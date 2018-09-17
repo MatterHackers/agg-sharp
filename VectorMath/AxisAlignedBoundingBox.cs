@@ -35,13 +35,23 @@ namespace MatterHackers.VectorMath
 {
 	public class AxisAlignedBoundingBox
 	{
-		public static AxisAlignedBoundingBox Empty { get; } = new AxisAlignedBoundingBox(Vector3.PositiveInfinity, Vector3.NegativeInfinity);
-		public static AxisAlignedBoundingBox Zero { get; } = new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero);
+		public static AxisAlignedBoundingBox Empty() { return new AxisAlignedBoundingBox(Vector3.PositiveInfinity, Vector3.NegativeInfinity); }
+		public static AxisAlignedBoundingBox Zero() { return new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero); }
 
 		public Vector3 minXYZ;
 		public Vector3 maxXYZ;
 
+
+		public Vector3 Min { get { return minXYZ; } }
+		public Vector3 Max { get { return maxXYZ; } }
+	 
 		public AxisAlignedBoundingBox()
+		{
+		}
+
+		public AxisAlignedBoundingBox(double minX, double minY, double minZ,
+			double maxX, double maxY, double maxZ)
+			: this(new Vector3(minX, minY, minZ), new Vector3(maxX, maxY, maxZ))
 		{
 		}
 
@@ -190,14 +200,13 @@ namespace MatterHackers.VectorMath
 		}
 
 		/// <summary>
-		/// This is the computation cost of doing an intersection with the given type.
-		/// Attempt to give it in average CPU cycles for the intersection.
+		/// AABB defines our unit value for Intersection cost at 1. All othe types
+		/// should attempt to calculate their cost in CPU relative to this.
 		/// </summary>
 		/// <returns></returns>
 		public static double GetIntersectCost()
 		{
-			// it would be great to try and measure this more accurately.  This is a guess from looking at the intersect function.
-			return 132;
+			return 1;
 		}
 	
 		private double volumeCache = 0;
@@ -287,6 +296,12 @@ namespace MatterHackers.VectorMath
 			return false;
 		}
 
+		public void Set(double minX, double minY, double minZ, double maxX, double maxY, double maxZ)
+		{
+			minXYZ = new Vector3(minX, minY, minZ);
+			maxXYZ = new Vector3(maxX, maxY, maxZ);
+		}
+
 		public static AxisAlignedBoundingBox Intersection(AxisAlignedBoundingBox boundsA, AxisAlignedBoundingBox boundsB)
 		{
 			Vector3 minXYZ = new Vector3(
@@ -345,6 +360,11 @@ namespace MatterHackers.VectorMath
 			{
 				positionToClamp.Z = maxXYZ.Z;
 			}
+		}
+
+		public bool Contains(double x, double y, double z, double errorRange = .001)
+		{
+			return Contains(new Vector3(x, y, z), errorRange);
 		}
 
 		public bool Contains(Vector3 position, double errorRange = .001)

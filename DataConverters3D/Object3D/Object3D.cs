@@ -627,7 +627,7 @@ namespace MatterHackers.DataConverters3D
 		{
 			var totalTransorm = this.Matrix * matrix;
 
-			AxisAlignedBoundingBox totalBounds = AxisAlignedBoundingBox.Empty;
+			AxisAlignedBoundingBox totalBounds = AxisAlignedBoundingBox.Empty();
 			// Set the initial bounding box to empty or the bounds of the objects MeshGroup
 			if (this.Mesh != null)
 			{
@@ -653,7 +653,7 @@ namespace MatterHackers.DataConverters3D
 			// Make sure we have some data. Else return 0 bounds.
 			if (totalBounds.minXYZ.X == double.PositiveInfinity)
 			{
-				return AxisAlignedBoundingBox.Zero;
+				return AxisAlignedBoundingBox.Zero();
 			}
 
 			return totalBounds;
