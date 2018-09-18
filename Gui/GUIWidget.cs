@@ -992,23 +992,6 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public virtual bool GetMousePosition(out Vector2 position)
-		{
-			position = new Vector2();
-			if (Parent != null)
-			{
-				Vector2 parentMousePosition;
-				if (Parent.GetMousePosition(out parentMousePosition))
-				{
-					position = parentMousePosition;
-					ParentToChildTransform.transform(ref position.X, ref position.Y);
-					return true;
-				}
-			}
-
-			return false;
-		}
-
 		[Category("Layout")]
 		public virtual RectangleDouble LocalBounds
 		{
