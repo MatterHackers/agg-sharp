@@ -21,6 +21,7 @@ using MatterHackers.VectorMath;
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
 using System;
+using System.Collections.Generic;
 
 namespace MatterHackers.Agg.Image
 {
@@ -1264,6 +1265,47 @@ namespace MatterHackers.Agg.Image
 			}
 
 			return accumulatedPosition / accumulatedCount;
+		}
+
+		public static Circle GetCircleBounds(this ImageBuffer image)
+		{
+			var outsidePoints = new List<Vector2>();
+
+			// get the first pixel position for each y
+			// get the last pixel position for each y
+
+			return SmallestEnclosingCircle.MakeCircle(outsidePoints);
+		}
+
+		/// <summary>
+		/// Find the image content and scale it to the output size in consideration of the 
+		/// Material Desing icon scaling rules
+		/// </summary>
+		/// <param name="sourceImage"></param>
+		/// <param name="width"></param>
+		/// <param name="height"></param>
+		/// <returns></returns>
+		public static ImageBuffer MaterialDesignScaledIcon(this ImageBuffer sourceImage, int width, int height)
+		{
+			// these are the sizes definde by Material Design
+			var iconGridSize = 192;
+			var squareWidth = 152;
+			var circleDiameter = 176;
+			var verticalRectangle = new Vector2(128, 176);
+			var horizontalRectangle = new Vector2(176, 128);
+
+			// the first thing we will do is discover the icon shape that minimizes scaling
+
+			// now figure out the scalling that needs to happen to the source to make our image fit 
+			// the correct icon bounds at the new size
+			var cicle = sourceImage.GetCircleBounds();
+			var bounsd = sourceImage.GetBounds();
+
+			// create the new scaled image
+			var scaledImage = new ImageBuffer(sourceImage);
+
+			// return it
+			return scaledImage;
 		}
 
 		public static ImageBuffer CreateScaledImage(this ImageBuffer sourceImage, int width, int height)
