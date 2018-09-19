@@ -7,28 +7,16 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\agg\Agg.csproj">
-      <Project>{657dbc6d-c3ea-4398-a3fa-ddb73c14f71b}</Project>
-      <Name>Agg</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\DataConverters3D\DataConverters3D.csproj">
-      <Project>{04667764-dc7b-4b95-aef6-b4e6c87a54e9}</Project>
-      <Name>DataConverters3D</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\ImageProcessing\ImageProcessing.csproj">
-      <Project>{036bccba-52d8-457c-84ae-8821f209fe4a}</Project>
-      <Name>ImageProcessing</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\PolygonMesh\PolygonMesh.csproj">
-      <Project>{86f6aaf2-9b50-40b8-a427-1897d76471c5}</Project>
-      <Name>PolygonMesh</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\RayTracer\RayTracer.csproj">
-      <Project>{1e01abe0-b494-4fe4-b0d6-540133286887}</Project>
-      <Name>RayTracer</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj">
-      <Project>{d3e41b4e-bfbb-44ca-94c8-95c00f754fdd}</Project>
-      <Name>VectorMath</Name>
     </ProjectReference>
   </ItemGroup>
 

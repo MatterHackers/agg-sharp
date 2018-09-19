@@ -2318,7 +2318,8 @@ namespace MatterHackers.Agg.UI
 		public Vector2 TransformToScreenSpace(Vector2 vectorToTransform)
 		{
 			GuiWidget prevGUIWidget = this;
-			while (prevGUIWidget != null)
+
+            while (!(prevGUIWidget is SystemWindow))
 			{
 				vectorToTransform += prevGUIWidget.OriginRelativeParent;
 				prevGUIWidget = prevGUIWidget.Parent;
