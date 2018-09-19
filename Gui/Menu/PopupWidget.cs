@@ -248,6 +248,7 @@ namespace MatterHackers.Agg.UI
 			windowToAddTo = widgetRelativeTo.Parents<SystemWindow>().FirstOrDefault();
 			windowToAddTo?.AddChild(popupWidget);
 
+			// Iterate until the first SystemWindow is found
 			GuiWidget topParent = widgetRelativeTo.Parent;
 			while (topParent.Parent != null
 				&& topParent as SystemWindow == null)
