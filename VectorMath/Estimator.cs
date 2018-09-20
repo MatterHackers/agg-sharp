@@ -44,19 +44,12 @@ namespace MatterHackers.VectorMath
 			Vector3 velocitySameAsStopPerS,
 			Vector3 speedMultiplier)
 		{
-			double longestTime = 0;
-			for(int i=0; i<3; i++)
-			{
-				longestTime = Math.Max(longestTime,
-					GetSecondsForMovement(delta[i],
-					ratePerSecond,
-					maxAccelerationPerS2[i],
-					maxVelocityPerS[i],
-					velocitySameAsStopPerS[i],
-					speedMultiplier[i]));
-			}
-
-			return longestTime;
+			return GetSecondsForMovement(delta.Length,
+				ratePerSecond,
+				maxAccelerationPerS2.X,
+				maxVelocityPerS.X,
+				velocitySameAsStopPerS.X,
+				speedMultiplier.X);
 		}
 
 
@@ -65,7 +58,7 @@ namespace MatterHackers.VectorMath
 			double maxAccelerationPerS2,
 			double maxVelocityPerS,
 			double velocitySameAsStopPerS,
-			double speedMultiplier)
+			double speedMultiplier = 1)
 		{
 			if (delta == 0)
 			{
