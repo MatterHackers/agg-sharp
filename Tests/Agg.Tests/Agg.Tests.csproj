@@ -98,7 +98,7 @@
       <Name>DataConverters3D</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\GuiAutomation\GuiAutomation.csproj">
-      <Project>{e9102310-0029-4d8f-b1e9-88fba6147d45}</Project>
+      <Project>{807F5686-A3EC-4BCC-AA42-B75D79E0D855}</Project>
       <Name>GuiAutomation</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Gui\Gui.csproj">
@@ -106,7 +106,7 @@
       <Name>Gui</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj">
-      <Project>{670bddff-927b-425d-9dd1-22acb14356eb}</Project>
+      <Project>{CD8A3D1A-24D5-4184-8CF3-7B2AD5CD7A71}</Project>
       <Name>PlatformWin32</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\PolygonMesh\PolygonMesh.csproj">
