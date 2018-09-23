@@ -798,6 +798,10 @@ namespace MatterHackers.DataConverters3D
 					var newChild = child.Clone();
 					newChildren.Add(newChild);
 					newChild.Matrix *= this.Matrix;
+					newChild.CopyProperties(this, Object3DPropertyFlags.Color 
+						| Object3DPropertyFlags.MaterialIndex
+						| Object3DPropertyFlags.OutputType
+						| Object3DPropertyFlags.Visible);
 				}
 
 				// and replace us with the children
