@@ -11,7 +11,7 @@ namespace Typography.TextLayout
     /// </summary>
     class GlyphSubstitution
     {
-        public GlyphSubstitution(TtfTypeface typeface, string lang)
+        public GlyphSubstitution(Typeface typeface, string lang)
         {
             _language = lang;
             _typeface = typeface;
@@ -83,7 +83,7 @@ namespace Typography.TextLayout
 
         private bool _mustRebuildTables = true;
 
-        private TtfTypeface _typeface;
+        private Typeface _typeface;
         private List<GSUB.LookupTable> _lookupTables = new List<GSUB.LookupTable>();
 
         private void RebuildTables()
@@ -187,7 +187,7 @@ namespace Typography.TextLayout
             }
             return selectedRanges.ToArray();
         }
-        public static void CollectAllAssociateGlyphIndex(this TtfTypeface typeface, List<ushort> outputGlyphIndexList, ScriptLang scLang, UnicodeLangBits[] selectedRangs = null)
+        public static void CollectAllAssociateGlyphIndex(this Typeface typeface, List<ushort> outputGlyphIndexList, ScriptLang scLang, UnicodeLangBits[] selectedRangs = null)
         {
             //-----------
             //general glyph index in the unicode range

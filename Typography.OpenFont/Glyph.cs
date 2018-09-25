@@ -6,7 +6,7 @@ using System.Text;
 namespace Typography.OpenFont
 {
 
-    public class TtfGlyph
+    public class Glyph
     {
         GlyphPointF[] glyphPoints;
         ushort[] _contourEndPoints;
@@ -15,13 +15,13 @@ namespace Typography.OpenFont
         bool _hasOrgAdvWidth;
 
         Bounds _bounds;
-        public static readonly TtfGlyph Empty = new TtfGlyph(new GlyphPointF[0], new ushort[0], Bounds.Zero, null);
+        public static readonly Glyph Empty = new Glyph(new GlyphPointF[0], new ushort[0], Bounds.Zero, null);
 
 #if DEBUG
         public readonly int dbugId;
         static int s_debugTotalId;
 #endif
-        internal TtfGlyph(
+        internal Glyph(
             GlyphPointF[] glyphPoints,
             ushort[] contourEndPoints,
             Bounds bounds,
@@ -53,7 +53,7 @@ namespace Typography.OpenFont
         public bool HasOriginalAdvancedWidth { get { return _hasOrgAdvWidth; } }
         //--------------
 
-        internal static void OffsetXY(TtfGlyph glyph, short dx, short dy)
+        internal static void OffsetXY(Glyph glyph, short dx, short dy)
         {
 
             //change data on current glyph
@@ -75,7 +75,7 @@ namespace Typography.OpenFont
 
         public bool HasGlyphInstructions { get { return this.GlyphInstructions != null; } }
 
-        internal static void TransformNormalWith2x2Matrix(TtfGlyph glyph, float m00, float m01, float m10, float m11)
+        internal static void TransformNormalWith2x2Matrix(Glyph glyph, float m00, float m01, float m10, float m11)
         {
 
             //http://stackoverflow.com/questions/13188156/whats-the-different-between-vector2-transform-and-vector2-transformnormal-i
@@ -130,11 +130,11 @@ namespace Typography.OpenFont
 
         }
 
-        internal static TtfGlyph Clone(TtfGlyph original)
+        internal static Glyph Clone(Glyph original)
         {
             //---------------------- 
 
-            return new TtfGlyph(
+            return new Glyph(
                 Utils.CloneArray(original.glyphPoints),
                 Utils.CloneArray(original._contourEndPoints),
                 original.Bounds,
@@ -146,7 +146,7 @@ namespace Typography.OpenFont
         /// </summary>
         /// <param name="src"></param>
         /// <param name="dest"></param>
-        internal static void AppendGlyph(TtfGlyph dest, TtfGlyph src)
+        internal static void AppendGlyph(Glyph dest, Glyph src)
         {
             int org_dest_len = dest._contourEndPoints.Length;
             int src_contour_count = src._contourEndPoints.Length;

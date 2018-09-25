@@ -6,7 +6,7 @@ namespace Typography.TextLayout
 {
     public interface IPixelScaleLayout
     {
-        void SetFont(TtfTypeface typeface, float fontSizeInPoints);
+        void SetFont(Typeface typeface, float fontSizeInPoints);
         void Layout(IGlyphPositions posStream, GlyphPlanList outputGlyphPlanList);
     }
 
@@ -93,7 +93,7 @@ namespace Typography.TextLayout
         /// <param name="typeface"></param>
         /// <param name="scriptLang"></param>
         /// <returns></returns>
-        public GlyphLayoutPlanContext GetPlanOrCreate(TtfTypeface typeface, ScriptLang scriptLang)
+        public GlyphLayoutPlanContext GetPlanOrCreate(Typeface typeface, ScriptLang scriptLang)
         {
             GlyphLayoutPlanKey key = new GlyphLayoutPlanKey(typeface, scriptLang.internalName);
             GlyphLayoutPlanContext context;
@@ -109,9 +109,9 @@ namespace Typography.TextLayout
     }
     struct GlyphLayoutPlanKey
     {
-        public TtfTypeface t;
+        public Typeface t;
         public int scriptInternameName;
-        public GlyphLayoutPlanKey(TtfTypeface t, int scriptInternameName)
+        public GlyphLayoutPlanKey(Typeface t, int scriptInternameName)
         {
             this.t = t;
             this.scriptInternameName = scriptInternameName;
@@ -141,7 +141,7 @@ namespace Typography.TextLayout
     {
 
         GlyphLayoutPlanCollection _layoutPlanCollection = new GlyphLayoutPlanCollection();
-        TtfTypeface _typeface;
+        Typeface _typeface;
         ScriptLang _scriptLang;
         GlyphSubstitution _gsub;
         GlyphSetPosition _gpos;
@@ -178,7 +178,7 @@ namespace Typography.TextLayout
 
         public bool EnableLigature { get; set; }
         public bool EnableComposition { get; set; }
-        public TtfTypeface Typeface
+        public Typeface Typeface
         {
             get { return _typeface; }
             set
@@ -284,7 +284,7 @@ namespace Typography.TextLayout
                 //has member 1:1
                 ushort glyIndex = _inputGlyphs[i];
                 //
-                TtfGlyph orgGlyph = _typeface.GetGlyphByIndex(glyIndex);
+                Glyph orgGlyph = _typeface.GetGlyphByIndex(glyIndex);
                 //this is original value WITHOUT fit-to-grid adjust
                 _glyphPositions.AddGlyph(glyIndex, orgGlyph);
             }
@@ -404,7 +404,7 @@ namespace Typography.TextLayout
     {
         List<GlyphPos> _glyphs = new List<GlyphPos>();
 
-        TtfTypeface _typeface;
+        Typeface _typeface;
         public GlyphPosStream() { }
 
         public int Count
@@ -419,12 +419,12 @@ namespace Typography.TextLayout
             _typeface = null;
             _glyphs.Clear();
         }
-        public TtfTypeface Typeface
+        public Typeface Typeface
         {
             get { return this._typeface; }
             set { this._typeface = value; }
         }
-        public void AddGlyph(ushort glyphIndex, TtfGlyph glyph)
+        public void AddGlyph(ushort glyphIndex, Glyph glyph)
         {
             if (!glyph.HasOriginalAdvancedWidth)
             {

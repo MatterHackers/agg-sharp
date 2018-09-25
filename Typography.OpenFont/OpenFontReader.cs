@@ -59,7 +59,7 @@ namespace Typography.OpenFont
         }
 
 
-        public TtfTypeface Read(Stream stream, ReadFlags readFlags = ReadFlags.Full)
+        public Typeface Read(Stream stream, ReadFlags readFlags = ReadFlags.Full)
         {
             var little = BitConverter.IsLittleEndian;
             using (var input = new ByteOrderSwappingBinaryReader(stream))
@@ -114,7 +114,7 @@ namespace Typography.OpenFont
                 //about truetype instruction init 
 
                 //--------------------------------------------- 
-                var typeface = new TtfTypeface(
+                var typeface = new Typeface(
                     nameEntry,
                     header.Bounds,
                     header.UnitsPerEm,
