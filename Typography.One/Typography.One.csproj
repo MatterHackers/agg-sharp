@@ -8,6 +8,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
   <Import Project="..\Typography.GlyphLayout\Typography.GlyphLayout.projitems" Label="Shared" />
 
   <Import Project="..\Typography.OpenFont\Typography.OpenFont.projitems" Label="Shared" />
