@@ -1,4 +1,4 @@
-﻿//Apache2, 2016-2017,  WinterDev
+﻿//Apache2, 2016-present, WinterDev
 
 
 namespace Typography.OpenFont.Tables
@@ -8,12 +8,6 @@ namespace Typography.OpenFont.Tables
     /// </summary>
     public interface IGlyphIndexList
     {
-        void Clear();
-        /// <summary>
-        /// add original char and its glyph index
-        /// </summary>
-        /// <param name="glyphIndex"></param>
-        void AddGlyph(int originalChar, ushort glyphIndex);
         int Count { get; }
         ushort this[int index] { get; }
 
@@ -37,5 +31,5 @@ namespace Typography.OpenFont.Tables
         /// <param name="newGlyphIndices"></param>
         void Replace(int index, ushort[] newGlyphIndices);
     }
- 
+
 }

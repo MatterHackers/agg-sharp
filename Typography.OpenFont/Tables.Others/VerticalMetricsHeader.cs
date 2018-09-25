@@ -1,4 +1,4 @@
-﻿//Apache2, 2017, WinterDev
+﻿//Apache2, 2017-present, WinterDev
 //https://www.microsoft.com/typography/otspec/vhea.htm
 
 using System;
@@ -95,7 +95,7 @@ namespace Typography.OpenFont.Tables
         {
             uint version = reader.ReadUInt32();
             VersionMajor = (byte)(version >> 16);
-            VersionMinor = (byte)((version >> 8)&0xFF);
+            VersionMinor = (byte)(version >> 8);
 
             VertTypoAscender = reader.ReadInt16();
             VertTypoDescender = reader.ReadInt16();
