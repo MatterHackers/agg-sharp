@@ -114,10 +114,6 @@ namespace MatterHackers.Agg.UI
 		{
 			menuVisible = true;
 
-			if (this.Parent == null)
-			{
-				return;
-			}
 			base.ShowMenu();
 
 			if (selectedIndex >= MenuItems.Count - 1)

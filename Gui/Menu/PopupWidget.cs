@@ -147,13 +147,16 @@ namespace MatterHackers.Agg.UI
 			{
 				bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen());
 
+				bool isDropDownList = this.Descendants<DropDownList>().Any(w => w.ContainsFocus);
+
 				bool clickIsInsideScrollArea = (scrollingWindow?.ScrollArea?.Children?[0]?.ChildHasMouseCaptured == true);
 
 				scrollPositionAtMouseUp = scrollingWindow.ScrollPosition;
 				if (!scrollingWindow.VerticalScrollBar.ChildHasMouseCaptured
 					&& AllowClickingItems()
 					&& clickIsInsideScrollArea
-					&& !specialChildHasFocus)
+					&& !specialChildHasFocus
+					&& !isDropDownList)
 				{
 					UiThread.RunOnIdle(CloseMenu);
 				}

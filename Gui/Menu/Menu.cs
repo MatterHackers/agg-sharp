@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
@@ -108,7 +109,7 @@ namespace MatterHackers.Agg.UI
 
 		protected virtual void ShowMenu()
 		{
-			if (this.Parent == null)
+			if (this.Parents<SystemWindow>().FirstOrDefault() == null)
 			{
 				throw new Exception("You cannot show the menu on a Menu unless it has a parent (has been added to a GuiWidget).");
 			}
