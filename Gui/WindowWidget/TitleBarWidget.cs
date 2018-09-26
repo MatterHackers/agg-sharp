@@ -17,17 +17,18 @@ namespace MatterHackers.Agg.UI
 {
 	public class TitleBarWidget : GuiWidget
 	{
-		private bool mouseDownOnBar = false;
 		private Vector2 DownPosition;
+		private bool mouseDownOnBar = false;
 
-		public TitleBarWidget()
+		public TitleBarWidget(int height)
 		{
-		}
+			// add a close button
 
-		public TitleBarWidget(RectangleDouble InBounds)
-		{
-			OriginRelativeParent = new Vector2(InBounds.Left, InBounds.Bottom);
-			LocalBounds = new RectangleDouble(0, 0, InBounds.Width, InBounds.Height);
+
+			// set the size and anchor
+			Size = new Vector2(0, height);
+			HAnchor = HAnchor.Stretch;
+			VAnchor = VAnchor.Top;
 		}
 
 		protected bool MouseDownOnBar
@@ -59,30 +60,36 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseDown(mouseEvent);
 		}
 
-		override public void OnMouseUp(MouseEventArgs mouseEvent)
-		{
-			MouseDownOnBar = false;
-			base.OnMouseUp(mouseEvent);
-		}
-
 		override public void OnMouseMove(MouseEventArgs mouseEvent)
 		{
 			if (MouseDownOnBar)
 			{
 				Vector2 mousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
 
-				Vector2 parentOriginRelativeToItsParent = Parent.OriginRelativeParent;
-				parentOriginRelativeToItsParent.X += mousePosition.X - DownPosition.X;
-				parentOriginRelativeToItsParent.Y += mousePosition.Y - DownPosition.Y;
-				if (parentOriginRelativeToItsParent.Y + Parent.Height - (Height - DownPosition.Y) > Parent.Parent.Height)
+				Vector2 parentPosition = Parent.Position;
+				parentPosition.X += mousePosition.X - DownPosition.X;
+				parentPosition.Y += mousePosition.Y - DownPosition.Y;
+				if (parentPosition.Y + Parent.Height - (Height - DownPosition.Y) > Parent.Parent.Height)
 				{
-					parentOriginRelativeToItsParent.Y = Parent.Parent.Height - Parent.Height + (Height - DownPosition.Y);
+					parentPosition.Y = Parent.Parent.Height - Parent.Height + (Height - DownPosition.Y);
 				}
-				Parent.Invalidate();
-				Parent.OriginRelativeParent = parentOriginRelativeToItsParent;
-				Parent.Invalidate();
+
+				var parentParent = Parent.Parent;
+				if (parentParent != null)
+				{
+					parentPosition.X = agg_basics.Clamp(parentPosition.X, -Parent.Width + 10, parentParent.Width - 10);
+					parentPosition.Y = agg_basics.Clamp(parentPosition.Y, -Parent.Height + 10, parentParent.Height - Parent.Height);
+				}
+
+				Parent.Position = parentPosition;
 			}
 			base.OnMouseMove(mouseEvent);
+		}
+
+		override public void OnMouseUp(MouseEventArgs mouseEvent)
+		{
+			MouseDownOnBar = false;
+			base.OnMouseUp(mouseEvent);
 		}
 	}
 }

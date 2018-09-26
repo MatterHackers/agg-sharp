@@ -1,4 +1,3 @@
-using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
 //----------------------------------------------------------------------------
@@ -12,14 +11,45 @@ using MatterHackers.VectorMath;
 // warranty, and with no claim as to its suitability for any purpose.
 //
 //----------------------------------------------------------------------------
-using System;
 
 namespace MatterHackers.Agg.UI
 {
 	public class WindowWidget : GuiWidget
 	{
-		private TitleBarWidget dragBar;
-		private GuiWidget clientArea = new GuiWidget();
+		private WindowEdges downEdge = WindowEdges.none;
+		private Vector2 downPosition;
+		private WindowEdges hoverEdge = WindowEdges.none;
+
+		public WindowWidget(RectangleDouble InBounds)
+		{
+			Border = new BorderDouble(1);
+			BorderColor = Color.Cyan;
+
+			BackgroundColor = Color.White;
+
+			Position = new Vector2(InBounds.Left, InBounds.Bottom);
+			Size = new Vector2(InBounds.Width, InBounds.Height);
+
+			DragBarColor = Color.LightGray;
+			TitleBar = new TitleBarWidget(29);
+			TitleBar.BackgroundColor = Color.LightGray;
+			TitleBar.Border = new BorderDouble(0, 1, 0, 0);
+			TitleBar.BorderColor = Color.Black;
+			//dragBar.DebugShowBounds = true;
+			base.AddChild(TitleBar);
+
+			//clientArea.DebugShowBounds = true;
+			ClientArea = new GuiWidget();
+			ClientArea.Margin = new BorderDouble(0, 0, 0, TitleBar.Height);
+			ClientArea.AnchorAll();
+
+			base.AddChild(ClientArea);
+		}
+
+		private enum WindowEdges { none, left, leftBottom, leftTop, right, rightBottom, rightTop, top, bottom }
+
+		public GuiWidget ClientArea { get; }
+		public TitleBarWidget TitleBar { get; private set; }
 
 		private Color DragBarColor
 		{
@@ -27,55 +57,172 @@ namespace MatterHackers.Agg.UI
 			set;
 		}
 
-		public WindowWidget(RectangleDouble InBounds)
-		{
-			int sizeOfDragBar = 20;
-
-			BackgroundColor = Color.White;
-
-			OriginRelativeParent = new Vector2(InBounds.Left, InBounds.Bottom);
-			LocalBounds = new RectangleDouble(0, 0, InBounds.Width, InBounds.Height);
-
-			DragBarColor = Color.LightGray;
-			dragBar = new TitleBarWidget(new RectangleDouble(0, InBounds.Height - sizeOfDragBar, InBounds.Width, InBounds.Height));
-			//dragBar.DebugShowBounds = true;
-			base.AddChild(dragBar);
-
-			//clientArea.DebugShowBounds = true;
-			base.AddChild(clientArea);
-		}
-
 		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
 		{
-			clientArea.AddChild(child, indexInChildrenList);
+			ClientArea.AddChild(child, indexInChildrenList);
 		}
 
-		public override void OnParentChanged(EventArgs e)
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
-			base.OnParentChanged(e);
+			downPosition = mouseEvent.Position;
+			downEdge = GetEdge(downPosition);
 
-			clientArea.Margin = new BorderDouble(0, 0, 0, dragBar.Height);
-			clientArea.AnchorAll();
+			base.OnMouseDown(mouseEvent);
 		}
 
-		public override void OnBoundsChanged(EventArgs e)
+		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
-			if (dragBar != null)
+			var delta = mouseEvent.Position - downPosition;
+			switch (downEdge)
 			{
-				dragBar.BoundsRelativeToParent = new RectangleDouble(0, Height - dragBar.Height, Width, Height);
-				clientArea.BoundsRelativeToParent = new RectangleDouble(0, 0, Width, Height - dragBar.Height);
+				case WindowEdges.none:
+					hoverEdge = GetEdge(mouseEvent.Position);
+					SetCursor(hoverEdge);
+					break;
+
+				case WindowEdges.left:
+					Position = new Vector2(Position.X + delta.X, Position.Y);
+					Size = new Vector2(Size.X - delta.X, Size.Y);
+					break;
+
+				case WindowEdges.leftBottom:
+					Position = Position + delta;
+					Size = new Vector2(Size.X - delta.X, Size.Y - delta.Y);
+					break;
+
+				case WindowEdges.leftTop:
+					break;
+
+				case WindowEdges.right:
+					Size = new Vector2(Size.X + delta.X, Size.Y);
+					downPosition = mouseEvent.Position;
+					break;
+
+				case WindowEdges.rightBottom:
+					Position = new Vector2(Position.X, Position.Y + delta.Y);
+					Size = new Vector2(Size.X + delta.X, Size.Y - delta.Y);
+					downPosition.X = mouseEvent.Position.X;
+					break;
+
+				case WindowEdges.rightTop:
+					break;
+
+				case WindowEdges.top:
+					Size = new Vector2(Size.X, Size.Y + delta.Y);
+					downPosition = mouseEvent.Position;
+					break;
+
+				case WindowEdges.bottom:
+					Position = new Vector2(Position.X, Position.Y + delta.Y);
+					Size = new Vector2(Size.X, Size.Y - delta.Y);
+					break;
 			}
-			base.OnBoundsChanged(e);
+
+			base.OnMouseMove(mouseEvent);
 		}
 
-		public override void OnDraw(Graphics2D graphics2D)
+		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
-			graphics2D.Rectangle(LocalBounds, Color.Black);
+			downEdge = WindowEdges.none;
 
-			RoundedRect boundsRect = new RoundedRect(dragBar.BoundsRelativeToParent, 0);
-			graphics2D.Render(boundsRect, DragBarColor);
+			base.OnMouseUp(mouseEvent);
+		}
 
-			base.OnDraw(graphics2D);
+		private WindowEdges GetEdge(Vector2 position)
+		{
+			if (!Resizable)
+			{
+				return WindowEdges.none;
+			}
+
+			WindowEdges edge = WindowEdges.none;
+			if (this.ContainsFirstUnderMouseRecursive())
+			{
+				if (position.X < 5)
+				{
+					if (position.Y < 5)
+					{
+						edge = WindowEdges.leftBottom;
+					}
+					else if (position.Y > Height - 5)
+					{
+						//edge = WindowEdges.leftTop;
+					}
+					else
+					{
+						edge = WindowEdges.left;
+					}
+				}
+				else if (position.X > Width - 5)
+				{
+					if (position.Y < 5)
+					{
+						edge = WindowEdges.rightBottom;
+					}
+					else if (position.Y > Height - 5)
+					{
+						//edge = WindowEdges.rightTop;
+					}
+					else
+					{
+						edge = WindowEdges.right;
+					}
+				}
+				else if (position.Y < 5)
+				{
+					edge = WindowEdges.bottom;
+				}
+				else if (position.Y > Height - 5)
+				{
+					//edge = WindowEdges.top;
+				}
+			}
+
+			return edge;
+		}
+
+		private void SetCursor(WindowEdges target)
+		{
+			switch (target)
+			{
+				case WindowEdges.none:
+					Cursor = Cursors.Default;
+					break;
+
+				case WindowEdges.left:
+					Cursor = Cursors.SizeWE;
+					break;
+
+				case WindowEdges.leftBottom:
+					Cursor = Cursors.SizeNESW;
+					break;
+
+				case WindowEdges.leftTop:
+					Cursor = Cursors.SizeNWSE;
+					break;
+
+				case WindowEdges.right:
+					Cursor = Cursors.SizeWE;
+					break;
+
+				case WindowEdges.rightBottom:
+					Cursor = Cursors.SizeNWSE;
+					break;
+
+				case WindowEdges.rightTop:
+					Cursor = Cursors.SizeNESW;
+					break;
+
+				case WindowEdges.top:
+					Cursor = Cursors.SizeNS;
+					break;
+
+				case WindowEdges.bottom:
+					Cursor = Cursors.SizeNS;
+					break;
+			}
+
+			SetCursor(Cursor);
 		}
 	}
 }

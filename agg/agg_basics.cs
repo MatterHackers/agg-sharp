@@ -235,6 +235,12 @@ namespace MatterHackers.Agg
 			}
 		}
 
+		public static int Clamp(int value, int min, int max)
+		{
+			bool changed = false;
+			return Clamp(value, min, max, ref changed);
+		}
+
 		public static int Clamp(int value, int min, int max, ref bool changed)
 		{
 			min = Math.Min(min, max);
@@ -252,6 +258,12 @@ namespace MatterHackers.Agg
 			}
 
 			return value;
+		}
+
+		public static double Clamp(double value, double min, double max)
+		{
+			bool changed = false;
+			return Clamp(value, min, max, ref changed);
 		}
 
 		public static double Clamp(double value, double min, double max, ref bool changed)
