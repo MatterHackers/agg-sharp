@@ -1,4 +1,4 @@
-﻿//Apache2, 2017, WinterDev
+﻿//Apache2, 2017-present, WinterDev
 //Apache2, 2014-2016, Samuel Carlsson, WinterDev
 
 using System;
@@ -6,8 +6,10 @@ using System.Text;
 namespace Typography.OpenFont
 {
 
-    public class TtfGlyph
+    public class Glyph
     {
+        //--------------------
+        //ttf
         GlyphPointF[] glyphPoints;
         ushort[] _contourEndPoints;
 
@@ -15,32 +17,36 @@ namespace Typography.OpenFont
         bool _hasOrgAdvWidth;
 
         Bounds _bounds;
-        public static readonly TtfGlyph Empty = new TtfGlyph(new GlyphPointF[0], new ushort[0], Bounds.Zero, null);
 
-#if DEBUG
-        public readonly int dbugId;
-        static int s_debugTotalId;
-#endif
-        internal TtfGlyph(
+        internal Glyph(
             GlyphPointF[] glyphPoints,
             ushort[] contourEndPoints,
             Bounds bounds,
-            byte[] glyphInstructions)
+            byte[] glyphInstructions,
+            ushort index)
         {
+            //create from TTF 
 
 #if DEBUG
             this.dbugId = s_debugTotalId++;
 #endif
             this.glyphPoints = glyphPoints;
             _contourEndPoints = contourEndPoints;
-            _bounds = bounds;
+            Bounds = bounds;
             GlyphInstructions = glyphInstructions;
+            GlyphIndex = index;
+        }
+        public Bounds Bounds
+        {
+            get { return _bounds; }
+            internal set { _bounds = value; }
         }
 
-
-        public Bounds Bounds { get { return _bounds; } }
         public ushort[] EndPoints { get { return _contourEndPoints; } }
         public GlyphPointF[] GlyphPoints { get { return glyphPoints; } }
+
+
+
         public ushort OriginalAdvanceWidth
         {
             get { return _orgAdvWidth; }
@@ -53,7 +59,9 @@ namespace Typography.OpenFont
         public bool HasOriginalAdvancedWidth { get { return _hasOrgAdvWidth; } }
         //--------------
 
-        internal static void OffsetXY(TtfGlyph glyph, short dx, short dy)
+
+
+        internal static void OffsetXY(Glyph glyph, short dx, short dy)
         {
 
             //change data on current glyph
@@ -75,7 +83,7 @@ namespace Typography.OpenFont
 
         public bool HasGlyphInstructions { get { return this.GlyphInstructions != null; } }
 
-        internal static void TransformNormalWith2x2Matrix(TtfGlyph glyph, float m00, float m01, float m10, float m11)
+        internal static void TransformNormalWith2x2Matrix(Glyph glyph, float m00, float m01, float m10, float m11)
         {
 
             //http://stackoverflow.com/questions/13188156/whats-the-different-between-vector2-transform-and-vector2-transformnormal-i
@@ -126,19 +134,17 @@ namespace Typography.OpenFont
             //TODO: review here
             glyph._bounds = new Bounds(
                (short)new_xmin, (short)new_ymin,
-               (short)new_xmax, (short)new_ymax);
-
+               (short)new_xmax, (short)new_ymax); 
         }
 
-        internal static TtfGlyph Clone(TtfGlyph original)
+        internal static Glyph Clone(Glyph original, ushort newGlyphIndex)
         {
-            //---------------------- 
-
-            return new TtfGlyph(
+            return new Glyph(
                 Utils.CloneArray(original.glyphPoints),
                 Utils.CloneArray(original._contourEndPoints),
                 original.Bounds,
-                original.GlyphInstructions != null ? Utils.CloneArray(original.GlyphInstructions) : null);
+                original.GlyphInstructions != null ? Utils.CloneArray(original.GlyphInstructions) : null,
+                newGlyphIndex);
         }
 
         /// <summary>
@@ -146,7 +152,7 @@ namespace Typography.OpenFont
         /// </summary>
         /// <param name="src"></param>
         /// <param name="dest"></param>
-        internal static void AppendGlyph(TtfGlyph dest, TtfGlyph src)
+        internal static void AppendGlyph(Glyph dest, Glyph src)
         {
             int org_dest_len = dest._contourEndPoints.Length;
             int src_contour_count = src._contourEndPoints.Length;
@@ -192,18 +198,77 @@ namespace Typography.OpenFont
             get { return _bounds.YMax; }
         }
 
+        //--------------------
+        //both ttf and cff
+        public static readonly Glyph Empty = new Glyph(new GlyphPointF[0], new ushort[0], Bounds.Zero, null, 0);
+
+#if DEBUG
+        public readonly int dbugId;
+        static int s_debugTotalId;
+#endif
+
+        public ushort GlyphIndex { get; }
+
 #if DEBUG
         public override string ToString()
         {
             var stbuilder = new StringBuilder();
-            stbuilder.Append("class=" + GlyphClass.ToString());
-            if (MarkClassDef != 0)
+            if (IsCffGlyph)
             {
-                stbuilder.Append(",mark_class=" + MarkClassDef);
+                stbuilder.Append("cff");
+                stbuilder.Append(",index=" + GlyphIndex);
+                stbuilder.Append(",name=" + _cff1GlyphData.Name);
+            }
+            else
+            {
+                stbuilder.Append("ttf");
+                stbuilder.Append(",index=" + GlyphIndex);
+                stbuilder.Append(",class=" + GlyphClass.ToString());
+                if (MarkClassDef != 0)
+                {
+                    stbuilder.Append(",mark_class=" + MarkClassDef);
+                }
             }
             return stbuilder.ToString();
         }
 #endif 
+
+        //--------------------
+        //cff
+
+        internal CFF.Cff1Font _ownerCffFont;
+        internal CFF.Cff1GlyphData _cff1GlyphData; //temp
+        internal Glyph(CFF.Cff1Font owner, CFF.Cff1GlyphData cff1Glyph)
+        {
+#if DEBUG
+            this.dbugId = s_debugTotalId++;
+#endif
+
+            this._ownerCffFont = owner;
+            //create from CFF 
+            this._cff1GlyphData = cff1Glyph;
+            this.GlyphIndex = cff1Glyph.GlyphIndex;
+
+        }
+        public bool IsCffGlyph
+        {
+            get
+            {
+                return _ownerCffFont != null;
+            }
+        }
+        public CFF.Cff1Font GetOwnerCff()
+        {
+            //temp 
+            return _ownerCffFont;
+        }
+        public CFF.Cff1GlyphData GetCff1GlyphData()
+        {
+            return _cff1GlyphData;
+        }
+        //math glyph info, temp , TODO: review here again
+        public MathGlyphs.MathGlyphInfo MathGlyphInfo { get; internal set; }
+        public bool HasMathGlyphInfo { get; internal set; }
     }
 
     //https://www.microsoft.com/typography/otspec/gdef.htm

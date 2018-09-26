@@ -1,4 +1,4 @@
-﻿//MIT, 2016-2017, WinterDev
+﻿//MIT, 2016-present, WinterDev
 using System.Collections.Generic;
 using Typography.OpenFont;
 using Typography.OpenFont.Tables;
@@ -12,10 +12,10 @@ namespace Typography.TextLayout
     class GlyphSetPosition
     {
 
-        TtfTypeface typeface;
+        Typeface typeface;
         GPOS gposTable;
         List<GPOS.LookupTable> lookupTables;
-        public GlyphSetPosition(TtfTypeface typeface, string lang)
+        public GlyphSetPosition(Typeface typeface, string lang)
         {
             this.Lang = lang;
             this.typeface = typeface;

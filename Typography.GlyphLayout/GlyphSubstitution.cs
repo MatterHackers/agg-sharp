@@ -1,4 +1,4 @@
-﻿//MIT, 2016-2017, WinterDev
+﻿//MIT, 2016-present, WinterDev
 
 using System.Collections.Generic;
 using Typography.OpenFont;
@@ -11,7 +11,7 @@ namespace Typography.TextLayout
     /// </summary>
     class GlyphSubstitution
     {
-        public GlyphSubstitution(TtfTypeface typeface, string lang)
+        public GlyphSubstitution(Typeface typeface, string lang)
         {
             _language = lang;
             _typeface = typeface;
@@ -83,7 +83,7 @@ namespace Typography.TextLayout
 
         private bool _mustRebuildTables = true;
 
-        private TtfTypeface _typeface;
+        private Typeface _typeface;
         private List<GSUB.LookupTable> _lookupTables = new List<GSUB.LookupTable>();
 
         private void RebuildTables()
@@ -159,7 +159,7 @@ namespace Typography.TextLayout
             }
             //-------------
             //add some glyphs that also need by substitution process 
-           
+
             foreach (GSUB.LookupTable subLk in _lookupTables)
             {
                 subLk.CollectAssociatedSubstitutionGlyph(outputGlyphIndices);
@@ -187,7 +187,7 @@ namespace Typography.TextLayout
             }
             return selectedRanges.ToArray();
         }
-        public static void CollectAllAssociateGlyphIndex(this TtfTypeface typeface, List<ushort> outputGlyphIndexList, ScriptLang scLang, UnicodeLangBits[] selectedRangs = null)
+        public static void CollectAllAssociateGlyphIndex(this Typeface typeface, List<ushort> outputGlyphIndexList, ScriptLang scLang, UnicodeLangBits[] selectedRangs = null)
         {
             //-----------
             //general glyph index in the unicode range
@@ -221,8 +221,11 @@ namespace Typography.TextLayout
             }
 
             //-----------
-            var gsub = new GlyphSubstitution(typeface, scLang.shortname);
-            gsub.CollectAdditionalSubstitutionGlyphIndices(outputGlyphIndexList);
+            if (typeface.GSUBTable != null)
+            {
+                var gsub = new GlyphSubstitution(typeface, scLang.shortname);
+                gsub.CollectAdditionalSubstitutionGlyphIndices(outputGlyphIndexList);
+            }
         }
 
     }
