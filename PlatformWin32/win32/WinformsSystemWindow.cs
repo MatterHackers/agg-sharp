@@ -729,7 +729,7 @@ namespace MatterHackers.Agg.UI
 
 			var rootWindow = allOpenSystemWindows.LastOrDefault();
 			if ((systemWindow == rootWindow && SingleWindowMode)
-				|| (systemWindow == MainWindowsFormsWindow.systemWindow && !SingleWindowMode))
+				|| (MainWindowsFormsWindow != null && systemWindow == MainWindowsFormsWindow.systemWindow && !SingleWindowMode))
 			{
 				// Close the main (first) PlatformWindow if it's being requested and not this instance
 				if (MainWindowsFormsWindow.InvokeRequired)
