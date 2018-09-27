@@ -17,9 +17,6 @@ namespace MatterHackers.Agg.UI
 {
 	public class WindowWidget : GuiWidget
 	{
-		int grabWidth => (int)Math.Round(5 * GuiWidget.DeviceScale);
-		int titleBarHeight => (int)Math.Round(30 * GuiWidget.DeviceScale);
-
 		public WindowWidget(RectangleDouble InBounds)
 		{
 			MinimumSize = new Vector2(grabWidth * 8, grabWidth * 4 + titleBarHeight * 2);
@@ -45,15 +42,14 @@ namespace MatterHackers.Agg.UI
 			base.AddChild(TitleBar);
 
 			// left grab control
-			base.AddChild(new GrabControl()
+			base.AddChild(new GrabControl(Cursors.SizeWE)
 			{
 				BackgroundColor = grabEdgeColor,
 				Margin = new BorderDouble(0, grabWidth),
 				HAnchor = HAnchor.Left,
 				VAnchor = VAnchor.Stretch,
-				Cursor = Cursors.SizeWE,
 				Size = new Vector2(grabWidth, 0),
-				MoveParent = (s, e) =>
+				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
 					delta.Y = 0;
@@ -64,15 +60,14 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// bottom grab control
-			base.AddChild(new GrabControl()
+			base.AddChild(new GrabControl(Cursors.SizeNS)
 			{
 				BackgroundColor = grabEdgeColor,
 				Margin = new BorderDouble(grabWidth, 0),
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Bottom,
-				Cursor = Cursors.SizeNS,
 				Size = new Vector2(0, grabWidth),
-				MoveParent = (s, e) =>
+				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
 					delta.X = 0;
@@ -83,14 +78,13 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// left bottom grab control
-			base.AddChild(new GrabControl()
+			base.AddChild(new GrabControl(Cursors.SizeNESW)
 			{
 				BackgroundColor = grabCornnerColor,
 				HAnchor = HAnchor.Left,
 				VAnchor = VAnchor.Bottom,
-				Cursor = Cursors.SizeNESW,
 				Size = new Vector2(grabWidth, grabWidth),
-				MoveParent = (s, e) =>
+				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
 					var startSize = Size;
@@ -100,14 +94,13 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// left top grab control
-			base.AddChild(new GrabControl()
+			base.AddChild(new GrabControl(Cursors.SizeNWSE)
 			{
 				BackgroundColor = grabCornnerColor,
 				HAnchor = HAnchor.Left,
 				VAnchor = VAnchor.Top,
-				Cursor = Cursors.SizeNWSE,
 				Size = new Vector2(grabWidth, grabWidth),
-				MoveParent = (s, e) =>
+				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
 					var startSize = Size;
@@ -117,15 +110,14 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// right grab control
-			base.AddChild(new GrabControl()
+			base.AddChild(new GrabControl(Cursors.SizeWE)
 			{
 				BackgroundColor = grabEdgeColor,
 				Margin = new BorderDouble(0, grabWidth),
 				VAnchor = VAnchor.Stretch,
 				HAnchor = HAnchor.Right,
-				Cursor = Cursors.SizeWE,
 				Size = new Vector2(grabWidth, 0),
-				MoveParent = (s, e) =>
+				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
 					Size = new Vector2(Size.X + delta.X, Size.Y);
@@ -133,14 +125,13 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// right top grab control
-			base.AddChild(new GrabControl()
+			base.AddChild(new GrabControl(Cursors.SizeNESW)
 			{
 				BackgroundColor = grabCornnerColor,
 				HAnchor = HAnchor.Right,
 				VAnchor = VAnchor.Top,
-				Cursor = Cursors.SizeNESW,
 				Size = new Vector2(grabWidth, grabWidth),
-				MoveParent = (s, e) =>
+				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
 					Size = new Vector2(Size.X + delta.X, Size.Y + delta.Y);
@@ -148,15 +139,14 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// top grab control
-			base.AddChild(new GrabControl()
+			base.AddChild(new GrabControl(Cursors.SizeNS)
 			{
 				BackgroundColor = grabEdgeColor,
 				Margin = new BorderDouble(grabWidth, 0),
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Top,
-				Cursor = Cursors.SizeNS,
 				Size = new Vector2(0, grabWidth),
-				MoveParent = (s, e) =>
+				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
 					Size = new Vector2(Size.X, Size.Y + delta.Y);
@@ -164,14 +154,13 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// right bottom
-			base.AddChild(new GrabControl()
+			base.AddChild(new GrabControl(Cursors.SizeNWSE)
 			{
 				BackgroundColor = grabCornnerColor,
 				HAnchor = HAnchor.Right,
 				VAnchor = VAnchor.Bottom,
-				Cursor = Cursors.SizeNWSE,
 				Size = new Vector2(grabWidth, grabWidth),
-				MoveParent = (s, e) =>
+				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
 					var startSize = Size;
@@ -195,6 +184,24 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
+		public GuiWidget ClientArea { get; }
+		public TitleBarWidget TitleBar { get; private set; }
+		public Color TitleBarBackgroundColor { get; set; } = Color.LightGray;
+
+		private Color DragBarColor
+		{
+			get;
+			set;
+		}
+
+		private int grabWidth => (int)Math.Round(5 * GuiWidget.DeviceScale);
+		private int titleBarHeight => (int)Math.Round(30 * GuiWidget.DeviceScale);
+
+		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
+		{
+			ClientArea.AddChild(child, indexInChildrenList);
+		}
+
 		public override void OnDrawBackground(Graphics2D graphics2D)
 		{
 			base.OnDrawBackground(graphics2D);
@@ -207,35 +214,22 @@ namespace MatterHackers.Agg.UI
 			graphics2D.FillRectangle(0, Height - totalHeight, Width, Height - totalHeight + lineWidth, Color.Black);
 		}
 
-		public GuiWidget ClientArea { get; }
-
-		public Color TitleBarBackgroundColor { get; set; } = Color.LightGray;
-		public TitleBarWidget TitleBar { get; private set; }
-
-		private Color DragBarColor
-		{
-			get;
-			set;
-		}
-
-		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
-		{
-			ClientArea.AddChild(child, indexInChildrenList);
-		}
-
 		private class GrabControl : GuiWidget
 		{
 			public Vector2 downPosition;
-			internal Action<GrabControl, MouseEventArgs> MoveParent;
-			private bool downOnTop = false;
+			internal Action<GrabControl, MouseEventArgs> AdjustParent;
+			private Cursors cursor;
+			private bool mouseIsDown = false;
+			private GuiWidget perviousParent;
 
-			internal GrabControl()
+			public GrabControl(Cursors cursor)
 			{
+				this.cursor = cursor;
 			}
 
 			public override void OnMouseDown(MouseEventArgs mouseEvent)
 			{
-				downOnTop = true;
+				mouseIsDown = true;
 				downPosition = mouseEvent.Position;
 
 				base.OnMouseDown(mouseEvent);
@@ -243,9 +237,12 @@ namespace MatterHackers.Agg.UI
 
 			public override void OnMouseMove(MouseEventArgs mouseEvent)
 			{
-				if (downOnTop)
+				if (mouseIsDown)
 				{
-					MoveParent?.Invoke(this, mouseEvent);
+					if (Parent?.Resizable == true)
+					{
+						AdjustParent?.Invoke(this, mouseEvent);
+					}
 				}
 
 				base.OnMouseMove(mouseEvent);
@@ -253,61 +250,34 @@ namespace MatterHackers.Agg.UI
 
 			public override void OnMouseUp(MouseEventArgs mouseEvent)
 			{
-				downOnTop = false;
+				mouseIsDown = false;
 
 				base.OnMouseUp(mouseEvent);
 			}
+
+			public override void OnParentChanged(EventArgs e)
+			{
+				if (perviousParent != null)
+				{
+					perviousParent.ResizeableChanged -= PerviousParent_ResizeableChanged;
+				}
+				perviousParent = Parent;
+				Parent.ResizeableChanged += PerviousParent_ResizeableChanged;
+				base.OnParentChanged(e);
+				PerviousParent_ResizeableChanged(null, null);
+			}
+
+			private void PerviousParent_ResizeableChanged(object sender, EventArgs e)
+			{
+				if (Parent?.Resizable == true)
+				{
+					this.Cursor = cursor;
+				}
+				else
+				{
+					this.Cursor = Cursors.Arrow;
+				}
+			}
 		}
-
-		//public override void OnMouseMove(MouseEventArgs mouseEvent)
-		//{
-		//	var delta = mouseEvent.Position - downPosition;
-		//	switch (downEdge)
-		//	{
-		//		case WindowEdges.none:
-		//			hoverEdge = GetEdge(mouseEvent.Position);
-		//			//SetCursor(hoverEdge);
-		//			break;
-
-		//		case WindowEdges.left:
-		//			Position = new Vector2(Position.X + delta.X, Position.Y);
-		//			Size = new Vector2(Size.X - delta.X, Size.Y);
-		//			break;
-
-		//		case WindowEdges.leftBottom:
-		//			Position = Position + delta;
-		//			Size = new Vector2(Size.X - delta.X, Size.Y - delta.Y);
-		//			break;
-
-		//		case WindowEdges.leftTop:
-		//			break;
-
-		//		case WindowEdges.right:
-		//			Size = new Vector2(Size.X + delta.X, Size.Y);
-		//			downPosition = mouseEvent.Position;
-		//			break;
-
-		//		case WindowEdges.rightBottom:
-		//			Position = new Vector2(Position.X, Position.Y + delta.Y);
-		//			Size = new Vector2(Size.X + delta.X, Size.Y - delta.Y);
-		//			downPosition.X = mouseEvent.Position.X;
-		//			break;
-
-		//		case WindowEdges.rightTop:
-		//			break;
-
-		//		case WindowEdges.top:
-		//			Size = new Vector2(Size.X, Size.Y + delta.Y);
-		//			downPosition = mouseEvent.Position;
-		//			break;
-
-		//		case WindowEdges.bottom:
-		//			Position = new Vector2(Position.X, Position.Y + delta.Y);
-		//			Size = new Vector2(Size.X, Size.Y - delta.Y);
-		//			break;
-		//	}
-
-		//	base.OnMouseMove(mouseEvent);
-		//}
 	}
 }
