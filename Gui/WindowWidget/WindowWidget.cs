@@ -17,9 +17,12 @@ namespace MatterHackers.Agg.UI
 {
 	public class WindowWidget : GuiWidget
 	{
+		int grabWidth => (int)Math.Round(5 * GuiWidget.DeviceScale);
+		int titleBarHeight => (int)Math.Round(30 * GuiWidget.DeviceScale);
+
 		public WindowWidget(RectangleDouble InBounds)
 		{
-			var grabWidth = 5;
+			MinimumSize = new Vector2(grabWidth * 8, grabWidth * 4 + titleBarHeight * 2);
 			Border = new BorderDouble(1);
 			BorderColor = Color.Cyan;
 
@@ -28,23 +31,23 @@ namespace MatterHackers.Agg.UI
 			Position = new Vector2(InBounds.Left, InBounds.Bottom);
 			Size = new Vector2(InBounds.Width, InBounds.Height);
 
+			var grabCornnerColor = Color.Transparent;// Color.Blue;
+			var grabEdgeColor = Color.Transparent;//Color.Red;
+
 			DragBarColor = Color.LightGray;
 			TitleBar = new TitleBarWidget()
 			{
-				Size = new Vector2(0, 29 - grabWidth),
+				Size = new Vector2(0, titleBarHeight - grabWidth),
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Top,
 				Margin = new BorderDouble(grabWidth, 0, grabWidth, grabWidth),
-				BackgroundColor = Color.LightGray,
-				Border = new BorderDouble(0, 1, 0, 0),
-				BorderColor = Color.Black,
 			};
 			base.AddChild(TitleBar);
 
 			// left grab control
 			base.AddChild(new GrabControl()
 			{
-				BackgroundColor = Color.Red,
+				BackgroundColor = grabEdgeColor,
 				Margin = new BorderDouble(0, grabWidth),
 				HAnchor = HAnchor.Left,
 				VAnchor = VAnchor.Stretch,
@@ -54,15 +57,16 @@ namespace MatterHackers.Agg.UI
 				{
 					var delta = e.Position - s.downPosition;
 					delta.Y = 0;
-					Position = Position + delta;
+					var startSize = Size;
 					Size = new Vector2(Size.X - delta.X, Size.Y);
+					Position += startSize - Size;
 				}
 			});
 
 			// bottom grab control
 			base.AddChild(new GrabControl()
 			{
-				BackgroundColor = Color.Red,
+				BackgroundColor = grabEdgeColor,
 				Margin = new BorderDouble(grabWidth, 0),
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Bottom,
@@ -72,15 +76,16 @@ namespace MatterHackers.Agg.UI
 				{
 					var delta = e.Position - s.downPosition;
 					delta.X = 0;
-					Position = Position + delta;
+					var startSize = Size;
 					Size = new Vector2(Size.X, Size.Y - delta.Y);
+					Position = Position + startSize - Size;
 				}
 			});
 
 			// left bottom grab control
 			base.AddChild(new GrabControl()
 			{
-				BackgroundColor = Color.Blue,
+				BackgroundColor = grabCornnerColor,
 				HAnchor = HAnchor.Left,
 				VAnchor = VAnchor.Bottom,
 				Cursor = Cursors.SizeNESW,
@@ -88,15 +93,16 @@ namespace MatterHackers.Agg.UI
 				MoveParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
-					Position = Position + delta;
+					var startSize = Size;
 					Size -= delta;
+					Position = Position + startSize - Size;
 				}
 			});
 
 			// left top grab control
 			base.AddChild(new GrabControl()
 			{
-				BackgroundColor = Color.Blue,
+				BackgroundColor = grabCornnerColor,
 				HAnchor = HAnchor.Left,
 				VAnchor = VAnchor.Top,
 				Cursor = Cursors.SizeNWSE,
@@ -104,15 +110,16 @@ namespace MatterHackers.Agg.UI
 				MoveParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
-					Position += new Vector2(delta.X, 0);
+					var startSize = Size;
 					Size = new Vector2(Size.X - delta.X, Size.Y + delta.Y);
+					Position += new Vector2(startSize.X - Size.X, 0);
 				}
 			});
 
 			// right grab control
 			base.AddChild(new GrabControl()
 			{
-				BackgroundColor = Color.Red,
+				BackgroundColor = grabEdgeColor,
 				Margin = new BorderDouble(0, grabWidth),
 				VAnchor = VAnchor.Stretch,
 				HAnchor = HAnchor.Right,
@@ -128,7 +135,7 @@ namespace MatterHackers.Agg.UI
 			// right top grab control
 			base.AddChild(new GrabControl()
 			{
-				BackgroundColor = Color.Blue,
+				BackgroundColor = grabCornnerColor,
 				HAnchor = HAnchor.Right,
 				VAnchor = VAnchor.Top,
 				Cursor = Cursors.SizeNESW,
@@ -143,7 +150,7 @@ namespace MatterHackers.Agg.UI
 			// top grab control
 			base.AddChild(new GrabControl()
 			{
-				BackgroundColor = Color.Red,
+				BackgroundColor = grabEdgeColor,
 				Margin = new BorderDouble(grabWidth, 0),
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Top,
@@ -159,7 +166,7 @@ namespace MatterHackers.Agg.UI
 			// right bottom
 			base.AddChild(new GrabControl()
 			{
-				BackgroundColor = Color.Blue,
+				BackgroundColor = grabCornnerColor,
 				HAnchor = HAnchor.Right,
 				VAnchor = VAnchor.Bottom,
 				Cursor = Cursors.SizeNWSE,
@@ -167,8 +174,9 @@ namespace MatterHackers.Agg.UI
 				MoveParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
-					Position = new Vector2(Position.X, Position.Y + delta.Y);
+					var startSize = Size;
 					Size = new Vector2(Size.X + delta.X, Size.Y - delta.Y);
+					Position = new Vector2(Position.X, Position.Y + (startSize.Y - Size.Y));
 				}
 			});
 
@@ -187,8 +195,21 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
+		public override void OnDrawBackground(Graphics2D graphics2D)
+		{
+			base.OnDrawBackground(graphics2D);
+
+			// draw on top of the backgroud color
+			var totalHeight = titleBarHeight + grabWidth;
+			graphics2D.FillRectangle(0, Height, Width, Height - totalHeight, TitleBarBackgroundColor);
+
+			var lineWidth = Math.Round(1 * GuiWidget.DeviceScale);
+			graphics2D.FillRectangle(0, Height - totalHeight, Width, Height - totalHeight + lineWidth, Color.Black);
+		}
+
 		public GuiWidget ClientArea { get; }
 
+		public Color TitleBarBackgroundColor { get; set; } = Color.LightGray;
 		public TitleBarWidget TitleBar { get; private set; }
 
 		private Color DragBarColor

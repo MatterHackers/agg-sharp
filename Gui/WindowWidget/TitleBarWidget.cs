@@ -30,13 +30,6 @@ namespace MatterHackers.Agg.UI
 			set { mouseDownOnBar = value; }
 		}
 
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			RoundedRect roundRect = new RoundedRect(BoundsRelativeToParent, 0);
-			graphics2D.Render(roundRect, new Color(0, 0, 0, 30));
-			base.OnDraw(graphics2D);
-		}
-
 		override public void OnMouseDown(MouseEventArgs mouseEvent)
 		{
 			if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
