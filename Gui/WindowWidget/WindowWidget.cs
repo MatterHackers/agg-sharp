@@ -31,15 +31,14 @@ namespace MatterHackers.Agg.UI
 			var grabCornnerColor = Color.Transparent;// Color.Blue;
 			var grabEdgeColor = Color.Transparent;//Color.Red;
 
-			DragBarColor = Color.LightGray;
-			TitleBar = new TitleBarWidget()
+			DragRegion = new TitleBarWidget()
 			{
 				Size = new Vector2(0, titleBarHeight - grabWidth),
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Top,
 				Margin = new BorderDouble(grabWidth, 0, grabWidth, grabWidth),
 			};
-			base.AddChild(TitleBar);
+			base.AddChild(DragRegion);
 
 			// left grab control
 			base.AddChild(new GrabControl(Cursors.SizeWE)
@@ -172,7 +171,7 @@ namespace MatterHackers.Agg.UI
 			ClientArea = new GuiWidget()
 			{
 				//DebugShowBounds = true,
-				Margin = new BorderDouble(grabWidth, grabWidth, grabWidth, TitleBar.Height + grabWidth),
+				Margin = new BorderDouble(grabWidth, grabWidth, grabWidth, titleBarHeight),
 			};
 			ClientArea.AnchorAll();
 
@@ -185,14 +184,8 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public GuiWidget ClientArea { get; }
-		public TitleBarWidget TitleBar { get; private set; }
+		public TitleBarWidget DragRegion { get; private set; }
 		public Color TitleBarBackgroundColor { get; set; } = Color.LightGray;
-
-		private Color DragBarColor
-		{
-			get;
-			set;
-		}
 
 		private int grabWidth => (int)Math.Round(5 * GuiWidget.DeviceScale);
 		private int titleBarHeight => (int)Math.Round(30 * GuiWidget.DeviceScale);
@@ -207,11 +200,7 @@ namespace MatterHackers.Agg.UI
 			base.OnDrawBackground(graphics2D);
 
 			// draw on top of the backgroud color
-			var totalHeight = titleBarHeight + grabWidth;
-			graphics2D.FillRectangle(0, Height, Width, Height - totalHeight, TitleBarBackgroundColor);
-
-			var lineWidth = Math.Round(1 * GuiWidget.DeviceScale);
-			graphics2D.FillRectangle(0, Height - totalHeight, Width, Height - totalHeight + lineWidth, Color.Black);
+			graphics2D.FillRectangle(0, Height, Width, Height - titleBarHeight, TitleBarBackgroundColor);
 		}
 
 		private class GrabControl : GuiWidget
