@@ -1,4 +1,5 @@
 using MatterHackers.VectorMath;
+using System;
 
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
@@ -16,12 +17,9 @@ namespace MatterHackers.Agg.UI
 {
 	public class WindowWidget : GuiWidget
 	{
-		private WindowEdges downEdge = WindowEdges.none;
-		private Vector2 downPosition;
-		private WindowEdges hoverEdge = WindowEdges.none;
-
 		public WindowWidget(RectangleDouble InBounds)
 		{
+			var grabWidth = 5;
 			Border = new BorderDouble(1);
 			BorderColor = Color.Cyan;
 
@@ -31,24 +29,166 @@ namespace MatterHackers.Agg.UI
 			Size = new Vector2(InBounds.Width, InBounds.Height);
 
 			DragBarColor = Color.LightGray;
-			TitleBar = new TitleBarWidget(29);
-			TitleBar.BackgroundColor = Color.LightGray;
-			TitleBar.Border = new BorderDouble(0, 1, 0, 0);
-			TitleBar.BorderColor = Color.Black;
-			//dragBar.DebugShowBounds = true;
+			TitleBar = new TitleBarWidget()
+			{
+				Size = new Vector2(0, 29 - grabWidth),
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Top,
+				Margin = new BorderDouble(grabWidth, 0, grabWidth, grabWidth),
+				BackgroundColor = Color.LightGray,
+				Border = new BorderDouble(0, 1, 0, 0),
+				BorderColor = Color.Black,
+			};
 			base.AddChild(TitleBar);
 
-			//clientArea.DebugShowBounds = true;
-			ClientArea = new GuiWidget();
-			ClientArea.Margin = new BorderDouble(0, 0, 0, TitleBar.Height);
+			// left grab control
+			base.AddChild(new GrabControl()
+			{
+				BackgroundColor = Color.Red,
+				Margin = new BorderDouble(0, grabWidth),
+				HAnchor = HAnchor.Left,
+				VAnchor = VAnchor.Stretch,
+				Cursor = Cursors.SizeWE,
+				Size = new Vector2(grabWidth, 0),
+				MoveParent = (s, e) =>
+				{
+					var delta = e.Position - s.downPosition;
+					delta.Y = 0;
+					Position = Position + delta;
+					Size = new Vector2(Size.X - delta.X, Size.Y);
+				}
+			});
+
+			// bottom grab control
+			base.AddChild(new GrabControl()
+			{
+				BackgroundColor = Color.Red,
+				Margin = new BorderDouble(grabWidth, 0),
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Bottom,
+				Cursor = Cursors.SizeNS,
+				Size = new Vector2(0, grabWidth),
+				MoveParent = (s, e) =>
+				{
+					var delta = e.Position - s.downPosition;
+					delta.X = 0;
+					Position = Position + delta;
+					Size = new Vector2(Size.X, Size.Y - delta.Y);
+				}
+			});
+
+			// left bottom grab control
+			base.AddChild(new GrabControl()
+			{
+				BackgroundColor = Color.Blue,
+				HAnchor = HAnchor.Left,
+				VAnchor = VAnchor.Bottom,
+				Cursor = Cursors.SizeNESW,
+				Size = new Vector2(grabWidth, grabWidth),
+				MoveParent = (s, e) =>
+				{
+					var delta = e.Position - s.downPosition;
+					Position = Position + delta;
+					Size -= delta;
+				}
+			});
+
+			// left top grab control
+			base.AddChild(new GrabControl()
+			{
+				BackgroundColor = Color.Blue,
+				HAnchor = HAnchor.Left,
+				VAnchor = VAnchor.Top,
+				Cursor = Cursors.SizeNWSE,
+				Size = new Vector2(grabWidth, grabWidth),
+				MoveParent = (s, e) =>
+				{
+					var delta = e.Position - s.downPosition;
+					Position += new Vector2(delta.X, 0);
+					Size = new Vector2(Size.X - delta.X, Size.Y + delta.Y);
+				}
+			});
+
+			// right grab control
+			base.AddChild(new GrabControl()
+			{
+				BackgroundColor = Color.Red,
+				Margin = new BorderDouble(0, grabWidth),
+				VAnchor = VAnchor.Stretch,
+				HAnchor = HAnchor.Right,
+				Cursor = Cursors.SizeWE,
+				Size = new Vector2(grabWidth, 0),
+				MoveParent = (s, e) =>
+				{
+					var delta = e.Position - s.downPosition;
+					Size = new Vector2(Size.X + delta.X, Size.Y);
+				}
+			});
+
+			// right top grab control
+			base.AddChild(new GrabControl()
+			{
+				BackgroundColor = Color.Blue,
+				HAnchor = HAnchor.Right,
+				VAnchor = VAnchor.Top,
+				Cursor = Cursors.SizeNESW,
+				Size = new Vector2(grabWidth, grabWidth),
+				MoveParent = (s, e) =>
+				{
+					var delta = e.Position - s.downPosition;
+					Size = new Vector2(Size.X + delta.X, Size.Y + delta.Y);
+				}
+			});
+
+			// top grab control
+			base.AddChild(new GrabControl()
+			{
+				BackgroundColor = Color.Red,
+				Margin = new BorderDouble(grabWidth, 0),
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Top,
+				Cursor = Cursors.SizeNS,
+				Size = new Vector2(0, grabWidth),
+				MoveParent = (s, e) =>
+				{
+					var delta = e.Position - s.downPosition;
+					Size = new Vector2(Size.X, Size.Y + delta.Y);
+				}
+			});
+
+			// right bottom
+			base.AddChild(new GrabControl()
+			{
+				BackgroundColor = Color.Blue,
+				HAnchor = HAnchor.Right,
+				VAnchor = VAnchor.Bottom,
+				Cursor = Cursors.SizeNWSE,
+				Size = new Vector2(grabWidth, grabWidth),
+				MoveParent = (s, e) =>
+				{
+					var delta = e.Position - s.downPosition;
+					Position = new Vector2(Position.X, Position.Y + delta.Y);
+					Size = new Vector2(Size.X + delta.X, Size.Y - delta.Y);
+				}
+			});
+
+			ClientArea = new GuiWidget()
+			{
+				//DebugShowBounds = true,
+				Margin = new BorderDouble(grabWidth, grabWidth, grabWidth, TitleBar.Height + grabWidth),
+			};
 			ClientArea.AnchorAll();
 
 			base.AddChild(ClientArea);
 		}
 
-		private enum WindowEdges { none, left, leftBottom, leftTop, right, rightBottom, rightTop, top, bottom }
+		public WindowWidget(int x, int y, int width, int height)
+			: this(new RectangleDouble(x, y, x + width, y + height))
+		{
+		}
 
 		public GuiWidget ClientArea { get; }
+
 		public TitleBarWidget TitleBar { get; private set; }
 
 		private Color DragBarColor
@@ -62,167 +202,91 @@ namespace MatterHackers.Agg.UI
 			ClientArea.AddChild(child, indexInChildrenList);
 		}
 
-		public override void OnMouseDown(MouseEventArgs mouseEvent)
+		private class GrabControl : GuiWidget
 		{
-			downPosition = mouseEvent.Position;
-			downEdge = GetEdge(downPosition);
+			public Vector2 downPosition;
+			internal Action<GrabControl, MouseEventArgs> MoveParent;
+			private bool downOnTop = false;
 
-			base.OnMouseDown(mouseEvent);
-		}
-
-		public override void OnMouseMove(MouseEventArgs mouseEvent)
-		{
-			var delta = mouseEvent.Position - downPosition;
-			switch (downEdge)
+			internal GrabControl()
 			{
-				case WindowEdges.none:
-					hoverEdge = GetEdge(mouseEvent.Position);
-					SetCursor(hoverEdge);
-					break;
-
-				case WindowEdges.left:
-					Position = new Vector2(Position.X + delta.X, Position.Y);
-					Size = new Vector2(Size.X - delta.X, Size.Y);
-					break;
-
-				case WindowEdges.leftBottom:
-					Position = Position + delta;
-					Size = new Vector2(Size.X - delta.X, Size.Y - delta.Y);
-					break;
-
-				case WindowEdges.leftTop:
-					break;
-
-				case WindowEdges.right:
-					Size = new Vector2(Size.X + delta.X, Size.Y);
-					downPosition = mouseEvent.Position;
-					break;
-
-				case WindowEdges.rightBottom:
-					Position = new Vector2(Position.X, Position.Y + delta.Y);
-					Size = new Vector2(Size.X + delta.X, Size.Y - delta.Y);
-					downPosition.X = mouseEvent.Position.X;
-					break;
-
-				case WindowEdges.rightTop:
-					break;
-
-				case WindowEdges.top:
-					Size = new Vector2(Size.X, Size.Y + delta.Y);
-					downPosition = mouseEvent.Position;
-					break;
-
-				case WindowEdges.bottom:
-					Position = new Vector2(Position.X, Position.Y + delta.Y);
-					Size = new Vector2(Size.X, Size.Y - delta.Y);
-					break;
 			}
 
-			base.OnMouseMove(mouseEvent);
-		}
-
-		public override void OnMouseUp(MouseEventArgs mouseEvent)
-		{
-			downEdge = WindowEdges.none;
-
-			base.OnMouseUp(mouseEvent);
-		}
-
-		private WindowEdges GetEdge(Vector2 position)
-		{
-			if (!Resizable)
+			public override void OnMouseDown(MouseEventArgs mouseEvent)
 			{
-				return WindowEdges.none;
+				downOnTop = true;
+				downPosition = mouseEvent.Position;
+
+				base.OnMouseDown(mouseEvent);
 			}
 
-			WindowEdges edge = WindowEdges.none;
-			if (this.ContainsFirstUnderMouseRecursive())
+			public override void OnMouseMove(MouseEventArgs mouseEvent)
 			{
-				if (position.X < 5)
+				if (downOnTop)
 				{
-					if (position.Y < 5)
-					{
-						edge = WindowEdges.leftBottom;
-					}
-					else if (position.Y > Height - 5)
-					{
-						//edge = WindowEdges.leftTop;
-					}
-					else
-					{
-						edge = WindowEdges.left;
-					}
+					MoveParent?.Invoke(this, mouseEvent);
 				}
-				else if (position.X > Width - 5)
-				{
-					if (position.Y < 5)
-					{
-						edge = WindowEdges.rightBottom;
-					}
-					else if (position.Y > Height - 5)
-					{
-						//edge = WindowEdges.rightTop;
-					}
-					else
-					{
-						edge = WindowEdges.right;
-					}
-				}
-				else if (position.Y < 5)
-				{
-					edge = WindowEdges.bottom;
-				}
-				else if (position.Y > Height - 5)
-				{
-					//edge = WindowEdges.top;
-				}
+
+				base.OnMouseMove(mouseEvent);
 			}
 
-			return edge;
-		}
-
-		private void SetCursor(WindowEdges target)
-		{
-			switch (target)
+			public override void OnMouseUp(MouseEventArgs mouseEvent)
 			{
-				case WindowEdges.none:
-					Cursor = Cursors.Default;
-					break;
+				downOnTop = false;
 
-				case WindowEdges.left:
-					Cursor = Cursors.SizeWE;
-					break;
-
-				case WindowEdges.leftBottom:
-					Cursor = Cursors.SizeNESW;
-					break;
-
-				case WindowEdges.leftTop:
-					Cursor = Cursors.SizeNWSE;
-					break;
-
-				case WindowEdges.right:
-					Cursor = Cursors.SizeWE;
-					break;
-
-				case WindowEdges.rightBottom:
-					Cursor = Cursors.SizeNWSE;
-					break;
-
-				case WindowEdges.rightTop:
-					Cursor = Cursors.SizeNESW;
-					break;
-
-				case WindowEdges.top:
-					Cursor = Cursors.SizeNS;
-					break;
-
-				case WindowEdges.bottom:
-					Cursor = Cursors.SizeNS;
-					break;
+				base.OnMouseUp(mouseEvent);
 			}
-
-			SetCursor(Cursor);
 		}
+
+		//public override void OnMouseMove(MouseEventArgs mouseEvent)
+		//{
+		//	var delta = mouseEvent.Position - downPosition;
+		//	switch (downEdge)
+		//	{
+		//		case WindowEdges.none:
+		//			hoverEdge = GetEdge(mouseEvent.Position);
+		//			//SetCursor(hoverEdge);
+		//			break;
+
+		//		case WindowEdges.left:
+		//			Position = new Vector2(Position.X + delta.X, Position.Y);
+		//			Size = new Vector2(Size.X - delta.X, Size.Y);
+		//			break;
+
+		//		case WindowEdges.leftBottom:
+		//			Position = Position + delta;
+		//			Size = new Vector2(Size.X - delta.X, Size.Y - delta.Y);
+		//			break;
+
+		//		case WindowEdges.leftTop:
+		//			break;
+
+		//		case WindowEdges.right:
+		//			Size = new Vector2(Size.X + delta.X, Size.Y);
+		//			downPosition = mouseEvent.Position;
+		//			break;
+
+		//		case WindowEdges.rightBottom:
+		//			Position = new Vector2(Position.X, Position.Y + delta.Y);
+		//			Size = new Vector2(Size.X + delta.X, Size.Y - delta.Y);
+		//			downPosition.X = mouseEvent.Position.X;
+		//			break;
+
+		//		case WindowEdges.rightTop:
+		//			break;
+
+		//		case WindowEdges.top:
+		//			Size = new Vector2(Size.X, Size.Y + delta.Y);
+		//			downPosition = mouseEvent.Position;
+		//			break;
+
+		//		case WindowEdges.bottom:
+		//			Position = new Vector2(Position.X, Position.Y + delta.Y);
+		//			Size = new Vector2(Size.X, Size.Y - delta.Y);
+		//			break;
+		//	}
+
+		//	base.OnMouseMove(mouseEvent);
+		//}
 	}
 }

@@ -20,15 +20,8 @@ namespace MatterHackers.Agg.UI
 		private Vector2 DownPosition;
 		private bool mouseDownOnBar = false;
 
-		public TitleBarWidget(int height)
+		public TitleBarWidget()
 		{
-			// add a close button
-
-
-			// set the size and anchor
-			Size = new Vector2(0, height);
-			HAnchor = HAnchor.Stretch;
-			VAnchor = VAnchor.Top;
 		}
 
 		protected bool MouseDownOnBar
