@@ -19,9 +19,11 @@ namespace MatterHackers.Agg.UI
 	{
 		private Vector2 DownPosition;
 		private bool mouseDownOnBar = false;
+		GuiWidget windowToDrag;
 
-		public TitleBarWidget()
+		public TitleBarWidget(GuiWidget windowToDrag)
 		{
+			this.windowToDrag = windowToDrag;
 		}
 
 		protected bool MouseDownOnBar
@@ -52,22 +54,22 @@ namespace MatterHackers.Agg.UI
 			{
 				Vector2 mousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
 
-				Vector2 parentPosition = Parent.Position;
-				parentPosition.X += mousePosition.X - DownPosition.X;
-				parentPosition.Y += mousePosition.Y - DownPosition.Y;
-				if (parentPosition.Y + Parent.Height - (Height - DownPosition.Y) > Parent.Parent.Height)
+				Vector2 dragPosition = windowToDrag.Position;
+				dragPosition.X += mousePosition.X - DownPosition.X;
+				dragPosition.Y += mousePosition.Y - DownPosition.Y;
+				if (dragPosition.Y + windowToDrag.Height - (Height - DownPosition.Y) > windowToDrag.Parent.Height)
 				{
-					parentPosition.Y = Parent.Parent.Height - Parent.Height + (Height - DownPosition.Y);
+					dragPosition.Y = windowToDrag.Parent.Height - windowToDrag.Height + (Height - DownPosition.Y);
 				}
 
-				var parentParent = Parent.Parent;
-				if (parentParent != null)
+				var windowToDragParent = windowToDrag.Parent;
+				if (windowToDragParent != null)
 				{
-					parentPosition.X = agg_basics.Clamp(parentPosition.X, -Parent.Width + 10, parentParent.Width - 10);
-					parentPosition.Y = agg_basics.Clamp(parentPosition.Y, -Parent.Height + 10, parentParent.Height - Parent.Height);
+					dragPosition.X = agg_basics.Clamp(dragPosition.X, -windowToDrag.Width + 10, windowToDragParent.Width - 10);
+					dragPosition.Y = agg_basics.Clamp(dragPosition.Y, -windowToDrag.Height + 10, windowToDragParent.Height - windowToDrag.Height);
 				}
 
-				Parent.Position = parentPosition;
+				windowToDrag.Position = dragPosition;
 			}
 			base.OnMouseMove(mouseEvent);
 		}
