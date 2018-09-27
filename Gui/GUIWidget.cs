@@ -250,16 +250,16 @@ namespace MatterHackers.Agg.UI
 		public virtual int TabIndex { get; set; }
 
 		#region BackgroundColor
-		private Color backgroundColor = new Color();
+		private Color _backgroundColor = new Color();
 
 		public virtual Color BackgroundColor
 		{
-			get { return backgroundColor; }
+			get { return _backgroundColor; }
 			set
 			{
-				if (backgroundColor != value)
+				if (_backgroundColor != value)
 				{
-					backgroundColor = value;
+					_backgroundColor = value;
 					OnBackgroundColorChanged(null);
 					Invalidate();
 				}
@@ -1356,8 +1356,33 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		#region Risizeable
+		private bool _resizable = true;
+
+		public bool Resizable
+		{
+			get => _resizable;
+
+			set
+			{
+				if (_resizable != value)
+				{
+					_resizable = value;
+					OnResizeableChanged(null);
+					Invalidate();
+				}
+			}
+		}
+
+		public event EventHandler ResizeableChanged;
+
+		public virtual void OnResizeableChanged(EventArgs e)
+		{
+			ResizeableChanged?.Invoke(this, e);
+		}
+		#endregion
+
 		// Place holder, this is not really implemented.
-		public bool Resizable => true;
 
 		[Category("Layout")]
 		public virtual double Width
