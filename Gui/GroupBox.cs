@@ -27,6 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+
 namespace MatterHackers.Agg.UI
 {
 	public class GroupBox : GuiWidget
@@ -101,16 +103,10 @@ namespace MatterHackers.Agg.UI
 			clientArea.AddChild(childToAdd, indexInChildrenList);
 		}
 
-		public override string Text
+		public override void OnTextChanged(EventArgs e)
 		{
-			get
-			{
-				return groupBoxLabel.Text;
-			}
-			set
-			{
-				groupBoxLabel.Text = value;
-			}
+			groupBoxLabel.Text = Text;
+			base.OnTextChanged(e);
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)

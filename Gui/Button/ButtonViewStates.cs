@@ -44,36 +44,14 @@ namespace MatterHackers.Agg.UI
 			this.SetBoundsToEncloseChildren();
 		}
 
-		public override double Width
+		public override void OnSizeChanged(EventArgs e)
 		{
-			get
-			{
-				return base.Width;
-			}
-			set
-			{
-				base.Width = value;
-				normalWidget.Width = Width;
-				hoverWidget.Width = Width;
-				pressedWidget.Width = Width;
-				disabledWidget.Width = Width;
-			}
-		}
+			normalWidget.Size = Size;
+			hoverWidget.Size = Size;
+			pressedWidget.Size = Size;
+			disabledWidget.Size = Size;
 
-		public override double Height
-		{
-			get
-			{
-				return base.Height;
-			}
-			set
-			{
-				base.Height = value;
-				normalWidget.Height = Height;
-				hoverWidget.Height = Height;
-				pressedWidget.Height = Height;
-				disabledWidget.Height = Height;
-			}
+			base.OnSizeChanged(e);
 		}
 
 		public override void OnParentChanged(EventArgs e)

@@ -176,8 +176,6 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-
-
 		public bool Checked
 		{
 			get => isChecked;

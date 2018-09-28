@@ -17,7 +17,9 @@ namespace MatterHackers.Agg.UI
 {
 	public class WindowWidget : GuiWidget
 	{
-		GuiWidget windowBackground;
+		private int grabWidth = (int)Math.Round(5 * GuiWidget.DeviceScale);
+		private GuiWidget windowBackground;
+
 		public WindowWidget(RectangleDouble InBounds)
 		{
 			windowBackground = new FlowLayoutWidget(FlowDirection.TopToBottom)
@@ -28,7 +30,7 @@ namespace MatterHackers.Agg.UI
 			};
 
 			base.AddChild(windowBackground);
-			
+
 			TitleBar = new TitleBarWidget(this)
 			{
 				Size = new Vector2(0, 30 * GuiWidget.DeviceScale),
@@ -37,8 +39,8 @@ namespace MatterHackers.Agg.UI
 			windowBackground.AddChild(TitleBar);
 
 			MinimumSize = new Vector2(grabWidth * 8, grabWidth * 4 + TitleBar.Height * 2);
-			Border = new BorderDouble(1);
-			BorderColor = Color.Cyan;
+			WindowBorder = new BorderDouble(1);
+			WindowBorderColor = Color.Cyan;
 
 			Position = new Vector2(InBounds.Left, InBounds.Bottom);
 			Size = new Vector2(InBounds.Width, InBounds.Height);
@@ -54,37 +56,27 @@ namespace MatterHackers.Agg.UI
 			windowBackground.AddChild(ClientArea);
 		}
 
-		public override Color BackgroundColor
-		{
-			get => windowBackground.BackgroundColor;
-			set => windowBackground.BackgroundColor = value;
-		}
-
-		public override BorderDouble Border { get => windowBackground.Border; set => windowBackground.Border = value; }
-		public override Color BorderColor { get => windowBackground.BorderColor; set => windowBackground.BorderColor = value; }
-
 		public WindowWidget(int x, int y, int width, int height)
 			: this(new RectangleDouble(x, y, x + width, y + height))
 		{
 		}
 
+		public Color WindowBackgroundColor
+		{
+			get => windowBackground.BackgroundColor;
+			set => windowBackground.BackgroundColor = value;
+		}
+
+		public BorderDouble WindowBorder { get => windowBackground.Border; set => windowBackground.Border = value; }
+		public Color WindowBorderColor { get => windowBackground.BorderColor; set => windowBackground.BorderColor = value; }
 		public GuiWidget ClientArea { get; }
 
 		public TitleBarWidget TitleBar { get; private set; }
 
 		public Color TitleBarBackgroundColor { get; set; } = Color.LightGray;
 
-		private int grabWidth = (int)Math.Round(5 * GuiWidget.DeviceScale);
-
-		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
-		{
-			ClientArea.AddChild(child, indexInChildrenList);
-		}
-
 		public override void OnDrawBackground(Graphics2D graphics2D)
 		{
-			base.OnDrawBackground(graphics2D);
-
 			// draw on top of the backgroud color
 			graphics2D.FillRectangle(grabWidth, Height - grabWidth, Width - grabWidth, Height - TitleBar.Height - grabWidth, TitleBarBackgroundColor);
 
@@ -96,7 +88,7 @@ namespace MatterHackers.Agg.UI
 				graphics2D.Line(i + .5,
 					i + .5,
 					i + .5,
-					Height - i,
+					Height - i - .5,
 					color);
 
 				// right line
@@ -109,7 +101,7 @@ namespace MatterHackers.Agg.UI
 				// bottom line
 				graphics2D.Line(i + .5,
 					i + .5,
-					Width - i - 1.5,
+					Width - i - .5,
 					i + .5,
 					color);
 
