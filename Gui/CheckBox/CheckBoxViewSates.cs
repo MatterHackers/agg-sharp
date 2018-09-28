@@ -112,22 +112,16 @@ namespace MatterHackers.Agg.UI
 			base.OnClosed(e);
 		}
 
-		public override double Width
+		public override void OnSizeChanged(EventArgs e)
 		{
-			get
-			{
-				return base.Width;
-			}
-			set
-			{
-				base.Width = value;
-				normal.Width = this.Width;
-				normalHover.Width = this.Width;
-				switchNormalToPressed.Width = this.Width;
-				pressed.Width = this.Width;
-				pressedHover.Width = this.Width;
-				switchPressedToNormal.Width = this.Width;
-			}
+			normal.Size = this.Size;
+			normalHover.Size = this.Size;
+			switchNormalToPressed.Size = this.Size;
+			pressed.Size = this.Size;
+			pressedHover.Size = this.Size;
+			switchPressedToNormal.Size = this.Size;
+
+			base.OnSizeChanged(e);
 		}
 
 		public void SetCorrectVisibilityStates(object sender, EventArgs e)

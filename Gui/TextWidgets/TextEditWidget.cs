@@ -67,7 +67,7 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				return base.TabIndex;
+				return InternalTextEditWidget.TabIndex;
 			}
 			set
 			{

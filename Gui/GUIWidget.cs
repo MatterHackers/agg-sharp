@@ -354,7 +354,7 @@ namespace MatterHackers.Agg.UI
 		/// The space between the Widget and its border.
 		/// </summary>
 		[Category("Layout")]
-		public virtual BorderDouble Border
+		public BorderDouble Border
 		{
 			get { return _border; }
 			set
@@ -404,7 +404,7 @@ namespace MatterHackers.Agg.UI
 		/// The space between the Widget and it's parent (the outside border).
 		/// </summary>
 		[Category("Layout")]
-		public virtual BorderDouble Margin
+		public BorderDouble Margin
 		{
 			get
 			{
@@ -532,7 +532,7 @@ namespace MatterHackers.Agg.UI
 		private VAnchor vAnchor;
 
 		[Category("Layout Anchor")]
-		public virtual VAnchor VAnchor
+		public VAnchor VAnchor
 		{
 			get { return vAnchor; }
 			set
@@ -657,8 +657,6 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		public event EventHandler MouseLeave;
 
-		public event EventHandler PositionChanged;
-
 		public event EventHandler BoundsChanged;
 
 		public event EventHandler MinimumSizeChanged;
@@ -716,7 +714,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public virtual ObservableCollection<GuiWidget> Children
+		public ObservableCollection<GuiWidget> Children
 		{
 			get
 			{
@@ -822,11 +820,6 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public virtual Vector2 GetDefaultMinimumSize()
-		{
-			return Vector2.Zero;
-		}
-
 		public virtual Keys ModifierKeys
 		{
 			get
@@ -910,6 +903,14 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		#region Position
+		public event EventHandler PositionChanged;
+
+		public virtual void OnPositionChanged(EventArgs e)
+		{
+			PositionChanged?.Invoke(this, e);
+		}
+
 		/// <summary>
 		/// The bottom left position of the widget in its parent space (or the logical/intuitive position).
 		/// </summary>
@@ -924,9 +925,22 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				var delta = value - Position;
-				OriginRelativeParent = OriginRelativeParent + delta;
+				if (value != Position)
+				{
+					var delta = value - Position;
+					OriginRelativeParent = OriginRelativeParent + delta;
+					OnPositionChanged(null);
+				}
 			}
+		}
+		#endregion
+
+		#region Size
+		public event EventHandler SizeChanged;
+
+		public virtual void OnSizeChanged(EventArgs e)
+		{
+			SizeChanged?.Invoke(this, e);
 		}
 
 		/// <summary>
@@ -946,6 +960,7 @@ namespace MatterHackers.Agg.UI
 				Height = value.Y;
 			}
 		}
+		#endregion
 
 		public virtual Vector2 OriginRelativeParent
 		{
@@ -1211,9 +1226,12 @@ namespace MatterHackers.Agg.UI
 		public virtual void OnBoundsChanged(EventArgs e)
 		{
 			BoundsChanged?.Invoke(this, e);
+
+			// make sure we call size changed (we are planning to depricate bounds changed at some point)
+			OnSizeChanged(e);
 		}
 
-		public virtual string Name { get; set; }
+		public string Name { get; set; }
 
 		private string text = "";
 		public virtual string Text
@@ -1385,7 +1403,7 @@ namespace MatterHackers.Agg.UI
 		// Place holder, this is not really implemented.
 
 		[Category("Layout")]
-		public virtual double Width
+		public double Width
 		{
 			get => LocalBounds.Width;
 			set
@@ -1400,7 +1418,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		[Category("Layout")]
-		public virtual double Height
+		public double Height
 		{
 			get => LocalBounds.Height;
 			set
@@ -1543,7 +1561,7 @@ namespace MatterHackers.Agg.UI
 			RemoveChild(Children[index]);
 		}
 
-		public virtual void ReplaceChild(GuiWidget existing, GuiWidget replacement)
+		public void ReplaceChild(GuiWidget existing, GuiWidget replacement)
 		{
 			int pos = this.GetChildIndex(existing);
 			if (pos >= 0)
@@ -2216,7 +2234,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		protected virtual bool CurrentScreenClipping(out RectangleDouble screenClippingRect)
+		protected bool CurrentScreenClipping(out RectangleDouble screenClippingRect)
 		{
 			if (screenClipping.NeedRebuild)
 			{
@@ -3079,7 +3097,6 @@ namespace MatterHackers.Agg.UI
 			FindNamedChildrenRecursive(nameToSearchFor, foundChildren, new RectangleDouble(double.MinValue, double.MinValue, double.MaxValue, double.MaxValue), SearchType.Exact);
 		}
 
-
 		// allowInvalidItems - automation tests use this function and may need to find disabled or non-visible items to validate their state
 		public virtual void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType, bool allowDisabledOrHidden = true)
 		{
@@ -3209,11 +3226,6 @@ namespace MatterHackers.Agg.UI
 			}
 
 			KeyPressed?.Invoke(this, keyPressEvent);
-		}
-
-		public virtual void OnPositionChanged(EventArgs e)
-		{
-			PositionChanged?.Invoke(this, e);
 		}
 
 		private static int SortOnTabIndex(GuiWidget one, GuiWidget two)
