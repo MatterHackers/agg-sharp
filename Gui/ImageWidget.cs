@@ -49,10 +49,10 @@ namespace MatterHackers.Agg.UI
 		public ImageWidget(ImageBuffer initialImage)
 			: this(initialImage.Width, initialImage.Height)
 		{
-			Image = initialImage;
-			if (image != null)
+			this.Image = initialImage;
+			if (this.Image != null)
 			{
-				Image.ImageChanged += ImageChanged;
+				this.Image.ImageChanged += ImageChanged;
 			}
 		}
 
@@ -60,13 +60,14 @@ namespace MatterHackers.Agg.UI
 		{
 			if (AutoResize)
 			{
-				this.Width = image.Width;
-				this.Height = image.Height;
+				this.Width = this.Image.Width;
+				this.Height = this.Image.Height;
 			}
+
 			Invalidate();
 		}
 
-		public ImageBuffer Image
+		public virtual ImageBuffer Image
 		{
 			get  => image;
 			set
@@ -90,7 +91,7 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			if (image != null)
+			if (this.Image != null)
 			{
 				RectangleDouble screenBounds = TransformToScreenSpace(LocalBounds);
 				double pixelAlignXAdjust = 0;
@@ -100,7 +101,7 @@ namespace MatterHackers.Agg.UI
 					pixelAlignXAdjust = screenBounds.Left - (int)screenBounds.Left;
 					pixelAlignYAdjust = screenBounds.Bottom - (int)screenBounds.Bottom;
 				}
-				graphics2D.Render(image, -pixelAlignXAdjust, -pixelAlignYAdjust);
+				graphics2D.Render(this.Image, -pixelAlignXAdjust, -pixelAlignYAdjust);
 			}
 			base.OnDraw(graphics2D);
 		}
