@@ -20,7 +20,18 @@ namespace MatterHackers.Agg.UI
 		private int grabWidth = (int)Math.Round(5 * GuiWidget.DeviceScale);
 		private GuiWidget windowBackground;
 
-		public WindowWidget(RectangleDouble InBounds)
+		public WindowWidget(RectangleDouble inBounds)
+			: this(new GuiWidget(inBounds.Width, inBounds.Height)
+			{
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Stretch,
+				Position = new Vector2(inBounds.Left, inBounds.Bottom),
+				Size = new Vector2(inBounds.Width, inBounds.Height)
+			})
+		{
+		}
+
+		public WindowWidget(GuiWidget clientArea)
 		{
 			windowBackground = new FlowLayoutWidget(FlowDirection.TopToBottom)
 			{
@@ -42,29 +53,14 @@ namespace MatterHackers.Agg.UI
 			WindowBorder = new BorderDouble(1);
 			WindowBorderColor = Color.Cyan;
 
-			Position = new Vector2(InBounds.Left, InBounds.Bottom);
-			Size = new Vector2(InBounds.Width, InBounds.Height);
+			Position = clientArea.Position + new Vector2(grabWidth, grabWidth);
+			Size = clientArea.Size + new Vector2(grabWidth * 2, grabWidth * 2 + TitleBar.Height);
 
 			AddGrabControls();
 
-			ClientArea = new GuiWidget()
-			{
-				HAnchor = HAnchor.Stretch,
-				VAnchor = VAnchor.Stretch
-			};
+			ClientArea = clientArea;
 
 			windowBackground.AddChild(ClientArea);
-		}
-
-		public WindowWidget(int x, int y, int width, int height)
-			: this(new RectangleDouble(x, y, x + width, y + height))
-		{
-		}
-
-		public Color WindowBackgroundColor
-		{
-			get => windowBackground.BackgroundColor;
-			set => windowBackground.BackgroundColor = value;
 		}
 
 		public BorderDouble WindowBorder { get => windowBackground.Border; set => windowBackground.Border = value; }
@@ -73,13 +69,8 @@ namespace MatterHackers.Agg.UI
 
 		public TitleBarWidget TitleBar { get; private set; }
 
-		public Color TitleBarBackgroundColor { get; set; } = Color.LightGray;
-
 		public override void OnDrawBackground(Graphics2D graphics2D)
 		{
-			// draw on top of the backgroud color
-			graphics2D.FillRectangle(grabWidth, Height - grabWidth, Width - grabWidth, Height - TitleBar.Height - grabWidth, TitleBarBackgroundColor);
-
 			// draw the shadow
 			for (int i = 0; i < grabWidth; i++)
 			{
