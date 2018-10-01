@@ -36,7 +36,7 @@ namespace MatterHackers.Agg.UI
 {
 	public enum Direction { Up, Down };
 
-	public class Menu : Button
+	public class Menu : Button, IIgnoredPopupChild
 	{
 		private double maxHeight;
 
@@ -158,6 +158,11 @@ namespace MatterHackers.Agg.UI
 			IsOpen = false;
 
 			DropDownContainer = null;
+		}
+
+		public bool KeepMenuOpen()
+		{
+			return IsOpen;
 		}
 	}
 }

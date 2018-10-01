@@ -111,12 +111,14 @@ namespace MatterHackers.Agg.UI
 			{
 				// Fired any time focus changes. Traditionally we closed the menu if we weren't focused.
 				// To accommodate children (or external widgets) having focus we also query for and consider special cases
-				bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen())
-					|| this.Descendants<DropDownList>().Any(w => w.IsOpen);
+				bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen());
+				bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
+					&& (ignoredPopupChild.ContainsFocus || ignoredPopupChild.Focused || ignoredPopupChild.KeepMenuOpen()));
 
 				// If the focused changed and we've lost focus and no special cases permit, close the menu
 				if (!this.ContainsFocus
-					&& !specialChildHasFocus)
+					&& !specialChildHasFocus
+					&& !descendantIsHoldingOpen)
 				{
 					this.CloseMenu();
 				}
@@ -146,8 +148,8 @@ namespace MatterHackers.Agg.UI
 			if (scrollingWindow != null)
 			{
 				bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen());
-
-				bool isDropDownList = this.Descendants<DropDownList>().Any(w => w.ContainsFocus);
+				bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild 
+					&& (ignoredPopupChild.ContainsFocus || ignoredPopupChild.Focused || ignoredPopupChild.KeepMenuOpen()) );
 
 				bool clickIsInsideScrollArea = (scrollingWindow?.ScrollArea?.Children?[0]?.ChildHasMouseCaptured == true);
 
@@ -156,7 +158,7 @@ namespace MatterHackers.Agg.UI
 					&& AllowClickingItems()
 					&& clickIsInsideScrollArea
 					&& !specialChildHasFocus
-					&& !isDropDownList)
+					&& !descendantIsHoldingOpen)
 				{
 					UiThread.RunOnIdle(CloseMenu);
 				}
