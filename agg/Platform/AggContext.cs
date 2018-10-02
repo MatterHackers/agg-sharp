@@ -127,8 +127,7 @@ namespace MatterHackers.Agg.Platform
 			public string DialogProvider { get; set; } = "MatterHackers.Agg.Platform.WinformsFileDialogProvider, agg_platform_win32";
 			public string ImageIOProvider { get; set; } = "MatterHackers.Agg.Image.ImageIOWindowsPlugin, agg_platform_win32";
 			public string StaticDataProvider { get; set; } = "MatterHackers.Agg.FileSystemStaticData, agg_platform_win32";
-			public string SystemWindowProvider { get; set; } = "MatterHackers.Agg.UI.WinformsSystemWindowProvider, agg_platform_win32";
-			public string SystemWindow { get; set; } = "MatterHackers.Agg.UI.BitmapSystemWindow, agg_platform_win32";
+			public string SystemWindowProvider { get; set; } = "MatterHackers.Agg.UI.WinformsSystemWindowProvider`1[[MatterHackers.Agg.UI.BitmapSystemWindow, agg_platform_win32]], agg_platform_win32";
 		}
 
 		public class AggGraphicsMode
