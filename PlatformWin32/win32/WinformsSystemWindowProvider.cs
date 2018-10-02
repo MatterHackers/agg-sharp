@@ -59,8 +59,8 @@ namespace MatterHackers.Agg.UI
 
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
-			_openWindows.Remove(systemWindow);
 			systemWindow.PlatformWindow.CloseSystemWindow(systemWindow);
+			_openWindows.Remove(systemWindow);
 		}
 	}
 }

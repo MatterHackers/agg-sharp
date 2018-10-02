@@ -678,7 +678,8 @@ namespace MatterHackers.Agg.UI
 		public void ShowSystemWindow(SystemWindow systemWindow)
 		{
 			// If ShowSystemWindow is called on loaded/visible SystemWindow, call BringToFront and exit
-			if (systemWindow.PlatformWindow == this)
+			if (systemWindow.PlatformWindow == this
+				&& !SingleWindowMode)
 			{
 				this.BringToFront();
 				return;
