@@ -756,7 +756,7 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
-				if (!this.IsDisposed && !this.IsDisposed)
+				if (!this.IsDisposed && !this.Disposing)
 				{
 					if (this.InvokeRequired)
 					{
