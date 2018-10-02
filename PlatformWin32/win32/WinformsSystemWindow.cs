@@ -678,7 +678,8 @@ namespace MatterHackers.Agg.UI
 		public void ShowSystemWindow(SystemWindow systemWindow)
 		{
 			// If ShowSystemWindow is called on loaded/visible SystemWindow, call BringToFront and exit
-			if (systemWindow.PlatformWindow == this)
+			if (systemWindow.PlatformWindow == this
+				&& !SingleWindowMode)
 			{
 				this.BringToFront();
 				return;
@@ -756,7 +757,7 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
-				if (!this.IsDisposed && !this.IsDisposed)
+				if (!this.IsDisposed && !this.Disposing)
 				{
 					if (this.InvokeRequired)
 					{
