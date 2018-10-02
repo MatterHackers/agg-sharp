@@ -37,9 +37,9 @@ namespace MatterHackers.Agg.UI
 	{
 		private List<SystemWindow> _openWindows = new List<SystemWindow>();
 
-		public IReadOnlyList<SystemWindow> openWindows => _openWindows;
+		public IReadOnlyList<SystemWindow> OpenWindows => _openWindows;
 
-		public SystemWindow topWindow => _openWindows.LastOrDefault();
+		public SystemWindow TopWindow => _openWindows.LastOrDefault();
 
 		/// <summary>
 		/// Creates or connects a PlatformWindow to the given SystemWindow

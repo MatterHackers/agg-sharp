@@ -31,9 +31,9 @@ namespace MatterHackers.VeldridProvider
 
 		private VeldridSystemWindow veldridPlatformWindow;
 
-		public IReadOnlyList<SystemWindow> openWindows { get; }
+		public IReadOnlyList<SystemWindow> OpenWindows { get; }
 
-		public SystemWindow topWindow { get; }
+		public SystemWindow TopWindow { get; }
 
 		/// <summary>
 		/// Creates or connects a PlatformWindow to the given SystemWindow
