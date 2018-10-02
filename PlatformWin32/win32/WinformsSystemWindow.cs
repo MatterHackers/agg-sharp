@@ -30,8 +30,6 @@ namespace MatterHackers.Agg.UI
 {
 	public abstract class WinformsSystemWindow : Form, IPlatformWindow
 	{
-		private static Stack<SystemWindow> allOpenSystemWindows = new Stack<SystemWindow>();
-
 		public static bool SingleWindowMode { get; set; } = false;
 
 		public bool IsInitialized { get; set; } = false;
@@ -206,10 +204,22 @@ namespace MatterHackers.Agg.UI
 				DrawCount++;
 
 				var graphics2D = this.NewGraphics2D();
-				// We must call on draw background as this is effectively our child and that is the way it is done in GuiWidget.
-				// Parents call child OnDrawBackground before they call OnDraw
-				AggSystemWindow.OnDrawBackground(graphics2D);
-				AggSystemWindow.OnDraw(graphics2D);
+
+				if (!SingleWindowMode)
+				{
+					// We must call on draw background as this is effectively our child and that is the way it is done in GuiWidget.
+					// Parents call child OnDrawBackground before they call OnDraw
+					AggSystemWindow.OnDrawBackground(graphics2D);
+					AggSystemWindow.OnDraw(graphics2D);
+				}
+				else
+				{
+					for (var i = 0; i < this.WindowProvider.openWindows.Count; i++)
+					{
+						graphics2D.FillRectangle(this.WindowProvider.openWindows[0].LocalBounds, new Color(Color.Black, 160));
+						this.WindowProvider.openWindows[i].OnDraw(graphics2D);
+					}
+				}
 
 				/*
 				var bitmap = new Bitmap((int)SystemWindow.Width, (int)SystemWindow.Height);
@@ -267,7 +277,7 @@ namespace MatterHackers.Agg.UI
 
 		protected override void SetVisibleCore(bool value)
 		{
-			// Force Activation/BringToFront behavior when Visibility enabled. This ensures Agg forms 
+			// Force Activation/BringToFront behavior when Visibility enabled. This ensures Agg forms
 			// always come to front after ShowSystemWindow()
 			if (value)
 			{
@@ -305,7 +315,7 @@ namespace MatterHackers.Agg.UI
 					}
 
 					// Close the SystemWindow
-					if (AggSystemWindow != null 
+					if (AggSystemWindow != null
 						&& !AggSystemWindow.HasBeenClosed)
 					{
 						// Store that the Close operation started here
@@ -317,6 +327,8 @@ namespace MatterHackers.Agg.UI
 
 			base.OnClosing(e);
 		}
+
+		public ISystemWindowProvider WindowProvider { get; set; }
 
 		#region WidgetForWindowsFormsAbstract/WinformsWindowWidget
 		#endregion
@@ -672,12 +684,6 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			if (SingleWindowMode)
-			{
-				// Store the active SystemWindow
-				allOpenSystemWindows.Push(systemWindow);
-			}
-
 			// Set the active SystemWindow & PlatformWindow references
 			this.AggSystemWindow = systemWindow;
 			systemWindow.PlatformWindow = this;
@@ -727,7 +733,7 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			var rootWindow = allOpenSystemWindows.LastOrDefault();
+			var rootWindow = this.WindowProvider.topWindow;
 			if ((systemWindow == rootWindow && SingleWindowMode)
 				|| (MainWindowsFormsWindow != null && systemWindow == MainWindowsFormsWindow.systemWindow && !SingleWindowMode))
 			{
@@ -745,11 +751,7 @@ namespace MatterHackers.Agg.UI
 
 			if (SingleWindowMode)
 			{
-				// Remove the closing window
-				allOpenSystemWindows.Pop();
-
-				// Restore the prior window from the stack
-				AggSystemWindow = allOpenSystemWindows.Count <= 0 ? null : allOpenSystemWindows.Peek();
+				AggSystemWindow = this.WindowProvider.topWindow;
 				AggSystemWindow?.Invalidate();
 			}
 			else
