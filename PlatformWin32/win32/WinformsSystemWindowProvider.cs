@@ -1,34 +1,45 @@
-﻿//----------------------------------------------------------------------------
-// Anti-Grain Geometry - Version 2.4
-// Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
-//
-// C# port by: Lars Brubaker
-//                  larsbrubaker@gmail.com
-// Copyright (C) 2007
-//
-// Permission to copy, use, modify, sell and distribute this software
-// is granted provided this copyright notice appears in all copies.
-// This software is provided "as is" without express or implied
-// warranty, and with no claim as to its suitability for any purpose.
-//
-//----------------------------------------------------------------------------
-// Contact: mcseem@antigrain.com
-//          mcseemagg@yahoo.com
-//          http://www.antigrain.com
-//----------------------------------------------------------------------------
+﻿/*
+Copyright (c) 2018, Lars Brubaker, John Lewin
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied, of the FreeBSD Project.
+*/
+
 using System.Collections.Generic;
 using System.Linq;
-using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Agg.UI
 {
-	public class WinformsSystemWindowProvider : ISystemWindowProvider
+	public class WinformsSystemWindowProvider<T> : ISystemWindowProvider
+		where T : WinformsSystemWindow, new()
 	{
 		private List<SystemWindow> _openWindows = new List<SystemWindow>();
 
-		public IReadOnlyList<SystemWindow> openWindows => _openWindows;
+		public IReadOnlyList<SystemWindow> OpenWindows => _openWindows;
 
-		public SystemWindow topWindow => _openWindows.LastOrDefault();
+		public SystemWindow TopWindow => _openWindows.LastOrDefault();
 
 		/// <summary>
 		/// Creates or connects a PlatformWindow to the given SystemWindow
@@ -38,7 +49,7 @@ namespace MatterHackers.Agg.UI
 
 			if (systemWindow.PlatformWindow == null)
 			{
-				platformWindow = AggContext.CreateInstanceFrom<IPlatformWindow>(AggContext.Config.ProviderTypes.SystemWindow);
+				platformWindow = new T();
 				platformWindow.Caption = systemWindow.Title;
 				platformWindow.MinimumSize = systemWindow.MinimumSize;
 			}

@@ -214,10 +214,10 @@ namespace MatterHackers.Agg.UI
 				}
 				else
 				{
-					for (var i = 0; i < this.WindowProvider.openWindows.Count; i++)
+					for (var i = 0; i < this.WindowProvider.OpenWindows.Count; i++)
 					{
-						graphics2D.FillRectangle(this.WindowProvider.openWindows[0].LocalBounds, new Color(Color.Black, 160));
-						this.WindowProvider.openWindows[i].OnDraw(graphics2D);
+						graphics2D.FillRectangle(this.WindowProvider.OpenWindows[0].LocalBounds, new Color(Color.Black, 160));
+						this.WindowProvider.OpenWindows[i].OnDraw(graphics2D);
 					}
 				}
 
@@ -734,7 +734,7 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			var rootWindow = this.WindowProvider.topWindow;
+			var rootWindow = this.WindowProvider.TopWindow;
 			if ((systemWindow == rootWindow && SingleWindowMode)
 				|| (MainWindowsFormsWindow != null && systemWindow == MainWindowsFormsWindow.systemWindow && !SingleWindowMode))
 			{
@@ -752,7 +752,7 @@ namespace MatterHackers.Agg.UI
 
 			if (SingleWindowMode)
 			{
-				AggSystemWindow = this.WindowProvider.topWindow;
+				AggSystemWindow = this.WindowProvider.TopWindow;
 				AggSystemWindow?.Invalidate();
 			}
 			else
