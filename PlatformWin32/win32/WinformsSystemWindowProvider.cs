@@ -16,47 +16,50 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
+using System.Collections.Generic;
+using System.Linq;
 using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Agg.UI
 {
 	public class WinformsSystemWindowProvider : ISystemWindowProvider
 	{
-		private static IPlatformWindow singlePlatformWindow = null;
+		private List<SystemWindow> _openWindows = new List<SystemWindow>();
+
+		public IReadOnlyList<SystemWindow> openWindows => _openWindows;
+
+		public SystemWindow topWindow => _openWindows.LastOrDefault();
 
 		/// <summary>
 		/// Creates or connects a PlatformWindow to the given SystemWindow
-		/// </summary>
 		public void ShowSystemWindow(SystemWindow systemWindow)
 		{
 			IPlatformWindow platformWindow;
 
-			bool singleWindowMode = WinformsSystemWindow.SingleWindowMode;
-			bool isFirstWindow = singlePlatformWindow == null;
-			if ((singleWindowMode && isFirstWindow)
-				|| !singleWindowMode)
+			if (systemWindow.PlatformWindow == null)
 			{
-				if (systemWindow.PlatformWindow == null)
-				{
-					platformWindow = AggContext.CreateInstanceFrom<IPlatformWindow>(AggContext.Config.ProviderTypes.SystemWindow);
-					platformWindow.Caption = systemWindow.Title;
-					platformWindow.MinimumSize = systemWindow.MinimumSize;
-				}
-				else
-				{
-					platformWindow = systemWindow.PlatformWindow;
-				}
+				platformWindow = AggContext.CreateInstanceFrom<IPlatformWindow>(AggContext.Config.ProviderTypes.SystemWindow);
+				platformWindow.Caption = systemWindow.Title;
+				platformWindow.MinimumSize = systemWindow.MinimumSize;
 			}
 			else
 			{
-				platformWindow = singlePlatformWindow;
+				platformWindow = systemWindow.PlatformWindow;
 			}
+
+			if (platformWindow is WinformsSystemWindow winforms)
+			{
+				winforms.WindowProvider = this;
+			}
+
+			_openWindows.Add(systemWindow);
 
 			platformWindow.ShowSystemWindow(systemWindow);
 		}
 
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
+			_openWindows.Remove(systemWindow);
 			systemWindow.PlatformWindow.CloseSystemWindow(systemWindow);
 		}
 	}

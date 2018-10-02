@@ -21,6 +21,7 @@ using Veldrid.Sdl2;
 using Veldrid.StartupUtilities;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.Agg.UI;
+using System.Collections.Generic;
 
 namespace MatterHackers.VeldridProvider
 {
@@ -29,6 +30,10 @@ namespace MatterHackers.VeldridProvider
 		public GraphicsDevice _graphicsDevice;
 
 		private VeldridSystemWindow veldridPlatformWindow;
+
+		public IReadOnlyList<SystemWindow> openWindows { get; }
+
+		public SystemWindow topWindow { get; }
 
 		/// <summary>
 		/// Creates or connects a PlatformWindow to the given SystemWindow
@@ -176,7 +181,6 @@ namespace MatterHackers.VeldridProvider
 			}
 
 		}
-
 
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
