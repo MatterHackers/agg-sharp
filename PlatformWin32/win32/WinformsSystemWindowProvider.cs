@@ -36,7 +36,7 @@ namespace MatterHackers.Agg.UI
 	{
 	}
 
-	public class OpenGLWinformsWindowProvider : WinformsSystemWindowProvider<BitmapSystemWindow>
+	public class OpenGLWinformsWindowProvider : WinformsSystemWindowProvider<OpenGLSystemWindow>
 	{
 	}
 
