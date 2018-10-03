@@ -32,6 +32,14 @@ using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
+	public class BitmapWinformsWindowProvider : WinformsSystemWindowProvider<BitmapSystemWindow>
+	{
+	}
+
+	public class OpenGLWinformsWindowProvider : WinformsSystemWindowProvider<BitmapSystemWindow>
+	{
+	}
+
 	public class WinformsSystemWindowProvider<T> : ISystemWindowProvider
 		where T : WinformsSystemWindow, new()
 	{
