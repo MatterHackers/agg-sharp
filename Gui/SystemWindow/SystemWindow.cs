@@ -180,10 +180,6 @@ namespace MatterHackers.Agg.UI
 
 		public void ShowAsSystemWindow()
 		{
-			if (Parent != null)
-			{
-				throw new Exception("To be a system window you cannot be a child of another widget.");
-			}
 
 			if (systemWindowProvider == null)
 			{
