@@ -260,7 +260,10 @@ namespace MatterHackers.Agg.UI
 
 		protected override void OnResize(EventArgs e)
 		{
-			AggSystemWindow.LocalBounds = new RectangleDouble(0, 0, ClientSize.Width, ClientSize.Height);
+			if (AggSystemWindow != null)
+			{
+				AggSystemWindow.LocalBounds = new RectangleDouble(0, 0, ClientSize.Width, ClientSize.Height);
+			}
 
 			// Wait until the control is initialized (and thus WindowState has been set) to ensure we don't wipe out
 			// the persisted data before its loaded
@@ -270,7 +273,7 @@ namespace MatterHackers.Agg.UI
 				AggSystemWindow.Maximized = this.WindowState == FormWindowState.Maximized;
 			}
 
-			AggSystemWindow.Invalidate();
+			AggSystemWindow?.Invalidate();
 
 			base.OnResize(e);
 		}
