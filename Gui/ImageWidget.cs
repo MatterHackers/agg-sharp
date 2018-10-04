@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -40,6 +40,8 @@ namespace MatterHackers.Agg.UI
 
 		public bool AutoResize { get; set; } = true;
 
+		private bool listenForImageChanged;
+
 		public ImageWidget(int width, int height)
 		{
 			ForcePixelAlignment = true;
@@ -47,10 +49,17 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public ImageWidget(ImageBuffer initialImage)
+			: this(initialImage, true) // Image only constructor passes true for classic always registered/listening behavior
+		{
+		}
+
+		public ImageWidget(ImageBuffer initialImage, bool listenForImageChanged)
 			: this(initialImage.Width, initialImage.Height)
 		{
+			this.listenForImageChanged = listenForImageChanged;
 			this.Image = initialImage;
-			if (this.Image != null)
+
+			if (this.Image != null && listenForImageChanged)
 			{
 				this.Image.ImageChanged += ImageChanged;
 			}
@@ -58,7 +67,7 @@ namespace MatterHackers.Agg.UI
 
 		private void ImageChanged(object s, EventArgs e)
 		{
-			if (AutoResize)
+			if (this.AutoResize)
 			{
 				this.Width = this.Image.Width;
 				this.Height = this.Image.Height;
@@ -74,16 +83,26 @@ namespace MatterHackers.Agg.UI
 			{
 				if (image != value)
 				{
-					if (image != null)
+					if (listenForImageChanged)
 					{
-						image.ImageChanged -= ImageChanged;
+						if (image != null)
+						{
+							image.ImageChanged -= ImageChanged;
+						}
+
+						image = value;
+						image.ImageChanged += ImageChanged;
 					}
-					image = value;
-					image.ImageChanged += ImageChanged;
+					else
+					{
+						image = value;
+					}
+
 					if (AutoResize)
 					{
 						LocalBounds = new RectangleDouble(0, 0, image.Width, image.Height);
 					}
+
 					Invalidate();
 				}
 			}
