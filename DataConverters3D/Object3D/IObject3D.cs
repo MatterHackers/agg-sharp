@@ -310,13 +310,13 @@ namespace MatterHackers.DataConverters3D
 		bool CanEdit { get; }
 
 		[JsonIgnore]
-		bool CanApply { get; }
+		bool CanFlatten { get; }
 
 		/// <summary>
 		/// Remove the IObject3D from the tree and keep whatever functionality it was adding.
 		/// This may require removing many child objects from the tree depending on implementation.
 		/// </summary>
-		void Apply(UndoBuffer undoBuffer);
+		void Flatten(UndoBuffer undoBuffer);
 
 		/// <summary>
 		/// Remove the IObject3D from the tree and undo whatever functionality it was adding (if appropriate).

@@ -282,7 +282,7 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual bool Visible { get; set; } = true;
 
-		public virtual bool CanApply => false;
+		public virtual bool CanFlatten => false;
 		public virtual bool CanEdit => this.HasChildren();
 
 		[JsonIgnore]
@@ -787,7 +787,7 @@ namespace MatterHackers.DataConverters3D
 				});
 		}
 
-		public virtual void Apply(UndoBuffer undoBuffer)
+		public virtual void Flatten(UndoBuffer undoBuffer)
 		{
 			using (RebuildLock())
 			{
@@ -798,10 +798,11 @@ namespace MatterHackers.DataConverters3D
 					var newChild = child.Clone();
 					newChildren.Add(newChild);
 					newChild.Matrix *= this.Matrix;
-					newChild.CopyProperties(this, Object3DPropertyFlags.Color 
-						| Object3DPropertyFlags.MaterialIndex
-						| Object3DPropertyFlags.OutputType
-						| Object3DPropertyFlags.Visible);
+					var flags = Object3DPropertyFlags.Visible;
+					if (this.Color.alpha != 0) flags |= Object3DPropertyFlags.Color;
+					if (this.OutputType != PrintOutputTypes.Default) flags |= Object3DPropertyFlags.OutputType;
+					if (this.MaterialIndex != -1) flags |= Object3DPropertyFlags.MaterialIndex;
+					newChild.CopyProperties(this, flags);
 				}
 
 				// and replace us with the children

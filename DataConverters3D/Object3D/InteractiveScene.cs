@@ -289,7 +289,7 @@ namespace MatterHackers.DataConverters3D
 
 		public bool CanEdit => false;
 
-		public bool CanApply => false;
+		public bool CanFlatten => false;
 
 		public bool CanRemove => false;
 
@@ -318,7 +318,7 @@ namespace MatterHackers.DataConverters3D
 			return sourceItem.GetAxisAlignedBoundingBox(matrix);
 		}
 
-		public void Apply(UndoBuffer undoBuffer)
+		public void Flatten(UndoBuffer undoBuffer)
 		{
 			throw new NotImplementedException();
 		}
