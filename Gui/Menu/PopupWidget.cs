@@ -152,13 +152,16 @@ namespace MatterHackers.Agg.UI
 					&& ignoredPopupChild.KeepMenuOpen());
 
 				bool clickIsInsideScrollArea = (scrollingWindow?.ScrollArea?.Children?[0]?.ChildHasMouseCaptured == true);
+				// check if we are about to be the one recieving focus
+				bool mouseUpOnWidget = PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y);
 
 				scrollPositionAtMouseUp = scrollingWindow.ScrollPosition;
 				if (!scrollingWindow.VerticalScrollBar.ChildHasMouseCaptured
 					&& AllowClickingItems()
 					&& clickIsInsideScrollArea
 					&& !specialChildHasFocus
-					&& !descendantIsHoldingOpen)
+					&& !descendantIsHoldingOpen
+					&& !mouseUpOnWidget)
 				{
 					UiThread.RunOnIdle(CloseMenu);
 				}
