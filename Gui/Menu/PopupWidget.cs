@@ -40,6 +40,7 @@ namespace MatterHackers.Agg.UI
 		private ScrollableWidget scrollingWindow;
 		private Vector2 scrollPositionAtMouseDown;
 		private Vector2 scrollPositionAtMouseUp;
+		private bool holdingOpenForChild;
 
 		public PopupWidget(GuiWidget contentWidget, IPopupLayoutEngine layoutEngine, bool makeScrollable)
 		{
@@ -105,24 +106,42 @@ namespace MatterHackers.Agg.UI
 			base.OnClosed(e);
 		}
 
-		public override void OnContainsFocusChanged(EventArgs e)
+		public override void OnContainsFocusChanged(FocusChangedArgs e)
 		{
-			UiThread.RunOnIdle(() =>
+			if (!e.Focused)
 			{
-				// Fired any time focus changes. Traditionally we closed the menu if we weren't focused.
-				// To accommodate children (or external widgets) having focus we also query for and consider special cases
-				bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen());
+				bool reclaimFocus = false;
+
+				if (holdingOpenForChild)
+				{
+					holdingOpenForChild = false;
+					reclaimFocus = true;
+				}
+
+				UiThread.RunOnIdle(() =>
+				{
+					// Fired any time focus changes. Traditionally we closed the menu if we weren't focused.
+					// To accommodate children (or external widgets) having focus we also query for and consider special cases
+					bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen());
 				bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
 					&& ignoredPopupChild.KeepMenuOpen());
 
-				// If the focused changed and we've lost focus and no special cases permit, close the menu
-				if (!this.ContainsFocus
-					&& !specialChildHasFocus
-					&& !descendantIsHoldingOpen)
-				{
-					this.CloseMenu();
-				}
-			});
+					// If the focused changed and we've lost focus and no special cases permit, close the menu
+					if (!this.ContainsFocus
+							&& !specialChildHasFocus
+							&& !descendantIsHoldingOpen
+							&& !holdingOpenForChild)
+					{
+						this.CloseMenu();
+					}
+					else if (reclaimFocus && !descendantIsHoldingOpen)
+					{
+						this.Focus();
+					}
+
+					holdingOpenForChild = descendantIsHoldingOpen;
+				});
+			}
 
 			base.OnContainsFocusChanged(e);
 		}
@@ -148,12 +167,11 @@ namespace MatterHackers.Agg.UI
 			if (scrollingWindow != null)
 			{
 				bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen());
-				bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild 
+				bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
 					&& ignoredPopupChild.KeepMenuOpen());
+// 					&& ((ignoredPopupChild.ContainsFocus || ignoredPopupChild.KeepMenuOpen()) && !this.ContainsFocus));
 
 				bool clickIsInsideScrollArea = (scrollingWindow?.ScrollArea?.Children?[0]?.ChildHasMouseCaptured == true);
-				// check if we are about to be the one recieving focus
-				bool mouseUpOnWidget = PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y);
 
 				scrollPositionAtMouseUp = scrollingWindow.ScrollPosition;
 				if (!scrollingWindow.VerticalScrollBar.ChildHasMouseCaptured
@@ -161,7 +179,7 @@ namespace MatterHackers.Agg.UI
 					&& clickIsInsideScrollArea
 					&& !specialChildHasFocus
 					&& !descendantIsHoldingOpen
-					&& !mouseUpOnWidget)
+					&& !holdingOpenForChild)
 				{
 					UiThread.RunOnIdle(CloseMenu);
 				}
