@@ -11,22 +11,21 @@ namespace MatterHackers.Agg.UI
 	/// </summary>
 	public interface IIgnoredPopupChild
 	{
-		bool KeepMenuOpen();
+		bool KeepMenuOpen { get; }
 		bool ContainsFocus { get; }
 		bool Focused { get; }
 	}
 
 	public class IgnoredPopupWidget : GuiWidget, IIgnoredPopupChild
 	{
-		public virtual bool KeepMenuOpen()
-		{
-			return false;
-		}
+		public virtual bool KeepMenuOpen => false;
 	}
 
 	public interface IPopupLayoutEngine
 	{
 		double MaxHeight { get; }
+
+		GuiWidget Anchor { get; }
 
 		void Closed();
 
@@ -122,9 +121,9 @@ namespace MatterHackers.Agg.UI
 				{
 					// Fired any time focus changes. Traditionally we closed the menu if we weren't focused.
 					// To accommodate children (or external widgets) having focus we also query for and consider special cases
-					bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen());
-				bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
-					&& ignoredPopupChild.KeepMenuOpen());
+					bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen);
+					bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
+						&& ignoredPopupChild.KeepMenuOpen);
 
 					// If the focused changed and we've lost focus and no special cases permit, close the menu
 					if (!this.ContainsFocus
@@ -166,9 +165,9 @@ namespace MatterHackers.Agg.UI
 
 			if (scrollingWindow != null)
 			{
-				bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen());
+				bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen);
 				bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
-					&& ignoredPopupChild.KeepMenuOpen());
+					&& ignoredPopupChild.KeepMenuOpen);
 // 					&& ((ignoredPopupChild.ContainsFocus || ignoredPopupChild.KeepMenuOpen()) && !this.ContainsFocus));
 
 				bool clickIsInsideScrollArea = (scrollingWindow?.ScrollArea?.Children?[0]?.ChildHasMouseCaptured == true);
@@ -240,6 +239,8 @@ namespace MatterHackers.Agg.UI
 			this.direction = direction;
 			this.widgetRelativeTo = widgetRelativeTo;
 		}
+
+		public GuiWidget Anchor => widgetRelativeTo;
 
 		public double MaxHeight { get; private set; }
 
