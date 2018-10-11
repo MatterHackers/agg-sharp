@@ -16,6 +16,11 @@ namespace MatterHackers.Agg.UI
 		bool Focused { get; }
 	}
 
+	public interface IMenuCreator
+	{
+		bool AlwaysKeepOpen { get; }
+	}
+
 	public class IgnoredPopupWidget : GuiWidget, IIgnoredPopupChild
 	{
 		public virtual bool KeepMenuOpen => false;
@@ -138,7 +143,8 @@ namespace MatterHackers.Agg.UI
 					&& clickIsInsideScrollArea
 					&& !specialChildHasFocus
 					&& !descendantIsHoldingOpen
-					&& !holdingOpenForChild)
+					&& !holdingOpenForChild
+					&& !(layoutEngine.Anchor as IMenuCreator)?.AlwaysKeepOpen == true)
 				{
 					UiThread.RunOnIdle(CloseMenu);
 				}
