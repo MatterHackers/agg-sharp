@@ -84,12 +84,12 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		public static void Render(Mesh meshToRender, Color partColor, RenderTypes renderType = RenderTypes.Shaded, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color))
+		public static void Render(Mesh meshToRender, Color partColor, RenderTypes renderType = RenderTypes.Shaded, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color), Action meshChanged = null)
 		{
-			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor);
+			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged);
 		}
 
-		public static void Render(Mesh meshToRender, Color color, Matrix4X4 transform, RenderTypes renderType, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color))
+		public static void Render(Mesh meshToRender, Color color, Matrix4X4 transform, RenderTypes renderType, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color), Action meshChanged = null)
 		{
 			if (meshToRender != null)
 			{
@@ -123,7 +123,7 @@ namespace MatterHackers.RenderOpenGl
 						GL.PolygonOffset(0, 0);
 						GL.Disable(EnableCap.PolygonOffsetFill);
 
-						DrawWireOverlay(meshToRender, renderType, wireFrameColor);
+						DrawWireOverlay(meshToRender, renderType, wireFrameColor, meshChanged);
 						break;
 
 					case RenderTypes.Wireframe:
@@ -389,7 +389,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		private static void DrawWireOverlay(Mesh meshToRender, RenderTypes renderType, Color color)
+		private static void DrawWireOverlay(Mesh meshToRender, RenderTypes renderType, Color color, Action meshChanged = null)
 		{
 			GL.Color4(color.red, color.green, color.blue, color.alpha == 0 ? 255 : color.alpha);
 
@@ -399,7 +399,7 @@ namespace MatterHackers.RenderOpenGl
 			GLMeshWirePlugin glWireMeshPlugin = null;
 			if (renderType == RenderTypes.Outlines)
 			{
-				glWireMeshPlugin = GLMeshWirePlugin.Get(meshToRender, MathHelper.Tau / 8);
+				glWireMeshPlugin = GLMeshWirePlugin.Get(meshToRender, MathHelper.Tau / 8, meshChanged);
 			}
 			else
 			{
