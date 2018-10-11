@@ -59,7 +59,7 @@ namespace MatterHackers.RenderOpenGl
 		private int meshUpdateCount;
 		private double nonPlanarAngleRequired;
 
-		static public GLMeshWirePlugin Get(Mesh mesh, double nonPlanarAngleRequired = 0)
+		static public GLMeshWirePlugin Get(Mesh mesh, double nonPlanarAngleRequired = 0, Action meshChanged = null)
 		{
 			object meshData;
 			mesh.PropertyBag.TryGetValue(GLMeshWirePluginName, out meshData);
@@ -77,7 +77,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 
 			GLMeshWirePlugin newPlugin = new GLMeshWirePlugin();
-			newPlugin.CreateRenderData(mesh, nonPlanarAngleRequired);
+			newPlugin.CreateRenderData(mesh, nonPlanarAngleRequired, meshChanged);
 			newPlugin.meshUpdateCount = mesh.ChangedCount;
 			mesh.PropertyBag.Add(GLMeshWirePluginName, newPlugin);
 
@@ -89,7 +89,7 @@ namespace MatterHackers.RenderOpenGl
 			// This is private as you can't build one of these. You have to call GetImageGLDisplayListPlugin.
 		}
 
-		private void CreateRenderData(Mesh meshToBuildListFor, double nonPlanarAngleRequired = 0)
+		private void CreateRenderData(Mesh meshToBuildListFor, double nonPlanarAngleRequired = 0, Action meshChanged = null)
 		{
 			this.nonPlanarAngleRequired = nonPlanarAngleRequired;
 			var edgeLines = new VectorPOD<WireVertexData>();
@@ -199,6 +199,7 @@ namespace MatterHackers.RenderOpenGl
 					}
 
 					EdgeLines = filteredEdgeLines;
+					meshChanged?.Invoke();
 				});
 			}
 		}
