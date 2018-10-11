@@ -613,7 +613,7 @@ namespace MatterHackers.Agg.UI
 
 		public event EventHandler FocusChanged;
 
-		public event EventHandler ContainsFocusChanged;
+		public event EventHandler<FocusChangedArgs> ContainsFocusChanged;
 
 		/// <summary>
 		/// The mouse has gone down on this widget. This will not trigger if a child of this widget gets the down message.
@@ -621,6 +621,19 @@ namespace MatterHackers.Agg.UI
 		public event EventHandler<MouseEventArgs> MouseDownCaptured;
 
 		public event EventHandler<MouseEventArgs> MouseUpCaptured;
+
+		public class FocusChangedArgs : EventArgs
+		{
+			public FocusChangedArgs(GuiWidget sourceWidget, bool focused)
+			{
+				this.Focused = focused;
+				this.SourceWidget = sourceWidget;
+			}
+
+			public bool Focused { get; }
+
+			public GuiWidget SourceWidget { get; }
+		}
 
 		/// <summary>
 		/// The mouse has gone down while in the bounds of this widget
@@ -762,7 +775,7 @@ namespace MatterHackers.Agg.UI
 			FocusChanged?.Invoke(this, e);
 		}
 
-		public virtual void OnContainsFocusChanged(EventArgs e)
+		public virtual void OnContainsFocusChanged(FocusChangedArgs e)
 		{
 			ContainsFocusChanged?.Invoke(this, e);
 		}
@@ -1726,7 +1739,7 @@ namespace MatterHackers.Agg.UI
 				if (Focused)
 				{
 					containsFocus = false;
-					OnContainsFocusChanged(null);
+					OnContainsFocusChanged(new FocusChangedArgs(this, false));
 					OnFocusChanged(null);
 					return;
 				}
@@ -1735,7 +1748,7 @@ namespace MatterHackers.Agg.UI
 				if (containsFocus)
 				{
 					containsFocus = false;
-					OnContainsFocusChanged(null);
+					OnContainsFocusChanged(new FocusChangedArgs(this, false));
 					foreach (GuiWidget child in Children.ToArray())
 					{
 						child.Unfocus();
@@ -2608,7 +2621,7 @@ namespace MatterHackers.Agg.UI
 
 			if (focusStateBeforeProcessing != containsFocus)
 			{
-				OnContainsFocusChanged(null);
+				OnContainsFocusChanged(new FocusChangedArgs(this, containsFocus));
 			}
 		}
 

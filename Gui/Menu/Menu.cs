@@ -160,9 +160,6 @@ namespace MatterHackers.Agg.UI
 			DropDownContainer = null;
 		}
 
-		public bool KeepMenuOpen()
-		{
-			return IsOpen;
-		}
+		public bool KeepMenuOpen => IsOpen;
 	}
 }
