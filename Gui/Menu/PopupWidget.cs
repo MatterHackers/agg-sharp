@@ -105,46 +105,6 @@ namespace MatterHackers.Agg.UI
 			base.OnClosed(e);
 		}
 
-		public override void OnContainsFocusChanged(FocusChangedArgs e)
-		{
-			if (!e.Focused)
-			{
-				bool reclaimFocus = false;
-
-				if (holdingOpenForChild)
-				{
-					holdingOpenForChild = false;
-					reclaimFocus = true;
-				}
-
-				UiThread.RunOnIdle(() =>
-				{
-					// Fired any time focus changes. Traditionally we closed the menu if we weren't focused.
-					// To accommodate children (or external widgets) having focus we also query for and consider special cases
-					bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen);
-					bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
-						&& ignoredPopupChild.KeepMenuOpen);
-
-					// If the focused changed and we've lost focus and no special cases permit, close the menu
-					if (!this.ContainsFocus
-							&& !specialChildHasFocus
-							&& !descendantIsHoldingOpen
-							&& !holdingOpenForChild)
-					{
-						this.CloseMenu();
-					}
-					else if (reclaimFocus && !descendantIsHoldingOpen)
-					{
-						this.Focus();
-					}
-
-					holdingOpenForChild = descendantIsHoldingOpen;
-				});
-			}
-
-			base.OnContainsFocusChanged(e);
-		}
-
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			base.OnDraw(graphics2D);
@@ -186,6 +146,48 @@ namespace MatterHackers.Agg.UI
 
 			base.OnMouseUp(mouseEvent);
 		}
+
+		public override void OnContainsFocusChanged(FocusChangedArgs e)
+		{
+			if (!e.Focused)
+			{
+				bool reclaimFocus = false;
+
+				if (holdingOpenForChild)
+				{
+					holdingOpenForChild = false;
+					reclaimFocus = true;
+				}
+
+				UiThread.RunOnIdle(() =>
+				{
+					// Fired any time focus changes. Traditionally we closed the menu if we weren't focused.
+					// To accommodate children (or external widgets) having focus we also query for and consider special cases
+					bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen);
+					bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
+						&& ignoredPopupChild.KeepMenuOpen);
+
+					// If the focused changed and we've lost focus and no special cases permit, close the menu
+					if (!this.ContainsFocus
+							&& !specialChildHasFocus
+							&& !descendantIsHoldingOpen
+							&& !holdingOpenForChild
+							&& !(layoutEngine.Anchor as IMenuCreator)?.AlwaysKeepOpen == true)
+					{
+						this.CloseMenu();
+					}
+					else if (reclaimFocus && !descendantIsHoldingOpen)
+					{
+						this.Focus();
+					}
+
+					holdingOpenForChild = descendantIsHoldingOpen;
+				});
+			}
+
+			base.OnContainsFocusChanged(e);
+		}
+
 
 		public void ScrollIntoView(GuiWidget widget)
 		{
