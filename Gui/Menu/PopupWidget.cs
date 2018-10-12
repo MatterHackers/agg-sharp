@@ -137,6 +137,13 @@ namespace MatterHackers.Agg.UI
 
 				bool clickIsInsideScrollArea = (scrollingWindow?.ScrollArea?.Children?[0]?.ChildHasMouseCaptured == true);
 
+				bool keepMeOpen = false;
+
+				if (layoutEngine.Anchor is IMenuCreator menuCreator)
+				{
+					keepMeOpen = menuCreator.AlwaysKeepOpen;
+				}
+
 				scrollPositionAtMouseUp = scrollingWindow.ScrollPosition;
 				if (!scrollingWindow.VerticalScrollBar.ChildHasMouseCaptured
 					&& AllowClickingItems()
@@ -144,9 +151,9 @@ namespace MatterHackers.Agg.UI
 					&& !specialChildHasFocus
 					&& !descendantIsHoldingOpen
 					&& !holdingOpenForChild
-					&& !(layoutEngine.Anchor as IMenuCreator)?.AlwaysKeepOpen == true)
+					&& !keepMeOpen)
 				{
-					UiThread.RunOnIdle(CloseMenu);
+					UiThread.RunOnIdle(this.CloseMenu);
 				}
 			}
 
@@ -173,12 +180,19 @@ namespace MatterHackers.Agg.UI
 					bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
 						&& ignoredPopupChild.KeepMenuOpen);
 
+					bool keepMeOpen = false;
+
+					if (layoutEngine.Anchor is IMenuCreator menuCreator)
+					{
+						keepMeOpen = menuCreator.AlwaysKeepOpen;
+					}
+
 					// If the focused changed and we've lost focus and no special cases permit, close the menu
 					if (!this.ContainsFocus
 							&& !specialChildHasFocus
 							&& !descendantIsHoldingOpen
 							&& !holdingOpenForChild
-							&& !(layoutEngine.Anchor as IMenuCreator)?.AlwaysKeepOpen == true)
+							&& !keepMeOpen)
 					{
 						this.CloseMenu();
 					}
