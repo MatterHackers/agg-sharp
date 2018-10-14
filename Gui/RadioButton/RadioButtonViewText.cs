@@ -88,7 +88,7 @@ namespace MatterHackers.Agg.UI
 
 		public RadioCircleWidget RadioCircle => radioCircle;
 
-		public virtual Color TextColor { get; set; }
+		public virtual Color TextColor { get; set; } = Color.Black;
 
 		public override void OnParentChanged(EventArgs e)
 		{
@@ -107,7 +107,7 @@ namespace MatterHackers.Agg.UI
 				};
 
 				radioCircle.RadioButton = radioButton;
-				radioButton.TextColor = ActiveTheme.Instance.PrimaryTextColor;
+				radioButton.TextColor = this.TextColor;
 			}
 			base.OnParentChanged(e);
 		}

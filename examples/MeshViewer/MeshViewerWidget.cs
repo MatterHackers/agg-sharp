@@ -102,6 +102,8 @@ namespace MatterHackers.MeshVisualizer
 
 		private int volumeIndexWithMouseDown = -1;
 
+		private Color accentColor = Color.Blue;
+
 		public MeshViewerWidget(Vector3 displayVolume, Vector2 bedCenter, BedShape bedShape, string startingTextMessage = "")
 		{
 			Scene.SelectionChanged += (sender, e) =>
@@ -131,7 +133,7 @@ namespace MatterHackers.MeshVisualizer
 			labelContainer.AddChild(partProcessingInfo);
 			labelContainer.Selectable = false;
 
-			SetMaterialColor(1, ActiveTheme.Instance.PrimaryAccentColor);
+			SetMaterialColor(1, accentColor);
 
 			this.AddChild(labelContainer);
 		}

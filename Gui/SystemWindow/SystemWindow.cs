@@ -96,8 +96,7 @@ namespace MatterHackers.Agg.UI
 			: base(width, height, SizeLimitsToSet.None)
 		{
 			ToolTipManager = new ToolTipManager(this);
-
-			this.BackgroundColor = ActiveTheme.Instance.PrimaryBackgroundColor;
+			this.BackgroundColor = new Color("#444444");
 		}
 
 		public override void OnMinimumSizeChanged(EventArgs e)

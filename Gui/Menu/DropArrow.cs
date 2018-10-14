@@ -28,16 +28,15 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-	public class DropArrow : GuiWidget
+	public class DropArrow
 	{
 		public static VertexStorage DownArrow = null;
 		public static VertexStorage UpArrow = null;
 
-		public static int ArrowHeight { get; set; } = 5;
+		public static int ArrowHeight { get; } = 5;
 
 		static DropArrow()
 		{
@@ -50,34 +49,6 @@ namespace MatterHackers.Agg.UI
 			UpArrow.MoveTo(-ArrowHeight, -ArrowHeight);
 			UpArrow.LineTo(ArrowHeight, -ArrowHeight);
 			UpArrow.LineTo(0, 0);
-		}
-
-		public DropArrow()
-		{
-			this.Width = ArrowHeight;
-			this.Height = ArrowHeight;
-			this.VAnchor = VAnchor.Center;
-			this.HAnchor = HAnchor.Right;
-
-			this.Arrow = DownArrow;
-		}
-
-		public VertexStorage Arrow { get; set; }
-
-		public int StrokeWidth { get; set; } = 1;
-
-		public Color StrokeColor { get; set; }
-
-		public Vector2 DrawBounds { get; set; }
-
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			base.OnDraw(graphics2D);
-
-			if (this.Arrow != null)
-			{
-				graphics2D.Render(this.Arrow, this.DrawBounds.X - ArrowHeight * 2 - 2, this.DrawBounds.Y / 2 + ArrowHeight / 2, ActiveTheme.Instance.SecondaryTextColor);
-			}
 		}
 	}
 }
