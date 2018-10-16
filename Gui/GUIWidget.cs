@@ -1636,6 +1636,11 @@ namespace MatterHackers.Agg.UI
 			return null;
 		}
 
+		public bool PositionWithinLocalBounds(Vector2 postion)
+		{
+			return PositionWithinLocalBounds(postion.X, postion.Y);
+		}
+
 		public virtual bool PositionWithinLocalBounds(double x, double y)
 		{
 			if (LocalBounds.Contains(x, y))
