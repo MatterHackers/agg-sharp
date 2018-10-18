@@ -108,6 +108,13 @@ namespace MatterHackers.Agg.UI
 							Panel1Ratio = _splitterDistance / Height;
 						}
 					}
+
+					if(GuiWidget.DefaultEnforceIntegerBounds)
+					{
+						_splitterDistance = Math.Round(_splitterDistance);
+					}
+
+
 					if (!ajustingRatio)
 					{
 						OnBoundsChanged(null);
@@ -177,7 +184,7 @@ namespace MatterHackers.Agg.UI
 				&& Height > 0)
 			{
 				ajustingRatio = true;
-				SplitterDistance = Height * Panel1Ratio;
+				this.SplitterDistance = Height * this.Panel1Ratio;
 				ajustingRatio = false;
 			}
 
@@ -200,7 +207,7 @@ namespace MatterHackers.Agg.UI
 				splitterBar.LocalBounds = new RectangleDouble(0, 0, Width, splitterBar.Height);
 
 				Panel1.OriginRelativeParent = new Vector2(0, SplitterDistance + splitterBar.Height);
-				Panel1.LocalBounds = new RectangleDouble(0, 0, LocalBounds.Width, LocalBounds.Height - SplitterDistance - splitterBar.Height);
+				Panel1.LocalBounds = new RectangleDouble(Panel1.Border.Left, Panel1.Border.Bottom, LocalBounds.Width - Panel1.DeviceMarginAndBorder.Width, LocalBounds.Height - SplitterDistance - splitterBar.Height - Panel1.DeviceMarginAndBorder.Height);
 			}
 
 			base.OnBoundsChanged(e);
