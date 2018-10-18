@@ -329,7 +329,7 @@ namespace MatterHackers.Agg.UI
 		private static Color whiteTransparent = new Color(255, 255, 255, 0);
 
 		private double pointSize = 12;
-		private bool menuVisible;
+		protected bool menuVisible;
 
 		public DropDownList(string noSelectionString, Color textColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false, double pointSize = 12)
 			: base(direction, maxHeight)
