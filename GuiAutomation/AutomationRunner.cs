@@ -567,6 +567,22 @@ namespace MatterHackers.GuiAutomation
 			return GetWidgetByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion, onlyVisible);
 		}
 
+
+		GuiWidget lastWidget = null;
+
+		private void SetTarget(GuiWidget guiWidget)
+		{
+			if (lastWidget != null)
+			{
+				lastWidget.DebugShowBounds = false;
+			}
+
+			lastWidget = guiWidget;
+			lastWidget.DebugShowBounds = true;
+
+			UiThread.RunOnIdle(() => guiWidget.DebugShowBounds = false, 1);
+		}
+
 		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 5, SearchRegion searchRegion = null, bool onlyVisible = true)
 		{
 			containingWindow = null;
@@ -576,10 +592,10 @@ namespace MatterHackers.GuiAutomation
 			if (getResults != null
 				&& getResults.Count > 0)
 			{
+				this.SetTarget(getResults[0].Widget);
+
 				containingWindow = getResults[0].ContainingSystemWindow;
 				offsetHint = getResults[0].OffsetHint;
-				getResults[0].Widget.DebugShowBounds = true;
-				UiThread.RunOnIdle(() => getResults[0].Widget.DebugShowBounds = false, 1);
 
 				return getResults[0].Widget;
 			}
@@ -601,10 +617,10 @@ namespace MatterHackers.GuiAutomation
 			if (getResults != null
 				&& getResults.Count > 0)
 			{
+				this.SetTarget(getResults[0].Widget);
+
 				containingWindow = getResults[0].ContainingSystemWindow;
 				offsetHint = getResults[0].OffsetHint;
-				getResults[0].Widget.DebugShowBounds = true;
-				UiThread.RunOnIdle(() => getResults[0].Widget.DebugShowBounds = false, 1);
 
 				return getResults[0].NamedObject;
 			}

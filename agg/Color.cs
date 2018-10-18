@@ -1097,7 +1097,7 @@ namespace MatterHackers.Agg
 
 	public static class ColorExtensionMethods
 	{
-		public static IColorType AdjustContrast(this IColorType colorToAdjust, IColorType fixedColor, double minimumRequiredContrast = 3)
+		public static IColorType WithContrast(this IColorType colorToAdjust, IColorType fixedColor, double minimumRequiredContrast = 3)
 		{
 			var contrast = colorToAdjust.Contrast(fixedColor);
 			int tries = 0;
@@ -1106,11 +1106,11 @@ namespace MatterHackers.Agg
 			{
 				if (fixedColor.Luminance0To1() < .5)
 				{
-					colorToAdjust = colorToAdjust.AdjustLightness(1.05).ToColor();
+					colorToAdjust = colorToAdjust.WithLightnessAdjustment(1.05).ToColor();
 				}
 				else
 				{
-					colorToAdjust = colorToAdjust.AdjustLightness(.95).ToColor();
+					colorToAdjust = colorToAdjust.WithLightnessAdjustment(.95).ToColor();
 				}
 				contrast = colorToAdjust.Contrast(fixedColor);
 			}
@@ -1118,7 +1118,12 @@ namespace MatterHackers.Agg
 			return colorToAdjust;
 		}
 
-		public static IColorType AdjustSaturation(this IColorType original, double saturationMultiplier)
+		public static Color WithAlpha(this Color color, int alpha)
+		{
+			return new Color(color, alpha);
+		}
+
+		public static ColorF WithSaturationAdjustemnt(this IColorType original, double saturationMultiplier)
 		{
 			double hue0To1;
 			double saturation0To1;
@@ -1236,7 +1241,7 @@ namespace MatterHackers.Agg
 			return Math.Round((min + max) / 2, 2);
 		}
 
-		public static IColorType SetLightness(this IColorType original, double lightness)
+		public static ColorF WithLightness(this IColorType original, double lightness)
 		{
 			double hue0To1;
 			double saturation0To1;
@@ -1249,7 +1254,7 @@ namespace MatterHackers.Agg
 			return ColorF.FromHSL(hue0To1, saturation0To1, lightness);
 		}
 
-		public static IColorType AdjustLightness(this IColorType original, double lightnessMultiplier)
+		public static ColorF WithLightnessAdjustment(this IColorType original, double lightnessMultiplier)
 		{
 			double hue0To1;
 			double saturation0To1;
