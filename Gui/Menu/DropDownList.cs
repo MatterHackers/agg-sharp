@@ -225,10 +225,20 @@ namespace MatterHackers.Agg.UI
 			{
 				menuVisible = false;
 				mainControlText.Text = selectedIndex == -1 ? this.noSelectionString : MenuItems[SelectedIndex].Text;
+				this.OnMenuClose();
 				this.Focus();
 			};
 
+			this.OnMenuOpen();
 			this.Invalidate();
+		}
+
+		protected virtual void OnMenuOpen()
+		{
+		}
+
+		protected virtual void OnMenuClose()
+		{
 		}
 
 		private void ApplyFilter()
