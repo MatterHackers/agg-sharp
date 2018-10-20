@@ -31,6 +31,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
@@ -60,8 +61,6 @@ namespace MatterHackers.Agg.UI
 
 		private bool mouseInBounds;
 		private Color disabledBorderColor;
-
-		private ImageBuffer gradientBackground;
 
 		private int gradientDistance = 8;
 
@@ -411,25 +410,6 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override void OnLoad(EventArgs args)
-		{
-			base.OnLoad(args);
-
-			var firstBackgroundColor = this.Parents<GuiWidget>().Where(p => p.BackgroundColor.Alpha0To1 == 1).FirstOrDefault()?.BackgroundColor;
-			if (this.BackgroundColor == Color.Transparent)
-			{
-				// Propagate first parent opaque background
-				this.BackgroundColor = firstBackgroundColor ?? Color.Transparent;
-			}
-			else if (this.BackgroundColor.alpha != 255 && firstBackgroundColor != null)
-			{
-				// Resolve alpha
-				this.BackgroundColor = new BlenderRGBA().Blend(firstBackgroundColor.Value, this.BackgroundColor);
-			}
-
-			this.HoverColor = new BlenderRGBA().Blend(this.BackgroundColor, this.HoverColor);
-		}
-
 		public override void OnBoundsChanged(EventArgs e)
 		{
 			// Force child menu items to have parent width
@@ -467,24 +447,32 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		Dictionary<Color, ImageBuffer> clippingBackgrounds = new Dictionary<Color, ImageBuffer>();
+
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			base.OnDraw(graphics2D);
 
-			var gradientDistanceMinusBorder = (int) (gradientDistance - Border.Width);
+			var background = this.BackgroundColor;
 
-			if (lastRenderColor != this.BackgroundColor)
+			// Retrieve or create per color clipping images used to occlude text under drop arrow
+			if (background != Color.Transparent)
 			{
+				if (!clippingBackgrounds.TryGetValue(background, out ImageBuffer gradientBackground))
+			{
+					var gradientDistanceMinusBorder = (int)(gradientDistance - Border.Width);
+
 				gradientBackground = agg_basics.TrasparentToColorGradientX(
 					(int)(dropArrowBounds.Width + gradientDistanceMinusBorder),
 					(int)(this.LocalBounds.Height - Border.Height),
-					this.BackgroundColor,
+						background,
 					gradientDistance);
 
-				lastRenderColor = this.BackgroundColor;
+					lastRenderColor = background;
 			}
 
-			graphics2D.Render(this.gradientBackground, this.LocalBounds.Right - gradientBackground.Width, 0);
+				graphics2D.Render(gradientBackground, this.LocalBounds.Right - gradientBackground.Width, 0);
+			}
 
 			// Draw directional arrow
 			if (directionArrow != null)
