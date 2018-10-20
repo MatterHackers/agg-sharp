@@ -227,6 +227,8 @@ namespace MatterHackers.Agg.UI
 				mainControlText.Text = selectedIndex == -1 ? this.noSelectionString : MenuItems[SelectedIndex].Text;
 				this.Focus();
 			};
+
+			this.Invalidate();
 		}
 
 		private void ApplyFilter()
@@ -459,17 +461,17 @@ namespace MatterHackers.Agg.UI
 			if (background != Color.Transparent)
 			{
 				if (!clippingBackgrounds.TryGetValue(background, out ImageBuffer gradientBackground))
-			{
+				{
 					var gradientDistanceMinusBorder = (int)(gradientDistance - Border.Width);
 
-				gradientBackground = agg_basics.TrasparentToColorGradientX(
-					(int)(dropArrowBounds.Width + gradientDistanceMinusBorder),
-					(int)(this.LocalBounds.Height - Border.Height),
+					gradientBackground = agg_basics.TrasparentToColorGradientX(
+						(int)(dropArrowBounds.Width + gradientDistanceMinusBorder),
+						(int)(this.LocalBounds.Height - Border.Height),
 						background,
-					gradientDistance);
+						gradientDistance);
 
 					lastRenderColor = background;
-			}
+				}
 
 				graphics2D.Render(gradientBackground, this.LocalBounds.Right - gradientBackground.Width, 0);
 			}
