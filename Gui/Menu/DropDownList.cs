@@ -411,23 +411,6 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override Color BackgroundColor
-		{
-			get
-			{
-				if (menuVisible
-					|| (this.mouseInBounds && this.Enabled))
-				{
-					return this.HoverColor;
-				}
-				else
-				{
-					return base.BackgroundColor;
-				}
-			}
-			set => base.BackgroundColor = value;
-		}
-
 		public override void OnLoad(EventArgs args)
 		{
 			base.OnLoad(args);
