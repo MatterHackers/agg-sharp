@@ -523,7 +523,7 @@ namespace MatterHackers.Agg.UI
 				currentPadding = new BorderDouble(MenuItemsPadding.Left + 20 + 3, MenuItemsPadding.Bottom, MenuItemsPadding.Right, MenuItemsPadding.Top);
 			}
 
-			MenuItem menuItem = new MenuItem(new MenuItemColorStatesView(itemName)
+			MenuItem menuItem = new MenuItem(new MenuItemColorStatesView(itemName, MenuItemsTextColor)
 			{
 				NormalBackgroundColor = MenuItemsBackgroundColor,
 				OverBackgroundColor = MenuItemsBackgroundHoverColor,
