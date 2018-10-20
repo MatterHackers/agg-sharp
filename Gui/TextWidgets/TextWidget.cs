@@ -219,7 +219,7 @@ namespace MatterHackers.Agg.UI
 				{
 					convertedText = value.Replace("\r\n", "\n");
 					convertedText = convertedText.Replace('\r', '\n');
-					if (Text.Contains("\r"))
+					if (convertedText.Contains("\r"))
 					{
 						throw new Exception("These should have be converted to \n.");
 					}
