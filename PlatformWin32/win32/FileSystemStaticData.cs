@@ -121,7 +121,13 @@ namespace MatterHackers.Agg
 			ImageBuffer image = LoadIcon(path, invertImage);
 			image.SetRecieveBlender(new BlenderPreMultBGRA());
 
-			return image.CreateScaledImage(deviceWidth, deviceHeight);
+			// Scale if required
+			if (image.Width != width || image.Height != height)
+			{
+				image = image.CreateScaledImage(deviceWidth, deviceHeight);
+			}
+
+			return image;
 		}
 
 		public ImageSequence LoadSequence(string path)
