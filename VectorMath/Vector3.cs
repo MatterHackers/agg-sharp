@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Collections;
+using System.Linq;
 
 namespace MatterHackers.VectorMath
 {
@@ -469,6 +470,26 @@ namespace MatterHackers.VectorMath
 			a.Y = a.Y < b.Y ? a.Y : b.Y;
 			a.Z = a.Z < b.Z ? a.Z : b.Z;
 			return a;
+		}
+
+		public static Vector3 Parse(string s)
+		{
+			var result = Vector3.Zero;
+			var values = s.Split(',').Select(sValue =>
+			{
+				double number = 0;
+				if (double.TryParse(sValue, out number))
+				{
+					return double.Parse(sValue);
+				}
+				return 0;
+			}).ToArray();
+
+			for (int i = 0; i < Math.Min(3, values.Length); i++)
+			{
+				result[i] = values[i];
+			}
+			return result;
 		}
 
 		/// <summary>
