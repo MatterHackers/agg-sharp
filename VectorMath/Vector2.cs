@@ -25,6 +25,7 @@ SOFTWARE.
 #endregion --- License ---
 
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 
@@ -453,6 +454,27 @@ namespace MatterHackers.VectorMath
 			a.X = a.X < b.X ? a.X : b.X;
 			a.Y = a.Y < b.Y ? a.Y : b.Y;
 			return a;
+		}
+
+		public static Vector2 Parse(string s)
+		{
+			var result = Vector2.Zero;
+			var values = s.Split(',').Select(sValue =>
+			{
+				double number = 0;
+				if (double.TryParse(sValue, out number))
+				{
+					return double.Parse(sValue);
+				}
+				return 0;
+			}).ToArray();
+
+			for (int i = 0; i < Math.Min(2, values.Length); i++)
+			{
+				result[i] = values[i];
+			}
+
+			return result;
 		}
 
 		/// <summary>
