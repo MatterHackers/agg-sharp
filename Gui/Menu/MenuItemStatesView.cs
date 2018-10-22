@@ -94,13 +94,13 @@ namespace MatterHackers.Agg.UI
 
 		public double PointSize { get { return textWidget.PointSize; } set { textWidget.PointSize = value; } }
 
-		public MenuItemColorStatesView(string name)
+		public MenuItemColorStatesView(string name, Color textColor)
 		{
 			HAnchor = HAnchor.Stretch | HAnchor.Fit;
 			VAnchor = VAnchor.Fit;
 			Selectable = false;
 
-			textWidget = new TextWidget(name)
+			textWidget = new TextWidget(name, textColor: textColor)
 			{
 				AutoExpandBoundsToText = true,
 				HAnchor = HAnchor.Left

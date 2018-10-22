@@ -43,7 +43,6 @@ namespace MatterHackers.Agg.UI
 		public event EventHandler EditComplete;
 
 		private int borderWidth = 0;
-		private int borderRadius = 0;
 
 		public static event EventHandler ShowSoftwareKeyboard;
 
@@ -208,6 +207,7 @@ namespace MatterHackers.Agg.UI
 			InternalTextEditWidget = new InternalTextEditWidget(text, pointSize, multiLine, tabIndex, typeFace: typeFace);
 			HookUpToInternalWidget(pixelWidth, pixelHeight);
 			OriginRelativeParent = new Vector2(x, y);
+			BackgroundColor = Color.White;
 
 			Multiline = multiLine;
 		}
@@ -358,21 +358,6 @@ namespace MatterHackers.Agg.UI
 			{
 				return InternalTextEditWidget.Printer;
 			}
-		}
-
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			RectangleDouble Bounds = LocalBounds;
-			RoundedRect rectBorder = new RoundedRect(Bounds, this.borderRadius);
-
-			graphics2D.Render(rectBorder, BorderColor);
-
-			RectangleDouble insideBounds = Bounds;
-			insideBounds.Inflate(-this.borderWidth);
-			RoundedRect rectInside = new RoundedRect(insideBounds, Math.Max(this.borderRadius - this.borderWidth, 0));
-
-			graphics2D.Render(rectInside, this.BackgroundColor);
-			base.OnDraw(graphics2D);
 		}
 
 		private void internalTextEditWidget_InsertBarPositionChanged(object sender, EventArgs e)

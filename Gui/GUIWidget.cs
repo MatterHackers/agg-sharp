@@ -2146,7 +2146,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void DrawBorder(Graphics2D graphics2D, GuiWidget child)
+		protected void DrawBorder(Graphics2D graphics2D, GuiWidget child)
 		{
 			var childDeviceBorder = child.deviceBorder;
 			var childBorderColor = child.BorderColor;
