@@ -207,6 +207,7 @@ namespace MatterHackers.Agg.UI
 			InternalTextEditWidget = new InternalTextEditWidget(text, pointSize, multiLine, tabIndex, typeFace: typeFace);
 			HookUpToInternalWidget(pixelWidth, pixelHeight);
 			OriginRelativeParent = new Vector2(x, y);
+			BackgroundColor = Color.White;
 
 			Multiline = multiLine;
 		}
