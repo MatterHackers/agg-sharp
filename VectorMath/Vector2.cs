@@ -473,6 +473,7 @@ namespace MatterHackers.VectorMath
 			{
 				result[i] = values[i];
 			}
+
 			return result;
 		}
 
