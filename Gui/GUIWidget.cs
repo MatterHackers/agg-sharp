@@ -437,7 +437,7 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// Sets the cursor that will be used when the mouse is over this control
 		/// </summary>
-		public Cursors Cursor { get; set; }
+		public virtual Cursors Cursor { get; set; }
 
 		[Conditional("DEBUG")]
 		public static void BreakInDebugger(string description = "")
