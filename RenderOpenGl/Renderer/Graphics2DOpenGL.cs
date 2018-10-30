@@ -148,7 +148,7 @@ namespace MatterHackers.RenderOpenGl
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			triangleEddgeInfo.Clear();
-            VertexSourceToTesselator.SendShapeToTesselator(triangleEddgeInfo, vertexSource);
+			VertexSourceToTesselator.SendShapeToTesselator(triangleEddgeInfo, vertexSource);
 
 			// now render it
 			triangleEddgeInfo.RenderLastToGL();
@@ -241,7 +241,8 @@ namespace MatterHackers.RenderOpenGl
 			GL.Enable(EnableCap.Texture2D);
 			GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(AATextureImage, false).GLTextureHandle);
 
-			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+			// the source is always all white so has no does not have its color changed by the alpha
+			GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
 			GL.Enable(EnableCap.Blend);
 		}
 
