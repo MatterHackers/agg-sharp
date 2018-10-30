@@ -573,8 +573,6 @@ namespace MatterHackers.Agg.UI
 		}
 
 		protected Transform.Affine parentToChildTransform = Affine.NewIdentity();
-		private ObservableCollection<GuiWidget> children = new ObservableCollection<GuiWidget>();
-
 		private bool containsFocus = false;
 
 		internal int LayoutLockCount { get; set; }
@@ -708,7 +706,6 @@ namespace MatterHackers.Agg.UI
 		public GuiWidget()
 		{
 			screenClipping = new ScreenClipping(this);
-			children.CollectionChanged += children_CollectionChanged;
 			LayoutEngine = new LayoutEngineSimpleAlign();
 			HAnchor = hAnchor;
 			VAnchor = vAnchor;
@@ -719,21 +716,7 @@ namespace MatterHackers.Agg.UI
 			return $"Name = {Name}, Bounds = {LocalBounds} - {GetType().Name}";
 		}
 
-		private void children_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
-		{
-			if (childrenLockedInMouseUpCount != 0)
-			{
-				BreakInDebugger("The mouse should not be locked when the child list changes.");
-			}
-		}
-
-		public ObservableCollection<GuiWidget> Children
-		{
-			get
-			{
-				return children;
-			}
-		}
+		public List<GuiWidget> Children { get; } = new List<GuiWidget>();
 
 		public void ClearRemovedFlag()
 		{
