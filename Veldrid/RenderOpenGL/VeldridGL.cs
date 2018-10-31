@@ -848,6 +848,11 @@ namespace MatterHackers.RenderOpenGl
 
 		private Stream OpenEmbeddedAssetStream(string name) => GetType().Assembly.GetManifestResourceStream(name);
 
+		public void BlendFuncSeparate(BlendingFactorSrc sfactorRGB, BlendingFactorDest dfactorRGB, BlendingFactorSrc sfactorAlpha, BlendingFactorDest dfactorAlpha)
+		{
+			throw new NotImplementedException();
+		}
+
 		internal struct ViewPortData
 		{
 			internal int height;

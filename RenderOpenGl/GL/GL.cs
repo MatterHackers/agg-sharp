@@ -52,6 +52,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			Instance?.BindTexture(target, texture);
 		}
 
+		public static void BlendFuncSeparate(BlendingFactorSrc sfactorRGB, BlendingFactorDest dfactorRGB, BlendingFactorSrc sfactorAlpha, BlendingFactorDest dfactorAlpha)
+		{
+			Instance?.BlendFuncSeparate(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
+		}
+
 		public static void BlendFunc(BlendingFactorSrc sfactor, BlendingFactorDest dfactor)
 		{
 			Instance?.BlendFunc(sfactor, dfactor);
