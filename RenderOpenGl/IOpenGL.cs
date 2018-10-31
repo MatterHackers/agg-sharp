@@ -42,6 +42,8 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		void BindTexture(TextureTarget target, int texture);
 
+		void BlendFuncSeparate(BlendingFactorSrc sfactorRGB, BlendingFactorDest dfactorRGB, BlendingFactorSrc sfactorAlpha, BlendingFactorDest dfactorAlpha);
+
 		void BlendFunc(BlendingFactorSrc sfactor, BlendingFactorDest dfactor);
 
 		void BufferData(BufferTarget target, int size, IntPtr data, BufferUsageHint usage);
