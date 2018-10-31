@@ -141,44 +141,46 @@ namespace MatterHackers.DataConverters3D
 
 					foreach (var material in mtl.MaterialList)
 					{
-						var pathToTexture = Path.Combine(pathToObj, material.DiffuseTextureFileName);
-						if (!string.IsNullOrEmpty(material.DiffuseTextureFileName)
-							&& File.Exists(pathToTexture))
+						if (!string.IsNullOrEmpty(material.DiffuseTextureFileName))
 						{
-							ImageBuffer diffuseTexture = new ImageBuffer();
-
-							// TODO: have consideration for this being in a shared zip file
-							using (var ImageStream = File.OpenRead(pathToTexture))
+							var pathToTexture = Path.Combine(pathToObj, material.DiffuseTextureFileName);
+							if (File.Exists(pathToTexture))
 							{
-								if (Path.GetExtension(material.DiffuseTextureFileName).ToLower() == ".tga")
-								{
-									ImageTgaIO.LoadImageData(diffuseTexture, ImageStream, 32);
-								}
-								else
-								{
-									AggContext.ImageIO.LoadImageData(ImageStream, diffuseTexture);
-								}
-							}
+								ImageBuffer diffuseTexture = new ImageBuffer();
 
-							if (diffuseTexture.Width > 0 && diffuseTexture.Height > 0)
-							{
-								for(int faceIndex = 0; faceIndex < objFile.FaceList.Count; faceIndex++)
+								// TODO: have consideration for this being in a shared zip file
+								using (var ImageStream = File.OpenRead(pathToTexture))
 								{
-									var faceData = objFile.FaceList[faceIndex];
-									var polyFace = mesh.Faces[faceIndex];
-									polyFace.SetTexture(0, diffuseTexture);
-									int edgeIndex = 0;
-									foreach (FaceEdge faceEdge in polyFace.FaceEdges())
+									if (Path.GetExtension(material.DiffuseTextureFileName).ToLower() == ".tga")
 									{
-										int textureIndex = faceData.TextureVertexIndexList[edgeIndex] - 1;
-										faceEdge.SetUv(0, new Vector2(objFile.TextureList[textureIndex].X,
-											objFile.TextureList[textureIndex].Y));
-										edgeIndex++;
+										ImageTgaIO.LoadImageData(diffuseTexture, ImageStream, 32);
+									}
+									else
+									{
+										AggContext.ImageIO.LoadImageData(ImageStream, diffuseTexture);
 									}
 								}
 
-								context.Color = Color.White;
-								root.Color = Color.White;
+								if (diffuseTexture.Width > 0 && diffuseTexture.Height > 0)
+								{
+									for (int faceIndex = 0; faceIndex < objFile.FaceList.Count; faceIndex++)
+									{
+										var faceData = objFile.FaceList[faceIndex];
+										var polyFace = mesh.Faces[faceIndex];
+										polyFace.SetTexture(0, diffuseTexture);
+										int edgeIndex = 0;
+										foreach (FaceEdge faceEdge in polyFace.FaceEdges())
+										{
+											int textureIndex = faceData.TextureVertexIndexList[edgeIndex] - 1;
+											faceEdge.SetUv(0, new Vector2(objFile.TextureList[textureIndex].X,
+												objFile.TextureList[textureIndex].Y));
+											edgeIndex++;
+										}
+									}
+
+									context.Color = Color.White;
+									root.Color = Color.White;
+								}
 							}
 						}
 					}

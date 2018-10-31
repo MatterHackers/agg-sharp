@@ -117,22 +117,6 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
-		public void BlendFuncSeparate(BlendingFactorSrc sfactorRGB, BlendingFactorDest dfactorRGB, BlendingFactorSrc sfactorAlpha, BlendingFactorDest dfactorAlpha)
-		{
-#if USE_OPENGL
-			if (HardwareAvailable)
-			{
-				OpenTK.Graphics.OpenGL.GL.BlendFuncSeparate(
-					(OpenTK.Graphics.OpenGL.BlendingFactorSrc)sfactorRGB, 
-					(OpenTK.Graphics.OpenGL.BlendingFactorDest)dfactorRGB,
-					(OpenTK.Graphics.OpenGL.BlendingFactorSrc)sfactorAlpha,
-					(OpenTK.Graphics.OpenGL.BlendingFactorDest)dfactorAlpha);
-			}
-#else
-			OpenTK.Graphics.ES11.GL.BlendFunc((OpenTK.Graphics.ES11.All)sfactor, (OpenTK.Graphics.ES11.All)dfactor);
-#endif
-		}
-
 		public void Scissor(int x, int y, int width, int height)
 		{
 #if USE_OPENGL
