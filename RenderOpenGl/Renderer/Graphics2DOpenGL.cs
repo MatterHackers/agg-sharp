@@ -252,9 +252,7 @@ namespace MatterHackers.RenderOpenGl
 			GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(AATextureImages[colorIn.Alpha0To255], false).GLTextureHandle);
 
 			// the source is always all white so has no does not have its color changed by the alpha
-			//GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
-			GL.BlendFuncSeparate(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha,
-				BlendingFactorSrc.Zero, BlendingFactorDest.One);
+			GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
 			GL.Enable(EnableCap.Blend);
 		}
 
@@ -482,8 +480,7 @@ namespace MatterHackers.RenderOpenGl
 			GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(AATextureImages[color.Alpha0To255], false).GLTextureHandle);
 
 			// the source is always all white so has no does not have its color changed by the alpha
-			GL.BlendFuncSeparate(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha,
-				BlendingFactorSrc.Zero, BlendingFactorDest.One);
+			GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
 			GL.Enable(EnableCap.Blend);
 
 			GL.Disable(EnableCap.CullFace);
