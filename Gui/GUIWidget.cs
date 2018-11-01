@@ -1850,27 +1850,29 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnLayout(LayoutEventArgs layoutEventArgs)
 		{
-			//using (new PerformanceTimer("_LAST_", "Widget OnLayout"))
+			if (this.HasBeenClosed)
 			{
-				if (Visible && !LayoutLocked)
+				return;
+			}
+
+			if (Visible && !LayoutLocked)
+			{
+				LayoutCount++;
+
+				if ((LayoutCount % 11057) == 0)
 				{
-					LayoutCount++;
-
-					if((LayoutCount % 11057) == 0)
-					{
-						int a = 0;
-					}
-
-					if (LayoutEngine != null)
-					{
-						using (LayoutLock())
-						{
-							LayoutEngine.Layout(layoutEventArgs);
-						}
-					}
-
-					Layout?.Invoke(this, layoutEventArgs);
+					int a = 0;
 				}
+
+				if (LayoutEngine != null)
+				{
+					using (LayoutLock())
+					{
+						LayoutEngine.Layout(layoutEventArgs);
+					}
+				}
+
+				Layout?.Invoke(this, layoutEventArgs);
 			}
 		}
 
