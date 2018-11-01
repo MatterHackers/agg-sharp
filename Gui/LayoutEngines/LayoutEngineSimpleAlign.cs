@@ -22,6 +22,11 @@ namespace MatterHackers.Agg.UI
 					{
 						foreach (GuiWidget child in parent.Children)
 						{
+							if (parent.HasBeenClosed)
+							{
+								return;
+							}
+
 							if (child.Visible == false)
 							{
 								continue;
@@ -47,6 +52,11 @@ namespace MatterHackers.Agg.UI
 					{
 						foreach (GuiWidget child in parent.Children)
 						{
+							if (parent.HasBeenClosed)
+							{
+								return;
+							}
+
 							if (child.Visible == false)
 							{
 								continue;

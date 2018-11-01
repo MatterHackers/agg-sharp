@@ -57,6 +57,11 @@ namespace MatterHackers.Agg.UI
 				{
 					for (int i = 0; i < parent.Children.Count; i++)
 					{
+						if (parent.HasBeenClosed)
+						{
+							return;
+						}
+
 						GuiWidget child = parent.Children[i];
 						if (child.Visible == false)
 						{
@@ -78,10 +83,16 @@ namespace MatterHackers.Agg.UI
 					{
 						foreach (GuiWidget child in parent.Children)
 						{
+							if (parent.HasBeenClosed)
+							{
+								return;
+							}
+
 							if (child.Visible == false)
 							{
 								continue;
 							}
+
 							ApplyHAnchorToChild(parent, child);
 							ApplyVAnchorToChild(parent, child);
 						}
@@ -100,6 +111,11 @@ namespace MatterHackers.Agg.UI
 
 				for (int childIndex = 0; childIndex < parent.Children.Count; childIndex++)
 				{
+					if (parent.HasBeenClosed)
+					{
+						return;
+					}
+
 					GuiWidget child = parent.Children[childIndex];
 					if (child.Visible == false)
 					{
@@ -119,6 +135,11 @@ namespace MatterHackers.Agg.UI
 
 				for (int childIndex = 0; childIndex < parent.Children.Count; childIndex++)
 				{
+					if (parent.HasBeenClosed)
+					{
+						return;
+					}
+
 					GuiWidget child = parent.Children[childIndex];
 					if (child.Visible == false)
 					{
@@ -213,6 +234,11 @@ namespace MatterHackers.Agg.UI
 
 			for (int childIndex = 0; childIndex < parent.Children.Count; childIndex++)
 			{
+				if (parent.HasBeenClosed)
+				{
+					return;
+				}
+
 				GuiWidget child = parent.Children[childIndex];
 				if (child.Visible == false)
 				{
@@ -278,6 +304,11 @@ namespace MatterHackers.Agg.UI
 						double curX = parent.DevicePadding.Left;
 						foreach (GuiWidget child in parent.Children)
 						{
+							if (parent.HasBeenClosed)
+							{
+								return;
+							}
+
 							if (child.Visible == true)
 							{
 								double newX = curX - child.LocalBounds.Left + child.DeviceMarginAndBorder.Left;
@@ -300,6 +331,11 @@ namespace MatterHackers.Agg.UI
 						double curX = parent.LocalBounds.Right - parent.DevicePadding.Right;
 						foreach (GuiWidget child in parent.Children)
 						{
+							if (parent.HasBeenClosed)
+							{
+								return;
+							}
+
 							if (child.Visible == true)
 							{
 								if (child.HAnchorIsSet(HAnchor.Stretch))
@@ -323,6 +359,11 @@ namespace MatterHackers.Agg.UI
 						double curY = parent.DevicePadding.Bottom;
 						foreach (GuiWidget child in parent.Children)
 						{
+							if (parent.HasBeenClosed)
+							{
+								return;
+							}
+
 							if (child.Visible == true)
 							{
 								double newY = curY - child.LocalBounds.Bottom + child.DeviceMarginAndBorder.Bottom;
@@ -345,6 +386,11 @@ namespace MatterHackers.Agg.UI
 						double curY = parent.LocalBounds.Top - parent.DevicePadding.Top;
 						foreach (GuiWidget child in parent.Children)
 						{
+							if (parent.HasBeenClosed)
+							{
+								return;
+							}
+
 							if (child.Visible == true)
 							{
 								if (child.VAnchorIsSet(VAnchor.Stretch))
