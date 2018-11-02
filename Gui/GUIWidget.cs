@@ -2192,17 +2192,9 @@ namespace MatterHackers.Agg.UI
 
 		internal class ScreenClipping
 		{
-			private GuiWidget attachedTo;
-			internal bool needRebuild = true;
+			private readonly GuiWidget attachedTo;
 
-			internal bool NeedRebuild
-			{
-				get { return needRebuild; }
-				set
-				{
-					needRebuild = value;
-				}
-			}
+			internal bool NeedRebuild { get; set; } = true;
 
 			internal void MarkRecalculate()
 			{
