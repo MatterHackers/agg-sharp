@@ -2218,10 +2218,21 @@ namespace MatterHackers.Agg.UI
 
 			private void MarkChildrenRecaculate()
 			{
+				if (attachedTo.HasBeenClosed)
+				{
+					return;
+				}
+
 				NeedRebuild = true;
+
 				foreach (GuiWidget child in attachedTo.Children)
 				{
 					child.screenClipping.MarkChildrenRecaculate();
+
+					if (attachedTo.HasBeenClosed)
+					{
+						return;
+					}
 				}
 			}
 
