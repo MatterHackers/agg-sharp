@@ -2213,10 +2213,10 @@ namespace MatterHackers.Agg.UI
 					nextParent = nextParent.Parent;
 				}
 
-				MarkChildrenRecaculate();
+				MarkChildrenRecalculate();
 			}
 
-			private void MarkChildrenRecaculate()
+			private void MarkChildrenRecalculate()
 			{
 				if (attachedTo.HasBeenClosed)
 				{
@@ -2227,7 +2227,7 @@ namespace MatterHackers.Agg.UI
 
 				foreach (GuiWidget child in attachedTo.Children)
 				{
-					child.screenClipping.MarkChildrenRecaculate();
+					child.screenClipping.MarkChildrenRecalculate();
 
 					if (attachedTo.HasBeenClosed)
 					{
