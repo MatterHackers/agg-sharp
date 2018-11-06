@@ -1235,9 +1235,11 @@ namespace MatterHackers.Agg.UI
 			get => _text;
 			set
 			{
+				// make sure value is set to empty string rather than null
+				value = value ?? "";
 				if (_text != value)
 				{
-					_text = value ?? "";
+					_text = value;
 					OnTextChanged(null);
 					Invalidate();
 				}
