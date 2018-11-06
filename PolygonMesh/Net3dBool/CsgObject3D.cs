@@ -225,10 +225,6 @@ namespace Net3dBool
 
 					// stop processing if operation has been canceled
 					cancellationToken.ThrowIfCancellationRequested();
-					if(cancellationToken.IsCancellationRequested)
-					{
-						return;
-					}
 
 					//if object1 face bound and object2 bound overlap ...
 					//for each object2 face...
