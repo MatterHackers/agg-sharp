@@ -123,12 +123,14 @@ namespace Net3dBool
 		/// Classify faces as being inside, outside or on boundary of other object
 		/// </summary>
 		/// <param name="otherObject">object 3d used for the comparison</param>
-		public void ClassifyFaces(CsgObject3D otherObject, Action<CsgFace> classifyFaces = null)
+		public void ClassifyFaces(CsgObject3D otherObject, CancellationToken cancellationToken, Action<CsgFace> classifyFaces = null)
 		{
 			var otherBounds = otherObject.Bounds;
 			foreach (var vertex in vertices)
 			{
-				if(!otherBounds.Contains(vertex.Position)
+				cancellationToken.ThrowIfCancellationRequested();
+
+				if (!otherBounds.Contains(vertex.Position)
 					&& vertex.Status != FaceStatus.Outside)
 				{
 					vertex.Status = FaceStatus.Outside;
@@ -139,6 +141,8 @@ namespace Net3dBool
 			Faces.All();
 			foreach (var face in Faces.QueryResults)
 			{
+				cancellationToken.ThrowIfCancellationRequested();
+
 				face.v1.AddAdjacentVertex(face.v2);
 				face.v1.AddAdjacentVertex(face.v3);
 				face.v2.AddAdjacentVertex(face.v1);
@@ -150,6 +154,8 @@ namespace Net3dBool
 			// for each face
 			foreach (var face in Faces.QueryResults)
 			{
+				cancellationToken.ThrowIfCancellationRequested();
+
 				// If the face vertices can't be classified with the simple classify
 				if (face.SimpleClassify() == false)
 				{
@@ -225,10 +231,6 @@ namespace Net3dBool
 
 					// stop processing if operation has been canceled
 					cancellationToken.ThrowIfCancellationRequested();
-					if(cancellationToken.IsCancellationRequested)
-					{
-						return;
-					}
 
 					//if object1 face bound and object2 bound overlap ...
 					//for each object2 face...
@@ -908,15 +910,15 @@ namespace Net3dBool
 				//FACE-FACE-EDGE
 				return BreakFaceInFour(face, endPos, startPos, endVertex, facesFromSplit);
 			}
-			else if (startType == SegmentEnd.Face 
+			else if (startType == SegmentEnd.Face
 				&& endType == SegmentEnd.Face)
 			{
 				//FACE-FACE-FACE
 				Vector3 segmentVector = new Vector3(startPos.X - endPos.X, startPos.Y - endPos.Y, startPos.Z - endPos.Z);
 
 				//if the intersection segment is a point only...
-				if (Math.Abs(segmentVector.X) < EqualityTolerance 
-					&& Math.Abs(segmentVector.Y) < EqualityTolerance 
+				if (Math.Abs(segmentVector.X) < EqualityTolerance
+					&& Math.Abs(segmentVector.Y) < EqualityTolerance
 					&& Math.Abs(segmentVector.Z) < EqualityTolerance)
 				{
 					return BreakFaceInThree(face, startPos, facesFromSplit);
@@ -929,13 +931,13 @@ namespace Net3dBool
 
 				int linedVertex;
 				Vector3 linedVertexPos;
-				if (dot1 > dot2 
+				if (dot1 > dot2
 					&& dot1 > dot3)
 				{
 					linedVertex = 1;
 					linedVertexPos = face.v1.Position;
 				}
-				else if (dot2 > dot3 
+				else if (dot2 > dot3
 					&& dot2 > dot1)
 				{
 					linedVertex = 2;

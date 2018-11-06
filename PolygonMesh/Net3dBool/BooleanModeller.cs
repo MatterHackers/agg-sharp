@@ -233,10 +233,10 @@ namespace Net3dBool
 
 				//classify faces as being inside or outside the other solid
 				reporter?.Invoke("Classify Faces 1", 0.8);
-				object1.ClassifyFaces(object2, Object1ClassifyFace);
+				object1.ClassifyFaces(object2, cancellationToken, Object1ClassifyFace);
 
 				reporter?.Invoke("Classify Faces 2", 0.9);
-				object2.ClassifyFaces(object1, Object2ClassifyFace);
+				object2.ClassifyFaces(object1, cancellationToken, Object2ClassifyFace);
 			}
 		}
 	}
