@@ -1229,20 +1229,15 @@ namespace MatterHackers.Agg.UI
 
 		public string Name { get; set; }
 
-		private string text = "";
+		private string _text = "";
 		public virtual string Text
 		{
-			get => text;
+			get => _text;
 			set
 			{
-				if (value == null)
+				if (_text != value)
 				{
-					throw new ArgumentNullException("You cannot set the Text to null.");
-				}
-				if (text != value)
-				{
-					Invalidate(); // do it before and after in case it changes size.
-					text = value;
+					_text = value ?? "";
 					OnTextChanged(null);
 					Invalidate();
 				}
