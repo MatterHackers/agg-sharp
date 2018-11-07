@@ -2192,17 +2192,9 @@ namespace MatterHackers.Agg.UI
 
 		internal class ScreenClipping
 		{
-			private GuiWidget attachedTo;
-			internal bool needRebuild = true;
+			private readonly GuiWidget attachedTo;
 
-			internal bool NeedRebuild
-			{
-				get { return needRebuild; }
-				set
-				{
-					needRebuild = value;
-				}
-			}
+			internal bool NeedRebuild { get; set; } = true;
 
 			internal void MarkRecalculate()
 			{
@@ -2213,15 +2205,26 @@ namespace MatterHackers.Agg.UI
 					nextParent = nextParent.Parent;
 				}
 
-				MarkChildrenRecaculate();
+				MarkChildrenRecalculate();
 			}
 
-			private void MarkChildrenRecaculate()
+			private void MarkChildrenRecalculate()
 			{
+				if (attachedTo.HasBeenClosed)
+				{
+					return;
+				}
+
 				NeedRebuild = true;
+
 				foreach (GuiWidget child in attachedTo.Children)
 				{
-					child.screenClipping.MarkChildrenRecaculate();
+					child.screenClipping.MarkChildrenRecalculate();
+
+					if (attachedTo.HasBeenClosed)
+					{
+						return;
+					}
 				}
 			}
 
