@@ -347,7 +347,10 @@ namespace MatterHackers.Agg
 		int updatesPerSecond = 30;
 		private void ApplyVelocity()
 		{
-			runningInterval.Continue = !HasBeenClosed && currentVelocityPerMs.LengthSquared > 0;
+			if (HasBeenClosed || currentVelocityPerMs.LengthSquared <= 0)
+			{
+				UiThread.ClearInterval(runningInterval);
+			}
 
 			double msPerUpdate = 1000.0 / updatesPerSecond;
 			if (currentVelocityPerMs.LengthSquared > 0)
