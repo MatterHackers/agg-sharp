@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2018, Lars Brubaker
+Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -33,11 +33,6 @@ using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI
 {
-	public class RunningInterval
-	{
-		public bool Continue { get; set; } = true;
-	}
-
 	public static class UiThread
 	{
 		private static List<DeferredAction> deferredActions = new List<DeferredAction>();
@@ -47,7 +42,8 @@ namespace MatterHackers.Agg.UI
 
 		private static List<Action> callLater = listA;
 
-		private static Stopwatch timer = new Stopwatch();
+		private static Stopwatch timer = Stopwatch.StartNew();
+
 		private static object locker = new object();
 
 		public static long CurrentTimerMs => timer.ElapsedMilliseconds;
@@ -74,30 +70,33 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		private static List<RunningInterval> intervalActions = new List<RunningInterval>();
+
 		/// <summary>
 		/// Repeats a given action at every given time-interval.
 		/// </summary>
-		/// <param name="action"></param>
-		/// <param name="intervalInSeconds"></param>
+		/// <param name="action">The action to execute</param>
+		/// <param name="intervalInSeconds">The invoke interval in seconds</param>
 		/// <returns>Action to call to cancel interval</returns>
 		public static RunningInterval SetInterval(Action action, double intervalInSeconds)
 		{
-			RunningInterval runningInterval = new RunningInterval();
-			Action IntervalFunction = null;
-			IntervalFunction = () =>
-			{
-				if(runningInterval.Continue)
-				{
-					RunOnIdle(action, intervalInSeconds);
-					RunOnIdle(IntervalFunction, intervalInSeconds);
-				}
-			};
+			var runningInterval = new RunningInterval(action, intervalInSeconds);
 
-			// queue the next call and the event to run on uithread
-			RunOnIdle(action, intervalInSeconds);
-			RunOnIdle(IntervalFunction, intervalInSeconds);
+			lock (locker)
+			{
+				intervalActions.Add(runningInterval);
+			}
 
 			return runningInterval;
+		}
+
+		public static bool ClearInterval(RunningInterval runningInterval)
+		{
+			lock (locker)
+			{
+				runningInterval.Shutdown();
+				return intervalActions.Remove(runningInterval);
+			}
 		}
 
 		public static void RunOnIdle(Action action)
@@ -110,11 +109,6 @@ namespace MatterHackers.Agg.UI
 
 		public static void RunOnIdle(Action action, double delayInSeconds = 0)
 		{
-			if (!timer.IsRunning)
-			{
-				timer.Start();
-			}
-
 			lock (locker)
 			{
 				deferredActions.Add(new DeferredAction(action, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
@@ -134,6 +128,7 @@ namespace MatterHackers.Agg.UI
 				// Actually empty the list
 				callLater.Clear();
 
+				// Loop over deferred RunOnIdle actions which previously had not yet reached their execution time
 				long currentMilliseconds = timer.ElapsedMilliseconds;
 				for (int i = deferredActions.Count - 1; i >= 0; i--)
 				{
@@ -141,8 +136,19 @@ namespace MatterHackers.Agg.UI
 					var deferred = deferredActions[i];
 					if (deferred.AbsoluteMillisecondsToRunAt <= currentMilliseconds)
 					{
-						callNow.Add(deferred.Action);
+						callNow.Add(deferred.Execute);
 						deferredActions.RemoveAt(i);
+					}
+				}
+
+				// Loop over SetInterval functions, queueing for execution if interval period has elapsed
+				for (int i = intervalActions.Count - 1; i >= 0; i--)
+				{
+					// If the SetInterval action has reach its execution time, push it to the list
+					var intervalAction = intervalActions[i];
+					if (intervalAction.AbsoluteMillisecondsToRunAt <= currentMilliseconds)
+					{
+						callNow.Add(intervalAction.Execute);
 					}
 				}
 			}
@@ -162,16 +168,49 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private class DeferredAction
+		public class DeferredAction
 		{
-			internal Action Action;
+			protected Action action;
 			internal long AbsoluteMillisecondsToRunAt;
 
 			internal DeferredAction(Action action, long absoluteMillisecondsToRunAt)
 			{
-				this.Action = action;
+				this.action = action;
 				this.AbsoluteMillisecondsToRunAt = absoluteMillisecondsToRunAt;
 			}
+
+			public virtual void Execute()
+			{
+				this.action?.Invoke();
+			}
 		}
+	}
+
+	public class RunningInterval : UiThread.DeferredAction
+	{
+		private double intervalInSeconds;
+
+		public RunningInterval(Action action, double intervalInSeconds)
+			: base(action, 0)
+		{
+			this.intervalInSeconds = intervalInSeconds;
+			this.AbsoluteMillisecondsToRunAt = this.NextRunMs;
+		}
+
+		public override void Execute()
+		{
+			// Schedule next execution before action invoke
+			this.AbsoluteMillisecondsToRunAt = this.NextRunMs;
+
+			// Invoke
+			base.Execute();
+		}
+
+		internal void Shutdown()
+		{
+			action = null;
+		}
+
+		private long NextRunMs => UiThread.CurrentTimerMs + (int)(intervalInSeconds * 1000);
 	}
 }
