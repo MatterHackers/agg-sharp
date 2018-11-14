@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2018, Lars Brubaker
+Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -199,8 +199,11 @@ namespace MatterHackers.Agg.UI
 
 		public override void Execute()
 		{
-			base.Execute();
+			// Schedule next execution before action invoke
 			this.AbsoluteMillisecondsToRunAt = this.NextRunMs;
+
+			// Invoke
+			base.Execute();
 		}
 
 		internal void Shutdown()
