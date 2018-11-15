@@ -39,9 +39,8 @@ namespace MatterHackers.Agg.UI
 
 		public ResponsiveImageWidget(ImageBuffer initialImage)
 		{
-			HAnchor = HAnchor.Stretch;
-
-			Image = initialImage;
+			this.HAnchor = HAnchor.Stretch;
+			this.Image = initialImage;
 		}
 
 		public override RectangleDouble LocalBounds
@@ -76,11 +75,7 @@ namespace MatterHackers.Agg.UI
 
 		public ImageBuffer Image
 		{
-			get
-			{
-				return _image;
-			}
-
+			get => _image;
 			set
 			{
 				if(_image != null)
@@ -93,7 +88,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		Cursors overrideCursor = Cursors.Arrow;
+		private Cursors overrideCursor = Cursors.Arrow;
 		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
 			if (LocalBounds.Contains(mouseEvent.Position)
