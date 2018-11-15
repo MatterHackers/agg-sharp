@@ -42,10 +42,6 @@ namespace MatterHackers.Agg.UI
 			HAnchor = HAnchor.Stretch;
 
 			Image = initialImage;
-			if (Image != null)
-			{
-				Image.ImageChanged += ImageChanged;
-			}
 		}
 
 		public override RectangleDouble LocalBounds
