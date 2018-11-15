@@ -76,15 +76,15 @@ namespace MatterHackers.Agg.UI
 			get  => image;
 			set
 			{
-				if (image != value)
-				{
-					if (listenForImageChanged)
-			{
 				if (image != null)
 				{
 					image.ImageChanged -= ImageChanged;
 				}
 
+				if (image != value)
+				{
+					if (listenForImageChanged)
+					{
 						image = value;
 						image.ImageChanged += ImageChanged;
 					}
