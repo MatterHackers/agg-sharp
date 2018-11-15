@@ -58,11 +58,6 @@ namespace MatterHackers.Agg.UI
 		{
 			this.listenForImageChanged = listenForImageChanged;
 			this.Image = initialImage;
-
-			if (this.Image != null && listenForImageChanged)
-			{
-				this.Image.ImageChanged += ImageChanged;
-			}
 		}
 
 		private void ImageChanged(object s, EventArgs e)
@@ -81,15 +76,15 @@ namespace MatterHackers.Agg.UI
 			get  => image;
 			set
 			{
+				if (image != null)
+				{
+					image.ImageChanged -= ImageChanged;
+				}
+
 				if (image != value)
 				{
 					if (listenForImageChanged)
 					{
-						if (image != null)
-						{
-							image.ImageChanged -= ImageChanged;
-						}
-
 						image = value;
 						image.ImageChanged += ImageChanged;
 					}
