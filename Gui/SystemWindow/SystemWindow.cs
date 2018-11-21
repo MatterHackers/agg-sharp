@@ -74,6 +74,8 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnClosed(EventArgs e)
 		{
+			this.ToolTipManager.Dispose();
+
 			_openWindows.Remove(this);
 
 			base.OnClosed(e);

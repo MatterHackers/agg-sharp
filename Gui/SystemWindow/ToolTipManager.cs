@@ -33,7 +33,7 @@ using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI
 {
-	public class ToolTipManager
+	public class ToolTipManager : IDisposable
 	{
 		/// <summary>
 		/// Gets or sets the period of time the ToolTip remains visible if the pointer is stationary on a control with specified ToolTip text.
@@ -68,18 +68,21 @@ namespace MatterHackers.Agg.UI
 		private GuiWidget widgetThatIsShowingToolTip;
 		private GuiWidget widgetThatWantsToShowToolTip;
 		private GuiWidget widgetThatWasShowingToolTip;
+		private RunningInterval runningInterval;
 
 		internal ToolTipManager(SystemWindow owner)
 		{
 			this.systemWindow = owner;
-			systemWindow.MouseMove += (sender, e) =>
-			{
-				mousePosition = e.Position;
-				timeSinceLastMouseMove.Restart();
-			};
 
-			// Get the an idle loop up and running
-			UiThread.SetInterval(CheckIfNeedToDisplayToolTip, .05);
+			// Register listeners
+			systemWindow.MouseMove += this.SystemWindow_MouseMove;
+			runningInterval = UiThread.SetInterval(CheckIfNeedToDisplayToolTip, .05);
+		}
+
+		private void SystemWindow_MouseMove(object sender, MouseEventArgs e)
+		{
+			mousePosition = e.Position;
+			timeSinceLastMouseMove.Restart();
 		}
 
 		public event EventHandler ToolTipPop;
@@ -283,7 +286,8 @@ namespace MatterHackers.Agg.UI
 				//widgetThatWantsToShowToolTip = null;
 				timeSinceLastMouseMove.Stop();
 				timeSinceLastMouseMove.Reset();
-				systemWindow.RemoveChild(toolTipWidget);
+				
+				toolTipWidget.Close();
 				toolTipWidget = null;
 				toolTipText = "";
 
@@ -293,6 +297,13 @@ namespace MatterHackers.Agg.UI
 
 				Debug.WriteLine("RemoveToolTip {0}".FormatWith(count++));
 			}
+		}
+
+		public void Dispose()
+		{
+			// Unregister listeners
+			systemWindow.MouseMove -= this.SystemWindow_MouseMove;
+			UiThread.ClearInterval(runningInterval);
 		}
 	}
 }
