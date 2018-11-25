@@ -59,12 +59,16 @@ namespace MatterHackers.Agg.ImageProcessing
 						byte[] sourceBuffer = source.GetBuffer();
 						byte[] destBuffer = dest.GetBuffer();
 
-						for (int y = 1; y < height - 1; y++)
+						System.Threading.Tasks.Parallel.For(1, height, y =>
+						//for (int y = 1; y < height - 1; y++)
 						{
 							int rowOffset = source.GetBufferOffsetY(y);
 							for (int x = 1; x < width - 1; x++)
 							{
 								int bufferOffset = rowOffset + x;
+								// make sure it is set to 1 if we don't change it to 0
+								destBuffer[bufferOffset] = 255;
+
 								// do the upper left
 								int checkOffset = bufferOffset - strideInBytes - 1;
 								if (sourceBuffer[checkOffset] < threshold)
@@ -136,7 +140,7 @@ namespace MatterHackers.Agg.ImageProcessing
 									continue;
 								}
 							}
-						}
+						});
 					}
 					break;
 
