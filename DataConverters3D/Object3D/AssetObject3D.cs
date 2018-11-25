@@ -31,6 +31,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using MatterHackers.Agg;
 using MatterHackers.Agg.Platform;
 using MatterHackers.PolygonMesh.Processors;
 
@@ -178,7 +179,7 @@ namespace MatterHackers.DataConverters3D
 		public async Task<string> StoreFile(string filePath, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress)
 		{
 			// Compute SHA1
-			string sha1 = Object3D.ComputeFileSHA1(filePath);
+			string sha1 = HashGenerator.ComputeFileSHA1(filePath);
 			string sha1PlusExtension = sha1 + Path.GetExtension(filePath).ToLower();
 			string assetPath = Path.Combine(Object3D.AssetsPath, sha1PlusExtension);
 
@@ -214,7 +215,7 @@ namespace MatterHackers.DataConverters3D
 				Directory.CreateDirectory(Object3D.AssetsPath);
 
 				// Calculate
-				string sha1 = Object3D.ComputeSHA1(memoryStream);
+				string sha1 = HashGenerator.ComputeSHA1(memoryStream);
 				string sha1PlusExtension = sha1 + ".mcx";
 				string assetPath = Path.Combine(Object3D.AssetsPath, sha1PlusExtension);
 
@@ -275,7 +276,7 @@ namespace MatterHackers.DataConverters3D
 		public string StoreStream(Stream stream, string extension)
 		{
 			// Compute SHA1
-			string sha1 = Object3D.ComputeSHA1(stream);
+			string sha1 = HashGenerator.ComputeSHA1(stream);
 
 			string fileName = $"{sha1}{extension}";
 			string assetPath = Path.Combine(Object3D.AssetsPath, fileName);

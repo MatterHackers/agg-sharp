@@ -753,28 +753,6 @@ namespace MatterHackers.DataConverters3D
 			return hash;
 		}
 
-		public static string ComputeFileSHA1(string filePath)
-		{
-			using (var stream = new BufferedStream(File.OpenRead(filePath), 1200000))
-			{
-				return ComputeSHA1(stream);
-			}
-		}
-
-		public static string ComputeSHA1(Stream stream)
-		{
-			// var timer = Stopwatch.StartNew();
-
-			// Alternatively: MD5.Create(),  new SHA256Managed()
-			using (var sha1 = System.Security.Cryptography.SHA1.Create())
-			{
-				byte[] hash = sha1.ComputeHash(stream);
-				// Console.WriteLine("{0} {1} {2}", SHA1, timer.ElapsedMilliseconds, filePath);
-
-				return BitConverter.ToString(hash).Replace("-", String.Empty);
-			}
-		}
-
 		public string ToJson()
 		{
 			return JsonConvert.SerializeObject(
