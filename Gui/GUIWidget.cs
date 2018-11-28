@@ -2348,6 +2348,19 @@ namespace MatterHackers.Agg.UI
 			return position;
 		}
 
+		public RectangleDouble TransformFromParentSpace(GuiWidget parentToGetRelativeTo, RectangleDouble rectangleToTransform)
+		{
+			GuiWidget parent = Parent;
+			while (parent != null
+				&& parent != parentToGetRelativeTo)
+			{
+				rectangleToTransform.Offset(-parent.BoundsRelativeToParent.Left, -parent.BoundsRelativeToParent.Bottom);
+				parent = parent.Parent;
+			}
+
+			return rectangleToTransform;
+		}
+
 		public RectangleDouble TransformToParentSpace(GuiWidget parentToGetRelativeTo, RectangleDouble rectangleToTransform)
 		{
 			GuiWidget widgetToTransformBy = this;
@@ -2395,6 +2408,11 @@ namespace MatterHackers.Agg.UI
 			}
 
 			return rectangleToTransform;
+		}
+
+		public RectangleDouble TransformFromScreenSpace(RectangleDouble rectangleToTransform)
+		{
+			return this.TransformFromParentSpace(TopmostParent(), rectangleToTransform);
 		}
 
 		protected GuiWidget GetChildContainingFocus()
