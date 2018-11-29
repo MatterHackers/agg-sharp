@@ -268,7 +268,7 @@ namespace MatterHackers.PolygonMesh
 
 		public void Triangulate()
 		{
-			// TODO: Use the teselation library to ensure concave faces can be created correctly
+			// TODO: Use the tessellation library to ensure concave faces can be created correctly
 			List<Face> tempFaceList = new List<Face>(Faces);
 			foreach (Face face in tempFaceList)
 			{

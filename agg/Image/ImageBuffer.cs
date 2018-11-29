@@ -1279,7 +1279,7 @@ namespace MatterHackers.Agg.Image
 
 		/// <summary>
 		/// Find the image content and scale it to the output size in consideration of the 
-		/// Material Desing icon scaling rules
+		/// Material Design icon scaling rules
 		/// </summary>
 		/// <param name="sourceImage"></param>
 		/// <param name="width"></param>
@@ -1287,7 +1287,7 @@ namespace MatterHackers.Agg.Image
 		/// <returns></returns>
 		public static ImageBuffer MaterialDesignScaledIcon(this ImageBuffer sourceImage, int width, int height)
 		{
-			// these are the sizes definde by Material Design
+			// these are the sizes defined by Material Design
 			var iconGridSize = 192;
 			var squareWidth = 152;
 			var circleDiameter = 176;
@@ -1296,7 +1296,7 @@ namespace MatterHackers.Agg.Image
 
 			// the first thing we will do is discover the icon shape that minimizes scaling
 
-			// now figure out the scalling that needs to happen to the source to make our image fit 
+			// now figure out the scaling that needs to happen to the source to make our image fit 
 			// the correct icon bounds at the new size
 			var cicle = sourceImage.GetCircleBounds();
 			var bounsd = sourceImage.GetBounds();

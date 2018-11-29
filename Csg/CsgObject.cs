@@ -235,8 +235,8 @@ namespace MatterHackers.Csg
 		#region Static Functions
 
 		/// <summary>
-		/// Normaly ObjectCSG tree can be dirrected acyclic graphs and have instances appear more than once in the tree.
-		/// This function will ensure that that every Object is a unique instance in the structure.
+		/// Normally ObjectCSG tree can be directed acyclic graphs and have instances appear more than once in the tree.
+		/// This function will ensure that every Object is a unique instance in the structure.
 		/// </summary>
 		/// <param name="dagRoot"></param>
 		/// <returns>A new ObjectCSG root that is a new tree of all the objects in the original tree.</returns>
@@ -282,7 +282,7 @@ namespace MatterHackers.Csg
 			return oppositeFace;
 		}
 
-		#region Structure Optomizations
+		#region Structure Optimizations
 
 		public void OptomizeTransforms()
 		{

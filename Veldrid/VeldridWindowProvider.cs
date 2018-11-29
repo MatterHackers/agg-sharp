@@ -72,7 +72,7 @@ namespace MatterHackers.VeldridProvider
 						new KeyEventArgs((Keys)keyEvent.Key));
 				};
 
-				// setup our veldrid gl imediate mode emulator
+				// setup our veldrid gl immediate mode emulator
 				var veldridGl = new VeldridGL();
 				MatterHackers.RenderOpenGl.OpenGl.GL.Instance = veldridGl;
 				veldridGl.CreateResources(_graphicsDevice);

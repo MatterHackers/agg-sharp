@@ -50,7 +50,7 @@ namespace MatterHackers.Agg.Tests
 
 					// Add required config for PackageReference/automatic binding redirects/bind redirects for tests
 					elem.AddAfterSelf(
-						new XComment("See the following for details on netstandard2 binding workround: https://github.com/dotnet/standard/issues/481"),
+						new XComment("See the following for details on netstandard2 binding workaround: https://github.com/dotnet/standard/issues/481"),
 						new XElement(ns + "AutoGenerateBindingRedirects",
 							new XText("true")),
 						new XElement(ns + "RestoreProjectStyle",

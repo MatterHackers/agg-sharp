@@ -8,7 +8,7 @@ namespace MatterHackers.Agg.Tests
 		{
 			Console.WriteLine("This is the test running exe that you can use when \nthere is a problem with a test.\n");
 
-			// Run any test that needs debuging
+			// Run any test that needs debugging
 			Vector3Tests test1 = new Vector3Tests();
 			test1.DotProduct();
 

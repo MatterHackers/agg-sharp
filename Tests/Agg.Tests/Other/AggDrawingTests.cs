@@ -23,7 +23,7 @@ namespace MatterHackers.Agg.Tests
 		{
 			Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
 
-			// there is an assumtion that we got to save valid images at least once.
+			// there is an assumption that we got to save valid images at least once.
 			string controlFileTga = testTypeString + " Control.tga";
 			string imageFolder = "ControlImages";
 			string testFailPathAndFileName = Path.Combine(imageFolder, testTypeString + " Test Fail.tga");
@@ -50,7 +50,7 @@ namespace MatterHackers.Agg.Tests
 				}
 
 				Assert.IsTrue(testIsSameAsControl);
-				// If you want to create new control images select SetNextStatement to inside the else condition to creat them.
+				// If you want to create new control images select SetNextStatement to inside the else condition to create them.
 			}
 			else
 			{
@@ -109,7 +109,7 @@ namespace MatterHackers.Agg.Tests
 
 					Assert.IsTrue(testOldToNewIsSameAsControl);
 				}
-				// If you want to create new control VertexSources select SetNextStatement to inside the else condition to creat them.
+				// If you want to create new control VertexSources select SetNextStatement to inside the else condition to create them.
 			}
 			else
 			{

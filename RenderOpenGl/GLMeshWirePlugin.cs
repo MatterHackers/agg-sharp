@@ -101,7 +101,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 			EdgeLines = edgeLines;
 
-			// if we are trying to have a filtered list do this in a backgroud thread and wait for the results
+			// if we are trying to have a filtered list do this in a background thread and wait for the results
 			if (nonPlanarAngleRequired > 0)
 			{
 				Task.Run(() =>
@@ -148,7 +148,7 @@ namespace MatterHackers.RenderOpenGl
 					for (int i=0; i< faceEdges.Count; i++)
 					{
 						var edgeI = faceEdges[i];
-						// figure out if edge i has any colinear edges that are above the angle
+						// figure out if edge i has any collinear edges that are above the angle
 						if (startIndexes.ContainsKey(edgeI.start))
 						{
 							foreach (var faceEdgeIndex in startIndexes[edgeI.start])

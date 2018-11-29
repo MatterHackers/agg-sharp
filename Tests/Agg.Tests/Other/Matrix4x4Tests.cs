@@ -78,7 +78,7 @@ namespace MatterHackers.Agg.Tests
         [Test]
         public void MatrixColumnMajor()
         {
-            // Make sure our matrix is set up colum major like opengl. LBB [7/11/2003]
+            // Make sure our matrix is set up column major like opengl. LBB [7/11/2003]
             Matrix4X4 ColumnMajorRotationMatrix = Matrix4X4.CreateRotationY(.2345f);
             Matrix4X4 ColumnMajorTransLationMatrix = Matrix4X4.Identity;
             ColumnMajorTransLationMatrix.Translate(.2342f, 234234.734f, 223.324f);

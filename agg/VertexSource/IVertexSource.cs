@@ -128,7 +128,7 @@ namespace MatterHackers.Agg.VertexSource
 
 			// center for image
 			var centerPosition = imageBuffer.GetWeightedCenter(new MapOnMaxIntensity());
-			// tranlate to vertex source coordinates
+			// translate to vertex source coordinates
 			polygonsToImageTransform.inverse_transform(ref centerPosition.X, ref centerPosition.Y);
 
 			return centerPosition;
