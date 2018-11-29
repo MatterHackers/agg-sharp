@@ -37,14 +37,14 @@ namespace MatterHackers.Agg.UI
 	{
 		private static List<DeferredAction> deferredActions = new List<DeferredAction>();
 
-		private static List<Action> listA = new List<Action>();
-		private static List<Action> listB = new List<Action>();
+		private static readonly List<Action> listA = new List<Action>();
+		private static readonly List<Action> listB = new List<Action>();
 
 		private static List<Action> callLater = listA;
 
 		private static Stopwatch timer = Stopwatch.StartNew();
 
-		private static object locker = new object();
+		private static readonly object locker = new object();
 
 		public static long CurrentTimerMs => timer.ElapsedMilliseconds;
 
@@ -107,7 +107,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public static void RunOnIdle(Action action, double delayInSeconds = 0)
+		public static void RunOnIdle(Action action, double delayInSeconds)
 		{
 			lock (locker)
 			{

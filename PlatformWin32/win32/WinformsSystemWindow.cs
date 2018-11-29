@@ -17,10 +17,8 @@
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
@@ -40,7 +38,7 @@ namespace MatterHackers.Agg.UI
 
 		private static bool processingOnIdle = false;
 
-		private static object singleInvokeLock = new object();
+		private static readonly object singleInvokeLock = new object();
 
 		protected WinformsEventSink EventSink;
 
@@ -142,35 +140,27 @@ namespace MatterHackers.Agg.UI
 					processingOnIdle = true;
 				}
 
-				if (InvokeRequired)
+				try
 				{
-					Invoke(new Action(() =>
+					if (InvokeRequired)
 					{
-						try
-						{
-							UiThread.InvokePendingActions();
-						}
-						catch (Exception invokeException)
-						{
-#if DEBUG
-							lock (singleInvokeLock)
-							{
-								processingOnIdle = false;
-							}
-
-							throw (invokeException);
-#endif
-						}
-
-						lock (singleInvokeLock)
-						{
-							processingOnIdle = false;
-						}
-					}));
+						Invoke(new Action(UiThread.InvokePendingActions));
+					}
+					else
+					{
+						UiThread.InvokePendingActions();
+					}
 				}
-				else
+				catch (Exception ex)
 				{
-					UiThread.InvokePendingActions();
+					Console.WriteLine(ex.Message);
+				}
+				finally
+				{
+					lock (singleInvokeLock)
+					{
+						processingOnIdle = false;
+					}
 				}
 			}
 		}
