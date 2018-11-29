@@ -140,35 +140,27 @@ namespace MatterHackers.Agg.UI
 					processingOnIdle = true;
 				}
 
-				if (InvokeRequired)
+				try
 				{
-					Invoke(new Action(() =>
+					if (InvokeRequired)
 					{
-						try
-						{
-							UiThread.InvokePendingActions();
-						}
-						catch (Exception invokeException)
-						{
-#if DEBUG
-							lock (singleInvokeLock)
-							{
-								processingOnIdle = false;
-							}
-
-							throw (invokeException);
-#endif
-						}
-
-						lock (singleInvokeLock)
-						{
-							processingOnIdle = false;
-						}
-					}));
+						Invoke(new Action(UiThread.InvokePendingActions));
+					}
+					else
+					{
+						UiThread.InvokePendingActions();
+					}
 				}
-				else
+				catch (Exception ex)
 				{
-					UiThread.InvokePendingActions();
+					Console.WriteLine(ex.Message);
+				}
+				finally
+				{
+					lock (singleInvokeLock)
+					{
+						processingOnIdle = false;
+					}
 				}
 			}
 		}
