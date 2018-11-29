@@ -26,27 +26,71 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.VertexSource
 {
-	//------------------------------------------------------------rounded_rect
-	//
-	// See Implementation agg_rounded_rect.cpp
-	//
-	public class ConnectedPaths : VertexSourceLegacySupport
+	/// <summary>
+	/// This class is used to merge multiple paths into a single IVertexSource path.
+	/// This is great to do things like have a path as an outside an a second path that can become an inside hole.
+	/// </summary>
+	public class CombinePaths : VertexSourceLegacySupport
 	{
-		public ConnectedPaths()
+		public CombinePaths()
 		{
 		}
 
-		public ConnectedPaths(IVertexSource a, IVertexSource b)
+		public CombinePaths(IVertexSource a, IVertexSource b)
 			: this(new IVertexSource[] { a, b })
 		{
 		}
 
-		public ConnectedPaths(IEnumerable<IVertexSource> paths)
+		public CombinePaths(IEnumerable<IVertexSource> paths)
 		{
 			SourcPaths.AddRange(paths);
 		}
 
-		private List<IVertexSource> SourcPaths { get; } = new List<IVertexSource>();
+		public List<IVertexSource> SourcPaths { get; } = new List<IVertexSource>();
+
+		override public IEnumerable<VertexData> Vertices()
+		{
+			for (int i = 0; i < SourcPaths.Count; i++)
+			{
+				IVertexSource sourcePath = SourcPaths[i];
+				foreach (VertexData vertexData in sourcePath.Vertices())
+				{
+					// when we hit a stop move on to the next path
+					if (ShapePath.is_stop(vertexData.command))
+					{
+						break;
+					}
+					yield return vertexData;
+				}
+			}
+
+			// and send the actual stop
+			yield return new VertexData(ShapePath.FlagsAndCommand.EndPoly | ShapePath.FlagsAndCommand.FlagClose | ShapePath.FlagsAndCommand.FlagCCW, new Vector2());
+			yield return new VertexData(ShapePath.FlagsAndCommand.Stop, new Vector2());
+		}
+	}
+
+	/// <summary>
+	/// This class is used to strip out the close and first move of multiple pathes
+	/// so they render as a single set of LineTo (s) and internal MoveTo (s)
+	/// </summary>
+	public class JoinPaths : VertexSourceLegacySupport
+	{
+		public JoinPaths()
+		{
+		}
+
+		public JoinPaths(IVertexSource a, IVertexSource b)
+			: this(new IVertexSource[] { a, b })
+		{
+		}
+
+		public JoinPaths(IEnumerable<IVertexSource> paths)
+		{
+			SourcPaths.AddRange(paths);
+		}
+
+		public List<IVertexSource> SourcPaths { get; } = new List<IVertexSource>();
 
 		override public IEnumerable<VertexData> Vertices()
 		{
@@ -74,6 +118,35 @@ namespace MatterHackers.Agg.VertexSource
 			}
 
 			// and send the actual stop
+			yield return new VertexData(ShapePath.FlagsAndCommand.EndPoly | ShapePath.FlagsAndCommand.FlagClose | ShapePath.FlagsAndCommand.FlagCCW, new Vector2());
+			yield return new VertexData(ShapePath.FlagsAndCommand.Stop, new Vector2());
+		}
+	}
+
+	public class ReversePath : VertexSourceLegacySupport
+	{
+		public ReversePath(IVertexSource sourcePath)
+		{
+			SourcPath = sourcePath;
+		}
+
+		public IVertexSource SourcPath { get; }
+
+		override public IEnumerable<VertexData> Vertices()
+		{
+				IVertexSource sourcePath = SourcPath;
+				foreach (VertexData vertexData in sourcePath.Vertices())
+				{
+					// when we hit the initial stop. Skip it
+					if (ShapePath.is_stop(vertexData.command))
+					{
+						break;
+					}
+					yield return vertexData;
+				}
+
+			// and send the actual stop
+			yield return new VertexData(ShapePath.FlagsAndCommand.EndPoly | ShapePath.FlagsAndCommand.FlagClose | ShapePath.FlagsAndCommand.FlagCCW, new Vector2());
 			yield return new VertexData(ShapePath.FlagsAndCommand.Stop, new Vector2());
 		}
 	}
