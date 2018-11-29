@@ -63,7 +63,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		[Test]
 		public void TestBvhTreeSearches()
 		{
-			// for this shape imagine the 8 corners of a rubics cube and the center
+			// for this shape imagine the 8 corners of a Rubik's cube and the center
 			var data = new List<BvhTreeItemData<int>>();
 			// left, front, bottom
 			data.Add(new BvhTreeItemData<int>(0, new AxisAlignedBoundingBox(0, 0, 0, 1, 1, 1)));
@@ -107,7 +107,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		[Test]
 		public void TestBvhAlongRay()
 		{
-			// for this shape imagine the 8 corners of a rubics cube and the center
+			// for this shape imagine the 8 corners of a Rubik's cube and the center
 			var data = new List<BvhTreeItemData<int>>();
 			// left, front, bottom
 			data.Add(new BvhTreeItemData<int>(0, new AxisAlignedBoundingBox(0, 0, 0, 1, 1, 1)));
@@ -151,7 +151,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Assert.AreEqual(results.Count(), 3, "Found all items.");
 			Assert.IsTrue(results.Contains(0), "found the left front bottom.");
 			Assert.IsTrue(results.Contains(4), "found the center.");
-			Assert.IsTrue(results.Contains(8), "found the rigth back top.");
+			Assert.IsTrue(results.Contains(8), "found the right back top.");
 
 			results.Clear();
 			var shortRay = new Ray(new Vector3(-.5, -.5, -.5), new Vector3(1, 1, 1).GetNormal())
@@ -166,7 +166,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		[Test]
 		public void TestBvhClosestIntersection()
 		{
-			// for this shape imagine the 8 corners of a rubics cube and the center
+			// for this shape imagine the 8 corners of a Rubik's cube and the center
 			var data = new List<BvhTreeItemData<int>>();
 			// left, front, bottom
 			data.Add(new BvhTreeItemData<int>(0, new AxisAlignedBoundingBox(0, 0, 0, 1, 1, 1)));
@@ -219,7 +219,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		[Test]
 		public void TestBvhTreePointSearches()
 		{
-			// for this shape imagine the 8 corners of a rubics cube and the center
+			// for this shape imagine the 8 corners of a Rubik's cube and the center
 			var data = new List<BvhTreeItemData<int>>();
 			// left, front, bottom
 			data.Add(new BvhTreeItemData<int>(0, new AxisAlignedBoundingBox(0, 0, 0, 0, 0, 0)));

@@ -68,7 +68,7 @@ v5.1.6 (23 May 2013)
   exactly 'delta' units. (This improves the look of mitering 
   with larger limits at acute angles.) 
 * Added: New OffsetPolyLines function
-* Update: Minor code refactoring and optimisations
+* Update: Minor code refactoring and optimizations
 
 v5.1.5 (5 May 2013)
 * Added: ForceSimple property to Clipper class

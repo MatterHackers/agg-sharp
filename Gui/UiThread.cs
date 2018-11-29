@@ -141,7 +141,7 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
-				// Loop over SetInterval functions, queueing for execution if interval period has elapsed
+				// Loop over SetInterval functions, queuing for execution if interval period has elapsed
 				for (int i = intervalActions.Count - 1; i >= 0; i--)
 				{
 					// If the SetInterval action has reach its execution time, push it to the list

@@ -200,7 +200,7 @@ namespace MatterHackers.VectorMath
 		}
 
 		/// <summary>
-		/// AABB defines our unit value for Intersection cost at 1. All othe types
+		/// AABB defines our unit value for Intersection cost at 1. All other types
 		/// should attempt to calculate their cost in CPU relative to this.
 		/// </summary>
 		/// <returns></returns>

@@ -39,7 +39,7 @@ namespace MatterHackers.Csg.Transform
 		{
 			if (objectToAlign == objectToAlignTo)
 			{
-				throw new Exception("You cannot align an object ot itself.");
+				throw new Exception("You cannot align an object to itself.");
 			}
 		}
 

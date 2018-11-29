@@ -65,7 +65,7 @@ namespace Net3dBool
 		bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion);
 
 		/// <summary>
-		/// This method is to be implemented by each element seperately. This is the core
+		/// This method is to be implemented by each element separately. This is the core
 		/// function of each element, to determine the intersection with a ray.
 		/// </summary>
 		/// <param name="ray">the ray that intersects with the element</param>

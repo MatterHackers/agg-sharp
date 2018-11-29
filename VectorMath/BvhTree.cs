@@ -29,7 +29,7 @@ namespace MatterHackers.VectorMath
 	{
 		/// <summary>
 		/// This is the computation cost of doing an intersection with the given type.
-		/// It is relative to the coust of doing a simple BvhTree bounds calculation which is 1.
+		/// It is relative to the cost of doing a simple BvhTree bounds calculation which is 1.
 		/// </summary>
 		/// <returns></returns>
 		double GetIntersectCost();
@@ -259,7 +259,7 @@ namespace MatterHackers.VectorMath
 
 		public void All(List<T> results)
 		{
-			// check all the itmes that are part of this object
+			// check all the items that are part of this object
 			foreach (var item in Items)
 			{
 				results.Add(item.Item);
@@ -273,7 +273,7 @@ namespace MatterHackers.VectorMath
 		{
 			if (ray.Intersection(Aabb))
 			{
-				// check all the itmes that are part of this object
+				// check all the items that are part of this object
 				foreach (var item in Items)
 				{
 					if (item is IIntersectable intersectable)
@@ -316,7 +316,7 @@ namespace MatterHackers.VectorMath
 
 			if (ray.Intersection(Aabb))
 			{
-				// check all the itmes that are part of this object
+				// check all the items that are part of this object
 				foreach (var item in Items)
 				{
 					if (item is IIntersectable intersectable)
@@ -414,7 +414,7 @@ namespace MatterHackers.VectorMath
 		{
 			if (bounds.Intersects(Aabb))
 			{
-				// check all the itmes that are part of this object
+				// check all the items that are part of this object
 				foreach (var item in Items)
 				{
 					if (item.Aabb.Intersects(bounds))
@@ -442,7 +442,7 @@ namespace MatterHackers.VectorMath
 		{
 			if (Aabb.Contains(position))
 			{
-				// check all the itmes that are part of this object
+				// check all the items that are part of this object
 				foreach (var item in Items)
 				{
 					if (item.Aabb.Contains(position))

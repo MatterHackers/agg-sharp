@@ -107,7 +107,7 @@ namespace MatterHackers.Agg.UI
 
 		private void AddGrabControls()
 		{
-			// this is for debuging
+			// this is for debugging
 			var grabCornnerColor = Color.Transparent;// Color.Blue;
 			var grabEdgeColor = Color.Transparent;//Color.Red;
 

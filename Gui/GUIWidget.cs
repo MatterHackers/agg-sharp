@@ -1223,7 +1223,7 @@ namespace MatterHackers.Agg.UI
 		{
 			BoundsChanged?.Invoke(this, e);
 
-			// make sure we call size changed (we are planning to depricate bounds changed at some point)
+			// make sure we call size changed (we are planning to deprecate bounds changed at some point)
 			OnSizeChanged(e);
 		}
 
@@ -1367,7 +1367,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		#region Risizeable
+		#region Resizable
 		private bool _resizable = true;
 
 		public bool Resizable

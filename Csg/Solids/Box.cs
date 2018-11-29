@@ -48,7 +48,7 @@ namespace MatterHackers.Csg.Solids
 		}
 
 		/// <summary>
-		/// Cun along the diagonal of a give edge to the opposite edge.  The edge is chosen by saying
+		/// Cut along the diagonal of a give edge to the opposite edge.  The edge is chosen by saying
 		/// which 2 faces are to be kept solid, and or-ing them together.
 		/// </summary>
 		/// <param name="facesThatShareEdge">The two faces to maintain after the cut, or-ed together with '|'.</param>

@@ -71,7 +71,7 @@ namespace MatterHackers.Agg.VertexSource
 	}
 
 	/// <summary>
-	/// This class is used to strip out the close and first move of multiple pathes
+	/// This class is used to strip out the close and first move of multiple paths
 	/// so they render as a single set of LineTo (s) and internal MoveTo (s)
 	/// </summary>
 	public class JoinPaths : VertexSourceLegacySupport
