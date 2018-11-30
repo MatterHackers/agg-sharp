@@ -292,6 +292,11 @@ namespace MatterHackers.Agg
 			return bytes;
 		}
 
+		public static long GetLongHashCode(this string source)
+		{
+			return ComputeHash(source);
+		}
+
 		public static long ComputeHash(string data)
 		{
 			return ComputeHash(GetBytes(data));
