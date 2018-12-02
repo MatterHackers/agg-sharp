@@ -521,5 +521,32 @@ namespace MatterHackers.PolygonMesh
 				vertexIndex++;
 			}
 		}
+
+		public IEnumerable<IVertex> VerticesAsTriangles()
+		{
+			bool first = true;
+			int vertexIndex = 0;
+			IVertex firstVertex = null;
+			IVertex lastVertex = null;
+			// for now we assume the polygon is- convex and can be rendered as a fan
+			foreach (var vertex in Vertices())
+			{
+				if (first)
+				{
+					firstVertex = vertex;
+					first = false;
+				}
+
+				if (vertexIndex >= 2)
+				{
+					yield return firstVertex;
+					yield return lastVertex;
+					yield return vertex;
+				}
+
+				lastVertex = vertex;
+				vertexIndex++;
+			}
+		}
 	}
 }

@@ -973,6 +973,11 @@ namespace MatterHackers.PolygonMesh
 			return CreateFace(vertexList.ToArray(), createOption);
 		}
 
+		public Face CreateFace(int index0, int index1, int index2, CreateOption createOption = CreateOption.ReuseExisting)
+		{
+			return CreateFace(new IVertex[] { Vertices[index0], Vertices[index1], Vertices[index2] }, createOption);
+		}
+
 		public Face CreateFace(IVertex[] verticesToUse, CreateOption createOption = CreateOption.ReuseExisting)
 		{
 			List<IVertex> nonRepeatingSet = new List<IVertex>(verticesToUse);
