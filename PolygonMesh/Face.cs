@@ -522,7 +522,7 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public IEnumerable<IVertex> VerticesAsTriangles()
+		public IEnumerable<(IVertex v0, IVertex v1, IVertex v2)> VerticesAsTriangles()
 		{
 			bool first = true;
 			int vertexIndex = 0;
@@ -539,9 +539,7 @@ namespace MatterHackers.PolygonMesh
 
 				if (vertexIndex >= 2)
 				{
-					yield return firstVertex;
-					yield return lastVertex;
-					yield return vertex;
+					yield return (firstVertex, lastVertex, vertex);
 				}
 
 				lastVertex = vertex;
