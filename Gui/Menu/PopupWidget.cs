@@ -249,7 +249,7 @@ namespace MatterHackers.Agg.UI
 		private GuiWidget contentWidget;
 		private Direction direction;
 		private bool checkIfNeedScrollBar = true;
-		private HashSet<GuiWidget> hookedParents = new HashSet<GuiWidget>();
+		private HashSet<GuiWidget> monitoredWidgets = new HashSet<GuiWidget>();
 		private PopupWidget popupWidget;
 		private SystemWindow windowToAddTo;
 
@@ -269,10 +269,10 @@ namespace MatterHackers.Agg.UI
 		public void Closed()
 		{
 			// Unbind callbacks on parents for position_changed if we're closing
-			foreach (GuiWidget widget in hookedParents)
+			foreach (GuiWidget widget in monitoredWidgets)
 			{
-				widget.PositionChanged -= widgetRelativeTo_PositionChanged;
-				widget.BoundsChanged -= widgetRelativeTo_PositionChanged;
+				widget.PositionChanged -= recalculatePosition;
+				widget.BoundsChanged -= recalculatePosition;
 			}
 
 			// Long lived originating item must be unregistered
@@ -297,6 +297,12 @@ namespace MatterHackers.Agg.UI
 			windowToAddTo = widgetRelativeTo.Parents<SystemWindow>().FirstOrDefault();
 			windowToAddTo?.AddChild(popupWidget);
 
+			monitoredWidgets.Clear();
+
+			monitoredWidgets.Add(popupWidget);
+			popupWidget.PositionChanged += recalculatePosition;
+			popupWidget.BoundsChanged += recalculatePosition;
+
 			// Iterate until the first SystemWindow is found
 			GuiWidget topParent = widgetRelativeTo.Parent;
 			while (topParent.Parent != null
@@ -304,17 +310,17 @@ namespace MatterHackers.Agg.UI
 			{
 				// Regrettably we don't know who it is that is the window that will actually think it is moving relative to its parent
 				// but we need to know anytime our widgetRelativeTo has been moved by any change, so we hook them all.
-				if (!hookedParents.Contains(topParent))
+				if (!monitoredWidgets.Contains(topParent))
 				{
-					hookedParents.Add(topParent);
-					topParent.PositionChanged += widgetRelativeTo_PositionChanged;
-					topParent.BoundsChanged += widgetRelativeTo_PositionChanged;
+					monitoredWidgets.Add(topParent);
+					topParent.PositionChanged += recalculatePosition;
+					topParent.BoundsChanged += recalculatePosition;
 				}
 
 				topParent = topParent.Parent;
 			}
 
-			widgetRelativeTo_PositionChanged(widgetRelativeTo, null);
+			recalculatePosition(widgetRelativeTo, null);
 			widgetRelativeTo.Closed += widgetRelativeTo_Closed;
 		}
 
@@ -324,7 +330,7 @@ namespace MatterHackers.Agg.UI
 			popupWidget.CloseMenu();
 		}
 
-		private void widgetRelativeTo_PositionChanged(object sender, EventArgs e)
+		private void recalculatePosition(object sender, EventArgs e)
 		{
 			if (widgetRelativeTo != null
 				&& widgetRelativeTo.Parent != null)
