@@ -330,11 +330,15 @@ namespace MatterHackers.Agg.UI
 			popupWidget.CloseMenu();
 		}
 
+		int recursCount = 0;
 		private void recalculatePosition(object sender, EventArgs e)
 		{
-			if (widgetRelativeTo != null
+			if (recursCount == 0
+				&& widgetRelativeTo != null
 				&& widgetRelativeTo.Parent != null)
 			{
+				recursCount++;
+
 				var systemWindowWidth = windowToAddTo.Width;
 
 				Vector2 bottomLeftScreenSpace;
@@ -344,7 +348,7 @@ namespace MatterHackers.Agg.UI
 
 				// Calculate right aligned screen space position (using widgetRelativeTo.parent)
 				var bottomLeftForAlignRight = widgetRelativeTo.Position - new Vector2(popupWidget.Width - widgetRelativeTo.LocalBounds.Width, 0);
-				Vector2 alignRightPosition = widgetRelativeTo.Parent.TransformToScreenSpace( bottomLeftForAlignRight);
+				Vector2 alignRightPosition = widgetRelativeTo.Parent.TransformToScreenSpace(bottomLeftForAlignRight);
 
 				// Conditionally select appropriate left/right position
 				if (alignToRightEdge && alignRightPosition.X >= 0
@@ -405,6 +409,7 @@ namespace MatterHackers.Agg.UI
 					default:
 						throw new NotImplementedException();
 				}
+				recursCount--;
 			}
 		}
 	}
