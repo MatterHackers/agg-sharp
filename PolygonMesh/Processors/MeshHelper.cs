@@ -97,6 +97,64 @@ namespace MatterHackers.PolygonMesh
 			face.ContainingMesh.MarkAsChanged();
 		}
 
+		public static void ToVerticesAndFaces(this Mesh mesh, out double[] v, out int[] f)
+		{
+			mesh.ToVerticesAndFaces(Matrix4X4.Identity, out v, out f);
+		}
+
+		public static void ToVerticesAndFaces(this Mesh mesh, Matrix4X4 matrix, out double[] v, out int[] f)
+		{
+			v = new double[mesh.Vertices.Count * 3];
+			int i = 0;
+			var positionIndex = new Dictionary<(double, double, double), int>();
+			foreach (var vertex in mesh.Vertices)
+			{
+				var key = (vertex.Position.X, vertex.Position.Y, vertex.Position.Z);
+				if (!positionIndex.ContainsKey(key))
+				{
+					positionIndex.Add(key, i);
+					var position = Vector3.Transform(vertex.Position, matrix);
+					v[(i * 3) + 0] = position.X;
+					v[(i * 3) + 1] = position.Y;
+					v[(i * 3) + 2] = position.Z;
+					i++;
+				}
+			}
+
+			var lfa = new List<int>(mesh.Faces.Count * 3);
+			i = 0;
+			foreach (var face in mesh.Faces)
+			{
+				foreach (var vertex in face.VerticesAsTriangles())
+				{
+					lfa.Add(positionIndex[(vertex.v0.Position.X, vertex.v0.Position.Y, vertex.v0.Position.Z)]);
+					lfa.Add(positionIndex[(vertex.v1.Position.X, vertex.v1.Position.Y, vertex.v1.Position.Z)]);
+					lfa.Add(positionIndex[(vertex.v2.Position.X, vertex.v2.Position.Y, vertex.v2.Position.Z)]);
+				}
+			}
+
+			f = lfa.ToArray();
+		}
+
+		public static void Transform(double[] v, Matrix4X4 matrix)
+		{
+			void Transform(ref double X, ref double Y, ref double Z, Matrix4X4 mat)
+			{
+				var x = X * mat.Row0.X + Y * mat.Row1.X + Z * mat.Row2.X + mat.Row3.X;
+				var y = X * mat.Row0.Y + Y * mat.Row1.Y + Z * mat.Row2.Y + mat.Row3.Y;
+				var z = X * mat.Row0.Z + Y * mat.Row1.Z + Z * mat.Row2.Z + mat.Row3.Z;
+
+				X = x;
+				Y = y;
+				Z = z;
+			}
+
+			for (int i = 0; i < v.Length; i += 3)
+			{
+				Transform(ref v[i], ref v[i + 1], ref v[i + 2], matrix);
+			}
+		}
+
 		public static void CopyFaces(this Mesh copyTo, Mesh copyFrom)
 		{
 			foreach (Face face in copyFrom.Faces)
