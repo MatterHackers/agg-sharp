@@ -19,6 +19,7 @@
 using System;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
@@ -253,14 +254,14 @@ namespace MatterHackers.Agg.UI
 			if (AggSystemWindow != null)
 			{
 				AggSystemWindow.LocalBounds = new RectangleDouble(0, 0, ClientSize.Width, ClientSize.Height);
-			}
 
-			// Wait until the control is initialized (and thus WindowState has been set) to ensure we don't wipe out
-			// the persisted data before its loaded
-			if (this.IsInitialized)
-			{
-				// Push the current maximized state into the SystemWindow where it can be used or persisted by Agg applications
-				AggSystemWindow.Maximized = this.WindowState == FormWindowState.Maximized;
+				// Wait until the control is initialized (and thus WindowState has been set) to ensure we don't wipe out
+				// the persisted data before its loaded
+				if (this.IsInitialized)
+				{
+					// Push the current maximized state into the SystemWindow where it can be used or persisted by Agg applications
+					AggSystemWindow.Maximized = this.WindowState == FormWindowState.Maximized;
+				}
 			}
 
 			AggSystemWindow?.Invalidate();
@@ -727,8 +728,10 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			var rootWindow = this.WindowProvider.TopWindow;
-			if ((systemWindow == rootWindow && SingleWindowMode)
+			// Check for RootSystemWindow, close if found
+			string windowTypeName = systemWindow.GetType().Name;
+
+			if ((SingleWindowMode &&  windowTypeName == "RootSystemWindow")
 				|| (MainWindowsFormsWindow != null && systemWindow == MainWindowsFormsWindow.systemWindow && !SingleWindowMode))
 			{
 				// Close the main (first) PlatformWindow if it's being requested and not this instance
@@ -740,6 +743,7 @@ namespace MatterHackers.Agg.UI
 				{
 					MainWindowsFormsWindow.Close();
 				}
+
 				return;
 			}
 
