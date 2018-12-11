@@ -136,25 +136,6 @@ namespace MatterHackers.PolygonMesh
 			f = lfa.ToArray();
 		}
 
-		public static void Transform(double[] v, Matrix4X4 matrix)
-		{
-			void Transform(ref double X, ref double Y, ref double Z, Matrix4X4 mat)
-			{
-				var x = X * mat.Row0.X + Y * mat.Row1.X + Z * mat.Row2.X + mat.Row3.X;
-				var y = X * mat.Row0.Y + Y * mat.Row1.Y + Z * mat.Row2.Y + mat.Row3.Y;
-				var z = X * mat.Row0.Z + Y * mat.Row1.Z + Z * mat.Row2.Z + mat.Row3.Z;
-
-				X = x;
-				Y = y;
-				Z = z;
-			}
-
-			for (int i = 0; i < v.Length; i += 3)
-			{
-				Transform(ref v[i], ref v[i + 1], ref v[i + 2], matrix);
-			}
-		}
-
 		public static void CopyFaces(this Mesh copyTo, Mesh copyFrom)
 		{
 			foreach (Face face in copyFrom.Faces)
