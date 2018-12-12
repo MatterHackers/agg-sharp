@@ -251,20 +251,21 @@ namespace MatterHackers.Agg.UI
 
 		protected override void OnResize(EventArgs e)
 		{
-			if (AggSystemWindow != null)
+			var systemWindow = AggSystemWindow;
+			if (systemWindow != null)
 			{
-				AggSystemWindow.LocalBounds = new RectangleDouble(0, 0, ClientSize.Width, ClientSize.Height);
+				systemWindow.LocalBounds = new RectangleDouble(0, 0, ClientSize.Width, ClientSize.Height);
 
 				// Wait until the control is initialized (and thus WindowState has been set) to ensure we don't wipe out
 				// the persisted data before its loaded
 				if (this.IsInitialized)
 				{
 					// Push the current maximized state into the SystemWindow where it can be used or persisted by Agg applications
-					AggSystemWindow.Maximized = this.WindowState == FormWindowState.Maximized;
+					systemWindow.Maximized = this.WindowState == FormWindowState.Maximized;
 				}
-			}
 
-			AggSystemWindow?.Invalidate();
+				systemWindow.Invalidate();
+			}
 
 			base.OnResize(e);
 		}
