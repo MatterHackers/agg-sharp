@@ -52,13 +52,14 @@ namespace MatterHackers.DataConverters3D
 
 	public enum InvalidateType
 	{
-		Matrix,
 		Color,
-		Material,
 		Content,
-		Mesh,
-		Path,
 		Image,
+		Material,
+		Matrix,
+		Mesh,
+		Name,
+		Path,
 		Properties,
 		Redraw,
 	};
@@ -311,6 +312,11 @@ namespace MatterHackers.DataConverters3D
 
 		[JsonIgnore]
 		bool CanFlatten { get; }
+
+		/// <summary>
+		/// Describes the expanded state in the scene tree view
+		/// </summary>
+		bool Expanded { get; }
 
 		/// <summary>
 		/// Remove the IObject3D from the tree and keep whatever functionality it was adding.

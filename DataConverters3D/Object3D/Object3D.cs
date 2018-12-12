@@ -275,7 +275,19 @@ namespace MatterHackers.DataConverters3D
 
 		public string MeshPath { get; set; }
 
-		public string Name { get; set; }
+		private string _name = "";
+		public string Name
+		{
+			get => _name;
+			set
+			{
+				if(value != _name)
+				{
+					_name = value;
+					Invalidate(new InvalidateArgs(this, InvalidateType.Name, null));
+				}
+			}
+		}
 
 		[JsonIgnore]
 		public virtual bool Persistable { get; set; } = true;
@@ -287,6 +299,8 @@ namespace MatterHackers.DataConverters3D
 
 		[JsonIgnore]
 		internal int RebuildLockCount { get; set; }
+
+		public bool Expanded { get; set; }
 
 		private class Object3DRebuildLock : RebuildLock
 		{
