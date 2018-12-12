@@ -288,6 +288,8 @@ namespace MatterHackers.DataConverters3D
 		[JsonIgnore]
 		internal int RebuildLockCount { get; set; }
 
+		public bool Expanded { get; set; }
+
 		private class Object3DRebuildLock : RebuildLock
 		{
 			public Object3DRebuildLock(IObject3D item)
