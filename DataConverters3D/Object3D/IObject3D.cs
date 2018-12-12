@@ -52,13 +52,14 @@ namespace MatterHackers.DataConverters3D
 
 	public enum InvalidateType
 	{
-		Matrix,
 		Color,
-		Material,
 		Content,
-		Mesh,
-		Path,
 		Image,
+		Material,
+		Matrix,
+		Mesh,
+		Name,
+		Path,
 		Properties,
 		Redraw,
 	};
