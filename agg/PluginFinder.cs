@@ -37,41 +37,9 @@ namespace MatterHackers.Agg
 {
 	public static class PluginFinder
 	{
-		static PluginFinder()
-		{
-#if __ANDROID__
-			LoadAssembliesFromAssets();
-#else
-			LoadAssembliesFromFileSystem();
-#endif
-		}
+		private static Dictionary<Assembly, List<Type>> assemblyAndTypes = new Dictionary<Assembly, List<Type>>();
 
-		private static void LoadAssembliesFromFileSystem()
-		{
-			if (assemblyAndTypes != null)
-			{
-				return;
-			}
-
-			assemblyAndTypes = new Dictionary<Assembly, List<Type>>();
-
-			string searchPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-
-			// Load plugins from all dlls in the startup directory
-			foreach (var file in Directory.GetFiles(searchPath, "*.dll"))
-			{
-				try
-				{
-					LoadTypesFromAssembly(Assembly.LoadFile(file));
-				}
-				catch (Exception ex)
-				{
-					System.Diagnostics.Debug.WriteLine("Error loading assembly: " + ex.Message);
-				}
-			}
-		}
-
-		private static void LoadTypesFromAssembly(Assembly assembly)
+		public static void LoadTypesFromAssembly(Assembly assembly)
 		{
 			var assemblyTypes = new List<Type>();
 
@@ -94,81 +62,6 @@ namespace MatterHackers.Agg
 
 			assemblyAndTypes.Add(assembly, assemblyTypes);
 		}
-
-#if __ANDROID__
-		private static byte[] LoadBytesFromStream(string assetsPath, Android.Content.Res.AssetManager assets)
-		{
-			byte[] bytes;
-			using (var assetStream = assets.Open(assetsPath)){
-				using (var memoryStream = new MemoryStream()){
-					assetStream.CopyTo (memoryStream);
-					bytes = memoryStream.ToArray();
-				}
-			}
-			return bytes;
-		}
-
-		private static void LoadAssembliesFromAssets()
-		{
-			if (assemblyAndTypes != null)
-			{
-				return;
-			}
-
-			assemblyAndTypes = new Dictionary<Assembly, List<Type>>();
-
-			var assets = Android.App.Application.Context.Assets;
-
-			string pluginsDirectory = "StaticData/Plugins";
-
-			var pluginsInAssetsFolder = assets.List(pluginsDirectory);
-
-			var loadedAssemblies = new List<Assembly>();
-
-			// Iterate Android Assets in the StaticData/Plugins directory, loading each applicable assembly
-			foreach (string fileName in pluginsInAssetsFolder)
-			{
-				if (Path.GetExtension(fileName) == ".dll")
-				{
-					try
-					{
-						string assemblyAssetPath = Path.Combine(pluginsDirectory, fileName);
-						Byte[] bytes = LoadBytesFromStream(assemblyAssetPath, assets);
-
-						Assembly assembly;
-#if DEBUG
-						// If symbols exist for the assembly, load both together to support debug breakpoints
-						if (pluginsInAssetsFolder.Contains(fileName + ".mdb"))
-						{
-							byte[] symbolData = LoadBytesFromStream(assemblyAssetPath + ".mdb", assets);
-							assembly = Assembly.Load(bytes, symbolData);
-						}
-						else
-#endif
-						{
-							assembly = Assembly.Load(bytes);
-						}
-
-						if (assembly != null)
-						{
-							loadedAssemblies.Add(assembly);
-						}
-					}
-					catch (Exception ex)
-					{
-						System.Diagnostics.Debug.WriteLine("Error loading assembly: " + ex.Message);
-					}
-				}
-			}
-
-			// After all assemblies are loaded, iterate type data. Iterating before all dependent assemblies are loaded will result in exceptions on assembly.GetTypes()
-			foreach (var assembly in loadedAssemblies)
-			{
-				LoadTypesFromAssembly(assembly);
-			}
-		}
-#endif
-		private static Dictionary<Assembly, List<Type>> assemblyAndTypes;
 
 		public static IEnumerable<Type> FindTypes<T>()
 		{
@@ -206,11 +99,6 @@ namespace MatterHackers.Agg
 			}
 
 			return constructedTypes;
-		}
-
-		public static void Initialize(Assembly assembly)
-		{
-			LoadTypesFromAssembly(assembly);
 		}
 	}
 }
