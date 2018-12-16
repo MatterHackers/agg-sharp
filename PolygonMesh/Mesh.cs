@@ -61,6 +61,50 @@ namespace MatterHackers.PolygonMesh
 		{
 		}
 
+		/// <summary>
+		/// Iitialize with a 3xN vertex array and a 3xM vertex index array
+		/// </summary>
+		/// <param name="v">a Vector3List representing vertices</param>
+		/// <param name="f">a FaceList represeting face vertex indexes</param>
+		public Mesh(Vector3List v, FaceList f)
+		{
+			for (int vertexIndex = 0; vertexIndex < v.Count; vertexIndex++)
+			{
+				this.CreateVertex(v[vertexIndex], CreateOption.CreateNew, SortOption.WillSortLater);
+			}
+
+			for (int faceIndex = 0; faceIndex < f.Count; faceIndex++)
+			{
+				this.CreateFace(f[faceIndex][0],
+					f[faceIndex][1],
+					f[faceIndex][2], CreateOption.CreateNew);
+			}
+		}
+		
+		/// <summary>
+		 /// Iitialize with a 3xN vertex array and a 3xM vertex index array
+		 /// </summary>
+		 /// <param name="v">a 3xN array of doubles representing vertices</param>
+		 /// <param name="f">a 3xM array of ints represeting face vertex indexes</param>
+		public Mesh(double[] v, int[] f)
+		{
+			for (int vertexIndex = 0; vertexIndex < v.Length; vertexIndex++)
+			{
+				this.CreateVertex(v[vertexIndex + 0],
+					v[vertexIndex + 1],
+					v[vertexIndex + 2], CreateOption.CreateNew, SortOption.WillSortLater);
+				vertexIndex += 2;
+			}
+
+			for (int faceIndex = 0; faceIndex < f.Length; faceIndex++)
+			{
+				this.CreateFace(f[faceIndex + 0],
+					f[faceIndex + 1],
+					f[faceIndex + 2], CreateOption.CreateNew);
+				faceIndex += 2;
+			}
+		}
+
 		public event EventHandler Changed;
 
 		public int ChangedCount { get; private set; } = 0;

@@ -97,6 +97,45 @@ namespace MatterHackers.PolygonMesh
 			face.ContainingMesh.MarkAsChanged();
 		}
 
+		public static void ToVerticesAndFaces(this Mesh mesh, out double[] v, out int[] f)
+		{
+			mesh.ToVerticesAndFaces(Matrix4X4.Identity, out v, out f);
+		}
+
+		public static void ToVerticesAndFaces(this Mesh mesh, Matrix4X4 matrix, out double[] v, out int[] f)
+		{
+			v = new double[mesh.Vertices.Count * 3];
+			int i = 0;
+			var positionIndex = new Dictionary<(double, double, double), int>();
+			foreach (var vertex in mesh.Vertices)
+			{
+				var key = (vertex.Position.X, vertex.Position.Y, vertex.Position.Z);
+				if (!positionIndex.ContainsKey(key))
+				{
+					positionIndex.Add(key, i);
+					var position = Vector3.Transform(vertex.Position, matrix);
+					v[(i * 3) + 0] = position.X;
+					v[(i * 3) + 1] = position.Y;
+					v[(i * 3) + 2] = position.Z;
+					i++;
+				}
+			}
+
+			var lfa = new List<int>(mesh.Faces.Count * 3);
+			i = 0;
+			foreach (var face in mesh.Faces)
+			{
+				foreach (var vertex in face.VerticesAsTriangles())
+				{
+					lfa.Add(positionIndex[(vertex.v0.Position.X, vertex.v0.Position.Y, vertex.v0.Position.Z)]);
+					lfa.Add(positionIndex[(vertex.v1.Position.X, vertex.v1.Position.Y, vertex.v1.Position.Z)]);
+					lfa.Add(positionIndex[(vertex.v2.Position.X, vertex.v2.Position.Y, vertex.v2.Position.Z)]);
+				}
+			}
+
+			f = lfa.ToArray();
+		}
+
 		public static void CopyFaces(this Mesh copyTo, Mesh copyFrom)
 		{
 			foreach (Face face in copyFrom.Faces)
