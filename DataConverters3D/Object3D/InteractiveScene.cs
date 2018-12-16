@@ -350,6 +350,30 @@ namespace MatterHackers.DataConverters3D
 			throw new NotImplementedException();
 		}
 
+		public void Undo()
+		{
+			var selectedItem = this.SelectedItem;
+			this.SelectedItem = null;
+			UndoBuffer.Undo();
+			// if the item we had selected is still in the scene, re-select it
+			if (this.Children.Contains(selectedItem))
+			{
+				this.SelectedItem = selectedItem;
+			}
+		}
+
+		public void Redo()
+		{
+			var selectedItem = this.SelectedItem;
+			this.SelectedItem = null;
+			UndoBuffer.Redo();
+			// if the item we had selected is still in the scene, re-select it
+			if (this.Children.Contains(selectedItem))
+			{
+				this.SelectedItem = selectedItem;
+			}
+		}
+
 		#endregion
 
 	}
