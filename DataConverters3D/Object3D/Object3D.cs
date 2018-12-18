@@ -639,35 +639,22 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix)
 		{
-			var totalTransorm = this.Matrix * matrix;
-
 			AxisAlignedBoundingBox totalBounds = AxisAlignedBoundingBox.Empty();
-			// Set the initial bounding box to empty or the bounds of the objects MeshGroup
-			if (this.Mesh != null)
+
+			// This needs to be Descendants because we need to move past the first visible mesh to our owned objects
+			foreach (var child in this.VisibleMeshes())
 			{
-				totalBounds = this.Mesh.GetAxisAlignedBoundingBox(totalTransorm);
-			}
-			else if (Children.Count > 0)
-			{
-				foreach (IObject3D child in Children)
+				var childMesh = child.Mesh;
+				if (childMesh != null)
 				{
-					if (child.Visible)
+					// Add the bounds of each child object
+					var childBounds = childMesh.GetAxisAlignedBoundingBox(child.WorldMatrix(this) * matrix);
+					// Check if the child actually has any bounds
+					if (childBounds.XSize > 0)
 					{
-						// Add the bounds of each child object
-						var childBounds = child.GetAxisAlignedBoundingBox(totalTransorm);
-						// Check if the child actually has any bounds
-						if (childBounds.XSize > 0)
-						{
-							totalBounds += childBounds;
-						}
+						totalBounds += childBounds;
 					}
 				}
-			}
-
-			// Make sure we have some data. Else return 0 bounds.
-			if (totalBounds.minXYZ.X == double.PositiveInfinity)
-			{
-				return AxisAlignedBoundingBox.Zero();
 			}
 
 			return totalBounds;
