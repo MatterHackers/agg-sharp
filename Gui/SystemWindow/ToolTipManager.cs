@@ -89,7 +89,7 @@ namespace MatterHackers.Agg.UI
 
 		public event EventHandler<StringEventArgs> ToolTipShown;
 
-		public string CurrentText { get { return toolTipText; } }
+		public string CurrentText => toolTipText;
 
 		public static bool AllowToolTips { get; set; } = true;
 
