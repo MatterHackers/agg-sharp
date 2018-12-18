@@ -829,21 +829,24 @@ namespace MatterHackers.PolygonMesh
 			edgeToDelete.RemoveFromMeshEdgeLinksOfVertex(edgeToKeep.VertexOnEnd[0]);
 			edgeToDelete.RemoveFromMeshEdgeLinksOfVertex(edgeToKeep.VertexOnEnd[1]);
 
-			// fix any face edges that are referencing the edgeToDelete
-			foreach (FaceEdge attachedFaceEdge in edgeToDelete.firstFaceEdge.RadialNextFaceEdges())
+			if (edgeToDelete.firstFaceEdge != null)
 			{
-				attachedFaceEdge.MeshEdge = edgeToKeep;
-			}
+				// fix any face edges that are referencing the edgeToDelete
+				foreach (FaceEdge attachedFaceEdge in edgeToDelete.firstFaceEdge.RadialNextFaceEdges())
+				{
+					attachedFaceEdge.MeshEdge = edgeToKeep;
+				}
 
-			List<FaceEdge> radialLoopToMove = new List<FaceEdge>();
-			foreach (FaceEdge faceEdge in edgeToDelete.firstFaceEdge.RadialNextFaceEdges())
-			{
-				radialLoopToMove.Add(faceEdge);
-			}
+				List<FaceEdge> radialLoopToMove = new List<FaceEdge>();
+				foreach (FaceEdge faceEdge in edgeToDelete.firstFaceEdge.RadialNextFaceEdges())
+				{
+					radialLoopToMove.Add(faceEdge);
+				}
 
-			foreach (FaceEdge faceEdge in radialLoopToMove)
-			{
-				faceEdge.AddToRadialLoop(edgeToKeep);
+				foreach (FaceEdge faceEdge in radialLoopToMove)
+				{
+					faceEdge.AddToRadialLoop(edgeToKeep);
+				}
 			}
 
 			if (doActualDeletion)
