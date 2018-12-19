@@ -706,31 +706,54 @@ namespace MatterHackers.GuiAutomation
 			double secondsToWait = 5;
 
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out SystemWindow containingWindow, out Point2D offsetHint, secondsToWait, searchRegion);
+
 			if (widgetToClick != null)
 			{
-				MoveMouseToWidget(widgetToClick, containingWindow, offset, offsetHint, origin, out Point2D screenPosition);
-				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
-				WaitforDraw(containingWindow);
-
-				if (isDoubleClick)
-				{
-					Thread.Sleep(150);
-					inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
-					WaitforDraw(containingWindow);
-				}
-
-				Delay(UpDelaySeconds);
-
-				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
-
-				WaitforDraw(containingWindow);
-
-				Delay(0.2);
+				this.ClickWidget(widgetToClick, containingWindow, origin, offset, offsetHint, isDoubleClick);
 
 				return;
 			}
 
 			throw new Exception($"ClickByName Failed: Named GuiWidget not found [{widgetName}]");
+		}
+
+		/// <summary>
+		/// Click the given widget via automation methods
+		/// </summary>
+		/// <param name="widget">The widget to click</param>
+		public void ClickWidget(GuiWidget widget)
+		{
+			var systemWindow = widget.Parents<SystemWindow>().FirstOrDefault();
+			var center = widget.LocalBounds.Center;
+
+			this.ClickWidget(
+				widget,
+				systemWindow,
+				ClickOrigin.Center,
+				Point2D.Zero,
+				new Point2D(center.X, center.Y));
+		}
+
+		private void ClickWidget(GuiWidget widget, SystemWindow containingWindow, ClickOrigin origin, Point2D offset, Point2D offsetHint, bool isDoubleClick = false)
+		{
+			MoveMouseToWidget(widget, containingWindow, offset, offsetHint, origin, out Point2D screenPosition);
+			inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+			WaitforDraw(containingWindow);
+
+			if (isDoubleClick)
+			{
+				Thread.Sleep(150);
+				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+				WaitforDraw(containingWindow);
+			}
+
+			Delay(UpDelaySeconds);
+
+			inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+
+			WaitforDraw(containingWindow);
+
+			Delay(0.2);
 		}
 
 		/// <summary>
