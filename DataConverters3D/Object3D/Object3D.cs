@@ -798,7 +798,15 @@ namespace MatterHackers.DataConverters3D
 				}
 
 				// and replace us with the children
-				undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newChildren));
+				var replaceCommand = new ReplaceCommand(new List<IObject3D> { this }, newChildren);
+				if (undoBuffer != null)
+				{
+					undoBuffer.AddAndDo(replaceCommand);
+				}
+				else
+				{
+					replaceCommand.Do();
+				}
 			}
 
 			Invalidate(new InvalidateArgs(this, InvalidateType.Content, undoBuffer));
