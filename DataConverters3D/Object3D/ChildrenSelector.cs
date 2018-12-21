@@ -36,7 +36,7 @@ using System.Linq;
 
 namespace MatterHackers.DataConverters3D
 {
-	public class ChildrenSelector : List<string>
+	public class SelectedChildren : List<string>
 	{
 		public override string ToString()
 		{

@@ -524,7 +524,7 @@ namespace MatterHackers.DataConverters3D
 			return item.GetType().GetProperties(OwnedPropertiesOnly)
 				.Where((pi) =>
 				{
-					return pi.PropertyType == typeof(ChildrenSelector);
+					return pi.PropertyType == typeof(SelectedChildren);
 				});
 		}
 
@@ -590,11 +590,11 @@ namespace MatterHackers.DataConverters3D
 				// find all ObjecIdListAttributes and update them
 				foreach (var property in GetChildSelectorPropreties(descendant))
 				{
-					var newChildrenSelector = new ChildrenSelector();
+					var newChildrenSelector = new SelectedChildren();
 					bool foundReplacement = false;
 
 					// sync ids
-					foreach (var id in (ChildrenSelector)property.GetGetMethod().Invoke(descendant, null))
+					foreach (var id in (SelectedChildren)property.GetGetMethod().Invoke(descendant, null))
 					{
 						// update old id to new id
 						if (idRemaping.ContainsKey(id))
