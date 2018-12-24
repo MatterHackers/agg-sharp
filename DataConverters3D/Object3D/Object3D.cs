@@ -848,7 +848,6 @@ namespace MatterHackers.DataConverters3D
 					{
 						list.Remove(this);
 						list.AddRange(this.Children);
-						parent.Invalidate(new InvalidateArgs(parent, InvalidateType.Content, null));
 					});
 				}
 			}
