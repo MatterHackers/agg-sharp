@@ -629,12 +629,13 @@ namespace MatterHackers.DataConverters3D
 
 		public override string ToString()
 		{
+			var name = string.IsNullOrEmpty(Name) ? "" : $", '{Name}'";
 			if (Parent != null)
 			{
-				return $"{this.GetType().Name}, ID = {ID}, Parent = {Parent.ID}";
+				return $"{this.GetType().Name}{name}, ID = {ID}, Parent = {Parent.ID}";
 			}
 
-			return $"{this.GetType().Name}, ID = {ID}";
+			return $"{this.GetType().Name}{name}, ID = {ID}";
 		}
 
 		public virtual AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix)
