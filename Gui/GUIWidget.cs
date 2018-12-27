@@ -2378,8 +2378,7 @@ namespace MatterHackers.Agg.UI
 		{
 			GuiWidget prevGUIWidget = this;
 
-			while (prevGUIWidget != null
-				&& !(prevGUIWidget is SystemWindow))
+			while (prevGUIWidget != null)
 			{
 				vectorToTransform += prevGUIWidget.OriginRelativeParent;
 				prevGUIWidget = prevGUIWidget.Parent;
@@ -2390,7 +2389,7 @@ namespace MatterHackers.Agg.UI
 
 		public GuiWidget TopmostParent()
 		{
-			return this.Parents<SystemWindow>().FirstOrDefault() ?? this.Parents<GuiWidget>().Last();
+			return this.Parents<GuiWidget>().Last();
 		}
 
 		public Vector2 TransformFromScreenSpace(Vector2 vectorToTransform)
