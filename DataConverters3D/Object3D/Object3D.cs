@@ -170,6 +170,8 @@ namespace MatterHackers.DataConverters3D
 							UiThread.RunOnIdle(() => localMesh.FaceBspTree = bspTree);
 						});
 					}
+
+					Invalidate(new InvalidateArgs(this, InvalidateType.Redraw, null));
 				}
 			}
 		}
