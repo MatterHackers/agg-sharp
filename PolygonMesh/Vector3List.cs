@@ -36,6 +36,11 @@ namespace MatterHackers.PolygonMesh
 	// we can have a wrapper around arrays or other structures that make them work with this type
 	public class Vector3List : List<Vector3>
 	{
+		public Vector3List()
+		{
+
+		}
+
 		public Vector3List(double[] v)
 		{
 			for (int i = 0; i < v.Length; i += 3)
