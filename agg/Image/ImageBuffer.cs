@@ -481,6 +481,9 @@ namespace MatterHackers.Agg.Image
 			SetUpLookupTables();
 		}
 
+		/// <summary>
+		/// Flip pixels in the Y axis
+		/// </summary>
 		public void FlipY()
 		{
 			byte[] buffer = GetBuffer();
@@ -496,6 +499,42 @@ namespace MatterHackers.Agg.Image
 				}
 			}
 		}
+
+		/// <summary>
+		/// Flip pixels in the X axis
+		/// </summary>
+		public void FlipX()
+		{
+			byte[] buffer = GetBuffer();
+
+			// Iterate each row, swapping pixels in x from outer to midpoint
+			for (int y = 0; y < this.Height; y++)
+			{
+				for (int x = 0; x < this.Width / 2; x++)
+				{
+					int leftOffset = GetBufferOffsetXY(x, y);
+					int rightOffset = GetBufferOffsetXY(this.Width - x - 1, y);
+
+					// Hold
+					byte leftBuffer0 = buffer[leftOffset + 0];
+					byte leftBuffer1 = buffer[leftOffset + 1];
+					byte leftBuffer2 = buffer[leftOffset + 2];
+					byte leftBuffer3 = buffer[leftOffset + 3];
+
+					// Swap
+					buffer[leftOffset + 0] = buffer[rightOffset + 0];
+					buffer[leftOffset + 1] = buffer[rightOffset + 1];
+					buffer[leftOffset + 2] = buffer[rightOffset + 2];
+					buffer[leftOffset + 3] = buffer[rightOffset + 3];
+
+					buffer[rightOffset + 0] = leftBuffer0;
+					buffer[rightOffset + 1] = leftBuffer1;
+					buffer[rightOffset + 2] = leftBuffer2;
+					buffer[rightOffset + 3] = leftBuffer3;
+				}
+			}
+		}
+
 
 		public void SetBuffer(byte[] byteBuffer, int bufferOffset)
 		{
