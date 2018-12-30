@@ -3118,12 +3118,12 @@ namespace MatterHackers.Agg.UI
 			return FindDescendants(widgetName, new List<WidgetAndPosition>(), new RectangleDouble(double.MinValue, double.MinValue, double.MaxValue, double.MaxValue), SearchType.Exact);
 		}
 
-		// allowInvalidItems - automation tests use this function and may need to find disabled or non-visible items to validate their state
-		public virtual List<WidgetAndPosition> FindDescendants(string widgetName, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType, bool allowDisabledOrHidden = true)
+		// allowDisabledOrHidden - automation tests use this function and may need to find disabled or non-visible items to validate their state
+		public virtual List<WidgetAndPosition> FindDescendants(string widgetName, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType searchType, bool allowDisabledOrHidden = true)
 		{
 			bool nameFound = false;
 
-			if (seachType == SearchType.Exact)
+			if (searchType == SearchType.Exact)
 			{
 				if (Name == widgetName)
 				{
@@ -3152,7 +3152,7 @@ namespace MatterHackers.Agg.UI
 			{
 				RectangleDouble touchingBoundsRelChild = touchingBounds;
 				touchingBoundsRelChild.Offset(-child.OriginRelativeParent);
-				child.FindDescendants(widgetName, foundChildren, touchingBoundsRelChild, seachType, allowDisabledOrHidden);
+				child.FindDescendants(widgetName, foundChildren, touchingBoundsRelChild, searchType, allowDisabledOrHidden);
 			}
 
 			return foundChildren;
