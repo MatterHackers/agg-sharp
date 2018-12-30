@@ -3115,27 +3115,42 @@ namespace MatterHackers.Agg.UI
 
 		public List<WidgetAndPosition> FindDescendants(string widgetName)
 		{
-			return FindDescendants(widgetName, new List<WidgetAndPosition>(), new RectangleDouble(double.MinValue, double.MinValue, double.MaxValue, double.MaxValue), SearchType.Exact);
+			return FindDescendants(new string[] { widgetName });
+		}
+
+		public List<WidgetAndPosition> FindDescendants(IEnumerable<string> widgetNames)
+		{
+			return FindDescendants(
+				widgetNames,
+				new List<WidgetAndPosition>(),
+				new RectangleDouble(double.MinValue, double.MinValue, double.MaxValue, double.MaxValue),
+				SearchType.Exact);
 		}
 
 		// allowDisabledOrHidden - automation tests use this function and may need to find disabled or non-visible items to validate their state
-		public virtual List<WidgetAndPosition> FindDescendants(string widgetName, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType searchType, bool allowDisabledOrHidden = true)
+		public virtual List<WidgetAndPosition> FindDescendants(IEnumerable<string> widgetNames, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType searchType, bool allowDisabledOrHidden = true)
 		{
 			bool nameFound = false;
 
-			if (searchType == SearchType.Exact)
+			// Loop over name filters, checking for exact or partial matches
+			foreach (var widgetName in widgetNames)
 			{
-				if (Name == widgetName)
+				if (searchType == SearchType.Exact)
 				{
-					nameFound = true;
+					if (this.Name == widgetName)
+					{
+						nameFound = true;
+						break;
+					}
 				}
-			}
-			else
-			{
-				if (widgetName == ""
-					|| Name.Contains(widgetName))
+				else
 				{
-					nameFound = true;
+					if (widgetName == ""
+						|| this.Name.Contains(widgetName))
+					{
+						nameFound = true;
+						break;
+					}
 				}
 			}
 
@@ -3147,12 +3162,12 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 
-			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
+			var searchChildren = new List<GuiWidget>(Children);
 			foreach (GuiWidget child in searchChildren.Where(child => allowDisabledOrHidden || (child.Visible && child.Enabled)))
 			{
 				RectangleDouble touchingBoundsRelChild = touchingBounds;
 				touchingBoundsRelChild.Offset(-child.OriginRelativeParent);
-				child.FindDescendants(widgetName, foundChildren, touchingBoundsRelChild, searchType, allowDisabledOrHidden);
+				child.FindDescendants(widgetNames, foundChildren, touchingBoundsRelChild, searchType, allowDisabledOrHidden);
 			}
 
 			return foundChildren;
