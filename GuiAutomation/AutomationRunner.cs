@@ -660,8 +660,7 @@ namespace MatterHackers.GuiAutomation
 			{
 				if (searchRegion != null) // only add the widgets that are in the screen region
 				{
-					List<GuiWidget.WidgetAndPosition> namedWidgets = new List<GuiWidget.WidgetAndPosition>();
-					systemWindow.FindNamedChildrenRecursive(widgetName, namedWidgets);
+					var namedWidgets = systemWindow.FindDescendants(widgetName);
 					foreach (GuiWidget.WidgetAndPosition widgetAndPosition in namedWidgets)
 					{
 						if (!onlyVisible
@@ -680,8 +679,7 @@ namespace MatterHackers.GuiAutomation
 				}
 				else // add every named widget found
 				{
-					List<GuiWidget.WidgetAndPosition> namedWidgets = new List<GuiWidget.WidgetAndPosition>();
-					systemWindow.FindNamedChildrenRecursive(widgetName, namedWidgets);
+					var namedWidgets = systemWindow.FindDescendants(widgetName);
 					foreach (GuiWidget.WidgetAndPosition namedWidget in namedWidgets)
 					{
 						if (!onlyVisible
@@ -913,8 +911,7 @@ namespace MatterHackers.GuiAutomation
 			// Ignore SystemWindows with null PlatformWindow members - SystemWindow constructed but not yet shown
 			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.ToArray())
 			{
-				List<GuiWidget.WidgetAndPosition> foundChildren = new List<GuiWidget.WidgetAndPosition>();
-				window.FindNamedChildrenRecursive(widgetName, foundChildren);
+				var foundChildren = window.FindDescendants(widgetName);
 				if (foundChildren.Count > 0)
 				{
 					foreach (GuiWidget.WidgetAndPosition foundChild in foundChildren)

@@ -3113,29 +3113,44 @@ namespace MatterHackers.Agg.UI
 
 		public enum SearchType { Exact, Partial };
 
-		public void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren)
+		public List<WidgetAndPosition> FindDescendants(string widgetName)
 		{
-			FindNamedChildrenRecursive(nameToSearchFor, foundChildren, new RectangleDouble(double.MinValue, double.MinValue, double.MaxValue, double.MaxValue), SearchType.Exact);
+			return FindDescendants(new string[] { widgetName });
 		}
 
-		// allowInvalidItems - automation tests use this function and may need to find disabled or non-visible items to validate their state
-		public virtual void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType, bool allowDisabledOrHidden = true)
+		public List<WidgetAndPosition> FindDescendants(IEnumerable<string> widgetNames)
+		{
+			return FindDescendants(
+				widgetNames,
+				new List<WidgetAndPosition>(),
+				new RectangleDouble(double.MinValue, double.MinValue, double.MaxValue, double.MaxValue),
+				SearchType.Exact);
+		}
+
+		// allowDisabledOrHidden - automation tests use this function and may need to find disabled or non-visible items to validate their state
+		public virtual List<WidgetAndPosition> FindDescendants(IEnumerable<string> widgetNames, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType searchType, bool allowDisabledOrHidden = true)
 		{
 			bool nameFound = false;
 
-			if (seachType == SearchType.Exact)
+			// Loop over name filters, checking for exact or partial matches
+			foreach (var widgetName in widgetNames)
 			{
-				if (Name == nameToSearchFor)
+				if (searchType == SearchType.Exact)
 				{
-					nameFound = true;
+					if (this.Name == widgetName)
+					{
+						nameFound = true;
+						break;
+					}
 				}
-			}
-			else
-			{
-				if (nameToSearchFor == ""
-					|| Name.Contains(nameToSearchFor))
+				else
 				{
-					nameFound = true;
+					if (widgetName == ""
+						|| this.Name.Contains(widgetName))
+					{
+						nameFound = true;
+						break;
+					}
 				}
 			}
 
@@ -3147,26 +3162,29 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 
-			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
+			var searchChildren = new List<GuiWidget>(Children);
 			foreach (GuiWidget child in searchChildren.Where(child => allowDisabledOrHidden || (child.Visible && child.Enabled)))
 			{
 				RectangleDouble touchingBoundsRelChild = touchingBounds;
 				touchingBoundsRelChild.Offset(-child.OriginRelativeParent);
-				child.FindNamedChildrenRecursive(nameToSearchFor, foundChildren, touchingBoundsRelChild, seachType, allowDisabledOrHidden);
+				child.FindDescendants(widgetNames, foundChildren, touchingBoundsRelChild, searchType, allowDisabledOrHidden);
 			}
+
+			return foundChildren;
 		}
 
-		public GuiWidget FindNamedChildRecursive(string nameToSearchFor)
+		public GuiWidget FindDescendant(string nameToSearchFor)
 		{
 			if (Name == nameToSearchFor)
 			{
 				return this;
 			}
 
-			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
+			var searchChildren = new List<GuiWidget>(Children);
+
 			foreach (GuiWidget child in searchChildren)
 			{
-				GuiWidget namedChild = child.FindNamedChildRecursive(nameToSearchFor);
+				GuiWidget namedChild = child.FindDescendant(nameToSearchFor);
 				if (namedChild != null)
 				{
 					return namedChild;
