@@ -168,7 +168,7 @@ namespace MatterHackers.MeshVisualizer
 			base.OnLoad(args);
 		}
 
-		public override void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType, bool allowInvalidItems = true)
+		public override List<WidgetAndPosition> FindDescendants(IEnumerable<string> namesToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType, bool allowInvalidItems = true)
 		{
 			foreach (var child in Scene.Children)
 			{
@@ -180,19 +180,22 @@ namespace MatterHackers.MeshVisualizer
 
 				bool nameFound = false;
 
-				if (seachType == SearchType.Exact)
+				foreach (var nameToSearchFor in namesToSearchFor)
 				{
-					if (object3DName == nameToSearchFor)
+					if (seachType == SearchType.Exact)
 					{
-						nameFound = true;
+						if (object3DName == nameToSearchFor)
+						{
+							nameFound = true;
+						}
 					}
-				}
-				else
-				{
-					if (nameToSearchFor == ""
-						|| object3DName.Contains(nameToSearchFor))
+					else
 					{
-						nameFound = true;
+						if (nameToSearchFor == ""
+							|| object3DName.Contains(nameToSearchFor))
+						{
+							nameFound = true;
+						}
 					}
 				}
 
@@ -218,7 +221,7 @@ namespace MatterHackers.MeshVisualizer
 				}
 			}
 
-			base.FindNamedChildrenRecursive(nameToSearchFor, foundChildren, touchingBounds, seachType, allowInvalidItems);
+			return base.FindDescendants(namesToSearchFor, foundChildren, touchingBounds, seachType, allowInvalidItems);
 		}
 
 		public InteractiveScene Scene { get; } = new InteractiveScene();
@@ -520,7 +523,7 @@ namespace MatterHackers.MeshVisualizer
 			Ray ray = this.World.GetRayForLocalBounds(mouseEvent.Position);
 			IntersectInfo info;
 			if (this.Scene.SelectedItem != null
-				&& !SuppressUiVolumes 
+				&& !SuppressUiVolumes
 				&& FindInteractionVolumeHit(ray, out volumeHitIndex, out info))
 			{
 				MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray, info);
