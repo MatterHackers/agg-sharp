@@ -118,10 +118,10 @@ namespace MatterHackers.Agg.UI.Tests
 
 				testRunner.MoveToByName("ButtonWithToolTip");
 				testRunner.Delay(1.5);
-				GuiWidget toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
+				GuiWidget toolTipWidget = buttonContainer.FindDescendant("ToolTipWidget");
 				Assert.IsTrue(toolTipWidget != null, "Tool tip is showing");
 				testRunner.MoveToByName("right");
-				toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
+				toolTipWidget = buttonContainer.FindDescendant("ToolTipWidget");
 				Assert.IsTrue(toolTipWidget == null, "Tool tip is not showing");
 
 				testRunner.Delay(1);

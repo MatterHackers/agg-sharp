@@ -3113,27 +3113,27 @@ namespace MatterHackers.Agg.UI
 
 		public enum SearchType { Exact, Partial };
 
-		public void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren)
+		public List<WidgetAndPosition> FindDescendants(string widgetName)
 		{
-			FindNamedChildrenRecursive(nameToSearchFor, foundChildren, new RectangleDouble(double.MinValue, double.MinValue, double.MaxValue, double.MaxValue), SearchType.Exact);
+			return FindDescendants(widgetName, new List<WidgetAndPosition>(), new RectangleDouble(double.MinValue, double.MinValue, double.MaxValue, double.MaxValue), SearchType.Exact);
 		}
 
 		// allowInvalidItems - automation tests use this function and may need to find disabled or non-visible items to validate their state
-		public virtual void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType, bool allowDisabledOrHidden = true)
+		public virtual List<WidgetAndPosition> FindDescendants(string widgetName, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType, bool allowDisabledOrHidden = true)
 		{
 			bool nameFound = false;
 
 			if (seachType == SearchType.Exact)
 			{
-				if (Name == nameToSearchFor)
+				if (Name == widgetName)
 				{
 					nameFound = true;
 				}
 			}
 			else
 			{
-				if (nameToSearchFor == ""
-					|| Name.Contains(nameToSearchFor))
+				if (widgetName == ""
+					|| Name.Contains(widgetName))
 				{
 					nameFound = true;
 				}
@@ -3152,21 +3152,24 @@ namespace MatterHackers.Agg.UI
 			{
 				RectangleDouble touchingBoundsRelChild = touchingBounds;
 				touchingBoundsRelChild.Offset(-child.OriginRelativeParent);
-				child.FindNamedChildrenRecursive(nameToSearchFor, foundChildren, touchingBoundsRelChild, seachType, allowDisabledOrHidden);
+				child.FindDescendants(widgetName, foundChildren, touchingBoundsRelChild, seachType, allowDisabledOrHidden);
 			}
+
+			return foundChildren;
 		}
 
-		public GuiWidget FindNamedChildRecursive(string nameToSearchFor)
+		public GuiWidget FindDescendant(string nameToSearchFor)
 		{
 			if (Name == nameToSearchFor)
 			{
 				return this;
 			}
 
-			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
+			var searchChildren = new List<GuiWidget>(Children);
+
 			foreach (GuiWidget child in searchChildren)
 			{
-				GuiWidget namedChild = child.FindNamedChildRecursive(nameToSearchFor);
+				GuiWidget namedChild = child.FindDescendant(nameToSearchFor);
 				if (namedChild != null)
 				{
 					return namedChild;

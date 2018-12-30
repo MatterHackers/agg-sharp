@@ -1337,8 +1337,8 @@ namespace MatterHackers.Agg.Image
 
 			// now figure out the scaling that needs to happen to the source to make our image fit 
 			// the correct icon bounds at the new size
-			var cicle = sourceImage.GetCircleBounds();
-			var bounsd = sourceImage.GetBounds();
+			var circle = sourceImage.GetCircleBounds();
+			var bounds = sourceImage.GetBounds();
 
 			// create the new scaled image
 			var scaledImage = new ImageBuffer(sourceImage);
