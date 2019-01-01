@@ -71,4 +71,18 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 	}
+
+	public static class Vector3ListExtensions
+	{
+		public static AxisAlignedBoundingBox Bounds(this Vector3List vector3List)
+		{
+			var bounds = AxisAlignedBoundingBox.Empty();
+			foreach(var position in vector3List)
+			{
+				bounds.ExpandToInclude(position);
+			}
+
+			return bounds;
+		}
+	}
 }
