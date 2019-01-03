@@ -496,12 +496,12 @@ namespace MatterHackers.DataConverters3D
 			List<Vector3> positions = new List<Vector3>();
 			List<Vector2> uvs = new List<Vector2>();
 
-			foreach (Face face in mesh.Faces)
+			foreach (var face in mesh.Faces)
 			{
 				positions.Clear();
 				bool hasTexture = false;
 
-				foreach (FaceEdge faceEdge in face.FaceEdges())
+				foreach (var faceEdge in face.FaceEdges())
 				{
 					if (mesh.TextureUV.ContainsKey((faceEdge, 0)))
 					{
