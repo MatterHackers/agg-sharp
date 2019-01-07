@@ -57,7 +57,7 @@ namespace MatterHackers.DataConverters3D
 		public static Mesh FileMissingMesh { get; set; }
 
 		public Object3D()
-			: this (null)
+			: this(null)
 		{
 		}
 
@@ -80,11 +80,31 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		private void Children_ItemsModified(object sender, System.EventArgs e)
+		{
+			OnInvalidate(new InvalidateArgs(null, InvalidateType.Content));
+		}
+
 		public string ID { get; set; } = Guid.NewGuid().ToString();
 
 		public string OwnerID { get; set; }
 
-		public SafeList<IObject3D> Children { get; set; }
+		public SafeList<IObject3D> Children
+		{
+			get => _children;
+			set
+			{
+				if(value != _children)
+				{
+					if(_children != null)
+					{
+						_children.ItemsModified -= Children_ItemsModified;
+					}
+					_children = value;
+					_children.ItemsModified += Children_ItemsModified;
+				}
+			}
+		}
 
 		public string TypeName { get; }
 
@@ -182,7 +202,7 @@ namespace MatterHackers.DataConverters3D
 			get => _matrix;
 			set
 			{
-				if(value != _matrix)
+				if (value != _matrix)
 				{
 					_matrix = value;
 					Invalidate(new InvalidateArgs(this, InvalidateType.Matrix, null));
@@ -222,7 +242,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				return this.DescendantsAndSelf().Where((i) =>
 				{
-					if(i is Object3D object3D)
+					if (i is Object3D object3D)
 					{
 						return object3D.RebuildLockCount > 0;
 					}
@@ -283,7 +303,7 @@ namespace MatterHackers.DataConverters3D
 			get => _name;
 			set
 			{
-				if(value != _name)
+				if (value != _name)
 				{
 					_name = value;
 					Invalidate(new InvalidateArgs(this, InvalidateType.Name, null));
@@ -681,6 +701,7 @@ namespace MatterHackers.DataConverters3D
 		// Cache busting on child nodes
 		private long tracedHashCode = long.MinValue;
 		private bool buildingFaceBsp;
+		private SafeList<IObject3D> _children;
 
 		public IPrimitive TraceData()
 		{
@@ -755,7 +776,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				hash = hash * 31 + Matrix.GetLongHashCode();
 
-				if(Mesh != null)
+				if (Mesh != null)
 				{
 					hash = hash * 32 + Mesh.GetLongHashCode();
 				}
