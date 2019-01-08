@@ -191,7 +191,7 @@ namespace MatterHackers.DataConverters3D
 						});
 					}
 
-					Invalidate(new InvalidateArgs(this, InvalidateType.Redraw, null));
+					Invalidate(new InvalidateArgs(this, InvalidateType.OutputType, null));
 				}
 			}
 		}
@@ -524,12 +524,13 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual void OnInvalidate(InvalidateArgs invalidateType)
 		{
-			Invalidated?.Invoke(this, invalidateType);
-
-			if (Parent != null)
-			{
-				Parent.Invalidate(invalidateType);
-			}
+			this.Invalidated?.Invoke(this, invalidateType);
+			this.Parent?.Invalidate(invalidateType);
+		}
+		
+		public virtual Task Rebuild()
+		{
+			return Task.CompletedTask;
 		}
 
 		public void Invalidate(InvalidateArgs invalidateType)
@@ -539,6 +540,7 @@ namespace MatterHackers.DataConverters3D
 				this.OnInvalidate(invalidateType);
 			}
 		}
+
 		public const BindingFlags OwnedPropertiesOnly = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
 		public static IEnumerable<PropertyInfo> GetChildSelectorPropreties(IObject3D item)
