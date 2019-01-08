@@ -40,6 +40,7 @@ using MatterHackers.RayTracer;
 using MatterHackers.Localizations;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 namespace MatterHackers.DataConverters3D
 {
@@ -53,6 +54,11 @@ namespace MatterHackers.DataConverters3D
 		public InteractiveScene()
 		{
 			SourceItem = new Object3D();
+		}
+
+		public virtual Task Rebuild()
+		{
+			return Task.CompletedTask;
 		}
 
 		[JsonIgnore]
