@@ -82,7 +82,7 @@ namespace MatterHackers.DataConverters3D
 
 		private void Children_ItemsModified(object sender, System.EventArgs e)
 		{
-			OnInvalidate(new InvalidateArgs(null, InvalidateType.Content));
+			OnInvalidate(new InvalidateArgs(this, InvalidateType.Content));
 		}
 
 		public string ID { get; set; } = Guid.NewGuid().ToString();
@@ -553,98 +553,99 @@ namespace MatterHackers.DataConverters3D
 		// Deep clone via json serialization
 		public IObject3D Clone()
 		{
-			var rebuildLock = this.RebuilLockAll();
-			var originalParent = this.Parent;
-
-			// Index items by ID
-			// but make sure we don't blow up if we find duplicate ids (had bad data that did this)
-			var allItemsByID = this.DescendantsAndSelf()
-				.GroupBy(p => p.ID, StringComparer.OrdinalIgnoreCase)
-				.ToDictionary(g => g.Key, g => g.First());
-
 			IObject3D clonedItem;
 
-			using (var memoryStream = new MemoryStream())
-			using (var writer = new StreamWriter(memoryStream))
+			using (this.RebuilLockAll())
 			{
-				// Wrap with a temporary container
-				var wrapper = new Object3D();
-				wrapper.Children.Add(this);
+				var originalParent = this.Parent;
 
-				// Push json into stream and reset to start
-				writer.Write(JsonConvert.SerializeObject(wrapper, Formatting.Indented));
-				writer.Flush();
-				memoryStream.Position = 0;
+				// Index items by ID
+				// but make sure we don't blow up if we find duplicate ids (had bad data that did this)
+				var allItemsByID = this.DescendantsAndSelf()
+					.GroupBy(p => p.ID, StringComparer.OrdinalIgnoreCase)
+					.ToDictionary(g => g.Key, g => g.First());
 
-				// Load serialized content
-				var roundTripped = Object3D.Load(memoryStream, ".mcx", CancellationToken.None);
-
-				// Remove temp container
-				clonedItem = roundTripped.Children.First();
-			}
-
-			var cloneLocks = clonedItem.RebuilLockAll();
-			Dictionary<string, string> idRemaping = new Dictionary<string, string>();
-			// Copy mesh instances to cloned tree
-			foreach (var descendant in clonedItem.DescendantsAndSelf())
-			{
-				descendant.SetMeshDirect(allItemsByID[descendant.ID].Mesh);
-
-				// store the original id
-				string originalId = descendant.ID;
-				// update it to a new ID
-				descendant.ID = Guid.NewGuid().ToString();
-				// Now OwnerID must be reprocessed after changing ID to ensure consistency
-				foreach (var child in descendant.DescendantsAndSelf().Where((c) => c.OwnerID == originalId))
+				using (var memoryStream = new MemoryStream())
+				using (var writer = new StreamWriter(memoryStream))
 				{
-					child.OwnerID = descendant.ID;
+					// Wrap with a temporary container
+					var wrapper = new Object3D();
+					wrapper.Children.Add(this);
+
+					// Push json into stream and reset to start
+					writer.Write(JsonConvert.SerializeObject(wrapper, Formatting.Indented));
+					writer.Flush();
+					memoryStream.Position = 0;
+
+					// Load serialized content
+					var roundTripped = Object3D.Load(memoryStream, ".mcx", CancellationToken.None);
+
+					// Remove temp container
+					clonedItem = roundTripped.Children.First();
 				}
 
-				if (!idRemaping.ContainsKey(originalId))
+				using (clonedItem.RebuilLockAll())
 				{
-					idRemaping.Add(originalId, descendant.ID);
-				}
-			}
-
-			// Clean up any child references in the objects
-			foreach (var descendant in clonedItem.DescendantsAndSelf())
-			{
-				// find all ObjecIdListAttributes and update them
-				foreach (var property in GetChildSelectorPropreties(descendant))
-				{
-					var newChildrenSelector = new SelectedChildren();
-					bool foundReplacement = false;
-
-					// sync ids
-					foreach (var id in (SelectedChildren)property.GetGetMethod().Invoke(descendant, null))
+					Dictionary<string, string> idRemaping = new Dictionary<string, string>();
+					// Copy mesh instances to cloned tree
+					foreach (var descendant in clonedItem.DescendantsAndSelf())
 					{
-						// update old id to new id
-						if (idRemaping.ContainsKey(id))
+						descendant.SetMeshDirect(allItemsByID[descendant.ID].Mesh);
+
+						// store the original id
+						string originalId = descendant.ID;
+						// update it to a new ID
+						descendant.ID = Guid.NewGuid().ToString();
+						// Now OwnerID must be reprocessed after changing ID to ensure consistency
+						foreach (var child in descendant.DescendantsAndSelf().Where((c) => c.OwnerID == originalId))
 						{
-							newChildrenSelector.Add(idRemaping[id]);
-							foundReplacement = true;
+							child.OwnerID = descendant.ID;
 						}
-						else
+
+						if (!idRemaping.ContainsKey(originalId))
 						{
-							// this really should never happen
-							newChildrenSelector.Add(id);
+							idRemaping.Add(originalId, descendant.ID);
 						}
 					}
 
-					if (foundReplacement)
+					// Clean up any child references in the objects
+					foreach (var descendant in clonedItem.DescendantsAndSelf())
 					{
-						property.GetSetMethod().Invoke(descendant, new[] { newChildrenSelector });
+						// find all ObjecIdListAttributes and update them
+						foreach (var property in GetChildSelectorPropreties(descendant))
+						{
+							var newChildrenSelector = new SelectedChildren();
+							bool foundReplacement = false;
+
+							// sync ids
+							foreach (var id in (SelectedChildren)property.GetGetMethod().Invoke(descendant, null))
+							{
+								// update old id to new id
+								if (idRemaping.ContainsKey(id))
+								{
+									newChildrenSelector.Add(idRemaping[id]);
+									foundReplacement = true;
+								}
+								else
+								{
+									// this really should never happen
+									newChildrenSelector.Add(id);
+								}
+							}
+
+							if (foundReplacement)
+							{
+								property.GetSetMethod().Invoke(descendant, new[] { newChildrenSelector });
+							}
+						}
 					}
+					// the cloned item does not have a parent
+					clonedItem.Parent = null;
 				}
+
+				// restore the parent
+				this.Parent = originalParent;
 			}
-			// the cloned item does not have a parent
-			clonedItem.Parent = null;
-			cloneLocks.ResumeAll();
-
-			// restore the parent
-			this.Parent = originalParent;
-
-			rebuildLock.ResumeAll();
 
 			return clonedItem;
 		}

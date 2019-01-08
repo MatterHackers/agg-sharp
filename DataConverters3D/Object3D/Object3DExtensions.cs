@@ -397,23 +397,30 @@ namespace MatterHackers.DataConverters3D
 			return lastMaterialIndexFound;
 		}
 
-		public static List<RebuildLock> RebuilLockAll(this IObject3D parent)
+		public class RebuildLocks : IDisposable
 		{
-			var resumeLocks = new List<RebuildLock>();
-			foreach (var item in parent.DescendantsAndSelf())
+			List<RebuildLock> rebuilLocks = new List<RebuildLock>();
+
+			public RebuildLocks(IObject3D parent)
 			{
-				resumeLocks.Add(item.RebuildLock());
+				foreach (var item in parent.DescendantsAndSelf())
+				{
+					rebuilLocks.Add(item.RebuildLock());
+				}
 			}
 
-			return resumeLocks;
+			public void Dispose()
+			{
+				foreach (var rebuildLock in rebuilLocks)
+				{
+					rebuildLock.Dispose();
+				}
+			}
 		}
 
-		public static void ResumeAll(this List<RebuildLock> resumeLocks)
+		public static RebuildLocks RebuilLockAll(this IObject3D parent)
 		{
-			foreach (var resumeLock in resumeLocks)
-			{
-				resumeLock.Dispose();
-			}
+			return new RebuildLocks(parent);
 		}
 
 		public static IEnumerable<IObject3D> DescendantsAndSelf(this IObject3D root)
