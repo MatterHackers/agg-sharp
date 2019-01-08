@@ -33,6 +33,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
@@ -59,9 +60,9 @@ namespace MatterHackers.DataConverters3D
 		Matrix,
 		Mesh,
 		Name,
+		OutputType,
 		Path,
 		Properties,
-		Redraw,
 	};
 
 	[Flags]
@@ -298,6 +299,8 @@ namespace MatterHackers.DataConverters3D
 		/// </summary>
 		/// <returns></returns>
 		IObject3D Clone();
+
+		Task Rebuild();
 
 		/// <summary>
 		/// Mark that this object has changed (and notify its parent)
