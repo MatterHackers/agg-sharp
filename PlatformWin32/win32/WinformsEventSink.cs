@@ -278,14 +278,24 @@ namespace MatterHackers.Agg.UI
 
 		private List<string> GetDroppedFiles(DragEventArgs drgevent)
 		{
-			List<string> droppedFiles = new List<string>();
-			Array droppedItems = ((IDataObject)drgevent.Data).GetData(DataFormats.FileDrop) as Array;
-			if (droppedItems != null)
+			var droppedFiles = new List<string>();
+
+			if (drgevent.Data is IDataObject dataObject)
 			{
-				foreach (object droppedItem in droppedItems)
+				if (dataObject.GetData(DataFormats.FileDrop) is Array droppedItems)
 				{
-					string fileName = Path.GetFullPath((string)droppedItem);
-					droppedFiles.Add(fileName);
+					foreach (var droppedItem in droppedItems)
+					{
+						droppedFiles.Add(Path.GetFullPath((string)droppedItem));
+					}
+				}
+				else if (dataObject.GetData(DataFormats.Html) is string html)
+				{
+					droppedFiles.Add("html:" + html);
+				}
+				else if (dataObject.GetData(DataFormats.Text) is string text)
+				{
+					droppedFiles.Add("text:" + text);
 				}
 			}
 
