@@ -12,41 +12,55 @@ using MatterHackers.VectorMath;
 //-----------------------------------------------------------------------
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace MatterHackers.RayTracer
 {
-	public class TriangleShapeUv : TriangleShape
+	public interface ITriangle
+	{
+		Vector3 GetVertex(int index);
+	}
+
+	public class TriangleShapeUv : TriangleShape, ITriangle
 	{
 		Vector2Float uv0;
 		Vector2Float uv1;
 		Vector2Float uv2;
 
 		public TriangleShapeUv(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2,
-			Vector2 uv0, Vector2 uv1, Vector2 uv2,
+			Vector2Float uv0, Vector2Float uv1, Vector2Float uv2,
 			MaterialAbstract material)
 			: base(vertex0, vertex1, vertex2, material)
 		{
-			this.uv0 = new Vector2Float(uv0);
-			this.uv1 = new Vector2Float(uv1);
-			this.uv2 = new Vector2Float(uv2);
+			this.uv0 = uv0;
+			this.uv1 = uv1;
+			this.uv2 = uv2;
+		}
+
+		public TriangleShapeUv(Vector3Float vertex0, Vector3Float vertex1, Vector3Float vertex2,
+			Vector2Float uv0, Vector2Float uv1, Vector2Float uv2,
+			MaterialAbstract material)
+			: base(vertex0.AsVector3(), vertex1.AsVector3(), vertex2.AsVector3(), material)
+		{
+			this.uv0 = uv0;
+			this.uv1 = uv1;
+			this.uv2 = uv2;
 		}
 
 		public override (double u, double v) GetUv(IntersectInfo info)
 		{
 			Vector3Float normal = Plane.Normal;
-			Vector3Float vecU = new Vector3Float(normal.y, normal.z, -normal.x);
-			Vector3Float vecV = Vector3Float.Cross(vecU, Plane.Normal);
+			Vector3Float vecU = new Vector3Float(normal.Y, normal.Z, -normal.X);
+			Vector3Float vecV = vecU.Cross(Plane.Normal);
 
-			var u = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecU);
-			var v = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecV);
+			var u = new Vector3Float(info.HitPosition).Dot(vecU);
+			var v = new Vector3Float(info.HitPosition).Dot(vecV);
 
 			return (u, v);
 		}
 	}
 
-	public class TriangleShape : BaseShape
+	public class TriangleShape : BaseShape, ITriangle
 	{
 		private readonly static int[] xMapping = new int[] { 1, 0, 0 };
 		private readonly static int[] yMapping = new int[] { 2, 2, 1 };
@@ -55,13 +69,13 @@ namespace MatterHackers.RayTracer
 		Vector3Float aabbMinXYZ = Vector3Float.NegativeInfinity;
 		private RectangleFloat boundsOnMajorAxis = new RectangleFloat(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
 		private Vector3Float center;
-		public int MajorAxis { get; private set; } = 0;
+		public byte MajorAxis { get; private set; } = 0;
 		public PlaneFloat Plane { get; private set; }
 		private Vector3Float[] vertices = new Vector3Float[3];
 
 		public Vector3 GetVertex(int index)
 		{
-			return new Vector3(vertices[index].x, vertices[index].y, vertices[index].z);
+			return new Vector3(vertices[index].X, vertices[index].Y, vertices[index].Z);
 		}
 
 		public override bool Contains(Vector3 position)
@@ -76,10 +90,15 @@ namespace MatterHackers.RayTracer
 			return false;
 		}
 
+		public TriangleShape(Vector3Float vertex0, Vector3Float vertex1, Vector3Float vertex2, MaterialAbstract material)
+			: this(vertex0.AsVector3(), vertex1.AsVector3(), vertex2.AsVector3(), material)
+		{
+		}
+
 		public TriangleShape(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, MaterialAbstract material)
 		{
-			Vector3 planeNormal = Vector3.Cross(vertex1 - vertex0, vertex2 - vertex0).GetNormal();
-			double distanceFromOrigin = Vector3.Dot(vertex0, planeNormal);
+			Vector3 planeNormal = Vector3Ex.Cross(vertex1 - vertex0, vertex2 - vertex0).GetNormal();
+			double distanceFromOrigin = Vector3Ex.Dot(vertex0, planeNormal);
 			Plane = new PlaneFloat(new Vector3Float(planeNormal), (float)distanceFromOrigin);
 			Material = material;
 			vertices[0] = new Vector3Float(vertex0);
@@ -89,7 +108,7 @@ namespace MatterHackers.RayTracer
 			center = new Vector3Float((vertex0 + vertex1 + vertex2) / 3);
 
 			var normalLengths = new [] { Math.Abs(planeNormal.X), Math.Abs(planeNormal.Y), Math.Abs(planeNormal.Z)};
-			MajorAxis = normalLengths.Select((v, i) => new { Axis = i, Value = Math.Abs(v) }).OrderBy(o => o.Value).Last().Axis;
+			MajorAxis = (byte)normalLengths.Select((v, i) => new { Axis = i, Value = Math.Abs(v) }).OrderBy(o => o.Value).Last().Axis;
 
 			for (int i = 0; i < 3; i++)
 			{
@@ -98,6 +117,9 @@ namespace MatterHackers.RayTracer
 				boundsOnMajorAxis.Bottom = Math.Min(vertices[i][yForMajorAxis], boundsOnMajorAxis.Bottom);
 				boundsOnMajorAxis.Top = Math.Max(vertices[i][yForMajorAxis], boundsOnMajorAxis.Top);
 			}
+
+			aabbMinXYZ = vertices[0].ComponentMin(vertices[1]).ComponentMin(vertices[2]);
+			aabbMaxXYZ = vertices[0].ComponentMax(vertices[1]).ComponentMax(vertices[2]);
 		}
 
 		private int xForMajorAxis { get { return xMapping[MajorAxis]; } }
@@ -119,12 +141,6 @@ namespace MatterHackers.RayTracer
 
 		public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
-			if (aabbMinXYZ.x == double.NegativeInfinity)
-			{
-				aabbMinXYZ = Vector3Float.ComponentMin(Vector3Float.ComponentMin(vertices[0], vertices[1]), vertices[2]);
-				aabbMaxXYZ = Vector3Float.ComponentMax(Vector3Float.ComponentMax(vertices[0], vertices[1]), vertices[2]);
-			}
-
 			return new AxisAlignedBoundingBox(new Vector3(aabbMinXYZ), new Vector3(aabbMaxXYZ));
 		}
 
@@ -183,11 +199,11 @@ namespace MatterHackers.RayTracer
 		public override (double u, double v) GetUv(IntersectInfo info)
 		{
 			Vector3Float normal = Plane.Normal;
-			Vector3Float vecU = new Vector3Float(normal.y, normal.z, -normal.x);
-			Vector3Float vecV = Vector3Float.Cross(vecU, Plane.Normal);
+			Vector3Float vecU = new Vector3Float(normal.Y, normal.Z, -normal.X);
+			Vector3Float vecV = vecU.Cross(Plane.Normal);
 
-			var u = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecU);
-			var v = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecV);
+			var u = new Vector3Float(info.HitPosition).Dot(vecU);
+			var v = new Vector3Float(info.HitPosition).Dot(vecV);
 
 			return (u, v);
 		}
@@ -204,7 +220,7 @@ namespace MatterHackers.RayTracer
 			for (int firstIndex = 0; firstIndex < 3; ++firstIndex)
 			{
 				int secondIndex = (firstIndex + 1) % 3;
-				accumulation += new Vector3(Vector3Float.Cross(vertices[firstIndex], vertices[secondIndex]));
+				accumulation += new Vector3(vertices[firstIndex].Cross(vertices[secondIndex]));
 			}
 			accumulation /= 2;
 			return accumulation.Length;

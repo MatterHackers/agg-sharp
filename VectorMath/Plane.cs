@@ -46,8 +46,8 @@ namespace MatterHackers.VectorMath
 
 		public Plane(Vector3 point0, Vector3 point1, Vector3 point2)
 		{
-			this.PlaneNormal = Vector3.Cross((point1 - point0), (point2 - point0)).GetNormal();
-			this.DistanceToPlaneFromOrigin = Vector3.Dot(PlaneNormal, point0);
+			this.PlaneNormal = Vector3Ex.Cross((point1 - point0), (point2 - point0)).GetNormal();
+			this.DistanceToPlaneFromOrigin = Vector3Ex.Dot(PlaneNormal, point0);
 		}
 
 		public override string ToString()
@@ -58,7 +58,7 @@ namespace MatterHackers.VectorMath
 		public Plane(Vector3 planeNormal, Vector3 pointOnPlane)
 		{
 			this.PlaneNormal = planeNormal.GetNormal();
-			this.DistanceToPlaneFromOrigin = Vector3.Dot(planeNormal, pointOnPlane);
+			this.DistanceToPlaneFromOrigin = Vector3Ex.Dot(planeNormal, pointOnPlane);
 		}
 
 		public double this[int index]
@@ -125,7 +125,7 @@ namespace MatterHackers.VectorMath
 
 		public double GetDistanceFromPlane(Vector3 positionToCheck)
 		{
-			double distanceToPosition = Vector3.Dot(PlaneNormal, positionToCheck);
+			double distanceToPosition = Vector3Ex.Dot(PlaneNormal, positionToCheck);
 			return distanceToPosition - DistanceToPlaneFromOrigin;
 		}
 
@@ -188,10 +188,10 @@ namespace MatterHackers.VectorMath
 			double distanceToPlane = inputPlane.DistanceToPlaneFromOrigin;
 
 			Plane outputPlane = new Plane();
-			outputPlane.PlaneNormal = Vector3.TransformVector(planeNormal, matrix).GetNormal();
+			outputPlane.PlaneNormal = Vector3Ex.TransformVector(planeNormal, matrix).GetNormal();
 			Vector3 pointOnPlane = planeNormal * distanceToPlane;
-			Vector3 pointOnTransformedPlane = Vector3.Transform(pointOnPlane, matrix);
-			outputPlane.DistanceToPlaneFromOrigin = Vector3.Dot(outputPlane.PlaneNormal, pointOnTransformedPlane);
+			Vector3 pointOnTransformedPlane = Vector3Ex.Transform(pointOnPlane, matrix);
+			outputPlane.DistanceToPlaneFromOrigin = Vector3Ex.Dot(outputPlane.PlaneNormal, pointOnTransformedPlane);
 
 			return outputPlane;
 		}
@@ -199,7 +199,7 @@ namespace MatterHackers.VectorMath
 		public double GetDistanceToIntersection(Ray ray, out bool inFront)
 		{
 			inFront = false;
-			double normalDotRayDirection = Vector3.Dot(PlaneNormal, ray.directionNormal);
+			double normalDotRayDirection = Vector3Ex.Dot(PlaneNormal, ray.directionNormal);
 			if (normalDotRayDirection < TreatAsZero && normalDotRayDirection > -TreatAsZero) // the ray is parallel to the plane
 			{
 				return double.PositiveInfinity;
@@ -210,18 +210,18 @@ namespace MatterHackers.VectorMath
 				inFront = true;
 			}
 
-			return (DistanceToPlaneFromOrigin - Vector3.Dot(PlaneNormal, ray.origin)) / normalDotRayDirection;
+			return (DistanceToPlaneFromOrigin - Vector3Ex.Dot(PlaneNormal, ray.origin)) / normalDotRayDirection;
 		}
 
 		public double GetDistanceToIntersection(Vector3 pointOnLine, Vector3 lineDirection)
 		{
-			double normalDotRayDirection = Vector3.Dot(PlaneNormal, lineDirection);
+			double normalDotRayDirection = Vector3Ex.Dot(PlaneNormal, lineDirection);
 			if (normalDotRayDirection < TreatAsZero && normalDotRayDirection > -TreatAsZero) // the ray is parallel to the plane
 			{
 				return double.PositiveInfinity;
 			}
 
-			double planeNormalDotPointOnLine = Vector3.Dot(PlaneNormal, pointOnLine);
+			double planeNormalDotPointOnLine = Vector3Ex.Dot(PlaneNormal, pointOnLine);
 			return (DistanceToPlaneFromOrigin - planeNormalDotPointOnLine) / normalDotRayDirection;
 		}
 
@@ -230,7 +230,7 @@ namespace MatterHackers.VectorMath
 			distanceToHit = double.PositiveInfinity;
 			hitFrontOfPlane = false;
 
-			double normalDotRayDirection = Vector3.Dot(PlaneNormal, ray.directionNormal);
+			double normalDotRayDirection = Vector3Ex.Dot(PlaneNormal, ray.directionNormal);
 			if (normalDotRayDirection < TreatAsZero && normalDotRayDirection > -TreatAsZero) // the ray is parallel to the plane
 			{
 				return false;
@@ -241,7 +241,7 @@ namespace MatterHackers.VectorMath
 				hitFrontOfPlane = true;
 			}
 
-			double distanceToRayOriginFromOrigin = Vector3.Dot(PlaneNormal, ray.origin);
+			double distanceToRayOriginFromOrigin = Vector3Ex.Dot(PlaneNormal, ray.origin);
 
 			double distanceToPlaneFromRayOrigin = DistanceToPlaneFromOrigin - distanceToRayOriginFromOrigin;
 
@@ -271,14 +271,14 @@ namespace MatterHackers.VectorMath
 
 		public bool LineHitPlane(Vector3 start, Vector3 end, out Vector3 intersectionPosition)
 		{
-			double distanceToStartFromOrigin = Vector3.Dot(PlaneNormal, start);
+			double distanceToStartFromOrigin = Vector3Ex.Dot(PlaneNormal, start);
 			if (distanceToStartFromOrigin == 0)
 			{
 				intersectionPosition = start;
 				return true;
 			}
 
-			double distanceToEndFromOrigin = Vector3.Dot(PlaneNormal, end);
+			double distanceToEndFromOrigin = Vector3Ex.Dot(PlaneNormal, end);
 			if (distanceToEndFromOrigin == 0)
 			{
 				intersectionPosition = end;

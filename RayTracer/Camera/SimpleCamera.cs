@@ -93,7 +93,7 @@ namespace MatterHackers.RayTracer
 			Vector3 origin = Origin;
 			Vector3 direction = GetDirectionMinus1To1(screenX, screenY);
 
-			direction = Vector3.TransformVector(direction, axisToWorld);
+			direction = Vector3Ex.TransformVector(direction, axisToWorld);
 
 			Ray ray = new Ray(origin, direction);
 			return ray;

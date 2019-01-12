@@ -433,8 +433,8 @@ public class ViewableCylinder
 
 	// Start with the bounding planes
 	if ( IsRightCylinder() ) {
-		double pdotn = Vector3.Dot(viewPos, CenterAxis) - CenterDotAxis;
-		double udotn = Vector3.Dot(viewDir, CenterAxis);
+		double pdotn = Vector3Ex.Dot(viewPos, CenterAxis) - CenterDotAxis;
+		double udotn = Vector3Ex.Dot(viewDir, CenterAxis);
 		if ( pdotn > HalfHeight )
         {
 			if ( udotn>=0.0 )
@@ -474,8 +474,8 @@ public class ViewableCylinder
     {
 		// Has two bounding planes (not right cylinder)
 		// First handle the top plane
-		double pdotnCap = Vector3.Dot(TopNormal, viewPos);
-		double udotnCap = Vector3.Dot(TopNormal, viewDir);
+		double pdotnCap = Vector3Ex.Dot(TopNormal, viewPos);
+		double udotnCap = Vector3Ex.Dot(TopNormal, viewDir);
 		if ( pdotnCap>TopPlaneCoef ) {
 			if ( udotnCap>=0.0 ) {
 				return false;		// Above top plane, pointing up
@@ -491,8 +491,8 @@ public class ViewableCylinder
 			}
 		}
 		// Second, handle the bottom plane
-		pdotnCap = Vector3.Dot(BottomNormal, viewPos);
-		udotnCap = Vector3.Dot(BottomNormal^viewDir);
+		pdotnCap = Vector3Ex.Dot(BottomNormal, viewPos);
+		udotnCap = Vector3Ex.Dot(BottomNormal^viewDir);
 		if ( pdotnCap<BottomPlaneCoef )
         {
 			if ( udotnCap>0.0 )
@@ -536,10 +536,10 @@ public class ViewableCylinder
 	// Now handle the cylinder sides
 	Vector3 v = viewPos;
 	v -= Center;
-	double pdotuA = Vector3.Dot(v, AxisA);
-	double pdotuB = Vector3.Dot(v, AxisB);
-	double udotuA = Vector3.Dot(viewDir, AxisA);
-	double udotuB = Vector3.Dot(viewDir, AxisB);
+	double pdotuA = Vector3Ex.Dot(v, AxisA);
+	double pdotuB = Vector3Ex.Dot(v, AxisB);
+	double udotuA = Vector3Ex.Dot(viewDir, AxisA);
+	double udotuB = Vector3Ex.Dot(viewDir, AxisB);
 
 	double C = pdotuA*pdotuA + pdotuB*pdotuB - 1.0;
 	double B = (pdotuA*udotuA + pdotuB*udotuB);
@@ -670,13 +670,13 @@ public class ViewableCylinder
 		double vCoord;
 		if ( IsRightCylinder() )
         {
-			vCoord = (Vector3.Dot(v, CenterAxis)+HalfHeight)/Height;
+			vCoord = (Vector3Ex.Dot(v, CenterAxis)+HalfHeight)/Height;
 		}
 		else
         {
 			Vector3 hitPos=returnedPoint.GetPosition();
-			double distUp = (TopPlaneCoef - Vector3.Dot(hitPos, TopNormal))/ Vector3.Dot(CenterAxis, TopNormal);
-			double distDown = -(BottomPlaneCoef-Vector3.Dot(hitPos, BottomNormal))/Vector3.Dot(CenterAxis, BottomNormal);
+			double distUp = (TopPlaneCoef - Vector3Ex.Dot(hitPos, TopNormal))/ Vector3Ex.Dot(CenterAxis, TopNormal);
+			double distDown = -(BottomPlaneCoef-Vector3Ex.Dot(hitPos, BottomNormal))/Vector3Ex.Dot(CenterAxis, BottomNormal);
 			if ( distDown+distUp > 0.0 ) {
 				vCoord = distDown/(distDown+distUp);
 			}
@@ -692,12 +692,12 @@ public class ViewableCylinder
 
 void CalcBoundingPlanes(Vector3 u, out double minDot, out double maxDot )
 {
-	double centerDot = Vector3.Dot(u, Center);
-	double AxisCdotU = Vector3.Dot(CenterAxis, u);
+	double centerDot = Vector3Ex.Dot(u, Center);
+	double AxisCdotU = Vector3Ex.Dot(CenterAxis, u);
 	if ( IsRightCylinderFlag )
     {
 		double deltaDot = HalfHeight*Math.Abs(AxisCdotU)
-							+ Math.Sqrt(Square(RadiusA*RadiusA*Vector3.Dot(AxisA,u))+Square(RadiusB*RadiusB*Vector3.Dot(AxisB,u)));
+							+ Math.Sqrt(Square(RadiusA*RadiusA*Vector3Ex.Dot(AxisA,u))+Square(RadiusB*RadiusB*Vector3Ex.Dot(AxisB,u)));
 		minDot = centerDot - deltaDot;
 		maxDot = centerDot + deltaDot;
 		return;
@@ -707,11 +707,11 @@ void CalcBoundingPlanes(Vector3 u, out double minDot, out double maxDot )
 	// Handle top face
 	Vector3 perp = TopNormal;
 	perp *= u;
-	double alpha = Vector3.Dot(perp, AxisA)*RadiusA;
-	double beta = Vector3.Dot(perp, AxisB)*RadiusB;
+	double alpha = Vector3Ex.Dot(perp, AxisA)*RadiusA;
+	double beta = Vector3Ex.Dot(perp, AxisB)*RadiusB;
 	if ( alpha==0.0 && beta==0.0 )
     {	// If u perpendicular to top face
-		maxD = minD = TopPlaneCoef*Vector3.Dot(u,TopNormal);
+		maxD = minD = TopPlaneCoef*Vector3Ex.Dot(u,TopNormal);
 	}
 	else
     {
@@ -724,22 +724,22 @@ void CalcBoundingPlanes(Vector3 u, out double minDot, out double maxDot )
 		trial = Center;
 		trial += AxisA * (solnX*RadiusA);
 		trial += AxisB * (solnY*RadiusB);  // This is what it was. LBB - trial.AddScaled( AxisB, solnY*RadiusB );
-		maxD = minD = Vector3.Dot(trial,u) + (TopPlaneCoef-Vector3.Dot(trial, TopNormal))*AxisCdotU/ Vector3.Dot(CenterAxis, TopNormal);
+		maxD = minD = Vector3Ex.Dot(trial,u) + (TopPlaneCoef-Vector3Ex.Dot(trial, TopNormal))*AxisCdotU/ Vector3Ex.Dot(CenterAxis, TopNormal);
 		trial = Center;
 		trial += AxisA * (-solnX*RadiusA );
 		trial += AxisB * (-solnY*RadiusB );
-		double newDot = Vector3.Dot(trial, u) + (TopPlaneCoef-Vector3.Dot(trial, TopNormal))*AxisCdotU/Vector3.Dot(CenterAxis, TopNormal);
+		double newDot = Vector3Ex.Dot(trial, u) + (TopPlaneCoef-Vector3Ex.Dot(trial, TopNormal))*AxisCdotU/Vector3Ex.Dot(CenterAxis, TopNormal);
 		UpdateMinMax( newDot, minD, maxD );
 	}
 
 	// Handle bottom face
 	perp = BottomNormal;
 	perp *= u;
-	alpha = Vector3.Dot(perp, AxisA)*RadiusA;
-	beta = Vector3.Dot(perp, AxisB)*RadiusB;
+	alpha = Vector3Ex.Dot(perp, AxisA)*RadiusA;
+	beta = Vector3Ex.Dot(perp, AxisB)*RadiusB;
 	if ( alpha==0.0 && beta==0.0 )
     {			// If u perpendicular to bottom face
-		UpdateMinMax( BottomPlaneCoef*Vector3.Dot(u, BottomNormal), minD, maxD );
+		UpdateMinMax( BottomPlaneCoef*Vector3Ex.Dot(u, BottomNormal), minD, maxD );
 	}
 	else
     {
@@ -751,12 +751,12 @@ void CalcBoundingPlanes(Vector3 u, out double minDot, out double maxDot )
 		Vector3 trial = Center;
 		trial += AxisA * ( solnX*RadiusA );
 		trial += AxisB * ( solnY*RadiusB );
-		double newDot = Vector3.Dot(trial, u) + (BottomPlaneCoef-Vector3.Dot(trial, BottomNormal))*AxisCdotU/Vector3.Dot(CenterAxis, BottomNormal);
+		double newDot = Vector3Ex.Dot(trial, u) + (BottomPlaneCoef-Vector3Ex.Dot(trial, BottomNormal))*AxisCdotU/Vector3Ex.Dot(CenterAxis, BottomNormal);
 		UpdateMinMax( newDot, minD, maxD );
 		trial = Center;
 		trial += AxisA * ( -solnX*RadiusA );
 		trial += AxisB * ( -solnY*RadiusB );
-		newDot = Vector3.Dot(trial, u) + (BottomPlaneCoef-Vector3.Dot(trial, BottomNormal))*AxisCdotU/Vector3.Dot(CenterAxis, BottomNormal);
+		newDot = Vector3Ex.Dot(trial, u) + (BottomPlaneCoef-Vector3Ex.Dot(trial, BottomNormal))*AxisCdotU/Vector3Ex.Dot(CenterAxis, BottomNormal);
 		UpdateMinMax( newDot, minD, maxD );
 	}
 
@@ -794,7 +794,7 @@ void SetCenter( Vector3 center )
 {
 	this.Center = center;
 
-	CenterDotAxis = Vector3.Dot(Center, CenterAxis);
+	CenterDotAxis = Vector3Ex.Dot(Center, CenterAxis);
 	if ( IsRightCylinder() )
 {
 		TopPlaneCoef = CenterDotAxis+HalfHeight;

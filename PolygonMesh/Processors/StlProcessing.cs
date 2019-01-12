@@ -51,7 +51,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
 		}
 
-		public static bool Save(Mesh meshToSave, Stream stream, CancellationToken cancellationToken, MeshOutputSettings outputInfo)
+		public static bool Save(Mesh mesh, Stream stream, CancellationToken cancellationToken, MeshOutputSettings outputInfo)
 		{
 			switch (outputInfo.OutputTypeSetting)
 			{
@@ -61,34 +61,22 @@ namespace MatterHackers.PolygonMesh.Processors
 
 						streamWriter.WriteLine("solid Default");
 
-						foreach (Face face in meshToSave.Faces)
+						for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
 						{
-							if(cancellationToken.IsCancellationRequested)
+							if (cancellationToken.IsCancellationRequested)
 							{
 								return false;
 							}
-							List<Vector3> positionsCCW = new List<Vector3>();
-							foreach (FaceEdge faceEdge in face.FaceEdges())
-							{
-								positionsCCW.Add(faceEdge.FirstVertex.Position);
-							}
 
-							int numPolys = positionsCCW.Count - 2;
-							int secondIndex = 1;
-							int thirdIndex = 2;
-							for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
-							{
-								streamWriter.WriteLine("  facet normal " + FormatForStl(face.Normal));
-								streamWriter.WriteLine("    outer loop");
-								streamWriter.WriteLine("      vertex " + FormatForStl(positionsCCW[0]));
-								streamWriter.WriteLine("      vertex " + FormatForStl(positionsCCW[secondIndex]));
-								streamWriter.WriteLine("      vertex " + FormatForStl(positionsCCW[thirdIndex]));
-								streamWriter.WriteLine("    endloop");
-								streamWriter.WriteLine("  endfacet");
+							var face = mesh.Faces[faceIndex];
 
-								secondIndex = thirdIndex;
-								thirdIndex++;
-							}
+							streamWriter.WriteLine("  facet normal " + FormatForStl(mesh.FaceNormals[faceIndex]));
+							streamWriter.WriteLine("    outer loop");
+							streamWriter.WriteLine("      vertex " + FormatForStl(mesh.Vertices[face.v0]));
+							streamWriter.WriteLine("      vertex " + FormatForStl(mesh.Vertices[face.v0]));
+							streamWriter.WriteLine("      vertex " + FormatForStl(mesh.Vertices[face.v0]));
+							streamWriter.WriteLine("    endloop");
+							streamWriter.WriteLine("  endfacet");
 						}
 
 						streamWriter.WriteLine("endsolid Default");
@@ -103,42 +91,27 @@ namespace MatterHackers.PolygonMesh.Processors
 						// 80 bytes of nothing
 						bw.Write(new Byte[80]);
 						// the number of triangles
-						bw.Write(meshToSave.Faces.Count);
+						bw.Write(mesh.Faces.Count);
 						int binaryPolyCount = 0;
-						foreach (Face face in meshToSave.Faces)
+						for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
 						{
 							if (cancellationToken.IsCancellationRequested)
 							{
 								return false;
 							}
 
-							List<Vector3> positionsCCW = new List<Vector3>();
-							foreach (FaceEdge faceEdge in face.FaceEdges())
-							{
-								positionsCCW.Add(faceEdge.FirstVertex.Position);
-							}
+							var face = mesh.Faces[faceIndex];
 
-							int numPolys = positionsCCW.Count - 2;
-							int secondIndex = 1;
-							int thirdIndex = 2;
-							for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
-							{
-								binaryPolyCount++;
-								// save the normal (all 0 so it can compress better)
-								bw.Write((float)0);
-								bw.Write((float)0);
-								bw.Write((float)0);
-								// save the position
-								bw.Write((float)positionsCCW[0].X); bw.Write((float)positionsCCW[0].Y); bw.Write((float)positionsCCW[0].Z);
-								bw.Write((float)positionsCCW[secondIndex].X); bw.Write((float)positionsCCW[secondIndex].Y); bw.Write((float)positionsCCW[secondIndex].Z);
-								bw.Write((float)positionsCCW[thirdIndex].X); bw.Write((float)positionsCCW[thirdIndex].Y); bw.Write((float)positionsCCW[thirdIndex].Z);
+							binaryPolyCount++;
+							// save the normal (all 0 so it can compress better)
+							WriteToBinaryStl(bw, mesh.FaceNormals[faceIndex]);
+							// save the position
+							WriteToBinaryStl(bw, mesh.Vertices[face.v0]);
+							WriteToBinaryStl(bw, mesh.Vertices[face.v1]);
+							WriteToBinaryStl(bw, mesh.Vertices[face.v2]);
 
-								// and the attribute
-								bw.Write((ushort)0);
-
-								secondIndex = thirdIndex;
-								thirdIndex++;
-							}
+							// and the attribute
+							bw.Write((ushort)0);
 						}
 
 						bw.BaseStream.Position = 80;
@@ -149,6 +122,13 @@ namespace MatterHackers.PolygonMesh.Processors
 					break;
 			}
 			return true;
+		}
+
+		private static void WriteToBinaryStl(BinaryWriter bw, Vector3Float p)
+		{
+			bw.Write(p.X);
+			bw.Write(p.Y);
+			bw.Write(p.Z);
 		}
 
 		public static Mesh Load(string fileName, CancellationToken cancellationToken, Action<double, string> reportProgress = null)
@@ -256,6 +236,20 @@ namespace MatterHackers.PolygonMesh.Processors
 			{
 				startOfString = 3;
 			}
+			Dictionary<(double, double, double), int> postionToIndex = new Dictionary<(double, double, double), int>();
+			int GetIndex(Vector3 position)
+			{
+				int index;
+				if(postionToIndex.TryGetValue((position.X, position.Y,position.Z), out index))
+				{
+					return index;
+				}
+
+				var count = meshFromStlFile.Vertices.Count;
+				postionToIndex.Add((position.X, position.Y, position.Z), count);
+				meshFromStlFile.Vertices.Add(position);
+				return count;
+			}
 			string first160BytesOfSTLFile = System.Text.Encoding.UTF8.GetString(first160Bytes, startOfString, first160Bytes.Length - startOfString);
 			if (first160BytesOfSTLFile.StartsWith("solid") && first160BytesOfSTLFile.Contains("facet"))
 			{
@@ -287,10 +281,10 @@ namespace MatterHackers.PolygonMesh.Processors
 								vector2 = Convert(line);
 								if (!Vector3.Collinear(vector0, vector1, vector2))
 								{
-									IVertex vertex1 = meshFromStlFile.CreateVertex(vector0, CreateOption.CreateNew, SortOption.WillSortLater);
-									IVertex vertex2 = meshFromStlFile.CreateVertex(vector1, CreateOption.CreateNew, SortOption.WillSortLater);
-									IVertex vertex3 = meshFromStlFile.CreateVertex(vector2, CreateOption.CreateNew, SortOption.WillSortLater);
-									meshFromStlFile.CreateFace(new IVertex[] { vertex1, vertex2, vertex3 }, CreateOption.CreateNew);
+									int iv0 = GetIndex(vector0);
+									int iv1 = GetIndex(vector1);
+									int iv2 = GetIndex(vector2);
+									meshFromStlFile.Faces.Add((iv0, iv1, iv2));
 								}
 								vectorIndex = 0;
 								break;
@@ -358,10 +352,10 @@ namespace MatterHackers.PolygonMesh.Processors
 
 					if (!Vector3.Collinear(vector[0], vector[1], vector[2]))
 					{
-						IVertex vertex1 = meshFromStlFile.CreateVertex(vector[0], CreateOption.CreateNew, SortOption.WillSortLater);
-						IVertex vertex2 = meshFromStlFile.CreateVertex(vector[1], CreateOption.CreateNew, SortOption.WillSortLater);
-						IVertex vertex3 = meshFromStlFile.CreateVertex(vector[2], CreateOption.CreateNew, SortOption.WillSortLater);
-						meshFromStlFile.CreateFace(new IVertex[] { vertex1, vertex2, vertex3 }, CreateOption.CreateNew);
+						int iv0 = GetIndex(vector[0]);
+						int iv1 = GetIndex(vector[1]);
+						int iv2 = GetIndex(vector[2]);
+						meshFromStlFile.Faces.Add((iv0, iv1, iv2));
 					}
 				}
 			}
@@ -381,6 +375,11 @@ namespace MatterHackers.PolygonMesh.Processors
 		}
 
 		public static string FormatForStl(Vector3 value)
+		{
+			return string.Format("{0:0.000000} {1:0.000000} {2:0.000000}", value.X, value.Y, value.Z);
+		}
+
+		public static string FormatForStl(Vector3Float value)
 		{
 			return string.Format("{0:0.000000} {1:0.000000} {2:0.000000}", value.X, value.Y, value.Z);
 		}

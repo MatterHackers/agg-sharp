@@ -1017,8 +1017,8 @@ namespace MatterHackers.VectorMath
 			// There are lots of examples of look at code on the internet that don't do all these normalizes and also find the position
 			// through several dot products.  The problem with them is that they have a bit of error in that all the vectors aren't normal and need to be.
 			Vector3 z = Vector3.Normalize(eye - target);
-			Vector3 x = Vector3.Normalize(Vector3.Cross(up, z));
-			Vector3 y = Vector3.Normalize(Vector3.Cross(z, x));
+			Vector3 x = Vector3.Normalize(up.Cross(z));
+			Vector3 y = Vector3.Normalize(z.Cross(x));
 
 			Matrix4X4 rot = new Matrix4X4(new Vector4(x.X, y.X, z.X, 0.0),
 										new Vector4(x.Y, y.Y, z.Y, 0.0),

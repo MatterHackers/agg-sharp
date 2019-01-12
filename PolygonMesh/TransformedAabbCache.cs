@@ -51,7 +51,7 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Mesh mesh, AxisAlignedBoundingBox verticesBounds, Matrix4X4 transform)
+		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Mesh mesh, Matrix4X4 transform)
 		{
 			// if we already have the transform with exact bounds than return it
 			if (aabbTransform == transform && cachedAabb != null)
@@ -60,14 +60,14 @@ namespace MatterHackers.PolygonMesh
 				return cachedAabb;
 			}
 
-			IEnumerable<Vector3> positions = mesh.Vertices.Select((v) => v.Position);
+			var positions = mesh.Vertices;
 
 			lock (locker)
 			{
 				var convexHull = mesh.GetConvexHull(true);
-				if(convexHull != null)
+				if (convexHull != null)
 				{
-					positions = convexHull.Vertices.Select((v) => v.Position);
+					positions = convexHull.Vertices;
 				}
 			}
 
@@ -83,7 +83,33 @@ namespace MatterHackers.PolygonMesh
 
 			foreach (var positionIn in vertices)
 			{
-				Vector3 position = Vector3.Transform(positionIn, transform);
+				Vector3 position = Vector3Ex.Transform(positionIn, transform);
+
+				minXYZ.X = Math.Min(minXYZ.X, position.X);
+				minXYZ.Y = Math.Min(minXYZ.Y, position.Y);
+				minXYZ.Z = Math.Min(minXYZ.Z, position.Z);
+
+				maxXYZ.X = Math.Max(maxXYZ.X, position.X);
+				maxXYZ.Y = Math.Max(maxXYZ.Y, position.Y);
+				maxXYZ.Z = Math.Max(maxXYZ.Z, position.Z);
+			}
+
+			lock (locker)
+			{
+				cachedAabb = new AxisAlignedBoundingBox(minXYZ, maxXYZ);
+				aabbTransform = transform;
+			}
+		}
+
+		private void CalculateBounds(IEnumerable<Vector3Float> vertices, Matrix4X4 transform)
+		{
+			// calculate the aabb for the current transform
+			Vector3 minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
+			Vector3 maxXYZ = new Vector3(double.MinValue, double.MinValue, double.MinValue);
+
+			foreach (var positionIn in vertices)
+			{
+				Vector3 position = new Vector3(positionIn).Transform(transform);
 
 				minXYZ.X = Math.Min(minXYZ.X, position.X);
 				minXYZ.Y = Math.Min(minXYZ.Y, position.Y);

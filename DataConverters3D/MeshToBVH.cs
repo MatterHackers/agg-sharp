@@ -34,6 +34,7 @@ using System.Linq;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
+using System;
 
 namespace MatterHackers.DataConverters3D
 {
@@ -49,7 +50,7 @@ namespace MatterHackers.DataConverters3D
 
 		public static IPrimitive Convert(IObject3D rootItem)
 		{
-			List<IPrimitive> renderCollection = new List<IPrimitive>();
+			var tracePrimitives = new List<IPrimitive>();
 
 			foreach (var item in rootItem.VisibleMeshes())
 			{
@@ -65,27 +66,12 @@ namespace MatterHackers.DataConverters3D
 				}
 
 				var worldMatrix = item.WorldMatrix(rootItem);
-				foreach (Face face in item.Mesh.Faces)
-				{
-					if (false)
-					{
-						renderCollection.Add(new MeshFaceTraceable(face, partMaterial, worldMatrix));
-					}
-					else
-					{
-						foreach (var triangle in face.AsTriangles())
-						{
-							renderCollection.Add(new TriangleShape(
-								Vector3.Transform(triangle.p0, worldMatrix),
-								Vector3.Transform(triangle.p1, worldMatrix),
-								Vector3.Transform(triangle.p2, worldMatrix),
-								partMaterial));
-						}
-					}
-				}
+
+				item.Mesh.AddTracePrimitives(partMaterial, worldMatrix, tracePrimitives);
 			}
 
-			return BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
+			// return an empty collection
+			return BoundingVolumeHierarchy.CreateNewHierachy(tracePrimitives);
 		}
 
 		public static IPrimitive Convert(List<IObject3D> renderDatas)
@@ -111,18 +97,19 @@ namespace MatterHackers.DataConverters3D
 			Vector3[] triangle = new Vector3[3];
 			foreach (Mesh mesh in item.VisibleMeshes().Select(i => i.Mesh) )
 			{
-				foreach (Face face in mesh.Faces)
-				{
-					foreach (Vertex vertex in face.Vertices())
-					{
-						triangle[index++] = vertex.Position;
-						if (index == 3)
-						{
-							index = 0;
-							renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], partMaterial));
-						}
-					}
-				}
+				throw new NotImplementedException();
+				//foreach (Face face in mesh.Faces)
+				//{
+				//	foreach (Vertex vertex in face.Vertices())
+				//	{
+				//		triangle[index++] = vertex.Position;
+				//		if (index == 3)
+				//		{
+				//			index = 0;
+				//			renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], partMaterial));
+				//		}
+				//	}
+				//}
 			}
 
 			return BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
@@ -138,20 +125,21 @@ namespace MatterHackers.DataConverters3D
 			Vector3[] triangle = new Vector3[3];
 			//Mesh simpleMesh = Processors.StlProcessing.Load("complex.stl");
 			//Mesh simpleMesh = Processors.StlProcessing.Load("Spider With Base.stl");
-			foreach (Face face in simpleMesh.Faces)
-			{
-				foreach (Vertex vertex in face.Vertices())
-				{
-					triangle[index++] = vertex.Position;
-					if (index == 3)
-					{
-						index = 0;
-						renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], mhBlueStuff));
-					}
-				}
-			}
+			throw new NotImplementedException();
+			//foreach (Face face in simpleMesh.Faces)
+			//{
+			//	foreach (Vertex vertex in face.Vertices())
+			//	{
+			//		triangle[index++] = vertex.Position;
+			//		if (index == 3)
+			//		{
+			//			index = 0;
+			//			renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], mhBlueStuff));
+			//		}
+			//	}
+			//}
 
-			return new UnboundCollection(renderCollection);
+			//return new UnboundCollection(renderCollection);
 		}
 	}
 }

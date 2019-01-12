@@ -252,20 +252,21 @@ namespace MatterHackers.DataConverters3D
 									meshVertexStart.Add(vertexCount);
 									for (int vertexIndex = 0; vertexIndex < mesh.Vertices.Count; vertexIndex++)
 									{
-										IVertex vertex = mesh.Vertices[vertexIndex];
-										outputInfo?.ReportProgress?.Invoke(currentRation + vertexIndex / vertCount * ratioPerMesh * .5, "");
+										throw new NotImplementedException();
+										//IVertex vertex = mesh.Vertices[vertexIndex];
+										//outputInfo?.ReportProgress?.Invoke(currentRation + vertexIndex / vertCount * ratioPerMesh * .5, "");
 
-										Vector3 position = vertex.Position;
-										amfFile.WriteLine(Indent(4) + "<vertex>");
-										{
-											amfFile.WriteLine(Indent(5) + "<coordinates>");
-											amfFile.WriteLine(Indent(6) + "<x>{0}</x>".FormatWith(position.X));
-											amfFile.WriteLine(Indent(6) + "<y>{0}</y>".FormatWith(position.Y));
-											amfFile.WriteLine(Indent(6) + "<z>{0}</z>".FormatWith(position.Z));
-											amfFile.WriteLine(Indent(5) + "</coordinates>");
-										}
-										amfFile.WriteLine(Indent(4) + "</vertex>");
-										vertexCount++;
+										//Vector3 position = vertex.Position;
+										//amfFile.WriteLine(Indent(4) + "<vertex>");
+										//{
+										//	amfFile.WriteLine(Indent(5) + "<coordinates>");
+										//	amfFile.WriteLine(Indent(6) + "<x>{0}</x>".FormatWith(position.X));
+										//	amfFile.WriteLine(Indent(6) + "<y>{0}</y>".FormatWith(position.Y));
+										//	amfFile.WriteLine(Indent(6) + "<z>{0}</z>".FormatWith(position.Z));
+										//	amfFile.WriteLine(Indent(5) + "</coordinates>");
+										//}
+										//amfFile.WriteLine(Indent(4) + "</vertex>");
+										//vertexCount++;
 									}
 									currentRation += ratioPerMesh * .5;
 								}
@@ -283,27 +284,28 @@ namespace MatterHackers.DataConverters3D
 								{
 									outputInfo?.ReportProgress?.Invoke(currentRation + faceIndex / faceCount * ratioPerMesh * .5, "");
 
-									Face face = mesh.Faces[faceIndex];
-									List<IVertex> positionsCCW = new List<IVertex>();
-									foreach (FaceEdge faceEdge in face.FaceEdges())
-									{
-										positionsCCW.Add(faceEdge.FirstVertex);
-									}
+									throw new NotImplementedException();
+									//Face face = mesh.Faces[faceIndex];
+									//List<IVertex> positionsCCW = new List<IVertex>();
+									//foreach (FaceEdge faceEdge in face.FaceEdges())
+									//{
+									//	positionsCCW.Add(faceEdge.FirstVertex);
+									//}
 
-									int numPolys = positionsCCW.Count - 2;
-									int secondIndex = 1;
-									int thirdIndex = 2;
-									for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
-									{
-										amfFile.WriteLine(Indent(4) + "<triangle>");
-										amfFile.WriteLine(Indent(5) + "<v1>{0}</v1>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[0])));
-										amfFile.WriteLine(Indent(5) + "<v2>{0}</v2>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[secondIndex])));
-										amfFile.WriteLine(Indent(5) + "<v3>{0}</v3>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[thirdIndex])));
-										amfFile.WriteLine(Indent(4) + "</triangle>");
+									//int numPolys = positionsCCW.Count - 2;
+									//int secondIndex = 1;
+									//int thirdIndex = 2;
+									//for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
+									//{
+									//	amfFile.WriteLine(Indent(4) + "<triangle>");
+									//	amfFile.WriteLine(Indent(5) + "<v1>{0}</v1>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[0])));
+									//	amfFile.WriteLine(Indent(5) + "<v2>{0}</v2>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[secondIndex])));
+									//	amfFile.WriteLine(Indent(5) + "<v3>{0}</v3>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[thirdIndex])));
+									//	amfFile.WriteLine(Indent(4) + "</triangle>");
 
-										secondIndex = thirdIndex;
-										thirdIndex++;
-									}
+									//	secondIndex = thirdIndex;
+									//	thirdIndex++;
+									//}
 								}
 
 								currentRation += ratioPerMesh * .5;
@@ -460,13 +462,7 @@ namespace MatterHackers.DataConverters3D
 						&& vertices[indices[1]] != vertices[indices[2]]
 						&& vertices[indices[2]] != vertices[indices[0]])
 					{
-						var triangle = new IVertex[]
-						{
-							mesh.CreateVertex(vertices[indices[0]], CreateOption.CreateNew, SortOption.WillSortLater),
-							mesh.CreateVertex(vertices[indices[1]], CreateOption.CreateNew, SortOption.WillSortLater),
-							mesh.CreateVertex(vertices[indices[2]], CreateOption.CreateNew, SortOption.WillSortLater),
-						};
-						mesh.CreateFace(triangle, CreateOption.CreateNew);
+						mesh.CreateFace(new Vector3[] { vertices[indices[0]], vertices[indices[1]], vertices[indices[2]] });
 					}
 
 					progressData.ReportProgress0To50();

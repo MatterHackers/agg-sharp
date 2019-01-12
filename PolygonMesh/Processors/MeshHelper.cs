@@ -47,30 +47,30 @@ namespace MatterHackers.PolygonMesh
 		{
 			Vector3 scale = new Vector3(scaleIn * .5); // the plane is -1 to 1 and we want it to be -.5 to .5 so it is a unit cube.
 			Mesh plane = new Mesh();
-			IVertex[] verts = new Vertex[8];
-			verts[0] = plane.CreateVertex(new Vector3(-1, -1, 0) * scale);
-			verts[1] = plane.CreateVertex(new Vector3(1, -1, 0) * scale);
-			verts[2] = plane.CreateVertex(new Vector3(1, 1, 0) * scale);
-			verts[3] = plane.CreateVertex(new Vector3(-1, 1, 0) * scale);
+			plane.Vertices.Add(new Vector3(-1, -1, 0) * scale);
+			plane.Vertices.Add(new Vector3(1, -1, 0) * scale);
+			plane.Vertices.Add(new Vector3(1, 1, 0) * scale);
+			plane.Vertices.Add(new Vector3(-1, 1, 0) * scale);
 
 			// front
-			plane.CreateFace(new IVertex[] { verts[0], verts[1], verts[2], verts[3] });
+			plane.Faces.Add(( 0, 1, 2 ));
+			plane.Faces.Add(( 0, 2, 3 ));
 
 			return plane;
 		}
 
-		public static Matrix4X4 GetMaxFaceProjection(Face face, ImageBuffer textureToUse, Matrix4X4? initialTransform = null)
+		public static Matrix4X4 GetMaxFaceProjection(this Mesh mesh, int faceIndex, ImageBuffer textureToUse, Matrix4X4? initialTransform = null)
 		{
-			// If not set than make it identity
+			//// If not set than make it identity
 			var firstTransform = initialTransform == null ? Matrix4X4.Identity : (Matrix4X4)initialTransform;
 
-			var textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(face.Normal, Vector3.UnitZ));
+			var textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(mesh.FaceNormals[faceIndex].AsVector3(), Vector3.UnitZ));
 
 			var bounds = RectangleDouble.ZeroIntersection;
-			foreach (FaceEdge faceEdge in face.FaceEdges())
+			foreach (int vertexIndex in new int[] { mesh.Faces[faceIndex].v0, mesh.Faces[faceIndex].v1, mesh.Faces[faceIndex].v2 })
 			{
-				var edgeStartPosition = faceEdge.FirstVertex.Position;
-				var textureUv = Vector3.Transform(edgeStartPosition, textureCoordinateMapping);
+				var edgeStartPosition = mesh.Vertices[vertexIndex];
+				var textureUv = edgeStartPosition.Transform(textureCoordinateMapping);
 				bounds.ExpandToInclude(new Vector2(textureUv));
 			}
 			var centering = Matrix4X4.CreateTranslation(new Vector3(-bounds.Left, -bounds.Bottom, 0));
@@ -79,97 +79,64 @@ namespace MatterHackers.PolygonMesh
 			return textureCoordinateMapping * firstTransform * centering * scaling;
 		}
 
-		public static void PlaceTextureOnFace(this Face face, ImageBuffer textureToUse)
+		public static void PlaceTextureOnFace(this Mesh mesh, int face, ImageBuffer textureToUse)
 		{
-			// planer project along the normal of this face
-			PlaceTextureOnFace(face, textureToUse, GetMaxFaceProjection(face, textureToUse));
+			//// planer project along the normal of this face
+			mesh.PlaceTextureOnFace(face, textureToUse, mesh.GetMaxFaceProjection(face, textureToUse));
 		}
 
-		public static void PlaceTextureOnFace(this Face face, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
+		public static void PlaceTextureOnFace(this Mesh mesh, int face, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
 		{
-			face.SetTexture(0, textureToUse);
-			foreach (FaceEdge faceEdge in face.FaceEdges())
+			var uvs = new Vector2Float[3];
+			int uvIndex = 0;
+			foreach (int vertexIndex in new int[] { mesh.Faces[face].v0, mesh.Faces[face].v1, mesh.Faces[face].v2 })
 			{
-				Vector3 edgeStartPosition = faceEdge.FirstVertex.Position;
-				Vector3 textureUv = Vector3.Transform(edgeStartPosition, textureCoordinateMapping);
-				faceEdge.SetUv(0, new Vector2(textureUv));
-			}
-			face.ContainingMesh.MarkAsChanged();
-		}
-
-		public static void ToVerticesAndFaces(this Mesh mesh, out double[] v, out int[] f)
-		{
-			mesh.ToVerticesAndFaces(Matrix4X4.Identity, out v, out f);
-		}
-
-		public static void ToVerticesAndFaces(this Mesh mesh, Matrix4X4 matrix, out double[] v, out int[] f)
-		{
-			v = new double[mesh.Vertices.Count * 3];
-			int i = 0;
-			var positionIndex = new Dictionary<(double, double, double), int>();
-			foreach (var vertex in mesh.Vertices)
-			{
-				var key = (vertex.Position.X, vertex.Position.Y, vertex.Position.Z);
-				if (!positionIndex.ContainsKey(key))
-				{
-					positionIndex.Add(key, i);
-					var position = Vector3.Transform(vertex.Position, matrix);
-					v[(i * 3) + 0] = position.X;
-					v[(i * 3) + 1] = position.Y;
-					v[(i * 3) + 2] = position.Z;
-					i++;
-				}
+				var edgeStartPosition = mesh.Vertices[vertexIndex];
+				var textureUv = edgeStartPosition.Transform(textureCoordinateMapping);
+				uvs[uvIndex++] = new Vector2Float(textureUv);
 			}
 
-			var lfa = new List<int>(mesh.Faces.Count * 3);
-			i = 0;
-			foreach (var face in mesh.Faces)
-			{
-				foreach (var vertex in face.VerticesAsTriangles())
-				{
-					lfa.Add(positionIndex[(vertex.v0.Position.X, vertex.v0.Position.Y, vertex.v0.Position.Z)]);
-					lfa.Add(positionIndex[(vertex.v1.Position.X, vertex.v1.Position.Y, vertex.v1.Position.Z)]);
-					lfa.Add(positionIndex[(vertex.v2.Position.X, vertex.v2.Position.Y, vertex.v2.Position.Z)]);
-				}
-			}
-
-			f = lfa.ToArray();
+			mesh.FaceTextures.Add(face, new FaceTextureData(textureToUse, uvs[0], uvs[1], uvs[2]));
+			mesh.MarkAsChanged();
 		}
 
 		public static void CopyFaces(this Mesh copyTo, Mesh copyFrom)
 		{
-			foreach (Face face in copyFrom.Faces)
-			{
-				List<IVertex> faceVertices = new List<IVertex>();
-				foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
-				{
-					// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
-					IVertex newVertex = copyTo.CreateVertex(faceEdgeToAdd.FirstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
-					faceVertices.Add(newVertex);
-				}
+			throw new NotImplementedException();
+			//foreach (Face face in copyFrom.Faces)
+			//{
+			//	List<IVertex> faceVertices = new List<IVertex>();
+			//	foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
+			//	{
+			//		// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
+			//		IVertex newVertex = copyTo.CreateVertex(faceEdgeToAdd.FirstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
+			//		faceVertices.Add(newVertex);
+			//	}
 
-				// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
-				copyTo.CreateFace(faceVertices.ToArray(), CreateOption.CreateNew);
-			}
+			//	// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
+			//	copyTo.CreateFace(faceVertices.ToArray(), CreateOption.CreateNew);
+			//}
 		}
 
 		public static void RemoveTexture(this Mesh mesh, ImageBuffer texture, int index)
 		{
-			foreach (var face in mesh.Faces)
-			{
-				face.RemoveTexture(texture, index);
-			}
+			throw new NotImplementedException();
+			//foreach (var face in mesh.Faces)
+			//{
+			//	face.RemoveTexture(texture, index);
+			//}
 
-			mesh.MarkAsChanged();
+			//mesh.MarkAsChanged();
 		}
 
-		public static void RemoveTexture(this Face face, ImageBuffer texture, int index)
+		public static void RemoveTexture(this Mesh mesh, int face, ImageBuffer texture, int index)
 		{
-			face.ContainingMesh.FaceTexture.Remove((face, index));
-			foreach (FaceEdge faceEdge in face.FaceEdges())
-			{
-				face.ContainingMesh.TextureUV.Remove((faceEdge, index));
-			}
+			throw new NotImplementedException();
+			//face.ContainingMesh.FaceTexture.Remove((face, index));
+			//foreach (FaceEdge faceEdge in face.FaceEdges())
+			//{
+			//	face.ContainingMesh.TextureUV.Remove((faceEdge, index));
+			//}
 		}
 
 		/// <summary>
@@ -178,46 +145,50 @@ namespace MatterHackers.PolygonMesh
 		/// </summary>
 		/// <param name="mesh"></param>
 		/// <returns></returns>
-		public static IEnumerable<(Face face, double distanceFromOrigin)> FacePlanes(this Mesh mesh)
+		public static IEnumerable<(int face, double distanceFromOrigin)> FacePlanes(this Mesh mesh)
 		{
-			foreach(var face in mesh.Faces)
-			{
-				yield return (face, Vector3.Dot(face.Normal, face.firstFaceEdge.FirstVertex.Position));
-			}
+			throw new NotImplementedException();
+			//foreach(var face in mesh.Faces)
+			//{
+			//	yield return (face, Vector3Ex.Dot(face.Normal, face.firstFaceEdge.FirstVertex.Position));
+			//}
 		}
 
-		public static IEnumerable<(Face face, double distanceFromOrign)> GetPlanerFaces(this Mesh mesh, Vector3 normal, double distanceFromOrigin, double normalTolerance = 0, double distanceTolerance = 0)
+		public static IEnumerable<(int face, double distanceFromOrign)> GetPlanerFaces(this Mesh mesh, Vector3 normal, double distanceFromOrigin, double normalTolerance = 0, double distanceTolerance = 0)
 		{
-			var normalToleranceSquared = normalTolerance * normalTolerance;
-			foreach (var facePlane in mesh.FacePlanes())
-			{
-				if (Math.Abs(facePlane.distanceFromOrigin - distanceFromOrigin) <= distanceTolerance
-					&& (facePlane.face.Normal - normal).LengthSquared <= normalToleranceSquared)
-				{
-					yield return facePlane;
-				}
-			}
+			throw new NotImplementedException();
+			//var normalToleranceSquared = normalTolerance * normalTolerance;
+			//foreach (var facePlane in mesh.FacePlanes())
+			//{
+			//	if (Math.Abs(facePlane.distanceFromOrigin - distanceFromOrigin) <= distanceTolerance
+			//		&& (facePlane.face.Normal - normal).LengthSquared <= normalToleranceSquared)
+			//	{
+			//		yield return facePlane;
+			//	}
+			//}
 		}
 
 		public static void PlaceTexture(this Mesh mesh, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
 		{
-			foreach (var face in mesh.Faces)
-			{
-				face.PlaceTextureOnFace(textureToUse, textureCoordinateMapping);
-			}
+			throw new NotImplementedException();
+			//foreach (var face in mesh.Faces)
+			//{
+			//	face.PlaceTextureOnFace(textureToUse, textureCoordinateMapping);
+			//}
 
-			mesh.MarkAsChanged();
+			//mesh.MarkAsChanged();
 		}
 
 		public static Mesh TexturedPlane(ImageBuffer textureToUse, double xScale = 1, double yScale = 1)
 		{
-			Mesh texturedPlane = MeshHelper.CreatePlane(xScale, yScale);
-			{
-				Face face = texturedPlane.Faces[0];
-				PlaceTextureOnFace(face, textureToUse);
-			}
+			throw new NotImplementedException();
+			//Mesh texturedPlane = MeshHelper.CreatePlane(xScale, yScale);
+			//{
+			//	Face face = texturedPlane.Faces[0];
+			//	PlaceTextureOnFace(face, textureToUse);
+			//}
 
-			return texturedPlane;
+			//return texturedPlane;
 		}
 
 		/// <summary>
@@ -226,29 +197,30 @@ namespace MatterHackers.PolygonMesh
 		/// <param name="mesh"></param>
 		public static void RepairTJunctions(this Mesh mesh)
 		{
-			var nonManifoldEdges = mesh.GetNonManifoldEdges();
-
-			foreach(MeshEdge edge in nonManifoldEdges)
-			{
-				IVertex start = edge.VertexOnEnd[0];
-				IVertex end = edge.VertexOnEnd[1];
-				Vector3 normal = (end.Position - start.Position).GetNormal();
-
-				// Get all the vertices that lay on this edge
-				foreach (var vertex in mesh.Vertices)
-				{
-					// test if it falls on the edge
-					// split the edge at them
-					IVertex createdVertex;
-					MeshEdge createdMeshEdge;
-					mesh.SplitMeshEdge(edge, out createdVertex, out createdMeshEdge);
-					createdVertex.Position = vertex.Position;
-					createdVertex.Normal = vertex.Normal;
-					mesh.MergeVertices(vertex, createdVertex);
-				}
-			}
-
 			throw new NotImplementedException();
+			//var nonManifoldEdges = mesh.GetNonManifoldEdges();
+
+			//foreach(MeshEdge edge in nonManifoldEdges)
+			//{
+			//	IVertex start = edge.VertexOnEnd[0];
+			//	IVertex end = edge.VertexOnEnd[1];
+			//	Vector3 normal = (end.Position - start.Position).GetNormal();
+
+			//	// Get all the vertices that lay on this edge
+			//	foreach (var vertex in mesh.Vertices)
+			//	{
+			//		// test if it falls on the edge
+			//		// split the edge at them
+			//		IVertex createdVertex;
+			//		MeshEdge createdMeshEdge;
+			//		mesh.SplitMeshEdge(edge, out createdVertex, out createdMeshEdge);
+			//		createdVertex.Position = vertex.Position;
+			//		createdVertex.Normal = vertex.Normal;
+			//		mesh.MergeVertices(vertex, createdVertex);
+			//	}
+			//}
+
+			//throw new NotImplementedException();
 
 			// and merge the mesh edges that are now manifold
 			//mesh.MergeMeshEdges(CancellationToken.None);
@@ -256,12 +228,13 @@ namespace MatterHackers.PolygonMesh
 
 		public static bool IsManifold(this Mesh mesh)
 		{
-			var nonManifoldEdges = mesh.GetNonManifoldEdges();
+			throw new NotImplementedException();
+			//var nonManifoldEdges = mesh.GetNonManifoldEdges();
 
-			if(nonManifoldEdges.Count == 0)
-			{
-				return true;
-			}
+			//if(nonManifoldEdges.Count == 0)
+			//{
+			//	return true;
+			//}
 
 			// Every non-manifold edge must have matching non-manifold edge(s) that it lines up with.
 			// If this is true the model is still functionally manifold.

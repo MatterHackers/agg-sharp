@@ -215,7 +215,7 @@ namespace MatterHackers.RayTracer
 
 				if (RenderDiffuse)
 				{
-					double L = Vector3.Dot(directiorFromHitToLightNormalized, info.normalAtHit);
+					double L = Vector3Ex.Dot(directiorFromHitToLightNormalized, info.normalAtHit);
 					if (L > 0.0f)
 					{
 						color += infoColorAtHit * light.Illumination() * L;
@@ -276,7 +276,7 @@ namespace MatterHackers.RayTracer
 					shadowRay.isShadowRay = true;
 
 					// if the normal at the closest hit is away from the shadow it is already it it's own shadow.
-					if (Vector3.Dot(info.normalAtHit, directiorFromHitToLightNormalized) < 0)
+					if (Vector3Ex.Dot(info.normalAtHit, directiorFromHitToLightNormalized) < 0)
 					{
 						shadow.hitType = IntersectionType.FrontFace;
 						color *= 0.5;// +0.5 * Math.Pow(shadow.closestHit.Material.Transparency, 0.5); // Math.Pow(.5, shadow.HitCount);
@@ -306,7 +306,7 @@ namespace MatterHackers.RayTracer
 					Vector3 H = (E - Lv).GetNormal();
 
 					double Glossweight = 0.0;
-					Glossweight = Math.Pow(Math.Max(Vector3.Dot(info.normalAtHit, H), 0), shininess);
+					Glossweight = Math.Pow(Math.Max(Vector3Ex.Dot(info.normalAtHit, H), 0), shininess);
 					color += light.Illumination() * (Glossweight);
 				}
 			}
@@ -539,7 +539,7 @@ namespace MatterHackers.RayTracer
 
 		private Ray GetReflectionRay(Vector3 P, Vector3 N, Vector3 V)
 		{
-			double c1 = -Vector3.Dot(N, V);
+			double c1 = -Vector3Ex.Dot(N, V);
 			Vector3 Rl = V + (N * 2 * c1);
 			return new Ray(P, Rl, Ray.sameSurfaceOffset, double.MaxValue);
 		}
@@ -562,7 +562,7 @@ namespace MatterHackers.RayTracer
 					break;
 
 				case 2:
-					double c1 = Vector3.Dot(N, V);
+					double c1 = Vector3Ex.Dot(N, V);
 					double c2 = 1 - refraction * refraction * (1 - c1 * c1);
 					if (c2 < 0)
 

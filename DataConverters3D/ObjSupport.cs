@@ -114,19 +114,26 @@ namespace MatterHackers.DataConverters3D
 			var mesh = new Mesh();
 			context.SetMeshDirect(mesh);
 
-			foreach(var vertex in objFile.VertexList)
+			foreach (var vertex in objFile.VertexList)
 			{
-				mesh.CreateVertex(vertex.X, vertex.Y, vertex.Z, CreateOption.CreateNew, SortOption.WillSortLater);
+				mesh.Vertices.Add(new Vector3Float(vertex.X, vertex.Y, vertex.Z));
 			}
 
-			foreach(var face in objFile.FaceList)
+			foreach (var face in objFile.FaceList)
 			{
-				List<int> zeroBased = new List<int>(face.VertexIndexList.Length);
-				foreach(var index in face.VertexIndexList)
+				for(int i=0; i<face.VertexIndexList.Length; i++)
 				{
-					zeroBased.Add(index - 1);
+					if(face.VertexIndexList[i] >= objFile.TextureList.Count)
+					{
+						int a = 0;
+					}
 				}
-				mesh.CreateFace(zeroBased.ToArray(), CreateOption.CreateNew);
+				mesh.Faces.Add((face.VertexIndexList[0] - 1, face.VertexIndexList[1] - 1, face.VertexIndexList[2] - 1));
+				if(face.VertexIndexList.Length == 4)
+				{
+					// add the other side of the quad
+					mesh.Faces.Add((face.VertexIndexList[0] - 1, face.VertexIndexList[2] - 1, face.VertexIndexList[3] - 1));
+				}
 			}
 
 			// load and apply any texture
@@ -163,18 +170,30 @@ namespace MatterHackers.DataConverters3D
 
 								if (diffuseTexture.Width > 0 && diffuseTexture.Height > 0)
 								{
-									for (int faceIndex = 0; faceIndex < objFile.FaceList.Count; faceIndex++)
+									int meshFace = 0;
+									for (int objFace = 0; objFace < objFile.FaceList.Count; objFace++, meshFace++)
 									{
-										var faceData = objFile.FaceList[faceIndex];
-										var polyFace = mesh.Faces[faceIndex];
-										polyFace.SetTexture(0, diffuseTexture);
-										int edgeIndex = 0;
-										foreach (FaceEdge faceEdge in polyFace.FaceEdges())
+										var face = mesh.Faces[meshFace];
+
+										var faceData = objFile.FaceList[objFace];
+
+										int textureIndex0 = faceData.TextureVertexIndexList[0] - 1;
+										var uv0 = new Vector2Float(objFile.TextureList[textureIndex0].X, objFile.TextureList[textureIndex0].Y);
+										int textureIndex1 = faceData.TextureVertexIndexList[1] - 1;
+										var uv1 = new Vector2Float(objFile.TextureList[textureIndex1].X, objFile.TextureList[textureIndex1].Y);
+										int textureIndex2 = faceData.TextureVertexIndexList[2] - 1;
+										var uv2 = new Vector2Float(objFile.TextureList[textureIndex2].X, objFile.TextureList[textureIndex2].Y);
+
+										mesh.FaceTextures.Add(meshFace, new FaceTextureData(diffuseTexture, uv0, uv1, uv2));
+
+										if(faceData.TextureVertexIndexList.Length == 4)
 										{
-											int textureIndex = faceData.TextureVertexIndexList[edgeIndex] - 1;
-											faceEdge.SetUv(0, new Vector2(objFile.TextureList[textureIndex].X,
-												objFile.TextureList[textureIndex].Y));
-											edgeIndex++;
+											meshFace++;
+
+											int textureIndex3 = faceData.TextureVertexIndexList[3] - 1;
+											var uv3 = new Vector2Float(objFile.TextureList[textureIndex3].X, objFile.TextureList[textureIndex3].Y);
+
+											mesh.FaceTextures.Add(meshFace, new FaceTextureData(diffuseTexture, uv0, uv2, uv3));
 										}
 									}
 

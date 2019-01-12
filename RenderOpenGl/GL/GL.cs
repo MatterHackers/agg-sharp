@@ -316,6 +316,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			TexCoord2(uv.X, uv.Y);
 		}
 
+		public static void TexCoord2(Vector2Float uv)
+		{
+			TexCoord2(uv.X, uv.Y);
+		}
+
 		public static void TexCoord2(double x, double y)
 		{
 			Instance?.TexCoord2(x, y);
@@ -370,6 +375,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		}
 
 		public static void Vertex3(Vector3 position)
+		{
+			Vertex3(position.X, position.Y, position.Z);
+		}
+
+		public static void Vertex3(Vector3Float position)
 		{
 			Vertex3(position.X, position.Y, position.Z);
 		}

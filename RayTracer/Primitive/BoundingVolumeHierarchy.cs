@@ -27,167 +27,14 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg;
-using MatterHackers.VectorMath;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using MatterHackers.Agg;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer
 {
-	public class UnboundCollection : IPrimitive
-	{
-		public List<IPrimitive> Items { get; }
-
-		public UnboundCollection(IList<IPrimitive> traceableItems)
-		{
-			Items = new List<IPrimitive>(traceableItems.Count);
-			foreach (IPrimitive traceable in traceableItems)
-			{
-				Items.Add(traceable);
-			}
-		}
-
-		public ColorF GetColor(IntersectInfo info)
-		{
-			throw new NotImplementedException("You should not get a color directly from a BoundingVolumeHierarchy.");
-		}
-
-		public MaterialAbstract Material
-		{
-			get
-			{
-				throw new Exception("You should not get a material from an UnboundCollection.");
-			}
-			set
-			{
-				throw new Exception("You can't set a material on an UnboundCollection.");
-			}
-		}
-
-		public bool Contains(Vector3 position)
-		{
-			if (this.GetAxisAlignedBoundingBox().Contains(position))
-			{
-				foreach (IPrimitive item in Items)
-				{
-					if (item.Contains(position))
-					{
-						return true;
-					}
-				}
-			}
-
-			return false;
-		}
-
-
-		public IntersectInfo GetClosestIntersection(Ray ray)
-		{
-			IntersectInfo bestInfo = null;
-			foreach (IPrimitive item in Items)
-			{
-				IntersectInfo info = item.GetClosestIntersection(ray);
-				if (info != null && info.hitType != IntersectionType.None && info.distanceToHit >= 0)
-				{
-					if (bestInfo == null || info.distanceToHit < bestInfo.distanceToHit)
-					{
-						bestInfo = info;
-					}
-				}
-			}
-
-			return bestInfo;
-		}
-
-		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
-		{
-			bool foundItem = false;
-			foreach (IPrimitive item in Items)
-			{
-				foundItem |= item.GetContained(results, subRegion);
-			}
-
-			return foundItem;
-		}
-
-		public int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom)
-		{
-			throw new NotImplementedException();
-		}
-
-		public void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
-		{
-			var intersection = GetClosestIntersection(rayBundle.rayArray[rayIndexToStartCheckingFrom]);
-			if(intersection == null)
-			{
-				intersectionsForBundle[rayIndexToStartCheckingFrom].hitType = IntersectionType.None;
-			}
-		}
-
-		public IEnumerable IntersectionIterator(Ray ray)
-		{
-			foreach (IPrimitive item in Items)
-			{
-				foreach (IntersectInfo info in item.IntersectionIterator(ray))
-				{
-					yield return info;
-				}
-			}
-		}
-
-		public double GetSurfaceArea()
-		{
-			double totalSurfaceArea = 0;
-			foreach (IPrimitive item in Items)
-			{
-				totalSurfaceArea += item.GetSurfaceArea();
-			}
-
-			return totalSurfaceArea;
-		}
-
-		public Vector3 GetCenter()
-		{
-			return GetAxisAlignedBoundingBox().GetCenter();
-		}
-
-		private AxisAlignedBoundingBox cachedAABB = new AxisAlignedBoundingBox(Vector3.NegativeInfinity, Vector3.NegativeInfinity);
-
-		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
-		{
-			if (cachedAABB.minXYZ.X == double.NegativeInfinity)
-			{
-				cachedAABB = Items[0].GetAxisAlignedBoundingBox();
-				for (int i = 1; i < Items.Count; i++)
-				{
-					cachedAABB += Items[i].GetAxisAlignedBoundingBox();
-				}
-			}
-
-			return cachedAABB;
-		}
-
-		/// <summary>
-		/// This is the computation cost of doing an intersection with the given type.
-		/// Attempt to give it in average CPU cycles for the intersection.
-		/// It really does not need to be a member variable as it is fixed to a given
-		/// type of object.  But it needs to be virtual so we can get to the value
-		/// for a given class. (If only there were class virtual functions :) ).
-		/// </summary>
-		/// <returns></returns>
-		public double GetIntersectCost()
-		{
-			double totalIntersectCost = 0;
-			foreach (IPrimitive item in Items)
-			{
-				totalIntersectCost += item.GetIntersectCost();
-			}
-
-			return totalIntersectCost;
-		}
-	}
-
 	public class BoundingVolumeHierarchy : IPrimitive
 	{
 		internal AxisAlignedBoundingBox Aabb;
@@ -207,25 +54,6 @@ namespace MatterHackers.RayTracer
 			this.Aabb = nodeA.GetAxisAlignedBoundingBox() + nodeB.GetAxisAlignedBoundingBox(); // we can cache this because it is not allowed to change.
 		}
 
-		public bool Contains(Vector3 position)
-		{
-			if (this.GetAxisAlignedBoundingBox().Contains(position))
-			{
-				if (nodeA.Contains(position)
-					|| nodeB.Contains(position))
-				{
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		public ColorF GetColor(IntersectInfo info)
-		{
-			throw new NotImplementedException("You should not get a color directly from a BoundingVolumeHierarchy.");
-		}
-
 		public MaterialAbstract Material
 		{
 			get
@@ -235,196 +63,6 @@ namespace MatterHackers.RayTracer
 			set
 			{
 				throw new Exception("You can't set a material on a BoundingVolumeHierarchy.");
-			}
-		}
-
-		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
-		{
-			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
-			if (bounds.Contains(subRegion))
-			{
-				bool resultA = this.nodeA.GetContained(results, subRegion);
-				bool resultB = this.nodeB.GetContained(results, subRegion);
-				return resultA | resultB;
-			}
-
-			return false;
-		}
-
-		public double GetIntersectCost()
-		{
-			return AxisAlignedBoundingBox.GetIntersectCost();
-		}
-
-		public IntersectInfo GetClosestIntersection(Ray ray)
-		{
-			if (ray.Intersection(Aabb))
-			{
-				IPrimitive checkFirst = nodeA;
-				IPrimitive checkSecond = nodeB;
-				if (ray.directionNormal[splitingPlane] < 0)
-				{
-					checkFirst = nodeB;
-					checkSecond = nodeA;
-				}
-
-				IntersectInfo infoFirst = checkFirst.GetClosestIntersection(ray);
-				if (infoFirst != null && infoFirst.hitType != IntersectionType.None)
-				{
-					if (ray.isShadowRay)
-					{
-						return infoFirst;
-					}
-					else
-					{
-						ray.maxDistanceToConsider = infoFirst.distanceToHit;
-					}
-				}
-				if (checkSecond != null)
-				{
-					IntersectInfo infoSecond = checkSecond.GetClosestIntersection(ray);
-					if (infoSecond != null && infoSecond.hitType != IntersectionType.None)
-					{
-						if (ray.isShadowRay)
-						{
-							return infoSecond;
-						}
-						else
-						{
-							ray.maxDistanceToConsider = infoSecond.distanceToHit;
-						}
-					}
-					if (infoFirst != null && infoFirst.hitType != IntersectionType.None && infoFirst.distanceToHit >= 0)
-					{
-						if (infoSecond != null && infoSecond.hitType != IntersectionType.None && infoSecond.distanceToHit < infoFirst.distanceToHit && infoSecond.distanceToHit >= 0)
-						{
-							return infoSecond;
-						}
-						else
-						{
-							return infoFirst;
-						}
-					}
-
-					return infoSecond; // we don't have to test it because it didn't hit.
-				}
-				return infoFirst;
-			}
-
-			return null;
-		}
-
-		public int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom)
-		{
-			// check if first ray hits bounding box
-			if (rayBundle.rayArray[rayIndexToStartCheckingFrom].Intersection(Aabb))
-			{
-				return rayIndexToStartCheckingFrom;
-			}
-
-			int count = rayBundle.rayArray.Length;
-			// check if all bundle misses
-			if (!rayBundle.CheckIfBundleHitsAabb(Aabb))
-			{
-				return -1;
-			}
-
-			// check each ray until one hits or all miss
-			for (int i = rayIndexToStartCheckingFrom + 1; i < count; i++)
-			{
-				if (rayBundle.rayArray[i].Intersection(Aabb))
-				{
-					return i;
-				}
-			}
-
-			return -1;
-		}
-
-		public void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
-		{
-			int startRayIndex = FindFirstRay(rayBundle, rayIndexToStartCheckingFrom);
-			if (startRayIndex != -1)
-			{
-				IPrimitive checkFirst = nodeA;
-				IPrimitive checkSecond = nodeB;
-				if (rayBundle.rayArray[startRayIndex].directionNormal[splitingPlane] < 0)
-				{
-					checkFirst = nodeB;
-					checkSecond = nodeA;
-				}
-
-				checkFirst.GetClosestIntersections(rayBundle, startRayIndex, intersectionsForBundle);
-				if (checkSecond != null)
-				{
-					checkSecond.GetClosestIntersections(rayBundle, startRayIndex, intersectionsForBundle);
-				}
-			}
-		}
-
-		public IEnumerable IntersectionIterator(Ray ray)
-		{
-			if (ray.Intersection(Aabb))
-			{
-				IPrimitive checkFirst = nodeA;
-				IPrimitive checkSecond = nodeB;
-				if (ray.directionNormal[splitingPlane] < 0)
-				{
-					checkFirst = nodeB;
-					checkSecond = nodeA;
-				}
-
-				foreach (IntersectInfo info in checkFirst.IntersectionIterator(ray))
-				{
-					if (info != null && info.hitType != IntersectionType.None)
-					{
-						yield return info;
-					}
-				}
-
-				if (checkSecond != null)
-				{
-					foreach (IntersectInfo info in checkSecond.IntersectionIterator(ray))
-					{
-						if (info != null && info.hitType != IntersectionType.None)
-						{
-							yield return info;
-						}
-					}
-				}
-			}
-		}
-
-		public double GetSurfaceArea()
-		{
-			return Aabb.GetSurfaceArea();
-		}
-
-		public Vector3 GetCenter()
-		{
-			return GetAxisAlignedBoundingBox().GetCenter();
-		}
-
-		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
-		{
-			return Aabb;
-		}
-
-		public class SortingAccelerator
-		{
-			public int nextAxisForBigGroups = 2;
-
-			public int NextAxis
-			{
-				get
-				{
-					nextAxisForBigGroups = (nextAxisForBigGroups + 1) % 3;
-					return nextAxisForBigGroups;
-				}
-			}
-
-			public SortingAccelerator()
-			{
 			}
 		}
 
@@ -453,7 +91,7 @@ namespace MatterHackers.RayTracer
 
 			if (recursionDepth < maxRecursion)
 			{
-				if (numItems > 5000)
+				if (numItems > 50)
 				{
 					bestAxis = accelerator.NextAxis;
 					bestIndexToSplitOn = numItems / 2;
@@ -567,22 +205,419 @@ namespace MatterHackers.RayTracer
 			}
 			else
 			{
-				axisSorter.WhichAxis = bestAxis;
-				traceableItems.Sort(axisSorter);
 				List<IPrimitive> leftItems = new List<IPrimitive>(bestIndexToSplitOn + 1);
 				List<IPrimitive> rightItems = new List<IPrimitive>(numItems - bestIndexToSplitOn + 1);
-				for (int i = 0; i <= bestIndexToSplitOn; i++)
+				if (numItems > 100)
 				{
-					leftItems.Add(traceableItems[i]);
+					// there are lots of items, lets find a sampled bounds and then choose a center
+					AxisAlignedBoundingBox totalBounds = AxisAlignedBoundingBox.Empty();
+					for (int i = 0; i < 50; i++)
+					{
+						totalBounds.ExpandToInclude(traceableItems[i * numItems / 50].GetCenter());
+					}
+					bestAxis = totalBounds.XSize > totalBounds.YSize ? 0 : 1;
+					bestAxis = totalBounds.Size[bestAxis] > totalBounds.ZSize ? bestAxis : 2; 
+					var axisCenter = totalBounds.Center[bestAxis];
+					for (int i = 0; i < numItems; i++)
+					{
+						if (traceableItems[i].GetAxisCenter(bestAxis) <= axisCenter)
+						{
+							leftItems.Add(traceableItems[i]);
+						}
+						else
+						{
+							rightItems.Add(traceableItems[i]);
+						}
+					}
 				}
-				for (int i = bestIndexToSplitOn + 1; i < numItems; i++)
+				else // sort them and find the center
 				{
-					rightItems.Add(traceableItems[i]);
+					axisSorter.WhichAxis = bestAxis;
+					traceableItems.Sort(axisSorter);
+					for (int i = 0; i <= bestIndexToSplitOn; i++)
+					{
+						leftItems.Add(traceableItems[i]);
+					}
+					for (int i = bestIndexToSplitOn + 1; i < numItems; i++)
+					{
+						rightItems.Add(traceableItems[i]);
+					}
 				}
 				IPrimitive leftGroup = CreateNewHierachy(leftItems, maxRecursion, recursionDepth + 1, accelerator);
 				IPrimitive rightGroup = CreateNewHierachy(rightItems, maxRecursion, recursionDepth + 1, accelerator);
 				BoundingVolumeHierarchy newBVHNode = new BoundingVolumeHierarchy(leftGroup, rightGroup, bestAxis);
 				return newBVHNode;
+			}
+		}
+
+		public bool Contains(Vector3 position)
+		{
+			if (this.GetAxisAlignedBoundingBox().Contains(position))
+			{
+				if (nodeA.Contains(position)
+					|| nodeB.Contains(position))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		public int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom)
+		{
+			// check if first ray hits bounding box
+			if (rayBundle.rayArray[rayIndexToStartCheckingFrom].Intersection(Aabb))
+			{
+				return rayIndexToStartCheckingFrom;
+			}
+
+			int count = rayBundle.rayArray.Length;
+			// check if all bundle misses
+			if (!rayBundle.CheckIfBundleHitsAabb(Aabb))
+			{
+				return -1;
+			}
+
+			// check each ray until one hits or all miss
+			for (int i = rayIndexToStartCheckingFrom + 1; i < count; i++)
+			{
+				if (rayBundle.rayArray[i].Intersection(Aabb))
+				{
+					return i;
+				}
+			}
+
+			return -1;
+		}
+
+		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
+		{
+			return Aabb;
+		}
+
+		public double GetAxisCenter(int axis)
+		{
+			return GetCenter()[axis];
+		}
+
+		public Vector3 GetCenter()
+		{
+			return GetAxisAlignedBoundingBox().GetCenter();
+		}
+
+		public IntersectInfo GetClosestIntersection(Ray ray)
+		{
+			if (ray.Intersection(Aabb))
+			{
+				IPrimitive checkFirst = nodeA;
+				IPrimitive checkSecond = nodeB;
+				if (ray.directionNormal[splitingPlane] < 0)
+				{
+					checkFirst = nodeB;
+					checkSecond = nodeA;
+				}
+
+				IntersectInfo infoFirst = checkFirst.GetClosestIntersection(ray);
+				if (infoFirst != null && infoFirst.hitType != IntersectionType.None)
+				{
+					if (ray.isShadowRay)
+					{
+						return infoFirst;
+					}
+					else
+					{
+						ray.maxDistanceToConsider = infoFirst.distanceToHit;
+					}
+				}
+				if (checkSecond != null)
+				{
+					IntersectInfo infoSecond = checkSecond.GetClosestIntersection(ray);
+					if (infoSecond != null && infoSecond.hitType != IntersectionType.None)
+					{
+						if (ray.isShadowRay)
+						{
+							return infoSecond;
+						}
+						else
+						{
+							ray.maxDistanceToConsider = infoSecond.distanceToHit;
+						}
+					}
+					if (infoFirst != null && infoFirst.hitType != IntersectionType.None && infoFirst.distanceToHit >= 0)
+					{
+						if (infoSecond != null && infoSecond.hitType != IntersectionType.None && infoSecond.distanceToHit < infoFirst.distanceToHit && infoSecond.distanceToHit >= 0)
+						{
+							return infoSecond;
+						}
+						else
+						{
+							return infoFirst;
+						}
+					}
+
+					return infoSecond; // we don't have to test it because it didn't hit.
+				}
+				return infoFirst;
+			}
+
+			return null;
+		}
+
+		public void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
+		{
+			int startRayIndex = FindFirstRay(rayBundle, rayIndexToStartCheckingFrom);
+			if (startRayIndex != -1)
+			{
+				IPrimitive checkFirst = nodeA;
+				IPrimitive checkSecond = nodeB;
+				if (rayBundle.rayArray[startRayIndex].directionNormal[splitingPlane] < 0)
+				{
+					checkFirst = nodeB;
+					checkSecond = nodeA;
+				}
+
+				checkFirst.GetClosestIntersections(rayBundle, startRayIndex, intersectionsForBundle);
+				if (checkSecond != null)
+				{
+					checkSecond.GetClosestIntersections(rayBundle, startRayIndex, intersectionsForBundle);
+				}
+			}
+		}
+
+		public ColorF GetColor(IntersectInfo info)
+		{
+			throw new NotImplementedException("You should not get a color directly from a BoundingVolumeHierarchy.");
+		}
+
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
+		{
+			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
+			if (bounds.Contains(subRegion))
+			{
+				bool resultA = this.nodeA.GetContained(results, subRegion);
+				bool resultB = this.nodeB.GetContained(results, subRegion);
+				return resultA | resultB;
+			}
+
+			return false;
+		}
+
+		public double GetIntersectCost()
+		{
+			return AxisAlignedBoundingBox.GetIntersectCost();
+		}
+
+		public double GetSurfaceArea()
+		{
+			return Aabb.GetSurfaceArea();
+		}
+
+		public IEnumerable IntersectionIterator(Ray ray)
+		{
+			if (ray.Intersection(Aabb))
+			{
+				IPrimitive checkFirst = nodeA;
+				IPrimitive checkSecond = nodeB;
+				if (ray.directionNormal[splitingPlane] < 0)
+				{
+					checkFirst = nodeB;
+					checkSecond = nodeA;
+				}
+
+				foreach (IntersectInfo info in checkFirst.IntersectionIterator(ray))
+				{
+					if (info != null && info.hitType != IntersectionType.None)
+					{
+						yield return info;
+					}
+				}
+
+				if (checkSecond != null)
+				{
+					foreach (IntersectInfo info in checkSecond.IntersectionIterator(ray))
+					{
+						if (info != null && info.hitType != IntersectionType.None)
+						{
+							yield return info;
+						}
+					}
+				}
+			}
+		}
+
+		public class SortingAccelerator
+		{
+			public int nextAxisForBigGroups = 2;
+
+			public SortingAccelerator()
+			{
+			}
+
+			public int NextAxis
+			{
+				get
+				{
+					nextAxisForBigGroups = (nextAxisForBigGroups + 1) % 3;
+					return nextAxisForBigGroups;
+				}
+			}
+		}
+	}
+
+	public class UnboundCollection : IPrimitive
+	{
+		private AxisAlignedBoundingBox cachedAABB = new AxisAlignedBoundingBox(Vector3.NegativeInfinity, Vector3.NegativeInfinity);
+
+		public UnboundCollection(IList<IPrimitive> traceableItems)
+		{
+			Items = new List<IPrimitive>(traceableItems.Count);
+			foreach (IPrimitive traceable in traceableItems)
+			{
+				Items.Add(traceable);
+			}
+		}
+
+		public List<IPrimitive> Items { get; }
+
+		public MaterialAbstract Material
+		{
+			get
+			{
+				throw new Exception("You should not get a material from an UnboundCollection.");
+			}
+			set
+			{
+				throw new Exception("You can't set a material on an UnboundCollection.");
+			}
+		}
+
+		public bool Contains(Vector3 position)
+		{
+			if (this.GetAxisAlignedBoundingBox().Contains(position))
+			{
+				foreach (IPrimitive item in Items)
+				{
+					if (item.Contains(position))
+					{
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+
+		public int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom)
+		{
+			throw new NotImplementedException();
+		}
+
+		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
+		{
+			if (cachedAABB.MinXYZ.X == double.NegativeInfinity)
+			{
+				cachedAABB = Items[0].GetAxisAlignedBoundingBox();
+				for (int i = 1; i < Items.Count; i++)
+				{
+					cachedAABB += Items[i].GetAxisAlignedBoundingBox();
+				}
+			}
+
+			return cachedAABB;
+		}
+
+		public double GetAxisCenter(int axis)
+		{
+			return GetCenter()[axis];
+		}
+
+		public Vector3 GetCenter()
+		{
+			return GetAxisAlignedBoundingBox().GetCenter();
+		}
+
+		public IntersectInfo GetClosestIntersection(Ray ray)
+		{
+			IntersectInfo bestInfo = null;
+			foreach (IPrimitive item in Items)
+			{
+				IntersectInfo info = item.GetClosestIntersection(ray);
+				if (info != null && info.hitType != IntersectionType.None && info.distanceToHit >= 0)
+				{
+					if (bestInfo == null || info.distanceToHit < bestInfo.distanceToHit)
+					{
+						bestInfo = info;
+					}
+				}
+			}
+
+			return bestInfo;
+		}
+
+		public void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
+		{
+			var intersection = GetClosestIntersection(rayBundle.rayArray[rayIndexToStartCheckingFrom]);
+			if (intersection == null)
+			{
+				intersectionsForBundle[rayIndexToStartCheckingFrom].hitType = IntersectionType.None;
+			}
+		}
+
+		public ColorF GetColor(IntersectInfo info)
+		{
+			throw new NotImplementedException("You should not get a color directly from a BoundingVolumeHierarchy.");
+		}
+
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
+		{
+			bool foundItem = false;
+			foreach (IPrimitive item in Items)
+			{
+				foundItem |= item.GetContained(results, subRegion);
+			}
+
+			return foundItem;
+		}
+
+		/// <summary>
+		/// This is the computation cost of doing an intersection with the given type.
+		/// Attempt to give it in average CPU cycles for the intersection.
+		/// It really does not need to be a member variable as it is fixed to a given
+		/// type of object.  But it needs to be virtual so we can get to the value
+		/// for a given class. (If only there were class virtual functions :) ).
+		/// </summary>
+		/// <returns></returns>
+		public double GetIntersectCost()
+		{
+			double totalIntersectCost = 0;
+			foreach (IPrimitive item in Items)
+			{
+				totalIntersectCost += item.GetIntersectCost();
+			}
+
+			return totalIntersectCost;
+		}
+
+		public double GetSurfaceArea()
+		{
+			double totalSurfaceArea = 0;
+			foreach (IPrimitive item in Items)
+			{
+				totalSurfaceArea += item.GetSurfaceArea();
+			}
+
+			return totalSurfaceArea;
+		}
+
+		public IEnumerable IntersectionIterator(Ray ray)
+		{
+			foreach (IPrimitive item in Items)
+			{
+				foreach (IntersectInfo info in item.IntersectionIterator(ray))
+				{
+					yield return info;
+				}
 			}
 		}
 	}

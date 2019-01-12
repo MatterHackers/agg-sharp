@@ -12,8 +12,8 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		public CsgPlane(Vector3 a, Vector3 b, Vector3 c)
 		{
-			this.normal = (Vector3.Cross(b - a, c - a)).GetNormal();
-			this.w = Vector3.Dot(this.normal, a);
+			this.normal = (Vector3Ex.Cross(b - a, c - a)).GetNormal();
+			this.w = Vector3Ex.Dot(this.normal, a);
 		}
 
 		public bool ok()
@@ -43,93 +43,94 @@ namespace MatterHackers.PolygonMesh.Csg
 		// either `front` or `back`.
 		public void SplitPolygon(CsgPolygon polygon, List<CsgPolygon> coplanarFront, List<CsgPolygon> coplanarBack, List<CsgPolygon> front, List<CsgPolygon> back)
 		{
-			double splitTolerance = 0.00001;
-			// Classify each point as well as the entire polygon into one of the above
-			// four classes.
-			PolyType polygonType = PolyType.COPLANAR;
-			List<PolyType> types = new List<PolyType>();
+			throw new NotImplementedException();
+			//double splitTolerance = 0.00001;
+			//// Classify each point as well as the entire polygon into one of the above
+			//// four classes.
+			//PolyType polygonType = PolyType.COPLANAR;
+			//List<PolyType> types = new List<PolyType>();
 
-			for (int i = 0; i < polygon.vertices.Count; i++)
-			{
-				double t = Vector3.Dot(this.normal, polygon.vertices[i].Position) - this.w;
-				PolyType type = (t < -splitTolerance) ? PolyType.BACK : ((t > splitTolerance) ? PolyType.FRONT : PolyType.COPLANAR);
-				polygonType |= type;
-				types.Add(type);
-			}
+			//for (int i = 0; i < polygon.vertices.Count; i++)
+			//{
+			//	double t = Vector3Ex.Dot(this.normal, polygon.vertices[i].Position) - this.w;
+			//	PolyType type = (t < -splitTolerance) ? PolyType.BACK : ((t > splitTolerance) ? PolyType.FRONT : PolyType.COPLANAR);
+			//	polygonType |= type;
+			//	types.Add(type);
+			//}
 
-			// Put the polygon in the correct list, splitting it when necessary.
-			switch (polygonType)
-			{
-				case PolyType.COPLANAR:
-					{
-						if (Vector3.Dot(this.normal, polygon.plane.normal) > 0)
-						{
-							coplanarFront.Add(polygon);
-						}
-						else
-						{
-							coplanarBack.Add(polygon);
-						}
-						break;
-					}
-				case PolyType.FRONT:
-					{
-						front.Add(polygon);
-						break;
-					}
-				case PolyType.BACK:
-					{
-						back.Add(polygon);
-						break;
-					}
-				case PolyType.SPANNING:
-					{
-						List<IVertex> frontVertices = new List<IVertex>();
-						List<IVertex> backVertices = new List<IVertex>();
-						for (int firstVertexIndex = 0; firstVertexIndex < polygon.vertices.Count; firstVertexIndex++)
-						{
-							int nextVertexIndex = (firstVertexIndex + 1) % polygon.vertices.Count;
-							PolyType firstPolyType = types[firstVertexIndex];
-							PolyType nextPolyType = types[nextVertexIndex];
-							IVertex firstVertex = polygon.vertices[firstVertexIndex];
-							IVertex nextVertex = polygon.vertices[nextVertexIndex];
-							if (firstPolyType != PolyType.BACK)
-							{
-								frontVertices.Add(firstVertex);
-							}
+			//// Put the polygon in the correct list, splitting it when necessary.
+			//switch (polygonType)
+			//{
+			//	case PolyType.COPLANAR:
+			//		{
+			//			if (Vector3Ex.Dot(this.normal, polygon.plane.normal) > 0)
+			//			{
+			//				coplanarFront.Add(polygon);
+			//			}
+			//			else
+			//			{
+			//				coplanarBack.Add(polygon);
+			//			}
+			//			break;
+			//		}
+			//	case PolyType.FRONT:
+			//		{
+			//			front.Add(polygon);
+			//			break;
+			//		}
+			//	case PolyType.BACK:
+			//		{
+			//			back.Add(polygon);
+			//			break;
+			//		}
+			//	case PolyType.SPANNING:
+			//		{
+			//			List<IVertex> frontVertices = new List<IVertex>();
+			//			List<IVertex> backVertices = new List<IVertex>();
+			//			for (int firstVertexIndex = 0; firstVertexIndex < polygon.vertices.Count; firstVertexIndex++)
+			//			{
+			//				int nextVertexIndex = (firstVertexIndex + 1) % polygon.vertices.Count;
+			//				PolyType firstPolyType = types[firstVertexIndex];
+			//				PolyType nextPolyType = types[nextVertexIndex];
+			//				IVertex firstVertex = polygon.vertices[firstVertexIndex];
+			//				IVertex nextVertex = polygon.vertices[nextVertexIndex];
+			//				if (firstPolyType != PolyType.BACK)
+			//				{
+			//					frontVertices.Add(firstVertex);
+			//				}
 
-							if (firstPolyType != PolyType.FRONT)
-							{
-								backVertices.Add(firstVertex);
-							}
+			//				if (firstPolyType != PolyType.FRONT)
+			//				{
+			//					backVertices.Add(firstVertex);
+			//				}
 
-							if ((firstPolyType | nextPolyType) == PolyType.SPANNING)
-							{
-								double planDotFirstVertex = Vector3.Dot(this.normal, firstVertex.Position);
-								double firstDistToPlane = this.w - planDotFirstVertex;
-								Vector3 deltaFromFirstToNext = nextVertex.Position - firstVertex.Position;
-								double t = firstDistToPlane / Vector3.Dot(this.normal, deltaFromFirstToNext);
-								IVertex newVertex = firstVertex.CreateInterpolated(nextVertex, t);
-								frontVertices.Add(newVertex);
-								backVertices.Add(newVertex);
-							}
-						}
+			//				if ((firstPolyType | nextPolyType) == PolyType.SPANNING)
+			//				{
+			//					double planDotFirstVertex = Vector3Ex.Dot(this.normal, firstVertex.Position);
+			//					double firstDistToPlane = this.w - planDotFirstVertex;
+			//					Vector3 deltaFromFirstToNext = nextVertex.Position - firstVertex.Position;
+			//					double t = firstDistToPlane / Vector3Ex.Dot(this.normal, deltaFromFirstToNext);
+			//					IVertex newVertex = firstVertex.CreateInterpolated(nextVertex, t);
+			//					frontVertices.Add(newVertex);
+			//					backVertices.Add(newVertex);
+			//				}
+			//			}
 
-						if (frontVertices.Count >= 3)
-						{
-							front.Add(new CsgPolygon(frontVertices));
-						}
+			//			if (frontVertices.Count >= 3)
+			//			{
+			//				front.Add(new CsgPolygon(frontVertices));
+			//			}
 
-						if (backVertices.Count >= 3)
-						{
-							back.Add(new CsgPolygon(backVertices));
-						}
-					}
-					break;
+			//			if (backVertices.Count >= 3)
+			//			{
+			//				back.Add(new CsgPolygon(backVertices));
+			//			}
+			//		}
+			//		break;
 
-				default:
-					throw new NotImplementedException();
-			}
+			//	default:
+			//		throw new NotImplementedException();
+			//}
 		}
 	}
 }

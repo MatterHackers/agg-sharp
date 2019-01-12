@@ -92,7 +92,7 @@ namespace MatterHackers.RayTracer
 				add.Y = y;
 				add.Z = z;
 
-				add = Vector3.Transform(add, AxisToWorld);
+				add = Vector3Ex.Transform(add, AxisToWorld);
 
 				AxisToWorld[3, 0] += add.X;
 				AxisToWorld[3, 1] += add.Y;
@@ -117,14 +117,14 @@ namespace MatterHackers.RayTracer
 			add.Y = y;
 			add.Z = z;
 
-			add = Vector3.Transform(add, pReferenceAxis.AxisToWorld);
+			add = Vector3Ex.Transform(add, pReferenceAxis.AxisToWorld);
 
 			AxisToWorld[3, 0] += add.X;
 			AxisToWorld[3, 1] += add.Y;
 			AxisToWorld[3, 2] += add.Z;
 
 			// and do it for the inverse
-			add = Vector3.Transform(add, WorldToAxis);
+			add = Vector3Ex.Transform(add, WorldToAxis);
 
 			WorldToAxis[3, 0] -= add.X;
 			WorldToAxis[3, 1] -= add.Y;
@@ -137,7 +137,7 @@ namespace MatterHackers.RayTracer
 		{
 			Vector3 pos = new Vector3(x, y, z);
 
-			pos = Vector3.Transform(pos, pReferenceAxis.AxisToWorld);
+			pos = Vector3Ex.Transform(pos, pReferenceAxis.AxisToWorld);
 			Vector3 RefPos = pReferenceAxis.Origin;
 
 			pos += RefPos;
@@ -294,15 +294,15 @@ namespace MatterHackers.RayTracer
 			Vector3 UpVector = new Vector3(0, 1, 0);
 			Vector3 ForwardVector = new Vector3(0, 0, 1);
 
-			UpVector = Vector3.Transform(UpVector, AxisToWorld);
-			ForwardVector = Vector3.Transform(ForwardVector, AxisToWorld);
+			UpVector = Vector3Ex.Transform(UpVector, AxisToWorld);
+			ForwardVector = Vector3Ex.Transform(ForwardVector, AxisToWorld);
 
 			pOutVector.Z = Math.Atan2(UpVector.X, UpVector.Y);
 			//	DebugStream("It looks like z is now " << RadToDeg(pOutVector->z));
 
 			Matrix4X4 ZMatrix = Matrix4X4.CreateRotationZ(-pOutVector.Z);
-			UpVector = Vector3.Transform(UpVector, ZMatrix);
-			ForwardVector = Vector3.Transform(ForwardVector, ZMatrix);
+			UpVector = Vector3Ex.Transform(UpVector, ZMatrix);
+			ForwardVector = Vector3Ex.Transform(ForwardVector, ZMatrix);
 
 			//	DebugStream("It looks like z is now " << RadToDeg(atan2(UpVector.x, UpVector.y)));
 
@@ -310,8 +310,8 @@ namespace MatterHackers.RayTracer
 			//	DebugStream("It looks like y is now " << RadToDeg(pOutVector->y));
 
 			Matrix4X4 YMatrix = Matrix4X4.CreateRotationY(-pOutVector.Y);
-			UpVector = Vector3.Transform(UpVector, YMatrix);
-			ForwardVector = Vector3.Transform(ForwardVector, YMatrix);
+			UpVector = Vector3Ex.Transform(UpVector, YMatrix);
+			ForwardVector = Vector3Ex.Transform(ForwardVector, YMatrix);
 
 			//	DebugStream("It looks like y is now " << RadToDeg(-atan2(ForwardVector.x, ForwardVector.z)));
 
@@ -353,7 +353,7 @@ namespace MatterHackers.RayTracer
 		{
 			Vector3 TargetPos = pTarget;
 
-			TargetPos = Vector3.TransformVector(TargetPos, WorldToAxis);
+			TargetPos = Vector3Ex.TransformVector(TargetPos, WorldToAxis);
 
 			// Will rotate Y to make z point away from object (make -z point at object)
 			return Math.Atan2(TargetPos.X, -TargetPos.Z);
@@ -363,7 +363,7 @@ namespace MatterHackers.RayTracer
 		{
 			Vector3 TargetPos = pTarget;
 
-			TargetPos = Vector3.TransformVector(TargetPos, WorldToAxis);
+			TargetPos = Vector3Ex.TransformVector(TargetPos, WorldToAxis);
 
 			// (-90 degrees) Will rotate X to make z point away from object (-z point at object)
 			return Math.Atan2(-TargetPos.Z, TargetPos.Y) - MathHelper.Tau / 4;

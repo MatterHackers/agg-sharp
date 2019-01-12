@@ -31,25 +31,39 @@ using System.Collections.Generic;
 
 namespace MatterHackers.PolygonMesh
 {
-	public class FaceList : List<int[]>
+	public class FaceList : List<(int v0, int v1, int v2)>
 	{
 		public FaceList()
 		{
 		}
 
-		public FaceList(int[] f)
+		public FaceList(IEnumerable<int> f)
 		{
-			for (int i = 0; i < f.Length; i += 3)
-			{
-				Add(new int[] { f[i], f[i + 1], f[i + 2] });
-			}
+			AddFromIntArray(f);
 		}
 
 		public FaceList(FaceList f)
 		{
 			for (int i = 0; i < f.Count; i++)
 			{
-				Add(new int[] { f[i][0], f[i][1], f[i][2] });
+				Add((f[i].v0, f[i].v1, f[i].v2));
+			}
+		}
+
+		public void AddFromIntArray(IEnumerable<int> f)
+		{
+			this.Clear();
+
+			var enumeratior = f.GetEnumerator();
+			while(enumeratior.MoveNext())
+			{
+				var v0 = enumeratior.Current;
+				enumeratior.MoveNext();
+				var v1 = enumeratior.Current;
+				enumeratior.MoveNext();
+				var v2 = enumeratior.Current;
+
+				Add((v0, v1, v2));
 			}
 		}
 
@@ -59,9 +73,9 @@ namespace MatterHackers.PolygonMesh
 			int i = 0;
 			foreach (var face in this)
 			{
-				fa[i++] = face[0];
-				fa[i++] = face[1];
-				fa[i++] = face[2];
+				fa[i++] = face.v0;
+				fa[i++] = face.v1;
+				fa[i++] = face.v2;
 			}
 
 			return fa;

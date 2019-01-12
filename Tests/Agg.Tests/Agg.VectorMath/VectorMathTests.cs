@@ -252,13 +252,13 @@ namespace MatterHackers.VectorMath.Tests
 				{
 					Frustum movedRightFrustum = Frustum.Transform(frustum, Matrix4X4.CreateRotationY(MathHelper.DegreesToRadians(45)));
 					Matrix4X4 testMatrix = Matrix4X4.CreateRotationY(MathHelper.DegreesToRadians(45));
-					Plane control = new Plane(Vector3.TransformNormal(frustum.Planes[0].PlaneNormal, testMatrix), frustum.Planes[0].DistanceToPlaneFromOrigin);
+					Plane control = new Plane(Vector3Ex.TransformNormal(frustum.Planes[0].PlaneNormal, testMatrix), frustum.Planes[0].DistanceToPlaneFromOrigin);
 					Assert.IsTrue(movedRightFrustum.Planes[0].Equals(control, .001, .01));
-					Assert.IsTrue(movedRightFrustum.Planes[1].Equals(new Plane(Vector3.TransformNormal(frustum.Planes[1].PlaneNormal, testMatrix), frustum.Planes[1].DistanceToPlaneFromOrigin)));
+					Assert.IsTrue(movedRightFrustum.Planes[1].Equals(new Plane(Vector3Ex.TransformNormal(frustum.Planes[1].PlaneNormal, testMatrix), frustum.Planes[1].DistanceToPlaneFromOrigin)));
 					Assert.IsTrue(movedRightFrustum.Planes[2].Equals(frustum.Planes[2]));
 					Assert.IsTrue(movedRightFrustum.Planes[3].Equals(frustum.Planes[3]));
-					Assert.IsTrue(movedRightFrustum.Planes[4].Equals(new Plane(Vector3.TransformNormal(frustum.Planes[4].PlaneNormal, testMatrix), frustum.Planes[4].DistanceToPlaneFromOrigin)));
-					Assert.IsTrue(movedRightFrustum.Planes[5].Equals(new Plane(Vector3.TransformNormal(frustum.Planes[5].PlaneNormal, testMatrix), frustum.Planes[5].DistanceToPlaneFromOrigin)));
+					Assert.IsTrue(movedRightFrustum.Planes[4].Equals(new Plane(Vector3Ex.TransformNormal(frustum.Planes[4].PlaneNormal, testMatrix), frustum.Planes[4].DistanceToPlaneFromOrigin)));
+					Assert.IsTrue(movedRightFrustum.Planes[5].Equals(new Plane(Vector3Ex.TransformNormal(frustum.Planes[5].PlaneNormal, testMatrix), frustum.Planes[5].DistanceToPlaneFromOrigin)));
 				}
 			}
 

@@ -195,14 +195,14 @@ namespace MatterHackers.RenderOpenGl
 				var endScale = unitsPerPixelEnd * width;
 				for (int i = 0; i < unscaledLineMesh.Vertices.Count; i++)
 				{
-					Vector3 vertexPosition = unscaledLineMesh.Vertices[i].Position;
+					var vertexPosition = unscaledLineMesh.Vertices[i];
 					if (vertexPosition.X < 0)
 					{
-						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.X, vertexPosition.Y * startScale, vertexPosition.Z * startScale);
+						scaledLineMesh.Vertices[i] = new Vector3Float(vertexPosition.X, vertexPosition.Y * startScale, vertexPosition.Z * startScale);
 					}
 					else
 					{
-						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.X, vertexPosition.Y * endScale, vertexPosition.Z * endScale);
+						scaledLineMesh.Vertices[i] = new Vector3Float(vertexPosition.X, vertexPosition.Y * endScale, vertexPosition.Z * endScale);
 					}
 				}
 
@@ -224,14 +224,16 @@ namespace MatterHackers.RenderOpenGl
 					GL.MultMatrix(lineTransform.GetAsFloatArray());
 
 					GL.Begin(BeginMode.Triangles);
-					foreach (var face in scaledLineMesh.Faces)
+					for (int faceIndex = 0; faceIndex < scaledLineMesh.Faces.Count; faceIndex++)
 					{
-						foreach (var vertex in face.AsTriangles())
-						{
-							GL.Vertex3(vertex.p0.X, vertex.p0.Y, vertex.p0.Z);
-							GL.Vertex3(vertex.p1.X, vertex.p1.Y, vertex.p1.Z);
-							GL.Vertex3(vertex.p2.X, vertex.p2.Y, vertex.p2.Z);
-						}
+						var face = scaledLineMesh.Faces[faceIndex];
+						var vertices = scaledLineMesh.Vertices;
+						var position = vertices[face.v0];
+						GL.Vertex3(position.X, position.Y, position.Z);
+						position = vertices[face.v1];
+						GL.Vertex3(position.X, position.Y, position.Z);
+						position = vertices[face.v2];
+						GL.Vertex3(position.X, position.Y, position.Z);
 					}
 					GL.End();
 					GL.PopMatrix();
@@ -329,25 +331,26 @@ namespace MatterHackers.RenderOpenGl
 		}
 
 		// There can be a singleton of this because GL must always render on the UI thread and can't overlap this array
-		private static void DrawToGLUsingBsp(Mesh meshToRender, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
+		private static void DrawToGLUsingBsp(Mesh mesh, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
 		{
 			ImageBuffer lastFaceTexture = null;
-			var bspFaceList = FaceBspTree.GetFacesInVisibiltyOrder(meshToRender.Faces, meshToRender.FaceBspTree, meshToViewTransform, invMeshToViewTransform);
+			var bspFaceList = FaceBspTree.GetFacesInVisibiltyOrder(mesh, mesh.FaceBspTree, meshToViewTransform, invMeshToViewTransform);
 			foreach (var face in bspFaceList)
 			{
-				if (face == null)
+				if (face == -1)
 				{
 					continue;
 				}
 
-				ImageBuffer faceTexture;
-				meshToRender.FaceTexture.TryGetValue((face, 0), out faceTexture);
-				if (faceTexture != lastFaceTexture)
+				FaceTextureData faceTexture;
+				mesh.FaceTextures.TryGetValue(face, out faceTexture);
+				if (faceTexture != null
+					&& faceTexture.image != lastFaceTexture)
 				{
 					// Make sure the GLMeshPlugin has a reference to hold onto the image so it does not go away before this.
 					if (faceTexture != null)
 					{
-						ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(faceTexture, true);
+						ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(faceTexture.image, true);
 						GL.Enable(EnableCap.Texture2D);
 						GL.BindTexture(TextureTarget.Texture2D, glPlugin.GLTextureHandle);
 					}
@@ -356,34 +359,28 @@ namespace MatterHackers.RenderOpenGl
 						GL.Disable(EnableCap.Texture2D);
 					}
 
-					lastFaceTexture = faceTexture;
+					lastFaceTexture = faceTexture.image;
 				}
 
 				GL.Begin(BeginMode.Triangles);
-				GL.Normal3(face.Normal.X, face.Normal.Y, face.Normal.Z);
+				GL.Normal3(mesh.FaceNormals[face].X, mesh.FaceNormals[face].Y, mesh.FaceNormals[face].Z);
 				// load up the uvs
 				if (faceTexture != null)
 				{
-					foreach (var vertex in face.AsUvTriangles())
-					{
-						GL.TexCoord2(vertex.v0.uv);
-						GL.Vertex3(vertex.v0.p);
+					GL.TexCoord2(faceTexture.uv0);
+					GL.Vertex3(mesh.Vertices[mesh.Faces[face].v0]);
 
-						GL.TexCoord2(vertex.v1.uv);
-						GL.Vertex3(vertex.v1.p);
+					GL.TexCoord2(faceTexture.uv1);
+					GL.Vertex3(mesh.Vertices[mesh.Faces[face].v1]);
 
-						GL.TexCoord2(vertex.v2.uv);
-						GL.Vertex3(vertex.v2.p);
-					}
+					GL.TexCoord2(faceTexture.uv2);
+					GL.Vertex3(mesh.Vertices[mesh.Faces[face].v2]);
 				}
 				else
 				{
-					foreach (var vertex in face.AsTriangles())
-					{
-						GL.Vertex3(vertex.p0);
-						GL.Vertex3(vertex.p1);
-						GL.Vertex3(vertex.p2);
-					}
+					GL.Vertex3(mesh.Vertices[mesh.Faces[face].v0]);
+					GL.Vertex3(mesh.Vertices[mesh.Faces[face].v1]);
+					GL.Vertex3(mesh.Vertices[mesh.Faces[face].v2]);
 				}
 				GL.End();
 			}

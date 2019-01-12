@@ -129,7 +129,7 @@ namespace MatterHackers.RayTracer
 				double maxSize = Math.Max(aabb.XSize, aabb.YSize);
 				double scale = width / (maxSize * 1.2);
 
-				var bounds2D = new RectangleDouble(aabb.minXYZ.X, aabb.minXYZ.Y, aabb.maxXYZ.X, aabb.maxXYZ.Y);
+				var bounds2D = new RectangleDouble(aabb.MinXYZ.X, aabb.MinXYZ.Y, aabb.MaxXYZ.X, aabb.MaxXYZ.Y);
 				foreach (var meshGroup in visibleMeshes)
 				{
 					PolygonMesh.Rendering.OrthographicZProjection.DrawTo(
@@ -147,11 +147,12 @@ namespace MatterHackers.RayTracer
 				{
 					foreach (var loadedMesh in visibleMeshes)
 					{
-						List<MeshEdge> nonManifoldEdges = loadedMesh.Mesh.GetNonManifoldEdges();
-						if (nonManifoldEdges.Count > 0)
-						{
-							partGraphics2D.Circle(width / 4, width / 4, width / 8, Color.Red);
-						}
+						throw new NotImplementedException();
+						//List<MeshEdge> nonManifoldEdges = loadedMesh.Mesh.GetNonManifoldEdges();
+						//if (nonManifoldEdges.Count > 0)
+						//{
+						//	partGraphics2D.Circle(width / 4, width / 4, width / 8, Color.Red);
+						//}
 					}
 				}
 

@@ -38,13 +38,9 @@ namespace MatterHackers.VectorMath
 		public static AxisAlignedBoundingBox Empty() { return new AxisAlignedBoundingBox(Vector3.PositiveInfinity, Vector3.NegativeInfinity); }
 		public static AxisAlignedBoundingBox Zero() { return new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero); }
 
-		public Vector3 minXYZ;
-		public Vector3 maxXYZ;
+		public Vector3 MinXYZ;
+		public Vector3 MaxXYZ;
 
-
-		public Vector3 Min { get { return minXYZ; } }
-		public Vector3 Max { get { return maxXYZ; } }
-	 
 		public AxisAlignedBoundingBox()
 		{
 		}
@@ -57,16 +53,16 @@ namespace MatterHackers.VectorMath
 
 		public AxisAlignedBoundingBox(Vector3 minXYZ, Vector3 maxXYZ)
 		{
-			this.minXYZ = minXYZ;
-			this.maxXYZ = maxXYZ;
+			this.MinXYZ = minXYZ;
+			this.MaxXYZ = maxXYZ;
 		}
 
 		public AxisAlignedBoundingBox(IList<Vector3> verticesPoints)
 		{
 			if (verticesPoints.Count > 0)
 			{
-				minXYZ = verticesPoints[0];
-				maxXYZ = verticesPoints[0];
+				MinXYZ = verticesPoints[0];
+				MaxXYZ = verticesPoints[0];
 				for(int i=1; i<verticesPoints.Count; i++)
 				{
 					ExpandToInclude(verticesPoints[i]);
@@ -75,27 +71,27 @@ namespace MatterHackers.VectorMath
 		}
 
 		[JsonIgnore]
-		public Vector3 Center => (minXYZ + maxXYZ) / 2;
+		public Vector3 Center => (MinXYZ + MaxXYZ) / 2;
 
-		public Vector3 GetCenter() => (minXYZ + maxXYZ) * .5;
+		public Vector3 GetCenter() => (MinXYZ + MaxXYZ) * .5;
 
-		public double GetCenterX() => (minXYZ.X + maxXYZ.X) * .5;
-
-		[JsonIgnore]
-		public Vector3 Size => maxXYZ - minXYZ;
+		public double GetCenterX() => (MinXYZ.X + MaxXYZ.X) * .5;
 
 		[JsonIgnore]
-		public double XSize => maxXYZ.X - minXYZ.X;
+		public Vector3 Size => MaxXYZ - MinXYZ;
 
 		[JsonIgnore]
-		public double YSize => maxXYZ.Y - minXYZ.Y;
+		public double XSize => MaxXYZ.X - MinXYZ.X;
 
 		[JsonIgnore]
-		public double ZSize => maxXYZ.Z - minXYZ.Z;
+		public double YSize => MaxXYZ.Y - MinXYZ.Y;
+
+		[JsonIgnore]
+		public double ZSize => MaxXYZ.Z - MinXYZ.Z;
 
 		public bool Equals(AxisAlignedBoundingBox bounds, double equalityTolerance = 0)
 		{
-			return this.minXYZ.Equals(bounds.minXYZ, equalityTolerance) && this.maxXYZ.Equals(bounds.maxXYZ, equalityTolerance);
+			return this.MinXYZ.Equals(bounds.MinXYZ, equalityTolerance) && this.MaxXYZ.Equals(bounds.MaxXYZ, equalityTolerance);
 		}
 
 		public AxisAlignedBoundingBox NewTransformed(Matrix4X4 transform)
@@ -110,7 +106,7 @@ namespace MatterHackers.VectorMath
 			boundsVerts[6] = new Vector3(this[1][0], this[1][1], this[0][2]);
 			boundsVerts[7] = new Vector3(this[1][0], this[1][1], this[1][2]);
 
-			Vector3.Transform(boundsVerts, transform);
+			Vector3Ex.Transform(boundsVerts, transform);
 
 			Vector3 newMin = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
 			Vector3 newMax = new Vector3(double.MinValue, double.MinValue, double.MinValue);
@@ -131,24 +127,24 @@ namespace MatterHackers.VectorMath
 
 		public void Expand(int amount)
 		{
-			minXYZ.X -= amount;
-			minXYZ.Y -= amount;
-			minXYZ.Z -= amount;
+			MinXYZ.X -= amount;
+			MinXYZ.Y -= amount;
+			MinXYZ.Z -= amount;
 
-			maxXYZ.X += amount;
-			maxXYZ.Y += amount;
-			maxXYZ.Z += amount;
+			MaxXYZ.X += amount;
+			MaxXYZ.Y += amount;
+			MaxXYZ.Z += amount;
 		}
 
 		public void ExpandToInclude(Vector3 position)
 		{
-			minXYZ.X = Math.Min(minXYZ.X, position.X);
-			minXYZ.Y = Math.Min(minXYZ.Y, position.Y);
-			minXYZ.Z = Math.Min(minXYZ.Z, position.Z);
+			MinXYZ.X = Math.Min(MinXYZ.X, position.X);
+			MinXYZ.Y = Math.Min(MinXYZ.Y, position.Y);
+			MinXYZ.Z = Math.Min(MinXYZ.Z, position.Z);
 
-			maxXYZ.X = Math.Max(maxXYZ.X, position.X);
-			maxXYZ.Y = Math.Max(maxXYZ.Y, position.Y);
-			maxXYZ.Z = Math.Max(maxXYZ.Z, position.Z);
+			MaxXYZ.X = Math.Max(MaxXYZ.X, position.X);
+			MaxXYZ.Y = Math.Max(MaxXYZ.Y, position.Y);
+			MaxXYZ.Z = Math.Max(MaxXYZ.Z, position.Z);
 		}
 
 		/// <summary>
@@ -160,16 +156,16 @@ namespace MatterHackers.VectorMath
 			switch(quadrantIndex)
 			{
 				case 0:
-					return new Vector3(maxXYZ.X, maxXYZ.Y, minXYZ.Z);
+					return new Vector3(MaxXYZ.X, MaxXYZ.Y, MinXYZ.Z);
 
 				case 1:
-					return new Vector3(minXYZ.X, maxXYZ.Y, minXYZ.Z);
+					return new Vector3(MinXYZ.X, MaxXYZ.Y, MinXYZ.Z);
 
 				case 2:
-					return new Vector3(minXYZ.X, minXYZ.Y, minXYZ.Z);
+					return new Vector3(MinXYZ.X, MinXYZ.Y, MinXYZ.Z);
 
 				case 3:
-					return new Vector3(maxXYZ.X, minXYZ.Y, minXYZ.Z);
+					return new Vector3(MaxXYZ.X, MinXYZ.Y, MinXYZ.Z);
 			}
 
 			return Vector3.Zero;
@@ -184,16 +180,16 @@ namespace MatterHackers.VectorMath
 			switch (quadrantIndex)
 			{
 				case 0:
-					return new Vector3(maxXYZ.X, maxXYZ.Y, maxXYZ.Z);
+					return new Vector3(MaxXYZ.X, MaxXYZ.Y, MaxXYZ.Z);
 
 				case 1:
-					return new Vector3(minXYZ.X, maxXYZ.Y, maxXYZ.Z);
+					return new Vector3(MinXYZ.X, MaxXYZ.Y, MaxXYZ.Z);
 
 				case 2:
-					return new Vector3(minXYZ.X, minXYZ.Y, maxXYZ.Z);
+					return new Vector3(MinXYZ.X, MinXYZ.Y, MaxXYZ.Z);
 
 				case 3:
-					return new Vector3(maxXYZ.X, minXYZ.Y, maxXYZ.Z);
+					return new Vector3(MaxXYZ.X, MinXYZ.Y, MaxXYZ.Z);
 			}
 
 			return Vector3.Zero;
@@ -215,7 +211,7 @@ namespace MatterHackers.VectorMath
 		{
 			if (volumeCache == 0)
 			{
-				volumeCache = (maxXYZ.X - minXYZ.X) * (maxXYZ.Y - minXYZ.Y) * (maxXYZ.Z - minXYZ.Z);
+				volumeCache = (MaxXYZ.X - MinXYZ.X) * (MaxXYZ.Y - MinXYZ.Y) * (MaxXYZ.Z - MinXYZ.Z);
 			}
 
 			return volumeCache;
@@ -227,9 +223,9 @@ namespace MatterHackers.VectorMath
 		{
 			if (surfaceAreaCache == 0)
 			{
-				double frontAndBack = (maxXYZ.X - minXYZ.X) * (maxXYZ.Z - minXYZ.Z) * 2;
-				double leftAndRight = (maxXYZ.Y - minXYZ.Y) * (maxXYZ.Z - minXYZ.Z) * 2;
-				double topAndBottom = (maxXYZ.X - minXYZ.X) * (maxXYZ.Y - minXYZ.Y) * 2;
+				double frontAndBack = (MaxXYZ.X - MinXYZ.X) * (MaxXYZ.Z - MinXYZ.Z) * 2;
+				double leftAndRight = (MaxXYZ.Y - MinXYZ.Y) * (MaxXYZ.Z - MinXYZ.Z) * 2;
+				double topAndBottom = (MaxXYZ.X - MinXYZ.X) * (MaxXYZ.Y - MinXYZ.Y) * 2;
 				surfaceAreaCache = frontAndBack + leftAndRight + topAndBottom;
 			}
 
@@ -242,11 +238,11 @@ namespace MatterHackers.VectorMath
 			{
 				if (index == 0)
 				{
-					return minXYZ;
+					return MinXYZ;
 				}
 				else if (index == 1)
 				{
-					return maxXYZ;
+					return MaxXYZ;
 				}
 				else
 				{
@@ -263,14 +259,14 @@ namespace MatterHackers.VectorMath
 		public static AxisAlignedBoundingBox Union(AxisAlignedBoundingBox boundsA, AxisAlignedBoundingBox boundsB)
 		{
 			Vector3 minXYZ = new Vector3(
-				Math.Min(boundsA.minXYZ.X, boundsB.minXYZ.X),
-				Math.Min(boundsA.minXYZ.Y, boundsB.minXYZ.Y),
-				Math.Min(boundsA.minXYZ.Z, boundsB.minXYZ.Z));
+				Math.Min(boundsA.MinXYZ.X, boundsB.MinXYZ.X),
+				Math.Min(boundsA.MinXYZ.Y, boundsB.MinXYZ.Y),
+				Math.Min(boundsA.MinXYZ.Z, boundsB.MinXYZ.Z));
 
 			Vector3 maxXYZ = new Vector3(
-				Math.Max(boundsA.maxXYZ.X, boundsB.maxXYZ.X),
-				Math.Max(boundsA.maxXYZ.Y, boundsB.maxXYZ.Y),
-				Math.Max(boundsA.maxXYZ.Z, boundsB.maxXYZ.Z));
+				Math.Max(boundsA.MaxXYZ.X, boundsB.MaxXYZ.X),
+				Math.Max(boundsA.MaxXYZ.Y, boundsB.MaxXYZ.Y),
+				Math.Max(boundsA.MaxXYZ.Z, boundsB.MaxXYZ.Z));
 
 			return new AxisAlignedBoundingBox(minXYZ, maxXYZ);
 		}
@@ -278,14 +274,14 @@ namespace MatterHackers.VectorMath
 		public bool Intersects(AxisAlignedBoundingBox bounds)
 		{
 			Vector3 intersectMinXYZ = new Vector3(
-				Math.Max(minXYZ.X, bounds.minXYZ.X),
-				Math.Max(minXYZ.Y, bounds.minXYZ.Y),
-				Math.Max(minXYZ.Z, bounds.minXYZ.Z));
+				Math.Max(MinXYZ.X, bounds.MinXYZ.X),
+				Math.Max(MinXYZ.Y, bounds.MinXYZ.Y),
+				Math.Max(MinXYZ.Z, bounds.MinXYZ.Z));
 
 			Vector3 intersectMaxXYZ = new Vector3(
-				Math.Max(minXYZ.X, Math.Min(maxXYZ.X, bounds.maxXYZ.X)),
-				Math.Max(minXYZ.Y, Math.Min(maxXYZ.Y, bounds.maxXYZ.Y)),
-				Math.Max(minXYZ.Z, Math.Min(maxXYZ.Z, bounds.maxXYZ.Z)));
+				Math.Max(MinXYZ.X, Math.Min(MaxXYZ.X, bounds.MaxXYZ.X)),
+				Math.Max(MinXYZ.Y, Math.Min(MaxXYZ.Y, bounds.MaxXYZ.Y)),
+				Math.Max(MinXYZ.Z, Math.Min(MaxXYZ.Z, bounds.MaxXYZ.Z)));
 
 			Vector3 delta = intersectMaxXYZ - intersectMinXYZ;
 			if (delta.X >= 0 && delta.Y >= 0 && delta.Z >= 0)
@@ -298,21 +294,21 @@ namespace MatterHackers.VectorMath
 
 		public void Set(double minX, double minY, double minZ, double maxX, double maxY, double maxZ)
 		{
-			minXYZ = new Vector3(minX, minY, minZ);
-			maxXYZ = new Vector3(maxX, maxY, maxZ);
+			MinXYZ = new Vector3(minX, minY, minZ);
+			MaxXYZ = new Vector3(maxX, maxY, maxZ);
 		}
 
 		public static AxisAlignedBoundingBox Intersection(AxisAlignedBoundingBox boundsA, AxisAlignedBoundingBox boundsB)
 		{
 			Vector3 minXYZ = new Vector3(
-				Math.Max(boundsA.minXYZ.X, boundsB.minXYZ.X),
-				Math.Max(boundsA.minXYZ.Y, boundsB.minXYZ.Y),
-				Math.Max(boundsA.minXYZ.Z, boundsB.minXYZ.Z));
+				Math.Max(boundsA.MinXYZ.X, boundsB.MinXYZ.X),
+				Math.Max(boundsA.MinXYZ.Y, boundsB.MinXYZ.Y),
+				Math.Max(boundsA.MinXYZ.Z, boundsB.MinXYZ.Z));
 
 			Vector3 maxXYZ = new Vector3(
-				Math.Max(minXYZ.X, Math.Min(boundsA.maxXYZ.X, boundsB.maxXYZ.X)),
-				Math.Max(minXYZ.Y, Math.Min(boundsA.maxXYZ.Y, boundsB.maxXYZ.Y)),
-				Math.Max(minXYZ.Z, Math.Min(boundsA.maxXYZ.Z, boundsB.maxXYZ.Z)));
+				Math.Max(minXYZ.X, Math.Min(boundsA.MaxXYZ.X, boundsB.MaxXYZ.X)),
+				Math.Max(minXYZ.Y, Math.Min(boundsA.MaxXYZ.Y, boundsB.MaxXYZ.Y)),
+				Math.Max(minXYZ.Z, Math.Min(boundsA.MaxXYZ.Z, boundsB.MaxXYZ.Z)));
 
 			return new AxisAlignedBoundingBox(minXYZ, maxXYZ);
 		}
@@ -320,45 +316,45 @@ namespace MatterHackers.VectorMath
 		public static AxisAlignedBoundingBox Union(AxisAlignedBoundingBox bounds, Vector3 vertex)
 		{
 			Vector3 minXYZ = Vector3.Zero;
-			minXYZ.X = Math.Min(bounds.minXYZ.X, vertex.X);
-			minXYZ.Y = Math.Min(bounds.minXYZ.Y, vertex.Y);
-			minXYZ.Z = Math.Min(bounds.minXYZ.Z, vertex.Z);
+			minXYZ.X = Math.Min(bounds.MinXYZ.X, vertex.X);
+			minXYZ.Y = Math.Min(bounds.MinXYZ.Y, vertex.Y);
+			minXYZ.Z = Math.Min(bounds.MinXYZ.Z, vertex.Z);
 
 			Vector3 maxXYZ = Vector3.Zero;
-			maxXYZ.X = Math.Max(bounds.maxXYZ.X, vertex.X);
-			maxXYZ.Y = Math.Max(bounds.maxXYZ.Y, vertex.Y);
-			maxXYZ.Z = Math.Max(bounds.maxXYZ.Z, vertex.Z);
+			maxXYZ.X = Math.Max(bounds.MaxXYZ.X, vertex.X);
+			maxXYZ.Y = Math.Max(bounds.MaxXYZ.Y, vertex.Y);
+			maxXYZ.Z = Math.Max(bounds.MaxXYZ.Z, vertex.Z);
 
 			return new AxisAlignedBoundingBox(minXYZ, maxXYZ);
 		}
 
 		public void Clamp(ref Vector3 positionToClamp)
 		{
-			if (positionToClamp.X < minXYZ.X)
+			if (positionToClamp.X < MinXYZ.X)
 			{
-				positionToClamp.X = minXYZ.X;
+				positionToClamp.X = MinXYZ.X;
 			}
-			else if (positionToClamp.X > maxXYZ.X)
+			else if (positionToClamp.X > MaxXYZ.X)
 			{
-				positionToClamp.X = maxXYZ.X;
-			}
-
-			if (positionToClamp.Y < minXYZ.Y)
-			{
-				positionToClamp.Y = minXYZ.Y;
-			}
-			else if (positionToClamp.Y > maxXYZ.Y)
-			{
-				positionToClamp.Y = maxXYZ.Y;
+				positionToClamp.X = MaxXYZ.X;
 			}
 
-			if (positionToClamp.Z < minXYZ.Z)
+			if (positionToClamp.Y < MinXYZ.Y)
 			{
-				positionToClamp.Z = minXYZ.Z;
+				positionToClamp.Y = MinXYZ.Y;
 			}
-			else if (positionToClamp.Z > maxXYZ.Z)
+			else if (positionToClamp.Y > MaxXYZ.Y)
 			{
-				positionToClamp.Z = maxXYZ.Z;
+				positionToClamp.Y = MaxXYZ.Y;
+			}
+
+			if (positionToClamp.Z < MinXYZ.Z)
+			{
+				positionToClamp.Z = MinXYZ.Z;
+			}
+			else if (positionToClamp.Z > MaxXYZ.Z)
+			{
+				positionToClamp.Z = MaxXYZ.Z;
 			}
 		}
 
@@ -369,12 +365,12 @@ namespace MatterHackers.VectorMath
 
 		public bool Contains(Vector3 position, double errorRange = .001)
 		{
-			if (this.minXYZ.X <= position.X + errorRange
-				&& this.maxXYZ.X >= position.X - errorRange
-				&& this.minXYZ.Y <= position.Y + errorRange
-				&& this.maxXYZ.Y >= position.Y - errorRange
-				&& this.minXYZ.Z <= position.Z + errorRange
-				&& this.maxXYZ.Z >= position.Z - errorRange)
+			if (this.MinXYZ.X <= position.X + errorRange
+				&& this.MaxXYZ.X >= position.X - errorRange
+				&& this.MinXYZ.Y <= position.Y + errorRange
+				&& this.MaxXYZ.Y >= position.Y - errorRange
+				&& this.MinXYZ.Z <= position.Z + errorRange
+				&& this.MaxXYZ.Z >= position.Z - errorRange)
 			{
 				return true;
 			}
@@ -384,12 +380,12 @@ namespace MatterHackers.VectorMath
 
 		public bool Contains(AxisAlignedBoundingBox bounds)
 		{
-			if (this.minXYZ.X <= bounds.minXYZ.X
-				&& this.maxXYZ.X >= bounds.maxXYZ.X
-				&& this.minXYZ.Y <= bounds.minXYZ.Y
-				&& this.maxXYZ.Y >= bounds.maxXYZ.Y
-				&& this.minXYZ.Z <= bounds.minXYZ.Z
-				&& this.maxXYZ.Z >= bounds.maxXYZ.Z)
+			if (this.MinXYZ.X <= bounds.MinXYZ.X
+				&& this.MaxXYZ.X >= bounds.MaxXYZ.X
+				&& this.MinXYZ.Y <= bounds.MinXYZ.Y
+				&& this.MaxXYZ.Y >= bounds.MaxXYZ.Y
+				&& this.MinXYZ.Z <= bounds.MinXYZ.Z
+				&& this.MaxXYZ.Z >= bounds.MaxXYZ.Z)
 			{
 				return true;
 			}
@@ -399,7 +395,7 @@ namespace MatterHackers.VectorMath
 
 		public override string ToString()
 		{
-			return string.Format("min {0} - max {1}", minXYZ, maxXYZ);
+			return string.Format("min {0} - max {1}", MinXYZ, MaxXYZ);
 		}
 	}
 }

@@ -89,6 +89,12 @@ namespace MatterHackers.VectorMath
 			this.Y = vector.Y;
 		}
 
+		public Vector2(Vector3Float vector)
+		{
+			this.X = vector.X;
+			this.Y = vector.Y;
+		}
+
 		#endregion Constructors
 
 		#region Properties
@@ -137,17 +143,8 @@ namespace MatterHackers.VectorMath
 		{
 			long hash = 19;
 
-			unsafe
-			{
-				fixed (double* pX = &X)
-				{
-					hash = hash * 31 + *(long*)(pX);
-				}
-				fixed (double* pY = &Y)
-				{
-					hash = hash * 31 + *(long*)(pY);
-				}
-			}
+			hash = hash * 31 + BitConverter.DoubleToInt64Bits(X);
+			hash = hash * 31 + BitConverter.DoubleToInt64Bits(Y);
 
 			return hash;
 		}

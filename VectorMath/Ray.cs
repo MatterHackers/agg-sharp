@@ -92,8 +92,8 @@ namespace MatterHackers.VectorMath
 
 		public static Ray Transform(Ray ray, Matrix4X4 matrix)
 		{
-			Vector3 transformedOrigin = Vector3.TransformPosition(ray.origin, matrix);
-			Vector3 transformedDirecton = Vector3.TransformVector(ray.directionNormal, matrix);
+			Vector3 transformedOrigin = Vector3Ex.TransformPosition(ray.origin, matrix);
+			Vector3 transformedDirecton = Vector3Ex.TransformVector(ray.directionNormal, matrix);
 			return new Ray(transformedOrigin, transformedDirecton, ray.minDistanceToConsider, ray.maxDistanceToConsider, ray.intersectionType);
 		}
 

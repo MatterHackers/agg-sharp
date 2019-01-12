@@ -42,7 +42,7 @@ namespace MatterHackers.Csg.Transform
 			: base(objectToCenter, offset, name)
 		{
 			AxisAlignedBoundingBox bounds = objectToCenter.GetAxisAlignedBoundingBox();
-			Vector3 center = (bounds.maxXYZ + bounds.minXYZ) / 2;
+			Vector3 center = (bounds.MaxXYZ + bounds.MinXYZ) / 2;
 
 			Vector3 origin = Vector3.Zero; // zero out anything we don't want
 			if (onX)

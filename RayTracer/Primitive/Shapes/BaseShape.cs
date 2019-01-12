@@ -87,5 +87,10 @@ namespace MatterHackers.RayTracer
 		public abstract AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
 
 		public abstract double GetIntersectCost();
+
+		public double GetAxisCenter(int axis)
+		{
+			return GetCenter()[axis];
+		}
 	}
 }

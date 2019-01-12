@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
+using System;
 using System.Collections.Generic;
 
 namespace MatterHackers.PolygonMesh.Csg
@@ -82,36 +83,37 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		public void CreateSlice(Mesh mesh, Matrix4X4? matrix = null)
 		{
-			// Move the plane into the mesh's space
-			var planeInMeshSpace = SlicePlane;
-			if (matrix != null)
-			{
-				// transform our plane to the mesh
-				var toMeshMatrix = matrix.Value.Inverted;
-				planeInMeshSpace = new Plane(
-					Vector3.TransformNormal(SlicePlane.PlaneNormal, toMeshMatrix),
-					Vector3.Transform(SlicePlane.PlaneNormal * SlicePlane.DistanceToPlaneFromOrigin, toMeshMatrix));
-			}
+			throw new NotImplementedException();
+			//// Move the plane into the mesh's space
+			//var planeInMeshSpace = SlicePlane;
+			//if (matrix != null)
+			//{
+			//	// transform our plane to the mesh
+			//	var toMeshMatrix = matrix.Value.Inverted;
+			//	planeInMeshSpace = new Plane(
+			//		Vector3Ex.TransformNormal(SlicePlane.PlaneNormal, toMeshMatrix),
+			//		Vector3Ex.Transform(SlicePlane.PlaneNormal * SlicePlane.DistanceToPlaneFromOrigin, toMeshMatrix));
+			//}
 
-			// collect all the segments this plane intersects and record them in unordered segments in z 0 space
-			var meshTo0Plane = matrix == null ? flatentMatrix : matrix.Value * flatentMatrix;
-			foreach (var face in mesh.Faces)
-			{
-				var start = Vector3.Zero;
-				var end = Vector3.Zero;
-				if (face.GetCutLine(planeInMeshSpace, ref start, ref end))
-				{
-					var startAtZ0 = Vector3.Transform(start, meshTo0Plane);
-					var endAtZ0 = Vector3.Transform(end, meshTo0Plane);
-					this.UnorderedSegments.Add(
-						new Segment(
-							new Vector2(startAtZ0.X, startAtZ0.Y),
-							new Vector2(endAtZ0.X, endAtZ0.Y)));
-				}
-			}
+			//// collect all the segments this plane intersects and record them in unordered segments in z 0 space
+			//var meshTo0Plane = matrix == null ? flatentMatrix : matrix.Value * flatentMatrix;
+			//foreach (var face in mesh.Faces)
+			//{
+			//	var start = Vector3.Zero;
+			//	var end = Vector3.Zero;
+			//	if (face.GetCutLine(planeInMeshSpace, ref start, ref end))
+			//	{
+			//		var startAtZ0 = Vector3Ex.Transform(start, meshTo0Plane);
+			//		var endAtZ0 = Vector3Ex.Transform(end, meshTo0Plane);
+			//		this.UnorderedSegments.Add(
+			//			new Segment(
+			//				new Vector2(startAtZ0.X, startAtZ0.Y),
+			//				new Vector2(endAtZ0.X, endAtZ0.Y)));
+			//	}
+			//}
 
-			// connect all the segments together into polygons
-			FindClosedPolygons();
+			//// connect all the segments together into polygons
+			//FindClosedPolygons();
 		}
 
 		public void FindClosedPolygons()

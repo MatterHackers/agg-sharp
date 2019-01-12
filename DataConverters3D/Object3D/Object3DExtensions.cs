@@ -35,6 +35,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg;
+using MatterHackers.Agg.Image;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
@@ -200,15 +201,15 @@ namespace MatterHackers.DataConverters3D
 		{
 			RectangleDouble screenBounds = RectangleDouble.ZeroIntersection;
 
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.minXYZ.Y, meshBounds.minXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.minXYZ.Y, meshBounds.minXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.maxXYZ.Y, meshBounds.minXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.maxXYZ.Y, meshBounds.minXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.MinXYZ.X, meshBounds.MinXYZ.Y, meshBounds.MinXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.MaxXYZ.X, meshBounds.MinXYZ.Y, meshBounds.MinXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.MaxXYZ.X, meshBounds.MaxXYZ.Y, meshBounds.MinXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.MinXYZ.X, meshBounds.MaxXYZ.Y, meshBounds.MinXYZ.Z)));
 
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.minXYZ.Y, meshBounds.maxXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.minXYZ.Y, meshBounds.maxXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.maxXYZ.Y, meshBounds.maxXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.maxXYZ.Y, meshBounds.maxXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.MinXYZ.X, meshBounds.MinXYZ.Y, meshBounds.MaxXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.MaxXYZ.X, meshBounds.MinXYZ.Y, meshBounds.MaxXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.MaxXYZ.X, meshBounds.MaxXYZ.Y, meshBounds.MaxXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.MinXYZ.X, meshBounds.MaxXYZ.Y, meshBounds.MaxXYZ.Z)));
 			return screenBounds;
 		}
 
@@ -497,48 +498,53 @@ namespace MatterHackers.DataConverters3D
 			item.Matrix *= Matrix4X4.CreateTranslation(origin);
 		}
 
-		public static IPrimitive CreateTraceData(this Mesh mesh, int maxRecursion = int.MaxValue)
+		public static IPrimitive CreateTraceData(this Mesh mesh)
+		{
+			return CreateTraceData(mesh, null, Matrix4X4.Identity);
+		}
+
+		public static IPrimitive CreateTraceData(this Mesh mesh, MaterialAbstract material, Matrix4X4 matrix, int maxRecursion = int.MaxValue)
 		{
 			List<IPrimitive> allPolys = new List<IPrimitive>();
-			List<Vector3> positions = new List<Vector3>();
-			List<Vector2> uvs = new List<Vector2>();
 
-			foreach (var face in mesh.Faces)
-			{
-				positions.Clear();
-				bool hasTexture = false;
-
-				foreach (var faceEdge in face.FaceEdges())
-				{
-					if (mesh.TextureUV.ContainsKey((faceEdge, 0)))
-					{
-						uvs.Add(faceEdge.GetUv(0));
-						hasTexture = true;
-					}
-					positions.Add(faceEdge.FirstVertex.Position);
-				}
-
-				// We should use the tessellator for this if it is greater than 3.
-				Vector3 next = positions[1];
-				Vector2 nextuv = hasTexture ? uvs[1] : Vector2.Zero;
-				for (int positionIndex = 2; positionIndex < positions.Count; positionIndex++)
-				{
-					TriangleShape triangel;
-					if (hasTexture)
-					{
-						triangel = new TriangleShapeUv(positions[0], next, positions[positionIndex],
-							uvs[0], nextuv, uvs[positionIndex], null);
-					}
-					else
-					{
-						triangel = new TriangleShape(positions[0], next, positions[positionIndex], null);
-					}
-					allPolys.Add(triangel);
-					next = positions[positionIndex];
-				}
-			}
+			mesh.AddTracePrimitives(material, matrix, allPolys);
 
 			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys, maxRecursion);
+		}
+
+		public static void AddTracePrimitives(this Mesh mesh, MaterialAbstract material, Matrix4X4 matrix, List<IPrimitive> tracePrimitives)
+		{
+			for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
+			{
+				var face = mesh.Faces[faceIndex];
+
+				IPrimitive triangle;
+				if (material != null)
+				{
+					triangle = new TriangleShape(
+						mesh.Vertices[face.v0].Transform(matrix),
+						mesh.Vertices[face.v1].Transform(matrix),
+						mesh.Vertices[face.v2].Transform(matrix),
+						material);
+				}
+				else
+				{
+					triangle = new MinimalTriangle((fi, vi) =>
+					{
+						switch(vi)
+						{
+							case 0:
+								return mesh.Vertices[mesh.Faces[fi].v0];
+							case 1:
+								return mesh.Vertices[mesh.Faces[fi].v1];
+							default:
+								return mesh.Vertices[mesh.Faces[fi].v2];
+						}
+					}, faceIndex);
+				}
+
+				tracePrimitives.Add(triangle);
+			}
 		}
 
 		/// <summary>

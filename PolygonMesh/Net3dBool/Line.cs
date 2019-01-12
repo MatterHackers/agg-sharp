@@ -61,7 +61,7 @@ namespace Net3dBool
 			Vector3 normalFace2 = face2.Normal;
 
 			//direction: cross product of the faces normals
-			Direction = Vector3.Cross(normalFace1, normalFace2);
+			Direction = Vector3Ex.Cross(normalFace1, normalFace2);
 
 			//if direction length is not zero (the planes aren't parallel )...
 			if (!(Direction.Length < EqualityTolerance))
@@ -174,10 +174,10 @@ namespace Net3dBool
 		/// <returns>intersection point.If they don't intersect, return null</returns>
 		public Vector3 ComputePlaneIntersection(Plane plane)
 		{
-			double distanceToStartFromOrigin = Vector3.Dot(plane.PlaneNormal, startPoint);
+			double distanceToStartFromOrigin = Vector3Ex.Dot(plane.PlaneNormal, startPoint);
 
 			double distanceFromPlane = distanceToStartFromOrigin - plane.DistanceToPlaneFromOrigin;
-			double denominator = Vector3.Dot(plane.PlaneNormal, Direction);
+			double denominator = Vector3Ex.Dot(plane.PlaneNormal, Direction);
 
 			if (Math.Abs(denominator) < EqualityTolerance)
 			{
@@ -214,7 +214,7 @@ namespace Net3dBool
 			double distance = (otherPoint - startPoint).Length;
 			Vector3 vec = new Vector3(otherPoint.X - startPoint.X, otherPoint.Y - startPoint.Y, otherPoint.Z - startPoint.Z);
 			vec.Normalize();
-			if (Vector3.Dot(vec, Direction) < 0)
+			if (Vector3Ex.Dot(vec, Direction) < 0)
 			{
 				return -distance;
 			}

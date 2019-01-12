@@ -68,7 +68,7 @@ namespace MatterHackers.Agg.Tests
 		{
 			Vector3 Test1 = new Vector3(10, 1, 2);
 			Vector3 Test2 = new Vector3(1, 0, 0);
-			double DotResult = Vector3.Dot(Test2, Test1);
+			double DotResult = Vector3Ex.Dot(Test2, Test1);
 			Assert.IsTrue(DotResult == 10);
 		}
 
@@ -77,7 +77,7 @@ namespace MatterHackers.Agg.Tests
 		{
 			Vector3 Test1 = new Vector3(10, 0, 0);
 			Vector3 Test2 = new Vector3(1, 1, 0);
-			Vector3 CrossResult = Vector3.Cross(Test2, Test1);
+			Vector3 CrossResult = Vector3Ex.Cross(Test2, Test1);
 			Assert.IsTrue(CrossResult.X == 0);
 			Assert.IsTrue(CrossResult.Y == 0);
 			Assert.IsTrue(CrossResult.Z < 0);

@@ -40,59 +40,61 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		[Test]
 		public void PreventDuplicates()
 		{
-			VertexCollecton collection = new VertexCollecton();
-			Vector3 position1 = new Vector3(10, 11, 12);
-			IVertex vertex1 = new Vertex(position1);
-			collection.Add(vertex1);
-			Assert.IsTrue(collection.ContainsAVertexAtPosition(vertex1) == true);
-			List<IVertex> found = collection.FindVertices(position1, .001);
-			Assert.IsTrue(found.Count == 1);
-			Assert.IsTrue(found[0] == vertex1);
+			throw new NotImplementedException();
+			//VertexCollecton collection = new VertexCollecton();
+			//Vector3 position1 = new Vector3(10, 11, 12);
+			//IVertex vertex1 = new Vertex(position1);
+			//collection.Add(vertex1);
+			//Assert.IsTrue(collection.ContainsAVertexAtPosition(vertex1) == true);
+			//List<IVertex> found = collection.FindVertices(position1, .001);
+			//Assert.IsTrue(found.Count == 1);
+			//Assert.IsTrue(found[0] == vertex1);
 
-			Vector3 position2 = new Vector3(20, 21, 22);
-			IVertex vertex2 = new Vertex(position2);
-			collection.Add(vertex2);
-			Assert.IsTrue(collection.ContainsAVertexAtPosition(vertex1) == true);
-			found = collection.FindVertices(position1, .001);
-			Assert.IsTrue(found.Count == 1);
-			Assert.IsTrue(found[0] == vertex1);
+			//Vector3 position2 = new Vector3(20, 21, 22);
+			//IVertex vertex2 = new Vertex(position2);
+			//collection.Add(vertex2);
+			//Assert.IsTrue(collection.ContainsAVertexAtPosition(vertex1) == true);
+			//found = collection.FindVertices(position1, .001);
+			//Assert.IsTrue(found.Count == 1);
+			//Assert.IsTrue(found[0] == vertex1);
 
-			Vector3 position3 = new Vector3(10, 21, 22);
-			IVertex vertex3 = new Vertex(position3);
-			collection.Add(vertex3);
-			Assert.IsTrue(collection.ContainsAVertexAtPosition(vertex1) == true);
-			found = collection.FindVertices(position1, .001);
-			Assert.IsTrue(found.Count == 1);
-			Assert.IsTrue(found[0] == vertex1);
+			//Vector3 position3 = new Vector3(10, 21, 22);
+			//IVertex vertex3 = new Vertex(position3);
+			//collection.Add(vertex3);
+			//Assert.IsTrue(collection.ContainsAVertexAtPosition(vertex1) == true);
+			//found = collection.FindVertices(position1, .001);
+			//Assert.IsTrue(found.Count == 1);
+			//Assert.IsTrue(found[0] == vertex1);
 		}
 
 		[Test]
 		public void SortAndQueryWork()
 		{
-			double size = 10;
-			double increment = 1;
-			Random positionRand = new Random();
-			Mesh mesh = new Mesh();
-			List<Vector3Float> positions = new List<Vector3Float>();
-			int numPosition = 50;
-			for (int i = 0; i < numPosition; i++)
-			{
-				positions.Add(new Vector3Float(positionRand.NextDouble() * size, positionRand.NextDouble() * size, positionRand.NextDouble() * size));
-				mesh.CreateVertex(new Vector3(positions[i].x, positions[i].y, positions[i].z), CreateOption.CreateNew, SortOption.WillSortLater);
-			}
+			throw new NotImplementedException();
+			//double size = 10;
+			//double increment = 1;
+			//Random positionRand = new Random();
+			//Mesh mesh = new Mesh();
+			//List<Vector3Float> positions = new List<Vector3Float>();
+			//int numPosition = 50;
+			//for (int i = 0; i < numPosition; i++)
+			//{
+			//	positions.Add(new Vector3Float(positionRand.NextDouble() * size, positionRand.NextDouble() * size, positionRand.NextDouble() * size));
+			//	mesh.CreateVertex(new Vector3(positions[i].x, positions[i].y, positions[i].z), CreateOption.CreateNew, SortOption.WillSortLater);
+			//}
 
-			mesh.SortVertices();
+			//mesh.SortVertices();
 
-			for (double distance = 0; distance < size; distance += increment)
-			{
-				for (int i = 0; i < numPosition; i++)
-				{
-					List<IVertex> found1 = mesh.FindVertices(new Vector3(positions[i].x, positions[i].y, positions[i].z), distance);
-					List<Vector3Float> found2 = FindWithinDist(positions, positions[i], distance);
+			//for (double distance = 0; distance < size; distance += increment)
+			//{
+			//	for (int i = 0; i < numPosition; i++)
+			//	{
+			//		List<IVertex> found1 = mesh.FindVertices(new Vector3(positions[i].x, positions[i].y, positions[i].z), distance);
+			//		List<Vector3Float> found2 = FindWithinDist(positions, positions[i], distance);
 
-					Assert.IsTrue(found1.Count == found2.Count);
-				}
-			}
+			//		Assert.IsTrue(found1.Count == found2.Count);
+			//	}
+			//}
 		}
 
 		private List<Vector3Float> FindWithinDist(List<Vector3Float> positions, Vector3Float position, double distance)

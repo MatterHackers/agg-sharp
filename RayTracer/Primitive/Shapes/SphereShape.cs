@@ -61,8 +61,8 @@ namespace MatterHackers.RayTracer
 			double radiusSquared = radius * radius;
 
 			Vector3 deltaFromShpereCenterToRayOrigin = ray.origin - this.position;
-			double distanceFromSphereCenterToRayOrigin = Vector3.Dot(deltaFromShpereCenterToRayOrigin, ray.directionNormal); // negative means the sphere is in front of the ray.
-			double lengthFromRayOrginToSphereCenterSquared = Vector3.Dot(deltaFromShpereCenterToRayOrigin, deltaFromShpereCenterToRayOrigin);
+			double distanceFromSphereCenterToRayOrigin = Vector3Ex.Dot(deltaFromShpereCenterToRayOrigin, ray.directionNormal); // negative means the sphere is in front of the ray.
+			double lengthFromRayOrginToSphereCenterSquared = Vector3Ex.Dot(deltaFromShpereCenterToRayOrigin, deltaFromShpereCenterToRayOrigin);
 			double lengthFromRayOrigintoNearEdgeOfSphereSquared = lengthFromRayOrginToSphereCenterSquared - radiusSquared;
 			double distanceFromSphereCenterToRaySquared = distanceFromSphereCenterToRayOrigin * distanceFromSphereCenterToRayOrigin;
 			double amountSphereCenterToRayIsGreaterThanRayOriginToEdgeSquared = distanceFromSphereCenterToRaySquared - lengthFromRayOrigintoNearEdgeOfSphereSquared;
@@ -120,8 +120,8 @@ namespace MatterHackers.RayTracer
 			double radiusSquared = radius * radius;
 
 			Vector3 deltaFromShpereCenterToRayOrigin = ray.origin - this.position;
-			double distanceFromSphereCenterToRayOrigin = Vector3.Dot(deltaFromShpereCenterToRayOrigin, ray.directionNormal); // negative means the sphere is in front of the ray.
-			double lengthFromRayOrginToSphereCenterSquared = Vector3.Dot(deltaFromShpereCenterToRayOrigin, deltaFromShpereCenterToRayOrigin);
+			double distanceFromSphereCenterToRayOrigin = Vector3Ex.Dot(deltaFromShpereCenterToRayOrigin, ray.directionNormal); // negative means the sphere is in front of the ray.
+			double lengthFromRayOrginToSphereCenterSquared = Vector3Ex.Dot(deltaFromShpereCenterToRayOrigin, deltaFromShpereCenterToRayOrigin);
 			double lengthFromRayOrigintoNearEdgeOfSphereSquared = lengthFromRayOrginToSphereCenterSquared - radiusSquared;
 			double distanceFromSphereCenterToRaySquared = distanceFromSphereCenterToRayOrigin * distanceFromSphereCenterToRayOrigin;
 			double amountSphereCenterToRayIsGreaterThanRayOriginToEdgeSquared = distanceFromSphereCenterToRaySquared - lengthFromRayOrigintoNearEdgeOfSphereSquared;
@@ -172,16 +172,16 @@ namespace MatterHackers.RayTracer
 			Vector3 ve = new Vector3(0, 0, 1).GetNormal(); // equator / sphere orientation
 			Vector3 vp = (info.HitPosition - position).GetNormal(); //points from center of sphere to intersection
 
-			double phi = Math.Acos(-Vector3.Dot(vp, vn));
+			double phi = Math.Acos(-Vector3Ex.Dot(vp, vn));
 			double v = (phi * 2 / Math.PI) - 1;
 
-			double sinphi = Vector3.Dot(ve, vp) / Math.Sin(phi);
+			double sinphi = Vector3Ex.Dot(ve, vp) / Math.Sin(phi);
 			sinphi = sinphi < -1 ? -1 : sinphi > 1 ? 1 : sinphi;
 			double theta = Math.Acos(sinphi) * 2 / Math.PI;
 
 			double u;
 
-			if (Vector3.Dot(Vector3.Cross(vn, ve), vp) > 0)
+			if (Vector3Ex.Dot(Vector3Ex.Cross(vn, ve), vp) > 0)
 			{
 				u = theta;
 			}

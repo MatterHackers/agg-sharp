@@ -89,15 +89,18 @@ namespace MatterHackers.RenderOpenGl
 			// This is private as you can't build one of these. You have to call GetImageGLDisplayListPlugin.
 		}
 
-		private void CreateRenderData(Mesh meshToBuildListFor, double nonPlanarAngleRequired = 0, Action meshChanged = null)
+		private void CreateRenderData(Mesh mesh, double nonPlanarAngleRequired = 0, Action meshChanged = null)
 		{
 			this.nonPlanarAngleRequired = nonPlanarAngleRequired;
 			var edgeLines = new VectorPOD<WireVertexData>();
 
 			// create a quick edge list of all the polygon edges
-			foreach (MeshEdge meshEdge in meshToBuildListFor.MeshEdges)
+			for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
 			{
-				AddVertex(edgeLines, meshEdge.VertexOnEnd[0].Position, meshEdge.VertexOnEnd[1].Position);
+				var face = mesh.Faces[faceIndex];
+				AddVertex(edgeLines, mesh.Vertices[face.v0], mesh.Vertices[face.v1]);
+				AddVertex(edgeLines, mesh.Vertices[face.v1], mesh.Vertices[face.v2]);
+				AddVertex(edgeLines, mesh.Vertices[face.v2], mesh.Vertices[face.v0]);
 			}
 			EdgeLines = edgeLines;
 
@@ -108,14 +111,22 @@ namespace MatterHackers.RenderOpenGl
 				{
 					var filteredEdgeLines = new VectorPOD<WireVertexData>();
 
-					List<(Face face, Vector3 start, Vector3 end, Vector3 normal, double length)> faceEdges = new List<(Face face, Vector3 start, Vector3 end, Vector3 normal, double length)>();
-					foreach (var face in meshToBuildListFor.Faces)
+					var faceEdges = new List<(int face, Vector3Float start, Vector3Float end, Vector3Float normal, double length)>();
+					for(int i=0; i<mesh.Faces.Count; i++)
 					{
-						foreach (var faceEdge in face.FaceEdges())
+						var meshFace = mesh.Faces[i];
+
+						var meshFaceEdges = new List<(Vector3Float p0, Vector3Float p1)>
 						{
-							var meshEdge = faceEdge.MeshEdge;
-							Vector3 start = meshEdge.VertexOnEnd[0].Position;
-							Vector3 end = meshEdge.VertexOnEnd[1].Position;
+							(mesh.Vertices[meshFace.v0], mesh.Vertices[meshFace.v1]),
+							(mesh.Vertices[meshFace.v1], mesh.Vertices[meshFace.v2]),
+							(mesh.Vertices[meshFace.v2], mesh.Vertices[meshFace.v0])
+						};
+
+						foreach (var meshFaceEdge in meshFaceEdges)
+						{
+							var start = meshFaceEdge.p0;
+							var end = meshFaceEdge.p1;
 							if (start.X > end.X || start.Y > end.Y || start.Z > end.Z)
 							{
 								var temp = start;
@@ -124,15 +135,15 @@ namespace MatterHackers.RenderOpenGl
 							}
 
 							// quantize the normals so we group them together
-							Vector3 normal = (end - start).GetNormal();
-							normal.X = ((int)(normal.X * 255)) / 255.0;
-							normal.Y = ((int)(normal.Y * 255)) / 255.0;
-							normal.Z = ((int)(normal.Z * 255)) / 255.0;
-							faceEdges.Add((faceEdge.ContainingFace, start, end, normal, (end - start).Length));
+							var normal = (end - start).GetNormal();
+							normal.X = (float)(((int)(normal.X * 255)) / 255.0);
+							normal.Y = (float)((int)((normal.Y * 255)) / 255.0);
+							normal.Z = (float)((int)((normal.Z * 255)) / 255.0);
+							faceEdges.Add((i, start, end, normal, (end - start).Length));
 						}
 					}
 
-					var startIndexes = new Dictionary<Vector3, List<int>>();
+					var startIndexes = new Dictionary<Vector3Float, List<int>>();
 
 					for (int i = 0; i < faceEdges.Count; i++)
 					{
@@ -145,7 +156,7 @@ namespace MatterHackers.RenderOpenGl
 						startIndexes[faceEdge.start].Add(i);
 					}
 
-					for (int i=0; i< faceEdges.Count; i++)
+					for (int i = 0; i < faceEdges.Count; i++)
 					{
 						var edgeI = faceEdges[i];
 						// figure out if edge i has any collinear edges that are above the angle
@@ -163,7 +174,7 @@ namespace MatterHackers.RenderOpenGl
 								if ((edgeI.start == edgeJ.start && edgeI.end == edgeJ.end)
 									|| (edgeI.start == edgeJ.end && edgeI.end == edgeJ.start))
 								{
-									double angle = Vector3.CalculateAngle(edgeI.face.Normal, edgeJ.face.Normal);
+									double angle = mesh.FaceNormals[edgeI.face].CalculateAngle(mesh.FaceNormals[edgeJ.face]);
 									if (angle > MathHelper.Tau * .1)
 									{
 										AddVertex(filteredEdgeLines, edgeI.start, edgeI.end);
@@ -187,7 +198,7 @@ namespace MatterHackers.RenderOpenGl
 								if ((edgeI.start == edgeJ.start && edgeI.end == edgeJ.end)
 									|| (edgeI.start == edgeJ.end && edgeI.end == edgeJ.start))
 								{
-									double angle = Vector3.CalculateAngle(edgeI.face.Normal, edgeJ.face.Normal);
+									double angle = mesh.FaceNormals[edgeI.face].CalculateAngle(mesh.FaceNormals[edgeJ.face]);
 									if (angle > MathHelper.Tau * .1)
 									{
 										AddVertex(filteredEdgeLines, edgeI.start, edgeI.end);
@@ -204,7 +215,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		private void AddVertex(VectorPOD<WireVertexData> edgeLines, Vector3 vertex0, Vector3 vertex1)
+		private void AddVertex(VectorPOD<WireVertexData> edgeLines, Vector3Float vertex0, Vector3Float vertex1)
 		{
 			WireVertexData tempVertex;
 			tempVertex.positionsX = (float)vertex0.X;

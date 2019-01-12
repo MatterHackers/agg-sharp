@@ -66,7 +66,7 @@ namespace MatterHackers.Agg.Tests
 
 			Vector3 TestVector31 = new Vector3(TestVector2D1.X, TestVector2D1.Y, 0);
 			Vector3 TestVector32 = new Vector3(TestVector2D2.X, TestVector2D2.Y, 0);
-			Vector3 Cross3D = Vector3.Cross(TestVector31, TestVector32);
+			Vector3 Cross3D = Vector3Ex.Cross(TestVector31, TestVector32);
 
 			Assert.IsTrue(Cross3D.Z == Cross2D);
 		}
@@ -81,7 +81,7 @@ namespace MatterHackers.Agg.Tests
 
 			Vector3 TestVector31 = new Vector3(TestVector2D1.X, TestVector2D1.Y, 0);
 			Vector3 TestVector32 = new Vector3(TestVector2D2.X, TestVector2D2.Y, 0);
-			double Cross3D = Vector3.Dot(TestVector31, TestVector32);
+			double Cross3D = Vector3Ex.Dot(TestVector31, TestVector32);
 
 			Assert.IsTrue(Cross3D == Cross2D);
 		}

@@ -83,7 +83,7 @@ namespace MatterHackers.Csg.Processors
 		{
 			if (objectToProcess.Name == nameWeAreLookingFor)
 			{
-				Vector3 position = Vector3.TransformPosition(objectToProcess.GetCenter(), accumulatedMatrix);
+				Vector3 position = Vector3Ex.TransformPosition(objectToProcess.GetCenter(), accumulatedMatrix);
 				if (outputAsScad)
 				{
 					string output = "translate([" + position.X.ToString() + ", " + position.Y.ToString() + ", " + position.Z.ToString() + "])\n";
