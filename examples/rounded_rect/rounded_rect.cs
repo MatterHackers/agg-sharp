@@ -127,7 +127,7 @@ namespace MatterHackers.Agg
 			if (!m_DrawAsOutlineCheckBox.Checked)
 			{
 				Stroke p = new Stroke(r);
-				p.width(1.0);
+				p.Width = 1.0;
 				ras.add_path(p);
 			}
 			else

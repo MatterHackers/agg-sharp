@@ -79,7 +79,7 @@ namespace MatterHackers.Agg
 
 			VertexStorage ps = new VertexStorage();
 			Stroke pg = new Stroke(ps);
-			pg.width(2);
+			pg.Width = 2;
 
 			DrawBigA(graphics2D);
 

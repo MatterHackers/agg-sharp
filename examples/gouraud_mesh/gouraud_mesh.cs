@@ -393,9 +393,9 @@ namespace MatterHackers.Agg
 			t.SetFontSize(10.0);
 
 			Stroke pt = new Stroke(t);
-			pt.width(1.5);
-			pt.line_cap(LineCap.Round);
-			pt.line_join(LineJoin.Round);
+			pt.Width = 1.5;
+			pt.LineCap = LineCap.Round;
+			pt.LineJoin = LineJoin.Round;
 
 			string buf = string.Format("{0:F2} ms, {1} triangles, {2:F0} tri/sec",
 				tm,

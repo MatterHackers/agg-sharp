@@ -232,7 +232,7 @@ namespace MatterHackers.Agg
 			t.text(buf);
 
 			Stroke pt = new Stroke(t);
-			pt.width(1.5);
+			pt.Width = 1.5;
 
 			m_Rasterizer.add_path(pt);
 #if SourceDepthFloat

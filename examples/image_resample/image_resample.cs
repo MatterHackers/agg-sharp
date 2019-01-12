@@ -366,7 +366,7 @@ namespace MatterHackers.Agg
 			t.SetFontSize(10.0);
 
 			Stroke pt = new Stroke(t);
-			pt.width(1.5);
+			pt.Width = 1.5;
 
 			string buf = string.Format("{0:F2} ms", tm);
 			t.start_point(10.0, 70.0);
