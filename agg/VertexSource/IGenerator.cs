@@ -29,42 +29,42 @@ namespace MatterHackers.Agg.VertexSource
 
 		ShapePath.FlagsAndCommand Vertex(ref double x, ref double y);
 
-		LineCap line_cap();
+		LineCap LineCap();
 
-		LineJoin line_join();
+		LineJoin LineJoin();
 
-		InnerJoin inner_join();
+		InnerJoin InnerJoin();
 
-		void line_cap(LineCap lc);
+		void LineCap(LineCap lc);
 
-		void line_join(LineJoin lj);
+		void LineJoin(LineJoin lj);
 
-		void inner_join(InnerJoin ij);
+		void InnerJoin(InnerJoin ij);
 
-		void width(double w);
+		void Width(double w);
 
-		void miter_limit(double ml);
+		void MiterLimit(double ml);
 
-		void miter_limit_theta(double t);
+		void MiterLimitTheta(double t);
 
-		void inner_miter_limit(double ml);
+		void InnerMiterLimit(double ml);
 
-		void approximation_scale(double approxScale);
+		void ApproximationScale(double approxScale);
 
 		double width();
 
-		double miter_limit();
+		double MiterLimit();
 
-		double inner_miter_limit();
+		double InnerMiterLimit();
 
-		double approximation_scale();
+		double ApproximationScale();
 
-		void auto_detect_orientation(bool v);
+		void AutoDetectOrientation(bool v);
 
-		bool auto_detect_orientation();
+		bool AutoDetectOrientation();
 
-		void shorten(double s);
+		void Shorten(double s);
 
-		double shorten();
+		double Shorten();
 	};
 }

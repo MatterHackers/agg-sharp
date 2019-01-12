@@ -29,57 +29,57 @@ namespace MatterHackers.Agg.VertexSource
 			m_auto_detect = false;
 		}
 
-		public void line_cap(LineCap lc)
+		public void LineCap(LineCap lc)
 		{
 			m_stroker.line_cap(lc);
 		}
 
-		public void line_join(LineJoin lj)
+		public void LineJoin(LineJoin lj)
 		{
 			m_stroker.line_join(lj);
 		}
 
-		public void inner_join(InnerJoin ij)
+		public void InnerJoin(InnerJoin ij)
 		{
 			m_stroker.inner_join(ij);
 		}
 
-		public LineCap line_cap()
+		public LineCap LineCap()
 		{
 			return m_stroker.line_cap();
 		}
 
-		public LineJoin line_join()
+		public LineJoin LineJoin()
 		{
 			return m_stroker.line_join();
 		}
 
-		public InnerJoin inner_join()
+		public InnerJoin InnerJoin()
 		{
 			return m_stroker.inner_join();
 		}
 
-		public void width(double w)
+		public void Width(double w)
 		{
 			m_stroker.width(w);
 		}
 
-		public void miter_limit(double ml)
+		public void MiterLimit(double ml)
 		{
 			m_stroker.miter_limit(ml);
 		}
 
-		public void miter_limit_theta(double t)
+		public void MiterLimitTheta(double t)
 		{
 			m_stroker.miter_limit_theta(t);
 		}
 
-		public void inner_miter_limit(double ml)
+		public void InnerMiterLimit(double ml)
 		{
 			m_stroker.inner_miter_limit(ml);
 		}
 
-		public void approximation_scale(double approx_scale)
+		public void ApproximationScale(double approx_scale)
 		{
 			m_stroker.approximation_scale(approx_scale);
 		}
@@ -89,37 +89,37 @@ namespace MatterHackers.Agg.VertexSource
 			return m_stroker.width();
 		}
 
-		public double miter_limit()
+		public double MiterLimit()
 		{
 			return m_stroker.miter_limit();
 		}
 
-		public double inner_miter_limit()
+		public double InnerMiterLimit()
 		{
 			return m_stroker.inner_miter_limit();
 		}
 
-		public double approximation_scale()
+		public double ApproximationScale()
 		{
 			return m_stroker.approximation_scale();
 		}
 
-		public void shorten(double s)
+		public void Shorten(double s)
 		{
 			m_shorten = s;
 		}
 
-		public double shorten()
+		public double Shorten()
 		{
 			return m_shorten;
 		}
 
-		public void auto_detect_orientation(bool v)
+		public void AutoDetectOrientation(bool v)
 		{
 			m_auto_detect = v;
 		}
 
-		public bool auto_detect_orientation()
+		public bool AutoDetectOrientation()
 		{
 			return m_auto_detect;
 		}
