@@ -85,15 +85,9 @@ namespace MatterHackers.Agg.VertexSource
 			this.VertexSource = vertexSource;
 		}
 
-		protected IGenerator GetGenerator()
-		{
-			return generator;
-		}
+		protected IGenerator Generator => generator;
 
-		private IMarkers GetMarkers()
-		{
-			return markers;
-		}
+		protected IMarkers Markers => markers;
 
 		public IEnumerable<VertexData> Vertices()
 		{
