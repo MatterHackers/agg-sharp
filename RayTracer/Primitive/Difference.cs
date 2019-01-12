@@ -211,5 +211,10 @@ namespace MatterHackers.RayTracer.Traceable
 		{
 			return primary.GetIntersectCost() + subtract.GetIntersectCost() / 2;
 		}
+
+		public double GetAxisCenter(int axis)
+		{
+			return GetCenter()[axis];
+		}
 	}
 }

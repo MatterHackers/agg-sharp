@@ -86,7 +86,10 @@ namespace MatterHackers.RayTracer
 
 		public void TraceScene()
 		{
-			CreateScene();
+			using (new QuickTimer("Create Trace Data"))
+			{
+				CreateScene();
+			}
 
 			var rect = new RectangleInt(0, 0, size.x, size.y);
 			if (destImage == null || destImage.Width != rect.Width || destImage.Height != rect.Height)
@@ -94,8 +97,11 @@ namespace MatterHackers.RayTracer
 				destImage = new ImageBuffer(rect.Width, rect.Height);
 			}
 
-			rayTracer.RayTraceScene(rect, scene);
-			rayTracer.CopyColorBufferToImage(destImage, rect);
+			using (new QuickTimer("Do Ray Trace"))
+			{
+				rayTracer.RayTraceScene(rect, scene);
+				rayTracer.CopyColorBufferToImage(destImage, rect);
+			}
 		}
 
 		public void SetRenderPosition()
@@ -156,59 +162,60 @@ namespace MatterHackers.RayTracer
 			graphics2D.Rasterizer.gamma(new gamma_power(.3));
 			RenderPoint[] points = new RenderPoint[3] { new RenderPoint(), new RenderPoint(), new RenderPoint() };
 
-			foreach (Face face in meshToDraw.Faces)
-			{
-				int i = 0;
-				Vector3 normal = Vector3.TransformVector(face.Normal, world.ModelviewMatrix).GetNormal();
-				if (normal.Z > 0)
-				{
-					foreach (FaceEdge faceEdge in face.FaceEdges())
-					{
-						points[i].position = world.GetScreenPosition(faceEdge.FirstVertex.Position);
+			throw new NotImplementedException();
+//			foreach (Face face in meshToDraw.Faces)
+//			{
+//				int i = 0;
+//				Vector3 normal = Vector3Ex.TransformVector(face.Normal, world.ModelviewMatrix).GetNormal();
+//				if (normal.Z > 0)
+//				{
+//					foreach (FaceEdge faceEdge in face.FaceEdges())
+//					{
+//						points[i].position = world.GetScreenPosition(faceEdge.FirstVertex.Position);
 
-						Vector3 transformedPosition = Vector3.TransformPosition(faceEdge.FirstVertex.Position, world.ModelviewMatrix);
-						points[i].z = transformedPosition.Z;
-						i++;
-					}
+//						Vector3 transformedPosition = Vector3Ex.TransformPosition(faceEdge.FirstVertex.Position, world.ModelviewMatrix);
+//						points[i].z = transformedPosition.Z;
+//						i++;
+//					}
 
-					ColorF polyDrawColor = new ColorF();
-					double L = Vector3.Dot(lightNormal, normal);
-					if (L > 0.0f)
-					{
-						polyDrawColor = partColor * lightIllumination * L;
-					}
+//					ColorF polyDrawColor = new ColorF();
+//					double L = Vector3Ex.Dot(lightNormal, normal);
+//					if (L > 0.0f)
+//					{
+//						polyDrawColor = partColor * lightIllumination * L;
+//					}
 
-					polyDrawColor = ColorF.ComponentMax(polyDrawColor, partColor * ambiantIllumination);
-					for (i = 0; i < 3; i++)
-					{
-						double ratio = (points[i].z - minZ) / (maxZ - minZ);
-						int ratioInt16 = (int)(ratio * 65536);
-						points[i].color = new Color(polyDrawColor.Red0To255, ratioInt16 >> 8, ratioInt16 & 0xFF);
-					}
+//					polyDrawColor = ColorF.ComponentMax(polyDrawColor, partColor * ambiantIllumination);
+//					for (i = 0; i < 3; i++)
+//					{
+//						double ratio = (points[i].z - minZ) / (maxZ - minZ);
+//						int ratioInt16 = (int)(ratio * 65536);
+//						points[i].color = new Color(polyDrawColor.Red0To255, ratioInt16 >> 8, ratioInt16 & 0xFF);
+//					}
 
-#if true
-					render_gouraud(
-						graphics2D.DestImage,
-						new scanline_unpacked_8(),
-						new ScanlineRasterizer(),
-						points);
-#else
-					IRecieveBlenderByte oldBlender = graphics2D.DestImage.GetRecieveBlender();
-					graphics2D.DestImage.SetRecieveBlender(new BlenderZBuffer());
-					graphics2D.Render(polygonProjected, renderColor);
-					graphics2D.DestImage.SetRecieveBlender(oldBlender);
-#endif
+//#if true
+//					render_gouraud(
+//						graphics2D.DestImage,
+//						new scanline_unpacked_8(),
+//						new ScanlineRasterizer(),
+//						points);
+//#else
+//					IRecieveBlenderByte oldBlender = graphics2D.DestImage.GetRecieveBlender();
+//					graphics2D.DestImage.SetRecieveBlender(new BlenderZBuffer());
+//					graphics2D.Render(polygonProjected, renderColor);
+//					graphics2D.DestImage.SetRecieveBlender(oldBlender);
+//#endif
 
-					byte[] buffer = graphics2D.DestImage.GetBuffer();
-					int pixels = graphics2D.DestImage.Width * graphics2D.DestImage.Height;
-					for (int pixelIndex = 0; pixelIndex < pixels; pixelIndex++)
-					{
-						buffer[pixelIndex * 4 + ImageBuffer.OrderR] = buffer[pixelIndex * 4 + ImageBuffer.OrderR];
-						buffer[pixelIndex * 4 + ImageBuffer.OrderG] = buffer[pixelIndex * 4 + ImageBuffer.OrderR];
-						buffer[pixelIndex * 4 + ImageBuffer.OrderB] = buffer[pixelIndex * 4 + ImageBuffer.OrderR];
-					}
-				}
-			}
+//					byte[] buffer = graphics2D.DestImage.GetBuffer();
+//					int pixels = graphics2D.DestImage.Width * graphics2D.DestImage.Height;
+//					for (int pixelIndex = 0; pixelIndex < pixels; pixelIndex++)
+//					{
+//						buffer[pixelIndex * 4 + ImageBuffer.OrderR] = buffer[pixelIndex * 4 + ImageBuffer.OrderR];
+//						buffer[pixelIndex * 4 + ImageBuffer.OrderG] = buffer[pixelIndex * 4 + ImageBuffer.OrderR];
+//						buffer[pixelIndex * 4 + ImageBuffer.OrderB] = buffer[pixelIndex * 4 + ImageBuffer.OrderR];
+//					}
+//				}
+//			}
 		}
 
 		public sealed class BlenderZBuffer : BlenderBase8888, IRecieveBlenderByte
@@ -343,8 +350,8 @@ namespace MatterHackers.RayTracer
 		{
 			AxisAlignedBoundingBox meshBounds = mesh.GetAxisAlignedBoundingBox(world.ModelviewMatrix);
 
-			minZ = Math.Min(meshBounds.minXYZ.Z, minZ);
-			maxZ = Math.Max(meshBounds.maxXYZ.Z, maxZ);
+			minZ = Math.Min(meshBounds.MinXYZ.Z, minZ);
+			maxZ = Math.Max(meshBounds.MaxXYZ.Z, maxZ);
 		}
 
 		private class WorldCamera : ICamera

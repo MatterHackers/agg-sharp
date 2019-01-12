@@ -58,11 +58,11 @@ namespace MatterHackers.PolygonMesh
 					   vec.Z * mat.Row2.Z;
 		}
 
-		public override List<IVertex> FindVertices(List<IVertex> vertices, Vector3 position, double maxDistanceToConsiderVertexAsSame)
+		public override List<Vector3> FindVertices(List<Vector3> vertices, Vector3 position, double maxDistanceToConsiderVertexAsSame)
 		{
-			List<IVertex> foundVertices = new List<IVertex>();
+			List<Vector3> foundVertices = new List<Vector3>();
 
-			IVertex testPos = new Vertex(position);
+			Vector3 testPos = position;
 			int index = vertices.BinarySearch(testPos, this);
 			if (index < 0)
 			{
@@ -75,7 +75,7 @@ namespace MatterHackers.PolygonMesh
 			for (int i = index; i < vertices.Count; i++)
 			{
 				Vector3 positionToTest;
-				TransformVector(vertices[i].Position, ref rotationToUse, out positionToTest);
+				TransformVector(vertices[i], ref rotationToUse, out positionToTest);
 				if (Math.Abs(positionToTest.X - positionRotated.X) > maxDistanceToConsiderVertexAsSame)
 				{
 					// we are too far away in x, we are done with this direction
@@ -86,7 +86,7 @@ namespace MatterHackers.PolygonMesh
 			for (int i = index - 1; i >= 0; i--)
 			{
 				Vector3 positionToTest;
-				TransformVector(vertices[i].Position, ref rotationToUse, out positionToTest);
+				TransformVector(vertices[i], ref rotationToUse, out positionToTest);
 				if (Math.Abs(positionToTest.X - positionRotated.X) > maxDistanceToConsiderVertexAsSame)
 				{
 					// we are too far away in x, we are done with this direction
@@ -98,15 +98,15 @@ namespace MatterHackers.PolygonMesh
 			return foundVertices;
 		}
 
-		private void AddToListIfSameEnough(List<IVertex> vertices, Vector3 position, List<IVertex> findList, double maxDistanceToConsiderVertexAsSameSquared, int i)
+		private void AddToListIfSameEnough(List<Vector3> vertices, Vector3 position, List<Vector3> findList, double maxDistanceToConsiderVertexAsSameSquared, int i)
 		{
-			if (vertices[i].Position == position)
+			if (vertices[i] == position)
 			{
 				findList.Add(vertices[i]);
 			}
 			else
 			{
-				double distanceSquared = (vertices[i].Position - position).LengthSquared;
+				double distanceSquared = (vertices[i] - position).LengthSquared;
 				if (distanceSquared <= maxDistanceToConsiderVertexAsSameSquared)
 				{
 					findList.Add(vertices[i]);
@@ -114,12 +114,12 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public override int Compare(IVertex aVertex, IVertex bVertex)
+		public override int Compare(Vector3 aVertex, Vector3 bVertex)
 		{
 			Vector3 a;
-			TransformVector(aVertex.Position, ref rotationToUse, out a);
+			TransformVector(aVertex, ref rotationToUse, out a);
 			Vector3 b;
-			TransformVector(bVertex.Position, ref rotationToUse, out b);
+			TransformVector(bVertex, ref rotationToUse, out b);
 			if (a.X < b.X)
 			{
 				return -1;

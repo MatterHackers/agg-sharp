@@ -89,10 +89,10 @@ namespace MatterHackers.RayTracer
 		{
 			Vector3 Position = plane.PlaneNormal;
 			Vector3 vecU = new Vector3(Position.Y, Position.Z, -Position.X);
-			Vector3 vecV = Vector3.Cross(vecU, plane.PlaneNormal);
+			Vector3 vecV = Vector3Ex.Cross(vecU, plane.PlaneNormal);
 
-			double u = Vector3.Dot(info.HitPosition, vecU);
-			double v = Vector3.Dot(info.HitPosition, vecV);
+			double u = Vector3Ex.Dot(info.HitPosition, vecU);
+			double v = Vector3Ex.Dot(info.HitPosition, vecV);
 			return (u, v);
 		}
 	}

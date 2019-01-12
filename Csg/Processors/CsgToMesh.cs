@@ -77,40 +77,41 @@ namespace MatterHackers.RenderOpenGl
 
 		public static PolygonMesh.Mesh CreateBox(AxisAlignedBoundingBox aabb)
 		{
-			PolygonMesh.Mesh cube = new PolygonMesh.Mesh();
-			IVertex[] verts = new Vertex[8];
-			//verts[0] = cube.CreateVertex(new Vector3(-1, -1, 1));
-			//verts[1] = cube.CreateVertex(new Vector3(1, -1, 1));
-			//verts[2] = cube.CreateVertex(new Vector3(1, 1, 1));
-			//verts[3] = cube.CreateVertex(new Vector3(-1, 1, 1));
-			//verts[4] = cube.CreateVertex(new Vector3(-1, -1, -1));
-			//verts[5] = cube.CreateVertex(new Vector3(1, -1, -1));
-			//verts[6] = cube.CreateVertex(new Vector3(1, 1, -1));
-			//verts[7] = cube.CreateVertex(new Vector3(-1, 1, -1));
+			throw new NotImplementedException();
+			//PolygonMesh.Mesh cube = new PolygonMesh.Mesh();
+			//IVertex[] verts = new Vertex[8];
+			////verts[0] = cube.CreateVertex(new Vector3(-1, -1, 1));
+			////verts[1] = cube.CreateVertex(new Vector3(1, -1, 1));
+			////verts[2] = cube.CreateVertex(new Vector3(1, 1, 1));
+			////verts[3] = cube.CreateVertex(new Vector3(-1, 1, 1));
+			////verts[4] = cube.CreateVertex(new Vector3(-1, -1, -1));
+			////verts[5] = cube.CreateVertex(new Vector3(1, -1, -1));
+			////verts[6] = cube.CreateVertex(new Vector3(1, 1, -1));
+			////verts[7] = cube.CreateVertex(new Vector3(-1, 1, -1));
 
-			verts[0] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.minXYZ.Y, aabb.maxXYZ.Z));
-			verts[1] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.minXYZ.Y, aabb.maxXYZ.Z));
-			verts[2] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.maxXYZ.Y, aabb.maxXYZ.Z));
-			verts[3] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.maxXYZ.Y, aabb.maxXYZ.Z));
-			verts[4] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.minXYZ.Y, aabb.minXYZ.Z));
-			verts[5] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.minXYZ.Y, aabb.minXYZ.Z));
-			verts[6] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.maxXYZ.Y, aabb.minXYZ.Z));
-			verts[7] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.maxXYZ.Y, aabb.minXYZ.Z));
+			//verts[0] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.minXYZ.Y, aabb.maxXYZ.Z));
+			//verts[1] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.minXYZ.Y, aabb.maxXYZ.Z));
+			//verts[2] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.maxXYZ.Y, aabb.maxXYZ.Z));
+			//verts[3] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.maxXYZ.Y, aabb.maxXYZ.Z));
+			//verts[4] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.minXYZ.Y, aabb.minXYZ.Z));
+			//verts[5] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.minXYZ.Y, aabb.minXYZ.Z));
+			//verts[6] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.maxXYZ.Y, aabb.minXYZ.Z));
+			//verts[7] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.maxXYZ.Y, aabb.minXYZ.Z));
 
-			// front
-			cube.CreateFace(new IVertex[] { verts[0], verts[1], verts[2], verts[3] });
-			// left
-			cube.CreateFace(new IVertex[] { verts[4], verts[0], verts[3], verts[7] });
-			// right
-			cube.CreateFace(new IVertex[] { verts[1], verts[5], verts[6], verts[2] });
-			// back
-			cube.CreateFace(new IVertex[] { verts[4], verts[7], verts[6], verts[5] });
-			// top
-			cube.CreateFace(new IVertex[] { verts[3], verts[2], verts[6], verts[7] });
-			// bottom
-			cube.CreateFace(new IVertex[] { verts[4], verts[5], verts[1], verts[0] });
+			//// front
+			//cube.CreateFace(new IVertex[] { verts[0], verts[1], verts[2], verts[3] });
+			//// left
+			//cube.CreateFace(new IVertex[] { verts[4], verts[0], verts[3], verts[7] });
+			//// right
+			//cube.CreateFace(new IVertex[] { verts[1], verts[5], verts[6], verts[2] });
+			//// back
+			//cube.CreateFace(new IVertex[] { verts[4], verts[7], verts[6], verts[5] });
+			//// top
+			//cube.CreateFace(new IVertex[] { verts[3], verts[2], verts[6], verts[7] });
+			//// bottom
+			//cube.CreateFace(new IVertex[] { verts[4], verts[5], verts[1], verts[0] });
 
-			return cube;
+			//return cube;
 		}
 
 		public PolygonMesh.Mesh CsgToMeshRecursive(Csg.Solids.MeshContainer objectToPrecess)
@@ -137,31 +138,32 @@ namespace MatterHackers.RenderOpenGl
 
 		public static PolygonMesh.Mesh CreateCylinder(Cylinder.CylinderPrimitive cylinderToMeasure)
 		{
-			PolygonMesh.Mesh cylinder = new PolygonMesh.Mesh();
-			List<IVertex> bottomVerts = new List<IVertex>();
-			List<IVertex> topVerts = new List<IVertex>();
+			throw new NotImplementedException();
+			//PolygonMesh.Mesh cylinder = new PolygonMesh.Mesh();
+			//List<IVertex> bottomVerts = new List<IVertex>();
+			//List<IVertex> topVerts = new List<IVertex>();
 
-			int sides = cylinderToMeasure.Sides;
-			for (int i = 0; i < sides; i++)
-			{
-				Vector2 bottomRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius1, 0), MathHelper.Tau * i / sides);
-				IVertex bottomVertex = cylinder.CreateVertex(new Vector3(bottomRadialPos.X, bottomRadialPos.Y, -cylinderToMeasure.Height / 2));
-				bottomVerts.Add(bottomVertex);
-				Vector2 topRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius1, 0), MathHelper.Tau * i / sides);
-				IVertex topVertex = cylinder.CreateVertex(new Vector3(topRadialPos.X, topRadialPos.Y, cylinderToMeasure.Height / 2));
-				topVerts.Add(topVertex);
-			}
+			//int sides = cylinderToMeasure.Sides;
+			//for (int i = 0; i < sides; i++)
+			//{
+			//	Vector2 bottomRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius1, 0), MathHelper.Tau * i / sides);
+			//	IVertex bottomVertex = cylinder.CreateVertex(new Vector3(bottomRadialPos.X, bottomRadialPos.Y, -cylinderToMeasure.Height / 2));
+			//	bottomVerts.Add(bottomVertex);
+			//	Vector2 topRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius1, 0), MathHelper.Tau * i / sides);
+			//	IVertex topVertex = cylinder.CreateVertex(new Vector3(topRadialPos.X, topRadialPos.Y, cylinderToMeasure.Height / 2));
+			//	topVerts.Add(topVertex);
+			//}
 
-			cylinder.ReverseFaceEdges(cylinder.CreateFace(bottomVerts.ToArray()));
-			cylinder.CreateFace(topVerts.ToArray());
+			//cylinder.ReverseFaceEdges(cylinder.CreateFace(bottomVerts.ToArray()));
+			//cylinder.CreateFace(topVerts.ToArray());
 
-			for (int i = 0; i < sides - 1; i++)
-			{
-				cylinder.CreateFace(new IVertex[] { topVerts[i], bottomVerts[i], bottomVerts[i + 1], topVerts[i + 1] });
-			}
-			cylinder.CreateFace(new IVertex[] { topVerts[sides - 1], bottomVerts[sides - 1], bottomVerts[0], topVerts[0] });
+			//for (int i = 0; i < sides - 1; i++)
+			//{
+			//	cylinder.CreateFace(new IVertex[] { topVerts[i], bottomVerts[i], bottomVerts[i + 1], topVerts[i + 1] });
+			//}
+			//cylinder.CreateFace(new IVertex[] { topVerts[sides - 1], bottomVerts[sides - 1], bottomVerts[0], topVerts[0] });
 
-			return cylinder;
+			//return cylinder;
 		}
 
 		public PolygonMesh.Mesh CsgToMeshRecursive(Cylinder.CylinderPrimitive objectToProcess)

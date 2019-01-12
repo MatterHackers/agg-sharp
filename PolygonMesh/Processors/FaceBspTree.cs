@@ -45,9 +45,10 @@ namespace MatterHackers.PolygonMesh
 		{
 			BspNode root = new BspNode();
 
-			var faces = new List<Face>(mesh.Faces);
+			var sourceFaces = Enumerable.Range(0, mesh.Faces.Count).ToList();
+			var faces = Enumerable.Range(0, mesh.Faces.Count).ToList();
 
-			CreateNoSplitingFast(mesh.Faces, root, faces, maxFacesToTest, tryToBalanceTree);
+			CreateNoSplitingFast(mesh, sourceFaces, root, faces, maxFacesToTest, tryToBalanceTree);
 
 			return root;
 		}
@@ -59,9 +60,9 @@ namespace MatterHackers.PolygonMesh
 		/// <param name="meshToViewTransform"></param>
 		/// <param name="invMeshToViewTransform"></param>
 		/// <param name="faceRenderOrder"></param>
-		public static IEnumerable<Face> GetFacesInVisibiltyOrder(List<Face> meshFaces, BspNode root, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
+		public static IEnumerable<int> GetFacesInVisibiltyOrder(Mesh mesh, BspNode root, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
 		{
-			var renderOrder = new Stack<BspNode>(new BspNode[] { root.RenderOrder(meshFaces, meshToViewTransform, invMeshToViewTransform) });
+			var renderOrder = new Stack<BspNode>(new BspNode[] { root.RenderOrder(mesh, meshToViewTransform, invMeshToViewTransform) });
 
 			do
 			{
@@ -70,40 +71,42 @@ namespace MatterHackers.PolygonMesh
 					&& lastBack.Index != -1)
 				{
 					renderOrder.Peek().BackNode = null;
-					renderOrder.Push(lastBack.RenderOrder(meshFaces, meshToViewTransform, invMeshToViewTransform));
+					renderOrder.Push(lastBack.RenderOrder(mesh, meshToViewTransform, invMeshToViewTransform));
 					lastBack = renderOrder.Peek().BackNode;
 				}
 
 				var node = renderOrder.Pop();
 				if (node.Index != -1)
 				{
-					yield return meshFaces[node.Index];
+					yield return node.Index;
 				}
 				var lastFront = node.FrontNode;
 				if (lastFront != null && lastFront.Index != -1)
 				{
-					renderOrder.Push(lastFront.RenderOrder(meshFaces, meshToViewTransform, invMeshToViewTransform));
+					renderOrder.Push(lastFront.RenderOrder(mesh, meshToViewTransform, invMeshToViewTransform));
 				}
 			} while (renderOrder.Any());
 		}
 
-		private static (double, int) CalculateCrosingArrea(int faceIndex, List<Face> faces, double smallestCrossingArrea)
+		private static (double, int) CalculateCrosingArrea(Mesh mesh, int faceIndex, List<int> faces, double smallestCrossingArrea)
 		{
 			double negativeDistance = 0;
 			double positiveDistance = 0;
 			int negativeSideCount = 0;
 			int positiveSideCount = 0;
 
-			Face checkFace = faces[faceIndex];
-			var pointOnCheckFace = faces[faceIndex].firstFaceEdge.FirstVertex.Position;
+			int checkFace = faces[faceIndex];
+			var pointOnCheckFace = mesh.Vertices[mesh.Faces[faces[faceIndex]].v0];
 
 			for (int i = 0; i < faces.Count; i++)
 			{
 				if (i < faces.Count && i != faceIndex)
 				{
-					foreach (var vertex in faces[i].Vertices())
+					var iFace = mesh.Faces[faces[i]];
+					var vertexIndices = new int[] { iFace.v0, iFace.v1, iFace.v2 };
+					foreach (var vertexIndex in vertexIndices)
 					{
-						double distanceToPlan = Vector3.Dot(checkFace.Normal, vertex.Position - pointOnCheckFace);
+						double distanceToPlan = mesh.FaceNormals[checkFace].Dot(mesh.Vertices[vertexIndex] - pointOnCheckFace);
 						if (Math.Abs(distanceToPlan) > considerCoplaner)
 						{
 							if (distanceToPlan < 0)
@@ -139,19 +142,21 @@ namespace MatterHackers.PolygonMesh
 			return (Math.Min(negativeDistance, positiveDistance), Math.Abs(negativeSideCount - positiveSideCount));
 		}
 
-		private static void CreateBackAndFrontFaceLists(int faceIndex, List<Face> faces, List<Face> backFaces, List<Face> frontFaces)
+		private static void CreateBackAndFrontFaceLists(Mesh mesh, int faceIndex, List<int> faces, List<int> backFaces, List<int> frontFaces)
 		{
-			Face checkFace = faces[faceIndex];
-			var pointOnCheckFace = faces[faceIndex].Vertices().FirstOrDefault().Position;
+			var checkFaceIndex = faces[faceIndex];
+			var checkFace = mesh.Faces[checkFaceIndex];
+			var pointOnCheckFace = mesh.Vertices[mesh.Faces[checkFaceIndex].v0];
 
 			for (int i = 0; i < faces.Count; i++)
 			{
 				if (i != faceIndex)
 				{
 					bool backFace = true;
-					foreach (var vertex in faces[i].Vertices())
+					var vertexIndices = new int[] { checkFace.v0, checkFace.v1, checkFace.v2 };
+					foreach (var vertexIndex in vertexIndices)
 					{
-						double distanceToPlan = Vector3.Dot(checkFace.Normal, vertex.Position - pointOnCheckFace);
+						double distanceToPlan = mesh.FaceNormals[checkFaceIndex].Dot(mesh.Vertices[vertexIndex] - pointOnCheckFace);
 						if (Math.Abs(distanceToPlan) > considerCoplaner)
 						{
 							if (distanceToPlan > 0)
@@ -175,7 +180,7 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		private static void CreateNoSplitingFast(List<Face> sourceFaces, BspNode node, List<Face> faces, int maxFacesToTest, bool tryToBalanceTree)
+		private static void CreateNoSplitingFast(Mesh mesh, List<int> sourceFaces, BspNode node, List<int> faces, int maxFacesToTest, bool tryToBalanceTree)
 		{
 			if (faces.Count == 0)
 			{
@@ -191,7 +196,7 @@ namespace MatterHackers.PolygonMesh
 			for (int i = 0; i < faces.Count; i += step)
 			{
 				// calculate how much of polygons cross this face
-				(double crossingArrea, int balance) = CalculateCrosingArrea(i, faces, smallestCrossingArrea);
+				(double crossingArrea, int balance) = CalculateCrosingArrea(mesh, i, faces, smallestCrossingArrea);
 				// keep track of the best face so far
 				if (crossingArrea < smallestCrossingArrea)
 				{
@@ -216,12 +221,12 @@ namespace MatterHackers.PolygonMesh
 			node.Index = sourceFaces.IndexOf(faces[bestFaceIndex]);
 
 			// put the behind stuff in a list
-			List<Face> backFaces = new List<Face>();
-			List<Face> frontFaces = new List<Face>();
-			CreateBackAndFrontFaceLists(bestFaceIndex, faces, backFaces, frontFaces);
+			var backFaces = new List<int>();
+			var frontFaces = new List<int>();
+			CreateBackAndFrontFaceLists(mesh, bestFaceIndex, faces, backFaces, frontFaces);
 
-			CreateNoSplitingFast(sourceFaces, node.BackNode = new BspNode(), backFaces, maxFacesToTest, tryToBalanceTree);
-			CreateNoSplitingFast(sourceFaces, node.FrontNode = new BspNode(), frontFaces, maxFacesToTest, tryToBalanceTree);
+			CreateNoSplitingFast(mesh, sourceFaces, node.BackNode = new BspNode(), backFaces, maxFacesToTest, tryToBalanceTree);
+			CreateNoSplitingFast(mesh, sourceFaces, node.FrontNode = new BspNode(), frontFaces, maxFacesToTest, tryToBalanceTree);
 		}
 	}
 
@@ -233,12 +238,12 @@ namespace MatterHackers.PolygonMesh
 	}
 
 	public static class BspNodeExtensions
-	{ 
-		public static BspNode RenderOrder(this BspNode node, List<Face> meshFaces, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
+	{
+		public static BspNode RenderOrder(this BspNode node, Mesh mesh, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
 		{
-			var faceNormalInViewSpace = Vector3.TransformNormalInverse(meshFaces[node.Index].Normal, invMeshToViewTransform);
-			var pointOnFaceInViewSpace = Vector3.Transform(meshFaces[node.Index].firstFaceEdge.FirstVertex.Position, meshToViewTransform);
-			var infrontOfFace = Vector3.Dot(faceNormalInViewSpace, pointOnFaceInViewSpace) < 0;
+			var faceNormalInViewSpace = mesh.FaceNormals[node.Index].TransformNormalInverse(invMeshToViewTransform);
+			var pointOnFaceInViewSpace = mesh.Vertices[mesh.Faces[node.Index].v0].Transform(meshToViewTransform);
+			var infrontOfFace = faceNormalInViewSpace.Dot(pointOnFaceInViewSpace) < 0;
 
 			if (infrontOfFace)
 			{

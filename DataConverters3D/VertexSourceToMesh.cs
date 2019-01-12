@@ -39,7 +39,6 @@ using MatterHackers.VectorMath;
 namespace MatterHackers.DataConverters3D
 {
 	using Polygons = List<List<IntPoint>>;
-	using Polygon = List<IntPoint>;
 	public static class VertexSourceToMesh
 	{
 		public static Mesh TriangulateFaces(IVertexSource vertexSource)
@@ -52,7 +51,7 @@ namespace MatterHackers.DataConverters3D
 		{
 			VertexSourceToTesselator.SendShapeToTesselator(teselatedSource, vertexSource);
 
-			Mesh teselatedMesh = new Mesh();
+			Mesh mesh = new Mesh();
 
 			int numIndicies = teselatedSource.IndicesCache.Count;
 
@@ -67,42 +66,10 @@ namespace MatterHackers.DataConverters3D
 					continue;
 				}
 
-				IVertex topVertex0 = teselatedMesh.CreateVertex(new Vector3(v0, 0));
-				IVertex topVertex1 = teselatedMesh.CreateVertex(new Vector3(v1, 0));
-				IVertex topVertex2 = teselatedMesh.CreateVertex(new Vector3(v2, 0));
-
-				teselatedMesh.CreateFace(new IVertex[] { topVertex0, topVertex1, topVertex2 });
+				mesh.CreateFace(new Vector3[] { new Vector3(v0, 0), new Vector3(v1, 0), new Vector3(v2, 0) });
 			}
 
-			return teselatedMesh;
-		}
-
-		public static Polygons GetCorrectedWinding(this Polygons polygonsToFix)
-		{
-			polygonsToFix = Clipper.CleanPolygons(polygonsToFix);
-			Polygon boundsPolygon = new Polygon();
-			IntRect bounds = Clipper.GetBounds(polygonsToFix);
-			bounds.minX -= 10;
-			bounds.minY -= 10;
-			bounds.maxY += 10;
-			bounds.maxX += 10;
-
-			boundsPolygon.Add(new IntPoint(bounds.minX, bounds.minY));
-			boundsPolygon.Add(new IntPoint(bounds.maxX, bounds.minY));
-			boundsPolygon.Add(new IntPoint(bounds.maxX, bounds.maxY));
-			boundsPolygon.Add(new IntPoint(bounds.minX, bounds.maxY));
-
-			Clipper clipper = new Clipper();
-
-			clipper.AddPaths(polygonsToFix, PolyType.ptSubject, true);
-			clipper.AddPath(boundsPolygon, PolyType.ptClip, true);
-
-			PolyTree intersectionResult = new PolyTree();
-			clipper.Execute(ClipType.ctIntersection, intersectionResult);
-
-			Polygons outputPolygons = Clipper.ClosedPathsFromPolyTree(intersectionResult);
-
-			return outputPolygons;
+			return mesh;
 		}
 
 		public static Mesh Revolve(IVertexSource source, int angleSteps = 30, double angleStart = 0, double angleEnd = MathHelper.Tau)
@@ -113,7 +80,6 @@ namespace MatterHackers.DataConverters3D
 			// convert to clipper polygons and scale so we can ensure good shapes
 			Polygons polygons = source.CreatePolygons();
 			// ensure good winding and consistent shapes
-			polygons = polygons.GetCorrectedWinding();
 			// clip against x=0 left and right
 			// mirror left material across the origin
 			// union mirrored left with right material
@@ -166,7 +132,8 @@ namespace MatterHackers.DataConverters3D
 				Mesh extrudedVertexSource = TriangulateFaces(source, teselatedSource);
 				extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
 				extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(currentAngle));
-				extrudedVertexSource.ReverseFaceEdges();
+				throw new NotImplementedException();
+				//extrudedVertexSource.ReverseFaceEdges();
 				mesh.CopyFaces(extrudedVertexSource);
 			}
 
@@ -176,9 +143,6 @@ namespace MatterHackers.DataConverters3D
 
 		static void AddRevolveStrip(IVertexSource vertexSource, Mesh mesh, double startAngle, double endAngle)
 		{
-			CreateOption createOption = CreateOption.CreateNew;
-			SortOption sortOption = SortOption.WillSortLater;
-
 			Vector3 lastPosition = Vector3.Zero;
 
 			foreach (var vertexData in vertexSource.Vertices())
@@ -196,32 +160,26 @@ namespace MatterHackers.DataConverters3D
 				{
 					Vector3 currentPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
 
-					IVertex lastStart = mesh.CreateVertex(Vector3.Transform(lastPosition, Matrix4X4.CreateRotationZ(startAngle)), createOption, sortOption);
-					IVertex lastEnd = mesh.CreateVertex(Vector3.Transform(lastPosition, Matrix4X4.CreateRotationZ(endAngle)), createOption, sortOption);
-
-					IVertex currentStart = mesh.CreateVertex(Vector3.Transform(currentPosition, Matrix4X4.CreateRotationZ(startAngle)), createOption, sortOption);
-					IVertex currentEnd = mesh.CreateVertex(Vector3.Transform(currentPosition, Matrix4X4.CreateRotationZ(endAngle)), createOption, sortOption);
-
-					mesh.CreateFace(new IVertex[] { lastStart, lastEnd, currentEnd, currentStart }, createOption);
+					mesh.CreateFace(new Vector3[] 
+					{
+						Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(endAngle)),
+						Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(startAngle)),
+						Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationZ(startAngle)),
+						Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationZ(endAngle)),
+					});
 
 					lastPosition = currentPosition;
 				}
 			}
 		}
 
-		public static Mesh Extrude(IVertexSource source, double zHeight)
+		public static Mesh Extrude(IVertexSource vertexSource, double zHeight)
 		{
-			Polygons polygons = source.CreatePolygons();
-			// ensure good winding and consistent shapes
-			polygons = polygons.GetCorrectedWinding();
-			// convert the data back to PathStorage
-			source = polygons.CreateVertexStorage();
-
 			CachedTesselator teselatedSource = new CachedTesselator();
-			Mesh extrudedVertexSource = TriangulateFaces(source, teselatedSource);
+			Mesh mesh = TriangulateFaces(vertexSource, teselatedSource);
 			int numIndicies = teselatedSource.IndicesCache.Count;
 
-			extrudedVertexSource.Translate(new Vector3(0, 0, zHeight));
+			mesh.Translate(new Vector3(0, 0, zHeight));
 
 			// then the outside edge
 			for (int i = 0; i < numIndicies; i += 3)
@@ -234,27 +192,27 @@ namespace MatterHackers.DataConverters3D
 					continue;
 				}
 
-				IVertex bottomVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, 0));
-				IVertex bottomVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, 0));
-				IVertex bottomVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, 0));
+				var bottomVertex0 = new Vector3(v0, 0);
+				var bottomVertex1 = new Vector3(v1, 0);
+				var bottomVertex2 = new Vector3(v2, 0);
 
-				IVertex topVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, zHeight));
-				IVertex topVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, zHeight));
-				IVertex topVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, zHeight));
+				var topVertex0 = new Vector3(v0, zHeight);
+				var topVertex1 = new Vector3(v1, zHeight);
+				var topVertex2 = new Vector3(v2, zHeight);
 
 				if (teselatedSource.IndicesCache[i + 0].IsEdge)
 				{
-					extrudedVertexSource.CreateFace(new IVertex[] { bottomVertex0, bottomVertex1, topVertex1, topVertex0 });
+					mesh.CreateFace(new Vector3[] { bottomVertex0, bottomVertex1, topVertex1, topVertex0 });
 				}
 
 				if (teselatedSource.IndicesCache[i + 1].IsEdge)
 				{
-					extrudedVertexSource.CreateFace(new IVertex[] { bottomVertex1, bottomVertex2, topVertex2, topVertex1 });
+					mesh.CreateFace(new Vector3[] { bottomVertex1, bottomVertex2, topVertex2, topVertex1 });
 				}
 
 				if (teselatedSource.IndicesCache[i + 2].IsEdge)
 				{
-					extrudedVertexSource.CreateFace(new IVertex[] { bottomVertex2, bottomVertex0, topVertex0, topVertex2 });
+					mesh.CreateFace(new Vector3[] { bottomVertex2, bottomVertex0, topVertex0, topVertex2 });
 				}
 			}
 
@@ -269,14 +227,10 @@ namespace MatterHackers.DataConverters3D
 					continue;
 				}
 
-				IVertex bottomVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, 0));
-				IVertex bottomVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, 0));
-				IVertex bottomVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, 0));
-
-				extrudedVertexSource.CreateFace(new IVertex[] { bottomVertex2, bottomVertex1, bottomVertex0 });
+				mesh.CreateFace(new Vector3[] { new Vector3(v0, 0), new Vector3(v1, 0), new Vector3(v2, 0) });
 			}
 
-			return extrudedVertexSource;
+			return mesh;
 		}
 	}
 }

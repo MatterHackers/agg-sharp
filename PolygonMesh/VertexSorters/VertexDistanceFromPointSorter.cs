@@ -43,15 +43,15 @@ namespace MatterHackers.PolygonMesh
 		{
 		}
 
-		public override List<IVertex> FindVertices(List<IVertex> vertices, Vector3 position, double maxDistanceToConsiderVertexAsSame)
+		public override List<Vector3> FindVertices(List<Vector3> vertices, Vector3 position, double maxDistanceToConsiderVertexAsSame)
 		{
 			throw new NotImplementedException();
 		}
 
-		public override int Compare(IVertex a, IVertex b)
+		public override int Compare(Vector3 a, Vector3 b)
 		{
-			double distToASquared = (a.Position - positionToMeasureFrom).LengthSquared;
-			double distToBSquared = (b.Position - positionToMeasureFrom).LengthSquared;
+			double distToASquared = (a - positionToMeasureFrom).LengthSquared;
+			double distToBSquared = (b - positionToMeasureFrom).LengthSquared;
 			return distToASquared.CompareTo(distToBSquared);
 		}
 	}

@@ -50,7 +50,7 @@ namespace MatterHackers.RenderOpenGl
 
 			var normalZ = meshToRender.PropertyBag["Face0WorldZAngle"] as NormalZ;
 
-			var face0Normal = Vector3.TransformVector(meshToRender.Faces[0].Normal, transform).GetNormal();
+			var face0Normal = meshToRender.FaceNormals[0].TransformVector(transform).GetNormal();
 
 			var error = .0001;
 			if (normalZ.z < face0Normal.Z - error
@@ -64,7 +64,7 @@ namespace MatterHackers.RenderOpenGl
 				meshToRender,
 				(normal) =>
 				{
-					normal = Vector3.TransformVector(normal, transform).GetNormal();
+					normal = normal.TransformVector(transform).GetNormal();
 
 					double startColor = 223.0 / 360.0;
 					double endColor = 5.0 / 360.0;

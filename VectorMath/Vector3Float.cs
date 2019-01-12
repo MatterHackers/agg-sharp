@@ -41,225 +41,21 @@ namespace MatterHackers.VectorMath
 		/// <summary>
 		/// The X component of the Vector3Float.
 		/// </summary>
-		public float x;
+		public float X;
 
 		/// <summary>
 		/// The Y component of the Vector3Float.
 		/// </summary>
-		public float y;
+		public float Y;
 
 		/// <summary>
 		/// The Z component of the Vector3Float.
 		/// </summary>
-		public float z;
+		public float Z;
 
 		#endregion Fields
 
-		#region Constructors
-
-		/// <summary>
-		/// Constructs a new Vector3Float.
-		/// </summary>
-		/// <param name="x">The x component of the Vector3Float.</param>
-		/// <param name="y">The y component of the Vector3Float.</param>
-		/// <param name="z">The z component of the Vector3Float.</param>
-		public Vector3Float(double x, double y, double z)
-			: this((float)x, (float)y, (float)z)
-		{
-		}
-
-		public Vector3Float(float x, float y, float z)
-		{
-			this.x = x;
-			this.y = y;
-			this.z = z;
-		}
-
-		/// <summary>
-		/// Constructs a new instance from the given Vector2d.
-		/// </summary>
-		/// <param name="v">The Vector2d to copy components from.</param>
-		public Vector3Float(Vector2 v, float z = 0)
-		{
-#if true
-			throw new NotImplementedException();
-#else
-            x = v.x;
-            y = v.y;
-            this.z = z;
-#endif
-		}
-
-		/// <summary>
-		/// Constructs a new instance from the given Vector3Floatd.
-		/// </summary>
-		/// <param name="v">The Vector3Floatd to copy components from.</param>
-		public Vector3Float(Vector3Float v)
-		{
-			x = v.x;
-			y = v.y;
-			z = v.z;
-		}
-
-		public Vector3Float(float[] floatArray)
-		{
-			x = floatArray[0];
-			y = floatArray[1];
-			z = floatArray[2];
-		}
-
-		/// <summary>
-		/// Constructs a new instance from the given Vector4d.
-		/// </summary>
-		/// <param name="v">The Vector4d to copy components from.</param>
-		public Vector3Float(Vector4 v)
-		{
-#if true
-			throw new NotImplementedException();
-#else
-            x = v.x;
-            y = v.y;
-            z = v.z;
-#endif
-		}
-
-		public Vector3Float(Vector3 position)
-		{
-			this.x = (float)position.X;
-			this.y = (float)position.Y;
-			this.z = (float)position.Z;
-		}
-
-		#endregion Constructors
-
-		#region Properties
-
-		public float this[int index]
-		{
-			get
-			{
-				switch (index)
-				{
-					case 0:
-						return x;
-
-					case 1:
-						return y;
-
-					case 2:
-						return z;
-
-					default:
-						return 0;
-				}
-			}
-
-			set
-			{
-				switch (index)
-				{
-					case 0:
-						x = value;
-						break;
-
-					case 1:
-						y = value;
-						break;
-
-					case 2:
-						z = value;
-						break;
-
-					default:
-						throw new Exception();
-				}
-			}
-		}
-
-		#endregion Properties
-
-		#region Public Members
-
-		#region Instance
-
-		#region public float Length
-
-		/// <summary>
-		/// Gets the length (magnitude) of the vector.
-		/// </summary>
-		/// <see cref="LengthFast"/>
-		/// <seealso cref="LengthSquared"/>
-		public float Length
-		{
-			get
-			{
-				return (float)Math.Sqrt(x * x + y * y + z * z);
-			}
-		}
-
-		#endregion public float Length
-
-		#region public float LengthSquared
-
-		/// <summary>
-		/// Gets the square of the vector length (magnitude).
-		/// </summary>
-		/// <remarks>
-		/// This property avoids the costly square root operation required by the Length property. This makes it more suitable
-		/// for comparisons.
-		/// </remarks>
-		/// <see cref="Length"/>
-		/// <seealso cref="LengthFast"/>
-		public float LengthSquared
-		{
-			get
-			{
-				return x * x + y * y + z * z;
-			}
-		}
-
-		#endregion public float LengthSquared
-
-		#region public void Normalize()
-
-		/// <summary>
-		/// Returns a normalized Vector of this.
-		/// </summary>
-		/// <returns></returns>
-		public Vector3Float GetNormal()
-		{
-			Vector3Float temp = this;
-			temp.Normalize();
-			return temp;
-		}
-
-		/// <summary>
-		/// Scales the Vector3Floatd to unit length.
-		/// </summary>
-		public void Normalize()
-		{
-			float scale = 1.0f / this.Length;
-			x *= scale;
-			y *= scale;
-			z *= scale;
-		}
-
-		#endregion public void Normalize()
-
-		#region public float[] ToArray()
-
-		public float[] ToArray()
-		{
-			return new float[] { x, y, z };
-		}
-
-		#endregion public float[] ToArray()
-
-		#endregion Instance
-
-		#region Static
-
-		#region Fields
+		#region Constants
 
 		/// <summary>
 		/// Defines a unit-length Vector3Floatd that points towards the X-axis.
@@ -301,7 +97,470 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		public static readonly int SizeInBytes = Marshal.SizeOf(new Vector3Float());
 
-		#endregion Fields
+		#endregion Constants
+
+		#region Constructors
+
+		/// <summary>
+		/// Constructs a new Vector3Float.
+		/// </summary>
+		/// <param name="x">The x component of the Vector3Float.</param>
+		/// <param name="y">The y component of the Vector3Float.</param>
+		/// <param name="z">The z component of the Vector3Float.</param>
+		public Vector3Float(double x, double y, double z)
+			: this((float)x, (float)y, (float)z)
+		{
+		}
+
+		public Vector3Float(float x, float y, float z)
+		{
+			this.X = x;
+			this.Y = y;
+			this.Z = z;
+		}
+
+		/// <summary>
+		/// Constructs a new instance from the given Vector2d.
+		/// </summary>
+		/// <param name="v">The Vector2d to copy components from.</param>
+		public Vector3Float(Vector2 v, double z = 0)
+		{
+			X = (float)v.X;
+			Y = (float)v.Y;
+			this.Z = (float)z;
+		}
+
+		/// <summary>
+		/// Constructs a new instance from the given Vector3Floatd.
+		/// </summary>
+		/// <param name="v">The Vector3Floatd to copy components from.</param>
+		public Vector3Float(Vector3Float v)
+		{
+			X = v.X;
+			Y = v.Y;
+			Z = v.Z;
+		}
+
+		public Vector3Float(float[] floatArray)
+		{
+			X = floatArray[0];
+			Y = floatArray[1];
+			Z = floatArray[2];
+		}
+
+		/// <summary>
+		/// Constructs a new instance from the given Vector4d.
+		/// </summary>
+		/// <param name="v">The Vector4d to copy components from.</param>
+		public Vector3Float(Vector4 v)
+		{
+			X = (float)v.X;
+			Y = (float)v.Y;
+			Z = (float)v.Z;
+		}
+
+		public Vector3Float(Vector3 position)
+		{
+			this.X = (float)position.X;
+			this.Y = (float)position.Y;
+			this.Z = (float)position.Z;
+		}
+
+		#endregion Constructors
+
+		#region Properties
+
+		public float this[int index]
+		{
+			get
+			{
+				switch (index)
+				{
+					case 0:
+						return X;
+
+					case 1:
+						return Y;
+
+					case 2:
+						return Z;
+
+					default:
+						return 0;
+				}
+			}
+
+			set
+			{
+				switch (index)
+				{
+					case 0:
+						X = value;
+						break;
+
+					case 1:
+						Y = value;
+						break;
+
+					case 2:
+						Z = value;
+						break;
+
+					default:
+						throw new Exception();
+				}
+			}
+		}
+
+		#endregion Properties
+
+		public Vector3 AsVector3()
+		{
+			return new Vector3(this);
+		}
+
+		#region Public Members
+
+		#region Instance
+
+		#region public float Length
+
+		/// <summary>
+		/// Gets the length (magnitude) of the vector.
+		/// </summary>
+		/// <see cref="LengthFast"/>
+		/// <seealso cref="LengthSquared"/>
+		public float Length
+		{
+			get
+			{
+				return (float)Math.Sqrt(X * X + Y * Y + Z * Z);
+			}
+		}
+
+		#endregion public float Length
+
+		#region public float LengthSquared
+
+		/// <summary>
+		/// Gets the square of the vector length (magnitude).
+		/// </summary>
+		/// <remarks>
+		/// This property avoids the costly square root operation required by the Length property. This makes it more suitable
+		/// for comparisons.
+		/// </remarks>
+		/// <see cref="Length"/>
+		/// <seealso cref="LengthFast"/>
+		public float LengthSquared
+		{
+			get
+			{
+				return X * X + Y * Y + Z * Z;
+			}
+		}
+
+		#endregion public float LengthSquared
+
+		#region public void Normalize()
+
+		/// <summary>
+		/// Returns a normalized Vector of this.
+		/// </summary>
+		/// <returns></returns>
+		public Vector3Float GetNormal()
+		{
+			Vector3Float temp = this;
+			temp.Normalize();
+			return temp;
+		}
+
+		/// <summary>
+		/// Scales the Vector3Floatd to unit length.
+		/// </summary>
+		public void Normalize()
+		{
+			float scale = 1.0f / this.Length;
+			X *= scale;
+			Y *= scale;
+			Z *= scale;
+		}
+
+		#endregion public void Normalize()
+
+		#region public float[] ToArray()
+
+		public float[] ToArray()
+		{
+			return new float[] { X, Y, Z };
+		}
+
+		#endregion public float[] ToArray()
+
+		#endregion Instance
+
+		#region Swizzle
+
+		/// <summary>
+		/// Gets or sets an OpenTK.Vector2d with the X and Y components of this instance.
+		/// </summary>
+		public Vector2 Xy
+		{
+			get
+			{
+				return new Vector2(X, Y);
+			}
+			set
+			{
+#if true
+				throw new NotImplementedException();
+#else
+                x = value.x; y = value.y;
+#endif
+			}
+		}
+
+		#endregion Swizzle
+
+		#region Operators
+
+		/// <summary>
+		/// Adds two instances.
+		/// </summary>
+		/// <param name="left">The first instance.</param>
+		/// <param name="right">The second instance.</param>
+		/// <returns>The result of the calculation.</returns>
+		public static Vector3Float operator +(Vector3Float left, Vector3Float right)
+		{
+			left.X += right.X;
+			left.Y += right.Y;
+			left.Z += right.Z;
+			return left;
+		}
+
+		/// <summary>
+		/// Subtracts two instances.
+		/// </summary>
+		/// <param name="left">The first instance.</param>
+		/// <param name="right">The second instance.</param>
+		/// <returns>The result of the calculation.</returns>
+		public static Vector3Float operator -(Vector3Float left, Vector3Float right)
+		{
+			left.X -= right.X;
+			left.Y -= right.Y;
+			left.Z -= right.Z;
+			return left;
+		}
+
+		/// <summary>
+		/// Negates an instance.
+		/// </summary>
+		/// <param name="vec">The instance.</param>
+		/// <returns>The result of the calculation.</returns>
+		public static Vector3Float operator -(Vector3Float vec)
+		{
+			vec.X = -vec.X;
+			vec.Y = -vec.Y;
+			vec.Z = -vec.Z;
+			return vec;
+		}
+
+		/// <summary>
+		/// Component wise multiply two vectors together, x*x, y*y, z*z.
+		/// </summary>
+		/// <param name="vecA"></param>
+		/// <param name="vecB"></param>
+		/// <returns></returns>
+		public static Vector3Float operator *(Vector3Float vecA, Vector3Float vecB)
+		{
+			vecA.X *= vecB.X;
+			vecA.Y *= vecB.Y;
+			vecA.Z *= vecB.Z;
+			return vecA;
+		}
+
+		/// <summary>
+		/// Multiplies an instance by a scalar.
+		/// </summary>
+		/// <param name="vec">The instance.</param>
+		/// <param name="scale">The scalar.</param>
+		/// <returns>The result of the calculation.</returns>
+		public static Vector3Float operator *(Vector3Float vec, double scale)
+		{
+			vec.X *= (float)scale;
+			vec.Y *= (float)scale;
+			vec.Z *= (float)scale;
+			return vec;
+		}
+
+		/// <summary>
+		/// Multiplies an instance by a scalar.
+		/// </summary>
+		/// <param name="scale">The scalar.</param>
+		/// <param name="vec">The instance.</param>
+		/// <returns>The result of the calculation.</returns>
+		public static Vector3Float operator *(float scale, Vector3Float vec)
+		{
+			vec.X *= scale;
+			vec.Y *= scale;
+			vec.Z *= scale;
+			return vec;
+		}
+
+		/// <summary>
+		/// Creates a new vector which is the numerator divide by each component of the vector.
+		/// </summary>
+		/// <param name="numerator"></param>
+		/// <param name="vec"></param>
+		/// <returns>The result of the calculation.</returns>
+		public static Vector3Float operator /(float numerator, Vector3Float vec)
+		{
+			return new Vector3Float((numerator / vec.X), (numerator / vec.Y), (numerator / vec.Z));
+		}
+
+		/// <summary>
+		/// Divides an instance by a scalar.
+		/// </summary>
+		/// <param name="vec">The instance.</param>
+		/// <param name="scale">The scalar.</param>
+		/// <returns>The result of the calculation.</returns>
+		public static Vector3Float operator /(Vector3Float vec, double scale)
+		{
+			float mult = 1 / (float)scale;
+			vec.X *= mult;
+			vec.Y *= mult;
+			vec.Z *= mult;
+			return vec;
+		}
+
+		/// <summary>
+		/// Compares two instances for equality.
+		/// </summary>
+		/// <param name="left">The first instance.</param>
+		/// <param name="right">The second instance.</param>
+		/// <returns>True, if left equals right; false otherwise.</returns>
+		public static bool operator ==(Vector3Float left, Vector3Float right)
+		{
+			return left.Equals(right);
+		}
+
+		/// <summary>
+		/// Compares two instances for inequality.
+		/// </summary>
+		/// <param name="left">The first instance.</param>
+		/// <param name="right">The second instance.</param>
+		/// <returns>True, if left does not equa lright; false otherwise.</returns>
+		public static bool operator !=(Vector3Float left, Vector3Float right)
+		{
+			return !left.Equals(right);
+		}
+
+		#endregion Operators
+
+		#region Overrides
+
+		#region public override string ToString()
+
+		/// <summary>
+		/// Returns a System.String that represents the current Vector3Float.
+		/// </summary>
+		/// <returns></returns>
+		public override string ToString()
+		{
+			return $"[{X}, {Y}, {Z}]";
+		}
+
+		#endregion public override string ToString()
+
+		#region public override int GetHashCode()
+
+		/// <summary>
+		/// return a 64 bit hash code proposed by Jon Skeet
+		// http://stackoverflow.com/questions/8094867/good-gethashcode-override-for-list-of-foo-objects-respecting-the-order
+		/// </summary>
+		/// <returns></returns>
+		public long GetLongHashCode()
+		{
+			long hash = 19;
+
+			unsafe
+			{
+				hash = hash * 31 + BitConverter.DoubleToInt64Bits(X);
+				hash = hash * 31 + BitConverter.DoubleToInt64Bits(Y);
+				hash = hash * 31 + BitConverter.DoubleToInt64Bits(Z);
+			}
+
+			return hash;
+		}
+
+		/// <summary>
+		/// Returns the hashcode for this instance.
+		/// </summary>
+		/// <returns>A System.Int32 containing the unique hashcode for this instance.</returns>
+		public override int GetHashCode()
+		{
+			return new { X, Y, Z }.GetHashCode();
+		}
+
+		#endregion public override int GetHashCode()
+
+		#region public override bool Equals(object obj)
+
+		/// <summary>
+		/// Indicates whether this instance and a specified object are equal.
+		/// </summary>
+		/// <param name="obj">The object to compare to.</param>
+		/// <returns>True if the instances are equal; false otherwise.</returns>
+		public override bool Equals(object obj)
+		{
+			if (!(obj is Vector3Float))
+				return false;
+
+			return this.Equals((Vector3Float)obj);
+		}
+
+		/// <summary>
+		/// Indicates whether this instance and a specified object are equal within an error range.
+		/// </summary>
+		/// <param name="OtherVector"></param>
+		/// <param name="ErrorValue"></param>
+		/// <returns>True if the instances are equal; false otherwise.</returns>
+		public bool Equals(Vector3Float OtherVector, double ErrorValue)
+		{
+			if ((X < OtherVector.X + ErrorValue && X > OtherVector.X - ErrorValue) &&
+				(Y < OtherVector.Y + ErrorValue && Y > OtherVector.Y - ErrorValue) &&
+				(Z < OtherVector.Z + ErrorValue && Z > OtherVector.Z - ErrorValue))
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		#endregion public override bool Equals(object obj)
+
+		#endregion Overrides
+
+		#endregion Public Members
+
+		#region IEquatable<Vector3Float> Members
+
+		/// <summary>Indicates whether the current vector is equal to another vector.</summary>
+		/// <param name="other">A vector to compare with this vector.</param>
+		/// <returns>true if the current vector is equal to the vector parameter; otherwise, false.</returns>
+		public bool Equals(Vector3Float other)
+		{
+			return
+				X == other.X &&
+				Y == other.Y &&
+				Z == other.Z;
+		}
+
+		#endregion IEquatable<Vector3Float> Members
+	}
+
+	public static class Vector3FloatEx
+	{
+		#region Static
 
 		#region Add
 
@@ -325,7 +584,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">Result of operation.</param>
 		public static void Add(ref Vector3Float a, ref Vector3Float b, out Vector3Float result)
 		{
-			result = new Vector3Float(a.x + b.x, a.y + b.y, a.z + b.z);
+			result = new Vector3Float(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
 		}
 
 		#endregion Add
@@ -352,7 +611,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">Result of subtraction</param>
 		public static void Subtract(ref Vector3Float a, ref Vector3Float b, out Vector3Float result)
 		{
-			result = new Vector3Float(a.x - b.x, a.y - b.y, a.z - b.z);
+			result = new Vector3Float(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
 		}
 
 		#endregion Subtract
@@ -379,7 +638,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">Result of the operation.</param>
 		public static void Multiply(ref Vector3Float vector, float scale, out Vector3Float result)
 		{
-			result = new Vector3Float(vector.x * scale, vector.y * scale, vector.z * scale);
+			result = new Vector3Float(vector.X * scale, vector.Y * scale, vector.Z * scale);
 		}
 
 		/// <summary>
@@ -402,7 +661,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">Result of the operation.</param>
 		public static void Multiply(ref Vector3Float vector, ref Vector3Float scale, out Vector3Float result)
 		{
-			result = new Vector3Float(vector.x * scale.x, vector.y * scale.y, vector.z * scale.z);
+			result = new Vector3Float(vector.X * scale.X, vector.Y * scale.Y, vector.Z * scale.Z);
 		}
 
 		#endregion Multiply
@@ -452,12 +711,17 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">Result of the operation.</param>
 		public static void Divide(ref Vector3Float vector, ref Vector3Float scale, out Vector3Float result)
 		{
-			result = new Vector3Float(vector.x / scale.x, vector.y / scale.y, vector.z / scale.z);
+			result = new Vector3Float(vector.X / scale.X, vector.Y / scale.Y, vector.Z / scale.Z);
 		}
 
 		#endregion Divide
 
 		#region ComponentMin
+
+		public static float ComponentMin(this Vector3Float vector3)
+		{
+			return Math.Min(vector3.X, Math.Min(vector3.Y, vector3.Z));
+		}
 
 		/// <summary>
 		/// Calculate the component-wise minimum of two vectors
@@ -465,11 +729,11 @@ namespace MatterHackers.VectorMath
 		/// <param name="a">First operand</param>
 		/// <param name="b">Second operand</param>
 		/// <returns>The component-wise minimum</returns>
-		public static Vector3Float ComponentMin(Vector3Float a, Vector3Float b)
+		public static Vector3Float ComponentMin(this Vector3Float a, Vector3Float b)
 		{
-			a.x = a.x < b.x ? a.x : b.x;
-			a.y = a.y < b.y ? a.y : b.y;
-			a.z = a.z < b.z ? a.z : b.z;
+			a.X = a.X < b.X ? a.X : b.X;
+			a.Y = a.Y < b.Y ? a.Y : b.Y;
+			a.Z = a.Z < b.Z ? a.Z : b.Z;
 			return a;
 		}
 
@@ -479,16 +743,21 @@ namespace MatterHackers.VectorMath
 		/// <param name="a">First operand</param>
 		/// <param name="b">Second operand</param>
 		/// <param name="result">The component-wise minimum</param>
-		public static void ComponentMin(ref Vector3Float a, ref Vector3Float b, out Vector3Float result)
+		public static void ComponentMin(this Vector3Float a, ref Vector3Float b, out Vector3Float result)
 		{
-			result.x = a.x < b.x ? a.x : b.x;
-			result.y = a.y < b.y ? a.y : b.y;
-			result.z = a.z < b.z ? a.z : b.z;
+			result.X = a.X < b.X ? a.X : b.X;
+			result.Y = a.Y < b.Y ? a.Y : b.Y;
+			result.Z = a.Z < b.Z ? a.Z : b.Z;
 		}
 
 		#endregion ComponentMin
 
 		#region ComponentMax
+
+		public static float ComponentMax(this Vector3Float vector3)
+		{
+			return Math.Max(vector3.X, Math.Max(vector3.Y, vector3.Z));
+		}
 
 		/// <summary>
 		/// Calculate the component-wise maximum of two vectors
@@ -496,11 +765,11 @@ namespace MatterHackers.VectorMath
 		/// <param name="a">First operand</param>
 		/// <param name="b">Second operand</param>
 		/// <returns>The component-wise maximum</returns>
-		public static Vector3Float ComponentMax(Vector3Float a, Vector3Float b)
+		public static Vector3Float ComponentMax(this Vector3Float a, Vector3Float b)
 		{
-			a.x = a.x > b.x ? a.x : b.x;
-			a.y = a.y > b.y ? a.y : b.y;
-			a.z = a.z > b.z ? a.z : b.z;
+			a.X = a.X > b.X ? a.X : b.X;
+			a.Y = a.Y > b.Y ? a.Y : b.Y;
+			a.Z = a.Z > b.Z ? a.Z : b.Z;
 			return a;
 		}
 
@@ -510,11 +779,11 @@ namespace MatterHackers.VectorMath
 		/// <param name="a">First operand</param>
 		/// <param name="b">Second operand</param>
 		/// <param name="result">The component-wise maximum</param>
-		public static void ComponentMax(ref Vector3Float a, ref Vector3Float b, out Vector3Float result)
+		public static void ComponentMax(this Vector3Float a, ref Vector3Float b, out Vector3Float result)
 		{
-			result.x = a.x > b.x ? a.x : b.x;
-			result.y = a.y > b.y ? a.y : b.y;
-			result.z = a.z > b.z ? a.z : b.z;
+			result.X = a.X > b.X ? a.X : b.X;
+			result.Y = a.Y > b.Y ? a.Y : b.Y;
+			result.Z = a.Z > b.Z ? a.Z : b.Z;
 		}
 
 		#endregion ComponentMax
@@ -560,9 +829,9 @@ namespace MatterHackers.VectorMath
 		/// <returns>The clamped vector</returns>
 		public static Vector3Float Clamp(Vector3Float vec, Vector3Float min, Vector3Float max)
 		{
-			vec.x = vec.x < min.x ? min.x : vec.x > max.x ? max.x : vec.x;
-			vec.y = vec.y < min.y ? min.y : vec.y > max.y ? max.y : vec.y;
-			vec.z = vec.z < min.z ? min.z : vec.z > max.z ? max.z : vec.z;
+			vec.X = vec.X < min.X ? min.X : vec.X > max.X ? max.X : vec.X;
+			vec.Y = vec.Y < min.Y ? min.Y : vec.Y > max.Y ? max.Y : vec.Y;
+			vec.Z = vec.Z < min.Z ? min.Z : vec.Z > max.Z ? max.Z : vec.Z;
 			return vec;
 		}
 
@@ -575,9 +844,9 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The clamped vector</param>
 		public static void Clamp(ref Vector3Float vec, ref Vector3Float min, ref Vector3Float max, out Vector3Float result)
 		{
-			result.x = vec.x < min.x ? min.x : vec.x > max.x ? max.x : vec.x;
-			result.y = vec.y < min.y ? min.y : vec.y > max.y ? max.y : vec.y;
-			result.z = vec.z < min.z ? min.z : vec.z > max.z ? max.z : vec.z;
+			result.X = vec.X < min.X ? min.X : vec.X > max.X ? max.X : vec.X;
+			result.Y = vec.Y < min.Y ? min.Y : vec.Y > max.Y ? max.Y : vec.Y;
+			result.Z = vec.Z < min.Z ? min.Z : vec.Z > max.Z ? max.Z : vec.Z;
 		}
 
 		#endregion Clamp
@@ -592,9 +861,9 @@ namespace MatterHackers.VectorMath
 		public static Vector3Float Normalize(Vector3Float vec)
 		{
 			float scale = 1.0f / vec.Length;
-			vec.x *= scale;
-			vec.y *= scale;
-			vec.z *= scale;
+			vec.X *= scale;
+			vec.Y *= scale;
+			vec.Z *= scale;
 			return vec;
 		}
 
@@ -606,9 +875,9 @@ namespace MatterHackers.VectorMath
 		public static void Normalize(ref Vector3Float vec, out Vector3Float result)
 		{
 			float scale = 1.0f / vec.Length;
-			result.x = vec.x * scale;
-			result.y = vec.y * scale;
-			result.z = vec.z * scale;
+			result.X = vec.X * scale;
+			result.Y = vec.Y * scale;
+			result.Z = vec.Z * scale;
 		}
 
 		#endregion Normalize
@@ -621,9 +890,9 @@ namespace MatterHackers.VectorMath
 		/// <param name="left">First operand</param>
 		/// <param name="right">Second operand</param>
 		/// <returns>The dot product of the two inputs</returns>
-		public static float Dot(Vector3Float left, Vector3Float right)
+		public static float Dot(this Vector3Float left, Vector3Float right)
 		{
-			return left.x * right.x + left.y * right.y + left.z * right.z;
+			return left.X * right.X + left.Y * right.Y + left.Z * right.Z;
 		}
 
 		/// <summary>
@@ -632,9 +901,9 @@ namespace MatterHackers.VectorMath
 		/// <param name="left">First operand</param>
 		/// <param name="right">Second operand</param>
 		/// <param name="result">The dot product of the two inputs</param>
-		public static void Dot(ref Vector3Float left, ref Vector3Float right, out float result)
+		public static void Dot(this Vector3Float left, ref Vector3Float right, out float result)
 		{
-			result = left.x * right.x + left.y * right.y + left.z * right.z;
+			result = left.X * right.X + left.Y * right.Y + left.Z * right.Z;
 		}
 
 		#endregion Dot
@@ -647,10 +916,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="left">First operand</param>
 		/// <param name="right">Second operand</param>
 		/// <returns>The cross product of the two inputs</returns>
-		public static Vector3Float Cross(Vector3Float left, Vector3Float right)
+		public static Vector3Float Cross(this Vector3Float left, Vector3Float right)
 		{
 			Vector3Float result;
-			Cross(ref left, ref right, out result);
+			left.Cross(ref right, out result);
 			return result;
 		}
 
@@ -661,11 +930,11 @@ namespace MatterHackers.VectorMath
 		/// <param name="right">Second operand</param>
 		/// <returns>The cross product of the two inputs</returns>
 		/// <param name="result">The cross product of the two inputs</param>
-		public static void Cross(ref Vector3Float left, ref Vector3Float right, out Vector3Float result)
+		public static void Cross(this Vector3Float left, ref Vector3Float right, out Vector3Float result)
 		{
-			result = new Vector3Float(left.y * right.z - left.z * right.y,
-				left.z * right.x - left.x * right.z,
-				left.x * right.y - left.y * right.x);
+			result = new Vector3Float(left.Y * right.Z - left.Z * right.Y,
+				left.Z * right.X - left.X * right.Z,
+				left.X * right.Y - left.Y * right.X);
 		}
 
 		#endregion Cross
@@ -699,9 +968,9 @@ namespace MatterHackers.VectorMath
 		/// <returns>a when blend=0, b when blend=1, and a linear combination otherwise</returns>
 		public static Vector3Float Lerp(Vector3Float a, Vector3Float b, float blend)
 		{
-			a.x = blend * (b.x - a.x) + a.x;
-			a.y = blend * (b.y - a.y) + a.y;
-			a.z = blend * (b.z - a.z) + a.z;
+			a.X = blend * (b.X - a.X) + a.X;
+			a.Y = blend * (b.Y - a.Y) + a.Y;
+			a.Z = blend * (b.Z - a.Z) + a.Z;
 			return a;
 		}
 
@@ -714,9 +983,9 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">a when blend=0, b when blend=1, and a linear combination otherwise</param>
 		public static void Lerp(ref Vector3Float a, ref Vector3Float b, float blend, out Vector3Float result)
 		{
-			result.x = blend * (b.x - a.x) + a.x;
-			result.y = blend * (b.y - a.y) + a.y;
-			result.z = blend * (b.z - a.z) + a.z;
+			result.X = blend * (b.X - a.X) + a.X;
+			result.Y = blend * (b.Y - a.Y) + a.Y;
+			result.Z = blend * (b.Z - a.Z) + a.Z;
 		}
 
 		#endregion Lerp
@@ -769,12 +1038,12 @@ namespace MatterHackers.VectorMath
 		/// <param name="vec">The vector to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <returns>The transformed vector</returns>
-		public static Vector3Float TransformVector(Vector3Float vec, Matrix4X4 mat)
+		public static Vector3Float TransformVector(this Vector3Float vec, Matrix4X4 mat)
 		{
 			return new Vector3Float(
-				Vector3Float.Dot(vec, new Vector3Float(mat.Column0)),
-				Vector3Float.Dot(vec, new Vector3Float(mat.Column1)),
-				Vector3Float.Dot(vec, new Vector3Float(mat.Column2)));
+				vec.Dot(new Vector3Float(mat.Column0)),
+				vec.Dot(new Vector3Float(mat.Column1)),
+				vec.Dot(new Vector3Float(mat.Column2)));
 		}
 
 		/// <summary>Transform a direction vector by the given Matrix
@@ -783,7 +1052,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="vec">The vector to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <param name="result">The transformed vector</param>
-		public static void TransformVector(ref Vector3Float vec, ref Matrix4X4 mat, out Vector3Float result)
+		public static void TransformVector(this Vector3Float vec, ref Matrix4X4 mat, out Vector3Float result)
 		{
 #if true
 			throw new NotImplementedException();
@@ -810,10 +1079,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="norm">The normal to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <returns>The transformed normal</returns>
-		public static Vector3Float TransformNormal(Vector3Float norm, Matrix4X4 mat)
+		public static Vector3Float TransformNormal(this Vector3Float norm, Matrix4X4 mat)
 		{
 			mat.Invert();
-			return TransformNormalInverse(norm, mat);
+			return norm.TransformNormalInverse(mat);
 		}
 
 		/// <summary>Transform a Normal by the given Matrix</summary>
@@ -824,10 +1093,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="norm">The normal to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <param name="result">The transformed normal</param>
-		public static void TransformNormal(ref Vector3Float norm, ref Matrix4X4 mat, out Vector3Float result)
+		public static void TransformNormal(this Vector3Float norm, ref Matrix4X4 mat, out Vector3Float result)
 		{
 			Matrix4X4 Inverse = Matrix4X4.Invert(mat);
-			Vector3Float.TransformNormalInverse(ref norm, ref Inverse, out result);
+			norm.TransformNormalInverse(ref Inverse, out result);
 		}
 
 		/// <summary>Transform a Normal by the (transpose of the) given Matrix</summary>
@@ -838,12 +1107,12 @@ namespace MatterHackers.VectorMath
 		/// <param name="norm">The normal to transform</param>
 		/// <param name="invMat">The inverse of the desired transformation</param>
 		/// <returns>The transformed normal</returns>
-		public static Vector3Float TransformNormalInverse(Vector3Float norm, Matrix4X4 invMat)
+		public static Vector3Float TransformNormalInverse(this Vector3Float norm, Matrix4X4 invMat)
 		{
 			return new Vector3Float(
-				Vector3Float.Dot(norm, new Vector3Float(invMat.Row0)),
-				Vector3Float.Dot(norm, new Vector3Float(invMat.Row1)),
-				Vector3Float.Dot(norm, new Vector3Float(invMat.Row2)));
+				norm.Dot(new Vector3Float(invMat.Row0)),
+				norm.Dot(new Vector3Float(invMat.Row1)),
+				norm.Dot(new Vector3Float(invMat.Row2)));
 		}
 
 		/// <summary>Transform a Normal by the (transpose of the) given Matrix</summary>
@@ -854,7 +1123,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="norm">The normal to transform</param>
 		/// <param name="invMat">The inverse of the desired transformation</param>
 		/// <param name="result">The transformed normal</param>
-		public static void TransformNormalInverse(ref Vector3Float norm, ref Matrix4X4 invMat, out Vector3Float result)
+		public static void TransformNormalInverse(this Vector3Float norm, ref Matrix4X4 invMat, out Vector3Float result)
 		{
 #if true
 			throw new NotImplementedException();
@@ -877,7 +1146,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="pos">The position to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <returns>The transformed position</returns>
-		public static Vector3Float TransformPosition(Vector3Float pos, Matrix4X4 mat)
+		public static Vector3Float TransformPosition(this Vector3Float pos, Matrix4X4 mat)
 		{
 #if true
 			throw new NotImplementedException();
@@ -893,7 +1162,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="pos">The position to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <param name="result">The transformed position</param>
-		public static void TransformPosition(ref Vector3Float pos, ref Matrix4X4 mat, out Vector3Float result)
+		public static void TransformPosition(this Vector3Float pos, ref Matrix4X4 mat, out Vector3Float result)
 		{
 #if true
 			throw new NotImplementedException();
@@ -920,7 +1189,7 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		/// <param name="boundsVerts"></param>
 		/// <param name="rotationQuaternion"></param>
-		public static void Transform(Vector3Float[] vecArray, Matrix4X4 mat)
+		public static void Transform(this Vector3Float[] vecArray, Matrix4X4 mat)
 		{
 			for (int i = 0; i < vecArray.Length; i++)
 			{
@@ -932,10 +1201,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="vec">The vector to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <returns>The transformed vector</returns>
-		public static Vector3Float Transform(Vector3Float vec, Matrix4X4 mat)
+		public static Vector3Float Transform(this Vector3Float vec, Matrix4X4 mat)
 		{
 			Vector3Float result;
-			Transform(ref vec, ref mat, out result);
+			Transform(vec, ref mat, out result);
 			return result;
 		}
 
@@ -943,15 +1212,12 @@ namespace MatterHackers.VectorMath
 		/// <param name="vec">The vector to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <param name="result">The transformed vector</param>
-		public static void Transform(ref Vector3Float vec, ref Matrix4X4 mat, out Vector3Float result)
+		public static void Transform(this Vector3Float inVec, ref Matrix4X4 mat, out Vector3Float result)
 		{
-#if true
-			throw new NotImplementedException();
-#else
-            Vector4 v4 = new Vector4(vec.x, vec.y, vec.z, 1.0);
-            Vector4.Transform(ref v4, ref mat, out v4);
-            result = v4.Xyz;
-#endif
+			Vector3 vec = new Vector3(inVec);
+			Vector4 v4 = new Vector4(vec.X, vec.Y, vec.Z, 1.0);
+			Vector4.Transform(ref v4, ref mat, out v4);
+			result = new Vector3Float(v4.Xyz);
 		}
 
 		/// <summary>
@@ -960,7 +1226,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="vec">The vector to transform.</param>
 		/// <param name="quat">The quaternion to rotate the vector by.</param>
 		/// <returns>The result of the operation.</returns>
-		public static Vector3Float Transform(Vector3Float vec, Quaternion quat)
+		public static Vector3Float Transform(this Vector3Float vec, Quaternion quat)
 		{
 #if true
 			throw new NotImplementedException();
@@ -977,7 +1243,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="vec">The vector to transform.</param>
 		/// <param name="quat">The quaternion to rotate the vector by.</param>
 		/// <param name="result">The result of the operation.</param>
-		public static void Transform(ref Vector3Float vec, ref Quaternion quat, out Vector3Float result)
+		public static void Transform(this Vector3Float vec, ref Quaternion quat, out Vector3Float result)
 		{
 #if true
 			throw new NotImplementedException();
@@ -999,7 +1265,7 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		/// <param name="boundsVerts"></param>
 		/// <param name="rotationQuaternion"></param>
-		public static void Transform(Vector3Float[] vecArray, Quaternion rotationQuaternion)
+		public static void Transform(this Vector3Float[] vecArray, Quaternion rotationQuaternion)
 		{
 			for (int i = 0; i < vecArray.Length; i++)
 			{
@@ -1013,7 +1279,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="vec">The vector to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <returns>The transformed vector</returns>
-		public static Vector3Float TransformPerspective(Vector3Float vec, Matrix4X4 mat)
+		public static Vector3Float TransformPerspective(this Vector3Float vec, Matrix4X4 mat)
 		{
 #if true
 			throw new NotImplementedException();
@@ -1028,7 +1294,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="vec">The vector to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <param name="result">The transformed vector</param>
-		public static void TransformPerspective(ref Vector3Float vec, ref Matrix4X4 mat, out Vector3Float result)
+		public static void TransformPerspective(this Vector3Float vec, ref Matrix4X4 mat, out Vector3Float result)
 		{
 #if true
 			throw new NotImplementedException();
@@ -1052,9 +1318,9 @@ namespace MatterHackers.VectorMath
 		/// <param name="second">The second vector.</param>
 		/// <returns>Angle (in radians) between the vectors.</returns>
 		/// <remarks>Note that the returned angle is never bigger than the constant Pi.</remarks>
-		public static float CalculateAngle(Vector3Float first, Vector3Float second)
+		public static float CalculateAngle(this Vector3Float first, Vector3Float second)
 		{
-			return (float)Math.Acos((Vector3Float.Dot(first, second)) / (first.Length * second.Length));
+			return (float)Math.Acos((first.Dot(second)) / (first.Length * second.Length));
 		}
 
 		/// <summary>Calculates the angle (in radians) between two vectors.</summary>
@@ -1062,265 +1328,15 @@ namespace MatterHackers.VectorMath
 		/// <param name="second">The second vector.</param>
 		/// <param name="result">Angle (in radians) between the vectors.</param>
 		/// <remarks>Note that the returned angle is never bigger than the constant Pi.</remarks>
-		public static void CalculateAngle(ref Vector3Float first, ref Vector3Float second, out float result)
+		public static void CalculateAngle(this Vector3Float first, ref Vector3Float second, out float result)
 		{
 			float temp;
-			Vector3Float.Dot(ref first, ref second, out temp);
+			first.Dot(ref second, out temp);
 			result = (float)Math.Acos(temp / (first.Length * second.Length));
 		}
 
 		#endregion CalculateAngle
 
 		#endregion Static
-
-		#region Swizzle
-
-		/// <summary>
-		/// Gets or sets an OpenTK.Vector2d with the X and Y components of this instance.
-		/// </summary>
-		public Vector2 Xy
-		{
-			get
-			{
-				return new Vector2(x, y);
-			}
-			set
-			{
-#if true
-				throw new NotImplementedException();
-#else
-                x = value.x; y = value.y;
-#endif
-			}
-		}
-
-		#endregion Swizzle
-
-		#region Operators
-
-		/// <summary>
-		/// Adds two instances.
-		/// </summary>
-		/// <param name="left">The first instance.</param>
-		/// <param name="right">The second instance.</param>
-		/// <returns>The result of the calculation.</returns>
-		public static Vector3Float operator +(Vector3Float left, Vector3Float right)
-		{
-			left.x += right.x;
-			left.y += right.y;
-			left.z += right.z;
-			return left;
-		}
-
-		/// <summary>
-		/// Subtracts two instances.
-		/// </summary>
-		/// <param name="left">The first instance.</param>
-		/// <param name="right">The second instance.</param>
-		/// <returns>The result of the calculation.</returns>
-		public static Vector3Float operator -(Vector3Float left, Vector3Float right)
-		{
-			left.x -= right.x;
-			left.y -= right.y;
-			left.z -= right.z;
-			return left;
-		}
-
-		/// <summary>
-		/// Negates an instance.
-		/// </summary>
-		/// <param name="vec">The instance.</param>
-		/// <returns>The result of the calculation.</returns>
-		public static Vector3Float operator -(Vector3Float vec)
-		{
-			vec.x = -vec.x;
-			vec.y = -vec.y;
-			vec.z = -vec.z;
-			return vec;
-		}
-
-		/// <summary>
-		/// Component wise multiply two vectors together, x*x, y*y, z*z.
-		/// </summary>
-		/// <param name="vecA"></param>
-		/// <param name="vecB"></param>
-		/// <returns></returns>
-		public static Vector3Float operator *(Vector3Float vecA, Vector3Float vecB)
-		{
-			vecA.x *= vecB.x;
-			vecA.y *= vecB.y;
-			vecA.z *= vecB.z;
-			return vecA;
-		}
-
-		/// <summary>
-		/// Multiplies an instance by a scalar.
-		/// </summary>
-		/// <param name="vec">The instance.</param>
-		/// <param name="scale">The scalar.</param>
-		/// <returns>The result of the calculation.</returns>
-		public static Vector3Float operator *(Vector3Float vec, float scale)
-		{
-			vec.x *= scale;
-			vec.y *= scale;
-			vec.z *= scale;
-			return vec;
-		}
-
-		/// <summary>
-		/// Multiplies an instance by a scalar.
-		/// </summary>
-		/// <param name="scale">The scalar.</param>
-		/// <param name="vec">The instance.</param>
-		/// <returns>The result of the calculation.</returns>
-		public static Vector3Float operator *(float scale, Vector3Float vec)
-		{
-			vec.x *= scale;
-			vec.y *= scale;
-			vec.z *= scale;
-			return vec;
-		}
-
-		/// <summary>
-		/// Creates a new vector which is the numerator divide by each component of the vector.
-		/// </summary>
-		/// <param name="numerator"></param>
-		/// <param name="vec"></param>
-		/// <returns>The result of the calculation.</returns>
-		public static Vector3Float operator /(float numerator, Vector3Float vec)
-		{
-			return new Vector3Float((numerator / vec.x), (numerator / vec.y), (numerator / vec.z));
-		}
-
-		/// <summary>
-		/// Divides an instance by a scalar.
-		/// </summary>
-		/// <param name="vec">The instance.</param>
-		/// <param name="scale">The scalar.</param>
-		/// <returns>The result of the calculation.</returns>
-		public static Vector3Float operator /(Vector3Float vec, float scale)
-		{
-			float mult = 1 / scale;
-			vec.x *= mult;
-			vec.y *= mult;
-			vec.z *= mult;
-			return vec;
-		}
-
-		/// <summary>
-		/// Compares two instances for equality.
-		/// </summary>
-		/// <param name="left">The first instance.</param>
-		/// <param name="right">The second instance.</param>
-		/// <returns>True, if left equals right; false otherwise.</returns>
-		public static bool operator ==(Vector3Float left, Vector3Float right)
-		{
-			return left.Equals(right);
-		}
-
-		/// <summary>
-		/// Compares two instances for inequality.
-		/// </summary>
-		/// <param name="left">The first instance.</param>
-		/// <param name="right">The second instance.</param>
-		/// <returns>True, if left does not equa lright; false otherwise.</returns>
-		public static bool operator !=(Vector3Float left, Vector3Float right)
-		{
-			return !left.Equals(right);
-		}
-
-		#endregion Operators
-
-		#region Overrides
-
-		#region public override string ToString()
-
-		/// <summary>
-		/// Returns a System.String that represents the current Vector3Float.
-		/// </summary>
-		/// <returns></returns>
-		public override string ToString()
-		{
-			return $"[{x}, {y}, {z}]";
-		}
-
-		#endregion public override string ToString()
-
-		#region public override int GetHashCode()
-
-		/// <summary>
-		/// Returns the hashcode for this instance.
-		/// </summary>
-		/// <returns>A System.Int32 containing the unique hashcode for this instance.</returns>
-		public override int GetHashCode()
-		{
-			return new { x, y, z }.GetHashCode();
-		}
-
-		#endregion public override int GetHashCode()
-
-		#region public override bool Equals(object obj)
-
-		/// <summary>
-		/// Indicates whether this instance and a specified object are equal.
-		/// </summary>
-		/// <param name="obj">The object to compare to.</param>
-		/// <returns>True if the instances are equal; false otherwise.</returns>
-		public override bool Equals(object obj)
-		{
-			if (!(obj is Vector3Float))
-				return false;
-
-			return this.Equals((Vector3Float)obj);
-		}
-
-		/// <summary>
-		/// Indicates whether this instance and a specified object are equal within an error range.
-		/// </summary>
-		/// <param name="OtherVector"></param>
-		/// <param name="ErrorValue"></param>
-		/// <returns>True if the instances are equal; false otherwise.</returns>
-		public bool Equals(Vector3Float OtherVector, float ErrorValue)
-		{
-			if ((x < OtherVector.x + ErrorValue && x > OtherVector.x - ErrorValue) &&
-				(y < OtherVector.y + ErrorValue && y > OtherVector.y - ErrorValue) &&
-				(z < OtherVector.z + ErrorValue && z > OtherVector.z - ErrorValue))
-			{
-				return true;
-			}
-
-			return false;
-		}
-
-		#endregion public override bool Equals(object obj)
-
-		#endregion Overrides
-
-		#endregion Public Members
-
-		#region IEquatable<Vector3Float> Members
-
-		/// <summary>Indicates whether the current vector is equal to another vector.</summary>
-		/// <param name="other">A vector to compare with this vector.</param>
-		/// <returns>true if the current vector is equal to the vector parameter; otherwise, false.</returns>
-		public bool Equals(Vector3Float other)
-		{
-			return
-				x == other.x &&
-				y == other.y &&
-				z == other.z;
-		}
-
-		#endregion IEquatable<Vector3Float> Members
-
-		public static float ComponentMax(Vector3Float vector3)
-		{
-			return Math.Max(vector3.x, Math.Max(vector3.y, vector3.z));
-		}
-
-		public static float ComponentMin(Vector3Float vector3)
-		{
-			return Math.Min(vector3.x, Math.Min(vector3.y, vector3.z));
-		}
 	}
 }

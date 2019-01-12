@@ -72,7 +72,7 @@ namespace MatterHackers.VectorMath
 		{
 			get
 			{
-				Vector3 scaledUnitVector = Vector3.TransformPosition(Vector3.UnitX, this.GetTransform4X4());
+				Vector3 scaledUnitVector = Vector3Ex.TransformPosition(Vector3.UnitX, this.GetTransform4X4());
 				return scaledUnitVector.Length;
 			}
 
@@ -210,7 +210,7 @@ namespace MatterHackers.VectorMath
 
 			Vector3 finalRayWorld = new Vector3(rayWorld).GetNormal();
 
-			Vector3 origin = Vector3.Transform(Vector3.Zero, InverseModelviewMatrix);
+			Vector3 origin = Vector3Ex.Transform(Vector3.Zero, InverseModelviewMatrix);
 
 			return new Ray(origin, finalRayWorld);
 		}
@@ -237,9 +237,9 @@ namespace MatterHackers.VectorMath
 
 		public Vector2 GetScreenPosition(Vector3 worldPosition)
 		{
-			Vector3 homoginizedViewPosition = Vector3.Transform(worldPosition, this.ModelviewMatrix);
+			Vector3 homoginizedViewPosition = Vector3Ex.Transform(worldPosition, this.ModelviewMatrix);
 
-			Vector3 homoginizedScreenPosition = Vector3.TransformPerspective(homoginizedViewPosition, this.ProjectionMatrix);
+			Vector3 homoginizedScreenPosition = Vector3Ex.TransformPerspective(homoginizedViewPosition, this.ProjectionMatrix);
 
 			// Screen position
 			return new Vector2(homoginizedScreenPosition.X * width / 2 + width / 2,
@@ -248,8 +248,8 @@ namespace MatterHackers.VectorMath
 
 		public Vector3 GetScreenSpace(Vector3 worldPosition)
 		{
-			Vector3 viewPosition = Vector3.Transform(worldPosition, ModelviewMatrix);
-			return Vector3.Transform(viewPosition, ProjectionMatrix);
+			Vector3 viewPosition = Vector3Ex.Transform(worldPosition, ModelviewMatrix);
+			return Vector3Ex.Transform(viewPosition, ProjectionMatrix);
 		}
 	}
 }

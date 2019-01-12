@@ -41,16 +41,16 @@ namespace MatterHackers.PolygonMesh
 		{
 		}
 
-		public override int Compare(IVertex a, IVertex b)
+		public override int Compare(Vector3 a, Vector3 b)
 		{
-			return a.Position.X.CompareTo(b.Position.X);
+			return a.X.CompareTo(b.X);
 		}
 
-		public override List<IVertex> FindVertices(List<IVertex> vertices, Vector3 position, double maxDistanceToConsiderVertexAsSame)
+		public override List<Vector3> FindVertices(List<Vector3> vertices, Vector3 position, double maxDistanceToConsiderVertexAsSame)
 		{
-			List<IVertex> foundVertices = new List<IVertex>();
+			List<Vector3> foundVertices = new List<Vector3>();
 
-			IVertex testPos = new Vertex(position);
+			Vector3 testPos = position;
 			int index = vertices.BinarySearch(testPos, this);
 			if (index < 0)
 			{
@@ -60,7 +60,7 @@ namespace MatterHackers.PolygonMesh
 			double maxDistanceToConsiderVertexAsSameSquared = maxDistanceToConsiderVertexAsSame * maxDistanceToConsiderVertexAsSame;
 			for (int i = index; i < vertices.Count; i++)
 			{
-				if (Math.Abs(vertices[i].Position.X - position.X) > maxDistanceToConsiderVertexAsSame)
+				if (Math.Abs(vertices[i].X - position.X) > maxDistanceToConsiderVertexAsSame)
 				{
 					// we are too far away in x, we are done with this direction
 					break;
@@ -69,7 +69,7 @@ namespace MatterHackers.PolygonMesh
 			}
 			for (int i = index - 1; i >= 0; i--)
 			{
-				if (Math.Abs(vertices[i].Position.X - position.X) > maxDistanceToConsiderVertexAsSame)
+				if (Math.Abs(vertices[i].X - position.X) > maxDistanceToConsiderVertexAsSame)
 				{
 					// we are too far away in x, we are done with this direction
 					break;
@@ -80,15 +80,15 @@ namespace MatterHackers.PolygonMesh
 			return foundVertices;
 		}
 
-		private void AddToListIfSameEnough(List<IVertex> vertices, Vector3 position, List<IVertex> findList, double maxDistanceToConsiderVertexAsSameSquared, int i)
+		private void AddToListIfSameEnough(List<Vector3> vertices, Vector3 position, List<Vector3> findList, double maxDistanceToConsiderVertexAsSameSquared, int i)
 		{
-			if (vertices[i].Position == position)
+			if (vertices[i] == position)
 			{
 				findList.Add(vertices[i]);
 			}
 			else
 			{
-				double distanceSquared = (vertices[i].Position - position).LengthSquared;
+				double distanceSquared = (vertices[i] - position).LengthSquared;
 				if (distanceSquared <= maxDistanceToConsiderVertexAsSameSquared)
 				{
 					findList.Add(vertices[i]);

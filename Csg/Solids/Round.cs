@@ -521,8 +521,8 @@ namespace MatterHackers.Csg.Solids
 			AxisAlignedBoundingBox boundsA = objectA.GetAxisAlignedBoundingBox();
 			AxisAlignedBoundingBox boundsB = objectB.GetAxisAlignedBoundingBox();
 
-			double maxMin = Math.Max(boundsA.minXYZ[centralAxis], boundsB.minXYZ[centralAxis]);
-			double minMax = Math.Min(boundsA.maxXYZ[centralAxis], boundsB.maxXYZ[centralAxis]);
+			double maxMin = Math.Max(boundsA.MinXYZ[centralAxis], boundsB.MinXYZ[centralAxis]);
+			double minMax = Math.Min(boundsA.MaxXYZ[centralAxis], boundsB.MaxXYZ[centralAxis]);
 			if (maxMin >= minMax)
 			{
 				throw new ArgumentException("Your two objects must overlap to have a fillet be created.");

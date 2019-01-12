@@ -80,20 +80,20 @@ namespace MatterHackers.RayTracer
 			Vector3 cornerRay2 = rayArray[(height - 1) * width].directionNormal;
 			Vector3 cornerRay3 = rayArray[(height - 1) * width + (width - 1)].directionNormal;
 			{
-				Vector3 normal = Vector3.Cross(cornerRay0, cornerRay1).GetNormal();
-				frustumForRays.Planes[0] = new Plane(normal, Vector3.Dot(normal, origin));
+				Vector3 normal = Vector3Ex.Cross(cornerRay0, cornerRay1).GetNormal();
+				frustumForRays.Planes[0] = new Plane(normal, Vector3Ex.Dot(normal, origin));
 			}
 			{
-				Vector3 normal = Vector3.Cross(cornerRay1, cornerRay2).GetNormal();
-				frustumForRays.Planes[1] = new Plane(normal, Vector3.Dot(normal, origin));
+				Vector3 normal = Vector3Ex.Cross(cornerRay1, cornerRay2).GetNormal();
+				frustumForRays.Planes[1] = new Plane(normal, Vector3Ex.Dot(normal, origin));
 			}
 			{
-				Vector3 normal = Vector3.Cross(cornerRay2, cornerRay3).GetNormal();
-				frustumForRays.Planes[2] = new Plane(normal, Vector3.Dot(normal, origin));
+				Vector3 normal = Vector3Ex.Cross(cornerRay2, cornerRay3).GetNormal();
+				frustumForRays.Planes[2] = new Plane(normal, Vector3Ex.Dot(normal, origin));
 			}
 			{
-				Vector3 normal = Vector3.Cross(cornerRay3, cornerRay0).GetNormal();
-				frustumForRays.Planes[3] = new Plane(normal, Vector3.Dot(normal, origin));
+				Vector3 normal = Vector3Ex.Cross(cornerRay3, cornerRay0).GetNormal();
+				frustumForRays.Planes[3] = new Plane(normal, Vector3Ex.Dot(normal, origin));
 			}
 		}
 	}

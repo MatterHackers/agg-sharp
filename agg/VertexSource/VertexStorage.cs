@@ -985,8 +985,7 @@ namespace MatterHackers.Agg.VertexSource
 				parseIndex++;
 			}
 
-			if (parseIndex < dString.Length
-				&& validNumberStartingCharacters.Contains(dString[parseIndex]))
+			if (validNumberStartingCharacters.Contains(dString[parseIndex]))
 			{
 				return true;
 			}

@@ -24,22 +24,24 @@ namespace MatterHackers.PolygonMesh.Csg
 	{
 		public enum IntersectionType { None, Vertex, MeshEdge, Face }
 
-		public static IntersectionType Intersection(this Face face, Ray ray, out Vector3 intersectionPosition)
-		{
-			Plane facePlane = new Plane(face.Normal, face.firstFaceEdge.FirstVertex.Position);
-			double distanceToHit;
-			bool hitFrontOfPlane;
-			if (facePlane.RayHitPlane(ray, out distanceToHit, out hitFrontOfPlane))
-			{
-				intersectionPosition = ray.origin + ray.directionNormal * distanceToHit;
-				return IntersectionType.Face;
-			}
-			intersectionPosition = Vector3.PositiveInfinity;
-			return IntersectionType.None;
-		}
+		//public static IntersectionType Intersection(this Face face, Ray ray, out Vector3 intersectionPosition)
+		//{
+		//	Plane facePlane = new Plane(face.Normal, face.firstFaceEdge.FirstVertex.Position);
+		//	double distanceToHit;
+		//	bool hitFrontOfPlane;
+		//	if (facePlane.RayHitPlane(ray, out distanceToHit, out hitFrontOfPlane))
+		//	{
+		//		intersectionPosition = ray.origin + ray.directionNormal * distanceToHit;
+		//		return IntersectionType.Face;
+		//	}
+		//	intersectionPosition = Vector3.PositiveInfinity;
+		//	return IntersectionType.None;
+		//}
 
 		public static void SplitFaces(this Mesh meshToSplit, Mesh meshToConsider)
 		{
+			throw new NotImplementedException();
+			/*
 			AxisAlignedBoundingBox boundsForFaces = meshToSplit.GetAxisAlignedBoundingBox();
 			AxisAlignedBoundingBox boundsForEdges = meshToConsider.GetAxisAlignedBoundingBox();
 			AxisAlignedBoundingBox faceEdgeBoundsIntersection = AxisAlignedBoundingBox.Intersection(boundsForEdges, boundsForFaces);
@@ -72,6 +74,7 @@ namespace MatterHackers.PolygonMesh.Csg
 					}
 				}
 			}
+			*/
 		}
 
 		public static void FlipFaces(this Mesh a)
@@ -99,22 +102,22 @@ namespace MatterHackers.PolygonMesh.Csg
 			throw new NotImplementedException();
 		}
 
-		public static IEnumerable<Face> GetFacesTouching(this Mesh a, AxisAlignedBoundingBox edgeBounds)
-		{
-			// TODO: make this only get the right faces
-			foreach (var face in a.Faces)
-			{
-				yield return face;
-			}
-		}
+		//public static IEnumerable<Face> GetFacesTouching(this Mesh a, AxisAlignedBoundingBox edgeBounds)
+		//{
+		//	// TODO: make this only get the right faces
+		//	foreach (var face in a.Faces)
+		//	{
+		//		yield return face;
+		//	}
+		//}
 
-		public static IEnumerable<MeshEdge> GetMeshEdgesTouching(this Mesh a, AxisAlignedBoundingBox faceEdgeBoundsIntersection)
-		{
-			// TODO: make this only get the right mesh edges
-			foreach (var meshEdge in a.MeshEdges)
-			{
-				yield return meshEdge;
-			}
-		}
+		//public static IEnumerable<MeshEdge> GetMeshEdgesTouching(this Mesh a, AxisAlignedBoundingBox faceEdgeBoundsIntersection)
+		//{
+		//	// TODO: make this only get the right mesh edges
+		//	foreach (var meshEdge in a.MeshEdges)
+		//	{
+		//		yield return meshEdge;
+		//	}
+		//}
 	}
 }

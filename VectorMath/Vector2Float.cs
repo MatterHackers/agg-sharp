@@ -94,6 +94,12 @@ namespace MatterHackers.VectorMath
 			this.Y = (float)vector.Y;
 		}
 
+		public Vector2Float(Vector3Float vector)
+		{
+			this.X = vector.X;
+			this.Y = vector.Y;
+		}
+
 		#endregion Constructors
 
 		#region Properties

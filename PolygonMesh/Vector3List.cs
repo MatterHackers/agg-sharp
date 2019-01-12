@@ -27,33 +27,30 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System.Collections;
 using System.Collections.Generic;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
 {
-	// I have a plan to have an intenal storage that is IList so
-	// we can have a wrapper around arrays or other structures that make them work with this type
-	public class Vector3List : List<Vector3>
+	public static class Vector3ListEx
 	{
-		public Vector3List()
+		public static List<Vector3> ToVector3List(this double[] v)
 		{
-
-		}
-
-		public Vector3List(double[] v)
-		{
+			var list = new List<Vector3>();
 			for (int i = 0; i < v.Length; i += 3)
 			{
-				Add(new Vector3(v[i], v[i + 1], v[i + 2]));
+				list.Add(new Vector3(v[i], v[i + 1], v[i + 2]));
 			}
+
+			return list;
 		}
 
-		public double[] ToDoubleArray()
+		public static double[] ToDoubleArray(this List<Vector3> list)
 		{
-			var da = new double[Count * 3];
+			var da = new double[list.Count * 3];
 			int i = 0;
-			foreach (var vertex in this)
+			foreach (var vertex in list)
 			{
 				da[i++] = vertex[0];
 				da[i++] = vertex[1];
@@ -63,26 +60,93 @@ namespace MatterHackers.PolygonMesh
 			return da;
 		}
 
-		public void Transform(Matrix4X4 matrix)
+		public static void Transform(this List<Vector3> list, Matrix4X4 matrix)
 		{
-			for (int i = 0; i < this.Count; i++)
+			for (int i = 0; i < list.Count; i++)
 			{
-				this[i] = Vector3.Transform(this[i], matrix);
+				list[i] = Vector3Ex.Transform(list[i], matrix);
 			}
 		}
-	}
 
-	public static class Vector3ListExtensions
-	{
-		public static AxisAlignedBoundingBox Bounds(this Vector3List vector3List)
+		public static AxisAlignedBoundingBox Bounds(this List<Vector3> list)
 		{
 			var bounds = AxisAlignedBoundingBox.Empty();
-			foreach(var position in vector3List)
+			foreach (var position in list)
 			{
 				bounds.ExpandToInclude(position);
 			}
 
 			return bounds;
+		}
+
+		public static void AddRange(this List<Vector3> list, List<Vector3Float> vector3List)
+		{
+			foreach (var vector3 in vector3List)
+			{
+				list.Add(vector3.AsVector3());
+			}
+		}
+	}
+
+	public static class Vector3FloatListEx
+	{
+		public static List<Vector3Float> ToVector3FloatList(this double[] v)
+		{
+			var list = new List<Vector3Float>();
+			for (int i = 0; i < v.Length; i += 3)
+			{
+				list.Add(new Vector3Float(v[i], v[i + 1], v[i + 2]));
+			}
+
+			return list;
+		}
+
+		public static double[] ToDoubleArray(this List<Vector3Float> list, Matrix4X4 matrix)
+		{
+			var da = new double[list.Count * 3];
+			int i = 0;
+			foreach (var vector3Float in list)
+			{
+				var transformed = vector3Float.Transform(matrix);
+
+				da[i++] = transformed[0];
+				da[i++] = transformed[1];
+				da[i++] = transformed[2];
+			}
+
+			return da;
+		}
+
+		public static void Transform(this List<Vector3Float> list, Matrix4X4 matrix)
+		{
+			for (int i = 0; i < list.Count; i++)
+			{
+				list[i] = Vector3FloatEx.Transform(list[i], matrix);
+			}
+		}
+
+		public static AxisAlignedBoundingBox Bounds(this List<Vector3Float> list)
+		{
+			var bounds = AxisAlignedBoundingBox.Empty();
+			foreach (var position in list)
+			{
+				bounds.ExpandToInclude(new Vector3(position));
+			}
+
+			return bounds;
+		}
+
+		public static void AddRange(this List<Vector3Float> list, List<Vector3> vector3List)
+		{
+			foreach (var vector3 in vector3List)
+			{
+				list.Add(new Vector3Float(vector3));
+			}
+		}
+
+		public static void Add(this List<Vector3Float> list, Vector3 vector3)
+		{
+			list.Add(new Vector3Float(vector3));
 		}
 	}
 }

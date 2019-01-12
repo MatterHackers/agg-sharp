@@ -898,10 +898,10 @@ namespace MatterHackers.VectorMath
 		{
 			long hash = 19;
 
-			hash = hash * 31 + X.GetHashCode();
-			hash = hash * 31 + Y.GetHashCode();
-			hash = hash * 31 + Z.GetHashCode();
-			hash = hash * 31 + W.GetHashCode();
+			hash = hash * 31 + BitConverter.DoubleToInt64Bits(X);
+			hash = hash * 31 + BitConverter.DoubleToInt64Bits(Y);
+			hash = hash * 31 + BitConverter.DoubleToInt64Bits(Z);
+			hash = hash * 31 + BitConverter.DoubleToInt64Bits(W);
 
 			return hash;
 		}

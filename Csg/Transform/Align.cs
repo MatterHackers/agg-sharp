@@ -60,27 +60,27 @@ namespace MatterHackers.Csg.Transform
 
 			if (IsSet(boundingFacesToAlign, Face.Left, Face.Right))
 			{
-				positionToAlignTo.X = positionToAlignTo.X - bounds.minXYZ.X;
+				positionToAlignTo.X = positionToAlignTo.X - bounds.MinXYZ.X;
 			}
 			if (IsSet(boundingFacesToAlign, Face.Right, Face.Left))
 			{
-				positionToAlignTo.X = positionToAlignTo.X - bounds.minXYZ.X - (bounds.maxXYZ.X - bounds.minXYZ.X);
+				positionToAlignTo.X = positionToAlignTo.X - bounds.MinXYZ.X - (bounds.MaxXYZ.X - bounds.MinXYZ.X);
 			}
 			if (IsSet(boundingFacesToAlign, Face.Front, Face.Back))
 			{
-				positionToAlignTo.Y = positionToAlignTo.Y - bounds.minXYZ.Y;
+				positionToAlignTo.Y = positionToAlignTo.Y - bounds.MinXYZ.Y;
 			}
 			if (IsSet(boundingFacesToAlign, Face.Back, Face.Front))
 			{
-				positionToAlignTo.Y = positionToAlignTo.Y - bounds.minXYZ.Y - (bounds.maxXYZ.Y - bounds.minXYZ.Y);
+				positionToAlignTo.Y = positionToAlignTo.Y - bounds.MinXYZ.Y - (bounds.MaxXYZ.Y - bounds.MinXYZ.Y);
 			}
 			if (IsSet(boundingFacesToAlign, Face.Bottom, Face.Top))
 			{
-				positionToAlignTo.Z = positionToAlignTo.Z - bounds.minXYZ.Z;
+				positionToAlignTo.Z = positionToAlignTo.Z - bounds.MinXYZ.Z;
 			}
 			if (IsSet(boundingFacesToAlign, Face.Top, Face.Bottom))
 			{
-				positionToAlignTo.Z = positionToAlignTo.Z - bounds.minXYZ.Z - (bounds.maxXYZ.Z - bounds.minXYZ.Z);
+				positionToAlignTo.Z = positionToAlignTo.Z - bounds.MinXYZ.Z - (bounds.MaxXYZ.Z - bounds.MinXYZ.Z);
 			}
 
 			base.Translation = positionToAlignTo;
@@ -91,27 +91,27 @@ namespace MatterHackers.Csg.Transform
 			Vector3 positionToAlignTo = new Vector3();
 			if (IsSet(boundingFacesToAlignTo, Face.Left, Face.Right))
 			{
-				positionToAlignTo.X = objectToAlignTo.GetAxisAlignedBoundingBox().minXYZ.X;
+				positionToAlignTo.X = objectToAlignTo.GetAxisAlignedBoundingBox().MinXYZ.X;
 			}
 			if (IsSet(boundingFacesToAlignTo, Face.Right, Face.Left))
 			{
-				positionToAlignTo.X = objectToAlignTo.GetAxisAlignedBoundingBox().maxXYZ.X;
+				positionToAlignTo.X = objectToAlignTo.GetAxisAlignedBoundingBox().MaxXYZ.X;
 			}
 			if (IsSet(boundingFacesToAlignTo, Face.Front, Face.Back))
 			{
-				positionToAlignTo.Y = objectToAlignTo.GetAxisAlignedBoundingBox().minXYZ.Y;
+				positionToAlignTo.Y = objectToAlignTo.GetAxisAlignedBoundingBox().MinXYZ.Y;
 			}
 			if (IsSet(boundingFacesToAlignTo, Face.Back, Face.Front))
 			{
-				positionToAlignTo.Y = objectToAlignTo.GetAxisAlignedBoundingBox().maxXYZ.Y;
+				positionToAlignTo.Y = objectToAlignTo.GetAxisAlignedBoundingBox().MaxXYZ.Y;
 			}
 			if (IsSet(boundingFacesToAlignTo, Face.Bottom, Face.Top))
 			{
-				positionToAlignTo.Z = objectToAlignTo.GetAxisAlignedBoundingBox().minXYZ.Z;
+				positionToAlignTo.Z = objectToAlignTo.GetAxisAlignedBoundingBox().MinXYZ.Z;
 			}
 			if (IsSet(boundingFacesToAlignTo, Face.Top, Face.Bottom))
 			{
-				positionToAlignTo.Z = objectToAlignTo.GetAxisAlignedBoundingBox().maxXYZ.Z;
+				positionToAlignTo.Z = objectToAlignTo.GetAxisAlignedBoundingBox().MaxXYZ.Z;
 			}
 			return positionToAlignTo + extraOffset;
 		}

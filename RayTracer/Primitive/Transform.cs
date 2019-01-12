@@ -56,7 +56,7 @@ namespace MatterHackers.RayTracer.Traceable
 		{
 			if (this.GetAxisAlignedBoundingBox().Contains(position))
 			{
-				var childPosition = Vector3.Transform(position, WorldToAxis);
+				var childPosition = Vector3Ex.Transform(position, WorldToAxis);
 				if (Child?.Contains(childPosition) == true)
 				{
 					return true;
@@ -171,9 +171,14 @@ namespace MatterHackers.RayTracer.Traceable
 				return null;
 			}
 			IntersectInfo globalInfo = new IntersectInfo(localInfo);
-			globalInfo.HitPosition = Vector3.TransformPosition(localInfo.HitPosition, this.AxisToWorld);
-			globalInfo.normalAtHit = Vector3.TransformVector(localInfo.normalAtHit, this.AxisToWorld);
+			globalInfo.HitPosition = Vector3Ex.TransformPosition(localInfo.HitPosition, this.AxisToWorld);
+			globalInfo.normalAtHit = Vector3Ex.TransformVector(localInfo.normalAtHit, this.AxisToWorld);
 			return globalInfo;
+		}
+
+		public double GetAxisCenter(int axis)
+		{
+			return GetCenter()[axis];
 		}
 	}
 }

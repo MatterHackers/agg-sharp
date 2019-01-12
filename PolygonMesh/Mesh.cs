@@ -40,14 +40,57 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
 {
-	public enum CreateOption { CreateNew, ReuseExisting };
+	public class FaceTextureData
+	{
+		public ImageBuffer image;
+		public Vector2Float uv0;
+		public Vector2Float uv1;
+		public Vector2Float uv2;
 
-	public enum SortOption { SortNow, WillSortLater };
+		public FaceTextureData(ImageBuffer textureToUse, Vector2Float vector2Float1, Vector2Float vector2Float2, Vector2Float vector2Float3)
+		{
+			this.image = textureToUse;
+			this.uv0 = vector2Float1;
+			this.uv1 = vector2Float2;
+			this.uv2 = vector2Float3;
+		}
+	}
 
 	public class Mesh
 	{
-		public Dictionary<(Face, int), ImageBuffer> FaceTexture = new Dictionary<(Face, int), ImageBuffer>();
-		public Dictionary<(FaceEdge, int), Vector2> TextureUV = new Dictionary<(FaceEdge, int), Vector2>();
+		//public List<Vector3> Vertices { get; set; } = new List<Vector3>();
+		public List<Vector3Float> Vertices { get; set; } = new List<Vector3Float>();
+		public FaceList Faces { get; set; } = new FaceList();
+		public List<Vector3Float> FaceNormals
+		{
+			get
+			{
+				if(_faceNormals.Count != Faces.Count)
+				{
+					// calculate them from the faces
+					_faceNormals = new List<Vector3Float>(Faces.Count);
+					for(int i=0; i<Faces.Count; i++)
+					{
+						var position0 = Vertices[Faces[i].v0];
+						var position1 = Vertices[Faces[i].v1];
+						var position2 = Vertices[Faces[i].v2];
+						var faceEdge1Minus0 = position1 - position0;
+						var face2Minus0 = position2 - position0;
+						_faceNormals.Add(faceEdge1Minus0.Cross(face2Minus0).GetNormal());
+					}
+				}
+				return _faceNormals;
+			}
+			set
+			{
+				_faceNormals = value;
+			}
+		}
+
+		/// <summary>
+		/// lookup by face index into the UVs and image for a face
+		/// </summary>
+		public Dictionary<int, FaceTextureData> FaceTextures { get; set; } = new Dictionary<int, FaceTextureData>();
 
 		private static object nextIdLocker = new object();
 		public BspNode FaceBspTree { get; set; } = null;
@@ -61,61 +104,49 @@ namespace MatterHackers.PolygonMesh
 		{
 		}
 
+		public Mesh(List<Vector3> v, FaceList f)
+		{
+			Vertices.Clear();
+			Vertices.AddRange(v);
+
+			Faces.Clear();
+			Faces.AddRange(f);
+		}
+
+		public Mesh(List<Vector3Float> v, FaceList f)
+		{
+			Vertices.Clear();
+			Vertices.AddRange(v);
+
+			Faces.Clear();
+			Faces.AddRange(f);
+		}
+
 		/// <summary>
 		/// Iitialize with a 3xN vertex array and a 3xM vertex index array
 		/// </summary>
-		/// <param name="v">a Vector3List representing vertices</param>
-		/// <param name="f">a FaceList represeting face vertex indexes</param>
-		public Mesh(Vector3List v, FaceList f)
-		{
-			for (int vertexIndex = 0; vertexIndex < v.Count; vertexIndex++)
-			{
-				this.CreateVertex(v[vertexIndex], CreateOption.CreateNew, SortOption.WillSortLater);
-			}
-
-			for (int faceIndex = 0; faceIndex < f.Count; faceIndex++)
-			{
-				this.CreateFace(f[faceIndex][0],
-					f[faceIndex][1],
-					f[faceIndex][2], CreateOption.CreateNew);
-			}
-		}
-		
-		/// <summary>
-		 /// Iitialize with a 3xN vertex array and a 3xM vertex index array
-		 /// </summary>
-		 /// <param name="v">a 3xN array of doubles representing vertices</param>
-		 /// <param name="f">a 3xM array of ints represeting face vertex indexes</param>
+		/// <param name="v">a 3xN array of doubles representing vertices</param>
+		/// <param name="f">a 3xM array of ints represeting face vertex indexes</param>
 		public Mesh(double[] v, int[] f)
 		{
-			for (int vertexIndex = 0; vertexIndex < v.Length; vertexIndex++)
+			for (int vertexIndex = 0; vertexIndex < v.Length - 2; vertexIndex += 3)
 			{
-				this.CreateVertex(v[vertexIndex + 0],
+				this.Vertices.Add(new Vector3(v[vertexIndex + 0],
 					v[vertexIndex + 1],
-					v[vertexIndex + 2], CreateOption.CreateNew, SortOption.WillSortLater);
-				vertexIndex += 2;
+					v[vertexIndex + 2]));
 			}
 
-			for (int faceIndex = 0; faceIndex < f.Length; faceIndex++)
+			for (int faceIndex = 0; faceIndex < f.Length - 2; faceIndex += 3)
 			{
-				this.CreateFace(f[faceIndex + 0],
+				this.Faces.Add((f[faceIndex + 0],
 					f[faceIndex + 1],
-					f[faceIndex + 2], CreateOption.CreateNew);
-				faceIndex += 2;
+					f[faceIndex + 2]));
 			}
 		}
 
 		public event EventHandler Changed;
 
 		public int ChangedCount { get; private set; } = 0;
-
-		public List<Face> Faces { get; } = new List<Face>();
-
-		public int ID { get; } = Mesh.GetID();
-
-		public List<MeshEdge> MeshEdges { get; private set; } = new List<MeshEdge>();
-
-		public VertexCollecton Vertices { get; private set; } = new VertexCollecton();
 
 		long _longHashBeforeClean = 0;
 		public long LongHashBeforeClean
@@ -131,46 +162,6 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public void CleanAndMergeMesh(CancellationToken cancellationToken, double maxDistanceToConsiderVertexAsSame = 0, Action<double, string> reportProgress = null)
-		{
-			if (_longHashBeforeClean == 0)
-			{
-				_longHashBeforeClean = GetLongHashCode();
-			}
-
-			if (reportProgress != null)
-			{
-				SortVertices((double progress0To1, string processingState) =>
-				{
-					reportProgress(progress0To1 * .41, processingState);
-				});
-
-				if (!cancellationToken.IsCancellationRequested)
-				{
-					MergeVertices(cancellationToken, maxDistanceToConsiderVertexAsSame, (double progress0To1, string processingState) =>
-					{
-						reportProgress(progress0To1 * .23 + .41, processingState);
-					});
-				}
-
-				if (!cancellationToken.IsCancellationRequested)
-				{
-					MergeMeshEdges(cancellationToken, (double progress0To1, string processingState) =>
-					{
-						reportProgress(progress0To1 * .36 + .64, processingState);
-					});
-				}
-			}
-			else
-			{
-				SortVertices();
-				MergeVertices(cancellationToken, maxDistanceToConsiderVertexAsSame);
-				MergeMeshEdges(cancellationToken);
-			}
-
-			MarkAsChanged();
-		}
-
 		public override bool Equals(object obj)
 		{
 			if (!(obj is Mesh))
@@ -179,40 +170,29 @@ namespace MatterHackers.PolygonMesh
 			return this.Equals((Mesh)obj);
 		}
 
+		public override string ToString()
+		{
+			return $"Faces = {Faces.Count}, Vertices = {Vertices.Count}";
+		}
+
 		public bool Equals(Mesh other)
 		{
 			if (this.Vertices.Count == other.Vertices.Count
-				&& this.MeshEdges.Count == other.MeshEdges.Count
 				&& this.Faces.Count == other.Faces.Count)
 			{
-				foreach (IVertex vertex in Vertices)
+				for (int i = 0; i < Vertices.Count; i++)
 				{
-					List<IVertex> foundVertices = other.FindVertices(vertex.Position);
-					if (foundVertices.Count < 1)
+					if (Vertices[i] != other.Vertices[i])
 					{
 						return false;
 					}
 				}
 
-				foreach (MeshEdge meshEdge in MeshEdges)
+				for (int i = 0; i < Faces.Count; i++)
 				{
-					List<MeshEdge> foundEdges = other.FindMeshEdges(meshEdge.VertexOnEnd[0], meshEdge.VertexOnEnd[1]);
-					if (foundEdges.Count < 1)
-					{
-						return false;
-					}
-				}
-
-				foreach (Face face in Faces)
-				{
-					List<IVertex> faceVerices = new List<IVertex>();
-					foreach (FaceEdge faceEdge in face.FaceEdges())
-					{
-						faceVerices.Add(faceEdge.FirstVertex);
-					}
-
-					List<Face> foundFaces = other.FindFacesAtPosition(faceVerices.ToArray());
-					if (foundFaces.Count < 1)
+					if (Faces[i].v0 != other.Faces[i].v0
+						|| Faces[i].v1 != other.Faces[i].v1
+						|| Faces[i].v2 != other.Faces[i].v2)
 					{
 						return false;
 					}
@@ -230,15 +210,14 @@ namespace MatterHackers.PolygonMesh
 			{
 				long hash = 19;
 
-				hash = hash * 31 + MeshEdges.Count;
-				hash = hash * 31 + Faces.Count;
 				hash = hash * 31 + Vertices.Count;
+				hash = hash * 31 + Faces.Count;
 
 				int vertexStep = Math.Max(1, Vertices.Count / 16);
 				for (int i = 0; i < Vertices.Count; i += vertexStep)
 				{
 					var vertex = Vertices[i];
-					hash = hash * 31 + vertex.Position.GetLongHashCode();
+					hash = hash * 31 + vertex.GetLongHashCode();
 				}
 
 				// also need the direction of vertices for face edges
@@ -246,10 +225,9 @@ namespace MatterHackers.PolygonMesh
 				for (int i = 0; i < Faces.Count; i += faceStep)
 				{
 					var face = Faces[i];
-					foreach (var faceEdge in face.FaceEdges())
-					{
-						hash = hash * 31 + faceEdge.FirstVertex.ID;
-					}
+					hash = hash * 31 + face.v0;
+					hash = hash * 31 + face.v1;
+					hash = hash * 31 + face.v2;
 				}
 
 				return hash;
@@ -272,71 +250,32 @@ namespace MatterHackers.PolygonMesh
 		{
 			if (matrix != Matrix4X4.Identity)
 			{
-				bool wasSorted = Vertices.Sorted;
-				Vertices.Sorted = false;
-				foreach (IVertex vertex in Vertices)
-				{
-					vertex.Position = Vector3.Transform(vertex.Position, matrix);
-				}
-				foreach (Face face in Faces)
-				{
-					face.CalculateNormal();
-				}
-				if (wasSorted)
-				{
-					SortVertices();
-				}
+				Vertices.Transform(matrix);
 				MarkAsChanged();
 			}
 		}
 
 		public void CalculateNormals()
 		{
-			foreach (var face in Faces)
-			{
-				face.CalculateNormal();
-			}
+			// TODO: add a property bag of normals for the faces
+			throw new NotImplementedException();
 		}
 
 		public void Translate(Vector3 offset)
 		{
 			if (offset != Vector3.Zero)
 			{
-				foreach (IVertex vertex in Vertices)
-				{
-					vertex.Position += offset;
-				}
+				Vertices.Transform(Matrix4X4.CreateTranslation(offset));
+
 				MarkAsChanged();
-			}
-		}
-
-		public void Triangulate()
-		{
-			// TODO: Use the tessellation library to ensure concave faces can be created correctly
-			List<Face> tempFaceList = new List<Face>(Faces);
-			foreach (Face face in tempFaceList)
-			{
-				if (face.NumVertices != 3)
-				{
-					List<IVertex> positionsCCW = new List<IVertex>();
-					foreach (FaceEdge faceEdge in face.FaceEdges())
-					{
-						positionsCCW.Add(faceEdge.FirstVertex);
-					}
-
-					for (int splitIndex = 2; splitIndex < positionsCCW.Count - 1; splitIndex++)
-					{
-						MeshEdge createdEdge;
-						Face createdFace;
-						this.SplitFace(face, positionsCCW[0], positionsCCW[splitIndex], out createdEdge, out createdFace);
-					}
-				}
 			}
 		}
 
 		#region meshIDs
 		//private static Dictionary<object, int> Ids = new Dictionary<object, int>(ReferenceEqualityComparer.Default);
 		private static int nextId = 0;
+		private List<Vector3Float> _faceNormals = new List<Vector3Float>();
+
 		public static int GetID()
 		{
 			lock (nextIdLocker)
@@ -348,814 +287,6 @@ namespace MatterHackers.PolygonMesh
 
 		#region Public Members
 
-		#region Debug
-
-		public string GetConnectionInfoAsString()
-		{
-			StringBuilder totalDebug = new StringBuilder();
-			totalDebug.Append(String.Format("Mesh: {0}\n", ID));
-			foreach (IVertex vertex in Vertices)
-			{
-				totalDebug.Append(new string('\t', 1) + String.Format("Vertex: {0}\n", vertex.ID));
-				vertex.AddDebugInfo(totalDebug, 2);
-			}
-			foreach (MeshEdge meshEdge in MeshEdges)
-			{
-				totalDebug.Append(new string('\t', 1) + String.Format("MeshEdge: {0}\n", meshEdge.ID));
-				meshEdge.AddDebugInfo(totalDebug, 2);
-			}
-			foreach (Face face in Faces)
-			{
-				totalDebug.Append(new string('\t', 1) + String.Format("Face: {0}\n", face.ID));
-				face.AddDebugInfo(totalDebug, 2);
-			}
-
-			return totalDebug.ToString();
-		}
-
-		public void Validate(HashSet<IVertex> verticesToSkip = null)
-		{
-			if (verticesToSkip != null)
-			{
-				foreach (IVertex vertex in Vertices)
-				{
-					if (!verticesToSkip.Contains(vertex))
-					{
-						vertex.Validate();
-					}
-				}
-			}
-			else
-			{
-				foreach (IVertex vertex in Vertices)
-				{
-					vertex.Validate();
-				}
-			}
-			foreach (MeshEdge meshEdge in MeshEdges)
-			{
-				meshEdge.Validate();
-			}
-			foreach (Face face in Faces)
-			{
-				face.Validate();
-			}
-		}
-
-		#endregion Debug
-
-		#region Operations
-
-		public bool ContainsVertex(IVertex vertexToLookFor)
-		{
-			return Vertices.ContainsAVertexAtPosition(vertexToLookFor);
-		}
-
-		public bool DeleteVertexFromMeshEdge(MeshEdge meshEdgeDeleteVertexFrom, IVertex vertexToDelete)
-		{
-			throw new NotImplementedException();
-		}
-
-		public void ReverseFaceEdges()
-		{
-			foreach (Face face in Faces)
-			{
-				ReverseFaceEdges(face);
-			}
-
-			MarkAsChanged();
-		}
-
-		public void ReverseFaceEdges(Face faceToReverse)
-		{
-			FaceEdge temp = null;
-			FaceEdge current = faceToReverse.firstFaceEdge;
-
-			// swap next and prev for all nodes of
-			// doubly linked list
-			do
-			{
-				temp = current.PrevFaceEdge;
-				current.PrevFaceEdge = current.NextFaceEdge;
-				current.NextFaceEdge = temp;
-				current = current.PrevFaceEdge; // go to the next
-			} while (current != faceToReverse.firstFaceEdge);
-		}
-
-		public void SplitFace(Face faceToSplit, IVertex splitStartVertex, IVertex splitEndVertex, out MeshEdge meshEdgeCreatedDuringSplit, out Face faceCreatedDuringSplit)
-		{
-			if (!ContainsVertex(splitStartVertex) || !ContainsVertex(splitEndVertex))
-			{
-				throw new Exception("The mesh must contain the vertices you intend to split between.");
-			}
-
-			// we may want to be able to double up an edge for some operations (we'll have to see).
-			if (FindMeshEdges(splitStartVertex, splitEndVertex).Count > 0)
-			{
-				// this also ensures that the face is more than 2 sided.
-				throw new Exception("You cannot split a face on an existing edge.");
-			}
-
-			FaceEdge faceEdgeAfterSplitStart = null;
-			FaceEdge faceEdgeAfterSplitEnd = null;
-			int count = 0;
-			foreach (FaceEdge faceEdge in faceToSplit.FaceEdges())
-			{
-				if (faceEdge.FirstVertex == splitStartVertex)
-				{
-					faceEdgeAfterSplitStart = faceEdge;
-					count++;
-				}
-				else if (faceEdge.FirstVertex == splitEndVertex)
-				{
-					faceEdgeAfterSplitEnd = faceEdge;
-					count++;
-				}
-				if (count == 2)
-				{
-					break; // stop if we found both face edges
-				}
-			}
-
-			meshEdgeCreatedDuringSplit = CreateMeshEdge(splitStartVertex, splitEndVertex);
-			faceCreatedDuringSplit = new Face(faceToSplit, this);
-
-			Faces.Add(faceCreatedDuringSplit);
-
-			FaceEdge newFaceEdgeExistingFace = new FaceEdge(faceToSplit, meshEdgeCreatedDuringSplit, splitStartVertex);
-			FaceEdge newFaceEdgeForNewFace = new FaceEdge(faceCreatedDuringSplit, meshEdgeCreatedDuringSplit, splitEndVertex);
-
-			// get the new edges injected into the existing loop, splitting it in two.
-			newFaceEdgeExistingFace.PrevFaceEdge = faceEdgeAfterSplitStart.PrevFaceEdge;
-			newFaceEdgeForNewFace.PrevFaceEdge = faceEdgeAfterSplitEnd.PrevFaceEdge;
-
-			faceEdgeAfterSplitStart.PrevFaceEdge.NextFaceEdge = newFaceEdgeExistingFace;
-			faceEdgeAfterSplitEnd.PrevFaceEdge.NextFaceEdge = newFaceEdgeForNewFace;
-
-			newFaceEdgeExistingFace.NextFaceEdge = faceEdgeAfterSplitEnd;
-			newFaceEdgeForNewFace.NextFaceEdge = faceEdgeAfterSplitStart;
-
-			faceEdgeAfterSplitStart.PrevFaceEdge = newFaceEdgeForNewFace;
-			faceEdgeAfterSplitEnd.PrevFaceEdge = newFaceEdgeExistingFace;
-
-			// make sure the first face edge of each face is valid
-			faceToSplit.firstFaceEdge = newFaceEdgeExistingFace;
-			faceCreatedDuringSplit.firstFaceEdge = newFaceEdgeForNewFace;
-
-			// make sure the FaceEdges of the new face all point to the new face.
-			foreach (FaceEdge faceEdge in faceCreatedDuringSplit.firstFaceEdge.NextFaceEdges())
-			{
-				faceEdge.ContainingFace = faceCreatedDuringSplit;
-			}
-
-			newFaceEdgeExistingFace.AddToRadialLoop(meshEdgeCreatedDuringSplit);
-			newFaceEdgeForNewFace.AddToRadialLoop(meshEdgeCreatedDuringSplit);
-		}
-
-		public void UnsplitFace(Face faceToKeep, Face faceToDelete, MeshEdge meshEdgeToDelete)
-		{
-			if (faceToKeep == faceToDelete)
-			{
-				throw new Exception("Can't join face to itself");
-			}
-
-			// validate the edgeToDelete is in both faces, edgeToDelete is only in these two faces, the two faces only share this one edge and no other edges
-
-			FaceEdge faceEdgeToDeleteOnFaceToKeep = meshEdgeToDelete.GetFaceEdge(faceToKeep);
-			FaceEdge faceEdgeToDeleteOnFaceToDelete = meshEdgeToDelete.GetFaceEdge(faceToDelete);
-
-			if (faceEdgeToDeleteOnFaceToKeep.FirstVertex == faceEdgeToDeleteOnFaceToDelete.FirstVertex)
-			{
-				throw new Exception("The faces have opposite windings and you cannot merge the edge");
-			}
-
-			faceEdgeToDeleteOnFaceToKeep.PrevFaceEdge.NextFaceEdge = faceEdgeToDeleteOnFaceToDelete.NextFaceEdge;
-			faceEdgeToDeleteOnFaceToDelete.NextFaceEdge.PrevFaceEdge = faceEdgeToDeleteOnFaceToKeep.PrevFaceEdge;
-
-			faceEdgeToDeleteOnFaceToKeep.NextFaceEdge.PrevFaceEdge = faceEdgeToDeleteOnFaceToDelete.PrevFaceEdge;
-			faceEdgeToDeleteOnFaceToDelete.PrevFaceEdge.NextFaceEdge = faceEdgeToDeleteOnFaceToKeep.NextFaceEdge;
-
-			// if the face we are deleting is the one that the face to keep was looking at as its starting face edge, move it to the next face edge
-			if (faceToKeep.firstFaceEdge == faceEdgeToDeleteOnFaceToKeep)
-			{
-				faceToKeep.firstFaceEdge = faceToKeep.firstFaceEdge.NextFaceEdge;
-			}
-
-			// make sure the FaceEdges all point to the kept face.
-			foreach (FaceEdge faceEdge in faceToKeep.firstFaceEdge.NextFaceEdges())
-			{
-				faceEdge.ContainingFace = faceToKeep;
-			}
-
-			DeleteMeshEdge(meshEdgeToDelete);
-
-			// clear the data on the deleted face edge to help with debugging
-			faceEdgeToDeleteOnFaceToKeep.MeshEdge.VertexOnEnd[0] = null;
-			faceEdgeToDeleteOnFaceToKeep.MeshEdge.VertexOnEnd[1] = null;
-			faceToDelete.firstFaceEdge = null;
-			// take the face out of the face list
-			Faces.Remove(faceToDelete);
-		}
-
-		#endregion Operations
-
-		#region Vertex
-
-		public IVertex CreateVertex(double x, double y, double z, CreateOption createOption = CreateOption.ReuseExisting, SortOption sortOption = SortOption.SortNow)
-		{
-			return CreateVertex(new Vector3(x, y, z), createOption, sortOption);
-		}
-
-		public IVertex CreateVertex(Vector3 position, CreateOption createOption = CreateOption.ReuseExisting, SortOption sortOption = SortOption.SortNow, double maxDistanceToConsiderVertexAsSame = 0)
-		{
-			if (createOption == CreateOption.ReuseExisting)
-			{
-				List<IVertex> existingVertices = FindVertices(position, maxDistanceToConsiderVertexAsSame);
-				if (existingVertices != null && existingVertices.Count > 0)
-				{
-					return existingVertices[0];
-				}
-			}
-
-			IVertex createdVertex = new Vertex(position);
-			Vertices.Add(createdVertex, sortOption);
-			return createdVertex;
-		}
-
-		public void DeleteVertex(IVertex vertex)
-		{
-			throw new NotImplementedException();
-		}
-
-		public List<IVertex> FindVertices(Vector3 position, double maxDistanceToConsiderVertexAsSame = 0)
-		{
-			return Vertices.FindVertices(position, maxDistanceToConsiderVertexAsSame);
-		}
-
-		public void MergeVertices(CancellationToken cancellationToken, double maxDistanceToConsiderVertexAsSame = 0, Action<double, string> reportProgress = null)
-		{
-			HashSet<IVertex> markedForDeletion = new HashSet<IVertex>();
-			Stopwatch maxProgressReport = new Stopwatch();
-			maxProgressReport.Start();
-
-			for (int i = 0; i < Vertices.Count; i++)
-			{
-				IVertex vertexToKeep = Vertices[i];
-				if (!markedForDeletion.Contains(vertexToKeep))
-				{
-					List<IVertex> samePosition = Vertices.FindVertices(vertexToKeep.Position, maxDistanceToConsiderVertexAsSame);
-					foreach (IVertex vertexToDelete in samePosition)
-					{
-						if (vertexToDelete != vertexToKeep)
-						{
-							if (!markedForDeletion.Contains(vertexToDelete))
-							{
-								//Validate(markedForDeletion);
-								MergeVertices(vertexToKeep, vertexToDelete, false);
-								markedForDeletion.Add(vertexToDelete);
-								//Validate(markedForDeletion);
-							}
-						}
-					}
-
-					if (reportProgress != null
-						&& maxProgressReport.ElapsedMilliseconds > 200)
-					{
-						reportProgress(i / (double)Vertices.Count, "Merging Vertices");
-						if (cancellationToken.IsCancellationRequested)
-						{
-							return;
-						}
-						maxProgressReport.Restart();
-					}
-				}
-			}
-
-			//Validate(markedForDeletion);
-			reportProgress?.Invoke(1, "Deleting Unused Vertices");
-
-			RemoveVerticesMarkedForDeletion(markedForDeletion);
-		}
-
-		public void MergeVertices(IVertex vertexToKeep, IVertex vertexToDelete, bool doActualDeletion = true)
-		{
-			/* this check is relatively slow
-						if (!Vertices.ContainsAVertexAtPosition(vertexToKeep) || !Vertices.ContainsAVertexAtPosition(vertexToDelete))
-						{
-							throw new Exception("Both vertexes have to be part of this mesh to be merged.");
-						}
-			*/
-			// fix up the mesh edges
-			List<MeshEdge> connectedMeshEdges = vertexToDelete.GetConnectedMeshEdges();
-			foreach (MeshEdge meshEdgeToFix in connectedMeshEdges)
-			{
-				// fix up the face edges
-				foreach (FaceEdge faceEdge in meshEdgeToFix.FaceEdgesSharingMeshEdge())
-				{
-					if (faceEdge.FirstVertex == vertexToDelete)
-					{
-						faceEdge.FirstVertex = vertexToKeep;
-					}
-				}
-
-				// fix up the mesh edge
-				if (meshEdgeToFix.VertexOnEnd[0] == vertexToDelete)
-				{
-					meshEdgeToFix.VertexOnEnd[0] = vertexToKeep;
-				}
-				else if (meshEdgeToFix.VertexOnEnd[1] == vertexToDelete)
-				{
-					meshEdgeToFix.VertexOnEnd[1] = vertexToKeep;
-				}
-
-				// make sure it is in the vertex edge loop
-				meshEdgeToFix.AddToMeshEdgeLinksOfVertex(vertexToKeep);
-			}
-
-			// delete the vertex
-			if (doActualDeletion)
-			{
-				Vertices.Remove(vertexToDelete);
-			}
-		}
-
-		public void SortVertices(Action<double, string> reportProgress = null)
-		{
-			reportProgress?.Invoke(0, "Sorting Vertices");
-
-			Vertices.Sort();
-
-			reportProgress?.Invoke(1, "Sorting Vertices");
-		}
-
-		private void RemoveVerticesMarkedForDeletion(HashSet<IVertex> markedForDeletion)
-		{
-			VertexCollecton NonDeleteVertices = new VertexCollecton();
-			for (int i = 0; i < Vertices.Count; i++)
-			{
-				IVertex vertexToCheck = Vertices[i];
-				if (!markedForDeletion.Contains(vertexToCheck))
-				{
-					NonDeleteVertices.Add(vertexToCheck, SortOption.WillSortLater);
-				}
-			}
-
-			// we put them in the same order they were in, so we keep the state
-			NonDeleteVertices.Sorted = Vertices.Sorted;
-			Vertices = NonDeleteVertices;
-		}
-
-		#endregion Vertex
-
-		#region MeshEdge
-
-		public MeshEdge CreateMeshEdge(IVertex vertex1, IVertex vertex2, CreateOption createOption = CreateOption.ReuseExisting)
-		{
-			if (false)//!vertices.Contains(vertex1) || !vertices.Contains(vertex2))
-			{
-				throw new ArgumentException("the two vertices must be in the vertices list before a mesh edge can be made between them.");
-			}
-
-			if (vertex1 == vertex2)
-			{
-				throw new ArgumentException("Your input vertices must not be the same vertex.");
-			}
-
-			if (createOption == CreateOption.ReuseExisting)
-			{
-				MeshEdge existingMeshEdge = vertex1.GetMeshEdgeConnectedToVertex(vertex2);
-				if (existingMeshEdge != null)
-				{
-					return existingMeshEdge;
-				}
-			}
-
-			MeshEdge createdMeshEdge = new MeshEdge(vertex1, vertex2);
-
-			MeshEdges.Add(createdMeshEdge);
-
-			return createdMeshEdge;
-		}
-
-		public void DeleteMeshEdge(MeshEdge meshEdgeToDelete)
-		{
-			// make sure we take the mesh edge out of the neighbors pointers
-			meshEdgeToDelete.RemoveFromMeshEdgeLinksOfVertex(meshEdgeToDelete.VertexOnEnd[0]);
-			meshEdgeToDelete.RemoveFromMeshEdgeLinksOfVertex(meshEdgeToDelete.VertexOnEnd[1]);
-
-			// clear the data on the deleted mesh edge to help with debugging
-			meshEdgeToDelete.firstFaceEdge = null;
-			meshEdgeToDelete.VertexOnEnd[0] = null;
-			meshEdgeToDelete.NextMeshEdgeFromEnd[0] = null;
-			meshEdgeToDelete.VertexOnEnd[1] = null;
-			meshEdgeToDelete.NextMeshEdgeFromEnd[1] = null;
-
-			MeshEdges.Remove(meshEdgeToDelete);
-		}
-
-		public List<MeshEdge> FindMeshEdges(IVertex vertex1, IVertex vertex2)
-		{
-			List<MeshEdge> meshEdges = new List<MeshEdge>();
-
-			foreach (MeshEdge meshEdge in vertex1.ConnectedMeshEdges())
-			{
-				if (meshEdge.IsConnectedTo(vertex2))
-				{
-					meshEdges.Add(meshEdge);
-				}
-			}
-
-			return meshEdges;
-		}
-
-		public void MergeMeshEdges(CancellationToken cancellationToken, Action<double, string> reportProgress = null)
-		{
-			HashSet<MeshEdge> markedForDeletion = new HashSet<MeshEdge>();
-			Stopwatch maxProgressReport = Stopwatch.StartNew();
-
-			for (int i = 0; i < MeshEdges.Count; i++)
-			{
-				MeshEdge currentMeshEdge = MeshEdges[i];
-				if (!markedForDeletion.Contains(currentMeshEdge))
-				{
-					IVertex vertex0 = currentMeshEdge.VertexOnEnd[0];
-					IVertex vertex1 = currentMeshEdge.VertexOnEnd[1];
-
-					// find out if there is another edge attached to the same vertexes
-					List<MeshEdge> meshEdgesToDelete = FindMeshEdges(vertex0, vertex1);
-
-					if (meshEdgesToDelete.Count > 1)
-					{
-						foreach (MeshEdge meshEdgeToDelete in meshEdgesToDelete)
-						{
-							if (meshEdgeToDelete != currentMeshEdge)
-							{
-								if (!markedForDeletion.Contains(meshEdgeToDelete))
-								{
-									MergeMeshEdges(currentMeshEdge, meshEdgeToDelete, false);
-									markedForDeletion.Add(meshEdgeToDelete);
-								}
-							}
-						}
-					}
-				}
-
-				if (reportProgress != null)
-				{
-					if (maxProgressReport.ElapsedMilliseconds > 200)
-					{
-						reportProgress(i / (double)MeshEdges.Count, "Merging Mesh Edges");
-						maxProgressReport.Restart();
-						if (cancellationToken.IsCancellationRequested)
-						{
-							return;
-						}
-					}
-				}
-			}
-
-			RemoveMeshEdgesMarkedForDeletion(markedForDeletion);
-		}
-
-		public void MergeMeshEdges(MeshEdge edgeToKeep, MeshEdge edgeToDelete, bool doActualDeletion = true)
-		{
-			// make sure they share vertexes (or they can't be merged)
-			if (!edgeToDelete.IsConnectedTo(edgeToKeep.VertexOnEnd[0])
-				|| !edgeToDelete.IsConnectedTo(edgeToKeep.VertexOnEnd[1]))
-			{
-				throw new Exception("These mesh edges do not share vertexes and can't be merged.");
-			}
-
-			edgeToDelete.RemoveFromMeshEdgeLinksOfVertex(edgeToKeep.VertexOnEnd[0]);
-			edgeToDelete.RemoveFromMeshEdgeLinksOfVertex(edgeToKeep.VertexOnEnd[1]);
-
-			if (edgeToDelete.firstFaceEdge != null)
-			{
-				// fix any face edges that are referencing the edgeToDelete
-				foreach (FaceEdge attachedFaceEdge in edgeToDelete.firstFaceEdge.RadialNextFaceEdges())
-				{
-					attachedFaceEdge.MeshEdge = edgeToKeep;
-				}
-
-				List<FaceEdge> radialLoopToMove = new List<FaceEdge>();
-				foreach (FaceEdge faceEdge in edgeToDelete.firstFaceEdge.RadialNextFaceEdges())
-				{
-					radialLoopToMove.Add(faceEdge);
-				}
-
-				foreach (FaceEdge faceEdge in radialLoopToMove)
-				{
-					faceEdge.AddToRadialLoop(edgeToKeep);
-				}
-			}
-
-			if (doActualDeletion)
-			{
-				MeshEdges.Remove(edgeToDelete);
-			}
-		}
-
-		public void SplitMeshEdge(MeshEdge meshEdgeToSplit, out IVertex vertexCreatedDuringSplit, out MeshEdge meshEdgeCreatedDuringSplit)
-		{
-			// create our new Vertex and MeshEdge
-			{
-				// make a new vertex between the existing ones
-
-				// TODO: make this create an interpolated vertex, check if it exits and add it or use the right one.
-				//vertexCreatedDuringSplit = meshEdgeToSplit.edgeEndVertex[0].CreateInterpolated(meshEdgeToSplit.edgeEndVertex[1], .5);
-				vertexCreatedDuringSplit = CreateVertex((meshEdgeToSplit.VertexOnEnd[0].Position + meshEdgeToSplit.VertexOnEnd[1].Position) / 2);
-				// TODO: check if the mesh edge exits and use the existing one (or not)
-				meshEdgeCreatedDuringSplit = new MeshEdge();
-			}
-
-			// Set the new firstMeshEdge on the new Vertex
-			vertexCreatedDuringSplit.FirstMeshEdge = meshEdgeCreatedDuringSplit;
-
-			IVertex existingVertexToConectTo = meshEdgeToSplit.VertexOnEnd[1];
-			// fix the Vertex references on the MeshEdges
-			{
-				// and set the edges to point to this new one
-				meshEdgeCreatedDuringSplit.VertexOnEnd[0] = vertexCreatedDuringSplit;
-				meshEdgeCreatedDuringSplit.VertexOnEnd[1] = existingVertexToConectTo;
-				meshEdgeToSplit.VertexOnEnd[1] = vertexCreatedDuringSplit;
-			}
-
-			// fix the MeshEdgeLinks on the MeshEdges
-			{
-				// set the created edge to be connected to the old edges other mesh edges
-				meshEdgeCreatedDuringSplit.NextMeshEdgeFromEnd[0] = meshEdgeToSplit;
-
-				// make anything that pointed to the split edge point to the new mesh edge
-
-				meshEdgeToSplit.NextMeshEdgeFromEnd[1] = meshEdgeCreatedDuringSplit;
-			}
-
-			// if the MeshEdge is part of a face than we have to fix the face up
-			FaceEdge faceEdgeToSplit = meshEdgeToSplit.firstFaceEdge;
-			if (faceEdgeToSplit != null)
-			{
-				foreach (FaceEdge faceEdge in meshEdgeToSplit.FaceEdgesSharingMeshEdge())
-				{
-					Face currentFace = faceEdge.ContainingFace;
-					FaceEdge newFaceEdge = new FaceEdge(currentFace, meshEdgeCreatedDuringSplit, vertexCreatedDuringSplit);
-					newFaceEdge.AddToRadialLoop(meshEdgeCreatedDuringSplit);
-					// and inject it into the face loop for this face
-					newFaceEdge.PrevFaceEdge = faceEdge;
-					newFaceEdge.NextFaceEdge = faceEdge.NextFaceEdge;
-					faceEdge.NextFaceEdge.PrevFaceEdge = newFaceEdge;
-					faceEdge.NextFaceEdge = newFaceEdge;
-				}
-			}
-
-			MeshEdges.Add(meshEdgeCreatedDuringSplit);
-		}
-
-		/// <summary>
-		/// Unsplit (merge) the edgeToJoin and the edge that it is connected to through vertexToDelete.
-		/// Only unsplit the edge if we are reversing what would have been a split (a single vertex connecting only two edges).
-		/// </summary>
-		/// <param name="edgeToJoin"></param>
-		/// <param name="vertexToDelete"></param>
-		/// <returns></returns>
-		public void UnsplitMeshEdge(MeshEdge edgeToJoin, IVertex vertexToDelete)
-		{
-			int endToJoinIndex = edgeToJoin.GetVertexEndIndex(vertexToDelete);
-
-			MeshEdge edgeToDelete = edgeToJoin.GetNextMeshEdgeConnectedTo(vertexToDelete);
-			if (edgeToDelete.GetNextMeshEdgeConnectedTo(vertexToDelete) != edgeToJoin)
-			{
-				// make sure the edgeToJoin is a valid unsplit (only one connection)
-				throw new Exception("The edge that is being unsplit must be connected to only one other MeshEdge across the vertexToDelete.");
-			}
-
-			int otherEndOfEdgeToDelete = edgeToDelete.GetOpositeVertexEndIndex(vertexToDelete);
-			MeshEdge edgeToJoinTo = edgeToDelete.NextMeshEdgeFromEnd[otherEndOfEdgeToDelete];
-
-			// if the MeshEdge is part of any faces than we have to fix the faces.
-			if (edgeToJoin.firstFaceEdge != null)
-			{
-				// The edge we split was part of one or more faces, we need to fix the FaceEdge loops
-				foreach (FaceEdge faceEdge in edgeToJoin.FaceEdgesSharingMeshEdge())
-				{
-					FaceEdge faceEdgeToDelete = null;
-					if (faceEdge.NextFaceEdge.MeshEdge == edgeToDelete)
-					{
-						faceEdgeToDelete = faceEdge.NextFaceEdge;
-						FaceEdge newNextFaceEdge = faceEdgeToDelete.NextFaceEdge;
-						newNextFaceEdge.PrevFaceEdge = faceEdge;
-						faceEdge.NextFaceEdge = newNextFaceEdge;
-					}
-					else if (faceEdge.PrevFaceEdge.MeshEdge == edgeToDelete)
-					{
-						faceEdgeToDelete = faceEdge.PrevFaceEdge;
-						FaceEdge newPrevFaceEdge = faceEdgeToDelete.PrevFaceEdge;
-						newPrevFaceEdge.NextFaceEdge = faceEdge;
-						faceEdge.PrevFaceEdge = newPrevFaceEdge;
-					}
-					else
-					{
-						throw new Exception("Either the next or prev edge must be the same as the edge to delete.");
-					}
-
-					// if the FaceEdge we are deleting is the one that the face was using as its firstFaceEdge, change it.
-					if (faceEdge.ContainingFace.firstFaceEdge == faceEdgeToDelete)
-					{
-						faceEdge.ContainingFace.firstFaceEdge = faceEdge;
-					}
-
-					// and clear out the FaceEdge we are deleting to help debugging and other references to it.
-					faceEdgeToDelete.NextFaceEdge = null;
-					faceEdgeToDelete.PrevFaceEdge = null;
-					faceEdgeToDelete.RadialNextFaceEdge = null;
-					faceEdgeToDelete.radialPrevFaceEdge = null;
-					faceEdgeToDelete.MeshEdge = null;
-					faceEdgeToDelete.ContainingFace = null;
-					faceEdgeToDelete.FirstVertex = null;
-				}
-			}
-
-			// fix the MeshEdgeLinks on the edgeToJoin
-			{
-				edgeToJoin.VertexOnEnd[endToJoinIndex] = edgeToDelete.VertexOnEnd[otherEndOfEdgeToDelete];
-				edgeToJoin.NextMeshEdgeFromEnd[endToJoinIndex] = edgeToDelete.NextMeshEdgeFromEnd[otherEndOfEdgeToDelete];
-			}
-
-			// Clear all  the data on the deleted vertex and edge so we have less code that will work if it continues to use them.
-			vertexToDelete.FirstMeshEdge = null;
-			edgeToDelete.firstFaceEdge = null;
-			edgeToDelete.VertexOnEnd[0] = null;
-			edgeToDelete.NextMeshEdgeFromEnd[0] = null;
-			edgeToDelete.VertexOnEnd[1] = null;
-			edgeToDelete.NextMeshEdgeFromEnd[1] = null;
-
-			MeshEdges.Remove(edgeToDelete);
-		}
-
-		private void RemoveMeshEdgesMarkedForDeletion(HashSet<MeshEdge> markedForDeletion)
-		{
-			List<MeshEdge> NonDeleteMeshEdges = new List<MeshEdge>();
-			for (int i = 0; i < MeshEdges.Count; i++)
-			{
-				MeshEdge meshEdgeToCheck = MeshEdges[i];
-				if (!markedForDeletion.Contains(meshEdgeToCheck))
-				{
-					NonDeleteMeshEdges.Add(meshEdgeToCheck);
-				}
-			}
-
-			MeshEdges = NonDeleteMeshEdges;
-		}
-
-		#endregion MeshEdge
-
-		#region Face
-
-		public Face CreateFace(int[] vertexIndexList, CreateOption createOption = CreateOption.ReuseExisting)
-		{
-			List<IVertex> vertexList = new List<IVertex>();
-			foreach (var index in vertexIndexList)
-			{
-				vertexList.Add(Vertices[index]);
-			}
-			return CreateFace(vertexList.ToArray(), createOption);
-		}
-
-		public Face CreateFace(int index0, int index1, int index2, CreateOption createOption = CreateOption.ReuseExisting)
-		{
-			return CreateFace(new IVertex[] { Vertices[index0], Vertices[index1], Vertices[index2] }, createOption);
-		}
-
-		public Face CreateFace(IVertex[] verticesToUse, CreateOption createOption = CreateOption.ReuseExisting)
-		{
-			List<IVertex> nonRepeatingSet = new List<IVertex>(verticesToUse);
-			for (int i = nonRepeatingSet.Count - 1; i > 0; i--)
-			{
-				if (nonRepeatingSet[i] == nonRepeatingSet[i - 1]
-					|| nonRepeatingSet[i].Position == nonRepeatingSet[i - 1].Position)
-				{
-					nonRepeatingSet.RemoveAt(i);
-				}
-			}
-
-			if (nonRepeatingSet.Count < 3
-				|| (nonRepeatingSet.Count == 3
-				&& (nonRepeatingSet[0].Position == nonRepeatingSet[1].Position
-				|| nonRepeatingSet[1].Position == nonRepeatingSet[2].Position
-				|| nonRepeatingSet[2].Position == nonRepeatingSet[0].Position)))
-			{
-				return null;
-			}
-
-			List<MeshEdge> edgesToUse = new List<MeshEdge>();
-			for (int i = 0; i < nonRepeatingSet.Count - 1; i++)
-			{
-				edgesToUse.Add(CreateMeshEdge(nonRepeatingSet[i], nonRepeatingSet[i + 1], createOption));
-			}
-			edgesToUse.Add(CreateMeshEdge(nonRepeatingSet[nonRepeatingSet.Count - 1], nonRepeatingSet[0], createOption));
-
-			// make the face and set it's data
-			Face createdFace = new Face(this);
-
-			createdFace.CreateFaceEdges(nonRepeatingSet.ToArray(), edgesToUse);
-
-			createdFace.CalculateNormal();
-
-			Faces.Add(createdFace);
-
-			return createdFace;
-		}
-
-		public void DeleteFace(Face faceToDelete)
-		{
-			// fix the radial face edges and the mesh edges
-			List<FaceEdge> faceEdgesToDelete = new List<FaceEdge>(faceToDelete.FaceEdges());
-			foreach (var faceEdgeToDelete in faceEdgesToDelete)
-			{
-				if (faceEdgeToDelete.MeshEdge.firstFaceEdge == faceEdgeToDelete)
-				{
-					// make sure the mesh edge is not pointing to this face edge
-					if (faceEdgeToDelete.RadialNextFaceEdge == faceEdgeToDelete)
-					{
-						// it point to itself, so the edge will point to nothing
-						faceEdgeToDelete.MeshEdge.firstFaceEdge = null;
-					}
-					else
-					{
-						faceEdgeToDelete.MeshEdge.firstFaceEdge = faceEdgeToDelete.RadialNextFaceEdge;
-					}
-				}
-				FaceEdge temp = faceEdgeToDelete.RadialNextFaceEdge.radialPrevFaceEdge;
-				faceEdgeToDelete.radialPrevFaceEdge.RadialNextFaceEdge = faceEdgeToDelete.radialPrevFaceEdge;
-				faceEdgeToDelete.RadialNextFaceEdge.radialPrevFaceEdge = faceEdgeToDelete.NextFaceEdge;
-			}
-
-			// clear the data on the deleted face edge to help with debugging
-			faceToDelete.firstFaceEdge = null;
-			// take the face out of the face list
-			Faces.Remove(faceToDelete);
-		}
-
-		public List<Face> FindFacesAtPosition(IVertex[] vertices)
-		{
-			if (vertices.Length > 0)
-			{
-				List<Vector3> positions = new List<Vector3>();
-				foreach (IVertex vertex in vertices)
-				{
-					positions.Add(vertex.Position);
-				}
-
-				List<Face> sharedFaces = new List<Face>();
-				List<IVertex> sharedVertices = FindVertices(vertices[0].Position);
-				if (sharedVertices.Count > 0)
-				{
-					// we have found 1 or more shared vertexes (with the first vertex)
-					// let's get all the faces that also share the rest of the vertices
-					foreach (IVertex sharedVertex in sharedVertices)
-					{
-						foreach (Face connectedFace in sharedVertex.ConnectedFaces())
-						{
-							bool allShared = true;
-							foreach (IVertex checkVertex in connectedFace.Vertices())
-							{
-								if (!positions.Contains(checkVertex.Position))
-								{
-									allShared = false;
-									break;
-								}
-							}
-
-							if (allShared)
-							{
-								sharedFaces.Add(connectedFace);
-							}
-						}
-					}
-
-					return sharedFaces;
-				}
-			}
-
-			return null;
-		}
-
-		public List<MeshEdge> GetNonManifoldEdges()
-		{
-			List<MeshEdge> nonManifoldEdges = new List<MeshEdge>();
-
-			foreach (MeshEdge meshEdge in MeshEdges)
-			{
-				int numFacesSharingEdge = meshEdge.GetNumFacesSharingEdge();
-				if (numFacesSharingEdge != 2)
-				{
-					nonManifoldEdges.Add(meshEdge);
-				}
-			}
-
-			return nonManifoldEdges;
-		}
-		#endregion Face
-
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
 			if (Vertices.Count == 0)
@@ -1165,21 +296,7 @@ namespace MatterHackers.PolygonMesh
 
 			if (cachedAABB == null)
 			{
-				Vector3 minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
-				Vector3 maxXYZ = new Vector3(double.MinValue, double.MinValue, double.MinValue);
-
-				foreach (IVertex vertex in Vertices)
-				{
-					minXYZ.X = Math.Min(minXYZ.X, vertex.Position.X);
-					minXYZ.Y = Math.Min(minXYZ.Y, vertex.Position.Y);
-					minXYZ.Z = Math.Min(minXYZ.Z, vertex.Position.Z);
-
-					maxXYZ.X = Math.Max(maxXYZ.X, vertex.Position.X);
-					maxXYZ.Y = Math.Max(maxXYZ.Y, vertex.Position.Y);
-					maxXYZ.Z = Math.Max(maxXYZ.Z, vertex.Position.Z);
-				}
-
-				cachedAABB = new AxisAlignedBoundingBox(minXYZ, maxXYZ);
+				cachedAABB = Vertices.Bounds();
 			}
 
 			return cachedAABB;
@@ -1187,12 +304,7 @@ namespace MatterHackers.PolygonMesh
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 transform)
 		{
-			return transformedAabbCache.GetAxisAlignedBoundingBox(this, GetAxisAlignedBoundingBox(), transform);
-		}
-
-		public override string ToString()
-		{
-			return $"ID = {ID}, Faces = {Faces.Count}";
+			return transformedAabbCache.GetAxisAlignedBoundingBox(this, transform);
 		}
 
 		public override int GetHashCode()
@@ -1200,183 +312,32 @@ namespace MatterHackers.PolygonMesh
 			return (int)GetLongHashCode();
 		}
 
+		public void CreateFace(IEnumerable<Vector3> positionsIn)
+		{
+			var positions = positionsIn.Distinct();
+			int firstVertex = this.Vertices.Count;
+			// we don't have to iterate the positions twice if we count them as we add them
+			int addedPositions = 0;
+			foreach (var p in positions)
+			{
+				this.Vertices.Add(p);
+				addedPositions++;
+			}
+
+			for (int i = 0; i < addedPositions - 2; i++)
+			{
+				this.Faces.Add((firstVertex, firstVertex + i + 1, firstVertex + i + 2));
+			}
+		}
+
 		#endregion Public Members
 	}
 
 	public static class MeshExtensionMethods
 	{
-		private static Dictionary<int, int> GetMeshEdgeToIndexDictionary(List<MeshEdge> edgesToCopy, Mesh newMesh)
-		{
-			Dictionary<int, int> meshEdgeIndexDictionary = new Dictionary<int, int>(edgesToCopy.Count);
-			for (int edgeIndex = 0; edgeIndex < edgesToCopy.Count; edgeIndex++)
-			{
-				MeshEdge edgeToCopy = edgesToCopy[edgeIndex];
-				meshEdgeIndexDictionary.Add(edgeToCopy.ID, edgeIndex);
-				newMesh.MeshEdges.Add(new MeshEdge());
-			}
-			return meshEdgeIndexDictionary;
-		}
-
-		private static Dictionary<int, int> GetVertexToIndexDictionary(VertexCollecton verticesToCopy, Mesh newMesh)
-		{
-			Dictionary<int, int> vertexIndexMapping = new Dictionary<int, int>(verticesToCopy.Count);
-			for (int vertexIndex = 0; vertexIndex < verticesToCopy.Count; vertexIndex++)
-			{
-				IVertex vertexToCopy = verticesToCopy[vertexIndex];
-				vertexIndexMapping.Add(vertexToCopy.ID, vertexIndex);
-				newMesh.Vertices.Add(vertexToCopy.CreateInterpolated(vertexToCopy, 0), SortOption.WillSortLater);
-			}
-
-			newMesh.Vertices.Sorted = verticesToCopy.Sorted;
-
-			return vertexIndexMapping;
-		}
-
 		public static Mesh Copy(this Mesh meshToCopyIn, CancellationToken cancellationToken, Action<double, string> progress = null, bool allowFastCopy = true)
 		{
-			Mesh newMesh = new Mesh();
-
-			var verticesToCopy = meshToCopyIn.Vertices;
-			var facesToCopy = meshToCopyIn.Faces;
-			var edgesToCopy = meshToCopyIn.MeshEdges;
-
-			progress?.Invoke(0, "Create Dictionaries".Localize());
-			// This will add all the vertices to the new mesh
-			Dictionary<int, int> vertexIndexDictionary = GetVertexToIndexDictionary(verticesToCopy, newMesh);
-			// This will add all the edges to the new mesh
-			Dictionary<int, int> meshEdgeIndexDictionary = GetMeshEdgeToIndexDictionary(edgesToCopy, newMesh);
-
-			if(cancellationToken.IsCancellationRequested)
-			{
-				return null;
-			}
-
-			progress?.Invoke(.2, "Copy Faces".Localize());
-			for (int faceIndex = 0; faceIndex < facesToCopy.Count; faceIndex++)
-			{
-				Face faceToCopy = facesToCopy[faceIndex];
-				newMesh.Faces.Add(new Face(newMesh));
-			}
-
-			if (cancellationToken.IsCancellationRequested)
-			{
-				return null;
-			}
-
-			// now set all the data for the new mesh
-			progress?.Invoke(.4, "Copy Vertices".Localize());
-			newMesh.Vertices.Capacity = verticesToCopy.Capacity;
-			for (int vertexIndex = 0; vertexIndex < verticesToCopy.Count; vertexIndex++)
-			{
-				IVertex vertexToCopy = verticesToCopy[vertexIndex];
-				IVertex newVertex = newMesh.Vertices[vertexIndex];
-				if (vertexToCopy.FirstMeshEdge != null)
-				{
-					int indexOfFirstMeshEdge = meshEdgeIndexDictionary[vertexToCopy.FirstMeshEdge.ID];
-					newVertex.FirstMeshEdge = newMesh.MeshEdges[indexOfFirstMeshEdge];
-				}
-				newVertex.Normal = vertexToCopy.Normal;
-			}
-
-			if (cancellationToken.IsCancellationRequested)
-			{
-				return null;
-			}
-
-			progress?.Invoke(.5, "Copy Edges".Localize());
-			newMesh.MeshEdges.Capacity = edgesToCopy.Capacity;
-			for (int meshEdgeIndex = 0; meshEdgeIndex < edgesToCopy.Count; meshEdgeIndex++)
-			{
-				MeshEdge meshEdgeToCopy = edgesToCopy[meshEdgeIndex];
-				MeshEdge newMeshEdge = newMesh.MeshEdges[meshEdgeIndex];
-
-				newMeshEdge.NextMeshEdgeFromEnd[0] = newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeToCopy.NextMeshEdgeFromEnd[0].ID]];
-				newMeshEdge.NextMeshEdgeFromEnd[1] = newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeToCopy.NextMeshEdgeFromEnd[1].ID]];
-
-				newMeshEdge.VertexOnEnd[0] = newMesh.Vertices[vertexIndexDictionary[meshEdgeToCopy.VertexOnEnd[0].ID]];
-				newMeshEdge.VertexOnEnd[1] = newMesh.Vertices[vertexIndexDictionary[meshEdgeToCopy.VertexOnEnd[1].ID]];
-
-				// This will get hooked up when we create radial loops with the face edges below
-				//newMeshEdge.firstFaceEdge;
-				//newMesh.MeshEdges.Add(newMeshEdge);
-			}
-
-			if (cancellationToken.IsCancellationRequested)
-			{
-				return null;
-			}
-
-			progress?.Invoke(.6, "Copy State".Localize());
-			newMesh.Faces.Capacity = facesToCopy.Capacity;
-			for (int faceIndex = 0; faceIndex < facesToCopy.Count; faceIndex++)
-			{
-				if (cancellationToken.IsCancellationRequested)
-				{
-					return null;
-				}
-
-				Face faceToCopy = facesToCopy[faceIndex];
-				Face newface = newMesh.Faces[faceIndex];
-
-				newface.Normal = faceToCopy.Normal;
-
-				// hook up the face edges
-				//public FaceEdge firstFaceEdge;
-				List<IVertex> verticesFromCopy = new List<IVertex>();
-				List<IVertex> verticesForNew = new List<IVertex>();
-				foreach (IVertex vertex in faceToCopy.Vertices())
-				{
-					verticesFromCopy.Add(vertex);
-					verticesForNew.Add(newMesh.Vertices[vertexIndexDictionary[vertex.ID]]);
-				}
-
-				List<MeshEdge> edgesFromCopy = new List<MeshEdge>();
-				List<MeshEdge> edgesForNew = new List<MeshEdge>();
-				for (int i = 0; i < verticesForNew.Count - 1; i++)
-				{
-					MeshEdge meshEdgeFromCopy = verticesFromCopy[i].GetMeshEdgeConnectedToVertex(verticesFromCopy[i + 1]);
-					edgesFromCopy.Add(meshEdgeFromCopy);
-					edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeFromCopy.ID]]);
-				}
-				MeshEdge lastMeshEdgeFromCopy = verticesFromCopy[verticesFromCopy.Count - 1].GetMeshEdgeConnectedToVertex(verticesFromCopy[0]);
-				edgesFromCopy.Add(lastMeshEdgeFromCopy);
-				edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexDictionary[lastMeshEdgeFromCopy.ID]]);
-
-				newface.CreateFaceEdges(verticesForNew.ToArray(), edgesForNew);
-			}
-
-			return newMesh;
-		}
-
-		public static void CreateFaceEdges(this Face createdFace, IVertex[] verticesToUse, List<MeshEdge> edgesToUse)
-		{
-			FaceEdge prevFaceEdge = null;
-			for (int i = 0; i < verticesToUse.Length - 1; i++)
-			{
-				MeshEdge currentMeshEdge = edgesToUse[i];
-				FaceEdge currentFaceEdge = new FaceEdge(createdFace, currentMeshEdge, verticesToUse[i]);
-				if (i == 0)
-				{
-					createdFace.firstFaceEdge = currentFaceEdge;
-				}
-				else
-				{
-					prevFaceEdge.NextFaceEdge = currentFaceEdge;
-					currentFaceEdge.PrevFaceEdge = prevFaceEdge;
-				}
-				currentFaceEdge.AddToRadialLoop(currentMeshEdge);
-				prevFaceEdge = currentFaceEdge;
-			}
-			// make the last FaceEdge
-			{
-				MeshEdge currentMeshEdge = edgesToUse[verticesToUse.Length - 1];
-				FaceEdge currentFaceEdge = new FaceEdge(createdFace, currentMeshEdge, verticesToUse[verticesToUse.Length - 1]);
-				prevFaceEdge.NextFaceEdge = currentFaceEdge;
-				currentFaceEdge.PrevFaceEdge = prevFaceEdge;
-				currentFaceEdge.NextFaceEdge = createdFace.firstFaceEdge;
-				createdFace.firstFaceEdge.PrevFaceEdge = currentFaceEdge;
-				currentFaceEdge.AddToRadialLoop(currentMeshEdge);
-			}
+			return new Mesh(meshToCopyIn.Vertices, meshToCopyIn.Faces);
 		}
 	}
 }

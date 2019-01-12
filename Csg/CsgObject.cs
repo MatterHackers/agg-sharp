@@ -138,7 +138,7 @@ namespace MatterHackers.Csg
 		public Vector3 GetCenter()
 		{
 			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
-			return new Vector3((bounds.maxXYZ + bounds.minXYZ) / 2);
+			return new Vector3((bounds.MaxXYZ + bounds.MinXYZ) / 2);
 		}
 
 		#region Size Functions
@@ -149,9 +149,9 @@ namespace MatterHackers.Csg
 			{
 				AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
 				return new Vector3(
-					bounds.maxXYZ.X - bounds.minXYZ.X,
-					bounds.maxXYZ.Y - bounds.minXYZ.Y,
-					bounds.maxXYZ.Z - bounds.minXYZ.Z);
+					bounds.MaxXYZ.X - bounds.MinXYZ.X,
+					bounds.MaxXYZ.Y - bounds.MinXYZ.Y,
+					bounds.MaxXYZ.Z - bounds.MinXYZ.Z);
 			}
 
 			set

@@ -228,8 +228,6 @@ namespace MatterHackers.DataConverters3D
 						this.MeshPath = null;
 
 						Invalidate(new InvalidateArgs(this, InvalidateType.Mesh, null));
-
-						AsyncCleanAndMerge();
 					}
 				}
 			}
@@ -248,50 +246,6 @@ namespace MatterHackers.DataConverters3D
 					}
 					return false;
 				}).Any();
-			}
-		}
-
-		private void AsyncCleanAndMerge()
-		{
-			return;
-			var mesh = Mesh;
-			// keep track of the mesh we are copying
-			if (mesh != null
-				&& mesh.Vertices != null
-				&& !mesh.Vertices.Sorted)
-			{
-				var rebuildLock = RebuildLock();
-
-				Task.Run(() =>
-				{
-					var meshThatWasCopied = mesh;
-					// make the copy
-					var copyMesh = meshThatWasCopied.Copy(CancellationToken.None);
-					// clean the copy
-					copyMesh.CleanAndMergeMesh(CancellationToken.None);
-
-					lock (locker)
-					{
-						// if we have not changed to a new mesh (they are still the same)
-						if (meshThatWasCopied == Mesh)
-						{
-							// store the new clean mesh
-							_mesh = copyMesh;
-							UiThread.RunOnIdle(() =>
-							{
-								rebuildLock.Dispose();
-								this.Invalidate(new InvalidateArgs(this, InvalidateType.Mesh, null));
-							});
-						}
-						else // we still need to resume the building
-						{
-							UiThread.RunOnIdle(() =>
-							{
-								rebuildLock.Dispose();
-							});
-						}
-					}
-				});
 			}
 		}
 
@@ -517,7 +471,6 @@ namespace MatterHackers.DataConverters3D
 				if (_mesh != mesh)
 				{
 					_mesh = mesh;
-					AsyncCleanAndMerge();
 				}
 			}
 		}
@@ -691,7 +644,7 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			// Make sure we have some data. Else return 0 bounds.
-			if (totalBounds.minXYZ.X == double.PositiveInfinity)
+			if (totalBounds.MinXYZ.X == double.PositiveInfinity)
 			{
 				totalBounds = AxisAlignedBoundingBox.Zero();
 			}
@@ -727,7 +680,7 @@ namespace MatterHackers.DataConverters3D
 					{
 						// Get the trace data for the local mesh
 						// First create trace data that builds fast but traces slow
-						var simpleTraceData = processingMesh.CreateTraceData(0);
+						var simpleTraceData = processingMesh.CreateTraceData(null, Matrix4X4.Identity, 0);
 						if (simpleTraceData != null)
 						{
 							try
@@ -781,7 +734,7 @@ namespace MatterHackers.DataConverters3D
 
 				if (Mesh != null)
 				{
-					hash = hash * 32 + Mesh.GetLongHashCode();
+					hash = hash * 31 + Mesh.GetLongHashCode();
 				}
 
 				foreach (var child in Children)

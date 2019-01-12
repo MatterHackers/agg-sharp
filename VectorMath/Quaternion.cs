@@ -102,8 +102,24 @@ namespace MatterHackers.VectorMath
 			{
 				endingDirection += new Vector3(.0000001, 0, 0);
 			}
-			this.xyz = Vector3.Cross(endingDirection, startingDirection);
-			this.w = Math.Sqrt(Math.Pow(endingDirection.Length, 2) * Math.Pow(startingDirection.Length, 2)) + Vector3.Dot(endingDirection, startingDirection);
+			this.xyz = Vector3Ex.Cross(endingDirection, startingDirection);
+			this.w = Math.Sqrt(Math.Pow(endingDirection.Length, 2) * Math.Pow(startingDirection.Length, 2)) + Vector3Ex.Dot(endingDirection, startingDirection);
+			Normalize();
+		}
+
+		/// <summary>
+		/// Construct a quaternion that rotates from one direction to another
+		/// </summary>
+		/// <param name="startingDirection"></param>
+		/// <param name="endingDirection"></param>
+		public Quaternion(Vector3Float startingDirection, Vector3Float endingDirection)
+		{
+			if ((endingDirection + startingDirection).LengthSquared == 0)
+			{
+				endingDirection += new Vector3Float(.0000001, 0, 0);
+			}
+			this.xyz = new Vector3(endingDirection.Cross(startingDirection));
+			this.w = Math.Sqrt(Math.Pow(endingDirection.Length, 2) * Math.Pow(startingDirection.Length, 2)) + endingDirection.Dot(startingDirection);
 			Normalize();
 		}
 
@@ -355,8 +371,8 @@ namespace MatterHackers.VectorMath
 		public static Quaternion Mult(Quaternion left, Quaternion right)
 		{
 			return new Quaternion(
-				right.W * left.Xyz + left.W * right.Xyz + Vector3.Cross(left.Xyz, right.Xyz),
-				left.W * right.W - Vector3.Dot(left.Xyz, right.Xyz));
+				right.W * left.Xyz + left.W * right.Xyz + Vector3Ex.Cross(left.Xyz, right.Xyz),
+				left.W * right.W - Vector3Ex.Dot(left.Xyz, right.Xyz));
 		}
 
 		/// <summary>
@@ -369,8 +385,8 @@ namespace MatterHackers.VectorMath
 		public static void Mult(ref Quaternion left, ref Quaternion right, out Quaternion result)
 		{
 			result = new Quaternion(
-				right.W * left.Xyz + left.W * right.Xyz + Vector3.Cross(left.Xyz, right.Xyz),
-				left.W * right.W - Vector3.Dot(left.Xyz, right.Xyz));
+				right.W * left.Xyz + left.W * right.Xyz + Vector3Ex.Cross(left.Xyz, right.Xyz),
+				left.W * right.W - Vector3Ex.Dot(left.Xyz, right.Xyz));
 		}
 
 		/// <summary>
@@ -395,8 +411,8 @@ namespace MatterHackers.VectorMath
 		public static void Multiply(ref Quaternion left, ref Quaternion right, out Quaternion result)
 		{
 			result = new Quaternion(
-				right.W * left.Xyz + left.W * right.Xyz + Vector3.Cross(left.Xyz, right.Xyz),
-				left.W * right.W - Vector3.Dot(left.Xyz, right.Xyz));
+				right.W * left.Xyz + left.W * right.Xyz + Vector3Ex.Cross(left.Xyz, right.Xyz),
+				left.W * right.W - Vector3Ex.Dot(left.Xyz, right.Xyz));
 		}
 
 		/// <summary>
@@ -575,7 +591,7 @@ namespace MatterHackers.VectorMath
 				return q1;
 			}
 
-			double cosHalfAngle = q1.W * q2.W + Vector3.Dot(q1.Xyz, q2.Xyz);
+			double cosHalfAngle = q1.W * q2.W + Vector3Ex.Dot(q1.Xyz, q2.Xyz);
 
 			if (cosHalfAngle >= 1.0 || cosHalfAngle <= -1.0)
 			{

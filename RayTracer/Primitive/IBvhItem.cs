@@ -46,8 +46,8 @@ namespace MatterHackers.RayTracer
 				throw new Exception();
 			}
 
-			double axisCenterA = a.GetCenter()[whichAxis];
-			double axisCenterB = b.GetCenter()[whichAxis];
+			double axisCenterA = a.GetAxisCenter(whichAxis);
+			double axisCenterB = b.GetAxisCenter(whichAxis);
 
 			if (axisCenterA > axisCenterB)
 			{
@@ -81,6 +81,8 @@ namespace MatterHackers.RayTracer
 		/// </summary>
 		/// <returns></returns>
 		Vector3 GetCenter();
+
+		double GetAxisCenter(int axis);
 
 		/// <summary>
 		/// If this bvh item is a collection of other bvh items this will return the elements that are
@@ -145,14 +147,10 @@ namespace MatterHackers.RayTracer
 						}
 					}
 				}
-				else if (Bvh is TriangleShape)
+				else
 				{
 					// has no children, take no action
 					yield return this;
-				}
-				else
-				{
-					throw new NotImplementedException();
 				}
 			}
 		}

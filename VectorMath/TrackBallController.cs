@@ -65,7 +65,7 @@ namespace MatterHackers.VectorMath.TrackBall
 				var angleToTravel = screenCenter.GetDeltaAngle(startPosition, endPosition);
 
 				// now rotate that position about z in the direction of the screen vector
-				var positionOnRotationSphere = Vector3.Transform(new Vector3(1, 0, 0), Matrix4X4.CreateRotationZ(angleToTravel/2));
+				var positionOnRotationSphere = Vector3Ex.Transform(new Vector3(1, 0, 0), Matrix4X4.CreateRotationZ(angleToTravel/2));
 
 				return positionOnRotationSphere;
 			}
@@ -77,13 +77,13 @@ namespace MatterHackers.VectorMath.TrackBall
 				var lengthOnSurfaceRadi = deltaOnSurface.Length;
 
 				// get this rotation on the surface of the sphere about y
-				var positionAboutY = Vector3.Transform(new Vector3(0, 0, 1), Matrix4X4.CreateRotationY(lengthOnSurfaceRadi));
+				var positionAboutY = Vector3Ex.Transform(new Vector3(0, 0, 1), Matrix4X4.CreateRotationY(lengthOnSurfaceRadi));
 
 				// get the angle that this distance travels around the sphere
 				var angleToTravel = Math.Atan2(deltaOnSurface.Y, deltaOnSurface.X);
 
 				// now rotate that position about z in the direction of the screen vector
-				var positionOnRotationSphere = Vector3.Transform(positionAboutY, Matrix4X4.CreateRotationZ(angleToTravel));
+				var positionOnRotationSphere = Vector3Ex.Transform(positionAboutY, Matrix4X4.CreateRotationZ(angleToTravel));
 
 				return positionOnRotationSphere;
 			}
@@ -138,8 +138,8 @@ namespace MatterHackers.VectorMath.TrackBall
 						Vector2 mouseDelta = mousePosition - lastTranslationMousePosition;
 						Vector2 scaledDelta = mouseDelta / this.ScreenCenter.X * 4.75;
 						Vector3 offset = new Vector3(scaledDelta.X, scaledDelta.Y, 0);
-						offset = Vector3.TransformPosition(offset, Matrix4X4.Invert(world.RotationMatrix));
-						offset = Vector3.TransformPosition(offset, localToScreenTransform);
+						offset = Vector3Ex.TransformPosition(offset, Matrix4X4.Invert(world.RotationMatrix));
+						offset = Vector3Ex.TransformPosition(offset, localToScreenTransform);
 						world.TranslationMatrix = world.TranslationMatrix * Matrix4X4.CreateTranslation(offset);
 						lastTranslationMousePosition = mousePosition;
 						OnTransformChanged(null);
@@ -183,7 +183,7 @@ namespace MatterHackers.VectorMath.TrackBall
 			{
 				rotationStart3D = new Vector3(1, 0, 0);
 			}
-			Vector3 perp = Vector3.Cross(rotationStart3D, moveSpherePosition);
+			Vector3 perp = rotationStart3D.Cross(moveSpherePosition);
 
 			//Compute the length of the perpendicular vector
 			double epsilon = 1.0e-5;
@@ -195,7 +195,7 @@ namespace MatterHackers.VectorMath.TrackBall
 				activeRotationQuaternion.Y = perp.Y;
 				activeRotationQuaternion.Z = perp.Z;
 				//In the quaternion values, w is cosine (theta / 2), where theta is the rotation angle
-				activeRotationQuaternion.W = -Vector3.Dot(rotationStart3D, moveSpherePosition);
+				activeRotationQuaternion.W = -rotationStart3D.Dot(moveSpherePosition);
 			}
 
 			return activeRotationQuaternion;

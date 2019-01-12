@@ -36,26 +36,27 @@ namespace MatterHackers.PolygonMesh
 	{
 		public static Mesh CreateTetrahedron(double scale = 1)
 		{
-			Mesh tetrahedron = new Mesh();
-			Vector2 basePoint = new Vector2(1, 0);
-			double baseOffsetZ = -Math.Sin(MathHelper.DegreesToRadians(30));
-			IVertex[] verts = new Vertex[4];
-			verts[0] = tetrahedron.CreateVertex(new Vector3(basePoint, baseOffsetZ));
-			verts[1] = tetrahedron.CreateVertex(new Vector3(Vector2.Rotate(basePoint, MathHelper.Tau / 3), baseOffsetZ));
-			verts[2] = tetrahedron.CreateVertex(new Vector3(Vector2.Rotate(basePoint, 2 * MathHelper.Tau / 3), baseOffsetZ));
-			verts[3] = tetrahedron.CreateVertex(new Vector3(0, 0, 1));
+			throw new NotImplementedException();
+			//Mesh tetrahedron = new Mesh();
+			//Vector2 basePoint = new Vector2(1, 0);
+			//double baseOffsetZ = -Math.Sin(MathHelper.DegreesToRadians(30));
+			//IVertex[] verts = new Vertex[4];
+			//verts[0] = tetrahedron.CreateVertex(new Vector3(basePoint, baseOffsetZ));
+			//verts[1] = tetrahedron.CreateVertex(new Vector3(Vector2.Rotate(basePoint, MathHelper.Tau / 3), baseOffsetZ));
+			//verts[2] = tetrahedron.CreateVertex(new Vector3(Vector2.Rotate(basePoint, 2 * MathHelper.Tau / 3), baseOffsetZ));
+			//verts[3] = tetrahedron.CreateVertex(new Vector3(0, 0, 1));
 
-			tetrahedron.CreateFace(new IVertex[] { verts[0], verts[2], verts[1] }); // add reversed because we want to see the bottom.
-			tetrahedron.CreateFace(new IVertex[] { verts[0], verts[1], verts[3] });
-			tetrahedron.CreateFace(new IVertex[] { verts[1], verts[2], verts[3] });
-			tetrahedron.CreateFace(new IVertex[] { verts[2], verts[0], verts[3] });
+			//tetrahedron.CreateFace(new IVertex[] { verts[0], verts[2], verts[1] }); // add reversed because we want to see the bottom.
+			//tetrahedron.CreateFace(new IVertex[] { verts[0], verts[1], verts[3] });
+			//tetrahedron.CreateFace(new IVertex[] { verts[1], verts[2], verts[3] });
+			//tetrahedron.CreateFace(new IVertex[] { verts[2], verts[0], verts[3] });
 
-			if(scale != 1)
-			{
-				tetrahedron.Transform(Matrix4X4.CreateScale(scale));
-            }
+			//if(scale != 1)
+			//{
+			//	tetrahedron.Transform(Matrix4X4.CreateScale(scale));
+   //         }
 
-			return tetrahedron;
+			//return tetrahedron;
 		}
 
 		public static Mesh CreateCube(double xScale = 1, double yScale = 1, double zScale = 1)
@@ -67,95 +68,101 @@ namespace MatterHackers.PolygonMesh
 		{
 			scale *= .5; // the cube is -1 to 1 and we want it to be -.5 to .5 so it is a unit cube.
 			Mesh cube = new Mesh();
-			IVertex[] verts = new Vertex[8];
-			verts[0] = cube.CreateVertex(new Vector3(-1, -1, 1) * scale);
-			verts[1] = cube.CreateVertex(new Vector3(1, -1, 1) * scale);
-			verts[2] = cube.CreateVertex(new Vector3(1, 1, 1) * scale);
-			verts[3] = cube.CreateVertex(new Vector3(-1, 1, 1) * scale);
-			verts[4] = cube.CreateVertex(new Vector3(-1, -1, -1) * scale);
-			verts[5] = cube.CreateVertex(new Vector3(1, -1, -1) * scale);
-			verts[6] = cube.CreateVertex(new Vector3(1, 1, -1) * scale);
-			verts[7] = cube.CreateVertex(new Vector3(-1, 1, -1) * scale);
+			cube.Vertices.Add(new Vector3(-1, -1, 1) * scale);
+			cube.Vertices.Add(new Vector3(1, -1, 1) * scale);
+			cube.Vertices.Add(new Vector3(1, 1, 1) * scale);
+			cube.Vertices.Add(new Vector3(-1, 1, 1) * scale);
+			cube.Vertices.Add(new Vector3(-1, -1, -1) * scale);
+			cube.Vertices.Add(new Vector3(1, -1, -1) * scale);
+			cube.Vertices.Add(new Vector3(1, 1, -1) * scale);
+			cube.Vertices.Add(new Vector3(-1, 1, -1) * scale);
 
 			// front
-			cube.CreateFace(new IVertex[] { verts[0], verts[1], verts[2], verts[3] });
+			cube.Faces.Add((0, 1, 2));
+			cube.Faces.Add((0, 2, 3));
 			// left
-			cube.CreateFace(new IVertex[] { verts[4], verts[0], verts[3], verts[7] });
+			cube.Faces.Add((4, 0, 3));
+			cube.Faces.Add((4, 3, 7));
 			// right
-			cube.CreateFace(new IVertex[] { verts[1], verts[5], verts[6], verts[2] });
+			cube.Faces.Add((1, 5, 6));
+			cube.Faces.Add((1, 6, 2));
 			// back
-			cube.CreateFace(new IVertex[] { verts[4], verts[7], verts[6], verts[5] });
+			cube.Faces.Add((4, 7, 6));
+			cube.Faces.Add((4, 6, 5));
 			// top
-			cube.CreateFace(new IVertex[] { verts[3], verts[2], verts[6], verts[7] });
+			cube.Faces.Add((3, 2, 6));
+			cube.Faces.Add((3, 6, 7));
 			// bottom
-			cube.CreateFace(new IVertex[] { verts[4], verts[5], verts[1], verts[0] });
+			cube.Faces.Add((4, 5, 1));
+			cube.Faces.Add((4, 1, 0));
 
 			return cube;
 		}
 
 		public static Mesh CreateIcosahedron(double scale = 1)
 		{
-			Mesh icosahedron = new Mesh();
-			double[] icosahedronVertices =
-            {
-                0, -0.525731, 0.850651,
-                0.850651, 0, 0.525731,
-                0.850651, 0, -0.525731,
-                -0.850651, 0, -0.525731,
-                -0.850651, 0, 0.525731,
-                -0.525731, 0.850651, 0,
-                0.525731, 0.850651, 0,
-                0.525731, -0.850651, 0,
-                -0.525731, -0.850651, 0,
-                0, -0.525731, -0.850651,
-                0, 0.525731, -0.850651,
-                0, 0.525731, 0.850651
-            };
+			throw new NotImplementedException();
+			//Mesh icosahedron = new Mesh();
+			//double[] icosahedronVertices =
+   //         {
+   //             0, -0.525731, 0.850651,
+   //             0.850651, 0, 0.525731,
+   //             0.850651, 0, -0.525731,
+   //             -0.850651, 0, -0.525731,
+   //             -0.850651, 0, 0.525731,
+   //             -0.525731, 0.850651, 0,
+   //             0.525731, 0.850651, 0,
+   //             0.525731, -0.850651, 0,
+   //             -0.525731, -0.850651, 0,
+   //             0, -0.525731, -0.850651,
+   //             0, 0.525731, -0.850651,
+   //             0, 0.525731, 0.850651
+   //         };
 
-			int[] icosahedronIndicies =
-            {
-                1, 2, 6,
-                1, 7, 2,
-                3, 4, 5,
-                4, 3, 8,
-                6, 5, 11,
-                5, 6, 10,
-                9, 10, 2,
-                10, 9, 3,
-                7, 8, 9,
-                8, 7, 0,
-                11, 0, 1,
-                0, 11, 4,
-                6, 2, 10,
-                1, 6, 11,
-                3, 5, 10,
-                5, 4, 11,
-                2, 7, 9,
-                7, 1, 0,
-                3, 9, 8,
-                4, 8, 0,
-            };
+			//int[] icosahedronIndicies =
+   //         {
+   //             1, 2, 6,
+   //             1, 7, 2,
+   //             3, 4, 5,
+   //             4, 3, 8,
+   //             6, 5, 11,
+   //             5, 6, 10,
+   //             9, 10, 2,
+   //             10, 9, 3,
+   //             7, 8, 9,
+   //             8, 7, 0,
+   //             11, 0, 1,
+   //             0, 11, 4,
+   //             6, 2, 10,
+   //             1, 6, 11,
+   //             3, 5, 10,
+   //             5, 4, 11,
+   //             2, 7, 9,
+   //             7, 1, 0,
+   //             3, 9, 8,
+   //             4, 8, 0,
+   //         };
 
-			IVertex[] verts = new Vertex[icosahedronVertices.Length / 3];
-			for (int i = 0; i < icosahedronVertices.Length / 3; i++)
-			{
-				verts[i] = icosahedron.CreateVertex(new Vector3(icosahedronVertices[i * 3 + 0], icosahedronVertices[i * 3 + 1], icosahedronVertices[i * 3 + 2]));
-			}
+			//IVertex[] verts = new Vertex[icosahedronVertices.Length / 3];
+			//for (int i = 0; i < icosahedronVertices.Length / 3; i++)
+			//{
+			//	verts[i] = icosahedron.CreateVertex(new Vector3(icosahedronVertices[i * 3 + 0], icosahedronVertices[i * 3 + 1], icosahedronVertices[i * 3 + 2]));
+			//}
 
-			for (int i = 0; i < icosahedronIndicies.Length / 3; i++)
-			{
-				IVertex[] triangleVertices = new IVertex[]
-                {
-                    verts[icosahedronIndicies[i * 3 + 0]],
-                    verts[icosahedronIndicies[i * 3 + 1]],
-                    verts[icosahedronIndicies[i * 3 + 2]],
-                };
-				icosahedron.CreateFace(triangleVertices);
-			}
+			//for (int i = 0; i < icosahedronIndicies.Length / 3; i++)
+			//{
+			//	IVertex[] triangleVertices = new IVertex[]
+   //             {
+   //                 verts[icosahedronIndicies[i * 3 + 0]],
+   //                 verts[icosahedronIndicies[i * 3 + 1]],
+   //                 verts[icosahedronIndicies[i * 3 + 2]],
+   //             };
+			//	icosahedron.CreateFace(triangleVertices);
+			//}
 
-			icosahedron.Transform(Matrix4X4.CreateScale(scale));
+			//icosahedron.Transform(Matrix4X4.CreateScale(scale));
 
-			return icosahedron;
+			//return icosahedron;
 		}
 	}
 }

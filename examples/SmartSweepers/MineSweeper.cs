@@ -147,7 +147,7 @@ namespace SmartSweeper
 			//now transform the ships vertices
 			for (int i = 0; i < sweeper.Count; i++)
 			{
-				sweeper[i] = Vector3.Transform(sweeper[i], matTransform);
+				sweeper[i] = sweeper[i].Transform(matTransform);
 			}
 		}
 

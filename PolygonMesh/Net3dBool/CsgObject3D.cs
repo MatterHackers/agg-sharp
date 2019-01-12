@@ -925,9 +925,9 @@ namespace Net3dBool
 				}
 
 				//gets the vertex more lined with the intersection segment
-				double dot1 = Math.Abs(Vector3.Dot(segmentVector, (endPos - face.v1.Position).GetNormal()));
-				double dot2 = Math.Abs(Vector3.Dot(segmentVector, (endPos - face.v2.Position).GetNormal()));
-				double dot3 = Math.Abs(Vector3.Dot(segmentVector, (endPos - face.v3.Position).GetNormal()));
+				double dot1 = Math.Abs(Vector3Ex.Dot(segmentVector, (endPos - face.v1.Position).GetNormal()));
+				double dot2 = Math.Abs(Vector3Ex.Dot(segmentVector, (endPos - face.v2.Position).GetNormal()));
+				double dot3 = Math.Abs(Vector3Ex.Dot(segmentVector, (endPos - face.v3.Position).GetNormal()));
 
 				int linedVertex;
 				Vector3 linedVertexPos;

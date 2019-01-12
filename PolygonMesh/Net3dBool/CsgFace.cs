@@ -153,7 +153,7 @@ namespace Net3dBool
 		public double DistanceFromPlane(Vertex vertex)
 		{
 			double distToV1 = this.Plane.DistanceToPlaneFromOrigin;
-			double distToVertex = Vector3.Dot(Normal, vertex.Position);
+			double distToVertex = Vector3Ex.Dot(Normal, vertex.Position);
 			double distFromFacePlane = distToVertex - distToV1;
 			return distFromFacePlane;
 		}
@@ -253,7 +253,7 @@ namespace Net3dBool
 					//if ray intersects the plane...
 					if (face.Plane.RayHitPlane(ray, out hitDistance, out front))
 					{
-						double dotProduct = Vector3.Dot(face.Normal, ray.directionNormal);
+						double dotProduct = Vector3Ex.Dot(face.Normal, ray.directionNormal);
 						distance = hitDistance;
 						intersectionPoint = ray.origin + ray.directionNormal * hitDistance;
 						ray.maxDistanceToConsider = hitDistance;
@@ -305,7 +305,7 @@ namespace Net3dBool
 			}
 			else //face found: test dot product
 			{
-				double dotProduct = Vector3.Dot(closestFace.Normal, ray.directionNormal);
+				double dotProduct = Vector3Ex.Dot(closestFace.Normal, ray.directionNormal);
 
 				//distance = 0: coplanar faces
 				if (Math.Abs(closestDistance) < EqualityTolerance)

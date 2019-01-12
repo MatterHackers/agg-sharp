@@ -339,7 +339,7 @@ namespace SmartSweeper
 			for (int i = 0; i < VBuffer.Count; i++)
 			{
 				Vector3 Temp = VBuffer[i];
-				Temp = Vector3.Transform(Temp, matTransform);
+				Temp = Temp.Transform(matTransform);
 				VBuffer[i] = Temp;
 			}
 		}

@@ -159,48 +159,48 @@ namespace MatterHackers.VectorMath
 				// X axis
 				if (Planes[i].PlaneNormal.X > 0)
 				{
-					vmin.X = boundingBox.minXYZ.X;
-					vmax.X = boundingBox.maxXYZ.X;
+					vmin.X = boundingBox.MinXYZ.X;
+					vmax.X = boundingBox.MaxXYZ.X;
 				}
 				else
 				{
-					vmin.X = boundingBox.maxXYZ.X;
-					vmax.X = boundingBox.minXYZ.X;
+					vmin.X = boundingBox.MaxXYZ.X;
+					vmax.X = boundingBox.MinXYZ.X;
 				}
 
 				// Y axis
 				if (Planes[i].PlaneNormal.Y > 0)
 				{
-					vmin.Y = boundingBox.minXYZ.Y;
-					vmax.Y = boundingBox.maxXYZ.Y;
+					vmin.Y = boundingBox.MinXYZ.Y;
+					vmax.Y = boundingBox.MaxXYZ.Y;
 				}
 				else
 				{
-					vmin.Y = boundingBox.maxXYZ.Y;
-					vmax.Y = boundingBox.minXYZ.Y;
+					vmin.Y = boundingBox.MaxXYZ.Y;
+					vmax.Y = boundingBox.MinXYZ.Y;
 				}
 
 				// Z axis
 				if (Planes[i].PlaneNormal.Z > 0)
 				{
-					vmin.Z = boundingBox.minXYZ.Z;
-					vmax.Z = boundingBox.maxXYZ.Z;
+					vmin.Z = boundingBox.MinXYZ.Z;
+					vmax.Z = boundingBox.MaxXYZ.Z;
 				}
 				else
 				{
-					vmin.Z = boundingBox.maxXYZ.Z;
-					vmax.Z = boundingBox.minXYZ.Z;
+					vmin.Z = boundingBox.MaxXYZ.Z;
+					vmax.Z = boundingBox.MinXYZ.Z;
 				}
 
-				if (Vector3.Dot(Planes[i].PlaneNormal, vmin) - Planes[i].DistanceToPlaneFromOrigin > 0)
+				if (Planes[i].PlaneNormal.Dot(vmin) - Planes[i].DistanceToPlaneFromOrigin > 0)
 				{
-					if (Vector3.Dot(Planes[i].PlaneNormal, vmax) - Planes[i].DistanceToPlaneFromOrigin >= 0)
+					if (Planes[i].PlaneNormal.Dot(vmax) - Planes[i].DistanceToPlaneFromOrigin >= 0)
 					{
 						return FrustumIntersection.Outside;
 					}
 				}
 
-				if (Vector3.Dot(Planes[i].PlaneNormal, vmax) - Planes[i].DistanceToPlaneFromOrigin >= 0)
+				if (Planes[i].PlaneNormal.Dot(vmax) - Planes[i].DistanceToPlaneFromOrigin >= 0)
 				{
 					returnValue = FrustumIntersection.Intersect;
 				}

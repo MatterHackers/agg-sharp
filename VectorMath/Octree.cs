@@ -251,13 +251,13 @@ namespace MatterHackers.VectorMath
 			branch.Tree = tree;
 			branch.Parent = parent;
 			branch.Split = false;
-			double midX = bounds.Min.X + (bounds.Max.X - bounds.Min.X) / 2;
-			double midY = bounds.Min.Y + (bounds.Max.Y - bounds.Min.Y) / 2;
-			double midZ = bounds.Min.Z + (bounds.Max.Z - bounds.Min.Z) / 2;
+			double midX = bounds.MinXYZ.X + (bounds.MaxXYZ.X - bounds.MinXYZ.X) / 2;
+			double midY = bounds.MinXYZ.Y + (bounds.MaxXYZ.Y - bounds.MinXYZ.Y) / 2;
+			double midZ = bounds.MinXYZ.Z + (bounds.MaxXYZ.Z - bounds.MinXYZ.Z) / 2;
 
-			double[] xPos = new double[] { bounds.Min.X, midX, midX, bounds.Max.X };
-			double[] yPos = new double[] { bounds.Min.Y, midY, midY, bounds.Max.Y };
-			double[] zPos = new double[] { bounds.Min.Z, midZ, midZ, bounds.Max.Z };
+			double[] xPos = new double[] { bounds.MinXYZ.X, midX, midX, bounds.MaxXYZ.X };
+			double[] yPos = new double[] { bounds.MinXYZ.Y, midY, midY, bounds.MaxXYZ.Y };
+			double[] zPos = new double[] { bounds.MinXYZ.Z, midZ, midZ, bounds.MaxXYZ.Z };
 
 			branch.ChildBounds[0] = new AxisAlignedBoundingBox(xPos[0], yPos[0], zPos[0], xPos[1], yPos[1], zPos[1]);
 			branch.ChildBounds[1] = new AxisAlignedBoundingBox(xPos[2], yPos[0], zPos[0], xPos[3], yPos[1], zPos[1]);
@@ -344,11 +344,11 @@ namespace MatterHackers.VectorMath
 				{
 					if (index == 0)
 					{
-						return new Vector3(Bounds.Min.X, Bounds.Min.Y, Bounds.Min.Z);
+						return new Vector3(Bounds.MinXYZ.X, Bounds.MinXYZ.Y, Bounds.MinXYZ.Z);
 					}
 					else if (index == 1)
 					{
-						return new Vector3(Bounds.Max.X, Bounds.Max.Y, Bounds.Max.Z);
+						return new Vector3(Bounds.MaxXYZ.X, Bounds.MaxXYZ.Y, Bounds.MaxXYZ.Z);
 					}
 					else
 					{
