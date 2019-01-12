@@ -39,6 +39,7 @@ using MatterHackers.VectorMath;
 namespace MatterHackers.DataConverters3D
 {
 	using Polygons = List<List<IntPoint>>;
+	using Polygon = List<IntPoint>;
 	public static class VertexSourceToMesh
 	{
 		public static Mesh TriangulateFaces(IVertexSource vertexSource)
@@ -76,6 +77,34 @@ namespace MatterHackers.DataConverters3D
 			return teselatedMesh;
 		}
 
+		public static Polygons GetCorrectedWinding(this Polygons polygonsToFix)
+		{
+			polygonsToFix = Clipper.CleanPolygons(polygonsToFix);
+			Polygon boundsPolygon = new Polygon();
+			IntRect bounds = Clipper.GetBounds(polygonsToFix);
+			bounds.minX -= 10;
+			bounds.minY -= 10;
+			bounds.maxY += 10;
+			bounds.maxX += 10;
+
+			boundsPolygon.Add(new IntPoint(bounds.minX, bounds.minY));
+			boundsPolygon.Add(new IntPoint(bounds.maxX, bounds.minY));
+			boundsPolygon.Add(new IntPoint(bounds.maxX, bounds.maxY));
+			boundsPolygon.Add(new IntPoint(bounds.minX, bounds.maxY));
+
+			Clipper clipper = new Clipper();
+
+			clipper.AddPaths(polygonsToFix, PolyType.ptSubject, true);
+			clipper.AddPath(boundsPolygon, PolyType.ptClip, true);
+
+			PolyTree intersectionResult = new PolyTree();
+			clipper.Execute(ClipType.ctIntersection, intersectionResult);
+
+			Polygons outputPolygons = Clipper.ClosedPathsFromPolyTree(intersectionResult);
+
+			return outputPolygons;
+		}
+
 		public static Mesh Revolve(IVertexSource source, int angleSteps = 30, double angleStart = 0, double angleEnd = MathHelper.Tau)
 		{
 			angleSteps = Math.Max(angleSteps, 3);
@@ -84,6 +113,7 @@ namespace MatterHackers.DataConverters3D
 			// convert to clipper polygons and scale so we can ensure good shapes
 			Polygons polygons = source.CreatePolygons();
 			// ensure good winding and consistent shapes
+			polygons = polygons.GetCorrectedWinding();
 			// clip against x=0 left and right
 			// mirror left material across the origin
 			// union mirrored left with right material
@@ -179,10 +209,16 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static Mesh Extrude(IVertexSource vertexSource, double zHeight)
+		public static Mesh Extrude(IVertexSource source, double zHeight)
 		{
+			Polygons polygons = source.CreatePolygons();
+			// ensure good winding and consistent shapes
+			polygons = polygons.GetCorrectedWinding();
+			// convert the data back to PathStorage
+			source = polygons.CreateVertexStorage();
+
 			CachedTesselator teselatedSource = new CachedTesselator();
-			Mesh extrudedVertexSource = TriangulateFaces(vertexSource, teselatedSource);
+			Mesh extrudedVertexSource = TriangulateFaces(source, teselatedSource);
 			int numIndicies = teselatedSource.IndicesCache.Count;
 
 			extrudedVertexSource.Translate(new Vector3(0, 0, zHeight));
