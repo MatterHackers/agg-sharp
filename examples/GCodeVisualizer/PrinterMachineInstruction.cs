@@ -88,48 +88,48 @@ namespace MatterHackers.GCodeVisualizer
 
 		public double X
 		{
-			get { return xyzPosition.x; }
+			get { return xyzPosition.X; }
 			set
 			{
 				if (movementType == MovementTypes.Absolute)
 				{
-					xyzPosition.x = (float)value;
+					xyzPosition.X = (float)value;
 				}
 				else
 				{
-					xyzPosition.x += (float)value;
+					xyzPosition.X += (float)value;
 				}
 			}
 		}
 
 		public double Y
 		{
-			get { return xyzPosition.y; }
+			get { return xyzPosition.Y; }
 			set
 			{
 				if (movementType == MovementTypes.Absolute)
 				{
-					xyzPosition.y = (float)value;
+					xyzPosition.Y = (float)value;
 				}
 				else
 				{
-					xyzPosition.y += (float)value;
+					xyzPosition.Y += (float)value;
 				}
 			}
 		}
 
 		public double Z
 		{
-			get { return xyzPosition.z; }
+			get { return xyzPosition.Z; }
 			set
 			{
 				if (movementType == MovementTypes.Absolute)
 				{
-					xyzPosition.z = (float)value;
+					xyzPosition.Z = (float)value;
 				}
 				else
 				{
-					xyzPosition.z += (float)value;
+					xyzPosition.Z += (float)value;
 				}
 			}
 		}

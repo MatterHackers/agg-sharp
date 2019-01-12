@@ -46,8 +46,8 @@ namespace MatterHackers.GCodeVisualizer
 			{
 				Vector3Float start = this.start;
 				Vector2 offset = renderInfo.GetExtruderOffset(extruderIndex);
-				start.x += (float)offset.X;
-				start.y += (float)offset.Y;
+				start.X += (float)offset.X;
+				start.Y += (float)offset.Y;
 				return start;
 			}
 
@@ -60,8 +60,8 @@ namespace MatterHackers.GCodeVisualizer
 			{
 				Vector3Float end = this.end;
 				Vector2 offset = renderInfo.GetExtruderOffset(extruderIndex);
-				end.x += (float)offset.X;
-				end.y += (float)offset.Y;
+				end.X += (float)offset.X;
+				end.Y += (float)offset.Y;
 				return end;
 			}
 
@@ -100,10 +100,10 @@ namespace MatterHackers.GCodeVisualizer
 				{
 					Vector3Float startF = this.GetStart(renderInfo);
 					Vector3Float endF = this.GetEnd(renderInfo);
-					Vector2 start = new Vector2(startF.x, startF.y);
+					Vector2 start = new Vector2(startF.X, startF.Y);
 					renderInfo.Transform.transform(ref start);
 
-					Vector2 end = new Vector2(endF.x, endF.y);
+					Vector2 end = new Vector2(endF.X, endF.Y);
 					renderInfo.Transform.transform(ref end);
 
 					graphics2DGl.DrawAALineRounded(start, end, movementLineWidth, movementColor);
@@ -120,14 +120,14 @@ namespace MatterHackers.GCodeVisualizer
 					Vector3Float start = this.GetStart(renderInfo);
 					Vector3Float end = this.GetEnd(renderInfo);
 
-					pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.MoveTo);
-					if (end.x != start.x || end.y != start.y)
+					pathStorage.Add(start.X, start.Y, ShapePath.FlagsAndCommand.MoveTo);
+					if (end.X != start.X || end.Y != start.Y)
 					{
-						pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.LineTo);
+						pathStorage.Add(end.X, end.Y, ShapePath.FlagsAndCommand.LineTo);
 					}
 					else
 					{
-						pathStorage.Add(end.x + .01, end.y, ShapePath.FlagsAndCommand.LineTo);
+						pathStorage.Add(end.X + .01, end.Y, ShapePath.FlagsAndCommand.LineTo);
 					}
 
 					graphics2D.Render(stroke, movementColor);
