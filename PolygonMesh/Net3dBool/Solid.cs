@@ -69,7 +69,7 @@ namespace Net3dBool
      * @param indices array of indices for a array of vertices
      * @param colors array of colors defining the vertices colors 
      */
-        public Solid(Vector3[] vertices, int[] indices)
+        public Solid(Vector3Float[] vertices, int[] indices)
             : this()
         {
             setData(vertices, indices);
@@ -142,7 +142,7 @@ namespace Net3dBool
      * @param indices array of indices for a array of vertices
      * @param colors array of colors defining the vertices colors 
      */
-        public void setData(Vector3[] vertices, int[] indices)
+        public void setData(Vector3Float[] vertices, int[] indices)
         {
             this.vertices = new Vector3[vertices.Length];
             this.indices = new int[indices.Length];
@@ -150,7 +150,7 @@ namespace Net3dBool
             {
                 for (int i = 0; i < vertices.Length; i++)
                 {
-                    this.vertices[i] = vertices[i];
+                    this.vertices[i] = new Vector3(vertices[i]);
                 }
                 Array.Copy(indices, 0, this.indices, 0, indices.Length);
 

@@ -165,10 +165,10 @@ namespace Net3dBool
 			GroupObjectComponents(object2, vertices, indices, faceStatus3, faceStatus3);
 
 			//turn the arrayLists to arrays
-			Vector3[] verticesArray = new Vector3[vertices.Count];
+			var verticesArray = new Vector3Float[vertices.Count];
 			for (int i = 0; i < vertices.Count; i++)
 			{
-				verticesArray[i] = vertices[i].Position;
+				verticesArray[i] = new Vector3Float(vertices[i].Position);
 			}
 			int[] indicesArray = new int[indices.Count];
 			for (int i = 0; i < indices.Count; i++)
