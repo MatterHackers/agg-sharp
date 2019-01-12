@@ -227,7 +227,7 @@ namespace MatterHackers.DataConverters3D
 					continue;
 				}
 
-				mesh.CreateFace(new Vector3[] { new Vector3(v0, 0), new Vector3(v1, 0), new Vector3(v2, 0) });
+				mesh.CreateFace(new Vector3[] { new Vector3(v2, 0), new Vector3(v1, 0), new Vector3(v0, 0) });
 			}
 
 			return mesh;
