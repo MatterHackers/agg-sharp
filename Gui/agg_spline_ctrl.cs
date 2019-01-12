@@ -362,7 +362,7 @@ namespace MatterHackers.Agg.UI
 
 				case 2:                 // Curve
 					calc_curve();
-					m_curve_poly.width(m_curve_width);
+					m_curve_poly.Width = m_curve_width;
 					m_curve_poly.rewind(0);
 					break;
 

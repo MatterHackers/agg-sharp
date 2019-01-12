@@ -27,91 +27,60 @@ namespace MatterHackers.Agg.VertexSource
 		public Stroke(IVertexSource vertexSource, double inWidth = 1)
 			: base(vertexSource, new StrokeGenerator())
 		{
-			width(inWidth);
+			this.Width = inWidth;
 		}
 
-		public double Width { get { return width(); } set { width(value); } }
-
-		public void ApproximationScale(double approxScale)
+		public double ApproximationScale
 		{
-			this.Generator.ApproximationScale(approxScale);
+			get => this.Generator.ApproximationScale;
+			set => this.Generator.ApproximationScale = value;
 		}
 
-		public double ApproximationScale()
+		public InnerJoin InnerJoin
 		{
-			return this.Generator.ApproximationScale();
+			get => this.Generator.InnerJoin;
+			set => this.Generator.InnerJoin = value;
 		}
 
-		public void InnerJoin(InnerJoin ij)
+		public double InnerMiterLimit
 		{
-			this.Generator.InnerJoin(ij);
+			get => this.Generator.InnerMiterLimit;
+			set => this.Generator.InnerMiterLimit = value;
 		}
 
-		public InnerJoin InnerJoin()
+		public LineCap LineCap
 		{
-			return this.Generator.InnerJoin();
+			get => this.Generator.LineCap;
+			set => this.Generator.LineCap = value;
 		}
 
-		public void InnerMiterLimit(double ml)
+		public LineJoin LineJoin
 		{
-			this.Generator.InnerMiterLimit(ml);
+			get => this.Generator.LineJoin;
+			set => this.Generator.LineJoin = value;
 		}
 
-		public double InnerMiterLimit()
+		public double MiterLimit
 		{
-			return this.Generator.InnerMiterLimit();
+			get => this.Generator.MiterLimit;
+			set => this.Generator.MiterLimit = value;
 		}
 
-		public void LineCap(LineCap lc)
+		public double Shorten
 		{
-			this.Generator.LineCap(lc);
+			get => this.Generator.Shorten;
+			set => this.Generator.Shorten = value;
 		}
 
-		public LineCap LineCap()
+		public double Width
 		{
-			return this.Generator.LineCap();
-		}
-
-		public void LineJoin(LineJoin lj)
-		{
-			this.Generator.LineJoin(lj);
-		}
-		public LineJoin LineJoin()
-		{
-			return this.Generator.LineJoin();
-		}
-		public void MiterLimit(double ml)
-		{
-			this.Generator.MiterLimit(ml);
-		}
-
-		public double MiterLimit()
-		{
-			return this.Generator.MiterLimit();
+			get => this.Generator.Width;
+			set => this.Generator.Width = value;
 		}
 
 		public void MiterLimitTheta(double t)
 		{
 			this.Generator.MiterLimitTheta(t);
-		}
-
-		public void Shorten(double s)
-		{
-			this.Generator.Shorten(s);
-		}
-
-		public double Shorten()
-		{
-			return this.Generator.Shorten();
-		}
-
-		public void width(double w)
-		{
-			this.Generator.Width(w);
-		}
-		public double width()
-		{
-			return this.Generator.width();
 		}
 	}
 }

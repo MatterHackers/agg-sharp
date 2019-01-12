@@ -29,77 +29,51 @@ namespace MatterHackers.Agg.VertexSource
 		{
 		}
 
-		public void ApproximationScale(double approxScale)
+		public double ApproximationScale
 		{
-			this.Generator.ApproximationScale(approxScale);
+			get => this.Generator.ApproximationScale;
+			set => this.Generator.ApproximationScale = value;
 		}
 
-		public double ApproximationScale()
+		public bool AutoDetectOrientation
 		{
-			return this.Generator.ApproximationScale();
+			get => this.Generator.AutoDetectOrientation;
+			set => this.Generator.AutoDetectOrientation = value;
 		}
 
-		public void AutoDetectOrientation(bool v)
+		public InnerJoin InnerJoin
 		{
-			this.Generator.auto_detect_orientation(v);
+			get => this.Generator.InnerJoin;
+			set => this.Generator.InnerJoin = value;
 		}
 
-		public bool AutoDetectOrientation()
+		public double InnerMiterLimit
 		{
-			return this.Generator.AutoDetectOrientation();
+			get => this.Generator.InnerMiterLimit;
+			set => this.Generator.InnerMiterLimit = value;
 		}
 
-		public void InnerJoin(InnerJoin ij)
+		public LineJoin LineJoin
 		{
-			this.Generator.InnerJoin(ij);
+			get => this.Generator.LineJoin;
+			set => this.Generator.LineJoin = value;
 		}
 
-		public InnerJoin InnerJoin()
+		public double MiterLimit
 		{
-			return this.Generator.InnerJoin();
+			get => this.Generator.MiterLimit;
+			set => this.Generator.MiterLimit = value;
 		}
 
-		public void InnerMiterLimit(double ml)
+		public double Width
 		{
-			this.Generator.InnerMiterLimit(ml);
-		}
-
-		public double InnerMiterLimit()
-		{
-			return this.Generator.InnerMiterLimit();
-		}
-
-		public void LineJoin(LineJoin lj)
-		{
-			this.Generator.LineJoin(lj);
-		}
-		public LineJoin LineJoin()
-		{
-			return this.Generator.LineJoin();
-		}
-
-		public void MiterLimit(double ml)
-		{
-			this.Generator.MiterLimit(ml);
-		}
-
-		public double MiterLimit()
-		{
-			return this.Generator.MiterLimit();
+			get => this.Generator.Width;
+			set => this.Generator.Width = value;
 		}
 
 		public void MiterLimitTheta(double t)
 		{
 			this.Generator.MiterLimitTheta(t);
-		}
-
-		public void Width(double w)
-		{
-			this.Generator.Width(w);
-		}
-		public double Width()
-		{
-			return this.Generator.width();
 		}
 	}
 }

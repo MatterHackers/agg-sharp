@@ -136,7 +136,7 @@ namespace MatterHackers.Agg.UI
 			m_dx = (0.0);
 			m_dy = (0.0);
 			m_in_polygon_check = (true);
-			m_stroke.width(1.0);
+			m_stroke.Width = 1.0;
 		}
 
 		public override void OnParentChanged(EventArgs e)
@@ -190,12 +190,12 @@ namespace MatterHackers.Agg.UI
 
 		public void line_width(double w)
 		{
-			m_stroke.width(w);
+			m_stroke.Width = w;
 		}
 
 		public double line_width()
 		{
-			return m_stroke.width();
+			return m_stroke.Width;
 		}
 
 		public void point_radius(double r)

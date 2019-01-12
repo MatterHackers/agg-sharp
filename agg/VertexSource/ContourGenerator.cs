@@ -56,72 +56,58 @@ namespace MatterHackers.Agg.VertexSource
 			}
 		}
 
-		public void ApproximationScale(double approx_scale)
+		public double ApproximationScale
 		{
-			m_stroker.approximation_scale(approx_scale);
+			get => m_stroker.approximation_scale();
+			set => m_stroker.approximation_scale(value);
 		}
 
-		public double ApproximationScale()
+		public bool AutoDetectOrientation
 		{
-			return m_stroker.approximation_scale();
+			get => m_auto_detect;
+			set => m_auto_detect = value;
 		}
 
-		public void AutoDetectOrientation(bool v)
+		public InnerJoin InnerJoin
 		{
-			m_auto_detect = v;
+			get => m_stroker.inner_join();
+			set => m_stroker.inner_join(value);
 		}
 
-		public bool AutoDetectOrientation()
+		public double InnerMiterLimit
 		{
-			return m_auto_detect;
+			get => m_stroker.inner_miter_limit();
+			set => m_stroker.inner_miter_limit(value);
 		}
 
-		public void InnerJoin(InnerJoin ij)
+		public LineCap LineCap
 		{
-			m_stroker.inner_join(ij);
+			get => m_stroker.line_cap();
+			set => m_stroker.line_cap(value);
 		}
 
-		public InnerJoin InnerJoin()
+		public LineJoin LineJoin
 		{
-			return m_stroker.inner_join();
+			get => m_stroker.line_join();
+			set => m_stroker.line_join(value);
 		}
 
-		public void InnerMiterLimit(double ml)
+		public double MiterLimit
 		{
-			m_stroker.inner_miter_limit(ml);
+			get => m_stroker.miter_limit();
+			set => m_stroker.miter_limit(value);
 		}
 
-		public double InnerMiterLimit()
+		public double Shorten
 		{
-			return m_stroker.inner_miter_limit();
+			get => m_shorten;
+			set => m_shorten = value;
 		}
 
-		public void LineCap(LineCap lc)
+		public double Width
 		{
-			m_stroker.line_cap(lc);
-		}
-
-		public LineCap LineCap()
-		{
-			return m_stroker.line_cap();
-		}
-
-		public void LineJoin(LineJoin lj)
-		{
-			m_stroker.line_join(lj);
-		}
-		public LineJoin LineJoin()
-		{
-			return m_stroker.line_join();
-		}
-		public void MiterLimit(double ml)
-		{
-			m_stroker.miter_limit(ml);
-		}
-
-		public double MiterLimit()
-		{
-			return m_stroker.miter_limit();
+			get => m_stroker.width();
+			set => m_stroker.width(value);
 		}
 
 		public void MiterLimitTheta(double t)
@@ -159,16 +145,6 @@ namespace MatterHackers.Agg.VertexSource
 			}
 			m_status = StrokeMath.status_e.ready;
 			m_src_vertex = 0;
-		}
-
-		public void Shorten(double s)
-		{
-			m_shorten = s;
-		}
-
-		public double Shorten()
-		{
-			return m_shorten;
 		}
 
 		public ShapePath.FlagsAndCommand Vertex(ref double x, ref double y)
@@ -235,16 +211,6 @@ namespace MatterHackers.Agg.VertexSource
 				}
 			}
 			return cmd;
-		}
-
-		public double width()
-		{
-			return m_stroker.width();
-		}
-
-		public void Width(double w)
-		{
-			m_stroker.width(w);
 		}
 	}
 }
