@@ -29,73 +29,34 @@ namespace MatterHackers.PolygonMesh.Csg
 	// Public interface implementation
 	public static class CsgOperations
 	{
-		public static Solid SolidFromMesh(Mesh model)
+		public static Solid SolidFromMesh(Mesh mesh)
 		{
-			throw new NotImplementedException();
-			//var solid = new Solid();
-			//List<Vector3> vertices = new List<Vector3>();
-			//List<int> indices = new List<int>();
+			var solid = new Solid();
 
-			//int nextIndex = 0;
-			//foreach (Face face in model.Faces)
-			//{
-			//	List<IVertex> triangle = new List<IVertex>();
-			//	VectorMath.Vector3 first = VectorMath.Vector3.Zero;
-			//	VectorMath.Vector3 last = VectorMath.Vector3.Zero;
-			//	bool isFirst = true;
-			//	int count = 0;
-			//	foreach (FaceEdge faceEdge in face.FaceEdges())
-			//	{
-			//		VectorMath.Vector3 position = faceEdge.FirstVertex.Position;
-			//		if(isFirst)
-			//		{
-			//			first = position;
-			//			isFirst = false;
-			//		}
-			//		if (count < 3)
-			//		{
-			//			vertices.Add(new Vector3(position.X, position.Y, position.Z));
-			//			indices.Add(nextIndex++);
-			//		}
-			//		else // add an entire new polygon
-			//		{
-			//			vertices.Add(new Vector3(first.X, first.Y, first.Z));
-			//			indices.Add(nextIndex++);
-			//			vertices.Add(new Vector3(last.X, last.Y, last.Z));
-			//			indices.Add(nextIndex++);
-			//			vertices.Add(new Vector3(position.X, position.Y, position.Z));
-			//			indices.Add(nextIndex++);
-			//		}
-			//		count++;
-			//		last = position;
-			//	}
-			//}
+			solid.setData(mesh.Vertices.ToArray(), mesh.Faces.ToIntArray());
 
-			//solid.setData(vertices.ToArray(), indices.ToArray());
-
-			//return solid;
+			return solid;
 		}
 
 		public static Mesh MeshFromSolid(Solid solid)
 		{
-			throw new NotImplementedException();
-			//Mesh model = new Mesh();
-			//List<IVertex> vertices = new List<IVertex>();
-			//var indices = solid.getIndices();
-			//var solidVertices = solid.getVertices();
-			//for (int vertexIndex = 0; vertexIndex < indices.Length; vertexIndex++)
-			//{
-			//	var position = solidVertices[indices[vertexIndex]];
-			//	vertices.Add(model.CreateVertex(position.X, position.Y, position.Z));
+			Mesh model = new Mesh();
+			var vertices = new List<Vector3>();
+			var indices = solid.getIndices();
+			var solidVertices = solid.getVertices();
+			for (int vertexIndex = 0; vertexIndex < indices.Length; vertexIndex++)
+			{
+				var position = solidVertices[indices[vertexIndex]];
+				vertices.Add(new Vector3(position.X, position.Y, position.Z));
 
-			//	if (vertices.Count > 2)
-			//	{
-			//		model.CreateFace(vertices.ToArray());
-			//		vertices.Clear();
-			//	}
-			//}
+				if (vertices.Count > 2)
+				{
+					model.CreateFace(vertices.ToArray());
+					vertices.Clear();
+				}
+			}
 
-			//return model;
+			return model;
 		}
 
 		public static Mesh Union(Mesh a, Mesh b)
