@@ -21,41 +21,9 @@ namespace MatterHackers.Agg.VertexSource
 {
 	public interface IGenerator
 	{
-		void RemoveAll();
-
 		void AddVertex(double x, double y, ShapePath.FlagsAndCommand unknown);
 
-		void Rewind(int path_id);
-
-		ShapePath.FlagsAndCommand Vertex(ref double x, ref double y);
-
-		LineCap LineCap();
-
-		LineJoin LineJoin();
-
-		InnerJoin InnerJoin();
-
-		void LineCap(LineCap lc);
-
-		void LineJoin(LineJoin lj);
-
-		void InnerJoin(InnerJoin ij);
-
-		void Width(double w);
-
-		void MiterLimit(double ml);
-
-		void MiterLimitTheta(double t);
-
-		void InnerMiterLimit(double ml);
-
 		void ApproximationScale(double approxScale);
-
-		double width();
-
-		double MiterLimit();
-
-		double InnerMiterLimit();
 
 		double ApproximationScale();
 
@@ -63,8 +31,38 @@ namespace MatterHackers.Agg.VertexSource
 
 		bool AutoDetectOrientation();
 
+		InnerJoin InnerJoin();
+
+		void InnerJoin(InnerJoin ij);
+
+		void InnerMiterLimit(double ml);
+
+		double InnerMiterLimit();
+
+		LineCap LineCap();
+
+		void LineCap(LineCap lc);
+
+		LineJoin LineJoin();
+
+		void LineJoin(LineJoin lj);
+
+		void MiterLimit(double ml);
+
+		double MiterLimit();
+
+		void MiterLimitTheta(double t);
+
+		void RemoveAll();
+		void Rewind(int path_id);
+
 		void Shorten(double s);
 
 		double Shorten();
+
+		ShapePath.FlagsAndCommand Vertex(ref double x, ref double y);
+		double width();
+
+		void Width(double w);
 	};
 }

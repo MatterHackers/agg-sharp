@@ -30,14 +30,16 @@ namespace MatterHackers.Agg.VertexSource
 			width(inWidth);
 		}
 
-		public void LineCap(LineCap lc)
+		public double Width { get { return width(); } set { width(value); } }
+
+		public void ApproximationScale(double approxScale)
 		{
-			this.Generator.LineCap(lc);
+			this.Generator.ApproximationScale(approxScale);
 		}
 
-		public void LineJoin(LineJoin lj)
+		public double ApproximationScale()
 		{
-			this.Generator.LineJoin(lj);
+			return this.Generator.ApproximationScale();
 		}
 
 		public void InnerJoin(InnerJoin ij)
@@ -45,36 +47,9 @@ namespace MatterHackers.Agg.VertexSource
 			this.Generator.InnerJoin(ij);
 		}
 
-		public LineCap LineCap()
-		{
-			return this.Generator.LineCap();
-		}
-
-		public LineJoin LineJoin()
-		{
-			return this.Generator.LineJoin();
-		}
-
 		public InnerJoin InnerJoin()
 		{
 			return this.Generator.InnerJoin();
-		}
-
-		public double Width { get { return width(); } set { width(value); } }
-
-		public void width(double w)
-		{
-			this.Generator.Width(w);
-		}
-
-		public void MiterLimit(double ml)
-		{
-			this.Generator.MiterLimit(ml);
-		}
-
-		public void MiterLimitTheta(double t)
-		{
-			this.Generator.MiterLimitTheta(t);
 		}
 
 		public void InnerMiterLimit(double ml)
@@ -82,14 +57,32 @@ namespace MatterHackers.Agg.VertexSource
 			this.Generator.InnerMiterLimit(ml);
 		}
 
-		public void ApproximationScale(double approxScale)
+		public double InnerMiterLimit()
 		{
-			this.Generator.ApproximationScale(approxScale);
+			return this.Generator.InnerMiterLimit();
 		}
 
-		public double width()
+		public void LineCap(LineCap lc)
 		{
-			return this.Generator.width();
+			this.Generator.LineCap(lc);
+		}
+
+		public LineCap LineCap()
+		{
+			return this.Generator.LineCap();
+		}
+
+		public void LineJoin(LineJoin lj)
+		{
+			this.Generator.LineJoin(lj);
+		}
+		public LineJoin LineJoin()
+		{
+			return this.Generator.LineJoin();
+		}
+		public void MiterLimit(double ml)
+		{
+			this.Generator.MiterLimit(ml);
 		}
 
 		public double MiterLimit()
@@ -97,14 +90,9 @@ namespace MatterHackers.Agg.VertexSource
 			return this.Generator.MiterLimit();
 		}
 
-		public double InnerMiterLimit()
+		public void MiterLimitTheta(double t)
 		{
-			return this.Generator.InnerMiterLimit();
-		}
-
-		public double ApproximationScale()
-		{
-			return this.Generator.ApproximationScale();
+			this.Generator.MiterLimitTheta(t);
 		}
 
 		public void Shorten(double s)
@@ -115,6 +103,15 @@ namespace MatterHackers.Agg.VertexSource
 		public double Shorten()
 		{
 			return this.Generator.Shorten();
+		}
+
+		public void width(double w)
+		{
+			this.Generator.Width(w);
+		}
+		public double width()
+		{
+			return this.Generator.width();
 		}
 	}
 }
