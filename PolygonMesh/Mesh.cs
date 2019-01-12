@@ -67,17 +67,7 @@ namespace MatterHackers.PolygonMesh
 			{
 				if(_faceNormals.Count != Faces.Count)
 				{
-					// calculate them from the faces
-					_faceNormals = new List<Vector3Float>(Faces.Count);
-					for(int i=0; i<Faces.Count; i++)
-					{
-						var position0 = Vertices[Faces[i].v0];
-						var position1 = Vertices[Faces[i].v1];
-						var position2 = Vertices[Faces[i].v2];
-						var faceEdge1Minus0 = position1 - position0;
-						var face2Minus0 = position2 - position0;
-						_faceNormals.Add(faceEdge1Minus0.Cross(face2Minus0).GetNormal());
-					}
+					CalculateNormals();
 				}
 				return _faceNormals;
 			}
@@ -257,8 +247,17 @@ namespace MatterHackers.PolygonMesh
 
 		public void CalculateNormals()
 		{
-			// TODO: add a property bag of normals for the faces
-			throw new NotImplementedException();
+			// calculate them from the faces
+			_faceNormals = new List<Vector3Float>(Faces.Count);
+			for (int i = 0; i < Faces.Count; i++)
+			{
+				var position0 = Vertices[Faces[i].v0];
+				var position1 = Vertices[Faces[i].v1];
+				var position2 = Vertices[Faces[i].v2];
+				var faceEdge1Minus0 = position1 - position0;
+				var face2Minus0 = position2 - position0;
+				_faceNormals.Add(faceEdge1Minus0.Cross(face2Minus0).GetNormal());
+			}
 		}
 
 		public void Translate(Vector3 offset)
