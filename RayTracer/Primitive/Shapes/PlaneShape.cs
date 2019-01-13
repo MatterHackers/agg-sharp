@@ -28,8 +28,8 @@ namespace MatterHackers.RayTracer
 
 		public PlaneShape(Vector3 planeNormal, double distanceFromOrigin, ColorF color, ColorF oddcolor, double reflection, double transparency)
 		{
-			plane.PlaneNormal = planeNormal;
-			plane.DistanceToPlaneFromOrigin = distanceFromOrigin;
+			plane.Normal = planeNormal;
+			plane.DistanceFromOrigin = distanceFromOrigin;
 			//Color = color;
 			OddColor = oddcolor;
 			//Transparency = transparency;
@@ -61,7 +61,7 @@ namespace MatterHackers.RayTracer
 				info.closestHitObject = this;
 				info.hitType = IntersectionType.FrontFace;
 				info.HitPosition = ray.origin + ray.directionNormal * distanceToHit;
-				info.normalAtHit = plane.PlaneNormal;
+				info.normalAtHit = plane.Normal;
 				info.distanceToHit = distanceToHit;
 
 				return info;
@@ -82,14 +82,14 @@ namespace MatterHackers.RayTracer
 
 		public override string ToString()
 		{
-			return string.Format("Sphere {0}x+{1}y+{2}z+{3}=0)", plane.PlaneNormal.X, plane.PlaneNormal.Y, plane.PlaneNormal.Z, plane.DistanceToPlaneFromOrigin);
+			return string.Format("Sphere {0}x+{1}y+{2}z+{3}=0)", plane.Normal.X, plane.Normal.Y, plane.Normal.Z, plane.DistanceFromOrigin);
 		}
 
 		public override (double u, double v) GetUv(IntersectInfo info)
 		{
-			Vector3 Position = plane.PlaneNormal;
+			Vector3 Position = plane.Normal;
 			Vector3 vecU = new Vector3(Position.Y, Position.Z, -Position.X);
-			Vector3 vecV = Vector3Ex.Cross(vecU, plane.PlaneNormal);
+			Vector3 vecV = Vector3Ex.Cross(vecU, plane.Normal);
 
 			double u = Vector3Ex.Dot(info.HitPosition, vecU);
 			double v = Vector3Ex.Dot(info.HitPosition, vecV);

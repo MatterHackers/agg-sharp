@@ -174,10 +174,10 @@ namespace Net3dBool
 		/// <returns>intersection point.If they don't intersect, return null</returns>
 		public Vector3 ComputePlaneIntersection(Plane plane)
 		{
-			double distanceToStartFromOrigin = Vector3Ex.Dot(plane.PlaneNormal, startPoint);
+			double distanceToStartFromOrigin = Vector3Ex.Dot(plane.Normal, startPoint);
 
-			double distanceFromPlane = distanceToStartFromOrigin - plane.DistanceToPlaneFromOrigin;
-			double denominator = Vector3Ex.Dot(plane.PlaneNormal, Direction);
+			double distanceFromPlane = distanceToStartFromOrigin - plane.DistanceFromOrigin;
+			double denominator = Vector3Ex.Dot(plane.Normal, Direction);
 
 			if (Math.Abs(denominator) < EqualityTolerance)
 			{
