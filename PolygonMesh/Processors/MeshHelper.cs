@@ -102,20 +102,19 @@ namespace MatterHackers.PolygonMesh
 
 		public static void CopyFaces(this Mesh copyTo, Mesh copyFrom)
 		{
-			throw new NotImplementedException();
-			//foreach (Face face in copyFrom.Faces)
-			//{
-			//	List<IVertex> faceVertices = new List<IVertex>();
-			//	foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
-			//	{
-			//		// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
-			//		IVertex newVertex = copyTo.CreateVertex(faceEdgeToAdd.FirstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
-			//		faceVertices.Add(newVertex);
-			//	}
+			int vStart = copyTo.Vertices.Count;
+			// add all the vertices
+			for (int i = 0; i < copyFrom.Vertices.Count; i++)
+			{
+				copyTo.Vertices.Add(copyFrom.Vertices[i]);
+			}
 
-			//	// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
-			//	copyTo.CreateFace(faceVertices.ToArray(), CreateOption.CreateNew);
-			//}
+			// add all the faces
+			for(int i=0; i<copyFrom.Faces.Count; i++)
+			{
+				var face = copyFrom.Faces[i];
+				copyTo.Faces.Add((face.v0 + vStart, face.v1 + vStart, face.v2 + vStart));
+			}
 		}
 
 		public static void RemoveTexture(this Mesh mesh, ImageBuffer texture, int index)

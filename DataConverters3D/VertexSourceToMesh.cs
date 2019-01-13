@@ -132,8 +132,7 @@ namespace MatterHackers.DataConverters3D
 				Mesh extrudedVertexSource = TriangulateFaces(source, teselatedSource);
 				extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
 				extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(currentAngle));
-				throw new NotImplementedException();
-				//extrudedVertexSource.ReverseFaceEdges();
+				extrudedVertexSource.ReverseFaces();
 				mesh.CopyFaces(extrudedVertexSource);
 			}
 
@@ -227,7 +226,7 @@ namespace MatterHackers.DataConverters3D
 					continue;
 				}
 
-				mesh.CreateFace(new Vector3[] { new Vector3(v0, 0), new Vector3(v1, 0), new Vector3(v2, 0) });
+				mesh.CreateFace(new Vector3[] { new Vector3(v2, 0), new Vector3(v1, 0), new Vector3(v0, 0) });
 			}
 
 			return mesh;

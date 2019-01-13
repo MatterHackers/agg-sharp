@@ -194,6 +194,20 @@ namespace MatterHackers.PolygonMesh
 			return false;
 		}
 
+		public void ReverseFaces()
+		{
+			for(int i=0; i<Faces.Count; i++)
+			{
+				ReverseFaces(i);
+			}
+		}
+
+		public void ReverseFaces(int faceIndex)
+		{
+			var hold = Faces[faceIndex];
+			Faces[faceIndex] = (hold.v2, hold.v1, hold.v0);
+		}
+
 		public long GetLongHashCode()
 		{
 			unchecked
