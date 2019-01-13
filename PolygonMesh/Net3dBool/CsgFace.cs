@@ -152,7 +152,7 @@ namespace Net3dBool
 		/// <returns>the closest distance from the vertex to the plane</returns>
 		public double DistanceFromPlane(Vertex vertex)
 		{
-			double distToV1 = this.Plane.DistanceToPlaneFromOrigin;
+			double distToV1 = this.Plane.DistanceFromOrigin;
 			double distToVertex = Vector3Ex.Dot(Normal, vertex.Position);
 			double distFromFacePlane = distToVertex - distToV1;
 			return distFromFacePlane;
@@ -198,7 +198,7 @@ namespace Net3dBool
 		{
 			get
 			{
-				if (planeCache.PlaneNormal == Vector3.Zero)
+				if (planeCache.Normal == Vector3.Zero)
 				{
 					Vector3 p1 = v1.Position;
 					Vector3 p2 = v2.Position;
@@ -210,7 +210,7 @@ namespace Net3dBool
 			}
 		}
 
-		public Vector3 Normal => Plane.PlaneNormal;
+		public Vector3 Normal => Plane.Normal;
 
 		public void Invert()
 		{

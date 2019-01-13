@@ -59,30 +59,99 @@ namespace MatterHackers.PolygonMesh
 			return plane;
 		}
 
-		public static Matrix4X4 GetMaxFaceProjection(this Mesh mesh, int faceIndex, ImageBuffer textureToUse, Matrix4X4? initialTransform = null)
+		public static Plane GetPlane(this Mesh mesh, int faceIndex)
 		{
-			//// If not set than make it identity
+			var face = mesh.Faces[faceIndex];
+			var verts = mesh.Vertices;
+			return new Plane(verts[face.v0], verts[face.v1], verts[face.v2]);
+		}
+
+		public static IEnumerable<int> GetCoplanerFaces(this Mesh mesh, Plane plane)
+		{
+			double normalTolerance = .001;
+			double distanceTolerance = .001;
+
+			// TODO: check if the mesh has a face acceleration structure on it (if so use it)
+			var normalToleranceSquared = normalTolerance * normalTolerance;
+			for(int faceIndex=0; faceIndex<mesh.Faces.Count; faceIndex++)
+			{
+				var face = mesh.Faces[faceIndex];
+				var faceNormal = mesh.FaceNormals[faceIndex];
+				var distanceFromOrigin = faceNormal.Dot(mesh.Vertices[face.v0]);
+
+				if (Math.Abs(plane.DistanceFromOrigin - distanceFromOrigin) <= distanceTolerance
+					&& (plane.Normal - new Vector3(faceNormal)).LengthSquared <= normalToleranceSquared)
+				{
+					yield return faceIndex;
+				}
+			}
+		}
+
+		public static IEnumerable<int> GetCoplanerFaces(this Mesh mesh, int faceIndex)
+		{
+			var plane = mesh.GetPlane(faceIndex);
+
+			return mesh.GetCoplanerFaces(plane);
+		}
+
+		public static Matrix4X4 GetMaxPlaneProjection(this Mesh mesh, IEnumerable<int> faces, ImageBuffer textureToUse, Matrix4X4? initialTransform = null)
+		{
+			// If not set than make it identity
 			var firstTransform = initialTransform == null ? Matrix4X4.Identity : (Matrix4X4)initialTransform;
 
-			var textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(mesh.FaceNormals[faceIndex].AsVector3(), Vector3.UnitZ));
+			var textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(mesh.FaceNormals[faces.First()].AsVector3(), Vector3.UnitZ));
 
 			var bounds = RectangleDouble.ZeroIntersection;
-			foreach (int vertexIndex in new int[] { mesh.Faces[faceIndex].v0, mesh.Faces[faceIndex].v1, mesh.Faces[faceIndex].v2 })
+
+			foreach (var face in faces)
 			{
-				var edgeStartPosition = mesh.Vertices[vertexIndex];
-				var textureUv = edgeStartPosition.Transform(textureCoordinateMapping);
-				bounds.ExpandToInclude(new Vector2(textureUv));
+				foreach (int vertexIndex in new int[] { mesh.Faces[face].v0, mesh.Faces[face].v1, mesh.Faces[face].v2 })
+				{
+					var edgeStartPosition = mesh.Vertices[vertexIndex];
+					var textureUv = edgeStartPosition.Transform(textureCoordinateMapping);
+					bounds.ExpandToInclude(new Vector2(textureUv));
+				}
 			}
+
 			var centering = Matrix4X4.CreateTranslation(new Vector3(-bounds.Left, -bounds.Bottom, 0));
 			var scaling = Matrix4X4.CreateScale(new Vector3(1 / bounds.Width, 1 / bounds.Height, 1));
 
 			return textureCoordinateMapping * firstTransform * centering * scaling;
 		}
 
+		public static Matrix4X4 GetMaxPlaneProjection(this Mesh mesh, int face, ImageBuffer textureToUse, Matrix4X4? initialTransform = null)
+		{
+			// If not set than make it identity
+			var firstTransform = initialTransform == null ? Matrix4X4.Identity : (Matrix4X4)initialTransform;
+
+			var textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(mesh.FaceNormals[face].AsVector3(), Vector3.UnitZ));
+
+			var bounds = RectangleDouble.ZeroIntersection;
+
+			foreach (int vertexIndex in new int[] { mesh.Faces[face].v0, mesh.Faces[face].v1, mesh.Faces[face].v2 })
+			{
+				var edgeStartPosition = mesh.Vertices[vertexIndex];
+				var textureUv = edgeStartPosition.Transform(textureCoordinateMapping);
+				bounds.ExpandToInclude(new Vector2(textureUv));
+			}
+
+			var centering = Matrix4X4.CreateTranslation(new Vector3(-bounds.Left, -bounds.Bottom, 0));
+			var scaling = Matrix4X4.CreateScale(new Vector3(1 / bounds.Width, 1 / bounds.Height, 1));
+
+			return textureCoordinateMapping * firstTransform * centering * scaling;
+		}
+
+		public static void PlaceTextureOnFaces(this Mesh mesh, int face, ImageBuffer textureToUse)
+		{
+			//// planer project along the normal of this face
+			var faces = mesh.GetCoplanerFaces(face);
+			mesh.PlaceTextureOnFaces(faces, textureToUse, mesh.GetMaxPlaneProjection(faces, textureToUse));
+		}
+
 		public static void PlaceTextureOnFace(this Mesh mesh, int face, ImageBuffer textureToUse)
 		{
 			//// planer project along the normal of this face
-			mesh.PlaceTextureOnFace(face, textureToUse, mesh.GetMaxFaceProjection(face, textureToUse));
+			mesh.PlaceTextureOnFace(face, textureToUse, mesh.GetMaxPlaneProjection(face, textureToUse));
 		}
 
 		public static void PlaceTextureOnFace(this Mesh mesh, int face, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
@@ -97,6 +166,25 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			mesh.FaceTextures.Add(face, new FaceTextureData(textureToUse, uvs[0], uvs[1], uvs[2]));
+
+			mesh.MarkAsChanged();
+		}
+
+		public static void PlaceTextureOnFaces(this Mesh mesh, IEnumerable<int> faces, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
+		{
+			var uvs = new Vector2Float[3];
+			foreach (var face in faces)
+			{
+				int uvIndex = 0;
+				foreach (int vertexIndex in new int[] { mesh.Faces[face].v0, mesh.Faces[face].v1, mesh.Faces[face].v2 })
+				{
+					var edgeStartPosition = mesh.Vertices[vertexIndex];
+					var textureUv = edgeStartPosition.Transform(textureCoordinateMapping);
+					uvs[uvIndex++] = new Vector2Float(textureUv);
+				}
+
+				mesh.FaceTextures.Add(face, new FaceTextureData(textureToUse, uvs[0], uvs[1], uvs[2]));
+			}
 			mesh.MarkAsChanged();
 		}
 
@@ -135,35 +223,6 @@ namespace MatterHackers.PolygonMesh
 			//foreach (FaceEdge faceEdge in face.FaceEdges())
 			//{
 			//	face.ContainingMesh.TextureUV.Remove((faceEdge, index));
-			//}
-		}
-
-		/// <summary>
-		/// Get the planes for all the faces in a mesh. You can use the Normal on the face
-		/// and the distanceFromOrigin to have the plane of the face.
-		/// </summary>
-		/// <param name="mesh"></param>
-		/// <returns></returns>
-		public static IEnumerable<(int face, double distanceFromOrigin)> FacePlanes(this Mesh mesh)
-		{
-			throw new NotImplementedException();
-			//foreach(var face in mesh.Faces)
-			//{
-			//	yield return (face, Vector3Ex.Dot(face.Normal, face.firstFaceEdge.FirstVertex.Position));
-			//}
-		}
-
-		public static IEnumerable<(int face, double distanceFromOrign)> GetPlanerFaces(this Mesh mesh, Vector3 normal, double distanceFromOrigin, double normalTolerance = 0, double distanceTolerance = 0)
-		{
-			throw new NotImplementedException();
-			//var normalToleranceSquared = normalTolerance * normalTolerance;
-			//foreach (var facePlane in mesh.FacePlanes())
-			//{
-			//	if (Math.Abs(facePlane.distanceFromOrigin - distanceFromOrigin) <= distanceTolerance
-			//		&& (facePlane.face.Normal - normal).LengthSquared <= normalToleranceSquared)
-			//	{
-			//		yield return facePlane;
-			//	}
 			//}
 		}
 

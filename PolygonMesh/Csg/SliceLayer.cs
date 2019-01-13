@@ -70,10 +70,10 @@ namespace MatterHackers.PolygonMesh.Csg
 				if (_slicePlane != value)
 				{
 					_slicePlane = value;
-					var n = _slicePlane.PlaneNormal;
+					var n = _slicePlane.Normal;
 					Vector3 up = new Vector3(n.Y, n.Z, n.X);
 					invFlatentMatrix = Matrix4X4.LookAt(Vector3.Zero, n, up);
-					invFlatentMatrix *= Matrix4X4.CreateTranslation(n * _slicePlane.DistanceToPlaneFromOrigin);
+					invFlatentMatrix *= Matrix4X4.CreateTranslation(n * _slicePlane.DistanceFromOrigin);
 					flatentMatrix = invFlatentMatrix.Inverted;
 				}
 			}
