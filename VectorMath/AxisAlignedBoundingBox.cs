@@ -147,6 +147,17 @@ namespace MatterHackers.VectorMath
 			MaxXYZ.Z = Math.Max(MaxXYZ.Z, position.Z);
 		}
 
+		public void ExpandToInclude(Vector3Float position)
+		{
+			MinXYZ.X = Math.Min(MinXYZ.X, position.X);
+			MinXYZ.Y = Math.Min(MinXYZ.Y, position.Y);
+			MinXYZ.Z = Math.Min(MinXYZ.Z, position.Z);
+
+			MaxXYZ.X = Math.Max(MaxXYZ.X, position.X);
+			MaxXYZ.Y = Math.Max(MaxXYZ.Y, position.Y);
+			MaxXYZ.Z = Math.Max(MaxXYZ.Z, position.Z);
+		}
+
 		/// <summary>
 		/// Gets the corners by quadrant of the bottom
 		/// </summary>

@@ -121,7 +121,7 @@ namespace MatterHackers.VectorMath
 			Z = v.Z;
 		}
 
-		
+
 
 		#endregion Constructors
 
@@ -682,11 +682,11 @@ namespace MatterHackers.VectorMath
 		/// <returns>a when blend=0, b when blend=1, and a linear combination otherwise</returns>
 		public static Vector3 Lerp(Vector3 a, Vector3 b, double blend)
 		{
-			if(blend == 0)
+			if (blend == 0)
 			{
 				return a;
 			}
-			if(blend == 1)
+			if (blend == 1)
 			{
 				return b;
 			}
@@ -960,11 +960,9 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public long GetLongHashCode()
 		{
-			long hash = 19;
-
-			hash = hash * 31 + BitConverter.DoubleToInt64Bits(X);
-			hash = hash * 31 + BitConverter.DoubleToInt64Bits(Y);
-			hash = hash * 31 + BitConverter.DoubleToInt64Bits(Z);
+			long hash = Vector4.Hash64(X, Vector4.xHash, 3);
+			hash ^= Vector4.Hash64(Y, Vector4.yHash, 5);
+			hash ^= Vector4.Hash64(Z, Vector4.zHash, 7);
 
 			return hash;
 		}

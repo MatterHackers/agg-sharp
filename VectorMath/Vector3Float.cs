@@ -480,14 +480,9 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public long GetLongHashCode()
 		{
-			long hash = 19;
-
-			unsafe
-			{
-				hash = hash * 31 + BitConverter.DoubleToInt64Bits(X);
-				hash = hash * 31 + BitConverter.DoubleToInt64Bits(Y);
-				hash = hash * 31 + BitConverter.DoubleToInt64Bits(Z);
-			}
+			long hash = Vector4.Hash64(X, Vector4.xHash, 3);
+			hash ^= Vector4.Hash64(Y, Vector4.yHash, 5);
+			hash ^= Vector4.Hash64(Z, Vector4.zHash, 7);
 
 			return hash;
 		}

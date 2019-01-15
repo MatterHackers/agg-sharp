@@ -94,12 +94,23 @@ namespace MatterHackers.PolygonMesh
 
 		private static Mesh CreateHullMesh(Mesh mesh)
 		{
+			var bounds = AxisAlignedBoundingBox.Empty();
 			// Get the convex hull for the mesh
 			var cHVertexList = new List<CHVertex>();
 			foreach (var position in mesh.Vertices)
 			{
 				cHVertexList.Add(new CHVertex(position));
+				bounds.ExpandToInclude(position);
 			}
+
+			if(cHVertexList.Count == 0
+				|| bounds.XSize == 0
+				|| bounds.YSize == 0
+				|| bounds.ZSize == 0)
+			{
+				return mesh;
+			}
+
 			var convexHull = ConvexHull<CHVertex, CHFace>.Create(cHVertexList, .01);
 			if (convexHull != null)
 			{

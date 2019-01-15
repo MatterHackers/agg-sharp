@@ -889,6 +889,23 @@ namespace MatterHackers.VectorMath
 			return new { X, Y, Z, W }.GetHashCode();
 		}
 
+		public static long RotateLeft(long value, int count)
+		{
+			ulong val = (ulong)value;
+			return (long)((val << count) | (val >> (64 - count)));
+		}
+
+		public static long Hash64(double value, long xor, int roll)
+		{
+			var hash = BitConverter.ToInt64(BitConverter.GetBytes(value), 0) ^ xor;
+			return RotateLeft(hash, roll);
+		}
+
+		public static long xHash { get { unchecked { return (long)0x2673c784894d4f10; } } }
+		public static long yHash { get { unchecked { return (long)0xd202dbcb6c7c5537; } } }
+		public static long zHash { get { unchecked { return (long)0xae56da48b3c4d228; } } }
+		public static long wHash { get { unchecked { return (long)0x194260cb7ddb6871; } } }
+
 		/// <summary>
 		/// return a 64 bit hash code proposed by Jon Skeet
 		// http://stackoverflow.com/questions/8094867/good-gethashcode-override-for-list-of-foo-objects-respecting-the-order
@@ -896,12 +913,10 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public long GetLongHashCode()
 		{
-			long hash = 19;
-
-			hash = hash * 31 + BitConverter.DoubleToInt64Bits(X);
-			hash = hash * 31 + BitConverter.DoubleToInt64Bits(Y);
-			hash = hash * 31 + BitConverter.DoubleToInt64Bits(Z);
-			hash = hash * 31 + BitConverter.DoubleToInt64Bits(W);
+			long hash = Hash64(X, xHash, 3);
+			hash ^= Hash64(Y, yHash, 5);
+			hash ^= Hash64(Z, zHash, 7);
+			hash ^= Hash64(W, wHash, 9);
 
 			return hash;
 		}
