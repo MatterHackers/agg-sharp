@@ -106,7 +106,7 @@ namespace MatterHackers.PolygonMesh
 					var vertexIndices = new int[] { iFace.v0, iFace.v1, iFace.v2 };
 					foreach (var vertexIndex in vertexIndices)
 					{
-						double distanceToPlan = mesh.FaceNormals[checkFace].Dot(mesh.Vertices[vertexIndex] - pointOnCheckFace);
+						double distanceToPlan = mesh.Faces[checkFace].normal.Dot(mesh.Vertices[vertexIndex] - pointOnCheckFace);
 						if (Math.Abs(distanceToPlan) > considerCoplaner)
 						{
 							if (distanceToPlan < 0)
@@ -156,7 +156,7 @@ namespace MatterHackers.PolygonMesh
 					var vertexIndices = new int[] { checkFace.v0, checkFace.v1, checkFace.v2 };
 					foreach (var vertexIndex in vertexIndices)
 					{
-						double distanceToPlan = mesh.FaceNormals[checkFaceIndex].Dot(mesh.Vertices[vertexIndex] - pointOnCheckFace);
+						double distanceToPlan = mesh.Faces[checkFaceIndex].normal.Dot(mesh.Vertices[vertexIndex] - pointOnCheckFace);
 						if (Math.Abs(distanceToPlan) > considerCoplaner)
 						{
 							if (distanceToPlan > 0)
@@ -241,7 +241,7 @@ namespace MatterHackers.PolygonMesh
 	{
 		public static BspNode RenderOrder(this BspNode node, Mesh mesh, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
 		{
-			var faceNormalInViewSpace = mesh.FaceNormals[node.Index].TransformNormalInverse(invMeshToViewTransform);
+			var faceNormalInViewSpace = mesh.Faces[node.Index].normal.TransformNormalInverse(invMeshToViewTransform);
 			var pointOnFaceInViewSpace = mesh.Vertices[mesh.Faces[node.Index].v0].Transform(meshToViewTransform);
 			var infrontOfFace = faceNormalInViewSpace.Dot(pointOnFaceInViewSpace) < 0;
 

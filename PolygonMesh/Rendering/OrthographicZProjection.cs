@@ -43,7 +43,7 @@ namespace MatterHackers.PolygonMesh.Rendering
 			for (int i = 0; i < mesh.Faces.Count; i++)
 			{
 				var face = mesh.Faces[i];
-				if (mesh.FaceNormals[i].TransformNormal(matrix).Z > 0)
+				if (mesh.Faces[i].normal.TransformNormal(matrix).Z > 0)
 				{
 					polygonProjected.remove_all();
 

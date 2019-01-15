@@ -174,7 +174,7 @@ namespace MatterHackers.RenderOpenGl
 								if ((edgeI.start == edgeJ.start && edgeI.end == edgeJ.end)
 									|| (edgeI.start == edgeJ.end && edgeI.end == edgeJ.start))
 								{
-									double angle = mesh.FaceNormals[edgeI.face].CalculateAngle(mesh.FaceNormals[edgeJ.face]);
+									double angle = mesh.Faces[edgeI.face].normal.CalculateAngle(mesh.Faces[edgeJ.face].normal);
 									if (angle > MathHelper.Tau * .1)
 									{
 										AddVertex(filteredEdgeLines, edgeI.start, edgeI.end);
@@ -198,7 +198,7 @@ namespace MatterHackers.RenderOpenGl
 								if ((edgeI.start == edgeJ.start && edgeI.end == edgeJ.end)
 									|| (edgeI.start == edgeJ.end && edgeI.end == edgeJ.start))
 								{
-									double angle = mesh.FaceNormals[edgeI.face].CalculateAngle(mesh.FaceNormals[edgeJ.face]);
+									double angle = mesh.Faces[edgeI.face].normal.CalculateAngle(mesh.Faces[edgeJ.face].normal);
 									if (angle > MathHelper.Tau * .1)
 									{
 										AddVertex(filteredEdgeLines, edgeI.start, edgeI.end);

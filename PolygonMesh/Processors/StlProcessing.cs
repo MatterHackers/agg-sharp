@@ -70,7 +70,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 							var face = mesh.Faces[faceIndex];
 
-							streamWriter.WriteLine("  facet normal " + FormatForStl(mesh.FaceNormals[faceIndex]));
+							streamWriter.WriteLine("  facet normal " + FormatForStl(mesh.Faces[faceIndex].normal));
 							streamWriter.WriteLine("    outer loop");
 							streamWriter.WriteLine("      vertex " + FormatForStl(mesh.Vertices[face.v0]));
 							streamWriter.WriteLine("      vertex " + FormatForStl(mesh.Vertices[face.v0]));
@@ -104,7 +104,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 							binaryPolyCount++;
 							// save the normal (all 0 so it can compress better)
-							WriteToBinaryStl(bw, mesh.FaceNormals[faceIndex]);
+							WriteToBinaryStl(bw, mesh.Faces[faceIndex].normal);
 							// save the position
 							WriteToBinaryStl(bw, mesh.Vertices[face.v0]);
 							WriteToBinaryStl(bw, mesh.Vertices[face.v1]);
@@ -221,7 +221,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			Stopwatch maxProgressReport = new Stopwatch();
 			maxProgressReport.Start();
-			Mesh meshFromStlFile = new Mesh();
+			Mesh mesh = new Mesh();
 			long bytesInFile = stlStream.Length;
 			if (bytesInFile <= 80)
 			{
@@ -245,9 +245,9 @@ namespace MatterHackers.PolygonMesh.Processors
 					return index;
 				}
 
-				var count = meshFromStlFile.Vertices.Count;
+				var count = mesh.Vertices.Count;
 				postionToIndex.Add((position.X, position.Y, position.Z), count);
-				meshFromStlFile.Vertices.Add(position);
+				mesh.Vertices.Add(position);
 				return count;
 			}
 			string first160BytesOfSTLFile = System.Text.Encoding.UTF8.GetString(first160Bytes, startOfString, first160Bytes.Length - startOfString);
@@ -284,7 +284,7 @@ namespace MatterHackers.PolygonMesh.Processors
 									int iv0 = GetIndex(vector0);
 									int iv1 = GetIndex(vector1);
 									int iv2 = GetIndex(vector2);
-									meshFromStlFile.Faces.Add((iv0, iv1, iv2));
+									mesh.Faces.Add(iv0, iv1, iv2, mesh.Vertices);
 								}
 								vectorIndex = 0;
 								break;
@@ -355,7 +355,7 @@ namespace MatterHackers.PolygonMesh.Processors
 						int iv0 = GetIndex(vector[0]);
 						int iv1 = GetIndex(vector[1]);
 						int iv2 = GetIndex(vector[2]);
-						meshFromStlFile.Faces.Add((iv0, iv1, iv2));
+						mesh.Faces.Add(iv0, iv1, iv2, mesh.Vertices);
 					}
 				}
 			}
@@ -371,7 +371,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			Debug.WriteLine(string.Format("STL Load in {0:0.00}s", time.Elapsed.TotalSeconds));
 
 			stlStream.Close();
-			return meshFromStlFile;
+			return mesh;
 		}
 
 		public static string FormatForStl(Vector3 value)

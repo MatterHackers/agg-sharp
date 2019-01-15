@@ -61,21 +61,6 @@ namespace MatterHackers.PolygonMesh
 		//public List<Vector3> Vertices { get; set; } = new List<Vector3>();
 		public List<Vector3Float> Vertices { get; set; } = new List<Vector3Float>();
 		public FaceList Faces { get; set; } = new FaceList();
-		public List<Vector3Float> FaceNormals
-		{
-			get
-			{
-				if(_faceNormals.Count != Faces.Count)
-				{
-					CalculateNormals();
-				}
-				return _faceNormals;
-			}
-			set
-			{
-				_faceNormals = value;
-			}
-		}
 
 		/// <summary>
 		/// lookup by face index into the UVs and image for a face
@@ -128,9 +113,10 @@ namespace MatterHackers.PolygonMesh
 
 			for (int faceIndex = 0; faceIndex < f.Length - 2; faceIndex += 3)
 			{
-				this.Faces.Add((f[faceIndex + 0],
+				this.Faces.Add(f[faceIndex + 0],
 					f[faceIndex + 1],
-					f[faceIndex + 2]));
+					f[faceIndex + 2],
+					this.Vertices);
 			}
 		}
 
@@ -205,7 +191,7 @@ namespace MatterHackers.PolygonMesh
 		public void ReverseFaces(int faceIndex)
 		{
 			var hold = Faces[faceIndex];
-			Faces[faceIndex] = (hold.v2, hold.v1, hold.v0);
+			Faces[faceIndex] = new Face(hold.v2, hold.v1, hold.v0, -hold.normal);
 		}
 
 		public long GetLongHashCode()
@@ -261,16 +247,9 @@ namespace MatterHackers.PolygonMesh
 
 		public void CalculateNormals()
 		{
-			// calculate them from the faces
-			_faceNormals = new List<Vector3Float>(Faces.Count);
 			for (int i = 0; i < Faces.Count; i++)
 			{
-				var position0 = Vertices[Faces[i].v0];
-				var position1 = Vertices[Faces[i].v1];
-				var position2 = Vertices[Faces[i].v2];
-				var faceEdge1Minus0 = position1 - position0;
-				var face2Minus0 = position2 - position0;
-				_faceNormals.Add(faceEdge1Minus0.Cross(face2Minus0).GetNormal());
+				Faces[i].CalculateNormal(Vertices);
 			}
 		}
 
@@ -287,7 +266,6 @@ namespace MatterHackers.PolygonMesh
 		#region meshIDs
 		//private static Dictionary<object, int> Ids = new Dictionary<object, int>(ReferenceEqualityComparer.Default);
 		private static int nextId = 0;
-		private List<Vector3Float> _faceNormals = new List<Vector3Float>();
 
 		public static int GetID()
 		{
@@ -339,7 +317,7 @@ namespace MatterHackers.PolygonMesh
 
 			for (int i = 0; i < addedPositions - 2; i++)
 			{
-				this.Faces.Add((firstVertex, firstVertex + i + 1, firstVertex + i + 2));
+				this.Faces.Add(firstVertex, firstVertex + i + 1, firstVertex + i + 2, this.Vertices);
 			}
 		}
 
@@ -369,7 +347,7 @@ namespace MatterHackers.PolygonMesh
 			for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
 			{
 				var face = mesh.Faces[faceIndex];
-				var faceNormal = mesh.FaceNormals[faceIndex];
+				var faceNormal = mesh.Faces[faceIndex].normal;
 				var distanceFromOrigin = faceNormal.Dot(mesh.Vertices[face.v0]);
 
 				if (Math.Abs(plane.DistanceFromOrigin - distanceFromOrigin) <= distanceTolerance
@@ -392,7 +370,7 @@ namespace MatterHackers.PolygonMesh
 			// If not set than make it identity
 			var firstTransform = initialTransform == null ? Matrix4X4.Identity : (Matrix4X4)initialTransform;
 
-			var textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(mesh.FaceNormals[faces.First()].AsVector3(), Vector3.UnitZ));
+			var textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(mesh.Faces[faces.First()].normal.AsVector3(), Vector3.UnitZ));
 
 			var bounds = RectangleDouble.ZeroIntersection;
 
@@ -417,7 +395,7 @@ namespace MatterHackers.PolygonMesh
 			// If not set than make it identity
 			var firstTransform = initialTransform == null ? Matrix4X4.Identity : (Matrix4X4)initialTransform;
 
-			var textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(mesh.FaceNormals[face].AsVector3(), Vector3.UnitZ));
+			var textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(mesh.Faces[face].normal.AsVector3(), Vector3.UnitZ));
 
 			var bounds = RectangleDouble.ZeroIntersection;
 
@@ -494,7 +472,7 @@ namespace MatterHackers.PolygonMesh
 			for (int i = 0; i < copyFrom.Faces.Count; i++)
 			{
 				var face = copyFrom.Faces[i];
-				copyTo.Faces.Add((face.v0 + vStart, face.v1 + vStart, face.v2 + vStart));
+				copyTo.Faces.Add(face.v0 + vStart, face.v1 + vStart, face.v2 + vStart, face.normal);
 			}
 		}
 

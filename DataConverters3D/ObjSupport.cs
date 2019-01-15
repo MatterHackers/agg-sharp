@@ -128,11 +128,11 @@ namespace MatterHackers.DataConverters3D
 						int a = 0;
 					}
 				}
-				mesh.Faces.Add((face.VertexIndexList[0] - 1, face.VertexIndexList[1] - 1, face.VertexIndexList[2] - 1));
+				mesh.Faces.Add(face.VertexIndexList[0] - 1, face.VertexIndexList[1] - 1, face.VertexIndexList[2] - 1, mesh.Vertices);
 				if(face.VertexIndexList.Length == 4)
 				{
 					// add the other side of the quad
-					mesh.Faces.Add((face.VertexIndexList[0] - 1, face.VertexIndexList[2] - 1, face.VertexIndexList[3] - 1));
+					mesh.Faces.Add(face.VertexIndexList[0] - 1, face.VertexIndexList[2] - 1, face.VertexIndexList[3] - 1, mesh.Vertices);
 				}
 			}
 

@@ -53,8 +53,8 @@ namespace MatterHackers.PolygonMesh
 			plane.Vertices.Add(new Vector3(-1, 1, 0) * scale);
 
 			// front
-			plane.Faces.Add(( 0, 1, 2 ));
-			plane.Faces.Add(( 0, 2, 3 ));
+			plane.Faces.Add(0, 1, 2, plane.Vertices);
+			plane.Faces.Add(0, 2, 3, plane.Vertices);
 
 			return plane;
 		}

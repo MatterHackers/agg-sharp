@@ -363,7 +363,8 @@ namespace MatterHackers.RenderOpenGl
 				}
 
 				GL.Begin(BeginMode.Triangles);
-				GL.Normal3(mesh.FaceNormals[face].X, mesh.FaceNormals[face].Y, mesh.FaceNormals[face].Z);
+				var normal = mesh.Faces[face].normal;
+				GL.Normal3(normal.X, normal.Y, normal.Z);
 				// load up the uvs
 				if (faceTexture != null)
 				{

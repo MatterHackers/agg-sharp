@@ -108,12 +108,13 @@ namespace MatterHackers.PolygonMesh
 				foreach (var face in convexHull.Faces)
 				{
 					int vertexCount = hullMesh.Vertices.Count;
-					hullMesh.Faces.Add((vertexCount, vertexCount + 1, vertexCount + 2 ));
 
 					foreach (var vertex in face.Vertices)
 					{
 						hullMesh.Vertices.Add(new Vector3(vertex.Position[0], vertex.Position[1], vertex.Position[2]));
 					}
+
+					hullMesh.Faces.Add(vertexCount, vertexCount + 1, vertexCount + 2, hullMesh.Vertices);
 				}
 
 				try
