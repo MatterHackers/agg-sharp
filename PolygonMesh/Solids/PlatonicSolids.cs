@@ -78,23 +78,23 @@ namespace MatterHackers.PolygonMesh
 			cube.Vertices.Add(new Vector3(-1, 1, -1) * scale);
 
 			// front
-			cube.Faces.Add((0, 1, 2));
-			cube.Faces.Add((0, 2, 3));
+			cube.Faces.Add(0, 1, 2, cube.Vertices);
+			cube.Faces.Add(0, 2, 3, cube.Vertices);
 			// left
-			cube.Faces.Add((4, 0, 3));
-			cube.Faces.Add((4, 3, 7));
+			cube.Faces.Add(4, 0, 3, cube.Vertices);
+			cube.Faces.Add(4, 3, 7, cube.Vertices);
 			// right
-			cube.Faces.Add((1, 5, 6));
-			cube.Faces.Add((1, 6, 2));
+			cube.Faces.Add(1, 5, 6, cube.Vertices);
+			cube.Faces.Add(1, 6, 2, cube.Vertices);
 			// back
-			cube.Faces.Add((4, 7, 6));
-			cube.Faces.Add((4, 6, 5));
+			cube.Faces.Add(4, 7, 6, cube.Vertices);
+			cube.Faces.Add(4, 6, 5, cube.Vertices);
 			// top
-			cube.Faces.Add((3, 2, 6));
-			cube.Faces.Add((3, 6, 7));
+			cube.Faces.Add(3, 2, 6, cube.Vertices);
+			cube.Faces.Add(3, 6, 7, cube.Vertices);
 			// bottom
-			cube.Faces.Add((4, 5, 1));
-			cube.Faces.Add((4, 1, 0));
+			cube.Faces.Add(4, 5, 1, cube.Vertices);
+			cube.Faces.Add(4, 1, 0, cube.Vertices);
 
 			return cube;
 		}

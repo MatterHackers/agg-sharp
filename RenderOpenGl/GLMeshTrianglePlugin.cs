@@ -161,7 +161,7 @@ namespace MatterHackers.RenderOpenGl
 
 				if (getColorFunc != null)
 				{
-					var faceColor = getColorFunc(meshToBuildListFor.FaceNormals[faceIndex]);
+					var faceColor = getColorFunc(meshToBuildListFor.Faces[faceIndex].normal);
 					color = new VertexColorData
 					{
 						red = faceColor.red,
@@ -175,9 +175,10 @@ namespace MatterHackers.RenderOpenGl
 				VertexPositionData tempPosition;
 				tempTexture.textureU = faceTexture == null ? 0 : (float)faceTexture.uv0.X;
 				tempTexture.textureV = faceTexture == null ? 0 : (float)faceTexture.uv0.Y;
-				tempNormal.normalX = meshToBuildListFor.FaceNormals[faceIndex].X;
-				tempNormal.normalY = meshToBuildListFor.FaceNormals[faceIndex].Y;
-				tempNormal.normalZ = meshToBuildListFor.FaceNormals[faceIndex].Z;
+				var normal = meshToBuildListFor.Faces[faceIndex].normal;
+				tempNormal.normalX = normal.X;
+				tempNormal.normalY = normal.Y;
+				tempNormal.normalZ = normal.Z;
 				int vertexIndex = meshToBuildListFor.Faces[faceIndex].v0;
 				tempPosition.positionX = (float)meshToBuildListFor.Vertices[vertexIndex].X;
 				tempPosition.positionY = (float)meshToBuildListFor.Vertices[vertexIndex].Y;

@@ -27,35 +27,92 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Collections.Generic;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
 {
-	public class FaceList : List<(int v0, int v1, int v2)>
+	public struct Face
+	{
+		public Vector3Float normal;
+		public int v0;
+		public int v1;
+		public int v2;
+
+		public Face(int v0, int v1, int v2, List<Vector3Float> vertices)
+		{
+			this.v0 = v0;
+			this.v1 = v1;
+			this.v2 = v2;
+
+			normal = Vector3Float.Zero;
+
+			CalculateNormal(vertices);
+		}
+
+		public Face(int v0, int v1, int v2, Vector3Float normal)
+		{
+			this.v0 = v0;
+			this.v1 = v1;
+			this.v2 = v2;
+
+			this.normal = normal;
+		}
+
+		public void CalculateNormal(List<Vector3Float> vertices)
+		{
+			var position0 = vertices[this.v0];
+			var position1 = vertices[this.v1];
+			var position2 = vertices[this.v2];
+			var faceEdge1Minus0 = position1 - position0;
+			var face2Minus0 = position2 - position0;
+			normal = faceEdge1Minus0.Cross(face2Minus0).GetNormal();
+		}
+	}
+
+	public class FaceList : List<Face>
 	{
 		public FaceList()
 		{
 		}
 
-		public FaceList(IEnumerable<int> f)
+		public FaceList(IEnumerable<int> f, List<Vector3Float> vertices)
 		{
-			AddFromIntArray(f);
+			AddFromIntArray(f, vertices);
 		}
 
 		public FaceList(FaceList f)
 		{
 			for (int i = 0; i < f.Count; i++)
 			{
-				Add((f[i].v0, f[i].v1, f[i].v2));
+				Add(new Face(f[i].v0, f[i].v1, f[i].v2, f[i].normal));
 			}
 		}
 
-		public void AddFromIntArray(IEnumerable<int> f)
+		/// <summary>
+		/// Add a face from vertex indexes and calculate the nomrmal (from vertex positions)
+		/// </summary>
+		/// <param name="v0"></param>
+		/// <param name="v0"></param>
+		/// <param name="v1"></param>
+		/// <param name="vertices"></param>
+		public void Add(int v0, int v1, int v2, List<Vector3Float> vertices)
+		{
+			this.Add(new Face(v0, v1, v2, vertices));
+		}
+
+		public void Add(int v0, int v1, int v2, Vector3Float normal)
+		{
+			this.Add(new Face(v0, v1, v2, normal));
+		}
+
+		public void AddFromIntArray(IEnumerable<int> f, List<Vector3Float> vertices)
 		{
 			this.Clear();
 
 			var enumeratior = f.GetEnumerator();
-			while(enumeratior.MoveNext())
+			while (enumeratior.MoveNext())
 			{
 				var v0 = enumeratior.Current;
 				enumeratior.MoveNext();
@@ -63,7 +120,7 @@ namespace MatterHackers.PolygonMesh
 				enumeratior.MoveNext();
 				var v2 = enumeratior.Current;
 
-				Add((v0, v1, v2));
+				Add(item: new Face(v0, v1, v2, vertices));
 			}
 		}
 
