@@ -91,7 +91,7 @@ namespace MatterHackers.PolygonMesh
 		}
 
 		/// <summary>
-		/// Add a face from vertex indexes and calculate the nomrmal (from vertex positions)
+		/// Add a face from vertex indexes and calculate the normal (from vertex positions)
 		/// </summary>
 		/// <param name="v0"></param>
 		/// <param name="v0"></param>

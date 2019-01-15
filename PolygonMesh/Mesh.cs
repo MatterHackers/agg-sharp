@@ -98,10 +98,10 @@ namespace MatterHackers.PolygonMesh
 		}
 
 		/// <summary>
-		/// Iitialize with a 3xN vertex array and a 3xM vertex index array
+		/// Initialize with a 3xN vertex array and a 3xM vertex index array
 		/// </summary>
 		/// <param name="v">a 3xN array of doubles representing vertices</param>
-		/// <param name="f">a 3xM array of ints represeting face vertex indexes</param>
+		/// <param name="f">a 3xM array of ints representing face vertex indexes</param>
 		public Mesh(double[] v, int[] f)
 		{
 			for (int vertexIndex = 0; vertexIndex < v.Length - 2; vertexIndex += 3)
