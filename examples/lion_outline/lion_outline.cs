@@ -122,8 +122,8 @@ namespace MatterHackers.Agg
 				foreach (var shape in lionShape.Shapes)
 				{
 					Stroke stroke = new Stroke(shape.VertexStorage);
-					stroke.width(widthSlider.Value);
-					stroke.line_join(LineJoin.Round);
+					stroke.Width = widthSlider.Value;
+					stroke.LineJoin = LineJoin.Round;
 					VertexSourceApplyTransform trans = new VertexSourceApplyTransform(stroke, transform);
 					ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
 					rasterizer.add_path(trans);

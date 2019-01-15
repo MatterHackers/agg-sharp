@@ -72,7 +72,7 @@ namespace MatterHackers.Agg
 
 			// Drawing as an outline
 			Stroke p = new Stroke(r);
-			p.width(1.0);
+			p.Width = 1.0;
 			ras.add_path(p);
 
 			//Renderer.RenderSolid(clippingProxyGamma, ras, sl, new RGBA_Bytes(0, 0, 0));

@@ -137,7 +137,7 @@ namespace MatterHackers.Agg
 						VertexStorage ps1 = new VertexStorage();
 						VertexStorage ps2 = new VertexStorage();
 						Stroke stroke = new Stroke(ps2);
-						stroke.width(10.0);
+						stroke.Width = 10.0;
 
 						double x = m_x - Width / 2 + 100;
 						double y = m_y - Height / 2 + 100;
@@ -207,7 +207,7 @@ namespace MatterHackers.Agg
 						//
 						spiral sp = new spiral(m_x, m_y, 10, 150, 30, 0.0);
 						Stroke stroke = new Stroke(sp);
-						stroke.width(15.0);
+						stroke.Width = 15.0;
 
 						VertexStorage gb_poly = new VertexStorage();
 						GreatBritanPathStorage.Make(gb_poly);
@@ -221,7 +221,7 @@ namespace MatterHackers.Agg
 						graphics2D.Render(trans_gb_poly, new ColorF(0.5, 0.5, 0, 0.1).ToColor());
 
 						Stroke stroke_gb_poly = new Stroke(trans_gb_poly);
-						stroke_gb_poly.width(0.1);
+						stroke_gb_poly.Width = 0.1;
 						graphics2D.Render(stroke_gb_poly, new ColorF(0, 0, 0).ToColor());
 
 						graphics2D.Render(stroke, new ColorF(0.0, 0.5, 0.5, 0.1).ToColor());
@@ -237,7 +237,7 @@ namespace MatterHackers.Agg
 						//
 						spiral sp = new spiral(m_x, m_y, 10, 150, 30, 0.0);
 						Stroke stroke = new Stroke(sp);
-						stroke.width(15.0);
+						stroke.Width = 15.0;
 
 						VertexStorage glyph = new VertexStorage();
 						glyph.MoveTo(28.47, 6.45);

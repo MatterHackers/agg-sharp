@@ -240,7 +240,7 @@ namespace MomsSolitaire
 			RectangleDouble CardBounds = new RectangleDouble(StartX + 1.5, StartY + 1.5, StartX + CARD_WIDTH - 1.5, StartY + CARD_HEIGHT - 1.5);
 			RoundedRect CardFiledRoundedRect = new RoundedRect(CardBounds.Left, CardBounds.Bottom, CardBounds.Right, CardBounds.Top, 5);
 			Stroke CardRectBounds = new Stroke(CardFiledRoundedRect);
-			CardRectBounds.width(1);
+			CardRectBounds.Width = 1;
 
 			CCard Card = MomsGame.GetCard(CardX, CardY);
 			int CardValue = Card.GetValue();
@@ -410,7 +410,7 @@ namespace MomsSolitaire
 					double TextY = m_BoardY - 34;
 					RoundedRect BackFill = new RoundedRect(Size.Left - 6, Size.Bottom - 3, Size.Right + 6, Size.Top + 6, 3);
 					Stroke BackBorder = new Stroke(BackFill);
-					BackBorder.width(2);
+					BackBorder.Width = 2;
 
 					subGraphics2D.SetTransform(Affine.NewTranslation(TextX, TextY));
 					subGraphics2D.Render(BackFill, backFillCollor);

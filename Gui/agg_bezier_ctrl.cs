@@ -159,12 +159,12 @@ namespace MatterHackers.Agg.UI
 
 		public void line_width(double w)
 		{
-			m_stroke.width(w);
+			m_stroke.Width = w;
 		}
 
 		public double line_width()
 		{
-			return m_stroke.width();
+			return m_stroke.Width;
 		}
 
 		public void point_radius(double r)
@@ -458,12 +458,12 @@ namespace MatterHackers.Agg.UI
 
 		private void line_width(double w)
 		{
-			m_stroke.width(w);
+			m_stroke.Width = w;
 		}
 
 		private double line_width()
 		{
-			return m_stroke.width();
+			return m_stroke.Width;
 		}
 
 		private void point_radius(double r)

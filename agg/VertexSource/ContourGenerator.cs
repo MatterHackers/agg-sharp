@@ -4,17 +4,17 @@ namespace MatterHackers.Agg.VertexSource
 {
 	internal class ContourGenerator : IGenerator
 	{
-		private StrokeMath m_stroker;
-		private double m_width;
-		private VertexSequence m_src_vertices;
-		private Vector2Container m_out_vertices;
-		private StrokeMath.status_e m_status;
-		private int m_src_vertex;
-		private int m_out_vertex;
+		private bool m_auto_detect;
 		private bool m_closed;
 		private ShapePath.FlagsAndCommand m_orientation;
-		private bool m_auto_detect;
+		private int m_out_vertex;
+		private Vector2Container m_out_vertices;
 		private double m_shorten;
+		private int m_src_vertex;
+		private VertexSequence m_src_vertices;
+		private StrokeMath.status_e m_status;
+		private StrokeMath m_stroker;
+		private double m_width;
 
 		public ContourGenerator()
 		{
@@ -27,109 +27,6 @@ namespace MatterHackers.Agg.VertexSource
 			m_closed = false;
 			m_orientation = 0;
 			m_auto_detect = false;
-		}
-
-		public void line_cap(LineCap lc)
-		{
-			m_stroker.line_cap(lc);
-		}
-
-		public void line_join(LineJoin lj)
-		{
-			m_stroker.line_join(lj);
-		}
-
-		public void inner_join(InnerJoin ij)
-		{
-			m_stroker.inner_join(ij);
-		}
-
-		public LineCap line_cap()
-		{
-			return m_stroker.line_cap();
-		}
-
-		public LineJoin line_join()
-		{
-			return m_stroker.line_join();
-		}
-
-		public InnerJoin inner_join()
-		{
-			return m_stroker.inner_join();
-		}
-
-		public void width(double w)
-		{
-			m_stroker.width(w);
-		}
-
-		public void miter_limit(double ml)
-		{
-			m_stroker.miter_limit(ml);
-		}
-
-		public void miter_limit_theta(double t)
-		{
-			m_stroker.miter_limit_theta(t);
-		}
-
-		public void inner_miter_limit(double ml)
-		{
-			m_stroker.inner_miter_limit(ml);
-		}
-
-		public void approximation_scale(double approx_scale)
-		{
-			m_stroker.approximation_scale(approx_scale);
-		}
-
-		public double width()
-		{
-			return m_stroker.width();
-		}
-
-		public double miter_limit()
-		{
-			return m_stroker.miter_limit();
-		}
-
-		public double inner_miter_limit()
-		{
-			return m_stroker.inner_miter_limit();
-		}
-
-		public double approximation_scale()
-		{
-			return m_stroker.approximation_scale();
-		}
-
-		public void shorten(double s)
-		{
-			m_shorten = s;
-		}
-
-		public double shorten()
-		{
-			return m_shorten;
-		}
-
-		public void auto_detect_orientation(bool v)
-		{
-			m_auto_detect = v;
-		}
-
-		public bool auto_detect_orientation()
-		{
-			return m_auto_detect;
-		}
-
-		// Generator interface
-		public void RemoveAll()
-		{
-			m_src_vertices.remove_all();
-			m_closed = false;
-			m_status = StrokeMath.status_e.initial;
 		}
 
 		public void AddVertex(double x, double y, ShapePath.FlagsAndCommand cmd)
@@ -157,6 +54,73 @@ namespace MatterHackers.Agg.VertexSource
 					}
 				}
 			}
+		}
+
+		public double ApproximationScale
+		{
+			get => m_stroker.approximation_scale();
+			set => m_stroker.approximation_scale(value);
+		}
+
+		public bool AutoDetectOrientation
+		{
+			get => m_auto_detect;
+			set => m_auto_detect = value;
+		}
+
+		public InnerJoin InnerJoin
+		{
+			get => m_stroker.inner_join();
+			set => m_stroker.inner_join(value);
+		}
+
+		public double InnerMiterLimit
+		{
+			get => m_stroker.inner_miter_limit();
+			set => m_stroker.inner_miter_limit(value);
+		}
+
+		public LineCap LineCap
+		{
+			get => m_stroker.line_cap();
+			set => m_stroker.line_cap(value);
+		}
+
+		public LineJoin LineJoin
+		{
+			get => m_stroker.line_join();
+			set => m_stroker.line_join(value);
+		}
+
+		public double MiterLimit
+		{
+			get => m_stroker.miter_limit();
+			set => m_stroker.miter_limit(value);
+		}
+
+		public double Shorten
+		{
+			get => m_shorten;
+			set => m_shorten = value;
+		}
+
+		public double Width
+		{
+			get => m_stroker.width();
+			set => m_stroker.width(value);
+		}
+
+		public void MiterLimitTheta(double t)
+		{
+			m_stroker.miter_limit_theta(t);
+		}
+
+		// Generator interface
+		public void RemoveAll()
+		{
+			m_src_vertices.remove_all();
+			m_closed = false;
+			m_status = StrokeMath.status_e.initial;
 		}
 
 		// Vertex Source Interface

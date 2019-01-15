@@ -21,50 +21,30 @@ namespace MatterHackers.Agg.VertexSource
 {
 	public interface IGenerator
 	{
-		void RemoveAll();
+		double ApproximationScale { get; set; }
 
+		bool AutoDetectOrientation { get; set; }
+
+		InnerJoin InnerJoin { get; set; }
+
+		double InnerMiterLimit { get; set; }
+
+		LineCap LineCap { get; set; }
+
+		LineJoin LineJoin { get; set; }
+
+		double MiterLimit { get; set; }
+
+		void MiterLimitTheta(double t);
+
+		double Shorten { get; set; }
+
+		double Width { get; set; }
+
+		void RemoveAll();
+		void Rewind(int path_id);
 		void AddVertex(double x, double y, ShapePath.FlagsAndCommand unknown);
 
-		void Rewind(int path_id);
-
 		ShapePath.FlagsAndCommand Vertex(ref double x, ref double y);
-
-		LineCap line_cap();
-
-		LineJoin line_join();
-
-		InnerJoin inner_join();
-
-		void line_cap(LineCap lc);
-
-		void line_join(LineJoin lj);
-
-		void inner_join(InnerJoin ij);
-
-		void width(double w);
-
-		void miter_limit(double ml);
-
-		void miter_limit_theta(double t);
-
-		void inner_miter_limit(double ml);
-
-		void approximation_scale(double approxScale);
-
-		double width();
-
-		double miter_limit();
-
-		double inner_miter_limit();
-
-		double approximation_scale();
-
-		void auto_detect_orientation(bool v);
-
-		bool auto_detect_orientation();
-
-		void shorten(double s);
-
-		double shorten();
 	};
 }

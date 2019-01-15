@@ -27,94 +27,60 @@ namespace MatterHackers.Agg.VertexSource
 		public Stroke(IVertexSource vertexSource, double inWidth = 1)
 			: base(vertexSource, new StrokeGenerator())
 		{
-			width(inWidth);
+			this.Width = inWidth;
 		}
 
-		public void line_cap(LineCap lc)
+		public double ApproximationScale
 		{
-			base.GetGenerator().line_cap(lc);
+			get => this.Generator.ApproximationScale;
+			set => this.Generator.ApproximationScale = value;
 		}
 
-		public void line_join(LineJoin lj)
+		public InnerJoin InnerJoin
 		{
-			base.GetGenerator().line_join(lj);
+			get => this.Generator.InnerJoin;
+			set => this.Generator.InnerJoin = value;
 		}
 
-		public void inner_join(InnerJoin ij)
+		public double InnerMiterLimit
 		{
-			base.GetGenerator().inner_join(ij);
+			get => this.Generator.InnerMiterLimit;
+			set => this.Generator.InnerMiterLimit = value;
 		}
 
-		public LineCap line_cap()
+		public LineCap LineCap
 		{
-			return base.GetGenerator().line_cap();
+			get => this.Generator.LineCap;
+			set => this.Generator.LineCap = value;
 		}
 
-		public LineJoin line_join()
+		public LineJoin LineJoin
 		{
-			return base.GetGenerator().line_join();
+			get => this.Generator.LineJoin;
+			set => this.Generator.LineJoin = value;
 		}
 
-		public InnerJoin inner_join()
+		public double MiterLimit
 		{
-			return base.GetGenerator().inner_join();
+			get => this.Generator.MiterLimit;
+			set => this.Generator.MiterLimit = value;
 		}
 
-		public double Width { get { return width(); } set { width(value); } }
-
-		public void width(double w)
+		public double Shorten
 		{
-			base.GetGenerator().width(w);
+			get => this.Generator.Shorten;
+			set => this.Generator.Shorten = value;
 		}
 
-		public void miter_limit(double ml)
+		public double Width
 		{
-			base.GetGenerator().miter_limit(ml);
+			get => this.Generator.Width;
+			set => this.Generator.Width = value;
 		}
 
-		public void miter_limit_theta(double t)
+		public void MiterLimitTheta(double t)
 		{
-			base.GetGenerator().miter_limit_theta(t);
-		}
-
-		public void inner_miter_limit(double ml)
-		{
-			base.GetGenerator().inner_miter_limit(ml);
-		}
-
-		public void approximation_scale(double approxScale)
-		{
-			base.GetGenerator().approximation_scale(approxScale);
-		}
-
-		public double width()
-		{
-			return base.GetGenerator().width();
-		}
-
-		public double miter_limit()
-		{
-			return base.GetGenerator().miter_limit();
-		}
-
-		public double inner_miter_limit()
-		{
-			return base.GetGenerator().inner_miter_limit();
-		}
-
-		public double approximation_scale()
-		{
-			return base.GetGenerator().approximation_scale();
-		}
-
-		public void shorten(double s)
-		{
-			base.GetGenerator().shorten(s);
-		}
-
-		public double shorten()
-		{
-			return base.GetGenerator().shorten();
+			this.Generator.MiterLimitTheta(t);
 		}
 	}
 }

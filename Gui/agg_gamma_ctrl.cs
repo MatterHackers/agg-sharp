@@ -399,7 +399,7 @@ namespace MatterHackers.Agg.UI
 
 				case 0:                 // Curve
 					m_gamma_spline.box(m_xs1, m_ys1, m_xs2, m_ys2);
-					m_curve_poly.width(m_curve_width);
+					m_curve_poly.Width = m_curve_width;
 					m_curve_poly.rewind(0);
 					break;
 

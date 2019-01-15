@@ -29,79 +29,51 @@ namespace MatterHackers.Agg.VertexSource
 		{
 		}
 
-		public void line_join(LineJoin lj)
+		public double ApproximationScale
 		{
-			base.GetGenerator().line_join(lj);
+			get => this.Generator.ApproximationScale;
+			set => this.Generator.ApproximationScale = value;
 		}
 
-		public void inner_join(InnerJoin ij)
+		public bool AutoDetectOrientation
 		{
-			base.GetGenerator().inner_join(ij);
+			get => this.Generator.AutoDetectOrientation;
+			set => this.Generator.AutoDetectOrientation = value;
 		}
 
-		public void width(double w)
+		public InnerJoin InnerJoin
 		{
-			base.GetGenerator().width(w);
+			get => this.Generator.InnerJoin;
+			set => this.Generator.InnerJoin = value;
 		}
 
-		public void miter_limit(double ml)
+		public double InnerMiterLimit
 		{
-			base.GetGenerator().miter_limit(ml);
+			get => this.Generator.InnerMiterLimit;
+			set => this.Generator.InnerMiterLimit = value;
 		}
 
-		public void miter_limit_theta(double t)
+		public LineJoin LineJoin
 		{
-			base.GetGenerator().miter_limit_theta(t);
+			get => this.Generator.LineJoin;
+			set => this.Generator.LineJoin = value;
 		}
 
-		public void inner_miter_limit(double ml)
+		public double MiterLimit
 		{
-			base.GetGenerator().inner_miter_limit(ml);
+			get => this.Generator.MiterLimit;
+			set => this.Generator.MiterLimit = value;
 		}
 
-		public void approximation_scale(double approxScale)
+		public double Width
 		{
-			base.GetGenerator().approximation_scale(approxScale);
+			get => this.Generator.Width;
+			set => this.Generator.Width = value;
 		}
 
-		public void auto_detect_orientation(bool v)
+		public void MiterLimitTheta(double t)
 		{
-			base.GetGenerator().auto_detect_orientation(v);
-		}
-
-		public LineJoin line_join()
-		{
-			return base.GetGenerator().line_join();
-		}
-
-		public InnerJoin inner_join()
-		{
-			return base.GetGenerator().inner_join();
-		}
-
-		public double width()
-		{
-			return base.GetGenerator().width();
-		}
-
-		public double miter_limit()
-		{
-			return base.GetGenerator().miter_limit();
-		}
-
-		public double inner_miter_limit()
-		{
-			return base.GetGenerator().inner_miter_limit();
-		}
-
-		public double approximation_scale()
-		{
-			return base.GetGenerator().approximation_scale();
-		}
-
-		public bool auto_detect_orientation()
-		{
-			return base.GetGenerator().auto_detect_orientation();
+			this.Generator.MiterLimitTheta(t);
 		}
 	}
 }

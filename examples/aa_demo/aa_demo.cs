@@ -161,7 +161,7 @@ namespace MatterHackers.Agg
 
 			VertexStorage ps = new VertexStorage();
 			Stroke pg = new Stroke(ps);
-			pg.width(2);
+			pg.Width = 2;
 
 			ps.remove_all();
 			ps.MoveTo(m_x[0], m_y[0]);

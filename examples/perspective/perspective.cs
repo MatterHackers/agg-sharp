@@ -125,7 +125,7 @@ namespace MatterHackers.Agg
 									 (lionShape.Bounds.Right - lionShape.Bounds.Left) * 0.5, (lionShape.Bounds.Top - lionShape.Bounds.Bottom) * 0.5,
 									 200);
 					Stroke ell_stroke = new Stroke(ell);
-					ell_stroke.width(3.0);
+					ell_stroke.Width = 3.0;
 					VertexSourceApplyTransform trans_ell = new VertexSourceApplyTransform(ell, tr);
 
 					VertexSourceApplyTransform trans_ell_stroke = new VertexSourceApplyTransform(ell_stroke, tr);
@@ -157,7 +157,7 @@ namespace MatterHackers.Agg
 									 200);
 
 					Stroke EllipseOutline = new Stroke(FilledEllipse);
-					EllipseOutline.width(3.0);
+					EllipseOutline.Width = 3.0;
 					VertexSourceApplyTransform TransformedFilledEllipse = new VertexSourceApplyTransform(FilledEllipse, tr);
 
 					VertexSourceApplyTransform TransformedEllipesOutline = new VertexSourceApplyTransform(EllipseOutline, tr);
