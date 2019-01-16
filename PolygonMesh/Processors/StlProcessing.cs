@@ -236,17 +236,17 @@ namespace MatterHackers.PolygonMesh.Processors
 			{
 				startOfString = 3;
 			}
-			Dictionary<(double, double, double), int> postionToIndex = new Dictionary<(double, double, double), int>();
+			Dictionary<(double, double, double), int> positionToIndex = new Dictionary<(double, double, double), int>();
 			int GetIndex(Vector3 position)
 			{
 				int index;
-				if(postionToIndex.TryGetValue((position.X, position.Y,position.Z), out index))
+				if(positionToIndex.TryGetValue((position.X, position.Y,position.Z), out index))
 				{
 					return index;
 				}
 
 				var count = mesh.Vertices.Count;
-				postionToIndex.Add((position.X, position.Y, position.Z), count);
+				positionToIndex.Add((position.X, position.Y, position.Z), count);
 				mesh.Vertices.Add(position);
 				return count;
 			}
