@@ -1616,9 +1616,9 @@ namespace MatterHackers.Agg.UI
 			return null;
 		}
 
-		public bool PositionWithinLocalBounds(Vector2 postion)
+		public bool PositionWithinLocalBounds(Vector2 position)
 		{
-			return PositionWithinLocalBounds(postion.X, postion.Y);
+			return PositionWithinLocalBounds(position.X, position.Y);
 		}
 
 		public virtual bool PositionWithinLocalBounds(double x, double y)
