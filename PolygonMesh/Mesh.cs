@@ -321,6 +321,24 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
+		public void CreateFace(IEnumerable<Vector3Float> positionsIn)
+		{
+			var positions = positionsIn.Distinct();
+			int firstVertex = this.Vertices.Count;
+			// we don't have to iterate the positions twice if we count them as we add them
+			int addedPositions = 0;
+			foreach (var p in positions)
+			{
+				this.Vertices.Add(p);
+				addedPositions++;
+			}
+
+			for (int i = 0; i < addedPositions - 2; i++)
+			{
+				this.Faces.Add(firstVertex, firstVertex + i + 1, firstVertex + i + 2, this.Vertices);
+			}
+		}
+
 		#endregion Public Members
 	}
 
