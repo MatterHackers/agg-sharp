@@ -109,102 +109,23 @@ namespace MatterHackers.RenderOpenGl
 			{
 				Task.Run(() =>
 				{
+					var vertexFaceLists = VertexFaceList.CreateVertexFaceList(mesh);
+					var meshEdgeList = MeshEdge.CreateMeshEdgeList(mesh, vertexFaceLists);
+
 					var filteredEdgeLines = new VectorPOD<WireVertexData>();
 
-					var faceEdges = new List<(int face, Vector3Float start, Vector3Float end, Vector3Float normal, double length)>();
-					for(int i=0; i<mesh.Faces.Count; i++)
+					foreach (var meshEdge in meshEdgeList)
 					{
-						var meshFace = mesh.Faces[i];
-
-						var meshFaceEdges = new List<(Vector3Float p0, Vector3Float p1)>
+						if(meshEdge.Faces.Count() == 2)
 						{
-							(mesh.Vertices[meshFace.v0], mesh.Vertices[meshFace.v1]),
-							(mesh.Vertices[meshFace.v1], mesh.Vertices[meshFace.v2]),
-							(mesh.Vertices[meshFace.v2], mesh.Vertices[meshFace.v0])
-						};
-
-						foreach (var meshFaceEdge in meshFaceEdges)
-						{
-							var start = meshFaceEdge.p0;
-							var end = meshFaceEdge.p1;
-							if (start.X > end.X || start.Y > end.Y || start.Z > end.Z)
+							var faceNormal0 = mesh.Faces[meshEdge.Faces[0]].normal;
+							var faceNormal1 = mesh.Faces[meshEdge.Faces[1]].normal;
+							double angle = faceNormal0.CalculateAngle(faceNormal1);
+							if (angle > MathHelper.Tau * .1)
 							{
-								var temp = start;
-								start = end;
-								end = temp;
-							}
-
-							// quantize the normals so we group them together
-							var normal = (end - start).GetNormal();
-							normal.X = (float)(((int)(normal.X * 255)) / 255.0);
-							normal.Y = (float)((int)((normal.Y * 255)) / 255.0);
-							normal.Z = (float)((int)((normal.Z * 255)) / 255.0);
-							faceEdges.Add((i, start, end, normal, (end - start).Length));
-						}
-					}
-
-					var startIndexes = new Dictionary<Vector3Float, List<int>>();
-
-					for (int i = 0; i < faceEdges.Count; i++)
-					{
-						var faceEdge = faceEdges[i];
-						if (!startIndexes.ContainsKey(faceEdge.start))
-						{
-							startIndexes.Add(faceEdge.start, new List<int>());
-						}
-
-						startIndexes[faceEdge.start].Add(i);
-					}
-
-					for (int i = 0; i < faceEdges.Count; i++)
-					{
-						var edgeI = faceEdges[i];
-						// figure out if edge i has any collinear edges that are above the angle
-						if (startIndexes.ContainsKey(edgeI.start))
-						{
-							foreach (var faceEdgeIndex in startIndexes[edgeI.start])
-							{
-								if (faceEdgeIndex <= i)
-								{
-									continue;
-								}
-								var edgeJ = faceEdges[faceEdgeIndex];
-
-								// do they share end points
-								if ((edgeI.start == edgeJ.start && edgeI.end == edgeJ.end)
-									|| (edgeI.start == edgeJ.end && edgeI.end == edgeJ.start))
-								{
-									double angle = mesh.Faces[edgeI.face].normal.CalculateAngle(mesh.Faces[edgeJ.face].normal);
-									if (angle > MathHelper.Tau * .1)
-									{
-										AddVertex(filteredEdgeLines, edgeI.start, edgeI.end);
-										break;
-									}
-								}
-							}
-						}
-
-						if (startIndexes.ContainsKey(edgeI.end))
-						{
-							foreach (var faceEdgeIndex in startIndexes[edgeI.end])
-							{
-								if (faceEdgeIndex <= i)
-								{
-									continue;
-								}
-								var edgeJ = faceEdges[faceEdgeIndex];
-
-								// do they share end points
-								if ((edgeI.start == edgeJ.start && edgeI.end == edgeJ.end)
-									|| (edgeI.start == edgeJ.end && edgeI.end == edgeJ.start))
-								{
-									double angle = mesh.Faces[edgeI.face].normal.CalculateAngle(mesh.Faces[edgeJ.face].normal);
-									if (angle > MathHelper.Tau * .1)
-									{
-										AddVertex(filteredEdgeLines, edgeI.start, edgeI.end);
-										break;
-									}
-								}
+								AddVertex(filteredEdgeLines, 
+									mesh.Vertices[meshEdge.Vertex0Index], 
+									mesh.Vertices[meshEdge.Vertex1Index]);
 							}
 						}
 					}

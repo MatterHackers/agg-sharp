@@ -194,6 +194,37 @@ namespace MatterHackers.PolygonMesh
 			Faces[faceIndex] = new Face(hold.v2, hold.v1, hold.v0, -hold.normal);
 		}
 
+		public void CleanAndMerge()
+		{
+			var newVertices = new List<Vector3Float>();
+			var newFaces = new FaceList();
+
+			var positionToIndex = new Dictionary<(float, float, float), int>();
+			int GetIndex(Vector3Float position)
+			{
+				int index;
+				if (positionToIndex.TryGetValue((position.X, position.Y, position.Z), out index))
+				{
+					return index;
+				}
+				var count = newVertices.Count;
+				positionToIndex.Add((position.X, position.Y, position.Z), count);
+				newVertices.Add(position);
+				return count;
+			}
+
+			foreach(var face in Faces)
+			{
+				int iv0 = GetIndex(Vertices[face.v0]);
+				int iv1 = GetIndex(Vertices[face.v1]);
+				int iv2 = GetIndex(Vertices[face.v2]);
+				newFaces.Add(iv0, iv1, iv2, newVertices);
+			}
+
+			this.Faces = newFaces;
+			this.Vertices = newVertices;
+		}
+
 		public long GetLongHashCode()
 		{
 			unchecked
@@ -374,6 +405,16 @@ namespace MatterHackers.PolygonMesh
 					yield return faceIndex;
 				}
 			}
+		}
+
+		public static IReadOnlyList<VertexFaceList> NewVertexFaceLists(this Mesh mesh)
+		{
+			return VertexFaceList.CreateVertexFaceList(mesh);
+		}
+
+		public static IReadOnlyList<MeshEdge> NewMeshEdges(this Mesh mesh)
+		{
+			return MeshEdge.CreateMeshEdgeList(mesh, VertexFaceList.CreateVertexFaceList(mesh));
 		}
 
 		public static IEnumerable<int> GetCoplanerFaces(this Mesh mesh, int faceIndex)
