@@ -184,14 +184,15 @@ namespace MatterHackers.PolygonMesh
 		{
 			for(int i=0; i<Faces.Count; i++)
 			{
-				ReverseFaces(i);
+				ReverseFace(i);
 			}
+			MarkAsChanged();
 		}
 
-		public void ReverseFaces(int faceIndex)
+		public void ReverseFace(int faceIndex)
 		{
 			var hold = Faces[faceIndex];
-			Faces[faceIndex] = new Face(hold.v2, hold.v1, hold.v0, -hold.normal);
+			Faces[faceIndex] = new Face(hold.v0, hold.v2, hold.v1, hold.normal);
 		}
 
 		public void CleanAndMerge()
@@ -272,6 +273,10 @@ namespace MatterHackers.PolygonMesh
 			if (matrix != Matrix4X4.Identity)
 			{
 				Vertices.Transform(matrix);
+				for(int i=0; i<Faces.Count; i++)
+				{
+					Faces[i] = new Face(Faces[i].v0, Faces[i].v1, Faces[i].v2, Faces[i].normal.TransformNormal(matrix));
+				}
 				MarkAsChanged();
 			}
 		}
