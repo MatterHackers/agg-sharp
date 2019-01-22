@@ -136,6 +136,8 @@ namespace MatterHackers.DataConverters3D
 				mesh.CopyFaces(extrudedVertexSource);
 			}
 
+			mesh.CleanAndMerge();
+
 			// return the completed mesh
 			return mesh;
 		}
@@ -228,6 +230,8 @@ namespace MatterHackers.DataConverters3D
 
 				mesh.CreateFace(new Vector3[] { new Vector3(v2, 0), new Vector3(v1, 0), new Vector3(v0, 0) });
 			}
+
+			mesh.CleanAndMerge();
 
 			return mesh;
 		}
