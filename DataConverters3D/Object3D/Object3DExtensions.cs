@@ -225,7 +225,7 @@ namespace MatterHackers.DataConverters3D
 
 			Directory.CreateDirectory(Object3D.AssetsPath);
 
-			var assetFiles = new Dictionary<int, string>();
+			var assetFiles = new Dictionary<long, string>();
 
 			try
 			{
@@ -244,7 +244,7 @@ namespace MatterHackers.DataConverters3D
 					}
 
 					// Calculate the fast mesh hash
-					int hashCode = (int)item.Mesh.GetLongHashCode();
+					long hashCode = item.Mesh.GetLongHashCode();
 
 					// Index into dictionary using fast hash
 					if (!assetFiles.TryGetValue(hashCode, out string assetPath))
