@@ -1211,7 +1211,7 @@ namespace MatterHackers.VectorMath
 		{
 			Vector3 vec = new Vector3(inVec);
 			Vector4 v4 = new Vector4(vec.X, vec.Y, vec.Z, 1.0);
-			Vector4.Transform(ref v4, ref mat, out v4);
+			Vector4.Transform(v4, ref mat, out v4);
 			result = new Vector3Float(v4.Xyz);
 		}
 

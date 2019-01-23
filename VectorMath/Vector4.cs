@@ -673,7 +673,7 @@ namespace MatterHackers.VectorMath
 		public static Vector4 Transform(Vector4 vec, Matrix4X4 mat)
 		{
 			Vector4 result;
-			Transform(ref vec, ref mat, out result);
+			Transform(vec, ref mat, out result);
 			return result;
 		}
 
@@ -681,7 +681,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="vec">The vector to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <param name="result">The transformed vector</param>
-		public static void Transform(ref Vector4 vec, ref Matrix4X4 mat, out Vector4 result)
+		public static void Transform(Vector4 vec, ref Matrix4X4 mat, out Vector4 result)
 		{
 			result = new Vector4(
 				vec.X * mat.Row0.X + vec.Y * mat.Row1.X + vec.Z * mat.Row2.X + vec.W * mat.Row3.X,
