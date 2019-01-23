@@ -2378,8 +2378,9 @@ namespace MatterHackers.Agg.UI
 		{
 			GuiWidget prevGUIWidget = this;
 
+			// Walk until we find a SystemWindow with a null parent or until the topmost GuiWidget
 			while (prevGUIWidget != null
-				&& !(prevGUIWidget is SystemWindow))
+				&& !(prevGUIWidget is SystemWindow && prevGUIWidget.Parent == null))
 			{
 				vectorToTransform += prevGUIWidget.OriginRelativeParent;
 				prevGUIWidget = prevGUIWidget.Parent;
