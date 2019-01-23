@@ -244,7 +244,7 @@ namespace MatterHackers.DataConverters3D
 					}
 
 					// Calculate the fast mesh hash
-					var hashCode = item.Mesh.GetLongHashCode();
+					long hashCode = item.Mesh.GetLongHashCode();
 
 					// Index into dictionary using fast hash
 					if (!assetFiles.TryGetValue(hashCode, out string assetPath))
