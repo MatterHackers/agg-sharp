@@ -294,7 +294,7 @@ namespace MatterHackers.Agg.UI
 		public void ShowPopup(PopupWidget popupWidget)
 		{
 			this.popupWidget = popupWidget;
-			windowToAddTo = widgetRelativeTo.Parents<SystemWindow>().FirstOrDefault();
+			windowToAddTo = widgetRelativeTo.Parents<SystemWindow>().LastOrDefault();
 			windowToAddTo?.AddChild(popupWidget);
 
 			monitoredWidgets.Clear();
