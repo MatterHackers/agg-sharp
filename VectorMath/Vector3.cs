@@ -1332,7 +1332,7 @@ namespace MatterHackers.VectorMath
 		public static void TransformPerspective(this Vector3 vec, ref Matrix4X4 mat, out Vector3 result)
 		{
 			Vector4 v = new Vector4(vec);
-			Vector4.Transform(ref v, ref mat, out v);
+			Vector4.Transform(v, ref mat, out v);
 			result.X = v.X / v.W;
 			result.Y = v.Y / v.W;
 			result.Z = v.Z / v.W;

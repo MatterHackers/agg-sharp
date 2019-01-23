@@ -53,13 +53,15 @@ namespace MatterHackers.Agg.Image
 				if(_hasTransparency == null)
 				{
 					_hasTransparency = false;
+					var buffer = GetBuffer();
 					// check if the image has any alpha set to something other than 255
-					for(int y=0; y<Height; y++)
+					for (int y=0; y<Height; y++)
 					{
-						for(int x=0; x<Width; x++)
+						var yOffset = GetBufferOffsetY(y);
+						for (int x=0; x<Width; x++)
 						{
 							// get the alpha at this pixel
-							if(GetBuffer()[GetBufferOffsetXY(x, y) + 3] < 255)
+							if(buffer[yOffset + x + 3] < 255)
 							{
 								_hasTransparency = true;
 								x = Width;

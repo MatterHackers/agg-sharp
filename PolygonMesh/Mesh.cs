@@ -226,6 +226,12 @@ namespace MatterHackers.PolygonMesh
 			this.Vertices = newVertices;
 		}
 
+		public static long RotateLeft(long value, int count)
+		{
+			ulong val = (ulong)value;
+			return (long)((val << count) | (val >> (64 - count)));
+		}
+
 		public long GetLongHashCode()
 		{
 			unchecked
@@ -235,15 +241,16 @@ namespace MatterHackers.PolygonMesh
 				hash = hash * 31 + Vertices.Count;
 				hash = hash * 31 + Faces.Count;
 
-				int vertexStep = Math.Max(1, Vertices.Count / 16);
+				// we want to at most consider 100000 vertecies
+				int vertexStep = Math.Max(1, Vertices.Count / 10000);
 				for (int i = 0; i < Vertices.Count; i += vertexStep)
 				{
 					var vertex = Vertices[i];
-					hash = hash * 31 + vertex.GetLongHashCode();
+					hash ^= RotateLeft(vertex.GetLongHashCode(), 13);
 				}
 
-				// also need the direction of vertices for face edges
-				int faceStep = Math.Max(1, Faces.Count / 16);
+				// we want to at most consider 100000 faces
+				int faceStep = Math.Max(1, Faces.Count / 10000);
 				for (int i = 0; i < Faces.Count; i += faceStep)
 				{
 					var face = Faces[i];
