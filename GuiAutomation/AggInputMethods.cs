@@ -256,7 +256,7 @@ namespace MatterHackers.GuiAutomation
 		{
 			// Find the top systemWindow, then find its root
 			var topWindow = SystemWindow.AllOpenSystemWindows.Last();
-			var systemWindow = topWindow.Parents<GuiWidget>().Last();
+			var systemWindow = topWindow.Parents<GuiWidget>().LastOrDefault() ?? topWindow;
 
 			// Setup reset event to block until input received
 			var resetEvent = new AutoResetEvent(false);
