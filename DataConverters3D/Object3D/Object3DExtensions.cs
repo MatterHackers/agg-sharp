@@ -376,6 +376,25 @@ namespace MatterHackers.DataConverters3D
 			return lastOutputTypeFound;
 		}
 
+		public static bool WorldVisible(this IObject3D child, IObject3D rootOverride = null)
+		{
+			foreach (var item in child.AncestorsAndSelf())
+			{
+				if (!item.Visible)
+				{
+					return false;
+				}
+
+				// If the root override has been matched, break and return latest
+				if (item == rootOverride)
+				{
+					break;
+				}
+			}
+
+			return true;
+		}
+
 		public static int WorldMaterialIndex(this IObject3D child, IObject3D rootOverride = null)
 		{
 			var lastMaterialIndexFound = -1;
