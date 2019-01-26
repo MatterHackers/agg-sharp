@@ -115,6 +115,34 @@ namespace MatterHackers.DataConverters3D
 			list.AddRange(addItems);
 		}
 
+		public static void CopyWorldProperties(this IObject3D copyTo, IObject3D copyFrom, IObject3D root, Object3DPropertyFlags flags)
+		{
+			if (flags.HasFlag(Object3DPropertyFlags.Matrix))
+			{
+				copyTo.Matrix = copyFrom.WorldMatrix(root);
+			}
+			if (flags.HasFlag(Object3DPropertyFlags.Color))
+			{
+				copyTo.Color = copyFrom.WorldColor(root);
+			}
+			if (flags.HasFlag(Object3DPropertyFlags.MaterialIndex))
+			{
+				copyTo.MaterialIndex = copyFrom.WorldMaterialIndex(root);
+			}
+			if (flags.HasFlag(Object3DPropertyFlags.Name))
+			{
+				copyTo.Name = copyFrom.Name;
+			}
+			if (flags.HasFlag(Object3DPropertyFlags.OutputType))
+			{
+				copyTo.OutputType = copyFrom.WorldOutputType(root);
+			}
+			if (flags.HasFlag(Object3DPropertyFlags.Visible))
+			{
+				copyTo.Visible = copyFrom.WorldVisible(root);
+			}
+		}
+
 		public static void CopyProperties(this IObject3D copyTo, IObject3D copyFrom, Object3DPropertyFlags flags)
 		{
 			if (flags.HasFlag(Object3DPropertyFlags.Matrix))
