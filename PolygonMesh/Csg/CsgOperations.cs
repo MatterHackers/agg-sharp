@@ -56,6 +56,8 @@ namespace MatterHackers.PolygonMesh.Csg
 				}
 			}
 
+			model.CleanAndMerge();
+
 			return model;
 		}
 
