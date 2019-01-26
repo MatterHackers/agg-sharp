@@ -360,11 +360,26 @@ namespace MatterHackers.DataConverters3D
 		{
 			var selectedItem = this.SelectedItem;
 			this.SelectedItem = null;
+			var childrenBeforUndo = this.Children.ToList();
 			UndoBuffer.Undo();
 			// if the item we had selected is still in the scene, re-select it
 			if (this.Children.Contains(selectedItem))
 			{
 				this.SelectedItem = selectedItem;
+			}
+			else
+			{
+				// if the previously selected item is not in the scene
+				if(selectedItem != null && !this.Children.Contains(selectedItem))
+				{
+					// and we have only added one new item to the scene
+					var newItems = this.Children.Where(c => !childrenBeforUndo.Contains(c));
+					// select it
+					if (newItems.Count() == 1)
+					{
+						this.SelectedItem = newItems.First();
+					}
+				}
 			}
 		}
 
@@ -372,11 +387,26 @@ namespace MatterHackers.DataConverters3D
 		{
 			var selectedItem = this.SelectedItem;
 			this.SelectedItem = null;
+			var childrenBeforRedo = this.Children.ToList();
 			UndoBuffer.Redo();
 			// if the item we had selected is still in the scene, re-select it
 			if (this.Children.Contains(selectedItem))
 			{
 				this.SelectedItem = selectedItem;
+			}
+			else
+			{
+				// if the previously selected item is not in the scene
+				if (selectedItem != null && !this.Children.Contains(selectedItem))
+				{
+					// and we have only added one new item to the scene
+					var newItems = this.Children.Where(c => !childrenBeforRedo.Contains(c));
+					// select it
+					if (newItems.Count() == 1)
+					{
+						this.SelectedItem = newItems.First();
+					}
+				}
 			}
 		}
 

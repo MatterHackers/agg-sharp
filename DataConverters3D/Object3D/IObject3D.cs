@@ -209,33 +209,29 @@ namespace MatterHackers.DataConverters3D
 		/// <returns></returns>
 		public static IEnumerable<IObject3D> VisibleMeshes(this IObject3D root)
 		{
-			if (root.Visible)
+			var items = new Stack<IObject3D>(new[] { root });
+			while (items.Count > 0)
 			{
-				var items = new Stack<IObject3D>(new[] { root });
-				while (items.Count > 0)
-				{
-					var item = items.Pop();
+				var item = items.Pop();
 
-					// store the mesh so we are thread safe regarding having a valid object (not null)
-					var mesh = item.Mesh;
-					if (mesh != null)
+				// store the mesh so we are thread safe regarding having a valid object (not null)
+				var mesh = item.Mesh;
+				if (mesh != null)
+				{
+					// there is a mesh return the object
+					yield return item;
+				}
+				else // there is no mesh go into the object and iterate its children
+				{
+					foreach (var n in item.Children)
 					{
-						// there is a mesh return the object
-						yield return item;
-					}
-					else // there is no mesh go into the object and iterate its children
-					{
-						foreach (var n in item.Children)
+						if (n.Visible)
 						{
-							if (n.Visible)
-							{
-								items.Push(n);
-							}
+							items.Push(n);
 						}
 					}
 				}
 			}
-
 		}
 	}
 
