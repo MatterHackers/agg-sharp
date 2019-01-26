@@ -29,7 +29,7 @@ namespace MatterHackers.Agg.Font
             public int horiz_adv_x;
             public int unicode;
             public string glyphName;
-            public VertexStorage glyphData = new VertexStorage();
+            public IVertexSource glyphData = new VertexStorage();
         }
 
         private class Panos_1
@@ -278,7 +278,10 @@ namespace MatterHackers.Agg.Font
                 return newGlyph;
             }
 
-            newGlyph.glyphData.ParseSvgDString(dString);
+			if (newGlyph.glyphData is VertexStorage storage)
+			{
+				storage.ParseSvgDString(dString);
+			}
 
             return newGlyph;
         }
@@ -337,7 +340,6 @@ namespace MatterHackers.Agg.Font
                 //glyphs.Clear();
             }
 
-            IVertexSource vertexSource = null;
             // TODO: check for multi character glyphs (we don't currently support them in the reader).
             Glyph glyph = null;
             if (!glyphs.TryGetValue(character, out glyph))
@@ -345,25 +347,22 @@ namespace MatterHackers.Agg.Font
                 // if we have a loaded ttf try to create the glyph data
                 if (_ofTypeface != null)
                 {
-                    glyph = new Glyph();
-                    var translator = new VertexSourceGlyphTranslator(glyph.glyphData);
+                    var storage = new VertexStorage();
+                    var translator = new VertexSourceGlyphTranslator(storage);
                     var glyphIndex = _ofTypeface.LookupIndex(character);
                     var ttfGlyph = _ofTypeface.GetGlyphByIndex(glyphIndex);
                     //
                     Typography.OpenFont.IGlyphReaderExtensions.Read(translator,ttfGlyph.GlyphPoints, ttfGlyph.EndPoints);
+
                     //
+                    glyph = new Glyph();
                     glyph.unicode = character;
                     glyph.horiz_adv_x = _ofTypeface.GetHAdvanceWidthFromGlyphIndex(glyphIndex);
                     glyphs.Add(character, glyph);
-                    vertexSource = glyph.glyphData;
                 }
             }
-            else
-            {
-                vertexSource = glyph.glyphData;
-            }
 
-            return vertexSource;
+            return glyph.glyphData;
         }
 
         internal int GetAdvanceForCharacter(char character, char nextCharacterToKernWith)
