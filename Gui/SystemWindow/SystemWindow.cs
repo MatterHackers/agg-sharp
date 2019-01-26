@@ -37,6 +37,8 @@ namespace MatterHackers.Agg.UI
 {
 	public class SystemWindow : GuiWidget
 	{
+		private string _title = "";
+
 		public event EventHandler<ClosingEventArgs> Closing;
 
 		public bool AlwaysOnTopOfMain { get; set; }
@@ -51,7 +53,6 @@ namespace MatterHackers.Agg.UI
 
 		public ToolTipManager ToolTipManager { get; private set; }
 
-		private string _title = "";
 		public string Title
 		{
 			get => _title;
@@ -90,7 +91,7 @@ namespace MatterHackers.Agg.UI
 			Closing?.Invoke(this, eventArgs);
 		}
 
-		private static List<SystemWindow> _openWindows { get; } = new List<SystemWindow>();
+		private static readonly List<SystemWindow> _openWindows = new List<SystemWindow>();
 
 		public static IEnumerable<SystemWindow> AllOpenSystemWindows { get; } = _openWindows.Where(w => w.PlatformWindow != null);
 
@@ -199,10 +200,7 @@ namespace MatterHackers.Agg.UI
 
 		public Point2D DesktopPosition
 		{
-			get
-			{
-				return PlatformWindow.DesktopPosition;
-			}
+			get => PlatformWindow.DesktopPosition;
 			set
 			{
 				Point2D position = value;
