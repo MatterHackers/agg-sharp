@@ -358,59 +358,58 @@ namespace MatterHackers.DataConverters3D
 
 		public void Undo()
 		{
-			var selectedItem = this.SelectedItem;
-			this.SelectedItem = null;
-			var childrenBeforUndo = this.Children.ToList();
-			UndoBuffer.Undo();
-			// if the item we had selected is still in the scene, re-select it
-			if (this.Children.Contains(selectedItem))
+			using (new SelectionMaintainer(this))
 			{
-				this.SelectedItem = selectedItem;
-			}
-			else
-			{
-				// if the previously selected item is not in the scene
-				if(selectedItem != null && !this.Children.Contains(selectedItem))
-				{
-					// and we have only added one new item to the scene
-					var newItems = this.Children.Where(c => !childrenBeforUndo.Contains(c));
-					// select it
-					if (newItems.Count() == 1)
-					{
-						this.SelectedItem = newItems.First();
-					}
-				}
+				UndoBuffer.Undo();
 			}
 		}
 
 		public void Redo()
 		{
-			var selectedItem = this.SelectedItem;
-			this.SelectedItem = null;
-			var childrenBeforRedo = this.Children.ToList();
-			UndoBuffer.Redo();
-			// if the item we had selected is still in the scene, re-select it
-			if (this.Children.Contains(selectedItem))
+			using (new SelectionMaintainer(this))
 			{
-				this.SelectedItem = selectedItem;
-			}
-			else
-			{
-				// if the previously selected item is not in the scene
-				if (selectedItem != null && !this.Children.Contains(selectedItem))
-				{
-					// and we have only added one new item to the scene
-					var newItems = this.Children.Where(c => !childrenBeforRedo.Contains(c));
-					// select it
-					if (newItems.Count() == 1)
-					{
-						this.SelectedItem = newItems.First();
-					}
-				}
+				UndoBuffer.Redo();
 			}
 		}
 
 		#endregion
+	}
 
+	public class SelectionMaintainer : IDisposable
+	{
+		InteractiveScene scene;
+		private IObject3D selectedItem;
+		private List<IObject3D> childrenBeforUndo;
+
+		public SelectionMaintainer(InteractiveScene scene)
+		{
+			this.scene = scene;
+			selectedItem = scene.SelectedItem;
+			scene.SelectedItem = null;
+			childrenBeforUndo = scene.Children.ToList();
+		}
+
+		public void Dispose()
+		{
+			// if the item we had selected is still in the scene, re-select it
+			if (scene.Children.Contains(selectedItem))
+			{
+				scene.SelectedItem = selectedItem;
+			}
+			else
+			{
+				// if the previously selected item is not in the scene
+				if (selectedItem != null && !scene.Children.Contains(selectedItem))
+				{
+					// and we have only added one new item to the scene
+					var newItems = scene.Children.Where(c => !childrenBeforUndo.Contains(c));
+					// select it
+					if (newItems.Count() == 1)
+					{
+						scene.SelectedItem = newItems.First();
+					}
+				}
+			}
+		}
 	}
 }
