@@ -1,5 +1,7 @@
 using System;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.UI.Examples;
 using MatterHackers.VectorMath;
@@ -10,6 +12,24 @@ namespace MatterHackers.Agg
 	{
 		public DemoRunner()
 		{
+			string searchPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+			// Load plugins from all assemblies the startup directory
+			var dlls = Directory.GetFiles(searchPath, "*.dll");
+			var allAssemblies = dlls.Concat(Directory.GetFiles(searchPath, "*.exe"));
+
+			foreach (var file in allAssemblies)
+			{
+				try
+				{
+					PluginFinder.LoadTypesFromAssembly(Assembly.LoadFile(file));
+				}
+				catch (Exception ex)
+				{
+					System.Diagnostics.Debug.WriteLine("Error loading assembly: " + ex.Message);
+				}
+			}
+
 			var appWidgetFinder = PluginFinder.CreateInstancesOf<IDemoApp>().OrderBy(a => a.Title).ToList();
 
 			TabControl tabControl = new TabControl(Orientation.Vertical);

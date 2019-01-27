@@ -10,9 +10,9 @@ namespace MatterHackers.Agg.Font
 		[Test]
 		public void CanPrintTests()
 		{
+			// Invoke DrawString with a carriage return. If any part of the font pipeline throws, this test fails
 			ImageBuffer testImage = new ImageBuffer(300, 300);
 			testImage.NewGraphics2D().DrawString("\r", 30, 30);
-			Assert.IsTrue(true, "We can print only a \\r");
 		}
 
 		[Test]
