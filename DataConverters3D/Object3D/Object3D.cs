@@ -294,14 +294,14 @@ namespace MatterHackers.DataConverters3D
 				if (item is Object3D object3D)
 				{
 					object3D.RebuildLockCount--;
-					item.DebugDepth($"Decrease Lock Count {object3D.RebuildLockCount}");
+					//item.DebugDepth($"Decrease Lock Count {object3D.RebuildLockCount}");
 				}
 			}
 		}
 
 		public RebuildLock RebuildLock()
 		{
-			this.DebugDepth($"Increase Lock Count {RebuildLockCount}");
+			//this.DebugDepth($"Increase Lock Count {RebuildLockCount}");
 			return new Object3DRebuildLock(this);
 		}
 
