@@ -343,6 +343,7 @@ namespace MatterHackers.Agg.Font
 
             // TODO: check for multi character glyphs (we don't currently support them in the reader).
             Glyph glyph = null;
+
             if (!glyphs.TryGetValue(character, out glyph))
             {
                 // if we have a loaded ttf try to create the glyph data
@@ -367,7 +368,7 @@ namespace MatterHackers.Agg.Font
                 }
             }
 
-            return glyph.glyphData;
+            return glyph?.glyphData;
         }
 
 		/// <summary>
