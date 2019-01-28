@@ -8,6 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NUnit" Version="3.11.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.12.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\clipper_library\clipper_library.csproj">
     </ProjectReference>
     <ProjectReference Include="..\agg\Agg.csproj">
