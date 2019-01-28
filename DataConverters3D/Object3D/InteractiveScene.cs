@@ -391,24 +391,37 @@ namespace MatterHackers.DataConverters3D
 
 		public void Dispose()
 		{
+			if(selectedItem == null)
+			{
+				return;
+			}
+
 			// if the item we had selected is still in the scene, re-select it
 			if (scene.Children.Contains(selectedItem))
 			{
 				scene.SelectedItem = selectedItem;
+				return;
 			}
-			else
+
+			// if the previously selected item is not in the scene
+			if (!scene.Children.Contains(selectedItem))
 			{
-				// if the previously selected item is not in the scene
-				if (selectedItem != null && !scene.Children.Contains(selectedItem))
+				// and we have only added one new item to the scene
+				var newItems = scene.Children.Where(c => !childrenBeforUndo.Contains(c));
+				// select it
+				if (newItems.Count() == 1)
 				{
-					// and we have only added one new item to the scene
-					var newItems = scene.Children.Where(c => !childrenBeforUndo.Contains(c));
-					// select it
-					if (newItems.Count() == 1)
-					{
-						scene.SelectedItem = newItems.First();
-					}
+					scene.SelectedItem = newItems.First();
+					return;
 				}
+			}
+
+			// set the root item to the selection and then to the new item
+			var rootItem = selectedItem.Parents<IObject3D>().Where(i => scene.Children.Contains(i)).FirstOrDefault();
+			if(rootItem != null)
+			{
+				scene.SelectedItem = rootItem;
+				scene.SelectedItem = selectedItem;
 			}
 		}
 	}
