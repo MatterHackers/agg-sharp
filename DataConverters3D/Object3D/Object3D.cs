@@ -82,7 +82,7 @@ namespace MatterHackers.DataConverters3D
 
 		private void Children_ItemsModified(object sender, System.EventArgs e)
 		{
-			OnInvalidate(new InvalidateArgs(this, InvalidateType.Content));
+			OnInvalidate(new InvalidateArgs(this, InvalidateType.Children));
 		}
 
 		public string ID { get; set; } = Guid.NewGuid().ToString();
@@ -124,7 +124,7 @@ namespace MatterHackers.DataConverters3D
 						EnsureTransparentSorting();
 					}
 
-					Invalidate(new InvalidateArgs(this, InvalidateType.Color, null));
+					Invalidate(new InvalidateArgs(this, InvalidateType.Color));
 				}
 			}
 		}
@@ -160,7 +160,7 @@ namespace MatterHackers.DataConverters3D
 				if (value != _materialIndex)
 				{
 					_materialIndex = value;
-					Invalidate(new InvalidateArgs(this, InvalidateType.Material, null));
+					Invalidate(new InvalidateArgs(this, InvalidateType.Material));
 				}
 			}
 		}
@@ -191,7 +191,7 @@ namespace MatterHackers.DataConverters3D
 						});
 					}
 
-					Invalidate(new InvalidateArgs(this, InvalidateType.OutputType, null));
+					Invalidate(new InvalidateArgs(this, InvalidateType.OutputType));
 				}
 			}
 		}
@@ -205,7 +205,7 @@ namespace MatterHackers.DataConverters3D
 				if (value != _matrix)
 				{
 					_matrix = value;
-					Invalidate(new InvalidateArgs(this, InvalidateType.Matrix, null));
+					Invalidate(new InvalidateArgs(this, InvalidateType.Matrix));
 				}
 			}
 		}
@@ -227,7 +227,7 @@ namespace MatterHackers.DataConverters3D
 						traceData = null;
 						this.MeshPath = null;
 
-						Invalidate(new InvalidateArgs(this, InvalidateType.Mesh, null));
+						Invalidate(new InvalidateArgs(this, InvalidateType.Mesh));
 					}
 				}
 			}
@@ -260,7 +260,7 @@ namespace MatterHackers.DataConverters3D
 				if (value != _name)
 				{
 					_name = value;
-					Invalidate(new InvalidateArgs(this, InvalidateType.Name, null));
+					Invalidate(new InvalidateArgs(this, InvalidateType.Name));
 				}
 			}
 		}
@@ -789,7 +789,7 @@ namespace MatterHackers.DataConverters3D
 				}
 			}
 
-			Invalidate(new InvalidateArgs(this, InvalidateType.Content, undoBuffer));
+			Invalidate(new InvalidateArgs(this, InvalidateType.Children));
 		}
 
 		public virtual void Remove(UndoBuffer undoBuffer)
@@ -832,7 +832,7 @@ namespace MatterHackers.DataConverters3D
 				}
 			}
 
-			parent.Invalidate(new InvalidateArgs(this, InvalidateType.Content, null));
+			parent.Invalidate(new InvalidateArgs(this, InvalidateType.Children));
 		}
 	}
 

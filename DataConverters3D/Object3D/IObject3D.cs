@@ -51,18 +51,21 @@ namespace MatterHackers.DataConverters3D
 		Support
 	};
 
+	[Flags]
 	public enum InvalidateType
 	{
-		Color,
-		Content,
-		Image,
-		Material,
-		Matrix,
-		Mesh,
-		Name,
-		OutputType,
-		Path,
-		Properties,
+		Children = 1 << 0,
+		Color = 1 << 1,
+		Image = 1 << 2,
+		Material = 1 << 3,
+		Matrix = 1 << 4,
+		Mesh = 1 << 5,
+		Name = 1 << 6,
+		OutputType = 1 << 7,
+		Path = 1 << 8,
+		Properties = 1 << 9,
+
+		All = (Children | Color | Image | Material | Matrix | Mesh | Name | OutputType | Path | Properties)
 	};
 
 	[Flags]
@@ -81,12 +84,10 @@ namespace MatterHackers.DataConverters3D
 	{
 		public IObject3D Source { get; }
 		public InvalidateType InvalidateType { get; }
-		public UndoBuffer UndoBuffer { get; }
-		public InvalidateArgs(IObject3D source, InvalidateType invalidateType, UndoBuffer undoBuffer = null)
+		public InvalidateArgs(IObject3D source, InvalidateType invalidateType)
 		{
 			this.Source = source;
 			this.InvalidateType = invalidateType;
-			this.UndoBuffer = undoBuffer;
 		}
 	}
 
