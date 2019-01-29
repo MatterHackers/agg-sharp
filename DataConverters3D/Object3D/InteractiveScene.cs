@@ -320,7 +320,7 @@ namespace MatterHackers.DataConverters3D
 
 		public string ToJson() => SourceItem.ToJson();
 
-		public long GetLongHashCode() => SourceItem.GetLongHashCode();
+		public ulong GetLongHashCode(ulong hash = 14695981039346656037) => SourceItem.GetLongHashCode(hash);
 
 		public IPrimitive TraceData() => SourceItem.TraceData();
 

@@ -124,8 +124,8 @@ namespace MatterHackers.PolygonMesh
 
 		public int ChangedCount { get; private set; } = 0;
 
-		long _longHashBeforeClean = 0;
-		public long LongHashBeforeClean
+		ulong _longHashBeforeClean = 0;
+		public ulong LongHashBeforeClean
 		{
 			get
 			{
@@ -226,27 +226,19 @@ namespace MatterHackers.PolygonMesh
 			this.Vertices = newVertices;
 		}
 
-		public static long RotateLeft(long value, int count)
-		{
-			ulong val = (ulong)value;
-			return (long)((val << count) | (val >> (64 - count)));
-		}
-
-		public long GetLongHashCode()
+		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
 		{
 			unchecked
 			{
-				long hash = 19;
-
-				hash = hash * 31 + Vertices.Count;
-				hash = hash * 31 + Faces.Count;
+				hash = Vertices.Count.GetLongHashCode(hash);
+				hash = Faces.Count.GetLongHashCode(hash);
 
 				// we want to at most consider 100000 vertecies
-				int vertexStep = Math.Max(1, Vertices.Count / 10000);
+				int vertexStep = Math.Max(1, Vertices.Count / 1000);
 				for (int i = 0; i < Vertices.Count; i += vertexStep)
 				{
 					var vertex = Vertices[i];
-					hash ^= RotateLeft(vertex.GetLongHashCode(), 13);
+					hash = vertex.GetLongHashCode(hash);
 				}
 
 				// we want to at most consider 100000 faces
@@ -254,9 +246,9 @@ namespace MatterHackers.PolygonMesh
 				for (int i = 0; i < Faces.Count; i += faceStep)
 				{
 					var face = Faces[i];
-					hash = hash * 31 + face.v0;
-					hash = hash * 31 + face.v1;
-					hash = hash * 31 + face.v2;
+					hash = face.v0.GetLongHashCode(hash);
+					hash = face.v1.GetLongHashCode(hash);
+					hash = face.v2.GetLongHashCode(hash);
 				}
 
 				return hash;

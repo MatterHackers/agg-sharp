@@ -62,7 +62,7 @@ namespace Net3dBool
 		/// </summary>
 		private readonly static double EqualityTolerance = 1e-10f;
 
-		private Dictionary<long, int> addedVertices = new Dictionary<long, int>();
+		private Dictionary<ulong, int> addedVertices = new Dictionary<ulong, int>();
 
 		/// <summary>
 		/// object representing the solid extremes
