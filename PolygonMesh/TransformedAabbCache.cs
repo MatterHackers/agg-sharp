@@ -37,27 +37,33 @@ namespace MatterHackers.PolygonMesh
 	public class TransformedAabbCache
 	{
 		private object locker = new object();
-		private Matrix4X4 aabbTransform { get; set; } = Matrix4X4.Identity;
-		private AxisAlignedBoundingBox cachedAabb { get; set; }
+		private Dictionary<Matrix4X4, AxisAlignedBoundingBox> cache = new Dictionary<Matrix4X4, AxisAlignedBoundingBox>();
 
 		public void Changed()
 		{
 			lock (locker)
 			{
 				// set the aabbTransform to a bad value so we detect in needs to be recreated
-				var current = Matrix4X4.Identity;
-				current[0, 0] = double.MinValue;
-				aabbTransform = current;
+				cache.Clear();
 			}
 		}
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Mesh mesh, Matrix4X4 transform)
 		{
-			// if we already have the transform with exact bounds than return it
-			if (aabbTransform == transform && cachedAabb != null)
+			var cacheCount = cache.Count();
+			if (cacheCount > 100)
 			{
+				lock (locker)
+				{
+					cache.Clear();
+				}
+			}
+			// if we already have the transform with exact bounds than return it
+			AxisAlignedBoundingBox aabb;
+			if(cache.TryGetValue(transform, out aabb))
+			{ 
 				// return, the fast cache for this transform is correct
-				return cachedAabb;
+				return aabb;
 			}
 
 			var positions = mesh.Vertices;
@@ -72,33 +78,8 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			CalculateBounds(positions, transform);
-			return cachedAabb;
-		}
 
-		private void CalculateBounds(IEnumerable<Vector3> vertices, Matrix4X4 transform)
-		{
-			// calculate the aabb for the current transform
-			Vector3 minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
-			Vector3 maxXYZ = new Vector3(double.MinValue, double.MinValue, double.MinValue);
-
-			foreach (var positionIn in vertices)
-			{
-				Vector3 position = Vector3Ex.Transform(positionIn, transform);
-
-				minXYZ.X = Math.Min(minXYZ.X, position.X);
-				minXYZ.Y = Math.Min(minXYZ.Y, position.Y);
-				minXYZ.Z = Math.Min(minXYZ.Z, position.Z);
-
-				maxXYZ.X = Math.Max(maxXYZ.X, position.X);
-				maxXYZ.Y = Math.Max(maxXYZ.Y, position.Y);
-				maxXYZ.Z = Math.Max(maxXYZ.Z, position.Z);
-			}
-
-			lock (locker)
-			{
-				cachedAabb = new AxisAlignedBoundingBox(minXYZ, maxXYZ);
-				aabbTransform = transform;
-			}
+			return cache[transform];
 		}
 
 		private void CalculateBounds(IEnumerable<Vector3Float> vertices, Matrix4X4 transform)
@@ -122,8 +103,7 @@ namespace MatterHackers.PolygonMesh
 
 			lock (locker)
 			{
-				cachedAabb = new AxisAlignedBoundingBox(minXYZ, maxXYZ);
-				aabbTransform = transform;
+				cache.Add(transform, new AxisAlignedBoundingBox(minXYZ, maxXYZ));
 			}
 		}
 	}
