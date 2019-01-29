@@ -346,11 +346,6 @@ namespace MatterHackers.DataConverters3D
 			throw new NotImplementedException();
 		}
 
-		public void Rebuild(UndoBuffer undoBuffer)
-		{
-			throw new NotImplementedException();
-		}
-
 		public RebuildLock RebuildLock()
 		{
 			throw new NotImplementedException();
