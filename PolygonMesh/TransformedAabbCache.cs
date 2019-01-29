@@ -50,36 +50,33 @@ namespace MatterHackers.PolygonMesh
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Mesh mesh, Matrix4X4 transform)
 		{
-			var cacheCount = cache.Count();
-			if (cacheCount > 100)
+			lock (locker)
 			{
-				lock (locker)
+				var cacheCount = cache.Count();
+				if (cacheCount > 100)
 				{
 					cache.Clear();
 				}
-			}
-			// if we already have the transform with exact bounds than return it
-			AxisAlignedBoundingBox aabb;
-			if(cache.TryGetValue(transform, out aabb))
-			{ 
-				// return, the fast cache for this transform is correct
-				return aabb;
-			}
+				// if we already have the transform with exact bounds than return it
+				AxisAlignedBoundingBox aabb;
+				if (cache.TryGetValue(transform, out aabb))
+				{
+					// return, the fast cache for this transform is correct
+					return aabb;
+				}
 
-			var positions = mesh.Vertices;
+				var positions = mesh.Vertices;
 
-			lock (locker)
-			{
 				var convexHull = mesh.GetConvexHull(true);
 				if (convexHull != null)
 				{
 					positions = convexHull.Vertices;
 				}
+
+				CalculateBounds(positions, transform);
+
+				return cache[transform];
 			}
-
-			CalculateBounds(positions, transform);
-
-			return cache[transform];
 		}
 
 		private void CalculateBounds(IEnumerable<Vector3Float> vertices, Matrix4X4 transform)
@@ -101,10 +98,7 @@ namespace MatterHackers.PolygonMesh
 				maxXYZ.Z = Math.Max(maxXYZ.Z, position.Z);
 			}
 
-			lock (locker)
-			{
-				cache.Add(transform, new AxisAlignedBoundingBox(minXYZ, maxXYZ));
-			}
+			cache.Add(transform, new AxisAlignedBoundingBox(minXYZ, maxXYZ));
 		}
 	}
 }
