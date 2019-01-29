@@ -660,7 +660,7 @@ namespace MatterHackers.DataConverters3D
 		private IPrimitive traceData;
 
 		// Cache busting on child nodes
-		private long tracedHashCode = long.MinValue;
+		private ulong tracedHashCode = ulong.MinValue;
 		private bool buildingFaceBsp;
 		private SafeList<IObject3D> _children;
 
@@ -668,7 +668,7 @@ namespace MatterHackers.DataConverters3D
 		{
 			var processingMesh = Mesh;
 			// Cache busting on child nodes
-			long hashCode = GetLongHashCode();
+			ulong hashCode = GetLongHashCode();
 
 			if (traceData == null || tracedHashCode != hashCode)
 			{
@@ -729,24 +729,19 @@ namespace MatterHackers.DataConverters3D
 
 		// Hashcode for lists as proposed by Jon Skeet
 		// http://stackoverflow.com/questions/8094867/good-gethashcode-override-for-list-of-foo-objects-respecting-the-order
-		public long GetLongHashCode()
+		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
 		{
-			long hash = 19;
+			hash = Matrix.GetLongHashCode(hash);
 
-			unchecked
+			if (Mesh != null)
 			{
-				hash = hash * 31 + Matrix.GetLongHashCode();
+				hash = Mesh.GetLongHashCode(hash);
+			}
 
-				if (Mesh != null)
-				{
-					hash = hash * 31 + Mesh.GetLongHashCode();
-				}
-
-				foreach (var child in Children)
-				{
-					// The children need to include their transforms
-					hash = hash * 31 + child.GetLongHashCode();
-				}
+			foreach (var child in Children)
+			{
+				// The children need to include their transforms
+				hash = child.GetLongHashCode(hash);
 			}
 
 			return hash;

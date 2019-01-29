@@ -205,10 +205,9 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static long MeshRenderId(this IObject3D root)
+		public static ulong MeshRenderId(this IObject3D root)
 		{
-			long hash = 19;
-
+			ulong hash = 14695981039346656037;
 			using (root.RebuildLock())
 			{
 				var oldMatrix = root.Matrix;
@@ -218,9 +217,9 @@ namespace MatterHackers.DataConverters3D
 				{
 					unchecked
 					{
-						hash = hash * 31 + item.Mesh.LongHashBeforeClean;
-						hash = hash * 31 + item.WorldMatrix(root).GetLongHashCode();
-						hash = hash * 31 + item.WorldColor(root).GetLongHashCode();
+						hash = item.Mesh.LongHashBeforeClean.GetLongHashCode(hash);
+						hash = item.WorldMatrix(root).GetLongHashCode(hash);
+						hash = item.WorldColor(root).GetLongHashCode(hash);
 					}
 				}
 
@@ -369,7 +368,7 @@ namespace MatterHackers.DataConverters3D
 		/// return a 64 bit hash code of the transforms and children and transforms
 		/// </summary>
 		/// <returns></returns>
-		long GetLongHashCode();
+		ulong GetLongHashCode(ulong hash = 14695981039346656037);
 
 		/// <summary>
 		/// Serialize the current instance to Json
