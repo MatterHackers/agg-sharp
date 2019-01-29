@@ -82,7 +82,7 @@ namespace MatterHackers.DataConverters3D
 
 		private void Children_ItemsModified(object sender, System.EventArgs e)
 		{
-			OnInvalidate(new InvalidateArgs(this, InvalidateType.Children));
+			Invalidate(InvalidateType.Children);
 		}
 
 		public string ID { get; set; } = Guid.NewGuid().ToString();
@@ -124,7 +124,7 @@ namespace MatterHackers.DataConverters3D
 						EnsureTransparentSorting();
 					}
 
-					Invalidate(new InvalidateArgs(this, InvalidateType.Color));
+					Invalidate(InvalidateType.Color);
 				}
 			}
 		}
@@ -160,7 +160,7 @@ namespace MatterHackers.DataConverters3D
 				if (value != _materialIndex)
 				{
 					_materialIndex = value;
-					Invalidate(new InvalidateArgs(this, InvalidateType.Material));
+					Invalidate(InvalidateType.Material);
 				}
 			}
 		}
@@ -191,7 +191,7 @@ namespace MatterHackers.DataConverters3D
 						});
 					}
 
-					Invalidate(new InvalidateArgs(this, InvalidateType.OutputType));
+					Invalidate(InvalidateType.OutputType);
 				}
 			}
 		}
@@ -205,7 +205,7 @@ namespace MatterHackers.DataConverters3D
 				if (value != _matrix)
 				{
 					_matrix = value;
-					Invalidate(new InvalidateArgs(this, InvalidateType.Matrix));
+					Invalidate(InvalidateType.Matrix);
 				}
 			}
 		}
@@ -227,7 +227,7 @@ namespace MatterHackers.DataConverters3D
 						traceData = null;
 						this.MeshPath = null;
 
-						Invalidate(new InvalidateArgs(this, InvalidateType.Mesh));
+						Invalidate(InvalidateType.Mesh);
 					}
 				}
 			}
@@ -260,7 +260,7 @@ namespace MatterHackers.DataConverters3D
 				if (value != _name)
 				{
 					_name = value;
-					Invalidate(new InvalidateArgs(this, InvalidateType.Name));
+					Invalidate(InvalidateType.Name);
 				}
 			}
 		}
@@ -486,11 +486,16 @@ namespace MatterHackers.DataConverters3D
 			return Task.CompletedTask;
 		}
 
-		public void Invalidate(InvalidateArgs invalidateType)
+		public void Invalidate(InvalidateType invalidateType)
+		{
+			this.Invalidate(new InvalidateArgs(this, invalidateType));
+		}
+
+		public void Invalidate(InvalidateArgs invalidateArgs)
 		{
 			if (!RebuildLocked)
 			{
-				this.OnInvalidate(invalidateType);
+				this.OnInvalidate(invalidateArgs);
 			}
 		}
 
@@ -789,7 +794,7 @@ namespace MatterHackers.DataConverters3D
 				}
 			}
 
-			Invalidate(new InvalidateArgs(this, InvalidateType.Children));
+			Invalidate(InvalidateType.Children);
 		}
 
 		public virtual void Remove(UndoBuffer undoBuffer)
