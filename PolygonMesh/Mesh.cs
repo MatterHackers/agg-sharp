@@ -428,6 +428,17 @@ namespace MatterHackers.PolygonMesh
 			return mesh.GetCoplanerFaces(plane);
 		}
 
+		public static double GetSurfaceArea(this Mesh mesh, int faceIndex)
+		{
+			var face = mesh.Faces[faceIndex];
+			var verts = mesh.Vertices;
+			var a = (verts[face.v0] - verts[face.v1]).Length;
+			var b = (verts[face.v1] - verts[face.v2]).Length;
+			var c = (verts[face.v2] - verts[face.v0]).Length;
+			var p = 0.5 * (a + b + c);
+			return Math.Sqrt(p * (p - a) * (p - b) * (p - c));
+		}
+
 		public static Matrix4X4 GetMaxPlaneProjection(this Mesh mesh, IEnumerable<int> faces, ImageBuffer textureToUse, Matrix4X4? initialTransform = null)
 		{
 			// If not set than make it identity
