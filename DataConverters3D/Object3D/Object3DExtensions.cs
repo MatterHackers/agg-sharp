@@ -141,6 +141,27 @@ namespace MatterHackers.DataConverters3D
 			world.Fit(itemToRender, goalBounds, Matrix4X4.Identity);
 		}
 
+		public static AxisAlignedBoundingBox GetAxisAlignedBoundingBox(this IEnumerable<IObject3D> items)
+		{
+			var aabb = AxisAlignedBoundingBox.Empty();
+			foreach (var item in items)
+			{
+				aabb += item.GetAxisAlignedBoundingBox();
+			}
+
+			return aabb;
+		}
+
+		public static void Translate(this IEnumerable<IObject3D> items, Vector3 translation)
+		{
+			var matrix = Matrix4X4.CreateTranslation(translation);
+			var aabb = AxisAlignedBoundingBox.Empty();
+			foreach (var item in items)
+			{
+				item.Matrix *= matrix;
+			}
+		}
+
 		public static void Fit(this WorldView world, IObject3D itemToRender, RectangleDouble goalBounds, Matrix4X4 offset)
 		{
 			AxisAlignedBoundingBox meshBounds = itemToRender.GetAxisAlignedBoundingBox(offset);
