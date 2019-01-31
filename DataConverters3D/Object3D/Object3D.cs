@@ -787,6 +787,11 @@ namespace MatterHackers.DataConverters3D
 				{
 					replaceCommand.Do();
 				}
+
+				foreach(var child in newChildren)
+				{
+					child.MakeNameNonColliding();
+				}
 			}
 
 			Invalidate(InvalidateType.Children);

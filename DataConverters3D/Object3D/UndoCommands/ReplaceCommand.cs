@@ -66,7 +66,11 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 			var firstParent = removeItems.First().Parent;
 			using (firstParent.RebuildLock())
 			{
-				var aabb = firstParent.GetAxisAlignedBoundingBox();
+				var aabb = AxisAlignedBoundingBox.Empty();
+				foreach (var item in removeItems)
+				{
+					aabb += item.GetAxisAlignedBoundingBox();
+				}
 
 				firstParent.Children.Modify(list =>
 				{
