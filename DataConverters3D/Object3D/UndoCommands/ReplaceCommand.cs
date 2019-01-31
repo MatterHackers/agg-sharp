@@ -66,11 +66,7 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 			var firstParent = removeItems.First().Parent;
 			using (firstParent.RebuildLock())
 			{
-				var aabb = AxisAlignedBoundingBox.Empty();
-				foreach (var item in removeItems)
-				{
-					aabb += item.GetAxisAlignedBoundingBox();
-				}
+				var aabb = removeItems.GetAxisAlignedBoundingBox();
 
 				firstParent.Children.Modify(list =>
 				{
@@ -83,11 +79,7 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 
 				// attempt to hold the items that we are adding to the same position as the items we are replacing
 				// first get the bounds of all the items being added
-				var aabb2 = AxisAlignedBoundingBox.Empty();
-				foreach(var item in addItems)
-				{
-					aabb2 += item.GetAxisAlignedBoundingBox();
-				}
+				var aabb2 = addItems.GetAxisAlignedBoundingBox();
 
 				// then move the all to account for the old center and bed position
 				foreach (var item in addItems)
