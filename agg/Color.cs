@@ -766,19 +766,9 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public long GetLongHashCode()
+		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
 		{
-			long hash = 19;
-
-			unchecked
-			{
-				hash = hash * 31 + red;
-				hash = hash * 31 + green;
-				hash = hash * 31 + blue;
-				hash = hash * 31 + alpha;
-			}
-
-			return hash;
+			return agg_basics.ComputeHash(new byte[] { red, green, blue, alpha}, hash);
 		}
 
 		public Color(string htmlString)

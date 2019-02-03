@@ -292,35 +292,34 @@ namespace MatterHackers.Agg
 			return bytes;
 		}
 
-		public static long GetLongHashCode(this string source)
+		public static ulong GetLongHashCode(this string data, ulong hash = 14695981039346656037)
 		{
-			return ComputeHash(source);
+			return ComputeHash(GetBytes(data), hash);
 		}
 
-		public static long ComputeHash(string data)
+		public static ulong GetLongHashCode(this int data, ulong hash = 14695981039346656037)
 		{
-			return ComputeHash(GetBytes(data));
+			return ComputeHash(BitConverter.GetBytes(data), hash);
 		}
 
-		public static long ComputeHash(byte[] data)
+		public static ulong GetLongHashCode(this ulong data, ulong hash = 14695981039346656037)
 		{
-			unchecked
+			return ComputeHash(BitConverter.GetBytes(data), hash);
+		}
+
+		// FNV-1a (64-bit) non-cryptographic hash function.
+		// Adapted from: http://github.com/jakedouglas/fnv-java
+		public static ulong ComputeHash(byte[] bytes, ulong hash = 14695981039346656037)
+		{
+			const ulong fnv64Prime = 0x100000001b3;
+
+			for (var i = 0; i < bytes.Length; i++)
 			{
-				const long p = 1099511628211;
-				long hash = (long)14695981039346656037;
-
-				for (int i = 0; i < data.Length; i++)
-				{
-					hash = (hash ^ data[i]) * p;
-				}
-
-				hash += hash << 13;
-				hash ^= hash >> 7;
-				hash += hash << 3;
-				hash ^= hash >> 17;
-				hash += hash << 5;
-				return hash;
+				hash = hash ^ bytes[i];
+				hash *= fnv64Prime;
 			}
+
+			return hash;
 		}
 
 		public static void memcpy(int[] dest, int destIndex, int[] source, int sourceIndex, int Count)

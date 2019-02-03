@@ -320,7 +320,7 @@ namespace MatterHackers.DataConverters3D
 
 		public string ToJson() => SourceItem.ToJson();
 
-		public long GetLongHashCode() => SourceItem.GetLongHashCode();
+		public ulong GetLongHashCode(ulong hash = 14695981039346656037) => SourceItem.GetLongHashCode(hash);
 
 		public IPrimitive TraceData() => SourceItem.TraceData();
 
@@ -346,11 +346,6 @@ namespace MatterHackers.DataConverters3D
 			throw new NotImplementedException();
 		}
 
-		public void Rebuild(UndoBuffer undoBuffer)
-		{
-			throw new NotImplementedException();
-		}
-
 		public RebuildLock RebuildLock()
 		{
 			throw new NotImplementedException();
@@ -358,29 +353,20 @@ namespace MatterHackers.DataConverters3D
 
 		public void Undo()
 		{
-			var selectedItem = this.SelectedItem;
-			this.SelectedItem = null;
-			UndoBuffer.Undo();
-			// if the item we had selected is still in the scene, re-select it
-			if (this.Children.Contains(selectedItem))
+			using (new SelectionMaintainer(this))
 			{
-				this.SelectedItem = selectedItem;
+				UndoBuffer.Undo();
 			}
 		}
 
 		public void Redo()
 		{
-			var selectedItem = this.SelectedItem;
-			this.SelectedItem = null;
-			UndoBuffer.Redo();
-			// if the item we had selected is still in the scene, re-select it
-			if (this.Children.Contains(selectedItem))
+			using (new SelectionMaintainer(this))
 			{
-				this.SelectedItem = selectedItem;
+				UndoBuffer.Redo();
 			}
 		}
 
 		#endregion
-
 	}
 }

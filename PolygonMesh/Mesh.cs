@@ -124,8 +124,8 @@ namespace MatterHackers.PolygonMesh
 
 		public int ChangedCount { get; private set; } = 0;
 
-		long _longHashBeforeClean = 0;
-		public long LongHashBeforeClean
+		ulong _longHashBeforeClean = 0;
+		public ulong LongHashBeforeClean
 		{
 			get
 			{
@@ -184,14 +184,15 @@ namespace MatterHackers.PolygonMesh
 		{
 			for(int i=0; i<Faces.Count; i++)
 			{
-				ReverseFaces(i);
+				ReverseFace(i);
 			}
+			MarkAsChanged();
 		}
 
-		public void ReverseFaces(int faceIndex)
+		public void ReverseFace(int faceIndex)
 		{
 			var hold = Faces[faceIndex];
-			Faces[faceIndex] = new Face(hold.v2, hold.v1, hold.v0, -hold.normal);
+			Faces[faceIndex] = new Face(hold.v0, hold.v2, hold.v1, hold.normal);
 		}
 
 		public void CleanAndMerge()
@@ -225,30 +226,29 @@ namespace MatterHackers.PolygonMesh
 			this.Vertices = newVertices;
 		}
 
-		public long GetLongHashCode()
+		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
 		{
 			unchecked
 			{
-				long hash = 19;
+				hash = Vertices.Count.GetLongHashCode(hash);
+				hash = Faces.Count.GetLongHashCode(hash);
 
-				hash = hash * 31 + Vertices.Count;
-				hash = hash * 31 + Faces.Count;
-
-				int vertexStep = Math.Max(1, Vertices.Count / 16);
+				// we want to at most consider 100000 vertecies
+				int vertexStep = Math.Max(1, Vertices.Count / 1000);
 				for (int i = 0; i < Vertices.Count; i += vertexStep)
 				{
 					var vertex = Vertices[i];
-					hash = hash * 31 + vertex.GetLongHashCode();
+					hash = vertex.GetLongHashCode(hash);
 				}
 
-				// also need the direction of vertices for face edges
-				int faceStep = Math.Max(1, Faces.Count / 16);
+				// we want to at most consider 100000 faces
+				int faceStep = Math.Max(1, Faces.Count / 10000);
 				for (int i = 0; i < Faces.Count; i += faceStep)
 				{
 					var face = Faces[i];
-					hash = hash * 31 + face.v0;
-					hash = hash * 31 + face.v1;
-					hash = hash * 31 + face.v2;
+					hash = face.v0.GetLongHashCode(hash);
+					hash = face.v1.GetLongHashCode(hash);
+					hash = face.v2.GetLongHashCode(hash);
 				}
 
 				return hash;
@@ -272,6 +272,10 @@ namespace MatterHackers.PolygonMesh
 			if (matrix != Matrix4X4.Identity)
 			{
 				Vertices.Transform(matrix);
+				for(int i=0; i<Faces.Count; i++)
+				{
+					Faces[i] = new Face(Faces[i].v0, Faces[i].v1, Faces[i].v2, Faces[i].normal.TransformNormal(matrix));
+				}
 				MarkAsChanged();
 			}
 		}
@@ -422,6 +426,17 @@ namespace MatterHackers.PolygonMesh
 			var plane = mesh.GetPlane(faceIndex);
 
 			return mesh.GetCoplanerFaces(plane);
+		}
+
+		public static double GetSurfaceArea(this Mesh mesh, int faceIndex)
+		{
+			var face = mesh.Faces[faceIndex];
+			var verts = mesh.Vertices;
+			var a = (verts[face.v0] - verts[face.v1]).Length;
+			var b = (verts[face.v1] - verts[face.v2]).Length;
+			var c = (verts[face.v2] - verts[face.v0]).Length;
+			var p = 0.5 * (a + b + c);
+			return Math.Sqrt(p * (p - a) * (p - b) * (p - c));
 		}
 
 		public static Matrix4X4 GetMaxPlaneProjection(this Mesh mesh, IEnumerable<int> faces, ImageBuffer textureToUse, Matrix4X4? initialTransform = null)

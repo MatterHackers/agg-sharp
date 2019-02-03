@@ -50,7 +50,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		private Matrix4X4 invFlatentMatrix;
 
 		private List<List<Vector2>> openPolygonList = new List<List<Vector2>>();
-		private Dictionary<long, List<int>> startIndexes = new Dictionary<long, List<int>>();
+		private Dictionary<ulong, List<int>> startIndexes = new Dictionary<ulong, List<int>>();
 
 		public SliceLayer(Plane slicePlane)
 		{
@@ -355,7 +355,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		{
 			for (int startingSegmentIndex = 0; startingSegmentIndex < UnorderedSegments.Count; startingSegmentIndex++)
 			{
-				long positionKey = UnorderedSegments[startingSegmentIndex].Start.GetLongHashCode();
+				ulong positionKey = UnorderedSegments[startingSegmentIndex].Start.GetLongHashCode();
 				if (!startIndexes.ContainsKey(positionKey))
 				{
 					startIndexes.Add(positionKey, new List<int>());
@@ -383,7 +383,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 
 			int lookupSegmentIndex = -1;
-			long positionKey = addedSegmentEndPoint.GetLongHashCode();
+			ulong positionKey = addedSegmentEndPoint.GetLongHashCode();
 			if (startIndexes.ContainsKey(positionKey))
 			{
 				foreach (int index in startIndexes[positionKey])

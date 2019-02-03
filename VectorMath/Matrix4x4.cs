@@ -1349,17 +1349,12 @@ namespace MatterHackers.VectorMath
 		// http://stackoverflow.com/questions/8094867/good-gethashcode-override-for-list-of-foo-objects-respecting-the-order
 		/// </summary>
 		/// <returns></returns>
-		public long GetLongHashCode()
+		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
 		{
-			long hash = 19;
-
-			unchecked
-			{
-				hash = hash * 31 + Row0.GetLongHashCode();
-				hash = hash * 31 + Row1.GetLongHashCode();
-				hash = hash * 31 + Row2.GetLongHashCode();
-				hash = hash * 31 + Row3.GetLongHashCode();
-			}
+			hash = Row0.GetLongHashCode(hash);
+			hash = Row1.GetLongHashCode(hash);
+			hash = Row2.GetLongHashCode(hash);
+			hash = Row3.GetLongHashCode(hash);
 
 			return hash;
 		}

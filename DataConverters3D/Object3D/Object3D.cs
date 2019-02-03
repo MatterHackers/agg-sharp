@@ -82,7 +82,7 @@ namespace MatterHackers.DataConverters3D
 
 		private void Children_ItemsModified(object sender, System.EventArgs e)
 		{
-			OnInvalidate(new InvalidateArgs(this, InvalidateType.Content));
+			Invalidate(InvalidateType.Children);
 		}
 
 		public string ID { get; set; } = Guid.NewGuid().ToString();
@@ -124,7 +124,7 @@ namespace MatterHackers.DataConverters3D
 						EnsureTransparentSorting();
 					}
 
-					Invalidate(new InvalidateArgs(this, InvalidateType.Color, null));
+					Invalidate(InvalidateType.Color);
 				}
 			}
 		}
@@ -160,7 +160,7 @@ namespace MatterHackers.DataConverters3D
 				if (value != _materialIndex)
 				{
 					_materialIndex = value;
-					Invalidate(new InvalidateArgs(this, InvalidateType.Material, null));
+					Invalidate(InvalidateType.Material);
 				}
 			}
 		}
@@ -191,7 +191,7 @@ namespace MatterHackers.DataConverters3D
 						});
 					}
 
-					Invalidate(new InvalidateArgs(this, InvalidateType.OutputType, null));
+					Invalidate(InvalidateType.OutputType);
 				}
 			}
 		}
@@ -205,7 +205,7 @@ namespace MatterHackers.DataConverters3D
 				if (value != _matrix)
 				{
 					_matrix = value;
-					Invalidate(new InvalidateArgs(this, InvalidateType.Matrix, null));
+					Invalidate(InvalidateType.Matrix);
 				}
 			}
 		}
@@ -227,7 +227,7 @@ namespace MatterHackers.DataConverters3D
 						traceData = null;
 						this.MeshPath = null;
 
-						Invalidate(new InvalidateArgs(this, InvalidateType.Mesh, null));
+						Invalidate(InvalidateType.Mesh);
 					}
 				}
 			}
@@ -260,7 +260,7 @@ namespace MatterHackers.DataConverters3D
 				if (value != _name)
 				{
 					_name = value;
-					Invalidate(new InvalidateArgs(this, InvalidateType.Name, null));
+					Invalidate(InvalidateType.Name);
 				}
 			}
 		}
@@ -294,14 +294,14 @@ namespace MatterHackers.DataConverters3D
 				if (item is Object3D object3D)
 				{
 					object3D.RebuildLockCount--;
-					item.DebugDepth($"Decrease Lock Count {object3D.RebuildLockCount}");
+					//item.DebugDepth($"Decrease Lock Count {object3D.RebuildLockCount}");
 				}
 			}
 		}
 
 		public RebuildLock RebuildLock()
 		{
-			this.DebugDepth($"Increase Lock Count {RebuildLockCount}");
+			//this.DebugDepth($"Increase Lock Count {RebuildLockCount}");
 			return new Object3DRebuildLock(this);
 		}
 
@@ -486,11 +486,16 @@ namespace MatterHackers.DataConverters3D
 			return Task.CompletedTask;
 		}
 
-		public void Invalidate(InvalidateArgs invalidateType)
+		public void Invalidate(InvalidateType invalidateType)
+		{
+			this.Invalidate(new InvalidateArgs(this, invalidateType));
+		}
+
+		public void Invalidate(InvalidateArgs invalidateArgs)
 		{
 			if (!RebuildLocked)
 			{
-				this.OnInvalidate(invalidateType);
+				this.OnInvalidate(invalidateArgs);
 			}
 		}
 
@@ -655,7 +660,7 @@ namespace MatterHackers.DataConverters3D
 		private IPrimitive traceData;
 
 		// Cache busting on child nodes
-		private long tracedHashCode = long.MinValue;
+		private ulong tracedHashCode = ulong.MinValue;
 		private bool buildingFaceBsp;
 		private SafeList<IObject3D> _children;
 
@@ -663,7 +668,7 @@ namespace MatterHackers.DataConverters3D
 		{
 			var processingMesh = Mesh;
 			// Cache busting on child nodes
-			long hashCode = GetLongHashCode();
+			ulong hashCode = GetLongHashCode();
 
 			if (traceData == null || tracedHashCode != hashCode)
 			{
@@ -724,24 +729,19 @@ namespace MatterHackers.DataConverters3D
 
 		// Hashcode for lists as proposed by Jon Skeet
 		// http://stackoverflow.com/questions/8094867/good-gethashcode-override-for-list-of-foo-objects-respecting-the-order
-		public long GetLongHashCode()
+		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
 		{
-			long hash = 19;
+			hash = Matrix.GetLongHashCode(hash);
 
-			unchecked
+			if (Mesh != null)
 			{
-				hash = hash * 31 + Matrix.GetLongHashCode();
+				hash = Mesh.GetLongHashCode(hash);
+			}
 
-				if (Mesh != null)
-				{
-					hash = hash * 31 + Mesh.GetLongHashCode();
-				}
-
-				foreach (var child in Children)
-				{
-					// The children need to include their transforms
-					hash = hash * 31 + child.GetLongHashCode();
-				}
+			foreach (var child in Children)
+			{
+				// The children need to include their transforms
+				hash = child.GetLongHashCode(hash);
 			}
 
 			return hash;
@@ -778,7 +778,7 @@ namespace MatterHackers.DataConverters3D
 				}
 
 				// and replace us with the children
-				var replaceCommand = new ReplaceCommand(new List<IObject3D> { this }, newChildren);
+				var replaceCommand = new ReplaceCommand(new[] { this }, newChildren);
 				if (undoBuffer != null)
 				{
 					undoBuffer.AddAndDo(replaceCommand);
@@ -787,9 +787,14 @@ namespace MatterHackers.DataConverters3D
 				{
 					replaceCommand.Do();
 				}
+
+				foreach(var child in newChildren)
+				{
+					child.MakeNameNonColliding();
+				}
 			}
 
-			Invalidate(new InvalidateArgs(this, InvalidateType.Content, undoBuffer));
+			Invalidate(InvalidateType.Children);
 		}
 
 		public virtual void Remove(UndoBuffer undoBuffer)
@@ -814,7 +819,7 @@ namespace MatterHackers.DataConverters3D
 					}
 
 					// and replace us with the children
-					undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newTree.Children.ToList()));
+					undoBuffer.AddAndDo(new ReplaceCommand(new[] { this }, newTree.Children.ToList()));
 				}
 				else
 				{
@@ -832,7 +837,7 @@ namespace MatterHackers.DataConverters3D
 				}
 			}
 
-			parent.Invalidate(new InvalidateArgs(this, InvalidateType.Content, null));
+			parent.Invalidate(new InvalidateArgs(this, InvalidateType.Children));
 		}
 	}
 

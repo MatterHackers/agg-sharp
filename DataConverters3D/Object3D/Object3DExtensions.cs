@@ -141,6 +141,27 @@ namespace MatterHackers.DataConverters3D
 			world.Fit(itemToRender, goalBounds, Matrix4X4.Identity);
 		}
 
+		public static AxisAlignedBoundingBox GetAxisAlignedBoundingBox(this IEnumerable<IObject3D> items)
+		{
+			var aabb = AxisAlignedBoundingBox.Empty();
+			foreach (var item in items)
+			{
+				aabb += item.GetAxisAlignedBoundingBox();
+			}
+
+			return aabb;
+		}
+
+		public static void Translate(this IEnumerable<IObject3D> items, Vector3 translation)
+		{
+			var matrix = Matrix4X4.CreateTranslation(translation);
+			var aabb = AxisAlignedBoundingBox.Empty();
+			foreach (var item in items)
+			{
+				item.Matrix *= matrix;
+			}
+		}
+
 		public static void Fit(this WorldView world, IObject3D itemToRender, RectangleDouble goalBounds, Matrix4X4 offset)
 		{
 			AxisAlignedBoundingBox meshBounds = itemToRender.GetAxisAlignedBoundingBox(offset);
@@ -225,7 +246,7 @@ namespace MatterHackers.DataConverters3D
 
 			Directory.CreateDirectory(Object3D.AssetsPath);
 
-			var assetFiles = new Dictionary<int, string>();
+			var assetFiles = new Dictionary<ulong, string>();
 
 			try
 			{
@@ -244,7 +265,7 @@ namespace MatterHackers.DataConverters3D
 					}
 
 					// Calculate the fast mesh hash
-					int hashCode = (int)item.Mesh.GetLongHashCode();
+					ulong hashCode = item.Mesh.GetLongHashCode();
 
 					// Index into dictionary using fast hash
 					if (!assetFiles.TryGetValue(hashCode, out string assetPath))
@@ -374,6 +395,25 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			return lastOutputTypeFound;
+		}
+
+		public static bool WorldVisible(this IObject3D child, IObject3D rootOverride = null)
+		{
+			foreach (var item in child.AncestorsAndSelf())
+			{
+				if (!item.Visible)
+				{
+					return false;
+				}
+
+				// If the root override has been matched, break and return latest
+				if (item == rootOverride)
+				{
+					break;
+				}
+			}
+
+			return true;
 		}
 
 		public static int WorldMaterialIndex(this IObject3D child, IObject3D rootOverride = null)

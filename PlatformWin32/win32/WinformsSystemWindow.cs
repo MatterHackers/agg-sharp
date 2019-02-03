@@ -57,6 +57,11 @@ namespace MatterHackers.Agg.UI
 
 					if (SingleWindowMode)
 					{
+						if (firstWindow)
+						{
+							this.MinimumSize = systemWindow.MinimumSize;
+						}
+
 						// Set this system window as the event target
 						this.EventSink?.SetActiveSystemWindow(systemWindow);
 					}
@@ -652,10 +657,7 @@ namespace MatterHackers.Agg.UI
 
 		public new Vector2 MinimumSize
 		{
-			get
-			{
-				return new Vector2(base.MinimumSize.Width, base.MinimumSize.Height);
-			}
+			get => new Vector2(base.MinimumSize.Width, base.MinimumSize.Height);
 			set
 			{
 				Size clientSize = new Size((int)Math.Ceiling(value.X), (int)Math.Ceiling(value.Y));

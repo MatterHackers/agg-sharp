@@ -39,6 +39,8 @@ using MatterHackers.VectorMath;
 namespace MatterHackers.DataConverters3D
 {
 	using Polygons = List<List<IntPoint>>;
+	using Polygon = List<IntPoint>;
+
 	public static class VertexSourceToMesh
 	{
 		public static Mesh TriangulateFaces(IVertexSource vertexSource)
@@ -70,6 +72,34 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			return mesh;
+		}
+
+		public static Polygons GetCorrectedWinding(this Polygons polygonsToFix)
+		{
+			polygonsToFix = Clipper.CleanPolygons(polygonsToFix);
+			Polygon boundsPolygon = new Polygon();
+			IntRect bounds = Clipper.GetBounds(polygonsToFix);
+			bounds.minX -= 10;
+			bounds.minY -= 10;
+			bounds.maxY += 10;
+			bounds.maxX += 10;
+
+			boundsPolygon.Add(new IntPoint(bounds.minX, bounds.minY));
+			boundsPolygon.Add(new IntPoint(bounds.maxX, bounds.minY));
+			boundsPolygon.Add(new IntPoint(bounds.maxX, bounds.maxY));
+			boundsPolygon.Add(new IntPoint(bounds.minX, bounds.maxY));
+
+			Clipper clipper = new Clipper();
+
+			clipper.AddPaths(polygonsToFix, PolyType.ptSubject, true);
+			clipper.AddPath(boundsPolygon, PolyType.ptClip, true);
+
+			PolyTree intersectionResult = new PolyTree();
+			clipper.Execute(ClipType.ctIntersection, intersectionResult);
+
+			Polygons outputPolygons = Clipper.ClosedPathsFromPolyTree(intersectionResult);
+
+			return outputPolygons;
 		}
 
 		public static Mesh Revolve(IVertexSource source, int angleSteps = 30, double angleStart = 0, double angleEnd = MathHelper.Tau)
@@ -176,6 +206,14 @@ namespace MatterHackers.DataConverters3D
 
 		public static Mesh Extrude(IVertexSource vertexSource, double zHeight)
 		{
+			Polygons polygons = vertexSource.CreatePolygons();
+
+			// ensure good winding and consistent shapes
+			polygons = polygons.GetCorrectedWinding();
+
+			// convert the data back to PathStorage
+			vertexSource = polygons.CreateVertexStorage();
+
 			CachedTesselator teselatedSource = new CachedTesselator();
 			Mesh mesh = TriangulateFaces(vertexSource, teselatedSource);
 			int numIndicies = teselatedSource.IndicesCache.Count;

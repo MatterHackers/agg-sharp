@@ -673,7 +673,7 @@ namespace MatterHackers.VectorMath
 		public static Vector4 Transform(Vector4 vec, Matrix4X4 mat)
 		{
 			Vector4 result;
-			Transform(ref vec, ref mat, out result);
+			Transform(vec, ref mat, out result);
 			return result;
 		}
 
@@ -681,7 +681,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="vec">The vector to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <param name="result">The transformed vector</param>
-		public static void Transform(ref Vector4 vec, ref Matrix4X4 mat, out Vector4 result)
+		public static void Transform(Vector4 vec, ref Matrix4X4 mat, out Vector4 result)
 		{
 			result = new Vector4(
 				vec.X * mat.Row0.X + vec.Y * mat.Row1.X + vec.Z * mat.Row2.X + vec.W * mat.Row3.X,
@@ -889,34 +889,37 @@ namespace MatterHackers.VectorMath
 			return new { X, Y, Z, W }.GetHashCode();
 		}
 
-		public static long RotateLeft(long value, int count)
+		public static ulong GetLongHashCode(double data, ulong hash = 14695981039346656037)
 		{
-			ulong val = (ulong)value;
-			return (long)((val << count) | (val >> (64 - count)));
+			return ComputeHash(BitConverter.GetBytes(data), hash);
 		}
 
-		public static long Hash64(double value, long xor, int roll)
+		// FNV-1a (64-bit) non-cryptographic hash function.
+		// Adapted from: http://github.com/jakedouglas/fnv-java
+		public static ulong ComputeHash(byte[] bytes, ulong hash = 14695981039346656037)
 		{
-			var hash = BitConverter.ToInt64(BitConverter.GetBytes(value), 0) ^ xor;
-			return RotateLeft(hash, roll);
-		}
+			const ulong fnv64Prime = 0x100000001b3;
 
-		public static long xHash { get { unchecked { return (long)0x2673c784894d4f10; } } }
-		public static long yHash { get { unchecked { return (long)0xd202dbcb6c7c5537; } } }
-		public static long zHash { get { unchecked { return (long)0xae56da48b3c4d228; } } }
-		public static long wHash { get { unchecked { return (long)0x194260cb7ddb6871; } } }
+			for (var i = 0; i < bytes.Length; i++)
+			{
+				hash = hash ^ bytes[i];
+				hash *= fnv64Prime;
+			}
+
+			return hash;
+		}
 
 		/// <summary>
 		/// return a 64 bit hash code proposed by Jon Skeet
 		// http://stackoverflow.com/questions/8094867/good-gethashcode-override-for-list-of-foo-objects-respecting-the-order
 		/// </summary>
 		/// <returns></returns>
-		public long GetLongHashCode()
+		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
 		{
-			long hash = Hash64(X, xHash, 3);
-			hash ^= Hash64(Y, yHash, 5);
-			hash ^= Hash64(Z, zHash, 7);
-			hash ^= Hash64(W, wHash, 9);
+			hash = GetLongHashCode(X, hash);
+			hash = GetLongHashCode(Y, hash);
+			hash = GetLongHashCode(Z, hash);
+			hash = GetLongHashCode(W, hash);
 
 			return hash;
 		}

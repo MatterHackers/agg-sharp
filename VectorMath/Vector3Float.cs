@@ -478,11 +478,11 @@ namespace MatterHackers.VectorMath
 		// http://stackoverflow.com/questions/8094867/good-gethashcode-override-for-list-of-foo-objects-respecting-the-order
 		/// </summary>
 		/// <returns></returns>
-		public long GetLongHashCode()
+		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
 		{
-			long hash = Vector4.Hash64(X, Vector4.xHash, 3);
-			hash ^= Vector4.Hash64(Y, Vector4.yHash, 5);
-			hash ^= Vector4.Hash64(Z, Vector4.zHash, 7);
+			hash = Vector4.GetLongHashCode(X, hash);
+			hash = Vector4.GetLongHashCode(Y, hash);
+			hash = Vector4.GetLongHashCode(Z, hash);
 
 			return hash;
 		}
@@ -1211,7 +1211,7 @@ namespace MatterHackers.VectorMath
 		{
 			Vector3 vec = new Vector3(inVec);
 			Vector4 v4 = new Vector4(vec.X, vec.Y, vec.Z, 1.0);
-			Vector4.Transform(ref v4, ref mat, out v4);
+			Vector4.Transform(v4, ref mat, out v4);
 			result = new Vector3Float(v4.Xyz);
 		}
 

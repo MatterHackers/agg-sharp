@@ -958,11 +958,11 @@ namespace MatterHackers.VectorMath
 		// http://stackoverflow.com/questions/8094867/good-gethashcode-override-for-list-of-foo-objects-respecting-the-order
 		/// </summary>
 		/// <returns></returns>
-		public long GetLongHashCode()
+		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
 		{
-			long hash = Vector4.Hash64(X, Vector4.xHash, 3);
-			hash ^= Vector4.Hash64(Y, Vector4.yHash, 5);
-			hash ^= Vector4.Hash64(Z, Vector4.zHash, 7);
+			hash = Vector4.GetLongHashCode(X, hash);
+			hash = Vector4.GetLongHashCode(Y, hash);
+			hash = Vector4.GetLongHashCode(Z, hash);
 
 			return hash;
 		}
@@ -1332,7 +1332,7 @@ namespace MatterHackers.VectorMath
 		public static void TransformPerspective(this Vector3 vec, ref Matrix4X4 mat, out Vector3 result)
 		{
 			Vector4 v = new Vector4(vec);
-			Vector4.Transform(ref v, ref mat, out v);
+			Vector4.Transform(v, ref mat, out v);
 			result.X = v.X / v.W;
 			result.Y = v.Y / v.W;
 			result.Z = v.Z / v.W;

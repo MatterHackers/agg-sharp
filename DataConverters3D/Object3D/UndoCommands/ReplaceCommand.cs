@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using MatterHackers.Agg.UI;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.DataConverters3D.UndoCommands
 {
@@ -63,15 +64,39 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 		public void Do()
 		{
 			var firstParent = removeItems.First().Parent;
-			firstParent.Children.Modify(list =>
+			using (firstParent.RebuildLock())
 			{
-				foreach (var child in removeItems)
+				var aabb = removeItems.GetAxisAlignedBoundingBox();
+
+				firstParent.Children.Modify(list =>
 				{
-					list.Remove(child);
+					foreach (var child in removeItems)
+					{
+						list.Remove(child);
+					}
+					list.AddRange(addItems);
+				});
+
+				// attempt to hold the items that we are adding to the same position as the items we are replacing
+				// first get the bounds of all the items being added
+				var aabb2 = addItems.GetAxisAlignedBoundingBox();
+
+				// then move the all to account for the old center and bed position
+				foreach (var item in addItems)
+				{
+					if (aabb.ZSize > 0)
+					{
+						// move our center back to where our center was
+						var centerDelta = (aabb.Center - aabb2.Center);
+						centerDelta.Z = 0;
+						item.Matrix *= Matrix4X4.CreateTranslation(centerDelta);
+
+						// Make sure we also maintain our height
+						item.Matrix *= Matrix4X4.CreateTranslation(new Vector3(0, 0, aabb.MinXYZ.Z - aabb2.MinXYZ.Z));
+					}
 				}
-				list.AddRange(addItems);
-			});
-			firstParent.Invalidate(new InvalidateArgs(firstParent, InvalidateType.Content, null));
+			}
+			firstParent.Invalidate(new InvalidateArgs(firstParent, InvalidateType.Children | InvalidateType.Matrix));
 		}
 
 		public void Undo()
@@ -84,7 +109,7 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 					list.Remove(child);
 				}
 				list.AddRange(removeItems);
-				firstParent.Invalidate(new InvalidateArgs(firstParent, InvalidateType.Content, null));
+				firstParent.Invalidate(new InvalidateArgs(firstParent, InvalidateType.Children));
 			});
 		}
 	}
