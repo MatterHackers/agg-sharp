@@ -64,8 +64,9 @@ namespace MatterHackers.DataConverters3D
 		OutputType = 1 << 7,
 		Path = 1 << 8,
 		Properties = 1 << 9,
+		DisplayValues = 1 << 10,
 
-		All = (Children | Color | Image | Material | Matrix | Mesh | Name | OutputType | Path | Properties)
+		All = (Children | Color | Image | Material | Matrix | Mesh | Name | OutputType | Path | Properties | DisplayValues)
 	};
 
 	[Flags]
