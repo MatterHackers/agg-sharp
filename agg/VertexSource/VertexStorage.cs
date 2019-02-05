@@ -821,37 +821,32 @@ namespace MatterHackers.Agg.VertexSource
 						{
 							do
 							{
-								parseIndex++;
-								Vector2 controlPoint1;
-								if (foundSecondControlPoint)
-								{
-									if (command == 's')
+								Vector2 controlPoint = lastXY;
+
+								if (vertexDataManager.last_command() == ShapePath.FlagsAndCommand.Curve4)
 									{
-										controlPoint1 = new Vector2();
-									}
-									else
-									{
-										controlPoint1 = curXY;
-									}
+									controlPoint = Reflect(secondControlPoint, lastXY);
 								}
 								else
 								{
-									controlPoint1.X = curXY.X - (secondControlPoint.X - curXY.X);
-									controlPoint1.Y = curXY.Y - (secondControlPoint.Y - curXY.Y);
+									controlPoint = curXY;
 								}
+
+								parseIndex++;
+								
 								foundSecondControlPoint = true;
+
 								secondControlPoint.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 								secondControlPoint.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 								curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 								curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 								if (command == 's')
 								{
-									controlPoint1 += lastXY;
 									secondControlPoint += lastXY;
 									curXY += lastXY;
 								}
 
-								this.curve4(controlPoint1.X, controlPoint1.Y, secondControlPoint.X, secondControlPoint.Y, curXY.X, curXY.Y);
+								this.curve4(controlPoint.X, controlPoint.Y, secondControlPoint.X, secondControlPoint.Y, curXY.X, curXY.Y);
 
 								// if the next element is another coordinate than we just continue to add more curves.
 							} while (NextElementIsANumber(dString, parseIndex));
@@ -973,6 +968,32 @@ namespace MatterHackers.Agg.VertexSource
 
 				lastXY = curXY;
 			}
+		}
+
+		private static Vector2 Reflect(Vector2 point, Vector2 mirror)
+		{
+			double x, y, dx, dy;
+			dx = Math.Abs(mirror.X - point.X);
+			dy = Math.Abs(mirror.Y - point.Y);
+
+			if (mirror.X >= point.X)
+			{
+				x = mirror.X + dx;
+			}
+			else
+			{
+				x = mirror.X - dx;
+			}
+			if (mirror.Y >= point.Y)
+			{
+				y = mirror.Y + dy;
+			}
+			else
+			{
+				y = mirror.Y - dy;
+			}
+
+			return new Vector2(x, y);
 		}
 
 		HashSet<char> validNumberStartingCharacters = new HashSet<char> { '-', '.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
