@@ -31,9 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
-using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
-using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using MatterHackers.VectorMath.TrackBall;
 
@@ -71,17 +69,17 @@ namespace MatterHackers.Agg
 
 	public class TrackballTumbleWidget : GuiWidget
 	{
-		public TrackBallTransformType TransformState { get; set; }
-
-		private WorldView world;
-
-		public TrackBallController TrackBallController { get; }
-
-		public bool LockTrackBall { get; set; }
-
-		private GuiWidget sourceWidget;
-
+		public NearFarAction GetNearFar;
+		private double _centerOffsetX = 0;
+		private Vector2 currentVelocityPerMs = new Vector2();
+		private MotionQueue motionQueue = new MotionQueue();
+		private double pinchStartScale = 1;
 		private RunningInterval runningInterval;
+		private GuiWidget sourceWidget;
+		private double startAngle = 0;
+		private double startDistanceBetweenPoints = 1;
+		private int updatesPerSecond = 30;
+		private WorldView world;
 
 		public TrackballTumbleWidget(WorldView world, GuiWidget sourceWidget)
 		{
@@ -91,7 +89,8 @@ namespace MatterHackers.Agg
 			this.sourceWidget = sourceWidget;
 		}
 
-		private double _centerOffsetX = 0;
+		public delegate void NearFarAction(out double zNear, out double zFar);
+
 		public double CenterOffsetX
 		{
 			get
@@ -105,97 +104,16 @@ namespace MatterHackers.Agg
 			}
 		}
 
+		public bool LockTrackBall { get; set; }
+		public TrackBallController TrackBallController { get; }
+		public TrackBallTransformType TransformState { get; set; }
+
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			RecalculateProjection();
 
 			base.OnDraw(graphics2D);
 		}
-
-		public void RecalculateProjection()
-		{
-			double trackingRadius = Math.Min(Width * .45, Height * .45);
-			TrackBallController.ScreenCenter = new Vector2(Width / 2 - CenterOffsetX, Height / 2);
-
-			TrackBallController.TrackBallRadius = trackingRadius;
-
-			if (CenterOffsetX != 0)
-			{
-				this.world.CalculateProjectionMatrixOffCenter(sourceWidget.Width, sourceWidget.Height, CenterOffsetX);
-			}
-			else
-			{
-				this.world.CalculateProjectionMatrix(sourceWidget.Width, sourceWidget.Height);
-			}
-
-			this.world.CalculateModelviewMatrix();
-		}
-
-		internal class MotionQueue
-		{
-			internal struct TimeAndPosition
-			{
-				internal TimeAndPosition(Vector2 position, long timeMs)
-				{
-					this.timeMs = timeMs;
-					this.position = position;
-				}
-
-				internal long timeMs;
-				internal Vector2 position;
-			}
-
-			List<TimeAndPosition> motionQueue = new List<TimeAndPosition>();
-
-			internal void AddMoveToMotionQueue(Vector2 position, long timeMs)
-			{
-				if (motionQueue.Count > 4)
-				{
-					// take off the last one
-					motionQueue.RemoveAt(0);
-				}
-
-				motionQueue.Add(new TimeAndPosition(position, timeMs));
-			}
-
-			internal void Clear()
-			{
-				motionQueue.Clear();
-			}
-
-			internal Vector2 GetVelocityPixelsPerMs()
-			{
-				if (motionQueue.Count > 1)
-				{
-					// Get all the movement that is less 100 ms from the last time (the mouse up)
-					TimeAndPosition lastTime = motionQueue[motionQueue.Count - 1];
-					int firstTimeIndex = motionQueue.Count - 1;
-					while (firstTimeIndex > 0 && motionQueue[firstTimeIndex - 1].timeMs + 100 > lastTime.timeMs)
-					{
-						firstTimeIndex--;
-					}
-
-					TimeAndPosition firstTime = motionQueue[firstTimeIndex];
-
-					double milliseconds = lastTime.timeMs - firstTime.timeMs;
-					if (milliseconds > 0)
-					{
-						Vector2 pixels = lastTime.position - firstTime.position;
-						Vector2 pixelsPerSecond = pixels / milliseconds;
-
-						return pixelsPerSecond;
-					}
-				}
-
-				return Vector2.Zero;
-			}
-		}
-
-		MotionQueue motionQueue = new MotionQueue();
-
-		double startAngle = 0;
-		double startDistanceBetweenPoints = 1;
-		double pinchStartScale = 1;
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
@@ -313,12 +231,6 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		Vector2 currentVelocityPerMs = new Vector2();
-		public void ZeroVelocity()
-		{
-			currentVelocityPerMs = Vector2.Zero;
-		}
-
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
 			if (!LockTrackBall && TrackBallController.CurrentTrackingType != TrackBallTransformType.None)
@@ -344,7 +256,45 @@ namespace MatterHackers.Agg
 			base.OnMouseUp(mouseEvent);
 		}
 
-		int updatesPerSecond = 30;
+		public override void OnMouseWheel(MouseEventArgs mouseEvent)
+		{
+			if (!LockTrackBall && ContainsFirstUnderMouseRecursive())
+			{
+				TrackBallController.OnMouseWheel(mouseEvent.WheelDelta);
+				Invalidate();
+			}
+			base.OnMouseWheel(mouseEvent);
+		}
+
+		public void RecalculateProjection()
+		{
+			double trackingRadius = Math.Min(Width * .45, Height * .45);
+			TrackBallController.ScreenCenter = new Vector2(Width / 2 - CenterOffsetX, Height / 2);
+
+			TrackBallController.TrackBallRadius = trackingRadius;
+
+			var zNear = .1;
+			var zFar = 100.0;
+
+			GetNearFar?.Invoke(out zNear, out zFar);
+
+			if (CenterOffsetX != 0)
+			{
+				this.world.CalculateProjectionMatrixOffCenter(sourceWidget.Width, sourceWidget.Height, CenterOffsetX, zNear, zFar);
+			}
+			else
+			{
+				this.world.CalculateProjectionMatrix(sourceWidget.Width, sourceWidget.Height, zNear, zFar);
+			}
+
+			this.world.CalculateModelviewMatrix();
+		}
+
+		public void ZeroVelocity()
+		{
+			currentVelocityPerMs = Vector2.Zero;
+		}
+
 		private void ApplyVelocity()
 		{
 			if (HasBeenClosed || currentVelocityPerMs.LengthSquared <= 0)
@@ -372,14 +322,65 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public override void OnMouseWheel(MouseEventArgs mouseEvent)
+		internal class MotionQueue
 		{
-			if (!LockTrackBall && ContainsFirstUnderMouseRecursive())
+			private List<TimeAndPosition> motionQueue = new List<TimeAndPosition>();
+
+			internal void AddMoveToMotionQueue(Vector2 position, long timeMs)
 			{
-				TrackBallController.OnMouseWheel(mouseEvent.WheelDelta);
-				Invalidate();
+				if (motionQueue.Count > 4)
+				{
+					// take off the last one
+					motionQueue.RemoveAt(0);
+				}
+
+				motionQueue.Add(new TimeAndPosition(position, timeMs));
 			}
-			base.OnMouseWheel(mouseEvent);
+
+			internal void Clear()
+			{
+				motionQueue.Clear();
+			}
+
+			internal Vector2 GetVelocityPixelsPerMs()
+			{
+				if (motionQueue.Count > 1)
+				{
+					// Get all the movement that is less 100 ms from the last time (the mouse up)
+					TimeAndPosition lastTime = motionQueue[motionQueue.Count - 1];
+					int firstTimeIndex = motionQueue.Count - 1;
+					while (firstTimeIndex > 0 && motionQueue[firstTimeIndex - 1].timeMs + 100 > lastTime.timeMs)
+					{
+						firstTimeIndex--;
+					}
+
+					TimeAndPosition firstTime = motionQueue[firstTimeIndex];
+
+					double milliseconds = lastTime.timeMs - firstTime.timeMs;
+					if (milliseconds > 0)
+					{
+						Vector2 pixels = lastTime.position - firstTime.position;
+						Vector2 pixelsPerSecond = pixels / milliseconds;
+
+						return pixelsPerSecond;
+					}
+				}
+
+				return Vector2.Zero;
+			}
+
+			internal struct TimeAndPosition
+			{
+				internal Vector2 position;
+
+				internal long timeMs;
+
+				internal TimeAndPosition(Vector2 position, long timeMs)
+				{
+					this.timeMs = timeMs;
+					this.position = position;
+				}
+			}
 		}
 	}
 }
