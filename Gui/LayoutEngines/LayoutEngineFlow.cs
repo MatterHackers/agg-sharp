@@ -317,6 +317,10 @@ namespace MatterHackers.Agg.UI
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
 									double newWidth = (parent.LocalBounds.Width - parent.DevicePadding.Width - totalWidthOfStaticItems) / numItemsNeedingExpanding;
+									if (GuiWidget.DefaultEnforceIntegerBounds)
+									{
+										newWidth = Math.Floor(newWidth);
+									}
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
 										curChildBounds.Left + newWidth, curChildBounds.Top);
 								}
@@ -342,6 +346,10 @@ namespace MatterHackers.Agg.UI
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
 									double newWidth = (parent.LocalBounds.Width - parent.DevicePadding.Width - totalWidthOfStaticItems) / numItemsNeedingExpanding;
+									if (GuiWidget.DefaultEnforceIntegerBounds)
+									{
+										newWidth = Math.Floor(newWidth);
+									}
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
 										curChildBounds.Left + newWidth, curChildBounds.Top);
 								}
@@ -372,6 +380,10 @@ namespace MatterHackers.Agg.UI
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
 									double newHeight = (parent.LocalBounds.Height - parent.DevicePadding.Height - totalHeightOfStaticItems) / numItemsNeedingExpanding;
+									if (GuiWidget.DefaultEnforceIntegerBounds)
+									{
+										newHeight = Math.Floor(newHeight);
+									}
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
 										curChildBounds.Right, curChildBounds.Bottom + newHeight);
 								}
@@ -397,6 +409,10 @@ namespace MatterHackers.Agg.UI
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
 									double newHeight = (parent.LocalBounds.Height - parent.DevicePadding.Height - totalHeightOfStaticItems) / numItemsNeedingExpanding;// - child.DeviceMarginAndBorder.Height;
+									if (GuiWidget.DefaultEnforceIntegerBounds)
+									{
+										newHeight = Math.Floor(newHeight);
+									}
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
 										curChildBounds.Right, curChildBounds.Bottom + newHeight);
 								}
