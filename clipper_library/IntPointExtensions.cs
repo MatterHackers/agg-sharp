@@ -33,6 +33,9 @@ using System.Collections.Generic;
 
 namespace ClipperLib
 {
+	using Polygons = List<List<IntPoint>>;
+	using Polygon = List<IntPoint>;
+
 	public static class IntPointExtensions
 	{
 		public static IntPoint GetRotated(this IntPoint thisPoint, double radians)
@@ -143,6 +146,51 @@ namespace ClipperLib
 		public static long Dot(this IntPoint point1, IntPoint point2)
 		{
 			return point1.X * point2.X + point1.Y * point2.Y;
+		}
+
+
+		public static Polygons Offset(this Polygons polygons, double distance)
+		{
+			var offseter = new ClipperOffset();
+			offseter.AddPaths(polygons, JoinType.jtRound, EndType.etClosedPolygon);
+
+			var solution = new Polygons();
+			offseter.Execute(ref solution, distance);
+
+			return solution;
+		}
+
+		public static Polygons Offset(this Polygon polygon, double distance)
+		{
+			var offseter = new ClipperOffset();
+			offseter.AddPath(polygon, JoinType.jtRound, EndType.etClosedPolygon);
+
+			var solution = new Polygons();
+			offseter.Execute(ref solution, distance);
+
+			return solution;
+		}
+
+		public static Polygons CreateUnion(this Polygons polygons, Polygons other)
+		{
+			Clipper clipper = new Clipper();
+			clipper.AddPaths(polygons, PolyType.ptSubject, true);
+			clipper.AddPaths(other, PolyType.ptSubject, true);
+
+			Polygons ret = new Polygons();
+			clipper.Execute(ClipType.ctUnion, ret, PolyFillType.pftNonZero, PolyFillType.pftNonZero);
+			return ret;
+		}
+
+		public static Polygons CreateUnion(this Polygons polygons, Polygon other)
+		{
+			Clipper clipper = new Clipper();
+			clipper.AddPaths(polygons, PolyType.ptSubject, true);
+			clipper.AddPath(other, PolyType.ptSubject, true);
+
+			Polygons ret = new Polygons();
+			clipper.Execute(ClipType.ctUnion, ret, PolyFillType.pftNonZero, PolyFillType.pftNonZero);
+			return ret;
 		}
 	}
 }
