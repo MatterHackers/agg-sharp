@@ -27,13 +27,17 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
+using System.Collections.Generic;
+using ClipperLib;
 using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Rendering
 {
+	using Polygons = List<List<IntPoint>>;
+	using Polygon = List<IntPoint>;
+
 	public static class OrthographicZProjection
 	{
 		public static void DrawTo(Graphics2D graphics2D, Mesh mesh, Matrix4X4 matrix, Vector2 offset, double scale, Color silhouetteColor)
@@ -54,6 +58,31 @@ namespace MatterHackers.PolygonMesh.Rendering
 				graphics2D.Render(polygonProjected, silhouetteColor);
 			}
 			graphics2D.Rasterizer.gamma(new gamma_none());
+		}
+
+		/// <summary>
+		/// Return the clipper polygons for the z projection of the mesh faces combining mesh edges
+		/// </summary>
+		/// <param name="mesh"></param>
+		/// <param name="matrix"></param>
+		/// <param name="offset"></param>
+		/// <param name="scale"></param>
+		/// <param name="silhouetteColor"></param>
+		/// <returns></returns>
+		public static Polygons GetClipperPolygons(IEnumerable<(Vector2, Vector2, Vector2)> polygons, double meshToPolygonScale = 1000)
+		{
+			var polygonProjected = new Polygons();
+			foreach(var polygon in polygons)
+			{
+				var polyFace = new Polygon();
+				polyFace.Add(new IntPoint(polygon.Item1.X * meshToPolygonScale, polygon.Item1.Y * meshToPolygonScale));
+				polyFace.Add(new IntPoint(polygon.Item2.X * meshToPolygonScale, polygon.Item2.Y * meshToPolygonScale));
+				polyFace.Add(new IntPoint(polygon.Item3.X * meshToPolygonScale, polygon.Item3.Y * meshToPolygonScale));
+				polygonProjected = polygonProjected.CreateUnion(polyFace.Offset(100));
+			}
+
+			// and move it back to the right size
+			return polygonProjected.Offset(-100);
 		}
 	}
 }
