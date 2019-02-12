@@ -363,7 +363,8 @@ namespace MatterHackers.RenderOpenGl
 			if (fastLeft == (int)fastLeft
 				&& fastBottom == (int)fastBottom
 				&& fastRight == (int)fastRight
-				&& fastTop == (int)fastTop)
+				&& fastTop == (int)fastTop
+				&& strokeWidth == 1)
 			{
 				// FillRectangle will do the translation so use the original variables
 				FillRectangle(left, bottom, right, bottom + 1, color);
