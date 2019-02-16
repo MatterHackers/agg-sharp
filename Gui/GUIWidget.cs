@@ -1916,8 +1916,10 @@ namespace MatterHackers.Agg.UI
 			{
 				if (!formHasLoaded)
 				{
-					OnLoad(null);
+					// Set formHasLoaded before invoking OnLoad to ensure we only fire once
 					formHasLoaded = true;
+
+					OnLoad(null);
 				}
 
 				DrawCount++;
