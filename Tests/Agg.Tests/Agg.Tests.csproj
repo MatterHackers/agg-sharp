@@ -83,6 +83,7 @@
     <Compile Include="Other\Vector3DTests.cs" />
     <Compile Include="PackagesConfigConverter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="WidgetTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
