@@ -117,11 +117,14 @@ namespace MatterHackers.RenderOpenGl
 
 					case RenderTypes.Polygons:
 					case RenderTypes.Outlines:
-						GL.Enable(EnableCap.PolygonOffsetFill);
-						GL.PolygonOffset(1, 1);
-						DrawToGL(meshToRender, color.Alpha0To1 < 1, meshToViewTransform);
-						GL.PolygonOffset(0, 0);
-						GL.Disable(EnableCap.PolygonOffsetFill);
+						if (color.Alpha0To255 > 0)
+						{
+							GL.Enable(EnableCap.PolygonOffsetFill);
+							GL.PolygonOffset(1, 1);
+							DrawToGL(meshToRender, color.Alpha0To1 < 1, meshToViewTransform);
+							GL.PolygonOffset(0, 0);
+							GL.Disable(EnableCap.PolygonOffsetFill);
+						}
 
 						DrawWireOverlay(meshToRender, renderType, wireFrameColor, meshChanged);
 						break;
