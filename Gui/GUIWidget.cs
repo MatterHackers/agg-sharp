@@ -1894,7 +1894,7 @@ namespace MatterHackers.Agg.UI
 		public static int DrawCount;
 		public static int LayoutCount;
 
-		protected bool formHasLoaded = false;
+		protected bool onloadInvoked = false;
 
 		/// <summary>
 		/// Called before the very first draw of this widget
@@ -1907,17 +1907,19 @@ namespace MatterHackers.Agg.UI
 		/// <param name="args"></param>
 		public virtual void OnLoad(EventArgs args)
 		{
-			Load?.Invoke(this, args);
+			this.Load?.Invoke(this, args);
 		}
 
 		public virtual void OnDraw(Graphics2D graphics2D)
 		{
 			//using (new PerformanceTimer("Draw Timer", "Widget Draw"))
 			{
-				if (!formHasLoaded)
+				if (!onloadInvoked)
 				{
-					OnLoad(null);
-					formHasLoaded = true;
+					// Set onloadInvoked before invoking OnLoad to ensure we only fire once
+					onloadInvoked = true;
+
+					this.OnLoad(null);
 				}
 
 				DrawCount++;
