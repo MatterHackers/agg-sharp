@@ -1645,8 +1645,8 @@ namespace MatterHackers.Agg.UI
 				rectToInvalidate.Offset(OriginRelativeParent);
 
 				// This code may be a good idea but it needs to be tested to make sure there are no subtle consequences
-				//rectToInvalidate.IntersectWithRectangle(Parent.LocalBounds);
-				//if (rectToInvalidate.Width > 0 && rectToInvalidate.Height > 0)
+				if (rectToInvalidate.Width > 0 && rectToInvalidate.Height > 0
+					&& this.ActuallyVisibleOnParent())
 				{
 					threadSafeParent.Invalidate(rectToInvalidate);
 				}
@@ -1777,6 +1777,26 @@ namespace MatterHackers.Agg.UI
 				}
 
 				curGUIWidget = parent;
+			}
+
+			return true;
+		}
+
+		public bool ActuallyVisibleOnParent()
+		{
+			RectangleDouble visibleBounds = this.LocalBounds;
+			if (!this.Visible
+				|| visibleBounds.Width <= 0
+				|| visibleBounds.Height <= 0)
+			{
+				return false;
+			}
+
+			if (this.Parent != null)
+			{
+				// offset our bounds to the parent bounds
+				visibleBounds.Offset(this.OriginRelativeParent.X, this.OriginRelativeParent.Y);
+				visibleBounds.IntersectWithRectangle(this.Parent.LocalBounds);
 			}
 
 			return true;
