@@ -245,6 +245,18 @@ namespace MatterHackers.VectorMath
 
 		#endregion public void Normalize()
 
+		public bool IsValid()
+		{
+			if (double.IsNaN(X) || double.IsInfinity(X)
+				|| double.IsNaN(Y) || double.IsInfinity(Y)
+				|| double.IsNaN(Z) || double.IsInfinity(Z))
+			{
+				return false;
+			}
+
+			return true;
+		}
+
 		#region public double[] ToArray()
 
 		public double[] ToArray()
