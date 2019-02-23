@@ -503,6 +503,14 @@ namespace MatterHackers.VectorMath
 
 		#endregion public void Transpose()
 
+		public bool IsValid()
+		{
+			return Row0.IsValid()
+				&& Row1.IsValid()
+				&& Row2.IsValid()
+				&& Row3.IsValid();
+		}
+
 		#endregion Instance
 
 		#region Static
