@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -344,6 +345,15 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			return loadedItem;
+		}
+
+		[OnDeserialized]
+		public void OnDeserialized(StreamingContext context)
+		{
+			if (!this.Matrix.IsValid())
+			{
+				this.Matrix = Matrix4X4.Identity;
+			}
 		}
 
 		public static IObject3D Load(Stream stream, string extension, CancellationToken cancellationToken, CacheContext cacheContext = null, Action<double, string> progress = null)
