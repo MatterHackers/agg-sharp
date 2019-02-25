@@ -128,7 +128,7 @@ namespace MatterHackers.Agg.UI
 			DropDownContainer = new DropDownContainer(MenuItems, topToBottom, this, MenuDirection, maxHeight, AlignToRightEdge, true)
 			{
 				BorderWidth = MenuItemsBorderWidth,
-				BorderColor = MenuItemsBorderColor,
+				BorderColor = this.PopupBorderColor,
 				BackgroundColor = MenuItemsBackgroundColor
 			};
 
@@ -161,5 +161,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public bool KeepMenuOpen => IsOpen;
+
+		public Color PopupBorderColor { get; set; }
 	}
 }
