@@ -116,7 +116,7 @@ namespace MatterHackers.Agg.VertexSource
 			}
 		}
 
-		override public IEnumerable<VertexData> Vertices()
+		public override IEnumerable<VertexData> Vertices()
 		{
 			VertexData vertexData = new VertexData();
 			vertexData.command = FlagsAndCommand.MoveTo;

@@ -94,7 +94,7 @@ namespace MatterHackers.Agg.VertexSource
 			this.direction = direction;
 		}
 
-		override public IEnumerable<VertexData> Vertices()
+		public override IEnumerable<VertexData> Vertices()
 		{
 			double averageRadius = (Math.Abs(radius.X) + Math.Abs(radius.Y)) / 2;
 			flatenDeltaAngle = Math.Acos(averageRadius / (averageRadius + 0.125 / ResolutionScale)) * 2;

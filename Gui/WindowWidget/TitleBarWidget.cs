@@ -32,7 +32,7 @@ namespace MatterHackers.Agg.UI
 			set { mouseDownOnBar = value; }
 		}
 
-		override public void OnMouseDown(MouseEventArgs mouseEvent)
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
 			if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
 			{
@@ -48,7 +48,7 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseDown(mouseEvent);
 		}
 
-		override public void OnMouseMove(MouseEventArgs mouseEvent)
+		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
 			if (MouseDownOnBar)
 			{
@@ -74,7 +74,7 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseMove(mouseEvent);
 		}
 
-		override public void OnMouseUp(MouseEventArgs mouseEvent)
+		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
 			MouseDownOnBar = false;
 			base.OnMouseUp(mouseEvent);
