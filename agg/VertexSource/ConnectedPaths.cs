@@ -48,7 +48,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public List<IVertexSource> SourcPaths { get; } = new List<IVertexSource>();
 
-		override public IEnumerable<VertexData> Vertices()
+		public override IEnumerable<VertexData> Vertices()
 		{
 			for (int i = 0; i < SourcPaths.Count; i++)
 			{
@@ -92,7 +92,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public List<IVertexSource> SourcPaths { get; } = new List<IVertexSource>();
 
-		override public IEnumerable<VertexData> Vertices()
+		public override IEnumerable<VertexData> Vertices()
 		{
 			for (int i = 0; i < SourcPaths.Count; i++)
 			{
@@ -132,7 +132,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public IVertexSource SourcPath { get; }
 
-		override public IEnumerable<VertexData> Vertices()
+		public override IEnumerable<VertexData> Vertices()
 		{
 				IVertexSource sourcePath = SourcPath;
 				foreach (VertexData vertexData in sourcePath.Vertices())

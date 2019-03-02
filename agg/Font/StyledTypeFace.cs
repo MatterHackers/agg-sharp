@@ -35,7 +35,7 @@ namespace MatterHackers.Agg.Font
 			this.glyph = glyph;
 		}
 
-		override public IEnumerable<VertexData> Vertices()
+		public override IEnumerable<VertexData> Vertices()
 		{
 			// return all the data for the glyph
 			foreach (VertexData vertexData in glyph.Vertices())

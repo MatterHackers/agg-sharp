@@ -131,7 +131,7 @@ namespace MatterHackers.Agg.VertexSource
 			}
 		}
 
-		override public IEnumerable<VertexData> Vertices()
+		public override IEnumerable<VertexData> Vertices()
 		{
 			VertexData lastPosition = new VertexData();
 

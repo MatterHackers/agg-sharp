@@ -78,7 +78,7 @@ namespace MatterHackers.Agg.UI
 
 		protected bool MouseDownOnThumb { get; set; }
 
-		override public void OnMouseDown(MouseEventArgs mouseEvent)
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
 			MouseDownOnThumb = true;
 			MouseDownPosition = new Vector2(mouseEvent.X, mouseEvent.Y);
@@ -86,13 +86,13 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseDown(mouseEvent);
 		}
 
-		override public void OnMouseUp(MouseEventArgs mouseEvent)
+		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
 			MouseDownOnThumb = false;
 			base.OnMouseUp(mouseEvent);
 		}
 
-		override public void OnMouseMove(MouseEventArgs mouseEvent)
+		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
 			if (MouseDownOnThumb)
 			{
@@ -192,7 +192,7 @@ namespace MatterHackers.Agg.UI
 			UpdateScrollBar();
 		}
 
-		override public void OnMouseDown(MouseEventArgs mouseEvent)
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
 			if (!thumb.BoundsRelativeToParent.Contains(mouseEvent.X, mouseEvent.Y))
 			{

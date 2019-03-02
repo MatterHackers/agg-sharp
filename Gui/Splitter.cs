@@ -243,7 +243,7 @@ namespace MatterHackers.Agg.UI
 				this.Cursor = Cursors.VSplit;
 			}
 
-			override public void OnMouseDown(MouseEventArgs mouseEvent)
+			public override void OnMouseDown(MouseEventArgs mouseEvent)
 			{
 				mouseDownPosition = parentSplitter.SplitterDistance;
 
@@ -260,7 +260,7 @@ namespace MatterHackers.Agg.UI
 				base.OnMouseDown(mouseEvent);
 			}
 
-			override public void OnMouseMove(MouseEventArgs mouseEvent)
+			public override void OnMouseMove(MouseEventArgs mouseEvent)
 			{
 				if (mouseDownOnBar)
 				{
@@ -302,7 +302,7 @@ namespace MatterHackers.Agg.UI
 				base.OnMouseMove(mouseEvent);
 			}
 
-			override public void OnMouseUp(MouseEventArgs mouseEvent)
+			public override void OnMouseUp(MouseEventArgs mouseEvent)
 			{
 				if (mouseDownPosition != parentSplitter.SplitterDistance)
 				{
