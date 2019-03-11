@@ -949,7 +949,7 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public override string ToString()
 		{
-			return String.Format("[{0}, {1}, {2}]", X, Y, Z);
+			return String.Format($"[{X:0.####}, {Y:0.####}, {Z:0.####}]");
 		}
 
 		#endregion public override string ToString()
