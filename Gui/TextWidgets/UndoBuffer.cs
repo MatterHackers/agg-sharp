@@ -23,14 +23,16 @@ namespace MatterHackers.Agg.UI
 {
 	public class LimitStack<T>
 	{
-		public int Limit { get; set; } = int.MaxValue;
-		List<T> content = new List<T>();
+		private List<T> content = new List<T>();
 
-		public int Count { get { return content.Count; } }
+		public int Limit { get; set; } = int.MaxValue;
+
+		public int Count => content.Count;
 
 		public void Push(T item)
 		{
 			content.Add(item);
+
 			if(content.Count > Limit)
 			{
 				// remove the oldest item
@@ -54,28 +56,24 @@ namespace MatterHackers.Agg.UI
 
 	public class UndoBuffer
 	{
+		public event EventHandler Changed;
+
 		private Stack<IUndoRedoCommand> redoBuffer = new Stack<IUndoRedoCommand>();
-		public int RedoCount { get { return redoBuffer.Count; } }
 
 		private LimitStack<IUndoRedoCommand> undoBuffer = new LimitStack<IUndoRedoCommand>();
-		public int UndoCount { get { return undoBuffer.Count; } }
-
-		public int MaxUndos
-		{
-			get
-			{
-				return undoBuffer.Limit;
-			}
-			set
-			{
-				undoBuffer.Limit = value;
-			}
-		}
-
-		public event EventHandler Changed;
 
 		public UndoBuffer()
 		{
+		}
+
+		public int UndoCount => undoBuffer.Count;
+
+		public int RedoCount => redoBuffer.Count;
+
+		public int MaxUndos
+		{
+			get => undoBuffer.Limit;
+			set => undoBuffer.Limit = value;
 		}
 
 		public void Add(IUndoRedoCommand command)
@@ -139,16 +137,17 @@ namespace MatterHackers.Agg.UI
 
 	public class UndoRedoActions : IUndoRedoCommand
 	{
-		Action undoAction;
-		Action doAction;
+		private Action undoAction;
+		private Action doAction;
+
 		public UndoRedoActions(Action undoAction, Action doAction)
 		{
 			this.doAction = doAction;
 			this.undoAction = undoAction;
 		}
 
-		public void Do() { doAction?.Invoke(); }
+		public void Do() => doAction?.Invoke();
 
-		public void Undo() { undoAction?.Invoke(); }
+		public void Undo() => undoAction?.Invoke();
 	}
 }
