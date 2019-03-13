@@ -21,39 +21,6 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI
 {
-	public class LimitStack<T>
-	{
-		private List<T> content = new List<T>();
-
-		public int Limit { get; set; } = int.MaxValue;
-
-		public int Count => content.Count;
-
-		public void Push(T item)
-		{
-			content.Add(item);
-
-			if(content.Count > Limit)
-			{
-				// remove the oldest item
-				content.RemoveAt(0);
-			}
-		}
-
-		public T Pop()
-		{
-			var index = content.Count - 1;
-			var item = content[index];
-			content.RemoveAt(index);
-			return item;
-		}
-
-		public void Clear()
-		{
-			content.Clear();
-		}
-	}
-
 	public class UndoBuffer
 	{
 		public event EventHandler Changed;
@@ -126,28 +93,5 @@ namespace MatterHackers.Agg.UI
 			redoBuffer.Clear();
 			Changed?.Invoke(this, null);
 		}
-	}
-
-	public interface IUndoRedoCommand
-	{
-		void Do();
-
-		void Undo();
-	}
-
-	public class UndoRedoActions : IUndoRedoCommand
-	{
-		private Action undoAction;
-		private Action doAction;
-
-		public UndoRedoActions(Action undoAction, Action doAction)
-		{
-			this.doAction = doAction;
-			this.undoAction = undoAction;
-		}
-
-		public void Do() => doAction?.Invoke();
-
-		public void Undo() => undoAction?.Invoke();
 	}
 }
