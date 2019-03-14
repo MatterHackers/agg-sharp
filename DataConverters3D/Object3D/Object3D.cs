@@ -631,6 +631,51 @@ namespace MatterHackers.DataConverters3D
 			return $"{this.GetType().Name}{name}, ID = {ID}";
 		}
 
+		public virtual AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix, Func<IObject3D, bool> considerItem)
+		{
+			var totalTransorm = this.Matrix * matrix;
+
+			AxisAlignedBoundingBox totalBounds = AxisAlignedBoundingBox.Empty();
+			// Set the initial bounding box to empty or the bounds of the objects MeshGroup
+			if (this.Mesh != null)
+			{
+				totalBounds = this.Mesh.GetAxisAlignedBoundingBox(totalTransorm);
+			}
+			else if (Children.Count > 0)
+			{
+				foreach (IObject3D child in Children)
+				{
+					if (child.Visible
+						&& considerItem(child))
+					{
+						AxisAlignedBoundingBox childBounds;
+						// Add the bounds of each child object
+						if (child is Object3D object3D)
+						{
+							childBounds = object3D.GetAxisAlignedBoundingBox(totalTransorm, considerItem);
+						}
+						else
+						{
+							childBounds = child.GetAxisAlignedBoundingBox(totalTransorm);
+						}
+						// Check if the child actually has any bounds
+						if (childBounds.XSize > 0)
+						{
+							totalBounds += childBounds;
+						}
+					}
+				}
+			}
+
+			// Make sure we have some data. Else return 0 bounds.
+			if (totalBounds.MinXYZ.X == double.PositiveInfinity)
+			{
+				totalBounds = AxisAlignedBoundingBox.Zero();
+			}
+
+			return totalBounds;
+		}
+
 		public virtual AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix)
 		{
 			var totalTransorm = this.Matrix * matrix;
