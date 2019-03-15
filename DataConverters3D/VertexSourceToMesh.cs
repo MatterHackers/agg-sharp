@@ -43,14 +43,12 @@ namespace MatterHackers.DataConverters3D
 
 	public static class VertexSourceToMesh
 	{
-		public static Mesh TriangulateFaces(IVertexSource vertexSource)
+		public static Mesh TriangulateFaces(this IVertexSource vertexSource, CachedTesselator teselatedSource = null)
 		{
-			CachedTesselator teselatedSource = new CachedTesselator();
-			return TriangulateFaces(vertexSource, teselatedSource);
-		}
-
-		private static Mesh TriangulateFaces(IVertexSource vertexSource, CachedTesselator teselatedSource)
-		{
+			if (teselatedSource == null)
+			{
+				teselatedSource = new CachedTesselator();
+			}
 			VertexSourceToTesselator.SendShapeToTesselator(teselatedSource, vertexSource);
 
 			Mesh mesh = new Mesh();
@@ -102,7 +100,7 @@ namespace MatterHackers.DataConverters3D
 			return outputPolygons;
 		}
 
-		public static Mesh Revolve(IVertexSource source, int angleSteps = 30, double angleStart = 0, double angleEnd = MathHelper.Tau)
+		public static Mesh Revolve(this IVertexSource source, int angleSteps = 30, double angleStart = 0, double angleEnd = MathHelper.Tau)
 		{
 			angleSteps = Math.Max(angleSteps, 3);
 			angleStart = MathHelper.Range0ToTau(angleStart);
@@ -124,8 +122,7 @@ namespace MatterHackers.DataConverters3D
 			if (hasStartAndEndFaces)
 			{
 				// make a face for the start
-				CachedTesselator teselatedSource = new CachedTesselator();
-				Mesh extrudedVertexSource = TriangulateFaces(source, teselatedSource);
+				Mesh extrudedVertexSource = source.TriangulateFaces();
 				extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
 				extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(angleStart));
 				mesh.CopyFaces(extrudedVertexSource);
@@ -158,8 +155,7 @@ namespace MatterHackers.DataConverters3D
 			else // add the end face
 			{
 				// make a face for the end
-				CachedTesselator teselatedSource = new CachedTesselator();
-				Mesh extrudedVertexSource = TriangulateFaces(source, teselatedSource);
+				Mesh extrudedVertexSource = source.TriangulateFaces();
 				extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
 				extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(currentAngle));
 				extrudedVertexSource.ReverseFaces();
@@ -204,7 +200,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static Mesh Extrude(IVertexSource vertexSource, double zHeight)
+		public static Mesh Extrude(this IVertexSource vertexSource, double zHeight)
 		{
 			Polygons polygons = vertexSource.CreatePolygons();
 
@@ -215,7 +211,7 @@ namespace MatterHackers.DataConverters3D
 			vertexSource = polygons.CreateVertexStorage();
 
 			CachedTesselator teselatedSource = new CachedTesselator();
-			Mesh mesh = TriangulateFaces(vertexSource, teselatedSource);
+			Mesh mesh = vertexSource.TriangulateFaces(teselatedSource);
 			int numIndicies = teselatedSource.IndicesCache.Count;
 
 			mesh.Translate(new Vector3(0, 0, zHeight));
