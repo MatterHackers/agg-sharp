@@ -45,6 +45,11 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			return new VertexSourceApplyTransform(source, Affine.NewTranslation(x, y));
 		}
+
+		public static IVertexSource Scale(this IVertexSource source, double scale)
+		{
+			return new VertexSourceApplyTransform(source, Affine.NewScaling(scale));
+		}
 	}
 
 	// in the original agg this was conv_transform
