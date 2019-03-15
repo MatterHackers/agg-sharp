@@ -377,6 +377,18 @@ namespace MatterHackers.PolygonMesh
 		#endregion Public Members
 	}
 
+	public static class FaceExtensionMethods
+	{
+		public static AxisAlignedBoundingBox GetAxisAlignedBoundingBox(this Face face, Mesh mesh)
+		{
+			var bounds = AxisAlignedBoundingBox.Empty();
+			bounds.ExpandToInclude(mesh.Vertices[face.v0]);
+			bounds.ExpandToInclude(mesh.Vertices[face.v1]);
+			bounds.ExpandToInclude(mesh.Vertices[face.v2]);
+			return bounds;
+		}
+	}
+
 	public static class MeshExtensionMethods
 	{
 		public static Mesh Copy(this Mesh meshToCopyIn, CancellationToken cancellationToken, Action<double, string> progress = null, bool allowFastCopy = true)
