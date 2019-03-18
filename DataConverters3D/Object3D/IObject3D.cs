@@ -48,7 +48,8 @@ namespace MatterHackers.DataConverters3D
 	{
 		Default,
 		Solid,
-		Support
+		Support,
+		WipeTower
 	};
 
 	[Flags]
