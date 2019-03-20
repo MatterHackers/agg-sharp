@@ -562,10 +562,10 @@ namespace MatterHackers.Agg.UI
 
 		public int GutterWidth { get; set; } = 35;
 
-		public MenuItem AddItem(ImageBuffer leftImage, string itemName, string itemValue = null)
+		public MenuItem AddItem(ImageBuffer leftImage, string itemName, string itemValue = null, int pointSize = 12)
 		{
-			GuiWidget normalTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundColor, MenuItemsTextColor);
-			GuiWidget hoverTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundHoverColor, MenuItemsTextHoverColor);
+			GuiWidget normalTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundColor, MenuItemsTextColor, pointSize);
+			GuiWidget hoverTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundHoverColor, MenuItemsTextHoverColor, pointSize);
 
 			var menuItem = new MenuItem(
 				new MenuItemStatesView(normalTextWithMargin, hoverTextWithMargin),
@@ -573,7 +573,7 @@ namespace MatterHackers.Agg.UI
 				itemValue ?? itemName)
 			{
 				Name = itemName + " Menu Item",
-				Text = itemName
+				Text = itemName,
 			};
 			menuItem.Selected += MenuItem_Clicked;
 
@@ -582,7 +582,7 @@ namespace MatterHackers.Agg.UI
 			return menuItem;
 		}
 
-		private GuiWidget GetMenuContent(string itemName, ImageBuffer leftImage, Color color, Color textColor)
+		private GuiWidget GetMenuContent(string itemName, ImageBuffer leftImage, Color color, Color textColor, int pointSize = 12)
 		{
 			var rowContainer = new FlowLayoutWidget()
 			{
@@ -591,7 +591,7 @@ namespace MatterHackers.Agg.UI
 				BackgroundColor = color
 			};
 
-			var textWidget = new TextWidget(itemName)
+			var textWidget = new TextWidget(itemName, pointSize: pointSize)
 			{
 				Margin = MenuItemsPadding,
 				TextColor = textColor,
