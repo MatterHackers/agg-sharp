@@ -35,7 +35,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg;
-using MatterHackers.Agg.Image;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
@@ -54,6 +53,17 @@ namespace MatterHackers.DataConverters3D
 			{
 				object3D.LoadLinkedMesh(cacheContext, cancellationToken, progress);
 			}
+		}
+
+		public static IObject3D DescendantsAndSelfMultipleChildrenFirstOrSelf(this IObject3D item)
+		{
+			var parentOfMultipleChildren = item.DescendantsAndSelf().Where(i => i.Children.Count > 1).FirstOrDefault() as Object3D;
+			if (parentOfMultipleChildren == null)
+			{
+				return item;
+			}
+
+			return parentOfMultipleChildren;
 		}
 
 		public static int Depth(this IObject3D item)
