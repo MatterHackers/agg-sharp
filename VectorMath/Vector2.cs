@@ -37,6 +37,16 @@ namespace MatterHackers.VectorMath
 	[StructLayout(LayoutKind.Sequential)]
 	public struct Vector2 : IEquatable<Vector2> , IConvertible
 	{
+		/// <summary>
+		/// Defines an instance with all components set to positive infinity.
+		/// </summary>
+		public static readonly Vector2 PositiveInfinity = new Vector2(double.PositiveInfinity, double.PositiveInfinity);
+
+		/// <summary>
+		/// Defines an instance with all components set to negative infinity.
+		/// </summary>
+		public static readonly Vector2 NegativeInfinity = new Vector2(double.NegativeInfinity, double.NegativeInfinity);
+
 		#region Fields
 
 		/// <summary>The X coordinate of this instance.</summary>
