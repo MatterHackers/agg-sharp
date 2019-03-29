@@ -838,7 +838,7 @@ namespace MatterHackers.DataConverters3D
 				}
 
 				// and replace us with the children
-				var replaceCommand = new ReplaceCommand(new[] { this }, newChildren);
+				var replaceCommand = new ReplaceCommand(new[] { this }, newChildren, false);
 				if (undoBuffer != null)
 				{
 					undoBuffer.AddAndDo(replaceCommand);
@@ -879,7 +879,7 @@ namespace MatterHackers.DataConverters3D
 					}
 
 					// and replace us with the children
-					undoBuffer.AddAndDo(new ReplaceCommand(new[] { this }, newTree.Children.ToList()));
+					undoBuffer.AddAndDo(new ReplaceCommand(new[] { this }, newTree.Children.ToList(), false));
 				}
 				else
 				{
