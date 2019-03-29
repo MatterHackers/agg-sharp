@@ -39,9 +39,11 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 	{
 		private IEnumerable<IObject3D> removeItems;
 		private IEnumerable<IObject3D> addItems;
+		private bool mantainCenterAndZHeight;
 
-		public ReplaceCommand(IEnumerable<IObject3D> removeItems, IEnumerable<IObject3D> addItems)
+		public ReplaceCommand(IEnumerable<IObject3D> removeItems, IEnumerable<IObject3D> addItems, bool mantainCenterAndZHeight = true)
 		{
+			this.mantainCenterAndZHeight = mantainCenterAndZHeight;
 			var firstParent = removeItems.First().Parent;
 			if (firstParent == null)
 			{
@@ -84,7 +86,8 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 				// then move the all to account for the old center and bed position
 				foreach (var item in addItems)
 				{
-					if (aabb.ZSize > 0)
+					if (mantainCenterAndZHeight
+						&& aabb.ZSize > 0)
 					{
 						// move our center back to where our center was
 						var centerDelta = (aabb.Center - aabb2.Center);
