@@ -35,7 +35,7 @@ namespace MatterHackers.VectorMath
 	[JsonObject]
 	[Serializable]
 	[StructLayout(LayoutKind.Sequential)]
-	public struct Vector2 : IEquatable<Vector2> , IConvertible
+	public struct Vector2 : IEquatable<Vector2>, IConvertible
 	{
 		/// <summary>
 		/// Defines an instance with all components set to positive infinity.

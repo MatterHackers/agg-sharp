@@ -26,7 +26,6 @@ SOFTWARE.
 
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Linq;
@@ -36,9 +35,10 @@ namespace MatterHackers.VectorMath
 	/// <summary>
 	/// Represents a 3D vector using three double-precision floating-point numbers.
 	/// </summary>
+	[JsonObject]
 	[Serializable]
 	[StructLayout(LayoutKind.Sequential)]
-	public struct Vector3 : IEquatable<Vector3>
+	public struct Vector3 : IEquatable<Vector3>, IConvertible
 	{
 		#region Fields
 
@@ -182,7 +182,7 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		/// <see cref="LengthFast"/>
 		/// <seealso cref="LengthSquared"/>
-		[JsonIgnoreAttribute]
+		[JsonIgnore]
 		public double Length
 		{
 			get
@@ -204,7 +204,7 @@ namespace MatterHackers.VectorMath
 		/// </remarks>
 		/// <see cref="Length"/>
 		/// <seealso cref="LengthFast"/>
-		[JsonIgnoreAttribute]
+		[JsonIgnore]
 		public double LengthSquared
 		{
 			get
@@ -799,7 +799,7 @@ namespace MatterHackers.VectorMath
 		/// <summary>
 		/// Gets or sets an OpenTK.Vector2d with the X and Y components of this instance.
 		/// </summary>
-		[JsonIgnoreAttribute]
+		[JsonIgnore]
 		public Vector2 Xy { get { return new Vector2(X, Y); } set { X = value.X; Y = value.Y; } }
 
 		#endregion Swizzle
@@ -1034,6 +1034,94 @@ namespace MatterHackers.VectorMath
 		}
 
 		#endregion IEquatable<Vector3> Members
+
+		#region IConvertable
+		public TypeCode GetTypeCode()
+		{
+			throw new NotImplementedException();
+		}
+
+		public bool ToBoolean(IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		public char ToChar(IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		public sbyte ToSByte(IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		public byte ToByte(IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		public short ToInt16(IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		public ushort ToUInt16(IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		public int ToInt32(IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		public uint ToUInt32(IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		public long ToInt64(IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		public ulong ToUInt64(IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		public float ToSingle(IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		public double ToDouble(IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		public decimal ToDecimal(IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		public DateTime ToDateTime(IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		public string ToString(IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		public object ToType(Type conversionType, IFormatProvider provider)
+		{
+			throw new NotImplementedException();
+		}
+
+		#endregion IConvertable
 
 		public static double ComponentMax(Vector3 vector3)
 		{
