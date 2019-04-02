@@ -137,9 +137,9 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static void SaveTo(this IObject3D sourceItem, Stream outputStream, Action<double, string> progress = null)
+		public static async void SaveTo(this IObject3D sourceItem, Stream outputStream, Action<double, string> progress = null)
 		{
-			sourceItem.PersistAssets(progress);
+			await sourceItem.PersistAssets(progress);
 
 			var streamWriter = new StreamWriter(outputStream);
 			streamWriter.Write(sourceItem.ToJson());

@@ -105,15 +105,15 @@ namespace MatterHackers.DataConverters3D
 		[JsonIgnore]
 		public bool ShowSelectionShadow { get; set; } = true;
 
-		public void Save(Stream stream, Action<double, string> progress = null)
+		public async void Save(Stream stream, Action<double, string> progress = null)
 		{
 			// Serialize the scene to disk using a modified Json.net pipeline with custom ContractResolvers and JsonConverters
 			try
 			{
-				this.PersistAssets(progress);
+				await this.PersistAssets(progress);
 
 				// Clear the selection before saving
-				List<IObject3D> selectedItems = new List<IObject3D>();
+				var selectedItems = new List<IObject3D>();
 
 				if (this.SelectedItem != null)
 				{
