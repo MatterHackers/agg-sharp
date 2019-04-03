@@ -486,20 +486,18 @@ namespace MatterHackers.VectorMath
 		public static Vector3 Parse(string s)
 		{
 			var result = Vector3.Zero;
+
 			var values = s.Split(',').Select(sValue =>
 			{
-				double number = 0;
-				if (double.TryParse(sValue, out number))
-				{
-					return double.Parse(sValue);
-				}
-				return 0;
+				double.TryParse(sValue, out double number);
+				return number;
 			}).ToArray();
 
 			for (int i = 0; i < Math.Min(3, values.Length); i++)
 			{
 				result[i] = values[i];
 			}
+
 			return result;
 		}
 
