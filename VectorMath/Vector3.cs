@@ -24,11 +24,10 @@ SOFTWARE.
 
 #endregion --- License ---
 
-using Newtonsoft.Json;
 using System;
 using System.Runtime.InteropServices;
-using System.Collections;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace MatterHackers.VectorMath
 {
@@ -38,7 +37,7 @@ namespace MatterHackers.VectorMath
 	[JsonObject]
 	[Serializable]
 	[StructLayout(LayoutKind.Sequential)]
-	public struct Vector3 : IEquatable<Vector3>, IConvertible
+	public struct Vector3 : IEquatable<Vector3>
 	{
 		#region Fields
 
@@ -487,20 +486,18 @@ namespace MatterHackers.VectorMath
 		public static Vector3 Parse(string s)
 		{
 			var result = Vector3.Zero;
+
 			var values = s.Split(',').Select(sValue =>
 			{
-				double number = 0;
-				if (double.TryParse(sValue, out number))
-				{
-					return double.Parse(sValue);
-				}
-				return 0;
+				double.TryParse(sValue, out double number);
+				return number;
 			}).ToArray();
 
 			for (int i = 0; i < Math.Min(3, values.Length); i++)
 			{
 				result[i] = values[i];
 			}
+
 			return result;
 		}
 
@@ -838,7 +835,7 @@ namespace MatterHackers.VectorMath
 		/// Negates an instance.
 		/// </summary>
 		/// <param name="vec">The instance.</param>
-		/// <returns>The result of the calculation.</returns> 
+		/// <returns>The result of the calculation.</returns>
 		public static Vector3 operator -(Vector3 vec)
 		{
 			vec.X = -vec.X;
@@ -1244,7 +1241,7 @@ namespace MatterHackers.VectorMath
 
 		/// <summary>Transform a Normal by the given Matrix</summary>
 		/// <remarks>
-		/// This calculates the inverse of the given matrix, use TransformNormal if you have 
+		/// This calculates the inverse of the given matrix, use TransformNormal if you have
 		/// a point on the plane (fastest) or TransformNormalInverse if you
 		/// have the inverse but not a point on the plane - to avoid this extra calculation
 		/// </remarks>

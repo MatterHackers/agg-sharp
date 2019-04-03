@@ -26,6 +26,7 @@ SOFTWARE.
 
 using System;
 using System.Runtime.InteropServices;
+using Newtonsoft.Json;
 
 namespace MatterHackers.VectorMath
 {
@@ -223,24 +224,16 @@ namespace MatterHackers.VectorMath
 
 		#region Instance
 
-		#region public float Length
-
 		/// <summary>
 		/// Gets the length (magnitude) of the vector.
 		/// </summary>
 		/// <see cref="LengthFast"/>
 		/// <seealso cref="LengthSquared"/>
+		[JsonIgnore]
 		public float Length
 		{
-			get
-			{
-				return (float)Math.Sqrt(X * X + Y * Y + Z * Z);
-			}
+			get => (float)Math.Sqrt(X * X + Y * Y + Z * Z);
 		}
-
-		#endregion public float Length
-
-		#region public float LengthSquared
 
 		/// <summary>
 		/// Gets the square of the vector length (magnitude).
@@ -251,15 +244,11 @@ namespace MatterHackers.VectorMath
 		/// </remarks>
 		/// <see cref="Length"/>
 		/// <seealso cref="LengthFast"/>
+		[JsonIgnore]
 		public float LengthSquared
 		{
-			get
-			{
-				return X * X + Y * Y + Z * Z;
-			}
+			get => X * X + Y * Y + Z * Z;
 		}
-
-		#endregion public float LengthSquared
 
 		#region public void Normalize()
 
@@ -303,12 +292,10 @@ namespace MatterHackers.VectorMath
 		/// <summary>
 		/// Gets or sets an OpenTK.Vector2d with the X and Y components of this instance.
 		/// </summary>
+		[JsonIgnore]
 		public Vector2 Xy
 		{
-			get
-			{
-				return new Vector2(X, Y);
-			}
+			get => new Vector2(X, Y);
 			set
 			{
 #if true

@@ -34,7 +34,7 @@ namespace MatterHackers.VectorMath
 	[JsonObject]
 	[Serializable]
 	[StructLayout(LayoutKind.Sequential)]
-	public struct Vector2Float : IEquatable<Vector2Float> , IConvertible
+	public struct Vector2Float : IEquatable<Vector2Float>
 	{
 		#region Fields
 
@@ -163,23 +163,15 @@ namespace MatterHackers.VectorMath
 
 		#region Instance
 
-		#region public double Length
-
 		/// <summary>
 		/// Gets the length (magnitude) of the vector.
 		/// </summary>
 		/// <seealso cref="LengthSquared"/>
+		[JsonIgnore]
 		public float Length
 		{
-			get
-			{
-				return (float)System.Math.Sqrt(X * X + Y * Y);
-			}
+			get => (float)System.Math.Sqrt(X * X + Y * Y);
 		}
-
-		#endregion public double Length
-
-		#region public double LengthSquared
 
 		/// <summary>
 		/// Gets the square of the vector length (magnitude).
@@ -189,15 +181,11 @@ namespace MatterHackers.VectorMath
 		/// for comparisons.
 		/// </remarks>
 		/// <see cref="Length"/>
+		[JsonIgnore]
 		public double LengthSquared
 		{
-			get
-			{
-				return X * X + Y * Y;
-			}
+			get => X * X + Y * Y;
 		}
-
-		#endregion public double LengthSquared
 
 		public void Rotate(double radians)
 		{
@@ -959,93 +947,5 @@ namespace MatterHackers.VectorMath
 		}
 
 		#endregion IEquatable<Vector2Floatd> Members
-
-		#region IConvertable
-		public TypeCode GetTypeCode()
-		{
-			throw new NotImplementedException();
-		}
-
-		public bool ToBoolean(IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		public char ToChar(IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		public sbyte ToSByte(IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		public byte ToByte(IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		public short ToInt16(IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		public ushort ToUInt16(IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		public int ToInt32(IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		public uint ToUInt32(IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		public long ToInt64(IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		public ulong ToUInt64(IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		public float ToSingle(IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		public double ToDouble(IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		public decimal ToDecimal(IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		public DateTime ToDateTime(IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		public string ToString(IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		public object ToType(Type conversionType, IFormatProvider provider)
-		{
-			throw new NotImplementedException();
-		}
-
-		#endregion IConvertable
 	}
 }
