@@ -163,23 +163,15 @@ namespace MatterHackers.VectorMath
 
 		#region Instance
 
-		#region public double Length
-
 		/// <summary>
 		/// Gets the length (magnitude) of the vector.
 		/// </summary>
 		/// <seealso cref="LengthSquared"/>
+		[JsonIgnore]
 		public float Length
 		{
-			get
-			{
-				return (float)System.Math.Sqrt(X * X + Y * Y);
-			}
+			get => (float)System.Math.Sqrt(X * X + Y * Y);
 		}
-
-		#endregion public double Length
-
-		#region public double LengthSquared
 
 		/// <summary>
 		/// Gets the square of the vector length (magnitude).
@@ -189,15 +181,11 @@ namespace MatterHackers.VectorMath
 		/// for comparisons.
 		/// </remarks>
 		/// <see cref="Length"/>
+		[JsonIgnore]
 		public double LengthSquared
 		{
-			get
-			{
-				return X * X + Y * Y;
-			}
+			get => X * X + Y * Y;
 		}
-
-		#endregion public double LengthSquared
 
 		public void Rotate(double radians)
 		{

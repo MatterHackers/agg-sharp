@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
 
@@ -72,6 +73,81 @@ namespace MatterHackers.VectorMath.Tests
 		{
 			Assert.IsTrue(Vector3.Collinear(new Vector3(0, 0, 1), new Vector3(0, 0, 2), new Vector3(0, 0, 3)));
 			Assert.IsTrue(!Vector3.Collinear(new Vector3(0, 0, 1), new Vector3(0, 0, 2), new Vector3(0, 1, 3)));
+		}
+
+		[Test]
+		public void Vector3ParseTest()
+		{
+			// Two segments
+			Assert.AreEqual(
+				new Vector3(1, 2, 0),
+				Vector3.Parse("1, 2"));
+
+			// Two segments, trailing comma
+			Assert.AreEqual(
+				new Vector3(1, 2, 0),
+				Vector3.Parse("1, 2,"));
+
+			// Three segments with whitespace
+			Assert.AreEqual(
+				new Vector3(1, 2, 3),
+				Vector3.Parse("1, 2, 3"));
+
+			// Three segments without whitespace
+			Assert.AreEqual(
+				new Vector3(1, 2, 3),
+				Vector3.Parse("1,2,3"));
+
+			// Doubles
+			Assert.AreEqual(
+				new Vector3(1.1, 2.2, 3.3),
+				Vector3.Parse("1.1, 2.2, 3.3"));
+
+			// Negative values
+			Assert.AreEqual(
+				new Vector3(-1, -2, -3),
+				Vector3.Parse("-1, -2, -3"));
+
+			// Empty
+			Assert.AreEqual(
+				Vector3.Zero,
+				Vector3.Parse(""));
+		}
+
+		[Test]
+		public void Vector2SerializeTest()
+		{
+			Assert.AreEqual(
+				"{\"X\":1.0,\"Y\":2.0}",
+				JsonConvert.SerializeObject(new Vector2(1, 2)),
+				"Unexpected properties serialized into json output");
+		}
+
+		[Test]
+		public void Vector2FloatSerializeTest()
+		{
+			Assert.AreEqual(
+				"{\"X\":1.1,\"Y\":2.2}",
+				JsonConvert.SerializeObject(new Vector2Float(1.1, 2.2)),
+				"Unexpected properties serialized into json output");
+		}
+
+		[Test]
+		public void Vector3FloatSerializeTest()
+		{
+			Assert.AreEqual(
+				"{\"X\":1.1,\"Y\":2.2,\"Z\":3.3}",
+				JsonConvert.SerializeObject(new Vector3Float(1.1, 2.2, 3.3)),
+				"Unexpected properties serialized into json output");
+		}
+
+		[Test]
+		public void Vector3SerializeTest()
+		{
+			Assert.AreEqual(
+				"{\"X\":1.0,\"Y\":2.0,\"Z\":3.0}",
+				JsonConvert.SerializeObject(new Vector3(1, 2, 3)),
+				"Unexpected properties serialized into json output");
 		}
 
 		[Test]
