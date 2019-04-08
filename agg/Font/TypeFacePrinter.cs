@@ -303,7 +303,8 @@ namespace MatterHackers.Agg.Font
 				return calculatedSize;
 			}
 
-			if (totalSizeCache.X == 0)
+			if (totalSizeCache.X == 0
+				&& text != null)
 			{
 				Vector2 calculatedSize;
 				GetSize(0, Math.Max(0, text.Length - 1), out calculatedSize, text);
