@@ -134,9 +134,12 @@ namespace MatterHackers.Agg.UI
 			StyledTypeFace typeFaceStyle = new StyledTypeFace(typeFace, pointSize * GuiWidget.DeviceScale, underline);
 			Printer = new TypeFacePrinter(text, typeFaceStyle, justification: justification);
 
-			LocalBounds = Printer.LocalBounds;
+			if (text != null)
+			{
+				LocalBounds = Printer.LocalBounds;
 
-			MinimumSize = new Vector2(0, LocalBounds.Height);
+				MinimumSize = new Vector2(0, LocalBounds.Height);
+			}
 		}
 
 		public override RectangleDouble LocalBounds
