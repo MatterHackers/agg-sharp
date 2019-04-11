@@ -270,103 +270,111 @@ namespace MatterHackers.Agg.Image
 			return bitmap;
 		}
 
+		object[] filenameLockers = new object[] { new object(), new object(), new object(), new object() };
 		public bool SaveImageData(string filename, IImageByte sourceImage)
 		{
-			if (File.Exists(filename))
+			// Get a lock base on the hash of the file name
+			// so that we always lock when the same file but have multiple
+			// thread writes to multiple files.
+			// There may be much better ways to do this.
+			lock (filenameLockers[Math.Abs(filename.GetHashCode()) % filenameLockers.Length])
 			{
-				File.Delete(filename);
-			}
-
-			ImageFormat format = ImageFormat.Jpeg;
-			if (filename.ToLower().EndsWith(".png"))
-			{
-				format = ImageFormat.Png;
-			}
-			else if (!filename.ToLower().EndsWith(".jpg") && !filename.ToLower().EndsWith(".jpeg"))
-			{
-				filename += ".jpg";
-			}
-
-			if (!File.Exists(filename))
-			{
-				if (sourceImage.BitDepth == 32)
+				if (File.Exists(filename))
 				{
-					try
+					File.Delete(filename);
+				}
+
+				ImageFormat format = ImageFormat.Jpeg;
+				if (filename.ToLower().EndsWith(".png"))
+				{
+					format = ImageFormat.Png;
+				}
+				else if (!filename.ToLower().EndsWith(".jpg") && !filename.ToLower().EndsWith(".jpeg"))
+				{
+					filename += ".jpg";
+				}
+
+				if (!File.Exists(filename))
+				{
+					if (sourceImage.BitDepth == 32)
 					{
-						using (var bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format32bppArgb))
+						try
 						{
+							using (var bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format32bppArgb))
+							{
+								BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
+								int destIndex = 0;
+								unsafe
+								{
+									byte[] sourceBuffer = sourceImage.GetBuffer();
+									byte* pDestBuffer = (byte*)bitmapData.Scan0;
+									int scanlinePadding = bitmapData.Stride - bitmapData.Width * 4;
+									for (int y = 0; y < sourceImage.Height; y++)
+									{
+										int sourceIndex = sourceImage.GetBufferOffsetXY(0, sourceImage.Height - 1 - y);
+										for (int x = 0; x < sourceImage.Width; x++)
+										{
+											pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+											pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+											pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+											pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+										}
+
+										destIndex += scanlinePadding;
+									}
+								}
+
+								bitmapToSave.UnlockBits(bitmapData);
+								bitmapToSave.Save(filename, format);
+							}
+
+							return true;
+						}
+						catch (Exception ex)
+						{
+							Console.WriteLine("Error saving file: " + ex.Message);
+							return false;
+						}
+					}
+					else if (sourceImage.BitDepth == 8 && format == ImageFormat.Png)
+					{
+						using (Bitmap bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format8bppIndexed))
+						{
+							ColorPalette palette = bitmapToSave.Palette;
+							for (int i = 0; i < palette.Entries.Length; i++)
+							{
+								palette.Entries[i] = System.Drawing.Color.FromArgb(i, i, i);
+							}
+							bitmapToSave.Palette = palette;
 							BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
 							int destIndex = 0;
 							unsafe
 							{
 								byte[] sourceBuffer = sourceImage.GetBuffer();
 								byte* pDestBuffer = (byte*)bitmapData.Scan0;
-								int scanlinePadding = bitmapData.Stride - bitmapData.Width * 4;
 								for (int y = 0; y < sourceImage.Height; y++)
 								{
 									int sourceIndex = sourceImage.GetBufferOffsetXY(0, sourceImage.Height - 1 - y);
 									for (int x = 0; x < sourceImage.Width; x++)
 									{
 										pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-										pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-										pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-										pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
 									}
-
-									destIndex += scanlinePadding;
 								}
 							}
-
-							bitmapToSave.UnlockBits(bitmapData);
 							bitmapToSave.Save(filename, format);
-						}
+							bitmapToSave.UnlockBits(bitmapData);
 
-						return true;
+							return true;
+						}
 					}
-					catch (Exception ex)
+					else
 					{
-						Console.WriteLine("Error saving file: " + ex.Message);
-						return false;
+						throw new NotImplementedException();
 					}
 				}
-				else if (sourceImage.BitDepth == 8 && format == ImageFormat.Png)
-				{
-					using (Bitmap bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format8bppIndexed))
-					{
-						ColorPalette palette = bitmapToSave.Palette;
-						for (int i = 0; i < palette.Entries.Length; i++)
-						{
-							palette.Entries[i] = System.Drawing.Color.FromArgb(i, i, i);
-						}
-						bitmapToSave.Palette = palette;
-						BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
-						int destIndex = 0;
-						unsafe
-						{
-							byte[] sourceBuffer = sourceImage.GetBuffer();
-							byte* pDestBuffer = (byte*)bitmapData.Scan0;
-							for (int y = 0; y < sourceImage.Height; y++)
-							{
-								int sourceIndex = sourceImage.GetBufferOffsetXY(0, sourceImage.Height - 1 - y);
-								for (int x = 0; x < sourceImage.Width; x++)
-								{
-									pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-								}
-							}
-						}
-						bitmapToSave.Save(filename, format);
-						bitmapToSave.UnlockBits(bitmapData);
 
-						return true;
-					}
-				}
-				else
-				{
-					throw new NotImplementedException();
-				}
+				return false;
 			}
-
-			return false;
 		}
 
 		public bool LoadImageData(string filename, ImageBufferFloat destImage)
