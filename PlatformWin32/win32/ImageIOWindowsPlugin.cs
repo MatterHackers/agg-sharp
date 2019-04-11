@@ -270,14 +270,15 @@ namespace MatterHackers.Agg.Image
 			return bitmap;
 		}
 
-		object[] filenameLockers = new object[] { new object(), new object(), new object(), new object() };
+		// allocate a set of lockers to use when accessing files for saving
+		object[] lockers = new object[] { new object(), new object(), new object(), new object() };
 		public bool SaveImageData(string filename, IImageByte sourceImage)
 		{
-			// Get a lock base on the hash of the file name
-			// so that we always lock when the same file but have multiple
-			// thread writes to multiple files.
-			// There may be much better ways to do this.
-			lock (filenameLockers[Math.Abs(filename.GetHashCode()) % filenameLockers.Length])
+			// Get a lock index base on the hash of the file name
+			int lockerIndex = Math.Abs(filename.GetHashCode()) % lockers.Length; // mod the hash code by the count to get an index
+
+			// lock on the index that this file name selects
+			lock (lockers[lockerIndex])
 			{
 				if (File.Exists(filename))
 				{
