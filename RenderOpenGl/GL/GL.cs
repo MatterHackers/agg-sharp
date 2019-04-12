@@ -364,6 +364,12 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			Instance?.Translate(x, y, z);
 		}
 
+		public static void TexEnv(TextureEnvironmentTarget target, TextureEnvParameter pname, float param)
+		{
+			Instance?.TexEnv(target, pname, param);
+		}
+
+
 		public static void Vertex2(Vector2 position)
 		{
 			Vertex2(position.X, position.Y);

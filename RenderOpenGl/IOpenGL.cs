@@ -132,6 +132,8 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		void TexCoordPointer(int size, TexCordPointerType type, int stride, IntPtr pointer);
 
+		void TexEnv(TextureEnvironmentTarget target, TextureEnvParameter pname, float param);
+
 		void TexImage2D(TextureTarget target, int level, PixelInternalFormat internalFormat, int width, int height, int border, PixelFormat format, PixelType type, byte[] pixels);
 
 		void TexParameter(TextureTarget target, TextureParameterName pname, int param);
