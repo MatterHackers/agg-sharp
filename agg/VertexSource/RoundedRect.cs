@@ -148,10 +148,7 @@ namespace MatterHackers.Agg.VertexSource
 				ResolutionScale = ResolutionScale
 			});
 
-			foreach (var vertex in allPaths.Vertices())
-			{
-				yield return vertex;
-			}
+			return allPaths.Vertices();
 		}
 	}
 }
