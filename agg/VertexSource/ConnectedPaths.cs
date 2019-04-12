@@ -87,16 +87,16 @@ namespace MatterHackers.Agg.VertexSource
 
 		public JoinPaths(IEnumerable<IVertexSource> paths)
 		{
-			SourcPaths.AddRange(paths);
+			SourcePaths.AddRange(paths);
 		}
 
-		public List<IVertexSource> SourcPaths { get; } = new List<IVertexSource>();
+		public List<IVertexSource> SourcePaths { get; } = new List<IVertexSource>();
 
 		public override IEnumerable<VertexData> Vertices()
 		{
-			for (int i = 0; i < SourcPaths.Count; i++)
+			for (int i = 0; i < SourcePaths.Count; i++)
 			{
-				IVertexSource sourcePath = SourcPaths[i];
+				IVertexSource sourcePath = SourcePaths[i];
 				bool firstMove = true;
 				foreach (VertexData vertexData in sourcePath.Vertices())
 				{
