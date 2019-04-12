@@ -45,6 +45,10 @@ namespace MatterHackers.RenderOpenGl
 
 		private static Mesh unscaledLineMesh = PlatonicSolids.CreateCube();
 
+		private const float GL_MODULATE = (float)0x2100;
+
+		private const float GL_REPLACE = (float)0x1E01;
+
 		public static Frustum GetClippingFrustum(this WorldView world)
 		{
 			var frustum = Frustum.FrustumFromProjectionMatrix(world.ProjectionMatrix);
@@ -84,12 +88,12 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		public static void Render(Mesh meshToRender, Color partColor, RenderTypes renderType = RenderTypes.Shaded, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color), Action meshChanged = null)
+		public static void Render(Mesh meshToRender, Color partColor, RenderTypes renderType = RenderTypes.Shaded, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color), Action meshChanged = null, bool blendTexture = true)
 		{
-			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged);
+			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture);
 		}
 
-		public static void Render(Mesh meshToRender, Color color, Matrix4X4 transform, RenderTypes renderType, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color), Action meshChanged = null)
+		public static void Render(Mesh meshToRender, Color color, Matrix4X4 transform, RenderTypes renderType, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color), Action meshChanged = null, bool blendTexture = true)
 		{
 			if (meshToRender != null)
 			{
@@ -140,7 +144,7 @@ namespace MatterHackers.RenderOpenGl
 
 					case RenderTypes.Shaded:
 					case RenderTypes.Materials:
-						DrawToGL(meshToRender, color.Alpha0To1 < 1, meshToViewTransform);
+						DrawToGL(meshToRender, color.Alpha0To1 < 1, meshToViewTransform, blendTexture);
 						break;
 				}
 
@@ -250,8 +254,14 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		private static void DrawToGL(Mesh meshToRender, bool isTransparent, Matrix4X4? meshToViewTransform)
+		private static void DrawToGL(Mesh meshToRender, bool isTransparent, Matrix4X4? meshToViewTransform, bool blendTexture = true)
 		{
+			if (!blendTexture)
+			{
+				// Turn off default GL_MODULATE mode
+				GL.TexEnv(TextureEnvironmentTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, GL_REPLACE);
+			}
+
 			if (meshToViewTransform != null
 				&& isTransparent
 				&& meshToRender.FaceBspTree != null
@@ -260,6 +270,13 @@ namespace MatterHackers.RenderOpenGl
 				var invMeshToViewTransform = meshToViewTransform.Value;
 				invMeshToViewTransform.Invert();
 				DrawToGLUsingBsp(meshToRender, meshToViewTransform.Value, invMeshToViewTransform);
+
+				if (!blendTexture)
+				{
+					// Restore default GL_MODULATE mode
+					GL.TexEnv(TextureEnvironmentTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, GL_MODULATE);
+				}
+
 				return;
 			}
 
@@ -270,10 +287,11 @@ namespace MatterHackers.RenderOpenGl
 				// Make sure the GLMeshPlugin has a reference to hold onto the image so it does not go away before this.
 				if (subMesh.texture != null)
 				{
-					if(subMesh.texture.HasTransparency)
+					if (subMesh.texture.HasTransparency)
 					{
 						GL.Enable(EnableCap.Blend);
 					}
+
 					ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(subMesh.texture, true);
 					GL.Enable(EnableCap.Texture2D);
 					GL.BindTexture(TextureTarget.Texture2D, glPlugin.GLTextureHandle);
@@ -330,6 +348,12 @@ namespace MatterHackers.RenderOpenGl
 				{
 					GL.DisableClientState(ArrayCap.TextureCoordArray);
 				}
+			}
+
+			if (!blendTexture)
+			{
+				// Restore default GL_MODULATE mode
+				GL.TexEnv(TextureEnvironmentTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, GL_MODULATE);
 			}
 		}
 

@@ -848,6 +848,10 @@ namespace MatterHackers.RenderOpenGl
 
 		private Stream OpenEmbeddedAssetStream(string name) => GetType().Assembly.GetManifestResourceStream(name);
 
+		public void TexEnv(TextureEnvironmentTarget target, TextureEnvParameter pname, float param)
+		{
+		}
+
 		internal struct ViewPortData
 		{
 			internal int height;

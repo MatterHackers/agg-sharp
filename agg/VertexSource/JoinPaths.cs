@@ -1,4 +1,4 @@
-using MatterHackers.VectorMath;
+﻿using MatterHackers.VectorMath;
 
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
@@ -26,22 +26,23 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.VertexSource
 {
+
 	/// <summary>
-	/// This class is used to merge multiple paths into a single IVertexSource path.
-	/// This is great to do things like have a path as an outside an a second path that can become an inside hole.
+	/// This class is used to strip out the close and first move of multiple paths
+	/// so they render as a single set of LineTo (s) and internal MoveTo (s)
 	/// </summary>
-	public class CombinePaths : VertexSourceLegacySupport
+	public class JoinPaths : VertexSourceLegacySupport
 	{
-		public CombinePaths()
+		public JoinPaths()
 		{
 		}
 
-		public CombinePaths(IVertexSource a, IVertexSource b)
+		public JoinPaths(IVertexSource a, IVertexSource b)
 			: this(new IVertexSource[] { a, b })
 		{
 		}
 
-		public CombinePaths(IEnumerable<IVertexSource> paths)
+		public JoinPaths(IEnumerable<IVertexSource> paths)
 		{
 			SourcePaths.AddRange(paths);
 		}
@@ -53,8 +54,17 @@ namespace MatterHackers.Agg.VertexSource
 			for (int i = 0; i < SourcePaths.Count; i++)
 			{
 				IVertexSource sourcePath = SourcePaths[i];
+				bool firstMove = true;
 				foreach (VertexData vertexData in sourcePath.Vertices())
 				{
+					// skip the initial command if it is not the first path and is a moveto.
+					if (i > 0
+						&& firstMove
+						&& ShapePath.is_move_to(vertexData.command))
+					{
+						continue;
+					}
+
 					// when we hit a stop move on to the next path
 					if (ShapePath.is_stop(vertexData.command))
 					{

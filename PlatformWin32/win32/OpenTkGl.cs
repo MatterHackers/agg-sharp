@@ -117,6 +117,11 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
+		public void TexEnv(TextureEnvironmentTarget target, TextureEnvParameter pname, float param)
+		{
+			OpenTK.Graphics.OpenGL.GL.TexEnv((OpenTK.Graphics.OpenGL.TextureEnvTarget)target, (OpenTK.Graphics.OpenGL.TextureEnvParameter)pname, param);
+		}
+
 		public void Scissor(int x, int y, int width, int height)
 		{
 #if USE_OPENGL

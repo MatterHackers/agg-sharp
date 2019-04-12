@@ -25,6 +25,7 @@ SOFTWARE.
 #endregion --- License ---
 
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace MatterHackers.VectorMath
@@ -160,6 +161,25 @@ namespace MatterHackers.VectorMath
 		}
 
 		#endregion Constructors
+
+		public static Vector4 Parse(string s)
+		{
+			var result = Vector4.Zero;
+
+			var values = s.Split(',').Select(sValue =>
+			{
+				double.TryParse(sValue, out double number);
+				return number;
+			}).ToArray();
+
+			for (int i = 0; i < Math.Min(4, values.Length); i++)
+			{
+				result[i] = values[i];
+			}
+
+			return result;
+		}
+
 
 		#region Public Members
 
