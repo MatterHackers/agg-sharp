@@ -1,4 +1,4 @@
-using MatterHackers.VectorMath;
+﻿using MatterHackers.VectorMath;
 
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
@@ -26,43 +26,28 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.VertexSource
 {
-	/// <summary>
-	/// This class is used to merge multiple paths into a single IVertexSource path.
-	/// This is great to do things like have a path as an outside an a second path that can become an inside hole.
-	/// </summary>
-	public class CombinePaths : VertexSourceLegacySupport
+
+	public class ReversePath : VertexSourceLegacySupport
 	{
-		public CombinePaths()
+		public ReversePath(IVertexSource sourcePath)
 		{
+			SourcPath = sourcePath;
 		}
 
-		public CombinePaths(IVertexSource a, IVertexSource b)
-			: this(new IVertexSource[] { a, b })
-		{
-		}
-
-		public CombinePaths(IEnumerable<IVertexSource> paths)
-		{
-			SourcePaths.AddRange(paths);
-		}
-
-		public List<IVertexSource> SourcePaths { get; } = new List<IVertexSource>();
+		public IVertexSource SourcPath { get; }
 
 		public override IEnumerable<VertexData> Vertices()
 		{
-			for (int i = 0; i < SourcePaths.Count; i++)
-			{
-				IVertexSource sourcePath = SourcePaths[i];
+				IVertexSource sourcePath = SourcPath;
 				foreach (VertexData vertexData in sourcePath.Vertices())
 				{
-					// when we hit a stop move on to the next path
+					// when we hit the initial stop. Skip it
 					if (ShapePath.is_stop(vertexData.command))
 					{
 						break;
 					}
 					yield return vertexData;
 				}
-			}
 
 			// and send the actual stop
 			yield return new VertexData(ShapePath.FlagsAndCommand.EndPoly | ShapePath.FlagsAndCommand.FlagClose | ShapePath.FlagsAndCommand.FlagCCW, new Vector2());
