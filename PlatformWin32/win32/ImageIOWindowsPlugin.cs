@@ -271,14 +271,15 @@ namespace MatterHackers.Agg.Image
 		}
 
 		// allocate a set of lockers to use when accessing files for saving
-		object[] lockers = new object[] { new object(), new object(), new object(), new object() };
+		private static readonly object[] Lockers = new object[] { new object(), new object(), new object(), new object() };
+
 		public bool SaveImageData(string filename, IImageByte sourceImage)
 		{
 			// Get a lock index base on the hash of the file name
-			int lockerIndex = Math.Abs(filename.GetHashCode()) % lockers.Length; // mod the hash code by the count to get an index
+			int lockerIndex = Math.Abs(filename.GetHashCode()) % Lockers.Length; // mod the hash code by the count to get an index
 
 			// lock on the index that this file name selects
-			lock (lockers[lockerIndex])
+			lock (Lockers[lockerIndex])
 			{
 				if (File.Exists(filename))
 				{
