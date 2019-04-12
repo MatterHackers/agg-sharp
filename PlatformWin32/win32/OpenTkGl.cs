@@ -119,7 +119,6 @@ namespace MatterHackers.Agg.UI
 
 		public void TexEnv(TextureEnvironmentTarget target, TextureEnvParameter pname, float param)
 		{
-			float xxx = (float) OpenTK.Graphics.ES11.All.Modulate;
 			OpenTK.Graphics.OpenGL.GL.TexEnv((OpenTK.Graphics.OpenGL.TextureEnvTarget)target, (OpenTK.Graphics.OpenGL.TextureEnvParameter)pname, param);
 		}
 
