@@ -226,6 +226,24 @@ namespace MatterHackers.PolygonMesh
 			this.Vertices = newVertices;
 		}
 
+		/// <summary>
+		/// Split the given face on the given plane. Remove the original face
+		/// and add as many new faces as required for the split
+		/// </summary>
+		/// <param name="faceIndex"></param>
+		/// <param name="plane"></param>
+		public bool SplitFace(int faceIndex, Plane plane, double onPlaneDistance = .001)
+		{
+			List<Vector3Float> newVertices = new List<Vector3Float>();
+			List<Face> newFaces = new List<Face>();
+			if(Faces[faceIndex].Split(this, plane, newFaces, newVertices, onPlaneDistance))
+			{
+				return true;
+			}
+
+			return false;
+		}
+
 		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
 		{
 			unchecked
@@ -386,6 +404,45 @@ namespace MatterHackers.PolygonMesh
 			bounds.ExpandToInclude(mesh.Vertices[face.v1]);
 			bounds.ExpandToInclude(mesh.Vertices[face.v2]);
 			return bounds;
+		}
+
+		/// <summary>
+		/// Split the face at the given plane.
+		/// </summary>
+		/// <param name="face">The face to split</param>
+		/// <param name="mesh">The mesh containing the face</param>
+		/// <param name="plane">The plane to split at</param>
+		/// <param name="newFaces">The new faces created will be added to this list, not the mesh.</param>
+		/// <param name="newVertices">The new vertices will be added to this list, not the mesh.</param>
+		/// <param name="onPlaneDistance">Treat any distance less than this as not crossing the plane</param>
+		/// <returns>True if the face crosses the plane else false</returns>
+		public static bool Split(this Face face, Mesh mesh, Plane plane, List<Face> newFaces, List<Vector3Float> newVertices, double onPlaneDistance)
+		{
+			var v0 = mesh.Vertices[face.v0];
+			var v1 = mesh.Vertices[face.v1];
+			var v2 = mesh.Vertices[face.v2];
+			// check if the face crosses the plane
+			var d0 = plane.GetDistanceFromPlane(v0);
+			var c0 = Math.Abs(d0) > onPlaneDistance;
+			var d1 = plane.GetDistanceFromPlane(v1);
+			var c1 = Math.Abs(d1) > onPlaneDistance;
+			var d2 = plane.GetDistanceFromPlane(v2);
+			var c2 = Math.Abs(d2) > onPlaneDistance;
+			var clip01 = c0 && c1 && ((d0 < 0 && d1 > 0) || (d0 > 0 && d1 < 0));
+			var clip12 = c1 && c2 && ((d1 < 0 && d2 > 0) || (d1 > 0 && d2 < 0));
+			var clip20 = c2 && c0 && ((d2 < 0 && d0 > 0) || (d2 > 0 && d0 < 0));
+
+			if(clip01)
+			{
+				// add the new vertex
+				var delta = (v1 - v0);
+				var length = delta.Length;
+				var totalDistance = Math.Abs(d0) + Math.Abs(d1);
+				var ratioToD0 = Math.Abs(d0) / totalDistance;
+				var newPoint = v1 + delta * ratioToD0;
+			}
+
+			return clip01 || clip12 || clip20;
 		}
 	}
 
