@@ -238,6 +238,23 @@ namespace MatterHackers.PolygonMesh
 			List<Face> newFaces = new List<Face>();
 			if(Faces[faceIndex].Split(this, plane, newFaces, newVertices, onPlaneDistance))
 			{
+				var vertexCount = Vertices.Count;
+				// remove the face index
+				Faces.RemoveAt(faceIndex);
+				// add the new vertices
+				Vertices.AddRange(newVertices);
+				// add the new faces (have to make the vertex indices to the new vertices
+				foreach(var newFace in newFaces)
+				{
+					Face faceNewIndices = newFace;
+					faceNewIndices.v0 += vertexCount;
+					faceNewIndices.v1 += vertexCount;
+					faceNewIndices.v2 += vertexCount;
+					Faces.Add(faceNewIndices);
+				}
+
+				CleanAndMerge();
+		
 				return true;
 			}
 
@@ -418,31 +435,69 @@ namespace MatterHackers.PolygonMesh
 		/// <returns>True if the face crosses the plane else false</returns>
 		public static bool Split(this Face face, Mesh mesh, Plane plane, List<Face> newFaces, List<Vector3Float> newVertices, double onPlaneDistance)
 		{
-			var v0 = mesh.Vertices[face.v0];
-			var v1 = mesh.Vertices[face.v1];
-			var v2 = mesh.Vertices[face.v2];
-			// check if the face crosses the plane
-			var d0 = plane.GetDistanceFromPlane(v0);
-			var c0 = Math.Abs(d0) > onPlaneDistance;
-			var d1 = plane.GetDistanceFromPlane(v1);
-			var c1 = Math.Abs(d1) > onPlaneDistance;
-			var d2 = plane.GetDistanceFromPlane(v2);
-			var c2 = Math.Abs(d2) > onPlaneDistance;
-			var clip01 = c0 && c1 && ((d0 < 0 && d1 > 0) || (d0 > 0 && d1 < 0));
-			var clip12 = c1 && c2 && ((d1 < 0 && d2 > 0) || (d1 > 0 && d2 < 0));
-			var clip20 = c2 && c0 && ((d2 < 0 && d0 > 0) || (d2 > 0 && d0 < 0));
-
-			if(clip01)
+			Vector3Float[] v = new Vector3Float[]
 			{
+				mesh.Vertices[face.v0],
+				mesh.Vertices[face.v1],
+				mesh.Vertices[face.v2]
+			};
+
+			// get the distance from the crossing plane
+			var dist = v.Select(a => plane.GetDistanceFromPlane(a)).ToArray();
+
+			// bool if each point is clipped
+			var clipPoint = dist.Select(a => Math.Abs(a) > onPlaneDistance).ToArray();
+
+			// bool if there is a clip on a line segment (between points)
+			var clipSegment = clipPoint.Select((a, i) =>
+			{
+				var nextI = (i + 1) % 3;
+				// if both points are clipped and they are on opposite sides of the clip plane
+				return clipPoint[i] && clipPoint[nextI] && ((dist[i] < 0 && dist[nextI] > 0) || (dist[i] > 0 && dist[nextI] < 0));
+			}).ToArray();
+
+			// the number of segments that need to be clipped
+			var segmentsClipped = clipSegment[0] ? 1 : 0;
+			segmentsClipped += clipSegment[1] ? 1 : 0;
+			segmentsClipped += clipSegment[2] ? 1 : 0;
+
+			void ClipEdge(int vi0)
+			{
+				var vi1 = (vi0 + 1) % 3;
+				var vi2 = (vi0 + 2) % 3;
+				var totalDistance = Math.Abs(dist[vi0]) + Math.Abs(dist[vi1]);
+				var ratioTodist0 = Math.Abs(dist[vi0]) / totalDistance;
+				var newPoint = v[vi0] + (v[vi1] - v[vi0]) * ratioTodist0;
 				// add the new vertex
-				var delta = (v1 - v0);
-				var length = delta.Length;
-				var totalDistance = Math.Abs(d0) + Math.Abs(d1);
-				var ratioToD0 = Math.Abs(d0) / totalDistance;
-				var newPoint = v1 + delta * ratioToD0;
+				newVertices.Add(newPoint);
 			}
 
-			return clip01 || clip12 || clip20;
+			switch (segmentsClipped)
+			{
+				// if 2 sides are clipped we will add 2 new vertices and 3 polygons
+				case 2:
+					break;
+
+				// if 1 side is clipped we will add 1 new vertex and 2 polygons
+				case 1:
+					int vi0 = clipSegment[0] ? 0 : clipSegment[1] ? 1 : 2;
+					var vi1 = (vi0 + 1) % 3;
+					var vi2 = (vi0 + 2) % 3;
+
+					var vertexStart = newVertices.Count;
+					// add the existing vertices
+					newVertices.Add(v[vi0]);
+					newVertices.Add(v[vi1]);
+					newVertices.Add(v[vi2]);
+					// clip the edge and add the new point
+					ClipEdge(vi0);
+					// add the new faces
+					newFaces.Add(new Face(vertexStart, vertexStart + 3, vertexStart + 2, newVertices));
+					newFaces.Add(new Face(vertexStart + 3, vertexStart + 1, vertexStart + 2, newVertices));
+					return true;
+			}
+
+			return false;
 		}
 	}
 

@@ -87,18 +87,65 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		[Test]
-		public void SplitFaceTest()
+		public void SplitFaceEdgeEdge()
+		{
+			void TestPositions(int p0, int p1, int p2)
+			{
+				var positions = new Vector3[] { new Vector3(), new Vector3(10, 0, 0), new Vector3(5, 20, 0) };
+				var mesh = new Mesh();
+				//      |
+				//     /|\
+				//    / | \
+				//   /  |  \
+				//  /___|___\
+				//      |
+				mesh.CreateFace(new Vector3[] { positions[p0], positions[p1], positions[p2] });
+				Assert.AreEqual(1, mesh.Faces.Count);
+				Assert.AreEqual(3, mesh.Vertices.Count);
+
+				// we find a split
+				Assert.IsTrue(mesh.SplitFace(0, new Plane(new Vector3(1, 0, 0), 5)));
+				// we now have 2 faces
+				Assert.AreEqual(2, mesh.Faces.Count);
+				// we now have 5 verts
+				// the have all the expected x values
+				Assert.AreEqual(4, mesh.Vertices.Count);
+				Assert.AreEqual(1, mesh.Vertices.Where(v => v.X == 0).Count());
+				Assert.AreEqual(2, mesh.Vertices.Where(v => v.X == 5).Count());
+				Assert.AreEqual(1, mesh.Vertices.Where(v => v.X == 10).Count());
+				// no face crosses the split line
+				Assert.AreEqual(2, mesh.Faces.Where(f =>
+				{
+					// all face vertices are less than the split line or greater than the split line
+					return (mesh.Vertices[f.v0].X <= 5 && mesh.Vertices[f.v1].X <= 5 && mesh.Vertices[f.v2].X <= 5)
+						|| (mesh.Vertices[f.v0].X >= 5 && mesh.Vertices[f.v1].X >= 5 && mesh.Vertices[f.v2].X >= 5);
+				}).Count());
+			}
+
+			// test every vertex orientation
+			TestPositions(0, 1, 2);
+			TestPositions(0, 2, 1);
+			TestPositions(1, 0, 2);
+			TestPositions(1, 2, 0);
+			TestPositions(2, 0, 1);
+			TestPositions(2, 1, 0);
+		}
+
+		[Test]
+		public void SplitFaceTowEdges()
 		{
 			void TestPositions(int p0, int p1, int p2)
 			{
 				var positions = new Vector3[] { new Vector3(), new Vector3(10, 0, 0), new Vector3(0, 5, 0) };
 				var mesh = new Mesh();
-				//  _
-				// |   __
-				// |       __
-				// |_____________
-				//
+				//  _    |
+				// |   __|
+				// |     | __
+				// |_____|_______
+				//       |
 				mesh.CreateFace(new Vector3[] { positions[p0], positions[p1], positions[p2] });
+				Assert.AreEqual(1, mesh.Faces.Count);
+				Assert.AreEqual(3, mesh.Vertices.Count);
 
 				// we find a split
 				Assert.IsTrue(mesh.SplitFace(0, new Plane(new Vector3(1, 0, 0), 5)));
@@ -113,9 +160,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				// no face crosses the split line
 				Assert.AreEqual(0, mesh.Faces.Where(f =>
 				{
-				// all face vertices are less than the split line or greater than the split line
-				return (mesh.Vertices[f.v0].X < 5 && mesh.Vertices[f.v0].X < 5 && mesh.Vertices[f.v0].X < 5)
-					|| (mesh.Vertices[f.v0].X > 5 && mesh.Vertices[f.v0].X > 5 && mesh.Vertices[f.v0].X > 5);
+					// all face vertices are less than the split line or greater than the split line
+					return (mesh.Vertices[f.v0].X < 5 && mesh.Vertices[f.v0].X < 5 && mesh.Vertices[f.v0].X < 5)
+						|| (mesh.Vertices[f.v0].X > 5 && mesh.Vertices[f.v0].X > 5 && mesh.Vertices[f.v0].X > 5);
 				}).Count());
 			}
 
