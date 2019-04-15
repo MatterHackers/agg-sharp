@@ -476,24 +476,47 @@ namespace MatterHackers.PolygonMesh
 			{
 				// if 2 sides are clipped we will add 2 new vertices and 3 polygons
 				case 2:
-					break;
+					{
+						// find the side we are not going to clip
+						int vi0 = clipSegment[0] && clipSegment[1] ? 2
+							: clipSegment[0] && clipSegment[2] ? 1 : 0;
+						var vi1 = (vi0 + 1) % 3;
+						var vi2 = (vi0 + 2) % 3;
+						// get the current count
+						var vertexStart = newVertices.Count;
+						// add the existing vertices
+						newVertices.Add(v[vi0]);
+						newVertices.Add(v[vi1]);
+						newVertices.Add(v[vi2]);
+						// clip the edges, will add the new points
+						ClipEdge(vi1);
+						ClipEdge(vi2);
+						// add the new faces
+						newFaces.Add(new Face(vertexStart, vertexStart + 1, vertexStart + 3, newVertices));
+						newFaces.Add(new Face(vertexStart, vertexStart + 3, vertexStart + 4, newVertices));
+						newFaces.Add(new Face(vertexStart + 3, vertexStart + 2, vertexStart + 4, newVertices));
+					}
+					return true;
 
 				// if 1 side is clipped we will add 1 new vertex and 2 polygons
 				case 1:
-					int vi0 = clipSegment[0] ? 0 : clipSegment[1] ? 1 : 2;
-					var vi1 = (vi0 + 1) % 3;
-					var vi2 = (vi0 + 2) % 3;
-
-					var vertexStart = newVertices.Count;
-					// add the existing vertices
-					newVertices.Add(v[vi0]);
-					newVertices.Add(v[vi1]);
-					newVertices.Add(v[vi2]);
-					// clip the edge and add the new point
-					ClipEdge(vi0);
-					// add the new faces
-					newFaces.Add(new Face(vertexStart, vertexStart + 3, vertexStart + 2, newVertices));
-					newFaces.Add(new Face(vertexStart + 3, vertexStart + 1, vertexStart + 2, newVertices));
+					{
+						// find the side we are going to clip
+						int vi0 = clipSegment[0] ? 0 : clipSegment[1] ? 1 : 2;
+						var vi1 = (vi0 + 1) % 3;
+						var vi2 = (vi0 + 2) % 3;
+						// get the current count
+						var vertexStart = newVertices.Count;
+						// add the existing vertices
+						newVertices.Add(v[vi0]);
+						newVertices.Add(v[vi1]);
+						newVertices.Add(v[vi2]);
+						// clip the edge, will add the new point
+						ClipEdge(vi0);
+						// add the new faces
+						newFaces.Add(new Face(vertexStart, vertexStart + 3, vertexStart + 2, newVertices));
+						newFaces.Add(new Face(vertexStart + 3, vertexStart + 1, vertexStart + 2, newVertices));
+					}
 					return true;
 			}
 
