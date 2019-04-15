@@ -324,7 +324,7 @@ namespace MatterHackers.DataConverters3D
 			return matrix;
 		}
 
-		public static AxisAlignedBoundingBox WorlAxisAlignedBoundingBox(this IObject3D child)
+		public static AxisAlignedBoundingBox WorldAxisAlignedBoundingBox(this IObject3D child)
 		{
 			return child.GetAxisAlignedBoundingBox(child.Parent.WorldMatrix());
 		}
