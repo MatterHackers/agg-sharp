@@ -58,12 +58,13 @@ namespace MatterHackers.PolygonMesh
 
 	public class Mesh
 	{
-		//public List<Vector3> Vertices { get; set; } = new List<Vector3>();
+		// public List<Vector3> Vertices { get; set; } = new List<Vector3>();
 		public List<Vector3Float> Vertices { get; set; } = new List<Vector3Float>();
+
 		public FaceList Faces { get; set; } = new FaceList();
 
 		/// <summary>
-		/// lookup by face index into the UVs and image for a face
+		/// Gets or sets lookup by face index into the UVs and image for a face.
 		/// </summary>
 		public Dictionary<int, FaceTextureData> FaceTextures { get; set; } = new Dictionary<int, FaceTextureData>();
 
@@ -125,6 +126,7 @@ namespace MatterHackers.PolygonMesh
 		public int ChangedCount { get; private set; } = 0;
 
 		ulong _longHashBeforeClean = 0;
+
 		public ulong LongHashBeforeClean
 		{
 			get
@@ -141,7 +143,9 @@ namespace MatterHackers.PolygonMesh
 		public override bool Equals(object obj)
 		{
 			if (!(obj is Mesh))
+			{
 				return false;
+			}
 
 			return this.Equals((Mesh)obj);
 		}
@@ -182,10 +186,11 @@ namespace MatterHackers.PolygonMesh
 
 		public void ReverseFaces()
 		{
-			for(int i=0; i<Faces.Count; i++)
+			for (int i = 0; i < Faces.Count; i++)
 			{
 				ReverseFace(i);
 			}
+
 			MarkAsChanged();
 		}
 
@@ -203,18 +208,18 @@ namespace MatterHackers.PolygonMesh
 			var positionToIndex = new Dictionary<(float, float, float), int>();
 			int GetIndex(Vector3Float position)
 			{
-				int index;
-				if (positionToIndex.TryGetValue((position.X, position.Y, position.Z), out index))
+				if (positionToIndex.TryGetValue((position.X, position.Y, position.Z), out int index))
 				{
 					return index;
 				}
+
 				var count = newVertices.Count;
 				positionToIndex.Add((position.X, position.Y, position.Z), count);
 				newVertices.Add(position);
 				return count;
 			}
 
-			foreach(var face in Faces)
+			foreach (var face in Faces)
 			{
 				int iv0 = GetIndex(Vertices[face.v0]);
 				int iv1 = GetIndex(Vertices[face.v1]);
@@ -232,11 +237,12 @@ namespace MatterHackers.PolygonMesh
 		/// </summary>
 		/// <param name="faceIndex"></param>
 		/// <param name="plane"></param>
+		/// <returns></returns>
 		public bool SplitFace(int faceIndex, Plane plane, double onPlaneDistance = .001)
 		{
 			List<Vector3Float> newVertices = new List<Vector3Float>();
 			List<Face> newFaces = new List<Face>();
-			if(Faces[faceIndex].Split(this, plane, newFaces, newVertices, onPlaneDistance))
+			if (Faces[faceIndex].Split(this.Vertices, plane, newFaces, newVertices, onPlaneDistance))
 			{
 				var vertexCount = Vertices.Count;
 				// remove the face index
@@ -244,7 +250,7 @@ namespace MatterHackers.PolygonMesh
 				// add the new vertices
 				Vertices.AddRange(newVertices);
 				// add the new faces (have to make the vertex indices to the new vertices
-				foreach(var newFace in newFaces)
+				foreach (var newFace in newFaces)
 				{
 					Face faceNewIndices = newFace;
 					faceNewIndices.v0 += vertexCount;
@@ -254,7 +260,7 @@ namespace MatterHackers.PolygonMesh
 				}
 
 				CleanAndMerge();
-		
+
 				return true;
 			}
 
@@ -268,7 +274,7 @@ namespace MatterHackers.PolygonMesh
 				hash = Vertices.Count.GetLongHashCode(hash);
 				hash = Faces.Count.GetLongHashCode(hash);
 
-				// we want to at most consider 100000 vertecies
+				// we want to at most consider 100000 vertices
 				int vertexStep = Math.Max(1, Vertices.Count / 1000);
 				for (int i = 0; i < Vertices.Count; i += vertexStep)
 				{
@@ -307,10 +313,11 @@ namespace MatterHackers.PolygonMesh
 			if (matrix != Matrix4X4.Identity)
 			{
 				Vertices.Transform(matrix);
-				for(int i=0; i<Faces.Count; i++)
+				for (int i = 0; i < Faces.Count; i++)
 				{
 					Faces[i] = new Face(Faces[i].v0, Faces[i].v1, Faces[i].v2, Faces[i].normal.TransformNormal(matrix));
 				}
+
 				MarkAsChanged();
 			}
 		}
@@ -427,19 +434,19 @@ namespace MatterHackers.PolygonMesh
 		/// Split the face at the given plane.
 		/// </summary>
 		/// <param name="face">The face to split</param>
-		/// <param name="mesh">The mesh containing the face</param>
+		/// <param name="faceVertices">The list containing the vertices for the face</param>
 		/// <param name="plane">The plane to split at</param>
 		/// <param name="newFaces">The new faces created will be added to this list, not the mesh.</param>
 		/// <param name="newVertices">The new vertices will be added to this list, not the mesh.</param>
 		/// <param name="onPlaneDistance">Treat any distance less than this as not crossing the plane</param>
 		/// <returns>True if the face crosses the plane else false</returns>
-		public static bool Split(this Face face, Mesh mesh, Plane plane, List<Face> newFaces, List<Vector3Float> newVertices, double onPlaneDistance)
+		public static bool Split(this Face face, List<Vector3Float> faceVertices, Plane plane, List<Face> newFaces, List<Vector3Float> newVertices, double onPlaneDistance)
 		{
 			Vector3Float[] v = new Vector3Float[]
 			{
-				mesh.Vertices[face.v0],
-				mesh.Vertices[face.v1],
-				mesh.Vertices[face.v2]
+				faceVertices[face.v0],
+				faceVertices[face.v1],
+				faceVertices[face.v2]
 			};
 
 			// get the distance from the crossing plane
