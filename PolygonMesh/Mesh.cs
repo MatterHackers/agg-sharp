@@ -58,12 +58,13 @@ namespace MatterHackers.PolygonMesh
 
 	public class Mesh
 	{
-		//public List<Vector3> Vertices { get; set; } = new List<Vector3>();
+		// public List<Vector3> Vertices { get; set; } = new List<Vector3>();
 		public List<Vector3Float> Vertices { get; set; } = new List<Vector3Float>();
+
 		public FaceList Faces { get; set; } = new FaceList();
 
 		/// <summary>
-		/// lookup by face index into the UVs and image for a face
+		/// Gets or sets lookup by face index into the UVs and image for a face.
 		/// </summary>
 		public Dictionary<int, FaceTextureData> FaceTextures { get; set; } = new Dictionary<int, FaceTextureData>();
 
@@ -125,6 +126,7 @@ namespace MatterHackers.PolygonMesh
 		public int ChangedCount { get; private set; } = 0;
 
 		ulong _longHashBeforeClean = 0;
+
 		public ulong LongHashBeforeClean
 		{
 			get
@@ -141,7 +143,9 @@ namespace MatterHackers.PolygonMesh
 		public override bool Equals(object obj)
 		{
 			if (!(obj is Mesh))
+			{
 				return false;
+			}
 
 			return this.Equals((Mesh)obj);
 		}
@@ -182,10 +186,11 @@ namespace MatterHackers.PolygonMesh
 
 		public void ReverseFaces()
 		{
-			for(int i=0; i<Faces.Count; i++)
+			for (int i = 0; i < Faces.Count; i++)
 			{
 				ReverseFace(i);
 			}
+
 			MarkAsChanged();
 		}
 
@@ -203,18 +208,18 @@ namespace MatterHackers.PolygonMesh
 			var positionToIndex = new Dictionary<(float, float, float), int>();
 			int GetIndex(Vector3Float position)
 			{
-				int index;
-				if (positionToIndex.TryGetValue((position.X, position.Y, position.Z), out index))
+				if (positionToIndex.TryGetValue((position.X, position.Y, position.Z), out int index))
 				{
 					return index;
 				}
+
 				var count = newVertices.Count;
 				positionToIndex.Add((position.X, position.Y, position.Z), count);
 				newVertices.Add(position);
 				return count;
 			}
 
-			foreach(var face in Faces)
+			foreach (var face in Faces)
 			{
 				int iv0 = GetIndex(Vertices[face.v0]);
 				int iv1 = GetIndex(Vertices[face.v1]);
@@ -226,6 +231,42 @@ namespace MatterHackers.PolygonMesh
 			this.Vertices = newVertices;
 		}
 
+		/// <summary>
+		/// Split the given face on the given plane. Remove the original face
+		/// and add as many new faces as required for the split
+		/// </summary>
+		/// <param name="faceIndex"></param>
+		/// <param name="plane"></param>
+		/// <returns></returns>
+		public bool SplitFace(int faceIndex, Plane plane, double onPlaneDistance = .001)
+		{
+			List<Vector3Float> newVertices = new List<Vector3Float>();
+			List<Face> newFaces = new List<Face>();
+			if (Faces[faceIndex].Split(this.Vertices, plane, newFaces, newVertices, onPlaneDistance))
+			{
+				var vertexCount = Vertices.Count;
+				// remove the face index
+				Faces.RemoveAt(faceIndex);
+				// add the new vertices
+				Vertices.AddRange(newVertices);
+				// add the new faces (have to make the vertex indices to the new vertices
+				foreach (var newFace in newFaces)
+				{
+					Face faceNewIndices = newFace;
+					faceNewIndices.v0 += vertexCount;
+					faceNewIndices.v1 += vertexCount;
+					faceNewIndices.v2 += vertexCount;
+					Faces.Add(faceNewIndices);
+				}
+
+				CleanAndMerge();
+
+				return true;
+			}
+
+			return false;
+		}
+
 		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
 		{
 			unchecked
@@ -233,7 +274,7 @@ namespace MatterHackers.PolygonMesh
 				hash = Vertices.Count.GetLongHashCode(hash);
 				hash = Faces.Count.GetLongHashCode(hash);
 
-				// we want to at most consider 100000 vertecies
+				// we want to at most consider 100000 vertices
 				int vertexStep = Math.Max(1, Vertices.Count / 1000);
 				for (int i = 0; i < Vertices.Count; i += vertexStep)
 				{
@@ -272,10 +313,11 @@ namespace MatterHackers.PolygonMesh
 			if (matrix != Matrix4X4.Identity)
 			{
 				Vertices.Transform(matrix);
-				for(int i=0; i<Faces.Count; i++)
+				for (int i = 0; i < Faces.Count; i++)
 				{
 					Faces[i] = new Face(Faces[i].v0, Faces[i].v1, Faces[i].v2, Faces[i].normal.TransformNormal(matrix));
 				}
+
 				MarkAsChanged();
 			}
 		}
@@ -386,6 +428,106 @@ namespace MatterHackers.PolygonMesh
 			bounds.ExpandToInclude(mesh.Vertices[face.v1]);
 			bounds.ExpandToInclude(mesh.Vertices[face.v2]);
 			return bounds;
+		}
+
+		/// <summary>
+		/// Split the face at the given plane.
+		/// </summary>
+		/// <param name="face">The face to split</param>
+		/// <param name="faceVertices">The list containing the vertices for the face</param>
+		/// <param name="plane">The plane to split at</param>
+		/// <param name="newFaces">The new faces created will be added to this list, not the mesh.</param>
+		/// <param name="newVertices">The new vertices will be added to this list, not the mesh.</param>
+		/// <param name="onPlaneDistance">Treat any distance less than this as not crossing the plane</param>
+		/// <returns>True if the face crosses the plane else false</returns>
+		public static bool Split(this Face face, List<Vector3Float> faceVertices, Plane plane, List<Face> newFaces, List<Vector3Float> newVertices, double onPlaneDistance)
+		{
+			Vector3Float[] v = new Vector3Float[]
+			{
+				faceVertices[face.v0],
+				faceVertices[face.v1],
+				faceVertices[face.v2]
+			};
+
+			// get the distance from the crossing plane
+			var dist = v.Select(a => plane.GetDistanceFromPlane(a)).ToArray();
+
+			// bool if each point is clipped
+			var clipPoint = dist.Select(a => Math.Abs(a) > onPlaneDistance).ToArray();
+
+			// bool if there is a clip on a line segment (between points)
+			var clipSegment = clipPoint.Select((a, i) =>
+			{
+				var nextI = (i + 1) % 3;
+				// if both points are clipped and they are on opposite sides of the clip plane
+				return clipPoint[i] && clipPoint[nextI] && ((dist[i] < 0 && dist[nextI] > 0) || (dist[i] > 0 && dist[nextI] < 0));
+			}).ToArray();
+
+			// the number of segments that need to be clipped
+			var segmentsClipped = clipSegment[0] ? 1 : 0;
+			segmentsClipped += clipSegment[1] ? 1 : 0;
+			segmentsClipped += clipSegment[2] ? 1 : 0;
+
+			void ClipEdge(int vi0)
+			{
+				var vi1 = (vi0 + 1) % 3;
+				var vi2 = (vi0 + 2) % 3;
+				var totalDistance = Math.Abs(dist[vi0]) + Math.Abs(dist[vi1]);
+				var ratioTodist0 = Math.Abs(dist[vi0]) / totalDistance;
+				var newPoint = v[vi0] + (v[vi1] - v[vi0]) * ratioTodist0;
+				// add the new vertex
+				newVertices.Add(newPoint);
+			}
+
+			switch (segmentsClipped)
+			{
+				// if 2 sides are clipped we will add 2 new vertices and 3 polygons
+				case 2:
+					{
+						// find the side we are not going to clip
+						int vi0 = clipSegment[0] && clipSegment[1] ? 2
+							: clipSegment[0] && clipSegment[2] ? 1 : 0;
+						var vi1 = (vi0 + 1) % 3;
+						var vi2 = (vi0 + 2) % 3;
+						// get the current count
+						var vertexStart = newVertices.Count;
+						// add the existing vertices
+						newVertices.Add(v[vi0]);
+						newVertices.Add(v[vi1]);
+						newVertices.Add(v[vi2]);
+						// clip the edges, will add the new points
+						ClipEdge(vi1);
+						ClipEdge(vi2);
+						// add the new faces
+						newFaces.Add(new Face(vertexStart, vertexStart + 1, vertexStart + 3, newVertices));
+						newFaces.Add(new Face(vertexStart, vertexStart + 3, vertexStart + 4, newVertices));
+						newFaces.Add(new Face(vertexStart + 3, vertexStart + 2, vertexStart + 4, newVertices));
+					}
+					return true;
+
+				// if 1 side is clipped we will add 1 new vertex and 2 polygons
+				case 1:
+					{
+						// find the side we are going to clip
+						int vi0 = clipSegment[0] ? 0 : clipSegment[1] ? 1 : 2;
+						var vi1 = (vi0 + 1) % 3;
+						var vi2 = (vi0 + 2) % 3;
+						// get the current count
+						var vertexStart = newVertices.Count;
+						// add the existing vertices
+						newVertices.Add(v[vi0]);
+						newVertices.Add(v[vi1]);
+						newVertices.Add(v[vi2]);
+						// clip the edge, will add the new point
+						ClipEdge(vi0);
+						// add the new faces
+						newFaces.Add(new Face(vertexStart, vertexStart + 3, vertexStart + 2, newVertices));
+						newFaces.Add(new Face(vertexStart + 3, vertexStart + 1, vertexStart + 2, newVertices));
+					}
+					return true;
+			}
+
+			return false;
 		}
 	}
 

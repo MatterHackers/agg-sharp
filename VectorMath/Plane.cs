@@ -129,6 +129,10 @@ namespace MatterHackers.VectorMath
 				&& DistanceFromOrigin == other.DistanceFromOrigin;
 		}
 
+		public double GetDistanceFromPlane(Vector3Float positionToCheck)
+		{
+			return GetDistanceFromPlane(new Vector3(positionToCheck));
+		}
 		public double GetDistanceFromPlane(Vector3 positionToCheck)
 		{
 			double distanceToPosition = Vector3Ex.Dot(Normal, positionToCheck);
