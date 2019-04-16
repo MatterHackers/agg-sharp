@@ -140,7 +140,9 @@ namespace MatterHackers.RenderOpenGl
 				// don't compare the data of the texture but rather if they are just the same object
 				if (subMeshs.Count == 0 
 					|| (faceTexture != null 
-						&& (object)subMeshs[subMeshs.Count - 1].texture != (object)faceTexture.image))
+						&& (object)subMeshs[subMeshs.Count - 1].texture != (object)faceTexture.image)
+					|| (faceTexture == null 
+						&& subMeshs[subMeshs.Count - 1].texture != null))
 				{
 					SubTriangleMesh newSubMesh = new SubTriangleMesh();
 					newSubMesh.texture = faceTexture == null ? null : faceTexture.image;
