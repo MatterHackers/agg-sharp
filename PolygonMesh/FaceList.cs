@@ -89,6 +89,13 @@ namespace MatterHackers.PolygonMesh
 				Add(new Face(f[i].v0, f[i].v1, f[i].v2, f[i].normal));
 			}
 		}
+		public FaceList(IEnumerable<Face> faces)
+		{
+			foreach(var face in faces)
+			{
+				Add(new Face(face.v0, face.v1, face.v2, face.normal));
+			}
+		}
 
 		/// <summary>
 		/// Add a face from vertex indexes and calculate the normal (from vertex positions)

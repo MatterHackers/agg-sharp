@@ -267,6 +267,55 @@ namespace MatterHackers.PolygonMesh
 			return false;
 		}
 
+		public bool Split(Plane plane, double onPlaneDistance = .001)
+		{
+			var newVertices = new List<Vector3Float>();
+			var newFaces = new List<Face>();
+			var facesToRemove = new HashSet<int>();
+
+			for(int i=0; i<Faces.Count; i++)
+			{
+				var face = Faces[i];
+
+				if (face.Split(this.Vertices, plane, newFaces, newVertices, onPlaneDistance))
+				{
+					// record the face for removal
+					facesToRemove.Add(i);
+				}
+			}
+
+			// make a new list of all the faces we are keeping
+			var keptFaces = new List<Face>();
+			for (int i = 0; i < Faces.Count; i++)
+			{
+				if(!facesToRemove.Contains(i))
+				{
+					keptFaces.Add(Faces[i]);
+				}
+			}
+
+			var vertexCount = Vertices.Count;
+			
+			// add the new vertices
+			Vertices.AddRange(newVertices);
+
+			// add the new faces (have to make the vertex indices to the new vertices
+			foreach (var newFace in newFaces)
+			{
+				Face faceNewIndices = newFace;
+				faceNewIndices.v0 += vertexCount;
+				faceNewIndices.v1 += vertexCount;
+				faceNewIndices.v2 += vertexCount;
+				keptFaces.Add(faceNewIndices);
+			}
+
+			Faces = new FaceList(keptFaces);
+
+			CleanAndMerge();
+
+			return true;
+		}
+
 		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
 		{
 			unchecked
