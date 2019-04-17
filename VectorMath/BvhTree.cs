@@ -51,7 +51,7 @@ namespace MatterHackers.VectorMath
 
 		private BvhTree<T> nodeB;
 
-		private int splitingPlane;
+		private int splittingPlane;
 
 		public BvhTree()
 		{
@@ -67,9 +67,9 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		public BvhTree(BvhTree<T> nodeA, BvhTree<T> nodeB, int splitingPlane)
+		public BvhTree(BvhTree<T> nodeA, BvhTree<T> nodeB, int splittingPlane)
 		{
-			this.splitingPlane = splitingPlane;
+			this.splittingPlane = splittingPlane;
 			this.nodeA = nodeA;
 			this.nodeB = nodeB;
 			this.Aabb = nodeA.Aabb + nodeB.Aabb; // we can cache this because it is not allowed to change.
@@ -357,7 +357,7 @@ namespace MatterHackers.VectorMath
 
 				var checkFirst = nodeA;
 				var checkSecond = nodeB;
-				if (ray.directionNormal[splitingPlane] < 0)
+				if (ray.directionNormal[splittingPlane] < 0)
 				{
 					checkFirst = nodeB;
 					checkSecond = nodeA;
