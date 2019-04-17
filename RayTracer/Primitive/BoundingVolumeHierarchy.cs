@@ -40,15 +40,15 @@ namespace MatterHackers.RayTracer
 		internal AxisAlignedBoundingBox Aabb;
 		private IPrimitive nodeA;
 		private IPrimitive nodeB;
-		private int splitingPlane;
+		private int splittingPlane;
 
 		public BoundingVolumeHierarchy()
 		{
 		}
 
-		public BoundingVolumeHierarchy(IPrimitive nodeA, IPrimitive nodeB, int splitingPlane)
+		public BoundingVolumeHierarchy(IPrimitive nodeA, IPrimitive nodeB, int splittingPlane)
 		{
-			this.splitingPlane = splitingPlane;
+			this.splittingPlane = splittingPlane;
 			this.nodeA = nodeA;
 			this.nodeB = nodeB;
 			this.Aabb = nodeA.GetAxisAlignedBoundingBox() + nodeB.GetAxisAlignedBoundingBox(); // we can cache this because it is not allowed to change.
@@ -312,7 +312,7 @@ namespace MatterHackers.RayTracer
 			{
 				IPrimitive checkFirst = nodeA;
 				IPrimitive checkSecond = nodeB;
-				if (ray.directionNormal[splitingPlane] < 0)
+				if (ray.directionNormal[splittingPlane] < 0)
 				{
 					checkFirst = nodeB;
 					checkSecond = nodeA;
@@ -371,7 +371,7 @@ namespace MatterHackers.RayTracer
 			{
 				IPrimitive checkFirst = nodeA;
 				IPrimitive checkSecond = nodeB;
-				if (rayBundle.rayArray[startRayIndex].directionNormal[splitingPlane] < 0)
+				if (rayBundle.rayArray[startRayIndex].directionNormal[splittingPlane] < 0)
 				{
 					checkFirst = nodeB;
 					checkSecond = nodeA;
@@ -419,7 +419,7 @@ namespace MatterHackers.RayTracer
 			{
 				IPrimitive checkFirst = nodeA;
 				IPrimitive checkSecond = nodeB;
-				if (ray.directionNormal[splitingPlane] < 0)
+				if (ray.directionNormal[splittingPlane] < 0)
 				{
 					checkFirst = nodeB;
 					checkSecond = nodeA;

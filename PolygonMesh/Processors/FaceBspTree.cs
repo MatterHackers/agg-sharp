@@ -48,7 +48,7 @@ namespace MatterHackers.PolygonMesh
 			var sourceFaces = Enumerable.Range(0, mesh.Faces.Count).ToList();
 			var faces = Enumerable.Range(0, mesh.Faces.Count).ToList();
 
-			CreateNoSplitingFast(mesh, sourceFaces, root, faces, maxFacesToTest, tryToBalanceTree);
+			CreateNoSplittingFast(mesh, sourceFaces, root, faces, maxFacesToTest, tryToBalanceTree);
 
 			return root;
 		}
@@ -88,7 +88,7 @@ namespace MatterHackers.PolygonMesh
 			} while (renderOrder.Any());
 		}
 
-		private static (double, int) CalculateCrosingArrea(Mesh mesh, int faceIndex, List<int> faces, double smallestCrossingArrea)
+		private static (double, int) CalculateCrossingArea(Mesh mesh, int faceIndex, List<int> faces, double smallestCrossingArrea)
 		{
 			double negativeDistance = 0;
 			double positiveDistance = 0;
@@ -180,7 +180,7 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		private static void CreateNoSplitingFast(Mesh mesh, List<int> sourceFaces, BspNode node, List<int> faces, int maxFacesToTest, bool tryToBalanceTree)
+		private static void CreateNoSplittingFast(Mesh mesh, List<int> sourceFaces, BspNode node, List<int> faces, int maxFacesToTest, bool tryToBalanceTree)
 		{
 			if (faces.Count == 0)
 			{
@@ -196,7 +196,7 @@ namespace MatterHackers.PolygonMesh
 			for (int i = 0; i < faces.Count; i += step)
 			{
 				// calculate how much of polygons cross this face
-				(double crossingArrea, int balance) = CalculateCrosingArrea(mesh, i, faces, smallestCrossingArrea);
+				(double crossingArrea, int balance) = CalculateCrossingArea(mesh, i, faces, smallestCrossingArrea);
 				// keep track of the best face so far
 				if (crossingArrea < smallestCrossingArrea)
 				{
@@ -225,15 +225,17 @@ namespace MatterHackers.PolygonMesh
 			var frontFaces = new List<int>();
 			CreateBackAndFrontFaceLists(mesh, bestFaceIndex, faces, backFaces, frontFaces);
 
-			CreateNoSplitingFast(mesh, sourceFaces, node.BackNode = new BspNode(), backFaces, maxFacesToTest, tryToBalanceTree);
-			CreateNoSplitingFast(mesh, sourceFaces, node.FrontNode = new BspNode(), frontFaces, maxFacesToTest, tryToBalanceTree);
+			CreateNoSplittingFast(mesh, sourceFaces, node.BackNode = new BspNode(), backFaces, maxFacesToTest, tryToBalanceTree);
+			CreateNoSplittingFast(mesh, sourceFaces, node.FrontNode = new BspNode(), frontFaces, maxFacesToTest, tryToBalanceTree);
 		}
 	}
 
 	public class BspNode
 	{
 		public BspNode BackNode { get; internal set; }
+
 		public BspNode FrontNode { get; internal set; }
+
 		public int Index { get; internal set; } = -1;
 	}
 
