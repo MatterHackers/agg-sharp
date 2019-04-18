@@ -120,8 +120,9 @@ namespace MatterHackers.DataConverters3D
 			{
 				property.ShouldSerialize = (instance) =>
 				{
+					// Only serialize Matrix values off by more than .001 from Matrix4X4.Identity
 					return instance is Object3D object3D
-						&& object3D.Matrix != Matrix4X4.Identity;
+						&& !object3D.Matrix.Equals(Matrix4X4.Identity, .001);
 				};
 			}
 
