@@ -1139,6 +1139,18 @@ namespace MatterHackers.GuiAutomation
 
 		#endregion Time
 
+		public void SelectAll()
+		{
+			// Type into focused widget
+			this.Type("^a"); // select all
+		}
+
+		public void SelectNone()
+		{
+			// Type into focused widget
+			this.Type(" "); // clear the selection (type a space)
+		}
+
 		#region Prior TestHarness code
 
 		public static IInputMethod InputMethod { get; set; }
