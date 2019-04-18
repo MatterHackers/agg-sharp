@@ -267,7 +267,18 @@ namespace MatterHackers.PolygonMesh
 			return false;
 		}
 
-		public bool Split(Plane plane, double onPlaneDistance = .001)
+		public class SplitData
+		{
+			public Face Face { get; }
+			public double[] Dist { get; }
+
+			public SplitData(Face face, double[] dist)
+			{
+				this.Face = face;
+				this.Dist = dist;
+			}
+		}
+		public bool Split(Plane plane, double onPlaneDistance = .001, Func<SplitData, bool> clipFace = null)
 		{
 			var newVertices = new List<Vector3Float>();
 			var newFaces = new List<Face>();
@@ -277,7 +288,7 @@ namespace MatterHackers.PolygonMesh
 			{
 				var face = Faces[i];
 
-				if (face.Split(this.Vertices, plane, newFaces, newVertices, onPlaneDistance))
+				if (face.Split(this.Vertices, plane, newFaces, newVertices, onPlaneDistance, clipFace))
 				{
 					// record the face for removal
 					facesToRemove.Add(i);
@@ -489,7 +500,7 @@ namespace MatterHackers.PolygonMesh
 		/// <param name="newVertices">The new vertices will be added to this list, not the mesh.</param>
 		/// <param name="onPlaneDistance">Treat any distance less than this as not crossing the plane</param>
 		/// <returns>True if the face crosses the plane else false</returns>
-		public static bool Split(this Face face, List<Vector3Float> faceVertices, Plane plane, List<Face> newFaces, List<Vector3Float> newVertices, double onPlaneDistance)
+		public static bool Split(this Face face, List<Vector3Float> faceVertices, Plane plane, List<Face> newFaces, List<Vector3Float> newVertices, double onPlaneDistance, Func<Mesh.SplitData, bool> clipFace = null)
 		{
 			Vector3Float[] v = new Vector3Float[]
 			{
@@ -532,6 +543,7 @@ namespace MatterHackers.PolygonMesh
 			{
 				// if 2 sides are clipped we will add 2 new vertices and 3 polygons
 				case 2:
+					if(clipFace?.Invoke(new Mesh.SplitData(face, dist)) != false)
 					{
 						// find the side we are not going to clip
 						int vi0 = clipSegment[0] && clipSegment[1] ? 2
@@ -551,8 +563,9 @@ namespace MatterHackers.PolygonMesh
 						newFaces.Add(new Face(vertexStart, vertexStart + 1, vertexStart + 3, newVertices));
 						newFaces.Add(new Face(vertexStart, vertexStart + 3, vertexStart + 4, newVertices));
 						newFaces.Add(new Face(vertexStart + 3, vertexStart + 2, vertexStart + 4, newVertices));
+						return true;
 					}
-					return true;
+					break;
 
 				// if 1 side is clipped we will add 1 new vertex and 2 polygons
 				case 1:
