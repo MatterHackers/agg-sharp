@@ -43,7 +43,7 @@ namespace MatterHackers.PolygonMesh
 		}
 
 		/// <summary>
-		/// The indecies of all the faces that share this edeg
+		/// The indices of all the faces that share this edge
 		/// </summary>
 		public IReadOnlyList<int> Faces => _faces;
 
@@ -77,8 +77,8 @@ namespace MatterHackers.PolygonMesh
 				faceEdgesThatShareStartIndex[(faceEdge.start, faceEdge.end)].Add(faceEdge.face);
 			}
 
-			// now that we have a dictionary of all the face edegs by start index
-			// we can make the list of mesh edeges
+			// now that we have a dictionary of all the face edges by start index
+			// we can make the list of mesh edges
 
 			var meshEdges = new List<MeshEdge>();
 			
@@ -102,7 +102,7 @@ namespace MatterHackers.PolygonMesh
 		private List<int> _faces = new List<int>();
 
 		/// <summary>
-		/// The indecies of all the faces that share this edeg
+		/// The indices of all the faces that share this edge
 		/// </summary>
 		public IReadOnlyList<int> Faces => _faces;
 

@@ -1,5 +1,5 @@
-﻿using ShaderGen;
-using System.Numerics;
+﻿using System.Numerics;
+using ShaderGen;
 using static ShaderGen.ShaderBuiltins;
 
 [assembly: ShaderSet("PositionTextureGL", "RenderOpenGl.Shaders.PositionTextureGL.VS", "RenderOpenGl.Shaders.PositionTextureGL.FS")]
@@ -10,13 +10,16 @@ namespace RenderOpenGl.Shaders
 	{
 		[ResourceSet(0)]
 		public Matrix4x4 Projection;
+
 		[ResourceSet(0)]
 		public Matrix4x4 View;
 
 		[ResourceSet(1)]
 		public Matrix4x4 World;
+
 		[ResourceSet(1)]
 		public Texture2DResource SurfaceTexture;
+
 		[ResourceSet(1)]
 		public SamplerResource SurfaceSampler;
 
@@ -41,14 +44,20 @@ namespace RenderOpenGl.Shaders
 
 		public struct VertexInput
 		{
-			[PositionSemantic] public Vector3 Position;
-			[TextureCoordinateSemantic] public Vector2 TexCoords;
+			[PositionSemantic]
+			public Vector3 Position;
+
+			[TextureCoordinateSemantic]
+			public Vector2 TexCoords;
 		}
 
 		public struct FragmentInput
 		{
-			[SystemPositionSemantic] public Vector4 SystemPosition;
-			[TextureCoordinateSemantic] public Vector2 TexCoords;
+			[SystemPositionSemantic]
+			public Vector4 SystemPosition;
+
+			[TextureCoordinateSemantic]
+			public Vector2 TexCoords;
 		}
 	}
 }
