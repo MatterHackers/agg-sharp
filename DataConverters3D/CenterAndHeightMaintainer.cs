@@ -28,17 +28,16 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using MatterHackers.DataConverters3D;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.DataConverters3D
 {
-	public class CenterAndHeightMantainer : IDisposable
+	public class CenterAndHeightMaintainer : IDisposable
 	{
 		private IObject3D item;
 		private AxisAlignedBoundingBox aabb;
 
-		public CenterAndHeightMantainer(IObject3D item)
+		public CenterAndHeightMaintainer(IObject3D item)
 		{
 			this.item = item;
 			aabb = item.GetAxisAlignedBoundingBox();
