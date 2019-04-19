@@ -1,5 +1,5 @@
-﻿using ShaderGen;
-using System.Numerics;
+﻿using System.Numerics;
+using ShaderGen;
 using static ShaderGen.ShaderBuiltins;
 
 [assembly: ShaderSet("PositionTexture", "MatterHackers.VeldridProvider.Shaders.PositionTexture.VS", "MatterHackers.VeldridProvider.Shaders.PositionTexture.FS")]
@@ -10,6 +10,7 @@ namespace MatterHackers.VeldridProvider.Shaders
 	{
 		[ResourceSet(1)]
 		public Texture2DResource SurfaceTexture;
+
 		[ResourceSet(1)]
 		public SamplerResource SurfaceSampler;
 
@@ -31,14 +32,20 @@ namespace MatterHackers.VeldridProvider.Shaders
 
 		public struct VertexInput
 		{
-			[PositionSemantic] public Vector2 Position;
-			[TextureCoordinateSemantic] public Vector2 TexCoords;
+			[PositionSemantic]
+			public Vector2 Position;
+
+			[TextureCoordinateSemantic]
+			public Vector2 TexCoords;
 		}
 
 		public struct FragmentInput
 		{
-			[SystemPositionSemantic] public Vector4 SystemPosition;
-			[TextureCoordinateSemantic] public Vector2 TexCoords;
+			[SystemPositionSemantic]
+			public Vector4 SystemPosition;
+
+			[TextureCoordinateSemantic]
+			public Vector2 TexCoords;
 		}
 	}
 }

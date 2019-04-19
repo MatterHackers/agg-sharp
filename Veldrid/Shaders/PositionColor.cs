@@ -27,9 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using ShaderGen;
 using System.Numerics;
-using static ShaderGen.ShaderBuiltins;
+using ShaderGen;
 
 [assembly: ShaderSet("PositionColor", "MatterHackers.VeldridProvider.Shaders.PositionColor.VS", "MatterHackers.VeldridProvider.Shaders.PositionColor.FS")]
 
