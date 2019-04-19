@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2016, Lars Brubaker, John Lewin
+Copyright (c) 2019, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -39,11 +39,11 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 	{
 		private IEnumerable<IObject3D> removeItems;
 		private IEnumerable<IObject3D> addItems;
-		private bool mantainCenterAndZHeight;
+		private bool maintainCenterAndZHeight;
 
-		public ReplaceCommand(IEnumerable<IObject3D> removeItems, IEnumerable<IObject3D> addItems, bool mantainCenterAndZHeight = true)
+		public ReplaceCommand(IEnumerable<IObject3D> removeItems, IEnumerable<IObject3D> addItems, bool maintainCenterAndZHeight = true)
 		{
-			this.mantainCenterAndZHeight = mantainCenterAndZHeight;
+			this.maintainCenterAndZHeight = maintainCenterAndZHeight;
 			var firstParent = removeItems.First().Parent;
 			if (firstParent == null)
 			{
@@ -86,7 +86,7 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 				// then move the all to account for the old center and bed position
 				foreach (var item in addItems)
 				{
-					if (mantainCenterAndZHeight
+					if (maintainCenterAndZHeight
 						&& aabb.ZSize > 0)
 					{
 						// move our center back to where our center was
