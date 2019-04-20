@@ -27,12 +27,12 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using MatterHackers.Agg;
 using MatterHackers.DataConverters3D;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace MatterHackers.DataConverters3D
 {
