@@ -51,7 +51,7 @@ namespace MatterHackers.Agg.UI
 
 		public ToolTipManager ToolTipManager { get; private set; }
 
-		private string _title;
+		private string _title = "";
 		public string Title
 		{
 			get => _title;
