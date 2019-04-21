@@ -245,6 +245,7 @@ namespace MatterHackers.DataConverters3D
 					{
 						return object3D.RebuildLockCount > 0;
 					}
+
 					return false;
 				}).Any();
 			}
