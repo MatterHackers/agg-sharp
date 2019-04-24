@@ -713,13 +713,18 @@ namespace MatterHackers.Agg.UI
 			else if (SingleWindowMode)
 			{
 				// Notify the embedded window of its new single windows parent size
-				// TODO: Hack - figure out how to push this into non-firstWindow items
-				//systemWindow.Size = new Vector2(this.Size.Width, this.Size.Height);
+
+				// If client code has called ShowSystemWindow and we're minimized, we must restore in order
+				// to establish correct window bounds from ClientSize below. Otherwise we're zeroed out and
+				// will create invalid surfaces of (0,0)
+				if (this.WindowState == FormWindowState.Minimized)
+				{
+					this.WindowState = FormWindowState.Normal;
+				}
 
 				systemWindow.Size = new Vector2(
 						this.ClientSize.Width,
 						this.ClientSize.Height);
-				//systemWindow.Position = Vector2.Zero;
 			}
 		}
 
