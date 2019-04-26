@@ -1096,11 +1096,11 @@ namespace MatterHackers.Agg
 			{
 				if (fixedColor.Luminance0To1() < .5)
 				{
-					colorToAdjust = colorToAdjust.WithLightnessAdjustment(1.05).ToColor();
+					colorToAdjust = colorToAdjust.AdjustLightness(1.05).ToColor();
 				}
 				else
 				{
-					colorToAdjust = colorToAdjust.WithLightnessAdjustment(.95).ToColor();
+					colorToAdjust = colorToAdjust.AdjustLightness(.95).ToColor();
 				}
 				contrast = colorToAdjust.Contrast(fixedColor);
 			}
@@ -1240,7 +1240,7 @@ namespace MatterHackers.Agg
 			return ColorF.FromHSL(hue0To1, saturation0To1, lightness);
 		}
 
-		public static ColorF WithLightnessAdjustment(this IColorType original, double lightnessMultiplier)
+		public static ColorF AdjustLightness(this IColorType original, double lightnessMultiplier)
 		{
 			ColorF colorF = original.ToColorF();
 
