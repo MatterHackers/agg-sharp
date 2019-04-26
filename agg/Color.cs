@@ -1235,7 +1235,7 @@ namespace MatterHackers.Agg
 		{
 			ColorF colorF = original.ToColorF();
 
-			colorF.GetHSL(out double hue0To1, out double saturation0To1, out double lightness0To1);
+			colorF.GetHSL(out double hue0To1, out double saturation0To1, out _);
 
 			return ColorF.FromHSL(hue0To1, saturation0To1, lightness);
 		}
