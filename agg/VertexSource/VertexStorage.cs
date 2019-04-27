@@ -47,13 +47,14 @@ namespace MatterHackers.Agg.VertexSource
 			private int allocatedVertices;
 			private VertexData[] vertexData;
 			private int numVertices;
+
 			public VertexDataManager()
 			{
 			}
 
-			public void AddVertex(double x, double y, ShapePath.FlagsAndCommand CommandAndFlags, int index = -1)
+			public void AddVertex(double x, double y, ShapePath.FlagsAndCommand CommandAndFlags)
 			{
-				index = index == -1 ? numVertices : index;
+				int index = numVertices;
 				allocate_if_required(numVertices);
 				vertexData[index] = new VertexData(CommandAndFlags, x, y);
 
@@ -85,11 +86,12 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				if (numVertices != 0)
 				{
-					return vertex((int)(numVertices - 1), out x, out y);
+					return vertex(numVertices - 1, out x, out y);
 				}
 
-				x = new double();
-				y = new double();
+				x = 0;
+				y = 0;
+
 				return ShapePath.FlagsAndCommand.Stop;
 			}
 
@@ -97,21 +99,22 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				if (numVertices > 0)
 				{
-					int index = (int)(numVertices - 1);
+					int index = numVertices - 1;
 					return vertexData[index].position.X;
 				}
 
-				return new double();
+				return 0;
 			}
 
 			public double last_y()
 			{
 				if (numVertices > 0)
 				{
-					int index = (int)(numVertices - 1);
+					int index = numVertices - 1;
 					return vertexData[index].position.Y;
 				}
-				return new double();
+
+				return 0;
 			}
 
 			public void modify_command(int index, ShapePath.FlagsAndCommand CommandAndFlags)
@@ -134,11 +137,12 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				if (numVertices > 1)
 				{
-					return vertex((int)(numVertices - 2), out x, out y);
+					return vertex(numVertices - 2, out x, out y);
 				}
 
-				x = new double();
-				y = new double();
+				x = 0;
+				y = 0;
+
 				return ShapePath.FlagsAndCommand.Stop;
 			}
 
@@ -202,6 +206,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		private int iteratorIndex;
 		private VertexDataManager vertexDataManager;
+
 		public VertexStorage()
 		{
 			vertexDataManager = new VertexDataManager();
@@ -695,14 +700,14 @@ namespace MatterHackers.Agg.VertexSource
 			vertexDataManager.modify_vertex(index, x, y, PathAndFlags);
 		}
 
-		public void MoveTo(Vector2 position, int index = -1)
+		public void MoveTo(Vector2 position)
 		{
-			MoveTo(position.X, position.Y, index);
+			MoveTo(position.X, position.Y);
 		}
 
-		public void MoveTo(double x, double y, int index = -1)
+		public void MoveTo(double x, double y)
 		{
-			vertexDataManager.AddVertex(x, y, ShapePath.FlagsAndCommand.MoveTo, index);
+			vertexDataManager.AddVertex(x, y, ShapePath.FlagsAndCommand.MoveTo);
 		}
 
 		public string SvgDString
