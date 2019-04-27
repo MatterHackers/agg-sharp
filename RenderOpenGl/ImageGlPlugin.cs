@@ -90,10 +90,14 @@ namespace MatterHackers.RenderOpenGl
 			removeGlDataCallBackHolder = inCallBackHolder;
 		}
 
+		public static void Remove(ImageBuffer image)
+		{
+			imagesWithCacheData.Remove(image.GetBuffer());
+		}
+
 		static public ImageGlPlugin GetImageGlPlugin(ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps, bool TextureMagFilterLinear = true, bool clamp = true)
 		{
-			ImageGlPlugin plugin;
-			imagesWithCacheData.TryGetValue(imageToGetDisplayListFor.GetBuffer(), out plugin);
+			imagesWithCacheData.TryGetValue(imageToGetDisplayListFor.GetBuffer(), out ImageGlPlugin plugin);
 
 			lock (glDataNeedingToBeDeleted)
 			{
