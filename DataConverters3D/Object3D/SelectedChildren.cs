@@ -27,12 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.UI;
-using MatterHackers.DataConverters3D;
-using MatterHackers.Localizations;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace MatterHackers.DataConverters3D
 {
