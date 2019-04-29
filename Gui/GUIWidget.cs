@@ -1532,10 +1532,11 @@ namespace MatterHackers.Agg.UI
 
 		public void CloseAllChildren()
 		{
-			for (int i = Children.Count - 1; i >= 0; i--)
+			while(Children.Count > 0)
 			{
-				GuiWidget child = Children[i];
-				Children.RemoveAt(i);
+				int lastIndex = Children.Count - 1;
+				GuiWidget child = Children[lastIndex];
+				Children.RemoveAt(lastIndex);
 				child.Parent = null;
 				child.Close();
 			}
