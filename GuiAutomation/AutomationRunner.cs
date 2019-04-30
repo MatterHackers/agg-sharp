@@ -942,7 +942,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool WidgetExists<T>(SearchRegion searchRegion = null) where T : GuiWidget
+		public bool ChildExists<T>(SearchRegion searchRegion = null) where T : GuiWidget
 		{
 			// Ignore SystemWindows with null PlatformWindow members - SystemWindow constructed but not yet shown
 			foreach (SystemWindow systemWindow in SystemWindow.AllOpenSystemWindows.ToArray())
