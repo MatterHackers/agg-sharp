@@ -945,12 +945,13 @@ namespace MatterHackers.GuiAutomation
 		public bool ChildExists<T>(SearchRegion searchRegion = null) where T : GuiWidget
 		{
 			// Ignore SystemWindows with null PlatformWindow members - SystemWindow constructed but not yet shown
-			foreach (SystemWindow systemWindow in SystemWindow.AllOpenSystemWindows.ToArray())
+			foreach (var systemWindow in SystemWindow.AllOpenSystemWindows.ToArray())
 			{
 				// Get either the topmost or active SystemWindow
 				var window = systemWindow.Parents<GuiWidget>().LastOrDefault() as SystemWindow ?? systemWindow;
 
-				IEnumerable<T> foundChildren = window.Children<T>();
+				// Single window implementation requires both windows to be checked
+				var foundChildren = window.Children<T>().Concat(systemWindow.Children<T>());
 				if (foundChildren.Count() > 0)
 				{
 					foreach (var foundChild in foundChildren)
