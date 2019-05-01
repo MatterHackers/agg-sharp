@@ -112,9 +112,11 @@ namespace MatterHackers.DataConverters3D
 		public IObject3D Parent { get; set; }
 
 		private Color _color = Color.Transparent;
+
 		public Color Color
 		{
 			get { return _color; }
+
 			set
 			{
 				if (_color != value)
@@ -150,12 +152,14 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		private int _materialIndex = -1;
+
 		public int MaterialIndex
 		{
 			get
 			{
 				return _materialIndex;
 			}
+
 			set
 			{
 				if (value != _materialIndex)
@@ -167,12 +171,14 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		private PrintOutputTypes _outputType = PrintOutputTypes.Default;
+
 		public PrintOutputTypes OutputType
 		{
 			get
 			{
 				return _outputType;
 			}
+
 			set
 			{
 				if (_outputType != value)
@@ -198,6 +204,7 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		private Matrix4X4 _matrix = Matrix4X4.Identity;
+
 		public virtual Matrix4X4 Matrix
 		{
 			get => _matrix;
@@ -205,6 +212,17 @@ namespace MatterHackers.DataConverters3D
 			{
 				if (value != _matrix)
 				{
+#if DEBUG
+					foreach (var element in value.GetAsDoubleArray())
+					{
+						if (double.IsNaN(element)
+							|| double.IsInfinity(element))
+						{
+							throw new InvalidDataException("Setting an invalid Matrix. You probably should not be considering some part of the data that lead to this set.");
+						}
+					}
+#endif
+
 					_matrix = value;
 					Invalidate(InvalidateType.Matrix);
 				}
@@ -215,6 +233,7 @@ namespace MatterHackers.DataConverters3D
 
 		[JsonIgnore]
 		private Mesh _mesh;
+
 		public virtual Mesh Mesh
 		{
 			get => _mesh;
@@ -254,6 +273,7 @@ namespace MatterHackers.DataConverters3D
 		public string MeshPath { get; set; }
 
 		private string _name = "";
+
 		public string Name
 		{
 			get => _name;
@@ -273,6 +293,7 @@ namespace MatterHackers.DataConverters3D
 		public virtual bool Visible { get; set; } = true;
 
 		public virtual bool CanFlatten => false;
+
 		public virtual bool CanEdit => this.HasChildren();
 
 		[JsonIgnore]
@@ -905,6 +926,7 @@ namespace MatterHackers.DataConverters3D
 	public class CacheContext
 	{
 		public Dictionary<string, IObject3D> Items { get; set; } = new Dictionary<string, IObject3D>();
+
 		public Dictionary<string, Mesh> Meshes { get; set; } = new Dictionary<string, Mesh>();
 	}
 }

@@ -36,8 +36,8 @@ namespace MatterHackers.PolygonMesh
 {
 	public class TransformedAabbCache
 	{
-		private object locker = new object();
-		private Dictionary<Matrix4X4, AxisAlignedBoundingBox> cache = new Dictionary<Matrix4X4, AxisAlignedBoundingBox>();
+		private readonly object locker = new object();
+		private readonly Dictionary<Matrix4X4, AxisAlignedBoundingBox> cache = new Dictionary<Matrix4X4, AxisAlignedBoundingBox>();
 
 		public void Changed()
 		{
@@ -82,8 +82,8 @@ namespace MatterHackers.PolygonMesh
 		private void CalculateBounds(IEnumerable<Vector3Float> vertices, Matrix4X4 transform)
 		{
 			// calculate the aabb for the current transform
-			Vector3 minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
-			Vector3 maxXYZ = new Vector3(double.MinValue, double.MinValue, double.MinValue);
+			var minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
+			var maxXYZ = new Vector3(double.MinValue, double.MinValue, double.MinValue);
 
 			foreach (var positionIn in vertices)
 			{
