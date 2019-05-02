@@ -1152,10 +1152,10 @@ namespace MatterHackers.GuiAutomation
 			this.Type(" "); // clear the selection (type a space)
 		}
 
-		#region Prior TestHarness code
-
 		public static IInputMethod InputMethod { get; set; }
+
 		public static bool DrawSimulatedMouse { get; set; } = true;
+
 		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action closeWindow = null)
 		{
 			var testRunner = new AutomationRunner(InputMethod, DrawSimulatedMouse, imagesDirectory);
@@ -1171,6 +1171,8 @@ namespace MatterHackers.GuiAutomation
 			int testTimeout = (int)(1000 * secondsToTestFailure);
 			var timer = Stopwatch.StartNew();
 
+			bool testTimedOut = false;
+
 			// Start two tasks, the timeout and the test method. Block in the test method until the first draw
 			Task<Task> task = Task.WhenAny(
 				Task.Delay(testTimeout),
@@ -1182,10 +1184,11 @@ namespace MatterHackers.GuiAutomation
 					return testMethod(testRunner);
 				}));
 
-			// Once either the timeout or the test method has completed, reassign the task/result for timeout errors and shutdown the SystemWindow
+			// Once either the timeout or the test method has completed, store if a timeout occurred and shutdown the SystemWindow
 			task.ContinueWith((innerTask) =>
 			{
 				long elapsedTime = timer.ElapsedMilliseconds;
+				testTimedOut = elapsedTime >= testTimeout;
 
 				// Invoke the callers close implementation or fall back to CloseOnIdle
 				if (closeWindow != null)
@@ -1196,25 +1199,22 @@ namespace MatterHackers.GuiAutomation
 				{
 					initialSystemWindow.CloseOnIdle();
 				}
-
-				// Create an exception Task for test timeouts
-				if (elapsedTime >= testTimeout)
-				{
-					// Wait for CloseOnIdle to complete
-					testRunner.WaitFor(() => initialSystemWindow.HasBeenClosed);
-
-					task = new Task<Task>(() => throw new TimeoutException("TestMethod timed out"));
-					task.RunSynchronously();
-				}
 			});
 
 			// Main thread blocks here until released via CloseOnIdle above
 			initialSystemWindow.ShowAsSystemWindow();
 
-			// After the system window is closed return the task and any exception to the calling context
-			return task?.GetAwaiter().GetResult() ?? Task.CompletedTask;
-		}
+			// Wait for CloseOnIdle to complete
+			testRunner.WaitFor(() => initialSystemWindow.HasBeenClosed);
 
-		#endregion
+			if (testTimedOut)
+			{
+				// Throw an exception for test timeouts
+				throw new TimeoutException("TestMethod timed out");
+			}
+
+			// After the system window is closed return the task and any exception to the calling context
+			return task?.Result ?? Task.CompletedTask;
+		}
 	}
 }

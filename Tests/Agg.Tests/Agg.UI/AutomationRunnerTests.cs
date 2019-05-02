@@ -63,6 +63,29 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
+		public void AutomationRunnerTimeoutTest()
+		{
+			// Ensure AutomationRunner throws timeout exceptions
+			var systemWindow = new SystemWindow(300, 200);
+
+			var leftButton = new Button("left", 10, 40);
+			leftButton.Name = "left";
+			systemWindow.AddChild(leftButton);
+
+			Assert.ThrowsAsync<TimeoutException>(
+				() => AutomationRunner.ShowWindowAndExecuteTests(
+					systemWindow,
+					(testRunner) =>
+					{
+						// Test method that runs for 10+ seconds
+						Thread.Sleep(10 * 1000);
+						return Task.CompletedTask;
+					},
+					// Timeout after 1 second
+					secondsToTestFailure: 1));
+		}
+
+		[Test]
 		public async Task GetWidgetByNameTestRegionSingleWindow()
 		{
 			int leftClickCount = 0;
