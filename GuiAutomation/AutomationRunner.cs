@@ -1152,10 +1152,10 @@ namespace MatterHackers.GuiAutomation
 			this.Type(" "); // clear the selection (type a space)
 		}
 
-		#region Prior TestHarness code
-
 		public static IInputMethod InputMethod { get; set; }
+
 		public static bool DrawSimulatedMouse { get; set; } = true;
+
 		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action closeWindow = null)
 		{
 			var testRunner = new AutomationRunner(InputMethod, DrawSimulatedMouse, imagesDirectory);
@@ -1212,9 +1212,7 @@ namespace MatterHackers.GuiAutomation
 			initialSystemWindow.ShowAsSystemWindow();
 
 			// After the system window is closed return the task and any exception to the calling context
-			return task?.GetAwaiter().GetResult() ?? Task.CompletedTask;
+			return task?.Result ?? Task.CompletedTask;
 		}
-
-		#endregion
 	}
 }
