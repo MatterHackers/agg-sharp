@@ -34,7 +34,7 @@ namespace MatterHackers.PolygonMesh
 {
 	public class MeshEdge
 	{
-		private List<int> _faces = new List<int>();
+		private readonly List<int> _faces = new List<int>();
 
 		public MeshEdge(int vertex0Index, int vertex1Index)
 		{
@@ -43,14 +43,15 @@ namespace MatterHackers.PolygonMesh
 		}
 
 		/// <summary>
-		/// The indices of all the faces that share this edge
+		/// Gets the indices of all the faces that share this edge.
 		/// </summary>
 		public IReadOnlyList<int> Faces => _faces;
 
 		public int Vertex0Index { get; private set; }
+
 		public int Vertex1Index { get; private set; }
 
-		public static IReadOnlyList<MeshEdge> CreateMeshEdgeList(Mesh mesh, IReadOnlyList<VertexFaceList> vertexFaceLists)
+		public static IReadOnlyList<MeshEdge> CreateMeshEdgeList(Mesh mesh)
 		{
 			// make a list of every face edge (faceIndex, vertex0Index, vertex1Index)
 			var faceEdges = new List<(int face, int start, int end)>(mesh.Faces.Count * 3);
@@ -68,24 +69,23 @@ namespace MatterHackers.PolygonMesh
 			var faceEdgesThatShareStartIndex = new Dictionary<(int start, int end), List<int>>();
 			for (int i = 0; i < faceEdges.Count; i++)
 			{
-				var faceEdge = faceEdges[i];
-				if (!faceEdgesThatShareStartIndex.ContainsKey((faceEdge.start, faceEdge.end)))
+				var (face, start, end) = faceEdges[i];
+				if (!faceEdgesThatShareStartIndex.ContainsKey((start, end)))
 				{
-					faceEdgesThatShareStartIndex.Add((faceEdge.start, faceEdge.end), new List<int>());
+					faceEdgesThatShareStartIndex.Add((start, end), new List<int>());
 				}
 
-				faceEdgesThatShareStartIndex[(faceEdge.start, faceEdge.end)].Add(faceEdge.face);
+				faceEdgesThatShareStartIndex[(start, end)].Add(face);
 			}
 
 			// now that we have a dictionary of all the face edges by start index
 			// we can make the list of mesh edges
-
 			var meshEdges = new List<MeshEdge>();
-			
-			foreach(var kvp in faceEdgesThatShareStartIndex)
+
+			foreach (var kvp in faceEdgesThatShareStartIndex)
 			{
 				var meshEdge = new MeshEdge(kvp.Key.start, kvp.Key.end);
-				foreach(var face in kvp.Value)
+				foreach (var face in kvp.Value)
 				{
 					meshEdge._faces.Add(face);
 				}
@@ -94,35 +94,6 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			return meshEdges;
-		}
-	}
-
-	public class VertexFaceList
-	{
-		private List<int> _faces = new List<int>();
-
-		/// <summary>
-		/// The indices of all the faces that share this edge
-		/// </summary>
-		public IReadOnlyList<int> Faces => _faces;
-
-		public static IReadOnlyList<VertexFaceList> CreateVertexFaceList(Mesh mesh)
-		{
-			var meshVertex = new List<VertexFaceList>(mesh.Vertices.Count);
-			for (int i = 0; i < mesh.Vertices.Count; i++)
-			{
-				meshVertex.Add(new VertexFaceList());
-			}
-
-			for (int i = 0; i < mesh.Faces.Count; i++)
-			{
-				var face = mesh.Faces[i];
-				meshVertex[face.v0]._faces.Add(i);
-				meshVertex[face.v1]._faces.Add(i);
-				meshVertex[face.v2]._faces.Add(i);
-			}
-
-			return meshVertex;
 		}
 	}
 }
