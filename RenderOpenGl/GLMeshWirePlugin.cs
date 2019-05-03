@@ -109,8 +109,7 @@ namespace MatterHackers.RenderOpenGl
 			{
 				Task.Run(() =>
 				{
-					var vertexFaceLists = VertexFaceList.CreateVertexFaceList(mesh);
-					var meshEdgeList = MeshEdge.CreateMeshEdgeList(mesh, vertexFaceLists);
+					var meshEdgeList = mesh.NewMeshEdges();
 
 					var filteredEdgeLines = new VectorPOD<WireVertexData>();
 

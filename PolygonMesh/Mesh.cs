@@ -634,7 +634,7 @@ namespace MatterHackers.PolygonMesh
 
 		public static IReadOnlyList<MeshEdge> NewMeshEdges(this Mesh mesh)
 		{
-			return MeshEdge.CreateMeshEdgeList(mesh, VertexFaceList.CreateVertexFaceList(mesh));
+			return MeshEdge.CreateMeshEdgeList(mesh);
 		}
 
 		public static IEnumerable<int> GetCoplanerFaces(this Mesh mesh, int faceIndex)
