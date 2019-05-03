@@ -37,7 +37,16 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderOpenGl
 {
-	public enum RenderTypes { Hidden, Shaded, Outlines, Polygons, Overhang, Materials, Wireframe };
+	public enum RenderTypes
+	{
+		Hidden,
+		Shaded,
+		Outlines,
+		Polygons,
+		Overhang,
+		Materials,
+		Wireframe
+	}
 
 	public static class GLHelper
 	{
@@ -193,8 +202,8 @@ namespace MatterHackers.RenderOpenGl
 
 				Vector3 delta = start - end;
 				var deltaLength = delta.Length;
-				Matrix4X4 rotateTransform = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitX + new Vector3(.0001, -.00001, .00002), -delta / deltaLength));
-				Matrix4X4 scaleTransform = Matrix4X4.CreateScale(deltaLength, 1, 1);
+				var rotateTransform = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitX + new Vector3(.0001, -.00001, .00002), -delta / deltaLength));
+				var scaleTransform = Matrix4X4.CreateScale(deltaLength, 1, 1);
 				Vector3 lineCenter = (start + end) / 2;
 				Matrix4X4 lineTransform = scaleTransform * rotateTransform * Matrix4X4.CreateTranslation(lineCenter);
 
@@ -223,7 +232,7 @@ namespace MatterHackers.RenderOpenGl
 					}
 					else
 					{
-						//GL.Disable(EnableCap.Blend);
+						// GL.Disable(EnableCap.Blend);
 					}
 
 					GL.MatrixMode(MatrixMode.Modelview);
@@ -242,6 +251,7 @@ namespace MatterHackers.RenderOpenGl
 						position = vertices[face.v2];
 						GL.Vertex3(position.X, position.Y, position.Z);
 					}
+
 					GL.End();
 					GL.PopMatrix();
 				}
@@ -280,7 +290,7 @@ namespace MatterHackers.RenderOpenGl
 				return;
 			}
 
-			GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);
+			var glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);
 			for (int i = 0; i < glMeshPlugin.subMeshs.Count; i++)
 			{
 				SubTriangleMesh subMesh = glMeshPlugin.subMeshs[i];
@@ -292,7 +302,7 @@ namespace MatterHackers.RenderOpenGl
 						GL.Enable(EnableCap.Blend);
 					}
 
-					ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(subMesh.texture, true);
+					var glPlugin = ImageGlPlugin.GetImageGlPlugin(subMesh.texture, true);
 					GL.Enable(EnableCap.Texture2D);
 					GL.BindTexture(TextureTarget.Texture2D, glPlugin.GLTextureHandle);
 					GL.EnableClientState(ArrayCap.TextureCoordArray);
@@ -325,6 +335,7 @@ namespace MatterHackers.RenderOpenGl
 									{
 										GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, new IntPtr(pColorData));
 									}
+
 									GL.NormalPointer(NormalPointerType.Float, 0, new IntPtr(pNormalData));
 									GL.VertexPointer(3, VertexPointerType.Float, 0, new IntPtr(pPosition));
 									GL.DrawArrays(BeginMode.Triangles, 0, subMesh.positionData.Count);
@@ -377,7 +388,7 @@ namespace MatterHackers.RenderOpenGl
 					// Make sure the GLMeshPlugin has a reference to hold onto the image so it does not go away before this.
 					if (faceTexture != null)
 					{
-						ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(faceTexture.image, true);
+						var glPlugin = ImageGlPlugin.GetImageGlPlugin(faceTexture.image, true);
 						GL.Enable(EnableCap.Texture2D);
 						GL.BindTexture(TextureTarget.Texture2D, glPlugin.GLTextureHandle);
 					}
@@ -410,6 +421,7 @@ namespace MatterHackers.RenderOpenGl
 					GL.Vertex3(mesh.Vertices[mesh.Faces[face].v1]);
 					GL.Vertex3(mesh.Vertices[mesh.Faces[face].v2]);
 				}
+
 				GL.End();
 			}
 		}
@@ -463,7 +475,7 @@ namespace MatterHackers.RenderOpenGl
 			GL.DepthFunc(DepthFunction.Lequal);
 
 			GL.Disable(EnableCap.DepthTest);
-			//ClearToGradient();
+			// ClearToGradient();
 
 			GL.Light(LightName.Light0, LightParameter.Ambient, lighting.AmbientLight);
 			GL.Light(LightName.Light0, LightParameter.Diffuse, lighting.DiffuseLight0);
@@ -482,7 +494,7 @@ namespace MatterHackers.RenderOpenGl
 			GL.Enable(EnableCap.Lighting);
 			GL.Enable(EnableCap.ColorMaterial);
 
-			Vector3 lightDirectionVector = new Vector3(lighting.LightDirection0[0], lighting.LightDirection0[1], lighting.LightDirection0[2]);
+			var lightDirectionVector = new Vector3(lighting.LightDirection0[0], lighting.LightDirection0[1], lighting.LightDirection0[2]);
 			lightDirectionVector.Normalize();
 			lighting.LightDirection0[0] = (float)lightDirectionVector.X;
 			lighting.LightDirection0[1] = (float)lightDirectionVector.Y;
@@ -520,7 +532,5 @@ namespace MatterHackers.RenderOpenGl
 
 			GL.PopAttrib();
 		}
-
-
 	}
 }
