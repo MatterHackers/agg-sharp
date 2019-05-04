@@ -721,6 +721,7 @@ namespace MatterHackers.PolygonMesh
 			mesh.PlaceTextureOnFace(face, textureToUse, mesh.GetMaxPlaneProjection(face, textureToUse));
 		}
 
+
 		public static void PlaceTextureOnFace(this Mesh mesh, int face, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
 		{
 			var uvs = new Vector2Float[3];
@@ -732,7 +733,7 @@ namespace MatterHackers.PolygonMesh
 				uvs[uvIndex++] = new Vector2Float(textureUv);
 			}
 
-			mesh.FaceTextures.Add(face, new FaceTextureData(textureToUse, uvs[0], uvs[1], uvs[2]));
+			mesh.FaceTextures[face] = new FaceTextureData(textureToUse, uvs[0], uvs[1], uvs[2]);
 
 			mesh.MarkAsChanged();
 		}
@@ -775,34 +776,27 @@ namespace MatterHackers.PolygonMesh
 
 		public static void RemoveTexture(this Mesh mesh, ImageBuffer texture, int index)
 		{
-			throw new NotImplementedException();
-			// foreach (var face in mesh.Faces)
-			// {
-			// face.RemoveTexture(texture, index);
-			// }
+			for (int i = 0; i < mesh.Faces.Count; i++)
+			{
+				mesh.RemoveTexture(i, texture, index);
+			}
 
-			// mesh.MarkAsChanged();
+			mesh.MarkAsChanged();
 		}
 
-		public static void RemoveTexture(this Mesh mesh, int face, ImageBuffer texture, int index)
+		public static void RemoveTexture(this Mesh mesh, int faceIndex, ImageBuffer texture, int index)
 		{
-			throw new NotImplementedException();
-			// face.ContainingMesh.FaceTexture.Remove((face, index));
-			// foreach (FaceEdge faceEdge in face.FaceEdges())
-			// {
-			// face.ContainingMesh.TextureUV.Remove((faceEdge, index));
-			// }
+			mesh.FaceTextures.Remove(faceIndex);
 		}
 
 		public static void PlaceTexture(this Mesh mesh, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
 		{
-			throw new NotImplementedException();
-			// foreach (var face in mesh.Faces)
-			// {
-			// face.PlaceTextureOnFace(textureToUse, textureCoordinateMapping);
-			// }
+			for (int i = 0; i < mesh.Faces.Count; i++)
+			{
+				mesh.PlaceTextureOnFace(i, textureToUse, textureCoordinateMapping);
+			}
 
-			// mesh.MarkAsChanged();
+			mesh.MarkAsChanged();
 		}
 
 		public static Mesh TexturedPlane(ImageBuffer textureToUse, double xScale = 1, double yScale = 1)
