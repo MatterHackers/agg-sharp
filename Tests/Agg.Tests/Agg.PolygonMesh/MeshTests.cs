@@ -42,48 +42,47 @@ namespace MatterHackers.PolygonMesh.UnitTests
 	[TestFixture, Category("Agg.PolygonMesh")]
 	public class MeshTests
 	{
-		//[TestFixtureSetUp]
-		//public void Setup()
-		//{
+		// [TestFixtureSetUp]
+		// public void Setup()
+		// {
 		//    string relativePath = "../../../../../agg-sharp/PlatformWin32/bin/Debug/agg_platform_win32.dll";
 		//    if(Path.DirectorySeparatorChar != '/')
 		//    {
 		//        relativePath = relativePath.Replace('/', Path.DirectorySeparatorChar);
 		//    }
-
 		//    File.Copy(relativePath, Path.GetFileName(relativePath), true);
-		//}
+		// }
 		private static int meshSaveIndex = 0;
 
 		public void SaveDebugInfo(Mesh mesh, string testHint = "")
 		{
 #if DEBUG_INTO_TGAS
 			throw new NotImplementedException();
-			//DebugRenderToImage debugRender = new DebugRenderToImage(mesh);
-			//if (testHint != "")
-			//{
-			//	debugRender.RenderToPng("debug face {0} - {1}.png".FormatWith(meshSaveIndex++, testHint));
-			//}
-			//else
-			//{
-			//	debugRender.RenderToPng("debug face {0}.png".FormatWith(meshSaveIndex++));
-			//}
+			// DebugRenderToImage debugRender = new DebugRenderToImage(mesh);
+			// if (testHint != "")
+			// {
+			// 	debugRender.RenderToPng("debug face {0} - {1}.png".FormatWith(meshSaveIndex++, testHint));
+			// }
+			// else
+			// {
+			// 	debugRender.RenderToPng("debug face {0}.png".FormatWith(meshSaveIndex++));
+			// }
 #endif
 		}
 
-		//[Test]
+		// [Test]
 		public void GetSliceLoop()
 		{
 			var cube = MeshHelper.CreatePlane(10, 10);
 			var cutPlane = new Plane(Vector3.UnitX, new Vector3(3, 0, 0));
 			var slice = new SliceLayer(cutPlane);
 			slice.CreateSlice(cube);
-			//Assert.AreEqual(1, slice.ClosedPolygons.Count);
+			// Assert.AreEqual(1, slice.ClosedPolygons.Count);
 		}
 
 		public void DetectAndRemoveTJunctions()
 		{
-			//throw new NotImplementedException();
+			// throw new NotImplementedException();
 		}
 
 		[Test]
@@ -91,14 +90,14 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		{
 			void TestPositions(int p0, int p1, int p2)
 			{
-				var positions = new Vector3[] { new Vector3(), new Vector3(10, 0, 0), new Vector3(5, 20, 0) };
+				var positions = new Vector3[] { default(Vector3), new Vector3(10, 0, 0), new Vector3(5, 20, 0) };
 				var mesh = new Mesh();
-				//      |
-				//     /|\
-				//    / | \
-				//   /  |  \
-				//  /___|___\
-				//      |
+				// .     |
+				// .    /|\
+				// .   / | \
+				// .  /  |  \
+				// . /___|___\
+				// .     |
 				mesh.CreateFace(new Vector3[] { positions[p0], positions[p1], positions[p2] });
 				Assert.AreEqual(1, mesh.Faces.Count);
 				Assert.AreEqual(3, mesh.Vertices.Count);
@@ -136,13 +135,14 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		{
 			void TestPositions(int p0, int p1, int p2)
 			{
-				var positions = new Vector3[] { new Vector3(0, 5, 0), new Vector3(), new Vector3(10, 0, 0) };
+				var positions = new Vector3[] { new Vector3(0, 5, 0), default, new Vector3(10, 0, 0) };
 				var mesh = new Mesh();
-				//  0 _    |
-				//   |   __|
-				//   |     | __
-				//   |_____|_______
-				//  1      |       2
+				// split the face along the vertical line
+				// . 0 _    |
+				// .  |   __|
+				// .  |     | __
+				// .  |_____|_______
+				// . 1      |       2
 				mesh.CreateFace(new Vector3[] { positions[p0], positions[p1], positions[p2] });
 				Assert.AreEqual(1, mesh.Faces.Count);
 				Assert.AreEqual(3, mesh.Vertices.Count);
@@ -186,14 +186,15 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			//
 			// Index 2 ^------------------- z = 1
 
-			Mesh testMesh = new Mesh();
+			var testMesh = new Mesh();
 
 			testMesh.CreateFace(new Vector3[]
-			{ 
+			{
 				new Vector3(0, 0, 2),
 				new Vector3(10, 0, 2),
 				new Vector3(5, 5, 2)
 			});
+
 			testMesh.CreateFace(new Vector3[]
 			{
 				new Vector3(0, 0, 3),
@@ -215,7 +216,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Assert.IsTrue(root.BackNode.Index == 0);
 				Assert.IsTrue(root.BackNode.BackNode.Index == 2);
 
-				List<int> renderOredrList = FaceBspTree.GetFacesInVisibiltyOrder(testMesh, root, Matrix4X4.Identity, Matrix4X4.Identity).ToList();
+				var renderOredrList = FaceBspTree.GetFacesInVisibiltyOrder(testMesh, root, Matrix4X4.Identity, Matrix4X4.Identity).ToList();
 				Assert.IsTrue(renderOredrList[0] == 1);
 				Assert.IsTrue(renderOredrList[1] == 0);
 				Assert.IsTrue(renderOredrList[2] == 2);
