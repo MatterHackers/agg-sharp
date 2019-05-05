@@ -284,18 +284,9 @@ namespace MatterHackers.VectorMath
 
 		public bool Intersects(AxisAlignedBoundingBox bounds)
 		{
-			Vector3 intersectMinXYZ = new Vector3(
-				Math.Max(MinXYZ.X, bounds.MinXYZ.X),
-				Math.Max(MinXYZ.Y, bounds.MinXYZ.Y),
-				Math.Max(MinXYZ.Z, bounds.MinXYZ.Z));
-
-			Vector3 intersectMaxXYZ = new Vector3(
-				Math.Max(MinXYZ.X, Math.Min(MaxXYZ.X, bounds.MaxXYZ.X)),
-				Math.Max(MinXYZ.Y, Math.Min(MaxXYZ.Y, bounds.MaxXYZ.Y)),
-				Math.Max(MinXYZ.Z, Math.Min(MaxXYZ.Z, bounds.MaxXYZ.Z)));
-
-			Vector3 delta = intersectMaxXYZ - intersectMinXYZ;
-			if (delta.X >= 0 && delta.Y >= 0 && delta.Z >= 0)
+			if (bounds.MinXYZ.X <= MaxXYZ.X && bounds.MaxXYZ.X >= MinXYZ.X
+				&& bounds.MinXYZ.Y <= MaxXYZ.Y && bounds.MaxXYZ.Y >= MinXYZ.Y
+				&& bounds.MinXYZ.Z <= MaxXYZ.Z && bounds.MaxXYZ.Z >= MinXYZ.Z)
 			{
 				return true;
 			}
