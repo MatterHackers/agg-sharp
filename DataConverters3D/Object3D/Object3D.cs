@@ -534,6 +534,25 @@ namespace MatterHackers.DataConverters3D
 			{
 				this.OnInvalidate(invalidateArgs);
 			}
+			else
+			{
+				RunningInterval runningInterval = null;
+				void RebuildWhenUnlocked()
+				{
+					if (!RebuildLocked)
+					{
+						UiThread.ClearInterval(runningInterval);
+						this.OnInvalidate(invalidateArgs);
+					}
+				}
+
+				if (invalidateArgs.InvalidateType.HasFlag(InvalidateType.Properties)
+					&& invalidateArgs.Source == this)
+				{
+					// we need to get back to the user requested change when not locked
+					runningInterval = UiThread.SetInterval(RebuildWhenUnlocked, .2);
+				}
+			}
 		}
 
 		public const BindingFlags OwnedPropertiesOnly = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
