@@ -135,7 +135,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		{
 			void TestPositions(int p0, int p1, int p2)
 			{
-				var positions = new Vector3[] { new Vector3(0, 5, 0), default, new Vector3(10, 0, 0) };
+				var positions = new Vector3[] { new Vector3(0, 5, 0), default(Vector3), new Vector3(10, 0, 0) };
 				var mesh = new Mesh();
 				// split the face along the vertical line
 				// . 0 _    |
