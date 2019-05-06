@@ -69,10 +69,12 @@ namespace MatterHackers.PolygonMesh
 		public Dictionary<int, FaceTextureData> FaceTextures { get; set; } = new Dictionary<int, FaceTextureData>();
 
 		private static object nextIdLocker = new object();
+
 		public BspNode FaceBspTree { get; set; } = null;
+
 		public AxisAlignedBoundingBox cachedAABB = null;
 
-		TransformedAabbCache transformedAabbCache = new TransformedAabbCache();
+		private TransformedAabbCache transformedAabbCache = new TransformedAabbCache();
 
 		public Dictionary<string, object> PropertyBag = new Dictionary<string, object>();
 
@@ -99,7 +101,8 @@ namespace MatterHackers.PolygonMesh
 		}
 
 		/// <summary>
-		/// Initialize with a 3xN vertex array and a 3xM vertex index array
+		/// Initializes a new instance of the <see cref="Mesh"/> class.
+		/// with a 3xN vertex array and a 3xM vertex index array.
 		/// </summary>
 		/// <param name="v">a 3xN array of doubles representing vertices</param>
 		/// <param name="f">a 3xM array of ints representing face vertex indexes</param>
@@ -125,7 +128,7 @@ namespace MatterHackers.PolygonMesh
 
 		public int ChangedCount { get; private set; } = 0;
 
-		ulong _longHashBeforeClean = 0;
+		private ulong _longHashBeforeClean = 0;
 
 		public ulong LongHashBeforeClean
 		{
@@ -270,6 +273,7 @@ namespace MatterHackers.PolygonMesh
 		public class SplitData
 		{
 			public Face Face { get; }
+
 			public double[] Dist { get; }
 
 			public SplitData(Face face, double[] dist)
@@ -278,13 +282,14 @@ namespace MatterHackers.PolygonMesh
 				this.Dist = dist;
 			}
 		}
+
 		public bool Split(Plane plane, double onPlaneDistance = .001, Func<SplitData, bool> clipFace = null)
 		{
 			var newVertices = new List<Vector3Float>();
 			var newFaces = new List<Face>();
 			var facesToRemove = new HashSet<int>();
 
-			for(int i=0; i<Faces.Count; i++)
+			for (int i = 0; i < Faces.Count; i++)
 			{
 				var face = Faces[i];
 
@@ -299,14 +304,14 @@ namespace MatterHackers.PolygonMesh
 			var keptFaces = new List<Face>();
 			for (int i = 0; i < Faces.Count; i++)
 			{
-				if(!facesToRemove.Contains(i))
+				if (!facesToRemove.Contains(i))
 				{
 					keptFaces.Add(Faces[i]);
 				}
 			}
 
 			var vertexCount = Vertices.Count;
-			
+
 			// add the new vertices
 			Vertices.AddRange(newVertices);
 
@@ -400,8 +405,7 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		#region meshIDs
-		//private static Dictionary<object, int> Ids = new Dictionary<object, int>(ReferenceEqualityComparer.Default);
+		// private static Dictionary<object, int> Ids = new Dictionary<object, int>(ReferenceEqualityComparer.Default);
 		private static int nextId = 0;
 
 		public static int GetID()
@@ -411,7 +415,6 @@ namespace MatterHackers.PolygonMesh
 				return nextId++;
 			}
 		}
-		#endregion
 
 		#region Public Members
 
@@ -502,7 +505,7 @@ namespace MatterHackers.PolygonMesh
 		/// <returns>True if the face crosses the plane else false</returns>
 		public static bool Split(this Face face, List<Vector3Float> faceVertices, Plane plane, List<Face> newFaces, List<Vector3Float> newVertices, double onPlaneDistance, Func<Mesh.SplitData, bool> clipFace = null)
 		{
-			Vector3Float[] v = new Vector3Float[]
+			var v = new Vector3Float[]
 			{
 				faceVertices[face.v0],
 				faceVertices[face.v1],
@@ -543,7 +546,7 @@ namespace MatterHackers.PolygonMesh
 			{
 				// if 2 sides are clipped we will add 2 new vertices and 3 polygons
 				case 2:
-					if(clipFace?.Invoke(new Mesh.SplitData(face, dist)) != false)
+					if (clipFace?.Invoke(new Mesh.SplitData(face, dist)) != false)
 					{
 						// find the side we are not going to clip
 						int vi0 = clipSegment[0] && clipSegment[1] ? 2
@@ -565,6 +568,7 @@ namespace MatterHackers.PolygonMesh
 						newFaces.Add(new Face(vertexStart + 3, vertexStart + 2, vertexStart + 4, newVertices));
 						return true;
 					}
+
 					break;
 
 				// if 1 side is clipped we will add 1 new vertex and 2 polygons
@@ -586,6 +590,7 @@ namespace MatterHackers.PolygonMesh
 						newFaces.Add(new Face(vertexStart, vertexStart + 3, vertexStart + 2, newVertices));
 						newFaces.Add(new Face(vertexStart + 3, vertexStart + 1, vertexStart + 2, newVertices));
 					}
+
 					return true;
 			}
 
@@ -599,6 +604,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			return new Mesh(meshToCopyIn.Vertices, meshToCopyIn.Faces);
 		}
+
 		public static Plane GetPlane(this Mesh mesh, int faceIndex)
 		{
 			var face = mesh.Faces[faceIndex];
@@ -715,6 +721,7 @@ namespace MatterHackers.PolygonMesh
 			mesh.PlaceTextureOnFace(face, textureToUse, mesh.GetMaxPlaneProjection(face, textureToUse));
 		}
 
+
 		public static void PlaceTextureOnFace(this Mesh mesh, int face, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
 		{
 			var uvs = new Vector2Float[3];
@@ -726,7 +733,7 @@ namespace MatterHackers.PolygonMesh
 				uvs[uvIndex++] = new Vector2Float(textureUv);
 			}
 
-			mesh.FaceTextures.Add(face, new FaceTextureData(textureToUse, uvs[0], uvs[1], uvs[2]));
+			mesh.FaceTextures[face] = new FaceTextureData(textureToUse, uvs[0], uvs[1], uvs[2]);
 
 			mesh.MarkAsChanged();
 		}
@@ -746,6 +753,7 @@ namespace MatterHackers.PolygonMesh
 
 				mesh.FaceTextures.Add(face, new FaceTextureData(textureToUse, uvs[0], uvs[1], uvs[2]));
 			}
+
 			mesh.MarkAsChanged();
 		}
 
@@ -768,92 +776,85 @@ namespace MatterHackers.PolygonMesh
 
 		public static void RemoveTexture(this Mesh mesh, ImageBuffer texture, int index)
 		{
-			throw new NotImplementedException();
-			//foreach (var face in mesh.Faces)
-			//{
-			//	face.RemoveTexture(texture, index);
-			//}
+			for (int i = 0; i < mesh.Faces.Count; i++)
+			{
+				mesh.RemoveTexture(i, texture, index);
+			}
 
-			//mesh.MarkAsChanged();
+			mesh.MarkAsChanged();
 		}
 
-		public static void RemoveTexture(this Mesh mesh, int face, ImageBuffer texture, int index)
+		public static void RemoveTexture(this Mesh mesh, int faceIndex, ImageBuffer texture, int index)
 		{
-			throw new NotImplementedException();
-			//face.ContainingMesh.FaceTexture.Remove((face, index));
-			//foreach (FaceEdge faceEdge in face.FaceEdges())
-			//{
-			//	face.ContainingMesh.TextureUV.Remove((faceEdge, index));
-			//}
+			mesh.FaceTextures.Remove(faceIndex);
 		}
 
 		public static void PlaceTexture(this Mesh mesh, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
 		{
-			throw new NotImplementedException();
-			//foreach (var face in mesh.Faces)
-			//{
-			//	face.PlaceTextureOnFace(textureToUse, textureCoordinateMapping);
-			//}
+			for (int i = 0; i < mesh.Faces.Count; i++)
+			{
+				mesh.PlaceTextureOnFace(i, textureToUse, textureCoordinateMapping);
+			}
 
-			//mesh.MarkAsChanged();
+			mesh.MarkAsChanged();
 		}
 
 		public static Mesh TexturedPlane(ImageBuffer textureToUse, double xScale = 1, double yScale = 1)
 		{
 			throw new NotImplementedException();
-			//Mesh texturedPlane = MeshHelper.CreatePlane(xScale, yScale);
-			//{
-			//	Face face = texturedPlane.Faces[0];
-			//	PlaceTextureOnFace(face, textureToUse);
-			//}
+			// Mesh texturedPlane = MeshHelper.CreatePlane(xScale, yScale);
+			// {
+			// Face face = texturedPlane.Faces[0];
+			// PlaceTextureOnFace(face, textureToUse);
+			// }
 
-			//return texturedPlane;
+			// return texturedPlane;
 		}
 
 		/// <summary>
 		/// For every T Junction add a vertex to the mesh edge that needs one.
 		/// </summary>
-		/// <param name="mesh"></param>
+		/// <param name="mesh">The mesh to repair.</param>
 		public static void RepairTJunctions(this Mesh mesh)
 		{
 			throw new NotImplementedException();
-			//var nonManifoldEdges = mesh.GetNonManifoldEdges();
+			// var nonManifoldEdges = mesh.GetNonManifoldEdges();
 
-			//foreach(MeshEdge edge in nonManifoldEdges)
-			//{
-			//	IVertex start = edge.VertexOnEnd[0];
-			//	IVertex end = edge.VertexOnEnd[1];
-			//	Vector3 normal = (end.Position - start.Position).GetNormal();
+			// foreach(MeshEdge edge in nonManifoldEdges)
+			// {
+			// IVertex start = edge.VertexOnEnd[0];
+			// IVertex end = edge.VertexOnEnd[1];
+			// Vector3 normal = (end.Position - start.Position).GetNormal();
 
-			//	// Get all the vertices that lay on this edge
-			//	foreach (var vertex in mesh.Vertices)
-			//	{
-			//		// test if it falls on the edge
-			//		// split the edge at them
-			//		IVertex createdVertex;
-			//		MeshEdge createdMeshEdge;
-			//		mesh.SplitMeshEdge(edge, out createdVertex, out createdMeshEdge);
-			//		createdVertex.Position = vertex.Position;
-			//		createdVertex.Normal = vertex.Normal;
-			//		mesh.MergeVertices(vertex, createdVertex);
-			//	}
-			//}
+			// // Get all the vertices that lay on this edge
+			// foreach (var vertex in mesh.Vertices)
+			// {
+			// // test if it falls on the edge
+			// // split the edge at them
+			// IVertex createdVertex;
+			// MeshEdge createdMeshEdge;
+			// mesh.SplitMeshEdge(edge, out createdVertex, out createdMeshEdge);
+			// createdVertex.Position = vertex.Position;
+			// createdVertex.Normal = vertex.Normal;
+			// mesh.MergeVertices(vertex, createdVertex);
+			// }
+			// }
 
-			//throw new NotImplementedException();
+			// throw new NotImplementedException();
 
 			// and merge the mesh edges that are now manifold
-			//mesh.MergeMeshEdges(CancellationToken.None);
+			// mesh.MergeMeshEdges(CancellationToken.None);
 		}
 
 		public static bool IsManifold(this Mesh mesh)
 		{
 			throw new NotImplementedException();
-			//var nonManifoldEdges = mesh.GetNonManifoldEdges();
+			// var nonManifoldEdges = mesh.GetNonManifoldEdges();
 
-			//if(nonManifoldEdges.Count == 0)
-			//{
-			//	return true;
-			//}
+			// if(nonManifoldEdges.Count == 0)
+			// {
+			// return true;
+			// }
 
 			// Every non-manifold edge must have matching non-manifold edge(s) that it lines up with.
 			// If this is true the model is still functionally manifold.
