@@ -241,7 +241,7 @@ namespace MatterHackers.PolygonMesh
 				return;
 			}
 
-			AxisAlignedBoundingBox totalBounds = new AxisAlignedBoundingBox(Vertices[0], Vertices[0]);
+			var totalBounds = new AxisAlignedBoundingBox(Vertices[0], Vertices[0]);
 
 			foreach (var vertex in Vertices)
 			{
@@ -250,6 +250,7 @@ namespace MatterHackers.PolygonMesh
 
 			totalBounds.Expand(treatAsSameDistance);
 			var sameDistance = new Vector3Float(treatAsSameDistance, treatAsSameDistance, treatAsSameDistance);
+			var tinyDistance = new Vector3Float(.001, .001, .001);
 
 			var newVertices = new List<Vector3Float>();
 			var newFaces = new FaceList();
@@ -259,11 +260,11 @@ namespace MatterHackers.PolygonMesh
 			for (int i = 0; i < Vertices.Count; i++)
 			{
 				var vertex = Vertices[i];
-				positionToIndex.SearchPoint(vertex.X, vertex.Y, vertex.Z);
+				positionToIndex.SearchBounds(new AxisAlignedBoundingBox(vertex - sameDistance, vertex + sameDistance));
 				if (positionToIndex.QueryResults.Count == 0)
 				{
 					// we did not find a point close to this point so add it
-					positionToIndex.Insert(newVertices.Count, new AxisAlignedBoundingBox(vertex - sameDistance, vertex + sameDistance));
+					positionToIndex.Insert(newVertices.Count, new AxisAlignedBoundingBox(vertex - tinyDistance, vertex + tinyDistance));
 					positionToIndexFast.Add((vertex.X, vertex.Y, vertex.Z), newVertices.Count);
 					newVertices.Add(vertex);
 				}
@@ -277,7 +278,7 @@ namespace MatterHackers.PolygonMesh
 					return index;
 				}
 
-				positionToIndex.SearchPoint(position.X, position.Y, position.Z);
+				positionToIndex.SearchBounds(new AxisAlignedBoundingBox(position - sameDistance, position + sameDistance));
 				return positionToIndex.QueryResults[0];
 			}
 
@@ -295,15 +296,18 @@ namespace MatterHackers.PolygonMesh
 
 		/// <summary>
 		/// Split the given face on the given plane. Remove the original face
-		/// and add as many new faces as required for the split
+		/// and add as many new faces as required for the split.
 		/// </summary>
-		/// <param name="faceIndex"></param>
-		/// <param name="plane"></param>
-		/// <returns></returns>
+		/// <param name="faceIndex">The index of the face to split.</param>
+		/// <param name="plane">The plane to split the face on. The face will not be split
+		/// if it is not intersected by this plane.</param>
+		/// <param name="onPlaneDistance">If a given edge of the face has a vertex that is within
+		/// this distance of the plane, the edge will not be split.</param>
+		/// <returns>Returns if the edge was actually split.</returns>
 		public bool SplitFace(int faceIndex, Plane plane, double onPlaneDistance = .001)
 		{
-			List<Vector3Float> newVertices = new List<Vector3Float>();
-			List<Face> newFaces = new List<Face>();
+			var newVertices = new List<Vector3Float>();
+			var newFaces = new List<Face>();
 			if (Faces[faceIndex].Split(this.Vertices, plane, newFaces, newVertices, onPlaneDistance))
 			{
 				var vertexCount = Vertices.Count;
@@ -475,8 +479,6 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		#region Public Members
-
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
 			if (Vertices.Count == 0)
@@ -537,8 +539,6 @@ namespace MatterHackers.PolygonMesh
 				this.Faces.Add(firstVertex, firstVertex + i + 1, firstVertex + i + 2, this.Vertices);
 			}
 		}
-
-		#endregion Public Members
 	}
 
 	public static class FaceExtensionMethods
@@ -555,13 +555,15 @@ namespace MatterHackers.PolygonMesh
 		/// <summary>
 		/// Split the face at the given plane.
 		/// </summary>
-		/// <param name="face">The face to split</param>
-		/// <param name="faceVertices">The list containing the vertices for the face</param>
-		/// <param name="plane">The plane to split at</param>
+		/// <param name="face">The face to split.</param>
+		/// <param name="faceVertices">The list containing the vertices for the face.</param>
+		/// <param name="plane">The plane to split at.</param>
 		/// <param name="newFaces">The new faces created will be added to this list, not the mesh.</param>
 		/// <param name="newVertices">The new vertices will be added to this list, not the mesh.</param>
-		/// <param name="onPlaneDistance">Treat any distance less than this as not crossing the plane</param>
-		/// <returns>True if the face crosses the plane else false</returns>
+		/// <param name="onPlaneDistance">Treat any distance less than this as not crossing the plane.</param>
+		/// <param name="clipFace">An optional function that can be called to check if the given
+		/// face should be clipped.</param>
+		/// <returns>True if the face crosses the plane else false.</returns>
 		public static bool Split(this Face face, List<Vector3Float> faceVertices, Plane plane, List<Face> newFaces, List<Vector3Float> newVertices, double onPlaneDistance, Func<Mesh.SplitData, bool> clipFace = null)
 		{
 			var v = new Vector3Float[]
@@ -779,7 +781,6 @@ namespace MatterHackers.PolygonMesh
 			//// planer project along the normal of this face
 			mesh.PlaceTextureOnFace(face, textureToUse, mesh.GetMaxPlaneProjection(face, textureToUse));
 		}
-
 
 		public static void PlaceTextureOnFace(this Mesh mesh, int face, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
 		{
