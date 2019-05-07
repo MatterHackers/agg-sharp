@@ -234,6 +234,65 @@ namespace MatterHackers.PolygonMesh
 			this.Vertices = newVertices;
 		}
 
+		public void MergeVertices(double treatAsSameDistance)
+		{
+			if (Vertices.Count == 0)
+			{
+				return;
+			}
+
+			AxisAlignedBoundingBox totalBounds = new AxisAlignedBoundingBox(Vertices[0], Vertices[0]);
+
+			foreach (var vertex in Vertices)
+			{
+				totalBounds.ExpandToInclude(vertex);
+			}
+
+			totalBounds.Expand(treatAsSameDistance);
+			var sameDistance = new Vector3Float(treatAsSameDistance, treatAsSameDistance, treatAsSameDistance);
+
+			var newVertices = new List<Vector3Float>();
+			var newFaces = new FaceList();
+			var positionToIndex = new Octree<int>(5, totalBounds);
+			var positionToIndexFast = new Dictionary<(float, float, float), int>();
+
+			for (int i = 0; i < Vertices.Count; i++)
+			{
+				var vertex = Vertices[i];
+				positionToIndex.SearchPoint(vertex.X, vertex.Y, vertex.Z);
+				if (positionToIndex.QueryResults.Count == 0)
+				{
+					// we did not find a point close to this point so add it
+					positionToIndex.Insert(newVertices.Count, new AxisAlignedBoundingBox(vertex - sameDistance, vertex + sameDistance));
+					positionToIndexFast.Add((vertex.X, vertex.Y, vertex.Z), newVertices.Count);
+					newVertices.Add(vertex);
+				}
+			}
+
+			// now make a new face list with the merge vertices
+			int GetIndex(Vector3Float position)
+			{
+				if (positionToIndexFast.TryGetValue((position.X, position.Y, position.Z), out int index))
+				{
+					return index;
+				}
+
+				positionToIndex.SearchPoint(position.X, position.Y, position.Z);
+				return positionToIndex.QueryResults[0];
+			}
+
+			foreach (var face in Faces)
+			{
+				int iv0 = GetIndex(Vertices[face.v0]);
+				int iv1 = GetIndex(Vertices[face.v1]);
+				int iv2 = GetIndex(Vertices[face.v2]);
+				newFaces.Add(iv0, iv1, iv2, newVertices);
+			}
+
+			this.Faces = newFaces;
+			this.Vertices = newVertices;
+		}
+
 		/// <summary>
 		/// Split the given face on the given plane. Remove the original face
 		/// and add as many new faces as required for the split

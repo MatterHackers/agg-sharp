@@ -57,6 +57,11 @@ namespace MatterHackers.VectorMath
 			this.MaxXYZ = maxXYZ;
 		}
 
+		public AxisAlignedBoundingBox(Vector3Float minXYZ, Vector3Float maxXYZ)
+			: this(new Vector3(minXYZ), new Vector3(maxXYZ))
+		{
+		}
+
 		public AxisAlignedBoundingBox(IList<Vector3> verticesPoints)
 		{
 			if (verticesPoints.Count > 0)
@@ -125,7 +130,7 @@ namespace MatterHackers.VectorMath
 			return new AxisAlignedBoundingBox(newMin, newMax);
 		}
 
-		public void Expand(int amount)
+		public void Expand(double amount)
 		{
 			MinXYZ.X -= amount;
 			MinXYZ.Y -= amount;
