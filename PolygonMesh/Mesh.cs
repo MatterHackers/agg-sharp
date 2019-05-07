@@ -254,6 +254,7 @@ namespace MatterHackers.PolygonMesh
 			var newVertices = new List<Vector3Float>();
 			var newFaces = new FaceList();
 			var positionToIndex = new Octree<int>(5, totalBounds);
+			var positionToIndexFast = new Dictionary<(float, float, float), int>();
 
 			for (int i = 0; i < Vertices.Count; i++)
 			{
@@ -263,6 +264,7 @@ namespace MatterHackers.PolygonMesh
 				{
 					// we did not find a point close to this point so add it
 					positionToIndex.Insert(newVertices.Count, new AxisAlignedBoundingBox(vertex - sameDistance, vertex + sameDistance));
+					positionToIndexFast.Add((vertex.X, vertex.Y, vertex.Z), newVertices.Count);
 					newVertices.Add(vertex);
 				}
 			}
@@ -270,6 +272,11 @@ namespace MatterHackers.PolygonMesh
 			// now make a new face list with the merge vertices
 			int GetIndex(Vector3Float position)
 			{
+				if (positionToIndexFast.TryGetValue((position.X, position.Y, position.Z), out int index))
+				{
+					return index;
+				}
+
 				positionToIndex.SearchPoint(position.X, position.Y, position.Z);
 				return positionToIndex.QueryResults[0];
 			}
