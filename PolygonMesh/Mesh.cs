@@ -236,7 +236,7 @@ namespace MatterHackers.PolygonMesh
 
 		public void MergeVertices(double treatAsSameDistance)
 		{
-			if (Vertices.Count == 0)
+			if (Vertices.Count < 2)
 			{
 				return;
 			}
@@ -746,6 +746,41 @@ namespace MatterHackers.PolygonMesh
 
 			return textureCoordinateMapping * firstTransform * centering * scaling;
 		}
+
+		/// <summary>
+		/// Split a mesh at a series of coplanar planes.
+		/// </summary>
+		/// <param name="mesh">The mesh to split faces on.</param>
+		/// <param name="planeNormal">The plane normal of the planes to split on.</param>
+		/// <param name="distancesFromOrigin">The series of coplanar planes to split the mash at.</param>
+		/// <param name="onPlaneDistance">Any mesh edge that has a vertex at this distance or less from a cut plane
+		/// should not be cut by that plane.</param>
+		public static void SplitOnPlanes(this Mesh mesh, Vector3 planeNormal, List<double> distancesFromOrigin, double onPlaneDistance)
+		{
+			for (int i = 0; i < distancesFromOrigin.Count; i++)
+			{
+				mesh.Split(new Plane(planeNormal, distancesFromOrigin[i]), onPlaneDistance, (clipData) =>
+				{
+					// if two distances are less than 0
+					if ((clipData.Dist[0] < 0 && clipData.Dist[1] < 0)
+						|| (clipData.Dist[1] < 0 && clipData.Dist[2] < 0)
+						|| (clipData.Dist[2] < 0 && clipData.Dist[0] < 0))
+					{
+						return true;
+					}
+
+					return false;
+				});
+			}
+
+			for (int i = distancesFromOrigin.Count - 1; i >= 0; i--)
+			{
+				mesh.Split(new Plane(planeNormal, distancesFromOrigin[i]), .1);
+			}
+
+			return;
+		}
+
 
 		public static Matrix4X4 GetMaxPlaneProjection(this Mesh mesh, int face, ImageBuffer textureToUse, Matrix4X4? initialTransform = null)
 		{
