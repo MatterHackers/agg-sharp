@@ -327,20 +327,11 @@ namespace MatterHackers.Agg
 			return new RectangleDouble(a.Left * b, a.Bottom * b, a.Right * b, a.Top * b);
 		}
 
-		public Vector2 Center
-		{
-			get { return new Vector2(XCenter, YCenter); }
-		}
+		public Vector2 Center => new Vector2(XCenter, YCenter);
 
-		public double XCenter
-		{
-			get { return (Right + Left) / 2; }
-		}
+		public double XCenter => (Right + Left) / 2;
 
-		public double YCenter
-		{
-			get { return (Top + Bottom) / 2; }
-		}
+		public double YCenter => (Top + Bottom) / 2;
 
 		public override string ToString()
 		{
