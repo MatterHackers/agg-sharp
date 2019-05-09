@@ -55,7 +55,7 @@ namespace MatterHackers.Agg
 			Top = intRect.Top;
 		}
 
-		public RectangleDouble(Vector2 position1, Vector2 position2) : 
+		public RectangleDouble(Vector2 position1, Vector2 position2) :
 			this(Math.Min(position1.X, position2.X), Math.Min(position1.Y, position2.Y), Math.Max(position1.X, position2.X), Math.Max(position1.Y, position2.Y))
 		{
 		}
@@ -172,17 +172,17 @@ namespace MatterHackers.Agg
 			return false;
 		}
 
-        public bool Contains(Vector2 position)
-        {
-            return Contains(position.X, position.Y);
-        }
+		public bool Contains(Vector2 position)
+		{
+			return Contains(position.X, position.Y);
+		}
 
-        public bool Contains(Point2D position)
-        {
-            return Contains(position.x, position.y);
-        }
+		public bool Contains(Point2D position)
+		{
+			return Contains(position.x, position.y);
+		}
 
-        public bool IntersectRectangles(RectangleDouble rectToCopy, RectangleDouble rectToIntersectWith)
+		public bool IntersectRectangles(RectangleDouble rectToCopy, RectangleDouble rectToIntersectWith)
 		{
 			Left = rectToCopy.Left;
 			Bottom = rectToCopy.Bottom;
@@ -327,7 +327,7 @@ namespace MatterHackers.Agg
 			return new RectangleDouble(a.Left * b, a.Bottom * b, a.Right * b, a.Top * b);
 		}
 
-		public Vector2 Center 
+		public Vector2 Center
 		{
 			get { return new Vector2(XCenter, YCenter); }
 		}
@@ -370,7 +370,10 @@ namespace MatterHackers.Agg
 			return code;
 		}
 
-		public OutCode ComputeOutCode(Vector2 p) { return ComputeOutCode(p.X, p.Y); }
+		public OutCode ComputeOutCode(Vector2 p)
+		{
+			return ComputeOutCode(p.X, p.Y); 
+		}
 
 		private Vector2 CalculateIntersection(Vector2 p1, Vector2 p2, OutCode clipTo)
 		{
@@ -475,7 +478,7 @@ namespace MatterHackers.Agg
 
 		public bool ClipLine(Vector2 p1, Vector2 p2)
 		{
-			if(this.ClipSegment(p1, p2) != null)
+			if (this.ClipSegment(p1, p2) != null)
 			{
 				return true;
 			}
