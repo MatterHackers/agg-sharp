@@ -186,9 +186,8 @@ namespace MatterHackers.Agg.Font
 				throw new ArgumentException("The x and y fractions must both be between 0 and 1.");
 			}
 
-			ImageBuffer imageForCharacter;
-			Dictionary<char, ImageBuffer> characterImageCache = StyledTypeFaceImageCache.GetCorrectCache(this.TypeFace, color, this.emSizeInPixels);
-			characterImageCache.TryGetValue(character, out imageForCharacter);
+			var characterImageCache = StyledTypeFaceImageCache.GetCorrectCache(this.TypeFace, color, emSizeInPixels);
+			characterImageCache.TryGetValue(character, out ImageBuffer imageForCharacter);
 			if (imageForCharacter != null)
 			{
 				return imageForCharacter;
@@ -202,16 +201,24 @@ namespace MatterHackers.Agg.Font
 
 			glyphForCharacter.rewind(0);
 			double x, y;
+
 			ShapePath.FlagsAndCommand curCommand = glyphForCharacter.vertex(out x, out y);
-			RectangleDouble bounds = new RectangleDouble(x, y, x, y);
+
+			var bounds = new RectangleDouble(x, y, x, y);
+
 			while (curCommand != ShapePath.FlagsAndCommand.Stop)
 			{
 				bounds.ExpandToInclude(x, y);
 				curCommand = glyphForCharacter.vertex(out x, out y);
 			}
 
-			var charImage = new ImageBuffer(Math.Max((int)(bounds.Width + .5), 1) + 1, Math.Max((int)Math.Ceiling(EmSizeInPixels + (-DescentInPixels) + .5), 1) + 1, 32, new BlenderPreMultBGRA());
-			Graphics2D graphics = charImage.NewGraphics2D();
+			var charImage = new ImageBuffer(
+				Math.Max((int)(bounds.Width + .5), 1) + 1,
+				Math.Max((int)Math.Ceiling(EmSizeInPixels + (-DescentInPixels) + .5), 1) + 1,
+				32,
+				new BlenderPreMultBGRA());
+
+			var graphics = charImage.NewGraphics2D();
 			graphics.Render(glyphForCharacter, xFraction, yFraction + (-DescentInPixels) + 1, color);
 			characterImageCache[character] = charImage;
 
@@ -229,7 +236,7 @@ namespace MatterHackers.Agg.Font
 					sourceGlyph = new GlyphWithUnderline(sourceGlyph, TypeFace.GetAdvanceForCharacter(character), TypeFace.Underline_position, TypeFace.Underline_thickness);
 				}
 
-				Affine glyphTransform = Affine.NewIdentity();
+				var glyphTransform = Affine.NewIdentity();
 				glyphTransform *= Affine.NewScaling(currentEmScaling);
 				IVertexSource characterGlyph = new VertexSourceApplyTransform(sourceGlyph, glyphTransform);
 
