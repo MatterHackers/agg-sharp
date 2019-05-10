@@ -193,6 +193,11 @@ namespace MatterHackers.RenderOpenGl
 			world.Render3DLineNoPrep(clippingFrustum, start, end, color, width);
 		}
 
+		public static void Render3DLineNoPrep(this WorldView world, Frustum clippingFrustum, Vector3Float start, Vector3Float end, Color color, double width = 1)
+		{
+			world.Render3DLineNoPrep(clippingFrustum, new Vector3(start), new Vector3(end), new Color(color), width);
+		}
+
 		public static void Render3DLineNoPrep(this WorldView world, Frustum clippingFrustum, Vector3 start, Vector3 end, Color color, double width = 1)
 		{
 			if (clippingFrustum.ClipLine(ref start, ref end))

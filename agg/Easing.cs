@@ -35,12 +35,101 @@ using System.Threading.Tasks;
 
 namespace MatterHackers.Agg
 {
-	/* 
+	/*
 	 * Functions taken from Tween.js - Licensed under the MIT license
 	 * at https://github.com/sole/tween.js
 	 */
 	public class Easing
 	{
+		public enum EaseType
+		{
+			Linear,
+			Quadratic,
+			Cubic,
+			Quartic,
+			Quintic,
+			Sinusoidal,
+		}
+
+		public enum EaseOption
+		{
+			In,
+			Out,
+			InOut
+		}
+
+		public static double Specify(EaseType easeType, EaseOption easeOption, double k)
+		{
+			switch (easeType)
+			{
+				case EaseType.Quadratic:
+					switch (easeOption)
+					{
+						case EaseOption.In:
+							return Quadratic.In(k);
+						case EaseOption.Out:
+							return Quadratic.Out(k);
+						case EaseOption.InOut:
+							return Quadratic.InOut(k);
+					}
+
+					break;
+
+				case EaseType.Cubic:
+					switch (easeOption)
+					{
+						case EaseOption.In:
+							return Cubic.In(k);
+						case EaseOption.Out:
+							return Cubic.Out(k);
+						case EaseOption.InOut:
+							return Cubic.InOut(k);
+					}
+
+					break;
+
+				case EaseType.Quartic:
+					switch (easeOption)
+					{
+						case EaseOption.In:
+							return Quartic.In(k);
+						case EaseOption.Out:
+							return Quartic.Out(k);
+						case EaseOption.InOut:
+							return Quartic.InOut(k);
+					}
+
+					break;
+
+				case EaseType.Quintic:
+					switch (easeOption)
+					{
+						case EaseOption.In:
+							return Quintic.In(k);
+						case EaseOption.Out:
+							return Quintic.Out(k);
+						case EaseOption.InOut:
+							return Quintic.InOut(k);
+					}
+
+					break;
+
+				case EaseType.Sinusoidal:
+					switch (easeOption)
+					{
+						case EaseOption.In:
+							return Sinusoidal.In(k);
+						case EaseOption.Out:
+							return Sinusoidal.Out(k);
+						case EaseOption.InOut:
+							return Sinusoidal.InOut(k);
+					}
+
+					break;
+			}
+
+			return Linear(k);
+		}
 
 		public static double Linear(double k)
 		{
@@ -61,10 +150,14 @@ namespace MatterHackers.Agg
 
 			public static double InOut(double k)
 			{
-				if ((k *= 2f) < 1f) return 0.5f * k * k;
+				if ((k *= 2f) < 1f)
+				{
+					return 0.5f * k * k;
+				}
+
 				return -0.5f * ((k -= 1f) * (k - 2f) - 1f);
 			}
-		};
+		}
 
 		public class Cubic
 		{
@@ -80,10 +173,14 @@ namespace MatterHackers.Agg
 
 			public static double InOut(double k)
 			{
-				if ((k *= 2f) < 1f) return 0.5f * k * k * k;
+				if ((k *= 2f) < 1f)
+				{
+					return 0.5f * k * k * k;
+				}
+
 				return 0.5f * ((k -= 2f) * k * k + 2f);
 			}
-		};
+		}
 
 		public class Quartic
 		{
@@ -99,10 +196,14 @@ namespace MatterHackers.Agg
 
 			public static double InOut(double k)
 			{
-				if ((k *= 2f) < 1f) return 0.5f * k * k * k * k;
+				if ((k *= 2f) < 1f)
+				{
+					return 0.5f * k * k * k * k;
+				}
+
 				return -0.5f * ((k -= 2f) * k * k * k - 2f);
 			}
-		};
+		}
 
 		public class Quintic
 		{
@@ -118,10 +219,14 @@ namespace MatterHackers.Agg
 
 			public static double InOut(double k)
 			{
-				if ((k *= 2f) < 1f) return 0.5f * k * k * k * k * k;
+				if ((k *= 2f) < 1f)
+				{
+					return 0.5f * k * k * k * k * k;
+				}
+
 				return 0.5f * ((k -= 2f) * k * k * k * k + 2f);
 			}
-		};
+		}
 
 		public class Sinusoidal
 		{
@@ -139,7 +244,7 @@ namespace MatterHackers.Agg
 			{
 				return 0.5f * (1f - Math.Cos(Math.PI * k));
 			}
-		};
+		}
 
 		public class Exponential
 		{
@@ -155,12 +260,24 @@ namespace MatterHackers.Agg
 
 			public static double InOut(double k)
 			{
-				if (k == 0f) return 0f;
-				if (k == 1f) return 1f;
-				if ((k *= 2f) < 1f) return 0.5f * Math.Pow(1024f, k - 1f);
+				if (k == 0f)
+				{
+					return 0f;
+				}
+
+				if (k == 1f)
+				{
+					return 1f;
+				}
+
+				if ((k *= 2f) < 1f)
+				{
+					return 0.5f * Math.Pow(1024f, k - 1f);
+				}
+
 				return 0.5f * (-Math.Pow(2f, -10f * (k - 1f)) + 2f);
 			}
-		};
+		}
 
 		public class Circular
 		{
@@ -176,55 +293,83 @@ namespace MatterHackers.Agg
 
 			public static double InOut(double k)
 			{
-				if ((k *= 2f) < 1f) return -0.5f * (Math.Sqrt(1f - k * k) - 1);
+				if ((k *= 2f) < 1f)
+				{
+					return -0.5f * (Math.Sqrt(1f - k * k) - 1);
+				}
+
 				return 0.5f * (Math.Sqrt(1f - (k -= 2f) * k) + 1f);
 			}
-		};
+		}
 
 		public class Elastic
 		{
 			public static double In(double k)
 			{
-				if (k == 0) return 0;
-				if (k == 1) return 1;
+				if (k == 0)
+				{
+					return 0;
+				}
+
+				if (k == 1)
+				{
+					return 1;
+				}
+
 				return -Math.Pow(2f, 10f * (k -= 1f)) * Math.Sin((k - 0.1f) * (2f * Math.PI) / 0.4f);
 			}
 
 			public static double Out(double k)
 			{
-				if (k == 0) return 0;
-				if (k == 1) return 1;
+				if (k == 0)
+				{
+					return 0;
+				}
+
+				if (k == 1)
+				{
+					return 1;
+				}
+
 				return Math.Pow(2f, -10f * k) * Math.Sin((k - 0.1f) * (2f * Math.PI) / 0.4f) + 1f;
 			}
 
 			public static double InOut(double k)
 			{
-				if ((k *= 2f) < 1f) return -0.5f * Math.Pow(2f, 10f * (k -= 1f)) * Math.Sin((k - 0.1f) * (2f * Math.PI) / 0.4f);
+				if ((k *= 2f) < 1f)
+				{
+					return -0.5f * Math.Pow(2f, 10f * (k -= 1f)) * Math.Sin((k - 0.1f) * (2f * Math.PI) / 0.4f);
+				}
+
 				return Math.Pow(2f, -10f * (k -= 1f)) * Math.Sin((k - 0.1f) * (2f * Math.PI) / 0.4f) * 0.5f + 1f;
 			}
-		};
+		}
 
 		public class Back
 		{
-			static double s = 1.70158f;
-			static double s2 = 2.5949095f;
+			private static readonly double S = 1.70158f;
+			private static readonly double S2 = 2.5949095f;
 
 			public static double In(double k)
 			{
-				return k * k * ((s + 1f) * k - s);
+				return k * k * ((S + 1f) * k - S);
 			}
 
 			public static double Out(double k)
 			{
-				return (k -= 1f) * k * ((s + 1f) * k + s) + 1f;
+				return (k -= 1f) * k * ((S + 1f) * k + S) + 1f;
 			}
 
 			public static double InOut(double k)
 			{
-				if ((k *= 2f) < 1f) return 0.5f * (k * k * ((s2 + 1f) * k - s2));
-				return 0.5f * ((k -= 2f) * k * ((s2 + 1f) * k + s2) + 2f);
+				if ((k *= 2f) < 1f)
+				{
+					return 0.5f * (k * k * ((S2 + 1f) * k - S2));
+				}
+
+				return 0.5f * ((k -= 2f) * k * ((S2 + 1f) * k + S2) + 2f);
 			}
-		};
+		}
 
 		public class Bounce
 		{
@@ -241,23 +386,27 @@ namespace MatterHackers.Agg
 				}
 				else if (k < (2f / 2.75f))
 				{
-					return 7.5625f * (k -= (1.5f / 2.75f)) * k + 0.75f;
+					return 7.5625f * (k -= 1.5f / 2.75f) * k + 0.75f;
 				}
 				else if (k < (2.5f / 2.75f))
 				{
-					return 7.5625f * (k -= (2.25f / 2.75f)) * k + 0.9375f;
+					return 7.5625f * (k -= 2.25f / 2.75f) * k + 0.9375f;
 				}
 				else
 				{
-					return 7.5625f * (k -= (2.625f / 2.75f)) * k + 0.984375f;
+					return 7.5625f * (k -= 2.625f / 2.75f) * k + 0.984375f;
 				}
 			}
 
 			public static double InOut(double k)
 			{
-				if (k < 0.5f) return In(k * 2f) * 0.5f;
+				if (k < 0.5f)
+				{
+					return In(k * 2f) * 0.5f;
+				}
+
 				return Out(k * 2f - 1f) * 0.5f + 0.5f;
 			}
-		};
+		}
 	}
 }
