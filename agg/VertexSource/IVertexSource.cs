@@ -55,6 +55,15 @@ namespace MatterHackers.Agg.VertexSource
 		[JsonIgnore]
 		public bool IsStop => ShapePath.is_stop(command);
 
+		[JsonIgnore]
+		public bool IsVertex => ShapePath.is_vertex(command);
+
+		[JsonIgnore]
+		public double X => position.X;
+
+		[JsonIgnore]
+		public double Y => position.Y;
+
 		public override string ToString()
 		{
 			return $"{command}:{position}";

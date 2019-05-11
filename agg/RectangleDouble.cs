@@ -327,10 +327,13 @@ namespace MatterHackers.Agg
 			return new RectangleDouble(a.Left * b, a.Bottom * b, a.Right * b, a.Top * b);
 		}
 
+		[JsonIgnore]
 		public Vector2 Center => new Vector2(XCenter, YCenter);
 
+		[JsonIgnore]
 		public double XCenter => (Right + Left) / 2;
 
+		[JsonIgnore]
 		public double YCenter => (Top + Bottom) / 2;
 
 		public override string ToString()
