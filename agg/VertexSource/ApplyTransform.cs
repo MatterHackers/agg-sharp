@@ -59,15 +59,11 @@ namespace MatterHackers.Agg.VertexSource
 
 		public ITransform Transform
 		{
-			get { return transformToApply; }
-			set { transformToApply = value; }
+			get => transformToApply;
+			set => transformToApply = value;
 		}
 
-		public IVertexSource VertexSource
-		{
-			get;
-			set;
-		}
+		public IVertexSource VertexSource { get; set; }
 
 		public VertexSourceApplyTransform()
 		{
@@ -94,12 +90,14 @@ namespace MatterHackers.Agg.VertexSource
 			foreach (VertexData vertexData in VertexSource.Vertices())
 			{
 				VertexData transformedVertex = vertexData;
+
 				if (ShapePath.is_vertex(transformedVertex.command))
 				{
 					var position = transformedVertex.position;
 					transformToApply.transform(ref position.X, ref position.Y);
 					transformedVertex.position = position;
 				}
+
 				yield return transformedVertex;
 			}
 		}
@@ -112,10 +110,12 @@ namespace MatterHackers.Agg.VertexSource
 		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
 		{
 			ShapePath.FlagsAndCommand cmd = VertexSource.vertex(out x, out y);
+
 			if (ShapePath.is_vertex(cmd))
 			{
 				transformToApply.transform(ref x, ref y);
 			}
+
 			return cmd;
 		}
 
