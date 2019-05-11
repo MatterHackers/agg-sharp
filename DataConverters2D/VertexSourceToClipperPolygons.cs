@@ -82,12 +82,12 @@ namespace MatterHackers.DataConverters2D
 				{
 					if (!addedFirst)
 					{
-						currentPoly.Add(new IntPoint((long)(last.position.X * scaling), (long)(last.position.Y * scaling)));
+						currentPoly.Add(new IntPoint(last.position.X * scaling, last.position.Y * scaling));
 						addedFirst = true;
 						first = last;
 					}
 
-					currentPoly.Add(new IntPoint((long)(vertexData.position.X * scaling), (long)(vertexData.position.Y * scaling)));
+					currentPoly.Add(new IntPoint(vertexData.position.X * scaling, vertexData.position.Y * scaling));
 					last = vertexData;
 				}
 				else
