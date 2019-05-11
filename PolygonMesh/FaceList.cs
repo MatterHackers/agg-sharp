@@ -65,9 +65,9 @@ namespace MatterHackers.PolygonMesh
 			var position0 = vertices[this.v0];
 			var position1 = vertices[this.v1];
 			var position2 = vertices[this.v2];
-			var faceEdge1Minus0 = position1 - position0;
-			var face2Minus0 = position2 - position0;
-			normal = faceEdge1Minus0.Cross(face2Minus0).GetNormal();
+			var v11MinusV0 = position1 - position0;
+			var v2MinusV0 = position2 - position0;
+			normal = v11MinusV0.Cross(v2MinusV0).GetNormal();
 		}
 	}
 

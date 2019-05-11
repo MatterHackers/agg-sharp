@@ -456,6 +456,8 @@ namespace MatterHackers.PolygonMesh
 			{
 				Faces[i].CalculateNormal(Vertices);
 			}
+
+			MarkAsChanged();
 		}
 
 		public void Translate(Vector3 offset)
