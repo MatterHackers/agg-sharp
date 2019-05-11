@@ -74,15 +74,20 @@ namespace MatterHackers.Agg.Tests
 
 			glyphForCharacter.rewind(0);
 
-			ShapePath.FlagsAndCommand curCommand = glyphForCharacter.vertex(out double x, out double y);
+			ShapePath.FlagsAndCommand curCommand;
 
-			var bounds = new RectangleDouble(x, y, x, y);
+			var bounds = RectangleDouble.ZeroIntersection;
 
-			while (curCommand != ShapePath.FlagsAndCommand.Stop)
+			do
 			{
-				bounds.ExpandToInclude(x, y);
-				curCommand = glyphForCharacter.vertex(out x, out y);
-			}
+				curCommand = glyphForCharacter.vertex(out double x, out double y);
+
+				if (curCommand != ShapePath.FlagsAndCommand.Stop
+					&& !ShapePath.is_close(curCommand))
+				{
+					bounds.ExpandToInclude(x, y);
+				}
+			} while (curCommand != ShapePath.FlagsAndCommand.Stop);
 
 			return bounds;
 		}

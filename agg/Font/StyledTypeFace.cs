@@ -199,18 +199,7 @@ namespace MatterHackers.Agg.Font
 				return null;
 			}
 
-			glyphForCharacter.rewind(0);
-			double x, y;
-
-			ShapePath.FlagsAndCommand curCommand = glyphForCharacter.vertex(out x, out y);
-
-			var bounds = new RectangleDouble(x, y, x, y);
-
-			while (curCommand != ShapePath.FlagsAndCommand.Stop)
-			{
-				bounds.ExpandToInclude(x, y);
-				curCommand = glyphForCharacter.vertex(out x, out y);
-			}
+			var bounds = glyphForCharacter.GetBounds();
 
 			var charImage = new ImageBuffer(
 				Math.Max((int)(bounds.Width + .5), 1) + 1,
