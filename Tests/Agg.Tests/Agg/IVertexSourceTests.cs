@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using MatterHackers.Agg.Font;
+using MatterHackers.Agg.Image;
 using MatterHackers.Agg.VertexSource;
+using MatterHackers.DataConverters2D;
+using MatterHackers.VectorMath;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -65,6 +68,90 @@ namespace MatterHackers.Agg.Tests
 
 				Assert.AreEqual(expected, actual);
 			}
+		}
+
+		[Test]
+		public void CubePolygonCountTest()
+		{
+			var square = new VertexStorage();
+			square.MoveTo(0, 0);
+			square.LineTo(100, 0);
+			square.LineTo(100, 100);
+			square.LineTo(0, 100);
+			square.ClosePolygon();
+
+			var polygons = square.CreatePolygons();
+
+			Assert.AreEqual(1, polygons.Count, "One polygon should be created for a simple 4 point cube path");
+		}
+
+		[Test]
+		public void MoveToCreatesAdditionalPolygonTest()
+		{
+			// Any MoveTo should always create a new Polygon
+			var storage = new VertexStorage();
+			storage.MoveTo(0, 0);
+			storage.LineTo(100, 0);
+			storage.LineTo(100, 100);
+			storage.MoveTo(30, 30);
+			storage.LineTo(0, 100);
+			storage.ClosePolygon();
+
+			var polygons = storage.CreatePolygons();
+
+			Assert.AreEqual(2, polygons.Count, "Two polygons should be created for a path with a floating MoveTo command");
+		}
+
+		[Test]
+		public void TwoItemPolygonCountTest()
+		{
+			var square = new VertexStorage();
+			square.MoveTo(0, 0);
+			square.LineTo(100, 0);
+			square.LineTo(100, 100);
+			square.LineTo(0, 100);
+			square.ClosePolygon();
+
+			var result = square.CombineWith(new Ellipse(Vector2.Zero, 10));
+
+			var polygons = result.CreatePolygons();
+
+			Assert.AreEqual(2, polygons.Count, "Two polygons should be create for a combined square and ellipse");
+		}
+
+		[Test]
+		public void ThreeItemPolygonCountTest()
+		{
+			var storage = new VertexStorage();
+
+			// Square
+			storage.MoveTo(0, 0);
+			storage.LineTo(100, 0);
+			storage.LineTo(100, 100);
+			storage.LineTo(0, 100);
+			storage.ClosePolygon();
+
+			// Triangle
+			storage.MoveTo(30, 30);
+			storage.LineTo(40, 30);
+			storage.LineTo(35, 40);
+			storage.ClosePolygon();
+
+			// Small Square
+			storage.MoveTo(20, 20);
+			storage.LineTo(25, 20);
+			storage.LineTo(25, 25);
+			storage.LineTo(20, 25);
+			storage.ClosePolygon();
+
+			var polygons = storage.CreatePolygons();
+
+			//var image = new ImageBuffer(200, 200);
+			//var graphics = image.NewGraphics2D();
+			//graphics.Render(new Stroke(storage), Color.Blue);
+			//ImageTgaIO.Save(image, @"c:\temp\some.tga");
+
+			Assert.AreEqual(3, polygons.Count, "Three polygons should be create for a two squares and a triangle");
 		}
 
 		// Behavior which relies on classic IVertexSource.vertex iteration
