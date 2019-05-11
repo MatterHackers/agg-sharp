@@ -241,52 +241,54 @@ namespace MatterHackers.PolygonMesh
 				return;
 			}
 
-			var totalBounds = new AxisAlignedBoundingBox(Vertices[0], Vertices[0]);
-
-			foreach (var vertex in Vertices)
-			{
-				totalBounds.ExpandToInclude(vertex);
-			}
-
-			totalBounds.Expand(treatAsSameDistance);
 			var sameDistance = new Vector3Float(treatAsSameDistance, treatAsSameDistance, treatAsSameDistance);
 			var tinyDistance = new Vector3Float(.001, .001, .001);
+			// build a bvh tree of all the vertices
+			var bvhTree = BvhTree<int>.CreateNewHierachy(this.Vertices
+				.Select((v, i) => new BvhTreeItemData<int>(i, new AxisAlignedBoundingBox(v - tinyDistance, v + tinyDistance))).ToList());
 
-			var newVertices = new List<Vector3Float>();
-			var newFaces = new FaceList();
-			var positionToIndex = new Octree<int>(5, totalBounds);
-			var positionToIndexFast = new Dictionary<(float, float, float), int>();
-
+			var newVertices = new List<Vector3Float>(Vertices.Count);
+			var vertexIndexRemaping = Enumerable.Range(0, Vertices.Count).Select(i => -1).ToList();
+			var searchResults = new List<int>();
+			// build up the list of index mapping
 			for (int i = 0; i < Vertices.Count; i++)
 			{
-				var vertex = Vertices[i];
-				positionToIndex.SearchBounds(new AxisAlignedBoundingBox(vertex - sameDistance, vertex + sameDistance));
-				if (positionToIndex.QueryResults.Count == 0)
+				// first check if we have already found this vertex
+				if (vertexIndexRemaping[i] == -1)
 				{
-					// we did not find a point close to this point so add it
-					positionToIndex.Insert(newVertices.Count, new AxisAlignedBoundingBox(vertex - tinyDistance, vertex + tinyDistance));
-					positionToIndexFast.Add((vertex.X, vertex.Y, vertex.Z), newVertices.Count);
+					var vertex = Vertices[i];
+					// remember the new index
+					var newIndex = newVertices.Count;
+					// add it to the vertices we will end up with
 					newVertices.Add(vertex);
+					// clear for new search
+					searchResults.Clear();
+					// find everything close
+					bvhTree.SearchBounds(new AxisAlignedBoundingBox(vertex - sameDistance, vertex + sameDistance), searchResults);
+					// map them to this new vertex
+					foreach (var result in searchResults)
+					{
+						// this vertex has not been mapped
+						if (vertexIndexRemaping[result] == -1)
+						{
+							vertexIndexRemaping[result] = newIndex;
+						}
+					}
 				}
 			}
 
 			// now make a new face list with the merge vertices
-			int GetIndex(Vector3Float position)
+			int GetIndex(int originalIndex)
 			{
-				if (positionToIndexFast.TryGetValue((position.X, position.Y, position.Z), out int index))
-				{
-					return index;
-				}
-
-				positionToIndex.SearchBounds(new AxisAlignedBoundingBox(position - sameDistance, position + sameDistance));
-				return positionToIndex.QueryResults[0];
+				return vertexIndexRemaping[originalIndex];
 			}
 
+			var newFaces = new FaceList();
 			foreach (var face in Faces)
 			{
-				int iv0 = GetIndex(Vertices[face.v0]);
-				int iv1 = GetIndex(Vertices[face.v1]);
-				int iv2 = GetIndex(Vertices[face.v2]);
+				int iv0 = GetIndex(face.v0);
+				int iv1 = GetIndex(face.v1);
+				int iv2 = GetIndex(face.v2);
 				newFaces.Add(iv0, iv1, iv2, newVertices);
 			}
 
