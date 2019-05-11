@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2013, Lars Brubaker
+Copyright (c) 2019, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,22 +27,27 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System.Collections.Generic;
+using System.Linq;
 using ClipperLib;
 using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
-using System.Collections.Generic;
 
 namespace MatterHackers.DataConverters2D
 {
+	using Polygon = List<IntPoint>;
+	using Polygons = List<List<IntPoint>>;
+
 	public static class VertexSourceToClipperPolygons
 	{
-		public static VertexStorage CreateVertexStorage(this List<List<IntPoint>> polygons, double scaling = 1000)
+		public static VertexStorage CreateVertexStorage(this Polygons polygons, double scaling = 1000)
 		{
-			VertexStorage output = new VertexStorage();
+			var output = new VertexStorage();
 
-			foreach (List<IntPoint> polygon in polygons)
+			foreach (Polygon polygon in polygons)
 			{
 				bool first = true;
+
 				foreach (IntPoint point in polygon)
 				{
 					if (first)
@@ -58,42 +63,40 @@ namespace MatterHackers.DataConverters2D
 
 				output.ClosePolygon();
 			}
+
 			return output;
 		}
 
-		public static List<List<IntPoint>> CreatePolygons(this IVertexSource sourcePath, double scaling = 1000)
+		public static Polygons CreatePolygons(this IVertexSource sourcePath, double scaling = 1000)
 		{
-			List<List<IntPoint>> allPolys = new List<List<IntPoint>>();
-			List<IntPoint> currentPoly = null;
-			VertexData last = new VertexData();
-			VertexData first = new VertexData();
-			bool addedFirst = false;
+			var allPolys = new Polygons();
+			Polygon currentPoly = null;
+
 			foreach (VertexData vertexData in sourcePath.Vertices())
 			{
-				if (vertexData.IsLineTo)
+				if (vertexData.command == ShapePath.FlagsAndCommand.MoveTo
+					|| vertexData.IsLineTo)
 				{
-					if (!addedFirst)
+					// MoveTo always creates a new polygon
+					if (vertexData.command == ShapePath.FlagsAndCommand.MoveTo)
 					{
-						currentPoly.Add(new IntPoint((long)(last.position.X * scaling), (long)(last.position.Y * scaling)));
-						addedFirst = true;
-						first = last;
+						currentPoly = null;
 					}
-					currentPoly.Add(new IntPoint((long)(vertexData.position.X * scaling), (long)(vertexData.position.Y * scaling)));
-					last = vertexData;
+
+					// Construct current polygon if unset
+					if (currentPoly == null)
+					{
+						currentPoly = new Polygon();
+						allPolys.Add(currentPoly);
+					}
+
+					// Add polygon point for LineTo or MoveTo command
+					currentPoly.Add(new IntPoint(vertexData.position.X * scaling, vertexData.position.Y * scaling));
 				}
-				else
+				else if (vertexData.command != ShapePath.FlagsAndCommand.FlagNone)
 				{
-					addedFirst = false;
-					currentPoly = new List<IntPoint>();
-					allPolys.Add(currentPoly);
-					if (vertexData.IsMoveTo)
-					{
-						last = vertexData;
-					}
-					else
-					{
-						last = first;
-					}
+					// Clear active, reconstructed on first valid point
+					currentPoly = null;
 				}
 			}
 

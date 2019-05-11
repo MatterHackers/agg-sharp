@@ -105,8 +105,10 @@ namespace MatterHackers.DataConverters3D
 			angleSteps = Math.Max(angleSteps, 3);
 			angleStart = MathHelper.Range0ToTau(angleStart);
 			angleEnd = MathHelper.Range0ToTau(angleEnd);
+
 			// convert to clipper polygons and scale so we can ensure good shapes
 			Polygons polygons = source.CreatePolygons();
+
 			// ensure good winding and consistent shapes
 			// clip against x=0 left and right
 			// mirror left material across the origin
