@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System.Collections.Generic;
+using System.Linq;
 using ClipperLib;
 using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
@@ -71,39 +72,31 @@ namespace MatterHackers.DataConverters2D
 			var allPolys = new Polygons();
 			Polygon currentPoly = null;
 
-			var last = default(VertexData);
-			var first = default(VertexData);
-
-			bool addedFirst = false;
-
 			foreach (VertexData vertexData in sourcePath.Vertices())
 			{
-				if (vertexData.IsLineTo)
+				if (vertexData.command == ShapePath.FlagsAndCommand.MoveTo
+					|| vertexData.IsLineTo)
 				{
-					if (!addedFirst)
+					// MoveTo always creates a new polygon
+					if (vertexData.command == ShapePath.FlagsAndCommand.MoveTo)
 					{
-						currentPoly.Add(new IntPoint(last.position.X * scaling, last.position.Y * scaling));
-						addedFirst = true;
-						first = last;
+						currentPoly = null;
 					}
 
+					// Construct current polygon if unset
+					if (currentPoly == null)
+					{
+						currentPoly = new Polygon();
+						allPolys.Add(currentPoly);
+					}
+
+					// Add polygon point for LineTo or MoveTo command
 					currentPoly.Add(new IntPoint(vertexData.position.X * scaling, vertexData.position.Y * scaling));
-					last = vertexData;
 				}
-				else
+				else if (vertexData.command != ShapePath.FlagsAndCommand.FlagNone)
 				{
-					addedFirst = false;
-					currentPoly = new Polygon();
-					allPolys.Add(currentPoly);
-
-					if (vertexData.IsMoveTo)
-					{
-						last = vertexData;
-					}
-					else
-					{
-						last = first;
-					}
+					// Clear active, reconstructed on first valid point
+					currentPoly = null;
 				}
 			}
 
