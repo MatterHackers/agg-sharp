@@ -34,13 +34,16 @@ using MatterHackers.Agg.VertexSource;
 
 namespace MatterHackers.DataConverters2D
 {
+	using Polygon = List<IntPoint>;
+	using Polygons = List<List<IntPoint>>;
+
 	public static class VertexSourceToClipperPolygons
 	{
-		public static VertexStorage CreateVertexStorage(this List<List<IntPoint>> polygons, double scaling = 1000)
+		public static VertexStorage CreateVertexStorage(this Polygons polygons, double scaling = 1000)
 		{
 			var output = new VertexStorage();
 
-			foreach (List<IntPoint> polygon in polygons)
+			foreach (Polygon polygon in polygons)
 			{
 				bool first = true;
 
@@ -63,10 +66,10 @@ namespace MatterHackers.DataConverters2D
 			return output;
 		}
 
-		public static List<List<IntPoint>> CreatePolygons(this IVertexSource sourcePath, double scaling = 1000)
+		public static Polygons CreatePolygons(this IVertexSource sourcePath, double scaling = 1000)
 		{
-			var allPolys = new List<List<IntPoint>>();
-			List<IntPoint> currentPoly = null;
+			var allPolys = new Polygons();
+			Polygon currentPoly = null;
 
 			var last = default(VertexData);
 			var first = default(VertexData);
@@ -90,7 +93,7 @@ namespace MatterHackers.DataConverters2D
 				else
 				{
 					addedFirst = false;
-					currentPoly = new List<IntPoint>();
+					currentPoly = new Polygon();
 					allPolys.Add(currentPoly);
 
 					if (vertexData.IsMoveTo)
