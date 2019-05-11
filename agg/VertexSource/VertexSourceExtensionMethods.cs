@@ -47,5 +47,10 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			return new VertexSourceApplyTransform(source, Affine.NewScaling(scale));
 		}
+
+		public static IVertexSource CombineWith(this IVertexSource source, IVertexSource target)
+		{
+			return new JoinPaths(source, target);
+		}
 	}
 }
