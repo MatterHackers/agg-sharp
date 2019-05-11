@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2013, Lars Brubaker
+Copyright (c) 2019, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,10 +27,10 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System.Collections.Generic;
 using ClipperLib;
 using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
-using System.Collections.Generic;
 
 namespace MatterHackers.DataConverters2D
 {
@@ -38,11 +38,12 @@ namespace MatterHackers.DataConverters2D
 	{
 		public static VertexStorage CreateVertexStorage(this List<List<IntPoint>> polygons, double scaling = 1000)
 		{
-			VertexStorage output = new VertexStorage();
+			var output = new VertexStorage();
 
 			foreach (List<IntPoint> polygon in polygons)
 			{
 				bool first = true;
+
 				foreach (IntPoint point in polygon)
 				{
 					if (first)
@@ -58,16 +59,20 @@ namespace MatterHackers.DataConverters2D
 
 				output.ClosePolygon();
 			}
+
 			return output;
 		}
 
 		public static List<List<IntPoint>> CreatePolygons(this IVertexSource sourcePath, double scaling = 1000)
 		{
-			List<List<IntPoint>> allPolys = new List<List<IntPoint>>();
+			var allPolys = new List<List<IntPoint>>();
 			List<IntPoint> currentPoly = null;
-			VertexData last = new VertexData();
-			VertexData first = new VertexData();
+
+			var last = default(VertexData);
+			var first = default(VertexData);
+
 			bool addedFirst = false;
+
 			foreach (VertexData vertexData in sourcePath.Vertices())
 			{
 				if (vertexData.IsLineTo)
@@ -78,6 +83,7 @@ namespace MatterHackers.DataConverters2D
 						addedFirst = true;
 						first = last;
 					}
+
 					currentPoly.Add(new IntPoint((long)(vertexData.position.X * scaling), (long)(vertexData.position.Y * scaling)));
 					last = vertexData;
 				}
@@ -86,6 +92,7 @@ namespace MatterHackers.DataConverters2D
 					addedFirst = false;
 					currentPoly = new List<IntPoint>();
 					allPolys.Add(currentPoly);
+
 					if (vertexData.IsMoveTo)
 					{
 						last = vertexData;
