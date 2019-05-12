@@ -3300,7 +3300,9 @@ namespace MatterHackers.Agg.UI
 		{
 			foreach (GuiWidget child in Children)
 			{
-				if (child.Visible && child.Selectable)
+				if (child.Visible
+					&& child.Selectable
+					&& child.Enabled)
 				{
 					child.AddAllTabStopsRecursive(allWidgetsThatAreTabStops);
 				}
@@ -3316,7 +3318,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (Parent != null)
 			{
-				List<GuiWidget> allWidgetsThatAreTabStops = new List<GuiWidget>();
+				var allWidgetsThatAreTabStops = new List<GuiWidget>();
 
 				GuiWidget topParent = Parent;
 				while (topParent != null && topParent.Parent != null)
@@ -3325,6 +3327,7 @@ namespace MatterHackers.Agg.UI
 				}
 
 				topParent.AddAllTabStopsRecursive(allWidgetsThatAreTabStops);
+
 				if (allWidgetsThatAreTabStops.Count > 0)
 				{
 					allWidgetsThatAreTabStops.Sort(SortOnTabIndex);
@@ -3363,6 +3366,7 @@ namespace MatterHackers.Agg.UI
 		public virtual void OnKeyDown(KeyEventArgs keyEvent)
 		{
 			GuiWidget childWithFocus = GetChildContainingFocus();
+
 			if (childWithFocus != null && childWithFocus.Visible && childWithFocus.Enabled)
 			{
 				childWithFocus.OnKeyDown(keyEvent);
