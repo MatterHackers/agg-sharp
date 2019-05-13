@@ -123,15 +123,15 @@ namespace MatterHackers.Agg.Font
 
 		private double emSizeInPixels;
 		private double currentEmScaling;
-		private bool flatenCurves = true;
+		private bool flattenCurves = true;
 
-		public StyledTypeFace(TypeFace typeFace, double emSizeInPoints, bool underline = false, bool flatenCurves = true)
+		public StyledTypeFace(TypeFace typeFace, double emSizeInPoints, bool underline = false, bool flattenCurves = true)
 		{
 			this.TypeFace = typeFace;
 			emSizeInPixels = emSizeInPoints / PointsPerInch * PixelsPerInch;
 			currentEmScaling = emSizeInPixels / typeFace.UnitsPerEm;
 			DoUnderline = underline;
-			FlatenCurves = flatenCurves;
+			FlattenCurves = flattenCurves;
 		}
 
 		public bool DoUnderline { get; set; }
@@ -141,10 +141,10 @@ namespace MatterHackers.Agg.Font
 		/// <para>You may want to disable this so you can flatten the curve after other transforms have been applied,</para>
 		/// <para>such as skewing or scaling.  Rotation and Translation will not alter how a curve is flattened.</para>
 		/// </summary>
-		public bool FlatenCurves
+		public bool FlattenCurves
 		{
-			get => flatenCurves;
-			set => flatenCurves = value;
+			get => flattenCurves;
+			set => flattenCurves = value;
 		}
 
 		/// <summary>
@@ -229,7 +229,7 @@ namespace MatterHackers.Agg.Font
 				glyphTransform *= Affine.NewScaling(currentEmScaling);
 				IVertexSource characterGlyph = new VertexSourceApplyTransform(sourceGlyph, glyphTransform);
 
-				if (FlatenCurves)
+				if (FlattenCurves)
 				{
 					characterGlyph = new FlattenCurves(characterGlyph)
 					{

@@ -3291,12 +3291,19 @@ namespace MatterHackers.Agg.UI
 			KeyPressed?.Invoke(this, keyPressEvent);
 		}
 
-		private static int SortOnTabIndex(GuiWidget one, GuiWidget two)
+		/// <summary>
+		/// Gets all active descendants marked as TabStops
+		/// </summary>
+		/// <returns>A populated list of active TabStop descendants</returns>
+		protected List<GuiWidget> ActiveTabStops()
 		{
-			return one.TabIndex.CompareTo(two.TabIndex);
+			var tabStops = new List<GuiWidget>();
+			this.ActiveTabStops(tabStops);
+
+			return tabStops;
 		}
 
-		private void AddAllTabStopsRecursive(List<GuiWidget> allWidgetsThatAreTabStops)
+		private void ActiveTabStops(List<GuiWidget> tabStops)
 		{
 			foreach (GuiWidget child in Children)
 			{
@@ -3304,13 +3311,13 @@ namespace MatterHackers.Agg.UI
 					&& child.Selectable
 					&& child.Enabled)
 				{
-					child.AddAllTabStopsRecursive(allWidgetsThatAreTabStops);
+					child.ActiveTabStops(tabStops);
 				}
 			}
 
-			if (TabStop)
+			if (this.TabStop)
 			{
-				allWidgetsThatAreTabStops.Add(this);
+				tabStops.Add(this);
 			}
 		}
 
@@ -3318,31 +3325,30 @@ namespace MatterHackers.Agg.UI
 		{
 			if (Parent != null)
 			{
-				var allWidgetsThatAreTabStops = new List<GuiWidget>();
-
 				GuiWidget topParent = Parent;
 				while (topParent != null && topParent.Parent != null)
 				{
 					topParent = topParent.Parent;
 				}
 
-				topParent.AddAllTabStopsRecursive(allWidgetsThatAreTabStops);
+				var tabStops = topParent.ActiveTabStops();
 
-				if (allWidgetsThatAreTabStops.Count > 0)
+				if (tabStops.Count > 0)
 				{
-					allWidgetsThatAreTabStops.Sort(SortOnTabIndex);
+					// Order by TabIndex
+					tabStops = tabStops.OrderBy(t => t.TabIndex).ToList();
 
-					int currentIndex = allWidgetsThatAreTabStops.IndexOf(this);
-					int nextIndex = (currentIndex + andvanceAmount) % allWidgetsThatAreTabStops.Count;
+					int currentIndex = tabStops.IndexOf(this);
+					int nextIndex = (currentIndex + andvanceAmount) % tabStops.Count;
 					if (nextIndex < 0)
 					{
-						nextIndex += allWidgetsThatAreTabStops.Count;
+						nextIndex += tabStops.Count;
 					}
 
 					if (currentIndex != nextIndex)
 					{
-						allWidgetsThatAreTabStops[nextIndex].Focus();
-						allWidgetsThatAreTabStops[nextIndex].OnKeyDown(new KeyEventArgs(Keys.A | Keys.Control));
+						tabStops[nextIndex].Focus();
+						tabStops[nextIndex].OnKeyDown(new KeyEventArgs(Keys.A | Keys.Control));
 					}
 				}
 			}

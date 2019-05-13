@@ -27,10 +27,10 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
@@ -42,12 +42,12 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <summary>
 		/// Transforms the plane onto the z = 0 plane
 		/// </summary>
-		private Matrix4X4 flatentMatrix;
+		private Matrix4X4 flattenedMatrix;
 
 		/// <summary>
 		/// Transforms from z = 0 back to the defined plane
 		/// </summary>
-		private Matrix4X4 invFlatentMatrix;
+		private Matrix4X4 invFlattenedMatrix;
 
 		private List<List<Vector2>> openPolygonList = new List<List<Vector2>>();
 		private Dictionary<ulong, List<int>> startIndexes = new Dictionary<ulong, List<int>>();
@@ -61,10 +61,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		public Plane SlicePlane
 		{
-			get
-			{
-				return _slicePlane;
-			}
+			get => _slicePlane;
 			set
 			{
 				if (_slicePlane != value)
@@ -72,9 +69,9 @@ namespace MatterHackers.PolygonMesh.Csg
 					_slicePlane = value;
 					var n = _slicePlane.Normal;
 					Vector3 up = new Vector3(n.Y, n.Z, n.X);
-					invFlatentMatrix = Matrix4X4.LookAt(Vector3.Zero, n, up);
-					invFlatentMatrix *= Matrix4X4.CreateTranslation(n * _slicePlane.DistanceFromOrigin);
-					flatentMatrix = invFlatentMatrix.Inverted;
+					invFlattenedMatrix = Matrix4X4.LookAt(Vector3.Zero, n, up);
+					invFlattenedMatrix *= Matrix4X4.CreateTranslation(n * _slicePlane.DistanceFromOrigin);
+					flattenedMatrix = invFlattenedMatrix.Inverted;
 				}
 			}
 		}
@@ -96,7 +93,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			//}
 
 			//// collect all the segments this plane intersects and record them in unordered segments in z 0 space
-			//var meshTo0Plane = matrix == null ? flatentMatrix : matrix.Value * flatentMatrix;
+			//var meshTo0Plane = matrix == null ? flattenedMatrix : matrix.Value * flatentMatrix;
 			//foreach (var face in mesh.Faces)
 			//{
 			//	var start = Vector3.Zero;

@@ -54,7 +54,7 @@ namespace MatterHackers.Agg.UI
 			get => Printer.TypeFaceStyle.EmSizeInPoints / GuiWidget.DeviceScale;
 			set
 			{
-				Printer.TypeFaceStyle = new StyledTypeFace(Printer.TypeFaceStyle.TypeFace, value * GuiWidget.DeviceScale, Printer.TypeFaceStyle.DoUnderline, Printer.TypeFaceStyle.FlatenCurves);
+				Printer.TypeFaceStyle = new StyledTypeFace(Printer.TypeFaceStyle.TypeFace, value * GuiWidget.DeviceScale, Printer.TypeFaceStyle.DoUnderline, Printer.TypeFaceStyle.FlattenCurves);
 
 				if (AutoExpandBoundsToText)
 				{
