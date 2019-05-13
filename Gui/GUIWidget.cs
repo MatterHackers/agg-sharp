@@ -3291,11 +3291,18 @@ namespace MatterHackers.Agg.UI
 			KeyPressed?.Invoke(this, keyPressEvent);
 		}
 
-
 		/// <summary>
 		/// Gets all active descendants marked as TabStops
 		/// </summary>
-		/// <param name="tabStops">The list to populate</param>
+		/// <returns>A populated list of active TabStop descendants</returns>
+		protected List<GuiWidget> ActiveTabStops()
+		{
+			var tabStops = new List<GuiWidget>();
+			this.ActiveTabStops(tabStops);
+
+			return tabStops;
+		}
+
 		private void ActiveTabStops(List<GuiWidget> tabStops)
 		{
 			foreach (GuiWidget child in Children)
@@ -3318,15 +3325,13 @@ namespace MatterHackers.Agg.UI
 		{
 			if (Parent != null)
 			{
-
 				GuiWidget topParent = Parent;
 				while (topParent != null && topParent.Parent != null)
 				{
 					topParent = topParent.Parent;
 				}
 
-				var tabStops = new List<GuiWidget>();
-				topParent.ActiveTabStops(tabStops);
+				var tabStops = topParent.ActiveTabStops();
 
 				if (tabStops.Count > 0)
 				{
