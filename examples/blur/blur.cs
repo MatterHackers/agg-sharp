@@ -69,7 +69,7 @@ namespace MatterHackers.Agg
 
 			m_sl = new ScanlineCachePacked8();
 
-			StyledTypeFace typeFaceForLargeA = new StyledTypeFace(LiberationSansFont.Instance, 300, flatenCurves: false);
+			StyledTypeFace typeFaceForLargeA = new StyledTypeFace(LiberationSansFont.Instance, 300, flattenCurves: false);
 			m_path = typeFaceForLargeA.GetGlyphForCharacter('a');
 
 			Affine shape_mtx = Affine.NewIdentity();

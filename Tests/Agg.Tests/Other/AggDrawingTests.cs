@@ -167,27 +167,27 @@ namespace MatterHackers.Agg.Tests
 			CheckTestAgainstControl(testImage, "DrawString");
 
 			TypeFacePrinter stringPrinterA = new TypeFacePrinter("A");
-			stringPrinterA.TypeFaceStyle.FlatenCurves = false;
+			stringPrinterA.TypeFaceStyle.FlattenCurves = false;
 			CheckTestAgainstControl(stringPrinterA, "ShapeStringANotFlattened");
-			stringPrinterA.TypeFaceStyle.FlatenCurves = true;
+			stringPrinterA.TypeFaceStyle.FlattenCurves = true;
 			CheckTestAgainstControl(stringPrinterA, "ShapeStringAFlattened");
 
 			TypeFacePrinter stringPrintere = new TypeFacePrinter("e");
-			stringPrintere.TypeFaceStyle.FlatenCurves = false;
+			stringPrintere.TypeFaceStyle.FlattenCurves = false;
 			CheckTestAgainstControl(stringPrintere, "ShapeStringeNotFlattened");
-			stringPrintere.TypeFaceStyle.FlatenCurves = true;
+			stringPrintere.TypeFaceStyle.FlattenCurves = true;
 			CheckTestAgainstControl(stringPrintere, "ShapeStringeFlattened");
 
 			TypeFacePrinter stringPrinterAe = new TypeFacePrinter("Ae");
-			stringPrinterAe.TypeFaceStyle.FlatenCurves = false;
+			stringPrinterAe.TypeFaceStyle.FlattenCurves = false;
 			CheckTestAgainstControl(stringPrinterAe, "ShapeStringAeNotFlattened");
-			stringPrinterAe.TypeFaceStyle.FlatenCurves = true;
+			stringPrinterAe.TypeFaceStyle.FlattenCurves = true;
 			CheckTestAgainstControl(stringPrinterAe, "ShapeStringAeFlattened");
 
 			TypeFacePrinter stringPrinterTest = new TypeFacePrinter("Test");
-			stringPrinterTest.TypeFaceStyle.FlatenCurves = false;
+			stringPrinterTest.TypeFaceStyle.FlattenCurves = false;
 			CheckTestAgainstControl(stringPrinterTest, "ShapeStringTestNotFlattened");
-			stringPrinterTest.TypeFaceStyle.FlatenCurves = true;
+			stringPrinterTest.TypeFaceStyle.FlattenCurves = true;
 			CheckTestAgainstControl(stringPrinterTest, "ShapeStringTestFlattened");
 		}
 

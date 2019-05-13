@@ -38,7 +38,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		private double endAngle;
 
-		private double flatenDeltaAngle;
+		private double flattenedDeltaAngle;
 
 		private Vector2 origin;
 
@@ -97,7 +97,7 @@ namespace MatterHackers.Agg.VertexSource
 		public override IEnumerable<VertexData> Vertices()
 		{
 			double averageRadius = (Math.Abs(radius.X) + Math.Abs(radius.Y)) / 2;
-			flatenDeltaAngle = Math.Acos(averageRadius / (averageRadius + 0.125 / ResolutionScale)) * 2;
+			flattenedDeltaAngle = Math.Acos(averageRadius / (averageRadius + 0.125 / ResolutionScale)) * 2;
 			while (endAngle < startAngle)
 			{
 				endAngle += Math.PI * 2.0;
@@ -112,15 +112,16 @@ namespace MatterHackers.Agg.VertexSource
 
 				vertexData.command = FlagsAndCommand.LineTo;
 				double angle = startAngle;
-				int numSteps = (int)((endAngle - startAngle) / flatenDeltaAngle);
-                for (int i=0; i<=numSteps; i++)
+				int numSteps = (int)((endAngle - startAngle) / flattenedDeltaAngle);
+
+				for (int i = 0; i <= numSteps; i++)
 				{
 					if (angle < endAngle)
 					{
 						vertexData.position = new Vector2(origin.X + Math.Cos(angle) * radius.X, origin.Y + Math.Sin(angle) * radius.Y);
 						yield return vertexData;
 
-						angle += flatenDeltaAngle;
+						angle += flattenedDeltaAngle;
 					}
 				}
 
@@ -134,13 +135,13 @@ namespace MatterHackers.Agg.VertexSource
 
 				vertexData.command = FlagsAndCommand.LineTo;
 				double angle = endAngle;
-				int numSteps = (int)((endAngle - startAngle) / flatenDeltaAngle);
+				int numSteps = (int)((endAngle - startAngle) / flattenedDeltaAngle);
 				for (int i = 0; i <= numSteps; i++)
 				{
 					vertexData.position = new Vector2(origin.X + Math.Cos(angle) * radius.X, origin.Y + Math.Sin(angle) * radius.Y);
 					yield return vertexData;
 
-					angle -= flatenDeltaAngle;
+					angle -= flattenedDeltaAngle;
 				}
 
 				vertexData.position = new Vector2(origin.X + Math.Cos(startAngle) * radius.X, origin.Y + Math.Sin(startAngle) * radius.Y);
