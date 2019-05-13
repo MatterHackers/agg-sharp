@@ -202,7 +202,7 @@ namespace MatterHackers.Agg.Font
 			var bounds = glyphForCharacter.GetBounds();
 
 			var charImage = new ImageBuffer(
-				Math.Max((int)(bounds.Width + .5), 1) + 1,
+				Math.Max((int)(bounds.Right + .5), 1) + 1,
 				Math.Max((int)Math.Ceiling(EmSizeInPixels + (-DescentInPixels) + .5), 1) + 1,
 				32,
 				new BlenderPreMultBGRA());
