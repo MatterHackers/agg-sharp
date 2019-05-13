@@ -3291,10 +3291,6 @@ namespace MatterHackers.Agg.UI
 			KeyPressed?.Invoke(this, keyPressEvent);
 		}
 
-		private static int SortOnTabIndex(GuiWidget one, GuiWidget two)
-		{
-			return one.TabIndex.CompareTo(two.TabIndex);
-		}
 
 		/// <summary>
 		/// Gets all active descendants marked as TabStops
@@ -3334,7 +3330,8 @@ namespace MatterHackers.Agg.UI
 
 				if (tabStops.Count > 0)
 				{
-					tabStops.Sort(SortOnTabIndex);
+					// Order by TabIndex
+					tabStops = tabStops.OrderBy(t => t.TabIndex).ToList();
 
 					int currentIndex = tabStops.IndexOf(this);
 					int nextIndex = (currentIndex + andvanceAmount) % tabStops.Count;
