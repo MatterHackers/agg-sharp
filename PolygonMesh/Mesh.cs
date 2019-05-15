@@ -456,7 +456,9 @@ namespace MatterHackers.PolygonMesh
 		{
 			for (int i = 0; i < Faces.Count; i++)
 			{
-				Faces[i].CalculateNormal(Vertices);
+				var face = Faces[i];
+				face.CalculateNormal(Vertices);
+				Faces[i] = face;
 			}
 
 			MarkAsChanged();

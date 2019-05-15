@@ -27,85 +27,46 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
 using System.Collections.Generic;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
 {
-	public class FaceList : List<Face>
+	public struct Face
 	{
-		public FaceList()
+		public Vector3Float normal;
+		public int v0;
+		public int v1;
+		public int v2;
+
+		public Face(int v0, int v1, int v2, List<Vector3Float> vertices)
 		{
+			this.v0 = v0;
+			this.v1 = v1;
+			this.v2 = v2;
+
+			normal = Vector3Float.Zero;
+
+			CalculateNormal(vertices);
 		}
 
-		public FaceList(IEnumerable<int> f, List<Vector3Float> vertices)
+		public Face(int v0, int v1, int v2, Vector3Float normal)
 		{
-			AddFromIntArray(f, vertices);
+			this.v0 = v0;
+			this.v1 = v1;
+			this.v2 = v2;
+
+			this.normal = normal;
 		}
 
-		public FaceList(FaceList f)
+		public void CalculateNormal(List<Vector3Float> vertices)
 		{
-			for (int i = 0; i < f.Count; i++)
-			{
-				Add(new Face(f[i].v0, f[i].v1, f[i].v2, f[i].normal));
-			}
-		}
-
-		public FaceList(IEnumerable<Face> faces)
-		{
-			foreach (var face in faces)
-			{
-				Add(new Face(face.v0, face.v1, face.v2, face.normal));
-			}
-		}
-
-		/// <summary>
-		/// Add a face from vertex indexes and calculate the normal (from vertex positions).
-		/// </summary>
-		/// <param name="v0">Index of vertex 0.</param>
-		/// <param name="v1">Index of vertex 1.</param>
-		/// <param name="v2">Index of vertex 2.</param>
-		/// <param name="vertices">The list the vertex position data is in.</param>
-		public void Add(int v0, int v1, int v2, List<Vector3Float> vertices)
-		{
-			this.Add(new Face(v0, v1, v2, vertices));
-		}
-
-		public void Add(int v0, int v1, int v2, Vector3Float normal)
-		{
-			this.Add(new Face(v0, v1, v2, normal));
-		}
-
-		public void AddFromIntArray(IEnumerable<int> f, List<Vector3Float> vertices)
-		{
-			this.Clear();
-
-			var enumeratior = f.GetEnumerator();
-			while (enumeratior.MoveNext())
-			{
-				var v0 = enumeratior.Current;
-				enumeratior.MoveNext();
-				var v1 = enumeratior.Current;
-				enumeratior.MoveNext();
-				var v2 = enumeratior.Current;
-
-				Add(item: new Face(v0, v1, v2, vertices));
-			}
-		}
-
-		public int[] ToIntArray()
-		{
-			var fa = new int[Count * 3];
-			int i = 0;
-			foreach (var face in this)
-			{
-				fa[i++] = face.v0;
-				fa[i++] = face.v1;
-				fa[i++] = face.v2;
-			}
-
-			return fa;
+			var position0 = vertices[this.v0];
+			var position1 = vertices[this.v1];
+			var position2 = vertices[this.v2];
+			var v11MinusV0 = position1 - position0;
+			var v2MinusV0 = position2 - position0;
+			normal = v11MinusV0.Cross(v2MinusV0).GetNormal();
 		}
 	}
 }
