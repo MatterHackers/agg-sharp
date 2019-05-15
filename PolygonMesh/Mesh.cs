@@ -454,11 +454,9 @@ namespace MatterHackers.PolygonMesh
 
 		public void CalculateNormals()
 		{
-			for (int i = 0; i < Faces.Count; i++)
+			foreach (var face in Faces)
 			{
-				var face = Faces[i];
 				face.CalculateNormal(Vertices);
-				Faces[i] = face;
 			}
 
 			MarkAsChanged();
