@@ -32,7 +32,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
 {
-	public struct Face
+	public class Face
 	{
 		public Vector3Float normal;
 		public int v0;
