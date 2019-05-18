@@ -1,9 +1,3 @@
-using MatterHackers.Agg.Font;
-using MatterHackers.Agg.Image;
-using MatterHackers.Agg.Transform;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
-
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
@@ -24,6 +18,11 @@ using MatterHackers.VectorMath;
 //----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
+using MatterHackers.Agg.Font;
+using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Transform;
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg
 {
@@ -45,7 +44,12 @@ namespace MatterHackers.Agg
 		protected Stack<Affine> affineTransformStack = new Stack<Affine>();
 		protected ScanlineRasterizer rasterizer;
 
-		public enum TransformQuality { Fastest, Best };
+		public enum TransformQuality
+		{
+			Fastest,
+			Best
+		}
+
 		public TransformQuality ImageRenderQuality { get; set; } = TransformQuality.Fastest;
 
 		public Graphics2D()
@@ -78,6 +82,18 @@ namespace MatterHackers.Agg
 			get { return affineTransformStack.Count; }
 		}
 
+		/// <summary>
+		/// Draws an arc representing a portion of an ellipse specified by a Rectangle structure.
+		/// </summary>
+		/// <param name="color">The color to draw in.</param>
+		/// <param name="rect">Structure that defines the boundaries of the ellipse.</param>
+		/// <param name="startAngle">Angle in degrees measured clockwise from the x-axis to the starting point of the arc.</param>
+		/// <param name="sweepAngle">Angle in degrees measured clockwise from the startAngle parameter to ending point of the arc.</param>
+		public void DrawArc(Color color, RectangleDouble rect, int startAngle, int sweepAngle)
+		{
+			throw new NotImplementedException();
+		}
+
 		public Affine PopTransform()
 		{
 			if (affineTransformStack.Count == 1)
@@ -107,6 +123,11 @@ namespace MatterHackers.Agg
 		{
 			affineTransformStack.Pop();
 			affineTransformStack.Push(value);
+		}
+
+		public void DrawLine(Color color, Vector2 start, Vector2 end)
+		{
+			Line(start, end, color);
 		}
 
 		public ScanlineRasterizer Rasterizer
@@ -164,14 +185,18 @@ namespace MatterHackers.Agg
 		}
 
 		public abstract void Render(IImageByte imageSource,
-			double x, double y,
+			double x,
+			double y,
 			double angleRadians,
-			double scaleX, double ScaleY);
+			double scaleX,
+			double scaleY);
 
 		public abstract void Render(IImageFloat imageSource,
-			double x, double y,
+			double x,
+			double y,
 			double angleRadians,
-			double scaleX, double ScaleY);
+			double scaleX,
+			double scaleY);
 
 		public void Render(IVertexSource vertexSource, double x, double y, IColorType color)
 		{
@@ -186,14 +211,34 @@ namespace MatterHackers.Agg
 		public abstract void Clear(IColorType color);
 
 		public abstract int Width { get; }
+
 		public abstract int Height { get; }
 
-		public void DrawString(string Text, double x, double y, double pointSize = 12,
-			Justification justification = Justification.Left, Baseline baseline = Baseline.Text,
-			Color color = new Color(), bool drawFromHintedCach = false, Color backgroundColor = new Color(),
+		public void DrawString(string text,
+			Vector2 position,
+			double pointSize = 12,
+			Justification justification = Justification.Left,
+			Baseline baseline = Baseline.Text,
+			Color color = default(Color),
+			bool drawFromHintedCach = false,
+			Color backgroundColor = default(Color),
 			bool bold = false)
 		{
-			TypeFacePrinter stringPrinter = new TypeFacePrinter(Text, pointSize, new Vector2(x, y), justification, baseline, bold);
+			DrawString(text, position.X, position.Y, pointSize, justification, baseline, color, drawFromHintedCach, backgroundColor, bold);
+		}
+
+		public void DrawString(string text,
+			double x,
+			double y,
+			double pointSize = 12,
+			Justification justification = Justification.Left,
+			Baseline baseline = Baseline.Text,
+			Color color = default(Color),
+			bool drawFromHintedCach = false,
+			Color backgroundColor = default(Color),
+			bool bold = false)
+		{
+			TypeFacePrinter stringPrinter = new TypeFacePrinter(text, pointSize, new Vector2(x, y), justification, baseline, bold);
 			if (color.Alpha0To255 == 0)
 			{
 				color = Color.Black;
@@ -232,7 +277,7 @@ namespace MatterHackers.Agg
 			lineToDraw.LineTo(x2, y2);
 
 			this.Render(
-				new Stroke(lineToDraw, strokeWidth), 
+				new Stroke(lineToDraw, strokeWidth),
 				color);
 		}
 
