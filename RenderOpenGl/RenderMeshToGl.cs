@@ -42,6 +42,7 @@ namespace MatterHackers.RenderOpenGl
 		Hidden,
 		Shaded,
 		Outlines,
+		Manifold,
 		Polygons,
 		Overhang,
 		Materials,

@@ -227,7 +227,10 @@ namespace MatterHackers.PolygonMesh
 				int iv0 = GetIndex(Vertices[face.v0]);
 				int iv1 = GetIndex(Vertices[face.v1]);
 				int iv2 = GetIndex(Vertices[face.v2]);
-				newFaces.Add(iv0, iv1, iv2, newVertices);
+				if (iv0 != iv1 && iv1 != iv2 && iv2 != iv0)
+				{
+					newFaces.Add(iv0, iv1, iv2, newVertices);
+				}
 			}
 
 			this.Faces = newFaces;
@@ -289,7 +292,10 @@ namespace MatterHackers.PolygonMesh
 				int iv0 = GetIndex(face.v0);
 				int iv1 = GetIndex(face.v1);
 				int iv2 = GetIndex(face.v2);
-				newFaces.Add(iv0, iv1, iv2, newVertices);
+				if (iv0 != iv1 && iv1 != iv2 && iv2 != iv0)
+				{
+					newFaces.Add(iv0, iv1, iv2, newVertices);
+				}
 			}
 
 			this.Faces = newFaces;
