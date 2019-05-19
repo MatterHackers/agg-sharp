@@ -155,16 +155,17 @@ namespace MatterHackers.Agg.UI
 
 			foreach (Action action in callNow)
 			{
+#if DEBUG
+				action?.Invoke();
+#else
 				try
 				{
 					action?.Invoke();
 				}
 				catch (Exception invokeException)
 				{
-#if DEBUG
-					throw (invokeException);
-#endif
 				}
+#endif
 			}
 		}
 

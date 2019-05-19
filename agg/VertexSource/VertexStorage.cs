@@ -402,6 +402,16 @@ namespace MatterHackers.Agg.VertexSource
 		}
 
 		/// <summary>
+		/// Draws a quadratic Bézier curve from the current point to the target point using the supplied control point.
+		/// </summary>
+		/// <param name="controlPoint">The control point</param>
+		/// <param name="point">The new target point</param>
+		public void curve3(Vector2 controlPoint, Vector2 point)
+		{
+			curve3(controlPoint.X, controlPoint.Y, point.X, point.Y);
+		}
+
+		/// <summary>
 		/// Draws a quadratic Bézier curve from the current point to (x,y) using (xControl,yControl) as the control point.
 		/// </summary>
 		/// <param name="xControl"></param>
@@ -555,11 +565,9 @@ namespace MatterHackers.Agg.VertexSource
 		//--------------------------------------------------------------------
 		public void flip_x(double x1, double x2)
 		{
-			int i;
-			double x, y;
-			for (i = 0; i < vertexDataManager.total_vertices(); i++)
+			for (int i = 0; i < vertexDataManager.total_vertices(); i++)
 			{
-				ShapePath.FlagsAndCommand PathAndFlags = vertexDataManager.vertex(i, out x, out y);
+				ShapePath.FlagsAndCommand PathAndFlags = vertexDataManager.vertex(i, out double x, out double y);
 				if (ShapePath.is_vertex(PathAndFlags))
 				{
 					vertexDataManager.modify_vertex(i, x2 - x + x1, y);
@@ -569,11 +577,9 @@ namespace MatterHackers.Agg.VertexSource
 
 		public void flip_y(double y1, double y2)
 		{
-			int i;
-			double x, y;
-			for (i = 0; i < vertexDataManager.total_vertices(); i++)
+			for (int i = 0; i < vertexDataManager.total_vertices(); i++)
 			{
-				ShapePath.FlagsAndCommand PathAndFlags = vertexDataManager.vertex(i, out x, out y);
+				ShapePath.FlagsAndCommand PathAndFlags = vertexDataManager.vertex(i, out double x, out double y);
 				if (ShapePath.is_vertex(PathAndFlags))
 				{
 					vertexDataManager.modify_vertex(i, x, y2 - y + y1);
@@ -673,6 +679,11 @@ namespace MatterHackers.Agg.VertexSource
 		public ShapePath.FlagsAndCommand last_vertex(out double x, out double y)
 		{
 			return vertexDataManager.last_vertex(out x, out y);
+		}
+
+		public void LineTo(Point2D position)
+		{
+			LineTo(position.x, position.y);
 		}
 
 		public void LineTo(Vector2 position)
