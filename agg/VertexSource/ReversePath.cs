@@ -1,4 +1,5 @@
 ﻿using MatterHackers.VectorMath;
+using System;
 
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
@@ -23,31 +24,53 @@
 //
 //----------------------------------------------------------------------------
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MatterHackers.Agg.VertexSource
 {
 
 	public class ReversePath : VertexSourceLegacySupport
 	{
+		private bool convertNextToMove;
+
 		public ReversePath(IVertexSource sourcePath)
 		{
-			SourcPath = sourcePath;
+			SourcePath = sourcePath;
 		}
 
-		public IVertexSource SourcPath { get; }
+		public IVertexSource SourcePath { get; }
 
 		public override IEnumerable<VertexData> Vertices()
 		{
-				IVertexSource sourcePath = SourcPath;
-				foreach (VertexData vertexData in sourcePath.Vertices())
+			IVertexSource sourcePath = SourcePath;
+			foreach (VertexData vertexData in sourcePath.Vertices().Reverse())
+			{
+				// when we hit the initial stop. Skip it
+				if (vertexData.IsClose || vertexData.IsStop)
 				{
-					// when we hit the initial stop. Skip it
-					if (ShapePath.is_stop(vertexData.command))
+					if (vertexData.IsClose)
 					{
-						break;
+						convertNextToMove = true;
 					}
-					yield return vertexData;
+
+					continue;
 				}
+
+				if (convertNextToMove)
+				{
+					convertNextToMove = false;
+
+					yield return new VertexData()
+					{
+						position = vertexData.position,
+						command = ShapePath.FlagsAndCommand.MoveTo
+					};
+
+					continue;
+				}
+
+				yield return vertexData;
+			}
 
 			// and send the actual stop
 			yield return new VertexData(ShapePath.FlagsAndCommand.EndPoly | ShapePath.FlagsAndCommand.FlagClose | ShapePath.FlagsAndCommand.FlagCCW, new Vector2());
