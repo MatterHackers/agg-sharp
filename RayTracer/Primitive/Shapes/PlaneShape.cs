@@ -57,14 +57,14 @@ namespace MatterHackers.RayTracer
 			double distanceToHit = plane.GetDistanceToIntersection(ray, out inFront);
 			if (distanceToHit > 0)
 			{
-				IntersectInfo info = new IntersectInfo();
-				info.closestHitObject = this;
-				info.hitType = IntersectionType.FrontFace;
-				info.HitPosition = ray.origin + ray.directionNormal * distanceToHit;
-				info.normalAtHit = plane.Normal;
-				info.distanceToHit = distanceToHit;
-
-				return info;
+				return new IntersectInfo
+				{
+					closestHitObject = this,
+					hitType = IntersectionType.FrontFace,
+					HitPosition = ray.origin + ray.directionNormal * distanceToHit,
+					normalAtHit = plane.Normal,
+					distanceToHit = distanceToHit
+				};
 			}
 
 			return null;

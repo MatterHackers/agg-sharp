@@ -751,7 +751,7 @@ namespace MatterHackers.Agg.VertexSource
 				}
 				else if (vertexData.IsClose)
 				{
-					ReverseAndAdd(dstring, pendingPositions);
+					ReverseAndAdd(dstring, pendingPositions, closePath: true);
 				}
 				else // Assuming this is a line to. if (vertexData.IsLineTo)
 				{
@@ -759,7 +759,7 @@ namespace MatterHackers.Agg.VertexSource
 				}
 			}
 
-			if(pendingPositions.Count > 0)
+			if (pendingPositions.Count > 0)
 			{
 				ReverseAndAdd(dstring, pendingPositions);
 			}
@@ -767,10 +767,11 @@ namespace MatterHackers.Agg.VertexSource
 			return dstring.ToString();
 		}
 
-		private static void ReverseAndAdd(StringBuilder dstring, List<Vector2> pendingPositions)
+		private static void ReverseAndAdd(StringBuilder dstring, List<Vector2> pendingPositions, bool closePath = false)
 		{
 			// reverse the output so it is wound correctly for SVG
 			bool first = true;
+
 			for (int i = pendingPositions.Count - 1; i >= 0; i--)
 			{
 				if (first)
@@ -783,7 +784,12 @@ namespace MatterHackers.Agg.VertexSource
 					dstring.Append($"L {pendingPositions[i].X:0.###} {pendingPositions[i].Y:0.###}");
 				}
 			}
-			dstring.Append("Z");
+
+			if (closePath)
+			{
+				dstring.Append("Z");
+			}
+
 			pendingPositions.Clear();
 		}
 
