@@ -31,7 +31,7 @@ using System.Collections.Generic;
 
 namespace MatterHackers.DataConverters3D
 {
-	public class SelectedChildren : List<string>
+	public class SelectedChildren : HashSet<string>
 	{
 		public override string ToString()
 		{
