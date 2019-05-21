@@ -303,7 +303,7 @@ namespace MatterHackers.DataConverters3D
 			AxisAlignedBoundingBox totalBounds = AxisAlignedBoundingBox.Empty();
 			foreach (var object3D in items)
 			{
-				totalBounds = AxisAlignedBoundingBox.Union(totalBounds, object3D.GetAxisAlignedBoundingBox(Matrix4X4.Identity));
+				totalBounds = AxisAlignedBoundingBox.Union(totalBounds, object3D.GetAxisAlignedBoundingBox());
 			}
 
 			return totalBounds;
