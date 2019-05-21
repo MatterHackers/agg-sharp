@@ -499,7 +499,9 @@ namespace MatterHackers.RenderOpenGl
 				GL.Disable(EnableCap.DepthTest);
 			}
 
+			this.affineTransformStack.Push(Affine.NewIdentity());
 			this.DrawAAShape(path, color);
+			this.affineTransformStack.Pop();
 
 			GL.PopMatrix();
 		}

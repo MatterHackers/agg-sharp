@@ -39,6 +39,7 @@ using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D.UndoCommands;
+using MatterHackers.Localizations;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.PolygonMesh.Processors;
@@ -575,11 +576,17 @@ namespace MatterHackers.DataConverters3D
 			{
 				var originalParent = this.Parent;
 
-				// Index items by ID
-				// but make sure we don't blow up if we find duplicate ids (had bad data that did this)
-				var allItemsByID = this.DescendantsAndSelf()
-					.GroupBy(p => p.ID, StringComparer.OrdinalIgnoreCase)
-					.ToDictionary(g => g.Key, g => g.First());
+				Dictionary<string, IObject3D> allItemsByID;
+
+				try
+				{
+					// Index items by ID
+					allItemsByID = this.DescendantsAndSelf().ToDictionary(i => i.ID);
+				}
+				catch
+				{
+					throw new Exception("Error cloning item due to duplicate identifiers".Localize());
+				}
 
 				using (var memoryStream = new MemoryStream())
 				using (var writer = new StreamWriter(memoryStream))
