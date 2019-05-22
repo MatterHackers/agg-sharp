@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2019, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,23 +27,26 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.Agg.UI
 {
 	public class ImageSequenceWidget : GuiWidget
 	{
 		private ImageSequence _imageSequence;
-		private Animation animation = new Animation();
+		private readonly Animation animation;
 		private double currentTime = 0;
 
 		public ImageSequenceWidget(int width, int height)
 		{
 			LocalBounds = new RectangleDouble(0, 0, width, height);
 
-			animation.DrawTarget = this;
+			animation = new Animation
+			{
+				DrawTarget = this
+			};
 			animation.Update += this.Animation_Update;
 
 			RunAnimation = true;
