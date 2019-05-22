@@ -44,20 +44,7 @@ namespace MatterHackers.Agg.UI
 			LocalBounds = new RectangleDouble(0, 0, width, height);
 
 			animation.DrawTarget = this;
-			animation.Update += (s, updateEvent) =>
-			{
-				var currentImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
-
-				currentTime += updateEvent.SecondsPassed;
-				while(ImageSequence.Time > 0 
-					&& currentTime > ImageSequence.Time)
-				{
-					currentTime -= ImageSequence.Time;
-				}
-
-				var newImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
-				updateEvent.ShouldDraw = currentImageIndex != newImageIndex;
-			};
+			animation.Update += this.Animation_Update;
 
 			RunAnimation = true;
 		}
@@ -94,6 +81,21 @@ namespace MatterHackers.Agg.UI
 			this.Width = ImageSequence.Width;
 			this.Height = ImageSequence.Height;
 			Invalidate();
+		}
+
+		private void Animation_Update(object sender, Animation.UpdateEvent updateEvent)
+		{
+			var currentImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
+
+			currentTime += updateEvent.SecondsPassed;
+			while (ImageSequence.Time > 0
+				&& currentTime > ImageSequence.Time)
+			{
+				currentTime -= ImageSequence.Time;
+			}
+
+			var newImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
+			updateEvent.ShouldDraw = currentImageIndex != newImageIndex;
 		}
 
 		public bool MaintainAspecRatio { get; set; } = true;
