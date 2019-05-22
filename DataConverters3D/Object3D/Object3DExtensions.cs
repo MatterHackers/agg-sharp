@@ -68,13 +68,13 @@ namespace MatterHackers.DataConverters3D
 
 		public static int Depth(this IObject3D item)
 		{
-			return item.Parents<IObject3D>().Count();
+			return item.Parents().Count();
 		}
 
 		[System.Diagnostics.Conditional("DEBUG")]
 		public static void DebugDepth(this IObject3D item, string extra = "")
 		{
-			Debug.WriteLine(new String(' ', item.Depth()) + $"({item.Depth()}) {item.GetType().Name} " + extra);
+			Debug.WriteLine(new string(' ', item.Depth()) + $"({item.Depth()}) {item.GetType().Name} " + extra);
 		}
 
 		private static void LoadLinkedMesh(this IObject3D item, CacheContext cacheContext, CancellationToken cancellationToken, Action<double, string> progress)
@@ -497,18 +497,14 @@ namespace MatterHackers.DataConverters3D
 		/// <summary>
 		/// Returns all ancestors of the current IObject3D matching the given type
 		/// </summary>
-		/// <typeparam name="T">The type filter</typeparam>
 		/// <param name="item">The context item</param>
-		/// <returns>The matching ancestor item</returns>
-		public static IEnumerable<T> Parents<T>(this IObject3D item) where T : IObject3D
+		/// <returns>The matching ancestor items</returns>
+		public static IEnumerable<IObject3D> Parents(this IObject3D item)
 		{
 			IObject3D context = item.Parent;
 			while (context != null)
 			{
-				if (context is T)
-				{
-					yield return (T)context;
-				}
+				yield return context;
 
 				context = context.Parent;
 			}

@@ -75,8 +75,8 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			// set the root item to the selection and then to the new item
-			var rootItem = selectedItem.Parents<IObject3D>().Where(i => scene.Children.Contains(i)).FirstOrDefault();
-			if(rootItem != null)
+			var rootItem = selectedItem.Parents().Where(i => scene.Children.Contains(i)).FirstOrDefault();
+			if (rootItem != null)
 			{
 				scene.SelectedItem = rootItem;
 				scene.SelectedItem = selectedItem;
