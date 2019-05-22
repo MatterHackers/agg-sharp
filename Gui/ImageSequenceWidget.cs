@@ -29,7 +29,6 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using MatterHackers.Agg.Image;
-using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
@@ -70,6 +69,7 @@ namespace MatterHackers.Agg.UI
 					{
 						_imageSequence.Invalidated -= ResetImageIndex;
 					}
+
 					_imageSequence = value;
 					animation.FramesPerSecond = _imageSequence.FramesPerSecond;
 					currentTime = 0;
@@ -101,11 +101,11 @@ namespace MatterHackers.Agg.UI
 			updateEvent.ShouldDraw = currentImageIndex != newImageIndex;
 		}
 
-		public bool MaintainAspecRatio { get; set; } = true;
+		public bool MaintainAspectRatio { get; set; } = true;
 
 		public bool RunAnimation
 		{
-			get { return animation != null && animation.IsRunning; }
+			get => animation != null && animation.IsRunning;
 			set
 			{
 				if (animation != null
@@ -130,23 +130,26 @@ namespace MatterHackers.Agg.UI
 			if (ImageSequence != null)
 			{
 				var currentImage = ImageSequence.GetImageByTime(currentTime);
-				var bottomLeft = Vector2.Zero;
 				var ratio = 1.0;
-				if (MaintainAspecRatio)
+
+				if (MaintainAspectRatio)
 				{
 					ratio = Math.Min(Width / currentImage.Width, Height / currentImage.Height);
-					if(!AllowStretching)
+					if (!AllowStretching)
 					{
 						ratio = Math.Min(ratio, 1);
 					}
 				}
 
-				graphics2D.Render(currentImage,
+				graphics2D.Render(
+					currentImage,
 					Width / 2 - (currentImage.Width * ratio) / 2,
 					Height / 2 - (currentImage.Height * ratio) / 2,
 					0,
-					ratio, ratio);
+					ratio,
+					ratio);
 			}
+
 			base.OnDraw(graphics2D);
 		}
 	}
