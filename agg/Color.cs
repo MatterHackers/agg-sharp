@@ -677,7 +677,7 @@ namespace MatterHackers.Agg
 		public static readonly Color Blue = new Color("#0000FF");
 		public static readonly Color Crimson = new Color("#DC143C");
 		public static readonly Color Cyan = new Color(0, 255, 255);
-		public static readonly Color DargBlue = new Color("#0000A0");
+		public static readonly Color DarkBlue = new Color("#0000A0");
 		public static readonly Color DarkGray = new Color(85, 85, 85);
 		public static readonly Color FireEngineRed = new Color("#F62817");
 		public static readonly Color Gray = new Color(125, 125, 125);
