@@ -46,6 +46,8 @@ namespace MatterHackers.Agg.UI
 			{
 				DrawTarget = this
 			};
+
+			// Register listeners
 			animation.Update += this.Animation_Update;
 
 			RunAnimation = true;
@@ -124,6 +126,14 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public bool AllowStretching { get; set; } = false;
+
+		public override void OnClosed(EventArgs e)
+		{
+			// Unregister listeners
+			animation.Update -= this.Animation_Update;
+
+			base.OnClosed(e);
+		}
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
