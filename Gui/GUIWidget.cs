@@ -224,9 +224,8 @@ namespace MatterHackers.Agg.UI
 
 		public bool EnforceIntegerBounds
 		{
-			get { return enforceIntegerBounds; }
-
-			set { enforceIntegerBounds = value; }
+			get => enforceIntegerBounds;
+			set => enforceIntegerBounds = value;
 		}
 
 		public bool FirstWidgetUnderMouse
@@ -254,7 +253,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual Color BackgroundColor
 		{
-			get { return _backgroundColor; }
+			get => _backgroundColor;
 			set
 			{
 				if (_backgroundColor != value)
@@ -294,7 +293,7 @@ namespace MatterHackers.Agg.UI
 		[Category("Layout")]
 		public virtual BorderDouble Padding
 		{
-			get { return _padding; }
+			get => _padding;
 			set
 			{
 				//using (new PerformanceTimer("Draw Timer", "On Layout"))
@@ -326,7 +325,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual Color BorderColor
 		{
-			get { return _borderColor; }
+			get => _borderColor;
 			set
 			{
 				if (_borderColor != value)
@@ -356,7 +355,7 @@ namespace MatterHackers.Agg.UI
 		[Category("Layout")]
 		public BorderDouble Border
 		{
-			get { return _border; }
+			get => _border;
 			set
 			{
 				//using (new PerformanceTimer("Draw Timer", "On Layout"))
@@ -406,10 +405,7 @@ namespace MatterHackers.Agg.UI
 		[Category("Layout")]
 		public BorderDouble Margin
 		{
-			get
-			{
-				return margin;
-			}
+			get => margin;
 			set
 			{
 				if (margin != value)
@@ -480,7 +476,7 @@ namespace MatterHackers.Agg.UI
 		[Category("Layout Anchor")]
 		public virtual HAnchor HAnchor
 		{
-			get { return hAnchor; }
+			get => hAnchor;
 			set
 			{
 				if (hAnchor != value)
@@ -534,7 +530,7 @@ namespace MatterHackers.Agg.UI
 		[Category("Layout Anchor")]
 		public VAnchor VAnchor
 		{
-			get { return vAnchor; }
+			get => vAnchor;
 			set
 			{
 				if (vAnchor != value)
@@ -725,11 +721,7 @@ namespace MatterHackers.Agg.UI
 
 		public Affine ParentToChildTransform
 		{
-			get
-			{
-				return parentToChildTransform;
-			}
-
+			get => parentToChildTransform;
 			set
 			{
 				//if (parentToChildTransform != value)
@@ -775,7 +767,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// This will return the backBuffer object for widgets that are double buffered.  It will return null if they are not.
+		/// Gets the backBuffer object for widgets that are double buffered.  It will return null if they are not.
 		/// </summary>
 		public ImageBuffer BackBuffer
 		{
@@ -792,11 +784,7 @@ namespace MatterHackers.Agg.UI
 
 		public bool DoubleBuffer
 		{
-			get
-			{
-				return doubleBuffer;
-			}
-
+			get => doubleBuffer;
 			set
 			{
 				if (this.DoubleBuffer != value)
@@ -834,11 +822,7 @@ namespace MatterHackers.Agg.UI
 		[Category("Layout Constraints")]
 		public virtual Vector2 MinimumSize
 		{
-			get
-			{
-				return minimumSize;
-			}
-
+			get => minimumSize;
 			set
 			{
 				if (value != minimumSize)
@@ -878,11 +862,7 @@ namespace MatterHackers.Agg.UI
 		[Category("Layout Constraints")]
 		public Vector2 MaximumSize
 		{
-			get
-			{
-				return maximumSize;
-			}
-
+			get => maximumSize;
 			set
 			{
 				if (value != maximumSize)
@@ -945,11 +925,7 @@ namespace MatterHackers.Agg.UI
 		[Category("Layout")]
 		public Vector2 Size
 		{
-			get
-			{
-				return new Vector2(LocalBounds.Width, LocalBounds.Height);
-			}
-
+			get => new Vector2(LocalBounds.Width, LocalBounds.Height);
 			set
 			{
 				Width = value.X;
@@ -966,6 +942,7 @@ namespace MatterHackers.Agg.UI
 				Vector2 originRelParent = new Vector2(tempLocalToParentTransform.tx, tempLocalToParentTransform.ty);
 				return originRelParent;
 			}
+
 			set
 			{
 				Affine tempLocalToParentTransform = ParentToChildTransform;
@@ -1006,11 +983,7 @@ namespace MatterHackers.Agg.UI
 		[Category("Layout")]
 		public virtual RectangleDouble LocalBounds
 		{
-			get
-			{
-				return localBounds;
-			}
-
+			get => localBounds;
 			set
 			{
 				if (value.Width < MinimumSize.X)
