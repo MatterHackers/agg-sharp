@@ -97,12 +97,12 @@ namespace MatterHackers.DataConverters3D
 			{
 				property.ShouldSerialize = (instance) =>
 				{
-					string meshPath = (instance as IObject3D)?.MeshPath;
-
-					// ShouldSerialize if MeshPath is unset or is a relative path (i.e. no DirectoryName part), otherwise
+					// Serialize if has children and MeshPath is unset or is a relative path (i.e. no DirectoryName part), otherwise
 					// we truncate the in memory Children property and fall back to the MeshPath value on reload
-					return string.IsNullOrEmpty(meshPath)
-						|| string.IsNullOrEmpty(Path.GetDirectoryName(meshPath));
+					return instance is IObject3D object3D
+						&& object3D.Children.Count > 0
+						&& (string.IsNullOrEmpty(object3D.MeshPath)
+						|| string.IsNullOrEmpty(Path.GetDirectoryName(object3D.MeshPath)));
 				};
 			}
 
@@ -145,6 +145,39 @@ namespace MatterHackers.DataConverters3D
 					// Only serialize non-default (false) value
 					return instance is IObject3D object3D
 						&& !object3D.Visible;
+				};
+			}
+
+			if (property.PropertyType == typeof(bool)
+				&& property.PropertyName == "Expanded")
+			{
+				property.ShouldSerialize = (instance) =>
+				{
+					// Only serialize non-default (false) value
+					return instance is IObject3D object3D
+						&& object3D.Expanded;
+				};
+			}
+
+			if (property.PropertyType == typeof(PrintOutputTypes)
+				&& property.PropertyName == "OutputType")
+			{
+				property.ShouldSerialize = (instance) =>
+				{
+					// Only serialize non-default (false) value
+					return instance is IObject3D object3D
+						&& object3D.OutputType != PrintOutputTypes.Default;
+				};
+			}
+
+			if (property.PropertyType == typeof(int)
+				&& property.PropertyName == "MaterialIndex")
+			{
+				property.ShouldSerialize = (instance) =>
+				{
+					// Only serialize non-default (false) value
+					return instance is IObject3D object3D
+						&& object3D.MaterialIndex != -1;
 				};
 			}
 
