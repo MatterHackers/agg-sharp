@@ -103,7 +103,7 @@ namespace MatterHackers.RenderOpenGl
 			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture);
 		}
 
-		public static void Render(Mesh meshToRender, Color color, Matrix4X4 transform, RenderTypes renderType, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color), Action meshChanged = null, bool blendTexture = true)
+		public static void Render(Mesh meshToRender, Color color, Matrix4X4 transform, RenderTypes renderType, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color), Action meshChanged = null, bool blendTexture = true, bool allowBspRendering = true)
 		{
 			if (meshToRender != null)
 			{
@@ -135,7 +135,7 @@ namespace MatterHackers.RenderOpenGl
 						{
 							GL.Enable(EnableCap.PolygonOffsetFill);
 							GL.PolygonOffset(1, 1);
-							DrawToGL(meshToRender, color.Alpha0To1 < 1, meshToViewTransform);
+							DrawToGL(meshToRender, color.Alpha0To1 < 1, meshToViewTransform, allowBspRendering: allowBspRendering);
 							GL.PolygonOffset(0, 0);
 							GL.Disable(EnableCap.PolygonOffsetFill);
 						}
@@ -154,7 +154,7 @@ namespace MatterHackers.RenderOpenGl
 
 					case RenderTypes.Shaded:
 					case RenderTypes.Materials:
-						DrawToGL(meshToRender, color.Alpha0To1 < 1, meshToViewTransform, blendTexture);
+						DrawToGL(meshToRender, color.Alpha0To1 < 1, meshToViewTransform, blendTexture, allowBspRendering);
 						break;
 				}
 
@@ -270,7 +270,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		private static void DrawToGL(Mesh meshToRender, bool isTransparent, Matrix4X4? meshToViewTransform, bool blendTexture = true)
+		private static void DrawToGL(Mesh meshToRender, bool isTransparent, Matrix4X4? meshToViewTransform, bool blendTexture = true, bool allowBspRendering = true)
 		{
 			if (!blendTexture)
 			{
@@ -281,7 +281,8 @@ namespace MatterHackers.RenderOpenGl
 			if (meshToViewTransform != null
 				&& isTransparent
 				&& meshToRender.FaceBspTree != null
-				&& meshToRender.Faces.Count > 0)
+				&& meshToRender.Faces.Count > 0
+				&& allowBspRendering)
 			{
 				var invMeshToViewTransform = meshToViewTransform.Value;
 				invMeshToViewTransform.Invert();
