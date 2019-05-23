@@ -94,7 +94,12 @@ namespace MatterHackers.RenderOpenGl
 
 		public static void Remove(ImageBuffer image)
 		{
-			imagesWithCacheData.Remove(image.GetBuffer());
+			var buffer = image.GetBuffer();
+			if (imagesWithCacheData.TryGetValue(buffer, out ImageGlPlugin imagePlugin))
+			{
+				glDataNeedingToBeDeleted.Add(imagePlugin.glData);
+				imagesWithCacheData.Remove(buffer);
+			}
 		}
 
 		public static ImageGlPlugin GetImageGlPlugin(ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps, bool textureMagFilterLinear = true, bool clamp = true)
