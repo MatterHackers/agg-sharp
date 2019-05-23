@@ -29,13 +29,12 @@ either expressed or implied, of the FreeBSD Project.
 
 #define ON_IMAGE_CHANGED_ALWAYS_CREATE_IMAGE
 
-using MatterHackers.Agg;
-using MatterHackers.Agg.Image;
-using MatterHackers.RenderOpenGl.OpenGl;
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using MatterHackers.Agg.Image;
+using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderOpenGl
 {
@@ -51,7 +50,7 @@ namespace MatterHackers.RenderOpenGl
 
 	public class ImageGlPlugin
 	{
-		private static ConditionalWeakTable<Byte[], ImageGlPlugin> imagesWithCacheData = new ConditionalWeakTable<Byte[], ImageGlPlugin>();
+		private static ConditionalWeakTable<byte[], ImageGlPlugin> imagesWithCacheData = new ConditionalWeakTable<byte[], ImageGlPlugin>();
 
 		internal class glAllocatedData
 		{
@@ -71,19 +70,22 @@ namespace MatterHackers.RenderOpenGl
 		private static List<glAllocatedData> glDataNeedingToBeDeleted = new List<glAllocatedData>();
 
 		private glAllocatedData glData = new glAllocatedData();
+
 		private int imageUpdateCount;
 		private bool createdWithMipMaps;
 		private bool clamp;
 
 		private static int currentGlobalRefreshCount = 0;
 
-		static public void MarkAllImagesNeedRefresh()
+		public static void MarkAllImagesNeedRefresh()
 		{
 			currentGlobalRefreshCount++;
 		}
 
-		static int contextId;
-		static RemoveGlDataCallBackHolder removeGlDataCallBackHolder;
+		private static int contextId;
+
+		private static RemoveGlDataCallBackHolder removeGlDataCallBackHolder;
+
 		public static void SetCurrentContextData(int inContextId, RemoveGlDataCallBackHolder inCallBackHolder)
 		{
 			contextId = inContextId;
@@ -92,10 +94,15 @@ namespace MatterHackers.RenderOpenGl
 
 		public static void Remove(ImageBuffer image)
 		{
-			imagesWithCacheData.Remove(image.GetBuffer());
+			var buffer = image.GetBuffer();
+			if (imagesWithCacheData.TryGetValue(buffer, out ImageGlPlugin imagePlugin))
+			{
+				glDataNeedingToBeDeleted.Add(imagePlugin.glData);
+				imagesWithCacheData.Remove(buffer);
+			}
 		}
 
-		static public ImageGlPlugin GetImageGlPlugin(ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps, bool TextureMagFilterLinear = true, bool clamp = true)
+		public static ImageGlPlugin GetImageGlPlugin(ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps, bool textureMagFilterLinear = true, bool clamp = true)
 		{
 			imagesWithCacheData.TryGetValue(imageToGetDisplayListFor.GetBuffer(), out ImageGlPlugin plugin);
 
@@ -116,6 +123,7 @@ namespace MatterHackers.RenderOpenGl
 							removeGlDataCallBackHolder.releaseAllGlData -= glDataNeedingToBeDeleted[i].DeleteTextureData;
 						}
 					}
+
 					glDataNeedingToBeDeleted.RemoveAt(i);
 				}
 			}
@@ -130,6 +138,7 @@ namespace MatterHackers.RenderOpenGl
 				{
 					GL.DeleteTextures(1, ref textureToDelete);
 				}
+
 				plugin.glData.glTextureHandle = -1;
 				imagesWithCacheData.Remove(imageToGetDisplayListFor.GetBuffer());
 				// use the original settings
@@ -140,14 +149,15 @@ namespace MatterHackers.RenderOpenGl
 
 			if (plugin == null)
 			{
-				ImageGlPlugin newPlugin = new ImageGlPlugin();
+				var newPlugin = new ImageGlPlugin();
 				imagesWithCacheData.Add(imageToGetDisplayListFor.GetBuffer(), newPlugin);
 				newPlugin.createdWithMipMaps = createAndUseMipMaps;
 				newPlugin.clamp = clamp;
 				newPlugin.glData.glContextId = contextId;
-				newPlugin.CreateGlDataForImage(imageToGetDisplayListFor, TextureMagFilterLinear);
+				newPlugin.CreateGlDataForImage(imageToGetDisplayListFor, textureMagFilterLinear);
 				newPlugin.imageUpdateCount = imageToGetDisplayListFor.ChangedCount;
 				newPlugin.glData.refreshCountCreatedOn = currentGlobalRefreshCount;
+
 				if (removeGlDataCallBackHolder != null)
 				{
 					removeGlDataCallBackHolder.releaseAllGlData += newPlugin.glData.DeleteTextureData;
@@ -159,13 +169,7 @@ namespace MatterHackers.RenderOpenGl
 			return plugin;
 		}
 
-		public int GLTextureHandle
-		{
-			get
-			{
-				return glData.glTextureHandle;
-			}
-		}
+		public int GLTextureHandle => glData.glTextureHandle;
 
 		private ImageGlPlugin()
 		{
@@ -209,7 +213,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		private void CreateGlDataForImage(ImageBuffer bufferedImage, bool TextureMagFilterLinear)
+		private void CreateGlDataForImage(ImageBuffer bufferedImage, bool textureMagFilterLinear)
 		{
 			int imageWidth = bufferedImage.Width;
 			int imageHeight = bufferedImage.Height;
@@ -225,7 +229,7 @@ namespace MatterHackers.RenderOpenGl
 
 			// Set up some texture parameters for openGL
 			GL.BindTexture(TextureTarget.Texture2D, glData.glTextureHandle);
-			if (TextureMagFilterLinear)
+			if (textureMagFilterLinear)
 			{
 				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
 			}
@@ -272,9 +276,10 @@ namespace MatterHackers.RenderOpenGl
 				{
 					case 32:
 						{
-							ImageBuffer sourceImage = new ImageBuffer(bufferedImage);
-							ImageBuffer tempImage = new ImageBuffer(sourceImage.Width / 2, sourceImage.Height / 2);
+							var sourceImage = new ImageBuffer(bufferedImage);
+							var tempImage = new ImageBuffer(sourceImage.Width / 2, sourceImage.Height / 2);
 							tempImage.NewGraphics2D().Render(sourceImage, 0, 0, 0, .5, .5);
+
 							int mipLevel = 1;
 							while (sourceImage.Width > 1 || sourceImage.Height > 1)
 							{
@@ -289,6 +294,7 @@ namespace MatterHackers.RenderOpenGl
 									(double)tempImage.Height / (double)sourceImage.Height);
 							}
 						}
+
 						break;
 
 					default:
@@ -299,25 +305,25 @@ namespace MatterHackers.RenderOpenGl
 			float texCoordX = imageWidth / (float)hardwareWidth;
 			float texCoordY = imageHeight / (float)hardwareHeight;
 
-			float OffsetX = (float)bufferedImage.OriginOffset.X;
-			float OffsetY = (float)bufferedImage.OriginOffset.Y;
+			float offsetX = (float)bufferedImage.OriginOffset.X;
+			float offsetY = (float)bufferedImage.OriginOffset.Y;
 
 			glData.textureUVs = new float[8];
 			glData.positions = new float[8];
 
-			glData.textureUVs[0] = 0; glData.textureUVs[1] = 0; glData.positions[0] = 0 - OffsetX; glData.positions[1] = 0 - OffsetY;
-			glData.textureUVs[2] = 0; glData.textureUVs[3] = texCoordY; glData.positions[2] = 0 - OffsetX; glData.positions[3] = imageHeight - OffsetY;
-			glData.textureUVs[4] = texCoordX; glData.textureUVs[5] = texCoordY; glData.positions[4] = imageWidth - OffsetX; glData.positions[5] = imageHeight - OffsetY;
-			glData.textureUVs[6] = texCoordX; glData.textureUVs[7] = 0; glData.positions[6] = imageWidth - OffsetX; glData.positions[7] = 0 - OffsetY;
+			glData.textureUVs[0] = 0; glData.textureUVs[1] = 0; glData.positions[0] = 0 - offsetX; glData.positions[1] = 0 - offsetY;
+			glData.textureUVs[2] = 0; glData.textureUVs[3] = texCoordY; glData.positions[2] = 0 - offsetX; glData.positions[3] = imageHeight - offsetY;
+			glData.textureUVs[4] = texCoordX; glData.textureUVs[5] = texCoordY; glData.positions[4] = imageWidth - offsetX; glData.positions[5] = imageHeight - offsetY;
+			glData.textureUVs[6] = texCoordX; glData.textureUVs[7] = 0; glData.positions[6] = imageWidth - offsetX; glData.positions[7] = 0 - offsetY;
 		}
 
 		private void FixImageColors(ImageBuffer bufferedImage)
 		{
-			//Next we expand the image into an openGL texture
+			// Next we expand the image into an openGL texture
 			int imageWidth = bufferedImage.Width;
 			int imageHeight = bufferedImage.Height;
-			int bufferOffset;
-			byte[] imageBuffer = bufferedImage.GetBuffer(out bufferOffset);
+
+			byte[] imageBuffer = bufferedImage.GetBuffer(out _);
 
 			switch (bufferedImage.BitDepth)
 			{
@@ -339,6 +345,7 @@ namespace MatterHackers.RenderOpenGl
 							imageBuffer[pixelIndex + 3] = a;
 						}
 					}
+
 					break;
 
 				default:
@@ -348,16 +355,14 @@ namespace MatterHackers.RenderOpenGl
 
 		private ImageBuffer FixImageSizePower2IfRequired(ImageBuffer bufferedImage)
 		{
-			//Next we expand the image into an openGL texture
+			// Next we expand the image into an openGL texture
 			int imageWidth = bufferedImage.Width;
 			int imageHeight = bufferedImage.Height;
-			int bufferOffset;
-			byte[] imageBuffer = bufferedImage.GetBuffer(out bufferOffset);
+			byte[] imageBuffer = bufferedImage.GetBuffer(out _);
 			int hardwareWidth = SmallestHardwareCompatibleTextureSize(imageWidth);
 			int hardwareHeight = SmallestHardwareCompatibleTextureSize(imageHeight);
-			byte[] hardwareExpandedPixelBuffer = imageBuffer;
 
-			ImageBuffer pow2BufferedImage = new ImageBuffer(hardwareWidth, hardwareHeight, 32, bufferedImage.GetRecieveBlender());
+			var pow2BufferedImage = new ImageBuffer(hardwareWidth, hardwareHeight, 32, bufferedImage.GetRecieveBlender());
 			pow2BufferedImage.NewGraphics2D().Render(bufferedImage, 0, 0);
 
 			// always return a new image because we are going to modify its colors and don't want to change the original image
@@ -368,10 +373,18 @@ namespace MatterHackers.RenderOpenGl
 		{
 			GL.BindTexture(TextureTarget.Texture2D, GLTextureHandle);
 			GL.Begin(BeginMode.TriangleFan);
-			GL.TexCoord2(glData.textureUVs[0], glData.textureUVs[1]); GL.Vertex2(glData.positions[0], glData.positions[1]);
-			GL.TexCoord2(glData.textureUVs[2], glData.textureUVs[3]); GL.Vertex2(glData.positions[2], glData.positions[3]);
-			GL.TexCoord2(glData.textureUVs[4], glData.textureUVs[5]); GL.Vertex2(glData.positions[4], glData.positions[5]);
-			GL.TexCoord2(glData.textureUVs[6], glData.textureUVs[7]); GL.Vertex2(glData.positions[6], glData.positions[7]);
+
+			GL.TexCoord2(glData.textureUVs[0], glData.textureUVs[1]);
+			GL.Vertex2(glData.positions[0], glData.positions[1]);
+
+			GL.TexCoord2(glData.textureUVs[2], glData.textureUVs[3]);
+			GL.Vertex2(glData.positions[2], glData.positions[3]);
+
+			GL.TexCoord2(glData.textureUVs[4], glData.textureUVs[5]);
+			GL.Vertex2(glData.positions[4], glData.positions[5]);
+
+			GL.TexCoord2(glData.textureUVs[6], glData.textureUVs[7]);
+			GL.Vertex2(glData.positions[6], glData.positions[7]);
 
 			GL.End();
 		}
