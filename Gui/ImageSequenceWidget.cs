@@ -131,6 +131,7 @@ namespace MatterHackers.Agg.UI
 		{
 			// Unregister listeners
 			animation.Update -= this.Animation_Update;
+			animation.Dispose();
 
 			base.OnClosed(e);
 		}
