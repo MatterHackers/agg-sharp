@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2019, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,37 +27,28 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.Image;
-using MatterHackers.VectorMath;
 using System;
+using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.UI
 {
 	public class ImageSequenceWidget : GuiWidget
 	{
 		private ImageSequence _imageSequence;
-		private Animation animation = new Animation();
+		private readonly Animation animation;
 		private double currentTime = 0;
 
 		public ImageSequenceWidget(int width, int height)
 		{
 			LocalBounds = new RectangleDouble(0, 0, width, height);
 
-			animation.DrawTarget = this;
-			animation.Update += (s, updateEvent) =>
+			animation = new Animation
 			{
-				var currentImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
-
-				currentTime += updateEvent.SecondsPassed;
-				while(ImageSequence.Time > 0 
-					&& currentTime > ImageSequence.Time)
-				{
-					currentTime -= ImageSequence.Time;
-				}
-
-				var newImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
-				updateEvent.ShouldDraw = currentImageIndex != newImageIndex;
+				DrawTarget = this
 			};
+
+			// Register listeners
+			animation.Update += this.Animation_Update;
 
 			RunAnimation = true;
 		}
@@ -80,6 +71,7 @@ namespace MatterHackers.Agg.UI
 					{
 						_imageSequence.Invalidated -= ResetImageIndex;
 					}
+
 					_imageSequence = value;
 					animation.FramesPerSecond = _imageSequence.FramesPerSecond;
 					currentTime = 0;
@@ -96,11 +88,26 @@ namespace MatterHackers.Agg.UI
 			Invalidate();
 		}
 
-		public bool MaintainAspecRatio { get; set; } = true;
+		private void Animation_Update(object sender, Animation.UpdateEvent updateEvent)
+		{
+			var currentImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
+
+			currentTime += updateEvent.SecondsPassed;
+			while (ImageSequence.Time > 0
+				&& currentTime > ImageSequence.Time)
+			{
+				currentTime -= ImageSequence.Time;
+			}
+
+			var newImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
+			updateEvent.ShouldDraw = currentImageIndex != newImageIndex;
+		}
+
+		public bool MaintainAspectRatio { get; set; } = true;
 
 		public bool RunAnimation
 		{
-			get { return animation != null && animation.IsRunning; }
+			get => animation != null && animation.IsRunning;
 			set
 			{
 				if (animation != null
@@ -120,28 +127,40 @@ namespace MatterHackers.Agg.UI
 
 		public bool AllowStretching { get; set; } = false;
 
+		public override void OnClosed(EventArgs e)
+		{
+			// Unregister listeners
+			animation.Update -= this.Animation_Update;
+			animation.Dispose();
+
+			base.OnClosed(e);
+		}
+
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			if (ImageSequence != null)
 			{
 				var currentImage = ImageSequence.GetImageByTime(currentTime);
-				var bottomLeft = Vector2.Zero;
 				var ratio = 1.0;
-				if (MaintainAspecRatio)
+
+				if (MaintainAspectRatio)
 				{
 					ratio = Math.Min(Width / currentImage.Width, Height / currentImage.Height);
-					if(!AllowStretching)
+					if (!AllowStretching)
 					{
 						ratio = Math.Min(ratio, 1);
 					}
 				}
 
-				graphics2D.Render(currentImage,
+				graphics2D.Render(
+					currentImage,
 					Width / 2 - (currentImage.Width * ratio) / 2,
 					Height / 2 - (currentImage.Height * ratio) / 2,
 					0,
-					ratio, ratio);
+					ratio,
+					ratio);
 			}
+
 			base.OnDraw(graphics2D);
 		}
 	}

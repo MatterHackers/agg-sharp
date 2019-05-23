@@ -72,10 +72,12 @@ namespace MatterHackers.Agg.UI
 		public class UpdateEvent
 		{
 			public double SecondsPassed { get; internal set; }
+
 			public bool ShouldDraw { get; set; } = true;
 		}
 
-		public EventHandler<UpdateEvent> Update;
+		public event EventHandler<UpdateEvent> Update;
+
 		private bool haveDrawn = false;
 		private long lastTimeMs;
 		private RunningInterval runningInterval;
