@@ -38,17 +38,17 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// Gets or sets the period of time the ToolTip remains visible if the pointer is stationary on a control with specified ToolTip text.
 		/// </summary>
-		public double AutoPopDelay = 5;
+		public const double AutoPopDelay = 5;
 
 		/// <summary>
 		/// Gets or sets the time that passes before the ToolTip appears.
 		/// </summary>
-		public double InitialDelay = 1;
+		public const double InitialDelay = .6;
 
 		/// <summary>
 		/// Gets or sets the length of time that must transpire before subsequent ToolTip windows appear as the pointer moves from one control to another.
 		/// </summary>
-		public double ReshowDelay = .2;
+		public const double ReshowDelay = .2;
 
 		private static int count = 0;
 		private double CurrentAutoPopDelay = 5;

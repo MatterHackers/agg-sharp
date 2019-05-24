@@ -68,7 +68,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.Children.Count == 2);
 
 			// sleep 1/2 long enough to show the tool tip
-			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay / 2 * 1000 + minMsToBias));
+			Thread.Sleep((int)(ToolTipManager.InitialDelay / 2 * 1000 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure it is still not up
@@ -77,7 +77,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
 
 			// sleep 1/2 long enough to show the tool tip
-			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay / 2 * 1000 + minMsToBias));
+			Thread.Sleep((int)(ToolTipManager.InitialDelay / 2 * 1000 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure the tool tip came up
@@ -86,7 +86,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
 
 			// wait 1/2 long enough for the tool tip to go away
-			Thread.Sleep((int)(systemWindow.ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
+			Thread.Sleep((int)(ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure the tool did not go away
@@ -95,7 +95,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
 
 			// wait 1/2 long enough for the tool tip to go away
-			Thread.Sleep((int)(systemWindow.ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
+			Thread.Sleep((int)(ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure the tool tip went away
@@ -152,7 +152,7 @@ namespace MatterHackers.Agg.UI.Tests
 			UiThread.InvokePendingActions();
 
 			// sleep long enough to show the tool tip
-			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay * 1000 + minMsToBias));
+			Thread.Sleep((int)(ToolTipManager.InitialDelay * 1000 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure the tool tip came up
@@ -182,7 +182,7 @@ namespace MatterHackers.Agg.UI.Tests
 			UiThread.InvokePendingActions();
 
 			// sleep long enough to show the tool tip
-			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay * 1000 + minMsToBias));
+			Thread.Sleep((int)(ToolTipManager.InitialDelay * 1000 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure the tool tip came up
@@ -201,7 +201,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
 
 			// sleep long enough to clear the fast move time
-			Thread.Sleep((int)(systemWindow.ToolTipManager.ReshowDelay * 1000 * 2));
+			Thread.Sleep((int)(ToolTipManager.ReshowDelay * 1000 * 2));
 			UiThread.InvokePendingActions();
 
 			// make sure the first tool still gone
@@ -220,7 +220,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
 
 			// wait 1/2 long enough for the second tool tip to come up
-			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay * 1000 / 2 + minMsToBias));
+			Thread.Sleep((int)(ToolTipManager.InitialDelay * 1000 / 2 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure the second tool tip not showing
@@ -229,7 +229,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
 
 			// wait 1/2 long enough for the second tool tip to come up
-			Thread.Sleep((int)(systemWindow.ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
+			Thread.Sleep((int)(ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure the tool tip 2 came up
@@ -249,7 +249,7 @@ namespace MatterHackers.Agg.UI.Tests
 			UiThread.InvokePendingActions();
 
 			// sleep long enough to show the tool tip
-			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay * 1000 + minMsToBias));
+			Thread.Sleep((int)(ToolTipManager.InitialDelay * 1000 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure the tool tip came up
@@ -258,7 +258,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
 
 			// wait 1/2 long enough for the tool tip to go away
-			Thread.Sleep((int)(systemWindow.ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
+			Thread.Sleep((int)(ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// move onto the other widget
@@ -272,7 +272,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
 
 			// wait long enough for the second tool tip to come up
-			Thread.Sleep((int)(systemWindow.ToolTipManager.ReshowDelay * 1000 + minMsToBias));
+			Thread.Sleep((int)(ToolTipManager.ReshowDelay * 1000 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure the tool tip 2 came up
