@@ -459,7 +459,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		Dictionary<Color, ImageBuffer> clippingBackgrounds = new Dictionary<Color, ImageBuffer>();
+		private readonly Dictionary<Color, ImageBuffer> clippingBackgrounds = new Dictionary<Color, ImageBuffer>();
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
@@ -481,6 +481,7 @@ namespace MatterHackers.Agg.UI
 						gradientDistance);
 
 					lastRenderColor = background;
+					clippingBackgrounds[background] = gradientBackground;
 				}
 
 				graphics2D.Render(gradientBackground, this.LocalBounds.Right - gradientBackground.Width, 0);
