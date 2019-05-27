@@ -35,7 +35,6 @@ using System.Text;
 using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
-using MatterHackers.Localizations;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
