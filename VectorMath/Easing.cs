@@ -28,12 +28,8 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace MatterHackers.Agg
+namespace MatterHackers.VectorMath
 {
 	/*
 	 * Functions taken from Tween.js - Licensed under the MIT license

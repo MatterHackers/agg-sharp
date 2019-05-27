@@ -41,7 +41,7 @@ using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using static MatterHackers.Agg.Easing;
+using static MatterHackers.VectorMath.Easing;
 
 namespace MatterHackers.GuiAutomation
 {
