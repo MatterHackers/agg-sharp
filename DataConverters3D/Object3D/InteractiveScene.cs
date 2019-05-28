@@ -32,15 +32,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
-using MatterHackers.DataConverters3D.UndoCommands;
+using MatterHackers.Localizations;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
-using MatterHackers.Localizations;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
-using System.Threading.Tasks;
 
 namespace MatterHackers.DataConverters3D
 {
