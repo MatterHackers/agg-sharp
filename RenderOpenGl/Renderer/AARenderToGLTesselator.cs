@@ -137,9 +137,9 @@ namespace MatterHackers.RenderOpenGl
 			Vector2 centerPoint = p0 + p1 + p2;
 			centerPoint /= 3;
 
-			Draw1EdgeTriangle(p0, p1, centerPoint);
-			Draw1EdgeTriangle(p1, p2, centerPoint);
-			DrawNonAATriangle(p2, p0, centerPoint);
+			Draw1EdgeTriangle(p0, p1, (p0 + p1) / 2 + (centerPoint - (p0 + p1) / 2) * .001);
+			Draw1EdgeTriangle(p1, p2, (p1 + p2) / 2 + (centerPoint - (p1 + p2) / 2) * .001);
+			DrawNonAATriangle(p0, p1, p2);
 		}
 
 		protected void Draw3EdgeTriangle(Vector2 p0, Vector2 p1, Vector2 p2)
