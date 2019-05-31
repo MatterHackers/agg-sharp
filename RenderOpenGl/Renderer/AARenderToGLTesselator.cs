@@ -72,8 +72,8 @@ namespace MatterHackers.RenderOpenGl
 			{
 				return;
 			}
-			Vector2 edegP0P1Vector = aaEdgeP1 - aaEdgeP0;
-			Vector2 edgeP0P1Normal = edegP0P1Vector;
+			Vector2 edgeP0P1Vector = aaEdgeP1 - aaEdgeP0;
+			Vector2 edgeP0P1Normal = edgeP0P1Vector;
 			edgeP0P1Normal.Normalize();
 
 			Vector2 Normal = edgeP0P1Normal.GetPerpendicularRight();

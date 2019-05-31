@@ -47,7 +47,7 @@ namespace MatterHackers.RenderOpenGl
 	{
 		// We can have a single static instance because all gl rendering is required to happen on the ui thread so there can
 		// be no runtime contention for this object (no thread contention).
-		private static AARenderToGLTesselator triangleEddgeInfo = new AARenderToGLTesselator();
+		private static AARenderToGLTesselator triangleEdgeInfo = new AARenderToGLTesselator();
 
 		/// <summary>
 		/// A texture per alpha value
@@ -157,11 +157,11 @@ namespace MatterHackers.RenderOpenGl
 			// the alpha has come from the bound texture
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, (byte)255);
 
-			triangleEddgeInfo.Clear();
-			VertexSourceToTesselator.SendShapeToTesselator(triangleEddgeInfo, vertexSource);
+			triangleEdgeInfo.Clear();
+			VertexSourceToTesselator.SendShapeToTesselator(triangleEdgeInfo, vertexSource);
 
 			// now render it
-			triangleEddgeInfo.RenderLastToGL();
+			triangleEdgeInfo.RenderLastToGL();
 		}
 
 		public void DrawAALine(Vector2 start, Vector2 end, double halfWidth, IColorType colorIn)
@@ -177,9 +177,9 @@ namespace MatterHackers.RenderOpenGl
 			}
 
 			GL.Begin(BeginMode.Triangles);
-			Vector2 widthRightOffset = (end - start).GetPerpendicularRight().GetNormal() * halfWidth/2;
-			triangleEddgeInfo.Draw2EdgeTriangle(start - widthRightOffset, end - widthRightOffset, end + widthRightOffset);
-			triangleEddgeInfo.Draw2EdgeTriangle(end + widthRightOffset, start + widthRightOffset, start - widthRightOffset);
+			Vector2 widthRightOffset = (end - start).GetPerpendicularRight().GetNormal() * halfWidth / 2;
+			triangleEdgeInfo.Draw2EdgeTriangle(start - widthRightOffset, end - widthRightOffset, end + widthRightOffset);
+			triangleEdgeInfo.Draw2EdgeTriangle(end + widthRightOffset, start + widthRightOffset, start - widthRightOffset);
 			GL.End();
 		}
 
@@ -198,20 +198,20 @@ namespace MatterHackers.RenderOpenGl
 			//GL.Begin(BeginMode.Triangles);
 			Vector2 widthRightOffset = (end - start).GetPerpendicularRight().GetNormal() * halfWidth / 2;
 			// draw the main line part
-			triangleEddgeInfo.Draw1EdgeTriangle(start - widthRightOffset, end - widthRightOffset, end + widthRightOffset);
-			triangleEddgeInfo.Draw1EdgeTriangle(end + widthRightOffset, start + widthRightOffset, start - widthRightOffset);
+			triangleEdgeInfo.Draw1EdgeTriangle(start - widthRightOffset, end - widthRightOffset, end + widthRightOffset);
+			triangleEdgeInfo.Draw1EdgeTriangle(end + widthRightOffset, start + widthRightOffset, start - widthRightOffset);
 			// now draw the end rounds
 			int numSegments = 5;
 			Vector2 endCurveStart = end + widthRightOffset;
 			Vector2 startCurveStart = start + widthRightOffset;
-			for (int i = 0; i < numSegments+1; i++)
+			for (int i = 0; i < numSegments + 1; i++)
 			{
 				Vector2 endCurveEnd = end + Vector2.Rotate(widthRightOffset, i * Math.PI / numSegments);
-				triangleEddgeInfo.Draw1EdgeTriangle(endCurveStart, endCurveEnd, end);
+				triangleEdgeInfo.Draw1EdgeTriangle(endCurveStart, endCurveEnd, end);
 				endCurveStart = endCurveEnd;
 
 				Vector2 startCurveEnd = start + Vector2.Rotate(widthRightOffset, -i * Math.PI / numSegments);
-				triangleEddgeInfo.Draw1EdgeTriangle(startCurveStart, startCurveEnd, start);
+				triangleEdgeInfo.Draw1EdgeTriangle(startCurveStart, startCurveEnd, start);
 				startCurveStart = startCurveEnd;
 			}
 			//GL.End();
@@ -238,7 +238,7 @@ namespace MatterHackers.RenderOpenGl
 				currentOffset.Rotate(anglePerSegment);
 				Vector2 curveEnd = start + currentOffset;
 
-				triangleEddgeInfo.Draw1EdgeTriangle(curveStart, curveEnd, start);
+				triangleEdgeInfo.Draw1EdgeTriangle(curveStart, curveEnd, start);
 				curveStart = curveEnd;
 			}
 		}
@@ -278,7 +278,7 @@ namespace MatterHackers.RenderOpenGl
 				GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 				renderNowTesselator.Clear();
-                VertexSourceToTesselator.SendShapeToTesselator(renderNowTesselator, vertexSource);
+				VertexSourceToTesselator.SendShapeToTesselator(renderNowTesselator, vertexSource);
 			}
 
 			PopOrthoProjection();
