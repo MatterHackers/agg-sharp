@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2019, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -29,14 +29,14 @@ either expressed or implied, of the FreeBSD Project.
 
 //#define AA_TIPS
 
-using MatterHackers.RenderOpenGl.OpenGl;
 using System.Collections.Generic;
 using MatterHackers.DataConverters2D;
+using MatterHackers.RenderOpenGl.OpenGl;
 using Tesselate;
 
 namespace MatterHackers.RenderOpenGl
 {
-	public class RenderToGLTesselator : VertexTesselatorAbstract
+	public class GLTesselator : VertexTesselatorAbstract
 	{
 		private List<AddedVertex> verticesCache = new List<AddedVertex>();
 
@@ -52,12 +52,11 @@ namespace MatterHackers.RenderOpenGl
 			internal double m_Y;
 		};
 
-		public RenderToGLTesselator()
+		public GLTesselator()
 		{
 			callBegin = BeginCallBack;
 			callEnd = EndCallBack;
 			callVertex = VertexCallBack;
-			//callEdgeFlag += EdgeFlagCallBack;
 			callCombine = CombineCallBack;
 		}
 
@@ -96,12 +95,6 @@ namespace MatterHackers.RenderOpenGl
 			GL.Vertex2(verticesCache[index].m_X, verticesCache[index].m_Y);
 		}
 
-		public void EdgeFlagCallBack(bool IsEdge)
-		{
-			// this is not set as it is only used in GL_POLYGON_MODE and GL_POINT or GL_LINE (which we currently don't use)
-			//GL.EdgeFlag(IsEdge);
-		}
-
 		public int CombineCallBack(double[] coords3, int[] data4, double[] weight4)
 		{
 			return AddVertex(coords3[0], coords3[1], false);
@@ -123,7 +116,7 @@ namespace MatterHackers.RenderOpenGl
 			{
 				AddVertex(coords, clientIndex);
 			}
-			
+
 			return clientIndex;
 		}
 

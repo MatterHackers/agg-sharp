@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2019, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -33,14 +33,14 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderOpenGl
 {
-	public class AARenderToGLTesselator : CachedTesselator
+	public class AAGLTesselator : CachedTesselator
 	{
 		private Vector2 fanPStart;
 		private Vector2 fanTStart;
 		private Vector2 fanPNext;
 		private Vector2 fanTNext;
 
-		public AARenderToGLTesselator()
+		public AAGLTesselator()
 		{
 		}
 

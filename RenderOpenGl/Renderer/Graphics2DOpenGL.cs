@@ -47,7 +47,7 @@ namespace MatterHackers.RenderOpenGl
 	{
 		// We can have a single static instance because all gl rendering is required to happen on the ui thread so there can
 		// be no runtime contention for this object (no thread contention).
-		private static AARenderToGLTesselator triangleEdgeInfo = new AARenderToGLTesselator();
+		private static AAGLTesselator triangleEdgeInfo = new AAGLTesselator();
 
 		/// <summary>
 		/// A texture per alpha value
@@ -55,7 +55,7 @@ namespace MatterHackers.RenderOpenGl
 		private static List<ImageBuffer> AATextureImages = null;
 
 		public bool DoEdgeAntiAliasing = true;
-		private static RenderToGLTesselator renderNowTesselator = new RenderToGLTesselator();
+		private static GLTesselator renderNowTesselator = new GLTesselator();
 
 		private int width;
 		private int height;
