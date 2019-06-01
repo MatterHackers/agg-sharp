@@ -67,7 +67,6 @@ namespace MatterHackers.RenderOpenGl
 		/// <param name="nonAaPoint"></param>
 		public void Draw1EdgeTriangle(Vector2 aaEdgeP0, Vector2 aaEdgeP1, Vector2 nonAaPoint)
 		{
-			//return;
 			if (aaEdgeP0 == aaEdgeP1 || aaEdgeP1 == nonAaPoint || nonAaPoint == aaEdgeP0)
 			{
 				return;
@@ -76,19 +75,19 @@ namespace MatterHackers.RenderOpenGl
 			Vector2 edgeP0P1Normal = edgeP0P1Vector;
 			edgeP0P1Normal.Normalize();
 
-			Vector2 Normal = edgeP0P1Normal.GetPerpendicularRight();
-			double edgeDotP3 = Vector2.Dot(Normal, nonAaPoint - aaEdgeP0);
+			Vector2 normal = edgeP0P1Normal.GetPerpendicularRight();
+			double edgeDotP3 = Vector2.Dot(normal, nonAaPoint - aaEdgeP0);
 			if (edgeDotP3 < 0)
 			{
 				edgeDotP3 = -edgeDotP3;
 			}
 			else
 			{
-				Normal = -Normal;
+				normal = -normal;
 			}
 
-			Vector2 edgeP0Offset = aaEdgeP0 + Normal;
-			Vector2 edgeP1Offset = aaEdgeP1 + Normal;
+			Vector2 edgeP0Offset = aaEdgeP0 + normal;
+			Vector2 edgeP1Offset = aaEdgeP1 + normal;
 
 			Vector2 texP0 = new Vector2(1 / 1023.0, .25);
 			Vector2 texP1 = new Vector2(1 / 1023.0, .75);
