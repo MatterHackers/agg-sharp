@@ -164,6 +164,13 @@ namespace MatterHackers.RenderOpenGl
 			triangleEdgeInfo.RenderLastToGL();
 		}
 
+		/// <summary>
+		/// Draws a line with low poly rounded endcaps (only in GL implementation/only used by 2D GCode)
+		/// </summary>
+		/// <param name="start"></param>
+		/// <param name="end"></param>
+		/// <param name="halfWidth"></param>
+		/// <param name="colorIn"></param>
 		public void DrawAALineRounded(Vector2 start, Vector2 end, double halfWidth, IColorType colorIn)
 		{
 			Color colorBytes = colorIn.ToColor();
@@ -198,6 +205,12 @@ namespace MatterHackers.RenderOpenGl
 			//GL.End();
 		}
 
+		/// <summary>
+		/// Draws a low poly circle (only in GL implementation/only used by 2D GCode)
+		/// </summary>
+		/// <param name="start"></param>
+		/// <param name="radius"></param>
+		/// <param name="colorIn"></param>
 		public void DrawAACircle(Vector2 start, double radius, IColorType colorIn)
 		{
 			Color colorBytes = colorIn.ToColor();
