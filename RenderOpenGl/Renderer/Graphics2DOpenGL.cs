@@ -143,7 +143,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		public void DrawAAShape(IVertexSource vertexSource, IColorType colorIn)
+		private void DrawAAShape(IVertexSource vertexSource, IColorType colorIn)
 		{
 			vertexSource.rewind(0);
 
