@@ -164,25 +164,6 @@ namespace MatterHackers.RenderOpenGl
 			triangleEdgeInfo.RenderLastToGL();
 		}
 
-		public void DrawAALine(Vector2 start, Vector2 end, double halfWidth, IColorType colorIn)
-		{
-			Color colorBytes = colorIn.ToColor();
-			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
-
-			Affine transform = GetTransform();
-			if (!transform.is_identity())
-			{
-				transform.transform(ref start);
-				transform.transform(ref end);
-			}
-
-			GL.Begin(BeginMode.Triangles);
-			Vector2 widthRightOffset = (end - start).GetPerpendicularRight().GetNormal() * halfWidth / 2;
-			triangleEdgeInfo.Draw2EdgeTriangle(start - widthRightOffset, end - widthRightOffset, end + widthRightOffset);
-			triangleEdgeInfo.Draw2EdgeTriangle(end + widthRightOffset, start + widthRightOffset, start - widthRightOffset);
-			GL.End();
-		}
-
 		public void DrawAALineRounded(Vector2 start, Vector2 end, double halfWidth, IColorType colorIn)
 		{
 			Color colorBytes = colorIn.ToColor();
