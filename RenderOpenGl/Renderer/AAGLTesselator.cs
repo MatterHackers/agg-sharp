@@ -39,9 +39,15 @@ namespace MatterHackers.RenderOpenGl
 		private Vector2 fanTStart;
 		private Vector2 fanPNext;
 		private Vector2 fanTNext;
+		private WorldView world;
 
 		public AAGLTesselator()
 		{
+		}
+
+		public AAGLTesselator(WorldView world)
+		{
+			this.world = world;
 		}
 
 		protected void DrawNonAATriangle(Vector2 p0, Vector2 p1, Vector2 p2)
@@ -71,6 +77,7 @@ namespace MatterHackers.RenderOpenGl
 			{
 				return;
 			}
+
 			Vector2 edgeP0P1Vector = aaEdgeP1 - aaEdgeP0;
 			Vector2 edgeP0P1Normal = edgeP0P1Vector;
 			edgeP0P1Normal.Normalize();
@@ -86,8 +93,25 @@ namespace MatterHackers.RenderOpenGl
 				normal = -normal;
 			}
 
-			Vector2 edgeP0Offset = aaEdgeP0 + normal;
-			Vector2 edgeP1Offset = aaEdgeP1 + normal;
+			Vector2 edgeP0Offset;
+			Vector2 edgeP1Offset;
+
+			if (world != null)
+			{
+				// If world reference available, adjust the offset distance to screen space
+				double unitsPerPixel;
+
+				unitsPerPixel = world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(aaEdgeP0));
+				edgeP0Offset = aaEdgeP0 + (normal * unitsPerPixel);
+
+				unitsPerPixel = world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(aaEdgeP1));
+				edgeP1Offset = aaEdgeP1 + (normal * unitsPerPixel);
+			}
+			else
+			{
+				edgeP0Offset = aaEdgeP0 + normal;
+				edgeP1Offset = aaEdgeP1 + normal;
+			}
 
 			Vector2 texP0 = new Vector2(1 / 1023.0, .25);
 			Vector2 texP1 = new Vector2(1 / 1023.0, .75);
