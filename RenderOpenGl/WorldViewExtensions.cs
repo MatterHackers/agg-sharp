@@ -28,9 +28,12 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using MatterHackers.Agg;
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.DataConverters2D;
 using MatterHackers.PolygonMesh;
-using MatterHackers.RenderOpenGl;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 
@@ -267,6 +270,53 @@ namespace MatterHackers.RenderOpenGl
 			}
 
 			GL.Enable(EnableCap.Lighting);
+		}
+
+		private static readonly ConditionalWeakTable<WorldView, AAGLTesselator> TesselatorsByWorld = new ConditionalWeakTable<WorldView, AAGLTesselator>();
+
+		public static void RenderPath(this WorldView world, IVertexSource vertexSource, Color color, bool doDepthTest)
+		{
+			AAGLTesselator tesselator;
+
+			if (!TesselatorsByWorld.TryGetValue(world, out tesselator))
+			{
+				// Update reference and store in dictionary
+				tesselator = new AAGLTesselator(world);
+
+				TesselatorsByWorld.Add(world, tesselator);
+			}
+
+			// TODO: Necessary?
+			// CheckLineImageCache();
+			// GL.Enable(EnableCap.Texture2D);
+			// GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(AATextureImages[color.Alpha0To255], false).GLTextureHandle);
+
+			// the source is always all white so has no does not have its color changed by the alpha
+			GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
+			GL.Enable(EnableCap.Blend);
+
+			GL.Disable(EnableCap.CullFace);
+			GL.Disable(EnableCap.Lighting);
+
+			if (doDepthTest)
+			{
+				GL.Enable(EnableCap.DepthTest);
+			}
+			else
+			{
+				GL.Disable(EnableCap.DepthTest);
+			}
+
+			vertexSource.rewind(0);
+
+			// the alpha has to come from the bound texture
+			GL.Color4(color.red, color.green, color.blue, (byte)255);
+
+			tesselator.Clear();
+			VertexSourceToTesselator.SendShapeToTesselator(tesselator, vertexSource);
+
+			// now render it
+			tesselator.RenderLastToGL();
 		}
 	}
 }
