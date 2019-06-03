@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2019, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -29,35 +29,23 @@ either expressed or implied, of the FreeBSD Project.
 
 //#define AA_TIPS
 
-using MatterHackers.RenderOpenGl.OpenGl;
 using System.Collections.Generic;
 using MatterHackers.DataConverters2D;
+using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.VectorMath;
 using Tesselate;
 
 namespace MatterHackers.RenderOpenGl
 {
-	public class RenderToGLTesselator : VertexTesselatorAbstract
+	public class GLTesselator : VertexTesselatorAbstract
 	{
-		private List<AddedVertex> verticesCache = new List<AddedVertex>();
+		private readonly List<Vector2> verticesCache = new List<Vector2>();
 
-		internal class AddedVertex
-		{
-			internal AddedVertex(double x, double y)
-			{
-				m_X = x;
-				m_Y = y;
-			}
-
-			internal double m_X;
-			internal double m_Y;
-		};
-
-		public RenderToGLTesselator()
+		public GLTesselator()
 		{
 			callBegin = BeginCallBack;
 			callEnd = EndCallBack;
 			callVertex = VertexCallBack;
-			//callEdgeFlag += EdgeFlagCallBack;
 			callCombine = CombineCallBack;
 		}
 
@@ -93,13 +81,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void VertexCallBack(int index)
 		{
-			GL.Vertex2(verticesCache[index].m_X, verticesCache[index].m_Y);
-		}
-
-		public void EdgeFlagCallBack(bool IsEdge)
-		{
-			// this is not set as it is only used in GL_POLYGON_MODE and GL_POINT or GL_LINE (which we currently don't use)
-			//GL.EdgeFlag(IsEdge);
+			GL.Vertex2(verticesCache[index].X, verticesCache[index].Y);
 		}
 
 		public int CombineCallBack(double[] coords3, int[] data4, double[] weight4)
@@ -115,15 +97,13 @@ namespace MatterHackers.RenderOpenGl
 		public int AddVertex(double x, double y, bool passOnToTesselator)
 		{
 			int clientIndex = verticesCache.Count;
-			verticesCache.Add(new AddedVertex(x, y));
-			double[] coords = new double[2];
-			coords[0] = x;
-			coords[1] = y;
+			verticesCache.Add(new Vector2(x, y));
+
 			if (passOnToTesselator)
 			{
-				AddVertex(coords, clientIndex);
+				AddVertex(new double[] { x, y }, clientIndex);
 			}
-			
+
 			return clientIndex;
 		}
 

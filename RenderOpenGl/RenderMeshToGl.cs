@@ -51,21 +51,9 @@ namespace MatterHackers.RenderOpenGl
 
 	public static class GLHelper
 	{
-		private static Mesh scaledLineMesh = PlatonicSolids.CreateCube();
-
-		private static Mesh unscaledLineMesh = PlatonicSolids.CreateCube();
-
 		private const float GL_MODULATE = (float)0x2100;
 
 		private const float GL_REPLACE = (float)0x1E01;
-
-		public static Frustum GetClippingFrustum(this WorldView world)
-		{
-			var frustum = Frustum.FrustumFromProjectionMatrix(world.ProjectionMatrix);
-			var frustum2 = Frustum.Transform(frustum, world.InverseModelviewMatrix);
-
-			return frustum2;
-		}
 
 		public static void ExtendLineEnds(ref Vector3 start, ref Vector3 end, double length)
 		{
@@ -159,114 +147,6 @@ namespace MatterHackers.RenderOpenGl
 				}
 
 				GL.PopMatrix();
-			}
-		}
-
-		/// <summary>
-		/// Draw a line in the scene in 3D but scale it such that it appears as a 2D line in the view.
-		/// If drawing lots of lines call with a pre-calculated clipping frustum.
-		/// </summary>
-		/// <param name="world"></param>
-		/// <param name="start"></param>
-		/// <param name="end"></param>
-		/// <param name="color"></param>
-		/// <param name="doDepthTest"></param>
-		/// <param name="width"></param>
-		public static void Render3DLine(this WorldView world, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1)
-		{
-			world.Render3DLine(GetClippingFrustum(world), start, end, color, doDepthTest, width);
-		}
-
-		/// <summary>
-		/// Draw a line in the scene in 3D but scale it such that it appears as a 2D line in the view.
-		/// </summary>
-		/// <param name="world"></param>
-		/// <param name="clippingFrustum">This is a cache of the frustum from world.
-		/// Much faster to pass this way if drawing lots of lines.</param>
-		/// <param name="start"></param>
-		/// <param name="end"></param>
-		/// <param name="color"></param>
-		/// <param name="doDepthTest"></param>
-		/// <param name="width"></param>
-		public static void Render3DLine(this WorldView world, Frustum clippingFrustum, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1)
-		{
-			PrepareFor3DLineRender(doDepthTest);
-			world.Render3DLineNoPrep(clippingFrustum, start, end, color, width);
-		}
-
-		public static void Render3DLineNoPrep(this WorldView world, Frustum clippingFrustum, Vector3Float start, Vector3Float end, Color color, double width = 1)
-		{
-			world.Render3DLineNoPrep(clippingFrustum, new Vector3(start), new Vector3(end), new Color(color), width);
-		}
-
-		public static void Render3DLineNoPrep(this WorldView world, Frustum clippingFrustum, Vector3 start, Vector3 end, Color color, double width = 1)
-		{
-			if (clippingFrustum.ClipLine(ref start, ref end))
-			{
-				double unitsPerPixelStart = world.GetWorldUnitsPerScreenPixelAtPosition(start);
-				double unitsPerPixelEnd = world.GetWorldUnitsPerScreenPixelAtPosition(end);
-
-				Vector3 delta = start - end;
-				var deltaLength = delta.Length;
-				var rotateTransform = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitX + new Vector3(.0001, -.00001, .00002), -delta / deltaLength));
-				var scaleTransform = Matrix4X4.CreateScale(deltaLength, 1, 1);
-				Vector3 lineCenter = (start + end) / 2;
-				Matrix4X4 lineTransform = scaleTransform * rotateTransform * Matrix4X4.CreateTranslation(lineCenter);
-
-				var startScale = unitsPerPixelStart * width;
-				var endScale = unitsPerPixelEnd * width;
-				for (int i = 0; i < unscaledLineMesh.Vertices.Count; i++)
-				{
-					var vertexPosition = unscaledLineMesh.Vertices[i];
-					if (vertexPosition.X < 0)
-					{
-						scaledLineMesh.Vertices[i] = new Vector3Float(vertexPosition.X, vertexPosition.Y * startScale, vertexPosition.Z * startScale);
-					}
-					else
-					{
-						scaledLineMesh.Vertices[i] = new Vector3Float(vertexPosition.X, vertexPosition.Y * endScale, vertexPosition.Z * endScale);
-					}
-				}
-
-				if (true)
-				{
-					GL.Color4(color.Red0To255, color.Green0To255, color.Blue0To255, color.Alpha0To255);
-
-					if (color.Alpha0To1 < 1)
-					{
-						GL.Enable(EnableCap.Blend);
-					}
-					else
-					{
-						// GL.Disable(EnableCap.Blend);
-					}
-
-					GL.MatrixMode(MatrixMode.Modelview);
-					GL.PushMatrix();
-					GL.MultMatrix(lineTransform.GetAsFloatArray());
-
-					GL.Begin(BeginMode.Triangles);
-					for (int faceIndex = 0; faceIndex < scaledLineMesh.Faces.Count; faceIndex++)
-					{
-						var face = scaledLineMesh.Faces[faceIndex];
-						var vertices = scaledLineMesh.Vertices;
-						var position = vertices[face.v0];
-						GL.Vertex3(position.X, position.Y, position.Z);
-						position = vertices[face.v1];
-						GL.Vertex3(position.X, position.Y, position.Z);
-						position = vertices[face.v2];
-						GL.Vertex3(position.X, position.Y, position.Z);
-					}
-
-					GL.End();
-					GL.PopMatrix();
-				}
-				else
-				{
-					scaledLineMesh.MarkAsChanged();
-
-					GLHelper.Render(scaledLineMesh, color, lineTransform, RenderTypes.Shaded);
-				}
 			}
 		}
 
