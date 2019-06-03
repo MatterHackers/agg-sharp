@@ -32,25 +32,14 @@ either expressed or implied, of the FreeBSD Project.
 using System.Collections.Generic;
 using MatterHackers.DataConverters2D;
 using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.VectorMath;
 using Tesselate;
 
 namespace MatterHackers.RenderOpenGl
 {
 	public class GLTesselator : VertexTesselatorAbstract
 	{
-		private List<AddedVertex> verticesCache = new List<AddedVertex>();
-
-		internal class AddedVertex
-		{
-			internal AddedVertex(double x, double y)
-			{
-				m_X = x;
-				m_Y = y;
-			}
-
-			internal double m_X;
-			internal double m_Y;
-		};
+		private readonly List<Vector2> verticesCache = new List<Vector2>();
 
 		public GLTesselator()
 		{
@@ -92,7 +81,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void VertexCallBack(int index)
 		{
-			GL.Vertex2(verticesCache[index].m_X, verticesCache[index].m_Y);
+			GL.Vertex2(verticesCache[index].X, verticesCache[index].Y);
 		}
 
 		public int CombineCallBack(double[] coords3, int[] data4, double[] weight4)
@@ -108,7 +97,8 @@ namespace MatterHackers.RenderOpenGl
 		public int AddVertex(double x, double y, bool passOnToTesselator)
 		{
 			int clientIndex = verticesCache.Count;
-			verticesCache.Add(new AddedVertex(x, y));
+			verticesCache.Add(new Vector2(x, y));
+
 			double[] coords = new double[2];
 			coords[0] = x;
 			coords[1] = y;
