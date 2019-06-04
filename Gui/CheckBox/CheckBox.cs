@@ -109,7 +109,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override void OnClick(MouseEventArgs mouseEvent)
+		protected override void OnClick(MouseEventArgs mouseEvent)
 		{
 			Checked = !Checked;
 			base.OnClick(mouseEvent);

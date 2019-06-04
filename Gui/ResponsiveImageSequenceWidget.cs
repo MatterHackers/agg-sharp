@@ -164,7 +164,7 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseMove(mouseEvent);
 		}
 
-		public override void OnClick(MouseEventArgs mouseEvent)
+		protected override void OnClick(MouseEventArgs mouseEvent)
 		{
 			if (ImageBounds.Contains(mouseEvent.Position))
 			{

@@ -3056,7 +3056,7 @@ namespace MatterHackers.Agg.UI
 			this.OnClick(new MouseEventArgs(MouseButtons.Left, 1, new[] { this.Position + Vector2.One }, 0, null));
 		}
 
-		public virtual void OnClick(MouseEventArgs mouseEvent)
+		protected virtual void OnClick(MouseEventArgs mouseEvent)
 		{
 			Click?.Invoke(this, mouseEvent);
 		}
