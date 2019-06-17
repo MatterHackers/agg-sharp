@@ -97,13 +97,13 @@ namespace MatterHackers.PolygonMesh
 			var bounds = AxisAlignedBoundingBox.Empty();
 			// Get the convex hull for the mesh
 			var cHVertexList = new List<CHVertex>();
-			foreach (var position in mesh.Vertices)
+			foreach (var position in mesh.Vertices.ToArray())
 			{
 				cHVertexList.Add(new CHVertex(position));
 				bounds.ExpandToInclude(position);
 			}
 
-			if(cHVertexList.Count == 0
+			if (cHVertexList.Count == 0
 				|| bounds.XSize == 0
 				|| bounds.YSize == 0
 				|| bounds.ZSize == 0)
@@ -146,6 +146,7 @@ namespace MatterHackers.PolygonMesh
 					{
 						mesh.PropertyBag.Remove(CreatingConvexHullMesh);
 					}
+
 					return hullMesh;
 				}
 				catch
