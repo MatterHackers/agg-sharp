@@ -151,6 +151,11 @@ namespace MatterHackers.DataConverters3D
 			world.Fit(itemToRender, goalBounds, Matrix4X4.Identity);
 		}
 
+		public static Matrix4X4 GetXYInViewRotation(this WorldView world)
+		{
+			return Matrix4X4.CreateTranslation(0, 0, 30);
+		}
+
 		public static AxisAlignedBoundingBox GetAxisAlignedBoundingBox(this IEnumerable<IObject3D> items)
 		{
 			var aabb = AxisAlignedBoundingBox.Empty();
