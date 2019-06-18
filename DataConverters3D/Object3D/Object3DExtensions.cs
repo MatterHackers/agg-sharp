@@ -165,7 +165,6 @@ namespace MatterHackers.DataConverters3D
 		public static void Translate(this IEnumerable<IObject3D> items, Vector3 translation)
 		{
 			var matrix = Matrix4X4.CreateTranslation(translation);
-			var aabb = AxisAlignedBoundingBox.Empty();
 			foreach (var item in items)
 			{
 				item.Matrix *= matrix;
@@ -188,7 +187,7 @@ namespace MatterHackers.DataConverters3D
 
 				if (!NeedsToBeSmaller(partScreenBounds, goalBounds))
 				{
-					world.Scale *= (1 + scaleFraction);
+					world.Scale *= 1 + scaleFraction;
 					partScreenBounds = GetScreenBounds(meshBounds, world);
 
 					// If it crossed over the goal reduct the amount we are adjusting by.
@@ -199,7 +198,7 @@ namespace MatterHackers.DataConverters3D
 				}
 				else
 				{
-					world.Scale *= (1 - scaleFraction);
+					world.Scale *= 1 - scaleFraction;
 					partScreenBounds = GetScreenBounds(meshBounds, world);
 
 					// If it crossed over the goal reduct the amount we are adjusting by.
@@ -244,14 +243,14 @@ namespace MatterHackers.DataConverters3D
 			return screenBounds;
 		}
 
-		public static async Task PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null, bool publishAssets=false)
+		public static async Task PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null, bool publishAssets = false)
 		{
 			// Must use DescendantsAndSelf so that leaf nodes save their meshes
 			var persistableItems = from object3D in sourceItem.DescendantsAndSelf()
-										 where object3D.WorldPersistable() &&
-												(((object3D.MeshPath == null || publishAssets) && object3D.Mesh != null)
-												|| (object3D is IAssetObject && publishAssets))
-												&& object3D.Mesh != Object3D.FileMissingMesh // Ignore items assigned the FileMissing mesh
+								   where object3D.WorldPersistable() &&
+										  (((object3D.MeshPath == null || publishAssets) && object3D.Mesh != null)
+										  || (object3D is IAssetObject && publishAssets))
+										  && object3D.Mesh != Object3D.FileMissingMesh // Ignore items assigned the FileMissing mesh
 								   select object3D;
 
 			Directory.CreateDirectory(Object3D.AssetsPath);
@@ -344,7 +343,6 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-
 		public static IEnumerable<IObject3D> AncestorsAndSelf(this IObject3D item)
 		{
 			yield return item;
@@ -359,7 +357,7 @@ namespace MatterHackers.DataConverters3D
 		public static Color WorldColor(this IObject3D child, IObject3D rootOverride = null)
 		{
 			var lastColorFound = Color.White;
-			foreach(var item in child.AncestorsAndSelf())
+			foreach (var item in child.AncestorsAndSelf())
 			{
 				// if we find a color it overrides our current color so set it
 				if (item.Color.Alpha0To255 != 0)
@@ -461,7 +459,7 @@ namespace MatterHackers.DataConverters3D
 
 		public class RebuildLocks : IDisposable
 		{
-			List<RebuildLock> rebuilLocks = new List<RebuildLock>();
+			private readonly List<RebuildLock> rebuilLocks = new List<RebuildLock>();
 
 			public RebuildLocks(IObject3D parent)
 			{
@@ -522,6 +520,7 @@ namespace MatterHackers.DataConverters3D
 				{
 					yield return asType;
 				}
+
 				foreach (var n in item.Children)
 				{
 					items.Push(n);
@@ -546,7 +545,7 @@ namespace MatterHackers.DataConverters3D
 
 		public static IPrimitive CreateTraceData(this Mesh mesh, MaterialAbstract material, Matrix4X4 matrix, int maxRecursion = int.MaxValue)
 		{
-			List<IPrimitive> allPolys = new List<IPrimitive>();
+			var allPolys = new List<IPrimitive>();
 
 			mesh.AddTracePrimitives(material, matrix, allPolys);
 
@@ -572,7 +571,7 @@ namespace MatterHackers.DataConverters3D
 				{
 					triangle = new MinimalTriangle((fi, vi) =>
 					{
-						switch(vi)
+						switch (vi)
 						{
 							case 0:
 								return mesh.Vertices[mesh.Faces[fi].v0];
@@ -593,8 +592,8 @@ namespace MatterHackers.DataConverters3D
 		/// </summary>
 		/// <param name="objectToCollapse">The object to collapse</param>
 		/// <param name="collapseInto">The target to collapse into</param>
-		/// <param name="typeFilter">Type filter</param>
-		/// <param name="depth">?</param>
+		/// <param name="filterToSelectionGroup">State if should filter</param>
+		/// <param name="depth">The maximum times to recurse this function</param>
 		public static void CollapseInto(this IObject3D objectToCollapse, List<IObject3D> collapseInto, bool filterToSelectionGroup = true, int depth = int.MaxValue)
 		{
 			if (objectToCollapse != null

@@ -91,7 +91,7 @@ namespace MatterHackers.RenderOpenGl
 			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture);
 		}
 
-		public static void Render(Mesh meshToRender, Color color, Matrix4X4 transform, RenderTypes renderType, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color), Action meshChanged = null, bool blendTexture = true, bool allowBspRendering = true)
+		public static void Render(Mesh meshToRender, Color color, Matrix4X4 transform, RenderTypes renderType = RenderTypes.Shaded, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color), Action meshChanged = null, bool blendTexture = true, bool allowBspRendering = true)
 		{
 			if (meshToRender != null)
 			{
