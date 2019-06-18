@@ -151,9 +151,59 @@ namespace MatterHackers.DataConverters3D
 			world.Fit(itemToRender, goalBounds, Matrix4X4.Identity);
 		}
 
-		public static Matrix4X4 GetXYInViewRotation(this WorldView world)
+		public static Matrix4X4 GetXYInViewRotation(this WorldView world, Vector3 center)
 		{
-			return Matrix4X4.CreateTranslation(0, 0, 30);
+			var positions = new Vector3[]
+			{
+				center + new Vector3(1, 0, 0),
+				center + new Vector3(0, 1, 0),
+				center + new Vector3(-1, 0, 0),
+				center + new Vector3(0, -1, 0),
+			};
+
+			double bestY = double.PositiveInfinity;
+			double bestX = double.PositiveInfinity;
+			int frontIndex = 0;
+			int rightIndex = 0;
+			// get the closest z on the bottom in view space
+			for (int cornerIndex = 0; cornerIndex < 4; cornerIndex++)
+			{
+				Vector3 axisSide = positions[cornerIndex];
+				Vector3 axisSideScreenSpace = world.GetScreenSpace(axisSide);
+				if (axisSideScreenSpace.Y < bestY)
+				{
+					frontIndex = cornerIndex;
+					bestY = axisSideScreenSpace.Y;
+				}
+
+				if (axisSideScreenSpace.X < bestX)
+				{
+					rightIndex = cornerIndex;
+					bestX = axisSideScreenSpace.X;
+				}
+			}
+
+			var transform = Matrix4X4.Identity;
+			switch (frontIndex)
+			{
+				case 0:
+					transform = Matrix4X4.CreateRotationZ(MathHelper.Tau / 4);
+					break;
+
+				case 1:
+					transform = Matrix4X4.CreateRotationZ(MathHelper.Tau / 2);
+					break;
+
+				case 2:
+					transform = Matrix4X4.CreateRotationZ(-MathHelper.Tau / 4);
+					break;
+
+				case 3:
+					// transform = Matrix4X4.CreateRotationZ(MathHelper.Tau / 4);
+					break;
+			}
+
+			return transform;
 		}
 
 		public static AxisAlignedBoundingBox GetAxisAlignedBoundingBox(this IEnumerable<IObject3D> items)
