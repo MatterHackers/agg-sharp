@@ -375,9 +375,12 @@ namespace MatterHackers.Agg.UI
 		{
 			if (this.Descendants().Contains(widget))
 			{
-				var widgetScreenBounds = widget.TransformToScreenSpace(widget.LocalBounds);
-				var widgetScrollBounds = this.TransformFromScreenSpace(widgetScreenBounds.Center);
-				this.ScrollPosition = new Vector2(0, -widgetScrollBounds.Y);
+				if (!widget.ActuallyVisibleOnScreen())
+				{
+					var widgetScreenBounds = widget.TransformToScreenSpace(widget.LocalBounds);
+					var widgetScrollBounds = this.TransformFromScreenSpace(widgetScreenBounds.Center);
+					this.ScrollPosition = new Vector2(0, -widgetScrollBounds.Y);
+				}
 			}
 		}
 	}
