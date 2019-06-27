@@ -36,5 +36,10 @@ namespace MatterHackers.Agg
 		public string Status { get; set; }
 
 		public double Progress0To1 { get; set; }
+
+		/// <summary>
+		/// Gets or sets an idicator of the output target
+		/// </summary>
+		public string Target { get; set; }
 	}
 }
