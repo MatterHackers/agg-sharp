@@ -4096,24 +4096,24 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 			}
 
 			double distSqrd = distance * distance;
-			OutPt currentOutPoint = outPts[0];
-			while (currentOutPoint.Idx == 0 && currentOutPoint.Next != currentOutPoint.Prev)
+			OutPt op = outPts[0];
+			while (op.Idx == 0 && op.Next != op.Prev)
 			{
-				if (PointsAreClose(currentOutPoint.Pt, currentOutPoint.Prev.Pt, distSqrd))
+				if (PointsAreClose(op.Pt, op.Prev.Pt, distSqrd))
 				{
-					currentOutPoint = ExcludeOp(currentOutPoint);
+					op = ExcludeOp(op);
 					cnt--;
 				}
-				else if (PointsAreClose(currentOutPoint.Prev.Pt, currentOutPoint.Next.Pt, distSqrd))
+				else if (PointsAreClose(op.Prev.Pt, op.Next.Pt, distSqrd))
 				{
-					ExcludeOp(currentOutPoint.Next);
-					currentOutPoint = ExcludeOp(currentOutPoint);
+					ExcludeOp(op.Next);
+					op = ExcludeOp(op);
 					cnt -= 2;
 				}
 				else
 				{
-					currentOutPoint.Idx = 1;
-					currentOutPoint = currentOutPoint.Next;
+					op.Idx = 1;
+					op = op.Next;
 				}
 			}
 
@@ -4122,19 +4122,19 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 			// the next point. The new middle point is very close to the new third point and so we collapse and remove the second point. We can remove and create
 			// a large flat on the edge of the circle.
 			HashSet<OutPt> removePoints = new HashSet<OutPt>();
-			OutPt loopStart = currentOutPoint;
+			OutPt loopStart = op;
 			bool first = true;
-			while ((first || currentOutPoint != loopStart)
-				&& currentOutPoint.Next != currentOutPoint.Prev)
+			while ((first || op != loopStart)
+				&& op.Next != op.Prev)
 			{
-				if (SlopesNearCollinear(currentOutPoint.Prev.Pt, currentOutPoint.Pt, currentOutPoint.Next.Pt, distSqrd))
+				if (SlopesNearCollinear(op.Prev.Pt, op.Pt, op.Next.Pt, distSqrd))
 				{
 					// we check if the new end point is collinear with all the points we already have accumulated.
 					// and collapse all the points in between
-					OutPt start = currentOutPoint.Prev; // -1
-					OutPt firstCheck = currentOutPoint; // 0
+					OutPt start = op.Prev; // -1
+					OutPt firstCheck = op; // 0
 					OutPt currentCheck = firstCheck; // 0
-					OutPt endCheck = currentOutPoint.Next; // 1
+					OutPt endCheck = op.Next; // 1
 					bool foundEnd = false;
 					while (!foundEnd
 						&& endCheck != start)
@@ -4166,11 +4166,11 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 						}
 					}
 
-					currentOutPoint = endCheck;
+					op = endCheck;
 				}
 				else
 				{
-					currentOutPoint = currentOutPoint.Next;
+					op = op.Next;
 				}
 
 				first = false;
@@ -4179,7 +4179,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 			// remove all the points that were collinear
 			foreach (OutPt remove in removePoints)
 			{
-				currentOutPoint = ExcludeOp(remove);
+				op = ExcludeOp(remove);
 				cnt--;
 			}
 
@@ -4187,8 +4187,8 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 			Path result = new Path(cnt);
 			for (int i = 0; i < cnt; ++i)
 			{
-				result.Add(currentOutPoint.Pt);
-				currentOutPoint = currentOutPoint.Next;
+				result.Add(op.Pt);
+				op = op.Next;
 			}
 			outPts = null;
 			return result;
