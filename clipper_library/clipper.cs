@@ -71,9 +71,8 @@ namespace ClipperLib
 
 	public struct DoublePoint
 	{
-		// Immutable public properties
-		public readonly double X;
-		public readonly double Y;
+		public double X;
+		public double Y;
 
 		public DoublePoint(double x = 0, double y = 0)
 		{
@@ -357,7 +356,6 @@ namespace ClipperLib
 	//------------------------------------------------------------------------------
 	//------------------------------------------------------------------------------
 
-	[Serializable]
 	public struct IntPoint
 	{
 		public cInt X;
@@ -4087,10 +4085,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 			if (cnt == 0) return new Path();
 
 			OutPt[] outPts = new OutPt[cnt];
-			for (int i = 0; i < cnt; ++i)
-			{
-				outPts[i] = new OutPt();
-			}
+			for (int i = 0; i < cnt; ++i) outPts[i] = new OutPt();
 
 			for (int i = 0; i < cnt; ++i)
 			{
