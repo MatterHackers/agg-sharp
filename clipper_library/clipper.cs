@@ -34,7 +34,7 @@
 /*******************************************************************************
 *                                                                              *
 * This is a translation of the Delphi Clipper library and the naming style     *
-* used has retained a Delphi flavor.                                          *
+* used has retained a Delphi flavour.                                          *
 *                                                                              *
 *******************************************************************************/
 
@@ -47,6 +47,9 @@
 
 //use_lines: Enables open path clipping. Adds a very minor cost to performance.
 #define use_lines
+
+//use_deprecated: Enables temporary support for the obsolete functions
+//#define use_deprecated
 
 using System;
 using System.Collections.Generic;
@@ -306,7 +309,7 @@ namespace ClipperLib
 				return new Int128(~val.hi, ~val.lo + 1);
 		}
 
-		public static explicit operator double (Int128 val)
+		public static explicit operator double(Int128 val)
 		{
 			const double shift64 = 18446744073709551616.0; //2^64
 			if (val.hi < 0)
@@ -456,20 +459,20 @@ namespace ClipperLib
 
 	public struct IntRect
 	{
-		public cInt minX;
-		public cInt minY;
-		public cInt maxX;
-		public cInt maxY;
+		public cInt left;
+		public cInt top;
+		public cInt right;
+		public cInt bottom;
 
 		public IntRect(cInt l, cInt t, cInt r, cInt b)
 		{
-			this.minX = l; this.minY = t;
-			this.maxX = r; this.maxY = b;
+			this.left = l; this.top = t;
+			this.right = r; this.bottom = b;
 		}
 		public IntRect(IntRect ir)
 		{
-			this.minX = ir.minX; this.minY = ir.minY;
-			this.maxX = ir.maxX; this.maxY = ir.maxY;
+			this.left = ir.left; this.top = ir.top;
+			this.right = ir.right; this.bottom = ir.bottom;
 		}
 	}
 
@@ -665,8 +668,7 @@ namespace ClipperLib
 			if (UseFullRange)
 				return Int128.Int128Mul(e1.Delta.Y, e2.Delta.X) ==
 					Int128.Int128Mul(e1.Delta.X, e2.Delta.Y);
-			else
-				return (cInt)(e1.Delta.Y) * (e2.Delta.X) ==
+			else return (cInt)(e1.Delta.Y) * (e2.Delta.X) ==
 			 (cInt)(e1.Delta.X) * (e2.Delta.Y);
 		}
 		//------------------------------------------------------------------------------
@@ -677,8 +679,7 @@ namespace ClipperLib
 			if (UseFullRange)
 				return Int128.Int128Mul(pt1.Y - pt2.Y, pt2.X - pt3.X) ==
 				  Int128.Int128Mul(pt1.X - pt2.X, pt2.Y - pt3.Y);
-			else
-				return
+			else return
 			 (cInt)(pt1.Y - pt2.Y) * (pt2.X - pt3.X) - (cInt)(pt1.X - pt2.X) * (pt2.Y - pt3.Y) == 0;
 		}
 		//------------------------------------------------------------------------------
@@ -689,8 +690,7 @@ namespace ClipperLib
 			if (UseFullRange)
 				return Int128.Int128Mul(pt1.Y - pt2.Y, pt3.X - pt4.X) ==
 				  Int128.Int128Mul(pt1.X - pt2.X, pt3.Y - pt4.Y);
-			else
-				return
+			else return
 			 (cInt)(pt1.Y - pt2.Y) * (pt3.X - pt4.X) - (cInt)(pt1.X - pt2.X) * (pt3.Y - pt4.Y) == 0;
 		}
 		//------------------------------------------------------------------------------
@@ -775,7 +775,7 @@ namespace ClipperLib
 		private TEdge FindNextLocMin(TEdge E)
 		{
 			TEdge E2;
-			for (;;)
+			for (; ; )
 			{
 				while (E.Bot != E.Prev.Bot || E.Curr == E.Top) E = E.Next;
 				if (E.Dx != horizontal && E.Prev.Dx != horizontal) break;
@@ -949,7 +949,7 @@ namespace ClipperLib
 
 			//2. Remove duplicate vertices, and (when closed) collinear edges ...
 			TEdge E = eStart, eLoopStop = eStart;
-			for (;;)
+			for (; ; )
 			{
 				//nb: allows matching start and end points when not Closed ...
 				if (E.Curr == E.Next.Curr && (Closed || E.Next != eStart))
@@ -1035,7 +1035,7 @@ namespace ClipperLib
 			//open paths have matching start and end points ...
 			if (E.Prev.Bot == E.Prev.Top) E = E.Next;
 
-			for (;;)
+			for (; ; )
 			{
 				E = FindNextLocMin(E);
 				if (E == EMin) break;
@@ -1197,17 +1197,17 @@ namespace ClipperLib
 			while (i < cnt && paths[i].Count == 0) i++;
 			if (i == cnt) return new IntRect(0, 0, 0, 0);
 			IntRect result = new IntRect();
-			result.minX = paths[i][0].X;
-			result.maxX = result.minX;
-			result.minY = paths[i][0].Y;
-			result.maxY = result.minY;
+			result.left = paths[i][0].X;
+			result.right = result.left;
+			result.top = paths[i][0].Y;
+			result.bottom = result.top;
 			for (; i < cnt; i++)
 				for (int j = 0; j < paths[i].Count; j++)
 				{
-					if (paths[i][j].X < result.minX) result.minX = paths[i][j].X;
-					else if (paths[i][j].X > result.maxX) result.maxX = paths[i][j].X;
-					if (paths[i][j].Y < result.minY) result.minY = paths[i][j].Y;
-					else if (paths[i][j].Y > result.maxY) result.maxY = paths[i][j].Y;
+					if (paths[i][j].X < result.left) result.left = paths[i][j].X;
+					else if (paths[i][j].X > result.right) result.right = paths[i][j].X;
+					if (paths[i][j].Y < result.top) result.top = paths[i][j].Y;
+					else if (paths[i][j].Y > result.bottom) result.bottom = paths[i][j].Y;
 				}
 			return result;
 		}
@@ -1332,8 +1332,7 @@ namespace ClipperLib
 			PolyFillType subjFillType, PolyFillType clipFillType)
 		{
 			if (m_ExecuteLocked) return false;
-			if (m_HasOpenPaths)
-				throw
+			if (m_HasOpenPaths) throw
 new ClipperException("Error: PolyTree struct is need for open path clipping.");
 
 			m_ExecuteLocked = true;
@@ -1400,11 +1399,10 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 		internal void FixHoleLinkage(OutRec outRec)
 		{
 			//skip if an outermost polygon or
-			//already points to the correct FirstLeft ...
+			//already already points to the correct FirstLeft ...
 			if (outRec.FirstLeft == null ||
 				  (outRec.IsHole != outRec.FirstLeft.IsHole &&
-				  outRec.FirstLeft.Pts != null))
-				return;
+				  outRec.FirstLeft.Pts != null)) return;
 
 			OutRec orfl = outRec.FirstLeft;
 			while (orfl != null && ((orfl.IsHole == outRec.IsHole) || orfl.Pts == null))
@@ -1773,7 +1771,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 		private void SetWindingCount(TEdge edge)
 		{
 			TEdge e = edge.PrevInAEL;
-			//find the edge of the same polytype that immediately precedes 'edge' in AEL
+			//find the edge of the same polytype that immediately preceeds 'edge' in AEL
 			while (e != null && ((e.PolyTyp != edge.PolyTyp) || (e.WindDelta == 0))) e = e.PrevInAEL;
 			if (e == null)
 			{
@@ -1905,8 +1903,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 		{
 			//check that one or other edge hasn't already been removed from AEL ...
 			if (edge1.NextInAEL == edge1.PrevInAEL ||
-			  edge2.NextInAEL == edge2.PrevInAEL)
-				return;
+			  edge2.NextInAEL == edge2.PrevInAEL) return;
 
 			if (edge1.NextInAEL == edge2)
 			{
@@ -2701,7 +2698,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 			if (eLastHorz.NextInLML == null)
 				eMaxPair = GetMaximaPair(eLastHorz);
 
-			for (;;)
+			for (; ; )
 			{
 				bool IsLastHorz = (horzEdge == eLastHorz);
 				TEdge e = GetNextInAEL(horzEdge, dir);
@@ -2710,8 +2707,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 					//Break if we've got to the end of an intermediate horizontal edge ...
 					//nb: Smaller Dx's are to the right of larger Dx's ABOVE the horizontal.
 					if (e.Curr.X == horzEdge.Top.X && horzEdge.NextInLML != null &&
-					  e.Dx < horzEdge.NextInLML.Dx)
-						break;
+					  e.Dx < horzEdge.NextInLML.Dx) break;
 
 					TEdge eNext = GetNextInAEL(e, dir); //saves eNext for later
 
@@ -2757,8 +2753,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 						SwapPositionsInAEL(horzEdge, e);
 					}
 					else if ((dir == Direction.dLeftToRight && e.Curr.X >= horzRight) ||
-					  (dir == Direction.dRightToLeft && e.Curr.X <= horzLeft))
-						break;
+					  (dir == Direction.dRightToLeft && e.Curr.X <= horzLeft)) break;
 					e = eNext;
 				} //end while
 
@@ -3278,8 +3273,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 				OutRec outRec = m_PolyOuts[i];
 				int cnt = PointCount(outRec.Pts);
 				if ((outRec.IsOpen && cnt < 2) ||
-				  (!outRec.IsOpen && cnt < 3))
-					continue;
+				  (!outRec.IsOpen && cnt < 3)) continue;
 				FixHoleLinkage(outRec);
 				PolyNode pn = new PolyNode();
 				polytree.m_AllPolys.Add(pn);
@@ -3320,7 +3314,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 			OutPt lastOK = null;
 			outRec.BottomPt = null;
 			OutPt pp = outRec.Pts;
-			for (;;)
+			for (; ; )
 			{
 				if (pp.Prev == pp || pp.Prev == pp.Next)
 				{
@@ -3549,7 +3543,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 				if (op2b.Next == op2 || op2b.Next == op1) return false; //a flat 'polygon'
 
 				cInt Left, Right;
-				//Op1 -. Op1b & Op2 -. Op2b are the extremities of the horizontal edges
+				//Op1 -. Op1b & Op2 -. Op2b are the extremites of the horizontal edges
 				if (!GetOverlap(op1.Pt.X, op1b.Pt.X, op2.Pt.X, op2b.Pt.X, out Left, out Right))
 					return false;
 
@@ -3594,8 +3588,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 					op1b = op1.Prev;
 					while ((op1b.Pt == op1.Pt) && (op1b != op1)) op1b = op1b.Prev;
 					if ((op1b.Pt.Y > op1.Pt.Y) ||
-					  !SlopesEqual(op1.Pt, op1b.Pt, j.OffPt, m_UseFullRange))
-						return false;
+					  !SlopesEqual(op1.Pt, op1b.Pt, j.OffPt, m_UseFullRange)) return false;
 				};
 				op2b = op2.Next;
 				while ((op2b.Pt == op2.Pt) && (op2b != op2)) op2b = op2b.Next;
@@ -3606,13 +3599,11 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 					op2b = op2.Prev;
 					while ((op2b.Pt == op2.Pt) && (op2b != op2)) op2b = op2b.Prev;
 					if ((op2b.Pt.Y > op2.Pt.Y) ||
-					  !SlopesEqual(op2.Pt, op2b.Pt, j.OffPt, m_UseFullRange))
-						return false;
+					  !SlopesEqual(op2.Pt, op2b.Pt, j.OffPt, m_UseFullRange)) return false;
 				}
 
 				if ((op1b == op1) || (op2b == op2) || (op1b == op2b) ||
-				  ((outRec1 == outRec2) && (Reverse1 == Reverse2)))
-					return false;
+				  ((outRec1 == outRec2) && (Reverse1 == Reverse2))) return false;
 
 				if (Reverse1)
 				{
@@ -3656,8 +3647,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 				if (ipNext.Y == pt.Y)
 				{
 					if ((ipNext.X == pt.X) || (ip.Y == pt.Y &&
-					  ((ipNext.X > pt.X) == (ip.X < pt.X))))
-						return -1;
+					  ((ipNext.X > pt.X) == (ip.X < pt.X)))) return -1;
 				}
 				if ((ip.Y < pt.Y) != (ipNext.Y < pt.Y))
 				{
@@ -3706,8 +3696,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 				if (poly1y == pty)
 				{
 					if ((poly1x == ptx) || (poly0y == pty &&
-					  ((poly1x > ptx) == (poly0x < ptx))))
-						return -1;
+					  ((poly1x > ptx) == (poly0x < ptx)))) return -1;
 				}
 				if ((poly0y < pty) != (poly1y < pty))
 				{
@@ -3825,8 +3814,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 						{
 							OutRec oRec = m_PolyOuts[j];
 							if (oRec.Pts == null || ParseFirstLeft(oRec.FirstLeft) != outRec1 ||
-							  oRec.IsHole == outRec1.IsHole)
-								continue;
+							  oRec.IsHole == outRec1.IsHole) continue;
 							if (Poly2ContainsPoly1(oRec.Pts, join.OutPt2))
 								oRec.FirstLeft = outRec2;
 						}
@@ -4422,8 +4410,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 					newNode.m_polygon.Add(path[i]);
 					if (path[i].Y > newNode.m_polygon[k].Y ||
 					  (path[i].Y == newNode.m_polygon[k].Y &&
-					  path[i].X < newNode.m_polygon[k].X))
-						k = j;
+					  path[i].X < newNode.m_polygon[k].X)) k = j;
 				}
 			if (endType == EndType.etClosedPolygon && j < 2) return;
 
@@ -4692,10 +4679,10 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 				IntRect r = Clipper.GetBounds(m_destPolys);
 				Path outer = new Path(4);
 
-				outer.Add(new IntPoint(r.minX - 10, r.maxY + 10));
-				outer.Add(new IntPoint(r.maxX + 10, r.maxY + 10));
-				outer.Add(new IntPoint(r.maxX + 10, r.minY - 10));
-				outer.Add(new IntPoint(r.minX - 10, r.minY - 10));
+				outer.Add(new IntPoint(r.left - 10, r.bottom + 10));
+				outer.Add(new IntPoint(r.right + 10, r.bottom + 10));
+				outer.Add(new IntPoint(r.right + 10, r.top - 10));
+				outer.Add(new IntPoint(r.left - 10, r.top - 10));
 
 				clpr.AddPath(outer, PolyType.ptSubject, true);
 				clpr.ReverseSolution = true;
@@ -4724,10 +4711,10 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 				IntRect r = Clipper.GetBounds(m_destPolys);
 				Path outer = new Path(4);
 
-				outer.Add(new IntPoint(r.minX - 10, r.maxY + 10));
-				outer.Add(new IntPoint(r.maxX + 10, r.maxY + 10));
-				outer.Add(new IntPoint(r.maxX + 10, r.minY - 10));
-				outer.Add(new IntPoint(r.minX - 10, r.minY - 10));
+				outer.Add(new IntPoint(r.left - 10, r.bottom + 10));
+				outer.Add(new IntPoint(r.right + 10, r.bottom + 10));
+				outer.Add(new IntPoint(r.right + 10, r.top - 10));
+				outer.Add(new IntPoint(r.left - 10, r.top - 10));
 
 				clpr.AddPath(outer, PolyType.ptSubject, true);
 				clpr.ReverseSolution = true;
