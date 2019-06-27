@@ -82,26 +82,10 @@ namespace MatterHackers.DataConverters3D
 			// Abort load if cancel requested
 			cancellationToken.ThrowIfCancellationRequested();
 
-			// Natural path
-			string filePath = item.MeshPath;
-
-			// If relative/asset file name
-			if (Path.GetDirectoryName(filePath) == "")
-			{
-				string sha1PlusExtension = filePath;
-
-				filePath = Path.Combine(Object3D.AssetsPath, sha1PlusExtension);
-
-				// If the asset is not in the local cache folder, acquire it
-				if (!File.Exists(filePath))
-				{
-					// *************************************************************************
-					// TODO: Fix invalid use of Wait()
-					// *************************************************************************
-					// Prime cache
-					AssetObject3D.AssetManager.AcquireAsset(sha1PlusExtension, cancellationToken, progress).Wait();
-				}
-			}
+			// *************************************************************************
+			// TODO: Fix invalid use of Result
+			// *************************************************************************
+			string filePath = item.ResolveFilePath(progress, cancellationToken).Result;
 
 			if (string.Equals(Path.GetExtension(filePath), ".mcx", StringComparison.OrdinalIgnoreCase))
 			{
@@ -135,6 +119,29 @@ namespace MatterHackers.DataConverters3D
 
 				item.SetMeshDirect(mesh);
 			}
+		}
+
+		public static async Task<string> ResolveFilePath(this IObject3D item, Action<double, string> progress, CancellationToken cancellationToken)
+		{
+			// Natural path
+			string filePath = item.MeshPath;
+
+			// If relative/asset file name
+			if (Path.GetDirectoryName(filePath) == "")
+			{
+				string sha1PlusExtension = filePath;
+
+				filePath = Path.Combine(Object3D.AssetsPath, sha1PlusExtension);
+
+				// If the asset is not in the local cache folder, acquire it
+				if (!File.Exists(filePath))
+				{
+					// Prime cache
+					await AssetObject3D.AssetManager.AcquireAsset(sha1PlusExtension, cancellationToken, progress);
+				}
+			}
+
+			return filePath;
 		}
 
 		public static async void SaveTo(this IObject3D sourceItem, Stream outputStream, Action<double, string> progress = null)
