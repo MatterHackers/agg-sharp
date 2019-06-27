@@ -77,6 +77,7 @@
     <Compile Include="AmfDocumentTests.cs" />
     <Compile Include="Other\AffineTests.cs" />
     <Compile Include="Other\AggDrawingTests.cs" />
+    <Compile Include="Other\ClipperTests.cs" />
     <Compile Include="Other\Matrix4x4Tests.cs" />
     <Compile Include="Other\RunTest.cs" />
     <Compile Include="Other\TesselatorTests.cs" />
