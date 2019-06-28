@@ -817,7 +817,10 @@ namespace MatterHackers.PolygonMesh
 		{
 			//// planer project along the normal of this face
 			var faces = mesh.GetCoplanerFaces(face);
-			mesh.PlaceTextureOnFaces(faces, textureToUse, mesh.GetMaxPlaneProjection(faces, textureToUse));
+			if (faces.Any())
+			{
+				mesh.PlaceTextureOnFaces(faces, textureToUse, mesh.GetMaxPlaneProjection(faces, textureToUse));
+			}
 		}
 
 		public static void PlaceTextureOnFace(this Mesh mesh, int face, ImageBuffer textureToUse)
