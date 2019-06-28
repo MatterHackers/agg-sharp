@@ -17,8 +17,8 @@
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
 using System;
+using System.Buffers;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -31,6 +31,36 @@ using static MatterHackers.Agg.Color;
 
 namespace MatterHackers.Agg.UI
 {
+	public class SafeChildren : IDisposable
+	{
+		private readonly GuiWidget[] children;
+
+		public GuiWidget this[int index]
+		{
+			get
+			{
+				return children[index];
+			}
+		}
+
+		public int Count { get; private set; }
+
+		public SafeChildren(GuiWidget item)
+		{
+			Count = item.Children.Count;
+			children = ArrayPool<GuiWidget>.Shared.Rent(item.Children.Count);
+			for (int i = 0; i < Count; i++)
+			{
+				children[i] = item.Children[i];
+			}
+		}
+
+		public void Dispose()
+		{
+			ArrayPool<GuiWidget>.Shared.Return(children);
+		}
+	}
+
 	public class LayoutLock : IDisposable
 	{
 		GuiWidget item;
@@ -2785,49 +2815,16 @@ namespace MatterHackers.Agg.UI
 
 		private void OnMouseMoveNotCaptured(MouseEventArgs mouseEvent)
 		{
-			if (Parent != null && Parent.mouseMoveEventHasBeenAcceptedByOther)
+			using (var children = new SafeChildren(this))
 			{
-				mouseMoveEventHasBeenAcceptedByOther = true;
-			}
-
-			if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
-			{
-				if (mouseMoveEventHasBeenAcceptedByOther)
+				if (Parent != null && Parent.mouseMoveEventHasBeenAcceptedByOther)
 				{
-					if (UnderMouseState == UnderMouseState.FirstUnderMouse)
-					{
-						// set it before we call the function to have the state right to the callee
-						UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
-						OnMouseLeave(mouseEvent);
-					}
-					else if (UnderMouseState == UnderMouseState.NotUnderMouse)
-					{
-						UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
-						OnMouseEnterBounds(mouseEvent);
-					}
+					mouseMoveEventHasBeenAcceptedByOther = true;
 				}
-				else
+
+				if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
 				{
-					bool willBeInChild = false;
-
-					// figure out what state we will be in when done
-					for (int i = Children.Count - 1; i >= 0; i--)
-					{
-						GuiWidget child = Children[i];
-						double childX = mouseEvent.X;
-						double childY = mouseEvent.Y;
-						child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
-						if (child.Visible
-							&& child.Enabled
-							&& child.CanSelect
-							&& child.PositionWithinLocalBounds(childX, childY))
-						{
-							willBeInChild = true;
-							break;
-						}
-					}
-
-					if (willBeInChild)
+					if (mouseMoveEventHasBeenAcceptedByOther)
 					{
 						if (UnderMouseState == UnderMouseState.FirstUnderMouse)
 						{
@@ -2840,54 +2837,92 @@ namespace MatterHackers.Agg.UI
 							UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
 							OnMouseEnterBounds(mouseEvent);
 						}
-						UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
 					}
-					else // It is in this but not children. It will be the first under mouse
+					else
 					{
-						if (UnderMouseState == UnderMouseState.NotUnderMouse)
+						bool willBeInChild = false;
+
+						// figure out what state we will be in when done
+						for (int i = children.Count - 1; i >= 0; i--)
 						{
-							UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
-							OnMouseEnterBounds(mouseEvent);
-							OnMouseEnter(mouseEvent);
+							GuiWidget child = children[i];
+							double childX = mouseEvent.X;
+							double childY = mouseEvent.Y;
+							child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
+							if (child.Visible
+								&& child.Enabled
+								&& child.CanSelect
+								&& child.PositionWithinLocalBounds(childX, childY))
+							{
+								willBeInChild = true;
+								break;
+							}
 						}
-						else if (UnderMouseState == UnderMouseState.UnderMouseNotFirst)
+
+						if (willBeInChild)
 						{
-							UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
-							OnMouseEnter(mouseEvent);
+							if (UnderMouseState == UnderMouseState.FirstUnderMouse)
+							{
+								// set it before we call the function to have the state right to the callee
+								UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+								OnMouseLeave(mouseEvent);
+							}
+							else if (UnderMouseState == UnderMouseState.NotUnderMouse)
+							{
+								UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+								OnMouseEnterBounds(mouseEvent);
+							}
+
+							UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+						}
+						else // It is in this but not children. It will be the first under mouse
+						{
+							if (UnderMouseState == UnderMouseState.NotUnderMouse)
+							{
+								UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
+								OnMouseEnterBounds(mouseEvent);
+								OnMouseEnter(mouseEvent);
+							}
+							else if (UnderMouseState == UnderMouseState.UnderMouseNotFirst)
+							{
+								UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
+								OnMouseEnter(mouseEvent);
+							}
 						}
 					}
 				}
-			}
-			else // mouse is not in this bounds
-			{
-				if (UnderMouseState != UI.UnderMouseState.NotUnderMouse)
+				else // mouse is not in this bounds
 				{
-					if (FirstWidgetUnderMouse)
+					if (UnderMouseState != UI.UnderMouseState.NotUnderMouse)
 					{
+						if (FirstWidgetUnderMouse)
+						{
+							UnderMouseState = UI.UnderMouseState.NotUnderMouse;
+							OnMouseLeave(mouseEvent);
+						}
+
 						UnderMouseState = UI.UnderMouseState.NotUnderMouse;
-						OnMouseLeave(mouseEvent);
+						OnMouseLeaveBounds(mouseEvent);
 					}
-					UnderMouseState = UI.UnderMouseState.NotUnderMouse;
-					OnMouseLeaveBounds(mouseEvent);
 				}
-			}
 
-			MouseMove?.Invoke(this, mouseEvent);
+				MouseMove?.Invoke(this, mouseEvent);
 
-			for (int i = Children.Count - 1; i >= 0; i--)
-			{
-				GuiWidget child = Children[i];
-				double childX = mouseEvent.X;
-				double childY = mouseEvent.Y;
-				child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
-				MouseEventArgs childMouseEvent = new MouseEventArgs(mouseEvent, childX, childY);
-				if (child.Visible && child.Enabled && child.CanSelect)
+				for (int i = children.Count - 1; i >= 0; i--)
 				{
-					child.OnMouseMove(childMouseEvent);
-					mouseEvent.AcceptDrop |= childMouseEvent.AcceptDrop;
-					if (child.UnderMouseState != UnderMouseState.NotUnderMouse)
+					GuiWidget child = children[i];
+					double childX = mouseEvent.X;
+					double childY = mouseEvent.Y;
+					child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
+					MouseEventArgs childMouseEvent = new MouseEventArgs(mouseEvent, childX, childY);
+					if (child.Visible && child.Enabled && child.CanSelect)
 					{
-						mouseMoveEventHasBeenAcceptedByOther = true;
+						child.OnMouseMove(childMouseEvent);
+						mouseEvent.AcceptDrop |= childMouseEvent.AcceptDrop;
+						if (child.UnderMouseState != UnderMouseState.NotUnderMouse)
+						{
+							mouseMoveEventHasBeenAcceptedByOther = true;
+						}
 					}
 				}
 			}
