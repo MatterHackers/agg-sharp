@@ -31,6 +31,7 @@ using MatterHackers.Agg.Image;
 using NUnit.Framework;
 using System.IO;
 using MatterHackers.VectorMath;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -965,7 +966,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(contents.Height == 20);
 			Assert.IsTrue(groupBox.ClientArea.Height == 20);
 			Assert.IsTrue(groupBox.Height == 50);
-			TextWidget groupBoxLabel = groupBox.Children[0] as TextWidget;
+			TextWidget groupBoxLabel = groupBox.Children.FirstOrDefault() as TextWidget;
 			groupBoxLabel.Name = "groupBoxLabel";
 			Assert.IsTrue(groupBoxLabel.BoundsRelativeToParent.Top == groupBox.LocalBounds.Top);
 			contents.Height = 10;

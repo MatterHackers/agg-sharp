@@ -62,8 +62,13 @@ namespace MatterHackers.Agg.UI
 			{
 				perviousParent.ResizeableChanged -= PerviousParent_ResizeableChanged;
 			}
+
 			perviousParent = Parent;
-			Parent.ResizeableChanged += PerviousParent_ResizeableChanged;
+			if (Parent != null)
+			{
+				Parent.ResizeableChanged += PerviousParent_ResizeableChanged;
+			}
+
 			base.OnParentChanged(e);
 			PerviousParent_ResizeableChanged(null, null);
 		}
