@@ -960,6 +960,11 @@ namespace MatterHackers.DataConverters3D
 
 			parent.Invalidate(new InvalidateArgs(this, InvalidateType.Children));
 		}
+
+		public bool Equals(IObject3D other)
+		{
+			return base.Equals(other);
+		}
 	}
 
 	public class CacheContext

@@ -139,13 +139,13 @@ namespace MatterHackers.Agg.UI
 
 			Tab foundTab = null;
 
-			tabBar.Children.ReadOnly((list) =>
+			using (var list = tabBar.Children.ReadOnly())
 			{
 				if (list[index] is Tab tab)
 				{
 					foundTab = tab;
 				}
-			});
+			}
 
 			return foundTab.TabPage;
 		}
