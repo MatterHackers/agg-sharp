@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -72,7 +73,8 @@ namespace MatterHackers.Agg.UI
 			{
 				throw new Exception("We should have one child that is the thum view.");
 			}
-			Children[0].LocalBounds = LocalBounds;
+
+			Children.FirstOrDefault().LocalBounds = LocalBounds;
 			base.OnBoundsChanged(e);
 		}
 

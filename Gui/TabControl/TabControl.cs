@@ -137,12 +137,17 @@ namespace MatterHackers.Agg.UI
 				throw new IndexOutOfRangeException();
 			}
 
-			if (tabBar.Children[index] is Tab tab)
-			{
-				return tab.TabPage;
-			}
+			Tab foundTab = null;
 
-			throw new Exception("Somehow there is an object in the tabBar that is not a Tab.");
+			tabBar.Children.ReadOnly((list) =>
+			{
+				if (list[index] is Tab tab)
+				{
+					foundTab = tab;
+				}
+			});
+
+			return foundTab.TabPage;
 		}
 
 		public TabPage GetTabPage(string tabName)

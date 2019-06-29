@@ -17,7 +17,6 @@
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -31,36 +30,6 @@ using static MatterHackers.Agg.Color;
 
 namespace MatterHackers.Agg.UI
 {
-	public class SafeChildren : IDisposable
-	{
-		private readonly GuiWidget[] children;
-
-		public GuiWidget this[int index]
-		{
-			get
-			{
-				return children[index];
-			}
-		}
-
-		public int Count { get; private set; }
-
-		public SafeChildren(GuiWidget item)
-		{
-			Count = item.Children.Count;
-			children = ArrayPool<GuiWidget>.Shared.Rent(item.Children.Count);
-			for (int i = 0; i < Count; i++)
-			{
-				children[i] = item.Children[i];
-			}
-		}
-
-		public void Dispose()
-		{
-			ArrayPool<GuiWidget>.Shared.Return(children);
-		}
-	}
-
 	public class LayoutLock : IDisposable
 	{
 		private readonly GuiWidget item;
@@ -180,7 +149,7 @@ namespace MatterHackers.Agg.UI
 		FirstUnderMouse
 	}
 
-	public class GuiWidget
+	public class GuiWidget : IAscendable<GuiWidget>
 	{
 		public static double DeviceScale { get; set; } = 1;
 
@@ -748,6 +717,7 @@ namespace MatterHackers.Agg.UI
 
 		public GuiWidget()
 		{
+			Children = new SafeList<GuiWidget>(this);
 			screenClipping = new ScreenClipping(this);
 			LayoutEngine = new LayoutEngineSimpleAlign();
 			HAnchor = hAnchor;
@@ -759,7 +729,7 @@ namespace MatterHackers.Agg.UI
 			return $"Name = {Name}, Bounds = {LocalBounds} - {GetType().Name}";
 		}
 
-		public List<GuiWidget> Children { get; } = new List<GuiWidget>();
+		public SafeList<GuiWidget> Children { get; }
 
 		public void ClearRemovedFlag()
 		{
@@ -1500,7 +1470,11 @@ namespace MatterHackers.Agg.UI
 
 				childToAdd.Parent = this;
 				childToAdd.HasBeenClosed = false;
-				Children.Insert(indexInChildrenList, childToAdd);
+				Children.Modify((list) =>
+				{
+					list.Insert(indexInChildrenList, childToAdd);
+				});
+
 				OnChildAdded(new GuiWidgetEventArgs(childToAdd));
 				childToAdd.OnParentChanged(null);
 
@@ -1517,14 +1491,17 @@ namespace MatterHackers.Agg.UI
 			Initialized = true;
 		}
 
-		public int GetChildIndex(GuiWidget child)
+		public int GetChildIndex(GuiWidget childToFind)
 		{
-			for (int i = 0; i < Children.Count; i++)
+			int i = 0;
+			foreach (var child in Children)
 			{
-				if (Children[i] == child)
+				if (child == childToFind)
 				{
 					return i;
 				}
+
+				i++;
 			}
 
 			BreakInDebugger("You asked for the index of a child that is not a child of this widget.");
@@ -1538,8 +1515,11 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			Parent.Children.Remove(this);
-			Parent.Children.Insert(0, this);
+			Parent.Children.Modify((list) =>
+			{
+				list.Remove(this);
+				list.Insert(0, this);
+			});
 		}
 
 		public virtual void BringToFront()
@@ -1563,34 +1543,43 @@ namespace MatterHackers.Agg.UI
 			while (Children.Count > 0)
 			{
 				int lastIndex = Children.Count - 1;
-				GuiWidget child = Children[lastIndex];
-				Children.RemoveAt(lastIndex);
-				child.Parent = null;
-				child.Close();
+				Children.Modify((list) =>
+				{
+					GuiWidget child = list[lastIndex];
+					list.RemoveAt(lastIndex);
+					child.Parent = null;
+					child.Close();
+				});
 			}
 		}
 
 		public void RemoveAllChildren()
 		{
-			for (int i = Children.Count - 1; i >= 0; i--)
+			foreach (var child in Children)
 			{
-				RemoveChild(Children[i]);
+				RemoveChild(child);
 			}
 		}
 
 		public virtual void RemoveChild(int index)
 		{
-			RemoveChild(Children[index]);
+			Children.Modify((list) =>
+			{
+				RemoveChild(list[index]);
+			});
 		}
 
 		public void ReplaceChild(GuiWidget existing, GuiWidget replacement)
 		{
-			int pos = this.GetChildIndex(existing);
-			if (pos >= 0)
+			Children.Modify((list) =>
 			{
-				this.Children[pos].Close();
-				this.AddChild(replacement, pos);
-			}
+				var pos = list.IndexOf(existing);
+				if (pos >= 0)
+				{
+					list.Remove(existing);
+					list.Insert(pos, replacement);
+				}
+			});
 		}
 
 		private bool hasBeenRemoved = false;
@@ -1979,9 +1968,8 @@ namespace MatterHackers.Agg.UI
 
 				BeforeDraw?.Invoke(this, new DrawEventArgs(graphics2D));
 
-				for (int i = 0; i < Children.Count; i++)
+				foreach (var child in Children)
 				{
-					GuiWidget child = Children[i];
 					if (child.Visible)
 					{
 						if (child.DebugShowBounds)
@@ -2541,9 +2529,8 @@ namespace MatterHackers.Agg.UI
 			if (PositionWithinLocalBounds(flingEvent.X, flingEvent.Y))
 			{
 				// bool childHasAcceptedThisEvent = false;
-				for (int i = Children.Count - 1; i >= 0; i--)
+				foreach (var child in Children.Reverse())
 				{
-					GuiWidget child = Children[i];
 					if (child.Visible & child.Enabled)
 					{
 						double childX = flingEvent.X;
@@ -2571,9 +2558,8 @@ namespace MatterHackers.Agg.UI
 				bool willBeInChild = false;
 
 				// figure out what state we will be in when done
-				for (int i = Children.Count - 1; i >= 0; i--)
+				foreach (var child in Children.Reverse())
 				{
-					GuiWidget child = Children[i];
 					double childX = mouseEvent.X;
 					double childY = mouseEvent.Y;
 					child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
@@ -2620,9 +2606,8 @@ namespace MatterHackers.Agg.UI
 
 				bool childHasAcceptedThisEvent = false;
 				bool childHasTakenFocus = false;
-				for (int i = Children.Count - 1; i >= 0; i--)
+				foreach (var child in Children.Reverse())
 				{
-					GuiWidget child = Children[i];
 					double childX = mouseEvent.X;
 					double childY = mouseEvent.Y;
 					child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
@@ -2864,16 +2849,48 @@ namespace MatterHackers.Agg.UI
 
 		private void OnMouseMoveNotCaptured(MouseEventArgs mouseEvent)
 		{
-			using (var children = new SafeChildren(this))
+			if (Parent != null && Parent.mouseMoveEventHasBeenAcceptedByOther)
 			{
-				if (Parent != null && Parent.mouseMoveEventHasBeenAcceptedByOther)
-				{
-					mouseMoveEventHasBeenAcceptedByOther = true;
-				}
+				mouseMoveEventHasBeenAcceptedByOther = true;
+			}
 
-				if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
+			if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
+			{
+				if (mouseMoveEventHasBeenAcceptedByOther)
 				{
-					if (mouseMoveEventHasBeenAcceptedByOther)
+					if (UnderMouseState == UnderMouseState.FirstUnderMouse)
+					{
+						// set it before we call the function to have the state right to the callee
+						UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+						OnMouseLeave(mouseEvent);
+					}
+					else if (UnderMouseState == UnderMouseState.NotUnderMouse)
+					{
+						UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+						OnMouseEnterBounds(mouseEvent);
+					}
+				}
+				else
+				{
+					bool willBeInChild = false;
+
+					// figure out what state we will be in when done
+					foreach (var child in Children.Reverse())
+					{
+						double childX = mouseEvent.X;
+						double childY = mouseEvent.Y;
+						child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
+						if (child.Visible
+							&& child.Enabled
+							&& child.CanSelect
+							&& child.PositionWithinLocalBounds(childX, childY))
+						{
+							willBeInChild = true;
+							break;
+						}
+					}
+
+					if (willBeInChild)
 					{
 						if (UnderMouseState == UnderMouseState.FirstUnderMouse)
 						{
@@ -2886,92 +2903,55 @@ namespace MatterHackers.Agg.UI
 							UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
 							OnMouseEnterBounds(mouseEvent);
 						}
+
+						UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
 					}
-					else
+					else // It is in this but not children. It will be the first under mouse
 					{
-						bool willBeInChild = false;
-
-						// figure out what state we will be in when done
-						for (int i = children.Count - 1; i >= 0; i--)
+						if (UnderMouseState == UnderMouseState.NotUnderMouse)
 						{
-							GuiWidget child = children[i];
-							double childX = mouseEvent.X;
-							double childY = mouseEvent.Y;
-							child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
-							if (child.Visible
-								&& child.Enabled
-								&& child.CanSelect
-								&& child.PositionWithinLocalBounds(childX, childY))
-							{
-								willBeInChild = true;
-								break;
-							}
+							UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
+							OnMouseEnterBounds(mouseEvent);
+							OnMouseEnter(mouseEvent);
 						}
-
-						if (willBeInChild)
+						else if (UnderMouseState == UnderMouseState.UnderMouseNotFirst)
 						{
-							if (UnderMouseState == UnderMouseState.FirstUnderMouse)
-							{
-								// set it before we call the function to have the state right to the callee
-								UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
-								OnMouseLeave(mouseEvent);
-							}
-							else if (UnderMouseState == UnderMouseState.NotUnderMouse)
-							{
-								UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
-								OnMouseEnterBounds(mouseEvent);
-							}
-
-							UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
-						}
-						else // It is in this but not children. It will be the first under mouse
-						{
-							if (UnderMouseState == UnderMouseState.NotUnderMouse)
-							{
-								UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
-								OnMouseEnterBounds(mouseEvent);
-								OnMouseEnter(mouseEvent);
-							}
-							else if (UnderMouseState == UnderMouseState.UnderMouseNotFirst)
-							{
-								UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
-								OnMouseEnter(mouseEvent);
-							}
+							UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
+							OnMouseEnter(mouseEvent);
 						}
 					}
 				}
-				else // mouse is not in this bounds
+			}
+			else // mouse is not in this bounds
+			{
+				if (UnderMouseState != UI.UnderMouseState.NotUnderMouse)
 				{
-					if (UnderMouseState != UI.UnderMouseState.NotUnderMouse)
+					if (FirstWidgetUnderMouse)
 					{
-						if (FirstWidgetUnderMouse)
-						{
-							UnderMouseState = UI.UnderMouseState.NotUnderMouse;
-							OnMouseLeave(mouseEvent);
-						}
-
 						UnderMouseState = UI.UnderMouseState.NotUnderMouse;
-						OnMouseLeaveBounds(mouseEvent);
+						OnMouseLeave(mouseEvent);
 					}
+
+					UnderMouseState = UI.UnderMouseState.NotUnderMouse;
+					OnMouseLeaveBounds(mouseEvent);
 				}
+			}
 
-				MouseMove?.Invoke(this, mouseEvent);
+			MouseMove?.Invoke(this, mouseEvent);
 
-				for (int i = children.Count - 1; i >= 0; i--)
+			foreach (var child in Children.Reverse())
+			{
+				double childX = mouseEvent.X;
+				double childY = mouseEvent.Y;
+				child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
+				var childMouseEvent = new MouseEventArgs(mouseEvent, childX, childY);
+				if (child.Visible && child.Enabled && child.CanSelect)
 				{
-					GuiWidget child = children[i];
-					double childX = mouseEvent.X;
-					double childY = mouseEvent.Y;
-					child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
-					var childMouseEvent = new MouseEventArgs(mouseEvent, childX, childY);
-					if (child.Visible && child.Enabled && child.CanSelect)
+					child.OnMouseMove(childMouseEvent);
+					mouseEvent.AcceptDrop |= childMouseEvent.AcceptDrop;
+					if (child.UnderMouseState != UnderMouseState.NotUnderMouse)
 					{
-						child.OnMouseMove(childMouseEvent);
-						mouseEvent.AcceptDrop |= childMouseEvent.AcceptDrop;
-						if (child.UnderMouseState != UnderMouseState.NotUnderMouse)
-						{
-							mouseMoveEventHasBeenAcceptedByOther = true;
-						}
+						mouseMoveEventHasBeenAcceptedByOther = true;
 					}
 				}
 			}
@@ -2995,9 +2975,8 @@ namespace MatterHackers.Agg.UI
 			{
 				if (mouseUpOnWidget)
 				{
-					for (int i = Children.Count - 1; i >= 0; i--)
+					foreach (var child in Children.Reverse())
 					{
-						GuiWidget child = Children[i];
 						double childX = mouseEvent.X;
 						double childY = mouseEvent.Y;
 						child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
@@ -3008,7 +2987,7 @@ namespace MatterHackers.Agg.UI
 							{
 								childHasAcceptedThisEvent = true;
 								child.OnMouseUp(childMouseEvent);
-								i = -1;
+								break;
 							}
 							else
 							{
@@ -3042,9 +3021,8 @@ namespace MatterHackers.Agg.UI
 					}
 
 					int countOfChildernThatThinkTheyHaveTheMouseCaptured = 0;
-					for (int childIndex = 0; childIndex < Children.Count(); childIndex++)
+					foreach (var child in Children)
 					{
-						GuiWidget child = Children[childIndex];
 						if (childrenLockedInMouseUpCount != 1)
 						{
 							BreakInDebugger("The mouse should always be locked while in mouse up.");
@@ -3074,9 +3052,8 @@ namespace MatterHackers.Agg.UI
 					}
 
 					bool upHappenedAboveChild = false;
-					for (int i = Children.Count - 1; i >= 0; i--)
+					foreach (var child in Children.Reverse())
 					{
-						GuiWidget child = Children[i];
 						double childX = mouseEvent.X;
 						double childY = mouseEvent.Y;
 						child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
@@ -3319,9 +3296,8 @@ namespace MatterHackers.Agg.UI
 		{
 			if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
 			{
-				for (int i = Children.Count - 1; i >= 0; i--)
+				foreach (var child in Children.Reverse())
 				{
-					GuiWidget child = Children[i];
 					if (child.Visible & child.Enabled)
 					{
 						double childX = mouseEvent.X;

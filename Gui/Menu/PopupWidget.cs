@@ -136,7 +136,7 @@ namespace MatterHackers.Agg.UI
 					&& ignoredPopupChild.KeepMenuOpen);
 // 					&& ((ignoredPopupChild.ContainsFocus || ignoredPopupChild.KeepMenuOpen()) && !this.ContainsFocus));
 
-				bool clickIsInsideScrollArea = (scrollingWindow?.ScrollArea?.Children?[0]?.ChildHasMouseCaptured == true);
+				bool clickIsInsideScrollArea = scrollingWindow?.ScrollArea?.Children?.FirstOrDefault()?.ChildHasMouseCaptured == true;
 
 				bool keepMeOpen = false;
 

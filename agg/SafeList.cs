@@ -31,7 +31,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace MatterHackers.DataConverters3D
+namespace MatterHackers.Agg
 {
 	public interface IAscendable<T>
 	{
@@ -75,6 +75,11 @@ namespace MatterHackers.DataConverters3D
 		public void SetParent(T parent)
 		{
 			this.parentItem = parent;
+		}
+
+		public void ReadOnly(Action<List<T>> reader)
+		{
+			reader(new List<T>(items));
 		}
 
 		/// <summary>

@@ -73,6 +73,7 @@ namespace MatterHackers.Agg.UI
 					graphics2D.Line(LocalBounds.Right, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, this.BorderColor);
 					break;
 			}
+
 			base.OnDraw(graphics2D);
 		}
 
@@ -85,7 +86,13 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				return Children.IndexOf(currentVisibleTab);
+				int index = -1;
+				Children.ReadOnly((list) =>
+				{
+					index = list.IndexOf(currentVisibleTab);
+				});
+
+				return index;
 			}
 
 			set
