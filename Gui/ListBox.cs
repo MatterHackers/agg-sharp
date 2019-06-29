@@ -247,7 +247,7 @@ namespace MatterHackers.Agg.UI
 			GuiWidget widgetLeft = ((GuiWidget)sender);
 			if (SelectedIndex >= 0)
 			{
-				topToBottomItemList.Children.ReadOnly((list) =>
+				using (var list = topToBottomItemList.Children.ReadOnly())
 				{
 					if (widgetLeft != list[SelectedIndex])
 					{
@@ -255,7 +255,7 @@ namespace MatterHackers.Agg.UI
 						widgetLeft.Invalidate();
 						Invalidate();
 					}
-				});
+				}
 			}
 		}
 
@@ -333,10 +333,10 @@ namespace MatterHackers.Agg.UI
 				if (SelectedIndex != -1)
 				{
 					GuiWidget child = null;
-					Children.ReadOnly((list) =>
+					using (var list = Children.ReadOnly())
 					{
 						child = list[SelectedIndex];
-					});
+					}
 
 					return child;
 				}

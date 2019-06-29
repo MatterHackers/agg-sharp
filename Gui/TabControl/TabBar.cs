@@ -87,10 +87,10 @@ namespace MatterHackers.Agg.UI
 			get
 			{
 				int index = -1;
-				Children.ReadOnly((list) =>
+				using (var list = Children.ReadOnly())
 				{
 					index = list.IndexOf(currentVisibleTab);
-				});
+				}
 
 				return index;
 			}

@@ -270,7 +270,7 @@ namespace MatterHackers.DataConverters3D
 		IVertexSource VertexSource { get; set; }
 	}
 
-	public interface IObject3D : IAscendable<IObject3D>
+	public interface IObject3D : IAscendable<IObject3D>, IEquatable<IObject3D>
 	{
 		event EventHandler<InvalidateArgs> Invalidated;
 

@@ -149,7 +149,7 @@ namespace MatterHackers.Agg.UI
 		FirstUnderMouse
 	}
 
-	public class GuiWidget : IAscendable<GuiWidget>
+	public class GuiWidget : IAscendable<GuiWidget>, IEquatable<GuiWidget>
 	{
 		public static double DeviceScale { get; set; } = 1;
 
@@ -3440,6 +3440,11 @@ namespace MatterHackers.Agg.UI
 			}
 
 			KeyUp?.Invoke(this, keyEvent);
+		}
+
+		public bool Equals(GuiWidget other)
+		{
+			return base.Equals(other);
 		}
 	}
 

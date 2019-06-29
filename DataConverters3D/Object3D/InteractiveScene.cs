@@ -377,6 +377,11 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		public bool Equals(IObject3D other)
+		{
+			return base.Equals(other);
+		}
+
 		#endregion
 	}
 }
