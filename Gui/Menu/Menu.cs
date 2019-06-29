@@ -97,7 +97,7 @@ namespace MatterHackers.Agg.UI
 			{
 				if (MenuItems.Count > 0)
 				{
-					UiThread.RunOnIdle(ShowMenu);
+					ShowMenu();
 					IsOpen = true;
 				}
 			}
