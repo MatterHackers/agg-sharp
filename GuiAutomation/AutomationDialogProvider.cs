@@ -63,7 +63,7 @@ namespace MatterHackers.Agg.Platform
 				Margin = new BorderDouble(30, 15),
 				Name = "Automation Dialog TextEdit"
 			};
-			fileNameInput.EnterPressed += (s, e) => systemWindow.CloseOnIdle();
+			fileNameInput.EnterPressed += (s, e) => systemWindow.Close();
 			systemWindow.AddChild(fileNameInput);
 
 			systemWindow.Load += (s, e) => fileNameInput.Focus();

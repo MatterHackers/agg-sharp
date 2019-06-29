@@ -1540,17 +1540,15 @@ namespace MatterHackers.Agg.UI
 
 		public void CloseAllChildren()
 		{
-			while (Children.Count > 0)
+			Children.Modify((Action<List<GuiWidget>>)((List<GuiWidget> list) =>
 			{
-				int lastIndex = Children.Count - 1;
-				Children.Modify((list) =>
+				foreach (var child in list)
 				{
-					GuiWidget child = list[lastIndex];
-					list.RemoveAt(lastIndex);
-					child.Parent = null;
 					child.Close();
-				});
-			}
+				}
+
+				list.Clear();
+			}));
 		}
 
 		public void RemoveAllChildren()
@@ -1586,19 +1584,16 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void RemoveChild(GuiWidget childToRemove)
 		{
-			if (!Children.Contains(childToRemove))
+			if (Children.Contains(childToRemove))
 			{
-				throw new InvalidOperationException("You can only remove children that this control has.");
+				childToRemove.ClearCapturedState();
+				childToRemove.hasBeenRemoved = true;
+				Children.Remove(childToRemove);
+				childToRemove.Parent = null;
+				OnChildRemoved(new GuiWidgetEventArgs(childToRemove));
+				OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.RemoveChild));
+				Invalidate();
 			}
-
-			childToRemove.ClearCapturedState();
-			childToRemove.hasBeenRemoved = true;
-			Children.Remove(childToRemove);
-			childToRemove.Parent = null;
-			childToRemove.OnParentChanged(null);
-			OnChildRemoved(new GuiWidgetEventArgs(childToRemove));
-			OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.RemoveChild));
-			Invalidate();
 		}
 
 		public virtual void OnChildRemoved(EventArgs e)
@@ -2327,14 +2322,6 @@ namespace MatterHackers.Agg.UI
 
 			screenClippingRect = screenClipping.ScreenClippingRect;
 			return screenClipping.VisibleAfterClipping;
-		}
-
-		public void CloseOnIdle()
-		{
-			if (!HasBeenClosed)
-			{
-				UiThread.RunOnIdle(() => this.Close());
-			}
 		}
 
 		public void Close()

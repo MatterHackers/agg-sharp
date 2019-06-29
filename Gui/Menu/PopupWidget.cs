@@ -53,9 +53,9 @@ namespace MatterHackers.Agg.UI
 
 			this.layoutEngine = layoutEngine;
 
-			ignoredWidgets =  contentWidget.Children.OfType<IIgnoredPopupChild>().ToList();
+			ignoredWidgets = contentWidget.Children.OfType<IIgnoredPopupChild>().ToList();
 
-			contentWidget.Closed += (s,e) => this.Close();
+			contentWidget.Closed += (s, e) => this.Close();
 
 			if (makeScrollable)
 			{

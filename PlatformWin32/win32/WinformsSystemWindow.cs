@@ -246,9 +246,9 @@ namespace MatterHackers.Agg.UI
 			// focus the first child of the forms window (should be the system window)
 			if (AggSystemWindow != null
 				&& AggSystemWindow.Children.Count > 0
-				&& AggSystemWindow.Children[0] != null)
+				&& AggSystemWindow.Children.FirstOrDefault() != null)
 			{
-				AggSystemWindow.Children[0].Focus();
+				AggSystemWindow.Children.FirstOrDefault().Focus();
 			}
 
 			base.OnActivated(e);

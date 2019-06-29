@@ -1057,9 +1057,10 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			for (int i = 0; i < 6; i++)
+			int index = 0;
+			foreach (var child in leftToRightFlowLayoutAll.Children)
 			{
-				Assert.IsTrue(eightControlRectangles[i] == leftToRightFlowLayoutAll.Children[i].BoundsRelativeToParent);
+				Assert.IsTrue(eightControlRectangles[index++] == child.BoundsRelativeToParent);
 			}
 
 			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
@@ -1167,9 +1168,10 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			for (int i = 0; i < 6; i++)
+			int index = 0;
+			foreach (var child in rightToLeftFlowLayoutAll.Children)
 			{
-				Assert.IsTrue(eightControlRectangles[i].Equals(rightToLeftFlowLayoutAll.Children[i].BoundsRelativeToParent, .001));
+				Assert.IsTrue(eightControlRectangles[index++].Equals(child.BoundsRelativeToParent, .001));
 			}
 
 			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
@@ -1267,9 +1269,10 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			for (int i = 0; i < 6; i++)
+			int index = 0;
+			foreach (var child in bottomToTopFlowLayoutAll.Children)
 			{
-				Assert.IsTrue(eightControlRectangles[i] == bottomToTopFlowLayoutAll.Children[i].BoundsRelativeToParent);
+				Assert.IsTrue(eightControlRectangles[index++] == child.BoundsRelativeToParent);
 			}
 
 			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
@@ -1377,9 +1380,10 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			for (int i = 0; i < 6; i++)
+			int index = 0;
+			foreach (var child in bottomToTopFlowLayoutAll.Children)
 			{
-				Assert.IsTrue(eightControlRectangles[i].Equals(bottomToTopFlowLayoutAll.Children[i].BoundsRelativeToParent, .001));
+				Assert.IsTrue(eightControlRectangles[index].Equals(child.BoundsRelativeToParent, .001));
 			}
 
 			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
