@@ -39,7 +39,7 @@ namespace MatterHackers.Agg
 		T Parent { get; set; }
 	}
 
-	public class ReadOnlyList<T> : IDisposable where T : IEquatable<T>
+	public class ReadOnlyList<T> : IEnumerable<T>, IDisposable where T : IEquatable<T>
 	{
 		private readonly T[] items;
 
@@ -79,6 +79,19 @@ namespace MatterHackers.Agg
 			}
 
 			return -1;
+		}
+
+		public IEnumerator<T> GetEnumerator()
+		{
+			for (int i = 0; i < Count; i++)
+			{
+				yield return items[i];
+			}
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return GetEnumerator();
 		}
 	}
 
