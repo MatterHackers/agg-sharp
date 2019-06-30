@@ -30,21 +30,22 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MatterHackers.Agg;
 
 namespace MatterHackers.DataConverters3D
 {
 	public class SelectionMaintainer : IDisposable
 	{
-		InteractiveScene scene;
-		private IObject3D selectedItem;
-		private List<IObject3D> childrenBeforUndo;
+		private readonly InteractiveScene scene;
+		private readonly IObject3D selectedItem;
+		private readonly List<IObject3D> childrenAtStart;
 
 		public SelectionMaintainer(InteractiveScene scene)
 		{
 			this.scene = scene;
 			selectedItem = scene.SelectedItem;
 			scene.SelectedItem = null;
-			childrenBeforUndo = scene.Children.ToList();
+			childrenAtStart = scene.Children.ToList();
 		}
 
 		public void Dispose()
@@ -65,7 +66,7 @@ namespace MatterHackers.DataConverters3D
 			if (!scene.Children.Contains(selectedItem))
 			{
 				// and we have only added one new item to the scene
-				var newItems = scene.Children.Where(c => !childrenBeforUndo.Contains(c));
+				var newItems = scene.Children.Where(c => !childrenAtStart.Contains(c));
 				// select it
 				if (newItems.Count() == 1)
 				{
