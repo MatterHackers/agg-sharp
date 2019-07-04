@@ -39,64 +39,7 @@ namespace MatterHackers.Agg
 		T Parent { get; set; }
 	}
 
-	public class ReadOnlyList<T> : IEnumerable<T>, IDisposable where T : IEquatable<T>
-	{
-		private readonly T[] items;
-
-		public T this[int index]
-		{
-			get
-			{
-				return items[index];
-			}
-		}
-
-		public int Count { get; private set; }
-
-		public ReadOnlyList(List<T> list)
-		{
-			Count = list.Count;
-			items = ArrayPool<T>.Shared.Rent(list.Count);
-			for (int i = 0; i < Count; i++)
-			{
-				items[i] = list[i];
-			}
-		}
-
-		public void Dispose()
-		{
-			ArrayPool<T>.Shared.Return(items);
-		}
-
-		public int IndexOf(T item)
-		{
-			for (int i = 0; i < Count; i++)
-			{
-				if (items[i].Equals(item))
-				{
-					return i;
-				}
-			}
-
-			return -1;
-		}
-
-		public IEnumerator<T> GetEnumerator()
-		{
-			for (int i = 0; i < Count; i++)
-			{
-				yield return items[i];
-			}
-		}
-
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return GetEnumerator();
-		}
-	}
-
-
-	public class SafeList<T> : IEnumerable<T> where T : IAscendable<T>, IEquatable<T>
+	public class SafeList<T> : IEnumerable<T> where T : IAscendable<T>
 	{
 		public event EventHandler ItemsModified;
 
@@ -133,11 +76,6 @@ namespace MatterHackers.Agg
 		public void SetParent(T parent)
 		{
 			this.parentItem = parent;
-		}
-
-		public ReadOnlyList<T> ReadOnly()
-		{
-			return new ReadOnlyList<T>(items);
 		}
 
 		/// <summary>
@@ -181,6 +119,11 @@ namespace MatterHackers.Agg
 			{
 				return $"Count = {Count}";
 			}
+		}
+
+		public int IndexOf(T childToFind)
+		{
+			return items.IndexOf(childToFind);
 		}
 	}
 }

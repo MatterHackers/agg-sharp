@@ -1383,7 +1383,7 @@ namespace MatterHackers.Agg.UI.Tests
 			int index = 0;
 			foreach (var child in bottomToTopFlowLayoutAll.Children)
 			{
-				Assert.IsTrue(eightControlRectangles[index].Equals(child.BoundsRelativeToParent, .001));
+				Assert.IsTrue(eightControlRectangles[index++].Equals(child.BoundsRelativeToParent, .001));
 			}
 
 			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
