@@ -172,34 +172,37 @@ namespace MatterHackers.Agg.UI
 					reclaimFocus = true;
 				}
 
-				// Fired any time focus changes. Traditionally we closed the menu if we weren't focused.
-				// To accommodate children (or external widgets) having focus we also query for and consider special cases
-				bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen);
-				bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
-					&& ignoredPopupChild.KeepMenuOpen);
-
-				bool keepMeOpen = false;
-
-				if (layoutEngine.Anchor is IMenuCreator menuCreator)
+				UiThread.RunOnIdle(() =>
 				{
-					keepMeOpen = menuCreator.AlwaysKeepOpen;
-				}
+					// Fired any time focus changes. Traditionally we closed the menu if we weren't focused.
+					// To accommodate children (or external widgets) having focus we also query for and consider special cases
+					bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen);
+					bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
+						&& ignoredPopupChild.KeepMenuOpen);
 
-				// If the focused changed and we've lost focus and no special cases permit, close the menu
-				if (!this.ContainsFocus
-						&& !specialChildHasFocus
-						&& !descendantIsHoldingOpen
-						&& !holdingOpenForChild
-						&& !keepMeOpen)
-				{
-					this.CloseMenu();
-				}
-				else if (reclaimFocus && !descendantIsHoldingOpen)
-				{
-					this.Focus();
-				}
+					bool keepMeOpen = false;
 
-				holdingOpenForChild = descendantIsHoldingOpen;
+					if (layoutEngine.Anchor is IMenuCreator menuCreator)
+					{
+						keepMeOpen = menuCreator.AlwaysKeepOpen;
+					}
+
+					// If the focused changed and we've lost focus and no special cases permit, close the menu
+					if (!this.ContainsFocus
+							&& !specialChildHasFocus
+							&& !descendantIsHoldingOpen
+							&& !holdingOpenForChild
+							&& !keepMeOpen)
+					{
+						this.CloseMenu();
+					}
+					else if (reclaimFocus && !descendantIsHoldingOpen)
+					{
+						this.Focus();
+					}
+
+					holdingOpenForChild = descendantIsHoldingOpen;
+				});
 			}
 
 			base.OnContainsFocusChanged(e);
