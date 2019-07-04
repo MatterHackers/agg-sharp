@@ -244,12 +244,14 @@ namespace MatterHackers.Agg.UI
 
 		private void itemToAdd_MouseLeaveBounds(object sender, EventArgs e)
 		{
-			GuiWidget widgetLeft = ((GuiWidget)sender);
+			GuiWidget widgetLeft = (GuiWidget)sender;
 			if (SelectedIndex >= 0)
 			{
-				using (var list = topToBottomItemList.Children.ReadOnly())
+				int index = 0;
+				foreach (var child in topToBottomItemList.Children)
 				{
-					if (widgetLeft != list[SelectedIndex])
+					if (index++ == SelectedIndex
+						&& widgetLeft != child)
 					{
 						widgetLeft.BackgroundColor = default(Color);
 						widgetLeft.Invalidate();
@@ -332,13 +334,14 @@ namespace MatterHackers.Agg.UI
 			{
 				if (SelectedIndex != -1)
 				{
-					GuiWidget child = null;
-					using (var list = Children.ReadOnly())
+					int index = 0;
+					foreach (var child in topToBottomItemList.Children)
 					{
-						child = list[SelectedIndex];
+						if (index++ == SelectedIndex)
+						{
+							return child;
+						}
 					}
-
-					return child;
 				}
 
 				return null;

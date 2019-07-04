@@ -139,9 +139,9 @@ namespace MatterHackers.Agg.UI
 
 			Tab foundTab = null;
 
-			using (var list = tabBar.Children.ReadOnly())
+			foreach (var child in Children)
 			{
-				if (list[index] is Tab tab)
+				if (child is Tab tab)
 				{
 					foundTab = tab;
 				}

@@ -86,13 +86,7 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				int index = -1;
-				using (var list = Children.ReadOnly())
-				{
-					index = list.IndexOf(currentVisibleTab);
-				}
-
-				return index;
+				return Children.IndexOf(currentVisibleTab);
 			}
 
 			set

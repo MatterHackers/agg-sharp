@@ -1491,23 +1491,6 @@ namespace MatterHackers.Agg.UI
 			Initialized = true;
 		}
 
-		public int GetChildIndex(GuiWidget childToFind)
-		{
-			int i = 0;
-			foreach (var child in Children)
-			{
-				if (child == childToFind)
-				{
-					return i;
-				}
-
-				i++;
-			}
-
-			BreakInDebugger("You asked for the index of a child that is not a child of this widget.");
-			return -1;
-		}
-
 		public void SendToBack()
 		{
 			if (Parent == null)
@@ -1540,7 +1523,7 @@ namespace MatterHackers.Agg.UI
 
 		public void CloseAllChildren()
 		{
-			Children.Modify((Action<List<GuiWidget>>)((List<GuiWidget> list) =>
+			Children.Modify(list =>
 			{
 				foreach (var child in list)
 				{
@@ -1548,7 +1531,7 @@ namespace MatterHackers.Agg.UI
 				}
 
 				list.Clear();
-			}));
+			});
 		}
 
 		public void RemoveAllChildren()

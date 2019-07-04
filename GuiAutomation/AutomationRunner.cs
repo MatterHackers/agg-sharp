@@ -1185,7 +1185,7 @@ namespace MatterHackers.GuiAutomation
 				}));
 
 			// Once either the timeout or the test method has completed, store if a timeout occurred and shutdown the SystemWindow
-			task.ContinueWith((Action<Task<Task>>)((Task<Task> innerTask) =>
+			task.ContinueWith(innerTask =>
 			{
 				long elapsedTime = timer.ElapsedMilliseconds;
 				testTimedOut = elapsedTime >= testTimeout;
@@ -1199,7 +1199,7 @@ namespace MatterHackers.GuiAutomation
 				{
 					initialSystemWindow.Close();
 				}
-			}));
+			});
 
 			// Main thread blocks here until released via CloseOnIdle above
 			initialSystemWindow.ShowAsSystemWindow();
