@@ -42,7 +42,7 @@ namespace MatterHackers.RenderOpenGl
 		Hidden,
 		Shaded,
 		Outlines,
-		Manifold,
+		NonManifold,
 		Polygons,
 		Overhang,
 		Materials,
@@ -119,6 +119,7 @@ namespace MatterHackers.RenderOpenGl
 
 					case RenderTypes.Polygons:
 					case RenderTypes.Outlines:
+					case RenderTypes.NonManifold:
 						if (color.Alpha0To255 > 0)
 						{
 							GL.Enable(EnableCap.PolygonOffsetFill);
@@ -320,18 +321,22 @@ namespace MatterHackers.RenderOpenGl
 			GL.Disable(EnableCap.Lighting);
 
 			GL.DisableClientState(ArrayCap.TextureCoordArray);
-			GLMeshWirePlugin glWireMeshPlugin = null;
+			IEdgeLinesContainer edgeLinesContainer = null;
 			if (renderType == RenderTypes.Outlines)
 			{
-				glWireMeshPlugin = GLMeshWirePlugin.Get(meshToRender, MathHelper.Tau / 8, meshChanged);
+				edgeLinesContainer = GLMeshWirePlugin.Get(meshToRender, MathHelper.Tau / 8, meshChanged);
+			}
+			else if (renderType == RenderTypes.NonManifold)
+			{
+				edgeLinesContainer = GLMeshNonManifoldPlugin.Get(meshToRender, meshChanged);
 			}
 			else
 			{
-				glWireMeshPlugin = GLMeshWirePlugin.Get(meshToRender);
+				edgeLinesContainer = GLMeshWirePlugin.Get(meshToRender);
 			}
 
 			GL.EnableClientState(ArrayCap.VertexArray);
-			VectorPOD<WireVertexData> edgeLines = glWireMeshPlugin.EdgeLines;
+			VectorPOD<WireVertexData> edgeLines = edgeLinesContainer.EdgeLines;
 
 			unsafe
 			{
