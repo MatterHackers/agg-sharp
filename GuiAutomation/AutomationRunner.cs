@@ -1197,7 +1197,7 @@ namespace MatterHackers.GuiAutomation
 				}
 				else
 				{
-					initialSystemWindow.Close();
+					initialSystemWindow.CloseOnIdle();
 				}
 			});
 
