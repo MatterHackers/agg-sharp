@@ -125,7 +125,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Assert.IsTrue(toolTipWidget == null, "Tool tip is not showing");
 
 				testRunner.Delay(1);
-				buttonContainer.Close();
+				buttonContainer.CloseOnIdle();
 
 				return Task.CompletedTask;
 			};

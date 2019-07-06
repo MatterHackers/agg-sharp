@@ -2312,6 +2312,14 @@ namespace MatterHackers.Agg.UI
 			return screenClipping.VisibleAfterClipping;
 		}
 
+		public void CloseOnIdle()
+		{
+			if (!HasBeenClosed)
+			{
+				UiThread.RunOnIdle(() => this.Close());
+			}
+		}
+
 		public void Close()
 		{
 			if (childrenLockedInMouseUpCount != 0)
