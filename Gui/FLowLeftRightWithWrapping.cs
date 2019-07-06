@@ -55,14 +55,14 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnParentChanged(EventArgs e)
 		{
+			base.OnParentChanged(e);
+
 			if (Parent != null)
 			{
 				Parent.BoundsChanged += Parent_BoundsChanged;
+				// Make sure we always do a layout regardless of having a layout event or a draw.
+				DoWrappingLayout();
 			}
-			base.OnParentChanged(e);
-
-			// Make sure we always do a layout regardless of having a layout event or a draw.
-			UiThread.RunOnIdle(DoWrappingLayout);
 		}
 
 		public override void OnLoad(EventArgs args)
@@ -72,6 +72,7 @@ namespace MatterHackers.Agg.UI
 
 		bool doingLayout = false;
 		double oldWidth = 0;
+
 		private void Parent_BoundsChanged(object sender, EventArgs e)
 		{
 			var parent = Parent;
@@ -82,6 +83,7 @@ namespace MatterHackers.Agg.UI
 				{
 					DoWrappingLayout();
 				}
+
 				oldWidth = parent.Width;
 			}
 		}

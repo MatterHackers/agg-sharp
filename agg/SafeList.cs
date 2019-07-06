@@ -28,10 +28,11 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace MatterHackers.DataConverters3D
+namespace MatterHackers.Agg
 {
 	public interface IAscendable<T>
 	{
@@ -118,6 +119,11 @@ namespace MatterHackers.DataConverters3D
 			{
 				return $"Count = {Count}";
 			}
+		}
+
+		public int IndexOf(T childToFind)
+		{
+			return items.IndexOf(childToFind);
 		}
 	}
 }

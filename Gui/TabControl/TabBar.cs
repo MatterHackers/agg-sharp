@@ -73,6 +73,7 @@ namespace MatterHackers.Agg.UI
 					graphics2D.Line(LocalBounds.Right, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, this.BorderColor);
 					break;
 			}
+
 			base.OnDraw(graphics2D);
 		}
 
