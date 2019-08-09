@@ -6,6 +6,9 @@ namespace Typography.OpenFont.Tables
 {
     class Glyf : TableEntry
     {
+        public const string _N = "glyf";
+        public override string Name => _N;
+        //
         Glyph[] _glyphs;
         public Glyf(GlyphLocations glyphLocations)
         {
@@ -13,16 +16,12 @@ namespace Typography.OpenFont.Tables
         }
         public Glyph[] Glyphs
         {
-            get { return _glyphs; }
+            get => _glyphs;
+            internal set => _glyphs = value;
         }
-        public override string Name
-        {
-            get { return "glyf"; }
-        }
-        public GlyphLocations GlyphLocations
+        GlyphLocations GlyphLocations
         {
             get;
-            private set;
         }
         protected override void ReadContentFrom(BinaryReader reader)
         {
@@ -70,8 +69,10 @@ namespace Typography.OpenFont.Tables
             //--------------------------------
             //resolve composte glyphs 
             //--------------------------------
+
             foreach (ushort glyphIndex in compositeGlyphs)
             {
+
 #if DEBUG
                 if (glyphIndex == 7)
                 {
@@ -79,6 +80,8 @@ namespace Typography.OpenFont.Tables
                 }
 #endif
                 _glyphs[glyphIndex] = ReadCompositeGlyph(_glyphs, reader, tableOffset, glyphIndex);
+
+
             }
         }
 
@@ -86,7 +89,7 @@ namespace Typography.OpenFont.Tables
         {
             return (target & test) == test;
         }
-        static bool HasFlag(CompositeGlyphFlags target, CompositeGlyphFlags test)
+        internal static bool HasFlag(CompositeGlyphFlags target, CompositeGlyphFlags test)
         {
             return (target & test) == test;
         }
@@ -219,7 +222,7 @@ namespace Typography.OpenFont.Tables
 
 
         [Flags]
-        enum CompositeGlyphFlags : ushort
+        internal enum CompositeGlyphFlags : ushort
         {
             //These are the constants for the flags field:
             //Bit   Flags 	 	Description

@@ -68,7 +68,9 @@ namespace Typography.TextLayout
             _exactX = _exactY = 0;
             _currentGlyphIndex = 0;
         }
-        public int CurrentIndex { get { return _index; } }
+        //
+        public int CurrentIndex => _index;
+        //
         public PxScaledGlyphPlan GlyphPlan
         {
             get
@@ -84,10 +86,10 @@ namespace Typography.TextLayout
             }
         }
 
-        public float AccumWidth { get { return _accW; } }
-        public float ExactX { get { return _exactX; } }
-        public float ExactY { get { return _exactY; } }
-        public ushort CurrentGlyphIndex { get { return _currentGlyphIndex; } }
+        public float AccumWidth => _accW;
+        public float ExactX => _exactX;
+        public float ExactY => _exactY;
+        public ushort CurrentGlyphIndex => _currentGlyphIndex;
         public bool Read()
         {
             if (_index >= _end)
@@ -143,25 +145,10 @@ namespace Typography.TextLayout
             _exactX = _exactY = 0;
             _currentGlyphIndex = 0;
         }
-        public ushort CurrentGlyphIndex { get { return _currentGlyphIndex; } }
-        public int CurrentIndex { get { return _index; } }
-
-        public PxScaledGlyphPlan GlyphPlan
-        {
-            get
-            {
-                UnscaledGlyphPlan unscale = _seq[_index];
-                float scaled_advW = (short)Math.Round(unscale.AdvanceX * _pxscale);
-                return new PxScaledGlyphPlan(
-                    unscale.input_cp_offset,
-                    unscale.glyphIndex,
-                    scaled_advW,
-                    unscale.OffsetX * _pxscale,
-                    unscale.OffsetY * _pxscale);
-
-            }
-        }
-
+        //
+        public ushort CurrentGlyphIndex => _currentGlyphIndex;
+        public int CurrentIndex => _index;
+        //
         public bool Read()
         {
             if (_index >= _end)
@@ -185,11 +172,9 @@ namespace Typography.TextLayout
             _index++;
             return true;
         }
-        public int AccumWidth { get { return _accW; } }
-        public int ExactX { get { return _exactX; } }
-        public int ExactY { get { return _exactY; } }
-
-
+        public int AccumWidth => _accW;
+        public int ExactX => _exactX;
+        public int ExactY => _exactY;
     }
     public static class PixelScaleLayoutExtensions
     {
@@ -214,16 +199,13 @@ namespace Typography.TextLayout
         }
 #endif
 
-
-
-        static void GenerateScaledGlyphPlans(this GlyphLayout glyphLayout,
-         float pxscale,
-         bool snapToGrid,
-         out float accumW)
+        static float MeasureGlyphPlans(this GlyphLayout glyphLayout,
+             float pxscale,
+             bool snapToGrid)
         {
             //user can implement this with some 'PixelScaleEngine'  
             IGlyphPositions glyphPositions = glyphLayout.ResultUnscaledGlyphPositions;
-            accumW = 0; //acummulate Width
+            float accumW = 0; //acummulate Width
 
             if (snapToGrid)
             {
@@ -236,11 +218,9 @@ namespace Typography.TextLayout
                         out offsetX,
                         out offsetY,
                         out advW);
-
-                    float scaled_advW = (short)Math.Round(advW * pxscale);
-                    accumW += scaled_advW;
-
+                    accumW += (short)Math.Round(advW * pxscale);
                 }
+
             }
             else
             {
@@ -258,7 +238,174 @@ namespace Typography.TextLayout
                     accumW += advW * pxscale;
                 }
             }
+            return accumW;
         }
+        static float MeasureGlyphPlanWithLimitWidth(this GlyphLayout glyphLayout,
+             float pxscale,
+             float limitWidth,
+             bool snapToGrid,
+             out int stopAtGlyphIndex)
+        {
+            //user can implement this with some 'PixelScaleEngine'  
+            IGlyphPositions glyphPositions = glyphLayout.ResultUnscaledGlyphPositions;
+            float accumW = 0; //acummulate Width
+            stopAtGlyphIndex = 0;
+
+            if (snapToGrid)
+            {
+                int finalGlyphCount = glyphPositions.Count;
+                for (int i = 0; i < finalGlyphCount; ++i)
+                {
+
+                    short offsetX, offsetY, advW; //all from pen-pos
+                    ushort glyphIndex = glyphPositions.GetGlyph(i,
+                        out ushort input_offset,
+                        out offsetX,
+                        out offsetY,
+                        out advW);
+
+                    stopAtGlyphIndex = i; //***
+                    //
+                    short w = (short)Math.Round(advW * pxscale);
+                    if (accumW + w > limitWidth)
+                    {
+                        //stop           
+                        break;
+                    }
+                    else
+                    {
+                        accumW += w;
+                    }
+                }
+            }
+            else
+            {
+                //not snap to grid
+                //scaled but not snap to grid
+                int finalGlyphCount = glyphPositions.Count;
+                for (int i = 0; i < finalGlyphCount; ++i)
+                {
+                    short offsetX, offsetY, advW; //all from pen-pos
+                    ushort glyphIndex = glyphPositions.GetGlyph(i,
+                        out ushort input_offset,
+                        out offsetX,
+                        out offsetY,
+                        out advW);
+
+
+                    stopAtGlyphIndex = i; //***
+
+                    float w = advW * pxscale;
+                    if (accumW + w > limitWidth)
+                    {
+                        //stop           
+                        break;
+                    }
+                    else
+                    {
+                        accumW += w;
+                    }
+                }
+            }
+            return accumW;
+
+
+            ////measure string 
+            //if (str.Length < 1)
+            //{
+            //    charFitWidth = 0;
+            //}
+
+            //_reusableMeasureBoxList.Clear(); //reset 
+
+
+            //float pxscale = _currentTypeface.CalculateScaleToPixelFromPointSize(_fontSizeInPts);
+            ////NOET:at this moment, simple operation
+            ////may not be simple...  
+            ////-------------------
+            ////input string may contain more than 1 script lang
+            ////user can parse it by other parser
+            ////but in this code, we use our Typography' parser
+            ////-------------------
+            ////user must setup the CustomBreakerBuilder before use         
+
+            //int cur_startAt = startAt;
+            //float accumW = 0;
+
+            //float acc_x = 0;//accum_x
+            //float acc_y = 0;//accum_y
+            //float g_x = 0;
+            //float g_y = 0;
+            //float x = 0;
+            //float y = 0;
+            //foreach (Typography.TextLayout.BreakSpan breakSpan in BreakToLineSegments(str, startAt, len))
+            //{
+
+            //    //measure string at specific px scale 
+            //    _glyphLayout.Layout(str, breakSpan.startAt, breakSpan.len);
+            //    //
+
+            //    _reusableGlyphPlanList.Clear();
+            //    _glyphLayout.GenerateUnscaledGlyphPlans(_reusableGlyphPlanList);
+            //    //measure ...
+
+
+            //    //measure each glyph
+            //    //limit at specific width
+            //    int glyphCount = _reusableGlyphPlanList.Count;
+
+
+
+            //    for (int i = 0; i < glyphCount; ++i)
+            //    {
+            //        UnscaledGlyphPlan glyphPlan = _reusableGlyphPlanList[i];
+
+            //        float ngx = acc_x + (float)Math.Round(glyphPlan.OffsetX * pxscale);
+            //        float ngy = acc_y + (float)Math.Round(glyphPlan.OffsetY * pxscale);
+            //        //NOTE:
+            //        // -glyphData.TextureXOffset => restore to original pos
+            //        // -glyphData.TextureYOffset => restore to original pos 
+            //        //--------------------------
+            //        g_x = (float)(x + (ngx)); //ideal x
+            //        g_y = (float)(y + (ngy));
+            //        float g_w = (float)Math.Round(glyphPlan.AdvanceX * pxscale);
+            //        acc_x += g_w;
+            //        //g_x = (float)Math.Round(g_x);
+            //        g_y = (float)Math.Floor(g_y);
+
+            //        float right = g_x + g_w;
+
+            //        if (right >= accumW)
+            //        {
+            //            //stop here at this glyph
+            //            charFit = i - 1;
+            //            //TODO: review this
+            //            charFitWidth = (int)System.Math.Round(accumW);
+            //            return;
+            //        }
+            //        else
+            //        {
+            //            accumW = right;
+            //        }
+            //    }
+            //}
+
+            //charFit = 0;
+            //charFitWidth = 0;
+        }
+
+
+        //static void ConcatMeasureBox(ref float accumW, ref float accumH, ref MeasuredStringBox measureBox)
+        //{
+        //    accumW += measureBox.width;
+        //    float h = measureBox.CalculateLineHeight();
+        //    if (h > accumH)
+        //    {
+        //        accumH = h;
+        //    }
+        //}
+
+
 
         public static MeasuredStringBox LayoutAndMeasureString(
             this GlyphLayout glyphLayout,
@@ -266,11 +413,11 @@ namespace Typography.TextLayout
             int startAt,
             int len,
             float fontSizeInPoints,
+            float limitW = -1,//-1 unlimit scaled width (px)
             bool snapToGrid = true)
         {
             //1. unscale layout, in design unit
-            glyphLayout.Layout(textBuffer, startAt, len);
-
+            glyphLayout.Layout(textBuffer, startAt, len); 
 
             //2. scale  to specific font size           
 
@@ -278,18 +425,52 @@ namespace Typography.TextLayout
             float pxscale = typeface.CalculateScaleToPixelFromPointSize(fontSizeInPoints);
 
             //....
-            GenerateScaledGlyphPlans(
-                glyphLayout,
-                pxscale,
-                snapToGrid,
-                out float scaled_accumX);
+            float scaled_accumX = 0;
+            if (limitW < 0)
+            {
+                //no limit
+                scaled_accumX = MeasureGlyphPlans(
+                    glyphLayout,
+                    pxscale,
+                    snapToGrid);
 
-            return new MeasuredStringBox(
-                  scaled_accumX,
-                  typeface.Ascender * pxscale,
-                  typeface.Descender * pxscale,
-                  typeface.LineGap * pxscale,
-                  Typography.OpenFont.Extensions.TypefaceExtensions.CalculateRecommendLineSpacing(typeface) * pxscale);
+                return new MeasuredStringBox(
+                     scaled_accumX,
+                     typeface.Ascender,
+                     typeface.Descender,
+                     typeface.LineGap,
+                    (short)Typography.OpenFont.Extensions.TypefaceExtensions.CalculateRecommendLineSpacing(typeface),
+                     pxscale);
+
+            }
+            else if (limitW > 0)
+            {
+                scaled_accumX = MeasureGlyphPlanWithLimitWidth(
+                    glyphLayout,
+                    pxscale,
+                    limitW,
+                    snapToGrid,
+                    out int stopAtChar);
+
+                return new MeasuredStringBox(
+                 scaled_accumX,
+                 typeface.Ascender,
+                 typeface.Descender,
+                 typeface.LineGap,
+                 (short)Typography.OpenFont.Extensions.TypefaceExtensions.CalculateRecommendLineSpacing(typeface),
+                 pxscale);
+            }
+            else
+            {
+                return new MeasuredStringBox(
+                    0,
+                    typeface.Ascender,
+                    typeface.Descender,
+                    typeface.LineGap,
+                    (short)Typography.OpenFont.Extensions.TypefaceExtensions.CalculateRecommendLineSpacing(typeface),
+                    pxscale);
+            }
+
         }
     }
 

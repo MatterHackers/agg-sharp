@@ -6,11 +6,9 @@ namespace Typography.OpenFont.Tables
 {
     class MaxProfile : TableEntry
     {
-
-        public override string Name
-        {
-            get { return "maxp"; }
-        }
+        public const string _N = "maxp";
+        public override string Name => _N;
+        //s
         public uint Version { get; private set; }
         public ushort GlyphCount { get; private set; }
         public ushort MaxPointsPerGlyph { get; private set; }
