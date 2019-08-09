@@ -8,8 +8,9 @@ namespace Typography.OpenFont.Tables
 {
     public class CPAL : TableEntry
     {
-        public override string Name { get { return "CPAL"; } }
-
+        public const string _N = "CPAL";
+        public override string Name => _N;
+        //
 
         byte[] _colorBGRABuffer;
         // Read the CPAL table

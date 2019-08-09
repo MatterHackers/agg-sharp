@@ -673,12 +673,11 @@ namespace Typography.OpenFont.Tables
 
     class MathTable : TableEntry
     {
+        public const string _N = "MATH";
+        public override string Name => _N;
+        //
         internal MathConstants _mathConstTable;
 
-        public override string Name
-        {
-            get { return "MATH"; }
-        }
         protected override void ReadContentFrom(BinaryReader reader)
         {
             //eg. latin-modern-math-regular.otf, asana-math.otf
@@ -811,7 +810,7 @@ namespace Typography.OpenFont.Tables
             mc.RadicalDegreeBottomRaisePercent = reader.ReadInt16();
 
 
-            this._mathConstTable = mc;
+            _mathConstTable = mc;
         }
 
 

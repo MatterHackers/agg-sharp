@@ -10,6 +10,9 @@ namespace Typography.OpenFont.Tables
     /// </summary>
     class HorizontalHeader : TableEntry
     {
+        public const string _N = "hhea";
+        public override string Name => _N;
+
         //-----
         // Type     Name            Description
         //uint16    majorVersion    Major version number of the horizontal header table — set to 1.
@@ -34,10 +37,6 @@ namespace Typography.OpenFont.Tables
 
         public HorizontalHeader()
         {
-        }
-        public override string Name
-        {
-            get { return "hhea"; }
         }
         protected override void ReadContentFrom(BinaryReader input)
         {

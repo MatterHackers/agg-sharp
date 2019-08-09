@@ -12,6 +12,10 @@ namespace Typography.OpenFont.Tables
     /// </summary>
     class OS2Table : TableEntry
     {
+        public const string _N = "OS/2";
+        public override string Name => _N;
+        //
+
         // Type     Name of  Entry        Comments
         //uint16 	version 	           0x0005
         //int16 	xAvgCharWidth 	    
@@ -23,6 +27,7 @@ namespace Typography.OpenFont.Tables
         public ushort usWeightClass;    //visual weight (degree of blackness or thickness of strokes), 0-1000
         public ushort usWidthClass;     //A relative change from the normal aspect ratio (width to height ratio)
         public ushort fsType;           //Type flags., embedding licensing rights for the font
+
         //int16 	ySubscriptXSize 	 
         //int16 	ySubscriptYSize 	 
         //int16 	ySubscriptXOffset 	 
@@ -59,9 +64,9 @@ namespace Typography.OpenFont.Tables
 
         //Tag 	    achVendID[4] 	    char 4 
         public uint achVendID;          //see 'registered venders' at https://www.microsoft.com/typography/links/vendorlist.aspx
-        //uint16 	fsSelection 	 
-        //uint16 	usFirstCharIndex 	 
-        //uint16 	usLastCharIndex 
+                                        //uint16 	fsSelection 	 
+                                        //uint16 	usFirstCharIndex 	 
+                                        //uint16 	usLastCharIndex 
         public ushort fsSelection;      //Contains information concerning the nature of the font patterns
         public ushort usFirstCharIndex;
         public ushort usLastCharIndex;
@@ -94,10 +99,7 @@ namespace Typography.OpenFont.Tables
         public ushort usLowerOpticalPointSize;
         public ushort usUpperOpticalPointSize;
 
-        public override string Name
-        {
-            get { return "OS/2"; }
-        }
+
 #if DEBUG
         public override string ToString()
         {
@@ -572,5 +574,5 @@ namespace Typography.OpenFont.Tables
             this.usLowerOpticalPointSize = reader.ReadUInt16();
             this.usUpperOpticalPointSize = reader.ReadUInt16();
         }
-    } 
+    }
 }
