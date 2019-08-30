@@ -9,11 +9,9 @@ namespace Typography.OpenFont.Tables
 
     class NameEntry : TableEntry
     {
-        public override string Name
-        {
-            get { return "name"; }
-        }
-
+        public const string _N = "name";
+        public override string Name => _N;
+        //
         protected override void ReadContentFrom(BinaryReader reader)
         {
 

@@ -6,29 +6,31 @@ namespace Typography.OpenFont.Tables
 {
     class Glyf : TableEntry
     {
+        public const string _N = "glyf";
+        public override string Name => _N;
+        //
         Glyph[] _glyphs;
+        GlyphLocations _glyphLocations;
+
+        //--------------------
+        //both ttf and cff
+        //we don't share EmptyGlyph between typefaces
+        internal readonly Glyph _emptyGlyph = new Glyph(new GlyphPointF[0], new ushort[0], Bounds.Zero, null, 0);
+
         public Glyf(GlyphLocations glyphLocations)
         {
-            this.GlyphLocations = glyphLocations;
+            _glyphLocations = glyphLocations;
         }
         public Glyph[] Glyphs
         {
-            get { return _glyphs; }
-        }
-        public override string Name
-        {
-            get { return "glyf"; }
-        }
-        public GlyphLocations GlyphLocations
-        {
-            get;
-            private set;
-        }
+            get => _glyphs;
+            internal set => _glyphs = value;
+        } 
         protected override void ReadContentFrom(BinaryReader reader)
         {
 
             uint tableOffset = this.Header.Offset;
-            GlyphLocations locations = this.GlyphLocations;
+            GlyphLocations locations = _glyphLocations;
             int glyphCount = locations.GlyphCount;
             _glyphs = new Glyph[glyphCount];
 
@@ -63,15 +65,17 @@ namespace Typography.OpenFont.Tables
                 }
                 else
                 {
-                    _glyphs[i] = Glyph.Empty;
+                    _glyphs[i] = _emptyGlyph;
                 }
             }
 
             //--------------------------------
             //resolve composte glyphs 
             //--------------------------------
+
             foreach (ushort glyphIndex in compositeGlyphs)
             {
+
 #if DEBUG
                 if (glyphIndex == 7)
                 {
@@ -79,6 +83,8 @@ namespace Typography.OpenFont.Tables
                 }
 #endif
                 _glyphs[glyphIndex] = ReadCompositeGlyph(_glyphs, reader, tableOffset, glyphIndex);
+
+
             }
         }
 
@@ -86,7 +92,7 @@ namespace Typography.OpenFont.Tables
         {
             return (target & test) == test;
         }
-        static bool HasFlag(CompositeGlyphFlags target, CompositeGlyphFlags test)
+        internal static bool HasFlag(CompositeGlyphFlags target, CompositeGlyphFlags test)
         {
             return (target & test) == test;
         }
@@ -219,7 +225,7 @@ namespace Typography.OpenFont.Tables
 
 
         [Flags]
-        enum CompositeGlyphFlags : ushort
+        internal enum CompositeGlyphFlags : ushort
         {
             //These are the constants for the flags field:
             //Bit   Flags 	 	Description
@@ -229,7 +235,7 @@ namespace Typography.OpenFont.Tables
             //3     WE_HAVE_A_SCALE 	 	This indicates that there is a simple scale for the component. Otherwise, scale = 1.0.
             //4     RESERVED 	        	This bit is reserved. Set it to 0.
             //5     MORE_COMPONENTS 	    Indicates at least one more glyph after this one.
-            //6     WE_HAVE_AN_X_AND_Y_SCALE 	  	The x direction will use a different scale from the y direction.
+            //6     WE_HAVE_AN_X_AND_Y_SCALE 	The x direction will use a different scale from the y direction.
             //7     WE_HAVE_A_TWO_BY_TWO 	  	There is a 2 by 2 transformation that will be used to scale the component.
             //8     WE_HAVE_INSTRUCTIONS 	 	Following the last component are instructions for the composite character.
             //9     USE_MY_METRICS 	 	        If set, this forces the aw and lsb (and rsb) for the composite to be equal to those from this original glyph. This works for hinted and unhinted characters.
@@ -261,8 +267,8 @@ namespace Typography.OpenFont.Tables
             //This is the table information needed for composite glyphs (numberOfContours is -1). 
             //A composite glyph starts with two USHORT values (“flags” and “glyphIndex,” i.e. the index of the first contour in this composite glyph); 
             //the data then varies according to “flags”).
-            //Type 	Name 	Description
-            //USHORT 	flags 	component flag
+            //Type 	    Name 	    Description
+            //USHORT 	flags 	    component flag
             //USHORT 	glyphIndex 	glyph index of component
             //VARIABLE 	argument1 	x-offset for component or point number; type depends on bits 0 and 1 in component flags
             //VARIABLE 	argument2 	y-offset for component or point number; type depends on bits 0 and 1 in component flags
@@ -271,7 +277,7 @@ namespace Typography.OpenFont.Tables
             //---------
 
             //move to composite glyph position
-            reader.BaseStream.Seek(tableOffset + GlyphLocations.Offsets[compositeGlyphIndex], SeekOrigin.Begin);//reset
+            reader.BaseStream.Seek(tableOffset + _glyphLocations.Offsets[compositeGlyphIndex], SeekOrigin.Begin);//reset
             //------------------------
             short contoursCount = reader.ReadInt16(); // ignored
             Bounds bounds = Utils.ReadBounds(reader);
@@ -279,6 +285,9 @@ namespace Typography.OpenFont.Tables
             Glyph finalGlyph = null;
             CompositeGlyphFlags flags;
 
+#if DEBUG
+            int ncount = 0;
+#endif
             do
             {
                 flags = (CompositeGlyphFlags)reader.ReadUInt16();
@@ -291,22 +300,50 @@ namespace Typography.OpenFont.Tables
                     createdGlyphs[glyphIndex] = missingGlyph;
                     reader.BaseStream.Position = storedOffset;
                 }
-
                 Glyph newGlyph = Glyph.Clone(createdGlyphs[glyphIndex], compositeGlyphIndex);
 
-                short arg1 = 0;
-                short arg2 = 0;
-                ushort arg1and2 = 0;
+                int arg1 = 0;//arg1, arg2 may be int8,uint8,int16,uint 16
+                int arg2 = 0;//arg1, arg2 may be int8,uint8,int16,uint 16
 
                 if (HasFlag(flags, CompositeGlyphFlags.ARG_1_AND_2_ARE_WORDS))
                 {
-                    arg1 = reader.ReadInt16();
-                    arg2 = reader.ReadInt16();
+
+                    //0x0002  ARGS_ARE_XY_VALUES Bit 1: If this is set,
+                    //the arguments are **signed xy values**
+                    //otherwise, they are unsigned point numbers.
+                    if (HasFlag(flags, CompositeGlyphFlags.ARGS_ARE_XY_VALUES))
+                    {
+                        //singed
+                        arg1 = reader.ReadInt16();
+                        arg2 = reader.ReadInt16();
+                    }
+                    else
+                    {
+                        //unsigned
+                        arg1 = reader.ReadUInt16();
+                        arg2 = reader.ReadUInt16();
+                    }
                 }
                 else
                 {
-                    arg1and2 = reader.ReadUInt16();
+
+                    //0x0002  ARGS_ARE_XY_VALUES Bit 1: If this is set,
+                    //the arguments are **signed xy values**
+                    //otherwise, they are unsigned point numbers.
+                    if (HasFlag(flags, CompositeGlyphFlags.ARGS_ARE_XY_VALUES))
+                    {
+                        //singed
+                        arg1 = (sbyte)reader.ReadByte();
+                        arg2 = (sbyte)reader.ReadByte();
+                    }
+                    else
+                    {
+                        //unsigned
+                        arg1 = reader.ReadByte();
+                        arg2 = reader.ReadByte();
+                    }
                 }
+
                 //-----------------------------------------
                 float xscale = 1;
                 float scale01 = 0;
@@ -321,13 +358,15 @@ namespace Typography.OpenFont.Tables
                     //If the bit WE_HAVE_A_SCALE is set,
                     //the scale value is read in 2.14 format-the value can be between -2 to almost +2.
                     //The glyph will be scaled by this value before grid-fitting. 
-                    xscale = yscale = ((float)reader.ReadInt16()) / (1 << 14); /* Format 2.14 */
+
+                    xscale = yscale = reader.ReadF2Dot14(); /* Format 2.14 */
                     hasScale = true;
                 }
                 else if (HasFlag(flags, CompositeGlyphFlags.WE_HAVE_AN_X_AND_Y_SCALE))
                 {
-                    xscale = ((float)reader.ReadInt16()) / (1 << 14); /* Format 2.14 */
-                    yscale = ((float)reader.ReadInt16()) / (1 << 14); /* Format 2.14 */
+
+                    xscale = reader.ReadF2Dot14(); /* Format 2.14 */
+                    yscale = reader.ReadF2Dot14(); /* Format 2.14 */
                     hasScale = true;
                 }
                 else if (HasFlag(flags, CompositeGlyphFlags.WE_HAVE_A_TWO_BY_TWO))
@@ -348,10 +387,11 @@ namespace Typography.OpenFont.Tables
                     //Note that the behavior of the USE_MY_METRICS operation is undefined for rotated composite components. 
                     useMatrix = true;
                     hasScale = true;
-                    xscale = ((float)reader.ReadInt16()) / (1 << 14); /* Format 2.14 */
-                    scale01 = ((float)reader.ReadInt16()) / (1 << 14); /* Format 2.14 */
-                    scale10 = ((float)reader.ReadInt16()) / (1 << 14); /* Format 2.14 */
-                    yscale = ((float)reader.ReadInt16()) / (1 << 14); /* Format 2.14 */
+
+                    xscale = reader.ReadF2Dot14(); /* Format 2.14 */
+                    scale01 = reader.ReadF2Dot14(); /* Format 2.14 */
+                    scale10 = reader.ReadF2Dot14();/* Format 2.14 */
+                    yscale = reader.ReadF2Dot14(); /* Format 2.14 */
 
                     if (HasFlag(flags, CompositeGlyphFlags.UNSCALED_COMPONENT_OFFSET))
                     {
@@ -369,20 +409,25 @@ namespace Typography.OpenFont.Tables
                     }
                 }
 
+                //Argument1 and argument2 can be either...
+                //   x and y offsets to be added to the glyph(the ARGS_ARE_XY_VALUES flag is set), 
+                //or 
+                //   two point numbers(the ARGS_ARE_XY_VALUES flag is **not** set)
+
+                //When arguments 1 and 2 are an x and a y offset instead of points and the bit ROUND_XY_TO_GRID is set to 1,
+                //the values are rounded to those of the closest grid lines before they are added to the glyph.
+                //X and Y offsets are described in FUnits. 
+
+
                 //--------------------------------------------------------------------
                 if (HasFlag(flags, CompositeGlyphFlags.ARGS_ARE_XY_VALUES))
                 {
-                    //Argument1 and argument2 can be either x and y offsets to be added to the glyph or two point numbers.  
-                    //x and y offsets to be added to the glyph
-                    //When arguments 1 and 2 are an x and a y offset instead of points and the bit ROUND_XY_TO_GRID is set to 1,
-                    //the values are rounded to those of the closest grid lines before they are added to the glyph.
-                    //X and Y offsets are described in FUnits. 
 
                     if (useMatrix)
                     {
                         //use this matrix  
                         Glyph.TransformNormalWith2x2Matrix(newGlyph, xscale, scale01, scale10, yscale);
-                        Glyph.OffsetXY(newGlyph, arg1, arg2);
+                        Glyph.OffsetXY(newGlyph, (short)arg1, (short)arg2);
                     }
                     else
                     {
@@ -396,7 +441,7 @@ namespace Typography.OpenFont.Tables
                             {
                                 Glyph.TransformNormalWith2x2Matrix(newGlyph, xscale, 0, 0, yscale);
                             }
-                            Glyph.OffsetXY(newGlyph, arg1, arg2);
+                            Glyph.OffsetXY(newGlyph, (short)arg1, (short)arg2);
                         }
                         else
                         {
@@ -406,11 +451,9 @@ namespace Typography.OpenFont.Tables
                                 //----------------------------
                             }
                             //just offset***
-                            Glyph.OffsetXY(newGlyph, arg1, arg2);
+                            Glyph.OffsetXY(newGlyph, (short)arg1, (short)arg2);
                         }
                     }
-
-
                 }
                 else
                 {
@@ -418,6 +461,8 @@ namespace Typography.OpenFont.Tables
                     //the first point number indicates the point that is to be matched to the new glyph. 
                     //The second number indicates the new glyph's “matched” point. 
                     //Once a glyph is added,its point numbers begin directly after the last glyphs (endpoint of first glyph + 1)
+
+                    //TODO: implement this...
 
                 }
 
@@ -431,6 +476,11 @@ namespace Typography.OpenFont.Tables
                     //merge 
                     Glyph.AppendGlyph(finalGlyph, newGlyph);
                 }
+
+
+#if DEBUG
+                ncount++;
+#endif
 
             } while (HasFlag(flags, CompositeGlyphFlags.MORE_COMPONENTS));
             //
@@ -471,7 +521,7 @@ namespace Typography.OpenFont.Tables
             //------------------------------------------------------------ 
 
 
-            return finalGlyph ?? Glyph.Empty;
+            return finalGlyph ?? _emptyGlyph;
         }
     }
 }

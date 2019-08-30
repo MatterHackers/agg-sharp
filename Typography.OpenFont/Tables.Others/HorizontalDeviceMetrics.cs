@@ -7,6 +7,9 @@ namespace Typography.OpenFont.Tables
 
     class HorizontalDeviceMetrics : TableEntry
     {
+        public const string _N = "hdmx";
+        public override string Name => _N;
+        //
         //https://www.microsoft.com/typography/otspec/hdmx.htm
         //The hdmx table relates to OpenType™ fonts with TrueType outlines. 
         //The Horizontal Device Metrics table stores integer advance widths scaled to particular pixel sizes. 
@@ -47,10 +50,7 @@ namespace Typography.OpenFont.Tables
         //at the pixels per em (ppem) size listed at the start of the DeviceRecord.
 
         //The ppem sizes are measured along the y axis. 
-        public override string Name
-        {
-            get { return "hdmx"; }
-        }
+
         protected override void ReadContentFrom(BinaryReader reader)
         {
 

@@ -11,6 +11,9 @@ namespace Typography.OpenFont.Tables
     /// </summary>
     class EBLCTable : TableEntry
     {
+        public const string _N = "EBLC";
+        public override string Name => _N;
+        //
         //from https://www.microsoft.com/typography/otspec/eblc.htm
         //EBLC - Embedded Bitmap Location Table
         //----------------------------------------------
@@ -32,10 +35,7 @@ namespace Typography.OpenFont.Tables
         //The numSizes in the eblcHeader indicates the number of bitmapSizeTables in the array.
         //Each strike is defined by one bitmapSizeTable.
 
-        public override string Name
-        {
-            get { return "EBLC"; }
-        }
+
         protected override void ReadContentFrom(BinaryReader reader)
         {
             // load each strike table
@@ -45,7 +45,7 @@ namespace Typography.OpenFont.Tables
             ushort versionMinor = reader.ReadUInt16();
             uint numSizes = reader.ReadUInt32();
 
-            if (numSizes > MaxBitmapStrikes)
+            if (numSizes > MAX_BITMAP_STRIKES)
                 throw new Exception("Too many bitmap strikes in font.");
 
             //----------------
@@ -198,6 +198,6 @@ namespace Typography.OpenFont.Tables
             Vertical = 2
         }
 
-        const int MaxBitmapStrikes = 1024;
+        const int MAX_BITMAP_STRIKES = 1024;
     }
 }
