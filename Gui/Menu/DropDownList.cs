@@ -27,15 +27,15 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.Font;
-using MatterHackers.Agg.Image;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
+using MatterHackers.Agg.Font;
+using MatterHackers.Agg.Image;
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
@@ -312,7 +312,11 @@ namespace MatterHackers.Agg.UI
 
 		public string SelectedValue
 		{
-			get { return GetValue(SelectedIndex); }
+			get
+			{
+				return GetValue(SelectedIndex);
+			}
+
 			set
 			{
 				if (SelectedIndex == -1 || SelectedValue != value)
