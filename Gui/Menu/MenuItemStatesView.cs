@@ -35,8 +35,8 @@ namespace MatterHackers.Agg.UI
 {
 	public class MenuItemStatesView : GuiWidget
 	{
-		private GuiWidget normalState;
-		private GuiWidget overState;
+		private readonly GuiWidget normalState;
+		private readonly GuiWidget overState;
 
 		public MenuItemStatesView(GuiWidget normalState, GuiWidget overState)
 		{
@@ -112,7 +112,7 @@ namespace MatterHackers.Agg.UI
 
 	public class MenuItemColorStatesView : GuiWidget
 	{
-		TextWidget textWidget;
+		private readonly TextWidget textWidget;
 
 		public Color NormalBackgroundColor { get; set; }
 
@@ -189,7 +189,7 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				if(value)
+				if (value)
 				{
 					BackgroundColor = OverBackgroundColor;
 					if (Parent.Enabled)
