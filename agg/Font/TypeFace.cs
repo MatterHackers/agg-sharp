@@ -443,7 +443,7 @@ namespace MatterHackers.Agg.Font
 		internal int GetAdvanceForCharacter(char character)
 		{
 			Glyph glyph = GetGlyph(character);
-			if (glyphs != null)
+			if (glyph != null)
 			{
 				return glyph.horiz_adv_x;
 			}
