@@ -341,8 +341,12 @@ namespace MatterHackers.Agg.Font
 			}
 
 			// TODO: check for multi character glyphs (we don't currently support them in the reader).
-			Glyph glyph = null;
+			return GetGlyph(character)?.glyphData;
+		}
 
+		private Glyph GetGlyph(char character)
+		{
+			Glyph glyph;
 			if (!glyphs.TryGetValue(character, out glyph))
 			{
 				// if we have a loaded ttf try to create the glyph data
@@ -367,7 +371,7 @@ namespace MatterHackers.Agg.Font
 				}
 			}
 
-			return glyph?.glyphData;
+			return glyph;
 		}
 
 		/// <summary>
@@ -427,8 +431,8 @@ namespace MatterHackers.Agg.Font
 		internal int GetAdvanceForCharacter(char character, char nextCharacterToKernWith)
 		{
 			// TODO: check for kerning and adjust
-			Glyph glyph;
-			if (glyphs.TryGetValue(character, out glyph))
+			Glyph glyph = GetGlyph(character);
+			if (glyphs != null)
 			{
 				return glyph.horiz_adv_x;
 			}
@@ -438,8 +442,8 @@ namespace MatterHackers.Agg.Font
 
 		internal int GetAdvanceForCharacter(char character)
 		{
-			Glyph glyph;
-			if (glyphs.TryGetValue(character, out glyph))
+			Glyph glyph = GetGlyph(character);
+			if (glyphs != null)
 			{
 				return glyph.horiz_adv_x;
 			}
