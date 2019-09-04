@@ -120,6 +120,7 @@ namespace MatterHackers.Agg.UI
 				// we assume it is the default if alpha 0.  Also there is no reason to make a text color of this as it will draw nothing.
 				this.textColor = Color.Black;
 			}
+
 			if (backgroundColor.Alpha0To255 != 0)
 			{
 				BackgroundColor = backgroundColor;
@@ -131,6 +132,7 @@ namespace MatterHackers.Agg.UI
 			{
 				typeFace = (bold) ? LiberationSansBoldFont.Instance : LiberationSansFont.Instance;
 			}
+
 			StyledTypeFace typeFaceStyle = new StyledTypeFace(typeFace, pointSize * GuiWidget.DeviceScale, underline);
 			Printer = new TypeFacePrinter(text, typeFaceStyle, justification: justification);
 
@@ -239,6 +241,7 @@ namespace MatterHackers.Agg.UI
 					{
 						DoExpandBoundsToText();
 					}
+
 					Invalidate();
 				}
 			}
@@ -274,6 +277,7 @@ namespace MatterHackers.Agg.UI
 				default:
 					throw new NotImplementedException();
 			}
+
 			graphics2D.SetTransform(graphics2D.GetTransform() * Affine.NewTranslation(xOffsetForText, yOffsetForText));
 
 			if (this.EllipsisActive) // only do this if it's static text
@@ -284,6 +288,7 @@ namespace MatterHackers.Agg.UI
 				{
 					shortTextPrinter = new TypeFacePrinter(shortTextPrinter.Text.Substring(0, shortTextPrinter.Text.Length - 4).TrimEnd(spaceTrim) + "...", Printer);
 				}
+
 				shortTextPrinter.Render(graphics2D, this.TextColor);
 			}
 			else

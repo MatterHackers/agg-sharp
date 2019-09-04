@@ -1,9 +1,3 @@
-using MatterHackers.Agg.Image;
-using MatterHackers.Agg.RasterizerScanline;
-using MatterHackers.Agg.Transform;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
-
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
@@ -23,17 +17,21 @@ using MatterHackers.VectorMath;
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
 using System;
+using MatterHackers.Agg.Image;
+using MatterHackers.Agg.RasterizerScanline;
+using MatterHackers.Agg.Transform;
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg
 {
 	public class ImageGraphics2D : Graphics2D
 	{
-		private const int cover_full = 255;
-		protected IScanlineCache m_ScanlineCache;
-		private VertexStorage drawImageRectPath = new VertexStorage();
-		private MatterHackers.Agg.span_allocator destImageSpanAllocatorCache = new span_allocator();
-		private ScanlineCachePacked8 drawImageScanlineCache = new ScanlineCachePacked8();
-		private ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
+		private IScanlineCache scanlineCache;
+		private readonly VertexStorage drawImageRectPath = new VertexStorage();
+		private readonly span_allocator destImageSpanAllocatorCache = new span_allocator();
+		private readonly ScanlineCachePacked8 drawImageScanlineCache = new ScanlineCachePacked8();
+		private readonly ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
 
 		public ImageGraphics2D()
 		{
@@ -42,13 +40,13 @@ namespace MatterHackers.Agg
 		public ImageGraphics2D(IImageByte destImage, ScanlineRasterizer rasterizer, IScanlineCache scanlineCache)
 			: base(destImage, rasterizer)
 		{
-			m_ScanlineCache = scanlineCache;
+			this.scanlineCache = scanlineCache;
 		}
 
 		public override IScanlineCache ScanlineCache
 		{
-			get { return m_ScanlineCache; }
-			set { m_ScanlineCache = value; }
+			get { return scanlineCache; }
+			set { scanlineCache = value; }
 		}
 
 		public override int Width => destImageByte.Width;
@@ -73,95 +71,102 @@ namespace MatterHackers.Agg
 			{
 				vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
 			}
+
 			rasterizer.add_path(vertexSource);
 			if (destImageByte != null)
 			{
-				scanlineRenderer.RenderSolid(destImageByte, rasterizer, m_ScanlineCache, colorBytes.ToColor());
+				scanlineRenderer.RenderSolid(destImageByte, rasterizer, scanlineCache, colorBytes.ToColor());
 				DestImage.MarkImageChanged();
 			}
 			else
 			{
-				scanlineRenderer.RenderSolid(destImageFloat, rasterizer, m_ScanlineCache, colorBytes.ToColorF());
+				scanlineRenderer.RenderSolid(destImageFloat, rasterizer, scanlineCache, colorBytes.ToColorF());
 				destImageFloat.MarkImageChanged();
 			}
 		}
 
 		private void DrawImageGetDestBounds(IImageByte sourceImage,
-			double DestX, double DestY,
-			double HotspotOffsetX, double HotspotOffsetY,
-			double ScaleX, double ScaleY,
-			double AngleRad, out Affine destRectTransform)
+			double destX,
+			double destY,
+			double hotspotOffsetX,
+			double hotspotOffsetY,
+			double scaleX,
+			double scaleY,
+			double angleRad,
+			out Affine destRectTransform)
 		{
 			destRectTransform = Affine.NewIdentity();
 
-			if (HotspotOffsetX != 0.0f || HotspotOffsetY != 0.0f)
+			if (hotspotOffsetX != 0.0f || hotspotOffsetY != 0.0f)
 			{
-				destRectTransform *= Affine.NewTranslation(-HotspotOffsetX, -HotspotOffsetY);
+				destRectTransform *= Affine.NewTranslation(-hotspotOffsetX, -hotspotOffsetY);
 			}
 
-			if (ScaleX != 1 || ScaleY != 1)
+			if (scaleX != 1 || scaleY != 1)
 			{
-				destRectTransform *= Affine.NewScaling(ScaleX, ScaleY);
+				destRectTransform *= Affine.NewScaling(scaleX, scaleY);
 			}
 
-			if (AngleRad != 0)
+			if (angleRad != 0)
 			{
-				destRectTransform *= Affine.NewRotation(AngleRad);
+				destRectTransform *= Affine.NewRotation(angleRad);
 			}
 
-			if (DestX != 0 || DestY != 0)
+			if (destX != 0 || destY != 0)
 			{
-				destRectTransform *= Affine.NewTranslation(DestX, DestY);
+				destRectTransform *= Affine.NewTranslation(destX, destY);
 			}
 
-			int SourceBufferWidth = (int)sourceImage.Width;
-			int SourceBufferHeight = (int)sourceImage.Height;
+			int sourceBufferWidth = (int)sourceImage.Width;
+			int sourceBufferHeight = (int)sourceImage.Height;
 
 			drawImageRectPath.remove_all();
 
 			drawImageRectPath.MoveTo(0, 0);
-			drawImageRectPath.LineTo(SourceBufferWidth, 0);
-			drawImageRectPath.LineTo(SourceBufferWidth, SourceBufferHeight);
-			drawImageRectPath.LineTo(0, SourceBufferHeight);
+			drawImageRectPath.LineTo(sourceBufferWidth, 0);
+			drawImageRectPath.LineTo(sourceBufferWidth, sourceBufferHeight);
+			drawImageRectPath.LineTo(0, sourceBufferHeight);
 			drawImageRectPath.ClosePolygon();
 		}
 
-		private void DrawImage(IImageByte sourceImage, ISpanGenerator spanImageFilter, Affine destRectTransform)
+		private void DrawImage(ISpanGenerator spanImageFilter, Affine destRectTransform)
 		{
 			if (destImageByte.OriginOffset.X != 0 || destImageByte.OriginOffset.Y != 0)
 			{
 				destRectTransform *= Affine.NewTranslation(-destImageByte.OriginOffset.X, -destImageByte.OriginOffset.Y);
 			}
 
-			VertexSourceApplyTransform transformedRect = new VertexSourceApplyTransform(drawImageRectPath, destRectTransform);
+			var transformedRect = new VertexSourceApplyTransform(drawImageRectPath, destRectTransform);
 			Rasterizer.add_path(transformedRect);
 			{
-				ImageClippingProxy destImageWithClipping = new ImageClippingProxy(destImageByte);
+				var destImageWithClipping = new ImageClippingProxy(destImageByte);
 				scanlineRenderer.GenerateAndRender(Rasterizer, drawImageScanlineCache, destImageWithClipping, destImageSpanAllocatorCache, spanImageFilter);
 			}
 		}
 
 		public override void Render(IImageByte source,
-			double destX, double destY,
+			double destX,
+			double destY,
 			double angleRadians,
-			double inScaleX, double inScaleY)
+			double inScaleX,
+			double inScaleY)
 		{
 			Affine graphicsTransform = GetTransform();
 
-			{ // exit early if the dest and source bounds don't touch.
-			  // TODO: <BUG> make this do rotation and scaling
-				RectangleInt sourceBounds = source.GetBounds();
-				RectangleInt destBounds = this.destImageByte.GetBounds();
-				sourceBounds.Offset((int)(destX + graphicsTransform.tx), (int)(destY + graphicsTransform.ty));
+			// exit early if the dest and source bounds don't touch.
+			// TODO: <BUG> make this do rotation and scaling
+			RectangleInt sourceBounds = source.GetBounds();
+			RectangleInt destBounds = this.destImageByte.GetBounds();
+			sourceBounds.Offset((int)(destX + graphicsTransform.tx), (int)(destY + graphicsTransform.ty));
 
-				if (!RectangleInt.DoIntersect(sourceBounds, destBounds))
+			if (!RectangleInt.DoIntersect(sourceBounds, destBounds))
+			{
+				if (inScaleX != 1 || inScaleY != 1 || angleRadians != 0)
 				{
-					if (inScaleX != 1 || inScaleY != 1 || angleRadians != 0)
-					{
-						throw new NotImplementedException();
-					}
-					return;
+					throw new NotImplementedException();
 				}
+
+				return;
 			}
 
 			double scaleX = inScaleX;
@@ -173,6 +178,7 @@ namespace MatterHackers.Agg
 				{
 					throw new NotImplementedException();
 				}
+
 				graphicsTransform.transform(ref destX, ref destY);
 			}
 
@@ -184,25 +190,25 @@ namespace MatterHackers.Agg
 		        m_OutFinalBlitBounds.SetRect(0,0,0,0);
 	        }
 #endif
-			bool IsScaled = (scaleX != 1 || scaleY != 1);
+			bool isScaled = scaleX != 1 || scaleY != 1;
 
-			bool IsRotated = true;
+			bool isRotated = true;
 			if (Math.Abs(angleRadians) < (0.1 * MathHelper.Tau / 360))
 			{
-				IsRotated = false;
+				isRotated = false;
 				angleRadians = 0;
 			}
 
-			//bool IsMipped = false;
+			// bool IsMipped = false;
 			double sourceOriginOffsetX = source.OriginOffset.X;
 			double sourceOriginOffsetY = source.OriginOffset.Y;
-			bool CanUseMipMaps = IsScaled;
+			bool canUseMipMaps = isScaled;
 			if (scaleX > 0.5 || scaleY > 0.5)
 			{
-				CanUseMipMaps = false;
+				canUseMipMaps = false;
 			}
 
-			bool renderRequriesSourceSampling = IsScaled || IsRotated || destX != (int)destX || destY != (int)destY;
+			bool renderRequriesSourceSampling = isScaled || isRotated || destX != (int)destX || destY != (int)destY;
 
 			// this is the fast drawing path
 			if (renderRequriesSourceSampling)
@@ -226,50 +232,50 @@ namespace MatterHackers.Agg
 			    HotspotOffsetY *= (inScaleY / scaleY);
 	        }
 #endif
-                switch (ImageRenderQuality)
+				switch (ImageRenderQuality)
 				{
 					case TransformQuality.Fastest:
 						{
-							Affine destRectTransform;
-							DrawImageGetDestBounds(source, destX, destY, sourceOriginOffsetX, sourceOriginOffsetY, scaleX, scaleY, angleRadians, out destRectTransform);
+							DrawImageGetDestBounds(source, destX, destY, sourceOriginOffsetX, sourceOriginOffsetY, scaleX, scaleY, angleRadians, out Affine destRectTransform);
 
-							Affine sourceRectTransform = new Affine(destRectTransform);
+							var sourceRectTransform = new Affine(destRectTransform);
 							// We invert it because it is the transform to make the image go to the same position as the polygon. LBB [2/24/2004]
 							sourceRectTransform.invert();
 
 							span_image_filter spanImageFilter;
-							span_interpolator_linear interpolator = new span_interpolator_linear(sourceRectTransform);
-							ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).ToColor());
+							var interpolator = new span_interpolator_linear(sourceRectTransform);
+							var sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).ToColor());
 
 							spanImageFilter = new span_image_filter_rgba_bilinear_clip(sourceAccessor, ColorF.rgba_pre(0, 0, 0, 0), interpolator);
 
-							DrawImage(source, spanImageFilter, destRectTransform);
+							DrawImage(spanImageFilter, destRectTransform);
 						}
+
 						break;
 
 					case TransformQuality.Best:
 						{
-							Affine destRectTransform;
-							DrawImageGetDestBounds(source, destX, destY, sourceOriginOffsetX, sourceOriginOffsetY, scaleX, scaleY, angleRadians, out destRectTransform);
+							DrawImageGetDestBounds(source, destX, destY, sourceOriginOffsetX, sourceOriginOffsetY, scaleX, scaleY, angleRadians, out Affine destRectTransform);
 
-							Affine sourceRectTransform = new Affine(destRectTransform);
+							var sourceRectTransform = new Affine(destRectTransform);
 							// We invert it because it is the transform to make the image go to the same position as the polygon. LBB [2/24/2004]
 							sourceRectTransform.invert();
 
-							span_interpolator_linear interpolator = new span_interpolator_linear(sourceRectTransform);
-							ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).ToColor());
+							var interpolator = new span_interpolator_linear(sourceRectTransform);
+							var sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).ToColor());
 
-							//spanImageFilter = new span_image_filter_rgba_bilinear_clip(sourceAccessor, RGBA_Floats.rgba_pre(0, 0, 0, 0), interpolator);
+							// spanImageFilter = new span_image_filter_rgba_bilinear_clip(sourceAccessor, RGBA_Floats.rgba_pre(0, 0, 0, 0), interpolator);
 
 							IImageFilterFunction filterFunction = null;
 							filterFunction = new image_filter_blackman(4);
-							ImageFilterLookUpTable filter = new ImageFilterLookUpTable();
+							var filter = new ImageFilterLookUpTable();
 							filter.calculate(filterFunction, true);
 
 							span_image_filter spanGenerator = new span_image_filter_rgba(sourceAccessor, interpolator, filter);
 
-							DrawImage(source, spanGenerator, destRectTransform);
+							DrawImage(spanGenerator, destRectTransform);
 						}
+
 						break;
 				}
 #if false // this is some debug you can enable to visualize the dest bounding box
@@ -281,15 +287,14 @@ namespace MatterHackers.Agg
 			}
 			else // TODO: this can be even faster if we do not use an intermediate buffer
 			{
-				Affine destRectTransform;
-				DrawImageGetDestBounds(source, destX, destY, sourceOriginOffsetX, sourceOriginOffsetY, scaleX, scaleY, angleRadians, out destRectTransform);
+				DrawImageGetDestBounds(source, destX, destY, sourceOriginOffsetX, sourceOriginOffsetY, scaleX, scaleY, angleRadians, out Affine destRectTransform);
 
-				Affine sourceRectTransform = new Affine(destRectTransform);
+				var sourceRectTransform = new Affine(destRectTransform);
 				// We invert it because it is the transform to make the image go to the same position as the polygon. LBB [2/24/2004]
 				sourceRectTransform.invert();
 
-				span_interpolator_linear interpolator = new span_interpolator_linear(sourceRectTransform);
-				ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).ToColor());
+				var interpolator = new span_interpolator_linear(sourceRectTransform);
+				var sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).ToColor());
 
 				span_image_filter spanImageFilter = null;
 				switch (source.BitDepth)
@@ -309,31 +314,34 @@ namespace MatterHackers.Agg
 					default:
 						throw new NotImplementedException();
 				}
-				//spanImageFilter = new span_image_filter_rgba_nn(sourceAccessor, interpolator);
 
-				DrawImage(source, spanImageFilter, destRectTransform);
+				// spanImageFilter = new span_image_filter_rgba_nn(sourceAccessor, interpolator);
+
+				DrawImage(spanImageFilter, destRectTransform);
 				DestImage.MarkImageChanged();
 			}
 		}
 
 		public override void Rectangle(double left, double bottom, double right, double top, Color color, double strokeWidth)
 		{
-			RoundedRect rect = new RoundedRect(left + .5, bottom + .5, right - .5, top - .5, 0);
-			Stroke rectOutline = new Stroke(rect, strokeWidth);
+			var rect = new RoundedRect(left + .5, bottom + .5, right - .5, top - .5, 0);
+			var rectOutline = new Stroke(rect, strokeWidth);
 
 			Render(rectOutline, color);
 		}
 
 		public override void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor)
 		{
-			RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
+			var rect = new RoundedRect(left, bottom, right, top, 0);
 			Render(rect, fillColor.ToColor());
 		}
 
 		public override void Render(IImageFloat source,
-			double x, double y,
+			double x,
+			double y,
 			double angleDegrees,
-			double inScaleX, double inScaleY)
+			double inScaleX,
+			double inScaleY)
 		{
 			throw new NotImplementedException();
 		}
@@ -341,19 +349,16 @@ namespace MatterHackers.Agg
 		public override void Clear(IColorType iColor)
 		{
 			RectangleDouble clippingRect = GetClippingRect();
-			RectangleInt clippingRectInt = new RectangleInt((int)clippingRect.Left, (int)clippingRect.Bottom, (int)clippingRect.Right, (int)clippingRect.Top);
+			var clippingRectInt = new RectangleInt((int)clippingRect.Left, (int)clippingRect.Bottom, (int)clippingRect.Right, (int)clippingRect.Top);
 
 			if (DestImage != null)
 			{
-				Color color = iColor.ToColor();
-				int width = DestImage.Width;
-				int height = DestImage.Height;
+				var color = iColor.ToColor();
 				byte[] buffer = DestImage.GetBuffer();
 				switch (DestImage.BitDepth)
 				{
 					case 8:
 						{
-							byte byteColor = (byte)iColor.Red0To255;
 							for (int y = clippingRectInt.Bottom; y < clippingRectInt.Top; y++)
 							{
 								int bufferOffset = DestImage.GetBufferOffsetXY((int)clippingRect.Left, y);
@@ -365,6 +370,7 @@ namespace MatterHackers.Agg
 								}
 							}
 						}
+
 						break;
 
 					case 24:
@@ -380,6 +386,7 @@ namespace MatterHackers.Agg
 								bufferOffset += bytesBetweenPixels;
 							}
 						}
+
 						break;
 
 					case 32:
@@ -398,6 +405,7 @@ namespace MatterHackers.Agg
 								}
 							}
 						}
+
 						break;
 
 					default:
@@ -413,8 +421,7 @@ namespace MatterHackers.Agg
 					throw new Exception("You have to have either a byte or float DestImage.");
 				}
 
-				ColorF color = iColor.ToColorF();
-				int width = DestImageFloat.Width;
+				var color = iColor.ToColorF();
 				int height = DestImageFloat.Height;
 				float[] buffer = DestImageFloat.GetBuffer();
 				switch (DestImageFloat.BitDepth)
@@ -433,6 +440,7 @@ namespace MatterHackers.Agg
 								bufferOffset += bytesBetweenPixels;
 							}
 						}
+
 						break;
 
 					default:
