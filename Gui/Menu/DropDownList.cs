@@ -27,14 +27,15 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.Image;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
+using MatterHackers.Agg.Font;
+using MatterHackers.Agg.Image;
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
@@ -311,7 +312,11 @@ namespace MatterHackers.Agg.UI
 
 		public string SelectedValue
 		{
-			get { return GetValue(SelectedIndex); }
+			get
+			{
+				return GetValue(SelectedIndex);
+			}
+
 			set
 			{
 				if (SelectedIndex == -1 || SelectedValue != value)
@@ -519,12 +524,13 @@ namespace MatterHackers.Agg.UI
 
 		public bool UseLeftIcons { get; private set; } = false;
 
-		public MenuItem AddItem(string itemName, string itemValue = null)
+		public MenuItem AddItem(string itemName, string itemValue = null, TypeFace typeFace = null)
 		{
 			if (itemValue == null)
 			{
 				itemValue = itemName;
 			}
+
 			if (mainControlText.Text != "")
 			{
 				mainControlText.Margin = MenuItemsPadding;
@@ -536,7 +542,7 @@ namespace MatterHackers.Agg.UI
 				currentPadding = new BorderDouble(MenuItemsPadding.Left + 20 + 3, MenuItemsPadding.Bottom, MenuItemsPadding.Right, MenuItemsPadding.Top);
 			}
 
-			MenuItem menuItem = new MenuItem(new MenuItemColorStatesView(itemName, MenuItemsTextColor)
+			MenuItem menuItem = new MenuItem(new MenuItemColorStatesView(itemName, MenuItemsTextColor, typeFace)
 			{
 				NormalBackgroundColor = MenuItemsBackgroundColor,
 				OverBackgroundColor = MenuItemsBackgroundHoverColor,

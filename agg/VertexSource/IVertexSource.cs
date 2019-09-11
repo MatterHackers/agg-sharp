@@ -1,10 +1,3 @@
-using MatterHackers.Agg.Image;
-using MatterHackers.Agg.Image.ThresholdFunctions;
-using MatterHackers.Agg.Transform;
-using MatterHackers.VectorMath;
-using Newtonsoft.Json;
-using System;
-
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
@@ -24,6 +17,11 @@ using System;
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
 using System.Collections.Generic;
+using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Image.ThresholdFunctions;
+using MatterHackers.Agg.Transform;
+using MatterHackers.VectorMath;
+using Newtonsoft.Json;
 
 namespace MatterHackers.Agg.VertexSource
 {
@@ -70,11 +68,11 @@ namespace MatterHackers.Agg.VertexSource
 		}
 	}
 
-	abstract public class VertexSourceLegacySupport : IVertexSource
+	public abstract class VertexSourceLegacySupport : IVertexSource
 	{
 		private IEnumerator<VertexData> currentEnumerator;
 
-		abstract public IEnumerable<VertexData> Vertices();
+		public abstract IEnumerable<VertexData> Vertices();
 
 		public void rewind(int layerIndex)
 		{
@@ -88,6 +86,7 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				rewind(0);
 			}
+
 			x = currentEnumerator.Current.position.X;
 			y = currentEnumerator.Current.position.Y;
 			ShapePath.FlagsAndCommand command = currentEnumerator.Current.command;
@@ -96,7 +95,6 @@ namespace MatterHackers.Agg.VertexSource
 
 			return command;
 		}
-
 	}
 
 	public interface IVertexSource
