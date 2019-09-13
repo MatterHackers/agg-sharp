@@ -266,6 +266,8 @@ namespace MatterHackers.DataConverters3D
 		#region IObject3D
 
 		IObject3D _sourceItem  = null;
+
+
 		private IObject3D SourceItem
 		{
 			get => _sourceItem;
@@ -278,13 +280,20 @@ namespace MatterHackers.DataConverters3D
 
 				if (_sourceItem != null)
 				{
+					_sourceItem.Children.ItemsModified -= OnItemsModified;
 					_sourceItem.Invalidated -= SourceItem_Invalidated;
 				}
 
 				_sourceItem = value;
 
 				_sourceItem.Invalidated += SourceItem_Invalidated;
+				_sourceItem.Children.ItemsModified += OnItemsModified;
 			}
+		}
+
+		private void OnItemsModified(object sender, EventArgs e)
+		{
+			ItemsModified?.Invoke(_sourceItem, null);
 		}
 
 		public string OwnerID { get => SourceItem.OwnerID; set => SourceItem.OwnerID = value; }
@@ -314,6 +323,8 @@ namespace MatterHackers.DataConverters3D
 		public bool RebuildLocked => false;
 
 		public bool Expanded => true;
+
+		public event EventHandler ItemsModified;
 
 		public IObject3D Clone() => SourceItem.Clone();
 
