@@ -666,6 +666,22 @@ namespace MatterHackers.PolygonMesh
 
 			return false;
 		}
+
+		public static double GetArea(this Face face, Mesh mesh)
+		{
+			// area = (a * c * sen(B))/2
+			var p0 = mesh.Vertices[face.v0];
+			var p1 = mesh.Vertices[face.v1];
+			var p2 = mesh.Vertices[face.v2];
+			var xy = new Vector3(p1.X - p0.X, p1.Y - p0.Y, p1.Z - p0.Z);
+			var xz = new Vector3(p2.X - p0.X, p2.Y - p0.Y, p2.Z - p0.Z);
+
+			double a = (p0 - p1).Length;
+			double c = (p0 - p2).Length;
+			double b = Vector3.CalculateAngle(xy, xz);
+
+			return (a * c * Math.Sin(b)) / 2d;
+		}
 	}
 
 	public static class MeshExtensionMethods
