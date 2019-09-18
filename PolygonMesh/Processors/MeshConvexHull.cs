@@ -27,6 +27,7 @@ using MatterHackers.VectorMath;
 using MIConvexHull;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -97,7 +98,7 @@ namespace MatterHackers.PolygonMesh
 			var bounds = AxisAlignedBoundingBox.Empty();
 			// Get the convex hull for the mesh
 			var cHVertexList = new List<CHVertex>();
-			foreach (var position in mesh.Vertices.ToArray())
+			foreach (var position in mesh.Vertices.Distinct().ToArray())
 			{
 				cHVertexList.Add(new CHVertex(position));
 				bounds.ExpandToInclude(position);
