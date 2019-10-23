@@ -45,6 +45,7 @@ namespace MatterHackers.Agg.UI
 		private Vector2 scrollPositionAtMouseDown;
 		private Vector2 scrollPositionAtMouseUp;
 		private bool holdingOpenForChild;
+		public static bool DebugKeepOpen { get; set; } = false;
 
 		public PopupWidget(GuiWidget contentWidget, IPopupLayoutEngine layoutEngine, bool makeScrollable)
 		{
@@ -151,7 +152,8 @@ namespace MatterHackers.Agg.UI
 					&& !specialChildHasFocus
 					&& !descendantIsHoldingOpen
 					&& !holdingOpenForChild
-					&& !keepMeOpen)
+					&& !keepMeOpen
+					&& !DebugKeepOpen)
 				{
 					UiThread.RunOnIdle(this.CloseMenu);
 				}
@@ -192,7 +194,8 @@ namespace MatterHackers.Agg.UI
 							&& !specialChildHasFocus
 							&& !descendantIsHoldingOpen
 							&& !holdingOpenForChild
-							&& !keepMeOpen)
+							&& !keepMeOpen
+							&& !DebugKeepOpen)
 					{
 						this.CloseMenu();
 					}
