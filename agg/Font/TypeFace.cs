@@ -434,7 +434,7 @@ namespace MatterHackers.Agg.Font
 		{
 			// TODO: check for kerning and adjust
 			Glyph glyph = GetGlyph(character);
-			if (glyphs != null)
+			if (glyph != null)
 			{
 				return glyph.horiz_adv_x;
 			}
@@ -445,7 +445,7 @@ namespace MatterHackers.Agg.Font
 		internal int GetAdvanceForCharacter(char character)
 		{
 			Glyph glyph = GetGlyph(character);
-			if (glyphs != null)
+			if (glyph != null)
 			{
 				return glyph.horiz_adv_x;
 			}
