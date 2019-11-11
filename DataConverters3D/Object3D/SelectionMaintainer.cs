@@ -49,7 +49,7 @@ namespace MatterHackers.DataConverters3D
 
 		public void Dispose()
 		{
-			if(selectedItem == null)
+			if (selectedItem == null)
 			{
 				return;
 			}
@@ -70,6 +70,11 @@ namespace MatterHackers.DataConverters3D
 				if (newItems.Count() == 1)
 				{
 					scene.SelectedItem = newItems.First();
+					return;
+				}
+				else
+				{
+					scene.SelectedItem = null;
 					return;
 				}
 			}
