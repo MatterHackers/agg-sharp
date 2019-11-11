@@ -52,6 +52,13 @@ namespace MatterHackers.Agg.VertexSource
 			{
 			}
 
+			public VertexData this[int index]
+			{
+				get => vertexData[index];
+				set => vertexData[index] = value;
+			}
+
+
 			public void AddVertex(double x, double y, ShapePath.FlagsAndCommand CommandAndFlags)
 			{
 				int index = numVertices;
@@ -228,7 +235,7 @@ namespace MatterHackers.Agg.VertexSource
 			}
 		}
 
-		static public bool OldEqualsNewStyle(IVertexSource control, IVertexSource test, double maxError = .0001)
+		public static bool OldEqualsNewStyle(IVertexSource control, IVertexSource test, double maxError = .0001)
 		{
 			control.rewind(0);
 			double controlX;
@@ -256,7 +263,7 @@ namespace MatterHackers.Agg.VertexSource
 			return false;
 		}
 
-		static public bool OldEqualsOldStyle(IVertexSource control, IVertexSource test, double maxError = .0001)
+		public static bool OldEqualsOldStyle(IVertexSource control, IVertexSource test, double maxError = .0001)
 		{
 			control.rewind(0);
 			double controlX;
@@ -281,6 +288,7 @@ namespace MatterHackers.Agg.VertexSource
 					{
 						return false;
 					}
+
 					index++;
 				}
 
@@ -366,6 +374,7 @@ namespace MatterHackers.Agg.VertexSource
 					}
 				}
 			}
+
 			return end;
 		}
 
@@ -1167,7 +1176,13 @@ namespace MatterHackers.Agg.VertexSource
 			}
 		}
 
-		public ShapePath.FlagsAndCommand vertex(int index, out double x, out double y)
+		public VertexData this[int index]
+		{
+			get => vertexDataManager[index];
+			set => vertexDataManager[index] = value;
+		}
+
+	public ShapePath.FlagsAndCommand vertex(int index, out double x, out double y)
 		{
 			return vertexDataManager.vertex(index, out x, out y);
 		}

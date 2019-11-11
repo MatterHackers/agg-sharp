@@ -36,7 +36,7 @@ namespace MatterHackers.Agg.VertexSource
 		public double radiusY;
 
 		#region resolution
-		private double _resolutionScale;
+		private double _resolutionScale = 1;
 		public double ResolutionScale
 		{
 			get { return _resolutionScale; }
@@ -58,7 +58,6 @@ namespace MatterHackers.Agg.VertexSource
 			originY = 0.0;
 			radiusX = 1.0;
 			radiusY = 1.0;
-			ResolutionScale = 1.0;
 			numSteps = 4;
 			//m_step = 0;
 			m_cw = false;
@@ -80,7 +79,6 @@ namespace MatterHackers.Agg.VertexSource
 			this.originY = OriginY;
 			this.radiusX = RadiusX;
 			this.radiusY = RadiusY;
-			ResolutionScale = 1;
 			numSteps = num_steps;
 			//m_step = 0;
 			m_cw = cw;
