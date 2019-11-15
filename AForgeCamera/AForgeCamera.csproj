@@ -16,7 +16,7 @@
     </UpgradeBackupLocation>
     <OldToolsVersion>2.0</OldToolsVersion>
     <ApplicationRevision>0</ApplicationRevision>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
