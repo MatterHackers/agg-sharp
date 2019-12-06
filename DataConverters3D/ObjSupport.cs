@@ -186,7 +186,7 @@ namespace MatterHackers.DataConverters3D
 
 										mesh.FaceTextures.Add(meshFace, new FaceTextureData(diffuseTexture, uv0, uv1, uv2));
 
-										if(faceData.TextureVertexIndexList.Length == 4)
+										if (faceData.TextureVertexIndexList.Length == 4)
 										{
 											meshFace++;
 
