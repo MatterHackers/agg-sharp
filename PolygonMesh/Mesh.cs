@@ -847,6 +847,8 @@ namespace MatterHackers.PolygonMesh
 
 		public static void PlaceTextureOnFace(this Mesh mesh, int face, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
 		{
+			var faceTextures = new Dictionary<int, FaceTextureData>(mesh.FaceTextures);
+
 			var uvs = new Vector2Float[3];
 			int uvIndex = 0;
 			foreach (int vertexIndex in new int[] { mesh.Faces[face].v0, mesh.Faces[face].v1, mesh.Faces[face].v2 })
@@ -856,13 +858,17 @@ namespace MatterHackers.PolygonMesh
 				uvs[uvIndex++] = new Vector2Float(textureUv);
 			}
 
-			mesh.FaceTextures[face] = new FaceTextureData(textureToUse, uvs[0], uvs[1], uvs[2]);
+			faceTextures[face] = new FaceTextureData(textureToUse, uvs[0], uvs[1], uvs[2]);
+
+			mesh.FaceTextures = faceTextures;
 
 			mesh.MarkAsChanged();
 		}
 
 		public static void PlaceTextureOnFaces(this Mesh mesh, IEnumerable<int> faces, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
 		{
+			var faceTextures = new Dictionary<int, FaceTextureData>();
+
 			var uvs = new Vector2Float[3];
 			foreach (var face in faces)
 			{
@@ -874,8 +880,10 @@ namespace MatterHackers.PolygonMesh
 					uvs[uvIndex++] = new Vector2Float(textureUv);
 				}
 
-				mesh.FaceTextures.Add(face, new FaceTextureData(textureToUse, uvs[0], uvs[1], uvs[2]));
+				faceTextures.Add(face, new FaceTextureData(textureToUse, uvs[0], uvs[1], uvs[2]));
 			}
+
+			mesh.FaceTextures = faceTextures;
 
 			mesh.MarkAsChanged();
 		}
