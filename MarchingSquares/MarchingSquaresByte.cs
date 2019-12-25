@@ -142,33 +142,76 @@ namespace MatterHackers.MarchingSquares
 			CreateLineSegments();
 		}
 
+		internal class SharedPoints
+		{
+			private Dictionary<(double, double), List<int>> indexes = new Dictionary<(double, double), List<int>>();
+			internal SharedPoints(List<LineSegment> segments)
+			{
+				for (int i = 0; i < segments.Count; i++)
+				{
+					var segment = segments[i];
+					AddToKey(i, (segment.start.X, segment.start.Y));
+					AddToKey(i, (segment.end.X, segment.end.Y));
+				}
+			}
+
+			private void AddToKey(int i, (double X, double Y) key)
+			{
+				if (!indexes.ContainsKey(key))
+				{
+					indexes.Add(key, new List<int>());
+				}
+
+				if (!indexes[key].Contains(i))
+				{
+					indexes[key].Add(i);
+				}
+			}
+
+			internal IEnumerable<int> GetTouching(LineSegment segment)
+			{
+				foreach (var index in indexes[(segment.start.X, segment.start.Y)])
+				{
+					yield return index;
+				}
+
+				foreach (var index in indexes[(segment.end.X, segment.end.Y)])
+				{
+					yield return index;
+				}
+			}
+		}
+
 		public Polygons CreateLineLoops(int pixelsToIntPointsScale, int maxLineLoopsToAdd = int.MaxValue)
 		{
-			Polygons LineLoops = new Polygons();
+			var LineLoops = new Polygons();
 
 			bool[] hasBeenAddedList = new bool[LineSegments.Count];
+
+			var sharedPoints = new SharedPoints(LineSegments);
 
 			for (int segmentToAddIndex = 0; segmentToAddIndex < LineSegments.Count; segmentToAddIndex++)
 			{
 				if (!hasBeenAddedList[segmentToAddIndex])
 				{
 					// now find all the connected segments until we get back to this one
-					Polygon loopToAdd = new Polygon();
+					var loopToAdd = new Polygon();
 
 					// walk the loop
-					int currentSegmentIndex = segmentToAddIndex;
-					LineSegment currentSegment = LineSegments[currentSegmentIndex];
-					Vector2 connectionVertex = currentSegment.end;
+					var currentSegmentIndex = segmentToAddIndex;
+					var currentSegment = LineSegments[currentSegmentIndex];
+					var connectionVertex = currentSegment.end;
 					loopToAdd.Add(new IntPoint((long)(connectionVertex.X * pixelsToIntPointsScale), (long)(connectionVertex.Y * pixelsToIntPointsScale)));
 					hasBeenAddedList[currentSegmentIndex] = true;
-					bool addedToLoop = false;
+					var addedToLoop = false;
 					do
 					{
-						bool foundNextSegment = false;
+						var foundNextSegment = false;
 						addedToLoop = false;
-						for (int segmentToCheckIndex = 0; segmentToCheckIndex < LineSegments.Count; segmentToCheckIndex++)
+						foreach (int segmentToCheckIndex in sharedPoints.GetTouching(currentSegment))
+						//for (int segmentToCheckIndex = 0; segmentToCheckIndex < LineSegments.Count; segmentToCheckIndex++)
 						{
-							LineSegment segmentToCheck = LineSegments[segmentToCheckIndex];
+							var segmentToCheck = LineSegments[segmentToCheckIndex];
 							if (!hasBeenAddedList[segmentToCheckIndex])
 							{
 								if (connectionVertex == segmentToCheck.start)
@@ -180,10 +223,6 @@ namespace MatterHackers.MarchingSquares
 								{
 									connectionVertex = segmentToCheck.start;
 									foundNextSegment = true;
-								}
-								else
-								{
-									// int i = 0;
 								}
 
 								if (foundNextSegment)
@@ -197,7 +236,8 @@ namespace MatterHackers.MarchingSquares
 								}
 							}
 						}
-					} while (addedToLoop);
+					}
+                    while (addedToLoop);
 
 					LineLoops.Add(loopToAdd);
 					if (LineLoops.Count > maxLineLoopsToAdd)
@@ -283,7 +323,7 @@ namespace MatterHackers.MarchingSquares
 			directionB *= ratioB;
 
 			double offsetToPixelCenter = .5;
-			LineSegment segment = new LineSegment(
+			var segment = new LineSegment(
 				(segmentA.start.X + directionA.X) + offsetToPixelCenter,
 				(segmentA.start.Y + directionA.Y) + offsetToPixelCenter,
 				(segmentB.start.X + directionB.X) + offsetToPixelCenter,
@@ -383,11 +423,11 @@ namespace MatterHackers.MarchingSquares
 		{
 			foreach (LineSegment lineSegment in LineSegments)
 			{
-				VertexStorage m_LinesToDraw = new VertexStorage();
+				var m_LinesToDraw = new VertexStorage();
 				m_LinesToDraw.remove_all();
 				m_LinesToDraw.MoveTo(lineSegment.start.X, lineSegment.start.Y);
 				m_LinesToDraw.LineTo(lineSegment.end.X, lineSegment.end.Y);
-				Stroke StrockedLineToDraw = new Stroke(m_LinesToDraw, .25);
+				var StrockedLineToDraw = new Stroke(m_LinesToDraw, .25);
 				graphics2D.Render(StrockedLineToDraw, lineSegment.color);
 			}
 		}
