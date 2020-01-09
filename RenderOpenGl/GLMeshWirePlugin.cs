@@ -102,6 +102,7 @@ namespace MatterHackers.RenderOpenGl
 				AddVertex(edgeLines, mesh.Vertices[face.v1], mesh.Vertices[face.v2]);
 				AddVertex(edgeLines, mesh.Vertices[face.v2], mesh.Vertices[face.v0]);
 			}
+
 			EdgeLines = edgeLines;
 
 			// if we are trying to have a filtered list do this in a background thread and wait for the results
@@ -115,15 +116,15 @@ namespace MatterHackers.RenderOpenGl
 
 					foreach (var meshEdge in meshEdgeList)
 					{
-						if(meshEdge.Faces.Count() == 2)
+						if (meshEdge.Faces.Count() == 2)
 						{
 							var faceNormal0 = mesh.Faces[meshEdge.Faces[0]].normal;
 							var faceNormal1 = mesh.Faces[meshEdge.Faces[1]].normal;
 							double angle = faceNormal0.CalculateAngle(faceNormal1);
 							if (angle > MathHelper.Tau * .1)
 							{
-								AddVertex(filteredEdgeLines, 
-									mesh.Vertices[meshEdge.Vertex0Index], 
+								AddVertex(filteredEdgeLines,
+									mesh.Vertices[meshEdge.Vertex0Index],
 									mesh.Vertices[meshEdge.Vertex1Index]);
 							}
 						}
