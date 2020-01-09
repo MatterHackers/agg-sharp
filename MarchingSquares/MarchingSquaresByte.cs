@@ -145,6 +145,7 @@ namespace MatterHackers.MarchingSquares
 		internal class SharedPoints
 		{
 			private Dictionary<(double, double), List<int>> indexes = new Dictionary<(double, double), List<int>>();
+
 			internal SharedPoints(List<LineSegment> segments)
 			{
 				for (int i = 0; i < segments.Count; i++)
@@ -203,7 +204,7 @@ namespace MatterHackers.MarchingSquares
 					var connectionVertex = currentSegment.end;
 					loopToAdd.Add(new IntPoint((long)(connectionVertex.X * pixelsToIntPointsScale), (long)(connectionVertex.Y * pixelsToIntPointsScale)));
 					hasBeenAddedList[currentSegmentIndex] = true;
-					var addedToLoop = false;
+					bool addedToLoop;
 					do
 					{
 						var foundNextSegment = false;
