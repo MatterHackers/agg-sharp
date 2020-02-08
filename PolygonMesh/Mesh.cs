@@ -883,6 +883,15 @@ namespace MatterHackers.PolygonMesh
 				faceTextures.Add(face, new FaceTextureData(textureToUse, uvs[0], uvs[1], uvs[2]));
 			}
 
+			// add in any existing face textures
+			if (mesh.FaceTextures != null)
+			{
+				foreach (var kvp in mesh.FaceTextures)
+				{
+					faceTextures.Add(kvp.Key, kvp.Value);
+				}
+			}
+
 			mesh.FaceTextures = faceTextures;
 
 			mesh.MarkAsChanged();
