@@ -55,18 +55,18 @@ namespace MatterHackers.Agg.UI
 			{
 				using (parent.LayoutLock())
 				{
-					for (int i = 0; i < parent.Children.Count; i++)
+					foreach (GuiWidget child in parent.Children)
 					{
 						if (parent.HasBeenClosed)
 						{
 							return;
 						}
 
-						GuiWidget child = parent.Children[i];
 						if (child.Visible == false)
 						{
 							continue;
 						}
+
 						ApplyHAnchorToChild(parent, child);
 						ApplyVAnchorToChild(parent, child);
 					}
@@ -109,14 +109,13 @@ namespace MatterHackers.Agg.UI
 			{
 				RectangleDouble encloseChildrenRect = parent.GetMinimumBoundsToEncloseChildren();
 
-				for (int childIndex = 0; childIndex < parent.Children.Count; childIndex++)
+				foreach (GuiWidget child in parent.Children)
 				{
 					if (parent.HasBeenClosed)
 					{
 						return;
 					}
 
-					GuiWidget child = parent.Children[childIndex];
 					if (child.Visible == false)
 					{
 						continue;
@@ -133,14 +132,13 @@ namespace MatterHackers.Agg.UI
 			{
 				RectangleDouble encloseChildrenRect = parent.GetMinimumBoundsToEncloseChildren();
 
-				for (int childIndex = 0; childIndex < parent.Children.Count; childIndex++)
+				foreach (GuiWidget child in parent.Children)
 				{
 					if (parent.HasBeenClosed)
 					{
 						return;
 					}
 
-					GuiWidget child = parent.Children[childIndex];
 					if (child.Visible == false)
 					{
 						continue;
@@ -232,14 +230,13 @@ namespace MatterHackers.Agg.UI
 			double totalMinimumWidthOfAllItems = 0;
 			double totalMinimumHeightOfAllItems = 0;
 
-			for (int childIndex = 0; childIndex < parent.Children.Count; childIndex++)
+			foreach (GuiWidget child in parent.Children)
 			{
 				if (parent.HasBeenClosed)
 				{
 					return;
 				}
 
-				GuiWidget child = parent.Children[childIndex];
 				if (child.Visible == false)
 				{
 					continue;

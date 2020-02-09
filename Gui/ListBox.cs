@@ -1,5 +1,6 @@
 ﻿using MatterHackers.VectorMath;
 using System;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -45,6 +46,7 @@ namespace MatterHackers.Agg.UI
 			{
 				return selectedIndex;
 			}
+
 			set
 			{
 				if (value < -1 || value >= topToBottomItemList.Children.Count)
@@ -57,9 +59,9 @@ namespace MatterHackers.Agg.UI
 					selectedIndex = value;
 					OnSelectedIndexChanged();
 
-					for (int index = 0; index < topToBottomItemList.Children.Count; index++)
+					int index = 0;
+					foreach (GuiWidget child in topToBottomItemList.Children)
 					{
-						GuiWidget child = topToBottomItemList.Children[index];
 						if (index == selectedIndex)
 						{
 							child.BackgroundColor = selectedColor;
@@ -69,7 +71,9 @@ namespace MatterHackers.Agg.UI
 						{
 							child.BackgroundColor = new Color();
 						}
+
 						child.Invalidate();
+						index++;
 					}
 
 					Invalidate();
@@ -116,11 +120,11 @@ namespace MatterHackers.Agg.UI
 					OnHoverIndexChanged();
 
 					Color noneColor = new Color();
-					for (int index = 0; index < topToBottomItemList.Children.Count; index++)
+					var index = 0;
+					foreach (GuiWidget child in topToBottomItemList.Children)
 					{
 						if (index != SelectedIndex)
 						{
-							GuiWidget child = topToBottomItemList.Children[index];
 							if (index == HoverIndex)
 							{
 								HoverIndex = index;
@@ -132,6 +136,7 @@ namespace MatterHackers.Agg.UI
 							}
 							child.Invalidate();
 						}
+						index++;
 					}
 
 					Invalidate();
@@ -205,10 +210,9 @@ namespace MatterHackers.Agg.UI
 
 		public override void RemoveChild(GuiWidget childToRemove)
 		{
-			for (int i = topToBottomItemList.Children.Count - 1; i >= 0; i--)
+			foreach (GuiWidget itemHolder in topToBottomItemList.Children.Reverse())
 			{
-				GuiWidget itemHolder = topToBottomItemList.Children[i];
-				if (itemHolder == childToRemove || itemHolder.Children[0] == childToRemove)
+				if (itemHolder == childToRemove || itemHolder.Children.FirstOrDefault() == childToRemove)
 				{
 					topToBottomItemList.RemoveChild(itemHolder);
 				}
@@ -227,43 +231,51 @@ namespace MatterHackers.Agg.UI
 		private void itemHolder_MouseDownInBounds(object sender, MouseEventArgs mouseEvent)
 		{
 			GuiWidget widgetClicked = ((GuiWidget)sender);
-			for (int index = 0; index < topToBottomItemList.Children.Count; index++)
+			var index = 0;
+			foreach (GuiWidget child in topToBottomItemList.Children)
 			{
-				GuiWidget child = topToBottomItemList.Children[index];
 				if (child == widgetClicked)
 				{
 					SelectedIndex = index;
 				}
+				index++;
 			}
 		}
 
 		private void itemToAdd_MouseLeaveBounds(object sender, EventArgs e)
 		{
-			GuiWidget widgetLeft = ((GuiWidget)sender);
+			GuiWidget widgetLeft = (GuiWidget)sender;
 			if (SelectedIndex >= 0)
 			{
-				if (widgetLeft != topToBottomItemList.Children[SelectedIndex])
+				int index = 0;
+				foreach (var child in topToBottomItemList.Children)
 				{
-					widgetLeft.BackgroundColor = new Color();
-					widgetLeft.Invalidate();
-					Invalidate();
+					if (index++ == SelectedIndex
+						&& widgetLeft != child)
+					{
+						widgetLeft.BackgroundColor = default(Color);
+						widgetLeft.Invalidate();
+						Invalidate();
+					}
 				}
 			}
 		}
 
 		private void itemToAdd_MouseEnterBounds(object sender, EventArgs e)
 		{
-			GuiWidget widgetEntered = ((GuiWidget)sender);
-			for (int index = 0; index < topToBottomItemList.Children.Count; index++)
+			var widgetEntered = (GuiWidget)sender;
+			int index = 0;
+			foreach (var child in topToBottomItemList.Children)
 			{
 				if (index != SelectedIndex)
 				{
-					GuiWidget child = topToBottomItemList.Children[index];
 					if (child == widgetEntered)
 					{
 						HoverIndex = index;
 					}
 				}
+
+				index++;
 			}
 		}
 
@@ -322,7 +334,14 @@ namespace MatterHackers.Agg.UI
 			{
 				if (SelectedIndex != -1)
 				{
-					return Children[SelectedIndex];
+					int index = 0;
+					foreach (var child in topToBottomItemList.Children)
+					{
+						if (index++ == SelectedIndex)
+						{
+							return child;
+						}
+					}
 				}
 
 				return null;
@@ -330,12 +349,15 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				for (int i = 0; i < Children.Count; i++)
+				var index = 0;
+				foreach (var child in Children)
 				{
-					if (Children[SelectedIndex] == value)
+					if (child == value)
 					{
-						SelectedIndex = i;
+						SelectedIndex = index;
 					}
+
+					index++;
 				}
 			}
 		}

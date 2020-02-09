@@ -73,15 +73,21 @@ namespace Typography.OpenFont.Tables
 
     class Cmap : TableEntry
     {
-        public override string Name { get { return "cmap"; } }
+        public const string _N = "cmap";
+        public override string Name => _N;
 
+        /// <summary>
+        /// find glyph index from given codepoint
+        /// </summary>
+        /// <param name="codepoint"></param>
+        /// <param name="nextCodepoint"></param>
+        /// <returns>glyph index</returns>
         public ushort LookupIndex(int codepoint, int nextCodepoint = 0)
         {
             // https://www.microsoft.com/typography/OTSPEC/cmap.htm
             // "character codes that do not correspond to any glyph in the font should be mapped to glyph index 0."
-            ushort ret = 0;
 
-            if (!_codepointToGlyphs.TryGetValue(codepoint, out ret))
+            if (!_codepointToGlyphs.TryGetValue(codepoint, out ushort found))
             {
                 foreach (CharacterMap cmap in _charMaps)
                 {
@@ -89,13 +95,13 @@ namespace Typography.OpenFont.Tables
 
                     //https://www.microsoft.com/typography/OTSPEC/cmap.htm
                     //...When building a Unicode font for Windows, the platform ID should be 3 and the encoding ID should be 1
-                    if (ret == 0 || (gid != 0 && cmap.PlatformId == 3 && cmap.EncodingId == 1))
+                    if (found == 0 || (gid != 0 && cmap.PlatformId == 3 && cmap.EncodingId == 1))
                     {
-                        ret = gid;
+                        found = gid;
                     }
                 }
 
-                _codepointToGlyphs[codepoint] = ret;
+                _codepointToGlyphs[codepoint] = found;
             }
 
             // If there is a second codepoint, we are asked whether this is an UVS sequence
@@ -105,10 +111,9 @@ namespace Typography.OpenFont.Tables
             {
                 foreach (CharacterMap cmap in _charMaps)
                 {
-                    if (cmap is CharMapFormat14)
+                    if (cmap is CharMapFormat14 cmap14)
                     {
-                        CharMapFormat14 cmap14 = cmap as CharMapFormat14;
-                        ushort gid = cmap14.CharacterPairToGlyphIndex(codepoint, ret, nextCodepoint);
+                        ushort gid = cmap14.CharacterPairToGlyphIndex(codepoint, found, nextCodepoint);
                         if (gid > 0)
                         {
                             return gid;
@@ -119,11 +124,11 @@ namespace Typography.OpenFont.Tables
                 return 0;
             }
 
-            return ret;
+            return found;
         }
 
-        private List<CharacterMap> _charMaps = new List<CharacterMap>();
-        private Dictionary<int, ushort> _codepointToGlyphs = new Dictionary<int, ushort>();
+        List<CharacterMap> _charMaps = new List<CharacterMap>();
+        Dictionary<int, ushort> _codepointToGlyphs = new Dictionary<int, ushort>();
 
         protected override void ReadContentFrom(BinaryReader input)
         {

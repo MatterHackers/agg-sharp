@@ -236,8 +236,8 @@ namespace MatterHackers.Agg.UI
 
 					ToolTipShown?.Invoke(this, new StringEventArgs(CurrentText));
 
-					//timeCurrentToolTipHasBeenShowing.Reset();
-					//timeCurrentToolTipHasBeenShowingWasRunning = true;
+					// timeCurrentToolTipHasBeenShowing.Reset();
+					// timeCurrentToolTipHasBeenShowingWasRunning = true;
 					timeCurrentToolTipHasBeenShowing.Restart();
 
 					RectangleDouble toolTipBounds = toolTipWidget.LocalBounds;
@@ -283,16 +283,16 @@ namespace MatterHackers.Agg.UI
 			{
 				ToolTipPop?.Invoke(this, null);
 
-				//widgetThatWantsToShowToolTip = null;
+				// widgetThatWantsToShowToolTip = null;
 				timeSinceLastMouseMove.Stop();
 				timeSinceLastMouseMove.Reset();
-				
+
 				toolTipWidget.Close();
 				toolTipWidget = null;
 				toolTipText = "";
 
-				//timeSinceLastToolTipClose.Reset();
-				//timeSinceLastToolTipCloseWasRunning = true;
+				// timeSinceLastToolTipClose.Reset();
+				// timeSinceLastToolTipCloseWasRunning = true;
 				timeSinceLastToolTipClose.Restart();
 
 				Debug.WriteLine("RemoveToolTip {0}".FormatWith(count++));

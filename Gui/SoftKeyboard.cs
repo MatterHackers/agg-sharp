@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.VectorMath;
 using System;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -91,7 +92,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (hadFocusWidget != null)
 			{
-				hadFocusWidget.OnKeyPress(new KeyPressEventArgs(((Button)sender).Children[0].Children[0].Text[0]));
+				hadFocusWidget.OnKeyPress(new KeyPressEventArgs(((Button)sender).Children.FirstOrDefault().Children.FirstOrDefault().Text[0]));
 			}
 		}
 

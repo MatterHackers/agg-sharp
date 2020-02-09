@@ -31,19 +31,26 @@ namespace MatterHackers.Agg.UI
 	{
 		public static bool SingleWindowMode { get; set; } = false;
 
-		public bool IsInitialized { get; set; } = false;
+		public static bool EnableInputHook { get; set; } = true;
 
-		public static bool EnableInputHook = true;
+		public static bool ShowingSystemDialog { get; set; } = false;
+
+		public static WinformsSystemWindow MainWindowsFormsWindow { get; private set; }
+
+		public static Func<SystemWindow, FormInspector> InspectorCreator { get; set; }
 
 		private static System.Timers.Timer idleCallBackTimer = null;
 
 		private static bool processingOnIdle = false;
 
-		private static readonly object singleInvokeLock = new object();
+		private static readonly object SingleInvokeLock = new object();
 
 		protected WinformsEventSink EventSink;
 
 		private SystemWindow systemWindow;
+		private int drawCount = 0;
+		private int onPaintCount;
+
 		public SystemWindow AggSystemWindow
 		{
 			get => systemWindow;
@@ -74,6 +81,8 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public bool IsMainWindow { get; } = false;
+
+		public bool IsInitialized { get; set; } = false;
 
 		public WinformsSystemWindow()
 		{
@@ -125,7 +134,7 @@ namespace MatterHackers.Agg.UI
 
 		public void ReleaseOnIdleGuard()
 		{
-			lock (singleInvokeLock)
+			lock (SingleInvokeLock)
 			{
 				processingOnIdle = false;
 			}
@@ -135,7 +144,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (!this.IsDisposed)
 			{
-				lock (singleInvokeLock)
+				lock (SingleInvokeLock)
 				{
 					if (processingOnIdle)
 					{
@@ -163,15 +172,13 @@ namespace MatterHackers.Agg.UI
 				}
 				finally
 				{
-					lock (singleInvokeLock)
+					lock (SingleInvokeLock)
 					{
 						processingOnIdle = false;
 					}
 				}
 			}
 		}
-
-		public static bool ShowingSystemDialog = false;
 
 		public abstract Graphics2D NewGraphics2D();
 
@@ -197,7 +204,7 @@ namespace MatterHackers.Agg.UI
 			Rectangle rect = paintEventArgs.ClipRectangle;
 			if (ClientSize.Width > 0 && ClientSize.Height > 0)
 			{
-				DrawCount++;
+				drawCount++;
 
 				var graphics2D = this.NewGraphics2D();
 
@@ -225,13 +232,10 @@ namespace MatterHackers.Agg.UI
 				CopyBackBufferToScreen(paintEventArgs.Graphics);
 			}
 
-			OnPaintCount++;
 			// use this to debug that windows are drawing and updating.
-			//Text = string.Format("Draw {0}, Idle {1}, OnPaint {2}", DrawCount, IdleCount, OnPaintCount);
+			// onPaintCount++;
+			// Text = string.Format("Draw {0}, OnPaint {1}", drawCount, onPaintCount);
 		}
-
-		private int DrawCount = 0;
-		private int OnPaintCount;
 
 		public abstract void CopyBackBufferToScreen(Graphics displayGraphics);
 
@@ -246,9 +250,9 @@ namespace MatterHackers.Agg.UI
 			// focus the first child of the forms window (should be the system window)
 			if (AggSystemWindow != null
 				&& AggSystemWindow.Children.Count > 0
-				&& AggSystemWindow.Children[0] != null)
+				&& AggSystemWindow.Children.FirstOrDefault() != null)
 			{
-				AggSystemWindow.Children[0].Focus();
+				AggSystemWindow.Children.FirstOrDefault().Focus();
 			}
 
 			base.OnActivated(e);
@@ -335,7 +339,7 @@ namespace MatterHackers.Agg.UI
 
 		#region IPlatformWindow
 
-		public new Agg.UI.Keys ModifierKeys => (Agg.UI.Keys)Control.ModifierKeys;
+		public new Keys ModifierKeys => (Keys)Control.ModifierKeys;
 
 		/* // Can't simply override BringToFront. Change Interface method name/signature if required. Leaving as is
 		 * // to call base/this.BringToFront via Interface call
@@ -351,23 +355,13 @@ namespace MatterHackers.Agg.UI
 		// TODO: Why is this member named Caption instead of Title?
 		public string Caption
 		{
-			get
-			{
-				return this.Text;
-			}
-			set
-			{
-				this.Text = value;
-			}
+			get => this.Text;
+			set => this.Text = value;
 		}
 
 		public Point2D DesktopPosition
 		{
-			get
-			{
-				return new Point2D(this.DesktopLocation.X, this.DesktopLocation.Y);
-			}
-
+			get => new Point2D(this.DesktopLocation.X, this.DesktopLocation.Y);
 			set
 			{
 				if (!this.Visible)
@@ -435,11 +429,11 @@ namespace MatterHackers.Agg.UI
 			// Ignore problems with buggy WinForms on Linux
 			try
 			{
-				this.Invalidate ();
+				this.Invalidate();
 			}
 			catch (Exception e)
 			{
-				System.Console.WriteLine("WinForms Exception: " + e.Message);
+				Console.WriteLine("WinForms Exception: " + e.Message);
 			}
 		}
 
@@ -653,16 +647,14 @@ namespace MatterHackers.Agg.UI
 		*/
 		#endregion
 
-		public static WinformsSystemWindow MainWindowsFormsWindow { get; private set; }
-
 		public new Vector2 MinimumSize
 		{
 			get => new Vector2(base.MinimumSize.Width, base.MinimumSize.Height);
 			set
 			{
-				Size clientSize = new Size((int)Math.Ceiling(value.X), (int)Math.Ceiling(value.Y));
+				var clientSize = new Size((int)Math.Ceiling(value.X), (int)Math.Ceiling(value.Y));
 
-				Size windowSize = new Size(
+				var windowSize = new Size(
 					clientSize.Width + this.Width - this.ClientSize.Width,
 					clientSize.Height + this.Height - this.ClientSize.Height);
 
@@ -731,7 +723,7 @@ namespace MatterHackers.Agg.UI
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
 			// Prevent our call to SystemWindow.Close from recursing
-			if (this.winformAlreadyClosing)
+			if (winformAlreadyClosing)
 			{
 				return;
 			}
@@ -739,7 +731,7 @@ namespace MatterHackers.Agg.UI
 			// Check for RootSystemWindow, close if found
 			string windowTypeName = systemWindow.GetType().Name;
 
-			if ((SingleWindowMode &&  windowTypeName == "RootSystemWindow")
+			if ((SingleWindowMode && windowTypeName == "RootSystemWindow")
 				|| (MainWindowsFormsWindow != null && systemWindow == MainWindowsFormsWindow.systemWindow && !SingleWindowMode))
 			{
 				// Close the main (first) PlatformWindow if it's being requested and not this instance
@@ -780,7 +772,5 @@ namespace MatterHackers.Agg.UI
 		{
 			public virtual bool Inspecting { get; set; } = true;
 		}
-
-		public static Func<SystemWindow, FormInspector> InspectorCreator { get; set; }
 	}
 }

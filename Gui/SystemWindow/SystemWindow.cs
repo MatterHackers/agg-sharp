@@ -138,10 +138,8 @@ namespace MatterHackers.Agg.UI
 			{
 				var item = items.Pop();
 
-				for (int i = item.Children.Count - 1; i >= 0; i--)
+				foreach (var child in item.Children.Reverse())
 				{
-					var child = item.Children[i];
-
 					var screenSpaceChildBounds = child.TransformToScreenSpace(child.LocalBounds);
 
 					if (screenSpaceChildBounds.Contains(screenSpaceMouse)

@@ -37,63 +37,47 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderOpenGl
 {
-	interface IEdgeLinesContainer
-	{
-		VectorPOD<WireVertexData> EdgeLines { get; }
-	}
 
-	public struct WireVertexData
-	{
-		public float PositionsX;
-		public float PositionsY;
-		public float PositionsZ;
-
-		public static readonly int Stride = Marshal.SizeOf(default(WireVertexData));
-	}
-
-	public class GLMeshWirePlugin : IEdgeLinesContainer
+	public class GLMeshNonManifoldPlugin : IEdgeLinesContainer
 	{
 		public delegate void DrawToGL(Mesh meshToRender);
 
-		public static string GLMeshWirePluginName => nameof(GLMeshWirePluginName);
+		public static string GLMeshNonManifoldPluginName => nameof(GLMeshNonManifoldPluginName);
 
 		public VectorPOD<WireVertexData> EdgeLines { get; private set; } = new VectorPOD<WireVertexData>();
 
 		private int meshUpdateCount;
-		private double nonPlanarAngleRequired;
 
-		public static GLMeshWirePlugin Get(Mesh mesh, double nonPlanarAngleRequired = 0, Action meshChanged = null)
+		public static GLMeshNonManifoldPlugin Get(Mesh mesh, Action meshChanged = null)
 		{
-			mesh.PropertyBag.TryGetValue(GLMeshWirePluginName, out object meshData);
-			if (meshData is GLMeshWirePlugin plugin)
+			mesh.PropertyBag.TryGetValue(GLMeshNonManifoldPluginName, out object meshData);
+			if (meshData is GLMeshNonManifoldPlugin plugin)
 			{
-				if (mesh.ChangedCount == plugin.meshUpdateCount
-					&& nonPlanarAngleRequired == plugin.nonPlanarAngleRequired)
+				if (mesh.ChangedCount == plugin.meshUpdateCount)
 				{
 					return plugin;
 				}
 
 				// else we need to rebuild the data
 				plugin.meshUpdateCount = mesh.ChangedCount;
-				mesh.PropertyBag.Remove(GLMeshWirePluginName);
+				mesh.PropertyBag.Remove(GLMeshNonManifoldPluginName);
 			}
 
-			var newPlugin = new GLMeshWirePlugin();
-			newPlugin.CreateRenderData(mesh, nonPlanarAngleRequired, meshChanged);
+			var newPlugin = new GLMeshNonManifoldPlugin();
+			newPlugin.CreateRenderData(mesh, meshChanged);
 			newPlugin.meshUpdateCount = mesh.ChangedCount;
-			mesh.PropertyBag.Add(GLMeshWirePluginName, newPlugin);
+			mesh.PropertyBag.Add(GLMeshNonManifoldPluginName, newPlugin);
 
 			return newPlugin;
 		}
 
-		private GLMeshWirePlugin()
+		private GLMeshNonManifoldPlugin()
 		{
 			// This is private as you can't build one of these. You have to call GetImageGLDisplayListPlugin.
 		}
 
-		private void CreateRenderData(Mesh mesh, double nonPlanarAngleRequired = 0, Action meshChanged = null)
+		private void CreateRenderData(Mesh mesh, Action meshChanged = null)
 		{
-			this.nonPlanarAngleRequired = nonPlanarAngleRequired;
 			var edgeLines = new VectorPOD<WireVertexData>();
 
 			// create a quick edge list of all the polygon edges
@@ -107,35 +91,26 @@ namespace MatterHackers.RenderOpenGl
 
 			this.EdgeLines = edgeLines;
 
-			// if we are trying to have a filtered list do this in a background thread and wait for the results
-			if (nonPlanarAngleRequired > 0)
+			// do this in a background thread and wait for the results
+			Task.Run(() =>
 			{
-				Task.Run(() =>
+				var meshEdgeList = mesh.NewMeshEdges();
+
+				var filteredEdgeLines = new VectorPOD<WireVertexData>();
+
+				foreach (var meshEdge in meshEdgeList)
 				{
-					var meshEdgeList = mesh.NewMeshEdges();
-
-					var filteredEdgeLines = new VectorPOD<WireVertexData>();
-
-					foreach (var meshEdge in meshEdgeList)
+					if (meshEdge.Faces.Count() != 2)
 					{
-						if (meshEdge.Faces.Count() == 2)
-						{
-							var faceNormal0 = mesh.Faces[meshEdge.Faces[0]].normal;
-							var faceNormal1 = mesh.Faces[meshEdge.Faces[1]].normal;
-							double angle = faceNormal0.CalculateAngle(faceNormal1);
-							if (angle > nonPlanarAngleRequired)
-							{
-								AddVertex(filteredEdgeLines,
-									mesh.Vertices[meshEdge.Vertex0Index],
-									mesh.Vertices[meshEdge.Vertex1Index]);
-							}
-						}
+						AddVertex(filteredEdgeLines,
+							mesh.Vertices[meshEdge.Vertex0Index],
+							mesh.Vertices[meshEdge.Vertex1Index]);
 					}
+				}
 
-					this.EdgeLines = filteredEdgeLines;
-					meshChanged?.Invoke();
-				});
-			}
+				this.EdgeLines = filteredEdgeLines;
+				meshChanged?.Invoke();
+			});
 		}
 
 		private void AddVertex(VectorPOD<WireVertexData> edgeLines, Vector3Float vertex0, Vector3Float vertex1)

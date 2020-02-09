@@ -664,15 +664,15 @@ namespace MatterHackers.GuiAutomation
 					foreach (GuiWidget.WidgetAndPosition widgetAndPosition in namedWidgets)
 					{
 						if (!onlyVisible
-							|| widgetAndPosition.widget.ActuallyVisibleOnScreen())
+							|| widgetAndPosition.Widget.ActuallyVisibleOnScreen())
 						{
-							RectangleDouble childBounds = widgetAndPosition.widget.TransformToParentSpace(systemWindow, widgetAndPosition.widget.LocalBounds);
+							RectangleDouble childBounds = widgetAndPosition.Widget.TransformToParentSpace(systemWindow, widgetAndPosition.Widget.LocalBounds);
 
 							ScreenRectangle screenRect = SystemWindowToScreen(childBounds, systemWindow);
 							ScreenRectangle result;
 							if (ScreenRectangle.Intersection(searchRegion.ScreenRect, screenRect, out result))
 							{
-								namedWidgetsInRegion.Add(new GetByNameResults(widgetAndPosition.widget, widgetAndPosition.position, systemWindow, widgetAndPosition.NamedObject));
+								namedWidgetsInRegion.Add(new GetByNameResults(widgetAndPosition.Widget, widgetAndPosition.Position, systemWindow, widgetAndPosition.NamedObject));
 							}
 						}
 					}
@@ -683,9 +683,9 @@ namespace MatterHackers.GuiAutomation
 					foreach (GuiWidget.WidgetAndPosition namedWidget in namedWidgets)
 					{
 						if (!onlyVisible
-							|| namedWidget.widget.ActuallyVisibleOnScreen())
+							|| namedWidget.Widget.ActuallyVisibleOnScreen())
 						{
-							namedWidgetsInRegion.Add(new GetByNameResults(namedWidget.widget, namedWidget.position, systemWindow, namedWidget.NamedObject));
+							namedWidgetsInRegion.Add(new GetByNameResults(namedWidget.Widget, namedWidget.Position, systemWindow, namedWidget.NamedObject));
 						}
 					}
 				}
@@ -918,14 +918,14 @@ namespace MatterHackers.GuiAutomation
 					{
 						if (onlyVisible)
 						{
-							RectangleDouble childBounds = foundChild.widget.TransformToParentSpace(window, foundChild.widget.LocalBounds);
+							RectangleDouble childBounds = foundChild.Widget.TransformToParentSpace(window, foundChild.Widget.LocalBounds);
 
 							ScreenRectangle screenRect = SystemWindowToScreen(childBounds, window);
 							ScreenRectangle result;
 							if (searchRegion == null
 								|| ScreenRectangle.Intersection(searchRegion.ScreenRect, screenRect, out result))
 							{
-								if (foundChild.widget.ActuallyVisibleOnScreen())
+								if (foundChild.Widget.ActuallyVisibleOnScreen())
 								{
 									return true;
 								}
@@ -1185,7 +1185,7 @@ namespace MatterHackers.GuiAutomation
 				}));
 
 			// Once either the timeout or the test method has completed, store if a timeout occurred and shutdown the SystemWindow
-			task.ContinueWith((innerTask) =>
+			task.ContinueWith(innerTask =>
 			{
 				long elapsedTime = timer.ElapsedMilliseconds;
 				testTimedOut = elapsedTime >= testTimeout;

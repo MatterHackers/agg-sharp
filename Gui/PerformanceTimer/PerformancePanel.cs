@@ -64,7 +64,7 @@ namespace MatterHackers.Agg.UI
 
 				if (true) // only add this when doing testing
 				{
-					UiThread.RunOnIdle((Action)(() =>
+					UiThread.RunOnIdle(() =>
 					{
 						if (PerformanceTimer.GetParentWindowFunction != null)
 						{
@@ -75,7 +75,7 @@ namespace MatterHackers.Agg.UI
 							parentWindow.MouseDown += this.ParentWindow_MouseDown;
 #endif
 						}
-					}));
+					});
 				}
 			}
 
@@ -122,16 +122,21 @@ namespace MatterHackers.Agg.UI
 
 			foreach (PerformanceTimerDisplayData timerData in allRecords)
 			{
-				int curIndex = topToBottom.Children.IndexOf(timerData.widget);
-				if (curIndex != -1)
+				int curIndex = -1;
+				topToBottom.Children.Modify((list) =>
 				{
-					if (timerData.drawOrder < int.MaxValue
-					&& curIndex != timerData.drawOrder)
+					curIndex = list.IndexOf(timerData.widget);
+
+					if (curIndex != -1)
 					{
-						topToBottom.Children.RemoveAt(curIndex);
-						topToBottom.Children.Insert(Math.Min(timerData.drawOrder, topToBottom.Children.Count), timerData.widget);
+						if (timerData.drawOrder < int.MaxValue
+						&& curIndex != timerData.drawOrder)
+						{
+							list.RemoveAt(curIndex);
+							list.Insert(Math.Min(timerData.drawOrder, topToBottom.Children.Count), timerData.widget);
+						}
 					}
-				}
+				});
 
 				timerData.startTimeMs = 0;
 				timerData.TotalCount = 0;

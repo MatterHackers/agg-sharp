@@ -45,6 +45,7 @@ namespace MatterHackers.Agg.UI
 		private Vector2 scrollPositionAtMouseDown;
 		private Vector2 scrollPositionAtMouseUp;
 		private bool holdingOpenForChild;
+
 		public static bool DebugKeepOpen { get; set; } = false;
 
 		public PopupWidget(GuiWidget contentWidget, IPopupLayoutEngine layoutEngine, bool makeScrollable)
@@ -53,9 +54,9 @@ namespace MatterHackers.Agg.UI
 
 			this.layoutEngine = layoutEngine;
 
-			ignoredWidgets =  contentWidget.Children.OfType<IIgnoredPopupChild>().ToList();
+			ignoredWidgets = contentWidget.Children.OfType<IIgnoredPopupChild>().ToList();
 
-			contentWidget.Closed += (s,e) => this.Close();
+			contentWidget.Closed += (s, e) => this.Close();
 
 			if (makeScrollable)
 			{
@@ -136,7 +137,7 @@ namespace MatterHackers.Agg.UI
 					&& ignoredPopupChild.KeepMenuOpen);
 // 					&& ((ignoredPopupChild.ContainsFocus || ignoredPopupChild.KeepMenuOpen()) && !this.ContainsFocus));
 
-				bool clickIsInsideScrollArea = (scrollingWindow?.ScrollArea?.Children?[0]?.ChildHasMouseCaptured == true);
+				bool clickIsInsideScrollArea = scrollingWindow?.ScrollArea?.Children?.FirstOrDefault()?.ChildHasMouseCaptured == true;
 
 				bool keepMeOpen = false;
 

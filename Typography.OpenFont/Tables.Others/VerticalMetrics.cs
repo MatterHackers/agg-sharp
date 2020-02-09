@@ -9,6 +9,9 @@ namespace Typography.OpenFont.Tables
     /// </summary>
     class VerticalMetrics : TableEntry
     {
+        public const string _N = "vmtx";
+        public override string Name => _N;
+
         // https://www.microsoft.com/typography/otspec/vmtx.htm
         // vmtx - Vertical Metrics Table
 
@@ -59,15 +62,7 @@ namespace Typography.OpenFont.Tables
         AdvanceHeightAndTopSideBearing[] _advHeightAndTopSideBearings;
         public VerticalMetrics(ushort numOfLongVerMetrics)
         {
-            this._numOfLongVerMetrics = numOfLongVerMetrics;
-        }
-
-        public override string Name
-        {
-            get
-            {
-                return "vmtx";
-            }
+            _numOfLongVerMetrics = numOfLongVerMetrics;
         }
         protected override void ReadContentFrom(BinaryReader reader)
         {

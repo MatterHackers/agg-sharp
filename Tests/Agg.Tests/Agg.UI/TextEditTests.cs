@@ -31,13 +31,11 @@ using MatterHackers.Agg.Image;
 #if !__ANDROID__
 using MatterHackers.GuiAutomation;
 #endif
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
-using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
-using System.Threading;
-using System.IO;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -46,11 +44,11 @@ namespace MatterHackers.Agg.UI.Tests
 #endif
 	public class TextEditTests
 	{
-		public static bool saveImagesForDebug = false;
+		public static bool SaveImagesForDebug = false;
 
 		private void OutputImage(ImageBuffer imageToOutput, string fileName)
 		{
-			if (saveImagesForDebug)
+			if (SaveImagesForDebug)
 			{
 				var dirAndFileName = Path.Combine("C:/Temp", fileName);
 				ImageTgaIO.Save(imageToOutput, dirAndFileName);
@@ -59,17 +57,17 @@ namespace MatterHackers.Agg.UI.Tests
 
 		public void SendKeyDown(Keys keyDown, GuiWidget reciever)
 		{
-			KeyEventArgs keyDownEvent = new KeyEventArgs(keyDown);
+			var keyDownEvent = new KeyEventArgs(keyDown);
 			reciever.OnKeyDown(keyDownEvent);
 		}
 
 		public void SendKey(Keys keyDown, char keyPressed, GuiWidget reciever)
 		{
-			KeyEventArgs keyDownEvent = new KeyEventArgs(keyDown);
+			var keyDownEvent = new KeyEventArgs(keyDown);
 			reciever.OnKeyDown(keyDownEvent);
 			if (!keyDownEvent.SuppressKeyPress)
 			{
-				KeyPressEventArgs keyPressEvent = new KeyPressEventArgs(keyPressed);
+				var keyPressEvent = new KeyPressEventArgs(keyPressed);
 				reciever.OnKeyPress(keyPressEvent);
 			}
 		}
@@ -77,9 +75,11 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void TextEditTextSelectionTests()
 		{
-			GuiWidget container = new GuiWidget();
-			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
-			TextEditWidget editField1 = new TextEditWidget("", 0, 0, pixelWidth: 51);
+			var container = new GuiWidget
+			{
+				LocalBounds = new RectangleDouble(0, 0, 200, 200)
+			};
+			var editField1 = new TextEditWidget("", 0, 0, pixelWidth: 51);
 			container.AddChild(editField1);
 
 			// select the control and type something in it
@@ -125,11 +125,15 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void TextChangedEventsTests()
 		{
-			GuiWidget container = new GuiWidget();
-			container.Name = "container";
-			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
-			TextEditWidget editField1 = new TextEditWidget("", 0, 0, pixelWidth: 20);
-			editField1.Name = "editField1";
+			var container = new GuiWidget
+			{
+				Name = "container",
+				LocalBounds = new RectangleDouble(0, 0, 200, 200)
+			};
+			var editField1 = new TextEditWidget("", 0, 0, pixelWidth: 20)
+			{
+				Name = "editField1"
+			};
 			Assert.IsTrue(editField1.BoundsRelativeToParent.Top < 40, "We make this assumption in the code below, so make sure it's true.");
 			bool textField1EditComplete = false;
 			editField1.EditComplete += (sender, e) => { textField1EditComplete = true; };
@@ -149,8 +153,10 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 			container.AddChild(editField1);
 
-			TextEditWidget editField2 = new TextEditWidget("", 0, 40, pixelWidth: 20);
-			editField2.Name = "editField2";
+			var editField2 = new TextEditWidget("", 0, 40, pixelWidth: 20)
+			{
+				Name = "editField2"
+			};
 			container.AddChild(editField2);
 
 			// mouse select on the control when it contains nothing
@@ -195,15 +201,21 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void TextEditGetsFocusTests()
 		{
-			GuiWidget container = new GuiWidget();
-			container.Name = "container";
-			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
-			TextEditWidget editField1 = new TextEditWidget("", 0, 0, pixelWidth: 160);
-			editField1.Name = "editField1";
+			var container = new GuiWidget
+			{
+				Name = "container",
+				LocalBounds = new RectangleDouble(0, 0, 200, 200)
+			};
+			var editField1 = new TextEditWidget("", 0, 0, pixelWidth: 160)
+			{
+				Name = "editField1"
+			};
 			container.AddChild(editField1);
 
-			TextEditWidget editField2 = new TextEditWidget("", 0, 20, pixelWidth: 160);
-			editField2.Name = "editField2";
+			var editField2 = new TextEditWidget("", 0, 20, pixelWidth: 160)
+			{
+				Name = "editField2"
+			};
 			container.AddChild(editField2);
 
 			// select no edit field
@@ -247,14 +259,16 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void AddThenDeleteCausesNoVisualChange()
 		{
-			GuiWidget container = new GuiWidget();
-			container.DoubleBuffer = true;
-			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
-			TextEditWidget editField1 = new TextEditWidget("Test", 10, 10, pixelWidth: 50);
+			var container = new GuiWidget
+			{
+				DoubleBuffer = true,
+				LocalBounds = new RectangleDouble(0, 0, 200, 200)
+			};
+			var editField1 = new TextEditWidget("Test", 10, 10, pixelWidth: 50);
 			container.AddChild(editField1);
 			container.BackBuffer.NewGraphics2D().Clear(Color.White);
 			container.OnDraw(container.BackBuffer.NewGraphics2D());
-			ImageBuffer beforeEditImage = new ImageBuffer(container.BackBuffer);
+			var beforeEditImage = new ImageBuffer(container.BackBuffer);
 			RectangleDouble beforeLocalBounds = editField1.LocalBounds;
 			Vector2 beforeOrigin = editField1.OriginRelativeParent;
 
@@ -290,19 +304,21 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
-		public void MiltiLineTests()
+		public void MultiLineTests()
 		{
 			{
-				InternalTextEditWidget singleLine = new InternalTextEditWidget("test", 12, false, 0);
-				InternalTextEditWidget multiLine = new InternalTextEditWidget("test\ntest\ntest", 12, true, 0);
+				var singleLine = new InternalTextEditWidget("test", 12, false, 0);
+				var multiLine = new InternalTextEditWidget("test\ntest\ntest", 12, true, 0);
 				Assert.IsTrue(multiLine.Height >= singleLine.Height * 3);
 			}
 
 			// we get the typed results we expect
 			{
-				GuiWidget container = new GuiWidget();
-				container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
-				InternalTextEditWidget multiLine = new InternalTextEditWidget("\n\n\n\n", 12, true, 0);
+				var container = new GuiWidget
+				{
+					LocalBounds = new RectangleDouble(0, 0, 200, 200)
+				};
+				var multiLine = new InternalTextEditWidget("\n\n\n\n", 12, true, 0);
 				container.AddChild(multiLine);
 
 				container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
@@ -332,9 +348,11 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// make sure the insert position is correct when homed
 			{
-				GuiWidget container = new GuiWidget();
-				container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
-				InternalTextEditWidget multiLine = new InternalTextEditWidget("line1\nline2\nline3", 12, true, 0);
+				var container = new GuiWidget
+				{
+					LocalBounds = new RectangleDouble(0, 0, 200, 200)
+				};
+				var multiLine = new InternalTextEditWidget("line1\nline2\nline3", 12, true, 0);
 				container.AddChild(multiLine);
 
 				container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 5, 1, 0));
@@ -354,9 +372,11 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// make sure the insert position is correct when move left to end of line
 			{
-				GuiWidget container = new GuiWidget();
-				container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
-				InternalTextEditWidget multiLine = new InternalTextEditWidget("xx", 12, true, 0);
+				var container = new GuiWidget
+				{
+					LocalBounds = new RectangleDouble(0, 0, 200, 200)
+				};
+				var multiLine = new InternalTextEditWidget("xx", 12, true, 0);
 				container.AddChild(multiLine);
 
 				container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
@@ -378,10 +398,12 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// make sure the cursor is at the right hight when it is after a \n that is on the first line
 			{
-				GuiWidget container = new GuiWidget();
-				container.DoubleBuffer = true;
-				container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
-				InternalTextEditWidget multiLine = new InternalTextEditWidget("\n1\n\n3\n", 12, true, 0);
+				var container = new GuiWidget
+				{
+					DoubleBuffer = true,
+					LocalBounds = new RectangleDouble(0, 0, 200, 200)
+				};
+				var multiLine = new InternalTextEditWidget("\n1\n\n3\n", 12, true, 0);
 				Assert.IsTrue(multiLine.LocalBounds.Height == 16 * 5);
 				container.AddChild(multiLine);
 
@@ -427,10 +449,12 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void NumEditHandlesNonNumberChars()
 		{
-			GuiWidget container = new GuiWidget();
-			container.DoubleBuffer = true;
-			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
-			NumberEdit numberEdit = new NumberEdit(0, 0, 0, 12, 200, 16, true, true);
+			var container = new GuiWidget
+			{
+				DoubleBuffer = true,
+				LocalBounds = new RectangleDouble(0, 0, 200, 200)
+			};
+			var numberEdit = new NumberEdit(0, 0, 0, 12, 200, 16, true, true);
 			container.AddChild(numberEdit);
 
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
@@ -454,17 +478,19 @@ namespace MatterHackers.Agg.UI.Tests
 			container.Close();
 		}
 
-#if (__ANDROID__)
+#if __ANDROID__
 		[Test]
 #else
 		[Test]
 #endif
 		public void TextEditingSpecialKeysWork()
 		{
-			GuiWidget container = new GuiWidget();
-			container.DoubleBuffer = true;
-			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
-			TextEditWidget textEdit = new TextEditWidget("some starting text");
+			var container = new GuiWidget
+			{
+				DoubleBuffer = true,
+				LocalBounds = new RectangleDouble(0, 0, 200, 200)
+			};
+			var textEdit = new TextEditWidget("some starting text");
 			container.AddChild(textEdit);
 
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, textEdit.Height - 1, 0));
@@ -495,12 +521,11 @@ namespace MatterHackers.Agg.UI.Tests
 			SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
 			Assert.IsTrue(textEdit.Selection == "starting ");
 
-#if (!__ANDROID__)
+#if !__ANDROID__
 			// if this fails add
 			// GuiHalWidget.SetClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
 			// before you call the unit tests
 			Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
-
 
 			SendKey(Keys.Control | Keys.C, 'c', container);
 			Assert.IsTrue(textEdit.Selection == "starting ");
@@ -516,20 +541,22 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void ScrollingToEndShowsEnd()
 		{
-			GuiWidget container = new GuiWidget();
-			container.DoubleBuffer = true;
-			container.LocalBounds = new RectangleDouble(0, 0, 110, 30);
-			TextEditWidget editField1 = new TextEditWidget("This is a nice long text string", 0, 0, pixelWidth: 100);
+			var container = new GuiWidget
+			{
+				DoubleBuffer = true,
+				LocalBounds = new RectangleDouble(0, 0, 110, 30)
+			};
+			var editField1 = new TextEditWidget("This is a nice long text string", 0, 0, pixelWidth: 100);
 			container.AddChild(editField1);
 
-			TextWidget firstWordText = new TextWidget("This");
+			var firstWordText = new TextWidget("This");
 			RectangleDouble bounds = firstWordText.LocalBounds;
 			bounds.Offset(bounds.Left, bounds.Bottom);
 			firstWordText.LocalBounds = bounds;
 
 			firstWordText.BackBuffer.NewGraphics2D().Clear(Color.White);
 			firstWordText.OnDraw(firstWordText.BackBuffer.NewGraphics2D());
-			TextWidget lastWordText = new TextWidget("string");
+			var lastWordText = new TextWidget("string");
 
 			bounds = lastWordText.LocalBounds;
 			bounds.Offset(bounds.Left, bounds.Bottom);
@@ -548,12 +575,9 @@ namespace MatterHackers.Agg.UI.Tests
 			OutputImage(firstWordText.BackBuffer, "Control - Left.tga");
 			OutputImage(lastWordText.BackBuffer, "Control - Right.tga");
 			OutputImage(container.BackBuffer, "Test - Start.tga");
-
-			Vector2 bestPosition;
-			double bestLeastSquares;
-			container.BackBuffer.FindLeastSquaresMatch(firstWordText.BackBuffer, out bestPosition, out bestLeastSquares);
+			container.BackBuffer.FindLeastSquaresMatch(firstWordText.BackBuffer, out _, out double bestLeastSquares);
 			Assert.IsTrue(bestLeastSquares < 2000000);
-			container.BackBuffer.FindLeastSquaresMatch(lastWordText.BackBuffer, out bestPosition, out bestLeastSquares);
+			container.BackBuffer.FindLeastSquaresMatch(lastWordText.BackBuffer, out _, out bestLeastSquares);
 			Assert.IsTrue(bestLeastSquares > 2000000);
 
 			SendKeyDown(Keys.End, container);
@@ -561,9 +585,9 @@ namespace MatterHackers.Agg.UI.Tests
 			container.OnDraw(container.BackBuffer.NewGraphics2D());
 			OutputImage(container.BackBuffer, "Test - Scrolled.tga");
 
-			container.BackBuffer.FindLeastSquaresMatch(firstWordText.BackBuffer, out bestPosition, out bestLeastSquares);
+			container.BackBuffer.FindLeastSquaresMatch(firstWordText.BackBuffer, out _, out bestLeastSquares);
 			Assert.IsTrue(bestLeastSquares > 2000000);
-			container.BackBuffer.FindLeastSquaresMatch(lastWordText.BackBuffer, out bestPosition, out bestLeastSquares);
+			container.BackBuffer.FindLeastSquaresMatch(lastWordText.BackBuffer, out _, out bestLeastSquares);
 			Assert.IsTrue(bestLeastSquares < 2000000);
 
 			container.Close();
@@ -578,12 +602,12 @@ namespace MatterHackers.Agg.UI.Tests
 		public async Task VerifyFocusMakesTextWidgetEditable()
 		{
 			TextEditWidget editField = null;
-			SystemWindow systemWindow = new SystemWindow(300, 200)
+			var systemWindow = new SystemWindow(300, 200)
 			{
 				BackgroundColor = Color.Black,
 			};
 
-			AutomationTest testToRun = (testRunner) =>
+			Task TestToRun(AutomationRunner testRunner)
 			{
 				UiThread.RunOnIdle(editField.Focus);
 
@@ -593,7 +617,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Assert.IsTrue(editField.Text == "Test Text", "validate text is typed");
 
 				return Task.CompletedTask;
-			};
+			}
 
 			editField = new TextEditWidget(pixelWidth: 200)
 			{
@@ -602,13 +626,13 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 			systemWindow.AddChild(editField);
 
-			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun);
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);
 		}
 
 		[Test]
 		public async Task VerifyFocusProperty()
 		{
-			SystemWindow systemWindow = new SystemWindow(300, 200)
+			var systemWindow = new SystemWindow(300, 200)
 			{
 				BackgroundColor = Color.Black,
 			};
@@ -620,16 +644,16 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 			systemWindow.AddChild(editField);
 
-			AutomationTest testToRun = (testRunner) =>
+			Task TestToRun(AutomationRunner testRunner)
 			{
 				UiThread.RunOnIdle(editField.Focus);
 				testRunner.WaitFor(() => editField.ContainsFocus);
 				Assert.IsTrue(editField.ContainsFocus, "Focused property should be true after invoking Focus method");
 
 				return Task.CompletedTask;
-			};
+			}
 
-			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun);
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);
 		}
 
 		[Test]
@@ -649,7 +673,7 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 			systemWindow.AddChild(editField);
 
-			AutomationTest testToRun = (testRunner) =>
+			Task TestToRun(AutomationRunner testRunner)
 			{
 				editField.SelectAllOnFocus = true;
 				testRunner.Delay(1);
@@ -666,9 +690,9 @@ namespace MatterHackers.Agg.UI.Tests
 				Assert.AreEqual("123123", editField.Text, "Text should be appended if control is focused and has already received input");
 
 				return Task.CompletedTask;
-			};
+			}
 
-			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun);
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);
 		}
 	}
 #endif

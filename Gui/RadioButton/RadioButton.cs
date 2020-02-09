@@ -34,7 +34,7 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		public static void UncheckSiblings(this IRadioButton radioButton)
 		{
-			var siblingButtons = radioButton.SiblingRadioButtonList ?? (radioButton as GuiWidget)?.Parent?.Children;
+			var siblingButtons = radioButton.SiblingRadioButtonList ?? (radioButton as GuiWidget)?.Parent?.Children.ToList();
 			if (siblingButtons != null)
 			{
 				foreach (GuiWidget child in siblingButtons.Distinct())
@@ -147,7 +147,7 @@ namespace MatterHackers.Agg.UI
 
 			if (this.SiblingRadioButtonList == null)
 			{
-				SiblingRadioButtonList = Parent.Children;
+				SiblingRadioButtonList = Parent.Children.ToList();
 			}
 
 			base.OnParentChanged(e);

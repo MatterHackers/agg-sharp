@@ -77,15 +77,15 @@ namespace MatterHackers.DataConverters3D
 			polygonsToFix = Clipper.CleanPolygons(polygonsToFix);
 			Polygon boundsPolygon = new Polygon();
 			IntRect bounds = Clipper.GetBounds(polygonsToFix);
-			bounds.minX -= 10;
-			bounds.minY -= 10;
-			bounds.maxY += 10;
-			bounds.maxX += 10;
+			bounds.left -= 10;
+			bounds.top -= 10;
+			bounds.bottom += 10;
+			bounds.right += 10;
 
-			boundsPolygon.Add(new IntPoint(bounds.minX, bounds.minY));
-			boundsPolygon.Add(new IntPoint(bounds.maxX, bounds.minY));
-			boundsPolygon.Add(new IntPoint(bounds.maxX, bounds.maxY));
-			boundsPolygon.Add(new IntPoint(bounds.minX, bounds.maxY));
+			boundsPolygon.Add(new IntPoint(bounds.left, bounds.top));
+			boundsPolygon.Add(new IntPoint(bounds.right, bounds.top));
+			boundsPolygon.Add(new IntPoint(bounds.right, bounds.bottom));
+			boundsPolygon.Add(new IntPoint(bounds.left, bounds.bottom));
 
 			Clipper clipper = new Clipper();
 

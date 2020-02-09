@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -60,8 +61,8 @@ namespace MatterHackers.Agg.UI
 			{
 				if (s is GuiWidget widget)
 				{
-					normalWidget.Children[0].Text = widget.Text;
-					selectedWidget.Children[0].Text = widget.Text;
+					normalWidget.Children.FirstOrDefault().Text = widget.Text;
+					selectedWidget.Children.FirstOrDefault().Text = widget.Text;
 				}
 			};
 

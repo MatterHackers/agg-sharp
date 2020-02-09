@@ -23,6 +23,7 @@ using MatterHackers.VectorMath;
 //
 //----------------------------------------------------------------------------
 using System;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -90,7 +91,7 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				CheckBoxViewText child = Children[0] as CheckBoxViewText;
+				CheckBoxViewText child = Children.FirstOrDefault() as CheckBoxViewText;
 				if (child != null)
 				{
 					return child.TextColor;
@@ -101,7 +102,7 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				CheckBoxViewText child = Children[0] as CheckBoxViewText;
+				CheckBoxViewText child = Children.FirstOrDefault() as CheckBoxViewText;
 				if (child != null)
 				{
 					child.TextColor = value;
