@@ -897,6 +897,11 @@ namespace MatterHackers.PolygonMesh
 			mesh.MarkAsChanged();
 		}
 
+		/// <summary>
+		/// Copy all of the faces from the copyFrom mesh into the copyTo mesh
+		/// </summary>
+		/// <param name="copyTo">The mesh receiving the copied faces</param>
+		/// <param name="copyFrom">The mesh providing the faces to copy</param>
 		public static void CopyFaces(this Mesh copyTo, Mesh copyFrom)
 		{
 			int vStart = copyTo.Vertices.Count;
