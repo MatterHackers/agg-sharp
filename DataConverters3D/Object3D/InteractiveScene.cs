@@ -382,6 +382,25 @@ namespace MatterHackers.DataConverters3D
 			return base.Equals(other);
 		}
 
+		public List<IObject3D> GetSelectedItems()
+		{
+			var selectedItem = this.SelectedItem;
+			var selectedItems = new List<IObject3D>();
+			if (selectedItem != null)
+			{
+				if (selectedItem is SelectionGroupObject3D)
+				{
+					selectedItems = selectedItem.Children.ToList();
+				}
+				else
+				{
+					selectedItems = new List<IObject3D> { selectedItem };
+				}
+			}
+
+			return selectedItems;
+		}
+
 		#endregion
 	}
 }
