@@ -50,7 +50,8 @@ namespace MatterHackers.DataConverters3D
 		Solid,
 		Support,
 		WipeTower
-	};
+	}
+;
 
 	[Flags]
 	public enum InvalidateType
@@ -68,7 +69,7 @@ namespace MatterHackers.DataConverters3D
 		DisplayValues = 1 << 10,
 
 		All = (Children | Color | Image | Material | Matrix | Mesh | Name | OutputType | Path | Properties | DisplayValues)
-	};
+	}
 
 	[Flags]
 	public enum Object3DPropertyFlags
@@ -80,7 +81,7 @@ namespace MatterHackers.DataConverters3D
 		OutputType = 0x10,
 		Visible = 0x20,
 		All = 0xFF,
-	};
+	}
 
 	public class InvalidateArgs : EventArgs
 	{
@@ -124,22 +125,27 @@ namespace MatterHackers.DataConverters3D
 			{
 				copyTo.Matrix = copyFrom.WorldMatrix(root);
 			}
+
 			if (flags.HasFlag(Object3DPropertyFlags.Color))
 			{
 				copyTo.Color = copyFrom.WorldColor(root);
 			}
+
 			if (flags.HasFlag(Object3DPropertyFlags.MaterialIndex))
 			{
 				copyTo.MaterialIndex = copyFrom.WorldMaterialIndex(root);
 			}
+
 			if (flags.HasFlag(Object3DPropertyFlags.Name))
 			{
 				copyTo.Name = copyFrom.Name;
 			}
+
 			if (flags.HasFlag(Object3DPropertyFlags.OutputType))
 			{
 				copyTo.OutputType = copyFrom.WorldOutputType(root);
 			}
+
 			if (flags.HasFlag(Object3DPropertyFlags.Visible))
 			{
 				copyTo.Visible = copyFrom.WorldVisible(root);
@@ -152,22 +158,27 @@ namespace MatterHackers.DataConverters3D
 			{
 				copyTo.Matrix = copyFrom.Matrix;
 			}
+
 			if (flags.HasFlag(Object3DPropertyFlags.Color))
 			{
 				copyTo.Color = copyFrom.Color;
 			}
+
 			if (flags.HasFlag(Object3DPropertyFlags.MaterialIndex))
 			{
 				copyTo.MaterialIndex = copyFrom.MaterialIndex;
 			}
+
 			if (flags.HasFlag(Object3DPropertyFlags.Name))
 			{
 				copyTo.Name = copyFrom.Name;
 			}
+
 			if (flags.HasFlag(Object3DPropertyFlags.OutputType))
 			{
 				copyTo.OutputType = copyFrom.OutputType;
 			}
+
 			if (flags.HasFlag(Object3DPropertyFlags.Visible))
 			{
 				copyTo.Visible = copyFrom.Visible;
@@ -400,6 +411,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				TransformToWorld = Matrix4X4.Identity;
 			}
+
 			Depth = initialDepth;
 
 			IObject3D = referenceItem;
