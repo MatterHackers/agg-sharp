@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.PolygonMesh;
+using MatterHackers.RayTracer;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 
@@ -167,7 +168,7 @@ namespace MatterHackers.RenderOpenGl
 			{
 				var invMeshToViewTransform = meshToViewTransform.Value;
 				invMeshToViewTransform.Invert();
-				DrawToGLUsingBsp(meshToRender, meshToViewTransform.Value, invMeshToViewTransform);
+				DrawToGLZSorted(meshToRender, meshToViewTransform.Value, invMeshToViewTransform);
 
 				if (!blendTexture)
 				{
@@ -257,11 +258,13 @@ namespace MatterHackers.RenderOpenGl
 		}
 
 		// There can be a singleton of this because GL must always render on the UI thread and can't overlap this array
-		private static void DrawToGLUsingBsp(Mesh mesh, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
+		private static void DrawToGLZSorted(Mesh mesh, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
 		{
 			ImageBuffer lastFaceTexture = null;
-			var bspFaceList = FaceBspTree.GetFacesInVisibiltyOrder(mesh, mesh.FaceBspTree, meshToViewTransform, invMeshToViewTransform);
-			foreach (var face in bspFaceList)
+
+			// var zSortedFaceList2 = mesh.GetFacesInVisibiltyOrder(meshToViewTransform);
+			var zSortedFaceList = FaceBspTree.GetFacesInVisibiltyOrder(mesh, mesh.FaceBspTree, meshToViewTransform, invMeshToViewTransform);
+			foreach (var face in zSortedFaceList)
 			{
 				if (face == -1)
 				{

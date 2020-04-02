@@ -593,12 +593,25 @@ namespace MatterHackers.DataConverters3D
 			item.Matrix *= Matrix4X4.CreateTranslation(origin);
 		}
 
-		public static IPrimitive CreateTraceData(this Mesh mesh)
+		/// <summary>
+		/// Create a bounding volume hierarchy for the given mesh.
+		/// </summary>
+		/// <param name="mesh">The mesh to add the BVH to.</param>
+		/// <returns>The created BVH tree.</returns>
+		public static IPrimitive CreateBVHData(this Mesh mesh)
 		{
-			return CreateTraceData(mesh, null, Matrix4X4.Identity);
+			return CreateBVHData(mesh, null, Matrix4X4.Identity);
 		}
 
-		public static IPrimitive CreateTraceData(this Mesh mesh, MaterialAbstract material, Matrix4X4 matrix, int maxRecursion = int.MaxValue)
+		/// <summary>
+		/// Create a bounding volume hierarchy for the give mesh.
+		/// </summary>
+		/// <param name="mesh">The mesh to add the BVH to.</param>
+		/// <param name="material">The tracing material to use.</param>
+		/// <param name="matrix">A transformation to apply to the trace data</param>
+		/// <param name="maxRecursion">The max depth to create the BVH tree.</param>
+		/// <returns>The created BVH tree.</returns>
+		public static IPrimitive CreateBVHData(this Mesh mesh, MaterialAbstract material, Matrix4X4 matrix, int maxRecursion = int.MaxValue)
 		{
 			var allPolys = new List<IPrimitive>();
 

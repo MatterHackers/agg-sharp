@@ -24,6 +24,7 @@
     <ProjectReference Include="..\Csg\Csg.csproj" />
     <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj" />
     <ProjectReference Include="..\PolygonMesh\PolygonMesh.csproj" />
+    <ProjectReference Include="..\RayTracer\RayTracer.csproj" />
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
 
