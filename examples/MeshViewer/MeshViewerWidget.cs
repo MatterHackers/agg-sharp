@@ -159,7 +159,7 @@ namespace MatterHackers.MeshVisualizer
 				{
 					foreach (var child in Scene.Children)
 					{
-						this.World.RenderDebugAABB(e.Graphics2D, child.TraceData().GetAxisAlignedBoundingBox());
+						this.World.RenderDebugAABB(e.Graphics2D, child.GetBVHData().GetAxisAlignedBoundingBox());
 						this.World.RenderDebugAABB(e.Graphics2D, child.GetAxisAlignedBoundingBox(Matrix4X4.Identity));
 					}
 				};
@@ -201,7 +201,7 @@ namespace MatterHackers.MeshVisualizer
 
 				if (nameFound)
 				{
-					AxisAlignedBoundingBox bounds = child.TraceData().GetAxisAlignedBoundingBox();
+					AxisAlignedBoundingBox bounds = child.GetBVHData().GetAxisAlignedBoundingBox();
 
 					RectangleDouble screenBoundsOfObject3D = RectangleDouble.ZeroIntersection;
 					for(int i=0; i<4; i++)

@@ -87,7 +87,7 @@ namespace MatterHackers.RayTracer
 
 			int bestAxis = -1;
 			int bestIndexToSplitOn = -1;
-			CompareCentersOnAxis axisSorter = new CompareCentersOnAxis(0);
+			var axisSorter = new CompareCentersOnAxis(0);
 
 			if (recursionDepth < maxRecursion)
 			{
@@ -112,11 +112,12 @@ namespace MatterHackers.RayTracer
 					{
 						OverallBox += traceableItems[i].GetAxisAlignedBoundingBox();
 					}
+
 					double areaOfTotalBounds = OverallBox.GetSurfaceArea();
 
 					double bestCost = totalIntersectCost;
 
-					Vector3 totalDeviationOnAxis = new Vector3();
+					var totalDeviationOnAxis = default(Vector3);
 					double[] surfaceArreaOfItem = new double[numItems - 1];
 					double[] rightBoundsAtItem = new double[numItems - 1];
 
@@ -205,16 +206,17 @@ namespace MatterHackers.RayTracer
 			}
 			else
 			{
-				List<IPrimitive> leftItems = new List<IPrimitive>(bestIndexToSplitOn + 1);
-				List<IPrimitive> rightItems = new List<IPrimitive>(numItems - bestIndexToSplitOn + 1);
+				var leftItems = new List<IPrimitive>(bestIndexToSplitOn + 1);
+				var rightItems = new List<IPrimitive>(numItems - bestIndexToSplitOn + 1);
 				if (numItems > 100)
 				{
 					// there are lots of items, lets find a sampled bounds and then choose a center
-					AxisAlignedBoundingBox totalBounds = AxisAlignedBoundingBox.Empty();
+					var totalBounds = AxisAlignedBoundingBox.Empty();
 					for (int i = 0; i < 50; i++)
 					{
 						totalBounds.ExpandToInclude(traceableItems[i * numItems / 50].GetCenter());
 					}
+
 					bestAxis = totalBounds.XSize > totalBounds.YSize ? 0 : 1;
 					bestAxis = totalBounds.Size[bestAxis] > totalBounds.ZSize ? bestAxis : 2; 
 					var axisCenter = totalBounds.Center[bestAxis];
@@ -238,14 +240,16 @@ namespace MatterHackers.RayTracer
 					{
 						leftItems.Add(traceableItems[i]);
 					}
+
 					for (int i = bestIndexToSplitOn + 1; i < numItems; i++)
 					{
 						rightItems.Add(traceableItems[i]);
 					}
 				}
+
 				IPrimitive leftGroup = CreateNewHierachy(leftItems, maxRecursion, recursionDepth + 1, accelerator);
 				IPrimitive rightGroup = CreateNewHierachy(rightItems, maxRecursion, recursionDepth + 1, accelerator);
-				BoundingVolumeHierarchy newBVHNode = new BoundingVolumeHierarchy(leftGroup, rightGroup, bestAxis);
+				var newBVHNode = new BoundingVolumeHierarchy(leftGroup, rightGroup, bestAxis);
 				return newBVHNode;
 			}
 		}
@@ -330,6 +334,7 @@ namespace MatterHackers.RayTracer
 						ray.maxDistanceToConsider = infoFirst.distanceToHit;
 					}
 				}
+
 				if (checkSecond != null)
 				{
 					IntersectInfo infoSecond = checkSecond.GetClosestIntersection(ray);
@@ -344,6 +349,7 @@ namespace MatterHackers.RayTracer
 							ray.maxDistanceToConsider = infoSecond.distanceToHit;
 						}
 					}
+
 					if (infoFirst != null && infoFirst.hitType != IntersectionType.None && infoFirst.distanceToHit >= 0)
 					{
 						if (infoSecond != null && infoSecond.hitType != IntersectionType.None && infoSecond.distanceToHit < infoFirst.distanceToHit && infoSecond.distanceToHit >= 0)
@@ -358,6 +364,7 @@ namespace MatterHackers.RayTracer
 
 					return infoSecond; // we don't have to test it because it didn't hit.
 				}
+
 				return infoFirst;
 			}
 

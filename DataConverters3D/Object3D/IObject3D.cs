@@ -394,7 +394,7 @@ namespace MatterHackers.DataConverters3D
 		/// for intersections (mouse hit) and possibly rendering.
 		/// </summary>
 		/// <returns></returns>
-		IPrimitive TraceData();
+		IPrimitive GetBVHData();
 	}
 
 	public class Object3DIterator : IEnumerable<Object3DIterator>

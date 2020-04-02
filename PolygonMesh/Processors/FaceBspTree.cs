@@ -80,12 +80,14 @@ namespace MatterHackers.PolygonMesh
 				{
 					yield return node.Index;
 				}
+
 				var lastFront = node.FrontNode;
 				if (lastFront != null && lastFront.Index != -1)
 				{
 					renderOrder.Push(lastFront.RenderOrder(mesh, meshToViewTransform, invMeshToViewTransform));
 				}
-			} while (renderOrder.Any());
+			}
+			while (renderOrder.Any());
 		}
 
 		private static (double, int) CalculateCrossingArea(Mesh mesh, int faceIndex, List<int> faces, double smallestCrossingArrea)

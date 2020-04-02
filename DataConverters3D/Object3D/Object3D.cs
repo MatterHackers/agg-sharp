@@ -774,7 +774,11 @@ namespace MatterHackers.DataConverters3D
 		private bool buildingFaceBsp;
 		private SafeList<IObject3D> _children;
 
-		public IPrimitive TraceData()
+		/// <summary>
+		/// Create or return a Bounding Volume Hierarchy for this mesh. Is created add it to the property bag.
+		/// </summary>
+		/// <returns>The root of the BVH</returns>
+		public IPrimitive GetBVHData()
 		{
 			var processingMesh = Mesh;
 			// Cache busting on child nodes
@@ -794,7 +798,7 @@ namespace MatterHackers.DataConverters3D
 					{
 						// Get the trace data for the local mesh
 						// First create trace data that builds fast but traces slow
-						var simpleTraceData = processingMesh.CreateTraceData(null, Matrix4X4.Identity, 0);
+						var simpleTraceData = processingMesh.CreateBVHData(null, Matrix4X4.Identity, 0);
 						if (simpleTraceData != null)
 						{
 							try
@@ -822,7 +826,7 @@ namespace MatterHackers.DataConverters3D
 					{
 						if (child.Visible)
 						{
-							traceables.Add(child.TraceData());
+							traceables.Add(child.GetBVHData());
 						}
 					}
 				}
