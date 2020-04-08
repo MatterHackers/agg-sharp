@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>net471</TargetFramework>
     <Company>MatterHackers Inc.</Company>
     <AssemblyName>agg_platform_win32</AssemblyName>
     <RootNamespace>agg_platform_win32</RootNamespace>
