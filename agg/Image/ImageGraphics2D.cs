@@ -163,7 +163,7 @@ namespace MatterHackers.Agg
 			{
 				if (inScaleX != 1 || inScaleY != 1 || angleRadians != 0)
 				{
-					throw new NotImplementedException();
+					//throw new NotImplementedException();
 				}
 
 				return;
@@ -176,7 +176,7 @@ namespace MatterHackers.Agg
 			{
 				if (scaleX != 1 || scaleY != 1 || angleRadians != 0)
 				{
-					throw new NotImplementedException();
+					//throw new NotImplementedException();
 				}
 
 				graphicsTransform.transform(ref destX, ref destY);

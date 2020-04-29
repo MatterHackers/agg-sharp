@@ -89,12 +89,25 @@ namespace MatterHackers.Agg.UI
 			set { selectionIndexToStartBefore = value; }
 		}
 
-		private int charIndexToInsertBefore;
+		private int _charIndexToInsertBefore;
 
 		public int CharIndexToInsertBefore
 		{
-			get { return charIndexToInsertBefore; }
-			set { charIndexToInsertBefore = value; }
+			get
+			{
+				if (!String.IsNullOrWhiteSpace(this.Text))
+				{
+					_charIndexToInsertBefore = Math.Min(this.Text.Length, _charIndexToInsertBefore);
+				}
+				else
+				{
+					_charIndexToInsertBefore = 0;
+				}
+
+				return _charIndexToInsertBefore;
+			}
+
+			set { _charIndexToInsertBefore = value; }
 		}
 
 		private int charIndexToAcceptAsMerging;

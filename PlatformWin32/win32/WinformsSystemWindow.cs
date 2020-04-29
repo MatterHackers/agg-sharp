@@ -245,19 +245,6 @@ namespace MatterHackers.Agg.UI
 			//base.OnPaintBackground(e);
 		}
 
-		protected override void OnActivated(EventArgs e)
-		{
-			// focus the first child of the forms window (should be the system window)
-			if (AggSystemWindow != null
-				&& AggSystemWindow.Children.Count > 0
-				&& AggSystemWindow.Children.FirstOrDefault() != null)
-			{
-				AggSystemWindow.Children.FirstOrDefault().Focus();
-			}
-
-			base.OnActivated(e);
-		}
-
 		protected override void OnResize(EventArgs e)
 		{
 			var systemWindow = AggSystemWindow;
