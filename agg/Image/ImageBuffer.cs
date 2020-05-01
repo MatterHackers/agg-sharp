@@ -910,14 +910,22 @@ namespace MatterHackers.Agg.Image
 			//for_each_pixel(apply_gamma_inv_rgba<color_type, order_type, GammaLut>(g));
 		}
 
-		private bool IsPixelVisible(int x, int y)
+		private bool IsPixelVisible(int x, int y, Func<Color, bool> isVisible)
 		{
 			Color pixelValue = GetRecieveBlender().PixelToColor(m_ByteBuffer, GetBufferOffsetXY(x, y));
-			return (pixelValue.Alpha0To255 != 0 || pixelValue.Red0To255 != 0 || pixelValue.Green0To255 != 0 || pixelValue.Blue0To255 != 0);
+			return isVisible(pixelValue);
 		}
 
-		public void GetVisibleBounds(out RectangleInt visibleBounds)
+		public void GetVisibleBounds(out RectangleInt visibleBounds, Func<Color, bool> isVisible)
 		{
+			if(isVisible == null)
+			{
+				isVisible = (pixelValue) =>
+				{
+					return (pixelValue.Alpha0To255 != 0 || pixelValue.Red0To255 != 0 || pixelValue.Green0To255 != 0 || pixelValue.Blue0To255 != 0);
+				};
+			}
+
 			visibleBounds = new RectangleInt(0, 0, Width, Height);
 
 			// trim the bottom
@@ -926,7 +934,7 @@ namespace MatterHackers.Agg.Image
 			{
 				for (int x = 0; x < Width; x++)
 				{
-					if (IsPixelVisible(x, y))
+					if (IsPixelVisible(x, y, isVisible))
 					{
 						visibleBounds.Bottom = y;
 						y = Height;
@@ -943,12 +951,12 @@ namespace MatterHackers.Agg.Image
 				return;
 			}
 
-			// trim the bottom
+			// trim the top
 			for (int y = Height - 1; y >= 0; y--)
 			{
 				for (int x = 0; x < Width; x++)
 				{
-					if (IsPixelVisible(x, y))
+					if (IsPixelVisible(x, y, isVisible))
 					{
 						visibleBounds.Top = y + 1;
 						y = -1;
@@ -962,7 +970,7 @@ namespace MatterHackers.Agg.Image
 			{
 				for (int y = 0; y < Height; y++)
 				{
-					if (IsPixelVisible(x, y))
+					if (IsPixelVisible(x, y, isVisible))
 					{
 						visibleBounds.Left = x;
 						y = Height;
@@ -976,7 +984,7 @@ namespace MatterHackers.Agg.Image
 			{
 				for (int y = 0; y < Height; y++)
 				{
-					if (IsPixelVisible(x, y))
+					if (IsPixelVisible(x, y, isVisible))
 					{
 						visibleBounds.Right = x + 1;
 						y = Height;
@@ -986,7 +994,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public void CropToVisible()
+		public void CropToVisible(Func<Color, bool> isVisible = null)
 		{
 			Vector2 OldOriginOffset = OriginOffset;
 
@@ -994,7 +1002,7 @@ namespace MatterHackers.Agg.Image
 			OriginOffset = new Vector2(0, 0);
 
 			RectangleInt visibleBounds;
-			GetVisibleBounds(out visibleBounds);
+			GetVisibleBounds(out visibleBounds, isVisible);
 
 			if (visibleBounds.Width == Width
 				&& visibleBounds.Height == Height)

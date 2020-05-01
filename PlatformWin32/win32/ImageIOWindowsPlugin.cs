@@ -103,7 +103,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		internal static bool ConvertBitmapToImage(ImageBuffer destImage, Bitmap bitmap)
+		public static bool ConvertBitmapToImage(ImageBuffer destImage, Bitmap bitmap)
 		{
 			if (bitmap != null)
 			{

@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using MatterHackers.Agg.Platform;
 
@@ -164,12 +165,6 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void controlToHook_GotFocus(object sender, EventArgs e)
-		{
-			widgetToSendTo.OnFocusChanged(e);
-			Keyboard.Clear();
-		}
-
 		private void controlToHook_KeyDown(object sender, System.Windows.Forms.KeyEventArgs windowsKeyEvent)
 		{
 			if (AggContext.OperatingSystem == OSType.Mac
@@ -214,8 +209,35 @@ namespace MatterHackers.Agg.UI
 			windowsKeyEvent.SuppressKeyPress = aggKeyEvent.SuppressKeyPress;
 		}
 
+		private GuiWidget focusedChild = null;
+
+		private void controlToHook_GotFocus(object sender, EventArgs e)
+		{
+			widgetToSendTo.OnFocusChanged(e);
+			Keyboard.Clear();
+
+			focusedChild?.Focus();
+		}
+
 		private void controlToHook_LostFocus(object sender, EventArgs e)
 		{
+			focusedChild = null;
+			GuiWidget currentWidget = widgetToSendTo;
+
+			// try to remember the specific widget that has focus
+			do
+			{
+				currentWidget = currentWidget.Children.Where(c => c.ContainsFocus).FirstOrDefault();
+
+				if (currentWidget != null
+					&& currentWidget.Focused)
+				{
+					focusedChild = currentWidget;
+					break;
+				}
+			}
+			while (currentWidget != null);
+
 			widgetToSendTo.Unfocus();
 			widgetToSendTo.OnFocusChanged(e);
 		}

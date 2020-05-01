@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27421.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30002.166
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlatformWin32", "PlatformWin32\PlatformWin32.csproj", "{670BDDFF-927B-425D-9DD1-22ACB14356EB}"
 EndProject
@@ -123,13 +123,13 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Typography.OpenFont", "Typo
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Typography.GlyphLayout", "Typography.GlyphLayout\Typography.GlyphLayout.shproj", "{D8861CF8-C506-472B-8A57-632BD6CA6496}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Typography.One", "Typography.One\Typography.One.csproj", "{B9EBC483-29BA-4F03-A1F5-89AFCBD22FA4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Typography.One", "Typography.One\Typography.One.csproj", "{B9EBC483-29BA-4F03-A1F5-89AFCBD22FA4}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Typography.OpenFont\Typography.OpenFont.projitems*{235a071b-8d06-40ae-a5c5-b1ce59715ee9}*SharedItemsImports = 13
-		Typography.GlyphLayout\Typography.GlyphLayout.projitems*{657dbc6d-c3ea-4398-a3fa-ddb73c14f71b}*SharedItemsImports = 4
-		Typography.OpenFont\Typography.OpenFont.projitems*{657dbc6d-c3ea-4398-a3fa-ddb73c14f71b}*SharedItemsImports = 4
+		Typography.GlyphLayout\Typography.GlyphLayout.projitems*{b9ebc483-29ba-4f03-a1f5-89afcbd22fa4}*SharedItemsImports = 5
+		Typography.OpenFont\Typography.OpenFont.projitems*{b9ebc483-29ba-4f03-a1f5-89afcbd22fa4}*SharedItemsImports = 5
 		Typography.GlyphLayout\Typography.GlyphLayout.projitems*{d8861cf8-c506-472b-8a57-632bd6ca6496}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
