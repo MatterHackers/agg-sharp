@@ -95,7 +95,7 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				if (!String.IsNullOrWhiteSpace(this.Text))
+				if (!String.IsNullOrEmpty(this.Text))
 				{
 					_charIndexToInsertBefore = Math.Min(this.Text.Length, _charIndexToInsertBefore);
 				}
