@@ -349,27 +349,30 @@ namespace MatterHackers.Agg.Font
 		{
 			Glyph glyph;
 
-			if (!glyphs.TryGetValue(character, out glyph))
+			lock (glyphs)
 			{
-				// if we have a loaded ttf try to create the glyph data
-				if (_ofTypeface != null)
+				if (!glyphs.TryGetValue(character, out glyph))
 				{
-					var storage = new VertexStorage();
-					var translator = new VertexSourceGlyphTranslator(storage);
-					var glyphIndex = _ofTypeface.LookupIndex(character);
-					var ttfGlyph = _ofTypeface.GetGlyphByIndex(glyphIndex);
-					//
-					Typography.OpenFont.IGlyphReaderExtensions.Read(translator, ttfGlyph.GlyphPoints, ttfGlyph.EndPoints);
+					// if we have a loaded ttf try to create the glyph data
+					if (_ofTypeface != null)
+					{
+						var storage = new VertexStorage();
+						var translator = new VertexSourceGlyphTranslator(storage);
+						var glyphIndex = _ofTypeface.LookupIndex(character);
+						var ttfGlyph = _ofTypeface.GetGlyphByIndex(glyphIndex);
+						//
+						Typography.OpenFont.IGlyphReaderExtensions.Read(translator, ttfGlyph.GlyphPoints, ttfGlyph.EndPoints);
 
-					//
-					glyph = new Glyph();
-					glyph.unicode = character;
-					glyph.horiz_adv_x = _ofTypeface.GetHAdvanceWidthFromGlyphIndex(glyphIndex);
+						//
+						glyph = new Glyph();
+						glyph.unicode = character;
+						glyph.horiz_adv_x = _ofTypeface.GetHAdvanceWidthFromGlyphIndex(glyphIndex);
 
-					glyphs.Add(character, glyph);
+						glyphs.Add(character, glyph);
 
-					// Wrap glyph data with ClosedLoopGlyphData to ensure all loops are correctly closed
-					glyph.glyphData = new ClosedLoopGlyphData(storage);
+						// Wrap glyph data with ClosedLoopGlyphData to ensure all loops are correctly closed
+						glyph.glyphData = new ClosedLoopGlyphData(storage);
+					}
 				}
 			}
 

@@ -66,6 +66,7 @@ namespace MatterHackers.Agg.UI
 						}
 					}
 				}
+
 				return count;
 			}
 		}
