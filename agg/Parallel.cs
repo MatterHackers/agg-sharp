@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg
 {
@@ -64,6 +65,11 @@ namespace MatterHackers.Agg
             {
                 System.Threading.Tasks.Parallel.For(startInclusive, endExclusive, action);
             }
+        }
+
+        public static void For<T>(int startInclusive, int endExclusive, Func<T> action, Func<int, ParallelLoopState, T, T> p2, Action<T> p3)
+        {
+            System.Threading.Tasks.Parallel.For(startInclusive, endExclusive, action, p2, p3);
         }
     }
 }
