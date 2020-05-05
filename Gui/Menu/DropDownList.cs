@@ -639,6 +639,7 @@ namespace MatterHackers.Agg.UI
 					textWidget.Margin = new BorderDouble(MenuItemsPadding.Left + 20 + 3, MenuItemsPadding.Bottom, MenuItemsPadding.Right, MenuItemsPadding.Top);
 				}
 			}
+
 			rowContainer.AddChild(textWidget);
 
 			return rowContainer;

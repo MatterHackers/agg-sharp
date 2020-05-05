@@ -26,7 +26,6 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
-#define MULTI_THREAD
 #define DUMP_SLOW_TIMES
 
 using System;
@@ -709,13 +708,7 @@ namespace MatterHackers.GCodeVisualizer
 		public override Vector2 GetWeightedCenter()
 		{
 			Vector2 total = new Vector2();
-#if !MULTI_THREAD
-            foreach (PrinterMachineInstruction state in GCodeCommandQueue)
-            {
-                total += new Vector2(state.Position.x, state.Position.y);
-            }
-#else
-			Parallel.For<Vector2>(
+			Agg.Parallel.For<Vector2>(
 				0,
 				GCodeCommandQueue.Count,
 				() => new Vector2(),
@@ -730,7 +723,6 @@ namespace MatterHackers.GCodeVisualizer
 						total += new Vector2(x.X, x.Y);
 					}
 			);
-#endif
 
 			return total / GCodeCommandQueue.Count;
 		}
@@ -738,16 +730,7 @@ namespace MatterHackers.GCodeVisualizer
 		public override RectangleDouble GetBounds()
 		{
 			RectangleDouble bounds = new RectangleDouble(double.MaxValue, double.MaxValue, double.MinValue, double.MinValue);
-#if !MULTI_THREAD
-            foreach (PrinterMachineInstruction state in GCodeCommandQueue)
-            {
-                bounds.Left = Math.Min(state.Position.x, bounds.Left);
-                bounds.Right = Math.Max(state.Position.x, bounds.Right);
-                bounds.Bottom = Math.Min(state.Position.y, bounds.Bottom);
-                bounds.Top = Math.Max(state.Position.y, bounds.Top);
-            }
-#else
-			Parallel.For<RectangleDouble>(
+			Agg.Parallel.For<RectangleDouble>(
 				0,
 				GCodeCommandQueue.Count,
 				() => new RectangleDouble(double.MaxValue, double.MaxValue, double.MinValue, double.MinValue),
@@ -769,7 +752,7 @@ namespace MatterHackers.GCodeVisualizer
 						bounds.Top = Math.Max(x.Top, bounds.Top);
 					}
 			);
-#endif
+		
 			return bounds;
 		}
 

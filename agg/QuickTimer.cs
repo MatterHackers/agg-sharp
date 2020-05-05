@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace MatterHackers.Agg
@@ -68,7 +69,41 @@ namespace MatterHackers.Agg
 		public void Dispose()
 		{
 			double totalTime = quickTimerTime.Elapsed.TotalMilliseconds - startTime;
-			Debug.WriteLine(name + ": {0:0.0}ms".FormatWith(totalTime));
+			Debug.WriteLine(name + ": {0:0.0}s".FormatWith(totalTime/1000.0));
+		}
+	}
+
+	public class QuickTimer2 : IDisposable
+	{
+		private string name;
+		private Stopwatch quickTimerTime = Stopwatch.StartNew();
+		private double startTime;
+
+		private static Dictionary<string, double> timers = new Dictionary<string, double>();
+
+		public QuickTimer2(string name)
+		{
+			this.name = name;
+			if (!timers.ContainsKey(name))
+			{
+				timers.Add(name, 0);
+			}
+
+			startTime = quickTimerTime.Elapsed.TotalMilliseconds;
+		}
+
+		public void Dispose()
+		{
+			double totalTime = quickTimerTime.Elapsed.TotalMilliseconds - startTime;
+			timers[name] = timers[name] + totalTime;
+		}
+
+		public static void Report()
+		{
+			foreach (var kvp in timers)
+			{
+				Debug.WriteLine(kvp.Key + ": {0:0.0}s".FormatWith(kvp.Value / 1000.0));
+			}
 		}
 	}
 }
