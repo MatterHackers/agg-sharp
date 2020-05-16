@@ -82,7 +82,7 @@
     <Compile Include="Other\RunTest.cs" />
     <Compile Include="Other\TesselatorTests.cs" />
     <Compile Include="Other\Vector2DTests.cs" />
-    <Compile Include="Other\Vector3DTests.cs" />
+    <Compile Include="Other\Vector3Tests.cs" />
     <Compile Include="PackagesConfigConverter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestExtensionMethods.cs" />

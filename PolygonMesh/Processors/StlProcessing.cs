@@ -41,12 +41,13 @@ namespace MatterHackers.PolygonMesh.Processors
 	{
 		public static bool Save(this Mesh meshToSave, string fileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null)
 		{
-			using (FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
+			using (var file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
 			{
 				if (outputInfo == null)
 				{
 					outputInfo = new MeshOutputSettings();
 				}
+
 				return Save(meshToSave, file, cancellationToken, outputInfo);
 			}
 		}
@@ -57,7 +58,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			{
 				case MeshOutputSettings.OutputType.Ascii:
 					{
-						StreamWriter streamWriter = new StreamWriter(stream);
+						var streamWriter = new StreamWriter(stream);
 
 						streamWriter.WriteLine("solid Default");
 
@@ -83,13 +84,14 @@ namespace MatterHackers.PolygonMesh.Processors
 
 						streamWriter.Close();
 					}
+
 					break;
 
 				case MeshOutputSettings.OutputType.Binary:
-					using (BinaryWriter bw = new BinaryWriter(stream))
+					using (var bw = new BinaryWriter(stream))
 					{
 						// 80 bytes of nothing
-						bw.Write(new Byte[80]);
+						bw.Write(new byte[80]);
 						// the number of triangles
 						bw.Write(mesh.Faces.Count);
 						int binaryPolyCount = 0;
@@ -119,8 +121,10 @@ namespace MatterHackers.PolygonMesh.Processors
 						// the number of triangles
 						bw.Write(binaryPolyCount);
 					}
+
 					break;
 			}
+
 			return true;
 		}
 
@@ -134,7 +138,10 @@ namespace MatterHackers.PolygonMesh.Processors
 		public static Mesh Load(string fileName, CancellationToken cancellationToken, Action<double, string> reportProgress = null)
 		{
 			// Early exit if not STL
-			if (Path.GetExtension(fileName).ToUpper() != ".STL") return null;
+			if (Path.GetExtension(fileName).ToUpper() != ".STL")
+			{
+				return null;
+			}
 
 			using (Stream fileStream = File.OpenRead(fileName))
 			{
@@ -173,44 +180,45 @@ namespace MatterHackers.PolygonMesh.Processors
 #endif
 		}
 
-		static NumberStyles style = NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent | NumberStyles.AllowLeadingSign;
-		static CultureInfo culture = CultureInfo.InvariantCulture;
+		private static readonly NumberStyles Style = NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent | NumberStyles.AllowLeadingSign;
+		private static readonly CultureInfo Culture = CultureInfo.InvariantCulture;
+
 		private static Vector3 Convert(string line)
 		{
 			Vector3 vector0;
 			int currentPosition = "vertex".Length;
 			string number = GetNumber(line, ref currentPosition);
-			double.TryParse(number, style, culture, out vector0.X);
+			double.TryParse(number, Style, Culture, out vector0.X);
 
 			number = GetNumber(line, ref currentPosition);
-			double.TryParse(number, style, culture, out vector0.Y);
+			double.TryParse(number, Style, Culture, out vector0.Y);
 
 			number = GetNumber(line, ref currentPosition);
-			double.TryParse(number, style, culture, out vector0.Z);
+			double.TryParse(number, Style, Culture, out vector0.Z);
 
 			return vector0;
 		}
 
 		private static string GetNumber(string line, ref int currentPosition)
 		{
-			while(line[currentPosition] == ' ')
+			while (line[currentPosition] == ' ')
 			{
 				currentPosition++;
 			}
 
 			int numberLength = 0;
-			while(currentPosition < line.Length && line[currentPosition] != ' ')
+			while (currentPosition < line.Length && line[currentPosition] != ' ')
 			{
 				currentPosition++;
 				numberLength++;
 			}
 
-			return line.Substring(currentPosition-numberLength, numberLength);
+			return line.Substring(currentPosition - numberLength, numberLength);
 		}
 
 		public static Mesh ParseFileContents(Stream stlStream, CancellationToken cancellationToken, Action<double, string> reportProgress)
 		{
-			Stopwatch time = new Stopwatch();
+			var time = new Stopwatch();
 			time.Start();
 			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
@@ -219,9 +227,9 @@ namespace MatterHackers.PolygonMesh.Processors
 				return null;
 			}
 
-			Stopwatch maxProgressReport = new Stopwatch();
+			var maxProgressReport = new Stopwatch();
 			maxProgressReport.Start();
-			Mesh mesh = new Mesh();
+			var mesh = new Mesh();
 			long bytesInFile = stlStream.Length;
 			if (bytesInFile <= 80)
 			{
@@ -230,17 +238,17 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			byte[] first160Bytes = new byte[160];
 			stlStream.Read(first160Bytes, 0, 160);
-			byte[] ByteOredrMark = new byte[] { 0xEF, 0xBB, 0xBF };
+			byte[] byteOredrMark = new byte[] { 0xEF, 0xBB, 0xBF };
 			int startOfString = 0;
-			if (first160Bytes[0] == ByteOredrMark[0] && first160Bytes[0] == ByteOredrMark[0] && first160Bytes[0] == ByteOredrMark[0])
+			if (first160Bytes[0] == byteOredrMark[0] && first160Bytes[0] == byteOredrMark[0] && first160Bytes[0] == byteOredrMark[0])
 			{
 				startOfString = 3;
 			}
-			Dictionary<(double, double, double), int> positionToIndex = new Dictionary<(double, double, double), int>();
+
+			var positionToIndex = new Dictionary<(double, double, double), int>();
 			int GetIndex(Vector3 position)
 			{
-				int index;
-				if(positionToIndex.TryGetValue((position.X, position.Y,position.Z), out index))
+				if (positionToIndex.TryGetValue((position.X, position.Y, position.Z), out int index))
 				{
 					return index;
 				}
@@ -250,15 +258,16 @@ namespace MatterHackers.PolygonMesh.Processors
 				mesh.Vertices.Add(position);
 				return count;
 			}
+
 			string first160BytesOfSTLFile = System.Text.Encoding.UTF8.GetString(first160Bytes, startOfString, first160Bytes.Length - startOfString);
 			if (first160BytesOfSTLFile.StartsWith("solid") && first160BytesOfSTLFile.Contains("facet"))
 			{
 				stlStream.Position = 0;
-				StreamReader stlReader = new StreamReader(stlStream);
+				var stlReader = new StreamReader(stlStream);
 				int vectorIndex = 0;
-				Vector3 vector0 = new Vector3(0, 0, 0);
-				Vector3 vector1 = new Vector3(0, 0, 0);
-				Vector3 vector2 = new Vector3(0, 0, 0);
+				var vector0 = new Vector3(0, 0, 0);
+				var vector1 = new Vector3(0, 0, 0);
+				var vector2 = new Vector3(0, 0, 0);
 				string line = stlReader.ReadLine();
 
 				while (line != null)
@@ -286,10 +295,12 @@ namespace MatterHackers.PolygonMesh.Processors
 									int iv2 = GetIndex(vector2);
 									mesh.Faces.Add(iv0, iv1, iv2, mesh.Vertices);
 								}
+
 								vectorIndex = 0;
 								break;
 						}
 					}
+
 					line = stlReader.ReadLine();
 
 					if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
@@ -300,6 +311,7 @@ namespace MatterHackers.PolygonMesh.Processors
 							stlStream.Close();
 							return null;
 						}
+
 						maxProgressReport.Restart();
 					}
 				}
@@ -310,7 +322,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				// skip the first 80 bytes
 				// read in the number of triangles
 				stlStream.Position = 0;
-				BinaryReader br = new BinaryReader(stlStream);
+				var br = new BinaryReader(stlStream);
 				byte[] fileContents = br.ReadBytes((int)stlStream.Length);
 				int currentPosition = 80;
 				uint numTriangles = System.BitConverter.ToUInt32(fileContents, currentPosition);
@@ -324,7 +336,8 @@ namespace MatterHackers.PolygonMesh.Processors
 					stlStream.Close();
 					return null;
 				}
-				Vector3[] vector = new Vector3[3];
+
+				var vector = new Vector3[3];
 				for (int i = 0; i < numTriangles; i++)
 				{
 					// skip the normal
@@ -337,6 +350,7 @@ namespace MatterHackers.PolygonMesh.Processors
 							System.BitConverter.ToSingle(fileContents, currentPosition + 2 * 4));
 						currentPosition += 3 * 4;
 					}
+
 					currentPosition += 2; // skip the attribute
 
 					if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
@@ -347,6 +361,7 @@ namespace MatterHackers.PolygonMesh.Processors
 							stlStream.Close();
 							return null;
 						}
+
 						maxProgressReport.Restart();
 					}
 
@@ -388,17 +403,19 @@ namespace MatterHackers.PolygonMesh.Processors
 		{
 			if (thisLine == null)
 			{
-				vertexPosition = new Vector3();
+				vertexPosition = default(Vector3);
 				return true;
 			}
+
 			thisLine = thisLine.Trim();
 			string noDoubleSpaces = thisLine;
 			while (noDoubleSpaces.Contains("  "))
 			{
 				noDoubleSpaces = noDoubleSpaces.Replace("  ", " ");
 			}
+
 			string[] splitOnSpace = noDoubleSpaces.Split(' ');
-			vertexPosition = new Vector3();
+			vertexPosition = default(Vector3);
 			bool goodParse = double.TryParse(splitOnSpace[1], out vertexPosition.X);
 			goodParse &= double.TryParse(splitOnSpace[2], out vertexPosition.Y);
 			goodParse &= double.TryParse(splitOnSpace[3], out vertexPosition.Z);
@@ -419,12 +436,13 @@ namespace MatterHackers.PolygonMesh.Processors
 
 					byte[] first160Bytes = new byte[160];
 					stlStream.Read(first160Bytes, 0, 160);
-					byte[] ByteOredrMark = new byte[] { 0xEF, 0xBB, 0xBF };
+					byte[] byteOredrMark = new byte[] { 0xEF, 0xBB, 0xBF };
 					int startOfString = 0;
-					if (first160Bytes[0] == ByteOredrMark[0] && first160Bytes[0] == ByteOredrMark[0] && first160Bytes[0] == ByteOredrMark[0])
+					if (first160Bytes[0] == byteOredrMark[0] && first160Bytes[0] == byteOredrMark[0] && first160Bytes[0] == byteOredrMark[0])
 					{
 						startOfString = 3;
 					}
+
 					string first160BytesOfSTLFile = System.Text.Encoding.UTF8.GetString(first160Bytes, startOfString, first160Bytes.Length - startOfString);
 					if (first160BytesOfSTLFile.StartsWith("solid") && first160BytesOfSTLFile.Contains("facet"))
 					{
@@ -432,7 +450,7 @@ namespace MatterHackers.PolygonMesh.Processors
 					}
 				}
 			}
-			catch (Exception e) 
+			catch (Exception e)
 			{
 				Debug.Print(e.Message);
 				BreakInDebugger();

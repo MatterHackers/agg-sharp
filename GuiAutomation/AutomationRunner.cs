@@ -206,7 +206,7 @@ namespace MatterHackers.GuiAutomation
 		/// <param name="checkConditionSatisfied"></param>
 		/// <param name="maxSeconds"></param>
 		/// <param name="checkInterval"></param>
-		public static void StaticDelay(Func<bool> checkConditionSatisfied, double maxSeconds, int checkInterval = 10)
+		public static bool StaticDelay(Func<bool> checkConditionSatisfied, double maxSeconds, int checkInterval = 10)
 		{
 			Stopwatch timer = Stopwatch.StartNew();
 
@@ -214,11 +214,13 @@ namespace MatterHackers.GuiAutomation
 			{
 				if (checkConditionSatisfied())
 				{
-					break;
+					return true;
 				}
 
 				Thread.Sleep(checkInterval);
 			}
+
+			return false;
 		}
 
 		/// <summary>
@@ -227,9 +229,9 @@ namespace MatterHackers.GuiAutomation
 		/// <param name="checkConditionSatisfied"></param>
 		/// <param name="maxSeconds"></param>
 		/// <param name="checkInterval"></param>
-		public void WaitFor(Func<bool> checkConditionSatisfied, double maxSeconds = 5, int checkInterval = 200)
+		public bool WaitFor(Func<bool> checkConditionSatisfied, double maxSeconds = 5, int checkInterval = 200)
 		{
-			StaticDelay(checkConditionSatisfied, maxSeconds, checkInterval);
+			return StaticDelay(checkConditionSatisfied, maxSeconds, checkInterval);
 		}
 
 		public bool DoubleClickImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
@@ -1128,6 +1130,31 @@ namespace MatterHackers.GuiAutomation
 				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 			{
 				Delay(.05);
+			}
+
+			if (timeWaited.Elapsed.TotalSeconds > secondsToWait)
+			{
+				return false;
+			}
+
+			return true;
+		}
+
+		public bool WaitForWidgetEnabled(string widgetName, double secondsToWait = 5) // TODO: should have a search region
+		{
+			Stopwatch timeWaited = Stopwatch.StartNew();
+			while (!NamedWidgetExists(widgetName)
+				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
+			{
+				Delay(.05);
+			}
+
+			var widget = this.GetWidgetByName(widgetName, out SystemWindow _);
+			if (widget == null
+				|| !this.WaitFor(() => widget.ActuallyVisibleOnScreen() && widget.Enabled,
+				secondsToWait - timeWaited.Elapsed.TotalSeconds))
+			{
+				throw new Exception($"WaitForWidgetEnabled Failed: Named GuiWidget not found [{widgetName}]");
 			}
 
 			if (timeWaited.Elapsed.TotalSeconds > secondsToWait)
