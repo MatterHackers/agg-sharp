@@ -371,15 +371,45 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public void ScrollIntoView(GuiWidget widget)
+		public enum ScrollAmount
+		{
+			Minimum,
+			Center,
+		}
+
+		public void ScrollIntoView(GuiWidget widget, ScrollAmount scrollAmount = ScrollAmount.Minimum)
 		{
 			if (this.Descendants().Contains(widget))
 			{
-				if (!widget.ActuallyVisibleOnScreen())
+				var clippedBounds = widget.ClippedOnScreenBounds();
+				var screenBounds = widget.TransformToScreenSpace(widget.LocalBounds);
+
+				if (clippedBounds.Height != screenBounds.Height)
 				{
-					var widgetScreenBounds = widget.TransformToScreenSpace(widget.LocalBounds);
-					var widgetScrollBounds = this.TransformFromScreenSpace(widgetScreenBounds.Center);
-					this.ScrollPosition = new Vector2(0, -widgetScrollBounds.Y);
+					if (scrollAmount == ScrollAmount.Center)
+					{
+						var widgetScrollBounds = this.TransformFromScreenSpace(screenBounds.Center);
+						this.ScrollPosition = new Vector2(0, -widgetScrollBounds.Y);
+					}
+					else
+					{
+						// do the minimum scroll that will put the widget on screen
+						var bounds = this.LocalBounds;
+						var scrollSpace = widget.TransformToParentSpace(this, widget.LocalBounds);
+						// are we above or below
+						if (scrollSpace.Top >= bounds.Top)
+						{
+							// the widget is clipped on the top
+							// lower it
+							this.ScrollPosition = new Vector2(0, this.ScrollPosition.Y + bounds.Top - scrollSpace.Top);
+						}
+						else if (scrollSpace.Bottom <= bounds.Bottom)
+						{
+							// the widget is clipped on the top
+							// lower it
+							this.ScrollPosition = new Vector2(0, this.ScrollPosition.Y + bounds.Bottom - scrollSpace.Bottom);
+						}
+					}
 				}
 			}
 		}
