@@ -1807,6 +1807,32 @@ namespace MatterHackers.Agg.UI
 			return true;
 		}
 
+		public RectangleDouble ClippedOnScreenBounds()
+		{
+			GuiWidget curGUIWidget = this;
+			var clippedBounds = this.LocalBounds;
+			while (curGUIWidget != null)
+			{
+				if (!curGUIWidget.Visible
+					|| clippedBounds.Width <= 0
+					|| clippedBounds.Height <= 0)
+				{
+					return default(RectangleDouble);
+				}
+
+				if (curGUIWidget.Parent != null)
+				{
+					// offset our bounds to the parent bounds
+					clippedBounds.Offset(curGUIWidget.OriginRelativeParent.X, curGUIWidget.OriginRelativeParent.Y);
+					clippedBounds.IntersectWithRectangle(curGUIWidget.Parent.LocalBounds);
+				}
+
+				curGUIWidget = curGUIWidget.Parent;
+			}
+
+			return clippedBounds;
+		}
+
 		public bool ActuallyVisibleOnScreen()
 		{
 			GuiWidget curGUIWidget = this;
@@ -3494,13 +3520,21 @@ namespace MatterHackers.Agg.UI
 			return Descendants<GuiWidget>(widget);
 		}
 
+		public enum ReturnOrder
+		{
+			BredthFirst,
+			DepthFirst
+		}
+
 		/// <summary>
 		/// Returns all descendants of the current GuiWiget matching the given type
 		/// </summary>
 		/// <typeparam name="T">The type filter</typeparam>
 		/// <param name="widget">The context widget</param>
+		/// <param name="evaluate">Determines if a given child widget should be added or descended.</param>
 		/// <returns>All matching child widgets</returns>
-		public static IEnumerable<T> Descendants<T>(this GuiWidget widget) where T : GuiWidget
+		public static IEnumerable<T> Descendants<T>(this GuiWidget widget,
+			Func<GuiWidget, bool> evaluate = null) where T : GuiWidget
 		{
 			var items = new Stack<GuiWidget>(widget.Children);
 
@@ -3508,9 +3542,13 @@ namespace MatterHackers.Agg.UI
 			{
 				GuiWidget item = items.Pop();
 
-				foreach (var child in item.Children)
+				foreach (var child in item.Children.Reverse())
 				{
-					items.Push(child);
+					if (evaluate == null
+						|| evaluate(child))
+					{
+						items.Push(child);
+					}
 				}
 
 				if (item is T itemIsType)
