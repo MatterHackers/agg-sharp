@@ -46,6 +46,7 @@ namespace MatterHackers.DataConverters3D
 	public class InteractiveScene : IObject3D
 	{
 		public event EventHandler SelectionChanged;
+
 		public event EventHandler<InvalidateArgs> Invalidated;
 
 		private IObject3D _selectedItem;
@@ -297,18 +298,31 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		public string OwnerID { get => SourceItem.OwnerID; set => SourceItem.OwnerID = value; }
+
 		public SafeList<IObject3D> Children { get => SourceItem.Children; set => SourceItem.Children = value; }
+
 		public IObject3D Parent { get => SourceItem.Parent; set => SourceItem.Parent = value; }
+
 		public Color Color { get => SourceItem.Color; set => SourceItem.Color = value; }
+
 		public int MaterialIndex { get => SourceItem.MaterialIndex; set => SourceItem.MaterialIndex = value; }
+
 		public PrintOutputTypes OutputType { get => SourceItem.OutputType; set => SourceItem.OutputType = value; }
+
 		public Matrix4X4 Matrix { get => SourceItem.Matrix; set => SourceItem.Matrix = value; }
+
 		public string TypeName => SourceItem.TypeName;
+
 		public Mesh Mesh { get => SourceItem.Mesh; set => SourceItem.Mesh = value; }
+
 		public string MeshPath { get => SourceItem.MeshPath; set => SourceItem.MeshPath = value; }
+
 		public string Name { get => SourceItem.Name; set => SourceItem.Name = value; }
+
 		public bool Persistable => SourceItem.Persistable;
+
 		public bool Visible { get => SourceItem.Visible; set => SourceItem.Visible = value; }
+
 		public string ID { get => SourceItem.ID; set => SourceItem.ID = value; }
 
 		public bool CanEdit => false;
