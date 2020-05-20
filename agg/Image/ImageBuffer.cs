@@ -50,28 +50,33 @@ namespace MatterHackers.Agg.Image
 		{
 			get
 			{
-				if(_hasTransparency == null)
+				if (BitDepth == 32)
 				{
-					_hasTransparency = false;
-					var buffer = GetBuffer();
-					// check if the image has any alpha set to something other than 255
-					for (int y=0; y<Height; y++)
+					if (_hasTransparency == null)
 					{
-						var yOffset = GetBufferOffsetY(y);
-						for (int x=0; x<Width; x++)
+						_hasTransparency = false;
+						var buffer = GetBuffer();
+						// check if the image has any alpha set to something other than 255
+						for (int y = 0; y < Height; y++)
 						{
-							// get the alpha at this pixel
-							if(buffer[yOffset + x + 3] < 255)
+							var yOffset = GetBufferOffsetY(y);
+							for (int x = 0; x < Width; x++)
 							{
-								_hasTransparency = true;
-								x = Width;
-								y = Height;
+								// get the alpha at this pixel
+								if (buffer[yOffset + x * 4 + 3] < 255)
+								{
+									_hasTransparency = true;
+									x = Width;
+									y = Height;
+								}
 							}
 						}
 					}
+
+					return _hasTransparency.Value;
 				}
 
-				return _hasTransparency.Value;
+				throw new NotImplementedException();
 			}
 		}
 
