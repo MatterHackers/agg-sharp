@@ -353,7 +353,7 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public bool Split(Plane plane, double onPlaneDistance = .001, Func<SplitData, bool> clipFace = null)
+		public bool Split(Plane plane, double onPlaneDistance = .001, Func<SplitData, bool> clipFace = null, bool cleanAndMerge = true)
 		{
 			var newVertices = new List<Vector3Float>();
 			var newFaces = new List<Face>();
@@ -397,7 +397,10 @@ namespace MatterHackers.PolygonMesh
 
 			Faces = new FaceList(keptFaces);
 
-			CleanAndMerge();
+			if (cleanAndMerge)
+			{
+				CleanAndMerge();
+			}
 
 			return true;
 		}
