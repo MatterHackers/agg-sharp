@@ -46,14 +46,14 @@ namespace Typography.OpenFont.Tables
     //Maximum runtime memory use depends on the maximum band size of any bitmap potentially rasterized by the font scaler. 
     //Runtime memory usage could be calculated by rendering characters at different point sizes and comparing memory use.
 
-    class PostTable : TableEntry
+    public class PostTable : TableEntry
     {
         public const string _N = "post";
         public override string Name => _N;
         //
         uint _italicAngle;
-        short _underlinePosition;
-        short _underlineThickness;
+        public short _underlinePosition { get; private set; }
+        public short _underlineThickness { get; private set; }
 
         //---------------
 

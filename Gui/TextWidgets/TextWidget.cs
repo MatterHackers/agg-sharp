@@ -22,6 +22,7 @@
 //----------------------------------------------------------------------------
 using System;
 using MatterHackers.Agg.Font;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.Transform;
 using MatterHackers.VectorMath;
 
@@ -75,7 +76,7 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				if (Printer.TypeFaceStyle.TypeFace == LiberationSansBoldFont.Instance)
+				if (Printer.TypeFaceStyle.TypeFace == AggContext.DefaultFontBold)
 				{
 					return true;
 				}
@@ -85,18 +86,18 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				if (Printer.TypeFaceStyle.TypeFace == LiberationSansBoldFont.Instance)
+				if (Printer.TypeFaceStyle.TypeFace == AggContext.DefaultFontBold)
 				{
-					var typeFaceStyle = new StyledTypeFace(LiberationSansFont.Instance, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline);
+					var typeFaceStyle = new StyledTypeFace(AggContext.DefaultFont, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline);
 					Printer = new TypeFacePrinter(Text, typeFaceStyle, justification: Printer.Justification);
 					if (AutoExpandBoundsToText)
 					{
 						DoExpandBoundsToText();
 					}
 				}
-				else if (Printer.TypeFaceStyle.TypeFace == LiberationSansFont.Instance)
+				else if (Printer.TypeFaceStyle.TypeFace == AggContext.DefaultFont)
 				{
-					var typeFaceStyle = new StyledTypeFace(LiberationSansBoldFont.Instance, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline);
+					var typeFaceStyle = new StyledTypeFace(AggContext.DefaultFontBold, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline);
 					Printer = new TypeFacePrinter(Text, typeFaceStyle, justification: Printer.Justification);
 					if (AutoExpandBoundsToText)
 					{
@@ -131,7 +132,7 @@ namespace MatterHackers.Agg.UI
 
 			if (typeFace == null)
 			{
-				typeFace = bold ? LiberationSansBoldFont.Instance : LiberationSansFont.Instance;
+				typeFace = bold ? AggContext.DefaultFontBold : AggContext.DefaultFont;
 			}
 
 			var typeFaceStyle = new StyledTypeFace(typeFace, pointSize * GuiWidget.DeviceScale, underline);

@@ -23,7 +23,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.Font
 {
-	public partial class TypeFace
+	public class TypeFace
 	{
 		private class Glyph
 		{
@@ -67,10 +67,10 @@ namespace MatterHackers.Agg.Font
 			private Midline midline;
 			private XHeight xHeight;
 
-			public Panos_1(String SVGPanos1String)
+			public Panos_1(string SVGPanos1String)
 			{
 				int tempInt;
-				String[] valuesString = SVGPanos1String.Split(' ');
+				string[] valuesString = SVGPanos1String.Split(' ');
 				if (int.TryParse(valuesString[0], out tempInt))
 					family = (Family)tempInt;
 				if (int.TryParse(valuesString[1], out tempInt))
@@ -97,11 +97,11 @@ namespace MatterHackers.Agg.Font
 
 		Typography.OpenFont.Typeface _ofTypeface;
 
-		private String fontId;
+		private string fontId;
 		private int horiz_adv_x;
-		private String fontFamily;
+		private string fontFamily;
 		private int font_weight;
-		private String font_stretch;
+		private string font_stretch;
 		private int unitsPerEm;
 		private Panos_1 panose_1;
 		private int ascent;
@@ -132,12 +132,12 @@ namespace MatterHackers.Agg.Font
 
 		public int Underline_position { get { return underline_position; } }
 
-		private String unicode_range;
+		private string unicode_range;
 
 		private Glyph missingGlyph;
 
 		private Dictionary<int, Glyph> glyphs = new Dictionary<int, Glyph>(); // a glyph is indexed by the string it represents, usually one character, but sometimes multiple
-		private Dictionary<Char, Dictionary<Char, int>> HKerns = new Dictionary<char, Dictionary<char, int>>();
+		private Dictionary<char, Dictionary<char, int>> HKerns = new Dictionary<char, Dictionary<char, int>>();
 
 		public int UnitsPerEm
 		{
@@ -147,13 +147,13 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		private static String GetSubString(String source, String start, String end)
+		private static string GetSubString(string source, string start, string end)
 		{
 			int startIndex = 0;
 			return GetSubString(source, start, end, ref startIndex);
 		}
 
-		private static String GetSubString(String source, String start, String end, ref int startIndex)
+		private static string GetSubString(string source, string start, string end, ref int startIndex)
 		{
 			int startPos = source.IndexOf(start, startIndex);
 			if (startPos >= 0)
@@ -168,15 +168,15 @@ namespace MatterHackers.Agg.Font
 			return null;
 		}
 
-		private static String GetStringValue(String source, String name)
+		private static string GetStringValue(string source, string name)
 		{
-			String element = GetSubString(source, name + "=\"", "\"");
+			string element = GetSubString(source, name + "=\"", "\"");
 			return element;
 		}
 
-		private static bool GetIntValue(String source, String name, out int outValue, ref int startIndex)
+		private static bool GetIntValue(string source, string name, out int outValue, ref int startIndex)
 		{
-			String element = GetSubString(source, name + "=\"", "\"", ref startIndex);
+			string element = GetSubString(source, name + "=\"", "\"", ref startIndex);
 			if (int.TryParse(element, NumberStyles.Number, null, out outValue))
 			{
 				return true;
@@ -185,7 +185,7 @@ namespace MatterHackers.Agg.Font
 			return false;
 		}
 
-		private static bool GetIntValue(String source, String name, out int outValue)
+		private static bool GetIntValue(string source, string name, out int outValue)
 		{
 			int startIndex = 0;
 			return GetIntValue(source, name, out outValue, ref startIndex);
@@ -193,7 +193,7 @@ namespace MatterHackers.Agg.Font
 
 		public static TypeFace LoadFrom(string content)
 		{
-			TypeFace fontUnderConstruction = new TypeFace();
+			var fontUnderConstruction = new TypeFace();
 			fontUnderConstruction.ReadSVG(content);
 
 			return fontUnderConstruction;
@@ -216,20 +216,23 @@ namespace MatterHackers.Agg.Font
 				this.ascent = _ofTypeface.Ascender;
 				this.descent = _ofTypeface.Descender;
 				this.unitsPerEm = _ofTypeface.UnitsPerEm;
+				this.underline_position = _ofTypeface.PostTable._underlinePosition;
+				var bounds = _ofTypeface.Bounds;
+				this.boundingBox = new RectangleInt(bounds.XMin, bounds.YMin, bounds.XMax, bounds.YMax);
 				return true;
 			}
 
 			return false;
 		}
 
-		public static TypeFace LoadSVG(String filename)
+		public static TypeFace LoadSVG(string filename)
 		{
-			TypeFace fontUnderConstruction = new TypeFace();
+			var fontUnderConstruction = new TypeFace();
 
 			string svgContent = "";
-			using (FileStream fileStream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+			using (var fileStream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 			{
-				using (StreamReader reader = new StreamReader(fileStream))
+				using (var reader = new StreamReader(fileStream))
 				{
 					svgContent = reader.ReadToEnd();
 				}
@@ -239,16 +242,16 @@ namespace MatterHackers.Agg.Font
 			return fontUnderConstruction;
 		}
 
-		private Glyph CreateGlyphFromSVGGlyphData(String SVGGlyphData)
+		private Glyph CreateGlyphFromSVGGlyphData(string SVGGlyphData)
 		{
-			Glyph newGlyph = new Glyph();
+			var newGlyph = new Glyph();
 			if (!GetIntValue(SVGGlyphData, "horiz-adv-x", out newGlyph.horiz_adv_x))
 			{
 				newGlyph.horiz_adv_x = horiz_adv_x;
 			}
 
 			newGlyph.glyphName = GetStringValue(SVGGlyphData, "glyph-name");
-			String unicodeString = GetStringValue(SVGGlyphData, "unicode");
+			string unicodeString = GetStringValue(SVGGlyphData, "unicode");
 
 			if (unicodeString != null)
 			{
@@ -266,13 +269,13 @@ namespace MatterHackers.Agg.Font
 					if (int.TryParse(unicodeString, NumberStyles.Number, null, out newGlyph.unicode) == false)
 					{
 						// see if it is a unicode
-						String hexNumber = GetSubString(unicodeString, "&#x", ";");
+						string hexNumber = GetSubString(unicodeString, "&#x", ";");
 						int.TryParse(hexNumber, NumberStyles.HexNumber, null, out newGlyph.unicode);
 					}
 				}
 			}
 
-			String dString = GetStringValue(SVGGlyphData, "d");
+			string dString = GetStringValue(SVGGlyphData, "d");
 
 			if (dString == null || dString.Length == 0)
 			{
@@ -287,14 +290,14 @@ namespace MatterHackers.Agg.Font
 			return newGlyph;
 		}
 
-		public void ReadSVG(String svgContent)
+		public void ReadSVG(string svgContent)
 		{
 			int startIndex = 0;
-			String fontElementString = GetSubString(svgContent, "<font", ">", ref startIndex);
+			string fontElementString = GetSubString(svgContent, "<font", ">", ref startIndex);
 			fontId = GetStringValue(fontElementString, "id");
 			GetIntValue(fontElementString, "horiz-adv-x", out horiz_adv_x);
 
-			String fontFaceString = GetSubString(svgContent, "<font-face", "/>", ref startIndex);
+			string fontFaceString = GetSubString(svgContent, "<font-face", "/>", ref startIndex);
 			fontFamily = GetStringValue(fontFaceString, "font-family");
 			GetIntValue(fontFaceString, "font-weight", out font_weight);
 			font_stretch = GetStringValue(fontFaceString, "font-stretch");
@@ -316,10 +319,10 @@ namespace MatterHackers.Agg.Font
 			GetIntValue(fontFaceString, "underline-position", out underline_position);
 			unicode_range = GetStringValue(fontFaceString, "unicode-range");
 
-			String missingGlyphString = GetSubString(svgContent, "<missing-glyph", "/>", ref startIndex);
+			string missingGlyphString = GetSubString(svgContent, "<missing-glyph", "/>", ref startIndex);
 			missingGlyph = CreateGlyphFromSVGGlyphData(missingGlyphString);
 
-			String nextGlyphString = GetSubString(svgContent, "<glyph", "/>", ref startIndex);
+			string nextGlyphString = GetSubString(svgContent, "<glyph", "/>", ref startIndex);
 			while (nextGlyphString != null)
 			{
 				// get the data and put it in the glyph dictionary
@@ -392,7 +395,7 @@ namespace MatterHackers.Agg.Font
 
 				var vertexData = source.Vertices().Where(v => v.command != ShapePath.FlagsAndCommand.FlagNone).ToArray();
 
-				VertexData previous = default(VertexData);
+				var previous = default(VertexData);
 
 				for (var i = 0; i < vertexData.Length; i++)
 				{
@@ -458,30 +461,24 @@ namespace MatterHackers.Agg.Font
 
 		public void ShowDebugInfo(Graphics2D graphics2D)
 		{
-			StyledTypeFace typeFaceNameStyle = new StyledTypeFace(this, 30);
-			TypeFacePrinter fontNamePrinter = new TypeFacePrinter(this.fontFamily + " - 30 point", typeFaceNameStyle);
-
-			RectangleDouble bounds = typeFaceNameStyle.BoundingBoxInPixels;
-			double origX = 10 - bounds.Left;
-			double x = origX;
-			double y = 10 - typeFaceNameStyle.DescentInPixels;
-			int width = 50;
 			Color boundingBoxColor = new Color(0, 0, 0);
-			Color originColor = new Color(0, 0, 0);
-			Color ascentColor = new Color(255, 0, 0);
-			Color descentColor = new Color(255, 0, 0);
-			Color xHeightColor = new Color(12, 25, 200);
-			Color capHeightColor = new Color(12, 25, 200);
-			Color underlineColor = new Color(0, 150, 55);
+			var typeFaceNameStyle = new StyledTypeFace(this, 50);
+			var fontNamePrinter = new TypeFacePrinter(this.fontFamily + " - 50 point", typeFaceNameStyle);
+
+			double x = 30 + typeFaceNameStyle.EmSizeInPoints * 1.5;
+			double y = 40 - typeFaceNameStyle.DescentInPixels;
+			int width = 150;
+			var originColor = new Color(0, 0, 0);
+			var ascentColor = new Color(255, 0, 0);
+			var descentColor = new Color(255, 0, 0);
+			var xHeightColor = new Color(12, 25, 200);
+			var capHeightColor = new Color(12, 25, 200);
+			var underlineColor = new Color(0, 150, 55);
 
 			// the origin
-			graphics2D.Line(x, y, x + width, y, originColor);
-
+			RectangleDouble bounds = typeFaceNameStyle.BoundingBoxInPixels;
 			graphics2D.Rectangle(x + bounds.Left, y + bounds.Bottom, x + bounds.Right, y + bounds.Top, boundingBoxColor);
-
-			x += typeFaceNameStyle.BoundingBoxInPixels.Width * 1.5;
-
-			width = width * 3;
+			graphics2D.Line(x - 10, y, x + width / 2, y, originColor);
 
 			double temp = typeFaceNameStyle.AscentInPixels;
 			graphics2D.Line(x, y + temp, x + width, y + temp, ascentColor);
@@ -500,23 +497,30 @@ namespace MatterHackers.Agg.Font
 
 			Affine textTransform;
 			textTransform = Affine.NewIdentity();
-			textTransform *= Affine.NewTranslation(10, origX);
+			textTransform *= Affine.NewTranslation(x, y);
 
-			VertexSourceApplyTransform transformedText = new VertexSourceApplyTransform(textTransform);
+			var transformedText = new VertexSourceApplyTransform(textTransform);
 			fontNamePrinter.Render(graphics2D, Color.Black, transformedText);
 
 			graphics2D.Render(transformedText, Color.Black);
 
 			// render the legend
-			StyledTypeFace legendFont = new StyledTypeFace(this, 12);
-			Vector2 textPos = new Vector2(x + width / 2, y + typeFaceNameStyle.EmSizeInPixels * 1.5);
-			graphics2D.Render(new TypeFacePrinter("Descent"), textPos, descentColor); textPos.Y += legendFont.EmSizeInPixels;
-			graphics2D.Render(new TypeFacePrinter("Underline"), textPos, underlineColor); textPos.Y += legendFont.EmSizeInPixels;
-			graphics2D.Render(new TypeFacePrinter("X Height"), textPos, xHeightColor); textPos.Y += legendFont.EmSizeInPixels;
-			graphics2D.Render(new TypeFacePrinter("CapHeight"), textPos, capHeightColor); textPos.Y += legendFont.EmSizeInPixels;
-			graphics2D.Render(new TypeFacePrinter("Ascent"), textPos, ascentColor); textPos.Y += legendFont.EmSizeInPixels;
-			graphics2D.Render(new TypeFacePrinter("Origin"), textPos, originColor); textPos.Y += legendFont.EmSizeInPixels;
+			var legendFont = new StyledTypeFace(this, 12);
+			var textPos = new Vector2(x + width / 2, y + typeFaceNameStyle.EmSizeInPixels * 1.5);
 			graphics2D.Render(new TypeFacePrinter("Bounding Box"), textPos, boundingBoxColor);
+			textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("Descent"), textPos, descentColor);
+			textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("Underline"), textPos, underlineColor);
+			textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("Origin"), textPos, originColor);
+			textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("X Height"), textPos, xHeightColor);
+			textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("CapHeight"), textPos, capHeightColor);
+			textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("Ascent"), textPos, ascentColor);
+			textPos.Y += legendFont.EmSizeInPixels;
 		}
 	}
 }
