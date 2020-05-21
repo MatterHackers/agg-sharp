@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg.Font;
 using System;
 
 namespace MatterHackers.Agg.Platform
@@ -198,5 +199,13 @@ namespace MatterHackers.Agg.Platform
 			/// </summary>
 			public int FSAASamples { get; set; } = 8;
 		}
+
+		public static TypeFace DefaultFont { get; set; } = LiberationSansFont.Instance;
+
+		public static TypeFace DefaultFontBold { get; set; } = LiberationSansBoldFont.Instance;
+
+		public static TypeFace DefaultFontItalic { get; set; } = LiberationSansFont.Instance;
+
+		public static TypeFace DefaultFontBoldItalic { get; set; } = LiberationSansBoldFont.Instance;
 	}
 }

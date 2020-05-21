@@ -94,7 +94,7 @@ namespace Typography.OpenFont
         //
         //Typical values average 7 - 10 % of units per em.
         //The goal is to free applications from Macintosh or Windows - specific metrics
-        //which are constrained by backward compatability requirements
+        //which are constrained by backward compatibility requirements
         //(see chapter, “Recommendations for OpenType Fonts”).
         //These new metrics, when combined with the character design widths,
         //will allow applications to lay out documents in a typographically correct and portable fashion. 
@@ -285,7 +285,7 @@ namespace Typography.OpenFont
 
 
         //---------        
-        internal PostTable PostTable { get; set; }
+        public PostTable PostTable { get; set; }
         internal bool _evalCffGlyphBounds;
         internal bool IsCffFont => _cffTable != null;
         //---------

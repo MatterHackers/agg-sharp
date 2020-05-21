@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MatterHackers.Agg.Platform;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -59,7 +60,7 @@ namespace MatterHackers.Agg.Font
 		}
 
 		public EnglishTextWrapping(double pointSize)
-			: base(new StyledTypeFace(LiberationSansFont.Instance, pointSize))
+			: base(new StyledTypeFace(AggContext.DefaultFont, pointSize))
 		{
 		}
 

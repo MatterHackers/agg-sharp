@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
@@ -94,7 +95,7 @@ namespace MatterHackers.Agg.Font
 
 		public TypeFacePrinter(string text = "", double pointSize = 12, Vector2 origin = default(Vector2), Justification justification = Justification.Left, Baseline baseline = Baseline.Text, bool bold = false)
 			: this(text,
-				  bold ? new StyledTypeFace(LiberationSansBoldFont.Instance, pointSize) : new StyledTypeFace(LiberationSansFont.Instance, pointSize),
+				  bold ? new StyledTypeFace(AggContext.DefaultFontBold, pointSize) : new StyledTypeFace(AggContext.DefaultFont, pointSize),
 				  origin,
 				  justification,
 				  baseline)
