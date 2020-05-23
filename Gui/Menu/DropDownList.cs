@@ -387,7 +387,7 @@ namespace MatterHackers.Agg.UI
 			this.BorderColor = borderColor;
 		}
 
-		private void OnSelectionChanged(EventArgs e)
+		public virtual void OnSelectionChanged(EventArgs e)
 		{
 			SelectionChanged?.Invoke(this, e);
 		}
