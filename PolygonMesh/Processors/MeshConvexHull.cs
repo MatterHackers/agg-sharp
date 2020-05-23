@@ -41,6 +41,8 @@ namespace MatterHackers.PolygonMesh
 
 		public static Mesh GetConvexHull(this Mesh mesh, bool generateAsync)
 		{
+			// currently disabling async as it has some threading issues
+			generateAsync = false;
 			if (mesh.Faces.Count < 4)
 			{
 				return null;
@@ -58,18 +60,18 @@ namespace MatterHackers.PolygonMesh
 			{
 				object creatingHullData;
 				mesh.PropertyBag.TryGetValue(CreatingConvexHullMesh, out creatingHullData);
-				bool currentlyCreatingHule = creatingHullData is CreatingHullFlag;
-				if (!currentlyCreatingHule)
+				bool currentlyCreatingHull = creatingHullData is CreatingHullFlag;
+				if (!currentlyCreatingHull)
 				{
 					// set the marker that we are creating the data
 					mesh.PropertyBag.Add(CreatingConvexHullMesh, new CreatingHullFlag());
 
 					if (generateAsync)
 					{
-						//Task.Run(() =>
+						Task.Run(() =>
 						{
 							CreateHullMesh(mesh);
-						}//);
+						});
 					}
 					else
 					{
@@ -79,11 +81,11 @@ namespace MatterHackers.PolygonMesh
 				else if (!generateAsync)
 				{
 					// we need to wait for the data to be ready and return it
-					while (currentlyCreatingHule)
+					while (currentlyCreatingHull)
 					{
 						Thread.Sleep(1);
 						mesh.PropertyBag.TryGetValue(CreatingConvexHullMesh, out creatingHullData);
-						currentlyCreatingHule = creatingHullData is CreatingHullFlag;
+						currentlyCreatingHull = creatingHullData is CreatingHullFlag;
 					}
 
 					return CreateHullMesh(mesh);
@@ -104,15 +106,18 @@ namespace MatterHackers.PolygonMesh
 				bounds.ExpandToInclude(position);
 			}
 
+			var tollerance = .01;
+
 			if (cHVertexList.Count == 0
-				|| bounds.XSize == 0
-				|| bounds.YSize == 0
-				|| bounds.ZSize == 0)
+				|| bounds.XSize <= tollerance
+				|| bounds.YSize <= tollerance
+				|| bounds.ZSize <= tollerance
+				|| double.IsNaN(cHVertexList.First().Position[0]))
 			{
 				return mesh;
 			}
 
-			var convexHull = ConvexHull<CHVertex, CHFace>.Create(cHVertexList, .01);
+			var convexHull = ConvexHull<CHVertex, CHFace>.Create(cHVertexList, tollerance);
 			if (convexHull != null)
 			{
 				// create the mesh from the hull data
