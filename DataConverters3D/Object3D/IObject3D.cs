@@ -119,21 +119,25 @@ namespace MatterHackers.DataConverters3D
 			list.AddRange(addItems);
 		}
 
-		public static void CopyWorldProperties(this IObject3D copyTo, IObject3D copyFrom, IObject3D root, Object3DPropertyFlags flags)
+		public static void CopyWorldProperties(this IObject3D copyTo,
+			IObject3D copyFrom,
+			IObject3D root,
+			Object3DPropertyFlags flags,
+			bool includingRoot = true)
 		{
 			if (flags.HasFlag(Object3DPropertyFlags.Matrix))
 			{
-				copyTo.Matrix = copyFrom.WorldMatrix(root);
+				copyTo.Matrix = copyFrom.WorldMatrix(root, includingRoot);
 			}
 
 			if (flags.HasFlag(Object3DPropertyFlags.Color))
 			{
-				copyTo.Color = copyFrom.WorldColor(root);
+				copyTo.Color = copyFrom.WorldColor(root, includingRoot);
 			}
 
 			if (flags.HasFlag(Object3DPropertyFlags.MaterialIndex))
 			{
-				copyTo.MaterialIndex = copyFrom.WorldMaterialIndex(root);
+				copyTo.MaterialIndex = copyFrom.WorldMaterialIndex(root, includingRoot);
 			}
 
 			if (flags.HasFlag(Object3DPropertyFlags.Name))
@@ -143,12 +147,12 @@ namespace MatterHackers.DataConverters3D
 
 			if (flags.HasFlag(Object3DPropertyFlags.OutputType))
 			{
-				copyTo.OutputType = copyFrom.WorldOutputType(root);
+				copyTo.OutputType = copyFrom.WorldOutputType(root, includingRoot);
 			}
 
 			if (flags.HasFlag(Object3DPropertyFlags.Visible))
 			{
-				copyTo.Visible = copyFrom.WorldVisible(root);
+				copyTo.Visible = copyFrom.WorldVisible(root, includingRoot);
 			}
 		}
 
