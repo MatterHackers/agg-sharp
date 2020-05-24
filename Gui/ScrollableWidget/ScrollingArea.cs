@@ -91,6 +91,12 @@ namespace MatterHackers.Agg.UI
 
 		internal void ValidateScrollPosition()
 		{
+			var parent = this.Parent;
+			if (parent == null)
+			{
+				return;
+			}
+
 			Vector2 newOrigin = OriginRelativeParent;
 
 			Vector2 topLeftOffset = parentScrollableWidget.TopLeftOffset;
@@ -104,33 +110,34 @@ namespace MatterHackers.Agg.UI
 				{
 					parentScrollableWidget.TopLeftOffset = new Vector2(parentScrollableWidget.TopLeftOffset.X, 0);
 				}
+
 				debugRecursionCount--;
 				newOrigin.Y = OriginRelativeParent.Y;
 			}
 			else
 			{
-				if (newOrigin.Y + Margin.Top + Padding.Top + LocalBounds.Top < Parent.LocalBounds.Top)
+				if (newOrigin.Y + Margin.Top + Padding.Top + LocalBounds.Top < parent.LocalBounds.Top)
 				{
-					newOrigin.Y = Parent.LocalBounds.Top - Margin.Top - Padding.Top - LocalBounds.Top;
+					newOrigin.Y = parent.LocalBounds.Top - Margin.Top - Padding.Top - LocalBounds.Top;
 				}
-				else if (LocalBounds.Height + Margin.Height >= Parent.LocalBounds.Height)
+				else if (LocalBounds.Height + Margin.Height >= parent.LocalBounds.Height)
 				{
-					if (BoundsRelativeToParent.Bottom - Margin.Bottom > Parent.LocalBounds.Bottom)
+					if (BoundsRelativeToParent.Bottom - Margin.Bottom > parent.LocalBounds.Bottom)
 					{
-						newOrigin.Y = Parent.LocalBounds.Bottom - LocalBounds.Bottom + Margin.Bottom;
+						newOrigin.Y = parent.LocalBounds.Bottom - LocalBounds.Bottom + Margin.Bottom;
 					}
 				}
 			}
 
-			if (BoundsRelativeToParent.Left - Margin.Left > Parent.LocalBounds.Left)
+			if (BoundsRelativeToParent.Left - Margin.Left > parent.LocalBounds.Left)
 			{
-				newOrigin.X = Parent.LocalBounds.Left - LocalBounds.Left + Margin.Left;
+				newOrigin.X = parent.LocalBounds.Left - LocalBounds.Left + Margin.Left;
 			}
-			else if (LocalBounds.Width + Margin.Width > Parent.LocalBounds.Width)
+			else if (LocalBounds.Width + Margin.Width > parent.LocalBounds.Width)
 			{
-				if (BoundsRelativeToParent.Right + Margin.Right < Parent.LocalBounds.Right)
+				if (BoundsRelativeToParent.Right + Margin.Right < parent.LocalBounds.Right)
 				{
-					newOrigin.X = Parent.LocalBounds.Right - LocalBounds.Right - Margin.Right;
+					newOrigin.X = parent.LocalBounds.Right - LocalBounds.Right - Margin.Right;
 				}
 			}
 
