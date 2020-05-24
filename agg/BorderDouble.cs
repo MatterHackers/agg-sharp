@@ -88,6 +88,15 @@ namespace MatterHackers.Agg
 			return left;
 		}
 
+		public static RectangleDouble operator -(RectangleDouble left, BorderDouble right)
+		{
+			left.Left += right.Left;
+			left.Bottom += right.Bottom;
+			left.Right -= right.Right;
+			left.Top -= right.Top;
+			return left;
+		}
+
 		public override int GetHashCode()
 		{
 			return new { x1 = Left, x2 = Right, y1 = Bottom, y2 = Top }.GetHashCode();
