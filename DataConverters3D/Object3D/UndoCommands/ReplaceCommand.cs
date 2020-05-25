@@ -49,9 +49,10 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 			{
 				throw new Exception("The remove item(s) must already be in the scene (have a parent).");
 			}
+
 			if (removeItems.Any())
 			{
-				foreach(var removeItem in removeItems)
+				foreach (var removeItem in removeItems)
 				{
 					if (firstParent != removeItem.Parent)
 					{
@@ -59,6 +60,7 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 					}
 				}
 			}
+
 			this.removeItems = removeItems;
 			this.addItems = addItems;
 		}
@@ -76,6 +78,7 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 					{
 						list.Remove(child);
 					}
+
 					list.AddRange(addItems);
 				});
 
@@ -99,6 +102,7 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 					}
 				}
 			}
+
 			firstParent.Invalidate(new InvalidateArgs(firstParent, InvalidateType.Children | InvalidateType.Matrix));
 		}
 
@@ -111,6 +115,7 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 				{
 					list.Remove(child);
 				}
+
 				list.AddRange(removeItems);
 				firstParent.Invalidate(new InvalidateArgs(firstParent, InvalidateType.Children));
 			});
