@@ -193,20 +193,26 @@ namespace MatterHackers.Agg.UI
 
 		private void controlToHook_KeyPress(object sender, System.Windows.Forms.KeyPressEventArgs windowsKeyPressEvent)
 		{
-			KeyPressEventArgs aggKeyPressEvent = new KeyPressEventArgs(windowsKeyPressEvent.KeyChar);
+			var aggKeyPressEvent = new KeyPressEventArgs(windowsKeyPressEvent.KeyChar);
 			widgetToSendTo.OnKeyPress(aggKeyPressEvent);
 			windowsKeyPressEvent.Handled = aggKeyPressEvent.Handled;
 		}
 
 		private void controlToHook_KeyUp(object sender, System.Windows.Forms.KeyEventArgs windowsKeyEvent)
 		{
-			KeyEventArgs aggKeyEvent = new KeyEventArgs((Keys)windowsKeyEvent.KeyData);
-			widgetToSendTo.OnKeyUp(aggKeyEvent);
+			// Only process the key up event if we were the ones to receive the key down event.
+			// This is because the SaveFileDialog is returning us the key up event for enter after it closes.
+			var aggKeyEvent = new KeyEventArgs((Keys)windowsKeyEvent.KeyData);
 
-			Keyboard.SetKeyDownState(aggKeyEvent.KeyCode, false);
+			if (Keyboard.IsKeyDown(aggKeyEvent.KeyCode))
+			{
+				widgetToSendTo.OnKeyUp(aggKeyEvent);
 
-			windowsKeyEvent.Handled = aggKeyEvent.Handled;
-			windowsKeyEvent.SuppressKeyPress = aggKeyEvent.SuppressKeyPress;
+				Keyboard.SetKeyDownState(aggKeyEvent.KeyCode, false);
+
+				windowsKeyEvent.Handled = aggKeyEvent.Handled;
+				windowsKeyEvent.SuppressKeyPress = aggKeyEvent.SuppressKeyPress;
+			}
 		}
 
 		private GuiWidget focusedChild = null;
@@ -273,7 +279,7 @@ namespace MatterHackers.Agg.UI
 		private MouseEventArgs ConvertWindowsDragEventToAggMouseEvent(DragEventArgs dragevent)
 		{
 			System.Drawing.Point clientTop = controlToHook.PointToScreen(new System.Drawing.Point(0, 0));
-			System.Drawing.Point appWidgetPos = new System.Drawing.Point(dragevent.X - clientTop.X, (int)widgetToSendTo.Height - (dragevent.Y - clientTop.Y));
+			var appWidgetPos = new System.Drawing.Point(dragevent.X - clientTop.X, (int)widgetToSendTo.Height - (dragevent.Y - clientTop.Y));
 
 			return new MouseEventArgs((MouseButtons.None), 0, appWidgetPos.X, appWidgetPos.Y, 0, dragFiles);
 		}
