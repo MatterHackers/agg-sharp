@@ -71,16 +71,16 @@ namespace MatterHackers.Agg.UI.Tests
 			int marginSize = 40;
 			int dimensions = 300;
 
-			GuiWidget outerContainer = new GuiWidget(dimensions, dimensions);
+			var outerContainer = new GuiWidget(dimensions, dimensions);
 
-			FlowLayoutWidget topToBottomContainer = new FlowLayoutWidget(FlowDirection.TopToBottom)
+			var topToBottomContainer = new FlowLayoutWidget(FlowDirection.TopToBottom)
 			{
 				HAnchor = HAnchor.Stretch,
-				VAnchor = UI.VAnchor.Stretch,
+				VAnchor = VAnchor.Stretch,
 			};
 			outerContainer.AddChild(topToBottomContainer);
 
-			GuiWidget childWidget = new GuiWidget()
+			var childWidget = new GuiWidget()
 			{
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Stretch,
@@ -97,8 +97,8 @@ namespace MatterHackers.Agg.UI.Tests
 			outerContainer.OnDraw(outerContainer.NewGraphics2D());
 
 			// For troubleshooting or visual validation
-			//saveImagesForDebug = true;
-			//OutputImages(outerContainer, outerContainer);
+			// saveImagesForDebug = true;
+			// OutputImages(outerContainer, outerContainer);
 
 			var bounds = childWidget.BoundsRelativeToParent;
 			Assert.IsTrue(bounds.Left == marginSize, "Left margin is incorrect");
@@ -110,9 +110,6 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public async Task SpacingClearedAfterLoadPositionsCorrectly()
 		{
-			// Expectation - no matter what the margin/padding is at construction time, clearing it should result in Flowlayout position that reflects the latest values
-			// Actual - initial margin/padding values cause layout changes to OriginRelativeParent that are never reversed, resulting in the problem described in MatterHackers/MCCentral#3133 and presented below
-
 			var systemWindow = new SystemWindow(700, 200)
 			{
 				BackgroundColor = Color.LightGray,
@@ -127,7 +124,6 @@ namespace MatterHackers.Agg.UI.Tests
 
 			FlowLayoutWidget row;
 
-			// **** Reset to zero to see the expected behavior ****
 			int initialSpacing = 8;
 
 			// Header
@@ -191,15 +187,14 @@ namespace MatterHackers.Agg.UI.Tests
 
 				return Task.CompletedTask;
 			});
-
 		}
 #endif
 
 		[Test]
 		public void NestedLayoutTopToBottomTests()
 		{
-			NestedLayoutTopToBottomTest(new BorderDouble(), new BorderDouble());
-			NestedLayoutTopToBottomTest(new BorderDouble(), new BorderDouble(3));
+			NestedLayoutTopToBottomTest(default(BorderDouble), default(BorderDouble));
+			NestedLayoutTopToBottomTest(default(BorderDouble), new BorderDouble(3));
 			NestedLayoutTopToBottomTest(new BorderDouble(2), new BorderDouble(0));
 			NestedLayoutTopToBottomTest(new BorderDouble(2), new BorderDouble(3));
 			NestedLayoutTopToBottomTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
@@ -208,7 +203,7 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void ChangingChildVisiblityUpdatesFlow()
 		{
-			//  ___________________________________________________
+			// ___________________________________________________
 			//  |       containerControl 300                      |
 			//  | _______________________________________________ |
 			//  | |     Flow1 ParentWidth  300                  | |
@@ -221,34 +216,43 @@ namespace MatterHackers.Agg.UI.Tests
 			//  | | |________________________________________|  | |
 			//  | |_____________________________________________| |
 			//  |_________________________________________________|
-			//
 
-			GuiWidget containerControl = new GuiWidget(300, 200);
-			containerControl.Name = "containerControl";
+			var containerControl = new GuiWidget(300, 200)
+			{
+				Name = "containerControl"
+			};
 
-			FlowLayoutWidget flow1 = new FlowLayoutWidget(FlowDirection.LeftToRight);
-			flow1.Name = "flow1";
-			flow1.HAnchor = HAnchor.Stretch;
-			flow1.Padding = new BorderDouble(3, 3);
+			var flow1 = new FlowLayoutWidget(FlowDirection.LeftToRight)
+			{
+				Name = "flow1",
+				HAnchor = HAnchor.Stretch,
+				Padding = new BorderDouble(3, 3)
+			};
 			containerControl.AddChild(flow1);
 
-			FlowLayoutWidget flow2 = new FlowLayoutWidget();
-			flow2.Name = "flow2";
+			var flow2 = new FlowLayoutWidget
+			{
+				Name = "flow2"
+			};
 			flow1.AddChild(flow2);
 
-			GuiWidget size1 = new GuiWidget(200, 20);
-			size1.Name = "size2";
+			var size1 = new GuiWidget(200, 20)
+			{
+				Name = "size2"
+			};
 			flow2.AddChild(size1);
 
-			GuiWidget size2 = new GuiWidget(50, 20);
-			size2.Name = "size1";
+			var size2 = new GuiWidget(50, 20)
+			{
+				Name = "size1"
+			};
 			flow2.AddChild(size2);
 
 			Assert.IsTrue(flow1.Width == containerControl.Width);
 			Assert.IsTrue(flow2.Width == size2.Width + size1.Width);
 
 			size1.Visible = false;
-			//  ___________________________________________________
+			// ___________________________________________________
 			//  |       containerControl 300                      |
 			//  | _______________________________________________ |
 			//  | |   Flow1 ParentWidth  300                    | |
@@ -262,7 +266,6 @@ namespace MatterHackers.Agg.UI.Tests
 			//  | | |___________|                               | |
 			//  | |_____________________________________________| |
 			//  |_________________________________________________|
-			//
 
 			Assert.IsTrue(flow1.Width == containerControl.Width);
 			Assert.IsTrue(flow2.Width == size2.Width);
@@ -271,7 +274,7 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void ChangingChildFlowWidgetVisiblityUpdatesParentFlow()
 		{
-			//  ___________________________________________________
+			// ___________________________________________________
 			//  |       containerControl 300                      |
 			//  | _______________________________________________ |
 			//  | |     Flow1 ParentWidth  300                  | |
@@ -286,31 +289,42 @@ namespace MatterHackers.Agg.UI.Tests
 			//  | | |________________________________________|  | |
 			//  | |_____________________________________________| |
 			//  |_________________________________________________|
-			//
 
-			GuiWidget containerControl = new GuiWidget(300, 200);
-			containerControl.Name = "containerControl";
+			var containerControl = new GuiWidget(300, 200)
+			{
+				Name = "containerControl"
+			};
 
-			FlowLayoutWidget flow1 = new FlowLayoutWidget(FlowDirection.LeftToRight);
-			flow1.Name = "flow1";
-			flow1.HAnchor = HAnchor.Stretch;
-			flow1.Padding = new BorderDouble(3, 3);
+			var flow1 = new FlowLayoutWidget(FlowDirection.LeftToRight)
+			{
+				Name = "flow1",
+				HAnchor = HAnchor.Stretch,
+				Padding = new BorderDouble(3, 3)
+			};
 			containerControl.AddChild(flow1);
 
-			FlowLayoutWidget flow2 = new FlowLayoutWidget();
-			flow2.Name = "flow2";
+			var flow2 = new FlowLayoutWidget
+			{
+				Name = "flow2"
+			};
 			flow1.AddChild(flow2);
 
-			GuiWidget flow3 = new FlowLayoutWidget();
-			flow3.Name = "flow3";
+			GuiWidget flow3 = new FlowLayoutWidget
+			{
+				Name = "flow3"
+			};
 			flow2.AddChild(flow3);
 
-			GuiWidget size1 = new GuiWidget(200, 20);
-			size1.Name = "size2";
+			var size1 = new GuiWidget(200, 20)
+			{
+				Name = "size2"
+			};
 			flow3.AddChild(size1);
 
-			GuiWidget size2 = new GuiWidget(50, 20);
-			size2.Name = "size1";
+			var size2 = new GuiWidget(50, 20)
+			{
+				Name = "size1"
+			};
 			flow2.AddChild(size2);
 
 
@@ -319,7 +333,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(flow2.Width == size2.Width + flow3.Width);
 
 			size1.Visible = false;
-			//  ___________________________________________________
+			// ___________________________________________________
 			//  |       containerControl 300                      |
 			//  | _______________________________________________ |
 			//  | |   Flow1 ParentWidth  300                    | |
@@ -341,25 +355,30 @@ namespace MatterHackers.Agg.UI.Tests
 
 		public void NestedLayoutTopToBottomTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
-			GuiWidget containerControl = new GuiWidget(300, 200);
-			containerControl.DoubleBuffer = true;
+			var containerControl = new GuiWidget(300, 200)
+			{
+				DoubleBuffer = true
+			};
 			containerControl.BackBuffer.NewGraphics2D().Clear(Color.White);
 			{
-				Button topButtonC = new Button("top button");
-				Button bottomButtonC = new Button("bottom wide button");
+				var topButtonC = new Button("top button");
+				var bottomButtonC = new Button("bottom wide button");
 				topButtonC.LocalBounds = new RectangleDouble(0, 0, bottomButtonC.LocalBounds.Width, 40);
 				topButtonC.OriginRelativeParent = new Vector2(bottomButtonC.OriginRelativeParent.X + buttonMargin.Left, containerControl.Height - controlPadding.Top - topButtonC.Height - buttonMargin.Top);
 				containerControl.AddChild(topButtonC);
 				bottomButtonC.OriginRelativeParent = new Vector2(bottomButtonC.OriginRelativeParent.X + buttonMargin.Left, topButtonC.OriginRelativeParent.Y - buttonMargin.Height - bottomButtonC.Height);
 				containerControl.AddChild(bottomButtonC);
 			}
+
 			containerControl.OnDraw(containerControl.NewGraphics2D());
 
-			GuiWidget containerTest = new GuiWidget(300, 200);
-			containerTest.DoubleBuffer = true;
+			var containerTest = new GuiWidget(300, 200)
+			{
+				DoubleBuffer = true
+			};
 			containerTest.BackBuffer.NewGraphics2D().Clear(Color.White);
 
-			FlowLayoutWidget allButtons = new FlowLayoutWidget(FlowDirection.TopToBottom);
+			var allButtons = new FlowLayoutWidget(FlowDirection.TopToBottom);
 			allButtons.AnchorAll();
 			Button topButtonT;
 			Button bottomButtonT;
@@ -371,11 +390,14 @@ namespace MatterHackers.Agg.UI.Tests
 
 				topButtonBar = new FlowLayoutWidget();
 				{
-					topButtonT = new Button("top button");
-					topButtonT.LocalBounds = new RectangleDouble(0, 0, bottomButtonT.LocalBounds.Width, 40);
-					topButtonT.Margin = buttonMargin;
+					topButtonT = new Button("top button")
+					{
+						LocalBounds = new RectangleDouble(0, 0, bottomButtonT.LocalBounds.Width, 40),
+						Margin = buttonMargin
+					};
 					topButtonBar.AddChild(topButtonT);
 				}
+
 				allButtons.AddChild(topButtonBar);
 
 				bottomButtonBar = new FlowLayoutWidget();
@@ -383,8 +405,10 @@ namespace MatterHackers.Agg.UI.Tests
 					bottomButtonT.Margin = buttonMargin;
 					bottomButtonBar.AddChild(bottomButtonT);
 				}
+
 				allButtons.AddChild(bottomButtonBar);
 			}
+
 			containerTest.AddChild(allButtons);
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 
@@ -397,8 +421,8 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void NestedLayoutTopToBottomWithResizeTests()
 		{
-			NestedLayoutTopToBottomWithResizeTest(new BorderDouble(), new BorderDouble());
-			NestedLayoutTopToBottomWithResizeTest(new BorderDouble(), new BorderDouble(3));
+			NestedLayoutTopToBottomWithResizeTest(default(BorderDouble), default(BorderDouble));
+			NestedLayoutTopToBottomWithResizeTest(default(BorderDouble), new BorderDouble(3));
 			NestedLayoutTopToBottomWithResizeTest(new BorderDouble(2), new BorderDouble(0));
 			NestedLayoutTopToBottomWithResizeTest(new BorderDouble(2), new BorderDouble(3));
 			NestedLayoutTopToBottomWithResizeTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
@@ -406,32 +430,41 @@ namespace MatterHackers.Agg.UI.Tests
 
 		public void NestedLayoutTopToBottomWithResizeTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
-			GuiWidget containerTest = new GuiWidget(300, 200);
-			containerTest.Padding = controlPadding;
-			containerTest.DoubleBuffer = true;
+			var containerTest = new GuiWidget(300, 200)
+			{
+				Padding = controlPadding,
+				DoubleBuffer = true
+			};
 			containerTest.BackBuffer.NewGraphics2D().Clear(Color.White);
 
-			FlowLayoutWidget allButtons = new FlowLayoutWidget(FlowDirection.TopToBottom);
+			var allButtons = new FlowLayoutWidget(FlowDirection.TopToBottom);
 			{
-				FlowLayoutWidget topButtonBar = new FlowLayoutWidget();
+				var topButtonBar = new FlowLayoutWidget();
 				{
-					Button button1 = new Button("button1");
-					button1.Margin = buttonMargin;
+					var button1 = new Button("button1")
+					{
+						Margin = buttonMargin
+					};
 					topButtonBar.AddChild(button1);
 				}
+
 				allButtons.AddChild(topButtonBar);
 
-				FlowLayoutWidget bottomButtonBar = new FlowLayoutWidget();
+				var bottomButtonBar = new FlowLayoutWidget();
 				{
-					Button button2 = new Button("wide button2");
-					button2.Margin = buttonMargin;
+					var button2 = new Button("wide button2")
+					{
+						Margin = buttonMargin
+					};
 					bottomButtonBar.AddChild(button2);
 				}
+
 				allButtons.AddChild(bottomButtonBar);
 			}
+
 			containerTest.AddChild(allButtons);
 			containerTest.OnDraw(containerTest.NewGraphics2D());
-			ImageBuffer controlImage = new ImageBuffer(containerTest.BackBuffer, new BlenderBGRA());
+			var controlImage = new ImageBuffer(containerTest.BackBuffer, new BlenderBGRA());
 
 			OutputImage(controlImage, "image-control.tga");
 
@@ -455,8 +488,8 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void LeftToRightTests()
 		{
-			LeftToRightTest(new BorderDouble(), new BorderDouble());
-			LeftToRightTest(new BorderDouble(), new BorderDouble(3));
+			LeftToRightTest(default(BorderDouble), default(BorderDouble));
+			LeftToRightTest(default(BorderDouble), new BorderDouble(3));
 			LeftToRightTest(new BorderDouble(2), new BorderDouble(0));
 			LeftToRightTest(new BorderDouble(2), new BorderDouble(3));
 			LeftToRightTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
@@ -464,28 +497,34 @@ namespace MatterHackers.Agg.UI.Tests
 
 		private void LeftToRightTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
-			GuiWidget containerControl = new GuiWidget(300, 200);
-			containerControl.DoubleBuffer = true;
-			Button controlButton1 = new Button("buttonLeft");
+			var containerControl = new GuiWidget(300, 200)
+			{
+				DoubleBuffer = true
+			};
+			var controlButton1 = new Button("buttonLeft");
 			controlButton1.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Left, controlButton1.OriginRelativeParent.Y);
 			containerControl.AddChild(controlButton1);
-			Button controlButton2 = new Button("buttonRight");
+			var controlButton2 = new Button("buttonRight");
 			controlButton2.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Width + buttonMargin.Left + controlButton1.Width, controlButton2.OriginRelativeParent.Y);
 			containerControl.AddChild(controlButton2);
 			containerControl.OnDraw(containerControl.NewGraphics2D());
 
-			GuiWidget containerTest = new GuiWidget(300, 200);
-			FlowLayoutWidget flowLayout = new FlowLayoutWidget(FlowDirection.LeftToRight);
+			var containerTest = new GuiWidget(300, 200);
+			var flowLayout = new FlowLayoutWidget(FlowDirection.LeftToRight);
 			flowLayout.AnchorAll();
 			flowLayout.Padding = controlPadding;
 			containerTest.DoubleBuffer = true;
 
-			Button testButton1 = new Button("buttonLeft");
-			testButton1.Margin = buttonMargin;
+			var testButton1 = new Button("buttonLeft")
+			{
+				Margin = buttonMargin
+			};
 			flowLayout.AddChild(testButton1);
 
-			Button testButton2 = new Button("buttonRight");
-			testButton2.Margin = buttonMargin;
+			var testButton2 = new Button("buttonRight")
+			{
+				Margin = buttonMargin
+			};
 			flowLayout.AddChild(testButton2);
 
 			containerTest.AddChild(flowLayout);
@@ -511,8 +550,8 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void RightToLeftTests()
 		{
-			RightToLeftTest(new BorderDouble(), new BorderDouble());
-			RightToLeftTest(new BorderDouble(), new BorderDouble(3));
+			RightToLeftTest(default(BorderDouble), default(BorderDouble));
+			RightToLeftTest(default(BorderDouble), new BorderDouble(3));
 			RightToLeftTest(new BorderDouble(2), new BorderDouble(0));
 			RightToLeftTest(new BorderDouble(2), new BorderDouble(3));
 			RightToLeftTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
@@ -520,28 +559,34 @@ namespace MatterHackers.Agg.UI.Tests
 
 		private void RightToLeftTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
-			GuiWidget containerControl = new GuiWidget(300, 200);
-			containerControl.DoubleBuffer = true;
-			Button controlButtonRight = new Button("buttonRight");
+			var containerControl = new GuiWidget(300, 200)
+			{
+				DoubleBuffer = true
+			};
+			var controlButtonRight = new Button("buttonRight");
 			controlButtonRight.OriginRelativeParent = new VectorMath.Vector2(containerControl.Width - controlPadding.Right - buttonMargin.Right - controlButtonRight.Width, controlButtonRight.OriginRelativeParent.Y);
 			containerControl.AddChild(controlButtonRight);
-			Button controlButtonLeft = new Button("buttonLeft");
+			var controlButtonLeft = new Button("buttonLeft");
 			controlButtonLeft.OriginRelativeParent = new VectorMath.Vector2(controlButtonRight.BoundsRelativeToParent.Left - buttonMargin.Width - controlButtonLeft.Width, controlButtonLeft.OriginRelativeParent.Y);
 			containerControl.AddChild(controlButtonLeft);
 			containerControl.OnDraw(containerControl.NewGraphics2D());
 
-			GuiWidget containerTest = new GuiWidget(300, 200);
-			FlowLayoutWidget flowLayout = new FlowLayoutWidget(FlowDirection.RightToLeft);
+			var containerTest = new GuiWidget(300, 200);
+			var flowLayout = new FlowLayoutWidget(FlowDirection.RightToLeft);
 			flowLayout.AnchorAll();
 			flowLayout.Padding = controlPadding;
 			containerTest.DoubleBuffer = true;
 
-			Button testButton2 = new Button("buttonRight");
-			testButton2.Margin = buttonMargin;
+			var testButton2 = new Button("buttonRight")
+			{
+				Margin = buttonMargin
+			};
 			flowLayout.AddChild(testButton2);
 
-			Button testButton1 = new Button("buttonLeft");
-			testButton1.Margin = buttonMargin;
+			var testButton1 = new Button("buttonLeft")
+			{
+				Margin = buttonMargin
+			};
 			flowLayout.AddChild(testButton1);
 
 			containerTest.AddChild(flowLayout);
@@ -565,84 +610,86 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
-		public void NestedFitToChildrenParentWidth()
+		public void NestedMaxFitOrStretchToChildrenParentWidth()
 		{
 			// child of flow layout is Stretch
 			{
-				//  _________________________________________
-				//  |            containerControl            |
+				// _________________________________________
+				//  |  containerControl 300x300              |
 				//  | _____________________________________  |
-				//  | |    Max_FitToChildren_ParentWidth   | |
+				//  | |    MaxFitOrStretch                 | |
 				//  | | ________________________ ________  | |
 				//  | | |                      | |       | | |
-				//  | | |    Stretch   | | 10x10 | | |
+				//  | | |    Stretch           | | 10x10 | | |
 				//  | | |______________________| |_______| | |
 				//  | |____________________________________| |
 				//  |________________________________________|
 				//
 
-				GuiWidget containerControl = new GuiWidget(300, 200); // containerControl = 0, 0, 300, 200
-				containerControl.DoubleBuffer = true;
-				FlowLayoutWidget flowWidget = new FlowLayoutWidget()
+				var containerControl = new GuiWidget(300, 200)
 				{
+					DoubleBuffer = true
+				};
+				var maxFitOrStretch = new FlowLayoutWidget()
+				{
+					Name = "MaxFitOrStretch",
 					HAnchor = HAnchor.MaxFitOrStretch,
 				};
-				containerControl.AddChild(flowWidget); // flowWidget = 0, 0, 300, 0
-				GuiWidget fitToChildrenOrParent = new GuiWidget(20, 20)
+				containerControl.AddChild(maxFitOrStretch);
+				var stretch = new GuiWidget(20, 20)
 				{
+					Name = "stretch",
 					HAnchor = HAnchor.Stretch,
 				};
-				flowWidget.AddChild(fitToChildrenOrParent); // flowWidget = 0, 0, 300, 20  fitToChildrenOrParent = 0, 0, 300, 20
-				GuiWidget fixed10x10 = new GuiWidget(10, 10);
-				flowWidget.AddChild(fixed10x10); // flowWidget = 0, 0, 300, 20  fitToChildrenOrParent = 0, 0, 290, 20
+				maxFitOrStretch.AddChild(stretch);
+				var fixed10x10 = new GuiWidget(10, 10);
+				maxFitOrStretch.AddChild(fixed10x10);
 				containerControl.OnDraw(containerControl.NewGraphics2D());
 
-				//OutputImage(containerControl, "container");
-
-				Assert.IsTrue(flowWidget.Width == containerControl.Width);
-				Assert.IsTrue(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width);
+				Assert.IsTrue(maxFitOrStretch.Width == containerControl.Width);
+				Assert.IsTrue(stretch.Width + fixed10x10.Width == containerControl.Width);
 
 				containerControl.Width = 350;
-				Assert.IsTrue(flowWidget.Width == containerControl.Width);
-				Assert.IsTrue(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width);
+				Assert.IsTrue(maxFitOrStretch.Width == containerControl.Width);
+				Assert.IsTrue(stretch.Width + fixed10x10.Width == containerControl.Width);
 
 				containerControl.Width = 310;
-				Assert.IsTrue(flowWidget.Width == containerControl.Width);
-				Assert.IsTrue(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width);
+				Assert.IsTrue(maxFitOrStretch.Width == containerControl.Width);
+				Assert.IsTrue(stretch.Width + fixed10x10.Width == containerControl.Width);
 			}
 
-			// child of flow layout is Max_FitToChildren_ParentWidth
+			// child of flow layout is MaxFitOrStretch
 			{
-				//  ___________________________________________________
+				// ___________________________________________________
 				//  |            containerControl                      |
 				//  | _______________________________________________  |
-				//  | |    Max_FitToChildren_ParentWidth             | |
+				//  | |    MaxFitOrStretch                           | |
 				//  | | _________________________________   _______  | |
 				//  | | |                                | |       | | |
-				//  | | | Max_FitToChildren_ParentWidth  | | 10x10 | | |
+				//  | | | MaxFitOrStretch                | | 10x10 | | |
 				//  | | |________________________________| |_______| | |
 				//  | |______________________________________________| |
 				//  |__________________________________________________|
 				//
 
-				GuiWidget containerControl = new GuiWidget(300, 200); // containerControl = 0, 0, 300, 200
-				containerControl.DoubleBuffer = true;
-				FlowLayoutWidget flowWidget = new FlowLayoutWidget()
+				var containerControl = new GuiWidget(300, 200)
+				{
+					DoubleBuffer = true
+				};
+				var flowWidget = new FlowLayoutWidget()
 				{
 					HAnchor = HAnchor.MaxFitOrStretch,
 				};
 				containerControl.AddChild(flowWidget);
-				GuiWidget fitToChildrenOrParent = new GuiWidget(20, 20)
+				var fitToChildrenOrParent = new GuiWidget(20, 20)
 				{
 					Name = "fitToChildrenOrParent",
 					HAnchor = HAnchor.MaxFitOrStretch,
 				};
-				flowWidget.AddChild(fitToChildrenOrParent); // flowWidget = 0, 0, 300, 20  fitToChildrenOrParent = 0, 0, 300, 20
-				GuiWidget fixed10x10 = new GuiWidget(10, 10);
-				flowWidget.AddChild(fixed10x10); // flowWidget = 0, 0, 300, 20  fitToChildrenOrParent = 0, 0, 290, 20
+				flowWidget.AddChild(fitToChildrenOrParent);
+				var fixed10x10 = new GuiWidget(10, 10);
+				flowWidget.AddChild(fixed10x10);
 				containerControl.OnDraw(containerControl.NewGraphics2D());
-
-				//OutputImage(containerControl, "container");
 
 				Assert.IsTrue(flowWidget.Width == containerControl.Width);
 				Assert.IsTrue(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width);
@@ -658,10 +705,206 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
+		public void NestedMinFitOrStretchToChildrenParentWidth()
+		{
+			// child of flow layout is Stretch
+			{
+				// _________________________________________
+				//  |     containerControl  300x200          |
+				//  | _____________________________________  |
+				//  | |    MinFitOrStretch                 | |
+				//  | |  ______________________            | |
+				//  | | |                     |            | |
+				//  | | |              150x10 |            | |
+				//  | | |_____________________|            | |
+				//  | |____________________________________| |
+				//  |________________________________________|
+
+				var containerControl = new GuiWidget(300, 200)
+				{
+					Name = "containerControl"
+				};
+				containerControl.MinimumSize = Vector2.Zero;
+				containerControl.DoubleBuffer = true;
+				var minFitOrStretch = new FlowLayoutWidget()
+				{
+					Name = "minFitOrStretch",
+					HAnchor = HAnchor.MinFitOrStretch,
+				};
+				containerControl.AddChild(minFitOrStretch);
+				Assert.AreEqual(0, minFitOrStretch.Width);
+
+				var fixed150x10 = new GuiWidget(150, 10)
+				{
+					MinimumSize = Vector2.Zero
+				};
+				minFitOrStretch.AddChild(fixed150x10);
+				Assert.AreEqual(150, minFitOrStretch.Width);
+
+				containerControl.Width = 100;
+				Assert.AreEqual(100, minFitOrStretch.Width);
+
+				containerControl.Width = 200;
+				Assert.AreEqual(150, minFitOrStretch.Width);
+
+				fixed150x10.Width = 21;
+				Assert.AreEqual(21, minFitOrStretch.Width);
+			}
+
+			// in this test the main container starts out as the constraint
+			{
+				// _________________________________________
+				//  |     containerControl  123x200          |
+				//  | _____________________________________  |
+				//  | |    MinFitOrStretch                 | |
+				//  | |  ______________________            | |
+				//  | | |                     |            | |
+				//  | | |              150x10 |            | |
+				//  | | |_____________________|            | |
+				//  | |____________________________________| |
+				//  |________________________________________|
+
+				var containerControl = new GuiWidget(123, 200)
+				{
+					Name = "containerControl"
+				};
+				containerControl.MinimumSize = Vector2.Zero;
+				containerControl.DoubleBuffer = true;
+				var minFitOrStretch = new FlowLayoutWidget()
+				{
+					Name = "minFitOrStretch",
+					HAnchor = HAnchor.MinFitOrStretch,
+				};
+				containerControl.AddChild(minFitOrStretch);
+				Assert.AreEqual(0, minFitOrStretch.Width);
+
+				var fixed150x10 = new GuiWidget(150, 10)
+				{
+					MinimumSize = Vector2.Zero
+				};
+				minFitOrStretch.AddChild(fixed150x10);
+				Assert.AreEqual(123, minFitOrStretch.Width);
+
+				containerControl.Width = 100;
+				Assert.AreEqual(100, minFitOrStretch.Width);
+
+				containerControl.Width = 200;
+				Assert.AreEqual(150, minFitOrStretch.Width);
+
+				fixed150x10.Width = 21;
+				Assert.AreEqual(21, fixed150x10.Width);
+				Assert.AreEqual(21, minFitOrStretch.Width);
+			}
+
+			// child of flow layout is Stretch
+			{
+				// _________________________________________
+				//  |     containerControl  300x200          |
+				//  | _____________________________________  |
+				//  | |    MinFitOrStretch                 | |
+				//  | | ________________________ ________  | |
+				//  | | |                      | |       | | |
+				//  | | |    Stretch           | | 10x10 | | |
+				//  | | |______________________| |_______| | |
+				//  | |____________________________________| |
+				//  |________________________________________|
+
+				var containerControl = new GuiWidget(300, 200)
+				{
+					DoubleBuffer = true
+				};
+				var minFitOrStretch = new FlowLayoutWidget()
+				{
+					Name = "minFitOrStretch",
+					HAnchor = HAnchor.MinFitOrStretch,
+				};
+				containerControl.AddChild(minFitOrStretch);
+				var stretch = new GuiWidget(20, 20)
+				{
+					Name = "stretch",
+					HAnchor = HAnchor.Stretch,
+				};
+				minFitOrStretch.AddChild(stretch);
+				var fixed10x10 = new GuiWidget(10, 10);
+				minFitOrStretch.AddChild(fixed10x10);
+				containerControl.OnDraw(containerControl.NewGraphics2D());
+
+				Assert.AreEqual(30, minFitOrStretch.Width);
+				Assert.AreEqual(20, stretch.Width);
+
+				containerControl.Width = 350;
+				Assert.AreEqual(30, minFitOrStretch.Width);
+				Assert.AreEqual(20, stretch.Width);
+
+				containerControl.Width = 310;
+				Assert.AreEqual(30, minFitOrStretch.Width);
+				Assert.AreEqual(20, stretch.Width);
+
+				fixed10x10.Width = 21;
+				Assert.AreEqual(41, minFitOrStretch.Width);
+				Assert.AreEqual(20, stretch.Width);
+			}
+
+			return; // this last test does not work yet
+			// child of flow layout is MaxFitOrStretch
+			{
+				// ___________________________________________________
+				//  |            containerControl 300x200             |
+				//  | ______________________________________________  |
+				//  | |    MinFitOrStretchOuter                     | |
+				//  | | ________________________________________    | |
+				//  | | |                      _________        |   | |
+				//  | | |                      |       |        |   | |
+				//  | | | MinFitOrStretchInner | 10x10 |        |   | |
+				//  | | |                      |_______|        |   | |
+				//  | | |_______________________________________|   | |
+				//  | |_____________________________________________| |
+				//  |_________________________________________________|
+
+				var containerControl = new GuiWidget(300, 200)
+				{
+					DoubleBuffer = true
+				};
+				var minFitOrStretchOuter = new FlowLayoutWidget()
+				{
+					Name = "minFitOrStretchOuter",
+					HAnchor = HAnchor.MinFitOrStretch,
+					MinimumSize = Vector2.Zero,
+				};
+				containerControl.AddChild(minFitOrStretchOuter);
+				var minFitOrStretchInner = new FlowLayoutWidget()
+				{
+					Name = "minFitOrStretchInner",
+					HAnchor = HAnchor.MinFitOrStretch,
+					MinimumSize = Vector2.Zero,
+				};
+				minFitOrStretchOuter.AddChild(minFitOrStretchInner);
+
+				var fixed10x10 = new GuiWidget(10, 10)
+				{
+					Name = "fixed10x10"
+				};
+
+				minFitOrStretchInner.AddChild(fixed10x10);
+
+				Assert.AreEqual(10, minFitOrStretchInner.Width);
+				Assert.AreEqual(10, minFitOrStretchOuter.Width);
+
+				containerControl.Width = 350;
+				Assert.AreEqual(10, minFitOrStretchInner.Width);
+				Assert.AreEqual(10, minFitOrStretchOuter.Width);
+
+				containerControl.Width = 300;
+				Assert.AreEqual(10, minFitOrStretchInner.Width);
+				Assert.AreEqual(10, minFitOrStretchOuter.Width);
+			}
+		}
+
+		[Test]
 		public void LeftToRightAnchorLeftBottomTests()
 		{
-			LeftToRightAnchorLeftBottomTest(new BorderDouble(), new BorderDouble());
-			LeftToRightAnchorLeftBottomTest(new BorderDouble(), new BorderDouble(3));
+			LeftToRightAnchorLeftBottomTest(default(BorderDouble), default(BorderDouble));
+			LeftToRightAnchorLeftBottomTest(default(BorderDouble), new BorderDouble(3));
 			LeftToRightAnchorLeftBottomTest(new BorderDouble(2), new BorderDouble(0));
 			LeftToRightAnchorLeftBottomTest(new BorderDouble(2), new BorderDouble(3));
 			LeftToRightAnchorLeftBottomTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
@@ -669,30 +912,36 @@ namespace MatterHackers.Agg.UI.Tests
 
 		private void LeftToRightAnchorLeftBottomTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
-			GuiWidget containerControl = new GuiWidget(300, 200);
-			containerControl.DoubleBuffer = true;
-			Button controlButton1 = new Button("buttonLeft");
+			var containerControl = new GuiWidget(300, 200)
+			{
+				DoubleBuffer = true
+			};
+			var controlButton1 = new Button("buttonLeft");
 			controlButton1.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Left, controlButton1.OriginRelativeParent.Y + controlPadding.Bottom + buttonMargin.Bottom);
 			containerControl.AddChild(controlButton1);
-			Button controlButton2 = new Button("buttonRight");
+			var controlButton2 = new Button("buttonRight");
 			controlButton2.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Width + buttonMargin.Left + controlButton1.Width, controlButton2.OriginRelativeParent.Y + controlPadding.Bottom + buttonMargin.Bottom);
 			containerControl.AddChild(controlButton2);
 			containerControl.OnDraw(containerControl.NewGraphics2D());
 
-			GuiWidget containerTest = new GuiWidget(300, 200);
-			FlowLayoutWidget flowLayout = new FlowLayoutWidget(FlowDirection.LeftToRight);
+			var containerTest = new GuiWidget(300, 200);
+			var flowLayout = new FlowLayoutWidget(FlowDirection.LeftToRight);
 			flowLayout.AnchorAll();
 			flowLayout.Padding = controlPadding;
 			containerTest.DoubleBuffer = true;
 
-			Button testButton1 = new Button("buttonLeft");
-			testButton1.VAnchor = VAnchor.Bottom;
-			testButton1.Margin = buttonMargin;
+			var testButton1 = new Button("buttonLeft")
+			{
+				VAnchor = VAnchor.Bottom,
+				Margin = buttonMargin
+			};
 			flowLayout.AddChild(testButton1);
 
-			Button testButton2 = new Button("buttonRight");
-			testButton2.VAnchor = VAnchor.Bottom;
-			testButton2.Margin = buttonMargin;
+			var testButton2 = new Button("buttonRight")
+			{
+				VAnchor = VAnchor.Bottom,
+				Margin = buttonMargin
+			};
 			flowLayout.AddChild(testButton2);
 
 			containerTest.AddChild(flowLayout);
@@ -718,8 +967,8 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void AnchorLeftRightTests()
 		{
-			FlowTopBottomAnchorChildrenLeftRightTest(new BorderDouble(), new BorderDouble());
-			FlowTopBottomAnchorChildrenLeftRightTest(new BorderDouble(), new BorderDouble(3));
+			FlowTopBottomAnchorChildrenLeftRightTest(default(BorderDouble), default(BorderDouble));
+			FlowTopBottomAnchorChildrenLeftRightTest(default(BorderDouble), new BorderDouble(3));
 			FlowTopBottomAnchorChildrenLeftRightTest(new BorderDouble(2), new BorderDouble(0));
 			FlowTopBottomAnchorChildrenLeftRightTest(new BorderDouble(2), new BorderDouble(3));
 			FlowTopBottomAnchorChildrenLeftRightTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
@@ -727,33 +976,41 @@ namespace MatterHackers.Agg.UI.Tests
 
 		public void FlowTopBottomAnchorChildrenLeftRightTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
-			GuiWidget containerControl = new GuiWidget(300, 500);
-			containerControl.DoubleBuffer = true;
-			Button controlButtonWide = new Button("Button Wide Text");
+			var containerControl = new GuiWidget(300, 500)
+			{
+				DoubleBuffer = true
+			};
+			var controlButtonWide = new Button("Button Wide Text");
 			containerControl.AddChild(controlButtonWide);
-			Button controlButton1 = new Button("button1");
+			var controlButton1 = new Button("button1");
 			controlButton1.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Left + controlButton1.OriginRelativeParent.X, controlPadding.Bottom + buttonMargin.Bottom);
 			controlButtonWide.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Left + controlButtonWide.OriginRelativeParent.X, controlButton1.BoundsRelativeToParent.Top + buttonMargin.Height);
 			controlButton1.LocalBounds = controlButtonWide.LocalBounds;
 			containerControl.AddChild(controlButton1);
 			containerControl.OnDraw(containerControl.NewGraphics2D());
 
-			GuiWidget containerTest = new GuiWidget(300, 500);
-			FlowLayoutWidget flowLayout = new FlowLayoutWidget(FlowDirection.TopToBottom);
-			flowLayout.Padding = controlPadding;
+			var containerTest = new GuiWidget(300, 500);
+			var flowLayout = new FlowLayoutWidget(FlowDirection.TopToBottom)
+			{
+				Padding = controlPadding
+			};
 			containerTest.DoubleBuffer = true;
 
-			Button testButtonWide = new Button("Button Wide Text");
-			testButtonWide.HAnchor = HAnchor.Left;
-			testButtonWide.Margin = buttonMargin;
+			var testButtonWide = new Button("Button Wide Text")
+			{
+				HAnchor = HAnchor.Left,
+				Margin = buttonMargin
+			};
 			flowLayout.AddChild(testButtonWide);
 
 			double correctHeightOfFlowLayout = testButtonWide.Height + flowLayout.Padding.Height + testButtonWide.Margin.Height;
 			Assert.AreEqual(flowLayout.Height, correctHeightOfFlowLayout, .001);
 
-			Button testButton1 = new Button("button1");
-			testButton1.Margin = buttonMargin;
-			testButton1.HAnchor = HAnchor.Left | HAnchor.Right;
+			var testButton1 = new Button("button1")
+			{
+				Margin = buttonMargin,
+				HAnchor = HAnchor.Left | HAnchor.Right
+			};
 			flowLayout.AddChild(testButton1);
 
 			correctHeightOfFlowLayout += testButton1.Height + testButton1.Margin.Height;
@@ -787,8 +1044,8 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void NestedFlowWidgetsTopToBottomTests()
 		{
-			NestedFlowWidgetsTopToBottomTest(new BorderDouble(), new BorderDouble());
-			NestedFlowWidgetsTopToBottomTest(new BorderDouble(), new BorderDouble(3));
+			NestedFlowWidgetsTopToBottomTest(default(BorderDouble), default(BorderDouble));
+			NestedFlowWidgetsTopToBottomTest(default(BorderDouble), new BorderDouble(3));
 			NestedFlowWidgetsTopToBottomTest(new BorderDouble(2), new BorderDouble(0));
 			NestedFlowWidgetsTopToBottomTest(new BorderDouble(2), new BorderDouble(3));
 			NestedFlowWidgetsTopToBottomTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
@@ -796,13 +1053,14 @@ namespace MatterHackers.Agg.UI.Tests
 
 		public void NestedFlowWidgetsTopToBottomTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
-			GuiWidget containerControl = new GuiWidget(300, 500);
-			containerControl.Padding = controlPadding;
-			containerControl.DoubleBuffer = true;
-
+			var containerControl = new GuiWidget(300, 500)
 			{
-				Button buttonTop = new Button("buttonTop");
-				Button buttonBottom = new Button("buttonBottom");
+				Padding = controlPadding,
+				DoubleBuffer = true
+			};
+			{
+				var buttonTop = new Button("buttonTop");
+				var buttonBottom = new Button("buttonBottom");
 				buttonTop.OriginRelativeParent = new VectorMath.Vector2(buttonTop.OriginRelativeParent.X, containerControl.LocalBounds.Top - buttonMargin.Top - controlPadding.Top - buttonTop.Height);
 				buttonBottom.OriginRelativeParent = new VectorMath.Vector2(buttonBottom.OriginRelativeParent.X, buttonTop.BoundsRelativeToParent.Bottom - buttonBottom.Height - buttonMargin.Height);
 				containerControl.AddChild(buttonTop);
@@ -810,25 +1068,31 @@ namespace MatterHackers.Agg.UI.Tests
 				containerControl.OnDraw(containerControl.NewGraphics2D());
 			}
 
-			GuiWidget containerTest = new GuiWidget(300, 500);
-			containerTest.DoubleBuffer = true;
+			var containerTest = new GuiWidget(300, 500)
 			{
-				FlowLayoutWidget topToBottomFlowLayoutAll = new FlowLayoutWidget(FlowDirection.TopToBottom);
+				DoubleBuffer = true
+			};
+			{
+				var topToBottomFlowLayoutAll = new FlowLayoutWidget(FlowDirection.TopToBottom);
 				topToBottomFlowLayoutAll.AnchorAll();
 				topToBottomFlowLayoutAll.Padding = controlPadding;
 				{
-					FlowLayoutWidget topToBottomFlowLayoutTop = new FlowLayoutWidget(FlowDirection.TopToBottom);
-					Button buttonTop = new Button("buttonTop");
-					buttonTop.Margin = buttonMargin;
+					var topToBottomFlowLayoutTop = new FlowLayoutWidget(FlowDirection.TopToBottom);
+					var buttonTop = new Button("buttonTop")
+					{
+						Margin = buttonMargin
+					};
 					topToBottomFlowLayoutTop.AddChild(buttonTop);
 					topToBottomFlowLayoutTop.SetBoundsToEncloseChildren();
 					topToBottomFlowLayoutAll.AddChild(topToBottomFlowLayoutTop);
 				}
 
 				{
-					FlowLayoutWidget topToBottomFlowLayoutBottom = new FlowLayoutWidget(FlowDirection.TopToBottom);
-					Button buttonBottom = new Button("buttonBottom");
-					buttonBottom.Margin = buttonMargin;
+					var topToBottomFlowLayoutBottom = new FlowLayoutWidget(FlowDirection.TopToBottom);
+					var buttonBottom = new Button("buttonBottom")
+					{
+						Margin = buttonMargin
+					};
 					topToBottomFlowLayoutBottom.AddChild(buttonBottom);
 					topToBottomFlowLayoutBottom.SetBoundsToEncloseChildren();
 					topToBottomFlowLayoutAll.AddChild(topToBottomFlowLayoutBottom);
@@ -847,8 +1111,8 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void NestedFlowWidgetsRightToLeftTests()
 		{
-			NestedFlowWidgetsRightToLeftTest(new BorderDouble(), new BorderDouble());
-			NestedFlowWidgetsRightToLeftTest(new BorderDouble(), new BorderDouble(3));
+			NestedFlowWidgetsRightToLeftTest(default(BorderDouble), default(BorderDouble));
+			NestedFlowWidgetsRightToLeftTest(default(BorderDouble), new BorderDouble(3));
 			NestedFlowWidgetsRightToLeftTest(new BorderDouble(2), new BorderDouble(0));
 			NestedFlowWidgetsRightToLeftTest(new BorderDouble(2), new BorderDouble(3));
 			NestedFlowWidgetsRightToLeftTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
@@ -856,13 +1120,14 @@ namespace MatterHackers.Agg.UI.Tests
 
 		public void NestedFlowWidgetsRightToLeftTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
-			GuiWidget containerControl = new GuiWidget(500, 300);
-			containerControl.Padding = controlPadding;
-			containerControl.DoubleBuffer = true;
-
+			var containerControl = new GuiWidget(500, 300)
 			{
-				Button buttonRight = new Button("buttonRight");
-				Button buttonLeft = new Button("buttonLeft");
+				Padding = controlPadding,
+				DoubleBuffer = true
+			};
+			{
+				var buttonRight = new Button("buttonRight");
+				var buttonLeft = new Button("buttonLeft");
 				buttonRight.OriginRelativeParent = new VectorMath.Vector2(containerControl.LocalBounds.Right - controlPadding.Right - buttonMargin.Right - buttonRight.Width, buttonRight.OriginRelativeParent.Y + controlPadding.Bottom + buttonMargin.Bottom);
 				buttonLeft.OriginRelativeParent = new VectorMath.Vector2(buttonRight.BoundsRelativeToParent.Left - buttonMargin.Width - buttonLeft.Width, buttonLeft.OriginRelativeParent.Y + controlPadding.Bottom + buttonMargin.Bottom);
 				containerControl.AddChild(buttonRight);
@@ -870,16 +1135,20 @@ namespace MatterHackers.Agg.UI.Tests
 				containerControl.OnDraw(containerControl.NewGraphics2D());
 			}
 
-			GuiWidget containerTest = new GuiWidget(500, 300);
-			containerTest.DoubleBuffer = true;
+			var containerTest = new GuiWidget(500, 300)
 			{
-				FlowLayoutWidget rightToLeftFlowLayoutAll = new FlowLayoutWidget(FlowDirection.RightToLeft);
+				DoubleBuffer = true
+			};
+			{
+				var rightToLeftFlowLayoutAll = new FlowLayoutWidget(FlowDirection.RightToLeft);
 				rightToLeftFlowLayoutAll.AnchorAll();
 				rightToLeftFlowLayoutAll.Padding = controlPadding;
 				{
-					FlowLayoutWidget rightToLeftFlowLayoutRight = new FlowLayoutWidget(FlowDirection.RightToLeft);
-					Button buttonRight = new Button("buttonRight");
-					buttonRight.Margin = buttonMargin;
+					var rightToLeftFlowLayoutRight = new FlowLayoutWidget(FlowDirection.RightToLeft);
+					var buttonRight = new Button("buttonRight")
+					{
+						Margin = buttonMargin
+					};
 					rightToLeftFlowLayoutRight.AddChild(buttonRight);
 					rightToLeftFlowLayoutRight.SetBoundsToEncloseChildren();
 					rightToLeftFlowLayoutRight.VAnchor = VAnchor.Bottom;
@@ -887,9 +1156,11 @@ namespace MatterHackers.Agg.UI.Tests
 				}
 
 				{
-					FlowLayoutWidget rightToLeftFlowLayoutLeft = new FlowLayoutWidget(FlowDirection.RightToLeft);
-					Button buttonLeft = new Button("buttonLeft");
-					buttonLeft.Margin = buttonMargin;
+					var rightToLeftFlowLayoutLeft = new FlowLayoutWidget(FlowDirection.RightToLeft);
+					var buttonLeft = new Button("buttonLeft")
+					{
+						Margin = buttonMargin
+					};
 					rightToLeftFlowLayoutLeft.AddChild(buttonLeft);
 					rightToLeftFlowLayoutLeft.SetBoundsToEncloseChildren();
 					rightToLeftFlowLayoutLeft.VAnchor = VAnchor.Bottom;
@@ -911,8 +1182,8 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void NestedFlowWidgetsLeftToRightTests()
 		{
-			NestedFlowWidgetsLeftToRightTest(new BorderDouble(), new BorderDouble());
-			NestedFlowWidgetsLeftToRightTest(new BorderDouble(), new BorderDouble(3));
+			NestedFlowWidgetsLeftToRightTest(default(BorderDouble), default(BorderDouble));
+			NestedFlowWidgetsLeftToRightTest(default(BorderDouble), new BorderDouble(3));
 			NestedFlowWidgetsLeftToRightTest(new BorderDouble(2), new BorderDouble(0));
 			NestedFlowWidgetsLeftToRightTest(new BorderDouble(2), new BorderDouble(3));
 			NestedFlowWidgetsLeftToRightTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
@@ -920,13 +1191,14 @@ namespace MatterHackers.Agg.UI.Tests
 
 		public void NestedFlowWidgetsLeftToRightTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
-			GuiWidget containerControl = new GuiWidget(500, 300);
-			containerControl.Padding = controlPadding;
-			containerControl.DoubleBuffer = true;
-
+			var containerControl = new GuiWidget(500, 300)
 			{
-				Button buttonRight = new Button("buttonRight");
-				Button buttonLeft = new Button("buttonLeft");
+				Padding = controlPadding,
+				DoubleBuffer = true
+			};
+			{
+				var buttonRight = new Button("buttonRight");
+				var buttonLeft = new Button("buttonLeft");
 				buttonLeft.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Left, buttonLeft.OriginRelativeParent.Y);
 				buttonRight.OriginRelativeParent = new VectorMath.Vector2(buttonLeft.BoundsRelativeToParent.Right + buttonMargin.Width, buttonRight.OriginRelativeParent.Y);
 				containerControl.AddChild(buttonRight);
@@ -934,25 +1206,31 @@ namespace MatterHackers.Agg.UI.Tests
 				containerControl.OnDraw(containerControl.NewGraphics2D());
 			}
 
-			GuiWidget containerTest = new GuiWidget(500, 300);
-			containerTest.DoubleBuffer = true;
+			var containerTest = new GuiWidget(500, 300)
 			{
-				FlowLayoutWidget leftToRightFlowLayoutAll = new FlowLayoutWidget(FlowDirection.LeftToRight);
+				DoubleBuffer = true
+			};
+			{
+				var leftToRightFlowLayoutAll = new FlowLayoutWidget(FlowDirection.LeftToRight);
 				leftToRightFlowLayoutAll.AnchorAll();
 				leftToRightFlowLayoutAll.Padding = controlPadding;
 				{
-					FlowLayoutWidget leftToRightFlowLayoutLeft = new FlowLayoutWidget(FlowDirection.LeftToRight);
-					Button buttonTop = new Button("buttonLeft");
-					buttonTop.Margin = buttonMargin;
+					var leftToRightFlowLayoutLeft = new FlowLayoutWidget(FlowDirection.LeftToRight);
+					var buttonTop = new Button("buttonLeft")
+					{
+						Margin = buttonMargin
+					};
 					leftToRightFlowLayoutLeft.AddChild(buttonTop);
 					leftToRightFlowLayoutLeft.SetBoundsToEncloseChildren();
 					leftToRightFlowLayoutAll.AddChild(leftToRightFlowLayoutLeft);
 				}
 
 				{
-					FlowLayoutWidget leftToRightFlowLayoutRight = new FlowLayoutWidget(FlowDirection.LeftToRight);
-					Button buttonBottom = new Button("buttonRight");
-					buttonBottom.Margin = buttonMargin;
+					var leftToRightFlowLayoutRight = new FlowLayoutWidget(FlowDirection.LeftToRight);
+					var buttonBottom = new Button("buttonRight")
+					{
+						Margin = buttonMargin
+					};
 					leftToRightFlowLayoutRight.AddChild(buttonBottom);
 					leftToRightFlowLayoutRight.SetBoundsToEncloseChildren();
 					leftToRightFlowLayoutAll.AddChild(leftToRightFlowLayoutRight);
@@ -971,8 +1249,8 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void LeftRightWithAnchorLeftRightChildTests()
 		{
-			LeftRightWithAnchorLeftRightChildTest(new BorderDouble(), new BorderDouble());
-			LeftRightWithAnchorLeftRightChildTest(new BorderDouble(), new BorderDouble(3));
+			LeftRightWithAnchorLeftRightChildTest(default(BorderDouble), default(BorderDouble));
+			LeftRightWithAnchorLeftRightChildTest(default(BorderDouble), new BorderDouble(3));
 			LeftRightWithAnchorLeftRightChildTest(new BorderDouble(2), new BorderDouble(0));
 			LeftRightWithAnchorLeftRightChildTest(new BorderDouble(2), new BorderDouble(3));
 			LeftRightWithAnchorLeftRightChildTest(new BorderDouble(2, 4, 6, 8), new BorderDouble(1, 3, 5, 7));
@@ -981,12 +1259,14 @@ namespace MatterHackers.Agg.UI.Tests
 		public void LeftRightWithAnchorLeftRightChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			double buttonSize = 40;
-			GuiWidget containerControl = new GuiWidget(buttonSize * 6, buttonSize * 3);
-			containerControl.Padding = controlPadding;
-			containerControl.DoubleBuffer = true;
+			var containerControl = new GuiWidget(buttonSize * 6, buttonSize * 3)
+			{
+				Padding = controlPadding,
+				DoubleBuffer = true
+			};
 
-			RectangleDouble[] eightControlRectangles = new RectangleDouble[6];
-			Color[] testColors = new Color[] { Color.Red, Color.Orange, Color.Yellow, Color.YellowGreen, Color.Green, Color.Blue };
+			var eightControlRectangles = new RectangleDouble[6];
+			var testColors = new Color[] { Color.Red, Color.Orange, Color.Yellow, Color.YellowGreen, Color.Green, Color.Blue };
 			{
 				double currentleft = controlPadding.Left + buttonMargin.Left;
 				double buttonHeightWithMargin = buttonSize + buttonMargin.Height;
@@ -1028,16 +1308,18 @@ namespace MatterHackers.Agg.UI.Tests
 				}
 			}
 
-			GuiWidget containerTest = new GuiWidget(containerControl.Width, containerControl.Height);
-			FlowLayoutWidget leftToRightFlowLayoutAll = new FlowLayoutWidget(FlowDirection.LeftToRight);
+			var containerTest = new GuiWidget(containerControl.Width, containerControl.Height);
+			var leftToRightFlowLayoutAll = new FlowLayoutWidget(FlowDirection.LeftToRight);
 			containerTest.DoubleBuffer = true;
 			{
 				leftToRightFlowLayoutAll.AnchorAll();
 				leftToRightFlowLayoutAll.Padding = controlPadding;
 				{
-					GuiWidget left = new GuiWidget(buttonSize, buttonSize);
-					left.BackgroundColor = testColors[0];
-					left.Margin = buttonMargin;
+					var left = new GuiWidget(buttonSize, buttonSize)
+					{
+						BackgroundColor = testColors[0],
+						Margin = buttonMargin
+					};
 					leftToRightFlowLayoutAll.AddChild(left);
 
 					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Bottom, testColors[1]));
@@ -1045,9 +1327,11 @@ namespace MatterHackers.Agg.UI.Tests
 					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Top, testColors[3]));
 					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Stretch, testColors[4]));
 
-					GuiWidget right = new GuiWidget(buttonSize, buttonSize);
-					right.BackgroundColor = testColors[5];
-					right.Margin = buttonMargin;
+					var right = new GuiWidget(buttonSize, buttonSize)
+					{
+						BackgroundColor = testColors[5],
+						Margin = buttonMargin
+					};
 					leftToRightFlowLayoutAll.AddChild(right);
 				}
 
@@ -1071,19 +1355,21 @@ namespace MatterHackers.Agg.UI.Tests
 
 		private GuiWidget CreateLeftToRightMiddleWidget(BorderDouble buttonMargin, double buttonSize, VAnchor vAnchor, Color color)
 		{
-			GuiWidget middle = new GuiWidget(buttonSize / 2, buttonSize);
-			middle.Margin = buttonMargin;
-			middle.HAnchor = HAnchor.Stretch;
-			middle.VAnchor = vAnchor;
-			middle.BackgroundColor = color;
+			var middle = new GuiWidget(buttonSize / 2, buttonSize)
+			{
+				Margin = buttonMargin,
+				HAnchor = HAnchor.Stretch,
+				VAnchor = vAnchor,
+				BackgroundColor = color
+			};
 			return middle;
 		}
 
 		[Test]
 		public void RightLeftWithAnchorLeftRightChildTests()
 		{
-			RightLeftWithAnchorLeftRightChildTest(new BorderDouble(), new BorderDouble());
-			RightLeftWithAnchorLeftRightChildTest(new BorderDouble(), new BorderDouble(3));
+			RightLeftWithAnchorLeftRightChildTest(default(BorderDouble), default(BorderDouble));
+			RightLeftWithAnchorLeftRightChildTest(default(BorderDouble), new BorderDouble(3));
 			RightLeftWithAnchorLeftRightChildTest(new BorderDouble(2), new BorderDouble(0));
 			RightLeftWithAnchorLeftRightChildTest(new BorderDouble(2), new BorderDouble(3));
 			RightLeftWithAnchorLeftRightChildTest(new BorderDouble(2, 4, 6, 8), new BorderDouble(1, 3, 5, 7));
@@ -1092,12 +1378,14 @@ namespace MatterHackers.Agg.UI.Tests
 		public void RightLeftWithAnchorLeftRightChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			double buttonSize = 40;
-			GuiWidget containerControl = new GuiWidget(buttonSize * 6, buttonSize * 3);
-			containerControl.Padding = controlPadding;
-			containerControl.DoubleBuffer = true;
+			var containerControl = new GuiWidget(buttonSize * 6, buttonSize * 3)
+			{
+				Padding = controlPadding,
+				DoubleBuffer = true
+			};
 
-			RectangleDouble[] eightControlRectangles = new RectangleDouble[6];
-			Color[] testColors = new Color[] { Color.Red, Color.Orange, Color.Yellow, Color.YellowGreen, Color.Green, Color.Blue };
+			var eightControlRectangles = new RectangleDouble[6];
+			var testColors = new Color[] { Color.Red, Color.Orange, Color.Yellow, Color.YellowGreen, Color.Green, Color.Blue };
 			{
 				double currentLeft = containerControl.Width - controlPadding.Right - buttonMargin.Right - buttonSize;
 				double buttonHeightWithMargin = buttonSize + buttonMargin.Height;
@@ -1139,16 +1427,18 @@ namespace MatterHackers.Agg.UI.Tests
 				}
 			}
 
-			GuiWidget containerTest = new GuiWidget(containerControl.Width, containerControl.Height);
-			FlowLayoutWidget rightToLeftFlowLayoutAll = new FlowLayoutWidget(FlowDirection.RightToLeft);
+			var containerTest = new GuiWidget(containerControl.Width, containerControl.Height);
+			var rightToLeftFlowLayoutAll = new FlowLayoutWidget(FlowDirection.RightToLeft);
 			containerTest.DoubleBuffer = true;
 			{
 				rightToLeftFlowLayoutAll.AnchorAll();
 				rightToLeftFlowLayoutAll.Padding = controlPadding;
 				{
-					GuiWidget left = new GuiWidget(buttonSize, buttonSize);
-					left.BackgroundColor = testColors[0];
-					left.Margin = buttonMargin;
+					var left = new GuiWidget(buttonSize, buttonSize)
+					{
+						BackgroundColor = testColors[0],
+						Margin = buttonMargin
+					};
 					rightToLeftFlowLayoutAll.AddChild(left);
 
 					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Bottom, testColors[1]));
@@ -1156,9 +1446,11 @@ namespace MatterHackers.Agg.UI.Tests
 					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Top, testColors[3]));
 					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Stretch, testColors[4]));
 
-					GuiWidget right = new GuiWidget(buttonSize, buttonSize);
-					right.BackgroundColor = testColors[5];
-					right.Margin = buttonMargin;
+					var right = new GuiWidget(buttonSize, buttonSize)
+					{
+						BackgroundColor = testColors[5],
+						Margin = buttonMargin
+					};
 					rightToLeftFlowLayoutAll.AddChild(right);
 				}
 
@@ -1183,8 +1475,8 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void BottomTopWithAnchorBottomTopChildTests()
 		{
-			BottomTopWithAnchorBottomTopChildTest(new BorderDouble(), new BorderDouble());
-			BottomTopWithAnchorBottomTopChildTest(new BorderDouble(), new BorderDouble(3));
+			BottomTopWithAnchorBottomTopChildTest(default(BorderDouble), default(BorderDouble));
+			BottomTopWithAnchorBottomTopChildTest(default(BorderDouble), new BorderDouble(3));
 			BottomTopWithAnchorBottomTopChildTest(new BorderDouble(2), new BorderDouble(0));
 			BottomTopWithAnchorBottomTopChildTest(new BorderDouble(2), new BorderDouble(3));
 			BottomTopWithAnchorBottomTopChildTest(new BorderDouble(2, 4, 6, 8), new BorderDouble(1, 3, 5, 7));
@@ -1193,12 +1485,14 @@ namespace MatterHackers.Agg.UI.Tests
 		public void BottomTopWithAnchorBottomTopChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			double buttonSize = 40;
-			GuiWidget containerControl = new GuiWidget(buttonSize * 3, buttonSize * 6);
-			containerControl.Padding = controlPadding;
-			containerControl.DoubleBuffer = true;
+			var containerControl = new GuiWidget(buttonSize * 3, buttonSize * 6)
+			{
+				Padding = controlPadding,
+				DoubleBuffer = true
+			};
 
-			RectangleDouble[] eightControlRectangles = new RectangleDouble[6];
-			Color[] sixColors = new Color[] { Color.Red, Color.Orange, Color.Yellow, Color.YellowGreen, Color.Green, Color.Blue };
+			var eightControlRectangles = new RectangleDouble[6];
+			var sixColors = new Color[] { Color.Red, Color.Orange, Color.Yellow, Color.YellowGreen, Color.Green, Color.Blue };
 			{
 				double currentBottom = controlPadding.Bottom + buttonMargin.Bottom;
 				double buttonWidthWithMargin = buttonSize + buttonMargin.Width;
@@ -1240,16 +1534,18 @@ namespace MatterHackers.Agg.UI.Tests
 				}
 			}
 
-			GuiWidget containerTest = new GuiWidget(containerControl.Width, containerControl.Height);
-			FlowLayoutWidget bottomToTopFlowLayoutAll = new FlowLayoutWidget(FlowDirection.BottomToTop);
+			var containerTest = new GuiWidget(containerControl.Width, containerControl.Height);
+			var bottomToTopFlowLayoutAll = new FlowLayoutWidget(FlowDirection.BottomToTop);
 			containerTest.DoubleBuffer = true;
 			{
 				bottomToTopFlowLayoutAll.AnchorAll();
 				bottomToTopFlowLayoutAll.Padding = controlPadding;
 				{
-					GuiWidget bottom = new GuiWidget(buttonSize, buttonSize);
-					bottom.BackgroundColor = sixColors[0];
-					bottom.Margin = buttonMargin;
+					var bottom = new GuiWidget(buttonSize, buttonSize)
+					{
+						BackgroundColor = sixColors[0],
+						Margin = buttonMargin
+					};
 					bottomToTopFlowLayoutAll.AddChild(bottom);
 
 					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Left, sixColors[1]));
@@ -1257,9 +1553,11 @@ namespace MatterHackers.Agg.UI.Tests
 					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Right, sixColors[3]));
 					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Stretch, sixColors[4]));
 
-					GuiWidget top = new GuiWidget(buttonSize, buttonSize);
-					top.BackgroundColor = sixColors[5];
-					top.Margin = buttonMargin;
+					var top = new GuiWidget(buttonSize, buttonSize)
+					{
+						BackgroundColor = sixColors[5],
+						Margin = buttonMargin
+					};
 					bottomToTopFlowLayoutAll.AddChild(top);
 				}
 
@@ -1283,19 +1581,21 @@ namespace MatterHackers.Agg.UI.Tests
 
 		private GuiWidget CreateBottomToTopMiddleWidget(BorderDouble buttonMargin, double buttonSize, HAnchor hAnchor, Color color)
 		{
-			GuiWidget middle = new GuiWidget(buttonSize, buttonSize / 2);
-			middle.Margin = buttonMargin;
-			middle.VAnchor = VAnchor.Stretch;
-			middle.HAnchor = hAnchor;
-			middle.BackgroundColor = color;
+			var middle = new GuiWidget(buttonSize, buttonSize / 2)
+			{
+				Margin = buttonMargin,
+				VAnchor = VAnchor.Stretch,
+				HAnchor = hAnchor,
+				BackgroundColor = color
+			};
 			return middle;
 		}
 
 		[Test]
 		public void TopBottomWithAnchorBottomTopChildTests()
 		{
-			TopBottomWithAnchorBottomTopChildTest(new BorderDouble(), new BorderDouble());
-			TopBottomWithAnchorBottomTopChildTest(new BorderDouble(), new BorderDouble(3));
+			TopBottomWithAnchorBottomTopChildTest(default(BorderDouble), default(BorderDouble));
+			TopBottomWithAnchorBottomTopChildTest(default(BorderDouble), new BorderDouble(3));
 			TopBottomWithAnchorBottomTopChildTest(new BorderDouble(2), new BorderDouble(0));
 			TopBottomWithAnchorBottomTopChildTest(new BorderDouble(2), new BorderDouble(3));
 			TopBottomWithAnchorBottomTopChildTest(new BorderDouble(2, 4, 6, 8), new BorderDouble(1, 3, 5, 7));
@@ -1304,12 +1604,14 @@ namespace MatterHackers.Agg.UI.Tests
 		public void TopBottomWithAnchorBottomTopChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			double buttonSize = 40;
-			GuiWidget containerControl = new GuiWidget(buttonSize * 3, buttonSize * 6);
-			containerControl.Padding = controlPadding;
-			containerControl.DoubleBuffer = true;
+			var containerControl = new GuiWidget(buttonSize * 3, buttonSize * 6)
+			{
+				Padding = controlPadding,
+				DoubleBuffer = true
+			};
 
-			RectangleDouble[] eightControlRectangles = new RectangleDouble[6];
-			Color[] testColors = new Color[] { Color.Red, Color.Orange, Color.Yellow, Color.YellowGreen, Color.Green, Color.Blue };
+			var eightControlRectangles = new RectangleDouble[6];
+			var testColors = new Color[] { Color.Red, Color.Orange, Color.Yellow, Color.YellowGreen, Color.Green, Color.Blue };
 			{
 				double currentBottom = containerControl.Height - controlPadding.Top - buttonMargin.Top - buttonSize;
 				double buttonWidthWithMargin = buttonSize + buttonMargin.Width;
@@ -1351,16 +1653,18 @@ namespace MatterHackers.Agg.UI.Tests
 				}
 			}
 
-			GuiWidget containerTest = new GuiWidget(containerControl.Width, containerControl.Height);
-			FlowLayoutWidget bottomToTopFlowLayoutAll = new FlowLayoutWidget(FlowDirection.TopToBottom);
+			var containerTest = new GuiWidget(containerControl.Width, containerControl.Height);
+			var bottomToTopFlowLayoutAll = new FlowLayoutWidget(FlowDirection.TopToBottom);
 			containerTest.DoubleBuffer = true;
 			{
 				bottomToTopFlowLayoutAll.AnchorAll();
 				bottomToTopFlowLayoutAll.Padding = controlPadding;
 				{
-					GuiWidget top = new GuiWidget(buttonSize, buttonSize);
-					top.BackgroundColor = testColors[0];
-					top.Margin = buttonMargin;
+					var top = new GuiWidget(buttonSize, buttonSize)
+					{
+						BackgroundColor = testColors[0],
+						Margin = buttonMargin
+					};
 					bottomToTopFlowLayoutAll.AddChild(top);
 
 					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Left, testColors[1]));
@@ -1368,9 +1672,11 @@ namespace MatterHackers.Agg.UI.Tests
 					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Right, testColors[3]));
 					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Stretch, testColors[4]));
 
-					GuiWidget bottom = new GuiWidget(buttonSize, buttonSize);
-					bottom.BackgroundColor = testColors[5];
-					bottom.Margin = buttonMargin;
+					var bottom = new GuiWidget(buttonSize, buttonSize)
+					{
+						BackgroundColor = testColors[5],
+						Margin = buttonMargin
+					};
 					bottomToTopFlowLayoutAll.AddChild(bottom);
 				}
 
@@ -1397,29 +1703,29 @@ namespace MatterHackers.Agg.UI.Tests
 			// This test is to prove that a flow layout widget always has it's min size set
 			// to the enclosing bounds size of all it's childrens min size.
 			// The code to be tested will expand the flow layouts min size as it's children's min size change.
-			GuiWidget containerTest = new GuiWidget(640, 480);
-			FlowLayoutWidget topToBottomFlowLayoutAll = new FlowLayoutWidget(FlowDirection.TopToBottom);
+			var containerTest = new GuiWidget(640, 480);
+			var topToBottomFlowLayoutAll = new FlowLayoutWidget(FlowDirection.TopToBottom);
 			containerTest.AddChild(topToBottomFlowLayoutAll);
 			containerTest.DoubleBuffer = true;
 
-			FlowLayoutWidget topLeftToRight = new FlowLayoutWidget(FlowDirection.LeftToRight);
+			var topLeftToRight = new FlowLayoutWidget(FlowDirection.LeftToRight);
 			topToBottomFlowLayoutAll.AddChild(topLeftToRight);
 			GuiWidget bottomLeftToRight = new FlowLayoutWidget(FlowDirection.LeftToRight);
 			topToBottomFlowLayoutAll.AddChild(bottomLeftToRight);
 
 			topLeftToRight.AddChild(new Button("top button"));
 
-			FlowLayoutWidget bottomContentTopToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom);
+			var bottomContentTopToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom);
 			bottomLeftToRight.AddChild(bottomContentTopToBottom);
 
-			Button button1 = new Button("button1");
+			var button1 = new Button("button1");
 			Assert.IsTrue(button1.MinimumSize.X > 0, "Buttons should set their min size on construction.");
 			bottomContentTopToBottom.AddChild(button1);
-			//Assert.IsTrue(bottomContentTopToBottom.MinimumSize.x >= button1.MinimumSize.x, "There should be space for the button.");
+			// Assert.IsTrue(bottomContentTopToBottom.MinimumSize.x >= button1.MinimumSize.x, "There should be space for the button.");
 			bottomContentTopToBottom.AddChild(new Button("button2"));
-			Button wideButton = new Button("button3 Wide");
+			var wideButton = new Button("button3 Wide");
 			bottomContentTopToBottom.AddChild(wideButton);
-			//Assert.IsTrue(bottomContentTopToBottom.MinimumSize.x >= wideButton.MinimumSize.x, "These should be space for the button.");
+			// Assert.IsTrue(bottomContentTopToBottom.MinimumSize.x >= wideButton.MinimumSize.x, "These should be space for the button.");
 
 			containerTest.BackgroundColor = Color.White;
 			containerTest.OnDrawBackground(containerTest.NewGraphics2D());
@@ -1434,14 +1740,14 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void ChildVisibilityChangeCauseResize()
 		{
-			//Test whether toggling the visibility of children changes the flow layout
-			GuiWidget containerTest = new GuiWidget(640, 480);
-			FlowLayoutWidget topToBottomFlowLayoutAll = new FlowLayoutWidget(FlowDirection.TopToBottom);
+			// Test whether toggling the visibility of children changes the flow layout
+			var containerTest = new GuiWidget(640, 480);
+			var topToBottomFlowLayoutAll = new FlowLayoutWidget(FlowDirection.TopToBottom);
 			containerTest.AddChild(topToBottomFlowLayoutAll);
 
-			GuiWidget item1 = new GuiWidget(1, 20);
-			GuiWidget item2 = new GuiWidget(1, 30);
-			GuiWidget item3 = new GuiWidget(1, 40);
+			var item1 = new GuiWidget(1, 20);
+			var item2 = new GuiWidget(1, 30);
+			var item3 = new GuiWidget(1, 40);
 
 			topToBottomFlowLayoutAll.AddChild(item1);
 			Assert.IsTrue(topToBottomFlowLayoutAll.Height == 20);
@@ -1458,15 +1764,19 @@ namespace MatterHackers.Agg.UI.Tests
 		internal void EnsureCorrectMinimumSize()
 		{
 			{
-				GuiWidget containerTest = new GuiWidget(640, 480);
-				containerTest.DoubleBuffer = true;
-				FlowLayoutWidget leftToRightLayout = new FlowLayoutWidget(FlowDirection.LeftToRight);
+				var containerTest = new GuiWidget(640, 480)
+				{
+					DoubleBuffer = true
+				};
+				var leftToRightLayout = new FlowLayoutWidget(FlowDirection.LeftToRight);
 				containerTest.AddChild(leftToRightLayout);
 
-				GuiWidget item1 = new GuiWidget(10, 11);
-				GuiWidget item2 = new GuiWidget(20, 22);
-				GuiWidget item3 = new GuiWidget(30, 33);
-				item3.HAnchor = HAnchor.Stretch;
+				var item1 = new GuiWidget(10, 11);
+				var item2 = new GuiWidget(20, 22);
+				var item3 = new GuiWidget(30, 33)
+				{
+					HAnchor = HAnchor.Stretch
+				};
 
 				leftToRightLayout.AddChild(item1);
 				leftToRightLayout.AddChild(item2);
@@ -1475,45 +1785,49 @@ namespace MatterHackers.Agg.UI.Tests
 				leftToRightLayout.AnchorAll();
 				containerTest.OnDraw(containerTest.NewGraphics2D());
 				Assert.IsTrue(leftToRightLayout.Width == 640);
-				//Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
 				Assert.IsTrue(leftToRightLayout.Height == 480);
-				//Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
 				Assert.IsTrue(item3.Width == 610);
 
 				containerTest.OnDraw(containerTest.NewGraphics2D());
 				Assert.IsTrue(leftToRightLayout.Width == 640);
-				//Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
 				Assert.IsTrue(leftToRightLayout.Height == 480);
-				//Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
 				Assert.IsTrue(item3.Width == 610);
 
 				containerTest.Width = 650;
 				containerTest.OnDraw(containerTest.NewGraphics2D());
 				Assert.IsTrue(leftToRightLayout.Width == 650);
-				//Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
 				Assert.IsTrue(leftToRightLayout.Height == 480);
-				//Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
 				Assert.IsTrue(item3.Width == 620);
 
 				containerTest.Width = 640;
 				containerTest.OnDraw(containerTest.NewGraphics2D());
 				Assert.IsTrue(leftToRightLayout.Width == 640);
-				//Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
 				Assert.IsTrue(leftToRightLayout.Height == 480);
-				//Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
 				Assert.IsTrue(item3.Width == 610);
 			}
 
 			{
-				GuiWidget containerTest = new GuiWidget(640, 480);
-				containerTest.DoubleBuffer = true;
-				FlowLayoutWidget leftToRightLayout = new FlowLayoutWidget(FlowDirection.TopToBottom);
+				var containerTest = new GuiWidget(640, 480)
+				{
+					DoubleBuffer = true
+				};
+				var leftToRightLayout = new FlowLayoutWidget(FlowDirection.TopToBottom);
 				containerTest.AddChild(leftToRightLayout);
 
-				GuiWidget item1 = new GuiWidget(10, 11);
-				GuiWidget item2 = new GuiWidget(20, 22);
-				GuiWidget item3 = new GuiWidget(30, 33);
-				item3.VAnchor = VAnchor.Stretch;
+				var item1 = new GuiWidget(10, 11);
+				var item2 = new GuiWidget(20, 22);
+				var item3 = new GuiWidget(30, 33)
+				{
+					VAnchor = VAnchor.Stretch
+				};
 
 				leftToRightLayout.AddChild(item1);
 				leftToRightLayout.AddChild(item2);
@@ -1522,24 +1836,28 @@ namespace MatterHackers.Agg.UI.Tests
 				leftToRightLayout.AnchorAll();
 				containerTest.OnDraw(containerTest.NewGraphics2D());
 				Assert.IsTrue(leftToRightLayout.Width == 640);
-				//Assert.IsTrue(leftToRightLayout.MinimumSize.x == 30);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.x == 30);
 
 				Assert.IsTrue(leftToRightLayout.Height == 480);
-				//Assert.IsTrue(leftToRightLayout.MinimumSize.y == 66);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.y == 66);
 			}
 		}
 
 		internal void EnsureNestedAreMinimumSize()
 		{
-			GuiWidget containerTest = new GuiWidget(640, 480);
-			containerTest.DoubleBuffer = true;
-			FlowLayoutWidget leftToRightLayout = new FlowLayoutWidget(FlowDirection.LeftToRight);
+			var containerTest = new GuiWidget(640, 480)
+			{
+				DoubleBuffer = true
+			};
+			var leftToRightLayout = new FlowLayoutWidget(FlowDirection.LeftToRight);
 			containerTest.AddChild(leftToRightLayout);
 
-			GuiWidget item1 = new GuiWidget(10, 11);
-			GuiWidget item2 = new GuiWidget(20, 22);
-			GuiWidget item3 = new GuiWidget(30, 33);
-			item3.HAnchor = HAnchor.Stretch;
+			var item1 = new GuiWidget(10, 11);
+			var item2 = new GuiWidget(20, 22);
+			var item3 = new GuiWidget(30, 33)
+			{
+				HAnchor = HAnchor.Stretch
+			};
 
 			leftToRightLayout.AddChild(item1);
 			leftToRightLayout.AddChild(item2);
@@ -1566,23 +1884,31 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			// just one column changes correctly
 			{
-				FlowLayoutWidget testColumn = new FlowLayoutWidget(FlowDirection.TopToBottom);
-				testColumn.Name = "testColumn";
+				var testColumn = new FlowLayoutWidget(FlowDirection.TopToBottom)
+				{
+					Name = "testColumn"
+				};
 
-				GuiWidget item1 = new GuiWidget(10, 10);
-				item1.Name = "item1";
+				var item1 = new GuiWidget(10, 10)
+				{
+					Name = "item1"
+				};
 				testColumn.AddChild(item1);
 
 				Assert.IsTrue(testColumn.Height == 10);
 
-				GuiWidget item2 = new GuiWidget(11, 11);
-				item2.Name = "item2";
+				var item2 = new GuiWidget(11, 11)
+				{
+					Name = "item2"
+				};
 				testColumn.AddChild(item2);
 
 				Assert.IsTrue(testColumn.Height == 21);
 
-				GuiWidget item3 = new GuiWidget(12, 12);
-				item3.Name = "item3";
+				var item3 = new GuiWidget(12, 12)
+				{
+					Name = "item3"
+				};
 				testColumn.AddChild(item3);
 
 				Assert.IsTrue(testColumn.Height == 33);
@@ -1602,20 +1928,25 @@ namespace MatterHackers.Agg.UI.Tests
 				CheckBox hideCheckBox;
 				FlowLayoutWidget leftColumn;
 				FlowLayoutWidget topLeftStuff;
-				GuiWidget everything = new GuiWidget(500, 500);
+				var everything = new GuiWidget(500, 500);
 				GuiWidget firstItem;
 				GuiWidget thingToHide;
 				{
-					FlowLayoutWidget twoColumns = new FlowLayoutWidget();
-					twoColumns.Name = "twoColumns";
-					twoColumns.VAnchor = UI.VAnchor.Top;
-
+					var twoColumns = new FlowLayoutWidget
 					{
-						leftColumn = new FlowLayoutWidget(FlowDirection.TopToBottom);
-						leftColumn.Name = "leftColumn";
+						Name = "twoColumns",
+						VAnchor = VAnchor.Top
+					};
+					{
+						leftColumn = new FlowLayoutWidget(FlowDirection.TopToBottom)
 						{
-							topLeftStuff = new FlowLayoutWidget(FlowDirection.TopToBottom);
-							topLeftStuff.Name = "topLeftStuff";
+							Name = "leftColumn"
+						};
+						{
+							topLeftStuff = new FlowLayoutWidget(FlowDirection.TopToBottom)
+							{
+								Name = "topLeftStuff"
+							};
 							firstItem = new TextWidget("Top of Top Stuff");
 							topLeftStuff.AddChild(firstItem);
 							thingToHide = new Button("thing to hide");
@@ -1623,15 +1954,17 @@ namespace MatterHackers.Agg.UI.Tests
 							topLeftStuff.AddChild(new TextWidget("Bottom of Top Stuff"));
 
 							leftColumn.AddChild(topLeftStuff);
-							//leftColumn.DebugShowBounds = true;
+							// leftColumn.DebugShowBounds = true;
 						}
 
 						twoColumns.AddChild(leftColumn);
 					}
 
 					{
-						FlowLayoutWidget rightColumn = new FlowLayoutWidget(FlowDirection.TopToBottom);
-						rightColumn.Name = "rightColumn";
+						var rightColumn = new FlowLayoutWidget(FlowDirection.TopToBottom)
+						{
+							Name = "rightColumn"
+						};
 						hideCheckBox = new CheckBox("Hide Stuff");
 						rightColumn.AddChild(hideCheckBox);
 						hideCheckBox.CheckedStateChanged += (sender, e) =>
@@ -1652,7 +1985,7 @@ namespace MatterHackers.Agg.UI.Tests
 					everything.AddChild(twoColumns);
 
 					Assert.IsTrue(firstItem.OriginRelativeParent.Y == 54);
-					//Assert.IsTrue(firstItem.OriginRelativeParent.y - topLeftStuff.LocalBounds.Bottom == 54);
+					// Assert.IsTrue(firstItem.OriginRelativeParent.y - topLeftStuff.LocalBounds.Bottom == 54);
 					Assert.IsTrue(twoColumns.BoundsRelativeToParent.Top == 500);
 					Assert.IsTrue(leftColumn.BoundsRelativeToParent.Top == 67);
 					Assert.IsTrue(leftColumn.BoundsRelativeToParent.Bottom == 0);
@@ -1669,6 +2002,7 @@ namespace MatterHackers.Agg.UI.Tests
 					Assert.IsTrue(topLeftStuff.Height == 34);
 					Assert.IsTrue(leftColumn.Height == 34);
 				}
+
 				GuiWidget.DefaultEnforceIntegerBounds = false;
 			}
 		}
@@ -1678,15 +2012,15 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			// make sure a middle spacer grows and shrinks correctly
 			{
-				FlowLayoutWidget leftRightFlowLayout = new FlowLayoutWidget()
+				var leftRightFlowLayout = new FlowLayoutWidget()
 				{
 					Name = "leftRightFlowLayout"
 				};
 				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-				// [no content] // attempting to make a visual depiction of what is happening
+				// [no content] // attempting to make a visual description of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
-				GuiWidget leftWidget = new GuiWidget(10, 10)
+				var leftWidget = new GuiWidget(10, 10)
 				{
 					Name = "leftWidget"
 				}; // we call it left widget as it will be the first one in the left to right flow layout
@@ -1694,7 +2028,7 @@ namespace MatterHackers.Agg.UI.Tests
 				// [<->(10)<->] // the flow layout should now be forced to be 10 wide
 				Assert.IsTrue(leftRightFlowLayout.Width == 10);
 
-				GuiWidget middleSpacer = new GuiWidget(0, 10)
+				var middleSpacer = new GuiWidget(0, 10)
 				{
 					Name = "middleSpacer"
 				}; // this widget will hold the space
@@ -1704,12 +2038,12 @@ namespace MatterHackers.Agg.UI.Tests
 				Assert.IsTrue(leftRightFlowLayout.Width == 10);
 				Assert.IsTrue(middleSpacer.Width == 0);
 
-				GuiWidget rightItem = new GuiWidget(10, 10);
+				var rightItem = new GuiWidget(10, 10);
 				leftRightFlowLayout.AddChild(rightItem);
 				// [<->(10)(<->)(10)<->]
 				Assert.IsTrue(leftRightFlowLayout.Width == 20);
 
-				GuiWidget container = new GuiWidget(40, 20);
+				var container = new GuiWidget(40, 20);
 				container.AddChild(leftRightFlowLayout);
 				// (40[<->(10)(<->)(10)<->]) // the extra 20 must be put into the expandable (<->)
 				Assert.IsTrue(container.Width == 40);
@@ -1739,24 +2073,32 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// make sure the middle spacer works the same when in a flow layout
 			{
-				FlowLayoutWidget leftRightFlowLayout = new FlowLayoutWidget();
-				leftRightFlowLayout.Name = "leftRightFlowLayout";
+				var leftRightFlowLayout = new FlowLayoutWidget
+				{
+					Name = "leftRightFlowLayout"
+				};
 				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-				// [<-><->] // attempting to make a visual depiction of what is happening
+				// [<-><->] // attempting to make a visual description of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
-				GuiWidget leftWidget = new GuiWidget(10, 10); // we call it left widget as it will be the first one in the left to right flow layout
-				leftWidget.Name = "leftWidget";
+				var leftWidget = new GuiWidget(10, 10)
+				{
+					Name = "leftWidget"
+				}; // we call it left widget as it will be the first one in the left to right flow layout
 				leftRightFlowLayout.AddChild(leftWidget); // add in a child with a width of 10
 				// [<->(10)<->] // the flow layout should now be forced to be 10 wide
 				Assert.IsTrue(leftRightFlowLayout.Width == 10);
 
-				FlowLayoutWidget middleFlowLayoutWrapper = new FlowLayoutWidget(); // we are going to wrap the implicitly middle items to test nested resizing
-				middleFlowLayoutWrapper.Name = "middleFlowLayoutWrapper";
+				var middleFlowLayoutWrapper = new FlowLayoutWidget
+				{
+					Name = "middleFlowLayoutWrapper"
+				}; // we are going to wrap the implicitly middle items to test nested resizing
 				middleFlowLayoutWrapper.HAnchor |= HAnchor.Stretch;
-				GuiWidget middleSpacer = new GuiWidget(0, 10); // this widget will hold the space
-				middleSpacer.Name = "middleSpacer";
-				middleSpacer.HAnchor = HAnchor.Stretch; // by resizing to whatever width it can be
+				var middleSpacer = new GuiWidget(0, 10)
+				{
+					Name = "middleSpacer",
+					HAnchor = HAnchor.Stretch // by resizing to whatever width it can be
+				}; // this widget will hold the space
 				middleFlowLayoutWrapper.AddChild(middleSpacer);
 				// {<->(<->)<->}
 				leftRightFlowLayout.AddChild(middleFlowLayoutWrapper);
@@ -1765,14 +2107,18 @@ namespace MatterHackers.Agg.UI.Tests
 				Assert.IsTrue(middleFlowLayoutWrapper.Width == 0);
 				Assert.IsTrue(middleSpacer.Width == 0);
 
-				GuiWidget rightWidget = new GuiWidget(10, 10);
-				rightWidget.Name = "rightWidget";
+				var rightWidget = new GuiWidget(10, 10)
+				{
+					Name = "rightWidget"
+				};
 				leftRightFlowLayout.AddChild(rightWidget);
 				// [<->(10){<->(<->)<->}(10)<->]
 				Assert.IsTrue(leftRightFlowLayout.Width == 20);
 
-				GuiWidget container = new GuiWidget(40, 20);
-				container.Name = "container";
+				var container = new GuiWidget(40, 20)
+				{
+					Name = "container"
+				};
 				container.AddChild(leftRightFlowLayout);
 				// (40[<->(10){<->(<->)<->}(10)<->]) // the extra 20 must be put into the expandable (<->)
 				Assert.IsTrue(leftRightFlowLayout.Width == 40);
@@ -1792,16 +2138,20 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// make sure a middle spacer grows and shrinks correctly when in another guiwidget (not a flow widget) that is LeftRight
 			{
-				FlowLayoutWidget leftRightFlowLayout = new FlowLayoutWidget();
-				leftRightFlowLayout.Name = "leftRightFlowLayout";
+				var leftRightFlowLayout = new FlowLayoutWidget
+				{
+					Name = "leftRightFlowLayout"
+				};
 				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-				// [<-><->] // attempting to make a visual depiction of what is happening
+				// [<-><->] // attempting to make a visual description of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 
-				GuiWidget middleSpacer = new GuiWidget(0, 10); // this widget will hold the space
-				middleSpacer.Name = "middleSpacer";
-				middleSpacer.HAnchor = HAnchor.Stretch; // by resizing to whatever width it can be
+				var middleSpacer = new GuiWidget(0, 10)
+				{
+					Name = "middleSpacer",
+					HAnchor = HAnchor.Stretch // by resizing to whatever width it can be
+				}; // this widget will hold the space
 				leftRightFlowLayout.AddChild(middleSpacer);
 				// [<->(<->)<->]
 				Assert.IsTrue(leftRightFlowLayout.Width == 0);
@@ -1809,11 +2159,15 @@ namespace MatterHackers.Agg.UI.Tests
 
 				Assert.IsTrue(leftRightFlowLayout.Width == 0);
 
-				GuiWidget containerOuter = new GuiWidget(40, 20);
-				containerOuter.Name = "containerOuter";
-				GuiWidget containerInner = new GuiWidget(0, 20);
-				containerInner.HAnchor = HAnchor.Stretch | HAnchor.Fit;
-				containerInner.Name = "containerInner";
+				var containerOuter = new GuiWidget(40, 20)
+				{
+					Name = "containerOuter"
+				};
+				var containerInner = new GuiWidget(0, 20)
+				{
+					HAnchor = HAnchor.Stretch | HAnchor.Fit,
+					Name = "containerInner"
+				};
 				containerOuter.AddChild(containerInner);
 				Assert.IsTrue(containerInner.Width == 40);
 				containerInner.AddChild(leftRightFlowLayout);
@@ -1837,33 +2191,39 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// make sure a middle spacer grows and shrinks correctly when in another guiwidget (not a flow widget) that is LeftRight
 			{
-				FlowLayoutWidget leftRightFlowLayout = new FlowLayoutWidget();
+				var leftRightFlowLayout = new FlowLayoutWidget();
 				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-				// [<-><->] // attempting to make a visual depiction of what is happening
+				// [<-><->] // attempting to make a visual description of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
-				GuiWidget leftWidget = new GuiWidget(10, 10); // we call it left widget as it will be the first one in the left to right flow layout
+				var leftWidget = new GuiWidget(10, 10); // we call it left widget as it will be the first one in the left to right flow layout
 				leftRightFlowLayout.AddChild(leftWidget); // add in a child with a width of 10
 				// [<->(10)<->] // the flow layout should now be forced to be 10 wide
 				Assert.IsTrue(leftRightFlowLayout.Width == 10);
 
-				GuiWidget middleSpacer = new GuiWidget(0, 10); // this widget will hold the space
-				middleSpacer.HAnchor = HAnchor.Stretch; // by resizing to whatever width it can be
+				var middleSpacer = new GuiWidget(0, 10)
+				{
+					HAnchor = HAnchor.Stretch // by resizing to whatever width it can be
+				}; // this widget will hold the space
 				leftRightFlowLayout.AddChild(middleSpacer);
 				// [<->(10)(<->)<->]
 				Assert.IsTrue(leftRightFlowLayout.Width == 10);
 				Assert.IsTrue(middleSpacer.Width == 0);
 
-				GuiWidget rightItem = new GuiWidget(10, 10);
+				var rightItem = new GuiWidget(10, 10);
 				leftRightFlowLayout.AddChild(rightItem);
 				// [<->(10)(<->)(10)<->]
 				Assert.IsTrue(leftRightFlowLayout.Width == 20);
 
-				GuiWidget containerOuter = new GuiWidget(40, 20);
-				containerOuter.Name = "containerOuter";
-				GuiWidget containerInner = new GuiWidget(0, 20);
-				containerInner.HAnchor = HAnchor.Stretch | HAnchor.Fit;
-				containerInner.Name = "containerInner";
+				var containerOuter = new GuiWidget(40, 20)
+				{
+					Name = "containerOuter"
+				};
+				var containerInner = new GuiWidget(0, 20)
+				{
+					HAnchor = HAnchor.Stretch | HAnchor.Fit,
+					Name = "containerInner"
+				};
 				containerOuter.AddChild(containerInner);
 				Assert.IsTrue(containerInner.Width == 40);
 				containerInner.AddChild(leftRightFlowLayout);
@@ -1889,18 +2249,24 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void TestVAnchorCenter()
 		{
-			FlowLayoutWidget searchPanel = new FlowLayoutWidget();
-			searchPanel.BackgroundColor = new Color(180, 180, 180);
-			searchPanel.HAnchor = HAnchor.Stretch;
-			searchPanel.Padding = new BorderDouble(3, 3);
+			var searchPanel = new FlowLayoutWidget
 			{
-				TextEditWidget searchInput = new TextEditWidget("Test");
-				searchInput.Margin = new BorderDouble(6, 0);
-				searchInput.HAnchor = HAnchor.Stretch;
-				searchInput.VAnchor = VAnchor.Center;
+				BackgroundColor = new Color(180, 180, 180),
+				HAnchor = HAnchor.Stretch,
+				Padding = new BorderDouble(3, 3)
+			};
+			{
+				var searchInput = new TextEditWidget("Test")
+				{
+					Margin = new BorderDouble(6, 0),
+					HAnchor = HAnchor.Stretch,
+					VAnchor = VAnchor.Center
+				};
 
-				Button searchButton = new Button("Search");
-				searchButton.Margin = new BorderDouble(right: 9);
+				var searchButton = new Button("Search")
+				{
+					Margin = new BorderDouble(right: 9)
+				};
 
 				searchPanel.AddChild(searchInput);
 				Assert.IsTrue(searchInput.BoundsRelativeToParent.Bottom - searchPanel.BoundsRelativeToParent.Bottom == searchPanel.BoundsRelativeToParent.Top - searchInput.BoundsRelativeToParent.Top);
