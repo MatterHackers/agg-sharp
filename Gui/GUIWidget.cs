@@ -83,9 +83,14 @@ namespace MatterHackers.Agg.UI
 		Stretch = Left | Right,
 
 		/// <summary>
-		/// Take the larger of FitToChildren or Stretch.
+		/// Take the larger of Fit or Stretch.
 		/// </summary>
 		MaxFitOrStretch = Fit | Stretch,
+		
+		/// <summary>
+		/// Take the lesser of the Fit or Stretch calculation
+		/// </summary>
+		MinFitOrStretch = 16,
 	}
 
 	/// <summary>
@@ -109,6 +114,11 @@ namespace MatterHackers.Agg.UI
 		/// Take the larger of FitToChildren or Stretch.
 		/// </summary>
 		MaxFitOrStretch = Fit | Stretch,
+
+		/// <summary>
+		/// Take the lesser of the Fit or Stretch calculation
+		/// </summary>
+		MinFitOrStretch = 16,
 	}
 
 	public enum Cursors
@@ -496,6 +506,10 @@ namespace MatterHackers.Agg.UI
 						BreakInDebugger("You cannot be anchored to all three positions.");
 					}
 
+					if(value != HAnchor.MinFitOrStretch && value.HasFlag(HAnchor.MinFitOrStretch))
+					{
+						BreakInDebugger("You cannot have anything else set if you set MinFitOrStretch.");
+					}
 					hAnchor = value;
 					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.HAnchor));
 

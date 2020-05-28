@@ -218,6 +218,7 @@ namespace MatterHackers.Agg.UI
 						child.OriginRelativeParent = newOriginRelParent;
 						child.Width = newWidth;
 					}
+
 					parentLock?.Dispose();
 					if (child.OriginRelativeParent != origin
 						|| child.Width != width)
@@ -231,11 +232,16 @@ namespace MatterHackers.Agg.UI
 					child.Width = newWidth;
 				}
 			}
+			else if (child.HAnchor == HAnchor.MinFitOrStretch)
+			{
+				child.OnLayout(new LayoutEventArgs(parent, child, PropertyCausingLayout.LocalBounds));
+			}
 		}
 
 		public void DoFitToChildrenHorizontal(GuiWidget widgetToAdjust, ref bool sizeWasChanged)
 		{
-			if (widgetToAdjust.HAnchorIsSet(HAnchor.Fit))
+			if (widgetToAdjust.HAnchor.HasFlag(HAnchor.Fit)
+				|| widgetToAdjust.HAnchor.HasFlag(HAnchor.MinFitOrStretch))
 			{
 				double widthToMatchParent = 0;
 				// let's check if the parent would like to make this widget bigger
@@ -273,7 +279,14 @@ namespace MatterHackers.Agg.UI
 					}
 					else if ((widgetToAdjust.Parent.LayoutEngine as LayoutEngineSimpleAlign) != null)
 					{
-						widgetToAdjustBounds.Right = Math.Max(childrenEnclosingBounds.Left + widthToMatchParent, childrenEnclosingBounds.Right);
+						if (widgetToAdjust.HAnchor.HasFlag(HAnchor.MinFitOrStretch))
+						{
+							widgetToAdjustBounds.Right = Math.Min(childrenEnclosingBounds.Right, childrenEnclosingBounds.Left + widgetToAdjust.Parent.Width);
+						}
+						else
+						{
+							widgetToAdjustBounds.Right = Math.Max(childrenEnclosingBounds.Left + widthToMatchParent, childrenEnclosingBounds.Right);
+						}
 					}
 					else
 					{
@@ -284,6 +297,7 @@ namespace MatterHackers.Agg.UI
 				{
 					widgetToAdjustBounds.Right = Math.Max(childrenEnclosingBounds.Left + widthToMatchParent, childrenEnclosingBounds.Right);
 				}
+
 				if (widgetToAdjust.LocalBounds != widgetToAdjustBounds)
 				{
 					if (widgetToAdjust.HAnchorIsSet(HAnchor.Stretch))
@@ -310,7 +324,7 @@ namespace MatterHackers.Agg.UI
 			bool needToAdjustOrigin = false;
 			newOriginRelParent = child.OriginRelativeParent;
 			newWidth = child.Width;
-			if ((child.HAnchor & HAnchor.Left) == HAnchor.Left)
+			if (child.HAnchor.HasFlag(HAnchor.Left))
 			{
 				needToAdjustOrigin = true;
 				// Hold it to the left

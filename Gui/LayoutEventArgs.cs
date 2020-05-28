@@ -31,6 +31,7 @@ namespace MatterHackers.Agg.UI
 			{
 				throw new InvalidOperationException("The LayoutEngine comes from the parent so you have to pass it.");
 			}
+
 			this.parentWidget = parentWidget;
 			this.childWidget = childWidget;
 			this.changedProperty = changedProperty;
