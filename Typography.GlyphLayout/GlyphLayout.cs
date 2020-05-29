@@ -153,8 +153,8 @@ namespace Typography.TextLayout
         public GlyphLayoutPlanContext GetPlanOrCreate(Typeface typeface, ScriptLang scriptLang)
         {
             GlyphLayoutPlanKey key = new GlyphLayoutPlanKey(typeface, scriptLang.internalName);
-            GlyphLayoutPlanContext context;
-            if (!_collection.TryGetValue(key, out context))
+
+            if (!_collection.TryGetValue(key, out GlyphLayoutPlanContext context))
             {
                 var glyphSubstitution = (typeface.GSUBTable != null) ? new GlyphSubstitution(typeface, scriptLang.shortname) : null;
                 var glyphPosition = (typeface.GPOSTable != null) ? new GlyphSetPosition(typeface, scriptLang.shortname) : null;
@@ -166,8 +166,8 @@ namespace Typography.TextLayout
     }
     struct GlyphLayoutPlanKey
     {
-        public Typeface t;
-        public int scriptInternameName;
+        public readonly Typeface t;
+        public readonly int scriptInternameName;
         public GlyphLayoutPlanKey(Typeface t, int scriptInternameName)
         {
             this.t = t;
@@ -195,7 +195,7 @@ namespace Typography.TextLayout
         /// <summary>
         /// offset from the start of input codepoint buffer
         /// </summary>
-        public ushort user_char_offset;
+        public readonly ushort user_char_offset;
         public dbugCodePointFromUserChar(ushort user_char_offset, int codePoint)
         {
             this.user_char_offset = user_char_offset;
@@ -252,6 +252,7 @@ namespace Typography.TextLayout
 
         public bool EnableLigature { get; set; }
         public bool EnableComposition { get; set; }
+         
         public Typeface Typeface
         {
             get => _typeface;
@@ -266,8 +267,14 @@ namespace Typography.TextLayout
         }
 
 
-        //not thread-safe*** 
 
+
+        public delegate ushort GlyphNotFoundHandler(GlyphLayout glyphLayout, int codepoint, int nextcodepoint);
+        GlyphNotFoundHandler _glyphNotFoundHandler;
+
+
+
+        //not thread-safe*** 
         List<int> _reusableUserCodePoints = new List<int>();
 #if DEBUG
         List<dbugCodePointFromUserChar> _dbugReusableCodePointFromUserCharList = new List<dbugCodePointFromUserChar>();
@@ -325,44 +332,60 @@ namespace Typography.TextLayout
             Layout(_reusableUserCodePoints);
         }
 
+        public void SetGlyphIndexNotFoundHandler(GlyphNotFoundHandler glyphNotFoundHandler)
+        {
+            _glyphNotFoundHandler = glyphNotFoundHandler;
+        }
         public void Layout(IList<int> inputCodePoints)
         {
             Layout(inputCodePoints, 0, inputCodePoints.Count);
         }
         public void Layout(IList<int> inputCodePoints, int startAt, int len)
         {
-
             //
             //[B]
             // convert codepoint-list to input glyph-list 
             // clear before use
             _inputGlyphs.Clear();
+
             int end = startAt + len;
+            int cur_codepoint, next_codepoint;
+
             for (int i = 0; i < end; ++i)
             {
-                //find glyph index by specific codepoint 
-                ushort glyphIndex = _typeface.LookupIndex(inputCodePoints[i]);
+                //find glyph index by specific codepoint  
                 if (i + 1 < end)
+                {
+                    cur_codepoint = inputCodePoints[i];
+                    next_codepoint = inputCodePoints[i + 1];
+                }
+                else
+                {
+                    cur_codepoint = inputCodePoints[i];
+                    next_codepoint = 0;
+                }
+
+                ushort glyphIndex = _typeface.GetGlyphIndex(cur_codepoint, next_codepoint, out bool skipNextCodepoint);
+
+                if (glyphIndex == 0 && _glyphNotFoundHandler != null)
+                {
+                    //handle glyph not found
+                    glyphIndex = _glyphNotFoundHandler(this, cur_codepoint, next_codepoint);
+                }
+
+                _inputGlyphs.AddGlyph(i, glyphIndex);
+                if (skipNextCodepoint)
                 {
                     // Maybe this is a UVS sequence; in that case,
                     //***SKIP*** the second codepoint 
-                    ushort variationGlyphIndex = _typeface.LookupIndex(inputCodePoints[i], inputCodePoints[i + 1]);
-                    if (variationGlyphIndex > 0)
-                    {
-                        //user glyph index from next codepoint
-                        glyphIndex = variationGlyphIndex;
-                        //but record as current code point i
-                        _inputGlyphs.AddGlyph(i, glyphIndex);
-
-                        ++i; //skip
-                        continue;//*** 
-                    }
+                    ++i;
                 }
-                _inputGlyphs.AddGlyph(i, glyphIndex);
             }
             //continue below...
             Layout(_inputGlyphs);
         }
+
+
         void Layout(GlyphIndexList glyphs)
         {
             if (_needPlanUpdate)
@@ -377,7 +400,7 @@ namespace Typography.TextLayout
             {
                 //TODO: review perf here
                 _gsub.EnableLigation = this.EnableLigature;
-                _gsub.EnableComposition = this.EnableComposition;
+                _gsub.EnableComposition = this.EnableComposition; 
                 _gsub.DoSubstitution(glyphs);
             }
 
@@ -396,12 +419,14 @@ namespace Typography.TextLayout
             {
                 //at this stage _inputGlyphs and _glyphPositions 
                 //has member 1:1
-                ushort glyIndex, input_codepointOffset, input_mapLen;
-                glyphs.GetGlyphIndexAndMap(i, out glyIndex, out input_codepointOffset, out input_mapLen);
+                glyphs.GetGlyphIndexAndMap(i,
+                    out ushort glyphIndex,
+                    out ushort input_codepointOffset,
+                    out ushort input_mapLen);
                 //
-                Glyph orgGlyph = _typeface.GetGlyphByIndex(glyIndex);
+                Glyph orgGlyph = _typeface.GetGlyph(glyphIndex);
                 //this is original value WITHOUT fit-to-grid adjust
-                _glyphPositions.AddGlyph(input_codepointOffset, glyIndex, orgGlyph);
+                _glyphPositions.AddGlyph(input_codepointOffset, glyphIndex, orgGlyph);
             }
 
             PositionTechnique posTech = this.PositionTechnique;
@@ -456,12 +481,12 @@ namespace Typography.TextLayout
             int finalGlyphCount = glyphPositions.Count;
             for (int i = 0; i < finalGlyphCount; ++i)
             {
-                short offsetX, offsetY, advW;
+
                 ushort glyphIndex = glyphPositions.GetGlyph(i,
                     out ushort input_offset,
-                    out offsetX,
-                    out offsetY,
-                    out advW);
+                    out short offsetX,
+                    out short offsetY,
+                    out short advW);
                 //
                 outputGlyphPlanList.Append(new UnscaledGlyphPlan(
                     input_offset,
@@ -479,12 +504,11 @@ namespace Typography.TextLayout
             int finalGlyphCount = glyphPositions.Count;
             for (int i = 0; i < finalGlyphCount; ++i)
             {
-                short offsetX, offsetY, advW;
                 ushort glyphIndex = glyphPositions.GetGlyph(i,
                     out ushort input_offset,
-                    out offsetX,
-                    out offsetY,
-                    out advW);
+                    out short offsetX,
+                    out short offsetY,
+                    out short advW);
 
                 yield return new UnscaledGlyphPlan(
                     input_offset,
@@ -595,8 +619,6 @@ namespace Typography.TextLayout
             pos.advanceW += appendAdvX;//TODO: review for appendY
             _glyphPosList[index] = pos;
         }
-
-
     }
 
     struct GlyphPos

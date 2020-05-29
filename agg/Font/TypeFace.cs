@@ -216,7 +216,7 @@ namespace MatterHackers.Agg.Font
 				this.ascent = _ofTypeface.Ascender;
 				this.descent = _ofTypeface.Descender;
 				this.unitsPerEm = _ofTypeface.UnitsPerEm;
-				this.underline_position = _ofTypeface.PostTable._underlinePosition;
+				this.underline_position = _ofTypeface.UnderlinePosition;
 				var bounds = _ofTypeface.Bounds;
 				this.boundingBox = new RectangleInt(bounds.XMin, bounds.YMin, bounds.XMax, bounds.YMax);
 				return true;
@@ -361,8 +361,8 @@ namespace MatterHackers.Agg.Font
 					{
 						var storage = new VertexStorage();
 						var translator = new VertexSourceGlyphTranslator(storage);
-						var glyphIndex = _ofTypeface.LookupIndex(character);
-						var ttfGlyph = _ofTypeface.GetGlyphByIndex(glyphIndex);
+						var glyphIndex = _ofTypeface.GetGlyphIndex(character);
+						var ttfGlyph = _ofTypeface.GetGlyph(glyphIndex);
 						//
 						Typography.OpenFont.IGlyphReaderExtensions.Read(translator, ttfGlyph.GlyphPoints, ttfGlyph.EndPoints);
 
