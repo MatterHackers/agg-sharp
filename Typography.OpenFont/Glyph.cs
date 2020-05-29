@@ -16,6 +16,7 @@ namespace Typography.OpenFont
         ushort _orgAdvWidth;
         bool _hasOrgAdvWidth;
 
+
         Bounds _bounds;
 
         internal Glyph(
@@ -29,12 +30,17 @@ namespace Typography.OpenFont
 
 #if DEBUG
             this.dbugId = s_debugTotalId++;
+            if (this.dbugId == 444)
+            {
+
+            }
 #endif
             this.glyphPoints = glyphPoints;
             _contourEndPoints = contourEndPoints;
             Bounds = bounds;
             GlyphInstructions = glyphInstructions;
             GlyphIndex = index;
+
         }
         public Bounds Bounds
         {
@@ -55,9 +61,7 @@ namespace Typography.OpenFont
             }
         }
         public bool HasOriginalAdvancedWidth => _hasOrgAdvWidth;
-        //
-        //
-
+        //      
 
         internal static void OffsetXY(Glyph glyph, short dx, short dy)
         {
@@ -153,18 +157,33 @@ namespace Typography.OpenFont
         internal static void AppendGlyph(Glyph dest, Glyph src)
         {
             int org_dest_len = dest._contourEndPoints.Length;
+#if DEBUG
             int src_contour_count = src._contourEndPoints.Length;
-            ushort org_last_point = (ushort)(dest._contourEndPoints[org_dest_len - 1] + 1); //since start at 0 
-
-            dest.glyphPoints = Utils.ConcatArray(dest.glyphPoints, src.glyphPoints);
-            dest._contourEndPoints = Utils.ConcatArray(dest._contourEndPoints, src._contourEndPoints);
-
-            //offset latest append contour  end points
-            int newlen = dest._contourEndPoints.Length;
-            for (int i = org_dest_len; i < newlen; ++i)
+#endif
+            if (org_dest_len == 0)
             {
-                dest._contourEndPoints[i] += (ushort)org_last_point;
+                //org is empty glyph
+
+                dest.glyphPoints = Utils.ConcatArray(dest.glyphPoints, src.glyphPoints);
+                dest._contourEndPoints = Utils.ConcatArray(dest._contourEndPoints, src._contourEndPoints);
+
             }
+            else
+            {
+                ushort org_last_point = (ushort)(dest._contourEndPoints[org_dest_len - 1] + 1); //since start at 0 
+
+                dest.glyphPoints = Utils.ConcatArray(dest.glyphPoints, src.glyphPoints);
+                dest._contourEndPoints = Utils.ConcatArray(dest._contourEndPoints, src._contourEndPoints);
+                //offset latest append contour  end points
+                int newlen = dest._contourEndPoints.Length;
+                for (int i = org_dest_len; i < newlen; ++i)
+                {
+                    dest._contourEndPoints[i] += (ushort)org_last_point;
+                }
+            }
+
+
+
             //calculate new bounds
             Bounds destBound = dest.Bounds;
             Bounds srcBound = src.Bounds;
@@ -184,7 +203,7 @@ namespace Typography.OpenFont
         public short MinY => _bounds.YMin;
         public short MaxY => _bounds.YMax;
 
-       
+
 #if DEBUG
         public readonly int dbugId;
         static int s_debugTotalId;
@@ -231,7 +250,6 @@ namespace Typography.OpenFont
             //create from CFF 
             _cff1GlyphData = cff1Glyph;
             this.GlyphIndex = cff1Glyph.GlyphIndex;
-
         }
         public bool IsCffGlyph => _ownerCffFont != null;
         public CFF.Cff1Font GetOwnerCff() => _ownerCffFont;
@@ -239,7 +257,31 @@ namespace Typography.OpenFont
         //math glyph info, temp , TODO: review here again
         public MathGlyphs.MathGlyphInfo MathGlyphInfo { get; internal set; }
         public bool HasMathGlyphInfo { get; internal set; }
+
+
+        //--------------------
+        //Bitmap and Svg
+
+        uint _streamOffset;
+        uint _streamLen;
+        ushort _imgFormat;
+        internal Glyph(ushort glyphIndex, uint streamOffset, uint streamLen, ushort imgFormat)
+        {
+            //_bmpGlyphSource = bmpGlyphSource;
+            _streamOffset = streamOffset;
+            _streamLen = streamLen;
+            _imgFormat = imgFormat;
+            this.GlyphIndex = glyphIndex;
+        }
+        internal uint BitmapStreamOffset => _streamOffset;
+        internal uint BitmapFormat => _imgFormat;
+
+        //public void CopyBitmapContent(System.IO.Stream output)
+        //{
+        //    _bmpGlyphSource.CopyBitmapContent(this, output);
+        //}
     }
+
 
     //https://www.microsoft.com/typography/otspec/gdef.htm
     public enum GlyphClassKind : byte

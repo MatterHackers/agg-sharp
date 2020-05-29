@@ -22,15 +22,36 @@ namespace Typography.OpenFont
     {
         public readonly string Name;
         public readonly string SubFamilyName;
+        public readonly string TypographicFamilyName;
+        public readonly string TypographicSubFamilyName;
         public readonly Extensions.TranslatedOS2FontStyle OS2TranslatedStyle;
         public readonly ushort Weight;
         PreviewFontInfo[] _ttcfMembers;
 
-        public PreviewFontInfo(string fontName, string fontSubFam, ushort weight,
+        public PreviewFontInfo(string fontName, string fontSubFam,
+            string tFamilyName, string tSubFamilyName,
+            ushort weight,
             Extensions.TranslatedOS2FontStyle os2TranslatedStyle = Extensions.TranslatedOS2FontStyle.UNSET)
         {
             Name = fontName;
             SubFamilyName = fontSubFam;
+            TypographicFamilyName = tFamilyName;
+            TypographicSubFamilyName = tSubFamilyName;
+
+#if DEBUG
+            //please note that some fontName != typographicFontName
+            //this may effect how to search a font
+            if (fontName != tFamilyName && tFamilyName != null)
+            {
+
+            }
+            if (fontSubFam != tSubFamilyName && tSubFamilyName != null)
+            {
+
+            }
+#endif
+
+
             Weight = weight;
             OS2TranslatedStyle = os2TranslatedStyle;
         }
@@ -43,6 +64,14 @@ namespace Typography.OpenFont
         public int ActualStreamOffset { get; internal set; }
         public bool IsWebFont { get; internal set; }
         public bool IsFontCollection => _ttcfMembers != null;
+
+        public string PostScriptName { get; set; }
+        public string UniqueFontIden { get; set; }
+        public string VersionString { get; set; }
+        public uint UnicodeRange1 { get; set; }
+        public uint UnicodeRange2 { get; set; }
+        public uint UnicodeRange3 { get; set; }
+        public uint UnicodeRange4 { get; set; }
 
         /// <summary>
         /// get font collection's member count
@@ -96,6 +125,12 @@ namespace Typography.OpenFont
 
     public class OpenFontReader
     {
+
+        public OpenFontReader()
+        {
+
+        }
+
         class FontCollectionHeader
         {
             public ushort majorVersion;
@@ -306,10 +341,22 @@ namespace Typography.OpenFont
             OS2Table os2Table = ReadTableIfExists(tables, input, new OS2Table());
 
             return new PreviewFontInfo(
-              nameEntry.TypographicFamilyName ?? nameEntry.FontName,
-              nameEntry.TypographyicSubfamilyName ?? nameEntry.FontSubFamily,
+              nameEntry.FontName,
+              nameEntry.FontSubFamily,
+              nameEntry.TypographicFamilyName,
+              nameEntry.TypographyicSubfamilyName,
               os2Table.usWeightClass,
-              Extensions.TypefaceExtensions.TranslatedOS2FontStyle(os2Table));
+              Extensions.TypefaceExtensions.TranslatedOS2FontStyle(os2Table))
+            {
+                PostScriptName = nameEntry.PostScriptName,
+                UniqueFontIden = nameEntry.UniqueFontIden,
+                VersionString = nameEntry.VersionString,
+                UnicodeRange1 = os2Table.ulUnicodeRange1,
+                UnicodeRange2 = os2Table.ulUnicodeRange2,
+                UnicodeRange3 = os2Table.ulUnicodeRange3,
+                UnicodeRange4 = os2Table.ulUnicodeRange4,
+            };
+
         }
         internal Typeface ReadTableEntryCollection(TableEntryCollection tables, BinaryReader input)
         {
@@ -324,7 +371,7 @@ namespace Typography.OpenFont
 
             //---
             PostTable postTable = ReadTableIfExists(tables, input, new PostTable());
-            CFFTable ccf = ReadTableIfExists(tables, input, new CFFTable());
+            CFFTable cff = ReadTableIfExists(tables, input, new CFFTable());
 
             //--------------
             Cmap cmaps = ReadTableIfExists(tables, input, new Cmap());
@@ -354,37 +401,79 @@ namespace Typography.OpenFont
                 VerticalMetrics vmtx = ReadTableIfExists(tables, input, new VerticalMetrics(vhea.NumOfLongVerMetrics));
             }
 
+            STAT stat = ReadTableIfExists(tables, input, new STAT());
+            if (stat != null)
+            {
+                FVar fvar = ReadTableIfExists(tables, input, new FVar());
+                if (fvar != null)
+                {
+                    GVar gvar = ReadTableIfExists(tables, input, new GVar());
+                    CVar cvar = ReadTableIfExists(tables, input, new CVar());
+                    HVar hvar = ReadTableIfExists(tables, input, new HVar());
+                    MVar mvar = ReadTableIfExists(tables, input, new MVar());
+                    AVar avar = ReadTableIfExists(tables, input, new AVar());
+                }
+            }
 
 
             //test math table
             MathTable mathtable = ReadTableIfExists(tables, input, new MathTable());
-            EBLCTable fontBmpTable = ReadTableIfExists(tables, input, new EBLCTable());
+
             //---------------------------------------------
             //about truetype instruction init 
 
             //--------------------------------------------- 
             Typeface typeface = null;
             bool isPostScriptOutline = false;
+            bool isBitmapFont = false;
             if (glyf == null)
             {
                 //check if this is cff table ?
-                if (ccf == null)
+                if (cff == null)
                 {
-                    //TODO: review here
-                    throw new NotSupportedException();
+
+                    //check  cbdt/cblc ?
+                    CBLC cblcTable = ReadTableIfExists(tables, input, new CBLC());
+                    if (cblcTable != null)
+                    {
+                        CBDT cbdtTable = ReadTableIfExists(tables, input, new CBDT());
+                        //read cbdt 
+                        //bitmap font 
+
+                        BitmapFontGlyphSource bmpFontGlyphSrc = new BitmapFontGlyphSource(cblcTable, cbdtTable);
+                        Glyph[] glyphs = bmpFontGlyphSrc.BuildGlyphList();
+
+
+                        typeface = new Typeface(
+                          nameEntry,
+                          header.Bounds,
+                          header.UnitsPerEm,
+                          bmpFontGlyphSrc,
+                          glyphs,
+                          horizontalMetrics,
+                          os2Table);
+                        isBitmapFont = true;
+                    }
+                    else
+                    {
+                        //TODO:
+                        EBLC fontBmpTable = ReadTableIfExists(tables, input, new EBLC());
+                        throw new NotSupportedException();
+                    }
                 }
-                //...  
-                //PostScript outline font 
-                isPostScriptOutline = true;
-                typeface = new Typeface(
-                      nameEntry,
-                      header.Bounds,
-                      header.UnitsPerEm,
-                      ccf,
-                      horizontalMetrics,
-                      os2Table);
-
-
+                else
+                {
+                    //...  
+                    //PostScript outline font 
+                    isPostScriptOutline = true;
+                    typeface = new Typeface(
+                          nameEntry,
+                          header.Bounds,
+                          header.UnitsPerEm,
+                          cff,
+                          horizontalMetrics,
+                          os2Table);
+                }
             }
             else
             {
@@ -405,7 +494,7 @@ namespace Typography.OpenFont
             typeface.HheaTable = horizontalHeader;
             //----------------------------
 
-            if (!isPostScriptOutline)
+            if (!isPostScriptOutline && !isBitmapFont)
             {
                 FpgmTable fpgmTable = ReadTableIfExists(tables, input, new FpgmTable());
                 //control values table
@@ -432,11 +521,8 @@ namespace Typography.OpenFont
                 baseTable,
                 colr,
                 cpal);
-
             //------------
 
-
-            //test
             {
                 SvgTable svgTable = ReadTableIfExists(tables, input, new SvgTable());
                 if (svgTable != null)

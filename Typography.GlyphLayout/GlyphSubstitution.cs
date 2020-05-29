@@ -74,25 +74,39 @@ namespace Typography.TextLayout
 
             }
         }
+
+        public bool EnableMathFeature
+        {
+            get => _enableMathFeature;
+            set
+            {
+                if (value != _enableMathFeature)
+                {
+                    _mustRebuildTables = true;
+                }
+                _enableMathFeature = value;
+            }
+        }
         readonly string _language;
         bool _enableLigation = true; // enable by default
         bool _enableComposition = true;
         bool _mustRebuildTables = true;
-        Typeface _typeface;
-        List<GSUB.LookupTable> _lookupTables = new List<GSUB.LookupTable>();
+        bool _enableMathFeature = true;
 
-        void RebuildTables()
+        Typeface _typeface;
+
+
+        internal List<GSUB.LookupTable> _lookupTables = new List<GSUB.LookupTable>();
+
+        internal void RebuildTables()
         {
             _lookupTables.Clear();
 
             // check if this lang has
             GSUB gsubTable = _typeface.GSUBTable;
             ScriptTable scriptTable = gsubTable.ScriptList[_language];
-            if (scriptTable == null)
-            {
-                //no script table for request lang-> no lookup process here
-                return;
-            }
+            if (scriptTable == null) return;
+
 
             ScriptTable.LangSysTable selectedLang = null;
             if (scriptTable.langSysTables != null && scriptTable.langSysTables.Length > 0)
@@ -120,25 +134,38 @@ namespace Typography.TextLayout
             foreach (ushort featureIndex in selectedLang.featureIndexList)
             {
                 FeatureList.FeatureTable feature = gsubTable.FeatureList.featureTables[featureIndex];
-                bool featureIsNeeded = false;
+                bool includeThisFeature = false;
                 switch (feature.TagName)
                 {
                     case "ccmp": // glyph composition/decomposition 
-                        featureIsNeeded = EnableComposition;
+                        includeThisFeature = EnableComposition;
                         break;
                     case "liga": // Standard Ligatures --enable by default
-                        featureIsNeeded = EnableLigation;
+                        includeThisFeature = EnableLigation;
+                        break;
+
+
+                    //OpenType Layout tags for math processing:
+                    //https://docs.microsoft.com/en-us/typography/opentype/spec/math
+                    //'math', 'ssty','flac','dtls' 	
+                    case "ssty":
+                        includeThisFeature = EnableMathFeature;
+                        break;
+                    case "dlts"://'dtls' 	Dotless Forms 
+                        includeThisFeature = EnableMathFeature;
+                        break;
+                    case "flac": //Flattened Accents over Capitals  
                         break;
                 }
 
-                if (featureIsNeeded)
+                if (includeThisFeature)
                 {
                     foreach (ushort lookupIndex in feature.LookupListIndices)
                     {
                         _lookupTables.Add(gsubTable.LookupList[lookupIndex]);
                     }
                 }
-            }
+            } 
         }
 
         /// <summary>
@@ -189,8 +216,8 @@ namespace Typography.TextLayout
 
             //if user dose not specific the unicode lanf bit ranges
             //the we try to select it ourself. 
-            UnicodeLangBits[] unicodeLangBitsRanges;
-            if (ScriptLangs.TryGenUnicodeLangBitsArray(scLang.shortname, out unicodeLangBitsRanges))
+
+            if (ScriptLangs.TryGetUnicodeLangBitsArray(scLang.shortname, out UnicodeLangBits[] unicodeLangBitsRanges))
             {
                 //one lang may contains may ranges
                 if (selectedRangs != null)
@@ -205,11 +232,12 @@ namespace Typography.TextLayout
                     int endAt = rngInfo.EndAt;
                     for (int codePoint = rngInfo.StartAt; codePoint <= endAt; ++codePoint)
                     {
-                        ushort glyghIndex = typeface.LookupIndex(codePoint);
-                        if (glyghIndex > 0)
+
+                        ushort glyphIndex = typeface.GetGlyphIndex(codePoint);
+                        if (glyphIndex > 0)
                         {
                             //add this glyph index
-                            outputGlyphIndexList.Add(glyghIndex);
+                            outputGlyphIndexList.Add(glyphIndex);
                         }
                     }
                 }

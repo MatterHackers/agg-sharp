@@ -92,7 +92,7 @@ namespace Typography.OpenFont.Tables
     //---------------------------------------
     class ClassDefTable
     {
-        public int Format { get; private set; }
+        public int Format { get; internal set; }
         //----------------
         //format 1
         public ushort startGlyph;
@@ -163,7 +163,7 @@ namespace Typography.OpenFont.Tables
         }
 
 
-        public int GetClassValue(int glyphIndex)
+        public int GetClassValue(ushort glyphIndex)
         {
             switch (Format)
             {
@@ -173,13 +173,13 @@ namespace Typography.OpenFont.Tables
                         if (glyphIndex >= startGlyph &&
                             glyphIndex < classValueArray.Length)
                         {
-                            return classValueArray[startGlyph + (glyphIndex - startGlyph)];
+                            return classValueArray[glyphIndex - startGlyph];
                         }
                         return -1;
                     }
                 case 2:
                     {
-                        
+
                         for (int i = 0; i < records.Length; ++i)
                         {
                             //TODO: review a proper method here again
@@ -200,7 +200,7 @@ namespace Typography.OpenFont.Tables
                         return -1;
                     }
             }
-        } 
+        }
     }
 
 }
