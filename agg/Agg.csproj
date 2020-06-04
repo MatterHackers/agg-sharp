@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Typography.One\Typography.One.csproj" />
+    <ProjectReference Include="..\Typography\Typography.One\Typography.One.csproj" />
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
 
