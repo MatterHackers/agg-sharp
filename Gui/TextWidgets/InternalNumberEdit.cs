@@ -41,8 +41,12 @@ namespace MatterHackers.Agg.UI
 		private bool allowNegatives;
 		private bool allowDecimals;
 
-		public InternalNumberEdit(double startingValue, double pointSize, double pixelWidth, double pixelHeight,
-			bool allowNegatives, bool allowDecimals,
+		public InternalNumberEdit(double startingValue,
+			double pointSize,
+			double pixelWidth,
+			double pixelHeight,
+			bool allowNegatives,
+			bool allowDecimals,
 			double minValue,
 			double maxValue,
 			double increment,
@@ -80,6 +84,7 @@ namespace MatterHackers.Agg.UI
 					throw new Exception("To have a startingValue, min, max, or increment be negative, you need to set 'allowNegatives' to true.");
 				}
 			}
+
 			if (allowDecimals)
 			{
 				allowedChars.Add('.');
@@ -106,10 +111,12 @@ namespace MatterHackers.Agg.UI
 				{
 					throw new Exception("This has to be positive.");
 				}
+
 				if (!allowDecimals && value != (int)value)
 				{
 					throw new Exception("This can't be a decimal number.");
 				}
+
 				minValue = value;
 			}
 		}
@@ -127,16 +134,18 @@ namespace MatterHackers.Agg.UI
 				{
 					throw new Exception("This has to be positive.");
 				}
+
 				if (!allowDecimals && value != (int)value)
 				{
 					throw new Exception("This can't be a decimal number.");
 				}
+
 				maxValue = value;
 			}
 		}
 
 		/// <summary>
-		/// The number of decimal places to show with this number. Max is currently 10
+		/// Gets or sets the number of decimal places to show with this number. Max is currently 10
 		/// any number below 0 will render without formating (string default behavior).
 		/// </summary>
 		public int MaxDecimalsPlaces { get; set; } = -1;
@@ -150,21 +159,24 @@ namespace MatterHackers.Agg.UI
 				{
 					return errorReturn;
 				}
+
 				double value = minValue;
-				if (Double.TryParse(Text, out value))
+				if (double.TryParse(Text, out value))
 				{
 					return value;
 				}
+
 				return errorReturn;
 			}
 
 			set
 			{
 				string format = "";
-				if(MaxDecimalsPlaces > 0)
+				if (MaxDecimalsPlaces > 0)
 				{
-					format = "0." + new String('#', Math.Min(10, MaxDecimalsPlaces));
+					format = "0." + new string('#', Math.Min(10, MaxDecimalsPlaces));
 				}
+
 				double newValue = ValidateRange(value);
 				if (newValue != Value)
 				{
@@ -173,7 +185,7 @@ namespace MatterHackers.Agg.UI
 				else // lets make sure it has the same text as the value
 				{
 					double currentValue;
-					if (Double.TryParse(Text, out currentValue))
+					if (double.TryParse(Text, out currentValue))
 					{
 						if (currentValue != newValue)
 						{
@@ -196,10 +208,12 @@ namespace MatterHackers.Agg.UI
 			{
 				valueToValidate = minValue;
 			}
+
 			if (valueToValidate > maxValue)
 			{
 				valueToValidate = maxValue;
 			}
+
 			return valueToValidate;
 		}
 
@@ -253,14 +267,17 @@ namespace MatterHackers.Agg.UI
 					{
 						return;
 					}
+
 					if (Text == "-" && allowNegatives)
 					{
 						return;
 					}
+
 					if (Text == "-." && allowDecimals && allowNegatives)
 					{
 						return;
 					}
+
 					if (!double.TryParse(Text, out number))
 					{
 						if (hadSelection)

@@ -286,7 +286,7 @@ namespace MatterHackers.Agg.UI
 
 		private class PerformanceDisplayWidget : FlowLayoutWidget
 		{
-			public override void AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
+			public override GuiWidget AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
 			{
 				childToAdd.BoundsChanged += (sender, e) =>
 				{
@@ -297,7 +297,7 @@ namespace MatterHackers.Agg.UI
 					}
 				};
 
-				base.AddChild(childToAdd, indexInChildrenList);
+				return base.AddChild(childToAdd, indexInChildrenList);
 			}
 		}
 	}

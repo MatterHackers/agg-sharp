@@ -212,7 +212,7 @@ namespace MatterHackers.Agg.UI
 			Multiline = multiLine;
 		}
 
-		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
+		public override GuiWidget AddChild(GuiWidget child, int indexInChildrenList = -1)
 		{
 			throw new Exception("You cannot add children to a TextEdit widget.");
 		}

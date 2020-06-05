@@ -102,7 +102,7 @@ namespace MatterHackers.Agg.UI
 			base.OnLoad(args);
 		}
 
-		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
+		public override GuiWidget AddChild(GuiWidget child, int indexInChildrenList = -1)
 		{
 			throw new Exception("You cannot add controls directly to a TabControl. Add the controls to a TabPage and then add that to the TabControl.");
 		}

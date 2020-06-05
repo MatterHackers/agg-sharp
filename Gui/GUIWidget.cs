@@ -1443,10 +1443,8 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public virtual void AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
+		public virtual GuiWidget AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
 		{
-			// using (new PerformanceTimer("_LAST_", "Add Child"))
-			{
 #if DEBUG
 				if (childToAdd.hasBeenRemoved)
 				{
@@ -1454,47 +1452,48 @@ namespace MatterHackers.Agg.UI
 				}
 #endif
 
-				// first thing we do is make sure the child has been initialized
-				childToAdd.Initialize();
+			// first thing we do is make sure the child has been initialized
+			childToAdd.Initialize();
 
-				if (indexInChildrenList == -1)
-				{
-					indexInChildrenList = Children.Count;
-				}
-
-				if (childToAdd == this)
-				{
-					BreakInDebugger("A GuiWidget cannot be a child of itself.");
-				}
-
-				if (indexInChildrenList > Children.Count)
-				{
-					throw new IndexOutOfRangeException();
-				}
-
-				if (Children.Contains(childToAdd))
-				{
-					throw new Exception("You cannot add the same child twice.");
-				}
-
-				if (childToAdd.Parent != null)
-				{
-					throw new Exception("This is already the child of another widget.");
-				}
-
-				childToAdd.Parent = this;
-				childToAdd.HasBeenClosed = false;
-				Children.Modify((list) =>
-				{
-					list.Insert(indexInChildrenList, childToAdd);
-				});
-
-				OnChildAdded(new GuiWidgetEventArgs(childToAdd));
-				childToAdd.OnParentChanged(null);
-
-				childToAdd.InitLayout();
-				OnLayout(new LayoutEventArgs(this, childToAdd, PropertyCausingLayout.AddChild));
+			if (indexInChildrenList == -1)
+			{
+				indexInChildrenList = Children.Count;
 			}
+
+			if (childToAdd == this)
+			{
+				BreakInDebugger("A GuiWidget cannot be a child of itself.");
+			}
+
+			if (indexInChildrenList > Children.Count)
+			{
+				throw new IndexOutOfRangeException();
+			}
+
+			if (Children.Contains(childToAdd))
+			{
+				throw new Exception("You cannot add the same child twice.");
+			}
+
+			if (childToAdd.Parent != null)
+			{
+				throw new Exception("This is already the child of another widget.");
+			}
+
+			childToAdd.Parent = this;
+			childToAdd.HasBeenClosed = false;
+			Children.Modify((list) =>
+			{
+				list.Insert(indexInChildrenList, childToAdd);
+			});
+
+			OnChildAdded(new GuiWidgetEventArgs(childToAdd));
+			childToAdd.OnParentChanged(null);
+
+			childToAdd.InitLayout();
+			OnLayout(new LayoutEventArgs(this, childToAdd, PropertyCausingLayout.AddChild));
+
+			return childToAdd;
 		}
 
 		/// <summary>

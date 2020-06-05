@@ -181,9 +181,9 @@ namespace MatterHackers.Agg.UI
 			base.OnBoundsChanged(e);
 		}
 
-		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
+		public override GuiWidget AddChild(GuiWidget child, int indexInChildrenList = -1)
 		{
-			ScrollArea.AddChild(child, indexInChildrenList);
+			return ScrollArea.AddChild(child, indexInChildrenList);
 		}
 
 		private bool mouseDownOnScrollArea = false;
