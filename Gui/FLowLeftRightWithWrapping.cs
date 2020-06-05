@@ -135,6 +135,7 @@ namespace MatterHackers.Agg.UI
 						{
 							childContainerRow.PerformLayout();
 						}
+
 						childContainerRow = new FlowLayoutWidget()
 						{
 							Margin = RowMargin,
