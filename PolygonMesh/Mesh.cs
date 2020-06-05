@@ -848,7 +848,7 @@ namespace MatterHackers.PolygonMesh
 			mesh.PlaceTextureOnFace(face, textureToUse, mesh.GetMaxPlaneProjection(face, textureToUse));
 		}
 
-		public static void PlaceTextureOnFace(this Mesh mesh, int face, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
+		public static void PlaceTextureOnFace(this Mesh mesh, int face, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping, bool markAsChange = true)
 		{
 			var faceTextures = new Dictionary<int, FaceTextureData>(mesh.FaceTextures);
 
@@ -865,7 +865,10 @@ namespace MatterHackers.PolygonMesh
 
 			mesh.FaceTextures = faceTextures;
 
-			mesh.MarkAsChanged();
+			if (markAsChange)
+			{
+				mesh.MarkAsChanged();
+			}
 		}
 
 		public static void PlaceTextureOnFaces(this Mesh mesh, IEnumerable<int> faces, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
@@ -941,7 +944,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			for (int i = 0; i < mesh.Faces.Count; i++)
 			{
-				mesh.PlaceTextureOnFace(i, textureToUse, textureCoordinateMapping);
+				mesh.PlaceTextureOnFace(i, textureToUse, textureCoordinateMapping, false);
 			}
 
 			mesh.MarkAsChanged();
