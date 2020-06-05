@@ -166,7 +166,7 @@ namespace MatterHackers.Agg
 					//throw new NotImplementedException();
 				}
 
-				return;
+				//return;
 			}
 
 			double scaleX = inScaleX;

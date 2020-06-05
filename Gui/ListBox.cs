@@ -158,7 +158,7 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
-		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
+		public override GuiWidget AddChild(GuiWidget child, int indexInChildrenList = -1)
 		{
 			FlowLayoutWidget itemHolder = new FlowLayoutWidget();
 			itemHolder.Name = "list item holder";
@@ -172,6 +172,8 @@ namespace MatterHackers.Agg.UI
 			itemHolder.MouseLeaveBounds += itemToAdd_MouseLeaveBounds;
 			itemHolder.MouseDown += itemHolder_MouseDownInBounds;
 			itemHolder.ParentChanged += itemHolder_ParentChanged;
+
+			return child;
 		}
 
 		private bool settingLocalBounds = false;

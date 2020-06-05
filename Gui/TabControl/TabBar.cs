@@ -46,13 +46,14 @@ namespace MatterHackers.Agg.UI
 
 		public GuiWidget TabPageContainer { get; }
 
-		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
+		public override GuiWidget AddChild(GuiWidget child, int indexInChildrenList = -1)
 		{
 			if (child is Tab newTab)
 			{
 				newTab.Selected += Tab_Selected;
 			}
-			base.AddChild(child, indexInChildrenList);
+
+			return base.AddChild(child, indexInChildrenList);
 		}
 
 		public override void OnChildAdded(EventArgs e)

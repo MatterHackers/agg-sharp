@@ -72,7 +72,7 @@ namespace MatterHackers.Agg.UI
 			parentScrollableWidget.TopLeftOffset = topLeftOffset;
 		}
 
-		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
+		public override GuiWidget AddChild(GuiWidget child, int indexInChildrenList = -1)
 		{
 			child.BoundsChanged += RecalculateChildrenBounds;
 			child.PositionChanged += RecalculateChildrenBounds;
@@ -85,6 +85,8 @@ namespace MatterHackers.Agg.UI
 
 			// and restore it
 			parentScrollableWidget.TopLeftOffset = topLeftOffset;
+
+			return child;
 		}
 
 		private int debugRecursionCount = 0;

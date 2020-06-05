@@ -88,9 +88,11 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override void AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
+		public override GuiWidget AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
 		{
 			addedChildren.Add(childToAdd);
+
+			return childToAdd;
 		}
 
 		protected void DoWrappingLayout()
