@@ -45,6 +45,7 @@ namespace MatterHackers.Agg.UI
 		protected List<GuiWidget> addedChildren = new List<GuiWidget>();
 
 		public BorderDouble RowMargin { get; set; } = new BorderDouble(3, 0);
+
 		public BorderDouble RowPadding { get; set; } = new BorderDouble(3);
 
 		public FlowLeftRightWithWrapping()
@@ -95,8 +96,16 @@ namespace MatterHackers.Agg.UI
 			return childToAdd;
 		}
 
+		private bool needAnotherLayout;
+
 		protected void DoWrappingLayout()
 		{
+			if (doingLayout)
+			{
+				needAnotherLayout = true;
+				return;
+			}
+
 			using (this.LayoutLock())
 			{
 				doingLayout = true;
@@ -148,7 +157,7 @@ namespace MatterHackers.Agg.UI
 						base.AddChild(childContainerRow);
 					}
 
-					if (runningSize > 0 
+					if (runningSize > 0
 						|| !(child is ISkipIfFirst))
 					{
 						// add the new child to the current row
@@ -156,15 +165,25 @@ namespace MatterHackers.Agg.UI
 						{
 							childContainerRow.AddChild(child);
 						}
+
 						runningSize += child.Width;
 					}
 				}
+
 				if (childContainerRow != null)
 				{
 					childContainerRow.PerformLayout();
 				}
+
 				doingLayout = false;
 			}
+
+			if (needAnotherLayout)
+			{
+				UiThread.RunOnIdle(DoWrappingLayout);
+				needAnotherLayout = false;
+			}
+
 			this.PerformLayout();
 		}
 	}
