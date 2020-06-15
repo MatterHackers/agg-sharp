@@ -148,6 +148,26 @@ namespace ClipperLib
 			return point1.X * point2.X + point1.Y * point2.Y;
 		}
 
+		public static Polygon Translate(this Polygon poly, double x, double y, double scale = 1)
+		{
+			var output = new Polygon(poly.Count);
+			foreach (var point in poly)
+			{
+				output.Add(new IntPoint(point.X + x * scale, point.Y + y * scale));
+			}
+
+			return output;
+		}
+		public static Polygons Translate(this Polygons polys, double x, double y, double scale = 1)
+		{
+			var output = new Polygons(polys.Count);
+			foreach (var poly in polys)
+			{
+				output.Add(poly.Translate(x, y, scale));
+			}
+
+			return output;
+		}
 
 		public static Polygons Offset(this Polygons polygons, double distance)
 		{
