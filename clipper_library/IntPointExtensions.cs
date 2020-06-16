@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using ClipperLib;
+using MatterHackers.Agg;
 using System;
 using System.Collections.Generic;
 
@@ -148,6 +149,11 @@ namespace ClipperLib
 			return point1.X * point2.X + point1.Y * point2.Y;
 		}
 
+		public static long Cross(this IntPoint left, IntPoint right)
+		{
+			return left.X * right.Y - left.Y * right.X;
+		}
+
 		public static Polygon Translate(this Polygon poly, double x, double y, double scale = 1)
 		{
 			var output = new Polygon(poly.Count);
@@ -195,6 +201,28 @@ namespace ClipperLib
 			return output;
 		}
 
+		public static RectangleDouble GetBounds(this Polygon poly)
+		{
+			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
+			foreach (var point in poly)
+			{
+				bounds.ExpandToInclude(point.X, point.Y);
+			}
+
+			return bounds;
+		}
+
+		public static RectangleDouble GetBounds(this Polygons polys)
+		{
+			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
+			foreach (var poly in polys)
+			{
+				bounds.ExpandToInclude(poly.GetBounds());
+			}
+
+			return bounds;
+		}
+
 		public static Polygons Offset(this Polygons polygons, double distance)
 		{
 			var offseter = new ClipperOffset();
@@ -217,26 +245,45 @@ namespace ClipperLib
 			return solution;
 		}
 
-		public static Polygons CreateUnion(this Polygons polygons, Polygons other)
+		private static Polygons CombinePolygons(this Polygons aPolys, Polygons bPolys, ClipType clipType)
 		{
-			Clipper clipper = new Clipper();
-			clipper.AddPaths(polygons, PolyType.ptSubject, true);
-			clipper.AddPaths(other, PolyType.ptSubject, true);
+			var clipper = new Clipper();
+			clipper.AddPaths(aPolys, PolyType.ptSubject, true);
+			clipper.AddPaths(bPolys, PolyType.ptClip, true);
 
-			Polygons ret = new Polygons();
-			clipper.Execute(ClipType.ctUnion, ret, PolyFillType.pftNonZero, PolyFillType.pftNonZero);
-			return ret;
+			var outputPolys = new Polygons();
+			clipper.Execute(clipType, outputPolys);
+			return outputPolys;
 		}
 
-		public static Polygons CreateUnion(this Polygons polygons, Polygon other)
+		public static Polygons Union(this Polygons polygons, Polygons other)
 		{
-			Clipper clipper = new Clipper();
-			clipper.AddPaths(polygons, PolyType.ptSubject, true);
-			clipper.AddPath(other, PolyType.ptSubject, true);
+			return polygons.CombinePolygons(other, ClipType.ctUnion);
+		}
 
-			Polygons ret = new Polygons();
-			clipper.Execute(ClipType.ctUnion, ret, PolyFillType.pftNonZero, PolyFillType.pftNonZero);
-			return ret;
+		public static Polygons Union(this Polygons polygons, Polygon other)
+		{
+			return polygons.CombinePolygons(new Polygons() { other }, ClipType.ctUnion);
+		}
+
+		public static Polygons Subtract(this Polygons polygons, Polygons other)
+		{
+			return polygons.CombinePolygons(other, ClipType.ctDifference);
+		}
+
+		public static Polygons Subtract(this Polygons polygons, Polygon other)
+		{
+			return polygons.CombinePolygons(new Polygons() { other }, ClipType.ctDifference);
+		}
+
+		public static Polygons Subtract(this Polygon polygon, Polygons other)
+		{
+			return new Polygons() { polygon }.CombinePolygons(other, ClipType.ctDifference);
+		}
+
+		public static Polygons Subtract(this Polygon polygon, Polygon other)
+		{
+			return new Polygons() { polygon }.CombinePolygons(new Polygons() { other }, ClipType.ctDifference);
 		}
 	}
 }
