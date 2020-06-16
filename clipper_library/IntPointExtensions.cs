@@ -169,6 +169,32 @@ namespace ClipperLib
 			return output;
 		}
 
+		public static Polygon Rotate(this Polygon poly, double radians)
+		{
+			var output = new Polygon(poly.Count);
+
+			var cos = Math.Cos(radians);
+			var sin = Math.Sin(radians);
+
+			foreach (var point in poly)
+			{
+				output.Add(new IntPoint(point.X * cos - point.Y * sin, point.Y * cos + point.X * sin));
+			}
+
+			return output;
+		}
+
+		public static Polygons Rotate(this Polygons polys, double radians)
+		{
+			var output = new Polygons(polys.Count);
+			foreach (var poly in polys)
+			{
+				output.Add(poly.Rotate(radians));
+			}
+
+			return output;
+		}
+
 		public static Polygons Offset(this Polygons polygons, double distance)
 		{
 			var offseter = new ClipperOffset();
