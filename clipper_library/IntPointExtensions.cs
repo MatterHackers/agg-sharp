@@ -244,20 +244,20 @@ namespace ClipperLib
 			return solution;
 		}
 
-		private static Polygons CombinePolygons(this Polygons aPolys, Polygons bPolys, ClipType clipType)
+		private static Polygons CombinePolygons(this Polygons aPolys, Polygons bPolys, ClipType clipType, PolyFillType fillType = PolyFillType.pftEvenOdd)
 		{
 			var clipper = new Clipper();
 			clipper.AddPaths(aPolys, PolyType.ptSubject, true);
 			clipper.AddPaths(bPolys, PolyType.ptClip, true);
 
 			var outputPolys = new Polygons();
-			clipper.Execute(clipType, outputPolys);
+			clipper.Execute(clipType, outputPolys, fillType);
 			return outputPolys;
 		}
 
-		public static Polygons Union(this Polygons polygons, Polygons other)
+		public static Polygons Union(this Polygons polygons, Polygons other, PolyFillType fillType = PolyFillType.pftEvenOdd)
 		{
-			return polygons.CombinePolygons(other, ClipType.ctUnion);
+			return polygons.CombinePolygons(other, ClipType.ctUnion, fillType);
 		}
 
 		public static Polygons Union(this Polygons polygons, Polygon other)
