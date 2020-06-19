@@ -6,4 +6,8 @@
     <AssemblyName>agg_clipper_library</AssemblyName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\agg\Agg.csproj" />
+  </ItemGroup>
+
 </Project>

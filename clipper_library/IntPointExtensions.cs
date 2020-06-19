@@ -27,7 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using ClipperLib;
+using MatterHackers.Agg;
 using System;
 using System.Collections.Generic;
 
@@ -148,6 +148,79 @@ namespace ClipperLib
 			return point1.X * point2.X + point1.Y * point2.Y;
 		}
 
+		public static long Cross(this IntPoint left, IntPoint right)
+		{
+			return left.X * right.Y - left.Y * right.X;
+		}
+
+		public static Polygon Translate(this Polygon poly, double x, double y, double scale = 1)
+		{
+			var output = new Polygon(poly.Count);
+			foreach (var point in poly)
+			{
+				output.Add(new IntPoint(point.X + x * scale, point.Y + y * scale));
+			}
+
+			return output;
+		}
+		public static Polygons Translate(this Polygons polys, double x, double y, double scale = 1)
+		{
+			var output = new Polygons(polys.Count);
+			foreach (var poly in polys)
+			{
+				output.Add(poly.Translate(x, y, scale));
+			}
+
+			return output;
+		}
+
+		public static Polygon Rotate(this Polygon poly, double radians)
+		{
+			var output = new Polygon(poly.Count);
+
+			var cos = Math.Cos(radians);
+			var sin = Math.Sin(radians);
+
+			foreach (var point in poly)
+			{
+				output.Add(new IntPoint(point.X * cos - point.Y * sin, point.Y * cos + point.X * sin));
+			}
+
+			return output;
+		}
+
+		public static Polygons Rotate(this Polygons polys, double radians)
+		{
+			var output = new Polygons(polys.Count);
+			foreach (var poly in polys)
+			{
+				output.Add(poly.Rotate(radians));
+			}
+
+			return output;
+		}
+
+		public static RectangleDouble GetBounds(this Polygon poly)
+		{
+			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
+			foreach (var point in poly)
+			{
+				bounds.ExpandToInclude(point.X, point.Y);
+			}
+
+			return bounds;
+		}
+
+		public static RectangleDouble GetBounds(this Polygons polys)
+		{
+			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
+			foreach (var poly in polys)
+			{
+				bounds.ExpandToInclude(poly.GetBounds());
+			}
+
+			return bounds;
+		}
 
 		public static Polygons Offset(this Polygons polygons, double distance)
 		{
@@ -171,26 +244,45 @@ namespace ClipperLib
 			return solution;
 		}
 
-		public static Polygons CreateUnion(this Polygons polygons, Polygons other)
+		private static Polygons CombinePolygons(this Polygons aPolys, Polygons bPolys, ClipType clipType, PolyFillType fillType = PolyFillType.pftEvenOdd)
 		{
-			Clipper clipper = new Clipper();
-			clipper.AddPaths(polygons, PolyType.ptSubject, true);
-			clipper.AddPaths(other, PolyType.ptSubject, true);
+			var clipper = new Clipper();
+			clipper.AddPaths(aPolys, PolyType.ptSubject, true);
+			clipper.AddPaths(bPolys, PolyType.ptClip, true);
 
-			Polygons ret = new Polygons();
-			clipper.Execute(ClipType.ctUnion, ret, PolyFillType.pftNonZero, PolyFillType.pftNonZero);
-			return ret;
+			var outputPolys = new Polygons();
+			clipper.Execute(clipType, outputPolys, fillType);
+			return outputPolys;
 		}
 
-		public static Polygons CreateUnion(this Polygons polygons, Polygon other)
+		public static Polygons Union(this Polygons polygons, Polygons other, PolyFillType fillType = PolyFillType.pftEvenOdd)
 		{
-			Clipper clipper = new Clipper();
-			clipper.AddPaths(polygons, PolyType.ptSubject, true);
-			clipper.AddPath(other, PolyType.ptSubject, true);
+			return polygons.CombinePolygons(other, ClipType.ctUnion, fillType);
+		}
 
-			Polygons ret = new Polygons();
-			clipper.Execute(ClipType.ctUnion, ret, PolyFillType.pftNonZero, PolyFillType.pftNonZero);
-			return ret;
+		public static Polygons Union(this Polygons polygons, Polygon other)
+		{
+			return polygons.CombinePolygons(new Polygons() { other }, ClipType.ctUnion);
+		}
+
+		public static Polygons Subtract(this Polygons polygons, Polygons other)
+		{
+			return polygons.CombinePolygons(other, ClipType.ctDifference);
+		}
+
+		public static Polygons Subtract(this Polygons polygons, Polygon other)
+		{
+			return polygons.CombinePolygons(new Polygons() { other }, ClipType.ctDifference);
+		}
+
+		public static Polygons Subtract(this Polygon polygon, Polygons other)
+		{
+			return new Polygons() { polygon }.CombinePolygons(other, ClipType.ctDifference);
+		}
+
+		public static Polygons Subtract(this Polygon polygon, Polygon other)
+		{
+			return new Polygons() { polygon }.CombinePolygons(new Polygons() { other }, ClipType.ctDifference);
 		}
 	}
 }

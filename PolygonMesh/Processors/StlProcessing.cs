@@ -240,7 +240,9 @@ namespace MatterHackers.PolygonMesh.Processors
 			stlStream.Read(first160Bytes, 0, 160);
 			byte[] byteOredrMark = new byte[] { 0xEF, 0xBB, 0xBF };
 			int startOfString = 0;
-			if (first160Bytes[0] == byteOredrMark[0] && first160Bytes[0] == byteOredrMark[0] && first160Bytes[0] == byteOredrMark[0])
+			if (first160Bytes[0] == byteOredrMark[0]
+				&& first160Bytes[1] == byteOredrMark[1]
+				&& first160Bytes[2] == byteOredrMark[2])
 			{
 				startOfString = 3;
 			}

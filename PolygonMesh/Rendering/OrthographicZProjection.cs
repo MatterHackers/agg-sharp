@@ -78,7 +78,7 @@ namespace MatterHackers.PolygonMesh.Rendering
 				polyFace.Add(new IntPoint(polygon.Item1.X * meshToPolygonScale, polygon.Item1.Y * meshToPolygonScale));
 				polyFace.Add(new IntPoint(polygon.Item2.X * meshToPolygonScale, polygon.Item2.Y * meshToPolygonScale));
 				polyFace.Add(new IntPoint(polygon.Item3.X * meshToPolygonScale, polygon.Item3.Y * meshToPolygonScale));
-				polygonProjected = polygonProjected.CreateUnion(polyFace.Offset(100));
+				polygonProjected = polygonProjected.Union(polyFace.Offset(100));
 			}
 
 			// and move it back to the right size

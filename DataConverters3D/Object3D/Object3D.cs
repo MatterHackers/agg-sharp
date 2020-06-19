@@ -295,7 +295,19 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual bool Visible { get; set; } = true;
 
-		public virtual bool CanFlatten => false;
+		public virtual bool CanFlatten
+		{
+			get
+			{
+				if (this.Children.Count == 0 && this.GetType() != typeof(Object3D))
+				{
+					// we can flatten anything that is not an object 3d into an object 3d
+					return true;
+				}
+
+				return false;
+			}
+		}
 
 		public virtual bool CanEdit => this.HasChildren();
 
@@ -900,6 +912,14 @@ namespace MatterHackers.DataConverters3D
 					}
 
 					newChild.CopyProperties(this, flags);
+				}
+
+				if (this.Children.Count == 0 && this.GetType() != typeof(Object3D))
+				{
+					var newChild = new Object3D();
+					newChildren.Add(newChild);
+					newChild.CopyProperties(this, Object3DPropertyFlags.All);
+					newChild.Mesh = this.Mesh;
 				}
 
 				// and replace us with the children
