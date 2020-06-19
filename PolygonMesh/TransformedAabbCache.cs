@@ -57,6 +57,7 @@ namespace MatterHackers.PolygonMesh
 				{
 					cache.Clear();
 				}
+
 				// if we already have the transform with exact bounds than return it
 				AxisAlignedBoundingBox aabb;
 				if (cache.TryGetValue(transform, out aabb))
@@ -73,13 +74,11 @@ namespace MatterHackers.PolygonMesh
 					positions = convexHull.Vertices;
 				}
 
-				CalculateBounds(positions, transform);
-
-				return cache[transform];
+				return CalculateBounds(positions, transform);
 			}
 		}
 
-		private void CalculateBounds(IEnumerable<Vector3Float> vertices, Matrix4X4 transform)
+		private AxisAlignedBoundingBox CalculateBounds(IEnumerable<Vector3Float> vertices, Matrix4X4 transform)
 		{
 			// calculate the aabb for the current transform
 			var minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
@@ -98,7 +97,10 @@ namespace MatterHackers.PolygonMesh
 				maxXYZ.Z = Math.Max(maxXYZ.Z, position.Z);
 			}
 
-			cache.Add(transform, new AxisAlignedBoundingBox(minXYZ, maxXYZ));
+			var bounds = new AxisAlignedBoundingBox(minXYZ, maxXYZ);
+			cache.Add(transform, bounds);
+
+			return bounds;
 		}
 	}
 }
