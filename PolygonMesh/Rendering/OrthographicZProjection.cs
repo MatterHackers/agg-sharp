@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using ClipperLib;
 using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
+using MatterHackers.DataConverters2D;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Rendering
@@ -42,22 +43,20 @@ namespace MatterHackers.PolygonMesh.Rendering
 	{
 		public static void DrawTo(Graphics2D graphics2D, Mesh mesh, Matrix4X4 matrix, Vector2 offset, double scale, Color silhouetteColor)
 		{
-			graphics2D.Rasterizer.gamma(new gamma_power(.3));
 			VertexStorage polygonProjected = new VertexStorage();
 			for (int i = 0; i < mesh.Faces.Count; i++)
 			{
 				var face = mesh.Faces[i];
 				if (mesh.Faces[i].normal.TransformNormal(matrix).Z > 0)
 				{
-					polygonProjected.remove_all();
-
 					polygonProjected.MoveTo((new Vector2(mesh.Vertices[face.v0].Transform(matrix)) + offset) * scale);
 					polygonProjected.LineTo((new Vector2(mesh.Vertices[face.v1].Transform(matrix)) + offset) * scale);
 					polygonProjected.LineTo((new Vector2(mesh.Vertices[face.v2].Transform(matrix)) + offset) * scale);
+					polygonProjected.LineTo((new Vector2(mesh.Vertices[face.v0].Transform(matrix)) + offset) * scale);
 				}
-				graphics2D.Render(polygonProjected, silhouetteColor);
 			}
-			graphics2D.Rasterizer.gamma(new gamma_none());
+
+			graphics2D.Render(polygonProjected, silhouetteColor);
 		}
 
 		/// <summary>

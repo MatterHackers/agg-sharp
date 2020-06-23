@@ -67,6 +67,24 @@ namespace MatterHackers.DataConverters2D
 			return output;
 		}
 
+		public static VertexStorage Offset(this IVertexSource a, double distance, JoinType joinType = JoinType.jtMiter)
+		{
+			List<List<IntPoint>> aPolys = a.CreatePolygons();
+
+			ClipperOffset offseter = new ClipperOffset();
+			offseter.AddPaths(aPolys, joinType, EndType.etClosedPolygon);
+			var solution = new List<List<IntPoint>>();
+			offseter.Execute(ref solution, distance * 1000);
+
+			Clipper.CleanPolygons(solution);
+
+			VertexStorage output = solution.CreateVertexStorage();
+
+			output.Add(0, 0, ShapePath.FlagsAndCommand.Stop);
+
+			return output;
+		}
+
 		public static Polygons CreatePolygons(this IVertexSource sourcePath, double scaling = 1000)
 		{
 			var allPolys = new Polygons();
