@@ -34,9 +34,11 @@ namespace MatterHackers.Agg.UI
 	public interface ISystemWindowProvider
 	{
 		IReadOnlyList<SystemWindow> OpenWindows { get; }
+
 		SystemWindow TopWindow { get; }
 
 		void ShowSystemWindow(SystemWindow systemWindow);
+
 		void CloseSystemWindow(SystemWindow systemWindow);
 	}
 }
