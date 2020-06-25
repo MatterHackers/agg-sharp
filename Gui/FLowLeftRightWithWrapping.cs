@@ -47,6 +47,7 @@ namespace MatterHackers.Agg.UI
 		public BorderDouble RowMargin { get; set; } = new BorderDouble(3, 0);
 
 		public BorderDouble RowPadding { get; set; } = new BorderDouble(3);
+		public double MaxLineWidth { get; private set; }
 
 		public FlowLeftRightWithWrapping()
 			: base(FlowDirection.TopToBottom)
@@ -135,12 +136,14 @@ namespace MatterHackers.Agg.UI
 				base.AddChild(childContainerRow);
 
 				double runningSize = 0;
+				MaxLineWidth = 0;
 				foreach (var child in addedChildren)
 				{
 					if (Parent != null
 						&& (runningSize + child.Width > Parent.Width
 							|| child is IHardBreak))
 					{
+						MaxLineWidth = Math.Max(MaxLineWidth, runningSize);
 						runningSize = 0;
 						if (childContainerRow != null)
 						{
@@ -167,6 +170,7 @@ namespace MatterHackers.Agg.UI
 						}
 
 						runningSize += child.Width;
+						MaxLineWidth = Math.Max(MaxLineWidth, runningSize);
 					}
 				}
 

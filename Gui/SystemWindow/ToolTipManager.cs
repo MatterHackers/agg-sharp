@@ -134,7 +134,7 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 
-			if(widgetThatWasShowingToolTip != null)
+			if (widgetThatWasShowingToolTip != null)
 			{
 				RectangleDouble screenBounds = widgetThatWasShowingToolTip.TransformToScreenSpace(widgetThatWasShowingToolTip.LocalBounds);
 				if (!screenBounds.Contains(mousePosition))
@@ -208,29 +208,18 @@ namespace MatterHackers.Agg.UI
 					toolTipText = widgetThatWantsToShowToolTip.ToolTipText;
 					toolTipWidget = new FlowLayoutWidget()
 					{
-						BackgroundColor = Color.White,
 						OriginRelativeParent = new Vector2((int)mousePosition.X, (int)mousePosition.Y),
-						Padding = new BorderDouble(3),
 						Selectable = false,
 					};
 
 					toolTipWidget.Name = "ToolTipWidget";
 
-					toolTipWidget.AfterDraw += (sender, drawEventHandler) =>
-					{
-						drawEventHandler.Graphics2D.Rectangle(toolTipWidget.LocalBounds, Color.Black);
-					};
-
 					// Make sure we wrap long text
-					toolTipWidget.AddChild(new WrappedTextWidget(toolTipText)
-					{
-						Width = 350 * GuiWidget.DeviceScale,
-						HAnchor = HAnchor.Fit,
-					});
+					toolTipWidget.AddChild(CreateToolTip(toolTipText));
 
 					// Increase the delay to make long text stay on screen long enough to read
-					double RatioOfExpectedText = Math.Max(1, (widgetThatWantsToShowToolTip.ToolTipText.Length / 50.0));
-					CurrentAutoPopDelay = RatioOfExpectedText * AutoPopDelay;
+					double ratioOfExpectedText = Math.Max(1, widgetThatWantsToShowToolTip.ToolTipText.Length / 50.0);
+					CurrentAutoPopDelay = ratioOfExpectedText * AutoPopDelay;
 
 					systemWindow.AddChild(toolTipWidget);
 
@@ -266,6 +255,26 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 		}
+
+		private static GuiWidget DefaultToolTipWidget(string toolTipText)
+		{
+			var content = new WrappedTextWidget(toolTipText)
+			{
+				BackgroundColor = Color.White,
+				Width = 350 * GuiWidget.DeviceScale,
+				HAnchor = HAnchor.Fit,
+				Padding = new BorderDouble(3),
+			};
+
+			content.AfterDraw += (sender, drawEventHandler) =>
+			{
+				drawEventHandler.Graphics2D.Rectangle(content.LocalBounds, Color.Black);
+			};
+
+			return content;
+		}
+
+		public static Func<string, GuiWidget> CreateToolTip = DefaultToolTipWidget;
 
 		public void Clear()
 		{
