@@ -445,7 +445,7 @@ namespace MatterHackers.Agg.Font
 			int clostestIndex = -1;
 			double clostestXDistSquared = double.MaxValue;
 			double clostestYDistSquared = double.MaxValue;
-			var offset = new Vector2(0, TypeFaceStyle.EmSizeInPixels * NumLines());
+			var offset = new Vector2(0, TypeFaceStyle.EmSizeInPixels * NumLines() - TypeFaceStyle.EmSizeInPixels * .5);
 			int characterToMeasureStartIndexInclusive = 0;
 			int characterToMeasureEndIndexInclusive = text.Length - 1;
 			if (text.Length > 0)
