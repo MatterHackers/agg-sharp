@@ -852,6 +852,11 @@ namespace MatterHackers.RenderOpenGl
 		{
 		}
 
+		public void IndexPointer(IndexPointerType type, int stride, IntPtr pointer)
+		{
+			throw new NotImplementedException();
+		}
+
 		internal struct ViewPortData
 		{
 			internal int height;
