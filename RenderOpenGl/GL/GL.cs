@@ -261,6 +261,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			Instance?.NormalPointer(type, stride, pointer);
 		}
 
+		public static void IndexPointer(IndexPointerType type, int stride, IntPtr pointer)
+		{
+			Instance?.IndexPointer(type, stride, pointer);
+		}
+
 		public static void Ortho(double left, double right, double bottom, double top, double zNear, double zFar)
 		{
 			Instance?.Ortho(left, right, bottom, top, zNear, zFar);

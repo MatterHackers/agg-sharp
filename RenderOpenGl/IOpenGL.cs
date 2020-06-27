@@ -107,6 +107,8 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		void Normal3(double x, double y, double z);
 
 		void NormalPointer(NormalPointerType type, int stride, IntPtr pointer);
+		
+		void IndexPointer(IndexPointerType type, int stride, IntPtr pointer);
 
 		void Ortho(double left, double right, double bottom, double top, double zNear, double zFar);
 

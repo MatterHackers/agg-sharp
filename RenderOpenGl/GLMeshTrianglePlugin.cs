@@ -77,7 +77,7 @@ namespace MatterHackers.RenderOpenGl
 		public VectorPOD<VertexNormalData> normalData = new VectorPOD<VertexNormalData>();
 		public VectorPOD<VertexPositionData> positionData = new VectorPOD<VertexPositionData>();
 
-		public bool UseVertexColors { get; internal set; }
+		public bool UseVertexColors { get; set; }
 	}
 
 	public class GLMeshTrianglePlugin

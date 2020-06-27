@@ -1005,6 +1005,29 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
+		public void IndexPointer(IndexPointerType type, int stride, IntPtr pointer)
+		{
+#if USE_OPENGL
+			if (HardwareAvailable)
+			{
+				if (glHasBufferObjects || currentArrayBufferIndex == 0)
+				{
+					OpenTK.Graphics.OpenGL.GL.IndexPointer((OpenTK.Graphics.OpenGL.IndexPointerType)type, stride, pointer);
+				}
+				else
+				{
+					unsafe
+					{
+						fixed (byte* buffer = bufferData[currentArrayBufferIndex])
+						{
+							OpenTK.Graphics.OpenGL.GL.IndexPointer((OpenTK.Graphics.OpenGL.IndexPointerType)type, stride, new IntPtr(&buffer[(int)pointer]));
+						}
+					}
+				}
+			}
+#endif
+		}
+
 		public void VertexPointer(int size, VertexPointerType type, int stride, float[] pointer)
 		{
 			unsafe
