@@ -92,6 +92,7 @@ namespace MatterHackers.Agg.UI
 		public string CurrentText => toolTipText;
 
 		public static bool AllowToolTips { get; set; } = true;
+		public static bool DebugKeepOpen { get; set; }
 
 		public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
 		{
@@ -296,7 +297,11 @@ namespace MatterHackers.Agg.UI
 				timeSinceLastMouseMove.Stop();
 				timeSinceLastMouseMove.Reset();
 
-				toolTipWidget.Close();
+				if (!ToolTipManager.DebugKeepOpen)
+				{
+					toolTipWidget.Close();
+				}
+
 				toolTipWidget = null;
 				toolTipText = "";
 
