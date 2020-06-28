@@ -393,7 +393,7 @@ namespace MatterHackers.Agg.Font
 			int numLines = 1;
 
 			characterToMeasureStartIndexInclusive = Math.Max(0, Math.Min(characterToMeasureStartIndexInclusive, text.Length - 1));
-			characterToMeasureEndIndexInclusive = Math.Max(0, Math.Min(characterToMeasureEndIndexInclusive, text.Length - 1));
+			characterToMeasureEndIndexInclusive = Math.Max(-1, Math.Min(characterToMeasureEndIndexInclusive, text.Length - 1));
 			for (int i = characterToMeasureStartIndexInclusive; i <= characterToMeasureEndIndexInclusive; i++)
 			{
 				if (text[i] == '\n')
