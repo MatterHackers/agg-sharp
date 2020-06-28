@@ -36,6 +36,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
+using MatterHackers.Agg.Font;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -70,6 +71,31 @@ namespace MatterHackers.Agg.UI.Tests
 				var keyPressEvent = new KeyPressEventArgs(keyPressed);
 				reciever.OnKeyPress(keyPressEvent);
 			}
+		}
+
+		[Test]
+		public void CorectLineCounts()
+		{
+			var lines7 = @"; activate T0
+; move up a bit
+G91 
+G1 Z1 F1500
+G90
+; do the switch to T0
+G1 X-29.5 F6000 ; NO_PROCESSING";
+			var printer7 = new TypeFacePrinter(lines7);
+			Assert.AreEqual(7, printer7.NumLines());
+
+			var lines8 = @"; activate T0
+; move up a bit
+G91 
+G1 Z1 F1500
+G90
+; do the switch to T0
+G1 X-29.5 F6000 ; NO_PROCESSING
+";
+			var printer8 = new TypeFacePrinter(lines8);
+			Assert.AreEqual(8, printer8.NumLines());
 		}
 
 		[Test]
