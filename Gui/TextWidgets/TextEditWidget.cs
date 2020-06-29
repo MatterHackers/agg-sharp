@@ -27,10 +27,9 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.Font;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
 using System;
+using MatterHackers.Agg.Font;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
@@ -56,6 +55,7 @@ namespace MatterHackers.Agg.UI
 			{
 				return InternalTextEditWidget.TextColor;
 			}
+
 			set
 			{
 				InternalTextEditWidget.TextColor = value;
@@ -68,6 +68,7 @@ namespace MatterHackers.Agg.UI
 			{
 				return InternalTextEditWidget.TabIndex;
 			}
+
 			set
 			{
 				InternalTextEditWidget.TabIndex = value;
@@ -78,11 +79,12 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				return InternalTextEditWidget.cursorColor;
+				return InternalTextEditWidget.CursorColor;
 			}
+
 			set
 			{
-				InternalTextEditWidget.cursorColor = value;
+				InternalTextEditWidget.CursorColor = value;
 			}
 		}
 
@@ -108,11 +110,12 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				return InternalTextEditWidget.highlightColor;
+				return InternalTextEditWidget.HighlightColor;
 			}
+
 			set
 			{
-				InternalTextEditWidget.highlightColor = value;
+				InternalTextEditWidget.HighlightColor = value;
 			}
 		}
 
@@ -120,11 +123,12 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				return InternalTextEditWidget.borderColor;
+				return InternalTextEditWidget.BorderColor;
 			}
+
 			set
 			{
-				InternalTextEditWidget.borderColor = value;
+				InternalTextEditWidget.BorderColor = value;
 			}
 		}
 
@@ -134,6 +138,7 @@ namespace MatterHackers.Agg.UI
 			{
 				return borderWidth;
 			}
+
 			set
 			{
 				this.borderWidth = value;
@@ -149,7 +154,11 @@ namespace MatterHackers.Agg.UI
 
 		public bool Multiline
 		{
-			get { return InternalTextEditWidget.Multiline; }
+			get
+			{
+				return InternalTextEditWidget.Multiline;
+			}
+
 			set
 			{
 				InternalTextEditWidget.Multiline = value;
@@ -184,6 +193,7 @@ namespace MatterHackers.Agg.UI
 			{
 				return InternalTextEditWidget.Text;
 			}
+
 			set
 			{
 				InternalTextEditWidget.Text = value;
@@ -221,24 +231,26 @@ namespace MatterHackers.Agg.UI
 		{
 			Cursor = Cursors.IBeam;
 
-			InternalTextEditWidget.EditComplete += new EventHandler(internalTextEditWidget_EditComplete);
-			InternalTextEditWidget.EnterPressed += new KeyEventHandler(internalTextEditWidget_EnterPressed);
+			InternalTextEditWidget.EditComplete += new EventHandler(InternalTextEditWidget_EditComplete);
+			InternalTextEditWidget.EnterPressed += new KeyEventHandler(InternalTextEditWidget_EnterPressed);
 			if (pixelWidth == 0)
 			{
 				pixelWidth = InternalTextEditWidget.Width;
 			}
+
 			if (pixelHeight == 0)
 			{
 				pixelHeight = InternalTextEditWidget.Height;
 			}
+
 			this.LocalBounds = new RectangleDouble(0, 0, pixelWidth, pixelHeight);
-			InternalTextEditWidget.InsertBarPositionChanged += new EventHandler(internalTextEditWidget_InsertBarPositionChanged);
-			InternalTextEditWidget.FocusChanged += new EventHandler(internalTextEditWidget_FocusChanged);
-			InternalTextEditWidget.TextChanged += new EventHandler(internalTextEditWidget_TextChanged);
+			InternalTextEditWidget.InsertBarPositionChanged += new EventHandler(InternalTextEditWidget_InsertBarPositionChanged);
+			InternalTextEditWidget.FocusChanged += new EventHandler(InternalTextEditWidget_FocusChanged);
+			InternalTextEditWidget.TextChanged += new EventHandler(InternalTextEditWidget_TextChanged);
 			base.AddChild(InternalTextEditWidget);
 		}
 
-		private void internalTextEditWidget_TextChanged(object sender, EventArgs e)
+		private void InternalTextEditWidget_TextChanged(object sender, EventArgs e)
 		{
 			OnTextChanged(e);
 		}
@@ -246,7 +258,6 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// Make this widget the focus of keyboard input.
 		/// </summary>
-		/// <returns></returns>
 		public override void Focus()
 		{
 #if DEBUG
@@ -259,7 +270,7 @@ namespace MatterHackers.Agg.UI
 			InternalTextEditWidget.Focus();
 		}
 
-		private void internalTextEditWidget_FocusChanged(object sender, EventArgs e)
+		private void InternalTextEditWidget_FocusChanged(object sender, EventArgs e)
 		{
 			if (ContainsFocus)
 			{
@@ -275,6 +286,7 @@ namespace MatterHackers.Agg.UI
 			{
 				OnHideSoftwareKeyboard();
 			}
+
 			OnFocusChanged(e);
 		}
 
@@ -284,6 +296,7 @@ namespace MatterHackers.Agg.UI
 			{
 				OnHideSoftwareKeyboard();
 			}
+
 			base.OnClosed(e);
 		}
 
@@ -301,7 +314,7 @@ namespace MatterHackers.Agg.UI
 			KeyboardCollapsed?.Invoke(null, null);
 		}
 
-		private void internalTextEditWidget_EnterPressed(object sender, KeyEventArgs keyEvent)
+		private void InternalTextEditWidget_EnterPressed(object sender, KeyEventArgs keyEvent)
 		{
 			EnterPressed?.Invoke(this, keyEvent);
 		}
@@ -327,6 +340,7 @@ namespace MatterHackers.Agg.UI
 				{
 					scrollingAreaX = InternalTextEditWidget.LocalBounds.Left;
 				}
+
 				if (scrollingAreaY > InternalTextEditWidget.LocalBounds.Top)
 				{
 					scrollingAreaY = InternalTextEditWidget.LocalBounds.Top - 1;
@@ -335,6 +349,7 @@ namespace MatterHackers.Agg.UI
 				{
 					scrollingAreaY = InternalTextEditWidget.LocalBounds.Bottom;
 				}
+
 				ScrollArea.ParentToChildTransform.transform(ref scrollingAreaX, ref scrollingAreaY);
 				mouseEvent.X = scrollingAreaX;
 				mouseEvent.Y = scrollingAreaY;
@@ -347,7 +362,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void internalTextEditWidget_EditComplete(object sender, EventArgs e)
+		private void InternalTextEditWidget_EditComplete(object sender, EventArgs e)
 		{
 			EditComplete?.Invoke(this, null);
 		}
@@ -360,7 +375,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void internalTextEditWidget_InsertBarPositionChanged(object sender, EventArgs e)
+		private void InternalTextEditWidget_InsertBarPositionChanged(object sender, EventArgs e)
 		{
 			double fontHeight = Printer.TypeFaceStyle.EmSizeInPixels;
 			Vector2 barPosition = InternalTextEditWidget.InsertBarPosition;
@@ -375,6 +390,7 @@ namespace MatterHackers.Agg.UI
 			{
 				requiredOffet.X = currentOffsetInView.X;
 			}
+
 			if (currentOffsetInView.Y <= -(Height - fontHeight))
 			{
 				requiredOffet.Y = -(currentOffsetInView.Y + Height) + fontHeight;
@@ -383,6 +399,7 @@ namespace MatterHackers.Agg.UI
 			{
 				requiredOffet.Y = -currentOffsetInView.Y;
 			}
+
 			TopLeftOffset = new VectorMath.Vector2(TopLeftOffset.X - requiredOffet.X, TopLeftOffset.Y + requiredOffet.Y);
 		}
 

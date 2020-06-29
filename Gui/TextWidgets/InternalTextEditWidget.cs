@@ -27,15 +27,15 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.Font;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
+using MatterHackers.Agg.Font;
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
@@ -71,6 +71,7 @@ namespace MatterHackers.Agg.UI
 		public bool Selecting
 		{
 			get { return selecting; }
+
 			set
 			{
 				if (selecting != value)
@@ -95,7 +96,7 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				if (!String.IsNullOrEmpty(this.Text))
+				if (!string.IsNullOrEmpty(this.Text))
 				{
 					_charIndexToInsertBefore = Math.Min(this.Text.Length, _charIndexToInsertBefore);
 				}
@@ -107,7 +108,10 @@ namespace MatterHackers.Agg.UI
 				return _charIndexToInsertBefore;
 			}
 
-			set { _charIndexToInsertBefore = value; }
+			set
+			{
+				_charIndexToInsertBefore = value;
+			}
 		}
 
 		private int charIndexToAcceptAsMerging;
@@ -144,7 +148,11 @@ namespace MatterHackers.Agg.UI
 
 		public Vector2 InsertBarPosition
 		{
-			get { return insertBarPosition; }
+			get
+			{
+				return insertBarPosition;
+			}
+
 			set
 			{
 				if (insertBarPosition != value)
@@ -186,11 +194,11 @@ namespace MatterHackers.Agg.UI
 				{
 					if (CharIndexToInsertBefore < SelectionIndexToStartBefore)
 					{
-						return Text.Substring(CharIndexToInsertBefore, (SelectionIndexToStartBefore - CharIndexToInsertBefore));
+						return Text.Substring(CharIndexToInsertBefore, SelectionIndexToStartBefore - CharIndexToInsertBefore);
 					}
 					else
 					{
-						return Text.Substring(SelectionIndexToStartBefore, (CharIndexToInsertBefore - SelectionIndexToStartBefore));
+						return Text.Substring(SelectionIndexToStartBefore, CharIndexToInsertBefore - SelectionIndexToStartBefore);
 					}
 				}
 
@@ -198,7 +206,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override String Text
+		public override string Text
 		{
 			get
 			{
@@ -240,27 +248,27 @@ namespace MatterHackers.Agg.UI
 
 			Cursor = Cursors.IBeam;
 
-			internalTextWidget.TextChanged += new EventHandler(internalTextWidget_TextChanged);
-			internalTextWidget.BoundsChanged += new EventHandler(internalTextWidget_BoundsChanged);
+			internalTextWidget.TextChanged += new EventHandler(InternalTextWidget_TextChanged);
+			internalTextWidget.BoundsChanged += new EventHandler(InternalTextWidget_BoundsChanged);
 		}
 
 		private void UpdateLocalBounds()
 		{
-			//double padding = 5;
+			// double padding = 5;
 			double width = Math.Max(internalTextWidget.Width + 2, 3);
 			double height = Math.Max(internalTextWidget.Height, internalTextWidget.Printer.TypeFaceStyle.EmSizeInPixels);
-			//LocalBounds = new RectangleDouble(this.BorderWidth - padding, this.BorderWidth - padding, width + this.BorderWidth + padding, height + this.BorderWidth + padding);
+			// LocalBounds = new RectangleDouble(this.BorderWidth - padding, this.BorderWidth - padding, width + this.BorderWidth + padding, height + this.BorderWidth + padding);
 			LocalBounds = new RectangleDouble(-1, 0, width, height);
 			// TODO: text widget should have some padding rather than the 1 on the x below.  LBB 2013/02/03
 			internalTextWidget.OriginRelativeParent = new Vector2(1, -internalTextWidget.LocalBounds.Bottom);
 		}
 
-		private void internalTextWidget_BoundsChanged(object sender, EventArgs e)
+		private void InternalTextWidget_BoundsChanged(object sender, EventArgs e)
 		{
 			UpdateLocalBounds();
 		}
 
-		private void internalTextWidget_TextChanged(object sender, EventArgs e)
+		private void InternalTextWidget_TextChanged(object sender, EventArgs e)
 		{
 			OnTextChanged(e);
 		}
@@ -340,6 +348,7 @@ namespace MatterHackers.Agg.UI
 					OnEditComplete(e);
 				}
 			}
+
 			base.OnFocusChanged(e);
 		}
 
@@ -353,12 +362,12 @@ namespace MatterHackers.Agg.UI
 			return textWhenGotFocus != Text;
 		}
 
-		public Color cursorColor = Color.DarkGray;
-		public Color highlightColor = Color.Gray;
-		public Color borderColor = Color.White;
+		public Color CursorColor = Color.DarkGray;
+		public Color HighlightColor = Color.Gray;
+		public Color BorderColor = Color.White;
 		public Color textColor = Color.Black;
 		public int borderWidth = 0;
-		public int borderRadius = 0;
+		public int BorderRadius = 0;
 
 		public int BorderWidth
 		{
@@ -366,6 +375,7 @@ namespace MatterHackers.Agg.UI
 			{
 				return this.borderWidth;
 			}
+
 			set
 			{
 				this.borderWidth = value;
@@ -379,6 +389,7 @@ namespace MatterHackers.Agg.UI
 			{
 				return textColor;
 			}
+
 			set
 			{
 				this.textColor = value;
@@ -406,7 +417,7 @@ namespace MatterHackers.Agg.UI
 											Math.Ceiling(internalTextWidget.Height + InsertBarPosition.Y - fontHeight));
 
 					RoundedRect selectCursorRect = new RoundedRect(bar, 0);
-					graphics2D.Render(selectCursorRect, this.highlightColor);
+					graphics2D.Render(selectCursorRect, this.HighlightColor);
 				}
 				else
 				{
@@ -421,6 +432,7 @@ namespace MatterHackers.Agg.UI
 						// we are starting on a '\n', adjust so we will show the cr at the end of the line
 						lineEndPos = lineStartPos;
 					}
+
 					bool firstCharOfLine = false;
 					for (int i = lineEnd; i < lastCharToHighlight + 1; i++)
 					{
@@ -432,21 +444,24 @@ namespace MatterHackers.Agg.UI
 								// we are starting on a '\n', adjust so we will show the cr at the end of the line
 								lineEndPos = lineStartPos;
 							}
+
 							firstCharOfLine = false;
 						}
+
 						if (nextPos.Y != lineStartPos.Y)
 						{
 							if (lineEndPos.X == lineStartPos.X)
 							{
 								lineEndPos.X += Printer.TypeFaceStyle.GetAdvanceForCharacter(' ');
 							}
+
 							RectangleDouble bar = new RectangleDouble(Math.Ceiling(lineStartPos.X),
 													Math.Ceiling(internalTextWidget.Height + lineStartPos.Y),
 													Math.Ceiling(lineEndPos.X + 1),
 													Math.Ceiling(internalTextWidget.Height + lineEndPos.Y - fontHeight));
 
 							RoundedRect selectCursorRect = new RoundedRect(bar, 0);
-							graphics2D.Render(selectCursorRect, this.highlightColor);
+							graphics2D.Render(selectCursorRect, this.HighlightColor);
 							lineStartPos = nextPos;
 							firstCharOfLine = true;
 						}
@@ -455,6 +470,7 @@ namespace MatterHackers.Agg.UI
 							lineEndPos = nextPos;
 						}
 					}
+
 					if (lineEndPos.X != lineStartPos.X)
 					{
 						RectangleDouble bar = new RectangleDouble(Math.Ceiling(lineStartPos.X),
@@ -463,7 +479,7 @@ namespace MatterHackers.Agg.UI
 												Math.Ceiling(internalTextWidget.Height + lineEndPos.Y - fontHeight));
 
 						RoundedRect selectCursorRect = new RoundedRect(bar, 0);
-						graphics2D.Render(selectCursorRect, this.highlightColor);
+						graphics2D.Render(selectCursorRect, this.HighlightColor);
 					}
 				}
 			}
@@ -477,7 +493,7 @@ namespace MatterHackers.Agg.UI
 										Math.Ceiling(InsertBarPosition.X + 1) - xFraction,
 										Math.Ceiling(internalTextWidget.Height + InsertBarPosition.Y));
 				RoundedRect cursorRect = new RoundedRect(bar2, 0);
-				graphics2D.Render(cursorRect, this.cursorColor);
+				graphics2D.Render(cursorRect, this.CursorColor);
 			}
 
 			RectangleDouble boundsPlusPoint5 = LocalBounds;
@@ -498,6 +514,7 @@ namespace MatterHackers.Agg.UI
 					// we could not find any characters when looking for mouse click position
 					CharIndexToInsertBefore = 0;
 				}
+
 				SelectionIndexToStartBefore = CharIndexToInsertBefore;
 				Selecting = false;
 				mouseIsDown = true;
@@ -508,14 +525,17 @@ namespace MatterHackers.Agg.UI
 				{
 					CharIndexToInsertBefore--;
 				}
+
 				CharIndexToInsertBefore++;
 				SelectionIndexToStartBefore = CharIndexToInsertBefore + 1;
 				while (SelectionIndexToStartBefore < Text.Length && !WordBreakChars.Contains(Text[SelectionIndexToStartBefore]))
 				{
 					SelectionIndexToStartBefore++;
 				}
+
 				Selecting = true;
 			}
+
 			RestartBarFlash();
 			FixBarPosition(DesiredXPositionOnLine.Set);
 
@@ -532,10 +552,12 @@ namespace MatterHackers.Agg.UI
 				{
 					CharIndexToInsertBefore = 0;
 				}
+
 				if (CharIndexToInsertBefore != SelectionIndexToStartBefore)
 				{
 					Selecting = true;
 				}
+
 				Invalidate();
 				FixBarPosition(DesiredXPositionOnLine.Set);
 			}
@@ -552,6 +574,7 @@ namespace MatterHackers.Agg.UI
 			{
 				SelectAll();
 			}
+
 			selectAllOnMouseUpIfNoSelection = false;
 			base.OnMouseUp(mouseEvent);
 		}
@@ -561,7 +584,8 @@ namespace MatterHackers.Agg.UI
 			return internalTextWidget.Text;
 		}
 
-		protected enum DesiredXPositionOnLine { Maintain, Set };
+		protected enum DesiredXPositionOnLine { Maintain,
+            Set };
 
 		protected void FixBarPosition(DesiredXPositionOnLine desiredXPositionOnLine)
 		{
@@ -570,6 +594,7 @@ namespace MatterHackers.Agg.UI
 			{
 				desiredBarX = InsertBarPosition.X;
 			}
+
 			Invalidate();
 		}
 
@@ -583,11 +608,11 @@ namespace MatterHackers.Agg.UI
 			// first make sure we are deleting something that exists
 			startIndexInclusive = Math.Max(0, Math.Min(startIndexInclusive, internalTextWidget.Text.Length));
 			endIndexInclusive = Math.Max(startIndexInclusive, Math.Min(endIndexInclusive, internalTextWidget.Text.Length));
-			int LengthToDelete = (endIndexInclusive + 1) - startIndexInclusive;
-			if (LengthToDelete > 0 && internalTextWidget.Text.Length - startIndexInclusive >= LengthToDelete)
+			int lengthToDelete = endIndexInclusive + 1 - startIndexInclusive;
+			if (lengthToDelete > 0 && internalTextWidget.Text.Length - startIndexInclusive >= lengthToDelete)
 			{
 				StringBuilder stringBuilder = new StringBuilder(internalTextWidget.Text);
-				stringBuilder.Remove(startIndexInclusive, LengthToDelete);
+				stringBuilder.Remove(startIndexInclusive, lengthToDelete);
 				internalTextWidget.Text = stringBuilder.ToString();
 			}
 		}
@@ -656,7 +681,7 @@ namespace MatterHackers.Agg.UI
 			{
 				RestartBarFlash();
 
-				bool SetDesiredBarPosition = true;
+				bool setDesiredBarPosition = true;
 				bool turnOffSelection = false;
 
 				if (!ShiftKeyIsDown(keyEvent))
@@ -681,6 +706,7 @@ namespace MatterHackers.Agg.UI
 							keyEvent.SuppressKeyPress = true;
 							keyEvent.Handled = true;
 						}
+
 						break;
 
 					case Keys.Left:
@@ -700,6 +726,7 @@ namespace MatterHackers.Agg.UI
 								CharIndexToInsertBefore--;
 							}
 						}
+
 						keyEvent.SuppressKeyPress = true;
 						keyEvent.Handled = true;
 						break;
@@ -721,6 +748,7 @@ namespace MatterHackers.Agg.UI
 								CharIndexToInsertBefore++;
 							}
 						}
+
 						keyEvent.SuppressKeyPress = true;
 						keyEvent.Handled = true;
 						break;
@@ -731,8 +759,9 @@ namespace MatterHackers.Agg.UI
 						{
 							CharIndexToInsertBefore = Math.Min(CharIndexToInsertBefore, SelectionIndexToStartBefore);
 						}
+
 						GotoLineAbove();
-						SetDesiredBarPosition = false;
+						setDesiredBarPosition = false;
 						keyEvent.SuppressKeyPress = true;
 						keyEvent.Handled = true;
 						break;
@@ -743,8 +772,9 @@ namespace MatterHackers.Agg.UI
 						{
 							CharIndexToInsertBefore = Math.Max(CharIndexToInsertBefore, SelectionIndexToStartBefore);
 						}
+
 						GotoLineBelow();
-						SetDesiredBarPosition = false;
+						setDesiredBarPosition = false;
 						keyEvent.SuppressKeyPress = true;
 						keyEvent.Handled = true;
 						break;
@@ -838,6 +868,7 @@ namespace MatterHackers.Agg.UI
 								OnEditComplete(keyEvent);
 							}
 						}
+
 						break;
 
 					case Keys.Insert:
@@ -848,6 +879,7 @@ namespace MatterHackers.Agg.UI
 							keyEvent.Handled = true;
 							keyEvent.SuppressKeyPress = true;
 						}
+
 						if (keyEvent.Control)
 						{
 							turnOffSelection = false;
@@ -855,6 +887,7 @@ namespace MatterHackers.Agg.UI
 							keyEvent.Handled = true;
 							keyEvent.SuppressKeyPress = true;
 						}
+
 						break;
 
 					case Keys.A:
@@ -864,6 +897,7 @@ namespace MatterHackers.Agg.UI
 							keyEvent.Handled = true;
 							keyEvent.SuppressKeyPress = true;
 						}
+
 						break;
 
 					case Keys.X:
@@ -874,6 +908,7 @@ namespace MatterHackers.Agg.UI
 							keyEvent.Handled = true;
 							keyEvent.SuppressKeyPress = true;
 						}
+
 						break;
 
 					case Keys.C:
@@ -884,6 +919,7 @@ namespace MatterHackers.Agg.UI
 							keyEvent.Handled = true;
 							keyEvent.SuppressKeyPress = true;
 						}
+
 						break;
 
 					case Keys.V:
@@ -893,6 +929,7 @@ namespace MatterHackers.Agg.UI
 							keyEvent.Handled = true;
 							keyEvent.SuppressKeyPress = true;
 						}
+
 						break;
 
 					case Keys.Z:
@@ -902,6 +939,7 @@ namespace MatterHackers.Agg.UI
 							keyEvent.Handled = true;
 							keyEvent.SuppressKeyPress = true;
 						}
+
 						break;
 
 					case Keys.Y:
@@ -911,10 +949,11 @@ namespace MatterHackers.Agg.UI
 							keyEvent.Handled = true;
 							keyEvent.SuppressKeyPress = true;
 						}
+
 						break;
 				}
 
-				if (SetDesiredBarPosition)
+				if (setDesiredBarPosition)
 				{
 					FixBarPosition(DesiredXPositionOnLine.Set);
 				}
@@ -981,11 +1020,12 @@ namespace MatterHackers.Agg.UI
 				}
 
 				StringBuilder stringBuilder = new StringBuilder(internalTextWidget.Text);
-				String stringOnClipboard = Clipboard.Instance.GetText();
-				if(!Multiline)
+				string stringOnClipboard = Clipboard.Instance.GetText();
+				if (!Multiline)
 				{
 					stringOnClipboard = Regex.Replace(stringOnClipboard, @"\r\n?|\n", " ");
 				}
+
 				stringBuilder.Insert(CharIndexToInsertBefore, stringOnClipboard);
 				CharIndexToInsertBefore += stringOnClipboard.Length;
 				internalTextWidget.Text = stringBuilder.ToString();
@@ -1009,7 +1049,7 @@ namespace MatterHackers.Agg.UI
 					return;
 				}
 
-				if(ReadOnly)
+				if (ReadOnly)
 				{
 					return;
 				}
@@ -1029,6 +1069,7 @@ namespace MatterHackers.Agg.UI
 				{
 					tempString.Insert(CharIndexToInsertBefore, keyPressEvent.KeyChar.ToString());
 				}
+
 				keyPressEvent.Handled = true;
 				CharIndexToInsertBefore++;
 				internalTextWidget.Text = tempString.ToString();
@@ -1046,34 +1087,37 @@ namespace MatterHackers.Agg.UI
 				{
 					undoBuffer.Add(newUndoData);
 				}
+
 				charIndexToAcceptAsMerging = CharIndexToInsertBefore;
 			}
 		}
 
-		private int GetIndexOffset(int CharacterStartIndexInclusive, int MaxCharacterEndIndexInclusive, double DesiredPixelOffset)
+		private int GetIndexOffset(int characterStartIndexInclusive, int maxCharacterEndIndexInclusive, double desiredPixelOffset)
 		{
-			int OffsetIndex = 0;
-			int EndOffsetIndex = MaxCharacterEndIndexInclusive - CharacterStartIndexInclusive;
-			Vector2 offset = new Vector2();
-			Vector2 lastOffset = new Vector2();
+			int offsetIndex = 0;
+			int endOffsetIndex = maxCharacterEndIndexInclusive - characterStartIndexInclusive;
+			Vector2 offset = default(Vector2);
+			Vector2 lastOffset = default(Vector2);
 			while (true)
 			{
-				internalTextWidget.Printer.GetOffset(CharacterStartIndexInclusive, CharacterStartIndexInclusive + OffsetIndex, out offset);
-				OffsetIndex++;
-				if (offset.X >= DesiredPixelOffset || OffsetIndex >= EndOffsetIndex)
+				internalTextWidget.Printer.GetOffset(characterStartIndexInclusive, characterStartIndexInclusive + offsetIndex, out offset);
+				offsetIndex++;
+				if (offset.X >= desiredPixelOffset || offsetIndex >= endOffsetIndex)
 				{
 					if (Math.Abs(offset.Y) < .01
-						&& Math.Abs(lastOffset.X - DesiredPixelOffset) < Math.Abs(offset.X - DesiredPixelOffset))
+						&& Math.Abs(lastOffset.X - desiredPixelOffset) < Math.Abs(offset.X - desiredPixelOffset))
 					{
-						OffsetIndex--;
+						offsetIndex--;
 					}
+
 					break;
 				}
+
 				lastOffset = offset;
 			}
 
-			int MaxLength = Math.Min(MaxCharacterEndIndexInclusive - CharacterStartIndexInclusive, OffsetIndex);
-			return CharacterStartIndexInclusive + MaxLength;
+			int maxLength = Math.Min(maxCharacterEndIndexInclusive - characterStartIndexInclusive, offsetIndex);
+			return characterStartIndexInclusive + maxLength;
 		}
 
 		// the '\n' is always considered to be the end of the line.
@@ -1154,11 +1198,11 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			bool SkippedWiteSpace = false;
+			bool skippedWiteSpace = false;
 			if (internalTextWidget.Text[CharIndexToInsertBefore] == '\n')
 			{
 				CharIndexToInsertBefore++;
-				SkippedWiteSpace = true;
+				skippedWiteSpace = true;
 			}
 			else
 			{
@@ -1166,12 +1210,12 @@ namespace MatterHackers.Agg.UI
 				Match firstWhiteSpace = firstWhiteSpaceRegex.Match(internalTextWidget.Text, CharIndexToInsertBefore);
 				if (firstWhiteSpace.Success)
 				{
-					SkippedWiteSpace = true;
+					skippedWiteSpace = true;
 					CharIndexToInsertBefore = firstWhiteSpace.Index;
 				}
 			}
 
-			if (SkippedWiteSpace)
+			if (skippedWiteSpace)
 			{
 				Regex firstNonWhiteSpaceRegex = new Regex("[^\\t ]");
 				Match firstNonWhiteSpace = firstNonWhiteSpaceRegex.Match(internalTextWidget.Text, CharIndexToInsertBefore);
@@ -1255,6 +1299,7 @@ namespace MatterHackers.Agg.UI
 			{
 				CharIndexToInsertBefore = indexOfReturn;
 			}
+
 			FixBarPosition(DesiredXPositionOnLine.Set);
 		}
 

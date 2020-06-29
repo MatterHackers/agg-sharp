@@ -393,16 +393,11 @@ namespace MatterHackers.Agg.Font
 			int numLines = 1;
 
 			characterToMeasureStartIndexInclusive = Math.Max(0, Math.Min(characterToMeasureStartIndexInclusive, text.Length - 1));
-			characterToMeasureEndIndexInclusive = Math.Max(0, Math.Min(characterToMeasureEndIndexInclusive, text.Length - 1));
-			for (int i = characterToMeasureStartIndexInclusive; i < characterToMeasureEndIndexInclusive; i++)
+			characterToMeasureEndIndexInclusive = Math.Max(-1, Math.Min(characterToMeasureEndIndexInclusive, text.Length - 1));
+			for (int i = characterToMeasureStartIndexInclusive; i <= characterToMeasureEndIndexInclusive; i++)
 			{
 				if (text[i] == '\n')
 				{
-					if (i + 1 < characterToMeasureEndIndexInclusive && (text[i + 1] == '\n') && text[i] != text[i + 1])
-					{
-						i++;
-					}
-
 					numLines++;
 				}
 			}
@@ -445,7 +440,7 @@ namespace MatterHackers.Agg.Font
 			int clostestIndex = -1;
 			double clostestXDistSquared = double.MaxValue;
 			double clostestYDistSquared = double.MaxValue;
-			var offset = new Vector2(0, TypeFaceStyle.EmSizeInPixels * NumLines());
+			var offset = new Vector2(0, TypeFaceStyle.EmSizeInPixels * NumLines() - TypeFaceStyle.EmSizeInPixels * .5);
 			int characterToMeasureStartIndexInclusive = 0;
 			int characterToMeasureEndIndexInclusive = text.Length - 1;
 			if (text.Length > 0)
