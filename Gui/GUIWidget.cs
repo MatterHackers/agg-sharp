@@ -1446,14 +1446,15 @@ namespace MatterHackers.Agg.UI
 		public virtual GuiWidget AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
 		{
 #if DEBUG
-				if (childToAdd.hasBeenRemoved)
-				{
-					throw new Exception("You are adding a child that has previously been removed. You should probably be creating a new widget, or calling ClearRemovedFlag() before adding.");
-				}
+			if (childToAdd.hasBeenRemoved)
+			{
+				throw new Exception("You are adding a child that has previously been removed. You should probably be creating a new widget, or calling ClearRemovedFlag() before adding.");
+			}
 #endif
 
 			// first thing we do is make sure the child has been initialized
 			childToAdd.Initialize();
+
 
 			if (indexInChildrenList == -1)
 			{
