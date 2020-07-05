@@ -80,12 +80,14 @@ namespace MatterHackers.PolygonMesh
 				}
 				else if (!generateAsync)
 				{
+					var count = 0;
 					// we need to wait for the data to be ready and return it
-					while (currentlyCreatingHull)
+					while (currentlyCreatingHull && count < 1000)
 					{
 						Thread.Sleep(1);
 						mesh.PropertyBag.TryGetValue(CreatingConvexHullMesh, out creatingHullData);
 						currentlyCreatingHull = creatingHullData is CreatingHullFlag;
+						count++;
 					}
 
 					return CreateHullMesh(mesh);
