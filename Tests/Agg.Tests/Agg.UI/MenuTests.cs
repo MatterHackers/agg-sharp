@@ -28,30 +28,29 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 #if !__ANDROID__
+using System.Threading;
+using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
 	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
 	public class MenuTests
 	{
-		public static bool saveImagesForDebug = false;
+		public static bool SaveImagesForDebug = false;
 
 		private void OutputImage(ImageBuffer imageToOutput, string fileName)
 		{
-			if (saveImagesForDebug)
+			if (SaveImagesForDebug)
 			{
 				ImageTgaIO.Save(imageToOutput, fileName);
 			}
 		}
 
-		[Test, Ignore("Test remains unstable and written in a non-standard form") /* Test was unstable, putting back in rotation with updates... */]
+		[Test]
 		public async Task OpenAndCloseMenus()
 		{
 			int item1ClickCount = 0;
@@ -140,7 +139,6 @@ namespace MatterHackers.Agg.UI.Tests
 			menuItem1.Name = "item1";
 			menuItem1.Selected += (s, e) => item1ClickCount++;
 
-
 			var menuItem2 = testList.AddItem("item2");
 			menuItem2.Name = "item2";
 			menuItem2.Selected += (s, e) => item2ClickCount++;
@@ -149,7 +147,7 @@ namespace MatterHackers.Agg.UI.Tests
 			menuItem3.Name = "item3";
 			menuItem3.Enabled = false;
 			menuItem3.Selected += (s, e) => item3ClickCount++;
-			
+
 			menuTestContainer.AddChild(testList);
 
 			menuTestContainer.AddChild(new GuiWidget(20, 20)
