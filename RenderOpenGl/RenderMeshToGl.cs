@@ -96,18 +96,21 @@ namespace MatterHackers.RenderOpenGl
 		{
 			if (meshToRender != null)
 			{
-				GL.Enable(EnableCap.CullFace);
 				GL.Enable(EnableCap.Lighting);
 
 				GL.Color4(color.Red0To255, color.Green0To255, color.Blue0To255, color.Alpha0To255);
 
 				if (color.Alpha0To1 < 1)
 				{
+					GL.Disable(EnableCap.CullFace);
 					GL.Enable(EnableCap.Blend);
 				}
 				else
 				{
-					GL.Disable(EnableCap.Blend);
+					GL.Enable(EnableCap.CullFace);
+					// if we get a better transparency (like depth peeling) we should switch to rendering back faces
+					GL.Enable(EnableCap.Blend);
+					//GL.Disable(EnableCap.Blend);
 				}
 
 				GL.MatrixMode(MatrixMode.Modelview);
