@@ -297,13 +297,13 @@ namespace MatterHackers.Agg.UI
 				{
 					if (child.MaximumSize.X < sizePerChild.X)
 					{
-						extraSizeDueToMax.X += child.MaximumSize.X;
+						extraSizeDueToMax.X += sizePerChild.X - child.MaximumSize.X;
 						maxSizeCount.x++;
 					}
 
 					if (child.MaximumSize.Y < sizePerChild.Y)
 					{
-						extraSizeDueToMax.Y += child.MaximumSize.Y;
+						extraSizeDueToMax.Y += sizePerChild.Y - child.MaximumSize.Y;
 						maxSizeCount.y++;
 					}
 				}
@@ -311,12 +311,12 @@ namespace MatterHackers.Agg.UI
 				// add back in the amount this item cannot grow to the amount we will try to give each child
 				if (maxSizeCount.x > 0)
 				{
-					sizePerChild.X += extraSizeDueToMax.X / maxSizeCount.x;
+					sizePerChild.X += extraSizeDueToMax.X / (numItemsNeedingExpanding - maxSizeCount.x);
 				}
 
 				if (maxSizeCount.y > 0)
 				{
-					sizePerChild.Y += extraSizeDueToMax.Y / maxSizeCount.y;
+					sizePerChild.Y += extraSizeDueToMax.Y / (numItemsNeedingExpanding - maxSizeCount.y);
 				}
 			}
 
