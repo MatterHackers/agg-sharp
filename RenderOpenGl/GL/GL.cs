@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 using System;
+using System.Collections.Generic;
 
 namespace MatterHackers.RenderOpenGl.OpenGl
 {
@@ -140,6 +141,8 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		public static void Disable(EnableCap cap)
 		{
+			isEnabled[cap] = false;
+
 			Instance?.Disable(cap);
 		}
 
@@ -158,8 +161,21 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			Instance?.DrawRangeElements(mode, start, end, count, type, indices);
 		}
 
+		private static Dictionary<EnableCap, bool> isEnabled = new Dictionary<EnableCap, bool>();
+
+		public static bool EnableState(EnableCap cap)
+		{
+			if (isEnabled.ContainsKey(cap))
+			{
+				return isEnabled[cap];
+			}
+
+			return false;
+		}
+
 		public static void Enable(EnableCap cap)
 		{
+			isEnabled[cap] = true;
 			Instance?.Enable(cap);
 		}
 

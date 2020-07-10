@@ -28,11 +28,9 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Collections.Generic;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.PolygonMesh;
-using MatterHackers.RayTracer;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 
@@ -92,12 +90,18 @@ namespace MatterHackers.RenderOpenGl
 			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture);
 		}
 
-		public static void Render(Mesh meshToRender, Color color, Matrix4X4 transform, RenderTypes renderType = RenderTypes.Shaded, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color), Action meshChanged = null, bool blendTexture = true, bool allowBspRendering = true)
+		public static void Render(Mesh meshToRender,
+			Color color,
+			Matrix4X4 transform,
+			RenderTypes renderType = RenderTypes.Shaded,
+			Matrix4X4? meshToViewTransform = null,
+			Color wireFrameColor = default(Color),
+			Action meshChanged = null,
+			bool blendTexture = true,
+			bool allowBspRendering = true)
 		{
 			if (meshToRender != null)
 			{
-				GL.Enable(EnableCap.Lighting);
-
 				GL.Color4(color.Red0To255, color.Green0To255, color.Blue0To255, color.Alpha0To255);
 
 				if (color.Alpha0To1 < 1)
