@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2020, Lars Brubaker
+Copyright (c) 2015, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,20 +27,30 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-	public abstract class LayoutEngine
+	public static class GuiWidgetExtensions
 	{
-		public virtual void InitLayout()
+		public static Vector2 MinimumFlowSize(this GuiWidget widget)
 		{
+			// This is to understand the smallest this widget will be in the flow
+			var minimumSize = widget.MinimumSize;
+			if (widget.LayoutLocked)
+			{
+				minimumSize.X = Math.Max(minimumSize.X, widget.Width);
+				minimumSize.Y = Math.Max(minimumSize.Y, widget.Width);
+			}
+
+			if (widget.HAnchor != HAnchor.Stretch)
+			{
+				minimumSize.X = Math.Max(minimumSize.X, widget.Width);
+				minimumSize.Y = Math.Max(minimumSize.Y, widget.Height);
+			}
+
+			return minimumSize;
 		}
-
-		public abstract void Layout(LayoutEventArgs layoutEventArgs);
-
-		public abstract (bool adjustOrigin, bool adjustWidth) GetOriginAndWidthForChild(GuiWidget parent, GuiWidget child, out Vector2 newOriginRelParent, out double newWidth);
-
-		public abstract (bool adjustOrigin, bool adjustHeight) GetOriginAndHeightForChild(GuiWidget parent, GuiWidget child, out Vector2 newOriginRelParent, out double newHeight);
 	}
 }

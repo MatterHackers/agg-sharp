@@ -1247,6 +1247,38 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
+		public void FlowWithMaxSizeChildAllocatesToOthers()
+		{
+			var container = new GuiWidget(200, 300);
+
+			var leftToRightFlowLayout = new FlowLayoutWidget(FlowDirection.LeftToRight);
+			leftToRightFlowLayout.AnchorAll();
+			container.AddChild(leftToRightFlowLayout);
+
+			var leftItem = new GuiWidget()
+			{
+				Name = "leftItem",
+				HAnchor = HAnchor.Stretch
+			};
+			leftToRightFlowLayout.AddChild(leftItem);
+
+			var rightItem = new GuiWidget()
+			{
+				Name = "rightItem",
+				HAnchor = HAnchor.Stretch
+			};
+			leftToRightFlowLayout.AddChild(rightItem);
+
+			Assert.AreEqual(100, leftItem.Width);
+			Assert.AreEqual(100, rightItem.Width);
+
+			leftItem.MaximumSize = new Vector2(50, 500);
+
+			Assert.AreEqual(50, leftItem.Width);
+			Assert.AreEqual(150, rightItem.Width);
+		}
+
+		[Test]
 		public void LeftRightWithAnchorLeftRightChildTests()
 		{
 			LeftRightWithAnchorLeftRightChildTest(default(BorderDouble), default(BorderDouble));

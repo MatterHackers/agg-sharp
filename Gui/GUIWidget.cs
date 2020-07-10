@@ -696,6 +696,8 @@ namespace MatterHackers.Agg.UI
 
 		public event EventHandler MinimumSizeChanged;
 
+		public event EventHandler MaximumSizeChanged;
+
 		public event EventHandler TextChanged;
 
 		public event EventHandler VisibleChanged;
@@ -892,6 +894,11 @@ namespace MatterHackers.Agg.UI
 			MinimumSizeChanged?.Invoke(this, e);
 		}
 
+		public virtual void OnMaximumSizeChanged(EventArgs e)
+		{
+			MaximumSizeChanged?.Invoke(this, e);
+		}
+
 		private Vector2 maximumSize = new Vector2(double.MaxValue, double.MaxValue);
 
 		[Category("Layout Constraints")]
@@ -911,6 +918,21 @@ namespace MatterHackers.Agg.UI
 
 					minimumSize.X = Min(minimumSize.X, maximumSize.X);
 					minimumSize.Y = Min(minimumSize.Y, maximumSize.Y);
+
+					RectangleDouble localBounds = LocalBounds;
+					if (localBounds.Width > MaximumSize.X)
+					{
+						localBounds.Right = localBounds.Left + MaximumSize.X;
+					}
+
+					if (localBounds.Height > MaximumSize.Y)
+					{
+						localBounds.Top = localBounds.Bottom + MaximumSize.Y;
+					}
+
+					LocalBounds = localBounds;
+
+					OnMaximumSizeChanged(null);
 				}
 			}
 		}
