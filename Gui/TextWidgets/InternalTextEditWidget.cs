@@ -521,7 +521,9 @@ namespace MatterHackers.Agg.UI
 			}
 			else if (IsDoubleClick(mouseEvent))
 			{
-				while (CharIndexToInsertBefore >= Text.Length || (CharIndexToInsertBefore > -1 && !WordBreakChars.Contains(Text[CharIndexToInsertBefore])))
+				while (CharIndexToInsertBefore > 0
+					&& (CharIndexToInsertBefore >= Text.Length
+						|| (CharIndexToInsertBefore > -1 && !WordBreakChars.Contains(Text[CharIndexToInsertBefore]))))
 				{
 					CharIndexToInsertBefore--;
 				}
@@ -935,7 +937,15 @@ namespace MatterHackers.Agg.UI
 					case Keys.Z:
 						if (keyEvent.Control)
 						{
-							Undo();
+							if (keyEvent.Shift)
+							{
+								Redo();
+							}
+							else
+							{
+								Undo();
+							}
+
 							keyEvent.Handled = true;
 							keyEvent.SuppressKeyPress = true;
 						}
@@ -945,7 +955,7 @@ namespace MatterHackers.Agg.UI
 					case Keys.Y:
 						if (keyEvent.Control)
 						{
-							undoBuffer.Redo();
+							Redo();
 							keyEvent.Handled = true;
 							keyEvent.SuppressKeyPress = true;
 						}
@@ -975,6 +985,12 @@ namespace MatterHackers.Agg.UI
 		public void Undo()
 		{
 			undoBuffer.Undo();
+			FixBarPosition(DesiredXPositionOnLine.Set);
+		}
+
+		public void Redo()
+		{
+			undoBuffer.Redo();
 			FixBarPosition(DesiredXPositionOnLine.Set);
 		}
 
