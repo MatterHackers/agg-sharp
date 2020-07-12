@@ -16,7 +16,7 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
-//#define USE_UNSAFE // no real code for this yet
+// #define USE_UNSAFE // no real code for this yet
 
 using System;
 using System.Collections.Generic;
@@ -39,43 +39,44 @@ namespace MatterHackers.Agg
 			fill_even_odd
 		}
 
-		public static void memcpy(Byte[] dest, int destIndex, Byte[] source, int sourceIndex, int Count)
+		public static void memcpy(byte[] dest, int destIndex, byte[] source, int sourceIndex, int count)
 		{
 #if USE_UNSAFE
 #else
-			for (int i = 0; i < Count; i++)
+			for (int i = 0; i < count; i++)
 			{
 				dest[destIndex + i] = source[sourceIndex + i];
 			}
 #endif
 		}
 
-		public static double ParseDouble(String source, bool fastSimpleNumbers)
+		public static double ParseDouble(string source, bool fastSimpleNumbers)
 		{
 			int startIndex = 0;
 			return ParseDouble(source, ref startIndex, fastSimpleNumbers);
 		}
 
-		//private static Regex numberRegex = new Regex(@"[-+]?[0-9]*\.?[0-9]+");
+		// private static Regex numberRegex = new Regex(@"[-+]?[0-9]*\.?[0-9]+");
 		private static Regex numberRegex = new Regex(@"[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?");
 
-		private static double GetNextNumber(String source, ref int startIndex)
+		private static double GetNextNumber(string source, ref int startIndex)
 		{
 			Match numberMatch = numberRegex.Match(source, startIndex);
-			String returnString = numberMatch.Value;
+			string returnString = numberMatch.Value;
 			startIndex = numberMatch.Index + numberMatch.Length;
 			double returnVal;
 			double.TryParse(returnString, NumberStyles.Number, CultureInfo.InvariantCulture, out returnVal);
 			return returnVal;
 		}
 
-		public static double ParseDouble(String source, ref int startIndex, bool fastSimpleNumbers)
+		public static double ParseDouble(string source, ref int startIndex, bool fastSimpleNumbers)
 		{
 #if true
 			if (fastSimpleNumbers)
 			{
 				return ParseDoubleFast(source, ref startIndex);
 			}
+
 			return GetNextNumber(source, ref startIndex);
 #else
 			int startIndexNew = startIndex;
@@ -94,19 +95,20 @@ namespace MatterHackers.Agg
 		}
 
 		private static Regex fileNameNumberMatch = new Regex("\\(\\d+\\)\\s*$", RegexOptions.Compiled);
+
 		public static string GetNonCollidingName(string desiredName, IEnumerable<string> listToCheck)
 		{
 			return GetNonCollidingName(desiredName, (name) => !listToCheck.Contains(name));
 		}
 
-		public static string GetNonCollidingName(string desiredName, Func<string, bool> IsUnique)
+		public static string GetNonCollidingName(string desiredName, Func<string, bool> isUnique)
 		{
 			if (desiredName == null)
 			{
 				desiredName = "No Name";
 			}
 
-			if (IsUnique(desiredName))
+			if (isUnique(desiredName))
 			{
 				return desiredName;
 			}
@@ -124,13 +126,13 @@ namespace MatterHackers.Agg
 				do
 				{
 					candidateName = string.Format("{0} ({1})", desiredName, nextNumberToTry++);
-				} while (!IsUnique(candidateName));
+				} while (!isUnique(candidateName));
 
 				return candidateName;
 			}
 		}
 
-		private static double ParseDoubleFast(String source, ref int startIndex)
+		private static double ParseDoubleFast(string source, ref int startIndex)
 		{
 			int length = source.Length;
 			bool negative = false;
@@ -149,6 +151,7 @@ namespace MatterHackers.Agg
 					{
                         break;
 					}
+
 					if (next == '-')
 					{
 						negative = true;
@@ -162,11 +165,14 @@ namespace MatterHackers.Agg
 						currentIntPart = next - '0';
 						foundNumber = true;
 					}
+
 					startIndex++;
 					break;
 				}
+
 				startIndex++;
 			}
+
 			// accumulate the int part
 			while (startIndex < length)
 			{
@@ -193,8 +199,10 @@ namespace MatterHackers.Agg
 						{
 							break;
 						}
+
 						startIndex++;
 					}
+
 					break;
 				}
 				else if(!foundNumber && next == ' ')
@@ -205,16 +213,18 @@ namespace MatterHackers.Agg
 				{
 					break;
 				}
+
 				startIndex++;
 			}
 
 			if (fractionDigits > 0)
 			{
-				double fractionNumber = currentIntPart + (currentFractionPart / (Math.Pow(10.0, fractionDigits)));
+				double fractionNumber = currentIntPart + (currentFractionPart / Math.Pow(10.0, fractionDigits));
 				if (negative)
 				{
 					return -fractionNumber;
 				}
+
 				return fractionNumber;
 			}
 			else
@@ -223,6 +233,7 @@ namespace MatterHackers.Agg
 				{
 					return -currentIntPart;
 				}
+
 				return currentIntPart;
 			}
 		}
@@ -314,9 +325,9 @@ namespace MatterHackers.Agg
 			return hash;
 		}
 
-		public static void memcpy(int[] dest, int destIndex, int[] source, int sourceIndex, int Count)
+		public static void memcpy(int[] dest, int destIndex, int[] source, int sourceIndex, int count)
 		{
-			for (int i = 0; i < Count; i++)
+			for (int i = 0; i < count; i++)
 			{
 				dest[destIndex + i] = source[sourceIndex + i];
 			}
@@ -330,12 +341,12 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public static void memmove(Byte[] dest, int destIndex, Byte[] source, int sourceIndex, int Count)
+		public static void memmove(byte[] dest, int destIndex, byte[] source, int sourceIndex, int count)
 		{
 			if (source != dest
 				|| destIndex < sourceIndex)
 			{
-				memcpy(dest, destIndex, source, sourceIndex, Count);
+				memcpy(dest, destIndex, source, sourceIndex, count);
 			}
 			else
 			{
@@ -349,12 +360,12 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public static void memmove(int[] dest, int destIndex, int[] source, int sourceIndex, int Count)
+		public static void memmove(int[] dest, int destIndex, int[] source, int sourceIndex, int count)
 		{
 			if (source != dest
 				|| destIndex < sourceIndex)
 			{
-				memcpy(dest, destIndex, source, sourceIndex, Count);
+				memcpy(dest, destIndex, source, sourceIndex, count);
 			}
 			else
 			{
@@ -368,12 +379,12 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public static void memmove(float[] dest, int destIndex, float[] source, int sourceIndex, int Count)
+		public static void memmove(float[] dest, int destIndex, float[] source, int sourceIndex, int count)
 		{
 			if (source != dest
 				|| destIndex < sourceIndex)
 			{
-				memcpy(dest, destIndex, source, sourceIndex, Count);
+				memcpy(dest, destIndex, source, sourceIndex, count);
 			}
 			else
 			{
@@ -387,36 +398,37 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public static void memset(int[] dest, int destIndex, int Val, int Count)
+		public static void memset(int[] dest, int destIndex, int val, int count)
 		{
-			for (int i = 0; i < Count; i++)
+			for (int i = 0; i < count; i++)
 			{
-				dest[destIndex + i] = Val;
+				dest[destIndex + i] = val;
 			}
 		}
 
-		public static void memset(Byte[] dest, int destIndex, byte ByteVal, int Count)
+		public static void memset(byte[] dest, int destIndex, byte byteVal, int count)
 		{
-			for (int i = 0; i < Count; i++)
+			for (int i = 0; i < count; i++)
 			{
-				dest[destIndex + i] = ByteVal;
+				dest[destIndex + i] = byteVal;
 			}
 		}
 
-		public static void MemClear(int[] dest, int destIndex, int Count)
+		public static void MemClear(int[] dest, int destIndex, int count)
 		{
-			for (int i = 0; i < Count; i++)
+			for (int i = 0; i < count; i++)
 			{
 				dest[destIndex + i] = 0;
 			}
 		}
 
-		public static void MemClear(Byte[] dest, int destIndex, int Count)
+		public static void MemClear(byte[] dest, int destIndex, int count)
 		{
-			for (int i = 0; i < Count; i++)
+			for (int i = 0; i < count; i++)
 			{
 				dest[destIndex + i] = 0;
 			}
+
 			/*
 			// dword align to dest
 			while (((int)pDest & 3) != 0
@@ -452,7 +464,7 @@ namespace MatterHackers.Agg
 
 		public static bool is_equal_eps(double v1, double v2, double epsilon)
 		{
-			return Math.Abs(v1 - v2) <= (double)(epsilon);
+			return Math.Abs(v1 - v2) <= (double)epsilon;
 		}
 
 		//------------------------------------------------------------------deg2rad
@@ -477,8 +489,16 @@ namespace MatterHackers.Agg
 
 		public static int iround(double v, int saturationLimit)
 		{
-			if (v < (double)(-saturationLimit)) return -saturationLimit;
-			if (v > (double)(saturationLimit)) return saturationLimit;
+			if (v < (double)-saturationLimit)
+			{
+				return -saturationLimit;
+			}
+
+			if (v > (double)saturationLimit)
+			{
+				return saturationLimit;
+			}
+
 			return iround(v);
 		}
 
@@ -489,12 +509,12 @@ namespace MatterHackers.Agg
 
 		public static int ufloor(double v)
 		{
-			return (int)(uint)(v);
+			return (int)(uint)v;
 		}
 
 		public static int uceil(double v)
 		{
-			return (int)(uint)(Math.Ceiling(v));
+			return (int)(uint)Math.Ceiling(v);
 		}
 
 		//----------------------------------------------------poly_subpixel_scale_e

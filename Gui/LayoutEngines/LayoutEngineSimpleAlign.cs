@@ -1,5 +1,34 @@
-﻿using MatterHackers.VectorMath;
+﻿/*
+Copyright (c) 2020, Lars Brubaker
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied, of the FreeBSD Project.
+*/
+
 using System;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
@@ -61,6 +90,7 @@ namespace MatterHackers.Agg.UI
 							{
 								continue;
 							}
+
 							ApplyHAnchorToChild(parent, child);
 							ApplyVAnchorToChild(parent, child);
 						}
@@ -76,10 +106,8 @@ namespace MatterHackers.Agg.UI
 				throw new Exception("All children should have their parent set the parent they have.");
 			}
 
-			Vector2 newOriginRelParent;
-			double newHeight;
-			var adjust = GetOriginAndHeightForChild(parent, child, out newOriginRelParent, out newHeight);
-			if (adjust.adjustOrigin || adjust.adjustHeight)
+			var (adjustOrigin, adjustHeight) = GetOriginAndHeightForChild(parent, child, out Vector2 newOriginRelParent, out double newHeight);
+			if (adjustOrigin || adjustHeight)
 			{
 				child.OriginRelativeParent = newOriginRelParent;
 				child.Height = newHeight;
@@ -93,8 +121,7 @@ namespace MatterHackers.Agg.UI
 				double heightToMatchParent = 0;
 				if (widgetToAdjustBounds.Parent != null)
 				{
-					Vector2 newOriginRelParent;
-					if (!GetOriginAndHeightForChild(widgetToAdjustBounds.Parent, widgetToAdjustBounds, out newOriginRelParent, out heightToMatchParent).adjustHeight)
+					if (!GetOriginAndHeightForChild(widgetToAdjustBounds.Parent, widgetToAdjustBounds, out _, out heightToMatchParent).adjustHeight)
 					{
 						// we don't need to adjust anything for the parent so make sure this is not applied below.
 						heightToMatchParent = 0;
@@ -200,10 +227,8 @@ namespace MatterHackers.Agg.UI
 				throw new Exception("All children should have their parent set to the parent they have.");
 			}
 
-			Vector2 newOriginRelParent;
-			double newWidth;
-			var adjust = GetOriginAndWidthForChild(parent, child, out newOriginRelParent, out newWidth);
-			if (adjust.adjustOrigin || adjust.adjustWidth)
+			var (adjustOrigin, adjustWidth) = GetOriginAndWidthForChild(parent, child, out Vector2 newOriginRelParent, out double newWidth);
+			if (adjustOrigin || adjustWidth)
 			{
 				newWidth = Math.Max(newWidth, child.MinimumSize.X);
 				if (child.OriginRelativeParent != newOriginRelParent
@@ -211,7 +236,7 @@ namespace MatterHackers.Agg.UI
 				{
 					var origin = child.OriginRelativeParent;
 					var width = child.Width;
-					var parentLock = (child.Parent != null) ? child.Parent.LayoutLock() : null;
+					var parentLock = child.Parent?.LayoutLock();
 					// only do one layout
 					using (child.LayoutLock())
 					{
@@ -247,8 +272,7 @@ namespace MatterHackers.Agg.UI
 				// let's check if the parent would like to make this widget bigger
 				if (widgetToAdjust.Parent != null)
 				{
-					Vector2 newOriginRelParent;
-					if (!GetOriginAndWidthForChild(widgetToAdjust.Parent, widgetToAdjust, out newOriginRelParent, out widthToMatchParent).adjustWidth)
+					if (!GetOriginAndWidthForChild(widgetToAdjust.Parent, widgetToAdjust, out _, out widthToMatchParent).adjustWidth)
 					{
 						// we don't need to adjust anything for the parent so make sure this is not applied below.
 						widthToMatchParent = 0;

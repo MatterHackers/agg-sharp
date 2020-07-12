@@ -51,6 +51,7 @@ namespace MatterHackers.Agg.UI
 	public interface ICheckbox
 	{
 		event EventHandler CheckedStateChanged;
+
 		bool Checked { get; set; }
 	}
 

@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2015, Lars Brubaker
+Copyright (c) 2020, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,20 +27,26 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
 using System;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-	public enum FlowDirection { LeftToRight, BottomToTop, RightToLeft, TopToBottom };
+	public enum FlowDirection
+	{
+		LeftToRight,
+		BottomToTop,
+		RightToLeft,
+		TopToBottom
+	}
 
 	public class LayoutEngineFlow : LayoutEngineSimpleAlign
 	{
 		public FlowDirection FlowDirection { get; set; }
 
-		public LayoutEngineFlow(FlowDirection FlowDirection)
+		public LayoutEngineFlow(FlowDirection flowDirection)
 		{
-			this.FlowDirection = FlowDirection;
+			this.FlowDirection = flowDirection;
 		}
 
 		public override void InitLayout()
@@ -276,6 +282,44 @@ namespace MatterHackers.Agg.UI
 				ref totalSizeOfStaticItems,
 				ref totalMinimumSizeOfAllItems);
 
+			var availableSpaceInParent = new Vector2(parent.LocalBounds.Width - parent.DevicePadding.Width,
+				parent.LocalBounds.Height - parent.DevicePadding.Height);
+			var sizePerChild = new Vector2((availableSpaceInParent.X - totalSizeOfStaticItems.X) / numItemsNeedingExpanding,
+				(availableSpaceInParent.Y - totalSizeOfStaticItems.Y) / numItemsNeedingExpanding);
+
+			if (numItemsNeedingExpanding > 0)
+			{
+				// Iterate all the children and add back in and size that they can't grow bigger than back into the sizePerChild.
+				var extraSizeDueToMax = default(Vector2);
+				var maxSizeCount = default(Point2D);
+
+				foreach (GuiWidget child in parent.Children)
+				{
+					if (child.MaximumSize.X < sizePerChild.X)
+					{
+						extraSizeDueToMax.X += sizePerChild.X - child.MaximumSize.X;
+						maxSizeCount.x++;
+					}
+
+					if (child.MaximumSize.Y < sizePerChild.Y)
+					{
+						extraSizeDueToMax.Y += sizePerChild.Y - child.MaximumSize.Y;
+						maxSizeCount.y++;
+					}
+				}
+
+				// add back in the amount this item cannot grow to the amount we will try to give each child
+				if (maxSizeCount.x > 0)
+				{
+					sizePerChild.X += extraSizeDueToMax.X / (numItemsNeedingExpanding - maxSizeCount.x);
+				}
+
+				if (maxSizeCount.y > 0)
+				{
+					sizePerChild.Y += extraSizeDueToMax.Y / (numItemsNeedingExpanding - maxSizeCount.y);
+				}
+			}
+
 			switch (FlowDirection)
 			{
 				case UI.FlowDirection.LeftToRight:
@@ -295,10 +339,9 @@ namespace MatterHackers.Agg.UI
 								if (child.HAnchorIsSet(HAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
-									double newWidth = (parent.LocalBounds.Width - parent.DevicePadding.Width - totalSizeOfStaticItems.X) / numItemsNeedingExpanding;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left,
 										curChildBounds.Bottom,
-										curChildBounds.Left + newWidth,
+										curChildBounds.Left + sizePerChild.X,
 										curChildBounds.Top);
 								}
 
@@ -324,10 +367,9 @@ namespace MatterHackers.Agg.UI
 								if (child.HAnchorIsSet(HAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
-									double newWidth = (parent.LocalBounds.Width - parent.DevicePadding.Width - totalSizeOfStaticItems.X) / numItemsNeedingExpanding;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left,
 										curChildBounds.Bottom,
-										curChildBounds.Left + newWidth,
+										curChildBounds.Left + sizePerChild.X,
 										curChildBounds.Top);
 								}
 
@@ -357,11 +399,10 @@ namespace MatterHackers.Agg.UI
 								if (child.VAnchorIsSet(VAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
-									double newHeight = (parent.LocalBounds.Height - parent.DevicePadding.Height - totalSizeOfStaticItems.Y) / numItemsNeedingExpanding;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left,
 										curChildBounds.Bottom,
 										curChildBounds.Right,
-										curChildBounds.Bottom + newHeight);
+										curChildBounds.Bottom + sizePerChild.Y);
 								}
 
 								curY += child.LocalBounds.Height + child.DeviceMarginAndBorder.Height;
@@ -386,11 +427,10 @@ namespace MatterHackers.Agg.UI
 								if (child.VAnchorIsSet(VAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
-									double newHeight = (parent.LocalBounds.Height - parent.DevicePadding.Height - totalSizeOfStaticItems.Y) / numItemsNeedingExpanding;                                         // - child.DeviceMarginAndBorder.Height;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left,
 										curChildBounds.Bottom,
 										curChildBounds.Right,
-										curChildBounds.Bottom + newHeight);
+										curChildBounds.Bottom + sizePerChild.Y);
 								}
 
 								double newY = curY - child.LocalBounds.Bottom - (child.LocalBounds.Height + child.DeviceMarginAndBorder.Top);
@@ -476,28 +516,6 @@ namespace MatterHackers.Agg.UI
 			}
 
 			return numItemsNeedingExpanding;
-		}
-	}
-
-	public static class GuiWidgetExtensions
-	{
-		public static Vector2 MinimumFlowSize(this GuiWidget widget)
-		{
-			// This is to understand the smallest this widget will be in the flow
-			var minimumSize = widget.MinimumSize;
-			if (widget.LayoutLocked)
-			{
-				minimumSize.X = Math.Max(minimumSize.X, widget.Width);
-				minimumSize.Y = Math.Max(minimumSize.Y, widget.Width);
-			}
-
-			if (widget.HAnchor != HAnchor.Stretch)
-			{
-				minimumSize.X = Math.Max(minimumSize.X, widget.Width);
-				minimumSize.Y = Math.Max(minimumSize.Y, widget.Height);
-			}
-
-			return minimumSize;
 		}
 	}
 }
