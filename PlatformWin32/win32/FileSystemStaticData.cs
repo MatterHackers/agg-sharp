@@ -45,7 +45,7 @@ namespace MatterHackers.Agg
 	{
 		private static Dictionary<string, ImageBuffer> cachedImages = new Dictionary<string, ImageBuffer>();
 
-		private string basePath;
+		private readonly string basePath;
 
 		public FileSystemStaticData()
 		{
@@ -98,6 +98,7 @@ namespace MatterHackers.Agg
 		/// Loads the specified file from the StaticData/Icons path
 		/// </summary>
 		/// <param name="path">The file path to load</param>
+		/// <param name="invertImage">describes if the icon should be inverted</param>
 		/// <returns>An ImageBuffer initialized with data from the given file</returns>
 		public ImageBuffer LoadIcon(string path, bool invertImage = false)
 		{
@@ -110,9 +111,10 @@ namespace MatterHackers.Agg
 		/// adjusting for the device scale in GuiWidget
 		/// </summary>
 		/// <param name="path">The file path to load</param>
-		/// <param name="width"></param>
-		/// <param name="height"></param>
-		/// <returns></returns>
+		/// <param name="width">Width to scale to</param>
+		/// <param name="height">Height to scale to</param>
+		/// <param name="invertImage">describes if the icon should be inverted</param>
+		/// <returns>The image buffer at the right scale</returns>
 		public ImageBuffer LoadIcon(string path, int width, int height, bool invertImage = false)
 		{
 			int deviceWidth = (int)(width * GuiWidget.DeviceScale);
@@ -213,6 +215,7 @@ namespace MatterHackers.Agg
 							minFrameTimeMs = Math.Max(10, Math.Min(frameDelay, minFrameTimeMs));
 						}
 					}
+
 					var item = image.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
 															  // Time is in milliseconds
 					sequence.SecondsPerFrame = minFrameTimeMs / 1000.0;
@@ -229,6 +232,7 @@ namespace MatterHackers.Agg
 		}
 
 		private static object locker = new object();
+
 		private void LoadImage(string path, ImageBuffer destImage, bool invertImage = false)
 		{
 			lock (locker)
