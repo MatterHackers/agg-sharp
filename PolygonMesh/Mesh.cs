@@ -691,7 +691,12 @@ namespace MatterHackers.PolygonMesh
 	{
 		public static Mesh Copy(this Mesh meshToCopyIn, CancellationToken cancellationToken, Action<double, string> progress = null, bool allowFastCopy = true)
 		{
-			return new Mesh(meshToCopyIn.Vertices, meshToCopyIn.Faces);
+			if (meshToCopyIn != null)
+			{
+				return new Mesh(meshToCopyIn.Vertices, meshToCopyIn.Faces);
+			}
+
+			return null;
 		}
 
 		public static Plane GetPlane(this Mesh mesh, int faceIndex)

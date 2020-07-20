@@ -33,22 +33,58 @@ namespace MatterHackers.Agg.UI
 {
 	public class DropArrow
 	{
-		public static VertexStorage DownArrow = null;
-		public static VertexStorage UpArrow = null;
+		private static VertexStorage _downArrow;
 
-		public static int ArrowHeight { get; } = 5;
+		public static VertexStorage DownArrow
+		{
+			get
+			{
+				if (calculatedDeviceScale != GuiWidget.DeviceScale)
+				{
+					BuildDropArrow();
+				}
+
+				return _downArrow;
+			}
+		}
+
+		private static VertexStorage _upArrow;
+
+		public static VertexStorage UpArrow
+		{
+			get
+			{
+				if (calculatedDeviceScale != GuiWidget.DeviceScale)
+				{
+					BuildDropArrow();
+				}
+
+				return _upArrow;
+			}
+		}
+
+		public static double ArrowHeight => 5 * GuiWidget.DeviceScale;
+
+		private static double calculatedDeviceScale;
 
 		static DropArrow()
 		{
-			DownArrow = new VertexStorage();
-			DownArrow.MoveTo(-ArrowHeight, 0);
-			DownArrow.LineTo(ArrowHeight, 0);
-			DownArrow.LineTo(0, -ArrowHeight);
+			BuildDropArrow();
+		}
 
-			UpArrow = new VertexStorage();
-			UpArrow.MoveTo(-ArrowHeight, -ArrowHeight);
-			UpArrow.LineTo(ArrowHeight, -ArrowHeight);
-			UpArrow.LineTo(0, 0);
+		private static void BuildDropArrow()
+		{
+			_downArrow = new VertexStorage();
+			_downArrow.MoveTo(-ArrowHeight, 0);
+			_downArrow.LineTo(ArrowHeight, 0);
+			_downArrow.LineTo(0, -ArrowHeight);
+
+			_upArrow = new VertexStorage();
+			_upArrow.MoveTo(-ArrowHeight, -ArrowHeight);
+			_upArrow.LineTo(ArrowHeight, -ArrowHeight);
+			_upArrow.LineTo(0, 0);
+
+			calculatedDeviceScale = GuiWidget.DeviceScale;
 		}
 	}
 }

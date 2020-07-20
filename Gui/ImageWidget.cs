@@ -73,7 +73,8 @@ namespace MatterHackers.Agg.UI
 
 		public virtual ImageBuffer Image
 		{
-			get  => image;
+			get => image;
+
 			set
 			{
 				if (image != null)
@@ -115,8 +116,10 @@ namespace MatterHackers.Agg.UI
 					pixelAlignXAdjust = screenBounds.Left - (int)screenBounds.Left;
 					pixelAlignYAdjust = screenBounds.Bottom - (int)screenBounds.Bottom;
 				}
+
 				graphics2D.Render(this.Image, -pixelAlignXAdjust, -pixelAlignYAdjust);
 			}
+
 			base.OnDraw(graphics2D);
 		}
 
