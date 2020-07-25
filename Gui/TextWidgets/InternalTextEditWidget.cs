@@ -43,6 +43,8 @@ namespace MatterHackers.Agg.UI
 	{
 		private static ReadOnlyCollection<char> defaultWordBreakChars;
 
+		public static Action<InternalTextEditWidget, MouseEventArgs> DefaultRightClick;
+
 		private static ReadOnlyCollection<char> WordBreakChars
 		{
 			get
@@ -492,40 +494,43 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
-			CharIndexToInsertBefore = internalTextWidget.Printer.GetCharacterIndexToStartBefore(new Vector2(mouseEvent.X, mouseEvent.Y));
-			if (mouseEvent.Clicks < 2)
+			if (mouseEvent.Button == MouseButtons.Left)
 			{
-				if (CharIndexToInsertBefore == -1)
+				CharIndexToInsertBefore = internalTextWidget.Printer.GetCharacterIndexToStartBefore(new Vector2(mouseEvent.X, mouseEvent.Y));
+				if (mouseEvent.Clicks < 2)
 				{
-					// we could not find any characters when looking for mouse click position
-					CharIndexToInsertBefore = 0;
+					if (CharIndexToInsertBefore == -1)
+					{
+						// we could not find any characters when looking for mouse click position
+						CharIndexToInsertBefore = 0;
+					}
+
+					SelectionIndexToStartBefore = CharIndexToInsertBefore;
+					Selecting = false;
+					mouseIsDown = true;
+				}
+				else if (IsDoubleClick(mouseEvent))
+				{
+					while (CharIndexToInsertBefore > 0
+						&& (CharIndexToInsertBefore >= Text.Length
+							|| (CharIndexToInsertBefore > -1 && !WordBreakChars.Contains(Text[CharIndexToInsertBefore]))))
+					{
+						CharIndexToInsertBefore--;
+					}
+
+					CharIndexToInsertBefore++;
+					SelectionIndexToStartBefore = CharIndexToInsertBefore + 1;
+					while (SelectionIndexToStartBefore < Text.Length && !WordBreakChars.Contains(Text[SelectionIndexToStartBefore]))
+					{
+						SelectionIndexToStartBefore++;
+					}
+
+					Selecting = true;
 				}
 
-				SelectionIndexToStartBefore = CharIndexToInsertBefore;
-				Selecting = false;
-				mouseIsDown = true;
+				RestartBarFlash();
+				FixBarPosition(DesiredXPositionOnLine.Set);
 			}
-			else if (IsDoubleClick(mouseEvent))
-			{
-				while (CharIndexToInsertBefore > 0
-					&& (CharIndexToInsertBefore >= Text.Length
-						|| (CharIndexToInsertBefore > -1 && !WordBreakChars.Contains(Text[CharIndexToInsertBefore]))))
-				{
-					CharIndexToInsertBefore--;
-				}
-
-				CharIndexToInsertBefore++;
-				SelectionIndexToStartBefore = CharIndexToInsertBefore + 1;
-				while (SelectionIndexToStartBefore < Text.Length && !WordBreakChars.Contains(Text[SelectionIndexToStartBefore]))
-				{
-					SelectionIndexToStartBefore++;
-				}
-
-				Selecting = true;
-			}
-
-			RestartBarFlash();
-			FixBarPosition(DesiredXPositionOnLine.Set);
 
 			base.OnMouseDown(mouseEvent);
 		}
@@ -567,16 +572,11 @@ namespace MatterHackers.Agg.UI
 			}
 			else if (mouseEvent.Button == MouseButtons.Right)
 			{
-				ShowRightClickMenu(mouseEvent);
+				DefaultRightClick?.Invoke(this, mouseEvent);
 			}
 
 			selectAllOnMouseUpIfNoSelection = false;
 			base.OnMouseUp(mouseEvent);
-		}
-
-		private void ShowRightClickMenu(MouseEventArgs mouseEvent)
-		{
-			// var menu = new PopupMenu()
 		}
 
 		public override string ToString()
@@ -617,7 +617,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void DeleteSelection(bool createUndoMarker = true)
+		public void DeleteSelection(bool createUndoMarker = true)
 		{
 			if (ReadOnly)
 			{
@@ -992,7 +992,7 @@ namespace MatterHackers.Agg.UI
 			FixBarPosition(DesiredXPositionOnLine.Set);
 		}
 
-		private void CopySelection()
+		public void CopySelection()
 		{
 			if (Selecting)
 			{
@@ -1019,7 +1019,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void PasteFromClipboard()
+		public void PasteFromClipboard()
 		{
 			if (ReadOnly)
 			{

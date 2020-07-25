@@ -12,7 +12,9 @@ namespace MatterHackers.Agg.UI
 	public interface IIgnoredPopupChild
 	{
 		bool KeepMenuOpen { get; }
+
 		bool ContainsFocus { get; }
+
 		bool Focused { get; }
 	}
 
@@ -54,7 +56,7 @@ namespace MatterHackers.Agg.UI
 
 			this.layoutEngine = layoutEngine;
 
-			ignoredWidgets = contentWidget.Children.OfType<IIgnoredPopupChild>().ToList();
+			IgnoredWidgets = contentWidget.Children.OfType<IIgnoredPopupChild>().ToList();
 
 			contentWidget.Closed += (s, e) => this.Close();
 
@@ -94,7 +96,8 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public int BorderWidth { get; set; }
-		List<IIgnoredPopupChild> ignoredWidgets { get; }
+
+		private List<IIgnoredPopupChild> IgnoredWidgets { get; }
 
 		public virtual void CloseMenu()
 		{
@@ -132,7 +135,7 @@ namespace MatterHackers.Agg.UI
 
 			if (scrollingWindow != null)
 			{
-				bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen);
+				bool specialChildHasFocus = IgnoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen);
 				bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
 					&& ignoredPopupChild.KeepMenuOpen);
 // 					&& ((ignoredPopupChild.ContainsFocus || ignoredPopupChild.KeepMenuOpen()) && !this.ContainsFocus));
@@ -179,7 +182,7 @@ namespace MatterHackers.Agg.UI
 				{
 					// Fired any time focus changes. Traditionally we closed the menu if we weren't focused.
 					// To accommodate children (or external widgets) having focus we also query for and consider special cases
-					bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen);
+					bool specialChildHasFocus = IgnoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen);
 					bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
 						&& ignoredPopupChild.KeepMenuOpen);
 
@@ -232,7 +235,7 @@ namespace MatterHackers.Agg.UI
 
 		internal void MakeMenuHaveScroll(double maxHeight)
 		{
-			if(scrollingWindow == null)
+			if (scrollingWindow == null)
 			{
 				return;
 			}
@@ -275,12 +278,12 @@ namespace MatterHackers.Agg.UI
 			// Unbind callbacks on parents for position_changed if we're closing
 			foreach (GuiWidget widget in monitoredWidgets)
 			{
-				widget.PositionChanged -= recalculatePosition;
-				widget.BoundsChanged -= recalculatePosition;
+				widget.PositionChanged -= RecalculatePosition;
+				widget.BoundsChanged -= RecalculatePosition;
 			}
 
 			// Long lived originating item must be unregistered
-			widgetRelativeTo.Closed -= widgetRelativeTo_Closed;
+			widgetRelativeTo.Closed -= WidgetRelativeTo_Closed;
 
 			// Restore focus to originating widget on close
 			if (this.widgetRelativeTo != null
@@ -304,8 +307,8 @@ namespace MatterHackers.Agg.UI
 			monitoredWidgets.Clear();
 
 			monitoredWidgets.Add(popupWidget);
-			popupWidget.PositionChanged += recalculatePosition;
-			popupWidget.BoundsChanged += recalculatePosition;
+			popupWidget.PositionChanged += RecalculatePosition;
+			popupWidget.BoundsChanged += RecalculatePosition;
 
 			// Iterate until the first SystemWindow is found
 			GuiWidget topParent = widgetRelativeTo.Parent;
@@ -317,25 +320,26 @@ namespace MatterHackers.Agg.UI
 				if (!monitoredWidgets.Contains(topParent))
 				{
 					monitoredWidgets.Add(topParent);
-					topParent.PositionChanged += recalculatePosition;
-					topParent.BoundsChanged += recalculatePosition;
+					topParent.PositionChanged += RecalculatePosition;
+					topParent.BoundsChanged += RecalculatePosition;
 				}
 
 				topParent = topParent.Parent;
 			}
 
-			recalculatePosition(widgetRelativeTo, null);
-			widgetRelativeTo.Closed += widgetRelativeTo_Closed;
+			RecalculatePosition(widgetRelativeTo, null);
+			widgetRelativeTo.Closed += WidgetRelativeTo_Closed;
 		}
 
-		private void widgetRelativeTo_Closed(object sender, EventArgs e)
+		private void WidgetRelativeTo_Closed(object sender, EventArgs e)
 		{
 			// If the owning widget closed, so should we
 			popupWidget.CloseMenu();
 		}
 
-		int recursCount = 0;
-		private void recalculatePosition(object sender, EventArgs e)
+		private int recursCount = 0;
+
+		private void RecalculatePosition(object sender, EventArgs e)
 		{
 			if (recursCount == 0
 				&& widgetRelativeTo != null
@@ -355,7 +359,8 @@ namespace MatterHackers.Agg.UI
 				Vector2 alignRightPosition = widgetRelativeTo.Parent.TransformToScreenSpace(bottomLeftForAlignRight);
 
 				// Conditionally select appropriate left/right position
-				if (alignToRightEdge && alignRightPosition.X >= 0
+				if (alignToRightEdge
+					&& alignRightPosition.X >= 0
 					|| alignLeftPosition.X + popupWidget.Width > systemWindowWidth)
 				{
 					// Align right or align left with x > systemWindow.Width
@@ -420,16 +425,16 @@ namespace MatterHackers.Agg.UI
 
 	internal class DropDownContainer : PopupWidget
 	{
-		private List<MenuItem> MenuItems;
+		private readonly List<MenuItem> menuItems;
 
-		public DropDownContainer(IEnumerable<MenuItem> MenuItems, GuiWidget popupContent, GuiWidget widgetRelativeTo, Direction direction, double maxHeight, bool alignToRightEdge, bool makeScrollable)
+		public DropDownContainer(IEnumerable<MenuItem> menuItems, GuiWidget popupContent, GuiWidget widgetRelativeTo, Direction direction, double maxHeight, bool alignToRightEdge, bool makeScrollable)
 			: base(popupContent, new PopupLayoutEngine(popupContent, widgetRelativeTo, direction, maxHeight, alignToRightEdge), makeScrollable)
 		{
 			this.Name = "_OpenMenuContents";
-			this.MenuItems = new List<MenuItem>();
-			this.MenuItems.AddRange(MenuItems);
+			this.menuItems = new List<MenuItem>();
+			this.menuItems.AddRange(menuItems);
 
-			foreach (MenuItem menu in MenuItems)
+			foreach (MenuItem menu in menuItems)
 			{
 				menu.AllowClicks = AllowClickingItems;
 			}
@@ -439,7 +444,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (this.Parent != null)
 			{
-				foreach (MenuItem item in MenuItems)
+				foreach (MenuItem item in menuItems)
 				{
 					item.Parent.RemoveChild(item);
 
@@ -453,7 +458,7 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnClosed(EventArgs e)
 		{
-			foreach (MenuItem menuItem in MenuItems)
+			foreach (MenuItem menuItem in menuItems)
 			{
 				menuItem.SendToChildren(new MenuItem.MenuClosedMessage());
 			}
