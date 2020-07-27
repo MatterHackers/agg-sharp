@@ -62,7 +62,12 @@ namespace MatterHackers.GuiAutomation
 
 		public static double UpDelaySeconds { get; set; } = .2;
 
-		public enum InputType { Native, Simulated, SimulatedDrawMouse };
+		public enum InputType
+		{
+			Native,
+			Simulated,
+			SimulatedDrawMouse
+		}
 
 		public static IInputMethod OverrideInputSystem = null;
 
@@ -70,7 +75,7 @@ namespace MatterHackers.GuiAutomation
 		public AutomationRunner(IInputMethod inputMethod, bool drawSimulatedMouse, string imageDirectory = "")
 		{
 #if !__ANDROID__
-			if(OverrideInputSystem != null)
+			if (OverrideInputSystem != null)
 			{
 				inputSystem = OverrideInputSystem;
 			}
@@ -78,7 +83,7 @@ namespace MatterHackers.GuiAutomation
 			{
 				inputSystem = new AggInputMethods(this, drawSimulatedMouse);
 				// TODO: Consider how to set this and if needed
-				//HookWindowsInputAndSendToWidget.EnableInputHook = false;
+				// HookWindowsInputAndSendToWidget.EnableInputHook = false;
 			}
 #else
 				inputSystem = new AggInputMethods(this, drawSimulatedMouse);
@@ -86,9 +91,19 @@ namespace MatterHackers.GuiAutomation
 			this.imageDirectory = imageDirectory;
 		}
 
-		public enum ClickOrigin { LowerLeft, Center };
+		public enum ClickOrigin
+		{
+			LowerLeft,
+			Center
+		}
 
-		public enum InterpolationType { LINEAR, EASE_IN, EASE_OUT, EASE_IN_OUT };
+		public enum InterpolationType
+		{
+			LINEAR,
+			EASE_IN,
+			EASE_OUT,
+			EASE_IN_OUT
+		}
 
 		public Point2D CurrentMousePosition()
 		{
@@ -143,7 +158,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		int GetMouseDown(MouseButtons mouseButtons)
+		private int GetMouseDown(MouseButtons mouseButtons)
 		{
 			switch (mouseButtons)
 			{
@@ -164,7 +179,7 @@ namespace MatterHackers.GuiAutomation
 			}
 		}
 
-		int GetMouseUp(MouseButtons mouseButtons)
+		private int GetMouseUp(MouseButtons mouseButtons)
 		{
 			switch (mouseButtons)
 			{
@@ -573,7 +588,7 @@ namespace MatterHackers.GuiAutomation
 			return GetWidgetByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion, onlyVisible);
 		}
 
-		GuiWidget lastWidget = null;
+		private GuiWidget lastWidget = null;
 
 		private void SetTarget(GuiWidget guiWidget)
 		{
