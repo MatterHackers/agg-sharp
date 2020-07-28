@@ -66,20 +66,20 @@ namespace MatterHackers.Agg.UI
 		private UndoBuffer undoBuffer = new UndoBuffer();
 
 		private bool mouseIsDown = false;
-		private bool selecting;
+		private bool _selecting;
 
 		public bool Selecting
 		{
 			get
 			{
-				return selecting;
+				return _selecting;
 			}
 
 			set
 			{
-				if (selecting != value)
+				if (_selecting != value)
 				{
-					selecting = value;
+					_selecting = value;
 					Invalidate();
 				}
 			}
@@ -326,11 +326,17 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
-				Selecting = false;
+				// do not lose selection on focus changed
 				Invalidate();
 				if (TextHasChanged())
 				{
 					OnEditComplete(e);
+				}
+				else if (SelectAllOnFocus
+					&& selectedAllDueToFocus)
+				{
+					// if we select all on focus and the selection happened due to focus and no change
+					Selecting = false;
 				}
 			}
 
@@ -354,6 +360,7 @@ namespace MatterHackers.Agg.UI
 		private Color _textColor = Color.Black;
 
 		private int _borderWidth = 0;
+		private bool selectedAllDueToFocus;
 
 		public int BorderRadius { get; set; } = 0;
 
@@ -560,15 +567,21 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
+			if (SelectAllOnFocus
+				&& selectAllOnMouseUpIfNoSelection
+				&& Selecting == false)
+			{
+				SelectAll();
+				selectedAllDueToFocus = true;
+			}
+			else
+			{
+				selectedAllDueToFocus = false;
+			}
+
 			if (mouseEvent.Button == MouseButtons.Left)
 			{
 				mouseIsDown = false;
-				if (SelectAllOnFocus
-					&& selectAllOnMouseUpIfNoSelection
-					&& Selecting == false)
-				{
-					SelectAll();
-				}
 			}
 			else if (mouseEvent.Button == MouseButtons.Right)
 			{
