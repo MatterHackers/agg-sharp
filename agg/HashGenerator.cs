@@ -44,7 +44,7 @@ namespace MatterHackers.Agg
 				byte[] hash = sha1.ComputeHash(stream);
 				// Console.WriteLine("{0} {1} {2}", SHA1, timer.ElapsedMilliseconds, filePath);
 
-				return BitConverter.ToString(hash).Replace("-", String.Empty);
+				return BitConverter.ToString(hash).Replace("-", string.Empty);
 			}
 		}
 
