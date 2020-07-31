@@ -65,7 +65,8 @@ namespace MatterHackers.Agg.UI
 
 		private UndoBuffer undoBuffer = new UndoBuffer();
 
-		private bool mouseIsDown = false;
+		private bool mouseIsDownLeft = false;
+		private bool showingRightClickMenu = false;
 		private bool _selecting;
 
 		public bool Selecting
@@ -316,6 +317,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (Focused)
 			{
+				showingRightClickMenu = false;
 				RestartBarFlash();
 				textWhenGotFocus = Text;
 				timeSinceTurnOn.Restart();
@@ -333,7 +335,8 @@ namespace MatterHackers.Agg.UI
 					OnEditComplete(e);
 				}
 				else if (SelectAllOnFocus
-					&& selectedAllDueToFocus)
+					&& selectedAllDueToFocus
+					&& !showingRightClickMenu)
 				{
 					// if we select all on focus and the selection happened due to focus and no change
 					Selecting = false;
@@ -514,7 +517,7 @@ namespace MatterHackers.Agg.UI
 
 					SelectionIndexToStartBefore = CharIndexToInsertBefore;
 					Selecting = false;
-					mouseIsDown = true;
+					mouseIsDownLeft = true;
 				}
 				else if (IsDoubleClick(mouseEvent))
 				{
@@ -544,7 +547,7 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
-			if (mouseIsDown)
+			if (mouseIsDownLeft)
 			{
 				StartSelectionIfRequired(null);
 				CharIndexToInsertBefore = internalTextWidget.Printer.GetCharacterIndexToStartBefore(new Vector2(mouseEvent.X, mouseEvent.Y));
@@ -581,11 +584,16 @@ namespace MatterHackers.Agg.UI
 
 			if (mouseEvent.Button == MouseButtons.Left)
 			{
-				mouseIsDown = false;
+				mouseIsDownLeft = false;
+				showingRightClickMenu = false;
 			}
 			else if (mouseEvent.Button == MouseButtons.Right)
 			{
-				DefaultRightClick?.Invoke(this, mouseEvent);
+				if (DefaultRightClick != null)
+				{
+					showingRightClickMenu = true;
+					DefaultRightClick?.Invoke(this, mouseEvent);
+				}
 			}
 
 			selectAllOnMouseUpIfNoSelection = false;
@@ -597,8 +605,11 @@ namespace MatterHackers.Agg.UI
 			return internalTextWidget.Text;
 		}
 
-		protected enum DesiredXPositionOnLine { Maintain,
-            Set };
+		protected enum DesiredXPositionOnLine
+		{
+			Maintain,
+			Set
+		}
 
 		protected void FixBarPosition(DesiredXPositionOnLine desiredXPositionOnLine)
 		{
@@ -609,11 +620,6 @@ namespace MatterHackers.Agg.UI
 			}
 
 			Invalidate();
-		}
-
-		private void DeleteIndex(int startIndexInclusive)
-		{
-			DeleteIndexRange(startIndexInclusive, startIndexInclusive);
 		}
 
 		private void DeleteIndexRange(int startIndexInclusive, int endIndexInclusive)
