@@ -27,8 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
 using System;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
@@ -49,9 +49,13 @@ namespace MatterHackers.Agg.UI
 		public InternalNumberEdit InternalNumberEdit { get { return (InternalNumberEdit)InternalTextEditWidget; } }
 
 		public NumberEdit(double startingValue,
-			double x = 0, double y = 0, double pointSize = 12,
-			double pixelWidth = 0, double pixelHeight = 0,
-			bool allowNegatives = false, bool allowDecimals = false,
+			double x = 0,
+			double y = 0,
+			double pointSize = 12,
+			double pixelWidth = 0,
+			double pixelHeight = 0,
+			bool allowNegatives = false,
+			bool allowDecimals = false,
 			double minValue = int.MinValue,
 			double maxValue = int.MaxValue,
 			double increment = 1,
@@ -61,8 +65,16 @@ namespace MatterHackers.Agg.UI
 			{
 				minValue = Math.Max(0, minValue);
 			}
-			InternalTextEditWidget = new InternalNumberEdit(startingValue, pointSize,
-				pixelWidth, pixelHeight, allowNegatives, allowDecimals, minValue, maxValue, increment, tabIndex);
+
+			InternalTextEditWidget = new InternalNumberEdit(startingValue,
+				pointSize,
+				allowNegatives,
+				allowDecimals,
+				minValue,
+				maxValue,
+				increment,
+				tabIndex);
+
 			HookUpToInternalWidget(pixelWidth, pixelHeight);
 			OriginRelativeParent = new Vector2(x, y);
 		}

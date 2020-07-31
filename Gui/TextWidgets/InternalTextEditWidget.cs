@@ -317,9 +317,14 @@ namespace MatterHackers.Agg.UI
 		{
 			if (Focused)
 			{
+				if (!showingRightClickMenu)
+				{
+					// don't change the focus text if we were showing the right click menu
+					textWhenGotFocus = Text;
+				}
+
 				showingRightClickMenu = false;
 				RestartBarFlash();
-				textWhenGotFocus = Text;
 				timeSinceTurnOn.Restart();
 				if (SelectAllOnFocus)
 				{

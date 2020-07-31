@@ -782,7 +782,7 @@ namespace MatterHackers.GuiAutomation
 		/// </summary>
 		/// <param name="widgetName">The given widget name</param>
 		/// <param name="secondsToWait">Total seconds to stay in this function waiting for the named widget to become visible.</param>
-		public void RightClickByName(string widgetName, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, bool isDoubleClick = false)
+		public AutomationRunner RightClickByName(string widgetName, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, bool isDoubleClick = false)
 		{
 			double secondsToWait = 5;
 
@@ -808,7 +808,7 @@ namespace MatterHackers.GuiAutomation
 
 				Delay(0.2);
 
-				return;
+				return this;
 			}
 
 			throw new Exception($"ClickByName Failed: Named GuiWidget not found [{widgetName}]");
