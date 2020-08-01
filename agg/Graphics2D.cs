@@ -184,7 +184,7 @@ namespace MatterHackers.Agg
 			Render(imageSource, x, y, 0, width / imageSource.Width, height / imageSource.Height);
 		}
 
-		public void RenderMaxSize(IImageByte image, double x, double y, double maxX, double maxY, out Vector2 size)
+		public void RenderMaxSize(IImageByte image, double x, double y, double maxX, double maxY, out Vector2 size, bool right = false)
 		{
 			size.X = image.Width;
 			size.Y = image.Height;
@@ -203,7 +203,15 @@ namespace MatterHackers.Agg
 				size.X = image.Width * ratio;
 			}
 
-			this.Render(image, x, y, size.X, size.Y);
+			if (right)
+			{
+				var expectedRight = x + image.Width;
+				this.Render(image, expectedRight - size.X, y, size.X, size.Y);
+			}
+			else
+			{
+				this.Render(image, x, y, size.X, size.Y);
+			}
 		}
 
 		public void RenderScale(IImageByte image, double x, double y, double sizeX)

@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2014, Kevin Pope
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,56 +27,51 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using MatterHackers.VectorMath;
-
 namespace MatterHackers.Agg.UI
 {
-	public class NumberEdit : TextEditWidget
+	public class HorizontalSpacer : GuiWidget
 	{
-		public double Value
+		public HorizontalSpacer()
 		{
-			get { return InternalNumberEdit.Value; }
-			set { InternalNumberEdit.Value = value; }
+			HAnchor = HAnchor.Stretch;
+		}
+	}
+
+	public class VerticalSpacer : GuiWidget
+	{
+		public VerticalSpacer()
+		{
+			VAnchor = VAnchor.Stretch;
+		}
+	}
+
+	public class HorizontalLine : GuiWidget
+	{
+		public HorizontalLine()
+			: base(1, 1)
+		{
+			HAnchor = HAnchor.Stretch;
 		}
 
-		public double MaxValue
+		public HorizontalLine(Color color)
+			: this()
 		{
-			get { return InternalNumberEdit.MaxValue; }
-			set { InternalNumberEdit.MaxValue = value; }
+			BackgroundColor = color;
+		}
+	}
+
+	public class VerticalLine : GuiWidget
+	{
+		public VerticalLine()
+			: base(1, 1)
+		{
+			VAnchor = VAnchor.Stretch;
 		}
 
-		public InternalNumberEdit InternalNumberEdit { get { return (InternalNumberEdit)InternalTextEditWidget; } }
-
-		public NumberEdit(double startingValue,
-			double x = 0,
-			double y = 0,
-			double pointSize = 12,
-			double pixelWidth = 0,
-			double pixelHeight = 0,
-			bool allowNegatives = false,
-			bool allowDecimals = false,
-			double minValue = int.MinValue,
-			double maxValue = int.MaxValue,
-			double increment = 1,
-			int tabIndex = 0)
+		public VerticalLine(Color color)
+			: this()
 		{
-			if (!allowNegatives)
-			{
-				minValue = Math.Max(0, minValue);
-			}
-
-			InternalTextEditWidget = new InternalNumberEdit(startingValue,
-				pointSize,
-				allowNegatives,
-				allowDecimals,
-				minValue,
-				maxValue,
-				increment,
-				tabIndex);
-
-			HookUpToInternalWidget(pixelWidth, pixelHeight);
-			OriginRelativeParent = new Vector2(x, y);
+			BackgroundColor = color;
 		}
 	}
 }

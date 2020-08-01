@@ -124,8 +124,11 @@ namespace MatterHackers.DataConverters3D
 		public static async Task<string> ResolveFilePath(this IObject3D item, Action<double, string> progress, CancellationToken cancellationToken)
 		{
 			// Natural path
-			string filePath = item.MeshPath;
+			return await ResolveFilePath(item.MeshPath, progress, cancellationToken);
+		}
 
+		public static async Task<string> ResolveFilePath(string filePath, Action<double, string> progress, CancellationToken cancellationToken)
+		{
 			// If relative/asset file name
 			if (Path.GetDirectoryName(filePath) == "")
 			{

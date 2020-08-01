@@ -43,8 +43,6 @@ namespace MatterHackers.Agg.UI
 
 		public InternalNumberEdit(double startingValue,
 			double pointSize,
-			double pixelWidth,
-			double pixelHeight,
 			bool allowNegatives,
 			bool allowDecimals,
 			double minValue,

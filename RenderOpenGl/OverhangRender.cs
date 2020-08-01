@@ -43,6 +43,13 @@ namespace MatterHackers.RenderOpenGl
 	{
 		public static void EnsureUpdated(Mesh meshToRender, Matrix4X4 transform)
 		{
+			var faces = meshToRender.Faces;
+
+			if (faces?.Count < 1)
+			{
+				return;
+			}
+
 			if (!meshToRender.PropertyBag.ContainsKey("Face0WorldZAngle"))
 			{
 				meshToRender.PropertyBag.Add("Face0WorldZAngle", new NormalZ());
@@ -50,7 +57,7 @@ namespace MatterHackers.RenderOpenGl
 
 			var normalZ = meshToRender.PropertyBag["Face0WorldZAngle"] as NormalZ;
 
-			var face0Normal = meshToRender.Faces[0].normal.TransformNormal(transform).GetNormal();
+			var face0Normal = faces[0].normal.TransformNormal(transform).GetNormal();
 
 			var error = .0001;
 			if (normalZ.z < face0Normal.Z - error
@@ -59,6 +66,7 @@ namespace MatterHackers.RenderOpenGl
 				meshToRender.MarkAsChanged();
 				normalZ.z = face0Normal.Z;
 			}
+
 			// change the color to be the right thing per face normal
 			GLMeshTrianglePlugin.Get(
 				meshToRender,
