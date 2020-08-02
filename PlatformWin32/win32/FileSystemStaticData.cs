@@ -44,6 +44,7 @@ namespace MatterHackers.Agg
 	public class FileSystemStaticData : IStaticData
 	{
 		private static Dictionary<string, ImageBuffer> cachedImages = new Dictionary<string, ImageBuffer>();
+		private static Dictionary<(string, int, int), ImageBuffer> cachedIcons = new Dictionary<(string, int, int), ImageBuffer>();
 
 		private readonly string basePath;
 
@@ -120,16 +121,25 @@ namespace MatterHackers.Agg
 			int deviceWidth = (int)(width * GuiWidget.DeviceScale);
 			int deviceHeight = (int)(height * GuiWidget.DeviceScale);
 
-			ImageBuffer image = LoadIcon(path, invertImage);
-			image.SetRecieveBlender(new BlenderPreMultBGRA());
-
-			// Scale if required
-			if (image.Width != width || image.Height != height)
+			if (!cachedIcons.TryGetValue((path, width, height), out ImageBuffer cachedIcon))
 			{
-				image = image.CreateScaledImage(deviceWidth, deviceHeight);
+				cachedIcon = LoadIcon(path, invertImage);
+				cachedIcon.SetRecieveBlender(new BlenderPreMultBGRA());
+
+				// Scale if required
+				if (cachedIcon.Width != width || cachedIcon.Height != height)
+				{
+					cachedIcon = cachedIcon.CreateScaledImage(deviceWidth, deviceHeight);
+				}
+
+				// only cache relatively small images
+				if (cachedIcon.Width < 200 && cachedIcon.Height < 200)
+				{
+					cachedIcons.Add((path, width, height), cachedIcon);
+				}
 			}
 
-			return image;
+			return new ImageBuffer(cachedIcons[(path, width, height)]);
 		}
 
 		public ImageSequence LoadSequence(string path)
