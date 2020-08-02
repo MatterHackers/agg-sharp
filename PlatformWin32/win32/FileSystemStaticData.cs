@@ -123,7 +123,7 @@ namespace MatterHackers.Agg
 
 			if (!cachedIcons.TryGetValue((path, width, height), out ImageBuffer cachedIcon))
 			{
-				cachedIcon = LoadIcon(path, invertImage);
+				cachedIcon = LoadIcon(path);
 				cachedIcon.SetRecieveBlender(new BlenderPreMultBGRA());
 
 				// Scale if required
@@ -139,7 +139,16 @@ namespace MatterHackers.Agg
 				}
 			}
 
-			return new ImageBuffer(cachedIcons[(path, width, height)]);
+			var cachedImage = new ImageBuffer(cachedIcons[(path, width, height)]);
+
+			// Themed icons are black and need be inverted on dark themes, or when white icons are requested
+			if (invertImage)
+			{
+				cachedImage = cachedImage.InvertLightness();
+				cachedImage.SetRecieveBlender(new BlenderPreMultBGRA());
+			}
+
+			return cachedImage;
 		}
 
 		public ImageSequence LoadSequence(string path)
