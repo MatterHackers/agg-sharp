@@ -1465,6 +1465,12 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Add a child to this widget. It will layout right away.
+		/// </summary>
+		/// <param name="childToAdd">The child to add</param>
+		/// <param name="indexInChildrenList">The index in the child list to add the child (defaults to the end).</param>
+		/// <returns>The child that was added</returns>
 		public virtual GuiWidget AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
 		{
 #if DEBUG
