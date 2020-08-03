@@ -121,21 +121,24 @@ namespace MatterHackers.Agg
 			int deviceWidth = (int)(width * GuiWidget.DeviceScale);
 			int deviceHeight = (int)(height * GuiWidget.DeviceScale);
 
-			if (!cachedIcons.TryGetValue((path, width, height), out ImageBuffer cachedIcon))
+			lock (locker)
 			{
-				cachedIcon = LoadIcon(path);
-				cachedIcon.SetRecieveBlender(new BlenderPreMultBGRA());
-
-				// Scale if required
-				if (cachedIcon.Width != width || cachedIcon.Height != height)
+				if (!cachedIcons.TryGetValue((path, width, height), out ImageBuffer cachedIcon))
 				{
-					cachedIcon = cachedIcon.CreateScaledImage(deviceWidth, deviceHeight);
-				}
+					cachedIcon = LoadIcon(path);
+					cachedIcon.SetRecieveBlender(new BlenderPreMultBGRA());
 
-				// only cache relatively small images
-				if (cachedIcon.Width < 200 && cachedIcon.Height < 200)
-				{
-					cachedIcons.Add((path, width, height), cachedIcon);
+					// Scale if required
+					if (cachedIcon.Width != width || cachedIcon.Height != height)
+					{
+						cachedIcon = cachedIcon.CreateScaledImage(deviceWidth, deviceHeight);
+					}
+
+					// only cache relatively small images
+					if (cachedIcon.Width < 200 && cachedIcon.Height < 200)
+					{
+						cachedIcons.Add((path, width, height), cachedIcon);
+					}
 				}
 			}
 
