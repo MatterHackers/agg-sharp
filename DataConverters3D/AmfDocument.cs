@@ -36,7 +36,6 @@ using System.Linq;
 using System.Threading;
 using System.Xml;
 using MatterHackers.Agg;
-using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
@@ -158,14 +157,15 @@ namespace MatterHackers.DataConverters3D
 				fileStream.Dispose();
 			}
 
-			foreach(var keyValue in objectMaterialDictionary)
+			foreach (var keyValue in objectMaterialDictionary)
 			{
 				ColorF color = ColorF.White;
-				if(keyValue.Value == null
+				if (keyValue.Value == null
 					|| !materials.TryGetValue(keyValue.Value, out color))
 				{
 					color = ColorF.White;
 				}
+
 				keyValue.Key.Color = color.ToColor();
 			}
 
@@ -222,6 +222,7 @@ namespace MatterHackers.DataConverters3D
 					amfFile.WriteLine(Indent(1) + "<metadata type=\"{0}\">{1}</metadata>".FormatWith(metaData.Key, metaData.Value));
 				}
 			}
+
 			{
 				int objectId = 1;
 
@@ -252,22 +253,22 @@ namespace MatterHackers.DataConverters3D
 									meshVertexStart.Add(vertexCount);
 									for (int vertexIndex = 0; vertexIndex < mesh.Vertices.Count; vertexIndex++)
 									{
-										throw new NotImplementedException();
-										//IVertex vertex = mesh.Vertices[vertexIndex];
-										//outputInfo?.ReportProgress?.Invoke(currentRation + vertexIndex / vertCount * ratioPerMesh * .5, "");
+										var position = mesh.Vertices[vertexIndex];
+										outputInfo?.ReportProgress?.Invoke(currentRation + vertexIndex / vertCount * ratioPerMesh * .5, "");
 
-										//Vector3 position = vertex.Position;
-										//amfFile.WriteLine(Indent(4) + "<vertex>");
-										//{
-										//	amfFile.WriteLine(Indent(5) + "<coordinates>");
-										//	amfFile.WriteLine(Indent(6) + "<x>{0}</x>".FormatWith(position.X));
-										//	amfFile.WriteLine(Indent(6) + "<y>{0}</y>".FormatWith(position.Y));
-										//	amfFile.WriteLine(Indent(6) + "<z>{0}</z>".FormatWith(position.Z));
-										//	amfFile.WriteLine(Indent(5) + "</coordinates>");
-										//}
-										//amfFile.WriteLine(Indent(4) + "</vertex>");
-										//vertexCount++;
+										amfFile.WriteLine(Indent(4) + "<vertex>");
+										{
+											amfFile.WriteLine(Indent(5) + "<coordinates>");
+											amfFile.WriteLine(Indent(6) + "<x>{0}</x>".FormatWith(position.X));
+											amfFile.WriteLine(Indent(6) + "<y>{0}</y>".FormatWith(position.Y));
+											amfFile.WriteLine(Indent(6) + "<z>{0}</z>".FormatWith(position.Z));
+											amfFile.WriteLine(Indent(5) + "</coordinates>");
+										}
+
+										amfFile.WriteLine(Indent(4) + "</vertex>");
+										vertexCount++;
 									}
+
 									currentRation += ratioPerMesh * .5;
 								}
 							}
@@ -284,39 +285,27 @@ namespace MatterHackers.DataConverters3D
 								{
 									outputInfo?.ReportProgress?.Invoke(currentRation + faceIndex / faceCount * ratioPerMesh * .5, "");
 
-									throw new NotImplementedException();
-									//Face face = mesh.Faces[faceIndex];
-									//List<IVertex> positionsCCW = new List<IVertex>();
-									//foreach (FaceEdge faceEdge in face.FaceEdges())
-									//{
-									//	positionsCCW.Add(faceEdge.FirstVertex);
-									//}
+									Face face = mesh.Faces[faceIndex];
 
-									//int numPolys = positionsCCW.Count - 2;
-									//int secondIndex = 1;
-									//int thirdIndex = 2;
-									//for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
-									//{
-									//	amfFile.WriteLine(Indent(4) + "<triangle>");
-									//	amfFile.WriteLine(Indent(5) + "<v1>{0}</v1>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[0])));
-									//	amfFile.WriteLine(Indent(5) + "<v2>{0}</v2>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[secondIndex])));
-									//	amfFile.WriteLine(Indent(5) + "<v3>{0}</v3>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[thirdIndex])));
-									//	amfFile.WriteLine(Indent(4) + "</triangle>");
-
-									//	secondIndex = thirdIndex;
-									//	thirdIndex++;
-									//}
+									amfFile.WriteLine(Indent(4) + "<triangle>");
+									amfFile.WriteLine(Indent(5) + $"<v1>{face.v0}</v1>");
+									amfFile.WriteLine(Indent(5) + $"<v2>{face.v1}</v2>");
+									amfFile.WriteLine(Indent(5) + $"<v3>{face.v2}</v3>");
+									amfFile.WriteLine(Indent(4) + "</triangle>");
 								}
 
 								currentRation += ratioPerMesh * .5;
 								amfFile.WriteLine(Indent(3) + "</volume>");
 							}
 						}
+
 						amfFile.WriteLine(Indent(2) + "</mesh>");
 					}
+
 					amfFile.WriteLine(Indent(1) + "</object>");
 				}
 			}
+
 			amfFile.WriteLine("</amf>");
 			amfFile.Flush();
 			return true;
@@ -332,7 +321,7 @@ namespace MatterHackers.DataConverters3D
 
 		private static string Indent(int index)
 		{
-			return new String(' ', index * 2);
+			return new string(' ', index * 2);
 		}
 
 		private static bool IsZipFile(Stream fs)
@@ -363,7 +352,7 @@ namespace MatterHackers.DataConverters3D
 				{
 					if (reader.ReadToDescendant("coordinates"))
 					{
-						Vector3 vertex = new Vector3();
+						Vector3 vertex = default(Vector3);
 
 						string nextSibling = null;
 						if (reader.ReadToDescendant("x"))
@@ -388,7 +377,8 @@ namespace MatterHackers.DataConverters3D
 
 										break;
 								}
-							} while (nextSibling != null && (reader.Name != nextSibling ? reader.ReadToNextSibling(nextSibling) : true));
+							}
+							while (nextSibling != null && (reader.Name != nextSibling ? reader.ReadToNextSibling(nextSibling) : true));
 						}
 
 						progressData.ReportProgress0To50();
@@ -396,8 +386,9 @@ namespace MatterHackers.DataConverters3D
 						vertices.Add(vertex);
 					}
 
-					reader.MoveToEndElement("vertex");
-				} while (reader.ReadToNextSibling("vertex"));
+					MoveToEndElement(reader, "vertex");
+				}
+				while (reader.ReadToNextSibling("vertex"));
 			}
 
 			return vertices;
@@ -408,7 +399,7 @@ namespace MatterHackers.DataConverters3D
 			var id = reader["id"];
 			var color = ColorF.White;
 
-			if(reader.ReadToDescendant("color"))
+			if (reader.ReadToDescendant("color"))
 			{
 				if (reader.ReadToDescendant("r"))
 				{
@@ -452,7 +443,8 @@ namespace MatterHackers.DataConverters3D
 									nextSibling = null;
 									break;
 							}
-						} while (nextSibling != null && (reader.Name != nextSibling ? reader.ReadToNextSibling(nextSibling) : true));
+						}
+						while (nextSibling != null && (reader.Name != nextSibling ? reader.ReadToNextSibling(nextSibling) : true));
 					}
 
 					if (indices[0] != indices[1]
@@ -467,8 +459,9 @@ namespace MatterHackers.DataConverters3D
 
 					progressData.ReportProgress0To50();
 
-					reader.MoveToEndElement("triangle");
-				} while (reader.ReadToNextSibling("triangle"));
+					MoveToEndElement(reader, "triangle");
+				}
+				while (reader.ReadToNextSibling("triangle"));
 			}
 
 			return vertices;
@@ -477,8 +470,11 @@ namespace MatterHackers.DataConverters3D
 		internal class ProgressData
 		{
 			private long bytesInFile;
+
 			private Stopwatch maxProgressReport = new Stopwatch();
+
 			private Stream positionStream;
+
 			private Action<double, string> reportProgress;
 
 			internal ProgressData(Stream positionStream, Action<double, string> reportProgress)
@@ -498,11 +494,8 @@ namespace MatterHackers.DataConverters3D
 				}
 			}
 		}
-	}
 
-	public static class ExtensionMethods
-	{
-		public static void MoveToEndElement(this XmlReader reader, string xname)
+		public static void MoveToEndElement(XmlReader reader, string xname)
 		{
 			while (!reader.EOF && !(reader.NodeType == XmlNodeType.EndElement && reader.Name == xname))
 			{
