@@ -162,6 +162,14 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			Assert.AreEqual("abc", editField1.Selection, "First word selected");
 
+			// double click last word selects
+			editField1.Text = "abc 123";
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 30, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 2, 30, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
+			Assert.AreEqual("123", editField1.Selection, "Second word selected");
+
 			container.Close();
 		}
 
