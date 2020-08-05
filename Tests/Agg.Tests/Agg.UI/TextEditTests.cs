@@ -145,6 +145,24 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			SendKey(Keys.Back, ' ', container);
 			Assert.IsTrue(editField1.Text == "", "It should have nothing in it.");
 
+			// double click empty does nothing
+			// select the other way but start far to the right
+			editField1.Text = "";
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 2, 1, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
+			Assert.AreEqual("", editField1.Selection, "First word selected");
+
+
+			// double click first word selects
+			editField1.Text = "abc 123";
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 2, 1, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
+			Assert.AreEqual("abc", editField1.Selection, "First word selected");
+
 			container.Close();
 		}
 
