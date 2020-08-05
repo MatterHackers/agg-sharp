@@ -154,7 +154,6 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			Assert.AreEqual("", editField1.Selection, "First word selected");
 
-
 			// double click first word selects
 			editField1.Text = "abc 123";
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 0, 0));

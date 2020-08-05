@@ -524,9 +524,9 @@ namespace MatterHackers.Agg.UI
 					Selecting = false;
 					mouseIsDownLeft = true;
 				}
-				else if (IsDoubleClick(mouseEvent))
+				else if (IsDoubleClick(mouseEvent) && Text.Length > 0)
 				{
-					while (CharIndexToInsertBefore > 0
+					while (CharIndexToInsertBefore >= 0
 						&& (CharIndexToInsertBefore >= Text.Length
 							|| (CharIndexToInsertBefore > -1 && !WordBreakChars.Contains(Text[CharIndexToInsertBefore]))))
 					{
