@@ -34,9 +34,9 @@ using MatterHackers.GuiAutomation;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using MatterHackers.Agg.Font;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
-using MatterHackers.Agg.Font;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -357,6 +357,34 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 		[Test]
 		public void MultiLineTests()
 		{
+			// make sure selection ranges are always working
+			{
+				Clipboard.SetSystemClipboard(new SimulatedClipboard());
+
+				var singleLine = new InternalTextEditWidget("test", 12, false, 0);
+
+				void TestRange(int start, int end, string expected)
+				{
+					singleLine.CharIndexToInsertBefore = start;
+					singleLine.SelectionIndexToStartBefore = end;
+					singleLine.Selecting = true;
+					Assert.AreEqual(expected, singleLine.Selection);
+					singleLine.CopySelection();
+
+					Assert.AreEqual(expected, Clipboard.Instance.GetText());
+				}
+
+				// ask for some selections
+				TestRange(-10, -8, "");
+				TestRange(-8, -10, "");
+				TestRange(18, 10, "");
+				TestRange(10, 18, "");
+				TestRange(2, -10, "te");
+				TestRange(-10, 2, "te");
+				TestRange(18, 2, "st");
+				TestRange(3, 22, "t");
+			}
+
 			{
 				var singleLine = new InternalTextEditWidget("test", 12, false, 0);
 				var multiLine = new InternalTextEditWidget("test\ntest\ntest", 12, true, 0);

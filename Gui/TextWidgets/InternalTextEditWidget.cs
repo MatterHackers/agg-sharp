@@ -190,13 +190,17 @@ namespace MatterHackers.Agg.UI
 			{
 				if (Selecting)
 				{
-					if (CharIndexToInsertBefore < SelectionIndexToStartBefore)
+					// make local copies to make sure we aren't affected by any threading issues
+					var text = Text;
+					var charIndexToInsertBefore = Math.Max(0, Math.Min(text.Length, CharIndexToInsertBefore));
+					var selectionIndexToStartBefore = Math.Max(0, Math.Min(text.Length, SelectionIndexToStartBefore));
+					if (charIndexToInsertBefore < selectionIndexToStartBefore)
 					{
-						return Text.Substring(CharIndexToInsertBefore, SelectionIndexToStartBefore - CharIndexToInsertBefore);
+						return text.Substring(charIndexToInsertBefore, selectionIndexToStartBefore - charIndexToInsertBefore);
 					}
 					else
 					{
-						return Text.Substring(SelectionIndexToStartBefore, CharIndexToInsertBefore - SelectionIndexToStartBefore);
+						return text.Substring(selectionIndexToStartBefore, charIndexToInsertBefore - selectionIndexToStartBefore);
 					}
 				}
 
@@ -1020,21 +1024,16 @@ namespace MatterHackers.Agg.UI
 		{
 			if (Selecting)
 			{
-				if (CharIndexToInsertBefore < SelectionIndexToStartBefore)
+				var text = Text;
+				var charIndexToInsertBefore = Math.Max(0, Math.Min(text.Length, CharIndexToInsertBefore));
+				var selectionIndexToStartBefore = Math.Max(0, Math.Min(text.Length, SelectionIndexToStartBefore));
+				if (charIndexToInsertBefore < selectionIndexToStartBefore)
 				{
-#if SILVERLIGHT
-                    throw new NotImplementedException();
-#else
-					Clipboard.Instance.SetText(internalTextWidget.Text.Substring(CharIndexToInsertBefore, SelectionIndexToStartBefore - CharIndexToInsertBefore));
-#endif
+					Clipboard.Instance.SetText(text.Substring(charIndexToInsertBefore, selectionIndexToStartBefore - charIndexToInsertBefore));
 				}
 				else
 				{
-#if SILVERLIGHT
-                    throw new NotImplementedException();
-#else
-					Clipboard.Instance.SetText(internalTextWidget.Text.Substring(SelectionIndexToStartBefore, CharIndexToInsertBefore - SelectionIndexToStartBefore));
-#endif
+					Clipboard.Instance.SetText(text.Substring(selectionIndexToStartBefore, charIndexToInsertBefore - selectionIndexToStartBefore));
 				}
 			}
 			else if (Multiline)
