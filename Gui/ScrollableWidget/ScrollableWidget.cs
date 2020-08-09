@@ -113,7 +113,7 @@ namespace MatterHackers.Agg.UI
 				switch (keyEvent.KeyCode)
 				{
 					case Keys.Down:
-						ScrollPosition += new Vector2(0, 16);
+						ScrollPosition += new Vector2(0, 16 * GuiWidget.DeviceScale);
 						break;
 
 					case Keys.PageDown:
@@ -121,7 +121,7 @@ namespace MatterHackers.Agg.UI
 						break;
 
 					case Keys.Up:
-						ScrollPosition -= new Vector2(0, 16);
+						ScrollPosition -= new Vector2(0, 16 * GuiWidget.DeviceScale);
 						break;
 
 					case Keys.PageUp:
@@ -278,11 +278,12 @@ namespace MatterHackers.Agg.UI
 			if (AutoScroll)
 			{
 				Vector2 oldScrollPosition = ScrollPosition;
-				ScrollPosition += new Vector2(0, -mouseEvent.WheelDelta / 5);
+				ScrollPosition += new Vector2(0, -mouseEvent.WheelDelta / 5 * GuiWidget.DeviceScale);
 				if (oldScrollPosition != ScrollPosition)
 				{
 					mouseEvent.WheelDelta = 0;
 				}
+
 				Invalidate();
 			}
 		}
