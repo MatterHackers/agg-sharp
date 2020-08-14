@@ -121,9 +121,10 @@ namespace MatterHackers.Agg
 			int deviceWidth = (int)(width * GuiWidget.DeviceScale);
 			int deviceHeight = (int)(height * GuiWidget.DeviceScale);
 
+			ImageBuffer cachedIcon;
 			lock (locker)
 			{
-				if (!cachedIcons.TryGetValue((path, width, height), out ImageBuffer cachedIcon))
+				if (!cachedIcons.TryGetValue((path, deviceWidth, deviceHeight), out cachedIcon))
 				{
 					cachedIcon = LoadIcon(path);
 					cachedIcon.SetRecieveBlender(new BlenderPreMultBGRA());
@@ -137,21 +138,21 @@ namespace MatterHackers.Agg
 					// only cache relatively small images
 					if (cachedIcon.Width < 200 && cachedIcon.Height < 200)
 					{
-						cachedIcons.Add((path, width, height), cachedIcon);
+						cachedIcons.Add((path, deviceWidth, deviceHeight), cachedIcon);
 					}
 				}
 			}
 
-			var cachedImage = new ImageBuffer(cachedIcons[(path, width, height)]);
+			var cacheCopy = new ImageBuffer(cachedIcon);
 
 			// Themed icons are black and need be inverted on dark themes, or when white icons are requested
 			if (invertImage)
 			{
-				cachedImage = cachedImage.InvertLightness();
-				cachedImage.SetRecieveBlender(new BlenderPreMultBGRA());
+				cacheCopy = cacheCopy.InvertLightness();
+				cacheCopy.SetRecieveBlender(new BlenderPreMultBGRA());
 			}
 
-			return cachedImage;
+			return cacheCopy;
 		}
 
 		public ImageSequence LoadSequence(string path)

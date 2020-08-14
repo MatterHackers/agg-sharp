@@ -34,9 +34,9 @@ using MatterHackers.GuiAutomation;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using MatterHackers.Agg.Font;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
-using MatterHackers.Agg.Font;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -144,6 +144,31 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			SendKey(Keys.Back, ' ', container);
 			Assert.IsTrue(editField1.Text == "", "It should have nothing in it.");
+
+			// double click empty does nothing
+			// select the other way but start far to the right
+			editField1.Text = "";
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 2, 1, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
+			Assert.AreEqual("", editField1.Selection, "First word selected");
+
+			// double click first word selects
+			editField1.Text = "abc 123";
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 2, 1, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
+			Assert.AreEqual("abc", editField1.Selection, "First word selected");
+
+			// double click last word selects
+			editField1.Text = "abc 123";
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 30, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 2, 30, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
+			Assert.AreEqual("123", editField1.Selection, "Second word selected");
 
 			container.Close();
 		}
@@ -332,6 +357,34 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 		[Test]
 		public void MultiLineTests()
 		{
+			// make sure selection ranges are always working
+			{
+				Clipboard.SetSystemClipboard(new SimulatedClipboard());
+
+				var singleLine = new InternalTextEditWidget("test", 12, false, 0);
+
+				void TestRange(int start, int end, string expected)
+				{
+					singleLine.CharIndexToInsertBefore = start;
+					singleLine.SelectionIndexToStartBefore = end;
+					singleLine.Selecting = true;
+					Assert.AreEqual(expected, singleLine.Selection);
+					singleLine.CopySelection();
+
+					Assert.AreEqual(expected, Clipboard.Instance.GetText());
+				}
+
+				// ask for some selections
+				TestRange(-10, -8, "");
+				TestRange(-8, -10, "");
+				TestRange(18, 10, "");
+				TestRange(10, 18, "");
+				TestRange(2, -10, "te");
+				TestRange(-10, 2, "te");
+				TestRange(18, 2, "st");
+				TestRange(3, 22, "t");
+			}
+
 			{
 				var singleLine = new InternalTextEditWidget("test", 12, false, 0);
 				var multiLine = new InternalTextEditWidget("test\ntest\ntest", 12, true, 0);

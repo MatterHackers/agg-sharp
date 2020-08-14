@@ -31,67 +31,6 @@ using System;
 
 namespace MatterHackers.Agg.UI
 {
-	public class ProgressBar : GuiWidget
-	{
-		public Color FillColor { get; set; }
-
-		public event EventHandler ProgressChanged;
-
-		private double ratioComplete;
-
-		public ProgressBar()
-		{
-			this.BorderColor = Color.Black;
-		}
-
-		public ProgressBar(int width, int height)
-			: base(width, height)
-		{
-		}
-
-		public int PercentComplete
-		{
-			get { return (int)(ratioComplete * 100 + .5); }
-			set
-			{
-				if (value != (int)(ratioComplete * ratioComplete + .5))
-				{
-					ProgressChanged?.Invoke(this, null);
-					ratioComplete = value / 100.0;
-					Invalidate();
-				}
-			}
-		}
-
-		public double RatioComplete
-		{
-			get { return ratioComplete; }
-			set
-			{
-				if (value != ratioComplete)
-				{
-					ProgressChanged?.Invoke(this, null);
-					ratioComplete = value;
-					Invalidate();
-				}
-			}
-		}
-
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			base.OnDraw(graphics2D);
-
-			// Restrict fill to valid values
-			var fillWidth = Math.Min(Width, Width * RatioComplete);
-			if (fillWidth > 0 && fillWidth <= this.Width)
-			{
-				graphics2D.FillRectangle(0, 0, fillWidth, Height, FillColor);
-			}
-
-			graphics2D.Rectangle(LocalBounds, BorderColor);
-		}
-	}
-
 	public class ProgressControl : FlowLayoutWidget
 	{
 		private TextWidget processTextWidget;
@@ -100,7 +39,8 @@ namespace MatterHackers.Agg.UI
 
 		public double PointSize
 		{
-			get { return processTextWidget.PointSize; }
+			get => processTextWidget.PointSize;
+
 			set
 			{
 				processTextWidget.PointSize = value;
@@ -117,7 +57,8 @@ namespace MatterHackers.Agg.UI
 				VAnchor = VAnchor.Center,
 			});
 
-			this.AddChild(progressBar = new ProgressBar(barWidgth, barHeight)
+			// must be scaled to match the font scaling for the text
+			this.AddChild(progressBar = new ProgressBar(barWidgth * GuiWidget.DeviceScale, barHeight * GuiWidget.DeviceScale)
 			{
 				FillColor = fillColor,
 				VAnchor = VAnchor.Center,
@@ -151,7 +92,8 @@ namespace MatterHackers.Agg.UI
 
 		public string ProcessType
 		{
-			get { return processTextWidget.Text; }
+			get => processTextWidget.Text;
+
 			set
 			{
 				ProgressMessage = "";
@@ -161,7 +103,8 @@ namespace MatterHackers.Agg.UI
 
 		public string ProgressMessage
 		{
-			get { return progressTextWidget.Text; }
+			get => progressTextWidget.Text;
+
 			set
 			{
 				progressTextWidget.Text = value;
