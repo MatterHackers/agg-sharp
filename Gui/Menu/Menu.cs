@@ -30,35 +30,23 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
-using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-	public enum Direction { Up, Down };
+	public enum Direction
+	{
+		Up,
+
+		Down
+	}
 
 	public class Menu : Button, IIgnoredPopupChild
 	{
+		internal DropDownContainer DropDownContainer = null;
+
 		private double maxHeight;
 
-		public bool AlignToRightEdge { get; set; }
-
-		public bool IsOpen { get; private set; } = false;
-
-		public Direction MenuDirection { get; private set; }
-
-		public Color MenuItemsBorderColor { get; set; }
-
-		public Color MenuItemsBackgroundColor { get; set; } = Color.White;
-
-		public Color MenuItemsBackgroundHoverColor { get; set; } = Color.Gray;
-
-		public Color MenuItemsTextColor { get; set; } = Color.Black;
-
-		public Color MenuItemsTextHoverColor { get; set; } = Color.Black;
-
-		public int MenuItemsBorderWidth { get; set; } = 1;
-
-		public ObservableCollection<MenuItem> MenuItems = new ObservableCollection<MenuItem>();
+		private bool mouseDownWhileOpen = false;
 
 		// If max height is > 0 it will limit the height of the menu
 		public Menu(Direction direction = Direction.Down, double maxHeight = 0)
@@ -76,7 +64,44 @@ namespace MatterHackers.Agg.UI
 			AddChild(view);
 		}
 
-		private bool mouseDownWhileOpen = false;
+		public bool AlignToRightEdge { get; set; }
+
+		public bool IsOpen { get; private set; } = false;
+
+		public bool KeepMenuOpen => IsOpen;
+
+		public Direction MenuDirection { get; private set; }
+
+		public ObservableCollection<MenuItem> MenuItems { get; set; } = new ObservableCollection<MenuItem>();
+
+		public Color MenuItemsBackgroundColor { get; set; } = Color.White;
+
+		public Color MenuItemsBackgroundHoverColor { get; set; } = Color.Gray;
+
+		public Color MenuItemsBorderColor { get; set; }
+
+		public int MenuItemsBorderWidth { get; set; } = 1;
+
+		public Color MenuItemsTextColor { get; set; } = Color.Black;
+
+		public Color MenuItemsTextHoverColor { get; set; } = Color.Black;
+
+		public Color PopupBorderColor { get; set; }
+
+		public MenuItem AddHorizontalLine()
+		{
+			var menuItem = new MenuItem(new GuiWidget()
+			{
+				HAnchor = HAnchor.Stretch,
+				Height = 1,
+				BackgroundColor = Color.LightGray,
+				Margin = new BorderDouble(10, 1),
+				VAnchor = VAnchor.Center,
+			}, "HorizontalLine");
+			MenuItems.Add(menuItem);
+
+			return menuItem;
+		}
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
@@ -88,7 +113,17 @@ namespace MatterHackers.Agg.UI
 			{
 				mouseDownWhileOpen = false;
 			}
+
 			base.OnMouseDown(mouseEvent);
+		}
+
+		protected virtual void DropListItems_Closed(object sender, EventArgs e)
+		{
+			var dropListItems = (DropDownContainer)sender;
+			dropListItems.Closed -= DropListItems_Closed;
+			IsOpen = false;
+
+			DropDownContainer = null;
 		}
 
 		protected override void OnClick(MouseEventArgs mouseEvent)
@@ -104,8 +139,6 @@ namespace MatterHackers.Agg.UI
 
 			base.OnClick(mouseEvent);
 		}
-
-		internal DropDownContainer DropDownContainer = null;
 
 		protected virtual void ShowMenu()
 		{
@@ -135,33 +168,5 @@ namespace MatterHackers.Agg.UI
 			DropDownContainer.Closed += DropListItems_Closed;
 			DropDownContainer.Focus();
 		}
-
-		public MenuItem AddHorizontalLine()
-		{
-			var menuItem = new MenuItem(new GuiWidget()
-			{
-				HAnchor = HAnchor.Stretch,
-				Height = 1,
-				BackgroundColor = Color.LightGray,
-				Margin = new BorderDouble(10, 1),
-				VAnchor = VAnchor.Center,
-			}, "HorizontalLine");
-			MenuItems.Add(menuItem);
-
-			return menuItem;
-		}
-
-		virtual protected void DropListItems_Closed(object sender, EventArgs e)
-		{
-			DropDownContainer dropListItems = (DropDownContainer)sender;
-			dropListItems.Closed -= DropListItems_Closed;
-			IsOpen = false;
-
-			DropDownContainer = null;
-		}
-
-		public bool KeepMenuOpen => IsOpen;
-
-		public Color PopupBorderColor { get; set; }
 	}
 }
