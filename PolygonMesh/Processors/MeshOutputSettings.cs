@@ -34,13 +34,23 @@ namespace MatterHackers.PolygonMesh.Processors
 {
 	public class MeshOutputSettings
 	{
-		public enum CsgOption { SimpleInsertVolumes, DoCsgMerge }
+		public enum CsgOption
+		{
+			SimpleInsertVolumes,
+			DoCsgMerge
+		}
 
-		public enum OutputType { Ascii, Binary };
+		public enum OutputType
+		{
+			Ascii,
+			Binary
+		}
 
-		public OutputType OutputTypeSetting = OutputType.Binary;
-		public Dictionary<string, string> MetaDataKeyValue = new Dictionary<string, string>();
-		public CsgOption CsgOptionState = CsgOption.SimpleInsertVolumes;
+		public OutputType OutputTypeSetting { get; set; } = OutputType.Binary;
+
+		public Dictionary<string, string> MetaDataKeyValue { get; set; } = new Dictionary<string, string>();
+
+		public CsgOption CsgOptionState { get; set; } = CsgOption.SimpleInsertVolumes;
 
 		public Action<double, string> ReportProgress { get; set; }
 
@@ -67,5 +77,4 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
 		}
 	}
-
 }
