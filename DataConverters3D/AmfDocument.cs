@@ -192,7 +192,7 @@ namespace MatterHackers.DataConverters3D
 		{
 			try
 			{
-				var forceAscii = true;
+				var forceAscii = false;
 				if (forceAscii || outputInfo?.OutputTypeSetting == MeshOutputSettings.OutputType.Ascii)
 				{
 					SaveUncompressed(item, fileName, outputInfo);
@@ -237,9 +237,6 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			{
-				int objectId = 1;
-				int volumeId = 1;
-
 				var visibleMeshes = itemToSave.VisibleMeshes();
 				int totalMeshes = visibleMeshes.Count();
 
@@ -248,9 +245,11 @@ namespace MatterHackers.DataConverters3D
 
 				var groupedByNameColorMaterial = visibleMeshes.GroupBy(i => (i.Name, i.Color, i.WorldMaterialIndex()));
 
+				int objectId = 0;
 				foreach (var group in groupedByNameColorMaterial)
 				{
-					amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">".FormatWith(objectId++));
+					objectId++;
+					amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">".FormatWith(objectId));
 					{
 						int vertexCount = 0;
 						var meshVertexStart = new List<int>();
@@ -293,7 +292,7 @@ namespace MatterHackers.DataConverters3D
 							{
 								var mesh = item.Mesh;
 								int firstVertexIndex = meshVertexStart[meshIndex++];
-								amfFile.WriteLine(Indent(3) + "<volume materialid=\"{0}\">".FormatWith(volumeId++));
+								amfFile.WriteLine(Indent(3) + "<volume materialid=\"{0}\">".FormatWith(objectId));
 
 								double faceCount = (double)mesh.Faces.Count;
 								for (int faceIndex = 0; faceIndex < faceCount; faceIndex++)

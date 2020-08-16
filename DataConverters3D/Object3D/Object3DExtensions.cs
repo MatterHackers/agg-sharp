@@ -125,7 +125,7 @@ namespace MatterHackers.DataConverters3D
 						else
 						{
 							// copy the mesh
-							var loadedMesh = loadedItem.Mesh;
+							var loadedMesh = loadedItem?.Mesh;
 							cacheContext.Meshes[filePath] = loadedMesh;
 							item.SetMeshDirect(loadedMesh);
 						}
