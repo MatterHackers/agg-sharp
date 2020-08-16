@@ -70,7 +70,11 @@ namespace MatterHackers.Agg.UI
 
 		public bool RunAnimation
 		{
-			get { return animation != null && animation.IsRunning; }
+			get
+			{
+				return animation != null && animation.IsRunning;
+			}
+
 			set
 			{
 				if (animation != null
@@ -99,6 +103,7 @@ namespace MatterHackers.Agg.UI
 					var scale = Math.Min(1, newBounds.Width / ImageSequence.Width);
 					newBounds.Top = newBounds.Bottom + ImageSequence.Height * scale;
 				}
+
 				base.LocalBounds = newBounds;
 			}
 		}
@@ -130,6 +135,7 @@ namespace MatterHackers.Agg.UI
 					{
 						_imageSequence.Invalidated -= ResetImageIndex;
 					}
+
 					_imageSequence = value;
 					animation.FramesPerSecond = _imageSequence.FramesPerSecond;
 					currentTime = 0;
@@ -144,7 +150,8 @@ namespace MatterHackers.Agg.UI
 			Invalidate();
 		}
 
-		Cursors overrideCursor = Cursors.Arrow;
+		private Cursors overrideCursor = Cursors.Arrow;
+
 		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
 			if (LocalBounds.Contains(mouseEvent.Position)
@@ -158,7 +165,8 @@ namespace MatterHackers.Agg.UI
 				{
 					overrideCursor = Cursors.Arrow;
 				}
-				base.SetCursor(overrideCursor);
+
+				this.SetCursor(overrideCursor);
 			}
 
 			base.OnMouseMove(mouseEvent);
@@ -176,12 +184,14 @@ namespace MatterHackers.Agg.UI
 		{
 			if (this.ImageSequence?.Frames.Count > 0)
 			{
-				var imageBounds = ImageBounds;
 				var currentImage = ImageSequence.GetImageByTime(currentTime);
 				graphics2D.Render(currentImage,
-					ImageBounds.Left, ImageBounds.Bottom,
-					ImageBounds.Width, ImageBounds.Height);
+					ImageBounds.Left,
+					ImageBounds.Bottom,
+					ImageBounds.Width,
+					ImageBounds.Height);
 			}
+
 			base.OnDraw(graphics2D);
 		}
 
