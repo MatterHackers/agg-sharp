@@ -33,6 +33,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Threading;
 using System.Xml;
 using MatterHackers.Agg;
@@ -104,8 +105,8 @@ namespace MatterHackers.DataConverters3D
 			int totalMeshes = 0;
 			var time = Stopwatch.StartNew();
 
-			var materials = new Dictionary<string, ColorF>();
-			var objectMaterialDictionary = new Dictionary<IObject3D, string>();
+			var materials = new Dictionary<int, (string name, Color color, int material)>();
+			var itemPropertiesDictionary = new Dictionary<IObject3D, int>();
 
 			using (var decompressedStream = GetCompressedStreamIfRequired(fileStream))
 			{
@@ -144,11 +145,12 @@ namespace MatterHackers.DataConverters3D
 
 								string materialId;
 								ReadVolume(reader, vertices, mesh, progressData, out materialId);
-								objectMaterialDictionary.Add(context, materialId);
+								int.TryParse(materialId, out int id);
+								itemPropertiesDictionary.Add(context, id);
 								break;
 
 							case "material":
-								ReadMaterial(reader, materials);
+								ReadProperties(reader, materials);
 								break;
 						}
 					}
@@ -157,16 +159,14 @@ namespace MatterHackers.DataConverters3D
 				fileStream.Dispose();
 			}
 
-			foreach (var keyValue in objectMaterialDictionary)
+			foreach (var keyValue in itemPropertiesDictionary)
 			{
-				ColorF color = ColorF.White;
-				if (keyValue.Value == null
-					|| !materials.TryGetValue(keyValue.Value, out color))
+				if (materials.TryGetValue(keyValue.Value, out (string name, Color color, int material) data))
 				{
-					color = ColorF.White;
+					keyValue.Key.Name = data.name;
+					keyValue.Key.Color = data.color;
+					keyValue.Key.MaterialIndex = data.material;
 				}
-
-				keyValue.Key.Color = color.ToColor();
 			}
 
 			time.Stop();
@@ -192,12 +192,11 @@ namespace MatterHackers.DataConverters3D
 		{
 			try
 			{
-				if (outputInfo?.OutputTypeSetting == MeshOutputSettings.OutputType.Ascii)
+				var forceAscii = true;
+				if (forceAscii || outputInfo?.OutputTypeSetting == MeshOutputSettings.OutputType.Ascii)
 				{
-					using (Stream stream = File.OpenWrite(fileName))
-					{
-						return Save(item, stream, outputInfo);
-					}
+					SaveUncompressed(item, fileName, outputInfo);
+					return true;
 				}
 				else
 				{
@@ -208,10 +207,12 @@ namespace MatterHackers.DataConverters3D
 							ZipArchiveEntry zipEntry = archive.CreateEntry(Path.GetFileName(fileName));
 							using (var entryStream = zipEntry.Open())
 							{
-								return Save(item, entryStream, outputInfo);
+								Save(item, entryStream, outputInfo);
 							}
 						}
 					}
+
+					return true;
 				}
 			}
 			catch (Exception e)
@@ -222,7 +223,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static bool Save(IObject3D itemToSave, Stream stream, MeshOutputSettings outputInfo)
+		public static void Save(IObject3D itemToSave, Stream stream, MeshOutputSettings outputInfo)
 		{
 			TextWriter amfFile = new StreamWriter(stream);
 			amfFile.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
@@ -237,6 +238,7 @@ namespace MatterHackers.DataConverters3D
 
 			{
 				int objectId = 1;
+				int volumeId = 1;
 
 				var visibleMeshes = itemToSave.VisibleMeshes();
 				int totalMeshes = visibleMeshes.Count();
@@ -244,9 +246,9 @@ namespace MatterHackers.DataConverters3D
 				double ratioPerMesh = 1d / totalMeshes;
 				double currentRatio = 0;
 
-				var groupedByExtruder = visibleMeshes.GroupBy(i => i.WorldMaterialIndex());
+				var groupedByNameColorMaterial = visibleMeshes.GroupBy(i => (i.Name, i.Color, i.WorldMaterialIndex()));
 
-				foreach (var group in groupedByExtruder)
+				foreach (var group in groupedByNameColorMaterial)
 				{
 					amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">".FormatWith(objectId++));
 					{
@@ -290,16 +292,8 @@ namespace MatterHackers.DataConverters3D
 							foreach (var item in group)
 							{
 								var mesh = item.Mesh;
-								var materialIndex = item.WorldMaterialIndex();
 								int firstVertexIndex = meshVertexStart[meshIndex++];
-								if (materialIndex == -1)
-								{
-									amfFile.WriteLine(Indent(3) + "<volume>");
-								}
-								else
-								{
-									amfFile.WriteLine(Indent(3) + "<volume materialid=\"{0}\">".FormatWith(materialIndex));
-								}
+								amfFile.WriteLine(Indent(3) + "<volume materialid=\"{0}\">".FormatWith(volumeId++));
 
 								double faceCount = (double)mesh.Faces.Count;
 								for (int faceIndex = 0; faceIndex < faceCount; faceIndex++)
@@ -326,37 +320,35 @@ namespace MatterHackers.DataConverters3D
 					amfFile.WriteLine(Indent(1) + "</object>");
 				}
 
-				HashSet<int> materials = new HashSet<int>();
-				foreach (var group in groupedByExtruder)
+				var nameColorMaterials = new HashSet<(string name, Color c, int material)>();
+				foreach (var group in groupedByNameColorMaterial)
 				{
 					foreach (var item in group)
 					{
-						var materialIndex = item.WorldMaterialIndex();
-						if (materialIndex != -1)
-						{
-							materials.Add(materialIndex);
-						}
+						nameColorMaterials.Add((item.Name, item.WorldColor(), item.WorldMaterialIndex()));
 					}
 				}
 
-				foreach (int material in materials)
+				int id = 1;
+				foreach (var ncm in nameColorMaterials)
 				{
-					amfFile.WriteLine(Indent(1) + "<material id=\"{0}\">".FormatWith(material));
-					amfFile.WriteLine(Indent(2) + "<metadata type=\"Name\">Material {0}</metadata>".FormatWith(material));
+					amfFile.WriteLine(Indent(1) + "<material id=\"{0}\">".FormatWith(id++));
+					amfFile.WriteLine(Indent(2) + $"<metadata type=\"Name\">{ncm.name}</metadata>");
+					amfFile.WriteLine(Indent(2) + $"<metadata type=\"MaterialIndex\">{ncm.material}</metadata>");
+					amfFile.WriteLine(Indent(2) + $"<color><r>{ncm.c.Red0To1}</r><g>{ncm.c.Green0To1}</g><b>{ncm.c.Blue0To1}</b></color>");
 					amfFile.WriteLine(Indent(1) + "</material>");
 				}
 			}
 
 			amfFile.WriteLine("</amf>");
 			amfFile.Flush();
-			return true;
 		}
 
-		public static bool SaveUncompressed(IObject3D item, string fileName, MeshOutputSettings outputInfo = null)
+		public static void SaveUncompressed(IObject3D item, string fileName, MeshOutputSettings outputInfo = null)
 		{
 			using (var file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
 			{
-				return Save(item, file, outputInfo);
+				Save(item, file, outputInfo);
 			}
 		}
 
@@ -435,12 +427,42 @@ namespace MatterHackers.DataConverters3D
 			return vertices;
 		}
 
-		private static void ReadMaterial(XmlReader reader, Dictionary<string, ColorF> materials)
+		private static void ReadProperties(XmlReader reader, Dictionary<int, (string name, Color color, int material)> materials)
 		{
-			var id = reader["id"];
-			var color = ColorF.White;
+			var idString = reader["id"];
 
-			if (reader.ReadToDescendant("color"))
+			var name = "";
+			var materialIndex = -1;
+			if (reader.ReadToDescendant("metadata"))
+			{
+				switch (reader.GetAttribute("type"))
+				{
+					case "Name":
+						name = reader.ReadElementContentAsString();
+						break;
+
+					case "MaterialIndex":
+						materialIndex = reader.ReadElementContentAsInt();
+						break;
+				}
+			}
+
+			if (reader.ReadToNextSibling("metadata"))
+			{
+				switch (reader.GetAttribute("type"))
+				{
+					case "Name":
+						name = reader.ReadContentAsString();
+						break;
+
+					case "MaterialIndex":
+						materialIndex = reader.ReadElementContentAsInt();
+						break;
+				}
+			}
+
+			var color = ColorF.White;
+			if (reader.ReadToNextSibling("color"))
 			{
 				if (reader.ReadToDescendant("r"))
 				{
@@ -450,12 +472,14 @@ namespace MatterHackers.DataConverters3D
 				}
 			}
 
-			materials.Add(id, color);
+			int.TryParse(idString, out int id);
+
+			materials.Add(id, (name, color.ToColor(), materialIndex));
 		}
 
-		private static List<Vector3> ReadVolume(XmlReader reader, List<Vector3> vertices, Mesh mesh, ProgressData progressData, out string material)
+		private static List<Vector3> ReadVolume(XmlReader reader, List<Vector3> vertices, Mesh mesh, ProgressData progressData, out string id)
 		{
-			material = reader["materialid"];
+			id = reader["materialid"];
 
 			if (reader.ReadToDescendant("triangle"))
 			{
