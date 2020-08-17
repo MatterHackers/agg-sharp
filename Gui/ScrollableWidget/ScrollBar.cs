@@ -27,115 +27,66 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
 using System;
 using System.Linq;
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-	public class DefaultThumbView : GuiWidget
-	{
-		public static Color ThumbColor = Color.DarkGray;
-
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			RoundedRect rect = new RoundedRect(LocalBounds, 0);
-			//RoundedRect rect = new RoundedRect(LocalBounds, 0);
-			graphics2D.Render(rect, ThumbColor);
-			base.OnDraw(graphics2D);
-		}
-	}
-
-	public class DefaultThumbBackground : GuiWidget
-	{
-		public static Color DefaultBackgroundColor = Color.LightGray;
-
-		public DefaultThumbBackground()
-		{
-			this.BackgroundColor = DefaultBackgroundColor;
-		}
-	}
-
-	public class ThumDragWidget : GuiWidget
-	{
-		private Vector2 MouseDownPosition;
-		private Orientation orientation;
-
-		public ThumDragWidget(Orientation orientation)
-		{
-			this.orientation = orientation;
-		}
-
-		public override void OnBoundsChanged(EventArgs e)
-		{
-			if (Children.Count != 1)
-			{
-				throw new Exception("We should have one child that is the thum view.");
-			}
-
-			Children.FirstOrDefault().LocalBounds = LocalBounds;
-			base.OnBoundsChanged(e);
-		}
-
-		protected bool MouseDownOnThumb { get; set; }
-
-		public override void OnMouseDown(MouseEventArgs mouseEvent)
-		{
-			MouseDownOnThumb = true;
-			MouseDownPosition = new Vector2(mouseEvent.X, mouseEvent.Y);
-
-			base.OnMouseDown(mouseEvent);
-		}
-
-		public override void OnMouseUp(MouseEventArgs mouseEvent)
-		{
-			MouseDownOnThumb = false;
-			base.OnMouseUp(mouseEvent);
-		}
-
-		public override void OnMouseMove(MouseEventArgs mouseEvent)
-		{
-			if (MouseDownOnThumb)
-			{
-				Vector2 mousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
-
-				Vector2 deltaFromDownPosition = mousePosition - MouseDownPosition;
-
-				if (orientation == Orientation.Vertical)
-				{
-					deltaFromDownPosition.X = 0;
-				}
-				else
-				{
-					deltaFromDownPosition.Y = 0;
-				}
-
-				ScrollBar parentScrollBar = (ScrollBar)Parent;
-				parentScrollBar.MoveThumb(deltaFromDownPosition);
-			}
-			base.OnMouseMove(mouseEvent);
-		}
-	}
-
 	public class ScrollBar : GuiWidget
 	{
-		private ScrollableWidget ParentScrollWidget;
-		private GuiWidget background;
-		private ThumDragWidget thumb;
+		private readonly GuiWidget background;
 
-		public static double ScrollBarWidth = 15 * GuiWidget.DeviceScale;
+		private readonly ScrollableWidget parentScrollWidget;
 
-		/// <summary>
-		/// The amount to grow each side of the thumb in Y on Hover
-		/// </summary>
-		public static int GrowThumbBy = 3;
+		private readonly ThumDragWidget thumb;
 
-		public static BorderDouble DefaultMargin = 0;
-
-		public enum ShowState { Never, WhenRequired, Always };
+		private bool mouseInBounds = false;
 
 		private ShowState showState = ShowState.WhenRequired;
+
+		internal ScrollBar(ScrollableWidget parent, Orientation orientation = Orientation.Vertical)
+			: this(parent, new DefaultThumbBackground(), new DefaultThumbView(), orientation)
+		{
+		}
+
+		internal ScrollBar(ScrollableWidget parent, GuiWidget background, GuiWidget thumbView, Orientation orientation = Orientation.Vertical)
+		{
+			parentScrollWidget = parent;
+
+			this.background = background;
+			thumb = new ThumDragWidget(orientation);
+			thumb.AddChild(thumbView);
+
+			AddChild(background);
+			AddChild(thumb);
+
+			this.Margin = ScrollBar.DefaultMargin;
+
+			parentScrollWidget.BoundsChanged += Bounds_Changed;
+			parentScrollWidget.ScrollArea.BoundsChanged += Bounds_Changed;
+			parentScrollWidget.ScrollPositionChanged += Bounds_Changed;
+			parentScrollWidget.ScrollArea.MarginChanged += Bounds_Changed;
+
+			UpdateScrollBar();
+		}
+
+		public enum ShowState
+		{
+			Never,
+			WhenRequired,
+			Always
+		}
+
+		public static BorderDouble DefaultMargin { get; set; } = 0;
+
+		/// <summary>
+		/// Gets or sets the amount to grow each side of the thumb in Y on Hover
+		/// </summary>
+		public static int GrowThumbBy { get; set; } = 3;
+
+		public static double ScrollBarWidth { get; set; } = 15 * GuiWidget.DeviceScale;
 
 		public ShowState Show
 		{
@@ -168,30 +119,13 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		internal ScrollBar(ScrollableWidget parent, Orientation orientation = Orientation.Vertical)
-			: this(parent, new DefaultThumbBackground(), new DefaultThumbView(), orientation)
+		internal double ThumbHeight
 		{
-		}
-
-		internal ScrollBar(ScrollableWidget parent, GuiWidget background, GuiWidget thumbView, Orientation orientation = Orientation.Vertical)
-		{
-			ParentScrollWidget = parent;
-
-			this.background = background;
-			thumb = new ThumDragWidget(orientation);
-			thumb.AddChild(thumbView);
-
-			AddChild(background);
-			AddChild(thumb);
-
-			this.Margin = ScrollBar.DefaultMargin;
-
-			ParentScrollWidget.BoundsChanged += Bounds_Changed;
-			ParentScrollWidget.ScrollArea.BoundsChanged += Bounds_Changed;
-			ParentScrollWidget.ScrollPositionChanged += Bounds_Changed;
-			ParentScrollWidget.ScrollArea.MarginChanged += Bounds_Changed;
-
-			UpdateScrollBar();
+			get
+			{
+				Vector2 ratioOfViewToContents0To1 = parentScrollWidget.RatioOfViewToContents0To1();
+				return ratioOfViewToContents0To1.Y * parentScrollWidget.Height;
+			}
 		}
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
@@ -212,8 +146,6 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseDown(mouseEvent);
 		}
 
-		bool mouseInBounds = false;
-
 		public override void OnMouseEnterBounds(MouseEventArgs mouseEvent)
 		{
 			mouseInBounds = true;
@@ -230,12 +162,24 @@ namespace MatterHackers.Agg.UI
 			this.UpdateScrollBar();
 		}
 
+		internal void MoveThumb(Vector2 deltaToMove)
+		{
+			double notThumbHeight = parentScrollWidget.Height - ThumbHeight;
+			double changeRatio = deltaToMove.Y / notThumbHeight;
+			parentScrollWidget.ScrollRatioFromTop0To1 += new Vector2(0, changeRatio);
+		}
+
+		private void Bounds_Changed(object sender, EventArgs e)
+		{
+			UpdateScrollBar();
+		}
+
 		private void UpdateScrollBar()
 		{
 			switch (Show)
 			{
 				case ShowState.WhenRequired:
-					if (ParentScrollWidget.ScrollArea.Height > ParentScrollWidget.Height)
+					if (parentScrollWidget.ScrollArea.Height > parentScrollWidget.Height)
 					{
 						goto case ShowState.Always;
 					}
@@ -248,15 +192,15 @@ namespace MatterHackers.Agg.UI
 					// make sure we can see it
 					Visible = true;
 					// fix the bounds of the scroll bar background
-					LocalBounds = new RectangleDouble(0, 0, ScrollBarWidth, ParentScrollWidget.Height);
+					LocalBounds = new RectangleDouble(0, 0, ScrollBarWidth, parentScrollWidget.Height);
 					background.LocalBounds = LocalBounds;
 
 					// On hover, grow the thumb bounds by the given value
-					int growAmount = (mouseInBounds) ? 0 : ScrollBar.GrowThumbBy;
+					int growAmount = mouseInBounds ? 0 : ScrollBar.GrowThumbBy;
 					thumb.LocalBounds = new RectangleDouble(growAmount, 0, ScrollBarWidth - growAmount, ThumbHeight);
 
-					Vector2 scrollRatioFromTop0To1 = ParentScrollWidget.ScrollRatioFromTop0To1;
-					double notThumbHeight = ParentScrollWidget.Height - ThumbHeight;
+					Vector2 scrollRatioFromTop0To1 = parentScrollWidget.ScrollRatioFromTop0To1;
+					double notThumbHeight = parentScrollWidget.Height - ThumbHeight;
 					thumb.OriginRelativeParent = new Vector2(0, notThumbHeight * scrollRatioFromTop0To1.Y);
 					break;
 
@@ -266,28 +210,93 @@ namespace MatterHackers.Agg.UI
 			}
 
 			// HACK: Workaround to fix problems with initial positioning - set padding on ScrollArea to force layout
-			this.ParentScrollWidget.ScrollArea.Padding = 0;
+			this.parentScrollWidget.ScrollArea.Padding = 0;
 		}
 
-		internal void MoveThumb(Vector2 deltaToMove)
+		public class DefaultThumbBackground : GuiWidget
 		{
-			double notThumbHeight = ParentScrollWidget.Height - ThumbHeight;
-			double changeRatio = deltaToMove.Y / notThumbHeight;
-			ParentScrollWidget.ScrollRatioFromTop0To1 = ParentScrollWidget.ScrollRatioFromTop0To1 + new Vector2(0, changeRatio);
-		}
-
-		internal double ThumbHeight
-		{
-			get
+			public DefaultThumbBackground()
 			{
-				Vector2 ratioOfViewToContents0To1 = ParentScrollWidget.RatioOfViewToContents0To1();
-				return ratioOfViewToContents0To1.Y * ParentScrollWidget.Height;
+				this.BackgroundColor = DefaultBackgroundColor;
+			}
+
+			public static Color DefaultBackgroundColor { get; set; } = Color.LightGray;
+		}
+
+		public class DefaultThumbView : GuiWidget
+		{
+			public static Color ThumbColor { get; set; } = Color.DarkGray;
+
+			public override void OnDraw(Graphics2D graphics2D)
+			{
+				var rect = new RoundedRect(LocalBounds, 0);
+				// RoundedRect rect = new RoundedRect(LocalBounds, 0);
+				graphics2D.Render(rect, ThumbColor);
+				base.OnDraw(graphics2D);
 			}
 		}
+	}
 
-		private void Bounds_Changed(object sender, EventArgs e)
+	public class ThumDragWidget : GuiWidget
+	{
+		private readonly Orientation orientation;
+
+		private Vector2 mouseDownPosition;
+
+		public ThumDragWidget(Orientation orientation)
 		{
-			UpdateScrollBar();
+			this.orientation = orientation;
+		}
+
+		protected bool MouseDownOnThumb { get; set; }
+
+		public override void OnBoundsChanged(EventArgs e)
+		{
+			if (Children.Count != 1)
+			{
+				throw new Exception("We should have one child that is the thum view.");
+			}
+
+			Children.FirstOrDefault().LocalBounds = LocalBounds;
+			base.OnBoundsChanged(e);
+		}
+
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
+		{
+			MouseDownOnThumb = true;
+			mouseDownPosition = new Vector2(mouseEvent.X, mouseEvent.Y);
+
+			base.OnMouseDown(mouseEvent);
+		}
+
+		public override void OnMouseMove(MouseEventArgs mouseEvent)
+		{
+			if (MouseDownOnThumb)
+			{
+				var mousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
+
+				Vector2 deltaFromDownPosition = mousePosition - mouseDownPosition;
+
+				if (orientation == Orientation.Vertical)
+				{
+					deltaFromDownPosition.X = 0;
+				}
+				else
+				{
+					deltaFromDownPosition.Y = 0;
+				}
+
+				var parentScrollBar = (ScrollBar)Parent;
+				parentScrollBar.MoveThumb(deltaFromDownPosition);
+			}
+
+			base.OnMouseMove(mouseEvent);
+		}
+
+		public override void OnMouseUp(MouseEventArgs mouseEvent)
+		{
+			MouseDownOnThumb = false;
+			base.OnMouseUp(mouseEvent);
 		}
 	}
 }
