@@ -51,9 +51,10 @@ namespace MatterHackers.Agg.UI
 				var newBounds = value;
 				if (Image.Width > 0)
 				{
-					var scale = Math.Min(1, newBounds.Width / Image.Width);
+					var scale = Math.Min(GuiWidget.DeviceScale, newBounds.Width / Image.Width);
 					newBounds.Top = newBounds.Bottom + Image.Height * scale;
 				}
+
 				base.LocalBounds = newBounds;
 			}
 		}
@@ -64,8 +65,9 @@ namespace MatterHackers.Agg.UI
 			var newBounds = LocalBounds;
 			if (Image.Width > 0)
 			{
-				var scale = Math.Min(1, newBounds.Width / Image.Width);
-				MaximumSize = new Vector2(Image.Width, Image.Height);
+				var scale = Math.Min(GuiWidget.DeviceScale, newBounds.Width / Image.Width);
+				MaximumSize = new Vector2(Image.Width * GuiWidget.DeviceScale,
+					Image.Height * GuiWidget.DeviceScale);
 				newBounds.Top = newBounds.Bottom + Image.Height * scale;
 				base.LocalBounds = newBounds;
 			}
@@ -88,62 +90,14 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private Cursors overrideCursor = Cursors.Arrow;
-		public override void OnMouseMove(MouseEventArgs mouseEvent)
-		{
-			if (LocalBounds.Contains(mouseEvent.Position)
-				&& this.ContainsFocus)
-			{
-				if (ImageBounds.Contains(mouseEvent.Position))
-				{
-					overrideCursor = Cursor;
-				}
-				else
-				{
-					overrideCursor = Cursors.Arrow;
-				}
-				base.SetCursor(overrideCursor);
-			}
-
-			base.OnMouseMove(mouseEvent);
-		}
-
-		protected override void OnClick(MouseEventArgs mouseEvent)
-		{
-			if (ImageBounds.Contains(mouseEvent.Position))
-			{
-				base.OnClick(mouseEvent);
-			}
-		}
-
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			if (Image != null)
 			{
-				var imageBounds = ImageBounds;
-				graphics2D.Render(Image,
-					ImageBounds.Left, ImageBounds.Bottom,
-					ImageBounds.Width, ImageBounds.Height);
+				graphics2D.Render(Image, 0, 0, Width, Height);
 			}
-			base.OnDraw(graphics2D);
-		}
 
-		public RectangleDouble ImageBounds
-		{
-			get
-			{
-				if (Width > Image.Width)
-				{
-					var left = new Vector2(Width / 2 - Image.Width / 2, Height / 2 - Image.Height / 2);
-					return new RectangleDouble(
-							left,
-							new Vector2(left.X + Image.Width, left.Y + Image.Height));
-				}
-				else
-				{
-					return new RectangleDouble(0, 0, Width, Height);
-				}
-			}
+			base.OnDraw(graphics2D);
 		}
 	}
 }

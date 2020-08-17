@@ -121,6 +121,7 @@ namespace MatterHackers.Agg.UI
 	public static class RadioImage
 	{
 		public static double BoxWidth => 10 * GuiWidget.DeviceScale;
+
 		public static double BorderRadius => BoxWidth / 2;
 
 		public static void DrawCircle(Graphics2D graphics2D, Vector2 center, Color color, bool isChecked, bool isActive)
@@ -132,7 +133,12 @@ namespace MatterHackers.Agg.UI
 			}
 
 			// Radio border
-			int strokeWidth = (isActive) ? 2 : 1;
+			var strokeWidth = Math.Max(1, Math.Round(1 * GuiWidget.DeviceScale));
+			if (isActive)
+			{
+				strokeWidth *= 2;
+			}
+
 			graphics2D.Render(
 				new Stroke(new Ellipse(center, BorderRadius), strokeWidth),
 				color);

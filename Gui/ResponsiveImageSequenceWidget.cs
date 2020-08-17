@@ -36,7 +36,9 @@ namespace MatterHackers.Agg.UI
 	public class ResponsiveImageSequenceWidget : GuiWidget
 	{
 		private ImageSequence _imageSequence;
+
 		private Animation animation = new Animation();
+
 		private double currentTime = 0;
 
 		public ResponsiveImageSequenceWidget(ImageSequence initialSequence)
@@ -44,6 +46,8 @@ namespace MatterHackers.Agg.UI
 			HAnchor = HAnchor.Stretch;
 
 			ImageSequence = initialSequence;
+			MaximumSize = new Vector2(initialSequence.Width * GuiWidget.DeviceScale,
+				initialSequence.Height * GuiWidget.DeviceScale);
 			if (ImageSequence != null)
 			{
 				ImageSequence.Invalidated += ImageChanged;
@@ -68,9 +72,52 @@ namespace MatterHackers.Agg.UI
 			RunAnimation = true;
 		}
 
+		public ImageSequence ImageSequence
+		{
+			get => _imageSequence;
+
+			set
+			{
+				if (_imageSequence != value)
+				{
+					// clear the old one
+					if (_imageSequence != null)
+					{
+						_imageSequence.Invalidated -= ResetImageIndex;
+					}
+
+					_imageSequence = value;
+					animation.FramesPerSecond = _imageSequence.FramesPerSecond;
+					currentTime = 0;
+					_imageSequence.Invalidated += ResetImageIndex;
+				}
+			}
+		}
+
+		public override RectangleDouble LocalBounds
+		{
+			get => base.LocalBounds;
+
+			set
+			{
+				var newBounds = value;
+				if (ImageSequence.Width > 0)
+				{
+					var scale = Math.Min(GuiWidget.DeviceScale, newBounds.Width / ImageSequence.Width);
+					newBounds.Top = newBounds.Bottom + ImageSequence.Height * scale;
+				}
+
+				base.LocalBounds = newBounds;
+			}
+		}
+
 		public bool RunAnimation
 		{
-			get { return animation != null && animation.IsRunning; }
+			get
+			{
+				return animation != null && animation.IsRunning;
+			}
+
 			set
 			{
 				if (animation != null
@@ -88,19 +135,15 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override RectangleDouble LocalBounds
+		public override void OnDraw(Graphics2D graphics2D)
 		{
-			get => base.LocalBounds;
-			set
+			if (this.ImageSequence?.Frames.Count > 0)
 			{
-				var newBounds = value;
-				if (ImageSequence.Width > 0)
-				{
-					var scale = Math.Min(1, newBounds.Width / ImageSequence.Width);
-					newBounds.Top = newBounds.Bottom + ImageSequence.Height * scale;
-				}
-				base.LocalBounds = newBounds;
+				var currentImage = ImageSequence.GetImageByTime(currentTime);
+				graphics2D.Render(currentImage, 0, 0, Width, Height);
 			}
+
+			base.OnDraw(graphics2D);
 		}
 
 		private void ImageChanged(object s, EventArgs e)
@@ -109,8 +152,9 @@ namespace MatterHackers.Agg.UI
 			var newBounds = LocalBounds;
 			if (ImageSequence.Width > 0)
 			{
-				var scale = Math.Min(1, newBounds.Width / ImageSequence.Width);
-				MaximumSize = new Vector2(ImageSequence.Width, ImageSequence.Height);
+				var scale = Math.Min(GuiWidget.DeviceScale, newBounds.Width / ImageSequence.Width);
+				MaximumSize = new Vector2(ImageSequence.Width * GuiWidget.DeviceScale,
+					ImageSequence.Height * GuiWidget.DeviceScale);
 				newBounds.Top = newBounds.Bottom + ImageSequence.Height * scale;
 				base.LocalBounds = newBounds;
 			}
@@ -118,89 +162,10 @@ namespace MatterHackers.Agg.UI
 			Invalidate();
 		}
 
-		public ImageSequence ImageSequence
-		{
-			get => _imageSequence;
-			set
-			{
-				if (_imageSequence != value)
-				{
-					// clear the old one
-					if (_imageSequence != null)
-					{
-						_imageSequence.Invalidated -= ResetImageIndex;
-					}
-					_imageSequence = value;
-					animation.FramesPerSecond = _imageSequence.FramesPerSecond;
-					currentTime = 0;
-					_imageSequence.Invalidated += ResetImageIndex;
-				}
-			}
-		}
-
 		private void ResetImageIndex(object sender, EventArgs e)
 		{
 			currentTime = 0;
 			Invalidate();
-		}
-
-		Cursors overrideCursor = Cursors.Arrow;
-		public override void OnMouseMove(MouseEventArgs mouseEvent)
-		{
-			if (LocalBounds.Contains(mouseEvent.Position)
-				&& this.ContainsFocus)
-			{
-				if (ImageBounds.Contains(mouseEvent.Position))
-				{
-					overrideCursor = Cursor;
-				}
-				else
-				{
-					overrideCursor = Cursors.Arrow;
-				}
-				base.SetCursor(overrideCursor);
-			}
-
-			base.OnMouseMove(mouseEvent);
-		}
-
-		protected override void OnClick(MouseEventArgs mouseEvent)
-		{
-			if (ImageBounds.Contains(mouseEvent.Position))
-			{
-				base.OnClick(mouseEvent);
-			}
-		}
-
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			if (this.ImageSequence?.Frames.Count > 0)
-			{
-				var imageBounds = ImageBounds;
-				var currentImage = ImageSequence.GetImageByTime(currentTime);
-				graphics2D.Render(currentImage,
-					ImageBounds.Left, ImageBounds.Bottom,
-					ImageBounds.Width, ImageBounds.Height);
-			}
-			base.OnDraw(graphics2D);
-		}
-
-		public RectangleDouble ImageBounds
-		{
-			get
-			{
-				if (Width > ImageSequence.Width)
-				{
-					var left = new Vector2(Width / 2 - ImageSequence.Width / 2, Height / 2 - ImageSequence.Height / 2);
-					return new RectangleDouble(
-							left,
-							new Vector2(left.X + ImageSequence.Width, left.Y + ImageSequence.Height));
-				}
-				else
-				{
-					return new RectangleDouble(0, 0, Width, Height);
-				}
-			}
 		}
 	}
 }

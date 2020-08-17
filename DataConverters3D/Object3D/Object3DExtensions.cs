@@ -101,23 +101,41 @@ namespace MatterHackers.DataConverters3D
 			}
 			else
 			{
-				Mesh mesh = null;
-
 				try
 				{
-					if (!cacheContext.Meshes.TryGetValue(filePath, out mesh))
+					if (cacheContext.Meshes.TryGetValue(filePath, out Mesh mesh))
 					{
-						mesh = Object3D.Load(filePath, cancellationToken).Mesh;
-						cacheContext.Meshes[filePath] = mesh;
+						item.SetMeshDirect(mesh);
+					}
+					else
+					{
+						var loadedItem = Object3D.Load(filePath, cancellationToken);
+						if (loadedItem?.Children.Count() > 0)
+						{
+							loadedItem.Children.Modify(loadedChildren =>
+							{
+								// copy the children
+								item.Children.Modify(children =>
+								{
+									children.AddRange(loadedChildren);
+									loadedChildren.Clear();
+								});
+							});
+						}
+						else
+						{
+							// copy the mesh
+							var loadedMesh = loadedItem?.Mesh;
+							cacheContext.Meshes[filePath] = loadedMesh;
+							item.SetMeshDirect(loadedMesh);
+						}
 					}
 				}
 				catch
 				{
 					// Fall back to Missing mesh if available
-					mesh = Object3D.FileMissingMesh;
+					item.SetMeshDirect(Object3D.FileMissingMesh);
 				}
-
-				item.SetMeshDirect(mesh);
 			}
 		}
 
