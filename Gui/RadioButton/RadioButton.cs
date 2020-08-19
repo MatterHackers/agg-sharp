@@ -32,6 +32,7 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// Uncheck all IRadioButton siblings based on our parents children or the custom SiblingRadioButtonList
 		/// </summary>
+		/// <param name="radioButton">The button that is being checked</param>
 		public static void UncheckSiblings(this IRadioButton radioButton)
 		{
 			var siblingButtons = radioButton.SiblingRadioButtonList ?? (radioButton as GuiWidget)?.Parent?.Children.ToList();
@@ -55,7 +56,7 @@ namespace MatterHackers.Agg.UI
 		bool Checked { get; set; }
 	}
 
-	public interface IRadioButton: ICheckbox
+	public interface IRadioButton : ICheckbox
 	{
 		IList<GuiWidget> SiblingRadioButtonList { get; set; }
 	}
@@ -118,8 +119,8 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public RadioButton(string label, int fontSize=12)
-			: this(0, 0, label, Color.Black)
+		public RadioButton(string label, int fontSize = 12)
+			: this(0, 0, label, Color.Black, fontSize)
 		{
 		}
 
@@ -137,21 +138,6 @@ namespace MatterHackers.Agg.UI
 		public RadioButton(double x, double y, string label, Color textColor, int fontSize=12)
 			: this(x, y, new RadioButtonViewText(label, textColor, fontSize))
 		{
-		}
-
-		public override void OnParentChanged(EventArgs e)
-		{
-			if(Parent == null)
-			{
-				return;
-			}
-
-			if (this.SiblingRadioButtonList == null)
-			{
-				SiblingRadioButtonList = Parent.Children.ToList();
-			}
-
-			base.OnParentChanged(e);
 		}
 
 		public override string Text
