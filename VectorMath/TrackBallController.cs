@@ -56,12 +56,10 @@ namespace MatterHackers.VectorMath.TrackBall
 
 		public TrackBallTransformType CurrentTrackingType { get; private set; } = TrackBallTransformType.None;
 
-		public static Vector3 MapMoveToSphere(Vector2 screenCenter, WorldView world, double trackBallRadius, Vector2 startPosition, Vector2 endPosition, bool rotateOnZ)
+		public static Vector3 MapMoveToSphere(Vector2 screenCenter, double trackBallRadius, Vector2 startPosition, Vector2 endPosition, bool rotateOnScreenZ)
 		{
-			if (rotateOnZ)
+			if (rotateOnScreenZ)
 			{
-				var deltaFromScreenCenter = screenCenter - endPosition;
-
 				var angleToTravel = screenCenter.GetDeltaAngle(startPosition, endPosition);
 
 				// now rotate that position about z in the direction of the screen vector
@@ -122,7 +120,7 @@ namespace MatterHackers.VectorMath.TrackBall
 			switch (CurrentTrackingType)
 			{
 				case TrackBallTransformType.Rotation:
-					Quaternion activeRotationQuaternion = GetRotationForMove(ScreenCenter, world, TrackBallRadius, mouseDownPosition, mousePosition, false);
+					Quaternion activeRotationQuaternion = GetRotationForMove(ScreenCenter, TrackBallRadius, mouseDownPosition, mousePosition, false);
 
 					if (activeRotationQuaternion != Quaternion.Identity)
 					{
@@ -169,12 +167,12 @@ namespace MatterHackers.VectorMath.TrackBall
 			}
 		}
 
-		public static Quaternion GetRotationForMove(Vector2 screenCenter, WorldView world, double trackBallRadius, Vector2 startPosition, Vector2 endPosition, bool rotateOnZ)
+		public static Quaternion GetRotationForMove(Vector2 screenCenter, double trackBallRadius, Vector2 startPosition, Vector2 endPosition, bool rotateOnZ)
 		{
 			var activeRotationQuaternion = Quaternion.Identity;
 
 			//Map the point to the sphere
-			var moveSpherePosition = MapMoveToSphere(screenCenter, world, trackBallRadius, startPosition, endPosition, rotateOnZ);
+			var moveSpherePosition = MapMoveToSphere(screenCenter, trackBallRadius, startPosition, endPosition, rotateOnZ);
 
 			//Return the quaternion equivalent to the rotation
 			//Compute the vector perpendicular to the begin and end vectors
