@@ -15,17 +15,49 @@ namespace MatterHackers.Agg.UI
 			System.Windows.Forms.Clipboard.SetText(text);
 		}
 
-		public bool ContainsText => System.Windows.Forms.Clipboard.ContainsText();
+		public bool ContainsText
+		{
+			get
+			{
+				try
+				{
+					return System.Windows.Forms.Clipboard.ContainsText();
+				}
+				catch
+				{
+					return false;
+				}
+			}
+		}
 
-		public bool ContainsImage => System.Windows.Forms.Clipboard.ContainsImage();
+		public bool ContainsImage
+		{
+			get
+			{
+				try
+				{
+					return System.Windows.Forms.Clipboard.ContainsImage();
+				}
+				catch
+				{
+					return false;
+				}
+			}
+		}
 
 		public ImageBuffer GetImage()
 		{
-			var bitmap = new System.Drawing.Bitmap(System.Windows.Forms.Clipboard.GetImage());
-			var image = new ImageBuffer();
-			if (ImageIOWindowsPlugin.ConvertBitmapToImage(image, bitmap))
+			try
 			{
-				return image;
+				var bitmap = new System.Drawing.Bitmap(System.Windows.Forms.Clipboard.GetImage());
+				var image = new ImageBuffer();
+				if (ImageIOWindowsPlugin.ConvertBitmapToImage(image, bitmap))
+				{
+					return image;
+				}
+			}
+			catch
+			{
 			}
 
 			return null;
@@ -37,6 +69,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public bool ContainsFileDropList => System.Windows.Forms.Clipboard.ContainsFileDropList();
+
 		public StringCollection GetFileDropList()
 		{
 			return System.Windows.Forms.Clipboard.GetFileDropList();
