@@ -126,7 +126,6 @@ namespace MatterHackers.VectorMath.TrackBall
 					{
 						mouseDownPosition = mousePosition;
 						world.RotationMatrix = world.RotationMatrix * Matrix4X4.CreateRotation(activeRotationQuaternion);
-						OnTransformChanged(null);
 					}
 
 					break;
@@ -140,7 +139,6 @@ namespace MatterHackers.VectorMath.TrackBall
 						offset = Vector3Ex.TransformPosition(offset, localToScreenTransform);
 						world.TranslationMatrix = world.TranslationMatrix * Matrix4X4.CreateTranslation(offset);
 						lastTranslationMousePosition = mousePosition;
-						OnTransformChanged(null);
 					}
 					break;
 
@@ -158,7 +156,6 @@ namespace MatterHackers.VectorMath.TrackBall
 						}
 						world.Scale = world.Scale * zoomDelta;
 						lastScaleMousePosition = mousePosition;
-						OnTransformChanged(null);
 					}
 					break;
 
@@ -232,12 +229,6 @@ namespace MatterHackers.VectorMath.TrackBall
 			}
 
 			world.Scale = world.Scale * zoomDelta;
-			OnTransformChanged(null);
-		}
-
-		private void OnTransformChanged(EventArgs x)
-		{
-			world.OnTransformChanged(x);
 		}
 
 		public double TrackBallRadius { get; set; }
