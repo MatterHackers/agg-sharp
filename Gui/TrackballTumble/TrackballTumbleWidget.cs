@@ -286,8 +286,6 @@ namespace MatterHackers.Agg
 			{
 				this.world.CalculateProjectionMatrix(sourceWidget.Width, sourceWidget.Height, zNear, zFar);
 			}
-
-			this.world.CalculateModelviewMatrix();
 		}
 
 		public void ZeroVelocity()

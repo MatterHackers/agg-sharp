@@ -309,7 +309,7 @@ namespace MatterHackers.Agg.UI
 				// timeSinceLastToolTipCloseWasRunning = true;
 				timeSinceLastToolTipClose.Restart();
 
-				Debug.WriteLine("RemoveToolTip {0}".FormatWith(count++));
+				// Debug.WriteLine("RemoveToolTip {0}".FormatWith(count++));
 			}
 		}
 
