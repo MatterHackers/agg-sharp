@@ -347,6 +347,7 @@ namespace MatterHackers.Agg.Image
 							{
 								palette.Entries[i] = System.Drawing.Color.FromArgb(i, i, i);
 							}
+
 							bitmapToSave.Palette = palette;
 							BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
 							int destIndex = 0;
