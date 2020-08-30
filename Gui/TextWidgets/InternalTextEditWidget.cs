@@ -28,7 +28,6 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text;
@@ -39,7 +38,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-	public class InternalTextEditWidget : GuiWidget
+	public class InternalTextEditWidget : GuiWidget, IIgnoredPopupChild
 	{
 		private static ReadOnlyCollection<char> defaultWordBreakChars;
 
@@ -85,6 +84,8 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 		}
+
+		public bool KeepMenuOpen { get; set; } = false;
 
 		public int SelectionIndexToStartBefore { get; set; }
 
