@@ -48,7 +48,7 @@ namespace MatterHackers.Agg.UI
 	public class HorizontalLine : GuiWidget
 	{
 		public HorizontalLine()
-			: base(1, 1)
+			: base(1, 1 * DeviceScale)
 		{
 			HAnchor = HAnchor.Stretch;
 		}
@@ -63,7 +63,7 @@ namespace MatterHackers.Agg.UI
 	public class VerticalLine : GuiWidget
 	{
 		public VerticalLine()
-			: base(1, 1)
+			: base(1 * DeviceScale, 1)
 		{
 			VAnchor = VAnchor.Stretch;
 		}
