@@ -280,7 +280,7 @@ namespace MatterHackers.Agg.UI
 				currentPadding = new BorderDouble(MenuItemsPadding.Left + 20 + 3, MenuItemsPadding.Bottom, MenuItemsPadding.Right, MenuItemsPadding.Top);
 			}
 
-			MenuItem menuItem = new MenuItem(new MenuItemColorStatesView(itemName, MenuItemsTextColor, typeFace)
+			var menuItem = new MenuItem(new MenuItemColorStatesView(itemName, MenuItemsTextColor, typeFace)
 			{
 				NormalBackgroundColor = MenuItemsBackgroundColor,
 				OverBackgroundColor = MenuItemsBackgroundHoverColor,
@@ -651,7 +651,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (e.NewItems != null)
 			{
-				Vector2 minSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
+				var minSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
 
 				string startText = mainControlText.Text;
 				foreach (MenuItem item in MenuItems.ToList())
