@@ -409,7 +409,7 @@ namespace MatterHackers.Agg
 
 			if (m_gamma.GetGamma() != 1.0)
 			{
-				((ImageBuffer)destImage).apply_gamma_inv(m_gamma);
+				((ImageBuffer)destImage).ApplyGammaInv(m_gamma);
 			}
 
 			base.OnDraw(graphics2D);
