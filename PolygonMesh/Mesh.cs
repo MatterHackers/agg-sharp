@@ -246,7 +246,8 @@ namespace MatterHackers.PolygonMesh
 			var sameDistance = new Vector3Float(treatAsSameDistance, treatAsSameDistance, treatAsSameDistance);
 			var tinyDistance = new Vector3Float(.001, .001, .001);
 			// build a bvh tree of all the vertices
-			var bvhTree = BvhTree<int>.CreateNewHierachy(this.Vertices
+			var bvhBuilder = new TradeOffBvhConstructor<int>();
+			var bvhTree = bvhBuilder.CreateNewHierachy(this.Vertices
 				.Select((v, i) => new BvhTreeItemData<int>(i, new AxisAlignedBoundingBox(v - tinyDistance, v + tinyDistance))).ToList());
 
 			var newVertices = new List<Vector3Float>(Vertices.Count);

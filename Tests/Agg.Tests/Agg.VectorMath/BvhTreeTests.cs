@@ -47,7 +47,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			data.Add(new BvhTreeItemData<int>(3, new AxisAlignedBoundingBox(-9, -17, -29, 9, 19, 28)));
 			data.Add(new BvhTreeItemData<int>(4, new AxisAlignedBoundingBox(-9, -16, -29, 9, 19, 27)));
 
-			var tree = BvhTree<int>.CreateNewHierachy(data);
+			var bvhBuilder = new TradeOffBvhConstructor<int>();
+			var tree = bvhBuilder.CreateNewHierachy(data);
 
 			Assert.IsTrue(tree.CountBranches() == 1, "all the bounds overlap, there is no value in splitting them up");
 
@@ -83,7 +84,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			data.Add(new BvhTreeItemData<int>(7, new AxisAlignedBoundingBox(0, 2, 2, 1, 3, 3)));
 			// right, back, top
 			data.Add(new BvhTreeItemData<int>(8, new AxisAlignedBoundingBox(2, 2, 2, 3, 3, 3)));
-			var tree = BvhTree<int>.CreateNewHierachy(data);
+			var bvhBuilder = new TradeOffBvhConstructor<int>();
+			var tree = bvhBuilder.CreateNewHierachy(data);
 
 			Assert.AreEqual(7, tree.CountBranches(), "these must be split up into multiple bounds");
 
@@ -127,7 +129,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			data.Add(new BvhTreeItemData<int>(7, new AxisAlignedBoundingBox(0, 2, 2, 1, 3, 3)));
 			// right, back, top
 			data.Add(new BvhTreeItemData<int>(8, new AxisAlignedBoundingBox(2, 2, 2, 3, 3, 3)));
-			var tree = BvhTree<int>.CreateNewHierachy(data);
+			var bvhBuilder = new TradeOffBvhConstructor<int>();
+			var tree = bvhBuilder.CreateNewHierachy(data);
 
 			Assert.AreEqual(7, tree.CountBranches(), "these must be split up into multiple bounds");
 
@@ -186,7 +189,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			data.Add(new BvhTreeItemData<int>(7, new AxisAlignedBoundingBox(0, 2, 2, 1, 3, 3)));
 			// right, back, top
 			data.Add(new BvhTreeItemData<int>(8, new AxisAlignedBoundingBox(2, 2, 2, 3, 3, 3)));
-			var tree = BvhTree<int>.CreateNewHierachy(data);
+			var bvhBuilder = new TradeOffBvhConstructor<int>();
+			var tree = bvhBuilder.CreateNewHierachy(data);
 
 			Assert.AreEqual(7, tree.CountBranches(), "these must be split up into multiple bounds");
 
@@ -239,7 +243,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			data.Add(new BvhTreeItemData<int>(2, new AxisAlignedBoundingBox(0, 2, 2, 0, 2, 2)));
 			// right, back, top
 			data.Add(new BvhTreeItemData<int>(3, new AxisAlignedBoundingBox(2, 2, 2, 2, 2, 2)));
-			var tree = BvhTree<int>.CreateNewHierachy(data);
+			var bvhBuilder = new TradeOffBvhConstructor<int>();
+			var tree = bvhBuilder.CreateNewHierachy(data);
 
 			var results = new List<int>();
 			tree.SearchBounds(new AxisAlignedBoundingBox(0, 0, 0, 3, 3, 3), results);

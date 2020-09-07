@@ -175,7 +175,9 @@ namespace MatterHackers.VectorMath
 						}
 						info.ClosestHitObject = bounds;
 						info.HitPosition = this.origin + this.directionNormal * minDistFound;
-						info.NormalAtHit[minAxis] = this.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is opposite your sign
+						Vector3 normalAtHit = default(Vector3);
+						normalAtHit[minAxis] = this.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is opposite your sign
+						info.NormalAtHit = normalAtHit;
 						info.DistanceToHit = minDistFound;
 					}
 				}
@@ -190,7 +192,9 @@ namespace MatterHackers.VectorMath
 						}
 						info.ClosestHitObject = bounds;
 						info.HitPosition = this.origin + this.directionNormal * maxDistFound;
-						info.NormalAtHit[maxAxis] = this.sign[maxAxis] == Ray.Sign.negative ? 1 : -1;
+						Vector3 normalAtHit = default(Vector3);
+						normalAtHit[minAxis] = this.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is opposite your sign
+						info.NormalAtHit = normalAtHit;
 						info.DistanceToHit = maxDistFound;
 					}
 				}

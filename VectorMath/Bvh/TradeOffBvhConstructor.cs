@@ -25,67 +25,35 @@ using System.Collections.Generic;
 
 namespace MatterHackers.VectorMath
 {
-	public interface IIntersectable
+	public class TradeOffBvhConstructor<T> : IBvhConstructor<T>
 	{
-		/// <summary>
-		/// This is the computation cost of doing an intersection with the given type.
-		/// It is relative to the cost of doing a simple BvhTree bounds calculation which is 1.
-		/// </summary>
-		/// <returns></returns>
-		double GetIntersectCost();
+		private SortingAccelerator accelerator;
 
-		/// <summary>
-		/// Calculate the RayHitInfo for this object
-		/// </summary>
-		/// <param name="ray"></param>
-		/// <returns></returns>
-		RayHitInfo GetIntersection(Ray ray);
-	}
+		private int maxRecursion;
 
-	public class BvhTree<T> : IIntersectable
-	{
-		// any of the items that are in this node
-		public List<BvhTreeItemData<T>> Items = new List<BvhTreeItemData<T>>();
+		private int recursionDepth;
 
-		private BvhTree<T> nodeA;
-
-		private BvhTree<T> nodeB;
-
-		private int splittingPlane;
-
-		public BvhTree()
-		{
-		}
-
-		public BvhTree(IEnumerable<BvhTreeItemData<T>> items)
-		{
-			Aabb = AxisAlignedBoundingBox.Empty();
-			foreach (var item in items)
-			{
-				Items.Add(item);
-				Aabb += item.Aabb;
-			}
-		}
-
-		public BvhTree(BvhTree<T> nodeA, BvhTree<T> nodeB, int splittingPlane)
-		{
-			this.splittingPlane = splittingPlane;
-			this.nodeA = nodeA;
-			this.nodeB = nodeB;
-			this.Aabb = nodeA.Aabb + nodeB.Aabb; // we can cache this because it is not allowed to change.
-			this.Center = Aabb.Center;
-		}
-
-		public AxisAlignedBoundingBox Aabb { get; private set; }
-
-		public Vector3 Center { get; private set; }
-
-		public int Count { get; private set; }
-
-		public static BvhTree<T> CreateNewHierachy(List<BvhTreeItemData<T>> itemsToAdd,
-			int maxRecursion = int.MaxValue,
+		public TradeOffBvhConstructor(int maxRecursion = int.MaxValue,
 			int recursionDepth = 0,
 			SortingAccelerator accelerator = null)
+		{
+			this.maxRecursion = maxRecursion;
+			this.recursionDepth = recursionDepth;
+			this.accelerator = accelerator;
+		}
+
+		public BvhTree<T> CreateNewHierachy(List<BvhTreeItemData<T>> itemsToAdd)
+		{
+			return CreateNewHierachy(itemsToAdd,
+			this.maxRecursion,
+			this.recursionDepth,
+			this.accelerator);
+		}
+
+		private static BvhTree<T> CreateNewHierachy(List<BvhTreeItemData<T>> itemsToAdd,
+			int maxRecursion,
+			int recursionDepth,
+			SortingAccelerator accelerator)
 		{
 			if (accelerator == null)
 			{
@@ -257,210 +225,6 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		public void All(List<T> results)
-		{
-			// check all the items that are part of this object
-			foreach (var item in Items)
-			{
-				results.Add(item.Item);
-			}
-
-			nodeA.All(results);
-			nodeB.All(results);
-		}
-
-		public void AlongRay(Ray ray, List<T> results)
-		{
-			if (ray.Intersection(Aabb))
-			{
-				// check all the items that are part of this object
-				foreach (var item in Items)
-				{
-					if (item is IIntersectable intersectable)
-					{
-						RayHitInfo info = intersectable.GetIntersection(ray);
-						if (info != null && info.HitType != IntersectionType.None && info.DistanceToHit >= 0)
-						{
-							results.Add(item.Item);
-						}
-					}
-					else if(ray.Intersection(item.Aabb))
-					{
-						results.Add(item.Item);
-					}
-				}
-
-				nodeA?.AlongRay(ray, results);
-				nodeB?.AlongRay(ray, results);
-			}
-		}
-
-		public int CountBranches()
-		{
-			int count = 1;
-			if (nodeA != null)
-			{
-				count += nodeA.CountBranches();
-			}
-
-			if (nodeB != null)
-			{
-				count += nodeB.CountBranches();
-			}
-			return count;
-		}
-
-		public RayHitInfo GetClosestIntersection(Ray ray)
-		{
-			RayHitInfo bestIntersect = null;
-
-			if (ray.Intersection(Aabb))
-			{
-				// check all the items that are part of this object
-				foreach (var item in Items)
-				{
-					if (item is IIntersectable intersectable)
-					{
-						RayHitInfo info = intersectable.GetIntersection(ray);
-						if (info != null && info.HitType != IntersectionType.None && info.DistanceToHit >= 0)
-						{
-							if (ray.isShadowRay)
-							{
-								return info;
-							}
-							else if (bestIntersect == null || info.DistanceToHit < bestIntersect.DistanceToHit)
-							{
-								bestIntersect = info;
-								ray.maxDistanceToConsider = bestIntersect.DistanceToHit;
-							}
-						}
-					}
-					// we will just be hitting the bounding box of the type
-					else
-					{
-						RayHitInfo info = ray.GetClosestIntersection(item.Aabb);
-						if (info != null && info.HitType != IntersectionType.None && info.DistanceToHit >= 0)
-						{
-							info.ClosestHitObject = item.Item;
-							if (ray.isShadowRay)
-							{
-								return info;
-							}
-							else if (bestIntersect == null || info.DistanceToHit < bestIntersect.DistanceToHit)
-							{
-								bestIntersect = info;
-								ray.maxDistanceToConsider = bestIntersect.DistanceToHit;
-							}
-						}
-					}
-				}
-
-				var checkFirst = nodeA;
-				var checkSecond = nodeB;
-				if (ray.directionNormal[splittingPlane] < 0)
-				{
-					checkFirst = nodeB;
-					checkSecond = nodeA;
-				}
-
-				if (checkFirst != null)
-				{
-					RayHitInfo firstIntersect = checkFirst.GetClosestIntersection(ray);
-					if (firstIntersect != null && firstIntersect.HitType != IntersectionType.None)
-					{
-						if (ray.isShadowRay)
-						{
-							return firstIntersect;
-						}
-						else if (bestIntersect == null || firstIntersect.DistanceToHit < bestIntersect.DistanceToHit)
-						{
-							bestIntersect = firstIntersect;
-							ray.maxDistanceToConsider = bestIntersect.DistanceToHit;
-						}
-					}
-				}
-				if (checkSecond != null)
-				{
-					RayHitInfo secondIntersect = checkSecond.GetClosestIntersection(ray);
-					if (secondIntersect != null && secondIntersect.HitType != IntersectionType.None)
-					{
-						if (ray.isShadowRay)
-						{
-							return secondIntersect;
-						}
-						else if (bestIntersect == null || secondIntersect.DistanceToHit < bestIntersect.DistanceToHit)
-						{
-							bestIntersect = secondIntersect;
-							ray.maxDistanceToConsider = bestIntersect.DistanceToHit;
-						}
-					}
-				}
-			}
-
-			return bestIntersect;
-		}
-
-		public double GetIntersectCost()
-		{
-			return AxisAlignedBoundingBox.GetIntersectCost();
-		}
-
-		public RayHitInfo GetIntersection(Ray ray)
-		{
-			return GetClosestIntersection(ray);
-		}
-
-		public void SearchBounds(AxisAlignedBoundingBox bounds, List<T> results)
-		{
-			if (bounds.Intersects(Aabb))
-			{
-				// check all the items that are part of this object
-				foreach (var item in Items)
-				{
-					if (item.Aabb.Intersects(bounds))
-					{
-						results.Add(item.Item);
-					}
-				}
-
-				nodeA?.SearchBounds(bounds, results);
-				nodeB?.SearchBounds(bounds, results);
-			}
-		}
-
-		public void SearchBounds(double x, double y, double z,
-			double xSize, double ySize, double zSize,
-			List<T> results)
-		{
-			SearchBounds(new AxisAlignedBoundingBox(
-				new Vector3(x, y, z),
-				new Vector3(x + xSize, y + ySize, z + zSize)),
-				results);
-		}
-
-		public void SearchPoint(Vector3 position, List<T> results)
-		{
-			if (Aabb.Contains(position))
-			{
-				// check all the items that are part of this object
-				foreach (var item in Items)
-				{
-					if (item.Aabb.Contains(position))
-					{
-						results.Add(item.Item);
-					}
-				}
-
-				nodeA?.SearchPoint(position, results);
-				nodeB?.SearchPoint(position, results);
-			}
-		}
-
-		public void SearchPoint(double x, double y, double z, List<T> results)
-		{
-			SearchPoint(new Vector3(x, y, z), results);
-		}
-
 		public class AxisSorter : IComparer<BvhTreeItemData<T>>
 		{
 			private int whichAxis;
@@ -476,6 +240,7 @@ namespace MatterHackers.VectorMath
 				{
 					return whichAxis;
 				}
+
 				set
 				{
 					whichAxis = value % 3;
@@ -521,42 +286,5 @@ namespace MatterHackers.VectorMath
 				}
 			}
 		}
-	}
-
-	public class BvhTreeItemData<T>
-	{
-		public BvhTreeItemData(T item, AxisAlignedBoundingBox bounds)
-		{
-			this.Item = item;
-			Aabb = bounds;
-		}
-
-		public AxisAlignedBoundingBox Aabb { get; set; }
-		public Vector3 Center { get; set; }
-		public T Item { get; set; }
-	}
-
-	public class RayHitInfo
-	{
-		public object ClosestHitObject { get; set; }
-		public double DistanceToHit { get; set; }
-		public IntersectionType HitType { get; set; }
-		public Vector3 NormalAtHit;
-
-		public RayHitInfo()
-		{
-			DistanceToHit = double.MaxValue;
-		}
-
-		public RayHitInfo(RayHitInfo copyInfo)
-		{
-			this.HitType = copyInfo.HitType;
-			this.ClosestHitObject = copyInfo.ClosestHitObject;
-			this.HitPosition = copyInfo.HitPosition;
-			this.NormalAtHit = copyInfo.NormalAtHit;
-			this.DistanceToHit = copyInfo.DistanceToHit;
-		}
-
-		public Vector3 HitPosition { get; set; }
 	}
 }
