@@ -1373,6 +1373,12 @@ namespace MatterHackers.Agg.Image
 			return destImage;
 		}
 
+		public static void ScaleImage(this ImageBuffer image, double ratio)
+		{
+			var scaled = CreateScaledImage(image, image.Width * ratio, image.Height * ratio);
+			image.CopyFrom(scaled);
+		}
+
 		public static ImageBuffer CreateScaledImage(this ImageBuffer image, double ratio)
 		{
 			return CreateScaledImage(image, image.Width * ratio, image.Height * ratio);
