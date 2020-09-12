@@ -38,8 +38,8 @@ namespace MatterHackers.RayTracer
 	public class BoundingVolumeHierarchy : ITraceable
 	{
 		internal AxisAlignedBoundingBox Aabb;
-		private ITraceable nodeA;
-		private ITraceable nodeB;
+		private readonly ITraceable nodeA;
+		private readonly ITraceable nodeB;
 		private int splittingPlane;
 
 		public BoundingVolumeHierarchy()
@@ -108,13 +108,13 @@ namespace MatterHackers.RayTracer
 					}
 
 					// get the bounding box of all the items we are going to consider.
-					AxisAlignedBoundingBox OverallBox = traceableItems[0].GetAxisAlignedBoundingBox();
+					AxisAlignedBoundingBox overallBox = traceableItems[0].GetAxisAlignedBoundingBox();
 					for (int i = skipInterval; i < numItems; i += skipInterval)
 					{
-						OverallBox += traceableItems[i].GetAxisAlignedBoundingBox();
+						overallBox += traceableItems[i].GetAxisAlignedBoundingBox();
 					}
 
-					double areaOfTotalBounds = OverallBox.GetSurfaceArea();
+					double areaOfTotalBounds = overallBox.GetSurfaceArea();
 
 					double bestCost = totalIntersectCost;
 
@@ -155,8 +155,7 @@ namespace MatterHackers.RayTracer
 						// Sweep from left
 						for (int itemIndex = 0; itemIndex < numItems - 1; itemIndex += skipInterval)
 						{
-							double thisCost = 0;
-
+							double thisCost;
 							{
 								// Evaluate Surface Cost Equation
 								double costOfTwoAABB = 2 * AxisAlignedBoundingBox.GetIntersectCost(); // the cost of the two children AABB tests
@@ -456,7 +455,7 @@ namespace MatterHackers.RayTracer
 
 		public class SortingAccelerator
 		{
-			public int nextAxisForBigGroups = 2;
+			private int nextAxisForBigGroups = 2;
 
 			public SortingAccelerator()
 			{
@@ -596,7 +595,7 @@ namespace MatterHackers.RayTracer
 		/// type of object.  But it needs to be virtual so we can get to the value
 		/// for a given class. (If only there were class virtual functions :) ).
 		/// </summary>
-		/// <returns></returns>
+		/// <returns>The relative cost of an intersection test</returns>
 		public double GetIntersectCost()
 		{
 			double totalIntersectCost = 0;
