@@ -40,7 +40,7 @@ namespace MatterHackers.DataConverters3D
 {
 	public static class MeshToBVH
 	{
-		public static IPrimitive Convert(Mesh mesh, MaterialAbstract partMaterial = null)
+		public static ITraceable Convert(Mesh mesh, MaterialAbstract partMaterial = null)
 		{
 			return Convert(new Object3D()
 			{
@@ -48,9 +48,9 @@ namespace MatterHackers.DataConverters3D
 			});
 		}
 
-		public static IPrimitive Convert(IObject3D rootItem)
+		public static ITraceable Convert(IObject3D rootItem)
 		{
-			var tracePrimitives = new List<IPrimitive>();
+			var tracePrimitives = new List<ITraceable>();
 
 			foreach (var item in rootItem.VisibleMeshes())
 			{
@@ -67,16 +67,16 @@ namespace MatterHackers.DataConverters3D
 
 				var worldMatrix = item.WorldMatrix(rootItem);
 
-				item.Mesh.AddTracePrimitives(partMaterial, worldMatrix, tracePrimitives);
+				item.Mesh.AddTraceables(partMaterial, worldMatrix, tracePrimitives);
 			}
 
 			// return an empty collection
 			return BoundingVolumeHierarchy.CreateNewHierachy(tracePrimitives);
 		}
 
-		public static IPrimitive Convert(List<IObject3D> renderDatas)
+		public static ITraceable Convert(List<IObject3D> renderDatas)
 		{
-			List<IPrimitive> renderCollection = new List<IPrimitive>();
+			var renderCollection = new List<ITraceable>();
 			foreach (var renderData in renderDatas)
 			{
 				renderCollection.Add(Convert(renderData));
@@ -85,16 +85,17 @@ namespace MatterHackers.DataConverters3D
 			return BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
 		}
 
-		public static IPrimitive Convert(IObject3D item, MaterialAbstract partMaterial = null)
+		public static ITraceable Convert(IObject3D item, MaterialAbstract partMaterial = null)
 		{
-			List<IPrimitive> renderCollection = new List<IPrimitive>();
+			var renderCollection = new List<ITraceable>();
 
 			if (partMaterial == null)
 			{
 				partMaterial = new SolidMaterial(new ColorF(.9, .2, .1), .01, 0.0, 2.0);
 			}
+
 			int index = 0;
-			Vector3[] triangle = new Vector3[3];
+			var triangle = new Vector3[3];
 			foreach (Mesh mesh in item.VisibleMeshes().Select(i => i.Mesh) )
 			{
 				throw new NotImplementedException();
@@ -115,14 +116,14 @@ namespace MatterHackers.DataConverters3D
 			return BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
 		}
 
-		public static IPrimitive ConvertUnoptomized(Mesh simpleMesh)
+		public static ITraceable ConvertUnoptomized(Mesh simpleMesh)
 		{
-			List<IPrimitive> renderCollection = new List<IPrimitive>();
+			var renderCollection = new List<ITraceable>();
 
 			//SolidMaterial redStuff = new SolidMaterial(new RGBA_Floats(.9, .2, .1), .01, 0.0, 2.0);
-			SolidMaterial mhBlueStuff = new SolidMaterial(new ColorF(0, .32, .58), .01, 0.0, 2.0);
+			var mhBlueStuff = new SolidMaterial(new ColorF(0, .32, .58), .01, 0.0, 2.0);
 			int index = 0;
-			Vector3[] triangle = new Vector3[3];
+			var triangle = new Vector3[3];
 			//Mesh simpleMesh = Processors.StlProcessing.Load("complex.stl");
 			//Mesh simpleMesh = Processors.StlProcessing.Load("Spider With Base.stl");
 			throw new NotImplementedException();

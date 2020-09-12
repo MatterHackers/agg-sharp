@@ -35,16 +35,16 @@ using System.Collections.Generic;
 
 namespace MatterHackers.RayTracer.Traceable
 {
-	public class Transform : Axis3D, IPrimitive
+	public class Transform : Axis3D, ITraceable
 	{
-		public IPrimitive Child { get; }
+		public ITraceable Child { get; }
 
-		public Transform(IPrimitive root)
+		public Transform(ITraceable root)
 		{
 			this.Child = root;
 		}
 
-		public Transform(IPrimitive root, Matrix4X4 transform)
+		public Transform(ITraceable root, Matrix4X4 transform)
 		{
 			this.Child = root;
 
@@ -64,23 +64,6 @@ namespace MatterHackers.RayTracer.Traceable
 			}
 
 			return false;
-		}
-
-		public ColorF GetColor(IntersectInfo info)
-		{
-			return Child.GetColor(info);
-		}
-
-		public MaterialAbstract Material
-		{
-			get
-			{
-				return Child.Material;
-			}
-			set
-			{
-				Child.Material = value;
-			}
 		}
 
 		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
@@ -114,6 +97,7 @@ namespace MatterHackers.RayTracer.Traceable
 			{
 				rayBundle.rayArray[i] = GetLocalSpaceRay(rayBundle.rayArray[i]);
 			}
+
 			Child.GetClosestIntersections(rayBundle, rayIndexToStartCheckingFrom, intersectionsForBundle);
 			for (int i = 0; i < rayBundle.rayArray.Length; i++)
 			{
@@ -143,10 +127,11 @@ namespace MatterHackers.RayTracer.Traceable
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
-			if(Child == null)
+			if (Child == null)
 			{
 				return new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero);
 			}
+
 			Vector3 localOrigin = Origin;
 			AxisAlignedBoundingBox localBounds = Child.GetAxisAlignedBoundingBox();
 			AxisAlignedBoundingBox bounds = localBounds.NewTransformed(AxisToWorld);
@@ -170,6 +155,7 @@ namespace MatterHackers.RayTracer.Traceable
 			{
 				return null;
 			}
+
 			IntersectInfo globalInfo = new IntersectInfo(localInfo);
 			globalInfo.HitPosition = Vector3Ex.TransformPosition(localInfo.HitPosition, this.AxisToWorld);
 			globalInfo.normalAtHit = Vector3Ex.TransformVector(localInfo.normalAtHit, this.AxisToWorld);

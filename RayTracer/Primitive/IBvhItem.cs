@@ -163,7 +163,7 @@ namespace MatterHackers.RayTracer
 
 	public static class ExtensionMethods
 	{
-		public static BvhIterator Filter(this IPrimitive item, Func<BvhIterator, bool> decentFilter = null)
+		public static BvhIterator Filter(this ITraceable item, Func<BvhIterator, bool> decentFilter = null)
 		{
 			return new BvhIterator(item, Matrix4X4.Identity, 0, decentFilter);
 		}

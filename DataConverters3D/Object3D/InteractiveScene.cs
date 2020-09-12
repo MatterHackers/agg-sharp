@@ -346,7 +346,7 @@ namespace MatterHackers.DataConverters3D
 
 		public ulong GetLongHashCode(ulong hash = 14695981039346656037) => SourceItem.GetLongHashCode(hash);
 
-		public IPrimitive GetBVHData() => SourceItem.GetBVHData();
+		public ITraceable GetBVHData() => SourceItem.GetBVHData();
 
 		public void SetMeshDirect(Mesh mesh) => SourceItem.SetMeshDirect(mesh);
 

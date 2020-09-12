@@ -779,7 +779,7 @@ namespace MatterHackers.DataConverters3D
 			return totalBounds;
 		}
 
-		private IPrimitive traceData;
+		private ITraceable traceData;
 
 		// Cache busting on child nodes
 		private ulong tracedHashCode = ulong.MinValue;
@@ -790,7 +790,7 @@ namespace MatterHackers.DataConverters3D
 		/// Create or return a Bounding Volume Hierarchy for this mesh. Is created add it to the property bag.
 		/// </summary>
 		/// <returns>The root of the BVH</returns>
-		public IPrimitive GetBVHData()
+		public ITraceable GetBVHData()
 		{
 			var processingMesh = Mesh;
 			// Cache busting on child nodes
@@ -798,13 +798,13 @@ namespace MatterHackers.DataConverters3D
 
 			if (traceData == null || tracedHashCode != hashCode)
 			{
-				var traceables = new List<IPrimitive>();
+				var traceables = new List<ITraceable>();
 				// Check if we have a mesh at this level
 				if (processingMesh != null)
 				{
 					// we have a mesh so don't recurse into children
 					processingMesh.PropertyBag.TryGetValue("MeshTraceData", out object objectData);
-					var meshTraceData = objectData as IPrimitive;
+					var meshTraceData = objectData as ITraceable;
 					if (meshTraceData == null
 						&& processingMesh.Faces.Count > 0)
 					{
