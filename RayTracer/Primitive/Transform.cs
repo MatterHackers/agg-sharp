@@ -158,7 +158,7 @@ namespace MatterHackers.RayTracer.Traceable
 
 			IntersectInfo globalInfo = new IntersectInfo(localInfo);
 			globalInfo.HitPosition = Vector3Ex.TransformPosition(localInfo.HitPosition, this.AxisToWorld);
-			globalInfo.normalAtHit = Vector3Ex.TransformVector(localInfo.normalAtHit, this.AxisToWorld);
+			globalInfo.NormalAtHit = Vector3Ex.TransformVector(localInfo.NormalAtHit, this.AxisToWorld);
 			return globalInfo;
 		}
 

@@ -323,7 +323,7 @@ namespace MatterHackers.RayTracer
 				}
 
 				IntersectInfo infoFirst = checkFirst.GetClosestIntersection(ray);
-				if (infoFirst != null && infoFirst.hitType != IntersectionType.None)
+				if (infoFirst != null && infoFirst.HitType != IntersectionType.None)
 				{
 					if (ray.isShadowRay)
 					{
@@ -331,14 +331,14 @@ namespace MatterHackers.RayTracer
 					}
 					else
 					{
-						ray.maxDistanceToConsider = infoFirst.distanceToHit;
+						ray.maxDistanceToConsider = infoFirst.DistanceToHit;
 					}
 				}
 
 				if (checkSecond != null)
 				{
 					IntersectInfo infoSecond = checkSecond.GetClosestIntersection(ray);
-					if (infoSecond != null && infoSecond.hitType != IntersectionType.None)
+					if (infoSecond != null && infoSecond.HitType != IntersectionType.None)
 					{
 						if (ray.isShadowRay)
 						{
@@ -346,13 +346,13 @@ namespace MatterHackers.RayTracer
 						}
 						else
 						{
-							ray.maxDistanceToConsider = infoSecond.distanceToHit;
+							ray.maxDistanceToConsider = infoSecond.DistanceToHit;
 						}
 					}
 
-					if (infoFirst != null && infoFirst.hitType != IntersectionType.None && infoFirst.distanceToHit >= 0)
+					if (infoFirst != null && infoFirst.HitType != IntersectionType.None && infoFirst.DistanceToHit >= 0)
 					{
-						if (infoSecond != null && infoSecond.hitType != IntersectionType.None && infoSecond.distanceToHit < infoFirst.distanceToHit && infoSecond.distanceToHit >= 0)
+						if (infoSecond != null && infoSecond.HitType != IntersectionType.None && infoSecond.DistanceToHit < infoFirst.DistanceToHit && infoSecond.DistanceToHit >= 0)
 						{
 							return infoSecond;
 						}
@@ -434,7 +434,7 @@ namespace MatterHackers.RayTracer
 
 				foreach (IntersectInfo info in checkFirst.IntersectionIterator(ray))
 				{
-					if (info != null && info.hitType != IntersectionType.None)
+					if (info != null && info.HitType != IntersectionType.None)
 					{
 						yield return info;
 					}
@@ -444,7 +444,7 @@ namespace MatterHackers.RayTracer
 				{
 					foreach (IntersectInfo info in checkSecond.IntersectionIterator(ray))
 					{
-						if (info != null && info.hitType != IntersectionType.None)
+						if (info != null && info.HitType != IntersectionType.None)
 						{
 							yield return info;
 						}
@@ -551,9 +551,9 @@ namespace MatterHackers.RayTracer
 			foreach (var item in Items)
 			{
 				IntersectInfo info = item.GetClosestIntersection(ray);
-				if (info != null && info.hitType != IntersectionType.None && info.distanceToHit >= 0)
+				if (info != null && info.HitType != IntersectionType.None && info.DistanceToHit >= 0)
 				{
-					if (bestInfo == null || info.distanceToHit < bestInfo.distanceToHit)
+					if (bestInfo == null || info.DistanceToHit < bestInfo.DistanceToHit)
 					{
 						bestInfo = info;
 					}
@@ -568,7 +568,7 @@ namespace MatterHackers.RayTracer
 			var intersection = GetClosestIntersection(rayBundle.rayArray[rayIndexToStartCheckingFrom]);
 			if (intersection == null)
 			{
-				intersectionsForBundle[rayIndexToStartCheckingFrom].hitType = IntersectionType.None;
+				intersectionsForBundle[rayIndexToStartCheckingFrom].HitType = IntersectionType.None;
 			}
 		}
 

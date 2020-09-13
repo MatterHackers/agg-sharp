@@ -209,10 +209,10 @@ namespace MatterHackers.RayTracer
 		public ColorF CreateAndTraceSecondaryRays(IntersectInfo info, Ray ray, Scene scene, int depth)
 		{
 			// calculate ambient light
-			ColorF infoColorAtHit = info.closestHitObject.GetColor(info);
+			ColorF infoColorAtHit = ((IPrimitive)info.ClosestHitObject).GetColor(info);
 			ColorF color = infoColorAtHit * scene.background.Ambience;
 			color.alpha = infoColorAtHit.alpha;
-			double shininess = Math.Pow(10, info.closestHitObject.Material.Gloss + 1);
+			double shininess = Math.Pow(10, ((IPrimitive)info.ClosestHitObject).Material.Gloss + 1);
 
 			foreach (ILight light in scene.lights)
 			{
@@ -223,7 +223,7 @@ namespace MatterHackers.RayTracer
 
 				if (RenderDiffuse)
 				{
-					double l = Vector3Ex.Dot(directiorFromHitToLightNormalized, info.normalAtHit);
+					double l = Vector3Ex.Dot(directiorFromHitToLightNormalized, info.NormalAtHit);
 					if (l > 0.0f)
 					{
 						color += infoColorAtHit * light.Illumination() * l;
@@ -236,12 +236,12 @@ namespace MatterHackers.RayTracer
 				if (depth < 3)
 				{
 					// calculate reflection ray
-					if (RenderReflection && info.closestHitObject.Material.Reflection > 0)
+					if (RenderReflection && ((IPrimitive)info.ClosestHitObject).Material.Reflection > 0)
 					{
-						Ray reflectionRay = GetReflectionRay(info.HitPosition, info.normalAtHit, ray.directionNormal);
+						Ray reflectionRay = GetReflectionRay(info.HitPosition, info.NormalAtHit, ray.directionNormal);
 						IntersectInfo reflectionInfo = TracePrimaryRay(reflectionRay, scene);
 						ColorF reflectionColorAtHit; // = reflectionInfo.closestHitObject.GetColor(reflectionInfo);
-						if (reflectionInfo.hitType != IntersectionType.None && reflectionInfo.distanceToHit > 0)
+						if (reflectionInfo.HitType != IntersectionType.None && reflectionInfo.DistanceToHit > 0)
 						{
 							// recursive call, this makes reflections expensive
 							reflectionColorAtHit = CreateAndTraceSecondaryRays(reflectionInfo, reflectionRay, scene, depth + 1);
@@ -252,16 +252,16 @@ namespace MatterHackers.RayTracer
 							reflectionColorAtHit.Alpha0To1 = infoColorAtHit.alpha;
 						}
 
-						color = color.Blend(reflectionColorAtHit, info.closestHitObject.Material.Reflection);
+						color = color.Blend(reflectionColorAtHit, ((IPrimitive)info.ClosestHitObject).Material.Reflection);
 					}
 
 					// calculate refraction ray
-					if (RenderRefraction && info.closestHitObject.Material.Transparency > 0)
+					if (RenderRefraction && ((IPrimitive)info.ClosestHitObject).Material.Transparency > 0)
 					{
 						var refractionRay = new Ray(info.HitPosition, ray.directionNormal, Ray.sameSurfaceOffset, double.MaxValue);  // GetRefractionRay(info.hitPosition, info.normalAtHit, ray.direction, info.closestHit.Material.Refraction);
 						IntersectInfo refractionInfo = TracePrimaryRay(refractionRay, scene);
-						ColorF refractionColorAtHit = refractionInfo.closestHitObject.GetColor(refractionInfo);
-						if (refractionInfo.hitType != IntersectionType.None && refractionInfo.distanceToHit > 0)
+						ColorF refractionColorAtHit = ((IPrimitive)refractionInfo.ClosestHitObject).GetColor(refractionInfo);
+						if (refractionInfo.HitType != IntersectionType.None && refractionInfo.DistanceToHit > 0)
 						{
 							// recursive call, this makes refractions expensive
 							refractionColorAtHit = CreateAndTraceSecondaryRays(refractionInfo, refractionRay, scene, depth + 1);
@@ -272,7 +272,7 @@ namespace MatterHackers.RayTracer
 							refractionColorAtHit.Alpha0To1 = infoColorAtHit.alpha;
 						}
 
-						color = refractionColorAtHit.Blend(color, info.closestHitObject.Material.Transparency);
+						color = refractionColorAtHit.Blend(color, ((IPrimitive)info.ClosestHitObject).Material.Transparency);
 					}
 				}
 
@@ -286,9 +286,9 @@ namespace MatterHackers.RayTracer
 					}; // it may be useful to limit the length to the dist to the camera (but I doubt it LBB).
 
 					// if the normal at the closest hit is away from the shadow it is already it it's own shadow.
-					if (Vector3Ex.Dot(info.normalAtHit, directiorFromHitToLightNormalized) < 0)
+					if (Vector3Ex.Dot(info.NormalAtHit, directiorFromHitToLightNormalized) < 0)
 					{
-						shadow.hitType = IntersectionType.FrontFace;
+						shadow.HitType = IntersectionType.FrontFace;
 						color *= 0.5; // +0.5 * Math.Pow(shadow.closestHit.Material.Transparency, 0.5); // Math.Pow(.5, shadow.HitCount);
 						color.Alpha0To1 = infoColorAtHit.alpha;
 					}
@@ -296,7 +296,7 @@ namespace MatterHackers.RayTracer
 					{
 						// find any element in between intersection point and light
 						shadow = TracePrimaryRay(shadowRay, scene);
-						if (shadow.hitType != IntersectionType.None && shadow.closestHitObject != info.closestHitObject && shadow.distanceToHit < distanceToLight)
+						if (shadow.HitType != IntersectionType.None && shadow.ClosestHitObject != info.ClosestHitObject && shadow.DistanceToHit < distanceToLight)
 						{
 							// only cast shadow if the found intersection is another
 							// element than the current element
@@ -307,7 +307,7 @@ namespace MatterHackers.RayTracer
 				}
 
 				// only show highlights if it is not in the shadow of another object
-				if (RenderHighlights && shadow.hitType == IntersectionType.None && info.closestHitObject.Material.Gloss > 0)
+				if (RenderHighlights && shadow.HitType == IntersectionType.None && ((IPrimitive)info.ClosestHitObject).Material.Gloss > 0)
 				{
 					// only show Gloss light if it is not in a shadow of another element.
 					// calculate Gloss lighting (Phong)
@@ -316,7 +316,7 @@ namespace MatterHackers.RayTracer
 					Vector3 h = (e - lv).GetNormal();
 
 					double glossweight = 0.0;
-					glossweight = Math.Pow(Math.Max(Vector3Ex.Dot(info.normalAtHit, h), 0), shininess);
+					glossweight = Math.Pow(Math.Max(Vector3Ex.Dot(info.NormalAtHit, h), 0), shininess);
 					color += light.Illumination() * glossweight;
 				}
 			}
@@ -328,7 +328,7 @@ namespace MatterHackers.RayTracer
 		public ColorF FullyTraceRay(Ray ray, Scene scene, out IntersectInfo primaryInfo)
 		{
 			primaryInfo = TracePrimaryRay(ray, scene);
-			if (primaryInfo.hitType != IntersectionType.None)
+			if (primaryInfo.HitType != IntersectionType.None)
 			{
 				ColorF totalColor = CreateAndTraceSecondaryRays(primaryInfo, ray, scene, 0);
 				return totalColor;
@@ -345,13 +345,13 @@ namespace MatterHackers.RayTracer
 				try
 				{
 					IntersectInfo primaryInfo = TracePrimaryRay(rayBundle.rayArray[i], scene);
-					if (intersectionsForBundle[i].hitType != IntersectionType.None)
+					if (intersectionsForBundle[i].HitType != IntersectionType.None)
 					{
-						intersectionsForBundle[i].totalColor = CreateAndTraceSecondaryRays(primaryInfo, rayBundle.rayArray[i], scene, 0);
+						intersectionsForBundle[i].TotalColor = CreateAndTraceSecondaryRays(primaryInfo, rayBundle.rayArray[i], scene, 0);
 					}
 					else
 					{
-						intersectionsForBundle[i].totalColor = scene.background.Color;
+						intersectionsForBundle[i].TotalColor = scene.background.Color;
 					}
 				}
 				catch
@@ -422,7 +422,7 @@ namespace MatterHackers.RayTracer
 							{
 								for (int rayX = 0; rayX < bundleWidth; rayX++)
 								{
-									ColorBuffer[x + rayX][y + rayY] = intersectionsForBundle[rayX + rayY * bundleWidth].totalColor;
+									ColorBuffer[x + rayX][y + rayY] = intersectionsForBundle[rayX + rayY * bundleWidth].TotalColor;
 								}
 							}
 						}
@@ -463,7 +463,7 @@ namespace MatterHackers.RayTracer
 			foreach (var shapeToTest in scene.shapes)
 			{
 				IntersectInfo info = shapeToTest.GetClosestIntersection(ray);
-				if (info != null && info.hitType != IntersectionType.None && info.distanceToHit < primaryRayIntersection.distanceToHit && info.distanceToHit >= 0)
+				if (info != null && info.HitType != IntersectionType.None && info.DistanceToHit < primaryRayIntersection.DistanceToHit && info.DistanceToHit >= 0)
 				{
 					primaryRayIntersection = info;
 				}
@@ -609,8 +609,8 @@ namespace MatterHackers.RayTracer
 				{
 					if (primaryInfo != null)
 					{
-						NormalBuffer[x][y] = primaryInfo.normalAtHit;
-						DepthBuffer[x][y] = primaryInfo.distanceToHit;
+						NormalBuffer[x][y] = primaryInfo.NormalAtHit;
+						DepthBuffer[x][y] = primaryInfo.DistanceToHit;
 					}
 					else
 					{

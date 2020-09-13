@@ -119,18 +119,18 @@ namespace MatterHackers.RayTracer
 						{
 							IntersectInfo topHitInfo = new IntersectInfo();
 							topHitInfo.HitPosition = topHitPosition;
-							topHitInfo.closestHitObject = this;
+							topHitInfo.ClosestHitObject = this;
 							if (ray.intersectionType == IntersectionType.FrontFace)
 							{
-								topHitInfo.hitType = IntersectionType.FrontFace;
-								topHitInfo.normalAtHit = topPlane.Normal;
+								topHitInfo.HitType = IntersectionType.FrontFace;
+								topHitInfo.NormalAtHit = topPlane.Normal;
 							}
 							else
 							{
-								topHitInfo.hitType = IntersectionType.BackFace;
-								topHitInfo.normalAtHit = -topPlane.Normal;
+								topHitInfo.HitType = IntersectionType.BackFace;
+								topHitInfo.NormalAtHit = -topPlane.Normal;
 							}
-							topHitInfo.distanceToHit = testDistanceToHit;
+							topHitInfo.DistanceToHit = testDistanceToHit;
 
 							return topHitInfo;
 						}
@@ -149,18 +149,18 @@ namespace MatterHackers.RayTracer
 						{
 							IntersectInfo bottomHitInfo = new IntersectInfo();
 							bottomHitInfo.HitPosition = bottomHitPosition;
-							bottomHitInfo.closestHitObject = this;
+							bottomHitInfo.ClosestHitObject = this;
 							if (ray.intersectionType == IntersectionType.FrontFace)
 							{
-								bottomHitInfo.hitType = IntersectionType.FrontFace;
-								bottomHitInfo.normalAtHit = bottomPlane.Normal;
+								bottomHitInfo.HitType = IntersectionType.FrontFace;
+								bottomHitInfo.NormalAtHit = bottomPlane.Normal;
 							}
 							else
 							{
-								bottomHitInfo.hitType = IntersectionType.BackFace;
-								bottomHitInfo.normalAtHit = -bottomPlane.Normal;
+								bottomHitInfo.HitType = IntersectionType.BackFace;
+								bottomHitInfo.NormalAtHit = -bottomPlane.Normal;
 							}
-							bottomHitInfo.distanceToHit = testDistanceToHit;
+							bottomHitInfo.DistanceToHit = testDistanceToHit;
 
 							return bottomHitInfo;
 						}
@@ -168,8 +168,8 @@ namespace MatterHackers.RayTracer
 				}
 
 				IntersectInfo info = new IntersectInfo();
-				info.closestHitObject = this;
-				info.hitType = IntersectionType.FrontFace;
+				info.ClosestHitObject = this;
+				info.HitType = IntersectionType.FrontFace;
 				if (ray.isShadowRay)
 				{
 					return info;
@@ -187,13 +187,13 @@ namespace MatterHackers.RayTracer
 					{
 						return null;
 					}
-					info.distanceToHit = distanceToFrontHit;
-					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					info.DistanceToHit = distanceToFrontHit;
+					info.HitPosition = ray.origin + ray.directionNormal * info.DistanceToHit;
 					if (info.HitPosition.Z < -height / 2 || info.HitPosition.Z > height / 2)
 					{
 						return null;
 					}
-					info.normalAtHit = new Vector3(info.HitPosition.X, info.HitPosition.Y, 0).GetNormal();
+					info.NormalAtHit = new Vector3(info.HitPosition.X, info.HitPosition.Y, 0).GetNormal();
 				}
 				else if (ray.intersectionType == IntersectionType.BackFace)// check back faces
 				{
@@ -202,14 +202,14 @@ namespace MatterHackers.RayTracer
 					{
 						return null;
 					}
-					info.hitType = IntersectionType.BackFace;
-					info.distanceToHit = distanceToBackHit;
-					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					info.HitType = IntersectionType.BackFace;
+					info.DistanceToHit = distanceToBackHit;
+					info.HitPosition = ray.origin + ray.directionNormal * info.DistanceToHit;
 					if (info.HitPosition.Z < height / 2 || info.HitPosition.Z > height / 2)
 					{
 						return null;
 					}
-					info.normalAtHit = -(new Vector3(info.HitPosition.X, info.HitPosition.Y, 0).GetNormal());
+					info.NormalAtHit = -(new Vector3(info.HitPosition.X, info.HitPosition.Y, 0).GetNormal());
 				}
 
 				return info;
@@ -247,14 +247,14 @@ namespace MatterHackers.RayTracer
 				if ((ray.intersectionType & IntersectionType.FrontFace) == IntersectionType.FrontFace)
 				{
 					IntersectInfo info = new IntersectInfo();
-					info.hitType = IntersectionType.FrontFace;
-					info.closestHitObject = this;
+					info.HitType = IntersectionType.FrontFace;
+					info.ClosestHitObject = this;
 					double distanceToFrontHit = (distanceFromRayOriginToCircleCenter - amountCircleCenterToRayIsGreaterThanRayOriginToEdge) * scaleRatio;
-					info.distanceToHit = distanceToFrontHit;
-					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					info.DistanceToHit = distanceToFrontHit;
+					info.HitPosition = ray.origin + ray.directionNormal * info.DistanceToHit;
 					if (info.HitPosition.Z > -height / 2 && info.HitPosition.Z < height / 2)
 					{
-						info.normalAtHit = new Vector3(info.HitPosition.X, info.HitPosition.Y, 0).GetNormal();
+						info.NormalAtHit = new Vector3(info.HitPosition.X, info.HitPosition.Y, 0).GetNormal();
 						yield return info;
 					}
 				}
@@ -262,14 +262,14 @@ namespace MatterHackers.RayTracer
 				if ((ray.intersectionType & IntersectionType.BackFace) == IntersectionType.BackFace)
 				{
 					IntersectInfo info = new IntersectInfo();
-					info.hitType = IntersectionType.BackFace;
-					info.closestHitObject = this;
+					info.HitType = IntersectionType.BackFace;
+					info.ClosestHitObject = this;
 					double distanceToBackHit = (distanceFromRayOriginToCircleCenter + amountCircleCenterToRayIsGreaterThanRayOriginToEdge) * scaleRatio;
-					info.distanceToHit = distanceToBackHit;
-					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					info.DistanceToHit = distanceToBackHit;
+					info.HitPosition = ray.origin + ray.directionNormal * info.DistanceToHit;
 					if (info.HitPosition.Z > -height / 2 && info.HitPosition.Z < height / 2)
 					{
-						info.normalAtHit = -(new Vector3(info.HitPosition.X, info.HitPosition.Y, 0).GetNormal());
+						info.NormalAtHit = -(new Vector3(info.HitPosition.X, info.HitPosition.Y, 0).GetNormal());
 						yield return info;
 					}
 				}
@@ -285,10 +285,10 @@ namespace MatterHackers.RayTracer
 						{
 							IntersectInfo topHitInfo = new IntersectInfo();
 							topHitInfo.HitPosition = topHitPosition;
-							topHitInfo.closestHitObject = this;
-							topHitInfo.hitType = IntersectionType.FrontFace;
-							topHitInfo.normalAtHit = topPlane.Normal;
-							topHitInfo.distanceToHit = testDistanceToHit;
+							topHitInfo.ClosestHitObject = this;
+							topHitInfo.HitType = IntersectionType.FrontFace;
+							topHitInfo.NormalAtHit = topPlane.Normal;
+							topHitInfo.DistanceToHit = testDistanceToHit;
 
 							yield return topHitInfo;
 						}
@@ -297,10 +297,10 @@ namespace MatterHackers.RayTracer
 						{
 							IntersectInfo topHitInfo = new IntersectInfo();
 							topHitInfo.HitPosition = topHitPosition;
-							topHitInfo.closestHitObject = this;
-							topHitInfo.hitType = IntersectionType.BackFace;
-							topHitInfo.normalAtHit = -topPlane.Normal;
-							topHitInfo.distanceToHit = testDistanceToHit;
+							topHitInfo.ClosestHitObject = this;
+							topHitInfo.HitType = IntersectionType.BackFace;
+							topHitInfo.NormalAtHit = -topPlane.Normal;
+							topHitInfo.DistanceToHit = testDistanceToHit;
 
 							yield return topHitInfo;
 						}
@@ -318,10 +318,10 @@ namespace MatterHackers.RayTracer
 						{
 							IntersectInfo bottomHitInfo = new IntersectInfo();
 							bottomHitInfo.HitPosition = bottomHitPosition;
-							bottomHitInfo.closestHitObject = this;
-							bottomHitInfo.hitType = IntersectionType.FrontFace;
-							bottomHitInfo.normalAtHit = bottomPlane.Normal;
-							bottomHitInfo.distanceToHit = testDistanceToHit;
+							bottomHitInfo.ClosestHitObject = this;
+							bottomHitInfo.HitType = IntersectionType.FrontFace;
+							bottomHitInfo.NormalAtHit = bottomPlane.Normal;
+							bottomHitInfo.DistanceToHit = testDistanceToHit;
 
 							yield return bottomHitInfo;
 						}
@@ -330,10 +330,10 @@ namespace MatterHackers.RayTracer
 						{
 							IntersectInfo bottomHitInfo = new IntersectInfo();
 							bottomHitInfo.HitPosition = bottomHitPosition;
-							bottomHitInfo.closestHitObject = this;
-							bottomHitInfo.hitType = IntersectionType.BackFace;
-							bottomHitInfo.normalAtHit = -bottomPlane.Normal;
-							bottomHitInfo.distanceToHit = testDistanceToHit;
+							bottomHitInfo.ClosestHitObject = this;
+							bottomHitInfo.HitType = IntersectionType.BackFace;
+							bottomHitInfo.NormalAtHit = -bottomPlane.Normal;
+							bottomHitInfo.DistanceToHit = testDistanceToHit;
 
 							yield return bottomHitInfo;
 						}

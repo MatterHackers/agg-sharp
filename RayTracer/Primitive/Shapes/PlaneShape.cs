@@ -59,11 +59,11 @@ namespace MatterHackers.RayTracer
 			{
 				return new IntersectInfo
 				{
-					closestHitObject = this,
-					hitType = IntersectionType.FrontFace,
+					ClosestHitObject = this,
+					HitType = IntersectionType.FrontFace,
 					HitPosition = ray.origin + ray.directionNormal * distanceToHit,
-					normalAtHit = plane.Normal,
-					distanceToHit = distanceToHit
+					NormalAtHit = plane.Normal,
+					DistanceToHit = distanceToHit
 				};
 			}
 

@@ -133,7 +133,7 @@ namespace MatterHackers.RayTracer
 
 			Ray ray = new Ray(rayOrigin, -Vector3.UnitZ);
 			IntersectInfo primaryInfo = raytracer.TracePrimaryRay(ray, scene);
-			Assert.IsTrue(primaryInfo.hitType == IntersectionType.FrontFace, "always have a hit");
+			Assert.IsTrue(primaryInfo.HitType == IntersectionType.FrontFace, "always have a hit");
 		}
 
 		[Test]
@@ -144,9 +144,9 @@ namespace MatterHackers.RayTracer
 				TriangleShape facingPositiveX = new TriangleShape(new Vector3(0, 1, -1), new Vector3(0, 0, 1), new Vector3(0, -1, -1), redStuff);
 				IntersectInfo positiveXInfo = facingPositiveX.GetClosestIntersection(new Ray(new Vector3(1, 0, 0), new Vector3(-1, 0, 0)));
 				Assert.IsTrue(positiveXInfo.HitPosition == new Vector3(0, 0, 0));
-				Assert.IsTrue(positiveXInfo.hitType == IntersectionType.FrontFace);
-				Assert.IsTrue(positiveXInfo.closestHitObject == facingPositiveX);
-				Assert.IsTrue(positiveXInfo.distanceToHit == 1);
+				Assert.IsTrue(positiveXInfo.HitType == IntersectionType.FrontFace);
+				Assert.IsTrue(positiveXInfo.ClosestHitObject == facingPositiveX);
+				Assert.IsTrue(positiveXInfo.DistanceToHit == 1);
 
 				IntersectInfo negativeXInfo = facingPositiveX.GetClosestIntersection(new Ray(new Vector3(-1, 0, 0), new Vector3(1, 0, 0)));
 				Assert.IsTrue(negativeXInfo == null);
@@ -158,9 +158,9 @@ namespace MatterHackers.RayTracer
 
 				IntersectInfo negativeXInfo = facingNegativeX.GetClosestIntersection(new Ray(new Vector3(-1, 0, 0), new Vector3(1, 0, 0)));
 				Assert.IsTrue(negativeXInfo.HitPosition == new Vector3(0, 0, 0));
-				Assert.IsTrue(negativeXInfo.hitType == IntersectionType.FrontFace);
-				Assert.IsTrue(negativeXInfo.closestHitObject == facingNegativeX);
-				Assert.IsTrue(negativeXInfo.distanceToHit == 1);
+				Assert.IsTrue(negativeXInfo.HitType == IntersectionType.FrontFace);
+				Assert.IsTrue(negativeXInfo.ClosestHitObject == facingNegativeX);
+				Assert.IsTrue(negativeXInfo.DistanceToHit == 1);
 			}
 		}
 	}

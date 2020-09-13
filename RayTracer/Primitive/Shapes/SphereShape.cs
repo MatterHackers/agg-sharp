@@ -71,8 +71,8 @@ namespace MatterHackers.RayTracer
 				|| (ray.intersectionType == IntersectionType.BackFace && lengthFromRayOrginToSphereCenterSquared < radiusSquared)) // yes, that's it, we found the intersection!
 			{
 				IntersectInfo info = new IntersectInfo();
-				info.closestHitObject = this;
-				info.hitType = IntersectionType.FrontFace;
+				info.ClosestHitObject = this;
+				info.HitType = IntersectionType.FrontFace;
 				if (ray.isShadowRay)
 				{
 					return info;
@@ -87,9 +87,9 @@ namespace MatterHackers.RayTracer
 					{
 						return null;
 					}
-					info.distanceToHit = distanceToFrontHit;
-					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-					info.normalAtHit = (info.HitPosition - position).GetNormal();
+					info.DistanceToHit = distanceToFrontHit;
+					info.HitPosition = ray.origin + ray.directionNormal * info.DistanceToHit;
+					info.NormalAtHit = (info.HitPosition - position).GetNormal();
 				}
 				else // check back faces
 				{
@@ -98,10 +98,10 @@ namespace MatterHackers.RayTracer
 					{
 						return null;
 					}
-					info.hitType = IntersectionType.BackFace;
-					info.distanceToHit = distanceToBackHit;
-					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-					info.normalAtHit = -(info.HitPosition - position).GetNormal();
+					info.HitType = IntersectionType.BackFace;
+					info.DistanceToHit = distanceToBackHit;
+					info.HitPosition = ray.origin + ray.directionNormal * info.DistanceToHit;
+					info.NormalAtHit = -(info.HitPosition - position).GetNormal();
 				}
 
 				return info;
@@ -134,13 +134,13 @@ namespace MatterHackers.RayTracer
 				if ((ray.intersectionType & IntersectionType.FrontFace) == IntersectionType.FrontFace)
 				{
 					IntersectInfo info = new IntersectInfo();
-					info.hitType = IntersectionType.FrontFace;
-					info.closestHitObject = this;
+					info.HitType = IntersectionType.FrontFace;
+					info.ClosestHitObject = this;
 					double distanceToFrontHit = distanceFromRayOriginToSphereCenter - amountSphereCenterToRayIsGreaterThanRayOriginToEdge;
 
-					info.distanceToHit = distanceToFrontHit;
-					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-					info.normalAtHit = (info.HitPosition - position).GetNormal();
+					info.DistanceToHit = distanceToFrontHit;
+					info.HitPosition = ray.origin + ray.directionNormal * info.DistanceToHit;
+					info.NormalAtHit = (info.HitPosition - position).GetNormal();
 
 					yield return info;
 				}
@@ -148,13 +148,13 @@ namespace MatterHackers.RayTracer
 				if ((ray.intersectionType & IntersectionType.BackFace) == IntersectionType.BackFace)
 				{
 					IntersectInfo info = new IntersectInfo();
-					info.hitType = IntersectionType.BackFace;
-					info.closestHitObject = this;
+					info.HitType = IntersectionType.BackFace;
+					info.ClosestHitObject = this;
 					double distanceToBackHit = distanceFromRayOriginToSphereCenter + amountSphereCenterToRayIsGreaterThanRayOriginToEdge;
 
-					info.distanceToHit = distanceToBackHit;
-					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-					info.normalAtHit = -(info.HitPosition - position).GetNormal();
+					info.DistanceToHit = distanceToBackHit;
+					info.HitPosition = ray.origin + ray.directionNormal * info.DistanceToHit;
+					info.NormalAtHit = -(info.HitPosition - position).GetNormal();
 
 					yield return info;
 				}

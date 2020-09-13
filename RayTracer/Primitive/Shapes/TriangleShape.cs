@@ -177,11 +177,11 @@ namespace MatterHackers.RayTracer
 					if (haveHitIn2D)
 					{
 						IntersectInfo info = new IntersectInfo();
-						info.closestHitObject = this;
-						info.hitType = IntersectionType.FrontFace;
+						info.ClosestHitObject = this;
+						info.HitType = IntersectionType.FrontFace;
 						info.HitPosition = hitPosition;
-						info.normalAtHit = new Vector3(Plane.Normal);
-						info.distanceToHit = distanceToHit;
+						info.NormalAtHit = new Vector3(Plane.Normal);
+						info.DistanceToHit = distanceToHit;
 
 						return info;
 					}
