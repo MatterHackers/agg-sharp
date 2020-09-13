@@ -232,7 +232,7 @@ namespace MatterHackers.Agg.UI
 				SetAndClearViewPort();
 			}
 
-			Graphics2D graphics2D = new Graphics2DOpenGL(this.ClientSize.Width, this.ClientSize.Height);
+			Graphics2D graphics2D = new Graphics2DOpenGL(this.ClientSize.Width, this.ClientSize.Height, GuiWidget.DeviceScale);
 			graphics2D.PushTransform();
 
 			return graphics2D;

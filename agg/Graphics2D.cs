@@ -251,6 +251,8 @@ namespace MatterHackers.Agg
 
 		public abstract int Height { get; }
 
+		public double DeviceScale { get; set; } = 1;
+
 		public void DrawString(string text,
 			Vector2 position,
 			double pointSize = 12,
@@ -301,13 +303,39 @@ namespace MatterHackers.Agg
 			Render(elipse, color);
 		}
 
-		public void Line(Vector2 start, Vector2 end, Color color, double strokeWidth = 1)
+		/// <summary>
+		/// Render a line
+		/// </summary>
+		/// <param name="start">start position</param>
+		/// <param name="end">end position</param>
+		/// <param name="color">line color</param>
+		/// <param name="strokeWidth">The width in pixels, -1 will render 1 pixel scaled to device units</param>
+		public void Line(Vector2 start, Vector2 end, Color color, double strokeWidth = -1)
 		{
+			if (strokeWidth == -1)
+			{
+				strokeWidth = 1 * DeviceScale;
+			}
+
 			Line(start.X, start.Y, end.X, end.Y, color, strokeWidth);
 		}
 
-		public virtual void Line(double x1, double y1, double x2, double y2, Color color, double strokeWidth = 1)
+		/// <summary>
+		/// Render a line
+		/// </summary>
+		/// <param name="x1">x start</param>
+		/// <param name="y1">y start</param>
+		/// <param name="x2">x end</param>
+		/// <param name="y2">y end</param>
+		/// <param name="color">color of the line</param>
+		/// <param name="strokeWidth">The width in pixels, -1 will render 1 pixel scaled to device units</param>
+		public virtual void Line(double x1, double y1, double x2, double y2, Color color, double strokeWidth = -1)
 		{
+			if (strokeWidth == -1)
+			{
+				strokeWidth = 1 * DeviceScale;
+			}
+
 			var lineToDraw = new VertexStorage();
 			lineToDraw.remove_all();
 			lineToDraw.MoveTo(x1, y1);
@@ -322,10 +350,15 @@ namespace MatterHackers.Agg
 
 		public abstract RectangleDouble GetClippingRect();
 
-		public abstract void Rectangle(double left, double bottom, double right, double top, Color color, double strokeWidth = 1);
+		public abstract void Rectangle(double left, double bottom, double right, double top, Color color, double strokeWidth = -1);
 
-		public void Rectangle(RectangleDouble rect, Color color, double strokeWidth = 1)
+		public void Rectangle(RectangleDouble rect, Color color, double strokeWidth = -1)
 		{
+			if (strokeWidth == -1)
+			{
+				strokeWidth = 1 * DeviceScale;
+			}
+
 			Rectangle(rect.Left, rect.Bottom, rect.Right, rect.Top, color, strokeWidth);
 		}
 
