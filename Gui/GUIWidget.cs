@@ -1879,8 +1879,14 @@ namespace MatterHackers.Agg.UI
 		{
 			GuiWidget curGUIWidget = this;
 			RectangleDouble visibleBounds = this.LocalBounds;
+			bool sawSystemWindow = false;
 			while (curGUIWidget != null)
 			{
+				if (curGUIWidget is SystemWindow)
+				{
+					sawSystemWindow = true;
+				}
+
 				if (!curGUIWidget.Visible
 					|| visibleBounds.Width <= 0
 					|| visibleBounds.Height <= 0)
@@ -1898,7 +1904,7 @@ namespace MatterHackers.Agg.UI
 				curGUIWidget = curGUIWidget.Parent;
 			}
 
-			return true;
+			return sawSystemWindow;
 		}
 
 		public virtual bool CanFocus => this.Visible && this.Enabled;

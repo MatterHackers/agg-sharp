@@ -81,8 +81,10 @@ namespace MatterHackers.RenderOpenGl
 		/// <param name="width"></param>
 		public static void Render3DLine(this WorldView world, Frustum clippingFrustum, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1)
 		{
+			GL.PushAttrib(AttribMask.EnableBit);
 			GLHelper.PrepareFor3DLineRender(doDepthTest);
 			world.Render3DLineNoPrep(clippingFrustum, start, end, color, width);
+			GL.PopAttrib();
 		}
 
 		public static void Render3DLineNoPrep(this WorldView world, Frustum clippingFrustum, Vector3Float start, Vector3Float end, Color color, double width = 1)

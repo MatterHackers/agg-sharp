@@ -57,13 +57,13 @@ namespace MatterHackers.RayTracer
 			//MultiThreaded = false,
 		};
 
-		private IPrimitive focusedObject = null;
+		private ITraceable focusedObject = null;
 		private Stopwatch renderTime = new Stopwatch();
 		private Scene scene;
 
 		private Transform allObjectsHolder;
-		private IPrimitive allObjects;
-		private List<IPrimitive> renderCollection = new List<IPrimitive>();
+		private ITraceable allObjects;
+		private List<ITraceable> renderCollection = new List<ITraceable>();
 
 		private TrackballTumbleWidget trackballTumbleWidget;
 
@@ -248,7 +248,7 @@ namespace MatterHackers.RayTracer
 
 		private void AddCubeOfShperes()
 		{
-			List<IPrimitive> scanData1 = new List<IPrimitive>();
+			List<ITraceable> scanData1 = new List<ITraceable>();
 			Random rand = new Random(0);
 			double dist = 2;
 			for (int i = 0; i < 4000; i++)
@@ -267,7 +267,7 @@ namespace MatterHackers.RayTracer
 			BoxShape box1 = new BoxShape(new Vector3(.5, .5, .5), new Vector3(1.5, 1.5, 1.5),
 							   new SolidMaterial(ColorF.Green, 0, 0, 0));//.01, 0.0, 2.0));
 
-			List<IPrimitive> subtractShapes = new List<IPrimitive>();
+			var subtractShapes = new List<ITraceable>();
 			SolidMaterial material = new SolidMaterial(ColorF.Red, 0, 0, 0);
 
 #if false
@@ -294,7 +294,7 @@ namespace MatterHackers.RayTracer
             }
 #endif
 
-			IPrimitive subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
+			var subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
 			Difference merge = new Difference(box1, subtractGroup);
 
 			renderCollection.Add(merge);
@@ -305,11 +305,11 @@ namespace MatterHackers.RayTracer
 			BoxShape box1 = new BoxShape(new Vector3(.5, .5, .5), new Vector3(1.5, 1.5, 1.5),
 							   new SolidMaterial(ColorF.Green, .01, 0.0, 2.0));
 
-			List<IPrimitive> subtractShapes = new List<IPrimitive>();
+			List<ITraceable> subtractShapes = new List<ITraceable>();
 			SolidMaterial material = new SolidMaterial(ColorF.Red, 0, 0, 0);
 			subtractShapes.Add(new BoxShape(new Vector3(), new Vector3(1, 1, 1), material));
 
-			IPrimitive subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
+			var subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
 			Difference merge = new Difference(box1, subtractGroup);
 
 			renderCollection.Add(merge);
@@ -350,7 +350,7 @@ namespace MatterHackers.RayTracer
 
 			Stopwatch bvhTime = new Stopwatch();
 			bvhTime.Start();
-			IPrimitive bvhCollection = MeshToBVH.Convert(simpleMesh);
+			var bvhCollection = MeshToBVH.Convert(simpleMesh);
 			bvhTime.Stop();
 
 			timingStrings.Add("Time to create BVH {0:0.0}s".FormatWith(bvhTime.Elapsed.TotalSeconds));
@@ -394,7 +394,7 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		public IPrimitive FocusedObject
+		public ITraceable FocusedObject
 		{
 			get
 			{

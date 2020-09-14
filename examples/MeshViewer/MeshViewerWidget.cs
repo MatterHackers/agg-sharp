@@ -724,16 +724,17 @@ namespace MatterHackers.MeshVisualizer
 				return false;
 			}
 
-			List<IPrimitive> uiTraceables = new List<IPrimitive>();
+			List<ITraceable> uiTraceables = new List<ITraceable>();
 			foreach (InteractionVolume interactionVolume in interactionVolumes)
 			{
 				if (interactionVolume.CollisionVolume != null)
 				{
-					IPrimitive traceData = interactionVolume.CollisionVolume;
+					var traceData = interactionVolume.CollisionVolume;
 					uiTraceables.Add(new Transform(traceData, interactionVolume.TotalTransform));
 				}
 			}
-			IPrimitive allUiObjects = BoundingVolumeHierarchy.CreateNewHierachy(uiTraceables);
+
+			ITraceable allUiObjects = BoundingVolumeHierarchy.CreateNewHierachy(uiTraceables);
 
 			info = allUiObjects.GetClosestIntersection(ray);
 			if (info != null)
@@ -743,8 +744,8 @@ namespace MatterHackers.MeshVisualizer
 					List<IBvhItem> insideBounds = new List<IBvhItem>();
 					if (interactionVolumes[i].CollisionVolume != null)
 					{
-						interactionVolumes[i].CollisionVolume.GetContained(insideBounds, info.closestHitObject.GetAxisAlignedBoundingBox());
-						if (insideBounds.Contains(info.closestHitObject))
+						interactionVolumes[i].CollisionVolume.GetContained(insideBounds, info.ClosestHitObject.GetAxisAlignedBoundingBox());
+						if (insideBounds.Contains(info.ClosestHitObject))
 						{
 							interactionVolumeHitIndex = i;
 							return true;
