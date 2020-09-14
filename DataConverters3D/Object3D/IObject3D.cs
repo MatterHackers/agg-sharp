@@ -398,14 +398,17 @@ namespace MatterHackers.DataConverters3D
 		/// for intersections (mouse hit) and possibly rendering.
 		/// </summary>
 		/// <returns></returns>
-		IPrimitive GetBVHData();
+		ITraceable GetBVHData();
 	}
 
 	public class Object3DIterator : IEnumerable<Object3DIterator>
 	{
 		public Matrix4X4 TransformToWorld { get; private set; }
+
 		public IObject3D IObject3D { get; private set; }
+
 		public int Depth { get; private set; } = 0;
+
 		Func<Object3DIterator, bool> DecentFilter = null;
 
 		public Object3DIterator(IObject3D referenceItem, Matrix4X4 initialTransform = default(Matrix4X4), int initialDepth = 0, Func<Object3DIterator, bool> decentFilter = null)

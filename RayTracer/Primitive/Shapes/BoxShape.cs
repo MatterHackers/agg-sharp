@@ -161,22 +161,22 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 				if ((ray.intersectionType & IntersectionType.FrontFace) == IntersectionType.FrontFace)
 				{
 					IntersectInfo info = new IntersectInfo();
-					info.hitType = IntersectionType.FrontFace;
-					info.closestHitObject = this;
+					info.HitType = IntersectionType.FrontFace;
+					info.ClosestHitObject = this;
 					info.HitPosition = ray.origin + ray.directionNormal * minDistFound;
-					info.normalAtHit[minAxis] = ray.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is opposite your sign
-					info.distanceToHit = minDistFound;
+					info.NormalAtHit[minAxis] = ray.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is opposite your sign
+					info.DistanceToHit = minDistFound;
 					yield return info;
 				}
 
 				if ((ray.intersectionType & IntersectionType.BackFace) == IntersectionType.BackFace)
 				{
 					IntersectInfo info = new IntersectInfo();
-					info.hitType = IntersectionType.BackFace;
-					info.closestHitObject = this;
+					info.HitType = IntersectionType.BackFace;
+					info.ClosestHitObject = this;
 					info.HitPosition = ray.origin + ray.directionNormal * maxDistFound;
-					info.normalAtHit[maxAxis] = ray.sign[maxAxis] == Ray.Sign.negative ? 1 : -1;
-					info.distanceToHit = maxDistFound;
+					info.NormalAtHit[maxAxis] = ray.sign[maxAxis] == Ray.Sign.negative ? 1 : -1;
+					info.DistanceToHit = maxDistFound;
 					yield return info;
 				}
 			}
@@ -202,30 +202,30 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 				{
 					if (minDistFound > ray.minDistanceToConsider && minDistFound < ray.maxDistanceToConsider)
 					{
-						info.hitType = IntersectionType.FrontFace;
+						info.HitType = IntersectionType.FrontFace;
 						if (ray.isShadowRay)
 						{
 							return info;
 						}
-						info.closestHitObject = this;
+						info.ClosestHitObject = this;
 						info.HitPosition = ray.origin + ray.directionNormal * minDistFound;
-						info.normalAtHit[minAxis] = ray.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is opposite your sign
-						info.distanceToHit = minDistFound;
+						info.NormalAtHit[minAxis] = ray.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is opposite your sign
+						info.DistanceToHit = minDistFound;
 					}
 				}
 				else // check back faces
 				{
 					if (maxDistFound > ray.minDistanceToConsider && maxDistFound < ray.maxDistanceToConsider)
 					{
-						info.hitType = IntersectionType.BackFace;
+						info.HitType = IntersectionType.BackFace;
 						if (ray.isShadowRay)
 						{
 							return info;
 						}
-						info.closestHitObject = this;
+						info.ClosestHitObject = this;
 						info.HitPosition = ray.origin + ray.directionNormal * maxDistFound;
-						info.normalAtHit[maxAxis] = ray.sign[maxAxis] == Ray.Sign.negative ? 1 : -1;
-						info.distanceToHit = maxDistFound;
+						info.NormalAtHit[maxAxis] = ray.sign[maxAxis] == Ray.Sign.negative ? 1 : -1;
+						info.DistanceToHit = maxDistFound;
 					}
 				}
 			}

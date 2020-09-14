@@ -27,8 +27,10 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-//#define AA_TIPS
+// #define AA_TIPS
 
+using System;
+using System.Collections.Generic;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
@@ -36,10 +38,6 @@ using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters2D;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
-using System;
-using Tesselate;
-using MatterHackers.Agg.Platform;
-using System.Collections.Generic;
 
 namespace MatterHackers.RenderOpenGl
 {
@@ -47,25 +45,28 @@ namespace MatterHackers.RenderOpenGl
 	{
 		// We can have a single static instance because all gl rendering is required to happen on the ui thread so there can
 		// be no runtime contention for this object (no thread contention).
-		private static AAGLTesselator triangleEdgeInfo = new AAGLTesselator();
+		private static readonly AAGLTesselator TriangleEdgeInfo = new AAGLTesselator();
 
 		/// <summary>
 		/// A texture per alpha value
 		/// </summary>
-		private static List<ImageBuffer> AATextureImages = null;
+		private static List<ImageBuffer> aATextureImages = null;
 
-		public bool DoEdgeAntiAliasing = true;
-		private static GLTesselator renderNowTesselator = new GLTesselator();
+		public bool DoEdgeAntiAliasing { get; set; } = true;
 
-		private int width;
-		private int height;
+		private static readonly GLTesselator RenderNowTesselator = new GLTesselator();
+
+		private readonly int width;
+		private readonly int height;
 		private RectangleDouble cachedClipRect;
 
-		public Graphics2DOpenGL()
+		public Graphics2DOpenGL(double deviceScale)
 		{
+			this.DeviceScale = deviceScale;
 		}
 
-		public Graphics2DOpenGL(int width, int height)
+		public Graphics2DOpenGL(int width, int height, double deviceScale)
+			: this(deviceScale)
 		{
 			this.width = width;
 			this.height = height;
@@ -80,8 +81,10 @@ namespace MatterHackers.RenderOpenGl
 		public override void SetClippingRect(RectangleDouble clippingRect)
 		{
 			cachedClipRect = clippingRect;
-			GL.Scissor((int)Math.Floor(Math.Max(clippingRect.Left, 0)), (int)Math.Floor(Math.Max(clippingRect.Bottom, 0)),
-				(int)Math.Ceiling(Math.Max(clippingRect.Width, 0)), (int)Math.Ceiling(Math.Max(clippingRect.Height, 0)));
+			GL.Scissor((int)Math.Floor(Math.Max(clippingRect.Left, 0)),
+				(int)Math.Floor(Math.Max(clippingRect.Bottom, 0)),
+				(int)Math.Ceiling(Math.Max(clippingRect.Width, 0)),
+				(int)Math.Ceiling(Math.Max(clippingRect.Height, 0)));
 			GL.Enable(EnableCap.ScissorTest);
 		}
 
@@ -119,13 +122,13 @@ namespace MatterHackers.RenderOpenGl
 
 		private void CheckLineImageCache()
 		{
-			if (AATextureImages == null)
+			if (aATextureImages == null)
 			{
-				AATextureImages = new List<ImageBuffer>();
+				aATextureImages = new List<ImageBuffer>();
 				for (int i = 0; i < 256; i++)
 				{
 					var texture = new ImageBuffer(1024, 4);
-					AATextureImages.Add(texture);
+					aATextureImages.Add(texture);
 					byte[] hardwarePixelBuffer = texture.GetBuffer();
 					for (int y = 0; y < 4; y++)
 					{
@@ -153,27 +156,27 @@ namespace MatterHackers.RenderOpenGl
 				vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
 			}
 
-			Color colorBytes = colorIn.ToColor();
+			var colorBytes = colorIn.ToColor();
 			// the alpha has come from the bound texture
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, (byte)255);
 
-			triangleEdgeInfo.Clear();
-			VertexSourceToTesselator.SendShapeToTesselator(triangleEdgeInfo, vertexSource);
+			TriangleEdgeInfo.Clear();
+			VertexSourceToTesselator.SendShapeToTesselator(TriangleEdgeInfo, vertexSource);
 
 			// now render it
-			triangleEdgeInfo.RenderLastToGL();
+			TriangleEdgeInfo.RenderLastToGL();
 		}
 
 		/// <summary>
 		/// Draws a line with low poly rounded endcaps (only in GL implementation/only used by 2D GCode)
 		/// </summary>
-		/// <param name="start"></param>
-		/// <param name="end"></param>
-		/// <param name="halfWidth"></param>
-		/// <param name="colorIn"></param>
+		/// <param name="start">the start</param>
+		/// <param name="end">the end</param>
+		/// <param name="halfWidth">size of the line</param>
+		/// <param name="colorIn">the color</param>
 		public void DrawAALineRounded(Vector2 start, Vector2 end, double halfWidth, IColorType colorIn)
 		{
-			Color colorBytes = colorIn.ToColor();
+			var colorBytes = colorIn.ToColor();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			Affine transform = GetTransform();
@@ -183,11 +186,11 @@ namespace MatterHackers.RenderOpenGl
 				transform.transform(ref end);
 			}
 
-			//GL.Begin(BeginMode.Triangles);
+			// GL.Begin(BeginMode.Triangles);
 			Vector2 widthRightOffset = (end - start).GetPerpendicularRight().GetNormal() * halfWidth / 2;
 			// draw the main line part
-			triangleEdgeInfo.Draw1EdgeTriangle(start - widthRightOffset, end - widthRightOffset, end + widthRightOffset);
-			triangleEdgeInfo.Draw1EdgeTriangle(end + widthRightOffset, start + widthRightOffset, start - widthRightOffset);
+			TriangleEdgeInfo.Draw1EdgeTriangle(start - widthRightOffset, end - widthRightOffset, end + widthRightOffset);
+			TriangleEdgeInfo.Draw1EdgeTriangle(end + widthRightOffset, start + widthRightOffset, start - widthRightOffset);
 			// now draw the end rounds
 			int numSegments = 5;
 			Vector2 endCurveStart = end + widthRightOffset;
@@ -195,44 +198,45 @@ namespace MatterHackers.RenderOpenGl
 			for (int i = 0; i < numSegments + 1; i++)
 			{
 				Vector2 endCurveEnd = end + Vector2.Rotate(widthRightOffset, i * Math.PI / numSegments);
-				triangleEdgeInfo.Draw1EdgeTriangle(endCurveStart, endCurveEnd, end);
+				TriangleEdgeInfo.Draw1EdgeTriangle(endCurveStart, endCurveEnd, end);
 				endCurveStart = endCurveEnd;
 
 				Vector2 startCurveEnd = start + Vector2.Rotate(widthRightOffset, -i * Math.PI / numSegments);
-				triangleEdgeInfo.Draw1EdgeTriangle(startCurveStart, startCurveEnd, start);
+				TriangleEdgeInfo.Draw1EdgeTriangle(startCurveStart, startCurveEnd, start);
 				startCurveStart = startCurveEnd;
 			}
-			//GL.End();
+
+			// GL.End();
 		}
 
 		/// <summary>
 		/// Draws a low poly circle (only in GL implementation/only used by 2D GCode)
 		/// </summary>
-		/// <param name="start"></param>
-		/// <param name="radius"></param>
-		/// <param name="colorIn"></param>
-		public void DrawAACircle(Vector2 start, double radius, IColorType colorIn)
+		/// <param name="center">the center of the circle</param>
+		/// <param name="radius">the radius</param>
+		/// <param name="colorIn">the color</param>
+		public void DrawAACircle(Vector2 center, double radius, IColorType colorIn)
 		{
-			Color colorBytes = colorIn.ToColor();
+			var colorBytes = colorIn.ToColor();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			Affine transform = GetTransform();
 			if (!transform.is_identity())
 			{
-				transform.transform(ref start);
+				transform.transform(ref center);
 			}
 
 			// now draw the end rounds
 			int numSegments = 12;
 			double anglePerSegment = MathHelper.Tau / numSegments;
-			Vector2 currentOffset = new Vector2(0, radius);
-			Vector2 curveStart = start + currentOffset;
+			var currentOffset = new Vector2(0, radius);
+			Vector2 curveStart = center + currentOffset;
 			for (int i = 0; i < numSegments; i++)
 			{
 				currentOffset.Rotate(anglePerSegment);
-				Vector2 curveEnd = start + currentOffset;
+				Vector2 curveEnd = center + currentOffset;
 
-				triangleEdgeInfo.Draw1EdgeTriangle(curveStart, curveEnd, start);
+				TriangleEdgeInfo.Draw1EdgeTriangle(curveStart, curveEnd, center);
 				curveStart = curveEnd;
 			}
 		}
@@ -243,7 +247,7 @@ namespace MatterHackers.RenderOpenGl
 			PushOrthoProjection();
 
 			GL.Enable(EnableCap.Texture2D);
-			GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(AATextureImages[colorIn.Alpha0To255], false).GLTextureHandle);
+			GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(aATextureImages[colorIn.Alpha0To255], false).GLTextureHandle);
 
 			// the source is always all white so has no does not have its color changed by the alpha
 			GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
@@ -268,20 +272,22 @@ namespace MatterHackers.RenderOpenGl
 					vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
 				}
 
-				Color colorBytes = colorIn.ToColor();
+				var colorBytes = colorIn.ToColor();
 				GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
-				renderNowTesselator.Clear();
-				VertexSourceToTesselator.SendShapeToTesselator(renderNowTesselator, vertexSource);
+				RenderNowTesselator.Clear();
+				VertexSourceToTesselator.SendShapeToTesselator(RenderNowTesselator, vertexSource);
 			}
 
 			PopOrthoProjection();
 		}
 
 		public override void Render(IImageByte source,
-			double x, double y,
+			double x,
+			double y,
 			double angleRadians,
-			double scaleX, double scaleY)
+			double scaleX,
+			double scaleY)
 		{
 			Affine transform = GetTransform();
 			if (!transform.is_identity())
@@ -295,21 +301,22 @@ namespace MatterHackers.RenderOpenGl
 			// TODO: <BUG> make this do rotation and scaling
 			RectangleInt sourceBounds = source.GetBounds();
 			sourceBounds.Offset((int)x, (int)y);
-			RectangleInt destBounds = new RectangleInt((int)cachedClipRect.Left, (int)cachedClipRect.Bottom, (int)cachedClipRect.Right, (int)cachedClipRect.Top);
+			var destBounds = new RectangleInt((int)cachedClipRect.Left, (int)cachedClipRect.Bottom, (int)cachedClipRect.Right, (int)cachedClipRect.Top);
 
 			if (!RectangleInt.DoIntersect(sourceBounds, destBounds))
 			{
-				if (scaleX != 1 || scaleY != 1)// || angleDegrees != 0)
+				if (scaleX != 1 || scaleY != 1) // || angleDegrees != 0)
 				{
-					//throw new NotImplementedException();
+					// throw new NotImplementedException();
 				}
-				//return;
+
+				// return;
 			}
 
-			ImageBuffer sourceAsImageBuffer = (ImageBuffer)source;
-			//ImageIO.SaveImageData($"c:\\temp\\gah-{DateTime.Now.Ticks}.png", sourceAsImageBuffer);
+			var sourceAsImageBuffer = (ImageBuffer)source;
+			// ImageIO.SaveImageData($"c:\\temp\\gah-{DateTime.Now.Ticks}.png", sourceAsImageBuffer);
 
-			ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(sourceAsImageBuffer, false);
+			var glPlugin = ImageGlPlugin.GetImageGlPlugin(sourceAsImageBuffer, false);
 
 			// Prepare openGL for rendering
 			PushOrthoProjection();
@@ -329,14 +336,16 @@ namespace MatterHackers.RenderOpenGl
 
 			glPlugin.DrawToGL();
 
-			//Restore openGL state
+			// Restore openGL state
 			PopOrthoProjection();
 		}
 
 		public override void Render(IImageFloat imageSource,
-			double x, double y,
+			double x,
+			double y,
 			double angleDegrees,
-			double scaleX, double ScaleY)
+			double scaleX,
+			double scaleY)
 		{
 			throw new NotImplementedException();
 		}
@@ -370,8 +379,8 @@ namespace MatterHackers.RenderOpenGl
 			else
 #endif
 			{
-				RoundedRect rect = new RoundedRect(left + .5, bottom + .5, right - .5, top - .5, 0);
-				Stroke rectOutline = new Stroke(rect, strokeWidth);
+				var rect = new RoundedRect(left + .5, bottom + .5, right - .5, top - .5, 0);
+				var rectOutline = new Stroke(rect, strokeWidth);
 
 				Render(rectOutline, color);
 			}
@@ -416,13 +425,14 @@ namespace MatterHackers.RenderOpenGl
 					GL.Vertex2(fastRight, fastTop);
 					GL.Vertex2(fastLeft, fastTop);
 				}
+
 				GL.End();
 
 				PopOrthoProjection();
 			}
 			else
 			{
-				RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
+				var rect = new RoundedRect(left, bottom, right, top, 0);
 				Render(rect, fillColor.ToColor());
 			}
 		}
@@ -462,9 +472,12 @@ namespace MatterHackers.RenderOpenGl
 		{
 			Affine transform = GetTransform();
 
-			RoundedRect clearRect = new RoundedRect(new RectangleDouble(
-				cachedClipRect.Left - transform.tx, cachedClipRect.Bottom - transform.ty,
-				cachedClipRect.Right - transform.tx, cachedClipRect.Top - transform.ty), 0);
+			var clearRect = new RoundedRect(new RectangleDouble(
+				cachedClipRect.Left - transform.tx,
+				cachedClipRect.Bottom - transform.ty,
+				cachedClipRect.Right - transform.tx,
+				cachedClipRect.Top - transform.ty),
+				0);
 			Render(clearRect, color.ToColor());
 		}
 
@@ -472,7 +485,7 @@ namespace MatterHackers.RenderOpenGl
 		{
 			CheckLineImageCache();
 			GL.Enable(EnableCap.Texture2D);
-			GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(AATextureImages[color.Alpha0To255], false).GLTextureHandle);
+			GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(aATextureImages[color.Alpha0To255], false).GLTextureHandle);
 
 			// the source is always all white so has no does not have its color changed by the alpha
 			GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);

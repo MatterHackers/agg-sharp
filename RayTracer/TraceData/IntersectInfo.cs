@@ -52,25 +52,30 @@ namespace MatterHackers.RayTracer
 	/// </summary>
 	public class IntersectInfo
 	{
-		public IntersectionType hitType;
-		public IPrimitive closestHitObject;
-		public Vector3 HitPosition { get; set; }
-		public Vector3 normalAtHit;
-		public double distanceToHit;
-		public ColorF totalColor;
+		public IntersectionType HitType { get; set; }
+
+		public ITraceable ClosestHitObject { get; set; }
+
+		public Vector3 HitPosition;
+
+		public Vector3 NormalAtHit;
+
+		public double DistanceToHit;
+
+		public ColorF TotalColor { get; set; }
 
 		public IntersectInfo()
 		{
-			distanceToHit = double.MaxValue;
+			DistanceToHit = double.MaxValue;
 		}
 
 		public IntersectInfo(IntersectInfo copyInfo)
 		{
-			this.hitType = copyInfo.hitType;
-			this.closestHitObject = copyInfo.closestHitObject;
+			this.HitType = copyInfo.HitType;
+			this.ClosestHitObject = copyInfo.ClosestHitObject;
 			this.HitPosition = copyInfo.HitPosition;
-			this.normalAtHit = copyInfo.normalAtHit;
-			this.distanceToHit = copyInfo.distanceToHit;
+			this.NormalAtHit = copyInfo.NormalAtHit;
+			this.DistanceToHit = copyInfo.DistanceToHit;
 		}
 
 		public static void SaveOutLists(List<IntersectInfo> allPrimary, List<IntersectInfo> allSubtract)
@@ -81,13 +86,13 @@ namespace MatterHackers.RayTracer
 			writer.WriteLine(allPrimary.Count.ToString());
 			foreach (IntersectInfo info in allPrimary)
 			{
-				writer.WriteLine(info.hitType.ToString() + ", " + info.distanceToHit.ToString());
+				writer.WriteLine(info.HitType.ToString() + ", " + info.DistanceToHit.ToString());
 			}
 
 			writer.WriteLine(allSubtract.Count.ToString());
 			foreach (IntersectInfo info in allSubtract)
 			{
-				writer.WriteLine(info.hitType.ToString() + ", " + info.distanceToHit.ToString());
+				writer.WriteLine(info.HitType.ToString() + ", " + info.DistanceToHit.ToString());
 			}
 
 			writer.Close();
@@ -117,7 +122,7 @@ namespace MatterHackers.RayTracer
 				string[] strings = line.Split(',');
 				if (strings[0] == IntersectionType.FrontFace.ToString())
 				{
-					info.hitType = IntersectionType.FrontFace;
+					info.HitType = IntersectionType.FrontFace;
 				}
 				else
 				{
@@ -125,9 +130,11 @@ namespace MatterHackers.RayTracer
 					{
 						throw new Exception("Has to be back or front.");
 					}
-					info.hitType = IntersectionType.BackFace;
+
+					info.HitType = IntersectionType.BackFace;
 				}
-				double.TryParse(strings[1], NumberStyles.Number, null, out info.distanceToHit);
+
+				double.TryParse(strings[1], NumberStyles.Number, null, out info.DistanceToHit);
 				listToPopulate.Add(info);
 			}
 		}
@@ -180,7 +187,7 @@ namespace MatterHackers.RayTracer
 
 		private static void SubtractRemoveRegion(List<IntersectInfo> removeFrom, IntersectInfo startRemoveInfo, IntersectInfo endRemoveInfo)
 		{
-			if (startRemoveInfo.hitType != IntersectionType.FrontFace || endRemoveInfo.hitType != IntersectionType.BackFace)
+			if (startRemoveInfo.HitType != IntersectionType.FrontFace || endRemoveInfo.HitType != IntersectionType.BackFace)
 			{
 				throw new Exception("These should always be set right.");
 			}
@@ -189,36 +196,36 @@ namespace MatterHackers.RayTracer
 			for (int primaryIndex = 0; primaryIndex < removeFrom.Count; primaryIndex++)
 			{
 				IntersectInfo primaryInfo = removeFrom[primaryIndex];
-				if (primaryInfo.hitType == IntersectionType.FrontFace)
+				if (primaryInfo.HitType == IntersectionType.FrontFace)
 				{
 					insideCount++;
 
-					if (primaryInfo.distanceToHit < (startRemoveInfo.distanceToHit - Ray.sameSurfaceOffset))
+					if (primaryInfo.DistanceToHit < (startRemoveInfo.DistanceToHit - Ray.sameSurfaceOffset))
 					{
 						// We are in front of the remove start. If the next backface is behind the remove start, add a back face at the remove start.
 						// there should always be a back face so it should be safe to + 1 this index.  I will let the bounds checker get it because it will throw an assert.  If not I would throw one instead.
-						if (removeFrom[primaryIndex + 1].distanceToHit > (startRemoveInfo.distanceToHit - Ray.sameSurfaceOffset))
+						if (removeFrom[primaryIndex + 1].DistanceToHit > (startRemoveInfo.DistanceToHit - Ray.sameSurfaceOffset))
 						{
 							IntersectInfo newBackFace = new IntersectInfo(startRemoveInfo);
-							newBackFace.hitType = IntersectionType.BackFace;
+							newBackFace.HitType = IntersectionType.BackFace;
 							removeFrom.Insert(primaryIndex + 1, newBackFace); // it goes after the current index
 							primaryIndex++;
 						}
 					}
-					else if (primaryInfo.distanceToHit >= (startRemoveInfo.distanceToHit - Ray.sameSurfaceOffset) && primaryInfo.distanceToHit < (endRemoveInfo.distanceToHit + Ray.sameSurfaceOffset))
+					else if (primaryInfo.DistanceToHit >= (startRemoveInfo.DistanceToHit - Ray.sameSurfaceOffset) && primaryInfo.DistanceToHit < (endRemoveInfo.DistanceToHit + Ray.sameSurfaceOffset))
 					{
 						// the front face is within the remove so remove it.
 						removeFrom.Remove(primaryInfo);
 						// need to check the same index again.
 						primaryIndex--;
 					}
-					else if (primaryInfo.distanceToHit >= (endRemoveInfo.distanceToHit + Ray.sameSurfaceOffset))
+					else if (primaryInfo.DistanceToHit >= (endRemoveInfo.DistanceToHit + Ray.sameSurfaceOffset))
 					{
 						// we have gone past the remove region just return.
 						return;
 					}
 				}
-				else if (primaryInfo.hitType == IntersectionType.BackFace)
+				else if (primaryInfo.HitType == IntersectionType.BackFace)
 				{
 					if (insideCount == 0)
 					{
@@ -227,27 +234,27 @@ namespace MatterHackers.RayTracer
 					insideCount--;
 					if (insideCount == 0)
 					{
-						if (primaryInfo.distanceToHit > (startRemoveInfo.distanceToHit - Ray.sameSurfaceOffset) && primaryInfo.distanceToHit < (endRemoveInfo.distanceToHit + Ray.sameSurfaceOffset))
+						if (primaryInfo.DistanceToHit > (startRemoveInfo.DistanceToHit - Ray.sameSurfaceOffset) && primaryInfo.DistanceToHit < (endRemoveInfo.DistanceToHit + Ray.sameSurfaceOffset))
 						{
 							// the back face is within the remove so remove it.
 							removeFrom.Remove(primaryInfo);
 							// need to check the same index again.
 							primaryIndex--;
 						}
-						else if (primaryInfo.distanceToHit >= (endRemoveInfo.distanceToHit + Ray.sameSurfaceOffset))
+						else if (primaryInfo.DistanceToHit >= (endRemoveInfo.DistanceToHit + Ray.sameSurfaceOffset))
 						{
 							// the back face is past the remove distance.
 							// Add the remove back face as a front face to the primary
 							// We should be guaranteed that the front face is within the remove distance because if it was we should have returned above.
 							IntersectInfo newFrontFace = new IntersectInfo(endRemoveInfo);
-							newFrontFace.hitType = IntersectionType.FrontFace;
+							newFrontFace.HitType = IntersectionType.FrontFace;
 							removeFrom.Insert(primaryIndex, newFrontFace);
 							primaryIndex++;
 						}
 					}
 					else
 					{
-						if (primaryInfo.distanceToHit > (startRemoveInfo.distanceToHit - Ray.sameSurfaceOffset) && primaryInfo.distanceToHit < (endRemoveInfo.distanceToHit + Ray.sameSurfaceOffset))
+						if (primaryInfo.DistanceToHit > (startRemoveInfo.DistanceToHit - Ray.sameSurfaceOffset) && primaryInfo.DistanceToHit < (endRemoveInfo.DistanceToHit + Ray.sameSurfaceOffset))
 						{
 							// the back face is within the remove so remove it.
 							removeFrom.Remove(primaryInfo);
@@ -272,7 +279,7 @@ namespace MatterHackers.RayTracer
 			for (int subtractIndex = startIndex; subtractIndex < subtractCount; subtractIndex++)
 			{
 				IntersectInfo subtractInfo = subtractList[subtractIndex];
-				if (subtractInfo.hitType == IntersectionType.FrontFace)
+				if (subtractInfo.HitType == IntersectionType.FrontFace)
 				{
 					if (insideCount == 0)
 					{
@@ -280,7 +287,7 @@ namespace MatterHackers.RayTracer
 					}
 					insideCount++;
 				}
-				else if (subtractInfo.hitType == IntersectionType.BackFace)
+				else if (subtractInfo.HitType == IntersectionType.BackFace)
 				{
 					if (insideCount == 0)
 					{
@@ -291,7 +298,7 @@ namespace MatterHackers.RayTracer
 					{
 						// let's check that there is not another entry aligned exactly with this exit
 						int nextIndex = subtractIndex + 1;
-						if (nextIndex >= subtractCount || subtractList[subtractIndex].distanceToHit + Ray.sameSurfaceOffset < subtractList[nextIndex].distanceToHit)
+						if (nextIndex >= subtractCount || subtractList[subtractIndex].DistanceToHit + Ray.sameSurfaceOffset < subtractList[nextIndex].DistanceToHit)
 						{
 							// we have our subtract region
 							regionEndIndex = subtractIndex;
@@ -366,8 +373,8 @@ namespace MatterHackers.RayTracer
 				throw new Exception();
 			}
 
-			double axisCenterA = a.distanceToHit;
-			double axisCenterB = b.distanceToHit;
+			double axisCenterA = a.DistanceToHit;
+			double axisCenterB = b.DistanceToHit;
 
 			if (axisCenterA > axisCenterB)
 			{
@@ -377,13 +384,13 @@ namespace MatterHackers.RayTracer
 			{
 				return -1;
 			}
-			if (a.hitType != b.hitType)
+			if (a.HitType != b.HitType)
 			{
-				if (a.hitType == IntersectionType.FrontFace && b.hitType == IntersectionType.BackFace)
+				if (a.HitType == IntersectionType.FrontFace && b.HitType == IntersectionType.BackFace)
 				{
 					return -1;
 				}
-				else if (a.hitType == IntersectionType.BackFace && b.hitType == IntersectionType.FrontFace)
+				else if (a.HitType == IntersectionType.BackFace && b.HitType == IntersectionType.FrontFace)
 				{
 					return 1;
 				}

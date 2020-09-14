@@ -27,10 +27,10 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.Image;
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
+using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.UI
 {
@@ -68,6 +68,7 @@ namespace MatterHackers.Agg.UI
 					currentlyLocked = true;
 					bitmapData = windowsBitmap.LockBits(new Rectangle(0, 0, windowsBitmap.Width, windowsBitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, windowsBitmap.PixelFormat);
 				}
+
 				int backBufferStrideInBytes = backingImageBufferByte.StrideInBytes();
 				int backBufferStrideInInts = backBufferStrideInBytes / 4;
 				int backBufferHeight = backingImageBufferByte.Height;
@@ -94,16 +95,19 @@ namespace MatterHackers.Agg.UI
 										{
 											pDestBufferInt[x] = pSourceInt[x];
 										}
+
 										for (int x = backBufferStrideInInts * 4; x < backBufferStrideInBytes; x++)
 										{
 											pDestBuffer[x] = pSource[x];
 										}
+
 										pDestBuffer -= bitmapDataStride;
 										pSource += backBufferStrideInBytes;
 									}
 								}
 							}
 						}
+
 						break;
 
 					case 32:
@@ -118,10 +122,10 @@ namespace MatterHackers.Agg.UI
 									for (int y = rect.Bottom; y < rect.Top; y++)
 									{
 										int* pSourceInt = (int*)pSource;
-										pSourceInt += (backBufferStrideInBytes * y / 4);
+										pSourceInt += backBufferStrideInBytes * y / 4;
 
 										int* pDestBufferInt = (int*)pDestBuffer;
-										pDestBufferInt -= (bitmapDataStride * y / 4);
+										pDestBufferInt -= bitmapDataStride * y / 4;
 
 										for (int x = rect.Left; x < rect.Right; x++)
 										{
@@ -131,11 +135,13 @@ namespace MatterHackers.Agg.UI
 								}
 							}
 						}
+
 						break;
 
 					default:
 						throw new NotImplementedException();
 				}
+
 				if (!externallyLocked)
 				{
 					windowsBitmap.UnlockBits(bitmapData);
@@ -183,6 +189,7 @@ namespace MatterHackers.Agg.UI
 
 							windowsBitmap.UnlockBits(bitmapData);
 						}
+
 						break;
 
 					default:
@@ -206,9 +213,9 @@ namespace MatterHackers.Agg.UI
 
 					case 32:
 						windowsBitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
-						//widowsBitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
-						//widowsBitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-						//32bppPArgb
+						// widowsBitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+						// widowsBitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+						// 32bppPArgb
 						backingImageBufferByte = new ImageBuffer(width, height);
 						break;
 

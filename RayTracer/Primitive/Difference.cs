@@ -37,18 +37,18 @@ namespace MatterHackers.RayTracer.Traceable
 {
 	public class Difference : IPrimitive
 	{
-		private IPrimitive primary;
-		private IPrimitive subtract;
+		private ITraceable primary;
+		private ITraceable subtract;
 
-		public Difference(IPrimitive primary, IPrimitive subtract)
+		public Difference(ITraceable primary, ITraceable subtract)
 		{
 			this.primary = primary;
 			this.subtract = subtract;
 		}
 
-		public IPrimitive Primary { get { return primary; } }
+		public ITraceable Primary { get { return primary; } }
 
-		public IPrimitive Subtract { get { return subtract; } }
+		public ITraceable Subtract { get { return subtract; } }
 
 		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{

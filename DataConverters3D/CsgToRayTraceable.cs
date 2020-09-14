@@ -104,7 +104,7 @@ namespace MatterHackers.DataConverters3D
 
 		#region Transform
 
-		public IPrimitive GetIPrimitiveRecursive(TransformBase objectToProcess)
+		public ITraceable GetIPrimitiveRecursive(TransformBase objectToProcess)
 		{
 			return new Transform(GetIPrimitiveRecursive((dynamic)objectToProcess.ObjectToTransform), objectToProcess.ActiveTransform);
 		}
@@ -113,9 +113,9 @@ namespace MatterHackers.DataConverters3D
 
 		#region Union
 
-		public IPrimitive GetIPrimitiveRecursive(Union objectToProcess)
+		public ITraceable GetIPrimitiveRecursive(Union objectToProcess)
 		{
-			List<IPrimitive> items = new List<IPrimitive>();
+			var items = new List<ITraceable>();
 			foreach (CsgObject copiedObject in objectToProcess.AllObjects)
 			{
 				items.Add(GetIPrimitiveRecursive((dynamic)copiedObject));
@@ -128,22 +128,22 @@ namespace MatterHackers.DataConverters3D
 
 		#region Difference
 
-		public IPrimitive GetIPrimitiveRecursive(MatterHackers.Csg.Operations.Difference objectToProcess)
+		public ITraceable GetIPrimitiveRecursive(MatterHackers.Csg.Operations.Difference objectToProcess)
 		{
-			List<IPrimitive> subtractItems = new List<IPrimitive>();
+			var subtractItems = new List<ITraceable>();
 			foreach (CsgObject copiedObject in objectToProcess.AllSubtracts)
 			{
 				subtractItems.Add(GetIPrimitiveRecursive((dynamic)copiedObject));
 			}
 
-			return new MatterHackers.RayTracer.Traceable.Difference(GetIPrimitiveRecursive((dynamic)objectToProcess.Primary), BoundingVolumeHierarchy.CreateNewHierachy(subtractItems));
+			return new RayTracer.Traceable.Difference(GetIPrimitiveRecursive((dynamic)objectToProcess.Primary), BoundingVolumeHierarchy.CreateNewHierachy(subtractItems));
 		}
 
 		#endregion Difference
 
 		#region Intersection
 
-		public IPrimitive GetIPrimitiveRecursive(Intersection objectToProcess)
+		public ITraceable GetIPrimitiveRecursive(Intersection objectToProcess)
 		{
 			throw new NotImplementedException();
 			//return ApplyIndent("intersection()" + AddNameAsComment(objectToProcess) + "\n{\n" + GetRayTraceableRecursive((dynamic)objectToProcess.a, level + 1) + "\n" + GetRayTraceableRecursive((dynamic)objectToProcess.b, level + 1) + "\n}", level);

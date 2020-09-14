@@ -45,11 +45,11 @@ namespace MatterHackers.RayTracer
 			var level4_a = new TriangleShape(new Vector3(0, 0, 1), new Vector3(0, 0, 3), new Vector3(0, 1, 2), null);
 			var level4_b = new TriangleShape(new Vector3(0, 0, 11), new Vector3(0, 0, 13), new Vector3(0, 1, 12), null);
 			var level4_c = new TriangleShape(new Vector3(3, 0, 1), new Vector3(3, 0, 3), new Vector3(3, 1, 2), null);
-			var level3_a = new UnboundCollection(new List<IPrimitive>() { level4_a, level4_b, level4_c });
+			var level3_a = new UnboundCollection(new List<ITraceable>() { level4_a, level4_b, level4_c });
 			var level3_b = new TriangleShape(new Vector3(43, 0, 1), new Vector3(43, 0, 3), new Vector3(43, 1, 2), null);
 			var level2_a = new Transform(level3_a, Matrix4X4.CreateTranslation(0, 0, 40));
 			var level2_b = new Transform(level3_b, Matrix4X4.CreateTranslation(0, 40, 0));
-			var level1 = new UnboundCollection(new List<IPrimitive>() { level2_a, level2_b });
+			var level1 = new UnboundCollection(new List<ITraceable>() { level2_a, level2_b });
 			var root = new Transform(level1);
 
 			// enumerate it and check it

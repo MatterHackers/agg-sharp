@@ -50,7 +50,7 @@ namespace MatterHackers.RayTracer
 
 		public ImageBuffer destImage;
 
-		private IPrimitive allObjects;
+		private ITraceable allObjects;
 
 		private Transform allObjectsHolder;
 
@@ -309,7 +309,7 @@ namespace MatterHackers.RayTracer
 			return totalMeshBounds;
 		}
 
-		private List<IPrimitive> GetRenderCollection()
+		private List<ITraceable> GetRenderCollection()
 		{
 			if (sceneToRender != null)
 			{
@@ -319,9 +319,9 @@ namespace MatterHackers.RayTracer
 
 				world.Fit(sceneToRender, new RectangleDouble(0, 0, size.x, size.y), centeredTranslation);
 
-				IPrimitive bvhCollection = MeshToBVH.Convert(sceneToRender);
+				ITraceable bvhCollection = MeshToBVH.Convert(sceneToRender);
 
-				return new List<IPrimitive> { new Transform(bvhCollection, centeredTranslation) };
+				return new List<ITraceable> { new Transform(bvhCollection, centeredTranslation) };
 			}
 
 			return null;

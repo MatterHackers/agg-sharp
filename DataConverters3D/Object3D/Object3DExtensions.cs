@@ -654,7 +654,7 @@ namespace MatterHackers.DataConverters3D
 		/// </summary>
 		/// <param name="mesh">The mesh to add the BVH to.</param>
 		/// <returns>The created BVH tree.</returns>
-		public static IPrimitive CreateBVHData(this Mesh mesh)
+		public static ITraceable CreateBVHData(this Mesh mesh)
 		{
 			return CreateBVHData(mesh, null, Matrix4X4.Identity);
 		}
@@ -667,22 +667,22 @@ namespace MatterHackers.DataConverters3D
 		/// <param name="matrix">A transformation to apply to the trace data</param>
 		/// <param name="maxRecursion">The max depth to create the BVH tree.</param>
 		/// <returns>The created BVH tree.</returns>
-		public static IPrimitive CreateBVHData(this Mesh mesh, MaterialAbstract material, Matrix4X4 matrix, int maxRecursion = int.MaxValue)
+		public static ITraceable CreateBVHData(this Mesh mesh, MaterialAbstract material, Matrix4X4 matrix, int maxRecursion = int.MaxValue)
 		{
-			var allPolys = new List<IPrimitive>();
+			var allPolys = new List<ITraceable>();
 
-			mesh.AddTracePrimitives(material, matrix, allPolys);
+			mesh.AddTraceables(material, matrix, allPolys);
 
 			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys, maxRecursion);
 		}
 
-		public static void AddTracePrimitives(this Mesh mesh, MaterialAbstract material, Matrix4X4 matrix, List<IPrimitive> tracePrimitives)
+		public static void AddTraceables(this Mesh mesh, MaterialAbstract material, Matrix4X4 matrix, List<ITraceable> tracePrimitives)
 		{
 			for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
 			{
 				var face = mesh.Faces[faceIndex];
 
-				IPrimitive triangle;
+				ITraceable triangle;
 				if (material != null)
 				{
 					triangle = new TriangleShape(
