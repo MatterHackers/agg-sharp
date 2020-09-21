@@ -141,6 +141,17 @@ namespace MatterHackers.VectorMath
 			MaxXYZ.Z += amount;
 		}
 
+		public void Expand(double x, double y, double z)
+		{
+			MinXYZ.X -= x;
+			MinXYZ.Y -= y;
+			MinXYZ.Z -= z;
+
+			MaxXYZ.X += x;
+			MaxXYZ.Y += y;
+			MaxXYZ.Z += z;
+		}
+
 		public void ExpandToInclude(Vector3 position)
 		{
 			MinXYZ.X = Math.Min(MinXYZ.X, position.X);
