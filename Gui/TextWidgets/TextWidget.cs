@@ -242,6 +242,7 @@ namespace MatterHackers.Agg.UI
 					{
 						DrawFromHintedCache = wasUsingHintedCache
 					};
+
 					if (AutoExpandBoundsToText)
 					{
 						DoExpandBoundsToText();

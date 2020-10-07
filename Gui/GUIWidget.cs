@@ -1846,6 +1846,12 @@ namespace MatterHackers.Agg.UI
 				visibleBounds.IntersectWithRectangle(this.Parent.LocalBounds);
 			}
 
+			if (visibleBounds.Width <= 0
+				|| visibleBounds.Height <= 0)
+			{
+				return false;
+			}
+
 			return true;
 		}
 

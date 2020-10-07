@@ -163,6 +163,7 @@ namespace MatterHackers.Agg.UI
 				{
 					outputText += " ({0})".FormatWith(timerData.TotalCount);
 				}
+
 				if (recursionCount > 0)
 				{
 					if (recursionCount == 1)
