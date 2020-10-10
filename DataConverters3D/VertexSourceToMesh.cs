@@ -28,19 +28,16 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Collections.Generic;
-using System.Threading;
 using ClipperLib;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters2D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
 
 namespace MatterHackers.DataConverters3D
 {
-	using Polygons = List<List<IntPoint>>;
-	using Polygon = List<IntPoint>;
-
 	public static class VertexSourceToMesh
 	{
 		public static Mesh TriangulateFaces(this IVertexSource vertexSource, CachedTesselator teselatedSource = null)
@@ -49,9 +46,10 @@ namespace MatterHackers.DataConverters3D
 			{
 				teselatedSource = new CachedTesselator();
 			}
+
 			VertexSourceToTesselator.SendShapeToTesselator(teselatedSource, vertexSource);
 
-			Mesh mesh = new Mesh();
+			var mesh = new Mesh();
 
 			int numIndicies = teselatedSource.IndicesCache.Count;
 
@@ -72,34 +70,6 @@ namespace MatterHackers.DataConverters3D
 			return mesh;
 		}
 
-		public static Polygons GetCorrectedWinding(this Polygons polygonsToFix)
-		{
-			polygonsToFix = Clipper.CleanPolygons(polygonsToFix);
-			Polygon boundsPolygon = new Polygon();
-			IntRect bounds = Clipper.GetBounds(polygonsToFix);
-			bounds.left -= 10;
-			bounds.top -= 10;
-			bounds.bottom += 10;
-			bounds.right += 10;
-
-			boundsPolygon.Add(new IntPoint(bounds.left, bounds.top));
-			boundsPolygon.Add(new IntPoint(bounds.right, bounds.top));
-			boundsPolygon.Add(new IntPoint(bounds.right, bounds.bottom));
-			boundsPolygon.Add(new IntPoint(bounds.left, bounds.bottom));
-
-			Clipper clipper = new Clipper();
-
-			clipper.AddPaths(polygonsToFix, PolyType.ptSubject, true);
-			clipper.AddPath(boundsPolygon, PolyType.ptClip, true);
-
-			PolyTree intersectionResult = new PolyTree();
-			clipper.Execute(ClipType.ctIntersection, intersectionResult);
-
-			Polygons outputPolygons = Clipper.ClosedPathsFromPolyTree(intersectionResult);
-
-			return outputPolygons;
-		}
-
 		public static Mesh Revolve(this IVertexSource source, int angleSteps = 30, double angleStart = 0, double angleEnd = MathHelper.Tau)
 		{
 			angleSteps = Math.Max(angleSteps, 3);
@@ -116,7 +86,7 @@ namespace MatterHackers.DataConverters3D
 			// convert the data back to PathStorage
 			VertexStorage cleanedPath = polygons.CreateVertexStorage();
 
-			Mesh mesh = new Mesh();
+			var mesh = new Mesh();
 
 			var hasStartAndEndFaces = angleStart > 0.000001;
 			hasStartAndEndFaces |= angleEnd < MathHelper.Tau - 0.000001;
@@ -187,7 +157,7 @@ namespace MatterHackers.DataConverters3D
 
 				if (vertexData.IsLineTo)
 				{
-					Vector3 currentPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
+					var currentPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
 
 					mesh.CreateFace(new Vector3[] 
 					{
@@ -212,7 +182,7 @@ namespace MatterHackers.DataConverters3D
 			// convert the data back to PathStorage
 			vertexSource = polygons.CreateVertexStorage();
 
-			CachedTesselator teselatedSource = new CachedTesselator();
+			var teselatedSource = new CachedTesselator();
 			Mesh mesh = vertexSource.TriangulateFaces(teselatedSource);
 			int numIndicies = teselatedSource.IndicesCache.Count;
 

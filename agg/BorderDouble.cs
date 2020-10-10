@@ -39,7 +39,7 @@ namespace MatterHackers.Agg
 			this.Top = top;
 		}
 
-		public static implicit operator BorderDouble(int valueForAll)  // explicit byte to digit conversion operator
+		public static implicit operator BorderDouble(int valueForAll) // explicit byte to digit conversion operator
 		{
 			return new BorderDouble(valueForAll);
 		}
@@ -69,12 +69,12 @@ namespace MatterHackers.Agg
 			return false;
 		}
 
-		static public BorderDouble operator *(BorderDouble a, double b)
+		public static BorderDouble operator *(BorderDouble a, double b)
 		{
 			return new BorderDouble(a.Left * b, a.Bottom * b, a.Right * b, a.Top * b);
 		}
 
-		static public BorderDouble operator *(double b, BorderDouble a)
+		public static BorderDouble operator *(double b, BorderDouble a)
 		{
 			return new BorderDouble(a.Left * b, a.Bottom * b, a.Right * b, a.Top * b);
 		}
@@ -108,6 +108,7 @@ namespace MatterHackers.Agg
 			{
 				return this == (BorderDouble)obj;
 			}
+
 			return false;
 		}
 
@@ -157,8 +158,7 @@ namespace MatterHackers.Agg
 			{
 				var values = stringValue.Split(',').Select(s =>
 				{
-					double result;
-					double.TryParse(s, out result);
+					double.TryParse(s, out double result);
 					return result;
 				}).ToArray();
 
