@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Linq;
 using ClipperLib;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters2D;
@@ -72,17 +73,61 @@ namespace MatterHackers.DataConverters3D
 
 		public static Mesh Revolve(this IVertexSource source, int angleSteps = 30, double angleStart = 0, double angleEnd = MathHelper.Tau)
 		{
-			angleSteps = Math.Max(angleSteps, 3);
+			if (angleStart == 0 && angleEnd == MathHelper.Tau)
+			{
+				angleSteps = Math.Max(angleSteps, 3);
+			}
+			else
+			{
+				angleSteps = Math.Max(angleSteps, 1);
+			}
+
 			angleStart = MathHelper.Range0ToTau(angleStart);
 			angleEnd = MathHelper.Range0ToTau(angleEnd);
 
 			// convert to clipper polygons and scale so we can ensure good shapes
 			Polygons polygons = source.CreatePolygons();
 
-			// ensure good winding and consistent shapes
-			// clip against x=0 left and right
-			// mirror left material across the origin
-			// union mirrored left with right material
+			if (polygons.Select(poly => poly.Where(pos => pos.X < 0)).Any())
+			{
+				// ensure good winding and consistent shapes
+				polygons = polygons.GetCorrectedWinding();
+				var bounds = polygons.GetBounds();
+				bounds.Inflate(10);
+				// clip against x=0 left and right
+				var leftClip = new Polygon();
+				leftClip.Add(new IntPoint(0, bounds.Bottom));
+				leftClip.Add(new IntPoint(0, bounds.Top));
+				leftClip.Add(new IntPoint(bounds.Left, bounds.Top));
+				leftClip.Add(new IntPoint(bounds.Left, bounds.Bottom));
+				var rightStuff = polygons.Subtract(leftClip);
+
+				var rightClip = new Polygon();
+				rightClip.Add(new IntPoint(0, bounds.Top));
+				rightClip.Add(new IntPoint(0, bounds.Bottom));
+				rightClip.Add(new IntPoint(bounds.Right, bounds.Bottom));
+				rightClip.Add(new IntPoint(bounds.Right, bounds.Top));
+				var leftStuff = polygons.Subtract(rightClip);
+				// mirror left material across the origin
+				var leftAdd = leftStuff.Scale(-1, 1);
+				if (leftAdd.Count > 0)
+				{
+					if (rightStuff.Count > 0)
+					{
+						polygons = rightStuff.Union(leftAdd);
+					}
+					else
+					{
+						polygons = leftAdd;
+					}
+				}
+				else
+				{
+					// union mirrored left with right material
+					polygons = rightStuff;
+				}
+			}
+
 			// convert the data back to PathStorage
 			VertexStorage cleanedPath = polygons.CreateVertexStorage();
 
@@ -94,7 +139,7 @@ namespace MatterHackers.DataConverters3D
 			if (hasStartAndEndFaces)
 			{
 				// make a face for the start
-				Mesh extrudedVertexSource = source.TriangulateFaces();
+				Mesh extrudedVertexSource = cleanedPath.TriangulateFaces();
 				extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
 				extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(angleStart));
 				mesh.CopyFaces(extrudedVertexSource);
@@ -103,12 +148,12 @@ namespace MatterHackers.DataConverters3D
 			// make the outside shell
 			double angleDelta = (angleEnd - angleStart) / angleSteps;
 			double currentAngle = angleStart;
-			if(!hasStartAndEndFaces)
+			if (!hasStartAndEndFaces)
 			{
 				angleSteps--;
 			}
 
-			for (int i=0; i < angleSteps; i++)
+			for (int i = 0; i < angleSteps; i++)
 			{
 				AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta);
 				currentAngle += angleDelta;
@@ -127,7 +172,7 @@ namespace MatterHackers.DataConverters3D
 			else // add the end face
 			{
 				// make a face for the end
-				Mesh extrudedVertexSource = source.TriangulateFaces();
+				Mesh extrudedVertexSource = cleanedPath.TriangulateFaces();
 				extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
 				extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(currentAngle));
 				extrudedVertexSource.ReverseFaces();
@@ -140,7 +185,7 @@ namespace MatterHackers.DataConverters3D
 			return mesh;
 		}
 
-		static void AddRevolveStrip(IVertexSource vertexSource, Mesh mesh, double startAngle, double endAngle)
+		private static void AddRevolveStrip(IVertexSource vertexSource, Mesh mesh, double startAngle, double endAngle)
 		{
 			Vector3 lastPosition = Vector3.Zero;
 
@@ -150,6 +195,7 @@ namespace MatterHackers.DataConverters3D
 				{
 					break;
 				}
+
 				if (vertexData.IsMoveTo)
 				{
 					lastPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
@@ -159,7 +205,7 @@ namespace MatterHackers.DataConverters3D
 				{
 					var currentPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
 
-					mesh.CreateFace(new Vector3[] 
+					mesh.CreateFace(new Vector3[]
 					{
 						Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(endAngle)),
 						Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(startAngle)),
