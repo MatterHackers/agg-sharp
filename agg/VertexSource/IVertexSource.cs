@@ -154,5 +154,20 @@ namespace MatterHackers.Agg.VertexSource
 
 			return bounds;
 		}
+
+		public static IVertexSource Transform(this IVertexSource source, Matrix4X4 matrix)
+		{
+			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
+
+			var output = new VertexStorage();
+			foreach (var vertex in source.Vertices())
+			{
+				var position = new Vector3(vertex.X, vertex.Y, 0);
+				position = position.Transform(matrix);
+				output.Add(position.X, position.Y, vertex.command);
+			}
+
+			return output;
+		}
 	}
 }
