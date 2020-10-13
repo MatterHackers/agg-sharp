@@ -71,8 +71,35 @@ namespace MatterHackers.DataConverters3D
 			return mesh;
 		}
 
-		public static Mesh Revolve(this IVertexSource source, int angleSteps = 30, double angleStart = 0, double angleEnd = MathHelper.Tau)
+		private static double fixCloseAngles(double angle)
 		{
+			if (Math.Abs(angle) < .001)
+			{
+				return 0;
+			}
+
+			if (angle < MathHelper.Tau + .001
+				&& angle > MathHelper.Tau - .001)
+			{
+				return MathHelper.Tau;
+			}
+
+			return angle;
+		}
+
+		public static Mesh Revolve(this IVertexSource source,
+			int angleSteps = 30,
+			double angleStart = 0,
+			double angleEnd = MathHelper.Tau,
+			bool revolveAroundZ = true)
+		{
+			angleStart = MathHelper.Range0ToTau(angleStart);
+			angleEnd = MathHelper.Range0ToTau(angleEnd);
+
+			// make sure we close 360 shapes
+			angleStart = fixCloseAngles(angleStart);
+			angleEnd = fixCloseAngles(angleEnd);
+
 			if (angleStart == 0 && angleEnd == MathHelper.Tau)
 			{
 				angleSteps = Math.Max(angleSteps, 3);
@@ -81,9 +108,6 @@ namespace MatterHackers.DataConverters3D
 			{
 				angleSteps = Math.Max(angleSteps, 1);
 			}
-
-			angleStart = MathHelper.Range0ToTau(angleStart);
-			angleEnd = MathHelper.Range0ToTau(angleEnd);
 
 			// convert to clipper polygons and scale so we can ensure good shapes
 			Polygons polygons = source.CreatePolygons();
@@ -123,7 +147,7 @@ namespace MatterHackers.DataConverters3D
 				}
 				else
 				{
-					// union mirrored left with right material
+					// there is nothing on the left
 					polygons = rightStuff;
 				}
 			}
@@ -140,8 +164,16 @@ namespace MatterHackers.DataConverters3D
 			{
 				// make a face for the start
 				Mesh extrudedVertexSource = cleanedPath.TriangulateFaces();
-				extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
-				extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(angleStart));
+				if (revolveAroundZ)
+				{
+					extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
+					extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(angleStart));
+				}
+				else
+				{
+					extrudedVertexSource.Transform(Matrix4X4.CreateRotationY(angleStart));
+				}
+
 				mesh.CopyFaces(extrudedVertexSource);
 			}
 
@@ -155,7 +187,7 @@ namespace MatterHackers.DataConverters3D
 
 			for (int i = 0; i < angleSteps; i++)
 			{
-				AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta);
+				AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta, revolveAroundZ);
 				currentAngle += angleDelta;
 			}
 
@@ -166,15 +198,23 @@ namespace MatterHackers.DataConverters3D
 					&& (angleEnd - currentAngle) > .0000001)
 				{
 					// make sure we close the shape exactly
-					AddRevolveStrip(cleanedPath, mesh, currentAngle, angleStart);
+					AddRevolveStrip(cleanedPath, mesh, currentAngle, angleStart, revolveAroundZ);
 				}
 			}
 			else // add the end face
 			{
 				// make a face for the end
 				Mesh extrudedVertexSource = cleanedPath.TriangulateFaces();
-				extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
-				extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(currentAngle));
+				if (revolveAroundZ)
+				{
+					extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
+					extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(currentAngle));
+				}
+				else
+				{
+					extrudedVertexSource.Transform(Matrix4X4.CreateRotationY(angleStart));
+				}
+
 				extrudedVertexSource.ReverseFaces();
 				mesh.CopyFaces(extrudedVertexSource);
 			}
@@ -185,9 +225,10 @@ namespace MatterHackers.DataConverters3D
 			return mesh;
 		}
 
-		private static void AddRevolveStrip(IVertexSource vertexSource, Mesh mesh, double startAngle, double endAngle)
+		private static void AddRevolveStrip(IVertexSource vertexSource, Mesh mesh, double startAngle, double endAngle, bool revolveAroundZ)
 		{
 			Vector3 lastPosition = Vector3.Zero;
+			Vector3 firstPosition = Vector3.Zero;
 
 			foreach (var vertexData in vertexSource.Vertices())
 			{
@@ -198,20 +239,52 @@ namespace MatterHackers.DataConverters3D
 
 				if (vertexData.IsMoveTo)
 				{
-					lastPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
+					firstPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
+					if (!revolveAroundZ)
+					{
+						firstPosition = new Vector3(vertexData.position.X, vertexData.position.Y, 0);
+					}
+
+					lastPosition = firstPosition;
 				}
 
-				if (vertexData.IsLineTo)
+				if (vertexData.IsLineTo || vertexData.IsClose)
 				{
-					var currentPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
 
-					mesh.CreateFace(new Vector3[]
+					var currentPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
+					if (!revolveAroundZ)
 					{
-						Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(endAngle)),
-						Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(startAngle)),
-						Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationZ(startAngle)),
-						Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationZ(endAngle)),
-					});
+						currentPosition = new Vector3(vertexData.position.X, vertexData.position.Y, 0);
+					}
+
+					if (vertexData.IsClose)
+					{
+						currentPosition = firstPosition;
+					}
+
+					if (currentPosition.X != 0 || lastPosition.X != 0)
+					{
+						if (revolveAroundZ)
+						{
+							mesh.CreateFace(new Vector3[]
+							{
+								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(endAngle)),
+								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(startAngle)),
+								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationZ(startAngle)),
+								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationZ(endAngle)),
+							});
+						}
+						else
+						{
+							mesh.CreateFace(new Vector3[]
+							{
+								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationY(endAngle)),
+								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationY(startAngle)),
+								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationY(startAngle)),
+								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationY(endAngle)),
+							});
+						}
+					}
 
 					lastPosition = currentPosition;
 				}
