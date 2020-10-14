@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using ClipperLib;
 using MatterHackers.Agg.VertexSource;
@@ -41,7 +42,7 @@ namespace MatterHackers.DataConverters3D
 {
 	public static class VertexSourceToMesh
 	{
-		public static Mesh TriangulateFaces(this IVertexSource vertexSource, CachedTesselator teselatedSource = null)
+		public static Mesh TriangulateFaces(this IVertexSource vertexSource, CachedTesselator teselatedSource = null, Mesh meshToAddTo = null)
 		{
 			if (teselatedSource == null)
 			{
@@ -50,7 +51,10 @@ namespace MatterHackers.DataConverters3D
 
 			VertexSourceToTesselator.SendShapeToTesselator(teselatedSource, vertexSource);
 
-			var mesh = new Mesh();
+			if (meshToAddTo == null)
+			{
+				meshToAddTo = new Mesh();
+			}
 
 			int numIndicies = teselatedSource.IndicesCache.Count;
 
@@ -65,10 +69,10 @@ namespace MatterHackers.DataConverters3D
 					continue;
 				}
 
-				mesh.CreateFace(new Vector3[] { new Vector3(v0, 0), new Vector3(v1, 0), new Vector3(v2, 0) });
+				meshToAddTo.CreateFace(new Vector3[] { new Vector3(v0, 0), new Vector3(v1, 0), new Vector3(v2, 0) });
 			}
 
-			return mesh;
+			return meshToAddTo;
 		}
 
 		private static double fixCloseAngles(double angle)
@@ -291,28 +295,69 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static Mesh Extrude(this IVertexSource vertexSource, double zHeight)
+		public static Mesh Extrude(this IVertexSource vertexSourceIn,
+			double zHeightTop,
+			List<(double height, double offset)> bevel = null)
 		{
-			Polygons polygons = vertexSource.CreatePolygons();
+			Polygons bottomPolygons = vertexSourceIn.CreatePolygons();
 
 			// ensure good winding and consistent shapes
-			polygons = polygons.GetCorrectedWinding();
+			bottomPolygons = bottomPolygons.GetCorrectedWinding();
 
-			// convert the data back to PathStorage
-			vertexSource = polygons.CreateVertexStorage();
+			var bottomTeselatedSource = new CachedTesselator();
 
-			var teselatedSource = new CachedTesselator();
-			Mesh mesh = vertexSource.TriangulateFaces(teselatedSource);
-			int numIndicies = teselatedSource.IndicesCache.Count;
+			// add the top
+			var mesh = new Mesh();
 
-			mesh.Translate(new Vector3(0, 0, zHeight));
+			var zHeightSides = zHeightTop;
+			if (bevel != null)
+			{
+				// add the top polygon
+				var vertexSourceTop = bottomPolygons.Offset(bevel[bevel.Count - 1].offset);
+				vertexSourceTop.CreateVertexStorage().TriangulateFaces(bottomTeselatedSource, mesh);
+				mesh.Translate(new Vector3(0, 0, zHeightTop));
+
+				// add all the bevels
+				vertexSourceTop = bottomPolygons;
+
+				for (int i = bevel.Count - 1; i >= 0; i--)
+				{
+					var vertexSourceNext = bottomPolygons.Offset(bevel[i].offset);
+
+					var all = new Polygons();
+					all.AddRange(vertexSourceTop);
+					all.AddRange(vertexSourceNext);
+					var allTeselatedSource = new CachedTesselator();
+
+					var bevelLoop = all.CreateVertexStorage().TriangulateFaces(allTeselatedSource);
+
+					for (var j = 0; j < bevelLoop.Vertices.Count; j++)
+					{
+						bevelLoop.Vertices[j] = bevelLoop.Vertices[j] + new Vector3Float(0, 0, 16);
+					}
+
+					mesh.CopyFaces(bevelLoop);
+				}
+
+				// and set the level for the bottom wall polygons
+				zHeightSides = bevel[0].height;
+			}
+			else
+			{
+				// add the top polygon
+				var vertexSourceBottom = bottomPolygons.CreateVertexStorage();
+				vertexSourceBottom.TriangulateFaces(bottomTeselatedSource, mesh);
+				mesh.Translate(new Vector3(0, 0, zHeightTop));
+			}
+
+			int numIndicies = bottomTeselatedSource.IndicesCache.Count;
 
 			// then the outside edge
 			for (int i = 0; i < numIndicies; i += 3)
 			{
-				Vector2 v0 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 0].Index].Position;
-				Vector2 v1 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 1].Index].Position;
-				Vector2 v2 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 2].Index].Position;
+				Vector2 v0 = bottomTeselatedSource.VerticesCache[bottomTeselatedSource.IndicesCache[i + 0].Index].Position;
+				Vector2 v1 = bottomTeselatedSource.VerticesCache[bottomTeselatedSource.IndicesCache[i + 1].Index].Position;
+				Vector2 v2 = bottomTeselatedSource.VerticesCache[bottomTeselatedSource.IndicesCache[i + 2].Index].Position;
 				if (v0 == v1 || v1 == v2 || v2 == v0)
 				{
 					continue;
@@ -322,21 +367,21 @@ namespace MatterHackers.DataConverters3D
 				var bottomVertex1 = new Vector3(v1, 0);
 				var bottomVertex2 = new Vector3(v2, 0);
 
-				var topVertex0 = new Vector3(v0, zHeight);
-				var topVertex1 = new Vector3(v1, zHeight);
-				var topVertex2 = new Vector3(v2, zHeight);
+				var topVertex0 = new Vector3(v0, zHeightSides);
+				var topVertex1 = new Vector3(v1, zHeightSides);
+				var topVertex2 = new Vector3(v2, zHeightSides);
 
-				if (teselatedSource.IndicesCache[i + 0].IsEdge)
+				if (bottomTeselatedSource.IndicesCache[i + 0].IsEdge)
 				{
 					mesh.CreateFace(new Vector3[] { bottomVertex0, bottomVertex1, topVertex1, topVertex0 });
 				}
 
-				if (teselatedSource.IndicesCache[i + 1].IsEdge)
+				if (bottomTeselatedSource.IndicesCache[i + 1].IsEdge)
 				{
 					mesh.CreateFace(new Vector3[] { bottomVertex1, bottomVertex2, topVertex2, topVertex1 });
 				}
 
-				if (teselatedSource.IndicesCache[i + 2].IsEdge)
+				if (bottomTeselatedSource.IndicesCache[i + 2].IsEdge)
 				{
 					mesh.CreateFace(new Vector3[] { bottomVertex2, bottomVertex0, topVertex0, topVertex2 });
 				}
@@ -345,9 +390,9 @@ namespace MatterHackers.DataConverters3D
 			// then the bottom
 			for (int i = 0; i < numIndicies; i += 3)
 			{
-				Vector2 v0 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 0].Index].Position;
-				Vector2 v1 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 1].Index].Position;
-				Vector2 v2 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 2].Index].Position;
+				Vector2 v0 = bottomTeselatedSource.VerticesCache[bottomTeselatedSource.IndicesCache[i + 0].Index].Position;
+				Vector2 v1 = bottomTeselatedSource.VerticesCache[bottomTeselatedSource.IndicesCache[i + 1].Index].Position;
+				Vector2 v2 = bottomTeselatedSource.VerticesCache[bottomTeselatedSource.IndicesCache[i + 2].Index].Position;
 				if (v0 == v1 || v1 == v2 || v2 == v0)
 				{
 					continue;
