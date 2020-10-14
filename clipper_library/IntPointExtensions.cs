@@ -247,7 +247,6 @@ namespace ClipperLib
 		{
 			var offseter = new ClipperOffset();
 			offseter.AddPaths(polygons, JoinType.jtRound, EndType.etClosedPolygon);
-
 			var solution = new Polygons();
 			offseter.Execute(ref solution, distance);
 

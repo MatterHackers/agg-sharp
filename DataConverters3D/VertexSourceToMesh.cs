@@ -313,7 +313,8 @@ namespace MatterHackers.DataConverters3D
 			if (bevel != null)
 			{
 				// add the top polygon
-				var vertexSourceTop = bottomPolygons.Offset(bevel[bevel.Count - 1].offset);
+				//vertexSourceIn.Offset(bevel[bevel.Count - 1].offset);
+				var vertexSourceTop = bottomPolygons.Offset(bevel[bevel.Count - 1].offset * 1000);
 				vertexSourceTop.CreateVertexStorage().TriangulateFaces(bottomTeselatedSource, mesh);
 				mesh.Translate(new Vector3(0, 0, zHeightTop));
 
@@ -322,11 +323,12 @@ namespace MatterHackers.DataConverters3D
 
 				for (int i = bevel.Count - 1; i >= 0; i--)
 				{
-					var vertexSourceNext = bottomPolygons.Offset(bevel[i].offset);
+					var vertexSourceNext = bottomPolygons.Offset(bevel[i].offset * 1000);
 
 					var all = new Polygons();
 					all.AddRange(vertexSourceTop);
 					all.AddRange(vertexSourceNext);
+					all = all.GetCorrectedWinding();
 					var allTeselatedSource = new CachedTesselator();
 
 					var bevelLoop = all.CreateVertexStorage().TriangulateFaces(allTeselatedSource);
@@ -341,6 +343,9 @@ namespace MatterHackers.DataConverters3D
 
 				// and set the level for the bottom wall polygons
 				zHeightSides = bevel[0].height;
+
+				var vertexSourceBottom = bottomPolygons.CreateVertexStorage();
+				vertexSourceBottom.TriangulateFaces(bottomTeselatedSource);
 			}
 			else
 			{
