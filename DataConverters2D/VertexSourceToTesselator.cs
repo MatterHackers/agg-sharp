@@ -54,6 +54,7 @@ namespace MatterHackers.DataConverters2D
 					{
 						break;
 					}
+
 					if (haveBegunContour
 						&& (vertexData.IsClose || vertexData.IsMoveTo))
 					{

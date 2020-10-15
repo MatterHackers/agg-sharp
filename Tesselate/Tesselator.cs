@@ -57,7 +57,7 @@ namespace Tesselate
 
 		public Mesh mesh;
 
-		public Tesselator.VertexAndIndex[] simpleVertexCache = new VertexAndIndex[MAX_CACHE_SIZE];
+		public VertexAndIndex[] simpleVertexCache = new VertexAndIndex[MAX_CACHE_SIZE];
 
 		public WindingRuleType windingRule;
 
@@ -81,7 +81,7 @@ namespace Tesselate
 
 			this.processingState = ProcessingState.Dormant;
 
-			this.windingRule = Tesselator.WindingRuleType.NonZero;
+			this.windingRule = WindingRuleType.NonZero;
 			this.boundaryOnly = false;
 		}
 
@@ -198,10 +198,7 @@ namespace Tesselate
 
 		public void CallBegin(TriangleListType triangleType)
 		{
-			if (callBegin != null)
-			{
-				callBegin(triangleType);
-			}
+			callBegin?.Invoke(triangleType);
 		}
 
 		public void CallCombine(double[] coords3, int[] data4,
@@ -216,26 +213,17 @@ namespace Tesselate
 
 		public void CallEdgeFlag(bool edgeState)
 		{
-			if (callEdgeFlag != null)
-			{
-				callEdgeFlag(edgeState);
-			}
+			callEdgeFlag?.Invoke(edgeState);
 		}
 
 		public void CallEnd()
 		{
-			if (callEnd != null)
-			{
-				callEnd();
-			}
+			callEnd?.Invoke();
 		}
 
 		public void CallVertex(int vertexData)
 		{
-			if (callVertex != null)
-			{
-				callVertex(vertexData);
-			}
+			callVertex?.Invoke(vertexData);
 		}
 
 		public void EndContour()
@@ -329,19 +317,19 @@ namespace Tesselate
 		{
 			switch (this.windingRule)
 			{
-				case Tesselator.WindingRuleType.Odd:
+				case WindingRuleType.Odd:
 					return (numCrossings & 1) != 0;
 
-				case Tesselator.WindingRuleType.NonZero:
+				case WindingRuleType.NonZero:
 					return (numCrossings != 0);
 
-				case Tesselator.WindingRuleType.Positive:
+				case WindingRuleType.Positive:
 					return (numCrossings > 0);
 
-				case Tesselator.WindingRuleType.Negative:
+				case WindingRuleType.Negative:
 					return (numCrossings < 0);
 
-				case Tesselator.WindingRuleType.ABS_GEQ_Two:
+				case WindingRuleType.ABS_GEQ_Two:
 					return (numCrossings >= 2) || (numCrossings <= -2);
 			}
 
@@ -549,7 +537,7 @@ namespace Tesselate
 			{
 				if (curFace.isInterior)
 				{
-					this.CallBegin(Tesselator.TriangleListType.LineLoop);
+					this.CallBegin(TriangleListType.LineLoop);
 					HalfEdge curHalfEdge = curFace.halfEdgeThisIsLeftFaceOf;
 					do
 					{
@@ -563,8 +551,8 @@ namespace Tesselate
 
 		public bool RenderCache()
 		{
-			Tesselator.VertexAndIndex[] vCache = this.simpleVertexCache;
-			Tesselator.VertexAndIndex v0 = vCache[0];
+			VertexAndIndex[] vCache = this.simpleVertexCache;
+			VertexAndIndex v0 = vCache[0];
 			double[] norm3 = new double[3];
 			int sign;
 
@@ -593,25 +581,25 @@ namespace Tesselate
 			/* Make sure we do the right thing for each winding rule */
 			switch (this.windingRule)
 			{
-				case Tesselator.WindingRuleType.Odd:
-				case Tesselator.WindingRuleType.NonZero:
+				case WindingRuleType.Odd:
+				case WindingRuleType.NonZero:
 					break;
 
-				case Tesselator.WindingRuleType.Positive:
+				case WindingRuleType.Positive:
 					if (sign < 0) return true;
 					break;
 
-				case Tesselator.WindingRuleType.Negative:
+				case WindingRuleType.Negative:
 					if (sign > 0) return true;
 					break;
 
-				case Tesselator.WindingRuleType.ABS_GEQ_Two:
+				case WindingRuleType.ABS_GEQ_Two:
 					return true;
 			}
 
-			this.CallBegin(this.BoundaryOnly ? Tesselator.TriangleListType.LineLoop
-				: (this.cacheCount > 3) ? Tesselator.TriangleListType.TriangleFan
-				: Tesselator.TriangleListType.Triangles);
+			this.CallBegin(this.BoundaryOnly ? TriangleListType.LineLoop
+				: (this.cacheCount > 3) ? TriangleListType.TriangleFan
+				: TriangleListType.Triangles);
 
 			this.CallVertex(v0.ClientIndex);
 			if (sign > 0)
@@ -654,7 +642,7 @@ namespace Tesselate
 					RenderMaximumFaceGroup(f);
 					if (!f.marked)
 					{
-						throw new System.Exception();
+						throw new Exception();
 					}
 				}
 			}
@@ -671,7 +659,7 @@ namespace Tesselate
 			* edge "e".  The fan *should* contain exactly "size" triangles
 			* (otherwise we've goofed up somewhere).
 			*/
-			tess.CallBegin(Tesselator.TriangleListType.TriangleFan);
+			tess.CallBegin(TriangleListType.TriangleFan);
 			tess.CallVertex(e.originVertex.ClientIndex);
 			tess.CallVertex(e.directionVertex.ClientIndex);
 
@@ -696,7 +684,7 @@ namespace Tesselate
 			* edge "e".  The strip *should* contain exactly "size" triangles
 			* (otherwise we've goofed up somewhere).
 			*/
-			tess.CallBegin(Tesselator.TriangleListType.TriangleStrip);
+			tess.CallBegin(TriangleListType.TriangleStrip);
 			tess.CallVertex(halfEdge.originVertex.ClientIndex);
 			tess.CallVertex(halfEdge.directionVertex.ClientIndex);
 
@@ -730,8 +718,8 @@ namespace Tesselate
 		* SIGN_INCONSISTENT.
 		*/
 		{
-			Tesselator.VertexAndIndex[] vCache = this.simpleVertexCache;
-			Tesselator.VertexAndIndex v0 = vCache[0];
+			VertexAndIndex[] vCache = this.simpleVertexCache;
+			VertexAndIndex v0 = vCache[0];
 			int vcIndex;
 			double dot, xc, yc, xp, yp;
 			double[] n = new double[3];
@@ -896,7 +884,7 @@ namespace Tesselate
 			bool edgeState = false; /* force edge state output for first vertex */
 			bool sentFirstEdge = false;
 
-			this.CallBegin(Tesselator.TriangleListType.Triangles);
+			this.CallBegin(TriangleListType.Triangles);
 
 			for (; f != null; f = f.trail)
 			{

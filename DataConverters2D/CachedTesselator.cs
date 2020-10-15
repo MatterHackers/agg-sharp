@@ -107,7 +107,8 @@ namespace MatterHackers.DataConverters2D
 			lastEdgeFlagSet = isEdge;
 		}
 
-		public int CombineCallBack(double[] coords3, int[] data4,
+		public int CombineCallBack(double[] coords3,
+			int[] data4,
 			double[] weight4)
 		{
 			return AddVertex(coords3[0], coords3[1], false);
@@ -129,6 +130,7 @@ namespace MatterHackers.DataConverters2D
 			{
 				AddVertex(coords, clientIndex);
 			}
+
 			return clientIndex;
 		}
 	}
