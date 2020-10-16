@@ -303,6 +303,7 @@ namespace MatterHackers.DataConverters3D
 
 			// ensure good winding and consistent shapes
 			bottomPolygons = bottomPolygons.GetCorrectedWinding();
+			var vertexSourceBottom = bottomPolygons.CreateVertexStorage();
 
 			var bottomTeselatedSource = new CachedTesselator();
 
@@ -313,30 +314,44 @@ namespace MatterHackers.DataConverters3D
 			if (bevel != null)
 			{
 				// add the top polygon
-				//vertexSourceIn.Offset(bevel[bevel.Count - 1].offset);
-				var vertexSourceTop = bottomPolygons.Offset(bevel[bevel.Count - 1].offset * 1000);
-				vertexSourceTop.CreateVertexStorage().TriangulateFaces(bottomTeselatedSource, mesh);
+				var topPolygons = bottomPolygons.Offset(bevel[bevel.Count - 1].offset * 1000);
+				topPolygons.CreateVertexStorage().TriangulateFaces(bottomTeselatedSource, mesh);
 				mesh.Translate(new Vector3(0, 0, zHeightTop));
 
 				// add all the bevels
-				vertexSourceTop = bottomPolygons;
+				var prevPolygons = bottomPolygons;
+				var prevZ = bevel[0].height;
 
 				for (int i = bevel.Count - 1; i >= 0; i--)
 				{
-					var vertexSourceNext = bottomPolygons.Offset(bevel[i].offset * 1000);
+					var nextZ = i < bevel.Count - 1 ? bevel[i + 1].height : zHeightTop;
+					var nextPolygons = bottomPolygons.Offset(bevel[i].offset * 1000);
+					var nextVertexSource = nextPolygons.CreateVertexStorage();
 
-					var all = new Polygons();
-					all.AddRange(vertexSourceTop);
-					all.AddRange(vertexSourceNext);
-					all = all.GetCorrectedWinding();
+					var allPolygons = new Polygons();
+					allPolygons.AddRange(prevPolygons);
+					allPolygons.AddRange(nextPolygons);
+					allPolygons = allPolygons.GetCorrectedWinding();
 					var allTeselatedSource = new CachedTesselator();
 
-					var bevelLoop = all.CreateVertexStorage().TriangulateFaces(allTeselatedSource);
+					var bevelLoop = allPolygons.CreateVertexStorage().TriangulateFaces(allTeselatedSource);
 
 					for (var j = 0; j < bevelLoop.Vertices.Count; j++)
 					{
-						bevelLoop.Vertices[j] = bevelLoop.Vertices[j] + new Vector3Float(0, 0, 16);
+						var position = bevelLoop.Vertices[j];
+						if (nextVertexSource.Count > 0
+							&& nextVertexSource.Contains(position.X, position.Y))
+						{
+							bevelLoop.Vertices[j] = bevelLoop.Vertices[j] + new Vector3Float(0, 0, nextZ);
+						}
+						else
+						{
+							bevelLoop.Vertices[j] = bevelLoop.Vertices[j] + new Vector3Float(0, 0, prevZ);
+						}
 					}
+
+					prevZ = nextZ;
+					prevPolygons = nextPolygons;
 
 					mesh.CopyFaces(bevelLoop);
 				}
@@ -344,13 +359,11 @@ namespace MatterHackers.DataConverters3D
 				// and set the level for the bottom wall polygons
 				zHeightSides = bevel[0].height;
 
-				var vertexSourceBottom = bottomPolygons.CreateVertexStorage();
 				vertexSourceBottom.TriangulateFaces(bottomTeselatedSource);
 			}
 			else
 			{
 				// add the top polygon
-				var vertexSourceBottom = bottomPolygons.CreateVertexStorage();
 				vertexSourceBottom.TriangulateFaces(bottomTeselatedSource, mesh);
 				mesh.Translate(new Vector3(0, 0, zHeightTop));
 			}

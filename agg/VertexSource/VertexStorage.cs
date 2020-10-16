@@ -207,6 +207,22 @@ namespace MatterHackers.Agg.VertexSource
 					allocatedVertices = newSize;
 				}
 			}
+
+			public bool Contains(double x, double y)
+			{
+				foreach (var item in vertexData)
+				{
+					if (item.position.X < x + .001
+						&& item.position.X > x - .001
+						&& item.position.Y < y + .001
+						&& item.position.Y > y - .001)
+					{
+						return true;
+					}
+				}
+
+				return false;
+			}
 		}
 
 		#endregion InternalVertexStorage
@@ -233,6 +249,11 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				return vertexDataManager.total_vertices();
 			}
+		}
+
+		public bool Contains(double x, double y)
+		{
+			return vertexDataManager.Contains(x, y);
 		}
 
 		public static bool OldEqualsNewStyle(IVertexSource control, IVertexSource test, double maxError = .0001)
@@ -1183,7 +1204,7 @@ namespace MatterHackers.Agg.VertexSource
 			set => vertexDataManager[index] = value;
 		}
 
-	public ShapePath.FlagsAndCommand vertex(int index, out double x, out double y)
+		public ShapePath.FlagsAndCommand vertex(int index, out double x, out double y)
 		{
 			return vertexDataManager.vertex(index, out x, out y);
 		}

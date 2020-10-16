@@ -39,6 +39,7 @@ namespace MatterHackers.Agg.VertexSource
 		}
 
 		public ShapePath.FlagsAndCommand command { get; set; }
+
 		public Vector2 position { get; set; }
 
 		[JsonIgnore]
