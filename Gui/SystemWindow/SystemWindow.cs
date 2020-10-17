@@ -67,7 +67,12 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public enum PixelTypes { Depth24 = 24, Depth32 = 32, DepthFloat = 128 };
+		public enum PixelTypes
+		{
+			Depth24 = 24,
+			Depth32 = 32,
+			DepthFloat = 128
+		}
 
 		public PixelTypes PixelType { get; set; } = PixelTypes.Depth32;
 
@@ -180,7 +185,6 @@ namespace MatterHackers.Agg.UI
 
 		public void ShowAsSystemWindow()
 		{
-
 			if (systemWindowProvider == null)
 			{
 				systemWindowProvider = AggContext.CreateInstanceFrom<ISystemWindowProvider>(AggContext.Config.ProviderTypes.SystemWindowProvider);
@@ -194,7 +198,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual bool Maximized { get; set; } = false;
 
-		public Point2D InitialDesktopPosition = new Point2D(-1, -1);
+		public Point2D InitialDesktopPosition { get; set; } = new Point2D(-1, -1);
 
 		public Point2D DesktopPosition
 		{
@@ -225,7 +229,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// If set only one os window will be created and all system windows will share it.
+		/// Gets or sets a value indicating whether only one os window will be created and all system windows will share it.
 		/// Make sure this is set prior to creating any SystemWindows (don't change at runtime).
 		/// </summary>
 		public static bool ShareSingleOsWindow { get; set; }
