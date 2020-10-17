@@ -18,6 +18,7 @@
 //----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using GLFW;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
@@ -71,9 +72,76 @@ namespace MatterHackers.GlfwProvider
 
 		private static Random rand = new Random();
 
+		private const string TITLE = "Simple Window";
+		private const int WIDTH = 1024;
+		private const int HEIGHT = 800;
+
+		private const int GL_COLOR_BUFFER_BIT = 0x00004000;
+
+		private delegate void glClearColorHandler(float r, float g, float b, float a);
+		private static glClearColorHandler glClearColor;
+
+		private delegate void glClearHandler(int mask);
+		private static glClearHandler glClear;
+
+		private static void ChangeRandomColor()
+		{
+			var r = (float)rand.NextDouble();
+			var g = (float)rand.NextDouble();
+			var b = (float)rand.NextDouble();
+			glClearColor(r, g, b, 1.0f);
+		}
+
 		// Creates or connects a PlatformWindow to the given SystemWindow
 		public void ShowSystemWindow(SystemWindow systemWindow)
 		{
+			var glfwGl = new GlfwGL();
+			MatterHackers.RenderOpenGl.OpenGl.GL.Instance = glfwGl;
+
+			// Create window
+			var window = Glfw.CreateWindow(WIDTH, HEIGHT, TITLE, Monitor.None, Window.None);
+			Glfw.MakeContextCurrent(window);
+			OpenGL.Gl.Import(Glfw.GetProcAddress);
+
+			// Effectively enables VSYNC by setting to 1.
+			Glfw.SwapInterval(1);
+
+			// Find center position based on window and monitor sizes
+			var screenSize = Glfw.PrimaryMonitor.WorkArea;
+			var x = (screenSize.Width - WIDTH) / 2;
+			var y = (screenSize.Height - HEIGHT) / 2;
+			Glfw.SetWindowPosition(window, x, y);
+
+			// Set a key callback
+			Glfw.SetKeyCallback(window, keyCallBack);
+
+
+			glClearColor = Marshal.GetDelegateForFunctionPointer<glClearColorHandler>(Glfw.GetProcAddress("glClearColor"));
+			glClear = Marshal.GetDelegateForFunctionPointer<glClearHandler>(Glfw.GetProcAddress("glClear"));
+
+
+			var tick = 0L;
+			ChangeRandomColor();
+
+			while (!Glfw.WindowShouldClose(window))
+			{
+				// Poll for OS events and swap front/back buffers
+				Glfw.PollEvents();
+
+				Graphics2D graphics2D = new Graphics2DOpenGL(1024, 800, GuiWidget.DeviceScale);
+				graphics2D.PushTransform();
+				systemWindow.OnDraw(graphics2D);
+
+				Glfw.SwapBuffers(window);
+
+				// Change background color to something random every 60 draws
+				//if (tick++ % 60 == 0)
+				ChangeRandomColor();
+
+				// Clear the buffer to the set color
+				glClear(GL_COLOR_BUFFER_BIT);
+			}
+#if false
 			using (nativeWindow = new NativeWindow(800, 600, "MyWindowTitle"))
 			{
 				// Main application loop
@@ -90,103 +158,115 @@ namespace MatterHackers.GlfwProvider
 
 					// Poll native operating system events (must be called or OS will think application is hanging)
 					Glfw.PollEvents();
+			}
+#endif
+		}
+
+		private void keyCallBack(IntPtr windowIn, GLFW.Keys key, int scanCode, InputState state, ModifierKeys mods)
+		{
+			{
+				switch (key)
+				{
+					case GLFW.Keys.Escape:
+						// Glfw.SetWindowShouldClose(window, true);
+						break;
 				}
 			}
+		}
 
-			/*
-			if (_graphicsDevice == null)
+		/*
+		if (_graphicsDevice == null)
+		{
+
+			WindowCreateInfo windowCI = new WindowCreateInfo()
 			{
+				X = 100,
+				Y = 100,
+				WindowWidth = 960,
+				WindowHeight = 540,
+				WindowTitle = "Glfw Tutorial",
+			};
 
-				WindowCreateInfo windowCI = new WindowCreateInfo()
+			Sdl2Window window = GlfwStartup.CreateWindow(ref windowCI);
+
+			GlfwPlatformWindow = new GlfwSystemWindow(this);
+
+			systemWindow.PlatformWindow = GlfwPlatformWindow;
+
+			_graphicsDevice = GlfwStartup.CreateGraphicsDevice(window, GraphicsBackend.OpenGL);
+
+			window.KeyDown += (KeyEvent keyEvent) =>
+			{
+				systemWindow.OnKeyDown(
+					new KeyEventArgs((Keys)keyEvent.Key));
+			};
+
+			window.KeyUp += (KeyEvent keyEvent) =>
+			{
+				systemWindow.OnKeyUp(
+					new KeyEventArgs((Keys)keyEvent.Key));
+			};
+
+			long runNextMs = 0;
+
+			VectorMath.Vector2 lastPosition = VectorMath.Vector2.Zero;
+			while (window.Exists)
+			{
+				InputSnapshot inputSnapshot = window.PumpEvents();
+
+				var position = new VectorMath.Vector2(inputSnapshot.MousePosition.X, window.Height - inputSnapshot.MousePosition.Y);
+
+				if (lastPosition != position)
 				{
-					X = 100,
-					Y = 100,
-					WindowWidth = 960,
-					WindowHeight = 540,
-					WindowTitle = "Glfw Tutorial",
-				};
-
-				Sdl2Window window = GlfwStartup.CreateWindow(ref windowCI);
-
-				GlfwPlatformWindow = new GlfwSystemWindow(this);
-
-				systemWindow.PlatformWindow = GlfwPlatformWindow;
-
-				_graphicsDevice = GlfwStartup.CreateGraphicsDevice(window, GraphicsBackend.OpenGL);
-
-				window.KeyDown += (KeyEvent keyEvent) =>
-				{
-					systemWindow.OnKeyDown(
-						new KeyEventArgs((Keys)keyEvent.Key));
-				};
-
-				window.KeyUp += (KeyEvent keyEvent) =>
-				{
-					systemWindow.OnKeyUp(
-						new KeyEventArgs((Keys)keyEvent.Key));
-				};
-
-				long runNextMs = 0;
-
-				VectorMath.Vector2 lastPosition = VectorMath.Vector2.Zero;
-				while (window.Exists)
-				{
-					InputSnapshot inputSnapshot = window.PumpEvents();
-
-					var position = new VectorMath.Vector2(inputSnapshot.MousePosition.X, window.Height - inputSnapshot.MousePosition.Y);
-
-					if (lastPosition != position)
-					{
-						systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, position.X, position.Y, 0));
-					}
-
-					if (inputSnapshot.WheelDelta != 0)
-					{
-						systemWindow.OnMouseWheel(new MouseEventArgs(MouseButtons.None, 0, position.X, position.Y, (int)inputSnapshot.WheelDelta * 120));
-					}
-
-					if (runNextMs <= UiThread.CurrentTimerMs)
-					{
-						UiThread.InvokePendingActions();
-
-						runNextMs = UiThread.CurrentTimerMs + 10;
-					}
-
-					foreach (var mouseEvent in inputSnapshot.MouseEvents)
-					{
-						MouseButtons buttons = MapMouseButtons(mouseEvent.MouseButton);
-						if (inputSnapshot.IsMouseDown(mouseEvent.MouseButton))
-						{
-							systemWindow.OnMouseDown(new MouseEventArgs(buttons, 1, position.X, position.Y, 0));
-						}
-						else
-						{
-							systemWindow.OnMouseUp(new MouseEventArgs(buttons, 0, position.X, position.Y, 0));
-						}
-
-
-					}
-
-					systemWindow.Width = GlfwPlatformWindow.Width = window.Width;
-					systemWindow.Height = GlfwPlatformWindow.Height = window.Height;
-
-					var graphics2D = GlfwPlatformWindow.NewGraphics2D();
-
-					// We must call on draw background as this is effectively our child and that is the way it is done in GuiWidget.
-					// Parents call child OnDrawBackground before they call OnDraw
-					systemWindow.OnDrawBackground(graphics2D);
-					systemWindow.OnDraw(graphics2D);
-
-					_graphicsDevice.SwapBuffers();
-
-					// Copy to screen/backbuffer
-
-					//window.PumpEvents();
+					systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, position.X, position.Y, 0));
 				}
 
-				// MyOpenGLView.RootGLView.ShowSystemWindow(systemWindow);
-			*/
-		}
+				if (inputSnapshot.WheelDelta != 0)
+				{
+					systemWindow.OnMouseWheel(new MouseEventArgs(MouseButtons.None, 0, position.X, position.Y, (int)inputSnapshot.WheelDelta * 120));
+				}
+
+				if (runNextMs <= UiThread.CurrentTimerMs)
+				{
+					UiThread.InvokePendingActions();
+
+					runNextMs = UiThread.CurrentTimerMs + 10;
+				}
+
+				foreach (var mouseEvent in inputSnapshot.MouseEvents)
+				{
+					MouseButtons buttons = MapMouseButtons(mouseEvent.MouseButton);
+					if (inputSnapshot.IsMouseDown(mouseEvent.MouseButton))
+					{
+						systemWindow.OnMouseDown(new MouseEventArgs(buttons, 1, position.X, position.Y, 0));
+					}
+					else
+					{
+						systemWindow.OnMouseUp(new MouseEventArgs(buttons, 0, position.X, position.Y, 0));
+					}
+
+
+				}
+
+				systemWindow.Width = GlfwPlatformWindow.Width = window.Width;
+				systemWindow.Height = GlfwPlatformWindow.Height = window.Height;
+
+				var graphics2D = GlfwPlatformWindow.NewGraphics2D();
+
+				// We must call on draw background as this is effectively our child and that is the way it is done in GuiWidget.
+				// Parents call child OnDrawBackground before they call OnDraw
+				systemWindow.OnDrawBackground(graphics2D);
+				systemWindow.OnDraw(graphics2D);
+
+				_graphicsDevice.SwapBuffers();
+
+				// Copy to screen/backbuffer
+
+				//window.PumpEvents();
+			}
+
+			// MyOpenGLView.RootGLView.ShowSystemWindow(systemWindow);
+		*/
 
 		private MouseButtons MapMouseButtons(MouseButton mouseButton)
 		{
