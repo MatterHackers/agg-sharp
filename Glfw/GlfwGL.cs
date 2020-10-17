@@ -394,8 +394,16 @@ namespace MatterHackers.RenderOpenGl
 		{
 		}
 
+		private delegate void glPopAttribHandler();
+		private static glPopAttribHandler glPopAttrib;
 		public void PopAttrib()
 		{
+			if (glPopAttrib == null)
+			{
+				glPopAttrib = Marshal.GetDelegateForFunctionPointer<glPopAttribHandler>(Glfw.GetProcAddress("glPopAttrib"));
+			}
+
+			glPopAttrib();
 		}
 
 		private delegate void glPopMatrixHandler();
@@ -410,8 +418,16 @@ namespace MatterHackers.RenderOpenGl
 			glPopMatrix();
 		}
 
+		private delegate void glPushAttribHandler();
+		private static glPushAttribHandler glPushAttrib;
 		public void PushAttrib(AttribMask mask)
 		{
+			if (glPushAttrib == null)
+			{
+				glPushAttrib = Marshal.GetDelegateForFunctionPointer<glPushAttribHandler>(Glfw.GetProcAddress("glPushAttrib"));
+			}
+
+			glPushAttrib();
 		}
 
 		private delegate void glPushMatrixHandler();
@@ -447,12 +463,28 @@ namespace MatterHackers.RenderOpenGl
 		{
 		}
 
+		private delegate void glRotatefHandler(float angle, float x, float y, float z);
+		private static glRotatefHandler glRotatef;
 		public void Rotate(double angle, double x, double y, double z)
 		{
+			if (glRotatef == null)
+			{
+				glRotatef = Marshal.GetDelegateForFunctionPointer<glRotatefHandler>(Glfw.GetProcAddress("glRotatef"));
+			}
+
+			glRotatef((float)angle, (float)x, (float)y, (float)z);
 		}
 
+		private delegate void glScalefHandler(float x, float y, float z);
+		private static glScalefHandler glScalef;
 		public void Scale(double x, double y, double z)
 		{
+			if (glScalef == null)
+			{
+				glScalef = Marshal.GetDelegateForFunctionPointer<glScalefHandler>(Glfw.GetProcAddress("glScalef"));
+			}
+
+			glScalef((float)x, (float)y, (float)z);
 		}
 
 		public void Scissor(int x, int y, int width, int height)
@@ -460,8 +492,16 @@ namespace MatterHackers.RenderOpenGl
 			Gl.glScissor(x, y, width, height);
 		}
 
+		private delegate void glShadeModelHandler(int model);
+		private static glShadeModelHandler glShadeModel;
 		public void ShadeModel(ShadingModel model)
 		{
+			if (glShadeModel == null)
+			{
+				glShadeModel = Marshal.GetDelegateForFunctionPointer<glShadeModelHandler>(Glfw.GetProcAddress("glShadeModel"));
+			}
+
+			glShadeModel((int)model);
 		}
 
 		public void TexCoord2(Vector2 uv)
@@ -469,8 +509,16 @@ namespace MatterHackers.RenderOpenGl
 			TexCoord2(uv.X, uv.Y);
 		}
 
+		private delegate void glTexCoord2fHandler(float x, float y);
+		private static glTexCoord2fHandler glTexCoord2f;
 		public void TexCoord2(double x, double y)
 		{
+			if (glTexCoord2f == null)
+			{
+				glTexCoord2f = Marshal.GetDelegateForFunctionPointer<glTexCoord2fHandler>(Glfw.GetProcAddress("glTexCoord2f"));
+			}
+
+			glTexCoord2f((float)x, (float)y);
 		}
 
 		private delegate void glTexCoordPointerHandler(int size, int type, int stride, IntPtr pointer);
@@ -494,8 +542,16 @@ namespace MatterHackers.RenderOpenGl
 		{
 		}
 
+		private delegate void glTexParameteriHandler(int target, int pname, int param);
+		private static glTexParameteriHandler glTexParameteri;
 		public void TexParameter(TextureTarget target, TextureParameterName pname, int param)
 		{
+			if (glTexParameteri == null)
+			{
+				glTexParameteri = Marshal.GetDelegateForFunctionPointer<glTexParameteriHandler>(Glfw.GetProcAddress("glTexParameteri"));
+			}
+
+			glTexParameteri((int)target, (int)pname, param);
 		}
 
 		public void Translate(MatterHackers.VectorMath.Vector3 vector)
@@ -503,8 +559,16 @@ namespace MatterHackers.RenderOpenGl
 			Translate(vector.X, vector.Y, vector.Z);
 		}
 
+		private delegate void glTranslatefHandler(float x, float y, float z);
+		private static glTranslatefHandler glTranslatef;
 		public void Translate(double x, double y, double z)
 		{
+			if (glTranslatef == null)
+			{
+				glTranslatef = Marshal.GetDelegateForFunctionPointer<glTranslatefHandler>(Glfw.GetProcAddress("glTranslatef"));
+			}
+
+			glTranslatef((float)x, (float)y, (float)z);
 		}
 
 		public void Vertex2(Vector2 position)
@@ -571,23 +635,6 @@ namespace MatterHackers.RenderOpenGl
 		public void IndexPointer(IndexPointerType type, int stride, IntPtr pointer)
 		{
 			throw new NotImplementedException();
-		}
-
-		internal struct ViewPortData
-		{
-			internal int height;
-			internal int width;
-			internal int x;
-			internal int y;
-
-			public ViewPortData(int x, int y, int width, int height)
-			{
-				// TODO: Complete member initialization
-				this.x = x;
-				this.y = y;
-				this.width = width;
-				this.height = height;
-			}
 		}
 	}
 }
