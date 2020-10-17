@@ -85,11 +85,6 @@ namespace MatterHackers.GlfwProvider
 
 					systemWindow.OnDraw(NewGraphics2D());
 
-					var r = (float)rand.NextDouble();
-					var g = (float)rand.NextDouble();
-					var b = (float)rand.NextDouble();
-					GL.Clear(ClearBufferMask.ColorBufferBit);
-
 					// Swap the front/back buffers
 					nativeWindow.SwapBuffers();
 

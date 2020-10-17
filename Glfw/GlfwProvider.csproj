@@ -28,4 +28,10 @@
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="glfw3.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

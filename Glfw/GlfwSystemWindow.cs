@@ -19,6 +19,7 @@
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.RenderOpenGl;
+using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.GlfwProvider
@@ -66,6 +67,8 @@ namespace MatterHackers.GlfwProvider
 
 		public Graphics2D NewGraphics2D()
 		{
+			SetupViewport();
+
 			Graphics2D graphics2D = new Graphics2DOpenGL(this.Width, this.Height, 1);
 
 			// this is for testing the open gl implementation
@@ -74,6 +77,19 @@ namespace MatterHackers.GlfwProvider
 
 			return graphics2D;
 		}
+
+		private void SetupViewport()
+		{
+			// If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
+			// Call this function you have called Show().
+			int w = Width;
+			int h = Height;
+			GL.MatrixMode(MatrixMode.Projection);
+			GL.LoadIdentity();
+			GL.Ortho(0, w, 0, h, -1, 1); // Bottom-left corner pixel has coordinate (0, 0)
+			GL.Viewport(0, 0, w, h); // Use all of the glControl painting area
+		}
+
 
 		public void SetCursor(Cursors cursorToSet)
 		{
