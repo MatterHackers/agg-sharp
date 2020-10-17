@@ -30,19 +30,21 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
+using GLFW;
 using MatterHackers.Agg;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 using OpenGL;
-using ErrorCode = MatterHackers.RenderOpenGl.OpenGl.ErrorCode;
 using static OpenGL.Gl;
-using System.Runtime.InteropServices;
-using GLFW;
+using ErrorCode = MatterHackers.RenderOpenGl.OpenGl.ErrorCode;
 
 namespace MatterHackers.RenderOpenGl
 {
 	public class GlfwGL : IOpenGL
 	{
+		private const string GlfwAssembly = "GLFW.NET.dll";//"glfw.dll";
+
 		private bool glHasBufferObjects = true;
 
 		public GlfwGL()
@@ -77,6 +79,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void BindTexture(TextureTarget target, int texture)
 		{
+			Gl.glBindTexture((int)target, (uint)texture);
 		}
 
 		public void BlendFunc(BlendingFactorSrc sfactor, BlendingFactorDest dfactor)
@@ -88,12 +91,21 @@ namespace MatterHackers.RenderOpenGl
 		{
 		}
 
+		private delegate void glClearHandler(int mask);
+		private static glClearHandler glClear;
 		public void Clear(ClearBufferMask mask)
 		{
+			if (glClear == null)
+			{
+				glClear = Marshal.GetDelegateForFunctionPointer<glClearHandler>(Glfw.GetProcAddress("glClear"));
+			}
+
+			glClear((int)mask);
 		}
 
 		public void ClearDepth(double depth)
 		{
+			Gl.glClearDepth(depth);
 		}
 
 		public void Color4(Color color)
@@ -106,33 +118,53 @@ namespace MatterHackers.RenderOpenGl
 			Color4((byte)red, (byte)green, (byte)blue, (byte)alpha);
 		}
 
+		private delegate void glColor4bHandler(byte red, byte green, byte blue, byte alpha);
+		private static glColor4bHandler glColor4b;
 		public void Color4(byte red, byte green, byte blue, byte alpha)
 		{
-			ImediateMode.currentColor[0] = (byte)red;
-			ImediateMode.currentColor[1] = (byte)green;
-			ImediateMode.currentColor[2] = (byte)blue;
-			ImediateMode.currentColor[3] = (byte)alpha;
+			if (glColor4b == null)
+			{
+				glColor4b = Marshal.GetDelegateForFunctionPointer<glColor4bHandler>(Glfw.GetProcAddress("glColor4b"));
+			}
+
+			glColor4b(red, green, blue, alpha);
 		}
 
 		public void ColorMask(bool red, bool green, bool blue, bool alpha)
 		{
 		}
 
+		private delegate void glColorMaterialHandler(int face, int mode);
+		private static glColorMaterialHandler glColorMaterial;
 		public void ColorMaterial(MaterialFace face, ColorMaterialParameter mode)
 		{
+			if (glColorMaterial == null)
+			{
+				glColorMaterial = Marshal.GetDelegateForFunctionPointer<glColorMaterialHandler>(Glfw.GetProcAddress("glColorMaterial"));
+			}
+
+			glColorMaterial((int)face, (int)mode);
 		}
 
 		public void ColorPointer(int size, ColorPointerType type, int stride, byte[] pointer)
 		{
 		}
 
+		private delegate void glColorPointerHandler(int size, int type, int stride, IntPtr pointer);
+		private static glColorPointerHandler glColorPointer;
 		public void ColorPointer(int size, ColorPointerType type, int stride, IntPtr pointer)
 		{
-			throw new NotImplementedException();
+			if (glColorPointer == null)
+			{
+				glColorPointer = Marshal.GetDelegateForFunctionPointer<glColorPointerHandler>(Glfw.GetProcAddress("glColorPointer"));
+			}
+
+			glColorPointer(size, (int)type, stride, pointer);
 		}
 
 		public void CullFace(CullFaceMode mode)
 		{
+			Gl.glCullFace((int)mode);
 		}
 
 		public void DeleteBuffers(int n, ref int buffers)
@@ -149,10 +181,17 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DeleteTextures(int n, ref int textures)
 		{
+			if (n != 1)
+			{
+				throw new NotImplementedException();
+			}
+
+			Gl.glDeleteTexture((uint)textures);
 		}
 
 		public void DepthFunc(DepthFunction func)
 		{
+			Gl.glDepthFunc((int)func);
 		}
 
 		public void DepthMask(bool flag)
@@ -235,6 +274,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void FrontFace(FrontFaceDirection mode)
 		{
+			Gl.glFrontFace((int)mode);
 		}
 
 		// start at 1 so we can use 0 as a not initialize tell.
@@ -255,7 +295,12 @@ namespace MatterHackers.RenderOpenGl
 
 		public void GenTextures(int n, out int textureHandle)
 		{
-			textureHandle = -1;
+			if (n != 1)
+			{
+				throw new NotImplementedException();
+			}
+
+			textureHandle = (int)Gl.glGenTexture();
 		}
 
 		public ErrorCode GetError()
@@ -265,7 +310,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public string GetString(StringName name)
 		{
-			return "";
+			return Gl.glGetString((int)name);
 		}
 
 		public void Light(LightName light, LightParameter pname, float[] param)
@@ -284,8 +329,16 @@ namespace MatterHackers.RenderOpenGl
 			glLoadIdentity();
 		}
 
+		private delegate void glLoadMatrixdHandler(double[] m);
+		private static glLoadMatrixdHandler glLoadMatrixd;
 		public void LoadMatrix(double[] m)
 		{
+			if (glLoadMatrixd == null)
+			{
+				glLoadMatrixd = Marshal.GetDelegateForFunctionPointer<glLoadMatrixdHandler>(Glfw.GetProcAddress("glLoadMatrixd"));
+			}
+
+			glLoadMatrixd(m);
 		}
 
 
@@ -492,9 +545,16 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
+		private delegate void glVertexPointerHandler(int size, int type, int stride, IntPtr pointer);
+		private static glVertexPointerHandler glVertexPointer;
 		public void VertexPointer(int size, VertexPointerType type, int stride, IntPtr pointer)
 		{
-			throw new NotImplementedException();
+			if (glVertexPointer == null)
+			{
+				glVertexPointer = Marshal.GetDelegateForFunctionPointer<glVertexPointerHandler>(Glfw.GetProcAddress("glVertexPointer"));
+			}
+
+			glVertexPointer(size, (int)type, stride, pointer);
 		}
 
 		public void Viewport(int x, int y, int width, int height)
@@ -527,30 +587,6 @@ namespace MatterHackers.RenderOpenGl
 				this.y = y;
 				this.width = width;
 				this.height = height;
-			}
-		}
-
-		internal class ImediateMode
-		{
-			public static byte[] currentColor = new byte[4];
-			internal VectorPOD<byte> color4b = new VectorPOD<byte>();
-			internal VectorPOD<float> positions3f = new VectorPOD<float>();
-			internal VectorPOD<float> textureCoords2f = new VectorPOD<float>();
-			private BeginMode mode;
-
-			internal BeginMode Mode
-			{
-				get
-				{
-					return mode;
-				}
-				set
-				{
-					mode = value;
-					positions3f.Clear();
-					color4b.Clear();
-					textureCoords2f.Clear();
-				}
 			}
 		}
 	}
