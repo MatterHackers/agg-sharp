@@ -141,69 +141,77 @@ namespace MatterHackers.DataConverters3D
 			{
 				// TODO: have consideration for this being in a shared zip file
 				string pathToObj = Path.GetDirectoryName(((FileStream)fileStream).Name);
-				using (var materialsStream = File.OpenRead(Path.Combine(pathToObj, objFile.Material)))
-				{
-					var mtl = new Mtl();
-					mtl.LoadMtl(materialsStream);
-
-					foreach (var material in mtl.MaterialList)
+				//Try-catch block for when objFile.Material is not found
+                try
+                {
+					using (var materialsStream = File.OpenRead(Path.Combine(pathToObj, objFile.Material)))
 					{
-						if (!string.IsNullOrEmpty(material.DiffuseTextureFileName))
+						var mtl = new Mtl();
+						mtl.LoadMtl(materialsStream);
+
+						foreach (var material in mtl.MaterialList)
 						{
-							var pathToTexture = Path.Combine(pathToObj, material.DiffuseTextureFileName);
-							if (File.Exists(pathToTexture))
+							if (!string.IsNullOrEmpty(material.DiffuseTextureFileName))
 							{
-								ImageBuffer diffuseTexture = new ImageBuffer();
-
-								// TODO: have consideration for this being in a shared zip file
-								using (var ImageStream = File.OpenRead(pathToTexture))
+								var pathToTexture = Path.Combine(pathToObj, material.DiffuseTextureFileName);
+								if (File.Exists(pathToTexture))
 								{
-									if (Path.GetExtension(material.DiffuseTextureFileName).ToLower() == ".tga")
+									ImageBuffer diffuseTexture = new ImageBuffer();
+
+									// TODO: have consideration for this being in a shared zip file
+									using (var ImageStream = File.OpenRead(pathToTexture))
 									{
-										ImageTgaIO.LoadImageData(diffuseTexture, ImageStream, 32);
-									}
-									else
-									{
-										AggContext.ImageIO.LoadImageData(ImageStream, diffuseTexture);
-									}
-								}
-
-								if (diffuseTexture.Width > 0 && diffuseTexture.Height > 0)
-								{
-									int meshFace = 0;
-									for (int objFace = 0; objFace < objFile.FaceList.Count; objFace++, meshFace++)
-									{
-										var face = mesh.Faces[meshFace];
-
-										var faceData = objFile.FaceList[objFace];
-
-										int textureIndex0 = faceData.TextureVertexIndexList[0] - 1;
-										var uv0 = new Vector2Float(objFile.TextureList[textureIndex0].X, objFile.TextureList[textureIndex0].Y);
-										int textureIndex1 = faceData.TextureVertexIndexList[1] - 1;
-										var uv1 = new Vector2Float(objFile.TextureList[textureIndex1].X, objFile.TextureList[textureIndex1].Y);
-										int textureIndex2 = faceData.TextureVertexIndexList[2] - 1;
-										var uv2 = new Vector2Float(objFile.TextureList[textureIndex2].X, objFile.TextureList[textureIndex2].Y);
-
-										mesh.FaceTextures.Add(meshFace, new FaceTextureData(diffuseTexture, uv0, uv1, uv2));
-
-										if (faceData.TextureVertexIndexList.Length == 4)
+										if (Path.GetExtension(material.DiffuseTextureFileName).ToLower() == ".tga")
 										{
-											meshFace++;
-
-											int textureIndex3 = faceData.TextureVertexIndexList[3] - 1;
-											var uv3 = new Vector2Float(objFile.TextureList[textureIndex3].X, objFile.TextureList[textureIndex3].Y);
-
-											mesh.FaceTextures.Add(meshFace, new FaceTextureData(diffuseTexture, uv0, uv2, uv3));
+											ImageTgaIO.LoadImageData(diffuseTexture, ImageStream, 32);
+										}
+										else
+										{
+											AggContext.ImageIO.LoadImageData(ImageStream, diffuseTexture);
 										}
 									}
 
-									context.Color = Color.White;
-									root.Color = Color.White;
+									if (diffuseTexture.Width > 0 && diffuseTexture.Height > 0)
+									{
+										int meshFace = 0;
+										for (int objFace = 0; objFace < objFile.FaceList.Count; objFace++, meshFace++)
+										{
+											var face = mesh.Faces[meshFace];
+
+											var faceData = objFile.FaceList[objFace];
+
+											int textureIndex0 = faceData.TextureVertexIndexList[0] - 1;
+											var uv0 = new Vector2Float(objFile.TextureList[textureIndex0].X, objFile.TextureList[textureIndex0].Y);
+											int textureIndex1 = faceData.TextureVertexIndexList[1] - 1;
+											var uv1 = new Vector2Float(objFile.TextureList[textureIndex1].X, objFile.TextureList[textureIndex1].Y);
+											int textureIndex2 = faceData.TextureVertexIndexList[2] - 1;
+											var uv2 = new Vector2Float(objFile.TextureList[textureIndex2].X, objFile.TextureList[textureIndex2].Y);
+
+											mesh.FaceTextures.Add(meshFace, new FaceTextureData(diffuseTexture, uv0, uv1, uv2));
+
+											if (faceData.TextureVertexIndexList.Length == 4)
+											{
+												meshFace++;
+
+												int textureIndex3 = faceData.TextureVertexIndexList[3] - 1;
+												var uv3 = new Vector2Float(objFile.TextureList[textureIndex3].X, objFile.TextureList[textureIndex3].Y);
+
+												mesh.FaceTextures.Add(meshFace, new FaceTextureData(diffuseTexture, uv0, uv2, uv3));
+											}
+										}
+
+										context.Color = Color.White;
+										root.Color = Color.White;
+									}
 								}
 							}
 						}
 					}
 				}
+                catch (FileNotFoundException)
+                {
+					//Just continue as if obj.Material == "" to show object
+                }				
 			}
 
 			time.Stop();
