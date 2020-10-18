@@ -212,6 +212,7 @@ namespace MatterHackers.RenderOpenGl
 						{
 							Draw1EdgeTriangle(v2, v0, v1);
 						}
+
 						break;
 
 					case 2:
@@ -230,6 +231,7 @@ namespace MatterHackers.RenderOpenGl
 						{
 							Draw2EdgeTriangle(v1, v2, v0);
 						}
+
 						break;
 
 					case 3:

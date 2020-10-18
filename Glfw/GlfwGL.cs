@@ -28,7 +28,6 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using GLFW;
@@ -43,8 +42,6 @@ namespace MatterHackers.RenderOpenGl
 {
 	public class GlfwGL : IOpenGL
 	{
-		private const string GlfwAssembly = "GLFW.NET.dll";//"glfw.dll";
-
 		private bool glHasBufferObjects = true;
 
 		public GlfwGL()
@@ -67,6 +64,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void BindBuffer(BufferTarget target, int buffer)
 		{
+			Gl.glBindBuffer((int)target, (uint)buffer);
 		}
 
 		public void BindFramebuffer(int renderBuffer)
@@ -118,16 +116,16 @@ namespace MatterHackers.RenderOpenGl
 			Color4((byte)red, (byte)green, (byte)blue, (byte)alpha);
 		}
 
-		private delegate void glColor4bHandler(byte red, byte green, byte blue, byte alpha);
-		private static glColor4bHandler glColor4b;
+		private delegate void glColor4fHandler(float red, float green, float blue, float alpha);
+		private static glColor4fHandler glColor4f;
 		public void Color4(byte red, byte green, byte blue, byte alpha)
 		{
-			if (glColor4b == null)
+			if (glColor4f == null)
 			{
-				glColor4b = Marshal.GetDelegateForFunctionPointer<glColor4bHandler>(Glfw.GetProcAddress("glColor4b"));
+				glColor4f = Marshal.GetDelegateForFunctionPointer<glColor4fHandler>(Glfw.GetProcAddress("glColor4f"));
 			}
 
-			glColor4b(red, green, blue, alpha);
+			glColor4f(red / 255.0F, green / 255.0F, blue / 255.0F, alpha / 255.0F);
 		}
 
 		public void ColorMask(bool red, bool green, bool blue, bool alpha)
@@ -224,8 +222,6 @@ namespace MatterHackers.RenderOpenGl
 		{
 		}
 
-		Random rand = new Random();
-
 		public void DrawArrays(BeginMode mode, int first, int count)
 		{
 			Gl.glDrawArrays((int)mode, first, count);
@@ -305,7 +301,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public ErrorCode GetError()
 		{
-			throw new NotImplementedException();
+			return (ErrorCode)Enum.Parse(typeof(ErrorCode), Gl.GetError().ToString());
 		}
 
 		public string GetString(StringName name)
@@ -392,6 +388,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void PolygonOffset(float factor, float units)
 		{
+			Gl.glPolygonOffset(factor, units);
 		}
 
 		private delegate void glPopAttribHandler();
@@ -540,6 +537,13 @@ namespace MatterHackers.RenderOpenGl
 			PixelType type,
 			Byte[] pixels)
 		{
+			unsafe
+			{
+				fixed (byte* pArray = pixels)
+				{
+					Gl.glTexImage2D((int)target, level, (int)internalFormat, width, height, border, (int)format, (int)type, new IntPtr(pArray));
+				}
+			}
 		}
 
 		private delegate void glTexParameteriHandler(int target, int pname, int param);
@@ -576,16 +580,16 @@ namespace MatterHackers.RenderOpenGl
 			Vertex2(position.X, position.Y);
 		}
 
-		private delegate void glVertex2dHandler(double x, double y);
-		private static glVertex2dHandler glVertex2d;
+		private delegate void glVertex2fHandler(float x, float y);
+		private static glVertex2fHandler glVertex2f;
 		public void Vertex2(double x, double y)
 		{
-			if (glVertex2d == null)
+			if (glVertex2f == null)
 			{
-				glVertex2d = Marshal.GetDelegateForFunctionPointer<glVertex2dHandler>(Glfw.GetProcAddress("glVertex2d"));
+				glVertex2f = Marshal.GetDelegateForFunctionPointer<glVertex2fHandler>(Glfw.GetProcAddress("glVertex2f"));
 			}
 
-			glVertex2d(x, y);
+			glVertex2f((float)x, (float)y);
 		}
 
 		public void Vertex3(Vector3 position)
@@ -593,9 +597,16 @@ namespace MatterHackers.RenderOpenGl
 			Vertex3(position.X, position.Y, position.Z);
 		}
 
+		private delegate void glVertex3fHandler(float x, float y, float z);
+		private static glVertex3fHandler glVertex3f;
 		public void Vertex3(double x, double y, double z)
 		{
-			throw new NotImplementedException();
+			if (glVertex3f == null)
+			{
+				glVertex3f = Marshal.GetDelegateForFunctionPointer<glVertex3fHandler>(Glfw.GetProcAddress("glVertex3f"));
+			}
+
+			glVertex3f((float)x, (float)y, (float)z);
 		}
 
 		public void VertexPointer(int size, VertexPointerType type, int stride, float[] pointer)
