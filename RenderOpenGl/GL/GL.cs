@@ -55,6 +55,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		public static void CheckForError()
 		{
+#if DEBUG
 			if (!InBegin)
 			{
 				var code = _instance.GetError();
@@ -63,6 +64,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 					int a = 0;
 				}
 			}
+#endif
 		}
 
 		public static void Begin(BeginMode mode)

@@ -73,7 +73,8 @@ namespace MatterHackers.GlfwProvider
 		{
 			TopWindow = systemWindow;
 			var glfwGl = new GlfwGL();
-			MatterHackers.RenderOpenGl.OpenGl.GL.Instance = glfwGl;
+			// set the gl renderer to the Glfw specific one rather than the OpenTk one
+			GL.Instance = glfwGl;
 
 			// Create window
 			var window = Glfw.CreateWindow((int)systemWindow.Width, (int)systemWindow.Height, systemWindow.Title, Monitor.None, Window.None);
@@ -83,7 +84,7 @@ namespace MatterHackers.GlfwProvider
 			// Effectively enables VSYNC by setting to 1.
 			Glfw.SwapInterval(1);
 
-			applicationWindow = new GlfwSystemWindow(this);
+			applicationWindow = new GlfwSystemWindow(this, window);
 			systemWindow.PlatformWindow = applicationWindow;
 
 			if (systemWindow.Maximized)
@@ -109,6 +110,8 @@ namespace MatterHackers.GlfwProvider
 					(int)systemWindow.InitialDesktopPosition.y);
 			}
 
+			Glfw.SetWindowSizeCallback(window, sizeCallback);
+
 			// Set a key callback
 			Glfw.SetKeyCallback(window, keyCallback);
 			Glfw.SetCursorPositionCallback(window, cursorPositionCallback);
@@ -117,7 +120,7 @@ namespace MatterHackers.GlfwProvider
 			while (!Glfw.WindowShouldClose(window))
 			{
 				// Poll for OS events and swap front/back buffers
-				Glfw.PollEvents();
+				Glfw.WaitEvents();
 
 				Graphics2D graphics2D = new Graphics2DOpenGL((int)systemWindow.Width, (int)systemWindow.Height, GuiWidget.DeviceScale);
 				graphics2D.PushTransform();
@@ -126,6 +129,12 @@ namespace MatterHackers.GlfwProvider
 
 				Glfw.SwapBuffers(window);
 			}
+		}
+
+		private void sizeCallback(IntPtr window, int width, int height)
+		{
+			TopWindow.Size = new VectorMath.Vector2(width, height);
+			GL.Viewport(0, 0, width, height); // Use all of the glControl painting area
 		}
 
 		private static double mouseX;
@@ -137,7 +146,7 @@ namespace MatterHackers.GlfwProvider
 		{
 			mouseX = x;
 			mouseY = TopWindow.Height - y;
-			TopWindow.OnMouseMove(new MouseEventArgs(mouseButton, 0, x, y, 0));
+			TopWindow.OnMouseMove(new MouseEventArgs(mouseButton, 0, mouseX, mouseY, 0));
 		}
 
 		private void mouseButtonCallback(IntPtr window, MouseButton button, InputState state, ModifierKeys modifiers)

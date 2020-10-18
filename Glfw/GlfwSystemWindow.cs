@@ -16,6 +16,7 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
+using GLFW;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.RenderOpenGl;
@@ -26,16 +27,32 @@ namespace MatterHackers.GlfwProvider
 {
 	public class GlfwSystemWindow : IPlatformWindow
 	{
+		private Window glfwWindow;
 		private GlfwWindowProvider windowProvider;
 		public int Width;
 		public int Height;
 
-		public GlfwSystemWindow(GlfwWindowProvider windowProvider)
+		public GlfwSystemWindow(GlfwWindowProvider windowProvider, Window window)
 		{
+			this.glfwWindow = window;
 			this.windowProvider = windowProvider;
 		}
 
-		public string Caption { get; set; }
+		private string _title = "";
+
+		public string Caption
+		{
+			get
+			{
+				return _title;
+			}
+
+			set
+			{
+				_title = value;
+				Glfw.SetWindowTitle(glfwWindow, _title);
+			}
+		}
 
 		public int TitleBarHeight => 45;
 
@@ -43,7 +60,7 @@ namespace MatterHackers.GlfwProvider
 
 		public Vector2 MinimumSize { get; set; }
 
-		public Keys ModifierKeys => Keys.None;
+		public Agg.UI.Keys ModifierKeys => Agg.UI.Keys.None;
 
 		public void BringToFront()
 		{
@@ -89,7 +106,6 @@ namespace MatterHackers.GlfwProvider
 			GL.Ortho(0, w, 0, h, -1, 1); // Bottom-left corner pixel has coordinate (0, 0)
 			GL.Viewport(0, 0, w, h); // Use all of the glControl painting area
 		}
-
 
 		public void SetCursor(Cursors cursorToSet)
 		{
