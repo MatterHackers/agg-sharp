@@ -69,10 +69,12 @@ namespace MatterHackers.RenderOpenGl
 
 		public void BindFramebuffer(int renderBuffer)
 		{
+			throw new NotImplementedException();
 		}
 
 		public void BindRenderbuffer(int renderBuffer)
 		{
+			throw new NotImplementedException();
 		}
 
 		public void BindTexture(TextureTarget target, int texture)
@@ -87,6 +89,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void BufferData(BufferTarget target, int size, IntPtr data, BufferUsageHint usage)
 		{
+			throw new NotImplementedException();
 		}
 
 		private delegate void glClearHandler(int mask);
@@ -130,6 +133,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void ColorMask(bool red, bool green, bool blue, bool alpha)
 		{
+			throw new NotImplementedException();
 		}
 
 		private delegate void glColorMaterialHandler(int face, int mode);
@@ -146,6 +150,13 @@ namespace MatterHackers.RenderOpenGl
 
 		public void ColorPointer(int size, ColorPointerType type, int stride, byte[] pointer)
 		{
+			unsafe
+			{
+				fixed (byte* pArray = pointer)
+				{
+					ColorPointer(size, type, stride, new IntPtr(pArray));
+				}
+			}
 		}
 
 		private delegate void glColorPointerHandler(int size, int type, int stride, IntPtr pointer);
@@ -167,14 +178,17 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DeleteBuffers(int n, ref int buffers)
 		{
+			throw new NotImplementedException();
 		}
 
 		public void DeleteFramebuffers(int n, ref int frameBuffers)
 		{
+			throw new NotImplementedException();
 		}
 
 		public void DeleteRenderbuffers(int n, ref int renderBuffers)
 		{
+			throw new NotImplementedException();
 		}
 
 		public void DeleteTextures(int n, ref int textures)
@@ -194,6 +208,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DepthMask(bool flag)
 		{
+			throw new NotImplementedException();
 		}
 
 		public void Disable(EnableCap cap)
@@ -220,6 +235,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DisposeResources()
 		{
+			throw new NotImplementedException();
 		}
 
 		public void DrawArrays(BeginMode mode, int first, int count)
@@ -229,6 +245,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DrawRangeElements(BeginMode mode, int start, int end, int count, DrawElementsType type, IntPtr indices)
 		{
+			throw new NotImplementedException();
 		}
 
 		public void Enable(EnableCap cap)
@@ -262,10 +279,12 @@ namespace MatterHackers.RenderOpenGl
 
 		public void Finish()
 		{
+			throw new NotImplementedException();
 		}
 
 		public void FramebufferRenderbuffer(int renderBuffer)
 		{
+			throw new NotImplementedException();
 		}
 
 		public void FrontFace(FrontFaceDirection mode)
@@ -273,10 +292,9 @@ namespace MatterHackers.RenderOpenGl
 			Gl.glFrontFace((int)mode);
 		}
 
-		// start at 1 so we can use 0 as a not initialize tell.
 		public void GenBuffers(int n, out int buffers)
 		{
-			buffers = -1;
+			throw new NotImplementedException();
 		}
 
 		public void GenFramebuffers(int n, out int frameBuffers)
@@ -309,8 +327,16 @@ namespace MatterHackers.RenderOpenGl
 			return Gl.glGetString((int)name);
 		}
 
+		private delegate void glLightfHandler(int light, int pname, float[] param);
+		private static glLightfHandler glLightf;
 		public void Light(LightName light, LightParameter pname, float[] param)
 		{
+			if (glLightf == null)
+			{
+				glLightf = Marshal.GetDelegateForFunctionPointer<glLightfHandler>(Glfw.GetProcAddress("glLightf"));
+			}
+
+			glLightf((int)light, (int)pname, param);
 		}
 
 		private delegate void glLoadIdentityHandler();
@@ -362,16 +388,39 @@ namespace MatterHackers.RenderOpenGl
 			glMultMatrixf(m);
 		}
 
+		private delegate void glNormal3fHandler(float x, float y, float z);
+		private static glNormal3fHandler glNormal3f;
 		public void Normal3(double x, double y, double z)
 		{
+			if (glNormal3f == null)
+			{
+				glNormal3f = Marshal.GetDelegateForFunctionPointer<glNormal3fHandler>(Glfw.GetProcAddress("glNormal3f"));
+			}
+
+			glNormal3f((float)x, (float)y, (float)z);
 		}
 
 		public void NormalPointer(NormalPointerType type, int stride, float[] pointer)
 		{
+			unsafe
+			{
+				fixed (float* pArray = pointer)
+				{
+					NormalPointer(type, stride, new IntPtr(pArray));
+				}
+			}
 		}
 
+		private delegate void glNormalPointerHandler(int type, int stride, IntPtr pointer);
+		private static glNormalPointerHandler glNormalPointer;
 		public void NormalPointer(NormalPointerType type, int stride, IntPtr pointer)
 		{
+			if (glNormalPointer == null)
+			{
+				glNormalPointer = Marshal.GetDelegateForFunctionPointer<glNormalPointerHandler>(Glfw.GetProcAddress("glNormalPointer"));
+			}
+
+			glNormalPointer((int)type, stride, pointer);
 		}
 
 		private delegate void glOrthoHandler(double left, double right, double bottom, double top, double zNear, double zFar);
@@ -441,6 +490,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void ReadBuffer()
 		{
+			throw new NotImplementedException();
 		}
 
 		public byte[] ReadEmbeddedAssetBytes(string name)
@@ -458,6 +508,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void ReadPixels(int x, int y, int width, int height, OpenGl.PixelFormat pixelFormat, PixelType pixelType, byte[] buffer)
 		{
+			throw new NotImplementedException();
 		}
 
 		private delegate void glRotatefHandler(float angle, float x, float y, float z);
@@ -639,13 +690,28 @@ namespace MatterHackers.RenderOpenGl
 
 		private Stream OpenEmbeddedAssetStream(string name) => GetType().Assembly.GetManifestResourceStream(name);
 
+		private delegate void glTexEnvfPointerHandler(int target, int pname, float param);
+		private static glTexEnvfPointerHandler glTexEnvf;
 		public void TexEnv(TextureEnvironmentTarget target, TextureEnvParameter pname, float param)
 		{
+			if (glTexEnvf == null)
+			{
+				glTexEnvf = Marshal.GetDelegateForFunctionPointer<glTexEnvfPointerHandler>(Glfw.GetProcAddress("glTexEnvf"));
+			}
+
+			glTexEnvf((int)target, (int)pname, param);
 		}
 
+		private delegate void glIndexPointerHandler(int type, int stride, IntPtr pointer);
+		private static glIndexPointerHandler glIndexPointer;
 		public void IndexPointer(IndexPointerType type, int stride, IntPtr pointer)
 		{
-			throw new NotImplementedException();
+			if (glIndexPointer == null)
+			{
+				glIndexPointer = Marshal.GetDelegateForFunctionPointer<glIndexPointerHandler>(Glfw.GetProcAddress("glIndexPointer"));
+			}
+
+			glIndexPointer((int)type, stride, pointer);
 		}
 	}
 }

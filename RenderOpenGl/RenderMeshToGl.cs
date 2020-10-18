@@ -162,7 +162,6 @@ namespace MatterHackers.RenderOpenGl
 
 		private static void DrawToGL(Mesh meshToRender, bool isTransparent, Matrix4X4? meshToViewTransform, bool blendTexture = true, bool allowBspRendering = true)
 		{
-			return;
 			if (!blendTexture)
 			{
 				// Turn off default GL_MODULATE mode
