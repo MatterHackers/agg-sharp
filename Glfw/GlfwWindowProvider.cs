@@ -77,14 +77,14 @@ namespace MatterHackers.GlfwProvider
 			GL.Instance = glfwGl;
 
 			// Create window
-			var window = Glfw.CreateWindow((int)systemWindow.Width, (int)systemWindow.Height, systemWindow.Title, Monitor.None, Window.None);
-			Glfw.MakeContextCurrent(window);
+			glfwWindow = Glfw.CreateWindow((int)systemWindow.Width, (int)systemWindow.Height, systemWindow.Title, Monitor.None, Window.None);
+			Glfw.MakeContextCurrent(glfwWindow);
 			OpenGL.Gl.Import(Glfw.GetProcAddress);
 
 			// Effectively enables VSYNC by setting to 1.
 			Glfw.SwapInterval(1);
 
-			applicationWindow = new GlfwSystemWindow(this, window);
+			applicationWindow = new GlfwPlatformWindow(this, glfwWindow);
 			systemWindow.PlatformWindow = applicationWindow;
 
 			if (systemWindow.Maximized)
@@ -93,7 +93,7 @@ namespace MatterHackers.GlfwProvider
 				var screenSize = Glfw.PrimaryMonitor.WorkArea;
 				var x = (screenSize.Width - (int)systemWindow.Width) / 2;
 				var y = (screenSize.Height - (int)systemWindow.Height) / 2;
-				Glfw.SetWindowPosition(window, x, y);
+				Glfw.SetWindowPosition(glfwWindow, x, y);
 			}
 			else if (systemWindow.InitialDesktopPosition == new Point2D(-1, -1))
 			{
@@ -101,46 +101,53 @@ namespace MatterHackers.GlfwProvider
 				var screenSize = Glfw.PrimaryMonitor.WorkArea;
 				var x = (screenSize.Width - (int)systemWindow.Width) / 2;
 				var y = (screenSize.Height - (int)systemWindow.Height) / 2;
-				Glfw.SetWindowPosition(window, x, y);
+				Glfw.SetWindowPosition(glfwWindow, x, y);
 			}
 			else
 			{
-				Glfw.SetWindowPosition(window,
+				Glfw.SetWindowPosition(glfwWindow,
 					(int)systemWindow.InitialDesktopPosition.x,
 					(int)systemWindow.InitialDesktopPosition.y);
 			}
 
-			Glfw.SetWindowSizeCallback(window, sizeCallback);
+			Glfw.SetWindowSizeCallback(glfwWindow, sizeCallback);
 
 			// Set a key callback
-			Glfw.SetKeyCallback(window, keyCallback);
-			Glfw.SetCursorPositionCallback(window, cursorPositionCallback);
-			Glfw.SetMouseButtonCallback(window, mouseButtonCallback);
+			Glfw.SetKeyCallback(glfwWindow, keyCallback);
+			Glfw.SetCursorPositionCallback(glfwWindow, cursorPositionCallback);
+			Glfw.SetMouseButtonCallback(glfwWindow, mouseButtonCallback);
 
-			while (!Glfw.WindowShouldClose(window))
+			while (!Glfw.WindowShouldClose(glfwWindow))
 			{
 				// Poll for OS events and swap front/back buffers
 				Glfw.WaitEvents();
 
-				Graphics2D graphics2D = new Graphics2DOpenGL((int)systemWindow.Width, (int)systemWindow.Height, GuiWidget.DeviceScale);
-				graphics2D.PushTransform();
-				systemWindow.OnDrawBackground(graphics2D);
-				systemWindow.OnDraw(graphics2D);
-
-				Glfw.SwapBuffers(window);
+				DrawAndUpdate(systemWindow);
 			}
+		}
+
+		private void DrawAndUpdate(SystemWindow systemWindow)
+		{
+			Graphics2D graphics2D = new Graphics2DOpenGL((int)systemWindow.Width, (int)systemWindow.Height, GuiWidget.DeviceScale);
+			graphics2D.PushTransform();
+			systemWindow.OnDrawBackground(graphics2D);
+			systemWindow.OnDraw(graphics2D);
+
+			Glfw.SwapBuffers(glfwWindow);
 		}
 
 		private void sizeCallback(IntPtr window, int width, int height)
 		{
 			TopWindow.Size = new VectorMath.Vector2(width, height);
 			GL.Viewport(0, 0, width, height); // Use all of the glControl painting area
+			DrawAndUpdate(TopWindow);
 		}
 
 		private static double mouseX;
 		private static double mouseY;
 		private static MouseButtons mouseButton;
-		private GlfwSystemWindow applicationWindow;
+		private GlfwPlatformWindow applicationWindow;
+		private Window glfwWindow;
 
 		private void cursorPositionCallback(IntPtr window, double x, double y)
 		{
@@ -149,8 +156,12 @@ namespace MatterHackers.GlfwProvider
 			TopWindow.OnMouseMove(new MouseEventArgs(mouseButton, 0, mouseX, mouseY, 0));
 		}
 
+		private Dictionary<MouseButton, long> lastMouseDownTime = new Dictionary<MouseButton, long>();
+		private Dictionary<MouseButton, int> clickCount = new Dictionary<MouseButton, int>();
+
 		private void mouseButtonCallback(IntPtr window, MouseButton button, InputState state, ModifierKeys modifiers)
 		{
+			var now = UiThread.CurrentTimerMs;
 			mouseButton = MouseButtons.Left;
 			switch (button)
 			{
@@ -165,15 +176,21 @@ namespace MatterHackers.GlfwProvider
 
 			if (state == InputState.Press)
 			{
-				TopWindow.OnMouseDown(new MouseEventArgs(mouseButton, 1, mouseX, mouseY, 0));
-			}
-			else if (state == InputState.Repeat)
-			{
-				TopWindow.OnMouseDown(new MouseEventArgs(mouseButton, 2, mouseX, mouseY, 0));
+				clickCount[button] = 1;
+				if (lastMouseDownTime.ContainsKey(button))
+				{
+					if (lastMouseDownTime[button] > now - 500)
+					{
+						clickCount[button] = 2;
+					}
+				}
+
+				lastMouseDownTime[button] = now;
+				TopWindow.OnMouseDown(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
 			}
 			else if (state == InputState.Release)
 			{
-				TopWindow.OnMouseUp(new MouseEventArgs(mouseButton, 1, mouseX, mouseY, 0));
+				TopWindow.OnMouseUp(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
 			}
 		}
 

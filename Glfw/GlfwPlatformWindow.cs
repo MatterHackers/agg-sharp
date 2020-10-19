@@ -22,17 +22,18 @@ using MatterHackers.Agg.UI;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
+using System;
 
 namespace MatterHackers.GlfwProvider
 {
-	public class GlfwSystemWindow : IPlatformWindow
+	public class GlfwPlatformWindow : IPlatformWindow
 	{
 		private Window glfwWindow;
 		private GlfwWindowProvider windowProvider;
 		public int Width;
 		public int Height;
 
-		public GlfwSystemWindow(GlfwWindowProvider windowProvider, Window window)
+		public GlfwPlatformWindow(GlfwWindowProvider windowProvider, Window window)
 		{
 			this.glfwWindow = window;
 			this.windowProvider = windowProvider;
@@ -109,8 +110,52 @@ namespace MatterHackers.GlfwProvider
 
 		public void SetCursor(Cursors cursorToSet)
 		{
-			// windowProvider.window.
-			// throw new NotImplementedException();
+			Glfw.SetCursor(glfwWindow, MapCursor(cursorToSet));
+		}
+
+		private Cursor MapCursor(Cursors cursorToSet)
+		{
+			switch (cursorToSet)
+			{
+				case Cursors.Arrow:
+					return Glfw.CreateStandardCursor(CursorType.Arrow);
+				case Cursors.Cross:
+				case Cursors.Default:
+					return Glfw.CreateStandardCursor(CursorType.Arrow);
+				case Cursors.Hand:
+					return Glfw.CreateStandardCursor(CursorType.Hand);
+				case Cursors.Help:
+					return Glfw.CreateStandardCursor(CursorType.Arrow);
+				case Cursors.HSplit:
+					return Glfw.CreateStandardCursor(CursorType.ResizeVertical);
+				case Cursors.IBeam:
+					return Glfw.CreateStandardCursor(CursorType.Beam);
+				case Cursors.No:
+				case Cursors.NoMove2D:
+				case Cursors.NoMoveHoriz:
+				case Cursors.NoMoveVert:
+				case Cursors.PanEast:
+				case Cursors.PanNE:
+				case Cursors.PanNorth:
+				case Cursors.PanNW:
+				case Cursors.PanSE:
+				case Cursors.PanSouth:
+				case Cursors.PanSW:
+				case Cursors.PanWest:
+				case Cursors.SizeAll:
+				case Cursors.SizeNESW:
+				case Cursors.SizeNS:
+				case Cursors.SizeNWSE:
+				case Cursors.SizeWE:
+				case Cursors.UpArrow:
+					return Glfw.CreateStandardCursor(CursorType.Arrow);
+				case Cursors.VSplit:
+					return Glfw.CreateStandardCursor(CursorType.ResizeHorizontal);
+				case Cursors.WaitCursor:
+					return Glfw.CreateStandardCursor(CursorType.Arrow);
+			}
+
+			return Glfw.CreateStandardCursor(CursorType.Arrow);
 		}
 
 		public void ShowSystemWindow(SystemWindow systemWindow)

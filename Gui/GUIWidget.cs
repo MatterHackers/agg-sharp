@@ -2754,7 +2754,7 @@ namespace MatterHackers.Agg.UI
 
 		public bool IsDoubleClick(MouseEventArgs mouseEvent)
 		{
-			// The OS told up the mouse is 2 clicks (shot time between clicks)
+			// The OS told us the mouse is 2 clicks (shot time between clicks)
 			// but we also want to check if the original click happened on our control.
 			if (mouseEvent.Clicks == 2
 				&& LastMouseDownMs > UiThread.CurrentTimerMs - 550)
