@@ -72,6 +72,9 @@ namespace MatterHackers.GlfwProvider
 		public void ShowSystemWindow(SystemWindow systemWindow)
 		{
 			TopWindow = systemWindow;
+			// Glfw.WindowHint(Hint.Decorated, false);
+			Glfw.WindowHint(Hint.Samples, 4);
+
 			var glfwGl = new GlfwGL();
 			// set the gl renderer to the Glfw specific one rather than the OpenTk one
 			GL.Instance = glfwGl;
@@ -116,24 +119,35 @@ namespace MatterHackers.GlfwProvider
 			Glfw.SetKeyCallback(glfwWindow, keyCallback);
 			Glfw.SetCursorPositionCallback(glfwWindow, cursorPositionCallback);
 			Glfw.SetMouseButtonCallback(glfwWindow, mouseButtonCallback);
+			Glfw.SetScrollCallback(glfwWindow, scrollCallback);
 
 			while (!Glfw.WindowShouldClose(glfwWindow))
 			{
 				// Poll for OS events and swap front/back buffers
-				Glfw.WaitEvents();
+				Glfw.PollEvents();
+				UiThread.InvokePendingActions();
 
 				DrawAndUpdate(systemWindow);
 			}
 		}
 
+		private void scrollCallback(IntPtr window, double x, double y)
+		{
+			TopWindow.OnMouseWheel(new MouseEventArgs(mouseButton, 0, mouseX, mouseY, (int)y));
+		}
+
 		private void DrawAndUpdate(SystemWindow systemWindow)
 		{
-			Graphics2D graphics2D = new Graphics2DOpenGL((int)systemWindow.Width, (int)systemWindow.Height, GuiWidget.DeviceScale);
-			graphics2D.PushTransform();
-			systemWindow.OnDrawBackground(graphics2D);
-			systemWindow.OnDraw(graphics2D);
+			if (applicationWindow.Invalidated)
+			{
+				applicationWindow.Invalidated = false;
+				Graphics2D graphics2D = new Graphics2DOpenGL((int)systemWindow.Width, (int)systemWindow.Height, GuiWidget.DeviceScale);
+				graphics2D.PushTransform();
+				systemWindow.OnDrawBackground(graphics2D);
+				systemWindow.OnDraw(graphics2D);
 
-			Glfw.SwapBuffers(glfwWindow);
+				Glfw.SwapBuffers(glfwWindow);
+			}
 		}
 
 		private void sizeCallback(IntPtr window, int width, int height)

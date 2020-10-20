@@ -63,6 +63,8 @@ namespace MatterHackers.GlfwProvider
 
 		public Agg.UI.Keys ModifierKeys => Agg.UI.Keys.None;
 
+		public bool Invalidated { get; set; }
+
 		public void BringToFront()
 		{
 			// throw new NotImplementedException();
@@ -80,7 +82,7 @@ namespace MatterHackers.GlfwProvider
 
 		public void Invalidate(RectangleDouble rectToInvalidate)
 		{
-			// throw new NotImplementedException();
+			Invalidated = true;
 		}
 
 		public Graphics2D NewGraphics2D()
