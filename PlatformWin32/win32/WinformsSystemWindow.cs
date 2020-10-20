@@ -242,7 +242,7 @@ namespace MatterHackers.Agg.UI
 		protected override void OnPaintBackground(PaintEventArgs e)
 		{
 			// don't call this so that windows will not erase the background.
-			//base.OnPaintBackground(e);
+			// base.OnPaintBackground(e);
 		}
 
 		protected override void OnResize(EventArgs e)
@@ -321,11 +321,6 @@ namespace MatterHackers.Agg.UI
 
 		public ISystemWindowProvider WindowProvider { get; set; }
 
-		#region WidgetForWindowsFormsAbstract/WinformsWindowWidget
-		#endregion
-
-		#region IPlatformWindow
-
 		public new Keys ModifierKeys => (Keys)Control.ModifierKeys;
 
 		/* // Can't simply override BringToFront. Change Interface method name/signature if required. Leaving as is
@@ -386,7 +381,7 @@ namespace MatterHackers.Agg.UI
 			if (MainWindowsFormsWindow != this
 				&& systemWindow.AlwaysOnTopOfMain)
 			{
-				base.Show(MainWindowsFormsWindow);
+				Show(MainWindowsFormsWindow);
 			}
 			else
 			{
@@ -515,124 +510,6 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public int TitleBarHeight { get; private set; } = 0;
-
-		#endregion
-
-		#region Agg Event Proxies
-		/*
-		protected override void OnMouseLeave(EventArgs e)
-		{
-			SystemWindow.OnMouseMove(new MatterHackers.Agg.UI.MouseEventArgs(MatterHackers.Agg.UI.MouseButtons.None, 0, -10, -10, 0));
-			base.OnMouseLeave(e);
-		}
-
-		protected override void OnGotFocus(EventArgs e)
-		{
-			SystemWindow.OnFocusChanged(e);
-			base.OnGotFocus(e);
-		}
-
-		protected override void OnLostFocus(EventArgs e)
-		{
-			SystemWindow.Unfocus();
-			SystemWindow.OnFocusChanged(e);
-
-			base.OnLostFocus(e);
-		}
-
-		protected override void OnKeyDown(System.Windows.Forms.KeyEventArgs e)
-		{
-			MatterHackers.Agg.UI.KeyEventArgs aggKeyEvent;
-			if (OsInformation.OperatingSystem == OSType.Mac
-				&& (e.KeyData & System.Windows.Forms.Keys.Alt) == System.Windows.Forms.Keys.Alt)
-			{
-				aggKeyEvent = new MatterHackers.Agg.UI.KeyEventArgs((MatterHackers.Agg.UI.Keys)(System.Windows.Forms.Keys.Control | (e.KeyData & ~System.Windows.Forms.Keys.Alt)));
-			}
-			else
-			{
-				aggKeyEvent = new MatterHackers.Agg.UI.KeyEventArgs((MatterHackers.Agg.UI.Keys)e.KeyData);
-			}
-			SystemWindow.OnKeyDown(aggKeyEvent);
-
-			Keyboard.SetKeyDownState(aggKeyEvent.KeyCode, true);
-
-			e.Handled = aggKeyEvent.Handled;
-			e.SuppressKeyPress = aggKeyEvent.SuppressKeyPress;
-
-			base.OnKeyDown(e);
-		}
-
-		protected override void OnKeyUp(System.Windows.Forms.KeyEventArgs e)
-		{
-			MatterHackers.Agg.UI.KeyEventArgs aggKeyEvent = new MatterHackers.Agg.UI.KeyEventArgs((MatterHackers.Agg.UI.Keys)e.KeyData);
-			SystemWindow.OnKeyUp(aggKeyEvent);
-
-			Keyboard.SetKeyDownState(aggKeyEvent.KeyCode, false);
-
-			e.Handled = aggKeyEvent.Handled;
-			e.SuppressKeyPress = aggKeyEvent.SuppressKeyPress;
-
-			base.OnKeyUp(e);
-		}
-
-		protected override void OnKeyPress(System.Windows.Forms.KeyPressEventArgs e)
-		{
-			MatterHackers.Agg.UI.KeyPressEventArgs aggKeyPressEvent = new MatterHackers.Agg.UI.KeyPressEventArgs(e.KeyChar);
-			SystemWindow.OnKeyPress(aggKeyPressEvent);
-			e.Handled = aggKeyPressEvent.Handled;
-
-			base.OnKeyPress(e);
-		}
-
-		private MatterHackers.Agg.UI.MouseEventArgs ConvertWindowsMouseEventToAggMouseEvent(System.Windows.Forms.MouseEventArgs windowsMouseEvent)
-		{
-			// we invert the y as we are bottom left coordinate system and windows is top left.
-			int Y = windowsMouseEvent.Y;
-			Y = (int)SystemWindow.BoundsRelativeToParent.Height - Y;
-
-			return new MatterHackers.Agg.UI.MouseEventArgs((MatterHackers.Agg.UI.MouseButtons)windowsMouseEvent.Button, windowsMouseEvent.Clicks, windowsMouseEvent.X, Y, windowsMouseEvent.Delta);
-		}
-
-		protected override void OnMouseDown(System.Windows.Forms.MouseEventArgs e)
-		{
-			SystemWindow.OnMouseDown(ConvertWindowsMouseEventToAggMouseEvent(e));
-			base.OnMouseDown(e);
-		}
-
-		protected override void OnMouseMove(System.Windows.Forms.MouseEventArgs e)
-		{
-			// TODO: Remove short term workaround for automation issues where mouse events fire differently if mouse is within window region
-			if (!EnableInputHook)
-			{
-				return;
-			}
-
-			SystemWindow.OnMouseMove(ConvertWindowsMouseEventToAggMouseEvent(e));
-			base.OnMouseMove(e);
-		}
-
-		protected override void OnMouseUp(System.Windows.Forms.MouseEventArgs e)
-		{
-			SystemWindow.OnMouseUp(ConvertWindowsMouseEventToAggMouseEvent(e));
-			base.OnMouseUp(e);
-		}
-
-		protected override void OnMouseCaptureChanged(EventArgs e)
-		{
-			if (SystemWindow.ChildHasMouseCaptured || SystemWindow.MouseCaptured)
-			{
-				SystemWindow.OnMouseUp(new MatterHackers.Agg.UI.MouseEventArgs(Agg.UI.MouseButtons.Left, 0, -10, -10, 0));
-			}
-			base.OnMouseCaptureChanged(e);
-		}
-
-		protected override void OnMouseWheel(System.Windows.Forms.MouseEventArgs e)
-		{
-			SystemWindow.OnMouseWheel(ConvertWindowsMouseEventToAggMouseEvent(e));
-			base.OnMouseWheel(e);
-		}
-		*/
-		#endregion
 
 		public new Vector2 MinimumSize
 		{
