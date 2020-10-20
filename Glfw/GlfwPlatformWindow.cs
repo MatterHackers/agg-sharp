@@ -22,7 +22,6 @@ using MatterHackers.Agg.UI;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.GlfwProvider
 {

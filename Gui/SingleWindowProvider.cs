@@ -42,13 +42,30 @@ namespace MatterHackers.Agg.UI
 
 		SystemWindow _topWindow;
 		
-		public static Color textColor;
-		public static int fontSize;
-		public static bool invertIcons;
-		public static GuiWidget closeButton;
-		public static BorderDouble titleBarPadding;
-		public static Color backgroundColor;
-		public static Color borderColor;
+		private static Color textColor;
+		private static int fontSize;
+		private static bool invertIcons;
+		private static Func<GuiWidget> getCloseButton;
+		private static BorderDouble titleBarPadding;
+		private static Color backgroundColor;
+		private static Color borderColor;
+
+		public static void SetWindowTheme(Color textColor,
+			int fontSize,
+			bool invertIcons,
+			Func<GuiWidget> getCloseButton,
+			BorderDouble titleBarPadding,
+			Color backgroundColor,
+			Color borderColor)
+		{
+			SingleWindowProvider.textColor = textColor;
+			SingleWindowProvider.fontSize = fontSize;
+			SingleWindowProvider.invertIcons = invertIcons;
+			SingleWindowProvider.getCloseButton = getCloseButton;
+			SingleWindowProvider.titleBarPadding = titleBarPadding;
+			SingleWindowProvider.backgroundColor = backgroundColor;
+			SingleWindowProvider.borderColor = borderColor;
+		}
 
 		public SystemWindow TopWindow
 		{
@@ -86,6 +103,11 @@ namespace MatterHackers.Agg.UI
 		// Creates or connects a PlatformWindow to the given SystemWindow
 		public virtual void ShowSystemWindow(SystemWindow systemWindow)
 		{
+			if (getCloseButton == null)
+			{
+				throw new Exception("You must call SetWindowTheme before you create any windows");
+			}
+
 			if (_openWindows.Count == 0)
 			{
 				this._openWindows.Add(systemWindow);
@@ -117,6 +139,7 @@ namespace MatterHackers.Agg.UI
 
 				overlayWindow.AddChild(movable);
 
+				var closeButton = getCloseButton();
 				closeButton.HAnchor = HAnchor.Right;
 				closeButton.ToolTipText = "Close".Localize();
 				closeButton.Click += (s, e) =>
