@@ -26,7 +26,7 @@ using MatterHackers.RenderOpenGl.OpenGl;
 
 namespace MatterHackers.GlfwProvider
 {
-	public class GlfwWindowProvider : ISystemWindowProvider
+	public class GlfwWindowProvider : SingleWindowProvider
 	{
 		public IReadOnlyList<SystemWindow> OpenWindows { get; }
 
