@@ -2090,7 +2090,7 @@ namespace MatterHackers.Agg.UI
 
 									offsetToRenderSurface.X = (int)offsetToRenderSurface.X + xOffset;
 									offsetToRenderSurface.Y = (int)offsetToRenderSurface.Y + yOffset;
-									// The transform to draw the backbuffer to the graphics2D must not have a factional amount
+									// The transform to draw the back-buffer to the graphics2D must not have a factional amount
 									// or we will get aliasing in the image and we want our back buffer pixels to map 1:1 to the next buffer
 									if (offsetToRenderSurface.X - (int)offsetToRenderSurface.X != 0
 										|| offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y != 0)

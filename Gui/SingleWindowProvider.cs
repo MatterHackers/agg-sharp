@@ -40,8 +40,8 @@ namespace MatterHackers.Agg.UI
 		protected List<SystemWindow> _openWindows = new List<SystemWindow>();
 		protected IPlatformWindow platformWindow;
 
-		SystemWindow _topWindow;
-		
+		private SystemWindow _topWindow;
+
 		private static Color textColor;
 		private static int fontSize;
 		private static bool invertIcons;

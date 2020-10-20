@@ -61,7 +61,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				var code = _instance.GetError();
 				if (code != ErrorCode.NoError)
 				{
-					int a = 0;
+					throw new Exception($"OpenGL Error: {code}");
 				}
 			}
 #endif

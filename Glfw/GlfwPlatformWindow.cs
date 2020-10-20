@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using GLFW;
 using MatterHackers.Agg;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.RenderOpenGl.OpenGl;
@@ -67,7 +68,7 @@ namespace MatterHackers.GlfwProvider
 
 		public Point2D DesktopPosition { get; set; }
 
-		public bool Invalidated { get; set; }
+		public bool Invalidated { get; set; } = true;
 
 		public Vector2 MinimumSize { get; set; }
 
@@ -152,7 +153,7 @@ namespace MatterHackers.GlfwProvider
 			systemWindow.OnMouseMove(new MouseEventArgs(mouseButton, 0, mouseX, mouseY, 0));
 		}
 
-		private void DrawAndUpdate(SystemWindow systemWindow)
+		private void ConditionalDrawAndRefresh(SystemWindow systemWindow)
 		{
 			if (this.Invalidated)
 			{
@@ -286,16 +287,18 @@ namespace MatterHackers.GlfwProvider
 		private void Show()
 		{
 			// Glfw.WindowHint(Hint.Decorated, false);
-			Glfw.WindowHint(Hint.Samples, 4);
-
-			var glfwGl = new GlfwGL();
-			// set the gl renderer to the GLFW specific one rather than the OpenTk one
-			GL.Instance = glfwGl;
+			var config = AggContext.Config.GraphicsMode;
+			Glfw.WindowHint(Hint.Samples, config.FSAASamples);
+			Glfw.WindowHint(Hint.Visible, false);
 
 			// Create window
 			glfwWindow = Glfw.CreateWindow((int)systemWindow.Width, (int)systemWindow.Height, systemWindow.Title, Monitor.None, Window.None);
 			Glfw.MakeContextCurrent(glfwWindow);
 			OpenGL.Gl.Import(Glfw.GetProcAddress);
+
+			// set the gl renderer to the GLFW specific one rather than the OpenTk one
+			var glfwGl = new GlfwGL();
+			GL.Instance = glfwGl;
 
 			// Effectively enables VSYNC by setting to 1.
 			Glfw.SwapInterval(1);
@@ -333,13 +336,21 @@ namespace MatterHackers.GlfwProvider
 			Glfw.SetMouseButtonCallback(glfwWindow, MouseButtonCallback);
 			Glfw.SetScrollCallback(glfwWindow, ScrollCallback);
 
+			Glfw.ShowWindow(glfwWindow);
+
+			var openTime = UiThread.CurrentTimerMs;
 			while (!Glfw.WindowShouldClose(glfwWindow))
 			{
 				// Poll for OS events and swap front/back buffers
-				Glfw.PollEvents();
 				UiThread.InvokePendingActions();
 
-				DrawAndUpdate(systemWindow);
+				if (UiThread.CurrentTimerMs > openTime + 500)
+				{
+					// wait for the window to finish opening
+					Glfw.PollEvents();
+
+					ConditionalDrawAndRefresh(systemWindow);
+				}
 			}
 		}
 
@@ -347,7 +358,7 @@ namespace MatterHackers.GlfwProvider
 		{
 			systemWindow.Size = new VectorMath.Vector2(width, height);
 			GL.Viewport(0, 0, width, height); // Use all of the glControl painting area
-			DrawAndUpdate(systemWindow);
+			ConditionalDrawAndRefresh(systemWindow);
 		}
 	}
 }

@@ -27,14 +27,14 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.IO;
-using System.Runtime.InteropServices;
 using GLFW;
 using MatterHackers.Agg;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 using OpenGL;
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
 using static OpenGL.Gl;
 using ErrorCode = MatterHackers.RenderOpenGl.OpenGl.ErrorCode;
 
@@ -42,23 +42,150 @@ namespace MatterHackers.RenderOpenGl
 {
 	public class GlfwGL : IOpenGL
 	{
+		private static glBeginHandler glBegin;
+		private static glClearHandler glClear;
+		private static glColor4fHandler glColor4f;
+		private static glColorMaterialHandler glColorMaterial;
+		private static glColorPointerHandler glColorPointer;
+		private static glDisableClientStateHandler glDisableClientState;
+		private static glEnableClientStateHandler glEnableClientState;
+		private static glEndHandler glEnd;
+		private static glIndexPointerHandler glIndexPointer;
+		private static glLightfvHandler glLightfv;
+		private static glLoadIdentityHandler glLoadIdentity;
+		private static glLoadMatrixdHandler glLoadMatrixd;
+		private static glMatrixModeHandler glMatrixMode;
+		private static glMultMatrixHandler glMultMatrixf;
+		private static glNormal3fHandler glNormal3f;
+		private static glNormalPointerHandler glNormalPointer;
+		private static glOrthoHandler glOrtho;
+		private static glPopAttribHandler glPopAttrib;
+		private static glPopMatrixHandler glPopMatrix;
+		private static glPushAttribHandler glPushAttrib;
+		private static glPushMatrixHandler glPushMatrix;
+		private static glRotatefHandler glRotatef;
+		private static glScalefHandler glScalef;
+		private static glShadeModelHandler glShadeModel;
+		private static glTexCoord2fHandler glTexCoord2f;
+		private static glTexCoordPointerHandler glTexCoordPointer;
+		private static glTexEnvfPointerHandler glTexEnvf;
+		private static glTexParameteriHandler glTexParameteri;
+		private static glTranslatefHandler glTranslatef;
+		private static glVertex2fHandler glVertex2f;
+		private static glVertex3fHandler glVertex3f;
+		private static glVertexPointerHandler glVertexPointer;
 		private bool glHasBufferObjects = true;
+
+		private static bool initialized = false;
 
 		public GlfwGL()
 		{
+			if (!initialized)
+			{
+				initialized = true;
+				glClear = Marshal.GetDelegateForFunctionPointer<glClearHandler>(Glfw.GetProcAddress("glClear"));
+				glBegin = Marshal.GetDelegateForFunctionPointer<glBeginHandler>(Glfw.GetProcAddress("glBegin"));
+				glColor4f = Marshal.GetDelegateForFunctionPointer<glColor4fHandler>(Glfw.GetProcAddress("glColor4f"));
+				glColorMaterial = Marshal.GetDelegateForFunctionPointer<glColorMaterialHandler>(Glfw.GetProcAddress("glColorMaterial"));
+				glColorPointer = Marshal.GetDelegateForFunctionPointer<glColorPointerHandler>(Glfw.GetProcAddress("glColorPointer"));
+				glDisableClientState = Marshal.GetDelegateForFunctionPointer<glDisableClientStateHandler>(Glfw.GetProcAddress("glDisableClientState"));
+				glEnableClientState = Marshal.GetDelegateForFunctionPointer<glEnableClientStateHandler>(Glfw.GetProcAddress("glEnableClientState"));
+				glEnd = Marshal.GetDelegateForFunctionPointer<glEndHandler>(Glfw.GetProcAddress("glEnd"));
+				glIndexPointer = Marshal.GetDelegateForFunctionPointer<glIndexPointerHandler>(Glfw.GetProcAddress("glIndexPointer"));
+				glLightfv = Marshal.GetDelegateForFunctionPointer<glLightfvHandler>(Glfw.GetProcAddress("glLightfv"));
+				glLoadIdentity = Marshal.GetDelegateForFunctionPointer<glLoadIdentityHandler>(Glfw.GetProcAddress("glLoadIdentity"));
+				glLoadMatrixd = Marshal.GetDelegateForFunctionPointer<glLoadMatrixdHandler>(Glfw.GetProcAddress("glLoadMatrixd"));
+				glMatrixMode = Marshal.GetDelegateForFunctionPointer<glMatrixModeHandler>(Glfw.GetProcAddress("glMatrixMode"));
+				glMultMatrixf = Marshal.GetDelegateForFunctionPointer<glMultMatrixHandler>(Glfw.GetProcAddress("glMultMatrixf"));
+				glNormal3f = Marshal.GetDelegateForFunctionPointer<glNormal3fHandler>(Glfw.GetProcAddress("glNormal3f"));
+				glNormalPointer = Marshal.GetDelegateForFunctionPointer<glNormalPointerHandler>(Glfw.GetProcAddress("glNormalPointer"));
+				glOrtho = Marshal.GetDelegateForFunctionPointer<glOrthoHandler>(Glfw.GetProcAddress("glOrtho"));
+				glPopAttrib = Marshal.GetDelegateForFunctionPointer<glPopAttribHandler>(Glfw.GetProcAddress("glPopAttrib"));
+				glPopMatrix = Marshal.GetDelegateForFunctionPointer<glPopMatrixHandler>(Glfw.GetProcAddress("glPopMatrix"));
+				glPushAttrib = Marshal.GetDelegateForFunctionPointer<glPushAttribHandler>(Glfw.GetProcAddress("glPushAttrib"));
+				glPushMatrix = Marshal.GetDelegateForFunctionPointer<glPushMatrixHandler>(Glfw.GetProcAddress("glPushMatrix"));
+				glRotatef = Marshal.GetDelegateForFunctionPointer<glRotatefHandler>(Glfw.GetProcAddress("glRotatef"));
+				glScalef = Marshal.GetDelegateForFunctionPointer<glScalefHandler>(Glfw.GetProcAddress("glScalef"));
+				glShadeModel = Marshal.GetDelegateForFunctionPointer<glShadeModelHandler>(Glfw.GetProcAddress("glShadeModel"));
+				glTexCoord2f = Marshal.GetDelegateForFunctionPointer<glTexCoord2fHandler>(Glfw.GetProcAddress("glTexCoord2f"));
+				glTexCoordPointer = Marshal.GetDelegateForFunctionPointer<glTexCoordPointerHandler>(Glfw.GetProcAddress("glTexCoordPointer"));
+				glTexEnvf = Marshal.GetDelegateForFunctionPointer<glTexEnvfPointerHandler>(Glfw.GetProcAddress("glTexEnvf"));
+				glTexParameteri = Marshal.GetDelegateForFunctionPointer<glTexParameteriHandler>(Glfw.GetProcAddress("glTexParameteri"));
+				glTranslatef = Marshal.GetDelegateForFunctionPointer<glTranslatefHandler>(Glfw.GetProcAddress("glTranslatef"));
+				glVertex2f = Marshal.GetDelegateForFunctionPointer<glVertex2fHandler>(Glfw.GetProcAddress("glVertex2f"));
+				glVertex3f = Marshal.GetDelegateForFunctionPointer<glVertex3fHandler>(Glfw.GetProcAddress("glVertex3f"));
+				glVertexPointer = Marshal.GetDelegateForFunctionPointer<glVertexPointerHandler>(Glfw.GetProcAddress("glVertexPointer"));
+			}
 		}
+
+		private delegate void glBeginHandler(int mode);
+
+		private delegate void glClearHandler(int mask);
+
+		private delegate void glColor4fHandler(float red, float green, float blue, float alpha);
+
+		private delegate void glColorMaterialHandler(int face, int mode);
+
+		private delegate void glColorPointerHandler(int size, int type, int stride, IntPtr pointer);
+
+		private delegate void glDisableClientStateHandler(int state);
+
+		private delegate void glEnableClientStateHandler(int arrayCap);
+
+		private delegate void glEndHandler();
+
+		private delegate void glIndexPointerHandler(int type, int stride, IntPtr pointer);
+
+		private delegate void glLightfvHandler(int light, int pname, float[] param);
+
+		private delegate void glLoadIdentityHandler();
+
+		private delegate void glLoadMatrixdHandler(double[] m);
+
+		private delegate void glMatrixModeHandler(int mode);
+
+		private delegate void glMultMatrixHandler(float[] m);
+
+		private delegate void glNormal3fHandler(float x, float y, float z);
+
+		private delegate void glNormalPointerHandler(int type, int stride, IntPtr pointer);
+
+		private delegate void glOrthoHandler(double left, double right, double bottom, double top, double zNear, double zFar);
+
+		private delegate void glPopAttribHandler();
+
+		private delegate void glPopMatrixHandler();
+
+		private delegate void glPushAttribHandler();
+
+		private delegate void glPushMatrixHandler();
+
+		private delegate void glRotatefHandler(float angle, float x, float y, float z);
+
+		private delegate void glScalefHandler(float x, float y, float z);
+
+		private delegate void glShadeModelHandler(int model);
+
+		private delegate void glTexCoord2fHandler(float x, float y);
+
+		private delegate void glTexCoordPointerHandler(int size, int type, int stride, IntPtr pointer);
+
+		private delegate void glTexEnvfPointerHandler(int target, int pname, float param);
+
+		private delegate void glTexParameteriHandler(int target, int pname, int param);
+
+		private delegate void glTranslatefHandler(float x, float y, float z);
+
+		private delegate void glVertex2fHandler(float x, float y);
+
+		private delegate void glVertex3fHandler(float x, float y, float z);
+
+		private delegate void glVertexPointerHandler(int size, int type, int stride, IntPtr pointer);
 
 		public bool GlHasBufferObjects { get { return glHasBufferObjects; } }
 
-		private delegate void glBeginHandler(int mode);
-		private static glBeginHandler glBegin;
 		public void Begin(BeginMode mode)
 		{
-			if (glBegin == null)
-			{
-				glBegin = Marshal.GetDelegateForFunctionPointer<glBeginHandler>(Glfw.GetProcAddress("glBegin"));
-			}
-
 			glBegin((int)mode);
 		}
 
@@ -92,15 +219,8 @@ namespace MatterHackers.RenderOpenGl
 			throw new NotImplementedException();
 		}
 
-		private delegate void glClearHandler(int mask);
-		private static glClearHandler glClear;
 		public void Clear(ClearBufferMask mask)
 		{
-			if (glClear == null)
-			{
-				glClear = Marshal.GetDelegateForFunctionPointer<glClearHandler>(Glfw.GetProcAddress("glClear"));
-			}
-
 			glClear((int)mask);
 		}
 
@@ -119,15 +239,8 @@ namespace MatterHackers.RenderOpenGl
 			Color4((byte)red, (byte)green, (byte)blue, (byte)alpha);
 		}
 
-		private delegate void glColor4fHandler(float red, float green, float blue, float alpha);
-		private static glColor4fHandler glColor4f;
 		public void Color4(byte red, byte green, byte blue, byte alpha)
 		{
-			if (glColor4f == null)
-			{
-				glColor4f = Marshal.GetDelegateForFunctionPointer<glColor4fHandler>(Glfw.GetProcAddress("glColor4f"));
-			}
-
 			glColor4f(red / 255.0F, green / 255.0F, blue / 255.0F, alpha / 255.0F);
 		}
 
@@ -136,15 +249,8 @@ namespace MatterHackers.RenderOpenGl
 			throw new NotImplementedException();
 		}
 
-		private delegate void glColorMaterialHandler(int face, int mode);
-		private static glColorMaterialHandler glColorMaterial;
 		public void ColorMaterial(MaterialFace face, ColorMaterialParameter mode)
 		{
-			if (glColorMaterial == null)
-			{
-				glColorMaterial = Marshal.GetDelegateForFunctionPointer<glColorMaterialHandler>(Glfw.GetProcAddress("glColorMaterial"));
-			}
-
 			glColorMaterial((int)face, (int)mode);
 		}
 
@@ -159,15 +265,8 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		private delegate void glColorPointerHandler(int size, int type, int stride, IntPtr pointer);
-		private static glColorPointerHandler glColorPointer;
 		public void ColorPointer(int size, ColorPointerType type, int stride, IntPtr pointer)
 		{
-			if (glColorPointer == null)
-			{
-				glColorPointer = Marshal.GetDelegateForFunctionPointer<glColorPointerHandler>(Glfw.GetProcAddress("glColorPointer"));
-			}
-
 			glColorPointer(size, (int)type, stride, pointer);
 		}
 
@@ -216,15 +315,8 @@ namespace MatterHackers.RenderOpenGl
 			glDisable((int)cap);
 		}
 
-		private delegate void glDisableClientStateHandler(int state);
-		private static glDisableClientStateHandler glDisableClientState;
 		public void DisableClientState(ArrayCap state)
 		{
-			if (glDisableClientState == null)
-			{
-				glDisableClientState = Marshal.GetDelegateForFunctionPointer<glDisableClientStateHandler>(Glfw.GetProcAddress("glDisableClientState"));
-			}
-
 			glDisableClientState((int)state);
 		}
 
@@ -253,27 +345,13 @@ namespace MatterHackers.RenderOpenGl
 			glEnable((int)cap);
 		}
 
-		private delegate void glEnableClientStateHandler(int arrayCap);
-		private static glEnableClientStateHandler glEnableClientState;
 		public void EnableClientState(ArrayCap arrayCap)
 		{
-			if (glEnableClientState == null)
-			{
-				glEnableClientState = Marshal.GetDelegateForFunctionPointer<glEnableClientStateHandler>(Glfw.GetProcAddress("glEnableClientState"));
-			}
-
 			glEnableClientState((int)arrayCap);
 		}
 
-		private delegate void glEndHandler();
-		private static glEndHandler glEnd;
 		public void End()
 		{
-			if (glEnd == null)
-			{
-				glEnd = Marshal.GetDelegateForFunctionPointer<glEndHandler>(Glfw.GetProcAddress("glEnd"));
-			}
-
 			glEnd();
 		}
 
@@ -327,76 +405,38 @@ namespace MatterHackers.RenderOpenGl
 			return Gl.glGetString((int)name);
 		}
 
-		private delegate void glLightfHandler(int light, int pname, float[] param);
-		private static glLightfHandler glLightf;
-		public void Light(LightName light, LightParameter pname, float[] param)
+		public void IndexPointer(IndexPointerType type, int stride, IntPtr pointer)
 		{
-			if (glLightf == null)
-			{
-				glLightf = Marshal.GetDelegateForFunctionPointer<glLightfHandler>(Glfw.GetProcAddress("glLightf"));
-			}
-
-			glLightf((int)light, (int)pname, param);
+			glIndexPointer((int)type, stride, pointer);
 		}
 
-		private delegate void glLoadIdentityHandler();
-		private static glLoadIdentityHandler glLoadIdentity;
+		public void Light(LightName light, LightParameter pname, float[] param)
+		{
+			glLightfv((int)light, (int)pname, param);
+		}
+
 		public void LoadIdentity()
 		{
-			if (glLoadIdentity == null)
-			{
-				glLoadIdentity = Marshal.GetDelegateForFunctionPointer<glLoadIdentityHandler>(Glfw.GetProcAddress("glLoadIdentity"));
-			}
-
 			glLoadIdentity();
 		}
 
-		private delegate void glLoadMatrixdHandler(double[] m);
-		private static glLoadMatrixdHandler glLoadMatrixd;
 		public void LoadMatrix(double[] m)
 		{
-			if (glLoadMatrixd == null)
-			{
-				glLoadMatrixd = Marshal.GetDelegateForFunctionPointer<glLoadMatrixdHandler>(Glfw.GetProcAddress("glLoadMatrixd"));
-			}
-
 			glLoadMatrixd(m);
 		}
 
-
-		private delegate void glMatrixModeHandler(int mode);
-		private static glMatrixModeHandler glMatrixMode;
 		public void MatrixMode(MatrixMode mode)
 		{
-			if (glMatrixMode == null)
-			{
-				glMatrixMode = Marshal.GetDelegateForFunctionPointer<glMatrixModeHandler>(Glfw.GetProcAddress("glMatrixMode"));
-			}
-
 			glMatrixMode((int)mode);
 		}
 
-		private delegate void glMultMatrixHandler(float[] m);
-		private static glMultMatrixHandler glMultMatrixf;
 		public void MultMatrix(float[] m)
 		{
-			if (glMultMatrixf == null)
-			{
-				glMultMatrixf = Marshal.GetDelegateForFunctionPointer<glMultMatrixHandler>(Glfw.GetProcAddress("glMultMatrixf"));
-			}
-
 			glMultMatrixf(m);
 		}
 
-		private delegate void glNormal3fHandler(float x, float y, float z);
-		private static glNormal3fHandler glNormal3f;
 		public void Normal3(double x, double y, double z)
 		{
-			if (glNormal3f == null)
-			{
-				glNormal3f = Marshal.GetDelegateForFunctionPointer<glNormal3fHandler>(Glfw.GetProcAddress("glNormal3f"));
-			}
-
 			glNormal3f((float)x, (float)y, (float)z);
 		}
 
@@ -411,27 +451,13 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		private delegate void glNormalPointerHandler(int type, int stride, IntPtr pointer);
-		private static glNormalPointerHandler glNormalPointer;
 		public void NormalPointer(NormalPointerType type, int stride, IntPtr pointer)
 		{
-			if (glNormalPointer == null)
-			{
-				glNormalPointer = Marshal.GetDelegateForFunctionPointer<glNormalPointerHandler>(Glfw.GetProcAddress("glNormalPointer"));
-			}
-
 			glNormalPointer((int)type, stride, pointer);
 		}
 
-		private delegate void glOrthoHandler(double left, double right, double bottom, double top, double zNear, double zFar);
-		private static glOrthoHandler glOrtho;
 		public void Ortho(double left, double right, double bottom, double top, double zNear, double zFar)
 		{
-			if (glOrtho == null)
-			{
-				glOrtho = Marshal.GetDelegateForFunctionPointer<glOrthoHandler>(Glfw.GetProcAddress("glOrtho"));
-			}
-
 			glOrtho(left, right, bottom, top, zNear, zFar);
 		}
 
@@ -440,51 +466,23 @@ namespace MatterHackers.RenderOpenGl
 			Gl.glPolygonOffset(factor, units);
 		}
 
-		private delegate void glPopAttribHandler();
-		private static glPopAttribHandler glPopAttrib;
 		public void PopAttrib()
 		{
-			if (glPopAttrib == null)
-			{
-				glPopAttrib = Marshal.GetDelegateForFunctionPointer<glPopAttribHandler>(Glfw.GetProcAddress("glPopAttrib"));
-			}
-
 			glPopAttrib();
 		}
 
-		private delegate void glPopMatrixHandler();
-		private static glPopMatrixHandler glPopMatrix;
 		public void PopMatrix()
 		{
-			if (glPopMatrix == null)
-			{
-				glPopMatrix = Marshal.GetDelegateForFunctionPointer<glPopMatrixHandler>(Glfw.GetProcAddress("glPopMatrix"));
-			}
-
 			glPopMatrix();
 		}
 
-		private delegate void glPushAttribHandler();
-		private static glPushAttribHandler glPushAttrib;
 		public void PushAttrib(AttribMask mask)
 		{
-			if (glPushAttrib == null)
-			{
-				glPushAttrib = Marshal.GetDelegateForFunctionPointer<glPushAttribHandler>(Glfw.GetProcAddress("glPushAttrib"));
-			}
-
 			glPushAttrib();
 		}
 
-		private delegate void glPushMatrixHandler();
-		private static glPushMatrixHandler glPushMatrix;
 		public void PushMatrix()
 		{
-			if (glPushMatrix == null)
-			{
-				glPushMatrix = Marshal.GetDelegateForFunctionPointer<glPushMatrixHandler>(Glfw.GetProcAddress("glPushMatrix"));
-			}
-
 			glPushMatrix();
 		}
 
@@ -511,27 +509,13 @@ namespace MatterHackers.RenderOpenGl
 			throw new NotImplementedException();
 		}
 
-		private delegate void glRotatefHandler(float angle, float x, float y, float z);
-		private static glRotatefHandler glRotatef;
 		public void Rotate(double angle, double x, double y, double z)
 		{
-			if (glRotatef == null)
-			{
-				glRotatef = Marshal.GetDelegateForFunctionPointer<glRotatefHandler>(Glfw.GetProcAddress("glRotatef"));
-			}
-
 			glRotatef((float)angle, (float)x, (float)y, (float)z);
 		}
 
-		private delegate void glScalefHandler(float x, float y, float z);
-		private static glScalefHandler glScalef;
 		public void Scale(double x, double y, double z)
 		{
-			if (glScalef == null)
-			{
-				glScalef = Marshal.GetDelegateForFunctionPointer<glScalefHandler>(Glfw.GetProcAddress("glScalef"));
-			}
-
 			glScalef((float)x, (float)y, (float)z);
 		}
 
@@ -540,15 +524,8 @@ namespace MatterHackers.RenderOpenGl
 			Gl.glScissor(x, y, width, height);
 		}
 
-		private delegate void glShadeModelHandler(int model);
-		private static glShadeModelHandler glShadeModel;
 		public void ShadeModel(ShadingModel model)
 		{
-			if (glShadeModel == null)
-			{
-				glShadeModel = Marshal.GetDelegateForFunctionPointer<glShadeModelHandler>(Glfw.GetProcAddress("glShadeModel"));
-			}
-
 			glShadeModel((int)model);
 		}
 
@@ -557,32 +534,23 @@ namespace MatterHackers.RenderOpenGl
 			TexCoord2(uv.X, uv.Y);
 		}
 
-		private delegate void glTexCoord2fHandler(float x, float y);
-		private static glTexCoord2fHandler glTexCoord2f;
 		public void TexCoord2(double x, double y)
 		{
-			if (glTexCoord2f == null)
-			{
-				glTexCoord2f = Marshal.GetDelegateForFunctionPointer<glTexCoord2fHandler>(Glfw.GetProcAddress("glTexCoord2f"));
-			}
-
 			glTexCoord2f((float)x, (float)y);
 		}
 
-		private delegate void glTexCoordPointerHandler(int size, int type, int stride, IntPtr pointer);
-		private static glTexCoordPointerHandler glTexCoordPointer;
 		public void TexCoordPointer(int size, TexCordPointerType type, int stride, IntPtr pointer)
 		{
-			if (glTexCoordPointer == null)
-			{
-				glTexCoordPointer = Marshal.GetDelegateForFunctionPointer<glTexCoordPointerHandler>(Glfw.GetProcAddress("glTexCoordPointer"));
-			}
-
 			glTexCoordPointer(size, (int)type, stride, pointer);
 		}
 
+		public void TexEnv(TextureEnvironmentTarget target, TextureEnvParameter pname, float param)
+		{
+			glTexEnvf((int)target, (int)pname, param);
+		}
+
 		public void TexImage2D(TextureTarget target, int level,
-			PixelInternalFormat internalFormat,
+					PixelInternalFormat internalFormat,
 			int width, int height, int border,
 			OpenGl.PixelFormat format,
 			PixelType type,
@@ -597,15 +565,8 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		private delegate void glTexParameteriHandler(int target, int pname, int param);
-		private static glTexParameteriHandler glTexParameteri;
 		public void TexParameter(TextureTarget target, TextureParameterName pname, int param)
 		{
-			if (glTexParameteri == null)
-			{
-				glTexParameteri = Marshal.GetDelegateForFunctionPointer<glTexParameteriHandler>(Glfw.GetProcAddress("glTexParameteri"));
-			}
-
 			glTexParameteri((int)target, (int)pname, param);
 		}
 
@@ -614,15 +575,8 @@ namespace MatterHackers.RenderOpenGl
 			Translate(vector.X, vector.Y, vector.Z);
 		}
 
-		private delegate void glTranslatefHandler(float x, float y, float z);
-		private static glTranslatefHandler glTranslatef;
 		public void Translate(double x, double y, double z)
 		{
-			if (glTranslatef == null)
-			{
-				glTranslatef = Marshal.GetDelegateForFunctionPointer<glTranslatefHandler>(Glfw.GetProcAddress("glTranslatef"));
-			}
-
 			glTranslatef((float)x, (float)y, (float)z);
 		}
 
@@ -631,15 +585,8 @@ namespace MatterHackers.RenderOpenGl
 			Vertex2(position.X, position.Y);
 		}
 
-		private delegate void glVertex2fHandler(float x, float y);
-		private static glVertex2fHandler glVertex2f;
 		public void Vertex2(double x, double y)
 		{
-			if (glVertex2f == null)
-			{
-				glVertex2f = Marshal.GetDelegateForFunctionPointer<glVertex2fHandler>(Glfw.GetProcAddress("glVertex2f"));
-			}
-
 			glVertex2f((float)x, (float)y);
 		}
 
@@ -648,15 +595,8 @@ namespace MatterHackers.RenderOpenGl
 			Vertex3(position.X, position.Y, position.Z);
 		}
 
-		private delegate void glVertex3fHandler(float x, float y, float z);
-		private static glVertex3fHandler glVertex3f;
 		public void Vertex3(double x, double y, double z)
 		{
-			if (glVertex3f == null)
-			{
-				glVertex3f = Marshal.GetDelegateForFunctionPointer<glVertex3fHandler>(Glfw.GetProcAddress("glVertex3f"));
-			}
-
 			glVertex3f((float)x, (float)y, (float)z);
 		}
 
@@ -671,15 +611,8 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		private delegate void glVertexPointerHandler(int size, int type, int stride, IntPtr pointer);
-		private static glVertexPointerHandler glVertexPointer;
 		public void VertexPointer(int size, VertexPointerType type, int stride, IntPtr pointer)
 		{
-			if (glVertexPointer == null)
-			{
-				glVertexPointer = Marshal.GetDelegateForFunctionPointer<glVertexPointerHandler>(Glfw.GetProcAddress("glVertexPointer"));
-			}
-
 			glVertexPointer(size, (int)type, stride, pointer);
 		}
 
@@ -689,29 +622,5 @@ namespace MatterHackers.RenderOpenGl
 		}
 
 		private Stream OpenEmbeddedAssetStream(string name) => GetType().Assembly.GetManifestResourceStream(name);
-
-		private delegate void glTexEnvfPointerHandler(int target, int pname, float param);
-		private static glTexEnvfPointerHandler glTexEnvf;
-		public void TexEnv(TextureEnvironmentTarget target, TextureEnvParameter pname, float param)
-		{
-			if (glTexEnvf == null)
-			{
-				glTexEnvf = Marshal.GetDelegateForFunctionPointer<glTexEnvfPointerHandler>(Glfw.GetProcAddress("glTexEnvf"));
-			}
-
-			glTexEnvf((int)target, (int)pname, param);
-		}
-
-		private delegate void glIndexPointerHandler(int type, int stride, IntPtr pointer);
-		private static glIndexPointerHandler glIndexPointer;
-		public void IndexPointer(IndexPointerType type, int stride, IntPtr pointer)
-		{
-			if (glIndexPointer == null)
-			{
-				glIndexPointer = Marshal.GetDelegateForFunctionPointer<glIndexPointerHandler>(Glfw.GetProcAddress("glIndexPointer"));
-			}
-
-			glIndexPointer((int)type, stride, pointer);
-		}
 	}
 }

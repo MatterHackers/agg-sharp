@@ -28,8 +28,10 @@ namespace MatterHackers.GlfwProvider
 		{
 			if (platformWindow == null)
 			{
-				glfwPlatformWindow = new GlfwPlatformWindow();
-				glfwPlatformWindow.WindowProvider = this;
+				glfwPlatformWindow = new GlfwPlatformWindow
+				{
+					WindowProvider = this
+				};
 
 				platformWindow = glfwPlatformWindow;
 			}
