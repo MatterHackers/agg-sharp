@@ -72,8 +72,6 @@ namespace MatterHackers.GlfwProvider
 
 		public Vector2 MinimumSize { get; set; }
 
-		public Agg.UI.Keys ModifierKeys => Agg.UI.Keys.None;
-
 		public int TitleBarHeight => 45;
 
 		public GlfwWindowProvider WindowProvider { get; set; }
@@ -167,16 +165,266 @@ namespace MatterHackers.GlfwProvider
 			}
 		}
 
+		private void CharCallback(IntPtr window, uint codePoint)
+		{
+			systemWindow.OnKeyPress(new KeyPressEventArgs((char)codePoint));
+		}
+
+		public Agg.UI.Keys ModifierKeys { get; private set; } = Agg.UI.Keys.None;
+
+		private void UpdateKeyboard(ModifierKeys theEvent)
+		{
+			int keys = (int)Agg.UI.Keys.None;
+
+			var shiftKey = theEvent.HasFlag(GLFW.ModifierKeys.Shift);
+			Keyboard.SetKeyDownState(Agg.UI.Keys.Shift, shiftKey);
+			if (shiftKey)
+			{
+				keys |= (int)Agg.UI.Keys.Shift;
+			}
+
+			var controlKey = theEvent.HasFlag(GLFW.ModifierKeys.Control);
+			Keyboard.SetKeyDownState(Agg.UI.Keys.Control, controlKey);
+			if (controlKey)
+			{
+				keys |= (int)Agg.UI.Keys.Control;
+			}
+
+			var altKey = theEvent.HasFlag(GLFW.ModifierKeys.Alt);
+			Keyboard.SetKeyDownState(Agg.UI.Keys.Alt, altKey);
+			if (altKey)
+			{
+				keys |= (int)Agg.UI.Keys.Alt;
+			}
+
+			ModifierKeys = (Agg.UI.Keys)keys;
+		}
+
+		private HashSet<Agg.UI.Keys> suppressedKeyDowns = new HashSet<Agg.UI.Keys>();
+
 		private void KeyCallback(IntPtr windowIn, GLFW.Keys key, int scanCode, InputState state, ModifierKeys mods)
 		{
+			if (state == InputState.Press)
 			{
-				switch (key)
+				var keyData = MapKey(key, out bool _);
+				Keyboard.SetKeyDownState(keyData, true);
+				UpdateKeyboard(mods);
+
+				var keyEvent = new Agg.UI.KeyEventArgs(keyData | ModifierKeys);
+				systemWindow.OnKeyDown(keyEvent);
+
+				if (keyEvent.SuppressKeyPress)
 				{
-					case GLFW.Keys.Escape:
-						// Glfw.SetWindowShouldClose(window, true);
-						break;
+					suppressedKeyDowns.Add(keyEvent.KeyCode);
 				}
 			}
+			else if (state == InputState.Repeat)
+			{
+
+			}
+			else if (state == InputState.Release)
+			{
+				var keyData = MapKey(key, out bool suppress);
+				Keyboard.SetKeyDownState(keyData, false);
+				UpdateKeyboard(mods);
+
+				var keyEvent = new Agg.UI.KeyEventArgs(keyData | ModifierKeys);
+
+				systemWindow.OnKeyUp(keyEvent);
+
+				if (suppressedKeyDowns.Contains(keyEvent.KeyCode))
+				{
+					suppressedKeyDowns.Remove(keyEvent.KeyCode);
+				}
+			}
+		}
+
+		private Agg.UI.Keys MapKey(GLFW.Keys key, out bool suppress)
+		{
+			suppress = true;
+
+			switch (key)
+			{
+				case GLFW.Keys.F1:
+					return Agg.UI.Keys.F1;
+
+				case GLFW.Keys.F2:
+					return Agg.UI.Keys.F2;
+
+				case GLFW.Keys.F3:
+					return Agg.UI.Keys.F3;
+
+				case GLFW.Keys.F4:
+					return Agg.UI.Keys.F4;
+
+				case GLFW.Keys.F5:
+					return Agg.UI.Keys.F5;
+
+				case GLFW.Keys.F6:
+					return Agg.UI.Keys.F6;
+
+				case GLFW.Keys.F7:
+					return Agg.UI.Keys.F7;
+
+				case GLFW.Keys.F8:
+					return Agg.UI.Keys.F8;
+
+				case GLFW.Keys.F9:
+					return Agg.UI.Keys.F9;
+
+				case GLFW.Keys.F10:
+					return Agg.UI.Keys.F10;
+
+				case GLFW.Keys.F11:
+					return Agg.UI.Keys.F11;
+
+				case GLFW.Keys.F12:
+					return Agg.UI.Keys.F12;
+
+				case GLFW.Keys.Home:
+					return Agg.UI.Keys.Home;
+
+				case GLFW.Keys.PageUp:
+					return Agg.UI.Keys.PageUp;
+
+				case GLFW.Keys.PageDown:
+					return Agg.UI.Keys.PageDown;
+
+				case GLFW.Keys.End:
+					return Agg.UI.Keys.End;
+
+				case GLFW.Keys.Escape:
+					return Agg.UI.Keys.Escape;
+
+				case GLFW.Keys.Left:
+					return Agg.UI.Keys.Left;
+
+				case GLFW.Keys.Right:
+					return Agg.UI.Keys.Right;
+
+				case GLFW.Keys.Up:
+					return Agg.UI.Keys.Up;
+
+				case GLFW.Keys.Down:
+					return Agg.UI.Keys.Down;
+
+				case GLFW.Keys.Backspace:
+					return Agg.UI.Keys.Back;
+
+				case GLFW.Keys.Delete:
+					return Agg.UI.Keys.Delete;
+			}
+
+			suppress = false;
+
+			switch (key)
+			{
+				/*
+				case GLFW.Keys.D0:
+					return Agg.UI.Keys.D0;
+				case GLFW.Keys.D1:
+					return Agg.UI.Keys.D1;
+				case GLFW.Keys.D2:
+					return Agg.UI.Keys.D2;
+				case GLFW.Keys.D3:
+					return Agg.UI.Keys.D3;
+				case GLFW.Keys.D4:
+					return Agg.UI.Keys.D4;
+				case GLFW.Keys.D5:
+					return Agg.UI.Keys.D5;
+				case GLFW.Keys.D6:
+					return Agg.UI.Keys.D6;
+				case GLFW.Keys.D7:
+					return Agg.UI.Keys.D7;
+				case GLFW.Keys.D8:
+					return Agg.UI.Keys.D8;
+				case GLFW.Keys.D9:
+					return Agg.UI.Keys.D9;
+				*/
+
+				case GLFW.Keys.Numpad0:
+					return Agg.UI.Keys.NumPad0;
+				case GLFW.Keys.Numpad1:
+					return Agg.UI.Keys.NumPad1;
+				case GLFW.Keys.Numpad2:
+					return Agg.UI.Keys.NumPad2;
+				case GLFW.Keys.Numpad3:
+					return Agg.UI.Keys.NumPad3;
+				case GLFW.Keys.Numpad4:
+					return Agg.UI.Keys.NumPad4;
+				case GLFW.Keys.Numpad5:
+					return Agg.UI.Keys.NumPad5;
+				case GLFW.Keys.Numpad6:
+					return Agg.UI.Keys.NumPad6;
+				case GLFW.Keys.Numpad7:
+					return Agg.UI.Keys.NumPad7;
+				case GLFW.Keys.Numpad8:
+					return Agg.UI.Keys.NumPad8;
+				case GLFW.Keys.Numpad9:
+					return Agg.UI.Keys.NumPad9;
+				case GLFW.Keys.NumpadEnter:
+					return Agg.UI.Keys.Enter;
+
+				case GLFW.Keys.Tab:
+					return Agg.UI.Keys.Tab;
+				case GLFW.Keys.Enter:
+					return Agg.UI.Keys.Return;
+
+				case GLFW.Keys.A:
+					return Agg.UI.Keys.A;
+				case GLFW.Keys.B:
+					return Agg.UI.Keys.B;
+				case GLFW.Keys.C:
+					return Agg.UI.Keys.C;
+				case GLFW.Keys.D:
+					return Agg.UI.Keys.D;
+				case GLFW.Keys.E:
+					return Agg.UI.Keys.E;
+				case GLFW.Keys.F:
+					return Agg.UI.Keys.F;
+				case GLFW.Keys.G:
+					return Agg.UI.Keys.G;
+				case GLFW.Keys.H:
+					return Agg.UI.Keys.H;
+				case GLFW.Keys.I:
+					return Agg.UI.Keys.I;
+				case GLFW.Keys.J:
+					return Agg.UI.Keys.J;
+				case GLFW.Keys.K:
+					return Agg.UI.Keys.K;
+				case GLFW.Keys.L:
+					return Agg.UI.Keys.L;
+				case GLFW.Keys.M:
+					return Agg.UI.Keys.M;
+				case GLFW.Keys.N:
+					return Agg.UI.Keys.N;
+				case GLFW.Keys.O:
+					return Agg.UI.Keys.O;
+				case GLFW.Keys.P:
+					return Agg.UI.Keys.P;
+				case GLFW.Keys.Q:
+					return Agg.UI.Keys.Q;
+				case GLFW.Keys.R:
+					return Agg.UI.Keys.R;
+				case GLFW.Keys.S:
+					return Agg.UI.Keys.S;
+				case GLFW.Keys.T:
+					return Agg.UI.Keys.T;
+				case GLFW.Keys.U:
+					return Agg.UI.Keys.U;
+				case GLFW.Keys.V:
+					return Agg.UI.Keys.V;
+				case GLFW.Keys.W:
+					return Agg.UI.Keys.W;
+				case GLFW.Keys.X:
+					return Agg.UI.Keys.X;
+				case GLFW.Keys.Y:
+					return Agg.UI.Keys.Y;
+				case GLFW.Keys.Z:
+					return Agg.UI.Keys.Z;
+			}
+
+			return Agg.UI.Keys.BrowserStop;
 		}
 
 		private Cursor MapCursor(Cursors cursorToSet)
@@ -332,6 +580,7 @@ namespace MatterHackers.GlfwProvider
 
 			// Set a key callback
 			Glfw.SetKeyCallback(glfwWindow, KeyCallback);
+			Glfw.SetCharCallback(glfwWindow, CharCallback);
 			Glfw.SetCursorPositionCallback(glfwWindow, CursorPositionCallback);
 			Glfw.SetMouseButtonCallback(glfwWindow, MouseButtonCallback);
 			Glfw.SetScrollCallback(glfwWindow, ScrollCallback);
@@ -344,7 +593,7 @@ namespace MatterHackers.GlfwProvider
 				// Poll for OS events and swap front/back buffers
 				UiThread.InvokePendingActions();
 
-				if (UiThread.CurrentTimerMs > openTime + 500)
+				// if (UiThread.CurrentTimerMs > openTime + 500)
 				{
 					// wait for the window to finish opening
 					Glfw.PollEvents();

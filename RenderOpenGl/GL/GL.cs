@@ -27,20 +27,33 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg;
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using MatterHackers.Agg;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderOpenGl.OpenGl
 {
 	public static class GL
 	{
+		private static int threadId = -1;
 		private static IOpenGL _instance = null;
+
 		public static IOpenGL Instance
 		{
 			get
 			{
+				if (threadId == -1)
+				{
+					threadId = Thread.CurrentThread.ManagedThreadId;
+				}
+
+				if (Thread.CurrentThread.ManagedThreadId != threadId)
+				{
+					throw new Exception("You mush only cal GL on the main thread.");
+				}
+
 				CheckForError();
 				return _instance;
 			}

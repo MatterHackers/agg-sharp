@@ -41,20 +41,28 @@ namespace MatterHackers.GuiAutomation
 	public interface IInputMethod : IDisposable
 	{
 		ImageBuffer GetCurrentScreen();
+
 		Point2D CurrentMousePosition();
+
 		bool LeftButtonDown { get; }
+
 		int GetCurrentScreenHeight();
+
 		int ClickCount { get; }
+
 		void SetCursorPosition(int x, int y);
+
 		void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
+
 		void Type(string textToType);
 	}
 
 	public class AggInputMethods : IInputMethod
 	{
 		private Point2D currentMousePosition;
-		private AutomationRunner automationRunner;
-		public bool DrawSimulatedMouse = true;
+		private readonly AutomationRunner automationRunner;
+
+		public bool DrawSimulatedMouse { get; set; } = true;
 
 		private SystemWindow windowToDrawSimulatedMouseOn = null;
 
@@ -65,7 +73,9 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		public bool LeftButtonDown { get; private set; }
+
 		public bool RightButtonDown { get; private set; }
+
 		public bool MiddleButtonDown { get; private set; }
 
 		public int ClickCount { get; private set; }
@@ -77,7 +87,7 @@ namespace MatterHackers.GuiAutomation
 
 		public int GetCurrentScreenHeight()
 		{
-			Size sz = new Size();
+			var sz = default(Size);
 			return sz.Height;
 		}
 
@@ -111,7 +121,7 @@ namespace MatterHackers.GuiAutomation
 				Point2D windowPosition = AutomationRunner.ScreenToSystemWindow(currentMousePosition, systemWindow);
 				if (LeftButtonDown)
 				{
-					MouseEventArgs aggEvent = new MouseEventArgs(MouseButtons.Left, 0, windowPosition.x, windowPosition.y, 0);
+					var aggEvent = new MouseEventArgs(MouseButtons.Left, 0, windowPosition.x, windowPosition.y, 0);
 					UiThread.RunOnIdle(() =>
 					{
 						systemWindow.OnMouseMove(aggEvent);
@@ -120,7 +130,7 @@ namespace MatterHackers.GuiAutomation
 				}
 				else
 				{
-					MouseEventArgs aggEvent = new MouseEventArgs(MouseButtons.None, 0, windowPosition.x, windowPosition.y, 0);
+					var aggEvent = new MouseEventArgs(MouseButtons.None, 0, windowPosition.x, windowPosition.y, 0);
 					UiThread.RunOnIdle(() =>
 					{
 						systemWindow.OnMouseMove(aggEvent);
@@ -146,7 +156,7 @@ namespace MatterHackers.GuiAutomation
 					MouseButtons mouseButtons = MapButtons(dwFlags);
 					if (dwFlags == MouseConsts.MOUSEEVENTF_LEFTDOWN)
 					{
-						this.ClickCount = (this.LeftButtonDown) ? 2 : 1;
+						this.ClickCount = this.LeftButtonDown ? 2 : 1;
 
 						UiThread.RunOnIdle(() =>
 						{
@@ -171,7 +181,7 @@ namespace MatterHackers.GuiAutomation
 					}
 					else if (dwFlags == MouseConsts.MOUSEEVENTF_RIGHTDOWN)
 					{
-						this.ClickCount = (this.RightButtonDown) ? 2 : 1;
+						this.ClickCount = this.RightButtonDown ? 2 : 1;
 
 						UiThread.RunOnIdle(() =>
 						{
@@ -196,7 +206,7 @@ namespace MatterHackers.GuiAutomation
 					}
 					else if (dwFlags == MouseConsts.MOUSEEVENTF_MIDDLEDOWN)
 					{
-						this.ClickCount = (this.MiddleButtonDown) ? 2 : 1;
+						this.ClickCount = this.MiddleButtonDown ? 2 : 1;
 
 						UiThread.RunOnIdle(() =>
 						{
@@ -222,9 +232,9 @@ namespace MatterHackers.GuiAutomation
 				}
 			}
 
-			this.LeftButtonDown = (dwFlags == MouseConsts.MOUSEEVENTF_LEFTDOWN);
-			this.MiddleButtonDown = (dwFlags == MouseConsts.MOUSEEVENTF_MIDDLEDOWN);
-			this.RightButtonDown = (dwFlags == MouseConsts.MOUSEEVENTF_RIGHTDOWN);
+			this.LeftButtonDown = dwFlags == MouseConsts.MOUSEEVENTF_LEFTDOWN;
+			this.MiddleButtonDown = dwFlags == MouseConsts.MOUSEEVENTF_MIDDLEDOWN;
+			this.RightButtonDown = dwFlags == MouseConsts.MOUSEEVENTF_RIGHTDOWN;
 		}
 
 		private MouseButtons MapButtons(int cButtons)
@@ -247,7 +257,7 @@ namespace MatterHackers.GuiAutomation
 			return MouseButtons.Left;
 		}
 
-		static Dictionary<char, Keys> charToKeys = new Dictionary<char, Keys>()
+		private static readonly Dictionary<char, Keys> CharToKeys = new Dictionary<char, Keys>()
 		{
 			['.'] = Keys.OemPeriod
 		};
@@ -288,11 +298,12 @@ namespace MatterHackers.GuiAutomation
 					default:
 						foreach (char character in textToType)
 						{
-							Keys k = (Keys)char.ToUpper(character);
-							if(charToKeys.ContainsKey(character))
+							var k = (Keys)char.ToUpper(character);
+							if (CharToKeys.ContainsKey(character))
 							{
-								k = charToKeys[character];
+								k = CharToKeys[character];
 							}
+
 							var keyDownEvent = new KeyEventArgs(k);
 							systemWindow.OnKeyDown(keyDownEvent);
 							if (!keyDownEvent.SuppressKeyPress)
@@ -306,10 +317,11 @@ namespace MatterHackers.GuiAutomation
 							}
 							else
 							{
-								// If you end up here unexpectedly you may need to add 
+								// If you end up here unexpectedly you may need to add
 								// a mapping to charToKeys for the inputed character.
 							}
 						}
+
 						break;
 				}
 
@@ -321,7 +333,7 @@ namespace MatterHackers.GuiAutomation
 
 		private void SendKey(Keys keyDown, char keyPressed, GuiWidget reciever)
 		{
-			KeyEventArgs keyDownEvent = new KeyEventArgs(keyDown);
+			var keyDownEvent = new KeyEventArgs(keyDown);
 			reciever.OnKeyDown(keyDownEvent);
 			if (!keyDownEvent.SuppressKeyPress)
 			{
