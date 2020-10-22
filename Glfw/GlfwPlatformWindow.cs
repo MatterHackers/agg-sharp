@@ -70,7 +70,23 @@ namespace MatterHackers.GlfwProvider
 
 		public bool Invalidated { get; set; } = true;
 
-		public Vector2 MinimumSize { get; set; }
+		public Vector2 MinimumSize
+		{
+			get
+			{
+				return this.systemWindow.MinimumSize;
+			}
+
+			set
+			{
+				this.systemWindow.MinimumSize = value;
+				Glfw.SetWindowSizeLimits(glfwWindow,
+					(int)systemWindow.MinimumSize.X,
+					(int)systemWindow.MinimumSize.Y,
+					-1,
+					-1);
+			}
+		}
 
 		public int TitleBarHeight => 45;
 
@@ -541,6 +557,11 @@ namespace MatterHackers.GlfwProvider
 
 			// Create window
 			glfwWindow = Glfw.CreateWindow((int)systemWindow.Width, (int)systemWindow.Height, systemWindow.Title, Monitor.None, Window.None);
+			Glfw.SetWindowSizeLimits(glfwWindow,
+				(int)systemWindow.MinimumSize.X,
+				(int)systemWindow.MinimumSize.Y,
+				-1,
+				-1);
 			Glfw.MakeContextCurrent(glfwWindow);
 			OpenGL.Gl.Import(Glfw.GetProcAddress);
 
@@ -560,6 +581,7 @@ namespace MatterHackers.GlfwProvider
 				var x = (screenSize.Width - (int)systemWindow.Width) / 2;
 				var y = (screenSize.Height - (int)systemWindow.Height) / 2;
 				Glfw.SetWindowPosition(glfwWindow, x, y);
+				Glfw.MaximizeWindow(glfwWindow);
 			}
 			else if (systemWindow.InitialDesktopPosition == new Point2D(-1, -1))
 			{
