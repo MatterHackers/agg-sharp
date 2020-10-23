@@ -269,11 +269,16 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			CheckForError();
 		}
 
-		public static void GenBuffers(int n, out int buffers)
+		public static int GenBuffer()
 		{
-			buffers = -1;
-			Instance?.GenBuffers(n, out buffers);
-			CheckForError();
+			if (Instance != null)
+			{
+				var buffer = Instance.GenBuffer();
+				CheckForError();
+				return buffer;
+			}
+
+			return 0;
 		}
 
 		public static void GenTextures(int n, out int textureHandle)

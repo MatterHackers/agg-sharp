@@ -216,7 +216,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void BufferData(BufferTarget target, int size, IntPtr data, BufferUsageHint usage)
 		{
-			throw new NotImplementedException();
+			glBufferData((int)target, size, data, (int)usage);
 		}
 
 		public void Clear(ClearBufferMask mask)
@@ -337,7 +337,10 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DrawRangeElements(BeginMode mode, int start, int end, int count, DrawElementsType type, IntPtr indices)
 		{
-			throw new NotImplementedException();
+			unsafe
+			{
+				glDrawRangeElements((int)mode, (uint)start, (uint)end, count, (int)type, (void*)indices);
+			}
 		}
 
 		public void Enable(EnableCap cap)
@@ -370,9 +373,9 @@ namespace MatterHackers.RenderOpenGl
 			Gl.glFrontFace((int)mode);
 		}
 
-		public void GenBuffers(int n, out int buffers)
+		public int GenBuffer()
 		{
-			throw new NotImplementedException();
+			return (int)glGenBuffer();
 		}
 
 		public void GenFramebuffers(int n, out int frameBuffers)

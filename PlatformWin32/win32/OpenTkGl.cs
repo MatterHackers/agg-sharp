@@ -821,26 +821,25 @@ namespace MatterHackers.Agg.UI
 		int genBuffersIndex = 1; // start at 1 so we can use 0 as a not initialize tell.
 		Dictionary<int, byte[]> bufferData = new Dictionary<int, byte[]>();
 
-		public void GenBuffers(int n, out int buffers)
+		public int GenBuffer()
 		{
 #if USE_OPENGL
-			buffers = 0;
 			if (HardwareAvailable)
 			{
 				if (glHasBufferObjects)
 				{
-					OpenTK.Graphics.OpenGL.GL.GenBuffers(n, out buffers);
+					OpenTK.Graphics.OpenGL.GL.GenBuffers(1, out int buffers);
+					return buffers;
 				}
 				else
 				{
-					if (n != 1)
-					{
-						throw new Exception("Can only handle 1 gen count at the moment.");
-					}
-					buffers = genBuffersIndex++;
-					bufferData.Add(buffers, new byte[1]);
+					int buffer = genBuffersIndex++;
+					bufferData.Add(buffer, new byte[1]);
+					return buffer;
 				}
 			}
+
+			return 0;
 #else
 			if (glHasBufferObjects)
 			{

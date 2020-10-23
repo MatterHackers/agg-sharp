@@ -66,7 +66,20 @@ namespace MatterHackers.GlfwProvider
 			}
 		}
 
-		public Point2D DesktopPosition { get; set; }
+		public Point2D DesktopPosition
+		{
+			get
+			{
+				Glfw.GetWindowPosition(glfwWindow, out int x, out int y);
+
+				return new Point2D(x, y);
+			}
+
+			set
+			{
+				Glfw.SetWindowPosition(glfwWindow, value.x, value.y);
+			}
+		}
 
 		public bool Invalidated { get; set; } = true;
 
@@ -94,17 +107,17 @@ namespace MatterHackers.GlfwProvider
 
 		public void BringToFront()
 		{
-			// throw new NotImplementedException();
+			throw new NotImplementedException();
 		}
 
 		public void Close()
 		{
-			// throw new NotImplementedException();
+			throw new NotImplementedException();
 		}
 
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
-			// throw new NotImplementedException();
+			Glfw.SetWindowShouldClose(glfwWindow, true);
 		}
 
 		public void Invalidate(RectangleDouble rectToInvalidate)
@@ -217,6 +230,7 @@ namespace MatterHackers.GlfwProvider
 		}
 
 		private HashSet<Agg.UI.Keys> suppressedKeyDowns = new HashSet<Agg.UI.Keys>();
+		private bool alreadyClosing;
 
 		private void KeyCallback(IntPtr windowIn, GLFW.Keys key, int scanCode, InputState state, ModifierKeys mods)
 		{
@@ -606,6 +620,7 @@ namespace MatterHackers.GlfwProvider
 			Glfw.SetCursorPositionCallback(glfwWindow, CursorPositionCallback);
 			Glfw.SetMouseButtonCallback(glfwWindow, MouseButtonCallback);
 			Glfw.SetScrollCallback(glfwWindow, ScrollCallback);
+			Glfw.SetCloseCallback(glfwWindow, CloseCallback);
 
 			Glfw.ShowWindow(glfwWindow);
 
@@ -615,13 +630,23 @@ namespace MatterHackers.GlfwProvider
 				// Poll for OS events and swap front/back buffers
 				UiThread.InvokePendingActions();
 
-				// if (UiThread.CurrentTimerMs > openTime + 500)
+				if (UiThread.CurrentTimerMs > openTime + 500)
 				{
 					// wait for the window to finish opening
 					Glfw.PollEvents();
 
 					ConditionalDrawAndRefresh(systemWindow);
 				}
+			}
+		}
+
+		private void CloseCallback(IntPtr window)
+		{
+			var closing = new ClosingEventArgs();
+			systemWindow.OnClosing(closing);
+			if (closing.Cancel)
+			{
+				Glfw.SetWindowShouldClose(glfwWindow, false);
 			}
 		}
 
