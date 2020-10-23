@@ -68,17 +68,16 @@ namespace MatterHackers.Agg.UI
 #if __ANDROID__
 		bool glHasBufferObjects = false;
 #else
-		bool glHasBufferObjects = true;
 #endif
 
 		public bool HardwareAvailable { get; set; } = true;
 
-		public bool GlHasBufferObjects { get { return glHasBufferObjects; } }
+		public bool GlHasBufferObjects { get; private set; } = true;
 
-        public void DisableGlBuffers()
-        {
-            glHasBufferObjects = false;
-        }
+		public void DisableGlBuffers()
+		{
+			GlHasBufferObjects = false;
+		}
 
 		internal struct ViewPortData
 		{
@@ -669,7 +668,7 @@ namespace MatterHackers.Agg.UI
 #if USE_OPENGL
 			if (HardwareAvailable)
 			{
-				if (glHasBufferObjects)
+				if (GlHasBufferObjects)
 				{
 					OpenTK.Graphics.OpenGL.GL.BindBuffer((OpenTK.Graphics.OpenGL.BufferTarget)target, buffer);
 				}
@@ -719,7 +718,7 @@ namespace MatterHackers.Agg.UI
 #if USE_OPENGL
 			if (HardwareAvailable)
 			{
-				if(glHasBufferObjects)
+				if (GlHasBufferObjects)
 				{
 					OpenTK.Graphics.OpenGL.GL.BufferData((OpenTK.Graphics.OpenGL.BufferTarget)target, (IntPtr)size, data, (OpenTK.Graphics.OpenGL.BufferUsageHint)usage);
 				}
@@ -737,7 +736,7 @@ namespace MatterHackers.Agg.UI
 					switch (target)
 					{
 						case BufferTarget.ArrayBuffer:
-							if(currentArrayBufferIndex == 0)
+							if (currentArrayBufferIndex == 0)
 							{
 								throw new Exception("You don't have a ArrayBuffer set.");
 							}
@@ -745,7 +744,7 @@ namespace MatterHackers.Agg.UI
 							break;
 
 						case BufferTarget.ElementArrayBuffer:
-							if(currentElementArrayBufferIndex == 0)
+							if (currentElementArrayBufferIndex == 0)
 							{
 								throw new Exception("You don't have an EllementArrayBuffer set.");
 							}
@@ -803,7 +802,7 @@ namespace MatterHackers.Agg.UI
 #if USE_OPENGL
 			if (HardwareAvailable)
 			{
-				if (glHasBufferObjects || arrayCap != ArrayCap.IndexArray) // don't set index array if we don't have buffer objects (we will render through DrawElements instead).
+				if (GlHasBufferObjects || arrayCap != ArrayCap.IndexArray) // don't set index array if we don't have buffer objects (we will render through DrawElements instead).
 				{
 					OpenTK.Graphics.OpenGL.GL.EnableClientState((OpenTK.Graphics.OpenGL.ArrayCap)arrayCap);
 				}
@@ -826,7 +825,7 @@ namespace MatterHackers.Agg.UI
 #if USE_OPENGL
 			if (HardwareAvailable)
 			{
-				if (glHasBufferObjects)
+				if (GlHasBufferObjects)
 				{
 					OpenTK.Graphics.OpenGL.GL.GenBuffers(1, out int buffers);
 					return buffers;
@@ -862,13 +861,13 @@ namespace MatterHackers.Agg.UI
 #if USE_OPENGL
 			if (HardwareAvailable)
 			{
-				if (glHasBufferObjects)
+				if (GlHasBufferObjects)
 				{
 					OpenTK.Graphics.OpenGL.GL.DeleteBuffers(n, ref buffers);
 				}
 				else
 				{
-					if(n != 1)
+					if (n != 1)
 					{
 						throw new Exception("Can only handle 1 delete count at the moment.");
 					}
@@ -914,7 +913,7 @@ namespace MatterHackers.Agg.UI
 #if USE_OPENGL
 			if (HardwareAvailable)
 			{
-				if (glHasBufferObjects || currentArrayBufferIndex == 0)
+				if (GlHasBufferObjects || currentArrayBufferIndex == 0)
 				{
 					// we are rending from memory so operate normally
 					OpenTK.Graphics.OpenGL.GL.ColorPointer(size, (OpenTK.Graphics.OpenGL.ColorPointerType)type, stride, pointer);
@@ -971,7 +970,7 @@ namespace MatterHackers.Agg.UI
 #if USE_OPENGL
 			if (HardwareAvailable)
 			{
-				if (glHasBufferObjects || currentArrayBufferIndex == 0)
+				if (GlHasBufferObjects || currentArrayBufferIndex == 0)
 				{
 					OpenTK.Graphics.OpenGL.GL.NormalPointer((OpenTK.Graphics.OpenGL.NormalPointerType)type, stride, pointer);
 				}
@@ -1009,7 +1008,7 @@ namespace MatterHackers.Agg.UI
 #if USE_OPENGL
 			if (HardwareAvailable)
 			{
-				if (glHasBufferObjects || currentArrayBufferIndex == 0)
+				if (GlHasBufferObjects || currentArrayBufferIndex == 0)
 				{
 					OpenTK.Graphics.OpenGL.GL.IndexPointer((OpenTK.Graphics.OpenGL.IndexPointerType)type, stride, pointer);
 				}
@@ -1043,7 +1042,7 @@ namespace MatterHackers.Agg.UI
 #if USE_OPENGL
 			if (HardwareAvailable)
 			{
-				if (glHasBufferObjects || currentArrayBufferIndex == 0)
+				if (GlHasBufferObjects || currentArrayBufferIndex == 0)
 				{
 					OpenTK.Graphics.OpenGL.GL.VertexPointer(size, (OpenTK.Graphics.OpenGL.VertexPointerType)type, stride, pointer);
 				}
@@ -1093,7 +1092,7 @@ namespace MatterHackers.Agg.UI
 #if USE_OPENGL
 			if (HardwareAvailable)
 			{
-				if (glHasBufferObjects)
+				if (GlHasBufferObjects)
 				{
 					OpenTK.Graphics.OpenGL.GL.DrawRangeElements((OpenTK.Graphics.OpenGL.BeginMode)mode, start, end, count, (OpenTK.Graphics.OpenGL.DrawElementsType)type, indices);
 				}

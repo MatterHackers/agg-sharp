@@ -33,6 +33,7 @@ using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 using OpenGL;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using static OpenGL.Gl;
@@ -74,8 +75,6 @@ namespace MatterHackers.RenderOpenGl
 		private static glVertex2fHandler glVertex2f;
 		private static glVertex3fHandler glVertex3f;
 		private static glVertexPointerHandler glVertexPointer;
-		private bool glHasBufferObjects = true;
-
 		private static bool initialized = false;
 
 		public GlfwGL()
@@ -182,7 +181,7 @@ namespace MatterHackers.RenderOpenGl
 
 		private delegate void glVertexPointerHandler(int size, int type, int stride, IntPtr pointer);
 
-		public bool GlHasBufferObjects { get { return glHasBufferObjects; } }
+		public bool GlHasBufferObjects { get; private set; } = true;
 
 		public void Begin(BeginMode mode)
 		{
@@ -191,7 +190,26 @@ namespace MatterHackers.RenderOpenGl
 
 		public void BindBuffer(BufferTarget target, int buffer)
 		{
-			Gl.glBindBuffer((int)target, (uint)buffer);
+			if (GlHasBufferObjects)
+			{
+				Gl.glBindBuffer((int)target, (uint)buffer);
+			}
+			else
+			{
+				switch (target)
+				{
+					case BufferTarget.ArrayBuffer:
+						currentArrayBufferIndex = buffer;
+						break;
+
+					case BufferTarget.ElementArrayBuffer:
+						currentElementArrayBufferIndex = buffer;
+						break;
+
+					default:
+						throw new NotImplementedException();
+				}
+			}
 		}
 
 		public void BindFramebuffer(int renderBuffer)
@@ -216,7 +234,45 @@ namespace MatterHackers.RenderOpenGl
 
 		public void BufferData(BufferTarget target, int size, IntPtr data, BufferUsageHint usage)
 		{
-			glBufferData((int)target, size, data, (int)usage);
+			if (GlHasBufferObjects)
+			{
+				glBufferData((int)target, size, data, (int)usage);
+			}
+			else
+			{
+				byte[] dataCopy = new byte[size];
+				unsafe
+				{
+					for (int i = 0; i < size; i++)
+					{
+						dataCopy[i] = ((byte*)data)[i];
+					}
+				}
+
+				switch (target)
+				{
+					case BufferTarget.ArrayBuffer:
+						if (currentArrayBufferIndex == 0)
+						{
+							throw new System.Exception("You don't have a ArrayBuffer set.");
+						}
+
+						bufferData[currentArrayBufferIndex] = dataCopy;
+						break;
+
+					case BufferTarget.ElementArrayBuffer:
+						if (currentElementArrayBufferIndex == 0)
+						{
+							throw new System.Exception("You don't have an EllementArrayBuffer set.");
+						}
+
+						bufferData[currentElementArrayBufferIndex] = dataCopy;
+						break;
+
+					default:
+						throw new NotImplementedException();
+				}
+			}
 		}
 
 		public void Clear(ClearBufferMask mask)
@@ -267,7 +323,21 @@ namespace MatterHackers.RenderOpenGl
 
 		public void ColorPointer(int size, ColorPointerType type, int stride, IntPtr pointer)
 		{
-			glColorPointer(size, (int)type, stride, pointer);
+			if (GlHasBufferObjects || currentArrayBufferIndex == 0)
+			{
+				// we are rending from memory so operate normally
+				glColorPointer(size, (int)type, stride, pointer);
+			}
+			else
+			{
+				unsafe
+				{
+					fixed (byte* buffer = bufferData[currentArrayBufferIndex])
+					{
+						glColorPointer(size, (int)type, stride, new IntPtr(&buffer[(int)pointer]));
+					}
+				}
+			}
 		}
 
 		public void CullFace(CullFaceMode mode)
@@ -277,7 +347,14 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DeleteBuffers(int n, ref int buffers)
 		{
-			throw new NotImplementedException();
+			if (GlHasBufferObjects)
+			{
+				Gl.glDeleteBuffer((uint)buffers);
+			}
+			else
+			{
+				bufferData.Remove(buffers);
+			}
 		}
 
 		public void DeleteFramebuffers(int n, ref int frameBuffers)
@@ -322,7 +399,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DisableGlBuffers()
 		{
-			glHasBufferObjects = false;
+			GlHasBufferObjects = false;
 		}
 
 		public void DisposeResources()
@@ -350,7 +427,10 @@ namespace MatterHackers.RenderOpenGl
 
 		public void EnableClientState(ArrayCap arrayCap)
 		{
-			glEnableClientState((int)arrayCap);
+			if (GlHasBufferObjects || arrayCap != ArrayCap.IndexArray) // don't set index array if we don't have buffer objects (we will render through DrawElements instead).
+			{
+				glEnableClientState((int)arrayCap);
+			}
 		}
 
 		public void End()
@@ -373,9 +453,23 @@ namespace MatterHackers.RenderOpenGl
 			Gl.glFrontFace((int)mode);
 		}
 
+		int currentArrayBufferIndex = 0;
+		int currentElementArrayBufferIndex = 0;
+		int genBuffersIndex = 1; // start at 1 so we can use 0 as a not initialize tell.
+		Dictionary<int, byte[]> bufferData = new Dictionary<int, byte[]>();
+
 		public int GenBuffer()
 		{
-			return (int)glGenBuffer();
+			if (GlHasBufferObjects)
+			{
+				return (int)glGenBuffer();
+			}
+			else
+			{
+				int buffer = genBuffersIndex++;
+				bufferData.Add(buffer, new byte[1]);
+				return buffer;
+			}
 		}
 
 		public void GenFramebuffers(int n, out int frameBuffers)
