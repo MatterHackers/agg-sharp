@@ -29,10 +29,8 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
-using MatterHackers.Agg;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
-
 
 namespace MatterHackers.Agg.UI
 {

@@ -27,15 +27,15 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.InteropServices;
 using GLFW;
 using MatterHackers.Agg;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 using OpenGL;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Runtime.InteropServices;
 using static OpenGL.Gl;
 using ErrorCode = MatterHackers.RenderOpenGl.OpenGl.ErrorCode;
 
@@ -44,38 +44,78 @@ namespace MatterHackers.RenderOpenGl
 	public class GlfwGL : IOpenGL
 	{
 		private static glBeginHandler glBegin;
+
 		private static glClearHandler glClear;
+
 		private static glColor4fHandler glColor4f;
+
 		private static glColorMaterialHandler glColorMaterial;
+
 		private static glColorPointerHandler glColorPointer;
+
 		private static glDisableClientStateHandler glDisableClientState;
+
 		private static glEnableClientStateHandler glEnableClientState;
+
 		private static glEndHandler glEnd;
+
 		private static glIndexPointerHandler glIndexPointer;
+
 		private static glLightfvHandler glLightfv;
+
 		private static glLoadIdentityHandler glLoadIdentity;
+
 		private static glLoadMatrixdHandler glLoadMatrixd;
+
 		private static glMatrixModeHandler glMatrixMode;
+
 		private static glMultMatrixHandler glMultMatrixf;
+
 		private static glNormal3fHandler glNormal3f;
+
 		private static glNormalPointerHandler glNormalPointer;
+
 		private static glOrthoHandler glOrtho;
+
 		private static glPopAttribHandler glPopAttrib;
+
 		private static glPopMatrixHandler glPopMatrix;
+
 		private static glPushAttribHandler glPushAttrib;
+
 		private static glPushMatrixHandler glPushMatrix;
+
 		private static glRotatefHandler glRotatef;
+
 		private static glScalefHandler glScalef;
+
 		private static glShadeModelHandler glShadeModel;
+
 		private static glTexCoord2fHandler glTexCoord2f;
+
 		private static glTexCoordPointerHandler glTexCoordPointer;
+
 		private static glTexEnvfPointerHandler glTexEnvf;
+
 		private static glTexParameteriHandler glTexParameteri;
+
 		private static glTranslatefHandler glTranslatef;
+
 		private static glVertex2fHandler glVertex2f;
+
 		private static glVertex3fHandler glVertex3f;
+
 		private static glVertexPointerHandler glVertexPointer;
+
 		private static bool initialized = false;
+
+		private Dictionary<int, byte[]> bufferData = new Dictionary<int, byte[]>();
+
+		private int currentArrayBufferIndex = 0;
+
+		private int currentElementArrayBufferIndex = 0;
+
+		private int genBuffersIndex = 1;
 
 		public GlfwGL()
 		{
@@ -453,11 +493,7 @@ namespace MatterHackers.RenderOpenGl
 			Gl.glFrontFace((int)mode);
 		}
 
-		int currentArrayBufferIndex = 0;
-		int currentElementArrayBufferIndex = 0;
-		int genBuffersIndex = 1; // start at 1 so we can use 0 as a not initialize tell.
-		Dictionary<int, byte[]> bufferData = new Dictionary<int, byte[]>();
-
+		// start at 1 so we can use 0 as a not initialize tell.
 		public int GenBuffer()
 		{
 			if (GlHasBufferObjects)
