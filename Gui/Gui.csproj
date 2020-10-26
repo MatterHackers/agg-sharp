@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\agg\Agg.csproj" />
+    <ProjectReference Include="..\Localizations\Localizations.csproj" />
   </ItemGroup>
 
 </Project>

@@ -102,10 +102,10 @@ namespace MatterHackers.DataConverters3D
 		{
 			IObject3D root = source ?? new Object3D();
 
-			Stopwatch time = Stopwatch.StartNew();
+			var time = Stopwatch.StartNew();
 
 			// LOAD THE MESH DATA
-			Obj objFile = new Obj();
+			var objFile = new Obj();
 			objFile.LoadObj(fileStream);
 
 			IObject3D context = new Object3D();
@@ -121,15 +121,16 @@ namespace MatterHackers.DataConverters3D
 
 			foreach (var face in objFile.FaceList)
 			{
-				for(int i=0; i<face.VertexIndexList.Length; i++)
+				for (int i = 0; i < face.VertexIndexList.Length; i++)
 				{
-					if(face.VertexIndexList[i] >= objFile.TextureList.Count)
+					if (face.VertexIndexList[i] >= objFile.TextureList.Count)
 					{
 						int a = 0;
 					}
 				}
+
 				mesh.Faces.Add(face.VertexIndexList[0] - 1, face.VertexIndexList[1] - 1, face.VertexIndexList[2] - 1, mesh.Vertices);
-				if(face.VertexIndexList.Length == 4)
+				if (face.VertexIndexList.Length == 4)
 				{
 					// add the other side of the quad
 					mesh.Faces.Add(face.VertexIndexList[0] - 1, face.VertexIndexList[2] - 1, face.VertexIndexList[3] - 1, mesh.Vertices);
@@ -142,8 +143,8 @@ namespace MatterHackers.DataConverters3D
 				// TODO: have consideration for this being in a shared zip file
 				string pathToObj = Path.GetDirectoryName(((FileStream)fileStream).Name);
 				//Try-catch block for when objFile.Material is not found
-                try
-                {
+				try
+				{
 					using (var materialsStream = File.OpenRead(Path.Combine(pathToObj, objFile.Material)))
 					{
 						var mtl = new Mtl();
@@ -156,18 +157,18 @@ namespace MatterHackers.DataConverters3D
 								var pathToTexture = Path.Combine(pathToObj, material.DiffuseTextureFileName);
 								if (File.Exists(pathToTexture))
 								{
-									ImageBuffer diffuseTexture = new ImageBuffer();
+									var diffuseTexture = new ImageBuffer();
 
 									// TODO: have consideration for this being in a shared zip file
-									using (var ImageStream = File.OpenRead(pathToTexture))
+									using (var imageStream = File.OpenRead(pathToTexture))
 									{
 										if (Path.GetExtension(material.DiffuseTextureFileName).ToLower() == ".tga")
 										{
-											ImageTgaIO.LoadImageData(diffuseTexture, ImageStream, 32);
+											ImageTgaIO.LoadImageData(diffuseTexture, imageStream, 32);
 										}
 										else
 										{
-											AggContext.ImageIO.LoadImageData(ImageStream, diffuseTexture);
+											AggContext.ImageIO.LoadImageData(imageStream, diffuseTexture);
 										}
 									}
 
@@ -208,10 +209,10 @@ namespace MatterHackers.DataConverters3D
 						}
 					}
 				}
-                catch (FileNotFoundException)
-                {
-					//Just continue as if obj.Material == "" to show object
-                }				
+				catch (FileNotFoundException)
+				{
+					// Just continue as if obj.Material == "" to show object
+				}
 			}
 
 			time.Stop();
@@ -223,13 +224,13 @@ namespace MatterHackers.DataConverters3D
 
 			reportProgress?.Invoke(1, "");
 
-			return (hasValidMesh) ? root : null;
+			return hasValidMesh ? root : null;
 		}
 
 		/// <summary>
 		/// Writes the mesh to disk in a zip container
 		/// </summary>
-		/// <param name="meshToSave">The mesh to save</param>
+		/// <param name="item">The mesh to save</param>
 		/// <param name="fileName">The file path to save at</param>
 		/// <param name="outputInfo">Extra meta data to store in the file</param>
 		/// <returns>The results of the save operation</returns>
@@ -238,7 +239,7 @@ namespace MatterHackers.DataConverters3D
 			try
 			{
 				using (Stream stream = File.OpenWrite(fileName))
-				using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Create))
+				using (var archive = new ZipArchive(stream, ZipArchiveMode.Create))
 				{
 					ZipArchiveEntry zipEntry = archive.CreateEntry(Path.GetFileName(fileName));
 					using (var entryStream = zipEntry.Open())
@@ -262,7 +263,7 @@ namespace MatterHackers.DataConverters3D
 
 		public static bool SaveUncompressed(IObject3D item, string fileName, MeshOutputSettings outputInfo = null)
 		{
-			using (FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
+			using (var file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
 			{
 				return Save(item, file, outputInfo);
 			}
@@ -270,7 +271,7 @@ namespace MatterHackers.DataConverters3D
 
 		private static string Indent(int index)
 		{
-			return new String(' ', index * 2);
+			return new string(' ', index * 2);
 		}
 
 		private static bool IsZipFile(Stream fs)

@@ -165,13 +165,15 @@ namespace MatterHackers.Agg
 		{
 			// Init agg with our OpenGL window definition
 			//AggContext.Init(embeddedResourceName: "lion.config.json");
-			AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.OpenGLWinformsWindowProvider, agg_platform_win32";
+			//AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.OpenGLWinformsWindowProvider, agg_platform_win32";
+			AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.GlfwProvider.GlfwWindowProvider, MatterHackers.GlfwProvider";
 
 			var demoWidget = new Lion();
 
 			var systemWindow = new SystemWindow(512, 400);
 			systemWindow.Title = demoWidget.Title;
 			systemWindow.AddChild(demoWidget);
+			SingleWindowProvider.SetWindowTheme(Color.Black, 12, false, () => new Button("X", 0, 0), 3, Color.LightGray, Color.DarkGray);
 			systemWindow.ShowAsSystemWindow();
 		}
 	}

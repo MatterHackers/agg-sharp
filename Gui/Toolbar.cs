@@ -27,65 +27,59 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.VertexSource;
-using Tesselate;
-
-namespace MatterHackers.DataConverters2D
+namespace MatterHackers.Agg.UI
 {
-	public abstract class VertexTesselatorAbstract : Tesselator
+	/// <summary>
+	/// A toolbar with an optional right anchored element and an ActionBar child to add actions to the bar
+	/// </summary>
+	public class Toolbar : GuiWidget
 	{
-		public abstract void AddVertex(double x, double y);
+		public Toolbar(BorderDouble padding, GuiWidget rightAnchorItem = null)
+		{
+			this.Padding = padding;
+
+			this.ActionArea = new FlowLayoutWidget()
+			{
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Fit | VAnchor.Center
+			};
+
+			base.AddChild(this.ActionArea, 0);
+			this.SetRightAnchorItem(rightAnchorItem);
+		}
+
+		public FlowLayoutWidget ActionArea { get; }
+
+		public GuiWidget RightAnchorItem { get; private set; }
+
+		public void SetRightAnchorItem(GuiWidget rightAnchorItem)
+		{
+			if (rightAnchorItem != null)
+			{
+				rightAnchorItem.HAnchor |= HAnchor.Right;
+				base.AddChild(rightAnchorItem);
+			}
+
+			this.RightAnchorItem = rightAnchorItem;
+		}
+
+		public override GuiWidget AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
+		{
+			return ActionArea.AddChild(childToAdd, indexInChildrenList);
+		}
+
+		public void AddChildDirect(GuiWidget guiWidget)
+		{
+			base.AddChild(guiWidget);
+		}
 	}
 
-	public class VertexSourceToTesselator
+	public class ToolbarSeparator : VerticalLine
 	{
-		public static void SendShapeToTesselator(VertexTesselatorAbstract tesselator, IVertexSource vertexSource)
+		public ToolbarSeparator(Color borderColor, BorderDouble margin)
+			: base(borderColor)
 		{
-#if !DEBUG
-            try
-#endif
-			{
-				tesselator.BeginPolygon();
-
-				bool haveBegunContour = false;
-				foreach (var vertexData in vertexSource.Vertices())
-				{
-					if (vertexData.IsStop)
-					{
-						break;
-					}
-
-					if (haveBegunContour
-						&& (vertexData.IsClose || vertexData.IsMoveTo))
-					{
-						tesselator.EndContour();
-						haveBegunContour = false;
-					}
-
-					if (!vertexData.IsClose)
-					{
-						if (!haveBegunContour)
-						{
-							tesselator.BeginContour();
-							haveBegunContour = true;
-						}
-
-						tesselator.AddVertex(vertexData.position.X, vertexData.position.Y);
-					}
-				}
-
-				if (haveBegunContour)
-				{
-					tesselator.EndContour();
-				}
-
-				tesselator.EndPolygon();
-			}
-#if !DEBUG
-            catch
-            {
-            }
-#endif
+			Margin = margin;
 		}
 	}
 }

@@ -29,29 +29,32 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
+using System.Linq;
 using ClipperLib;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters2D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
 
 namespace MatterHackers.DataConverters3D
 {
-	using Polygons = List<List<IntPoint>>;
-	using Polygon = List<IntPoint>;
-
 	public static class VertexSourceToMesh
 	{
-		public static Mesh TriangulateFaces(this IVertexSource vertexSource, CachedTesselator teselatedSource = null)
+		public static Mesh TriangulateFaces(this IVertexSource vertexSource, CachedTesselator teselatedSource = null, Mesh meshToAddTo = null)
 		{
 			if (teselatedSource == null)
 			{
 				teselatedSource = new CachedTesselator();
 			}
+
 			VertexSourceToTesselator.SendShapeToTesselator(teselatedSource, vertexSource);
 
-			Mesh mesh = new Mesh();
+			if (meshToAddTo == null)
+			{
+				meshToAddTo = new Mesh();
+			}
 
 			int numIndicies = teselatedSource.IndicesCache.Count;
 
@@ -66,57 +69,97 @@ namespace MatterHackers.DataConverters3D
 					continue;
 				}
 
-				mesh.CreateFace(new Vector3[] { new Vector3(v0, 0), new Vector3(v1, 0), new Vector3(v2, 0) });
+				meshToAddTo.CreateFace(new Vector3[] { new Vector3(v0, 0), new Vector3(v1, 0), new Vector3(v2, 0) });
 			}
 
-			return mesh;
+			return meshToAddTo;
 		}
 
-		public static Polygons GetCorrectedWinding(this Polygons polygonsToFix)
+		private static double fixCloseAngles(double angle)
 		{
-			polygonsToFix = Clipper.CleanPolygons(polygonsToFix);
-			Polygon boundsPolygon = new Polygon();
-			IntRect bounds = Clipper.GetBounds(polygonsToFix);
-			bounds.left -= 10;
-			bounds.top -= 10;
-			bounds.bottom += 10;
-			bounds.right += 10;
+			if (Math.Abs(angle) < .001)
+			{
+				return 0;
+			}
 
-			boundsPolygon.Add(new IntPoint(bounds.left, bounds.top));
-			boundsPolygon.Add(new IntPoint(bounds.right, bounds.top));
-			boundsPolygon.Add(new IntPoint(bounds.right, bounds.bottom));
-			boundsPolygon.Add(new IntPoint(bounds.left, bounds.bottom));
+			if (angle < MathHelper.Tau + .001
+				&& angle > MathHelper.Tau - .001)
+			{
+				return MathHelper.Tau;
+			}
 
-			Clipper clipper = new Clipper();
-
-			clipper.AddPaths(polygonsToFix, PolyType.ptSubject, true);
-			clipper.AddPath(boundsPolygon, PolyType.ptClip, true);
-
-			PolyTree intersectionResult = new PolyTree();
-			clipper.Execute(ClipType.ctIntersection, intersectionResult);
-
-			Polygons outputPolygons = Clipper.ClosedPathsFromPolyTree(intersectionResult);
-
-			return outputPolygons;
+			return angle;
 		}
 
-		public static Mesh Revolve(this IVertexSource source, int angleSteps = 30, double angleStart = 0, double angleEnd = MathHelper.Tau)
+		public static Mesh Revolve(this IVertexSource source,
+			int angleSteps = 30,
+			double angleStart = 0,
+			double angleEnd = MathHelper.Tau,
+			bool revolveAroundZ = true)
 		{
-			angleSteps = Math.Max(angleSteps, 3);
 			angleStart = MathHelper.Range0ToTau(angleStart);
 			angleEnd = MathHelper.Range0ToTau(angleEnd);
+
+			// make sure we close 360 shapes
+			angleStart = fixCloseAngles(angleStart);
+			angleEnd = fixCloseAngles(angleEnd);
+
+			if (angleStart == 0 && angleEnd == MathHelper.Tau)
+			{
+				angleSteps = Math.Max(angleSteps, 3);
+			}
+			else
+			{
+				angleSteps = Math.Max(angleSteps, 1);
+			}
 
 			// convert to clipper polygons and scale so we can ensure good shapes
 			Polygons polygons = source.CreatePolygons();
 
-			// ensure good winding and consistent shapes
-			// clip against x=0 left and right
-			// mirror left material across the origin
-			// union mirrored left with right material
+			if (polygons.Select(poly => poly.Where(pos => pos.X < 0)).Any())
+			{
+				// ensure good winding and consistent shapes
+				polygons = polygons.GetCorrectedWinding();
+				var bounds = polygons.GetBounds();
+				bounds.Inflate(10);
+				// clip against x=0 left and right
+				var leftClip = new Polygon();
+				leftClip.Add(new IntPoint(0, bounds.Bottom));
+				leftClip.Add(new IntPoint(0, bounds.Top));
+				leftClip.Add(new IntPoint(bounds.Left, bounds.Top));
+				leftClip.Add(new IntPoint(bounds.Left, bounds.Bottom));
+				var rightStuff = polygons.Subtract(leftClip);
+
+				var rightClip = new Polygon();
+				rightClip.Add(new IntPoint(0, bounds.Top));
+				rightClip.Add(new IntPoint(0, bounds.Bottom));
+				rightClip.Add(new IntPoint(bounds.Right, bounds.Bottom));
+				rightClip.Add(new IntPoint(bounds.Right, bounds.Top));
+				var leftStuff = polygons.Subtract(rightClip);
+				// mirror left material across the origin
+				var leftAdd = leftStuff.Scale(-1, 1);
+				if (leftAdd.Count > 0)
+				{
+					if (rightStuff.Count > 0)
+					{
+						polygons = rightStuff.Union(leftAdd);
+					}
+					else
+					{
+						polygons = leftAdd;
+					}
+				}
+				else
+				{
+					// there is nothing on the left
+					polygons = rightStuff;
+				}
+			}
+
 			// convert the data back to PathStorage
 			VertexStorage cleanedPath = polygons.CreateVertexStorage();
 
-			Mesh mesh = new Mesh();
+			var mesh = new Mesh();
 
 			var hasStartAndEndFaces = angleStart > 0.000001;
 			hasStartAndEndFaces |= angleEnd < MathHelper.Tau - 0.000001;
@@ -124,23 +167,31 @@ namespace MatterHackers.DataConverters3D
 			if (hasStartAndEndFaces)
 			{
 				// make a face for the start
-				Mesh extrudedVertexSource = source.TriangulateFaces();
-				extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
-				extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(angleStart));
+				Mesh extrudedVertexSource = cleanedPath.TriangulateFaces();
+				if (revolveAroundZ)
+				{
+					extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
+					extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(angleStart));
+				}
+				else
+				{
+					extrudedVertexSource.Transform(Matrix4X4.CreateRotationY(angleStart));
+				}
+
 				mesh.CopyFaces(extrudedVertexSource);
 			}
 
 			// make the outside shell
 			double angleDelta = (angleEnd - angleStart) / angleSteps;
 			double currentAngle = angleStart;
-			if(!hasStartAndEndFaces)
+			if (!hasStartAndEndFaces)
 			{
 				angleSteps--;
 			}
 
-			for (int i=0; i < angleSteps; i++)
+			for (int i = 0; i < angleSteps; i++)
 			{
-				AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta);
+				AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta, revolveAroundZ);
 				currentAngle += angleDelta;
 			}
 
@@ -151,15 +202,23 @@ namespace MatterHackers.DataConverters3D
 					&& (angleEnd - currentAngle) > .0000001)
 				{
 					// make sure we close the shape exactly
-					AddRevolveStrip(cleanedPath, mesh, currentAngle, angleStart);
+					AddRevolveStrip(cleanedPath, mesh, currentAngle, angleStart, revolveAroundZ);
 				}
 			}
 			else // add the end face
 			{
 				// make a face for the end
-				Mesh extrudedVertexSource = source.TriangulateFaces();
-				extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
-				extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(currentAngle));
+				Mesh extrudedVertexSource = cleanedPath.TriangulateFaces();
+				if (revolveAroundZ)
+				{
+					extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
+					extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(currentAngle));
+				}
+				else
+				{
+					extrudedVertexSource.Transform(Matrix4X4.CreateRotationY(angleStart));
+				}
+
 				extrudedVertexSource.ReverseFaces();
 				mesh.CopyFaces(extrudedVertexSource);
 			}
@@ -170,9 +229,10 @@ namespace MatterHackers.DataConverters3D
 			return mesh;
 		}
 
-		static void AddRevolveStrip(IVertexSource vertexSource, Mesh mesh, double startAngle, double endAngle)
+		private static void AddRevolveStrip(IVertexSource vertexSource, Mesh mesh, double startAngle, double endAngle, bool revolveAroundZ)
 		{
 			Vector3 lastPosition = Vector3.Zero;
+			Vector3 firstPosition = Vector3.Zero;
 
 			foreach (var vertexData in vertexSource.Vertices())
 			{
@@ -180,50 +240,129 @@ namespace MatterHackers.DataConverters3D
 				{
 					break;
 				}
+
 				if (vertexData.IsMoveTo)
 				{
-					lastPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
+					firstPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
+					if (!revolveAroundZ)
+					{
+						firstPosition = new Vector3(vertexData.position.X, vertexData.position.Y, 0);
+					}
+
+					lastPosition = firstPosition;
 				}
 
-				if (vertexData.IsLineTo)
+				if (vertexData.IsLineTo || vertexData.IsClose)
 				{
-					Vector3 currentPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
 
-					mesh.CreateFace(new Vector3[] 
+					var currentPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
+					if (!revolveAroundZ)
 					{
-						Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(endAngle)),
-						Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(startAngle)),
-						Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationZ(startAngle)),
-						Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationZ(endAngle)),
-					});
+						currentPosition = new Vector3(vertexData.position.X, vertexData.position.Y, 0);
+					}
+
+					if (vertexData.IsClose)
+					{
+						currentPosition = firstPosition;
+					}
+
+					if (currentPosition.X != 0 || lastPosition.X != 0)
+					{
+						if (revolveAroundZ)
+						{
+							mesh.CreateFace(new Vector3[]
+							{
+								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(endAngle)),
+								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(startAngle)),
+								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationZ(startAngle)),
+								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationZ(endAngle)),
+							});
+						}
+						else
+						{
+							mesh.CreateFace(new Vector3[]
+							{
+								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationY(endAngle)),
+								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationY(startAngle)),
+								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationY(startAngle)),
+								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationY(endAngle)),
+							});
+						}
+					}
 
 					lastPosition = currentPosition;
 				}
 			}
 		}
 
-		public static Mesh Extrude(this IVertexSource vertexSource, double zHeight)
+		public static Mesh Extrude(this IVertexSource vertexSourceIn,
+			double zHeightTop,
+			List<(double height, double offset)> bevel = null)
 		{
-			Polygons polygons = vertexSource.CreatePolygons();
+			Polygons bottomPolygons = vertexSourceIn.CreatePolygons();
 
 			// ensure good winding and consistent shapes
-			polygons = polygons.GetCorrectedWinding();
+			bottomPolygons = bottomPolygons.GetCorrectedWinding();
 
-			// convert the data back to PathStorage
-			vertexSource = polygons.CreateVertexStorage();
+			var bottomTeselatedSource = new CachedTesselator();
 
-			CachedTesselator teselatedSource = new CachedTesselator();
-			Mesh mesh = vertexSource.TriangulateFaces(teselatedSource);
-			int numIndicies = teselatedSource.IndicesCache.Count;
+			// add the top
+			var mesh = new Mesh();
 
-			mesh.Translate(new Vector3(0, 0, zHeight));
+			var zHeightSides = zHeightTop;
+			if (bevel != null)
+			{
+				// add the top polygon
+				//vertexSourceIn.Offset(bevel[bevel.Count - 1].offset);
+				var vertexSourceTop = bottomPolygons.Offset(bevel[bevel.Count - 1].offset * 1000);
+				vertexSourceTop.CreateVertexStorage().TriangulateFaces(bottomTeselatedSource, mesh);
+				mesh.Translate(new Vector3(0, 0, zHeightTop));
+
+				// add all the bevels
+				var vertexSourcePrev = bottomPolygons;
+
+				for (int i = 0; i < bevel.Count; i++)
+				{
+					var vertexSourceNext = bottomPolygons.Offset(bevel[i].offset * 1000);
+
+					var all = new Polygons();
+					all.AddRange(vertexSourcePrev);
+					all.AddRange(vertexSourceNext);
+					all = all.GetCorrectedWinding();
+					var allTeselatedSource = new CachedTesselator();
+
+					var bevelLoop = all.CreateVertexStorage().TriangulateFaces(allTeselatedSource);
+
+					for (var j = 0; j < bevelLoop.Vertices.Count; j++)
+					{
+						bevelLoop.Vertices[j] = bevelLoop.Vertices[j] + new Vector3Float(0, 0, 16);
+					}
+
+					mesh.CopyFaces(bevelLoop);
+				}
+
+				// and set the level for the bottom wall polygons
+				zHeightSides = bevel[0].height;
+
+				var vertexSourceBottom = bottomPolygons.CreateVertexStorage();
+				vertexSourceBottom.TriangulateFaces(bottomTeselatedSource);
+			}
+			else
+			{
+				// add the top polygon
+				var vertexSourceBottom = bottomPolygons.CreateVertexStorage();
+				vertexSourceBottom.TriangulateFaces(bottomTeselatedSource, mesh);
+				mesh.Translate(new Vector3(0, 0, zHeightTop));
+			}
+
+			int numIndicies = bottomTeselatedSource.IndicesCache.Count;
 
 			// then the outside edge
 			for (int i = 0; i < numIndicies; i += 3)
 			{
-				Vector2 v0 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 0].Index].Position;
-				Vector2 v1 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 1].Index].Position;
-				Vector2 v2 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 2].Index].Position;
+				Vector2 v0 = bottomTeselatedSource.VerticesCache[bottomTeselatedSource.IndicesCache[i + 0].Index].Position;
+				Vector2 v1 = bottomTeselatedSource.VerticesCache[bottomTeselatedSource.IndicesCache[i + 1].Index].Position;
+				Vector2 v2 = bottomTeselatedSource.VerticesCache[bottomTeselatedSource.IndicesCache[i + 2].Index].Position;
 				if (v0 == v1 || v1 == v2 || v2 == v0)
 				{
 					continue;
@@ -233,21 +372,21 @@ namespace MatterHackers.DataConverters3D
 				var bottomVertex1 = new Vector3(v1, 0);
 				var bottomVertex2 = new Vector3(v2, 0);
 
-				var topVertex0 = new Vector3(v0, zHeight);
-				var topVertex1 = new Vector3(v1, zHeight);
-				var topVertex2 = new Vector3(v2, zHeight);
+				var topVertex0 = new Vector3(v0, zHeightSides);
+				var topVertex1 = new Vector3(v1, zHeightSides);
+				var topVertex2 = new Vector3(v2, zHeightSides);
 
-				if (teselatedSource.IndicesCache[i + 0].IsEdge)
+				if (bottomTeselatedSource.IndicesCache[i + 0].IsEdge)
 				{
 					mesh.CreateFace(new Vector3[] { bottomVertex0, bottomVertex1, topVertex1, topVertex0 });
 				}
 
-				if (teselatedSource.IndicesCache[i + 1].IsEdge)
+				if (bottomTeselatedSource.IndicesCache[i + 1].IsEdge)
 				{
 					mesh.CreateFace(new Vector3[] { bottomVertex1, bottomVertex2, topVertex2, topVertex1 });
 				}
 
-				if (teselatedSource.IndicesCache[i + 2].IsEdge)
+				if (bottomTeselatedSource.IndicesCache[i + 2].IsEdge)
 				{
 					mesh.CreateFace(new Vector3[] { bottomVertex2, bottomVertex0, topVertex0, topVertex2 });
 				}
@@ -256,9 +395,9 @@ namespace MatterHackers.DataConverters3D
 			// then the bottom
 			for (int i = 0; i < numIndicies; i += 3)
 			{
-				Vector2 v0 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 0].Index].Position;
-				Vector2 v1 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 1].Index].Position;
-				Vector2 v2 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 2].Index].Position;
+				Vector2 v0 = bottomTeselatedSource.VerticesCache[bottomTeselatedSource.IndicesCache[i + 0].Index].Position;
+				Vector2 v1 = bottomTeselatedSource.VerticesCache[bottomTeselatedSource.IndicesCache[i + 1].Index].Position;
+				Vector2 v2 = bottomTeselatedSource.VerticesCache[bottomTeselatedSource.IndicesCache[i + 2].Index].Position;
 				if (v0 == v1 || v1 == v2 || v2 == v0)
 				{
 					continue;

@@ -53,7 +53,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -119,6 +119,10 @@
     <ProjectReference Include="..\..\Agg\Agg.csproj">
       <Project>{657dbc6d-c3ea-4398-a3fa-ddb73c14f71b}</Project>
       <Name>Agg</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Glfw\GlfwProvider.csproj">
+      <Project>{4ffc5b1f-e1fb-4411-84f4-2d564b8679db}</Project>
+      <Name>GlfwProvider</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Gui\Gui.csproj">
       <Project>{74f6bb6c-9d02-4512-a59a-21940e35c532}</Project>

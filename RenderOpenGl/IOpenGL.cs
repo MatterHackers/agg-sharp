@@ -86,7 +86,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		void FrontFace(FrontFaceDirection mode);
 
-		void GenBuffers(int n, out int buffers);
+		int GenBuffer();
 
 		void GenTextures(int n, out int textureHandle);
 

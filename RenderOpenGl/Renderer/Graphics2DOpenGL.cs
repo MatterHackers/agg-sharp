@@ -407,7 +407,14 @@ namespace MatterHackers.RenderOpenGl
 
 				GL.Disable(EnableCap.Texture2D);
 				GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-				GL.Enable(EnableCap.Blend);
+				if (fillColor.Alpha0To255 < 255)
+				{
+					GL.Enable(EnableCap.Blend);
+				}
+				else
+				{
+					GL.Disable(EnableCap.Blend);
+				}
 
 				GL.Color4(fillColor.Red0To255, fillColor.Green0To255, fillColor.Blue0To255, fillColor.Alpha0To255);
 

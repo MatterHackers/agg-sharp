@@ -200,6 +200,27 @@ namespace ClipperLib
 			return output;
 		}
 
+		public static Polygon Scale(this Polygon poly, double scaleX, double scaleY)
+		{
+			var output = new Polygon(poly.Count);
+			foreach (var point in poly)
+			{
+				output.Add(new IntPoint(point.X * scaleX, point.Y * scaleY));
+			}
+
+			return output;
+		}
+		public static Polygons Scale(this Polygons polys, double scaleX, double scaleY)
+		{
+			var output = new Polygons(polys.Count);
+			foreach (var poly in polys)
+			{
+				output.Add(poly.Scale(scaleX, scaleY));
+			}
+
+			return output;
+		}
+
 		public static RectangleDouble GetBounds(this Polygon poly)
 		{
 			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
@@ -226,7 +247,6 @@ namespace ClipperLib
 		{
 			var offseter = new ClipperOffset();
 			offseter.AddPaths(polygons, JoinType.jtRound, EndType.etClosedPolygon);
-
 			var solution = new Polygons();
 			offseter.Execute(ref solution, distance);
 

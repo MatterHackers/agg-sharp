@@ -43,8 +43,8 @@ namespace MatterHackers.GCodeVisualizer
 		public int myVertexLength;
 		public GCodeVertexBuffer()
 		{
-			GL.GenBuffers(1, out myVertexId);
-			GL.GenBuffers(1, out myIndexId);
+			myVertexId = GL.GenBuffer();
+			myIndexId= GL.GenBuffer();
 		}
 
 		public void Dispose()

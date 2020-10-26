@@ -1846,6 +1846,12 @@ namespace MatterHackers.Agg.UI
 				visibleBounds.IntersectWithRectangle(this.Parent.LocalBounds);
 			}
 
+			if (visibleBounds.Width <= 0
+				|| visibleBounds.Height <= 0)
+			{
+				return false;
+			}
+
 			return true;
 		}
 
@@ -2084,7 +2090,7 @@ namespace MatterHackers.Agg.UI
 
 									offsetToRenderSurface.X = (int)offsetToRenderSurface.X + xOffset;
 									offsetToRenderSurface.Y = (int)offsetToRenderSurface.Y + yOffset;
-									// The transform to draw the backbuffer to the graphics2D must not have a factional amount
+									// The transform to draw the back-buffer to the graphics2D must not have a factional amount
 									// or we will get aliasing in the image and we want our back buffer pixels to map 1:1 to the next buffer
 									if (offsetToRenderSurface.X - (int)offsetToRenderSurface.X != 0
 										|| offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y != 0)
@@ -2748,7 +2754,7 @@ namespace MatterHackers.Agg.UI
 
 		public bool IsDoubleClick(MouseEventArgs mouseEvent)
 		{
-			// The OS told up the mouse is 2 clicks (shot time between clicks)
+			// The OS told us the mouse is 2 clicks (shot time between clicks)
 			// but we also want to check if the original click happened on our control.
 			if (mouseEvent.Clicks == 2
 				&& LastMouseDownMs > UiThread.CurrentTimerMs - 550)

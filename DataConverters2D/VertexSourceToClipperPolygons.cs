@@ -67,14 +67,16 @@ namespace MatterHackers.DataConverters2D
 			return output;
 		}
 
-		public static VertexStorage Offset(this IVertexSource a, double distance, JoinType joinType = JoinType.jtMiter)
+		public static VertexStorage Offset(this IVertexSource a, double distance, JoinType joinType = JoinType.jtMiter, double scale = 1000)
 		{
-			List<List<IntPoint>> aPolys = a.CreatePolygons();
+			var aPolys = a.CreatePolygons(scale);
 
-			ClipperOffset offseter = new ClipperOffset();
+			aPolys = aPolys.GetCorrectedWinding();
+
+			var offseter = new ClipperOffset();
 			offseter.AddPaths(aPolys, joinType, EndType.etClosedPolygon);
-			var solution = new List<List<IntPoint>>();
-			offseter.Execute(ref solution, distance * 1000);
+			var solution = new Polygons();
+			offseter.Execute(ref solution, distance * scale);
 
 			Clipper.CleanPolygons(solution);
 
@@ -83,6 +85,34 @@ namespace MatterHackers.DataConverters2D
 			output.Add(0, 0, ShapePath.FlagsAndCommand.Stop);
 
 			return output;
+		}
+
+		public static Polygons GetCorrectedWinding(this Polygons polygonsToFix)
+		{
+			polygonsToFix = Clipper.CleanPolygons(polygonsToFix);
+			var boundsPolygon = new Polygon();
+			IntRect bounds = Clipper.GetBounds(polygonsToFix);
+			bounds.left -= 10;
+			bounds.top -= 10;
+			bounds.bottom += 10;
+			bounds.right += 10;
+
+			boundsPolygon.Add(new IntPoint(bounds.left, bounds.top));
+			boundsPolygon.Add(new IntPoint(bounds.right, bounds.top));
+			boundsPolygon.Add(new IntPoint(bounds.right, bounds.bottom));
+			boundsPolygon.Add(new IntPoint(bounds.left, bounds.bottom));
+
+			var clipper = new Clipper();
+
+			clipper.AddPaths(polygonsToFix, PolyType.ptSubject, true);
+			clipper.AddPath(boundsPolygon, PolyType.ptClip, true);
+
+			var intersectionResult = new PolyTree();
+			clipper.Execute(ClipType.ctIntersection, intersectionResult);
+
+			Polygons outputPolygons = Clipper.ClosedPathsFromPolyTree(intersectionResult);
+
+			return outputPolygons;
 		}
 
 		public static Polygons CreatePolygons(this IVertexSource sourcePath, double scaling = 1000)

@@ -17,11 +17,11 @@
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
 using System;
-using System.Windows.Forms;
-using System.Drawing;
-using MatterHackers.RenderOpenGl;
 using System.Diagnostics;
+using System.Drawing;
+using System.Windows.Forms;
 using MatterHackers.Agg.Platform;
+using MatterHackers.RenderOpenGl;
 
 #if USE_GLES
 using OpenTK.Graphics.ES11;
@@ -91,7 +91,7 @@ namespace MatterHackers.Agg.UI
 			this.ClientSize = new Size((int)AggSystemWindow.Width, (int)AggSystemWindow.Height);
 
 			// Restore to the last maximized or normal window state
-			this.WindowState = (this.AggSystemWindow.Maximized) ? FormWindowState.Maximized : FormWindowState.Normal;
+			this.WindowState = AggSystemWindow.Maximized ? FormWindowState.Maximized : FormWindowState.Normal;
 
 			this.IsInitialized = true;
 			initHasBeenCalled = true;
@@ -148,7 +148,7 @@ namespace MatterHackers.Agg.UI
 				// Call this function you have called Show().
 				glControl.MakeCurrent();
 				Invalidate();
-				//glSurface.Location = new Point(0, 0);
+				// glSurface.Location = new Point(0, 0);
 				glControl.Bounds = bounds;
 
 				if (initHasBeenCalled)
@@ -169,12 +169,11 @@ namespace MatterHackers.Agg.UI
 
 		public override void CopyBackBufferToScreen(Graphics displayGraphics)
 		{
-            // If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
-            // Call this function you have called Show().
-            glControl.SwapBuffers();
+			// If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
+			// Call this function you have called Show().
+			glControl.SwapBuffers();
 		}
 
-		#region WidgetForOpenGL
 		private static int count;
 		private int id;
 
@@ -212,11 +211,11 @@ namespace MatterHackers.Agg.UI
 				firstGlControlSeen = AggGLControl.currentControl;
 			}
 
-			//if (firstGlControlSeen != MyGLControl.currentControl)
+			// if (firstGlControlSeen != MyGLControl.currentControl)
 			if (AggGLControl.currentControl.Id != this.id)
 			{
 				Debug.WriteLine("Is {0} Should be {1}".FormatWith(firstGlControlSeen.Id, AggGLControl.currentControl.Id));
-				//throw new Exception("We have the wrong gl control realized.");
+				// throw new Exception("We have the wrong gl control realized.");
 				return false;
 			}
 
@@ -239,7 +238,5 @@ namespace MatterHackers.Agg.UI
 		}
 
 		private bool initHasBeenCalled = false;
-
-		#endregion
 	}
 }

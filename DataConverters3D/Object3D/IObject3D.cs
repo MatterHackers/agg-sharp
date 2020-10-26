@@ -278,6 +278,33 @@ namespace MatterHackers.DataConverters3D
 				}
 			}
 		}
+
+		public static IEnumerable<IObject3D> VisiblePaths(this IObject3D root)
+		{
+			var items = new Stack<IObject3D>(new[] { root });
+			while (items.Count > 0)
+			{
+				var item = items.Pop();
+
+				// store the mesh so we are thread safe regarding having a valid object (not null)
+				if (item is IPathObject pathObject
+					&& pathObject.VertexSource.Vertices().Any())
+				{
+					// there is a mesh return the object
+					yield return item;
+				}
+				else // there is no mesh go into the object and iterate its children
+				{
+					foreach (var n in item.Children)
+					{
+						if (n.Visible)
+						{
+							items.Push(n);
+						}
+					}
+				}
+			}
+		}
 	}
 
 	public interface IPathObject

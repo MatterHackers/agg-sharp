@@ -125,6 +125,8 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Typography.GlyphLayout", "T
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Typography.One", "Typography\Typography.One\Typography.One.csproj", "{B9EBC483-29BA-4F03-A1F5-89AFCBD22FA4}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GlfwProvider", "Glfw\GlfwProvider.csproj", "{4FFC5B1F-E1FB-4411-84F4-2D564B8679DB}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Typography\Typography.OpenFont\Typography.OpenFont.projitems*{235a071b-8d06-40ae-a5c5-b1ce59715ee9}*SharedItemsImports = 13
@@ -563,6 +565,14 @@ Global
 		{B9EBC483-29BA-4F03-A1F5-89AFCBD22FA4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B9EBC483-29BA-4F03-A1F5-89AFCBD22FA4}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{B9EBC483-29BA-4F03-A1F5-89AFCBD22FA4}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{4FFC5B1F-E1FB-4411-84F4-2D564B8679DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4FFC5B1F-E1FB-4411-84F4-2D564B8679DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4FFC5B1F-E1FB-4411-84F4-2D564B8679DB}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{4FFC5B1F-E1FB-4411-84F4-2D564B8679DB}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{4FFC5B1F-E1FB-4411-84F4-2D564B8679DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4FFC5B1F-E1FB-4411-84F4-2D564B8679DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4FFC5B1F-E1FB-4411-84F4-2D564B8679DB}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{4FFC5B1F-E1FB-4411-84F4-2D564B8679DB}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -623,6 +633,7 @@ Global
 		{235A071B-8D06-40AE-A5C5-B1CE59715EE9} = {7999BE91-B73D-4D2C-A479-8268B3D3E567}
 		{D8861CF8-C506-472B-8A57-632BD6CA6496} = {7999BE91-B73D-4D2C-A479-8268B3D3E567}
 		{B9EBC483-29BA-4F03-A1F5-89AFCBD22FA4} = {7999BE91-B73D-4D2C-A479-8268B3D3E567}
+		{4FFC5B1F-E1FB-4411-84F4-2D564B8679DB} = {7B61E043-F5D0-4CD5-9D34-F82BE9EF664C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CCCBC34D-2222-45D8-8652-9D1846B8B2DD}

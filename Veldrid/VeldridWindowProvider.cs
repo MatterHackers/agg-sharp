@@ -16,12 +16,12 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
+using System.Collections.Generic;
+using MatterHackers.Agg.UI;
+using MatterHackers.RenderOpenGl;
 using Veldrid;
 using Veldrid.Sdl2;
 using Veldrid.StartupUtilities;
-using MatterHackers.RenderOpenGl;
-using MatterHackers.Agg.UI;
-using System.Collections.Generic;
 
 namespace MatterHackers.VeldridProvider
 {
