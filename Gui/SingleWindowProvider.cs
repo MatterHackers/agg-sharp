@@ -105,7 +105,10 @@ namespace MatterHackers.Agg.UI
 		{
 			if (getCloseButton == null)
 			{
-				throw new Exception("You must call SetWindowTheme before you create any windows");
+				getCloseButton = () =>
+				{
+					return new Button("X", 0, 0);
+				};
 			}
 
 			if (_openWindows.Count == 0)
