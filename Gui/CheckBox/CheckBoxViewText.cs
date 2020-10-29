@@ -78,26 +78,27 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			CheckBox checkBox = (CheckBox)Parent;
-
-			double bottom = LocalBounds.Bottom + (Height / 2 - CheckBoxWidth / 2);
-
-			// the check
-			if (checkBox.Checked)
+			if (Parent is CheckBox checkBox)
 			{
-				graphics2D.Line(new Vector2(1, CheckBoxWidth + bottom), new Vector2(1 + CheckBoxWidth, 0 + bottom), this.TextColor);
-				graphics2D.Line(new Vector2(1, 0 + bottom), new Vector2(1 + CheckBoxWidth, CheckBoxWidth + bottom), this.TextColor);
-			}
+				double bottom = LocalBounds.Bottom + (Height / 2 - CheckBoxWidth / 2);
 
-			// the frame
-			RectangleDouble clampedRect = new RectangleDouble(1, Math.Floor(0 + bottom), 1 + Math.Ceiling(CheckBoxWidth), Math.Ceiling(CheckBoxWidth + bottom));
-			graphics2D.Rectangle(clampedRect, this.TextColor);
+				// the check
+				if (checkBox.Checked)
+				{
+					graphics2D.Line(new Vector2(1, CheckBoxWidth + bottom), new Vector2(1 + CheckBoxWidth, 0 + bottom), this.TextColor);
+					graphics2D.Line(new Vector2(1, 0 + bottom), new Vector2(1 + CheckBoxWidth, CheckBoxWidth + bottom), this.TextColor);
+				}
 
-			// extra frame
-			if (checkBox.MouseDownOnWidget && checkBox.FirstWidgetUnderMouse)
-			{
-				clampedRect.Inflate(1);
+				// the frame
+				RectangleDouble clampedRect = new RectangleDouble(1, Math.Floor(0 + bottom), 1 + Math.Ceiling(CheckBoxWidth), Math.Ceiling(CheckBoxWidth + bottom));
 				graphics2D.Rectangle(clampedRect, this.TextColor);
+
+				// extra frame
+				if (checkBox.MouseDownOnWidget && checkBox.FirstWidgetUnderMouse)
+				{
+					clampedRect.Inflate(1);
+					graphics2D.Rectangle(clampedRect, this.TextColor);
+				}
 			}
 
 			base.OnDraw(graphics2D);
