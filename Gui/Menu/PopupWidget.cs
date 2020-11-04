@@ -18,6 +18,11 @@ namespace MatterHackers.Agg.UI
 		bool Focused { get; }
 	}
 
+	public interface ISetableIgnoredPopupChild : IIgnoredPopupChild
+	{
+		bool KeepMenuOpen { get; set; }
+	}
+
 	public interface IMenuCreator
 	{
 		bool AlwaysKeepOpen { get; }
