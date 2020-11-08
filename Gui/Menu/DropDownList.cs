@@ -94,8 +94,6 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		private StringBuilder listFilterText = null;
 
-		private bool mouseInBounds;
-
 		private string noSelectionString;
 
 		private double pointSize = 12;
@@ -407,14 +405,12 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnMouseEnterBounds(MouseEventArgs mouseEvent)
 		{
-			mouseInBounds = true;
 			base.OnMouseEnterBounds(mouseEvent);
 			this.Invalidate();
 		}
 
 		public override void OnMouseLeaveBounds(MouseEventArgs mouseEvent)
 		{
-			mouseInBounds = false;
 			base.OnMouseLeaveBounds(mouseEvent);
 			this.Invalidate();
 		}
