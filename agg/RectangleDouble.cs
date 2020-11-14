@@ -96,6 +96,7 @@ namespace MatterHackers.Agg
 			{
 				return this == (RectangleDouble)obj;
 			}
+
 			return false;
 		}
 
@@ -138,17 +139,45 @@ namespace MatterHackers.Agg
 		public RectangleDouble normalize()
 		{
 			double t;
-			if (Left > Right) { t = Left; Left = Right; Right = t; }
-			if (Bottom > Top) { t = Bottom; Bottom = Top; Top = t; }
+			if (Left > Right)
+			{
+				t = Left;
+				Left = Right;
+				Right = t;
+			}
+
+			if (Bottom > Top)
+			{
+				t = Bottom;
+				Bottom = Top;
+				Top = t;
+			}
+
 			return this;
 		}
 
 		public bool clip(RectangleDouble r)
 		{
-			if (Right > r.Right) Right = r.Right;
-			if (Top > r.Top) Top = r.Top;
-			if (Left < r.Left) Left = r.Left;
-			if (Bottom < r.Bottom) Bottom = r.Bottom;
+			if (Right > r.Right)
+			{
+				Right = r.Right;
+			}
+
+			if (Top > r.Top)
+			{
+				Top = r.Top;
+			}
+
+			if (Left < r.Left)
+			{
+				Left = r.Left;
+			}
+
+			if (Bottom < r.Bottom)
+			{
+				Bottom = r.Bottom;
+			}
+
 			return Left <= Right && Bottom <= Top;
 		}
 
@@ -159,7 +188,7 @@ namespace MatterHackers.Agg
 
 		public bool Contains(double x, double y)
 		{
-			return (x >= Left && x <= Right && y >= Bottom && y <= Top);
+			return x >= Left && x <= Right && y >= Bottom && y <= Top;
 		}
 
 		public bool Contains(RectangleDouble innerRect)
@@ -189,10 +218,25 @@ namespace MatterHackers.Agg
 			Right = rectToCopy.Right;
 			Top = rectToCopy.Top;
 
-			if (Left < rectToIntersectWith.Left) Left = rectToIntersectWith.Left;
-			if (Bottom < rectToIntersectWith.Bottom) Bottom = rectToIntersectWith.Bottom;
-			if (Right > rectToIntersectWith.Right) Right = rectToIntersectWith.Right;
-			if (Top > rectToIntersectWith.Top) Top = rectToIntersectWith.Top;
+			if (Left < rectToIntersectWith.Left)
+			{
+				Left = rectToIntersectWith.Left;
+			}
+
+			if (Bottom < rectToIntersectWith.Bottom)
+			{
+				Bottom = rectToIntersectWith.Bottom;
+			}
+
+			if (Right > rectToIntersectWith.Right)
+			{
+				Right = rectToIntersectWith.Right;
+			}
+
+			if (Top > rectToIntersectWith.Top)
+			{
+				Top = rectToIntersectWith.Top;
+			}
 
 			if (Left < Right && Bottom < Top)
 			{
@@ -211,10 +255,25 @@ namespace MatterHackers.Agg
 
 		public bool IntersectWithRectangle(RectangleDouble rectToIntersectWith)
 		{
-			if (Left < rectToIntersectWith.Left) Left = rectToIntersectWith.Left;
-			if (Bottom < rectToIntersectWith.Bottom) Bottom = rectToIntersectWith.Bottom;
-			if (Right > rectToIntersectWith.Right) Right = rectToIntersectWith.Right;
-			if (Top > rectToIntersectWith.Top) Top = rectToIntersectWith.Top;
+			if (Left < rectToIntersectWith.Left)
+			{
+				Left = rectToIntersectWith.Left;
+			}
+
+			if (Bottom < rectToIntersectWith.Bottom)
+			{
+				Bottom = rectToIntersectWith.Bottom;
+			}
+
+			if (Right > rectToIntersectWith.Right)
+			{
+				Right = rectToIntersectWith.Right;
+			}
+
+			if (Top > rectToIntersectWith.Top)
+			{
+				Top = rectToIntersectWith.Top;
+			}
 
 			if (Left < Right && Bottom < Top)
 			{
@@ -230,10 +289,25 @@ namespace MatterHackers.Agg
 			Bottom = r1.Bottom;
 			Right = r1.Right;
 			Right = r1.Top;
-			if (Right < r2.Right) Right = r2.Right;
-			if (Top < r2.Top) Top = r2.Top;
-			if (Left > r2.Left) Left = r2.Left;
-			if (Bottom > r2.Bottom) Bottom = r2.Bottom;
+			if (Right < r2.Right)
+			{
+				Right = r2.Right;
+			}
+
+			if (Top < r2.Top)
+			{
+				Top = r2.Top;
+			}
+
+			if (Left > r2.Left)
+			{
+				Left = r2.Left;
+			}
+
+			if (Bottom > r2.Bottom)
+			{
+				Bottom = r2.Bottom;
+			}
 		}
 
 		public void ExpandToInclude(RectangleDouble rectToInclude)
@@ -266,26 +340,41 @@ namespace MatterHackers.Agg
 
 		public void ExpandToInclude(double x, double y)
 		{
-			if (Right < x) Right = x;
-			if (Top < y) Top = y;
-			if (Left > x) Left = x;
-			if (Bottom > y) Bottom = y;
+			if (Right < x)
+			{
+				Right = x;
+			}
+
+			if (Top < y)
+			{
+				Top = y;
+			}
+
+			if (Left > x)
+			{
+				Left = x;
+			}
+
+			if (Bottom > y)
+			{
+				Bottom = y;
+			}
 		}
 
 		public void Inflate(int inflateSize)
 		{
-			Left = Left - inflateSize;
-			Bottom = Bottom - inflateSize;
-			Right = Right + inflateSize;
-			Top = Top + inflateSize;
+			Left -= inflateSize;
+			Bottom -= inflateSize;
+			Right += inflateSize;
+			Top += inflateSize;
 		}
 
 		public void Inflate(double inflateSize)
 		{
-			Left = Left - inflateSize;
-			Bottom = Bottom - inflateSize;
-			Right = Right + inflateSize;
-			Top = Top + inflateSize;
+			Left -= inflateSize;
+			Bottom -= inflateSize;
+			Right += inflateSize;
+			Top += inflateSize;
 		}
 
 		public void Inflate(BorderDouble borderDouble)
@@ -311,18 +400,18 @@ namespace MatterHackers.Agg
 
 		public void Offset(double x, double y)
 		{
-			Left = Left + x;
-			Bottom = Bottom + y;
-			Right = Right + x;
-			Top = Top + y;
+			Left += x;
+			Bottom += y;
+			Right += x;
+			Top += y;
 		}
 
-		static public RectangleDouble operator *(RectangleDouble a, double b)
+		public static RectangleDouble operator *(RectangleDouble a, double b)
 		{
 			return new RectangleDouble(a.Left * b, a.Bottom * b, a.Right * b, a.Top * b);
 		}
 
-		static public RectangleDouble operator *(double b, RectangleDouble a)
+		public static RectangleDouble operator *(double b, RectangleDouble a)
 		{
 			return new RectangleDouble(a.Left * b, a.Bottom * b, a.Right * b, a.Top * b);
 		}
@@ -356,10 +445,25 @@ namespace MatterHackers.Agg
 		{
 			var code = OutCode.Inside;
 
-			if (x < this.Left) code |= OutCode.Left;
-			if (x > this.Right) code |= OutCode.Right;
-			if (y < this.Bottom) code |= OutCode.Bottom;
-			if (y > this.Top) code |= OutCode.Top;
+			if (x < this.Left)
+			{
+				code |= OutCode.Left;
+			}
+
+			if (x > this.Right)
+			{
+				code |= OutCode.Right;
+			}
+
+			if (y < this.Bottom)
+			{
+				code |= OutCode.Bottom;
+			}
+
+			if (y > this.Top)
+			{
+				code |= OutCode.Top;
+			}
 
 			return code;
 		}
@@ -371,8 +475,8 @@ namespace MatterHackers.Agg
 
 		private Vector2 CalculateIntersection(Vector2 p1, Vector2 p2, OutCode clipTo)
 		{
-			var dx = (p2.X - p1.X);
-			var dy = (p2.Y - p1.Y);
+			var dx = p2.X - p1.X;
+			var dy = p2.Y - p1.Y;
 
 			var slopeY = dx / dy; // slope to use for possibly-vertical lines
 			var slopeX = dy / dx; // slope to use for possibly-horizontal lines
@@ -381,30 +485,30 @@ namespace MatterHackers.Agg
 			{
 				return new Vector2(
 					p1.X + slopeY * (this.Top - p1.Y),
-					this.Top
-					);
+					this.Top);
 			}
+
 			if (clipTo.HasFlag(OutCode.Bottom))
 			{
 				return new Vector2(
 					p1.X + slopeY * (this.Bottom - p1.Y),
-					this.Bottom
-					);
+					this.Bottom);
 			}
+
 			if (clipTo.HasFlag(OutCode.Right))
 			{
 				return new Vector2(
 					this.Right,
-					p1.Y + slopeX * (this.Right - p1.X)
-					);
+					p1.Y + slopeX * (this.Right - p1.X));
 			}
+
 			if (clipTo.HasFlag(OutCode.Left))
 			{
 				return new Vector2(
 					this.Left,
-					p1.Y + slopeX * (this.Left - p1.X)
-					);
+					p1.Y + slopeX * (this.Left - p1.X));
 			}
+
 			throw new ArgumentOutOfRangeException("clipTo = " + clipTo);
 		}
 
@@ -453,6 +557,7 @@ namespace MatterHackers.Agg
 					outCodeP2 = this.ComputeOutCode(p2);
 				}
 			}
+
 			// if clipping area contained a portion of the line
 			if (accept)
 			{
