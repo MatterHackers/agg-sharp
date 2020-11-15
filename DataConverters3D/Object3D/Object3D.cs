@@ -588,12 +588,13 @@ namespace MatterHackers.DataConverters3D
 			{
 				var originalParent = this.Parent;
 
-				Dictionary<string, IObject3D> allItemsByID;
+				Dictionary<string, Mesh> allItemsByID;
 
 				try
 				{
 					// Index items by ID
-					allItemsByID = this.DescendantsAndSelf().ToDictionary(i => i.ID);
+					allItemsByID = this.DescendantsAndSelf().Select(t => new { t.ID, t.Mesh })
+						.ToDictionary(t => t.ID, t => t.Mesh);
 				}
 				catch
 				{
@@ -625,7 +626,14 @@ namespace MatterHackers.DataConverters3D
 					// Copy mesh instances to cloned tree
 					foreach (var descendant in clonedItem.DescendantsAndSelf())
 					{
-						descendant.SetMeshDirect(allItemsByID[descendant.ID].Mesh);
+						if (allItemsByID.ContainsKey(descendant.ID))
+						{
+							descendant.SetMeshDirect(allItemsByID[descendant.ID]);
+						}
+						else
+						{
+							descendant.SetMeshDirect(PlatonicSolids.CreateCube(10, 10, 10));
+						}
 
 						// store the original id
 						string originalId = descendant.ID;
