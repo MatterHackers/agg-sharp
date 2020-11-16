@@ -77,6 +77,7 @@ namespace MatterHackers.Csg.Solids
 					minX = Math.Min(minX, point.X);
 					maxX = Math.Max(maxX, point.X);
 				}
+
 				return new AxisAlignedBoundingBox(new Vector3(minX, minY, -height / 2), new Vector3(maxX, maxY, height / 2));
 			}
 		}
@@ -99,11 +100,13 @@ namespace MatterHackers.Csg.Solids
 			{
 				throw new Exception("You must pass in an even number of points so they can be converted to Vector2s.");
 			}
+
 			List<Vector2> vectorPoints = new List<Vector2>();
 			for (int i = 0; i < points.Length; i += 2)
 			{
 				vectorPoints.Add(new Vector2(points[i], points[i + 1]));
 			}
+
 			root = new LinearExtrudePrimitive(vectorPoints.ToArray(), height, twistRadians, name);
 			switch (alignment)
 			{
