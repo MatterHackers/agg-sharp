@@ -1,6 +1,6 @@
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
@@ -28,6 +28,7 @@ namespace MatterHackers.Agg.UI
 		public FlingDirection Direction { get { return direction; } }
 
 		public Vector2 Position { get { return new Vector2(x, y); } }
+
 		public double X { get { return x; } set { x = value; } }
 
 		public double Y { get { return y; } set { y = value; } }
@@ -36,14 +37,21 @@ namespace MatterHackers.Agg.UI
 	public class MouseEventArgs : EventArgs
 	{
 		private List<Vector2> positions = new List<Vector2>();
+
 		public List<string> DragFiles { get; private set; } = null;
-		bool acceptDrop = false;
+
+		private bool acceptDrop = false;
+
 		public bool AcceptDrop
 		{
-			get { return acceptDrop; }
+			get
+			{
+				return acceptDrop;
+			}
+
 			set
 			{
-				if(value != acceptDrop)
+				if (value != acceptDrop)
 				{
 					acceptDrop = value;
 				}
@@ -91,7 +99,7 @@ namespace MatterHackers.Agg.UI
 
 		public int WheelDelta { get; set; }
 
-		//public Point Location { get; }
+		// public Point Location { get; }
 		public double X { get { return positions[0].X; } set { positions[0] = new Vector2(value, positions[0].Y); } }
 
 		public double Y { get { return positions[0].Y; } set { positions[0] = new Vector2(positions[0].X, value); } }
