@@ -125,11 +125,6 @@ namespace MatterHackers.DataConverters3D
 				if (_color != value)
 				{
 					_color = value;
-					if (_color.alpha != 255)
-					{
-						EnsureTransparentSorting();
-					}
-
 					Invalidate(InvalidateType.Color);
 				}
 			}
