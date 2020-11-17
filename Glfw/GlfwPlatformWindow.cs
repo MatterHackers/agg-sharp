@@ -127,8 +127,6 @@ namespace MatterHackers.GlfwProvider
 
 		public Graphics2D NewGraphics2D()
 		{
-			SetupViewport();
-
 			// this is for testing the openGL implementation
 			var graphics2D = new Graphics2DOpenGL((int)this.systemWindow.Width,
 				(int)this.systemWindow.Height,
@@ -184,6 +182,8 @@ namespace MatterHackers.GlfwProvider
 		{
 			if (this.Invalidated)
 			{
+				SetupViewport();
+
 				this.Invalidated = false;
 				Graphics2D graphics2D = new Graphics2DOpenGL((int)systemWindow.Width, (int)systemWindow.Height, GuiWidget.DeviceScale);
 				graphics2D.PushTransform();
