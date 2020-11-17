@@ -900,7 +900,7 @@ namespace MatterHackers.PolygonMesh
 			{
 				foreach (var kvp in mesh.FaceTextures)
 				{
-					faceTextures.Add(kvp.Key, kvp.Value);
+					faceTextures[kvp.Key] = kvp.Value;
 				}
 			}
 

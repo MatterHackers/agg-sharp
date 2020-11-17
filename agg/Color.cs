@@ -824,7 +824,7 @@ namespace MatterHackers.Agg
 			red = (byte)c.red;
 			green = (byte)c.green;
 			blue = (byte)c.blue;
-			alpha = (byte)a_;
+			alpha = (byte)Math.Max(0, Math.Min(255, a_));
 		}
 
 		public Color(uint fourByteColor)
@@ -1112,6 +1112,11 @@ namespace MatterHackers.Agg
 		public static Color WithAlpha(this Color color, int alpha)
 		{
 			return new Color(color, alpha);
+		}
+
+		public static Color WithAlpha(this Color color, double alpha)
+		{
+			return new Color(color, (int)Math.Round(255 * alpha));
 		}
 
 		public static ColorF AdjustSaturation(this IColorType original, double saturationMultiplier)
