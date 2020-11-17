@@ -547,7 +547,7 @@ namespace MatterHackers.GlfwProvider
 
 		private void ScrollCallback(IntPtr window, double x, double y)
 		{
-			systemWindow.OnMouseWheel(new MouseEventArgs(mouseButton, 0, mouseX, mouseY, (int)y));
+			systemWindow.OnMouseWheel(new MouseEventArgs(MouseButtons.None, 0, mouseX, mouseY, (int)(y * 200)));
 		}
 
 		private void SetupViewport()
