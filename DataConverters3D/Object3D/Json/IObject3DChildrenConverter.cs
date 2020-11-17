@@ -40,7 +40,8 @@ namespace MatterHackers.DataConverters3D
 	{
 		// Register type mappings to support deserializing to the IObject3D concrete type - long term hopefully via configuration mapping, short term via IObject3D inheritance
 		private Dictionary<string, string> mappingTypesCache;
-		private Dictionary<string, string> mappingTypes
+
+		private Dictionary<string, string> MappingTypes
 		{
 			get
 			{
@@ -68,15 +69,14 @@ namespace MatterHackers.DataConverters3D
 
 			var items = new List<IObject3D>();
 
-			JArray jArray = JArray.Load(reader);
+			var jArray = JArray.Load(reader);
 			foreach (var item in jArray)
 			{
 				string typeName = item["TypeName"]?.ToString();
-				string fullTypeName;
 
 				IObject3D childItem;
 
-				if (string.IsNullOrEmpty(typeName) || typeName == "Object3D" || !mappingTypes.TryGetValue(typeName, out fullTypeName))
+				if (string.IsNullOrEmpty(typeName) || typeName == "Object3D" || !MappingTypes.TryGetValue(typeName, out string fullTypeName))
 				{
 					// Use a normal Object3D type if the TypeName field is missing, invalid or has no mapping entry
 					childItem = item.ToObject<Object3D>(serializer);
