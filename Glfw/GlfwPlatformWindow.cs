@@ -521,8 +521,12 @@ namespace MatterHackers.GlfwProvider
 				case Cursors.SizeAll:
 				case Cursors.SizeNESW:
 				case Cursors.SizeNS:
+					return Glfw.CreateStandardCursor(CursorType.ResizeVertical);
+
 				case Cursors.SizeNWSE:
 				case Cursors.SizeWE:
+					return Glfw.CreateStandardCursor(CursorType.ResizeHorizontal);
+
 				case Cursors.UpArrow:
 					return Glfw.CreateStandardCursor(CursorType.Arrow);
 
