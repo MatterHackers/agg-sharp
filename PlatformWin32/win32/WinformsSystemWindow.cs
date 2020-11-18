@@ -47,34 +47,34 @@ namespace MatterHackers.Agg.UI
 
 		protected WinformsEventSink EventSink;
 
-		private SystemWindow systemWindow;
+		private SystemWindow _systemWindow;
 		private int drawCount = 0;
 		private int onPaintCount;
 
 		public SystemWindow AggSystemWindow
 		{
-			get => systemWindow;
+			get => _systemWindow;
 			set
 			{
-				systemWindow = value;
+				_systemWindow = value;
 
-				if (systemWindow != null)
+				if (_systemWindow != null)
 				{
-					this.Caption = systemWindow.Title;
+					this.Caption = _systemWindow.Title;
 
 					if (SingleWindowMode)
 					{
 						if (firstWindow)
 						{
-							this.MinimumSize = systemWindow.MinimumSize;
+							this.MinimumSize = _systemWindow.MinimumSize;
 						}
 
 						// Set this system window as the event target
-						this.EventSink?.SetActiveSystemWindow(systemWindow);
+						this.EventSink?.SetActiveSystemWindow(_systemWindow);
 					}
 					else
 					{
-						this.MinimumSize = systemWindow.MinimumSize;
+						this.MinimumSize = _systemWindow.MinimumSize;
 					}
 				}
 			}
@@ -201,7 +201,6 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			Rectangle rect = paintEventArgs.ClipRectangle;
 			if (ClientSize.Width > 0 && ClientSize.Height > 0)
 			{
 				drawCount++;
@@ -357,29 +356,29 @@ namespace MatterHackers.Agg.UI
 
 		public new void Show()
 		{
-			this.ClientSize = new Size((int)systemWindow.Width, (int)systemWindow.Height);
+			this.ClientSize = new Size((int)AggSystemWindow.Width, (int)AggSystemWindow.Height);
 
 			// Center the window if specified on the SystemWindow
-			if (MainWindowsFormsWindow != this && systemWindow.CenterInParent)
+			if (MainWindowsFormsWindow != this && AggSystemWindow.CenterInParent)
 			{
 				Rectangle desktopBounds = MainWindowsFormsWindow.DesktopBounds;
-				RectangleDouble newItemBounds = systemWindow.LocalBounds;
+				RectangleDouble newItemBounds = AggSystemWindow.LocalBounds;
 
 				this.Left = desktopBounds.X + desktopBounds.Width / 2 - (int)newItemBounds.Width / 2;
 				this.Top = desktopBounds.Y + desktopBounds.Height / 2 - (int)newItemBounds.Height / 2 - TitleBarHeight / 2;
 			}
-			else if (systemWindow.InitialDesktopPosition == new Point2D(-1, -1))
+			else if (AggSystemWindow.InitialDesktopPosition == new Point2D(-1, -1))
 			{
 				this.CenterToScreen();
 			}
 			else
 			{
 				this.StartPosition = FormStartPosition.Manual;
-				this.DesktopPosition = systemWindow.InitialDesktopPosition;
+				this.DesktopPosition = AggSystemWindow.InitialDesktopPosition;
 			}
 
 			if (MainWindowsFormsWindow != this
-				&& systemWindow.AlwaysOnTopOfMain)
+				&& AggSystemWindow.AlwaysOnTopOfMain)
 			{
 				Show(MainWindowsFormsWindow);
 			}
@@ -394,10 +393,10 @@ namespace MatterHackers.Agg.UI
 			// Release the onidle guard so that the onidle pump continues processing while we block at ShowDialog below
 			Task.Run(() => this.ReleaseOnIdleGuard());
 
-			if (MainWindowsFormsWindow != this && systemWindow.CenterInParent)
+			if (MainWindowsFormsWindow != this && AggSystemWindow.CenterInParent)
 			{
 				Rectangle mainBounds = MainWindowsFormsWindow.DesktopBounds;
-				RectangleDouble newItemBounds = systemWindow.LocalBounds;
+				RectangleDouble newItemBounds = AggSystemWindow.LocalBounds;
 
 				this.Left = mainBounds.X + mainBounds.Width / 2 - (int)newItemBounds.Width / 2;
 				this.Top = mainBounds.Y + mainBounds.Height / 2 - (int)newItemBounds.Height / 2;
@@ -596,7 +595,7 @@ namespace MatterHackers.Agg.UI
 			string windowTypeName = systemWindow.GetType().Name;
 
 			if ((SingleWindowMode && windowTypeName == "RootSystemWindow")
-				|| (MainWindowsFormsWindow != null && systemWindow == MainWindowsFormsWindow.systemWindow && !SingleWindowMode))
+				|| (MainWindowsFormsWindow != null && systemWindow == MainWindowsFormsWindow.AggSystemWindow && !SingleWindowMode))
 			{
 				// Close the main (first) PlatformWindow if it's being requested and not this instance
 				if (MainWindowsFormsWindow.InvokeRequired)

@@ -64,15 +64,15 @@ namespace MatterHackers.Agg.UI
 						case System.Windows.Forms.Keys.F12:
 							if (inspectForm != null)
 							{
-							// Toggle mode if window is open
-							inspectForm.Inspecting = !inspectForm.Inspecting;
+								// Toggle mode if window is open
+								inspectForm.Inspecting = !inspectForm.Inspecting;
 							}
 							else
 							{
 								try
 								{
-								// Otherwise open
-								inspectForm = WinformsSystemWindow.InspectorCreator.Invoke(widgetToSendTo);
+									// Otherwise open
+									inspectForm = WinformsSystemWindow.InspectorCreator.Invoke(widgetToSendTo);
 									inspectForm.StartPosition = FormStartPosition.Manual;
 									inspectForm.Location = new System.Drawing.Point(0, 0);
 									inspectForm.FormClosed += (s2, e2) =>
@@ -81,27 +81,28 @@ namespace MatterHackers.Agg.UI
 									};
 									inspectForm.Show();
 
-								// Restore focus to ensure keyboard hooks in main SystemWindow work as expected
-								controlToHook.Focus();
+									// Restore focus to ensure keyboard hooks in main SystemWindow work as expected
+									controlToHook.Focus();
 								}
 								catch { }
 							}
+
 							return;
 					}
 				};
 			}
 
-			controlToHook.GotFocus += controlToHook_GotFocus;
-			controlToHook.LostFocus += controlToHook_LostFocus;
+			controlToHook.GotFocus += ControlToHook_GotFocus;
+			controlToHook.LostFocus += ControlToHook_LostFocus;
 
-			controlToHook.KeyDown += controlToHook_KeyDown;
-			controlToHook.KeyUp += controlToHook_KeyUp;
-			controlToHook.KeyPress += controlToHook_KeyPress;
+			controlToHook.KeyDown += ControlToHook_KeyDown;
+			controlToHook.KeyUp += ControlToHook_KeyUp;
+			controlToHook.KeyPress += ControlToHook_KeyPress;
 
-			controlToHook.MouseDown += controlToHook_MouseDown;
-			controlToHook.MouseMove += formToHook_MouseMove;
-			controlToHook.MouseUp += controlToHook_MouseUp;
-			controlToHook.MouseWheel += controlToHook_MouseWheel;
+			controlToHook.MouseDown += ControlToHook_MouseDown;
+			controlToHook.MouseMove += FormToHook_MouseMove;
+			controlToHook.MouseUp += ControlToHook_MouseUp;
+			controlToHook.MouseWheel += ControlToHook_MouseWheel;
 
 			controlToHook.AllowDrop = true;
 
@@ -110,9 +111,9 @@ namespace MatterHackers.Agg.UI
 			controlToHook.DragLeave += ControlToHook_DragLeave;
 			controlToHook.DragOver += ControlToHook_DragOver;
 
-			controlToHook.MouseCaptureChanged += controlToHook_MouseCaptureChanged;
+			controlToHook.MouseCaptureChanged += ControlToHook_MouseCaptureChanged;
 
-			controlToHook.MouseLeave += controlToHook_MouseLeave;
+			controlToHook.MouseLeave += ControlToHook_MouseLeave;
 		}
 
 		public void SetActiveSystemWindow(SystemWindow systemWindow)
@@ -122,8 +123,6 @@ namespace MatterHackers.Agg.UI
 
 		private void ControlToHook_DragDrop(object sender, DragEventArgs dragevent)
 		{
-			List<string> droppedFiles = GetDroppedFiles(dragevent);
-
 			// do a mouse up
 			widgetToSendTo.OnMouseUp(ConvertWindowsDragEventToAggMouseEvent(dragevent));
 
@@ -165,7 +164,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void controlToHook_KeyDown(object sender, System.Windows.Forms.KeyEventArgs windowsKeyEvent)
+		private void ControlToHook_KeyDown(object sender, System.Windows.Forms.KeyEventArgs windowsKeyEvent)
 		{
 			if (AggContext.OperatingSystem == OSType.Mac
 			   && windowsKeyEvent.KeyCode == System.Windows.Forms.Keys.Cancel)
@@ -183,6 +182,7 @@ namespace MatterHackers.Agg.UI
 			{
 				aggKeyEvent = new KeyEventArgs((Keys)windowsKeyEvent.KeyData);
 			}
+
 			widgetToSendTo.OnKeyDown(aggKeyEvent);
 
 			Keyboard.SetKeyDownState(aggKeyEvent.KeyCode, true);
@@ -191,14 +191,14 @@ namespace MatterHackers.Agg.UI
 			windowsKeyEvent.SuppressKeyPress = aggKeyEvent.SuppressKeyPress;
 		}
 
-		private void controlToHook_KeyPress(object sender, System.Windows.Forms.KeyPressEventArgs windowsKeyPressEvent)
+		private void ControlToHook_KeyPress(object sender, System.Windows.Forms.KeyPressEventArgs windowsKeyPressEvent)
 		{
 			var aggKeyPressEvent = new KeyPressEventArgs(windowsKeyPressEvent.KeyChar);
 			widgetToSendTo.OnKeyPress(aggKeyPressEvent);
 			windowsKeyPressEvent.Handled = aggKeyPressEvent.Handled;
 		}
 
-		private void controlToHook_KeyUp(object sender, System.Windows.Forms.KeyEventArgs windowsKeyEvent)
+		private void ControlToHook_KeyUp(object sender, System.Windows.Forms.KeyEventArgs windowsKeyEvent)
 		{
 			// Only process the key up event if we were the ones to receive the key down event.
 			// This is because the SaveFileDialog is returning us the key up event for enter after it closes.
@@ -217,7 +217,7 @@ namespace MatterHackers.Agg.UI
 
 		private GuiWidget focusedChild = null;
 
-		private void controlToHook_GotFocus(object sender, EventArgs e)
+		private void ControlToHook_GotFocus(object sender, EventArgs e)
 		{
 			widgetToSendTo.OnFocusChanged(e);
 			Keyboard.Clear();
@@ -225,7 +225,7 @@ namespace MatterHackers.Agg.UI
 			focusedChild?.Focus();
 		}
 
-		private void controlToHook_LostFocus(object sender, EventArgs e)
+		private void ControlToHook_LostFocus(object sender, EventArgs e)
 		{
 			focusedChild = null;
 			GuiWidget currentWidget = widgetToSendTo;
@@ -248,7 +248,7 @@ namespace MatterHackers.Agg.UI
 			widgetToSendTo.OnFocusChanged(e);
 		}
 
-		private void controlToHook_MouseCaptureChanged(object sender, EventArgs e)
+		private void ControlToHook_MouseCaptureChanged(object sender, EventArgs e)
 		{
 			if (widgetToSendTo.ChildHasMouseCaptured || widgetToSendTo.MouseCaptured)
 			{
@@ -256,22 +256,22 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void controlToHook_MouseDown(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
+		private void ControlToHook_MouseDown(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
 		{
 			widgetToSendTo.OnMouseDown(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
 		}
 
-		private void controlToHook_MouseLeave(object sender, EventArgs e)
+		private void ControlToHook_MouseLeave(object sender, EventArgs e)
 		{
 			widgetToSendTo.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, -10, -10, 0));
 		}
 
-		private void controlToHook_MouseUp(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
+		private void ControlToHook_MouseUp(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
 		{
 			widgetToSendTo.OnMouseUp(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
 		}
 
-		private void controlToHook_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
+		private void ControlToHook_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
 		{
 			widgetToSendTo.OnMouseWheel(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
 		}
@@ -281,19 +281,19 @@ namespace MatterHackers.Agg.UI
 			System.Drawing.Point clientTop = controlToHook.PointToScreen(new System.Drawing.Point(0, 0));
 			var appWidgetPos = new System.Drawing.Point(dragevent.X - clientTop.X, (int)widgetToSendTo.Height - (dragevent.Y - clientTop.Y));
 
-			return new MouseEventArgs((MouseButtons.None), 0, appWidgetPos.X, appWidgetPos.Y, 0, dragFiles);
+			return new MouseEventArgs(MouseButtons.None, 0, appWidgetPos.X, appWidgetPos.Y, 0, dragFiles);
 		}
 
 		private MouseEventArgs ConvertWindowsMouseEventToAggMouseEvent(System.Windows.Forms.MouseEventArgs windowsMouseEvent)
 		{
 			// we invert the y as we are bottom left coordinate system and windows is top left.
-			int Y = windowsMouseEvent.Y;
-			Y = (int)widgetToSendTo.Height - Y;
+			int y = windowsMouseEvent.Y;
+			y = (int)widgetToSendTo.Height - y;
 
-			return new MouseEventArgs((MouseButtons)windowsMouseEvent.Button, windowsMouseEvent.Clicks, windowsMouseEvent.X, Y, windowsMouseEvent.Delta, dragFiles);
+			return new MouseEventArgs((MouseButtons)windowsMouseEvent.Button, windowsMouseEvent.Clicks, windowsMouseEvent.X, y, windowsMouseEvent.Delta, dragFiles);
 		}
 
-		private void formToHook_MouseMove(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
+		private void FormToHook_MouseMove(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
 		{
 			// TODO: Remove short term workaround for automation issues where mouse events fire differently if mouse is within window region
 			if (!EnableInputHook)
