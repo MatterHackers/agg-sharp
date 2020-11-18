@@ -48,6 +48,8 @@ namespace MatterHackers.GlfwProvider
 
 		private SystemWindow aggSystemWindow;
 
+		private bool iconified;
+
 		public GlfwPlatformWindow()
 		{
 		}
@@ -177,16 +179,6 @@ namespace MatterHackers.GlfwProvider
 			}
 			else
 			{
-				// Notify the embedded window of its new single windows parent size
-
-				// If client code has called ShowSystemWindow and we're minimized, we must restore in order
-				// to establish correct window bounds from ClientSize below. Otherwise we're zeroed out and
-				// will create invalid surfaces of (0,0)
-				// if (this.WindowState == FormWindowState.Minimized)
-				{
-					// this.WindowState = FormWindowState.Normal;
-				}
-
 				systemWindow.Size = new Vector2(this.aggSystemWindow.Width, this.aggSystemWindow.Height);
 			}
 		}
@@ -200,7 +192,8 @@ namespace MatterHackers.GlfwProvider
 
 		private void ConditionalDrawAndRefresh(SystemWindow systemWindow)
 		{
-			if (this.Invalidated)
+			if (this.Invalidated
+				&& !iconified)
 			{
 				SetupViewport();
 
@@ -643,6 +636,8 @@ namespace MatterHackers.GlfwProvider
 			}
 
 			Glfw.SetWindowSizeCallback(glfwWindow, SizeCallback);
+			Glfw.SetWindowMaximizeCallback(glfwWindow, MaximizeCallback);
+			Glfw.SetWindowIconifyCallback(glfwWindow, IconifyCallback);
 
 			// Set a key callback
 			Glfw.SetKeyCallback(glfwWindow, KeyCallback);
@@ -685,6 +680,16 @@ namespace MatterHackers.GlfwProvider
 			aggSystemWindow.Size = new VectorMath.Vector2(width, height);
 			GL.Viewport(0, 0, width, height); // Use all of the glControl painting area
 			ConditionalDrawAndRefresh(aggSystemWindow);
+		}
+
+		private void MaximizeCallback(IntPtr window, bool maximized)
+		{
+			aggSystemWindow.Maximized = maximized;
+		}
+
+		private void IconifyCallback(IntPtr window, bool iconified)
+		{
+			this.iconified = iconified;
 		}
 	}
 }
