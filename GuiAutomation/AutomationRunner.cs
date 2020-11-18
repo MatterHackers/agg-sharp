@@ -238,14 +238,11 @@ namespace MatterHackers.GuiAutomation
 		/// <param name="maxSeconds">The maximum amount of time to wait</param>
 		/// <param name="checkInterval">The frequency to recheck the condition in milliseconds</param>
 		/// <returns>Returns if the condition was satisfied within maxSeconds</returns>
-		public bool WaitFor(Func<bool> checkConditionSatisfied, double maxSeconds = 5, int checkInterval = 200)
+		public AutomationRunner WaitFor(Func<bool> checkConditionSatisfied, double maxSeconds = 5, int checkInterval = 200)
 		{
-			if (!StaticDelay(checkConditionSatisfied, maxSeconds, checkInterval))
-			{
-				return false;
-			}
+			StaticDelay(checkConditionSatisfied, maxSeconds, checkInterval);
 
-			return true;
+			return this;
 		}
 
 		public bool DoubleClickImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)

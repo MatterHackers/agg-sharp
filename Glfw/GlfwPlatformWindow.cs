@@ -46,7 +46,7 @@ namespace MatterHackers.GlfwProvider
 
 		private Window glfwWindow;
 
-		private SystemWindow systemWindow;
+		private SystemWindow aggSystemWindow;
 
 		public GlfwPlatformWindow()
 		{
@@ -87,15 +87,15 @@ namespace MatterHackers.GlfwProvider
 		{
 			get
 			{
-				return this.systemWindow.MinimumSize;
+				return this.aggSystemWindow.MinimumSize;
 			}
 
 			set
 			{
-				this.systemWindow.MinimumSize = value;
+				this.aggSystemWindow.MinimumSize = value;
 				Glfw.SetWindowSizeLimits(glfwWindow,
-					(int)systemWindow.MinimumSize.X,
-					(int)systemWindow.MinimumSize.Y,
+					(int)aggSystemWindow.MinimumSize.X,
+					(int)aggSystemWindow.MinimumSize.Y,
 					-1,
 					-1);
 			}
@@ -115,9 +115,29 @@ namespace MatterHackers.GlfwProvider
 			throw new NotImplementedException();
 		}
 
+		private bool winformAlreadyClosing = false;
+
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
-			Glfw.SetWindowShouldClose(glfwWindow, true);
+			// Prevent our call to SystemWindow.Close from recursing
+			if (winformAlreadyClosing)
+			{
+				return;
+			}
+
+			// Check for RootSystemWindow, close if found
+			string windowTypeName = systemWindow.GetType().Name;
+
+			if (windowTypeName == "RootSystemWindow")
+			{
+				// Close the main (first) PlatformWindow if it's being requested and not this instance
+				Glfw.SetWindowShouldClose(glfwWindow, true);
+
+				return;
+			}
+
+			aggSystemWindow = this.WindowProvider.TopWindow;
+			aggSystemWindow?.Invalidate();
 		}
 
 		public void Invalidate(RectangleDouble rectToInvalidate)
@@ -127,11 +147,9 @@ namespace MatterHackers.GlfwProvider
 
 		public Graphics2D NewGraphics2D()
 		{
-			SetupViewport();
-
 			// this is for testing the openGL implementation
-			var graphics2D = new Graphics2DOpenGL((int)this.systemWindow.Width,
-				(int)this.systemWindow.Height,
+			var graphics2D = new Graphics2DOpenGL((int)this.aggSystemWindow.Width,
+				(int)this.aggSystemWindow.Height,
 				GuiWidget.DeviceScale);
 			graphics2D.PushTransform();
 
@@ -153,7 +171,7 @@ namespace MatterHackers.GlfwProvider
 			if (firstWindow)
 			{
 				firstWindow = false;
-				this.systemWindow = systemWindow;
+				this.aggSystemWindow = systemWindow;
 
 				this.Show();
 			}
@@ -169,26 +187,34 @@ namespace MatterHackers.GlfwProvider
 					// this.WindowState = FormWindowState.Normal;
 				}
 
-				systemWindow.Size = new Vector2(this.systemWindow.Width, this.systemWindow.Height);
+				systemWindow.Size = new Vector2(this.aggSystemWindow.Width, this.aggSystemWindow.Height);
 			}
 		}
 
 		private void CursorPositionCallback(IntPtr window, double x, double y)
 		{
 			mouseX = x;
-			mouseY = systemWindow.Height - y;
-			systemWindow.OnMouseMove(new MouseEventArgs(mouseButton, 0, mouseX, mouseY, 0));
+			mouseY = aggSystemWindow.Height - y;
+			WindowProvider.TopWindow.OnMouseMove(new MouseEventArgs(mouseButton, 0, mouseX, mouseY, 0));
 		}
 
 		private void ConditionalDrawAndRefresh(SystemWindow systemWindow)
 		{
 			if (this.Invalidated)
 			{
+				SetupViewport();
+
 				this.Invalidated = false;
 				Graphics2D graphics2D = new Graphics2DOpenGL((int)systemWindow.Width, (int)systemWindow.Height, GuiWidget.DeviceScale);
 				graphics2D.PushTransform();
-				systemWindow.OnDrawBackground(graphics2D);
-				systemWindow.OnDraw(graphics2D);
+				for (var i = 0; i < this.WindowProvider.OpenWindows.Count; i++)
+				{
+					graphics2D.FillRectangle(this.WindowProvider.OpenWindows[0].LocalBounds, new Color(Color.Black, 160));
+					this.WindowProvider.OpenWindows[i].OnDraw(graphics2D);
+				}
+
+				// systemWindow.OnDrawBackground(graphics2D);
+				// systemWindow.OnDraw(graphics2D);
 
 				Glfw.SwapBuffers(glfwWindow);
 			}
@@ -196,7 +222,7 @@ namespace MatterHackers.GlfwProvider
 
 		private void CharCallback(IntPtr window, uint codePoint)
 		{
-			systemWindow.OnKeyPress(new KeyPressEventArgs((char)codePoint));
+			WindowProvider.TopWindow.OnKeyPress(new KeyPressEventArgs((char)codePoint));
 		}
 
 		public Agg.UI.Keys ModifierKeys { get; private set; } = Agg.UI.Keys.None;
@@ -241,7 +267,7 @@ namespace MatterHackers.GlfwProvider
 				UpdateKeyboard(mods);
 
 				var keyEvent = new Agg.UI.KeyEventArgs(keyData | ModifierKeys);
-				systemWindow.OnKeyDown(keyEvent);
+				WindowProvider.TopWindow.OnKeyDown(keyEvent);
 
 				if (keyEvent.SuppressKeyPress)
 				{
@@ -260,7 +286,7 @@ namespace MatterHackers.GlfwProvider
 
 				var keyEvent = new Agg.UI.KeyEventArgs(keyData | ModifierKeys);
 
-				systemWindow.OnKeyUp(keyEvent);
+				WindowProvider.TopWindow.OnKeyUp(keyEvent);
 
 				if (suppressedKeyDowns.Contains(keyEvent.KeyCode))
 				{
@@ -495,8 +521,12 @@ namespace MatterHackers.GlfwProvider
 				case Cursors.SizeAll:
 				case Cursors.SizeNESW:
 				case Cursors.SizeNS:
+					return Glfw.CreateStandardCursor(CursorType.ResizeVertical);
+
 				case Cursors.SizeNWSE:
 				case Cursors.SizeWE:
+					return Glfw.CreateStandardCursor(CursorType.ResizeHorizontal);
+
 				case Cursors.UpArrow:
 					return Glfw.CreateStandardCursor(CursorType.Arrow);
 
@@ -537,25 +567,25 @@ namespace MatterHackers.GlfwProvider
 				}
 
 				lastMouseDownTime[button] = now;
-				systemWindow.OnMouseDown(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
+				WindowProvider.TopWindow.OnMouseDown(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
 			}
 			else if (state == InputState.Release)
 			{
-				systemWindow.OnMouseUp(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
+				WindowProvider.TopWindow.OnMouseUp(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
 			}
 		}
 
 		private void ScrollCallback(IntPtr window, double x, double y)
 		{
-			systemWindow.OnMouseWheel(new MouseEventArgs(mouseButton, 0, mouseX, mouseY, (int)y));
+			WindowProvider.TopWindow.OnMouseWheel(new MouseEventArgs(MouseButtons.None, 0, mouseX, mouseY, (int)(y * 120)));
 		}
 
 		private void SetupViewport()
 		{
 			// If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
 			// Call this function you have called Show().
-			int w = (int)systemWindow.Width;
-			int h = (int)systemWindow.Height;
+			int w = (int)aggSystemWindow.Width;
+			int h = (int)aggSystemWindow.Height;
 			GL.MatrixMode(MatrixMode.Projection);
 			GL.LoadIdentity();
 			GL.Ortho(0, w, 0, h, -1, 1); // Bottom-left corner pixel has coordinate (0, 0)
@@ -570,10 +600,10 @@ namespace MatterHackers.GlfwProvider
 			Glfw.WindowHint(Hint.Visible, false);
 
 			// Create window
-			glfwWindow = Glfw.CreateWindow((int)systemWindow.Width, (int)systemWindow.Height, systemWindow.Title, Monitor.None, Window.None);
+			glfwWindow = Glfw.CreateWindow((int)aggSystemWindow.Width, (int)aggSystemWindow.Height, aggSystemWindow.Title, Monitor.None, Window.None);
 			Glfw.SetWindowSizeLimits(glfwWindow,
-				(int)systemWindow.MinimumSize.X,
-				(int)systemWindow.MinimumSize.Y,
+				(int)aggSystemWindow.MinimumSize.X,
+				(int)aggSystemWindow.MinimumSize.Y,
 				-1,
 				-1);
 			Glfw.MakeContextCurrent(glfwWindow);
@@ -586,30 +616,30 @@ namespace MatterHackers.GlfwProvider
 			// Effectively enables VSYNC by setting to 1.
 			Glfw.SwapInterval(1);
 
-			systemWindow.PlatformWindow = this;
+			aggSystemWindow.PlatformWindow = this;
 
-			if (systemWindow.Maximized)
+			if (aggSystemWindow.Maximized)
 			{
 				// TODO: make this right
 				var screenSize = Glfw.PrimaryMonitor.WorkArea;
-				var x = (screenSize.Width - (int)systemWindow.Width) / 2;
-				var y = (screenSize.Height - (int)systemWindow.Height) / 2;
+				var x = (screenSize.Width - (int)aggSystemWindow.Width) / 2;
+				var y = (screenSize.Height - (int)aggSystemWindow.Height) / 2;
 				Glfw.SetWindowPosition(glfwWindow, x, y);
 				Glfw.MaximizeWindow(glfwWindow);
 			}
-			else if (systemWindow.InitialDesktopPosition == new Point2D(-1, -1))
+			else if (aggSystemWindow.InitialDesktopPosition == new Point2D(-1, -1))
 			{
 				// Find center position based on window and monitor sizes
 				var screenSize = Glfw.PrimaryMonitor.WorkArea;
-				var x = (screenSize.Width - (int)systemWindow.Width) / 2;
-				var y = (screenSize.Height - (int)systemWindow.Height) / 2;
+				var x = (screenSize.Width - (int)aggSystemWindow.Width) / 2;
+				var y = (screenSize.Height - (int)aggSystemWindow.Height) / 2;
 				Glfw.SetWindowPosition(glfwWindow, x, y);
 			}
 			else
 			{
 				Glfw.SetWindowPosition(glfwWindow,
-					(int)systemWindow.InitialDesktopPosition.x,
-					(int)systemWindow.InitialDesktopPosition.y);
+					(int)aggSystemWindow.InitialDesktopPosition.x,
+					(int)aggSystemWindow.InitialDesktopPosition.y);
 			}
 
 			Glfw.SetWindowSizeCallback(glfwWindow, SizeCallback);
@@ -635,7 +665,7 @@ namespace MatterHackers.GlfwProvider
 					// wait for the window to finish opening
 					Glfw.PollEvents();
 
-					ConditionalDrawAndRefresh(systemWindow);
+					ConditionalDrawAndRefresh(aggSystemWindow);
 				}
 			}
 		}
@@ -643,7 +673,7 @@ namespace MatterHackers.GlfwProvider
 		private void CloseCallback(IntPtr window)
 		{
 			var closing = new ClosingEventArgs();
-			systemWindow.OnClosing(closing);
+			aggSystemWindow.OnClosing(closing);
 			if (closing.Cancel)
 			{
 				Glfw.SetWindowShouldClose(glfwWindow, false);
@@ -652,9 +682,9 @@ namespace MatterHackers.GlfwProvider
 
 		private void SizeCallback(IntPtr window, int width, int height)
 		{
-			systemWindow.Size = new VectorMath.Vector2(width, height);
+			aggSystemWindow.Size = new VectorMath.Vector2(width, height);
 			GL.Viewport(0, 0, width, height); // Use all of the glControl painting area
-			ConditionalDrawAndRefresh(systemWindow);
+			ConditionalDrawAndRefresh(aggSystemWindow);
 		}
 	}
 }
