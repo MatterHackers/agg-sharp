@@ -103,8 +103,14 @@ namespace MatterHackers.Agg
 		/// <returns>An ImageBuffer initialized with data from the given file</returns>
 		public ImageBuffer LoadIcon(string path, bool invertImage = false)
 		{
-			var icon = LoadImage(Path.Combine("Icons", path), invertImage);
-			return (GuiWidget.DeviceScale == 1) ? icon : icon.CreateScaledImage(GuiWidget.DeviceScale);
+			var fullPath = Path.Combine("Icons", path);
+			if (FileExists(fullPath))
+			{
+				var icon = LoadImage(fullPath, invertImage);
+				return (GuiWidget.DeviceScale == 1) ? icon : icon.CreateScaledImage(GuiWidget.DeviceScale);
+			}
+
+			return null;
 		}
 
 		/// <summary>
