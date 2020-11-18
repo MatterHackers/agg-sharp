@@ -50,6 +50,8 @@ namespace MatterHackers.DataConverters3D
 {
 	public class Object3D : IObject3D
 	{
+		private RebuildLock deserializeLock = null;
+
 		public event EventHandler<InvalidateArgs> Invalidated;
 
 		public static string AssetsPath { get; set; }
@@ -377,13 +379,21 @@ namespace MatterHackers.DataConverters3D
 			return loadedItem;
 		}
 
+		[OnDeserializing]
+		internal void OnDeserializing(StreamingContext context)
+		{
+			deserializeLock = this.RebuildLock();
+		}
+
 		[OnDeserialized]
-		public void OnDeserialized(StreamingContext context)
+		internal void OnDeserialized(StreamingContext context)
 		{
 			if (!this.Matrix.IsValid())
 			{
 				this.Matrix = Matrix4X4.Identity;
 			}
+
+			deserializeLock?.Dispose();
 		}
 
 		public static IObject3D Load(Stream stream, string extension, CancellationToken cancellationToken, CacheContext cacheContext = null, Action<double, string> progress = null)

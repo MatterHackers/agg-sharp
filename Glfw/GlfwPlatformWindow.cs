@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using GLFW;
 using MatterHackers.Agg;
+using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using MatterHackers.RenderOpenGl;
@@ -47,6 +48,8 @@ namespace MatterHackers.GlfwProvider
 		private Window glfwWindow;
 
 		private SystemWindow aggSystemWindow;
+
+		private bool iconified;
 
 		public GlfwPlatformWindow()
 		{
@@ -177,16 +180,6 @@ namespace MatterHackers.GlfwProvider
 			}
 			else
 			{
-				// Notify the embedded window of its new single windows parent size
-
-				// If client code has called ShowSystemWindow and we're minimized, we must restore in order
-				// to establish correct window bounds from ClientSize below. Otherwise we're zeroed out and
-				// will create invalid surfaces of (0,0)
-				// if (this.WindowState == FormWindowState.Minimized)
-				{
-					// this.WindowState = FormWindowState.Normal;
-				}
-
 				systemWindow.Size = new Vector2(this.aggSystemWindow.Width, this.aggSystemWindow.Height);
 			}
 		}
@@ -200,7 +193,8 @@ namespace MatterHackers.GlfwProvider
 
 		private void ConditionalDrawAndRefresh(SystemWindow systemWindow)
 		{
-			if (this.Invalidated)
+			if (this.Invalidated
+				&& !iconified)
 			{
 				SetupViewport();
 
@@ -209,12 +203,15 @@ namespace MatterHackers.GlfwProvider
 				graphics2D.PushTransform();
 				for (var i = 0; i < this.WindowProvider.OpenWindows.Count; i++)
 				{
-					graphics2D.FillRectangle(this.WindowProvider.OpenWindows[0].LocalBounds, new Color(Color.Black, 160));
-					this.WindowProvider.OpenWindows[i].OnDraw(graphics2D);
-				}
+					if (i > 0)
+					{
+						graphics2D.FillRectangle(this.WindowProvider.OpenWindows[0].LocalBounds, new Agg.Color(Agg.Color.Black, 160));
+					}
 
-				// systemWindow.OnDrawBackground(graphics2D);
-				// systemWindow.OnDraw(graphics2D);
+					var window = this.WindowProvider.OpenWindows[i];
+					window.OnDrawBackground(graphics2D);
+					window.OnDraw(graphics2D);
+				}
 
 				Glfw.SwapBuffers(glfwWindow);
 			}
@@ -643,6 +640,8 @@ namespace MatterHackers.GlfwProvider
 			}
 
 			Glfw.SetWindowSizeCallback(glfwWindow, SizeCallback);
+			Glfw.SetWindowMaximizeCallback(glfwWindow, MaximizeCallback);
+			Glfw.SetWindowIconifyCallback(glfwWindow, IconifyCallback);
 
 			// Set a key callback
 			Glfw.SetKeyCallback(glfwWindow, KeyCallback);
@@ -652,20 +651,55 @@ namespace MatterHackers.GlfwProvider
 			Glfw.SetScrollCallback(glfwWindow, ScrollCallback);
 			Glfw.SetCloseCallback(glfwWindow, CloseCallback);
 
+			var applicationIcon = AggContext.StaticData.LoadIcon("application.png");
+
+			if (applicationIcon != null)
+			{
+				Glfw.SetWindowIcon(glfwWindow,
+					2,
+					new Image[]
+					{
+						ConvertImageBufferToImage(applicationIcon),
+						ConvertImageBufferToImage(applicationIcon.CreateScaledImage(16, 16))
+					});
+			}
+
 			Glfw.ShowWindow(glfwWindow);
 
-			var openTime = UiThread.CurrentTimerMs;
 			while (!Glfw.WindowShouldClose(glfwWindow))
 			{
-				// Poll for OS events and swap front/back buffers
+				// keep the event thread running
 				UiThread.InvokePendingActions();
 
-				if (UiThread.CurrentTimerMs > openTime + 500)
-				{
-					// wait for the window to finish opening
-					Glfw.PollEvents();
+				// Poll for OS events and swap front/back buffers
+				Glfw.PollEvents();
+				ConditionalDrawAndRefresh(aggSystemWindow);
+			}
+		}
 
-					ConditionalDrawAndRefresh(aggSystemWindow);
+		private Image ConvertImageBufferToImage(ImageBuffer sourceImage)
+		{
+			unsafe
+			{
+				var buffer = sourceImage.GetBuffer();
+				var flippedBuffer = new byte[buffer.Length];
+				var index = 0;
+				for (int y = sourceImage.Height - 1; y >= 0; y--)
+				{
+					for (int x = 0; x < sourceImage.Width; x++)
+					{
+						var pixel = sourceImage.GetPixel(x, y);
+						flippedBuffer[index + 0] = pixel.red;
+						flippedBuffer[index + 1] = pixel.green;
+						flippedBuffer[index + 2] = pixel.blue;
+						flippedBuffer[index + 3] = pixel.alpha;
+						index += 4;
+					}
+				}
+
+				fixed (byte* pBuffer = flippedBuffer)
+				{
+					return new Image(sourceImage.Width, sourceImage.Height, (IntPtr)pBuffer);
 				}
 			}
 		}
@@ -685,6 +719,16 @@ namespace MatterHackers.GlfwProvider
 			aggSystemWindow.Size = new VectorMath.Vector2(width, height);
 			GL.Viewport(0, 0, width, height); // Use all of the glControl painting area
 			ConditionalDrawAndRefresh(aggSystemWindow);
+		}
+
+		private void MaximizeCallback(IntPtr window, bool maximized)
+		{
+			aggSystemWindow.Maximized = maximized;
+		}
+
+		private void IconifyCallback(IntPtr window, bool iconified)
+		{
+			this.iconified = iconified;
 		}
 	}
 }

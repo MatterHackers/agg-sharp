@@ -327,7 +327,7 @@ namespace MatterHackers.RenderOpenGl
 
 		private static void DrawWireOverlay(Mesh meshToRender, RenderTypes renderType, Color color, Action meshChanged = null)
 		{
-			GL.Color4(color.red, color.green, color.blue, color.alpha == 0 ? 255 : color.alpha);
+			GL.Color4(color.red, color.green, color.blue, color.alpha == 0 ? (byte)255 : color.alpha);
 
 			GL.Disable(EnableCap.Lighting);
 
