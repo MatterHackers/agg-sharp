@@ -18,6 +18,7 @@
 //----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using GLFW;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
@@ -196,7 +197,7 @@ namespace MatterHackers.GlfwProvider
 			if (this.Invalidated
 				&& !iconified)
 			{
-				SetupViewport();
+				ResetViewport();
 
 				this.Invalidated = false;
 				Graphics2D graphics2D = new Graphics2DOpenGL((int)systemWindow.Width, (int)systemWindow.Height, GuiWidget.DeviceScale);
@@ -577,14 +578,20 @@ namespace MatterHackers.GlfwProvider
 			WindowProvider.TopWindow.OnMouseWheel(new MouseEventArgs(MouseButtons.None, 0, mouseX, mouseY, (int)(y * 120)));
 		}
 
-		private void SetupViewport()
+		private void ResetViewport()
 		{
 			// If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
 			// Call this function you have called Show().
 			int w = (int)aggSystemWindow.Width;
 			int h = (int)aggSystemWindow.Height;
+
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.LoadIdentity();
+			GL.Scissor(0, 0, w, h);
+
 			GL.MatrixMode(MatrixMode.Projection);
 			GL.LoadIdentity();
+
 			GL.Ortho(0, w, 0, h, -1, 1); // Bottom-left corner pixel has coordinate (0, 0)
 			GL.Viewport(0, 0, w, h); // Use all of the glControl painting area
 		}
@@ -597,7 +604,7 @@ namespace MatterHackers.GlfwProvider
 			Glfw.WindowHint(Hint.Visible, false);
 
 			// Create window
-			glfwWindow = Glfw.CreateWindow((int)aggSystemWindow.Width, (int)aggSystemWindow.Height, aggSystemWindow.Title, Monitor.None, Window.None);
+			glfwWindow = Glfw.CreateWindow((int)aggSystemWindow.Width, (int)aggSystemWindow.Height, aggSystemWindow.Title, GLFW.Monitor.None, Window.None);
 			Glfw.SetWindowSizeLimits(glfwWindow,
 				(int)aggSystemWindow.MinimumSize.X,
 				(int)aggSystemWindow.MinimumSize.Y,
@@ -605,7 +612,6 @@ namespace MatterHackers.GlfwProvider
 				-1);
 			Glfw.MakeContextCurrent(glfwWindow);
 			OpenGL.Gl.Import(Glfw.GetProcAddress);
-
 			// set the gl renderer to the GLFW specific one rather than the OpenTk one
 			var glfwGl = new GlfwGL();
 			GL.Instance = glfwGl;

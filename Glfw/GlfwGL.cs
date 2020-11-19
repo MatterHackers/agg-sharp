@@ -157,6 +157,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
+#pragma warning disable SA1300 // Element should begin with upper-case letter
 		private delegate void glBeginHandler(int mode);
 
 		private delegate void glClearHandler(int mask);
@@ -220,6 +221,7 @@ namespace MatterHackers.RenderOpenGl
 		private delegate void glVertex3fHandler(float x, float y, float z);
 
 		private delegate void glVertexPointerHandler(int size, int type, int stride, IntPtr pointer);
+#pragma warning restore SA1300 // Element should begin with upper-case letter
 
 		public bool GlHasBufferObjects { get; private set; } = true;
 
@@ -629,7 +631,7 @@ namespace MatterHackers.RenderOpenGl
 			using (Stream stream = OpenEmbeddedAssetStream(name))
 			{
 				byte[] bytes = new byte[stream.Length];
-				using (MemoryStream ms = new MemoryStream(bytes))
+				using (var ms = new MemoryStream(bytes))
 				{
 					stream.CopyTo(ms);
 					return bytes;
@@ -682,12 +684,15 @@ namespace MatterHackers.RenderOpenGl
 			glTexEnvf((int)target, (int)pname, param);
 		}
 
-		public void TexImage2D(TextureTarget target, int level,
-					PixelInternalFormat internalFormat,
-			int width, int height, int border,
+		public void TexImage2D(TextureTarget target,
+			int level,
+			PixelInternalFormat internalFormat,
+			int width,
+			int height,
+			int border,
 			OpenGl.PixelFormat format,
 			PixelType type,
-			Byte[] pixels)
+			byte[] pixels)
 		{
 			unsafe
 			{
