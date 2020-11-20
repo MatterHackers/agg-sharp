@@ -23,13 +23,13 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.VectorMath;
+using MIConvexHull;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MatterHackers.VectorMath;
-using MIConvexHull;
 
 namespace MatterHackers.PolygonMesh
 {
@@ -124,10 +124,15 @@ namespace MatterHackers.PolygonMesh
 			{
 				// create the mesh from the hull data
 				Mesh hullMesh = new Mesh();
-				foreach (var vertex in convexHull.Result.Points)
+				foreach (var face in convexHull.Result.Faces)
 				{
-					var vertexCount = hullMesh.Vertices.Count;
-					hullMesh.Vertices.Add(new Vector3(vertex.Position[0], vertex.Position[1], vertex.Position[2]));
+					int vertexCount = hullMesh.Vertices.Count;
+
+					foreach (var vertex in face.Vertices)
+					{
+						hullMesh.Vertices.Add(new Vector3(vertex.Position[0], vertex.Position[1], vertex.Position[2]));
+					}
+
 					hullMesh.Faces.Add(vertexCount, vertexCount + 1, vertexCount + 2, hullMesh.Vertices);
 				}
 
