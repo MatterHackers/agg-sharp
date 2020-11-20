@@ -17,11 +17,13 @@
   <ItemGroup>
     <ProjectReference Include="..\agg\Agg.csproj" />
     <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj" />
-    <ProjectReference Include="..\glfw-net\GLFW.NET\GLFW.NETCore.csproj" />
     <ProjectReference Include="..\Gui\Gui.csproj" />
     <ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj" />
     <ProjectReference Include="..\Tesselate\Tesselate.csproj" />
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
+    <ProjectReference Include="..\glfw-net\GLFW.NET\GLFW.NETCore.csproj">
+      <ReferenceSourceTarget>ProjectReference</ReferenceSourceTarget>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -29,6 +31,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="glfw3.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="glfw.dylib">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

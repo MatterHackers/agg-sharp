@@ -145,7 +145,7 @@
       <Name>gradients</Name>
     </ProjectReference>
     <ProjectReference Include="..\GUITester\GuiTester.csproj">
-      <Project>{3c2261e0-0ce9-422f-8050-f78bebae43f5}</Project>
+      <Project>{0B8D6F56-BD7F-4426-B858-D9292B084656}</Project>
       <Name>GuiTester</Name>
     </ProjectReference>
     <ProjectReference Include="..\image1\image1.csproj">
