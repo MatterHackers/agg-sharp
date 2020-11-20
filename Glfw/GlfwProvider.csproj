@@ -15,13 +15,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="glfw" Version="3.3.2" />
-    <PackageReference Include="glfw-net" Version="3.3.1" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\agg\Agg.csproj" />
     <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj" />
+    <ProjectReference Include="..\glfw-net\GLFW.NET\GLFW.NETCore.csproj" />
     <ProjectReference Include="..\Gui\Gui.csproj" />
     <ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj" />
     <ProjectReference Include="..\Tesselate\Tesselate.csproj" />

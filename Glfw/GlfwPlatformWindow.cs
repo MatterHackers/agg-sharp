@@ -18,7 +18,6 @@
 //----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using GLFW;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
@@ -185,7 +184,7 @@ namespace MatterHackers.GlfwProvider
 			}
 		}
 
-		private void CursorPositionCallback(IntPtr window, double x, double y)
+		private void CursorPositionCallback(Window window, double x, double y)
 		{
 			mouseX = x;
 			mouseY = aggSystemWindow.Height - y;
@@ -218,7 +217,7 @@ namespace MatterHackers.GlfwProvider
 			}
 		}
 
-		private void CharCallback(IntPtr window, uint codePoint)
+		private void CharCallback(Window window, uint codePoint)
 		{
 			WindowProvider.TopWindow.OnKeyPress(new KeyPressEventArgs((char)codePoint));
 		}
@@ -256,7 +255,7 @@ namespace MatterHackers.GlfwProvider
 		private HashSet<Agg.UI.Keys> suppressedKeyDowns = new HashSet<Agg.UI.Keys>();
 		private bool alreadyClosing;
 
-		private void KeyCallback(IntPtr windowIn, GLFW.Keys key, int scanCode, InputState state, ModifierKeys mods)
+		private void KeyCallback(Window windowIn, GLFW.Keys key, int scanCode, InputState state, ModifierKeys mods)
 		{
 			if (state == InputState.Press)
 			{
@@ -538,7 +537,7 @@ namespace MatterHackers.GlfwProvider
 			return Glfw.CreateStandardCursor(CursorType.Arrow);
 		}
 
-		private void MouseButtonCallback(IntPtr window, MouseButton button, InputState state, ModifierKeys modifiers)
+		private void MouseButtonCallback(Window window, MouseButton button, InputState state, ModifierKeys modifiers)
 		{
 			var now = UiThread.CurrentTimerMs;
 			mouseButton = MouseButtons.Left;
@@ -573,7 +572,7 @@ namespace MatterHackers.GlfwProvider
 			}
 		}
 
-		private void ScrollCallback(IntPtr window, double x, double y)
+		private void ScrollCallback(Window window, double x, double y)
 		{
 			WindowProvider.TopWindow.OnMouseWheel(new MouseEventArgs(MouseButtons.None, 0, mouseX, mouseY, (int)(y * 120)));
 		}
@@ -712,7 +711,7 @@ namespace MatterHackers.GlfwProvider
 			}
 		}
 
-		private void CloseCallback(IntPtr window)
+		private void CloseCallback(Window window)
 		{
 			var closing = new ClosingEventArgs();
 			aggSystemWindow.OnClosing(closing);
@@ -722,14 +721,14 @@ namespace MatterHackers.GlfwProvider
 			}
 		}
 
-		private void SizeCallback(IntPtr window, int width, int height)
+		private void SizeCallback(Window window, int width, int height)
 		{
 			aggSystemWindow.Size = new VectorMath.Vector2(width, height);
 			GL.Viewport(0, 0, width, height); // Use all of the glControl painting area
 			ConditionalDrawAndRefresh(aggSystemWindow);
 		}
 
-		private void MaximizeCallback(IntPtr window, bool maximized)
+		private void MaximizeCallback(Window window, bool maximized)
 		{
 			aggSystemWindow.Maximized = maximized;
 		}
