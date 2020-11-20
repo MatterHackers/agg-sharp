@@ -605,21 +605,18 @@ namespace MatterHackers.GlfwProvider
 
 			// Create window
 			glfwWindow = Glfw.CreateWindow((int)aggSystemWindow.Width, (int)aggSystemWindow.Height, aggSystemWindow.Title, GLFW.Monitor.None, Window.None);
-			Glfw.SetWindowSizeLimits(glfwWindow,
-				(int)aggSystemWindow.MinimumSize.X,
-				(int)aggSystemWindow.MinimumSize.Y,
-				-1,
-				-1);
 			Glfw.MakeContextCurrent(glfwWindow);
-			OpenGL.Gl.Import(Glfw.GetProcAddress);
-			// set the gl renderer to the GLFW specific one rather than the OpenTk one
-			var glfwGl = new GlfwGL();
-			GL.Instance = glfwGl;
 
 			// Effectively enables VSYNC by setting to 1.
 			Glfw.SwapInterval(1);
 
 			aggSystemWindow.PlatformWindow = this;
+
+			Glfw.SetWindowSizeLimits(glfwWindow,
+				(int)aggSystemWindow.MinimumSize.X,
+				(int)aggSystemWindow.MinimumSize.Y,
+				-1,
+				-1);
 
 			if (aggSystemWindow.Maximized)
 			{
@@ -670,16 +667,21 @@ namespace MatterHackers.GlfwProvider
 					});
 			}
 
+			OpenGL.Gl.Import(Glfw.GetProcAddress);
+			// set the gl renderer to the GLFW specific one rather than the OpenTk one
+			var glfwGl = new GlfwGL();
+			GL.Instance = glfwGl;
+
 			Glfw.ShowWindow(glfwWindow);
 
 			while (!Glfw.WindowShouldClose(glfwWindow))
 			{
-				// keep the event thread running
-				UiThread.InvokePendingActions();
-
 				// Poll for OS events and swap front/back buffers
 				Glfw.PollEvents();
 				ConditionalDrawAndRefresh(aggSystemWindow);
+
+				// keep the event thread running
+				UiThread.InvokePendingActions();
 			}
 		}
 
