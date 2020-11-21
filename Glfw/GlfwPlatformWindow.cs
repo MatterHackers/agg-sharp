@@ -118,7 +118,7 @@ namespace MatterHackers.GlfwProvider
 			throw new NotImplementedException();
 		}
 
-		private bool winformAlreadyClosing = false;
+		private readonly bool winformAlreadyClosing = false;
 
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
@@ -199,8 +199,7 @@ namespace MatterHackers.GlfwProvider
 				ResetViewport();
 
 				this.Invalidated = false;
-				Graphics2D graphics2D = new Graphics2DOpenGL((int)systemWindow.Width, (int)systemWindow.Height, GuiWidget.DeviceScale);
-				graphics2D.PushTransform();
+				Graphics2D graphics2D = NewGraphics2D();
 				for (var i = 0; i < this.WindowProvider.OpenWindows.Count; i++)
 				{
 					if (i > 0)
@@ -252,8 +251,7 @@ namespace MatterHackers.GlfwProvider
 			ModifierKeys = (Agg.UI.Keys)keys;
 		}
 
-		private HashSet<Agg.UI.Keys> suppressedKeyDowns = new HashSet<Agg.UI.Keys>();
-		private bool alreadyClosing;
+		private readonly HashSet<Agg.UI.Keys> suppressedKeyDowns = new HashSet<Agg.UI.Keys>();
 
 		private void KeyCallback(Window windowIn, GLFW.Keys key, int scanCode, InputState state, ModifierKeys mods)
 		{
@@ -273,7 +271,6 @@ namespace MatterHackers.GlfwProvider
 			}
 			else if (state == InputState.Repeat)
 			{
-
 			}
 			else if (state == InputState.Release)
 			{

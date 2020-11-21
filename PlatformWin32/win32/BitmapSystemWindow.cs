@@ -24,7 +24,7 @@
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// to use, copy, modify, merge, publish, distribute, sub-license, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
@@ -47,7 +47,7 @@ namespace MatterHackers.Agg.UI
 {
 	public class BitmapSystemWindow : WinformsSystemWindow
 	{
-		internal WindowsFormsBitmapBackBuffer bitmapBackBuffer = new WindowsFormsBitmapBackBuffer();
+		private readonly WindowsFormsBitmapBackBuffer bitmapBackBuffer = new WindowsFormsBitmapBackBuffer();
 
 		public BitmapSystemWindow()
 		{
@@ -55,17 +55,17 @@ namespace MatterHackers.Agg.UI
 
 		public override void CopyBackBufferToScreen(Graphics displayGraphics)
 		{
-			RectangleInt intRect = new RectangleInt(0, 0, (int)AggSystemWindow.Width, (int)AggSystemWindow.Height);
+			var intRect = new RectangleInt(0, 0, (int)AggSystemWindow.Width, (int)AggSystemWindow.Height);
 			bitmapBackBuffer.UpdateHardwareSurface(intRect);
 
 			if (AggContext.OperatingSystem != OSType.Windows)
 			{
-				//displayGraphics.DrawImage(aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap, windowsRect, windowsRect, GraphicsUnit.Pixel);  // around 250 ms for full screen
+				// displayGraphics.DrawImage(aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap, windowsRect, windowsRect, GraphicsUnit.Pixel);  // around 250 ms for full screen
 				displayGraphics.DrawImageUnscaled(bitmapBackBuffer.windowsBitmap, 0, 0); // around 200 ms for full screen
 			}
 			else
 			{
-				using (Graphics bitmapGraphics = Graphics.FromImage(bitmapBackBuffer.windowsBitmap))
+				using (var bitmapGraphics = Graphics.FromImage(bitmapBackBuffer.windowsBitmap))
 				{
 					IntPtr displayHDC = displayGraphics.GetHdc();
 					IntPtr bitmapHDC = bitmapGraphics.GetHdc();
@@ -90,7 +90,7 @@ namespace MatterHackers.Agg.UI
 
 			if (AggSystemWindow != null)
 			{
-				System.Drawing.Imaging.PixelFormat format = System.Drawing.Imaging.PixelFormat.Undefined;
+				System.Drawing.Imaging.PixelFormat format;
 				switch (AggSystemWindow.BitDepth)
 				{
 					case 24:
@@ -104,6 +104,7 @@ namespace MatterHackers.Agg.UI
 					default:
 						throw new NotImplementedException();
 				}
+
 				var clientSize = this.ClientSize;
 
 				int bitDepth = System.Drawing.Image.GetPixelFormatSize(format);
@@ -123,6 +124,7 @@ namespace MatterHackers.Agg.UI
 			{
 				graphics2D = bitmapBackBuffer.backingImageBufferFloat.NewGraphics2D();
 			}
+
 			graphics2D.PushTransform();
 			return graphics2D;
 		}
@@ -133,9 +135,11 @@ namespace MatterHackers.Agg.UI
 
 			this.EventSink = new WinformsEventSink(this, AggSystemWindow);
 
-			System.Drawing.Size clientSize = new System.Drawing.Size();
-			clientSize.Width = (int)this.AggSystemWindow.Width;
-			clientSize.Height = (int)this.AggSystemWindow.Height;
+			var clientSize = new Size
+			{
+				Width = (int)this.AggSystemWindow.Width,
+				Height = (int)this.AggSystemWindow.Height
+			};
 			this.ClientSize = clientSize;
 
 			if (!this.AggSystemWindow.Resizable)
