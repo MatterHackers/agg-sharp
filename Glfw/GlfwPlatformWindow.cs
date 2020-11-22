@@ -47,7 +47,11 @@ namespace MatterHackers.GlfwProvider
 
 		private Window glfwWindow;
 
-		private SystemWindow aggSystemWindow;
+		private SystemWindow aggSystemWindow
+		{
+			get;
+			set;
+		}
 
 		private bool iconified;
 
@@ -186,9 +190,12 @@ namespace MatterHackers.GlfwProvider
 
 		private void CursorPositionCallback(Window window, double x, double y)
 		{
-			mouseX = x;
-			mouseY = aggSystemWindow.Height - y;
-			WindowProvider.TopWindow.OnMouseMove(new MouseEventArgs(mouseButton, 0, mouseX, mouseY, 0));
+			if (this != null)
+			{
+				mouseX = x;
+				mouseY = aggSystemWindow.Height - y;
+				WindowProvider.TopWindow.OnMouseMove(new MouseEventArgs(mouseButton, 0, mouseX, mouseY, 0));
+			}
 		}
 
 		private void ConditionalDrawAndRefresh(SystemWindow systemWindow)
@@ -536,36 +543,39 @@ namespace MatterHackers.GlfwProvider
 
 		private void MouseButtonCallback(Window window, MouseButton button, InputState state, ModifierKeys modifiers)
 		{
-			var now = UiThread.CurrentTimerMs;
-			mouseButton = MouseButtons.Left;
-			switch (button)
+			if (this != null)
 			{
-				case MouseButton.Middle:
-					mouseButton = MouseButtons.Middle;
-					break;
-
-				case MouseButton.Right:
-					mouseButton = MouseButtons.Right;
-					break;
-			}
-
-			if (state == InputState.Press)
-			{
-				clickCount[button] = 1;
-				if (lastMouseDownTime.ContainsKey(button))
+				var now = UiThread.CurrentTimerMs;
+				mouseButton = MouseButtons.Left;
+				switch (button)
 				{
-					if (lastMouseDownTime[button] > now - 500)
-					{
-						clickCount[button] = 2;
-					}
+					case MouseButton.Middle:
+						mouseButton = MouseButtons.Middle;
+						break;
+
+					case MouseButton.Right:
+						mouseButton = MouseButtons.Right;
+						break;
 				}
 
-				lastMouseDownTime[button] = now;
-				WindowProvider.TopWindow.OnMouseDown(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
-			}
-			else if (state == InputState.Release)
-			{
-				WindowProvider.TopWindow.OnMouseUp(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
+				if (state == InputState.Press)
+				{
+					clickCount[button] = 1;
+					if (lastMouseDownTime.ContainsKey(button))
+					{
+						if (lastMouseDownTime[button] > now - 500)
+						{
+							clickCount[button] = 2;
+						}
+					}
+
+					lastMouseDownTime[button] = now;
+					WindowProvider.TopWindow.OnMouseDown(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
+				}
+				else if (state == InputState.Release)
+				{
+					WindowProvider.TopWindow.OnMouseUp(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
+				}
 			}
 		}
 
