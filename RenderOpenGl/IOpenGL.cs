@@ -88,7 +88,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		int GenBuffer();
 
-		void GenTextures(int[] textureHandle);
+		int GenTexture();
 
 		ErrorCode GetError();
 

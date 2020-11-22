@@ -387,15 +387,15 @@ namespace MatterHackers.RenderOpenGl
 			Gl.glCullFace((int)mode);
 		}
 
-		public void DeleteBuffers(int n, ref int buffers)
+		public void DeleteBuffer(int buffer)
 		{
 			if (GlHasBufferObjects)
 			{
-				Gl.glDeleteBuffer((uint)buffers);
+				Gl.glDeleteBuffer((uint)buffer);
 			}
 			else
 			{
-				bufferData.Remove(buffers);
+				bufferData.Remove(buffer);
 			}
 		}
 
@@ -409,14 +409,9 @@ namespace MatterHackers.RenderOpenGl
 			throw new NotImplementedException();
 		}
 
-		public void DeleteTextures(int n, ref int textures)
+		public void DeleteTexture(int texture)
 		{
-			if (n != 1)
-			{
-				throw new NotImplementedException();
-			}
-
-			Gl.glDeleteTexture((uint)textures);
+			Gl.glDeleteTexture((uint)texture);
 		}
 
 		public void DepthFunc(DepthFunction func)
@@ -520,14 +515,9 @@ namespace MatterHackers.RenderOpenGl
 			throw new NotImplementedException();
 		}
 
-		public void GenTextures(int n, out int textureHandle)
+		public int GenTexture()
 		{
-			if (n != 1)
-			{
-				throw new NotImplementedException();
-			}
-
-			textureHandle = (int)Gl.glGenTexture();
+			return (int)Gl.glGenTexture();
 		}
 
 		public ErrorCode GetError()

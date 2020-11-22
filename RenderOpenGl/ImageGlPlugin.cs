@@ -225,9 +225,7 @@ namespace MatterHackers.RenderOpenGl
 
 			GL.Enable(EnableCap.Texture2D);
 			// Create the texture handle
-			var texture = new int[1];
-			GL.GenTextures(texture);
-			glData.glTextureHandle = texture[0];
+			glData.glTextureHandle = GL.GenTexture();
 
 			// Set up some texture parameters for openGL
 			GL.BindTexture(TextureTarget.Texture2D, glData.glTextureHandle);

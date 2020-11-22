@@ -281,10 +281,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			return 0;
 		}
 
-		public static void GenTextures(int[] textureHandle)
+		public static int GenTexture()
 		{
-			Instance?.GenTextures(textureHandle);
+			var texture = Instance?.GenTexture();
 			CheckForError();
+			return texture.Value;
 		}
 
 		public static ErrorCode GetError()

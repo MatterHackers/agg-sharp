@@ -388,14 +388,11 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
-		public void GenTextures(int[] textureHandles)
+		public int GenTexture()
 		{
 #if USE_OPENGL
-			if (HardwareAvailable)
-			{
-				OpenTK.Graphics.OpenGL.GL.GenTextures(1, out int textureHandle);
-				textureHandles[0] = textureHandle;
-			}
+			OpenTK.Graphics.OpenGL.GL.GenTextures(1, out int textureHandle);
+			return textureHandle;
 #else
 			OpenTK.Graphics.ES11.GL.GenTextures(n, out textureHandle);
 #endif
