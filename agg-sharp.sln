@@ -127,7 +127,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Typography.One", "Typograph
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GlfwProvider", "Glfw\GlfwProvider.csproj", "{4FFC5B1F-E1FB-4411-84F4-2D564B8679DB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLFW.NETCore", "glfw-net\GLFW.NET\GLFW.NETCore.csproj", "{CADD6DB8-21EA-42C8-A4A8-5FA1F3E59970}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GLFW.NETCore", "glfw-net\GLFW.NET\GLFW.NETCore.csproj", "{CADD6DB8-21EA-42C8-A4A8-5FA1F3E59970}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution

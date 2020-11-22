@@ -290,7 +290,7 @@ namespace MatterHackers.RenderOpenGl
 		{
 		}
 
-		public void DeleteBuffers(int n, ref int buffers)
+		public void DeleteBuffer(int buffers)
 		{
 		}
 
@@ -302,7 +302,7 @@ namespace MatterHackers.RenderOpenGl
 		{
 		}
 
-		public void DeleteTextures(int n, ref int textures)
+		public void DeleteTexture(int texture)
 		{
 		}
 
@@ -544,9 +544,9 @@ namespace MatterHackers.RenderOpenGl
 			throw new NotImplementedException();
 		}
 
-		public void GenTextures(int n, out int textureHandle)
+		public void GenTextures(int[] textureHandle)
 		{
-			textureHandle = -1;
+			textureHandle[0] = -1;
 		}
 
 		public ErrorCode GetError()
@@ -853,6 +853,11 @@ namespace MatterHackers.RenderOpenGl
 		}
 
 		public void IndexPointer(IndexPointerType type, int stride, IntPtr pointer)
+		{
+			throw new NotImplementedException();
+		}
+
+		public int GenBuffer()
 		{
 			throw new NotImplementedException();
 		}

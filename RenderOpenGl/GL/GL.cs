@@ -176,15 +176,15 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			CheckForError();
 		}
 
-		public static void DeleteBuffers(int n, ref int buffers)
+		public static void DeleteBuffer(int buffer)
 		{
-			Instance?.DeleteBuffers(n, ref buffers);
+			Instance?.DeleteBuffer(buffer);
 			CheckForError();
 		}
 
-		public static void DeleteTextures(int n, ref int textures)
+		public static void DeleteTexture(int textures)
 		{
-			Instance?.DeleteTextures(n, ref textures);
+			Instance?.DeleteTexture(textures);
 			CheckForError();
 		}
 
@@ -281,10 +281,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			return 0;
 		}
 
-		public static void GenTextures(int n, out int textureHandle)
+		public static void GenTextures(int[] textureHandle)
 		{
-			textureHandle = -1;
-			Instance?.GenTextures(n, out textureHandle);
+			Instance?.GenTextures(textureHandle);
 			CheckForError();
 		}
 
