@@ -31,12 +31,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using GLFW;
 using MatterHackers.Agg;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
-using OpenGL;
-using static OpenGL.Gl;
 using ErrorCode = MatterHackers.RenderOpenGl.OpenGl.ErrorCode;
 
 namespace MatterHackers.RenderOpenGl
@@ -45,7 +44,17 @@ namespace MatterHackers.RenderOpenGl
 	{
 		private static glBeginHandler glBegin;
 
+		private static glBindBufferHandler glBindBuffer;
+
+		private static glBindTextureHandler glBindTexture;
+
+		private static glBlendFuncHandler glBlendFunc;
+
+		private static glBufferDataHandler glBufferData;
+
 		private static glClearHandler glClear;
+
+		private static glClearDepthHandler glClearDepth;
 
 		private static glColor4fHandler glColor4f;
 
@@ -53,11 +62,37 @@ namespace MatterHackers.RenderOpenGl
 
 		private static glColorPointerHandler glColorPointer;
 
+		private static glCullFaceHandler glCullFace;
+
+		private static glDeleteBuffersHandler glDeleteBuffers;
+
+		private static glDeleteTexturesHandler glDeleteTextures;
+
+		private static glDepthFuncHandler glDepthFunc;
+
+		private static glDisableHandler glDisable;
+
 		private static glDisableClientStateHandler glDisableClientState;
+
+		private static glDrawArraysHandler glDrawArrays;
+
+		private static glDrawRangeElementsHandler glDrawRangeElements;
+
+		private static glEnableHandler glEnable;
 
 		private static glEnableClientStateHandler glEnableClientState;
 
 		private static glEndHandler glEnd;
+
+		private static glFrontFaceHandler glFrontFace;
+
+		private static glGenBuffersHandler glGenBuffers;
+
+		private static glGenTexturesHandler glGenTextures;
+
+		private static glGetErrorHandler glGetError;
+
+		private static glGetStringHandler glGetString;
 
 		private static glIndexPointerHandler glIndexPointer;
 
@@ -77,6 +112,8 @@ namespace MatterHackers.RenderOpenGl
 
 		private static glOrthoHandler glOrtho;
 
+		private static glPolygonOffsetHandler glPolygonOffset;
+
 		private static glPopAttribHandler glPopAttrib;
 
 		private static glPopMatrixHandler glPopMatrix;
@@ -89,6 +126,8 @@ namespace MatterHackers.RenderOpenGl
 
 		private static glScalefHandler glScalef;
 
+		private static glScissorHandler glScissor;
+
 		private static glShadeModelHandler glShadeModel;
 
 		private static glTexCoord2fHandler glTexCoord2f;
@@ -96,6 +135,8 @@ namespace MatterHackers.RenderOpenGl
 		private static glTexCoordPointerHandler glTexCoordPointer;
 
 		private static glTexEnvfPointerHandler glTexEnvf;
+
+		private static glTexImage2DHandler glTexImage2D;
 
 		private static glTexParameteriHandler glTexParameteri;
 
@@ -107,9 +148,11 @@ namespace MatterHackers.RenderOpenGl
 
 		private static glVertexPointerHandler glVertexPointer;
 
+		private static glViewportHandler glViewport;
+
 		private static bool initialized = false;
 
-		private Dictionary<int, byte[]> bufferData = new Dictionary<int, byte[]>();
+		private readonly Dictionary<int, byte[]> bufferData = new Dictionary<int, byte[]>();
 
 		private int currentArrayBufferIndex = 0;
 
@@ -122,14 +165,32 @@ namespace MatterHackers.RenderOpenGl
 			if (!initialized)
 			{
 				initialized = true;
-				glClear = Marshal.GetDelegateForFunctionPointer<glClearHandler>(Glfw.GetProcAddress("glClear"));
 				glBegin = Marshal.GetDelegateForFunctionPointer<glBeginHandler>(Glfw.GetProcAddress("glBegin"));
+				glBindBuffer = Marshal.GetDelegateForFunctionPointer<glBindBufferHandler>(Glfw.GetProcAddress("glBindBuffer"));
+				glBindTexture = Marshal.GetDelegateForFunctionPointer<glBindTextureHandler>(Glfw.GetProcAddress("glBindTexture"));
+				glBlendFunc = Marshal.GetDelegateForFunctionPointer<glBlendFuncHandler>(Glfw.GetProcAddress("glBlendFunc"));
+				glBufferData = Marshal.GetDelegateForFunctionPointer<glBufferDataHandler>(Glfw.GetProcAddress("glBufferData"));
+				glClear = Marshal.GetDelegateForFunctionPointer<glClearHandler>(Glfw.GetProcAddress("glClear"));
+				glClearDepth = Marshal.GetDelegateForFunctionPointer<glClearDepthHandler>(Glfw.GetProcAddress("glClearDepth"));
 				glColor4f = Marshal.GetDelegateForFunctionPointer<glColor4fHandler>(Glfw.GetProcAddress("glColor4f"));
 				glColorMaterial = Marshal.GetDelegateForFunctionPointer<glColorMaterialHandler>(Glfw.GetProcAddress("glColorMaterial"));
 				glColorPointer = Marshal.GetDelegateForFunctionPointer<glColorPointerHandler>(Glfw.GetProcAddress("glColorPointer"));
+				glCullFace = Marshal.GetDelegateForFunctionPointer<glCullFaceHandler>(Glfw.GetProcAddress("glCullFace"));
+				glDeleteBuffers = Marshal.GetDelegateForFunctionPointer<glDeleteBuffersHandler>(Glfw.GetProcAddress("glDeleteBuffers"));
+				glDeleteTextures = Marshal.GetDelegateForFunctionPointer<glDeleteTexturesHandler>(Glfw.GetProcAddress("glDeleteTextures"));
+				glDepthFunc = Marshal.GetDelegateForFunctionPointer<glDepthFuncHandler>(Glfw.GetProcAddress("glDepthFunc"));
+				glDisable = Marshal.GetDelegateForFunctionPointer<glDisableHandler>(Glfw.GetProcAddress("glDisable"));
 				glDisableClientState = Marshal.GetDelegateForFunctionPointer<glDisableClientStateHandler>(Glfw.GetProcAddress("glDisableClientState"));
+				glDrawArrays = Marshal.GetDelegateForFunctionPointer<glDrawArraysHandler>(Glfw.GetProcAddress("glDrawArrays"));
+				glDrawRangeElements = Marshal.GetDelegateForFunctionPointer<glDrawRangeElementsHandler>(Glfw.GetProcAddress("glDrawRangeElements"));
+				glEnable = Marshal.GetDelegateForFunctionPointer<glEnableHandler>(Glfw.GetProcAddress("glEnable"));
 				glEnableClientState = Marshal.GetDelegateForFunctionPointer<glEnableClientStateHandler>(Glfw.GetProcAddress("glEnableClientState"));
 				glEnd = Marshal.GetDelegateForFunctionPointer<glEndHandler>(Glfw.GetProcAddress("glEnd"));
+				glFrontFace = Marshal.GetDelegateForFunctionPointer<glFrontFaceHandler>(Glfw.GetProcAddress("glFrontFace"));
+				glGenBuffers = Marshal.GetDelegateForFunctionPointer<glGenBuffersHandler>(Glfw.GetProcAddress("glGenBuffers"));
+				glGenTextures = Marshal.GetDelegateForFunctionPointer<glGenTexturesHandler>(Glfw.GetProcAddress("glGenTextures"));
+				glGetError = Marshal.GetDelegateForFunctionPointer<glGetErrorHandler>(Glfw.GetProcAddress("glGetError"));
+				glGetString = Marshal.GetDelegateForFunctionPointer<glGetStringHandler>(Glfw.GetProcAddress("glGetString"));
 				glIndexPointer = Marshal.GetDelegateForFunctionPointer<glIndexPointerHandler>(Glfw.GetProcAddress("glIndexPointer"));
 				glLightfv = Marshal.GetDelegateForFunctionPointer<glLightfvHandler>(Glfw.GetProcAddress("glLightfv"));
 				glLoadIdentity = Marshal.GetDelegateForFunctionPointer<glLoadIdentityHandler>(Glfw.GetProcAddress("glLoadIdentity"));
@@ -139,26 +200,41 @@ namespace MatterHackers.RenderOpenGl
 				glNormal3f = Marshal.GetDelegateForFunctionPointer<glNormal3fHandler>(Glfw.GetProcAddress("glNormal3f"));
 				glNormalPointer = Marshal.GetDelegateForFunctionPointer<glNormalPointerHandler>(Glfw.GetProcAddress("glNormalPointer"));
 				glOrtho = Marshal.GetDelegateForFunctionPointer<glOrthoHandler>(Glfw.GetProcAddress("glOrtho"));
+				glPolygonOffset = Marshal.GetDelegateForFunctionPointer<glPolygonOffsetHandler>(Glfw.GetProcAddress("glPolygonOffset"));
 				glPopAttrib = Marshal.GetDelegateForFunctionPointer<glPopAttribHandler>(Glfw.GetProcAddress("glPopAttrib"));
 				glPopMatrix = Marshal.GetDelegateForFunctionPointer<glPopMatrixHandler>(Glfw.GetProcAddress("glPopMatrix"));
 				glPushAttrib = Marshal.GetDelegateForFunctionPointer<glPushAttribHandler>(Glfw.GetProcAddress("glPushAttrib"));
 				glPushMatrix = Marshal.GetDelegateForFunctionPointer<glPushMatrixHandler>(Glfw.GetProcAddress("glPushMatrix"));
 				glRotatef = Marshal.GetDelegateForFunctionPointer<glRotatefHandler>(Glfw.GetProcAddress("glRotatef"));
 				glScalef = Marshal.GetDelegateForFunctionPointer<glScalefHandler>(Glfw.GetProcAddress("glScalef"));
+				glScissor = Marshal.GetDelegateForFunctionPointer<glScissorHandler>(Glfw.GetProcAddress("glScissor"));
 				glShadeModel = Marshal.GetDelegateForFunctionPointer<glShadeModelHandler>(Glfw.GetProcAddress("glShadeModel"));
 				glTexCoord2f = Marshal.GetDelegateForFunctionPointer<glTexCoord2fHandler>(Glfw.GetProcAddress("glTexCoord2f"));
 				glTexCoordPointer = Marshal.GetDelegateForFunctionPointer<glTexCoordPointerHandler>(Glfw.GetProcAddress("glTexCoordPointer"));
 				glTexEnvf = Marshal.GetDelegateForFunctionPointer<glTexEnvfPointerHandler>(Glfw.GetProcAddress("glTexEnvf"));
+				glTexImage2D = Marshal.GetDelegateForFunctionPointer<glTexImage2DHandler>(Glfw.GetProcAddress("glTexImage2D"));
 				glTexParameteri = Marshal.GetDelegateForFunctionPointer<glTexParameteriHandler>(Glfw.GetProcAddress("glTexParameteri"));
 				glTranslatef = Marshal.GetDelegateForFunctionPointer<glTranslatefHandler>(Glfw.GetProcAddress("glTranslatef"));
 				glVertex2f = Marshal.GetDelegateForFunctionPointer<glVertex2fHandler>(Glfw.GetProcAddress("glVertex2f"));
 				glVertex3f = Marshal.GetDelegateForFunctionPointer<glVertex3fHandler>(Glfw.GetProcAddress("glVertex3f"));
 				glVertexPointer = Marshal.GetDelegateForFunctionPointer<glVertexPointerHandler>(Glfw.GetProcAddress("glVertexPointer"));
+				glViewport = Marshal.GetDelegateForFunctionPointer<glViewportHandler>(Glfw.GetProcAddress("glViewport"));
 			}
 		}
 
 #pragma warning disable SA1300 // Element should begin with upper-case letter
+
 		private delegate void glBeginHandler(int mode);
+
+		private delegate void glBindBufferHandler(int target, uint buffer);
+
+		private delegate void glBindTextureHandler(int target, uint texture);
+
+		private delegate void glBlendFuncHandler(int sfactor, int dfactor);
+
+		private delegate void glBufferDataHandler(int target, int size, IntPtr data, int usage);
+
+		private delegate void glClearDepthHandler(double depth);
 
 		private delegate void glClearHandler(int mask);
 
@@ -168,11 +244,37 @@ namespace MatterHackers.RenderOpenGl
 
 		private delegate void glColorPointerHandler(int size, int type, int stride, IntPtr pointer);
 
+		private delegate void glCullFaceHandler(int mode);
+
+		private delegate void glDeleteBuffersHandler(int n, IntPtr buffers);
+
+		private delegate void glDeleteTexturesHandler(int n, IntPtr textures);
+
+		private delegate void glDepthFuncHandler(int func);
+
 		private delegate void glDisableClientStateHandler(int state);
+
+		private delegate void glDisableHandler(int cap);
+
+		private delegate void glDrawArraysHandler(int mode, int first, int count);
+
+		private delegate void glDrawRangeElementsHandler(int mode, uint start, uint end, int count, int type, IntPtr indices);
 
 		private delegate void glEnableClientStateHandler(int arrayCap);
 
+		private delegate void glEnableHandler(int cap);
+
 		private delegate void glEndHandler();
+
+		private delegate void glFrontFaceHandler(int mode);
+
+		private delegate void glGenBuffersHandler(int n, IntPtr buffers);
+
+		private delegate void glGenTexturesHandler(int n, IntPtr textures);
+
+		private delegate string glGetErrorHandler();
+
+		private delegate IntPtr glGetStringHandler(int name);
 
 		private delegate void glIndexPointerHandler(int type, int stride, IntPtr pointer);
 
@@ -192,6 +294,8 @@ namespace MatterHackers.RenderOpenGl
 
 		private delegate void glOrthoHandler(double left, double right, double bottom, double top, double zNear, double zFar);
 
+		private delegate void glPolygonOffsetHandler(float factor, float units);
+
 		private delegate void glPopAttribHandler();
 
 		private delegate void glPopMatrixHandler();
@@ -204,6 +308,8 @@ namespace MatterHackers.RenderOpenGl
 
 		private delegate void glScalefHandler(float x, float y, float z);
 
+		private delegate void glScissorHandler(int x, int y, int width, int height);
+
 		private delegate void glShadeModelHandler(int model);
 
 		private delegate void glTexCoord2fHandler(float x, float y);
@@ -211,6 +317,8 @@ namespace MatterHackers.RenderOpenGl
 		private delegate void glTexCoordPointerHandler(int size, int type, int stride, IntPtr pointer);
 
 		private delegate void glTexEnvfPointerHandler(int target, int pname, float param);
+
+		private delegate void glTexImage2DHandler(int target, int level, int internalformat, int width, int height, int border, int format, int type, IntPtr pixels);
 
 		private delegate void glTexParameteriHandler(int target, int pname, int param);
 
@@ -221,6 +329,9 @@ namespace MatterHackers.RenderOpenGl
 		private delegate void glVertex3fHandler(float x, float y, float z);
 
 		private delegate void glVertexPointerHandler(int size, int type, int stride, IntPtr pointer);
+
+		private delegate void glViewportHandler(int x, int y, int width, int height);
+
 #pragma warning restore SA1300 // Element should begin with upper-case letter
 
 		public bool GlHasBufferObjects { get; private set; } = true;
@@ -234,7 +345,7 @@ namespace MatterHackers.RenderOpenGl
 		{
 			if (GlHasBufferObjects)
 			{
-				Gl.glBindBuffer((int)target, (uint)buffer);
+				glBindBuffer((int)target, (uint)buffer);
 			}
 			else
 			{
@@ -266,7 +377,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void BindTexture(TextureTarget target, int texture)
 		{
-			Gl.glBindTexture((int)target, (uint)texture);
+			glBindTexture((int)target, (uint)texture);
 		}
 
 		public void BlendFunc(BlendingFactorSrc sfactor, BlendingFactorDest dfactor)
@@ -324,7 +435,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void ClearDepth(double depth)
 		{
-			Gl.glClearDepth(depth);
+			glClearDepth(depth);
 		}
 
 		public void Color4(Color color)
@@ -384,14 +495,21 @@ namespace MatterHackers.RenderOpenGl
 
 		public void CullFace(CullFaceMode mode)
 		{
-			Gl.glCullFace((int)mode);
+			glCullFace((int)mode);
 		}
 
 		public void DeleteBuffer(int buffer)
 		{
 			if (GlHasBufferObjects)
 			{
-				Gl.glDeleteBuffer((uint)buffer);
+				var buffers = new int[] { buffer };
+				unsafe
+				{
+					fixed (int* pArray = buffers)
+					{
+						glDeleteBuffers(1, new IntPtr(pArray));
+					}
+				}
 			}
 			else
 			{
@@ -411,12 +529,19 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DeleteTexture(int texture)
 		{
-			Gl.glDeleteTexture((uint)texture);
+			var textures = new int[] { texture };
+			unsafe
+			{
+				fixed (int* pArray = textures)
+				{
+					glDeleteTextures(1, new IntPtr(pArray));
+				}
+			}
 		}
 
 		public void DepthFunc(DepthFunction func)
 		{
-			Gl.glDepthFunc((int)func);
+			glDepthFunc((int)func);
 		}
 
 		public void DepthMask(bool flag)
@@ -446,14 +571,14 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DrawArrays(BeginMode mode, int first, int count)
 		{
-			Gl.glDrawArrays((int)mode, first, count);
+			glDrawArrays((int)mode, first, count);
 		}
 
 		public void DrawRangeElements(BeginMode mode, int start, int end, int count, DrawElementsType type, IntPtr indices)
 		{
 			unsafe
 			{
-				glDrawRangeElements((int)mode, (uint)start, (uint)end, count, (int)type, (void*)indices);
+				glDrawRangeElements((int)mode, (uint)start, (uint)end, count, (int)type, indices);
 			}
 		}
 
@@ -487,7 +612,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void FrontFace(FrontFaceDirection mode)
 		{
-			Gl.glFrontFace((int)mode);
+			glFrontFace((int)mode);
 		}
 
 		// start at 1 so we can use 0 as a not initialize tell.
@@ -495,7 +620,16 @@ namespace MatterHackers.RenderOpenGl
 		{
 			if (GlHasBufferObjects)
 			{
-				return (int)glGenBuffer();
+				var buffers = new int[1];
+				unsafe
+				{
+					fixed (int* pArray = buffers)
+					{
+						glGenBuffers(1, new IntPtr(pArray));
+					}
+				}
+
+				return buffers[0];
 			}
 			else
 			{
@@ -517,17 +651,33 @@ namespace MatterHackers.RenderOpenGl
 
 		public int GenTexture()
 		{
-			return (int)Gl.glGenTexture();
+			var textures = new int[1];
+			unsafe
+			{
+				fixed (int* pArray = textures)
+				{
+					glGenTextures(1, new IntPtr(pArray));
+				}
+			}
+
+			return textures[0];
 		}
 
 		public ErrorCode GetError()
 		{
-			return (ErrorCode)Enum.Parse(typeof(ErrorCode), Gl.GetError().ToString());
+			var error = glGetError();
+			if (!string.IsNullOrEmpty(error))
+			{
+				return (ErrorCode)Enum.Parse(typeof(ErrorCode), error.ToString());
+			}
+
+			return ErrorCode.NoError;
 		}
 
 		public string GetString(StringName name)
 		{
-			return Gl.glGetString((int)name);
+			var buffer = glGetString((int)name);
+			return PtrToStringUtf8(buffer);
 		}
 
 		public void IndexPointer(IndexPointerType type, int stride, IntPtr pointer)
@@ -588,7 +738,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void PolygonOffset(float factor, float units)
 		{
-			Gl.glPolygonOffset(factor, units);
+			glPolygonOffset(factor, units);
 		}
 
 		public void PopAttrib()
@@ -646,7 +796,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void Scissor(int x, int y, int width, int height)
 		{
-			Gl.glScissor(x, y, width, height);
+			glScissor(x, y, width, height);
 		}
 
 		public void ShadeModel(ShadingModel model)
@@ -680,7 +830,7 @@ namespace MatterHackers.RenderOpenGl
 			int width,
 			int height,
 			int border,
-			OpenGl.PixelFormat format,
+			PixelFormat format,
 			PixelType type,
 			byte[] pixels)
 		{
@@ -688,7 +838,7 @@ namespace MatterHackers.RenderOpenGl
 			{
 				fixed (byte* pArray = pixels)
 				{
-					Gl.glTexImage2D((int)target, level, (int)internalFormat, width, height, border, (int)format, (int)type, new IntPtr(pArray));
+					glTexImage2D((int)target, level, (int)internalFormat, width, height, border, (int)format, (int)type, new IntPtr(pArray));
 				}
 			}
 		}
@@ -747,6 +897,19 @@ namespace MatterHackers.RenderOpenGl
 		public void Viewport(int x, int y, int width, int height)
 		{
 			glViewport(x, y, width, height);
+		}
+
+		private static string PtrToStringUtf8(IntPtr ptr)
+		{
+			var length = 0;
+			while (Marshal.ReadByte(ptr, length) != 0)
+			{
+				length++;
+			}
+
+			var buffer = new byte[length];
+			Marshal.Copy(ptr, buffer, 0, length);
+			return Encoding.UTF8.GetString(buffer);
 		}
 
 		private Stream OpenEmbeddedAssetStream(string name) => GetType().Assembly.GetManifestResourceStream(name);

@@ -663,7 +663,6 @@ namespace MatterHackers.GlfwProvider
 					});
 			}
 
-			OpenGL.Gl.Import(Glfw.GetProcAddress);
 			// set the gl renderer to the GLFW specific one rather than the OpenTk one
 			var glfwGl = new GlfwGL();
 			GL.Instance = glfwGl;
