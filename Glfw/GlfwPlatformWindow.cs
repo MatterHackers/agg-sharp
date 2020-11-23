@@ -54,8 +54,9 @@ namespace MatterHackers.GlfwProvider
 		}
 
 		private bool iconified;
+        private static GlfwPlatformWindow staticThis;
 
-		public GlfwPlatformWindow()
+        public GlfwPlatformWindow()
 		{
 		}
 
@@ -640,17 +641,18 @@ namespace MatterHackers.GlfwProvider
 					(int)aggSystemWindow.InitialDesktopPosition.y);
 			}
 
-			Glfw.SetWindowSizeCallback(glfwWindow, SizeCallback);
-			Glfw.SetWindowMaximizeCallback(glfwWindow, MaximizeCallback);
-			Glfw.SetWindowIconifyCallback(glfwWindow, IconifyCallback);
+			staticThis = this;
+			Glfw.SetWindowSizeCallback(glfwWindow, (a, b, c) => staticThis.SizeCallback(a, b, c));
+			Glfw.SetWindowMaximizeCallback(glfwWindow, (a, b) => staticThis.MaximizeCallback(a, b));
+			Glfw.SetWindowIconifyCallback(glfwWindow, (a, b) => staticThis.IconifyCallback(a, b));
 
 			// Set a key callback
-			Glfw.SetKeyCallback(glfwWindow, KeyCallback);
-			Glfw.SetCharCallback(glfwWindow, CharCallback);
-			Glfw.SetCursorPositionCallback(glfwWindow, (a, b, c) => this.CursorPositionCallback(a, b, c));
-			Glfw.SetMouseButtonCallback(glfwWindow, (a, b, c, d) => this.MouseButtonCallback(a, b, c, d));
-			Glfw.SetScrollCallback(glfwWindow, ScrollCallback);
-			Glfw.SetCloseCallback(glfwWindow, CloseCallback);
+			Glfw.SetKeyCallback(glfwWindow, (a, b, c, d, e) => staticThis.KeyCallback(a, b, c, d, e));
+			Glfw.SetCharCallback(glfwWindow, (a, b) => staticThis.CharCallback(a, b));
+			Glfw.SetCursorPositionCallback(glfwWindow, (a, b, c) =>	staticThis.CursorPositionCallback(a, b, c));
+			Glfw.SetMouseButtonCallback(glfwWindow, (a, b, c, d) => staticThis.MouseButtonCallback(a, b, c, d));
+			Glfw.SetScrollCallback(glfwWindow, (a, b, c) => staticThis.ScrollCallback(a, b, c));
+			Glfw.SetCloseCallback(glfwWindow, (a) => staticThis.CloseCallback(a));
 
 			var applicationIcon = AggContext.StaticData.LoadIcon("application.png");
 
