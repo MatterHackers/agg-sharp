@@ -190,12 +190,9 @@ namespace MatterHackers.GlfwProvider
 
 		private void CursorPositionCallback(Window window, double x, double y)
 		{
-			if (this != null)
-			{
-				mouseX = x;
-				mouseY = aggSystemWindow.Height - y;
-				WindowProvider.TopWindow.OnMouseMove(new MouseEventArgs(mouseButton, 0, mouseX, mouseY, 0));
-			}
+			mouseX = x;
+			mouseY = aggSystemWindow.Height - y;
+			WindowProvider.TopWindow.OnMouseMove(new MouseEventArgs(mouseButton, 0, mouseX, mouseY, 0));
 		}
 
 		private void ConditionalDrawAndRefresh(SystemWindow systemWindow)
@@ -263,7 +260,7 @@ namespace MatterHackers.GlfwProvider
 		private void KeyCallback(Window windowIn, GLFW.Keys key, int scanCode, InputState state, ModifierKeys mods)
 		{
 			if (state == InputState.Press
-				|| state == InputState.Repeat)
+			|| state == InputState.Repeat)
 			{
 				var keyData = MapKey(key, out bool _);
 				Keyboard.SetKeyDownState(keyData, true);
@@ -541,39 +538,36 @@ namespace MatterHackers.GlfwProvider
 
 		private void MouseButtonCallback(Window window, MouseButton button, InputState state, ModifierKeys modifiers)
 		{
-			if (this != null)
+			var now = UiThread.CurrentTimerMs;
+			mouseButton = MouseButtons.Left;
+			switch (button)
 			{
-				var now = UiThread.CurrentTimerMs;
-				mouseButton = MouseButtons.Left;
-				switch (button)
-				{
-					case MouseButton.Middle:
-						mouseButton = MouseButtons.Middle;
-						break;
+				case MouseButton.Middle:
+					mouseButton = MouseButtons.Middle;
+					break;
 
-					case MouseButton.Right:
-						mouseButton = MouseButtons.Right;
-						break;
-				}
+				case MouseButton.Right:
+					mouseButton = MouseButtons.Right;
+					break;
+			}
 
-				if (state == InputState.Press)
+			if (state == InputState.Press)
+			{
+				clickCount[button] = 1;
+				if (lastMouseDownTime.ContainsKey(button))
 				{
-					clickCount[button] = 1;
-					if (lastMouseDownTime.ContainsKey(button))
+					if (lastMouseDownTime[button] > now - 500)
 					{
-						if (lastMouseDownTime[button] > now - 500)
-						{
-							clickCount[button] = 2;
-						}
+						clickCount[button] = 2;
 					}
+				}
 
-					lastMouseDownTime[button] = now;
-					WindowProvider.TopWindow.OnMouseDown(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
-				}
-				else if (state == InputState.Release)
-				{
-					WindowProvider.TopWindow.OnMouseUp(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
-				}
+				lastMouseDownTime[button] = now;
+				WindowProvider.TopWindow.OnMouseDown(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
+			}
+			else if (state == InputState.Release)
+			{
+				WindowProvider.TopWindow.OnMouseUp(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
 			}
 		}
 
@@ -653,8 +647,8 @@ namespace MatterHackers.GlfwProvider
 			// Set a key callback
 			Glfw.SetKeyCallback(glfwWindow, KeyCallback);
 			Glfw.SetCharCallback(glfwWindow, CharCallback);
-			Glfw.SetCursorPositionCallback(glfwWindow, CursorPositionCallback);
-			Glfw.SetMouseButtonCallback(glfwWindow, MouseButtonCallback);
+			Glfw.SetCursorPositionCallback(glfwWindow, (a, b, c) => this.CursorPositionCallback(a, b, c));
+			Glfw.SetMouseButtonCallback(glfwWindow, (a, b, c, d) => this.MouseButtonCallback(a, b, c, d));
 			Glfw.SetScrollCallback(glfwWindow, ScrollCallback);
 			Glfw.SetCloseCallback(glfwWindow, CloseCallback);
 
