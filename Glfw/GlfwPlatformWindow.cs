@@ -262,7 +262,8 @@ namespace MatterHackers.GlfwProvider
 
 		private void KeyCallback(Window windowIn, GLFW.Keys key, int scanCode, InputState state, ModifierKeys mods)
 		{
-			if (state == InputState.Press)
+			if (state == InputState.Press
+				|| state == InputState.Repeat)
 			{
 				var keyData = MapKey(key, out bool _);
 				Keyboard.SetKeyDownState(keyData, true);
@@ -275,9 +276,6 @@ namespace MatterHackers.GlfwProvider
 				{
 					suppressedKeyDowns.Add(keyEvent.KeyCode);
 				}
-			}
-			else if (state == InputState.Repeat)
-			{
 			}
 			else if (state == InputState.Release)
 			{
