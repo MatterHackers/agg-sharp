@@ -18,6 +18,8 @@
 //----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using GLFW;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
@@ -54,9 +56,9 @@ namespace MatterHackers.GlfwProvider
 		}
 
 		private bool iconified;
-        private static GlfwPlatformWindow staticThis;
+		private static GlfwPlatformWindow staticThis;
 
-        public GlfwPlatformWindow()
+		public GlfwPlatformWindow()
 		{
 		}
 
@@ -649,10 +651,11 @@ namespace MatterHackers.GlfwProvider
 			// Set a key callback
 			Glfw.SetKeyCallback(glfwWindow, (a, b, c, d, e) => staticThis.KeyCallback(a, b, c, d, e));
 			Glfw.SetCharCallback(glfwWindow, (a, b) => staticThis.CharCallback(a, b));
-			Glfw.SetCursorPositionCallback(glfwWindow, (a, b, c) =>	staticThis.CursorPositionCallback(a, b, c));
+			Glfw.SetCursorPositionCallback(glfwWindow, (a, b, c) => staticThis.CursorPositionCallback(a, b, c));
 			Glfw.SetMouseButtonCallback(glfwWindow, (a, b, c, d) => staticThis.MouseButtonCallback(a, b, c, d));
 			Glfw.SetScrollCallback(glfwWindow, (a, b, c) => staticThis.ScrollCallback(a, b, c));
 			Glfw.SetCloseCallback(glfwWindow, (a) => staticThis.CloseCallback(a));
+			Glfw.SetDropCallback(glfwWindow, (a, b, c) => staticThis.DropCallback(a, b, c));
 
 			var applicationIcon = AggContext.StaticData.LoadIcon("application.png");
 
@@ -682,6 +685,39 @@ namespace MatterHackers.GlfwProvider
 				// keep the event thread running
 				UiThread.InvokePendingActions();
 			}
+		}
+
+		public static string[] IntPtrToStringArray<TGenChar>(int size, IntPtr rRoot) where TGenChar : struct
+		{
+			// get the output array of pointers
+			var outPointers = new IntPtr[size];
+			Marshal.Copy(rRoot, outPointers, 0, size);
+			string[] outputStrArray = new string[size];
+			for (int i = 0; i < size; i++)
+			{
+				if (typeof(TGenChar) == typeof(char))
+				{
+					outputStrArray[i] = Marshal.PtrToStringUni(outPointers[i]);
+				}
+				else
+				{
+					outputStrArray[i] = Marshal.PtrToStringAnsi(outPointers[i]);
+				}
+			}
+
+			return outputStrArray;
+		}
+
+		private void DropCallback(Window window, int count, IntPtr array)
+		{
+			var files = IntPtrToStringArray<byte>(count, array).ToList();
+
+			UiThread.RunOnIdle(() =>
+			{
+				var dropEvent = new MouseEventArgs(Agg.UI.MouseButtons.None, 0, mouseX, mouseX, 0, files);
+				aggSystemWindow.OnMouseMove(dropEvent);
+				aggSystemWindow.OnMouseUp(dropEvent);
+			});
 		}
 
 		private Image ConvertImageBufferToImage(ImageBuffer sourceImage)
