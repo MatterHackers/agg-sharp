@@ -85,9 +85,9 @@ namespace MatterHackers.DataConverters3D
 		/// <param name="staticData">The StaticData instance to act on</param>
 		/// <param name="relativePath">The relative path of the Asset content</param>
 		/// <returns></returns>
-		public static string ToAssetPath(this IStaticData staticData, string relativePath)
+		public static string ToAssetPath(this StaticData staticData, string relativePath)
 		{
-			using (var sourceStream = AggContext.StaticData.OpenStream(relativePath))
+			using (var sourceStream = staticData.OpenStream(relativePath))
 			{
 				return AssetObject3D.AssetManager.StoreStream(sourceStream, Path.GetExtension(relativePath));
 			}

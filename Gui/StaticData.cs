@@ -35,39 +35,58 @@ using System.Linq;
 using System.Reflection;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.ImageProcessing;
-using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using Newtonsoft.Json;
 
-namespace MatterHackers.Agg
+namespace MatterHackers.Agg.Platform
 {
-	public class FileSystemStaticData : IStaticData
+	public class StaticData
 	{
 		private static Dictionary<string, ImageBuffer> cachedImages = new Dictionary<string, ImageBuffer>();
 		private static Dictionary<(string, int, int), ImageBuffer> cachedIcons = new Dictionary<(string, int, int), ImageBuffer>();
 
-		private readonly string basePath;
-
-		public FileSystemStaticData()
+		private StaticData()
 		{
 			string appPathAndFile = Assembly.GetExecutingAssembly().Location;
 			string pathToAppFolder = Path.GetDirectoryName(appPathAndFile);
 
-			this.basePath = Path.Combine(pathToAppFolder, "StaticData");
+			if (string.IsNullOrEmpty(RootPath))
+			{
+				RootPath = Path.Combine(pathToAppFolder, "StaticData");
+			}
 
 #if DEBUG
 			// In debug builds, use the StaticData folder up two directories from bin\debug, which should be MatterControl\StaticData
-			if (!Directory.Exists(this.basePath))
+			if (!Directory.Exists(RootPath))
 			{
-				this.basePath = Path.GetFullPath(Path.Combine(pathToAppFolder, "..", "..", "StaticData"));
+				RootPath = Path.GetFullPath(Path.Combine(pathToAppFolder, "..", "..", "StaticData"));
 			}
 #endif
 		}
 
-		public FileSystemStaticData(string overridePath)
+		private static StaticData _instance = null;
+
+		public static double DeviceScale => GuiWidget.DeviceScale;
+
+		public static StaticData Instance
+		{
+			get
+			{
+				if (_instance == null)
+				{
+					_instance = new StaticData();
+				}
+
+				return _instance;
+			}
+		}
+
+		public static string RootPath { get; set; }
+
+		public StaticData(string overridePath)
 		{
 			Console.WriteLine("   Overriding StaticData: " + Path.GetFullPath(overridePath));
-			this.basePath = overridePath;
+			RootPath = overridePath;
 		}
 
 		public void PurgeCache()
@@ -107,7 +126,7 @@ namespace MatterHackers.Agg
 			if (FileExists(fullPath))
 			{
 				var icon = LoadImage(fullPath, invertImage);
-				return (GuiWidget.DeviceScale == 1) ? icon : icon.CreateScaledImage(GuiWidget.DeviceScale);
+				return (DeviceScale == 1) ? icon : icon.CreateScaledImage(DeviceScale);
 			}
 
 			return null;
@@ -124,8 +143,8 @@ namespace MatterHackers.Agg
 		/// <returns>The image buffer at the right scale</returns>
 		public ImageBuffer LoadIcon(string path, int width, int height, bool invertImage = false)
 		{
-			int deviceWidth = (int)(width * GuiWidget.DeviceScale);
-			int deviceHeight = (int)(height * GuiWidget.DeviceScale);
+			int deviceWidth = (int)(width * DeviceScale);
+			int deviceHeight = (int)(height * DeviceScale);
 
 			ImageBuffer cachedIcon;
 			lock (locker)
@@ -323,7 +342,7 @@ namespace MatterHackers.Agg
 
 		public string MapPath(string path)
 		{
-			return Path.GetFullPath(Path.Combine(this.basePath, path));
+			return Path.GetFullPath(Path.Combine(RootPath, path));
 		}
 	}
 }

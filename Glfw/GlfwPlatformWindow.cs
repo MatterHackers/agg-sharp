@@ -657,7 +657,7 @@ namespace MatterHackers.GlfwProvider
 			Glfw.SetCloseCallback(glfwWindow, (a) => staticThis.CloseCallback(a));
 			Glfw.SetDropCallback(glfwWindow, (a, b, c) => staticThis.DropCallback(a, b, c));
 
-			var applicationIcon = AggContext.StaticData.LoadIcon("application.png");
+			var applicationIcon = StaticData.Instance.LoadIcon("application.png");
 
 			if (applicationIcon != null)
 			{

@@ -45,7 +45,6 @@ namespace MatterHackers.Agg.Platform
 	public static class AggContext
 	{
 		private static IFileDialogProvider _fileDialogs = null;
-		private static IStaticData _staticData = null;
 		private static IOsInformationProvider _osInformation = null;
 		private static PlatformConfig _config = null;
 
@@ -78,25 +77,6 @@ namespace MatterHackers.Agg.Platform
 			set
 			{
 				_fileDialogs = value;
-			}
-		}
-
-		public static IStaticData StaticData
-		{
-			get
-			{
-				if (_staticData == null)
-				{
-					// StaticData Provider
-					StaticData = CreateInstanceFrom<IStaticData>(Config.ProviderTypes.StaticDataProvider);
-				}
-
-				return _staticData;
-			}
-
-			set
-			{
-				_staticData = value;
 			}
 		}
 
