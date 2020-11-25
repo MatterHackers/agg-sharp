@@ -37,44 +37,56 @@ namespace MatterHackers.Agg.Image
 {
 	public static class ImageIO
 	{
-		public static bool LoadImageData(Stream stream, ImageSequence destImageSequence)
+		public static bool LoadImageData(Stream stream, ImageSequence sequence)
 		{
-			var gifImg = System.Drawing.Image.FromStream(stream);
-			if (gifImg != null)
+			System.Drawing.Image image;
+			try
 			{
-				var dimension = new FrameDimension(gifImg.FrameDimensionsList[0]);
-				// Number of frames
-				int frameCount = gifImg.GetFrameCount(dimension);
+				image = System.Drawing.Image.FromStream(stream);
+			}
+			catch
+			{
+				return false;
+			}
 
-				for (int i = 0; i < frameCount; i++)
+			sequence.Frames.Clear();
+			sequence.FrameTimesMs.Clear();
+
+			var dimension = new System.Drawing.Imaging.FrameDimension(image.FrameDimensionsList[0]);
+			// Number of frames
+			int frameCount = image.GetFrameCount(dimension);
+
+			if (frameCount > 1)
+			{
+				var minFrameTimeMs = int.MaxValue;
+				for (var i = 0; i < frameCount; i++)
 				{
 					// Return an Image at a certain index
-					gifImg.SelectActiveFrame(dimension, i);
-
-					using (var bitmap = new Bitmap(gifImg))
+					image.SelectActiveFrame(dimension, i);
+					ImageBuffer imageBuffer = new ImageBuffer();
+					if (ImageIO.ConvertBitmapToImage(imageBuffer, new System.Drawing.Bitmap(image)))
 					{
-						var frame = new ImageBuffer();
-						ConvertBitmapToImage(frame, bitmap);
-						destImageSequence.AddImage(frame);
+						var frameDelay = BitConverter.ToInt32(image.GetPropertyItem(20736).Value, i * 4) * 10;
+
+						sequence.AddImage(imageBuffer, frameDelay);
+						minFrameTimeMs = Math.Max(10, Math.Min(frameDelay, minFrameTimeMs));
 					}
 				}
 
-				try
+				var item = image.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
+														  // Time is in milliseconds
+				sequence.SecondsPerFrame = minFrameTimeMs / 1000.0;
+			}
+			else
+			{
+				ImageBuffer imageBuffer = new ImageBuffer();
+				if (ImageIO.ConvertBitmapToImage(imageBuffer, new System.Drawing.Bitmap(image)))
 				{
-					PropertyItem item = gifImg.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
-																		// Time is in 1/100th of a second
-					destImageSequence.SecondsPerFrame = (item.Value[0] + item.Value[1] * 256) / 100.0;
+					sequence.AddImage(imageBuffer);
 				}
-				catch (Exception e)
-				{
-					Debug.Print(e.Message);
-					destImageSequence.SecondsPerFrame = 2;
-				}
-
-				return true;
 			}
 
-			return false;
+			return true;
 		}
 
 		public static bool LoadImageData(Stream stream, ImageBuffer destImage)

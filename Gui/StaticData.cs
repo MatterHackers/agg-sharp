@@ -29,7 +29,6 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -220,62 +219,14 @@ namespace MatterHackers.Agg.Platform
 
 		public void LoadImageData(Stream imageStream, ImageBuffer destImage)
 		{
-			using (var bitmap = new Bitmap(imageStream))
-			{
-				ImageIO.ConvertBitmapToImage(destImage, bitmap);
-			}
+			destImage.CopyFrom(ImageIO.LoadImage(imageStream));
 		}
 
 		public void LoadImageSequenceData(Stream stream, ImageSequence sequence)
 		{
 			lock (locker)
 			{
-				System.Drawing.Image image;
-				try
-				{
-					image = System.Drawing.Image.FromStream(stream);
-				}
-				catch
-				{
-					return;
-				}
-
-				sequence.Frames.Clear();
-				sequence.FrameTimesMs.Clear();
-
-				var dimension = new System.Drawing.Imaging.FrameDimension(image.FrameDimensionsList[0]);
-				// Number of frames
-				int frameCount = image.GetFrameCount(dimension);
-
-				if (frameCount > 1)
-				{
-					var minFrameTimeMs = int.MaxValue;
-					for (var i = 0; i < frameCount; i++)
-					{
-						// Return an Image at a certain index
-						image.SelectActiveFrame(dimension, i);
-						ImageBuffer imageBuffer = new ImageBuffer();
-						if (ImageIO.ConvertBitmapToImage(imageBuffer, new Bitmap(image)))
-						{
-							var frameDelay = BitConverter.ToInt32(image.GetPropertyItem(20736).Value, i * 4) * 10;
-
-							sequence.AddImage(imageBuffer, frameDelay);
-							minFrameTimeMs = Math.Max(10, Math.Min(frameDelay, minFrameTimeMs));
-						}
-					}
-
-					var item = image.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
-															  // Time is in milliseconds
-					sequence.SecondsPerFrame = minFrameTimeMs / 1000.0;
-				}
-				else
-				{
-					ImageBuffer imageBuffer = new ImageBuffer();
-					if (ImageIO.ConvertBitmapToImage(imageBuffer, new Bitmap(image)))
-					{
-						sequence.AddImage(imageBuffer);
-					}
-				}
+				ImageIO.LoadImageData(stream, sequence);
 			}
 		}
 
@@ -287,12 +238,7 @@ namespace MatterHackers.Agg.Platform
 			{
 				if (!cachedImages.TryGetValue(path, out ImageBuffer cachedImage))
 				{
-					using (var imageStream = OpenStream(path))
-					using (var bitmap = new Bitmap(imageStream))
-					{
-						cachedImage = new ImageBuffer();
-						ImageIO.ConvertBitmapToImage(cachedImage, bitmap);
-					}
+					cachedImage = ImageIO.LoadImage(MapPath(path));
 
 					if (cachedImage.Width < 200 && cachedImage.Height < 200)
 					{
