@@ -44,7 +44,6 @@ namespace MatterHackers.Agg.Platform
 
 	public static class AggContext
 	{
-		private static IImageIOProvider _imageIO = null;
 		private static IFileDialogProvider _fileDialogs = null;
 		private static IStaticData _staticData = null;
 		private static IOsInformationProvider _osInformation = null;
@@ -62,24 +61,6 @@ namespace MatterHackers.Agg.Platform
 			return (type == null) ? null : Activator.CreateInstance(type) as T;
 		}
 
-		public static IImageIOProvider ImageIO
-		{
-			get
-			{
-				if (_imageIO == null)
-				{
-					// ImageIO Provider
-					ImageIO = CreateInstanceFrom<IImageIOProvider>(Config.ProviderTypes.ImageIOProvider);
-				}
-
-				return _imageIO;
-			}
-
-			set
-			{
-				_imageIO = value;
-			}
-		}
 
 		public static IFileDialogProvider FileDialogs
 		{
@@ -166,12 +147,12 @@ namespace MatterHackers.Agg.Platform
 
 		public class ProviderSettings
 		{
-#if false
+#if true
 			public string OsInformationProvider { get; set; } = "MatterHackers.Agg.Platform.WinformsInformationProvider, agg_platform_win32";
 
 			public string DialogProvider { get; set; } = "MatterHackers.Agg.Platform.WinformsFileDialogProvider, agg_platform_win32";
 
-			public string ImageIOProvider { get; set; } = "MatterHackers.Agg.Image.ImageIOWindowsPlugin, agg_platform_win32";
+			public string ImageIOProvider { get; set; } = "MatterHackers.Agg.Image.ImageIOSystemDrawingCommon, agg_platform_win32";
 
 			public string StaticDataProvider { get; set; } = "MatterHackers.Agg.FileSystemStaticData, agg_platform_win32";
 

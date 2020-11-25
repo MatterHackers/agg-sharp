@@ -74,7 +74,7 @@ namespace MatterHackers.Agg
 			AnchorAll();
 
 			string img_name = "spheres.bmp";
-			if (!AggContext.ImageIO.LoadImageData(img_name, image_resample.m_SourceImage))
+			if (!ImageIO.LoadImageData(img_name, image_resample.m_SourceImage))
 			{
 				string buf;
 				buf = "File not found: "
@@ -162,7 +162,7 @@ namespace MatterHackers.Agg
 			if (m_gamma.Value != m_old_gamma)
 			{
 				m_gamma_lut.SetGamma(m_gamma.Value);
-				AggContext.ImageIO.LoadImageData("spheres.bmp", m_SourceImage);
+				ImageIO.LoadImageData("spheres.bmp", m_SourceImage);
 				//m_SourceImage.apply_gamma_dir(m_gamma_lut);
 				m_old_gamma = m_gamma.Value;
 			}

@@ -51,7 +51,7 @@ namespace MatterHackers.Agg.UI
 			{
 				var bitmap = new System.Drawing.Bitmap(System.Windows.Forms.Clipboard.GetImage());
 				var image = new ImageBuffer();
-				if (ImageIOWindowsPlugin.ConvertBitmapToImage(image, bitmap))
+				if (ImageIO.ConvertBitmapToImage(image, bitmap))
 				{
 					return image;
 				}
@@ -65,7 +65,7 @@ namespace MatterHackers.Agg.UI
 
 		public void SetImage(ImageBuffer imageBuffer)
 		{
-			System.Windows.Forms.Clipboard.SetImage(ImageIOWindowsPlugin.ConvertImageToBitmap(imageBuffer));
+			System.Windows.Forms.Clipboard.SetImage(ImageIO.ConvertImageToBitmap(imageBuffer));
 		}
 
 		public bool ContainsFileDropList => System.Windows.Forms.Clipboard.ContainsFileDropList();

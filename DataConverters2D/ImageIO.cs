@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -32,19 +32,17 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using MatterHackers.Agg.Platform;
-using MatterHackers.Agg.UI;
 
 namespace MatterHackers.Agg.Image
 {
-	public class ImageIOWindowsPlugin : IImageIOProvider
+	public static class ImageIO
 	{
-		public bool LoadImageData(Stream stream, ImageSequence destImageSequence)
+		public static bool LoadImageData(Stream stream, ImageSequence destImageSequence)
 		{
 			var gifImg = System.Drawing.Image.FromStream(stream);
 			if (gifImg != null)
 			{
-				FrameDimension dimension = new FrameDimension(gifImg.FrameDimensionsList[0]);
+				var dimension = new FrameDimension(gifImg.FrameDimensionsList[0]);
 				// Number of frames
 				int frameCount = gifImg.GetFrameCount(dimension);
 
@@ -64,13 +62,12 @@ namespace MatterHackers.Agg.Image
 				try
 				{
 					PropertyItem item = gifImg.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
-					// Time is in 1/100th of a second
+																		// Time is in 1/100th of a second
 					destImageSequence.SecondsPerFrame = (item.Value[0] + item.Value[1] * 256) / 100.0;
 				}
 				catch (Exception e)
 				{
 					Debug.Print(e.Message);
-					GuiWidget.BreakInDebugger();
 					destImageSequence.SecondsPerFrame = 2;
 				}
 
@@ -80,7 +77,7 @@ namespace MatterHackers.Agg.Image
 			return false;
 		}
 
-		public bool LoadImageData(Stream stream, ImageBuffer destImage)
+		public static bool LoadImageData(Stream stream, ImageBuffer destImage)
 		{
 			using (var bitmap = new Bitmap(stream))
 			{
@@ -88,7 +85,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public bool LoadImageData(string fileName, ImageBuffer destImage)
+		public static bool LoadImageData(string fileName, ImageBuffer destImage)
 		{
 			if (File.Exists(fileName))
 			{
@@ -122,8 +119,7 @@ namespace MatterHackers.Agg.Image
 							int destIndex = 0;
 							unsafe
 							{
-								int offset;
-								byte[] destBuffer = destImage.GetBuffer(out offset);
+								byte[] destBuffer = destImage.GetBuffer(out int offset);
 								byte* pSourceBuffer = (byte*)bitmapData.Scan0;
 								for (int y = 0; y < destImage.Height; y++)
 								{
@@ -166,8 +162,7 @@ namespace MatterHackers.Agg.Image
 							int destIndex = 0;
 							unsafe
 							{
-								int offset;
-								byte[] destBuffer = destImage.GetBuffer(out offset);
+								byte[] destBuffer = destImage.GetBuffer(out int offset);
 								byte* pSourceBuffer = (byte*)bitmapData.Scan0;
 								for (int y = 0; y < destImage.Height; y++)
 								{
@@ -198,6 +193,7 @@ namespace MatterHackers.Agg.Image
 						break;
 				}
 			}
+
 			return false;
 		}
 
@@ -214,8 +210,7 @@ namespace MatterHackers.Agg.Image
 			int destIndex = 0;
 			unsafe
 			{
-				int offset;
-				byte[] destBuffer = destImage.GetBuffer(out offset);
+				byte[] destBuffer = destImage.GetBuffer(out int offset);
 				byte* pSourceBuffer = (byte*)bitmapData.Scan0;
 
 				System.Drawing.Color[] colors = bitmap.Palette.Entries;
@@ -273,7 +268,7 @@ namespace MatterHackers.Agg.Image
 		// allocate a set of lockers to use when accessing files for saving
 		private static readonly object[] Lockers = new object[] { new object(), new object(), new object(), new object() };
 
-		public bool SaveImageData(string filename, IImageByte sourceImage)
+		public static bool SaveImageData(string filename, IImageByte sourceImage)
 		{
 			// Get a lock index base on the hash of the file name
 			int lockerIndex = Math.Abs(filename.GetHashCode()) % Lockers.Length; // mod the hash code by the count to get an index
@@ -340,7 +335,7 @@ namespace MatterHackers.Agg.Image
 					}
 					else if (sourceImage.BitDepth == 8 && format == ImageFormat.Png)
 					{
-						using (Bitmap bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format8bppIndexed))
+						using (var bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format8bppIndexed))
 						{
 							ColorPalette palette = bitmapToSave.Palette;
 							for (int i = 0; i < palette.Entries.Length; i++)
@@ -380,7 +375,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public bool LoadImageData(string filename, ImageBufferFloat destImage)
+		public static bool LoadImageData(string filename, ImageBufferFloat destImage)
 		{
 			if (File.Exists(filename))
 			{
@@ -402,8 +397,7 @@ namespace MatterHackers.Agg.Image
 					int destIndex = 0;
 					unsafe
 					{
-						int offset;
-						float[] destBuffer = destImage.GetBuffer(out offset);
+						float[] destBuffer = destImage.GetBuffer(out int offset);
 						byte* pSourceBuffer = (byte*)bitmapData.Scan0;
 						for (int y = 0; y < destImage.Height; y++)
 						{
@@ -427,7 +421,7 @@ namespace MatterHackers.Agg.Image
 			return false;
 		}
 
-		public ImageBuffer LoadImage(string path)
+		public static ImageBuffer LoadImage(string path)
 		{
 			var temp = new ImageBuffer();
 			LoadImageData(path, temp);
@@ -435,7 +429,7 @@ namespace MatterHackers.Agg.Image
 			return temp;
 		}
 
-		public ImageBuffer LoadImage(Stream stream)
+		public static ImageBuffer LoadImage(Stream stream)
 		{
 			var temp = new ImageBuffer();
 			LoadImageData(stream, temp);

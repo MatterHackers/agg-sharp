@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\agg\Agg.csproj" />
+    <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj" />
     <ProjectReference Include="..\Gui\Gui.csproj" />
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
   </ItemGroup>

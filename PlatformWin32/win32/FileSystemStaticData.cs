@@ -203,7 +203,7 @@ namespace MatterHackers.Agg
 		{
 			using (var bitmap = new Bitmap(imageStream))
 			{
-				ImageIOWindowsPlugin.ConvertBitmapToImage(destImage, bitmap);
+				ImageIO.ConvertBitmapToImage(destImage, bitmap);
 			}
 		}
 
@@ -236,7 +236,7 @@ namespace MatterHackers.Agg
 						// Return an Image at a certain index
 						image.SelectActiveFrame(dimension, i);
 						ImageBuffer imageBuffer = new ImageBuffer();
-						if (ImageIOWindowsPlugin.ConvertBitmapToImage(imageBuffer, new Bitmap(image)))
+						if (ImageIO.ConvertBitmapToImage(imageBuffer, new Bitmap(image)))
 						{
 							var frameDelay = BitConverter.ToInt32(image.GetPropertyItem(20736).Value, i * 4) * 10;
 
@@ -252,7 +252,7 @@ namespace MatterHackers.Agg
 				else
 				{
 					ImageBuffer imageBuffer = new ImageBuffer();
-					if (ImageIOWindowsPlugin.ConvertBitmapToImage(imageBuffer, new Bitmap(image)))
+					if (ImageIO.ConvertBitmapToImage(imageBuffer, new Bitmap(image)))
 					{
 						sequence.AddImage(imageBuffer);
 					}
@@ -272,7 +272,7 @@ namespace MatterHackers.Agg
 					using (var bitmap = new Bitmap(imageStream))
 					{
 						cachedImage = new ImageBuffer();
-						ImageIOWindowsPlugin.ConvertBitmapToImage(cachedImage, bitmap);
+						ImageIO.ConvertBitmapToImage(cachedImage, bitmap);
 					}
 
 					if (cachedImage.Width < 200 && cachedImage.Height < 200)
