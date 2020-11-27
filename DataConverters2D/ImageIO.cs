@@ -57,8 +57,8 @@ namespace MatterHackers.Agg.Image
 				for (var i = 0; i < image.Frames.Count; i++)
 				{
 					// Return an Image at a certain index
-					ImageBuffer imageBuffer = new ImageBuffer();
-					ConvertBitmapToImage(imageBuffer, image.Frames[i]);
+					var imageBuffer = new ImageBuffer();
+					ConvertImageFrameToImageBuffer(imageBuffer, image.Frames[i]);
 
 					var frameData = image.Frames[i].Metadata.GetGifMetadata();
 
@@ -72,8 +72,8 @@ namespace MatterHackers.Agg.Image
 			}
 			else
 			{
-				ImageBuffer imageBuffer = new ImageBuffer();
-				if (ImageIO.ConvertBitmapToImage(imageBuffer, image))
+				var imageBuffer = new ImageBuffer();
+				if (ImageIO.ConvertImageToImageBuffer(imageBuffer, image))
 				{
 					sequence.AddImage(imageBuffer);
 				}
@@ -86,7 +86,7 @@ namespace MatterHackers.Agg.Image
 		{
 			using (var bitmap = Image<Rgba32>.Load<Rgba32>(stream))
 			{
-				return ConvertBitmapToImage(destImage, bitmap);
+				return ConvertImageToImageBuffer(destImage, bitmap);
 			}
 		}
 
@@ -95,7 +95,7 @@ namespace MatterHackers.Agg.Image
 			if (File.Exists(fileName))
 			{
 				var temp = SixLabors.ImageSharp.Image.Load(fileName);
-				return ConvertBitmapToImage(destImage, temp);
+				return ConvertImageToImageBuffer(destImage, temp);
 			}
 			else
 			{
@@ -103,7 +103,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		private static bool ConvertBitmapToImage(ImageBuffer imageBuffer, SixLabors.ImageSharp.ImageFrame imageFrameIn)
+		private static bool ConvertImageFrameToImageBuffer(ImageBuffer imageBuffer, ImageFrame imageFrameIn)
 		{
 			/*
 			var imageFrame = new SixLabors.ImageSharp.
@@ -118,63 +118,17 @@ namespace MatterHackers.Agg.Image
 			return false;
 		}
 
-		private static bool ConvertBitmapToImage(ImageBuffer destImage, SixLabors.ImageSharp.Image imageIn)
+		private static bool ConvertImageToImageBuffer(ImageBuffer destImage, SixLabors.ImageSharp.Image imageIn)
 		{
 			var tgaSave = new MemoryStream();
 			var encoder = new SixLabors.ImageSharp.Formats.Tga.TgaEncoder();
 			encoder.BitsPerPixel = SixLabors.ImageSharp.Formats.Tga.TgaBitsPerPixel.Pixel32;
 			encoder.Compression = SixLabors.ImageSharp.Formats.Tga.TgaCompression.None;
 			imageIn.SaveAsTga(tgaSave, encoder);
-			var image = new ImageBuffer();
 			tgaSave.Seek(0, SeekOrigin.Begin);
-			if (ImageTgaIO.LoadImageData(image, tgaSave, 32))
+			if (ImageTgaIO.LoadImageData(destImage, tgaSave, 32))
 			{
-				destImage.CopyFrom(image);
 				return true;
-			}
-
-			/*
-			if (image.TryGetSinglePixelSpan(out var pixelSpan))
-			{
-				Rgba32[] pixelArray = pixelSpan.ToArray();
-
-				return ConvertBitmapToImage(destImage, image.Width, image.Height, pixelArray);
-			}
-			*/
-
-			return false;
-		}
-
-		public static bool ConvertBitmapToImage(ImageBuffer destImage, int width, int height, Rgba32[] pixelArray)
-		{
-			if (pixelArray != null)
-			{
-				destImage.Allocate(width, height, width * 4, 32);
-				if (destImage.GetRecieveBlender() == null)
-				{
-					destImage.SetRecieveBlender(new BlenderBGRA());
-				}
-
-				int sourceIndex = 0;
-				int destIndex = 0;
-				unsafe
-				{
-					byte[] destBuffer = destImage.GetBuffer(out int offset);
-					for (int y = 0; y < destImage.Height; y++)
-					{
-						destIndex = destImage.GetBufferOffsetXY(0, destImage.Height - 1 - y);
-						for (int x = 0; x < destImage.Width; x++)
-						{
-							destBuffer[destIndex++] = pixelArray[sourceIndex].B;
-							destBuffer[destIndex++] = pixelArray[sourceIndex].G;
-							destBuffer[destIndex++] = pixelArray[sourceIndex].R;
-							destBuffer[destIndex++] = pixelArray[sourceIndex].A;
-							sourceIndex++;
-						}
-					}
-
-					return true;
-				}
 			}
 
 			return false;
@@ -185,113 +139,52 @@ namespace MatterHackers.Agg.Image
 
 		public static bool SaveImageData(string filename, IImageByte sourceImage)
 		{
-#if true
-			throw new NotImplementedException();
-#else
-			// Get a lock index base on the hash of the file name
-			int lockerIndex = Math.Abs(filename.GetHashCode()) % Lockers.Length; // mod the hash code by the count to get an index
-
-			// lock on the index that this file name selects
-			lock (Lockers[lockerIndex])
+			try
 			{
-				if (File.Exists(filename))
+				using (var tgaSave = new MemoryStream())
 				{
-					File.Delete(filename);
-				}
-
-				ImageFormat format = ImageFormat.Jpeg;
-				if (filename.ToLower().EndsWith(".png"))
-				{
-					format = ImageFormat.Png;
-				}
-				else if (!filename.ToLower().EndsWith(".jpg") && !filename.ToLower().EndsWith(".jpeg"))
-				{
-					filename += ".jpg";
-				}
-
-				if (!File.Exists(filename))
-				{
-					if (sourceImage.BitDepth == 32)
+					var source = sourceImage.GetBuffer();
+					var invertedBuffer = new byte[source.Length];
+					int index = 0;
+					for (int y = sourceImage.Height - 1; y >= 0; y--)
 					{
-						try
+						var line = sourceImage.GetBufferOffsetY(y);
+						for (int x = 0; x < sourceImage.Width; x++)
 						{
-							using (var bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format32bppArgb))
-							{
-								BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
-								int destIndex = 0;
-								unsafe
-								{
-									byte[] sourceBuffer = sourceImage.GetBuffer();
-									byte* pDestBuffer = (byte*)bitmapData.Scan0;
-									int scanlinePadding = bitmapData.Stride - bitmapData.Width * 4;
-									for (int y = 0; y < sourceImage.Height; y++)
-									{
-										int sourceIndex = sourceImage.GetBufferOffsetXY(0, sourceImage.Height - 1 - y);
-										for (int x = 0; x < sourceImage.Width; x++)
-										{
-											pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-											pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-											pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-											pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-										}
-
-										destIndex += scanlinePadding;
-									}
-								}
-
-								bitmapToSave.UnlockBits(bitmapData);
-								bitmapToSave.Save(filename, format);
-							}
-
-							return true;
-						}
-						catch (Exception ex)
-						{
-							Console.WriteLine("Error saving file: " + ex.Message);
-							return false;
+							var pix = x * 4;
+							invertedBuffer[index++] = source[line + pix + 2];
+							invertedBuffer[index++] = source[line + pix + 1];
+							invertedBuffer[index++] = source[line + pix + 0];
+							invertedBuffer[index++] = source[line + pix + 3];
 						}
 					}
-					else if (sourceImage.BitDepth == 8 && format == ImageFormat.Png)
+
+					var image2 = SixLabors.ImageSharp.Image.LoadPixelData<Rgba32>(invertedBuffer,
+						sourceImage.Width,
+						sourceImage.Height);
+					image2.Save(filename);
+
+					/*
+					ImageTgaIO.Save((ImageBuffer)sourceImage, tgaSave);
+					tgaSave.Seek(0, SeekOrigin.Begin);
+					var image = SixLabors.ImageSharp.Image.Load(tgaSave);
+					if (Path.GetExtension(filename).ToLower() == ".png")
 					{
-						using (var bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format8bppIndexed))
-						{
-							ColorPalette palette = bitmapToSave.Palette;
-							for (int i = 0; i < palette.Entries.Length; i++)
-							{
-								palette.Entries[i] = System.Drawing.Color.FromArgb(i, i, i);
-							}
-
-							bitmapToSave.Palette = palette;
-							BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
-							int destIndex = 0;
-							unsafe
-							{
-								byte[] sourceBuffer = sourceImage.GetBuffer();
-								byte* pDestBuffer = (byte*)bitmapData.Scan0;
-								for (int y = 0; y < sourceImage.Height; y++)
-								{
-									int sourceIndex = sourceImage.GetBufferOffsetXY(0, sourceImage.Height - 1 - y);
-									for (int x = 0; x < sourceImage.Width; x++)
-									{
-										pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-									}
-								}
-							}
-							bitmapToSave.Save(filename, format);
-							bitmapToSave.UnlockBits(bitmapData);
-
-							return true;
-						}
+						image.Save(filename);
+						image.Save("c:\\temp\\temp2.png");
 					}
 					else
 					{
-						throw new NotImplementedException();
+						image.Save(filename);
 					}
+					*/
 				}
 
-				return false;
+				return true;
 			}
-#endif
+			catch { }
+
+			return false;
 		}
 
 		public static ImageBuffer LoadImage(string path)
