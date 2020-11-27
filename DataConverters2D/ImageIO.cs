@@ -94,7 +94,8 @@ namespace MatterHackers.Agg.Image
 		{
 			if (File.Exists(fileName))
 			{
-				return ConvertBitmapToImage(destImage, Image<Rgba32>.Load<Rgba32>(fileName));
+				var temp = SixLabors.ImageSharp.Image.Load(fileName);
+				return ConvertBitmapToImage(destImage, temp);
 			}
 			else
 			{
@@ -102,26 +103,44 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		private static bool ConvertBitmapToImage(ImageBuffer imageBuffer, ImageFrame<Rgba32> imageFrame)
+		private static bool ConvertBitmapToImage(ImageBuffer imageBuffer, SixLabors.ImageSharp.ImageFrame imageFrameIn)
 		{
+			/*
+			var imageFrame = new SixLabors.ImageSharp.
 			if (imageFrame.TryGetSinglePixelSpan(out var pixelSpan))
 			{
 				Rgba32[] pixelArray = pixelSpan.ToArray();
 
 				return ConvertBitmapToImage(imageBuffer, imageFrame.Width, imageFrame.Height, pixelArray);
 			}
+			*/
 
 			return false;
 		}
 
-		private static bool ConvertBitmapToImage(ImageBuffer destImage, Image<Rgba32> image)
+		private static bool ConvertBitmapToImage(ImageBuffer destImage, SixLabors.ImageSharp.Image imageIn)
 		{
+			var tgaSave = new MemoryStream();
+			var encoder = new SixLabors.ImageSharp.Formats.Tga.TgaEncoder();
+			encoder.BitsPerPixel = SixLabors.ImageSharp.Formats.Tga.TgaBitsPerPixel.Pixel32;
+			encoder.Compression = SixLabors.ImageSharp.Formats.Tga.TgaCompression.None;
+			imageIn.SaveAsTga(tgaSave, encoder);
+			var image = new ImageBuffer();
+			tgaSave.Seek(0, SeekOrigin.Begin);
+			if (ImageTgaIO.LoadImageData(image, tgaSave, 32))
+			{
+				destImage.CopyFrom(image);
+				return true;
+			}
+
+			/*
 			if (image.TryGetSinglePixelSpan(out var pixelSpan))
 			{
 				Rgba32[] pixelArray = pixelSpan.ToArray();
 
 				return ConvertBitmapToImage(destImage, image.Width, image.Height, pixelArray);
 			}
+			*/
 
 			return false;
 		}
