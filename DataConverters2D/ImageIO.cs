@@ -38,10 +38,10 @@ namespace MatterHackers.Agg.Image
 	{
 		public static bool LoadImageData(Stream stream, ImageSequence sequence)
 		{
-			Image<Rgba32> image;
+			SixLabors.ImageSharp.Image image;
 			try
 			{
-				image = Image<Rgba32>.Load<Rgba32>(stream);
+				image = SixLabors.ImageSharp.Image.Load(stream);
 			}
 			catch
 			{
@@ -58,7 +58,7 @@ namespace MatterHackers.Agg.Image
 				{
 					// Return an Image at a certain index
 					var imageBuffer = new ImageBuffer();
-					ConvertImageFrameToImageBuffer(imageBuffer, image.Frames[i]);
+					ConvertImageToImageBuffer(imageBuffer, image.Frames.CloneFrame(i));
 
 					var frameData = image.Frames[i].Metadata.GetGifMetadata();
 
@@ -101,21 +101,6 @@ namespace MatterHackers.Agg.Image
 			{
 				throw new Exception(string.Format("Image file not found: {0}", fileName));
 			}
-		}
-
-		private static bool ConvertImageFrameToImageBuffer(ImageBuffer imageBuffer, ImageFrame imageFrameIn)
-		{
-			/*
-			var imageFrame = new SixLabors.ImageSharp.
-			if (imageFrame.TryGetSinglePixelSpan(out var pixelSpan))
-			{
-				Rgba32[] pixelArray = pixelSpan.ToArray();
-
-				return ConvertBitmapToImage(imageBuffer, imageFrame.Width, imageFrame.Height, pixelArray);
-			}
-			*/
-
-			return false;
 		}
 
 		private static bool ConvertImageToImageBuffer(ImageBuffer destImage, SixLabors.ImageSharp.Image imageIn)
