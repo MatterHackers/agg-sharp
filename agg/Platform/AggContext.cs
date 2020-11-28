@@ -127,27 +127,11 @@ namespace MatterHackers.Agg.Platform
 
 		public class ProviderSettings
 		{
-#if true
 			public string OsInformationProvider { get; set; } = "MatterHackers.Agg.Platform.WinformsInformationProvider, agg_platform_win32";
 
 			public string DialogProvider { get; set; } = "MatterHackers.Agg.Platform.WinformsFileDialogProvider, agg_platform_win32";
 
-			public string ImageIOProvider { get; set; } = "MatterHackers.Agg.Image.ImageIOSystemDrawingCommon, agg_platform_win32";
-
-			public string StaticDataProvider { get; set; } = "MatterHackers.Agg.FileSystemStaticData, agg_platform_win32";
-
 			public string SystemWindowProvider { get; set; } = "MatterHackers.Agg.UI.BitmapWinformsWindowProvider, agg_platform_win32";
-#else
-			public string OsInformationProvider { get; set; } = "MatterControlMac.MacInformationProvider, MatterControlMac";
-
-			public string DialogProvider { get; set; } = "MatterControlMac.MacFileDialogProvider, MatterControlMac";
-
-			public string ImageIOProvider { get; set; } = "MatterHackers.Agg.Image.MacImageIO, MatterControlMac";
-
-			public string StaticDataProvider { get; set; } = "MatterHackers.Agg.MacStaticData, MatterControlMac";
-
-			public string SystemWindowProvider = "MatterHackers.GlfwProvider.GlfwWindowProvider, MatterHackers.GlfwProvider";
-#endif
 		}
 
 		public class AggGraphicsMode
