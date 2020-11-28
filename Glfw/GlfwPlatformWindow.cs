@@ -215,7 +215,6 @@ namespace MatterHackers.GlfwProvider
 					}
 
 					var window = this.WindowProvider.OpenWindows[i];
-					window.OnDrawBackground(graphics2D);
 					window.OnDraw(graphics2D);
 				}
 
