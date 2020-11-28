@@ -17,8 +17,11 @@ namespace MatterHackers.Agg.UI
 {
 	public class WindowWidget : GuiWidget
 	{
-		private int grabWidth = (int)Math.Round(5 * GuiWidget.DeviceScale);
-		private GuiWidget windowBackground;
+		private int grabWidth2 = 5;
+
+		private double deviceGrabWidth => grabWidth2 * DeviceScale;
+
+		private readonly GuiWidget windowBackground;
 
 		public WindowWidget(RectangleDouble inBounds)
 			: this(new GuiWidget(inBounds.Width, inBounds.Height)
@@ -37,10 +40,10 @@ namespace MatterHackers.Agg.UI
 			{
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Stretch,
-				Margin = new BorderDouble(grabWidth),
+				Margin = new BorderDouble(grabWidth2),
 			};
 
-			base.AddChild(windowBackground);
+			AddChild(windowBackground);
 
 			TitleBar = new TitleBarWidget(this)
 			{
@@ -49,12 +52,12 @@ namespace MatterHackers.Agg.UI
 			};
 			windowBackground.AddChild(TitleBar);
 
-			MinimumSize = new Vector2(grabWidth * 8, grabWidth * 4 + TitleBar.Height * 2);
+			MinimumSize = new Vector2(deviceGrabWidth * 8, deviceGrabWidth * 4 + TitleBar.Height * 2);
 			WindowBorder = new BorderDouble(1);
 			WindowBorderColor = Color.Cyan;
 
-			Position = clientArea.Position + new Vector2(grabWidth, grabWidth);
-			Size = clientArea.Size + new Vector2(grabWidth * 2, grabWidth * 2 + TitleBar.Height);
+			Position = clientArea.Position - new Vector2(deviceGrabWidth, deviceGrabWidth);
+			Size = clientArea.Size + new Vector2(deviceGrabWidth * 2, deviceGrabWidth * 2 + TitleBar.Height);
 
 			AddGrabControls();
 
@@ -64,7 +67,9 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public BorderDouble WindowBorder { get => windowBackground.Border; set => windowBackground.Border = value; }
+
 		public Color WindowBorderColor { get => windowBackground.BorderColor; set => windowBackground.BorderColor = value; }
+
 		public GuiWidget ClientArea { get; }
 
 		public TitleBarWidget TitleBar { get; private set; }
@@ -72,9 +77,9 @@ namespace MatterHackers.Agg.UI
 		public override void OnDrawBackground(Graphics2D graphics2D)
 		{
 			// draw the shadow
-			for (int i = 0; i < grabWidth; i++)
+			for (int i = 0; i < deviceGrabWidth; i++)
 			{
-				var color = new Color(Color.Black, 100 * i / grabWidth);
+				var color = new Color(Color.Black, (int)(50 * i / deviceGrabWidth));
 				// left line
 				graphics2D.Line(i + .5,
 					i + .5,
@@ -108,17 +113,16 @@ namespace MatterHackers.Agg.UI
 		private void AddGrabControls()
 		{
 			// this is for debugging
-			var grabCornnerColor = Color.Transparent;// Color.Blue;
-			var grabEdgeColor = Color.Transparent;//Color.Red;
+			var grabCornnerColor = Color.Transparent;
+			var grabEdgeColor = Color.Transparent;
 
 			// left grab control
-			base.AddChild(new GrabControl(Cursors.SizeWE)
+			AddChild(new GrabControl(Cursors.SizeWE)
 			{
 				BackgroundColor = grabEdgeColor,
-				Margin = new BorderDouble(0, grabWidth),
 				HAnchor = HAnchor.Left,
 				VAnchor = VAnchor.Stretch,
-				Size = new Vector2(grabWidth, 0),
+				Size = new Vector2(deviceGrabWidth, 0),
 				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
@@ -130,13 +134,12 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// bottom grab control
-			base.AddChild(new GrabControl(Cursors.SizeNS)
+			this.AddChild(new GrabControl(Cursors.SizeNS)
 			{
 				BackgroundColor = grabEdgeColor,
-				Margin = new BorderDouble(grabWidth, 0),
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Bottom,
-				Size = new Vector2(0, grabWidth),
+				Size = new Vector2(0, deviceGrabWidth),
 				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
@@ -148,12 +151,12 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// left bottom grab control
-			base.AddChild(new GrabControl(Cursors.SizeNESW)
+			this.AddChild(new GrabControl(Cursors.SizeNESW)
 			{
 				BackgroundColor = grabCornnerColor,
 				HAnchor = HAnchor.Left,
 				VAnchor = VAnchor.Bottom,
-				Size = new Vector2(grabWidth, grabWidth),
+				Size = new Vector2(deviceGrabWidth, deviceGrabWidth),
 				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
@@ -164,12 +167,12 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// left top grab control
-			base.AddChild(new GrabControl(Cursors.SizeNWSE)
+			this.AddChild(new GrabControl(Cursors.SizeNWSE)
 			{
 				BackgroundColor = grabCornnerColor,
 				HAnchor = HAnchor.Left,
 				VAnchor = VAnchor.Top,
-				Size = new Vector2(grabWidth, grabWidth),
+				Size = new Vector2(deviceGrabWidth, deviceGrabWidth),
 				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
@@ -180,13 +183,12 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// right grab control
-			base.AddChild(new GrabControl(Cursors.SizeWE)
+			this.AddChild(new GrabControl(Cursors.SizeWE)
 			{
 				BackgroundColor = grabEdgeColor,
-				Margin = new BorderDouble(0, grabWidth),
 				VAnchor = VAnchor.Stretch,
 				HAnchor = HAnchor.Right,
-				Size = new Vector2(grabWidth, 0),
+				Size = new Vector2(deviceGrabWidth, 0),
 				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
@@ -195,12 +197,12 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// right top grab control
-			base.AddChild(new GrabControl(Cursors.SizeNESW)
+			this.AddChild(new GrabControl(Cursors.SizeNESW)
 			{
 				BackgroundColor = grabCornnerColor,
 				HAnchor = HAnchor.Right,
 				VAnchor = VAnchor.Top,
-				Size = new Vector2(grabWidth, grabWidth),
+				Size = new Vector2(deviceGrabWidth, deviceGrabWidth),
 				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
@@ -209,13 +211,12 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// top grab control
-			base.AddChild(new GrabControl(Cursors.SizeNS)
+			this.AddChild(new GrabControl(Cursors.SizeNS)
 			{
 				BackgroundColor = grabEdgeColor,
-				Margin = new BorderDouble(grabWidth, 0),
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Top,
-				Size = new Vector2(0, grabWidth),
+				Size = new Vector2(0, deviceGrabWidth),
 				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
@@ -224,12 +225,12 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// right bottom
-			base.AddChild(new GrabControl(Cursors.SizeNWSE)
+			this.AddChild(new GrabControl(Cursors.SizeNWSE)
 			{
 				BackgroundColor = grabCornnerColor,
 				HAnchor = HAnchor.Right,
 				VAnchor = VAnchor.Bottom,
-				Size = new Vector2(grabWidth, grabWidth),
+				Size = new Vector2(deviceGrabWidth, deviceGrabWidth),
 				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
