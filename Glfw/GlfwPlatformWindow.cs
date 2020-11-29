@@ -275,6 +275,17 @@ namespace MatterHackers.GlfwProvider
 				{
 					suppressedKeyDowns.Add(keyEvent.KeyCode);
 				}
+				else
+				{
+					// send any key that we need to that is not being sent in GLFWs CharCallback
+					switch (key)
+					{
+						case GLFW.Keys.Enter:
+						case GLFW.Keys.NumpadEnter:
+							WindowProvider.TopWindow.OnKeyPress(new KeyPressEventArgs((char)13));
+							break;
+					}
+				}
 			}
 			else if (state == InputState.Release)
 			{
