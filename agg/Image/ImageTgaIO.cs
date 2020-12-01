@@ -758,8 +758,10 @@ namespace MatterHackers.Agg.Image
 
 		static public bool Save(ImageBuffer image, String fileNameToSaveTo)
 		{
-			Stream file = File.Open(fileNameToSaveTo, FileMode.Create);
-			return Save(image, file);
+			using (Stream file = File.Open(fileNameToSaveTo, FileMode.Create))
+			{
+				return Save(image, file);
+			}
 		}
 
 		static public bool Save(ImageBuffer image, Stream streamToSaveImageDataTo)
