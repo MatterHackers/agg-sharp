@@ -37,8 +37,12 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 {
 	public static class GL
 	{
-		private static int threadId = -1;
+		private static readonly Dictionary<EnableCap, bool> IsEnabled = new Dictionary<EnableCap, bool>();
 		private static IOpenGL _instance = null;
+		private static bool inBegin;
+		private static int pushAttribCount = 0;
+		private static int pushMatrixCount = 0;
+		private static int threadId = -1;
 
 		public static IOpenGL Instance
 		{
@@ -64,25 +68,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			}
 		}
 
-		private static bool InBegin;
-
-		public static void CheckForError()
-		{
-#if DEBUG
-			if (!InBegin)
-			{
-				var code = _instance.GetError();
-				if (code != ErrorCode.NoError)
-				{
-					throw new Exception($"OpenGL Error: {code}");
-				}
-			}
-#endif
-		}
-
 		public static void Begin(BeginMode mode)
 		{
-			InBegin = true;
+			inBegin = true;
 			Instance?.Begin(mode);
 			CheckForError();
 		}
@@ -109,6 +97,20 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		{
 			Instance?.BufferData(target, size, data, usage);
 			CheckForError();
+		}
+
+		public static void CheckForError()
+		{
+#if DEBUG
+			if (!inBegin)
+			{
+				var code = _instance.GetError();
+				if (code != ErrorCode.NoError)
+				{
+					throw new Exception($"OpenGL Error: {code}");
+				}
+			}
+#endif
 		}
 
 		public static void Clear(ClearBufferMask mask)
@@ -174,15 +176,15 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			CheckForError();
 		}
 
-		public static void DeleteBuffers(int n, ref int buffers)
+		public static void DeleteBuffer(int buffer)
 		{
-			Instance?.DeleteBuffers(n, ref buffers);
+			Instance?.DeleteBuffer(buffer);
 			CheckForError();
 		}
 
-		public static void DeleteTextures(int n, ref int textures)
+		public static void DeleteTexture(int textures)
 		{
-			Instance?.DeleteTextures(n, ref textures);
+			Instance?.DeleteTexture(textures);
 			CheckForError();
 		}
 
@@ -200,7 +202,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		public static void Disable(EnableCap cap)
 		{
-			isEnabled[cap] = false;
+			IsEnabled[cap] = false;
 
 			Instance?.Disable(cap);
 			CheckForError();
@@ -224,21 +226,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			CheckForError();
 		}
 
-		private static Dictionary<EnableCap, bool> isEnabled = new Dictionary<EnableCap, bool>();
-
-		public static bool EnableState(EnableCap cap)
-		{
-			if (isEnabled.ContainsKey(cap))
-			{
-				return isEnabled[cap];
-			}
-
-			return false;
-		}
-
 		public static void Enable(EnableCap cap)
 		{
-			isEnabled[cap] = true;
+			IsEnabled[cap] = true;
 			Instance?.Enable(cap);
 			CheckForError();
 		}
@@ -249,10 +239,20 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			CheckForError();
 		}
 
+		public static bool EnableState(EnableCap cap)
+		{
+			if (IsEnabled.ContainsKey(cap))
+			{
+				return IsEnabled[cap];
+			}
+
+			return false;
+		}
+
 		public static void End()
 		{
 			Instance?.End();
-			InBegin = false;
+			inBegin = false;
 
 			CheckForError();
 		}
@@ -281,11 +281,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			return 0;
 		}
 
-		public static void GenTextures(int n, out int textureHandle)
+		public static int GenTexture()
 		{
-			textureHandle = -1;
-			Instance?.GenTextures(n, out textureHandle);
+			var texture = Instance?.GenTexture();
 			CheckForError();
+			return texture.Value;
 		}
 
 		public static ErrorCode GetError()
@@ -302,11 +302,17 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		{
 			if (Instance != null)
 			{
-				return Instance.GetString(name);
 				CheckForError();
+				return Instance.GetString(name);
 			}
 
 			return "";
+		}
+
+		public static void IndexPointer(IndexPointerType type, int stride, IntPtr pointer)
+		{
+			Instance?.IndexPointer(type, stride, pointer);
+			CheckForError();
 		}
 
 		public static void Light(LightName light, LightParameter pname, float[] param)
@@ -362,12 +368,6 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			CheckForError();
 		}
 
-		public static void IndexPointer(IndexPointerType type, int stride, IntPtr pointer)
-		{
-			Instance?.IndexPointer(type, stride, pointer);
-			CheckForError();
-		}
-
 		public static void Ortho(double left, double right, double bottom, double top, double zNear, double zFar)
 		{
 			Instance?.Ortho(left, right, bottom, top, zNear, zFar);
@@ -382,24 +382,38 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		public static void PopAttrib()
 		{
+			pushAttribCount--;
 			Instance?.PopAttrib();
 			CheckForError();
 		}
 
 		public static void PopMatrix()
 		{
+			pushMatrixCount--;
 			Instance?.PopMatrix();
 			CheckForError();
 		}
 
 		public static void PushAttrib(AttribMask mask)
 		{
+			pushAttribCount++;
+			if (pushAttribCount > 100)
+			{
+				throw new Exception("pushAttrib being called without matching PopAttrib");
+			}
+
 			Instance?.PushAttrib(mask);
 			CheckForError();
 		}
 
 		public static void PushMatrix()
 		{
+			pushMatrixCount++;
+			if (pushMatrixCount > 100)
+			{
+				throw new Exception("PushMatrix being called without matching PopMatrix");
+			}
+
 			Instance?.PushMatrix();
 			CheckForError();
 		}
@@ -450,12 +464,21 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			CheckForError();
 		}
 
-		public static void TexImage2D(TextureTarget target, int level,
+		public static void TexEnv(TextureEnvironmentTarget target, TextureEnvParameter pname, float param)
+		{
+			Instance?.TexEnv(target, pname, param);
+			CheckForError();
+		}
+
+		public static void TexImage2D(TextureTarget target,
+			int level,
 			PixelInternalFormat internalFormat,
-			int width, int height, int border,
+			int width,
+			int height,
+			int border,
 			PixelFormat format,
 			PixelType type,
-			Byte[] pixels)
+			byte[] pixels)
 		{
 			Instance?.TexImage2D(target,
 				level,
@@ -483,12 +506,6 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		public static void Translate(double x, double y, double z)
 		{
 			Instance?.Translate(x, y, z);
-			CheckForError();
-		}
-
-		public static void TexEnv(TextureEnvironmentTarget target, TextureEnvParameter pname, float param)
-		{
-			Instance?.TexEnv(target, pname, param);
 			CheckForError();
 		}
 

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 
 namespace MatterHackers.Agg.Image
 {
@@ -105,10 +106,10 @@ namespace MatterHackers.Agg.Image
 		{
 			if (Width > 0)
 			{
-				int DestOffset = Height * Width * 3;
+				int destOffset = Height * Width * 3;
 				for (int i = 0; i < Width * 3; i++)
 				{
-					Dest[DestOffset + i] = Source[SourceOffset + i];
+					Dest[destOffset + i] = Source[SourceOffset + i];
 				}
 			}
 		}
@@ -118,12 +119,12 @@ namespace MatterHackers.Agg.Image
 			if (Width > 0)
 			{
 				int i = 0;
-				int DestOffest = Height * Width * 3;
+				int destOffest = Height * Width * 3;
 				do
 				{
-					Dest[DestOffest + i * 3 + RGB_BLUE] = Source[SourceOffset + RGB_BLUE];
-					Dest[DestOffest + i * 3 + RGB_GREEN] = Source[SourceOffset + RGB_GREEN];
-					Dest[DestOffest + i * 3 + RGB_RED] = Source[SourceOffset + RGB_RED];
+					Dest[destOffest + i * 3 + RGB_BLUE] = Source[SourceOffset + RGB_BLUE];
+					Dest[destOffest + i * 3 + RGB_GREEN] = Source[SourceOffset + RGB_GREEN];
+					Dest[destOffest + i * 3 + RGB_RED] = Source[SourceOffset + RGB_RED];
 					SourceOffset += 4;
 				} while (++i < Width);
 			}
@@ -134,13 +135,13 @@ namespace MatterHackers.Agg.Image
 			if (Width > 0)
 			{
 				int i = 0;
-				int DestOffest = Height * Width * 4;
+				int destOffest = Height * Width * 4;
 				do
 				{
-					Dest[DestOffest + i * 4 + RGB_BLUE] = Source[SourceOffset + RGB_BLUE];
-					Dest[DestOffest + i * 4 + RGB_GREEN] = Source[SourceOffset + RGB_GREEN];
-					Dest[DestOffest + i * 4 + RGB_RED] = Source[SourceOffset + RGB_RED];
-					Dest[DestOffest + i * 4 + 3] = 255;
+					Dest[destOffest + i * 4 + RGB_BLUE] = Source[SourceOffset + RGB_BLUE];
+					Dest[destOffest + i * 4 + RGB_GREEN] = Source[SourceOffset + RGB_GREEN];
+					Dest[destOffest + i * 4 + RGB_RED] = Source[SourceOffset + RGB_RED];
+					Dest[destOffest + i * 4 + 3] = 255;
 					SourceOffset += 3;
 				} while (++i < Width);
 			}
@@ -151,15 +152,15 @@ namespace MatterHackers.Agg.Image
 			if (Width > 0)
 			{
 				int i = 0;
-				int DestOffest = Height * Width * 4;
+				int destOffest = Height * Width * 4;
 				do
 				{
-					Dest[DestOffest + RGB_BLUE] = Source[SourceOffset + RGB_BLUE];
-					Dest[DestOffest + RGB_GREEN] = Source[SourceOffset + RGB_GREEN];
-					Dest[DestOffest + RGB_RED] = Source[SourceOffset + RGB_RED];
-					Dest[DestOffest + RGBA_ALPHA] = Source[SourceOffset + RGBA_ALPHA];
+					Dest[destOffest + RGB_BLUE] = Source[SourceOffset + RGB_BLUE];
+					Dest[destOffest + RGB_GREEN] = Source[SourceOffset + RGB_GREEN];
+					Dest[destOffest + RGB_RED] = Source[SourceOffset + RGB_RED];
+					Dest[destOffest + RGBA_ALPHA] = Source[SourceOffset + RGBA_ALPHA];
 					SourceOffset += 4;
-					DestOffest += 4;
+					destOffest += 4;
 				} while (++i < Width);
 			}
 		}
@@ -259,13 +260,13 @@ namespace MatterHackers.Agg.Image
 
 		private static unsafe int Decompress(byte[] pDecompressBits, byte[] pBitsToPars, int ParsOffset, int Width, int Depth, int LineBeingRead)
 		{
-			int DecompressOffset = 0;
-			int Total = 0;
+			int decompressOffset = 0;
+			int total = 0;
 			do
 			{
 				int i;
-				int NumPixels = (pBitsToPars[ParsOffset] & RUN_LENGTH_MASK) + 1;
-				Total += NumPixels;
+				int numPixels = (pBitsToPars[ParsOffset] & RUN_LENGTH_MASK) + 1;
+				total += numPixels;
 				if ((pBitsToPars[ParsOffset++] & IS_PIXLE_RUN) != 0)
 				{
 					// decompress the run for NumPixels
@@ -276,22 +277,22 @@ namespace MatterHackers.Agg.Image
 					switch (Depth)
 					{
 						case 24:
-							for (i = 0; i < NumPixels; i++)
+							for (i = 0; i < numPixels; i++)
 							{
-								pDecompressBits[DecompressOffset++] = b;
-								pDecompressBits[DecompressOffset++] = g;
-								pDecompressBits[DecompressOffset++] = r;
+								pDecompressBits[decompressOffset++] = b;
+								pDecompressBits[decompressOffset++] = g;
+								pDecompressBits[decompressOffset++] = r;
 							}
 							break;
 
 						case 32:
 							a = pBitsToPars[ParsOffset++];
-							for (i = 0; i < NumPixels; i++)
+							for (i = 0; i < numPixels; i++)
 							{
-								pDecompressBits[DecompressOffset++] = b;
-								pDecompressBits[DecompressOffset++] = g;
-								pDecompressBits[DecompressOffset++] = r;
-								pDecompressBits[DecompressOffset++] = a;
+								pDecompressBits[decompressOffset++] = b;
+								pDecompressBits[decompressOffset++] = g;
+								pDecompressBits[decompressOffset++] = r;
+								pDecompressBits[decompressOffset++] = a;
 							}
 							break;
 
@@ -304,16 +305,16 @@ namespace MatterHackers.Agg.Image
 					switch (Depth)
 					{
 						case 24:
-							for (i = 0; i < NumPixels * 3; i++)
+							for (i = 0; i < numPixels * 3; i++)
 							{
-								pDecompressBits[DecompressOffset++] = pBitsToPars[ParsOffset++];
+								pDecompressBits[decompressOffset++] = pBitsToPars[ParsOffset++];
 							}
 							break;
 
 						case 32:
-							for (i = 0; i < NumPixels * 4; i++)
+							for (i = 0; i < numPixels * 4; i++)
 							{
-								pDecompressBits[DecompressOffset++] = pBitsToPars[ParsOffset++];
+								pDecompressBits[decompressOffset++] = pBitsToPars[ParsOffset++];
 							}
 							break;
 
@@ -321,9 +322,9 @@ namespace MatterHackers.Agg.Image
 							throw new System.Exception("Bad bit depth.");
 					}
 				}
-			} while (Total < Width);
+			} while (total < Width);
 
-			if (Total > Width)
+			if (total > Width)
 			{
 				throw new System.Exception("The TGA you loaded is corrupt (line " + LineBeingRead.ToString() + ").");
 			}
@@ -333,10 +334,10 @@ namespace MatterHackers.Agg.Image
 
 		private static unsafe int LowLevelReadTGABitsFromBuffer(ImageBuffer imageToReadTo, byte[] wholeFileBuffer, int DestBitDepth)
 		{
-			STargaHeader TargaHeader = new STargaHeader();
-			int FileReadOffset;
+			STargaHeader targaHeader = new STargaHeader();
+			int fileReadOffset;
 
-			if (!ReadTGAInfo(wholeFileBuffer, out TargaHeader))
+			if (!ReadTGAInfo(wholeFileBuffer, out targaHeader))
 			{
 				return 0;
 			}
@@ -344,9 +345,9 @@ namespace MatterHackers.Agg.Image
 			// if the frame we are loading is different then the one we have allocated
 			// or we don't have any bits allocated
 
-			if ((imageToReadTo.Width * imageToReadTo.Height) != (TargaHeader.Width * TargaHeader.Height))
+			if ((imageToReadTo.Width * imageToReadTo.Height) != (targaHeader.Width * targaHeader.Height))
 			{
-				imageToReadTo.Allocate(TargaHeader.Width, TargaHeader.Height, TargaHeader.Width * DestBitDepth / 8, DestBitDepth);
+				imageToReadTo.Allocate(targaHeader.Width, targaHeader.Height, targaHeader.Width * DestBitDepth / 8, DestBitDepth);
 			}
 
 			// work out the line width
@@ -374,43 +375,43 @@ namespace MatterHackers.Agg.Image
 
 			if (TGABytesPerLine > 0)
 			{
-				byte[] BufferToDecompressTo = null;
-				FileReadOffset = TargaHeaderSize + TargaHeader.PostHeaderSkip;
+				byte[] bufferToDecompressTo = null;
+				fileReadOffset = TargaHeaderSize + targaHeader.PostHeaderSkip;
 
-				if (TargaHeader.ImageType == 10) // 10 is RLE compressed
+				if (targaHeader.ImageType == 10) // 10 is RLE compressed
 				{
-					BufferToDecompressTo = new byte[TGABytesPerLine * 2];
+					bufferToDecompressTo = new byte[TGABytesPerLine * 2];
 				}
 
 				// read all the lines *
 				for (int i = 0; i < imageToReadTo.Height; i++)
 				{
-					byte[] BufferToCopyFrom;
-					int CopyOffset = 0;
+					byte[] bufferToCopyFrom;
+					int copyOffset = 0;
 
-					int CurReadLine;
+					int curReadLine;
 
 					// bit 5 tells us if the image is stored top to bottom or bottom to top
-					if ((TargaHeader.Descriptor & 0x20) != 0)
+					if ((targaHeader.Descriptor & 0x20) != 0)
 					{
 						// bottom to top
-						CurReadLine = imageToReadTo.Height - i - 1;
+						curReadLine = imageToReadTo.Height - i - 1;
 					}
 					else
 					{
 						// top to bottom
-						CurReadLine = i;
+						curReadLine = i;
 					}
 
-					if (TargaHeader.ImageType == 10) // 10 is RLE compressed
+					if (targaHeader.ImageType == 10) // 10 is RLE compressed
 					{
-						FileReadOffset = Decompress(BufferToDecompressTo, wholeFileBuffer, FileReadOffset, imageToReadTo.Width, TargaHeader.BPP, CurReadLine);
-						BufferToCopyFrom = BufferToDecompressTo;
+						fileReadOffset = Decompress(bufferToDecompressTo, wholeFileBuffer, fileReadOffset, imageToReadTo.Width, targaHeader.BPP, curReadLine);
+						bufferToCopyFrom = bufferToDecompressTo;
 					}
 					else
 					{
-						BufferToCopyFrom = wholeFileBuffer;
-						CopyOffset = FileReadOffset;
+						bufferToCopyFrom = wholeFileBuffer;
+						copyOffset = fileReadOffset;
 					}
 
 					int bufferOffset;
@@ -419,40 +420,40 @@ namespace MatterHackers.Agg.Image
 					switch (imageToReadTo.BitDepth)
 					{
 						case 8:
-							switch (TargaHeader.BPP)
+							switch (targaHeader.BPP)
 							{
 								case 24:
-									Do24To8Bit(imageBuffer, BufferToCopyFrom, CopyOffset, imageToReadTo.Width, CurReadLine);
+									Do24To8Bit(imageBuffer, bufferToCopyFrom, copyOffset, imageToReadTo.Width, curReadLine);
 									break;
 
 								case 32:
-									Do32To8Bit(imageBuffer, BufferToCopyFrom, CopyOffset, imageToReadTo.Width, CurReadLine);
+									Do32To8Bit(imageBuffer, bufferToCopyFrom, copyOffset, imageToReadTo.Width, curReadLine);
 									break;
 							}
 							break;
 
 						case 24:
-							switch (TargaHeader.BPP)
+							switch (targaHeader.BPP)
 							{
 								case 24:
-									Do24To24Bit(imageBuffer, BufferToCopyFrom, CopyOffset, imageToReadTo.Width, CurReadLine);
+									Do24To24Bit(imageBuffer, bufferToCopyFrom, copyOffset, imageToReadTo.Width, curReadLine);
 									break;
 
 								case 32:
-									Do32To24Bit(imageBuffer, BufferToCopyFrom, CopyOffset, imageToReadTo.Width, CurReadLine);
+									Do32To24Bit(imageBuffer, bufferToCopyFrom, copyOffset, imageToReadTo.Width, curReadLine);
 									break;
 							}
 							break;
 
 						case 32:
-							switch (TargaHeader.BPP)
+							switch (targaHeader.BPP)
 							{
 								case 24:
-									Do24To32Bit(imageBuffer, BufferToCopyFrom, CopyOffset, imageToReadTo.Width, CurReadLine);
+									Do24To32Bit(imageBuffer, bufferToCopyFrom, copyOffset, imageToReadTo.Width, curReadLine);
 									break;
 
 								case 32:
-									Do32To32Bit(imageBuffer, BufferToCopyFrom, CopyOffset, imageToReadTo.Width, CurReadLine);
+									Do32To32Bit(imageBuffer, bufferToCopyFrom, copyOffset, imageToReadTo.Width, curReadLine);
 									break;
 							}
 							break;
@@ -461,14 +462,14 @@ namespace MatterHackers.Agg.Image
 							throw new System.Exception("Bad bit depth");
 					}
 
-					if (TargaHeader.ImageType != 10) // 10 is RLE compressed
+					if (targaHeader.ImageType != 10) // 10 is RLE compressed
 					{
-						FileReadOffset += TGABytesPerLine;
+						fileReadOffset += TGABytesPerLine;
 					}
 				}
 			}
 
-			return TargaHeader.Width;
+			return targaHeader.Width;
 		}
 
 		private const int MAX_RUN_LENGTH = 127;
@@ -492,22 +493,22 @@ namespace MatterHackers.Agg.Image
 
 		private static int GetSameLength(byte[] checkBufer, int checkOffset, byte[] sourceBuffer, int sourceOffsetToNextPixel, int numBytesInPixel, int maxSameLengthWidth)
 		{
-			int Count = 0;
-			while (memcmp(checkBufer, checkOffset, sourceBuffer, sourceOffsetToNextPixel, numBytesInPixel) == 0 && Count < maxSameLengthWidth)
+			int count = 0;
+			while (memcmp(checkBufer, checkOffset, sourceBuffer, sourceOffsetToNextPixel, numBytesInPixel) == 0 && count < maxSameLengthWidth)
 			{
-				Count++;
+				count++;
 				sourceOffsetToNextPixel += numBytesInPixel;
 			}
 
-			return Count;
+			return count;
 		}
 
 		private static int GetDifLength(byte[] pCheck, byte[] pSource, int SourceOffset, int numBytesInPixel, int Max)
 		{
-			int Count = 0;
-			while (memcmp(pCheck, 0, pSource, SourceOffset, numBytesInPixel) != 0 && Count < Max)
+			int count = 0;
+			while (memcmp(pCheck, 0, pSource, SourceOffset, numBytesInPixel) != 0 && count < Max)
 			{
-				Count++;
+				count++;
 				for (int i = 0; i < numBytesInPixel; i++)
 				{
 					pCheck[i] = pSource[SourceOffset + i];
@@ -515,119 +516,119 @@ namespace MatterHackers.Agg.Image
 				SourceOffset += numBytesInPixel;
 			}
 
-			return Count;
+			return count;
 		}
 
 		private const int MIN_RUN_LENGTH = 2;
 
 		private static int CompressLine8(byte[] destBuffer, byte[] sourceBuffer, int sourceOffset, int Width)
 		{
-			int WritePos = 0;
+			int writePos = 0;
 			int pixelsProcessed = 0;
 
 			while (pixelsProcessed < Width)
 			{
 				// always get as many as you can that are the same first
-				int Max = System.Math.Min(MAX_RUN_LENGTH, (Width - 1) - pixelsProcessed);
-				int SameLength = GetSameLength(sourceBuffer, sourceOffset, sourceBuffer, sourceOffset + 1, 1, Max);
-				if (SameLength >= MIN_RUN_LENGTH)
+				int max = System.Math.Min(MAX_RUN_LENGTH, (Width - 1) - pixelsProcessed);
+				int sameLength = GetSameLength(sourceBuffer, sourceOffset, sourceBuffer, sourceOffset + 1, 1, max);
+				if (sameLength >= MIN_RUN_LENGTH)
 				//if(SameLength)
 				{
 					// write in the count
-					if (SameLength > MAX_RUN_LENGTH)
+					if (sameLength > MAX_RUN_LENGTH)
 					{
 						throw new System.Exception("Bad Length");
 					}
-					destBuffer[WritePos++] = (byte)((SameLength) | IS_PIXLE_RUN);
+					destBuffer[writePos++] = (byte)((sameLength) | IS_PIXLE_RUN);
 
 					// write in the same length pixel value
-					destBuffer[WritePos++] = sourceBuffer[sourceOffset];
+					destBuffer[writePos++] = sourceBuffer[sourceOffset];
 
-					pixelsProcessed += SameLength + 1;
+					pixelsProcessed += sameLength + 1;
 				}
 				else
 				{
-					byte CheckPixel = sourceBuffer[sourceOffset];
-					int DifLength = Max;
+					byte checkPixel = sourceBuffer[sourceOffset];
+					int difLength = max;
 
-					if (DifLength == 0)
+					if (difLength == 0)
 					{
-						DifLength = 1;
+						difLength = 1;
 					}
 					// write in the count (if there is only one the count is 0)
-					if (DifLength > MAX_RUN_LENGTH)
+					if (difLength > MAX_RUN_LENGTH)
 					{
 						throw new System.Exception("Bad Length");
 					}
 
-					destBuffer[WritePos++] = (byte)(DifLength - 1);
+					destBuffer[writePos++] = (byte)(difLength - 1);
 
-					while (DifLength-- != 0)
+					while (difLength-- != 0)
 					{
 						// write in the same length pixel value
-						destBuffer[WritePos++] = sourceBuffer[sourceOffset++];
+						destBuffer[writePos++] = sourceBuffer[sourceOffset++];
 						pixelsProcessed++;
 					}
 				}
 			}
 
-			return WritePos;
+			return writePos;
 		}
 
 		private static byte[] differenceHold = new byte[4];
 
 		private static int CompressLine24(byte[] destBuffer, byte[] sourceBuffer, int sourceOffset, int Width)
 		{
-			int WritePos = 0;
+			int writePos = 0;
 			int pixelsProcessed = 0;
 
 			while (pixelsProcessed < Width)
 			{
 				// always get as many as you can that are the same first
-				int Max = System.Math.Min(MAX_RUN_LENGTH, (Width - 1) - pixelsProcessed);
-				int SameLength = GetSameLength(sourceBuffer, sourceOffset, sourceBuffer, sourceOffset + 3, 3, Max);
-				if (SameLength > 0)
+				int max = System.Math.Min(MAX_RUN_LENGTH, (Width - 1) - pixelsProcessed);
+				int sameLength = GetSameLength(sourceBuffer, sourceOffset, sourceBuffer, sourceOffset + 3, 3, max);
+				if (sameLength > 0)
 				{
 					// write in the count
-					if (SameLength > MAX_RUN_LENGTH)
+					if (sameLength > MAX_RUN_LENGTH)
 					{
 						throw new Exception();
 					}
 
-					destBuffer[WritePos++] = (byte)((SameLength) | IS_PIXLE_RUN);
+					destBuffer[writePos++] = (byte)((sameLength) | IS_PIXLE_RUN);
 
 					// write in the same length pixel value
-					destBuffer[WritePos++] = sourceBuffer[sourceOffset + 0];
-					destBuffer[WritePos++] = sourceBuffer[sourceOffset + 1];
-					destBuffer[WritePos++] = sourceBuffer[sourceOffset + 2];
+					destBuffer[writePos++] = sourceBuffer[sourceOffset + 0];
+					destBuffer[writePos++] = sourceBuffer[sourceOffset + 1];
+					destBuffer[writePos++] = sourceBuffer[sourceOffset + 2];
 
-					sourceOffset += (SameLength) * 3;
-					pixelsProcessed += SameLength + 1;
+					sourceOffset += (sameLength) * 3;
+					pixelsProcessed += sameLength + 1;
 				}
 				else
 				{
 					differenceHold[0] = sourceBuffer[sourceOffset + 0];
 					differenceHold[1] = sourceBuffer[sourceOffset + 1];
 					differenceHold[2] = sourceBuffer[sourceOffset + 2];
-					int DifLength = GetDifLength(differenceHold, sourceBuffer, sourceOffset + 3, 3, Max);
-					if (DifLength == 0)
+					int difLength = GetDifLength(differenceHold, sourceBuffer, sourceOffset + 3, 3, max);
+					if (difLength == 0)
 					{
-						DifLength = 1;
+						difLength = 1;
 					}
 
 					// write in the count (if there is only one the count is 0)
-					if (SameLength > MAX_RUN_LENGTH)
+					if (sameLength > MAX_RUN_LENGTH)
 					{
 						throw new Exception();
 					}
-					destBuffer[WritePos++] = (byte)(DifLength - 1);
+					destBuffer[writePos++] = (byte)(difLength - 1);
 
-					while (DifLength-- > 0)
+					while (difLength-- > 0)
 					{
 						// write in the same length pixel value
-						destBuffer[WritePos++] = sourceBuffer[sourceOffset + 0];
-						destBuffer[WritePos++] = sourceBuffer[sourceOffset + 1];
-						destBuffer[WritePos++] = sourceBuffer[sourceOffset + 2];
+						destBuffer[writePos++] = sourceBuffer[sourceOffset + 0];
+						destBuffer[writePos++] = sourceBuffer[sourceOffset + 1];
+						destBuffer[writePos++] = sourceBuffer[sourceOffset + 2];
 
 						sourceOffset += 3;
 						pixelsProcessed++;
@@ -635,37 +636,37 @@ namespace MatterHackers.Agg.Image
 				}
 			}
 
-			return WritePos;
+			return writePos;
 		}
 
 		private static int CompressLine32(byte[] destBuffer, byte[] sourceBuffer, int sourceOffset, int Width)
 		{
-			int WritePos = 0;
+			int writePos = 0;
 			int pixelsProcessed = 0;
 
 			while (pixelsProcessed < Width)
 			{
 				// always get as many as you can that are the same first
-				int Max = System.Math.Min(MAX_RUN_LENGTH, (Width - 1) - pixelsProcessed);
-				int SameLength = GetSameLength(sourceBuffer, sourceOffset, sourceBuffer, sourceOffset + 4, 4, Max);
-				if (SameLength > 0)
+				int max = System.Math.Min(MAX_RUN_LENGTH, (Width - 1) - pixelsProcessed);
+				int sameLength = GetSameLength(sourceBuffer, sourceOffset, sourceBuffer, sourceOffset + 4, 4, max);
+				if (sameLength > 0)
 				{
 					// write in the count
-					if (SameLength > MAX_RUN_LENGTH)
+					if (sameLength > MAX_RUN_LENGTH)
 					{
 						throw new Exception();
 					}
 
-					destBuffer[WritePos++] = (byte)((SameLength) | IS_PIXLE_RUN);
+					destBuffer[writePos++] = (byte)((sameLength) | IS_PIXLE_RUN);
 
 					// write in the same length pixel value
-					destBuffer[WritePos++] = sourceBuffer[sourceOffset + 0];
-					destBuffer[WritePos++] = sourceBuffer[sourceOffset + 1];
-					destBuffer[WritePos++] = sourceBuffer[sourceOffset + 2];
-					destBuffer[WritePos++] = sourceBuffer[sourceOffset + 3];
+					destBuffer[writePos++] = sourceBuffer[sourceOffset + 0];
+					destBuffer[writePos++] = sourceBuffer[sourceOffset + 1];
+					destBuffer[writePos++] = sourceBuffer[sourceOffset + 2];
+					destBuffer[writePos++] = sourceBuffer[sourceOffset + 3];
 
-					sourceOffset += (SameLength) * 4;
-					pixelsProcessed += SameLength + 1;
+					sourceOffset += (sameLength) * 4;
+					pixelsProcessed += sameLength + 1;
 				}
 				else
 				{
@@ -673,26 +674,26 @@ namespace MatterHackers.Agg.Image
 					differenceHold[1] = sourceBuffer[sourceOffset + 1];
 					differenceHold[2] = sourceBuffer[sourceOffset + 2];
 					differenceHold[3] = sourceBuffer[sourceOffset + 3];
-					int DifLength = GetDifLength(differenceHold, sourceBuffer, sourceOffset + 4, 4, Max);
-					if (DifLength == 0)
+					int difLength = GetDifLength(differenceHold, sourceBuffer, sourceOffset + 4, 4, max);
+					if (difLength == 0)
 					{
-						DifLength = 1;
+						difLength = 1;
 					}
 
 					// write in the count (if there is only one the count is 0)
-					if (SameLength > MAX_RUN_LENGTH)
+					if (sameLength > MAX_RUN_LENGTH)
 					{
 						throw new Exception();
 					}
-					destBuffer[WritePos++] = (byte)(DifLength - 1);
+					destBuffer[writePos++] = (byte)(difLength - 1);
 
-					while (DifLength-- > 0)
+					while (difLength-- > 0)
 					{
 						// write in the dif length pixel value
-						destBuffer[WritePos++] = sourceBuffer[sourceOffset + 0];
-						destBuffer[WritePos++] = sourceBuffer[sourceOffset + 1];
-						destBuffer[WritePos++] = sourceBuffer[sourceOffset + 2];
-						destBuffer[WritePos++] = sourceBuffer[sourceOffset + 3];
+						destBuffer[writePos++] = sourceBuffer[sourceOffset + 0];
+						destBuffer[writePos++] = sourceBuffer[sourceOffset + 1];
+						destBuffer[writePos++] = sourceBuffer[sourceOffset + 2];
+						destBuffer[writePos++] = sourceBuffer[sourceOffset + 3];
 
 						sourceOffset += 4;
 						pixelsProcessed++;
@@ -700,7 +701,7 @@ namespace MatterHackers.Agg.Image
 				}
 			}
 
-			return WritePos;
+			return writePos;
 			/*
 			while(SourcePos < Width)
 			{
@@ -757,127 +758,137 @@ namespace MatterHackers.Agg.Image
 
 		static public bool Save(ImageBuffer image, String fileNameToSaveTo)
 		{
-			Stream file = File.Open(fileNameToSaveTo, FileMode.Create);
-			return Save(image, file);
+			using (Stream file = File.Open(fileNameToSaveTo, FileMode.Create))
+			{
+				return Save(image, file);
+			}
 		}
 
 		static public bool Save(ImageBuffer image, Stream streamToSaveImageDataTo)
 		{
-			STargaHeader TargaHeader;
+			STargaHeader targaHeader;
 
-			BinaryWriter writerToSaveTo = new BinaryWriter(streamToSaveImageDataTo);
-
-			int SourceDepth = image.BitDepth;
-
-			// make sure there is something to save before opening the file
-			if (image.Width <= 0 || image.Height <= 0)
+			using (BinaryWriter writerToSaveTo = new BinaryWriter(streamToSaveImageDataTo, new ASCIIEncoding(), true))
 			{
-				return false;
-			}
+				int sourceDepth = image.BitDepth;
 
-			// set up the header
-			TargaHeader.PostHeaderSkip = 0;	// no skip after the header
-			if (SourceDepth == 8)
-			{
-				TargaHeader.ColorMapType = 1;		// Color type is Palette
-				TargaHeader.ImageType = 9;		// 1 = Palette, 9 = RLE Palette
-				TargaHeader.ColorMapStart = 0;
-				TargaHeader.ColorMapLength = 256;
-				TargaHeader.ColorMapBits = 24;
-			}
-			else
-			{
-				TargaHeader.ColorMapType = 0;		// Color type is RGB
+				// make sure there is something to save before opening the file
+				if (image.Width <= 0 || image.Height <= 0)
+				{
+					return false;
+				}
+
+				// set up the header
+				targaHeader.PostHeaderSkip = 0; // no skip after the header
+				if (sourceDepth == 8)
+				{
+					targaHeader.ColorMapType = 1;       // Color type is Palette
+					targaHeader.ImageType = 9;      // 1 = Palette, 9 = RLE Palette
+					targaHeader.ColorMapStart = 0;
+					targaHeader.ColorMapLength = 256;
+					targaHeader.ColorMapBits = 24;
+				}
+				else
+				{
+					targaHeader.ColorMapType = 0;       // Color type is RGB
 #if WRITE_RLE_COMPRESSED
 		        TargaHeader.ImageType = 10;		// RLE RGB
 #else
-				TargaHeader.ImageType = 2;		// RGB
+					targaHeader.ImageType = 2;      // RGB
 #endif
-				TargaHeader.ColorMapStart = 0;
-				TargaHeader.ColorMapLength = 0;
-				TargaHeader.ColorMapBits = 0;
-			}
-			TargaHeader.XStart = 0;
-			TargaHeader.YStart = 0;
-			TargaHeader.Width = (ushort)image.Width;
-			TargaHeader.Height = (ushort)image.Height;
-			TargaHeader.BPP = (byte)SourceDepth;
-			TargaHeader.Descriptor = 0;	// all 8 bits are used for alpha
-
-			TargaHeader.BinaryWrite(writerToSaveTo);
-
-			byte[] pLineBuffer = new byte[image.StrideInBytesAbs() * 2];
-
-			//int BytesToSave;
-			switch (SourceDepth)
-			{
-				case 8:
-					/*
-				if (image.HasPalette())
-				{
-					for(int i=0; i<256; i++)
-					{
-						TGAFile.Write(image.GetPaletteIfAllocated()->pPalette[i * RGB_SIZE + RGB_BLUE]);
-						TGAFile.Write(image.GetPaletteIfAllocated()->pPalette[i * RGB_SIZE + RGB_GREEN]);
-						TGAFile.Write(image.GetPaletteIfAllocated()->pPalette[i * RGB_SIZE + RGB_RED]);
-					}
+					targaHeader.ColorMapStart = 0;
+					targaHeader.ColorMapLength = 0;
+					targaHeader.ColorMapBits = 0;
 				}
-				else
-					 */
-					{	// there is no palette for this DIB but we should write something
-						for (int i = 0; i < 256; i++)
+
+				targaHeader.XStart = 0;
+				targaHeader.YStart = 0;
+				targaHeader.Width = (ushort)image.Width;
+				targaHeader.Height = (ushort)image.Height;
+				targaHeader.BPP = (byte)sourceDepth;
+				targaHeader.Descriptor = 0; // all 8 bits are used for alpha
+
+				targaHeader.BinaryWrite(writerToSaveTo);
+
+				byte[] pLineBuffer = new byte[image.StrideInBytesAbs() * 2];
+
+				// int BytesToSave;
+				switch (sourceDepth)
+				{
+					case 8:
+						/*
+					if (image.HasPalette())
+					{
+						for(int i=0; i<256; i++)
 						{
-							writerToSaveTo.Write((byte)i);
-							writerToSaveTo.Write((byte)i);
-							writerToSaveTo.Write((byte)i);
+							TGAFile.Write(image.GetPaletteIfAllocated()->pPalette[i * RGB_SIZE + RGB_BLUE]);
+							TGAFile.Write(image.GetPaletteIfAllocated()->pPalette[i * RGB_SIZE + RGB_GREEN]);
+							TGAFile.Write(image.GetPaletteIfAllocated()->pPalette[i * RGB_SIZE + RGB_RED]);
 						}
 					}
-					for (int i = 0; i < image.Height; i++)
-					{
-						int bufferOffset;
-						byte[] buffer = image.GetPixelPointerY(i, out bufferOffset);
+					else
+						 */
+						{
+							// there is no palette for this DIB but we should write something
+							for (int i = 0; i < 256; i++)
+							{
+								writerToSaveTo.Write((byte)i);
+								writerToSaveTo.Write((byte)i);
+								writerToSaveTo.Write((byte)i);
+							}
+						}
+
+						for (int i = 0; i < image.Height; i++)
+						{
+							int bufferOffset;
+							byte[] buffer = image.GetPixelPointerY(i, out bufferOffset);
 #if WRITE_RLE_COMPRESSED
                     BytesToSave = CompressLine8(pLineBuffer, buffer, bufferOffset, image.Width());
 			        writerToSaveTo.Write(pLineBuffer, 0, BytesToSave);
 #else
-						writerToSaveTo.Write(buffer, bufferOffset, image.Width);
+							writerToSaveTo.Write(buffer, bufferOffset, image.Width);
 #endif
-					}
-					break;
+						}
 
-				case 24:
-					for (int i = 0; i < image.Height; i++)
-					{
-						int bufferOffset;
-						byte[] buffer = image.GetPixelPointerY(i, out bufferOffset);
+						break;
+
+					case 24:
+						for (int i = 0; i < image.Height; i++)
+						{
+							int bufferOffset;
+							byte[] buffer = image.GetPixelPointerY(i, out bufferOffset);
 #if WRITE_RLE_COMPRESSED
                     BytesToSave = CompressLine24(pLineBuffer, buffer, bufferOffset, image.Width());
                     writerToSaveTo.Write(pLineBuffer, 0, BytesToSave);
 #else
-						writerToSaveTo.Write(buffer, bufferOffset, image.Width * 3);
+							writerToSaveTo.Write(buffer, bufferOffset, image.Width * 3);
 #endif
-					}
-					break;
+						}
 
-				case 32:
-					for (int i = 0; i < image.Height; i++)
-					{
-						int bufferOffset;
-						byte[] buffer = image.GetPixelPointerY(i, out bufferOffset);
+						break;
+
+					case 32:
+						for (int i = 0; i < image.Height; i++)
+						{
+							int bufferOffset;
+							byte[] buffer = image.GetPixelPointerY(i, out bufferOffset);
 #if WRITE_RLE_COMPRESSED
                     BytesToSave = CompressLine32(pLineBuffer, buffer, bufferOffset, image.Width);
                     writerToSaveTo.Write(pLineBuffer, 0, BytesToSave);
 #else
-						writerToSaveTo.Write(buffer, bufferOffset, image.Width * 4);
+							writerToSaveTo.Write(buffer, bufferOffset, image.Width * 4);
 #endif
-					}
-					break;
+						}
 
-				default:
-					throw new NotSupportedException();
+						break;
+
+					default:
+						throw new NotSupportedException();
+				}
+
+				writerToSaveTo.Flush();
 			}
 
-			writerToSaveTo.Close();
 			return true;
 		}
 
@@ -926,19 +937,19 @@ namespace MatterHackers.Agg.Image
 
 		static public bool LoadImageData(ImageBuffer image, Stream streamToLoadImageDataFrom, int destBitDepth)
 		{
-			byte[] ImageData = new byte[streamToLoadImageDataFrom.Length];
-			streamToLoadImageDataFrom.Read(ImageData, 0, (int)streamToLoadImageDataFrom.Length);
-			return ReadBitsFromBuffer(image, ImageData, destBitDepth) > 0;
+			byte[] imageData = new byte[streamToLoadImageDataFrom.Length];
+			streamToLoadImageDataFrom.Read(imageData, 0, (int)streamToLoadImageDataFrom.Length);
+			return ReadBitsFromBuffer(image, imageData, destBitDepth) > 0;
 		}
 
 		static public int GetBitDepth(Stream streamToReadFrom)
 		{
-			STargaHeader TargaHeader;
-			byte[] ImageData = new byte[streamToReadFrom.Length];
-			streamToReadFrom.Read(ImageData, 0, (int)streamToReadFrom.Length);
-			if (ReadTGAInfo(ImageData, out TargaHeader))
+			STargaHeader targaHeader;
+			byte[] imageData = new byte[streamToReadFrom.Length];
+			streamToReadFrom.Read(imageData, 0, (int)streamToReadFrom.Length);
+			if (ReadTGAInfo(imageData, out targaHeader))
 			{
-				return TargaHeader.BPP;
+				return targaHeader.BPP;
 			}
 
 			return 0;

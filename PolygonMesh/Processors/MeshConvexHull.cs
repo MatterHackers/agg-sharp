@@ -119,12 +119,12 @@ namespace MatterHackers.PolygonMesh
 				return mesh;
 			}
 
-			var convexHull = ConvexHull<CHVertex, CHFace>.Create(cHVertexList, tollerance);
+			var convexHull = ConvexHull.Create<CHVertex, CHFace>(cHVertexList, tollerance);
 			if (convexHull != null)
 			{
 				// create the mesh from the hull data
 				Mesh hullMesh = new Mesh();
-				foreach (var face in convexHull.Faces)
+				foreach (var face in convexHull.Result.Faces)
 				{
 					int vertexCount = hullMesh.Vertices.Count;
 

@@ -7,6 +7,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\agg\Agg.csproj" />
+    <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj" />
+    <ProjectReference Include="..\ImageProcessing\ImageProcessing.csproj" />
     <ProjectReference Include="..\Localizations\Localizations.csproj" />
   </ItemGroup>
 

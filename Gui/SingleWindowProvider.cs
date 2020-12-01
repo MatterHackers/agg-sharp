@@ -156,7 +156,7 @@ namespace MatterHackers.Agg.UI
 					VAnchor = VAnchor.Fit | VAnchor.Center,
 				};
 
-				titleBarRow.AddChild(new ImageWidget(AggContext.StaticData.LoadIcon("mh.png", 16, 16, invertIcons))
+				titleBarRow.AddChild(new ImageWidget(StaticData.Instance.LoadIcon("mh.png", 16, 16, invertIcons))
 				{
 					Margin = new BorderDouble(4, 0, 6, 0),
 					VAnchor = VAnchor.Center

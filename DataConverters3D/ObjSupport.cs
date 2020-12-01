@@ -168,7 +168,7 @@ namespace MatterHackers.DataConverters3D
 										}
 										else
 										{
-											AggContext.ImageIO.LoadImageData(imageStream, diffuseTexture);
+											ImageIO.LoadImageData(imageStream, diffuseTexture);
 										}
 									}
 

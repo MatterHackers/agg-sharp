@@ -552,7 +552,7 @@ namespace MatterHackers.GuiAutomation
 			{
 				var imageToLookFor = new ImageBuffer();
 
-				if (AggContext.ImageIO.LoadImageData(pathToImage, imageToLookFor))
+				if (ImageIO.LoadImageData(pathToImage, imageToLookFor))
 				{
 					return imageToLookFor;
 				}

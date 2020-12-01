@@ -18,6 +18,8 @@
 //----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using GLFW;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
@@ -47,9 +49,14 @@ namespace MatterHackers.GlfwProvider
 
 		private Window glfwWindow;
 
-		private SystemWindow aggSystemWindow;
+		private SystemWindow aggSystemWindow
+		{
+			get;
+			set;
+		}
 
 		private bool iconified;
+		private static GlfwPlatformWindow staticThis;
 
 		public GlfwPlatformWindow()
 		{
@@ -118,7 +125,7 @@ namespace MatterHackers.GlfwProvider
 			throw new NotImplementedException();
 		}
 
-		private bool winformAlreadyClosing = false;
+		private readonly bool winformAlreadyClosing = false;
 
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
@@ -184,7 +191,7 @@ namespace MatterHackers.GlfwProvider
 			}
 		}
 
-		private void CursorPositionCallback(IntPtr window, double x, double y)
+		private void CursorPositionCallback(Window window, double x, double y)
 		{
 			mouseX = x;
 			mouseY = aggSystemWindow.Height - y;
@@ -196,11 +203,10 @@ namespace MatterHackers.GlfwProvider
 			if (this.Invalidated
 				&& !iconified)
 			{
-				SetupViewport();
+				ResetViewport();
 
 				this.Invalidated = false;
-				Graphics2D graphics2D = new Graphics2DOpenGL((int)systemWindow.Width, (int)systemWindow.Height, GuiWidget.DeviceScale);
-				graphics2D.PushTransform();
+				Graphics2D graphics2D = NewGraphics2D();
 				for (var i = 0; i < this.WindowProvider.OpenWindows.Count; i++)
 				{
 					if (i > 0)
@@ -209,7 +215,6 @@ namespace MatterHackers.GlfwProvider
 					}
 
 					var window = this.WindowProvider.OpenWindows[i];
-					window.OnDrawBackground(graphics2D);
 					window.OnDraw(graphics2D);
 				}
 
@@ -217,7 +222,7 @@ namespace MatterHackers.GlfwProvider
 			}
 		}
 
-		private void CharCallback(IntPtr window, uint codePoint)
+		private void CharCallback(Window window, uint codePoint)
 		{
 			WindowProvider.TopWindow.OnKeyPress(new KeyPressEventArgs((char)codePoint));
 		}
@@ -252,12 +257,12 @@ namespace MatterHackers.GlfwProvider
 			ModifierKeys = (Agg.UI.Keys)keys;
 		}
 
-		private HashSet<Agg.UI.Keys> suppressedKeyDowns = new HashSet<Agg.UI.Keys>();
-		private bool alreadyClosing;
+		private readonly HashSet<Agg.UI.Keys> suppressedKeyDowns = new HashSet<Agg.UI.Keys>();
 
-		private void KeyCallback(IntPtr windowIn, GLFW.Keys key, int scanCode, InputState state, ModifierKeys mods)
+		private void KeyCallback(Window windowIn, GLFW.Keys key, int scanCode, InputState state, ModifierKeys mods)
 		{
-			if (state == InputState.Press)
+			if (state == InputState.Press
+			|| state == InputState.Repeat)
 			{
 				var keyData = MapKey(key, out bool _);
 				Keyboard.SetKeyDownState(keyData, true);
@@ -270,10 +275,17 @@ namespace MatterHackers.GlfwProvider
 				{
 					suppressedKeyDowns.Add(keyEvent.KeyCode);
 				}
-			}
-			else if (state == InputState.Repeat)
-			{
-
+				else
+				{
+					// send any key that we need to that is not being sent in GLFWs CharCallback
+					switch (key)
+					{
+						case GLFW.Keys.Enter:
+						case GLFW.Keys.NumpadEnter:
+							WindowProvider.TopWindow.OnKeyPress(new KeyPressEventArgs((char)13));
+							break;
+					}
+				}
 			}
 			else if (state == InputState.Release)
 			{
@@ -537,7 +549,7 @@ namespace MatterHackers.GlfwProvider
 			return Glfw.CreateStandardCursor(CursorType.Arrow);
 		}
 
-		private void MouseButtonCallback(IntPtr window, MouseButton button, InputState state, ModifierKeys modifiers)
+		private void MouseButtonCallback(Window window, MouseButton button, InputState state, ModifierKeys modifiers)
 		{
 			var now = UiThread.CurrentTimerMs;
 			mouseButton = MouseButtons.Left;
@@ -572,19 +584,25 @@ namespace MatterHackers.GlfwProvider
 			}
 		}
 
-		private void ScrollCallback(IntPtr window, double x, double y)
+		private void ScrollCallback(Window window, double x, double y)
 		{
 			WindowProvider.TopWindow.OnMouseWheel(new MouseEventArgs(MouseButtons.None, 0, mouseX, mouseY, (int)(y * 120)));
 		}
 
-		private void SetupViewport()
+		private void ResetViewport()
 		{
 			// If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
 			// Call this function you have called Show().
 			int w = (int)aggSystemWindow.Width;
 			int h = (int)aggSystemWindow.Height;
+
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.LoadIdentity();
+			GL.Scissor(0, 0, w, h);
+
 			GL.MatrixMode(MatrixMode.Projection);
 			GL.LoadIdentity();
+
 			GL.Ortho(0, w, 0, h, -1, 1); // Bottom-left corner pixel has coordinate (0, 0)
 			GL.Viewport(0, 0, w, h); // Use all of the glControl painting area
 		}
@@ -597,23 +615,24 @@ namespace MatterHackers.GlfwProvider
 			Glfw.WindowHint(Hint.Visible, false);
 
 			// Create window
-			glfwWindow = Glfw.CreateWindow((int)aggSystemWindow.Width, (int)aggSystemWindow.Height, aggSystemWindow.Title, Monitor.None, Window.None);
+			glfwWindow = Glfw.CreateWindow((int)aggSystemWindow.Width, (int)aggSystemWindow.Height, aggSystemWindow.Title, GLFW.Monitor.None, Window.None);
+			Glfw.MakeContextCurrent(glfwWindow);
+
+			// Effectively enables VSYNC by setting to 1.
+			Glfw.SwapInterval(1);
+
+			GuiWidget.PreDraw += (drawDepth) =>
+			{
+				ResetViewport();
+			};
+
+			aggSystemWindow.PlatformWindow = this;
+
 			Glfw.SetWindowSizeLimits(glfwWindow,
 				(int)aggSystemWindow.MinimumSize.X,
 				(int)aggSystemWindow.MinimumSize.Y,
 				-1,
 				-1);
-			Glfw.MakeContextCurrent(glfwWindow);
-			OpenGL.Gl.Import(Glfw.GetProcAddress);
-
-			// set the gl renderer to the GLFW specific one rather than the OpenTk one
-			var glfwGl = new GlfwGL();
-			GL.Instance = glfwGl;
-
-			// Effectively enables VSYNC by setting to 1.
-			Glfw.SwapInterval(1);
-
-			aggSystemWindow.PlatformWindow = this;
 
 			if (aggSystemWindow.Maximized)
 			{
@@ -639,19 +658,21 @@ namespace MatterHackers.GlfwProvider
 					(int)aggSystemWindow.InitialDesktopPosition.y);
 			}
 
-			Glfw.SetWindowSizeCallback(glfwWindow, SizeCallback);
-			Glfw.SetWindowMaximizeCallback(glfwWindow, MaximizeCallback);
-			Glfw.SetWindowIconifyCallback(glfwWindow, IconifyCallback);
+			staticThis = this;
+			Glfw.SetWindowSizeCallback(glfwWindow, (a, b, c) => staticThis.SizeCallback(a, b, c));
+			Glfw.SetWindowMaximizeCallback(glfwWindow, (a, b) => staticThis.MaximizeCallback(a, b));
+			Glfw.SetWindowIconifyCallback(glfwWindow, (a, b) => staticThis.IconifyCallback(a, b));
 
 			// Set a key callback
-			Glfw.SetKeyCallback(glfwWindow, KeyCallback);
-			Glfw.SetCharCallback(glfwWindow, CharCallback);
-			Glfw.SetCursorPositionCallback(glfwWindow, CursorPositionCallback);
-			Glfw.SetMouseButtonCallback(glfwWindow, MouseButtonCallback);
-			Glfw.SetScrollCallback(glfwWindow, ScrollCallback);
-			Glfw.SetCloseCallback(glfwWindow, CloseCallback);
+			Glfw.SetKeyCallback(glfwWindow, (a, b, c, d, e) => staticThis.KeyCallback(a, b, c, d, e));
+			Glfw.SetCharCallback(glfwWindow, (a, b) => staticThis.CharCallback(a, b));
+			Glfw.SetCursorPositionCallback(glfwWindow, (a, b, c) => staticThis.CursorPositionCallback(a, b, c));
+			Glfw.SetMouseButtonCallback(glfwWindow, (a, b, c, d) => staticThis.MouseButtonCallback(a, b, c, d));
+			Glfw.SetScrollCallback(glfwWindow, (a, b, c) => staticThis.ScrollCallback(a, b, c));
+			Glfw.SetCloseCallback(glfwWindow, (a) => staticThis.CloseCallback(a));
+			Glfw.SetDropCallback(glfwWindow, (a, b, c) => staticThis.DropCallback(a, b, c));
 
-			var applicationIcon = AggContext.StaticData.LoadIcon("application.png");
+			var applicationIcon = StaticData.Instance.LoadIcon("application.png");
 
 			if (applicationIcon != null)
 			{
@@ -664,17 +685,54 @@ namespace MatterHackers.GlfwProvider
 					});
 			}
 
+			// set the gl renderer to the GLFW specific one rather than the OpenTk one
+			var glfwGl = new GlfwGL();
+			GL.Instance = glfwGl;
+
 			Glfw.ShowWindow(glfwWindow);
 
 			while (!Glfw.WindowShouldClose(glfwWindow))
 			{
-				// keep the event thread running
-				UiThread.InvokePendingActions();
-
 				// Poll for OS events and swap front/back buffers
 				Glfw.PollEvents();
 				ConditionalDrawAndRefresh(aggSystemWindow);
+
+				// keep the event thread running
+				UiThread.InvokePendingActions();
 			}
+		}
+
+		public static string[] IntPtrToStringArray<TGenChar>(int size, IntPtr rRoot) where TGenChar : struct
+		{
+			// get the output array of pointers
+			var outPointers = new IntPtr[size];
+			Marshal.Copy(rRoot, outPointers, 0, size);
+			string[] outputStrArray = new string[size];
+			for (int i = 0; i < size; i++)
+			{
+				if (typeof(TGenChar) == typeof(char))
+				{
+					outputStrArray[i] = Marshal.PtrToStringUni(outPointers[i]);
+				}
+				else
+				{
+					outputStrArray[i] = Marshal.PtrToStringAnsi(outPointers[i]);
+				}
+			}
+
+			return outputStrArray;
+		}
+
+		private void DropCallback(Window window, int count, IntPtr array)
+		{
+			var files = IntPtrToStringArray<byte>(count, array).ToList();
+
+			UiThread.RunOnIdle(() =>
+			{
+				var dropEvent = new MouseEventArgs(Agg.UI.MouseButtons.None, 0, mouseX, mouseX, 0, files);
+				aggSystemWindow.OnMouseMove(dropEvent);
+				aggSystemWindow.OnMouseUp(dropEvent);
+			});
 		}
 
 		private Image ConvertImageBufferToImage(ImageBuffer sourceImage)
@@ -704,7 +762,7 @@ namespace MatterHackers.GlfwProvider
 			}
 		}
 
-		private void CloseCallback(IntPtr window)
+		private void CloseCallback(Window window)
 		{
 			var closing = new ClosingEventArgs();
 			aggSystemWindow.OnClosing(closing);
@@ -714,14 +772,14 @@ namespace MatterHackers.GlfwProvider
 			}
 		}
 
-		private void SizeCallback(IntPtr window, int width, int height)
+		private void SizeCallback(Window window, int width, int height)
 		{
 			aggSystemWindow.Size = new VectorMath.Vector2(width, height);
 			GL.Viewport(0, 0, width, height); // Use all of the glControl painting area
 			ConditionalDrawAndRefresh(aggSystemWindow);
 		}
 
-		private void MaximizeCallback(IntPtr window, bool maximized)
+		private void MaximizeCallback(Window window, bool maximized)
 		{
 			aggSystemWindow.Maximized = maximized;
 		}

@@ -388,14 +388,11 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
-		public void GenTextures(int n, out int textureHandle)
+		public int GenTexture()
 		{
 #if USE_OPENGL
-			textureHandle = 0;
-			if (HardwareAvailable)
-			{
-				OpenTK.Graphics.OpenGL.GL.GenTextures(n, out textureHandle);
-			}
+			OpenTK.Graphics.OpenGL.GL.GenTextures(1, out int textureHandle);
+			return textureHandle;
 #else
 			OpenTK.Graphics.ES11.GL.GenTextures(n, out textureHandle);
 #endif
@@ -636,12 +633,12 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
-		public void DeleteTextures(int n, ref int textures)
+		public void DeleteTexture(int texture)
 		{
 #if USE_OPENGL
 			if (HardwareAvailable)
 			{
-				OpenTK.Graphics.OpenGL.GL.DeleteTextures(n, ref textures);
+				OpenTK.Graphics.OpenGL.GL.DeleteTextures(1, ref texture);
 			}
 #else
 			OpenTK.Graphics.ES11.GL.DeleteTextures(n, ref textures);
@@ -854,22 +851,18 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
-		public void DeleteBuffers(int n, ref int buffers)
+		public void DeleteBuffer(int buffer)
 		{
 #if USE_OPENGL
 			if (HardwareAvailable)
 			{
 				if (GlHasBufferObjects)
 				{
-					OpenTK.Graphics.OpenGL.GL.DeleteBuffers(n, ref buffers);
+					OpenTK.Graphics.OpenGL.GL.DeleteBuffers(1, ref buffer);
 				}
 				else
 				{
-					if (n != 1)
-					{
-						throw new Exception("Can only handle 1 delete count at the moment.");
-					}
-					bufferData.Remove(buffers);
+					bufferData.Remove(buffer);
 				}
 			}
 #else

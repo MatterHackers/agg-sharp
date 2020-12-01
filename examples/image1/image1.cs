@@ -23,7 +23,7 @@ namespace MatterHackers.Agg
 		{
 			AnchorAll();
 			string img_name = "spheres.bmp";
-			if (!AggContext.ImageIO.LoadImageData(img_name, sourceImage))
+			if (!ImageIO.LoadImageData(img_name, sourceImage))
 			{
 				string buf;
 				buf = "File not found: "

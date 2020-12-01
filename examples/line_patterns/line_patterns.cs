@@ -132,7 +132,6 @@ namespace MatterHackers.Agg
 
 		static line_patterns_application()
 		{
-			var ImageIO = AggContext.ImageIO;
 			if (!ImageIO.LoadImageData("1.bmp", line_patterns_application.rbuf_img0)
 				|| !ImageIO.LoadImageData("2.bmp", line_patterns_application.rbuf_img1)
 				|| !ImageIO.LoadImageData("3.bmp", line_patterns_application.rbuf_img2)

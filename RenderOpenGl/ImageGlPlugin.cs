@@ -62,7 +62,7 @@ namespace MatterHackers.RenderOpenGl
 
 			internal void DeleteTextureData(object sender, EventArgs e)
 			{
-				GL.DeleteTextures(1, ref glTextureHandle);
+				GL.DeleteTexture(glTextureHandle);
 				glTextureHandle = -1;
 			}
 		}
@@ -117,7 +117,7 @@ namespace MatterHackers.RenderOpenGl
 						&& glDataNeedingToBeDeleted[i].glContextId == contextId
 						&& glDataNeedingToBeDeleted[i].refreshCountCreatedOn == currentGlobalRefreshCount) // this is to leak on purpose on android for some gl that kills textures
 					{
-						GL.DeleteTextures(1, ref textureToDelete);
+						GL.DeleteTexture(textureToDelete);
 						if (removeGlDataCallBackHolder != null)
 						{
 							removeGlDataCallBackHolder.releaseAllGlData -= glDataNeedingToBeDeleted[i].DeleteTextureData;
@@ -136,7 +136,7 @@ namespace MatterHackers.RenderOpenGl
 				int textureToDelete = plugin.GLTextureHandle;
 				if (plugin.glData.refreshCountCreatedOn == currentGlobalRefreshCount)
 				{
-					GL.DeleteTextures(1, ref textureToDelete);
+					GL.DeleteTexture(textureToDelete);
 				}
 
 				plugin.glData.glTextureHandle = -1;
@@ -225,7 +225,7 @@ namespace MatterHackers.RenderOpenGl
 
 			GL.Enable(EnableCap.Texture2D);
 			// Create the texture handle
-			GL.GenTextures(1, out glData.glTextureHandle);
+			glData.glTextureHandle = GL.GenTexture();
 
 			// Set up some texture parameters for openGL
 			GL.BindTexture(TextureTarget.Texture2D, glData.glTextureHandle);

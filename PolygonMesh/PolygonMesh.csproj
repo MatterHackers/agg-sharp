@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MIConvexHull" Version="1.1.18.1016" />
+    <PackageReference Include="MIConvexHull" Version="1.1.19.1019" />
   </ItemGroup>
 
   <ItemGroup>

@@ -27,8 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
 using System;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderOpenGl.OpenGl
 {
@@ -60,9 +60,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		void CullFace(CullFaceMode mode);
 
-		void DeleteBuffers(int n, ref int buffers);
+		void DeleteBuffer(int buffer);
 
-		void DeleteTextures(int n, ref int textures);
+		void DeleteTexture(int texture);
 
 		void DepthFunc(DepthFunction func);
 
@@ -88,7 +88,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		int GenBuffer();
 
-		void GenTextures(int n, out int textureHandle);
+		int GenTexture();
 
 		ErrorCode GetError();
 
@@ -107,7 +107,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		void Normal3(double x, double y, double z);
 
 		void NormalPointer(NormalPointerType type, int stride, IntPtr pointer);
-		
+
 		void IndexPointer(IndexPointerType type, int stride, IntPtr pointer);
 
 		void Ortho(double left, double right, double bottom, double top, double zNear, double zFar);
