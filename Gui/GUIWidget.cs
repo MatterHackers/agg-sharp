@@ -2015,129 +2015,146 @@ namespace MatterHackers.Agg.UI
 			this.Load?.Invoke(this, args);
 		}
 
+		public static Action<int> PreDraw { get; set; }
+
+		public static Dictionary<int, int> DrawsByDepth { get; private set; } = new Dictionary<int, int>();
+
+		private static int drawDepth = 0;
+
 		public virtual void OnDraw(Graphics2D graphics2D)
 		{
-			// using (new PerformanceTimer("Draw Timer", "Widget Draw"))
+			drawDepth++;
+			if (DrawsByDepth.ContainsKey(drawDepth))
 			{
-				if (!onloadInvoked)
+				DrawsByDepth[drawDepth]++;
+			}
+			else
+			{
+				DrawsByDepth[drawDepth] = 1;
+			}
+
+			PreDraw?.Invoke(drawDepth);
+
+			if (!onloadInvoked)
+			{
+				// Set onloadInvoked before invoking OnLoad to ensure we only fire once
+				onloadInvoked = true;
+
+				this.OnLoad(null);
+			}
+
+			DrawCount++;
+
+			BeforeDraw?.Invoke(this, new DrawEventArgs(graphics2D));
+
+			foreach (var child in Children)
+			{
+				if (child.Visible)
 				{
-					// Set onloadInvoked before invoking OnLoad to ensure we only fire once
-					onloadInvoked = true;
-
-					this.OnLoad(null);
-				}
-
-				DrawCount++;
-
-				BeforeDraw?.Invoke(this, new DrawEventArgs(graphics2D));
-
-				foreach (var child in Children)
-				{
-					if (child.Visible)
+					if (child.DebugShowBounds)
 					{
-						if (child.DebugShowBounds)
-						{
-							// draw the margin
-							BorderDouble invertedMargin = child.DeviceMarginAndBorder;
-							invertedMargin.Left = -invertedMargin.Left;
-							invertedMargin.Bottom = -invertedMargin.Bottom;
-							invertedMargin.Right = -invertedMargin.Right;
-							invertedMargin.Top = -invertedMargin.Top;
-							DrawBorderAndPaddingBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new Color(Red, 128));
-						}
+						// draw the margin
+						BorderDouble invertedMargin = child.DeviceMarginAndBorder;
+						invertedMargin.Left = -invertedMargin.Left;
+						invertedMargin.Bottom = -invertedMargin.Bottom;
+						invertedMargin.Right = -invertedMargin.Right;
+						invertedMargin.Top = -invertedMargin.Top;
+						DrawBorderAndPaddingBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new Color(Red, 128));
+					}
 
-						RectangleDouble oldClippingRect = graphics2D.GetClippingRect();
-						graphics2D.PushTransform();
-						{
-							Affine currentGraphics2DTransform = graphics2D.GetTransform();
-							Affine accumulatedTransform = currentGraphics2DTransform * child.ParentToChildTransform;
-							graphics2D.SetTransform(accumulatedTransform);
+					RectangleDouble oldClippingRect = graphics2D.GetClippingRect();
+					graphics2D.PushTransform();
+					{
+						Affine currentGraphics2DTransform = graphics2D.GetTransform();
+						Affine accumulatedTransform = currentGraphics2DTransform * child.ParentToChildTransform;
+						graphics2D.SetTransform(accumulatedTransform);
 
-							if (child.CurrentScreenClipping(out RectangleDouble currentScreenClipping))
+						if (child.CurrentScreenClipping(out RectangleDouble currentScreenClipping))
+						{
+							currentScreenClipping.Left = Floor(currentScreenClipping.Left);
+							currentScreenClipping.Right = Ceiling(currentScreenClipping.Right);
+							currentScreenClipping.Bottom = Floor(currentScreenClipping.Bottom);
+							currentScreenClipping.Top = Ceiling(currentScreenClipping.Top);
+							if (currentScreenClipping.Right < currentScreenClipping.Left || currentScreenClipping.Top < currentScreenClipping.Bottom)
 							{
-								currentScreenClipping.Left = Floor(currentScreenClipping.Left);
-								currentScreenClipping.Right = Ceiling(currentScreenClipping.Right);
-								currentScreenClipping.Bottom = Floor(currentScreenClipping.Bottom);
-								currentScreenClipping.Top = Ceiling(currentScreenClipping.Top);
-								if (currentScreenClipping.Right < currentScreenClipping.Left || currentScreenClipping.Top < currentScreenClipping.Bottom)
+								BreakInDebugger("Right is less than Left or Top is less than Bottom");
+							}
+
+							graphics2D.SetClippingRect(currentScreenClipping);
+
+							if (child.DoubleBuffer)
+							{
+								var offsetToRenderSurface = new Vector2(currentGraphics2DTransform.tx, currentGraphics2DTransform.ty);
+								offsetToRenderSurface += child.OriginRelativeParent;
+
+								double yFraction = offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y;
+								double xFraction = offsetToRenderSurface.X - (int)offsetToRenderSurface.X;
+								int xOffset = (int)Floor(child.LocalBounds.Left);
+								int yOffset = (int)Floor(child.LocalBounds.Bottom);
+								if (child.isCurrentlyInvalid)
 								{
-									BreakInDebugger("Right is less than Left or Top is less than Bottom");
+									Graphics2D childBackBufferGraphics2D = child.backBuffer.NewGraphics2D();
+									childBackBufferGraphics2D.Clear(new Color(0, 0, 0, 0));
+									var transformToBuffer = Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction);
+									childBackBufferGraphics2D.SetTransform(transformToBuffer);
+									child.OnDrawBackground(childBackBufferGraphics2D);
+									child.OnDraw(childBackBufferGraphics2D);
+
+									child.backBuffer.MarkImageChanged();
+									child.isCurrentlyInvalid = false;
 								}
 
-								graphics2D.SetClippingRect(currentScreenClipping);
-
-								if (child.DoubleBuffer)
+								offsetToRenderSurface.X = (int)offsetToRenderSurface.X + xOffset;
+								offsetToRenderSurface.Y = (int)offsetToRenderSurface.Y + yOffset;
+								// The transform to draw the back-buffer to the graphics2D must not have a factional amount
+								// or we will get aliasing in the image and we want our back buffer pixels to map 1:1 to the next buffer
+								if (offsetToRenderSurface.X - (int)offsetToRenderSurface.X != 0
+									|| offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y != 0)
 								{
-									var offsetToRenderSurface = new Vector2(currentGraphics2DTransform.tx, currentGraphics2DTransform.ty);
-									offsetToRenderSurface += child.OriginRelativeParent;
-
-									double yFraction = offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y;
-									double xFraction = offsetToRenderSurface.X - (int)offsetToRenderSurface.X;
-									int xOffset = (int)Floor(child.LocalBounds.Left);
-									int yOffset = (int)Floor(child.LocalBounds.Bottom);
-									if (child.isCurrentlyInvalid)
-									{
-										Graphics2D childBackBufferGraphics2D = child.backBuffer.NewGraphics2D();
-										childBackBufferGraphics2D.Clear(new Color(0, 0, 0, 0));
-										var transformToBuffer = Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction);
-										childBackBufferGraphics2D.SetTransform(transformToBuffer);
-										child.OnDrawBackground(childBackBufferGraphics2D);
-										child.OnDraw(childBackBufferGraphics2D);
-
-										child.backBuffer.MarkImageChanged();
-										child.isCurrentlyInvalid = false;
-									}
-
-									offsetToRenderSurface.X = (int)offsetToRenderSurface.X + xOffset;
-									offsetToRenderSurface.Y = (int)offsetToRenderSurface.Y + yOffset;
-									// The transform to draw the back-buffer to the graphics2D must not have a factional amount
-									// or we will get aliasing in the image and we want our back buffer pixels to map 1:1 to the next buffer
-									if (offsetToRenderSurface.X - (int)offsetToRenderSurface.X != 0
-										|| offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y != 0)
-									{
-										BreakInDebugger("The transform for a back buffer must be integer to avoid aliasing.");
-									}
-
-									graphics2D.SetTransform(Affine.NewTranslation(offsetToRenderSurface));
-
-									graphics2D.Render(child.backBuffer, 0, 0);
+									BreakInDebugger("The transform for a back buffer must be integer to avoid aliasing.");
 								}
-								else
-								{
-									child.OnDrawBackground(graphics2D);
-									child.OnDraw(graphics2D);
-								}
+
+								graphics2D.SetTransform(Affine.NewTranslation(offsetToRenderSurface));
+
+								graphics2D.Render(child.backBuffer, 0, 0);
+							}
+							else
+							{
+								child.OnDrawBackground(graphics2D);
+								child.OnDraw(graphics2D);
 							}
 						}
-
-						graphics2D.PopTransform();
-						graphics2D.SetClippingRect(oldClippingRect);
-
-						DrawBorder(graphics2D, child);
 					}
-				}
 
-				AfterDraw?.Invoke(this, new DrawEventArgs(graphics2D));
+					graphics2D.PopTransform();
+					graphics2D.SetClippingRect(oldClippingRect);
 
-				if (DebugShowBounds)
-				{
-					// draw the padding
-					DrawBorderAndPaddingBounds(graphics2D, LocalBounds, DevicePadding, new Color(Cyan, 128));
-
-					// show the bounds and inside with an x
-					graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, new Color(Green, 100), 3);
-					graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, new Color(Green, 100), 3);
-					graphics2D.Rectangle(LocalBounds, Red);
-
-					RenderAnchoreInfo(graphics2D);
-				}
-
-				if (DebugShowSize)
-				{
-					graphics2D.DrawString(string.Format("{4} {0}, {1} : {2}, {3}", (int)MinimumSize.X, (int)MinimumSize.Y, (int)LocalBounds.Width, (int)LocalBounds.Height, Name),
-						Width / 2, Max(Height - 16, Height / 2 - 16 * graphics2D.TransformStackCount), color: Magenta, justification: Font.Justification.Center);
+					DrawBorder(graphics2D, child);
 				}
 			}
+
+			AfterDraw?.Invoke(this, new DrawEventArgs(graphics2D));
+
+			if (DebugShowBounds)
+			{
+				// draw the padding
+				DrawBorderAndPaddingBounds(graphics2D, LocalBounds, DevicePadding, new Color(Cyan, 128));
+
+				// show the bounds and inside with an x
+				graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, new Color(Green, 100), 3);
+				graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, new Color(Green, 100), 3);
+				graphics2D.Rectangle(LocalBounds, Red);
+
+				RenderAnchoreInfo(graphics2D);
+			}
+
+			if (DebugShowSize)
+			{
+				graphics2D.DrawString(string.Format("{4} {0}, {1} : {2}, {3}", (int)MinimumSize.X, (int)MinimumSize.Y, (int)LocalBounds.Width, (int)LocalBounds.Height, Name),
+					Width / 2, Max(Height - 16, Height / 2 - 16 * graphics2D.TransformStackCount), color: Magenta, justification: Font.Justification.Center);
+			}
+
+			drawDepth--;
 		}
 
 		private void RenderAnchoreInfo(Graphics2D graphics2D)
