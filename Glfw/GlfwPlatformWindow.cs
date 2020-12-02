@@ -621,11 +621,6 @@ namespace MatterHackers.GlfwProvider
 			// Effectively enables VSYNC by setting to 1.
 			Glfw.SwapInterval(1);
 
-			GuiWidget.PreDraw += (drawDepth) =>
-			{
-				ResetViewport();
-			};
-
 			aggSystemWindow.PlatformWindow = this;
 
 			Glfw.SetWindowSizeLimits(glfwWindow,
