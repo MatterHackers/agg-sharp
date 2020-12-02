@@ -4,6 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <Company>MatterHackers Inc.</Company>
     <AssemblyName>MatterHackers.GlfwProvider</AssemblyName>
+    <ReleaseVersion>2.20.12</ReleaseVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -37,10 +38,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="libglfw.3.dylib">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInPackage>true</IncludeInPackage>
     </None>
     <None Update="libglfw3.a">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInPackage>true</IncludeInPackage>
     </None>
   </ItemGroup>
 
