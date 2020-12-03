@@ -38,12 +38,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="libglfw.3.dylib">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <IncludeInPackage>true</IncludeInPackage>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInPackage>false</IncludeInPackage>
     </None>
     <None Update="libglfw3.a">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <IncludeInPackage>true</IncludeInPackage>
+      <IncludeInPackage>false</IncludeInPackage>
     </None>
   </ItemGroup>
 
