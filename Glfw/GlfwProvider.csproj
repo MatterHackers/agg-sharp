@@ -22,9 +22,7 @@
     <ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj" />
     <ProjectReference Include="..\Tesselate\Tesselate.csproj" />
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
-    <ProjectReference Include="..\glfw-net\GLFW.NET\GLFW.NETCore.csproj">
-      <ReferenceSourceTarget>ProjectReference</ReferenceSourceTarget>
-    </ProjectReference>
+    <ProjectReference Include="..\glfw-net\GLFW.NET\GLFW.NETStandard.csproj" />
   </ItemGroup>
 
   <ItemGroup>
