@@ -5,6 +5,7 @@
     <Company>MatterHackers Inc.</Company>
 	<AssemblyName>MatterHackers.Agg.ImageProcessing</AssemblyName>
     <RootNamespace>MatterHackers.Agg.ImageProcessing</RootNamespace>
+    <ReleaseVersion>2.20.12</ReleaseVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -2015,8 +2015,6 @@ namespace MatterHackers.Agg.UI
 			this.Load?.Invoke(this, args);
 		}
 
-		public static Action<int> PreDraw { get; set; }
-
 		public static Dictionary<int, int> DrawsByDepth { get; private set; } = new Dictionary<int, int>();
 
 		private static int drawDepth = 0;
@@ -2032,8 +2030,6 @@ namespace MatterHackers.Agg.UI
 			{
 				DrawsByDepth[drawDepth] = 1;
 			}
-
-			PreDraw?.Invoke(drawDepth);
 
 			if (!onloadInvoked)
 			{

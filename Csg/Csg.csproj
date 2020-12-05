@@ -5,6 +5,7 @@
     <Company>MatterHackers Inc.</Company>
     <AssemblyName>MatterHackers.Csg</AssemblyName>
     <RootNamespace>MatterHackers.Csg</RootNamespace>
+    <ReleaseVersion>2.20.12</ReleaseVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -300,7 +300,7 @@ namespace MatterHackers.RenderOpenGl
 
 		private delegate void glPopMatrixHandler();
 
-		private delegate void glPushAttribHandler();
+		private delegate void glPushAttribHandler(int mask);
 
 		private delegate void glPushMatrixHandler();
 
@@ -753,7 +753,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void PushAttrib(AttribMask mask)
 		{
-			glPushAttrib();
+			glPushAttrib((int)mask);
 		}
 
 		public void PushMatrix()

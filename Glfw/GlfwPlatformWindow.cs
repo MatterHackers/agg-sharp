@@ -614,17 +614,21 @@ namespace MatterHackers.GlfwProvider
 			Glfw.WindowHint(Hint.Samples, config.FSAASamples);
 			Glfw.WindowHint(Hint.Visible, false);
 
+			var screenSize = Glfw.PrimaryMonitor.WorkArea;
+
 			// Create window
+			if (aggSystemWindow.Maximized)
+			{
+				aggSystemWindow.Width = screenSize.Width;
+				aggSystemWindow.Height = screenSize.Height - screenSize.Y;
+			}
+
 			glfwWindow = Glfw.CreateWindow((int)aggSystemWindow.Width, (int)aggSystemWindow.Height, aggSystemWindow.Title, GLFW.Monitor.None, Window.None);
+
 			Glfw.MakeContextCurrent(glfwWindow);
 
 			// Effectively enables VSYNC by setting to 1.
 			Glfw.SwapInterval(1);
-
-			GuiWidget.PreDraw += (drawDepth) =>
-			{
-				ResetViewport();
-			};
 
 			aggSystemWindow.PlatformWindow = this;
 
@@ -637,16 +641,12 @@ namespace MatterHackers.GlfwProvider
 			if (aggSystemWindow.Maximized)
 			{
 				// TODO: make this right
-				var screenSize = Glfw.PrimaryMonitor.WorkArea;
-				var x = (screenSize.Width - (int)aggSystemWindow.Width) / 2;
-				var y = (screenSize.Height - (int)aggSystemWindow.Height) / 2;
-				Glfw.SetWindowPosition(glfwWindow, x, y);
+				Glfw.SetWindowPosition(glfwWindow, 0, 0);
 				Glfw.MaximizeWindow(glfwWindow);
 			}
 			else if (aggSystemWindow.InitialDesktopPosition == new Point2D(-1, -1))
 			{
 				// Find center position based on window and monitor sizes
-				var screenSize = Glfw.PrimaryMonitor.WorkArea;
 				var x = (screenSize.Width - (int)aggSystemWindow.Width) / 2;
 				var y = (screenSize.Height - (int)aggSystemWindow.Height) / 2;
 				Glfw.SetWindowPosition(glfwWindow, x, y);
@@ -699,6 +699,13 @@ namespace MatterHackers.GlfwProvider
 
 				// keep the event thread running
 				UiThread.InvokePendingActions();
+
+				// the mac does not report maximize changes correctly
+				var maximized = Glfw.GetWindowAttribute(glfwWindow, WindowAttribute.Maximized);
+				if (maximized != aggSystemWindow.Maximized)
+				{
+					aggSystemWindow.Maximized = maximized;
+				}
 			}
 		}
 

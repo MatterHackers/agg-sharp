@@ -41,8 +41,14 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		private static IOpenGL _instance = null;
 		private static bool inBegin;
 		private static int pushAttribCount = 0;
-		private static int pushMatrixCount = 0;
+		private static Dictionary<MatrixMode, int> pushMatrixCount = new Dictionary<MatrixMode, int>()
+		{
+			[OpenGl.MatrixMode.Modelview] = 0,
+			[OpenGl.MatrixMode.Projection] = 0,
+		};
+
 		private static int threadId = -1;
+		private static MatrixMode matrixMode = OpenGl.MatrixMode.Modelview;
 
 		public static IOpenGL Instance
 		{
@@ -335,6 +341,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		public static void MatrixMode(MatrixMode mode)
 		{
+			matrixMode = mode;
 			Instance?.MatrixMode(mode);
 			CheckForError();
 		}
@@ -389,7 +396,12 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		public static void PopMatrix()
 		{
-			pushMatrixCount--;
+			pushMatrixCount[matrixMode]--;
+			if (pushMatrixCount[matrixMode] < 0)
+			{
+				throw new Exception("popMatrib called too many times.");
+			}
+
 			Instance?.PopMatrix();
 			CheckForError();
 		}
@@ -408,8 +420,8 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		public static void PushMatrix()
 		{
-			pushMatrixCount++;
-			if (pushMatrixCount > 100)
+			pushMatrixCount[matrixMode]++;
+			if (pushMatrixCount[matrixMode] > 32)
 			{
 				throw new Exception("PushMatrix being called without matching PopMatrix");
 			}
