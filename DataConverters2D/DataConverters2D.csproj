@@ -19,10 +19,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+  </ItemGroup>
+  
+  <ItemGroup>
     <ProjectReference Include="..\agg\Agg.csproj" />
     <ProjectReference Include="..\clipper_library\clipper_library.csproj" />
     <ProjectReference Include="..\Tesselate\Tesselate.csproj" />
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Update="StyleCop.Analyzers" Version="1.1.118" />
   </ItemGroup>
   
 </Project>

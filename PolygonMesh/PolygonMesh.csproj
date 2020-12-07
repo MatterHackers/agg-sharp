@@ -16,6 +16,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="MIConvexHull" Version="1.1.19.1019" />
   </ItemGroup>
 
@@ -25,6 +29,10 @@
     <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj" />
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
     <ProjectReference Include="Net3dBool\Net3dBool.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="StyleCop.Analyzers" Version="1.1.118" />
   </ItemGroup>
 
 </Project>
