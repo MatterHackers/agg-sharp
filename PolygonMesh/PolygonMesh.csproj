@@ -31,4 +31,8 @@
     <ProjectReference Include="Net3dBool\Net3dBool.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Update="StyleCop.Analyzers" Version="1.1.118" />
+  </ItemGroup>
+
 </Project>
