@@ -110,9 +110,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="lion.cs" />
   </ItemGroup>
   <ItemGroup>
