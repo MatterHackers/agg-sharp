@@ -303,6 +303,9 @@ namespace MatterHackers.Agg.UI
 			private set;
 		}
 
+		/// <summary>
+		/// Called when the padding has changed
+		/// </summary>
 		public event EventHandler PaddingChanged;
 
 		private BorderDouble _padding;
