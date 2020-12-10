@@ -591,6 +591,8 @@ namespace MatterHackers.GlfwProvider
 
 		private void ResetViewport()
 		{
+			Glfw.MakeContextCurrent(glfwWindow);
+
 			// If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
 			// Call this function you have called Show().
 			int w = (int)aggSystemWindow.Width;
