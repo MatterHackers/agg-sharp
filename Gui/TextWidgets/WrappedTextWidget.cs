@@ -34,7 +34,7 @@ namespace MatterHackers.Agg.UI
 {
 	public class WrappedTextWidget : GuiWidget
 	{
-		private String unwrappedText;
+		private string unwrappedText;
 		public TextWidget TextWidget { get; }
 		private double pointSize;
 		private double wrappedWidth = -1;

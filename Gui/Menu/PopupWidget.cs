@@ -380,7 +380,7 @@ namespace MatterHackers.Agg.UI
 				// we only check for the scroll bar one time (the first time we open)
 				if (checkIfNeedScrollBar)
 				{
-					var minimumOpenHeight = 50;
+					var minimumOpenHeight = 50 * GuiWidget.DeviceScale;
 
 					// If the bottom of the popup is below the bottom of the screen
 					if (direction == Direction.Down)

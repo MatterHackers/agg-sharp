@@ -211,6 +211,7 @@ namespace MatterHackers.GlfwProvider
 				{
 					if (i > 0)
 					{
+						ResetViewport();
 						graphics2D.FillRectangle(this.WindowProvider.OpenWindows[0].LocalBounds, new Agg.Color(Agg.Color.Black, 160));
 					}
 
