@@ -616,6 +616,7 @@ namespace MatterHackers.GlfwProvider
 			var config = AggContext.Config.GraphicsMode;
 			Glfw.WindowHint(Hint.Samples, config.FSAASamples);
 			Glfw.WindowHint(Hint.Visible, false);
+			Glfw.WindowHint(Hint.CocoaRetinaFrameBuffer, true);
 
 			var screenSize = Glfw.PrimaryMonitor.WorkArea;
 
