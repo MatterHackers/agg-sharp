@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using GLFW;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
@@ -599,6 +600,8 @@ namespace MatterHackers.GlfwProvider
 			int w = (int)aggSystemWindow.Width;
 			int h = (int)aggSystemWindow.Height;
 
+			Glfw.GetWindowContentScale(glfwWindow, out float xScale, out float yScale);
+
 			GL.MatrixMode(MatrixMode.Modelview);
 			GL.LoadIdentity();
 			GL.Scissor(0, 0, w, h);
@@ -616,6 +619,7 @@ namespace MatterHackers.GlfwProvider
 			var config = AggContext.Config.GraphicsMode;
 			Glfw.WindowHint(Hint.Samples, config.FSAASamples);
 			Glfw.WindowHint(Hint.Visible, false);
+			Glfw.WindowHint(Hint.CocoaRetinaFrameBuffer, true);
 
 			var screenSize = Glfw.PrimaryMonitor.WorkArea;
 
@@ -709,6 +713,8 @@ namespace MatterHackers.GlfwProvider
 				{
 					aggSystemWindow.Maximized = maximized;
 				}
+
+				Thread.Sleep(1);
 			}
 		}
 

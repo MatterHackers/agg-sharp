@@ -280,6 +280,11 @@ namespace MatterHackers.GuiAutomation
 						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Enter));
 						break;
 
+					case "{Tab}":
+						systemWindow.OnKeyDown(new KeyEventArgs(Keys.Tab));
+						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Tab));
+						break;
+
 					case "%{F4}":
 						systemWindow.Close();
 						break;
