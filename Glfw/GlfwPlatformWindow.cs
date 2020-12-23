@@ -618,7 +618,7 @@ namespace MatterHackers.GlfwProvider
 			// Glfw.WindowHint(Hint.Decorated, false);
 			var config = AggContext.Config.GraphicsMode;
 			Glfw.WindowHint(Hint.Samples, config.FSAASamples);
-			Glfw.WindowHint(Hint.Visible, false);
+			Glfw.WindowHint(Hint.Visible, false); // this line causing crash on windows tablet
 			Glfw.WindowHint(Hint.CocoaRetinaFrameBuffer, true);
 
 			var screenSize = Glfw.PrimaryMonitor.WorkArea;
