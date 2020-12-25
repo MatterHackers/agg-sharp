@@ -68,8 +68,6 @@ namespace MatterHackers.Agg.UI
 				var newImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
 				updateEvent.ShouldDraw = currentImageIndex != newImageIndex;
 			};
-
-			RunAnimation = true;
 		}
 
 		public ImageSequence ImageSequence
@@ -141,6 +139,26 @@ namespace MatterHackers.Agg.UI
 			{
 				var currentImage = ImageSequence.GetImageByTime(currentTime);
 				graphics2D.Render(currentImage, 0, 0, Width, Height);
+			}
+
+			if (this.ActuallyVisibleOnScreen() && !RunAnimation)
+			{
+				// if we are visible and not running, run
+				this.RunAnimation = true;
+				UiThread.RunOnIdle(() => CheckVisible(), .1);
+			}
+
+			void CheckVisible()
+			{
+				if (!this.ActuallyVisibleOnScreen() && RunAnimation)
+				{
+					// if we are not visible and running, stop running
+					this.RunAnimation = false;
+				}
+				else // keep cheeking
+				{
+					UiThread.RunOnIdle(() => CheckVisible(), .1);
+				}
 			}
 
 			base.OnDraw(graphics2D);

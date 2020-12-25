@@ -38,6 +38,7 @@ namespace MatterHackers.Agg.Image
 	{
 		public static bool LoadImageData(Stream stream, ImageSequence sequence)
 		{
+#if false
 			SixLabors.ImageSharp.Image image;
 			try
 			{
@@ -79,7 +80,54 @@ namespace MatterHackers.Agg.Image
 				}
 			}
 
+			Configuration.Default.MemoryAllocator.ReleaseRetainedResources();
+
 			return true;
+#else
+			Image<Rgba32> image;
+			try
+			{
+				image = Image<Rgba32>.Load<Rgba32>(stream);
+			}
+			catch
+			{
+				return false;
+			}
+
+			sequence.Frames.Clear();
+			sequence.FrameTimesMs.Clear();
+
+			if (image.Frames.Count > 1)
+			{
+				var minFrameTimeMs = int.MaxValue;
+				for (var i = 0; i < image.Frames.Count; i++)
+				{
+					// Return an Image at a certain index
+					ImageBuffer imageBuffer = new ImageBuffer();
+					ConvertImageToImageBuffer(imageBuffer, image.Frames[i]);
+
+					var frameData = image.Frames[i].Metadata.GetGifMetadata();
+
+					var frameDelay = frameData.FrameDelay * 10;
+
+					sequence.AddImage(imageBuffer, frameDelay);
+					minFrameTimeMs = Math.Max(10, Math.Min(frameDelay, minFrameTimeMs));
+				}
+
+				sequence.SecondsPerFrame = minFrameTimeMs / 1000.0;
+			}
+			else
+			{
+				ImageBuffer imageBuffer = new ImageBuffer();
+				if (ImageIO.ConvertImageToImageBuffer(imageBuffer, image))
+				{
+					sequence.AddImage(imageBuffer);
+				}
+			}
+
+			return true;
+
+#endif
 		}
 
 		public static bool LoadImageData(Stream stream, ImageBuffer destImage)
@@ -94,7 +142,7 @@ namespace MatterHackers.Agg.Image
 		{
 			if (File.Exists(fileName))
 			{
-				var temp = SixLabors.ImageSharp.Image.Load(fileName);
+				var temp = SixLabors.ImageSharp.Image.Load<Rgba32>(fileName);
 				return ConvertImageToImageBuffer(destImage, temp);
 			}
 			else
@@ -103,6 +151,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
+#if false
 		private static bool ConvertImageToImageBuffer(ImageBuffer destImage, SixLabors.ImageSharp.Image imageIn)
 		{
 			var tgaSave = new MemoryStream();
@@ -118,9 +167,66 @@ namespace MatterHackers.Agg.Image
 
 			return false;
 		}
+#else
+		private static bool ConvertImageToImageBuffer(ImageBuffer imageBuffer, ImageFrame<Rgba32> imageFrame)
+		{
+			if (imageFrame.TryGetSinglePixelSpan(out var pixelSpan))
+			{
+				Rgba32[] pixelArray = pixelSpan.ToArray();
 
-		// allocate a set of lockers to use when accessing files for saving
-		private static readonly object[] Lockers = new object[] { new object(), new object(), new object(), new object() };
+				return ConvertImageToImageBuffer(imageBuffer, imageFrame.Width, imageFrame.Height, pixelArray);
+			}
+
+			return false;
+		}
+
+		private static bool ConvertImageToImageBuffer(ImageBuffer destImage, Image<Rgba32> image)
+		{
+			if (image.TryGetSinglePixelSpan(out var pixelSpan))
+			{
+				Rgba32[] pixelArray = pixelSpan.ToArray();
+
+				return ConvertImageToImageBuffer(destImage, image.Width, image.Height, pixelArray);
+			}
+
+			return false;
+		}
+
+		public static bool ConvertImageToImageBuffer(ImageBuffer destImage, int width, int height, Rgba32[] pixelArray)
+		{
+			if (pixelArray != null)
+			{
+				destImage.Allocate(width, height, width * 4, 32);
+				if (destImage.GetRecieveBlender() == null)
+				{
+					destImage.SetRecieveBlender(new BlenderBGRA());
+				}
+
+				int sourceIndex = 0;
+				int destIndex = 0;
+				unsafe
+				{
+					byte[] destBuffer = destImage.GetBuffer(out int offset);
+					for (int y = 0; y < destImage.Height; y++)
+					{
+						destIndex = destImage.GetBufferOffsetXY(0, destImage.Height - 1 - y);
+						for (int x = 0; x < destImage.Width; x++)
+						{
+							destBuffer[destIndex++] = pixelArray[sourceIndex].B;
+							destBuffer[destIndex++] = pixelArray[sourceIndex].G;
+							destBuffer[destIndex++] = pixelArray[sourceIndex].R;
+							destBuffer[destIndex++] = pixelArray[sourceIndex].A;
+							sourceIndex++;
+						}
+					}
+
+					return true;
+				}
+			}
+
+			return false;
+		}
+#endif
 
 		public static bool SaveImageData(string filename, IImageByte sourceImage)
 		{
@@ -148,21 +254,6 @@ namespace MatterHackers.Agg.Image
 						sourceImage.Width,
 						sourceImage.Height);
 					image2.Save(filename);
-
-					/*
-					ImageTgaIO.Save((ImageBuffer)sourceImage, tgaSave);
-					tgaSave.Seek(0, SeekOrigin.Begin);
-					var image = SixLabors.ImageSharp.Image.Load(tgaSave);
-					if (Path.GetExtension(filename).ToLower() == ".png")
-					{
-						image.Save(filename);
-						image.Save("c:\\temp\\temp2.png");
-					}
-					else
-					{
-						image.Save(filename);
-					}
-					*/
 				}
 
 				return true;
