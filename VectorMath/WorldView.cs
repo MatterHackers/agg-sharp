@@ -112,8 +112,7 @@ namespace MatterHackers.VectorMath
 
 				var fovYRadians = MathHelper.DegreesToRadians(45);
 				var aspectWidthOverHeight = width / height;
-				var projectionMatrix = Matrix4X4.Identity;
-				Matrix4X4.CreatePerspectiveFieldOfView(fovYRadians, aspectWidthOverHeight, zNear, zFar, out projectionMatrix);
+				Matrix4X4.CreatePerspectiveFieldOfView(fovYRadians, aspectWidthOverHeight, zNear, zFar, out Matrix4X4 projectionMatrix);
 
 				this.ProjectionMatrix = projectionMatrix;
 				this.InverseProjectionMatrix = Matrix4X4.Invert(projectionMatrix);
@@ -126,9 +125,6 @@ namespace MatterHackers.VectorMath
 			{
 				this.width = width;
 				this.height = height;
-
-				var projectionMatrix = Matrix4X4.Identity;
-
 				var yAngleR = MathHelper.DegreesToRadians(45) / 2;
 
 				var screenDist = height / 2 / Math.Tan(yAngleR);
@@ -142,7 +138,8 @@ namespace MatterHackers.VectorMath
 				double yMin = -yMax;
 				double xMax = zNear * System.Math.Tan(xAngleR);
 				double xMin = zNear * System.Math.Tan(xAngleL);
-				Matrix4X4.CreatePerspectiveOffCenter(xMin, xMax, yMin, yMax, zNear, zFar, out projectionMatrix);
+
+				Matrix4X4.CreatePerspectiveOffCenter(xMin, xMax, yMin, yMax, zNear, zFar, out Matrix4X4 projectionMatrix);
 
 				this.ProjectionMatrix = projectionMatrix;
 				this.InverseProjectionMatrix = Matrix4X4.Invert(projectionMatrix);
@@ -151,16 +148,16 @@ namespace MatterHackers.VectorMath
 
 		public Ray GetRayForLocalBounds(Vector2 localPosition)
 		{
-			Vector4 rayClip = new Vector4();
+			var rayClip = new Vector4();
 			rayClip.X = (2.0 * localPosition.X) / this.width - 1.0;
 			rayClip.Y = (2.0 * localPosition.Y) / this.height - 1.0;
 			rayClip.Z = -1.0;
 			rayClip.W = 1.0;
 
-			Vector4 rayEye = Vector4.Transform(rayClip, InverseProjectionMatrix);
+			var rayEye = Vector4.Transform(rayClip, InverseProjectionMatrix);
 			rayEye.Z = -1; rayEye.W = 0;
 
-			Vector4 rayWorld = Vector4.Transform(rayEye, InverseModelviewMatrix);
+			var rayWorld = Vector4.Transform(rayEye, InverseModelviewMatrix);
 
 			Vector3 finalRayWorld = new Vector3(rayWorld).GetNormal();
 
@@ -193,14 +190,14 @@ namespace MatterHackers.VectorMath
 
 		public Vector3 GetWorldPosition(Vector2 screenPosition)
 		{
-			Vector4 homoginizedScreenSpace = new Vector4((2.0f * (screenPosition.X / width)) - 1,
+			var homoginizedScreenSpace = new Vector4((2.0f * (screenPosition.X / width)) - 1,
 				1 - (2 * (screenPosition.Y / height)),
 				1,
 				1);
 
 			Matrix4X4 viewProjection = ModelviewMatrix * ProjectionMatrix;
-			Matrix4X4 viewProjectionInverse = Matrix4X4.Invert(viewProjection);
-			Vector4 woldSpace = Vector4.Transform(homoginizedScreenSpace, viewProjectionInverse);
+			var viewProjectionInverse = Matrix4X4.Invert(viewProjection);
+			var woldSpace = Vector4.Transform(homoginizedScreenSpace, viewProjectionInverse);
 
 			double perspectiveDivide = 1 / woldSpace.W;
 

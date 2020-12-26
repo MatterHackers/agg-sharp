@@ -44,7 +44,7 @@ namespace MatterHackers.VectorMath.TrackBall
 		private Vector2 lastTranslationMousePosition = Vector2.Zero;
 		private Vector2 lastScaleMousePosition = Vector2.Zero;
 
-		private WorldView world;
+		private readonly WorldView world;
 
 		public TrackBallController(WorldView world, double trackBallRadius = 1)
 		{
@@ -125,7 +125,7 @@ namespace MatterHackers.VectorMath.TrackBall
 					if (activeRotationQuaternion != Quaternion.Identity)
 					{
 						mouseDownPosition = mousePosition;
-						world.RotationMatrix = world.RotationMatrix * Matrix4X4.CreateRotation(activeRotationQuaternion);
+						world.RotationMatrix *= Matrix4X4.CreateRotation(activeRotationQuaternion);
 					}
 
 					break;
@@ -134,10 +134,10 @@ namespace MatterHackers.VectorMath.TrackBall
 					{
 						Vector2 mouseDelta = mousePosition - lastTranslationMousePosition;
 						Vector2 scaledDelta = mouseDelta / this.ScreenCenter.X * 4.75;
-						Vector3 offset = new Vector3(scaledDelta.X, scaledDelta.Y, 0);
+						var offset = new Vector3(scaledDelta.X, scaledDelta.Y, 0);
 						offset = Vector3Ex.TransformPosition(offset, Matrix4X4.Invert(world.RotationMatrix));
 						offset = Vector3Ex.TransformPosition(offset, localToScreenTransform);
-						world.TranslationMatrix = world.TranslationMatrix * Matrix4X4.CreateTranslation(offset);
+						world.TranslationMatrix *= Matrix4X4.CreateTranslation(offset);
 						lastTranslationMousePosition = mousePosition;
 					}
 					break;
@@ -154,7 +154,7 @@ namespace MatterHackers.VectorMath.TrackBall
 						{
 							zoomDelta = 1 + (1 * mouseDelta.Y / 100);
 						}
-						world.Scale = world.Scale * zoomDelta;
+						world.Scale *= zoomDelta;
 						lastScaleMousePosition = mousePosition;
 					}
 					break;
@@ -228,7 +228,7 @@ namespace MatterHackers.VectorMath.TrackBall
 				zoomDelta = .8;
 			}
 
-			world.Scale = world.Scale * zoomDelta;
+			world.Scale *= zoomDelta;
 		}
 
 		public double TrackBallRadius { get; set; }
