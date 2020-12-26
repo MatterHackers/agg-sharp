@@ -170,6 +170,7 @@ namespace MatterHackers.Agg.UI
 			{
 				this.IsRunning = false;
 				UiThread.ClearInterval(runningInterval);
+				runningInterval = null;
 			}
 		}
 
@@ -182,6 +183,11 @@ namespace MatterHackers.Agg.UI
 		{
 			if (!haveDrawn)
 			{
+				if (DrawTarget.HasBeenClosed)
+				{
+					DrawTarget.AfterDraw -= MarkHaveDrawn;
+					Stop();
+				}
 				return;
 			}
 
