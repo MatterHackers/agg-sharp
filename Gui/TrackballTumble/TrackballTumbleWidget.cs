@@ -72,14 +72,13 @@ namespace MatterHackers.Agg
 		public NearFarAction GetNearFar;
 		private double _centerOffsetX = 0;
 		private Vector2 currentVelocityPerMs = new Vector2();
-		private MotionQueue motionQueue = new MotionQueue();
+		private readonly MotionQueue motionQueue = new MotionQueue();
 		private double pinchStartScale = 1;
 		private RunningInterval runningInterval;
-		private GuiWidget sourceWidget;
-		private double startAngle = 0;
+		private readonly GuiWidget sourceWidget;
 		private double startDistanceBetweenPoints = 1;
-		private int updatesPerSecond = 30;
-		private WorldView world;
+		private readonly int updatesPerSecond = 30;
+		private readonly WorldView world;
 
 		public TrackballTumbleWidget(WorldView world, GuiWidget sourceWidget)
 		{
@@ -142,8 +141,6 @@ namespace MatterHackers.Agg
 					Vector2 position1 = mouseEvent.GetPosition(1);
 					startDistanceBetweenPoints = (position1 - position0).Length;
 					pinchStartScale = world.Scale;
-
-					startAngle = Math.Atan2(position1.Y - position0.Y, position1.X - position0.X);
 
 					if (TransformState != TrackBallTransformType.None)
 					{
@@ -322,7 +319,7 @@ namespace MatterHackers.Agg
 
 		internal class MotionQueue
 		{
-			private List<TimeAndPosition> motionQueue = new List<TimeAndPosition>();
+			private readonly List<TimeAndPosition> motionQueue = new List<TimeAndPosition>();
 
 			internal void AddMoveToMotionQueue(Vector2 position, long timeMs)
 			{

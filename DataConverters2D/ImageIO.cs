@@ -38,7 +38,8 @@ namespace MatterHackers.Agg.Image
 	{
 		public static bool LoadImageData(Stream stream, ImageSequence sequence)
 		{
-#if false
+			// if (AggContext.OperatingSystem == OSType.Mac)
+#if OSX
 			SixLabors.ImageSharp.Image image;
 			try
 			{
@@ -151,7 +152,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-#if false
+#if OSX
 		private static bool ConvertImageToImageBuffer(ImageBuffer destImage, SixLabors.ImageSharp.Image imageIn)
 		{
 			var tgaSave = new MemoryStream();
