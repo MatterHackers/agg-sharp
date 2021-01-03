@@ -70,14 +70,14 @@ namespace MatterHackers.PolygonMesh.UnitTests
 #endif
 		}
 
-		// [Test]
+		[Test]
 		public void GetSliceLoop()
 		{
 			var cube = MeshHelper.CreatePlane(10, 10);
 			var cutPlane = new Plane(Vector3.UnitX, new Vector3(3, 0, 0));
-			var slice = new SliceLayer(cutPlane);
-			slice.CreateSlice(cube);
-			// Assert.AreEqual(1, slice.ClosedPolygons.Count);
+			var slice = SliceLayer.CreateSlice(cube, cutPlane);
+			Assert.AreEqual(1, slice.Count);
+			Assert.AreEqual(4, slice[0].Count);
 		}
 
 		public void DetectAndRemoveTJunctions()
