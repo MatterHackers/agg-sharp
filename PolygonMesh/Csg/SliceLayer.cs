@@ -49,13 +49,11 @@ namespace MatterHackers.PolygonMesh.Csg
 			return CreateSlice(mesh, planeInMeshSpace);
 		}
 
-		public static List<List<Vector2>> CreateSlice(Mesh mesh, Plane planeInMeshSpace)
+		public static List<List<Vector2>> CreateSlice(Mesh mesh, Plane plane)
 		{
-			var n = planeInMeshSpace.Normal;
-			var up = new Vector3(n.Y, n.Z, n.X);
-			var invFlattenedMatrix = Matrix4X4.LookAt(Vector3.Zero, n, up);
-			invFlattenedMatrix *= Matrix4X4.CreateTranslation(n * planeInMeshSpace.DistanceFromOrigin);
-			var flattenedMatrix = invFlattenedMatrix.Inverted;
+			var rotation = new Quaternion(plane.Normal, Vector3.UnitZ);
+			var flattenedMatrix = Matrix4X4.CreateRotation(rotation);
+			flattenedMatrix *= Matrix4X4.CreateTranslation(0, 0, -plane.DistanceFromOrigin);
 
 			// collect all the segments this plane intersects and record them in unordered segments in z 0 space
 			var meshTo0Plane = flattenedMatrix;
@@ -64,7 +62,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				var start = Vector3.Zero;
 				var end = Vector3.Zero;
-				if (face.GetCutLine(mesh.Vertices, planeInMeshSpace, ref start, ref end))
+				if (face.GetCutLine(mesh.Vertices, plane, ref start, ref end))
 				{
 					var startAtZ0 = Vector3Ex.Transform(start, meshTo0Plane);
 					var endAtZ0 = Vector3Ex.Transform(end, meshTo0Plane);
@@ -118,6 +116,7 @@ namespace MatterHackers.PolygonMesh.Csg
 						{
 							canClose = true;
 						}
+
 						break;
 					}
 					else
@@ -177,6 +176,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				startSorter.Add(i, openPolygonList[i][0]);
 			}
+
 			startSorter.Sort();
 
 			var endSorter = new SortedVector2();
@@ -184,6 +184,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				endSorter.Add(i, openPolygonList[i][openPolygonList[i].Count - 1]);
 			}
+
 			endSorter.Sort();
 
 			// Link up all the missing ends, closing up the smallest gaps first. This is an inefficient implementation which can run in O(n*n*n) time.
@@ -202,8 +203,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 					var aEndPosition = openPolygonList[polygonAIndex][openPolygonList[polygonAIndex].Count - 1];
 					// find the closestStartFromEnd
-					double distanceToStartSqrd;
-					int bStartIndex = startSorter.FindClosetIndex(aEndPosition, out distanceToStartSqrd);
+					int bStartIndex = startSorter.FindClosetIndex(aEndPosition, out double distanceToStartSqrd);
 					if (distanceToStartSqrd < bestScore)
 					{
 						bestScore = distanceToStartSqrd;
@@ -219,8 +219,7 @@ namespace MatterHackers.PolygonMesh.Csg
 					}
 
 					// find the closestStartFromStart
-					double distanceToEndSqrd;
-					int bEndIndex = endSorter.FindClosetIndex(aEndPosition, out distanceToEndSqrd, polygonAIndex);
+					int bEndIndex = endSorter.FindClosetIndex(aEndPosition, out double distanceToEndSqrd, polygonAIndex);
 					if (distanceToEndSqrd < bestScore)
 					{
 						bestScore = distanceToEndSqrd;
@@ -265,6 +264,7 @@ namespace MatterHackers.PolygonMesh.Csg
 							{
 								openPolygonList[bestA].Add(openPolygonList[bestB][indexB]);
 							}
+
 							openPolygonList[bestB].Clear();
 							endSorter.Remove(bestB);
 							startSorter.Remove(bestB);
@@ -275,6 +275,7 @@ namespace MatterHackers.PolygonMesh.Csg
 							{
 								openPolygonList[bestB].Add(openPolygonList[bestA][indexA]);
 							}
+
 							openPolygonList[bestA].Clear();
 							endSorter.Remove(bestA);
 							startSorter.Remove(bestA);
@@ -290,8 +291,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				}
 			}
 
-			//Remove all the tiny polygons, or polygons that are not closed. As they do not contribute to the actual print.
-			int minimumPerimeter = 1000;
+			double minimumPerimeter = .01;
 			for (int polygonIndex = 0; polygonIndex < closedPolygons.Count; polygonIndex++)
 			{
 				double perimeterLength = 0;
@@ -320,13 +320,14 @@ namespace MatterHackers.PolygonMesh.Csg
 			throw new System.NotImplementedException();
 		}
 
-		private static Dictionary<ulong, List<int>> CreateFastIndexLookup(List<Segment> UnorderedSegments)
+		private static Dictionary<(double, double), List<int>> CreateFastIndexLookup(List<Segment> UnorderedSegments)
 		{
-			var startIndexes = new Dictionary<ulong, List<int>>();
+			var startIndexes = new Dictionary<(double, double), List<int>>();
 
 			for (int startingSegmentIndex = 0; startingSegmentIndex < UnorderedSegments.Count; startingSegmentIndex++)
 			{
-				ulong positionKey = UnorderedSegments[startingSegmentIndex].Start.GetLongHashCode();
+				var position = UnorderedSegments[startingSegmentIndex].Start;
+				var positionKey = (position.X, position.Y);
 				if (!startIndexes.ContainsKey(positionKey))
 				{
 					startIndexes.Add(positionKey, new List<int>());
@@ -339,12 +340,12 @@ namespace MatterHackers.PolygonMesh.Csg
 		}
 
 		private static int GetTouchingSegmentIndex(List<Segment> UnorderedSegments,
-			Dictionary<ulong, List<int>> startIndexes,
+			Dictionary<(double, double), List<int>> startIndexes,
 			bool[] segmentHasBeenAdded,
 			Vector2 addedSegmentEndPoint)
 		{
 			int lookupSegmentIndex = -1;
-			ulong positionKey = addedSegmentEndPoint.GetLongHashCode();
+			var positionKey = (addedSegmentEndPoint.X, addedSegmentEndPoint.Y);
 			if (startIndexes.ContainsKey(positionKey))
 			{
 				foreach (int index in startIndexes[positionKey])
