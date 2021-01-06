@@ -36,27 +36,25 @@ namespace MatterHackers.PolygonMesh
 	{
 		public static Mesh CreateTetrahedron(double scale = 1)
 		{
-			throw new NotImplementedException();
-			//Mesh tetrahedron = new Mesh();
-			//Vector2 basePoint = new Vector2(1, 0);
-			//double baseOffsetZ = -Math.Sin(MathHelper.DegreesToRadians(30));
-			//IVertex[] verts = new Vertex[4];
-			//verts[0] = tetrahedron.CreateVertex(new Vector3(basePoint, baseOffsetZ));
-			//verts[1] = tetrahedron.CreateVertex(new Vector3(Vector2.Rotate(basePoint, MathHelper.Tau / 3), baseOffsetZ));
-			//verts[2] = tetrahedron.CreateVertex(new Vector3(Vector2.Rotate(basePoint, 2 * MathHelper.Tau / 3), baseOffsetZ));
-			//verts[3] = tetrahedron.CreateVertex(new Vector3(0, 0, 1));
+			Mesh tetrahedron = new Mesh();
+			Vector2 basePoint = new Vector2(1, 0);
+			double baseOffsetZ = -Math.Sin(MathHelper.DegreesToRadians(30));
+			tetrahedron.Vertices.Add(new Vector3(basePoint, baseOffsetZ));
+			tetrahedron.Vertices.Add(new Vector3(Vector2.Rotate(basePoint, MathHelper.Tau / 3), baseOffsetZ));
+			tetrahedron.Vertices.Add(new Vector3(Vector2.Rotate(basePoint, 2 * MathHelper.Tau / 3), baseOffsetZ));
+			tetrahedron.Vertices.Add(new Vector3(0, 0, 1));
 
-			//tetrahedron.CreateFace(new IVertex[] { verts[0], verts[2], verts[1] }); // add reversed because we want to see the bottom.
-			//tetrahedron.CreateFace(new IVertex[] { verts[0], verts[1], verts[3] });
-			//tetrahedron.CreateFace(new IVertex[] { verts[1], verts[2], verts[3] });
-			//tetrahedron.CreateFace(new IVertex[] { verts[2], verts[0], verts[3] });
+			tetrahedron.Faces.Add(0, 2, 1, tetrahedron.Vertices); // add reversed because we want to see the bottom.
+			tetrahedron.Faces.Add(0, 1, 3, tetrahedron.Vertices);
+			tetrahedron.Faces.Add(1, 2, 3, tetrahedron.Vertices);
+			tetrahedron.Faces.Add(2, 0, 3, tetrahedron.Vertices);
 
-			//if(scale != 1)
-			//{
-			//	tetrahedron.Transform(Matrix4X4.CreateScale(scale));
-   //         }
+			if (scale != 1)
+			{
+				tetrahedron.Transform(Matrix4X4.CreateScale(scale));
+			}
 
-			//return tetrahedron;
+			return tetrahedron;
 		}
 
 		public static Mesh CreateCube(double xScale = 1, double yScale = 1, double zScale = 1)

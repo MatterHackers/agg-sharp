@@ -671,6 +671,94 @@ namespace MatterHackers.PolygonMesh
 			return false;
 		}
 
+		public static bool GetCutLine(this Face face,
+			List<Vector3Float> faceVertices,
+			Plane plane,
+			ref Vector3 start,
+			ref Vector3 end,
+			double onPlaneDistance = 0,
+			Func<Mesh.SplitData, bool> clipFace = null)
+		{
+			var v = new Vector3Float[]
+			{
+				faceVertices[face.v0],
+				faceVertices[face.v1],
+				faceVertices[face.v2]
+			};
+
+			// get the distance from the crossing plane
+			var dist = v.Select(a => plane.GetDistanceFromPlane(a)).ToArray();
+
+			// bool if each point is clipped
+			var clipPoint = dist.Select(a => Math.Abs(a) > onPlaneDistance).ToArray();
+
+			// bool if there is a clip on a line segment (between points)
+			var clipSegment = clipPoint.Select((a, i) =>
+			{
+				var nextI = (i + 1) % 3;
+				// if both points are clipped and they are on opposite sides of the clip plane
+				return clipPoint[i] && clipPoint[nextI] && ((dist[i] < 0 && dist[nextI] > 0) || (dist[i] > 0 && dist[nextI] < 0));
+			}).ToArray();
+
+			// the number of segments that need to be clipped
+			var segmentsClipped = clipSegment[0] ? 1 : 0;
+			segmentsClipped += clipSegment[1] ? 1 : 0;
+			segmentsClipped += clipSegment[2] ? 1 : 0;
+
+			var newVertices = new List<Vector3Float>();
+			void ClipEdge(int vi0)
+			{
+				var vi1 = (vi0 + 1) % 3;
+				var vi2 = (vi0 + 2) % 3;
+				var totalDistance = Math.Abs(dist[vi0]) + Math.Abs(dist[vi1]);
+				var ratioTodist0 = Math.Abs(dist[vi0]) / totalDistance;
+				var newPoint = v[vi0] + (v[vi1] - v[vi0]) * ratioTodist0;
+				// add the new vertex
+				newVertices.Add(newPoint);
+			}
+
+			switch (segmentsClipped)
+			{
+				// if 2 sides are clipped we will add 2 new vertices and 3 polygons
+				case 2:
+					if (clipFace?.Invoke(new Mesh.SplitData(face, dist)) != false)
+					{
+						// find the side we are not going to clip
+						int vi0 = clipSegment[0] && clipSegment[1] ? 2
+							: clipSegment[0] && clipSegment[2] ? 1 : 0;
+						var vi1 = (vi0 + 1) % 3;
+						var vi2 = (vi0 + 2) % 3;
+						// clip the edges, will add the new points
+						ClipEdge(vi1);
+						ClipEdge(vi2);
+						// add the new faces
+						start = new Vector3(newVertices[0]);
+						end = new Vector3(newVertices[1]);
+						return true;
+					}
+
+					break;
+
+				// if 1 side is clipped we will add 1 new vertex and 2 polygons
+				case 1:
+					{
+						// find the side we are going to clip
+						int vi0 = clipSegment[0] ? 0 : clipSegment[1] ? 1 : 2;
+						var vi1 = (vi0 + 1) % 3;
+						var vi2 = (vi0 + 2) % 3;
+						// clip the edge, will add the new point
+						ClipEdge(vi0);
+						// add the new faces
+						start = new Vector3(v[vi0]);
+						end = new Vector3(newVertices[0]);
+					}
+
+					return true;
+			}
+
+			return false;
+		}
+
 		public static double GetArea(this Face face, Mesh mesh)
 		{
 			// area = (a * c * sen(B))/2

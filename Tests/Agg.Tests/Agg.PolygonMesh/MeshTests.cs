@@ -70,14 +70,41 @@ namespace MatterHackers.PolygonMesh.UnitTests
 #endif
 		}
 
-		// [Test]
+		[Test]
 		public void GetSliceLoop()
 		{
-			var cube = MeshHelper.CreatePlane(10, 10);
-			var cutPlane = new Plane(Vector3.UnitX, new Vector3(3, 0, 0));
-			var slice = new SliceLayer(cutPlane);
-			slice.CreateSlice(cube);
-			// Assert.AreEqual(1, slice.ClosedPolygons.Count);
+			{
+				Mesh triangle = new Mesh();
+				triangle.Vertices.Add(new Vector3(0, -5, 0));
+				triangle.Vertices.Add(new Vector3(0, 5, 0));
+				triangle.Vertices.Add(new Vector3(0, 0, 5));
+
+				triangle.Faces.Add(0, 1, 2, triangle.Vertices);
+				var start = default(Vector3);
+				var end = default(Vector3);
+				var plane = new Plane(Vector3.UnitZ, 3);
+				Assert.IsTrue(triangle.Faces[0].GetCutLine(triangle.Vertices, plane, ref start, ref end), "valid cut");
+				Assert.IsTrue(start.Y == -end.Y && start.Y < 4 && start.Y > 0);
+				Assert.IsTrue(start.X == end.X && start.X == 0);
+				Assert.IsTrue(start.Z == end.Z && start.Z == 3);
+			}
+
+			{
+				var tetrahedron = PlatonicSolids.CreateTetrahedron(10);
+				tetrahedron.Translate(new Vector3(0, 0, -tetrahedron.GetAxisAlignedBoundingBox().MinXYZ.Z));
+				var cutPlane = new Plane(Vector3.UnitZ, new Vector3(0, 0, 3));
+				var slice = SliceLayer.CreateSlice(tetrahedron, cutPlane);
+				Assert.AreEqual(1, slice.Count);
+				Assert.AreEqual(4, slice[0].Count);
+			}
+
+			{
+				var cube = PlatonicSolids.CreateCube(10, 10, 10);
+				var cutPlane = new Plane(Vector3.UnitX, new Vector3(3, 0, 0));
+				var slice = SliceLayer.CreateSlice(cube, cutPlane);
+				Assert.AreEqual(1, slice.Count);
+				// Assert.AreEqual(4, slice[0].Count);
+			}
 		}
 
 		public void DetectAndRemoveTJunctions()
