@@ -204,25 +204,21 @@ namespace MatterHackers.Agg.Image
 				}
 
 				int sourceIndex = 0;
-				int destIndex = 0;
-				unsafe
+				byte[] destBuffer = destImage.GetBuffer(out _);
+				for (int y = 0; y < destImage.Height; y++)
 				{
-					byte[] destBuffer = destImage.GetBuffer(out int offset);
-					for (int y = 0; y < destImage.Height; y++)
+					int destIndex = destImage.GetBufferOffsetXY(0, destImage.Height - 1 - y);
+					for (int x = 0; x < destImage.Width; x++)
 					{
-						destIndex = destImage.GetBufferOffsetXY(0, destImage.Height - 1 - y);
-						for (int x = 0; x < destImage.Width; x++)
-						{
-							destBuffer[destIndex++] = pixelArray[sourceIndex].B;
-							destBuffer[destIndex++] = pixelArray[sourceIndex].G;
-							destBuffer[destIndex++] = pixelArray[sourceIndex].R;
-							destBuffer[destIndex++] = pixelArray[sourceIndex].A;
-							sourceIndex++;
-						}
+						destBuffer[destIndex++] = pixelArray[sourceIndex].B;
+						destBuffer[destIndex++] = pixelArray[sourceIndex].G;
+						destBuffer[destIndex++] = pixelArray[sourceIndex].R;
+						destBuffer[destIndex++] = pixelArray[sourceIndex].A;
+						sourceIndex++;
 					}
-
-					return true;
 				}
+
+				return true;
 			}
 
 			return false;
