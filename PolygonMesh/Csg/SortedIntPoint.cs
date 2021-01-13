@@ -27,27 +27,28 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using ClipperLib;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
-	public class SortedVector2
+	public class SortedIntPoint
 	{
 		private List<IndexAndPosition> sorted = new List<IndexAndPosition>();
 		private IndexAndPositionSorter sorter = new IndexAndPositionSorter();
 
-		public SortedVector2()
+		public SortedIntPoint()
 		{
 		}
 
-		public void Add(int index, Vector2 position)
+		public void Add(int index, IntPoint position)
 		{
 			sorted.Add(new IndexAndPosition(index, position));
 		}
 
-		public int FindClosetIndex(Vector2 position, out double bestDistanceSquared, int indexToSkip = -1)
+		public int FindClosetIndex(IntPoint position, out double bestDistanceSquared, int indexToSkip = -1)
 		{
 			var testPos = new IndexAndPosition(0, position);
 			int index = Math.Min(sorted.Count - 1, sorted.BinarySearch(testPos, sorter));
@@ -59,7 +60,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			bestDistanceSquared = double.MaxValue;
 			if (sorted[bestIndex].Index != indexToSkip)
 			{
-				bestDistanceSquared = (sorted[index].Position - position).LengthSquared;
+				bestDistanceSquared = (sorted[index].Position - position).LengthSquared();
 			}
 			// we have the starting index now get all the vertices that are close enough starting from here
 			for (int i = 0; i < sorted.Count; i++)
@@ -71,7 +72,7 @@ namespace MatterHackers.PolygonMesh.Csg
 					&& Math.Pow(Math.Abs(sorted[currentIndex].Position.X - position.X), 2) <= bestDistanceSquared)
 				{
 					checkedX = true;
-					var distSquared = (sorted[currentIndex].Position - position).LengthSquared;
+					var distSquared = (sorted[currentIndex].Position - position).LengthSquared();
 					if (distSquared < bestDistanceSquared
 						&& sorted[currentIndex].Index != indexToSkip)
 					{
@@ -84,7 +85,7 @@ namespace MatterHackers.PolygonMesh.Csg
 					&& Math.Pow(Math.Abs(sorted[prevIndex].Position.X - position.X), 2) <= bestDistanceSquared)
 				{
 					checkedX = true;
-					var distSquared = (sorted[prevIndex].Position - position).LengthSquared;
+					var distSquared = (sorted[prevIndex].Position - position).LengthSquared();
 					if (distSquared < bestDistanceSquared
 						&& sorted[prevIndex].Index != indexToSkip)
 					{

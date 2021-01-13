@@ -42,7 +42,18 @@ namespace MatterHackers.DataConverters3D
 {
 	public static class VertexSourceToMesh
 	{
-		public static Mesh TriangulateFaces(this IVertexSource vertexSource, CachedTesselator teselatedSource = null, Mesh meshToAddTo = null)
+		public static Mesh TriangulateFaces(this IVertexSource vertexSource,
+			CachedTesselator teselatedSource = null,
+			Mesh meshToAddTo = null,
+			double zHeight = 0)
+		{
+			return TriangulateFaces(vertexSource.Vertices(), teselatedSource, meshToAddTo, zHeight);
+		}
+
+		public static Mesh TriangulateFaces(this IEnumerable<VertexData> vertexSource,
+			CachedTesselator teselatedSource = null,
+			Mesh meshToAddTo = null,
+			double zHeight = 0)
 		{
 			if (teselatedSource == null)
 			{
@@ -69,7 +80,7 @@ namespace MatterHackers.DataConverters3D
 					continue;
 				}
 
-				meshToAddTo.CreateFace(new Vector3[] { new Vector3(v0, 0), new Vector3(v1, 0), new Vector3(v2, 0) });
+				meshToAddTo.CreateFace(new Vector3[] { new Vector3(v0, zHeight), new Vector3(v1, zHeight), new Vector3(v2, zHeight) });
 			}
 
 			return meshToAddTo;
