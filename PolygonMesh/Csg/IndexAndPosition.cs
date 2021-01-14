@@ -27,19 +27,19 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
+using ClipperLib;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
 	public struct IndexAndPosition
 	{
-		public IndexAndPosition(int index, Vector2 position)
+		public IndexAndPosition(int index, IntPoint position)
 		{
 			Index = index;
 			Position = position;
 		}
 
 		public int Index { get; private set; }
-		public Vector2 Position { get; private set; }
+		public IntPoint Position { get; private set; }
 	}
 }

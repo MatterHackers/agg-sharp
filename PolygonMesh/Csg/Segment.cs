@@ -27,19 +27,19 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
+using ClipperLib;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
 	public struct Segment
 	{
-		public Segment(Vector2 start, Vector2 end)
+		public Segment(IntPoint start, IntPoint end)
 		{
 			this.Start = start;
 			this.End = end;
 		}
 
-		public Vector2 End { get; }
-		public Vector2 Start { get; }
+		public IntPoint End { get; }
+		public IntPoint Start { get; }
 	}
 }

@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.VertexSource;
+using System.Collections.Generic;
 using Tesselate;
 
 namespace MatterHackers.DataConverters2D
@@ -41,6 +42,11 @@ namespace MatterHackers.DataConverters2D
 	{
 		public static void SendShapeToTesselator(VertexTesselatorAbstract tesselator, IVertexSource vertexSource)
 		{
+			SendShapeToTesselator(tesselator, vertexSource.Vertices());
+		}
+
+		public static void SendShapeToTesselator(VertexTesselatorAbstract tesselator, IEnumerable<VertexData> vertexSource)
+		{
 #if !DEBUG
             try
 #endif
@@ -48,7 +54,7 @@ namespace MatterHackers.DataConverters2D
 				tesselator.BeginPolygon();
 
 				bool haveBegunContour = false;
-				foreach (var vertexData in vertexSource.Vertices())
+				foreach (var vertexData in vertexSource)
 				{
 					if (vertexData.IsStop)
 					{

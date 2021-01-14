@@ -95,7 +95,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var cutPlane = new Plane(Vector3.UnitZ, new Vector3(0, 0, 3));
 				var slice = SliceLayer.CreateSlice(tetrahedron, cutPlane);
 				Assert.AreEqual(1, slice.Count);
-				Assert.AreEqual(4, slice[0].Count);
+				Assert.AreEqual(3, slice[0].Count);
 			}
 
 			{
@@ -103,7 +103,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var cutPlane = new Plane(Vector3.UnitX, new Vector3(3, 0, 0));
 				var slice = SliceLayer.CreateSlice(cube, cutPlane);
 				Assert.AreEqual(1, slice.Count);
-				// Assert.AreEqual(4, slice[0].Count);
+				Assert.AreEqual(4, slice[0].Count);
 			}
 		}
 

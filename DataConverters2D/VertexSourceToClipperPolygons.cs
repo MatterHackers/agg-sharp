@@ -117,10 +117,15 @@ namespace MatterHackers.DataConverters2D
 
 		public static Polygons CreatePolygons(this IVertexSource sourcePath, double scaling = 1000)
 		{
+			return CreatePolygons(sourcePath.Vertices());
+		}
+
+		public static Polygons CreatePolygons(this IEnumerable<VertexData> vertices, double scaling = 1000)
+		{
 			var allPolys = new Polygons();
 			Polygon currentPoly = null;
 
-			foreach (VertexData vertexData in sourcePath.Vertices())
+			foreach (VertexData vertexData in vertices)
 			{
 				if (vertexData.command == ShapePath.FlagsAndCommand.MoveTo
 					|| vertexData.IsLineTo)

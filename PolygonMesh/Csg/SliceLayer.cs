@@ -27,8 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
 using System.Collections.Generic;
+using ClipperLib;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
@@ -36,7 +36,7 @@ namespace MatterHackers.PolygonMesh.Csg
 {
 	public static class SliceLayer
 	{
-		public static List<List<Vector2>> GetPolygonXYLoopsAt0(this Mesh mesh, Matrix4X4 matrix)
+		public static List<List<IntPoint>> GetPolygonXYLoopsAt0(this Mesh mesh, Matrix4X4 matrix, double outputScale = 1000)
 		{
 			var slicePlane = new Plane(Vector3.UnitZ, 0);
 
@@ -49,15 +49,15 @@ namespace MatterHackers.PolygonMesh.Csg
 			return CreateSlice(mesh, planeInMeshSpace);
 		}
 
-		public static List<List<Vector2>> CreateSlice(Mesh mesh, Plane plane)
+		public static List<List<IntPoint>> CreateSlice(Mesh mesh, Plane plane, int outputScale = 1000)
 		{
 			var rotation = new Quaternion(plane.Normal, Vector3.UnitZ);
 			var flattenedMatrix = Matrix4X4.CreateRotation(rotation);
 			flattenedMatrix *= Matrix4X4.CreateTranslation(0, 0, -plane.DistanceFromOrigin);
 
 			// collect all the segments this plane intersects and record them in unordered segments in z 0 space
-			var meshTo0Plane = flattenedMatrix;
-			var unorderedSegments = new List<Segment>(); 
+			var meshTo0Plane = flattenedMatrix * Matrix4X4.CreateScale(outputScale);
+			var unorderedSegments = new List<Segment>();
 			foreach (var face in mesh.Faces)
 			{
 				var start = Vector3.Zero;
@@ -68,8 +68,8 @@ namespace MatterHackers.PolygonMesh.Csg
 					var endAtZ0 = Vector3Ex.Transform(end, meshTo0Plane);
 					unorderedSegments.Add(
 						new Segment(
-							new Vector2(startAtZ0.X, startAtZ0.Y),
-							new Vector2(endAtZ0.X, endAtZ0.Y)));
+							new IntPoint(startAtZ0.X, startAtZ0.Y),
+							new IntPoint(endAtZ0.X, endAtZ0.Y)));
 				}
 			}
 
@@ -77,14 +77,14 @@ namespace MatterHackers.PolygonMesh.Csg
 			return FindClosedPolygons(unorderedSegments);
 		}
 
-		public static List<List<Vector2>> FindClosedPolygons(List<Segment> UnorderedSegments)
+		public static List<List<IntPoint>> FindClosedPolygons(List<Segment> UnorderedSegments)
 		{
 			var startIndexes = CreateFastIndexLookup(UnorderedSegments);
-			
+
 			var segmentHasBeenAdded = new bool[UnorderedSegments.Count];
 
-			var openPolygonList = new List<List<Vector2>>();
-			var closedPolygons = new List<List<Vector2>>();
+			var openPolygonList = new List<List<IntPoint>>();
+			var closedPolygons = new List<List<IntPoint>>();
 
 			for (int startingSegmentIndex = 0; startingSegmentIndex < UnorderedSegments.Count; startingSegmentIndex++)
 			{
@@ -93,7 +93,7 @@ namespace MatterHackers.PolygonMesh.Csg
 					continue;
 				}
 
-				var poly = new List<Vector2>();
+				var poly = new List<IntPoint>();
 				// We start by adding the start, as we will add ends from now on.
 				var polygonStartPosition = UnorderedSegments[startingSegmentIndex].Start;
 				poly.Add(polygonStartPosition);
@@ -171,7 +171,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				}
 			}
 
-			var startSorter = new SortedVector2();
+			var startSorter = new SortedIntPoint();
 			for (int i = 0; i < openPolygonList.Count; i++)
 			{
 				startSorter.Add(i, openPolygonList[i][0]);
@@ -179,7 +179,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			startSorter.Sort();
 
-			var endSorter = new SortedVector2();
+			var endSorter = new SortedIntPoint();
 			for (int i = 0; i < openPolygonList.Count; i++)
 			{
 				endSorter.Add(i, openPolygonList[i][openPolygonList[i].Count - 1]);
@@ -249,7 +249,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 				if (bestA == bestB) // This loop connects to itself, close the polygon.
 				{
-					closedPolygons.Add(new List<Vector2>(openPolygonList[bestA]));
+					closedPolygons.Add(new List<IntPoint>(openPolygonList[bestA]));
 					openPolygonList[bestA].Clear(); // B is cleared as it is A
 					endSorter.Remove(bestA);
 					startSorter.Remove(bestA);
@@ -298,7 +298,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 				for (int intPointIndex = 1; intPointIndex < closedPolygons[polygonIndex].Count; intPointIndex++)
 				{
-					perimeterLength += (closedPolygons[polygonIndex][intPointIndex] - closedPolygons[polygonIndex][intPointIndex - 1]).Length;
+					perimeterLength += (closedPolygons[polygonIndex][intPointIndex] - closedPolygons[polygonIndex][intPointIndex - 1]).Length();
 					if (perimeterLength > minimumPerimeter)
 					{
 						break;
@@ -311,13 +311,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				}
 			}
 
-			// TODO: clean up collinear and coincident points
-			return closedPolygons;
-		}
-
-		public static IEnumerable<VertexData> Vertices()
-		{
-			throw new System.NotImplementedException();
+			return Clipper.CleanPolygons(closedPolygons, 10);
 		}
 
 		private static Dictionary<(double, double), List<int>> CreateFastIndexLookup(List<Segment> UnorderedSegments)
@@ -342,7 +336,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		private static int GetTouchingSegmentIndex(List<Segment> UnorderedSegments,
 			Dictionary<(double, double), List<int>> startIndexes,
 			bool[] segmentHasBeenAdded,
-			Vector2 addedSegmentEndPoint)
+			IntPoint addedSegmentEndPoint)
 		{
 			int lookupSegmentIndex = -1;
 			var positionKey = (addedSegmentEndPoint.X, addedSegmentEndPoint.Y);
@@ -361,6 +355,59 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 
 			return lookupSegmentIndex;
+		}
+	}
+
+	public static class IntPointPolygonsExtensions
+	{
+		public static IEnumerable<VertexData> Vertices(this List<List<IntPoint>> polygons, double outputScale = 1000)
+		{
+			foreach (var polygon in polygons)
+			{
+				if (polygon.Count > 2)
+				{
+					foreach (var vertex in polygon.Vertices(outputScale))
+					{
+						yield return vertex;
+					}
+				}
+			}
+		}
+	}
+
+	public static class IntPointPolygonExtensions
+	{
+		public static IEnumerable<VertexData> Vertices(this List<IntPoint> polygon, double outputScale = 1000)
+		{
+			// start at the last point
+			yield return new VertexData(Agg.ShapePath.FlagsAndCommand.MoveTo,
+				new Vector2(polygon[polygon.Count - 1].X / outputScale, polygon[polygon.Count - 1].Y / outputScale));
+
+			for (int i = 0; i < polygon.Count; i++)
+			{
+				yield return new VertexData(Agg.ShapePath.FlagsAndCommand.LineTo,
+					new Vector2(polygon[i].X / outputScale, polygon[i].Y / outputScale));
+			}
+		}
+
+		public static double Area(this List<IntPoint> polygon)
+		{
+			var count = polygon.Count;
+
+			if (count < 3)
+			{
+				return 0;
+			}
+
+			double a = 0;
+			var lastPoint = count - 1;
+			for (int i = 0; i < count; i++)
+			{
+				a += ((double)polygon[lastPoint].X + polygon[i].X) * ((double)polygon[lastPoint].Y - polygon[i].Y);
+				lastPoint = i;
+			}
+
+			return -a * 0.5;
 		}
 	}
 }
