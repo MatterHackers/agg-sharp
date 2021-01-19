@@ -29,10 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 #define DEBUG_INTO_TGAS
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using MatterHackers.Agg;
 using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
@@ -52,7 +49,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		//    }
 		//    File.Copy(relativePath, Path.GetFileName(relativePath), true);
 		// }
-		private static int meshSaveIndex = 0;
+		private static readonly int meshSaveIndex = 0;
 
 		public void SaveDebugInfo(Mesh mesh, string testHint = "")
 		{
@@ -74,7 +71,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		public void GetSliceLoop()
 		{
 			{
-				Mesh triangle = new Mesh();
+				var triangle = new Mesh();
 				triangle.Vertices.Add(new Vector3(0, -5, 0));
 				triangle.Vertices.Add(new Vector3(0, 5, 0));
 				triangle.Vertices.Add(new Vector3(0, 0, 5));
@@ -104,6 +101,22 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var slice = SliceLayer.CreateSlice(cube, cutPlane);
 				Assert.AreEqual(1, slice.Count);
 				Assert.AreEqual(4, slice[0].Count);
+			}
+
+			{
+				var cube1 = PlatonicSolids.CreateCube(10, 10, 10);
+				var cube2 = PlatonicSolids.CreateCube(10, 10, 10);
+				cube2.Translate(3, 3, 0);
+				var cubes = new Mesh();
+				cubes.CopyFaces(cube1);
+				cubes.CopyFaces(cube2);
+				var cutPlane = new Plane(Vector3.UnitX, new Vector3(3, 0, 0));
+				var unorderedSegments = SliceLayer.GetUnorderdSegments(cubes, cutPlane);
+				Assert.AreEqual(16, unorderedSegments.Count);
+				var closedLoops = SliceLayer.FindClosedPolygons(unorderedSegments);
+				Assert.AreEqual(2, closedLoops.Count);
+				var union = SliceLayer.UnionClosedPolygons(closedLoops);
+				Assert.AreEqual(1, union.Count);
 			}
 		}
 

@@ -51,12 +51,33 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		public static List<List<IntPoint>> CreateSlice(Mesh mesh, Plane plane, int outputScale = 1000)
 		{
+			var unorderedSegments = GetUnorderdSegments(mesh, plane, outputScale);
+
+			// connect all the segments together into polygons
+			var closedPolygons = FindClosedPolygons(unorderedSegments);
+
+			return UnionClosedPolygons(closedPolygons);
+		}
+
+		public static List<List<IntPoint>> UnionClosedPolygons(List<List<IntPoint>> closedPolygons)
+		{
+			if (closedPolygons.Count > 1)
+			{
+				return closedPolygons.GetRange(0, 1).Union(closedPolygons.GetRange(1, closedPolygons.Count - 1), PolyFillType.pftNonZero);
+			}
+
+			return closedPolygons;
+		}
+
+		public static List<Segment> GetUnorderdSegments(Mesh mesh, Plane plane, int outputScale = 1000)
+		{
 			var rotation = new Quaternion(plane.Normal, Vector3.UnitZ);
 			var flattenedMatrix = Matrix4X4.CreateRotation(rotation);
 			flattenedMatrix *= Matrix4X4.CreateTranslation(0, 0, -plane.DistanceFromOrigin);
 
 			// collect all the segments this plane intersects and record them in unordered segments in z 0 space
 			var meshTo0Plane = flattenedMatrix * Matrix4X4.CreateScale(outputScale);
+
 			var unorderedSegments = new List<Segment>();
 			foreach (var face in mesh.Faces)
 			{
@@ -73,8 +94,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				}
 			}
 
-			// connect all the segments together into polygons
-			return FindClosedPolygons(unorderedSegments);
+			return unorderedSegments;
 		}
 
 		public static List<List<IntPoint>> FindClosedPolygons(List<Segment> UnorderedSegments)
@@ -314,9 +334,9 @@ namespace MatterHackers.PolygonMesh.Csg
 			return Clipper.CleanPolygons(closedPolygons, 10);
 		}
 
-		private static Dictionary<(double, double), List<int>> CreateFastIndexLookup(List<Segment> UnorderedSegments)
+		private static Dictionary<(long, long), List<int>> CreateFastIndexLookup(List<Segment> UnorderedSegments)
 		{
-			var startIndexes = new Dictionary<(double, double), List<int>>();
+			var startIndexes = new Dictionary<(long, long), List<int>>();
 
 			for (int startingSegmentIndex = 0; startingSegmentIndex < UnorderedSegments.Count; startingSegmentIndex++)
 			{
@@ -334,7 +354,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		}
 
 		private static int GetTouchingSegmentIndex(List<Segment> UnorderedSegments,
-			Dictionary<(double, double), List<int>> startIndexes,
+			Dictionary<(long, long), List<int>> startIndexes,
 			bool[] segmentHasBeenAdded,
 			IntPoint addedSegmentEndPoint)
 		{

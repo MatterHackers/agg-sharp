@@ -14,9 +14,6 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
