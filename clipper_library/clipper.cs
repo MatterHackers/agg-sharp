@@ -383,7 +383,7 @@ namespace ClipperLib
     }
     public IntPoint(double x, double y)
     {
-      this.X = (cInt)x; this.Y = (cInt)y;
+      this.X = (cInt)Math.Round(x); this.Y = (cInt)Math.Round(y);
     }
 
     public IntPoint(IntPoint pt)

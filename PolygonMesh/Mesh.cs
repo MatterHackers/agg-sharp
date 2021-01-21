@@ -471,6 +471,11 @@ namespace MatterHackers.PolygonMesh
 			MarkAsChanged();
 		}
 
+		public void Translate(double x, double y, double z)
+		{
+			Translate(new Vector3(x, y, z));
+		}
+
 		public void Translate(Vector3 offset)
 		{
 			if (offset != Vector3.Zero)
