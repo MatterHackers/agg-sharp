@@ -39,6 +39,11 @@ namespace MatterHackers.PolygonMesh.Csg
 			this.End = end;
 		}
 
+		public override string ToString()
+		{
+			return $"{Start} <-> {End}";
+		}
+
 		public IntPoint End { get; }
 		public IntPoint Start { get; }
 	}

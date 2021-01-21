@@ -334,7 +334,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			return Clipper.CleanPolygons(closedPolygons, 10);
 		}
 
-		private static Dictionary<(long, long), List<int>> CreateFastIndexLookup(List<Segment> UnorderedSegments)
+		public static Dictionary<(long, long), List<int>> CreateFastIndexLookup(List<Segment> UnorderedSegments)
 		{
 			var startIndexes = new Dictionary<(long, long), List<int>>();
 
