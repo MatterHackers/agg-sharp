@@ -81,10 +81,9 @@ namespace MatterHackers.PolygonMesh.Csg
 			var unorderedSegments = new List<Segment>();
 			foreach (var face in mesh.Faces)
 			{
-				var start = Vector3.Zero;
-				var end = Vector3.Zero;
-				if (face.GetCutLine(mesh.Vertices, plane, ref start, ref end))
+				if (face.GetCutLine(mesh.Vertices, plane, out Vector3 start, out Vector3 end))
 				{
+					var positions = new Vector3Float[] { mesh.Vertices[face.v0], mesh.Vertices[face.v1], mesh.Vertices[face.v2]};
 					var startAtZ0 = Vector3Ex.Transform(start, meshTo0Plane);
 					var endAtZ0 = Vector3Ex.Transform(end, meshTo0Plane);
 					unorderedSegments.Add(
