@@ -186,6 +186,27 @@ namespace MatterHackers.Agg.UI
 				this.action?.Invoke();
 			}
 		}
+
+		public static void ExecuteWhen(Func<bool> readyCondition, Action actionToExecute, double secondsBeforeRecheck = .1, double maxSecondsToWait = 1)
+		{
+			long startTime = UiThread.CurrentTimerMs;
+			RunningInterval interval = null;
+
+			void WaitForCondition()
+			{
+				var ready = readyCondition();
+				if (ready || UiThread.CurrentTimerMs > startTime + maxSecondsToWait * 1000)
+				{
+					if (ready)
+					{
+						actionToExecute();
+					}
+					UiThread.ClearInterval(interval);
+				}
+			}
+
+			interval = UiThread.SetInterval(WaitForCondition, secondsBeforeRecheck);
+		}
 	}
 
 	public class RunningInterval : UiThread.DeferredAction

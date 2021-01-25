@@ -679,8 +679,8 @@ namespace MatterHackers.PolygonMesh
 		public static bool GetCutLine(this Face face,
 			List<Vector3Float> faceVertices,
 			Plane plane,
-			ref Vector3 start,
-			ref Vector3 end,
+			out Vector3 start,
+			out Vector3 end,
 			double onPlaneDistance = 0,
 			Func<Mesh.SplitData, bool> clipFace = null)
 		{
@@ -761,6 +761,8 @@ namespace MatterHackers.PolygonMesh
 					return true;
 			}
 
+			start = Vector3.Zero;
+			end = Vector3.Zero;
 			return false;
 		}
 
