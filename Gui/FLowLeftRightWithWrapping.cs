@@ -124,7 +124,7 @@ namespace MatterHackers.Agg.UI
 				}
 
 				// close all the row containers
-				this.CloseAllChildren();
+				this.CloseChildren();
 
 				// add in new row container
 				FlowLayoutWidget childContainerRow = new FlowLayoutWidget()
