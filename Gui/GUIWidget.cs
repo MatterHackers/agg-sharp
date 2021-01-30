@@ -1566,7 +1566,10 @@ namespace MatterHackers.Agg.UI
 			ChildAdded?.Invoke(this, e);
 		}
 
-		public void CloseAllChildren()
+		/// <summary>
+		/// Remove all children and call close on each of them
+		/// </summary>
+		public void CloseChildren()
 		{
 			Children.Modify(list =>
 			{
@@ -1579,7 +1582,10 @@ namespace MatterHackers.Agg.UI
 			});
 		}
 
-		public void RemoveAllChildren()
+		/// <summary>
+		/// Remove all the children of the widget but do not explicitly call close on them
+		/// </summary>
+		public void RemoveChildren()
 		{
 			foreach (var child in Children)
 			{
@@ -2439,7 +2445,7 @@ namespace MatterHackers.Agg.UI
 			{
 				HasBeenClosed = true;
 
-				this.CloseAllChildren();
+				this.CloseChildren();
 
 				OnClosed(null);
 				if (Parent != null)

@@ -110,7 +110,7 @@ namespace MatterHackers.Agg.UI
 			count++;
 			if (count == 20)
 			{
-				RemoveAllChildren();
+				RemoveChildren();
 
 				ScrollableWidget allContainer = new ScrollableWidget(true);
 				topToBottomTotal = new FlowLayoutWidget(FlowDirection.TopToBottom);
