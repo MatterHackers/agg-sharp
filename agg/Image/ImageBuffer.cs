@@ -321,6 +321,9 @@ namespace MatterHackers.Agg.Image
 
 			// then set the blender to what we expect
 			SetRecieveBlender(sourceImage.GetRecieveBlender());
+		
+			// and finally let anything that cares know we change the image
+			MarkImageChanged();
 		}
 
 		protected void CopyFromNoClipping(IImageByte sourceImage, RectangleInt clippedSourceImageRect, int destXOffset, int destYOffset)
