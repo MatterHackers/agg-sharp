@@ -196,7 +196,7 @@ namespace MatterHackers.Agg.UI
 					var totalSizeWithMargin = Vector2.Zero;
 					var totalSizeOfStaticItems = Vector2.Zero;
 					var totalMinimumSizeOfAllItems = Vector2.Zero;
-					_ = CalculateContentSizes(child,
+					CalculateContentSizes(child,
 						ref totalSizeWithMargin,
 						ref totalSizeOfStaticItems,
 						ref totalMinimumSizeOfAllItems);
@@ -227,7 +227,7 @@ namespace MatterHackers.Agg.UI
 					var totalSizeWithMargin = Vector2.Zero;
 					var totalSizeOfStaticItems = Vector2.Zero;
 					var totalMinimumSizeOfAllItems = Vector2.Zero;
-					_ = CalculateContentSizes(child,
+					CalculateContentSizes(child,
 						ref totalSizeWithMargin,
 						ref totalSizeOfStaticItems,
 						ref totalMinimumSizeOfAllItems);
