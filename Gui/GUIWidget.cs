@@ -2569,19 +2569,6 @@ namespace MatterHackers.Agg.UI
 			return null;
 		}
 
-		private GuiWidget GetFocusedChild()
-		{
-			GuiWidget childWithFocus = this;
-			GuiWidget nextChildWithFocus = GetChildContainingFocus();
-			while (nextChildWithFocus != null)
-			{
-				childWithFocus = nextChildWithFocus;
-				nextChildWithFocus = childWithFocus.GetChildContainingFocus();
-			}
-
-			return childWithFocus;
-		}
-
 		private void DoMouseMovedOffWidgetRecursive(MouseEventArgs mouseEvent)
 		{
 			bool needToCallLeaveBounds = UnderMouseState != UI.UnderMouseState.NotUnderMouse;
