@@ -64,13 +64,17 @@ namespace MatterHackers.PolygonMesh
 				if (!currentlyCreatingHull)
 				{
 					// set the marker that we are creating the data
-					mesh.PropertyBag.Add(CreatingConvexHullMesh, new CreatingHullFlag());
-
 					if (generateAsync)
 					{
+						mesh.PropertyBag.Add(CreatingConvexHullMesh, new CreatingHullFlag());
+
 						Task.Run(() =>
 						{
 							CreateHullMesh(mesh);
+							if (mesh.PropertyBag.ContainsKey(CreatingConvexHullMesh))
+							{
+								mesh.PropertyBag.Remove(CreatingConvexHullMesh);
+							}
 						});
 					}
 					else
@@ -159,6 +163,7 @@ namespace MatterHackers.PolygonMesh
 				}
 				catch
 				{
+					mesh.PropertyBag.Remove(CreatingConvexHullMesh);
 				}
 			}
 
