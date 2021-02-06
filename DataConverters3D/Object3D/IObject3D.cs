@@ -209,7 +209,7 @@ namespace MatterHackers.DataConverters3D
 			var topParent = item.Ancestors().LastOrDefault();
 			if (topParent != null)
 			{
-				var names = topParent.DescendantsAndSelf().Where((i) => i != item).Select((i2) => i2.Name).ToList();
+				var names = new HashSet<string>(topParent.DescendantsAndSelf().Where((i) => i != item).Select((i2) => i2.Name));
 
 				if (string.IsNullOrEmpty(item.Name))
 				{
