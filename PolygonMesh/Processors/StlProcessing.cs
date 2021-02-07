@@ -74,8 +74,8 @@ namespace MatterHackers.PolygonMesh.Processors
 							streamWriter.WriteLine("  facet normal " + FormatForStl(mesh.Faces[faceIndex].normal));
 							streamWriter.WriteLine("    outer loop");
 							streamWriter.WriteLine("      vertex " + FormatForStl(mesh.Vertices[face.v0]));
-							streamWriter.WriteLine("      vertex " + FormatForStl(mesh.Vertices[face.v0]));
-							streamWriter.WriteLine("      vertex " + FormatForStl(mesh.Vertices[face.v0]));
+							streamWriter.WriteLine("      vertex " + FormatForStl(mesh.Vertices[face.v1]));
+							streamWriter.WriteLine("      vertex " + FormatForStl(mesh.Vertices[face.v2]));
 							streamWriter.WriteLine("    endloop");
 							streamWriter.WriteLine("  endfacet");
 						}
