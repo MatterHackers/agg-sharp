@@ -372,7 +372,7 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			// make a new list of all the faces we are keeping
-			var keptFaces = new List<Face>();
+			var keptFaces = new FaceList();
 			for (int i = 0; i < Faces.Count; i++)
 			{
 				if (!facesToRemove.Contains(i))
@@ -396,7 +396,7 @@ namespace MatterHackers.PolygonMesh
 				keptFaces.Add(faceNewIndices);
 			}
 
-			Faces = new FaceList(keptFaces);
+			Faces = keptFaces;
 
 			if (cleanAndMerge)
 			{
@@ -452,9 +452,10 @@ namespace MatterHackers.PolygonMesh
 			if (matrix != Matrix4X4.Identity)
 			{
 				Vertices.Transform(matrix);
+				var invMatrix = matrix.Inverted;
 				for (int i = 0; i < Faces.Count; i++)
 				{
-					Faces[i] = new Face(Faces[i].v0, Faces[i].v1, Faces[i].v2, Faces[i].normal.TransformNormal(matrix));
+					Faces[i].normal = Faces[i].normal.TransformNormalInverse(invMatrix);
 				}
 
 				MarkAsChanged();
