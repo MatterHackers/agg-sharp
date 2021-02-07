@@ -31,8 +31,10 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using MatterHackers.Agg.Image;
 using MatterHackers.PolygonMesh.Csg;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
 
@@ -113,22 +115,49 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 		
 		[Test]
-		public void GetSliceLoop()
+		public void CutsRespectWindingOrder()
 		{
-			{
-				var triangle = new Mesh();
-				triangle.Vertices.Add(new Vector3(0, -5, 0));
-				triangle.Vertices.Add(new Vector3(0, 5, 0));
-				triangle.Vertices.Add(new Vector3(0, 0, 5));
+			var cube = PlatonicSolids.CreateCube(10, 10, 10);
+			cube.Translate(0, 0, 5); // move bottom to z=0
+			var cutPlane = new Plane(Vector3.UnitZ, new Vector3(0, 0, 5));
 
-				triangle.Faces.Add(0, 1, 2, triangle.Vertices);
-				var plane = new Plane(Vector3.UnitZ, 3);
-				Assert.IsTrue(triangle.Faces[0].GetCutLine(triangle.Vertices, plane, out Vector3 start, out Vector3 end), "valid cut");
-				Assert.IsTrue(start.Y == -end.Y && start.Y < 4 && start.Y > 0);
-				Assert.IsTrue(start.X == end.X && start.X == 0);
-				Assert.IsTrue(start.Z == end.Z && start.Z == 3);
+			// StlProcessing.Save(cube, "c:\\temp\\cube.stl", CancellationToken.None, new MeshOutputSettings() { OutputTypeSetting = MeshOutputSettings.OutputType.Ascii });
+
+			void CheckFace(int faceIndex)
+			{
+				var face = cube.Faces[faceIndex];
+				if (face.normal.Z == 0)
+				{
+					Vector3 start, end;
+					Assert.IsTrue(face.GetCutLine(cube.Vertices, cutPlane, out start, out end));
+					if (face.normal.X < 0)
+					{
+						Assert.Greater(start.Y, end.Y);
+					}
+					else if (face.normal.Y < 0)
+					{
+						Assert.Less(start.X, end.X);
+					}
+					else if (face.normal.X > 0)
+					{
+						Assert.Less(start.Y, end.Y);
+					}
+					else if (face.normal.Y > 0)
+					{
+						Assert.Greater(start.X, end.X);
+					}
+				}
 			}
 
+			for (var faceIndex = 0; faceIndex < cube.Faces.Count; faceIndex++)
+			{
+				CheckFace(faceIndex);
+			}
+		}
+
+		[Test]
+		public void GetSliceLoop()
+		{
 			{
 				var tetrahedron = PlatonicSolids.CreateTetrahedron(10);
 				tetrahedron.Translate(new Vector3(0, 0, -tetrahedron.GetAxisAlignedBoundingBox().MinXYZ.Z));
@@ -146,7 +175,18 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Assert.AreEqual(4, slice[0].Count);
 			}
 
-			return;  // these tests are still in progress
+			{
+				var cube = PlatonicSolids.CreateCube(10, 10, 10);
+				cube.Translate(0, 0, 5); // move bottom to z=0
+				var cutPlane = new Plane(Vector3.UnitZ, new Vector3(0, 0, 5));
+				var unorderedSegments = SliceLayer.GetUnorderdSegments(cube, cutPlane);
+				Assert.AreEqual(8, unorderedSegments.Count);
+				var fastLookups = SliceLayer.CreateFastIndexLookup(unorderedSegments);
+				Assert.AreEqual(8, fastLookups.Count);
+				var closedLoops = SliceLayer.FindClosedPolygons(unorderedSegments);
+				Assert.AreEqual(1, closedLoops.Count);
+			}
+
 			{
 				var cube = PlatonicSolids.CreateCube(10, 10, 10);
 				cube.Translate(0, 0, 5); // move bottom to z=0
