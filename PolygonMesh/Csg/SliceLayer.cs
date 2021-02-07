@@ -54,9 +54,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			var unorderedSegments = GetUnorderdSegments(mesh, plane, outputScale);
 
 			// connect all the segments together into polygons
-			var closedPolygons = FindClosedPolygons(unorderedSegments);
-
-			return UnionClosedPolygons(closedPolygons);
+			return FindClosedPolygons(unorderedSegments);
 		}
 
 		public static List<List<IntPoint>> UnionClosedPolygons(List<List<IntPoint>> closedPolygons)
