@@ -452,10 +452,13 @@ namespace MatterHackers.PolygonMesh
 			if (matrix != Matrix4X4.Identity)
 			{
 				Vertices.Transform(matrix);
-				var invMatrix = matrix.Inverted;
+				// var inverted = matrix.Inverted;
 				for (int i = 0; i < Faces.Count; i++)
 				{
-					Faces[i].normal = Faces[i].normal.TransformNormalInverse(invMatrix);
+					Faces[i] = new Face(Faces[i].v0, Faces[i].v1, Faces[i].v2, Vertices);
+					// don't know why one of these does not work
+					//Faces[i] = new Face(Faces[i].v0, Faces[i].v1, Faces[i].v2, Faces[i].normal.TransformNormal(matrix));
+					//Faces[i] = new Face(Faces[i].v0, Faces[i].v1, Faces[i].v2, Faces[i].normal.TransformNormalInverse(inverted));
 				}
 
 				MarkAsChanged();
@@ -693,23 +696,16 @@ namespace MatterHackers.PolygonMesh
 			};
 
 			// get the distance from the crossing plane
-			var dist = v.Select(a => plane.GetDistanceFromPlane(a)).ToArray();
-
-			// bool if each point is clipped
-			var clipPoint = dist.Select(a => Math.Abs(a) > onPlaneDistance).ToArray();
-
-			// bool if there is a clip on a line segment (between points)
-			var clipSegment = clipPoint.Select((a, i) =>
+			var dist = new double[]
 			{
-				var nextI = (i + 1) % 3;
-				// if both points are clipped and they are on opposite sides of the clip plane
-				return clipPoint[i] && clipPoint[nextI] && ((dist[i] < 0 && dist[nextI] > 0) || (dist[i] > 0 && dist[nextI] < 0));
-			}).ToArray();
+				plane.GetDistanceFromPlane(v[0]),
+				plane.GetDistanceFromPlane(v[1]),
+				plane.GetDistanceFromPlane(v[2]),
+			};
 
 			Vector3 ClipEdge(int vi0)
 			{
 				var vi1 = (vi0 + 1) % 3;
-				var vi2 = (vi0 + 2) % 3;
 				var totalDistance = Math.Abs(dist[vi0]) + Math.Abs(dist[vi1]);
 				var ratioTodist0 = Math.Abs(dist[vi0]) / totalDistance;
 				var newPoint = v[vi0] + (v[vi1] - v[vi0]) * ratioTodist0;
