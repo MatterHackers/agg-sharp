@@ -93,7 +93,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 				var direction = end - start;
 				var yDirection = new Vector2(direction.X, direction.Y).GetRotated(-angle);
-				Assert.Greater(yDirection.Y, 0);
+				Assert.Less(yDirection.Y, 0);
 			}
 
 			CheckAngle(MathHelper.Tau / 3 * 0, .5);
