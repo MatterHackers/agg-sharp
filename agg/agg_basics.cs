@@ -96,7 +96,7 @@ namespace MatterHackers.Agg
 
 		private static Regex fileNameNumberMatch = new Regex("\\(\\d+\\)\\s*$", RegexOptions.Compiled);
 
-		public static string GetNonCollidingName(string desiredName, IEnumerable<string> listToCheck)
+		public static string GetNonCollidingName(string desiredName, HashSet<string> listToCheck)
 		{
 			return GetNonCollidingName(desiredName, (name) => !listToCheck.Contains(name));
 		}
