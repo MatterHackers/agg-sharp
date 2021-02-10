@@ -81,7 +81,6 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				if (face.GetCutLine(mesh.Vertices, plane, out Vector3 start, out Vector3 end))
 				{
-					var positions = new Vector3Float[] { mesh.Vertices[face.v0], mesh.Vertices[face.v1], mesh.Vertices[face.v2]};
 					var startAtZ0 = Vector3Ex.Transform(start, meshTo0Plane);
 					var endAtZ0 = Vector3Ex.Transform(end, meshTo0Plane);
 					unorderedSegments.Add(
