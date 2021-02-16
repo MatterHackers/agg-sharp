@@ -63,12 +63,12 @@ namespace MatterHackers.Agg.UI
 			parentButton.MouseEnter += redrawButtonIfRequired;
 			parentButton.MouseDownCaptured += redrawButtonIfRequired;
 			parentButton.MouseUpCaptured += redrawButtonIfRequired;
-			parentButton.MouseLeave += new EventHandler(parentButton_MouseLeave);
+			parentButton.MouseLeave += parentButton_MouseLeave;
 
 			base.OnParentChanged(null);
 		}
 
-		private void parentButton_MouseLeave(object sender, EventArgs e)
+		private void parentButton_MouseLeave(object sender, MouseEventArgs e)
 		{
 			Invalidate();
 		}

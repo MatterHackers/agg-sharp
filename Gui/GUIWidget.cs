@@ -678,22 +678,22 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// The mouse has entered the bounds of this widget.  It may also be over a child.
 		/// </summary>
-		public event EventHandler MouseEnterBounds;
+		public event EventHandler<MouseEventArgs> MouseEnterBounds;
 
 		/// <summary>
 		/// The mouse has left the bounds of this widget.
 		/// </summary>
-		public event EventHandler MouseLeaveBounds;
+		public event EventHandler<MouseEventArgs> MouseLeaveBounds;
 
 		/// <summary>
 		/// The mouse has entered the bounds of this widget and is also not over a child widget.
 		/// </summary>
-		public event EventHandler MouseEnter;
+		public event EventHandler<MouseEventArgs> MouseEnter;
 
 		/// <summary>
 		/// The mouse has left this widget but may still be over the bounds, it could be above a child.
 		/// </summary>
-		public event EventHandler MouseLeave;
+		public event EventHandler<MouseEventArgs> MouseLeave;
 
 		public event EventHandler BoundsChanged;
 
@@ -2531,6 +2531,10 @@ namespace MatterHackers.Agg.UI
 
 		public GuiWidget TopmostParent()
 		{
+			if (this.Parent == null)
+			{
+				return this;
+			}
 			return this.Parents<SystemWindow>().FirstOrDefault() ?? this.Parents<GuiWidget>().Last();
 		}
 

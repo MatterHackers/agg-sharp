@@ -48,6 +48,9 @@ namespace MatterHackers.Agg.UI
 
 		public static long CurrentTimerMs => timer.ElapsedMilliseconds;
 
+		/// <summary>
+		/// Count of the current deferred actions
+		/// </summary>
 		public static int Count => deferredActions.Count;
 
 		public static int CountExpired

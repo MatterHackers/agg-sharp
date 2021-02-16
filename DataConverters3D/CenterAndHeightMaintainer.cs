@@ -34,11 +34,20 @@ namespace MatterHackers.DataConverters3D
 {
 	public class CenterAndHeightMaintainer : IDisposable
 	{
+		private MaintainFlags flags;
 		private IObject3D item;
 		private AxisAlignedBoundingBox aabb;
 
-		public CenterAndHeightMaintainer(IObject3D item)
+		public enum MaintainFlags
 		{
+			Center,
+			Height,
+			Both
+		}
+
+		public CenterAndHeightMaintainer(IObject3D item, MaintainFlags flags = MaintainFlags.Both)
+		{
+			this.flags = flags;
 			this.item = item;
 			aabb = item.GetAxisAlignedBoundingBox();
 		}
@@ -51,14 +60,20 @@ namespace MatterHackers.DataConverters3D
 				// get the current bounds
 				var newAabbb = item.GetAxisAlignedBoundingBox();
 
-				// move our center back to where our center was
-				item.Matrix *= Matrix4X4.CreateTranslation(aabb.Center - newAabbb.Center);
+				if (flags == MaintainFlags.Center || flags == MaintainFlags.Both)
+				{
+					// move our center back to where our center was
+					item.Matrix *= Matrix4X4.CreateTranslation(aabb.Center - newAabbb.Center);
 
-				// update the bounds again
-				newAabbb = item.GetAxisAlignedBoundingBox();
+					// update the bounds again
+					newAabbb = item.GetAxisAlignedBoundingBox();
+				}
 
-				// Make sure we also maintain our height
-				item.Matrix *= Matrix4X4.CreateTranslation(new Vector3(0, 0, aabb.MinXYZ.Z - newAabbb.MinXYZ.Z));
+				if (flags == MaintainFlags.Height || flags == MaintainFlags.Both)
+				{
+					// Make sure we also maintain our height
+					item.Matrix *= Matrix4X4.CreateTranslation(new Vector3(0, 0, aabb.MinXYZ.Z - newAabbb.MinXYZ.Z));
+				}
 			}
 		}
 	}
