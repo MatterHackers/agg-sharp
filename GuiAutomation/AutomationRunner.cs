@@ -580,6 +580,12 @@ namespace MatterHackers.GuiAutomation
 			return null;
 		}
 
+		public AutomationRunner GetWidgetByName(string widgetName, out GuiWidget widget, out SystemWindow containingWindow, double secondsToWait = 5, SearchRegion searchRegion = null, bool onlyVisible = true)
+		{
+			widget = GetWidgetByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion, onlyVisible);
+			return this;
+		}
+
 		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 5, SearchRegion searchRegion = null, bool onlyVisible = true)
 		{
 			return GetWidgetByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion, onlyVisible);
