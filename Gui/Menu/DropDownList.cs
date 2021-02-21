@@ -87,8 +87,6 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		private MenuItem highlightedItem;
 
-		private Color lastRenderColor;
-
 		/// <summary>
 		/// Filter text captured while the droplist is open. Cleared when the menu is closed
 		/// </summary>
@@ -366,7 +364,6 @@ namespace MatterHackers.Agg.UI
 						background,
 						gradientDistance);
 
-					lastRenderColor = background;
 					clippingBackgrounds[background] = gradientBackground;
 				}
 
