@@ -36,7 +36,6 @@ namespace MatterHackers.Agg.UI
 	public enum Direction
 	{
 		Up,
-
 		Down
 	}
 
