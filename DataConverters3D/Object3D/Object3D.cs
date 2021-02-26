@@ -74,11 +74,11 @@ namespace MatterHackers.DataConverters3D
 
 			if (children != null)
 			{
-				Children = new SafeList<IObject3D>(children, this);
+				Children = new AscendableSafeList<IObject3D>(children, this);
 			}
 			else
 			{
-				Children = new SafeList<IObject3D>(this);
+				Children = new AscendableSafeList<IObject3D>(this);
 			}
 		}
 
@@ -91,7 +91,7 @@ namespace MatterHackers.DataConverters3D
 
 		public string OwnerID { get; set; }
 
-		public SafeList<IObject3D> Children
+		public AscendableSafeList<IObject3D> Children
 		{
 			get => _children;
 			set
@@ -797,7 +797,7 @@ namespace MatterHackers.DataConverters3D
 		// Cache busting on child nodes
 		private ulong tracedHashCode = ulong.MinValue;
 		private bool buildingFaceBsp;
-		private SafeList<IObject3D> _children;
+		private AscendableSafeList<IObject3D> _children;
 
 		/// <summary>
 		/// Create or return a Bounding Volume Hierarchy for this mesh. Is created add it to the property bag.

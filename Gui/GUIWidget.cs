@@ -746,7 +746,7 @@ namespace MatterHackers.Agg.UI
 
 		public GuiWidget()
 		{
-			Children = new SafeList<GuiWidget>(this);
+			Children = new AscendableSafeList<GuiWidget>(this);
 			screenClipping = new ScreenClipping(this);
 			LayoutEngine = new LayoutEngineSimpleAlign();
 			HAnchor = hAnchor;
@@ -758,7 +758,7 @@ namespace MatterHackers.Agg.UI
 			return $"Name = {Name}, Bounds = {LocalBounds} - {GetType().Name}";
 		}
 
-		public SafeList<GuiWidget> Children { get; }
+		public AscendableSafeList<GuiWidget> Children { get; }
 
 		public void ClearRemovedFlag()
 		{

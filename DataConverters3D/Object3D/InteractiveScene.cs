@@ -299,7 +299,7 @@ namespace MatterHackers.DataConverters3D
 
 		public string OwnerID { get => SourceItem.OwnerID; set => SourceItem.OwnerID = value; }
 
-		public SafeList<IObject3D> Children { get => SourceItem.Children; set => SourceItem.Children = value; }
+		public AscendableSafeList<IObject3D> Children { get => SourceItem.Children; set => SourceItem.Children = value; }
 
 		public IObject3D Parent { get => SourceItem.Parent; set => SourceItem.Parent = value; }
 
