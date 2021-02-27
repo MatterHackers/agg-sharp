@@ -425,6 +425,14 @@ namespace MatterHackers.Agg
 		[JsonIgnore]
 		public double YCenter => (Top + Bottom) / 2;
 
+		public Vector2 Size
+		{
+			get
+			{
+				return new Vector2(Width, Height);
+			}
+		}
+
 		public override string ToString()
 		{
 			return string.Format("L:{0}, B:{1}, R:{2}, T:{3}", Left, Bottom, Right, Top);
