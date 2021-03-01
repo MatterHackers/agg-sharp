@@ -319,7 +319,7 @@ namespace MatterHackers.DataConverters3D
 		string OwnerID { get; set; }
 
 		[JsonConverter(typeof(IObject3DChildrenConverter))]
-		SafeList<IObject3D> Children { get; set; }
+		AscendableSafeList<IObject3D> Children { get; set; }
 
 		[JsonIgnore]
 		new IObject3D Parent { get; set; }

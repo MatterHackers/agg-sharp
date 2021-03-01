@@ -271,6 +271,16 @@ namespace MatterHackers.Agg.UI
 
 		public virtual int TabIndex { get; set; }
 
+		/// <summary>
+		/// The radius to use on the corners of the background and Background Outline (if enabled).
+		/// </summary>
+		public double BackgroundRadius { get; set; }
+
+		/// <summary>
+		/// Draw an outline around the background fill, this will use the OutlineColor and BackgroundRadius if set (in device units, scalled when rendered).
+		/// </summary>
+		public double BackgroundOutlineWidth { get; set; } = 0;
+
 		private Color _backgroundColor = default(Color);
 
 		public virtual Color BackgroundColor
@@ -736,7 +746,7 @@ namespace MatterHackers.Agg.UI
 
 		public GuiWidget()
 		{
-			Children = new SafeList<GuiWidget>(this);
+			Children = new AscendableSafeList<GuiWidget>(this);
 			screenClipping = new ScreenClipping(this);
 			LayoutEngine = new LayoutEngineSimpleAlign();
 			HAnchor = hAnchor;
@@ -748,7 +758,7 @@ namespace MatterHackers.Agg.UI
 			return $"Name = {Name}, Bounds = {LocalBounds} - {GetType().Name}";
 		}
 
-		public SafeList<GuiWidget> Children { get; }
+		public AscendableSafeList<GuiWidget> Children { get; }
 
 		public void ClearRemovedFlag()
 		{
@@ -1999,9 +2009,22 @@ namespace MatterHackers.Agg.UI
 		/// <param name="graphics2D">The graphics 2D this is being drawn onto.</param>
 		public virtual void OnDrawBackground(Graphics2D graphics2D)
 		{
+			var bounds = this.LocalBounds;
+			var rect = new RoundedRect(bounds.Left, bounds.Bottom, bounds.Right, bounds.Top, BackgroundRadius);
+
 			if (BackgroundColor.Alpha0To255 > 0)
 			{
-				graphics2D.FillRectangle(LocalBounds, BackgroundColor);
+				graphics2D.Render(rect, BackgroundColor);
+			}
+
+			if (BorderColor.Alpha0To255 > 0 && BackgroundOutlineWidth > 0)
+			{
+				var stroke = BackgroundOutlineWidth * GuiWidget.DeviceScale;
+				var expand = stroke / 2;
+				rect = new RoundedRect(bounds.Left + expand, bounds.Bottom + expand, bounds.Right - expand, bounds.Top - expand, BackgroundRadius);
+				var rectOutline = new Stroke(rect, stroke);
+
+				graphics2D.Render(rectOutline, BorderColor);
 			}
 		}
 
