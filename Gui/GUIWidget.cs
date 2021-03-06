@@ -274,7 +274,7 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// The radius to use on the corners of the background and Background Outline (if enabled).
 		/// </summary>
-		public double BackgroundRadius { get; set; }
+		public RadiusCorners BackgroundRadius { get; set; } = default(RadiusCorners);
 
 		/// <summary>
 		/// Draw an outline around the background fill, this will use the OutlineColor and BackgroundRadius if set (in device units, scalled when rendered).
@@ -2010,7 +2010,8 @@ namespace MatterHackers.Agg.UI
 		public virtual void OnDrawBackground(Graphics2D graphics2D)
 		{
 			var bounds = this.LocalBounds;
-			var rect = new RoundedRect(bounds.Left, bounds.Bottom, bounds.Right, bounds.Top, BackgroundRadius);
+			var rect = new RoundedRect(bounds.Left, bounds.Bottom, bounds.Right, bounds.Top);
+			rect.radius(BackgroundRadius.SW, BackgroundRadius.SE, BackgroundRadius.NE, BackgroundRadius.NW);
 
 			if (BackgroundColor.Alpha0To255 > 0)
 			{
@@ -2021,7 +2022,9 @@ namespace MatterHackers.Agg.UI
 			{
 				var stroke = BackgroundOutlineWidth * GuiWidget.DeviceScale;
 				var expand = stroke / 2;
-				rect = new RoundedRect(bounds.Left + expand, bounds.Bottom + expand, bounds.Right - expand, bounds.Top - expand, BackgroundRadius);
+				rect = new RoundedRect(bounds.Left + expand, bounds.Bottom + expand, bounds.Right - expand, bounds.Top - expand);
+				rect.radius(BackgroundRadius.SW, BackgroundRadius.SE, BackgroundRadius.NE, BackgroundRadius.NW);
+
 				var rectOutline = new Stroke(rect, stroke);
 
 				graphics2D.Render(rectOutline, BorderColor);
