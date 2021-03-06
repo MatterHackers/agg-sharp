@@ -41,7 +41,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public double ResolutionScale { get; set; } = 1;
 
-		public RoundedRect(double left, double bottom, double right, double top, double radius)
+		public RoundedRect(double left, double bottom, double right, double top, double radius = 0)
 		{
 			bounds = new RectangleDouble(left, bottom, right, top);
 			leftBottomRadius.X = radius;
