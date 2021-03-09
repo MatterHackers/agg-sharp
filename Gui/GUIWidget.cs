@@ -1606,25 +1606,24 @@ namespace MatterHackers.Agg.UI
 		public virtual void RemoveChild(int index)
 		{
 			int i = 0;
-			foreach (var child in Children)
+			Children.Modify((list) =>
 			{
-				if (i++ == index)
+				if (index < list.Count)
 				{
-					RemoveChild(child);
-					return;
+					list.RemoveAt(index);
 				}
-			}
+			});
 		}
 
 		public void ReplaceChild(GuiWidget existing, GuiWidget replacement)
 		{
 			Children.Modify((list) =>
 			{
-				var pos = list.IndexOf(existing);
-				if (pos >= 0)
+				var index = list.IndexOf(existing);
+				if (index >= 0)
 				{
 					list.Remove(existing);
-					list.Insert(pos, replacement);
+					list.Insert(index, replacement);
 				}
 			});
 		}
