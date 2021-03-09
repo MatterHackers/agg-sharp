@@ -932,7 +932,12 @@ namespace MatterHackers.Agg.Image
 			return isVisible(pixelValue);
 		}
 
-		public void GetVisibleBounds(out RectangleInt visibleBounds, Func<Color, bool> isVisible)
+		/// <summary>
+		/// Calculate the visible bounds (set pixel) of a given images.
+		/// </summary>
+		/// <param name="visibleBounds">The returned bounds of the visible pixels</param>
+		/// <param name="isVisible">An optional function for defining the criteria of visibility</param>
+		public void GetVisibleBounds(out RectangleInt visibleBounds, Func<Color, bool> isVisible = null)
 		{
 			if (isVisible == null)
 			{
