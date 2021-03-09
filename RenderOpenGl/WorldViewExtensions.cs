@@ -207,6 +207,35 @@ namespace MatterHackers.RenderOpenGl
 			GL.Enable(EnableCap.Lighting);
 		}
 
+		public static void RenderPathOutline(this WorldView world, Matrix4X4 worldMatrix, IVertexSource path, Color color, double lineWidth = 1)
+		{
+			GLHelper.PrepareFor3DLineRender(true);
+			Frustum frustum = world.GetClippingFrustum();
+
+			Vector3 firstPosition = default(Vector3);
+			Vector3 prevPosition = default(Vector3);
+			foreach (var vertex in path.Vertices())
+			{
+				if (vertex.command == ShapePath.FlagsAndCommand.MoveTo)
+				{
+					firstPosition = prevPosition = new Vector3(vertex.position).Transform(worldMatrix);
+				}
+				else if (vertex.command == ShapePath.FlagsAndCommand.LineTo)
+				{
+					var position = new Vector3(vertex.position).Transform(worldMatrix);
+					world.Render3DLineNoPrep(frustum, prevPosition, position, color, lineWidth);
+					prevPosition = position;
+				}
+				else if (vertex.command.HasFlag(ShapePath.FlagsAndCommand.FlagClose))
+				{
+					world.Render3DLineNoPrep(frustum, prevPosition, firstPosition, color, lineWidth);
+				}
+			}
+
+			// turn the lighting back on
+			GL.Enable(EnableCap.Lighting);
+		}
+
 		public static void RenderAabb(this WorldView world, AxisAlignedBoundingBox bounds, Matrix4X4 matrix, Color color, double width, double extendLineLength = 0)
 		{
 			GLHelper.PrepareFor3DLineRender(true);
