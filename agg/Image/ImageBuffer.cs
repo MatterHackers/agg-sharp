@@ -932,7 +932,12 @@ namespace MatterHackers.Agg.Image
 			return isVisible(pixelValue);
 		}
 
-		public void GetVisibleBounds(out RectangleInt visibleBounds, Func<Color, bool> isVisible)
+		/// <summary>
+		/// Calculate the visible bounds (set pixel) of a given images.
+		/// </summary>
+		/// <param name="visibleBounds">The returned bounds of the visible pixels</param>
+		/// <param name="isVisible">An optional function for defining the criteria of visibility</param>
+		public void GetVisibleBounds(out RectangleInt visibleBounds, Func<Color, bool> isVisible = null)
 		{
 			if (isVisible == null)
 			{
@@ -1305,6 +1310,26 @@ namespace MatterHackers.Agg.Image
 
 	public static class ImageBufferExtensionMethods
 	{
+		/// <summary>
+		/// Flip pixels in the X axis
+		/// </summary>
+		public static ImageBuffer MirrorX(this ImageBuffer input)
+		{
+			var mirrored = new ImageBuffer(input);
+			mirrored.FlipX();
+			return mirrored;
+		}
+
+		/// <summary>
+		/// Flip pixels in the Y axis
+		/// </summary>
+		public static ImageBuffer MirrorY(this ImageBuffer input)
+		{
+			var mirrored = new ImageBuffer(input);
+			mirrored.FlipY();
+			return mirrored;
+		}
+
 		public static ImageBuffer CreateScaledImage(this ImageBuffer unscaledSourceImage, double width, double height)
 		{
 			return CreateScaledImage(unscaledSourceImage, (int)Math.Round(width), (int)Math.Round(height));
