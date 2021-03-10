@@ -3231,12 +3231,20 @@ namespace MatterHackers.Agg.UI
 			Parent?.SetCursor(cursorToSet);
 		}
 
+		/// <summary>
+		/// The mouse has entered the bounds of this widget and is also not over a child widget.
+		/// </summary>
+		/// <param name="mouseEvent">The mouse event that triggered this event</param>
 		public virtual void OnMouseEnter(MouseEventArgs mouseEvent)
 		{
 			SetCursor(Cursor);
 			MouseEnter?.Invoke(this, mouseEvent);
 		}
 
+		/// <summary>
+		/// The mouse has left the bounds of this widget but it may still be over a child widget.
+		/// </summary>
+		/// <param name="mouseEvent">The mouse event that triggered this event</param>
 		public virtual void OnMouseLeave(MouseEventArgs mouseEvent)
 		{
 			MouseLeave?.Invoke(this, mouseEvent);
@@ -3363,11 +3371,19 @@ namespace MatterHackers.Agg.UI
 			return null;
 		}
 
+		/// <summary>
+		/// The mouse has entered the bounds of this widget.  It may also be over a child.
+		/// </summary>
+		/// <param name="mouseEvent">The mouse event that triggered the enter</param>
 		public virtual void OnMouseEnterBounds(MouseEventArgs mouseEvent)
 		{
 			MouseEnterBounds?.Invoke(this, mouseEvent);
 		}
 
+		/// <summary>
+		/// The mouse has left the bounds of this widget.
+		/// </summary>
+		/// <param name="mouseEvent">The mouse event that triggered the leave</param>
 		public virtual void OnMouseLeaveBounds(MouseEventArgs mouseEvent)
 		{
 			MouseLeaveBounds?.Invoke(this, mouseEvent);
