@@ -85,9 +85,16 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		public static void Render(Mesh meshToRender, Color partColor, RenderTypes renderType = RenderTypes.Shaded, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color), Action meshChanged = null, bool blendTexture = true)
+		public static void Render(Mesh meshToRender,
+			Color partColor,
+			RenderTypes renderType = RenderTypes.Shaded,
+			Matrix4X4? meshToViewTransform = null,
+			Color wireFrameColor = default(Color),
+			Action meshChanged = null,
+			bool blendTexture = true,
+			bool forceCullBackFaces = true)
 		{
-			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture);
+			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture, forceCullBackFaces);
 		}
 
 		public static void Render(Mesh meshToRender,
@@ -98,7 +105,8 @@ namespace MatterHackers.RenderOpenGl
 			Color wireFrameColor = default(Color),
 			Action meshChanged = null,
 			bool blendTexture = true,
-			bool allowBspRendering = true)
+			bool allowBspRendering = true,
+			bool forceCullBackFaces = true)
 		{
 			if (meshToRender != null)
 			{
@@ -106,15 +114,21 @@ namespace MatterHackers.RenderOpenGl
 
 				if (color.Alpha0To1 < 1)
 				{
-					GL.Disable(EnableCap.CullFace);
+					if (forceCullBackFaces)
+					{
+						GL.Enable(EnableCap.CullFace);
+					}
+					else
+					{
+						// by default render back faces of transparent objects
+						GL.Disable(EnableCap.CullFace);
+					}
 					GL.Enable(EnableCap.Blend);
 				}
 				else
 				{
 					GL.Enable(EnableCap.CullFace);
-					// if we get a better transparency (like depth peeling) we should switch to rendering back faces
 					GL.Enable(EnableCap.Blend);
-					//GL.Disable(EnableCap.Blend);
 				}
 
 				GL.MatrixMode(MatrixMode.Modelview);
