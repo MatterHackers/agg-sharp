@@ -336,7 +336,9 @@ namespace MatterHackers.DataConverters3D
 				{
 					var vertexSourceNext = bottomPolygons.Offset(bevel[i].insetAmount * 1000);
 
-					mesh.CopyFaces(StitchLoopsTogether(vertexSourcePrev, zHeightSides, vertexSourceNext, bevel[0].height));
+					var walls = PathStitcher.Stitch(vertexSourceNext, zHeightSides * 1000, vertexSourcePrev, bevel[0].height * 1000);
+					walls.Transform(Matrix4X4.CreateScale(1 / 1000.0));
+					mesh.CopyFaces(walls);
 				}
 
 				// and set the level for the bottom wall polygons
@@ -407,24 +409,6 @@ namespace MatterHackers.DataConverters3D
 			mesh.CleanAndMerge();
 
 			return mesh;
-		}
-
-		private static Mesh StitchLoopsTogether(Polygons bottomLoop, double bottomHeight, Polygons topLoop, double topHeight)
-		{
-			var all = new Polygons();
-			all.AddRange(bottomLoop);
-			all.AddRange(topLoop);
-			all = all.GetCorrectedWinding();
-			var allTeselatedSource = new CachedTesselator();
-
-			var bevelLoop = all.CreateVertexStorage().TriangulateFaces(allTeselatedSource);
-
-			for (var i = 0; i < bevelLoop.Vertices.Count; i++)
-			{
-				bevelLoop.Vertices[i] = bevelLoop.Vertices[i] + new Vector3Float(0, 0, 16);
-			}
-
-			return bevelLoop;
 		}
 	}
 }
