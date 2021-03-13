@@ -308,7 +308,7 @@ namespace MatterHackers.DataConverters3D
 
 		public static Mesh Extrude(this IVertexSource vertexSourceIn,
 			double zHeightTop,
-			List<(double height, double offset)> bevel = null)
+			List<(double height, double insetAmount)> bevel = null)
 		{
 			Polygons bottomPolygons = vertexSourceIn.CreatePolygons();
 
@@ -325,7 +325,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				// add the top polygon
 				//vertexSourceIn.Offset(bevel[bevel.Count - 1].offset);
-				var vertexSourceTop = bottomPolygons.Offset(bevel[bevel.Count - 1].offset * 1000);
+				var vertexSourceTop = bottomPolygons.Offset(bevel[bevel.Count - 1].insetAmount * 1000);
 				vertexSourceTop.CreateVertexStorage().TriangulateFaces(bottomTeselatedSource, mesh);
 				mesh.Translate(new Vector3(0, 0, zHeightTop));
 
@@ -334,22 +334,9 @@ namespace MatterHackers.DataConverters3D
 
 				for (int i = 0; i < bevel.Count; i++)
 				{
-					var vertexSourceNext = bottomPolygons.Offset(bevel[i].offset * 1000);
+					var vertexSourceNext = bottomPolygons.Offset(bevel[i].insetAmount * 1000);
 
-					var all = new Polygons();
-					all.AddRange(vertexSourcePrev);
-					all.AddRange(vertexSourceNext);
-					all = all.GetCorrectedWinding();
-					var allTeselatedSource = new CachedTesselator();
-
-					var bevelLoop = all.CreateVertexStorage().TriangulateFaces(allTeselatedSource);
-
-					for (var j = 0; j < bevelLoop.Vertices.Count; j++)
-					{
-						bevelLoop.Vertices[j] = bevelLoop.Vertices[j] + new Vector3Float(0, 0, 16);
-					}
-
-					mesh.CopyFaces(bevelLoop);
+					mesh.CopyFaces(StitchLoopsTogether(vertexSourcePrev, zHeightSides, vertexSourceNext, bevel[0].height));
 				}
 
 				// and set the level for the bottom wall polygons
@@ -420,6 +407,24 @@ namespace MatterHackers.DataConverters3D
 			mesh.CleanAndMerge();
 
 			return mesh;
+		}
+
+		private static Mesh StitchLoopsTogether(Polygons bottomLoop, double bottomHeight, Polygons topLoop, double topHeight)
+		{
+			var all = new Polygons();
+			all.AddRange(bottomLoop);
+			all.AddRange(topLoop);
+			all = all.GetCorrectedWinding();
+			var allTeselatedSource = new CachedTesselator();
+
+			var bevelLoop = all.CreateVertexStorage().TriangulateFaces(allTeselatedSource);
+
+			for (var i = 0; i < bevelLoop.Vertices.Count; i++)
+			{
+				bevelLoop.Vertices[i] = bevelLoop.Vertices[i] + new Vector3Float(0, 0, 16);
+			}
+
+			return bevelLoop;
 		}
 	}
 }
