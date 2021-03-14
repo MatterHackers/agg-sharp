@@ -39,20 +39,22 @@ namespace MatterHackers.DataConverters3D
 
 	public static class PathStitcher
 	{
-		public static Mesh Stitch(Polygons bottomLoop, double bottomHeight, Polygons topLoop, double topHeight)
+		public static Mesh Stitch(Polygons bottomLoop, double bottomHeight, Polygons topLoop, double topHeight, double scaling = 1000)
 		{
 			// only a bottom
-			if (bottomLoop.Count > 0
-				&& topLoop.Count == 0)
+			if (bottomLoop?.Count > 0
+				&& (topLoop == null || topLoop.Count == 0))
 			{
-				return CreateBottom(bottomLoop, bottomHeight);
+				// if there is no top than we need to create a top
+				return CreateTop(bottomLoop, bottomHeight, scaling);
 			}
 
 			// only a top
-			if (bottomLoop.Count == 0
+			if ((bottomLoop == null || bottomLoop.Count == 0)
 				&& topLoop.Count > 0)
 			{
-				return CreateTop(topLoop, topHeight);
+				// if there is no bottom than we need to create  bottom
+				return CreateBottom(topLoop, topHeight, scaling);
 			}
 
 			// simple bottom and top
@@ -60,7 +62,9 @@ namespace MatterHackers.DataConverters3D
 				&& topLoop.Count == 1
 				&& bottomLoop[0].Count == topLoop[0].Count)
 			{
-				return CreateSimpleWall(bottomLoop[0], bottomHeight, topLoop[0], topHeight);
+				var mesh = CreateSimpleWall(bottomLoop[0], bottomHeight * 1000, topLoop[0], topHeight * 1000);
+				mesh.Transform(Matrix4X4.CreateScale(1 / scaling));
+				return mesh;
 			}
 
 			var all = new Polygons();
@@ -78,14 +82,16 @@ namespace MatterHackers.DataConverters3D
 			return bevelLoop;
 		}
 
-		private static Mesh CreateTop(Polygons path, double topHeight)
+		private static Mesh CreateTop(Polygons path, double topHeight, double scaling)
 		{
-			return path.CreateVertexStorage().TriangulateFaces(zHeight: topHeight);
+			return path.CreateVertexStorage(scaling).TriangulateFaces(zHeight: topHeight);
 		}
 
-		private static Mesh CreateBottom(Polygons path, double bottomHeight)
+		private static Mesh CreateBottom(Polygons path, double bottomHeight, double scaling)
 		{
-			return path.CreateVertexStorage().TriangulateFaces(zHeight: bottomHeight);
+			var mesh = path.CreateVertexStorage(scaling).TriangulateFaces(zHeight: bottomHeight);
+			mesh.ReverseFaces();
+			return mesh;
 		}
 
 		private static Mesh CreateSimpleWall(Polygon bottomLoop, double bottomHeight, Polygon topLoop, double topHeight)
@@ -97,14 +103,14 @@ namespace MatterHackers.DataConverters3D
 				mesh.CreateFace(new Vector3[]
 				{
 					new Vector3(bottomLoop[i].X, bottomLoop[i].Y, bottomHeight),
-					new Vector3(topLoop[i].X, topLoop[i].Y, topHeight),
 					new Vector3(bottomLoop[next].X, bottomLoop[next].Y, bottomHeight),
+					new Vector3(topLoop[i].X, topLoop[i].Y, topHeight),
 				});
 				mesh.CreateFace(new Vector3[]
 				{
 					new Vector3(bottomLoop[next].X, bottomLoop[next].Y, bottomHeight),
-					new Vector3(topLoop[i].X, topLoop[i].Y, topHeight),
 					new Vector3(topLoop[next].X, topLoop[next].Y, topHeight),
+					new Vector3(topLoop[i].X, topLoop[i].Y, topHeight),
 				});
 			}
 
