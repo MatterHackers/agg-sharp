@@ -308,63 +308,64 @@ namespace MatterHackers.DataConverters3D
 
 		public static Mesh Extrude(this IVertexSource vertexSourceIn,
 			double zHeightTop,
-			List<(double height, double offset)> bevel = null)
+			List<(double height, double insetAmount)> bevel = null)
 		{
 			Polygons bottomPolygons = vertexSourceIn.CreatePolygons();
 
 			// ensure good winding and consistent shapes
 			bottomPolygons = bottomPolygons.GetCorrectedWinding();
 
-			var bottomTeselatedSource = new CachedTesselator();
-
-			// add the top
 			var mesh = new Mesh();
-
-			var zHeightSides = zHeightTop;
+			
 			if (bevel != null)
 			{
-				// add the top polygon
-				//vertexSourceIn.Offset(bevel[bevel.Count - 1].offset);
-				var vertexSourceTop = bottomPolygons.Offset(bevel[bevel.Count - 1].offset * 1000);
-				vertexSourceTop.CreateVertexStorage().TriangulateFaces(bottomTeselatedSource, mesh);
-				mesh.Translate(new Vector3(0, 0, zHeightTop));
+				// create the bottom polygon
+				var bottom = PathStitcher.Stitch(null, 0, bottomPolygons, 0);
+				mesh.CopyFaces(bottom);
 
-				// add all the bevels
-				var vertexSourcePrev = bottomPolygons;
+				var bottomLoop = bottomPolygons;
+				var bottomHeight = 0.0;
+				// create all the walls
+				var topLoop = bottomPolygons;
+				var topHeight = bevel[0].height;
 
-				for (int i = 0; i < bevel.Count; i++)
+				int i = -1;
+				while (i < bevel.Count)
 				{
-					var vertexSourceNext = bottomPolygons.Offset(bevel[i].offset * 1000);
+					// add the top polygon
+					var walls = PathStitcher.Stitch(bottomLoop, bottomHeight, topLoop, topHeight);
+					mesh.CopyFaces(walls);
+					bottomLoop = topLoop;
+					bottomHeight = topHeight;
 
-					var all = new Polygons();
-					all.AddRange(vertexSourcePrev);
-					all.AddRange(vertexSourceNext);
-					all = all.GetCorrectedWinding();
-					var allTeselatedSource = new CachedTesselator();
-
-					var bevelLoop = all.CreateVertexStorage().TriangulateFaces(allTeselatedSource);
-
-					for (var j = 0; j < bevelLoop.Vertices.Count; j++)
+					i++;
+					if (i < bevel.Count)
 					{
-						bevelLoop.Vertices[j] = bevelLoop.Vertices[j] + new Vector3Float(0, 0, 16);
+						topLoop = bottomPolygons.Offset(bevel[i].insetAmount * 1000);
+						if (i == bevel.Count - 1)
+						{
+							topHeight = zHeightTop;
+						}
+						else
+						{
+							topHeight = bevel[i + 1].height;
+						}
 					}
-
-					mesh.CopyFaces(bevelLoop);
 				}
 
-				// and set the level for the bottom wall polygons
-				zHeightSides = bevel[0].height;
+				// create the top polygon
+				var top = PathStitcher.Stitch(topLoop, zHeightTop, null, 0);
+				mesh.CopyFaces(top);
+				mesh.CleanAndMerge();
+				return mesh;
+			}
 
-				var vertexSourceBottom = bottomPolygons.CreateVertexStorage();
-				vertexSourceBottom.TriangulateFaces(bottomTeselatedSource);
-			}
-			else
-			{
-				// add the top polygon
-				var vertexSourceBottom = bottomPolygons.CreateVertexStorage();
-				vertexSourceBottom.TriangulateFaces(bottomTeselatedSource, mesh);
-				mesh.Translate(new Vector3(0, 0, zHeightTop));
-			}
+			var bottomTeselatedSource = new CachedTesselator();
+
+			// add the top polygon
+			var vertexSourceBottom = bottomPolygons.CreateVertexStorage();
+			vertexSourceBottom.TriangulateFaces(bottomTeselatedSource, mesh);
+			mesh.Translate(new Vector3(0, 0, zHeightTop));
 
 			int numIndicies = bottomTeselatedSource.IndicesCache.Count;
 
@@ -383,9 +384,9 @@ namespace MatterHackers.DataConverters3D
 				var bottomVertex1 = new Vector3(v1, 0);
 				var bottomVertex2 = new Vector3(v2, 0);
 
-				var topVertex0 = new Vector3(v0, zHeightSides);
-				var topVertex1 = new Vector3(v1, zHeightSides);
-				var topVertex2 = new Vector3(v2, zHeightSides);
+				var topVertex0 = new Vector3(v0, zHeightTop);
+				var topVertex1 = new Vector3(v1, zHeightTop);
+				var topVertex2 = new Vector3(v2, zHeightTop);
 
 				if (bottomTeselatedSource.IndicesCache[i + 0].IsEdge)
 				{

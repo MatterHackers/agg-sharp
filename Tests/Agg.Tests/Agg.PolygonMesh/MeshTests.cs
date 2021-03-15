@@ -31,15 +31,18 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
+using ClipperLib;
 using MatterHackers.Agg.Image;
+using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh.Csg;
-using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
+	using Polygons = List<List<IntPoint>>;
+	using Polygon = List<IntPoint>;
+
 	[TestFixture, Category("Agg.PolygonMesh")]
 	public class MeshTests
 	{
@@ -216,6 +219,72 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Assert.AreEqual(2, closedLoops.Count);
 				var union = SliceLayer.UnionClosedPolygons(closedLoops);
 				Assert.AreEqual(1, union.Count);
+			}
+		}
+
+		[Test]
+		public void SingleLoopStiching()
+		{
+			// only a CCW bottom
+			{
+				var bottom = PolygonsExtensions.CreateFromString("0,0, 100,0, 100,100, 0,100");
+				var top = PolygonsExtensions.CreateFromString("");
+				var mesh = PathStitcher.Stitch(bottom, 0, top, 10);
+				// only a bottom face, no walls
+				Assert.AreEqual(2, mesh.Faces.Count);
+				foreach (var vertex in mesh.Vertices)
+				{
+					Assert.AreEqual(0, vertex.Z);
+				}
+			}
+
+			// only a CCW top
+			{
+				var bottom = PolygonsExtensions.CreateFromString("");
+				var top = PolygonsExtensions.CreateFromString("0,0, 100,0, 100,100, 0,100");
+				var mesh = PathStitcher.Stitch(bottom, 0, top, 10);
+				// only a top face, no walls
+				// only a bottom face, no walls
+				Assert.AreEqual(2, mesh.Faces.Count);
+				foreach (var vertex in mesh.Vertices)
+				{
+					Assert.AreEqual(10, vertex.Z);
+				}
+			}
+
+			// a simple skirt wound ccw
+			{
+				var bottom = PolygonsExtensions.CreateFromString("0,0, 100,0, 100,100, 0,100");
+				var top = PolygonsExtensions.CreateFromString("0,0 ,100,0, 100,100, 0,100");
+				var mesh = PathStitcher.Stitch(bottom, 0, top, 10);
+				Assert.AreEqual(8, mesh.Faces.Count);
+			}
+
+			// a simple skirt wound CW (error condition)
+			{
+				var bottom = PolygonsExtensions.CreateFromString("0,0, 0,100, 100,100, 100,0");
+				var top = PolygonsExtensions.CreateFromString("0,0, 0,100, 100,100, 100,0");
+				var mesh = PathStitcher.Stitch(bottom, 0, top, 10);
+				Assert.AreEqual(0, mesh.Faces.Count);
+			}
+
+			// only a CW bottom (error condition)
+			{
+				var bottom = PolygonsExtensions.CreateFromString("0,0, 0,100, 100,100, 100,0");
+				var top = PolygonsExtensions.CreateFromString("");
+				var mesh = PathStitcher.Stitch(bottom, 0, top, 10);
+				// only a bottom face, no walls
+				Assert.AreEqual(0, mesh.Faces.Count);
+			}
+
+			// only a CW top (error condition)
+			{
+				var bottom = PolygonsExtensions.CreateFromString("");
+				var top = PolygonsExtensions.CreateFromString("0,0, 0,100, 100,100, 100,0");
+				var mesh = PathStitcher.Stitch(bottom, 0, top, 10);
+				// only a top face, no walls
+				// only a bottom face, no walls
+				Assert.AreEqual(0, mesh.Faces.Count);
 			}
 		}
 
