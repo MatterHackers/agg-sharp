@@ -210,13 +210,14 @@ namespace MatterHackers.GlfwProvider
 				Graphics2D graphics2D = NewGraphics2D();
 				for (var i = 0; i < this.WindowProvider.OpenWindows.Count; i++)
 				{
+					var window = this.WindowProvider.OpenWindows[i];
 					if (i > 0)
 					{
+						window.Size = systemWindow.Size;
 						ResetViewport();
 						graphics2D.FillRectangle(this.WindowProvider.OpenWindows[0].LocalBounds, new Agg.Color(Agg.Color.Black, 160));
 					}
-
-					var window = this.WindowProvider.OpenWindows[i];
+					
 					window.OnDraw(graphics2D);
 				}
 
