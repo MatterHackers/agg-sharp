@@ -146,7 +146,16 @@ namespace MatterHackers.Agg.UI
 		/// Gets or sets the number of decimal places to show with this number. Max is currently 10
 		/// any number below 0 will render without formating (string default behavior).
 		/// </summary>
-		public int MaxDecimalsPlaces { get; set; } = -1;
+		private int _maxDecimalsPlaces = -1;
+		public int MaxDecimalsPlaces
+		{
+			get => _maxDecimalsPlaces;
+			set
+			{
+				_maxDecimalsPlaces = value;
+				Value = Value;
+			}
+		}
 
 		public double Value
 		{
@@ -185,11 +194,8 @@ namespace MatterHackers.Agg.UI
 					double currentValue;
 					if (double.TryParse(Text, out currentValue))
 					{
-						if (currentValue != newValue)
-						{
-							// the text does not match the value so set it
-							Text = newValue.ToString(format);
-						}
+						// the text does not match the value so set it
+						Text = newValue.ToString(format);
 					}
 					else // the text cannot be parsed so set it
 					{
