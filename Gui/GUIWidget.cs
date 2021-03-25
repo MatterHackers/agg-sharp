@@ -3350,6 +3350,19 @@ namespace MatterHackers.Agg.UI
 			return foundChildren;
 		}
 
+		/// <summary>
+		/// Broadcast a message and event to every child recursively, regardless of visibility or enabled state.
+		/// </summary>
+		/// <param name="message">A text string to describe the event</param>
+		/// <param name="eventArgs">The event that is broadcast</param>
+		public void Broadcast(string message, EventArgs eventArgs)
+		{
+			foreach (var child in Children)
+			{
+				child.Broadcast(message, eventArgs);
+			}
+		}
+
 		public GuiWidget FindDescendant(string nameToSearchFor)
 		{
 			if (Name == nameToSearchFor)
