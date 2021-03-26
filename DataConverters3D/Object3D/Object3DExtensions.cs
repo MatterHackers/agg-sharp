@@ -322,12 +322,18 @@ namespace MatterHackers.DataConverters3D
 		public static async Task PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null, bool publishAssets = false)
 		{
 			// Must use DescendantsAndSelf so that leaf nodes save their meshes
-			var persistableItems = from object3D in sourceItem.DescendantsAndSelf()
-								   where object3D.WorldPersistable() &&
-										  (((object3D.MeshPath == null || publishAssets) && object3D.Mesh != null)
-										  || (object3D is IAssetObject && publishAssets))
-										  && object3D.Mesh != Object3D.FileMissingMesh // Ignore items assigned the FileMissing mesh
-								   select object3D;
+			var persistableItems = sourceItem.DescendantsAndSelf().Where(object3D =>
+			{
+				var needSave = (object3D.MeshPath == null || publishAssets);
+				var needSaveAndHaveMesh = (needSave && object3D.Mesh != null);
+				var assetObjectAndPublish = (object3D is IAssetObject && publishAssets);
+				var meshOrAssetNeedingSave = (needSaveAndHaveMesh || assetObjectAndPublish);
+				// Ignore items assigned the FileMissing mesh
+				var invalidMesh = object3D.Mesh == Object3D.FileMissingMesh;
+				return object3D.WorldPersistable() 
+					&& meshOrAssetNeedingSave
+					&& !invalidMesh;
+			});
 
 			Directory.CreateDirectory(Object3D.AssetsPath);
 
