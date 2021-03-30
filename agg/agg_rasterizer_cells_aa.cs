@@ -560,7 +560,7 @@ namespace MatterHackers.Agg
 			b = temp;
 		}
 
-		private enum qsort { qsort_threshold = 9 };
+		private enum qsort { threshold = 9 };
 	}
 
 	//------------------------------------------------------scanline_hit_test
