@@ -227,31 +227,58 @@ namespace MatterHackers.Agg.Image
 
 		public static bool SaveImageData(string filename, IImageByte sourceImage)
 		{
+			using (var fs = new FileStream(filename, FileMode.CreateNew))
+			{
+				return SaveImageData(fs, Path.GetExtension(filename), sourceImage);
+			}
+		}
+
+		private static Image<Rgba32> ImageBufferToImage32(IImageByte sourceImage)
+		{
+			var source = sourceImage.GetBuffer();
+			var invertedBuffer = new byte[source.Length];
+			int index = 0;
+			for (int y = sourceImage.Height - 1; y >= 0; y--)
+			{
+				var line = sourceImage.GetBufferOffsetY(y);
+				for (int x = 0; x < sourceImage.Width; x++)
+				{
+					var pix = x * 4;
+					invertedBuffer[index++] = source[line + pix + 2];
+					invertedBuffer[index++] = source[line + pix + 1];
+					invertedBuffer[index++] = source[line + pix + 0];
+					invertedBuffer[index++] = source[line + pix + 3];
+				}
+			}
+
+			var image2 = SixLabors.ImageSharp.Image.LoadPixelData<Rgba32>(invertedBuffer,
+				sourceImage.Width,
+				sourceImage.Height);
+			return image2;
+		}
+
+		public static bool SaveImageData(Stream stream, string extension, IImageByte sourceImage)
+		{
 			try
 			{
-				using (var tgaSave = new MemoryStream())
+				Image<Rgba32> image2 = ImageBufferToImage32(sourceImage);
+				var formatManager = new SixLabors.ImageSharp.Formats.ImageFormatManager();
+				SixLabors.ImageSharp.Formats.IImageFormat imageFormat = null;
+				switch(extension.ToLower())
 				{
-					var source = sourceImage.GetBuffer();
-					var invertedBuffer = new byte[source.Length];
-					int index = 0;
-					for (int y = sourceImage.Height - 1; y >= 0; y--)
-					{
-						var line = sourceImage.GetBufferOffsetY(y);
-						for (int x = 0; x < sourceImage.Width; x++)
-						{
-							var pix = x * 4;
-							invertedBuffer[index++] = source[line + pix + 2];
-							invertedBuffer[index++] = source[line + pix + 1];
-							invertedBuffer[index++] = source[line + pix + 0];
-							invertedBuffer[index++] = source[line + pix + 3];
-						}
-					}
-
-					var image2 = SixLabors.ImageSharp.Image.LoadPixelData<Rgba32>(invertedBuffer,
-						sourceImage.Width,
-						sourceImage.Height);
-					image2.Save(filename);
+					case ".jpg":
+						imageFormat = SixLabors.ImageSharp.Formats.Jpeg.JpegFormat.Instance;
+						break;
+					case ".png":
+						imageFormat = SixLabors.ImageSharp.Formats.Png.PngFormat.Instance;
+						break;
+					case ".gif":
+						imageFormat = SixLabors.ImageSharp.Formats.Gif.GifFormat.Instance;
+						break;
+					default:
+						throw new NotImplementedException();
 				}
+				image2.Save(stream, imageFormat);
 
 				return true;
 			}
