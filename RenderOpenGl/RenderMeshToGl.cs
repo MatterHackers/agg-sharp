@@ -112,6 +112,8 @@ namespace MatterHackers.RenderOpenGl
 			{
 				GL.Color4(color.Red0To255, color.Green0To255, color.Blue0To255, color.Alpha0To255);
 
+				GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+
 				if (color.Alpha0To1 < 1)
 				{
 					if (forceCullBackFaces)
