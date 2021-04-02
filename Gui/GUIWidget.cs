@@ -1603,16 +1603,20 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public virtual void RemoveChild(int index)
+		public virtual GuiWidget RemoveChild(int index)
 		{
+			GuiWidget childThatWasRemove = null;
 			int i = 0;
 			Children.Modify((list) =>
 			{
 				if (index < list.Count)
 				{
+					childThatWasRemove = list[index];
 					list.RemoveAt(index);
 				}
 			});
+
+			return childThatWasRemove;
 		}
 
 		public void ReplaceChild(GuiWidget existing, GuiWidget replacement)

@@ -205,9 +205,9 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override void RemoveChild(int index)
+		public override GuiWidget RemoveChild(int index)
 		{
-			topToBottomItemList.RemoveChild(index);
+			return topToBottomItemList.RemoveChild(index);
 		}
 
 		public override void RemoveChild(GuiWidget childToRemove)
