@@ -17,19 +17,19 @@ namespace MatterHackers.RayTracer
 {
 	public class PlaneShape : BaseShape
 	{
-		private Plane plane;
+		public Plane Plane;
 		public ColorF OddColor;
 
 		public PlaneShape(Vector3 planeNormal, double distanceFromOrigin, MaterialAbstract material)
 		{
-			plane = new Plane(planeNormal, distanceFromOrigin);
+			Plane = new Plane(planeNormal, distanceFromOrigin);
 			Material = material;
 		}
 
 		public PlaneShape(Vector3 planeNormal, double distanceFromOrigin, ColorF color, ColorF oddcolor, double reflection, double transparency)
 		{
-			plane.Normal = planeNormal;
-			plane.DistanceFromOrigin = distanceFromOrigin;
+			Plane.Normal = planeNormal;
+			Plane.DistanceFromOrigin = distanceFromOrigin;
 			//Color = color;
 			OddColor = oddcolor;
 			//Transparency = transparency;
@@ -54,7 +54,7 @@ namespace MatterHackers.RayTracer
 		public override IntersectInfo GetClosestIntersection(Ray ray)
 		{
 			bool inFront;
-			double distanceToHit = plane.GetDistanceToIntersection(ray, out inFront);
+			double distanceToHit = Plane.GetDistanceToIntersection(ray, out inFront);
 			if (distanceToHit > 0)
 			{
 				return new IntersectInfo
@@ -62,7 +62,7 @@ namespace MatterHackers.RayTracer
 					ClosestHitObject = this,
 					HitType = IntersectionType.FrontFace,
 					HitPosition = ray.origin + ray.directionNormal * distanceToHit,
-					NormalAtHit = plane.Normal,
+					NormalAtHit = Plane.Normal,
 					DistanceToHit = distanceToHit
 				};
 			}
@@ -82,14 +82,14 @@ namespace MatterHackers.RayTracer
 
 		public override string ToString()
 		{
-			return string.Format("Sphere {0}x+{1}y+{2}z+{3}=0)", plane.Normal.X, plane.Normal.Y, plane.Normal.Z, plane.DistanceFromOrigin);
+			return string.Format("Sphere {0}x+{1}y+{2}z+{3}=0)", Plane.Normal.X, Plane.Normal.Y, Plane.Normal.Z, Plane.DistanceFromOrigin);
 		}
 
 		public override (double u, double v) GetUv(IntersectInfo info)
 		{
-			Vector3 Position = plane.Normal;
+			Vector3 Position = Plane.Normal;
 			Vector3 vecU = new Vector3(Position.Y, Position.Z, -Position.X);
-			Vector3 vecV = Vector3Ex.Cross(vecU, plane.Normal);
+			Vector3 vecV = Vector3Ex.Cross(vecU, Plane.Normal);
 
 			double u = Vector3Ex.Dot(info.HitPosition, vecU);
 			double v = Vector3Ex.Dot(info.HitPosition, vecV);

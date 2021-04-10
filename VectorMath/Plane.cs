@@ -150,9 +150,9 @@ namespace MatterHackers.VectorMath
 			double startDistance = GetDistanceFromPlane(startPoint);
 			double endDistance = GetDistanceFromPlane(endPoint);
 
-			if(startDistance < 0)
+			if (startDistance < 0)
 			{
-				if(endDistance < 0)
+				if (endDistance < 0)
 				{
 					// both points are behind the plane
 					return false;
@@ -166,7 +166,7 @@ namespace MatterHackers.VectorMath
 				double startClipRatio = startDistance / (endDistance - startDistance);
 				startPoint = startPoint + lineNormal * (lineLength * startClipRatio);
 			}
-			else if(endDistance < 0)
+			else if (endDistance < 0)
 			{
 				// the end point must be clipped
 				// get the normal in the direction of the start point
@@ -183,13 +183,23 @@ namespace MatterHackers.VectorMath
 
 		public bool Equals(Plane control, double normalError, double lengthError)
 		{
-			if(Normal.Equals(control.Normal, normalError)
+			if (Normal.Equals(control.Normal, normalError)
 				&& Math.Abs(DistanceFromOrigin - control.DistanceFromOrigin) < lengthError)
 			{
 				return true;
 			}
 
 			return false;
+		}
+
+		/// <summary>
+		/// Transform this mesh by the matrix and return the transformed mesh
+		/// </summary>
+		/// <param name="matrix">The matrix to transform by</param>
+		/// <returns>The mesh after being transformed</returns>
+		public Plane Transform(Matrix4X4 matrix)
+		{
+			return Transform(this, matrix);
 		}
 
 		public static Plane Transform(Plane inputPlane, Matrix4X4 matrix)
@@ -295,7 +305,7 @@ namespace MatterHackers.VectorMath
 				return true;
 			}
 
-			if((distanceToStartFromOrigin < 0 && distanceToEndFromOrigin > 0)
+			if ((distanceToStartFromOrigin < 0 && distanceToEndFromOrigin > 0)
 				|| (distanceToStartFromOrigin > 0 && distanceToEndFromOrigin < 0))
 			{
 				Vector3 direction = (end - start).GetNormal();

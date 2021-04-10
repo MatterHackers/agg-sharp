@@ -53,6 +53,24 @@ namespace MatterHackers.RenderOpenGl
 			return frustum2;
 		}
 
+		public static void RenderPlane(this WorldView world, Plane plane, MatterHackers.Agg.Color color, bool doDepthTest, double rectSize, double lineWidth)
+		{
+			var clipping = world.GetClippingFrustum();
+			// get any perpendicular to the normal (we call it x to make it clear where to apply it)
+			var perpendicularX = plane.Normal.GetPerpendicular().GetNormal() * rectSize;
+			// get a second perpendicular that is perpendicular to both
+			var perpendicularY = Vector3.GetPerpendicular(plane.Normal, perpendicularX).GetNormal() * rectSize;
+			var pointOnPlane = plane.Normal * plane.DistanceFromOrigin;
+			// the top line
+			world.Render3DLine(clipping, pointOnPlane - perpendicularX + perpendicularY, pointOnPlane + perpendicularX + perpendicularY, color, doDepthTest, lineWidth);
+			// the bottom line
+			world.Render3DLine(clipping, pointOnPlane - perpendicularX - perpendicularY, pointOnPlane + perpendicularX - perpendicularY, color, doDepthTest, lineWidth);
+			// the left line
+			world.Render3DLine(clipping, pointOnPlane - perpendicularX - perpendicularY, pointOnPlane - perpendicularX + perpendicularY, color, doDepthTest, lineWidth);
+			// the right line
+			world.Render3DLine(clipping, pointOnPlane + perpendicularX - perpendicularY, pointOnPlane + perpendicularX + perpendicularY, color, doDepthTest, lineWidth);
+		}
+
 		/// <summary>
 		/// Draw a line in the scene in 3D but scale it such that it appears as a 2D line in the view.
 		/// If drawing lots of lines call with a pre-calculated clipping frustum.
