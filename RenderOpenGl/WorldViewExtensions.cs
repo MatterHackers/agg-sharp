@@ -53,22 +53,26 @@ namespace MatterHackers.RenderOpenGl
 			return frustum2;
 		}
 
-		public static void RenderPlane(this WorldView world, Plane plane, MatterHackers.Agg.Color color, bool doDepthTest, double rectSize, double lineWidth)
+		public static void RenderPlane(this WorldView world, Plane plane, Color color, bool doDepthTest, double rectSize, double lineWidth)
+		{
+			world.RenderPlane(plane.Normal * plane.DistanceFromOrigin, plane.Normal, color, doDepthTest, rectSize, lineWidth);
+		}
+
+		public static void RenderPlane(this WorldView world, Vector3 position, Vector3 normal, MatterHackers.Agg.Color color, bool doDepthTest, double rectSize, double lineWidth)
 		{
 			var clipping = world.GetClippingFrustum();
 			// get any perpendicular to the normal (we call it x to make it clear where to apply it)
-			var perpendicularX = plane.Normal.GetPerpendicular().GetNormal() * rectSize;
+			var perpendicularX = normal.GetPerpendicular().GetNormal() * rectSize;
 			// get a second perpendicular that is perpendicular to both
-			var perpendicularY = Vector3.GetPerpendicular(plane.Normal, perpendicularX).GetNormal() * rectSize;
-			var pointOnPlane = plane.Normal * plane.DistanceFromOrigin;
+			var perpendicularY = Vector3.GetPerpendicular(normal, perpendicularX).GetNormal() * rectSize;
 			// the top line
-			world.Render3DLine(clipping, pointOnPlane - perpendicularX + perpendicularY, pointOnPlane + perpendicularX + perpendicularY, color, doDepthTest, lineWidth);
+			world.Render3DLine(clipping, position - perpendicularX + perpendicularY, position + perpendicularX + perpendicularY, color, doDepthTest, lineWidth);
 			// the bottom line
-			world.Render3DLine(clipping, pointOnPlane - perpendicularX - perpendicularY, pointOnPlane + perpendicularX - perpendicularY, color, doDepthTest, lineWidth);
+			world.Render3DLine(clipping, position - perpendicularX - perpendicularY, position + perpendicularX - perpendicularY, color, doDepthTest, lineWidth);
 			// the left line
-			world.Render3DLine(clipping, pointOnPlane - perpendicularX - perpendicularY, pointOnPlane - perpendicularX + perpendicularY, color, doDepthTest, lineWidth);
+			world.Render3DLine(clipping, position - perpendicularX - perpendicularY, position - perpendicularX + perpendicularY, color, doDepthTest, lineWidth);
 			// the right line
-			world.Render3DLine(clipping, pointOnPlane + perpendicularX - perpendicularY, pointOnPlane + perpendicularX + perpendicularY, color, doDepthTest, lineWidth);
+			world.Render3DLine(clipping, position + perpendicularX - perpendicularY, position + perpendicularX + perpendicularY, color, doDepthTest, lineWidth);
 		}
 
 		/// <summary>

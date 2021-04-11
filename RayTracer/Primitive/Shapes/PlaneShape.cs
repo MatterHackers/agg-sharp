@@ -20,10 +20,15 @@ namespace MatterHackers.RayTracer
 		public Plane Plane;
 		public ColorF OddColor;
 
-		public PlaneShape(Vector3 planeNormal, double distanceFromOrigin, MaterialAbstract material)
+		public PlaneShape(Plane plane, MaterialAbstract material)
 		{
-			Plane = new Plane(planeNormal, distanceFromOrigin);
+			Plane = plane;
 			Material = material;
+		}
+
+		public PlaneShape(Vector3 planeNormal, double distanceFromOrigin, MaterialAbstract material)
+			: this(new Plane(planeNormal, distanceFromOrigin), material)
+		{
 		}
 
 		public PlaneShape(Vector3 planeNormal, double distanceFromOrigin, ColorF color, ColorF oddcolor, double reflection, double transparency)
