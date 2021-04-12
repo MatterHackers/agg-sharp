@@ -657,6 +657,30 @@ namespace MatterHackers.VectorMath
 			return Math.Abs((b - a).Cross(c - a).Length) < epsilon;
 		}
 
+		/// <summary>
+		/// Given an arbitrary vector find a perpendicular from the infinite perpendiculars that are available
+		/// </summary>
+		/// <param name="a">The vector to find a perpendicular for</param>
+		/// <returns>A perpendicular vector to a</returns>
+		public Vector3 GetPerpendicular()
+		{
+			if (this.X != 0)
+			{
+				return new Vector3(-(this.Y + this.Z) / this.X, 1, 1);
+			}
+			else if (this.Y != 0)
+			{
+				return new Vector3(1, -(this.X + this.Z) / this.Y, 1);
+			}
+			else if (this.Z != 0)
+			{
+				return new Vector3(1, 1, -(this.X + this.Y) / this.Z);
+			}
+
+			// the input vector has no length (no vector is perpendicular to it)
+			return default(Vector3);
+		}
+		
 		public static Vector3 GetPerpendicular(Vector3 a, Vector3 b)
 		{
 			if (!Collinear(a, b, Zero))

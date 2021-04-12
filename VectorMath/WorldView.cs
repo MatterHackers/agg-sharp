@@ -166,6 +166,14 @@ namespace MatterHackers.VectorMath
 			return new Ray(origin, finalRayWorld);
 		}
 
+		public Vector3 EyePosition
+		{
+			get
+			{
+				return Vector3Ex.Transform(Vector3.Zero, InverseModelviewMatrix);
+			}
+		}
+
 		public Vector2 GetScreenPosition(Vector3 worldPosition)
 		{
 			Vector3 homoginizedViewPosition = Vector3Ex.Transform(worldPosition, this.ModelviewMatrix);

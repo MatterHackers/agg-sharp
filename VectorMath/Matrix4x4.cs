@@ -1151,118 +1151,83 @@ namespace MatterHackers.VectorMath
 		/// <exception cref="InvalidOperationException">Thrown if the Matrix4d is singular.</exception>
 		public static Matrix4X4 Invert(Matrix4X4 mat)
 		{
-			int[] colIdx = { 0, 0, 0, 0 };
-			int[] rowIdx = { 0, 0, 0, 0 };
-			int[] pivotIdx = { -1, -1, -1, -1 };
+			// Original implementation can be found here:
+			// https://github.com/dotnet/runtime/blob/79ae74f5ca5c8a6fe3a48935e85bd7374959c570/src/libraries/System.Private.CoreLib/src/System/Numerics/Matrix4x4.cs#L1556
+#pragma warning disable SA1407 // Arithmetic expressions should declare precedence
+			double a = mat.M11, b = mat.M21, c = mat.M31, d = mat.M41;
+			double e = mat.M12, f = mat.M22, g = mat.M32, h = mat.M42;
+			double i = mat.M13, j = mat.M23, k = mat.M33, l = mat.M43;
+			double m = mat.M14, n = mat.M24, o = mat.M34, p = mat.M44;
 
-			// convert the matrix to an array for easy looping
-			double[,] inverse = {{mat.Row0.X, mat.Row0.Y, mat.Row0.Z, mat.Row0.W},
-                                {mat.Row1.X, mat.Row1.Y, mat.Row1.Z, mat.Row1.W},
-                                {mat.Row2.X, mat.Row2.Y, mat.Row2.Z, mat.Row2.W},
-                                {mat.Row3.X, mat.Row3.Y, mat.Row3.Z, mat.Row3.W} };
-			int icol = 0;
-			int irow = 0;
-			for (int i = 0; i < 4; i++)
+			double kp_lo = k * p - l * o;
+			double jp_ln = j * p - l * n;
+			double jo_kn = j * o - k * n;
+			double ip_lm = i * p - l * m;
+			double io_km = i * o - k * m;
+			double in_jm = i * n - j * m;
+
+			double a11 = +(f * kp_lo - g * jp_ln + h * jo_kn);
+			double a12 = -(e * kp_lo - g * ip_lm + h * io_km);
+			double a13 = +(e * jp_ln - f * ip_lm + h * in_jm);
+			double a14 = -(e * jo_kn - f * io_km + g * in_jm);
+
+			double det = a * a11 + b * a12 + c * a13 + d * a14;
+
+			if (Math.Abs(det) < double.Epsilon)
 			{
-				// Find the largest pivot value
-				double maxPivot = 0.0;
-				for (int j = 0; j < 4; j++)
-				{
-					if (pivotIdx[j] != 0)
-					{
-						for (int k = 0; k < 4; ++k)
-						{
-							if (pivotIdx[k] == -1)
-							{
-								double absVal = System.Math.Abs(inverse[j, k]);
-								if (absVal > maxPivot)
-								{
-									maxPivot = absVal;
-									irow = j;
-									icol = k;
-								}
-							}
-							else if (pivotIdx[k] > 0)
-							{
-								return mat;
-							}
-						}
-					}
-				}
-
-				++(pivotIdx[icol]);
-
-				// Swap rows over so pivot is on diagonal
-				if (irow != icol)
-				{
-					for (int k = 0; k < 4; ++k)
-					{
-						double f = inverse[irow, k];
-						inverse[irow, k] = inverse[icol, k];
-						inverse[icol, k] = f;
-					}
-				}
-
-				rowIdx[i] = irow;
-				colIdx[i] = icol;
-
-				double pivot = inverse[icol, icol];
-				// check for singular matrix
-				if (pivot == 0.0)
-				{
-					//throw new InvalidOperationException("Matrix is singular and cannot be inverted.");
-					return mat;
-				}
-
-				// Scale row so it has a unit diagonal
-				double oneOverPivot = 1.0 / pivot;
-				inverse[icol, icol] = 1.0;
-				for (int k = 0; k < 4; ++k)
-					inverse[icol, k] *= oneOverPivot;
-
-				// Do elimination of non-diagonal elements
-				for (int j = 0; j < 4; ++j)
-				{
-					// check this isn't on the diagonal
-					if (icol != j)
-					{
-						double f = inverse[j, icol];
-						inverse[j, icol] = 0.0;
-						for (int k = 0; k < 4; ++k)
-							inverse[j, k] -= inverse[icol, k] * f;
-					}
-				}
+				throw new InvalidOperationException("Matrix is singular and cannot be inverted.");
 			}
 
-			for (int j = 3; j >= 0; --j)
-			{
-				int ir = rowIdx[j];
-				int ic = colIdx[j];
-				for (int k = 0; k < 4; ++k)
-				{
-					double f = inverse[k, ir];
-					inverse[k, ir] = inverse[k, ic];
-					inverse[k, ic] = f;
-				}
-			}
+			double invDet = 1.0f / det;
+			var result = default(Matrix4X4);
 
-			mat.Row0 = new Vector4(inverse[0, 0], inverse[0, 1], inverse[0, 2], inverse[0, 3]);
-			mat.Row1 = new Vector4(inverse[1, 0], inverse[1, 1], inverse[1, 2], inverse[1, 3]);
-			mat.Row2 = new Vector4(inverse[2, 0], inverse[2, 1], inverse[2, 2], inverse[2, 3]);
-			mat.Row3 = new Vector4(inverse[3, 0], inverse[3, 1], inverse[3, 2], inverse[3, 3]);
-			return mat;
+			result.Row0 = new Vector4(a11, a12, a13, a14) * invDet;
+
+			result.Row1 = new Vector4(
+				-(b * kp_lo - c * jp_ln + d * jo_kn),
+				+(a * kp_lo - c * ip_lm + d * io_km),
+				-(a * jp_ln - b * ip_lm + d * in_jm),
+				+(a * jo_kn - b * io_km + c * in_jm)) * invDet;
+
+			double gp_ho = g * p - h * o;
+			double fp_hn = f * p - h * n;
+			double fo_gn = f * o - g * n;
+			double ep_hm = e * p - h * m;
+			double eo_gm = e * o - g * m;
+			double en_fm = e * n - f * m;
+
+			result.Row2 = new Vector4(
+				+(b * gp_ho - c * fp_hn + d * fo_gn),
+				-(a * gp_ho - c * ep_hm + d * eo_gm),
+				+(a * fp_hn - b * ep_hm + d * en_fm),
+				-(a * fo_gn - b * eo_gm + c * en_fm)) * invDet;
+
+			double gl_hk = g * l - h * k;
+			double fl_hj = f * l - h * j;
+			double fk_gj = f * k - g * j;
+			double el_hi = e * l - h * i;
+			double ek_gi = e * k - g * i;
+			double ej_fi = e * j - f * i;
+
+			result.Row3 = new Vector4(
+				-(b * gl_hk - c * fl_hj + d * fk_gj),
+				+(a * gl_hk - c * el_hi + d * ek_gi),
+				-(a * fl_hj - b * el_hi + d * ej_fi),
+				+(a * fk_gj - b * ek_gi + c * ej_fi)) * invDet;
+#pragma warning restore SA1407 // Arithmetic expressions should declare precedence
+			return result;
 		}
 
 			#endregion Invert Functions
 
 			#region Transpose
 
-		/// <summary>
-		/// Calculate the transpose of the given matrix
-		/// </summary>
-		/// <param name="mat">The matrix to transpose</param>
-		/// <returns>The transpose of the given matrix</returns>
-		public static Matrix4X4 Transpose(Matrix4X4 mat)
+			/// <summary>
+			/// Calculate the transpose of the given matrix
+			/// </summary>
+			/// <param name="mat">The matrix to transpose</param>
+			/// <returns>The transpose of the given matrix</returns>
+			public static Matrix4X4 Transpose(Matrix4X4 mat)
 		{
 			return new Matrix4X4(mat.Column0, mat.Column1, mat.Column2, mat.Column3);
 		}
