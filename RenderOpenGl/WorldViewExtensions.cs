@@ -101,88 +101,140 @@ namespace MatterHackers.RenderOpenGl
 		/// <param name="color"></param>
 		/// <param name="doDepthTest"></param>
 		/// <param name="width"></param>
-		public static void Render3DLine(this WorldView world, Frustum clippingFrustum, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1)
+		public static void Render3DLine(this WorldView world, Frustum clippingFrustum, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1, bool startArrow = false, bool endArrow = false)
 		{
 			GL.PushAttrib(AttribMask.EnableBit);
 			GLHelper.PrepareFor3DLineRender(doDepthTest);
-			world.Render3DLineNoPrep(clippingFrustum, start, end, color, width);
+			world.Render3DLineNoPrep(clippingFrustum, start, end, color, width, startArrow, endArrow);
 			GL.PopAttrib();
 		}
 
-		public static void Render3DLineNoPrep(this WorldView world, Frustum clippingFrustum, Vector3Float start, Vector3Float end, Color color, double width = 1)
+		public static void Render3DLineNoPrep(this WorldView world, Frustum clippingFrustum, Vector3Float start, Vector3Float end, Color color, double width = 1, bool startArrow = false, bool endArrow = false)
 		{
-			world.Render3DLineNoPrep(clippingFrustum, new Vector3(start), new Vector3(end), new Color(color), width);
+			world.Render3DLineNoPrep(clippingFrustum, new Vector3(start), new Vector3(end), new Color(color), width, startArrow, endArrow);
 		}
 
-		public static void Render3DLineNoPrep(this WorldView world, Frustum clippingFrustum, Vector3 start, Vector3 end, Color color, double width = 1)
+		public static void Render3DLineNoPrep(this WorldView world, Frustum clippingFrustum, Vector3 start, Vector3 end, Color color, double width = 1, bool startArrow = false, bool endArrow = false)
 		{
 			if (clippingFrustum.ClipLine(ref start, ref end))
 			{
-				double unitsPerPixelStart = world.GetWorldUnitsPerScreenPixelAtPosition(start);
-				double unitsPerPixelEnd = world.GetWorldUnitsPerScreenPixelAtPosition(end);
+				double startScale = world.GetWorldUnitsPerScreenPixelAtPosition(start);
+				double endScale = world.GetWorldUnitsPerScreenPixelAtPosition(end);
 
 				Vector3 delta = start - end;
+				var normal = delta.GetNormal();
+				var arrowWidth = 3 * width;
+				var arrowLength = 6 * width;
+				if (startArrow || endArrow)
+				{
+					// move the start and end points
+					if (startArrow)
+					{
+						start -= normal * startScale * arrowLength;
+					}
+
+					if (endArrow)
+					{
+						end += normal * endScale * arrowLength;
+					}
+
+					delta = start - end;
+				}
+
 				var deltaLength = delta.Length;
 				var rotateTransform = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitX + new Vector3(.0001, -.00001, .00002), -delta / deltaLength));
 				var scaleTransform = Matrix4X4.CreateScale(deltaLength, 1, 1);
 				Vector3 lineCenter = (start + end) / 2;
 				Matrix4X4 lineTransform = scaleTransform * rotateTransform * Matrix4X4.CreateTranslation(lineCenter);
 
-				var startScale = unitsPerPixelStart * width;
-				var endScale = unitsPerPixelEnd * width;
+				var startWidth = startScale * width;
+				var endWidth = endScale * width;
 				for (int i = 0; i < unscaledLineMesh.Vertices.Count; i++)
 				{
 					var vertexPosition = unscaledLineMesh.Vertices[i];
 					if (vertexPosition.X < 0)
 					{
-						scaledLineMesh.Vertices[i] = new Vector3Float(vertexPosition.X, vertexPosition.Y * startScale, vertexPosition.Z * startScale);
+						scaledLineMesh.Vertices[i] = new Vector3Float(vertexPosition.X, vertexPosition.Y * startWidth, vertexPosition.Z * startWidth);
 					}
 					else
 					{
-						scaledLineMesh.Vertices[i] = new Vector3Float(vertexPosition.X, vertexPosition.Y * endScale, vertexPosition.Z * endScale);
+						scaledLineMesh.Vertices[i] = new Vector3Float(vertexPosition.X, vertexPosition.Y * endWidth, vertexPosition.Z * endWidth);
 					}
 				}
 
-				if (true)
+				// render the line mesh directly
+				GL.Color4(color.Red0To255, color.Green0To255, color.Blue0To255, color.Alpha0To255);
+				GL.Enable(EnableCap.Blend);
+
+				GL.MatrixMode(MatrixMode.Modelview);
+				GL.PushMatrix();
+				GL.MultMatrix(lineTransform.GetAsFloatArray());
+
+				GL.Begin(BeginMode.Triangles);
+				for (int faceIndex = 0; faceIndex < scaledLineMesh.Faces.Count; faceIndex++)
 				{
-					GL.Color4(color.Red0To255, color.Green0To255, color.Blue0To255, color.Alpha0To255);
+					var face = scaledLineMesh.Faces[faceIndex];
+					var vertices = scaledLineMesh.Vertices;
+					var position = vertices[face.v0];
+					GL.Vertex3(position.X, position.Y, position.Z);
+					position = vertices[face.v1];
+					GL.Vertex3(position.X, position.Y, position.Z);
+					position = vertices[face.v2];
+					GL.Vertex3(position.X, position.Y, position.Z);
+				}
+				GL.End();
 
-					if (color.Alpha0To1 < 1)
-					{
-						GL.Enable(EnableCap.Blend);
-					}
-					else
-					{
-						// GL.Disable(EnableCap.Blend);
-					}
+				GL.PopMatrix();
 
-					GL.MatrixMode(MatrixMode.Modelview);
-					GL.PushMatrix();
-					GL.MultMatrix(lineTransform.GetAsFloatArray());
+				// render the arrows if any
+				if (startArrow)
+				{
+					RenderHead(start, startScale, normal, arrowWidth, arrowLength, false);
+				}
 
-					GL.Begin(BeginMode.Triangles);
-					for (int faceIndex = 0; faceIndex < scaledLineMesh.Faces.Count; faceIndex++)
-					{
-						var face = scaledLineMesh.Faces[faceIndex];
-						var vertices = scaledLineMesh.Vertices;
-						var position = vertices[face.v0];
-						GL.Vertex3(position.X, position.Y, position.Z);
-						position = vertices[face.v1];
-						GL.Vertex3(position.X, position.Y, position.Z);
-						position = vertices[face.v2];
-						GL.Vertex3(position.X, position.Y, position.Z);
-					}
+				if (endArrow)
+				{
+					RenderHead(end, startScale, normal, arrowWidth, arrowLength, true);
+				}
+			}
+		}
 
-					GL.End();
-					GL.PopMatrix();
+		private static void RenderHead(Vector3 basePos, double startScale, Vector3 normal, double arrowWidth, double arrowLength, bool invert)
+		{
+			if (invert)
+			{
+				normal *= -1;
+			}
+
+			var sides = 12;
+			var perpendicular = normal.GetPerpendicular().GetNormal();
+			var rotation = Matrix4X4.CreateRotation(normal, MathHelper.Tau / sides);
+			var offset = perpendicular * arrowWidth * startScale;
+			var tipPos = basePos + (normal * arrowLength * startScale);
+			GL.Begin(BeginMode.Triangles);
+			for (int side = 0; side < sides; side++)
+			{
+				var rotated = offset.Transform(rotation);
+				if (invert)
+				{
+					GL.Vertex3(tipPos);
+					GL.Vertex3(basePos + offset);
+					GL.Vertex3(basePos + rotated);
 				}
 				else
 				{
-					scaledLineMesh.MarkAsChanged();
-
-					GLHelper.Render(scaledLineMesh, color, lineTransform, RenderTypes.Shaded);
+					GL.Vertex3(basePos + offset);
+					GL.Vertex3(tipPos);
+					GL.Vertex3(basePos + rotated);
 				}
+
+				GL.Vertex3(basePos);
+				GL.Vertex3(basePos + offset);
+				GL.Vertex3(basePos + rotated);
+
+				offset = rotated;
 			}
+			GL.End();
 		}
 
 		public static void RenderCylinderOutline(this WorldView world, Matrix4X4 worldMatrix, Vector3 center, double diameter, double height, int sides, Color color, double lineWidth = 1, double extendLineLength = 0)
