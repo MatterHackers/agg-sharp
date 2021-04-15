@@ -85,9 +85,9 @@ namespace MatterHackers.RenderOpenGl
 		/// <param name="color"></param>
 		/// <param name="doDepthTest"></param>
 		/// <param name="width"></param>
-		public static void Render3DLine(this WorldView world, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1)
+		public static void Render3DLine(this WorldView world, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1, bool startArrow = false, bool endArrow = false)
 		{
-			world.Render3DLine(world.GetClippingFrustum(), start, end, color, doDepthTest, width);
+			world.Render3DLine(world.GetClippingFrustum(), start, end, color, doDepthTest, width, startArrow, endArrow);
 		}
 
 		/// <summary>
@@ -215,18 +215,9 @@ namespace MatterHackers.RenderOpenGl
 			for (int side = 0; side < sides; side++)
 			{
 				var rotated = offset.Transform(rotation);
-				if (invert)
-				{
-					GL.Vertex3(tipPos);
-					GL.Vertex3(basePos + offset);
-					GL.Vertex3(basePos + rotated);
-				}
-				else
-				{
-					GL.Vertex3(basePos + offset);
-					GL.Vertex3(tipPos);
-					GL.Vertex3(basePos + rotated);
-				}
+				GL.Vertex3(basePos + offset);
+				GL.Vertex3(tipPos);
+				GL.Vertex3(basePos + rotated);
 
 				GL.Vertex3(basePos);
 				GL.Vertex3(basePos + offset);
