@@ -307,6 +307,31 @@ namespace MatterHackers.DataConverters3D
 
 		public int MaterialIndex { get => SourceItem.MaterialIndex; set => SourceItem.MaterialIndex = value; }
 
+		public bool Contains(IObject3D item)
+		{
+			// validate that every parent has as a child the item that had it as a parent
+			var child = item;
+			var parent = item.Parent;
+			while (parent != null)
+			{
+				if (!parent.Children.Contains(child))
+				{
+					return false;
+				}
+
+				child = parent;
+				parent = parent.Parent;
+			}
+
+			if (child != SourceItem)
+			{
+				// the last child is not our scene root item
+				return false;
+			}
+
+			return true;
+		}
+
 		public PrintOutputTypes OutputType { get => SourceItem.OutputType; set => SourceItem.OutputType = value; }
 
 		public Matrix4X4 Matrix { get => SourceItem.Matrix; set => SourceItem.Matrix = value; }
