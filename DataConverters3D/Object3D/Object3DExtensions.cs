@@ -615,6 +615,17 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		public static IEnumerable<IObject3D> Parents(this IObject3D root)
+		{
+			var context = root.Parent;
+			while (context != null)
+			{
+				yield return context;
+
+				context = context.Parent;
+			}
+		}
+
 		public static IEnumerable<IObject3D> Descendants(this IObject3D root)
 		{
 			return (IEnumerable<IObject3D>)Descendants<IObject3D>(root);
