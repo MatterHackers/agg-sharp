@@ -68,7 +68,7 @@ namespace MatterHackers.DataConverters3D
 
 		public static int Depth(this IObject3D item)
 		{
-			return item.Ancestors().Count();
+			return item.Parents().Count();
 		}
 
 		[System.Diagnostics.Conditional("DEBUG")]
@@ -417,21 +417,6 @@ namespace MatterHackers.DataConverters3D
 			return child.GetAxisAlignedBoundingBox(child.Parent.WorldMatrix());
 		}
 
-		/// <summary>
-		/// Returns all ancestors of the given object
-		/// </summary>
-		/// <param name="item">The context item</param>
-		/// <returns>The matching ancestor items</returns>
-		public static IEnumerable<IObject3D> Ancestors(this IObject3D item)
-		{
-			var parent = item.Parent;
-			while (parent != null)
-			{
-				yield return parent;
-				parent = parent.Parent;
-			}
-		}
-
 		public static IEnumerable<IObject3D> AncestorsAndSelf(this IObject3D item)
 		{
 			yield return item;
@@ -615,6 +600,11 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		/// <summary>
+		/// Returns all Parents of the given object
+		/// </summary>
+		/// <param name="item">The context item</param>
+		/// <returns>The matching parents items</returns>
 		public static IEnumerable<IObject3D> Parents(this IObject3D root)
 		{
 			var context = root.Parent;
