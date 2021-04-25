@@ -134,13 +134,14 @@ namespace MatterHackers.Agg.UI
 					HAnchor = HAnchor.Stretch,
 				};
 				base.AddChild(childContainerRow);
+				var rowPaddingWidth = RowPadding.Width;
 
 				double runningSize = 0;
 				MaxLineWidth = 0;
 				foreach (var child in addedChildren)
 				{
 					if (Parent != null
-						&& (runningSize + child.Width > Parent.Width
+						&& (runningSize + child.Width > Parent.Width - rowPaddingWidth
 							|| child is IHardBreak))
 					{
 						MaxLineWidth = Math.Max(MaxLineWidth, runningSize);
