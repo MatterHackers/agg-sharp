@@ -87,7 +87,7 @@ namespace MatterHackers.DataConverters3D
 					// When setting SelectedItem, SelecteItemRoot is either the SelectedItem if rooted, or the first ancestor in the root of the scene
 					if (_selectedItem?.Parent.Parent != null)
 					{
-						this.SelectedItemRoot = _selectedItem.Ancestors().FirstOrDefault(o => o.Parent.Parent == null);
+						this.SelectedItemRoot = _selectedItem.Parents().FirstOrDefault(o => o.Parent.Parent == null);
 					}
 					else
 					{
