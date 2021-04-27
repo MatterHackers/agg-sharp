@@ -56,6 +56,7 @@ namespace MatterHackers.DataConverters3D
 	[Flags]
 	public enum InvalidateType
 	{
+		None = 0,
 		Children = 1 << 0,
 		Color = 1 << 1,
 		Image = 1 << 2,
