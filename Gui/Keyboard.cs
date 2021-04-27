@@ -36,6 +36,8 @@ namespace MatterHackers.Agg.UI
 	{
 		private static Dictionary<Keys, bool> downStates = new Dictionary<Keys, bool>();
 
+		public static event EventHandler StateChanged;
+
 		public static bool IsKeyDown(Keys key)
 		{
 			if (downStates.ContainsKey(key))
@@ -75,11 +77,17 @@ namespace MatterHackers.Agg.UI
 					SetKeyDownState(Keys.Alt, down);
 					break;
 			}
+
+			StateChanged?.Invoke(null, null);
 		}
 
 		public static void Clear()
 		{
-			downStates.Clear();
+			if (downStates.Count > 0)
+			{
+				downStates.Clear();
+				StateChanged?.Invoke(null, null);
+			}
 		}
 	}
 }
