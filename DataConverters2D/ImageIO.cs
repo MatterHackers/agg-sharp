@@ -267,6 +267,7 @@ namespace MatterHackers.Agg.Image
 				switch(extension.ToLower())
 				{
 					case ".jpg":
+					case ".jpeg":
 						imageFormat = SixLabors.ImageSharp.Formats.Jpeg.JpegFormat.Instance;
 						break;
 					case ".png":
