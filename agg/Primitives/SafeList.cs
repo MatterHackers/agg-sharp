@@ -108,5 +108,10 @@ namespace MatterHackers.Agg
 				list.Clear();
 			});
 		}
+
+		public void AddRange(IEnumerable<T> enumerable)
+		{
+			this.Modify(list => list.AddRange(enumerable));
+		}
 	}
 }
