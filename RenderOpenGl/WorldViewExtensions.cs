@@ -109,12 +109,26 @@ namespace MatterHackers.RenderOpenGl
 			GL.PopAttrib();
 		}
 
-		public static void Render3DLineNoPrep(this WorldView world, Frustum clippingFrustum, Vector3Float start, Vector3Float end, Color color, double width = 1, bool startArrow = false, bool endArrow = false)
+		public static void Render3DLineNoPrep(this WorldView world,
+			Frustum clippingFrustum,
+			Vector3Float start,
+			Vector3Float end,
+			Color color,
+			double width = 1,
+			bool startArrow = false,
+			bool endArrow = false)
 		{
 			world.Render3DLineNoPrep(clippingFrustum, new Vector3(start), new Vector3(end), new Color(color), width, startArrow, endArrow);
 		}
 
-		public static void Render3DLineNoPrep(this WorldView world, Frustum clippingFrustum, Vector3 start, Vector3 end, Color color, double width = 1, bool startArrow = false, bool endArrow = false)
+		public static void Render3DLineNoPrep(this WorldView world,
+			Frustum clippingFrustum,
+			Vector3 start,
+			Vector3 end,
+			Color color,
+			double width = 1,
+			bool startArrow = false,
+			bool endArrow = false)
 		{
 			if (clippingFrustum.ClipLine(ref start, ref end))
 			{
@@ -265,6 +279,37 @@ namespace MatterHackers.RenderOpenGl
 				{
 					world.Render3DLineNoPrep(frustum, topStart, topEnd, topBottomRingColor, lineWidth);
 					world.Render3DLineNoPrep(frustum, bottomStart, bottomEnd, topBottomRingColor, lineWidth);
+				}
+			}
+		}
+
+		public static void RenderRing(this WorldView world,
+			Matrix4X4 worldMatrix,
+			Vector3 center,
+			double diameter,
+			int sides,
+			Color ringColor,
+			double lineWidth = 1,
+			double phase = 0,
+			bool zBuffered = true)
+		{
+			GLHelper.PrepareFor3DLineRender(zBuffered);
+			Frustum frustum = world.GetClippingFrustum();
+
+			for (int i = 0; i < sides; i++)
+			{
+				var startAngle = MathHelper.Tau * i / sides + phase;
+				var rotatedPoint = new Vector3(Math.Cos(startAngle), Math.Sin(startAngle), 0) * diameter / 2;
+				var sideTop = Vector3Ex.Transform(center + rotatedPoint, worldMatrix);
+				var sideBottom = Vector3Ex.Transform(center + rotatedPoint, worldMatrix);
+				var endAngle = MathHelper.Tau * (i + 1) / sides + phase;
+				var rotated2Point = new Vector3(Math.Cos(endAngle), Math.Sin(endAngle), 0) * diameter / 2;
+				var topStart = sideTop;
+				var topEnd = Vector3Ex.Transform(center + rotated2Point, worldMatrix);
+
+				if (ringColor != Color.Transparent)
+				{
+					world.Render3DLineNoPrep(frustum, topStart, topEnd, ringColor, lineWidth);
 				}
 			}
 
