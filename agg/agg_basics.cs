@@ -305,6 +305,11 @@ namespace MatterHackers.Agg
 			return ComputeHash(BitConverter.GetBytes(data), hash);
 		}
 
+		public static ulong GetLongHashCode(this double data, ulong hash = 14695981039346656037)
+		{
+			return ComputeHash(BitConverter.GetBytes(data), hash);
+		}
+
 		public static ulong GetLongHashCode(this ulong data, ulong hash = 14695981039346656037)
 		{
 			return ComputeHash(BitConverter.GetBytes(data), hash);
