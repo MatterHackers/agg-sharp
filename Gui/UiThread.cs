@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 
 namespace MatterHackers.Agg.UI
 {
@@ -119,8 +120,23 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public static bool IsUiThread
+		{
+			get
+			{
+				return Thread.CurrentThread.ManagedThreadId == uiThreadId;
+			}
+		}
+
+		private static int uiThreadId = -1;
+
 		public static void InvokePendingActions()
 		{
+			if (uiThreadId == -1)
+			{
+				uiThreadId = Thread.CurrentThread.ManagedThreadId;
+			}
+
 			List<Action> callNow = callLater;
 
 			// Don't keep this locked for long
