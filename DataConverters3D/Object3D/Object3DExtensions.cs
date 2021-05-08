@@ -49,9 +49,15 @@ namespace MatterHackers.DataConverters3D
 							   where !string.IsNullOrEmpty(object3D.MeshPath)
 							   select object3D).ToList();
 
-			foreach (IObject3D object3D in itemsToLoad)
+			var ratioPerItem = 1.0 / itemsToLoad.Count;
+			for (int i = 0; i < itemsToLoad.Count; i++)
 			{
-				object3D.LoadLinkedMesh(cacheContext, cancellationToken, progress);
+				var object3D = itemsToLoad[i];
+				object3D.LoadLinkedMesh(cacheContext, cancellationToken, (ratio, title) =>
+				{
+					var accumulatedRatio = i * ratioPerItem + ratio * ratioPerItem;
+					progress?.Invoke(accumulatedRatio, title);
+				});
 			}
 		}
 
