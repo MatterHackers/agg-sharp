@@ -27,16 +27,13 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg.VertexSource;
 using System;
 
 namespace MatterHackers.Agg.UI
 {
 	public class ProgressBar : GuiWidget
 	{
-		public Color FillColor { get; set; }
-
-		public event EventHandler ProgressChanged;
-
 		private double ratioComplete;
 
 		public ProgressBar()
@@ -48,6 +45,10 @@ namespace MatterHackers.Agg.UI
 			: base(width, height)
 		{
 		}
+
+		public event EventHandler ProgressChanged;
+
+		public Color FillColor { get; set; }
 
 		public int PercentComplete
 		{
@@ -83,14 +84,50 @@ namespace MatterHackers.Agg.UI
 		{
 			base.OnDraw(graphics2D);
 
-			// Restrict fill to valid values
-			var fillWidth = Math.Min(Width, Width * RatioComplete);
-			if (fillWidth > 0 && fillWidth <= this.Width)
+			var bounds = this.LocalBounds;
+			var rect = new RoundedRect(bounds.Left, bounds.Bottom, bounds.Right, bounds.Top);
+			rect.radius(BackgroundRadius.SW, BackgroundRadius.SE, BackgroundRadius.NE, BackgroundRadius.NW);
+
+			// fill the background
+			if (BackgroundColor.Alpha0To255 > 0)
 			{
-				graphics2D.FillRectangle(0, 0, fillWidth, Height, FillColor);
+				graphics2D.Render(rect, BackgroundColor);
 			}
 
-			graphics2D.Rectangle(LocalBounds, BorderColor);
+			// Restrict fill to valid values
+			var fillWidth = Math.Max(0, Math.Min(Width, Width * RatioComplete));
+			if (fillWidth > 0)
+			{
+				if (BackgroundRadius == 0)
+				{
+					graphics2D.FillRectangle(0, 0, fillWidth, Height, FillColor);
+				}
+				else
+				{
+					var fill = new RoundedRect(0, 0, fillWidth, Height, BackgroundRadius.NW);
+					graphics2D.Render(fill, FillColor);
+				}
+			}
+
+			// draw the outline if needed
+			if (BorderColor.Alpha0To255 > 0)
+			{
+				if (BackgroundOutlineWidth > 0)
+				{
+					var stroke = BackgroundOutlineWidth * GuiWidget.DeviceScale;
+					var expand = stroke / 2;
+					rect = new RoundedRect(bounds.Left + expand, bounds.Bottom + expand, bounds.Right - expand, bounds.Top - expand);
+					rect.radius(BackgroundRadius.SW, BackgroundRadius.SE, BackgroundRadius.NE, BackgroundRadius.NW);
+
+					var rectOutline = new Stroke(rect, stroke);
+
+					graphics2D.Render(rectOutline, BorderColor);
+				}
+				else
+				{
+					graphics2D.Rectangle(LocalBounds, BorderColor);
+				}
+			}
 		}
 	}
 }
