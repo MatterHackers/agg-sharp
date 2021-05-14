@@ -190,6 +190,29 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
+		public double DistanceToSegment(Vector3 start, Vector3 end, bool onlyWithinSegment = false)
+		{
+			var delta = end - start;
+			var length = delta.Length;
+			var normal = delta.GetNormal();
+			var distanceFromStart = normal.Dot(this - start);
+			if (distanceFromStart >= 0 && distanceFromStart < length)
+			{
+				var perpendicular = normal.GetPerpendicular(new Vector3(0, 0, 1));
+				var distanceFromLine = Math.Abs((this - start).Dot(perpendicular));
+				return distanceFromLine;
+			}
+			else if (onlyWithinSegment)
+			{
+				return double.PositiveInfinity;
+			}
+
+			var distanceFromEnd = normal.Dot(this - end);
+
+			return Math.Max(-distanceFromStart, distanceFromEnd);
+		}
+
+
 		#endregion public double Length
 
 		#region public double LengthSquared
@@ -680,7 +703,12 @@ namespace MatterHackers.VectorMath
 			// the input vector has no length (no vector is perpendicular to it)
 			return default(Vector3);
 		}
-		
+
+		public Vector3 GetPerpendicular(Vector3 b)
+		{
+			return GetPerpendicular(this, b);
+		}
+
 		public static Vector3 GetPerpendicular(Vector3 a, Vector3 b)
 		{
 			if (!Collinear(a, b, Zero))

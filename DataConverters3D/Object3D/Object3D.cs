@@ -329,6 +329,12 @@ namespace MatterHackers.DataConverters3D
 				if (item is Object3D object3D)
 				{
 					object3D.RebuildLockCount--;
+#if DEBUG
+					if (object3D.RebuildLockCount < 0)
+					{
+						throw new Exception("Dispose is likely being called more than once");
+					}
+#endif
 					// item.DebugDepth($"Decrease Lock Count {object3D.RebuildLockCount}");
 				}
 			}
