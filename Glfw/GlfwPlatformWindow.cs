@@ -579,11 +579,17 @@ namespace MatterHackers.GlfwProvider
 				}
 
 				lastMouseDownTime[button] = now;
-				WindowProvider.TopWindow.OnMouseDown(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
+				if (clickCount.ContainsKey(button))
+				{
+					WindowProvider.TopWindow.OnMouseDown(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
+				}
 			}
 			else if (state == InputState.Release)
 			{
-				WindowProvider.TopWindow.OnMouseUp(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
+				if (clickCount.ContainsKey(button))
+				{
+					WindowProvider.TopWindow.OnMouseUp(new MouseEventArgs(mouseButton, clickCount[button], mouseX, mouseY, 0));
+				}
 			}
 		}
 
