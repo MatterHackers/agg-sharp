@@ -62,10 +62,20 @@ namespace MatterHackers.Agg.VertexSource
 
 		public Arc(Vector2 origin,
 			 Vector2 radius,
-			 double startAngle, double endAngle,
+			 double startAngle,
+			 double endAngle,
 			 Direction direction = Direction.CounterClockWise)
 		{
 			init(origin, radius, startAngle, endAngle, direction);
+		}
+
+		public Arc(Vector2 origin,
+			 double radius,
+			 double startAngle,
+			 double endAngle,
+			 Direction direction = Direction.CounterClockWise)
+			: this(origin, new Vector2(radius, radius), startAngle, endAngle, direction)
+		{
 		}
 
 		public enum Direction
