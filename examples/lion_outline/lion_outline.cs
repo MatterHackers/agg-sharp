@@ -41,9 +41,9 @@ namespace MatterHackers.Agg
 {
 	public class lion_outline : GuiWidget, IDemoApp
 	{
-		private MatterHackers.Agg.UI.Slider widthSlider;
-		private MatterHackers.Agg.UI.CheckBox renderAsScanlineCheckBox;
-		private MatterHackers.Agg.UI.CheckBox renderAccurateJoinsCheckBox;
+		private Slider widthSlider;
+		private CheckBox renderAsScanlineCheckBox;
+		private CheckBox renderAccurateJoinsCheckBox;
 
 		private LionShape lionShape = new LionShape();
 		private ScanlineRasterizer rasterizer = new ScanlineRasterizer();
@@ -55,8 +55,8 @@ namespace MatterHackers.Agg
 
 		public lion_outline()
 		{
-			widthSlider = new MatterHackers.Agg.UI.Slider(new Vector2(5, 5), 498);
-			renderAsScanlineCheckBox = new MatterHackers.Agg.UI.CheckBox(160, 5, "Use Scanline Rasterizer");
+			widthSlider = new Slider(new Vector2(5, 5), 498);
+			renderAsScanlineCheckBox = new CheckBox(160, 5, "Use Scanline Rasterizer");
 			renderAsScanlineCheckBox.Checked = false;
 			widthSlider.ValueChanged += new EventHandler(NeedsRedraw);
 			renderAsScanlineCheckBox.CheckedStateChanged += NeedsRedraw;
@@ -98,17 +98,17 @@ namespace MatterHackers.Agg
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			ImageBuffer widgetsSubImage = ImageBuffer.NewSubImageReference(graphics2D.DestImage, graphics2D.GetClippingRect());
+			var widgetsSubImage = ImageBuffer.NewSubImageReference(graphics2D.DestImage, graphics2D.GetClippingRect());
 
 			int width = (int)widgetsSubImage.Width;
 			int height = (int)widgetsSubImage.Height;
 
-			ImageBuffer clippedSubImage = new ImageBuffer();
+			var clippedSubImage = new ImageBuffer();
 			clippedSubImage.Attach(widgetsSubImage, new BlenderBGRA());
-			ImageClippingProxy imageClippingProxy = new ImageClippingProxy(clippedSubImage);
+			var imageClippingProxy = new ImageClippingProxy(clippedSubImage);
 			imageClippingProxy.clear(new ColorF(1, 1, 1));
 
-			Affine transform = Affine.NewIdentity();
+			var transform = Affine.NewIdentity();
 			transform *= Affine.NewTranslation(-lionShape.Center.X, -lionShape.Center.Y);
 			transform *= Affine.NewScaling(lionScale, lionScale);
 			transform *= Affine.NewRotation(angle + Math.PI);
@@ -121,11 +121,11 @@ namespace MatterHackers.Agg
 
 				foreach (var shape in lionShape.Shapes)
 				{
-					Stroke stroke = new Stroke(shape.VertexStorage);
+					var stroke = new Stroke(shape.VertexStorage);
 					stroke.Width = widthSlider.Value;
 					stroke.LineJoin = LineJoin.Round;
-					VertexSourceApplyTransform trans = new VertexSourceApplyTransform(stroke, transform);
-					ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
+					var trans = new VertexSourceApplyTransform(stroke, transform);
+					var scanlineRenderer = new ScanlineRenderer();
 					rasterizer.add_path(trans);
 					scanlineRenderer.RenderSolid(imageClippingProxy, rasterizer, scanlineCache, shape.Color);
 				}
@@ -134,9 +134,9 @@ namespace MatterHackers.Agg
 			{
 				double w = widthSlider.Value * transform.GetScale();
 
-				LineProfileAnitAlias lineProfile = new LineProfileAnitAlias(w, new gamma_none());
-				OutlineRenderer outlineRenderer = new OutlineRenderer(imageClippingProxy, lineProfile);
-				rasterizer_outline_aa rasterizer = new rasterizer_outline_aa(outlineRenderer);
+				var lineProfile = new LineProfileAnitAlias(w, new gamma_none());
+				var outlineRenderer = new OutlineRenderer(imageClippingProxy, lineProfile);
+				var rasterizer = new rasterizer_outline_aa(outlineRenderer);
 
 				rasterizer.line_join(renderAccurateJoinsCheckBox.Checked ?
 					rasterizer_outline_aa.outline_aa_join_e.outline_miter_accurate_join
@@ -145,7 +145,7 @@ namespace MatterHackers.Agg
 
 				foreach (var shape in lionShape.Shapes)
 				{
-					VertexSourceApplyTransform trans = new VertexSourceApplyTransform(shape.VertexStorage, transform);
+					var trans = new VertexSourceApplyTransform(shape.VertexStorage, transform);
 					rasterizer.RenderAllPaths(trans, new Color[] { shape.Color }, new int[] { 0 }, 1);
 				}
 			}
@@ -207,8 +207,8 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			//AggContext.Init(embeddedResourceName: "lion_outline.config.json");
-			AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.OpenGLWinformsWindowProvider, agg_platform_win32";
+			// AggContext.Init(embeddedResourceName: "lion_outline.config.json");
+			// AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.OpenGLWinformsWindowProvider, agg_platform_win32";
 
 			var demoWidget = new lion_outline();
 

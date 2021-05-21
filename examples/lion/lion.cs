@@ -166,7 +166,7 @@ namespace MatterHackers.Agg
 			// Init agg with our OpenGL window definition
 			// AggContext.Init(embeddedResourceName: "lion.config.json");
 			// AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.OpenGLWinformsWindowProvider, agg_platform_win32";
-			AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.GlfwProvider.GlfwWindowProvider, MatterHackers.GlfwProvider";
+			// AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.GlfwProvider.GlfwWindowProvider, MatterHackers.GlfwProvider";
 
 			var demoWidget = new Lion();
 
