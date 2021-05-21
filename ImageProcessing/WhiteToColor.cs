@@ -142,7 +142,7 @@ namespace MatterHackers.ImageProcessing
 							{
 								imageA.GetPixel(x, y).ToColorF().GetHSL(out double _, out double s, out double _);
 
-								if (s < .1)
+								if (s < .01)
 								{
 									resultBuffer[offsetResult++] = (byte)(color.blue); offsetA++;
 									resultBuffer[offsetResult++] = (byte)(color.green); offsetA++;

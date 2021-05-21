@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using MatterHackers.Agg.Platform;
+using MatterHackers.ImageProcessing;
 using MatterHackers.Localizations;
 
 namespace MatterHackers.Agg.UI
@@ -44,7 +45,6 @@ namespace MatterHackers.Agg.UI
 
 		private static Color textColor;
 		private static int fontSize;
-		private static bool invertIcons;
 		private static Func<GuiWidget> getCloseButton;
 		private static BorderDouble titleBarPadding;
 		private static Color backgroundColor;
@@ -52,7 +52,6 @@ namespace MatterHackers.Agg.UI
 
 		public static void SetWindowTheme(Color textColor,
 			int fontSize,
-			bool invertIcons,
 			Func<GuiWidget> getCloseButton,
 			BorderDouble titleBarPadding,
 			Color backgroundColor,
@@ -60,7 +59,6 @@ namespace MatterHackers.Agg.UI
 		{
 			SingleWindowProvider.textColor = textColor;
 			SingleWindowProvider.fontSize = fontSize;
-			SingleWindowProvider.invertIcons = invertIcons;
 			SingleWindowProvider.getCloseButton = getCloseButton;
 			SingleWindowProvider.titleBarPadding = titleBarPadding;
 			SingleWindowProvider.backgroundColor = backgroundColor;
@@ -156,7 +154,7 @@ namespace MatterHackers.Agg.UI
 					VAnchor = VAnchor.Fit | VAnchor.Center,
 				};
 
-				titleBarRow.AddChild(new ImageWidget(StaticData.Instance.LoadIcon("mh.png", 16, 16, invertIcons))
+				titleBarRow.AddChild(new ImageWidget(StaticData.Instance.LoadIcon("mh.png", 16, 16).SetToColor(textColor))
 				{
 					Margin = new BorderDouble(4, 0, 6, 0),
 					VAnchor = VAnchor.Center
