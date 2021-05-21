@@ -62,8 +62,11 @@ namespace MatterHackers.VectorMath
 			get => _rotationMatrix;
 			set
 			{
-				_rotationMatrix = value;
-				OnTransformChanged(null);
+				if (_rotationMatrix != value)
+				{
+					_rotationMatrix = value;
+					OnTransformChanged(null);
+				}
 			}
 		}
 
@@ -71,7 +74,7 @@ namespace MatterHackers.VectorMath
 		{
 			get
 			{
-				Vector3 scaledUnitVector = Vector3Ex.TransformPosition(Vector3.UnitX, this.GetTransform4X4());
+				var scaledUnitVector = Vector3.UnitX.TransformPosition(this.GetTransform4X4());
 				return scaledUnitVector.Length;
 			}
 
@@ -92,8 +95,11 @@ namespace MatterHackers.VectorMath
 			get => _translationMatrix;
 			set
 			{
-				_translationMatrix = value;
-				OnTransformChanged(null);
+				if (_translationMatrix != value)
+				{
+					_translationMatrix = value;
+					OnTransformChanged(null);
+				}
 			}
 		}
 
@@ -159,9 +165,9 @@ namespace MatterHackers.VectorMath
 
 			var rayWorld = Vector4.Transform(rayEye, InverseModelviewMatrix);
 
-			Vector3 finalRayWorld = new Vector3(rayWorld).GetNormal();
+			var finalRayWorld = new Vector3(rayWorld).GetNormal();
 
-			Vector3 origin = Vector3Ex.Transform(Vector3.Zero, InverseModelviewMatrix);
+			var origin = Vector3.Zero.Transform(InverseModelviewMatrix);
 
 			return new Ray(origin, finalRayWorld);
 		}
@@ -170,25 +176,33 @@ namespace MatterHackers.VectorMath
 		{
 			get
 			{
-				return Vector3Ex.Transform(Vector3.Zero, InverseModelviewMatrix);
+				return Vector3.Zero.Transform(InverseModelviewMatrix);
 			}
 		}
 
 		public Vector2 GetScreenPosition(Vector3 worldPosition)
 		{
-			Vector3 homoginizedViewPosition = Vector3Ex.Transform(worldPosition, this.ModelviewMatrix);
+			var homoginizedViewPosition = worldPosition.Transform(this.ModelviewMatrix);
 
-			Vector3 homoginizedScreenPosition = Vector3Ex.TransformPerspective(homoginizedViewPosition, this.ProjectionMatrix);
+			var homoginizedScreenPosition = homoginizedViewPosition.TransformPerspective(this.ProjectionMatrix);
 
 			// Screen position
 			return new Vector2(homoginizedScreenPosition.X * width / 2 + width / 2,
 				homoginizedScreenPosition.Y * height / 2 + height / 2);
 		}
 
-		public Vector3 GetScreenSpace(Vector3 worldPosition)
+		public Vector3 WorldToScreenSpace(Vector3 worldPosition)
 		{
-			Vector3 viewPosition = Vector3Ex.Transform(worldPosition, ModelviewMatrix);
-			return Vector3Ex.Transform(viewPosition, ProjectionMatrix);
+			var viewPosition = worldPosition.Transform(ModelviewMatrix);
+			return viewPosition.Transform(ProjectionMatrix);
+		}
+
+		public Vector3 ScreenToWorldSpace(Vector3 screenPosition)
+		{
+			throw new NotImplementedException();
+			// this function is not working at this time (it is not the inverse of the WorldToScreenSpace, and needs to be)
+			var xxx = screenPosition.Transform(InverseProjectionMatrix);
+			return xxx.Transform(InverseModelviewMatrix);
 		}
 
 		public Matrix4X4 GetTransform4X4()
@@ -224,7 +238,7 @@ namespace MatterHackers.VectorMath
 			double distanceFromOriginToWorldPos = (worldPosition - rayFromScreen.origin).Length;
 
 			Ray rightOnePixelRay = GetRayForLocalBounds(new Vector2(screenPosition.X + 1, screenPosition.Y));
-			Vector3 rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.directionNormal * distanceFromOriginToWorldPos;
+			var rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.directionNormal * distanceFromOriginToWorldPos;
 			double distBetweenPixelsWorldSpace = (rightOnePixel - worldPosition).Length;
 			if (distBetweenPixelsWorldSpace > maxRatio)
 			{
@@ -247,13 +261,36 @@ namespace MatterHackers.VectorMath
 		public void Rotate(Quaternion rotation)
 		{
 			RotationMatrix *= Matrix4X4.CreateRotation(rotation);
-			OnTransformChanged(null);
+		}
+
+		public void RotateAroundPosition(Vector3 worldPosition, Quaternion rotation)
+		{
+			var newRotation = RotationMatrix * Matrix4X4.CreateRotation(rotation);
+			SetRotationHoldPosition(worldPosition, newRotation);
 		}
 
 		public void Translate(Vector3 deltaPosition)
 		{
 			TranslationMatrix = Matrix4X4.CreateTranslation(deltaPosition) * TranslationMatrix;
-			OnTransformChanged(null);
+		}
+
+		public void SetRotationHoldPosition(Vector3 worldPosition, Quaternion newRotation)
+		{
+			SetRotationHoldPosition(worldPosition, Matrix4X4.CreateRotation(newRotation));
+		}
+
+		public void SetRotationHoldPosition(Vector3 worldPosition, Matrix4X4 newRotation)
+		{
+			// remember where we started on the screen
+			var cameraSpaceStart = worldPosition.Transform(this.ModelviewMatrix);
+
+			// do the rotation
+			this.RotationMatrix = newRotation;
+
+			// move back to where we started
+			var worldStartPostRotation = cameraSpaceStart.Transform(this.InverseModelviewMatrix);
+			var delta = worldStartPostRotation - worldPosition;
+			this.Translate(delta);
 		}
 	}
 }

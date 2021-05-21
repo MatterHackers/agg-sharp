@@ -201,7 +201,7 @@ namespace MatterHackers.DataConverters3D
 			for (int cornerIndex = 0; cornerIndex < 4; cornerIndex++)
 			{
 				Vector3 axisSide = positions[cornerIndex];
-				Vector3 axisSideScreenSpace = world.GetScreenSpace(axisSide);
+				Vector3 axisSideScreenSpace = world.WorldToScreenSpace(axisSide);
 
 				if (axisSideScreenSpace.X > bestX)
 				{
