@@ -36,20 +36,20 @@ namespace MatterHackers.VectorMath
 		private Matrix4X4 _rotationMatrix = Matrix4X4.Identity;
 		private Matrix4X4 _translationMatrix = Matrix4X4.Identity;
 
-		private double height;
+		public double Height { get; private set; }
 
-		private double width;
+		public double Width { get; private set; }
 
 		public WorldView(double width, double height)
 		{
-			this.width = width;
-			this.height = height;
+			this.Width = width;
+			this.Height = height;
 
 			this.CalculateProjectionMatrix(width, height);
 			this.CalculateModelviewMatrix();
 		}
 
-		public Matrix4X4 InverseModelviewMatrix { get; set; }
+		public Matrix4X4 InverseModelviewMatrix { get; private set; }
 
 		public Matrix4X4 InverseProjectionMatrix { get; private set; }
 
@@ -113,8 +113,8 @@ namespace MatterHackers.VectorMath
 		{
 			if (width > 0 && height > 0)
 			{
-				this.width = width;
-				this.height = height;
+				this.Width = width;
+				this.Height = height;
 
 				var fovYRadians = MathHelper.DegreesToRadians(45);
 				var aspectWidthOverHeight = width / height;
@@ -129,8 +129,8 @@ namespace MatterHackers.VectorMath
 		{
 			if (width > 0 && height > 0)
 			{
-				this.width = width;
-				this.height = height;
+				this.Width = width;
+				this.Height = height;
 				var yAngleR = MathHelper.DegreesToRadians(45) / 2;
 
 				var screenDist = height / 2 / Math.Tan(yAngleR);
@@ -155,8 +155,8 @@ namespace MatterHackers.VectorMath
 		public Ray GetRayForLocalBounds(Vector2 localPosition)
 		{
 			var rayClip = new Vector4();
-			rayClip.X = (2.0 * localPosition.X) / this.width - 1.0;
-			rayClip.Y = (2.0 * localPosition.Y) / this.height - 1.0;
+			rayClip.X = (2.0 * localPosition.X) / this.Width - 1.0;
+			rayClip.Y = (2.0 * localPosition.Y) / this.Height - 1.0;
 			rayClip.Z = -1.0;
 			rayClip.W = 1.0;
 
@@ -187,8 +187,8 @@ namespace MatterHackers.VectorMath
 			var homoginizedScreenPosition = homoginizedViewPosition.TransformPerspective(this.ProjectionMatrix);
 
 			// Screen position
-			return new Vector2(homoginizedScreenPosition.X * width / 2 + width / 2,
-				homoginizedScreenPosition.Y * height / 2 + height / 2);
+			return new Vector2(homoginizedScreenPosition.X * Width / 2 + Width / 2,
+				homoginizedScreenPosition.Y * Height / 2 + Height / 2);
 		}
 
 		public Vector3 WorldToScreenSpace(Vector3 worldPosition)
@@ -212,8 +212,8 @@ namespace MatterHackers.VectorMath
 
 		public Vector3 GetWorldPosition(Vector2 screenPosition)
 		{
-			var homoginizedScreenSpace = new Vector4((2.0f * (screenPosition.X / width)) - 1,
-				1 - (2 * (screenPosition.Y / height)),
+			var homoginizedScreenSpace = new Vector4((2.0f * (screenPosition.X / Width)) - 1,
+				1 - (2 * (screenPosition.Y / Height)),
 				1,
 				1);
 

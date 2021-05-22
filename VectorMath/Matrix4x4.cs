@@ -690,9 +690,9 @@ namespace MatterHackers.VectorMath
 			return CreateRotation(q);
 		}
 
-#endregion CreateRotation[XYZ]
+		#endregion CreateRotation[XYZ]
 
-			#region CreateTranslation
+		#region CreateTranslation
 
 		/// <summary>
 		/// Creates a translation matrix.
@@ -744,9 +744,9 @@ namespace MatterHackers.VectorMath
 			return result;
 		}
 
-			#endregion CreateTranslation
+		#endregion CreateTranslation
 
-			#region CreateOrthographic
+		#region CreateOrthographic
 
 		/// <summary>
 		/// Creates an orthographic projection matrix.
@@ -776,9 +776,9 @@ namespace MatterHackers.VectorMath
 			return result;
 		}
 
-			#endregion CreateOrthographic
+		#endregion CreateOrthographic
 
-			#region CreateOrthographicOffCenter
+		#region CreateOrthographicOffCenter
 
 		/// <summary>
 		/// Creates an orthographic projection matrix.
@@ -825,9 +825,9 @@ namespace MatterHackers.VectorMath
 			return result;
 		}
 
-			#endregion CreateOrthographicOffCenter
+		#endregion CreateOrthographicOffCenter
 
-			#region CreatePerspectiveFieldOfView
+		#region CreatePerspectiveFieldOfView
 
 		/// <summary>
 		/// Creates a perspective projection matrix.
@@ -893,9 +893,9 @@ namespace MatterHackers.VectorMath
 			return result;
 		}
 
-			#endregion CreatePerspectiveFieldOfView
+		#endregion CreatePerspectiveFieldOfView
 
-			#region CreatePerspectiveOffCenter
+		#region CreatePerspectiveOffCenter
 
 		/// <summary>
 		/// Creates an perspective projection matrix.
@@ -968,9 +968,9 @@ namespace MatterHackers.VectorMath
 			return result;
 		}
 
-			#endregion CreatePerspectiveOffCenter
+		#endregion CreatePerspectiveOffCenter
 
-			#region CreateScale
+		#region CreateScale
 
 		/// <summary>
 		/// Build a scaling matrix
@@ -1009,9 +1009,9 @@ namespace MatterHackers.VectorMath
 			return result;
 		}
 
-			#endregion CreateScale
+		#endregion CreateScale
 
-			#region Camera Helper Functions
+		#region Camera Helper Functions
 
 		/// <summary>
 		/// Build a world space to camera space matrix
@@ -1095,9 +1095,9 @@ namespace MatterHackers.VectorMath
 			return Frustum(xMin, xMax, yMin, yMax, near, far);
 		}
 
-			#endregion Camera Helper Functions
+		#endregion Camera Helper Functions
 
-			#region Multiply Functions
+		#region Multiply Functions
 
 		/// <summary>
 		/// Multiplies two instances.
@@ -1139,9 +1139,9 @@ namespace MatterHackers.VectorMath
 			result.M44 = left.M41 * right.M14 + left.M42 * right.M24 + left.M43 * right.M34 + left.M44 * right.M44;
 		}
 
-			#endregion Multiply Functions
+		#endregion Multiply Functions
 
-			#region Invert Functions
+		#region Invert Functions
 
 		/// <summary>
 		/// Calculate the inverse of the given matrix
@@ -1218,16 +1218,16 @@ namespace MatterHackers.VectorMath
 			return result;
 		}
 
-			#endregion Invert Functions
+		#endregion Invert Functions
 
-			#region Transpose
+		#region Transpose
 
-			/// <summary>
-			/// Calculate the transpose of the given matrix
-			/// </summary>
-			/// <param name="mat">The matrix to transpose</param>
-			/// <returns>The transpose of the given matrix</returns>
-			public static Matrix4X4 Transpose(Matrix4X4 mat)
+		/// <summary>
+		/// Calculate the transpose of the given matrix
+		/// </summary>
+		/// <param name="mat">The matrix to transpose</param>
+		/// <returns>The transpose of the given matrix</returns>
+		public static Matrix4X4 Transpose(Matrix4X4 mat)
 		{
 			return new Matrix4X4(mat.Column0, mat.Column1, mat.Column2, mat.Column3);
 		}
@@ -1245,11 +1245,11 @@ namespace MatterHackers.VectorMath
 			result.Row3 = mat.Column3;
 		}
 
-			#endregion Transpose
+		#endregion Transpose
 
-#endregion Static
+		#endregion Static
 
-			#region Operators
+		#region Operators
 
 		/// <summary>
 		/// Matrix multiplication
@@ -1284,11 +1284,11 @@ namespace MatterHackers.VectorMath
 			return !left.Equals(right);
 		}
 
-			#endregion Operators
+		#endregion Operators
 
-			#region Overrides
+		#region Overrides
 
-			#region public override string ToString()
+		#region public override string ToString()
 
 		/// <summary>
 		/// Returns a System.String that represents the current Matrix44.
@@ -1304,9 +1304,9 @@ namespace MatterHackers.VectorMath
 			throw new NotImplementedException();
 		}
 
-			#endregion public override string ToString()
+		#endregion public override string ToString()
 
-			#region public override int GetHashCode()
+		#region public override int GetHashCode()
 
 		/// <summary>
 		/// Returns the hashcode for this instance.
@@ -1332,9 +1332,9 @@ namespace MatterHackers.VectorMath
 			return hash;
 		}
 
-			#endregion public override int GetHashCode()
+		#endregion public override int GetHashCode()
 
-			#region public override bool Equals(object obj)
+		#region public override bool Equals(object obj)
 
 		/// <summary>
 		/// Indicates whether this instance and a specified object are equal.
@@ -1349,13 +1349,13 @@ namespace MatterHackers.VectorMath
 			return this.Equals((Matrix4X4)obj);
 		}
 
-			#endregion public override bool Equals(object obj)
+		#endregion public override bool Equals(object obj)
 
-			#endregion Overrides
+		#endregion Overrides
 
-#endregion Public Members
+		#endregion Public Members
 
-			#region IEquatable<Matrix4d> Members
+		#region IEquatable<Matrix4d> Members
 
 		/// <summary>Indicates whether the current matrix is equal to another matrix.</summary>
 		/// <param name="other">An matrix to compare with this matrix.</param>
@@ -1384,7 +1384,7 @@ namespace MatterHackers.VectorMath
 				Row3.Equals(other.Row3, errorRange);
 		}
 
-			#endregion IEquatable<Matrix4d> Members
+		#endregion IEquatable<Matrix4d> Members
 
 		public float[] GetAsFloatArray()
 		{
@@ -1410,4 +1410,4 @@ namespace MatterHackers.VectorMath
 	}
 
 #endif
-		}
+}
