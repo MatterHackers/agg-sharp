@@ -28,6 +28,8 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI
 {
@@ -239,6 +241,42 @@ namespace MatterHackers.Agg.UI
 
 			// remember the time that we didn't use up yet
 			secondsLeftOverFromLastUpdate = numSecondsPassedSinceLastUpdate;
+		}
+
+		/// <summary>
+		/// Run an animation for the given amount of time calling update the exact number of times
+		/// </summary>
+		/// <param name="widget">The widget to invalidate</param>
+		/// <param name="durration">The total seconds to complete the update count</param>
+		/// <param name="updateCount">The number of updates to run (exactly)</param>
+		/// <param name="update">The function to call each update. Passes the current count (1 - updateCount).</param>
+		public static async void Run(GuiWidget widget, double durration, int updateCount, Action<int> update)
+		{
+			Animation animation = new Animation()
+			{
+				DrawTarget = widget,
+				SecondsPerUpdate = durration / updateCount
+			};
+
+			int updates = 0;
+			animation.Update += (s, time) =>
+			{
+				if (updates++ < updateCount)
+				{
+					update(updates);
+				}
+			};
+			animation.Start();
+			// wait for the animation to complete
+			await Task.Run(() =>
+			{
+				while (updates < updateCount)
+				{
+					Thread.Sleep(1);
+				}
+			});
+
+			animation.Dispose();
 		}
 	}
 }
