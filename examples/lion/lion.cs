@@ -173,7 +173,7 @@ namespace MatterHackers.Agg
 			var systemWindow = new SystemWindow(512, 400);
 			systemWindow.Title = demoWidget.Title;
 			systemWindow.AddChild(demoWidget);
-			SingleWindowProvider.SetWindowTheme(Color.Black, 12, false, () => new Button("X", 0, 0), 3, Color.LightGray, Color.DarkGray);
+			SingleWindowProvider.SetWindowTheme(Color.Black, 12, () => new Button("X", 0, 0), 3, Color.LightGray, Color.DarkGray);
 			systemWindow.ShowAsSystemWindow();
 		}
 	}
