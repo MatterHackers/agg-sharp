@@ -174,6 +174,62 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 		}
 
 		[Test]
+		public void TextSelectionWithShiftClick()
+		{
+			const string fullText = "This is a text";
+
+			var container = new GuiWidget(200, 200);
+			var editField1 = new TextEditWidget(fullText, pixelWidth: 100);
+			container.AddChild(editField1);
+
+			// select all from left to right with shift click
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 0, 0));
+			Assert.AreEqual(0, editField1.CharIndexToInsertBefore);
+			Assert.AreEqual("", editField1.Selection);
+			Keyboard.SetKeyDownState(Keys.Shift, true);
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 100, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 100, 0, 0));
+			Keyboard.SetKeyDownState(Keys.Shift, false);
+			Assert.AreEqual(fullText.Length, editField1.CharIndexToInsertBefore);
+			Assert.AreEqual(fullText, editField1.Selection, "It should select full text");
+
+			// select all from right to left with shift click
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 100, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 100, 0, 0));
+			Assert.AreEqual(fullText.Length, editField1.CharIndexToInsertBefore);
+			Assert.AreEqual("", editField1.Selection);
+			Keyboard.SetKeyDownState(Keys.Shift, true);
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 0, 0));
+			Keyboard.SetKeyDownState(Keys.Shift, false);
+			Assert.AreEqual(0, editField1.CharIndexToInsertBefore);
+			Assert.AreEqual(fullText, editField1.Selection, "It should select full text");
+
+			// select parts of the text with shift click
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 0, 0));
+			SendKey(Keys.Control | Keys.Right, ' ', container);
+			SendKey(Keys.Control | Keys.Right, ' ', container);
+			Assert.AreEqual("This is ".Length, editField1.CharIndexToInsertBefore);
+			Assert.AreEqual("", editField1.Selection);
+			Keyboard.SetKeyDownState(Keys.Shift, true);
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 100, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 100, 0, 0));
+			Keyboard.SetKeyDownState(Keys.Shift, false);
+			Assert.AreEqual(fullText.Length, editField1.CharIndexToInsertBefore);
+			Assert.AreEqual("a text", editField1.Selection, "It should select second part of the text");
+			Keyboard.SetKeyDownState(Keys.Shift, true);
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 0, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 0, 0));
+			Keyboard.SetKeyDownState(Keys.Shift, false);
+			Assert.AreEqual(0, editField1.CharIndexToInsertBefore);
+			Assert.AreEqual("This is ", editField1.Selection, "It should select first part of the text");
+
+			container.Close();
+		}
+
+		[Test]
 		public void TextChangedEventsTests()
 		{
 			var container = new GuiWidget

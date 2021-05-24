@@ -516,8 +516,10 @@ namespace MatterHackers.Agg.UI
 		{
 			if (mouseEvent.Button == MouseButtons.Left)
 			{
+				StartSelectionIfRequired(null);
 				CharIndexToInsertBefore = internalTextWidget.Printer.GetCharacterIndexToStartBefore(new Vector2(mouseEvent.X, mouseEvent.Y));
-				if (mouseEvent.Clicks < 2)
+
+				if (mouseEvent.Clicks < 2 || ShiftKeyIsDown(null))
 				{
 					if (CharIndexToInsertBefore == -1)
 					{
@@ -525,8 +527,12 @@ namespace MatterHackers.Agg.UI
 						CharIndexToInsertBefore = 0;
 					}
 
-					SelectionIndexToStartBefore = CharIndexToInsertBefore;
-					Selecting = false;
+					if (!ShiftKeyIsDown(null))
+					{
+						SelectionIndexToStartBefore = CharIndexToInsertBefore;
+						Selecting = false;
+					}
+
 					mouseIsDownLeft = true;
 				}
 				else if (IsDoubleClick(mouseEvent) && Text.Length > 0)
