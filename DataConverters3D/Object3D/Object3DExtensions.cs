@@ -265,12 +265,12 @@ namespace MatterHackers.DataConverters3D
 			int rescaleAttempts = 0;
 			while (!done && rescaleAttempts++ < 500)
 			{
-				RectangleDouble partScreenBounds = GetScreenBounds(meshBounds, world);
+				RectangleDouble partScreenBounds = world.GetScreenBounds(meshBounds);
 
 				if (!NeedsToBeSmaller(partScreenBounds, goalBounds))
 				{
 					world.Scale *= 1 + scaleFraction;
-					partScreenBounds = GetScreenBounds(meshBounds, world);
+					partScreenBounds = world.GetScreenBounds(meshBounds);
 
 					// If it crossed over the goal reduct the amount we are adjusting by.
 					if (NeedsToBeSmaller(partScreenBounds, goalBounds))
@@ -281,7 +281,7 @@ namespace MatterHackers.DataConverters3D
 				else
 				{
 					world.Scale *= 1 - scaleFraction;
-					partScreenBounds = GetScreenBounds(meshBounds, world);
+					partScreenBounds = world.GetScreenBounds(meshBounds);
 
 					// If it crossed over the goal reduct the amount we are adjusting by.
 					if (!NeedsToBeSmaller(partScreenBounds, goalBounds))
@@ -309,7 +309,7 @@ namespace MatterHackers.DataConverters3D
 			return false;
 		}
 
-		public static RectangleDouble GetScreenBounds(AxisAlignedBoundingBox meshBounds, WorldView world)
+		public static RectangleDouble GetScreenBounds(this WorldView world, AxisAlignedBoundingBox meshBounds)
 		{
 			RectangleDouble screenBounds = RectangleDouble.ZeroIntersection;
 

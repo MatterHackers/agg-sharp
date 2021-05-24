@@ -250,9 +250,9 @@ namespace MatterHackers.Agg.UI
 		/// <param name="durration">The total seconds to complete the update count</param>
 		/// <param name="updateCount">The number of updates to run (exactly)</param>
 		/// <param name="update">The function to call each update. Passes the current count (1 - updateCount).</param>
-		public static async void Run(GuiWidget widget, double durration, int updateCount, Action<int> update)
+		public static async void Run(GuiWidget widget, double durration, int updateCount, Action<int> update, Action after = null)
 		{
-			Animation animation = new Animation()
+			var animation = new Animation()
 			{
 				DrawTarget = widget,
 				SecondsPerUpdate = durration / updateCount
@@ -275,6 +275,8 @@ namespace MatterHackers.Agg.UI
 					Thread.Sleep(1);
 				}
 			});
+
+			after?.Invoke();
 
 			animation.Dispose();
 		}
