@@ -91,14 +91,30 @@ namespace MatterHackers.ImageProcessing
 		}
 	}
 
-	public class SetToColor
+	public static class ImageSetColorExtensions
 	{
-		public static void DoSetToColor(ImageBuffer sourceImageAndDest, Color color)
+		/// <summary>
+		/// Set all gray pixels to a given color (including setting of black and white)
+		/// </summary>
+		public static ImageBuffer SetToColor(this ImageBuffer source, Color color)
 		{
-			DoSetToColor(sourceImageAndDest, sourceImageAndDest, color);
+			var dest = new ImageBuffer(source);
+			SetGrayToColor.DoSetGrayToColor(dest, source, color);
+			return dest;
+		}
+	}
+
+	/// <summary>
+	/// Set all gray pixels to a given color (including setting of black and white)
+	/// </summary>
+	public class SetGrayToColor
+	{
+		public static void DoSetGrayToColor(ImageBuffer sourceImageAndDest, Color color)
+		{
+			DoSetGrayToColor(sourceImageAndDest, sourceImageAndDest, color);
 		}
 
-		public static void DoSetToColor(ImageBuffer result, ImageBuffer imageA, Color color)
+		public static void DoSetGrayToColor(ImageBuffer result, ImageBuffer imageA, Color color)
 		{
 			if (imageA.BitDepth != result.BitDepth)
 			{
@@ -124,10 +140,20 @@ namespace MatterHackers.ImageProcessing
 
 							for (int x = 0; x < width; x++)
 							{
-								resultBuffer[offsetResult++] = (byte)(color.blue); offsetA++;
-								resultBuffer[offsetResult++] = (byte)(color.green); offsetA++;
-								resultBuffer[offsetResult++] = (byte)(color.red); offsetA++;
-								resultBuffer[offsetResult++] = imageABuffer[offsetA++];
+								imageA.GetPixel(x, y).ToColorF().GetHSL(out double _, out double s, out double _);
+
+								if (s < .01)
+								{
+									resultBuffer[offsetResult++] = (byte)(color.blue); offsetA++;
+									resultBuffer[offsetResult++] = (byte)(color.green); offsetA++;
+									resultBuffer[offsetResult++] = (byte)(color.red); offsetA++;
+									resultBuffer[offsetResult++] = imageABuffer[offsetA++];
+								}
+								else
+								{
+									offsetResult += 4;
+									offsetA += 4;
+								}
 							}
 						}
 					}
@@ -142,7 +168,7 @@ namespace MatterHackers.ImageProcessing
 		{
 			ImageBuffer destImage = new ImageBuffer(normalImage.Width, normalImage.Height);
 
-			DoSetToColor(destImage, normalImage, color);
+			DoSetGrayToColor(destImage, normalImage, color);
 
 			return destImage;
 		}

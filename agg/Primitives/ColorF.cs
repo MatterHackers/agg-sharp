@@ -230,7 +230,6 @@ namespace MatterHackers.Agg
 
 			hue0To1 = 0; // default to black
 			saturation0To1 = 0;
-			lightness0To1 = 0;
 			lightness0To1 = (minRGB + maxRGB) / 2.0;
 			if (lightness0To1 <= 0.0)
 			{

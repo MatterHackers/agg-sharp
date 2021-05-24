@@ -119,12 +119,12 @@ namespace MatterHackers.Agg.Platform
 		/// <param name="path">The file path to load</param>
 		/// <param name="invertImage">describes if the icon should be inverted</param>
 		/// <returns>An ImageBuffer initialized with data from the given file</returns>
-		public ImageBuffer LoadIcon(string path, bool invertImage = false)
+		public ImageBuffer LoadIcon(string path)
 		{
 			var fullPath = Path.Combine("Icons", path);
 			if (FileExists(fullPath))
 			{
-				var icon = LoadImage(fullPath, invertImage);
+				var icon = LoadImage(fullPath);
 				return (DeviceScale == 1) ? icon : icon.CreateScaledImage(DeviceScale);
 			}
 
@@ -232,7 +232,7 @@ namespace MatterHackers.Agg.Platform
 
 		private static object locker = new object();
 
-		private void LoadImage(string path, ImageBuffer destImage, bool invertImage = false)
+		private void LoadImage(string path, ImageBuffer destImage)
 		{
 			lock (locker)
 			{
@@ -247,26 +247,14 @@ namespace MatterHackers.Agg.Platform
 					}
 				}
 
-				// Themed icons are black and need be inverted on dark themes, or when white icons are requested
-				if (invertImage)
-				{
-					cachedImage = cachedImage.InvertLightness();
-					cachedImage.SetRecieveBlender(new BlenderPreMultBGRA());
-				}
-
 				destImage.CopyFrom(cachedImage);
 			}
 		}
 
 		public ImageBuffer LoadImage(string path)
 		{
-			return this.LoadImage(path, false);
-		}
-
-		public ImageBuffer LoadImage(string path, bool invertImage = false)
-		{
 			ImageBuffer temp = new ImageBuffer();
-			LoadImage(path, temp, invertImage);
+			LoadImage(path, temp);
 
 			return temp;
 		}
