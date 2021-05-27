@@ -45,7 +45,7 @@ namespace MatterHackers.VectorMath
 			this.Width = width;
 			this.Height = height;
 
-			this.CalculateProjectionMatrix(width, height);
+			this.CalculatePerspectiveMatrix(width, height);
 			this.CalculateModelviewMatrix();
 		}
 
@@ -109,7 +109,7 @@ namespace MatterHackers.VectorMath
 			this.InverseModelviewMatrix = Matrix4X4.Invert(this.ModelviewMatrix);
 		}
 
-		public void CalculateProjectionMatrix(double width, double height, double zNear = .1, double zFar = 100)
+		public void CalculatePerspectiveMatrix(double width, double height, double zNear = .1, double zFar = 100)
 		{
 			if (width > 0 && height > 0)
 			{
@@ -125,7 +125,7 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		public void CalculateProjectionMatrixOffCenter(double width, double height, double centerOffsetX, double zNear = .1, double zFar = 100)
+		public void CalculatePerspectiveMatrixOffCenter(double width, double height, double centerOffsetX, double zNear = .1, double zFar = 100)
 		{
 			if (width > 0 && height > 0)
 			{
@@ -140,10 +140,10 @@ namespace MatterHackers.VectorMath
 				var xAngleR = Math.Atan2(center - centerOffsetX / 2, screenDist);
 
 				// calculate yMin and yMax at the near clip plane
-				double yMax = zNear * System.Math.Tan(yAngleR);
+				double yMax = zNear * Math.Tan(yAngleR);
 				double yMin = -yMax;
-				double xMax = zNear * System.Math.Tan(xAngleR);
-				double xMin = zNear * System.Math.Tan(xAngleL);
+				double xMax = zNear * Math.Tan(xAngleR);
+				double xMin = zNear * Math.Tan(xAngleL);
 
 				Matrix4X4.CreatePerspectiveOffCenter(xMin, xMax, yMin, yMax, zNear, zFar, out Matrix4X4 projectionMatrix);
 
@@ -152,6 +152,35 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
+		public void CalculateOrthogrphicMatrixOffCenter(double width, double height, double centerOffsetX, double zNear = .1, double zFar = 100)
+		{
+			if (width > 0 && height > 0)
+			{
+				this.Width = width;
+				this.Height = height;
+				var yAngleR = MathHelper.DegreesToRadians(45) / 2;
+
+				var screenDist = height / 2 / Math.Tan(yAngleR);
+
+				var center = width / 2;
+				var xAngleL = Math.Atan2(-center - centerOffsetX / 2, screenDist);
+				var xAngleR = Math.Atan2(center - centerOffsetX / 2, screenDist);
+
+				// calculate yMin and yMax at the near clip plane
+				double yMax = zNear * Math.Tan(yAngleR);
+				double yMin = -yMax;
+				double xMax = zNear * Math.Tan(xAngleR);
+				double xMin = zNear * Math.Tan(xAngleL);
+
+				var screenCenter = this.GetWorldPosition(new Vector2(width / 2, height / 2));
+				var distToScreen = (EyePosition - screenCenter).Length;
+
+				Matrix4X4.CreateOrthographicOffCenter(xMin, xMax, yMin, yMax, zNear, zFar, out Matrix4X4 projectionMatrix);
+
+				this.ProjectionMatrix = projectionMatrix;
+				this.InverseProjectionMatrix = Matrix4X4.Invert(projectionMatrix);
+			}
+		}
 		public Ray GetRayForLocalBounds(Vector2 localPosition)
 		{
 			var rayClip = new Vector4();

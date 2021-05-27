@@ -277,11 +277,11 @@ namespace MatterHackers.Agg
 
 			if (CenterOffsetX != 0)
 			{
-				this.world.CalculateProjectionMatrixOffCenter(sourceWidget.Width, sourceWidget.Height, CenterOffsetX, zNear, zFar);
+				this.world.CalculatePerspectiveMatrixOffCenter(sourceWidget.Width, sourceWidget.Height, CenterOffsetX, zNear, zFar);
 			}
 			else
 			{
-				this.world.CalculateProjectionMatrix(sourceWidget.Width, sourceWidget.Height, zNear, zFar);
+				this.world.CalculatePerspectiveMatrix(sourceWidget.Width, sourceWidget.Height, zNear, zFar);
 			}
 		}
 
