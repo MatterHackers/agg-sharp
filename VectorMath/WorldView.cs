@@ -141,13 +141,18 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		public void CalculatePerspectiveMatrixOffCenter(double width, double height, double centerOffsetX, double zNear = .1, double zFar = 100)
+		public void CalculatePerspectiveMatrixOffCenter(double width,
+			double height,
+			double centerOffsetX,
+			double zNear = .1,
+			double zFar = 100,
+			double angle = 45)
 		{
 			if (width > 0 && height > 0)
 			{
 				this.Width = width;
 				this.Height = height;
-				var yAngleR = MathHelper.DegreesToRadians(45) / 2;
+				var yAngleR = MathHelper.DegreesToRadians(angle) / 2;
 
 				var screenDist = height / 2 / Math.Tan(yAngleR);
 
