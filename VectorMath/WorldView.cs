@@ -40,12 +40,14 @@ namespace MatterHackers.VectorMath
 
 		public double Width { get; private set; }
 
+		public bool IsOrthographic { get; private set; }
+
 		public WorldView(double width, double height)
 		{
 			this.Width = width;
 			this.Height = height;
 
-			this.CalculateProjectionMatrix(width, height);
+			this.CalculatePerspectiveMatrix(width, height);
 			this.CalculateModelviewMatrix();
 		}
 
@@ -64,6 +66,12 @@ namespace MatterHackers.VectorMath
 			{
 				if (_rotationMatrix != value)
 				{
+#if DEBUG
+					if (!value.IsValid())
+					{
+						int a = 0;
+					}
+#endif
 					_rotationMatrix = value;
 					OnTransformChanged(null);
 				}
@@ -97,6 +105,12 @@ namespace MatterHackers.VectorMath
 			{
 				if (_translationMatrix != value)
 				{
+#if DEBUG
+					if (!value.IsValid())
+					{
+						int a = 0;
+					}
+#endif
 					_translationMatrix = value;
 					OnTransformChanged(null);
 				}
@@ -109,7 +123,7 @@ namespace MatterHackers.VectorMath
 			this.InverseModelviewMatrix = Matrix4X4.Invert(this.ModelviewMatrix);
 		}
 
-		public void CalculateProjectionMatrix(double width, double height, double zNear = .1, double zFar = 100)
+		public void CalculatePerspectiveMatrix(double width, double height, double zNear = .1, double zFar = 100)
 		{
 			if (width > 0 && height > 0)
 			{
@@ -122,10 +136,46 @@ namespace MatterHackers.VectorMath
 
 				this.ProjectionMatrix = projectionMatrix;
 				this.InverseProjectionMatrix = Matrix4X4.Invert(projectionMatrix);
+
+				IsOrthographic = false;
 			}
 		}
 
-		public void CalculateProjectionMatrixOffCenter(double width, double height, double centerOffsetX, double zNear = .1, double zFar = 100)
+		public void CalculatePerspectiveMatrixOffCenter(double width,
+			double height,
+			double centerOffsetX,
+			double zNear = .1,
+			double zFar = 100,
+			double angle = 45)
+		{
+			if (width > 0 && height > 0)
+			{
+				this.Width = width;
+				this.Height = height;
+				var yAngleR = MathHelper.DegreesToRadians(angle) / 2;
+
+				var screenDist = height / 2 / Math.Tan(yAngleR);
+
+				var center = width / 2;
+				var xAngleL = Math.Atan2(-center - centerOffsetX / 2, screenDist);
+				var xAngleR = Math.Atan2(center - centerOffsetX / 2, screenDist);
+
+				// calculate yMin and yMax at the near clip plane
+				double yMax = zNear * Math.Tan(yAngleR);
+				double yMin = -yMax;
+				double xMax = zNear * Math.Tan(xAngleR);
+				double xMin = zNear * Math.Tan(xAngleL);
+
+				Matrix4X4.CreatePerspectiveOffCenter(xMin, xMax, yMin, yMax, zNear, zFar, out Matrix4X4 projectionMatrix);
+
+				this.ProjectionMatrix = projectionMatrix;
+				this.InverseProjectionMatrix = Matrix4X4.Invert(projectionMatrix);
+
+				IsOrthographic = false;
+			}
+		}
+
+		public void CalculateOrthogrphicMatrixOffCenter(double width, double height, double centerOffsetX, double zNear = .1, double zFar = 100)
 		{
 			if (width > 0 && height > 0)
 			{
@@ -140,23 +190,32 @@ namespace MatterHackers.VectorMath
 				var xAngleR = Math.Atan2(center - centerOffsetX / 2, screenDist);
 
 				// calculate yMin and yMax at the near clip plane
-				double yMax = zNear * System.Math.Tan(yAngleR);
+				double yMax = zNear * Math.Tan(yAngleR);
 				double yMin = -yMax;
-				double xMax = zNear * System.Math.Tan(xAngleR);
-				double xMin = zNear * System.Math.Tan(xAngleL);
+				double xMax = zNear * Math.Tan(xAngleR);
+				double xMin = zNear * Math.Tan(xAngleL);
 
-				Matrix4X4.CreatePerspectiveOffCenter(xMin, xMax, yMin, yMax, zNear, zFar, out Matrix4X4 projectionMatrix);
+				var screenCenter = this.GetWorldPosition(new Vector2(width / 2, height / 2));
+				var distToScreen = (EyePosition - screenCenter).Length;
+
+				xMax = width / distToScreen * 2;
+				xMin = -xMax;
+				yMax = height / distToScreen * 4;
+				yMin = -yMin;
+
+				Matrix4X4.CreateOrthographicOffCenter(xMin, xMax, yMin, yMax, zNear, zFar, out Matrix4X4 projectionMatrix);
 
 				this.ProjectionMatrix = projectionMatrix;
 				this.InverseProjectionMatrix = Matrix4X4.Invert(projectionMatrix);
+
+				IsOrthographic = true;
 			}
 		}
-
-		public Ray GetRayForLocalBounds(Vector2 localPosition)
+		public Ray GetRayForLocalBounds(Vector2 screenPosition)
 		{
 			var rayClip = new Vector4();
-			rayClip.X = (2.0 * localPosition.X) / this.Width - 1.0;
-			rayClip.Y = (2.0 * localPosition.Y) / this.Height - 1.0;
+			rayClip.X = (2.0 * screenPosition.X) / this.Width - 1.0;
+			rayClip.Y = (2.0 * screenPosition.Y) / this.Height - 1.0;
 			rayClip.Z = -1.0;
 			rayClip.W = 1.0;
 
@@ -184,11 +243,18 @@ namespace MatterHackers.VectorMath
 		{
 			var homoginizedViewPosition = worldPosition.Transform(this.ModelviewMatrix);
 
-			var homoginizedScreenPosition = homoginizedViewPosition.TransformPerspective(this.ProjectionMatrix);
+			if (IsOrthographic)
+			{
+				return new Vector2(homoginizedViewPosition.Transform(this.ProjectionMatrix));
+			}
+			else
+			{
+				var homoginizedScreenPosition = homoginizedViewPosition.TransformPerspective(this.ProjectionMatrix);
 
-			// Screen position
-			return new Vector2(homoginizedScreenPosition.X * Width / 2 + Width / 2,
-				homoginizedScreenPosition.Y * Height / 2 + Height / 2);
+				// Screen position
+				return new Vector2(homoginizedScreenPosition.X * Width / 2 + Width / 2,
+					homoginizedScreenPosition.Y * Height / 2 + Height / 2);
+			}
 		}
 
 		public Vector3 WorldToScreenSpace(Vector3 worldPosition)
@@ -216,6 +282,11 @@ namespace MatterHackers.VectorMath
 				1 - (2 * (screenPosition.Y / Height)),
 				1,
 				1);
+
+			var unprojected = Vector4.Transform(homoginizedScreenSpace, InverseProjectionMatrix);
+			var worldSpace2 = Vector4.Transform(unprojected, InverseModelviewMatrix);
+
+			return new Vector3(worldSpace2);
 
 			Matrix4X4 viewProjection = ModelviewMatrix * ProjectionMatrix;
 			var viewProjectionInverse = Matrix4X4.Invert(viewProjection);
