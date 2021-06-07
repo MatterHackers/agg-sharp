@@ -848,49 +848,45 @@ namespace MatterHackers.GuiAutomation
 		public AutomationRunner DragByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out SystemWindow containingWindow, out Point2D offsetHint, secondsToWait, searchRegion);
-			if (widgetToClick != null)
+
+			RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
+
+			if (origin == ClickOrigin.Center)
 			{
-				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
-
-				if (origin == ClickOrigin.Center)
-				{
-					offset += offsetHint;
-				}
-
-				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
-				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-				inputSystem.CreateMouseEvent(GetMouseDown(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
+				offset += offsetHint;
 			}
+
+			Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
+			SetMouseCursorPosition(screenPosition.x, screenPosition.y);
+			inputSystem.CreateMouseEvent(GetMouseDown(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
 
 			return this;
 		}
 
-		public bool DropByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
+		public AutomationRunner DropByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out SystemWindow containingWindow, out Point2D offsetHint, secondsToWait, searchRegion);
-			if (widgetToClick != null)
+
+			RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
+
+			if (origin == ClickOrigin.Center)
 			{
-				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
-
-				if (origin == ClickOrigin.Center)
-				{
-					offset += offsetHint;
-				}
-
-				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
-				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-				Drop(mouseButtons);
-
-				return true;
+				offset += offsetHint;
 			}
 
-			return false;
+			Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
+			SetMouseCursorPosition(screenPosition.x, screenPosition.y);
+			Drop(mouseButtons);
+
+			return this;
 		}
 
-		public void Drop(MouseButtons mouseButtons = MouseButtons.Left)
+		public AutomationRunner Drop(MouseButtons mouseButtons = MouseButtons.Left)
 		{
 			Point2D screenPosition = CurrentMousePosition();
 			inputSystem.CreateMouseEvent(GetMouseUp(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
+
+			return this;
 		}
 
 		public AutomationRunner DoubleClickByName(string widgetName, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)

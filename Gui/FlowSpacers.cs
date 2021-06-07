@@ -34,6 +34,7 @@ namespace MatterHackers.Agg.UI
 		public HorizontalSpacer()
 		{
 			HAnchor = HAnchor.Stretch;
+			Height = 1;
 		}
 	}
 
@@ -42,6 +43,7 @@ namespace MatterHackers.Agg.UI
 		public VerticalSpacer()
 		{
 			VAnchor = VAnchor.Stretch;
+			Width = 1;
 		}
 	}
 
