@@ -37,18 +37,22 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.DataConverters3D;
 using MatterHackers.ImageProcessing;
-using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer
 {
-	public enum RenderType { NONE, ORTHOGROPHIC, PERSPECTIVE, RAY_TRACE };
+	public enum RenderType
+	{
+		NONE,
+		ORTHOGROPHIC,
+		PERSPECTIVE,
+		RAY_TRACE
+	}
 
 	public static class ThumbnailEngine
 	{
