@@ -1175,16 +1175,16 @@ namespace MatterHackers.GuiAutomation
 			return this;
 		}
 
-		public void SelectAll()
+		public AutomationRunner SelectAll()
 		{
 			// Type into focused widget
-			this.Type("^a"); // select all
+			return this.Type("^a"); // select all
 		}
 
-		public void SelectNone()
+		public AutomationRunner SelectNone()
 		{
 			// Type into focused widget
-			this.Type(" "); // clear the selection (type a space)
+			return this.Type(" "); // clear the selection (type a space)
 		}
 
 		public static IInputMethod InputMethod { get; set; }
