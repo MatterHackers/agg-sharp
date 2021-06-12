@@ -28,8 +28,6 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Linq;
-using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
@@ -93,7 +91,7 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// Gets or sets the amount to grow each side of the thumb in Y on Hover
 		/// </summary>
-		public static int GrowThumbBy { get; set; } = 3;
+		public static double GrowThumbBy { get; set; } = 3 * GuiWidget.DeviceScale;
 
 		public static double ScrollBarWidth { get; set; } = 15 * GuiWidget.DeviceScale;
 
