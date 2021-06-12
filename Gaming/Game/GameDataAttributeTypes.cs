@@ -14,8 +14,8 @@ namespace Gaming.Game
 		private double m_MaxValue;
 		private double m_Increment;
 
-		public GameDataNumberAttribute(String Name)
-			: base(Name)
+		public GameDataNumberAttribute(string name)
+			: base(name)
 		{
 			m_Increment = 1;
 			m_MinValue = double.MinValue;
@@ -72,7 +72,7 @@ namespace Gaming.Game
 				m_Increment = value;
 			}
 		}
-	};
+	}
 
 	#endregion GameDataValueAttribute
 
@@ -81,8 +81,8 @@ namespace Gaming.Game
 	[AttributeUsage(AttributeTargets.Field)]
 	public class GameDataBoolAttribute : GameDataAttribute
 	{
-		public GameDataBoolAttribute(String Name)
-			: base(Name)
+		public GameDataBoolAttribute(string name)
+			: base(name)
 		{
 		}
 
@@ -100,7 +100,7 @@ namespace Gaming.Game
 
 			base.WriteField(xmlWriter, fieldToWrite);
 		}
-	};
+	}
 
 	#endregion GameDataBoolAttribute
 
@@ -109,14 +109,14 @@ namespace Gaming.Game
 	[AttributeUsage(AttributeTargets.Field)]
 	public class GameDataVector2DAttribute : GameDataAttribute
 	{
-		public GameDataVector2DAttribute(String Name)
-			: base(Name)
+		public GameDataVector2DAttribute(string name)
+			: base(name)
 		{
 		}
 
 		public override object ReadField(XmlReader xmlReader)
 		{
-			Vector2 newVector2D = (Vector2)GameDataAttribute.ReadTypeAttributes(xmlReader);
+			var newVector2D = (Vector2)GameDataAttribute.ReadTypeAttributes(xmlReader);
 
 			string xString = xmlReader.GetAttribute("x");
 			string yString = xmlReader.GetAttribute("y");
@@ -132,7 +132,7 @@ namespace Gaming.Game
 				throw new Exception("You can only put a GameDataVector2DAttribute on a Vector2D.");
 			}
 
-			Vector2 vector2DToWrite = (Vector2)fieldToWrite;
+			var vector2DToWrite = (Vector2)fieldToWrite;
 			xmlWriter.WriteStartAttribute("x");
 			xmlWriter.WriteValue(vector2DToWrite.X);
 			xmlWriter.WriteEndAttribute();
@@ -141,7 +141,7 @@ namespace Gaming.Game
 			xmlWriter.WriteValue(vector2DToWrite.Y);
 			xmlWriter.WriteEndAttribute();
 		}
-	};
+	}
 
 	#endregion GameDataVector2DAttribute
 
@@ -150,8 +150,8 @@ namespace Gaming.Game
 	[AttributeUsage(AttributeTargets.Field)]
 	public class GameDataListAttribute : GameDataAttribute
 	{
-		public GameDataListAttribute(String Name)
-			: base(Name)
+		public GameDataListAttribute(string name)
+			: base(name)
 		{
 		}
 
@@ -168,7 +168,7 @@ namespace Gaming.Game
 						object listItem = GameDataAttribute.ReadTypeAttributes(xmlReader);
 						if (listItem is GameObject)
 						{
-							GameObject listGameObject = (GameObject)listItem;
+							var listGameObject = (GameObject)listItem;
 							listGameObject.LoadGameObjectData(xmlReader);
 							MethodInfo addMethod = list.GetType().GetMethod("Add");
 							addMethod.Invoke(list, new object[] { listGameObject });
@@ -212,7 +212,7 @@ namespace Gaming.Game
 				}
 			}
 		}
-	};
+	}
 
 	#endregion GameDataListAttribute
 }

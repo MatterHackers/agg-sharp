@@ -9,7 +9,7 @@ namespace Gaming.Game
 	{
 		private DataAssetTree m_DataAssetTree;
 
-		private Dictionary<Type, Dictionary<String, GameObject>> m_AssetCache = new Dictionary<Type, Dictionary<string, GameObject>>();
+		private Dictionary<Type, Dictionary<string, GameObject>> m_AssetCache = new Dictionary<Type, Dictionary<string, GameObject>>();
 
 		private static DataAssetCache s_GlobalAssetCache = new DataAssetCache();
 
@@ -30,10 +30,10 @@ namespace Gaming.Game
 			m_DataAssetTree = dataAssetTree;
 		}
 
-		public bool AssetExists(Type GameObjectType, String AssetName)
+		public bool AssetExists(Type gameObjectType, string assetName)
 		{
-			String PathToAsset = m_DataAssetTree.GetPathToAsset(GameObjectType.Name, AssetName);
-			if (PathToAsset == null)
+			string pathToAsset = m_DataAssetTree.GetPathToAsset(gameObjectType.Name, assetName);
+			if (pathToAsset == null)
 			{
 				return false;
 			}
@@ -41,7 +41,7 @@ namespace Gaming.Game
 			return true;
 		}
 
-		public GameObject GetCopyOfAsset(Type GameObjectType, String AssetName)
+		public GameObject GetCopyOfAsset(Type gameObjectType, string assetName)
 		{
 			// TODO: this code below seems like it should work and would be better (use the copy of the asset in the cache).
 			/*
@@ -57,78 +57,80 @@ namespace Gaming.Game
 			return GameObject.Load(xmlReader);
 			 */
 
-			String PathToAsset = m_DataAssetTree.GetPathToAsset(GameObjectType.Name, AssetName);
-			return LoadGameObjectFromDisk(GameObjectType, AssetName, PathToAsset);
+			string pathToAsset = m_DataAssetTree.GetPathToAsset(gameObjectType.Name, assetName);
+			return LoadGameObjectFromDisk(gameObjectType, assetName, pathToAsset);
 		}
 
-		public GameObject GetAsset(Type GameObjectType, String AssetName)
+		public GameObject GetAsset(Type gameObjectType, string assetName)
 		{
-			if (AssetName == null)
+			if (assetName == null)
 			{
-				AssetName = "!Default";
+				assetName = "!Default";
 			}
 
-			GameObject Asset = GetAssetFromCache(GameObjectType, AssetName);
+			GameObject asset = GetAssetFromCache(gameObjectType, assetName);
 
-			if (Asset == null)
+			if (asset == null)
 			{
-				String PathToAsset = m_DataAssetTree.GetPathToAsset(GameObjectType.Name, AssetName);
+				string pathToAsset = m_DataAssetTree.GetPathToAsset(gameObjectType.Name, assetName);
 
-				if (PathToAsset == null)
+				if (pathToAsset == null)
 				{
-					if (AssetName == "!Default")
+					if (assetName == "!Default")
 					{
 						// we are trying to load the default item and we don't have one yet.
-						ConstructorInfo constructInfo = GameObjectType.GetConstructor(Type.EmptyTypes);
+						ConstructorInfo constructInfo = gameObjectType.GetConstructor(Type.EmptyTypes);
 						if (constructInfo == null)
 						{
-							throw new System.Exception("You must have a default constructor defined for '" + GameObjectType.Name + "' for default game object creation to work.");
+							throw new Exception("You must have a default constructor defined for '" + gameObjectType.Name + "' for default game object creation to work.");
 						}
-						GameObject defaultGameObjectItem = (GameObject)constructInfo.Invoke(null);
-						String DefaultAssetPath = m_DataAssetTree.Root + Path.DirectorySeparatorChar + "Default";
-						if (!Directory.Exists(DefaultAssetPath))
-						{
-							Directory.CreateDirectory(DefaultAssetPath);
-						}
-						String PathName = DefaultAssetPath + Path.DirectorySeparatorChar + AssetName + "." + GameObjectType.Name;
-						defaultGameObjectItem.SaveXML(PathName);
 
-						AddAssetToCache(GameObjectType, AssetName, defaultGameObjectItem);
+						var defaultGameObjectItem = (GameObject)constructInfo.Invoke(null);
+						string defaultAssetPath = m_DataAssetTree.Root + Path.DirectorySeparatorChar + "Default";
+						if (!Directory.Exists(defaultAssetPath))
+						{
+							Directory.CreateDirectory(defaultAssetPath);
+						}
+
+						string pathName = defaultAssetPath + Path.DirectorySeparatorChar + assetName + "." + gameObjectType.Name;
+						defaultGameObjectItem.SaveXML(pathName);
+
+						AddAssetToCache(gameObjectType, assetName, defaultGameObjectItem);
 						return defaultGameObjectItem;
 					}
 					else
 					{
-						throw new System.Exception("'" + GameObjectType.Name + "' named '" + AssetName + "' does not exist.");
+						throw new Exception("'" + gameObjectType.Name + "' named '" + assetName + "' does not exist.");
 					}
 				}
 
-				GameObject gameObjectItem = LoadGameObjectFromDisk(GameObjectType, AssetName, PathToAsset);
+				GameObject gameObjectItem = LoadGameObjectFromDisk(gameObjectType, assetName, pathToAsset);
 
-				AddAssetToCache(GameObjectType, AssetName, gameObjectItem);
+				AddAssetToCache(gameObjectType, assetName, gameObjectItem);
 
 				return gameObjectItem;
 			}
 
-			return Asset;
+			return asset;
 		}
 
-		private static GameObject LoadGameObjectFromDisk(Type GameObjectType, String AssetName, String PathToAsset)
+		private static GameObject LoadGameObjectFromDisk(Type gameObjectType, string assetName, string pathToAsset)
 		{
-			Type[] ParamsLoadTakes = new Type[] { typeof(String) };
+			var paramsLoadTakes = new Type[] { typeof(string) };
 			// TODO: more checking for right function. Must be static must return a GameObject.
-			MethodInfo LoadFunction = GameObjectType.GetMethod("Load", ParamsLoadTakes);
+			MethodInfo loadFunction = gameObjectType.GetMethod("Load", paramsLoadTakes);
 
-			if (LoadFunction == null)
+			if (loadFunction == null)
 			{
-				throw new System.Exception("You must implement the load function on '" + GameObjectType.Name + "'.\n"
+				throw new Exception("You must implement the load function on '" + gameObjectType.Name + "'.\n"
 					+ "It will look like this, \n 'public new static GameObject Load(String PathName)'.");
 			}
 
-			object[] ParamsToCallLoadWith = new object[] { PathToAsset };
+			object[] paramsToCallLoadWith = new object[] { pathToAsset };
 			GameObject gameObjectItem;
 			try
 			{
-				gameObjectItem = (GameObject)LoadFunction.Invoke(null, ParamsToCallLoadWith);
+				gameObjectItem = (GameObject)loadFunction.Invoke(null, paramsToCallLoadWith);
 			}
 			catch (Exception e)
 			{
@@ -137,18 +139,17 @@ namespace Gaming.Game
 
 			if (gameObjectItem == null)
 			{
-				throw new System.Exception("The load failed for the '" + GameObjectType.Name + "' named '" + AssetName + "'.");
+				throw new Exception("The load failed for the '" + gameObjectType.Name + "' named '" + assetName + "'.");
 			}
+
 			return gameObjectItem;
 		}
 
-		private GameObject GetAssetFromCache(Type GameObjectType, String AssetName)
+		private GameObject GetAssetFromCache(Type gameObjectType, string assetName)
 		{
-			Dictionary<string, GameObject> gameObjectClassDictionary;
-			if (m_AssetCache.TryGetValue(GameObjectType, out gameObjectClassDictionary))
+			if (m_AssetCache.TryGetValue(gameObjectType, out Dictionary<string, GameObject> gameObjectClassDictionary))
 			{
-				GameObject gameObjectItem;
-				if (gameObjectClassDictionary.TryGetValue(AssetName, out gameObjectItem))
+				if (gameObjectClassDictionary.TryGetValue(assetName, out GameObject gameObjectItem))
 				{
 					return gameObjectItem;
 				}
@@ -157,46 +158,45 @@ namespace Gaming.Game
 			return null;
 		}
 
-		private void AddAssetToCache(Type GameObjectType, String AssetName, GameObject Asset)
+		private void AddAssetToCache(Type gameObjectType, string assetName, GameObject asset)
 		{
-			Dictionary<string, GameObject> gameObjectClassDictionary;
-			if (!m_AssetCache.TryGetValue(GameObjectType, out gameObjectClassDictionary))
+			if (!m_AssetCache.TryGetValue(gameObjectType, out Dictionary<string, GameObject> gameObjectClassDictionary))
 			{
 				// create the dictionary
 				gameObjectClassDictionary = new Dictionary<string, GameObject>();
-				m_AssetCache.Add(GameObjectType, gameObjectClassDictionary);
+				m_AssetCache.Add(gameObjectType, gameObjectClassDictionary);
 			}
 
-			GameObject itemInCach;
-			if (gameObjectClassDictionary.TryGetValue(AssetName, out itemInCach))
+			if (gameObjectClassDictionary.TryGetValue(assetName, out GameObject itemInCach))
 			{
-				throw new System.Exception("The '" + GameObjectType.Name + "' asset named '" + AssetName + "' is already in the cache.");
+				throw new Exception("The '" + gameObjectType.Name + "' asset named '" + assetName + "' is already in the cache.");
 			}
 
-			gameObjectClassDictionary.Add(AssetName, Asset);
+			gameObjectClassDictionary.Add(assetName, asset);
 		}
 
-		public void ModifyOrCreateAsset(GameObject AssetToSave, string DesiredPathHint, string AssetName)
+		public void ModifyOrCreateAsset(GameObject assetToSave, string desiredPathHint, string assetName)
 		{
-			if (AssetExists(AssetToSave.GetType(), AssetName))
+			if (AssetExists(assetToSave.GetType(), assetName))
 			{
 				// re-save it
-				String PathToAsset = m_DataAssetTree.GetPathToAsset(AssetToSave.GetType().Name, AssetName);
-				AssetToSave.SaveXML(PathToAsset);
+				string pathToAsset = m_DataAssetTree.GetPathToAsset(assetToSave.GetType().Name, assetName);
+				assetToSave.SaveXML(pathToAsset);
 			}
 			else
 			{
 				// create the file and save the asset
-				String DesiredAssetPath = m_DataAssetTree.Root + Path.DirectorySeparatorChar + DesiredPathHint;
-				if (!Directory.Exists(DesiredAssetPath))
+				string desiredAssetPath = m_DataAssetTree.Root + Path.DirectorySeparatorChar + desiredPathHint;
+				if (!Directory.Exists(desiredAssetPath))
 				{
-					Directory.CreateDirectory(DesiredAssetPath);
+					Directory.CreateDirectory(desiredAssetPath);
 				}
-				String PathName = DesiredAssetPath + Path.DirectorySeparatorChar + AssetName + "." + AssetToSave.GetType().Name;
-				AssetToSave.SaveXML(PathName);
 
-				AddAssetToCache(AssetToSave.GetType(), AssetName, AssetToSave);
-				m_DataAssetTree.AddItemToTree(PathName);
+				string pathName = desiredAssetPath + Path.DirectorySeparatorChar + assetName + "." + assetToSave.GetType().Name;
+				assetToSave.SaveXML(pathName);
+
+				AddAssetToCache(assetToSave.GetType(), assetName, assetToSave);
+				m_DataAssetTree.AddItemToTree(pathName);
 			}
 		}
 	}

@@ -6,40 +6,40 @@ namespace Gaming.Game
 {
 	public class DataAssetTree
 	{
-		private String m_RootFolderOrZip;
-		private Dictionary<String, Dictionary<String, DataAssetTreeItem>> m_AssetTree = new Dictionary<string, Dictionary<string, DataAssetTreeItem>>();
-		private List<String> ExtensionExcludeList = new List<string>();
+		private string m_RootFolderOrZip;
+		private Dictionary<string, Dictionary<string, DataAssetTreeItem>> m_AssetTree = new Dictionary<string, Dictionary<string, DataAssetTreeItem>>();
+		private List<string> ExtensionExcludeList = new List<string>();
 
 		public class DataAssetTreeItem
 		{
-			private String m_FullPathName;
-			private String m_GameObjectClass;
-			private String m_InstanceName;
+			private string m_FullPathName;
+			private string m_GameObjectClass;
+			private string m_InstanceName;
 
-			public DataAssetTreeItem(String fullPathName)
+			public DataAssetTreeItem(string fullPathName)
 			{
 				m_FullPathName = fullPathName;
 				m_GameObjectClass = Path.GetExtension(fullPathName).Substring(1);
 				m_InstanceName = Path.GetFileNameWithoutExtension(fullPathName);
 			}
 
-			public String FullPathName
+			public string FullPathName
 			{
 				get { return m_FullPathName; }
 			}
 
-			public String GameObjectClass
+			public string GameObjectClass
 			{
 				get { return m_GameObjectClass; }
 			}
 
-			public String InstanceName
+			public string InstanceName
 			{
 				get { return m_InstanceName; }
 			}
-		};
+		}
 
-		public DataAssetTree(String rootFolderOrZip)
+		public DataAssetTree(string rootFolderOrZip)
 		{
 			ExtensionExcludeList.Add(".svn");
 
@@ -50,16 +50,16 @@ namespace Gaming.Game
 			}
 			else if (File.Exists(m_RootFolderOrZip + ".zip"))
 			{
-				throw new System.NotImplementedException("We don't support zip files yet.");
+				throw new NotImplementedException("We don't support zip files yet.");
 				//AddZipToTree(m_RootFolderOrZip);
 			}
 			else
 			{
-				throw new System.InvalidOperationException("The root folder or zip you specified does not exist.");
+				throw new InvalidOperationException("The root folder or zip you specified does not exist.");
 			}
 		}
 
-		public String Root
+		public string Root
 		{
 			get
 			{
@@ -67,16 +67,14 @@ namespace Gaming.Game
 			}
 		}
 
-		public String GetPathToAsset(String GameObjectClassName, String InstanceName)
+		public string GetPathToAsset(string gameObjectClassName, string instanceName)
 		{
-			Dictionary<string, DataAssetTreeItem> gameObjectClassDictionary;
-			if (!m_AssetTree.TryGetValue(GameObjectClassName, out gameObjectClassDictionary))
+			if (!m_AssetTree.TryGetValue(gameObjectClassName, out Dictionary<string, DataAssetTreeItem> gameObjectClassDictionary))
 			{
 				return null;
 			}
 
-			DataAssetTreeItem dataAssetItemItem;
-			if (!gameObjectClassDictionary.TryGetValue(InstanceName, out dataAssetItemItem))
+			if (!gameObjectClassDictionary.TryGetValue(instanceName, out DataAssetTreeItem dataAssetItemItem))
 			{
 				return null;
 			}
@@ -91,8 +89,8 @@ namespace Gaming.Game
 
 		private void AddDirectoryToTree(string directoryToEnumerate)
 		{
-			String[] directories = Directory.GetDirectories(directoryToEnumerate);
-			foreach (String directory in directories)
+			string[] directories = Directory.GetDirectories(directoryToEnumerate);
+			foreach (string directory in directories)
 			{
 				if (ExtensionExcludeList.Contains(Path.GetExtension(directory)))
 				{
@@ -110,14 +108,14 @@ namespace Gaming.Game
 				}
 			}
 
-			String[] files = Directory.GetFiles(directoryToEnumerate, "*.zip");
-			foreach (String file in files)
+			string[] files = Directory.GetFiles(directoryToEnumerate, "*.zip");
+			foreach (string file in files)
 			{
 				AddZipToTree(file);
 			}
 
 			files = Directory.GetFiles(directoryToEnumerate, "*.xml");
-			foreach (String file in files)
+			foreach (string file in files)
 			{
 				AddItemToTree(Path.ChangeExtension(file, null));
 			}
@@ -125,17 +123,15 @@ namespace Gaming.Game
 
 		public void AddItemToTree(string itemToAddToTree)
 		{
-			DataAssetTreeItem dataAssetItem = new DataAssetTreeItem(itemToAddToTree);
-			Dictionary<string, DataAssetTreeItem> gameObjectClassDictionary;
-			if (!m_AssetTree.TryGetValue(dataAssetItem.GameObjectClass, out gameObjectClassDictionary))
+			var dataAssetItem = new DataAssetTreeItem(itemToAddToTree);
+			if (!m_AssetTree.TryGetValue(dataAssetItem.GameObjectClass, out Dictionary<string, DataAssetTreeItem> gameObjectClassDictionary))
 			{
 				// create the dictionary
 				gameObjectClassDictionary = new Dictionary<string, DataAssetTreeItem>();
 				m_AssetTree.Add(dataAssetItem.GameObjectClass, gameObjectClassDictionary);
 			}
 
-			DataAssetTreeItem itemOfSameName;
-			if (gameObjectClassDictionary.TryGetValue(dataAssetItem.InstanceName, out itemOfSameName))
+			if (gameObjectClassDictionary.TryGetValue(dataAssetItem.InstanceName, out DataAssetTreeItem itemOfSameName))
 			{
 				throw new Exception("The GameDateObjectList '" + dataAssetItem.GameObjectClass + "' already contains an instance named '" + dataAssetItem.InstanceName + "'.\n"
 					+ "Please change the name, or delete one of them.\n"

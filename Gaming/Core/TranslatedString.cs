@@ -4,17 +4,17 @@ namespace Gaming.Core
 {
 	public class TranslatedString
 	{
-		private String m_EnglishString;
-		private String m_LocalizedString;
+		private string m_EnglishString;
+		private string m_LocalizedString;
 
-		public TranslatedString(String EnglishString)
+		public TranslatedString(string englishString)
 		{
 			// look it up and get the translation
-			m_EnglishString = EnglishString;
-			m_LocalizedString = EnglishString;
+			m_EnglishString = englishString;
+			m_LocalizedString = englishString;
 		}
 
-		public String LocalizedString
+		public string LocalizedString
 		{
 			get
 			{
@@ -22,7 +22,7 @@ namespace Gaming.Core
 			}
 		}
 
-		public String EnglishString
+		public string EnglishString
 		{
 			get
 			{

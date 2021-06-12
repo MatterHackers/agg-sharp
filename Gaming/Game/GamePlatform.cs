@@ -40,17 +40,17 @@ namespace Gaming.Game
 	{
 		private System.Diagnostics.Stopwatch potentialDrawsStopWatch = new System.Diagnostics.Stopwatch();
 		private Vector2 potentialDrawsBudgetPosition;
-		private MatterHackers.Agg.UI.CheckBox showPotentialDrawsBudgetGraph;
+		private CheckBox showPotentialDrawsBudgetGraph;
 		private DataViewGraph potentialDrawsBudgetGraph;
 
 		private System.Diagnostics.Stopwatch potentialUpdatesStopWatch = new System.Diagnostics.Stopwatch();
 		private Vector2 potentialUpdatesBudgetPosition;
-		private MatterHackers.Agg.UI.CheckBox showPotentialUpdatesBudgetGraph;
+		private CheckBox showPotentialUpdatesBudgetGraph;
 		private DataViewGraph potentialUpdatesBudgetGraph;
 
 		private System.Diagnostics.Stopwatch actualDrawsStopWatch = new System.Diagnostics.Stopwatch();
 		private Vector2 actualDrawsBudgetPosition;
-		private MatterHackers.Agg.UI.CheckBox showActualDrawsBudgetGraph;
+		private CheckBox showActualDrawsBudgetGraph;
 		private DataViewGraph actualDrawsBudgetGraph;
 
 		private bool showFrameRate;
@@ -60,9 +60,9 @@ namespace Gaming.Game
 		private int maxUpdatesPerDraw;
 		private double numSecondsSinceStart;
 
-		private static String potentialDrawsPerSecondString = "Potential Draws Per Second";
-		private static String actualDrawsPerSecondString = "Actual Draws Per Second";
-		private static String potentialUpdatesPerSecondString = "Potential Updates Per Second";
+		private static string potentialDrawsPerSecondString = "Potential Draws Per Second";
+		private static string actualDrawsPerSecondString = "Actual Draws Per Second";
+		private static string potentialUpdatesPerSecondString = "Potential Updates Per Second";
 
 		public GamePlatform(int framesPerSecond, int maxUpdatesPerDraw, double width, double height)
 			: base(width, height)
@@ -85,9 +85,16 @@ namespace Gaming.Game
 		public bool ShowFrameRate
 		{
 			get { return showFrameRate; }
+
 			set
 			{
 				showFrameRate = value;
+
+				if (showActualDrawsBudgetGraph == null)
+				{
+					return;
+				}
+
 				if (showFrameRate)
 				{
 					showActualDrawsBudgetGraph.Visible = true;
@@ -103,32 +110,32 @@ namespace Gaming.Game
 			}
 		}
 
-		public virtual void OnUpdate(double NumSecondsPassed)
+		public virtual void OnUpdate(double numSecondsPassed)
 		{
 		}
 
 		private void CreateGraphs()
 		{
-			int FrameRateOffset = -15;
-			ColorF FrameRateControlColor = new ColorF(1, 1, 1, 1);
+			int frameRateOffset = -15;
+			var frameRateControlColor = new ColorF(1, 1, 1, 1);
 
-			potentialDrawsBudgetPosition = new Vector2(10, (double)Height + FrameRateOffset);
-			showPotentialDrawsBudgetGraph = new MatterHackers.Agg.UI.CheckBox(potentialDrawsBudgetPosition.X, potentialDrawsBudgetPosition.Y, "D:000.000");
-			showPotentialDrawsBudgetGraph.TextColor = FrameRateControlColor.ToColor();
+			potentialDrawsBudgetPosition = new Vector2(10, (double)Height + frameRateOffset);
+			showPotentialDrawsBudgetGraph = new CheckBox(potentialDrawsBudgetPosition.X, potentialDrawsBudgetPosition.Y, "D:000.000");
+			showPotentialDrawsBudgetGraph.TextColor = frameRateControlColor.ToColor();
 			//showPotentialDrawsBudgetGraph.inactive_color(FrameRateControlColor);
 			AddChild(showPotentialDrawsBudgetGraph);
 			potentialDrawsBudgetGraph = new DataViewGraph(potentialDrawsBudgetPosition, 100, 100);
 
-			potentialUpdatesBudgetPosition = new Vector2(115, (double)Height + FrameRateOffset);
-			showPotentialUpdatesBudgetGraph = new MatterHackers.Agg.UI.CheckBox(potentialUpdatesBudgetPosition.X, potentialUpdatesBudgetPosition.Y, "U:000.000");
-			showPotentialUpdatesBudgetGraph.TextColor = FrameRateControlColor.ToColor();
+			potentialUpdatesBudgetPosition = new Vector2(115, (double)Height + frameRateOffset);
+			showPotentialUpdatesBudgetGraph = new CheckBox(potentialUpdatesBudgetPosition.X, potentialUpdatesBudgetPosition.Y, "U:000.000");
+			showPotentialUpdatesBudgetGraph.TextColor = frameRateControlColor.ToColor();
 			//showPotentialUpdatesBudgetGraph.inactive_color(FrameRateControlColor);
 			AddChild(showPotentialUpdatesBudgetGraph);
 			potentialUpdatesBudgetGraph = new DataViewGraph(potentialUpdatesBudgetPosition, 100, 100);
 
-			actualDrawsBudgetPosition = new Vector2(220, (double)Height + FrameRateOffset);
-			showActualDrawsBudgetGraph = new MatterHackers.Agg.UI.CheckBox(actualDrawsBudgetPosition.X, actualDrawsBudgetPosition.Y, "A:000.000");
-			showActualDrawsBudgetGraph.TextColor = FrameRateControlColor.ToColor();
+			actualDrawsBudgetPosition = new Vector2(220, (double)Height + frameRateOffset);
+			showActualDrawsBudgetGraph = new CheckBox(actualDrawsBudgetPosition.X, actualDrawsBudgetPosition.Y, "A:000.000");
+			showActualDrawsBudgetGraph.TextColor = frameRateControlColor.ToColor();
 			//showActualDrawsBudgetGraph.inactive_color(FrameRateControlColor);
 			AddChild(showActualDrawsBudgetGraph);
 			actualDrawsBudgetGraph = new DataViewGraph(actualDrawsBudgetPosition, 100, 100);
@@ -150,23 +157,23 @@ namespace Gaming.Game
 
 			if (showFrameRate)
 			{
-				int GraphOffsetY = -105;
+				int graphOffsetY = -105;
 				if (showPotentialDrawsBudgetGraph.Checked)
 				{
-					Affine Position = Affine.NewTranslation(0, GraphOffsetY);
-					potentialDrawsBudgetGraph.Draw(Position, graphics2D);
+					var position = Affine.NewTranslation(0, graphOffsetY);
+					potentialDrawsBudgetGraph.Draw(position, graphics2D);
 				}
 
 				if (showPotentialUpdatesBudgetGraph.Checked)
 				{
-					Affine Position = Affine.NewTranslation(0, GraphOffsetY);
-					potentialUpdatesBudgetGraph.Draw(Position, graphics2D);
+					var position = Affine.NewTranslation(0, graphOffsetY);
+					potentialUpdatesBudgetGraph.Draw(position, graphics2D);
 				}
 
 				if (showActualDrawsBudgetGraph.Checked)
 				{
-					Affine Position = Affine.NewTranslation(0, GraphOffsetY);
-					actualDrawsBudgetGraph.Draw(Position, graphics2D);
+					var position = Affine.NewTranslation(0, graphOffsetY);
+					actualDrawsBudgetGraph.Draw(position, graphics2D);
 				}
 			}
 		}
@@ -180,47 +187,47 @@ namespace Gaming.Game
 
 			double numSecondsPassedSinceLastUpdate = 0;
 
-			int ThisSystemTickCount = Environment.TickCount;
+			int thisSystemTickCount = Environment.TickCount;
 
 			// handle the counter rolling over
-			if (ThisSystemTickCount < lastSystemTickCount)
+			if (thisSystemTickCount < lastSystemTickCount)
 			{
-				lastSystemTickCount = ThisSystemTickCount;
+				lastSystemTickCount = thisSystemTickCount;
 			}
 
 			// figure out how many seconds have passed
-			numSecondsPassedSinceLastUpdate = (double)((ThisSystemTickCount - lastSystemTickCount) / 1000.0);
+			numSecondsPassedSinceLastUpdate = (double)((thisSystemTickCount - lastSystemTickCount) / 1000.0);
 
 			// add to it what we had left over from last time.
 			numSecondsPassedSinceLastUpdate += secondsLeftOverFromLastUpdate;
 
 			// limit it to the max that we are willing to consider
-			double MaxSecondsToCatchUpOn = maxUpdatesPerDraw * secondsPerUpdate;
-			if (numSecondsPassedSinceLastUpdate > MaxSecondsToCatchUpOn)
+			double maxSecondsToCatchUpOn = maxUpdatesPerDraw * secondsPerUpdate;
+			if (numSecondsPassedSinceLastUpdate > maxSecondsToCatchUpOn)
 			{
-				numSecondsPassedSinceLastUpdate = MaxSecondsToCatchUpOn;
+				numSecondsPassedSinceLastUpdate = maxSecondsToCatchUpOn;
 				secondsLeftOverFromLastUpdate = 0.0;
 			}
 
 			// Reset our last tick count. Do this as soon as we can, to make the time more accurate.
-			lastSystemTickCount = ThisSystemTickCount;
+			lastSystemTickCount = thisSystemTickCount;
 
-			bool WasUpdate = false;
+			bool wasUpdate = false;
 
 			// if enough time has gone by that we are willing to do an update
 			while (numSecondsPassedSinceLastUpdate >= secondsPerUpdate && potentialUpdatesBudgetGraph != null)
 			{
-				WasUpdate = true;
+				wasUpdate = true;
 
 				potentialUpdatesStopWatch.Restart();
 				// call update with time slices that are as big as secondsPerUpdate
 				OnUpdate(secondsPerUpdate);
 				potentialUpdatesStopWatch.Stop();
-				double Seconds = (double)(potentialUpdatesStopWatch.Elapsed.TotalMilliseconds / 1000);
-				if (Seconds == 0) Seconds = 1;
-				potentialUpdatesBudgetGraph.AddData(potentialUpdatesPerSecondString, 1.0 / Seconds);
-				string Lable = string.Format("U:{0:F2}", potentialUpdatesBudgetGraph.GetAverageValue(potentialUpdatesPerSecondString));
-				showPotentialUpdatesBudgetGraph.Text = Lable;
+				double seconds = (double)(potentialUpdatesStopWatch.Elapsed.TotalMilliseconds / 1000);
+				if (seconds == 0) seconds = 1;
+				potentialUpdatesBudgetGraph.AddData(potentialUpdatesPerSecondString, 1.0 / seconds);
+				string lable = string.Format("U:{0:F2}", potentialUpdatesBudgetGraph.GetAverageValue(potentialUpdatesPerSecondString));
+				showPotentialUpdatesBudgetGraph.Text = lable;
 
 				numSecondsSinceStart += secondsPerUpdate;
 				// take out the amount of time we updated and check again
@@ -228,24 +235,24 @@ namespace Gaming.Game
 			}
 
 			// if there was an update do a draw
-			if (WasUpdate)
+			if (wasUpdate)
 			{
 				potentialDrawsStopWatch.Restart();
 				//OnDraw(NewGraphics2D());
 				Invalidate();
 				potentialDrawsStopWatch.Stop();
-				double Seconds = (double)(potentialDrawsStopWatch.Elapsed.TotalMilliseconds / 1000);
-				if (Seconds == 0) Seconds = 1;
-				potentialDrawsBudgetGraph.AddData(potentialDrawsPerSecondString, 1.0 / Seconds);
-				string Lable = string.Format("D:{0:F2}", potentialDrawsBudgetGraph.GetAverageValue(potentialDrawsPerSecondString));
-				showPotentialDrawsBudgetGraph.Text = Lable;
+				double seconds = (double)(potentialDrawsStopWatch.Elapsed.TotalMilliseconds / 1000);
+				if (seconds == 0) seconds = 1;
+				potentialDrawsBudgetGraph.AddData(potentialDrawsPerSecondString, 1.0 / seconds);
+				string lable = string.Format("D:{0:F2}", potentialDrawsBudgetGraph.GetAverageValue(potentialDrawsPerSecondString));
+				showPotentialDrawsBudgetGraph.Text = lable;
 
 				actualDrawsStopWatch.Stop();
-				Seconds = (double)(actualDrawsStopWatch.Elapsed.TotalMilliseconds / 1000);
-				if (Seconds == 0) Seconds = 1;
-				actualDrawsBudgetGraph.AddData(actualDrawsPerSecondString, 1.0 / Seconds);
-				Lable = string.Format("A:{0:F2}", actualDrawsBudgetGraph.GetAverageValue(actualDrawsPerSecondString));
-				showActualDrawsBudgetGraph.Text = Lable;
+				seconds = (double)(actualDrawsStopWatch.Elapsed.TotalMilliseconds / 1000);
+				if (seconds == 0) seconds = 1;
+				actualDrawsBudgetGraph.AddData(actualDrawsPerSecondString, 1.0 / seconds);
+				lable = string.Format("A:{0:F2}", actualDrawsBudgetGraph.GetAverageValue(actualDrawsPerSecondString));
+				showActualDrawsBudgetGraph.Text = lable;
 				actualDrawsStopWatch.Restart();
 			}
 

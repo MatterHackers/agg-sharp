@@ -30,7 +30,7 @@ namespace Gaming.Audio
 		{
 		}
 
-		private static Sound LoadSerializationFileForFolder(String gameDataObjectXMLPath)
+		private static Sound LoadSerializationFileForFolder(string gameDataObjectXMLPath)
 		{
 			Sound soundLoaded;
 			try
@@ -46,19 +46,19 @@ namespace Gaming.Audio
 			return soundLoaded;
 		}
 
-		public new static GameObject Load(String PathName)
+		public new static GameObject Load(string pathName)
 		{
 			// First we load up the Data In the Serialization file.
-			String gameDataObjectXMLPath = Path.Combine(PathName, "Sound.xml");
-			Sound soundLoaded = new Sound();// LoadSerializationFileForFolder(gameDataObjectXMLPath);
+			string gameDataObjectXMLPath = Path.Combine(pathName, "Sound.xml");
+			var soundLoaded = new Sound();// LoadSerializationFileForFolder(gameDataObjectXMLPath);
 
-			String[] wavFilesArray = Directory.GetFiles(PathName, "*.wav");
+			string[] wavFilesArray = Directory.GetFiles(pathName, "*.wav");
 			if (wavFilesArray.Length > 1 || wavFilesArray.Length < 1)
 			{
-				throw new System.Exception("You must have at leas and at most 1 loadable adio file in the dirrectory '" + PathName + "'.");
+				throw new Exception("You must have at leas and at most 1 loadable adio file in the dirrectory '" + pathName + "'.");
 			}
 
-			Sound loadingBuffer = new Sound();
+			var loadingBuffer = new Sound();
 #if USE_OPENAL
             // Variables to load into.
             int format;
@@ -109,7 +109,7 @@ namespace Gaming.Audio
 
 		public SoundSource GetSoundSource()
 		{
-			SoundSource soundSource = new SoundSource();
+			var soundSource = new SoundSource();
 			if (soundSource.BindToBuffer(this))
 			{
 				return soundSource;

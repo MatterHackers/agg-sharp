@@ -17,9 +17,9 @@ namespace Gaming.Core
 			: this(5)
 		{ }
 
-		public TwoSidedStack(int InnerArrayPower2SizeFactor)
+		public TwoSidedStack(int innerArrayPower2SizeFactor)
 		{
-			SetSize(InnerArrayPower2SizeFactor);
+			SetSize(innerArrayPower2SizeFactor);
 		}
 
 		public void PushHead(ElementType value)
@@ -79,6 +79,7 @@ namespace Gaming.Core
 			{
 				m_TailIndex &= m_ArrayMask;
 			}
+
 			m_Count--;
 			return r;
 		}
@@ -100,31 +101,31 @@ namespace Gaming.Core
 			}
 		}
 
-		protected void SetSize(int InnerArrayPower2SizeFactor)
+		protected void SetSize(int innerArrayPower2SizeFactor)
 		{
-			int NewSize = 1 << InnerArrayPower2SizeFactor;
-			if (NewSize < m_Count)
+			int newSize = 1 << innerArrayPower2SizeFactor;
+			if (newSize < m_Count)
 			{
 				throw new ArgumentException("The new size is smaller than the count.");
 			}
 
-			if (InnerArrayPower2SizeFactor > m_ArrayPower2SizeFactor)
+			if (innerArrayPower2SizeFactor > m_ArrayPower2SizeFactor)
 			{
-				ElementType[] ResizedList = new ElementType[NewSize];
+				var resizedList = new ElementType[newSize];
 				int i;
 				for (i = 0; i < Count; i++)
 				{
-					ResizedList[i] = this[i];
+					resizedList[i] = this[i];
 				}
 
-				m_ArrayPower2SizeFactor = InnerArrayPower2SizeFactor;
+				m_ArrayPower2SizeFactor = innerArrayPower2SizeFactor;
 				m_ArrayCapacity = 1 << m_ArrayPower2SizeFactor;
 				m_ArrayMask = m_ArrayCapacity - 1;
 				m_InnerList = new ElementType[m_ArrayCapacity];
 
 				m_HeadIndex = 0;
 				m_TailIndex = Count;
-				m_InnerList = ResizedList;
+				m_InnerList = resizedList;
 			}
 		}
 

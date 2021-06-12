@@ -6,10 +6,10 @@ namespace Gaming.Game
 {
 	//[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
 	[AttributeUsage(AttributeTargets.Field)]
-	public class GameDataAttribute : System.Attribute
+	public class GameDataAttribute : Attribute
 	{
-		private String m_Name;
-		private String m_Description;
+		private string m_Name;
+		private string m_Description;
 
 		public virtual object ReadField(XmlReader xmlReader)
 		{
@@ -23,26 +23,26 @@ namespace Gaming.Game
 
 		public static object ReadTypeAttributes(XmlReader xmlReader)
 		{
-			string TypeString = xmlReader.GetAttribute("Type");
-			Type rootType = Type.GetType(TypeString);
+			string typeString = xmlReader.GetAttribute("Type");
+			var rootType = Type.GetType(typeString);
 			return Activator.CreateInstance(rootType);
 		}
 
 		public static void WriteTypeAttributes(XmlWriter xmlWriter, object objectWithType)
 		{
-			string FullyQualifiedName = objectWithType.GetType().AssemblyQualifiedName;
-			Regex RemoveExtraCrapSearch = new Regex(", (Version|Culture|PublicKeyToken)=[^,\\]]+");
-			string LessQualifiedName = RemoveExtraCrapSearch.Replace(FullyQualifiedName, "");
+			string fullyQualifiedName = objectWithType.GetType().AssemblyQualifiedName;
+			var removeExtraCrapSearch = new Regex(", (Version|Culture|PublicKeyToken)=[^,\\]]+");
+			string lessQualifiedName = removeExtraCrapSearch.Replace(fullyQualifiedName, "");
 			xmlWriter.WriteStartAttribute("Type");
-			xmlWriter.WriteValue(LessQualifiedName);
+			xmlWriter.WriteValue(lessQualifiedName);
 		}
 
-		public GameDataAttribute(String Name)
+		public GameDataAttribute(string name)
 		{
-			m_Name = Name;
+			m_Name = name;
 		}
 
-		public String Name
+		public string Name
 		{
 			get
 			{
@@ -50,7 +50,7 @@ namespace Gaming.Game
 			}
 		}
 
-		public String Description
+		public string Description
 		{
 			get
 			{
@@ -61,5 +61,6 @@ namespace Gaming.Game
 				m_Description = value;
 			}
 		}
-	};
+	}
+
 }
