@@ -19,7 +19,7 @@ namespace RockBlaster
 		{
 			BoundsRelativeToParent = bounds;
 
-			GameImageSequence cancelButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "NumPlayersCancelButton");
+			ImageSequence cancelButtonSequence = (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), "NumPlayersCancelButton");
 			Button cancelGameButton = new Button(400, 200, new ButtonViewThreeImage(cancelButtonSequence.GetImageByIndex(0), cancelButtonSequence.GetImageByIndex(1), cancelButtonSequence.GetImageByIndex(2)));
 			AddChild(cancelGameButton);
 			cancelGameButton.Click += OnCancelMenuButton;
@@ -27,7 +27,7 @@ namespace RockBlaster
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			GameImageSequence menuBackground = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "CreditsScreen");
+			ImageSequence menuBackground = (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), "CreditsScreen");
 			graphics2D.Render(menuBackground.GetImageByIndex(0), 0, 0);
 
 			base.OnDraw(graphics2D);

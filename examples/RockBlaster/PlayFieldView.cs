@@ -18,7 +18,7 @@ namespace RockBlaster
 		{
 			BoundsRelativeToParent = bounds;
 
-			GameImageSequence menuButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "MenuButtonFromGame");
+			ImageSequence menuButtonSequence = (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), "MenuButtonFromGame");
 			Button menuButton = new Button(400, 12, new ButtonViewThreeImage(menuButtonSequence.GetImageByIndex(0), menuButtonSequence.GetImageByIndex(1), menuButtonSequence.GetImageByIndex(2)));
 			AddChild(menuButton);
 			menuButton.Click += EscapeMenu;
@@ -63,7 +63,7 @@ namespace RockBlaster
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			GameImageSequence background = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "GameBackground");
+			ImageSequence background = (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), "GameBackground");
 			graphics2D.Render(background.GetImageByIndex(0), 0, 0);
 
 			m_Playfield.Draw(graphics2D);

@@ -7,7 +7,7 @@ using System.IO;
 
 namespace Gaming.Graphics
 {
-	public class GameImageSequence : GameObject
+	public class ImageSequence : GameObject
 	{
 		[GameDataNumber("FramesPerSecond",
 			Description = "Stored so that an object using this sequence knows how fast it should play.",
@@ -28,19 +28,19 @@ namespace Gaming.Graphics
 
 		private ImageBuffer[] m_Images;
 
-		public GameImageSequence()
+		public ImageSequence()
 		{
 		}
 
-		private static GameImageSequence LoadSerializationFileForFolder(String gameDataObjectXMLPath)
+		private static ImageSequence LoadSerializationFileForFolder(String gameDataObjectXMLPath)
 		{
-			GameImageSequence sequenceLoaded;
+			ImageSequence sequenceLoaded;
 
-			sequenceLoaded = (GameImageSequence)GameObject.Load(gameDataObjectXMLPath);
+			sequenceLoaded = (ImageSequence)GameObject.Load(gameDataObjectXMLPath);
 
 			if (sequenceLoaded == null)
 			{
-				sequenceLoaded = new GameImageSequence();
+				sequenceLoaded = new ImageSequence();
 				sequenceLoaded.SaveXML(gameDataObjectXMLPath);
 			}
 
@@ -75,7 +75,7 @@ namespace Gaming.Graphics
 		{
 			// First we load up the Data In the Serialization file.
 			String gameDataObjectXMLPath = System.IO.Path.Combine(PathName, "ImageSequence");
-			GameImageSequence sequenceLoaded = LoadSerializationFileForFolder(gameDataObjectXMLPath);
+			ImageSequence sequenceLoaded = LoadSerializationFileForFolder(gameDataObjectXMLPath);
 
 			// Now lets look for and load up any images that we find.
 			String[] tgaFilesArray = Directory.GetFiles(PathName, "*.tga");

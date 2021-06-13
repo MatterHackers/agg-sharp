@@ -19,7 +19,7 @@ namespace Gaming.Game
 		private Vector2 m_Position;
 		private uint m_Width;
 		private uint m_Height;
-		private Dictionary<String, HistoryData> m_DataHistoryArray;
+		private Dictionary<string, HistoryData> m_DataHistoryArray;
 		private int m_ColorIndex;
 		private VertexStorage m_LinesToDraw;
 
@@ -31,10 +31,10 @@ namespace Gaming.Game
 			internal double m_TotalValue;
 			internal Color m_Color;
 
-			internal HistoryData(int Capacity, IColorType Color)
+			internal HistoryData(int capacity, IColorType color)
 			{
-				m_Color = Color.ToColor();
-				m_Capacity = Capacity;
+				m_Color = color.ToColor();
+				m_Capacity = capacity;
 				m_Data = new TwoSidedStack<double>();
 				Reset();
 			}
@@ -47,15 +47,16 @@ namespace Gaming.Game
 				}
 			}
 
-			internal void Add(double Value)
+			internal void Add(double value)
 			{
 				if (m_Data.Count == m_Capacity)
 				{
 					m_TotalValue -= m_Data.PopHead();
 				}
-				m_Data.PushTail(Value);
 
-				m_TotalValue += Value;
+				m_Data.PushTail(value);
+
+				m_TotalValue += value;
 			}
 
 			internal void Reset()
@@ -64,11 +65,11 @@ namespace Gaming.Game
 				m_Data.Zero();
 			}
 
-			internal double GetItem(int ItemIndex)
+			internal double GetItem(int itemIndex)
 			{
-				if (ItemIndex < m_Data.Count)
+				if (itemIndex < m_Data.Count)
 				{
-					return m_Data[ItemIndex];
+					return m_Data[itemIndex];
 				}
 				else
 				{
@@ -78,56 +79,56 @@ namespace Gaming.Game
 
 			internal double GetMaxValue()
 			{
-				double Max = -9999999999;
+				double max = -9999999999;
 				for (int i = 0; i < m_Data.Count; i++)
 				{
-					if (m_Data[i] > Max)
+					if (m_Data[i] > max)
 					{
-						Max = m_Data[i];
+						max = m_Data[i];
 					}
 				}
 
-				return Max;
+				return max;
 			}
 
 			internal double GetMinValue()
 			{
-				double Min = 9999999999;
+				double min = 9999999999;
 				for (int i = 0; i < m_Data.Count; i++)
 				{
-					if (m_Data[i] < Min)
+					if (m_Data[i] < min)
 					{
-						Min = m_Data[i];
+						min = m_Data[i];
 					}
 				}
 
-				return Min;
+				return min;
 			}
 
 			internal double GetAverageValue()
 			{
 				return m_TotalValue / m_Data.Count;
 			}
-		};
+		}
 
-		public DataViewGraph(Vector2 RenderPosition)
-			: this(RenderPosition, 80, 50, 0, 0)
+		public DataViewGraph(Vector2 renderPosition)
+			: this(renderPosition, 80, 50, 0, 0)
 		{
 			m_DynamiclyScaleYRange = true;
 		}
 
-		public DataViewGraph(Vector2 RenderPosition, uint Width, uint Height)
-			: this(RenderPosition, Width, Height, 0, 0)
+		public DataViewGraph(Vector2 renderPosition, uint width, uint Height)
+			: this(renderPosition, width, Height, 0, 0)
 		{
 			m_DynamiclyScaleYRange = true;
 		}
 
-		public DataViewGraph(Vector2 RenderPosition, uint Width, uint Height, double StartMin, double StartMax)
+		public DataViewGraph(Vector2 renderPosition, uint width, uint Height, double StartMin, double StartMax)
 		{
 			m_LinesToDraw = new VertexStorage();
-			m_DataHistoryArray = new Dictionary<String, HistoryData>();
+			m_DataHistoryArray = new Dictionary<string, HistoryData>();
 
-			m_Width = Width;
+			m_Width = width;
 			m_Height = Height;
 			m_DataViewMinY = StartMin;
 			m_DataViewMaxY = StartMax;
@@ -136,31 +137,31 @@ namespace Gaming.Game
 				m_DataViewMaxY = -999999;
 				m_DataViewMinY = 999999;
 			}
-			m_Position = RenderPosition;
+
+			m_Position = renderPosition;
 			m_DynamiclyScaleYRange = false;
 		}
 
-		public double GetAverageValue(String DataType)
+		public double GetAverageValue(string dataType)
 		{
-			HistoryData TrendLine;
-			m_DataHistoryArray.TryGetValue(DataType, out TrendLine);
-			if (TrendLine != null)
+			m_DataHistoryArray.TryGetValue(dataType, out HistoryData trendLine);
+			if (trendLine != null)
 			{
-				return TrendLine.GetAverageValue();
+				return trendLine.GetAverageValue();
 			}
 
 			return 0;
 		}
 
-		public void Draw(MatterHackers.Agg.Transform.ITransform Position, Graphics2D renderer)
+		public void Draw(MatterHackers.Agg.Transform.ITransform position, Graphics2D renderer)
 		{
-			double TextHeight = m_Position.Y - 20;
+			double textHeight = m_Position.Y - 20;
 			double Range = (m_DataViewMaxY - m_DataViewMinY);
 			VertexSourceApplyTransform TransformedLinesToDraw;
 			Stroke StrockedTransformedLinesToDraw;
 
-			RoundedRect BackGround = new RoundedRect(m_Position.X, m_Position.Y - 1, m_Position.X + m_Width, m_Position.Y - 1 + m_Height + 2, 5);
-			VertexSourceApplyTransform TransformedBackGround = new VertexSourceApplyTransform(BackGround, Position);
+			var BackGround = new RoundedRect(m_Position.X, m_Position.Y - 1, m_Position.X + m_Width, m_Position.Y - 1 + m_Height + 2, 5);
+			var TransformedBackGround = new VertexSourceApplyTransform(BackGround, position);
 			renderer.Render(TransformedBackGround, new Color(0, 0, 0, .5));
 
 			// if the 0 line is within the window than draw it.
@@ -171,7 +172,7 @@ namespace Gaming.Game
 					m_Position.Y + ((0 - m_DataViewMinY) * m_Height / Range));
 				m_LinesToDraw.LineTo(m_Position.X + m_Width,
 					m_Position.Y + ((0 - m_DataViewMinY) * m_Height / Range));
-				TransformedLinesToDraw = new VertexSourceApplyTransform(m_LinesToDraw, Position);
+				TransformedLinesToDraw = new VertexSourceApplyTransform(m_LinesToDraw, position);
 				StrockedTransformedLinesToDraw = new Stroke(TransformedLinesToDraw);
 				renderer.Render(StrockedTransformedLinesToDraw, new Color(0, 0, 0, 1));
 			}
@@ -179,7 +180,7 @@ namespace Gaming.Game
 			double MaxMax = -999999999;
 			double MinMin = 999999999;
 			double MaxAverage = 0;
-			foreach (KeyValuePair<String, HistoryData> historyKeyValue in m_DataHistoryArray)
+			foreach (KeyValuePair<string, HistoryData> historyKeyValue in m_DataHistoryArray)
 			{
 				HistoryData history = historyKeyValue.Value;
 				m_LinesToDraw.remove_all();
@@ -200,64 +201,65 @@ namespace Gaming.Game
 					}
 				}
 
-				TransformedLinesToDraw = new VertexSourceApplyTransform(m_LinesToDraw, Position);
+				TransformedLinesToDraw = new VertexSourceApplyTransform(m_LinesToDraw, position);
 				StrockedTransformedLinesToDraw = new Stroke(TransformedLinesToDraw);
 				renderer.Render(StrockedTransformedLinesToDraw, history.m_Color);
 
-				String Text = historyKeyValue.Key + ": Min:" + MinMin.ToString("0.0") + " Max:" + MaxMax.ToString("0.0");
-				renderer.DrawString(Text, m_Position.X, TextHeight - m_Height);
-				TextHeight -= 20;
+				string Text = historyKeyValue.Key + ": Min:" + MinMin.ToString("0.0") + " Max:" + MaxMax.ToString("0.0");
+				renderer.DrawString(Text, m_Position.X, textHeight - m_Height);
+				textHeight -= 20;
 			}
 
-			RoundedRect BackGround2 = new RoundedRect(m_Position.X, m_Position.Y - 1, m_Position.X + m_Width, m_Position.Y - 1 + m_Height + 2, 5);
-			VertexSourceApplyTransform TransformedBackGround2 = new VertexSourceApplyTransform(BackGround2, Position);
-			Stroke StrockedTransformedBackGround = new Stroke(TransformedBackGround2);
-			renderer.Render(StrockedTransformedBackGround, new Color(0.0, 0, 0, 1));
+			var backGround2 = new RoundedRect(m_Position.X, m_Position.Y - 1, m_Position.X + m_Width, m_Position.Y - 1 + m_Height + 2, 5);
+			var TransformedBackGround2 = new VertexSourceApplyTransform(backGround2, position);
+			var strockedTransformedBackGround = new Stroke(TransformedBackGround2);
+			renderer.Render(strockedTransformedBackGround, new Color(0.0, 0, 0, 1));
 
 			//renderer.Color = BoxColor;
 			//renderer.DrawRect(m_Position.x, m_Position.y - 1, m_Width, m_Height + 2);
 		}
 
-		public void AddData(String DataType, double NewData)
+		public void AddData(string dataType, double newData)
 		{
 			if (m_DynamiclyScaleYRange)
 			{
-				m_DataViewMaxY = System.Math.Max(m_DataViewMaxY, NewData);
-				m_DataViewMinY = System.Math.Min(m_DataViewMinY, NewData);
+				m_DataViewMaxY = System.Math.Max(m_DataViewMaxY, newData);
+				m_DataViewMinY = System.Math.Min(m_DataViewMinY, newData);
 			}
 
-			if (!m_DataHistoryArray.ContainsKey(DataType))
+			if (!m_DataHistoryArray.ContainsKey(dataType))
 			{
-				Color LineColor = new Color(255, 255, 255);
+				var lineColor = new Color(255, 255, 255);
 				switch (m_ColorIndex++ % 3)
 				{
 					case 0:
-						LineColor = new Color(255, 55, 55);
+						lineColor = new Color(255, 55, 55);
 						break;
 
 					case 1:
-						LineColor = new Color(55, 255, 55);
+						lineColor = new Color(55, 255, 55);
 						break;
 
 					case 2:
-						LineColor = new Color(55, 55, 255);
+						lineColor = new Color(55, 55, 255);
 						break;
 				}
 
-				m_DataHistoryArray.Add(DataType, new HistoryData((int)m_Width, LineColor));
+				m_DataHistoryArray.Add(dataType, new HistoryData((int)m_Width, lineColor));
 			}
 
-			m_DataHistoryArray[DataType].Add(NewData);
+			m_DataHistoryArray[dataType].Add(newData);
 		}
 
 		public void Reset()
 		{
 			m_DataViewMaxY = 1;
 			m_DataViewMinY = 99999;
-			foreach (KeyValuePair<String, HistoryData> historyKeyValue in m_DataHistoryArray)
+			foreach (KeyValuePair<string, HistoryData> historyKeyValue in m_DataHistoryArray)
 			{
 				historyKeyValue.Value.Reset();
 			}
 		}
-	};
+	}
+
 }

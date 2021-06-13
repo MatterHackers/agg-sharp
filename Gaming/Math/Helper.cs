@@ -2,9 +2,9 @@ namespace Gaming.Math
 {
 	public static class Helper
 	{
-		public static double DegToRad(double Deg)
+		public static double DegToRad(double deg)
 		{
-			return Deg / 180 * (double)System.Math.PI;
+			return deg / 180 * (double)System.Math.PI;
 		}
 	}
 }

@@ -9,7 +9,7 @@ namespace RockBlaster
 	public class SequenceEntity : Entity
 	{
 		[GameData("Sequence")]
-		public AssetReference<GameImageSequence> ImageSequenceReference = new AssetReference<GameImageSequence>("LargFire");
+		public AssetReference<Gaming.Graphics.ImageSequence> ImageSequenceReference = new AssetReference<Gaming.Graphics.ImageSequence>("LargFire");
 
 		[GameDataNumberAttribute("Rotation")] // This is for save game
 		protected double m_Rotation;

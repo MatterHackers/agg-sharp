@@ -58,7 +58,7 @@ namespace MatterHackers.Agg.UI
 				if (value != TopLeftOffset)
 				{
 					Vector2 deltaNeeded = TopLeftOffset - value;
-					scrollArea.OriginRelativeParent = scrollArea.OriginRelativeParent - deltaNeeded;
+					scrollArea.OriginRelativeParent -= deltaNeeded;
 					scrollArea.ValidateScrollPosition();
 
 					OnScrollPositionChanged();
@@ -167,9 +167,33 @@ namespace MatterHackers.Agg.UI
 			AutoScroll = autoScroll;
 			VerticalScrollBar = new ScrollBar(this);
 
+			VerticalScrollBar.VisibleChanged += (s, e) =>
+			{
+				SetScrollAreaMargin();
+			};
+
+			VerticalScrollBar.SizeChanged += (s, e) =>
+			{
+				SetScrollAreaMargin();
+			};
+
+			scrollArea.Margin = scrollArea.Margin.Clone(right: VerticalScrollBar.Width);
+
 			base.AddChild(scrollArea);
 			base.AddChild(VerticalScrollBar);
 			VerticalScrollBar.HAnchor = UI.HAnchor.Right;
+		}
+
+		private void SetScrollAreaMargin()
+		{
+			if (VerticalScrollBar.Visible)
+			{
+				scrollArea.Margin = scrollArea.Margin.Clone(right: VerticalScrollBar.Width / DeviceScale);
+			}
+			else
+			{
+				scrollArea.Margin = scrollArea.Margin.Clone(right: 0);
+			}
 		}
 
 		public override void OnBoundsChanged(EventArgs e)

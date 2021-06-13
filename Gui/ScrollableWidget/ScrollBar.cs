@@ -28,8 +28,6 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Linq;
-using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
@@ -47,17 +45,26 @@ namespace MatterHackers.Agg.UI
 		private ShowState showState = ShowState.WhenRequired;
 
 		internal ScrollBar(ScrollableWidget parent, Orientation orientation = Orientation.Vertical)
-			: this(parent, new DefaultThumbBackground(), new DefaultThumbView(), orientation)
+			: this(parent, DefaultBackgroundColor, DefaultThumbColor, orientation)
 		{
 		}
 
-		internal ScrollBar(ScrollableWidget parent, GuiWidget background, GuiWidget thumbView, Orientation orientation = Orientation.Vertical)
+		internal ScrollBar(ScrollableWidget parent, Color backgroundColor, Color thumbViewColor, Orientation orientation = Orientation.Vertical)
 		{
 			parentScrollWidget = parent;
 
-			this.background = background;
-			thumb = new ThumDragWidget(orientation);
-			thumb.AddChild(thumbView);
+			this.background = new GuiWidget()
+			{
+				BackgroundColor = backgroundColor
+			};
+			thumb = new ThumDragWidget(orientation)
+			{
+				BackgroundColor = thumbViewColor
+			};
+			thumb.SizeChanged += (s, e) =>
+			{
+				thumb.BackgroundRadius = new RadiusCorners(thumb.Width / 2);
+			};
 
 			AddChild(background);
 			AddChild(thumb);
@@ -84,7 +91,7 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// Gets or sets the amount to grow each side of the thumb in Y on Hover
 		/// </summary>
-		public static int GrowThumbBy { get; set; } = 3;
+		public static double GrowThumbBy { get; set; } = 3 * GuiWidget.DeviceScale;
 
 		public static double ScrollBarWidth { get; set; } = 15 * GuiWidget.DeviceScale;
 
@@ -196,8 +203,16 @@ namespace MatterHackers.Agg.UI
 					background.LocalBounds = LocalBounds;
 
 					// On hover, grow the thumb bounds by the given value
-					int growAmount = mouseInBounds ? 0 : ScrollBar.GrowThumbBy;
-					thumb.LocalBounds = new RectangleDouble(growAmount, 0, ScrollBarWidth - growAmount, ThumbHeight);
+					if (mouseInBounds)
+					{
+						thumb.BackgroundColor = DefaultThumbHoverColor;
+						thumb.LocalBounds = new RectangleDouble(0, 0, ScrollBarWidth, ThumbHeight);
+					}
+					else
+					{
+						thumb.BackgroundColor = DefaultThumbColor;
+						thumb.LocalBounds = new RectangleDouble(ScrollBar.GrowThumbBy, 0, ScrollBarWidth - ScrollBar.GrowThumbBy, ThumbHeight);
+					}
 
 					Vector2 scrollRatioFromTop0To1 = parentScrollWidget.ScrollRatioFromTop0To1;
 					double notThumbHeight = parentScrollWidget.Height - ThumbHeight;
@@ -213,28 +228,9 @@ namespace MatterHackers.Agg.UI
 			this.parentScrollWidget.ScrollArea.Padding = 0;
 		}
 
-		public class DefaultThumbBackground : GuiWidget
-		{
-			public DefaultThumbBackground()
-			{
-				this.BackgroundColor = DefaultBackgroundColor;
-			}
-
-			public static Color DefaultBackgroundColor { get; set; } = Color.LightGray;
-		}
-
-		public class DefaultThumbView : GuiWidget
-		{
-			public static Color ThumbColor { get; set; } = Color.DarkGray;
-
-			public override void OnDraw(Graphics2D graphics2D)
-			{
-				var rect = new RoundedRect(LocalBounds, 0);
-				// RoundedRect rect = new RoundedRect(LocalBounds, 0);
-				graphics2D.Render(rect, ThumbColor);
-				base.OnDraw(graphics2D);
-			}
-		}
+		public static Color DefaultBackgroundColor { get; set; } = Color.LightGray;
+		public static Color DefaultThumbColor { get; set; } = Color.DarkGray;
+		public static Color DefaultThumbHoverColor { get; set; } = Color.DarkGray;
 	}
 
 	public class ThumDragWidget : GuiWidget
@@ -249,17 +245,6 @@ namespace MatterHackers.Agg.UI
 		}
 
 		protected bool MouseDownOnThumb { get; set; }
-
-		public override void OnBoundsChanged(EventArgs e)
-		{
-			if (Children.Count != 1)
-			{
-				throw new Exception("We should have one child that is the thum view.");
-			}
-
-			Children.FirstOrDefault().LocalBounds = LocalBounds;
-			base.OnBoundsChanged(e);
-		}
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{

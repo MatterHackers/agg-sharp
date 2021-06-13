@@ -10,7 +10,7 @@ namespace Gaming.Game
 
 		private GameObjectType m_AssetReference = null;
 
-		public AssetReference(String defaultAssetName)
+		public AssetReference(string defaultAssetName)
 		{
 			m_AssetName = defaultAssetName;
 		}
@@ -21,9 +21,9 @@ namespace Gaming.Game
 		{
 		}
 
-		public new static GameObject Load(String PathName)
+		public new static GameObject Load(string pathName)
 		{
-			return GameObject.Load(PathName);
+			return GameObject.Load(pathName);
 		}
 
 		#endregion GameObjectStuff
@@ -39,6 +39,7 @@ namespace Gaming.Game
 			{
 				writer.WriteValue(m_AssetName);
 			}
+
 			writer.WriteEndAttribute();
 		}
 
@@ -55,8 +56,10 @@ namespace Gaming.Game
 				{
 					m_AssetReference = (GameObjectType)DataAssetCache.Instance.GetAsset(typeof(GameObjectType), m_AssetName);
 				}
+
 				return m_AssetReference;
 			}
 		}
-	};
+	}
+
 }

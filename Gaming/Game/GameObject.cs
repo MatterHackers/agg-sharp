@@ -31,14 +31,14 @@ namespace Gaming.Game
 					if (objectWithAttribute != null)
 					{
 						var singleGameDataAttribute = (GameDataAttribute)gameDataAttributes[0];
-						String Name = singleGameDataAttribute.Name;
+						string name = singleGameDataAttribute.Name;
 
-						if (Name.Contains(" "))
+						if (name.Contains(" "))
 						{
-							throw new Exception(ToString() + " : '" + Name + "' has a space. Attribute names con not contain spaces.");
+							throw new Exception(ToString() + " : '" + name + "' has a space. Attribute names con not contain spaces.");
 						}
 
-						xmlWriter.WriteStartElement(Name);
+						xmlWriter.WriteStartElement(name);
 						GameDataAttribute.WriteTypeAttributes(xmlWriter, objectWithAttribute);
 						xmlWriter.WriteEndAttribute();
 
@@ -57,6 +57,7 @@ namespace Gaming.Game
 						{
 							singleGameDataAttribute.WriteField(xmlWriter, objectWithAttribute);
 						}
+
 						xmlWriter.WriteEndElement();
 					}
 				}
@@ -69,7 +70,7 @@ namespace Gaming.Game
 			{
 				if (xmlReader.NodeType == XmlNodeType.Element)
 				{
-					string AttributeNameForElement = xmlReader.Name;
+					string attributeNameForElement = xmlReader.Name;
 
 					BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 					FieldInfo[] fieldsOfGameObject = GetType().GetFields(bindingFlags);
@@ -80,7 +81,7 @@ namespace Gaming.Game
 						{
 							var singleGameDataAttribute = (GameDataAttribute)gameDataAttributes[0];
 							string AttributeNameForField = singleGameDataAttribute.Name;
-							if (AttributeNameForField == AttributeNameForElement)
+							if (AttributeNameForField == attributeNameForElement)
 							{
 								if (fieldOfGameObject.FieldType.IsSubclassOf(typeof(GameObject)))
 								{
@@ -94,6 +95,7 @@ namespace Gaming.Game
 									object objectReadByAttribute = singleGameDataAttribute.ReadField(xmlReader);
 									fieldOfGameObject.SetValue(this, objectReadByAttribute);
 								}
+
 								break;
 							}
 						}
@@ -112,9 +114,9 @@ namespace Gaming.Game
 			{
 				if (xmlReader.Name == "RootObject")
 				{
-					string AssemblyString = xmlReader.GetAttribute("Assembly");
+					string assemblyString = xmlReader.GetAttribute("Assembly");
 					string TypeString = xmlReader.GetAttribute("Type");
-					Type rootType = Type.GetType(TypeString + ", " + AssemblyString);
+					var rootType = Type.GetType(TypeString + ", " + assemblyString);
 					var newGameObject = (GameObject)Activator.CreateInstance(rootType);
 					newGameObject.LoadGameObjectData(xmlReader);
 					return newGameObject;
@@ -124,7 +126,7 @@ namespace Gaming.Game
 			return null;
 		}
 
-		public static GameObject Load(String pathName)
+		public static GameObject Load(string pathName)
 		{
 			FileStream stream;
 			try
@@ -157,7 +159,7 @@ namespace Gaming.Game
 			xmlWriter.WriteEndElement();
 		}
 
-		public void SaveXML(String pathName)
+		public void SaveXML(string pathName)
 		{
 			using (var xmlWriter = new XmlTextWriter(pathName + ".xml", System.Text.Encoding.UTF8))
 			{
@@ -201,5 +203,6 @@ namespace Gaming.Game
 					}
 			 */
 		}
-	};
+	}
+
 }

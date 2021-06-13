@@ -95,7 +95,7 @@
     <Compile Include="Game\DataAssetTree.cs" />
     <Compile Include="Game\DataViewGraph.cs" />
     <Compile Include="Game\GamePlatform.cs" />
-    <Compile Include="Graphics\GameImageSequence.cs" />
+    <Compile Include="Graphics\ImageSequence.cs" />
     <Compile Include="Core\TranslatedString.cs" />
     <Compile Include="Core\TwoSidedStack.cs" />
     <Compile Include="Game\GameObject.cs" />

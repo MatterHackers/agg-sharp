@@ -1039,13 +1039,17 @@ namespace MatterHackers.PolygonMesh
 			{
 				mesh.RemoveTexture(i, texture, index);
 			}
-
-			mesh.MarkAsChanged();
 		}
 
 		public static void RemoveTexture(this Mesh mesh, int faceIndex, ImageBuffer texture, int index)
 		{
-			mesh.FaceTextures.Remove(faceIndex);
+			var faceTextures = mesh.FaceTextures;
+			if (faceTextures.ContainsKey(faceIndex)
+				&& faceTextures[faceIndex].image == texture)
+			{
+				faceTextures.Remove(faceIndex);
+				mesh.MarkAsChanged();
+			}
 		}
 
 		public static void PlaceTexture(this Mesh mesh, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
