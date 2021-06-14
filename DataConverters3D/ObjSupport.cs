@@ -90,15 +90,15 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static IObject3D Load(string objPath, CancellationToken cancellationToken, Action<double, string> reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(string objPath, Action<double, string> reportProgress = null, IObject3D source = null)
 		{
 			using (var stream = File.OpenRead(objPath))
 			{
-				return Load(stream, cancellationToken, reportProgress, source);
+				return Load(stream, reportProgress, source);
 			}
 		}
 
-		public static IObject3D Load(Stream fileStream, CancellationToken cancellationToken, Action<double, string> reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(Stream fileStream, Action<double, string> reportProgress = null, IObject3D source = null)
 		{
 			IObject3D root = source ?? new Object3D();
 
@@ -290,31 +290,6 @@ namespace MatterHackers.DataConverters3D
 
 			// Zip files should start with the expected four byte token
 			return BitConverter.ToString(fileToken) == "50-4B-03-04";
-		}
-
-		internal class ProgressData
-		{
-			private long bytesInFile;
-			private Stopwatch maxProgressReport = new Stopwatch();
-			private Stream positionStream;
-			private Action<double, string> reportProgress;
-
-			internal ProgressData(Stream positionStream, Action<double, string> reportProgress)
-			{
-				this.reportProgress = reportProgress;
-				this.positionStream = positionStream;
-				maxProgressReport.Start();
-				bytesInFile = (long)positionStream.Length;
-			}
-
-			internal void ReportProgress0To50()
-			{
-				if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
-				{
-					reportProgress(positionStream.Position / (double)bytesInFile * .5, "Loading Mesh");
-					maxProgressReport.Restart();
-				}
-			}
 		}
 	}
 }

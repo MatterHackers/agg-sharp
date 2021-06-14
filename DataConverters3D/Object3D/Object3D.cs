@@ -437,7 +437,7 @@ namespace MatterHackers.DataConverters3D
 					return AmfDocument.Load(stream, cancellationToken, progress);
 
 				case ".OBJ":
-					return ObjSupport.Load(stream, cancellationToken, progress);
+					return ObjSupport.Load(stream, progress);
 
 				default:
 					return null;
