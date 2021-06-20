@@ -159,7 +159,7 @@ namespace MatterHackers.DataConverters3D
 		ITraceable GetBVHData();
 
 		/// <summary>
-		/// return a 64 bit hash code of the transforms and children and transforms
+		/// return a 64 bit hash code of the state of the object including transforms and children
 		/// </summary>
 		/// <returns></returns>
 		ulong GetLongHashCode(ulong hash = 14695981039346656037);
