@@ -168,6 +168,13 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
+		public void Set(double x, double y, double z)
+		{
+			X = x;
+			Y = y;
+			Z = z;
+		}
+
 		#endregion Properties
 
 		#region Public Members
