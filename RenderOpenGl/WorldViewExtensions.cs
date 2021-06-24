@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using DualContouring;
 using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters2D;
@@ -346,7 +347,26 @@ namespace MatterHackers.RenderOpenGl
 			GL.Enable(EnableCap.Lighting);
 		}
 
-		public static void RenderAabb(this WorldView world, AxisAlignedBoundingBox bounds, Matrix4X4 matrix, Color color, double width, double extendLineLength = 0)
+		public static void DrawOctree(this WorldView world, OctreeNode rootNode, int colorIndex)
+		{
+			if (rootNode != null && rootNode.children.Length > 0)
+			{
+				for (int i = 0; i < rootNode.children.Length; i++)
+				{
+					DrawOctree(world, rootNode.children[i], colorIndex + 1);
+				}
+
+				DrawOctreeNode(world, rootNode, Octree.DrawColors[colorIndex]);
+			}
+		}
+
+		public static void DrawOctreeNode(this WorldView world, OctreeNode node, Color color)
+		{
+			var aabb = new AxisAlignedBoundingBox(node.min, node.min + Vector3.One * node.size);
+			world.RenderAabb(aabb, Matrix4X4.Identity, color);
+		}
+
+		public static void RenderAabb(this WorldView world, AxisAlignedBoundingBox bounds, Matrix4X4 matrix, Color color, double lineWidth = 1, double extendLineLength = 0)
 		{
 			GLHelper.PrepareFor3DLineRender(true);
 
@@ -370,9 +390,9 @@ namespace MatterHackers.RenderOpenGl
 				}
 
 				// draw each of the edge lines (4) and their touching top and bottom lines (2 each)
-				world.Render3DLineNoPrep(frustum, sideStartPosition, sideEndPosition, color, width);
-				world.Render3DLineNoPrep(frustum, topStartPosition, topEndPosition, color, width);
-				world.Render3DLineNoPrep(frustum, bottomStartPosition, bottomEndPosition, color, width);
+				world.Render3DLineNoPrep(frustum, sideStartPosition, sideEndPosition, color, lineWidth);
+				world.Render3DLineNoPrep(frustum, topStartPosition, topEndPosition, color, lineWidth);
+				world.Render3DLineNoPrep(frustum, bottomStartPosition, bottomEndPosition, color, lineWidth);
 			}
 
 			GL.Enable(EnableCap.Lighting);
