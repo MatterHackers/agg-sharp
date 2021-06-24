@@ -38,7 +38,7 @@ public static class SVD
         }
 
         double c = 0, s = 0;
-        Schur2.rot01(vtav, c, s);
+        Schur2.Rot01(vtav, c, s);
         Givens.Rot01Post(v, c, s);
     }
 
@@ -50,7 +50,7 @@ public static class SVD
         }
 
         double c = 0, s = 0;
-        Schur2.rot02(vtav, c, s);
+        Schur2.Rot02(vtav, c, s);
         Givens.Rot02Post(v, c, s);
     }
 
