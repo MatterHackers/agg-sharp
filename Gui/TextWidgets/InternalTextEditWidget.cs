@@ -1236,12 +1236,18 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
-				var firstWhiteSpaceRegex = new Regex("\\s");
-				Match firstWhiteSpace = firstWhiteSpaceRegex.Match(internalTextWidget.Text, CharIndexToInsertBefore);
-				if (firstWhiteSpace.Success)
+				int nextToken = CharIndexToInsertBefore;
+				var text = internalTextWidget.Text;
+				var length = text.Length;
+				while(nextToken < length && !WordBreakChars.Contains(text[nextToken]))
+				{
+					nextToken++;
+				}
+
+				if (nextToken < length)
 				{
 					skippedWiteSpace = true;
-					CharIndexToInsertBefore = firstWhiteSpace.Index;
+					CharIndexToInsertBefore = nextToken;
 				}
 			}
 
@@ -1293,11 +1299,16 @@ namespace MatterHackers.Agg.UI
 					CharIndexToInsertBefore = firstNonWhiteSpace.Index;
 				}
 
-				var firstWhiteSpaceRegex = new Regex("\\s", RegexOptions.RightToLeft);
-				Match firstWhiteSpace = firstWhiteSpaceRegex.Match(internalTextWidget.Text, CharIndexToInsertBefore);
-				if (firstWhiteSpace.Success)
+				int nextToken = CharIndexToInsertBefore;
+				var text = internalTextWidget.Text;
+				while (nextToken >= 0 && !WordBreakChars.Contains(text[nextToken]))
 				{
-					CharIndexToInsertBefore = firstWhiteSpace.Index + 1;
+					nextToken--;
+				}
+
+				if (nextToken >= 0)
+				{
+					CharIndexToInsertBefore = nextToken + 1;
 				}
 				else
 				{

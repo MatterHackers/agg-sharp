@@ -656,7 +656,6 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
 			Assert.IsTrue(textEdit.Selection == "starting ");
 
-#if !__ANDROID__
 			// if this fails add
 			// GuiHalWidget.SetClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
 			// before you call the unit tests
@@ -668,7 +667,6 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			SendKeyDown(Keys.Right, container); // move to the right
 			SendKey(Keys.Control | Keys.V, 'v', container);
 			Assert.IsTrue(textEdit.Text == "starting starting text");
-#endif
 
 			container.Close();
 		}
