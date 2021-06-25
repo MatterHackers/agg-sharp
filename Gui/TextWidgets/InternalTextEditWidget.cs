@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text;
@@ -40,23 +41,16 @@ namespace MatterHackers.Agg.UI
 {
 	public class InternalTextEditWidget : GuiWidget, IIgnoredPopupChild
 	{
-		private static ReadOnlyCollection<char> defaultWordBreakChars;
+		private static HashSet<char> WordBreakChars = new HashSet<char>(new char[] 
+		{ 
+			' ', '\n', '\t', // white space characters
+			'\'', '"', '`', // quotes
+			',', '.', '?', '!', '@', '&', // punctuation
+			'(', ')', '<', '>', '[', ']', '{', '}', // parents (or equivalent)
+			'-', '+', '*', '/', '=', '\\', '#', '$', '^', '|', // math symbols
+		});
 
 		public static Action<InternalTextEditWidget, MouseEventArgs> DefaultRightClick;
-
-		private static ReadOnlyCollection<char> WordBreakChars
-		{
-			get
-			{
-				if (defaultWordBreakChars == null)
-				{
-					char[] defaultList = new char[] { ' ', '\n', '(', ')' };
-					defaultWordBreakChars = new ReadOnlyCollection<char>(defaultList);
-				}
-
-				return defaultWordBreakChars;
-			}
-		}
 
 		public event KeyEventHandler EnterPressed;
 

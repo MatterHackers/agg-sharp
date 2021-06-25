@@ -22,9 +22,9 @@ namespace MatterHackers.Agg.UI
 		{
 			BackgroundColor = new Color(50, 50, 50, 240);
 			FlowLayoutWidget topToBottomFlow = new FlowLayoutWidget(FlowDirection.TopToBottom);
-			topToBottomFlow.HAnchor = Agg.UI.HAnchor.Center;
-			topToBottomFlow.VAnchor = Agg.UI.VAnchor.Center;
-			topToBottomFlow.AddChild(new TextWidget(message, textColor: Color.White));
+			topToBottomFlow.HAnchor = HAnchor.Stretch;
+			topToBottomFlow.VAnchor = VAnchor.Stretch;
+			topToBottomFlow.AddChild(new WrappedTextWidget(message, textColor: Color.White));
 
 			Title = windowTitle;
 
@@ -60,8 +60,6 @@ namespace MatterHackers.Agg.UI
 				default:
 					throw new NotImplementedException();
 			}
-
-			topToBottomFlow.SetBoundsToEncloseChildren();
 
 			AddChild(topToBottomFlow);
 
