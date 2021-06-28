@@ -634,41 +634,82 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			Assert.IsTrue(textEdit.CharIndexToInsertBefore == 0);
 			Assert.IsTrue(textEdit.TopLeftOffset.Y == 0);
 
-			Assert.IsTrue(textEdit.Text == "some starting text");
-			// this is to select some text
-			SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
-			Assert.IsTrue(textEdit.Selection == "some ");
-			Assert.IsTrue(textEdit.Text == "some starting text");
-			// this is to prove that we don't loose the selection when pressing Control
-			SendKeyDown(Keys.Control, container);
-			Assert.IsTrue(textEdit.Selection == "some ");
-			Assert.IsTrue(textEdit.Text == "some starting text");
-			// this is to prove that we don't loose the selection when pressing Shift
-			SendKeyDown(Keys.Shift, container);
-			Assert.IsTrue(textEdit.Text == "some starting text");
-			Assert.IsTrue(textEdit.Selection == "some ");
-			SendKeyDown(Keys.Right, container);
-			Assert.IsTrue(textEdit.Selection == "");
-			SendKey(Keys.Shift | Keys.Control | Keys.Left, ' ', container);
-			Assert.IsTrue(textEdit.Selection == "some ");
-			SendKey(Keys.Delete, ' ', container);
-			Assert.IsTrue(textEdit.Text == "starting text");
-			SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
-			Assert.IsTrue(textEdit.Selection == "starting ");
+			// test that we move to the next character correctly
+			Assert.AreEqual(4, InternalTextEditWidget.IndexOfNextToken("235 12/6", 0));
+			Assert.AreEqual(6, InternalTextEditWidget.IndexOfNextToken("235   12/6", 0));
+			Assert.AreEqual(3, InternalTextEditWidget.IndexOfNextToken("235\n   12/6", 0));
+			Assert.AreEqual(7, InternalTextEditWidget.IndexOfNextToken("235\n   12/6", 3));
+			Assert.AreEqual(4, InternalTextEditWidget.IndexOfNextToken("235\n\n   12/6", 3));
+			Assert.AreEqual(8, InternalTextEditWidget.IndexOfNextToken("235\n\n   12/6", 4));
+			Assert.AreEqual(3, InternalTextEditWidget.IndexOfNextToken("123+ 235   12/6", 0));
+			Assert.AreEqual(3, InternalTextEditWidget.IndexOfNextToken("235+12/6", 0));
+			Assert.AreEqual(5, InternalTextEditWidget.IndexOfNextToken("+++++235   12/6", 0));
+			Assert.AreEqual(5, InternalTextEditWidget.IndexOfNextToken("+++++235   12/6", 0));
 
-#if !__ANDROID__
-			// if this fails add
-			// GuiHalWidget.SetClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
-			// before you call the unit tests
-			Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
+			// test that we move to the previous character correctly
+			Assert.AreEqual(7, InternalTextEditWidget.IndexOfPreviousToken("=35+12/6", 8));
+			Assert.AreEqual(6, InternalTextEditWidget.IndexOfPreviousToken("35556+68384734", 10));
+			Assert.AreEqual(5, InternalTextEditWidget.IndexOfPreviousToken("35556+68384734", 6));
+			Assert.AreEqual(0, InternalTextEditWidget.IndexOfPreviousToken("35556+68384734", 5));
+			
+			Assert.AreEqual(11, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 12));
+			Assert.AreEqual(10, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 11));
+			Assert.AreEqual(8, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 10));
+			Assert.AreEqual(5, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 8));
+			Assert.AreEqual(4, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 5));
+			Assert.AreEqual(0, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 4));
+			Assert.AreEqual(0, InternalTextEditWidget.IndexOfPreviousToken("some starting text", 5));
 
-			SendKey(Keys.Control | Keys.C, 'c', container);
-			Assert.IsTrue(textEdit.Selection == "starting ");
-			Assert.IsTrue(textEdit.Text == "starting text");
-			SendKeyDown(Keys.Right, container); // move to the right
-			SendKey(Keys.Control | Keys.V, 'v', container);
-			Assert.IsTrue(textEdit.Text == "starting starting text");
-#endif
+			void RunWithSpecificChar(string sep, string first, string second, string third)
+			{
+				var startText = $"{first}{sep}{second}{sep}{third}";
+				Assert.IsTrue(textEdit.Text == startText);
+				// this is to select some text
+				SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
+				Assert.IsTrue(textEdit.Selection == first+sep);
+				Assert.IsTrue(textEdit.Text == startText);
+				// this is to prove that we don't loose the selection when pressing Control
+				SendKeyDown(Keys.Control, container);
+				Assert.IsTrue(textEdit.Selection == first + sep);
+				Assert.IsTrue(textEdit.Text == startText);
+				// this is to prove that we don't loose the selection when pressing Shift
+				SendKeyDown(Keys.Shift, container);
+				Assert.IsTrue(textEdit.Text == startText);
+				Assert.IsTrue(textEdit.Selection == first + sep);
+				SendKeyDown(Keys.Right, container);
+				Assert.IsTrue(textEdit.Selection == "");
+				SendKey(Keys.Shift | Keys.Control | Keys.Left, ' ', container);
+				Assert.IsTrue(textEdit.Selection == first + sep);
+				SendKey(Keys.Delete, ' ', container);
+				Assert.IsTrue(textEdit.Text == $"{second}{sep}{third}");
+				SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
+				Assert.IsTrue(textEdit.Selection == $"{second}{sep}");
+
+				// if this fails add
+				// GuiHalWidget.SetClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
+				// before you call the unit tests
+				Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
+
+				SendKey(Keys.Control | Keys.C, 'c', container);
+				Assert.IsTrue(textEdit.Selection == $"{second}{sep}");
+				Assert.IsTrue(textEdit.Text == $"{second}{sep}{third}");
+				SendKeyDown(Keys.Right, container); // move to the right
+				SendKey(Keys.Control | Keys.V, 'v', container);
+				Assert.IsTrue(textEdit.Text == $"{second}{sep}{second}{sep}{third}");
+			}
+
+			void CheckChar(string sep)
+			{
+				textEdit.Text = $"some{sep}starting{sep}text";
+				// spaces work as expected
+				RunWithSpecificChar(sep, "some", "starting", "text");
+				textEdit.Text = $"123{sep}is{sep}number";
+				RunWithSpecificChar(sep, "123", "is", "number");
+				textEdit.Text = $"123_1{sep}456_2{sep}789_3";
+				RunWithSpecificChar(sep, "123_1", "456_2", "789_3");
+			}
+
+			CheckChar(" ");
 
 			container.Close();
 		}

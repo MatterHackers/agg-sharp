@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text;
@@ -40,23 +41,27 @@ namespace MatterHackers.Agg.UI
 {
 	public class InternalTextEditWidget : GuiWidget, IIgnoredPopupChild
 	{
-		private static ReadOnlyCollection<char> defaultWordBreakChars;
+		private static HashSet<char> WordBreakChars = new HashSet<char>(new char[] 
+		{ 
+			' ', '\t', // white space characters
+			'\'', '"', '`', // quotes
+			',', '.', '?', '!', '@', '&', // punctuation
+			'(', ')', '<', '>', '[', ']', '{', '}', // parents (or equivalent)
+			'-', '+', '*', '/', '=', '\\', '#', '$', '^', '|', // math symbols
+		});
 
-		public static Action<InternalTextEditWidget, MouseEventArgs> DefaultRightClick;
-
-		private static ReadOnlyCollection<char> WordBreakChars
+		private static HashSet<char> WordBreakCharsAndCR
 		{
 			get
 			{
-				if (defaultWordBreakChars == null)
-				{
-					char[] defaultList = new char[] { ' ', '\n', '(', ')' };
-					defaultWordBreakChars = new ReadOnlyCollection<char>(defaultList);
-				}
+				var withCR = new HashSet<char>(WordBreakChars);
+				withCR.Add('\n');
 
-				return defaultWordBreakChars;
+				return withCR;
 			}
 		}
+
+		public static Action<InternalTextEditWidget, MouseEventArgs> DefaultRightClick;
 
 		public event KeyEventHandler EnterPressed;
 
@@ -539,14 +544,14 @@ namespace MatterHackers.Agg.UI
 				{
 					while (CharIndexToInsertBefore >= 0
 						&& (CharIndexToInsertBefore >= Text.Length
-							|| (CharIndexToInsertBefore > -1 && !WordBreakChars.Contains(Text[CharIndexToInsertBefore]))))
+							|| (CharIndexToInsertBefore > -1 && !WordBreakCharsAndCR.Contains(Text[CharIndexToInsertBefore]))))
 					{
 						CharIndexToInsertBefore--;
 					}
 
 					CharIndexToInsertBefore++;
 					SelectionIndexToStartBefore = CharIndexToInsertBefore + 1;
-					while (SelectionIndexToStartBefore < Text.Length && !WordBreakChars.Contains(Text[SelectionIndexToStartBefore]))
+					while (SelectionIndexToStartBefore < Text.Length && !WordBreakCharsAndCR.Contains(Text[SelectionIndexToStartBefore]))
 					{
 						SelectionIndexToStartBefore++;
 					}
@@ -748,7 +753,7 @@ namespace MatterHackers.Agg.UI
 						StartSelectionIfRequired(keyEvent);
 						if (keyEvent.Control)
 						{
-							GotoBeginingOfPreviousToken();
+							CharIndexToInsertBefore = IndexOfPreviousToken(internalTextWidget.Text, CharIndexToInsertBefore);
 						}
 						else if (CharIndexToInsertBefore > 0)
 						{
@@ -770,7 +775,7 @@ namespace MatterHackers.Agg.UI
 						StartSelectionIfRequired(keyEvent);
 						if (keyEvent.Control)
 						{
-							GotoBeginingOfNextToken();
+							CharIndexToInsertBefore = IndexOfNextToken(internalTextWidget.Text, CharIndexToInsertBefore);
 						}
 						else if (CharIndexToInsertBefore < internalTextWidget.Text.Length)
 						{
@@ -841,7 +846,7 @@ namespace MatterHackers.Agg.UI
 						}
 						else
 						{
-							GotoStartOfCurrentLine();
+							CharIndexToInsertBefore = GotoStartOfCurrentLine(internalTextWidget.Text, CharIndexToInsertBefore);
 						}
 
 						keyEvent.SuppressKeyPress = true;
@@ -1227,89 +1232,107 @@ namespace MatterHackers.Agg.UI
 			CharIndexToInsertBefore = GetIndexOffset(nextStartIndexInclusive, nextEndIndexInclusive, desiredBarX);
 		}
 
-		private void GotoBeginingOfNextToken()
+		public static int IndexOfNextToken(string text, int cursor)
 		{
-			if (CharIndexToInsertBefore == internalTextWidget.Text.Length)
+			var insert = cursor;
+			var length = text.Length;
+			if (insert == text.Length)
 			{
-				return;
+				// If we are already at the end, return.
+				return text.Length;
 			}
 
-			bool skippedWiteSpace = false;
-			if (internalTextWidget.Text[CharIndexToInsertBefore] == '\n')
+			// if we are starting an a CR
+			if (text[insert] == '\n')
 			{
-				CharIndexToInsertBefore++;
-				skippedWiteSpace = true;
+				// If we are on a CR advance one (goto next line)
+				insert++;
+				// and skip ' ' and '\t'
+				while (insert < length 
+					&& (text[insert] == ' ' || text[insert] == '\t'))
+				{
+					insert++;
+				}
+
+				return insert;
+			}
+			else if (WordBreakChars.Contains(text[insert]))
+			{
+				// we are starting on a work break char
+				// while we are on the same char advance
+				var current = text[insert];
+				while (insert < length && text[insert]  == current)
+				{
+					insert++;
+				}
 			}
 			else
 			{
-				var firstWhiteSpaceRegex = new Regex("\\s");
-				Match firstWhiteSpace = firstWhiteSpaceRegex.Match(internalTextWidget.Text, CharIndexToInsertBefore);
-				if (firstWhiteSpace.Success)
+				// we are starting on a normal character
+				while (insert < length && !WordBreakCharsAndCR.Contains(text[insert]))
 				{
-					skippedWiteSpace = true;
-					CharIndexToInsertBefore = firstWhiteSpace.Index;
+					insert++;
+				}
+
+				// and also skip ' ' and '\t'
+				while (insert < length
+					&& (text[insert] == ' ' || text[insert] == '\t'))
+				{
+					insert++;
 				}
 			}
 
-			if (skippedWiteSpace)
-			{
-				var firstNonWhiteSpaceRegex = new Regex("[^\\t ]");
-				Match firstNonWhiteSpace = firstNonWhiteSpaceRegex.Match(internalTextWidget.Text, CharIndexToInsertBefore);
-				if (firstNonWhiteSpace.Success)
-				{
-					CharIndexToInsertBefore = firstNonWhiteSpace.Index;
-				}
-			}
-			else
-			{
-				GotoEndOfCurrentLine();
-			}
+			return insert;
 		}
 
-		private void GotoBeginingOfPreviousToken()
+		public static int IndexOfPreviousToken(string text, int cursor)
 		{
-			if (CharIndexToInsertBefore == 0)
+			if (cursor == 0)
 			{
-				return;
+				return 0;
 			}
 
-			var firstNonWhiteSpaceRegex = new Regex("[^\\t ]", RegexOptions.RightToLeft);
-			Match firstNonWhiteSpace = firstNonWhiteSpaceRegex.Match(internalTextWidget.Text, CharIndexToInsertBefore);
-			if (firstNonWhiteSpace.Success)
+			int prevToken = Math.Max(0, Math.Min(text.Length - 1, cursor - 1));
+			var token = text[prevToken];
+
+			if (text[prevToken] == '\n')
 			{
-				if (internalTextWidget.Text[firstNonWhiteSpace.Index] == '\n')
+				if (prevToken > 0
+					&& text[prevToken - 1] == '\n')
 				{
-					if (firstNonWhiteSpace.Index < CharIndexToInsertBefore - 1)
-					{
-						CharIndexToInsertBefore = firstNonWhiteSpace.Index;
-						return;
-					}
-					else
-					{
-						firstNonWhiteSpaceRegex = new Regex("[^\\t\\n ]", RegexOptions.RightToLeft);
-						firstNonWhiteSpace = firstNonWhiteSpaceRegex.Match(internalTextWidget.Text, CharIndexToInsertBefore);
-						if (firstNonWhiteSpace.Success)
-						{
-							CharIndexToInsertBefore = firstNonWhiteSpace.Index;
-						}
-					}
-				}
-				else
-				{
-					CharIndexToInsertBefore = firstNonWhiteSpace.Index;
+					return prevToken;
 				}
 
-				var firstWhiteSpaceRegex = new Regex("\\s", RegexOptions.RightToLeft);
-				Match firstWhiteSpace = firstWhiteSpaceRegex.Match(internalTextWidget.Text, CharIndexToInsertBefore);
-				if (firstWhiteSpace.Success)
+				prevToken--;
+			}
+			else if (token == ' ' || token == '\t')
+			{
+				// the token to the left is a breaking character
+				while (--prevToken >= 0
+					&& (text[prevToken] == ' ' || text[prevToken] == '\t'))
 				{
-					CharIndexToInsertBefore = firstWhiteSpace.Index + 1;
-				}
-				else
-				{
-					GotoStartOfCurrentLine();
+					// skip back the entire token
 				}
 			}
+			else if (WordBreakChars.Contains(token))
+			{
+				// the token to the left is a breaking character
+				while (--prevToken >= 0 && text[prevToken] == token)
+				{
+					// skip back the entire token
+				}
+
+				return prevToken + 1;
+			}
+
+			// the token to the left is normal character skip until a break
+			while (prevToken >= 0 && !WordBreakCharsAndCR.Contains(text[prevToken]))
+			{
+				// skip back until we are on a word break
+				prevToken--;
+			}
+
+			return prevToken + 1;
 		}
 
 		public void SelectAll()
@@ -1339,32 +1362,33 @@ namespace MatterHackers.Agg.UI
 			FixBarPosition(DesiredXPositionOnLine.Set);
 		}
 
-		internal void GotoStartOfCurrentLine()
+		public static int GotoStartOfCurrentLine(string text, int cursor)
 		{
-			if (CharIndexToInsertBefore > 0)
+			if (cursor > 0)
 			{
-				int indexOfReturn = internalTextWidget.Text.LastIndexOf('\n', CharIndexToInsertBefore - 1);
+				int indexOfReturn = text.LastIndexOf('\n', cursor - 1);
 				if (indexOfReturn == -1)
 				{
-					CharIndexToInsertBefore = 0;
+					return 0;
 				}
 				else
 				{
 					var firstNonWhiteSpaceRegex = new Regex("[^\\t ]");
-					Match firstNonWhiteSpace = firstNonWhiteSpaceRegex.Match(internalTextWidget.Text, indexOfReturn + 1);
+					Match firstNonWhiteSpace = firstNonWhiteSpaceRegex.Match(text, indexOfReturn + 1);
 					if (firstNonWhiteSpace.Success)
 					{
-						if (firstNonWhiteSpace.Index < CharIndexToInsertBefore
-						   || internalTextWidget.Text[CharIndexToInsertBefore - 1] == '\n')
+						if (firstNonWhiteSpace.Index < cursor
+						   || text[cursor - 1] == '\n')
 						{
-							CharIndexToInsertBefore = firstNonWhiteSpace.Index;
-							return;
+							return firstNonWhiteSpace.Index;
 						}
 					}
 
-					CharIndexToInsertBefore = indexOfReturn + 1;
+					return indexOfReturn + 1;
 				}
 			}
+
+			return 0;
 		}
 
 		public void ClearUndoHistory()
