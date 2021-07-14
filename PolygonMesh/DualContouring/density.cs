@@ -41,4 +41,88 @@ namespace DualContouring
 
         public AxisAlignedBoundingBox Bounds => new AxisAlignedBoundingBox(-halfSize, halfSize);
     }
+
+    public class Union : ISdf
+	{
+        public ISdf[] Items;
+
+        public double Sdf(Vector3 p)
+        {
+            var d = Items[0].Sdf(p);
+            for (int i = 1; i < Items.Length; i++)
+            {
+                d = Min(d, Items[i].Sdf(p));
+            }
+
+            return d;
+        }
+
+        public AxisAlignedBoundingBox Bounds
+        {
+            get
+            {
+                var b = Items[0].Bounds;
+                for (int i = 1; i < Items.Length; i++)
+                {
+                    b = AxisAlignedBoundingBox.Union(b, Items[i].Bounds);
+                }
+
+                return b;
+            }
+        }
+    }
+
+    public class Intersection : ISdf
+    {
+        public ISdf[] Items;
+
+        public double Sdf(Vector3 p)
+        {
+            var d = Items[0].Sdf(p);
+            for (int i = 1; i < Items.Length; i++)
+            {
+                d = Max(d, Items[i].Sdf(p));
+            }
+
+            return d;
+        }
+
+        public AxisAlignedBoundingBox Bounds
+        {
+            get
+            {
+                var b = Items[0].Bounds;
+                for (int i = 1; i < Items.Length; i++)
+                {
+                    b = AxisAlignedBoundingBox.Intersection(b, Items[i].Bounds);
+                }
+
+                return b;
+            }
+        }
+    }
+
+    public class Subtraction : ISdf
+    {
+        public ISdf[] Items;
+
+        public double Sdf(Vector3 p)
+        {
+            var d = -Items[0].Sdf(p);
+            for (int i = 1; i < Items.Length; i++)
+            {
+                d = Min(d, Items[i].Sdf(p));
+            }
+
+            return d;
+        }
+
+        public AxisAlignedBoundingBox Bounds
+        {
+            get
+            {
+                return Items[0].Bounds;
+            }
+        }
+    }
 }
