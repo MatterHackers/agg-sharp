@@ -349,11 +349,11 @@ namespace MatterHackers.RenderOpenGl
 
 		public static void DrawOctree(this WorldView world, OctreeNode rootNode, int colorIndex)
 		{
-			if (rootNode != null && rootNode.children.Length > 0)
+			if (rootNode != null && rootNode.Children.Length > 0)
 			{
-				for (int i = 0; i < rootNode.children.Length; i++)
+				for (int i = 0; i < rootNode.Children.Length; i++)
 				{
-					DrawOctree(world, rootNode.children[i], colorIndex + 1);
+					DrawOctree(world, rootNode.Children[i], colorIndex + 1);
 				}
 
 				DrawOctreeNode(world, rootNode, Octree.DrawColors[colorIndex]);
@@ -362,7 +362,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public static void DrawOctreeNode(this WorldView world, OctreeNode node, Color color)
 		{
-			var aabb = new AxisAlignedBoundingBox(node.min, node.min + Vector3.One * node.size);
+			var aabb = new AxisAlignedBoundingBox(node.Min, node.Min + node.Size);
 			world.RenderAabb(aabb, Matrix4X4.Identity, color);
 		}
 

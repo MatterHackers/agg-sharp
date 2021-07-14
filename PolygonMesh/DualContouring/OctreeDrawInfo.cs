@@ -6,5 +6,5 @@ public struct OctreeDrawInfo
     public int corners;
     public Vector3 position;
     public Vector3 averageNormal;
-	public QefData	qef;
+	public QefData	qefData;
 }

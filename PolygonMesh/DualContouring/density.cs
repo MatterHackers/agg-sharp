@@ -1,57 +1,128 @@
-
 using MatterHackers.VectorMath;
 using System;
+using static System.Math;
 
+// A collection of signed distance field functions
 namespace DualContouring
 {
-	public static class glm
+    public interface ISdf
+	{
+        double Sdf(Vector3 p);
+
+        AxisAlignedBoundingBox Bounds { get; }
+    }
+
+    public class Sphere : ISdf
     {
-        public static double Sphere(Vector3 worldPosition, Vector3 origin, double radius)
+        public double Radius;
+
+        public double Sdf(Vector3 p)
         {
-            return (worldPosition - origin).Length - radius;
+            return p.Length - Radius;
         }
 
-        public static double Cuboid(Vector3 worldPosition, Vector3 origin, Vector3 halfDimensions)
-        {
-            Vector3 local_pos = worldPosition - origin;
-            Vector3 pos = local_pos;
+        public AxisAlignedBoundingBox Bounds => new AxisAlignedBoundingBox(-Radius, -Radius, -Radius, Radius, Radius, Radius);
+    }
+    public class Box : ISdf
+    {
+        private Vector3 halfSize;
 
-            Vector3 d = new Vector3(Math.Abs(pos.X), Math.Abs(pos.Y), Math.Abs(pos.Z)) - halfDimensions;
-            double m = Math.Max(d.X, Math.Max(d.Y, d.Z));
-            return Math.Min(m, (d.Length > 0 ? d : Vector3.Zero).Length);
+        public Vector3 Size 
+        { 
+            get => halfSize * 2;
+            set => halfSize = value / 2;
         }
 
-        public static double FractalNoise(int octaves, double frequency, double lacunarity, double persistence, Vector2 position)
+        public double Sdf(Vector3 p)
         {
-            double SCALE = 1.0f / 128.0f;
-            Vector2 p = position * SCALE;
-            double noise = 0.0f;
+            Vector3 q = p.Abs() - halfSize;
+            return Vector3.ComponentMax(q, 0.0).Length + Min(Max(q.X, Max(q.Y, q.Z)), 0.0);
+        }
 
-            double amplitude = 1.0f;
-            p *= frequency;
+        public AxisAlignedBoundingBox Bounds => new AxisAlignedBoundingBox(-halfSize, halfSize);
+    }
 
-            for (int i = 0; i < octaves; i++)
+    public class Union : ISdf
+	{
+        public ISdf[] Items;
+
+        public double Sdf(Vector3 p)
+        {
+            var d = Items[0].Sdf(p);
+            for (int i = 1; i < Items.Length; i++)
             {
-                noise += Perlin.perlin(p.X, p.Y, 0) * amplitude;
-                p *= lacunarity;
-                amplitude *= persistence;
+                d = Min(d, Items[i].Sdf(p));
             }
 
-            // move into [0, 1] range
-            return 0.5f + (0.5f * noise);
+            return d;
         }
 
-
-        public static double Density_Func(Vector3 worldPosition)
+        public AxisAlignedBoundingBox Bounds
         {
-            double MAX_HEIGHT = 20.0f;
-            double noise = FractalNoise(4, 0.5343f, 2.2324f, 0.68324f, new Vector2(worldPosition.X, worldPosition.Z));
-            double terrain = worldPosition.Y - (MAX_HEIGHT * noise);
+            get
+            {
+                var b = Items[0].Bounds;
+                for (int i = 1; i < Items.Length; i++)
+                {
+                    b = AxisAlignedBoundingBox.Union(b, Items[i].Bounds);
+                }
 
-            double cube = Cuboid(worldPosition, new Vector3(-4.0f, 10.0f, -4.0f), new Vector3(12.0f, 12.0f, 12.0f));
-            double sphere = Sphere(worldPosition, new Vector3(15.0f, 2.5f, 1.0f), 16.0f);
+                return b;
+            }
+        }
+    }
 
-            return Math.Max(-cube, Math.Min(sphere, terrain));
+    public class Intersection : ISdf
+    {
+        public ISdf[] Items;
+
+        public double Sdf(Vector3 p)
+        {
+            var d = Items[0].Sdf(p);
+            for (int i = 1; i < Items.Length; i++)
+            {
+                d = Max(d, Items[i].Sdf(p));
+            }
+
+            return d;
+        }
+
+        public AxisAlignedBoundingBox Bounds
+        {
+            get
+            {
+                var b = Items[0].Bounds;
+                for (int i = 1; i < Items.Length; i++)
+                {
+                    b = AxisAlignedBoundingBox.Intersection(b, Items[i].Bounds);
+                }
+
+                return b;
+            }
+        }
+    }
+
+    public class Subtraction : ISdf
+    {
+        public ISdf[] Items;
+
+        public double Sdf(Vector3 p)
+        {
+            var d = -Items[0].Sdf(p);
+            for (int i = 1; i < Items.Length; i++)
+            {
+                d = Min(d, Items[i].Sdf(p));
+            }
+
+            return d;
+        }
+
+        public AxisAlignedBoundingBox Bounds
+        {
+            get
+            {
+                return Items[0].Bounds;
+            }
         }
     }
 }
