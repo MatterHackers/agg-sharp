@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using MatterHackers.Agg;
@@ -174,7 +175,7 @@ namespace MatterHackers.DataConverters3D
 		/// long operations are happening such as loading or mesh processing.
 		/// </summary>
 		/// <returns></returns>
-		public static IEnumerable<IObject3D> VisibleMeshes(this IObject3D root)
+		public static IEnumerable<IObject3D> VisibleMeshes(this IObject3D root, Func<IObject3D, bool> consider = null)
 		{
 			var items = new Stack<IObject3D>(new[] { root });
 			while (items.Count > 0)
@@ -190,11 +191,12 @@ namespace MatterHackers.DataConverters3D
 				}
 				else // there is no mesh go into the object and iterate its children
 				{
-					foreach (var n in item.Children)
+					foreach (var childItem in item.Children)
 					{
-						if (n.Visible)
+						if (childItem.Visible
+							&& (consider == null || consider(childItem)))
 						{
-							items.Push(n);
+							items.Push(childItem);
 						}
 					}
 				}

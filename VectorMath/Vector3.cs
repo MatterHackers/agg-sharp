@@ -563,6 +563,15 @@ namespace MatterHackers.VectorMath
 			return a;
 		}
 
+		public static Vector3 ComponentMax(Vector3 a, double b)
+		{
+			a.X = a.X > b ? a.X : b;
+			a.Y = a.Y > b ? a.Y : b;
+			a.Z = a.Z > b ? a.Z : b;
+
+			return a;
+		}
+
 		/// <summary>
 		/// Calculate the component-wise maximum of two vectors
 		/// </summary>
@@ -686,6 +695,11 @@ namespace MatterHackers.VectorMath
 		{
 			// Return true if a, b, and c all lie on the same line.
 			return Math.Abs((b - a).Cross(c - a).Length) < epsilon;
+		}
+
+		public static Vector3 Abs(Vector3 a)
+		{
+			return new Vector3(Math.Abs(a.X), Math.Abs(a.Y), Math.Abs(a.Z));
 		}
 
 		/// <summary>
@@ -1496,5 +1510,10 @@ namespace MatterHackers.VectorMath
 		}
 
 		#endregion Transform
+
+		public static Vector3 Abs(this Vector3 a)
+		{
+			return Vector3.Abs(a);
+		}
 	}
 }

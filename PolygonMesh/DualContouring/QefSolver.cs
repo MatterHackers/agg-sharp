@@ -30,14 +30,15 @@ using System;
 
 public class QefSolver
 {
-    private QefData data;
+    public QefData QefData { get; private set; } = new QefData();
     private SMat3 ata;
-    private Vector3 atb, massPoint, x;
+    private Vector3 atb;
+    private Vector3 massPoint;
+    private Vector3 x;
     private bool hasSolution;
 
     public QefSolver()
     {
-        data = new QefData();
         ata = new SMat3();
         atb = Vector3.Zero;
         massPoint = Vector3.Zero;
@@ -53,86 +54,76 @@ public class QefSolver
         return massPoint;
     }
 
-    public void add(double px, double py, double pz, double nx, double ny, double nz)
+    public void Add(Vector3 p, Vector3 n)
     {
         hasSolution = false;
-    
-        Vector3 tmpv = new Vector3(nx, ny, nz).GetNormal();
-        nx = tmpv.X;
-        ny = tmpv.Y;
-        nz = tmpv.Z;
-   
-        data.ata_00 += nx * nx;
-        data.ata_01 += nx * ny;
-        data.ata_02 += nx * nz;
-        data.ata_11 += ny * ny;
-        data.ata_12 += ny * nz;
-        data.ata_22 += nz * nz;
-        double dot = nx * px + ny * py + nz * pz;
-        data.atb_x += dot * nx;
-        data.atb_y += dot * ny;
-        data.atb_z += dot * nz;
-        data.btb += dot * dot;
-        data.massPoint_x += px;
-        data.massPoint_y += py;
-        data.massPoint_z += pz;
-        ++data.numPoints;
+
+        var normal = n.GetNormal();
+        var nx = normal.X;
+        var ny = normal.Y;
+        var nz = normal.Z;
+
+        QefData.ata_00 += nx * nx;
+        QefData.ata_01 += nx * ny;
+        QefData.ata_02 += nx * nz;
+        QefData.ata_11 += ny * ny;
+        QefData.ata_12 += ny * nz;
+        QefData.ata_22 += nz * nz;
+        double dot = nx * p.X + ny * p.Y + nz * p.Z;
+        QefData.atb_x += dot * nx;
+        QefData.atb_y += dot * ny;
+        QefData.atb_z += dot * nz;
+        QefData.btb += dot * dot;
+        QefData.massPoint_x += p.X;
+        QefData.massPoint_y += p.Y;
+        QefData.massPoint_z += p.Z;
+        ++QefData.numPoints;
     }
 
-    public void add(Vector3 p, Vector3 n)
-    {
-        add(p.X, p.Y, p.Z, n.X, n.Y, n.Z);
-    }
-
-    public void add(QefData rhs)
+    public void Add(QefData rhs)
     {
         hasSolution = false;
-        data.add(rhs);
-    }
-
-    public QefData getData()
-    {
-        return data;
+        QefData.add(rhs);
     }
 
     public double getError()
+    {
+        if (!hasSolution)
         {
-            if (!hasSolution)
-            {
-                throw new ArgumentException("Qef Solver does not have a solution!");
-            }
-
-            return getError(x);
+            throw new ArgumentException("Qef Solver does not have a solution!");
         }
 
+        return getError(x);
+    }
+
     public double getError(Vector3 pos)
-        { 
-            if (!hasSolution)
-            {
-                setAta();
-                setAtb();
-            }
+    {
+        if (!hasSolution)
+        {
+            setAta();
+            setAtb();
+        }
 
         Vector3 atax;
         MatUtils.VMuSymmetric(out atax, ata, pos);
-        return pos.Dot(atax) - 2 * pos.Dot(atb) + data.btb;
-        }
+        return pos.Dot(atax) - 2 * pos.Dot(atb) + QefData.btb;
+    }
 
     public void reset()
     {
         hasSolution = false;
-        data.clear();
+        QefData.clear();
     }
 
-    public double solve(Vector3 outx, double svd_tol, int svd_sweeps, double pinv_tol)
+    public double Solve(out Vector3 outx, double svd_tol, int svd_sweeps, double pinv_tol)
     {
-        if (data.numPoints == 0)
+        if (QefData.numPoints == 0)
         {
             throw new ArgumentException("...");
         }
 
-        massPoint.Set(data.massPoint_x, data.massPoint_y, data.massPoint_z);
-        massPoint *= (1.0f / data.numPoints);
+        massPoint.Set(QefData.massPoint_x, QefData.massPoint_y, QefData.massPoint_z);
+        massPoint *= (1.0f / QefData.numPoints);
         setAta();
         setAtb();
         Vector3 tmpv;
@@ -149,12 +140,12 @@ public class QefSolver
 
     private void setAta()
     {
-        ata.setSymmetric(data.ata_00, data.ata_01, data.ata_02, data.ata_11, data.ata_12, data.ata_22);
+        ata.SetSymmetric(QefData.ata_00, QefData.ata_01, QefData.ata_02, QefData.ata_11, QefData.ata_12, QefData.ata_22);
     }
 
     private void setAtb()
     {
-        atb.Set(data.atb_x, data.atb_y, data.atb_z);
-    }    
+        atb.Set(QefData.atb_x, QefData.atb_y, QefData.atb_z);
+    }
 }
     

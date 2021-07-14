@@ -45,7 +45,7 @@ public static class MatUtils
     { 
         Out = new SMat3();
 
-        Out.setSymmetric(a.m00 * a.m00 + a.m10 * a.m10 + a.m20 * a.m20,
+        Out.SetSymmetric(a.m00 * a.m00 + a.m10 * a.m10 + a.m20 * a.m20,
                          a.m00 * a.m01 + a.m10 * a.m11 + a.m20 * a.m21,
                          a.m00 * a.m02 + a.m10 * a.m12 + a.m20 * a.m22,
                          a.m01 * a.m01 + a.m11 * a.m11 + a.m21 * a.m21,

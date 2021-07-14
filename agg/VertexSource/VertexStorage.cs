@@ -241,6 +241,15 @@ namespace MatterHackers.Agg.VertexSource
 			SvgDString = svgDString;
 		}
 
+		public VertexStorage(IVertexSource copyFrom)
+			: this()
+		{
+			foreach(var vertex in copyFrom.Vertices())
+			{
+				this.Add(vertex.X, vertex.Y, vertex.command);
+			}
+		}
+
 
 		[JsonIgnore]
 		public int Count

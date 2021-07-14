@@ -28,6 +28,9 @@
 using MatterHackers.VectorMath;
 using System;
 
+/// <summary>
+/// Singular Value Decomposition
+/// </summary>
 public static class SVD
 {
     public static void Rotate01(SMat3 vtav, Mat3 v)
@@ -80,7 +83,7 @@ public static class SVD
         }
     }
 
-    public static double calcError(Mat3 A, Vector3 x, Vector3 b)
+    public static double CalcError(Mat3 A, Vector3 x, Vector3 b)
     {
         Vector3 vtmp;
         MatUtils.VMul(out vtmp, A, x);
