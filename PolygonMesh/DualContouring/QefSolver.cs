@@ -28,6 +28,9 @@
 using MatterHackers.VectorMath;
 using System;
 
+/// <summary>
+/// Solves the Quadratic Error Function
+/// </summary>
 public class QefSolver
 {
     public QefData QefData { get; private set; } = new QefData();
@@ -97,8 +100,7 @@ public class QefSolver
             SetAtb();
         }
 
-        Vector3 atax;
-        MatUtils.VMuSymmetric(out atax, ata, pos);
+        Vector3 atax = MatUtils.VMuSymmetric(ata, pos);
         return pos.Dot(atax) - 2 * pos.Dot(atb) + QefData.btb;
     }
 
@@ -108,7 +110,7 @@ public class QefSolver
         QefData.Clear();
     }
 
-    public double Solve(out Vector3 outx, double svd_tol, int svd_sweeps, double pinv_tol)
+    public Vector3 Solve(double svd_tol, int svd_sweeps, double pinv_tol)
     {
         if (QefData.numPoints == 0)
         {
@@ -116,18 +118,24 @@ public class QefSolver
         }
 
         massPoint = QefData.massPoint;
-        massPoint *= (1.0f / QefData.numPoints);
+        massPoint /= QefData.numPoints;
         SetAta();
         SetAtb();
-		MatUtils.VMuSymmetric(out Vector3 tmpv, ata, massPoint);
+        var tmpv = MatUtils.VMuSymmetric(ata, massPoint);
 		atb = atb - tmpv;
         x = Vector3.Zero;
         double result = SVD.SolveSymmetric(ata, atb, x, svd_tol, svd_sweeps, pinv_tol);
-        x += massPoint * 1;
+        if (double.IsNaN(result))
+        {
+            x = massPoint;
+        }
+        else
+        {
+            x += massPoint;
+        }
         SetAtb();
-        outx = x;
         hasSolution = true;
-        return result;
+        return x;
     }
 
     private void SetAta()

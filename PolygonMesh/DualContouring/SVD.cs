@@ -85,18 +85,16 @@ public static class SVD
 
     public static double CalcError(Mat3 A, Vector3 x, Vector3 b)
     {
-        Vector3 vtmp;
-        MatUtils.VMul(out vtmp, A, x);
+        Vector3 vtmp = MatUtils.VMul(A, x);
         vtmp = b - vtmp;
         return vtmp.Dot(vtmp);
     }
 
     public static double CalcError(SMat3 origA, Vector3 x, Vector3 b)
     {
-        Mat3 A = new Mat3();
-        Vector3 vtmp;
+        var A = new Mat3();
         A.SetSymmetric(origA);
-        MatUtils.VMul(out vtmp, A, x);
+        var vtmp = MatUtils.VMul(A, x);
         vtmp = b - vtmp;
         return vtmp.Dot(vtmp);
     }
@@ -106,12 +104,12 @@ public static class SVD
         return (Math.Abs(x) < tol || Math.Abs(1 / x) < tol) ? 0 : (1 / x);
     }
 
-    public static void PseudoInverse(out Mat3 Out, SMat3 d, Mat3 v, double tol)
+    public static Mat3 PseudoInverse(SMat3 d, Mat3 v, double tol)
     {
         double d0 = PinV(d.m00, tol), d1 = PinV(d.m11, tol), d2 = PinV(d.m22, tol);
 
-        Out = new Mat3();
-        Out.Set(v.m00 * d0 * v.m00 + v.m01 * d1 * v.m01 + v.m02 * d2 * v.m02,
+        var mat3 = new Mat3();
+        mat3.Set(v.m00 * d0 * v.m00 + v.m01 * d1 * v.m01 + v.m02 * d2 * v.m02,
                 v.m00 * d0 * v.m10 + v.m01 * d1 * v.m11 + v.m02 * d2 * v.m12,
                 v.m00 * d0 * v.m20 + v.m01 * d1 * v.m21 + v.m02 * d2 * v.m22,
                 v.m10 * d0 * v.m00 + v.m11 * d1 * v.m01 + v.m12 * d2 * v.m02,
@@ -120,16 +118,17 @@ public static class SVD
                 v.m20 * d0 * v.m00 + v.m21 * d1 * v.m01 + v.m22 * d2 * v.m02,
                 v.m20 * d0 * v.m10 + v.m21 * d1 * v.m11 + v.m22 * d2 * v.m12,
                 v.m20 * d0 * v.m20 + v.m21 * d1 * v.m21 + v.m22 * d2 * v.m22);
+
+        return mat3;
     }
 
     public static double SolveSymmetric(SMat3 A, Vector3 b, Vector3 x, double svd_tol, int svd_sweeps, double pinv_tol)
     {
-        Mat3 pinv;
-        Mat3 V = new Mat3();
-        SMat3 VTAV = new SMat3();
+		var V = new Mat3();
+		var VTAV = new SMat3();
         GetSymmetricSvd(A, VTAV, V, svd_tol, svd_sweeps);
-        PseudoInverse(out pinv, VTAV, V, pinv_tol);
-        MatUtils.VMul(out x, pinv, b);
+        var pinv = PseudoInverse(VTAV, V, pinv_tol);
+        x = MatUtils.VMul(pinv, b);
         return CalcError(A, x, b);
     }
 
@@ -151,12 +150,9 @@ public static class SVD
 
     public static double SolveLeastSquares(Mat3 a, Vector3 b, Vector3 x, double svd_tol, int svd_sweeps, double pinv_tol)
     {
-        Mat3 at;
-        SMat3 ata;
-        Vector3 atb;
-        MatUtils.Transpose(out at, a);
-        MatUtils.MmulAta(out ata, a);
-        MatUtils.VMul(out atb, at, b);
+        var at = MatUtils.Transpose(a);
+        var ata = MatUtils.MmulAta(a);
+        var atb = MatUtils.VMul(at, b);
         return SolveSymmetric(ata, atb, x, svd_tol, svd_sweeps, pinv_tol);
     }
 

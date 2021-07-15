@@ -1585,13 +1585,15 @@ namespace MatterHackers.Agg.UI
 			{
 				foreach (var child in list)
 				{
-					child.Close();
+					using (child.LayoutLock())
+					{
+						child.Close();
+					}
 				}
 
 				list.Clear();
 			});
 		}
-
 		/// <summary>
 		/// Remove all the children of the widget but do not explicitly call close on them
 		/// </summary>

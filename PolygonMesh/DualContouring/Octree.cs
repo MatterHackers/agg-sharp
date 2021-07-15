@@ -56,6 +56,15 @@ namespace DualContouring
 			new int[3]{6,7,2}
 		};
 
+		/// <summary>
+		///    6------7 
+		///   /.     /|
+		///  4------5 |
+		///  | 2 . .| 3
+		///  |.     |/
+		///  0------1 
+		///  
+		/// </summary>
 		public static readonly Vector3[] CHILD_MIN_OFFSETS =
 		{
 	        // needs to match the vertMap from Dual Contouring impl
@@ -152,23 +161,27 @@ namespace DualContouring
 			// approximate the zero crossing by finding the min value along the edge
 			double minValue = 100000f;
 			double t = 0f;
-			double currentT = 0f;
-			const int steps = 8;
-			double increment = (p1 - p0).Length / steps;
-			while (currentT <= 1.0f)
+			const int steps = 32;
+			int step = 0;
+			var bestPosition = p0;
+			while (++step < steps)
 			{
-				Vector3 p = p0 + ((p1 - p0) * currentT);
+				Vector3 p = p0 + ((p1 - p0) * t);
 				double density = Math.Abs(f(p));
 				if (density < minValue)
 				{
+					bestPosition = p;
 					minValue = density;
-					t = currentT;
+					if (minValue < 0)
+					{
+						break;
+					}
 				}
 
-				currentT += increment;
+				t += 1.0 / steps;
 			}
 
-			return p0 + ((p1 - p0) * t);
+			return bestPosition;
 		}
 
 		public static OctreeNode BuildOctree(Func<Vector3, double> f, Vector3 min, Vector3 cellSize, int level, double threshold)
@@ -261,8 +274,7 @@ namespace DualContouring
 				edgeCount++;
 			}
 
-			Vector3 qefPosition = Vector3.Zero;
-			qefSolver.Solve(out qefPosition, QEF_ERROR, QEF_SWEEPS, QEF_ERROR);
+			Vector3 qefPosition = qefSolver.Solve(QEF_ERROR, QEF_SWEEPS, QEF_ERROR);
 
 			var drawInfo = new OctreeDrawInfo();
 			drawInfo.corners = 0;
@@ -682,8 +694,7 @@ namespace DualContouring
 				return node;
 			}
 
-			Vector3 position = Vector3.Zero;
-			qef.Solve(out position, QEF_ERROR, QEF_SWEEPS, QEF_ERROR);
+			Vector3 position = qef.Solve(QEF_ERROR, QEF_SWEEPS, QEF_ERROR);
 			double error = qef.GetError();
 
 			// at this point the masspoint will actually be a sum, so divide to make it the average
