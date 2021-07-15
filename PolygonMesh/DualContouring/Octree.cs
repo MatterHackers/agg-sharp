@@ -684,7 +684,7 @@ namespace DualContouring
 
 			Vector3 position = Vector3.Zero;
 			qef.Solve(out position, QEF_ERROR, QEF_SWEEPS, QEF_ERROR);
-			double error = qef.getError();
+			double error = qef.GetError();
 
 			// at this point the masspoint will actually be a sum, so divide to make it the average
 			if (error > threshold)
