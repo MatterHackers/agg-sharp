@@ -122,7 +122,7 @@ public static class SVD
         return mat3;
     }
 
-    public static double SolveSymmetric(SMat3 A, Vector3 b, Vector3 x, double svd_tol, int svd_sweeps, double pinv_tol)
+    public static double SolveSymmetric(SMat3 A, Vector3 b, out Vector3 x, double svd_tol, int svd_sweeps, double pinv_tol)
     {
 		var V = new Mat3();
 		var VTAV = new SMat3();
@@ -148,12 +148,12 @@ public static class SVD
         s = tan * c;
     }
 
-    public static double SolveLeastSquares(Mat3 a, Vector3 b, Vector3 x, double svd_tol, int svd_sweeps, double pinv_tol)
+    public static double SolveLeastSquares(Mat3 a, Vector3 b, out Vector3 x, double svd_tol, int svd_sweeps, double pinv_tol)
     {
         var at = MatUtils.Transpose(a);
         var ata = MatUtils.MmulAta(a);
         var atb = MatUtils.VMul(at, b);
-        return SolveSymmetric(ata, atb, x, svd_tol, svd_sweeps, pinv_tol);
+        return SolveSymmetric(ata, atb, out x, svd_tol, svd_sweeps, pinv_tol);
     }
 
 }

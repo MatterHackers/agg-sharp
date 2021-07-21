@@ -121,10 +121,9 @@ public class QefSolver
         massPoint /= QefData.numPoints;
         SetAta();
         SetAtb();
-        var tmpv = MatUtils.VMuSymmetric(ata, massPoint);
-		atb = atb - tmpv;
+		atb -= MatUtils.VMuSymmetric(ata, massPoint);
         x = Vector3.Zero;
-        double result = SVD.SolveSymmetric(ata, atb, x, svd_tol, svd_sweeps, pinv_tol);
+        double result = SVD.SolveSymmetric(ata, atb, out x, svd_tol, svd_sweeps, pinv_tol);
         if (double.IsNaN(result))
         {
             x = massPoint;
