@@ -238,6 +238,8 @@ namespace DualContouring
 			int edgeCount = 0;
 			Vector3 averageNormal = Vector3.Zero;
 			var qefSolver = new QefSolver();
+			var debugError = .1;
+			bool is5Ish = false;
 
 			for (int i = 0; i < 12 && edgeCount < MAX_CROSSINGS; i++)
 			{
@@ -257,10 +259,9 @@ namespace DualContouring
 				Vector3 p2 = leaf.Min + CHILD_MIN_OFFSETS[c2] * leaf.Size;
 				Vector3 position = ApproximateZeroCrossingPosition(f, p1, p2);
 
-				var error = .1;
-				var is5Ish = Math.Abs(Math.Abs(position[0]) - 5) < error;
-				is5Ish |= Math.Abs(Math.Abs(position[1]) - 5) < error;
-				is5Ish |= Math.Abs(Math.Abs(position[2]) - 5) < error;
+				is5Ish = Math.Abs(Math.Abs(position[0]) - 5) < debugError;
+				is5Ish |= Math.Abs(Math.Abs(position[1]) - 5) < debugError;
+				is5Ish |= Math.Abs(Math.Abs(position[2]) - 5) < debugError;
 
 				if (!is5Ish)
 				{
@@ -275,6 +276,14 @@ namespace DualContouring
 			}
 
 			Vector3 qefPosition = qefSolver.Solve(QEF_ERROR, QEF_SWEEPS, QEF_ERROR);
+			is5Ish = Math.Abs(Math.Abs(qefPosition[0]) - 5) < debugError;
+			is5Ish |= Math.Abs(Math.Abs(qefPosition[1]) - 5) < debugError;
+			is5Ish |= Math.Abs(Math.Abs(qefPosition[2]) - 5) < debugError;
+
+			if (!is5Ish)
+			{
+				int a = 0;
+			}
 
 			var drawInfo = new OctreeDrawInfo();
 			drawInfo.corners = 0;
@@ -291,7 +300,7 @@ namespace DualContouring
 				drawInfo.position = qefSolver.GetMassPoint();
 			}
 
-			drawInfo.averageNormal = Vector3.Normalize(averageNormal / (double)edgeCount);
+			drawInfo.averageNormal = Vector3.Normalize(averageNormal);
 			drawInfo.corners = corners;
 
 			leaf.Type = OctreeNodeType.Node_Leaf;
