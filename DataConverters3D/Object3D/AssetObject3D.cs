@@ -94,12 +94,12 @@ namespace MatterHackers.DataConverters3D
 		}
 	}
 
-	public class AssetObject3D : Object3D, IAssetObject
+	public abstract class AssetObject3D : Object3D, IAssetObject
 	{
 		// Collector
 		public static IAssetManager AssetManager { get; set; }
 
-		public virtual string AssetPath { get; set; }
+		public abstract string AssetPath { get; set; }
 
 		public string AssetID { get; set; }
 
