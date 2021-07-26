@@ -28,6 +28,9 @@
 using MatterHackers.VectorMath;
 using System;
 
+/// <summary>
+/// Solves the Quadratic Error Function
+/// </summary>
 public class QefSolver
 {
     public QefData QefData { get; private set; } = new QefData();
@@ -45,9 +48,6 @@ public class QefSolver
         x = Vector3.Zero;
         hasSolution = false;
     }
-
-    private QefSolver(QefSolver rhs)
-    { }
 
     public Vector3 GetMassPoint()
     {
@@ -70,82 +70,81 @@ public class QefSolver
         QefData.ata_12 += ny * nz;
         QefData.ata_22 += nz * nz;
         double dot = nx * p.X + ny * p.Y + nz * p.Z;
-        QefData.atb_x += dot * nx;
-        QefData.atb_y += dot * ny;
-        QefData.atb_z += dot * nz;
+        QefData.atb += dot * normal;
         QefData.btb += dot * dot;
-        QefData.massPoint_x += p.X;
-        QefData.massPoint_y += p.Y;
-        QefData.massPoint_z += p.Z;
+        QefData.massPoint += p;
         ++QefData.numPoints;
     }
 
     public void Add(QefData rhs)
     {
         hasSolution = false;
-        QefData.add(rhs);
+        QefData.Add(rhs);
     }
 
-    public double getError()
+    public double GetError()
     {
         if (!hasSolution)
         {
             throw new ArgumentException("Qef Solver does not have a solution!");
         }
 
-        return getError(x);
+        return GetError(x);
     }
 
-    public double getError(Vector3 pos)
+    public double GetError(Vector3 pos)
     {
         if (!hasSolution)
         {
-            setAta();
-            setAtb();
+            SetAta();
+            SetAtb();
         }
 
-        Vector3 atax;
-        MatUtils.VMuSymmetric(out atax, ata, pos);
+        Vector3 atax = MatUtils.VMuSymmetric(ata, pos);
         return pos.Dot(atax) - 2 * pos.Dot(atb) + QefData.btb;
     }
 
-    public void reset()
+    public void Reset()
     {
         hasSolution = false;
-        QefData.clear();
+        QefData.Clear();
     }
 
-    public double Solve(out Vector3 outx, double svd_tol, int svd_sweeps, double pinv_tol)
+    public Vector3 Solve(double svd_tol, int svd_sweeps, double pinv_tol)
     {
         if (QefData.numPoints == 0)
         {
             throw new ArgumentException("...");
         }
 
-        massPoint.Set(QefData.massPoint_x, QefData.massPoint_y, QefData.massPoint_z);
-        massPoint *= (1.0f / QefData.numPoints);
-        setAta();
-        setAtb();
-        Vector3 tmpv;
-        MatUtils.VMuSymmetric(out tmpv, ata, massPoint);
-        atb = atb - tmpv;
+        massPoint = QefData.massPoint;
+        massPoint /= QefData.numPoints;
+        SetAta();
+        SetAtb();
+		atb -= MatUtils.VMuSymmetric(ata, massPoint);
         x = Vector3.Zero;
-        double result = SVD.SolveSymmetric(ata, atb, x, svd_tol, svd_sweeps, pinv_tol);
-        x += massPoint * 1;
-        setAtb();
-        outx = x;
+        double result = SVD.SolveSymmetric(ata, atb, out x, svd_tol, svd_sweeps, pinv_tol);
+        if (double.IsNaN(result))
+        {
+            x = massPoint;
+        }
+        else
+        {
+            x += massPoint;
+        }
+        SetAtb();
         hasSolution = true;
-        return result;
+        return x;
     }
 
-    private void setAta()
+    private void SetAta()
     {
         ata.SetSymmetric(QefData.ata_00, QefData.ata_01, QefData.ata_02, QefData.ata_11, QefData.ata_12, QefData.ata_22);
     }
 
-    private void setAtb()
+    private void SetAtb()
     {
-        atb.Set(QefData.atb_x, QefData.atb_y, QefData.atb_z);
+        atb = QefData.atb;
     }
 }
     
