@@ -46,6 +46,7 @@ namespace MatterHackers.Agg.UI
 		{
 			ForcePixelAlignment = true;
 			LocalBounds = new RectangleDouble(0, 0, width, height);
+			Image = new ImageBuffer(width, height);
 		}
 
 		public ImageWidget(ImageBuffer initialImage)
