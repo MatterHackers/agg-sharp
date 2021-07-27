@@ -95,12 +95,15 @@ namespace MatterHackers.Agg.UI
 			return runningInterval;
 		}
 
-		public static bool ClearInterval(RunningInterval runningInterval)
+		public static void ClearInterval(RunningInterval runningInterval)
 		{
 			lock (locker)
 			{
-				runningInterval.Shutdown();
-				return intervalActions.Remove(runningInterval);
+				if (runningInterval != null)
+				{
+					runningInterval.Shutdown();
+					intervalActions.Remove(runningInterval);
+				}
 			}
 		}
 
