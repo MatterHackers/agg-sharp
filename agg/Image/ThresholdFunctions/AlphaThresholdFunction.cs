@@ -84,4 +84,23 @@ namespace MatterHackers.Agg.Image.ThresholdFunctions
 			return outValue;
 		}
 	}
+
+	public class AlphaFunction : IThresholdFunction
+	{
+		public AlphaFunction()
+		{
+		}
+
+		public double Transform(Color color)
+		{
+			return color.Alpha0To1;
+		}
+
+		public Color ZeroColor => Color.Transparent;
+
+		public double Threshold(Color color)
+		{
+			return color.Alpha0To1;
+		}
+	}
 }
