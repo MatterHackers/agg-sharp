@@ -92,12 +92,12 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
+			base.OnDraw(graphics2D);
+		
 			if (Image != null)
 			{
 				graphics2D.Render(Image, 0, 0, Width, Height);
 			}
-
-			base.OnDraw(graphics2D);
 		}
 	}
 }
