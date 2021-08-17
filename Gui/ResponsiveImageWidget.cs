@@ -96,7 +96,8 @@ namespace MatterHackers.Agg.UI
 		
 			if (Image != null)
 			{
-				graphics2D.Render(Image, 0, 0, Width, Height);
+				var sizeX = Math.Min(Width, Image.Width);
+				graphics2D.Render(Image, (Width - sizeX) / 2, 0, sizeX, Height);
 			}
 		}
 	}
