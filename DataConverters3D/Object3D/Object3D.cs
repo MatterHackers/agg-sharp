@@ -552,6 +552,8 @@ namespace MatterHackers.DataConverters3D
 			this.Invalidate(new InvalidateArgs(this, invalidateType));
 		}
 
+		private static HashSet<IObject3D> pendingUpdates = new HashSet<IObject3D>();
+
 		public void Invalidate(InvalidateArgs invalidateArgs)
 		{
 			if (!RebuildLocked)
@@ -563,18 +565,27 @@ namespace MatterHackers.DataConverters3D
 				RunningInterval runningInterval = null;
 				void RebuildWhenUnlocked()
 				{
-					if (!RebuildLocked)
+					lock (pendingUpdates)
 					{
-						UiThread.ClearInterval(runningInterval);
-						this.OnInvalidate(invalidateArgs);
+						if (!RebuildLocked)
+						{
+							UiThread.ClearInterval(runningInterval);
+							this.OnInvalidate(invalidateArgs);
+							pendingUpdates.Remove(this);
+						}
 					}
 				}
 
-				if (invalidateArgs.InvalidateType.HasFlag(InvalidateType.Properties)
-					&& invalidateArgs.Source == this)
+				lock (pendingUpdates)
 				{
-					// we need to get back to the user requested change when not locked
-					runningInterval = UiThread.SetInterval(RebuildWhenUnlocked, .2);
+					if (invalidateArgs.InvalidateType.HasFlag(InvalidateType.Properties)
+						&& invalidateArgs.Source == this
+						&& !pendingUpdates.Contains(this))
+					{
+						pendingUpdates.Add(this);
+						// we need to get back to the user requested change when not locked
+						runningInterval = UiThread.SetInterval(RebuildWhenUnlocked, .2);
+					}
 				}
 			}
 		}

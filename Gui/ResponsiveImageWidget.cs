@@ -35,7 +35,10 @@ namespace MatterHackers.Agg.UI
 {
 	public class ResponsiveImageWidget : GuiWidget
 	{
+		private ImageBuffer checkerboard;
 		private ImageBuffer _image;
+
+		public bool RenderCheckerboard { get; set; }
 
 		public ResponsiveImageWidget(ImageBuffer initialImage)
 		{
@@ -90,14 +93,65 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		private void RenderCheckerboard2(ImageBuffer image, int size, Color colorA, Color colorB)
+		{
+			var graphics2D = image.NewGraphics2D();
+			var width = image.Width;
+			var height = image.Height;
+
+			byte[] buffer = image.GetBuffer();
+			Parallel.For(0, image.Height, (y) =>
+			{
+				int imageOffset = image.GetBufferOffsetY(y);
+
+				for (int x = 0; x < image.Width; x++)
+				{
+					int imageBufferOffsetWithX = imageOffset + x * 4;
+					if (((x / size) + (y / size)) % 2 == 0)
+					{
+						buffer[imageBufferOffsetWithX + 0] = colorA.blue;
+						buffer[imageBufferOffsetWithX + 1] = colorA.green;
+						buffer[imageBufferOffsetWithX + 2] = colorA.red;
+					}
+					else
+					{
+						buffer[imageBufferOffsetWithX + 0] = colorB.blue;
+						buffer[imageBufferOffsetWithX + 1] = colorB.green;
+						buffer[imageBufferOffsetWithX + 2] = colorB.red;
+					}
+
+					buffer[imageBufferOffsetWithX + 3] = 255;
+				}
+			});
+		}
+
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			if (Image != null)
+			if (RenderCheckerboard)
 			{
-				graphics2D.Render(Image, 0, 0, Width, Height);
+				if (checkerboard == null)
+				{
+					checkerboard = new ImageBuffer();
+				}
+
+				if (checkerboard.Width != graphics2D.Width || checkerboard.Height != graphics2D.Height)
+				{
+					checkerboard.Allocate(graphics2D.Width, graphics2D.Height, 32, new BlenderBGRA());
+					// render a checkerboard that can show through the alpha mask
+					var w = (int)(10 * GuiWidget.DeviceScale);
+					RenderCheckerboard2(checkerboard, w, Color.White, Color.LightGray);
+				}
+
+				graphics2D.Render(checkerboard, 0, 0);
 			}
 
 			base.OnDraw(graphics2D);
+		
+			if (Image != null)
+			{
+				var sizeX = Math.Min(Width, Image.Width);
+				graphics2D.Render(Image, (Width - sizeX) / 2, 0, sizeX, Height);
+			}
 		}
 	}
 }
