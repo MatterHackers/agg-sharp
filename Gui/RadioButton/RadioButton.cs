@@ -65,7 +65,7 @@ namespace MatterHackers.Agg.UI
 	{
 		public event EventHandler CheckedStateChanged;
 
-		private bool isChecked = false;
+		private bool _checked = false;
 
 		public static BorderDouble defaultMargin = new BorderDouble(5);
 
@@ -165,13 +165,13 @@ namespace MatterHackers.Agg.UI
 
 		public bool Checked
 		{
-			get => isChecked;
+			get => _checked;
 			set
 			{
-				if (isChecked != value)
+				if (_checked != value)
 				{
-					isChecked = value;
-					if (isChecked)
+					_checked = value;
+					if (_checked)
 					{
 						this.UncheckSiblings();
 					}
