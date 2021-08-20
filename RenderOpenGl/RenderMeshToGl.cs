@@ -94,7 +94,7 @@ namespace MatterHackers.RenderOpenGl
 			bool blendTexture = true,
 			bool forceCullBackFaces = true)
 		{
-			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture, forceCullBackFaces);
+			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture, forceCullBackFaces: forceCullBackFaces);
 		}
 
 		public static void Render(Mesh meshToRender,
