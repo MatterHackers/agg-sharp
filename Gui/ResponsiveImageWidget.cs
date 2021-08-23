@@ -54,7 +54,7 @@ namespace MatterHackers.Agg.UI
 				var newBounds = value;
 				if (Image.Width > 0)
 				{
-					var scale = Math.Min(GuiWidget.DeviceScale, Math.Min(this.MaximumSize.X, newBounds.Width) / Image.Width);
+					var scale = Math.Min(1, Math.Min(this.MaximumSize.X, newBounds.Width) / Image.Width);
 					newBounds.Top = newBounds.Bottom + Image.Height * scale;
 				}
 
