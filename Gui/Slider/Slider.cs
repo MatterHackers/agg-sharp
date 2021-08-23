@@ -151,26 +151,17 @@ namespace MatterHackers.Agg.UI
 
 		public void DoDrawAfterChildren(Graphics2D graphics2D)
 		{
-			RoundedRect track = new RoundedRect(GetTrackBounds(), TrackHeight / 2);
-			Vector2 ValuePrintPosition;
-			if (sliderAttachedTo.Orientation == Orientation.Horizontal)
-			{
-				ValuePrintPosition = new Vector2(sliderAttachedTo.TotalWidthInPixels / 2, -sliderAttachedTo.ThumbHeight - 12);
-			}
-			else
-			{
-				ValuePrintPosition = new Vector2(0, -sliderAttachedTo.ThumbHeight - 12);
-			}
+			var track = new RoundedRect(GetTrackBounds(), TrackHeight / 2);
 
 			// draw the track
 			graphics2D.Render(track, TrackColor);
 
 			// now do the thumb
 			RectangleDouble thumbBounds = sliderAttachedTo.GetThumbHitBounds();
-			RoundedRect thumbOutside = new RoundedRect(thumbBounds, sliderAttachedTo.ThumbWidth / 2);
+			var thumbOutside = new RoundedRect(thumbBounds, sliderAttachedTo.ThumbWidth / 2);
 			graphics2D.Render(thumbOutside, ColorF.GetTweenColor(ThumbColor.ToColorF(), ColorF.Black.ToColorF(), .2).ToColor());
 			thumbBounds.Inflate(-1);
-			RoundedRect thumbInside = new RoundedRect(thumbBounds, sliderAttachedTo.ThumbWidth / 2);
+			var thumbInside = new RoundedRect(thumbBounds, sliderAttachedTo.ThumbWidth / 2);
 			graphics2D.Render(thumbInside, ThumbColor);
 		}
 	}
