@@ -54,7 +54,52 @@ namespace MatterHackers.VectorMath
 			InOut
 		}
 
-		public static double Specify(EaseType easeType, EaseOption easeOption, double k)
+		/// <summary>
+		/// Iteretively solve for the required input given a known output
+		/// </summary>
+		/// <param name="function">The easing function (must be monotonic)</param>
+		/// <param name="output">The output value needing an input (0 to 1)</param>
+		/// <param name="errorTolerance">When this error is achived evaluation will stop</param>
+		/// <returns></returns>
+		public static double CalculateInverse(Func<double, double> function, double output, double errorTolerance = .000000001)
+		{
+			if (output >= 0 && output <= 1)
+			{
+				var start = 0.0;
+				var end = 1.0;
+				var mid = .5;
+				var iterations = 0;
+				var error = 1.0;
+				while (error > errorTolerance && iterations < 128)
+				{
+					iterations++;
+					var delta = end - start;
+					mid = start + delta / 2;
+					var testOutput = function(mid);
+
+					error = Math.Abs(output - testOutput);
+					if (error <= errorTolerance)
+					{
+						return mid;
+					}
+
+					if (testOutput > output)
+					{
+						end = mid;
+					}
+					else
+					{
+						start = mid;
+					}
+				}
+
+				return mid;
+			}
+
+			return 0;
+		}
+
+		public static Func<double, double> GetEasingFunction(EaseType easeType, EaseOption easeOption)
 		{
 			switch (easeType)
 			{
@@ -62,11 +107,11 @@ namespace MatterHackers.VectorMath
 					switch (easeOption)
 					{
 						case EaseOption.In:
-							return Quadratic.In(k);
+							return Quadratic.In;
 						case EaseOption.Out:
-							return Quadratic.Out(k);
+							return Quadratic.Out;
 						case EaseOption.InOut:
-							return Quadratic.InOut(k);
+							return Quadratic.InOut;
 					}
 
 					break;
@@ -75,11 +120,11 @@ namespace MatterHackers.VectorMath
 					switch (easeOption)
 					{
 						case EaseOption.In:
-							return Cubic.In(k);
+							return Cubic.In;
 						case EaseOption.Out:
-							return Cubic.Out(k);
+							return Cubic.Out;
 						case EaseOption.InOut:
-							return Cubic.InOut(k);
+							return Cubic.InOut;
 					}
 
 					break;
@@ -88,11 +133,11 @@ namespace MatterHackers.VectorMath
 					switch (easeOption)
 					{
 						case EaseOption.In:
-							return Quartic.In(k);
+							return Quartic.In;
 						case EaseOption.Out:
-							return Quartic.Out(k);
+							return Quartic.Out;
 						case EaseOption.InOut:
-							return Quartic.InOut(k);
+							return Quartic.InOut;
 					}
 
 					break;
@@ -101,11 +146,11 @@ namespace MatterHackers.VectorMath
 					switch (easeOption)
 					{
 						case EaseOption.In:
-							return Quintic.In(k);
+							return Quintic.In;
 						case EaseOption.Out:
-							return Quintic.Out(k);
+							return Quintic.Out;
 						case EaseOption.InOut:
-							return Quintic.InOut(k);
+							return Quintic.InOut;
 					}
 
 					break;
@@ -114,17 +159,39 @@ namespace MatterHackers.VectorMath
 					switch (easeOption)
 					{
 						case EaseOption.In:
-							return Sinusoidal.In(k);
+							return Sinusoidal.In;
 						case EaseOption.Out:
-							return Sinusoidal.Out(k);
+							return Sinusoidal.Out;
 						case EaseOption.InOut:
-							return Sinusoidal.InOut(k);
+							return Sinusoidal.InOut;
 					}
 
 					break;
 			}
 
-			return Linear(k);
+			return Linear;
+		}
+
+		public static double Calculate(EaseType easeType, EaseOption easeOption, double k)
+		{
+			return GetEasingFunction(easeType, easeOption)(k);
+		}
+
+		/// <summary>
+		/// Given the easing functions output, find the approximate input that would generate it.
+		/// </summary>
+		/// <param name="easeType">The easing type</param>
+		/// <param name="easeOption">The easing option</param>
+		/// <param name="k">The output value to find the input for</param>
+		/// <returns></returns>
+		public static double CalculateInverse(EaseType easeType, EaseOption easeOption, double k, double errorTolerance = .000000001)
+		{
+			if (easeType == EaseType.Linear)
+			{
+				return k;
+			}
+
+			return CalculateInverse(GetEasingFunction(easeType, easeOption), k, errorTolerance);
 		}
 
 		public static double Linear(double k)
