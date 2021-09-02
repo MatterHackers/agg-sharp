@@ -173,6 +173,8 @@ namespace MatterHackers.Agg.UI
 		public event EventHandler ValueChanged;
 
 		public event EventHandler SliderReleased;
+		
+		public event EventHandler SliderGrabed;
 
 		public SlideView View { get; set; }
 
@@ -408,6 +410,7 @@ namespace MatterHackers.Agg.UI
 					mouseDownOffsetFromThumbCenter = mousePos.Y - PositionPixelsFromFirstValue;
 				}
 				downOnThumb = true;
+				SliderGrabed?.Invoke(this, mouseEvent);
 			}
 			else // let's check if we are on the track
 			{
@@ -467,10 +470,8 @@ namespace MatterHackers.Agg.UI
 		{
 			downOnThumb = false;
 			base.OnMouseUp(mouseEvent);
-			if (valueOnMouseDown != Value && SliderReleased != null)
-			{
-				SliderReleased(this, mouseEvent);
-			}
+
+			SliderReleased?.Invoke(this, mouseEvent);
 		}
 	}
 }
