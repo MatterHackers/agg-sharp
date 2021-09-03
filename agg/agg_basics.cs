@@ -315,6 +315,11 @@ namespace MatterHackers.Agg
 			return ComputeHash(BitConverter.GetBytes(data), hash);
 		}
 
+		public static ulong GetLongHashCode(this long data, ulong hash = 14695981039346656037)
+		{
+			return ComputeHash(BitConverter.GetBytes(data), hash);
+		}
+
 		// FNV-1a (64-bit) non-cryptographic hash function.
 		// Adapted from: http://github.com/jakedouglas/fnv-java
 		public static ulong ComputeHash(byte[] bytes, ulong hash = 14695981039346656037)
