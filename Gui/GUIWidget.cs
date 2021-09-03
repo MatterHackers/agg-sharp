@@ -382,7 +382,7 @@ namespace MatterHackers.Agg.UI
 		private BorderDouble _border;
 
 		/// <summary>
-		/// Gets or sets the space between the Widget and its border.
+		/// Gets or sets the space between the Widget and its border. If BorderColor is set this will render as BorderColor and be rectangular.
 		/// </summary>
 		[Category("Layout")]
 		public BorderDouble Border

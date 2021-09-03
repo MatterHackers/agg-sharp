@@ -34,6 +34,37 @@ using System;
 namespace MatterHackers.VectorMath.Tests
 {
 	[TestFixture, Category("Agg.VectorMath")]
+	public class EasingTests
+	{
+		[Test]
+		public void StaticFunctionTests()
+		{
+			void InverseWorking(Easing.EaseType easeType, Easing.EaseOption easeOption, double k)
+			{
+				var output = Easing.Calculate(easeType, easeOption, k);
+
+				var input = Easing.CalculateInverse(easeType, easeOption, output);
+
+				Assert.AreEqual(k, input, .001);
+			}
+
+			void RangeTest(Easing.EaseType easeType)
+			{
+				for (double i = 0; i <= 1; i += .05)
+				{
+					InverseWorking(easeType, Easing.EaseOption.In, i);
+					InverseWorking(easeType, Easing.EaseOption.InOut, i);
+					InverseWorking(easeType, Easing.EaseOption.Out, i);
+				}
+			}
+
+			RangeTest(Easing.EaseType.Linear);
+			RangeTest(Easing.EaseType.Cubic);
+			RangeTest(Easing.EaseType.Quadratic);
+		}
+	}
+	
+	[TestFixture, Category("Agg.VectorMath")]
 	public class Vector2Tests
 	{
 		[Test]
