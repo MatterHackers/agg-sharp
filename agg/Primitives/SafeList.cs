@@ -56,6 +56,20 @@ namespace MatterHackers.Agg
 
 		public bool Contains(T item) => items.Contains(item);
 
+		public T this[int index]
+		{
+			get
+			{
+				var tempItems = items;
+				if (index < tempItems.Count)
+				{
+					return tempItems[index];
+				}
+
+				return default(T);
+			}
+		}
+
 		/// <summary>
 		/// Provides a safe context to manipulate items. Copies items into a new list, invokes the 'modifier'
 		/// Action passing in the copied list and finally swaps the modified list into place after the invoked Action completes
