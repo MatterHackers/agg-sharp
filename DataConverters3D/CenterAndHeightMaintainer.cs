@@ -32,24 +32,27 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.DataConverters3D
 {
+	public enum MaintainFlags
+	{
+		Center = 1,
+		Bottom = 2,
+		Origin = 4,
+		Default = Center | Bottom,
+	}
+
 	public class CenterAndHeightMaintainer : IDisposable
 	{
 		private MaintainFlags flags;
 		private IObject3D item;
 		private AxisAlignedBoundingBox aabb;
+		private Vector3 originRelParent;
 
-		public enum MaintainFlags
-		{
-			Center,
-			Height,
-			Both
-		}
-
-		public CenterAndHeightMaintainer(IObject3D item, MaintainFlags flags = MaintainFlags.Both)
+		public CenterAndHeightMaintainer(IObject3D item, MaintainFlags flags = MaintainFlags.Default)
 		{
 			this.flags = flags;
 			this.item = item;
 			aabb = item.GetAxisAlignedBoundingBox();
+			originRelParent = Vector3.Zero.Transform(item.Matrix);
 		}
 
 		public void Dispose()
@@ -60,7 +63,7 @@ namespace MatterHackers.DataConverters3D
 				// get the current bounds
 				var newAabbb = item.GetAxisAlignedBoundingBox();
 
-				if (flags == MaintainFlags.Center || flags == MaintainFlags.Both)
+				if (flags.HasFlag(MaintainFlags.Center))
 				{
 					// move our center back to where our center was
 					item.Matrix *= Matrix4X4.CreateTranslation(aabb.Center - newAabbb.Center);
@@ -68,8 +71,18 @@ namespace MatterHackers.DataConverters3D
 					// update the bounds again
 					newAabbb = item.GetAxisAlignedBoundingBox();
 				}
+				else if (flags.HasFlag(MaintainFlags.Origin))
+				{
+					var newOriginRelParent = Vector3.Zero.Transform(item.Matrix);
+					
+					// move our center back to where our center was
+					item.Matrix *= Matrix4X4.CreateTranslation(originRelParent - newOriginRelParent);
 
-				if (flags == MaintainFlags.Height || flags == MaintainFlags.Both)
+					// update the bounds again
+					newAabbb = item.GetAxisAlignedBoundingBox();
+				}
+
+				if (flags.HasFlag(MaintainFlags.Bottom))
 				{
 					// Make sure we also maintain our height
 					item.Matrix *= Matrix4X4.CreateTranslation(new Vector3(0, 0, aabb.MinXYZ.Z - newAabbb.MinXYZ.Z));
