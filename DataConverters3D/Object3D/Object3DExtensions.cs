@@ -238,7 +238,10 @@ namespace MatterHackers.DataConverters3D
 			var aabb = AxisAlignedBoundingBox.Empty();
 			foreach (var item in items)
 			{
-				aabb += item.GetAxisAlignedBoundingBox();
+				if (item != null)
+				{
+					aabb += item.GetAxisAlignedBoundingBox();
+				}
 			}
 
 			return aabb;
