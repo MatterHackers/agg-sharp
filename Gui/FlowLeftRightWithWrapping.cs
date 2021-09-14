@@ -140,8 +140,9 @@ namespace MatterHackers.Agg.UI
 				MaxLineWidth = 0;
 				foreach (var child in addedChildren)
 				{
+					var childWidth = child.Width + child.DeviceMarginAndBorder.Width;
 					if (Parent != null
-						&& (runningSize + child.Width > Parent.Width - rowPaddingWidth
+						&& (runningSize + childWidth > Parent.Width - rowPaddingWidth
 							|| child is IHardBreak))
 					{
 						MaxLineWidth = Math.Max(MaxLineWidth, runningSize);
@@ -170,7 +171,7 @@ namespace MatterHackers.Agg.UI
 							childContainerRow.AddChild(child);
 						}
 
-						runningSize += child.Width;
+						runningSize += childWidth;
 						MaxLineWidth = Math.Max(MaxLineWidth, runningSize);
 					}
 				}
