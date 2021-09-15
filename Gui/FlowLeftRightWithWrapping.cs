@@ -49,6 +49,10 @@ namespace MatterHackers.Agg.UI
 		public BorderDouble RowPadding { get; set; } = new BorderDouble(3);
 		public double MaxLineWidth { get; private set; }
 
+		public BorderDouble RowBoarder { get; set; }
+
+		public Color RowBoarderColor { get; set; }
+
 		public FlowLeftRightWithWrapping()
 			: base(FlowDirection.TopToBottom)
 		{
@@ -157,6 +161,8 @@ namespace MatterHackers.Agg.UI
 							Margin = RowMargin,
 							Padding = RowPadding,
 							HAnchor = HAnchor.Stretch,
+							Border = RowBoarder,
+							BorderColor = RowBoarderColor,
 						};
 
 						base.AddChild(childContainerRow);
