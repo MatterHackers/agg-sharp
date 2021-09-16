@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -48,6 +49,10 @@ namespace MatterHackers.Agg.UI
 
 		public BorderDouble RowPadding { get; set; } = new BorderDouble(3);
 		public double MaxLineWidth { get; private set; }
+
+		public BorderDouble RowBoarder { get; set; }
+
+		public Color RowBoarderColor { get; set; }
 
 		public FlowLeftRightWithWrapping()
 			: base(FlowDirection.TopToBottom)
@@ -141,15 +146,25 @@ namespace MatterHackers.Agg.UI
 				foreach (var child in addedChildren)
 				{
 					var childWidth = child.Width + child.DeviceMarginAndBorder.Width;
+					if(child.HAnchor == HAnchor.Stretch)
+					{
+						childWidth = child.MinimumSize.X + child.DeviceMarginAndBorder.Width;
+					}
+
 					if (Parent != null
 						&& (runningSize + childWidth > Parent.Width - rowPaddingWidth
 							|| child is IHardBreak))
 					{
 						MaxLineWidth = Math.Max(MaxLineWidth, runningSize);
 						runningSize = 0;
+						var lastItemWasHorizontalSpacer = false;
 						if (childContainerRow != null)
 						{
 							childContainerRow.PerformLayout();
+							if (childContainerRow.Children.LastOrDefault() is HorizontalSpacer)
+							{
+								lastItemWasHorizontalSpacer = true;
+							}
 						}
 
 						childContainerRow = new FlowLayoutWidget()
@@ -157,7 +172,14 @@ namespace MatterHackers.Agg.UI
 							Margin = RowMargin,
 							Padding = RowPadding,
 							HAnchor = HAnchor.Stretch,
+							Border = RowBoarder,
+							BorderColor = RowBoarderColor,
 						};
+
+						if (lastItemWasHorizontalSpacer)
+						{
+							childContainerRow.AddChild(new HorizontalSpacer());
+						}
 
 						base.AddChild(childContainerRow);
 					}
