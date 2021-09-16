@@ -58,7 +58,7 @@ namespace MatterHackers.Agg.UI
 		{
 			sliderAttachedTo = sliderWidget;
 
-			TrackHeight = 3;
+			TrackHeight = 3 * GuiWidget.DeviceScale;
 
 			TextColor = Color.Black;
 			TrackColor = new Color(220, 220, 220);
