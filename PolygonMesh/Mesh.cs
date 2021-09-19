@@ -123,6 +123,22 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
+		public Mesh(List<Vector3> v, List<int> f)
+		{
+			for (int vertexIndex = 0; vertexIndex < v.Count; vertexIndex++)
+			{
+				this.Vertices.Add(new Vector3Float(v[vertexIndex]));
+			}
+
+			for (int faceIndex = 0; faceIndex < f.Count - 2; faceIndex += 3)
+			{
+				this.Faces.Add(f[faceIndex + 0],
+					f[faceIndex + 1],
+					f[faceIndex + 2],
+					this.Vertices);
+			}
+		}
+
 		public event EventHandler Changed;
 
 		public int ChangedCount { get; private set; } = 0;
