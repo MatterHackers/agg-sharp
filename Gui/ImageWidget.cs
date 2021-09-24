@@ -78,21 +78,17 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				if (image != null)
+				if ((object)image != (object)value)
 				{
-					image.ImageChanged -= ImageChanged;
-				}
-
-				if (image != value)
-				{
-					if (listenForImageChanged)
+					if (image != null)
 					{
-						image = value;
-						image.ImageChanged += ImageChanged;
+						image.ImageChanged -= ImageChanged;
 					}
-					else
+
+					image = value;
+					if (image != null && listenForImageChanged)
 					{
-						image = value;
+						image.ImageChanged += ImageChanged;
 					}
 
 					if (AutoResize)
