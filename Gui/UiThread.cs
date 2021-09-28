@@ -242,6 +242,8 @@ namespace MatterHackers.Agg.UI
 			this.AbsoluteMillisecondsToRunAt = this.NextRunMs;
 		}
 
+		public bool Active => action != null;
+
 		public override void Execute()
 		{
 			// Schedule next execution before action invoke
