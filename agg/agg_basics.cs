@@ -95,13 +95,14 @@ namespace MatterHackers.Agg
 		}
 
 		private static Regex fileNameNumberMatch = new Regex("\\(\\d+\\)\\s*$", RegexOptions.Compiled);
+		private static Regex fileNameUnderscoreNumberMatch = new Regex("_\\d+\\s*$", RegexOptions.Compiled);
 
-		public static string GetNonCollidingName(string desiredName, HashSet<string> listToCheck)
+		public static string GetNonCollidingName(string desiredName, HashSet<string> listToCheck, bool lookForParens = true)
 		{
-			return GetNonCollidingName(desiredName, (name) => !listToCheck.Contains(name));
+			return GetNonCollidingName(desiredName, (name) => !listToCheck.Contains(name), lookForParens);
 		}
 
-		public static string GetNonCollidingName(string desiredName, Func<string, bool> isUnique)
+		public static string GetNonCollidingName(string desiredName, Func<string, bool> isUnique, bool lookForParens = true)
 		{
 			if (desiredName == null)
 			{
@@ -114,21 +115,39 @@ namespace MatterHackers.Agg
 			}
 			else
 			{
-				// Drop bracketed number sections from our source filename to ensure we don't generate something like "file (1) (1).amf"
-				if (desiredName.Contains("("))
+				if (lookForParens)
 				{
-					desiredName = fileNameNumberMatch.Replace(desiredName, "").Trim();
+					// Drop bracketed number sections from our source filename to ensure we don't generate something like "file (1) (1).amf"
+					if (desiredName.Contains("("))
+					{
+						desiredName = fileNameNumberMatch.Replace(desiredName, "").Trim();
+					}
+
+					int nextNumberToTry = 1;
+					string candidateName;
+
+					do
+					{
+						candidateName = $"{desiredName} ({nextNumberToTry++})";
+					} while (!isUnique(candidateName));
+
+					return candidateName;
 				}
-
-				int nextNumberToTry = 1;
-				string candidateName;
-
-				do
+				else
 				{
-					candidateName = string.Format("{0} ({1})", desiredName, nextNumberToTry++);
-				} while (!isUnique(candidateName));
+					// Drop the number sections from our source filename to ensure we don't generate something like "file_1_1.amf"
+					desiredName = fileNameUnderscoreNumberMatch.Replace(desiredName, "").Trim();
 
-				return candidateName;
+					int nextNumberToTry = 1;
+					string candidateName;
+
+					do
+					{
+						candidateName = $"{desiredName}_{nextNumberToTry++}";
+					} while (!isUnique(candidateName));
+
+					return candidateName;
+				}
 			}
 		}
 
