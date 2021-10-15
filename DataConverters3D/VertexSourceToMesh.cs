@@ -165,6 +165,7 @@ namespace MatterHackers.DataConverters3D
 					// there is nothing on the left
 					polygons = rightStuff;
 				}
+				polygons = polygons.GetCorrectedWinding();
 			}
 
 			// convert the data back to PathStorage
