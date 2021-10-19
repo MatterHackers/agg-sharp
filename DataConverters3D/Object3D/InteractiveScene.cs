@@ -346,6 +346,8 @@ namespace MatterHackers.DataConverters3D
 
 		public bool Persistable => SourceItem.Persistable;
 
+		public bool Printable => SourceItem.Printable;
+
 		public bool Visible { get => SourceItem.Visible; set => SourceItem.Visible = value; }
 
 		public string ID { get => SourceItem.ID; set => SourceItem.ID = value; }

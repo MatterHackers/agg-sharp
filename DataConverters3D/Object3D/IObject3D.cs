@@ -123,6 +123,15 @@ namespace MatterHackers.DataConverters3D
 		[JsonIgnore]
 		new IObject3D Parent { get; set; }
 
+		/// <summary>
+		/// Identifies if this object can be printed. Things like design tools
+		/// that are editor only do not print.
+		/// </summary>
+		bool Printable { get; }
+
+		/// <summary>
+		/// Identifies if this object and its children should save their meshes
+		/// </summary>
 		bool Persistable { get; }
 
 		[JsonIgnore]

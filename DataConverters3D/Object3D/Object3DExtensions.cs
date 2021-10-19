@@ -469,8 +469,26 @@ namespace MatterHackers.DataConverters3D
 		{
 			foreach (var item in child.AncestorsAndSelf())
 			{
-				// if we find a color it overrides our current color so set it
 				if (!item.Persistable)
+				{
+					return false;
+				}
+
+				// If the root override has been matched, break and return latest
+				if (item == rootOverride)
+				{
+					break;
+				}
+			}
+
+			return true;
+		}
+
+		public static bool WorldPrintable(this IObject3D child, IObject3D rootOverride = null)
+		{
+			foreach (var item in child.AncestorsAndSelf())
+			{
+				if (!item.Printable)
 				{
 					return false;
 				}

@@ -290,6 +290,9 @@ namespace MatterHackers.DataConverters3D
 		[JsonIgnore]
 		public virtual bool Persistable { get; set; } = true;
 
+		[JsonIgnore]
+		public virtual bool Printable { get; set; } = true;
+
 		public virtual bool Visible { get; set; } = true;
 
 		public virtual bool CanFlatten
