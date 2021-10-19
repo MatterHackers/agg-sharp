@@ -2506,17 +2506,33 @@ namespace MatterHackers.Agg.UI
 			return position;
 		}
 
-		public Vector2 TransformToParentSpace(GuiWidget parentToGetRelativeTo, Vector2 position)
+		public Vector2 TransformToParentSpace(GuiWidget parentToGetRelativeTo, Vector2 inPosition)
 		{
+			var bPosition = inPosition;
 			GuiWidget widgetToTransformBy = this;
 			while (widgetToTransformBy != null
 				&& widgetToTransformBy != parentToGetRelativeTo)
 			{
-				position += new Vector2(widgetToTransformBy.BoundsRelativeToParent.Left, widgetToTransformBy.BoundsRelativeToParent.Bottom);
+				bPosition += new Vector2(widgetToTransformBy.BoundsRelativeToParent.Left, widgetToTransformBy.BoundsRelativeToParent.Bottom);
 				widgetToTransformBy = widgetToTransformBy.Parent;
 			}
 
-			return position;
+			var mPosition = inPosition;
+			widgetToTransformBy = this;
+			while (widgetToTransformBy != null
+				&& widgetToTransformBy != parentToGetRelativeTo)
+			{
+				mPosition.X += widgetToTransformBy.parentToChildTransform.tx;
+				mPosition.Y += widgetToTransformBy.parentToChildTransform.ty;
+				widgetToTransformBy = widgetToTransformBy.Parent;
+			}
+
+			if (bPosition != mPosition)
+			{
+				int a = 0;
+			}
+
+			return mPosition;
 		}
 
 		public RectangleDouble TransformFromParentSpace(GuiWidget parentToGetRelativeTo, RectangleDouble rectangleToTransform)
