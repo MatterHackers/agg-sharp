@@ -25,35 +25,13 @@ using System.Collections.Generic;
 
 namespace MatterHackers.VectorMath
 {
-	public class TradeOffBvhConstructor<T> : IBvhConstructor<T>
+	public static class TradeOffBvhConstructor<T>
 	{
-		private SortingAccelerator accelerator;
-
-		private int maxRecursion;
-
-		private int recursionDepth;
-
-		public TradeOffBvhConstructor(int maxRecursion = int.MaxValue,
+		public static BvhTree<T> CreateNewHierachy(List<BvhTreeItemData<T>> itemsToAdd,
+			int maxRecursion = int.MaxValue,
 			int recursionDepth = 0,
-			SortingAccelerator accelerator = null)
-		{
-			this.maxRecursion = maxRecursion;
-			this.recursionDepth = recursionDepth;
-			this.accelerator = accelerator;
-		}
-
-		public BvhTree<T> CreateNewHierachy(List<BvhTreeItemData<T>> itemsToAdd)
-		{
-			return CreateNewHierachy(itemsToAdd,
-			this.maxRecursion,
-			this.recursionDepth,
-			this.accelerator);
-		}
-
-		private static BvhTree<T> CreateNewHierachy(List<BvhTreeItemData<T>> itemsToAdd,
-			int maxRecursion,
-			int recursionDepth,
-			SortingAccelerator accelerator)
+			SortingAccelerator accelerator = null,
+			int DoSimpleSortSize = 5000)
 		{
 			if (accelerator == null)
 			{
@@ -78,7 +56,7 @@ namespace MatterHackers.VectorMath
 
 			if (recursionDepth < maxRecursion)
 			{
-				if (numItems > 5000)
+				if (numItems > DoSimpleSortSize)
 				{
 					bestAxis = accelerator.NextAxis;
 					bestIndexToSplitOn = numItems / 2;

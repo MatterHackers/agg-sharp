@@ -52,8 +52,6 @@
     <Compile Include="Agg.PolygonMesh\MeshTests.cs" />
     <Compile Include="Agg.UI\BorderTests.cs" />
     <Compile Include="Agg.UI\SimulatedClipboard.cs" />
-    <Compile Include="Agg.VectorMath\BvhTreeTests.cs" />
-    <Compile Include="Agg.VectorMath\OctreeTests.cs" />
     <Compile Include="Agg.RayTracer\BooleanTests.cs" />
     <Compile Include="Agg.RayTracer\FrustumTests.cs" />
     <Compile Include="Agg.RayTracer\PolygonTraceTests.cs" />

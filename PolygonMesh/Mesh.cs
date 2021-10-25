@@ -218,6 +218,9 @@ namespace MatterHackers.PolygonMesh
 			Faces[faceIndex] = new Face(hold.v0, hold.v2, hold.v1, hold.normal);
 		}
 
+		/// <summary>
+		/// Merge vertices that share the exact same coordinates
+		/// </summary>
 		public void CleanAndMerge()
 		{
 			var newVertices = new List<Vector3Float>();
@@ -252,6 +255,10 @@ namespace MatterHackers.PolygonMesh
 			this.Vertices = newVertices;
 		}
 
+		/// <summary>
+		/// Merge vertices that are less than a given distance appart
+		/// </summary>
+		/// <param name="treatAsSameDistance">The distance to merge vertices</param>
 		public void MergeVertices(double treatAsSameDistance)
 		{
 			if (Vertices.Count < 2)
@@ -262,9 +269,9 @@ namespace MatterHackers.PolygonMesh
 			var sameDistance = new Vector3Float(treatAsSameDistance, treatAsSameDistance, treatAsSameDistance);
 			var tinyDistance = new Vector3Float(.001, .001, .001);
 			// build a bvh tree of all the vertices
-			var bvhBuilder = new TradeOffBvhConstructor<int>();
-			var bvhTree = bvhBuilder.CreateNewHierachy(this.Vertices
-				.Select((v, i) => new BvhTreeItemData<int>(i, new AxisAlignedBoundingBox(v - tinyDistance, v + tinyDistance))).ToList());
+			var bvhTree = TradeOffBvhConstructor<int>.CreateNewHierachy(this.Vertices
+				.Select((v, i) => new BvhTreeItemData<int>(i, new AxisAlignedBoundingBox(v - tinyDistance, v + tinyDistance))).ToList(),
+				DoSimpleSortSize: 10);
 
 			var newVertices = new List<Vector3Float>(Vertices.Count);
 			var vertexIndexRemaping = Enumerable.Range(0, Vertices.Count).Select(i => -1).ToList();
