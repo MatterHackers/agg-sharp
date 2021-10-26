@@ -20,11 +20,12 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
+using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MatterHackers.VectorMath
+namespace Net3dBool
 {
 	/// <summary>
 	/// A Octree tree where leaf nodes contain a Octree and a unique instance of T.
