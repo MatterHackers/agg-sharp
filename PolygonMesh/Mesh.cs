@@ -259,6 +259,75 @@ namespace MatterHackers.PolygonMesh
 		/// Merge vertices that are less than a given distance appart
 		/// </summary>
 		/// <param name="treatAsSameDistance">The distance to merge vertices</param>
+		public void MergeVertices2(double treatAsSameDistance)
+		{
+			if (Vertices.Count < 2)
+			{
+				return;
+			}
+
+			var sameDistance = new Vector3Float(treatAsSameDistance, treatAsSameDistance, treatAsSameDistance);
+			var tinyDistance = new Vector3Float(.001, .001, .001);
+			// build a bvh tree of all the vertices
+			var nearVertices = new NearVertices(treatAsSameDistance);
+			nearVertices.AddPoints(this.Vertices.Select((v, i) => (i, v)).ToList());
+
+			var newVertices = new List<Vector3Float>(Vertices.Count);
+			var vertexIndexRemaping = Enumerable.Range(0, Vertices.Count).Select(i => -1).ToList();
+			var searchResults = new List<int>();
+			// build up the list of index mapping
+			for (int i = 0; i < Vertices.Count; i++)
+			{
+				// first check if we have already found this vertex
+				if (vertexIndexRemaping[i] == -1)
+				{
+					var vertex = Vertices[i];
+					// remember the new index
+					var newIndex = newVertices.Count;
+					// add it to the vertices we will end up with
+					newVertices.Add(vertex);
+					// clear for new search
+					searchResults.Clear();
+					// find everything close
+					nearVertices.FindNearPositions(vertex, searchResults);
+					// map them to this new vertex
+					foreach (var result in searchResults)
+					{
+						// this vertex has not been mapped
+						if (vertexIndexRemaping[result] == -1)
+						{
+							vertexIndexRemaping[result] = newIndex;
+						}
+					}
+				}
+			}
+
+			// now make a new face list with the merge vertices
+			int GetIndex(int originalIndex)
+			{
+				return vertexIndexRemaping[originalIndex];
+			}
+
+			var newFaces = new FaceList();
+			foreach (var face in Faces)
+			{
+				int iv0 = GetIndex(face.v0);
+				int iv1 = GetIndex(face.v1);
+				int iv2 = GetIndex(face.v2);
+				if (iv0 != iv1 && iv1 != iv2 && iv2 != iv0)
+				{
+					newFaces.Add(iv0, iv1, iv2, newVertices);
+				}
+			}
+
+			this.Faces = newFaces;
+			this.Vertices = newVertices;
+		}
+
+		/// <summary>
+		/// Merge vertices that are less than a given distance appart
+		/// </summary>
+		/// <param name="treatAsSameDistance">The distance to merge vertices</param>
 		public void MergeVertices(double treatAsSameDistance)
 		{
 			if (Vertices.Count < 2)
