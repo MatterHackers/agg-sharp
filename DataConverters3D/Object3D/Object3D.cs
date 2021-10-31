@@ -618,6 +618,7 @@ namespace MatterHackers.DataConverters3D
 				try
 				{
 					// Index items by ID
+					this.FixIdsRecursive();
 					allItemsByID = this.DescendantsAndSelf().Select(t => new { t.ID, t.Mesh })
 						.ToDictionary(t => t.ID, t => t.Mesh);
 				}

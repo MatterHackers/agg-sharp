@@ -61,6 +61,26 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		public static void FixIdsRecursive(this IObject3D input)
+		{
+			var ids = new HashSet<string>();
+			foreach(var item in input.DescendantsAndSelf())
+			{
+				if(item is Object3D object3D)
+				{
+					if (ids.Contains(object3D.ID))
+					{
+#if DEBUG
+						throw new Exception("Bad Id");
+#endif
+						object3D.ID = Guid.NewGuid().ToString();
+					}
+
+					ids.Add(object3D.ID);
+				}
+			}
+		}
+
 		public static IObject3D DescendantsAndSelfMultipleChildrenFirstOrSelf(this IObject3D item)
 		{
 			var parentOfMultipleChildren = item.DescendantsAndSelf().Where(i => i.Children.Count > 1).FirstOrDefault() as Object3D;
