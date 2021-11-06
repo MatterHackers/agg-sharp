@@ -53,8 +53,10 @@ namespace MatterHackers.DataConverters3D
 		public static Mesh TriangulateFaces(this IEnumerable<VertexData> vertexSource,
 			CachedTesselator teselatedSource = null,
 			Mesh meshToAddTo = null,
-			double zHeight = 0)
+			double zHeight = 0,
+			Matrix4X4? inMatrix = null)
 		{
+			bool isIdentity = inMatrix == null || inMatrix.Value == Matrix4X4.Identity;
 			if (teselatedSource == null)
 			{
 				teselatedSource = new CachedTesselator();
@@ -80,7 +82,20 @@ namespace MatterHackers.DataConverters3D
 					continue;
 				}
 
-				meshToAddTo.CreateFace(new Vector3[] { new Vector3(v0, zHeight), new Vector3(v1, zHeight), new Vector3(v2, zHeight) });
+				if (!isIdentity)
+				{
+					var matrix = inMatrix.Value;
+					meshToAddTo.CreateFace(new Vector3[] 
+					{ 
+						new Vector3(v0, zHeight).Transform(matrix),
+						new Vector3(v1, zHeight).Transform(matrix), 
+						new Vector3(v2, zHeight).Transform(matrix)
+					});
+				}
+				else
+				{
+					meshToAddTo.CreateFace(new Vector3[] { new Vector3(v0, zHeight), new Vector3(v1, zHeight), new Vector3(v2, zHeight) });
+				}
 			}
 
 			return meshToAddTo;
