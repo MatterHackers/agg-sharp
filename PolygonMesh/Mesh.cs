@@ -1125,6 +1125,28 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
+		/// <summary>
+		/// Copy a face from the copyFrom mesh into the copyTo mesh
+		/// </summary>
+		/// <param name="copyTo">The mesh receiving the copied faces</param>
+		/// <param name="copyFrom">The mesh providing the faces to copy</param>
+		/// <param name="faceIndex">The index of the face to copy</param>
+		public static Face CopyFace(this Mesh copyTo, Mesh copyFrom, int faceIndex)
+		{
+			int vStart = copyTo.Vertices.Count;
+			var face = copyFrom.Faces[faceIndex];
+			
+			// add all the vertices
+			copyTo.Vertices.Add(copyFrom.Vertices[face.v0]);
+			copyTo.Vertices.Add(copyFrom.Vertices[face.v1]);
+			copyTo.Vertices.Add(copyFrom.Vertices[face.v2]);
+
+			// add all the face
+			copyTo.Faces.Add(vStart, vStart + 1, vStart + 2, face.normal);
+
+			return copyTo.Faces[copyTo.Faces.Count - 1];
+		}
+
 		public static void RemoveTexture(this Mesh mesh, ImageBuffer texture, int index)
 		{
 			for (int i = 0; i < mesh.Faces.Count; i++)
