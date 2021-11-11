@@ -60,13 +60,12 @@ namespace ClipperLib
 			double totalTurns = 0;
 			for (int pointIndex = 0; pointIndex < pointCount; pointIndex++)
 			{
-				int prevIndex = ((pointIndex + pointCount - 1) % pointCount);
-				int nextIndex = ((pointIndex + 1) % pointCount);
-				IntPoint prevPoint = polygon[prevIndex];
 				IntPoint currentPoint = polygon[pointIndex];
+				int nextIndex = (pointIndex + 1) % pointCount;
 				IntPoint nextPoint = polygon[nextIndex];
 
-				double turnAmount = currentPoint.GetTurnAmount(prevPoint, nextPoint);
+				// sum  (x2 − x1)(y2 + y1)
+				double turnAmount = (nextPoint.X + currentPoint.X) * (nextPoint.Y + currentPoint.Y);
 
 				totalTurns += turnAmount;
 			}
