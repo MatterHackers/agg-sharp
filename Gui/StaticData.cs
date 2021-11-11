@@ -35,6 +35,7 @@ using System.Reflection;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.ImageProcessing;
 using MatterHackers.Agg.UI;
+using MatterHackers.VectorMath;
 using Newtonsoft.Json;
 
 namespace MatterHackers.Agg.Platform
@@ -151,6 +152,26 @@ namespace MatterHackers.Agg.Platform
 				if (!cachedIcons.TryGetValue((path, deviceWidth, deviceHeight), out cachedIcon))
 				{
 					cachedIcon = LoadIcon(path);
+
+					if (cachedIcon == null)
+					{
+#if DEBUG
+						throw new Exception("Bad icon load");
+#else
+						// try to load a image to show the bad load
+						cachedIcon = LoadIcon("bad_load.png");
+						if (cachedIcon == null)
+						{
+							// create an image so things don't crash
+							cachedIcon = new ImageBuffer(32, 32);
+							var graphics = cachedIcon.NewGraphics2D();
+							graphics.FillRectangle(cachedIcon.GetBounds(), Color.White);
+							graphics.DrawLine(Color.White, new Vector2(0, 0), new Vector2(cachedIcon.Width, cachedIcon.Height));
+							graphics.DrawLine(Color.White, new Vector2(0, cachedIcon.Height), new Vector2(cachedIcon.Width, 0));
+						}
+#endif
+					}
+
 					cachedIcon.SetRecieveBlender(new BlenderPreMultBGRA());
 
 					// Scale if required
