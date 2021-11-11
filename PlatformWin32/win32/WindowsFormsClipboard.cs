@@ -9,12 +9,25 @@ namespace MatterHackers.Agg.UI
 	{
 		public string GetText()
 		{
-			return System.Windows.Forms.Clipboard.GetText();
+			try
+			{
+				return System.Windows.Forms.Clipboard.GetText();
+			}
+			catch
+			{
+				return "Clipboard Failed";
+			}
 		}
 
 		public void SetText(string text)
 		{
-			System.Windows.Forms.Clipboard.SetText(text);
+			try
+			{
+				System.Windows.Forms.Clipboard.SetText(text);
+			}
+			catch
+			{
+			}
 		}
 
 		public bool ContainsText
