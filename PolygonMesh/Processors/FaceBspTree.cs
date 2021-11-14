@@ -32,7 +32,7 @@ namespace MatterHackers.PolygonMesh
 {
 	public static class FaceBspTree
 	{
-		private static readonly double considerCoplaner = .1;
+		private static readonly double considerCoplanar = .1;
 
 		/// <summary>
 		/// This function will search for the first face that produces no polygon cuts
@@ -109,7 +109,7 @@ namespace MatterHackers.PolygonMesh
 					foreach (var vertexIndex in vertexIndices)
 					{
 						double distanceToPlan = mesh.Faces[checkFace].normal.Dot(mesh.Vertices[vertexIndex] - pointOnCheckFace);
-						if (Math.Abs(distanceToPlan) > considerCoplaner)
+						if (Math.Abs(distanceToPlan) > considerCoplanar)
 						{
 							if (distanceToPlan < 0)
 							{
@@ -159,7 +159,7 @@ namespace MatterHackers.PolygonMesh
 					foreach (var vertexIndex in vertexIndices)
 					{
 						double distanceToPlan = mesh.Faces[checkFaceIndex].normal.Dot(mesh.Vertices[vertexIndex] - pointOnCheckFace);
-						if (Math.Abs(distanceToPlan) > considerCoplaner)
+						if (Math.Abs(distanceToPlan) > considerCoplanar)
 						{
 							if (distanceToPlan > 0)
 							{

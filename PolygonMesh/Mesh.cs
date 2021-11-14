@@ -545,13 +545,15 @@ namespace MatterHackers.PolygonMesh
 			{
 				Vertices.Transform(matrix);
 				// var inverted = matrix.Inverted;
-				for (int i = 0; i < Faces.Count; i++)
+				Parallel.For(0, Faces.Count, (i) =>
+				// for (int i = 0; i < Faces.Count; i++)
 				{
 					Faces[i] = new Face(Faces[i].v0, Faces[i].v1, Faces[i].v2, Vertices);
 					// don't know why one of these does not work
 					//Faces[i] = new Face(Faces[i].v0, Faces[i].v1, Faces[i].v2, Faces[i].normal.TransformNormal(matrix));
 					//Faces[i] = new Face(Faces[i].v0, Faces[i].v1, Faces[i].v2, Faces[i].normal.TransformNormalInverse(inverted));
 				}
+				);
 
 				MarkAsChanged();
 			}
@@ -901,7 +903,7 @@ namespace MatterHackers.PolygonMesh
 			return new Plane(verts[face.v0], verts[face.v1], verts[face.v2]);
 		}
 
-		public static IEnumerable<int> GetCoplanerFaces(this Mesh mesh, Plane plane)
+		public static IEnumerable<int> GetCoplanarFaces(this Mesh mesh, Plane plane)
 		{
 			double normalTolerance = .001;
 			double distanceTolerance = .001;
@@ -932,11 +934,11 @@ namespace MatterHackers.PolygonMesh
 			return MeshEdge.CreateMeshEdgeList(mesh);
 		}
 
-		public static IEnumerable<int> GetCoplanerFaces(this Mesh mesh, int faceIndex)
+		public static IEnumerable<int> GetCoplanarFaces(this Mesh mesh, int faceIndex)
 		{
 			var plane = mesh.GetPlane(faceIndex);
 
-			return mesh.GetCoplanerFaces(plane);
+			return mesh.GetCoplanarFaces(plane);
 		}
 
 		public static double GetSurfaceArea(this Mesh mesh, int faceIndex)
@@ -1034,8 +1036,8 @@ namespace MatterHackers.PolygonMesh
 
 		public static void PlaceTextureOnFaces(this Mesh mesh, int face, ImageBuffer textureToUse)
 		{
-			//// planer project along the normal of this face
-			var faces = mesh.GetCoplanerFaces(face);
+			//// planar project along the normal of this face
+			var faces = mesh.GetCoplanarFaces(face);
 			if (faces.Any())
 			{
 				mesh.PlaceTextureOnFaces(faces, textureToUse, mesh.GetMaxPlaneProjection(faces, textureToUse));
@@ -1044,7 +1046,7 @@ namespace MatterHackers.PolygonMesh
 
 		public static void PlaceTextureOnFace(this Mesh mesh, int face, ImageBuffer textureToUse)
 		{
-			//// planer project along the normal of this face
+			//// planar project along the normal of this face
 			mesh.PlaceTextureOnFace(face, textureToUse, mesh.GetMaxPlaneProjection(face, textureToUse));
 		}
 
