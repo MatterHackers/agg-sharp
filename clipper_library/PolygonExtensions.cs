@@ -73,6 +73,26 @@ namespace ClipperLib
 			return totalTurns > 0 ? 1 : -1;
 		}
 
+		public static int GetWindingDirection2(this Polygon polygon)
+		{
+			int pointCount = polygon.Count;
+			double totalTurns = 0;
+			for (int pointIndex = 0; pointIndex < pointCount; pointIndex++)
+			{
+				int prevIndex = ((pointIndex + pointCount - 1) % pointCount);
+				int nextIndex = ((pointIndex + 1) % pointCount);
+				IntPoint prevPoint = polygon[prevIndex]; 
+				IntPoint currentPoint = polygon[pointIndex];
+				IntPoint nextPoint = polygon[nextIndex];
+
+				double turnAmount = currentPoint.GetTurnAmount(prevPoint, nextPoint);
+
+				totalTurns += turnAmount;
+			}
+
+			return totalTurns > 0 ? 1 : -1;
+		}
+
 		public static Polygons Offset(this Polygon polygon, double distance)
 		{
 			var offseter = new ClipperOffset();
