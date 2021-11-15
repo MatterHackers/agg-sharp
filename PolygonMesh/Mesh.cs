@@ -1133,7 +1133,7 @@ namespace MatterHackers.PolygonMesh
 		/// <param name="copyTo">The mesh receiving the copied faces</param>
 		/// <param name="copyFrom">The mesh providing the faces to copy</param>
 		/// <param name="faceIndex">The index of the face to copy</param>
-		public static Face CopyFace(this Mesh copyTo, Mesh copyFrom, int faceIndex)
+		public static Face AddFaceCopy(this Mesh copyTo, Mesh copyFrom, int faceIndex)
 		{
 			int vStart = copyTo.Vertices.Count;
 			var face = copyFrom.Faces[faceIndex];
