@@ -137,13 +137,6 @@ namespace MatterHackers.VectorMath
 			return !left.Equals(right);
 		}
 
-		public bool Equals(Plane other)
-		{
-			return
-				Normal == other.Normal
-				&& DistanceFromOrigin == other.DistanceFromOrigin;
-		}
-
 		public double GetDistanceFromPlane(Vector3Float positionToCheck)
 		{
 			return GetDistanceFromPlane(new Vector3(positionToCheck));
