@@ -276,6 +276,19 @@ namespace MatterHackers.Agg.UI
 				mouseEventIsTouchScrolling = true;
 			}
 
+			// FIXME: BUG: This is a hack to fix the scroll bar position being wrong sometimes.
+			// I think the problem may be that the layout manager is not trying to hold the scroll bar to the right on a
+			// visibility change. The scroll bar is becoming visible and not doing a layout. There is evidence this is the
+			// problem, but not proof.
+			if (VerticalScrollBar.Visible
+				&& VerticalScrollBar.BoundsRelativeToParent.Left < this.Width / 2)
+            {
+				// Make a layout event happen to fix the scroll bar
+				var width = this.Width;
+				this.Width = this.Width + 1;
+				this.Width = width;
+            }
+
 			base.OnMouseMove(mouseEvent);
 		}
 
