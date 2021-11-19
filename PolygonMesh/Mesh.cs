@@ -325,7 +325,7 @@ namespace MatterHackers.PolygonMesh
 		}
 
 		/// <summary>
-		/// Merge vertices that are less than a given distance appart
+		/// Merge vertices that are less than a given distance apart
 		/// </summary>
 		/// <param name="treatAsSameDistance">The distance to merge vertices</param>
 		public void MergeVertices(double treatAsSameDistance)
