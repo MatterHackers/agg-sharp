@@ -227,10 +227,15 @@ namespace MatterHackers.Agg.Image
 
 		public static bool SaveImageData(string filename, IImageByte sourceImage)
 		{
-			using (var fs = new FileStream(filename, FileMode.CreateNew))
+			if (!File.Exists(filename))
 			{
-				return SaveImageData(fs, Path.GetExtension(filename), sourceImage);
+				using (var fs = new FileStream(filename, FileMode.CreateNew))
+				{
+					return SaveImageData(fs, Path.GetExtension(filename), sourceImage);
+				}
 			}
+
+			return false;
 		}
 
 		private static Image<Rgba32> ImageBufferToImage32(IImageByte sourceImage)

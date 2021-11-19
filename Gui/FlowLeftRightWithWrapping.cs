@@ -53,8 +53,9 @@ namespace MatterHackers.Agg.UI
 		public BorderDouble RowBoarder { get; set; }
 
 		public Color RowBoarderColor { get; set; }
+		public bool Proportional { get; set; }
 
-		public FlowLeftRightWithWrapping()
+        public FlowLeftRightWithWrapping()
 			: base(FlowDirection.TopToBottom)
 		{
 			HAnchor = HAnchor.Stretch;
@@ -203,6 +204,8 @@ namespace MatterHackers.Agg.UI
 					childContainerRow.PerformLayout();
 				}
 
+				MakeProportionalIfRequired();
+
 				doingLayout = false;
 			}
 
@@ -214,5 +217,33 @@ namespace MatterHackers.Agg.UI
 
 			this.PerformLayout();
 		}
-	}
+
+        private void MakeProportionalIfRequired()
+        {
+            if (Proportional)
+            {
+				foreach (var row in Children)
+				{
+					row.PerformLayout();
+					var rowChildrenCount = row.Children.Count;
+					var extraWidth = this.Width - row.GetChildrenBoundsIncludingMargins().Width - row.Padding.Width - row.Margin.Width;
+					if (extraWidth > rowChildrenCount)
+					{
+						// distribute the extra width between each child
+						var extraMargin = extraWidth / (rowChildrenCount + 1);
+						using (row.LayoutLock())
+						{
+							for (int i = rowChildrenCount; i >= 0; i--)
+							{
+								// add a spacer item between every row item
+								row.AddChild(new GuiWidget(extraMargin, 2), i);
+							}
+						}
+
+						row.PerformLayout();
+					}
+				}
+            }
+        }
+    }
 }

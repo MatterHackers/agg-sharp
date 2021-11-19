@@ -79,6 +79,15 @@ namespace MatterHackers.PolygonMesh.Csg
 			throw new NotImplementedException();
 		}
 
+		public static void FlipFace(this Mesh a, int faceIndex)
+		{
+			var face = a.Faces[faceIndex];
+			var hold = face.v0;
+			face.v0 = face.v2;
+			face.v2 = hold;
+			a.Faces[faceIndex].normal *= -1;
+		}
+
 		public static void MarkInternalVertices(this Mesh a, Mesh b)
 		{
 			throw new NotImplementedException();

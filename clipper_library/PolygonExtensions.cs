@@ -60,9 +60,28 @@ namespace ClipperLib
 			double totalTurns = 0;
 			for (int pointIndex = 0; pointIndex < pointCount; pointIndex++)
 			{
+				IntPoint currentPoint = polygon[pointIndex];
+				int nextIndex = (pointIndex + 1) % pointCount;
+				IntPoint nextPoint = polygon[nextIndex];
+
+				// sum  (x2 − x1)(y2 + y1)
+				double turnAmount = (nextPoint.X + currentPoint.X) * (nextPoint.Y + currentPoint.Y);
+
+				totalTurns += turnAmount;
+			}
+
+			return totalTurns > 0 ? 1 : -1;
+		}
+
+		public static int GetWindingDirection2(this Polygon polygon)
+		{
+			int pointCount = polygon.Count;
+			double totalTurns = 0;
+			for (int pointIndex = 0; pointIndex < pointCount; pointIndex++)
+			{
 				int prevIndex = ((pointIndex + pointCount - 1) % pointCount);
 				int nextIndex = ((pointIndex + 1) % pointCount);
-				IntPoint prevPoint = polygon[prevIndex];
+				IntPoint prevPoint = polygon[prevIndex]; 
 				IntPoint currentPoint = polygon[pointIndex];
 				IntPoint nextPoint = polygon[nextIndex];
 

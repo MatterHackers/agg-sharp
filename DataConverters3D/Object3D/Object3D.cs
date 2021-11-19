@@ -212,16 +212,14 @@ namespace MatterHackers.DataConverters3D
 			{
 				if (value != _matrix)
 				{
-#if DEBUG
 					foreach (var element in value.GetAsDoubleArray())
 					{
 						if (double.IsNaN(element)
 							|| double.IsInfinity(element))
 						{
-							throw new InvalidDataException("Setting an invalid Matrix. You probably should not be considering some part of the data that lead to this set.");
+							value = Matrix4X4.Identity;
 						}
 					}
-#endif
 
 					_matrix = value;
 					Invalidate(InvalidateType.Matrix);

@@ -104,12 +104,27 @@ namespace MatterHackers.VectorMath
 
 		public override bool Equals(object obj)
 		{
-			throw new NotImplementedException();
+			if (!(obj is Plane))
+				return false;
+
+			return this.Equals((Plane)obj);
+		}
+
+		public bool Equals(Plane otherPlane, double distanceErrorValue = .01, double normalErrorValue = .0001)
+		{
+			if (DistanceFromOrigin < otherPlane.DistanceFromOrigin + distanceErrorValue 
+				&& DistanceFromOrigin > otherPlane.DistanceFromOrigin - distanceErrorValue
+				&& Normal.Equals(otherPlane.Normal, normalErrorValue))
+			{
+				return true;
+			}
+
+			return false;
 		}
 
 		public override int GetHashCode()
 		{
-			throw new NotImplementedException();
+			return new { DistanceFromOrigin, Normal.X, Normal.Y, Normal.Z }.GetHashCode();
 		}
 
 		public static bool operator ==(Plane left, Plane right)
@@ -120,13 +135,6 @@ namespace MatterHackers.VectorMath
 		public static bool operator !=(Plane left, Plane right)
 		{
 			return !left.Equals(right);
-		}
-
-		public bool Equals(Plane other)
-		{
-			return
-				Normal == other.Normal
-				&& DistanceFromOrigin == other.DistanceFromOrigin;
 		}
 
 		public double GetDistanceFromPlane(Vector3Float positionToCheck)
@@ -179,17 +187,6 @@ namespace MatterHackers.VectorMath
 
 			// both points in front of the plane
 			return true;
-		}
-
-		public bool Equals(Plane control, double normalError, double lengthError)
-		{
-			if (Normal.Equals(control.Normal, normalError)
-				&& Math.Abs(DistanceFromOrigin - control.DistanceFromOrigin) < lengthError)
-			{
-				return true;
-			}
-
-			return false;
 		}
 
 		/// <summary>
