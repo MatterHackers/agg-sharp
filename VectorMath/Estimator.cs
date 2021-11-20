@@ -27,11 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Collections;
 
 namespace MatterHackers.VectorMath
 {
