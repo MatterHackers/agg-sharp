@@ -51,7 +51,14 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		public static List<List<IntPoint>> CreateSlice(Mesh mesh, Plane plane, int outputScale = 1000)
 		{
-			var unorderedSegments = GetUnorderdSegments(mesh, plane, outputScale);
+			var transformTo0Plane = GetTransformTo0Plane(plane, outputScale);
+
+			return CreateSlice(mesh, plane, transformTo0Plane);
+		}
+
+		public static List<List<IntPoint>> CreateSlice(Mesh mesh, Plane plane, Matrix4X4 transformTo0Plane)
+		{
+			var unorderedSegments = GetUnorderdSegments(mesh, plane, transformTo0Plane);
 
 			// connect all the segments together into polygons
 			return FindClosedPolygons(unorderedSegments);
@@ -67,15 +74,40 @@ namespace MatterHackers.PolygonMesh.Csg
 			return closedPolygons;
 		}
 
-		public static List<Segment> GetUnorderdSegments(Mesh mesh, Plane plane, int outputScale = 1000)
+		/// <summary>
+		/// Calculate the transform to move from the plane to a scaled polygon at plane z=1 offset = 0
+		/// </summary>
+		/// <param name="plane">The plane to transform from</param>
+		/// <param name="outputScale">The amout to scale up when transforming</param>
+		/// <returns>The plane to accomplish the transform</returns>
+        public static Matrix4X4 GetTransformTo0Plane(Plane plane, int outputScale = 1000)
+        {
+            var rotation = new Quaternion(plane.Normal, Vector3.UnitZ);
+            var flattenedMatrix = Matrix4X4.CreateRotation(rotation);
+            flattenedMatrix *= Matrix4X4.CreateTranslation(0, 0, -plane.DistanceFromOrigin);
+
+            var transformTo0Plane = flattenedMatrix * Matrix4X4.CreateScale(outputScale);
+            return transformTo0Plane;
+        }
+
+		public static Matrix4X4 GetFlattenedMatrix(Plane cutPlane)
 		{
-			var rotation = new Quaternion(plane.Normal, Vector3.UnitZ);
+			var rotation = new Quaternion(cutPlane.Normal, Vector3.UnitZ);
 			var flattenedMatrix = Matrix4X4.CreateRotation(rotation);
-			flattenedMatrix *= Matrix4X4.CreateTranslation(0, 0, -plane.DistanceFromOrigin);
+			flattenedMatrix *= Matrix4X4.CreateTranslation(0, 0, -cutPlane.DistanceFromOrigin);
 
+			return flattenedMatrix;
+		}
+
+
+		public static List<Segment> GetUnorderdSegments(Mesh mesh, Plane plane)
+		{
+			return GetUnorderdSegments(mesh, plane, GetTransformTo0Plane(plane));
+		}
+
+		public static List<Segment> GetUnorderdSegments(Mesh mesh, Plane plane, Matrix4X4 meshTo0Plane)
+		{
 			// collect all the segments this plane intersects and record them in unordered segments in z 0 space
-			var meshTo0Plane = flattenedMatrix * Matrix4X4.CreateScale(outputScale);
-
 			var unorderedSegments = new List<Segment>();
 			foreach (var face in mesh.Faces)
 			{
