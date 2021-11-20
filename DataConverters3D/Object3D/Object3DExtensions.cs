@@ -457,7 +457,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static Color WorldColor(this IObject3D child, IObject3D rootOverride = null, bool includingRoot = true)
+		public static Color WorldColor(this IObject3D child, IObject3D rootOverride = null, bool includingRoot = true, bool checkOutputType = false)
 		{
 			var lastColorFound = Color.White;
 			foreach (var item in child.AncestorsAndSelf())
@@ -473,6 +473,17 @@ namespace MatterHackers.DataConverters3D
 				if (item.Color.Alpha0To255 != 0)
 				{
 					lastColorFound = item.Color;
+					if (checkOutputType)
+					{
+						if (item.WorldOutputType() == PrintOutputTypes.Support)
+						{
+							lastColorFound = new Color(Color.Yellow, 120);
+						}
+						else if (item.WorldOutputType() == PrintOutputTypes.WipeTower)
+						{
+							lastColorFound = new Color(Color.Cyan, 120);
+						}
+					}
 				}
 
 				// If the root override has been matched, break and return latest
