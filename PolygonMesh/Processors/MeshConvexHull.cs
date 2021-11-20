@@ -124,7 +124,7 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			var convexHull = ConvexHull.Create<CHVertex, CHFace>(cHVertexList, tollerance);
-			if (convexHull != null)
+			if (convexHull?.Result != null)
 			{
 				// create the mesh from the hull data
 				Mesh hullMesh = new Mesh();
