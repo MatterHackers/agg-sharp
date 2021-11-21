@@ -15,8 +15,6 @@
     </ProjectReference>
     <ProjectReference Include="..\..\PolygonMesh\PolygonMesh.csproj">
     </ProjectReference>
-    <ProjectReference Include="..\..\RayTracer\RayTracer.csproj">
-    </ProjectReference>
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj">
     </ProjectReference>
   </ItemGroup>

@@ -140,7 +140,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				{
 					foreach (var child in Bvh.Children)
 					{
-						foreach (var subIterator in new BvhIterator(child, child.AxisToWorld * TransformToWorld, Depth + 1, DecentFilter))
+						foreach (var subIterator in new BvhIterator(child, Bvh.AxisToWorld * TransformToWorld, Depth + 1, DecentFilter))
 						{
 							yield return subIterator;
 						}

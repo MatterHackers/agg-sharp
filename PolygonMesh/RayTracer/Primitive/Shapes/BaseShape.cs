@@ -40,11 +40,11 @@ namespace MatterHackers.RayTracer
 			set;
 		}
 
-        public IEnumerable<IBvhItem> Children => throw new NotImplementedException();
+		public IEnumerable<IBvhItem> Children => null;
 
-        public Matrix4X4 AxisToWorld => throw new NotImplementedException();
+		public Matrix4X4 AxisToWorld => throw new NotImplementedException();
 
-        public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
 			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
 			if (bounds.Contains(subRegion))
@@ -98,9 +98,13 @@ namespace MatterHackers.RayTracer
 			return GetCenter()[axis];
 		}
 
-        public IEnumerable<IBvhItem> GetCrossing(Plane plane)
-        {
-            throw new NotImplementedException();
-        }
-    }
+		public IEnumerable<IBvhItem> GetCrossing(Plane plane)
+		{
+			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
+			if (plane.CrossedBy(bounds))
+			{
+				yield return this;
+			}
+		}
+	}
 }

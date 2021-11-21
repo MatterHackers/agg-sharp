@@ -26,13 +26,13 @@ namespace MatterHackers.RayTracer
 		private Vector3Float aabbMinXYZ = Vector3Float.NegativeInfinity;
 		private RectangleFloat boundsOnMajorAxis = new RectangleFloat(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
 		private Vector3Float center;
-		private int faceIndex;
+		public int FaceIndex { get; set; }
 		private byte MajorAxis = 0;
 		private Func<int, int, Vector3Float> vertexFunc;
 
 		public MinimalTriangle(Func<int, int, Vector3Float> vertexFunc, int faceIndex)
 		{
-			this.faceIndex = faceIndex;
+			this.FaceIndex = faceIndex;
 			this.vertexFunc = vertexFunc;
 			var planeNormal = (vertex(1) - vertex(0)).Cross(vertex(2) - vertex(0)).GetNormal();
 			double distanceFromOrigin = vertex(0).Dot(planeNormal);
@@ -59,9 +59,9 @@ namespace MatterHackers.RayTracer
 
 		public PlaneFloat Plane { get; private set; }
 
-        public IEnumerable<IBvhItem> Children => throw new NotImplementedException();
+        public IEnumerable<IBvhItem> Children => null;
 
-        public Matrix4X4 AxisToWorld => throw new NotImplementedException();
+        public Matrix4X4 AxisToWorld => Matrix4X4.Identity;
 
         private int xForMajorAxis => xMapping[MajorAxis];
 
@@ -187,10 +187,14 @@ namespace MatterHackers.RayTracer
 
         public IEnumerable<IBvhItem> GetCrossing(Plane plane)
         {
-            throw new NotImplementedException();
-        }
+			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
+			if (plane.CrossedBy(bounds))
+			{
+				yield return this;
+			}
+		}
 
-        public double GetIntersectCost()
+		public double GetIntersectCost()
 		{
 			return 350;
 		}
@@ -259,7 +263,7 @@ namespace MatterHackers.RayTracer
 
 		private Vector3Float vertex(int i)
 		{
-			return vertexFunc(faceIndex, i);
+			return vertexFunc(FaceIndex, i);
 		}
 	}
 }

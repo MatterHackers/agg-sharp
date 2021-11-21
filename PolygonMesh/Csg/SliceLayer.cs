@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using ClipperLib;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.PolygonMesh.Processors;
+using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Csg
@@ -59,7 +60,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
         public static List<List<IntPoint>> CreateSlice(Mesh mesh, Plane plane, Matrix4X4 transformTo0Plane, IBvhItem acccelerator = null)
 		{
-			var unorderedSegments = GetUnorderdSegments(mesh, plane, transformTo0Plane);
+			var unorderedSegments = GetUnorderdSegments(mesh, plane, transformTo0Plane, acccelerator);
 
 			// connect all the segments together into polygons
 			return FindClosedPolygons(unorderedSegments);
@@ -100,27 +101,54 @@ namespace MatterHackers.PolygonMesh.Csg
 			return flattenedMatrix;
 		}
 
-
-		public static List<Segment> GetUnorderdSegments(Mesh mesh, Plane plane)
+		public static List<Segment> GetUnorderdSegments(Mesh mesh, Plane plane, IBvhItem acccelerator = null)
 		{
-			return GetUnorderdSegments(mesh, plane, GetTransformTo0Plane(plane));
+			return GetUnorderdSegments(mesh, plane, GetTransformTo0Plane(plane), acccelerator);
 		}
 
-		public static List<Segment> GetUnorderdSegments(Mesh mesh, Plane plane, Matrix4X4 meshTo0Plane)
+		public static List<Segment> GetUnorderdSegments(Mesh mesh, Plane plane, Matrix4X4 meshTo0Plane, IBvhItem acccelerator = null)
 		{
 			// collect all the segments this plane intersects and record them in unordered segments in z 0 space
 			var unorderedSegments = new List<Segment>();
-			for (var faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
+			if (acccelerator != null)
 			{
-				var face = mesh.Faces[faceIndex];
-				if (face.GetCutLine(mesh.Vertices, plane, out Vector3 start, out Vector3 end))
+				foreach (var bvhItem in acccelerator.GetCrossing(plane))
 				{
-					var startAtZ0 = Vector3Ex.Transform(start, meshTo0Plane);
-					var endAtZ0 = Vector3Ex.Transform(end, meshTo0Plane);
-					unorderedSegments.Add(
-						new Segment(
-							new IntPoint(startAtZ0.X, startAtZ0.Y),
-							new IntPoint(endAtZ0.X, endAtZ0.Y)));
+					var faceIndex = -1;
+					if (bvhItem is MinimalTriangle minimalTriangle)
+					{
+						faceIndex = minimalTriangle.FaceIndex;
+					}
+					else if (bvhItem is TriangleShape triangleShape)
+					{
+						faceIndex = triangleShape.Index;
+					}
+					var face = mesh.Faces[faceIndex];
+					if (face.GetCutLine(mesh.Vertices, plane, out Vector3 start, out Vector3 end))
+					{
+						var startAtZ0 = Vector3Ex.Transform(start, meshTo0Plane);
+						var endAtZ0 = Vector3Ex.Transform(end, meshTo0Plane);
+						unorderedSegments.Add(
+							new Segment(
+								new IntPoint(startAtZ0.X, startAtZ0.Y),
+								new IntPoint(endAtZ0.X, endAtZ0.Y)));
+					}
+				}
+			}
+			else
+			{
+				for (var faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
+				{
+					var face = mesh.Faces[faceIndex];
+					if (face.GetCutLine(mesh.Vertices, plane, out Vector3 start, out Vector3 end))
+					{
+						var startAtZ0 = Vector3Ex.Transform(start, meshTo0Plane);
+						var endAtZ0 = Vector3Ex.Transform(end, meshTo0Plane);
+						unorderedSegments.Add(
+							new Segment(
+								new IntPoint(startAtZ0.X, startAtZ0.Y),
+								new IntPoint(endAtZ0.X, endAtZ0.Y)));
+					}
 				}
 			}
 

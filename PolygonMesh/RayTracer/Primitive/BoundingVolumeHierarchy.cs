@@ -460,10 +460,21 @@ namespace MatterHackers.RayTracer
 
         public IEnumerable<IBvhItem> GetCrossing(Plane plane)
         {
-            throw new NotImplementedException();
-        }
+			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
+			if (plane.CrossedBy(bounds))
+			{
+				foreach(var item in this.nodeA.GetCrossing(plane))
+                {
+					yield return item;
+                }
+				foreach (var item in this.nodeB.GetCrossing(plane))
+				{
+					yield return item;
+				}
+			}
+		}
 
-        public class SortingAccelerator
+		public class SortingAccelerator
 		{
 			private int nextAxisForBigGroups = 2;
 
@@ -604,18 +615,29 @@ namespace MatterHackers.RayTracer
 
         public IEnumerable<IBvhItem> GetCrossing(Plane plane)
         {
-            throw new NotImplementedException();
-        }
+			var bounds = this.GetAxisAlignedBoundingBox();
+			if (plane.CrossedBy(bounds))
+			{
+				foreach (var item in Items)
+				{
+					bounds = item.GetAxisAlignedBoundingBox();
+					if (plane.CrossedBy(bounds))
+					{
+						yield return item;
+					}
+				}
+			}
+		}
 
-        /// <summary>
-        /// This is the computation cost of doing an intersection with the given type.
-        /// Attempt to give it in average CPU cycles for the intersection.
-        /// It really does not need to be a member variable as it is fixed to a given
-        /// type of object.  But it needs to be virtual so we can get to the value
-        /// for a given class. (If only there were class virtual functions :) ).
-        /// </summary>
-        /// <returns>The relative cost of an intersection test</returns>
-        public double GetIntersectCost()
+		/// <summary>
+		/// This is the computation cost of doing an intersection with the given type.
+		/// Attempt to give it in average CPU cycles for the intersection.
+		/// It really does not need to be a member variable as it is fixed to a given
+		/// type of object.  But it needs to be virtual so we can get to the value
+		/// for a given class. (If only there were class virtual functions :) ).
+		/// </summary>
+		/// <returns>The relative cost of an intersection test</returns>
+		public double GetIntersectCost()
 		{
 			double totalIntersectCost = 0;
 			foreach (var item in Items)

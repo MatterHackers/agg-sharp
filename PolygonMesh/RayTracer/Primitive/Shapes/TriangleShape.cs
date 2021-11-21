@@ -29,8 +29,9 @@ namespace MatterHackers.RayTracer
 
 		public TriangleShapeUv(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2,
 			Vector2Float uv0, Vector2Float uv1, Vector2Float uv2,
-			MaterialAbstract material)
-			: base(vertex0, vertex1, vertex2, material)
+			MaterialAbstract material,
+			int index)
+			: base(vertex0, vertex1, vertex2, material, index)
 		{
 			this.uv0 = uv0;
 			this.uv1 = uv1;
@@ -39,8 +40,9 @@ namespace MatterHackers.RayTracer
 
 		public TriangleShapeUv(Vector3Float vertex0, Vector3Float vertex1, Vector3Float vertex2,
 			Vector2Float uv0, Vector2Float uv1, Vector2Float uv2,
-			MaterialAbstract material)
-			: base(vertex0.AsVector3(), vertex1.AsVector3(), vertex2.AsVector3(), material)
+			MaterialAbstract material,
+			int index)
+			: base(vertex0.AsVector3(), vertex1.AsVector3(), vertex2.AsVector3(), material, index)
 		{
 			this.uv0 = uv0;
 			this.uv1 = uv1;
@@ -73,6 +75,8 @@ namespace MatterHackers.RayTracer
 		public PlaneFloat Plane { get; private set; }
 		private Vector3Float[] vertices = new Vector3Float[3];
 
+		public int Index { get; private set; }
+
 		public Vector3 GetVertex(int index)
 		{
 			return new Vector3(vertices[index].X, vertices[index].Y, vertices[index].Z);
@@ -90,13 +94,14 @@ namespace MatterHackers.RayTracer
 			return false;
 		}
 
-		public TriangleShape(Vector3Float vertex0, Vector3Float vertex1, Vector3Float vertex2, MaterialAbstract material)
-			: this(vertex0.AsVector3(), vertex1.AsVector3(), vertex2.AsVector3(), material)
+		public TriangleShape(Vector3Float vertex0, Vector3Float vertex1, Vector3Float vertex2, MaterialAbstract material, int index = -1)
+			: this(vertex0.AsVector3(), vertex1.AsVector3(), vertex2.AsVector3(), material, index)
 		{
 		}
 
-		public TriangleShape(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, MaterialAbstract material)
+		public TriangleShape(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, MaterialAbstract material, int index = -1)
 		{
+			this.Index = index;
 			Vector3 planeNormal = Vector3Ex.Cross(vertex1 - vertex0, vertex2 - vertex0).GetNormal();
 			double distanceFromOrigin = Vector3Ex.Dot(vertex0, planeNormal);
 			Plane = new PlaneFloat(new Vector3Float(planeNormal), (float)distanceFromOrigin);
