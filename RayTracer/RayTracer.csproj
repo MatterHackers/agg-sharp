@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\agg\Agg.csproj" />
+    <ProjectReference Include="..\PolygonMesh\PolygonMesh.csproj" />
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
 

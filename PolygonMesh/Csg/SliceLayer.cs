@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System.Collections.Generic;
 using ClipperLib;
 using MatterHackers.Agg.VertexSource;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Csg
@@ -56,7 +57,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			return CreateSlice(mesh, plane, transformTo0Plane);
 		}
 
-		public static List<List<IntPoint>> CreateSlice(Mesh mesh, Plane plane, Matrix4X4 transformTo0Plane)
+        public static List<List<IntPoint>> CreateSlice(Mesh mesh, Plane plane, Matrix4X4 transformTo0Plane, IBvhItem acccelerator = null)
 		{
 			var unorderedSegments = GetUnorderdSegments(mesh, plane, transformTo0Plane);
 
@@ -109,8 +110,9 @@ namespace MatterHackers.PolygonMesh.Csg
 		{
 			// collect all the segments this plane intersects and record them in unordered segments in z 0 space
 			var unorderedSegments = new List<Segment>();
-			foreach (var face in mesh.Faces)
+			for (var faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
 			{
+				var face = mesh.Faces[faceIndex];
 				if (face.GetCutLine(mesh.Vertices, plane, out Vector3 start, out Vector3 end))
 				{
 					var startAtZ0 = Vector3Ex.Transform(start, meshTo0Plane);

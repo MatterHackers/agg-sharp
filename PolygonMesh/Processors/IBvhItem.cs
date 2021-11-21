@@ -1,6 +1,4 @@
-﻿using MatterHackers.Agg;
-using MatterHackers.RayTracer.Traceable;
-using MatterHackers.VectorMath;
+﻿using MatterHackers.VectorMath;
 
 // Copyright 2006 Herre Kuijpers - <herre@xs4all.nl>
 //
@@ -16,7 +14,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.PolygonMesh.Processors
 {
 	public class CompareCentersOnAxis : IComparer<IBvhItem>
 	{
@@ -63,6 +61,10 @@ namespace MatterHackers.RayTracer
 
 	public interface IBvhItem
 	{
+		IEnumerable<IBvhItem> Children { get; }
+		
+		Matrix4X4 AxisToWorld { get; }
+
 		/// <summary>
 		/// The actual surface area of the surface that this bvh item is defining (a sphere, or a box, or a triangle, etc...)
 		/// </summary>
@@ -83,6 +85,13 @@ namespace MatterHackers.RayTracer
 		Vector3 GetCenter();
 
 		double GetAxisCenter(int axis);
+
+		/// <summary>
+		/// Get all the items that cross the given plane
+		/// </summary>
+		/// <param name="plane"></param>
+		/// <returns></returns>
+		IEnumerable<IBvhItem> GetCrossing(Plane plane);
 
 		/// <summary>
 		/// If this bvh item is a collection of other bvh items this will return the elements that are
@@ -125,32 +134,17 @@ namespace MatterHackers.RayTracer
 		{
 			if (DecentFilter?.Invoke(this) != false)
 			{
-				if (Bvh is Transform transform)
+				yield return this;
+
+				if (Bvh.Children != null)
 				{
-					yield return this;
-					if (transform.Child != null)
+					foreach (var child in Bvh.Children)
 					{
-						foreach (var subIterator in new BvhIterator(transform.Child, transform.AxisToWorld * TransformToWorld, Depth + 1, DecentFilter))
+						foreach (var subIterator in new BvhIterator(child, child.AxisToWorld * TransformToWorld, Depth + 1, DecentFilter))
 						{
 							yield return subIterator;
 						}
 					}
-				}
-				else if (Bvh is UnboundCollection unboundCollection)
-				{
-					yield return this;
-					foreach (var item in unboundCollection.Items)
-					{
-						foreach (var subIterator in new BvhIterator(item, TransformToWorld, Depth + 1, DecentFilter))
-						{
-							yield return subIterator;
-						}
-					}
-				}
-				else
-				{
-					// has no children, take no action
-					yield return this;
 				}
 			}
 		}
@@ -163,7 +157,7 @@ namespace MatterHackers.RayTracer
 
 	public static class ExtensionMethods
 	{
-		public static BvhIterator Filter(this ITraceable item, Func<BvhIterator, bool> decentFilter = null)
+		public static BvhIterator Filter(this IBvhItem item, Func<BvhIterator, bool> decentFilter = null)
 		{
 			return new BvhIterator(item, Matrix4X4.Identity, 0, decentFilter);
 		}

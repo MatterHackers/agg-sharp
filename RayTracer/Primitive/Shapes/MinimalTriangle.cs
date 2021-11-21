@@ -12,6 +12,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using MatterHackers.Agg;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer
@@ -58,7 +59,11 @@ namespace MatterHackers.RayTracer
 
 		public PlaneFloat Plane { get; private set; }
 
-		private int xForMajorAxis => xMapping[MajorAxis];
+        public IEnumerable<IBvhItem> Children => throw new NotImplementedException();
+
+        public Matrix4X4 AxisToWorld => throw new NotImplementedException();
+
+        private int xForMajorAxis => xMapping[MajorAxis];
 
 		private int yForMajorAxis => yMapping[MajorAxis];
 
@@ -180,7 +185,12 @@ namespace MatterHackers.RayTracer
 			return false;
 		}
 
-		public double GetIntersectCost()
+        public IEnumerable<IBvhItem> GetCrossing(Plane plane)
+        {
+            throw new NotImplementedException();
+        }
+
+        public double GetIntersectCost()
 		{
 			return 350;
 		}

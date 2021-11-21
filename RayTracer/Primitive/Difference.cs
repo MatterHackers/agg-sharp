@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections;
@@ -181,7 +182,11 @@ namespace MatterHackers.RayTracer.Traceable
 			set { throw new NotImplementedException(); }
 		}
 
-		private IntersectInfo FindNextIntersections(IPrimitive element, Ray ray, IntersectInfo info, IntersectionType intersectionType)
+        public IEnumerable<IBvhItem> Children => throw new NotImplementedException();
+
+        public Matrix4X4 AxisToWorld => throw new NotImplementedException();
+
+        private IntersectInfo FindNextIntersections(IPrimitive element, Ray ray, IntersectInfo info, IntersectionType intersectionType)
 		{
 			// get all the intersection for the object
 			Ray currentRayCheckBackfaces = new Ray(ray);
@@ -216,5 +221,10 @@ namespace MatterHackers.RayTracer.Traceable
 		{
 			return GetCenter()[axis];
 		}
-	}
+
+        public IEnumerable<IBvhItem> GetCrossing(Plane plane)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

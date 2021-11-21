@@ -1,4 +1,5 @@
 ﻿using MatterHackers.Agg;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 
 // Copyright 2006 Herre Kuijpers - <herre@xs4all.nl>
@@ -10,9 +11,7 @@ using MatterHackers.VectorMath;
 // EXPRESS OR IMPLIED. USE IT AT YOUR OWN RISK. THE AUTHOR ACCEPTS NO
 // LIABILITY FOR ANY DATA DAMAGE/LOSS THAT THIS PRODUCT MAY CAUSE.
 //-----------------------------------------------------------------------
-using System;
 using System.Collections;
-using System.Collections.Generic;
 
 namespace MatterHackers.RayTracer
 {

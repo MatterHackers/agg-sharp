@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections;
@@ -39,7 +40,17 @@ namespace MatterHackers.RayTracer.Traceable
 	{
 		public ITraceable Child { get; }
 
-		public Transform(ITraceable root)
+        public IEnumerable<IBvhItem> Children
+		{
+			get
+			{
+				yield return Child;
+			}
+		}
+
+        Matrix4X4 IBvhItem.AxisToWorld => AxisToWorld;
+
+        public Transform(ITraceable root)
 		{
 			this.Child = root;
 		}
@@ -166,5 +177,10 @@ namespace MatterHackers.RayTracer.Traceable
 		{
 			return GetCenter()[axis];
 		}
-	}
+
+        public IEnumerable<IBvhItem> GetCrossing(Plane plane)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

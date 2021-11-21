@@ -31,6 +31,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using MatterHackers.Agg;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer
@@ -67,7 +68,11 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		public static ITraceable CreateNewHierachy(List<ITraceable> traceableItems, int maxRecursion = int.MaxValue, int recursionDepth = 0, SortingAccelerator accelerator = null)
+        public IEnumerable<IBvhItem> Children => throw new NotImplementedException();
+
+        public Matrix4X4 AxisToWorld => throw new NotImplementedException();
+
+        public static ITraceable CreateNewHierachy(List<ITraceable> traceableItems, int maxRecursion = int.MaxValue, int recursionDepth = 0, SortingAccelerator accelerator = null)
 		{
 			if (accelerator == null)
 			{
@@ -453,7 +458,12 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		public class SortingAccelerator
+        public IEnumerable<IBvhItem> GetCrossing(Plane plane)
+        {
+            throw new NotImplementedException();
+        }
+
+        public class SortingAccelerator
 		{
 			private int nextAxisForBigGroups = 2;
 
@@ -500,7 +510,11 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		public bool Contains(Vector3 position)
+        public IEnumerable<IBvhItem> Children => Items;
+
+        public Matrix4X4 AxisToWorld => Matrix4X4.Identity;
+
+        public bool Contains(Vector3 position)
 		{
 			if (this.GetAxisAlignedBoundingBox().Contains(position))
 			{
@@ -588,15 +602,20 @@ namespace MatterHackers.RayTracer
 			return foundItem;
 		}
 
-		/// <summary>
-		/// This is the computation cost of doing an intersection with the given type.
-		/// Attempt to give it in average CPU cycles for the intersection.
-		/// It really does not need to be a member variable as it is fixed to a given
-		/// type of object.  But it needs to be virtual so we can get to the value
-		/// for a given class. (If only there were class virtual functions :) ).
-		/// </summary>
-		/// <returns>The relative cost of an intersection test</returns>
-		public double GetIntersectCost()
+        public IEnumerable<IBvhItem> GetCrossing(Plane plane)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// This is the computation cost of doing an intersection with the given type.
+        /// Attempt to give it in average CPU cycles for the intersection.
+        /// It really does not need to be a member variable as it is fixed to a given
+        /// type of object.  But it needs to be virtual so we can get to the value
+        /// for a given class. (If only there were class virtual functions :) ).
+        /// </summary>
+        /// <returns>The relative cost of an intersection test</returns>
+        public double GetIntersectCost()
 		{
 			double totalIntersectCost = 0;
 			foreach (var item in Items)
