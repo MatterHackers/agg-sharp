@@ -61,16 +61,28 @@ namespace MatterHackers.VectorMath
 			return $"D:{DistanceFromOrigin:0.###} V:x{Normal.X:0.###}, y{Normal.Y:0.###}, z{Normal.Z:0.###}";
 		}
 
-		public bool CrossedBy(AxisAlignedBoundingBox aabb)
+		public bool CrossedBy(AxisAlignedBoundingBox aabb, double error = .001)
         {
 			var vectors = new Vector3[] { aabb.MinXYZ, aabb.MaxXYZ };
-			var firstSide = GetDistanceFromPlane(aabb.MinXYZ) < 0; // left, front, bottom
+			var firstDistance = GetDistanceFromPlane(aabb.MinXYZ);
+			if (Math.Abs(firstDistance) < error)
+            {
+				return true;
+            }
+			var firstSide = firstDistance < 0; // left, front, bottom
 			var plane = this;
 
 			bool SameSide(int x, int y, int z)
             {
 				var corner = new Vector3(vectors[x].X, vectors[y].Y, vectors[z].Z);
-				return (plane.GetDistanceFromPlane(corner) < 0) == firstSide;
+				var distance = plane.GetDistanceFromPlane(corner);
+				if (Math.Abs(distance) < error)
+				{
+					// we are too close to the line count this as a transition
+					return false;
+				}
+
+				return (distance < 0) == firstSide;
 			}
 
 			var points = new (int x, int y, int z)[]
