@@ -63,50 +63,19 @@ namespace MatterHackers.VectorMath
 
 		public bool CrossedBy(AxisAlignedBoundingBox aabb, double error = .001)
         {
-			var vectors = new Vector3[] { aabb.MinXYZ, aabb.MaxXYZ };
-			var firstDistance = GetDistanceFromPlane(aabb.MinXYZ);
-			if (Math.Abs(firstDistance) < error)
-            {
-				return true;
-            }
-			var firstSide = firstDistance < 0; // left, front, bottom
-			var plane = this;
+			// Convert AABB to center-extents representation
+			var center = aabb.Center;
+			var deltaToMax = aabb.MaxXYZ - center; // Compute positive extents
 
-			bool SameSide(int x, int y, int z)
-            {
-				var corner = new Vector3(vectors[x].X, vectors[y].Y, vectors[z].Z);
-				var distance = plane.GetDistanceFromPlane(corner);
-				if (Math.Abs(distance) < error)
-				{
-					// we are too close to the line count this as a transition
-					return false;
-				}
+			// Compute the projection interval radius of aabb onto L(t) = aabb.center + t * plane.normal
+			var distanceToMax = deltaToMax.X * Math.Abs(Normal.X) + deltaToMax.Y * Math.Abs(Normal.Y) + deltaToMax.Z * Math.Abs(Normal.Z);
 
-				return (distance < 0) == firstSide;
-			}
+			// Compute distance of box center from plane
+			var distanceToCenter = Normal.Dot(center) - DistanceFromOrigin;
 
-			var points = new (int x, int y, int z)[]
-			{
-				(0, 0, 1), // left, front, top
-				(0, 1, 1), // left, back, top
-				(0, 1, 0), // left, back, bottom
-				(1, 0, 0), // right, front, bottom
-				(1, 0, 1), // right, front, top
-				(1, 1, 1), // right, back, top
-				(1, 1, 0), // right, back, bottom
-			};
-
-			foreach (var point in points)
-			{
-				// check if any other point is on the other side
-				if(!SameSide(point.x, point.y, point.z))
-                {
-					return true;
-                }
-			}
-
-			return false;
-        }
+			// Intersection occurs when distance s falls within [-r,+r] interval
+			return Math.Abs(distanceToCenter) <= distanceToMax + error;
+		}
 
 		public Plane(Vector3 planeNormal, Vector3 pointOnPlane)
 		{
