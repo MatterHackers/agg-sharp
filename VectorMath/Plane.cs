@@ -61,6 +61,53 @@ namespace MatterHackers.VectorMath
 			return $"D:{DistanceFromOrigin:0.###} V:x{Normal.X:0.###}, y{Normal.Y:0.###}, z{Normal.Z:0.###}";
 		}
 
+		public bool CrossedBy(AxisAlignedBoundingBox aabb, double error = .001)
+        {
+			var vectors = new Vector3[] { aabb.MinXYZ, aabb.MaxXYZ };
+			var firstDistance = GetDistanceFromPlane(aabb.MinXYZ);
+			if (Math.Abs(firstDistance) < error)
+            {
+				return true;
+            }
+			var firstSide = firstDistance < 0; // left, front, bottom
+			var plane = this;
+
+			bool SameSide(int x, int y, int z)
+            {
+				var corner = new Vector3(vectors[x].X, vectors[y].Y, vectors[z].Z);
+				var distance = plane.GetDistanceFromPlane(corner);
+				if (Math.Abs(distance) < error)
+				{
+					// we are too close to the line count this as a transition
+					return false;
+				}
+
+				return (distance < 0) == firstSide;
+			}
+
+			var points = new (int x, int y, int z)[]
+			{
+				(0, 0, 1), // left, front, top
+				(0, 1, 1), // left, back, top
+				(0, 1, 0), // left, back, bottom
+				(1, 0, 0), // right, front, bottom
+				(1, 0, 1), // right, front, top
+				(1, 1, 1), // right, back, top
+				(1, 1, 0), // right, back, bottom
+			};
+
+			foreach (var point in points)
+			{
+				// check if any other point is on the other side
+				if(!SameSide(point.x, point.y, point.z))
+                {
+					return true;
+                }
+			}
+
+			return false;
+        }
+
 		public Plane(Vector3 planeNormal, Vector3 pointOnPlane)
 		{
 			this.Normal = planeNormal.GetNormal();

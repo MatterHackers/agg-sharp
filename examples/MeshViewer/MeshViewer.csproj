@@ -128,10 +128,6 @@
       <Project>{86f6aaf2-9b50-40b8-a427-1897d76471c5}</Project>
       <Name>PolygonMesh</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\RayTracer\RayTracer.csproj">
-      <Project>{1e01abe0-b494-4fe4-b0d6-540133286887}</Project>
-      <Name>RayTracer</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\RenderOpenGl\RenderOpenGl.csproj">
       <Project>{545b6912-77ff-4b34-ba76-6c3d6a32be6a}</Project>
       <Name>RenderOpenGl</Name>

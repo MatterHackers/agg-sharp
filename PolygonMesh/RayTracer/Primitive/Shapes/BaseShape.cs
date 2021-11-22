@@ -1,4 +1,5 @@
 using MatterHackers.Agg;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 
 // Copyright 2006 Herre Kuijpers - <herre@xs4all.nl>
@@ -38,6 +39,10 @@ namespace MatterHackers.RayTracer
 			get;
 			set;
 		}
+
+		public IEnumerable<IBvhItem> Children => null;
+
+		public Matrix4X4 AxisToWorld => throw new NotImplementedException();
 
 		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
@@ -91,6 +96,15 @@ namespace MatterHackers.RayTracer
 		public double GetAxisCenter(int axis)
 		{
 			return GetCenter()[axis];
+		}
+
+		public IEnumerable<IBvhItem> GetCrossing(Plane plane)
+		{
+			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
+			if (plane.CrossedBy(bounds))
+			{
+				yield return this;
+			}
 		}
 	}
 }

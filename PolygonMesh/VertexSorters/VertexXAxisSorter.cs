@@ -65,6 +65,7 @@ namespace MatterHackers.PolygonMesh
 					// we are too far away in x, we are done with this direction
 					break;
 				}
+
 				AddToListIfSameEnough(vertices, position, foundVertices, maxDistanceToConsiderVertexAsSameSquared, i);
 			}
 			for (int i = index - 1; i >= 0; i--)
@@ -74,6 +75,7 @@ namespace MatterHackers.PolygonMesh
 					// we are too far away in x, we are done with this direction
 					break;
 				}
+
 				AddToListIfSameEnough(vertices, position, foundVertices, maxDistanceToConsiderVertexAsSameSquared, i);
 			}
 

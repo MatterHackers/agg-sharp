@@ -754,7 +754,7 @@ namespace MatterHackers.DataConverters3D
 						mesh.Vertices[face.v0].Transform(matrix),
 						mesh.Vertices[face.v1].Transform(matrix),
 						mesh.Vertices[face.v2].Transform(matrix),
-						material);
+						material, faceIndex);
 				}
 				else
 				{

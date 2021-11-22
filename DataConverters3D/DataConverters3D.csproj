@@ -18,7 +18,6 @@
     <ProjectReference Include="..\Gui\Gui.csproj" />
     <ProjectReference Include="..\Localizations\Localizations.csproj" />
     <ProjectReference Include="..\PolygonMesh\PolygonMesh.csproj" />
-    <ProjectReference Include="..\RayTracer\RayTracer.csproj" />
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
 

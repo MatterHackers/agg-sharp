@@ -31,6 +31,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using MatterHackers.Agg;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer
@@ -67,7 +68,11 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		public static ITraceable CreateNewHierachy(List<ITraceable> traceableItems, int maxRecursion = int.MaxValue, int recursionDepth = 0, SortingAccelerator accelerator = null)
+        public IEnumerable<IBvhItem> Children => throw new NotImplementedException();
+
+        public Matrix4X4 AxisToWorld => throw new NotImplementedException();
+
+        public static ITraceable CreateNewHierachy(List<ITraceable> traceableItems, int maxRecursion = int.MaxValue, int recursionDepth = 0, SortingAccelerator accelerator = null)
 		{
 			if (accelerator == null)
 			{
@@ -453,6 +458,22 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
+        public IEnumerable<IBvhItem> GetCrossing(Plane plane)
+        {
+			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
+			if (plane.CrossedBy(bounds))
+			{
+				foreach(var item in this.nodeA.GetCrossing(plane))
+                {
+					yield return item;
+                }
+				foreach (var item in this.nodeB.GetCrossing(plane))
+				{
+					yield return item;
+				}
+			}
+		}
+
 		public class SortingAccelerator
 		{
 			private int nextAxisForBigGroups = 2;
@@ -500,7 +521,11 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		public bool Contains(Vector3 position)
+        public IEnumerable<IBvhItem> Children => Items;
+
+        public Matrix4X4 AxisToWorld => Matrix4X4.Identity;
+
+        public bool Contains(Vector3 position)
 		{
 			if (this.GetAxisAlignedBoundingBox().Contains(position))
 			{
@@ -586,6 +611,22 @@ namespace MatterHackers.RayTracer
 			}
 
 			return foundItem;
+		}
+
+        public IEnumerable<IBvhItem> GetCrossing(Plane plane)
+        {
+			var bounds = this.GetAxisAlignedBoundingBox();
+			if (plane.CrossedBy(bounds))
+			{
+				foreach (var item in Items)
+				{
+					bounds = item.GetAxisAlignedBoundingBox();
+					if (plane.CrossedBy(bounds))
+					{
+						yield return item;
+					}
+				}
+			}
 		}
 
 		/// <summary>

@@ -30,6 +30,8 @@ either expressed or implied, of the FreeBSD Project.
 using System.Collections.Generic;
 using ClipperLib;
 using MatterHackers.Agg.VertexSource;
+using MatterHackers.PolygonMesh.Processors;
+using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Csg
@@ -51,7 +53,14 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		public static List<List<IntPoint>> CreateSlice(Mesh mesh, Plane plane, int outputScale = 1000)
 		{
-			var unorderedSegments = GetUnorderdSegments(mesh, plane, outputScale);
+			var transformTo0Plane = GetTransformTo0Plane(plane, outputScale);
+
+			return CreateSlice(mesh, plane, transformTo0Plane);
+		}
+
+        public static List<List<IntPoint>> CreateSlice(Mesh mesh, Plane plane, Matrix4X4 transformTo0Plane, IBvhItem acccelerator = null)
+		{
+			var unorderedSegments = GetUnorderdSegments(mesh, plane, transformTo0Plane, acccelerator);
 
 			// connect all the segments together into polygons
 			return FindClosedPolygons(unorderedSegments);
@@ -67,26 +76,79 @@ namespace MatterHackers.PolygonMesh.Csg
 			return closedPolygons;
 		}
 
-		public static List<Segment> GetUnorderdSegments(Mesh mesh, Plane plane, int outputScale = 1000)
+		/// <summary>
+		/// Calculate the transform to move from the plane to a scaled polygon at plane z=1 offset = 0
+		/// </summary>
+		/// <param name="plane">The plane to transform from</param>
+		/// <param name="outputScale">The amout to scale up when transforming</param>
+		/// <returns>The plane to accomplish the transform</returns>
+        public static Matrix4X4 GetTransformTo0Plane(Plane plane, int outputScale = 1000)
+        {
+            var rotation = new Quaternion(plane.Normal, Vector3.UnitZ);
+            var flattenedMatrix = Matrix4X4.CreateRotation(rotation);
+            flattenedMatrix *= Matrix4X4.CreateTranslation(0, 0, -plane.DistanceFromOrigin);
+
+            var transformTo0Plane = flattenedMatrix * Matrix4X4.CreateScale(outputScale);
+            return transformTo0Plane;
+        }
+
+		public static Matrix4X4 GetFlattenedMatrix(Plane cutPlane)
 		{
-			var rotation = new Quaternion(plane.Normal, Vector3.UnitZ);
+			var rotation = new Quaternion(cutPlane.Normal, Vector3.UnitZ);
 			var flattenedMatrix = Matrix4X4.CreateRotation(rotation);
-			flattenedMatrix *= Matrix4X4.CreateTranslation(0, 0, -plane.DistanceFromOrigin);
+			flattenedMatrix *= Matrix4X4.CreateTranslation(0, 0, -cutPlane.DistanceFromOrigin);
 
+			return flattenedMatrix;
+		}
+
+		public static List<Segment> GetUnorderdSegments(Mesh mesh, Plane plane, IBvhItem acccelerator = null)
+		{
+			return GetUnorderdSegments(mesh, plane, GetTransformTo0Plane(plane), acccelerator);
+		}
+
+		public static List<Segment> GetUnorderdSegments(Mesh mesh, Plane plane, Matrix4X4 meshTo0Plane, IBvhItem acccelerator = null)
+		{
 			// collect all the segments this plane intersects and record them in unordered segments in z 0 space
-			var meshTo0Plane = flattenedMatrix * Matrix4X4.CreateScale(outputScale);
-
 			var unorderedSegments = new List<Segment>();
-			foreach (var face in mesh.Faces)
+			if (acccelerator != null)
 			{
-				if (face.GetCutLine(mesh.Vertices, plane, out Vector3 start, out Vector3 end))
+				foreach (var bvhItem in acccelerator.GetCrossing(plane))
 				{
-					var startAtZ0 = Vector3Ex.Transform(start, meshTo0Plane);
-					var endAtZ0 = Vector3Ex.Transform(end, meshTo0Plane);
-					unorderedSegments.Add(
-						new Segment(
-							new IntPoint(startAtZ0.X, startAtZ0.Y),
-							new IntPoint(endAtZ0.X, endAtZ0.Y)));
+					var faceIndex = -1;
+					if (bvhItem is MinimalTriangle minimalTriangle)
+					{
+						faceIndex = minimalTriangle.FaceIndex;
+					}
+					else if (bvhItem is TriangleShape triangleShape)
+					{
+						faceIndex = triangleShape.Index;
+					}
+					var face = mesh.Faces[faceIndex];
+					if (face.GetCutLine(mesh.Vertices, plane, out Vector3 start, out Vector3 end))
+					{
+						var startAtZ0 = Vector3Ex.Transform(start, meshTo0Plane);
+						var endAtZ0 = Vector3Ex.Transform(end, meshTo0Plane);
+						unorderedSegments.Add(
+							new Segment(
+								new IntPoint(startAtZ0.X, startAtZ0.Y),
+								new IntPoint(endAtZ0.X, endAtZ0.Y)));
+					}
+				}
+			}
+			else
+			{
+				for (var faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
+				{
+					var face = mesh.Faces[faceIndex];
+					if (face.GetCutLine(mesh.Vertices, plane, out Vector3 start, out Vector3 end))
+					{
+						var startAtZ0 = Vector3Ex.Transform(start, meshTo0Plane);
+						var endAtZ0 = Vector3Ex.Transform(end, meshTo0Plane);
+						unorderedSegments.Add(
+							new Segment(
+								new IntPoint(startAtZ0.X, startAtZ0.Y),
+								new IntPoint(endAtZ0.X, endAtZ0.Y)));
+					}
 				}
 			}
 
