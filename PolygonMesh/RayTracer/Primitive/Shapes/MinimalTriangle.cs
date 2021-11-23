@@ -265,5 +265,10 @@ namespace MatterHackers.RayTracer
 		{
 			return vertexFunc(FaceIndex, i);
 		}
-	}
+
+        public IEnumerable<IBvhItem> GetTouching(Vector3 position, double error)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }
