@@ -182,5 +182,10 @@ namespace MatterHackers.RayTracer.Traceable
         {
             throw new NotImplementedException();
         }
+
+        public IEnumerable<IBvhItem> GetTouching(Vector3 position, double error)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

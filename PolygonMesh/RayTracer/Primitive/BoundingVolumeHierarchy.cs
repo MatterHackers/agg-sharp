@@ -474,6 +474,22 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
+        public IEnumerable<IBvhItem> GetTouching(Vector3 position, double error)
+        {
+			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
+			if (bounds.Contains(position, error))
+			{
+				foreach (var item in this.nodeA.GetTouching(position, error))
+				{
+					yield return item;
+				}
+				foreach (var item in this.nodeB.GetTouching(position, error))
+				{
+					yield return item;
+				}
+			}
+		}
+
 		public class SortingAccelerator
 		{
 			private int nextAxisForBigGroups = 2;
@@ -657,6 +673,22 @@ namespace MatterHackers.RayTracer
 			}
 
 			return totalSurfaceArea;
+		}
+
+        public IEnumerable<IBvhItem> GetTouching(Vector3 position, double error)
+        {
+			var bounds = this.GetAxisAlignedBoundingBox();
+			if (bounds.Contains(position, error))
+			{
+				foreach (var item in Items)
+				{
+					bounds = item.GetAxisAlignedBoundingBox();
+					if (bounds.Contains(position, error))
+					{
+						yield return item;
+					}
+				}
+			}
 		}
 
 		public IEnumerable IntersectionIterator(Ray ray)

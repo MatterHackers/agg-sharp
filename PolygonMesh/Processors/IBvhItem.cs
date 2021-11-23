@@ -94,6 +94,14 @@ namespace MatterHackers.PolygonMesh.Processors
 		IEnumerable<IBvhItem> GetCrossing(Plane plane);
 
 		/// <summary>
+		/// return every Bvh item that touches this position
+		/// </summary>
+		/// <param name="position">The position to check</param>
+		/// <param name="error">the amount to check around the position</param>
+		/// <returns></returns>
+		IEnumerable<IBvhItem> GetTouching(Vector3 position, double error);
+
+		/// <summary>
 		/// If this bvh item is a collection of other bvh items this will return the elements that are
 		/// in the sub-region. If it is the actual element it will return itself (like a sphere or a box).
 		/// </summary>
