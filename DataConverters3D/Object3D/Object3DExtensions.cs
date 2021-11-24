@@ -674,12 +674,12 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static IEnumerable<IObject3D> Descendants(this IObject3D root)
+		public static IEnumerable<IObject3D> Descendants(this IObject3D root, Func<IObject3D, bool> processChildren = null)
 		{
-			return (IEnumerable<IObject3D>)Descendants<IObject3D>(root);
+			return Descendants<IObject3D>(root, processChildren);
 		}
 
-		public static IEnumerable<T> Descendants<T>(this IObject3D root) where T : IObject3D
+		public static IEnumerable<T> Descendants<T>(this IObject3D root, Func<IObject3D, bool> processChildren = null) where T : IObject3D
 		{
 			var items = new Stack<IObject3D>();
 
@@ -697,9 +697,12 @@ namespace MatterHackers.DataConverters3D
 					yield return asType;
 				}
 
-				foreach (var n in item.Children)
+				if (processChildren?.Invoke(item) != false)
 				{
-					items.Push(n);
+					foreach (var n in item.Children)
+					{
+						items.Push(n);
+					}
 				}
 			}
 		}
