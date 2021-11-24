@@ -615,6 +615,11 @@ namespace MatterHackers.VectorMath
 			return left.X * right.X + left.Y * right.Y;
 		}
 
+		public double Dot(Vector2 b)
+        {
+			return X * b.X + Y * b.Y;
+        }
+
 		/// <summary>
 		/// Calculate the dot (scalar) product of two vectors
 		/// </summary>
