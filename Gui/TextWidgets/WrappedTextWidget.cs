@@ -104,7 +104,8 @@ namespace MatterHackers.Agg.UI
 
 		private void AdjustTextWrap()
 		{
-			if (TextWidget != null)
+			if (TextWidget != null
+				&& !string.IsNullOrEmpty(unwrappedText))
 			{
 				if (Width > 0)
 				{
