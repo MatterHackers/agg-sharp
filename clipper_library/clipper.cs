@@ -4207,11 +4207,13 @@ namespace ClipperLib
       private static bool SlopesNearCollinear(IntPoint pt1, 
           IntPoint pt2, IntPoint pt3, double distSqrd)
       {
-        //this function is more accurate when the point that's GEOMETRICALLY 
-        //between the other 2 points is the one that's tested for distance.  
-        //nb: with 'spikes', either pt1 or pt3 is geometrically between the other pts                    
-        if (Math.Abs(pt1.X - pt2.X) > Math.Abs(pt1.Y - pt2.Y))
-	      {
+            //this function is more accurate when the point that's GEOMETRICALLY 
+            //between the other 2 points is the one that's tested for distance.  
+            //nb: with 'spikes', either pt1 or pt3 is geometrically between the other pts                    
+            var deltaX = (double)pt1.X - pt2.X;
+            var deltaY = (double)pt1.Y - pt2.Y;
+            if (Math.Abs(deltaX) > Math.Abs(deltaY))
+            {
           if ((pt1.X > pt2.X) == (pt1.X < pt3.X))
             return DistanceFromLineSqrd(pt1, pt2, pt3) < distSqrd;
           else if ((pt2.X > pt1.X) == (pt2.X < pt3.X))
