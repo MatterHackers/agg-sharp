@@ -318,8 +318,9 @@ namespace MatterHackers.Agg
 				// spanImageFilter = new span_image_filter_rgba_nn(sourceAccessor, interpolator);
 
 				DrawImage(spanImageFilter, destRectTransform);
-				DestImage.MarkImageChanged();
 			}
+
+			DestImage.MarkImageChanged();
 		}
 
 		public override void Rectangle(double left, double bottom, double right, double top, Color color, double strokeWidth)
