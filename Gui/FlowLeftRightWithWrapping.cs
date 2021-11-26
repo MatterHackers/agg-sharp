@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg.Font;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,6 +42,24 @@ namespace MatterHackers.Agg.UI
 	{
 	}
 
+	public class HardBreak : GuiWidget, IHardBreak
+	{
+		public HardBreak()
+		{
+			Width = 1;
+			Height = 1;
+		}
+	}
+
+	public class SkipIfFirstSpace : TextWidget, ISkipIfFirst
+	{
+		public SkipIfFirstSpace(double x = 0, double y = 0, double pointSize = 12, Justification justification = Justification.Left, Color textColor = default(Color), bool ellipsisIfClipped = true, bool underline = false, Color backgroundColor = default(Color), TypeFace typeFace = null, bool bold = false)
+			: base(" ", x, y, pointSize, justification, textColor, ellipsisIfClipped, underline, backgroundColor, typeFace, bold)
+		{
+
+		}
+	}
+
 	public class FlowLeftRightWithWrapping : FlowLayoutWidget
 	{
 		protected List<GuiWidget> addedChildren = new List<GuiWidget>();
@@ -53,7 +72,10 @@ namespace MatterHackers.Agg.UI
 		public BorderDouble RowBoarder { get; set; }
 
 		public Color RowBoarderColor { get; set; }
+
 		public bool Proportional { get; set; }
+
+		public bool Center { get; set; }
 
         public FlowLeftRightWithWrapping()
 			: base(FlowDirection.TopToBottom)
@@ -96,7 +118,36 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override GuiWidget AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
+        public void AddText(string text, Color textColor, int pointSize)
+        {
+			var firstLine = true;
+            foreach(var line in text.Split('\n'))
+            {
+				if (!firstLine)
+                {
+					this.AddChild(new HardBreak());
+                }
+
+				var firstWord = true;
+				foreach(var word in line.Split(' '))
+                {
+					if (!firstWord)
+                    {
+						this.AddChild(new SkipIfFirstSpace(pointSize: pointSize, textColor: textColor));
+                    }
+
+					if (word != " ")
+					{
+						this.AddChild(new TextWidget(word, pointSize: pointSize, textColor: textColor));
+					}
+					firstWord = false;
+				}
+
+				firstLine = false;
+			}
+        }
+
+        public override GuiWidget AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
 		{
 			addedChildren.Add(childToAdd);
 
@@ -140,7 +191,7 @@ namespace MatterHackers.Agg.UI
 					HAnchor = HAnchor.Stretch,
 				};
 				base.AddChild(childContainerRow);
-				var rowPaddingWidth = RowPadding.Width;
+				var rowPaddingWidth = RowPadding.Width + RowMargin.Width + this.Margin.Width + this.Padding.Width;
 
 				double runningSize = 0;
 				MaxLineWidth = 0;
@@ -152,9 +203,8 @@ namespace MatterHackers.Agg.UI
 						childWidth = child.MinimumSize.X + child.DeviceMarginAndBorder.Width;
 					}
 
-					if (Parent != null
-						&& (runningSize + childWidth > Parent.Width - rowPaddingWidth
-							|| child is IHardBreak))
+					if (runningSize + childWidth > this.Width - rowPaddingWidth
+						|| child is IHardBreak)
 					{
 						MaxLineWidth = Math.Max(MaxLineWidth, runningSize);
 						runningSize = 0;
@@ -205,6 +255,7 @@ namespace MatterHackers.Agg.UI
 				}
 
 				MakeProportionalIfRequired();
+				MakeCenterIfRequired();
 
 				doingLayout = false;
 			}
@@ -215,6 +266,8 @@ namespace MatterHackers.Agg.UI
 				needAnotherLayout = false;
 			}
 
+			this.Height = this.Height - 1;
+			this.Height = this.Height + 1;
 			this.PerformLayout();
 		}
 
@@ -245,5 +298,28 @@ namespace MatterHackers.Agg.UI
 				}
             }
         }
-    }
+
+		private void MakeCenterIfRequired()
+		{
+			if (Center)
+			{
+				foreach (var row in Children)
+				{
+					row.PerformLayout();
+					var rowChildrenCount = row.Children.Count;
+					var extraWidth = this.Width - row.GetChildrenBoundsIncludingMargins().Width - row.Padding.Width - row.Margin.Width;
+					if (extraWidth > rowChildrenCount)
+					{
+						using (row.LayoutLock())
+						{
+							// add a spacer before the first item
+							row.AddChild(new GuiWidget(extraWidth / 2, 2), 0);
+						}
+
+						row.PerformLayout();
+					}
+				}
+			}
+		}
+	}
 }
