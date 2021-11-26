@@ -29,9 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
@@ -206,17 +204,30 @@ namespace MatterHackers.PolygonMesh
 		{
 			for (int i = 0; i < Faces.Count; i++)
 			{
-				ReverseFace(i);
+				ReverseFace(i, false);
 			}
 
 			MarkAsChanged();
 		}
 
-		public void ReverseFace(int faceIndex)
+		public void ReverseFace(int faceIndex, bool markAsChange = true)
 		{
-			var hold = Faces[faceIndex];
-			Faces[faceIndex] = new Face(hold.v0, hold.v2, hold.v1, hold.normal);
+			var face = Faces[faceIndex];
+			var hold = face.v0;
+			face.v0 = face.v2;
+			face.v2 = hold;
+			face.normal *= -1;
+
+			if (markAsChange)
+            {
+				MarkAsChanged();
+            }
 		}
+
+		public void FlipFace(int faceIndex)
+        {
+			ReverseFace(faceIndex);
+        }
 
 		/// <summary>
 		/// Merge vertices that share the exact same coordinates

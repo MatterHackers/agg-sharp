@@ -38,7 +38,7 @@ using MatterHackers.VectorMath;
 using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
 using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
 
-namespace MatterHackers.DataConverters3D
+namespace MatterHackers.PolygonMesh.Processors
 {
 	public static class VertexSourceToMesh
 	{

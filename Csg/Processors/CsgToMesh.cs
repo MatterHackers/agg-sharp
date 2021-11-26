@@ -34,7 +34,6 @@ using MatterHackers.Csg.Transform;
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 using System;
-using System.Collections.Generic;
 using System.Threading;
 
 namespace MatterHackers.RenderOpenGl
