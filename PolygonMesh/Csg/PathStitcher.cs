@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2021, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -29,11 +29,9 @@ either expressed or implied, of the FreeBSD Project.
 
 using System.Collections.Generic;
 using MatterHackers.DataConverters2D;
-using MatterHackers.PolygonMesh;
-using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.DataConverters3D
+namespace MatterHackers.PolygonMesh.Processors
 {
 	using Polygon = List<ClipperLib.IntPoint>;
 	using Polygons = List<List<ClipperLib.IntPoint>>;

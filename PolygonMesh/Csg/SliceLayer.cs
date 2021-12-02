@@ -119,9 +119,9 @@ namespace MatterHackers.PolygonMesh.Csg
 					{
 						faceIndex = minimalTriangle.FaceIndex;
 					}
-					else if (bvhItem is TriangleShape triangleShape)
+					else if (bvhItem is MinimalTriangle triangleShape)
 					{
-						faceIndex = triangleShape.Index;
+						faceIndex = triangleShape.FaceIndex;
 					}
 					var face = mesh.Faces[faceIndex];
 					if (face.GetCutLine(mesh.Vertices, plane, out Vector3 start, out Vector3 end))

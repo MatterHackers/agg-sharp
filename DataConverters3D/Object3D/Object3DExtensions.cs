@@ -735,13 +735,13 @@ namespace MatterHackers.DataConverters3D
 		/// <param name="matrix">A transformation to apply to the trace data</param>
 		/// <param name="maxRecursion">The max depth to create the BVH tree.</param>
 		/// <returns>The created BVH tree.</returns>
-		public static ITraceable CreateBVHData(this Mesh mesh, MaterialAbstract material, Matrix4X4 matrix, int maxRecursion = int.MaxValue)
+		public static ITraceable CreateBVHData(this Mesh mesh, MaterialAbstract material, Matrix4X4 matrix, BvhCreationOptions bvhCreationOptions = BvhCreationOptions.FavorFastTracing)
 		{
 			var allPolys = new List<ITraceable>();
 
 			mesh.AddTraceables(material, matrix, allPolys);
 
-			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys, maxRecursion);
+			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys, bvhCreationOptions);
 		}
 
 		public static void AddTraceables(this Mesh mesh, MaterialAbstract material, Matrix4X4 matrix, List<ITraceable> tracePrimitives)

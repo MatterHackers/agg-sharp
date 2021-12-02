@@ -405,11 +405,25 @@ namespace MatterHackers.Agg.Font
 			return numLines;
 		}
 
+		private Dictionary<char, double> fastAdvance = new Dictionary<char, double>();
+
 		public void GetOffset(int characterToMeasureStartIndexInclusive, int characterToMeasureEndIndexInclusive, out Vector2 offset)
 		{
 			offset = Vector2.Zero;
 
 			characterToMeasureEndIndexInclusive = Math.Min(text.Length - 1, characterToMeasureEndIndexInclusive);
+
+			var startIndex = characterToMeasureStartIndexInclusive;
+			// find the first '\n' before the characterIndex
+			for (int i = characterToMeasureStartIndexInclusive; i <= characterToMeasureEndIndexInclusive; i++)
+			{
+				if (text[i] == '\n')
+				{
+					startIndex = i + 1;
+					offset.Y -= TypeFaceStyle.EmSizeInPixels;
+				}
+			}
+			characterToMeasureStartIndexInclusive = startIndex;
 
 			for (int index = characterToMeasureStartIndexInclusive; index <= characterToMeasureEndIndexInclusive; index++)
 			{
@@ -420,7 +434,12 @@ namespace MatterHackers.Agg.Font
 				}
 				else
 				{
-					offset.X += TypeFaceStyle.GetAdvanceForCharacter(text, index);
+					if (!fastAdvance.ContainsKey(text[index]))
+					{
+						fastAdvance[text[index]] = TypeFaceStyle.GetAdvanceForCharacter(text, index);
+					}
+
+					offset.X += fastAdvance[text[index]];
 				}
 			}
 		}

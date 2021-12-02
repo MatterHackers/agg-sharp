@@ -75,8 +75,6 @@ namespace MatterHackers.RayTracer
 		public PlaneFloat Plane { get; private set; }
 		private Vector3Float[] vertices = new Vector3Float[3];
 
-		public int Index { get; private set; }
-
 		public Vector3 GetVertex(int index)
 		{
 			return new Vector3(vertices[index].X, vertices[index].Y, vertices[index].Z);
@@ -101,7 +99,6 @@ namespace MatterHackers.RayTracer
 
 		public TriangleShape(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, MaterialAbstract material, int index = -1)
 		{
-			this.Index = index;
 			Vector3 planeNormal = Vector3Ex.Cross(vertex1 - vertex0, vertex2 - vertex0).GetNormal();
 			double distanceFromOrigin = Vector3Ex.Dot(vertex0, planeNormal);
 			Plane = new PlaneFloat(new Vector3Float(planeNormal), (float)distanceFromOrigin);

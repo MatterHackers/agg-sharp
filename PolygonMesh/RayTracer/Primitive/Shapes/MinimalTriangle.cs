@@ -268,7 +268,11 @@ namespace MatterHackers.RayTracer
 
         public IEnumerable<IBvhItem> GetTouching(Vector3 position, double error)
         {
-            throw new NotImplementedException();
-        }
-    }
+			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
+			if (bounds.Contains(position, error))
+			{
+				yield return this;
+			}
+		}
+	}
 }
