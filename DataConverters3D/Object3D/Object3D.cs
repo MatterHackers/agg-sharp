@@ -842,7 +842,7 @@ namespace MatterHackers.DataConverters3D
 					{
 						// Get the trace data for the local mesh
 						// First create trace data that builds fast but traces slow
-						var simpleTraceData = processingMesh.CreateBVHData(null, Matrix4X4.Identity, 0);
+						var simpleTraceData = processingMesh.CreateBVHData(null, Matrix4X4.Identity, BvhCreationOptions.FavorFastConstruction);
 						if (simpleTraceData != null)
 						{
 							try
@@ -876,7 +876,7 @@ namespace MatterHackers.DataConverters3D
 				}
 
 				// Wrap with a BVH
-				traceData = BoundingVolumeHierarchy.CreateNewHierachy(traceables, 0);
+				traceData = BoundingVolumeHierarchy.CreateNewHierachy(traceables, BvhCreationOptions.FavorFastConstruction);
 				tracedHashCode = hashCode;
 			}
 

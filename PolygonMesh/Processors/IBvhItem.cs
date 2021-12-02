@@ -10,13 +10,12 @@
 // LIABILITY FOR ANY DATA DAMAGE/LOSS THAT THIS PRODUCT MAY CAUSE.
 //-----------------------------------------------------------------------
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace MatterHackers.PolygonMesh.Processors
 {
-	public class CompareCentersOnAxis : IComparer<IBvhItem>
+    public class CompareCentersOnAxis : IComparer<IBvhItem>
 	{
 		private int whichAxis;
 
@@ -116,51 +115,6 @@ namespace MatterHackers.PolygonMesh.Processors
 		/// <param name="itemToCheckFor"></param>
 		/// <returns></returns>
 		bool Contains(Vector3 position);
-	}
-
-	public class BvhIterator : IEnumerable<BvhIterator>
-	{
-		public Matrix4X4 TransformToWorld { get; private set; }
-		public IBvhItem Bvh { get; private set; }
-		public int Depth { get; private set; } = 0;
-		Func<BvhIterator, bool> DecentFilter = null;
-
-		public BvhIterator(IBvhItem referenceItem, Matrix4X4 initialTransform = default(Matrix4X4), int initialDepth = 0, Func<BvhIterator, bool> decentFilter = null)
-		{
-			TransformToWorld = initialTransform;
-			if (TransformToWorld == default(Matrix4X4))
-			{
-				TransformToWorld = Matrix4X4.Identity;
-			}
-			Depth = initialDepth;
-
-			Bvh = referenceItem;
-			this.DecentFilter = decentFilter;
-		}
-
-		public IEnumerator<BvhIterator> GetEnumerator()
-		{
-			if (DecentFilter?.Invoke(this) != false)
-			{
-				yield return this;
-
-				if (Bvh.Children != null)
-				{
-					foreach (var child in Bvh.Children)
-					{
-						foreach (var subIterator in new BvhIterator(child, Bvh.AxisToWorld * TransformToWorld, Depth + 1, DecentFilter))
-						{
-							yield return subIterator;
-						}
-					}
-				}
-			}
-		}
-
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			throw new NotImplementedException();
-		}
 	}
 
 	public static class ExtensionMethods
