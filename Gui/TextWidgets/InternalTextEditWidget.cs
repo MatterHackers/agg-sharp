@@ -509,11 +509,6 @@ namespace MatterHackers.Agg.UI
 				graphics2D.Render(cursorRect, this.CursorColor);
 			}
 
-			RectangleDouble boundsPlusPoint5 = LocalBounds;
-			boundsPlusPoint5.Inflate(-.5);
-			var borderRect = new RoundedRect(boundsPlusPoint5, 0);
-			var borderLine = new Stroke(borderRect);
-
 			base.OnDraw(graphics2D);
 		}
 
@@ -820,6 +815,44 @@ namespace MatterHackers.Agg.UI
 						break;
 
 					case Keys.Space:
+						keyEvent.Handled = true;
+						break;
+
+					case Keys.PageDown:
+						StartSelectionIfRequired(keyEvent);
+						{
+							var scrollParent = Parent?.Parent;
+							if (scrollParent != null)
+							{
+								var downLines = (int)(scrollParent.Height / internalTextWidget.Printer.TypeFaceStyle.EmSizeInPixels);
+								// try to find downlines worth of cr and try to keep the same distance into the line
+								for (int i = 0; i < downLines; i++)
+								{
+									GotoLineBelow();
+								}
+							}
+						}
+
+						keyEvent.SuppressKeyPress = true;
+						keyEvent.Handled = true;
+						break;
+
+					case Keys.PageUp:
+						StartSelectionIfRequired(keyEvent);
+						{
+							var scrollParent = Parent?.Parent;
+							if (scrollParent != null)
+							{
+								var upLines = (int)(scrollParent.Height / internalTextWidget.Printer.TypeFaceStyle.EmSizeInPixels);
+								// try to find downlines worth of cr and try to keep the same distance into the line
+								for (int i = 0; i < upLines; i++)
+								{
+									GotoLineAbove();
+								}
+							}
+						}
+
+						keyEvent.SuppressKeyPress = true;
 						keyEvent.Handled = true;
 						break;
 
