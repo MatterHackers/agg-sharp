@@ -1175,7 +1175,12 @@ namespace MatterHackers.VectorMath
 
 			if (Math.Abs(det) < double.Epsilon)
 			{
+#if DEBUG
 				throw new InvalidOperationException("Matrix is singular and cannot be inverted.");
+#else
+				// return the input matrix rather than throw an exception (release only)
+				return mat;
+#endif
 			}
 
 			double invDet = 1.0f / det;
@@ -1218,9 +1223,9 @@ namespace MatterHackers.VectorMath
 			return result;
 		}
 
-		#endregion Invert Functions
+#endregion Invert Functions
 
-		#region Transpose
+				#region Transpose
 
 		/// <summary>
 		/// Calculate the transpose of the given matrix
@@ -1245,11 +1250,11 @@ namespace MatterHackers.VectorMath
 			result.Row3 = mat.Column3;
 		}
 
-		#endregion Transpose
+				#endregion Transpose
 
-		#endregion Static
+#endregion Static
 
-		#region Operators
+				#region Operators
 
 		/// <summary>
 		/// Matrix multiplication
@@ -1284,11 +1289,11 @@ namespace MatterHackers.VectorMath
 			return !left.Equals(right);
 		}
 
-		#endregion Operators
+				#endregion Operators
 
-		#region Overrides
+				#region Overrides
 
-		#region public override string ToString()
+				#region public override string ToString()
 
 		/// <summary>
 		/// Returns a System.String that represents the current Matrix44.
@@ -1304,9 +1309,9 @@ namespace MatterHackers.VectorMath
 			throw new NotImplementedException();
 		}
 
-		#endregion public override string ToString()
+				#endregion public override string ToString()
 
-		#region public override int GetHashCode()
+				#region public override int GetHashCode()
 
 		/// <summary>
 		/// Returns the hashcode for this instance.
@@ -1332,9 +1337,9 @@ namespace MatterHackers.VectorMath
 			return hash;
 		}
 
-		#endregion public override int GetHashCode()
+				#endregion public override int GetHashCode()
 
-		#region public override bool Equals(object obj)
+				#region public override bool Equals(object obj)
 
 		/// <summary>
 		/// Indicates whether this instance and a specified object are equal.
@@ -1349,13 +1354,13 @@ namespace MatterHackers.VectorMath
 			return this.Equals((Matrix4X4)obj);
 		}
 
-		#endregion public override bool Equals(object obj)
+				#endregion public override bool Equals(object obj)
 
-		#endregion Overrides
+				#endregion Overrides
 
-		#endregion Public Members
+#endregion Public Members
 
-		#region IEquatable<Matrix4d> Members
+				#region IEquatable<Matrix4d> Members
 
 		/// <summary>Indicates whether the current matrix is equal to another matrix.</summary>
 		/// <param name="other">An matrix to compare with this matrix.</param>
@@ -1384,7 +1389,7 @@ namespace MatterHackers.VectorMath
 				Row3.Equals(other.Row3, errorRange);
 		}
 
-		#endregion IEquatable<Matrix4d> Members
+				#endregion IEquatable<Matrix4d> Members
 
 		public float[] GetAsFloatArray()
 		{
@@ -1410,4 +1415,4 @@ namespace MatterHackers.VectorMath
 	}
 
 #endif
-}
+			}
