@@ -122,7 +122,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			transformTo0Planes = new Dictionary<Plane, (Matrix4X4 matrix, Matrix4X4 inverted)>();
 			foreach (var plane in uniquePlanes)
 			{
-				var matrix = SliceLayer.GetTransformTo0Plane(plane);
+				var matrix = SliceLayer.GetTransformTo0Plane(plane, 10000);
 				transformTo0Planes[plane] = (matrix, matrix.Inverted);
 			}
 		}
