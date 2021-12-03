@@ -7,11 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Net3dBool\**" />
     <Compile Remove="ObjParser\**" />
-    <EmbeddedResource Remove="Net3dBool\**" />
     <EmbeddedResource Remove="ObjParser\**" />
-    <None Remove="Net3dBool\**" />
     <None Remove="ObjParser\**" />
   </ItemGroup>
 
