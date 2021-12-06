@@ -61,6 +61,18 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		public static void CancelAllParentBuilding(this IObject3D object3D)
+		{
+			// and cancel the current building of any parent that can be canceled
+			foreach (var parent in object3D.Parents())
+			{
+				if (parent is IBuildsOnThread buildsOnThread2)
+				{
+					buildsOnThread2.CancelBuild();
+				}
+			}
+		}
+
 		public static void FixIdsRecursive(this IObject3D input)
 		{
 			var ids = new HashSet<string>();

@@ -543,6 +543,10 @@ namespace MatterHackers.DataConverters3D
 			this.Parent?.Invalidate(invalidateType);
 		}
 
+		/// <summary>
+		/// This wil cancel any ansync re-builds happening in our parents
+		/// </summary>
+		/// <returns></returns>
 		public virtual Task Rebuild()
 		{
 			return Task.CompletedTask;
@@ -568,7 +572,24 @@ namespace MatterHackers.DataConverters3D
 				{
 					lock (pendingUpdates)
 					{
-						if (!RebuildLocked)
+						if (RebuildLocked)
+						{
+							if (this is IBuildsOnThread buildsOnThread
+								&& buildsOnThread.IsBuilding)
+                            {
+								buildsOnThread.CancelBuild();
+
+								// and cancel the current building of any parent that can be canceled
+								foreach(var parent in this.Parents())
+                                {
+									if (parent is IBuildsOnThread buildsOnThread2)
+                                    {
+										buildsOnThread2.CancelBuild();
+                                    }
+                                }
+                            }
+						}
+                        else
 						{
 							UiThread.ClearInterval(runningInterval);
 							this.OnInvalidate(invalidateArgs);
@@ -585,7 +606,7 @@ namespace MatterHackers.DataConverters3D
 					{
 						pendingUpdates.Add(this);
 						// we need to get back to the user requested change when not locked
-						runningInterval = UiThread.SetInterval(RebuildWhenUnlocked, .2);
+						runningInterval = UiThread.SetInterval(RebuildWhenUnlocked, .05);
 					}
 				}
 			}
@@ -1021,6 +1042,13 @@ namespace MatterHackers.DataConverters3D
 		{
 			return base.Equals(other);
 		}
+	}
+
+	public interface IBuildsOnThread
+	{
+		bool IsBuilding { get; }
+
+		void CancelBuild();
 	}
 
 	public class CacheContext
