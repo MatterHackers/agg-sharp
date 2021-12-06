@@ -62,7 +62,7 @@ namespace MatterHackers.Agg.UI
 
 	public class FlowLeftRightWithWrapping : FlowLayoutWidget
 	{
-		protected List<GuiWidget> addedChildren = new List<GuiWidget>();
+		protected SafeList<GuiWidget> addedChildren = new SafeList<GuiWidget>();
 
 		public BorderDouble RowMargin { get; set; } = new BorderDouble(3, 0);
 
