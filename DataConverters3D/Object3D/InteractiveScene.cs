@@ -309,6 +309,11 @@ namespace MatterHackers.DataConverters3D
 
 		public bool Contains(IObject3D item)
 		{
+			if (item?.Parent == null)
+            {
+				return false;
+            }
+
 			// validate that every parent has as a child the item that had it as a parent
 			var child = item;
 			var parent = item.Parent;

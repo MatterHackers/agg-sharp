@@ -46,9 +46,13 @@ namespace MatterHackers.Localizations
 
 			return englishString;
 		}
+
+		public static string Stars(this string englishString)
+		{
+			return "*" + englishString + "*";
+		}
 	}
 
-	[DebuggerStepThrough]
 	public class TranslationMap
 	{
 		private const string englishTag = "English:";
@@ -56,41 +60,77 @@ namespace MatterHackers.Localizations
 
 		private Dictionary<string, string> translationDictionary = new Dictionary<string, string>();
 
-		private string twoLetterIsoLanguageName;
-
 		public static TranslationMap ActiveTranslationMap { get; set; }
-
-		public TranslationMap()
-		{
-			// In English no translation file exists and no dictionary will be initialized or loaded
-			twoLetterIsoLanguageName = "en";
-		}
 
 		public TranslationMap(StreamReader streamReader, string twoLetterIsoLanguageName)
 		{
-			if (twoLetterIsoLanguageName != "en")
-			{
-				translationDictionary = ReadIntoDictionary(streamReader);
-			}
+			translationDictionary = ReadIntoDictionary(streamReader);
 		}
 
 		public virtual string Translate(string englishString)
 		{
 			// Skip dictionary lookups for English
+#if DEBUG
+			if (englishString == null)
+			{
+				return englishString;
+			}
+#else
 			if (twoLetterIsoLanguageName == "en"
 				|| englishString == null)
 			{
 				return englishString;
 			}
+#endif
 
 			// Perform the lookup to the translation table
 			if (!translationDictionary.TryGetValue(englishString, out string translatedString))
 			{
+#if DEBUG
+				AddNewString(englishString);
+#endif
+
 				// Use English string if no mapping found
 				return englishString;
 			}
 
 			return translatedString;
+		}
+
+		/// <summary>
+		/// Encodes for saving, escaping newlines
+		/// </summary>
+		private string EncodeForSaving(string stringToEncode)
+		{
+			return stringToEncode.Replace("\n", "\\n");
+		}
+
+		private object locker = new object();
+
+		private void AddNewString(string englishString)
+		{
+			lock (locker)
+			{
+				if (!translationDictionary.ContainsKey(englishString))
+				{
+					translationDictionary.Add(englishString, englishString);
+
+					string mastFilePath = "C:\\" + Path.Combine("Development", "MCCentral", "MatterControl", "StaticData", "Translations", "Master.txt");
+
+					string pathName = Path.GetDirectoryName(mastFilePath);
+					if (!Directory.Exists(pathName))
+					{
+						Directory.CreateDirectory(pathName);
+					}
+
+					using (StreamWriter masterFileStream = File.AppendText(mastFilePath))
+					{
+						masterFileStream.WriteLine("{0}{1}", englishTag, EncodeForSaving(englishString));
+						masterFileStream.WriteLine("{0}{1}", translatedTag, EncodeForSaving(englishString));
+						masterFileStream.WriteLine("");
+					}
+				}
+			}
 		}
 
 		public static void AssertDebugNotDefined()
