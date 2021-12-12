@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace MatterHackers.Localizations
 {
@@ -62,7 +63,11 @@ namespace MatterHackers.Localizations
 
 		public static TranslationMap ActiveTranslationMap { get; set; }
 
-		public TranslationMap(StreamReader streamReader, string twoLetterIsoLanguageName)
+		public TranslationMap()
+		{
+		}
+
+		public TranslationMap(StreamReader streamReader)
 		{
 			translationDictionary = ReadIntoDictionary(streamReader);
 		}
@@ -115,20 +120,30 @@ namespace MatterHackers.Localizations
 				{
 					translationDictionary.Add(englishString, englishString);
 
-					string mastFilePath = "C:\\" + Path.Combine("Development", "MCCentral", "MatterControl", "StaticData", "Translations", "Master.txt");
-
-					string pathName = Path.GetDirectoryName(mastFilePath);
+					var pathName = "C:\\" + Path.Combine("Development", "MCCentral", "MatterControl", "StaticData", "Translations");
 					if (!Directory.Exists(pathName))
 					{
 						Directory.CreateDirectory(pathName);
 					}
 
-					using (StreamWriter masterFileStream = File.AppendText(mastFilePath))
+					var newFile = Path.Combine(pathName, "Master_new.txt");
+					// save content to new file
+					using (var masterFileStream = File.CreateText(newFile))
 					{
-						masterFileStream.WriteLine("{0}{1}", englishTag, EncodeForSaving(englishString));
-						masterFileStream.WriteLine("{0}{1}", translatedTag, EncodeForSaving(englishString));
-						masterFileStream.WriteLine("");
+						foreach(var kvp in translationDictionary.OrderBy(k => k.Key))
+                        {
+							masterFileStream.WriteLine("{0}{1}", englishTag, EncodeForSaving(kvp.Key));
+							masterFileStream.WriteLine("{0}{1}", translatedTag, EncodeForSaving(kvp.Key));
+							masterFileStream.WriteLine("");
+						}
 					}
+
+					// delete the old file
+					var oldFile = Path.Combine(pathName, "Master.txt");
+					File.Delete(oldFile);
+
+					// rename the new file
+					File.Move(newFile, oldFile);
 				}
 			}
 		}
