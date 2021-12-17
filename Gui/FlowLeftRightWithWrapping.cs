@@ -266,8 +266,9 @@ namespace MatterHackers.Agg.UI
 				needAnotherLayout = false;
 			}
 
-			this.Height = this.Height - 1;
-			this.Height = this.Height + 1;
+			// change the size to force a recursive layout event
+			this.Height--;
+			this.Height++;
 			this.PerformLayout();
 		}
 
