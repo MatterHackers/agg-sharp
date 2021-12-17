@@ -63,12 +63,16 @@ namespace MatterHackers.Localizations
 
 		public static TranslationMap ActiveTranslationMap { get; set; }
 
-		public TranslationMap()
+		private string twoLetterIsoLanguageName;
+
+		public TranslationMap(string twoLetterIsoLanguageName)
 		{
+			this.twoLetterIsoLanguageName = twoLetterIsoLanguageName;
 		}
 
-		public TranslationMap(StreamReader streamReader)
+		public TranslationMap(StreamReader streamReader, string twoLetterIsoLanguageName)
 		{
+			this.twoLetterIsoLanguageName = twoLetterIsoLanguageName;
 			translationDictionary = ReadIntoDictionary(streamReader);
 		}
 
@@ -92,8 +96,45 @@ namespace MatterHackers.Localizations
 			if (!translationDictionary.TryGetValue(englishString, out string translatedString))
 			{
 #if DEBUG
-				AddNewString(englishString);
+				if (twoLetterIsoLanguageName == "en")
+				{
+					if (englishString[englishString.Length - 1] == ' ')
+					{
+						throw new Exception("Tranlation strings should not have a trailing space");
+					}
+
+					AddNewString(englishString);
+				}
 #endif
+				if (twoLetterIsoLanguageName == "l10n"
+					&& englishString.Length > 0)
+                {
+					var firstChar = 'a';
+					foreach (var c in englishString)
+					{
+						if ((c >= 'a' && c <= 'z')
+							|| (c >= 'A' && c <= 'Z'))
+						{
+							firstChar = c;
+							break;
+						}
+					}
+					var newString = "";
+					foreach(var c in englishString)
+                    {
+						if ((c >= 'a' && c <= 'z')
+							|| (c >= 'A' && c <= 'Z'))
+						{
+							newString += firstChar;
+						}
+						else
+                        {
+							newString += c;
+                        }
+                    }
+
+					return newString;
+				}
 
 				// Use English string if no mapping found
 				return englishString;
