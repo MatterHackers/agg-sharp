@@ -249,7 +249,7 @@ namespace MatterHackers.RenderOpenGl
 			GL.Enable(EnableCap.Texture2D);
 			GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(aATextureImages[colorIn.Alpha0To255], false).GLTextureHandle);
 
-			// the source is always all white so has no does not have its color changed by the alpha
+			// the source is always all white so it does not have its color changed by the alpha
 			GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
 			GL.Enable(EnableCap.Blend);
 		}

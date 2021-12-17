@@ -632,14 +632,19 @@ namespace MatterHackers.DataConverters3D
 			{
 				var originalParent = this.Parent;
 
-				Dictionary<string, Mesh> allItemsByID;
+				var allItemsByID = new Dictionary<string, Mesh>();
 
 				try
 				{
 					// Index items by ID
 					this.FixIdsRecursive();
-					allItemsByID = this.DescendantsAndSelf().Select(t => new { t.ID, t.Mesh })
-						.ToDictionary(t => t.ID, t => t.Mesh);
+					foreach(var item in this.DescendantsAndSelf())
+                    {
+						if (!allItemsByID.ContainsKey(item.ID))
+                        {
+							allItemsByID.Add(item.ID, item.Mesh);
+                        }
+					}
 				}
 				catch
 				{
