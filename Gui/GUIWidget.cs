@@ -2081,7 +2081,7 @@ namespace MatterHackers.Agg.UI
 
 			DrawCount++;
 
-			BeforeDraw?.Invoke(this, new DrawEventArgs(graphics2D));
+			OnBeforeDraw(graphics2D);
 
 			foreach (var child in Children)
 			{
@@ -2169,22 +2169,14 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 
-			AfterDraw?.Invoke(this, new DrawEventArgs(graphics2D));
+			OnAfterDraw(graphics2D);
 
 			if (DebugShowBounds)
-			{
-				// draw the padding
-				DrawBorderAndPaddingBounds(graphics2D, LocalBounds, DevicePadding, new Color(Cyan, 128));
+            {
+                ShowDebugBounds(graphics2D);
+            }
 
-				// show the bounds and inside with an x
-				graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, new Color(Green, 100), 3);
-				graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, new Color(Green, 100), 3);
-				graphics2D.Rectangle(LocalBounds, Red);
-
-				RenderAnchoreInfo(graphics2D);
-			}
-
-			if (DebugShowSize)
+            if (DebugShowSize)
 			{
 				graphics2D.DrawString(string.Format("{4} {0}, {1} : {2}, {3}", (int)MinimumSize.X, (int)MinimumSize.Y, (int)LocalBounds.Width, (int)LocalBounds.Height, Name),
 					Width / 2, Max(Height - 16, Height / 2 - 16 * graphics2D.TransformStackCount), color: Magenta, justification: Font.Justification.Center);
@@ -2193,7 +2185,30 @@ namespace MatterHackers.Agg.UI
 			drawDepth--;
 		}
 
-		private void RenderAnchoreInfo(Graphics2D graphics2D)
+		virtual public void OnBeforeDraw(Graphics2D graphics2D)
+		{
+			BeforeDraw?.Invoke(this, new DrawEventArgs(graphics2D));
+		}
+
+		virtual public void OnAfterDraw(Graphics2D graphics2D)
+        {
+			AfterDraw?.Invoke(this, new DrawEventArgs(graphics2D));
+		}
+
+		protected void ShowDebugBounds(Graphics2D graphics2D)
+        {
+            // draw the padding
+            DrawBorderAndPaddingBounds(graphics2D, LocalBounds, DevicePadding, new Color(Cyan, 128));
+
+            // show the bounds and inside with an x
+            graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, new Color(Green, 100), 3);
+            graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, new Color(Green, 100), 3);
+            graphics2D.Rectangle(LocalBounds, Red);
+
+            RenderAnchoreInfo(graphics2D);
+        }
+
+        private void RenderAnchoreInfo(Graphics2D graphics2D)
 		{
 			var color = Color.Cyan;
 			double size = 10;

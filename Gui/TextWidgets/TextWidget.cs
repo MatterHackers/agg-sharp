@@ -255,8 +255,18 @@ namespace MatterHackers.Agg.UI
 
 		private readonly char[] spaceTrim = { ' ' };
 
-		public override void OnDraw(Graphics2D graphics2D)
+        public override void OnDraw(Graphics2D graphics2D)
 		{
+			if (!onloadInvoked)
+			{
+				// Set onloadInvoked before invoking OnLoad to ensure we only fire once
+				onloadInvoked = true;
+
+				this.OnLoad(null);
+			}
+
+			OnBeforeDraw(graphics2D);
+
 			graphics2D.PushTransform();
 
 			int numLines = Text.Split('\n').Length - 1;
@@ -327,7 +337,12 @@ namespace MatterHackers.Agg.UI
 
 			graphics2D.PopTransform();
 
-			base.OnDraw(graphics2D);
+			OnAfterDraw(graphics2D);
+
+			if (DebugShowBounds)
+			{
+				ShowDebugBounds(graphics2D);
+			}
 		}
 
 		public override void OnEnabledChanged(EventArgs e)
