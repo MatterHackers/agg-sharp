@@ -100,7 +100,7 @@ namespace MatterHackers.Localizations
 				{
 					if (englishString[englishString.Length - 1] == ' ')
 					{
-						throw new Exception("Tranlation strings should not have a trailing space");
+						throw new Exception("Translation strings should not have a trailing space");
 					}
 
 					AddNewString(englishString);
