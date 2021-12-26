@@ -102,7 +102,7 @@ namespace MatterHackers.Agg.UI
 		ImediateMode currentImediateData = new ImediateMode();
 #endif
 
-		public void BlendFunc(BlendingFactorSrc sfactor, BlendingFactorDest dfactor)
+		public void BlendFunc(int sfactor, int dfactor)
 		{
 #if USE_OPENGL
 			if (HardwareAvailable)
@@ -135,7 +135,7 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
-		public void Enable(EnableCap cap)
+		public void Enable(int cap)
 		{
 #if USE_OPENGL
 			if (HardwareAvailable)
@@ -161,7 +161,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 
-		public void Disable(EnableCap cap)
+		public void Disable(int cap)
 		{
 #if USE_OPENGL
 			if (HardwareAvailable)
@@ -398,7 +398,7 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
-		public void BindTexture(TextureTarget target, int texture)
+		public void BindTexture(int target, int texture)
 		{
 #if USE_OPENGL
 			if (HardwareAvailable)
@@ -431,12 +431,7 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
-		public void TexImage2D(TextureTarget target, int level,
-			PixelInternalFormat internalFormat,
-			int width, int height, int border,
-			PixelFormat format,
-			PixelType type,
-			Byte[] pixels)
+		public void TexImage2D(int target, int level, int internalFormat, int width, int height, int border, int format, int type, byte[] pixels)
 		{
 #if USE_OPENGL
 			if (HardwareAvailable)
@@ -658,7 +653,13 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
-		public void BindBuffer(BufferTarget target, int buffer)
+		public int ComplieShared()
+        {
+			throw new NotImplementedException();
+			// OpenTK.Graphics.OpenGL.GL.CreateShader();
+		}
+
+		public void BindBuffer(int target, int buffer)
 		{
 #if USE_OPENGL
 			if (HardwareAvailable)
@@ -669,7 +670,7 @@ namespace MatterHackers.Agg.UI
 				}
 				else
 				{
-					switch (target)
+					switch ((BufferTarget)target)
 					{
 						case BufferTarget.ArrayBuffer:
 							currentArrayBufferIndex = buffer;
@@ -708,7 +709,7 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
-		public void BufferData(BufferTarget target, int size, IntPtr data, BufferUsageHint usage)
+		public void BufferData(int target, int size, IntPtr data, int usage)
 		{
 #if USE_OPENGL
 			if (HardwareAvailable)
@@ -728,7 +729,7 @@ namespace MatterHackers.Agg.UI
 						}
 					}
 
-					switch (target)
+					switch ((BufferTarget)target)
 					{
 						case BufferTarget.ArrayBuffer:
 							if (currentArrayBufferIndex == 0)
@@ -1155,7 +1156,7 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
-		public void Clear(ClearBufferMask mask)
+		public void Clear(int mask)
 		{
 #if USE_OPENGL
 			if (HardwareAvailable)
@@ -1215,7 +1216,7 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
-		public void DepthFunc(DepthFunction func)
+		public void DepthFunc(int func)
 		{
 #if USE_OPENGL
 			if (HardwareAvailable)
@@ -1261,6 +1262,146 @@ namespace MatterHackers.Agg.UI
 #else
 			throw new NotImplementedException();
 #endif
+		}
+
+        public void BindFramebuffer(int target, int buffer)
+        {
+			OpenTK.Graphics.OpenGL.GL.BindFramebuffer((OpenTK.Graphics.OpenGL.FramebufferTarget) target, buffer);
+		}
+
+		public int CreateProgram()
+        {
+            return OpenTK.Graphics.OpenGL.GL.CreateProgram();
+        }
+
+        public int CreateShader(int shaderType)
+        {
+			return OpenTK.Graphics.OpenGL.GL.CreateShader((OpenTK.Graphics.OpenGL.ShaderType)shaderType);
+		}
+
+		public void ShaderSource(int id, int count, string src, object p)
+        {
+			OpenTK.Graphics.OpenGL.GL.ShaderSource(id, src);
+        }
+
+        public void CompileShader(int id)
+        {
+			OpenTK.Graphics.OpenGL.GL.CompileShader(id);
+		}
+
+		public void AttachShader(int program, int shader)
+        {
+			OpenTK.Graphics.OpenGL.GL.AttachShader(program, shader);
+		}
+
+        public void LinkProgram(int id)
+        {
+			OpenTK.Graphics.OpenGL.GL.LinkProgram(id);
+		}
+
+        public void DeleteShader(int shader)
+        {
+			OpenTK.Graphics.OpenGL.GL.DeleteShader(shader);
+		}
+
+		public void DetachShader(int id, int shader)
+        {
+			OpenTK.Graphics.OpenGL.GL.DetachShader(id, shader);
+		}
+
+        public void GenVertexArrays(int n, out int arrays)
+        {
+			OpenTK.Graphics.OpenGL.GL.GenVertexArrays(n, out arrays);
+		}
+
+        public void GenBuffers(int n, out int buffer)
+        {
+			OpenTK.Graphics.OpenGL.GL.GenBuffers(n, out buffer);
+		}
+
+        public void TexParameteri(int target, int pname, int param)
+        {
+			OpenTK.Graphics.OpenGL.GL.TexParameter((OpenTK.Graphics.OpenGL.TextureTarget)target, (OpenTK.Graphics.OpenGL.TextureParameterName)pname, param);
+		}
+
+        public void BindVertexArray(int array)
+        {
+			OpenTK.Graphics.OpenGL.GL.BindVertexArray(array);
+		}
+
+        public void GenTextures(int n, out int textures)
+        {
+			OpenTK.Graphics.OpenGL.GL.GenTextures(n, out textures);
+		}
+
+        public void GenFramebuffers(int n, out int framebuffers)
+        {
+			OpenTK.Graphics.OpenGL.GL.GenFramebuffers(n, out framebuffers);
+		}
+
+        public void FramebufferTexture2D(int target, int attachment, int textarget, int texture, int level)
+        {
+			OpenTK.Graphics.OpenGL.GL.FramebufferTexture2D((OpenTK.Graphics.OpenGL.FramebufferTarget)target,
+				(OpenTK.Graphics.OpenGL.FramebufferAttachment)attachment,
+				(OpenTK.Graphics.OpenGL.TextureTarget)textarget,
+				texture,
+				level);
+		}
+
+        public void UniformMatrix4fv(int location, int count, int transpose, float[] value)
+        {
+			OpenTK.Graphics.OpenGL.GL.UniformMatrix4(location, count, transpose == 0 ? false : true, value);
+		}
+
+        public void VertexAttribPointer(int index, int size, int type, int normalized, int stride, IntPtr pointer)
+        {
+			OpenTK.Graphics.OpenGL.GL.VertexAttribIPointer(index, size, (OpenTK.Graphics.OpenGL.VertexAttribIPointerType)type, stride, pointer);
+        }
+
+        public void EnableVertexAttribArray(int index)
+        {
+			OpenTK.Graphics.OpenGL.GL.EnableVertexAttribArray(index);
+		}
+
+        public void UseProgram(int program)
+        {
+			OpenTK.Graphics.OpenGL.GL.UseProgram(program);
+		}
+
+        public int GetUniformLocation(int program, string name)
+        {
+			return OpenTK.Graphics.OpenGL.GL.GetUniformLocation(program, name);
+		}
+
+        public void Uniform1i(int location, int v0)
+        {
+			OpenTK.Graphics.OpenGL.GL.Uniform1(location, v0);
+		}
+
+        public void ActiveTexture(int texture)
+        {
+			OpenTK.Graphics.OpenGL.GL.ActiveTexture((OpenTK.Graphics.OpenGL.TextureUnit) texture);
+		}
+
+        public void DrawElements(int mode, int count, int elementType, IntPtr indices)
+        {
+			OpenTK.Graphics.OpenGL.GL.DrawElements((OpenTK.Graphics.OpenGL.BeginMode) mode, count, (OpenTK.Graphics.OpenGL.DrawElementsType) elementType, indices);
+		}
+
+        public void Uniform1f(int location, float v0)
+        {
+			OpenTK.Graphics.OpenGL.GL.Uniform1(location, v0);
+		}
+
+        public void ClearColor(double r, double g, double b, double a)
+        {
+			OpenTK.Graphics.OpenGL.GL.ClearColor((float)r, (float)g, (float)b, (float)a);
+		}
+
+        public int GenFramebuffer()
+        {
+			OpenTK.Graphics.OpenGL.GL.GenFramebuffers(1, out int framebuffers);
+			return framebuffers;
 		}
 	}
 }

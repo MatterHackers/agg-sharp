@@ -28,6 +28,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Linq;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace MatterHackers.VectorMath
 {
@@ -1219,6 +1220,20 @@ namespace MatterHackers.VectorMath
 		{
 			return left.X * right.X + left.Y * right.Y + left.Z * right.Z;
 		}
+
+		public static float[] ToFloatArray(this List<Vector3> list)
+        {
+			var array = new float[list.Count * 3];
+
+			for (var i=0; i<list.Count; i++)
+            {
+				array[i * 3 + 0] = (float)list[i].X;
+				array[i * 3 + 1] = (float)list[i].Y;
+				array[i * 3 + 2] = (float)list[i].Z;
+            }
+
+			return array;
+        }
 
 		/// <summary>
 		/// Calculate the dot (scalar) product of two vectors

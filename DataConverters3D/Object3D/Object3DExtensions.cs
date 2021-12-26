@@ -485,16 +485,17 @@ namespace MatterHackers.DataConverters3D
 				if (item.Color.Alpha0To255 != 0)
 				{
 					lastColorFound = item.Color;
-					if (checkOutputType)
+				}
+
+				if (checkOutputType)
+				{
+					if (item.WorldOutputType() == PrintOutputTypes.Support)
 					{
-						if (item.WorldOutputType() == PrintOutputTypes.Support)
-						{
-							lastColorFound = new Color(Color.Yellow, 120);
-						}
-						else if (item.WorldOutputType() == PrintOutputTypes.WipeTower)
-						{
-							lastColorFound = new Color(Color.Cyan, 120);
-						}
+						lastColorFound = new Color(Color.Yellow, 120);
+					}
+					else if (item.WorldOutputType() == PrintOutputTypes.WipeTower)
+					{
+						lastColorFound = new Color(Color.Cyan, 120);
 					}
 				}
 

@@ -28,18 +28,20 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
-using MatterHackers.DataConverters3D;
 using MatterHackers.RenderOpenGl;
+using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.MeshVisualizer
 {
-	public class MeshViewerApplication : SystemWindow
+    public class MeshViewerApplication : SystemWindow
 	{
 		protected MeshViewerWidget meshViewerWidget;
 
@@ -53,11 +55,12 @@ namespace MatterHackers.MeshVisualizer
 			get { return meshViewerWidget; }
 		}
 
-		public MeshViewerApplication(string meshFileToLoad = "")
+		public MeshViewerApplication(bool doDepthPeeling, string meshFileToLoad = "")
 			: base(800, 600)
 		{
+			this.doDepthPeeling = doDepthPeeling;
 			BackgroundColor = Color.White;
-			MinimumSize = new VectorMath.Vector2(200, 200);
+			MinimumSize = new Vector2(200, 200);
 			Title = "MatterHackers MeshViewr";
 			UseOpenGL = true;
 
@@ -73,7 +76,10 @@ namespace MatterHackers.MeshVisualizer
 
 			meshViewerWidget.AnchorAll();
 
-			viewArea.AddChild(meshViewerWidget);
+			if (!doDepthPeeling)
+			{
+				viewArea.AddChild(meshViewerWidget);
+			}
 
 			mainContainer.AddChild(viewArea);
 
@@ -109,30 +115,22 @@ namespace MatterHackers.MeshVisualizer
 			this.AddChild(mainContainer);
 			this.AnchorAll();
 
-			AddHandlers();
-		}
-
-		private void AddHandlers()
-		{
-			bedCheckBox.CheckedStateChanged += bedCheckBox_CheckedStateChanged;
-			wireframeCheckBox.CheckedStateChanged += wireframeCheckBox_CheckedStateChanged;
-		}
-
-		private void wireframeCheckBox_CheckedStateChanged(object sender, EventArgs e)
-		{
-			if (wireframeCheckBox.Checked)
+			bedCheckBox.CheckedStateChanged += (s, e) =>
 			{
-				meshViewerWidget.RenderType = RenderTypes.Polygons;
-			}
-			else
-			{
-				meshViewerWidget.RenderType = RenderTypes.Shaded;
-			}
-		}
+				meshViewerWidget.RenderBed = bedCheckBox.Checked;
+			};
 
-		private void bedCheckBox_CheckedStateChanged(object sender, EventArgs e)
-		{
-			meshViewerWidget.RenderBed = bedCheckBox.Checked;
+			wireframeCheckBox.CheckedStateChanged += (s, e) =>
+			{
+				if (wireframeCheckBox.Checked)
+				{
+					meshViewerWidget.RenderType = RenderTypes.Polygons;
+				}
+				else
+				{
+					meshViewerWidget.RenderType = RenderTypes.Shaded;
+				}
+			};
 		}
 
 		private void openFileButton_ButtonClick(object sender, EventArgs mouseEvent)
@@ -146,9 +144,11 @@ namespace MatterHackers.MeshVisualizer
 		{
 			AggContext.FileDialogs.OpenFileDialog(
 				new OpenFileDialogParams("3D Mesh Files|*.stl;*.amf;*.obj"),
-				(openParams) =>
+				async (openParams) =>
 				{
-					meshViewerWidget.LoadItemIntoScene(openParams.FileName);
+					await meshViewerWidget.LoadItemIntoScene(openParams.FileName);
+					var children = meshViewerWidget.Scene.Children;
+					children[children.Count - 1].Color = Color.FireEngineRed.WithAlpha(100);
 				});
 
 			Invalidate();
@@ -191,7 +191,7 @@ namespace MatterHackers.MeshVisualizer
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
-			if(mouseEvent.DragFiles?.Count > 0)
+			if (mouseEvent.DragFiles?.Count > 0)
 			{
 				foreach (string droppedFileName in mouseEvent.DragFiles)
 				{
@@ -208,9 +208,19 @@ namespace MatterHackers.MeshVisualizer
 
 		private Stopwatch totalDrawTime = new Stopwatch();
 		private int drawCount = 0;
+        private DepthPeeling depthPeeling;
+        private bool doDepthPeeling;
 
-		public override void OnDraw(Graphics2D graphics2D)
+        public override void OnDraw(Graphics2D graphics2D)
 		{
+			if (doDepthPeeling
+				&& depthPeeling == null
+				&& meshViewerWidget.Scene.Children.Count > 0)
+            {
+				depthPeeling = new DepthPeeling(meshViewerWidget.Scene.Children[0].Mesh);
+				depthPeeling.ReshapeFunc(200, 200);
+			}
+
 			totalDrawTime.Restart();
 			base.OnDraw(graphics2D);
 			totalDrawTime.Stop();
@@ -227,9 +237,18 @@ namespace MatterHackers.MeshVisualizer
 		public static void Main(string[] args)
 		{
 			// Force OpenGL
-			AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.OpenGLWinformsWindowProvider, agg_platform_win32";
+			var Glfw = false;
+			if (Glfw)
+			{
+				AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.GlfwProvider.GlfwWindowProvider, MatterHackers.GlfwProvider";
+			}
+			else
+			{
+				AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.OpenGLWinformsWindowProvider, agg_platform_win32";
+			}
 
-			MeshViewerApplication app = new MeshViewerApplication();
+			MeshViewerApplication app = new MeshViewerApplication(false);
+			SingleWindowProvider.SetWindowTheme(Color.Black, 12, () => new Button("X", 0, 0), 3, Color.LightGray, Color.DarkGray);
 			app.ShowAsSystemWindow();
 		}
 	}

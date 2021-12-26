@@ -25,6 +25,7 @@ SOFTWARE.
 #endregion --- License ---
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 
@@ -703,6 +704,20 @@ namespace MatterHackers.VectorMath
 		public static float ComponentMin(this Vector3Float vector3)
 		{
 			return Math.Min(vector3.X, Math.Min(vector3.Y, vector3.Z));
+		}
+
+		public static float[] ToFloatArray(this List<Vector3Float> list)
+		{
+			var array = new float[list.Count * 3];
+
+			for (var i = 0; i < list.Count; i++)
+			{
+				array[i * 3 + 0] = (float)list[i].X;
+				array[i * 3 + 1] = (float)list[i].Y;
+				array[i * 3 + 2] = (float)list[i].Z;
+			}
+
+			return array;
 		}
 
 		/// <summary>

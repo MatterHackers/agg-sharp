@@ -461,6 +461,8 @@ namespace MatterHackers.MeshVisualizer
 
 				// Invoke LoadDone event
 				LoadDone?.Invoke(this, null);
+
+				Invalidate();
 			}
 			else
 			{

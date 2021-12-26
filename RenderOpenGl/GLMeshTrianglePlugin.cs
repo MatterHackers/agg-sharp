@@ -132,7 +132,7 @@ namespace MatterHackers.RenderOpenGl
 			{
 				FaceTextureData faceTexture;
 				meshToBuildListFor.FaceTextures.TryGetValue(faceIndex, out faceTexture);
-				if (faceTexture != null)
+				if (faceTexture?.image != null)
 				{
 					ImageGlPlugin.GetImageGlPlugin(faceTexture.image, true);
 				}
