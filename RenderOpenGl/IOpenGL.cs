@@ -38,15 +38,17 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		void Begin(BeginMode mode);
 
-		void BindBuffer(BufferTarget target, int buffer);
+		void BindBuffer(int target, int buffer);
+		
+		void BindFramebuffer(int target, int buffer);
 
-		void BindTexture(TextureTarget target, int texture);
+		void BindTexture(int target, int texture);
 
-		void BlendFunc(BlendingFactorSrc sfactor, BlendingFactorDest dfactor);
+		void BlendFunc(int sfactor, int dfactor);
 
-		void BufferData(BufferTarget target, int size, IntPtr data, BufferUsageHint usage);
+		void BufferData(int target, int size, IntPtr data, int usage);
 
-		void Clear(ClearBufferMask mask);
+		void Clear(int mask);
 
 		void ClearDepth(double depth);
 
@@ -64,11 +66,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		void DeleteTexture(int texture);
 
-		void DepthFunc(DepthFunction func);
+		void DepthFunc(int func);
 
 		void DepthMask(bool flag);
 
-		void Disable(EnableCap cap);
+		void Disable(int cap);
 
 		void DisableClientState(ArrayCap array);
 
@@ -76,7 +78,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		void DrawRangeElements(BeginMode mode, int start, int end, int count, DrawElementsType type, IntPtr indices);
 
-		void Enable(EnableCap cap);
+		void Enable(int cap);
 
 		void EnableClientState(ArrayCap arrayCap);
 
@@ -136,7 +138,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 		void TexEnv(TextureEnvironmentTarget target, TextureEnvParameter pname, float param);
 
-		void TexImage2D(TextureTarget target, int level, PixelInternalFormat internalFormat, int width, int height, int border, PixelFormat format, PixelType type, byte[] pixels);
+		void TexImage2D(int target, int level, int internalFormat, int width, int height, int border, int format, int type, byte[] pixels);
 
 		void TexParameter(TextureTarget target, TextureParameterName pname, int param);
 
@@ -151,5 +153,34 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		void VertexPointer(int size, VertexPointerType type, int stride, IntPtr pointer);
 
 		void Viewport(int x, int y, int width, int height);
-	}
+
+        int CreateProgram();
+
+        int CreateShader(int shaderType);
+        void BindVertexArray(int vertexArray);
+        void ShaderSource(int id, int count, string src, object p);
+        void CompileShader(int id);
+        void AttachShader(int program, int shader);
+        void LinkProgram(int id);
+        void DeleteShader(int shader);
+        void DetachShader(int id, int shader);
+        void GenVertexArrays(int n, out int arrays);
+        void GenBuffers(int n, out int buffer);
+        void TexParameteri(int target, int pname, int param);
+        void GenTextures(int n, out int textures);
+        void GenFramebuffers(int v, out int fbo);
+        void FramebufferTexture2D(int target, int attachment, int textarget, int texture, int level);
+        void UniformMatrix4fv(int location, int count, int transpose, float[] value);
+        void VertexAttribPointer(int index, int size, int type, int normalized, int stride, IntPtr pointer);
+        void EnableVertexAttribArray(int index);
+        void UseProgram(int program);
+        int GetUniformLocation(int program, string name);
+        void Uniform1i(int location, int v0);
+        void ActiveTexture(int texture);
+        void DrawElements(int mode, int count, int elementType, IntPtr indices);
+
+		void Uniform1f(int location, float v0);
+        void ClearColor(double r, double g, double b, double a);
+        int GenFramebuffer();
+    }
 }
