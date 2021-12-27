@@ -213,12 +213,18 @@ namespace MatterHackers.MeshVisualizer
 
         public override void OnDraw(Graphics2D graphics2D)
 		{
-			if (doDepthPeeling
-				&& depthPeeling == null
-				&& meshViewerWidget.Scene.Children.Count > 0)
-            {
-				depthPeeling = new DepthPeeling(meshViewerWidget.Scene.Children[0].Mesh);
-				depthPeeling.ReshapeFunc(200, 200);
+			if (doDepthPeeling)
+			{
+				if (depthPeeling != null)
+                {
+					depthPeeling.glutDisplayFunc();
+
+				}
+				else if (meshViewerWidget.Scene.Children.Count > 0)
+				{
+					depthPeeling = new DepthPeeling(meshViewerWidget.Scene.Children[0].Mesh);
+					depthPeeling.ReshapeFunc(200, 200);
+				}
 			}
 
 			totalDrawTime.Restart();
@@ -247,7 +253,7 @@ namespace MatterHackers.MeshVisualizer
 				AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.OpenGLWinformsWindowProvider, agg_platform_win32";
 			}
 
-			MeshViewerApplication app = new MeshViewerApplication(false);
+			MeshViewerApplication app = new MeshViewerApplication(true);
 			SingleWindowProvider.SetWindowTheme(Color.Black, 12, () => new Button("X", 0, 0), 3, Color.LightGray, Color.DarkGray);
 			app.ShowAsSystemWindow();
 		}
