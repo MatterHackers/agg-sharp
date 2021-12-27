@@ -107,7 +107,7 @@ namespace MatterHackers.Agg.UI
 #if USE_OPENGL
 			if (HardwareAvailable)
 			{
-				OpenTK.Graphics.OpenGL.GL.BlendFunc((OpenTK.Graphics.OpenGL.BlendingFactorSrc)sfactor, (OpenTK.Graphics.OpenGL.BlendingFactorDest)dfactor);
+				OpenTK.Graphics.OpenGL.GL.BlendFunc((OpenTK.Graphics.OpenGL.BlendingFactor)sfactor, (OpenTK.Graphics.OpenGL.BlendingFactor)dfactor);
 			}
 #else
 			OpenTK.Graphics.ES11.GL.BlendFunc((OpenTK.Graphics.ES11.All)sfactor, (OpenTK.Graphics.ES11.All)dfactor);
@@ -1355,7 +1355,7 @@ namespace MatterHackers.Agg.UI
 
         public void VertexAttribPointer(int index, int size, int type, int normalized, int stride, IntPtr pointer)
         {
-			OpenTK.Graphics.OpenGL.GL.VertexAttribIPointer(index, size, (OpenTK.Graphics.OpenGL.VertexAttribIPointerType)type, stride, pointer);
+			OpenTK.Graphics.OpenGL.GL.VertexAttribPointer(index, size, (OpenTK.Graphics.OpenGL.VertexAttribPointerType)type, normalized == 1, stride, pointer);
         }
 
         public void EnableVertexAttribArray(int index)

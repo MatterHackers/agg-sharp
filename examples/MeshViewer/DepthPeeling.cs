@@ -133,7 +133,7 @@ namespace MatterHackers.MeshVisualizer
 		}
 
 		// Main display routine
-		void glutDisplayFunc()
+		public void glutDisplayFunc()
 		{
 			// Projection and modelview matrices
 			var proj = Matrix4X4.Identity;
