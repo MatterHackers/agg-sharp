@@ -1398,10 +1398,15 @@ namespace MatterHackers.Agg.UI
 			OpenTK.Graphics.OpenGL.GL.ClearColor((float)r, (float)g, (float)b, (float)a);
 		}
 
-        public int GenFramebuffer()
-        {
+		public int GenFramebuffer()
+		{
 			OpenTK.Graphics.OpenGL.GL.GenFramebuffers(1, out int framebuffers);
 			return framebuffers;
+		}
+
+		public string GetShaderInfoLog(int shader)
+		{
+			return OpenTK.Graphics.OpenGL.GL.GetShaderInfoLog(shader);
 		}
 	}
 }

@@ -437,11 +437,6 @@ namespace MatterHackers.RenderOpenGl.OpenGl
             CheckForError();
         }
 
-        public static void gen_tex(out int dtex)
-        {
-            dtex = GenTexture();
-        }
-
         public static void BufferData(int target, float[] v, int usage)
         {
             unsafe
@@ -502,22 +497,13 @@ namespace MatterHackers.RenderOpenGl.OpenGl
             CheckForError();
         }
 
-        public static void print_shader_info_log(int obj)
+        public static void print_shader_info_log(int shader)
         {
-            int infologLength = 0;
-            int charsWritten = 0;
-            //char* infoLog;
-
-            //// Get shader info log from opengl
-            //GL.GetShaderiv(obj, GL.INFO_LOG_LENGTH, out infologLength);
-            //// Only print if there is something in the log
-            //if (infologLength > 0)
-            //{
-            //	infoLog = (char*)malloc(infologLength);
-            //	GL.GetShaderInfoLog(obj, infologLength, out charsWritten, infoLog);
-            //	Debug.WriteLine("%s\n", infoLog);
-            //	free(infoLog);
-            //}
+            var shaderInfo = Instance?.GetShaderInfoLog(shader);
+            if (!string.IsNullOrEmpty(shaderInfo))
+            {
+                Debug.WriteLine(shaderInfo);
+            }
         }
 
         public static int load_shader(string src, int shaderType)
@@ -544,11 +530,13 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         private static void CompileShader(int id)
         {
             Instance?.CompileShader(id);
+            CheckForError();
         }
 
         private static void ShaderSource(int id, int count, string src, object p)
         {
             Instance?.ShaderSource(id, count, src, p);
+            CheckForError();
         }
 
         public static int CreateShader(int shaderType)

@@ -43,7 +43,7 @@ namespace MatterHackers.MeshVisualizer
 		int VAO;
 		int QVAO;
 		// Number of passes
-		const int renderPasses = 4;
+		const int renderPasses = 6;
 		int[] tex_id = new int[renderPasses], dtex_id = new int[renderPasses], fbo_id = new int[renderPasses];
 		// full width/height of window, width/height of viewports
 		int full_w = 1440;
@@ -64,8 +64,12 @@ namespace MatterHackers.MeshVisualizer
 
 			var aabb = mesh.GetAxisAlignedBoundingBox();
 			mesh.Translate(-aabb.Center);
-			mesh.Transform(Matrix4X4.CreateScale(aabb.XSize));
-			vao(mesh.Vertices.ToFloatArray(), mesh.Faces.ToIntArray(), out VAO);
+			mesh.Transform(Matrix4X4.CreateRotation(new Vector3(23, 51, 12)));
+			mesh.Transform(Matrix4X4.CreateScale(1/aabb.XSize));
+			aabb = mesh.GetAxisAlignedBoundingBox();
+			var mV = mesh.Vertices.ToFloatArray();
+			var mF = mesh.Faces.ToIntArray();
+			vao(mV, mF, out VAO);
 			faceCount = mesh.Faces.Count;
 		
 			// square
@@ -104,7 +108,7 @@ namespace MatterHackers.MeshVisualizer
 			gl.BindFramebuffer(GL.FRAMEBUFFER, fbo);
 			// Generate texture for depth and attached to depth component of framebuffer
 			gl.FramebufferTexture2D(GL.FRAMEBUFFER, GL.COLOR_ATTACHMENT0, GL.TEXTURE_2D, tex, 0);
-			gl.gen_tex(out dtex);
+			gen_tex(out dtex);
 			gl.TexImage2D(GL.TEXTURE_2D, 0, GL.DEPTH_COMPONENT32, w, h, 0, GL.DEPTH_COMPONENT, GL.FLOAT, null);
 			gl.FramebufferTexture2D(GL.FRAMEBUFFER, GL.DEPTH_ATTACHMENT, GL.TEXTURE_2D, dtex, 0);
 			// Clean up
@@ -113,38 +117,49 @@ namespace MatterHackers.MeshVisualizer
 		}
 
 		// Prepare VAOs
-		void vao(float[] V, int[] F, out int VAO)
+		void vao(float[] verticesPositions, int[] faceVertexIndices, out int VAO)
 		{
-			// Generate and attach buffers to vertex array
+			// Generate vertex array
 			gl.GenVertexArrays(1, out VAO);
-			int VBO, EBO;
-			gl.GenBuffers(1, out VBO);
-			gl.GenBuffers(1, out EBO);
 			gl.BindVertexArray(VAO);
+
+			// Generate Vertex Buffer
+			gl.GenBuffers(1, out int VBO);
 			gl.BindBuffer(GL.ARRAY_BUFFER, VBO);
-			gl.BufferData(GL.ARRAY_BUFFER, V, GL.STATIC_DRAW);
-			gl.BindBuffer(GL.ELEMENT_ARRAY_BUFFER, EBO);
-			gl.BufferData(GL.ELEMENT_ARRAY_BUFFER, F, GL.STATIC_DRAW);
-			gl.VertexAttribPointer(0, 3, GL.FLOAT, GL.FALSE, 3 * sizeof(float), IntPtr.Zero); // line from http://www.alecjacobson.com/weblog/?p=4310
-			//gl.VertexAttribPointer(0, 3, GL.UNSIGNED_INT, GL.FALSE, 3 * sizeof(float), IntPtr.Zero); // alternate that seems to work
+			gl.BufferData(GL.ARRAY_BUFFER, verticesPositions, GL.STATIC_DRAW);
+
+			// Generate Index Buffer
+			gl.GenBuffers(1, out int FBO);
+			gl.BindBuffer(GL.ELEMENT_ARRAY_BUFFER, FBO);
+			gl.BufferData(GL.ELEMENT_ARRAY_BUFFER, faceVertexIndices, GL.STATIC_DRAW);
+			gl.VertexAttribPointer(0, 3, GL.FLOAT, GL.FALSE, 0, IntPtr.Zero);
+
 			gl.EnableVertexAttribArray(0);
 			gl.BindBuffer(GL.ARRAY_BUFFER, 0);
 			gl.BindVertexArray(0);
 		}
 
+		int count = 0;
+
 		// Main display routine
 		public void glutDisplayFunc()
 		{
 			// Projection and modelview matrices
-			var proj = Matrix4X4.Identity;
 			float near = 0.01f;
-			float far = 3;
+			float far = 20;
 			var top = Math.Tan(35.0 / 360.0 * Math.PI) * near;
 			var right = top * w / h;
-			proj = Matrix4X4.Frustum(-right, right, -top, top, near, far);
+			var proj = Matrix4X4.Frustum(-right, right, -top, top, near, far);
 			// spin around
-			var count = 0;
-			var model = Matrix4X4.CreateRotationY(Math.PI / 180.0 * count++);
+			var model = Matrix4X4.CreateRotationY(Math.PI / 180.0 * count++) * Matrix4X4.CreateTranslation(0, 0, -6.5);
+
+			GL.Disable(EnableCap.CullFace);
+
+			GL.MatrixMode(MatrixMode.Projection);
+			GL.LoadMatrix(proj.GetAsDoubleArray());
+			GL.LoadIdentity();
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.LoadIdentity();
 
 			gl.Enable(GL.DEPTH_TEST);
 			gl.Viewport(0, 0, w, h);
@@ -171,7 +186,7 @@ namespace MatterHackers.MeshVisualizer
 				gl.BindFramebuffer(GL.FRAMEBUFFER, fbo_id[pass]);
 				gl.ClearColor(0.0, 0.4, 0.7, 0.0);
 				gl.Clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
-				gl.DrawElements(GL.TRIANGLES, faceCount, GL.UNSIGNED_INT, IntPtr.Zero);
+				gl.DrawElements(GL.TRIANGLES, faceCount * 3, GL.UNSIGNED_INT, IntPtr.Zero);
 			}
 			// clean up and set to render to screen
 			gl.BindVertexArray(0);
@@ -235,7 +250,7 @@ namespace MatterHackers.MeshVisualizer
 		}
 
 		// For rendering a full-viewport quad, set tex-coord from position
-		string tex_v_shader = @"(
+		string tex_v_shader = @"
 		#version 330 core
 		in vec3 position;
 		out vec2 tex_coord;
@@ -244,10 +259,10 @@ namespace MatterHackers.MeshVisualizer
 		  gl_Position = vec4(position,1.);
 		  tex_coord = vec2(0.5*(position.x+1), 0.5*(position.y+1));
 		}
-		)";
+		";
 
 		// Render directly from color or depth texture
-		string tex_f_shader = @"(
+		string tex_f_shader = @"
 		#version 330 core
 		in vec2 tex_coord;
 		out vec4 color;
@@ -271,10 +286,10 @@ namespace MatterHackers.MeshVisualizer
 			discard;
 		  }
 		}
-		)";
+		";
 
 		// Pass-through vertex shader with projection and model matrices
-		string scene_v_shader = @"(
+		string scene_v_shader = @"
 		#version 330 core
 		uniform mat4 proj;
 		uniform mat4 model;
@@ -283,9 +298,10 @@ namespace MatterHackers.MeshVisualizer
 		{
 		  gl_Position = proj * model * vec4(position,1.);
 		}
-		)";
+		";
+
 		// Render if first pass or farther than closest frag on last pass
-		string scene_f_shader = @"(
+		string scene_f_shader = @"
 		#version 330 core
 		out vec4 color;
 		uniform bool first_pass;
@@ -294,8 +310,8 @@ namespace MatterHackers.MeshVisualizer
 		uniform sampler2D depth_texture;
 		void main()
 		{
-		  color = vec4(0.8,0.4,0.0,0.75);
-		  color.rgb *= (1.-gl_FragCoord.z)/0.006125;
+		  color = vec4(0.8,0.4,0.0,0.25);
+		  color.rgb *= (1.-gl_FragCoord.z)/0.0006125;
 		  if(!first_pass)
 		  {
 			vec2 tex_coord = vec2(float(gl_FragCoord.x)/width,float(gl_FragCoord.y)/height);
@@ -306,6 +322,6 @@ namespace MatterHackers.MeshVisualizer
 			}
 		  }
 		}
-		)";
+		";
 	}
 }

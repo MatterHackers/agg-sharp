@@ -1040,5 +1040,10 @@ namespace MatterHackers.RenderOpenGl
         {
             throw new NotImplementedException();
         }
+
+        public string GetShaderInfoLog(int shader)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
