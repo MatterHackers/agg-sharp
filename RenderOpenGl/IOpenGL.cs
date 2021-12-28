@@ -182,5 +182,6 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		void Uniform1f(int location, float v0);
         void ClearColor(double r, double g, double b, double a);
         int GenFramebuffer();
+        string GetShaderInfoLog(int shader);
     }
 }

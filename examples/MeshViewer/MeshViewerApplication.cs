@@ -28,20 +28,17 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using MatterHackers.RenderOpenGl;
-using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.MeshVisualizer
 {
-    public class MeshViewerApplication : SystemWindow
+	public class MeshViewerApplication : SystemWindow
 	{
 		protected MeshViewerWidget meshViewerWidget;
 
@@ -56,7 +53,7 @@ namespace MatterHackers.MeshVisualizer
 		}
 
 		public MeshViewerApplication(bool doDepthPeeling, string meshFileToLoad = "")
-			: base(800, 600)
+			: base(2200, 600)
 		{
 			this.doDepthPeeling = doDepthPeeling;
 			BackgroundColor = Color.White;
@@ -223,7 +220,7 @@ namespace MatterHackers.MeshVisualizer
 				else if (meshViewerWidget.Scene.Children.Count > 0)
 				{
 					depthPeeling = new DepthPeeling(meshViewerWidget.Scene.Children[0].Mesh);
-					depthPeeling.ReshapeFunc(200, 200);
+					depthPeeling.ReshapeFunc((int)Width, (int)Height);
 				}
 			}
 
@@ -237,6 +234,8 @@ namespace MatterHackers.MeshVisualizer
 				this.Title = string.Format("Allocated = {0:n0} : {1}ms, d{2} Size = {3}x{4}", memory, totalDrawTime.ElapsedMilliseconds, drawCount++, this.Width, this.Height);
 				//GC.Collect();
 			}
+
+			UiThread.RunOnIdle(Invalidate);
 		}
 
 		[STAThread]
@@ -253,7 +252,10 @@ namespace MatterHackers.MeshVisualizer
 				AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.OpenGLWinformsWindowProvider, agg_platform_win32";
 			}
 
-			MeshViewerApplication app = new MeshViewerApplication(true);
+			var meshPath = @"C:\Users\LarsBrubaker\Downloads\Swoop Shell_rev9.STL";
+			//meshPath = @"C:\Users\LarsBrubaker\Downloads\Runout Sensor.stl";
+			meshPath = @"C:\Users\LarsBrubaker\Downloads\phil.stl";
+			MeshViewerApplication app = new MeshViewerApplication(true, meshPath);
 			SingleWindowProvider.SetWindowTheme(Color.Black, 12, () => new Button("X", 0, 0), 3, Color.LightGray, Color.DarkGray);
 			app.ShowAsSystemWindow();
 		}
