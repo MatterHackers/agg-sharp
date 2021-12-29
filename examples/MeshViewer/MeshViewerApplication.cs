@@ -53,7 +53,7 @@ namespace MatterHackers.MeshVisualizer
 		}
 
 		public MeshViewerApplication(bool doDepthPeeling, string meshFileToLoad = "")
-			: base(1200, 600)
+			: base(2200, 600)
 		{
 			this.doDepthPeeling = doDepthPeeling;
 			BackgroundColor = Color.White;
@@ -73,7 +73,10 @@ namespace MatterHackers.MeshVisualizer
 
 			meshViewerWidget.AnchorAll();
 
-			viewArea.AddChild(meshViewerWidget);
+			if (!doDepthPeeling)
+			{
+				viewArea.AddChild(meshViewerWidget);
+			}
 
 			mainContainer.AddChild(viewArea);
 
@@ -256,8 +259,8 @@ namespace MatterHackers.MeshVisualizer
             }
 
 			var meshPath = Path.Combine(baseFolder, "Swoop Shell_rev9.STL");
-			//meshPath = Path.Combine(baseFolder, "Runout Sensor.stl");
-			meshPath = Path.Combine(baseFolder, "Engine-Benchmark.stl");
+			meshPath = Path.Combine(baseFolder, "Runout Sensor.stl");
+			//meshPath = Path.Combine(baseFolder, "Engine-Benchmark.stl");
 			MeshViewerApplication app = new MeshViewerApplication(true, meshPath);
 			SingleWindowProvider.SetWindowTheme(Color.Black, 12, () => new Button("X", 0, 0), 3, Color.LightGray, Color.DarkGray);
 			app.ShowAsSystemWindow();
