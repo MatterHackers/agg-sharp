@@ -53,7 +53,7 @@ namespace MatterHackers.MeshVisualizer
 		}
 
 		public MeshViewerApplication(bool doDepthPeeling, string meshFileToLoad = "")
-			: base(2200, 600)
+			: base(1200, 600)
 		{
 			this.doDepthPeeling = doDepthPeeling;
 			BackgroundColor = Color.White;
@@ -73,10 +73,7 @@ namespace MatterHackers.MeshVisualizer
 
 			meshViewerWidget.AnchorAll();
 
-			if (!doDepthPeeling)
-			{
-				viewArea.AddChild(meshViewerWidget);
-			}
+			viewArea.AddChild(meshViewerWidget);
 
 			mainContainer.AddChild(viewArea);
 
@@ -214,7 +211,7 @@ namespace MatterHackers.MeshVisualizer
 			{
 				if (depthPeeling != null)
                 {
-					depthPeeling.glutDisplayFunc();
+					depthPeeling.glutDisplayFunc(meshViewerWidget.World);
 
 				}
 				else if (meshViewerWidget.Scene.Children.Count > 0)
@@ -252,9 +249,15 @@ namespace MatterHackers.MeshVisualizer
 				AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.OpenGLWinformsWindowProvider, agg_platform_win32";
 			}
 
-			var meshPath = @"C:\Users\LarsBrubaker\Downloads\Swoop Shell_rev9.STL";
-			//meshPath = @"C:\Users\LarsBrubaker\Downloads\Runout Sensor.stl";
-			meshPath = @"C:\Users\LarsBrubaker\Downloads\phil.stl";
+			var baseFolder = @"C:\Users\larsb\Downloads";
+			if (!Directory.Exists(baseFolder))
+            {
+				baseFolder = @"C:\Users\LarsBrubaker\Downloads";
+            }
+
+			var meshPath = Path.Combine(baseFolder, "Swoop Shell_rev9.STL");
+			//meshPath = Path.Combine(baseFolder, "Runout Sensor.stl");
+			meshPath = Path.Combine(baseFolder, "Engine-Benchmark.stl");
 			MeshViewerApplication app = new MeshViewerApplication(true, meshPath);
 			SingleWindowProvider.SetWindowTheme(Color.Black, 12, () => new Button("X", 0, 0), 3, Color.LightGray, Color.DarkGray);
 			app.ShowAsSystemWindow();

@@ -43,18 +43,13 @@ namespace MatterHackers.MeshVisualizer
 		int VAO;
 		int QVAO;
 		// Number of passes
-		const int renderPasses = 6;
+		const int renderPasses = 4;
 		int[] tex_id = new int[renderPasses], dtex_id = new int[renderPasses], fbo_id = new int[renderPasses];
 		// full width/height of window, width/height of viewports
 		int full_w = 1440;
 		int full_h = 480;
 		int w => full_w / (renderPasses + 2);
 		int h => full_h / 1;
-		// Mesh data: RowMajor is important to directly use in OpenGL
-		//typedef Eigen::Matrix< float, Eigen::Dynamic,3, Eigen::RowMajor> MatrixV;
-		//typedef Eigen::Matrix<GLuint, Eigen::Dynamic,3, Eigen::RowMajor> MatrixF;
-		//MatrixV V, QV;
-		//MatrixF F, QF;
 		int faceCount;
 
 		public DepthPeeling(Mesh mesh)
@@ -65,7 +60,7 @@ namespace MatterHackers.MeshVisualizer
 			var aabb = mesh.GetAxisAlignedBoundingBox();
 			mesh.Translate(-aabb.Center);
 			mesh.Transform(Matrix4X4.CreateRotation(new Vector3(23, 51, 12)));
-			mesh.Transform(Matrix4X4.CreateScale(1/aabb.XSize));
+			mesh.Transform(Matrix4X4.CreateScale(1/ Math.Max(aabb.XSize, Math.Max(aabb.YSize, aabb.ZSize))));
 			aabb = mesh.GetAxisAlignedBoundingBox();
 			var mV = mesh.Vertices.ToFloatArray();
 			var mF = mesh.Faces.ToIntArray();
@@ -142,8 +137,9 @@ namespace MatterHackers.MeshVisualizer
 		int count = 0;
 
 		// Main display routine
-		public void glutDisplayFunc()
+		public void glutDisplayFunc(WorldView worldView)
 		{
+			GL.PushAttrib(AttribMask.EnableBit | AttribMask.ViewportBit | AttribMask.TransformBit);
 			// Projection and modelview matrices
 			float near = 0.01f;
 			float far = 20;
@@ -152,6 +148,9 @@ namespace MatterHackers.MeshVisualizer
 			var proj = Matrix4X4.Frustum(-right, right, -top, top, near, far);
 			// spin around
 			var model = Matrix4X4.CreateRotationY(Math.PI / 180.0 * count++) * Matrix4X4.CreateTranslation(0, 0, -6.5);
+
+			//proj = worldView.ProjectionMatrix;
+			//model = worldView.ModelviewMatrix;
 
 			GL.Disable(EnableCap.CullFace);
 
@@ -234,6 +233,11 @@ namespace MatterHackers.MeshVisualizer
 				gl.DrawElements(GL.TRIANGLES, 6, GL.UNSIGNED_INT, IntPtr.Zero);
 			}
 			gl.DepthFunc(GL.LESS);
+
+			GL.PopAttrib();
+			gl.BindVertexArray(0);
+			GL.BindTexture(TextureTarget.Texture2D, 0);
+			gl.UseProgram(0);
 		}
 
 		public void ReshapeFunc(int w, int h)
