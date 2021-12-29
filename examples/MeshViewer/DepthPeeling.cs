@@ -32,6 +32,17 @@ using MatterHackers.PolygonMesh;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 
+/*
+ * TODO:
+ *   [ ] Resize view
+ *   [ ] Make view correct size
+ *   [ ] Make shaded faces
+ *   [ ] Make alpha part of accumulation
+ *   [ ] Make belnding be per-pixel alpha rather than constant alpha
+ *   [ ] 
+ *   [ ] 
+ */
+
 namespace MatterHackers.MeshVisualizer
 {
     using gl = GL;
@@ -44,8 +55,7 @@ namespace MatterHackers.MeshVisualizer
 		int QVAO;
 		// Number of passes
 		const int renderPasses = 4;
-		int[] tex_id = new int[renderPasses], dtex_id = new int[renderPasses], fbo_id = new int[renderPasses];
-		// full width/height of window, width/height of viewports
+		int[] colorTexture = new int[renderPasses], depthTexture = new int[renderPasses], frameBufferObject = new int[renderPasses];
 		int full_w = 1440;
 		int full_h = 480;
 		int w => full_w / (renderPasses + 2);
@@ -60,7 +70,7 @@ namespace MatterHackers.MeshVisualizer
 			var aabb = mesh.GetAxisAlignedBoundingBox();
 			mesh.Translate(-aabb.Center);
 			mesh.Transform(Matrix4X4.CreateRotation(new Vector3(23, 51, 12)));
-			mesh.Transform(Matrix4X4.CreateScale(1/ Math.Max(aabb.XSize, Math.Max(aabb.YSize, aabb.ZSize))));
+			mesh.Transform(Matrix4X4.CreateScale(1/ Math.Max(aabb.XSize, Math.Max(aabb.YSize, aabb.ZSize)) / 2));
 			aabb = mesh.GetAxisAlignedBoundingBox();
 			var mV = mesh.Vertices.ToFloatArray();
 			var mF = mesh.Faces.ToIntArray();
@@ -84,28 +94,29 @@ namespace MatterHackers.MeshVisualizer
 			vao(QV, QF, out QVAO);
 		}
 
-		public void init_render_to_texture(int w, int h, out int tex, out int dtex, out int fbo)
+		public void InitRenderToTexture(int w, int h, out int colorTexture, out int depthTexture, out int frameBufferObject)
 		{
-			void gen_tex(out int texIn)
+			void gen_tex(out int newTexture)
 			{
 				// http://www.opengl.org/wiki/Framebuffer_Object_Examples#Quick_example.2C_render_to_texture_.282D.29
-				gl.GenTextures(1, out texIn);
-				gl.BindTexture(GL.TEXTURE_2D, texIn);
+				gl.GenTextures(1, out newTexture);
+				gl.BindTexture(GL.TEXTURE_2D, newTexture);
 				gl.TexParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.NEAREST);
 				gl.TexParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.NEAREST);
 			}
 
 			// Generate texture for colors and attached to color component of framebuffer
-			gen_tex(out tex);
+			gen_tex(out colorTexture);
 			gl.TexImage2D(GL.TEXTURE_2D, 0, GL.RGBA32F, w, h, 0, GL.BGRA, GL.FLOAT, null);
 			gl.BindTexture(GL.TEXTURE_2D, 0);
-			gl.GenFramebuffers(1, out fbo);
-			gl.BindFramebuffer(GL.FRAMEBUFFER, fbo);
+			gl.GenFramebuffers(1, out frameBufferObject);
+			gl.BindFramebuffer(GL.FRAMEBUFFER, frameBufferObject);
+			
 			// Generate texture for depth and attached to depth component of framebuffer
-			gl.FramebufferTexture2D(GL.FRAMEBUFFER, GL.COLOR_ATTACHMENT0, GL.TEXTURE_2D, tex, 0);
-			gen_tex(out dtex);
+			gl.FramebufferTexture2D(GL.FRAMEBUFFER, GL.COLOR_ATTACHMENT0, GL.TEXTURE_2D, colorTexture, 0);
+			gen_tex(out depthTexture);
 			gl.TexImage2D(GL.TEXTURE_2D, 0, GL.DEPTH_COMPONENT32, w, h, 0, GL.DEPTH_COMPONENT, GL.FLOAT, null);
-			gl.FramebufferTexture2D(GL.FRAMEBUFFER, GL.DEPTH_ATTACHMENT, GL.TEXTURE_2D, dtex, 0);
+			gl.FramebufferTexture2D(GL.FRAMEBUFFER, GL.DEPTH_ATTACHMENT, GL.TEXTURE_2D, depthTexture, 0);
 			// Clean up
 			gl.BindFramebuffer(GL.FRAMEBUFFER, 0);
 			gl.BindTexture(GL.TEXTURE_2D, 0);
@@ -140,6 +151,9 @@ namespace MatterHackers.MeshVisualizer
 		public void glutDisplayFunc(WorldView worldView)
 		{
 			GL.PushAttrib(AttribMask.EnableBit | AttribMask.ViewportBit | AttribMask.TransformBit);
+
+			//gl.Disable(EnableCap.CullFace);
+			//gl.CullFace(CullFaceMode.FrontAndBack);
 			// Projection and modelview matrices
 			float near = 0.01f;
 			float far = 20;
@@ -147,18 +161,7 @@ namespace MatterHackers.MeshVisualizer
 			var right = top * w / h;
 			var proj = Matrix4X4.Frustum(-right, right, -top, top, near, far);
 			// spin around
-			var model = Matrix4X4.CreateRotationY(Math.PI / 180.0 * count++) * Matrix4X4.CreateTranslation(0, 0, -6.5);
-
-			//proj = worldView.ProjectionMatrix;
-			//model = worldView.ModelviewMatrix;
-
-			GL.Disable(EnableCap.CullFace);
-
-			GL.MatrixMode(MatrixMode.Projection);
-			GL.LoadMatrix(proj.GetAsDoubleArray());
-			GL.LoadIdentity();
-			GL.MatrixMode(MatrixMode.Modelview);
-			GL.LoadIdentity();
+			var model = Matrix4X4.CreateRotationY(Math.PI / 180.0 * count++) * Matrix4X4.CreateTranslation(0, 0, -1.5);
 
 			gl.Enable(GL.DEPTH_TEST);
 			gl.Viewport(0, 0, w, h);
@@ -180,13 +183,14 @@ namespace MatterHackers.MeshVisualizer
 				{
 					gl.Uniform1i(gl.GetUniformLocation(scene_p_id, "depth_texture"), 0);
 					gl.ActiveTexture(GL.TEXTURE0 + 0);
-					GL.BindTexture(TextureTarget.Texture2D, dtex_id[pass - 1]);
+					GL.BindTexture(TextureTarget.Texture2D, depthTexture[pass - 1]);
 				}
-				gl.BindFramebuffer(GL.FRAMEBUFFER, fbo_id[pass]);
+				gl.BindFramebuffer(GL.FRAMEBUFFER, frameBufferObject[pass]);
 				gl.ClearColor(0.0, 0.4, 0.7, 0.0);
 				gl.Clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 				gl.DrawElements(GL.TRIANGLES, faceCount * 3, GL.UNSIGNED_INT, IntPtr.Zero);
 			}
+
 			// clean up and set to render to screen
 			gl.BindVertexArray(0);
 			gl.BindFramebuffer(GL.FRAMEBUFFER, 0);
@@ -204,11 +208,11 @@ namespace MatterHackers.MeshVisualizer
 				int color_tex_loc2 = gl.GetUniformLocation(tex_p_id, "color_texture");
 				gl.Uniform1i(color_tex_loc2, 0);
 				gl.ActiveTexture(GL.TEXTURE0 + 0);
-				GL.BindTexture(TextureTarget.Texture2D, tex_id[pass]);
+				GL.BindTexture(TextureTarget.Texture2D, colorTexture[pass]);
 				int depth_tex_loc2 = gl.GetUniformLocation(tex_p_id, "depth_texture");
 				gl.Uniform1i(depth_tex_loc2, 1);
 				gl.ActiveTexture(GL.TEXTURE0 + 1);
-				GL.BindTexture(TextureTarget.Texture2D, dtex_id[pass]);
+				GL.BindTexture(TextureTarget.Texture2D, depthTexture[pass]);
 				gl.Viewport(pass * w, 0 * h, w, h);
 				gl.Uniform1i(gl.GetUniformLocation(tex_p_id, "show_depth"), 0);
 				gl.DrawElements(GL.TRIANGLES, 6, GL.UNSIGNED_INT, IntPtr.Zero);
@@ -226,10 +230,10 @@ namespace MatterHackers.MeshVisualizer
 			{
 				gl.Uniform1i(color_tex_loc, 0);
 				gl.ActiveTexture(GL.TEXTURE0 + 0);
-				GL.BindTexture(TextureTarget.Texture2D, tex_id[pass]);
+				GL.BindTexture(TextureTarget.Texture2D, colorTexture[pass]);
 				gl.Uniform1i(depth_tex_loc, 1);
 				gl.ActiveTexture(GL.TEXTURE0 + 1);
-				GL.BindTexture(TextureTarget.Texture2D, dtex_id[pass]);
+				GL.BindTexture(TextureTarget.Texture2D, depthTexture[pass]);
 				gl.DrawElements(GL.TRIANGLES, 6, GL.UNSIGNED_INT, IntPtr.Zero);
 			}
 			gl.DepthFunc(GL.LESS);
@@ -245,11 +249,11 @@ namespace MatterHackers.MeshVisualizer
 			full_h = h;
 			full_w = w;
 			w = full_w / (renderPasses + 2);
-			h = full_h / (1);
+			h = full_h;
 			// (re)-initialize textures and buffers
 			for (var i = 0; i < renderPasses; i++)
 			{
-				init_render_to_texture(w, h, out tex_id[i], out dtex_id[i], out fbo_id[i]);
+				InitRenderToTexture(w, h, out colorTexture[i], out depthTexture[i], out frameBufferObject[i]);
 			}
 		}
 
@@ -285,7 +289,8 @@ namespace MatterHackers.MeshVisualizer
 			  // Depth of background seems to be set to exactly 1.
 			  color.rgb = vec3(1,1,1)*(1.-depth.r)/0.006125;
 			}
-		  }else
+		  }
+		  else
 		  {
 			discard;
 		  }
@@ -314,8 +319,8 @@ namespace MatterHackers.MeshVisualizer
 		uniform sampler2D depth_texture;
 		void main()
 		{
-		  color = vec4(0.8,0.4,0.0,0.25);
-		  color.rgb *= (1.-gl_FragCoord.z)/0.0006125;
+		  color = vec4(0.8,0.4,0.0,0.75);
+		  color.rgb *= (1.-gl_FragCoord.z)/0.006125;
 		  if(!first_pass)
 		  {
 			vec2 tex_coord = vec2(float(gl_FragCoord.x)/width,float(gl_FragCoord.y)/height);
