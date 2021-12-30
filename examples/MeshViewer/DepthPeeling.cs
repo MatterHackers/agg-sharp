@@ -40,7 +40,7 @@ using MatterHackers.VectorMath;
  *   [ ] Make shaded faces
  *   [ ] Make alpha part of accumulation
  *   [ ] Make belnding be per-pixel alpha rather than constant alpha
- *   [ ] 
+ *   [ ] Make VBO clean up when re-clacluated
  *   [ ] 
  */
 
@@ -59,11 +59,10 @@ namespace MatterHackers.MeshVisualizer
 		int full_h = 480;
 		int w => full_w / (renderPasses + 2);
 		int h => full_h / 1;
-		int faceCount;
 
 		public DepthPeeling(Mesh mesh)
 		{
-			gl.create_shader_program(null, scene_v_shader, scene_f_shader, out scene_p_id);
+			gl.create_shader_program(null, meshVertexShader, meshFragmentShader, out scene_p_id);
 			gl.create_shader_program(null, tex_v_shader, tex_f_shader, out tex_p_id);
 
 			var aabb = mesh.GetAxisAlignedBoundingBox();
@@ -115,104 +114,124 @@ namespace MatterHackers.MeshVisualizer
 
 		// Main display routine
 		public void glutDisplayFunc(WorldView worldView, Mesh mesh)
-		{
-			var meshVao = GLMeshVertexArrayObjectPlugin.Get(mesh);
+        {
+            var meshVao = GLMeshVertexArrayObjectPlugin.Get(mesh);
 
-			GL.PushAttrib(AttribMask.EnableBit | AttribMask.ViewportBit | AttribMask.TransformBit);
+            GL.PushAttrib(AttribMask.EnableBit | AttribMask.ViewportBit | AttribMask.TransformBit);
 
-			//gl.Disable(EnableCap.CullFace);
-			//gl.CullFace(CullFaceMode.FrontAndBack);
-			// Projection and modelview matrices
-			float near = 0.01f;
-			float far = 20;
-			var top = Math.Tan(35.0 / 360.0 * Math.PI) * near;
-			var right = top * w / h;
-			var proj = Matrix4X4.Frustum(-right, right, -top, top, near, far);
-			// spin around
-			var model = Matrix4X4.CreateRotationY(Math.PI / 180.0 * count++) * Matrix4X4.CreateTranslation(0, 0, -1.5);
+            //gl.Disable(EnableCap.CullFace);
+            //gl.CullFace(CullFaceMode.FrontAndBack);
+            // Projection and modelview matrices
+            float near = 0.01f;
+            float far = 20;
+            var top = Math.Tan(35.0 / 360.0 * Math.PI) * near;
+            var right = top * w / h;
+            var proj = Matrix4X4.Frustum(-right, right, -top, top, near, far);
+            // spin around
+            var model = Matrix4X4.CreateRotationY(Math.PI / 180.0 * count++) * Matrix4X4.CreateTranslation(0, 0, -1.5);
 
-			gl.Enable(GL.DEPTH_TEST);
-			gl.Viewport(0, 0, w, h);
-			// select program and attach uniforms
-			gl.UseProgram(scene_p_id);
-			int proj_loc = gl.GetUniformLocation(scene_p_id, "proj");
-			gl.UniformMatrix4fv(proj_loc, 1, GL.FALSE, proj.GetAsFloatArray());
-			int model_loc = gl.GetUniformLocation(scene_p_id, "model");
-			gl.UniformMatrix4fv(model_loc, 1, GL.FALSE, model.GetAsFloatArray());
-			gl.Uniform1f(gl.GetUniformLocation(scene_p_id, "width"), w);
-			gl.Uniform1f(gl.GetUniformLocation(scene_p_id, "height"), h);
-			gl.BindVertexArray(meshVao.Vao);
-			gl.Disable(GL.BLEND);
-			for (int pass = 0; pass < renderPasses; pass++)
-			{
-				int first_pass = pass == 0 ? 1 : 0;
-				gl.Uniform1i(gl.GetUniformLocation(scene_p_id, "first_pass"), first_pass);
-				if (first_pass == 0)
-				{
-					gl.Uniform1i(gl.GetUniformLocation(scene_p_id, "depth_texture"), 0);
-					gl.ActiveTexture(GL.TEXTURE0 + 0);
-					GL.BindTexture(TextureTarget.Texture2D, depthTexture[pass - 1]);
-				}
-				gl.BindFramebuffer(GL.FRAMEBUFFER, frameBufferObject[pass]);
-				gl.ClearColor(0.0, 0.4, 0.7, 0.0);
-				gl.Clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
-				gl.DrawElements(GL.TRIANGLES, faceCount * 3, GL.UNSIGNED_INT, IntPtr.Zero);
-			}
+			//proj = worldView.ProjectionMatrix;
+			//model = worldView.ModelviewMatrix;
 
-			// clean up and set to render to screen
-			gl.BindVertexArray(0);
-			gl.BindFramebuffer(GL.FRAMEBUFFER, 0);
-			gl.ActiveTexture(GL.TEXTURE0 + 0);
-			GL.BindTexture(TextureTarget.Texture2D, 0);
+            gl.Enable(GL.DEPTH_TEST);
+            gl.Viewport(0, 0, w, h);
+            // select program and attach uniforms
+            gl.UseProgram(scene_p_id);
+            int proj_loc = gl.GetUniformLocation(scene_p_id, "proj");
+            gl.UniformMatrix4fv(proj_loc, 1, GL.FALSE, proj.GetAsFloatArray());
+            int model_loc = gl.GetUniformLocation(scene_p_id, "model");
+            gl.UniformMatrix4fv(model_loc, 1, GL.FALSE, model.GetAsFloatArray());
+            gl.Uniform1f(gl.GetUniformLocation(scene_p_id, "width"), w);
+            gl.Uniform1f(gl.GetUniformLocation(scene_p_id, "height"), h);
+            gl.BindVertexArray(meshVao.Vao);
+            gl.Disable(GL.BLEND);
+            for (int pass = 0; pass < renderPasses; pass++)
+            {
+                int first_pass = pass == 0 ? 1 : 0;
+                gl.Uniform1i(gl.GetUniformLocation(scene_p_id, "first_pass"), first_pass);
+                if (first_pass == 0)
+                {
+                    gl.Uniform1i(gl.GetUniformLocation(scene_p_id, "depth_texture"), 0);
+                    gl.ActiveTexture(GL.TEXTURE0 + 0);
+                    GL.BindTexture(TextureTarget.Texture2D, depthTexture[pass - 1]);
+                }
+                gl.BindFramebuffer(GL.FRAMEBUFFER, frameBufferObject[pass]);
+                gl.ClearColor(0.0, 0.4, 0.7, 0.0);
+                gl.Clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
+                gl.DrawElements(GL.TRIANGLES, mesh.Faces.Count * 3, GL.UNSIGNED_INT, IntPtr.Zero);
+            }
 
-			// Get read to draw quads
-			gl.BindVertexArray(screenQuadVao.Vao);
+            // clean up and set to render to screen
+            gl.BindVertexArray(0);
+            gl.BindFramebuffer(GL.FRAMEBUFFER, 0);
+            gl.ActiveTexture(GL.TEXTURE0 + 0);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
 			gl.ClearColor(0.0, 0.4, 0.7, 0.0);
 			gl.Clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
-			gl.UseProgram(tex_p_id);
-			// Draw result of each peel
+
 			for (int pass = 0; pass < renderPasses; pass++)
 			{
-				int color_tex_loc2 = gl.GetUniformLocation(tex_p_id, "color_texture");
-				gl.Uniform1i(color_tex_loc2, 0);
-				gl.ActiveTexture(GL.TEXTURE0 + 0);
-				GL.BindTexture(TextureTarget.Texture2D, colorTexture[pass]);
-				int depth_tex_loc2 = gl.GetUniformLocation(tex_p_id, "depth_texture");
-				gl.Uniform1i(depth_tex_loc2, 1);
-				gl.ActiveTexture(GL.TEXTURE0 + 1);
-				GL.BindTexture(TextureTarget.Texture2D, depthTexture[pass]);
-				gl.Viewport(pass * w, 0 * h, w, h);
-				gl.Uniform1i(gl.GetUniformLocation(tex_p_id, "show_depth"), 0);
-				gl.DrawElements(GL.TRIANGLES, 6, GL.UNSIGNED_INT, IntPtr.Zero);
+				RenderLayer(pass);
 			}
 
-			// Render final result as composite of all textures
-			gl.BlendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
-			gl.Enable(GL.BLEND);
-			gl.DepthFunc(GL.ALWAYS);
-			gl.Viewport(renderPasses * w, 0 * h, w, h);
-			gl.Uniform1i(gl.GetUniformLocation(tex_p_id, "show_depth"), 0);
-			int color_tex_loc = gl.GetUniformLocation(tex_p_id, "color_texture");
-			int depth_tex_loc = gl.GetUniformLocation(tex_p_id, "depth_texture");
-			for (int pass = renderPasses - 1; pass >= 0; pass--)
-			{
-				gl.Uniform1i(color_tex_loc, 0);
-				gl.ActiveTexture(GL.TEXTURE0 + 0);
-				GL.BindTexture(TextureTarget.Texture2D, colorTexture[pass]);
-				gl.Uniform1i(depth_tex_loc, 1);
-				gl.ActiveTexture(GL.TEXTURE0 + 1);
-				GL.BindTexture(TextureTarget.Texture2D, depthTexture[pass]);
-				gl.DrawElements(GL.TRIANGLES, 6, GL.UNSIGNED_INT, IntPtr.Zero);
-			}
+			RenderFinal();
+
 			gl.DepthFunc(GL.LESS);
 
-			GL.PopAttrib();
-			gl.BindVertexArray(0);
-			GL.BindTexture(TextureTarget.Texture2D, 0);
-			gl.UseProgram(0);
+            GL.PopAttrib();
+            gl.BindVertexArray(0);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+            gl.UseProgram(0);
+        }
+
+		private void RenderLayer(int pass)
+		{
+			// Get ready to draw quads
+			gl.BindVertexArray(screenQuadVao.Vao);
+			gl.UseProgram(tex_p_id);
+
+
+			// Draw result of each peel
+			int color_tex_loc2 = gl.GetUniformLocation(tex_p_id, "color_texture");
+			gl.Uniform1i(color_tex_loc2, 0);
+			gl.ActiveTexture(GL.TEXTURE0 + 0);
+			GL.BindTexture(TextureTarget.Texture2D, colorTexture[pass]);
+			int depth_tex_loc2 = gl.GetUniformLocation(tex_p_id, "depth_texture");
+			gl.Uniform1i(depth_tex_loc2, 1);
+			gl.ActiveTexture(GL.TEXTURE0 + 1);
+			GL.BindTexture(TextureTarget.Texture2D, depthTexture[pass]);
+			gl.Viewport(pass * w, 0 * h, w, h);
+			gl.Uniform1i(gl.GetUniformLocation(tex_p_id, "show_depth"), 0);
+			gl.DrawElements(GL.TRIANGLES, 6, GL.UNSIGNED_INT, IntPtr.Zero);
 		}
 
-		public void ReshapeFunc(int w, int h)
+		private void RenderFinal()
+		{
+			gl.BindVertexArray(screenQuadVao.Vao);
+			gl.UseProgram(tex_p_id);
+			
+			// Render final result as composite of all textures
+			gl.BlendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
+            gl.Enable(GL.BLEND);
+            gl.DepthFunc(GL.ALWAYS);
+            gl.Viewport(renderPasses * w, 0 * h, w, h);
+            gl.Uniform1i(gl.GetUniformLocation(tex_p_id, "show_depth"), 0);
+            int color_tex_loc = gl.GetUniformLocation(tex_p_id, "color_texture");
+            int depth_tex_loc = gl.GetUniformLocation(tex_p_id, "depth_texture");
+            for (int pass = renderPasses - 1; pass >= 0; pass--)
+            {
+                gl.Uniform1i(color_tex_loc, 0);
+                gl.ActiveTexture(GL.TEXTURE0 + 0);
+                GL.BindTexture(TextureTarget.Texture2D, colorTexture[pass]);
+                gl.Uniform1i(depth_tex_loc, 1);
+                gl.ActiveTexture(GL.TEXTURE0 + 1);
+                GL.BindTexture(TextureTarget.Texture2D, depthTexture[pass]);
+                gl.DrawElements(GL.TRIANGLES, 6, GL.UNSIGNED_INT, IntPtr.Zero);
+            }
+        }
+
+        public void ReshapeFunc(int w, int h)
 		{
 			full_h = h;
 			full_w = w;
@@ -266,7 +285,7 @@ namespace MatterHackers.MeshVisualizer
 		";
 
 		// Pass-through vertex shader with projection and model matrices
-		string scene_v_shader = @"
+		string meshVertexShader = @"
 		#version 330 core
 		uniform mat4 proj;
 		uniform mat4 model;
@@ -278,7 +297,7 @@ namespace MatterHackers.MeshVisualizer
 		";
 
 		// Render if first pass or farther than closest frag on last pass
-		string scene_f_shader = @"
+		string meshFragmentShader = @"
 		#version 330 core
 		out vec4 color;
 		uniform bool first_pass;
