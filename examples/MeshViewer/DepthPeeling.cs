@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using MatterHackers.PolygonMesh;
+using MatterHackers.RenderOpenGl;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 
@@ -51,8 +52,6 @@ namespace MatterHackers.MeshVisualizer
 	{
 		// shader id, vertex array object
 		int scene_p_id = 0, tex_p_id;
-		int VAO;
-		int QVAO;
 		// Number of passes
 		const int renderPasses = 4;
 		int[] colorTexture = new int[renderPasses], depthTexture = new int[renderPasses], frameBufferObject = new int[renderPasses];
@@ -71,27 +70,17 @@ namespace MatterHackers.MeshVisualizer
 			mesh.Translate(-aabb.Center);
 			mesh.Transform(Matrix4X4.CreateRotation(new Vector3(23, 51, 12)));
 			mesh.Transform(Matrix4X4.CreateScale(1/ Math.Max(aabb.XSize, Math.Max(aabb.YSize, aabb.ZSize)) / 2));
-			aabb = mesh.GetAxisAlignedBoundingBox();
-			var mV = mesh.Vertices.ToFloatArray();
-			var mF = mesh.Faces.ToIntArray();
-			vao(mV, mF, out VAO);
-			faceCount = mesh.Faces.Count;
-		
-			// square
-			var QV =  new float[]
-			{
-				-1, -1, 0, 
-				1, -1, 0,
-				1, 1, 0,
-				-1, 1, 0
-			};
-			var QF = new int[]
-			{
-				0, 1, 2,
-				0, 2, 3
-			};
 
-			vao(QV, QF, out QVAO);
+			var screenQuad = new Mesh();
+			screenQuad.CreateFace(new Vector3[]
+			{
+				new Vector3(-1, -1, 0),
+				new Vector3(1, -1, 0),
+				new Vector3(1, 1, 0),
+				new Vector3(-1, 1, 0)
+			});
+
+			screenQuadVao = GLMeshVertexArrayObjectPlugin.Get(screenQuad);
 		}
 
 		public void InitRenderToTexture(int w, int h, out int colorTexture, out int depthTexture, out int frameBufferObject)
@@ -122,34 +111,13 @@ namespace MatterHackers.MeshVisualizer
 			gl.BindTexture(GL.TEXTURE_2D, 0);
 		}
 
-		// Prepare VAOs
-		void vao(float[] verticesPositions, int[] faceVertexIndices, out int VAO)
-		{
-			// Generate vertex array
-			gl.GenVertexArrays(1, out VAO);
-			gl.BindVertexArray(VAO);
-
-			// Generate Vertex Buffer
-			gl.GenBuffers(1, out int VBO);
-			gl.BindBuffer(GL.ARRAY_BUFFER, VBO);
-			gl.BufferData(GL.ARRAY_BUFFER, verticesPositions, GL.STATIC_DRAW);
-
-			// Generate Index Buffer
-			gl.GenBuffers(1, out int FBO);
-			gl.BindBuffer(GL.ELEMENT_ARRAY_BUFFER, FBO);
-			gl.BufferData(GL.ELEMENT_ARRAY_BUFFER, faceVertexIndices, GL.STATIC_DRAW);
-			gl.VertexAttribPointer(0, 3, GL.FLOAT, GL.FALSE, 0, IntPtr.Zero);
-
-			gl.EnableVertexAttribArray(0);
-			gl.BindBuffer(GL.ARRAY_BUFFER, 0);
-			gl.BindVertexArray(0);
-		}
-
 		int count = 0;
 
 		// Main display routine
-		public void glutDisplayFunc(WorldView worldView)
+		public void glutDisplayFunc(WorldView worldView, Mesh mesh)
 		{
+			var meshVao = GLMeshVertexArrayObjectPlugin.Get(mesh);
+
 			GL.PushAttrib(AttribMask.EnableBit | AttribMask.ViewportBit | AttribMask.TransformBit);
 
 			//gl.Disable(EnableCap.CullFace);
@@ -173,7 +141,7 @@ namespace MatterHackers.MeshVisualizer
 			gl.UniformMatrix4fv(model_loc, 1, GL.FALSE, model.GetAsFloatArray());
 			gl.Uniform1f(gl.GetUniformLocation(scene_p_id, "width"), w);
 			gl.Uniform1f(gl.GetUniformLocation(scene_p_id, "height"), h);
-			gl.BindVertexArray(VAO);
+			gl.BindVertexArray(meshVao.Vao);
 			gl.Disable(GL.BLEND);
 			for (int pass = 0; pass < renderPasses; pass++)
 			{
@@ -198,7 +166,7 @@ namespace MatterHackers.MeshVisualizer
 			GL.BindTexture(TextureTarget.Texture2D, 0);
 
 			// Get read to draw quads
-			gl.BindVertexArray(QVAO);
+			gl.BindVertexArray(screenQuadVao.Vao);
 			gl.ClearColor(0.0, 0.4, 0.7, 0.0);
 			gl.Clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 			gl.UseProgram(tex_p_id);
@@ -332,5 +300,6 @@ namespace MatterHackers.MeshVisualizer
 		  }
 		}
 		";
-	}
+        private GLMeshVertexArrayObjectPlugin screenQuadVao;
+    }
 }
