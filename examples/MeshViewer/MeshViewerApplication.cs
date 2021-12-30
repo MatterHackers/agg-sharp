@@ -214,8 +214,7 @@ namespace MatterHackers.MeshVisualizer
 			{
 				if (depthPeeling != null)
                 {
-					depthPeeling.glutDisplayFunc(meshViewerWidget.World);
-
+					depthPeeling.glutDisplayFunc(meshViewerWidget.World, meshViewerWidget.Scene.Children[0].Mesh);
 				}
 				else if (meshViewerWidget.Scene.Children.Count > 0)
 				{
@@ -260,7 +259,7 @@ namespace MatterHackers.MeshVisualizer
 
 			var meshPath = Path.Combine(baseFolder, "Swoop Shell_rev9.STL");
 			meshPath = Path.Combine(baseFolder, "Runout Sensor.stl");
-			//meshPath = Path.Combine(baseFolder, "Engine-Benchmark.stl");
+			meshPath = Path.Combine(baseFolder, "Engine-Benchmark.stl");
 			MeshViewerApplication app = new MeshViewerApplication(true, meshPath);
 			SingleWindowProvider.SetWindowTheme(Color.Black, 12, () => new Button("X", 0, 0), 3, Color.LightGray, Color.DarkGray);
 			app.ShowAsSystemWindow();
