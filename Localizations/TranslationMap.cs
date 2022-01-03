@@ -59,7 +59,8 @@ namespace MatterHackers.Localizations
 		private const string englishTag = "English:";
 		private const string translatedTag = "Translated:";
 
-		private Dictionary<string, string> translationDictionary = new Dictionary<string, string>();
+		private Dictionary<string, string> machineTranslation = new Dictionary<string, string>();
+		private Dictionary<string, string> humanTranslation = new Dictionary<string, string>();
 
 		public static TranslationMap ActiveTranslationMap { get; set; }
 
@@ -70,10 +71,11 @@ namespace MatterHackers.Localizations
 			this.twoLetterIsoLanguageName = twoLetterIsoLanguageName;
 		}
 
-		public TranslationMap(StreamReader streamReader, string twoLetterIsoLanguageName)
+		public TranslationMap(StreamReader machineTranslation, StreamReader humanTranslation, string twoLetterIsoLanguageName)
 		{
 			this.twoLetterIsoLanguageName = twoLetterIsoLanguageName;
-			translationDictionary = ReadIntoDictionary(streamReader);
+			this.machineTranslation = ReadIntoDictionary(machineTranslation);
+			this.humanTranslation = ReadIntoDictionary(humanTranslation);
 		}
 
 		public virtual string Translate(string englishString)
@@ -92,8 +94,15 @@ namespace MatterHackers.Localizations
 			}
 #endif
 
-			// Perform the lookup to the translation table
-			if (!translationDictionary.TryGetValue(englishString, out string translatedString))
+			if (humanTranslation?.TryGetValue(englishString, out string humanTranslatedString) == true)
+            {
+				if (englishString != humanTranslatedString)
+				{
+					return humanTranslatedString;
+				}
+			}
+				// Perform the lookup to the translation table
+			if (!machineTranslation.TryGetValue(englishString, out string machineTranslatedString))
 			{
 #if DEBUG
 				if (twoLetterIsoLanguageName == "en")
@@ -140,7 +149,7 @@ namespace MatterHackers.Localizations
 				return englishString;
 			}
 
-			return translatedString;
+			return machineTranslatedString;
 		}
 
 		/// <summary>
@@ -157,9 +166,9 @@ namespace MatterHackers.Localizations
 		{
 			lock (locker)
 			{
-				if (!translationDictionary.ContainsKey(englishString))
+				if (!machineTranslation.ContainsKey(englishString))
 				{
-					translationDictionary.Add(englishString, englishString);
+					machineTranslation.Add(englishString, englishString);
 
 					var pathName = "C:\\" + Path.Combine("Development", "MCCentral", "MatterControl", "StaticData", "Translations");
 					if (!Directory.Exists(pathName))
@@ -171,7 +180,7 @@ namespace MatterHackers.Localizations
 					// save content to new file
 					using (var masterFileStream = File.CreateText(newFile))
 					{
-						foreach(var kvp in translationDictionary.OrderBy(k => k.Key))
+						foreach(var kvp in machineTranslation.OrderBy(k => k.Key))
                         {
 							masterFileStream.WriteLine("{0}{1}", englishTag, EncodeForSaving(kvp.Key));
 							masterFileStream.WriteLine("{0}{1}", translatedTag, EncodeForSaving(kvp.Key));
@@ -198,6 +207,11 @@ namespace MatterHackers.Localizations
 
 		protected Dictionary<string, string> ReadIntoDictionary(StreamReader streamReader)
 		{
+			if (streamReader == null)
+            {
+				return null;
+            }
+
 			var dictionary = new Dictionary<string, string>();
 
 			bool lookingForEnglish = true;
