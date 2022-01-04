@@ -35,6 +35,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using IxMilia.ThreeMf;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D.UndoCommands;
@@ -436,6 +437,17 @@ namespace MatterHackers.DataConverters3D
 
 				case ".AMF":
 					return AmfDocument.Load(stream, cancellationToken, progress);
+
+				case ".3MF":
+					{
+						var file = ThreeMfFile.Load(stream);
+						var model = file.Models.Single();
+						var mesh = new Mesh();
+						// model.Resources
+						// model.Items
+						// var item = new Object3D();
+						return null;
+					}
 
 				case ".OBJ":
 					return ObjSupport.Load(stream, progress);

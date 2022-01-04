@@ -94,7 +94,8 @@ namespace MatterHackers.Localizations
 			}
 #endif
 
-			if (humanTranslation?.TryGetValue(englishString, out string humanTranslatedString) == true)
+			string humanTranslatedString = null;
+			if (humanTranslation?.TryGetValue(englishString, out humanTranslatedString) == true)
             {
 				if (englishString != humanTranslatedString)
 				{
