@@ -404,6 +404,46 @@ namespace MatterHackers.DataConverters3D
 			deserializeLock?.Dispose();
 		}
 
+		private static Matrix4X4 ToMatrix4X4(ThreeMfMatrix threeMfMatrix)
+        {
+			return new Matrix4X4(threeMfMatrix.M00, threeMfMatrix.M01, threeMfMatrix.M02, 0,
+				threeMfMatrix.M10, threeMfMatrix.M11, threeMfMatrix.M12, 0,
+				threeMfMatrix.M20, threeMfMatrix.M21, threeMfMatrix.M22, 0,
+				threeMfMatrix.M30, threeMfMatrix.M31, threeMfMatrix.M32, 1);
+		}
+
+		private static void AddObject(Object3D object3D, ThreeMfObject threeMfObject, Matrix4X4 matrix)
+		{
+			var mesh3mf = threeMfObject.Mesh;
+			if (mesh3mf.Triangles.Count > 0)
+			{
+				var mesh = new Mesh();
+
+				foreach (var vertex in mesh3mf.Triangles)
+				{
+					mesh.CreateFace(new Vector3[] {
+											new Vector3(vertex.V1.X,vertex.V1.Y,vertex.V1.Z),
+											new Vector3(vertex.V2.X,vertex.V2.Y,vertex.V2.Z),
+											new Vector3(vertex.V3.X,vertex.V3.Y,vertex.V3.Z),
+										});
+				}
+
+				object3D.Children.Add(new Object3D()
+				{
+					Mesh = mesh,
+					Matrix = matrix,
+				});
+			}
+
+			foreach (var component in threeMfObject.Components)
+			{
+				if (component.Object is ThreeMfObject subObject)
+				{
+					AddObject(object3D, subObject, matrix * ToMatrix4X4(component.Transform));
+				}
+			}
+		}
+
 		public static IObject3D Load(Stream stream, string extension, CancellationToken cancellationToken, CacheContext cacheContext = null, Action<double, string> progress = null)
 		{
 			if (cacheContext == null)
@@ -430,7 +470,6 @@ namespace MatterHackers.DataConverters3D
 					return loadedItem;
 
 				case ".STL":
-
 					var result = new Object3D();
 					result.SetMeshDirect(StlProcessing.Load(stream, cancellationToken, progress));
 					return result;
@@ -446,36 +485,10 @@ namespace MatterHackers.DataConverters3D
                         {
 							foreach (var item in model.Items)
 							{
-								var transform = item.Transform;
-								var matrix = new Matrix4X4(transform.M00, transform.M01, transform.M02, 0,
-									transform.M10, transform.M11, transform.M12, 0,
-									transform.M20, transform.M21, transform.M22, 0,
-									transform.M30, transform.M31, transform.M32, 1);
 								if (item.Object is ThreeMfObject itemObject)
 								{
-									var mesh3mf = itemObject.Mesh;
-
-									foreach(var component in itemObject.Components)
-                                    {
-										int a = 0;
-                                    }
-
-									var mesh = new Mesh();
-
-									foreach(var vertex in mesh3mf.Triangles)
-                                    {
-										mesh.CreateFace(new Vector3[] {
-											new Vector3(vertex.V1.X,vertex.V1.Y,vertex.V1.Z),
-											new Vector3(vertex.V2.X,vertex.V2.Y,vertex.V2.Z),
-											new Vector3(vertex.V3.X,vertex.V3.Y,vertex.V3.Z),
-										});
-                                    }
-
-									object3D.Children.Add(new Object3D()
-									{
-										Mesh = mesh,
-										Matrix = matrix,
-									});
+									var transform = item.Transform;
+									AddObject(object3D, itemObject, ToMatrix4X4(transform));
 								}
 							}
                         }
