@@ -441,11 +441,50 @@ namespace MatterHackers.DataConverters3D
 				case ".3MF":
 					{
 						var file = ThreeMfFile.Load(stream);
-						var model = file.Models.Single();
-						var mesh = new Mesh();
-						// model.Resources
-						// model.Items
-						// var item = new Object3D();
+						var object3D = new Object3D();
+						foreach (var model in file.Models)
+                        {
+							foreach (var item in model.Items)
+							{
+								var transform = item.Transform;
+								var matrix = new Matrix4X4(transform.M00, transform.M01, transform.M02, 0,
+									transform.M10, transform.M11, transform.M12, 0,
+									transform.M20, transform.M21, transform.M22, 0,
+									transform.M30, transform.M31, transform.M32, 1);
+								if (item.Object is ThreeMfObject itemObject)
+								{
+									var mesh3mf = itemObject.Mesh;
+
+									foreach(var component in itemObject.Components)
+                                    {
+										int a = 0;
+                                    }
+
+									var mesh = new Mesh();
+
+									foreach(var vertex in mesh3mf.Triangles)
+                                    {
+										mesh.CreateFace(new Vector3[] {
+											new Vector3(vertex.V1.X,vertex.V1.Y,vertex.V1.Z),
+											new Vector3(vertex.V2.X,vertex.V2.Y,vertex.V2.Z),
+											new Vector3(vertex.V3.X,vertex.V3.Y,vertex.V3.Z),
+										});
+                                    }
+
+									object3D.Children.Add(new Object3D()
+									{
+										Mesh = mesh,
+										Matrix = matrix,
+									});
+								}
+							}
+                        }
+
+						if (object3D?.Children.Count > 0)
+                        {
+							return object3D;
+                        }
+
 						return null;
 					}
 
@@ -483,6 +522,12 @@ namespace MatterHackers.DataConverters3D
 					case ".AMF":
 						outputInfo.ReportProgress = reportProgress;
 						return AmfDocument.Save(item, meshPathAndFileName, outputInfo);
+
+					case ".3MF":
+#if DEBUG
+						throw new NotImplementedException();
+#endif
+						return false;
 
 					case ".OBJ":
 						outputInfo.ReportProgress = reportProgress;
