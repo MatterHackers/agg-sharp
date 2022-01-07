@@ -1018,7 +1018,12 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public void CropToVisible(Func<Color, bool> isVisible = null)
+		public void CropToVisibleInPlace(Func<Color, bool> isVisible = null)
+		{
+			this.CopyFrom(this.CropToVisible());
+		}
+
+		public ImageBuffer CropToVisible(Func<Color, bool> isVisible = null)
 		{
 			Vector2 oldOriginOffset = OriginOffset;
 
@@ -1031,7 +1036,7 @@ namespace MatterHackers.Agg.Image
 				&& visibleBounds.Height == Height)
 			{
 				OriginOffset = oldOriginOffset;
-				return;
+				return this;
 			}
 
 			// check if the Not0Rect has any size
@@ -1042,14 +1047,13 @@ namespace MatterHackers.Agg.Image
 				// set TempImage equal to the Not0Rect
 				tempImage.Initialize(this, visibleBounds);
 
-				// set the frame equal to the TempImage
-				Initialize(tempImage);
+				tempImage.OriginOffset = new Vector2(-visibleBounds.Left + oldOriginOffset.X, -visibleBounds.Bottom + oldOriginOffset.Y);
 
-				OriginOffset = new Vector2(-visibleBounds.Left + oldOriginOffset.X, -visibleBounds.Bottom + oldOriginOffset.Y);
+				return tempImage;
 			}
 			else
 			{
-				Deallocate();
+				return new ImageBuffer();
 			}
 		}
 
