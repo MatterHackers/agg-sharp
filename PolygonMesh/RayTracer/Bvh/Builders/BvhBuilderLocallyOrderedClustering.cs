@@ -27,105 +27,246 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+using System.Collections.Generic;
+using Node = MatterHackers.RayTracer.ITraceable;
+using Scalar = System.Double;
+
 namespace MatterHackers.RayTracer
 {
-    public static class BvhBuilderLocallyOrderedClustering
-    {
-
-    }
-
-    public class RadixSort
-    {
 #if false
-        const int bits_per_iteration = 10;
+    public class BvhBuilderLocallyOrderedClustering
+    {
+        /// Parameter of the algorithm. The larger the search radius,
+        /// the longer the search for neighboring nodes lasts.
+        int search_radius = 14;
 
-    /// Performs the sort. Must be called from a parallel region.
-    template<typename Key, typename Value>
-    void sort_in_parallel(
-        Key* bvh_restrict& keys,
-        Key* bvh_restrict& keys_copy,
-        Value* bvh_restrict& values,
-        Value* bvh_restrict& values_copy,
-        size_t count, size_t bit_count)
+        (int, int) search_range(int i, int begin, int end)
         {
-            bvh::assert_in_parallel();
+            return (i > begin + search_radius ? i - search_radius : begin, Math.Min(i + search_radius + 1, end));
+        }
 
-            static constexpr size_t bucket_count = 1 << bits_per_iteration;
-            static constexpr Key mask = (Key(1) << bits_per_iteration) - 1;
+        (int, int) cluster(List<ITraceable> input,
+            Node output,
+            int neighbors,
+            int merged_index,
+            int begin,
+            int end,
+            int previous_end)
+        {
+            int next_begin = 0;
+            int next_end = 0;
 
-            size_t thread_count = bvh::get_thread_count();
-            size_t thread_id = bvh::get_thread_id();
-
-            // Allocate temporary storage
-#pragma omp single
             {
-                size_t data_size = (thread_count + 1) * bucket_count;
-                if (per_thread_data_size < data_size)
+                int thread_count = 1;// bvh::get_thread_count();
+                int thread_id = 0; // bvh::get_thread_id();
+                int chunk_size = (end - begin) / thread_count;
+                int chunk_begin = begin + thread_id * chunk_size;
+                int chunk_end = thread_id != thread_count - 1 ? chunk_begin + chunk_size : end;
+
+                var distances = new Scalar[((search_radius + 1) * search_radius)];
+                var distance_matrix = new List<Scalar[]>(search_radius + 1);
+                for (int i = 0; i <= search_radius; ++i)
                 {
-                    per_thread_buckets = std::make_unique<size_t[]>(data_size);
-                    per_thread_data_size = data_size;
+                    distance_matrix[i] = distances[i * search_radius];
                 }
-            }
 
-            for (size_t bit = 0; bit < bit_count; bit += BitsPerIteration)
-            {
-                auto buckets = &per_thread_buckets[thread_id * bucket_count];
-                std::fill(buckets, buckets + bucket_count, 0);
-
-#pragma omp for schedule(static)
-                for (size_t i = 0; i < count; ++i)
-                    buckets[(keys[i] >> bit) & mask]++;
-
-#pragma omp for
-                for (size_t i = 0; i < bucket_count; i++)
+                // Initialize the distance matrix, which caches the distances between
+                // neighboring nodes in the array. A brute force approach that recomputes the
+                // distances for every neighbor can be implemented without a distance matrix,
+                // but would be slower for larger search radii.
+                for (int i = search_range(chunk_begin, begin, end).Item1; i < chunk_begin; ++i)
                 {
-                    // Do a prefix sum of the elements in one bucket over all threads
-                    size_t sum = 0;
-                    for (size_t j = 0; j < thread_count; ++j)
+                    int search_end = search_range(i, begin, end).Item2;
+                    for (int j = i + 1; j < search_end; ++j)
                     {
-                        size_t old_sum = sum;
-                        sum += per_thread_buckets[j * bucket_count + i];
-                        per_thread_buckets[j * bucket_count + i] = old_sum;
+                        distance_matrix[chunk_begin - i][j - i - 1] = input[i]
+                            .bounding_box_proxy()
+                            .to_bounding_box()
+                            .extend(input[j].bounding_box_proxy())
+                            .half_area();
                     }
-                    per_thread_buckets[thread_count * bucket_count + i] = sum;
                 }
 
-                for (size_t i = 0, sum = 0; i < bucket_count; ++i)
+                // Nearest neighbor search
+                for (int i = chunk_begin; i < chunk_end; i++)
                 {
-                    size_t old_sum = sum;
-                    sum += per_thread_buckets[thread_count * bucket_count + i];
-                    buckets[i] += old_sum;
+                    int[search_begin, search_end] = search_range(i, begin, end);
+                    Scalar best_distance = std::numeric_limits < Scalar >::max();
+                    int best_neighbor = -1;
+
+                    // Backward search (using the previously-computed distances stored in the distance matrix)
+                    for (int j = search_begin; j < i; ++j)
+                    {
+                        int distance = distance_matrix[i - j][i - j - 1];
+                        if (distance < best_distance)
+                        {
+                            best_distance = distance;
+                            best_neighbor = j;
+                        }
+                    }
+
+                    // Forward search (caching computed distances in the distance matrix)
+                    for (int j = i + 1; j < search_end; ++j)
+                    {
+                        int distance = input[i]
+            .bounding_box_proxy()
+            .to_bounding_box()
+            .extend(input[j].bounding_box_proxy())
+            .half_area();
+                        distance_matrix[0][j - i - 1] = distance;
+                        if (distance < best_distance)
+                        {
+                            best_distance = distance;
+                            best_neighbor = j;
+                        }
+                    }
+
+                    assert(best_neighbor != int(-1));
+                    neighbors[i] = best_neighbor;
+
+                    // Rotate the distance matrix columns
+                    int last = distance_matrix[search_radius];
+                    std::move_backward(
+                        distance_matrix.get(),
+                        distance_matrix.get() + search_radius,
+                        distance_matrix.get() + search_radius + 1);
+                    distance_matrix[0] = last;
                 }
 
-#pragma omp for schedule(static)
-                for (size_t i = 0; i < count; ++i)
+                // Mark nodes that are the closest as merged, but keep
+                // the one with lowest index to act as the parent
+                for (int i = begin; i < end; ++i)
                 {
-                    size_t j = buckets[(keys[i] >> bit) & mask]++;
-                    keys_copy[j] = keys[i];
-                    values_copy[j] = values[i];
+                    int j = neighbors[i];
+                    bool is_mergeable = neighbors[j] == i;
+                    merged_index[i] = i < j && is_mergeable ? 1 : 0;
                 }
 
-#pragma omp single
+                // Perform a prefix sum to compute the insertion indices
+                prefix_sum.sum_in_parallel(merged_index + begin, merged_index + begin, end - begin);
+                int merged_count = merged_index[end - 1];
+                int unmerged_count = end - begin - merged_count;
+                int children_count = merged_count * 2;
+                int children_begin = end - children_count;
+                int unmerged_begin = end - (children_count + unmerged_count);
+
                 {
-                    std::swap(keys_copy, keys);
-                    std::swap(values_copy, values);
+                    next_begin = unmerged_begin;
+                    next_end = children_begin;
                 }
+
+                // Finally, merge nodes that are marked for merging and create
+                // their parents using the indices computed previously.
+                for (int i = begin; i < end; ++i)
+                {
+                    int j = neighbors[i];
+                    if (neighbors[j] == i)
+                    {
+                        if (i < j)
+                        {
+                            int &unmerged_node = output[unmerged_begin + j - begin - merged_index[j]];
+                            int first_child = children_begin + (merged_index[i] - 1) * 2;
+                            unmerged_node.bounding_box_proxy() = input[j]
+                                .bounding_box_proxy()
+                                .to_bounding_box()
+                                .extend(input[i].bounding_box_proxy());
+                            unmerged_node.primitive_count = 0;
+                            unmerged_node.first_child_or_primitive = first_child;
+                            output[first_child + 0] = input[i];
+                            output[first_child + 1] = input[j];
+                        }
+                    }
+                    else
+                    {
+                        output[unmerged_begin + i - begin - merged_index[i]] = input[i];
+                    }
+                }
+
+                // Copy the nodes of the previous level into the current array of nodes.
+                for (int i = end; i < previous_end; ++i)
+                    output[i] = input[i];
+            }
+
+            return (next_begin, next_end);
+        }
+    }
+
+    public class RadixSort<Key, Value>
+    {
+        // A function to do counting sort of arr[] according to
+        // the digit represented by exp.
+        public static void CountSort(int[] arr, int n, int exp)
+        {
+            int[] output = new int[n]; // output array
+            int i;
+            int[] count = new int[10];
+
+            // initializing all elements of count to 0
+            for (i = 0; i < 10; i++)
+            {
+                count[i] = 0;
+            }
+
+            // Store count of occurrences in count[]
+            for (i = 0; i < n; i++)
+            {
+                count[(arr[i] / exp) % 10]++;
+            }
+
+            // Change count[i] so that count[i] now contains
+            // actual
+            //  position of this digit in output[]
+            for (i = 1; i < 10; i++)
+            {
+                count[i] += count[i - 1];
+            }
+
+            // Build the output array
+            for (i = n - 1; i >= 0; i--)
+            {
+                output[count[(arr[i] / exp) % 10] - 1] = arr[i];
+                count[(arr[i] / exp) % 10]--;
+            }
+
+            // Copy the output array to arr[], so that arr[] now
+            // contains sorted numbers according to current
+            // digit
+            for (i = 0; i < n; i++)
+            {
+                arr[i] = output[i];
             }
         }
 
-        /// Creates a radix sort key from a floating point value.
-        template<typename T, std::enable_if_t<std::is_floating_point<T>::value, int> = 0>
-    static typename SizedIntegerType<sizeof(T) * CHAR_BIT>::Unsigned make_key(T x)
+        public static int GetMax(int[] arr, int n)
         {
-            using U = typename SizedIntegerType < sizeof(T) * CHAR_BIT >::Unsigned;
-            auto mask = U(1) << (sizeof(T) * CHAR_BIT - 1);
-            auto y = as< U > (x);
-            return (y & mask ? (-y) ^ mask : y) ^ mask;
+            int mx = arr[0];
+            for (int i = 1; i < n; i++)
+            {
+                if (arr[i] > mx)
+                {
+                    mx = arr[i];
+                }
+            }
+
+            return mx;
         }
 
-        private:
-    std::unique_ptr<size_t[]> per_thread_buckets;
-        size_t per_thread_data_size = 0;
-#endif
+        // The main function to that sorts arr[] of size n using
+        // Radix Sort
+        public static void Radixsort(int[] arr, int n)
+        {
+            // Find the maximum number to know number of digits
+            int m = GetMax(arr, n);
+
+            // Do counting sort for every digit. Note that
+            // instead of passing digit number, exp is passed.
+            // exp is 10^i where i is current digit number
+            for (int exp = 1; m / exp > 0; exp *= 10)
+            {
+                CountSort(arr, n, exp);
+            }
+        }
     }
+#endif
 }

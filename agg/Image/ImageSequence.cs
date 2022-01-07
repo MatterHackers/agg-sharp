@@ -136,9 +136,9 @@ namespace MatterHackers.Agg.Image
 
 		public void CropToVisible()
 		{
-			foreach (ImageBuffer image in Frames)
+			for (int i=0; i<Frames.Count; i++)
 			{
-				image.CropToVisible();
+				Frames[i] = Frames[i].CropToVisible();
 			}
 		}
 
