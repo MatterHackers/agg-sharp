@@ -111,7 +111,7 @@ namespace MatterHackers.Agg.UI
 
 		private void FixOriginXIfRightToLeft(GuiWidget parent)
 		{
-			if (parent.HAnchorIsSet(HAnchor.Fit) && FlowDirection == UI.FlowDirection.RightToLeft)
+			if (parent.HAnchorIsSet(HAnchor.Fit) && FlowDirection == FlowDirection.RightToLeft)
 			{
 				RectangleDouble encloseChildrenRect = parent.GetMinimumBoundsToEncloseChildren();
 
@@ -134,7 +134,7 @@ namespace MatterHackers.Agg.UI
 
 		private void FixOriginYIfTopToBottom(GuiWidget parent)
 		{
-			if (parent.VAnchorIsSet(VAnchor.Fit) && FlowDirection == UI.FlowDirection.TopToBottom)
+			if (parent.VAnchorIsSet(VAnchor.Fit) && FlowDirection == FlowDirection.TopToBottom)
 			{
 				RectangleDouble encloseChildrenRect = parent.GetMinimumBoundsToEncloseChildren();
 
@@ -159,7 +159,7 @@ namespace MatterHackers.Agg.UI
 		{
 			newOriginRelParent = Vector2.Zero;
 			newHeight = 0;
-			if (FlowDirection == UI.FlowDirection.LeftToRight || FlowDirection == UI.FlowDirection.RightToLeft)
+			if (FlowDirection == FlowDirection.LeftToRight || FlowDirection == FlowDirection.RightToLeft)
 			{
 				return base.GetOriginAndHeightForChild(parent, child, out newOriginRelParent, out newHeight);
 			}
@@ -171,7 +171,7 @@ namespace MatterHackers.Agg.UI
 		{
 			newOriginRelParent = Vector2.Zero;
 			newWidth = 0;
-			if (FlowDirection == UI.FlowDirection.BottomToTop || FlowDirection == UI.FlowDirection.TopToBottom)
+			if (FlowDirection == FlowDirection.BottomToTop || FlowDirection == FlowDirection.TopToBottom)
 			{
 				return base.GetOriginAndWidthForChild(parent, child, out newOriginRelParent, out newWidth);
 			}
@@ -181,7 +181,7 @@ namespace MatterHackers.Agg.UI
 
 		protected override void ApplyHAnchorToChild(GuiWidget parent, GuiWidget child)
 		{
-			if (FlowDirection == UI.FlowDirection.BottomToTop || FlowDirection == UI.FlowDirection.TopToBottom)
+			if (FlowDirection == FlowDirection.BottomToTop || FlowDirection == FlowDirection.TopToBottom)
 			{
 				base.ApplyHAnchorToChild(parent, child);
 			}
@@ -212,7 +212,7 @@ namespace MatterHackers.Agg.UI
 
 		protected override void ApplyVAnchorToChild(GuiWidget parent, GuiWidget child)
 		{
-			if (FlowDirection == UI.FlowDirection.LeftToRight || FlowDirection == UI.FlowDirection.RightToLeft)
+			if (FlowDirection == FlowDirection.LeftToRight || FlowDirection == FlowDirection.RightToLeft)
 			{
 				base.ApplyVAnchorToChild(parent, child);
 			}
@@ -322,7 +322,7 @@ namespace MatterHackers.Agg.UI
 
 			switch (FlowDirection)
 			{
-				case UI.FlowDirection.LeftToRight:
+				case FlowDirection.LeftToRight:
 					{
 						double curX = parent.DevicePadding.Left;
 						foreach (GuiWidget child in parent.Children)
@@ -352,7 +352,7 @@ namespace MatterHackers.Agg.UI
 
 					break;
 
-				case UI.FlowDirection.RightToLeft:
+				case FlowDirection.RightToLeft:
 					{
 						double curX = parent.LocalBounds.Right - parent.DevicePadding.Right;
 						foreach (GuiWidget child in parent.Children)
@@ -382,7 +382,7 @@ namespace MatterHackers.Agg.UI
 
 					break;
 
-				case UI.FlowDirection.BottomToTop:
+				case FlowDirection.BottomToTop:
 					{
 						double curY = parent.DevicePadding.Bottom;
 						foreach (GuiWidget child in parent.Children)
@@ -412,7 +412,7 @@ namespace MatterHackers.Agg.UI
 
 					break;
 
-				case UI.FlowDirection.TopToBottom:
+				case FlowDirection.TopToBottom:
 					{
 						double curY = parent.LocalBounds.Top - parent.DevicePadding.Top;
 						foreach (GuiWidget child in parent.Children)
@@ -467,8 +467,8 @@ namespace MatterHackers.Agg.UI
 
 				switch (FlowDirection)
 				{
-					case UI.FlowDirection.LeftToRight:
-					case UI.FlowDirection.RightToLeft:
+					case FlowDirection.LeftToRight:
+					case FlowDirection.RightToLeft:
 						totalMinimumSizeOfAllItems.X += child.MinimumFlowSize().X + child.DeviceMarginAndBorder.Width;
 						totalMinimumSizeOfAllItems.Y = Math.Max(totalMinimumSizeOfAllItems.Y, child.MinimumFlowSize().Y + child.DeviceMarginAndBorder.Height);
 
@@ -490,8 +490,8 @@ namespace MatterHackers.Agg.UI
 
 						break;
 
-					case UI.FlowDirection.TopToBottom:
-					case UI.FlowDirection.BottomToTop:
+					case FlowDirection.TopToBottom:
+					case FlowDirection.BottomToTop:
 						totalMinimumSizeOfAllItems.X = Math.Max(totalMinimumSizeOfAllItems.X, child.MinimumFlowSize().X + child.DeviceMarginAndBorder.Width);
 						totalMinimumSizeOfAllItems.Y += child.MinimumFlowSize().Y + child.DeviceMarginAndBorder.Height;
 						if (child.VAnchorIsSet(VAnchor.Stretch))
