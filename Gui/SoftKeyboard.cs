@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2022, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,68 +27,133 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg.Platform;
 using MatterHackers.VectorMath;
+using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
-	public class SoftKeyboard : GuiWidget
+	public class SoftKeyboard : FlowLayoutWidget
 	{
-		private TextEditWidget hadFocusWidget = null;
+		public class Key
+        {
+			public string Default { get; set; }
 
-		public SoftKeyboard(int width, int height)
+			public string Shifted { get; set; }
+
+			public double Size { get; set; } = 1;
+
+            public override string ToString() => $"{Default} : {Shifted} : {Size}";
+        }
+
+		public class Row
+        {
+			public List<Key> Keys { get; set; }
+        }
+
+		public class KeyboardLayout
 		{
-			Width = width;
+			public string Name { get; set; }
+			public List<Row> Rows { get; set; }
+		}
+
+		public class Layouts
+		{
+			public List<KeyboardLayout> Layout { get; set; }
+		}
+
+		private TextEditWidget hadFocusWidget = null;
+        private Layouts keyLayouts;
+
+        public SoftKeyboard(int width, int height)
+			: base(FlowDirection.TopToBottom)
+		{
 			Height = height;
+			HAnchor = HAnchor.Center;
+			Width = 17.5 * 64 * DeviceScale;
+
+			var layoutContent = StaticData.Instance.ReadAllText("TouchKeyboard.json");
+			keyLayouts = JsonConvert.DeserializeObject<Layouts>(layoutContent);
 
 			MakeKeyButtons();
 		}
 
 		private void MakeKeyButtons()
 		{
-			// row 1
-			int buttonHeight = (int)Height / 4;
-			string topButtons = "qwertyuiop";
-			int y = buttonHeight * 3;
-			int buttonWidth = (int)Width / (topButtons.Length + 1); // one is for the backspace
-			int x = AddStringOfButtons(topButtons, 0, y, buttonWidth);
-			AddInputButton("BS", x, y);
+			foreach(var row in keyLayouts.Layout[0].Rows)
+            {
+				var rowWidget = this.AddChild(new FlowLayoutWidget()
+                {
+					HAnchor = HAnchor.Stretch,
+					Padding = 3
+                });
+				var first = true;
+				foreach (var key in row.Keys)
+				{
+					if (!first)
+					{
+						rowWidget.AddChild(new HorizontalSpacer());
+					}
+					first = false;
+					var width = 64 * DeviceScale * key.Size;
+					var height = 57 * DeviceScale;
+					var inputButton = new Button(GetButtonImage(key))
+                    {
+						MinimumSize = new Vector2(width, height),
+						Width = width,
+						Height = height,
+						Margin = 0,
+						BackgroundRadius = 3 * DeviceScale,
+						Border = 3 * DeviceScale,
+						BorderColor = Color.Black
+                    };
+					inputButton.Click += inputButton_Click;
+					rowWidget.AddChild(inputButton);
+				}
 
-			// row 2
-			string bottonRow2 = "asdfghjkl";
-			buttonWidth = (int)Width / (bottonRow2.Length + 1); // one is for the cr
-			y -= buttonHeight;
-			x = AddStringOfButtons(bottonRow2, 0, y, buttonWidth);
-			AddInputButton("CR", x, y);
-
-			// row 3
-			string bottonRow3 = "zxcvbnm!?";
-			buttonWidth = (int)Width / (bottonRow3.Length + 2); // for shifts
-			y -= buttonHeight;
-			AddInputButton("Shift", 0, y);
-			x = AddStringOfButtons(bottonRow3, buttonWidth, y, buttonWidth);
-			AddInputButton("Shift", x, y);
-		}
-
-		private int AddStringOfButtons(string topButtons, int x, int y, int buttonWidth)
-		{
-			foreach (char letter in topButtons)
-			{
-				AddInputButton(letter.ToString(), x, y);
-				x += buttonWidth;
+				rowWidget.AddChild(new GuiWidget(4, 2));
 			}
-			return x;
 		}
 
-		private void AddInputButton(string label, int x, int y)
-		{
-			Button inputButton = new Button(label, x, y);
-			inputButton.Click += inputButton_Click;
-			AddChild(inputButton);
+        private GuiWidget GetButtonImage(Key key)
+        {
+			switch (key.Default)
+			{
+				default:
+					{
+						var container = new FlowLayoutWidget();
+						container.HAnchor |= HAnchor.Center;
+						container.VAnchor |= VAnchor.Center;
+						container.AddChild(new TextWidget(key.Default));
+						if (!string.IsNullOrEmpty(key.Shifted))
+						{
+							container.AddChild(new TextWidget(key.Shifted));
+							container.Children.Last().Visible = false;
+							Keyboard.StateChanged += (s, e) =>
+							{
+								if (Keyboard.IsKeyDown(Keys.ShiftKey))
+								{
+									container.Children.First().Visible = false;
+									container.Children.Last().Visible = true;
+								}
+								else
+								{
+									container.Children.First().Visible = true;
+									container.Children.Last().Visible = false;
+								}
+							};
+						}
+						return container;
+					}
+			}
+
+			throw new NotImplementedException();
 		}
 
-		private void inputButton_Click(object sender, EventArgs e)
+        private void inputButton_Click(object sender, EventArgs e)
 		{
 			if (hadFocusWidget != null)
 			{
@@ -102,7 +167,7 @@ namespace MatterHackers.Agg.UI
 		}
 	}
 
-	public class SoftKeyboardDisplayStateManager : GuiWidget
+    public class SoftKeyboardDisplayStateManager : GuiWidget
 	{
 		private TextEditWidget hadFocusWidget = null;
 		private GuiWidget content;
