@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2022
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -3325,6 +3325,19 @@ namespace MatterHackers.Agg.UI
 		{
 			Exact,
 			Partial
+		}
+
+		/// <summary>
+		/// Broadcast a message and event to every child recursively, regardless of visibility or enabled state.
+		/// </summary>
+		/// <param name="message">A text string to describe the event</param>
+		/// <param name="eventArgs">The event that is broadcast</param>
+		public void Broadcast(string message, EventArgs eventArgs)
+		{
+			foreach (var child in Children)
+			{
+				child.Broadcast(message, eventArgs);
+			}
 		}
 
 		public List<WidgetAndPosition> FindDescendants(string widgetName)
