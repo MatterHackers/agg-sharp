@@ -214,7 +214,7 @@ namespace MatterHackers.MeshVisualizer
 			{
 				if (depthPeeling != null)
 				{
-					depthPeeling.glutDisplayFunc(meshViewerWidget.World, meshViewerWidget.Scene.Children[0].Mesh);
+					depthPeeling.glutDisplayFunc(meshViewerWidget.World, meshViewerWidget.Scene.Children[0]);
 				}
 				else if (meshViewerWidget.Scene.Children.Count > 0)
 				{
@@ -264,7 +264,7 @@ namespace MatterHackers.MeshVisualizer
 			var meshPath = "";
 			for (int i = 0; i < possibleMeshes.Length; i++)
 			{
-				meshPath = Path.Combine(downloadsDirectory, possibleMeshes[0]);
+				meshPath = Path.Combine(downloadsDirectory, possibleMeshes[i]);
 				if (File.Exists(meshPath))
 				{
 					break;

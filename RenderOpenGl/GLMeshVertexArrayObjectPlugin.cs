@@ -82,7 +82,8 @@ namespace MatterHackers.RenderOpenGl
 
 		private void CreateRenderData(Mesh mesh, Func<Vector3Float, Color> getColorFunc)
 		{
-			var verticesPositions = mesh.Vertices.ToFloatArray();
+			//var verticesPositionsNormals = mesh.ToPositionNormalArray();
+			var verticesPositions = mesh.Vertices.ToFloatArray(); 
 			var faceVertexIndices = mesh.Faces.ToIntArray();
 
 			// Generate vertex array
@@ -92,7 +93,8 @@ namespace MatterHackers.RenderOpenGl
 			// Generate Vertex Buffer
 			gl.GenBuffers(1, out int VBO);
 			gl.BindBuffer(GL.ARRAY_BUFFER, VBO);
-			gl.BufferData(GL.ARRAY_BUFFER, verticesPositions, GL.STATIC_DRAW);
+			gl.BufferData(GL.ARRAY_BUFFER, verticesPositions, GL.STATIC_DRAW); 
+			//gl.BufferData(GL.ARRAY_BUFFER, verticesPositionsNormals, GL.STATIC_DRAW);
 
 			// Generate Index Buffer
 			gl.GenBuffers(1, out int FBO);

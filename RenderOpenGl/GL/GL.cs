@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using MatterHackers.Agg;
+using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderOpenGl.OpenGl
@@ -444,6 +445,17 @@ namespace MatterHackers.RenderOpenGl.OpenGl
                 fixed (float* data = v)
                 {
                     BufferData(target, sizeof(float) * v.Length, (IntPtr)data, usage);
+                }
+            }
+        }
+
+        public static void BufferData(int target, PositionNormal[] v, int usage)
+        {
+            unsafe
+            {
+                fixed (PositionNormal* data = v)
+                {
+                    BufferData(target, sizeof(PositionNormal) * v.Length, (IntPtr)data, usage);
                 }
             }
         }
