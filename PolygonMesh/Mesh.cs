@@ -895,6 +895,13 @@ namespace MatterHackers.PolygonMesh
 		}
 	}
 
+	public struct PositionNormal
+	{
+		public Vector3Float position;
+		public Vector3Float normal;
+	}
+
+
 	public static class MeshExtensionMethods
 	{
 		public static Mesh Copy(this Mesh meshToCopyIn, CancellationToken cancellationToken, Action<double, string> progress = null, bool allowFastCopy = true)
@@ -913,6 +920,26 @@ namespace MatterHackers.PolygonMesh
 			var verts = mesh.Vertices;
 			return new Plane(verts[face.v0], verts[face.v1], verts[face.v2]);
 		}
+
+		public static PositionNormal[] ToPositionNormalArray(this Mesh mesh)
+		{
+			List<Vector3Float> positions = mesh.Vertices;
+			var faces = mesh.Faces;
+
+			var array = new PositionNormal[faces.Count];
+
+			for (var i = 0; i < faces.Count; i++)
+			{
+				array[i] = new PositionNormal()
+				{
+					position = positions[faces[i].v0],
+					normal = faces[i].normal,
+				};
+			}
+
+			return array;
+		}
+
 
 		public static IEnumerable<int> GetCoplanarFaces(this Mesh mesh, Plane plane)
 		{

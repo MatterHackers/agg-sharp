@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.RenderOpenGl.OpenGl;
@@ -113,14 +114,13 @@ namespace MatterHackers.MeshVisualizer
 		int count = 0;
 
 		// Main display routine
-		public void glutDisplayFunc(WorldView worldView, Mesh mesh)
+		public void glutDisplayFunc(WorldView worldView, IObject3D item)
         {
+			var mesh = item.Mesh;
             var meshVao = GLMeshVertexArrayObjectPlugin.Get(mesh);
 
             GL.PushAttrib(AttribMask.EnableBit | AttribMask.ViewportBit | AttribMask.TransformBit);
 
-            //gl.Disable(EnableCap.CullFace);
-            //gl.CullFace(CullFaceMode.FrontAndBack);
             // Projection and modelview matrices
             float near = 0.01f;
             float far = 20;
