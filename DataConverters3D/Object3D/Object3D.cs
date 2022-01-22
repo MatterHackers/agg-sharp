@@ -294,13 +294,13 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual bool Visible { get; set; } = true;
 
-		public virtual bool CanFlatten
+		public virtual bool CanApply
 		{
 			get
 			{
 				if (this.Children.Count == 0 && this.GetType() != typeof(Object3D))
 				{
-					// we can flatten anything that is not an object 3d into an object 3d
+					// we can apply anything that is not an object 3d into an object 3d
 					return true;
 				}
 
@@ -1012,7 +1012,7 @@ namespace MatterHackers.DataConverters3D
 				});
 		}
 
-		public virtual void Flatten(UndoBuffer undoBuffer)
+		public virtual void Apply(UndoBuffer undoBuffer)
 		{
 			using (RebuildLock())
 			{
@@ -1070,7 +1070,7 @@ namespace MatterHackers.DataConverters3D
 			Invalidate(InvalidateType.Children);
 		}
 
-		public virtual void Remove(UndoBuffer undoBuffer)
+		public virtual void Cancel(UndoBuffer undoBuffer)
 		{
 			var parent = this.Parent;
 

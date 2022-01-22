@@ -87,7 +87,7 @@ namespace MatterHackers.DataConverters3D
 		bool CanEdit { get; }
 
 		[JsonIgnore]
-		bool CanFlatten { get; }
+		bool CanApply { get; }
 
 		[JsonConverter(typeof(IObject3DChildrenConverter))]
 		AscendableSafeList<IObject3D> Children { get; set; }
@@ -151,7 +151,7 @@ namespace MatterHackers.DataConverters3D
 		/// Remove the IObject3D from the tree and keep whatever functionality it was adding.
 		/// This may require removing many child objects from the tree depending on implementation.
 		/// </summary>
-		void Flatten(UndoBuffer undoBuffer);
+		void Apply(UndoBuffer undoBuffer);
 
 		/// <summary>
 		/// Get the Axis Aligned Bounding Box transformed by the given offset
@@ -186,7 +186,7 @@ namespace MatterHackers.DataConverters3D
 		/// Remove the IObject3D from the tree and undo whatever functionality it was adding (if appropriate).
 		/// This may require removing many child objects from the tree depending on implementation.
 		/// </summary>
-		void Remove(UndoBuffer undoBuffer);
+		void Cancel(UndoBuffer undoBuffer);
 
 		/// <summary>
 		/// Directly assigns a mesh without firing events or invalidating
