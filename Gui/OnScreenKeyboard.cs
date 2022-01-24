@@ -36,7 +36,7 @@ using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
-	public class SoftKeyboard : FlowLayoutWidget
+	public class OnScreenKeyboard : FlowLayoutWidget
 	{
 		public class Key
         {
@@ -68,7 +68,7 @@ namespace MatterHackers.Agg.UI
 		private TextEditWidget hadFocusWidget = null;
         private Layouts keyLayouts;
 
-        public SoftKeyboard(int width, int height)
+        public OnScreenKeyboard(int width, int height)
 			: base(FlowDirection.TopToBottom)
 		{
 			Height = height;
@@ -110,6 +110,14 @@ namespace MatterHackers.Agg.UI
 						Border = 3 * DeviceScale,
 						BorderColor = Color.Black
                     };
+					inputButton.MouseEnterBounds += (s, e) =>
+					{
+						inputButton.BackgroundColor = Color.Blue;
+					};
+					inputButton.MouseLeaveBounds += (s, e) =>
+					{
+						inputButton.BackgroundColor = Color.Transparent;
+					};
 					inputButton.Click += inputButton_Click;
 					rowWidget.AddChild(inputButton);
 				}
@@ -172,16 +180,16 @@ namespace MatterHackers.Agg.UI
 		private TextEditWidget hadFocusWidget = null;
 		private GuiWidget content;
 		private GuiWidget contentOffsetHolder;
-		private SoftKeyboard keyboard;
+		private OnScreenKeyboard keyboard;
 
-		public SoftKeyboardDisplayStateManager(GuiWidget content, Color backgroundColor)
+		public SoftKeyboardDisplayStateManager(SystemWindow rootSystemWindow)
 		{
 			this.content = content;
 			AnchorAll();
-			AddChild(content);
+			// AddChild(content);
 
-			keyboard = new SoftKeyboard(800, 300);
-			keyboard.BackgroundColor = backgroundColor;
+			keyboard = new OnScreenKeyboard(800, 300);
+			// keyboard.BackgroundColor = backgroundColor;
 			AddChild(keyboard);
 			keyboard.Visible = false;
 
