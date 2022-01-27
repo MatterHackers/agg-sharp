@@ -126,6 +126,16 @@ namespace MatterHackers.DataConverters3D
 				};
 			}
 
+			if (property.PropertyName == "NameOverriden")
+			{
+				property.ShouldSerialize = (instance) =>
+				{
+					// Only serialize Matrix values off by more than .001 from Matrix4X4.Identity
+					return instance is Object3D object3D
+						&& object3D.NameOverriden == false;
+				};
+			}
+
 			if (property.PropertyType == typeof(bool)
 				&& property.PropertyName == "Persistable")
 			{
