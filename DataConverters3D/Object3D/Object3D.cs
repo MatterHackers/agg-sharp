@@ -271,9 +271,14 @@ namespace MatterHackers.DataConverters3D
 
 		public string MeshPath { get; set; }
 
+		/// <summary>
+		/// Gets or set if the name has been override by the user.
+		/// </summary>
+		public bool NameOverriden { get; set; }
+
 		private string _name = "";
 
-		public string Name
+		public virtual string Name
 		{
 			get => _name;
 			set
@@ -281,6 +286,7 @@ namespace MatterHackers.DataConverters3D
 				if (value != _name)
 				{
 					_name = value;
+					NameOverriden = true;
 					Invalidate(InvalidateType.Name);
 				}
 			}
