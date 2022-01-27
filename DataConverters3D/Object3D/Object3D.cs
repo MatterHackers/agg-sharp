@@ -39,6 +39,7 @@ using IxMilia.ThreeMf;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D.UndoCommands;
+using MatterHackers.Localizations;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.PolygonMesh.Processors;
@@ -274,7 +275,7 @@ namespace MatterHackers.DataConverters3D
 		/// <summary>
 		/// Gets or set if the name has been override by the user.
 		/// </summary>
-		public bool NameOverriden { get; set; }
+		public bool NameOverriden { get; set; } = true;
 
 		private string _name = "";
 
@@ -1122,6 +1123,54 @@ namespace MatterHackers.DataConverters3D
 		public bool Equals(IObject3D other)
 		{
 			return base.Equals(other);
+		}
+
+		public static string CalculateName(IEnumerable<IObject3D> setA, string aSeprator)
+		{
+			var setACount = setA?.Count() ?? 0;
+			var name = "";
+
+			if (setACount > 0)
+			{
+				foreach (var item in setA.OrderBy(i => i.Name))
+				{
+					if (name == "")
+					{
+						name = item.Name;
+					}
+					else
+					{
+						name += aSeprator + item.Name;
+					}
+				}
+			}
+
+			return name;
+		}
+
+		public static string CalculateName(IEnumerable<IObject3D> setA,
+			string aSeparator,
+			string setSeparator,
+			IEnumerable<IObject3D> setB,
+			string bSeparator)
+		{
+			var setACount = setA?.Count() ?? 0;
+			var setBCount = setB?.Count() ?? 0;
+			if (setACount == 0 && setBCount == 0)
+			{
+				return "Empty".Localize();
+			}
+
+			var name = CalculateName(setA, aSeparator);
+
+			if (setACount > 0 && setBCount > 0)
+			{
+				name += setSeparator;
+			}
+
+			name += CalculateName(setB, bSeparator);
+
+			return name;
 		}
 	}
 
