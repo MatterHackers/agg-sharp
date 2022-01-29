@@ -370,7 +370,15 @@ namespace MatterHackers.DataConverters3D
 
 		public bool Expanded => true;
 
-		public event EventHandler ItemsModified;
+        public bool HasUnsavedChanges
+		{
+			get
+            {
+				return true;
+			}
+		}
+
+        public event EventHandler ItemsModified;
 
 		public IObject3D Clone() => SourceItem.Clone();
 
