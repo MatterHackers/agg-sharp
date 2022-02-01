@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -43,7 +44,7 @@ namespace MatterHackers.DataConverters3D
 {
 	public static class Object3DExtensions
 	{
-		internal static void LoadMeshLinks(this IObject3D tempScene, CancellationToken cancellationToken, CacheContext cacheContext, Action<double, string> progress)
+		public static void LoadMeshLinks(this IObject3D tempScene, CancellationToken cancellationToken, CacheContext cacheContext, Action<double, string> progress)
 		{
 			var itemsToLoad = (from object3D in tempScene.DescendantsAndSelf()
 							   where !string.IsNullOrEmpty(object3D.MeshPath)
@@ -54,6 +55,24 @@ namespace MatterHackers.DataConverters3D
 			{
 				var object3D = itemsToLoad[i];
 				object3D.LoadLinkedMesh(cacheContext, cancellationToken, (ratio, title) =>
+				{
+					var accumulatedRatio = i * ratioPerItem + ratio * ratioPerItem;
+					progress?.Invoke(accumulatedRatio, title);
+				});
+			}
+		}
+
+		public static void LoadMeshLinks(this IObject3D tempScene, ZipArchive zipArchive, CancellationToken cancellationToken, CacheContext cacheContext, Action<double, string> progress)
+		{
+			var itemsToLoad = (from object3D in tempScene.DescendantsAndSelf()
+							   where !string.IsNullOrEmpty(object3D.MeshPath)
+							   select object3D).ToList();
+
+			var ratioPerItem = 1.0 / itemsToLoad.Count;
+			for (int i = 0; i < itemsToLoad.Count; i++)
+			{
+				var object3D = itemsToLoad[i];
+				object3D.LoadLinkedMesh(zipArchive, cacheContext, cancellationToken, (ratio, title) =>
 				{
 					var accumulatedRatio = i * ratioPerItem + ratio * ratioPerItem;
 					progress?.Invoke(accumulatedRatio, title);
@@ -174,6 +193,70 @@ namespace MatterHackers.DataConverters3D
 					// Fall back to Missing mesh if available
 					item.SetMeshDirect(Object3D.FileMissingMesh);
 				}
+			}
+		}
+
+		private static void LoadLinkedMesh(this IObject3D item, ZipArchive zipArchive, CacheContext cacheContext, CancellationToken cancellationToken, Action<double, string> progress)
+		{
+			// Abort load if cancel requested
+			cancellationToken.ThrowIfCancellationRequested();
+
+			string filename = Path.GetFileName(item.ResolveFilePath(progress, cancellationToken).Result);
+
+			try
+			{
+				if (cacheContext.Meshes.TryGetValue(filename, out Mesh mesh))
+				{
+					item.SetMeshDirect(mesh);
+				}
+				else
+				{
+					IObject3D loadedItem = null;
+
+					var assetEntryName = zipArchive.Entries.Where(e => e.Name.Contains(filename)).First().FullName;
+					using (var zipEntryStream = zipArchive.GetEntry(assetEntryName).Open())
+					{
+						var stream = new MemoryStream();
+						zipEntryStream.CopyTo(stream);
+						
+						string extension = Path.GetExtension(filename).ToLower();
+
+						loadedItem = Object3D.Load(stream, extension, cancellationToken, cacheContext, progress);
+
+						// Cache loaded assets
+						if (cacheContext != null
+							&& extension != ".mcx"
+							&& loadedItem != null)
+						{
+							cacheContext.Items[filename] = loadedItem;
+						}
+					}
+
+					if (loadedItem?.Children.Count() > 0)
+					{
+						loadedItem.Children.Modify(loadedChildren =>
+						{
+							// copy the children
+							item.Children.Modify(children =>
+							{
+								children.AddRange(loadedChildren);
+								loadedChildren.Clear();
+							});
+						});
+					}
+					else
+					{
+						// copy the mesh
+						var loadedMesh = loadedItem?.Mesh;
+						cacheContext.Meshes[filename] = loadedMesh;
+						item.SetMeshDirect(loadedMesh);
+					}
+				}
+			}
+			catch
+			{
+				// Fall back to Missing mesh if available
+				item.SetMeshDirect(Object3D.FileMissingMesh);
 			}
 		}
 

@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -461,20 +462,57 @@ namespace MatterHackers.DataConverters3D
 			switch (extension.ToUpper())
 			{
 				case ".MCX":
-					string json = new StreamReader(stream).ReadToEnd();
+					// check if the file is binary
+					var buffer = new char[4096];
+					var readCount = new StreamReader(stream).ReadBlock(buffer, 0, buffer.Length);
+					stream.Seek(0, SeekOrigin.Begin);
+					if (readCount > 0 && new string(buffer).Contains("\"ID\":"))
+					{
+						// it is a next mcx file do the legacy load
+						var json = new StreamReader(stream).ReadToEnd();
 
-					// Load the meta file and convert MeshPath links into objects
-					var loadedItem = JsonConvert.DeserializeObject<Object3D>(
-						json,
-						new JsonSerializerSettings
+						// Load the meta file and convert MeshPath links into objects
+						var loadedItem = JsonConvert.DeserializeObject<Object3D>(
+							json,
+							new JsonSerializerSettings
+							{
+								ContractResolver = new IObject3DContractResolver(),
+								NullValueHandling = NullValueHandling.Ignore
+							});
+
+						loadedItem?.LoadMeshLinks(cancellationToken, cacheContext, progress);
+
+						return loadedItem;
+					}
+					else
+					{
+						try
 						{
-							ContractResolver = new IObject3DContractResolver(),
-							NullValueHandling = NullValueHandling.Ignore
-						});
+							// it looks like a binary mcx file (which is a zip file). Load the contents
+							using (var archive = new ZipArchive(stream, ZipArchiveMode.Read))
+							{
+								var sceneEntryName = archive.Entries.Where(e => e.Name.Contains("scene.mcx")).First().FullName;
+								var json = new StreamReader(archive.GetEntry(sceneEntryName).Open()).ReadToEnd();
 
-					loadedItem?.LoadMeshLinks(cancellationToken, cacheContext, progress);
+								// Load the meta file and convert MeshPath links into objects
+								var loadedItem = JsonConvert.DeserializeObject<Object3D>(
+									json,
+									new JsonSerializerSettings
+									{
+										ContractResolver = new IObject3DContractResolver(),
+										NullValueHandling = NullValueHandling.Ignore
+									});
 
-					return loadedItem;
+								loadedItem?.LoadMeshLinks(archive, cancellationToken, cacheContext, progress);
+
+								return loadedItem;
+							}
+						}
+						catch
+                        {
+                        }
+					}
+					return null;
 
 				case ".STL":
 					var result = new Object3D();
