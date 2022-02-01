@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace MatterHackers.Localizations
 {
@@ -78,14 +79,16 @@ namespace MatterHackers.Localizations
 			this.humanTranslation = ReadIntoDictionary(humanTranslation);
 		}
 
+		private static Regex findLocalizedText = new Regex(@"\""(?:[^\""\\]|\\.)*\"".Localize\(\)", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
 		public virtual string Translate(string englishString)
-		{
-			// Skip dictionary lookups for English
+        {
+            // Skip dictionary lookups for English
 #if DEBUG
-			if (englishString == null)
-			{
-				return englishString;
-			}
+            if (englishString == null)
+            {
+                return englishString;
+            }
 #else
 			if (twoLetterIsoLanguageName == "en"
 				|| englishString == null)
@@ -94,74 +97,119 @@ namespace MatterHackers.Localizations
 			}
 #endif
 
-			string humanTranslatedString = null;
-			if (humanTranslation?.TryGetValue(englishString, out humanTranslatedString) == true)
+            string humanTranslatedString = null;
+            if (humanTranslation?.TryGetValue(englishString, out humanTranslatedString) == true)
             {
-				if (englishString != humanTranslatedString)
-				{
-					return humanTranslatedString;
-				}
-			}
-				// Perform the lookup to the translation table
-			if (!machineTranslation.TryGetValue(englishString, out string machineTranslatedString))
-			{
-#if DEBUG
-				if (twoLetterIsoLanguageName == "en")
-				{
-					if (englishString[englishString.Length - 1] == ' ')
-					{
-						throw new Exception("Translation strings should not have a trailing space");
-					}
-
-					AddNewString(englishString);
-				}
-#endif
-				if (twoLetterIsoLanguageName == "l10n"
-					&& englishString.Length > 0)
+                if (englishString != humanTranslatedString)
                 {
-					var firstChar = 'a';
-					foreach (var c in englishString)
-					{
-						if ((c >= 'a' && c <= 'z')
-							|| (c >= 'A' && c <= 'Z'))
-						{
-							firstChar = c;
-							break;
-						}
-					}
-					var newString = "";
-					foreach(var c in englishString)
+                    return humanTranslatedString;
+                }
+            }
+
+            SearchCodeForTranslations();
+
+            // Perform the lookup to the translation table
+            if (!machineTranslation.TryGetValue(englishString, out string machineTranslatedString))
+            {
+#if DEBUG
+                if (twoLetterIsoLanguageName == "en")
+                {
+                    if (englishString[englishString.Length - 1] == ' ')
                     {
-						if ((c >= 'a' && c <= 'z')
-							|| (c >= 'A' && c <= 'Z'))
-						{
-							newString += firstChar;
-						}
-						else
+                        throw new Exception("Translation strings should not have a trailing space");
+                    }
+
+                    AddNewString(englishString);
+                }
+#endif
+                if (twoLetterIsoLanguageName == "l10n"
+                    && englishString.Length > 0)
+                {
+                    var firstChar = 'a';
+                    foreach (var c in englishString)
+                    {
+                        if ((c >= 'a' && c <= 'z')
+                            || (c >= 'A' && c <= 'Z'))
                         {
-							newString += c;
+                            firstChar = c;
+                            break;
+                        }
+                    }
+                    var newString = "";
+                    foreach (var c in englishString)
+                    {
+                        if ((c >= 'a' && c <= 'z')
+                            || (c >= 'A' && c <= 'Z'))
+                        {
+                            newString += firstChar;
+                        }
+                        else
+                        {
+                            newString += c;
                         }
                     }
 
-					return newString;
+                    return newString;
+                }
+
+                // Use English string if no mapping found
+                return englishString;
+            }
+
+            return machineTranslatedString;
+        }
+
+        private void SearchCodeForTranslations()
+        {
+			// make sure we have not run already and that we have a translation file loaded
+            if (!haveParsedSourceCode
+                && this.machineTranslation != null)
+            {
+                var masterTranslationFile = Path.Combine(MasterSavePath, "Master.txt");
+                var fileInfo = new FileInfo(masterTranslationFile);
+
+				// only build if we are more than 10 days out of date
+                if (fileInfo.LastWriteTime.AddDays(10) < DateTime.UtcNow)
+                {
+                    // get a list of every .cs file
+                    var sourceFilesDirectory = new DirectoryInfo(SourceFilesPath);
+
+                    foreach (FileInfo file in sourceFilesDirectory.GetFiles("*.cs", SearchOption.AllDirectories))
+                    {
+                        var fileContent = File.ReadAllText(file.FullName);
+                        var matches = findLocalizedText.Matches(fileContent);
+                        for (int i = 0; i < matches.Count; i++)
+                        {
+                            var value = matches[i].Value;
+                            var withoutQuotes = value.Substring(1, value.Length - 2 - ".Localize()".Length);
+                            if (!withoutQuotes.Contains('\n'))
+                            {
+                                AddNewString(withoutQuotes);
+                            }
+                        }
+                    }
+
+					// Just in case we did not add any new strings set the last write time to now
+					File.SetLastWriteTimeUtc(masterTranslationFile, DateTime.UtcNow);
 				}
 
-				// Use English string if no mapping found
-				return englishString;
-			}
+                haveParsedSourceCode = true;
+            }
+        }
 
-			return machineTranslatedString;
-		}
-
-		/// <summary>
-		/// Encodes for saving, escaping newlines
-		/// </summary>
-		private string EncodeForSaving(string stringToEncode)
+        /// <summary>
+        /// Encodes for saving, escaping newlines
+        /// </summary>
+        private string EncodeForSaving(string stringToEncode)
 		{
 			return stringToEncode.Replace("\n", "\\n");
 		}
 
 		private object locker = new object();
+        private static bool haveParsedSourceCode;
+
+		private string MasterSavePath => "C:\\" + Path.Combine("Development", "MCCentral", "MatterControl", "StaticData", "Translations");
+		private string SourceFilesPath => @"C:\Development\MCCentral";
 
 		private void AddNewString(string englishString)
 		{
@@ -171,13 +219,12 @@ namespace MatterHackers.Localizations
 				{
 					machineTranslation.Add(englishString, englishString);
 
-					var pathName = "C:\\" + Path.Combine("Development", "MCCentral", "MatterControl", "StaticData", "Translations");
-					if (!Directory.Exists(pathName))
+					if (!Directory.Exists(MasterSavePath))
 					{
-						Directory.CreateDirectory(pathName);
+						Directory.CreateDirectory(MasterSavePath);
 					}
 
-					var newFile = Path.Combine(pathName, "Master_new.txt");
+					var newFile = Path.Combine(MasterSavePath, "Master_new.txt");
 					// save content to new file
 					using (var masterFileStream = File.CreateText(newFile))
 					{
@@ -190,7 +237,7 @@ namespace MatterHackers.Localizations
 					}
 
 					// delete the old file
-					var oldFile = Path.Combine(pathName, "Master.txt");
+					var oldFile = Path.Combine(MasterSavePath, "Master.txt");
 					File.Delete(oldFile);
 
 					// rename the new file
