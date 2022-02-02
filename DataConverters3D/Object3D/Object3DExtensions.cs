@@ -443,21 +443,26 @@ namespace MatterHackers.DataConverters3D
 			return screenBounds;
 		}
 
-		public static async Task PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null, bool publishAssets = false)
-		{
-			// Must use DescendantsAndSelf so that leaf nodes save their meshes
-			var persistableItems = sourceItem.DescendantsAndSelf().Where(object3D =>
+		public static IEnumerable<IObject3D> GetPersistable(this IObject3D sourceItem, bool forceIntoCache = false)
+        {
+			return sourceItem.DescendantsAndSelf().Where(object3D =>
 			{
-				var needSave = (object3D.MeshPath == null || publishAssets);
-				var needSaveAndHaveMesh = (needSave && object3D.Mesh != null);
-				var assetObjectAndPublish = (object3D is IAssetObject && publishAssets);
-				var meshOrAssetNeedingSave = (needSaveAndHaveMesh || assetObjectAndPublish);
+				var needSave = (object3D.MeshPath == null || forceIntoCache);
+				var needSaveAndHasMesh = (needSave && object3D.Mesh != null);
+				var assetObjectAndForceCache = (object3D is IAssetObject && forceIntoCache);
+				var meshOrAssetNeedingSave = (needSaveAndHasMesh || assetObjectAndForceCache);
 				// Ignore items assigned the FileMissing mesh
 				var invalidMesh = object3D.Mesh == Object3D.FileMissingMesh;
-				return object3D.WorldPersistable() 
+				return object3D.WorldPersistable()
 					&& meshOrAssetNeedingSave
 					&& !invalidMesh;
 			});
+		}
+
+		public static async Task PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null, bool forceIntoCache = false)
+		{
+			// Must use DescendantsAndSelf so that leaf nodes save their meshes
+			var persistableItems = sourceItem.GetPersistable(forceIntoCache);
 
 			Directory.CreateDirectory(Object3D.AssetsPath);
 
@@ -468,10 +473,10 @@ namespace MatterHackers.DataConverters3D
 				// Write unsaved content to disk
 				foreach (IObject3D item in persistableItems)
 				{
-					// If publishAssets is specified, persist any unsaved IAssetObject items to disk
-					if (item is IAssetObject assetObject && publishAssets)
+					// If forceIntoCache is specified, persist any unsaved IAssetObject items to disk
+					if (item is IAssetObject assetObject && forceIntoCache)
 					{
-						await AssetObject3D.AssetManager.StoreAsset(assetObject, publishAssets, CancellationToken.None, progress);
+						await AssetObject3D.AssetManager.StoreAsset(assetObject, forceIntoCache, CancellationToken.None, progress);
 
 						if (string.IsNullOrWhiteSpace(item.MeshPath))
 						{
@@ -486,7 +491,7 @@ namespace MatterHackers.DataConverters3D
 					if (!assetFiles.TryGetValue(hashCode, out string assetPath))
 					{
 						// Store and update cache if missing
-						await AssetObject3D.AssetManager.StoreMesh(item, publishAssets, CancellationToken.None, progress);
+						await AssetObject3D.AssetManager.StoreMesh(item, forceIntoCache, CancellationToken.None, progress);
 						assetFiles.Add(hashCode, item.MeshPath);
 					}
 					else
