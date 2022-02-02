@@ -470,6 +470,9 @@ namespace MatterHackers.DataConverters3D
 
 			try
 			{
+				var persistCount = persistableItems.Count();
+				var savedCount = 0;
+
 				// Write unsaved content to disk
 				foreach (IObject3D item in persistableItems)
 				{
@@ -499,6 +502,9 @@ namespace MatterHackers.DataConverters3D
 						// If the Mesh is in the assetFile cache, set .MeshPath to the existing asset name
 						item.MeshPath = assetPath;
 					}
+
+					savedCount++;
+					progress?.Invoke(savedCount / (double)persistCount, "");
 				}
 			}
 			catch (Exception ex)
