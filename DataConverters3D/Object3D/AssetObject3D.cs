@@ -27,300 +27,293 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg;
+using MatterHackers.Agg.Platform;
+using MatterHackers.PolygonMesh.Processors;
 using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using MatterHackers.Agg;
-using MatterHackers.Agg.Platform;
-using MatterHackers.PolygonMesh.Processors;
 
 namespace MatterHackers.DataConverters3D
 {
-	public interface IAssetObject
-	{
-		string AssetPath { get; set; }
+    public interface IAssetManager
+    {
+        Task AcquireAsset(string sha1PlusExtension, CancellationToken cancellationToken, Action<double, string> progress);
 
-		string AssetID { get; set; }
+        Task<Stream> LoadAsset(IAssetObject assetObject, CancellationToken cancellationToken, Action<double, string> progress);
 
-		Task<Stream> LoadAsset(CancellationToken cancellationToken, Action<double, string> progress);
-	}
+        Task PublishAsset(string sha1PlusExtension, CancellationToken cancellationToken, Action<double, string> progress);
 
-	public interface IAssetManager
-	{
-		Task<Stream> LoadAsset(IAssetObject assetObject, CancellationToken cancellationToken, Action<double, string> progress);
+        Task StoreAsset(IAssetObject assetObject, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress);
 
-		Task PublishAsset(string sha1PlusExtension, CancellationToken cancellationToken, Action<double, string> progress);
+        /// <summary>
+        /// Ensures the given file is stored in the asset system
+        /// </summary>
+        /// <param name="filePath">The full path to the source file</param>
+        /// <param name="cancellationToken"></param>
+        /// <param name="progress"></param>
+        /// <returns>The new asset file name</returns>
+        Task<string> StoreFile(string filePath, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress);
 
-		Task AcquireAsset(string sha1PlusExtension, CancellationToken cancellationToken, Action<double, string> progress);
+        /// <summary>
+        /// Computes and writes the MCX file to the assets system
+        /// </summary>
+        /// <param name="object3D">The source MCX file</param>
+        /// <returns></returns>
+        Task<string> StoreMcx(IObject3D object3D, bool publishAfterSave);
 
-		Task StoreAsset(IAssetObject assetObject, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress);
+        Task StoreMesh(IObject3D object3D, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress);
 
-		Task StoreMesh(IObject3D object3D, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress);
+        Task<string> StoreStream(Stream stream, string extension, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress);
+    }
 
-		string StoreStream(Stream stream, string extension);
+    public interface IAssetObject
+    {
+        string AssetID { get; set; }
+        string AssetPath { get; set; }
 
-		/// <summary>
-		/// Ensures the given file is stored in the asset system
-		/// </summary>
-		/// <param name="filePath">The full path to the source file</param>
-		/// <param name="cancellationToken"></param>
-		/// <param name="progress"></param>
-		/// <returns>The new asset file name</returns>
-		Task<string> StoreFile(string filePath, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress);
+        Task<Stream> LoadAsset(CancellationToken cancellationToken, Action<double, string> progress);
+    }
 
-		/// <summary>
-		/// Computes and writes the MCX file to the assets system
-		/// </summary>
-		/// <param name="object3D">The source MCX file</param>
-		/// <returns></returns>
-		Task<string> StoreMcx(IObject3D object3D, bool publishAfterSave);
-	}
+    public static class StaticDataExtensions
+    {
+        /// <summary>
+        /// Dynamically computes the SHA1 for the content, storing to Assets if needed and returning the given AssetPath
+        /// </summary>
+        /// <param name="staticData">The StaticData instance to act on</param>
+        /// <param name="relativePath">The relative path of the Asset content</param>
+        /// <returns></returns>
+        public static string ToAssetPath(this StaticData staticData, string relativePath)
+        {
+            using (var sourceStream = staticData.OpenStream(relativePath))
+            {
+                return AssetObject3D.AssetManager.StoreStream(sourceStream, Path.GetExtension(relativePath), false, CancellationToken.None, null).Result;
+            }
+        }
+    }
 
-	public static class StaticDataExtensions
-	{
-		/// <summary>
-		/// Dynamically computes the SHA1 for the content, storing to Assets if needed and returning the given AssetPath
-		/// </summary>
-		/// <param name="staticData">The StaticData instance to act on</param>
-		/// <param name="relativePath">The relative path of the Asset content</param>
-		/// <returns></returns>
-		public static string ToAssetPath(this StaticData staticData, string relativePath)
-		{
-			using (var sourceStream = staticData.OpenStream(relativePath))
-			{
-				return AssetObject3D.AssetManager.StoreStream(sourceStream, Path.GetExtension(relativePath));
-			}
-		}
-	}
+    public class AssetManager : IAssetManager
+    {
+        public virtual Task AcquireAsset(string sha1PlusExtension, CancellationToken cancellationToken, Action<double, string> progress)
+        {
+            return Task.CompletedTask;
+        }
 
-	public abstract class AssetObject3D : Object3D, IAssetObject
-	{
-		// Collector
-		public static IAssetManager AssetManager { get; set; }
+        public Task<Stream> LoadAsset(IAssetObject assetObject, CancellationToken cancellationToken, Action<double, string> progress)
+        {
+            // Natural path
+            string filePath = assetObject.AssetPath;
 
-		public abstract string AssetPath { get; set; }
+            // Is relative asset path only, no directory
+            if (Path.GetDirectoryName(filePath) == "")
+            {
+                filePath = Path.Combine(Object3D.AssetsPath, filePath);
 
-		public string AssetID { get; set; }
+                // Prime cache
+                if (!File.Exists(filePath))
+                {
+                    AcquireAsset(assetObject.AssetPath, cancellationToken, progress);
+                }
+            }
 
-		// Load
-		public Task<Stream> LoadAsset(CancellationToken cancellationToken, Action<double, string> progress)
-		{
-			return AssetManager.LoadAsset(this, cancellationToken, progress);
-		}
-	}
+            if (!File.Exists(filePath))
+            {
+                // Not at natural path, not in local assets, not in remote assets
+                return Task.FromResult<Stream>(null);
+            }
 
-	public class AssetManager : IAssetManager
-	{
-		public virtual Task AcquireAsset(string sha1PlusExtension, CancellationToken cancellationToken, Action<double, string> progress)
-		{
-			return Task.CompletedTask;
-		}
+            return Task.FromResult<Stream>(File.OpenRead(filePath));
+        }
 
-		public virtual Task PublishAsset(string sha1PlusExtension, CancellationToken cancellationToken, Action<double, string> progress)
-		{
-			return Task.CompletedTask;
-		}
+        public virtual Task PublishAsset(string sha1PlusExtension, CancellationToken cancellationToken, Action<double, string> progress)
+        {
+            return Task.CompletedTask;
+        }
 
-		public Task<Stream> LoadAsset(IAssetObject assetObject, CancellationToken cancellationToken, Action<double, string> progress)
-		{
-			// Natural path
-			string filePath = assetObject.AssetPath;
+        public async Task StoreAsset(IAssetObject assetObject, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress)
+        {
+            // Natural path
+            string filePath = assetObject.AssetPath;
 
-			// Is relative asset path only, no directory
-			if (Path.GetDirectoryName(filePath) == "")
-			{
-				filePath = Path.Combine(Object3D.AssetsPath, filePath);
+            // Is full path and file exists, import as Asset
+            if (Path.GetDirectoryName(filePath) != ""
+                && File.Exists(filePath))
+            {
+                using (var sourceStream = File.OpenRead(assetObject.AssetPath))
+                {
+                    // ComputeSha1 -> Save asset
+                    string sha1PlusExtension = await this.StoreStream(sourceStream, Path.GetExtension(assetObject.AssetPath), publishAfterSave, cancellationToken, progress);
+                    // string sha1PlusExtension = await this.StoreFile(assetObject.AssetPath, publishAfterSave, cancellationToken, progress);
 
-				// Prime cache
-				if (!File.Exists(filePath))
-				{
-					AcquireAsset(assetObject.AssetPath, cancellationToken, progress);
-				}
-			}
+                    // Update AssetID
+                    assetObject.AssetID = Path.GetFileNameWithoutExtension(sha1PlusExtension);
+                    assetObject.AssetPath = sha1PlusExtension;
+                }
+            }
 
-			if (!File.Exists(filePath))
-			{
-				// Not at natural path, not in local assets, not in remote assets
-				return Task.FromResult<Stream>(null);
-			}
+            if (publishAfterSave)
+            {
+                await Publish(assetObject.AssetPath, cancellationToken, progress);
+            }
+        }
 
-			return Task.FromResult<Stream>(File.OpenRead(filePath));
-		}
+        public async Task<string> StoreFile(string filePath, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress)
+        {
+            // Compute SHA1
+            string sha1 = HashGenerator.ComputeFileSHA1(filePath);
+            string sha1PlusExtension = sha1 + Path.GetExtension(filePath).ToLower();
+            string assetPath = Path.Combine(Object3D.AssetsPath, sha1PlusExtension);
 
-		public async Task StoreAsset(IAssetObject assetObject, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress)
-		{
-			// Natural path
-			string filePath = assetObject.AssetPath;
+            // Load cache
+            if (!File.Exists(assetPath))
+            {
+                File.Copy(filePath, assetPath);
+            }
 
-			// Is full path and file exists, import as Asset
-			if (Path.GetDirectoryName(filePath) != ""
-				&& File.Exists(filePath))
-			{
-				using (var sourceStream = File.OpenRead(assetObject.AssetPath))
-				{
-					// ComputeSha1 -> Save asset
-					//string assetName = await this.StoreStream(sourceStream, Path.GetExtension(assetObject.AssetPath), cancellationToken, progress);
-					string sha1PlusExtension = await this.StoreFile(assetObject.AssetPath, publishAfterSave, cancellationToken, progress);
+            if (publishAfterSave)
+            {
+                await Publish(sha1PlusExtension, cancellationToken, progress);
+            }
 
-					// Update AssetID
-					assetObject.AssetID = Path.GetFileNameWithoutExtension(sha1PlusExtension);
-					assetObject.AssetPath = sha1PlusExtension;
-				}
-			}
+            return sha1PlusExtension;
+        }
 
-			await ConditionalPublish(
-				assetObject.AssetPath,
-				publishAfterSave,
-				cancellationToken,
-				progress);
-		}
+        public async Task<string> StoreMcx(IObject3D object3D, bool publishAfterSave)
+        {
+            // TODO: Track SHA1 of persisted asset
+            // TODO: Skip if cached sha1 exists in assets
 
-		public async Task<string> StoreFile(string filePath, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress)
-		{
-			// Compute SHA1
-			string sha1 = HashGenerator.ComputeFileSHA1(filePath);
-			string sha1PlusExtension = sha1 + Path.GetExtension(filePath).ToLower();
-			string assetPath = Path.Combine(Object3D.AssetsPath, sha1PlusExtension);
+            // Serialize object3D to in memory mcx/json stream
+            using (var memoryStream = new MemoryStream())
+            {
+                // Write JSON
+                object3D.SaveTo(memoryStream);
 
-			// Load cache
-			if (!File.Exists(assetPath))
-			{
-				File.Copy(filePath, assetPath);
-			}
+                // Reposition
+                memoryStream.Position = 0;
 
-			await ConditionalPublish(
-				sha1PlusExtension,
-				publishAfterSave,
-				cancellationToken,
-				progress);
+                Directory.CreateDirectory(Object3D.AssetsPath);
 
-			return sha1PlusExtension;
-		}
+                // Calculate
+                string sha1 = HashGenerator.ComputeSHA1(memoryStream);
+                string sha1PlusExtension = sha1 + ".mcx";
+                string assetPath = Path.Combine(Object3D.AssetsPath, sha1PlusExtension);
 
-		public async Task<string> StoreMcx(IObject3D object3D, bool publishAfterSave)
-		{
-			// TODO: Track SHA1 of persisted asset
-			// TODO: Skip if cached sha1 exists in assets
+                if (!File.Exists(assetPath))
+                {
+                    memoryStream.Position = 0;
 
-			// Serialize object3D to in memory mcx/json stream
-			using (var memoryStream = new MemoryStream())
-			{
-				// Write JSON
-				object3D.SaveTo(memoryStream);
+                    using (var outStream = File.Create(assetPath))
+                    {
+                        memoryStream.CopyTo(outStream);
+                    }
+                }
 
-				// Reposition
-				memoryStream.Position = 0;
+                if (publishAfterSave)
+                {
+                    await Publish(sha1PlusExtension, CancellationToken.None, null);
+                }
 
-				Directory.CreateDirectory(Object3D.AssetsPath);
+                return assetPath;
+            }
+        }
 
-				// Calculate
-				string sha1 = HashGenerator.ComputeSHA1(memoryStream);
-				string sha1PlusExtension = sha1 + ".mcx";
-				string assetPath = Path.Combine(Object3D.AssetsPath, sha1PlusExtension);
+        public async Task StoreMesh(IObject3D object3D, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress = null)
+        {
+            if (object3D.Mesh == Object3D.FileMissingMesh)
+            {
+                return;
+            }
 
-				if (!File.Exists(assetPath))
-				{
-					memoryStream.Position = 0;
+            var memoryStream = new MemoryStream();
 
-					using (var outStream = File.Create(assetPath))
-					{
-						memoryStream.CopyTo(outStream);
-					}
-				}
+            // Save the embedded asset to disk
+            bool savedSuccessfully = StlProcessing.Save(
+                object3D.Mesh,
+                memoryStream,
+                CancellationToken.None,
+                new MeshOutputSettings(MeshOutputSettings.OutputType.Binary),
+                true);
 
-				await ConditionalPublish(
-					sha1PlusExtension,
-					publishAfterSave,
-					CancellationToken.None,
-					null);
+            if (savedSuccessfully)
+            {
+                // There's currently no way to know the actual mesh file hashcode without saving it to disk, thus we save at least once in
+                // order to compute the hash but then throw away the duplicate file if an existing copy exists in the assets directory
+                string assetPath = await this.StoreStream(memoryStream, ".stl", publishAfterSave, cancellationToken, progress);
 
-				return assetPath;
-			}
-		}
+                // Update MeshPath with Assets relative filename
+                object3D.MeshPath = Path.GetFileName(assetPath);
+            }
 
-		public async Task StoreMesh(IObject3D object3D, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress = null)
-		{
-			if (object3D.Mesh == Object3D.FileMissingMesh)
-			{
-				return;
-			}
+            memoryStream.Close();
+        }
 
-			// In memory mesh is always saved to stl
-			string tempStlPath = CreateNewLibraryPath(".stl");
+        public async Task<string> StoreStream(Stream stream, string extension, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress)
+        {
+            // Compute SHA1
+            string sha1PlusExtension = $"{HashGenerator.ComputeSHA1(stream)}{extension}";
+            string assetPath = Path.Combine(Object3D.AssetsPath, sha1PlusExtension);
 
-			// Save the embedded asset to disk
-			bool savedSuccessfully = StlProcessing.Save(
-				object3D.Mesh,
-				tempStlPath,
-				CancellationToken.None,
-				new MeshOutputSettings(MeshOutputSettings.OutputType.Binary));
+            // Load cache
+            if (!File.Exists(assetPath))
+            {
+                stream.Position = 0;
 
-			if (savedSuccessfully)
-			{
-				// There's currently no way to know the actual mesh file hashcode without saving it to disk, thus we save at least once in
-				// order to compute the hash but then throw away the duplicate file if an existing copy exists in the assets directory
-				string assetPath = await this.StoreFile(tempStlPath, publishAfterSave, cancellationToken, progress);
+                using (var outstream = File.OpenWrite(assetPath))
+                {
+                    stream.CopyTo(outstream);
+                }
+            }
 
-				// Remove the temp file
-				if (File.Exists(tempStlPath))
-				{
-					File.Delete(tempStlPath);
-				}
+            if (publishAfterSave)
+            {
+                await Publish(sha1PlusExtension, cancellationToken, progress);
+            }
 
-				// Update MeshPath with Assets relative filename
-				object3D.MeshPath = Path.GetFileName(assetPath);
-			}
-		}
+            return sha1PlusExtension;
+        }
 
-		public string StoreStream(Stream stream, string extension)
-		{
-			// Compute SHA1
-			string sha1 = HashGenerator.ComputeSHA1(stream);
+        /// <summary>
+        /// Creates a new non-colliding library file path to write library contents to
+        /// </summary>
+        /// <param name="extension">The file extension to use</param>
+        /// <returns>A new unique library path</returns>
+        private static string CreateNewLibraryPath(string extension)
+        {
+            string filePath;
+            do
+            {
+                filePath = Path.Combine(Object3D.AssetsPath, Path.ChangeExtension(Path.GetRandomFileName(), extension));
+            } while (File.Exists(filePath));
 
-			string fileName = $"{sha1}{extension}";
-			string assetPath = Path.Combine(Object3D.AssetsPath, fileName);
+            return filePath;
+        }
 
-			// Load cache
-			if (!File.Exists(assetPath))
-			{
-				stream.Position = 0;
+        private async Task Publish(string sha1PlusExtension, CancellationToken cancellationToken, Action<double, string> progress)
+        {
+            string assetPath = Path.Combine(Object3D.AssetsPath, sha1PlusExtension);
 
-				using (var outstream = File.OpenWrite(assetPath))
-				{
-					stream.CopyTo(outstream);
-				}
-			}
+            // If the local asset store contains the item, ensure it's copied to the remote
+            if (File.Exists(assetPath))
+            {
+                await this.PublishAsset(sha1PlusExtension, cancellationToken, progress);
+            }
+        }
+    }
 
-			return fileName;
-		}
+    public abstract class AssetObject3D : Object3D, IAssetObject
+    {
+        // Collector
+        public static IAssetManager AssetManager { get; set; }
 
-		private async Task ConditionalPublish(string sha1PlusExtension, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress)
-		{
-			string assetPath = Path.Combine(Object3D.AssetsPath, sha1PlusExtension);
+        public string AssetID { get; set; }
+        public abstract string AssetPath { get; set; }
 
-			// If the local asset store contains the item, ensure it's copied to the remote
-			if (publishAfterSave
-				&& File.Exists(assetPath))
-			{
-				await this.PublishAsset(sha1PlusExtension, cancellationToken, progress);
-			}
-		}
-
-		/// <summary>
-		/// Creates a new non-colliding library file path to write library contents to
-		/// </summary>
-		/// <param name="extension">The file extension to use</param>
-		/// <returns>A new unique library path</returns>
-		private static string CreateNewLibraryPath(string extension)
-		{
-			string filePath;
-			do
-			{
-				filePath = Path.Combine(Object3D.AssetsPath, Path.ChangeExtension(Path.GetRandomFileName(), extension));
-			} while (File.Exists(filePath));
-
-			return filePath;
-		}
-	}
+        // Load
+        public Task<Stream> LoadAsset(CancellationToken cancellationToken, Action<double, string> progress)
+        {
+            return AssetManager.LoadAsset(this, cancellationToken, progress);
+        }
+    }
 }

@@ -91,11 +91,14 @@ namespace MatterHackers.PolygonMesh.Csg
 			bvhAccelerators = new List<ITraceable>();
 			foreach (var (mesh, matrix) in meshAndMatrix)
 			{
-				totalOperations += mesh.Faces.Count;
-				var meshCopy = mesh.Copy(cancellationToken);
-				transformedMeshes.Add(meshCopy);
-				meshCopy.Transform(matrix);
-				bvhAccelerators.Add(GetBVH(meshCopy));
+                if (mesh != null)
+                {
+                    totalOperations += mesh.Faces.Count;
+                    var meshCopy = mesh.Copy(cancellationToken);
+                    transformedMeshes.Add(meshCopy);
+                    meshCopy.Transform(matrix);
+                    bvhAccelerators.Add(GetBVH(meshCopy));
+                }
 			}
 
 			plansByMesh = new List<List<Plane>>();

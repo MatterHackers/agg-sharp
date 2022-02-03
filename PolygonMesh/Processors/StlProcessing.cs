@@ -52,13 +52,13 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
 		}
 
-		public static bool Save(Mesh mesh, Stream stream, CancellationToken cancellationToken, MeshOutputSettings outputInfo)
+		public static bool Save(Mesh mesh, Stream stream, CancellationToken cancellationToken, MeshOutputSettings outputInfo, bool leaveStreamOpen = false)
 		{
 			switch (outputInfo.OutputTypeSetting)
 			{
 				case MeshOutputSettings.OutputType.Ascii:
 					{
-						var streamWriter = new StreamWriter(stream);
+						var streamWriter = new StreamWriter(stream, System.Text.Encoding.Default, 1<<16, leaveStreamOpen);
 
 						streamWriter.WriteLine("solid Default");
 
@@ -88,7 +88,7 @@ namespace MatterHackers.PolygonMesh.Processors
 					break;
 
 				case MeshOutputSettings.OutputType.Binary:
-					using (var bw = new BinaryWriter(stream))
+					using (var bw = new BinaryWriter(stream, System.Text.Encoding.Default, leaveStreamOpen))
 					{
 						// 80 bytes of nothing
 						bw.Write(new byte[80]);

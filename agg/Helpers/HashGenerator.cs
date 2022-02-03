@@ -50,7 +50,7 @@ namespace MatterHackers.Agg
 
 		public static string ComputeFileSHA1(string filePath)
 		{
-			using (var stream = new BufferedStream(File.OpenRead(filePath), 1200000))
+			using (var stream = new BufferedStream(File.OpenRead(filePath), 1<<16))
 			{
 				return HashGenerator.ComputeSHA1(stream);
 			}

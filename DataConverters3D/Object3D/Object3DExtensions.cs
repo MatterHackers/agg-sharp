@@ -201,7 +201,7 @@ namespace MatterHackers.DataConverters3D
 			// Abort load if cancel requested
 			cancellationToken.ThrowIfCancellationRequested();
 
-			string filename = Path.GetFileName(item.ResolveFilePath(progress, cancellationToken).Result);
+			string filename = item.MeshPath;
 
 			try
 			{
@@ -213,43 +213,52 @@ namespace MatterHackers.DataConverters3D
 				{
 					IObject3D loadedItem = null;
 
-					var assetEntryName = zipArchive.Entries.Where(e => e.Name.Contains(filename)).First().FullName;
-					using (var zipEntryStream = zipArchive.GetEntry(assetEntryName).Open())
+					var archiveEntry = zipArchive.Entries.Where(e => e.Name.Contains(filename)).FirstOrDefault();
+					if (archiveEntry != null)
 					{
-						var stream = new MemoryStream();
-						zipEntryStream.CopyTo(stream);
-						
-						string extension = Path.GetExtension(filename).ToLower();
-
-						loadedItem = Object3D.Load(stream, extension, cancellationToken, cacheContext, progress);
-
-						// Cache loaded assets
-						if (cacheContext != null
-							&& extension != ".mcx"
-							&& loadedItem != null)
+						var assetEntryName = archiveEntry.FullName;
+						using (var zipEntryStream = zipArchive.GetEntry(assetEntryName).Open())
 						{
-							cacheContext.Items[filename] = loadedItem;
+							var stream = new MemoryStream();
+							zipEntryStream.CopyTo(stream);
+
+							string extension = Path.GetExtension(filename).ToLower();
+
+							loadedItem = Object3D.Load(stream, extension, cancellationToken, cacheContext, progress);
+
+							// Cache loaded assets
+							if (cacheContext != null
+								&& extension != ".mcx"
+								&& loadedItem != null)
+							{
+								cacheContext.Items[filename] = loadedItem;
+							}
 						}
-					}
 
-					if (loadedItem?.Children.Count() > 0)
-					{
-						loadedItem.Children.Modify(loadedChildren =>
+						if (loadedItem?.Children.Count() > 0)
 						{
+							loadedItem.Children.Modify(loadedChildren =>
+							{
 							// copy the children
 							item.Children.Modify(children =>
-							{
-								children.AddRange(loadedChildren);
-								loadedChildren.Clear();
+								{
+									children.AddRange(loadedChildren);
+									loadedChildren.Clear();
+								});
 							});
-						});
+						}
+						else
+						{
+							// copy the mesh
+							var loadedMesh = loadedItem?.Mesh;
+							cacheContext.Meshes[filename] = loadedMesh;
+							item.SetMeshDirect(loadedMesh);
+						}
 					}
 					else
-					{
-						// copy the mesh
-						var loadedMesh = loadedItem?.Mesh;
-						cacheContext.Meshes[filename] = loadedMesh;
-						item.SetMeshDirect(loadedMesh);
+                    {
+						// Fall back to Missing mesh if available
+						item.SetMeshDirect(Object3D.FileMissingMesh);
 					}
 				}
 			}
@@ -459,7 +468,7 @@ namespace MatterHackers.DataConverters3D
 			});
 		}
 
-		public static async Task PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null, bool forceIntoCache = false)
+		public static async Task PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null, bool forceIntoCache = false, bool publishAfterSave = false)
 		{
 			// Must use DescendantsAndSelf so that leaf nodes save their meshes
 			var persistableItems = sourceItem.GetPersistable(forceIntoCache);
@@ -494,7 +503,7 @@ namespace MatterHackers.DataConverters3D
 					if (!assetFiles.TryGetValue(hashCode, out string assetPath))
 					{
 						// Store and update cache if missing
-						await AssetObject3D.AssetManager.StoreMesh(item, forceIntoCache, CancellationToken.None, progress);
+						await AssetObject3D.AssetManager.StoreMesh(item, publishAfterSave, CancellationToken.None, progress);
 						assetFiles.Add(hashCode, item.MeshPath);
 					}
 					else
