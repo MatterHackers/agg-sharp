@@ -1203,7 +1203,7 @@ namespace MatterHackers.GuiAutomation
 
 		public static bool DrawSimulatedMouse { get; set; } = true;
 
-		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action closeWindow = null)
+		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action<AutomationRunner> closeWindow = null)
 		{
 			var testRunner = new AutomationRunner(InputMethod, DrawSimulatedMouse, imagesDirectory);
 
@@ -1240,7 +1240,7 @@ namespace MatterHackers.GuiAutomation
 				// Invoke the callers close implementation or fall back to CloseOnIdle
 				if (closeWindow != null)
 				{
-					closeWindow();
+					closeWindow(testRunner);
 				}
 				else
 				{

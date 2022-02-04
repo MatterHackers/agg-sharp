@@ -1045,16 +1045,16 @@ namespace MatterHackers.DataConverters3D
 			return hash;
 		}
 
-		public string ToJson()
+		public Task<string> ToJson(Action<double, string> progress = null)
 		{
-			return JsonConvert.SerializeObject(
+			return Task.FromResult(JsonConvert.SerializeObject(
 				this,
 				Formatting.Indented,
 				new JsonSerializerSettings
 				{
 					ContractResolver = new IObject3DContractResolver(),
 					NullValueHandling = NullValueHandling.Ignore
-				});
+				}));
 		}
 
 		public virtual void Apply(UndoBuffer undoBuffer)

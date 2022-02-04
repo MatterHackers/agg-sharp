@@ -110,34 +110,9 @@ namespace MatterHackers.DataConverters3D
 			// Serialize the scene to disk using a modified Json.net pipeline with custom ContractResolvers and JsonConverters
 			try
 			{
-				await this.PersistAssets(progress);
-
-				// Clear the selection before saving
-				var selectedItems = new List<IObject3D>();
-
-				if (this.SelectedItem != null)
+				using (var streamWriter = new StreamWriter(stream))
 				{
-					if (this.SelectedItem is SelectionGroupObject3D selectionGroup)
-					{
-						foreach (var item in selectionGroup.Children)
-						{
-							selectedItems.Add(item);
-						}
-					}
-					else
-					{
-						selectedItems.Add(this.SelectedItem);
-					}
-				}
-
-				var streamWriter = new StreamWriter(stream);
-				streamWriter.Write(this.ToJson());
-				streamWriter.Flush();
-
-				// Restore the selection after saving
-				foreach (var item in selectedItems)
-				{
-					this.AddToSelection(item);
+					streamWriter.Write(this.ToJson());
 				}
 			}
 			catch (Exception ex)
@@ -374,6 +349,11 @@ namespace MatterHackers.DataConverters3D
 		{
 			get
             {
+				if (UndoBuffer.UndoCount == 0)
+                {
+					return false;
+                }
+
 				return true;
 			}
 		}
@@ -382,7 +362,47 @@ namespace MatterHackers.DataConverters3D
 
 		public IObject3D Clone() => SourceItem.Clone();
 
-		public string ToJson() => SourceItem.ToJson();
+		public async Task<string> ToJson(Action<double, string> progress = null)
+		{
+			try
+			{
+				await this.PersistAssets(progress);
+
+				// Clear the selection before saving
+				var selectedItems = new List<IObject3D>();
+
+				if (this.SelectedItem != null)
+				{
+					if (this.SelectedItem is SelectionGroupObject3D selectionGroup)
+					{
+						foreach (var item in selectionGroup.Children)
+						{
+							selectedItems.Add(item);
+						}
+					}
+					else
+					{
+						selectedItems.Add(this.SelectedItem);
+					}
+				}
+
+				var json = SourceItem.ToJson().Result;
+
+				// Restore the selection after saving
+				foreach (var item in selectedItems)
+				{
+					this.AddToSelection(item);
+				}
+
+				return json;
+			}
+			catch (Exception ex)
+			{
+				Trace.WriteLine("Error converting to json: ", ex.Message);
+			}
+
+			return "";
+		}
 
 		public ulong GetLongHashCode(ulong hash = 14695981039346656037) => SourceItem.GetLongHashCode(hash);
 

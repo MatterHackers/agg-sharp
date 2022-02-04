@@ -198,6 +198,6 @@ namespace MatterHackers.DataConverters3D
 		/// Serialize the current instance to Json
 		/// </summary>
 		/// <returns></returns>
-		string ToJson();
+		Task<string> ToJson(Action<double, string> progress = null);
 	}
 }
