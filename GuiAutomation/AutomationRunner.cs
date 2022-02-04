@@ -245,6 +245,18 @@ namespace MatterHackers.GuiAutomation
 			return this;
 		}
 
+		public AutomationRunner Require(Func<bool> checkConditionSatisfied, string errorResponse, double maxSeconds = 5, int checkInterval = 200)
+		{
+			var satisfied = StaticDelay(checkConditionSatisfied, maxSeconds, checkInterval);
+
+			if (!satisfied)
+            {
+				throw new Exception($"Require Failed: {errorResponse}");
+			}
+
+			return this;
+		}
+
 		public bool DoubleClickImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
 			throw new NotImplementedException();
