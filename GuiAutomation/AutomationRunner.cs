@@ -245,7 +245,7 @@ namespace MatterHackers.GuiAutomation
 			return this;
 		}
 
-		public AutomationRunner Require(Func<bool> checkConditionSatisfied, string errorResponse, double maxSeconds = 5, int checkInterval = 200)
+		public AutomationRunner Assert(Func<bool> checkConditionSatisfied, string errorResponse, double maxSeconds = 5, int checkInterval = 200)
 		{
 			var satisfied = StaticDelay(checkConditionSatisfied, maxSeconds, checkInterval);
 

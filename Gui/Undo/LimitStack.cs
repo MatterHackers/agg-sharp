@@ -28,6 +28,14 @@ namespace MatterHackers.Agg.UI
 
 		public int Count => content.Count;
 
+		public IEnumerable<T> Iterate()
+        {
+			foreach(var item in content)
+            {
+				yield return item;
+            }
+        }
+
 		public void Push(T item)
 		{
 			content.Add(item);

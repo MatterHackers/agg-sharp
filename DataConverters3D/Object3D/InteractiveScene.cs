@@ -112,7 +112,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				using (var streamWriter = new StreamWriter(stream))
 				{
-					streamWriter.Write(this.ToJson());
+					streamWriter.Write(await this.ToJson());
 				}
 			}
 			catch (Exception ex)
@@ -345,11 +345,18 @@ namespace MatterHackers.DataConverters3D
 
 		public bool Expanded => true;
 
-        public bool HasUnsavedChanges
+		private ulong lastSaveUndoHash = 0;
+
+		public void MarkSavePoint()
+		{
+			lastSaveUndoHash = UndoBuffer.GetLongHashCode();
+		}
+		
+		public bool HasUnsavedChanges
 		{
 			get
             {
-				if (UndoBuffer.UndoCount == 0)
+				if (lastSaveUndoHash == UndoBuffer.GetLongHashCode())
                 {
 					return false;
                 }

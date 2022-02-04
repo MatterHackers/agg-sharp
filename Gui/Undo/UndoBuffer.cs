@@ -37,6 +37,22 @@ namespace MatterHackers.Agg.UI
 
 		public int RedoCount => redoBuffer.Count;
 
+		public ulong GetLongHashCode()
+        {
+			if (UndoCount == 0)
+			{
+				return 0;
+			}
+
+			ulong longHash = 14695981039346656037;
+			foreach(var undo in undoBuffer.Iterate())
+            {
+				longHash = undo.GetHashCode().GetLongHashCode();
+            }
+
+			return longHash;
+		}
+
 		public int MaxUndos
 		{
 			get => undoBuffer.Limit;
