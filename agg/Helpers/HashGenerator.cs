@@ -36,14 +36,9 @@ namespace MatterHackers.Agg
 	{
 		public static string ComputeSHA1(Stream stream)
 		{
-			// var timer = Stopwatch.StartNew();
-
-			// Alternatively: MD5.Create(),  new SHA256Managed()
 			using (var sha1 = System.Security.Cryptography.SHA1.Create())
 			{
 				byte[] hash = sha1.ComputeHash(stream);
-				// Console.WriteLine("{0} {1} {2}", SHA1, timer.ElapsedMilliseconds, filePath);
-
 				return BitConverter.ToString(hash).Replace("-", string.Empty);
 			}
 		}

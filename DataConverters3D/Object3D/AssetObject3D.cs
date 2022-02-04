@@ -144,7 +144,7 @@ namespace MatterHackers.DataConverters3D
                 {
                     // ComputeSha1 -> Save asset
                     string sha1PlusExtension = await this.StoreStream(sourceStream, Path.GetExtension(assetObject.AssetPath), publishAfterSave, cancellationToken, progress);
-                    // string sha1PlusExtension = await this.StoreFile(assetObject.AssetPath, publishAfterSave, cancellationToken, progress);
+                    string sha1PlusExtension2 = await this.StoreFile(assetObject.AssetPath, publishAfterSave, cancellationToken, progress);
 
                     // Update AssetID
                     assetObject.AssetID = Path.GetFileNameWithoutExtension(sha1PlusExtension);
@@ -228,7 +228,7 @@ namespace MatterHackers.DataConverters3D
 
             var memoryStream = new MemoryStream();
 
-            // Save the embedded asset to disk
+            // Save the embedded asset to a memory stream
             bool savedSuccessfully = StlProcessing.Save(
                 object3D.Mesh,
                 memoryStream,
@@ -238,8 +238,9 @@ namespace MatterHackers.DataConverters3D
 
             if (savedSuccessfully)
             {
-                // There's currently no way to know the actual mesh file hashcode without saving it to disk, thus we save at least once in
-                // order to compute the hash but then throw away the duplicate file if an existing copy exists in the assets directory
+                // reset the memory stream to the start
+                memoryStream.Position = 0;
+                // save the asset to the asset store
                 string assetPath = await this.StoreStream(memoryStream, ".stl", publishAfterSave, cancellationToken, progress);
 
                 // Update MeshPath with Assets relative filename
