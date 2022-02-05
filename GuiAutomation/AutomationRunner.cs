@@ -474,8 +474,11 @@ namespace MatterHackers.GuiAutomation
 			var screenPosition = new Point2D(pointOnWindow.x, (int)containingWindow.Height - pointOnWindow.y);
 
 			IPlatformWindow mappingWidget = containingWindow.PlatformWindow;
-			screenPosition.x += mappingWidget.DesktopPosition.x;
-			screenPosition.y += mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight;
+			if (mappingWidget != null)
+			{
+				screenPosition.x += mappingWidget.DesktopPosition.x;
+				screenPosition.y += mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight;
+			}
 
 			return screenPosition;
 		}
