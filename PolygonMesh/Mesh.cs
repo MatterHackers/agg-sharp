@@ -335,6 +335,17 @@ namespace MatterHackers.PolygonMesh
 			this.Vertices = newVertices;
 		}
 
+        public void CopyAllFaces(Mesh mesh, Matrix4X4 matrix)
+        {
+			foreach (var face in mesh.Faces)
+			{
+				var v0 = mesh.Vertices[face.v0].Transform(matrix);
+				var v1 = mesh.Vertices[face.v1].Transform(matrix);
+				var v2 = mesh.Vertices[face.v2].Transform(matrix);
+				this.CreateFace(new[] { v0, v1, v2 });
+			}
+		}
+
 		/// <summary>
 		/// Merge vertices that are less than a given distance apart
 		/// </summary>
