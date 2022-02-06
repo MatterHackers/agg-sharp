@@ -114,12 +114,14 @@ namespace MatterHackers.Localizations
 #if DEBUG
                 if (twoLetterIsoLanguageName == "en")
                 {
-                    if (englishString[englishString.Length - 1] == ' ')
+					// don't have string that end in spaces or have lind=e feeds
+                    if (englishString[englishString.Length - 1] == ' '
+						|| englishString.Contains('\r'))
                     {
                         throw new Exception("Translation strings should not have a trailing space");
                     }
 
-                    AddNewString(englishString);
+					AddNewString(englishString);
                 }
 #endif
                 if (twoLetterIsoLanguageName == "l10n"
