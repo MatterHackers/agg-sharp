@@ -300,7 +300,7 @@ namespace MatterHackers.DataConverters3D
 			await sourceItem.PersistAssets(progress);
 
 			var streamWriter = new StreamWriter(outputStream);
-			streamWriter.Write(sourceItem.ToJson());
+			streamWriter.Write(await sourceItem.ToJson());
 			streamWriter.Flush();
 		}
 
