@@ -264,6 +264,9 @@ namespace MatterHackers.DataConverters3D
 
 				_sourceItem.Invalidated += SourceItem_Invalidated;
 				_sourceItem.Children.ItemsModified += OnItemsModified;
+
+				// and call it
+				OnItemsModified(this, null);
 			}
 		}
 
