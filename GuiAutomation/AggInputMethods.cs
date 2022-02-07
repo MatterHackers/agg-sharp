@@ -99,7 +99,8 @@ namespace MatterHackers.GuiAutomation
 		public void SetCursorPosition(int x, int y)
 		{
 			var openWindows = SystemWindow.AllOpenSystemWindows.ToList();
-			SystemWindow topSystemWindow = openWindows.Last();
+			var topSystemWindow = openWindows.LastOrDefault();
+
 			if (windowToDrawSimulatedMouseOn != topSystemWindow)
 			{
 				if (windowToDrawSimulatedMouseOn != null)
