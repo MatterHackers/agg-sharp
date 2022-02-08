@@ -168,10 +168,11 @@ namespace MatterHackers.Localizations
                 && this.machineTranslation != null)
             {
                 var masterTranslationFile = Path.Combine(MasterSavePath, "Master.txt");
-                var fileInfo = new FileInfo(masterTranslationFile);
+				var fileInfo = new FileInfo(masterTranslationFile);
 
 				// only build if we are more than 10 days out of date
-                if (fileInfo.LastWriteTime.AddDays(10) < DateTime.UtcNow)
+                if (fileInfo.LastWriteTime.AddDays(10) < DateTime.UtcNow
+					&& Directory.Exists(SourceFilesPath))
                 {
                     // get a list of every .cs file
                     var sourceFilesDirectory = new DirectoryInfo(SourceFilesPath);
