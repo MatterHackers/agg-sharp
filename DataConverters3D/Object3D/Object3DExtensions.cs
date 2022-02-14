@@ -134,7 +134,7 @@ namespace MatterHackers.DataConverters3D
 			Debug.WriteLine(new string(' ', item.Depth()) + $"({item.Depth()}) {item.GetType().Name} " + extra);
 		}
 
-		private static void LoadLinkedMesh(this IObject3D item, CacheContext cacheContext, CancellationToken cancellationToken, Action<double, string> progress)
+		private static async void LoadLinkedMesh(this IObject3D item, CacheContext cacheContext, CancellationToken cancellationToken, Action<double, string> progress)
 		{
 			// Abort load if cancel requested
 			cancellationToken.ThrowIfCancellationRequested();
@@ -142,7 +142,7 @@ namespace MatterHackers.DataConverters3D
 			// *************************************************************************
 			// TODO: Fix invalid use of Result
 			// *************************************************************************
-			string filePath = item.ResolveFilePath(progress, cancellationToken).Result;
+			string filePath = await item.ResolveFilePath(progress, cancellationToken);
 
 			if (string.Equals(Path.GetExtension(filePath), ".mcx", StringComparison.OrdinalIgnoreCase))
 			{
