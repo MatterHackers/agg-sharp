@@ -372,6 +372,13 @@ namespace MatterHackers.Agg
 
 		public static void memmove(byte[] dest, int destIndex, byte[] source, int sourceIndex, int count)
 		{
+			if (dest == source
+				&& destIndex == sourceIndex)
+            {
+				// there is nothing to do it is already the same
+				return;
+            }
+
 			if (source != dest
 				|| destIndex < sourceIndex)
 			{
@@ -379,13 +386,10 @@ namespace MatterHackers.Agg
 			}
 			else
 			{
-				throw new Exception("this code needs to be tested");
-				/*
-				for (int i = Count-1; i > 0; i--)
+				for (int i = count-1; i >= 0; i--)
 				{
 					dest[destIndex + i] = source[sourceIndex + i];
 				}
-				 */
 			}
 		}
 
