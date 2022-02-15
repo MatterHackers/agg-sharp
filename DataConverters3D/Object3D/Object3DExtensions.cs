@@ -36,6 +36,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg;
+using MatterHackers.Agg.UI;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
@@ -134,15 +135,12 @@ namespace MatterHackers.DataConverters3D
 			Debug.WriteLine(new string(' ', item.Depth()) + $"({item.Depth()}) {item.GetType().Name} " + extra);
 		}
 
-		private static async void LoadLinkedMesh(this IObject3D item, CacheContext cacheContext, CancellationToken cancellationToken, Action<double, string> progress)
+		private static void LoadLinkedMesh(this IObject3D item, CacheContext cacheContext, CancellationToken cancellationToken, Action<double, string> progress)
 		{
 			// Abort load if cancel requested
 			cancellationToken.ThrowIfCancellationRequested();
 
-			// *************************************************************************
-			// TODO: Fix invalid use of Result
-			// *************************************************************************
-			string filePath = await item.ResolveFilePath(progress, cancellationToken);
+			string filePath = item.ResolveFilePath(progress, cancellationToken);
 
 			if (string.Equals(Path.GetExtension(filePath), ".mcx", StringComparison.OrdinalIgnoreCase))
 			{
@@ -269,13 +267,13 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static async Task<string> ResolveFilePath(this IObject3D item, Action<double, string> progress, CancellationToken cancellationToken)
+		public static string ResolveFilePath(this IObject3D item, Action<double, string> progress, CancellationToken cancellationToken)
 		{
 			// Natural path
-			return await ResolveFilePath(item.MeshPath, progress, cancellationToken);
+			return ResolveFilePath(item.MeshPath, progress, cancellationToken);
 		}
 
-		public static async Task<string> ResolveFilePath(string filePath, Action<double, string> progress, CancellationToken cancellationToken)
+		public static string ResolveFilePath(string filePath, Action<double, string> progress, CancellationToken cancellationToken)
 		{
 			// If relative/asset file name
 			if (Path.GetDirectoryName(filePath) == "")
@@ -287,8 +285,20 @@ namespace MatterHackers.DataConverters3D
 				// If the asset is not in the local cache folder, acquire it
 				if (!File.Exists(filePath))
 				{
-					// Prime cache
-					await AssetObject3D.AssetManager.AcquireAsset(sha1PlusExtension, cancellationToken, progress);
+					var endTime = UiThread.CurrentTimerMs + 5000;
+					var aquired = false;
+					Task.Run(async () =>
+					{
+						// Prime cache
+						await AssetObject3D.AssetManager.AcquireAsset(sha1PlusExtension, cancellationToken, progress);
+						aquired = true;
+					});
+
+					// wait up to 5 seconds to aqurie the asset
+					while(!aquired && UiThread.CurrentTimerMs < endTime)
+                    {
+						Thread.Sleep(100);
+                    }
 				}
 			}
 
