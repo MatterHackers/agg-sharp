@@ -239,8 +239,8 @@ namespace MatterHackers.DataConverters3D
 						{
 							loadedItem.Children.Modify(loadedChildren =>
 							{
-							// copy the children
-							item.Children.Modify(children =>
+								// copy the children							
+								item.Children.Modify(children =>
 								{
 									children.AddRange(loadedChildren);
 									loadedChildren.Clear();
