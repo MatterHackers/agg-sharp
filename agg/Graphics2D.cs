@@ -184,7 +184,7 @@ namespace MatterHackers.Agg
 			Render(imageSource, x, y, 0, width / imageSource.Width, height / imageSource.Height);
 		}
 
-		public void RenderMaxSize(ImageBuffer image, double x, double y, double maxX, double maxY, out Vector2 size, bool right = false, bool preScale = true)
+		public void RenderMaxSize(ImageBuffer image, double x, double y, double maxX, double maxY, out Vector2 size, bool right = false, bool preScale = false)
 		{
 			size.X = image.Width;
 			size.Y = image.Height;
@@ -205,7 +205,7 @@ namespace MatterHackers.Agg
 
 			if (right)
 			{
-				var expectedRight = x + image.Width;
+				var expectedRight = x + image.Width; 
 				if (preScale)
 				{
 					this.Render(image.CreateScaledImage(size.X / image.Width), x, y, size.X, size.Y);

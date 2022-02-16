@@ -313,6 +313,11 @@ namespace MatterHackers.Agg.Image
 
 		public void CopyFrom(IImageByte sourceImage)
 		{
+			if (this == sourceImage)
+            {
+				return;
+            }
+
 			Allocate(sourceImage.Width, sourceImage.Height, sourceImage.StrideInBytesAbs(), sourceImage.BitDepth);
 
 			// make sure we make an exact copy
@@ -1018,9 +1023,15 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public void CropToVisibleInPlace(Func<Color, bool> isVisible = null)
+		public void CropToVisibleInPlace(Func<Color, bool> isVisible = null, bool clearOriginOffset = true)
 		{
-			this.CopyFrom(this.CropToVisible());
+			var cropped = this.CropToVisible(isVisible);
+			if(clearOriginOffset)
+            {
+				cropped.OriginOffset = Vector2.Zero;
+			}
+
+			this.CopyFrom(cropped);
 		}
 
 		public ImageBuffer CropToVisible(Func<Color, bool> isVisible = null)
