@@ -458,11 +458,7 @@ namespace MatterHackers.DataConverters3D
 			var buffer = new char[4096];
 			var readCount = new StreamReader(stream).ReadBlock(buffer, 0, buffer.Length);
 			stream.Seek(0, SeekOrigin.Begin);
-			if (readCount > 0 && new string(buffer).Contains("\"ID\":"))
-			{
-				return true;
-			}
-			else if (readCount > 4
+			if (readCount > 4
 				&& buffer[0] == 80 // 'P'
 				&& buffer[1] == 75 // 'K'
 				&& buffer[2] == 3 // 3
