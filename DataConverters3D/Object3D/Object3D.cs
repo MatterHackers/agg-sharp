@@ -452,6 +452,28 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		public static bool IsBinaryMCX(Stream stream)
+        {
+			stream.Seek(0, SeekOrigin.Begin);
+			var buffer = new char[4096];
+			var readCount = new StreamReader(stream).ReadBlock(buffer, 0, buffer.Length);
+			stream.Seek(0, SeekOrigin.Begin);
+			if (readCount > 0 && new string(buffer).Contains("\"ID\":"))
+			{
+				return true;
+			}
+			else if (readCount > 4
+				&& buffer[0] == 80 // 'P'
+				&& buffer[1] == 75 // 'K'
+				&& buffer[2] == 3 // 3
+				&& buffer[3] == 4)
+            {
+				return true;
+            }
+
+			return false;
+		}
+
 		public static IObject3D Load(Stream stream, string extension, CancellationToken cancellationToken, CacheContext cacheContext = null, Action<double, string> progress = null)
 		{
 			if (cacheContext == null)
@@ -462,14 +484,23 @@ namespace MatterHackers.DataConverters3D
 			switch (extension.ToUpper())
 			{
 				case ".MCX":
-					// check if the file is binary
-					var buffer = new char[4096];
-					var readCount = new StreamReader(stream).ReadBlock(buffer, 0, buffer.Length);
-					stream.Seek(0, SeekOrigin.Begin);
-					if (readCount > 0 && new string(buffer).Contains("\"ID\":"))
+					try
 					{
-						// it is a next mcx file do the legacy load
-						var json = new StreamReader(stream).ReadToEnd();
+						string json;
+						// check if the file is binary
+						if (IsBinaryMCX(stream))
+						{
+							// it looks like a binary mcx file (which is a zip file). Load the contents
+							using (var archive = new ZipArchive(stream, ZipArchiveMode.Read))
+							{
+								var sceneEntryName = archive.Entries.Where(e => e.Name.Contains("scene.mcx")).First().FullName;
+								json = new StreamReader(archive.GetEntry(sceneEntryName).Open()).ReadToEnd();
+							}
+						}
+						else
+						{
+							json = new StreamReader(stream).ReadToEnd();
+						}
 
 						// Load the meta file and convert MeshPath links into objects
 						var loadedItem = JsonConvert.DeserializeObject<Object3D>(
@@ -484,33 +515,8 @@ namespace MatterHackers.DataConverters3D
 
 						return loadedItem;
 					}
-					else
+					catch
 					{
-						try
-						{
-							// it looks like a binary mcx file (which is a zip file). Load the contents
-							using (var archive = new ZipArchive(stream, ZipArchiveMode.Read))
-							{
-								var sceneEntryName = archive.Entries.Where(e => e.Name.Contains("scene.mcx")).First().FullName;
-								var json = new StreamReader(archive.GetEntry(sceneEntryName).Open()).ReadToEnd();
-
-								// Load the meta file and convert MeshPath links into objects
-								var loadedItem = JsonConvert.DeserializeObject<Object3D>(
-									json,
-									new JsonSerializerSettings
-									{
-										ContractResolver = new IObject3DContractResolver(),
-										NullValueHandling = NullValueHandling.Ignore
-									});
-
-								loadedItem?.LoadMeshLinks(archive, cancellationToken, cacheContext, progress);
-
-								return loadedItem;
-							}
-						}
-						catch
-                        {
-                        }
 					}
 					return null;
 
