@@ -31,6 +31,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.Platform;
 using MatterHackers.PolygonMesh.Processors;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -100,6 +101,8 @@ namespace MatterHackers.DataConverters3D
             return Task.CompletedTask;
         }
 
+        public static Dictionary<string, object> assetLocks = new Dictionary<string, object>();
+
         public Task<Stream> LoadAsset(IAssetObject assetObject, CancellationToken cancellationToken, Action<double, string> progress)
         {
             // Natural path
@@ -110,10 +113,19 @@ namespace MatterHackers.DataConverters3D
             {
                 filePath = Path.Combine(Object3D.AssetsPath, filePath);
 
-                // Prime cache
-                if (!File.Exists(filePath))
+                if (!assetLocks.ContainsKey(filePath))
                 {
-                    AcquireAsset(assetObject.AssetPath, cancellationToken, progress);
+                    assetLocks[filePath] = new object();
+                }
+
+                // make sure we are only loading a give asset one at a time (in case we need to aquire it before getting)
+                lock (assetLocks[filePath])
+                {
+                    // Prime cache
+                    if (!File.Exists(filePath))
+                    {
+                        AcquireAsset(assetObject.AssetPath, cancellationToken, progress);
+                    }
                 }
             }
 
