@@ -246,7 +246,16 @@ namespace MatterHackers.DataConverters3D
 
 		private IObject3D SourceItem
 		{
-			get => _sourceItem;
+			get
+			{
+				if (_sourceItem != null 
+					&& _sourceItem.Matrix != Matrix4X4.Identity)
+                {
+					_sourceItem.Matrix = Matrix4X4.Identity;
+				}
+
+				return _sourceItem;
+			}
 			set
 			{
 				void SourceItem_Invalidated(object sender, InvalidateArgs e)
