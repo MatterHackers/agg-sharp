@@ -21,6 +21,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MatterHackers.VectorMath
 {
@@ -67,29 +68,33 @@ namespace MatterHackers.VectorMath
 		// Initially: No boundary points known
 		public static Circle MakeCircle(IEnumerable<Vector2> points)
 		{
-			// Clone list to preserve the caller's data, do Durstenfeld shuffle
-			List<Vector2> shuffled = new List<Vector2>(points);
-			Random rand = new Random();
-			for (int i = shuffled.Count - 1; i > 0; i--)
-			{
-				int j = rand.Next(i + 1);
-				Vector2 temp = shuffled[i];
-				shuffled[i] = shuffled[j];
-				shuffled[j] = temp;
-			}
+			var circle = new Circle(new Vector2(0, 0), -1);
 
-			// Progressively add points to circle or recompute circle
-			Circle c = new Circle(new Vector2(0, 0), -1);
-			for (int i = 0; i < shuffled.Count; i++)
+			if (points?.Any() == true)
 			{
-				Vector2 p = shuffled[i];
-				if (c.Radius < 0 || !c.Contains(p))
+				// Clone list to preserve the caller's data, do Durstenfeld shuffle
+				List<Vector2> shuffled = new List<Vector2>(points);
+				Random rand = new Random();
+				for (int i = shuffled.Count - 1; i > 0; i--)
 				{
-					c = MakeCircleOnePoint(shuffled.GetRange(0, i + 1), p);
+					int j = rand.Next(i + 1);
+					Vector2 temp = shuffled[i];
+					shuffled[i] = shuffled[j];
+					shuffled[j] = temp;
+				}
+
+				// Progressively add points to circle or recompute circle
+				for (int i = 0; i < shuffled.Count; i++)
+				{
+					Vector2 p = shuffled[i];
+					if (circle.Radius < 0 || !circle.Contains(p))
+					{
+						circle = MakeCircleOnePoint(shuffled.GetRange(0, i + 1), p);
+					}
 				}
 			}
 
-			return c;
+			return circle;
 		}
 
 		public static Circle MakeCircumcircle(Vector2 a, Vector2 b, Vector2 c)
