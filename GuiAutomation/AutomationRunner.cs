@@ -37,7 +37,6 @@ using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
@@ -103,6 +102,15 @@ namespace MatterHackers.GuiAutomation
 			EASE_IN,
 			EASE_OUT,
 			EASE_IN_OUT
+		}
+
+		[Flags]
+		public enum ModifierKeys
+		{
+			None = 0,
+			Shift = 0x1,
+			Control = 0x2,
+			Alt = 0x4
 		}
 
 		public Point2D CurrentMousePosition()
@@ -760,17 +768,21 @@ namespace MatterHackers.GuiAutomation
 		/// Click the given widget via automation methods
 		/// </summary>
 		/// <param name="widget">The widget to click</param>
-		public void ClickWidget(GuiWidget widget)
+		/// <param name="isDoubleClick">Set to true to simulate a double-click</param>
+		public AutomationRunner ClickWidget(GuiWidget widget, bool isDoubleClick = false)
 		{
 			var systemWindow = widget.Parents<SystemWindow>().FirstOrDefault();
 			var center = widget.LocalBounds.Center;
 
-			this.ClickWidget(
+			ClickWidget(
 				widget,
 				systemWindow,
 				ClickOrigin.Center,
 				Point2D.Zero,
-				new Point2D(center.X, center.Y));
+				new Point2D(center.X, center.Y),
+				isDoubleClick);
+
+			return this;
 		}
 
 		private void ClickWidget(GuiWidget widget, SystemWindow containingWindow, ClickOrigin origin, Point2D offset, Point2D offsetHint, bool isDoubleClick = false)
@@ -807,29 +819,47 @@ namespace MatterHackers.GuiAutomation
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out SystemWindow containingWindow, out Point2D offsetHint, secondsToWait, searchRegion);
 			if (widgetToClick != null)
 			{
-				MoveMouseToWidget(widgetToClick, containingWindow, offset, offsetHint, origin, out Point2D screenPosition);
-				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
-				WaitforDraw(containingWindow);
-
-				if (isDoubleClick)
-				{
-					Thread.Sleep(150);
-					inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
-					WaitforDraw(containingWindow);
-				}
-
-				Delay(UpDelaySeconds);
-
-				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
-
-				WaitforDraw(containingWindow);
-
-				Delay(0.2);
-
+				RightClickWidget(widgetToClick, containingWindow, origin, offset, offsetHint, isDoubleClick);
 				return this;
 			}
 
 			throw new Exception($"ClickByName Failed: Named GuiWidget not found [{widgetName}]");
+		}
+
+		public AutomationRunner RightClickWidget(GuiWidget widget)
+		{
+			var systemWindow = widget.Parents<SystemWindow>().FirstOrDefault();
+			var center = widget.LocalBounds.Center;
+
+			RightClickWidget(
+				widget,
+				systemWindow,
+				ClickOrigin.Center,
+				Point2D.Zero,
+				new Point2D(center.X, center.Y));
+			return this;
+		}
+
+		private void RightClickWidget(GuiWidget widgetToClick, SystemWindow containingWindow, ClickOrigin origin, Point2D offset, Point2D offsetHint, bool isDoubleClick = false)
+		{
+			MoveMouseToWidget(widgetToClick, containingWindow, offset, offsetHint, origin, out Point2D screenPosition);
+			inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+			WaitforDraw(containingWindow);
+
+			if (isDoubleClick)
+			{
+				Thread.Sleep(150);
+				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+				WaitforDraw(containingWindow);
+			}
+
+			Delay(UpDelaySeconds);
+
+			inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
+
+			WaitforDraw(containingWindow);
+
+			Delay(0.2);
 		}
 
 		public AutomationRunner WaitforDraw(SystemWindow containingWindow, int maxSeconds = 30)
@@ -863,7 +893,40 @@ namespace MatterHackers.GuiAutomation
 		public AutomationRunner DragByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out SystemWindow containingWindow, out Point2D offsetHint, secondsToWait, searchRegion);
+			DragStart(widgetToClick, containingWindow, origin, offset, offsetHint, mouseButtons);
 
+			return this;
+		}
+
+		public AutomationRunner DragWidget(GuiWidget widget, Point2D travel, MouseButtons mouseButtons = MouseButtons.Left)
+		{
+			var systemWindow = widget.Parents<SystemWindow>().FirstOrDefault();
+			var center = widget.LocalBounds.Center;
+
+			var start = DragStart(
+				widget,
+				systemWindow,
+				ClickOrigin.Center,
+				Point2D.Zero,
+				new Point2D(center.X, center.Y),
+				mouseButtons);
+			var screenPosition = new Point2D(start.x + travel.x, start.y + travel.y);
+			SetMouseCursorPosition(screenPosition.x, screenPosition.y);
+
+			return this;
+		}
+
+		public AutomationRunner DragToPosition(SystemWindow containingWindow, int x, int y)
+		{
+			var screenPosition = CurrentMousePosition();
+			inputSystem.CreateMouseEvent(GetMouseDown(MouseButtons.Left), screenPosition.x, screenPosition.y, 0, 0);
+			SetMouseCursorPosition(containingWindow, x, y);
+
+			return this;
+		}
+
+		private Point2D DragStart(GuiWidget widgetToClick, SystemWindow containingWindow, ClickOrigin origin, Point2D offset, Point2D offsetHint, MouseButtons mouseButtons)
+		{
 			RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
 
 			if (origin == ClickOrigin.Center)
@@ -871,11 +934,11 @@ namespace MatterHackers.GuiAutomation
 				offset += offsetHint;
 			}
 
-			Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
+			var screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
 			SetMouseCursorPosition(screenPosition.x, screenPosition.y);
 			inputSystem.CreateMouseEvent(GetMouseDown(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
 
-			return this;
+			return screenPosition;
 		}
 
 		public AutomationRunner DropByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
@@ -1005,7 +1068,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public void MoveMouseToWidget(GuiWidget widget, SystemWindow containingWindow, Point2D offset, Point2D offsetHint, ClickOrigin origin, out Point2D screenPosition)
+		private void MoveMouseToWidget(GuiWidget widget, SystemWindow containingWindow, Point2D offset, Point2D offsetHint, ClickOrigin origin, out Point2D screenPosition)
 		{
 			RectangleDouble childBounds = widget.TransformToParentSpace(containingWindow, widget.LocalBounds);
 			screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
@@ -1036,6 +1099,12 @@ namespace MatterHackers.GuiAutomation
 			inputSystem.SetCursorPosition(screenPosition.x, screenPosition.y);
 		}
 
+		public void SetMouseCursorPosition(SystemWindow systemWindow, int x, int y)
+		{
+			Point2D screenPosition = SystemWindowToScreen(new Point2D(x, y), systemWindow);
+			SetMouseCursorPosition(screenPosition.x, screenPosition.y);
+		}
+
 		public void SetMouseCursorPosition(int x, int y)
 		{
 			var start = new Vector2(CurrentMousePosition().x, CurrentMousePosition().y);
@@ -1061,12 +1130,6 @@ namespace MatterHackers.GuiAutomation
 			inputSystem = null;
 		}
 
-		public void SetMouseCursorPosition(SystemWindow systemWindow, int x, int y)
-		{
-			Point2D screenPosition = SystemWindowToScreen(new Point2D(x, y), systemWindow);
-			SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-		}
-
 		public void KeyDown(KeyEventArgs keyEvent)
 		{
 			throw new NotImplementedException();
@@ -1075,6 +1138,71 @@ namespace MatterHackers.GuiAutomation
 		public void KeyUp(KeyEventArgs keyEvent)
 		{
 			throw new NotImplementedException();
+		}
+
+		/// <summary>
+		/// Send modifier key presses to the system window. Modifiers may be combined
+		/// as in Control+Shift.
+		/// </summary>
+		/// <param name="modifierKeys">Modifier keys to be pressed</param>
+		/// <returns>The automation runner to allow call chaining</returns>
+		public AutomationRunner PressModifierKeys(ModifierKeys modifierKeys)
+		{
+			if (modifierKeys == ModifierKeys.None)
+			{
+				return this;
+			}
+
+			var keys = Keys.None;
+			if ((modifierKeys & ModifierKeys.Shift) == ModifierKeys.Shift)
+			{
+				keys = (Keys)((uint)keys | (uint)Keys.ShiftKey | (uint)Keys.Shift);
+			}
+			if ((modifierKeys & ModifierKeys.Control) == ModifierKeys.Control)
+			{
+				keys = (Keys)((uint)keys | (uint)Keys.ControlKey | (uint)Keys.Control);
+			}
+			if ((modifierKeys & ModifierKeys.Alt) == ModifierKeys.Alt)
+			{
+				keys = (Keys)((uint)keys | (uint)Keys.Menu | (uint)Keys.Alt);
+			}
+
+			inputSystem.PressModifierKeys(keys);
+			Delay(.2);
+
+			return this;
+		}
+
+		/// <summary>
+		/// Release modifier keys that were previously pressed.
+		/// </summary>
+		/// <param name="modifierKeys">Modifier keys to be released</param>
+		/// <returns>The automation runner to allow call chaining</returns>
+		public AutomationRunner ReleaseModifierKeys(ModifierKeys modifierKeys)
+		{
+			if (modifierKeys == ModifierKeys.None)
+			{
+				return this;
+			}
+
+			var keys = Keys.None;
+			if ((modifierKeys & ModifierKeys.Shift) == ModifierKeys.Shift)
+			{
+				keys = (Keys)((uint)keys | (uint)Keys.ShiftKey);
+			}
+			if ((modifierKeys & ModifierKeys.Control) == ModifierKeys.Control)
+			{
+				keys = (Keys)((uint)keys | (uint)Keys.ControlKey);
+			}
+			if ((modifierKeys & ModifierKeys.Alt) == ModifierKeys.Alt)
+			{
+				keys = (Keys)((uint)keys | (uint)Keys.Menu);
+			}
+
+			inputSystem.ReleaseModifierKeys(keys);
+			Delay(.2);
+
+			return this;
 		}
 
 		/// <summary>

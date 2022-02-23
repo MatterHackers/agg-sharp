@@ -31,9 +31,11 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 
 namespace MatterHackers.GuiAutomation
@@ -53,6 +55,10 @@ namespace MatterHackers.GuiAutomation
 		void SetCursorPosition(int x, int y);
 
 		void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
+
+		void PressModifierKeys(Keys modifierKeys);
+
+		void ReleaseModifierKeys(Keys modifierKeys);
 
 		void Type(string textToType);
 	}
@@ -265,9 +271,7 @@ namespace MatterHackers.GuiAutomation
 
 		public void Type(string textToType)
 		{
-			// Find the top systemWindow, then find its root
-			var topWindow = SystemWindow.AllOpenSystemWindows.Last();
-			var systemWindow = topWindow.Parents<GuiWidget>().LastOrDefault() ?? topWindow;
+			var systemWindow = FindRootSystemWindow();
 
 			// Setup reset event to block until input received
 			var resetEvent = new AutoResetEvent(false);
@@ -337,13 +341,134 @@ namespace MatterHackers.GuiAutomation
 			resetEvent.WaitOne();
 		}
 
-		private void SendKey(Keys keyDown, char keyPressed, GuiWidget reciever)
+		private GuiWidget FindRootSystemWindow()
+		{
+			// Find the top systemWindow, then find its root
+			var topWindow = SystemWindow.AllOpenSystemWindows.Last();
+			return topWindow.Parents<GuiWidget>().LastOrDefault() ?? topWindow;
+		}
+
+		private static readonly List<Keys> ModifierKeyList = new List<Keys>()
+		{
+			Keys.ShiftKey,
+			Keys.LShiftKey,
+			Keys.RShiftKey,
+			Keys.Shift,
+			Keys.ControlKey,
+			Keys.LControlKey,
+			Keys.RControlKey,
+			Keys.Control,
+			Keys.Menu,
+			Keys.Alt
+		};
+
+		private static readonly uint ModifierKeyMask = ModifierKeyList.Aggregate(0u, (acc, v) => acc | (uint)v);
+
+		public void PressModifierKeys(Keys modifierKeys)
+		{
+			var mods = (uint)modifierKeys & ModifierKeyMask;
+			var keyDownEvent = new KeyEventArgs((Keys)mods);
+			var systemWindow = (SystemWindow)FindRootSystemWindow();
+
+			void setModifiers(uint m, Keys key)
+			{
+				var bits = (uint)key;
+				if ((m & bits) == bits)
+				{
+					Keyboard.SetKeyDownState(key, true);
+				}
+			}
+
+			mods = (uint)keyDownEvent.Modifiers;
+			switch (keyDownEvent.KeyCode)
+			{
+				case Keys.ShiftKey:
+				case Keys.LShiftKey:
+				case Keys.RShiftKey:
+					mods |= (uint)Keys.Shift;
+					break;
+
+				case Keys.ControlKey:
+				case Keys.LControlKey:
+				case Keys.RControlKey:
+					mods |= (uint)Keys.Control;
+					break;
+
+				case Keys.Menu:
+					mods |= (uint)Keys.Alt;
+					break;
+			}
+
+			setModifiers(mods, Keys.Shift);
+			setModifiers(mods, Keys.Control);
+			setModifiers(mods, Keys.Alt);
+
+			var platformWindowType = systemWindow.PlatformWindow.GetType();
+			if (platformWindowType.Name == "OpenGLSystemWindow")
+			{
+				var methodInfo = platformWindowType.GetMethod("SetModifierKeys", BindingFlags.Instance | BindingFlags.NonPublic);
+				methodInfo.Invoke(systemWindow.PlatformWindow, new object[] { (Keys)mods });
+			}
+
+			systemWindow.OnKeyDown(keyDownEvent);
+		}
+
+		public void ReleaseModifierKeys(Keys modifierKeys)
+		{
+			var mods = (uint)modifierKeys & ModifierKeyMask;
+			var keyUpEvent = new KeyEventArgs((Keys)mods);
+			var systemWindow = (SystemWindow)FindRootSystemWindow();
+
+			void unsetModifier(uint m, Keys key)
+			{
+				var bits = (uint)key;
+				if ((m & bits) != bits)
+				{
+					Keyboard.SetKeyDownState(key, false);
+				}
+			}
+
+			mods = (uint)keyUpEvent.Modifiers;
+			switch (keyUpEvent.KeyCode)
+			{
+				case Keys.ShiftKey:
+				case Keys.LShiftKey:
+				case Keys.RShiftKey:
+					mods &= ~(uint)Keys.Shift;
+					break;
+
+				case Keys.ControlKey:
+				case Keys.LControlKey:
+				case Keys.RControlKey:
+					mods &= ~(uint)Keys.Control;
+					break;
+
+				case Keys.Menu:
+					mods &= ~(uint)Keys.Alt;
+					break;
+			}
+
+			unsetModifier(mods, Keys.Shift);
+			unsetModifier(mods, Keys.Control);
+			unsetModifier(mods, Keys.Alt);
+
+			var platformWindowType = systemWindow.PlatformWindow.GetType();
+			if (platformWindowType.Name == "OpenGLSystemWindow")
+			{
+				var methodInfo = platformWindowType.GetMethod("SetModifierKeys", BindingFlags.Instance | BindingFlags.NonPublic);
+				methodInfo.Invoke(systemWindow.PlatformWindow, new object[] { (Keys)mods });
+			}
+
+			systemWindow.OnKeyUp(keyUpEvent);
+		}
+
+		private void SendKey(Keys keyDown, char keyPressed, GuiWidget receiver)
 		{
 			var keyDownEvent = new KeyEventArgs(keyDown);
-			reciever.OnKeyDown(keyDownEvent);
+			receiver.OnKeyDown(keyDownEvent);
 			if (!keyDownEvent.SuppressKeyPress)
 			{
-				reciever.OnKeyPress(new KeyPressEventArgs(keyPressed));
+				receiver.OnKeyPress(new KeyPressEventArgs(keyPressed));
 			}
 		}
 

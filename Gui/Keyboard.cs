@@ -34,51 +34,47 @@ namespace MatterHackers.Agg.UI
 {
 	public static class Keyboard
 	{
-		private static Dictionary<Keys, bool> downStates = new Dictionary<Keys, bool>();
+		private static HashSet<Keys> downStates = new HashSet<Keys>();
 
 		public static event EventHandler StateChanged;
 
-		public static bool IsKeyDown(Keys key)
-		{
-			if (downStates.ContainsKey(key))
-			{
-				return downStates[key];
-			}
-
-			return false;
-		}
+		public static bool IsKeyDown(Keys key) => downStates.Contains(key);
 
 		public static void SetKeyDownState(Keys key, bool down)
 		{
-			if (downStates.ContainsKey(key))
-			{
-				downStates[key] = down;
-			}
-			else
-			{
-				downStates.Add(key, down);
-			}
-
+			SaveKeyState(key, down);
 			switch(key)
 			{
 				case Keys.LControlKey:
 				case Keys.RControlKey:
 				case Keys.ControlKey:
-					SetKeyDownState(Keys.Control, down);
+					SaveKeyState(Keys.Control, down);
 					break;
 
 				case Keys.LShiftKey:
 				case Keys.RShiftKey:
 				case Keys.ShiftKey:
-					SetKeyDownState(Keys.Shift, down);
+					SaveKeyState(Keys.Shift, down);
 					break;
 
 				case Keys.Menu:
-					SetKeyDownState(Keys.Alt, down);
+					SaveKeyState(Keys.Alt, down);
 					break;
 			}
 
 			StateChanged?.Invoke(null, null);
+		}
+
+		private static void SaveKeyState(Keys key, bool down)
+		{
+			if (down)
+			{
+				downStates.Add(key);
+			}
+			else
+			{
+				downStates.Remove(key);
+			}
 		}
 
 		public static void Clear()
