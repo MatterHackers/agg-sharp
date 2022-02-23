@@ -137,6 +137,44 @@ namespace MatterHackers.GuiAutomation
 		{
 			System.Windows.Forms.SendKeys.SendWait(textToType);
 		}
+
+		private const uint shiftMask = (uint)Keys.ShiftKey | (uint)Keys.Shift;
+		private const uint controlMask = (uint)Keys.ControlKey | (uint)Keys.Control;
+		private const uint altMask = (uint)Keys.Menu | (uint)Keys.Alt;
+
+		public void PressModifierKeys(Keys modifierKeys)
+		{
+			var mods = (uint)modifierKeys;
+			if ((mods & shiftMask) == shiftMask)
+			{
+				NativeMethods.keybd_event(0x10, 0, 0, 0);
+			}
+			if ((mods & controlMask) == controlMask)
+			{
+				NativeMethods.keybd_event(0x11, 0, 0, 0);
+			}
+			if ((mods & altMask) == altMask)
+			{
+				NativeMethods.keybd_event(0x12, 0, 0, 0);
+			}
+		}
+
+		public void ReleaseModifierKeys(Keys modifierKeys)
+		{
+			var mods = (uint)modifierKeys;
+			if ((mods & shiftMask) == shiftMask)
+			{
+				NativeMethods.keybd_event(0x10, 0, 0x2, 0);
+			}
+			if ((mods & controlMask) == controlMask)
+			{
+				NativeMethods.keybd_event(0x11, 0, 0x2, 0);
+			}
+			if ((mods & altMask) == altMask)
+			{
+				NativeMethods.keybd_event(0x12, 0, 0x2, 0);
+			}
+		}
 	}
 #endif
 }

@@ -264,11 +264,17 @@ namespace MatterHackers.GlfwProvider
 
 		private void KeyCallback(Window windowIn, GLFW.Keys key, int scanCode, InputState state, ModifierKeys mods)
 		{
-			if (state == InputState.Press
-			|| state == InputState.Repeat)
+			if (state == InputState.Press || state == InputState.Repeat)
 			{
 				var keyData = MapKey(key, out bool _);
-				Keyboard.SetKeyDownState(keyData, true);
+				if (keyData != Agg.UI.Keys.None && keyData != Agg.UI.Keys.Modifiers)
+				{
+					Keyboard.SetKeyDownState(keyData, true);
+				}
+				else if (keyData == Agg.UI.Keys.Modifiers)
+				{
+					mods |= MapModifier(key);
+				}
 				UpdateKeyboard(mods);
 
 				var keyEvent = new Agg.UI.KeyEventArgs(keyData | ModifierKeys);
@@ -293,7 +299,14 @@ namespace MatterHackers.GlfwProvider
 			else if (state == InputState.Release)
 			{
 				var keyData = MapKey(key, out bool suppress);
-				Keyboard.SetKeyDownState(keyData, false);
+				if (keyData != Agg.UI.Keys.None && keyData != Agg.UI.Keys.Modifiers)
+				{
+					Keyboard.SetKeyDownState(keyData, false);
+				}
+				else if (keyData == Agg.UI.Keys.Modifiers)
+				{
+					mods &= ~MapModifier(key);
+				}
 				UpdateKeyboard(mods);
 
 				var keyEvent = new Agg.UI.KeyEventArgs(keyData | ModifierKeys);
@@ -381,6 +394,24 @@ namespace MatterHackers.GlfwProvider
 
 				case GLFW.Keys.Delete:
 					return Agg.UI.Keys.Delete;
+
+				case GLFW.Keys.LeftShift:
+					return Agg.UI.Keys.Modifiers;
+
+				case GLFW.Keys.LeftControl:
+					return Agg.UI.Keys.Modifiers;
+
+				case GLFW.Keys.LeftAlt:
+					return Agg.UI.Keys.Modifiers;
+
+				case GLFW.Keys.RightShift:
+					return Agg.UI.Keys.Modifiers;
+
+				case GLFW.Keys.RightControl:
+					return Agg.UI.Keys.Modifiers;
+
+				case GLFW.Keys.RightAlt:
+					return Agg.UI.Keys.Modifiers;
 			}
 
 			suppress = false;
@@ -492,7 +523,33 @@ namespace MatterHackers.GlfwProvider
 					return Agg.UI.Keys.Z;
 			}
 
-			return Agg.UI.Keys.BrowserStop;
+			return Agg.UI.Keys.None;
+		}
+
+		private ModifierKeys MapModifier(GLFW.Keys key)
+		{
+			// When only a single modifier key is pressed by itself in Linux, Modifiers is zero but
+			// when the key is released, Modifiers is set. This messes up the key state being tracked
+			// in the Keyboard class and is different than in Windows. Patch up Modifiers so it is
+			// consistent on both platforms.
+
+			switch (key)
+			{
+				case GLFW.Keys.LeftShift:
+					return GLFW.ModifierKeys.Shift;
+				case GLFW.Keys.LeftControl:
+					return GLFW.ModifierKeys.Control;
+				case GLFW.Keys.LeftAlt:
+					return GLFW.ModifierKeys.Alt;
+				case GLFW.Keys.RightShift:
+					return GLFW.ModifierKeys.Shift;
+				case GLFW.Keys.RightControl:
+					return GLFW.ModifierKeys.Control;
+				case GLFW.Keys.RightAlt:
+					return GLFW.ModifierKeys.Alt;
+			}
+
+			return 0;
 		}
 
 		private Cursor MapCursor(Cursors cursorToSet)

@@ -50,5 +50,8 @@ namespace MatterHackers.Agg.UI
 
 		[DllImport("user32.dll")]
 		internal static extern void mouse_event(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
+
+		[DllImport("user32.dll")]
+		internal static extern void keybd_event(byte bVk, byte bScan, int dwFlags, int dwExtraInfo);
 	}
 }

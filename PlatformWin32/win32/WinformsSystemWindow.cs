@@ -50,6 +50,7 @@ namespace MatterHackers.Agg.UI
 		private SystemWindow _systemWindow;
 		private int drawCount = 0;
 		private int onPaintCount;
+		private bool enableIdleProcessing;
 
 		public SystemWindow AggSystemWindow
 		{
@@ -146,6 +147,14 @@ namespace MatterHackers.Agg.UI
 			{
 				lock (SingleInvokeLock)
 				{
+					if (!enableIdleProcessing)
+					{
+						// There's a race between the idle timer calling this handler and the code to
+						// start the main event loop. Reaching this handler first seems to cause the
+						// app to get stuck when running the automation test suite on Linux.
+						return;
+					}
+
 					if (processingOnIdle)
 					{
 						// If the pending invoke has not completed, skip the timer event
@@ -320,7 +329,7 @@ namespace MatterHackers.Agg.UI
 
 		public ISystemWindowProvider WindowProvider { get; set; }
 
-		public new Keys ModifierKeys => (Keys)Control.ModifierKeys;
+		public new virtual Keys ModifierKeys => (Keys)Control.ModifierKeys;
 
 		/* // Can't simply override BringToFront. Change Interface method name/signature if required. Leaving as is
 		 * // to call base/this.BringToFront via Interface call
@@ -548,6 +557,13 @@ namespace MatterHackers.Agg.UI
 				firstWindow = false;
 
 				this.Show();
+
+				// Enable idle processing now that the window is ready to handle events.
+				lock (SingleInvokeLock)
+				{
+					enableIdleProcessing = true;
+				}
+
 				Application.Run(this);
 			}
 			else if (!SingleWindowMode)
