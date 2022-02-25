@@ -332,9 +332,18 @@ namespace MatterHackers.GuiAutomation
 				{
 					graphics2D.Render(circle, Color.Green);
 
+					var mods = string.Join("", new[] {(Keys.Shift, "S"), (Keys.Control, "C")}
+						.Select(x => Keyboard.IsKeyDown(x.Item1) ? x.Item2 : "")
+						.Where(v => !string.IsNullOrEmpty(v)));
+
 					if (inputSystem.ClickCount > 1)
 					{
-						graphics2D.DrawString(inputSystem.ClickCount.ToString(), mousePosOnWindow.x, mousePosOnWindow.y, 8, justification: Justification.Center, baseline: Baseline.BoundsCenter);
+						mods += inputSystem.ClickCount.ToString();
+					}
+
+					if (!string.IsNullOrEmpty(mods))
+					{
+						graphics2D.DrawString(mods, mousePosOnWindow.x, mousePosOnWindow.y, 8, justification: Justification.Center, baseline: Baseline.BoundsCenter);
 					}
 				}
 
