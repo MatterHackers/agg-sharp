@@ -30,63 +30,64 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using MatterHackers.Agg;
 
 namespace MatterHackers.DataConverters3D
 {
 	public class SelectionMaintainer : IDisposable
 	{
-		private readonly InteractiveScene scene;
-		private readonly IObject3D selectedItem;
-		private readonly List<IObject3D> childrenAtStart;
+        private InteractiveScene scene;
+        private List<IObject3D> selectedObjects = new List<IObject3D>();
 
-		public SelectionMaintainer(InteractiveScene scene)
-		{
-			this.scene = scene;
-			selectedItem = scene.SelectedItem;
-			scene.SelectedItem = null;
-			childrenAtStart = scene.Children.ToList();
-		}
+        public SelectionMaintainer(InteractiveScene interactiveScene)
+        {
+            this.scene = interactiveScene;
 
-		public void Dispose()
-		{
-			if (selectedItem == null)
-			{
-				return;
-			}
+            // remember any selected objects we have
+            var selection = interactiveScene.SelectedItem;
+            if (selection != null)
+            {
+                if (selection is SelectionGroupObject3D selectionGroup)
+                {
+                    selectedObjects.AddRange(selectionGroup.Children);
+                }
+                else
+                {
+                    selectedObjects.Add(selection);
+                }
+            }
 
-			// if the item we had selected is still in the scene, re-select it
-			if (scene.Children.Contains(selectedItem))
-			{
-				scene.SelectedItem = selectedItem;
-				return;
-			}
+            // clear the selection
+            interactiveScene.SelectedItem = null;
+        }
 
-			// if the previously selected item is not in the scene
-			if (!scene.Children.Contains(selectedItem))
-			{
-				// and we have only added one new item to the scene
-				var newItems = scene.Children.Where(c => !childrenAtStart.Contains(c));
-				// select it
-				if (newItems.Count() == 1)
-				{
-					scene.SelectedItem = newItems.First();
-					return;
-				}
-				else
-				{
-					scene.SelectedItem = null;
-					return;
-				}
-			}
-
-			// set the root item to the selection and then to the new item
-			var rootItem = selectedItem.Parents().Where(i => scene.Children.Contains(i)).FirstOrDefault();
-			if (rootItem != null)
-			{
-				scene.SelectedItem = rootItem;
-				scene.SelectedItem = selectedItem;
-			}
-		}
-	}
+        public void Dispose()
+        {
+            if (selectedObjects.Count == 1)
+            {
+                var item = selectedObjects[0];
+                var rootItem = item.Parents().Where(i => scene.Children.Contains(i)).FirstOrDefault();
+                if (rootItem != null)
+                {
+                    scene.SelectedItem = rootItem;
+                    scene.SelectedItem = item;
+                }
+                else if (scene.Children.Contains(item))
+                {
+                    scene.SelectedItem = item;
+                }
+            }
+            else
+            {
+                // restore the selcetion
+                foreach (var item in selectedObjects)
+                {
+                    if (!(item is SelectionGroupObject3D)
+                        && scene.Children.Contains(item))
+                    {
+                        scene.AddToSelection(item);
+                    }
+                }
+            }
+        }
+    }
 }
