@@ -239,8 +239,6 @@ namespace MatterHackers.Agg.UI
 
 		private bool initHasBeenCalled = false;
 
-		private Keys modifierKeys = Keys.None;
-		public override Keys ModifierKeys => modifierKeys;
-		internal void SetModifierKeys(Keys modifiers) => modifierKeys = modifiers;
+		public override Keys ModifierKeys => base.ModifierKeys;
 	}
 }
