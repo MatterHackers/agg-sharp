@@ -33,31 +33,52 @@ namespace MatterHackers.VectorMath
 {
 	public class WorldView
 	{
+		public const double DefaultPerspectiveVFOVDegrees = 45;
+		public const double DefaultNearZ = 0.1;
+		public const double DefaultFarZ = 100.0;
+		// Force this minimum on near Z.
+		// As the dynamic near plane will take this value inside an AABB, it'll be the same as the default for now.
+		public const double PerspectiveProjectionMinimumNearZ = DefaultNearZ;
+		// far / near >= this
+		private const double PerspectiveProjectionMinimumFarNearRatio = 1.001;
+		// Force this minimum distance between the near and far planes for the orthographic projection.
+		private const double OrthographicProjectionMinimumNearFarGap = 0.001;
+
+		private const double CameraZTranslationFudge = -7;
+
+		public double Height { get; private set; } = 0;
+		public double Width { get; private set; } = 0;
+		public Vector2 ViewportSize { get { return new Vector2(Width, Height); } }
+		/// <summary>
+		/// The vertical FOV of the latest perspective projection. Untouched by orthographic projection.
+		/// </summary>
+		public double VFovDegrees { get; private set; } = 0;
+		/// <summary>
+		/// The horizontal FOV of the latest perspective projection. Untouched by orthographic projection.
+		/// May not be symmetric due to center offset.
+		/// </summary>
+		public double HFovDegrees { get; private set; } = 0;
+		/// <summary>
+		/// The height of the near plane in viewspace in either projection mode. For orthographic, this is constant for all Z.
+		/// This value is used to maintain orthographic scale during viewport resize.
+		/// </summary>
+		public double NearPlaneHeightInViewspace { get; private set; } = 0;
+		public bool IsOrthographic { get; private set; } = false;
+		public Matrix4X4 ModelviewMatrix { get; private set; } = Matrix4X4.Identity;
+		public Matrix4X4 ProjectionMatrix { get; private set; } = Matrix4X4.Identity;
+		public Matrix4X4 InverseModelviewMatrix { get; private set; } = Matrix4X4.Identity;
+		public Matrix4X4 InverseProjectionMatrix { get; private set; } = Matrix4X4.Identity;
+		/// <summary>
+		/// Signed distance of the near plane from the eye along the forward axis. Positive for perspective projection.
+		/// </summary>
+		public double NearZ { get; private set; } = 0;
+		/// <summary>
+		/// Signed distance of the far plane from the eye along the forward axis. Positive for perspective projection.
+		/// </summary>
+		public double FarZ { get; private set; } = 0;
+
 		private Matrix4X4 _rotationMatrix = Matrix4X4.Identity;
 		private Matrix4X4 _translationMatrix = Matrix4X4.Identity;
-
-		public double Height { get; private set; }
-
-		public double Width { get; private set; }
-
-		public bool IsOrthographic { get; private set; }
-
-		public WorldView(double width, double height)
-		{
-			this.Width = width;
-			this.Height = height;
-
-			this.CalculatePerspectiveMatrix(width, height);
-			this.CalculateModelviewMatrix();
-		}
-
-		public Matrix4X4 InverseModelviewMatrix { get; private set; }
-
-		public Matrix4X4 InverseProjectionMatrix { get; private set; }
-
-		public Matrix4X4 ModelviewMatrix { get; private set; }
-
-		public Matrix4X4 ProjectionMatrix { get; private set; } = Matrix4X4.Identity;
 
 		public Matrix4X4 RotationMatrix
 		{
@@ -119,116 +140,8 @@ namespace MatterHackers.VectorMath
 
 		public void CalculateModelviewMatrix()
 		{
-			this.ModelviewMatrix = this.GetTransform4X4() * Matrix4X4.CreateTranslation(0, 0, -7);
+			this.ModelviewMatrix = this.GetTransform4X4() * Matrix4X4.CreateTranslation(0, 0, CameraZTranslationFudge);
 			this.InverseModelviewMatrix = Matrix4X4.Invert(this.ModelviewMatrix);
-		}
-
-		public void CalculatePerspectiveMatrix(double width, double height, double zNear = .1, double zFar = 100)
-		{
-			if (width > 0 && height > 0)
-			{
-				this.Width = width;
-				this.Height = height;
-
-				var fovYRadians = MathHelper.DegreesToRadians(45);
-				var aspectWidthOverHeight = width / height;
-				Matrix4X4.CreatePerspectiveFieldOfView(fovYRadians, aspectWidthOverHeight, zNear, zFar, out Matrix4X4 projectionMatrix);
-
-				this.ProjectionMatrix = projectionMatrix;
-				this.InverseProjectionMatrix = Matrix4X4.Invert(projectionMatrix);
-
-				IsOrthographic = false;
-			}
-		}
-
-		public void CalculatePerspectiveMatrixOffCenter(double width,
-			double height,
-			double centerOffsetX,
-			double zNear = .1,
-			double zFar = 100,
-			double angle = 45)
-		{
-			if (width > 0 && height > 0)
-			{
-				this.Width = width;
-				this.Height = height;
-				var yAngleR = MathHelper.DegreesToRadians(angle) / 2;
-
-				var screenDist = height / 2 / Math.Tan(yAngleR);
-
-				var center = width / 2;
-				var xAngleL = Math.Atan2(-center - centerOffsetX / 2, screenDist);
-				var xAngleR = Math.Atan2(center - centerOffsetX / 2, screenDist);
-
-				// calculate yMin and yMax at the near clip plane
-				double yMax = zNear * Math.Tan(yAngleR);
-				double yMin = -yMax;
-				double xMax = zNear * Math.Tan(xAngleR);
-				double xMin = zNear * Math.Tan(xAngleL);
-
-				Matrix4X4.CreatePerspectiveOffCenter(xMin, xMax, yMin, yMax, zNear, zFar, out Matrix4X4 projectionMatrix);
-
-				this.ProjectionMatrix = projectionMatrix;
-				this.InverseProjectionMatrix = Matrix4X4.Invert(projectionMatrix);
-
-				IsOrthographic = false;
-			}
-		}
-
-		public void CalculateOrthogrphicMatrixOffCenter(double width, double height, double centerOffsetX, double zNear = .1, double zFar = 100)
-		{
-			if (width > 0 && height > 0)
-			{
-				this.Width = width;
-				this.Height = height;
-				var yAngleR = MathHelper.DegreesToRadians(45) / 2;
-
-				var screenDist = height / 2 / Math.Tan(yAngleR);
-
-				var center = width / 2;
-				var xAngleL = Math.Atan2(-center - centerOffsetX / 2, screenDist);
-				var xAngleR = Math.Atan2(center - centerOffsetX / 2, screenDist);
-
-				// calculate yMin and yMax at the near clip plane
-				double yMax = zNear * Math.Tan(yAngleR);
-				double yMin = -yMax;
-				double xMax = zNear * Math.Tan(xAngleR);
-				double xMin = zNear * Math.Tan(xAngleL);
-
-				var screenCenter = this.GetWorldPosition(new Vector2(width / 2, height / 2));
-				var distToScreen = (EyePosition - screenCenter).Length;
-
-				xMax = width / distToScreen * 2;
-				xMin = -xMax;
-				yMax = height / distToScreen * 4;
-				yMin = -yMin;
-
-				Matrix4X4.CreateOrthographicOffCenter(xMin, xMax, yMin, yMax, zNear, zFar, out Matrix4X4 projectionMatrix);
-
-				this.ProjectionMatrix = projectionMatrix;
-				this.InverseProjectionMatrix = Matrix4X4.Invert(projectionMatrix);
-
-				IsOrthographic = true;
-			}
-		}
-		public Ray GetRayForLocalBounds(Vector2 screenPosition)
-		{
-			var rayClip = new Vector4();
-			rayClip.X = (2.0 * screenPosition.X) / this.Width - 1.0;
-			rayClip.Y = (2.0 * screenPosition.Y) / this.Height - 1.0;
-			rayClip.Z = -1.0;
-			rayClip.W = 1.0;
-
-			var rayEye = Vector4.Transform(rayClip, InverseProjectionMatrix);
-			rayEye.Z = -1; rayEye.W = 0;
-
-			var rayWorld = Vector4.Transform(rayEye, InverseModelviewMatrix);
-
-			var finalRayWorld = new Vector3(rayWorld).GetNormal();
-
-			var origin = Vector3.Zero.Transform(InverseModelviewMatrix);
-
-			return new Ray(origin, finalRayWorld);
 		}
 
 		public Vector3 EyePosition
@@ -237,26 +150,153 @@ namespace MatterHackers.VectorMath
 			{
 				return Vector3.Zero.Transform(InverseModelviewMatrix);
 			}
+
+			set
+			{
+				this.Translate(EyePosition - value);
+			}
 		}
 
+		/// <summary>
+		/// Initialises with a typical perspective projection and a default camera transform.
+		/// </summary>
+		/// <param name="width">Width of the viewport.</param>
+		/// <param name="height">Height of the viewport.</param>
+		public WorldView(double width, double height)
+		{
+			this.CalculatePerspectiveMatrix(width, height);
+			this.CalculateModelviewMatrix();
+		}
+
+
+		/// <summary>
+		/// Sets a typical perspective projection with an FOV of 45.
+		/// </summary>
+		/// <param name="width">Width of the viewport.</param>
+		/// <param name="height">Height of the viewport.</param>
+		/// <param name="zNear">Positive position of the near plane along the forward axis.</param>
+		/// <param name="zFar">Positive position of the far plane along the forward axis.</param>
+		public void CalculatePerspectiveMatrix(
+			double width, double height,
+			double zNear = DefaultNearZ, double zFar = DefaultFarZ)
+		{
+			CalculatePerspectiveMatrixOffCenter(width, height, 0, zNear, zFar);
+		}
+
+		public static void SanitisePerspectiveNearFar(ref double near, ref double far)
+		{
+			near = Math.Max(near, PerspectiveProjectionMinimumNearZ);
+			far = Math.Max(far, near * PerspectiveProjectionMinimumFarNearRatio);
+		}
+
+		/// <summary>
+		/// Sets a perspective projection with a given center adjustment and FOV.
+		/// </summary>
+		/// <param name="width">Width of the viewport.</param>
+		/// <param name="height">Height of the viewport.</param>
+		/// <param name="centerOffsetX">Offset of the right edge, to adjust the position of the viewport's center.</param>
+		/// <param name="zNear">Positive position of the near plane along the forward axis.</param>
+		/// <param name="zFar">Positive position of the far plane along the forward axis.</param>
+		/// <param name="vfovDegrees">Vertical FOV in degrees.</param>
+		public void CalculatePerspectiveMatrixOffCenter(
+			double width, double height,
+			double centerOffsetX,
+			double zNear = DefaultNearZ, double zFar = DefaultFarZ,
+			double vfovDegrees = DefaultPerspectiveVFOVDegrees)
+		{
+			width = Math.Max(1, width);
+			height = Math.Max(1, height);
+			SanitisePerspectiveNearFar(ref zNear, ref zFar);
+
+			var yAngleR = MathHelper.DegreesToRadians(vfovDegrees) / 2;
+			var screenDist = height / 2 / Math.Tan(yAngleR);
+			var center = width / 2;
+			var xAngleL = Math.Atan2(-center - centerOffsetX / 2, screenDist);
+			var xAngleR = Math.Atan2(center - centerOffsetX / 2, screenDist);
+
+			// calculate yMin and yMax at the near clip plane
+			double yMax = zNear * Math.Tan(yAngleR);
+			double yMin = -yMax;
+			double xMax = zNear * Math.Tan(xAngleR);
+			double xMin = zNear * Math.Tan(xAngleL);
+
+			Matrix4X4.CreatePerspectiveOffCenter(xMin, xMax, yMin, yMax, zNear, zFar, out Matrix4X4 projectionMatrix);
+
+			this.ProjectionMatrix = projectionMatrix;
+			this.InverseProjectionMatrix = Matrix4X4.Invert(projectionMatrix);
+			this.Width = width;
+			this.Height = height;
+			this.VFovDegrees = vfovDegrees;
+			this.HFovDegrees = MathHelper.RadiansToDegrees(Math.Abs(xAngleR - xAngleL));
+			this.NearPlaneHeightInViewspace = yMax * 2;
+			this.NearZ = zNear;
+			this.FarZ = zFar;
+			this.IsOrthographic = false;
+		}
+
+		public static void SanitiseOrthographicNearFar(ref double near, ref double far)
+		{
+			far = Math.Max(far, near + WorldView.OrthographicProjectionMinimumNearFarGap);
+			if (far <= near)
+			{
+				// zNear is so large that the addition didn't make a difference.
+				// Hope it's not infinity and do something multiplicative instead.
+				if (near >= 0)
+					far = near * 2;
+				else
+					far = near / 2;
+			}
+		}
+
+		/// <summary>
+		/// Sets an orthographic projection with an explicit height in viewspace.
+		/// </summary>
+		/// <param name="width">Width of the viewport.</param>
+		/// <param name="height">Height of the viewport.</param>
+		/// <param name="centerOffsetX">Offset of the right edge, to adjust the position of the viewport's center.</param>
+		/// <param name="heightInViewspace">The height of the projection in viewspace.</param>
+		/// <param name="zNear">Signed position of the near plane along the forward axis.</param>
+		/// <param name="zFar">Signed position of the far plane along the forward axis.</param>
+		public void CalculateOrthogrphicMatrixOffCenterWithViewspaceHeight(
+			double width, double height,
+			double centerOffsetX,
+			double heightInViewspace,
+			double zNear = DefaultNearZ, double zFar = DefaultFarZ)
+		{
+			width = Math.Max(1, width);
+			height = Math.Max(1, height);
+			SanitiseOrthographicNearFar(ref zNear, ref zFar);
+
+			double effectiveViewWidth = Math.Max(1, width + centerOffsetX);
+			double screenCenterX = effectiveViewWidth / 2;
+			double xMax = heightInViewspace / height * (width - screenCenterX);
+			double xMin = heightInViewspace / height * -screenCenterX;
+			double yMax = heightInViewspace / 2;
+			double yMin = -yMax;
+
+			Matrix4X4.CreateOrthographicOffCenter(xMin, xMax, yMin, yMax, zNear, zFar, out Matrix4X4 projectionMatrix);
+
+			this.Width = width;
+			this.Height = height;
+			this.ProjectionMatrix = projectionMatrix;
+			this.InverseProjectionMatrix = Matrix4X4.Invert(projectionMatrix);
+			this.NearPlaneHeightInViewspace = heightInViewspace;
+			this.NearZ = zNear;
+			this.FarZ = zFar;
+			this.IsOrthographic = true;
+		}
+		
+		/// <param name="worldPosition">Position in worldspace.</param>
+		/// <returns>[0, 0]..[Width, Height] (+Y is up)</returns>
 		public Vector2 GetScreenPosition(Vector3 worldPosition)
 		{
-			var homoginizedViewPosition = worldPosition.Transform(this.ModelviewMatrix);
-
-			if (IsOrthographic)
-			{
-				return new Vector2(homoginizedViewPosition.Transform(this.ProjectionMatrix));
-			}
-			else
-			{
-				var homoginizedScreenPosition = homoginizedViewPosition.TransformPerspective(this.ProjectionMatrix);
-
-				// Screen position
-				return new Vector2(homoginizedScreenPosition.X * Width / 2 + Width / 2,
-					homoginizedScreenPosition.Y * Height / 2 + Height / 2);
-			}
+			var viewspace = WorldspaceToViewspace(worldPosition);
+			var ndc = ViewspaceToNDC(viewspace);
+			return NDCToBottomScreenspace(ndc.Xy);
 		}
 
+		/// <param name="worldPosition">Position in worldspace.</param>
+		/// <returns>NDC before the perspective divide (clip-space).</returns>
 		public Vector3 WorldToScreenSpace(Vector3 worldPosition)
 		{
 			var viewPosition = worldPosition.Transform(ModelviewMatrix);
@@ -271,11 +311,34 @@ namespace MatterHackers.VectorMath
 			return xxx.Transform(InverseModelviewMatrix);
 		}
 
+		/// <param name="screenPosition">Screenspace coordinate with bottom-left origin.</param>
+		/// <returns>
+		/// A ray in worldspace along all points at the given position.
+		/// In perspective mode, the origin is EyePosition.
+		/// In orthographic mode, the origin is on the near plane with infinite extent in both directions (Ray.minDistanceToConsider is -inf).
+		/// </returns>
+		public Ray GetRayForLocalBounds(Vector2 screenPosition)
+		{
+			var nearNDC = BottomScreenspaceToNDC(new Vector3(screenPosition, -1));
+			var nearViewspacePosition = NDCToViewspace(nearNDC);
+			if (IsOrthographic)
+			{
+				return new Ray(nearViewspacePosition.TransformPosition(InverseModelviewMatrix), -Vector3.UnitZ.TransformVector(InverseModelviewMatrix).GetNormal(),
+					minDistanceToConsider: double.NegativeInfinity);
+			}
+			else
+			{
+				return new Ray(EyePosition, nearViewspacePosition.TransformVector(InverseModelviewMatrix).GetNormal());
+			}
+		}
+
 		public Matrix4X4 GetTransform4X4()
 		{
 			return TranslationMatrix * RotationMatrix;
 		}
 
+		// This code just doesn't look right... (and appears to be unused)
+		/*
 		public Vector3 GetWorldPosition(Vector2 screenPosition)
 		{
 			var homoginizedScreenSpace = new Vector4((2.0f * (screenPosition.X / Width)) - 1,
@@ -300,22 +363,31 @@ namespace MatterHackers.VectorMath
 
 			return new Vector3(woldSpace);
 		}
+		*/
 
+		public double GetViewspaceHeightAtPosition(Vector3 viewspacePosition)
+		{
+			if (this.IsOrthographic)
+				return NearPlaneHeightInViewspace;
+			else
+				return NearPlaneHeightInViewspace * viewspacePosition.Z / -NearZ;
+		}
+
+		/// <param name="worldPosition">Position in worldspace.</param>
+		/// <returns>
+		/// Units per screenspace X in worldspace at the given position.
+		/// Always positive unless underflow or NaN occurs.
+		/// The absolute value is taken and clamped to a minimum derived from the minimum allowed near plane.
+		/// </returns>
+		// NOTE: Original implementation always returns non-negative and callers depend on non-zero.
 		public double GetWorldUnitsPerScreenPixelAtPosition(Vector3 worldPosition, double maxRatio = 5)
 		{
-			Vector2 screenPosition = GetScreenPosition(worldPosition);
-
-			Ray rayFromScreen = GetRayForLocalBounds(screenPosition);
-			double distanceFromOriginToWorldPos = (worldPosition - rayFromScreen.origin).Length;
-
-			Ray rightOnePixelRay = GetRayForLocalBounds(new Vector2(screenPosition.X + 1, screenPosition.Y));
-			var rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.directionNormal * distanceFromOriginToWorldPos;
-			double distBetweenPixelsWorldSpace = (rightOnePixel - worldPosition).Length;
-			if (distBetweenPixelsWorldSpace > maxRatio)
-			{
-				return maxRatio;
-			}
-			return distBetweenPixelsWorldSpace;
+			Vector3 viewspace = WorldspaceToViewspace(worldPosition);
+			double viewspaceUnitsPerPixel = GetViewspaceHeightAtPosition(viewspace) / Height;
+			double minMagnitude = GetViewspaceHeightAtPosition(new Vector3(0, 0, -PerspectiveProjectionMinimumNearZ)) / Height;
+			viewspaceUnitsPerPixel = Math.Max(Math.Abs(viewspaceUnitsPerPixel), minMagnitude);
+			double worldspaceXUnitsPerPixel = new Vector3(viewspaceUnitsPerPixel, 0, 0).TransformVector(InverseModelviewMatrix).Length;
+			return Math.Min(worldspaceXUnitsPerPixel, maxRatio);
 		}
 
 		public void OnTransformChanged(EventArgs e)
@@ -362,6 +434,73 @@ namespace MatterHackers.VectorMath
 			var worldStartPostRotation = cameraSpaceStart.Transform(this.InverseModelviewMatrix);
 			var delta = worldStartPostRotation - worldPosition;
 			this.Translate(delta);
+		}
+
+		/// <param name="worldspacePosition">Position in worldspace.</param>
+		/// <returns>[0..0]..[Width, Height], if on-screen (+Y is up)</returns>
+		public Vector3 WorldspaceToBottomScreenspace(Vector3 worldspacePosition)
+		{
+			Vector3 viewspace = WorldspaceToViewspace(worldspacePosition);
+			Vector3 ndc = ViewspaceToNDC(viewspace);
+			return NDCToBottomScreenspace(ndc);
+		}
+
+		/// <param name="worldspacePosition">Worldspace</param>
+		/// <returns>[l, b, -near]..[r, t, -far] (if ortho)</returns>
+		private Vector3 WorldspaceToViewspace(Vector3 worldspacePosition)
+		{
+			return worldspacePosition.TransformPosition(ModelviewMatrix);
+		}
+
+		/// <param name="viewspacePosition">[l, b, -near]..[r, t, -far] (if ortho)</param>
+		/// <returns>[-1, -1, -1]..[1, 1, 1]</returns>
+		private Vector3 ViewspaceToNDC(Vector3 viewspacePosition)
+		{
+			var v = Vector4.Transform(new Vector4(viewspacePosition, 1), ProjectionMatrix);
+			return v.Xyz / v.W;
+		}
+
+		/// <param name="ndcPosition">[-1, -1, -1]..[1, 1, 1]</param>
+		/// <returns>[l, b, -near]..[r, t, -far] (if ortho)</returns>
+		public Vector3 NDCToViewspace(Vector3 ndcPosition)
+		{
+			var v = Vector4.Transform(new Vector4(ndcPosition, 1), InverseProjectionMatrix);
+			return v.Xyz / v.W;
+		}
+
+		/// <param name="ndcPosition">[-1, -1]..[1, 1] (+Y is up)</param>
+		/// <returns>[0, 0]..[Width, Height] (+Y is down)</returns>
+		private Vector2 NDCToTopScreenspace(Vector2 ndcPosition)
+		{
+			return Vector2.Multiply(Vector2.Multiply(ndcPosition - new Vector2(-1, 1), ViewportSize), new Vector2(0.5, -0.5));
+		}
+
+		/// <param name="ndcPosition">[-1, -1]..[1, 1] (+Y is up)</param>
+		/// <returns>[0, 0]..[Width, Height] (+Y is up)</returns>
+		private Vector2 NDCToBottomScreenspace(Vector2 ndcPosition)
+		{
+			return Vector2.Multiply(Vector2.Multiply(ndcPosition - new Vector2(-1, -1), ViewportSize), new Vector2(0.5, 0.5));
+		}
+
+		/// <param name="screenspacePosition">[0, 0]..[Width, Height] (+Y is up)</param>
+		/// <returns>[-1, -1]..[1, 1] (+Y is up)</returns>
+		private Vector2 BottomScreenspaceToNDC(Vector2 screenspacePosition)
+		{
+			return Vector2.Divide(Vector2.Multiply(screenspacePosition, new Vector2(2, 2)), ViewportSize) + new Vector2(-1, -1);
+		}
+
+		/// <param name="ndcPosition">[-1, -1, -1]..[1, 1, 1] (+Y is up)</param>
+		/// <returns>[0, 0, -1]..[Width, Height, 1] (+Y is up)</returns>
+		private Vector3 NDCToBottomScreenspace(Vector3 ndcPosition)
+		{
+			return new Vector3(NDCToBottomScreenspace(ndcPosition.Xy), ndcPosition.Z);
+		}
+
+		/// <param name="screenspacePosition">[0, 0, -1]..[Width, Height, 1] (+Y is up)</param>
+		/// <returns>[-1, -1, -1]..[1, 1, 1] (+Y is up)</returns>
+		private Vector3 BottomScreenspaceToNDC(Vector3 screenspacePosition)
+		{
+			return new Vector3(BottomScreenspaceToNDC(screenspacePosition.Xy), screenspacePosition.Z);
 		}
 	}
 }
