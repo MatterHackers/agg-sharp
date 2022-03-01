@@ -182,6 +182,52 @@ namespace MatterHackers.VectorMath.Tests
 		}
 
 		[Test]
+		public void WorldViewPerspectiveProjectionTests()
+		{
+			var world = new WorldView(1, 1);
+			Assert.IsTrue(world.EyePosition.Equals(Vector3.UnitZ * 7, 1e-3));
+			world.CalculatePerspectiveMatrixOffCenter(567, 123, -200, 5, 55);
+			Assert.IsTrue(world.GetScreenPosition(new Vector3(0, 0, 0)).Equals(new Vector2((567 - 200) / 2.0, 123 / 2.0), 1e-3));
+			Assert.AreEqual(5, world.NearZ, 1e-3);
+			Assert.AreEqual(55, world.FarZ, 1e-3);
+			Assert.AreEqual(4.14213562373095, world.NearPlaneHeightInViewspace, 1e-3);
+			var ray = world.GetRayForLocalBounds(new Vector2((567 - 200) / 2.0, 123)); // top center
+			Assert.AreEqual(WorldView.DefaultPerspectiveVFOVDegrees / 2, MathHelper.RadiansToDegrees(Math.Atan2(ray.directionNormal.Y, -ray.directionNormal.Z)), 1e-3);
+			Assert.IsTrue(new Vector3(0, world.NearPlaneHeightInViewspace / 2, 2).Equals(ray.origin, 1e-3));
+			Assert.AreEqual(world.NearPlaneHeightInViewspace * 2, world.GetViewspaceHeightAtPosition(new Vector3(1, 1, -10)), 1e-3);
+			world.Scale = 3;
+			Assert.AreEqual(world.NearPlaneHeightInViewspace * 2 / 3, world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 123, 1e-3);
+		}
+
+		[Test]
+		public void WorldViewOrthographicProjectionTests()
+		{
+			var world = new WorldView(1, 1);
+			Assert.IsTrue(world.EyePosition.Equals(Vector3.UnitZ * 7, 1e-3));
+			world.CalculateOrthogrphicMatrixOffCenterWithViewspaceHeight(680, 240, -200, 128, 5, 55);
+			Assert.IsTrue(world.GetScreenPosition(new Vector3(0, 0, 0)).Equals(new Vector2((680 - 200) / 2.0, 240 / 2.0), 1e-3));
+			Assert.IsTrue(world.GetScreenPosition(new Vector3(128, 64, 0)).Equals(new Vector2(680 - 200, 240), 1e-3));
+			Assert.IsTrue(world.GetScreenPosition(new Vector3(-128, -64, 0)).Equals(new Vector2(0, 0), 1e-3));
+			Assert.AreEqual(5, world.NearZ, 1e-3);
+			Assert.AreEqual(55, world.FarZ, 1e-3);
+			Assert.AreEqual(128, world.NearPlaneHeightInViewspace, 1e-3);
+			var ray = world.GetRayForLocalBounds(new Vector2((680 - 200) / 2.0, 240)); // top center
+			Assert.IsTrue(Vector3.UnitZ.Equals(-ray.directionNormal.GetNormal(), 1e-3));
+			Assert.IsTrue(new Vector3(0, 64, 2).Equals(ray.origin, 1e-3));
+			Assert.AreEqual(world.NearPlaneHeightInViewspace, world.GetViewspaceHeightAtPosition(new Vector3(1, 1, -10)), 1e-3);
+			world.Scale = 3;
+			Assert.AreEqual(world.NearPlaneHeightInViewspace / 3, world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 240, 1e-3);
+		}
+
+		[Test]
+		public void WorldViewEyePositionTests()
+		{
+			var world = new WorldView(1, 1);
+			world.EyePosition = new Vector3(1, 2, 3);
+			Assert.IsTrue(new Vector3(1, 2, 3).Equals(world.EyePosition, 1e-3));
+		}
+
+		[Test]
 		public void FrustumExtractionTests()
 		{
 			{

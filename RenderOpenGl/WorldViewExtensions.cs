@@ -347,6 +347,29 @@ namespace MatterHackers.RenderOpenGl
 			GL.Enable(EnableCap.Lighting);
 		}
 
+		public static AxisAlignedBoundingBox GetWorldspaceAabbOfRenderPathOutline(this WorldView world, Matrix4X4 worldMatrix, IVertexSource path, double lineWidth = 1)
+		{
+			AxisAlignedBoundingBox box = AxisAlignedBoundingBox.Empty();
+
+			Vector3 prevPosition = default;
+			foreach (var vertex in path.Vertices())
+			{
+				if (vertex.command == ShapePath.FlagsAndCommand.MoveTo)
+				{
+					prevPosition = new Vector3(vertex.position).Transform(worldMatrix);
+				}
+				else if (vertex.command == ShapePath.FlagsAndCommand.LineTo)
+				{
+					var position = new Vector3(vertex.position).Transform(worldMatrix);
+					box.ExpandToInclude(prevPosition);
+					box.ExpandToInclude(position);
+					prevPosition = position;
+				}
+			}
+
+			return box;
+		}
+
 		public static void DrawOctree(this WorldView world, OctreeNode rootNode, int colorIndex)
 		{
 			if (rootNode != null && rootNode.Children.Length > 0)
@@ -398,6 +421,13 @@ namespace MatterHackers.RenderOpenGl
 			GL.Enable(EnableCap.Lighting);
 		}
 
+		public static AxisAlignedBoundingBox GetWorldspaceAabbOfRenderAabb(AxisAlignedBoundingBox bounds, Matrix4X4 matrix, double lineWidth = 1, double extendLineLength = 0)
+		{
+			bounds = bounds.NewTransformed(matrix);
+			bounds.Expand(extendLineLength);
+			return bounds;
+		}
+
 		public static void RenderAxis(this WorldView world, Vector3 position, Matrix4X4 matrix, double size, double lineWidth)
 		{
 			GLHelper.PrepareFor3DLineRender(true);
@@ -431,6 +461,11 @@ namespace MatterHackers.RenderOpenGl
 			}
 
 			GL.Enable(EnableCap.Lighting);
+		}
+
+		public static AxisAlignedBoundingBox GetWorldspaceAabbOfRenderAxis(Vector3 position, Matrix4X4 matrix, double size, double lineWidth)
+		{
+			return AxisAlignedBoundingBox.CenteredHalfExtents(Vector3.One * size, position).NewTransformed(matrix);
 		}
 
 		private static readonly ConditionalWeakTable<WorldView, AAGLTesselator> TesselatorsByWorld = new ConditionalWeakTable<WorldView, AAGLTesselator>();

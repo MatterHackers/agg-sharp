@@ -75,6 +75,29 @@ namespace MatterHackers.RayTracer
 			return null;
 		}
 
+		/// <summary>
+		/// Like GetClosestIntersection, but considers the Ray's min and max distance instead.
+		/// </summary>
+		public IntersectInfo GetClosestIntersectionWithinRayDistanceRange(Ray ray)
+		{
+			bool inFront;
+			double distanceToHit = Plane.GetDistanceToIntersection(ray, out inFront);
+			// This will also reject infinity.
+			if (ray.minDistanceToConsider < distanceToHit && distanceToHit < ray.maxDistanceToConsider)
+			{
+				return new IntersectInfo
+				{
+					ClosestHitObject = this,
+					HitType = IntersectionType.FrontFace,
+					HitPosition = ray.origin + ray.directionNormal * distanceToHit,
+					NormalAtHit = Plane.Normal,
+					DistanceToHit = distanceToHit
+				};
+			}
+
+			return null;
+		}
+
 		public override int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom)
 		{
 			throw new NotImplementedException();
