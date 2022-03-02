@@ -247,38 +247,43 @@ namespace MatterHackers.Agg.UI
 		/// Run an animation for the given amount of time calling update the exact number of times
 		/// </summary>
 		/// <param name="widget">The widget to invalidate</param>
-		/// <param name="durration">The total seconds to complete the update count</param>
+		/// <param name="duration">The total seconds to complete the update count</param>
 		/// <param name="updateCount">The number of updates to run (exactly)</param>
 		/// <param name="update">The function to call each update. Passes the current count (1 - updateCount).</param>
-		public static async void Run(GuiWidget widget, double durration, int updateCount, Action<int> update, Action after = null)
+		public static async void Run(GuiWidget widget, double duration, int updateCount, Action<int> update, Action after = null)
 		{
-			var animation = new Animation()
+			if (updateCount > 0)
 			{
-				DrawTarget = widget,
-				SecondsPerUpdate = durration / updateCount
-			};
+				var animation = new Animation()
+				{
+					DrawTarget = widget,
+					SecondsPerUpdate = duration / updateCount
+				};
 
-			int updates = 0;
-			animation.Update += (s, time) =>
-			{
-				if (updates++ < updateCount)
+				var future = new TaskCompletionSource<object>();
+
+				int updates = 0;
+
+				animation.Update += (s, time) =>
 				{
-					update(updates);
-				}
-			};
-			animation.Start();
-			// wait for the animation to complete
-			await Task.Run(() =>
-			{
-				while (updates < updateCount)
-				{
-					Thread.Sleep(1);
-				}
-			});
+					if (updates++ < updateCount)
+					{
+						update(updates);
+
+						if (updates == updateCount)
+						{
+							animation.Stop();
+							future.SetResult(null);
+						}
+					}
+				};
+
+				animation.Start();
+
+				await future.Task;
+			}
 
 			after?.Invoke();
-
-			animation.Dispose();
 		}
 	}
 }
