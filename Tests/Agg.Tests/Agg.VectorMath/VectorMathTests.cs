@@ -193,7 +193,7 @@ namespace MatterHackers.VectorMath.Tests
 			Assert.AreEqual(4.14213562373095, world.NearPlaneHeightInViewspace, 1e-3);
 			var ray = world.GetRayForLocalBounds(new Vector2((567 - 200) / 2.0, 123)); // top center
 			Assert.AreEqual(WorldView.DefaultPerspectiveVFOVDegrees / 2, MathHelper.RadiansToDegrees(Math.Atan2(ray.directionNormal.Y, -ray.directionNormal.Z)), 1e-3);
-			Assert.IsTrue(new Vector3(0, world.NearPlaneHeightInViewspace / 2, 2).Equals(ray.origin, 1e-3));
+			Assert.IsTrue((Vector3.UnitZ * 7).Equals(ray.origin, 1e-3));
 			Assert.AreEqual(world.NearPlaneHeightInViewspace * 2, world.GetViewspaceHeightAtPosition(new Vector3(1, 1, -10)), 1e-3);
 			world.Scale = 3;
 			Assert.AreEqual(world.NearPlaneHeightInViewspace * 2 / 3, world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 123, 1e-3);
