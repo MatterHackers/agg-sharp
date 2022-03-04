@@ -37,6 +37,14 @@ namespace MatterHackers.VectorMath
 	{
 		public static AxisAlignedBoundingBox Empty() { return new AxisAlignedBoundingBox(Vector3.PositiveInfinity, Vector3.NegativeInfinity); }
 		public static AxisAlignedBoundingBox Zero() { return new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero); }
+		public static AxisAlignedBoundingBox CenteredBox(Vector3 size, Vector3 position = default)
+		{
+			return new AxisAlignedBoundingBox(position - size / 2, position + size / 2);
+		}
+		public static AxisAlignedBoundingBox CenteredHalfExtents(Vector3 halfsize, Vector3 position = default)
+		{
+			return new AxisAlignedBoundingBox(position - halfsize, position + halfsize);
+		}
 
 		public Vector3 MinXYZ;
 		public Vector3 MaxXYZ;
@@ -220,6 +228,23 @@ namespace MatterHackers.VectorMath
 			}
 
 			return Vector3.Zero;
+		}
+
+		/// <summary>
+		/// Get all the corners of the AABB as an array.
+		/// </summary>
+		public Vector3[] GetCorners()
+		{
+			return new Vector3[] {
+				GetTopCorner(0),
+				GetTopCorner(1),
+				GetTopCorner(2),
+				GetTopCorner(3),
+				GetBottomCorner(0),
+				GetBottomCorner(1),
+				GetBottomCorner(2),
+				GetBottomCorner(3),
+			};
 		}
 
 		/// <summary>
