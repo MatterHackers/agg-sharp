@@ -351,7 +351,7 @@ namespace MatterHackers.RenderOpenGl
 		{
 			AxisAlignedBoundingBox box = AxisAlignedBoundingBox.Empty();
 
-			Vector3 prevPosition = default;
+			Vector3 prevPosition = default(Vector3);
 			foreach (var vertex in path.Vertices())
 			{
 				if (vertex.command == ShapePath.FlagsAndCommand.MoveTo)
