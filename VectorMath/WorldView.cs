@@ -44,6 +44,9 @@ namespace MatterHackers.VectorMath
 		// Force this minimum distance between the near and far planes for the orthographic projection.
 		private const double OrthographicProjectionMinimumNearFarGap = 0.001;
 
+		// Derive from the perspective minimum near Z.
+		public static readonly double OrthographicProjectionMinimumHeight = CalcPerspectiveHeight(PerspectiveProjectionMinimumNearZ, DefaultPerspectiveVFOVDegrees);
+
 		private const double CameraZTranslationFudge = -7;
 
 		public double Height { get; private set; } = 0;
@@ -188,6 +191,20 @@ namespace MatterHackers.VectorMath
 			near = Math.Max(near, PerspectiveProjectionMinimumNearZ);
 			far = Math.Max(far, near * PerspectiveProjectionMinimumFarNearRatio);
 		}
+		public static double CalcPerspectiveHeight(double distance, double vfovDegrees)
+		{
+			return distance * 2 * Math.Tan(MathHelper.DegreesToRadians(vfovDegrees) * 0.5);
+		}
+		public static double CalcPerspectiveDistance(double height, double vfovDegrees)
+		{
+			return height * 0.5 / Math.Tan(MathHelper.DegreesToRadians(vfovDegrees) * 0.5);
+		}
+
+		public static double CalcPerspectiveVFOVDegreesFromDistanceAndHeight(double distance, double height)
+		{
+			return MathHelper.RadiansToDegrees(Math.Atan(height * 0.5 / distance) * 2);
+		}
+
 
 		/// <summary>
 		/// Sets a perspective projection with a given center adjustment and FOV.
@@ -208,14 +225,13 @@ namespace MatterHackers.VectorMath
 			height = Math.Max(1, height);
 			SanitisePerspectiveNearFar(ref zNear, ref zFar);
 
-			var yAngleR = MathHelper.DegreesToRadians(vfovDegrees) / 2;
-			var screenDist = height / 2 / Math.Tan(yAngleR);
+			var screenDist = CalcPerspectiveDistance(height, vfovDegrees);
 			var center = width / 2;
 			var xAngleL = Math.Atan2(-center - centerOffsetX / 2, screenDist);
 			var xAngleR = Math.Atan2(center - centerOffsetX / 2, screenDist);
 
 			// calculate yMin and yMax at the near clip plane
-			double yMax = zNear * Math.Tan(yAngleR);
+			double yMax = CalcPerspectiveHeight(zNear, vfovDegrees) * 0.5;
 			double yMin = -yMax;
 			double xMax = zNear * Math.Tan(xAngleR);
 			double xMin = zNear * Math.Tan(xAngleL);
@@ -265,6 +281,7 @@ namespace MatterHackers.VectorMath
 		{
 			width = Math.Max(1, width);
 			height = Math.Max(1, height);
+			heightInViewspace = Math.Max(heightInViewspace, OrthographicProjectionMinimumHeight);
 			SanitiseOrthographicNearFar(ref zNear, ref zFar);
 
 			double effectiveViewWidth = Math.Max(1, width + centerOffsetX);
