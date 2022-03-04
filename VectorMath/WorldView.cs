@@ -191,6 +191,20 @@ namespace MatterHackers.VectorMath
 			near = Math.Max(near, PerspectiveProjectionMinimumNearZ);
 			far = Math.Max(far, near * PerspectiveProjectionMinimumFarNearRatio);
 		}
+		public static double CalcPerspectiveHeight(double distance, double vfovDegrees)
+		{
+			return distance * 2 * Math.Tan(MathHelper.DegreesToRadians(vfovDegrees) * 0.5);
+		}
+		public static double CalcPerspectiveDistance(double height, double vfovDegrees)
+		{
+			return height * 0.5 / Math.Tan(MathHelper.DegreesToRadians(vfovDegrees) * 0.5);
+		}
+
+		public static double CalcPerspectiveVFOVDegreesFromDistanceAndHeight(double distance, double height)
+		{
+			return MathHelper.RadiansToDegrees(Math.Atan(height * 0.5 / distance) * 2);
+		}
+
 
 		/// <param name="distance">Signed distance from the camera to the plane.</param>
 		/// <param name="vfovDegrees">Symmetric vertical FOV in degrees between the top and bottom.</param>
