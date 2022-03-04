@@ -37,11 +37,11 @@ namespace MatterHackers.VectorMath
 	{
 		public static AxisAlignedBoundingBox Empty() { return new AxisAlignedBoundingBox(Vector3.PositiveInfinity, Vector3.NegativeInfinity); }
 		public static AxisAlignedBoundingBox Zero() { return new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero); }
-		public static AxisAlignedBoundingBox CenteredBox(Vector3 size, Vector3 position = default)
+		public static AxisAlignedBoundingBox CenteredBox(Vector3 size, Vector3 position)
 		{
 			return new AxisAlignedBoundingBox(position - size / 2, position + size / 2);
 		}
-		public static AxisAlignedBoundingBox CenteredHalfExtents(Vector3 halfsize, Vector3 position = default)
+		public static AxisAlignedBoundingBox CenteredHalfExtents(Vector3 halfsize, Vector3 position)
 		{
 			return new AxisAlignedBoundingBox(position - halfsize, position + halfsize);
 		}
