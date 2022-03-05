@@ -243,7 +243,8 @@ namespace MatterHackers.GlfwProvider
 				keys |= (int)Agg.UI.Keys.Shift;
 			}
 
-			var controlKey = theEvent.HasFlag(GLFW.ModifierKeys.Control);
+			var controlKey = theEvent.HasFlag(GLFW.ModifierKeys.Control)
+				|| theEvent.HasFlag(GLFW.ModifierKeys.Super);
 			Keyboard.SetKeyDownState(Agg.UI.Keys.Control, controlKey);
 			if (controlKey)
 			{
@@ -401,6 +402,9 @@ namespace MatterHackers.GlfwProvider
 				case GLFW.Keys.LeftControl:
 					return Agg.UI.Keys.Modifiers;
 
+				case GLFW.Keys.LeftSuper:
+					return Agg.UI.Keys.Modifiers;
+
 				case GLFW.Keys.LeftAlt:
 					return Agg.UI.Keys.Modifiers;
 
@@ -411,6 +415,9 @@ namespace MatterHackers.GlfwProvider
 					return Agg.UI.Keys.Modifiers;
 
 				case GLFW.Keys.RightAlt:
+					return Agg.UI.Keys.Modifiers;
+
+				case GLFW.Keys.RightSuper:
 					return Agg.UI.Keys.Modifiers;
 			}
 
@@ -538,12 +545,14 @@ namespace MatterHackers.GlfwProvider
 				case GLFW.Keys.LeftShift:
 					return GLFW.ModifierKeys.Shift;
 				case GLFW.Keys.LeftControl:
+				case GLFW.Keys.LeftSuper:
 					return GLFW.ModifierKeys.Control;
 				case GLFW.Keys.LeftAlt:
 					return GLFW.ModifierKeys.Alt;
 				case GLFW.Keys.RightShift:
 					return GLFW.ModifierKeys.Shift;
 				case GLFW.Keys.RightControl:
+				case GLFW.Keys.RightSuper:
 					return GLFW.ModifierKeys.Control;
 				case GLFW.Keys.RightAlt:
 					return GLFW.ModifierKeys.Alt;

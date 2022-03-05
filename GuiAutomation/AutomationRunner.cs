@@ -40,6 +40,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
+using static MatterHackers.Agg.UI.ScrollableWidget;
 using static MatterHackers.VectorMath.Easing;
 
 namespace MatterHackers.GuiAutomation
@@ -432,15 +433,16 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public AutomationRunner ScrollIntoView(string checkBoxName)
+		public AutomationRunner ScrollIntoView(string widgetName, ScrollAmount scrollAmount = ScrollAmount.Minimum)
 		{
 			// Find any sibling toggle switch and scroll the parent to the bottom
-			var checkBox = GetWidgetByName(checkBoxName, out _, onlyVisible: false);
+			var widget = GetWidgetByName(widgetName, out _, onlyVisible: false);
 
-			if (checkBox != null)
+			if (widget != null)
 			{
-				var scrollable = checkBox.Parents<ScrollableWidget>().First();
-				scrollable?.ScrollIntoView(checkBox);
+				var parents = widget.Parents<ScrollableWidget>();
+				var scrollable = parents.First();
+				scrollable?.ScrollIntoView(widget);
 			}
 
 			return this;
