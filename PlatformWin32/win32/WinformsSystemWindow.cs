@@ -331,17 +331,6 @@ namespace MatterHackers.Agg.UI
 
 		public new virtual Keys ModifierKeys => (Keys)Control.ModifierKeys;
 
-		/* // Can't simply override BringToFront. Change Interface method name/signature if required. Leaving as is
-		 * // to call base/this.BringToFront via Interface call
-		public override void BringToFront()
-		{
-			// Numerous articles on the web claim that Activate does not always bring to front (something MatterControl
-			// suffers when running automation tests). If we were to continue to use Activate, we might consider calling
-			// BringToFront after
-			this.Activate();
-			this.BringToFront();
-		}*/
-
 		// TODO: Why is this member named Caption instead of Title?
 		public string Caption
 		{
