@@ -43,7 +43,15 @@ namespace MatterHackers.Agg.UI
 
 		Keys ModifierKeys { get; }
 
+		/// <summary>
+		/// Bring this window to the front of any windows that are part of this application. Does not bring it to the front of othe apps
+		/// </summary>
 		void BringToFront();
+
+		/// <summary>
+		/// Bring this window to the front of other app windows
+		/// </summary>
+		void Activate();
 
 		void Invalidate(RectangleDouble rectToInvalidate);
 
