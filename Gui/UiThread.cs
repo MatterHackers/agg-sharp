@@ -107,6 +107,18 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public static void RunOnUiThread(Action action)
+        {
+			if (UiThread.IsUiThread)
+			{
+				action?.Invoke();
+			}
+			else
+			{
+				RunOnIdle(action);
+			}
+		}
+
 		public static void RunOnIdle(Action action)
 		{
 			lock (locker)
