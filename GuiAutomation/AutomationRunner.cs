@@ -438,9 +438,9 @@ namespace MatterHackers.GuiAutomation
 			// Find any sibling toggle switch and scroll the parent to the bottom
 			var widgets = GetWidgetsByName(widgetName, onlyVisible: false);
 
-			var widgetByDepth = widgets.Select(w => (w.Widget, w.Widget.Parents<GuiWidget>().Where(p => p.ActuallyVisibleOnScreen()).Count()));
+			IEnumerable<(GuiWidget widget, int index)> widgetsByDepth = widgets.Select(w => (w.Widget, w.Widget.Parents<GuiWidget>().Where(p => p.ActuallyVisibleOnScreen()).Count()));
 
-			var widget = widgetByDepth.OrderBy(wbd => wbd.Item2).FirstOrDefault().Widget;
+			var widget = widgetsByDepth.OrderBy(wbd => wbd.index).FirstOrDefault().widget;
 
 			if (widget != null)
 			{
