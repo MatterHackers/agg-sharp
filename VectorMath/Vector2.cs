@@ -26,6 +26,8 @@ SOFTWARE.
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
@@ -36,6 +38,7 @@ namespace MatterHackers.VectorMath
 	[JsonObject]
 	[Serializable]
 	[StructLayout(LayoutKind.Sequential)]
+	[TypeConverter(typeof(Vector2Converter))]
 	public struct Vector2 : IEquatable<Vector2>
 	{
 		/// <summary>
@@ -1162,5 +1165,41 @@ namespace MatterHackers.VectorMath
 			return 0;
 		}
 
+	}
+
+	public class Vector2Converter : TypeConverter
+	{
+		public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+		{
+			return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
+		}
+
+		public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+		{
+			string stringValue = value as string;
+
+			if (!string.IsNullOrEmpty(stringValue)
+				&& stringValue.Length > 3)
+			{
+				stringValue = stringValue.Substring(1, stringValue.Length - 2);
+				var values = stringValue.Split(',').Select(s =>
+				{
+					double.TryParse(s, out double result);
+					return result;
+				}).ToArray();
+
+				switch (values.Length)
+				{
+					case 1:
+						return new Vector2(values[0], values[0]);
+					case 2:
+						return new Vector2(values[0], values[1]);
+					default:
+						return 0;
+				}
+			}
+
+			return base.ConvertFrom(context, culture, value);
+		}
 	}
 }
