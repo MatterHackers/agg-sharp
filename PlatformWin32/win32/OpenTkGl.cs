@@ -501,8 +501,8 @@ namespace MatterHackers.Agg.UI
 							{
 								fixed (byte* pc = c)
 								{
-									GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
 									GL.VertexPointer(currentImediateData.vertexCount, VertexPointerType.Float, 0, new IntPtr(pv));
+									GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
 									GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / currentImediateData.vertexCount);
 								}
 							}
@@ -531,8 +531,8 @@ namespace MatterHackers.Agg.UI
 							{
                                 fixed (byte* pc = c)
                                 {
-                                    GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
 									GL.VertexPointer(currentImediateData.vertexCount, VertexPointerType.Float, 0, new IntPtr(pv));
+                                    GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
                                     GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pt));
                                     GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / currentImediateData.vertexCount);
                                 }
