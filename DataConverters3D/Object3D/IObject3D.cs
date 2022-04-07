@@ -73,7 +73,9 @@ namespace MatterHackers.DataConverters3D
 		Default,
 		Solid,
 		Support,
-		WipeTower
+		WipeTower,
+		Fuzzy,
+		Hole,
 	}
 
 	public interface IObject3D : IAscendable<IObject3D>, IEquatable<IObject3D>

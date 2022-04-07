@@ -519,6 +519,10 @@ namespace MatterHackers.DataConverters3D
 					{
 						lastColorFound = new Color(Color.Cyan, 120);
 					}
+					else if (item.WorldOutputType() == PrintOutputTypes.Fuzzy)
+					{
+						lastColorFound = new Color(255, 182, 57, 120);
+					}
 				}
 
 				// If the root override has been matched, break and return latest
