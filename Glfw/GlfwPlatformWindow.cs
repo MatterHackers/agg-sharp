@@ -823,7 +823,7 @@ namespace MatterHackers.GlfwProvider
 
 			UiThread.RunOnIdle(() =>
 			{
-				var dropEvent = new MouseEventArgs(Agg.UI.MouseButtons.None, 0, mouseX, mouseX, 0, files);
+				var dropEvent = new MouseEventArgs(Agg.UI.MouseButtons.None, 0, mouseX, mouseY, 0, files);
 				aggSystemWindow.OnMouseMove(dropEvent);
 				aggSystemWindow.OnMouseUp(dropEvent);
 			});
