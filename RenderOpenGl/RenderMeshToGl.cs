@@ -243,14 +243,14 @@ namespace MatterHackers.RenderOpenGl
 							{
 								fixed (VertexPositionData* pPosition = subMesh.positionData.Array)
 								{
+									GL.VertexPointer(3, VertexPointerType.Float, 0, new IntPtr(pPosition));
+									GL.NormalPointer(NormalPointerType.Float, 0, new IntPtr(pNormalData));
 									GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pTextureData));
 									if (pColorData != null)
 									{
 										GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, new IntPtr(pColorData));
 									}
 
-									GL.NormalPointer(NormalPointerType.Float, 0, new IntPtr(pNormalData));
-									GL.VertexPointer(3, VertexPointerType.Float, 0, new IntPtr(pPosition));
 									GL.DrawArrays(BeginMode.Triangles, 0, subMesh.positionData.Count);
 								}
 							}

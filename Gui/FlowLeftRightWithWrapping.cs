@@ -42,6 +42,10 @@ namespace MatterHackers.Agg.UI
 	{
 	}
 
+	public interface IWrapChildrenSeparatly
+	{
+	}
+
 	public class HardBreak : GuiWidget, IHardBreak
 	{
 		public HardBreak()
@@ -149,7 +153,17 @@ namespace MatterHackers.Agg.UI
 
         public override GuiWidget AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
 		{
-			addedChildren.Add(childToAdd);
+			if (childToAdd is IWrapChildrenSeparatly)
+			{
+				foreach(var child in childToAdd.Children)
+                {
+					addedChildren.Add(child);
+                }
+			}
+			else
+			{
+				addedChildren.Add(childToAdd);
+			}
 
 			return childToAdd;
 		}

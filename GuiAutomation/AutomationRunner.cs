@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2018, Lars Brubaker
+Copyright (c) 2022, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -436,13 +436,22 @@ namespace MatterHackers.GuiAutomation
 		public AutomationRunner ScrollIntoView(string widgetName, ScrollAmount scrollAmount = ScrollAmount.Minimum)
 		{
 			// Find any sibling toggle switch and scroll the parent to the bottom
-			var widget = GetWidgetByName(widgetName, out _, onlyVisible: false);
+			var widgets = GetWidgetsByName(widgetName, onlyVisible: false);
+
+			IEnumerable<(GuiWidget widget, int index)> widgetsByDepth = widgets.Select(w => (w.Widget, w.Widget.Parents<GuiWidget>().Where(p => p.ActuallyVisibleOnScreen()).Count()));
+
+			var widget = widgetsByDepth.OrderBy(wbd => wbd.index).FirstOrDefault().widget;
 
 			if (widget != null)
 			{
 				var parents = widget.Parents<ScrollableWidget>();
-				var scrollable = parents.First();
-				scrollable?.ScrollIntoView(widget);
+				var scrollable = parents.FirstOrDefault();
+				if (scrollable != null)
+				{
+					scrollable.ScrollIntoView(widget);
+					scrollable.ScrollArea.Width = scrollable.ScrollArea.Width + 1;
+					scrollable.Width = scrollable.Width + 1;
+				}
 			}
 
 			return this;
@@ -759,10 +768,8 @@ namespace MatterHackers.GuiAutomation
 		/// <param name="widgetName">The given widget name</param>
 		/// <param name="secondsToWait">Total seconds to stay in this function waiting for the named widget to become visible.</param>
 		/// <returns>The current AutomationRunner so commands can be issued in sequence.</returns>
-		public AutomationRunner ClickByName(string widgetName, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, bool isDoubleClick = false)
+		public AutomationRunner ClickByName(string widgetName, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, bool isDoubleClick = false, double secondsToWait = 5)
 		{
-			double secondsToWait = 5;
-
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out SystemWindow containingWindow, out Point2D offsetHint, secondsToWait, searchRegion);
 
 			if (widgetToClick != null)

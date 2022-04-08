@@ -1863,7 +1863,7 @@ namespace MatterHackers.Agg.UI
 				return false;
 			}
 
-			if (this.Parent != null)
+			if (this?.Parent != null)
 			{
 				// offset our bounds to the parent bounds
 				visibleBounds.Offset(this.OriginRelativeParent.X, this.OriginRelativeParent.Y);

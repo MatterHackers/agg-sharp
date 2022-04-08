@@ -118,7 +118,12 @@ namespace MatterHackers.GlfwProvider
 
 		public void BringToFront()
 		{
-			throw new NotImplementedException();
+			Glfw.ShowWindow(glfwWindow);
+		}
+
+		public void Activate()
+		{
+			Glfw.ShowWindow(glfwWindow);
 		}
 
 		public void Close()
@@ -877,5 +882,5 @@ namespace MatterHackers.GlfwProvider
 		{
 			this.iconified = iconified;
 		}
-	}
+    }
 }
