@@ -55,13 +55,25 @@ namespace MatterHackers.Agg.Platform
 				RootPath = Path.Combine(pathToAppFolder, "StaticData");
 			}
 
-#if DEBUG
+//#if DEBUG
 			// In debug builds, use the StaticData folder up two directories from bin\debug, which should be MatterControl\StaticData
 			if (!Directory.Exists(RootPath))
 			{
-				RootPath = Path.GetFullPath(Path.Combine(pathToAppFolder, "..", "..", "StaticData"));
+				//RootPath = Path.GetFullPath(Path.Combine(pathToAppFolder, "..", "..", "StaticData"));
+
+				var directory = new DirectoryInfo(pathToAppFolder);
+				while (directory != null && !directory.GetDirectories("StaticData", SearchOption.TopDirectoryOnly).Any())
+				{
+					directory = directory.Parent;
+				}
+				if (directory != null)
+					RootPath = Path.Combine(directory.FullName, "StaticData");
 			}
-#endif
+
+
+			
+
+//#endif
 		}
 
 		private static StaticData _instance = null;
