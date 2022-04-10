@@ -34,7 +34,7 @@ using System.Threading;
 using MatterHackers.DataConverters3D;
 using NUnit.Framework;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.RayTracerNS
 {
 	[TestFixture]
 	public class AmfDocumentTests

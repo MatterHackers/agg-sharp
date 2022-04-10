@@ -33,7 +33,7 @@ using System.Linq;
 using System.Threading;
 using ClipperLib;
 using MatterHackers.PolygonMesh.Processors;
-using MatterHackers.RayTracer;
+using MatterHackers.RayTracerNS;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Csg

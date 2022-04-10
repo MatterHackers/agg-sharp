@@ -34,10 +34,11 @@ using MatterHackers.Agg.Image;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
+using TestInvoker;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
+	[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
 	public class MenuTests
 	{
 		public static bool SaveImagesForDebug = false;
@@ -50,7 +51,7 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public async Task OpenAndCloseMenus()
 		{
 			int item1ClickCount = 0;

@@ -29,7 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.RayTracerNS
 {
 	public interface ICamera
 	{

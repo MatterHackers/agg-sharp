@@ -29,10 +29,10 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
-using Node = MatterHackers.RayTracer.ITraceable;
+using Node = MatterHackers.RayTracerNS.ITraceable;
 using Scalar = System.Double;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.RayTracerNS
 {
 #if false
     public class BvhBuilderLocallyOrderedClustering

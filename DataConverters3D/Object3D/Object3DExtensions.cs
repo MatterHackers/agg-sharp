@@ -38,7 +38,7 @@ using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.PolygonMesh;
-using MatterHackers.RayTracer;
+using MatterHackers.RayTracerNS;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.DataConverters3D

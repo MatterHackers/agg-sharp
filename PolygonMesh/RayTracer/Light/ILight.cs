@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RayTracer.Light
+namespace MatterHackers.RayTracerNS.Light
 {
 	public interface ILight
 	{

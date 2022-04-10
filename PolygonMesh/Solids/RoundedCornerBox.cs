@@ -13,7 +13,7 @@ using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 
-namespace PolygonMesh.Solids
+namespace MatterHackers.PolygonMesh.Solids
 {
 	public class RoundedCornerBox
 	{

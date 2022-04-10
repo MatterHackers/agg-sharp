@@ -34,6 +34,7 @@ using NUnit.Framework;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using TestInvoker;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -44,7 +45,7 @@ namespace MatterHackers.Agg.UI.Tests
 		internal int popCount;
 	}
 
-	[TestFixture, Category("Agg.UI.ToolTip"), Apartment(ApartmentState.STA), RunInApplicationDomain]
+	[TestFixture, Category("Agg.UI.ToolTip"), Apartment(ApartmentState.STA), Parallelizable(ParallelScope.All), FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 	public class ToolTipTests
 	{
 		static string toolTip1Text = "toolTip1";
@@ -104,7 +105,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public async Task ToolTipsShow()
 		{
 			SystemWindow buttonContainer = new SystemWindow(300, 200)

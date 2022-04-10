@@ -34,7 +34,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace MatterHackers.RayTracer.Traceable
+namespace MatterHackers.RayTracerNS.Traceable
 {
 	public class Difference : IPrimitive
 	{

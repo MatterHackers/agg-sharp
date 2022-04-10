@@ -144,6 +144,9 @@ namespace MatterHackers.Agg.Image
 			if (File.Exists(fileName))
 			{
 				var temp = SixLabors.ImageSharp.Image.Load<Rgba32>(fileName);
+				if (fileName.Contains("edit_design"))
+					temp.SaveAsPng(@"C:\Users\Fluffy\Downloads\temp.png");
+
 				return ConvertImageToImageBuffer(destImage, temp);
 			}
 			else
@@ -171,26 +174,16 @@ namespace MatterHackers.Agg.Image
 #else
 		private static bool ConvertImageToImageBuffer(ImageBuffer imageBuffer, ImageFrame<Rgba32> imageFrame)
 		{
-			if (imageFrame.TryGetSinglePixelSpan(out var pixelSpan))
-			{
-				Rgba32[] pixelArray = pixelSpan.ToArray();
-
-				return ConvertImageToImageBuffer(imageBuffer, imageFrame.Width, imageFrame.Height, pixelArray);
-			}
-
-			return false;
+			Rgba32[] pixelArray = new Rgba32[imageFrame.Width * imageFrame.Height];
+			imageFrame.CopyPixelDataTo(pixelArray);
+			return ConvertImageToImageBuffer(imageBuffer, imageFrame.Width, imageFrame.Height, pixelArray);
 		}
 
 		private static bool ConvertImageToImageBuffer(ImageBuffer destImage, Image<Rgba32> image)
 		{
-			if (image.TryGetSinglePixelSpan(out var pixelSpan))
-			{
-				Rgba32[] pixelArray = pixelSpan.ToArray();
-
-				return ConvertImageToImageBuffer(destImage, image.Width, image.Height, pixelArray);
-			}
-
-			return false;
+			Rgba32[] pixelArray = new Rgba32[image.Width * image.Height];
+			image.CopyPixelDataTo(pixelArray);
+			return ConvertImageToImageBuffer(destImage, image.Width, image.Height, pixelArray);
 		}
 
 		public static bool ConvertImageToImageBuffer(ImageBuffer destImage, int width, int height, Rgba32[] pixelArray)

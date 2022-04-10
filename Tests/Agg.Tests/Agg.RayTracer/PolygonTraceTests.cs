@@ -30,8 +30,10 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.Agg;
 using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh.Processors;
-using MatterHackers.RayTracer.Light;
-using MatterHackers.RayTracer.Traceable;
+using MatterHackers.PolygonMesh;
+using MatterHackers.RayTracerNS;
+using MatterHackers.RayTracerNS.Light;
+using MatterHackers.RayTracerNS.Traceable;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
 using System.Collections.Generic;
@@ -40,9 +42,9 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.Agg.Tests.Agg.RayTracerNS
 {
-	public static class AggTestUtilities
+	/*public static class AggTestUtilities
 	{
 		public static string ResolveProjectPath(this TestContext context, int stepsToProjectRoot, params string[] relativePathSteps)
 		{
@@ -58,7 +60,7 @@ namespace MatterHackers.RayTracer
 
 			return Path.GetFullPath(Path.Combine(allPathSteps.ToArray()));
 		}
-	}
+	}*/
 
 	[TestFixture, Category("Agg.RayTracer")]
 	public class PolygonTraceTests
@@ -99,10 +101,11 @@ namespace MatterHackers.RayTracer
 		[Test]
 		public void CorrectRayOnCircle()
 		{
-			var testPartPath = TestContext.CurrentContext.ResolveProjectPath(4, "examples", "RayTracerTest");
+			var testPartPath = //TestContext.CurrentContext.ResolveProjectPath(4, "examples", "RayTracerTest");
+				TestContext.CurrentContext.ResolveProjectPath(new string[] { "..", "..", "..", "examples", "RayTracerTest" });
 
-			var testPart = Path.Combine(testPartPath,  "circle_100x100_centered.stl");
-			PolygonMesh.Mesh simpleMesh = StlProcessing.Load(testPart, CancellationToken.None);
+			var testPart = Path.Combine(testPartPath, "circle_100x100_centered.stl");
+			Mesh simpleMesh = StlProcessing.Load(testPart, CancellationToken.None);
 			var bvhCollection = MeshToBVH.Convert(simpleMesh);
 
 			var scene = new Scene();
