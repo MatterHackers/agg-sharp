@@ -143,11 +143,7 @@ namespace MatterHackers.Agg.Image
 		{
 			if (File.Exists(fileName))
 			{
-				var temp = SixLabors.ImageSharp.Image.Load<Rgba32>(fileName);
-				if (fileName.Contains("edit_design"))
-					temp.SaveAsPng(@"C:\Users\Fluffy\Downloads\temp.png");
-
-				return ConvertImageToImageBuffer(destImage, temp);
+				return ConvertImageToImageBuffer(destImage, SixLabors.ImageSharp.Image.Load<Rgba32>(fileName));
 			}
 			else
 			{

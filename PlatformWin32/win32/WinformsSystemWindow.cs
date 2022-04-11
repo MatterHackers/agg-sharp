@@ -541,6 +541,9 @@ namespace MatterHackers.Agg.UI
 
 			systemWindow.AnchorAll();
 
+			// If this isn't true, prepare for deadlocks.
+			System.Diagnostics.Debug.Assert(WindowsFormsSynchronizationContext.Current == null || WindowsFormsSynchronizationContext.Current is WindowsFormsSynchronizationContext);
+
 			if (firstWindow)
 			{
 				firstWindow = false;
@@ -552,7 +555,7 @@ namespace MatterHackers.Agg.UI
 				{
 					enableIdleProcessing = true;
 				}
-
+				
 				Application.Run(this);
 			}
 			else if (!SingleWindowMode)

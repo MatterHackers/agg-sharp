@@ -6,6 +6,8 @@ namespace MatterHackers.Agg.Platform
 {
 	public class AutomationDialogProvider : IFileDialogProvider
 	{
+		static readonly char[] multipleFileSeparators = new char[] { ';' };
+
 		public string LastDirectoryUsed { get; private set; }
 
 		public bool OpenFileDialog(OpenFileDialogParams openParams, Action<OpenFileDialogParams> callback)
@@ -14,7 +16,7 @@ namespace MatterHackers.Agg.Platform
 			{
 				if (fileText.Length > 2)
 				{
-					string[] files = fileText.Split(';', ' ').Select(f => f.Trim('\"')).ToArray();
+					string[] files = fileText.Split(multipleFileSeparators).Select(f => f.Trim('\"')).ToArray();
 					openParams.FileName = files[0];
 					openParams.FileNames = files;
 				}
@@ -30,7 +32,7 @@ namespace MatterHackers.Agg.Platform
 			{
 				if (fileText.Length > 2)
 				{
-					string[] files = fileText.Split(';', ' ').Select(f => f.Trim('\"')).ToArray();
+					string[] files = fileText.Split(multipleFileSeparators).Select(f => f.Trim('\"')).ToArray();
 					saveParams.FileName = files[0];
 					saveParams.FileNames = files;
 				}
