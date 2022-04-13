@@ -62,7 +62,11 @@ namespace MatterHackers.RayTracer
 			if ((loadedItem.Children.Count == 0 && loadedItem.Mesh == null)
 				|| !loadedItem.VisibleMeshes().Any())
 			{
-				return null;
+				// check again in case it got loaded
+				if (!loadedItem.VisibleMeshes().Any())
+				{
+					return null;
+				}
 			}
 
 			switch (renderType)
