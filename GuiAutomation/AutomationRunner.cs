@@ -124,7 +124,7 @@ namespace MatterHackers.GuiAutomation
 			return inputSystem.GetCurrentScreen();
 		}
 
-		public bool ClickImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
+		public bool ClickImage(string imageName, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
 			ImageBuffer imageToLookFor = LoadImageFromSourceFolder(imageName);
 			if (imageToLookFor != null)
@@ -135,7 +135,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool ClickImage(ImageBuffer imageNeedle, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
+		public bool ClickImage(ImageBuffer imageNeedle, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
 			if (origin == ClickOrigin.Center)
 			{
@@ -266,14 +266,14 @@ namespace MatterHackers.GuiAutomation
 			return this;
 		}
 
-		public bool DoubleClickImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public bool DoubleClickImage(string imageName, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
 			throw new NotImplementedException();
 		}
 
 		public bool DragDropImage(ImageBuffer imageNeedleDrag,
 			ImageBuffer imageNeedleDrop,
-			double secondsToWait = 0,
+			double secondsToWait = 5,
 			SearchRegion searchRegion = null,
 			Point2D offsetDrag = default(Point2D),
 			ClickOrigin originDrag = ClickOrigin.Center,
@@ -295,7 +295,7 @@ namespace MatterHackers.GuiAutomation
 
 		public bool DragDropImage(string imageNameDrag,
 			string imageNameDrop,
-			double secondsToWait = 0,
+			double secondsToWait = 5,
 			SearchRegion searchRegion = null,
 			Point2D offsetDrag = default(Point2D),
 			ClickOrigin originDrag = ClickOrigin.Center,
@@ -353,7 +353,7 @@ namespace MatterHackers.GuiAutomation
 			}
 		}
 
-		public bool DragImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public bool DragImage(string imageName, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
 			ImageBuffer imageToLookFor = LoadImageFromSourceFolder(imageName);
 			if (imageToLookFor != null)
@@ -364,7 +364,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool DragImage(ImageBuffer imageNeedle, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public bool DragImage(ImageBuffer imageNeedle, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
 			if (origin == ClickOrigin.Center)
 			{
@@ -393,7 +393,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool DropImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public bool DropImage(string imageName, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
 			ImageBuffer imageToLookFor = LoadImageFromSourceFolder(imageName);
 			if (imageToLookFor != null)
@@ -404,7 +404,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool DropImage(ImageBuffer imageNeedle, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public bool DropImage(ImageBuffer imageNeedle, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
 			if (origin == ClickOrigin.Center)
 			{
@@ -457,7 +457,7 @@ namespace MatterHackers.GuiAutomation
 			return this;
 		}
 
-		public bool ImageExists(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public bool ImageExists(string imageName, double secondsToWait = 5, SearchRegion searchRegion = null)
 		{
 			ImageBuffer imageToLookFor = LoadImageFromSourceFolder(imageName);
 			if (imageToLookFor != null)
@@ -468,7 +468,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool ImageExists(ImageBuffer imageNeedle, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public bool ImageExists(ImageBuffer imageNeedle, double secondsToWait = 5, SearchRegion searchRegion = null)
 		{
 			if (secondsToWait > 0)
 			{
@@ -492,7 +492,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool MoveToImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public bool MoveToImage(string imageName, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
 			throw new NotImplementedException();
 		}
@@ -604,7 +604,7 @@ namespace MatterHackers.GuiAutomation
 			return null;
 		}
 
-		public SearchRegion GetRegionByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public SearchRegion GetRegionByName(string widgetName, double secondsToWait = 5, SearchRegion searchRegion = null)
 		{
 			GuiWidget namedWidget = GetWidgetByName(widgetName, out SystemWindow containingWindow, out _, secondsToWait, searchRegion);
 
@@ -669,12 +669,12 @@ namespace MatterHackers.GuiAutomation
 			return null;
 		}
 
-		public object GetObjectByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public object GetObjectByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 5, SearchRegion searchRegion = null)
 		{
 			return GetObjectByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion);
 		}
 
-		public object GetObjectByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 0, SearchRegion searchRegion = null, bool onlyVisible = true)
+		public object GetObjectByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 5, SearchRegion searchRegion = null, bool onlyVisible = true)
 		{
 			containingWindow = null;
 			offsetHint = Point2D.Zero;
@@ -713,7 +713,7 @@ namespace MatterHackers.GuiAutomation
 			}
 		}
 
-		public List<GetByNameResults> GetWidgetsByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, bool onlyVisible = true)
+		public List<GetByNameResults> GetWidgetsByName(string widgetName, double secondsToWait = 5, SearchRegion searchRegion = null, bool onlyVisible = true)
 		{
 			if (secondsToWait > 0)
 			{
@@ -900,7 +900,7 @@ namespace MatterHackers.GuiAutomation
 			return this;
 		}
 
-		public AutomationRunner DragDropByName(string widgetNameDrag, string widgetNameDrop, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offsetDrag = default(Point2D), ClickOrigin originDrag = ClickOrigin.Center, Point2D offsetDrop = default(Point2D), ClickOrigin originDrop = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
+		public AutomationRunner DragDropByName(string widgetNameDrag, string widgetNameDrop, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offsetDrag = default(Point2D), ClickOrigin originDrag = ClickOrigin.Center, Point2D offsetDrop = default(Point2D), ClickOrigin originDrop = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
 			DragByName(widgetNameDrag, secondsToWait, searchRegion, offsetDrag, originDrag, mouseButtons);
 			DropByName(widgetNameDrop, secondsToWait, searchRegion, offsetDrop, originDrop, mouseButtons);
@@ -908,7 +908,7 @@ namespace MatterHackers.GuiAutomation
 			return this;
 		}
 
-		public AutomationRunner DragByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
+		public AutomationRunner DragByName(string widgetName, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out SystemWindow containingWindow, out Point2D offsetHint, secondsToWait, searchRegion);
 			DragStart(widgetToClick, containingWindow, origin, offset, offsetHint, mouseButtons);
@@ -959,7 +959,7 @@ namespace MatterHackers.GuiAutomation
 			return screenPosition;
 		}
 
-		public AutomationRunner DropByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
+		public AutomationRunner DropByName(string widgetName, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out SystemWindow containingWindow, out Point2D offsetHint, secondsToWait, searchRegion);
 
@@ -990,7 +990,7 @@ namespace MatterHackers.GuiAutomation
 			return this.ClickByName(widgetName, searchRegion, offset, origin, isDoubleClick: true);
 		}
 
-		public bool MoveToByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public bool MoveToByName(string widgetName, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out SystemWindow containingWindow, out Point2D offsetHint, secondsToWait, searchRegion);
 			if (widgetToClick != null)
