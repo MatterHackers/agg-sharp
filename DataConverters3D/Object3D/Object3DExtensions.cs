@@ -523,6 +523,10 @@ namespace MatterHackers.DataConverters3D
 					{
 						lastColorFound = new Color(255, 182, 57, 120);
 					}
+					else if (item.WorldOutputType() == PrintOutputTypes.Hole)
+                    {
+						lastColorFound = Color.DarkGray.WithAlpha(120);
+					}
 				}
 
 				// If the root override has been matched, break and return latest
