@@ -42,7 +42,7 @@ namespace MatterHackers.Agg.UI
 
 		private SystemWindow widgetToSendTo;
 
-		private ContainerControl controlToHook;
+		private Control controlToHook;
 
 		private List<string> dragFiles = null;
 
@@ -50,7 +50,7 @@ namespace MatterHackers.Agg.UI
 
 		public static bool AllowInspector = false;
 
-		public WinformsEventSink(ContainerControl controlToHook, SystemWindow systemWindow)
+		public WinformsEventSink(Control controlToHook, SystemWindow systemWindow)
 		{
 			this.controlToHook = controlToHook;
 			this.widgetToSendTo = systemWindow;

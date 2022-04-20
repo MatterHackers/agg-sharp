@@ -216,6 +216,12 @@ namespace MatterHackers.GlfwProvider
 				for (var i = 0; i < this.WindowProvider.OpenWindows.Count; i++)
 				{
 					var window = this.WindowProvider.OpenWindows[i];
+
+					// Due to handling in CloseSystemWindow, testing can sometimes end up handling a draw event with no PlatformWindow, so skip this window.
+					// TODO: Unify this stuff with PlatformWin32.
+					if (window.PlatformWindow == null)
+						continue;
+
 					if (i > 0)
 					{
 						window.Size = systemWindow.Size;
