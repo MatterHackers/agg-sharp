@@ -73,6 +73,8 @@ namespace MatterHackers.Agg.UI.Tests
 			leftButton.Name = "left";
 			systemWindow.AddChild(leftButton);
 
+			// NOTE: This test once failed. Possibly due to ShowWindowAndExecuteTests using different timing sources. A Stopwatch and a Task.Delay.
+
 			Assert.ThrowsAsync<TimeoutException>(
 				() => AutomationRunner.ShowWindowAndExecuteTests(
 					systemWindow,

@@ -123,44 +123,56 @@ namespace MatterHackers.Agg.UI
 
 		private void ControlToHook_DragDrop(object sender, DragEventArgs dragevent)
 		{
-			// do a mouse up
-			widgetToSendTo.OnMouseUp(ConvertWindowsDragEventToAggMouseEvent(dragevent));
+			if (SystemWindow.EnablePlatformWindowInput)
+			{
+				// do a mouse up
+				widgetToSendTo.OnMouseUp(ConvertWindowsDragEventToAggMouseEvent(dragevent));
 
-			dragFiles = null;
+				dragFiles = null;
+			}
 		}
 
 		private void ControlToHook_DragEnter(object sender, DragEventArgs dragevent)
 		{
-			dragFiles = GetDroppedFiles(dragevent);
-
-			var mouseEvent = ConvertWindowsDragEventToAggMouseEvent(dragevent);
-			widgetToSendTo.OnMouseMove(mouseEvent);
-
-			if (mouseEvent.AcceptDrop)
+			if (SystemWindow.EnablePlatformWindowInput)
 			{
-				dragevent.Effect = DragDropEffects.Copy;
+				dragFiles = GetDroppedFiles(dragevent);
+
+				var mouseEvent = ConvertWindowsDragEventToAggMouseEvent(dragevent);
+				widgetToSendTo.OnMouseMove(mouseEvent);
+
+				if (mouseEvent.AcceptDrop)
+				{
+					dragevent.Effect = DragDropEffects.Copy;
+				}
 			}
 		}
 
 		private void ControlToHook_DragLeave(object sender, EventArgs dragevent)
 		{
-			dragFiles = null;
+			if (SystemWindow.EnablePlatformWindowInput)
+			{
+				dragFiles = null;
+			}
 		}
 
 		private void ControlToHook_DragOver(object sender, DragEventArgs dragevent)
 		{
-			dragFiles = GetDroppedFiles(dragevent);
-
-			var mouseEvent = ConvertWindowsDragEventToAggMouseEvent(dragevent);
-			widgetToSendTo.OnMouseMove(mouseEvent);
-
-			if (mouseEvent.AcceptDrop)
+			if (SystemWindow.EnablePlatformWindowInput)
 			{
-				dragevent.Effect = DragDropEffects.Copy;
-			}
-			else
-			{
-				dragevent.Effect = DragDropEffects.None;
+				dragFiles = GetDroppedFiles(dragevent);
+
+				var mouseEvent = ConvertWindowsDragEventToAggMouseEvent(dragevent);
+				widgetToSendTo.OnMouseMove(mouseEvent);
+
+				if (mouseEvent.AcceptDrop)
+				{
+					dragevent.Effect = DragDropEffects.Copy;
+				}
+				else
+				{
+					dragevent.Effect = DragDropEffects.None;
+				}
 			}
 		}
 
@@ -189,6 +201,10 @@ namespace MatterHackers.Agg.UI
 
 			windowsKeyEvent.Handled = aggKeyEvent.Handled;
 			windowsKeyEvent.SuppressKeyPress = aggKeyEvent.SuppressKeyPress;
+
+			// If this isn't suppressed, it swallows up the next keydown event.
+			if (windowsKeyEvent.KeyCode == System.Windows.Forms.Keys.F10)
+				windowsKeyEvent.SuppressKeyPress = true;
 		}
 
 		private void ControlToHook_KeyPress(object sender, System.Windows.Forms.KeyPressEventArgs windowsKeyPressEvent)
@@ -219,61 +235,82 @@ namespace MatterHackers.Agg.UI
 
 		private void ControlToHook_GotFocus(object sender, EventArgs e)
 		{
-			widgetToSendTo.OnFocusChanged(e);
-			Keyboard.Clear();
+			if (SystemWindow.EnablePlatformWindowInput)
+			{
+				widgetToSendTo.OnFocusChanged(e);
+				Keyboard.Clear();
 
-			focusedChild?.Focus();
+				focusedChild?.Focus();
+			}
 		}
 
 		private void ControlToHook_LostFocus(object sender, EventArgs e)
 		{
-			focusedChild = null;
-			GuiWidget currentWidget = widgetToSendTo;
-
-			// try to remember the specific widget that has focus
-			do
+			if (SystemWindow.EnablePlatformWindowInput)
 			{
-				currentWidget = currentWidget.Children.Where(c => c.ContainsFocus).FirstOrDefault();
+				focusedChild = null;
+				GuiWidget currentWidget = widgetToSendTo;
 
-				if (currentWidget != null
-					&& currentWidget.Focused)
+				// try to remember the specific widget that has focus
+				do
 				{
-					focusedChild = currentWidget;
-					break;
-				}
-			}
-			while (currentWidget != null);
+					currentWidget = currentWidget.Children.Where(c => c.ContainsFocus).FirstOrDefault();
 
-			widgetToSendTo.Unfocus();
-			widgetToSendTo.OnFocusChanged(e);
+					if (currentWidget != null
+						&& currentWidget.Focused)
+					{
+						focusedChild = currentWidget;
+						break;
+					}
+				}
+				while (currentWidget != null);
+
+				widgetToSendTo.Unfocus();
+				widgetToSendTo.OnFocusChanged(e);
+			}
 		}
 
 		private void ControlToHook_MouseCaptureChanged(object sender, EventArgs e)
 		{
-			if (widgetToSendTo.ChildHasMouseCaptured || widgetToSendTo.MouseCaptured)
+			if (SystemWindow.EnablePlatformWindowInput)
 			{
-				widgetToSendTo.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, -10, -10, 0));
+				if (widgetToSendTo.ChildHasMouseCaptured || widgetToSendTo.MouseCaptured)
+				{
+					widgetToSendTo.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, -10, -10, 0));
+				}
 			}
 		}
 
 		private void ControlToHook_MouseDown(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
 		{
-			widgetToSendTo.OnMouseDown(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
+			if (SystemWindow.EnablePlatformWindowInput)
+			{
+				widgetToSendTo.OnMouseDown(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
+			}
 		}
 
 		private void ControlToHook_MouseLeave(object sender, EventArgs e)
 		{
-			widgetToSendTo.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, -10, -10, 0));
+			if (SystemWindow.EnablePlatformWindowInput)
+			{
+				widgetToSendTo.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, -10, -10, 0));
+			}
 		}
 
 		private void ControlToHook_MouseUp(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
 		{
-			widgetToSendTo.OnMouseUp(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
+			if (SystemWindow.EnablePlatformWindowInput)
+			{
+				widgetToSendTo.OnMouseUp(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
+			}
 		}
 
 		private void ControlToHook_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
 		{
-			widgetToSendTo.OnMouseWheel(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
+			if (SystemWindow.EnablePlatformWindowInput)
+			{
+				widgetToSendTo.OnMouseWheel(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
+			}
 		}
 
 		private MouseEventArgs ConvertWindowsDragEventToAggMouseEvent(DragEventArgs dragevent)
@@ -295,13 +332,16 @@ namespace MatterHackers.Agg.UI
 
 		private void FormToHook_MouseMove(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
 		{
-			// TODO: Remove short term workaround for automation issues where mouse events fire differently if mouse is within window region
-			if (!EnableInputHook)
+			if (SystemWindow.EnablePlatformWindowInput)
 			{
-				return;
-			}
+				// TODO: Remove short term workaround for automation issues where mouse events fire differently if mouse is within window region
+				if (!EnableInputHook)
+				{
+					return;
+				}
 
-			widgetToSendTo.OnMouseMove(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
+				widgetToSendTo.OnMouseMove(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
+			}
 		}
 
 		private List<string> GetDroppedFiles(DragEventArgs drgevent)

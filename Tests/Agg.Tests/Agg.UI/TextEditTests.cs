@@ -825,6 +825,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			{
 				UiThread.RunOnIdle(editField.Focus);
 				testRunner.WaitFor(() => editField.ContainsFocus);
+				//if (!editField.ContainsFocus) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
+				// NOTE: Okay. During parallel testing, it seems that the avalanche of windows causes test UIs to lose control focus and get confused.
 				Assert.IsTrue(editField.ContainsFocus, "Focused property should be true after invoking Focus method");
 
 				return Task.CompletedTask;
@@ -861,9 +863,11 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 				Assert.AreEqual("123", editField.Text, "Text input on newly focused control should replace selection");
 
 				testRunner.ClickByName(editField.Name);
-				testRunner.Delay(.2);
+				//testRunner.WaitFor(() => editField.ContainsFocus);
 
 				testRunner.Type("123");
+				//testRunner.WaitFor(() => "123123" == editField.Text, maxSeconds: 60);
+				// TODO: Sometimes get failures here. Using a large wait now.
 				Assert.AreEqual("123123", editField.Text, "Text should be appended if control is focused and has already received input");
 
 				return Task.CompletedTask;

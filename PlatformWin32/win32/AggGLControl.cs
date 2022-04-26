@@ -50,7 +50,6 @@ namespace MatterHackers.Agg.UI
 		// TODO: Set VSync off for OpenTK 4. Will need access to the NativeWindow.
 
 
-		// If you have an error here it is likely that you need to build your project with Platform Target x86.
 #if USE_OPENTK4
 		public AggGLControl(GLControlSettings graphicsMode)
 #else
@@ -83,13 +82,13 @@ namespace MatterHackers.Agg.UI
 			// OpenTK3 GLControl will swallow the GraphicsModeException and create a dummy context instead.
 			if (!HasValidContext)
 			{
-				System.Windows.Forms.MessageBox.Show(null, "Failed to create GL context.".Localize(), "MatterControl",
-					MessageBoxButtons.OK, MessageBoxIcon.Error);
+				//System.Windows.Forms.MessageBox.Show(null, "Failed to create GL context.".Localize(), "MatterControl",
+				//	MessageBoxButtons.OK, MessageBoxIcon.Error);
+				throw new OpenTK.PlatformException("Failed to create GL context.");
 			}
 #else
 			// OpenTK4 will throw a OpenTK.Windowing.GraphicsLibraryFramework.GLFWException.
 #endif
-			
 		}
 
 		public override string ToString()

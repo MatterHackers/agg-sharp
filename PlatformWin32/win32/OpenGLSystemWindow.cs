@@ -55,6 +55,9 @@ namespace MatterHackers.Agg.UI
 			};
 #else
 			var graphicsMode = new OpenTK.Graphics.GraphicsMode(config.Color, config.Depth, config.Stencil, config.FSAASamples);
+
+			// If the GPU driver is disabled in Windows, this could be used to test context creation failure.
+			//var graphicsMode = new OpenTK.Graphics.GraphicsMode(config.Color, config.Depth, config.Stencil, config.FSAASamples + 100, OpenTK.Graphics.ColorFormat.Empty, 100, true);
 #endif
 
 			glControl = new AggGLControl(graphicsMode)
@@ -117,6 +120,15 @@ namespace MatterHackers.Agg.UI
 			this.IsInitialized = true;
 			initHasBeenCalled = true;
 		}
+
+#if USE_OPENTK4
+		// HACK: Huh!? Makes keyboard input work. https://github.com/opentk/GLControl/issues/18
+		protected override void OnShown(EventArgs e)
+		{
+			base.OnShown(e);
+			glControl.Focus();
+		}
+#endif
 
 		private void SetupViewport()
 		{

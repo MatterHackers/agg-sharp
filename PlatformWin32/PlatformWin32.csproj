@@ -15,7 +15,7 @@
 		<DefineConstants>TRACE;RELEASE;USE_OPENGL</DefineConstants>
 	</PropertyGroup>
 	<PropertyGroup>
-		<UsingOpenTK4>true</UsingOpenTK4>
+		<UsingOpenTK4>false</UsingOpenTK4>
 	</PropertyGroup>
 	<PropertyGroup Condition="$(UsingOpenTK4)">
 		<DefineConstants>$(DefineConstants);USE_OPENTK4</DefineConstants>
