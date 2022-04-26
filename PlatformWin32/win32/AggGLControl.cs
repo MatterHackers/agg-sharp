@@ -22,7 +22,6 @@ using System.Windows.Forms;
 
 using OpenTK;
 using MatterHackers.RenderOpenGl;
-using MatterHackers.Localizations;
 
 #if USE_GLES
 using OpenTK.Graphics.ES11;
