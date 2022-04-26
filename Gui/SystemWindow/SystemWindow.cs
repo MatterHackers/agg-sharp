@@ -37,9 +37,6 @@ namespace MatterHackers.Agg.UI
 {
 	public class SystemWindow : GuiWidget
 	{
-		// This must be set to false when doing parallel UI testing.
-		public static bool EnablePlatformWindowInput { get; set; } = true;
-
 		private string _title = "";
 
 		public event EventHandler<ClosingEventArgs> Closing;
