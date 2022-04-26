@@ -43,7 +43,7 @@ namespace MatterHackers.Agg
 		{
 			var assemblyTypes = new List<Type>();
 
-			foreach (var type in assembly.GetExportedTypes())
+			foreach (var type in assembly.GetTypes())
 			{
 				try
 				{
