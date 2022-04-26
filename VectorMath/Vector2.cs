@@ -605,6 +605,50 @@ namespace MatterHackers.VectorMath
 
 		#endregion Normalize
 
+		/// <summary>
+		/// Get the distance from a point to a line. Calculate the distance to both ends and to the
+		/// line legment and return the smallest value.
+		/// </summary>
+		/// <param name="point">The point to consider</param>
+		/// <param name="lineStart">The start of the line segment to consider</param>
+		/// <param name="lineEnd">The end of the line segment to consider</param>
+		/// <returns>The distance from the point to the line</returns>
+		public static double DistancePointToLine(Vector2 point, Vector2 lineStart, Vector2 lineEnd)
+		{
+			if (point == lineStart || point == lineEnd)
+			{
+				return 0;
+			}
+
+			if (lineStart == lineEnd)
+			{
+				return (point - lineStart).Length;
+			}
+
+			var lineDelta = lineEnd - lineStart;
+			var lineLength = lineDelta.Length;
+			var lineNormal = lineDelta.GetNormal();
+
+			var deltaFromStart = point - lineStart;
+			var distanceFromStart = lineNormal.Dot(deltaFromStart);
+			// if we are within the cone of the line
+			if (distanceFromStart >= 0 && distanceFromStart <= lineLength)
+            {
+				var perpendicularNormal = lineNormal.GetPerpendicularLeft();
+				var distanceToLine = perpendicularNormal.Dot(deltaFromStart);
+
+				return Math.Abs(distanceToLine);
+			}
+
+			if (distanceFromStart < 0)
+            {
+				return deltaFromStart.Length;
+			}
+
+			var deltaFromEnd = point - lineEnd;
+			return deltaFromEnd.Length;
+		}
+
 		#region Dot
 
 		/// <summary>

@@ -63,7 +63,7 @@ namespace MatterHackers.VectorMath.Tests
 			RangeTest(Easing.EaseType.Quadratic);
 		}
 	}
-	
+
 	[TestFixture, Category("Agg.VectorMath")]
 	public class Vector2Tests
 	{
@@ -93,6 +93,23 @@ namespace MatterHackers.VectorMath.Tests
 				end = new Vector2(1, 3);
 				Assert.IsTrue(Math.Abs(-MathHelper.Tau / 4 - center.GetDeltaAngle(start, end)) < .0001);
 			}
+		}
+
+		[Test]
+		public void DistanceToLineTests()
+		{
+			// outside the line
+			Assert.AreEqual(5, Vector2.DistancePointToLine(new Vector2(0, 0), new Vector2(5, 0), new Vector2(10, 0)));
+			Assert.AreEqual(5, Vector2.DistancePointToLine(new Vector2(15, 0), new Vector2(5, 0), new Vector2(10, 0)));
+			Assert.AreEqual(Math.Sqrt(2), Vector2.DistancePointToLine(new Vector2(-1, -1), new Vector2(0, 0), new Vector2(10, 0)), .0001);
+			Assert.AreEqual(Math.Sqrt(2), Vector2.DistancePointToLine(new Vector2(-1, 1), new Vector2(0, 0), new Vector2(10, 0)), .0001);
+			Assert.AreEqual(Math.Sqrt(2), Vector2.DistancePointToLine(new Vector2(11, -1), new Vector2(0, 0), new Vector2(10, 0)), .0001);
+			Assert.AreEqual(Math.Sqrt(2), Vector2.DistancePointToLine(new Vector2(11, 1), new Vector2(0, 0), new Vector2(10, 0)), .0001);
+			// inside the line
+			Assert.AreEqual(5, Vector2.DistancePointToLine(new Vector2(7, 5), new Vector2(5, 0), new Vector2(10, 0)));
+			Assert.AreEqual(5, Vector2.DistancePointToLine(new Vector2(7, -5), new Vector2(5, 0), new Vector2(10, 0)));
+			// line is a point
+			Assert.AreEqual(5, Vector2.DistancePointToLine(new Vector2(0, 0), new Vector2(5, 0), new Vector2(5, 0)));
 		}
 	}
 
