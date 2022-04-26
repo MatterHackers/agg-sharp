@@ -44,24 +44,6 @@ using System.Threading;
 
 namespace MatterHackers.Agg.Tests.Agg.RayTracerNS
 {
-	/*public static class AggTestUtilities
-	{
-		public static string ResolveProjectPath(this TestContext context, int stepsToProjectRoot, params string[] relativePathSteps)
-		{
-			string assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-
-			var allPathSteps = new List<string> { assemblyPath };
-			allPathSteps.AddRange(Enumerable.Repeat("..", stepsToProjectRoot));
-
-			if (relativePathSteps.Any())
-			{
-				allPathSteps.AddRange(relativePathSteps);
-			}
-
-			return Path.GetFullPath(Path.Combine(allPathSteps.ToArray()));
-		}
-	}*/
-
 	[TestFixture, Category("Agg.RayTracer")]
 	public class PolygonTraceTests
 	{
@@ -101,8 +83,7 @@ namespace MatterHackers.Agg.Tests.Agg.RayTracerNS
 		[Test]
 		public void CorrectRayOnCircle()
 		{
-			var testPartPath = //TestContext.CurrentContext.ResolveProjectPath(4, "examples", "RayTracerTest");
-				TestContext.CurrentContext.ResolveProjectPath(new string[] { "..", "..", "..", "examples", "RayTracerTest" });
+			var testPartPath = TestContext.CurrentContext.ResolveProjectPath(new string[] { "..", "..", "..", "examples", "RayTracerTest" });
 
 			var testPart = Path.Combine(testPartPath, "circle_100x100_centered.stl");
 			Mesh simpleMesh = StlProcessing.Load(testPart, CancellationToken.None);

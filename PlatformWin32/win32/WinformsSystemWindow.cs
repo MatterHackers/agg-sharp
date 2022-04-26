@@ -20,6 +20,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
@@ -542,7 +543,7 @@ namespace MatterHackers.Agg.UI
 			systemWindow.AnchorAll();
 
 			// If this isn't true, prepare for deadlocks.
-			System.Diagnostics.Debug.Assert(WindowsFormsSynchronizationContext.Current == null || WindowsFormsSynchronizationContext.Current is WindowsFormsSynchronizationContext);
+			System.Diagnostics.Debug.Assert(SynchronizationContext.Current == null || SynchronizationContext.Current is WindowsFormsSynchronizationContext);
 
 			if (firstWindow)
 			{

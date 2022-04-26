@@ -50,47 +50,44 @@ namespace MatterHackers.Agg.Tests
 		[Test, ChildProcessTest]
 		public async Task ClickFiresOnCorrectWidgets()
 		{
-			//await InvokeInChildProcess(async () => {
+			var testWindow = new ClickTestsWindow(300, 200);
 
-				var testWindow = new ClickTestsWindow(300, 200);
+			await AutomationRunner.ShowWindowAndExecuteTests(
+				testWindow,
+				(testRunner) =>
+				{
+					testRunner.ClickByName("blueWidget");
+					testRunner.Delay(.1);
+					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
+					Assert.AreEqual(0, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
+					Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
 
-				await AutomationRunner.ShowWindowAndExecuteTests(
-					testWindow,
-					(testRunner) =>
-					{
-						testRunner.ClickByName("blueWidget");
-						testRunner.Delay(.1);
-						Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
-						Assert.AreEqual(0, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
-						Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
+					testRunner.ClickByName("orangeWidget");
+					testRunner.Delay(.1);
+					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
+					Assert.AreEqual(1, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
+					Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
 
-						testRunner.ClickByName("orangeWidget");
-						testRunner.Delay(.1);
-						Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
-						Assert.AreEqual(1, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
-						Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
+					testRunner.ClickByName("blueWidget");
+					testRunner.Delay(.1);
+					Assert.AreEqual(2, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
+					Assert.AreEqual(1, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
+					Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
 
-						testRunner.ClickByName("blueWidget");
-						testRunner.Delay(.1);
-						Assert.AreEqual(2, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
-						Assert.AreEqual(1, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
-						Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
+					testRunner.ClickByName("orangeWidget");
+					testRunner.Delay(.1);
+					Assert.AreEqual(2, testWindow.BlueWidget.ClickCount, "Unexpected click count on root widget");
+					Assert.AreEqual(2, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
+					Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
 
-						testRunner.ClickByName("orangeWidget");
-						testRunner.Delay(.1);
-						Assert.AreEqual(2, testWindow.BlueWidget.ClickCount, "Unexpected click count on root widget");
-						Assert.AreEqual(2, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
-						Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
+					testRunner.ClickByName("purpleWidget");
+					testRunner.Delay(.1);
+					Assert.AreEqual(2, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
+					Assert.AreEqual(2, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
+					Assert.AreEqual(1, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
 
-						testRunner.ClickByName("purpleWidget");
-						testRunner.Delay(.1);
-						Assert.AreEqual(2, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
-						Assert.AreEqual(2, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
-						Assert.AreEqual(1, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
-
-						return Task.CompletedTask;
-					});
-			//});
+					return Task.CompletedTask;
+				});
 		}
 
 		[Test, ChildProcessTest]

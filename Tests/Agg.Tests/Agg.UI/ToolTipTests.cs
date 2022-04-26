@@ -45,11 +45,11 @@ namespace MatterHackers.Agg.UI.Tests
 		internal int popCount;
 	}
 
-	[TestFixture, Category("Agg.UI.ToolTip"), Apartment(ApartmentState.STA), Parallelizable(ParallelScope.All), FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+	[TestFixture, Category("Agg.UI.ToolTip"), Apartment(ApartmentState.STA), Parallelizable(ParallelScope.All)]
 	public class ToolTipTests
 	{
-		static string toolTip1Text = "toolTip1";
-		static string toolTip2Text = "toolTip2";
+		static readonly string toolTip1Text = "toolTip1";
+		static readonly string toolTip2Text = "toolTip2";
 
 		static readonly int minMsTimeToRespond = 60;
 		static readonly int minMsToBias = 80;

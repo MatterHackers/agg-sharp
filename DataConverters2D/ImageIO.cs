@@ -143,7 +143,8 @@ namespace MatterHackers.Agg.Image
 		{
 			if (File.Exists(fileName))
 			{
-				return ConvertImageToImageBuffer(destImage, SixLabors.ImageSharp.Image.Load<Rgba32>(fileName));
+				var temp = SixLabors.ImageSharp.Image.Load<Rgba32>(fileName);
+				return ConvertImageToImageBuffer(destImage, temp);
 			}
 			else
 			{

@@ -867,7 +867,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 
 				testRunner.Type("123");
 				//testRunner.WaitFor(() => "123123" == editField.Text, maxSeconds: 60);
-				// TODO: Sometimes get failures here. Using a large wait now.
+				// NOTE: Used to get intermittent failures here. These issues might have been sorted out now.
 				Assert.AreEqual("123123", editField.Text, "Text should be appended if control is focused and has already received input");
 
 				return Task.CompletedTask;
