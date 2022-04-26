@@ -664,6 +664,7 @@ namespace MatterHackers.GuiAutomation
 				//       PrinterTabRemainsAfterReloadAll: "Distance or Loops Field"
 				//       AddingImageConverterWorks: "Row Item Image Converter"
 				//       PulseLevelingTest: "Stop Task Button"
+				//       But, well, what about common dialog box widgets?
 				//if (getResults.Count > 1)
 				//	throw new Exception($"Widgets have duplicate names: {widgetName}");
 
