@@ -28,21 +28,16 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
+using MatterHackers.Agg.Tests;
 using MatterHackers.DataConverters3D;
-using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.PolygonMesh;
-using MatterHackers.RayTracerNS;
-using MatterHackers.RayTracerNS.Light;
-using MatterHackers.RayTracerNS.Traceable;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Threading;
 
-namespace MatterHackers.Agg.Tests.Agg.RayTracerNS
+namespace MatterHackers.RayTracerNS
 {
 	[TestFixture, Category("Agg.RayTracer")]
 	public class PolygonTraceTests
