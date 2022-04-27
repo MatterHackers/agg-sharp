@@ -914,7 +914,7 @@ namespace MatterHackers.GuiAutomation
 				}
 			});
 
-			resetEvent.WaitOne(maxSeconds * 1000);
+			resetEvent.WaitOne(maxSeconds);
 
 			containingWindow.AfterDraw -= afterDraw;
 			containingWindow.Closed -= closed;
