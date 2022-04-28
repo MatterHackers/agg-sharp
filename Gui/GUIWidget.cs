@@ -1365,6 +1365,12 @@ namespace MatterHackers.Agg.UI
 
 		private void ClearMouseOverWidget()
 		{
+			bool needToCallLeaveBounds = UnderMouseState != UI.UnderMouseState.NotUnderMouse;
+			if (needToCallLeaveBounds)
+			{
+				OnMouseLeaveBounds(null);
+			}
+
 			foreach (GuiWidget child in Children)
 			{
 				child.ClearMouseOverWidget();
