@@ -521,7 +521,7 @@ namespace MatterHackers.DataConverters3D
 					}
 					else if (item.WorldOutputType() == PrintOutputTypes.Fuzzy)
 					{
-						lastColorFound = new Color(255, 182, 57, 120);
+						lastColorFound = new Color(108, 209, 98, 120);
 					}
 					else if (item.WorldOutputType() == PrintOutputTypes.Hole)
                     {
