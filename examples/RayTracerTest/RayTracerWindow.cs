@@ -1,5 +1,5 @@
 using MatterHackers.Agg.UI;
-using MatterHackers.RayTracer;
+using MatterHackers.RayTracerNS;
 using MatterHackers.VectorMath;
 using System;
 using System.Diagnostics;

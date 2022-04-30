@@ -20,7 +20,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\MatterControl.csproj" />
     <ProjectReference Include="..\..\..\..\Tests\TestInvoker\TestInvoker.csproj">
       <CopyLocal>True</CopyLocal>
     </ProjectReference>
