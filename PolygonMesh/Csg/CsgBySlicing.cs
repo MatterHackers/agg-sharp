@@ -109,8 +109,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				plansByMesh.Add(new List<Plane>());
 				for (int j = 0; j < transformedMeshes[i].Faces.Count; j++)
 				{
-					var face = mesh.Faces[j];
-					var cutPlane = new Plane(mesh.Vertices[face.v0].AsVector3(), mesh.Vertices[face.v1].AsVector3(), mesh.Vertices[face.v2].AsVector3());
+                    var cutPlane = mesh.GetPlane(j);
 					plansByMesh[i].Add(cutPlane);
 					uniquePlanes.Add(cutPlane);
 				}
@@ -233,6 +232,9 @@ namespace MatterHackers.PolygonMesh.Csg
                         polygonShape.Vertices(1).TriangulateFaces(null, resultsMesh, 0, transformTo0Planes[cutPlane].inverted);
                         var postAddCount = resultsMesh.Vertices.Count;
 
+                        var polygonPlane = mesh1.GetPlane(faceIndex);
+
+                        // for every vertex that we just added
                         for (int addedIndex = preAddCount; addedIndex < postAddCount; addedIndex++)
                         {
                             // TODO: map all the added vertices that can be back to the original polygon positions
@@ -253,10 +255,23 @@ namespace MatterHackers.PolygonMesh.Csg
                                         {
                                             var sourcePosition = mesh.Vertices[sourceVertexIndex];
                                             var deltaSquared = (addedPosition - sourcePosition).LengthSquared;
-                                            if (deltaSquared > 0 && deltaSquared < .00001)
+                                            if (deltaSquared == 0)
                                             {
-                                                // add the vertex and set the face position index to the new vertex
+                                                // do nothing it already matches
+                                                var a = 0;
+                                            }
+                                            else if (deltaSquared < .00001)
+                                            {
+                                                // we found a vertex that this is equivalent to
+                                                // make it exactly the same
                                                 resultsMesh.Vertices[addedIndex] = sourcePosition;
+                                            }
+                                            else
+                                            {
+                                                // we did not find a matching vertex but we can still make sure
+                                                // the new vertex is on the right plane
+                                                var distanceToPlane = polygonPlane.GetDistanceFromPlane(addedPosition);
+                                                resultsMesh.Vertices[addedIndex] -= new Vector3Float(polygonPlane.Normal * distanceToPlane);
                                             }
                                         }
                                     }
