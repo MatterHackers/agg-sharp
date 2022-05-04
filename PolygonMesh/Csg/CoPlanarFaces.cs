@@ -280,7 +280,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			EnsureFaceNormals(plane, resultsMesh, countPreAdd);
 		}
 
-		public void StoreFaceAdd(PlaneNormalXSorter planeSorter,
+		public void StoreFaceAdd(SimilarPlaneFinder planeSorter,
 			Plane facePlane,
 			int sourceMeshIndex,
 			int sourceFaceIndex,

@@ -46,7 +46,7 @@ namespace MatterHackers.PolygonMesh.Csg
         private List<Mesh> transformedMeshes;
         private List<ITraceable> bvhAccelerators;
         private List<List<Plane>> plansByMesh;
-        private PlaneNormalXSorter planeSorter;
+        private SimilarPlaneFinder planeSorter;
         private Dictionary<Plane, (Matrix4X4 matrix, Matrix4X4 inverted)> transformTo0Planes;
 
 		public CsgBySlicing()
@@ -120,7 +120,7 @@ namespace MatterHackers.PolygonMesh.Csg
                 }
 			}
 
-			planeSorter = new PlaneNormalXSorter(uniquePlanes);
+			planeSorter = new SimilarPlaneFinder(uniquePlanes);
 			transformTo0Planes = new Dictionary<Plane, (Matrix4X4 matrix, Matrix4X4 inverted)>();
 			foreach (var plane in uniquePlanes)
 			{
@@ -242,8 +242,7 @@ namespace MatterHackers.PolygonMesh.Csg
                             {
                                 var bvhAccelerator = bvhAccelerators[meshIndex];
                                 var mesh = transformedMeshes[meshIndex];
-                                var addedPosition = resultsMesh.Vertices[addedIndex];
-                                var touchingBvhItems = bvhAccelerator.GetTouching(new Vector3(addedPosition), .0001);
+                                var touchingBvhItems = bvhAccelerator.GetTouching(new Vector3(resultsMesh.Vertices[addedIndex]), .0001);
                                 foreach (var touchingBvhItem in touchingBvhItems)
                                 {
                                     if (touchingBvhItem is MinimalTriangle triangleShape)
@@ -254,7 +253,7 @@ namespace MatterHackers.PolygonMesh.Csg
                                         foreach (var sourceVertexIndex in sourceVertexIndices)
                                         {
                                             var sourcePosition = mesh.Vertices[sourceVertexIndex];
-                                            var deltaSquared = (addedPosition - sourcePosition).LengthSquared;
+                                            var deltaSquared = (resultsMesh.Vertices[addedIndex] - sourcePosition).LengthSquared;
                                             if (deltaSquared == 0)
                                             {
                                                 // do nothing it already matches
@@ -270,7 +269,7 @@ namespace MatterHackers.PolygonMesh.Csg
                                             {
                                                 // we did not find a matching vertex but we can still make sure
                                                 // the new vertex is on the right plane
-                                                var distanceToPlane = polygonPlane.GetDistanceFromPlane(addedPosition);
+                                                var distanceToPlane = polygonPlane.GetDistanceFromPlane(resultsMesh.Vertices[addedIndex]);
                                                 resultsMesh.Vertices[addedIndex] -= new Vector3Float(polygonPlane.Normal * distanceToPlane);
                                             }
                                         }
@@ -323,7 +322,7 @@ namespace MatterHackers.PolygonMesh.Csg
                 var meshIndices = coPlanarFaces.MeshIndicesForPlane(plane);
                 if (meshIndices.Count() > 1)
                 {
-                    // check if more than one mesh has this polygons on this plan
+                    // check if more than one mesh has this polygons on this plane
                     var flattenedMatrix = transformTo0Planes[plane].matrix;
 
                     // depending on the operation add or remove polygons that are planar
