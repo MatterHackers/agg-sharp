@@ -32,7 +32,7 @@ using System.Collections.Generic;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.RayTracerNS
 {
     public static class BvhBuilderLegacy
     {

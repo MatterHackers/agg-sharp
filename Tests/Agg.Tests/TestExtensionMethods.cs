@@ -37,19 +37,9 @@ namespace MatterHackers.Agg.Tests
 {
 	public static class TestExtensionMethods
 	{
-		public static string ResolveProjectPath(this TestContext context, int stepsToProjectRoot, params string[] relativePathSteps)
+		public static string ResolveProjectPath(this TestContext context, string[] relativePathPieces, [System.Runtime.CompilerServices.CallerFilePath] string sourceFilePath = null)
 		{
-			string assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-
-			var allPathSteps = new List<string> { assemblyPath };
-			allPathSteps.AddRange(Enumerable.Repeat("..", stepsToProjectRoot));
-
-			if (relativePathSteps.Any())
-			{
-				allPathSteps.AddRange(relativePathSteps);
-			}
-
-			return Path.GetFullPath(Path.Combine(allPathSteps.ToArray()));
+			return Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourceFilePath), Path.Combine(relativePathPieces)));
 		}
 	}
 }

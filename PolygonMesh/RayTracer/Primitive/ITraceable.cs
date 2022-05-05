@@ -13,7 +13,7 @@ using MatterHackers.VectorMath;
 //-----------------------------------------------------------------------
 using System.Collections;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.RayTracerNS
 {
 	public interface ITraceable : IBvhItem
 	{

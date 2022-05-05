@@ -33,6 +33,9 @@ namespace MatterHackers.Agg.UI
 {
 	public interface IPlatformWindow
 	{
+		// This must be set to false when doing parallel UI testing.
+		public static bool EnablePlatformWindowInput { get; set; } = true;
+
 		string Caption { get; set; }
 
 		int TitleBarHeight { get; }

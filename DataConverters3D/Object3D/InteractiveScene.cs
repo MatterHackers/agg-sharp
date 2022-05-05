@@ -37,7 +37,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.Localizations;
 using MatterHackers.PolygonMesh;
-using MatterHackers.RayTracer;
+using MatterHackers.RayTracerNS;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
 

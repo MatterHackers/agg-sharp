@@ -35,12 +35,12 @@ using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.RayTracerNS
 {
 	using MatterHackers.Agg.RasterizerScanline;
 	using MatterHackers.Agg.VertexSource;
-	using MatterHackers.RayTracer.Light;
-	using MatterHackers.RayTracer.Traceable;
+	using MatterHackers.RayTracerNS.Light;
+	using MatterHackers.RayTracerNS.Traceable;
 
 	public class ThumbnailTracer
 	{

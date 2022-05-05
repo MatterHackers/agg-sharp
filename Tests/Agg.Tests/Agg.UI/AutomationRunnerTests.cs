@@ -32,13 +32,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.GuiAutomation;
 using NUnit.Framework;
+using TestInvoker;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
+	[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
 	public class AutomationRunnerTests
 	{
-		[Test]
+		[Test, ChildProcessTest]
 		public async Task GetWidgetByNameTestNoRegionSingleWindow()
 		{
 			// single system window
@@ -62,7 +63,7 @@ namespace MatterHackers.Agg.UI.Tests
 			});
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void AutomationRunnerTimeoutTest()
 		{
 			// Ensure AutomationRunner throws timeout exceptions
@@ -71,6 +72,8 @@ namespace MatterHackers.Agg.UI.Tests
 			var leftButton = new Button("left", 10, 40);
 			leftButton.Name = "left";
 			systemWindow.AddChild(leftButton);
+
+			// NOTE: This test once failed. Possibly due to ShowWindowAndExecuteTests using different timing sources. A Stopwatch and a Task.Delay.
 
 			Assert.ThrowsAsync<TimeoutException>(
 				() => AutomationRunner.ShowWindowAndExecuteTests(
@@ -85,7 +88,7 @@ namespace MatterHackers.Agg.UI.Tests
 					secondsToTestFailure: 1));
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public async Task GetWidgetByNameTestRegionSingleWindow()
 		{
 			int leftClickCount = 0;

@@ -32,17 +32,17 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh.Processors;
-using MatterHackers.RayTracer.Traceable;
+using MatterHackers.RayTracerNS.Traceable;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.RayTracerNS
 {
 	using System.Threading;
-	using MatterHackers.RayTracer.Light;
+	using MatterHackers.RayTracerNS.Light;
 	using MatterHackers.VectorMath.TrackBall;
 
 	public class RayTraceWidget : GuiWidget

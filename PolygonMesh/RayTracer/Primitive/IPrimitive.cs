@@ -14,7 +14,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.RayTracerNS
 {
 	/// <summary>
 	/// element in a scene

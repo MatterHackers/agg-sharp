@@ -39,10 +39,10 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
-using MatterHackers.RayTracer.Light;
+using MatterHackers.RayTracerNS.Light;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.RayTracerNS
 {
 	public enum AntiAliasing
 	{

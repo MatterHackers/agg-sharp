@@ -37,11 +37,12 @@ using System.Threading.Tasks;
 using MatterHackers.Agg.Font;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
+using TestInvoker;
 
 namespace MatterHackers.Agg.UI.Tests
 {
 #if !__ANDROID__
-	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
+	[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
 #endif
 	public class TextEditTests
 	{
@@ -73,7 +74,7 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void CorectLineCounts()
 		{
 			var lines7 = @"; activate T0
@@ -98,7 +99,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			Assert.AreEqual(8, printer8.NumLines());
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void TextEditTextSelectionTests()
 		{
 			var container = new GuiWidget
@@ -173,7 +174,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.Close();
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void TextSelectionWithShiftClick()
 		{
 			const string fullText = "This is a text";
@@ -229,7 +230,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.Close();
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void TextChangedEventsTests()
 		{
 			var container = new GuiWidget
@@ -305,7 +306,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.Close();
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void TextEditGetsFocusTests()
 		{
 			var container = new GuiWidget
@@ -363,7 +364,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.Close();
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void AddThenDeleteCausesNoVisualChange()
 		{
 			var container = new GuiWidget
@@ -410,7 +411,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			Assert.IsTrue(container.BackBuffer == beforeEditImage);
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void MultiLineTests()
 		{
 			// make sure selection ranges are always working
@@ -581,7 +582,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			}
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void NumEditHandlesNonNumberChars()
 		{
 			var container = new GuiWidget
@@ -614,9 +615,9 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 		}
 
 #if __ANDROID__
-		[Test]
+		[Test, ChildProcessTest]
 #else
-		[Test]
+		[Test, ChildProcessTest]
 #endif
 		public void TextEditingSpecialKeysWork()
 		{
@@ -714,7 +715,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.Close();
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void ScrollingToEndShowsEnd()
 		{
 			var container = new GuiWidget
@@ -771,10 +772,10 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 	}
 
 #if !__ANDROID__
-	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
+	[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
 	public class TextEditFocusTests
 	{
-		[Test]
+		[Test, ChildProcessTest]
 		public async Task VerifyFocusMakesTextWidgetEditable()
 		{
 			TextEditWidget editField = null;
@@ -805,7 +806,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public async Task VerifyFocusProperty()
 		{
 			var systemWindow = new SystemWindow(300, 200)
@@ -824,6 +825,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			{
 				UiThread.RunOnIdle(editField.Focus);
 				testRunner.WaitFor(() => editField.ContainsFocus);
+				//if (!editField.ContainsFocus) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
+				// NOTE: Okay. During parallel testing, it seems that the avalanche of windows causes test UIs to lose control focus and get confused.
 				Assert.IsTrue(editField.ContainsFocus, "Focused property should be true after invoking Focus method");
 
 				return Task.CompletedTask;
@@ -832,7 +835,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public async Task SelectAllOnFocusCanStillClickAfterSelection()
 		{
 			var editField = new TextEditWidget(pixelWidth: 200)
@@ -860,9 +863,11 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 				Assert.AreEqual("123", editField.Text, "Text input on newly focused control should replace selection");
 
 				testRunner.ClickByName(editField.Name);
-				testRunner.Delay(.2);
+				//testRunner.WaitFor(() => editField.ContainsFocus);
 
 				testRunner.Type("123");
+				//testRunner.WaitFor(() => "123123" == editField.Text, maxSeconds: 60);
+				// NOTE: Used to get intermittent failures here. These issues might have been sorted out now.
 				Assert.AreEqual("123123", editField.Text, "Text should be appended if control is focused and has already received input");
 
 				return Task.CompletedTask;

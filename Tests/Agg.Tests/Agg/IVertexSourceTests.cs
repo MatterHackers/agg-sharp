@@ -28,7 +28,7 @@ namespace MatterHackers.Agg.Tests
 
 			string filename = $"{nameof(LiberationSansFont)}-{fontSize}.json";
 
-			string testDataPath = TestContext.CurrentContext.ResolveProjectPath(4, "Tests", "TestData", filename);
+			string testDataPath = TestContext.CurrentContext.ResolveProjectPath(new string[] { "..", "..", "TestData", filename });
 
 			// Project sample string characters to dictionary with character bounds
 			var characterBounds = sampleCharacters.ToDictionary(c => c, c => GetCharacterBounds(c, typeface));

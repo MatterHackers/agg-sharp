@@ -44,7 +44,7 @@ using MatterHackers.DataConverters3D;
 using MatterHackers.ImageProcessing;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.RayTracerNS
 {
 	public enum RenderType
 	{

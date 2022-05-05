@@ -31,7 +31,7 @@ using System.Collections.Generic;
 using ClipperLib;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.PolygonMesh.Processors;
-using MatterHackers.RayTracer;
+using MatterHackers.RayTracerNS;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Csg

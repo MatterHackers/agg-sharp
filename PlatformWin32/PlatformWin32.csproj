@@ -1,48 +1,46 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
-    <Company>MatterHackers Inc.</Company>
-    <AssemblyName>agg_platform_win32</AssemblyName>
-    <RootNamespace>agg_platform_win32</RootNamespace>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>TRACE;DEBUG;USE_OPENGL;NET471</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>TRACE;USE_OPENGL;RELEASE;NET471</DefineConstants>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Remove="win32\RendererOpenGL.cs" />
-    <Compile Remove="win32\WindowsFormsDXBackedGui.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Microsoft.VisualBasic" />
-    <Reference Include="System.Windows.Forms" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="OpenTK.GLControl" Version="3.1.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\agg\Agg.csproj" />
-    <ProjectReference Include="..\GuiAutomation\GuiAutomation.csproj" />
-    <ProjectReference Include="..\Gui\Gui.csproj" />
-    <ProjectReference Include="..\ImageProcessing\ImageProcessing.csproj" />
-    <ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj" />
-    <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Update="StyleCop.Analyzers" Version="1.1.118" />
-  </ItemGroup>
-
+	<PropertyGroup>
+		<TargetFramework>net6.0-windows</TargetFramework>
+		<Company>MatterHackers Inc.</Company>
+		<AssemblyName>agg_platform_win32</AssemblyName>
+		<RootNamespace>agg_platform_win32</RootNamespace>
+		<UseWindowsForms>true</UseWindowsForms>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<DefineConstants>TRACE;DEBUG;USE_OPENGL</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<DefineConstants>TRACE;RELEASE;USE_OPENGL</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup>
+		<UsingOpenTK4>false</UsingOpenTK4>
+	</PropertyGroup>
+	<PropertyGroup Condition="$(UsingOpenTK4)">
+		<DefineConstants>$(DefineConstants);USE_OPENTK4</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup>
+		<Compile Remove="win32\RendererOpenGL.cs" />
+		<Compile Remove="win32\WindowsFormsDXBackedGui.cs" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+		<PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.3.310801">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Condition="$(UsingOpenTK4)" Include="OpenTK.WinForms" Version="4.0.0-pre.6" />
+		<PackageReference Condition="!$(UsingOpenTK4)" Include="OpenTK.GLControl" Version="3.1.0" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\agg\Agg.csproj" />
+		<ProjectReference Include="..\GuiAutomation\GuiAutomation.csproj" />
+		<ProjectReference Include="..\Gui\Gui.csproj" />
+		<ProjectReference Include="..\ImageProcessing\ImageProcessing.csproj" />
+		<ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj" />
+		<ProjectReference Include="..\VectorMath\VectorMath.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Update="StyleCop.Analyzers" Version="1.1.118" />
+	</ItemGroup>
 </Project>

@@ -15,7 +15,7 @@ using MatterHackers.Agg;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.RayTracerNS
 {
 	public class MinimalTriangle : IPrimitive, ITriangle
 	{
