@@ -143,7 +143,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
             // teselate and add all the new polygons
             var countPreAdd = resultsMesh.Faces.Count;
-            polygonShape.Vertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
+            polygonShape.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
             EnsureFaceNormals(plane, resultsMesh, countPreAdd);
         }
 
@@ -212,7 +212,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			// teselate and add all the new polygons
 			var countPreAdd = resultsMesh.Faces.Count;
-			total.Vertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
+			total.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
 			EnsureFaceNormals(plane, resultsMesh, countPreAdd);
 		}
 
@@ -276,7 +276,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			// teselate and add all the new polygons
 			var countPreAdd = resultsMesh.Faces.Count;
-			totalSlices.Vertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
+			totalSlices.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
 			EnsureFaceNormals(plane, resultsMesh, countPreAdd);
 		}
 

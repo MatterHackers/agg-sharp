@@ -47,6 +47,8 @@ namespace MatterHackers.PolygonMesh.Csg
 			zComparer = new PlaneNormalComparer(inputPlanes, 2);
 		}
 
+		HashSet<Plane> foundPlanes = new HashSet<Plane>();
+
 		public Plane? FindPlane(Plane searchPlane,
 			double distanceErrorValue = .01,
 			double normalErrorValue = .0001)
@@ -56,9 +58,33 @@ namespace MatterHackers.PolygonMesh.Csg
 				.Union(zComparer.FindPlanes(searchPlane, normalErrorValue));
 
 			foreach (var planeAndDelta in allAxis.OrderBy(pad => pad.delta))
+			{
+				if (foundPlanes.Contains(planeAndDelta.plane))
+				{
+					if (planeAndDelta.plane.Equals(searchPlane, distanceErrorValue, normalErrorValue))
+					{
+						return planeAndDelta.plane;
+					}
+				}
+			}
+
+			var doIt = false;
+			if (doIt)
+			{
+				foreach (var plane in foundPlanes)
+				{
+					if (plane.Equals(searchPlane, distanceErrorValue, normalErrorValue))
+					{
+						return plane;
+					}
+				}
+            }
+
+			foreach (var planeAndDelta in allAxis.OrderBy(pad => pad.delta))
             {
 				if (planeAndDelta.plane.Equals(searchPlane, distanceErrorValue, normalErrorValue))
 				{
+					foundPlanes.Add(planeAndDelta.plane);
 					return planeAndDelta.plane;
 				}
 			}

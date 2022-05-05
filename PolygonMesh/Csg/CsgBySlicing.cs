@@ -229,7 +229,7 @@ namespace MatterHackers.PolygonMesh.Csg
                     {
                         var preAddCount = resultsMesh.Vertices.Count;
                         // mesh the new polygon and add it to the resultsMesh
-                        polygonShape.Vertices(1).TriangulateFaces(null, resultsMesh, 0, transformTo0Planes[cutPlane].inverted);
+                        polygonShape.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, transformTo0Planes[cutPlane].inverted);
                         var postAddCount = resultsMesh.Vertices.Count;
 
                         var polygonPlane = mesh1.GetPlane(faceIndex);
@@ -292,7 +292,7 @@ namespace MatterHackers.PolygonMesh.Csg
                             }
                         }
                     }
-                    else // we did not add any faces but we will still keep track of this polygons plan
+                    else // we did not add any faces but we will still keep track of this polygons plane
                     {
                         coPlanarFaces.StoreFaceAdd(planeSorter, cutPlane, mesh1Index, faceIndex, -1);
                     }
