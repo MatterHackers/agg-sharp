@@ -40,7 +40,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
     public class CoPlanarFaces
 	{
-		private new Dictionary<Plane, Dictionary<int, List<(int sourceFaceIndex, int destFaceIndex)>>> coPlanarFaces
+		private Dictionary<Plane, Dictionary<int, List<(int sourceFaceIndex, int destFaceIndex)>>> coPlanarFaces
 			= new Dictionary<Plane, Dictionary<int, List<(int sourceFaceIndex, int destFaceIndex)>>>();
 
 		public IEnumerable<Plane> Planes
@@ -143,7 +143,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
             // teselate and add all the new polygons
             var countPreAdd = resultsMesh.Faces.Count;
-            polygonShape.Vertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
+            polygonShape.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
             EnsureFaceNormals(plane, resultsMesh, countPreAdd);
         }
 
@@ -212,7 +212,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			// teselate and add all the new polygons
 			var countPreAdd = resultsMesh.Faces.Count;
-			total.Vertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
+			total.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
 			EnsureFaceNormals(plane, resultsMesh, countPreAdd);
 		}
 
@@ -276,18 +276,18 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			// teselate and add all the new polygons
 			var countPreAdd = resultsMesh.Faces.Count;
-			totalSlices.Vertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
+			totalSlices.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
 			EnsureFaceNormals(plane, resultsMesh, countPreAdd);
 		}
 
-		public void StoreFaceAdd(PlaneNormalXSorter planeSorter,
+		public void StoreFaceAdd(SimilarPlaneFinder planeSorter,
 			Plane facePlane,
 			int sourceMeshIndex,
 			int sourceFaceIndex,
 			int destFaceIndex)
 		{
 			// look through all the planes that are close to this one
-			var plane = planeSorter.FindPlane(facePlane, .02, .0002);
+			var plane = planeSorter.FindPlane(facePlane, .02);
 			if (plane != null)
 			{
 				facePlane = plane.Value;
