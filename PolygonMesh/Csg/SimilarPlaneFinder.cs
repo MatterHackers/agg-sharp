@@ -29,33 +29,52 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
-	public class Vector3Int
-    {
-		public int X;
-		public int Y;
-		public int Z;
-
-		public Vector3Int(Vector3 position, int scale)
-        {
-			X = (int)Math.Round(position.X * scale);
-			Y = (int)Math.Round(position.Y * scale);
-			Z = (int)Math.Round(position.Z * scale);
-        }
-	}
     public class SimilarPlaneFinder
 	{
-		private readonly Dictionary<int, Dictionary<int, Dictionary<int, List<Plane>>>> comparer;
+		public class VoxelIndex
+		{
+			public int X;
+			public int Y;
+			public int Z;
 
-		private Vector3Int GetIndex(Vector3 normal)
-        {
-			return new Vector3Int(normal, (int)(1 / normalErrorValue / 10));
+			public int SideX;
+			public int SideY;
+			public int SideZ;
+
+			public VoxelIndex(Vector3 position, double normalErrorValue)
+			{
+				var voxelScale = 1 / normalErrorValue;
+				var indexScale = voxelScale / 10;
+				X = (int)Math.Round(position.X * indexScale);
+				Y = (int)Math.Round(position.Y * indexScale);
+				Z = (int)Math.Round(position.Z * indexScale);
+
+				SideX = GetSide(position.X * voxelScale);
+				SideY = GetSide(position.Y * voxelScale);
+				SideZ = GetSide(position.Z * voxelScale);
+			}
+
+			int GetSide(double voxelScale)
+			{
+				var fraction = voxelScale - (int)voxelScale;
+				if (fraction < .1)
+				{
+					return -1;
+				}
+				else if (fraction > .9)
+				{
+					return 1;
+				}
+
+				return 0;
+			}
 		}
+
+		private readonly Dictionary<int, Dictionary<int, Dictionary<int, List<Plane>>>> comparer;
 
 		public SimilarPlaneFinder(IEnumerable<Plane> inputPlanes, double normalErrorValue = .0001)
 		{
@@ -63,59 +82,101 @@ namespace MatterHackers.PolygonMesh.Csg
 			comparer = new Dictionary<int, Dictionary<int, Dictionary<int, List<Plane>>>>();
 			foreach (var plane in inputPlanes)
             {
-				var index = GetIndex(plane.Normal);
+                var voxelIndex = new VoxelIndex(plane.Normal, normalErrorValue);
 
-				if (!comparer.ContainsKey(index.X))
+				if (!comparer.ContainsKey(voxelIndex.X))
 				{
-					comparer[index.X] = new Dictionary<int, Dictionary<int, List<Plane>>>();
+					comparer[voxelIndex.X] = new Dictionary<int, Dictionary<int, List<Plane>>>();
 				}
-				if (!comparer[index.X].ContainsKey(index.Y))
+				if (!comparer[voxelIndex.X].ContainsKey(voxelIndex.Y))
 				{
-					comparer[index.X][index.Y] = new Dictionary<int, List<Plane>>();
+					comparer[voxelIndex.X][voxelIndex.Y] = new Dictionary<int, List<Plane>>();
 				}
-				if (!comparer[index.X][index.Y].ContainsKey(index.Z))
+				if (!comparer[voxelIndex.X][voxelIndex.Y].ContainsKey(voxelIndex.Z))
 				{
-					comparer[index.X][index.Y][index.Z] = new List<Plane>();
+					comparer[voxelIndex.X][voxelIndex.Y][voxelIndex.Z] = new List<Plane>();
 				}
 
-				comparer[index.X][index.Y][index.Z].Add(plane);
+				comparer[voxelIndex.X][voxelIndex.Y][voxelIndex.Z].Add(plane);
 			}
 		}
 
-		IEnumerable<int> GetSearch(int position, double component)
-        {
-			var scaled = 1 / normalErrorValue * component;
-			var fraction = scaled - (int)scaled;
-			if (fraction < .1)
-            {
-				yield return position - 1;
-				yield return position;
-            }
-			else if (fraction > .9)
-            {
-				yield return position;
-				yield return position+1;
-            }
-
-			yield return position;
+		private IEnumerable<int> GetSearch(VoxelIndex voxelIndex, int axis)
+		{
+			if (axis == 0)
+			{
+				if (voxelIndex.SideX == -1)
+				{
+					yield return voxelIndex.X - 1;
+					yield return voxelIndex.X;
+				}
+				else if (voxelIndex.SideX == 1)
+				{
+					yield return voxelIndex.X;
+					yield return voxelIndex.X + 1;
+				}
+				else
+				{
+					yield return voxelIndex.X;
+				}
+			}
+			else if (axis == 1)
+			{
+				if (voxelIndex.SideY == -1)
+				{
+					yield return voxelIndex.Y - 1;
+					yield return voxelIndex.Y;
+				}
+				else if (voxelIndex.SideY == 1)
+				{
+					yield return voxelIndex.Y;
+					yield return voxelIndex.Y + 1;
+				}
+				else
+				{
+					yield return voxelIndex.Y;
+				}
+			}
+			else
+			{
+				if (voxelIndex.SideZ == -1)
+				{
+					yield return voxelIndex.Z - 1;
+					yield return voxelIndex.Z;
+				}
+				else if (voxelIndex.SideZ == 1)
+				{
+					yield return voxelIndex.Z;
+					yield return voxelIndex.Z + 1;
+				}
+				else
+				{
+					yield return voxelIndex.Z;
+				}
+			}
 		}
 
 		IEnumerable<Plane> FindPlanes(Vector3 normal)
         {
-			var index = GetIndex(normal);
-			foreach(var x in GetSearch(index.X, normal.X))
+			var voxelIndex = new VoxelIndex(normal, normalErrorValue);
+
+			foreach(var x in GetSearch(voxelIndex, 0))
             {
-				foreach (var y in GetSearch(index.Y, normal.Y))
+				if (comparer.ContainsKey(x))
 				{
-					foreach (var z in GetSearch(index.Z, normal.Z))
+					foreach (var y in GetSearch(voxelIndex, 1))
 					{
-						if (comparer.ContainsKey(x)
-							&& comparer[x].ContainsKey(y)
-							&& comparer[x][y].ContainsKey(z))
+						if (comparer[x].ContainsKey(y))
 						{
-							foreach (var plane in comparer[x][y][z])
+							foreach (var z in GetSearch(voxelIndex, 2))
 							{
-								yield return plane;
+								if (comparer[x][y].ContainsKey(z))
+								{
+									foreach (var plane in comparer[x][y][z])
+									{
+										yield return plane;
+									}
+								}
 							}
 						}
 					}
@@ -123,14 +184,12 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 		}
 
-		HashSet<Plane> firstFoundPlanes = new HashSet<Plane>();
+        HashSet<Plane> firstFoundPlanes = new HashSet<Plane>();
         private double normalErrorValue;
 
         public Plane? FindPlane(Plane searchPlane,
 			double distanceErrorValue = .01)
 		{
-			var position = GetIndex(searchPlane.Normal);
-
 			var allPlanes = FindPlanes(searchPlane.Normal);
 
 			// first check if we have already found a plane that can match
@@ -158,12 +217,12 @@ namespace MatterHackers.PolygonMesh.Csg
             }
 
 			// 
-			foreach (var planeAndDelta in allPlanes.OrderBy(pad => pad.delta))
+			foreach (var plane in allPlanes)
             {
-				if (planeAndDelta.plane.Equals(searchPlane, distanceErrorValue, normalErrorValue))
+				if (plane.Equals(searchPlane, distanceErrorValue, normalErrorValue))
 				{
-					firstFoundPlanes.Add(planeAndDelta.plane);
-					return planeAndDelta.plane;
+					firstFoundPlanes.Add(plane);
+					return plane;
 				}
 			}
 

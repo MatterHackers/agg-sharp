@@ -155,6 +155,10 @@ namespace MatterHackers.PolygonMesh.Csg
                     var face = mesh1.Faces[faceIndex];
 
                     var cutPlane = plansByMesh[mesh1Index][faceIndex];
+                    if (double.IsNaN(cutPlane.DistanceFromOrigin))
+                    {
+                        continue;
+                    }
                     var totalSlice = new Polygons();
                     var firstSlice = true;
 

@@ -40,7 +40,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
     public class CoPlanarFaces
 	{
-		private new Dictionary<Plane, Dictionary<int, List<(int sourceFaceIndex, int destFaceIndex)>>> coPlanarFaces
+		private Dictionary<Plane, Dictionary<int, List<(int sourceFaceIndex, int destFaceIndex)>>> coPlanarFaces
 			= new Dictionary<Plane, Dictionary<int, List<(int sourceFaceIndex, int destFaceIndex)>>>();
 
 		public IEnumerable<Plane> Planes
@@ -287,7 +287,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			int destFaceIndex)
 		{
 			// look through all the planes that are close to this one
-			var plane = planeSorter.FindPlane(facePlane, .02, .0002);
+			var plane = planeSorter.FindPlane(facePlane, .02);
 			if (plane != null)
 			{
 				facePlane = plane.Value;
