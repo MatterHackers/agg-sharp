@@ -30,48 +30,125 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
+	public class Vector3Int
+    {
+		public int X;
+		public int Y;
+		public int Z;
+
+		public Vector3Int(Vector3 position, int scale)
+        {
+			X = (int)Math.Round(position.X * scale);
+			Y = (int)Math.Round(position.Y * scale);
+			Z = (int)Math.Round(position.Z * scale);
+        }
+	}
     public class SimilarPlaneFinder
 	{
-		private readonly PlaneNormalComparer xComparer;
-		private readonly PlaneNormalComparer yComparer;
-		private readonly PlaneNormalComparer zComparer;
+		private readonly Dictionary<int, Dictionary<int, Dictionary<int, List<Plane>>>> comparer;
 
-		public SimilarPlaneFinder(IEnumerable<Plane> inputPlanes)
-		{
-			xComparer = new PlaneNormalComparer(inputPlanes, 0);
-			yComparer = new PlaneNormalComparer(inputPlanes, 1);
-			zComparer = new PlaneNormalComparer(inputPlanes, 2);
+		private Vector3Int GetIndex(Vector3 normal)
+        {
+			return new Vector3Int(normal, (int)(1 / normalErrorValue / 10));
 		}
 
-		HashSet<Plane> foundPlanes = new HashSet<Plane>();
-
-		public Plane? FindPlane(Plane searchPlane,
-			double distanceErrorValue = .01,
-			double normalErrorValue = .0001)
+		public SimilarPlaneFinder(IEnumerable<Plane> inputPlanes, double normalErrorValue = .0001)
 		{
-			var allAxis = xComparer.FindPlanes(searchPlane, normalErrorValue)
-				.Union(yComparer.FindPlanes(searchPlane, normalErrorValue))
-				.Union(zComparer.FindPlanes(searchPlane, normalErrorValue));
+			this.normalErrorValue = normalErrorValue;
+			comparer = new Dictionary<int, Dictionary<int, Dictionary<int, List<Plane>>>>();
+			foreach (var plane in inputPlanes)
+            {
+				var index = GetIndex(plane.Normal);
 
-			foreach (var planeAndDelta in allAxis.OrderBy(pad => pad.delta))
-			{
-				if (foundPlanes.Contains(planeAndDelta.plane))
+				if (!comparer.ContainsKey(index.X))
 				{
-					if (planeAndDelta.plane.Equals(searchPlane, distanceErrorValue, normalErrorValue))
+					comparer[index.X] = new Dictionary<int, Dictionary<int, List<Plane>>>();
+				}
+				if (!comparer[index.X].ContainsKey(index.Y))
+				{
+					comparer[index.X][index.Y] = new Dictionary<int, List<Plane>>();
+				}
+				if (!comparer[index.X][index.Y].ContainsKey(index.Z))
+				{
+					comparer[index.X][index.Y][index.Z] = new List<Plane>();
+				}
+
+				comparer[index.X][index.Y][index.Z].Add(plane);
+			}
+		}
+
+		IEnumerable<int> GetSearch(int position, double component)
+        {
+			var scaled = 1 / normalErrorValue * component;
+			var fraction = scaled - (int)scaled;
+			if (fraction < .1)
+            {
+				yield return position - 1;
+				yield return position;
+            }
+			else if (fraction > .9)
+            {
+				yield return position;
+				yield return position+1;
+            }
+
+			yield return position;
+		}
+
+		IEnumerable<Plane> FindPlanes(Vector3 normal)
+        {
+			var index = GetIndex(normal);
+			foreach(var x in GetSearch(index.X, normal.X))
+            {
+				foreach (var y in GetSearch(index.Y, normal.Y))
+				{
+					foreach (var z in GetSearch(index.Z, normal.Z))
 					{
-						return planeAndDelta.plane;
+						if (comparer.ContainsKey(x)
+							&& comparer[x].ContainsKey(y)
+							&& comparer[x][y].ContainsKey(z))
+						{
+							foreach (var plane in comparer[x][y][z])
+							{
+								yield return plane;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		HashSet<Plane> firstFoundPlanes = new HashSet<Plane>();
+        private double normalErrorValue;
+
+        public Plane? FindPlane(Plane searchPlane,
+			double distanceErrorValue = .01)
+		{
+			var position = GetIndex(searchPlane.Normal);
+
+			var allPlanes = FindPlanes(searchPlane.Normal);
+
+			// first check if we have already found a plane that can match
+			foreach (var plane in allPlanes)
+			{
+				if (firstFoundPlanes.Contains(plane))
+				{
+					if (plane.Equals(searchPlane, distanceErrorValue, normalErrorValue))
+					{
+						return plane;
 					}
 				}
 			}
 
-			var doIt = true;
+			var doIt = false;
 			if (doIt)
 			{
-				foreach (var plane in foundPlanes)
+				foreach (var plane in firstFoundPlanes)
 				{
 					if (plane.Equals(searchPlane, distanceErrorValue, normalErrorValue))
 					{
@@ -80,80 +157,17 @@ namespace MatterHackers.PolygonMesh.Csg
 				}
             }
 
-			foreach (var planeAndDelta in allAxis.OrderBy(pad => pad.delta))
+			// 
+			foreach (var planeAndDelta in allPlanes.OrderBy(pad => pad.delta))
             {
 				if (planeAndDelta.plane.Equals(searchPlane, distanceErrorValue, normalErrorValue))
 				{
-					foundPlanes.Add(planeAndDelta.plane);
+					firstFoundPlanes.Add(planeAndDelta.plane);
 					return planeAndDelta.plane;
 				}
 			}
 
 			return null;
-		}
-	}
-
-	public class PlaneNormalComparer : IComparer<Plane>
-	{
-        private readonly int axis;
-        private readonly List<Plane> planes;
-
-		public PlaneNormalComparer(IEnumerable<Plane> inputPlanes, int axis)
-		{
-			this.axis = axis;
-			planes = new List<Plane>(inputPlanes);
-			planes.Sort(this);
-		}
-
-		public int Compare(Plane a, Plane b)
-		{
-			return a.Normal[axis].CompareTo(b.Normal[axis]);
-		}
-
-		public IEnumerable<(Plane plane, double delta)> FindPlanes(Plane searchPlane, double normalErrorValue)
-		{
-			if (Math.Abs(searchPlane[axis]) > .2)
-			{
-				Plane testPlane = searchPlane;
-				int index = planes.BinarySearch(testPlane, this);
-				if (index < 0)
-				{
-					index = ~index;
-				}
-
-				// we have the starting index now get all the vertices that are close enough starting from here
-				var downOffset = 1;
-				for (int i = index; i < planes.Count; i++)
-				{
-					var foundOne = false;
-					var component = planes[i].Normal[axis];
-					var normalDelta = Math.Abs(component - searchPlane.Normal[axis]);
-					var distanceDelta = planes[i].DistanceFromOrigin - searchPlane.DistanceFromOrigin;
-					if (normalDelta <= normalErrorValue)
-					{
-						foundOne = true;
-						yield return (planes[i], normalDelta + distanceDelta);
-					}
-
-					var downIndex = index - downOffset++;
-					if (downIndex >= 0)
-					{
-						component = planes[downIndex].Normal[axis];
-						normalDelta = Math.Abs(component - searchPlane.Normal[axis]);
-						distanceDelta = planes[downIndex].DistanceFromOrigin - searchPlane.DistanceFromOrigin;
-						if (normalDelta <= normalErrorValue)
-						{
-							foundOne = true;
-							yield return (planes[i], normalDelta + distanceDelta);
-						}
-					}
-
-					if (!foundOne)
-					{
-						break;
-					}
-				}
-			}
 		}
 	}
 }
