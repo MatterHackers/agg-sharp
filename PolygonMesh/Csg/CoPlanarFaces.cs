@@ -187,7 +187,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			var polygonsByMesh = new List<Polygons>();
 			// iterate all the meshes that need to be intersected
-			for (int meshIndex = 0; meshIndex < meshesWithFaces.Count; meshIndex++)
+			foreach (var meshIndex in meshesWithFaces)
 			{
 				var unionedPoygons = new Polygons();
 				foreach (var removeFaceSets in FacesSetsForPlaneAndMesh(plane, meshIndex))
@@ -230,22 +230,24 @@ namespace MatterHackers.PolygonMesh.Csg
 			// sort them so we can process each group into intersections
 			meshesWithFaces.Sort();
 
-			var meshPolygons = new List<Polygons>();
-			for (int i = 0; i < meshesWithFaces.Count; i++)
+			var allMeshPolygons = new List<Polygons>();
+            foreach (var meshIndex in meshesWithFaces)
 			{
-				meshPolygons.Add(new Polygons());
+				var meshPolygons = new Polygons();
+				allMeshPolygons.Add(meshPolygons);
 				var addedFaces = new HashSet<int>();
-				foreach (var (sourceFaceIndex, destFaceIndex) in this.FacesSetsForPlaneAndMesh(plane, i))
+				foreach (var (sourceFaceIndex, destFaceIndex) in this.FacesSetsForPlaneAndMesh(plane, meshIndex))
 				{
 					if (!addedFaces.Contains(sourceFaceIndex))
 					{
-						meshPolygons[i].Add(GetFacePolygon(transformedMeshes[i], sourceFaceIndex, flattenedMatrix));
+						meshPolygons.Add(GetFacePolygon(transformedMeshes[meshIndex], sourceFaceIndex, flattenedMatrix));
 						addedFaces.Add(sourceFaceIndex);
 					}
 				}
 			}
 
-			var intersectionSets = new List<Polygons>();
+			Polygons firstSet = null;
+			var intersections = new Polygons();
 			// now intersect each set of meshes to get all the sets of intersections
 			for (int i = 0; i < meshesWithFaces.Count; i++)
 			{
@@ -253,31 +255,46 @@ namespace MatterHackers.PolygonMesh.Csg
 				for (int j = i + 1; j < meshesWithFaces.Count; j++)
 				{
 					var clipper = new Clipper();
-					clipper.AddPaths(meshPolygons[i], PolyType.ptSubject, true);
-					clipper.AddPaths(meshPolygons[j], PolyType.ptClip, true);
+					clipper.AddPaths(allMeshPolygons[i], PolyType.ptSubject, true);
+					clipper.AddPaths(allMeshPolygons[j], PolyType.ptClip, true);
 
 					var intersection = new Polygons();
-					clipper.Execute(ClipType.ctIntersection, intersection);
+					clipper.Execute(ClipType.ctIntersection, intersection, PolyFillType.pftNonZero);
 
-					intersectionSets.Add(intersection);
+					if (intersection.Count > 0)
+					{
+						if (firstSet == null)
+						{
+							firstSet = intersection;
+						}
+						else
+						{
+							intersections.AddRange(intersection);
+						}
+					}
+                    else
+                    {
+						int a = 0;
+                    }
 				}
 			}
 
-			// now union all the intersections
-			var totalSlices = new Polygons(intersectionSets[0]);
-			for (int i = 1; i < intersectionSets.Count; i++)
+			if (firstSet != null)
 			{
+				// now union all the intersections
 				// clip against the slice based on the parameters
-				var clipper = new Clipper();
-				clipper.AddPaths(totalSlices, PolyType.ptSubject, true);
-				clipper.AddPaths(intersectionSets[i], PolyType.ptClip, true);
-				clipper.Execute(ClipType.ctUnion, totalSlices);
-			}
+				var clipper2 = new Clipper();
+				clipper2.AddPaths(firstSet, PolyType.ptSubject, true);
+				clipper2.AddPaths(intersections, PolyType.ptClip, true);
 
-			// teselate and add all the new polygons
-			var countPreAdd = resultsMesh.Faces.Count;
-			totalSlices.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
-			EnsureFaceNormals(plane, resultsMesh, countPreAdd);
+				var totalSlices = new Polygons();
+				clipper2.Execute(ClipType.ctUnion, totalSlices, PolyFillType.pftNonZero);
+
+				// teselate and add all the new polygons
+				var countPreAdd = resultsMesh.Faces.Count;
+				totalSlices.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
+				EnsureFaceNormals(plane, resultsMesh, countPreAdd);
+			}
 		}
 
 		public void StoreFaceAdd(SimilarPlaneFinder planeSorter,
