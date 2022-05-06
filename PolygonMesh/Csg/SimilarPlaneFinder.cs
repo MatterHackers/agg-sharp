@@ -68,7 +68,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				}
 			}
 
-			var doIt = false;
+			var doIt = true;
 			if (doIt)
 			{
 				foreach (var plane in foundPlanes)
@@ -122,6 +122,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				}
 
 				// we have the starting index now get all the vertices that are close enough starting from here
+				var downOffset = 1;
 				for (int i = index; i < planes.Count; i++)
 				{
 					var foundOne = false;
@@ -134,7 +135,7 @@ namespace MatterHackers.PolygonMesh.Csg
 						yield return (planes[i], normalDelta + distanceDelta);
 					}
 
-					var downIndex = index - i - 1;
+					var downIndex = index - downOffset++;
 					if (downIndex >= 0)
 					{
 						component = planes[downIndex].Normal[axis];
