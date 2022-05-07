@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using MatterHackers.Agg.Font;
+using System.IO;
+using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
@@ -11,72 +11,139 @@ namespace MatterHackers.Agg
 {
     public class TriangleRenderer : GuiWidget
     {
+		public static List<Color> colors = null;
+
 		public TriangleRenderer()
         {
+			if (colors == null)
+            {
+				colors = new List<Color>();
+				var count = 20;
+				for(int i=0; i<count; i++)
+                {
+					colors.Add(ColorF.FromHSL(i/(double)count, .7, .6).ToColor());
+				}
+            }
+
 			BackgroundColor = Color.LightBlue;
         }
 
-
-		private List<Vector2> _points = new List<Vector2>();
-
         public override void OnDraw(Graphics2D graphics2D)
         {
-            // draw all the triangles
-            var count = Points.Count;
-            for (int i = 0; i < count / 3; i++)
+			// get the bounds of all the points
+			var bounds = RectangleDouble.ZeroIntersection;
+
+			foreach (var poly in Polygons)
 			{
-				var p0 = Points[i*3];
-                var p1 = Points[i*3+1];
-				var p2 = Points[i*3+2];
-				var vertexStorage = new VertexStorage();
-				vertexStorage.MoveTo(p0);
-				vertexStorage.LineTo(p1);
-                vertexStorage.LineTo(p2);
-                graphics2D.Render(vertexStorage, 0, 0, Color.Red.WithAlpha(160));
+				foreach (var point in poly)
+				{
+					bounds.ExpandToInclude(point);
+				}
 			}
 
-            var leftovers = (count % 3);
-			if (leftovers == 2)
-			{                 
-				var p0 = Points[count - 1];
-				var p1 = Points[count - 2];
-				graphics2D.Line(p0, p1, Color.Red);
+			// prep for scaling
+			var transform = Affine.NewTranslation(-bounds.Left, -bounds.Bottom);
+			// scale to window
+			var scale = Math.Min(Width / bounds.Width, Height / bounds.Height);
+			transform *= Affine.NewScaling(scale);
+			// scale for boarder
+			transform *= Affine.NewScaling(.9);
+			// move for boarder
+			transform *= Affine.NewTranslation(Width / 20, Height / 20);
+
+			// draw all the triangles
+			var index = 0;
+			foreach (var poly in Polygons)
+			{
+				var numPoints = poly.Count;
+				if (numPoints > 2)
+				{
+					var first = true;
+					var vertexStorage = new VertexStorage();
+					for (int i = 0; i < numPoints; i++)
+					{
+						var p0 = poly[i];
+						if (first)
+						{
+							vertexStorage.MoveTo(p0);
+							first = false;
+						}
+						else
+						{
+							vertexStorage.LineTo(p0);
+						}
+					}
+				
+					graphics2D.Render(new VertexSourceApplyTransform(vertexStorage, transform), 0, 0, colors[index].WithAlpha(190));
+				}
+				else if (numPoints > 1)
+				{
+					var p0 = poly[numPoints - 1];
+					var p1 = poly[numPoints - 2];
+					graphics2D.Line(transform.Transform(p0), transform.Transform(p1), colors[index]);
+				}
+
+				index++;
 			}
 
 			base.OnDraw(graphics2D);
         }
 
-        public List<Vector2> Points
-		{
-			get => _points;
-			
-			set
-			{
-				_points = value;
-				Invalidate();
-			}
-		}
+		public List<List<Vector2>> Polygons { get; set; } = new List<List<Vector2>>();
     }
 
     public class RenderTriangles : GuiWidget, IDemoApp
 	{
+        private TextEditWidget textWidget;
+
+		string CurrentFile()
+		{
+			return "Polygons_0.txt";
+		}
+
+		string LoadFile()
+		{
+			if (File.Exists(CurrentFile()))
+			{
+				return File.ReadAllText(CurrentFile());
+			}
+
+			return "";
+		}
+
+		void SaveFile()
+		{
+			File.WriteAllText(CurrentFile(), textWidget.Text);
+		}
+
 		public RenderTriangles()
 		{
-			var leftToRight = AddChild(new FlowLayoutWidget()
+			var spliter = new Splitter()
 			{
-				HAnchor = HAnchor.Stretch,
-				VAnchor = VAnchor.Stretch,
-			});
-
-			var textWidget = new TextEditWidget(pixelWidth: 200)
-			{
-				VAnchor = VAnchor.Stretch,
-				Multiline = true,
+				SplitterBackground = Color.Gray,
+				SplitterDistance = 200
 			};
 
-			leftToRight.AddChild(textWidget);
+			AddChild(spliter);
 
-			leftToRight.AddChild(new VerticalLine());
+			var leftSideTopToBottom = new FlowLayoutWidget()
+            {
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Stretch,
+            };
+			spliter.Panel1.AddChild(leftSideTopToBottom);
+
+			textWidget = new TextEditWidget(pixelWidth: 200)
+			{
+				VAnchor = VAnchor.Stretch,
+				HAnchor = HAnchor.Stretch,
+				Multiline = true,
+				Margin = 3,
+			};
+
+			leftSideTopToBottom.AddChild(textWidget);
+
+			spliter.AddChild(new VerticalLine());
 
 			var triangleRenderer = new TriangleRenderer()
 			{
@@ -84,27 +151,41 @@ namespace MatterHackers.Agg
 				VAnchor = VAnchor.Stretch
 			};
 
-			leftToRight.AddChild(triangleRenderer);
+			spliter.Panel2.AddChild(triangleRenderer);
 
 			textWidget.TextChanged += (sender, e) =>
 			{
+				var poly = new List<Vector2>();
+				var polygons = new List<List<Vector2>>();
+				polygons.Add(poly);
+
 				var lines = textWidget.Text.Split('\n');
-				var points = new List<Vector2>();
 				foreach (var line in lines)
 				{
-					var parts = line.Split(',');
-					if (parts.Length == 2)
+					if (string.IsNullOrEmpty(line))
 					{
-						if (double.TryParse(parts[0], out double x) && double.TryParse(parts[1], out double y))
+						poly = new List<Vector2>();
+						polygons.Add(poly);
+					}
+					else
+					{
+						var parts = line.Split(',');
+						if (parts.Length == 2)
 						{
-							points.Add(new Vector2(x, y));
+							if (double.TryParse(parts[0], out double x) && double.TryParse(parts[1], out double y))
+							{
+								poly.Add(new Vector2(x, y));
+							}
 						}
 					}
 				}
 
-				triangleRenderer.Points = points;
+				triangleRenderer.Polygons = polygons;
+				SaveFile();
+				Invalidate();
             };
-		
+
+			textWidget.Text = LoadFile();
 
 			triangleRenderer.Invalidate();
 
