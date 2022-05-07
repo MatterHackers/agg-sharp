@@ -145,6 +145,17 @@ namespace MatterHackers.Agg.UI
 				{
 					foundTab = tab;
 				}
+
+				if (child is TabBar tabBar)
+				{
+					foreach (var child2 in tabBar.Children)
+					{
+						if (child2 is Tab tab2)
+						{
+							foundTab = tab2;
+						}
+					}
+				}
 			}
 
 			return foundTab.TabPage;

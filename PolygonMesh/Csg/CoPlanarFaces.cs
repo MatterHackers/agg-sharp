@@ -147,22 +147,22 @@ namespace MatterHackers.PolygonMesh.Csg
             EnsureFaceNormals(plane, resultsMesh, countPreAdd);
         }
 
-        private static void EnsureFaceNormals(Plane plane, Mesh resultsMesh, int countPreAdd)
-        {
+		private static void EnsureFaceNormals(Plane plane, Mesh resultsMesh, int countPreAdd)
+		{
 			if (countPreAdd >= resultsMesh.Faces.Count)
-            {
+			{
 				return;
-            }
+			}
 
-            // Check that the new face normals are pointed in the right direction
-            if ((new Vector3(resultsMesh.Faces[countPreAdd].normal) - plane.Normal).LengthSquared > .1)
-            {
-                for (int i = countPreAdd; i < resultsMesh.Faces.Count; i++)
-                {
-                    resultsMesh.FlipFace(i);
-                }
-            }
-        }
+			// Check that the new face normals are pointed in the right direction
+			for (int i = countPreAdd; i < resultsMesh.Faces.Count; i++)
+			{
+				if ((new Vector3(resultsMesh.Faces[i].normal) - plane.Normal).LengthSquared > .1)
+				{
+					resultsMesh.FlipFace(i);
+				}
+			}
+		}
 
         public void IntersectFaces(Plane plane, List<Mesh> transformedMeshes, Mesh resultsMesh, Matrix4X4 flattenedMatrix, HashSet<int> faceIndicesToRemove)
 		{
@@ -246,30 +246,30 @@ namespace MatterHackers.PolygonMesh.Csg
 				}
 			}
 
-			Polygons firstSet = null;
-			var intersections = new Polygons();
+			Polygons firstIntersection = null;
+			var remainingIntersections = new Polygons();
 			// now intersect each set of meshes to get all the sets of intersections
-			for (int i = 0; i < meshesWithFaces.Count; i++)
+			for (int meshIndexA = 0; meshIndexA < meshesWithFaces.Count; meshIndexA++)
 			{
 				// add all the faces for mesh j
-				for (int j = i + 1; j < meshesWithFaces.Count; j++)
+				for (int meshIndexB = meshIndexA + 1; meshIndexB < meshesWithFaces.Count; meshIndexB++)
 				{
 					var clipper = new Clipper();
-					clipper.AddPaths(allMeshPolygons[i], PolyType.ptSubject, true);
-					clipper.AddPaths(allMeshPolygons[j], PolyType.ptClip, true);
+					clipper.AddPaths(allMeshPolygons[meshIndexA], PolyType.ptSubject, true);
+					clipper.AddPaths(allMeshPolygons[meshIndexB], PolyType.ptClip, true);
 
-					var intersection = new Polygons();
-					clipper.Execute(ClipType.ctIntersection, intersection, PolyFillType.pftNonZero);
+					var intersectionAB = new Polygons();
+					clipper.Execute(ClipType.ctIntersection, intersectionAB, PolyFillType.pftNonZero);
 
-					if (intersection.Count > 0)
+					if (intersectionAB.Count > 0)
 					{
-						if (firstSet == null)
+						if (firstIntersection == null)
 						{
-							firstSet = intersection;
+							firstIntersection = intersectionAB;
 						}
 						else
 						{
-							intersections.AddRange(intersection);
+							remainingIntersections.AddRange(intersectionAB);
 						}
 					}
                     else
@@ -279,13 +279,13 @@ namespace MatterHackers.PolygonMesh.Csg
 				}
 			}
 
-			if (firstSet != null)
+			if (firstIntersection != null)
 			{
 				// now union all the intersections
 				// clip against the slice based on the parameters
 				var clipper2 = new Clipper();
-				clipper2.AddPaths(firstSet, PolyType.ptSubject, true);
-				clipper2.AddPaths(intersections, PolyType.ptClip, true);
+				clipper2.AddPaths(firstIntersection, PolyType.ptSubject, true);
+				clipper2.AddPaths(remainingIntersections, PolyType.ptClip, true);
 
 				var totalSlices = new Polygons();
 				clipper2.Execute(ClipType.ctUnion, totalSlices, PolyFillType.pftNonZero);
