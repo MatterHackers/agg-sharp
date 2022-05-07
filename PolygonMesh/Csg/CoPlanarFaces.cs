@@ -147,22 +147,22 @@ namespace MatterHackers.PolygonMesh.Csg
             EnsureFaceNormals(plane, resultsMesh, countPreAdd);
         }
 
-        private static void EnsureFaceNormals(Plane plane, Mesh resultsMesh, int countPreAdd)
-        {
+		private static void EnsureFaceNormals(Plane plane, Mesh resultsMesh, int countPreAdd)
+		{
 			if (countPreAdd >= resultsMesh.Faces.Count)
-            {
+			{
 				return;
-            }
+			}
 
-            // Check that the new face normals are pointed in the right direction
-            if ((new Vector3(resultsMesh.Faces[countPreAdd].normal) - plane.Normal).LengthSquared > .1)
-            {
-                for (int i = countPreAdd; i < resultsMesh.Faces.Count; i++)
-                {
-                    resultsMesh.FlipFace(i);
-                }
-            }
-        }
+			// Check that the new face normals are pointed in the right direction
+			for (int i = countPreAdd; i < resultsMesh.Faces.Count; i++)
+			{
+				if ((new Vector3(resultsMesh.Faces[i].normal) - plane.Normal).LengthSquared > .1)
+				{
+					resultsMesh.FlipFace(i);
+				}
+			}
+		}
 
         public void IntersectFaces(Plane plane, List<Mesh> transformedMeshes, Mesh resultsMesh, Matrix4X4 flattenedMatrix, HashSet<int> faceIndicesToRemove)
 		{
@@ -187,7 +187,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			var polygonsByMesh = new List<Polygons>();
 			// iterate all the meshes that need to be intersected
-			for (int meshIndex = 0; meshIndex < meshesWithFaces.Count; meshIndex++)
+			foreach (var meshIndex in meshesWithFaces)
 			{
 				var unionedPoygons = new Polygons();
 				foreach (var removeFaceSets in FacesSetsForPlaneAndMesh(plane, meshIndex))
@@ -216,7 +216,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			EnsureFaceNormals(plane, resultsMesh, countPreAdd);
 		}
 
-		public void UnionFaces(Plane plane, List<Mesh> transformedMeshes, Mesh resultsMesh, Matrix4X4 flattenedMatrix)
+		public void UnionFaces(Plane plane, List<Mesh> transformedMeshes, Mesh resultsMesh, Matrix4X4 flattenedMatrix, HashSet<int> faceIndicesToRemove)
 		{
 			// get all meshes that have faces on this plane
 			var meshesWithFaces = MeshIndicesForPlane(plane).ToList();
@@ -227,52 +227,53 @@ namespace MatterHackers.PolygonMesh.Csg
 				return;
 			}
 
+			// add the faces that we should remove
+			foreach (var meshIndex in meshesWithFaces)
+			{
+				foreach (var faces in FacesSetsForPlaneAndMesh(plane, meshIndex))
+				{
+					faceIndicesToRemove.Add(faces.destFaceIndex);
+				}
+			}
+
 			// sort them so we can process each group into intersections
 			meshesWithFaces.Sort();
 
-			var meshPolygons = new List<Polygons>();
-			for (int i = 0; i < meshesWithFaces.Count; i++)
+			Polygons firstPolygons = null;
+			var unionPolygons = new Polygons();
+			var first = true;
+            foreach (var meshIndex in meshesWithFaces)
 			{
-				meshPolygons.Add(new Polygons());
+				var meshPolygons = new Polygons();
 				var addedFaces = new HashSet<int>();
-				foreach (var (sourceFaceIndex, destFaceIndex) in this.FacesSetsForPlaneAndMesh(plane, i))
+				foreach (var (sourceFaceIndex, destFaceIndex) in this.FacesSetsForPlaneAndMesh(plane, meshIndex))
 				{
 					if (!addedFaces.Contains(sourceFaceIndex))
 					{
-						meshPolygons[i].Add(GetFacePolygon(transformedMeshes[i], sourceFaceIndex, flattenedMatrix));
+						meshPolygons.Add(GetFacePolygon(transformedMeshes[meshIndex], sourceFaceIndex, flattenedMatrix));
 						addedFaces.Add(sourceFaceIndex);
 					}
 				}
-			}
 
-			var intersectionSets = new List<Polygons>();
-			// now intersect each set of meshes to get all the sets of intersections
-			for (int i = 0; i < meshesWithFaces.Count; i++)
-			{
-				// add all the faces for mesh j
-				for (int j = i + 1; j < meshesWithFaces.Count; j++)
-				{
-					var clipper = new Clipper();
-					clipper.AddPaths(meshPolygons[i], PolyType.ptSubject, true);
-					clipper.AddPaths(meshPolygons[j], PolyType.ptClip, true);
-
-					var intersection = new Polygons();
-					clipper.Execute(ClipType.ctIntersection, intersection);
-
-					intersectionSets.Add(intersection);
-				}
+				if (first)
+                {
+					firstPolygons = meshPolygons;
+					first = false;
+                }
+				else
+                {
+					unionPolygons.AddRange(meshPolygons);
+                }
 			}
 
 			// now union all the intersections
-			var totalSlices = new Polygons(intersectionSets[0]);
-			for (int i = 1; i < intersectionSets.Count; i++)
-			{
-				// clip against the slice based on the parameters
-				var clipper = new Clipper();
-				clipper.AddPaths(totalSlices, PolyType.ptSubject, true);
-				clipper.AddPaths(intersectionSets[i], PolyType.ptClip, true);
-				clipper.Execute(ClipType.ctUnion, totalSlices);
-			}
+			// clip against the slice based on the parameters
+			var clipper2 = new Clipper();
+			clipper2.AddPaths(firstPolygons, PolyType.ptSubject, true);
+			clipper2.AddPaths(unionPolygons, PolyType.ptClip, true);
+
+			var totalSlices = new Polygons();
+			clipper2.Execute(ClipType.ctUnion, totalSlices, PolyFillType.pftNonZero);
 
 			// teselate and add all the new polygons
 			var countPreAdd = resultsMesh.Faces.Count;
@@ -308,6 +309,36 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 
 			coPlanarFaces[facePlane][sourceMeshIndex].Add((sourceFaceIndex, destFaceIndex));
+		}
+	}
+
+	public static class PolygonsExtra
+	{
+		public static string GraphData(this List<Polygons> polygonsSets)
+		{
+			string output = "";
+			foreach (var polygons in polygonsSets)
+			{
+				output += polygons.GraphData();
+			}
+
+			return output;
+		}
+
+		public static string GraphData(this Polygons polygons)
+		{
+			string output = "";
+			foreach (var polygon in polygons)
+			{
+				foreach (var point in polygon)
+				{
+					output += $"{point.X},{point.Y}\n";
+				}
+
+				output += "\n";
+			}
+
+			return output;
 		}
 	}
 }

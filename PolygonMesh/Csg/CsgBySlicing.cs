@@ -333,7 +333,7 @@ namespace MatterHackers.PolygonMesh.Csg
                     switch (operation)
                     {
                         case CsgModes.Union:
-                            coPlanarFaces.UnionFaces(plane, transformedMeshes, resultsMesh, flattenedMatrix);
+                            coPlanarFaces.UnionFaces(plane, transformedMeshes, resultsMesh, flattenedMatrix, faceIndicesToRemove);
                             break;
 
                         case CsgModes.Subtract:
