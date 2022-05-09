@@ -556,7 +556,11 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static bool Save(IObject3D item, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
+		public static bool Save(IObject3D item,
+			string meshPathAndFileName,
+			CancellationToken cancellationToken,
+			MeshOutputSettings outputInfo = null,
+			Action<double, string> reportProgress = null)
 		{
 			try
 			{
@@ -576,7 +580,7 @@ namespace MatterHackers.DataConverters3D
 					// return true;
 
 					case ".STL":
-						Mesh mesh = DoMergeAndTransform(item, outputInfo, cancellationToken);
+						Mesh mesh = DoMergeAndTransform(item, outputInfo, cancellationToken, reportProgress);
 						return StlProcessing.Save(mesh, meshPathAndFileName, cancellationToken, outputInfo);
 
 					case ".AMF":
@@ -603,7 +607,18 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		private static Mesh DoMergeAndTransform(IObject3D item, MeshOutputSettings outputInfo, CancellationToken cancellationToken)
+		/// <summary>
+		/// This is used exclusively while exporting STLs and needs to account for holes , solids, support, wipe towers and fuzzy objects
+		/// </summary>
+		/// <param name="item"></param>
+		/// <param name="outputInfo"></param>
+		/// <param name="cancellationToken"></param>
+		/// <param name="reportProgress"></param>
+		/// <returns></returns>
+		private static Mesh DoMergeAndTransform(IObject3D item,
+			MeshOutputSettings outputInfo,
+			CancellationToken cancellationToken,
+			Action<double, string> reportProgress = null)
 		{
 			var visibleMeshes = item.VisibleMeshes().Where((i) => i.WorldPersistable());
 			if (visibleMeshes.Count() == 1)
@@ -614,6 +629,11 @@ namespace MatterHackers.DataConverters3D
 					return first.Mesh;
 				}
 			}
+
+			// union every hole
+			// union every solid (non-hole, not support structures)
+
+			// subtract all holes from all solids
 
 			var allPolygons = new Mesh();
 
