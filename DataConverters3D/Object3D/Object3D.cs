@@ -556,7 +556,11 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static bool Save(IObject3D item, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
+		public static bool Save(IObject3D item,
+			string meshPathAndFileName,
+			CancellationToken cancellationToken,
+			MeshOutputSettings outputInfo = null,
+			Action<double, string> reportProgress = null)
 		{
 			try
 			{
@@ -576,7 +580,7 @@ namespace MatterHackers.DataConverters3D
 					// return true;
 
 					case ".STL":
-						Mesh mesh = DoMergeAndTransform(item, outputInfo, cancellationToken);
+						Mesh mesh = DoMergeAndTransform(item, outputInfo, cancellationToken, reportProgress);
 						return StlProcessing.Save(mesh, meshPathAndFileName, cancellationToken, outputInfo);
 
 					case ".AMF":
@@ -603,42 +607,76 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		private static Mesh DoMergeAndTransform(IObject3D item, MeshOutputSettings outputInfo, CancellationToken cancellationToken)
+		/// <summary>
+		/// This is used exclusively while exporting STLs and needs to account for holes , solids, support, wipe towers and fuzzy objects
+		/// </summary>
+		/// <param name="item"></param>
+		/// <param name="outputInfo"></param>
+		/// <param name="cancellationToken"></param>
+		/// <param name="reportProgress"></param>
+		/// <returns></returns>
+		private static Mesh DoMergeAndTransform(IObject3D item,
+			MeshOutputSettings outputInfo,
+			CancellationToken cancellationToken,
+			Action<double, string> reportProgress = null)
 		{
-			var visibleMeshes = item.VisibleMeshes().Where((i) => i.WorldPersistable());
-			if (visibleMeshes.Count() == 1)
+			var persistable = item.VisibleMeshes().Where((i) => i.WorldPersistable());
+            
+			var solidsToUnion = persistable.Where((i) => i.WorldOutputType() == PrintOutputTypes.Default || i.WorldOutputType() == PrintOutputTypes.Solid);
+
+			var holesToSubtract = persistable.Where((i) => i.WorldOutputType() == PrintOutputTypes.Hole);
+
+			if (holesToSubtract.Any())
 			{
-				var first = visibleMeshes.First();
-				if (first.WorldMatrix() == Matrix4X4.Identity)
+				// union every solid (non-hole, not support structures)
+				var solidsObject = new Object3D()
 				{
-					return first.Mesh;
-				}
+					Mesh = CombineParticipanets(item, solidsToUnion, cancellationToken, new Reporter(reportProgress, 0, .33))
+				};
+
+				// union every hole
+				var holesObject = new Object3D()
+				{
+					Mesh = CombineParticipanets(item, holesToSubtract, cancellationToken, new Reporter(reportProgress, .33, .66))
+				};
+
+				// subtract all holes from all solids
+
+				var result = DoSubtract(item, new IObject3D[] { solidsObject }, new IObject3D[] { holesObject }, new Reporter(reportProgress, .66, 1), cancellationToken);
+
+				return result.First().Mesh;
 			}
-
-			var allPolygons = new Mesh();
-
-			foreach (var rawItem in visibleMeshes)
+			else // we only have meshes to union
 			{
-				var mesh = rawItem.Mesh.Copy(cancellationToken);
-				mesh.Transform(rawItem.WorldMatrix());
-				if (outputInfo.CsgOptionState == MeshOutputSettings.CsgOption.DoCsgMerge)
-				{
-					allPolygons = CsgOperations.Union(allPolygons, mesh, null, cancellationToken);
-				}
-				else
-				{
-					allPolygons.CopyFaces(mesh);
-				}
+				// union every solid (non-hole, not support structures)
+				return CombineParticipanets(item, solidsToUnion, cancellationToken, new Reporter(reportProgress));
 			}
-
-			return allPolygons;
 		}
 
-		/// <summary>
-		/// Called when loading existing content and needing to bypass the clearing of MeshPath that normally occurs in the this.Mesh setter
-		/// </summary>
-		/// <param name="mesh">The loaded mesh to assign this instance</param>
-		public void SetMeshDirect(Mesh mesh)
+        public class Reporter : IProgress<ProgressStatus>
+        {
+            public Reporter(Action<double, string> reportProgress, double startRatio = 0, double endRatio = 1)
+            {
+				this.startRatio = startRatio;
+				this.endRatio = endRatio;
+                this.reportProgress = reportProgress;
+            }
+
+			private Action<double, string> reportProgress;
+            private double startRatio;
+            private double endRatio;
+
+            public void Report(ProgressStatus value)
+            {
+                reportProgress?.Invoke(value.Progress0To1 * (endRatio - startRatio) + startRatio, value.Status);
+            }
+        }
+
+        /// <summary>
+        /// Called when loading existing content and needing to bypass the clearing of MeshPath that normally occurs in the this.Mesh setter
+        /// </summary>
+        /// <param name="mesh">The loaded mesh to assign this instance</param>
+        public void SetMeshDirect(Mesh mesh)
 		{
 			lock (locker)
 			{
@@ -1211,6 +1249,260 @@ namespace MatterHackers.DataConverters3D
 			name += CalculateName(setB, bSeparator);
 
 			return name;
+		}
+
+		public static List<List<(Mesh mesh, Matrix4X4 matrix, AxisAlignedBoundingBox aabb)>> GetTouchingMeshes(IObject3D rootObject, IEnumerable<IObject3D> participants)
+		{
+			void AddAllTouching(List<(Mesh mesh, Matrix4X4 matrix, AxisAlignedBoundingBox aabb)> touching,
+				List<(Mesh mesh, Matrix4X4 matrix, AxisAlignedBoundingBox aabb)> available)
+			{
+				// add the frirst item
+				touching.Add(available[available.Count - 1]);
+				available.RemoveAt(available.Count - 1);
+
+				var indexBeingChecked = 0;
+
+				// keep adding items until we have checked evry item in the the touching list
+				while (indexBeingChecked < touching.Count
+					&& available.Count > 0)
+				{
+					// look for a aabb that intersects any aabb in the set
+					for (int i = available.Count - 1; i >= 0; i--)
+					{
+						if (touching[indexBeingChecked].aabb.Intersects(available[i].aabb))
+						{
+							touching.Add(available[i]);
+							available.RemoveAt(i);
+						}
+					}
+
+					indexBeingChecked++;
+				}
+			}
+
+			var allItems = participants.Select(i =>
+			{
+				var mesh = i.Mesh.Copy(CancellationToken.None);
+				var matrix = i.WorldMatrix(rootObject);
+				var aabb = mesh.GetAxisAlignedBoundingBox(matrix);
+				return (mesh, matrix, aabb);
+			}).ToList();
+
+			var touchingSets = new List<List<(Mesh mesh, Matrix4X4 matrix, AxisAlignedBoundingBox aabb)>>();
+
+			while (allItems.Count > 0)
+			{
+				var touchingSet = new List<(Mesh mesh, Matrix4X4 matrix, AxisAlignedBoundingBox aabb)>();
+				touchingSets.Add(touchingSet);
+				AddAllTouching(touchingSet, allItems);
+			}
+
+			return touchingSets;
+		}
+
+		public static IEnumerable<IObject3D> DoSubtract(IObject3D rootObject,
+			IEnumerable<IObject3D> keepItems,
+			IEnumerable<IObject3D> removeItems,
+			IProgress<ProgressStatus> reporter,
+			CancellationToken cancellationToken,
+			ProcessingModes processingMode = ProcessingModes.Polygons,
+			ProcessingResolution inputResolution = ProcessingResolution._64,
+			ProcessingResolution outputResolution = ProcessingResolution._64)
+		{
+			var results = new List<IObject3D>();
+			if (keepItems?.Any() == true)
+			{
+				if (removeItems?.Any() == true)
+				{
+					foreach (var keep in keepItems)
+					{
+#if false
+						var items = removeItems.Select(i => (i.Mesh, i.WorldMatrix(rootObject))).ToList();
+						items.Insert(0, (keep.Mesh, keep.Matrix));
+						var resultsMesh = BooleanProcessing.DoArray(items,
+							CsgModes.Subtract,
+							processingMode,
+							inputResolution,
+							outputResolution,
+							reporter,
+							cancellationToken);
+#else
+						var totalOperations = removeItems.Count() * keepItems.Count();
+						double amountPerOperation = 1.0 / totalOperations;
+						double ratioCompleted = 0;
+
+						var progressStatus = new ProgressStatus
+						{
+							Status = "Do CSG"
+						};
+
+						var resultsMesh = keep.Mesh;
+						var keepWorldMatrix = keep.Matrix;
+						if (rootObject != null)
+						{
+							keepWorldMatrix = keep.WorldMatrix(rootObject);
+						}
+
+						foreach (var remove in removeItems)
+						{
+							var removeWorldMatrix = remove.Matrix;
+							if (rootObject != null)
+							{
+								removeWorldMatrix = remove.WorldMatrix(rootObject);
+							}
+
+							resultsMesh = BooleanProcessing.Do(resultsMesh,
+								keepWorldMatrix,
+								// other mesh
+								remove.Mesh,
+								removeWorldMatrix,
+								// operation type
+								CsgModes.Subtract,
+								processingMode,
+								inputResolution,
+								outputResolution,
+								// reporting
+								reporter,
+								amountPerOperation,
+								ratioCompleted,
+								progressStatus,
+								cancellationToken);
+
+							// after the first time we get a result the results mesh is in the right coordinate space
+							keepWorldMatrix = Matrix4X4.Identity;
+
+							// report our progress
+							ratioCompleted += amountPerOperation;
+							progressStatus.Progress0To1 = ratioCompleted;
+							reporter?.Report(progressStatus);
+						}
+
+#endif
+						// store our results mesh
+						var resultsItem = new Object3D()
+						{
+							Mesh = resultsMesh,
+							Visible = false,
+							OwnerID = keep.ID
+						};
+
+						// copy all the properties but the matrix
+						if (rootObject != null)
+						{
+							resultsItem.CopyWorldProperties(keep, rootObject, Object3DPropertyFlags.All & (~(Object3DPropertyFlags.Matrix | Object3DPropertyFlags.Visible)));
+						}
+						else
+						{
+							resultsItem.CopyProperties(keep, Object3DPropertyFlags.All & (~(Object3DPropertyFlags.Matrix | Object3DPropertyFlags.Visible)));
+						}
+
+						// and add it to this
+						results.Add(resultsItem);
+					}
+				}
+			}
+
+			return results;
+		}
+
+		public static Mesh CombineParticipanets(IObject3D rootObject,
+			IEnumerable<IObject3D> participants,
+			CancellationToken cancellationToken,
+			IProgress<ProgressStatus> reporter,
+			ProcessingModes processingMode = ProcessingModes.Polygons,
+			ProcessingResolution inputResolution = ProcessingResolution._64,
+			ProcessingResolution outputResolution = ProcessingResolution._64)
+		{
+			List<List<(Mesh mesh, Matrix4X4 matrix, AxisAlignedBoundingBox aabb)>> touchingSets = GetTouchingMeshes(rootObject, participants);
+
+			var totalOperations = touchingSets.Sum(t => t.Count);
+
+			double amountPerOperation = 1.0 / totalOperations;
+			double ratioCompleted = 0;
+
+			var progressStatus = new ProgressStatus();
+
+			var setMeshes = new List<Mesh>();
+			foreach (var set in touchingSets)
+			{
+				var setMesh = set.First().Item1;
+				var keepWorldMatrix = set.First().matrix;
+
+				if (set.Count > 1)
+				{
+#if true
+					setMesh = BooleanProcessing.DoArray(set.Select(i => (i.mesh, i.matrix)),
+						CsgModes.Union,
+						processingMode,
+						inputResolution,
+						outputResolution,
+						reporter,
+						cancellationToken);
+#else
+
+                    bool first = true;
+                    foreach (var next in set)
+                    {
+                        if (first)
+                        {
+                            first = false;
+                            continue;
+                        }
+
+                        setMesh = BooleanProcessing.Do(setMesh,
+                            keepWorldMatrix,
+                            // other mesh
+                            next.mesh,
+                            next.matrix,
+                            // operation type
+                            CsgModes.Union,
+                            Processing,
+                            InputResolution,
+                            OutputResolution,
+                            // reporting
+                            reporter,
+                            amountPerOperation,
+                            ratioCompleted,
+                            progressStatus,
+                            cancellationToken);
+
+                        // after the first time we get a result the results mesh is in the right coordinate space
+                        keepWorldMatrix = Matrix4X4.Identity;
+
+                        // report our progress
+                        ratioCompleted += amountPerOperation;
+                        progressStatus.Progress0To1 = ratioCompleted;
+                        reporter?.Report(progressStatus);
+                    }
+#endif
+
+					setMeshes.Add(setMesh);
+				}
+				else
+				{
+					setMesh.Transform(keepWorldMatrix);
+					// report our progress
+					ratioCompleted += amountPerOperation;
+					progressStatus.Progress0To1 = ratioCompleted;
+					reporter?.Report(progressStatus);
+					setMeshes.Add(setMesh);
+				}
+			}
+
+			Mesh resultsMesh = null;
+			foreach (var setMesh in setMeshes)
+			{
+				if (resultsMesh == null)
+				{
+					resultsMesh = setMesh;
+				}
+				else
+				{
+					resultsMesh.CopyAllFaces(setMesh, Matrix4X4.Identity);
+				}
+			}
+
+			return resultsMesh;
 		}
 	}
 
