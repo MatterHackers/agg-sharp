@@ -631,13 +631,13 @@ namespace MatterHackers.DataConverters3D
 				// union every solid (non-hole, not support structures)
 				var solidsObject = new Object3D()
 				{
-					Mesh = CombineParticipanets(item, solidsToUnion, cancellationToken, new Reporter(reportProgress, 0, .33))
+					Mesh = CombineParticipants(item, solidsToUnion, cancellationToken, new Reporter(reportProgress, 0, .33))
 				};
 
 				// union every hole
 				var holesObject = new Object3D()
 				{
-					Mesh = CombineParticipanets(item, holesToSubtract, cancellationToken, new Reporter(reportProgress, .33, .66))
+					Mesh = CombineParticipants(item, holesToSubtract, cancellationToken, new Reporter(reportProgress, .33, .66))
 				};
 
 				// subtract all holes from all solids
@@ -649,7 +649,7 @@ namespace MatterHackers.DataConverters3D
 			else // we only have meshes to union
 			{
 				// union every solid (non-hole, not support structures)
-				return CombineParticipanets(item, solidsToUnion, cancellationToken, new Reporter(reportProgress));
+				return CombineParticipants(item, solidsToUnion, cancellationToken, new Reporter(reportProgress));
 			}
 		}
 
@@ -1405,10 +1405,10 @@ namespace MatterHackers.DataConverters3D
 			return results;
 		}
 
-		public static Mesh CombineParticipanets(IObject3D rootObject,
+		public static Mesh CombineParticipants(IObject3D rootObject,
 			IEnumerable<IObject3D> participants,
 			CancellationToken cancellationToken,
-			IProgress<ProgressStatus> reporter,
+			IProgress<ProgressStatus> reporter = null,
 			ProcessingModes processingMode = ProcessingModes.Polygons,
 			ProcessingResolution inputResolution = ProcessingResolution._64,
 			ProcessingResolution outputResolution = ProcessingResolution._64)
