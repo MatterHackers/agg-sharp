@@ -38,12 +38,19 @@ namespace MatterHackers.PolygonMesh.Csg
     using Polygon = List<IntPoint>;
     using Polygons = List<List<IntPoint>>;
 
-    public class CoPlanarFaces
+	public class CoPlanarFaces
 	{
 		private Dictionary<Plane, Dictionary<int, List<(int sourceFaceIndex, int destFaceIndex)>>> coPlanarFaces
 			= new Dictionary<Plane, Dictionary<int, List<(int sourceFaceIndex, int destFaceIndex)>>>();
 
-		public IEnumerable<Plane> Planes
+		private SimilarPlaneFinder planeSorter;
+
+		public CoPlanarFaces(SimilarPlaneFinder planeSorter)
+		{
+			this.planeSorter = planeSorter;
+		}
+
+        public IEnumerable<Plane> Planes
 		{
 			get
 			{
@@ -221,14 +228,17 @@ namespace MatterHackers.PolygonMesh.Csg
 			// get all meshes that have faces on this plane
 			var meshesWithFaces = MeshIndicesForPlane(positivePlane).ToList();
 
-			var negativePlane = new Plane()
+			var negativePlane = planeSorter.FindPlane(new Plane()
 			{
 				Normal = -positivePlane.Normal,
 				DistanceFromOrigin = -positivePlane.DistanceFromOrigin,
-			};
+			}, .02);
 
-			// add any negative faces
-			meshesWithFaces.AddRange(MeshIndicesForPlane(negativePlane));
+			if (negativePlane != null)
+			{
+				// add any negative faces
+				meshesWithFaces.AddRange(MeshIndicesForPlane(negativePlane.Value));
+			}
 
 			if (meshesWithFaces.Count < 2)
 			{
@@ -277,47 +287,48 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			// now union all the intersections
 			// clip against the slice based on the parameters
-			var clipper2 = new Clipper();
-			clipper2.AddPaths(firstPositivePolygons, PolyType.ptSubject, true);
-			clipper2.AddPaths(unionPolygons, PolyType.ptClip, true);
+			var unionClipper = new Clipper();
+			unionClipper.AddPaths(firstPositivePolygons, PolyType.ptSubject, true);
+			unionClipper.AddPaths(unionPolygons, PolyType.ptClip, true);
 
 			var totalSlices = new Polygons();
-			clipper2.Execute(ClipType.ctUnion, totalSlices, PolyFillType.pftNonZero);
+			unionClipper.Execute(ClipType.ctUnion, totalSlices, PolyFillType.pftNonZero);
 
-			// get all the negitve faces
-			var subtractPolygons = new Polygons();
-			foreach (var meshIndex in meshesWithFaces)
+			if (negativePlane != null)
 			{
-				var meshPolygons = new Polygons();
-				var addedFaces = new HashSet<int>();
-				foreach (var (sourceFaceIndex, destFaceIndex) in this.FacesSetsForPlaneAndMesh(negativePlane, meshIndex))
+				// get all the negitve faces
+				var subtractPolygons = new Polygons();
+				foreach (var meshIndex in meshesWithFaces)
 				{
-					if (!addedFaces.Contains(sourceFaceIndex))
+					var addedFaces = new HashSet<int>();
+					foreach (var (sourceFaceIndex, destFaceIndex) in this.FacesSetsForPlaneAndMesh(negativePlane.Value, meshIndex))
 					{
-						meshPolygons.Add(GetFacePolygon(transformedMeshes[meshIndex], sourceFaceIndex, flattenedMatrix));
-						addedFaces.Add(sourceFaceIndex);
+						if (!addedFaces.Contains(sourceFaceIndex))
+						{
+							subtractPolygons.Add(GetFacePolygon(transformedMeshes[meshIndex], sourceFaceIndex, flattenedMatrix));
+							addedFaces.Add(sourceFaceIndex);
+						}
 					}
+
 				}
 
-				subtractPolygons.AddRange(meshPolygons);
+				// subtract them from the other union faces
+				var subtractionClipper = new Clipper();
+				subtractionClipper.AddPaths(totalSlices, PolyType.ptSubject, true);
+				subtractionClipper.AddPaths(subtractPolygons, PolyType.ptClip, true);
+
+				var totalSlices2 = new Polygons();
+				subtractionClipper.Execute(ClipType.ctDifference, totalSlices2, PolyFillType.pftEvenOdd);
+				totalSlices = totalSlices2;
 			}
-
-			// subtract them from the other union faces
-			var clipper3 = new Clipper();
-			clipper3.AddPaths(totalSlices, PolyType.ptSubject, true);
-			clipper3.AddPaths(subtractPolygons, PolyType.ptClip, true);
-
-			var totalSlices2 = new Polygons();
-			clipper2.Execute(ClipType.ctDifference, totalSlices, PolyFillType.pftNonZero);
 
 			// teselate and add all the new polygons
 			var countPreAdd = resultsMesh.Faces.Count;
-			totalSlices2.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
+			totalSlices.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
 			EnsureFaceNormals(positivePlane, resultsMesh, countPreAdd);
 		}
 
-		public void StoreFaceAdd(SimilarPlaneFinder planeSorter,
-			Plane facePlane,
+		public void StoreFaceAdd(Plane facePlane,
 			int sourceMeshIndex,
 			int sourceFaceIndex,
 			int destFaceIndex)
