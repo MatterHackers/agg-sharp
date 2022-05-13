@@ -38,12 +38,19 @@ namespace MatterHackers.PolygonMesh.Csg
     using Polygon = List<IntPoint>;
     using Polygons = List<List<IntPoint>>;
 
-    public class CoPlanarFaces
+	public class CoPlanarFaces
 	{
-		private new Dictionary<Plane, Dictionary<int, List<(int sourceFaceIndex, int destFaceIndex)>>> coPlanarFaces
+		private Dictionary<Plane, Dictionary<int, List<(int sourceFaceIndex, int destFaceIndex)>>> coPlanarFaces
 			= new Dictionary<Plane, Dictionary<int, List<(int sourceFaceIndex, int destFaceIndex)>>>();
 
-		public IEnumerable<Plane> Planes
+		private SimilarPlaneFinder planeSorter;
+
+		public CoPlanarFaces(SimilarPlaneFinder planeSorter)
+		{
+			this.planeSorter = planeSorter;
+		}
+
+        public IEnumerable<Plane> Planes
 		{
 			get
 			{
@@ -143,26 +150,26 @@ namespace MatterHackers.PolygonMesh.Csg
 
             // teselate and add all the new polygons
             var countPreAdd = resultsMesh.Faces.Count;
-            polygonShape.Vertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
+            polygonShape.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
             EnsureFaceNormals(plane, resultsMesh, countPreAdd);
         }
 
-        private static void EnsureFaceNormals(Plane plane, Mesh resultsMesh, int countPreAdd)
-        {
+		private static void EnsureFaceNormals(Plane plane, Mesh resultsMesh, int countPreAdd)
+		{
 			if (countPreAdd >= resultsMesh.Faces.Count)
-            {
+			{
 				return;
-            }
+			}
 
-            // Check that the new face normals are pointed in the right direction
-            if ((new Vector3(resultsMesh.Faces[countPreAdd].normal) - plane.Normal).LengthSquared > .1)
-            {
-                for (int i = countPreAdd; i < resultsMesh.Faces.Count; i++)
-                {
-                    resultsMesh.FlipFace(i);
-                }
-            }
-        }
+			// Check that the new face normals are pointed in the right direction
+			for (int i = countPreAdd; i < resultsMesh.Faces.Count; i++)
+			{
+				if ((new Vector3(resultsMesh.Faces[i].normal) - plane.Normal).LengthSquared > .1)
+				{
+					resultsMesh.FlipFace(i);
+				}
+			}
+		}
 
         public void IntersectFaces(Plane plane, List<Mesh> transformedMeshes, Mesh resultsMesh, Matrix4X4 flattenedMatrix, HashSet<int> faceIndicesToRemove)
 		{
@@ -187,7 +194,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			var polygonsByMesh = new List<Polygons>();
 			// iterate all the meshes that need to be intersected
-			for (int meshIndex = 0; meshIndex < meshesWithFaces.Count; meshIndex++)
+			foreach (var meshIndex in meshesWithFaces)
 			{
 				var unionedPoygons = new Polygons();
 				foreach (var removeFaceSets in FacesSetsForPlaneAndMesh(plane, meshIndex))
@@ -212,14 +219,26 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			// teselate and add all the new polygons
 			var countPreAdd = resultsMesh.Faces.Count;
-			total.Vertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
+			total.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
 			EnsureFaceNormals(plane, resultsMesh, countPreAdd);
 		}
 
-		public void UnionFaces(Plane plane, List<Mesh> transformedMeshes, Mesh resultsMesh, Matrix4X4 flattenedMatrix)
+		public void UnionFaces(Plane positivePlane, List<Mesh> transformedMeshes, Mesh resultsMesh, Matrix4X4 flattenedMatrix, HashSet<int> faceIndicesToRemove)
 		{
 			// get all meshes that have faces on this plane
-			var meshesWithFaces = MeshIndicesForPlane(plane).ToList();
+			var meshesWithFaces = MeshIndicesForPlane(positivePlane).ToList();
+
+			var negativePlane = planeSorter.FindPlane(new Plane()
+			{
+				Normal = -positivePlane.Normal,
+				DistanceFromOrigin = -positivePlane.DistanceFromOrigin,
+			}, .02);
+
+			if (negativePlane != null)
+			{
+				// add any negative faces
+				meshesWithFaces.AddRange(MeshIndicesForPlane(negativePlane.Value));
+			}
 
 			if (meshesWithFaces.Count < 2)
 			{
@@ -227,67 +246,95 @@ namespace MatterHackers.PolygonMesh.Csg
 				return;
 			}
 
+			// add the faces that we should union
+			foreach (var meshIndex in meshesWithFaces)
+			{
+				foreach (var faces in FacesSetsForPlaneAndMesh(positivePlane, meshIndex))
+				{
+					faceIndicesToRemove.Add(faces.destFaceIndex);
+				}
+			}
+
 			// sort them so we can process each group into intersections
 			meshesWithFaces.Sort();
 
-			var meshPolygons = new List<Polygons>();
-			for (int i = 0; i < meshesWithFaces.Count; i++)
+			Polygons firstPositivePolygons = null;
+			var unionPolygons = new Polygons();
+			var first = true;
+            foreach (var meshIndex in meshesWithFaces)
 			{
-				meshPolygons.Add(new Polygons());
+				var meshPolygons = new Polygons();
 				var addedFaces = new HashSet<int>();
-				foreach (var (sourceFaceIndex, destFaceIndex) in this.FacesSetsForPlaneAndMesh(plane, i))
+				foreach (var (sourceFaceIndex, destFaceIndex) in this.FacesSetsForPlaneAndMesh(positivePlane, meshIndex))
 				{
 					if (!addedFaces.Contains(sourceFaceIndex))
 					{
-						meshPolygons[i].Add(GetFacePolygon(transformedMeshes[i], sourceFaceIndex, flattenedMatrix));
+						meshPolygons.Add(GetFacePolygon(transformedMeshes[meshIndex], sourceFaceIndex, flattenedMatrix));
 						addedFaces.Add(sourceFaceIndex);
 					}
 				}
-			}
 
-			var intersectionSets = new List<Polygons>();
-			// now intersect each set of meshes to get all the sets of intersections
-			for (int i = 0; i < meshesWithFaces.Count; i++)
-			{
-				// add all the faces for mesh j
-				for (int j = i + 1; j < meshesWithFaces.Count; j++)
-				{
-					var clipper = new Clipper();
-					clipper.AddPaths(meshPolygons[i], PolyType.ptSubject, true);
-					clipper.AddPaths(meshPolygons[j], PolyType.ptClip, true);
-
-					var intersection = new Polygons();
-					clipper.Execute(ClipType.ctIntersection, intersection);
-
-					intersectionSets.Add(intersection);
-				}
+				if (first)
+                {
+					firstPositivePolygons = meshPolygons;
+					first = false;
+                }
+				else
+                {
+					unionPolygons.AddRange(meshPolygons);
+                }
 			}
 
 			// now union all the intersections
-			var totalSlices = new Polygons(intersectionSets[0]);
-			for (int i = 1; i < intersectionSets.Count; i++)
+			// clip against the slice based on the parameters
+			var unionClipper = new Clipper();
+			unionClipper.AddPaths(firstPositivePolygons, PolyType.ptSubject, true);
+			unionClipper.AddPaths(unionPolygons, PolyType.ptClip, true);
+
+			var totalSlices = new Polygons();
+			unionClipper.Execute(ClipType.ctUnion, totalSlices, PolyFillType.pftNonZero);
+
+			if (negativePlane != null)
 			{
-				// clip against the slice based on the parameters
-				var clipper = new Clipper();
-				clipper.AddPaths(totalSlices, PolyType.ptSubject, true);
-				clipper.AddPaths(intersectionSets[i], PolyType.ptClip, true);
-				clipper.Execute(ClipType.ctUnion, totalSlices);
+				// get all the negitve faces
+				var subtractPolygons = new Polygons();
+				foreach (var meshIndex in meshesWithFaces)
+				{
+					var addedFaces = new HashSet<int>();
+					foreach (var (sourceFaceIndex, destFaceIndex) in this.FacesSetsForPlaneAndMesh(negativePlane.Value, meshIndex))
+					{
+						if (!addedFaces.Contains(sourceFaceIndex))
+						{
+							subtractPolygons.Add(GetFacePolygon(transformedMeshes[meshIndex], sourceFaceIndex, flattenedMatrix));
+							addedFaces.Add(sourceFaceIndex);
+						}
+					}
+
+				}
+
+				// subtract them from the other union faces
+				var subtractionClipper = new Clipper();
+				subtractionClipper.AddPaths(totalSlices, PolyType.ptSubject, true);
+				subtractionClipper.AddPaths(subtractPolygons, PolyType.ptClip, true);
+
+				var totalSlices2 = new Polygons();
+				subtractionClipper.Execute(ClipType.ctDifference, totalSlices2, PolyFillType.pftNonZero);
+				totalSlices = totalSlices2;
 			}
 
 			// teselate and add all the new polygons
 			var countPreAdd = resultsMesh.Faces.Count;
-			totalSlices.Vertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
-			EnsureFaceNormals(plane, resultsMesh, countPreAdd);
+			totalSlices.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, flattenedMatrix.Inverted);
+			EnsureFaceNormals(positivePlane, resultsMesh, countPreAdd);
 		}
 
-		public void StoreFaceAdd(PlaneNormalXSorter planeSorter,
-			Plane facePlane,
+		public void StoreFaceAdd(Plane facePlane,
 			int sourceMeshIndex,
 			int sourceFaceIndex,
 			int destFaceIndex)
 		{
 			// look through all the planes that are close to this one
-			var plane = planeSorter.FindPlane(facePlane, .02, .0002);
+			var plane = planeSorter.FindPlane(facePlane, .02);
 			if (plane != null)
 			{
 				facePlane = plane.Value;
@@ -308,6 +355,36 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 
 			coPlanarFaces[facePlane][sourceMeshIndex].Add((sourceFaceIndex, destFaceIndex));
+		}
+	}
+
+	public static class PolygonsExtra
+	{
+		public static string GraphData(this List<Polygons> polygonsSets)
+		{
+			string output = "";
+			foreach (var polygons in polygonsSets)
+			{
+				output += polygons.GraphData();
+			}
+
+			return output;
+		}
+
+		public static string GraphData(this Polygons polygons)
+		{
+			string output = "";
+			foreach (var polygon in polygons)
+			{
+				foreach (var point in polygon)
+				{
+					output += $"{point.X},{point.Y}\n";
+				}
+
+				output += "\n";
+			}
+
+			return output;
 		}
 	}
 }

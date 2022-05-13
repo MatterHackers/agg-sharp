@@ -68,9 +68,9 @@ namespace MatterHackers.DataConverters3D
 			// and cancel the current building of any parent that can be canceled
 			foreach (var parent in object3D.Parents())
 			{
-				if (parent is IBuildsOnThread buildsOnThread2)
+				if (parent is IBuildsOnThread buildsOnThread)
 				{
-					buildsOnThread2.CancelBuild();
+					buildsOnThread.CancelBuild();
 				}
 			}
 		}
@@ -95,7 +95,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static IObject3D DescendantsAndSelfMultipleChildrenFirstOrSelf(this IObject3D item)
+		public static IObject3D FirstWithMultipleChildrenDescendantsAndSelf(this IObject3D item)
 		{
 			var parentOfMultipleChildren = item.DescendantsAndSelf().Where(i => i.Children.Count > 1).FirstOrDefault() as Object3D;
 			if (parentOfMultipleChildren == null)

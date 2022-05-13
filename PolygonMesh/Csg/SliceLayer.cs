@@ -438,13 +438,13 @@ namespace MatterHackers.PolygonMesh.Csg
 
 	public static class IntPointPolygonsExtensions
 	{
-		public static IEnumerable<VertexData> Vertices(this List<List<IntPoint>> polygons, double outputScale = 1000)
+		public static IEnumerable<VertexData> AsVertices(this List<List<IntPoint>> polygons, double outputScale = 1000)
 		{
 			foreach (var polygon in polygons)
 			{
 				if (polygon.Count > 2)
 				{
-					foreach (var vertex in polygon.Vertices(outputScale))
+					foreach (var vertex in polygon.AsVertices(outputScale))
 					{
 						yield return vertex;
 					}
@@ -455,7 +455,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 	public static class IntPointPolygonExtensions
 	{
-		public static IEnumerable<VertexData> Vertices(this List<IntPoint> polygon, double outputScale = 1000)
+		public static IEnumerable<VertexData> AsVertices(this List<IntPoint> polygon, double outputScale = 1000)
 		{
 			// start at the last point
 			yield return new VertexData(Agg.ShapePath.FlagsAndCommand.MoveTo,
