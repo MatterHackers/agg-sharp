@@ -318,7 +318,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				subtractionClipper.AddPaths(subtractPolygons, PolyType.ptClip, true);
 
 				var totalSlices2 = new Polygons();
-				subtractionClipper.Execute(ClipType.ctDifference, totalSlices2, PolyFillType.pftEvenOdd);
+				subtractionClipper.Execute(ClipType.ctDifference, totalSlices2, PolyFillType.pftNonZero);
 				totalSlices = totalSlices2;
 			}
 

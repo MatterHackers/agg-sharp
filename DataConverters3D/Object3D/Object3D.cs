@@ -1456,9 +1456,9 @@ namespace MatterHackers.DataConverters3D
                             next.matrix,
                             // operation type
                             CsgModes.Union,
-                            Processing,
-                            InputResolution,
-                            OutputResolution,
+                            processingMode,
+                            inputResolution,
+                            outputResolution,
                             // reporting
                             reporter,
                             amountPerOperation,
