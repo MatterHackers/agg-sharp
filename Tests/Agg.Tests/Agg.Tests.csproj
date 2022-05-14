@@ -12,6 +12,9 @@
 	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
+	<ItemGroup>
+		<Service Include="{63A7B48D-3B50-4B1E-B85E-2ADB8510F352}" />
+	</ItemGroup>
   <ItemGroup>
     <PackageReference Include="C5" Version="2.5.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />

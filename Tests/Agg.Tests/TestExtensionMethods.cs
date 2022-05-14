@@ -41,5 +41,10 @@ namespace MatterHackers.Agg.Tests
 		{
 			return Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourceFilePath), Path.Combine(relativePathPieces)));
 		}
+
+		public static string ResolveProjectPath(this TestContext context, [System.Runtime.CompilerServices.CallerFilePath] string sourceFilePath = null)
+		{
+			return Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourceFilePath)));
+		}
 	}
 }
