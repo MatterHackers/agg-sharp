@@ -139,7 +139,7 @@ namespace MatterHackers.PolygonMesh.Csg
             var resultsMesh = new Mesh();
 
             // keep track of all the faces added by their plane
-            var coPlanarFaces = new CoPlanarFaces();
+            var coPlanarFaces = new CoPlanarFaces(planeSorter);
 
             for (var mesh1Index = 0; mesh1Index < transformedMeshes.Count; mesh1Index++)
             {
@@ -288,7 +288,7 @@ namespace MatterHackers.PolygonMesh.Csg
                         // keep track of the adds so we can process the coplanar faces after
                         for (int i = faceCountPreAdd; i < resultsMesh.Faces.Count; i++)
                         {
-                            coPlanarFaces.StoreFaceAdd(planeSorter, cutPlane, mesh1Index, faceIndex, i);
+                            coPlanarFaces.StoreFaceAdd(cutPlane, mesh1Index, faceIndex, i);
                             // make sure our added faces are the right direction
                             if (resultsMesh.Faces[i].normal.Dot(expectedFaceNormal) < 0)
                             {
@@ -298,7 +298,7 @@ namespace MatterHackers.PolygonMesh.Csg
                     }
                     else // we did not add any faces but we will still keep track of this polygons plane
                     {
-                        coPlanarFaces.StoreFaceAdd(planeSorter, cutPlane, mesh1Index, faceIndex, -1);
+                        coPlanarFaces.StoreFaceAdd(cutPlane, mesh1Index, faceIndex, -1);
                     }
 
                     ratioCompleted += amountPerOperation;
@@ -323,7 +323,23 @@ namespace MatterHackers.PolygonMesh.Csg
             var faceIndicesToRemove = new HashSet<int>();
             foreach (var plane in coPlanarFaces.Planes)
             {
-                var meshIndices = coPlanarFaces.MeshIndicesForPlane(plane);
+                var meshIndices = coPlanarFaces.MeshIndicesForPlane(plane).ToList();
+                
+                if (operation == CsgModes.Union)
+                {
+                    var negativePlane = planeSorter.FindPlane(new Plane()
+                    {
+                        Normal = -plane.Normal,
+                        DistanceFromOrigin = -plane.DistanceFromOrigin,
+                    }, .02);
+
+                    if (negativePlane != null)
+                    {
+                        // add any negative faces
+                        meshIndices.AddRange(coPlanarFaces.MeshIndicesForPlane(negativePlane.Value));
+                    }
+                }
+
                 if (meshIndices.Count() > 1)
                 {
                     // check if more than one mesh has this polygons on this plane

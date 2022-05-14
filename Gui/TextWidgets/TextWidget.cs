@@ -86,7 +86,7 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				if (Printer.TypeFaceStyle.TypeFace == AggContext.DefaultFontBold)
+				if (!value && Printer.TypeFaceStyle.TypeFace == AggContext.DefaultFontBold)
 				{
 					var typeFaceStyle = new StyledTypeFace(AggContext.DefaultFont, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline);
 					Printer = new TypeFacePrinter(Text, typeFaceStyle, justification: Printer.Justification);
@@ -95,7 +95,7 @@ namespace MatterHackers.Agg.UI
 						DoExpandBoundsToText();
 					}
 				}
-				else if (Printer.TypeFaceStyle.TypeFace == AggContext.DefaultFont)
+				else if (value && Printer.TypeFaceStyle.TypeFace == AggContext.DefaultFont)
 				{
 					var typeFaceStyle = new StyledTypeFace(AggContext.DefaultFontBold, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline);
 					Printer = new TypeFacePrinter(Text, typeFaceStyle, justification: Printer.Justification);
