@@ -63,9 +63,12 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		public IEnumerable<int> MeshIndicesForPlane(Plane plane)
 		{
-			foreach (var kvp in coPlanarFaces[plane])
+			if (coPlanarFaces.ContainsKey(plane))
 			{
-				yield return kvp.Key;
+				foreach (var kvp in coPlanarFaces[plane])
+				{
+					yield return kvp.Key;
+				}
 			}
 		}
 
