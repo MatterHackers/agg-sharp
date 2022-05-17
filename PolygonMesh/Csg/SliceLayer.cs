@@ -51,16 +51,20 @@ namespace MatterHackers.PolygonMesh.Csg
 			return CreateSlice(mesh, planeInMeshSpace);
 		}
 
-		public static List<List<IntPoint>> CreateSlice(Mesh mesh, Plane plane, int outputScale = 1000)
+		public static List<List<IntPoint>> CreateSlice(Mesh mesh, Plane plane, int outputScale = 1000, bool includeBehindThePlane = true)
 		{
 			var transformTo0Plane = GetTransformTo0Plane(plane, outputScale);
 
-			return CreateSlice(mesh, plane, transformTo0Plane);
+			return CreateSlice(mesh, plane, transformTo0Plane, null, includeBehindThePlane);
 		}
 
-        public static List<List<IntPoint>> CreateSlice(Mesh mesh, Plane plane, Matrix4X4 transformTo0Plane, IBvhItem acccelerator = null)
+        public static List<List<IntPoint>> CreateSlice(Mesh mesh,
+			Plane plane,
+			Matrix4X4 transformTo0Plane,
+			IBvhItem acccelerator = null,
+			bool includeBehindThePlane = true)
 		{
-			var unorderedSegments = GetUnorderdSegments(mesh, plane, transformTo0Plane, acccelerator);
+			var unorderedSegments = GetUnorderdSegments(mesh, plane, transformTo0Plane, acccelerator, includeBehindThePlane);
 
 			// connect all the segments together into polygons
 			return FindClosedPolygons(unorderedSegments);
@@ -101,12 +105,16 @@ namespace MatterHackers.PolygonMesh.Csg
 			return flattenedMatrix;
 		}
 
-		public static List<Segment> GetUnorderdSegments(Mesh mesh, Plane plane, IBvhItem acccelerator = null)
+		public static List<Segment> GetUnorderdSegments(Mesh mesh, Plane plane, IBvhItem acccelerator = null, bool includeBehindThePlane = true)
 		{
-			return GetUnorderdSegments(mesh, plane, GetTransformTo0Plane(plane), acccelerator);
+			return GetUnorderdSegments(mesh, plane, GetTransformTo0Plane(plane), acccelerator, includeBehindThePlane);
 		}
 
-		public static List<Segment> GetUnorderdSegments(Mesh mesh, Plane plane, Matrix4X4 meshTo0Plane, IBvhItem acccelerator = null)
+		public static List<Segment> GetUnorderdSegments(Mesh mesh,
+			Plane plane,
+			Matrix4X4 meshTo0Plane,
+			IBvhItem acccelerator = null,
+			bool includeBehindThePlane = true)
 		{
 			// collect all the segments this plane intersects and record them in unordered segments in z 0 space
 			var unorderedSegments = new List<Segment>();
@@ -124,6 +132,18 @@ namespace MatterHackers.PolygonMesh.Csg
 						faceIndex = triangleShape.FaceIndex;
 					}
 					var face = mesh.Faces[faceIndex];
+					if (!includeBehindThePlane)
+                    {
+						// make sure some part of this face is in front of the plane
+						if (plane.GetDistanceFromPlane(mesh.Vertices[face.v0]) < .001
+							&& plane.GetDistanceFromPlane(mesh.Vertices[face.v1]) < .001
+							&& plane.GetDistanceFromPlane(mesh.Vertices[face.v2]) < .001)
+                        {
+							// skip this face as it is behind the plane
+							continue;
+                        }
+					}
+
 					if (face.GetCutLine(mesh.Vertices, plane, out Vector3 start, out Vector3 end))
 					{
 						var startAtZ0 = Vector3Ex.Transform(start, meshTo0Plane);
@@ -438,13 +458,13 @@ namespace MatterHackers.PolygonMesh.Csg
 
 	public static class IntPointPolygonsExtensions
 	{
-		public static IEnumerable<VertexData> Vertices(this List<List<IntPoint>> polygons, double outputScale = 1000)
+		public static IEnumerable<VertexData> AsVertices(this List<List<IntPoint>> polygons, double outputScale = 1000)
 		{
 			foreach (var polygon in polygons)
 			{
 				if (polygon.Count > 2)
 				{
-					foreach (var vertex in polygon.Vertices(outputScale))
+					foreach (var vertex in polygon.AsVertices(outputScale))
 					{
 						yield return vertex;
 					}
@@ -455,7 +475,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 	public static class IntPointPolygonExtensions
 	{
-		public static IEnumerable<VertexData> Vertices(this List<IntPoint> polygon, double outputScale = 1000)
+		public static IEnumerable<VertexData> AsVertices(this List<IntPoint> polygon, double outputScale = 1000)
 		{
 			// start at the last point
 			yield return new VertexData(Agg.ShapePath.FlagsAndCommand.MoveTo,

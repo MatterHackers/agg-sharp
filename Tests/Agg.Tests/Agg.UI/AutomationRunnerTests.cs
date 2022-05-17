@@ -72,8 +72,10 @@ namespace MatterHackers.Agg.UI.Tests
 			leftButton.Name = "left";
 			systemWindow.AddChild(leftButton);
 
-			Assert.ThrowsAsync<TimeoutException>(
-				() => AutomationRunner.ShowWindowAndExecuteTests(
+			Exception foundException = null;
+			try
+			{
+				AutomationRunner.ShowWindowAndExecuteTests(
 					systemWindow,
 					(testRunner) =>
 					{
@@ -81,8 +83,15 @@ namespace MatterHackers.Agg.UI.Tests
 						Thread.Sleep(10 * 1000);
 						return Task.CompletedTask;
 					},
-					// Timeout after 1 second
-					secondsToTestFailure: 1));
+					// Timeout after 3 seconds
+					secondsToTestFailure: 3);
+			}
+			catch (TimeoutException ex)
+            {
+				foundException = ex;
+			}
+
+			Assert.IsTrue(foundException != null, "Make sure we get a timeout exception");
 		}
 
 		[Test]
