@@ -1298,22 +1298,28 @@ namespace MatterHackers.GuiAutomation
 		/// <returns></returns>
 		public bool WaitForName(string widgetName, double secondsToWait = DefaultWidgetWaitSeconds, bool onlyVisible = true, Func<GuiWidget, bool> predicate = null)
 		{
-			// TODO: should have a search region
-
-			var timeWaited = Stopwatch.StartNew();
-			while (!NamedWidgetExists(widgetName, null, onlyVisible, predicate)
-				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
+			try
 			{
-				Delay(.05);
+				// TODO: should have a search region
+				var timeWaited = Stopwatch.StartNew();
+				while (!NamedWidgetExists(widgetName, null, onlyVisible, predicate)
+					&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
+				{
+					Delay(.05);
+				}
+
+				if (timeWaited.Elapsed.TotalSeconds > secondsToWait)
+				{
+					return false;
+				}
+
+				return true;
 			}
-
-			if (timeWaited.Elapsed.TotalSeconds > secondsToWait)
-			{
+            catch (Exception e)
+            {
 				return false;
-			}
-
-			return true;
-		}
+            }
+        }
 
 		/// <summary>
 		/// Wait up to secondsToWait for the named widget to disappear

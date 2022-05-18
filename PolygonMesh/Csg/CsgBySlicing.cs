@@ -159,30 +159,10 @@ namespace MatterHackers.PolygonMesh.Csg
                     {
                         continue;
                     }
-                    var totalSlice = new Polygons();
-                    var firstSlice = true;
 
                     var transformTo0Plane = transformTo0Planes[cutPlane].matrix;
-                    for (var sliceMeshIndex = 0; sliceMeshIndex < transformedMeshes.Count; sliceMeshIndex++)
-                    {
-                        if (mesh1Index == sliceMeshIndex)
-                        {
-                            continue;
-                        }
 
-                        var mesh2 = transformedMeshes[sliceMeshIndex];
-                        // calculate and add the PWN face from the loops
-                        var slice = SliceLayer.CreateSlice(mesh2, cutPlane, transformTo0Plane, bvhAccelerators[sliceMeshIndex]);
-                        if (firstSlice)
-                        {
-                            totalSlice = slice;
-                            firstSlice = false;
-                        }
-                        else
-                        {
-                            totalSlice = totalSlice.Union(slice);
-                        }
-                    }
+                    var totalSlice = GetTotalSlice(mesh1Index, cutPlane, transformTo0Plane);
 
                     // now we have the total loops that this polygon can intersect from the other meshes
                     // make a polygon for this face
@@ -318,13 +298,42 @@ namespace MatterHackers.PolygonMesh.Csg
             return resultsMesh;
         }
 
+        public Polygons GetTotalSlice(int meshIndexToIgnore, Plane cutPlane, Matrix4X4 transformTo0Plane, bool includeBehindThePlane = true)
+        {
+            var totalSlice = new Polygons();
+
+            var firstSlice = true;
+            for (var sliceMeshIndex = 0; sliceMeshIndex < transformedMeshes.Count; sliceMeshIndex++)
+            {
+                if (meshIndexToIgnore == sliceMeshIndex)
+                {
+                    continue;
+                }
+
+                var mesh2 = transformedMeshes[sliceMeshIndex];
+                // calculate and add the PWN face from the loops
+                var slice = SliceLayer.CreateSlice(mesh2, cutPlane, transformTo0Plane, bvhAccelerators[sliceMeshIndex], includeBehindThePlane);
+                if (firstSlice)
+                {
+                    totalSlice = slice;
+                    firstSlice = false;
+                }
+                else
+                {
+                    totalSlice = totalSlice.Union(slice);
+                }
+            }
+
+            return totalSlice;
+        }
+
         private void ProcessCoplanarFaces(CsgModes operation, Mesh resultsMesh, CoPlanarFaces coPlanarFaces)
         {
             var faceIndicesToRemove = new HashSet<int>();
             foreach (var plane in coPlanarFaces.Planes)
             {
                 var meshIndices = coPlanarFaces.MeshIndicesForPlane(plane).ToList();
-                
+
                 if (operation == CsgModes.Union)
                 {
                     var negativePlane = planeSorter.FindPlane(new Plane()
@@ -343,21 +352,21 @@ namespace MatterHackers.PolygonMesh.Csg
                 if (meshIndices.Count() > 1)
                 {
                     // check if more than one mesh has this polygons on this plane
-                    var flattenedMatrix = transformTo0Planes[plane].matrix;
+                    var transformTo0Plane = transformTo0Planes[plane].matrix;
 
                     // depending on the operation add or remove polygons that are planar
                     switch (operation)
                     {
                         case CsgModes.Union:
-                            coPlanarFaces.UnionFaces(plane, transformedMeshes, resultsMesh, flattenedMatrix, faceIndicesToRemove);
+                            coPlanarFaces.UnionFaces(plane, transformedMeshes, resultsMesh, transformTo0Plane, faceIndicesToRemove, this);
                             break;
 
                         case CsgModes.Subtract:
-                            coPlanarFaces.SubtractFaces(plane, transformedMeshes, resultsMesh, flattenedMatrix, faceIndicesToRemove);
+                            coPlanarFaces.SubtractFaces(plane, transformedMeshes, resultsMesh, transformTo0Plane, faceIndicesToRemove);
                             break;
 
                         case CsgModes.Intersect:
-                            coPlanarFaces.IntersectFaces(plane, transformedMeshes, resultsMesh, flattenedMatrix, faceIndicesToRemove);
+                            coPlanarFaces.IntersectFaces(plane, transformedMeshes, resultsMesh, transformTo0Plane, faceIndicesToRemove);
                             break;
                     }
 
