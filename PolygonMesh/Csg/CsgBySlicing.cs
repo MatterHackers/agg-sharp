@@ -101,11 +101,15 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 
             activeOperationBounds = transformedMeshes[0].GetAxisAlignedBoundingBox().GetIntersection(transformedMeshes[1].GetAxisAlignedBoundingBox());
-            for (var nextMeshIndex = 2; nextMeshIndex < transformedMeshes.Count; nextMeshIndex++)
+            for (var meshIndex = 1; meshIndex < transformedMeshes.Count; meshIndex++)
             {
-                var nextIntersectionBounds = transformedMeshes[nextMeshIndex-1].GetAxisAlignedBoundingBox()
-                    .GetIntersection(transformedMeshes[nextMeshIndex].GetAxisAlignedBoundingBox());
-                activeOperationBounds.ExpandToInclude(nextIntersectionBounds);
+                for (var meshIndex2 = meshIndex + 1; meshIndex2 <= transformedMeshes.Count; meshIndex2++)
+                {
+                    var nextMeshIndex = meshIndex2 % transformedMeshes.Count;
+                    var nextIntersectionBounds = transformedMeshes[meshIndex].GetAxisAlignedBoundingBox()
+                        .GetIntersection(transformedMeshes[nextMeshIndex].GetAxisAlignedBoundingBox());
+                    activeOperationBounds.ExpandToInclude(nextIntersectionBounds);
+                }
             }
 
             activeOperationBounds.Expand(.1);
