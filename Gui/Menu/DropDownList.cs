@@ -250,6 +250,26 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public MenuItem CreateSeparator()
+		{
+			var menuItem = new MenuItem(new HorizontalLine(Color.Black)
+			{
+				Margin = new BorderDouble(8, 1),
+			});
+
+			// MenuItem is a long lived object that is added and removed to new containers whenever the
+			// menu is shown. To ensure that event registration is not duplicated, always remove before add
+			menuItem.Selected -= MenuItem_Clicked;
+			menuItem.Selected += MenuItem_Clicked;
+
+			MenuItems.Add(menuItem);
+
+            menuItem.MinimumSize = new Vector2(0, 3);
+			menuItem.Height = 3;
+
+			return menuItem;
+		}
+
 		public Color TextColor
 		{
 			get => mainControlText.TextColor;
