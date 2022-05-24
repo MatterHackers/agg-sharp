@@ -22,13 +22,14 @@ namespace MatterHackers.RayTracerNS
 		private readonly static int[] xMapping = new int[] { 1, 0, 0 };
 		private readonly static int[] yMapping = new int[] { 2, 2, 1 };
 
-		private Vector3Float aabbMaxXYZ = Vector3Float.NegativeInfinity;
-		private Vector3Float aabbMinXYZ = Vector3Float.NegativeInfinity;
-		private RectangleFloat boundsOnMajorAxis = new RectangleFloat(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
-		private Vector3Float center;
-		public int FaceIndex { get; set; }
-		private byte MajorAxis = 0;
-		private Func<int, int, Vector3Float> vertexFunc;
+		private byte MajorAxis = 0; // 8 bits
+		private RectangleFloat boundsOnMajorAxis = new RectangleFloat(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue); // 128 bits
+
+		private Vector3Float center; // 96 bits
+		private Vector3Float aabbSize; // 96 bits
+
+		public int FaceIndex { get; set; } // 32 bits
+		private Func<int, int, Vector3Float> vertexFunc; // 64 bits
 
 		public MinimalTriangle(Func<int, int, Vector3Float> vertexFunc, int faceIndex)
 		{
@@ -39,12 +40,13 @@ namespace MatterHackers.RayTracerNS
 			Plane = new PlaneFloat(new Vector3Float(planeNormal), (float)distanceFromOrigin);
 
 			center = new Vector3Float((vertex(0) + vertex(1) + vertex(2)) / 3);
+			var aabbMinXYZ = vertex(0).ComponentMin(vertex(1)).ComponentMin(vertex(2));
+			var aabbMaxXYZ = vertex(0).ComponentMax(vertex(1)).ComponentMax(vertex(2));
+			var aabb = new AxisAlignedBoundingBox(aabbMinXYZ, aabbMaxXYZ);
+			aabbSize = new Vector3Float(aabb.Size);
 
 			var normalLengths = new[] { Math.Abs(planeNormal.X), Math.Abs(planeNormal.Y), Math.Abs(planeNormal.Z) };
 			MajorAxis = (byte)normalLengths.Select((v, i) => new { Axis = i, Value = Math.Abs(v) }).OrderBy(o => o.Value).Last().Axis;
-
-			aabbMinXYZ = vertex(0).ComponentMin(vertex(1)).ComponentMin(vertex(2));
-			aabbMaxXYZ = vertex(0).ComponentMax(vertex(1)).ComponentMax(vertex(2));
 
 			for (int i = 0; i < 3; i++)
 			{
@@ -99,7 +101,7 @@ namespace MatterHackers.RayTracerNS
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
-			return new AxisAlignedBoundingBox(new Vector3(aabbMinXYZ), new Vector3(aabbMaxXYZ));
+			return new AxisAlignedBoundingBox(center - aabbSize, center + aabbSize);
 		}
 
 		public double GetAxisCenter(int axis)
