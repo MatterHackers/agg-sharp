@@ -1314,6 +1314,10 @@ namespace MatterHackers.DataConverters3D
 			{
 				if (removeItems?.Any() == true)
 				{
+					var totalOperations = removeItems.Count() * keepItems.Count();
+					double amountPerOperation = 1.0 / totalOperations;
+					double ratioCompleted = 0;
+
 					foreach (var keep in keepItems)
 					{
 #if false
@@ -1327,14 +1331,7 @@ namespace MatterHackers.DataConverters3D
 							reporter,
 							cancellationToken);
 #else
-						var totalOperations = removeItems.Count() * keepItems.Count();
-						double amountPerOperation = 1.0 / totalOperations;
-						double ratioCompleted = 0;
-
-						var progressStatus = new ProgressStatus
-						{
-							Status = "Do CSG"
-						};
+						var progressStatus = new ProgressStatus();
 
 						var resultsMesh = keep.Mesh;
 						var keepWorldMatrix = keep.Matrix;
