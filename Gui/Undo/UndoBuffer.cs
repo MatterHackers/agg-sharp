@@ -29,6 +29,8 @@ namespace MatterHackers.Agg.UI
 
 		private LimitStack<IUndoRedoCommand> undoBuffer = new LimitStack<IUndoRedoCommand>();
 
+		private object locker = new object();
+
 		public UndoBuffer()
 		{
 		}
@@ -39,18 +41,28 @@ namespace MatterHackers.Agg.UI
 
 		public ulong GetLongHashCode()
         {
-			if (UndoCount == 0)
+			lock (locker)
 			{
-				return 0;
+				if (UndoCount == 0)
+				{
+					return 0;
+				}
+
+				ulong longHash = 14695981039346656037;
+
+				try
+				{
+					foreach (var undo in undoBuffer.Iterate())
+					{
+						longHash = undo.GetHashCode().GetLongHashCode();
+					}
+				}
+				catch (Exception e)
+				{
+				}
+
+				return longHash;
 			}
-
-			ulong longHash = 14695981039346656037;
-			foreach(var undo in undoBuffer.Iterate())
-            {
-				longHash = undo.GetHashCode().GetLongHashCode();
-            }
-
-			return longHash;
 		}
 
 		public int MaxUndos
@@ -61,53 +73,68 @@ namespace MatterHackers.Agg.UI
 
 		public void Add(IUndoRedoCommand command)
 		{
-			undoBuffer.Push(command);
-			redoBuffer.Clear();
-			Changed?.Invoke(this, null);
+			lock (locker)
+			{
+				undoBuffer.Push(command);
+				redoBuffer.Clear();
+				Changed?.Invoke(this, null);
+			}
 		}
 
 		public void AddAndDo(IUndoRedoCommand command)
 		{
-			undoBuffer.Push(command);
-			redoBuffer.Clear();
-			Changed?.Invoke(this, null);
+			lock (locker)
+			{
+				undoBuffer.Push(command);
+				redoBuffer.Clear();
+				Changed?.Invoke(this, null);
 
-			command.Do();
+				command.Do();
+			}
 		}
 
 		public void Redo(int redoCount = 1)
 		{
-			for (int i = 1; i <= redoCount; i++)
+			lock (locker)
 			{
-				if (redoBuffer.Count != 0)
+				for (int i = 1; i <= redoCount; i++)
 				{
-					IUndoRedoCommand command = redoBuffer.Pop();
-					command.Do();
-					undoBuffer.Push(command);
+					if (redoBuffer.Count != 0)
+					{
+						IUndoRedoCommand command = redoBuffer.Pop();
+						command.Do();
+						undoBuffer.Push(command);
+					}
 				}
+				Changed?.Invoke(this, null);
 			}
-			Changed?.Invoke(this, null);
 		}
 
 		public void Undo(int undoCount = 1)
 		{
-			for (int i = 1; i <= undoCount; i++)
+			lock (locker)
 			{
-				if (undoBuffer.Count != 0)
+				for (int i = 1; i <= undoCount; i++)
 				{
-					IUndoRedoCommand command = undoBuffer.Pop();
-					command.Undo();
-					redoBuffer.Push(command);
+					if (undoBuffer.Count != 0)
+					{
+						IUndoRedoCommand command = undoBuffer.Pop();
+						command.Undo();
+						redoBuffer.Push(command);
+					}
 				}
+				Changed?.Invoke(this, null);
 			}
-			Changed?.Invoke(this, null);
 		}
 
 		public void ClearHistory()
 		{
-			undoBuffer.Clear();
-			redoBuffer.Clear();
-			Changed?.Invoke(this, null);
+			lock (locker)
+			{
+				undoBuffer.Clear();
+				redoBuffer.Clear();
+				Changed?.Invoke(this, null);
+			}
 		}
 	}
 }
