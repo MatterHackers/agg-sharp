@@ -882,20 +882,25 @@ namespace MatterHackers.GuiAutomation
 
 		public AutomationRunner WaitforDraw(SystemWindow containingWindow, int maxSeconds = 30)
 		{
-			var resetEvent = new AutoResetEvent(false);
+			bool foundDraw = false;
 
-			EventHandler<DrawEventArgs> afterDraw = (s, e) => resetEvent.Set();
-			EventHandler closed = (s, e) => resetEvent.Set();
+			void DrawOccured(object o, EventArgs e)
+            {
+				foundDraw = true;
+            }
 
-			containingWindow.AfterDraw += afterDraw;
-			containingWindow.Closed += closed;
+			containingWindow.AfterDraw += DrawOccured;
+			containingWindow.Closed += DrawOccured;
 
-			containingWindow.Invalidate();
+			var start = UiThread.CurrentTimerMs;
+			while(!foundDraw && UiThread.CurrentTimerMs < maxSeconds * 1000)
+            {
+				containingWindow.Invalidate();
+				Thread.Sleep(1);
+            }
 
-			resetEvent.WaitOne(maxSeconds * 1000);
-
-			containingWindow.AfterDraw -= afterDraw;
-			containingWindow.Closed -= closed;
+			containingWindow.AfterDraw -= DrawOccured;
+			containingWindow.Closed -= DrawOccured;
 
 			return this;
 		}
