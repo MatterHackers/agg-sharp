@@ -290,8 +290,10 @@ namespace MatterHackers.DataConverters3D
 
 		public IObject3D Parent { get => SourceItem.Parent; set => SourceItem.Parent = value; }
 
+		[JsonIgnore]
 		public Color Color { get => SourceItem.Color; set => SourceItem.Color = value; }
 
+		[JsonIgnore]
 		public int MaterialIndex { get => SourceItem.MaterialIndex; set => SourceItem.MaterialIndex = value; }
 
 		public bool Contains(IObject3D item)
@@ -324,32 +326,45 @@ namespace MatterHackers.DataConverters3D
 			return true;
 		}
 
+		[JsonIgnore]
 		public PrintOutputTypes OutputType { get => SourceItem.OutputType; set => SourceItem.OutputType = value; }
 
+		[JsonIgnore]
 		public Matrix4X4 Matrix { get => SourceItem.Matrix; set => SourceItem.Matrix = value; }
 
+		[JsonIgnore]
 		public string TypeName => SourceItem.TypeName;
 
+		[JsonIgnore]
 		public Mesh Mesh { get => SourceItem.Mesh; set => SourceItem.Mesh = value; }
 
+		[JsonIgnore]
 		public string MeshPath { get => SourceItem.MeshPath; set => SourceItem.MeshPath = value; }
 
+		[JsonIgnore]
 		public string Name { get => SourceItem.Name; set => SourceItem.Name = value; }
 
+		[JsonIgnore]
 		public bool Persistable => SourceItem.Persistable;
 
+		[JsonIgnore]
 		public bool Printable => SourceItem.Printable;
 
+		[JsonIgnore]
 		public bool Visible { get => SourceItem.Visible; set => SourceItem.Visible = value; }
 
 		public string ID { get => SourceItem.ID; set => SourceItem.ID = value; }
 
+		[JsonIgnore]
 		public bool CanEdit => false;
 
+		[JsonIgnore]
 		public bool CanApply => false;
 
+		[JsonIgnore]
 		public bool CanRemove => false;
 
+		[JsonIgnore]
 		public bool DrawSelection { get; set; } = true;
 
 		[JsonIgnore]
@@ -363,7 +378,8 @@ namespace MatterHackers.DataConverters3D
 		{
 			lastSaveUndoHash = UndoBuffer.GetLongHashCode();
 		}
-		
+
+        [JsonIgnore]
 		public bool HasUnsavedChanges
 		{
 			get
