@@ -322,8 +322,9 @@ namespace MatterHackers.DataConverters3D
 		internal int RebuildLockCount { get; set; }
 
 		public bool Expanded { get; set; }
+		public static int MaxJsonDepth => 256;
 
-		private class Object3DRebuildLock : RebuildLock
+        private class Object3DRebuildLock : RebuildLock
 		{
 			public Object3DRebuildLock(IObject3D item)
 				: base(item)
@@ -504,7 +505,8 @@ namespace MatterHackers.DataConverters3D
 							new JsonSerializerSettings
 							{
 								ContractResolver = new IObject3DContractResolver(),
-								NullValueHandling = NullValueHandling.Ignore
+								NullValueHandling = NullValueHandling.Ignore,
+								MaxDepth = MaxJsonDepth
 							});
 
 						loadedItem?.LoadMeshLinks(cancellationToken, cacheContext, progress);
@@ -1093,7 +1095,8 @@ namespace MatterHackers.DataConverters3D
 				new JsonSerializerSettings
 				{
 					ContractResolver = new IObject3DContractResolver(),
-					NullValueHandling = NullValueHandling.Ignore
+					NullValueHandling = NullValueHandling.Ignore,
+					MaxDepth = MaxJsonDepth
 				}));
 		}
 
