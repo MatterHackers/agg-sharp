@@ -236,7 +236,7 @@ namespace MatterHackers.RayTracer
 
 				var leftGroup = Create(leftItems, maxRecursion, recursionDepth + 1, accelerator);
 				var rightGroup = Create(rightItems, maxRecursion, recursionDepth + 1, accelerator);
-				var newBVHNode = new BoundingVolumeHierarchy(leftGroup, rightGroup, bestAxis);
+				var newBVHNode = new BoundingVolumeHierarchy(leftGroup, rightGroup);
 				return newBVHNode;
 			}
 		}

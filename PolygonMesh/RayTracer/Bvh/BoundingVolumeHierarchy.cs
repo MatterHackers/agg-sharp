@@ -53,12 +53,13 @@ namespace MatterHackers.RayTracer
 		{
 		}
 
-		public BoundingVolumeHierarchy(ITraceable nodeA, ITraceable nodeB, int splittingPlane)
-		{
-			this.splittingPlane = splittingPlane;
+		public BoundingVolumeHierarchy(ITraceable nodeA, ITraceable nodeB)
+        {
 			this.nodeA = nodeA;
 			this.nodeB = nodeB;
-			this.Aabb = nodeA.GetAxisAlignedBoundingBox() + nodeB.GetAxisAlignedBoundingBox(); // we can cache this because it is not allowed to change.
+			Aabb = nodeA.GetAxisAlignedBoundingBox() + nodeB.GetAxisAlignedBoundingBox();
+			splittingPlane = Aabb.XSize > Aabb.YSize ? 0 : 1;
+			splittingPlane = Aabb.Size[splittingPlane] > Aabb.ZSize ? splittingPlane : 2;
 		}
 
 		public MaterialAbstract Material
@@ -74,7 +75,7 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-        public IEnumerable<IBvhItem> Children => throw new NotImplementedException();
+        public IEnumerable<IBvhItem> Children => null;
 
         public Matrix4X4 AxisToWorld => throw new NotImplementedException();
 

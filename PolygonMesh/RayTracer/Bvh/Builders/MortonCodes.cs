@@ -27,10 +27,17 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.VectorMath;
+
 namespace MatterHackers.RayTracer
 {
+    /// <summary>
+    /// This is a morton encoder that creates 21 bits per channel for x,y,z data
+    /// </summary>
     public static class MortonCodes
     {
+        public static long Size => 1 << 21;
+        
         // method to seperate the bits from a position
         private static long SplitBy3(uint position)
         {
@@ -41,6 +48,20 @@ namespace MatterHackers.RayTracer
             x = (x | x << 4) & 0x10c30c30c30c30c3; // shift left 32 bits, OR with self, and 0001000011000011000011000011000011000011000011000011000100000000
             x = (x | x << 2) & 0x1249249249249249;
             return x;
+        }
+
+        public static long Encode3(Vector3 position)
+        {
+            uint x = (uint)position.X;
+            uint y = (uint)position.Y;
+            uint z = (uint)position.Z;
+#if DEBUG
+            if (x > 0x1fffff || y > 0x1fffff || z > 0x1fffff)
+            {
+                throw new System.Exception("Position is out of range");
+            }
+#endif
+            return Encode3(x, y, z);
         }
 
         public static long Encode3(uint x, uint y, uint z)
