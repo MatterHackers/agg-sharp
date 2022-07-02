@@ -121,7 +121,9 @@ namespace MatterHackers.RayTracer
 
         public static ITraceable CreateNewHierachy(List<ITraceable> tracePrimitives, BvhCreationOptions bvhCreationOptions = BvhCreationOptions.FavorFastTracing)
         {
-			switch(bvhCreationOptions)
+            // return BvhBuilderLocallyOrderedClustering.Create(tracePrimitives);
+            
+            switch (bvhCreationOptions)
             {
 				case BvhCreationOptions.FavorFastConstruction:
 					return BvhBuilderLegacy.Create(tracePrimitives, 0);

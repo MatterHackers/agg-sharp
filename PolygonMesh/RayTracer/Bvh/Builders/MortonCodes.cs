@@ -27,43 +27,27 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace MatterHackers.RayTracer
 {
-
-    public class BvhBuilderLocallyOrderedClustering
+    public static class MortonCodes
     {
-        SortedList<uint, ITraceable> sortedNodes = new SortedList<uint, ITraceable>();
-
-        public ITraceable Create(List<ITraceable> nodes)
+        // method to seperate the bits from a position
+        private static long SplitBy3(uint position)
         {
-            // get the bounds of all the nodes
-            var bounds = AxisAlignedBoundingBox.Empty();
-            foreach(var node in nodes)
-            {
-                bounds.ExpandToInclude(node.GetCenter());
-            }
+            long x = position & 0x1fffff; // we only look at the first 21 bits
+            x = (x | x << 32) & 0x1f00000000ffff; // shift left 32 bits, OR with self, and 00011111000000000000000000000000000000001111111111111111
+            x = (x | x << 16) & 0x1f0000ff0000ff; // shift left 32 bits, OR with self, and 00011111000000000000000011111111000000000000000011111111
+            x = (x | x << 8) & 0x100f00f00f00f00f; // shift left 32 bits, OR with self, and 0001000000001111000000001111000000001111000000001111000000000000
+            x = (x | x << 4) & 0x10c30c30c30c30c3; // shift left 32 bits, OR with self, and 0001000011000011000011000011000011000011000011000011000100000000
+            x = (x | x << 2) & 0x1249249249249249;
+            return x;
+        }
 
-            // create sortedNodes from the center of each node
-
-            var remainingPrimitives = new List<ITraceable>(nodes);
-            var evaluatedPrimitives = new List<ITraceable>(nodes.Count);
-            while (remainingPrimitives.Count > 1)
-            {
-                // merge close primitives minimizing surface arrea
-                for (var i = 0; i < nodes.Count; i++)
-                {
-                    // find all close primitives and compare them
-                    for (var j = 0; j < nodes.Count; j++)
-                    {
-                    }
-                }
-            }
-
-            return remainingPrimitives[0];
+        public static long Encode3(uint x, uint y, uint z)
+        {
+            long encoded = 0;
+            encoded |= SplitBy3(x) | SplitBy3(y) << 1 | SplitBy3(z) << 2;
+            return encoded;
         }
     }
 }
