@@ -38,9 +38,10 @@ namespace MatterHackers.RayTracer
 {
 	public enum BvhCreationOptions
 	{
-		FavorFastConstruction,
-		FavorFastTracing
-	}
+		LegacyFastConstructionSlowTracing,
+		LegacySlowConstructionFastTracing,
+        LocFastContructionFastTracing
+    }
 
 	public class BoundingVolumeHierarchy : ITraceable
 	{
@@ -75,9 +76,16 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-        public IEnumerable<IBvhItem> Children => null;
+        public IEnumerable<IBvhItem> Children
+        {
+			get
+			{
+				yield return nodeA;
+				yield return nodeB;
+			}
+        }
 
-        public Matrix4X4 AxisToWorld => throw new NotImplementedException();
+        public Matrix4X4 AxisToWorld => Matrix4X4.Identity;
 
 		public bool Contains(Vector3 position)
 		{
@@ -120,19 +128,44 @@ namespace MatterHackers.RayTracer
 			return -1;
 		}
 
-        public static ITraceable CreateNewHierachy(List<ITraceable> tracePrimitives, BvhCreationOptions bvhCreationOptions = BvhCreationOptions.FavorFastTracing)
+        public static ITraceable CreateNewHierachy(List<ITraceable> tracePrimitives, BvhCreationOptions bvhCreationOptions = BvhCreationOptions.LegacySlowConstructionFastTracing)
         {
-            // return BvhBuilderLocallyOrderedClustering.Create(tracePrimitives);
-            
-            switch (bvhCreationOptions)
-            {
-				case BvhCreationOptions.FavorFastConstruction:
-					return BvhBuilderLegacy.Create(tracePrimitives, 0);
-
-				case BvhCreationOptions.FavorFastTracing:
-				default:
-					return BvhBuilderLegacy.Create(tracePrimitives);
+			ITraceable output = null;
+			using (new QuickTimer("LocalOrderClustering", 1))
+			{
+                //output = BvhBuilderLocallyOrderedClustering.Create(tracePrimitives);
+				//return output;
 			}
+
+			switch (bvhCreationOptions)
+            {
+				case BvhCreationOptions.LegacyFastConstructionSlowTracing:
+					using (new QuickTimer("LegacyFastConstructionSlowTracing", 1))
+					{
+						output = BvhBuilderBottomUp.Create(tracePrimitives, 0);
+					}
+					break;
+
+				case BvhCreationOptions.LegacySlowConstructionFastTracing:
+					using (new QuickTimer("LegacySlowConstructionFastTracing", 1))
+					{
+						output = BvhBuilderBottomUp.Create(tracePrimitives);
+					}
+					break;
+
+				case BvhCreationOptions.LocFastContructionFastTracing:
+					using (new QuickTimer("LocFastContructionFastTracing", 1))
+					{
+						output = BvhBuilderLocallyOrderedClustering.Create(tracePrimitives);
+					}
+					break;
+
+				default:
+					output = BvhBuilderBottomUp.Create(tracePrimitives);
+					break;
+			}
+
+			return output;
 		}
 
         public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()

@@ -34,7 +34,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer
 {
-    public static class BvhBuilderLegacy
+    public static class BvhBuilderBottomUp
     {
 		public class SortingAccelerator
 		{

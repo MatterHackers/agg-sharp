@@ -35,19 +35,66 @@ using System.Linq;
 
 namespace MatterHackers.RayTracer
 {
-
-    public class CompareMortonCodesClass : IComparer<(ITraceable node, long mortonCode)>
-    {
-        public int Compare((ITraceable node, long mortonCode) a, (ITraceable node, long mortonCode) b)
-        {
-            return a.mortonCode.CompareTo(b.mortonCode);
-        }
-    }
-
     public class BvhBuilderLocallyOrderedClustering
     {
-        SortedList<uint, ITraceable> sortedNodes = new SortedList<uint, ITraceable>();
+        public static void RadixSort((ITraceable node, long mortonCode)[] a)
+        {
+            // our helper array 
+            var t = new (ITraceable node, long mortonCode)[a.Length];
 
+            // number of bits our group will be long 
+            int r = 4; // try to set this also to 2, 8 or 16 to see if it is 
+                       // quicker or not 
+
+            // number of bits of a C# int 
+            int b = 32;
+
+            // counting and prefix arrays
+            // (note dimensions 2^r which is the number of all possible values of a 
+            // r-bit number) 
+            int[] count = new int[1 << r];
+            int[] pref = new int[1 << r];
+
+            // number of groups 
+            int groups = (int)Math.Ceiling((double)b / (double)r);
+
+            // the mask to identify groups 
+            int mask = (1 << r) - 1;
+
+            // the algorithm: 
+            for (int c = 0, shift = 0; c < groups; c++, shift += r)
+            {
+                // reset count array 
+                for (int j = 0; j < count.Length; j++)
+                {
+                    count[j] = 0;
+                }
+
+                // counting elements of the c-th group 
+                for (int i = 0; i < a.Length; i++)
+                {
+                    count[(a[i].mortonCode >> shift) & mask]++;
+                }
+
+                // calculating prefixes 
+                pref[0] = 0;
+                for (int i = 1; i < count.Length; i++)
+                {
+                    pref[i] = pref[i - 1] + count[i - 1];
+                }
+
+                // from a[] to t[] elements ordered by c-th group 
+                for (int i = 0; i < a.Length; i++)
+                {
+                    t[pref[(a[i].mortonCode >> shift) & mask]++] = a[i];
+                }
+
+                // a[]=t[] and start again until the last group 
+                t.CopyTo(a, 0);
+            }
+            // a is sorted 
+        }
+        
         /// <summary>
         /// Create a balanced BvhTree from the nodes
         /// </summary>
@@ -65,9 +112,9 @@ namespace MatterHackers.RayTracer
             {
                 return sourceNodes[0];
             }
-            Parallel.Sequential = false;
-            var compareMortonCodesClass = new CompareMortonCodesClass();
 
+            Parallel.Sequential = false;
+ 
             // get the bounds of all the nodes
             var bounds = AxisAlignedBoundingBox.Empty();
             foreach (var node in sourceNodes)
@@ -96,13 +143,10 @@ namespace MatterHackers.RayTracer
                 inputNodes.Add((sourceNodes[i], GetMortonCode(sourceNodes[i])));
             }
 
-            int CompareMortonCodes((ITraceable node, long mortonCode) a, (ITraceable node, long mortonCode) b)
-            {
-                return a.mortonCode.CompareTo(b.mortonCode);
-            }
-
             // sort them
-            inputNodes.Sort(CompareMortonCodes);
+            var inputNodesSorted = inputNodes.ToArray();
+            RadixSort(inputNodesSorted);
+            inputNodes = inputNodesSorted.ToList();
 
             var bestNodeToMerge = new List<int>(new int[inputNodes.Count]);
 
@@ -157,8 +201,6 @@ namespace MatterHackers.RayTracer
                     markedForRemoval[i] = false;
                 }
 
-                var nodesToAdd = new List<(ITraceable node, long mortonCode)>();
-
                 // find all the nodes that agree on merging with eachother
                 for (int i = 0; i < inputNodes.Count; i++)
                 {
@@ -169,7 +211,7 @@ namespace MatterHackers.RayTracer
 
                     var nodeToMergeWith = bestNodeToMerge[i];
                     // if the node we want to merge with wants to merge with us
-                    // if (bestNodeToMerge[nodeToMergeWith] == i)
+                    if (bestNodeToMerge[nodeToMergeWith] == i)
                     {
                         // create a new node that is the merge
                         var newNode = new BoundingVolumeHierarchy(inputNodes[i].node, inputNodes[nodeToMergeWith].node);
@@ -197,7 +239,7 @@ namespace MatterHackers.RayTracer
                 var temp = inputNodes;
                 inputNodes = outputNodes;
                 outputNodes = temp;
-                checkDistance = 4;
+                checkDistance = 20;
                 
                 // continue until all nodes have been merged
             }
