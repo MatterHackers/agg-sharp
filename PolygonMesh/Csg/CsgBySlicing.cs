@@ -190,6 +190,8 @@ namespace MatterHackers.PolygonMesh.Csg
                     return null;
                 }
 
+                var slicePolygons = new Dictionary<Plane, Polygons>();
+
                 for (int faceIndex = 0; faceIndex < mesh1.Faces.Count; faceIndex++)
                 {
                     var cutPlane = plansByMesh[mesh1Index][faceIndex];
@@ -213,7 +215,19 @@ namespace MatterHackers.PolygonMesh.Csg
 
                     var transformTo0Plane = transformTo0Planes[cutPlane].matrix;
 
-                    var totalSlice = GetTotalSlice(mesh1Index, cutPlane, transformTo0Plane);
+                    Polygons totalSlice;
+                    
+                    // check if we have already calculated this exact plane
+                    if (slicePolygons.ContainsKey(cutPlane))
+                    {
+                        totalSlice = slicePolygons[cutPlane];
+                    }
+                    else
+                    {
+                        totalSlice = GetTotalSlice(mesh1Index, cutPlane, transformTo0Plane);
+                        slicePolygons[cutPlane] = totalSlice;
+                    }
+                    
 
                     // now we have the total loops that this polygon can intersect from the other meshes
                     // make a polygon for this face

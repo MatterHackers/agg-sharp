@@ -765,24 +765,14 @@ namespace MatterHackers.DataConverters3D
 		/// </summary>
 		/// <param name="mesh">The mesh to add the BVH to.</param>
 		/// <returns>The created BVH tree.</returns>
-		public static ITraceable CreateBVHData(this Mesh mesh)
+		public static ITraceable CreateBVHData(this Mesh mesh, BvhCreationOptions bvhCreationOptions = BvhCreationOptions.LegacySlowConstructionFastTracing)
 		{
-			return CreateBVHData(mesh, null, Matrix4X4.Identity);
-		}
+			// test new BvHBuilderAac
+			// return BvhBuilderAac.Create(mesh);
 
-		/// <summary>
-		/// Create a bounding volume hierarchy for the give mesh.
-		/// </summary>
-		/// <param name="mesh">The mesh to add the BVH to.</param>
-		/// <param name="material">The tracing material to use.</param>
-		/// <param name="matrix">A transformation to apply to the trace data</param>
-		/// <param name="maxRecursion">The max depth to create the BVH tree.</param>
-		/// <returns>The created BVH tree.</returns>
-		public static ITraceable CreateBVHData(this Mesh mesh, MaterialAbstract material, Matrix4X4 matrix, BvhCreationOptions bvhCreationOptions = BvhCreationOptions.FavorFastTracing)
-		{
 			var allPolys = new List<ITraceable>();
 
-			mesh.AddTraceables(material, matrix, allPolys);
+			mesh.AddTraceables(null, Matrix4X4.Identity, allPolys);
 
 			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys, bvhCreationOptions);
 		}
