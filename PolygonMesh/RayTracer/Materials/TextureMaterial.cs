@@ -12,7 +12,7 @@ using MatterHackers.Agg.Image;
 //-----------------------------------------------------------------------
 using System;
 
-namespace MatterHackers.RayTracerNS
+namespace MatterHackers.RayTracer
 {
 	public class TextureMaterial : MaterialAbstract
 	{

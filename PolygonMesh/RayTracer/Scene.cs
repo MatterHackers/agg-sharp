@@ -37,11 +37,11 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
-using MatterHackers.RayTracerNS.Light;
+using MatterHackers.RayTracer.Light;
 using MatterHackers.VectorMath;
 using System.Collections.Generic;
 
-namespace MatterHackers.RayTracerNS
+namespace MatterHackers.RayTracer
 {
 	/// <summary>
 	/// a scene is defined by:

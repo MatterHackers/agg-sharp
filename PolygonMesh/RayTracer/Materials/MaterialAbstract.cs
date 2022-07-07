@@ -10,7 +10,7 @@
 
 using MatterHackers.Agg;
 
-namespace MatterHackers.RayTracerNS
+namespace MatterHackers.RayTracer
 {
 	public abstract class MaterialAbstract
 	{

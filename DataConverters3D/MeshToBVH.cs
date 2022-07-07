@@ -32,7 +32,7 @@ using MatterHackers.Agg;
 using MatterHackers.DataConverters3D;
 using System.Linq;
 using MatterHackers.PolygonMesh;
-using MatterHackers.RayTracerNS;
+using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
 using System;
 

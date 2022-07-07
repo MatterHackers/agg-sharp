@@ -32,7 +32,7 @@ using MatterHackers.VectorMath;
 using System;
 using System.Collections;
 
-namespace MatterHackers.RayTracerNS
+namespace MatterHackers.RayTracer
 {
 	public class CylinderShape : BaseShape
 	{

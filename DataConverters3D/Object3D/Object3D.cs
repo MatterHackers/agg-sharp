@@ -44,8 +44,8 @@ using MatterHackers.Localizations;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.PolygonMesh.Processors;
-using MatterHackers.RayTracerNS;
-using MatterHackers.RayTracerNS.Traceable;
+using MatterHackers.RayTracer;
+using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
 

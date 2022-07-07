@@ -41,7 +41,7 @@ using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 using System;
 
-namespace MatterHackers.RayTracerNS.Light
+namespace MatterHackers.RayTracer.Light
 {
 	/// <summary>
 	/// a point light

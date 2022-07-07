@@ -13,7 +13,7 @@ using MatterHackers.VectorMath;
 using System;
 using System.Collections;
 
-namespace MatterHackers.RayTracerNS
+namespace MatterHackers.RayTracer
 {
 	/// <summary>
 	/// a sphere is one of the most basic shapes you will find in any raytracer application.
