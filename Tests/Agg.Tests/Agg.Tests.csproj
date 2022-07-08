@@ -16,7 +16,6 @@
 		<Service Include="{63A7B48D-3B50-4B1E-B85E-2ADB8510F352}" />
 	</ItemGroup>
   <ItemGroup>
-    <PackageReference Include="C5" Version="2.5.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="NUnit" Version="3.13.3" />
