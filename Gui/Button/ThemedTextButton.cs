@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Kevin Pope
+Copyright (c) 2022, John Lewin, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -29,52 +29,51 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace MatterHackers.Agg.UI
 {
-	public class HorizontalSpacer : GuiWidget
-	{
-		public HorizontalSpacer()
-		{
-			HAnchor = HAnchor.Stretch;
-			Height = 1;
-		}
-	}
+    public class ThemedTextButton : ThemedButton
+    {
+        private readonly TextWidget textWidget;
 
-	public class VerticalSpacer : GuiWidget
-	{
-		public VerticalSpacer()
-		{
-			VAnchor = VAnchor.Stretch;
-			Width = 1;
-		}
-	}
+        public ThemedTextButton(string text, ThemeConfig2 theme, double pointSize = -1)
+            : base(theme)
+        {
+            HAnchor = HAnchor.Fit;
+            VAnchor = VAnchor.Absolute;
+            Height = theme.ButtonHeight;
+            Padding = theme.TextButtonPadding;
+            TabStop = true;
 
-	public class HorizontalLine : GuiWidget
-	{
-		public HorizontalLine()
-			: base(1, 1 * DeviceScale)
-		{
-            BackgroundColor = Color.Black;
-            HAnchor = HAnchor.Stretch;
-		}
+            BackgroundRadius = theme.ButtonRadius * DeviceScale;
 
-		public HorizontalLine(Color color)
-			: this()
-		{
-			BackgroundColor = color;
-		}
-	}
+            var textSize = pointSize != -1 ? pointSize : theme.DefaultFontSize;
 
-	public class VerticalLine : GuiWidget
-	{
-		public VerticalLine()
-			: base(1 * DeviceScale, 1)
-		{
-			VAnchor = VAnchor.Stretch;
-		}
+            AddChild(textWidget = new TextWidget(text, pointSize: textSize, textColor: theme.TextColor)
+            {
+                HAnchor = HAnchor.Center,
+                VAnchor = VAnchor.Center,
+                AutoExpandBoundsToText = true
+            });
+        }
 
-		public VerticalLine(Color color)
-			: this()
-		{
-			BackgroundColor = color;
-		}
-	}
+        public Color TextColor
+        {
+            get => textWidget.TextColor;
+            set => textWidget.TextColor = value;
+        }
+
+        public override string Text
+        {
+            get => textWidget.Text;
+            set => textWidget.Text = value;
+        }
+
+        public override bool Enabled
+        {
+            get => base.Enabled;
+            set
+            {
+                base.Enabled = value;
+                textWidget.Enabled = value;
+            }
+        }
+    }
 }
