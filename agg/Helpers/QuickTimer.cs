@@ -56,24 +56,29 @@ namespace MatterHackers.Agg
 	/// </example>
 	public class QuickTimer : IDisposable
 	{
-		private string name;
+        private double minTimeToReport;
+        private string name;
 		private Stopwatch quickTimerTime = Stopwatch.StartNew();
 		private double startTime;
 
-		public QuickTimer(string name)
+		public QuickTimer(string name, double minTimeToReport = 0)
 		{
+			this.minTimeToReport = minTimeToReport;
 			this.name = name;
 			startTime = quickTimerTime.Elapsed.TotalMilliseconds;
 		}
 
 		public void Dispose()
 		{
-			double totalTime = quickTimerTime.Elapsed.TotalMilliseconds - startTime;
-			Debug.WriteLine(name + ": {0:0.0}s".FormatWith(totalTime/1000.0));
+			double totalTime = (quickTimerTime.Elapsed.TotalMilliseconds - startTime) / 1000.0;
+			if (totalTime > minTimeToReport)
+			{
+				Debug.WriteLine(name + ": {0:0.0}s".FormatWith(totalTime));
+			}
 		}
 	}
 
-	public class QuickTimer2 : IDisposable
+	public class QuickTimer2Report : IDisposable
 	{
 		private string name;
 		private Stopwatch quickTimerTime = Stopwatch.StartNew();
@@ -81,7 +86,7 @@ namespace MatterHackers.Agg
 
 		private static Dictionary<string, double> timers = new Dictionary<string, double>();
 
-		public QuickTimer2(string name)
+		public QuickTimer2Report(string name)
 		{
 			this.name = name;
 			if (!timers.ContainsKey(name))

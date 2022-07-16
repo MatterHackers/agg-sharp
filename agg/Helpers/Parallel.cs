@@ -33,7 +33,7 @@ using System.Threading.Tasks;
 
 namespace MatterHackers.Agg
 {
-    public class Parallel
+    public static class Parallel
     {
         public static bool Sequential { get; set; }
 

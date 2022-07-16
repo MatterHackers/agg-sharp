@@ -29,7 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg;
 
-namespace MatterHackers.RayTracerNS
+namespace MatterHackers.RayTracer
 {
 	/// <summary>
 	/// defines the background of the scene

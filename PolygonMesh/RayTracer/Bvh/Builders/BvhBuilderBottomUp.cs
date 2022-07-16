@@ -32,9 +32,9 @@ using System.Collections.Generic;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RayTracerNS
+namespace MatterHackers.RayTracer
 {
-    public static class BvhBuilderLegacy
+    public static class BvhBuilderBottomUp
     {
 		public class SortingAccelerator
 		{
@@ -236,7 +236,7 @@ namespace MatterHackers.RayTracerNS
 
 				var leftGroup = Create(leftItems, maxRecursion, recursionDepth + 1, accelerator);
 				var rightGroup = Create(rightItems, maxRecursion, recursionDepth + 1, accelerator);
-				var newBVHNode = new BoundingVolumeHierarchy(leftGroup, rightGroup, bestAxis);
+				var newBVHNode = new BoundingVolumeHierarchy(leftGroup, rightGroup);
 				return newBVHNode;
 			}
 		}

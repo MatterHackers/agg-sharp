@@ -14,7 +14,7 @@ using System;
 using System.Collections;
 using System.Linq;
 
-namespace MatterHackers.RayTracerNS
+namespace MatterHackers.RayTracer
 {
 	public interface ITriangle
 	{

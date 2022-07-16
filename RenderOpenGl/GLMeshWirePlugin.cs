@@ -96,15 +96,6 @@ namespace MatterHackers.RenderOpenGl
 			this.nonPlanarAngleRequired = nonPlanarAngleRequired;
 			var edgeLines = new VectorPOD<WireVertexData>();
 
-			// create a quick edge list of all the polygon edges
-			for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
-			{
-				var face = mesh.Faces[faceIndex];
-				AddVertex(edgeLines, mesh.Vertices[face.v0], mesh.Vertices[face.v1]);
-				AddVertex(edgeLines, mesh.Vertices[face.v1], mesh.Vertices[face.v2]);
-				AddVertex(edgeLines, mesh.Vertices[face.v2], mesh.Vertices[face.v0]);
-			}
-
 			this.EdgeLines = edgeLines;
 
 			// if we are trying to have a filtered list do this in a background thread and wait for the results
@@ -135,6 +126,17 @@ namespace MatterHackers.RenderOpenGl
 					this.EdgeLines = filteredEdgeLines;
 					meshChanged?.Invoke();
 				});
+			}
+            else
+            {
+				// create a quick edge list of all the polygon edges
+				for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
+				{
+					var face = mesh.Faces[faceIndex];
+					AddVertex(edgeLines, mesh.Vertices[face.v0], mesh.Vertices[face.v1]);
+					AddVertex(edgeLines, mesh.Vertices[face.v1], mesh.Vertices[face.v2]);
+					AddVertex(edgeLines, mesh.Vertices[face.v2], mesh.Vertices[face.v0]);
+				}
 			}
 		}
 

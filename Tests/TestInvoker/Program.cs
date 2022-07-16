@@ -22,7 +22,10 @@ namespace TestInvoker // Note: actual namespace depends on the project name.
 		{
 			// Run the test on an STA thread.
 			if (Program.InChildProcess)
+			{
 				Properties.Add(PropertyNames.ApartmentState, ApartmentState.STA);
+			}
+            
 			_numParallelTests = numParallelTests;
 		}
 
@@ -47,7 +50,9 @@ namespace TestInvoker // Note: actual namespace depends on the project name.
 				void IDisposable.Dispose()
 				{
 					if (Interlocked.Exchange(ref originalContext, null) is var context)
+					{
 						SynchronizationContext.SetSynchronizationContext(context);
+					}
 				}
 			}
 
@@ -56,6 +61,7 @@ namespace TestInvoker // Note: actual namespace depends on the project name.
 			{
 				_numParallelTests = numParallelTests;
 			}
+            
 			public override TestResult Execute(TestExecutionContext context)
 			{
 				if (Program.InChildProcess)
@@ -65,7 +71,9 @@ namespace TestInvoker // Note: actual namespace depends on the project name.
 					// But now, there is no new AppDomain. NUnit sets up its default sync context and Application.Run keeps it, leading to deadlock.
 					// So setup the correct sync context.
 					using (var tempCtx = new TemporarySynchronizationContext(new WindowsFormsSynchronizationContext()))
+					{
 						context.CurrentResult = innerCommand.Execute(context);
+					}
 				}
 				else
 				{
@@ -90,22 +98,36 @@ namespace TestInvoker // Note: actual namespace depends on the project name.
 							pipeServer.DisposeLocalCopyOfClientHandle();
 							pipeSense.DisposeLocalCopyOfClientHandle();
 							using (var pipeReader = new StreamReader(pipeServer))
+							{
 								output = pipeReader.ReadToEnd();
+							}
+                            
 							proc!.WaitForExit();
 						}
 
+						XmlSerializer xmlserializer = null;
 						if (output.Length <= 0)
+						{
 							throw new Exception("Test child process did not return a result.");
+						}
 
 						try
 						{
-							XmlSerializer xmlserializer = new XmlSerializer(typeof(TestInvoker.FakeTestResult));
+							xmlserializer = new XmlSerializer(typeof(TestInvoker.FakeTestResult));
 							var fakeResult = (TestInvoker.FakeTestResult)xmlserializer.Deserialize(XmlReader.Create(new StringReader(output)))!;
 							return fakeResult.ToReal(context.CurrentTest);
 						}
-						catch (Exception ex)
+                        catch (Exception ex)
 						{
-							throw new Exception("Failed to parse the test result's XML.", ex);
+							try
+							{
+								var fakeResult = (TestInvoker.FakeTestResult)xmlserializer.Deserialize(XmlReader.Create(new StringReader(output)))!;
+								return fakeResult.ToReal(context.CurrentTest);
+							}
+							catch (Exception e)
+							{
+								throw new Exception("Test child process failed to run the test.", e);
+							}
 						}
 					}
 
@@ -121,7 +143,9 @@ namespace TestInvoker // Note: actual namespace depends on the project name.
 						{
 							context.CurrentResult = result;
 							if (result.FailCount > 0)
+							{
 								break;
+							}
 						}
 					}
 					else
@@ -136,11 +160,7 @@ namespace TestInvoker // Note: actual namespace depends on the project name.
 	
 	public class Program
 	{
-		public static bool InChildProcess
-		{
-			get;
-			private set;
-		} = false;
+		public static bool InChildProcess { get; private set; } = false;
 
 		class SpecificTestFilter : TestFilter
 		{
@@ -168,13 +188,12 @@ namespace TestInvoker // Note: actual namespace depends on the project name.
 				{
 					using (var pipeSense = new AnonymousPipeClientStream(PipeDirection.In, args[1]))
 					{
-						while (pipeSense.ReadByte() >= 0)
-							;
+						while (pipeSense.ReadByte() >= 0);
 					}
 				}
 				finally
 				{
-					System.Environment.Exit(5);
+                    Environment.Exit(5);
 				}
 			});
 
@@ -185,10 +204,10 @@ namespace TestInvoker // Note: actual namespace depends on the project name.
 			string methodName = args[4];
 
 			Assembly asm = Assembly.LoadFrom(assemblyPath!);
-			NUnit.Framework.Assert.NotNull(asm);
+            Assert.NotNull(asm);
 
 			MethodInfo? methodInfo = asm.GetType(typeName)?.GetMethod(methodName);
-			NUnit.Framework.Assert.NotNull(asm);
+            Assert.NotNull(asm);
 
 			var runner = new NUnitTestAssemblyRunner(new DefaultTestAssemblyBuilder());
 			runner.Load(asm, new Dictionary<string, object>());
@@ -196,17 +215,24 @@ namespace TestInvoker // Note: actual namespace depends on the project name.
 			var result = runner.Run(TestListener.NULL, new SpecificTestFilter { TheMethod = methodInfo });
 
 			while (result.HasChildren)
+			{
 				result = result.Children.Single();
+			}
 
 			// If nothing was tested, don't output the empty success result.
 			if (result == null || result.Test?.Method?.MethodInfo != methodInfo)
+			{
 				return 1;
+			}
 
 			XmlSerializer xmlserializer = new(typeof(FakeTestResult));
 
 			XmlWriterSettings settings = new();
 			using (XmlWriter writer = XmlWriter.Create(pipeClient, settings))
+			{
 				xmlserializer.Serialize(writer, FakeTestResult.FromReal(result));
+			}
+            
 			return 0;
 		}
 	}

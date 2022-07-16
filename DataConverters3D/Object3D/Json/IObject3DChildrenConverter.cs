@@ -65,6 +65,7 @@ namespace MatterHackers.DataConverters3D
 
 		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
 		{
+			reader.MaxDepth = Object3D.MaxJsonDepth;
 			var parentItem = existingValue as IObject3D;
 
 			var items = new List<IObject3D>();

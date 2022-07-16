@@ -37,7 +37,7 @@ using NUnit.Framework;
 using System.IO;
 using System.Threading;
 
-namespace MatterHackers.RayTracerNS
+namespace MatterHackers.RayTracer
 {
 	[TestFixture, Category("Agg.RayTracer")]
 	public class PolygonTraceTests

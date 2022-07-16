@@ -15,7 +15,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace MatterHackers.RayTracerNS
+namespace MatterHackers.RayTracer
 {
 	public abstract class BaseShape : IPrimitive
 	{

@@ -43,7 +43,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 
-namespace MatterHackers.RayTracerNS
+namespace MatterHackers.RayTracer
 {
 	/// <summary>
 	/// this is a data class that stores all relevant information about a ray-shape intersection

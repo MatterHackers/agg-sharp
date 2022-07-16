@@ -34,7 +34,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace MatterHackers.RayTracerNS.Traceable
+namespace MatterHackers.RayTracer.Traceable
 {
 	public class Transform : Axis3D, ITraceable
 	{

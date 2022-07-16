@@ -32,8 +32,8 @@ using MatterHackers.Csg;
 using MatterHackers.Csg.Operations;
 using MatterHackers.Csg.Solids;
 using MatterHackers.Csg.Transform;
-using MatterHackers.RayTracerNS;
-using MatterHackers.RayTracerNS.Traceable;
+using MatterHackers.RayTracer;
+using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
@@ -136,7 +136,7 @@ namespace MatterHackers.DataConverters3D
 				subtractItems.Add(GetIPrimitiveRecursive((dynamic)copiedObject));
 			}
 
-			return new RayTracerNS.Traceable.Difference(GetIPrimitiveRecursive((dynamic)objectToProcess.Primary), BoundingVolumeHierarchy.CreateNewHierachy(subtractItems));
+			return new RayTracer.Traceable.Difference(GetIPrimitiveRecursive((dynamic)objectToProcess.Primary), BoundingVolumeHierarchy.CreateNewHierachy(subtractItems));
 		}
 
 		#endregion Difference

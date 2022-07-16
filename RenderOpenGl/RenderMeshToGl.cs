@@ -356,6 +356,7 @@ namespace MatterHackers.RenderOpenGl
 			else if (renderType == RenderTypes.NonManifold)
 			{
 				edgeLinesContainer = GLMeshNonManifoldPlugin.Get(meshToRender, meshChanged);
+				GL.Color4(255, 0, 0, 255);
 			}
 			else
 			{

@@ -32,7 +32,7 @@ using MatterHackers.VectorMath;
 using NUnit.Framework;
 using MatterHackers.VectorMath.Tests;
 
-namespace MatterHackers.RayTracerNS
+namespace MatterHackers.RayTracer
 {
     [TestFixture, Ignore("WorkInProgress")]
 	public class FrustumTests
