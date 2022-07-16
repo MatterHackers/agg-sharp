@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2016, Lars Brubaker, John Lewin
+Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,55 +27,15 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI
 {
-	[DebuggerDisplay("{Text}:{Value}")]
-	public class MenuItem : GuiWidget
+	public enum ArrowDirection
 	{
-		public class MenuClosedMessage
-		{
-		}
-
-		public event EventHandler Selected;
-
-		public bool CanHeldSelection { get; set; } = true;
-
-		public Func<bool> AllowClicks;
-
-		public string Value { get; set; }
-
-		public MenuItem(GuiWidget viewItem, string value = null)
-		{
-			Value = value;
-			HAnchor = HAnchor.Stretch | HAnchor.Fit;
-			VAnchor = VAnchor.Fit;
-			AddChild(viewItem);
-		}
-
-		public override void OnMouseUp(MouseEventArgs mouseEvent)
-		{
-			if (AllowClicks?.Invoke() == true)
-			{
-				if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
-				{
-					Selected?.Invoke(this, mouseEvent);
-				}
-			}
-
-			base.OnMouseUp(mouseEvent);
-		}
-	}
-
-	public class MenuItemHoldOpen : MenuItem, IIgnoredPopupChild
-	{
-		public MenuItemHoldOpen(GuiWidget content)
-			: base(content)
-		{
-		}
-
-		public new bool KeepMenuOpen => false;
+		Right,
+		Left,
+		Up,
+		Down,
+		None
 	}
 }
