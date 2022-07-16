@@ -20,6 +20,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
@@ -541,6 +542,9 @@ namespace MatterHackers.Agg.UI
 
 			systemWindow.AnchorAll();
 
+			// If this isn't true, prepare for deadlocks.
+			System.Diagnostics.Debug.Assert(SynchronizationContext.Current == null || SynchronizationContext.Current is WindowsFormsSynchronizationContext);
+
 			if (firstWindow)
 			{
 				firstWindow = false;
@@ -552,7 +556,7 @@ namespace MatterHackers.Agg.UI
 				{
 					enableIdleProcessing = true;
 				}
-
+				
 				Application.Run(this);
 			}
 			else if (!SingleWindowMode)

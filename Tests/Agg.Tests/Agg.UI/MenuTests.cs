@@ -34,10 +34,11 @@ using MatterHackers.Agg.Image;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
+using TestInvoker;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
+	[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
 	public class MenuTests
 	{
 		public static bool SaveImagesForDebug = false;
@@ -50,7 +51,7 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public async Task OpenAndCloseMenus()
 		{
 			int item1ClickCount = 0;
@@ -109,17 +110,26 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.ClickByName("OffMenu");
 
 				testRunner.WaitFor(() => !testList.IsOpen, 2);
+				//if (testList.IsOpen) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
 				Assert.IsTrue(!testList.IsOpen);
 
 				testRunner.ClickByName("menu1");
 				testRunner.Delay(.1);
+				//testRunner.Delay(5);
+				//if (!testList.IsOpen) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
 				Assert.IsTrue(testList.IsOpen);
 
 				testRunner.ClickByName("item3");
 				testRunner.Delay(.1);
+				//if (!testList.IsOpen) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
 				Assert.IsTrue(testList.IsOpen);
 
+				//testRunner.Delay(5);
 				testRunner.MoveToByName("OffMenu");
+				// NOTE: Sometimes get failures here. Using a large delay now.
+				// NOTE: The menu was once closed for those 10s...
+				// Update: Failures may have been due to tests fighting over platform UI focus.
+				//if (!testList.IsOpen) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
 				Assert.IsTrue(testList.IsOpen);
 
 				testRunner.ClickByName("OffMenu");

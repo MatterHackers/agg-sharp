@@ -32,13 +32,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.GuiAutomation;
 using NUnit.Framework;
+using TestInvoker;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
+	[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
 	public class AutomationRunnerTests
 	{
-		[Test]
+		[Test, ChildProcessTest]
 		public async Task GetWidgetByNameTestNoRegionSingleWindow()
 		{
 			// single system window
@@ -62,7 +63,7 @@ namespace MatterHackers.Agg.UI.Tests
 			});
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void AutomationRunnerTimeoutTest()
 		{
 			// Ensure AutomationRunner throws timeout exceptions
@@ -72,10 +73,10 @@ namespace MatterHackers.Agg.UI.Tests
 			leftButton.Name = "left";
 			systemWindow.AddChild(leftButton);
 
-			Exception foundException = null;
-			try
-			{
-				AutomationRunner.ShowWindowAndExecuteTests(
+			// NOTE: This test once failed. Possibly due to ShowWindowAndExecuteTests using different timing sources. A Stopwatch and a Task.Delay.
+
+			Assert.ThrowsAsync<TimeoutException>(
+				() => AutomationRunner.ShowWindowAndExecuteTests(
 					systemWindow,
 					(testRunner) =>
 					{
@@ -83,18 +84,11 @@ namespace MatterHackers.Agg.UI.Tests
 						Thread.Sleep(10 * 1000);
 						return Task.CompletedTask;
 					},
-					// Timeout after 3 seconds
-					secondsToTestFailure: 3);
-			}
-			catch (TimeoutException ex)
-            {
-				foundException = ex;
-			}
-
-			Assert.IsTrue(foundException != null, "Make sure we get a timeout exception");
+					// Timeout after 1 second
+					secondsToTestFailure: 1));
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public async Task GetWidgetByNameTestRegionSingleWindow()
 		{
 			int leftClickCount = 0;

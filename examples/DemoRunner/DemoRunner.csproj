@@ -1,24 +1,8 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="12.0">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.50727</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{68625601-A793-4222-8916-2A62E6971CB8}</ProjectGuid>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <!--See the following for details on netstandard2 binding workround: https://github.com/dotnet/standard/issues/481-->
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>DemoRunner</RootNamespace>
-    <AssemblyName>DemoRunner</AssemblyName>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
-    <UpgradeBackupLocation>
-    </UpgradeBackupLocation>
-    <OldToolsVersion>2.0</OldToolsVersion>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -34,165 +18,46 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>True</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>False</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <PlatformTarget>x86</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>True</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <PlatformTarget>x86</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\x64\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <OutputPath>bin\x64\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\agg\Agg.csproj">
-      <Project>{657dbc6d-c3ea-4398-a3fa-ddb73c14f71b}</Project>
-      <Name>Agg</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Gui\Gui.csproj">
-      <Project>{74f6bb6c-9d02-4512-a59a-21940e35c532}</Project>
-      <Name>Gui</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj">
-      <Project>{670bddff-927b-425d-9dd1-22acb14356eb}</Project>
-      <Name>PlatformWin32</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\PolygonMesh\PolygonMesh.csproj">
-      <Project>{86f6aaf2-9b50-40b8-a427-1897d76471c5}</Project>
-      <Name>PolygonMesh</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\VectorMath\VectorMath.csproj">
-      <Project>{d3e41b4e-bfbb-44ca-94c8-95c00f754fdd}</Project>
-      <Name>VectorMath</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\aa_demo\aa_demo.csproj">
-      <Project>{b90fce13-d2da-4759-abfe-70b36bd32ec1}</Project>
-      <Name>aa_demo</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\aa_test\aa_test.csproj">
-      <Project>{0cd72c9c-5111-4b90-bfa9-06c5abc389f6}</Project>
-      <Name>aa_test</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\alpha_mask2\alpha_mask2.csproj">
-      <Project>{d933ef7c-9219-4c28-931c-95eb3c8494d6}</Project>
-      <Name>alpha_mask2</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\blur\blur.csproj">
-      <Project>{d0b56f16-6191-4337-8da1-9b0a59708c7f}</Project>
-      <Name>blur</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\component_rendering\component_rendering.csproj">
-      <Project>{1fe9ce87-30b0-44a1-a8d4-4fcb80f81f34}</Project>
-      <Name>component_rendering</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\FloodFill\FloodFill.csproj">
-      <Project>{b40ce1af-07a9-4b58-84ca-753d7d150ab9}</Project>
-      <Name>FloodFill</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\GCodeVisualizer\GCodeVisualizer.csproj">
-      <Project>{f67ae800-b0c7-42a8-836f-597b4e74591c}</Project>
-      <Name>GCodeVisualizer</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\gouraud\gouraud.csproj">
-      <Project>{dc6aec82-d343-48c3-972b-88f608e5597d}</Project>
-      <Name>gouraud</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\gouraud_mesh\gouraud_mesh.csproj">
-      <Project>{50237ee2-28dc-4f54-9e89-a8839a83aae5}</Project>
-      <Name>gouraud_mesh</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\gradients\gradients.csproj">
-      <Project>{d1562e89-00e2-44d6-bc1e-9b017e0212b4}</Project>
-      <Name>gradients</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\GUITester\GuiTester.csproj">
-      <Project>{0B8D6F56-BD7F-4426-B858-D9292B084656}</Project>
-      <Name>GuiTester</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\image1\image1.csproj">
-      <Project>{25d8987b-5449-4a31-b444-bcdf9e52d561}</Project>
-      <Name>image1</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\image_filters\image_filters.csproj">
-      <Project>{74ba5082-fd08-4bb9-8b30-39d9e80d2c8f}</Project>
-      <Name>image_filters</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\image_resample\image_resample.csproj">
-      <Project>{c804a351-7e6f-4d93-8e4c-3aa8183d1608}</Project>
-      <Name>image_resample</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\lion\lion.csproj">
-      <Project>{3befa755-a647-4a16-a73c-0acf18211ebd}</Project>
-      <Name>lion</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\lion_outline\lion_outline.csproj">
-      <Project>{3e06c55c-4cf1-4cc3-86f4-e4da1faffb06}</Project>
-      <Name>lion_outline</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\MomsSolitaire\MomsSolitaire.csproj">
-      <Project>{4c81e7d6-ca91-4724-851d-2c6092e362c7}</Project>
-      <Name>MomsSolitaire</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\perspective\perspective.csproj">
-      <Project>{eb8ae3d1-e17f-47d6-a7f3-3b670a65a702}</Project>
-      <Name>perspective</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PolygonClipping\PolygonClipping.csproj">
-      <Project>{e8d6f1ef-5ad2-45f0-b71d-1214d00c5ce4}</Project>
-      <Name>PolygonClipping</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\rounded_rect\rounded_rect.csproj">
-      <Project>{da8ebdd6-0e11-422d-82e9-b2ba487d106d}</Project>
-      <Name>rounded_rect</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SmartSweepers\SmartSweepers.csproj">
-      <Project>{f237ae63-0021-4873-ac36-5b75c5f4dd1a}</Project>
-      <Name>SmartSweepers</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\trans_curve1\trans_curve1.csproj">
-      <Project>{e00c05a9-1da5-48c4-b23f-9a2ceee229d4}</Project>
-      <Name>trans_curve1</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="DemoRunner.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <ProjectReference Include="..\..\agg\Agg.csproj" />
+    <ProjectReference Include="..\..\Gui\Gui.csproj" />
+    <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj" />
+    <ProjectReference Include="..\..\PolygonMesh\PolygonMesh.csproj" />
+    <ProjectReference Include="..\..\VectorMath\VectorMath.csproj" />
+    <ProjectReference Include="..\aa_demo\aa_demo.csproj" />
+    <ProjectReference Include="..\aa_test\aa_test.csproj" />
+    <ProjectReference Include="..\alpha_mask2\alpha_mask2.csproj" />
+    <ProjectReference Include="..\blur\blur.csproj" />
+    <ProjectReference Include="..\component_rendering\component_rendering.csproj" />
+    <ProjectReference Include="..\FloodFill\FloodFill.csproj" />
+    <ProjectReference Include="..\GCodeVisualizer\GCodeVisualizer.csproj" />
+    <ProjectReference Include="..\gouraud\gouraud.csproj" />
+    <ProjectReference Include="..\gouraud_mesh\gouraud_mesh.csproj" />
+    <ProjectReference Include="..\gradients\gradients.csproj" />
+    <ProjectReference Include="..\GUITester\GuiTester.csproj" />
+    <ProjectReference Include="..\image1\image1.csproj" />
+    <ProjectReference Include="..\image_filters\image_filters.csproj" />
+    <ProjectReference Include="..\image_resample\image_resample.csproj" />
+    <ProjectReference Include="..\lion\lion.csproj" />
+    <ProjectReference Include="..\lion_outline\lion_outline.csproj" />
+    <ProjectReference Include="..\MomsSolitaire\MomsSolitaire.csproj" />
+    <ProjectReference Include="..\perspective\perspective.csproj" />
+    <ProjectReference Include="..\PolygonClipping\PolygonClipping.csproj" />
+    <ProjectReference Include="..\rounded_rect\rounded_rect.csproj" />
+    <ProjectReference Include="..\SmartSweepers\SmartSweepers.csproj" />
+    <ProjectReference Include="..\trans_curve1\trans_curve1.csproj" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">
@@ -217,10 +82,8 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
+    <PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.3.330701">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -199,6 +199,9 @@ namespace MatterHackers.GlfwProvider
 
 		private void CursorPositionCallback(Window window, double x, double y)
 		{
+			if (!IPlatformWindow.EnablePlatformWindowInput)
+				return;
+
 			mouseX = x;
 			mouseY = aggSystemWindow.Height - y;
 			WindowProvider.TopWindow.OnMouseMove(new MouseEventArgs(mouseButton, 0, mouseX, mouseY, 0));
@@ -216,6 +219,12 @@ namespace MatterHackers.GlfwProvider
 				for (var i = 0; i < this.WindowProvider.OpenWindows.Count; i++)
 				{
 					var window = this.WindowProvider.OpenWindows[i];
+
+					// Due to handling in CloseSystemWindow, testing can sometimes end up handling a draw event with no PlatformWindow, so skip this window.
+					// TODO: Unify this stuff with PlatformWin32?
+					if (window.PlatformWindow == null)
+						continue;
+
 					if (i > 0)
 					{
 						window.Size = systemWindow.Size;
@@ -232,6 +241,9 @@ namespace MatterHackers.GlfwProvider
 
 		private void CharCallback(Window window, uint codePoint)
 		{
+			if (!IPlatformWindow.EnablePlatformWindowInput)
+				return;
+
 			WindowProvider.TopWindow.OnKeyPress(new KeyPressEventArgs((char)codePoint));
 		}
 
@@ -270,6 +282,9 @@ namespace MatterHackers.GlfwProvider
 
 		private void KeyCallback(Window windowIn, GLFW.Keys key, int scanCode, InputState state, ModifierKeys mods)
 		{
+			if (!IPlatformWindow.EnablePlatformWindowInput)
+				return;
+
 			if (state == InputState.Press || state == InputState.Repeat)
 			{
 				var keyData = MapKey(key, out bool _);
@@ -625,6 +640,9 @@ namespace MatterHackers.GlfwProvider
 
 		private void MouseButtonCallback(Window window, MouseButton button, InputState state, ModifierKeys modifiers)
 		{
+			if (!IPlatformWindow.EnablePlatformWindowInput)
+				return;
+
 			var now = UiThread.CurrentTimerMs;
 			mouseButton = MouseButtons.Left;
 			switch (button)
@@ -666,6 +684,9 @@ namespace MatterHackers.GlfwProvider
 
 		private void ScrollCallback(Window window, double x, double y)
 		{
+			if (!IPlatformWindow.EnablePlatformWindowInput)
+				return;
+
 			WindowProvider.TopWindow.OnMouseWheel(new MouseEventArgs(MouseButtons.None, 0, mouseX, mouseY, (int)(y * 120)));
 		}
 
@@ -819,6 +840,9 @@ namespace MatterHackers.GlfwProvider
 
 		private void DropCallback(Window window, int count, IntPtr array)
 		{
+			if (!IPlatformWindow.EnablePlatformWindowInput)
+				return;
+
 			var files = IntPtrToStringArray<byte>(count, array).ToList();
 
 			UiThread.RunOnIdle(() =>

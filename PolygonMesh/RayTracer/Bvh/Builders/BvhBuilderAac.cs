@@ -86,12 +86,13 @@ namespace MatterHackers.RayTracer
             Thread thread = new Thread();
             thread.init(4 * (int)(minSize * Math.Pow(faceCount / 2.0 / minSize, 0.5 - alpha / 2) + 1e-5));
             RadixSort();
-            int finalLen = 0;
+            int finalLen;
             ThreadBuild(thread, 0, 0, faceCount, MortonDigit * 3 - 1, out finalLen);
             AAClomerate(thread, 0, finalLen, 1, out finalLen);
 
             PruneTree();
             PrintTreeBIN(fileName);
+            PrintTree(fileName);
         }
 
         // Data input.
@@ -168,6 +169,15 @@ namespace MatterHackers.RayTracer
             f.Write(nodeNum[curNode - 1]);
             double area = AABB[curNode - 1].GetSurfaceArea();
             PrintTreeBIN(f, curNode - 1, 0, area);
+            f.Close();
+        }
+
+        public void PrintTree(string fileName)
+        {
+            var f = new StreamWriter(new FileStream(Path.ChangeExtension(fileName, ".txt"), FileMode.Create));
+            f.Write(nodeNum[curNode - 1]);
+            double area = AABB[curNode - 1].GetSurfaceArea();
+            PrintTree(f, curNode - 1, 0, area, 0);
             f.Close();
         }
 
@@ -352,6 +362,69 @@ namespace MatterHackers.RayTracer
                 f.Write(AABB[root].MaxXYZ.Y);
                 f.Write(AABB[root].MaxXYZ.Z);
                 PrintTreeBIN(f, root, 1, 0);
+            }
+        }
+
+        bool group = false;
+        private void PrintTree(TextWriter f, int root, int forb, double topArea, int depth)
+        {
+            var faceCount = model.Faces.Count;
+
+            void Indent()
+            {
+                f.Write(new String(' ', depth * 4));
+            }
+
+            if (forb > 0)
+            {
+                if (root < faceCount)
+                {
+                    if (!group)
+                    {
+                        f.Write("\n");
+                        Indent();
+                    }
+                    group = true;
+                    f.Write($"[{root}]");
+                }
+                else
+                {
+                    PrintTree(f, lChild[root], 1, 0, depth + 1);
+                    PrintTree(f, rChild[root], 1, 0, depth + 1);
+                }
+                return;
+            }
+
+            group = false;
+
+            double area = AABB[root].GetSurfaceArea();
+            bool skip = (area / topArea > 0.75);
+            if (!skip)
+            {
+                topArea = area;
+            }
+
+            f.Write("\n");
+            Indent();
+            int ax = 0;
+            if (!isLeaf[root])
+            {
+                ax = nodeNum[lChild[root]] + 1;
+                f.Write($"Node: ax[{ax}]");
+                ax = 0;
+                f.Write($",ax[{ax}]");
+                f.Write($"skip[{skip}]");
+                f.Write(AABB[root].ToString());
+                PrintTree(f, lChild[root], 0, topArea, depth + 1);
+                PrintTree(f, rChild[root], 0, topArea, depth + 1);
+            }
+            else
+            {
+                f.Write($"Leaf: Tri[{triNum[root]}]");
+                f.Write($",ax[{ax}]");
+                f.Write($"skip[{skip}]");
+                f.Write(AABB[root].ToString());
+                PrintTree(f, root, 1, 0, depth + 1);
             }
         }
 

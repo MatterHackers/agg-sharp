@@ -34,13 +34,20 @@ using MatterHackers.Agg.UI;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
+using System.Diagnostics;
+using NUnit.Framework.Internal.Commands;
+using NUnit.Framework.Internal;
+using NUnit.Framework.Interfaces;
+using System.Xml.Serialization;
+using System.Xml;
+using TestInvoker;
 
 namespace MatterHackers.Agg.Tests
 {
-	[TestFixture, Category("Agg.UI"), RunInApplicationDomain, Apartment(ApartmentState.STA)]
+	[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
 	public class WidgetClickTests
 	{
-		[Test]
+		[Test, ChildProcessTest]
 		public async Task ClickFiresOnCorrectWidgets()
 		{
 			var testWindow = new ClickTestsWindow(300, 200);
@@ -83,7 +90,7 @@ namespace MatterHackers.Agg.Tests
 				});
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public async Task ClickSuppressedOnExternalMouseUp()
 		{
 			var testWindow = new ClickTestsWindow(300, 200);
@@ -129,7 +136,7 @@ namespace MatterHackers.Agg.Tests
 				});
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public async Task ClickSuppressedOnMouseUpWithinChild2()
 		{
 			// Agg currently fires mouse up events in child controls when the parent has the mouse captured
@@ -178,7 +185,7 @@ namespace MatterHackers.Agg.Tests
 
 					// There should be no increment in the click count
 					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Expected click count to not increment on mouse up within child control");
-					
+
 					return Task.CompletedTask;
 				});
 		}

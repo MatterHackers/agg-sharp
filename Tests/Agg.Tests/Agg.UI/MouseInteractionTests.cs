@@ -35,13 +35,14 @@ using System.Threading.Tasks;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
+using TestInvoker;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
+	[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
 	public class MouseInteractionTests
 	{
-		[Test]
+		[Test, ChildProcessTest]
 		public async Task DoClickButtonInWindow()
 		{
 			int leftClickCount = 0;
@@ -84,7 +85,7 @@ namespace MatterHackers.Agg.UI.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun);
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public async Task RadioButtonSiblingsAreChildren()
 		{
 			AutomationRunner.TimeToMoveMouse = .1;
@@ -148,7 +149,7 @@ namespace MatterHackers.Agg.UI.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(buttonWindow, testToRun);
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void ExtensionMethodsTests()
 		{
 			var level0 = new GuiWidget() { Name = "level0" };
@@ -191,7 +192,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(parentCount == 3);
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void ValidateSimpleLeftClick()
 		{
 			var container = new GuiWidget
@@ -233,7 +234,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(button.Focused == false);
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void ValidateOnlyTopWidgetGetsLeftClick()
 		{
 			bool gotClick = false;
@@ -285,7 +286,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(gotClick == false);
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void ValidateSimpleMouseUpDown()
 		{
 			var container = new GuiWidget
@@ -382,7 +383,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(topWidgetGotMouseDownInBounds == 1);
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void ValidateOnlyTopWidgetGetsMouseUp()
 		{
 			bool topGotMouseUp = false;
@@ -426,7 +427,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(topGotMouseUp == false);
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void ValidateEnterAndLeaveEvents()
 		{
 			int mouseEnter = 0;
@@ -777,7 +778,7 @@ namespace MatterHackers.Agg.UI.Tests
 			return radioButton;
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void ValidateEnterAndLeaveEventsWhenNested()
 		{
 			// ___container__(200, 200)_______________________________________
@@ -1026,7 +1027,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(gotEnterBoundsB == 0);
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void ValidateEnterAndLeaveEventsWhenCoverd()
 		{
 			// A widget contains two children the second completely covering the first.
@@ -1302,7 +1303,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(gotEnterBoundsCoveredChild == 0);
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void ValidateEnterAndLeaveInOverlapArea()
 		{
 			var container = new GuiWidget
@@ -1469,7 +1470,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(topGotLeaveBounds == 0);
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void MouseCapturedSpressesLeaveEvents()
 		{
 			var container = new GuiWidget
@@ -1660,7 +1661,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(bGotMove == 0);
 		}
 
-		[Test]
+		[Test, ChildProcessTest]
 		public void MouseCapturedSpressesLeaveEventsInButtonsSameAsRectangles()
 		{
 			var container = new GuiWidget

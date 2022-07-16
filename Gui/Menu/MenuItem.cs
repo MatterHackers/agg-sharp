@@ -68,4 +68,14 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseUp(mouseEvent);
 		}
 	}
+
+	public class MenuItemHoldOpen : MenuItem, IIgnoredPopupChild
+	{
+		public MenuItemHoldOpen(GuiWidget content)
+			: base(content)
+		{
+		}
+
+		public new bool KeepMenuOpen => false;
+	}
 }
