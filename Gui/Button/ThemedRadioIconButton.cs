@@ -43,7 +43,7 @@ namespace MatterHackers.Agg.UI
 
         public bool ToggleButton { get; set; } = false;
 
-        public ThemedRadioIconButton(ImageBuffer icon, ThemeConfig2 theme)
+        public ThemedRadioIconButton(ImageBuffer icon, ThemeConfig theme)
             : base(icon, theme)
         {
         }

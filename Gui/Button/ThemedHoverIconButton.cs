@@ -39,12 +39,12 @@ namespace MatterHackers.Agg.UI
 
         // Single ImageBuffer constructor creates a grayscale copy for use as the normal image
         // and uses the original as the hover image
-        public ThemedHoverIconButton(ImageBuffer icon, ThemeConfig2 theme)
+        public ThemedHoverIconButton(ImageBuffer icon, ThemeConfig theme)
             : this(MakeGrayscale(icon), icon, theme)
         {
         }
 
-        public ThemedHoverIconButton(ImageBuffer icon, ImageBuffer hoverIcon, ThemeConfig2 theme)
+        public ThemedHoverIconButton(ImageBuffer icon, ImageBuffer hoverIcon, ThemeConfig theme)
             : base(icon, theme)
         {
             normalImage = icon;

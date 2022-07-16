@@ -33,13 +33,13 @@ using System;
 
 namespace MatterHackers.Agg.UI
 {
-	public class AdvancedTextEditWidget : GuiWidget
+	public class ThemedTextEditWidget : GuiWidget
 	{
 		public readonly TextWidget NoContentFieldDescription = null;
-		private ThemeConfig2 theme;
+		private ThemeConfig theme;
 		private bool mouseInBounds = false;
 
-		public AdvancedTextEditWidget(string text, ThemeConfig2 theme, double pixelWidth = 0, double pixelHeight = 0, bool multiLine = false, int tabIndex = 0, string messageWhenEmptyAndNotSelected = "", TypeFace typeFace = null)
+		public ThemedTextEditWidget(string text, ThemeConfig theme, double pixelWidth = 0, double pixelHeight = 0, bool multiLine = false, int tabIndex = 0, string messageWhenEmptyAndNotSelected = "", TypeFace typeFace = null)
 		{
 			this.Padding = new BorderDouble(3);
 			this.HAnchor = HAnchor.Fit;

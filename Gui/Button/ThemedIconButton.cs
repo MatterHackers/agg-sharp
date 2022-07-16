@@ -39,12 +39,12 @@ namespace MatterHackers.Agg.UI
 
         protected ImageBuffer image;
 
-        private ThemedIconButton(ThemeConfig2 theme)
+        private ThemedIconButton(ThemeConfig theme)
             : base(theme)
         {
         }
 
-        public ThemedIconButton(ImageBuffer icon, ThemeConfig2 theme)
+        public ThemedIconButton(ImageBuffer icon, ThemeConfig theme)
             : base(theme)
         {
             image = icon;

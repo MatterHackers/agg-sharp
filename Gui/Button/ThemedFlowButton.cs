@@ -33,9 +33,9 @@ namespace MatterHackers.Agg.UI
     {
         private bool mouseInBounds = false;
 
-        protected ThemeConfig2 theme;
+        protected ThemeConfig theme;
 
-        public ThemedFlowButton(ThemeConfig2 theme)
+        public ThemedFlowButton(ThemeConfig theme)
         {
             this.theme = theme;
             HoverColor = theme.SlightShade;

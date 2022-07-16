@@ -38,7 +38,7 @@ namespace MatterHackers.Agg.UI
 
         public bool DrawIconOverlayOnDisabled { get; set; } = false;
 
-        public ThemedTextIconButton(string text, ImageBuffer icon, ThemeConfig2 theme)
+        public ThemedTextIconButton(string text, ImageBuffer icon, ThemeConfig theme)
             : base(theme)
         {
             HAnchor = HAnchor.Fit;

@@ -38,7 +38,7 @@ namespace MatterHackers.Agg.UI
 
         public event EventHandler CheckedStateChanged;
 
-        public ThemedRadioTextButton(string text, ThemeConfig2 theme, double pointSize = -1)
+        public ThemedRadioTextButton(string text, ThemeConfig theme, double pointSize = -1)
             : base(text, theme, pointSize)
         {
             SelectedBackgroundColor = theme.SlightShade;

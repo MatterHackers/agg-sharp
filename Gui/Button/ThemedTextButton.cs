@@ -33,7 +33,7 @@ namespace MatterHackers.Agg.UI
     {
         private readonly TextWidget textWidget;
 
-        public ThemedTextButton(string text, ThemeConfig2 theme, double pointSize = -1)
+        public ThemedTextButton(string text, ThemeConfig theme, double pointSize = -1)
             : base(theme)
         {
             HAnchor = HAnchor.Fit;

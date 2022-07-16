@@ -37,10 +37,10 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-	public class ThemeConfig2
+	public class ThemeConfig
 	{
-		private ImageBuffer restoreNormal;
-		private ImageBuffer restoreHover;
+		public ImageBuffer RestoreNormal { get; private set; }
+		public ImageBuffer RestoreHover { get; private set; }
 
 		public Color SlightShade { get; set; } = new Color("#00000028");
 		public Color MinimalShade { get; set; } = new Color("#0000000F");
@@ -184,7 +184,7 @@ namespace MatterHackers.Agg.UI
 
 		public BorderDouble SeparatorMargin { get; }
 
-		public ImageBuffer GeneratingThumbnailIcon { get; private set; }
+		public ImageBuffer GeneratingThumbnailIcon { get; set; }
 
 		public class StateColor
 		{
@@ -223,7 +223,7 @@ namespace MatterHackers.Agg.UI
 
 		public Color BorderColor20 { get; set; }
 
-		internal void EnsureDefaults()
+		public void EnsureDefaults()
 		{
 			// EnsureDefaults is called after deserialization and at a point when state should be fully loaded. Invoking RebuildTheme here ensures icons shaded correctly
 			this.RebuildTheme();
@@ -259,7 +259,7 @@ namespace MatterHackers.Agg.UI
 			};
 		}
 
-		public ThemeConfig2()
+		public ThemeConfig()
 		{
 			this.SeparatorMargin = (this.ButtonSpacing * 2).Clone(left: this.ButtonSpacing.Right);
 			this.RebuildTheme();
@@ -276,8 +276,8 @@ namespace MatterHackers.Agg.UI
 			int size = (int)(16 * GuiWidget.DeviceScale);
 
 			// On Android, use red icon as no hover events, otherwise transparent and red on hover
-			restoreNormal = ColorCircle(size, (AggContext.OperatingSystem == OSType.Android) ? new Color(200, 0, 0) : Color.Transparent);
-			restoreHover = ColorCircle(size, new Color("#DB4437"));
+			RestoreNormal = ColorCircle(size, (AggContext.OperatingSystem == OSType.Android) ? new Color(200, 0, 0) : Color.Transparent);
+			RestoreHover = ColorCircle(size, new Color("#DB4437"));
 
 			//this.GeneratingThumbnailIcon = StaticData.Instance.LoadIcon("building_thumbnail_40x40.png", 40, 40).SetToColor(TextColor);
 

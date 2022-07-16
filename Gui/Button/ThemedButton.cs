@@ -34,11 +34,11 @@ namespace MatterHackers.Agg.UI
 {
     public class ThemedButton : GuiWidget
     {
-        protected ThemeConfig2 theme;
+        protected ThemeConfig theme;
 
         private bool hasKeyboardFocus;
 
-        public ThemedButton(ThemeConfig2 theme)
+        public ThemedButton(ThemeConfig theme)
         {
             this.theme = theme;
             HoverColor = theme.SlightShade;
