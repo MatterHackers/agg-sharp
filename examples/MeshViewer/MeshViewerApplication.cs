@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using MatterHackers.Agg;
@@ -253,7 +254,7 @@ namespace MatterHackers.MeshVisualizer
 
 			var downloadsDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
 
-			var possibleMeshes = new string[]
+			List<string> possibleMeshes = new()
 			{
 				"architest_18.stl",
 				"Runout Sensor.stl",
@@ -261,10 +262,12 @@ namespace MatterHackers.MeshVisualizer
 				"Engine-Benchmark.stl"
 			};
 
+			possibleMeshes.AddRange(args);
+
 			var meshPath = "";
-			for (int i = 0; i < possibleMeshes.Length; i++)
+			foreach (var path in possibleMeshes)
 			{
-				meshPath = Path.Combine(downloadsDirectory, possibleMeshes[i]);
+				meshPath = Path.Combine(downloadsDirectory, path);
 				if (File.Exists(meshPath))
 				{
 					break;

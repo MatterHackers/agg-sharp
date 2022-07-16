@@ -359,6 +359,7 @@ namespace MatterHackers.PolygonMesh.Csg
             // handle the co-planar faces
             ProcessCoplanarFaces(operation, resultsMesh, coPlanarFaces);
 
+            resultsMesh.MergeVertices(.01);
             resultsMesh.CleanAndMerge();
             return resultsMesh;
         }

@@ -70,7 +70,6 @@ Blue,12.82,Boat
 Red,12.14,Boat
 Green,11.63,Boat
 ";
-
         private Vector2 downPosition = new Vector2();
         private int dragingRegionIndex = -1;
         private Vector2 regionStartPosition = new Vector2();

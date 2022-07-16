@@ -52,7 +52,8 @@ namespace MatterHackers.Agg.UI
 		public HorizontalLine()
 			: base(1, 1 * DeviceScale)
 		{
-			HAnchor = HAnchor.Stretch;
+            BackgroundColor = Color.Black;
+            HAnchor = HAnchor.Stretch;
 		}
 
 		public HorizontalLine(Color color)

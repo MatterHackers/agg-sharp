@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "MeshViewer": {
+      "commandName": "Project",
+      "commandLineArgs": "\"$(ProjectDir)..\\RayTracerTest\\bunny.stl\""
+    }
+  }
+}

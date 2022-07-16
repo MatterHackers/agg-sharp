@@ -41,15 +41,39 @@ namespace MatterHackers.Agg.UI
 		{
 			// Set GraphicsMode via user overridable settings
 			var config = AggContext.Config.GraphicsMode;
+
+			// NOTE: OpenTK3 will run in Windows Sandbox (no proper GL driver), but OpenTK4 won't, it seems.
+
+#if USE_OPENTK4
+			var graphicsMode = new OpenTK.WinForms.GLControlSettings {
+				Profile = OpenTK.Windowing.Common.ContextProfile.Compatability,
+#if DEBUG
+				Flags = OpenTK.Windowing.Common.ContextFlags.Debug,
+#endif
+				NumberOfSamples = config.FSAASamples,
+				IsEventDriven = true,
+			};
+#else
 			var graphicsMode = new OpenTK.Graphics.GraphicsMode(config.Color, config.Depth, config.Stencil, config.FSAASamples);
+
+			// If the GPU driver is disabled in Windows, this could be used to test context creation failure.
+			//var graphicsMode = new OpenTK.Graphics.GraphicsMode(config.Color, config.Depth, config.Stencil, config.FSAASamples + 100, OpenTK.Graphics.ColorFormat.Empty, 100, true);
+#endif
 
 			glControl = new AggGLControl(graphicsMode)
 			{
 				Dock = DockStyle.Fill,
 				Location = new Point(0, 0),
 				TabIndex = 0,
-				VSync = false
+#if !USE_OPENTK4
+				VSync = false,
+#endif
 			};
+
+			// TODO: Disable VSync when using OpenTK 4? Current versions on NuGet do not expose VSync.
+#if !USE_OPENTK4
+			//(glControl.Context as OpenTK.Windowing.Desktop.GLFWGraphicsContext).SwapInterval = 0;
+#endif
 
 			RenderOpenGl.OpenGl.GL.Instance = new OpenTkGl();
 
@@ -96,6 +120,15 @@ namespace MatterHackers.Agg.UI
 			this.IsInitialized = true;
 			initHasBeenCalled = true;
 		}
+
+#if USE_OPENTK4
+		// HACK: Huh!? Makes keyboard input work. https://github.com/opentk/GLControl/issues/18
+		protected override void OnShown(EventArgs e)
+		{
+			base.OnShown(e);
+			glControl.Focus();
+		}
+#endif
 
 		private void SetupViewport()
 		{

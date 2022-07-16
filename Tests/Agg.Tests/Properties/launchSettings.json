@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Agg.Tests": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
