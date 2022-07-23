@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
@@ -38,9 +39,9 @@ namespace MatterHackers.RayTracer
 {
 	public enum BvhCreationOptions
 	{
-		LegacyFastConstructionSlowTracing,
-		LegacySlowConstructionFastTracing,
-        LocFastContructionFastTracing
+		SingleUnboundCollection,
+		BottomUpClustering,
+        LocalOrderClustering
     }
 
 	public class BoundingVolumeHierarchy : ITraceable
@@ -128,41 +129,84 @@ namespace MatterHackers.RayTracer
 			return -1;
 		}
 
-        public static ITraceable CreateNewHierachy(List<ITraceable> tracePrimitives, BvhCreationOptions bvhCreationOptions = BvhCreationOptions.LegacySlowConstructionFastTracing)
+        public static void PrintBvh(ITraceable tracable, StreamWriter stream, int level = 0)
+        {
+            string indent = "";
+            for (int i = 0; i < level; i++)
+            {
+                indent += " ";
+            }
+
+			if (tracable is UnboundCollection unboundCollection)
+			{
+				stream.WriteLine($"{indent}Collection: {unboundCollection.Items.Count}");
+			}
+			else if (tracable is BoundingVolumeHierarchy bvh)
+			{
+				stream.WriteLine($"{indent}BoundingVolumeHierarchy {bvh.GetAxisAlignedBoundingBox()}");
+				PrintBvh(bvh.nodeA, stream, level + 1);
+				PrintBvh(bvh.nodeB, stream, level + 1);
+			}
+			else if (tracable is MinimalTriangle minTri)
+			{
+				stream.WriteLine($"{indent}Tri: [{minTri.FaceIndex}] {tracable.GetAxisAlignedBoundingBox()}");
+			}
+			else
+			{
+				stream.WriteLine(indent + "Leaf: " + tracable.GetAxisAlignedBoundingBox());
+			}
+        }
+
+        public static void PrintBvh(ITraceable tracable, string file)
+        {
+            using (StreamWriter writer = new StreamWriter(file))
+            {
+                PrintBvh(tracable, writer);
+            }
+        }
+
+        public static ITraceable CreateNewHierachy(List<ITraceable> tracePrimitives, BvhCreationOptions bvhCreationOptions = BvhCreationOptions.BottomUpClustering)
         {
 			ITraceable output = null;
-			using (new QuickTimer("LocalOrderClustering", 1))
-			{
-                //output = BvhBuilderLocallyOrderedClustering.Create(tracePrimitives);
-				//return output;
-			}
 
 			switch (bvhCreationOptions)
             {
-				case BvhCreationOptions.LegacyFastConstructionSlowTracing:
+				case BvhCreationOptions.SingleUnboundCollection:
 					using (new QuickTimer("LegacyFastConstructionSlowTracing", 1))
 					{
-						output = BvhBuilderBottomUp.Create(tracePrimitives, 0);
+						output = new UnboundCollection(tracePrimitives);
 					}
 					break;
 
-				case BvhCreationOptions.LegacySlowConstructionFastTracing:
+				case BvhCreationOptions.BottomUpClustering:
 					using (new QuickTimer("LegacySlowConstructionFastTracing", 1))
 					{
 						output = BvhBuilderBottomUp.Create(tracePrimitives);
 					}
 					break;
 
-				case BvhCreationOptions.LocFastContructionFastTracing:
+				case BvhCreationOptions.LocalOrderClustering:
 					using (new QuickTimer("LocFastContructionFastTracing", 1))
 					{
 						output = BvhBuilderLocallyOrderedClustering.Create(tracePrimitives);
+#if false
+						if (tracePrimitives.Count > 1000)
+						{
+							PrintBvh(output, "C:\\Temp\\Bvh LOC.txt");
+						}
+#endif
 					}
 					break;
 
 				default:
-					output = BvhBuilderBottomUp.Create(tracePrimitives);
-					break;
+					throw new NotImplementedException();
+			}
+
+			if (tracePrimitives.Count > 100 && false)
+			{
+				PrintBvh(output, "C:\\Temp\\Bvh Bottom Up.txt");
+				var loc = BvhBuilderLocallyOrderedClustering.Create(tracePrimitives);
+				PrintBvh(loc, "C:\\Temp\\Bvh LOC.txt");
 			}
 
 			return output;

@@ -101,7 +101,7 @@ namespace MatterHackers.RayTracer
         /// <param name="nodes">The input nodes</param>
         /// <param name="checkDistance">The distance before and after a given morton index to look for nearest matches</param>
         /// <returns>The top of a new balanced tree</returns>
-        public static ITraceable Create(List<ITraceable> sourceNodes, int checkDistance = 6)
+        public static ITraceable Create(List<ITraceable> sourceNodes, int checkDistance = 20)
         {
             if (sourceNodes.Count == 0)
             {
@@ -153,6 +153,8 @@ namespace MatterHackers.RayTracer
             // we will need to keep track of nodes for removal
             var markedForRemoval = new List<bool>(new bool[inputNodes.Count]);
 
+            var error = .001;
+
             while (inputNodes.Count > 1)
             {
                 // find the nerest point for every point minimizing the surface area of what would be the enclosing aabb
@@ -170,7 +172,7 @@ namespace MatterHackers.RayTracer
                         var testNode = inputNodes[i].node;
                         var testBounds = testNode.GetAxisAlignedBoundingBox() + nodeBounds;
                         var surfaceArea = testBounds.GetSurfaceArea();
-                        if (surfaceArea < minSurfaceArea)
+                        if (surfaceArea < minSurfaceArea - error)
                         {
                             minSurfaceArea = surfaceArea;
                             minIndex = i;
@@ -178,14 +180,18 @@ namespace MatterHackers.RayTracer
                     }
 
                     // check the checkDistance behind
-                    var start = Math.Max(0, index - checkDistance);
+                    // var start = Math.Max(0, index - checkDistance);
+                    var start = index / checkDistance * checkDistance;
+                    start = Math.Max(0, start);
                     for (int i = start; i < index; i++)
                     {
                         TestForMinSurfaceArea(i);
                     }
 
                     // check the checkDistance in front
-                    var end = Math.Min(inputNodes.Count, index + checkDistance);
+                    // var end = Math.Min(inputNodes.Count, index + checkDistance);
+                    var end = ((index / checkDistance) + 1) * checkDistance;
+                    end = Math.Min(end, inputNodes.Count);
                     for (int i = index + 1; i < end; i++)
                     {
                         TestForMinSurfaceArea(i);
@@ -211,7 +217,7 @@ namespace MatterHackers.RayTracer
 
                     var nodeToMergeWith = bestNodeToMerge[i];
                     // if the node we want to merge with wants to merge with us
-                    if (bestNodeToMerge[nodeToMergeWith] == i)
+                    if (nodeToMergeWith != -1 && bestNodeToMerge[nodeToMergeWith] == i)
                     {
                         // create a new node that is the merge
                         var newNode = new BoundingVolumeHierarchy(inputNodes[i].node, inputNodes[nodeToMergeWith].node);
@@ -239,7 +245,7 @@ namespace MatterHackers.RayTracer
                 var temp = inputNodes;
                 inputNodes = outputNodes;
                 outputNodes = temp;
-                checkDistance = 20;
+                // checkDistance = 20;
                 
                 // continue until all nodes have been merged
             }

@@ -91,7 +91,7 @@ namespace MatterHackers.RayTracer
             AAClomerate(thread, 0, finalLen, 1, out finalLen);
 
             PruneTree();
-            PrintTreeBIN(fileName);
+            //PrintTreeBIN(fileName);
             PrintTree(fileName);
         }
 
