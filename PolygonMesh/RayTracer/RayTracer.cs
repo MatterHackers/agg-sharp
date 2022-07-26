@@ -344,10 +344,9 @@ namespace MatterHackers.RayTracer
 			{
 				try
 				{
-					IntersectInfo primaryInfo = TracePrimaryRay(rayBundle.rayArray[i], scene);
 					if (intersectionsForBundle[i].HitType != IntersectionType.None)
 					{
-						intersectionsForBundle[i].TotalColor = CreateAndTraceSecondaryRays(primaryInfo, rayBundle.rayArray[i], scene, 0);
+						intersectionsForBundle[i].TotalColor = CreateAndTraceSecondaryRays(intersectionsForBundle[i], rayBundle.rayArray[i], scene, 0);
 					}
 					else
 					{

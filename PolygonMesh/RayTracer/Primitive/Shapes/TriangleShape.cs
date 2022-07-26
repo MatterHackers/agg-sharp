@@ -195,7 +195,15 @@ namespace MatterHackers.RayTracer
 
 		public override void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
 		{
-			throw new NotImplementedException();
+			for (int i= rayIndexToStartCheckingFrom; i < intersectionsForBundle.Length; i++)
+            {
+				var info = GetClosestIntersection(rayBundle.rayArray[i]);
+				if (info != null
+					&& info.DistanceToHit < intersectionsForBundle[i].DistanceToHit)
+                {
+                    intersectionsForBundle[i] = info;
+                }
+            }
 		}
 
 		public override (double u, double v) GetUv(IntersectInfo info)
