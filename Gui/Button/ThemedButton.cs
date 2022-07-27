@@ -45,6 +45,7 @@ namespace MatterHackers.Agg.UI
             MouseDownColor = theme.MinimalShade;
             Margin = 3;
             Cursor = Cursors.Hand;
+            BackgroundColor = theme.ButtonBackgroundColor;
 
             TabStop = true;
         }
