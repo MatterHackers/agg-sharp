@@ -174,7 +174,23 @@ namespace MatterHackers.RayTracer
 				case BvhCreationOptions.SingleUnboundCollection:
 					using (new QuickTimer("LegacyFastConstructionSlowTracing", 1))
 					{
-						output = new UnboundCollection(tracePrimitives);
+						if (true)
+						{
+							output = new UnboundCollection(tracePrimitives);
+						}
+						else
+						{
+							if (tracePrimitives.Count > 0 && tracePrimitives[0] != null)
+							{
+								AxisAlignedBoundingBox overallBox = tracePrimitives[0].GetAxisAlignedBoundingBox();
+								for (int i = 0; i < tracePrimitives.Count; i++)
+								{
+									overallBox += tracePrimitives[i].GetAxisAlignedBoundingBox();
+								}
+
+								output = BvhBuilderBottomUp.CreateOnCentersOnly(tracePrimitives, overallBox);
+							}
+						}
 					}
 					break;
 
