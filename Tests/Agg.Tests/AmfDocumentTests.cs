@@ -32,6 +32,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using MatterHackers.DataConverters3D;
+using MatterHackers.PolygonMesh.Processors;
 using NUnit.Framework;
 
 namespace MatterHackers.Agg.Tests
@@ -72,6 +73,43 @@ namespace MatterHackers.Agg.Tests
 			Assert.AreEqual(-1, child.MaterialIndex);
 			Assert.AreEqual(new Color(0, 128, 255), child.Color);
 			Assert.AreEqual(PrintOutputTypes.Solid, child.OutputType);
+		}
+
+		[Test]
+		public void SaveAmfContainingXmlSpecialCharacters()
+		{
+			const string XmlSpecialCharacters = "&<>'\"";
+
+			// Create an object whose name contains XML special characters
+			var inputObject = new Object3D()
+			{
+				Children =
+				{
+					new Object3D()
+					{
+						Name = XmlSpecialCharacters,
+						Mesh = PolygonMesh.PlatonicSolids.CreateCube()
+					}
+				}
+			};
+
+			// Add meta data containing XML special characters
+			var outputSettings = new MeshOutputSettings()
+			{
+				MetaDataKeyValue = new()
+				{
+					{ XmlSpecialCharacters, XmlSpecialCharacters }
+				}
+			};
+
+			using var memoryStream = new MemoryStream();
+
+			// Save and load as AMF to validate that XML special characters are correctly escaped
+			AmfDocument.Save(inputObject, memoryStream, outputSettings);
+			var outputObject = AmfDocument.Load(memoryStream, CancellationToken.None);
+
+			Assert.AreEqual(outputObject.Children.Count, 1);
+			Assert.AreEqual(XmlSpecialCharacters, outputObject.Children.First().Name);
 		}
 
 		private void CreateSampleFile()
