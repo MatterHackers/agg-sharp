@@ -390,9 +390,9 @@ namespace MatterHackers.DataConverters3D
 					{
 						var vertex = default(Vector3);
 
-						string nextSibling = null;
 						if (reader.ReadToDescendant("x"))
 						{
+							string nextSibling = null;
 							do
 							{
 								switch (reader.Name)
@@ -414,7 +414,7 @@ namespace MatterHackers.DataConverters3D
 										break;
 								}
 							}
-							while (nextSibling != null && (reader.Name != nextSibling ? reader.ReadToNextSibling(nextSibling) : true));
+							while (nextSibling != null && (reader.Name == nextSibling || reader.ReadToNextSibling(nextSibling)));
 						}
 
 						progressData.ReportProgress0To50();
@@ -453,10 +453,31 @@ namespace MatterHackers.DataConverters3D
 			{
 				if (reader.ReadToDescendant("r"))
 				{
-					color.red = reader.ReadElementContentAsFloat();
-					color.green = reader.ReadElementContentAsFloat();
-					color.blue = reader.ReadElementContentAsFloat();
+					string nextSibling = null;
+					do
+					{
+						switch (reader.Name)
+						{
+							case "r":
+								color.red = reader.ReadElementContentAsFloat();
+								nextSibling = "g";
+								break;
+
+							case "g":
+								color.green = reader.ReadElementContentAsFloat();
+								nextSibling = "b";
+								break;
+
+							case "b":
+								color.blue = reader.ReadElementContentAsFloat();
+								nextSibling = null;
+								break;
+						}
+					}
+					while (nextSibling != null && (reader.Name == nextSibling || reader.ReadToNextSibling(nextSibling)));
 				}
+
+				MoveToEndElement(reader, "color");
 			}
 
 			if (reader.ReadToNextSibling("metadata"))
@@ -496,9 +517,10 @@ namespace MatterHackers.DataConverters3D
 				do
 				{
 					var indices = new int[3];
-					string nextSibling = null;
+
 					if (reader.ReadToDescendant("v1"))
 					{
+						string nextSibling = null;
 						do
 						{
 							switch (reader.Name)
@@ -519,7 +541,7 @@ namespace MatterHackers.DataConverters3D
 									break;
 							}
 						}
-						while (nextSibling != null && (reader.Name != nextSibling ? reader.ReadToNextSibling(nextSibling) : true));
+						while (nextSibling != null && (reader.Name == nextSibling || reader.ReadToNextSibling(nextSibling)));
 					}
 
 					if (indices[0] != indices[1]
