@@ -56,6 +56,11 @@ namespace MatterHackers.Agg
 			var theme = new ThemeConfig();
 
 			var newGame = new ThemedTextButton("New Game", theme);
+			newGame.Click += (s, e) =>
+			{
+				board.Reset();
+			};
+            
 			buttonsBar.AddChild(newGame);
 
 			var pauseGame = new ThemedTextButton("Pause", theme);

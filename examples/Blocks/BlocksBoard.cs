@@ -41,7 +41,7 @@ namespace MatterHackers.Agg
             Reset();
         }
 
-        private void Reset()
+        public void Reset()
         {
             for (int x = 0; x < Width; x++)
             {
@@ -68,6 +68,9 @@ namespace MatterHackers.Agg
             Y = Height - 1;
 
             SecondsToNextMoveDown = 1;
+
+            GetNextPiece();
+            GetNextPiece();
         }
 
         public bool PositionValid(int x, int y, int rotation)

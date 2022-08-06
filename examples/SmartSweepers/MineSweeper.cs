@@ -12,47 +12,47 @@ namespace SmartSweeper
 		private int m_WindowHeight;
 
 		//the minesweeper's neural net
-		private CNeuralNet m_ItsBrain;
+		private CNeuralNet Brain;
 
 		//its position in the world
-		private Vector3 m_vPosition;
+		private Vector3 Position;
 
 		//direction sweeper is facing
-		private Vector3 m_vLookAt;
+		private Vector3 LookAt;
 
 		//its rotation (surprise surprise)
-		private double m_dRotation;
+		private double Rotation;
 
-		private double m_dSpeed;
+		private double Speed;
 
 		//to store output from the ANN
-		private double m_lTrack, m_rTrack;
+		private double leftTrack, rightTrack;
 
 		//the sweeper's fitness score
-		private double m_dFitness;
+		public double Fitness { get; private set; }
 
 		//the scale of the sweeper when drawn
-		private double m_dScale;
+		private double Scale;
 
 		//index position of closest mine
-		private int m_iClosestMine;
+		private int ClosestMine;
 
 		public CMinesweeper(int WindowWidth, int WindowHeight, double SweeperScale, double dMaxTurnRate)
 		{
-			m_ItsBrain = new CNeuralNet(4, 2, 1, 6, -1, 1);
-			//m_ItsBrain = new CNeuralNet(4, 2, 3, 8, -1, 1);
+			//Brain = new CNeuralNet(4, 2, 1, 6, -1, 1);
+			Brain = new CNeuralNet(4, 2, 3, 8, -1, 1);
 			Random Rand = new Random();
 			m_WindowWidth = WindowWidth;
 			m_WindowHeight = WindowHeight;
 			m_dMaxTurnRate = dMaxTurnRate;
-			m_dRotation = (Rand.NextDouble() * (System.Math.PI * 2));
-			m_lTrack = (0.16);
-			m_rTrack = (0.16);
-			m_dFitness = (0);
-			m_dScale = SweeperScale;
-			m_iClosestMine = (0);
+			Rotation = (Rand.NextDouble() * (Math.PI * 2));
+			leftTrack = (0.16);
+			rightTrack = (0.16);
+			Fitness = (0);
+			Scale = SweeperScale;
+			ClosestMine = (0);
 			//create a random start position
-			m_vPosition = new Vector3((Rand.NextDouble() * WindowWidth), (Rand.NextDouble() * WindowHeight), 0);
+			Position = new Vector3((Rand.NextDouble() * WindowWidth), (Rand.NextDouble() * WindowHeight), 0);
 		}
 
 		//updates the ANN with information from the sweepers enviroment
@@ -85,46 +85,46 @@ namespace SmartSweeper
 			inputs.Add(vClosestMine.Y);
 
 			//add in sweepers look at List
-			inputs.Add(m_vLookAt.X);
-			inputs.Add(m_vLookAt.Y);
+			inputs.Add(LookAt.X);
+			inputs.Add(LookAt.Y);
 #endif
 
 			//update the brain and get feedback
-			List<double> output = m_ItsBrain.Update(inputs);
+			List<double> output = Brain.Update(inputs);
 
 			//make sure there were no errors in calculating the
 			//output
-			if (output.Count < m_ItsBrain.NumOutputs)
+			if (output.Count < Brain.NumOutputs)
 			{
 				return false;
 			}
 
 			//assign the outputs to the sweepers left & right tracks
-			m_lTrack = output[0];
-			m_rTrack = output[1];
+			leftTrack = output[0];
+			rightTrack = output[1];
 
 			//calculate steering forces
-			double RotForce = m_lTrack - m_rTrack;
+			double RotForce = leftTrack - rightTrack;
 
 			//clamp rotation
-			RotForce = System.Math.Min(System.Math.Max(RotForce, -m_dMaxTurnRate), m_dMaxTurnRate);
+			RotForce = Math.Min(Math.Max(RotForce, -m_dMaxTurnRate), m_dMaxTurnRate);
 
-			m_dRotation += RotForce;
+			Rotation += RotForce;
 
-			m_dSpeed = (m_lTrack + m_rTrack);
+			Speed = (leftTrack + rightTrack);
 
 			//update Look At
-			m_vLookAt.X = (double)-System.Math.Sin(m_dRotation);
-			m_vLookAt.Y = (double)System.Math.Cos(m_dRotation);
+			LookAt.X = (double)-Math.Sin(Rotation);
+			LookAt.Y = (double)Math.Cos(Rotation);
 
 			//update position
-			m_vPosition += (m_vLookAt * m_dSpeed);
+			Position += (LookAt * Speed);
 
 			//wrap around window limits
-			if (m_vPosition.X > m_WindowWidth) m_vPosition.X = 0;
-			if (m_vPosition.X < 0) m_vPosition.X = m_WindowWidth;
-			if (m_vPosition.Y > m_WindowHeight) m_vPosition.Y = 0;
-			if (m_vPosition.Y < 0) m_vPosition.Y = m_WindowHeight;
+			if (Position.X > m_WindowWidth) Position.X = 0;
+			if (Position.X < 0) Position.X = m_WindowWidth;
+			if (Position.Y > m_WindowHeight) Position.Y = 0;
+			if (Position.Y < 0) Position.Y = m_WindowHeight;
 
 			return true;
 		}
@@ -136,13 +136,13 @@ namespace SmartSweeper
 			Matrix4X4 matTransform = Matrix4X4.Identity;
 
 			//scale
-			matTransform *= Matrix4X4.CreateScale(m_dScale, m_dScale, 1);
+			matTransform *= Matrix4X4.CreateScale(Scale, Scale, 1);
 
 			//rotate
-			matTransform *= Matrix4X4.CreateRotationZ(m_dRotation);
+			matTransform *= Matrix4X4.CreateRotationZ(Rotation);
 
 			//and translate
-			matTransform *= Matrix4X4.CreateTranslation(m_vPosition.X, m_vPosition.Y, 0);
+			matTransform *= Matrix4X4.CreateTranslation(Position.X, Position.Y, 0);
 
 			//now transform the ships vertices
 			for (int i = 0; i < sweeper.Count; i++)
@@ -161,15 +161,15 @@ namespace SmartSweeper
 			//cycle through mines to find closest
 			for (int i = 0; i < mines.Count; i++)
 			{
-				double len_to_object = (mines[i] - m_vPosition).Length;
+				double len_to_object = (mines[i] - Position).Length;
 
 				if (len_to_object < closest_so_far)
 				{
 					closest_so_far = len_to_object;
 
-					vClosestObject = m_vPosition - mines[i];
+					vClosestObject = Position - mines[i];
 
-					m_iClosestMine = i;
+					ClosestMine = i;
 				}
 			}
 
@@ -179,11 +179,11 @@ namespace SmartSweeper
 		//checks to see if the minesweeper has 'collected' a mine
 		public int CheckForMine(List<Vector3> mines, double size)
 		{
-			Vector3 DistToObject = m_vPosition - mines[m_iClosestMine];
+			Vector3 DistToObject = Position - mines[ClosestMine];
 
 			if (DistToObject.Length < (size + 5))
 			{
-				return m_iClosestMine;
+				return ClosestMine;
 			}
 
 			return -1;
@@ -193,42 +193,32 @@ namespace SmartSweeper
 		{
 			Random Rand = new Random();
 			//reset the sweepers positions
-			m_vPosition = new Vector3((Rand.NextDouble() * m_WindowWidth),
+			Position = new Vector3((Rand.NextDouble() * m_WindowWidth),
 											(Rand.NextDouble() * m_WindowHeight), 0);
 
 			//and the fitness
-			m_dFitness = 0;
+			Fitness = 0;
 
 			//and the rotation
-			m_dRotation = Rand.NextDouble() * (System.Math.PI * 2);
+			Rotation = Rand.NextDouble() * (Math.PI * 2);
 
 			return;
 		}
 
 		//-------------------accessor functions
-		public Vector3 Position()
-		{
-			return m_vPosition;
-		}
-
 		public void IncrementFitness()
 		{
-			++m_dFitness;
-		}
-
-		public double Fitness()
-		{
-			return m_dFitness;
+			++Fitness;
 		}
 
 		public void PutWeights(List<double> w)
 		{
-			m_ItsBrain.PutWeights(w);
+			Brain.PutWeights(w);
 		}
 
 		public int GetNumberOfWeights()
 		{
-			return m_ItsBrain.GetNumberOfWeights();
+			return Brain.GetNumberOfWeights();
 		}
 	};
 }
