@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -110,6 +111,44 @@ namespace MatterHackers.Agg.Tests
 
 			Assert.AreEqual(outputObject.Children.Count, 1);
 			Assert.AreEqual(XmlSpecialCharacters, outputObject.Children.First().Name);
+		}
+
+		[Test]
+		public void SaveAmfWithSpecificCulture()
+		{
+			var originalCultureInfo = CultureInfo.CurrentCulture;
+
+			// Change current culture
+			CultureInfo.CurrentCulture = CultureInfo.CreateSpecificCulture("fr-FR");
+
+			try
+			{
+				var inputObject = new Object3D()
+				{
+					Children =
+					{
+						new Object3D()
+						{
+							Name = "Cube",
+							Mesh = PolygonMesh.PlatonicSolids.CreateCube()
+						}
+					}
+				};
+
+				using var memoryStream = new MemoryStream();
+
+				// Save and load as AMF to validate XML format
+				AmfDocument.Save(inputObject, memoryStream, new MeshOutputSettings());
+				var outputObject = AmfDocument.Load(memoryStream, CancellationToken.None);
+
+				Assert.AreEqual(outputObject.Children.Count, 1);
+				Assert.AreEqual("Cube", outputObject.Children.First().Name);
+			}
+			finally
+			{
+				// Restore original culture
+				CultureInfo.CurrentCulture = originalCultureInfo;
+			}
 		}
 
 		private void CreateSampleFile()
