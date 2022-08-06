@@ -34,7 +34,7 @@ using System.Threading;
 using MatterHackers.DataConverters3D;
 using NUnit.Framework;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.Agg.Tests
 {
 	[TestFixture]
 	public class AmfDocumentTests
@@ -53,6 +53,25 @@ namespace MatterHackers.RayTracer
 				Assert.AreEqual(amfObject3D.Children.Count, 1);
 				Assert.IsNotNull(amfObject3D.Children.First().Mesh);
 			}
+		}
+
+		[Test]
+		public void LoadAmfFullyIndented()
+		{
+			// Fully indented AMF file
+			string amfPath = TestContext.CurrentContext.ResolveProjectPath(new string[] { "..", "TestData", "FullyIndented.amf" });
+
+			// Load AMF file and validate result
+			var amfObject = AmfDocument.Load(amfPath, CancellationToken.None);
+
+			Assert.AreEqual(amfObject.Children.Count, 1);
+
+			var child = amfObject.Children.First();
+			Assert.IsNotNull(child.Mesh);
+			Assert.AreEqual("Cube", child.Name);
+			Assert.AreEqual(-1, child.MaterialIndex);
+			Assert.AreEqual(new Color(0, 128, 255), child.Color);
+			Assert.AreEqual(PrintOutputTypes.Solid, child.OutputType);
 		}
 
 		private void CreateSampleFile()
