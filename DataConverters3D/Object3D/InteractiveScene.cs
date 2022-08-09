@@ -35,6 +35,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.Localizations;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
@@ -335,6 +336,18 @@ namespace MatterHackers.DataConverters3D
 		[JsonIgnore]
 		public string TypeName => SourceItem.TypeName;
 
+		public IVertexSource GetVertexSource()
+		{
+			return SourceItem.GetVertexSource();
+		}
+
+		[JsonIgnore]
+		public IVertexSource VertexSource
+        {
+			get;
+			set;
+        }
+        
 		[JsonIgnore]
 		public Mesh Mesh { get => SourceItem.Mesh; set => SourceItem.Mesh = value; }
 

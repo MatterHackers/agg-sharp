@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
@@ -107,6 +108,13 @@ namespace MatterHackers.DataConverters3D
 
 		[JsonConverter(typeof(MatrixConverter))]
 		Matrix4X4 Matrix { get; set; }
+
+		/// <summary>
+		/// If this is not null, then this object is a 2D Object and the mesh is just a visualization of the 2D object.
+		/// </summary>
+		public IVertexSource GetVertexSource();
+
+		public IVertexSource VertexSource { get; set; }
 
 		/// <summary>
 		/// The associated mesh for this content. Setting to a new value invalidates the MeshPath, TraceData and notifies all active listeners

@@ -39,6 +39,7 @@ using System.Threading.Tasks;
 using IxMilia.ThreeMf;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters3D.UndoCommands;
 using MatterHackers.Localizations;
 using MatterHackers.PolygonMesh;
@@ -230,6 +231,27 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+        /// <summary>
+		/// The vertex storage to use when an object is a path
+		/// </summary>
+		public VertexStorage VertexStorage { get; set; } = new VertexStorage();
+
+
+        // Legacy - this is depricated
+        [Obsolete("Use VertexStorage instead")]
+        [JsonIgnore]
+		public virtual IVertexSource VertexSource { get; set; } = new VertexStorage();
+
+		public virtual IVertexSource GetVertexSource()
+        {
+            if (VertexStorage.Count > 0)
+            {
+				return VertexStorage;
+            }
+            
+			return null;
+        }
+
 		private object locker = new object();
 
 		[JsonIgnore]
@@ -298,9 +320,12 @@ namespace MatterHackers.DataConverters3D
 		public virtual bool Persistable { get; set; } = true;
 
 		[JsonIgnore]
-		public virtual bool Printable { get; set; } = true;
+		public virtual bool Printable
+		{
+			get => GetVertexSource() != null;
+		}
 
-		public virtual bool Visible { get; set; } = true;
+        public virtual bool Visible { get; set; } = true;
 
 		public virtual bool CanApply
 		{
