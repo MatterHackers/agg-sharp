@@ -227,14 +227,29 @@ namespace MatterHackers.DataConverters3D
 
 		public static void Save(IObject3D itemToSave, Stream stream, MeshOutputSettings outputInfo)
 		{
-			TextWriter amfFile = new StreamWriter(stream);
-			amfFile.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-			amfFile.WriteLine("<amf unit=\"millimeter\" version=\"1.1\">");
+			using var amfFile = XmlWriter.Create(stream, new XmlWriterSettings()
+			{
+				Indent = true,
+				IndentChars = "  "
+			});
+
+			// <?xml version="1.0" encoding="utf-8"?>
+			amfFile.WriteStartDocument();
+
+			// <amf unit="millimeter" version="1.1">
+			amfFile.WriteStartElement("amf");
+			amfFile.WriteAttributeString("unit", "millimeter");
+			amfFile.WriteAttributeString("version", "1.1");
+
 			if (outputInfo != null)
 			{
 				foreach (KeyValuePair<string, string> metaData in outputInfo.MetaDataKeyValue)
 				{
-					amfFile.WriteLine(Indent(1) + "<metadata type=\"{0}\">{1}</metadata>".FormatWith(metaData.Key, metaData.Value));
+					// <metadata type ="{metaData.Key}">{metaData.Value}</metadata>
+					amfFile.WriteStartElement("metadata");
+					amfFile.WriteAttributeString("type", metaData.Key);
+					amfFile.WriteString(metaData.Value);
+					amfFile.WriteEndElement();
 				}
 			}
 
@@ -252,13 +267,21 @@ namespace MatterHackers.DataConverters3D
 				foreach (var group in groupedByNameColorMaterial)
 				{
 					objectId++;
-					amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">".FormatWith(objectId));
+
+					// <object id="{objectId}">
+					amfFile.WriteStartElement("object");
+					amfFile.WriteStartAttribute("id");
+					amfFile.WriteValue(objectId);
+					amfFile.WriteEndAttribute();
 					{
 						int vertexCount = 0;
 						var meshVertexStart = new List<int>();
-						amfFile.WriteLine(Indent(2) + "<mesh>");
+
+						// <mesh>
+						amfFile.WriteStartElement("mesh");
 						{
-							amfFile.WriteLine(Indent(3) + "<vertices>");
+							// <vertices>
+							amfFile.WriteStartElement("vertices");
 							{
 								foreach (var item in group)
 								{
@@ -272,30 +295,53 @@ namespace MatterHackers.DataConverters3D
 										var position = mesh.Vertices[vertexIndex].Transform(matrix);
 										outputInfo?.ReportProgress?.Invoke(currentRatio + vertexIndex / meshVertCount * ratioPerMesh * .5, "");
 
-										amfFile.WriteLine(Indent(4) + "<vertex>");
+										// <vertex>
+										amfFile.WriteStartElement("vertex");
 										{
-											amfFile.WriteLine(Indent(5) + "<coordinates>");
-											amfFile.WriteLine(Indent(6) + "<x>{0}</x>".FormatWith(position.X));
-											amfFile.WriteLine(Indent(6) + "<y>{0}</y>".FormatWith(position.Y));
-											amfFile.WriteLine(Indent(6) + "<z>{0}</z>".FormatWith(position.Z));
-											amfFile.WriteLine(Indent(5) + "</coordinates>");
-										}
+											// <coordinates>
+											amfFile.WriteStartElement("coordinates");
+											{
+												// <x>{position.X}</x>
+												amfFile.WriteStartElement("x");
+												amfFile.WriteValue(position.X);
+												amfFile.WriteEndElement();
 
-										amfFile.WriteLine(Indent(4) + "</vertex>");
+												// <y>{position.Y}</y>
+												amfFile.WriteStartElement("y");
+												amfFile.WriteValue(position.Y);
+												amfFile.WriteEndElement();
+
+												// <z>{position.Z}</z>
+												amfFile.WriteStartElement("z");
+												amfFile.WriteValue(position.Z);
+												amfFile.WriteEndElement();
+											}
+											// </coordinates>
+											amfFile.WriteEndElement();
+										}
+										// </vertex>
+										amfFile.WriteEndElement();
+
 										vertexCount++;
 									}
 
 									currentRatio += ratioPerMesh * .5;
 								}
 							}
+							// </vertices>
+							amfFile.WriteEndElement();
 
 							int meshIndex = 0;
-							amfFile.WriteLine(Indent(3) + "</vertices>");
 							foreach (var item in group)
 							{
 								var mesh = item.Mesh;
 								int firstVertexIndex = meshVertexStart[meshIndex++];
-								amfFile.WriteLine(Indent(3) + "<volume materialid=\"{0}\">".FormatWith(objectId));
+
+								// <volume materialid="{objectId}">
+								amfFile.WriteStartElement("volume");
+								amfFile.WriteStartAttribute("materialid");
+								amfFile.WriteValue(objectId);
+								amfFile.WriteEndAttribute();
 
 								double faceCount = (double)mesh.Faces.Count;
 								for (int faceIndex = 0; faceIndex < faceCount; faceIndex++)
@@ -304,22 +350,39 @@ namespace MatterHackers.DataConverters3D
 
 									Face face = mesh.Faces[faceIndex];
 
-									amfFile.WriteLine(Indent(4) + "<triangle>");
-									amfFile.WriteLine(Indent(5) + $"<v1>{firstVertexIndex + face.v0}</v1>");
-									amfFile.WriteLine(Indent(5) + $"<v2>{firstVertexIndex + face.v1}</v2>");
-									amfFile.WriteLine(Indent(5) + $"<v3>{firstVertexIndex + face.v2}</v3>");
-									amfFile.WriteLine(Indent(4) + "</triangle>");
+									// <triangle>
+									amfFile.WriteStartElement("triangle");
+									{
+										// <v1>{firstVertexIndex + face.v0}</v1>
+										amfFile.WriteStartElement("v1");
+										amfFile.WriteValue(firstVertexIndex + face.v0);
+										amfFile.WriteEndElement();
+
+										// <v2>{firstVertexIndex + face.v1}</v2>
+										amfFile.WriteStartElement("v2");
+										amfFile.WriteValue(firstVertexIndex + face.v1);
+										amfFile.WriteEndElement();
+
+										// <v3>{firstVertexIndex + face.v2}</v3>
+										amfFile.WriteStartElement("v3");
+										amfFile.WriteValue(firstVertexIndex + face.v2);
+										amfFile.WriteEndElement();
+									}
+									// </triangle>
+									amfFile.WriteEndElement();
 								}
 
 								currentRatio += ratioPerMesh * .5;
-								amfFile.WriteLine(Indent(3) + "</volume>");
+
+								// </volume>
+								amfFile.WriteEndElement();
 							}
 						}
-
-						amfFile.WriteLine(Indent(2) + "</mesh>");
+						// </mesh>
+						amfFile.WriteEndElement();
 					}
-
-					amfFile.WriteLine(Indent(1) + "</object>");
+					// </object>
+					amfFile.WriteEndElement();
 				}
 
 				var nameColorMaterials = new HashSet<(string name, Color c, int material, PrintOutputTypes output)>();
@@ -331,19 +394,65 @@ namespace MatterHackers.DataConverters3D
 					}
 				}
 
-				int id = 1;
+				int id = 0;
 				foreach (var ncm in nameColorMaterials)
 				{
-					amfFile.WriteLine(Indent(1) + "<material id=\"{0}\">".FormatWith(id++));
-					amfFile.WriteLine(Indent(2) + $"<metadata type=\"Name\">{ncm.name}</metadata>");
-					amfFile.WriteLine(Indent(2) + $"<metadata type=\"MaterialIndex\">{ncm.material}</metadata>");
-					amfFile.WriteLine(Indent(2) + $"<color><r>{ncm.c.Red0To1}</r><g>{ncm.c.Green0To1}</g><b>{ncm.c.Blue0To1}</b></color>");
-					amfFile.WriteLine(Indent(2) + $"<metadata type=\"OutputType\">{ncm.output}</metadata>");
-					amfFile.WriteLine(Indent(1) + "</material>");
+					id++;
+
+					// <material id="{id}">
+					amfFile.WriteStartElement("material");
+					amfFile.WriteStartAttribute("id");
+					amfFile.WriteValue(id);
+					amfFile.WriteEndAttribute();
+					{
+						// <metadata type="Name">{ncm.name}</metadata>
+						amfFile.WriteStartElement("metadata");
+						amfFile.WriteAttributeString("type", "Name");
+						amfFile.WriteValue(ncm.name);
+						amfFile.WriteEndElement();
+
+						// <metadata type="MaterialIndex">{ncm.material}</metadata>
+						amfFile.WriteStartElement("metadata");
+						amfFile.WriteAttributeString("type", "MaterialIndex");
+						amfFile.WriteValue(ncm.material);
+						amfFile.WriteEndElement();
+
+						// <color>
+						amfFile.WriteStartElement("color");
+						{
+							// <r>{ncm.c.Red0To1}</r>
+							amfFile.WriteStartElement("r");
+							amfFile.WriteValue(ncm.c.Red0To1);
+							amfFile.WriteEndElement();
+
+							// <g>{ncm.c.Green0To1}</g>
+							amfFile.WriteStartElement("g");
+							amfFile.WriteValue(ncm.c.Green0To1);
+							amfFile.WriteEndElement();
+
+							// <b>{ncm.c.Blue0To1}</b>
+							amfFile.WriteStartElement("b");
+							amfFile.WriteValue(ncm.c.Blue0To1);
+							amfFile.WriteEndElement();
+						}
+						// </color>
+						amfFile.WriteEndElement();
+
+						// <metadata type="OutputType">{ncm.output}</metadata>
+						amfFile.WriteStartElement("metadata");
+						amfFile.WriteAttributeString("type", "OutputType");
+						amfFile.WriteString(ncm.output.ToString());
+						amfFile.WriteEndElement();
+					}
+					// </material>
+					amfFile.WriteEndElement();
 				}
 			}
+			// </amf>
+			amfFile.WriteEndElement();
 
-			amfFile.WriteLine("</amf>");
+			amfFile.WriteEndDocument();
+
 			amfFile.Flush();
 		}
 
@@ -353,11 +462,6 @@ namespace MatterHackers.DataConverters3D
 			{
 				Save(item, file, outputInfo);
 			}
-		}
-
-		private static string Indent(int index)
-		{
-			return new string(' ', index * 2);
 		}
 
 		private static bool IsZipFile(Stream fs)
@@ -390,9 +494,9 @@ namespace MatterHackers.DataConverters3D
 					{
 						var vertex = default(Vector3);
 
-						string nextSibling = null;
 						if (reader.ReadToDescendant("x"))
 						{
+							string nextSibling = null;
 							do
 							{
 								switch (reader.Name)
@@ -414,7 +518,7 @@ namespace MatterHackers.DataConverters3D
 										break;
 								}
 							}
-							while (nextSibling != null && (reader.Name != nextSibling ? reader.ReadToNextSibling(nextSibling) : true));
+							while (nextSibling != null && (reader.Name == nextSibling || reader.ReadToNextSibling(nextSibling)));
 						}
 
 						progressData.ReportProgress0To50();
@@ -453,10 +557,31 @@ namespace MatterHackers.DataConverters3D
 			{
 				if (reader.ReadToDescendant("r"))
 				{
-					color.red = reader.ReadElementContentAsFloat();
-					color.green = reader.ReadElementContentAsFloat();
-					color.blue = reader.ReadElementContentAsFloat();
+					string nextSibling = null;
+					do
+					{
+						switch (reader.Name)
+						{
+							case "r":
+								color.red = reader.ReadElementContentAsFloat();
+								nextSibling = "g";
+								break;
+
+							case "g":
+								color.green = reader.ReadElementContentAsFloat();
+								nextSibling = "b";
+								break;
+
+							case "b":
+								color.blue = reader.ReadElementContentAsFloat();
+								nextSibling = null;
+								break;
+						}
+					}
+					while (nextSibling != null && (reader.Name == nextSibling || reader.ReadToNextSibling(nextSibling)));
 				}
+
+				MoveToEndElement(reader, "color");
 			}
 
 			if (reader.ReadToNextSibling("metadata"))
@@ -496,9 +621,10 @@ namespace MatterHackers.DataConverters3D
 				do
 				{
 					var indices = new int[3];
-					string nextSibling = null;
+
 					if (reader.ReadToDescendant("v1"))
 					{
+						string nextSibling = null;
 						do
 						{
 							switch (reader.Name)
@@ -519,7 +645,7 @@ namespace MatterHackers.DataConverters3D
 									break;
 							}
 						}
-						while (nextSibling != null && (reader.Name != nextSibling ? reader.ReadToNextSibling(nextSibling) : true));
+						while (nextSibling != null && (reader.Name == nextSibling || reader.ReadToNextSibling(nextSibling)));
 					}
 
 					if (indices[0] != indices[1]

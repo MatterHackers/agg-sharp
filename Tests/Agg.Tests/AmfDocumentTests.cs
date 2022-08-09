@@ -27,14 +27,16 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using MatterHackers.DataConverters3D;
+using MatterHackers.PolygonMesh.Processors;
 using NUnit.Framework;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.Agg.Tests
 {
 	[TestFixture]
 	public class AmfDocumentTests
@@ -52,6 +54,100 @@ namespace MatterHackers.RayTracer
 
 				Assert.AreEqual(amfObject3D.Children.Count, 1);
 				Assert.IsNotNull(amfObject3D.Children.First().Mesh);
+			}
+		}
+
+		[Test]
+		public void LoadAmfFullyIndented()
+		{
+			// Fully indented AMF file
+			string amfPath = TestContext.CurrentContext.ResolveProjectPath(new string[] { "..", "TestData", "FullyIndented.amf" });
+
+			// Load AMF file and validate result
+			var amfObject = AmfDocument.Load(amfPath, CancellationToken.None);
+
+			Assert.AreEqual(amfObject.Children.Count, 1);
+
+			var child = amfObject.Children.First();
+			Assert.IsNotNull(child.Mesh);
+			Assert.AreEqual("Cube", child.Name);
+			Assert.AreEqual(-1, child.MaterialIndex);
+			Assert.AreEqual(new Color(0, 128, 255), child.Color);
+			Assert.AreEqual(PrintOutputTypes.Solid, child.OutputType);
+		}
+
+		[Test]
+		public void SaveAmfContainingXmlSpecialCharacters()
+		{
+			const string XmlSpecialCharacters = "&<>'\"";
+
+			// Create an object whose name contains XML special characters
+			var inputObject = new Object3D()
+			{
+				Children =
+				{
+					new Object3D()
+					{
+						Name = XmlSpecialCharacters,
+						Mesh = PolygonMesh.PlatonicSolids.CreateCube()
+					}
+				}
+			};
+
+			// Add meta data containing XML special characters
+			var outputSettings = new MeshOutputSettings()
+			{
+				MetaDataKeyValue = new()
+				{
+					{ XmlSpecialCharacters, XmlSpecialCharacters }
+				}
+			};
+
+			using var memoryStream = new MemoryStream();
+
+			// Save and load as AMF to validate that XML special characters are correctly escaped
+			AmfDocument.Save(inputObject, memoryStream, outputSettings);
+			var outputObject = AmfDocument.Load(memoryStream, CancellationToken.None);
+
+			Assert.AreEqual(outputObject.Children.Count, 1);
+			Assert.AreEqual(XmlSpecialCharacters, outputObject.Children.First().Name);
+		}
+
+		[Test]
+		public void SaveAmfWithSpecificCulture()
+		{
+			var originalCultureInfo = CultureInfo.CurrentCulture;
+
+			// Change current culture
+			CultureInfo.CurrentCulture = CultureInfo.CreateSpecificCulture("fr-FR");
+
+			try
+			{
+				var inputObject = new Object3D()
+				{
+					Children =
+					{
+						new Object3D()
+						{
+							Name = "Cube",
+							Mesh = PolygonMesh.PlatonicSolids.CreateCube()
+						}
+					}
+				};
+
+				using var memoryStream = new MemoryStream();
+
+				// Save and load as AMF to validate XML format
+				AmfDocument.Save(inputObject, memoryStream, new MeshOutputSettings());
+				var outputObject = AmfDocument.Load(memoryStream, CancellationToken.None);
+
+				Assert.AreEqual(outputObject.Children.Count, 1);
+				Assert.AreEqual("Cube", outputObject.Children.First().Name);
+			}
+			finally
+			{
+				// Restore original culture
+				CultureInfo.CurrentCulture = originalCultureInfo;
 			}
 		}
 
