@@ -244,7 +244,7 @@ namespace MatterHackers.DataConverters3D
 			if (visibleChildPaths != null
 				&& visibleChildPaths.Any())
 			{
-				return new JoinPaths(visibleChildPaths.Select(i => i.GetVertexSource()));
+				return new CombinePaths(visibleChildPaths.Select(i => i.GetVertexSource()));
 			}
 
 			return null;

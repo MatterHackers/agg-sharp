@@ -46,7 +46,7 @@ namespace MatterHackers.Agg.UI
 		public Color MinimalShade { get; set; } = new Color("#0000000F");
 		public Color TextColor { get; set; } = new Color("#333");
 		public Color BackgroundColor { get; set; } = new Color("#fff");
-		public Color PrimaryAccentColor { get; set; } = new Color("#B58900");
+		public Color PrimaryAccentColor { get; set; } = new Color("#7AD7F0");
 		public BorderDouble TextButtonPadding { get; } = new BorderDouble(14, 0);
 		public double ButtonHeight => 32 * GuiWidget.DeviceScale;
 
@@ -85,6 +85,51 @@ namespace MatterHackers.Agg.UI
 			};
 
 			theme.ButtonBackgroundColor = theme.BackgroundColor.WithLightness(0.9).ToColor();
+			return theme;
+		}
+
+		public static ThemeConfig DefaultMenuTheme()
+		{
+			var theme = new ThemeConfig()
+			{
+				DefaultFontSize = 11,
+				EditFieldColors = new ThemeConfig.ThreeStateColor()
+				{
+					Focused = new ThemeConfig.StateColor()
+					{
+						BackgroundColor = new Color("#fff"),
+						ForegroundColor = new Color("#00000000"),
+						BorderColor = new Color("#FF7F00"),
+						TextColor = new Color("#222222"),
+						LightTextColor = new Color("#6e6e6e")
+					},
+					Hovered = new ThemeConfig.StateColor()
+					{
+						BackgroundColor = new Color("#fff"),
+						ForegroundColor = new Color("#00000000"),
+						BorderColor = new Color("#FF7F00"),
+						TextColor = new Color("#00000000")
+						// LightTextColor = new Color("#")
+					},
+					Inactive = new ThemeConfig.StateColor()
+					{
+						BackgroundColor = new Color("#fff"),
+						ForegroundColor = new Color("#00000000"),
+						BorderColor = new Color("#ccc"),
+						TextColor = new Color("#222222"),
+						LightTextColor = new Color("#6e6e6e")
+					}
+				},
+				BackgroundColor = Color.LightGray
+			};
+
+			theme.ButtonBackgroundColor = Color.LightGray;
+			theme.BorderColor20 = Color.Black.WithAlpha(140);
+			theme.AccentMimimalOverlay = theme.PrimaryAccentColor.WithAlpha(128);
+            theme.SlightShade = theme.PrimaryAccentColor.WithAlpha(80);
+			theme.MinimalShade = theme.PrimaryAccentColor.WithAlpha(60);
+			theme.RowBorder = theme.TextColor;
+
 			return theme;
 		}
 

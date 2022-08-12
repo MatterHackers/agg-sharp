@@ -35,6 +35,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.VertexSource;
+using MatterHackers.Localizations;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
@@ -62,6 +63,54 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public static Action<InternalTextEditWidget, MouseEventArgs> DefaultRightClick;
+
+		public static void AddTextWidgetRightClickMenu(ThemeConfig theme)
+		{
+			InternalTextEditWidget.DefaultRightClick += (s, e) =>
+			{
+				var textEditWidget = s as InternalTextEditWidget;
+				var popupMenu = new PopupMenu(theme);
+
+				var cut = popupMenu.CreateMenuItem("Cut".Localize());
+				cut.Enabled = !string.IsNullOrEmpty(s.Selection);
+				cut.Click += (s2, e2) =>
+				{
+					textEditWidget?.CopySelection();
+					textEditWidget?.DeleteSelection();
+				};
+
+				var copy = popupMenu.CreateMenuItem("Copy".Localize());
+				copy.Enabled = !string.IsNullOrEmpty(s.Selection);
+				copy.Click += (s2, e2) =>
+				{
+					textEditWidget?.CopySelection();
+				};
+
+				var paste = popupMenu.CreateMenuItem("Paste".Localize());
+				paste.Enabled = Clipboard.Instance.ContainsText;
+				paste.Click += (s2, e2) =>
+				{
+					textEditWidget?.PasteFromClipboard();
+				};
+
+				popupMenu.CreateSeparator();
+
+				var selectAll = popupMenu.CreateMenuItem("Select All".Localize());
+				selectAll.Enabled = !string.IsNullOrEmpty(textEditWidget.Text);
+				selectAll.Click += (s2, e2) =>
+				{
+					textEditWidget?.SelectAll();
+				};
+
+				textEditWidget.KeepMenuOpen = true;
+				popupMenu.Closed += (s3, e3) =>
+				{
+					textEditWidget.KeepMenuOpen = false;
+				};
+
+				popupMenu.ShowMenu(s, e);
+			};
+		}
 
 		public event KeyEventHandler EnterPressed;
 
@@ -235,6 +284,12 @@ namespace MatterHackers.Agg.UI
 
 		public InternalTextEditWidget(string text, double pointSize, bool multiLine, int tabIndex, TypeFace typeFace = null)
 		{
+			if (DefaultRightClick == null)
+            {
+				var menuTheme = ThemeConfig.DefaultMenuTheme();
+				InternalTextEditWidget.AddTextWidgetRightClickMenu(menuTheme);
+			}
+            
 			TabIndex = tabIndex;
 			TabStop = true;
 			MergeTypingDuringUndo = true;
