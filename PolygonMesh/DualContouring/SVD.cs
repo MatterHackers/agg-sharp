@@ -40,8 +40,8 @@ public static class SVD
             return;
         }
 
-        double c = 0, s = 0;
-        Schur2.Rot01(vtav, c, s);
+        double c, s;
+        Schur2.Rot01(vtav, out c, out s);
         Givens.Rot01Post(v, c, s);
     }
 
@@ -52,8 +52,8 @@ public static class SVD
             return;
         }
 
-        double c = 0, s = 0;
-        Schur2.Rot02(vtav, c, s);
+        double c, s;
+        Schur2.Rot02(vtav, out c, out s);
         Givens.Rot02Post(v, c, s);
     }
 
@@ -64,8 +64,8 @@ public static class SVD
             return;
         }
 
-        double c = 0, s = 0;
-        Schur2.Rot12(vtav, c, s);
+        double c, s;
+        Schur2.Rot12(vtav, out c, out s);
         Givens.Rot12Post(v, c, s);
     }
 

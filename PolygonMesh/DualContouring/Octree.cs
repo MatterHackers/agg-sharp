@@ -101,7 +101,7 @@ namespace DualContouring
 
 		public static readonly int[][] edgevmap = new int[12][]
 		{
-			new int[2]{2,4},new int[2]{1,5},new int[2]{2,6},new int[2]{3,7},	// x-axis
+			new int[2]{0,4},new int[2]{1,5},new int[2]{2,6},new int[2]{3,7},	// x-axis
 			new int[2]{0,2},new int[2]{1,3},new int[2]{4,6},new int[2]{5,7},	// y-axis
 			new int[2]{0,1},new int[2]{2,3},new int[2]{4,5},new int[2]{6,7}     // z-axis
 		};
@@ -158,27 +158,30 @@ namespace DualContouring
 
 		public static Vector3 ApproximateZeroCrossingPosition(Func<Vector3, double> f, Vector3 p0, Vector3 p1)
 		{
-			// approximate the zero crossing by finding the min value along the edge
-			double minValue = 100000f;
-			double t = 0f;
-			const int steps = 32;
-			int step = 0;
-			var bestPosition = p0;
-			while (++step < steps)
+			Vector3 bestPosition;
+			double minValue;
+
+			// for initial position, try to approximate the zero crossing using linear interpolation
 			{
+				double d0 = f(p0);
+				double d1 = f(p1);
+				double t = (0 - d0) / (d1 - d0);
+				bestPosition = p0 + ((p1 - p0) * t);
+				minValue = Math.Abs(f(bestPosition));
+			}
+
+			// approximate the zero crossing by finding the min value along the edge
+			const int steps = 32;
+			for (int step = 0; step <= steps; step++)
+			{
+				double t = (double) step / steps;
 				Vector3 p = p0 + ((p1 - p0) * t);
 				double density = Math.Abs(f(p));
 				if (density < minValue)
 				{
 					bestPosition = p;
 					minValue = density;
-					if (minValue < 0)
-					{
-						break;
-					}
 				}
-
-				t += 1.0 / steps;
 			}
 
 			return bestPosition;
