@@ -236,12 +236,6 @@ namespace MatterHackers.DataConverters3D
 		/// </summary>
 		public VertexStorage VertexStorage { get; set; } = new VertexStorage();
 
-
-        // Legacy - this is depricated
-        [Obsolete("Use VertexStorage instead")]
-        [JsonIgnore]
-		public virtual IVertexSource VertexSource { get; set; } = new VertexStorage();
-
 		public virtual IVertexSource GetVertexSource()
         {
             if (VertexStorage.Count > 0)
