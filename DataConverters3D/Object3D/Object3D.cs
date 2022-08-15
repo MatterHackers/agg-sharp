@@ -579,6 +579,7 @@ namespace MatterHackers.DataConverters3D
 
 		public static bool Save(IObject3D item,
 			string meshPathAndFileName,
+            bool mergeMeshes,
 			CancellationToken cancellationToken,
 			MeshOutputSettings outputInfo = null,
 			Action<double, string> reportProgress = null)
@@ -601,6 +602,10 @@ namespace MatterHackers.DataConverters3D
 					// return true;
 
 					case ".STL":
+                        if (mergeMeshes)
+                        {
+							outputInfo.CsgOptionState = MeshOutputSettings.CsgOption.DoCsgMerge;
+                        }
 						Mesh mesh = DoMergeAndTransform(item, outputInfo, cancellationToken, reportProgress);
 						return StlProcessing.Save(mesh, meshPathAndFileName, cancellationToken, outputInfo);
 
@@ -642,38 +647,53 @@ namespace MatterHackers.DataConverters3D
 			Action<double, string> reportProgress = null)
 		{
 			var persistable = item.VisibleMeshes().Where((i) => i.WorldPersistable());
-            
-			var solidsToUnion = persistable.Where((i) => i.WorldOutputType() == PrintOutputTypes.Default || i.WorldOutputType() == PrintOutputTypes.Solid);
 
-			var holesToSubtract = persistable.Where((i) => i.WorldOutputType() == PrintOutputTypes.Hole);
-
-			if (holesToSubtract.Any())
+			if (outputInfo.CsgOptionState == MeshOutputSettings.CsgOption.DoCsgMerge)
 			{
-				// union every solid (non-hole, not support structures)
-				var solidsObject = new Object3D()
+				var solidsToUnion = persistable.Where((i) => i.WorldOutputType() == PrintOutputTypes.Default || i.WorldOutputType() == PrintOutputTypes.Solid);
+
+				var holesToSubtract = persistable.Where((i) => i.WorldOutputType() == PrintOutputTypes.Hole);
+
+				if (holesToSubtract.Any())
 				{
-					Mesh = CombineParticipants(item, solidsToUnion, cancellationToken, new Reporter(reportProgress, 0, .33))
-				};
+					// union every solid (non-hole, not support structures)
+					var solidsObject = new Object3D()
+					{
+						Mesh = CombineParticipants(item, solidsToUnion, cancellationToken, new Reporter(reportProgress, 0, .33))
+					};
 
-				// union every hole
-				var holesObject = new Object3D()
+					// union every hole
+					var holesObject = new Object3D()
+					{
+						Mesh = CombineParticipants(item, holesToSubtract, cancellationToken, new Reporter(reportProgress, .33, .66))
+					};
+
+					// subtract all holes from all solids
+
+					var result = DoSubtract(item, new IObject3D[] { solidsObject }, new IObject3D[] { holesObject }, new Reporter(reportProgress, .66, 1), cancellationToken);
+
+					return result.First().Mesh;
+				}
+				else // we only have meshes to union
 				{
-					Mesh = CombineParticipants(item, holesToSubtract, cancellationToken, new Reporter(reportProgress, .33, .66))
-				};
-
-				// subtract all holes from all solids
-
-				var result = DoSubtract(item, new IObject3D[] { solidsObject }, new IObject3D[] { holesObject }, new Reporter(reportProgress, .66, 1), cancellationToken);
-
-				return result.First().Mesh;
+					// union every solid (non-hole, not support structures)
+					return CombineParticipants(item, solidsToUnion, cancellationToken, new Reporter(reportProgress));
+				}
 			}
-			else // we only have meshes to union
+			else
 			{
-				// union every solid (non-hole, not support structures)
-				return CombineParticipants(item, solidsToUnion, cancellationToken, new Reporter(reportProgress));
+				var allPolygons = new Mesh();
+				foreach (var rawItem in persistable)
+				{
+					var mesh = rawItem.Mesh.Copy(cancellationToken);
+					mesh.Transform(rawItem.WorldMatrix());
+					allPolygons.CopyFaces(mesh);
+				}
+                
+				return allPolygons;
 			}
 		}
-
+        
         public class Reporter : IProgress<ProgressStatus>
         {
             public Reporter(Action<double, string> reportProgress, double startRatio = 0, double endRatio = 1)
