@@ -92,10 +92,10 @@ namespace ClipperLib
 			return bounds;
 		}
 
-		public static Polygons Offset(this Polygons polygons, double distance)
+		public static Polygons Offset(this Polygons polygons, double distance, JoinType joinType)
 		{
 			var offseter = new ClipperOffset();
-			offseter.AddPaths(polygons, JoinType.jtRound, EndType.etClosedPolygon);
+			offseter.AddPaths(polygons, joinType, EndType.etClosedPolygon);
 			var solution = new Polygons();
 			offseter.Execute(ref solution, distance);
 

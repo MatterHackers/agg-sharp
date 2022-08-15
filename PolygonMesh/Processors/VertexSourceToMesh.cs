@@ -357,7 +357,7 @@ namespace MatterHackers.PolygonMesh.Processors
 					i++;
 					if (i < bevel.Count)
 					{
-						topLoop = bottomPolygons.Offset(bevel[i].insetAmount * 1000);
+						topLoop = bottomPolygons.Offset(bevel[i].insetAmount * 1000, JoinType.jtRound);
 						if (i == bevel.Count - 1)
 						{
 							topHeight = zHeightTop;

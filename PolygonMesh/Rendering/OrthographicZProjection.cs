@@ -81,7 +81,7 @@ namespace MatterHackers.PolygonMesh.Rendering
 			}
 
 			// and move it back to the right size
-			return polygonProjected.Offset(-100);
+			return polygonProjected.Offset(-100, JoinType.jtRound);
 		}
 	}
 }
