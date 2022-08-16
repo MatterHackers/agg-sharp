@@ -32,6 +32,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ClipperLib;
+using DualContouring;
 using MatterHackers.Agg.Image;
 using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh.Csg;
@@ -72,6 +73,20 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			// 	debugRender.RenderToPng("debug face {0}.png".FormatWith(meshSaveIndex++));
 			// }
 #endif
+		}
+
+        [Test]
+        public void SdfDensityFunctions()
+        {
+            var cylinder = new Cylinder()
+            {
+                Height = 2,
+                Radius = 0.5
+            };
+
+			Assert.True(cylinder.Bounds.Equals(new AxisAlignedBoundingBox(-.5, -.5, 0, .5, .5, 2), .001));
+			Assert.AreEqual(1, cylinder.Sdf(new Vector3(0, 0, -1)));
+			Assert.AreEqual(1, cylinder.Sdf(new Vector3(0, 0, 3)));
 		}
 
 		[Test]
