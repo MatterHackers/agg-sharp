@@ -46,7 +46,7 @@ namespace SmartSweeper
 		private List<SGenome> m_vecThePopulation;
 
 		//and the minesweepers
-		private List<CMinesweeper> m_vecSweepers = new List<CMinesweeper>();
+		private List<CMinesweeper> Sweepers = new List<CMinesweeper>();
 
 		//and the mines
 		private List<Vector3> m_vecMines = new List<Vector3>();
@@ -190,12 +190,12 @@ namespace SmartSweeper
 			//let's create the mine sweepers
 			for (int i = 0; i < iNumSweepers; ++i)
 			{
-				m_vecSweepers.Add(new CMinesweeper((int)hwndMain.Width, (int)hwndMain.Height, m_SweeperScale, .3));
+				Sweepers.Add(new CMinesweeper((int)hwndMain.Width, (int)hwndMain.Height, m_SweeperScale, .3));
 			}
 
 			//get the total number of weights used in the sweepers
 			//NN so we can initialise the GA
-			m_NumWeightsInNN = m_vecSweepers[0].GetNumberOfWeights();
+			m_NumWeightsInNN = Sweepers[0].GetNumberOfWeights();
 
 			//initialize the Genetic Algorithm class
 			m_pGA = new CGenAlg(iNumSweepers, dMutationRate, dCrossoverRate, m_NumWeightsInNN, dMaxPerturbation,
@@ -206,7 +206,7 @@ namespace SmartSweeper
 
 			for (int i = 0; i < iNumSweepers; i++)
 			{
-				m_vecSweepers[i].PutWeights(m_vecThePopulation[i].Weights);
+				Sweepers[i].PutWeights(m_vecThePopulation[i].Weights);
 			}
 
 			//initialize mines in random positions within the application window
@@ -270,7 +270,7 @@ namespace SmartSweeper
 
 				Color currentColor = m_RedPen;
 				//render the sweepers
-				for (int i = 0; i < m_vecSweepers.Count; i++)
+				for (int i = 0; i < Sweepers.Count; i++)
 				{
 					//grab the sweeper vertices
 					List<Vector3> sweeperVB = new List<Vector3>();
@@ -280,7 +280,7 @@ namespace SmartSweeper
 					}
 
 					//transform the vertex buffer
-					m_vecSweepers[i].WorldTransform(sweeperVB);
+					Sweepers[i].WorldTransform(sweeperVB);
 
 					//draw the sweeper left track
 					m_LinesToDraw.remove_all();
@@ -351,13 +351,13 @@ namespace SmartSweeper
 			//information from its surroundings. The output from the NN is obtained
 			//and the sweeper is moved. If it encounters a mine its fitness is
 			//updated appropriately,
-			int NumSweepers = m_vecSweepers.Count;
+			int NumSweepers = Sweepers.Count;
 			if (m_TicksThisGeneration++ < m_NumTicksPerGeneration)
 			{
 				for (int i = 0; i < NumSweepers; ++i)
 				{
 					//update the NN and position
-					if (!m_vecSweepers[i].Update(m_vecMines))
+					if (!Sweepers[i].Update(m_vecMines))
 					{
 						//error in processing the neural net
 						//MessageBox(m_hwndMain, "Wrong amount of NN inputs!", "Error", MB_OK);
@@ -366,13 +366,13 @@ namespace SmartSweeper
 					}
 
 					//see if it's found a mine
-					int GrabHit = m_vecSweepers[i].CheckForMine(m_vecMines, m_MineScale);
+					int GrabHit = Sweepers[i].CheckForMine(m_vecMines, m_MineScale);
 
 					if (GrabHit >= 0)
 					{
 						Random Rand = new Random();
 						//we have discovered a mine so increase fitness
-						m_vecSweepers[i].IncrementFitness();
+						Sweepers[i].IncrementFitness();
 
 						//mine found so replace the mine with another at a random
 						//position
@@ -381,7 +381,7 @@ namespace SmartSweeper
 					}
 
 					//update the chromos fitness score
-					m_vecThePopulation[i].Fitness = m_vecSweepers[i].Fitness();
+					m_vecThePopulation[i].Fitness = Sweepers[i].Fitness;
 				}
 			}
 			//Another generation has been completed.
@@ -405,9 +405,9 @@ namespace SmartSweeper
 				//and reset their positions etc
 				for (int i = 0; i < NumSweepers; ++i)
 				{
-					m_vecSweepers[i].PutWeights(m_vecThePopulation[i].Weights);
+					Sweepers[i].PutWeights(m_vecThePopulation[i].Weights);
 
-					m_vecSweepers[i].Reset();
+					Sweepers[i].Reset();
 				}
 			}
 

@@ -240,5 +240,50 @@ namespace MatterHackers.RayTracer
 				return newBVHNode;
 			}
 		}
+
+		public static ITraceable CreateOnCentersOnly(List<ITraceable> traceableItems, AxisAlignedBoundingBox aabb)
+		{
+			int numItems = traceableItems.Count;
+
+			if (numItems == 0)
+			{
+				return null;
+			}
+
+			if (numItems == 1)
+			{
+				return traceableItems[0];
+			}
+
+            // always split on the largest axis
+            int bestAxis = aabb.XSize > aabb.YSize ? 0 : 1;
+			bestAxis = aabb.Size[bestAxis] > aabb.ZSize ? bestAxis : 2;
+			
+			var leftItems = new List<ITraceable>();
+			var rightItems = new List<ITraceable>();
+			var axisCenter = aabb.Center[bestAxis];
+
+			var leftMax = aabb.MaxXYZ;
+            leftMax[bestAxis] = axisCenter;
+            var leftAabb = new AxisAlignedBoundingBox(aabb.MinXYZ, leftMax);
+            var leftGroup = CreateOnCentersOnly(leftItems, leftAabb);
+
+			var rightMin = aabb.MinXYZ;
+			rightMin[bestAxis] = axisCenter;
+			var rightAabb = new AxisAlignedBoundingBox(rightMin, aabb.MaxXYZ);
+			var rightGroup = CreateOnCentersOnly(rightItems, rightAabb);
+            
+            if (leftGroup == null)
+            {
+				return rightGroup;
+            }
+            else if (rightGroup == null)
+            {
+				return leftGroup;
+            }
+
+			var newBVHNode = new BoundingVolumeHierarchy(leftGroup, rightGroup);
+			return newBVHNode;
+		}
 	}
 }

@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using MatterHackers.Agg;
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.DataConverters3D
@@ -203,7 +204,13 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static IEnumerable<IObject3D> VisiblePaths(this IObject3D root)
+		/// <summary>
+		/// Enumerator to get the currently visible object that has a VertexSource.
+		/// The returned set may include placeholder or proxy data while
+		/// long operations are happening such as loading or mesh processing.
+		/// </summary>
+		/// <returns></returns>
+		public static IEnumerable<IObject3D> VisiblePaths(this IObject3D root, Func<IObject3D, bool> consider = null, bool onlyChildren = false)
 		{
 			var items = new Stack<IObject3D>(new[] { root });
 			while (items.Count > 0)
@@ -211,23 +218,41 @@ namespace MatterHackers.DataConverters3D
 				var item = items.Pop();
 
 				// store the mesh so we are thread safe regarding having a valid object (not null)
-				if (item is IPathObject pathObject
-					&& pathObject.VertexSource.Vertices().Any())
+                if ((!onlyChildren || item != root)
+                    && item.GetVertexSource() != null)
 				{
-					// there is a mesh return the object
+					// there is a VertexSource return the object
 					yield return item;
 				}
 				else // there is no mesh go into the object and iterate its children
 				{
-					foreach (var n in item.Children)
+					foreach (var childItem in item.Children)
 					{
-						if (n.Visible)
+						if (childItem.Visible
+							&& (consider == null || consider(childItem)))
 						{
-							items.Push(n);
+							items.Push(childItem);
 						}
 					}
 				}
 			}
+		}
+
+        public static IVertexSource CombinedVisibleChildrenPaths(this IObject3D item)
+        {
+			var visibleChildPaths = item.VisiblePaths(onlyChildren: true);
+			if (visibleChildPaths != null
+				&& visibleChildPaths.Any())
+			{
+				return new CombinePaths(visibleChildPaths.Select(i => i.GetVertexSource()));
+			}
+
+			return null;
+		}
+
+		public static bool IsPathObject(this IObject3D item)
+		{
+			return item.GetVertexSource() != null;
 		}
 	}
 }

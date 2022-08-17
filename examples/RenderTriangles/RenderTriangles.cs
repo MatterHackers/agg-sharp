@@ -94,7 +94,7 @@ namespace MatterHackers.Agg
 
     public class RenderTriangles : GuiWidget, IDemoApp
 	{
-        private TextEditWidget textWidget;
+        private ThemedTextEditWidget textWidget;
 
 		string CurrentFile()
 		{
@@ -133,13 +133,18 @@ namespace MatterHackers.Agg
             };
 			spliter.Panel1.AddChild(leftSideTopToBottom);
 
-			textWidget = new TextEditWidget(pixelWidth: 200)
+			textWidget = new ThemedTextEditWidget("", ThemeConfig.DefaultTheme(),
+				multiLine: true,
+                messageWhenEmptyAndNotSelected: "Each line should have a comma separated\n x, y. Add as many lines as you want.\nAdd an empty line to creat a new polygon.",
+				pixelWidth: 200)
 			{
 				VAnchor = VAnchor.Stretch,
 				HAnchor = HAnchor.Stretch,
-				Multiline = true,
 				Margin = 3,
 			};
+
+			textWidget.ActualTextEditWidget.VAnchor = VAnchor.Stretch;
+			textWidget.ActualTextEditWidget.HAnchor = HAnchor.Stretch;
 
 			leftSideTopToBottom.AddChild(textWidget);
 

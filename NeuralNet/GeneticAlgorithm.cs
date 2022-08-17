@@ -22,20 +22,7 @@ namespace NeuralNet
 	{
 		private List<double> vecWeights = new List<double>();
 
-		private double dFitness = 0;
-
-		public double Fitness
-		{
-			get
-			{
-				return dFitness;
-			}
-
-			set
-			{
-				dFitness = value;
-			}
-		}
+		public double Fitness { get; set; }
 
 		public List<double> Weights
 		{
@@ -56,7 +43,7 @@ namespace NeuralNet
 			{
 				vecWeights.Add(weight);
 			}
-			dFitness = fitness;
+			Fitness = fitness;
 		}
 
 		public int CompareTo(SGenome other)

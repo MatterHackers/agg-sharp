@@ -765,7 +765,7 @@ namespace MatterHackers.DataConverters3D
 		/// </summary>
 		/// <param name="mesh">The mesh to add the BVH to.</param>
 		/// <returns>The created BVH tree.</returns>
-		public static ITraceable CreateBVHData(this Mesh mesh, BvhCreationOptions bvhCreationOptions = BvhCreationOptions.LegacySlowConstructionFastTracing)
+		public static ITraceable CreateBVHData(this Mesh mesh, BvhCreationOptions bvhCreationOptions = BvhCreationOptions.BottomUpClustering)
 		{
 			// test new BvHBuilderAac
 			// BvhBuilderAac.Create(mesh);

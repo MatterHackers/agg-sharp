@@ -163,6 +163,7 @@ namespace MatterHackers.Localizations
 
         private void SearchCodeForTranslations()
         {
+			return;
 			// make sure we have not run already and that we have a translation file loaded
             if (!haveParsedSourceCode
                 && this.machineTranslation != null)

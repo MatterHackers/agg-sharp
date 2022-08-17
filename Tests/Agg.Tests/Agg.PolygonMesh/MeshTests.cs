@@ -32,6 +32,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ClipperLib;
+using DualContouring;
 using MatterHackers.Agg.Image;
 using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh.Csg;
@@ -72,6 +73,22 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			// 	debugRender.RenderToPng("debug face {0}.png".FormatWith(meshSaveIndex++));
 			// }
 #endif
+		}
+
+        [Test]
+        public void SdfDensityFunctions()
+        {
+            var cylinder = new Cylinder()
+            {
+                Height = 2,
+                Radius = 0.5
+            };
+
+			Assert.True(cylinder.Bounds.Equals(new AxisAlignedBoundingBox(-.5, -.5, 0, .5, .5, 2), .001));
+			Assert.AreEqual(1, cylinder.Sdf(new Vector3(0, 0, -1)));
+			Assert.AreEqual(1, cylinder.Sdf(new Vector3(0, 0, 3)));
+			Assert.AreEqual(.5, cylinder.Sdf(new Vector3(0, 1, 1)));
+			Assert.AreEqual(.5, cylinder.Sdf(new Vector3(1, 0, 1)));
 		}
 
 		[Test]
@@ -429,6 +446,46 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Assert.IsTrue(renderOredrList[0] == 1);
 				Assert.IsTrue(renderOredrList[1] == 0);
 				Assert.IsTrue(renderOredrList[2] == 2);
+			}
+		}
+
+		[Test]
+		public void CreateDualContouringCube()
+		{
+			foreach (var size in new[] { 1, 15, 200 })
+			foreach (var iterations in new[] { 2, 3, 4, 5, 6, 7 })
+			{
+				// apply dual contouring to a box shape
+				// and validate that the generated mesh is a cube
+
+				var box = new DualContouring.Box()
+				{
+					Size = new Vector3(size, size, size)
+				};
+
+				var bounds = box.Bounds;
+				bounds.Expand(.1);
+
+				var octree = DualContouring.Octree.BuildOctree(box.Sdf, bounds.MinXYZ, bounds.Size, iterations, threshold: .001);
+				var mesh = DualContouring.Octree.GenerateMeshFromOctree(octree);
+
+				Assert.AreEqual(12, mesh.Faces.Count);
+				Assert.AreEqual(8, mesh.Vertices.Count);
+
+				var expectedVertices = PlatonicSolids.CreateCube(size, size, size).Vertices
+							.OrderBy(v => v.X)
+							.ThenBy(v => v.Y)
+							.ThenBy(v => v.Z);
+
+				var actualVertices = mesh.Vertices
+							.OrderBy(v => v.X)
+							.ThenBy(v => v.Y)
+							.ThenBy(v => v.Z);
+
+				foreach (var (expected, actual) in expectedVertices.Zip(actualVertices))
+				{
+					Assert.Less((expected - actual).Length, 1e-6);
+				}
 			}
 		}
 	}

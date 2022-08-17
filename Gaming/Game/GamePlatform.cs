@@ -39,17 +39,14 @@ namespace Gaming.Game
 	public class GamePlatform : SystemWindow
 	{
 		private System.Diagnostics.Stopwatch potentialDrawsStopWatch = new System.Diagnostics.Stopwatch();
-		private Vector2 potentialDrawsBudgetPosition;
 		private CheckBox showPotentialDrawsBudgetGraph;
 		private DataViewGraph potentialDrawsBudgetGraph;
 
 		private System.Diagnostics.Stopwatch potentialUpdatesStopWatch = new System.Diagnostics.Stopwatch();
-		private Vector2 potentialUpdatesBudgetPosition;
 		private CheckBox showPotentialUpdatesBudgetGraph;
 		private DataViewGraph potentialUpdatesBudgetGraph;
 
 		private System.Diagnostics.Stopwatch actualDrawsStopWatch = new System.Diagnostics.Stopwatch();
-		private Vector2 actualDrawsBudgetPosition;
 		private CheckBox showActualDrawsBudgetGraph;
 		private DataViewGraph actualDrawsBudgetGraph;
 
@@ -119,21 +116,21 @@ namespace Gaming.Game
 			int frameRateOffset = -15;
 			var frameRateControlColor = new ColorF(1, 1, 1, 1);
 
-			potentialDrawsBudgetPosition = new Vector2(10, (double)Height + frameRateOffset);
+			var potentialDrawsBudgetPosition = new Vector2(10, (double)Height + frameRateOffset);
 			showPotentialDrawsBudgetGraph = new CheckBox(potentialDrawsBudgetPosition.X, potentialDrawsBudgetPosition.Y, "D:000.000");
 			showPotentialDrawsBudgetGraph.TextColor = frameRateControlColor.ToColor();
 			//showPotentialDrawsBudgetGraph.inactive_color(FrameRateControlColor);
 			AddChild(showPotentialDrawsBudgetGraph);
 			potentialDrawsBudgetGraph = new DataViewGraph(potentialDrawsBudgetPosition, 100, 100);
 
-			potentialUpdatesBudgetPosition = new Vector2(115, (double)Height + frameRateOffset);
+			var potentialUpdatesBudgetPosition = new Vector2(115, (double)Height + frameRateOffset);
 			showPotentialUpdatesBudgetGraph = new CheckBox(potentialUpdatesBudgetPosition.X, potentialUpdatesBudgetPosition.Y, "U:000.000");
 			showPotentialUpdatesBudgetGraph.TextColor = frameRateControlColor.ToColor();
 			//showPotentialUpdatesBudgetGraph.inactive_color(FrameRateControlColor);
 			AddChild(showPotentialUpdatesBudgetGraph);
 			potentialUpdatesBudgetGraph = new DataViewGraph(potentialUpdatesBudgetPosition, 100, 100);
 
-			actualDrawsBudgetPosition = new Vector2(220, (double)Height + frameRateOffset);
+			var actualDrawsBudgetPosition = new Vector2(220, (double)Height + frameRateOffset);
 			showActualDrawsBudgetGraph = new CheckBox(actualDrawsBudgetPosition.X, actualDrawsBudgetPosition.Y, "A:000.000");
 			showActualDrawsBudgetGraph.TextColor = frameRateControlColor.ToColor();
 			//showActualDrawsBudgetGraph.inactive_color(FrameRateControlColor);

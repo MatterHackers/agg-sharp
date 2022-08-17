@@ -41,7 +41,6 @@ namespace MatterHackers.RayTracer
         public double alpha;
         public int minSize;
         public int[] table = new int[100];
-        private const double infi = 1e10;
         private AxisAlignedBoundingBox[] AABB;
         private Vector3[] bary;
         private AxisAlignedBoundingBox box = new AxisAlignedBoundingBox();
@@ -84,14 +83,14 @@ namespace MatterHackers.RayTracer
             var faceCount = model.Faces.Count;
             curNode = faceCount;
             Thread thread = new Thread();
-            thread.init(4 * (int)(minSize * Math.Pow(faceCount / 2.0 / minSize, 0.5 - alpha / 2) + 1e-5));
+            thread.Init(4 * (int)(minSize * Math.Pow(faceCount / 2.0 / minSize, 0.5 - alpha / 2) + 1e-5));
             RadixSort();
             int finalLen;
             ThreadBuild(thread, 0, 0, faceCount, MortonDigit * 3 - 1, out finalLen);
             AAClomerate(thread, 0, finalLen, 1, out finalLen);
 
             PruneTree();
-            PrintTreeBIN(fileName);
+            //PrintTreeBIN(fileName);
             PrintTree(fileName);
         }
 
@@ -181,22 +180,30 @@ namespace MatterHackers.RayTracer
             f.Close();
         }
 
-        //The function to process agglomeration.
+        /// <summary>
+        /// The function to process agglomeration.
+        /// </summary>
+        /// <param name="thread">The processing thread</param>
+        /// <param name="start"></param>
+        /// <param name="startNum"></param>
+        /// <param name="endNum"></param>
+        /// <param name="finalNum"></param>
         private void AAClomerate(Thread thread, int start, int startNum, int endNum, out int finalNum)
         {
-            int n = startNum;
+            // count backwards from startNum to endNum
+            int numRemaining = startNum;
             finalNum = Math.Min(startNum, endNum);
-            int a = 0;
+            int minAreaIndex = 0;
             int b = 0;
             int last = 0;
-            while (n > endNum)
+            while (numRemaining > endNum)
             {
-                double mn = infi;
-                for (int i = start; i < start + n; i++)
+                double minAreaFound = double.MaxValue;
+                for (int i = start; i < start + numRemaining; i++)
                 {
-                    if (thread.minPos[i] == start + n)
+                    if (thread.minPos[i] == start + numRemaining)
                     {
-                        if (last == start + n)
+                        if (last == start + numRemaining)
                         {
                             thread.minLabel[i] = -1;
                         }
@@ -208,7 +215,7 @@ namespace MatterHackers.RayTracer
 
                     if (thread.minLabel[i] != thread.label[thread.minPos[i]])
                     {
-                        thread.minArea[i] = infi;
+                        thread.minArea[i] = double.MaxValue;
                         for (int j = start; j < i; j++)
                         {
                             if (thread.area[i][j] < thread.minArea[i])
@@ -218,7 +225,7 @@ namespace MatterHackers.RayTracer
                             }
                         }
 
-                        for (int j = i + 1; j < start + n; j++)
+                        for (int j = i + 1; j < start + numRemaining; j++)
                         {
                             if (thread.area[j][i] < thread.minArea[i])
                             {
@@ -227,43 +234,44 @@ namespace MatterHackers.RayTracer
                             }
                         }
                     }
-                    if (thread.minArea[i] < mn)
+                    if (thread.minArea[i] < minAreaFound)
                     {
-                        mn = thread.minArea[i];
-                        a = i; b = thread.minPos[i];
+                        minAreaFound = thread.minArea[i];
+                        minAreaIndex = i;
+                        b = thread.minPos[i];
                     }
                 }
 
-                lChild[curNode] = thread.label[a];
+                lChild[curNode] = thread.label[minAreaIndex];
                 rChild[curNode] = thread.label[b];
                 Update(AABB[curNode], AABB[lChild[curNode]], AABB[rChild[curNode]]);
                 triNum[curNode] = triNum[lChild[curNode]] + triNum[rChild[curNode]];
-                for (int j = start; j < a; j++)
+                for (int j = start; j < minAreaIndex; j++)
                 {
-                    thread.area[a][j] = SA(AABB[curNode], AABB[thread.label[j]]);
+                    thread.area[minAreaIndex][j] = SurfaceArea(AABB[curNode], AABB[thread.label[j]]);
                 }
 
-                for (int j = a + 1; j < start + n; j++)
+                for (int j = minAreaIndex + 1; j < start + numRemaining; j++)
                 {
-                    thread.area[j][a] = SA(AABB[curNode], AABB[thread.label[j]]);
+                    thread.area[j][minAreaIndex] = SurfaceArea(AABB[curNode], AABB[thread.label[j]]);
                 }
 
-                n--;
+                numRemaining--;
                 for (int j = start; j < b; j++)
                 {
-                    thread.area[b][j] = thread.area[start + n][j];
+                    thread.area[b][j] = thread.area[start + numRemaining][j];
                 }
 
-                for (int j = b + 1; j < start + n; j++)
+                for (int j = b + 1; j < start + numRemaining; j++)
                 {
-                    thread.area[j][b] = thread.area[start + n][j];
+                    thread.area[j][b] = thread.area[start + numRemaining][j];
                 }
 
-                thread.label[a] = curNode;
-                thread.label[b] = thread.label[start + n];
-                thread.minArea[b] = thread.minArea[start + n];
-                thread.minLabel[b] = thread.minLabel[start + n];
-                thread.minPos[b] = thread.minPos[start + n];
+                thread.label[minAreaIndex] = curNode;
+                thread.label[b] = thread.label[start + numRemaining];
+                thread.minArea[b] = thread.minArea[start + numRemaining];
+                thread.minLabel[b] = thread.minLabel[start + numRemaining];
+                thread.minPos[b] = thread.minPos[start + numRemaining];
                 last = b;
                 curNode++;
             }
@@ -287,7 +295,7 @@ namespace MatterHackers.RayTracer
             {
                 for (int j = start + len1; j < start + len1 + len2; j++)
                 {
-                    thread.area[j][i] = SA(AABB[thread.label[i]], AABB[thread.label[j]]);
+                    thread.area[j][i] = SurfaceArea(AABB[thread.label[i]], AABB[thread.label[j]]);
                     if (thread.area[j][i] < thread.minArea[i])
                     {
                         thread.minArea[i] = thread.area[j][i];
@@ -444,7 +452,7 @@ namespace MatterHackers.RayTracer
             for (int i = faceCount; i < curNode; i++)
             {
                 surA[i] = AABB[i].GetSurfaceArea();
-                if (AABB[i].GetSurfaceArea() - SA(AABB[lChild[i]], AABB[rChild[i]]) < -1e-8)
+                if (AABB[i].GetSurfaceArea() - SurfaceArea(AABB[lChild[i]], AABB[rChild[i]]) < -1e-8)
                 {
                     throw new Exception();
                 }
@@ -527,7 +535,7 @@ namespace MatterHackers.RayTracer
             }
         }
 
-        private double SA(AxisAlignedBoundingBox a, AxisAlignedBoundingBox b)
+        private double SurfaceArea(AxisAlignedBoundingBox a, AxisAlignedBoundingBox b)
         {
             double x = Math.Max(a.MaxXYZ.X, b.MaxXYZ.X) - Math.Min(a.MinXYZ.X, b.MinXYZ.X);
             double y = Math.Max(a.MaxXYZ.Y, b.MaxXYZ.Y) - Math.Min(a.MinXYZ.Y, b.MinXYZ.Y);
@@ -540,7 +548,7 @@ namespace MatterHackers.RayTracer
         {
             for (int i = 0; i < faceCount; i++)
             {
-                thread.minArea[start + i] = infi;
+                thread.minArea[start + i] = double.MaxValue;
                 thread.label[start + i] = set[startTri + i];
             }
 
@@ -548,7 +556,7 @@ namespace MatterHackers.RayTracer
             {
                 for (int j = start; j < i; j++)
                 {
-                    thread.area[i][j] = SA(AABB[thread.label[i]], AABB[thread.label[j]]);
+                    thread.area[i][j] = SurfaceArea(AABB[thread.label[i]], AABB[thread.label[j]]);
                     if (thread.area[i][j] < thread.minArea[i])
                     {
                         thread.minArea[i] = thread.area[i][j];
@@ -697,7 +705,7 @@ namespace MatterHackers.RayTracer
             public int[] minPos;
             public int size;
 
-            public void init(int size)
+            public void Init(int size)
             {
                 this.size = size;
                 label = new int[size];

@@ -66,7 +66,7 @@ namespace MatterHackers.Agg.UI
 
         public ImageBuffer IconImage => Enabled ? image : DisabledImage;
 
-        internal void SetIcon(ImageBuffer icon)
+        public void SetIcon(ImageBuffer icon)
         {
             image = icon;
             imageWidget.Image = icon;
