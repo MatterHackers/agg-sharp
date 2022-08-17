@@ -87,6 +87,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Assert.True(cylinder.Bounds.Equals(new AxisAlignedBoundingBox(-.5, -.5, 0, .5, .5, 2), .001));
 			Assert.AreEqual(1, cylinder.Sdf(new Vector3(0, 0, -1)));
 			Assert.AreEqual(1, cylinder.Sdf(new Vector3(0, 0, 3)));
+			Assert.AreEqual(.5, cylinder.Sdf(new Vector3(0, 1, 1)));
+			Assert.AreEqual(.5, cylinder.Sdf(new Vector3(1, 0, 1)));
 		}
 
 		[Test]

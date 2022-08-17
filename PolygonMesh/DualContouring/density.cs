@@ -82,8 +82,18 @@ namespace DualContouring
 
         public double Sdf(Vector3 p)
         {
-            var d = new Vector2(new Vector2(p.X, p.Y).Length, Abs(p.Z)) - new Vector2(Radius, Height / 2);
-            return Min(Max(d.X, d.Y), 0.0) + Max(d.Length, Height / 2);
+            if (p.Z > Height)
+            {
+                return p.Z - Height;
+            }
+            else if (p.Z < 0)
+            {
+                return -p.Z;
+            }
+            else
+            {
+                return new Vector2(p.X, p.Y).Length - Radius;
+            }
         }
 
         public AxisAlignedBoundingBox Bounds => new AxisAlignedBoundingBox(-Radius, -Radius, 0, Radius, Radius, Height);
