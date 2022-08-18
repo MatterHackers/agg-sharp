@@ -77,18 +77,20 @@ namespace DualContouring
 
     public class Cylinder : ISdf
     {
-        public double Height;
+        private double halfHeight;
+        public double Height { get => halfHeight * 2; set => halfHeight = value / 2; }
         public double Radius;
 
         public double Sdf(Vector3 p)
         {
-            if (p.Z > Height)
+            var z = Math.Abs(p.Z);
+            if (z > halfHeight)
             {
-                return p.Z - Height;
+                return z - halfHeight;
             }
-            else if (p.Z < 0)
+            else if (p.Z < -halfHeight)
             {
-                return -p.Z;
+                return p.Z;
             }
             else
             {
@@ -96,7 +98,7 @@ namespace DualContouring
             }
         }
 
-        public AxisAlignedBoundingBox Bounds => new AxisAlignedBoundingBox(-Radius, -Radius, 0, Radius, Radius, Height);
+        public AxisAlignedBoundingBox Bounds => new AxisAlignedBoundingBox(-Radius, -Radius, -halfHeight, Radius, Radius, halfHeight);
     }
 
     public class Box : ISdf
@@ -184,10 +186,10 @@ namespace DualContouring
 
         public double Sdf(Vector3 p)
         {
-            var d = -Items[0].Sdf(p);
+            var d = Items[0].Sdf(p);
             for (int i = 1; i < Items.Length; i++)
             {
-                d = Min(d, Items[i].Sdf(p));
+                d = Max(d, -Items[i].Sdf(p));
             }
 
             return d;
