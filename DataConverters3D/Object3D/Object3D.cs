@@ -316,7 +316,7 @@ namespace MatterHackers.DataConverters3D
 		[JsonIgnore]
 		public virtual bool Printable
 		{
-			get => GetVertexSource() != null;
+			get => GetVertexSource()?.Vertices()?.Count() != 0;
 		}
 
         public virtual bool Visible { get; set; } = true;
