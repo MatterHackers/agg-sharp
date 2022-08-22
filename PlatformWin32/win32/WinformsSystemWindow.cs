@@ -105,7 +105,10 @@ namespace MatterHackers.Agg.UI
 			}
 
 			this.TitleBarHeight = RectangleToScreen(ClientRectangle).Top - this.Top;
-			this.AllowDrop = true;
+			if (SystemWindow.EnableAllowDrop)
+			{
+				this.AllowDrop = true;
+			}
 
 			string iconPath = File.Exists("application.ico") ?
 				"application.ico" :
@@ -544,7 +547,7 @@ namespace MatterHackers.Agg.UI
 
 			// If this isn't true, prepare for deadlocks.
 			System.Diagnostics.Debug.Assert(SynchronizationContext.Current == null || SynchronizationContext.Current is WindowsFormsSynchronizationContext);
-
+            
 			if (firstWindow)
 			{
 				firstWindow = false;

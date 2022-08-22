@@ -13,7 +13,13 @@ using System.Xml.Serialization;
 namespace TestInvoker // Note: actual namespace depends on the project name.
 {
 	[AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-	public class ChildProcessTestAttribute : PropertyAttribute, IWrapSetUpTearDown
+#if false // enable this if you want to easily debug tests in a single process
+	public class ChildProcessTestAttribute : PropertyAttribute
+    {
+        
+    }
+#else
+    public class ChildProcessTestAttribute : PropertyAttribute, IWrapSetUpTearDown
 	{
 		private readonly int _numParallelTests = 1;
 
@@ -157,6 +163,7 @@ namespace TestInvoker // Note: actual namespace depends on the project name.
 			}
 		}
 	}
+#endif
 	
 	public class Program
 	{

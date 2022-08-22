@@ -37,6 +37,8 @@ namespace MatterHackers.Agg.UI
 {
 	public class SystemWindow : GuiWidget
 	{
+		public static bool EnableAllowDrop = true;
+
 		private string _title = "";
 
 		public event EventHandler<ClosingEventArgs> Closing;

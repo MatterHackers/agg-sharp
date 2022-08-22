@@ -1430,6 +1430,7 @@ namespace MatterHackers.GuiAutomation
 			});
 
 			// Main thread blocks here until released via CloseOnIdle above
+			SystemWindow.EnableAllowDrop = false;
 			initialSystemWindow.ShowAsSystemWindow();
 
 			bool timedOut = task.Result == delayTask;
