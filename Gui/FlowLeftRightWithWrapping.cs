@@ -73,9 +73,9 @@ namespace MatterHackers.Agg.UI
 		public BorderDouble RowPadding { get; set; } = new BorderDouble(3);
 		public double MaxLineWidth { get; private set; }
 
-		public BorderDouble RowBoarder { get; set; }
+		public BorderDouble RowBorder { get; set; }
 
-		public Color RowBoarderColor { get; set; }
+		public Color RowBorderColor { get; set; }
 
 		public bool Proportional { get; set; }
 
@@ -237,8 +237,8 @@ namespace MatterHackers.Agg.UI
 							Margin = RowMargin,
 							Padding = RowPadding,
 							HAnchor = HAnchor.Stretch,
-							Border = RowBoarder,
-							BorderColor = RowBoarderColor,
+							Border = RowBorder,
+							BorderColor = RowBorderColor,
 						};
 
 						if (lastItemWasHorizontalSpacer)

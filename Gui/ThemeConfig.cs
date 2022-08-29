@@ -165,7 +165,7 @@ namespace MatterHackers.Agg.UI
 
 		private readonly int defaultScrollBarWidth = 120;
 
-		public void MakeRoundedButton(GuiWidget button, Color? boarderColor = null)
+		public void MakeRoundedButton(GuiWidget button, Color? borderColor = null)
 		{
 			if (button is ThemedTextButton textButton)
 			{
@@ -173,9 +173,9 @@ namespace MatterHackers.Agg.UI
 				textButton.HAnchor |= HAnchor.Fit;
 				textButton.HoverColor = this.AccentMimimalOverlay;
 				textButton.Padding = new BorderDouble(7, 5);
-				if (boarderColor != null)
+				if (borderColor != null)
 				{
-					textButton.BorderColor = boarderColor.Value;
+					textButton.BorderColor = borderColor.Value;
 				}
 				else
 				{
