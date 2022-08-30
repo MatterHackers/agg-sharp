@@ -86,7 +86,7 @@ namespace MatterHackers.Agg.UI
 		/// Take the larger of Fit or Stretch.
 		/// </summary>
 		MaxFitOrStretch = Fit | Stretch,
-		
+
 		/// <summary>
 		/// Take the lesser of the Fit or Stretch calculation
 		/// </summary>
@@ -305,7 +305,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// Gets the boarder and padding scaled by the DeviceScale (used by the layout engine)
+		/// Gets the border and padding scaled by the DeviceScale (used by the layout engine)
 		/// </summary>
 		public BorderDouble DevicePadding
 		{
