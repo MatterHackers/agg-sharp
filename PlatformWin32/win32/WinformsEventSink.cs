@@ -104,7 +104,10 @@ namespace MatterHackers.Agg.UI
 			controlToHook.MouseUp += ControlToHook_MouseUp;
 			controlToHook.MouseWheel += ControlToHook_MouseWheel;
 
-			controlToHook.AllowDrop = true;
+			if (SystemWindow.EnableAllowDrop)
+			{
+				controlToHook.AllowDrop = true;
+			}
 
 			controlToHook.DragDrop += ControlToHook_DragDrop;
 			controlToHook.DragEnter += ControlToHook_DragEnter;
