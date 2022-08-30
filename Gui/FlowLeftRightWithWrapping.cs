@@ -170,8 +170,15 @@ namespace MatterHackers.Agg.UI
 
 		private bool needAnotherLayout;
 
+
+		private double contentWidth = 0;
+
+		public double ContentWidth => contentWidth;
+
 		protected void DoWrappingLayout()
 		{
+			contentWidth = 0;
+
 			if (doingLayout)
 			{
 				needAnotherLayout = true;
@@ -216,6 +223,8 @@ namespace MatterHackers.Agg.UI
 					{
 						childWidth = child.MinimumSize.X + child.DeviceMarginAndBorder.Width;
 					}
+
+					contentWidth += childWidth;
 
 					if (runningSize + childWidth > this.Width - rowPaddingWidth
 						|| child is IHardBreak)
