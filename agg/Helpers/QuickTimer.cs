@@ -78,7 +78,7 @@ namespace MatterHackers.Agg
 		}
 	}
 
-	public class QuickTimer2Report : IDisposable
+	public class QuickTimerReport : IDisposable
 	{
 		private string name;
 		private Stopwatch quickTimerTime = Stopwatch.StartNew();
@@ -86,7 +86,7 @@ namespace MatterHackers.Agg
 
 		private static Dictionary<string, double> timers = new Dictionary<string, double>();
 
-		public QuickTimer2Report(string name)
+		public QuickTimerReport(string name)
 		{
 			this.name = name;
 			if (!timers.ContainsKey(name))
@@ -109,6 +109,23 @@ namespace MatterHackers.Agg
 			{
 				Debug.WriteLine(kvp.Key + ": {0:0.0}s".FormatWith(kvp.Value / 1000.0));
 			}
+		}
+
+		public static void ReportAndRestart(Graphics2D drawTo, double x, double y)
+		{
+			foreach (var kvp in timers)
+			{
+				var text =  $"{kvp.Key}: {kvp.Value:0.00}ms";
+				drawTo.DrawString(text, x, y, backgroundColor: Color.White.WithAlpha(210), drawFromHintedCach: true);
+				y -= 18;
+			}
+
+			Restart();
+		}
+
+		public static void Restart()
+		{
+			timers.Clear();
 		}
 	}
 }
