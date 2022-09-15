@@ -48,7 +48,37 @@ namespace ClipperLib
 			return outputPolys;
 		}
 
-		public static Polygons CreateFromString(string polygonsPackedString, double scale = 1)
+        public static void PolyTreeToPolygonSets(this Polygons inputPolygons, PolyNode node, List<Polygons> ret)
+        {
+            for (int n = 0; n < node.ChildCount; n++)
+            {
+                PolyNode child = node.Childs[n];
+                var outputPolygons = new Polygons();
+                outputPolygons.Add(child.Contour);
+                for (int i = 0; i < child.ChildCount; i++)
+                {
+                    outputPolygons.Add(child.Childs[i].Contour);
+                    inputPolygons.PolyTreeToPolygonSets(child.Childs[i], ret);
+                }
+
+                ret.Add(outputPolygons);
+            }
+        }
+
+        public static List<Polygons> SeparatePolygonGroups(this Polygons polygons)
+        {
+            var ret = new List<Polygons>();
+            var clipper = new Clipper();
+            var polyTree = new PolyTree();
+            clipper.AddPaths(polygons, PolyType.ptSubject, true);
+            clipper.Execute(ClipType.ctUnion, polyTree);
+
+            polygons.PolyTreeToPolygonSets(polyTree, ret);
+            return ret;
+        }
+
+
+        public static Polygons CreateFromString(string polygonsPackedString, double scale = 1)
 		{
 			Polygon SinglePolygon(string polygonString)
 			{

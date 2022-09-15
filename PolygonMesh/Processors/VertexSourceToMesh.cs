@@ -322,7 +322,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
 		}
 
-		public static Mesh Extrude(this IVertexSource vertexSourceIn,
+        public static Mesh Extrude(this IVertexSource vertexSourceIn,
 			double zHeightTop,
 			List<(double height, double insetAmount)> bevel = null)
 		{
@@ -331,56 +331,17 @@ namespace MatterHackers.PolygonMesh.Processors
 			// ensure good winding and consistent shapes
 			bottomPolygons = bottomPolygons.GetCorrectedWinding();
 
-			var mesh = new Mesh();
-			
 			if (bevel != null)
 			{
-				// create the bottom polygon
-				var bottom = PathStitcher.Stitch(null, 0, bottomPolygons, 0);
-				mesh.CopyFaces(bottom);
-
-				var bottomLoop = bottomPolygons;
-				var bottomHeight = 0.0;
-				// create all the walls
-				var topLoop = bottomPolygons;
-				var topHeight = bevel[0].height;
-
-				int i = -1;
-				while (i < bevel.Count)
-				{
-					// add the top polygon
-					var walls = PathStitcher.Stitch(bottomLoop, bottomHeight, topLoop, topHeight);
-					mesh.CopyFaces(walls);
-					bottomLoop = topLoop;
-					bottomHeight = topHeight;
-
-					i++;
-					if (i < bevel.Count)
-					{
-						topLoop = bottomPolygons.Offset(bevel[i].insetAmount * 1000, JoinType.jtRound);
-						if (i == bevel.Count - 1)
-						{
-							topHeight = zHeightTop;
-						}
-						else
-						{
-							topHeight = bevel[i + 1].height;
-						}
-					}
-				}
-
-				// create the top polygon
-				var top = PathStitcher.Stitch(topLoop, zHeightTop, null, 0);
-				mesh.CopyFaces(top);
-				mesh.CleanAndMerge();
-				return mesh;
+				return GetLoopMesh(zHeightTop, bevel, bottomPolygons);
 			}
 
 			var bottomTeselatedSource = new CachedTesselator();
 
 			// add the top polygon
 			var vertexSourceBottom = bottomPolygons.CreateVertexStorage();
-			vertexSourceBottom.TriangulateFaces(bottomTeselatedSource, mesh);
+            var mesh = new Mesh();
+            vertexSourceBottom.TriangulateFaces(bottomTeselatedSource, mesh);
 			mesh.Translate(new Vector3(0, 0, zHeightTop));
 
 			int numIndicies = bottomTeselatedSource.IndicesCache.Count;
@@ -436,6 +397,56 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			mesh.CleanAndMerge();
 
+			return mesh;
+		}
+
+		private static Mesh GetLoopMesh(double zHeightTop, List<(double height, double insetAmount)> bevel, Polygons inputPolygons)
+		{
+			var bottomPolygonsSets = inputPolygons.SeparatePolygonGroups();
+
+            var mesh = new Mesh();
+            foreach (var bottomPolygons in bottomPolygonsSets)
+			{
+				// create the bottom polygon
+				var bottom = PathStitcher.Stitch(null, 0, bottomPolygons, 0);
+				mesh.CopyFaces(bottom);
+
+				var bottomLoop = bottomPolygons;
+				var bottomHeight = 0.0;
+				// create all the walls
+				var topLoop = bottomPolygons;
+				var topHeight = bevel[0].height;
+
+				int i = -1;
+				while (i < bevel.Count)
+				{
+					// add the top polygon
+					var walls = PathStitcher.Stitch(bottomLoop, bottomHeight, topLoop, topHeight);
+					mesh.CopyFaces(walls);
+					bottomLoop = topLoop;
+					bottomHeight = topHeight;
+
+					i++;
+					if (i < bevel.Count)
+					{
+						topLoop = bottomPolygons.Offset(bevel[i].insetAmount * 1000, JoinType.jtRound);
+						if (i == bevel.Count - 1)
+						{
+							topHeight = zHeightTop;
+						}
+						else
+						{
+							topHeight = bevel[i + 1].height;
+						}
+					}
+				}
+
+				// create the top polygon
+				var top = PathStitcher.Stitch(topLoop, zHeightTop, null, 0);
+				mesh.CopyFaces(top);
+			}
+            
+			mesh.CleanAndMerge();
 			return mesh;
 		}
 	}
