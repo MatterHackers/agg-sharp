@@ -50,7 +50,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			// only a top
 			if ((bottomLoop == null || bottomLoop.Count == 0)
-				&& topLoop.Count > 0)
+				&& topLoop?.Count > 0)
 			{
 				// if there is no bottom than we need to create  bottom
 				return CreateBottom(topLoop, topHeight, scaling);
@@ -75,7 +75,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			for (var i = 0; i < bevelLoop.Vertices.Count; i++)
 			{
-				bevelLoop.Vertices[i] = bevelLoop.Vertices[i] + new Vector3Float(0, 0, 16);
+				bevelLoop.Vertices[i] = bevelLoop.Vertices[i] + new Vector3Float(0, 0, bottomHeight);
 			}
 
 			return bevelLoop;
