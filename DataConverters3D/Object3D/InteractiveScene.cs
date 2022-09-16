@@ -244,8 +244,27 @@ namespace MatterHackers.DataConverters3D
 
 		IObject3D _sourceItem  = null;
 
+        private void ValidateSceneStructure()
+		{
+            void ValidateAllChildrenHaveParentSetToParent(IObject3D parent)
+            {
+                foreach (var child in parent.Children)
+                {
+                    if (child != _sourceItem && child.Parent != parent)
+                    {
+                        throw new Exception("Child does not have parent set to parent.");
+                    }
 
-		private IObject3D SourceItem
+                    ValidateAllChildrenHaveParentSetToParent(child);
+                }
+            }
+
+            // Check that every childs parent is this recusively
+            ValidateAllChildrenHaveParentSetToParent(_sourceItem);
+        }
+
+
+        private IObject3D SourceItem
 		{
 			get
 			{
@@ -254,6 +273,10 @@ namespace MatterHackers.DataConverters3D
                 {
 					_sourceItem.Matrix = Matrix4X4.Identity;
 				}
+
+#if DEBUG
+				ValidateSceneStructure();
+#endif
 
 				return _sourceItem;
 			}
