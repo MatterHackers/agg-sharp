@@ -250,7 +250,9 @@ namespace MatterHackers.DataConverters3D
             {
                 foreach (var child in parent.Children)
                 {
-                    if (child != _sourceItem && child.Parent != parent)
+                    if (!child.RebuildLocked
+                        && child != _sourceItem
+						&& child.Parent != parent)
                     {
                         throw new Exception("Child does not have parent set to parent.");
                     }
