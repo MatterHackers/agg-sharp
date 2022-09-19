@@ -171,7 +171,7 @@ namespace MatterHackers.DataConverters3D
 				};
 
 				// Move selected items into a new SelectionGroup
-				this.Children.Modify(list =>
+				_sourceItem.Children.Modify(list =>
 				{
 					foreach (var item in items)
 					{
