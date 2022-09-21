@@ -109,26 +109,26 @@ namespace MatterHackers.PolygonMesh.Processors
 			return mesh;
 		}
 
-		private static (int bs, int ts) BestStart(Polygon bottomLoop, Polygon topLoop)
+		public static (int bs, int ts) BestStart(Polygon outerLoop, Polygon innerLoop)
 		{
 			var bestDistance = double.MaxValue;
-			var bestBs = 0;
-			var bestTs = 0;
-			for (var bs = 0; bs < bottomLoop.Count; bs++)
+			var bestOs = 0;
+			var bestIs = 0;
+			for (var oi = 0; oi < outerLoop.Count; oi++)
 			{
-				for (var ts = 0; ts < topLoop.Count; ts++)
+				for (var ii = 0; ii < innerLoop.Count; ii++)
 				{
-					var distance = (bottomLoop[bs] - topLoop[ts]).LengthSquared();
+					var distance = (outerLoop[oi] - innerLoop[ii]).LengthSquared();
 					if (distance < bestDistance)
 					{
 						bestDistance = distance;
-						bestBs = bs;
-						bestTs = ts;
+						bestOs = oi;
+						bestIs = ii;
 					}
 				}
 			}
 
-			return (bestBs, bestTs);
+			return (bestOs, bestIs);
 		}
 
 		private static Mesh Stitch2SingleWalls(Polygon bottomLoop, double bottomHeight, Polygon topLoop, double topHeight)
@@ -204,5 +204,31 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			return mesh;
 		}
+
+		public static int GetPolygonToAdvance(Polygon outerLoop, int oStart, Polygon innerLoop, int iStart)
+		{
+			// given the start, find the closest next point along either polygon to move to
+			var outerStart = outerLoop[oStart];
+			var outerNextIndex = oStart + 1 % outerLoop.Count;
+			var outerNext = outerLoop[outerNextIndex];
+            
+			var innerStart = innerLoop[iStart];
+			var innerNextIndex = iStart + 1 % innerLoop.Count;
+			var innerNext = innerLoop[innerNextIndex];
+
+			var distanceToInnerNext = (innerNext - outerStart).LengthSquared();
+			var distanceToOuterNext = (innerStart - outerNext).LengthSquared();
+            
+            if (distanceToInnerNext < distanceToOuterNext)
+			{
+                // check if segment innerNext - outerStart crosses any other line segments
+                return 1;
+            }
+            else
+			{
+                // check if segment innerStart - outerNext crosses any other line segments
+                return 0;
+            }
+        }
 	}
 }

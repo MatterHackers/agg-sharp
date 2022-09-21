@@ -27,11 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.Image;
 using MatterHackers.GuiAutomation;
-using MatterHackers.VectorMath;
 using NUnit.Framework;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 using TestInvoker;

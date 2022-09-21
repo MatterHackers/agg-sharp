@@ -37,9 +37,7 @@ using TestInvoker;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-#if !__ANDROID__
 	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA)]
-#endif
 	public class FlowLayoutTests
 	{
 		public static bool saveImagesForDebug = false;

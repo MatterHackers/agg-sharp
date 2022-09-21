@@ -33,122 +33,138 @@ using System.Collections.Generic;
 
 namespace ClipperLib
 {
-	using Polygon = List<IntPoint>;
-	using Polygons = List<List<IntPoint>>;
+    using Polygon = List<IntPoint>;
+    using Polygons = List<List<IntPoint>>;
 
-	public static class PolygonExtensions
-	{
-		public static RectangleDouble GetBounds(this Polygon poly)
-		{
-			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
-			foreach (var point in poly)
-			{
-				bounds.ExpandToInclude(point.X, point.Y);
-			}
+    public static class PolygonExtensions
+    {
+        public static RectangleDouble GetBounds(this Polygon poly)
+        {
+            RectangleDouble bounds = RectangleDouble.ZeroIntersection;
+            foreach (var point in poly)
+            {
+                bounds.ExpandToInclude(point.X, point.Y);
+            }
 
-			return bounds;
-		}
+            return bounds;
+        }
 
-		/// <summary>
-		/// Return 1 if ccw -1 if cw
-		/// </summary>
-		/// <param name="polygon"></param>
-		/// <returns></returns>
-		public static int GetWindingDirection(this Polygon polygon)
-		{
-			int pointCount = polygon.Count;
-			double totalTurns = 0;
-			for (int pointIndex = 0; pointIndex < pointCount; pointIndex++)
-			{
-				IntPoint currentPoint = polygon[pointIndex];
-				int nextIndex = (pointIndex + 1) % pointCount;
-				IntPoint nextPoint = polygon[nextIndex];
+        public static IEnumerable<(int pointIndex, Intersection intersection, IntPoint position)> GetIntersections(this Polygon polygon, IntPoint start, IntPoint end)
+        {
+            for (int i = 0; i < polygon.Count; i++)
+            {
+                IntPoint edgeStart = polygon[i];
+                IntPoint edgeEnd = polygon[(i + 1) % polygon.Count];
 
-				// sum  (x2 − x1)(y2 + y1)
-				double turnAmount = (nextPoint.X + currentPoint.X) * (nextPoint.Y + currentPoint.Y);
+                var intersection = IntPointExtensions.GetIntersection(start, end, edgeStart, edgeEnd);
+                if (intersection != Intersection.None)
+                {
+                    IntPointExtensions.CalcIntersection(start, end, edgeStart, edgeEnd, out IntPoint position);
+                    yield return (i, intersection, position);
+                }
+            }
+        }
 
-				totalTurns += turnAmount;
-			}
+        /// <summary>
+        /// Return 1 if ccw -1 if cw
+        /// </summary>
+        /// <param name="polygon"></param>
+        /// <returns></returns>
+        public static int GetWindingDirection(this Polygon polygon)
+        {
+            int pointCount = polygon.Count;
+            double totalTurns = 0;
+            for (int pointIndex = 0; pointIndex < pointCount; pointIndex++)
+            {
+                IntPoint currentPoint = polygon[pointIndex];
+                int nextIndex = (pointIndex + 1) % pointCount;
+                IntPoint nextPoint = polygon[nextIndex];
 
-			return totalTurns > 0 ? 1 : -1;
-		}
+                // sum  (x2 − x1)(y2 + y1)
+                double turnAmount = (nextPoint.X + currentPoint.X) * (nextPoint.Y + currentPoint.Y);
 
-		public static int GetWindingDirection2(this Polygon polygon)
-		{
-			int pointCount = polygon.Count;
-			double totalTurns = 0;
-			for (int pointIndex = 0; pointIndex < pointCount; pointIndex++)
-			{
-				int prevIndex = ((pointIndex + pointCount - 1) % pointCount);
-				int nextIndex = ((pointIndex + 1) % pointCount);
-				IntPoint prevPoint = polygon[prevIndex]; 
-				IntPoint currentPoint = polygon[pointIndex];
-				IntPoint nextPoint = polygon[nextIndex];
+                totalTurns += turnAmount;
+            }
 
-				double turnAmount = currentPoint.GetTurnAmount(prevPoint, nextPoint);
+            return totalTurns > 0 ? 1 : -1;
+        }
 
-				totalTurns += turnAmount;
-			}
+        public static int GetWindingDirection2(this Polygon polygon)
+        {
+            int pointCount = polygon.Count;
+            double totalTurns = 0;
+            for (int pointIndex = 0; pointIndex < pointCount; pointIndex++)
+            {
+                int prevIndex = ((pointIndex + pointCount - 1) % pointCount);
+                int nextIndex = ((pointIndex + 1) % pointCount);
+                IntPoint prevPoint = polygon[prevIndex];
+                IntPoint currentPoint = polygon[pointIndex];
+                IntPoint nextPoint = polygon[nextIndex];
 
-			return totalTurns > 0 ? 1 : -1;
-		}
+                double turnAmount = currentPoint.GetTurnAmount(prevPoint, nextPoint);
 
-		public static Polygons Offset(this Polygon polygon, double distance)
-		{
-			var offseter = new ClipperOffset();
-			offseter.AddPath(polygon, JoinType.jtRound, EndType.etClosedPolygon);
+                totalTurns += turnAmount;
+            }
 
-			var solution = new Polygons();
-			offseter.Execute(ref solution, distance);
+            return totalTurns > 0 ? 1 : -1;
+        }
 
-			return solution;
-		}
+        public static Polygons Offset(this Polygon polygon, double distance)
+        {
+            var offseter = new ClipperOffset();
+            offseter.AddPath(polygon, JoinType.jtRound, EndType.etClosedPolygon);
 
-		public static Polygon Rotate(this Polygon poly, double radians)
-		{
-			var output = new Polygon(poly.Count);
+            var solution = new Polygons();
+            offseter.Execute(ref solution, distance);
 
-			var cos = Math.Cos(radians);
-			var sin = Math.Sin(radians);
+            return solution;
+        }
 
-			foreach (var point in poly)
-			{
-				output.Add(new IntPoint(point.X * cos - point.Y * sin, point.Y * cos + point.X * sin));
-			}
+        public static Polygon Rotate(this Polygon poly, double radians)
+        {
+            var output = new Polygon(poly.Count);
 
-			return output;
-		}
+            var cos = Math.Cos(radians);
+            var sin = Math.Sin(radians);
 
-		public static Polygon Scale(this Polygon poly, double scaleX, double scaleY)
-		{
-			var output = new Polygon(poly.Count);
-			foreach (var point in poly)
-			{
-				output.Add(new IntPoint(point.X * scaleX, point.Y * scaleY));
-			}
+            foreach (var point in poly)
+            {
+                output.Add(new IntPoint(point.X * cos - point.Y * sin, point.Y * cos + point.X * sin));
+            }
 
-			return output;
-		}
+            return output;
+        }
 
-		public static Polygons Subtract(this Polygon polygon, Polygons other)
-		{
-			return new Polygons() { polygon }.CombinePolygons(other, ClipType.ctDifference);
-		}
+        public static Polygon Scale(this Polygon poly, double scaleX, double scaleY)
+        {
+            var output = new Polygon(poly.Count);
+            foreach (var point in poly)
+            {
+                output.Add(new IntPoint(point.X * scaleX, point.Y * scaleY));
+            }
 
-		public static Polygons Subtract(this Polygon polygon, Polygon other)
-		{
-			return new Polygons() { polygon }.CombinePolygons(new Polygons() { other }, ClipType.ctDifference);
-		}
+            return output;
+        }
 
-		public static Polygon Translate(this Polygon poly, double x, double y, double scale = 1)
-		{
-			var output = new Polygon(poly.Count);
-			foreach (var point in poly)
-			{
-				output.Add(new IntPoint(point.X + x * scale, point.Y + y * scale));
-			}
+        public static Polygons Subtract(this Polygon polygon, Polygons other)
+        {
+            return new Polygons() { polygon }.CombinePolygons(other, ClipType.ctDifference);
+        }
 
-			return output;
-		}
-	}
+        public static Polygons Subtract(this Polygon polygon, Polygon other)
+        {
+            return new Polygons() { polygon }.CombinePolygons(new Polygons() { other }, ClipType.ctDifference);
+        }
+
+        public static Polygon Translate(this Polygon poly, double x, double y, double scale = 1)
+        {
+            var output = new Polygon(poly.Count);
+            foreach (var point in poly)
+            {
+                output.Add(new IntPoint(point.X + x * scale, point.Y + y * scale));
+            }
+
+            return output;
+        }
+    }
 }
