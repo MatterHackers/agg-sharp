@@ -419,7 +419,77 @@ namespace MatterHackers.Agg
 				aS * (1 - rationB) + bS * rationB,
 				aL * (1 - rationB) + bL * rationB).ToColor();
 		}
-	}
+
+        static double[] XyzToRgb(double[] xyz)
+        {
+            // xyz is normalized to [0,1]
+            var x = xyz[0] / 100;
+            var y = xyz[1] / 100;
+            var z = xyz[2] / 100;
+            // xyz is multiplied by the reverse transformation matrix to linear rgb
+            var invR = 3.2406254773200533 * x - 1.5372079722103187 * y -
+              0.4986285986982479 * z;
+            var invG = -0.9689307147293197 * x + 1.8757560608852415 * y +
+              0.041517523842953964 * z;
+            var invB = 0.055710120445510616 * x + -0.2040210505984867 * y +
+              1.0569959422543882 * z;
+            // Linear rgb must be gamma corrected to normalized srgb. Gamma correction
+            // is linear for values <= 0.0031308 to avoid infinite log slope near zero
+            double compand(double c)
+            {
+                return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.Pow(c, 1 / 2.4) - 0.055;
+            }
+
+            var cR = compand(invR);
+            var cG = compand(invG);
+            var cB = compand(invB);
+            // srgb is scaled to [0,255]
+            // Add zero to prevent signed zeros (force 0 rather than -0)
+            return new double[]
+            {
+                Math.Round(cR * 255) + 0,
+                Math.Round(cG * 255) + 0,
+                Math.Round(cB * 255) + 0
+            };
+        }
+
+        static double[] LabToXyz(double[] lab)
+        {
+            /** d65 standard illuminant in XYZ */
+            double[] d65 = { 95.05, 100, 108.9 };
+
+            var L = lab[0];
+            var a = lab[1];
+            var b = lab[2];
+            var eps = 216 / 24389;
+            var kap = 24389 / 27;
+            var fY = (L + 16) / 116;
+            var fZ = (fY - b / 200);
+            var fX = a / 500 + fY;
+            var xR = Math.Pow(fX, 3) > eps ? Math.Pow(fX, 3) : (116 * fX - 16) / kap;
+            var yR = L > kap * eps ? Math.Pow((L + 16) / 116, 3) : L / kap;
+            var zR = Math.Pow(fZ, 3) > eps ? Math.Pow(fZ, 3) : (116 * fZ - 16) / kap;
+            // Add zero to prevent signed zeros (force 0 rather than -0)
+            return new double[]
+            {
+                xR * d65[0] + 0,
+                yR * d65[1] + 0,
+                zR * d65[2] + 0
+            };
+        }
+
+        static Color LabToRgb(double[] lab)
+        {
+            var xyz = LabToXyz(lab);
+            var rgb = XyzToRgb(xyz);
+            return new Color((int)rgb[0], (int)rgb[1], (int)rgb[2]);
+        }
+
+        public static Color FromLab(double l, double a, double b)
+        {
+            return LabToRgb(new double[] { l, a, b });
+        }
+    }
 
 	public class ColorTypeConverter : TypeConverter
 	{
