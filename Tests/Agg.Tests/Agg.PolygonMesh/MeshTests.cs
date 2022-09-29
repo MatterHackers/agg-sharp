@@ -36,6 +36,7 @@ using DualContouring;
 using MatterHackers.Agg.Image;
 using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh.Csg;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
 
@@ -92,6 +93,100 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		[Test]
+        public void PolygonRequirements()
+		{
+            //       /\1
+            //      /  \
+            //     /    \
+            //    /      \
+            //   /        \
+            //  /          \
+            // /____________\
+            // 2             0
+
+            var outerLoop = PolygonsExtensions.CreateFromString("x:1000, y:0,x:0, y:1000,x:-1000, y:0,|");
+
+            // crossing the bottom
+            {
+                var intersections = outerLoop[0].GetIntersections(new IntPoint(0, -10), new IntPoint(0, 10));
+                Assert.IsTrue(intersections.Count() == 1);
+                Assert.AreEqual(2, intersections.First().pointIndex);
+                Assert.AreEqual(ClipperLib.Intersection.Intersect, intersections.First().intersection);
+                Assert.AreEqual(new IntPoint(0, 0), intersections.First().position);
+            }
+
+            // touching the top point
+            {
+                var intersections = outerLoop[0].GetIntersections(new IntPoint(0, 700), new IntPoint(0, 1000));
+                Assert.IsTrue(intersections.Count() == 2);
+				foreach (var intersection in intersections)
+				{
+					Assert.AreEqual(ClipperLib.Intersection.Colinear, intersection.intersection);
+					Assert.AreEqual(new IntPoint(0, 1000), intersection.position);
+				}
+            }
+
+            // touching the bottom line
+            {
+                var intersections = outerLoop[0].GetIntersections(new IntPoint(0, -10), new IntPoint(0, 0));
+                Assert.IsTrue(intersections.Count() == 1);
+                Assert.AreEqual(2, intersections.First().pointIndex);
+                Assert.AreEqual(ClipperLib.Intersection.Colinear, intersections.First().intersection);
+                Assert.AreEqual(new IntPoint(0, 0), intersections.First().position);
+            }
+        }
+
+        [Test]
+        public void EnsureCorrectStitchOrder()
+		{
+            //       /\1
+            //      /1 \
+            //     / /\ \
+            //    / /  \2\
+            //   / 0\  /  \
+            //  /    \/3   \
+            // /____________\
+            // 2             0
+
+            // If the advance is on the 0 (outside) polygon, create [outside prev, outside new, inside]
+            // If the advance is on the 1 (inside) polygon, creat [outside, inside new, inside prev]
+
+            // head, move, created polygon
+            // [1,1] 0, starting points 0-1, 1-3 (outside to inside)
+            // [1,0] 1,    [0-1, 1-0, 1-1] 
+            // [2,0] 0,    [0-1, 0-2, 1-0] - [0-1, 1-0, 1-3] polygon crosses a line [1-0, 1-3]
+            // [2,3] 1,    [0-2, 1-3, 1-0]
+            // [0,3] 0,    [0-2, 0-0, 1-0]
+            // [0,2] 1,    [0-0, 1-2, 1-3]
+            // [1,2] 0,    [0-0, 0-1, 1-2]
+            // [1,1] 1,    [0-1, 1-1, 1-2]
+            // back to start, done
+
+            var outerLoop = PolygonsExtensions.CreateFromString("x:1000, y:0,x:0, y:1000,x:-1000, y:0,|");
+            var innerLoop = PolygonsExtensions.CreateFromString("x:-500, y:500,x:0, y:750,x:500, y:500,x:0, y:250,|");
+
+			var (outerStart, innerStart) = PathStitcher.BestStart(outerLoop[0], innerLoop[0]);
+
+			Assert.AreEqual(1, outerStart);
+			Assert.AreEqual(1, innerStart);
+
+			var expected = new List<(int outerIndex, int innerIndex, int polyIndex)>()
+			{
+				(1,1,0),
+				(1,0,1),
+				(2,0,0),
+				(2,3,0),
+				(0,2,1),
+				(1,2,0),
+				(1,1,1),
+			};
+			foreach (var data in expected)
+			{
+				Assert.AreEqual(data.polyIndex, PathStitcher.GetPolygonToAdvance(outerLoop[0], data.outerIndex, innerLoop[0], data.innerIndex), "Validate Advance");
+			}
+        }
+
+        [Test]
 		public void FaceCutWoundCorrectly()
 		{
 			var vertices = new List<Vector3Float>()

@@ -171,7 +171,7 @@ namespace MatterHackers.DataConverters3D
 				};
 
 				// Move selected items into a new SelectionGroup
-				this.Children.Modify(list =>
+				_sourceItem.Children.Modify(list =>
 				{
 					foreach (var item in items)
 					{
@@ -252,7 +252,8 @@ namespace MatterHackers.DataConverters3D
                 {
                     if (!child.RebuildLocked
                         && child != _sourceItem
-						&& child.Parent != parent)
+						&& child.Parent != parent
+						&& child.Parent.GetType() != typeof(SelectionGroupObject3D))
                     {
                         throw new Exception("Child does not have parent set to parent.");
                     }

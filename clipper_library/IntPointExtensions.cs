@@ -28,100 +28,215 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Collections.Generic;
 
 namespace ClipperLib
 {
-	public static class IntPointExtensions
-	{
-		public static long Cross(this IntPoint left, IntPoint right)
-		{
-			return left.X * right.Y - left.Y * right.X;
-		}
+    public enum Intersection
+    {
+        None,
+        Colinear,
+        Intersect
+    }
 
-		public static long Dot(this IntPoint point1, IntPoint point2)
-		{
-			return point1.X * point2.X + point1.Y * point2.Y;
-		}
+    public static class IntPointExtensions
+    {
+        public static bool CalcIntersection(IntPoint a1,
+            IntPoint a2,
+            IntPoint b1,
+            IntPoint b2,
+            out IntPoint position)
+        {
+            position = default(IntPoint);
 
-		public static IntPoint GetLength(this IntPoint pointToSet, long len)
-		{
-			long _len = pointToSet.Length();
-			if (_len < 1)
-			{
-				return new IntPoint(len, 0);
-			}
+            long intersection_epsilon = 1;
+            long num = (a1.Y - b1.Y) * (b2.X - b1.X) - (a1.X - b1.X) * (b2.Y - b1.Y);
+            long den = (a2.X - a1.X) * (b2.Y - b1.Y) - (a2.Y - a1.Y) * (b2.X - b1.X);
+            if (Math.Abs(den) < intersection_epsilon)
+            {
+                return false;
+            }
 
-			return pointToSet * len / _len;
-		}
+            position.X = a1.X + (a2.X - a1.X) * num / den;
+            position.Y = a1.Y + (a2.Y - a1.Y) * num / den;
 
-		public static IntPoint GetPerpendicularLeft(this IntPoint startingDirection)
-		{
-			return new IntPoint(-startingDirection.Y, startingDirection.X);
-		}
+            return true;
+        }
 
-		public static IntPoint GetPerpendicularRight(this IntPoint startingDirection)
-		{
-			return new IntPoint(startingDirection.Y, -startingDirection.X);
-		}
+        public static long Cross(this IntPoint left, IntPoint right)
+        {
+            return left.X * right.Y - left.Y * right.X;
+        }
 
-		public static IntPoint GetRotated(this IntPoint thisPoint, double radians)
-		{
-			double cos = (double)Math.Cos(radians);
-			double sin = (double)Math.Sin(radians);
+        public static bool DoIntersect(IntPoint startA, IntPoint endA, IntPoint startB, IntPoint endB)
+        {
+            return GetIntersection(startA, endA, startB, endB) != Intersection.None;
+        }
 
-			IntPoint output;
-			output.X = (long)(Math.Round(thisPoint.X * cos - thisPoint.Y * sin));
-			output.Y = (long)(Math.Round(thisPoint.Y * cos + thisPoint.X * sin));
+        public static long Dot(this IntPoint point1, IntPoint point2)
+        {
+            return point1.X * point2.X + point1.Y * point2.Y;
+        }
 
-			return output;
-		}
+        public static Intersection GetIntersection(IntPoint startA, IntPoint endA, IntPoint startB, IntPoint endB)
+        {
+            // Find the four orientations needed for general and
+            // special cases
+            int o1 = Orientation(startA, endA, startB);
+            int o2 = Orientation(startA, endA, endB);
+            int o3 = Orientation(startB, endB, startA);
+            int o4 = Orientation(startB, endB, endA);
 
-		public static double GetTurnAmount(this IntPoint currentPoint, IntPoint prevPoint, IntPoint nextPoint)
-		{
-			if (prevPoint != currentPoint
-				&& currentPoint != nextPoint
-				&& nextPoint != prevPoint)
-			{
-				prevPoint = currentPoint - prevPoint;
-				nextPoint -= currentPoint;
+            // Special Cases
+            // startA, endA and startB are collinear and startB lies on segment startA endA
+            if (o1 == 0 && startB.OnSegment(startA, endA)) return Intersection.Colinear;
 
-				double prevAngle = Math.Atan2(prevPoint.Y, prevPoint.X);
-				IntPoint rotatedPrev = prevPoint.GetRotated(-prevAngle);
+            // startA, endA and startB are collinear and endB lies on segment startA-endA
+            if (o2 == 0 && endB.OnSegment(startA, endA)) return Intersection.Colinear;
 
-				// undo the rotation
-				nextPoint = nextPoint.GetRotated(-prevAngle);
-				double angle = Math.Atan2(nextPoint.Y, nextPoint.X);
+            // startB, endB and startA are collinear and startA lies on segment startB-endB
+            if (o3 == 0 && startA.OnSegment(startB, endB)) return Intersection.Colinear;
+            
+            // startB, endB and endA are collinear and endA lies on segment startB-endB
+            if (o4 == 0 && endA.OnSegment(startB, endB)) return Intersection.Colinear;
 
-				return angle;
-			}
+            // General case
+            if (o1 != o2 && o3 != o4)
+            {
+                return Intersection.Intersect;
+            }
 
-			return 0;
-		}
+            return Intersection.None; // Doesn't fall in any of the above cases
+        }
 
-		public static bool IsShorterThen(this IntPoint pointToCheck, long len)
-		{
-			if (pointToCheck.X > len || pointToCheck.X < -len)
-			{
-				return false;
-			}
+        public static IntPoint GetLength(this IntPoint pointToSet, long len)
+        {
+            long _len = pointToSet.Length();
+            if (_len < 1)
+            {
+                return new IntPoint(len, 0);
+            }
 
-			if (pointToCheck.Y > len || pointToCheck.Y < -len)
-			{
-				return false;
-			}
+            return pointToSet * len / _len;
+        }
 
-			return pointToCheck.LengthSquared() <= len * len;
-		}
+        public static IntPoint GetPerpendicularLeft(this IntPoint startingDirection)
+        {
+            return new IntPoint(-startingDirection.Y, startingDirection.X);
+        }
 
-		public static long Length(this IntPoint pointToMeasure)
-		{
-			return (long)Math.Sqrt(pointToMeasure.LengthSquared());
-		}
+        public static IntPoint GetPerpendicularRight(this IntPoint startingDirection)
+        {
+            return new IntPoint(startingDirection.Y, -startingDirection.X);
+        }
 
-		public static long LengthSquared(this IntPoint pointToMeasure)
-		{
-			return pointToMeasure.X * pointToMeasure.X + pointToMeasure.Y * pointToMeasure.Y;
-		}
-	}
+        public static IntPoint GetRotated(this IntPoint thisPoint, double radians)
+        {
+            double cos = (double)Math.Cos(radians);
+            double sin = (double)Math.Sin(radians);
+
+            IntPoint output;
+            output.X = (long)(Math.Round(thisPoint.X * cos - thisPoint.Y * sin));
+            output.Y = (long)(Math.Round(thisPoint.Y * cos + thisPoint.X * sin));
+
+            return output;
+        }
+
+        public static double GetTurnAmount(this IntPoint currentPoint, IntPoint prevPoint, IntPoint nextPoint)
+        {
+            if (prevPoint != currentPoint
+                && currentPoint != nextPoint
+                && nextPoint != prevPoint)
+            {
+                prevPoint = currentPoint - prevPoint;
+                nextPoint -= currentPoint;
+
+                double prevAngle = Math.Atan2(prevPoint.Y, prevPoint.X);
+                IntPoint rotatedPrev = prevPoint.GetRotated(-prevAngle);
+
+                // undo the rotation
+                nextPoint = nextPoint.GetRotated(-prevAngle);
+                double angle = Math.Atan2(nextPoint.Y, nextPoint.X);
+
+                return angle;
+            }
+
+            return 0;
+        }
+
+        public static bool IsShorterThen(this IntPoint pointToCheck, long len)
+        {
+            if (pointToCheck.X > len || pointToCheck.X < -len)
+            {
+                return false;
+            }
+
+            if (pointToCheck.Y > len || pointToCheck.Y < -len)
+            {
+                return false;
+            }
+
+            return pointToCheck.LengthSquared() <= len * len;
+        }
+
+        public static long Length(this IntPoint pointToMeasure)
+        {
+            return (long)Math.Sqrt(pointToMeasure.LengthSquared());
+        }
+
+        public static long LengthSquared(this IntPoint pointToMeasure)
+        {
+            return pointToMeasure.X * pointToMeasure.X + pointToMeasure.Y * pointToMeasure.Y;
+        }
+
+        public static bool OnSegment(this IntPoint testPosition, IntPoint start, IntPoint end)
+        {
+            if (start == end)
+            {
+                if (testPosition == start)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+
+            IntPoint segmentDelta = end - start;
+            long segmentLength = segmentDelta.Length();
+            IntPoint pointRelStart = testPosition - start;
+            long distanceFromStart = segmentDelta.Dot(pointRelStart) / segmentLength;
+
+            if (distanceFromStart >= 0 && distanceFromStart <= segmentLength)
+            {
+                IntPoint segmentDeltaLeft = segmentDelta.GetPerpendicularLeft();
+                long distanceFromStartLeft = segmentDeltaLeft.Dot(pointRelStart) / segmentLength;
+
+                if (distanceFromStartLeft == 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // To find orientation of ordered triplet (p, q, r).
+        // The function returns following values
+        // 0 --> p, q and r are collinear
+        // 1 --> Clockwise
+        // 2 --> Counterclockwise
+        public static int Orientation(IntPoint start, IntPoint end, IntPoint test)
+        {
+            // See http://www.geeksforgeeks.org/orientation-3-ordered-points/
+            // for details of below formula.
+            long val = (end.Y - start.Y) * (test.X - end.X) -
+                      (end.X - start.X) * (test.Y - end.Y);
+
+            if (val == 0)
+            {
+                return 0;
+            }
+
+            return (val > 0) ? 1 : 2; // clockwise or counterclockwise
+        }
+    }
 }

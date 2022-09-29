@@ -27,7 +27,9 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Collections.Generic;
+using ClipperLib;
 using MatterHackers.DataConverters2D;
 using MatterHackers.VectorMath;
 
@@ -58,17 +60,31 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			// simple bottom and top
 			if (bottomLoop.Count == 1
-				&& topLoop.Count == 1
-				&& bottomLoop[0].Count == topLoop[0].Count)
+				&& topLoop.Count == 1)
 			{
-				var mesh = CreateSimpleWall(bottomLoop[0], bottomHeight * 1000, topLoop[0], topHeight * 1000);
+				Mesh mesh = null;
+				if (bottomLoop[0].Count == topLoop[0].Count)
+				{
+					mesh = CreateSimpleWall(bottomLoop[0], bottomHeight * 1000, topLoop[0], topHeight * 1000);
+				}
+				else
+				{
+					mesh = Stitch2SingleWalls(bottomLoop[0], bottomHeight * 1000, topLoop[0], topHeight * 1000);
+				}
+
 				mesh.Transform(Matrix4X4.CreateScale(1 / scaling));
 				return mesh;
 			}
 
 			var all = new Polygons();
-			all.AddRange(bottomLoop);
-			all.AddRange(topLoop);
+			if (bottomLoop != null)
+			{
+				all.AddRange(bottomLoop);
+			}
+			if (topLoop != null)
+			{
+				all.AddRange(topLoop);
+			}
 			all = all.GetCorrectedWinding();
 
 			var bevelLoop = all.CreateVertexStorage().TriangulateFaces();
@@ -90,6 +106,79 @@ namespace MatterHackers.PolygonMesh.Processors
 		{
 			var mesh = path.CreateVertexStorage(scaling).TriangulateFaces(zHeight: bottomHeight);
 			mesh.ReverseFaces();
+			return mesh;
+		}
+
+		public static (int bs, int ts) BestStart(Polygon outerLoop, Polygon innerLoop)
+		{
+			var bestDistance = double.MaxValue;
+			var bestOs = 0;
+			var bestIs = 0;
+			for (var oi = 0; oi < outerLoop.Count; oi++)
+			{
+				for (var ii = 0; ii < innerLoop.Count; ii++)
+				{
+					var distance = (outerLoop[oi] - innerLoop[ii]).LengthSquared();
+					if (distance < bestDistance)
+					{
+						bestDistance = distance;
+						bestOs = oi;
+						bestIs = ii;
+					}
+				}
+			}
+
+			return (bestOs, bestIs);
+		}
+
+		private static Mesh Stitch2SingleWalls(Polygon bottomLoop, double bottomHeight, Polygon topLoop, double topHeight)
+		{
+			var mesh = new Mesh();
+
+			var (bs, ts) = BestStart(bottomLoop, topLoop);
+
+			var bc = bs;
+			var tc = ts;
+			var loopedB = false;
+			var loopedT = false;
+			do
+			{
+				var b1 = bc;
+				var b2 = (bc + 1) % bottomLoop.Count;
+				var t1 = tc;
+				var t2 = (tc + 1) % topLoop.Count;
+
+				var b1b2 = (bottomLoop[b1] - bottomLoop[b2]).LengthSquared();
+				var t1t2 = (topLoop[t1] - topLoop[t2]).LengthSquared();
+
+				if ((b1b2 < t1t2 && !loopedB)
+					|| loopedT)
+				{
+					mesh.CreateFace(new Vector3[]
+					{
+						new Vector3(bottomLoop[b1].X, bottomLoop[b1].Y, bottomHeight),
+						new Vector3(bottomLoop[b2].X, bottomLoop[b2].Y, bottomHeight),
+						new Vector3(topLoop[tc].X, topLoop[tc].Y, topHeight)
+					});
+
+					bc = b2;
+					loopedB = bc == bs;
+				}
+				else
+				{
+					mesh.CreateFace(new Vector3[]
+					{
+						new Vector3(bottomLoop[bc].X, bottomLoop[bc].Y, bottomHeight),
+						new Vector3(topLoop[t1].X, topLoop[t1].Y, topHeight),
+						new Vector3(topLoop[t2].X, topLoop[t2].Y, topHeight)
+					});
+
+					tc = t2;
+					loopedT = tc == ts;
+				}
+			} while (bc != bs || tc != ts);
+
+
 			return mesh;
 		}
 
@@ -115,5 +204,31 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			return mesh;
 		}
+
+		public static int GetPolygonToAdvance(Polygon outerLoop, int oStart, Polygon innerLoop, int iStart)
+		{
+			// given the start, find the closest next point along either polygon to move to
+			var outerStart = outerLoop[oStart];
+			var outerNextIndex = oStart + 1 % outerLoop.Count;
+			var outerNext = outerLoop[outerNextIndex];
+            
+			var innerStart = innerLoop[iStart];
+			var innerNextIndex = iStart + 1 % innerLoop.Count;
+			var innerNext = innerLoop[innerNextIndex];
+
+			var distanceToInnerNext = (innerNext - outerStart).LengthSquared();
+			var distanceToOuterNext = (innerStart - outerNext).LengthSquared();
+            
+            if (distanceToInnerNext < distanceToOuterNext)
+			{
+                // check if segment innerNext - outerStart crosses any other line segments
+                return 1;
+            }
+            else
+			{
+                // check if segment innerStart - outerNext crosses any other line segments
+                return 0;
+            }
+        }
 	}
 }

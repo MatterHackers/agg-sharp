@@ -91,7 +91,8 @@ namespace MatterHackers.RayTracer
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
-			if (cachedAABB.MinXYZ.X == double.NegativeInfinity)
+			if (cachedAABB.MinXYZ.X == double.NegativeInfinity
+				&& Items.Count > 0)
 			{
 				cachedAABB = Items[0].GetAxisAlignedBoundingBox();
 				for (int i = 1; i < Items.Count; i++)

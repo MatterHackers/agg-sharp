@@ -78,20 +78,29 @@ namespace ClipperLib
         }
 
 
+        private static double GetDouble(string doubleString, double scale)
+        {
+            // strip leading characters up to and including ':'
+            int colonIndex = doubleString.IndexOf(':');
+            if (colonIndex != -1)
+            {
+                doubleString = doubleString.Substring(colonIndex + 1);
+            }
+
+            return double.Parse(doubleString) * scale;
+        }
+
         public static Polygons CreateFromString(string polygonsPackedString, double scale = 1)
 		{
-			Polygon SinglePolygon(string polygonString)
+            Polygon SinglePolygon(string polygonString)
 			{
 				var poly = new Polygon();
 				string[] intPointData = polygonString.Split(',');
 				int increment = 2;
 				for (int i = 0; i < intPointData.Length - 1; i += increment)
 				{
-					string elementX = intPointData[i];
-					string elementY = intPointData[i + 1];
-					var nextIntPoint = new IntPoint(double.Parse(elementX) * scale,
-						double.Parse(elementY) * scale);
-					poly.Add(nextIntPoint);
+					var nextIntPoint = new IntPoint(GetDouble(intPointData[i], scale), GetDouble(intPointData[i + 1], scale));
+		            poly.Add(nextIntPoint);
 				}
 
 				return poly;
