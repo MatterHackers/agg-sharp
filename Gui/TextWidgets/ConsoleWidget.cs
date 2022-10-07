@@ -101,7 +101,10 @@ namespace MatterHackers.Agg.UI
                     _pointSize = value;
 
                     styledTypeFace = new StyledTypeFace(typeFace, PointSize);
-                    typeFacePrinter = new TypeFacePrinter("", styledTypeFace);
+                    typeFacePrinter = new TypeFacePrinter("", styledTypeFace)
+                    {
+                        DrawFromHintedCache = true
+                    };
                     lineHeight = (int)Math.Round(styledTypeFace.AscentInPixels * 1.5);
 
                     // force a redraw
@@ -145,56 +148,59 @@ namespace MatterHackers.Agg.UI
 
         public override void OnDraw(Graphics2D graphics2D)
         {
-            RectangleDouble bounds = LocalBounds;
-
-            int numLinesToDraw = NumVisibleLines;
-
-            double y = LocalBounds.Bottom + styledTypeFace.EmSizeInPixels * numLinesToDraw;
-            lock (locker)
+            using (new QuickTimerReport("Console Widget - OnDraw"))
             {
-                int startLineIndex = allLineInfos.Count - numLinesToDraw;
-                if (forceStartLine != -1)
-                {
-                    y = LocalBounds.Top;
+                RectangleDouble bounds = LocalBounds;
 
-                    if (forceStartLine > allLineInfos.Count - numLinesToDraw)
+                int numLinesToDraw = NumVisibleLines;
+
+                double y = LocalBounds.Bottom + styledTypeFace.EmSizeInPixels * numLinesToDraw;
+                lock (locker)
+                {
+                    int startLineIndex = allLineInfos.Count - numLinesToDraw;
+                    if (forceStartLine != -1)
                     {
-                        forceStartLine = -1;
-                    }
-                    else
-                    {
-                        // make sure we show all the lines we can
-                        startLineIndex = Math.Min(forceStartLine, startLineIndex);
-                        if (startLineIndex == 0
-                            && y > LocalBounds.Top - styledTypeFace.EmSizeInPixels)
+                        y = LocalBounds.Top;
+
+                        if (forceStartLine > allLineInfos.Count - numLinesToDraw)
                         {
-                            y -= styledTypeFace.EmSizeInPixels;
+                            forceStartLine = -1;
+                        }
+                        else
+                        {
+                            // make sure we show all the lines we can
+                            startLineIndex = Math.Min(forceStartLine, startLineIndex);
+                            if (startLineIndex == 0
+                                && y > LocalBounds.Top - styledTypeFace.EmSizeInPixels)
+                            {
+                                y -= styledTypeFace.EmSizeInPixels;
+                            }
+                        }
+                    }
+
+                    int endLineIndex = allLineInfos.Count;
+                    for (int lineIndex = startLineIndex; lineIndex < endLineIndex; lineIndex++)
+                    {
+                        if (lineIndex >= 0)
+                        {
+                            if (allLineInfos[lineIndex] != null)
+                            {
+                                typeFacePrinter.Text = allLineInfos[lineIndex].Text;
+                                typeFacePrinter.Origin = new Vector2(bounds.Left + 2, y);
+                                typeFacePrinter.Render(graphics2D, allLineInfos[lineIndex].Color);
+                            }
+                        }
+
+                        y -= typeFacePrinter.TypeFaceStyle.EmSizeInPixels;
+                        if (y < -typeFacePrinter.TypeFaceStyle.EmSizeInPixels)
+                        {
+                            break;
                         }
                     }
                 }
 
-                int endLineIndex = allLineInfos.Count;
-                for (int lineIndex = startLineIndex; lineIndex < endLineIndex; lineIndex++)
-                {
-                    if (lineIndex >= 0)
-                    {
-                        if (allLineInfos[lineIndex] != null)
-                        {
-                            typeFacePrinter.Text = allLineInfos[lineIndex].Text;
-                            typeFacePrinter.Origin = new Vector2(bounds.Left + 2, y);
-                            typeFacePrinter.Render(graphics2D, allLineInfos[lineIndex].Color);
-                        }
-                    }
-
-                    y -= typeFacePrinter.TypeFaceStyle.EmSizeInPixels;
-                    if (y < -typeFacePrinter.TypeFaceStyle.EmSizeInPixels)
-                    {
-                        break;
-                    }
-                }
+                base.OnDraw(graphics2D);
             }
-
-            base.OnDraw(graphics2D);
         }
 
         public override void OnKeyDown(KeyEventArgs keyEvent)
@@ -361,16 +367,6 @@ namespace MatterHackers.Agg.UI
             // add the indent and the new line
             allLineInfos.Add(new LineInfo(new String(' ', Indent) + line, TextColor));
             Invalidate();
-        }
-
-        private void DrawText(Graphics2D graphics2D, LineInfo lineInfo, double x, double y)
-        {
-            if (lineInfo != null)
-            {
-                TypeFacePrinter stringPrinter = new TypeFacePrinter(lineInfo.Text, styledTypeFace, new Vector2(x, y));
-                stringPrinter.DrawFromHintedCache = true;
-                stringPrinter.Render(graphics2D, lineInfo.Color);
-            }
         }
     }
 }
