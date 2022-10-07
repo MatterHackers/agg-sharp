@@ -343,6 +343,20 @@ namespace MatterHackers.Agg.UI
 
         public void WriteLine(string line)
         {
+            if (line.Contains("\n"))
+            {
+                // remove traising '\n'
+                if (line[line.Length - 1] == '\n')
+                {
+                    line = line.Substring(0, line.Length - 1);
+                }
+                foreach (var internalLine in line.Split('\n'))
+                {
+                    WriteLine(internalLine);
+                }
+                return;
+            }
+
             writingSingleLine = false;
             // add the indent and the new line
             allLineInfos.Add(new LineInfo(new String(' ', Indent) + line, TextColor));
