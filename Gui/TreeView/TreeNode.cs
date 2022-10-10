@@ -108,7 +108,8 @@ namespace MatterHackers.Agg.UI
 				Expandable = GetNodeCount(false) != 0,
 				VAnchor = VAnchor.Fit | VAnchor.Center,
 				Height = 16,
-				Width = 16
+				Width = 16,
+                Name = "Expand Widget"
 			};
 
 			expandWidget.Click += (s, e) =>
@@ -124,7 +125,8 @@ namespace MatterHackers.Agg.UI
 				VAnchor = VAnchor.Fit,
 				HAnchor = HAnchor.Fit,
 				Padding = useIcon ? new BorderDouble(2) : new BorderDouble(4, 2),
-				Selectable = false
+				Selectable = false,
+                Name = "Content Region"
 			};
 			this.TitleBar.AddChild(this.HighlightRegion);
 
@@ -137,7 +139,8 @@ namespace MatterHackers.Agg.UI
 				{
 					VAnchor = VAnchor.Center,
 					Margin = new BorderDouble(right: 4),
-					Selectable = false
+					Selectable = false,
+                    Name = "ImageIconWidget"
 				});
 			}
 
@@ -236,7 +239,15 @@ namespace MatterHackers.Agg.UI
 
 		public void EnsureVisible() => throw new NotImplementedException();
 
-		public void ExpandAll() => throw new NotImplementedException();
+		public void ExpandAll()
+		{
+            // expand everything recursively
+            foreach (var node in Nodes)
+            {
+                node.Expanded = true;
+                node.ExpandAll();
+            }
+        }
 
 		public void Remove() => throw new NotImplementedException();
 
