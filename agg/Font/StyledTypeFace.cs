@@ -59,7 +59,8 @@ namespace MatterHackers.Agg.Font
 	{
 		private static StyledTypeFaceImageCache instance;
 
-		private Dictionary<TypeFace, Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>>> typeFaceImageCache = new Dictionary<TypeFace, Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>>>();
+        // Keys: TypeFace, Color, FontSize, Character
+        private Dictionary<TypeFace, Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>>> typeFaceImageCache = new Dictionary<TypeFace, Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>>>();
 
 		// private so you can't use it by accident (it is a singleton)
 		private StyledTypeFaceImageCache()

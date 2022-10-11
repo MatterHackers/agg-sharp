@@ -88,10 +88,13 @@ namespace MatterHackers.Agg
 
 		public QuickTimerReport(string name)
 		{
-			this.name = name;
-			if (!timers.ContainsKey(name))
+			lock (timers)
 			{
-				timers.Add(name, 0);
+				this.name = name;
+				if (!timers.ContainsKey(name))
+				{
+					timers.Add(name, 0);
+				}
 			}
 
 			startTime = quickTimerTime.Elapsed.TotalMilliseconds;
@@ -100,32 +103,48 @@ namespace MatterHackers.Agg
 		public void Dispose()
 		{
 			double totalTime = quickTimerTime.Elapsed.TotalMilliseconds - startTime;
-			timers[name] = timers[name] + totalTime;
+
+			lock (timers)
+			{
+				if (timers.ContainsKey(name))
+				{
+					timers[name] = timers[name] + totalTime;
+				}
+			}
 		}
 
 		public static void Report()
 		{
-			foreach (var kvp in timers)
+			lock (timers)
 			{
-				Debug.WriteLine(kvp.Key + ": {0:0.0}s".FormatWith(kvp.Value / 1000.0));
+				foreach (var kvp in timers)
+				{
+					Debug.WriteLine(kvp.Key + ": {0:0.0}s".FormatWith(kvp.Value / 1000.0));
+				}
 			}
 		}
 
 		public static void ReportAndRestart(Graphics2D drawTo, double x, double y)
 		{
-			foreach (var kvp in timers)
+			lock (timers)
 			{
-				var text =  $"{kvp.Key}: {kvp.Value:0.00}ms";
-				drawTo.DrawString(text, x, y, backgroundColor: Color.White.WithAlpha(210), drawFromHintedCach: true);
-				y -= 18;
-			}
+				foreach (var kvp in timers)
+				{
+					var text = $"{kvp.Key}: {kvp.Value:0.00}ms";
+					drawTo.DrawString(text, x, y, backgroundColor: Color.White.WithAlpha(210), drawFromHintedCach: true);
+					y -= 18;
+				}
 
-			Restart();
+				Restart();
+			}
 		}
 
 		public static void Restart()
 		{
-			timers.Clear();
+			lock (timers)
+			{
+				timers.Clear();
+			}
 		}
 	}
 }

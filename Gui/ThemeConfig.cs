@@ -81,9 +81,16 @@ namespace MatterHackers.Agg.UI
 						TextColor = new Color("#222222"),
 						LightTextColor = new Color("#6e6e6e")
 					}
-				}
+				},
 			};
 
+            theme.ButtonBackgroundColor = Color.LightGray;
+            theme.BorderColor20 = Color.Black.WithAlpha(140);
+            theme.AccentMimimalOverlay = theme.PrimaryAccentColor.WithAlpha(128);
+            theme.SlightShade = theme.PrimaryAccentColor.WithAlpha(80);
+            theme.MinimalShade = theme.PrimaryAccentColor.WithAlpha(60);
+            theme.RowBorder = theme.TextColor;
+            
 			theme.ButtonBackgroundColor = theme.BackgroundColor.WithLightness(0.9).ToColor();
 			return theme;
 		}
@@ -130,7 +137,7 @@ namespace MatterHackers.Agg.UI
 			theme.MinimalShade = theme.PrimaryAccentColor.WithAlpha(60);
 			theme.RowBorder = theme.TextColor;
 
-			return theme;
+            return theme;
 		}
 
 		public double ButtonRadius { get; set; } = 3;

@@ -195,7 +195,8 @@ namespace MatterHackers.Agg.Font
 				currentOffset.Y += Origin.Y + TypeFaceStyle.DescentInPixels - 1;
 
 				string[] lines = text.Split('\n');
-				foreach (string line in lines)
+				var transformX = graphics2D.GetTransform().tx;
+                foreach (string line in lines)
 				{
 					currentOffset = GetXPositionForLineBasedOnJustification(currentOffset, line);
 					currentOffset.X += Origin.X;
@@ -206,7 +207,10 @@ namespace MatterHackers.Agg.Font
 
 						if (currentGlyphImage != null)
 						{
-							graphics2D.Render(currentGlyphImage, currentOffset);
+							if (transformX + currentOffset.X < graphics2D.Width)
+							{
+								graphics2D.Render(currentGlyphImage, currentOffset);
+							}
 						}
 
 						// get the advance for the next character
