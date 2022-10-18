@@ -40,7 +40,7 @@ namespace MatterHackers.Agg.UI
 		internal static extern IntPtr CreateCompatibleDC(IntPtr hdc);
 
 		[DllImport("user32.dll")]
-		internal static extern IntPtr GetDesktopWindow();
+		public static extern IntPtr GetDesktopWindow();
 
 		[DllImport("user32.dll")]
 		internal static extern IntPtr GetWindowDC(IntPtr ptr);

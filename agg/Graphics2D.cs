@@ -18,6 +18,7 @@
 //----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
@@ -184,48 +185,65 @@ namespace MatterHackers.Agg
 			Render(imageSource, x, y, 0, width / imageSource.Width, height / imageSource.Height);
 		}
 
-		public void RenderMaxSize(ImageBuffer image, double x, double y, double maxX, double maxY, out Vector2 size, bool right = false, bool preScale = false)
+        public enum Alignment
 		{
-			size.X = image.Width;
-			size.Y = image.Height;
+            Left,
+            Center,
+            Right
+        }
 
-			if (size.X > maxX)
-			{
-				size.X = maxX;
-				var ratio = size.X / image.Width;
-				size.Y = image.Height * ratio;
-			}
+		public void RenderMaxSize(ImageBuffer image, Vector2 position, Vector2 maxSize)
+		{
+			RenderMaxSize(image, position, maxSize, Vector2.Zero, out _);
+		}
 
-			if (size.Y > maxY)
-			{
-				size.Y = maxY;
-				var ratio = size.Y / image.Height;
-				size.X = image.Width * ratio;
-			}
+		public void RenderMaxSize(ImageBuffer image, Vector2 position, Vector2 maxSize, Vector2 origin)
+		{
+            RenderMaxSize(image, position, maxSize, origin, out _);
+        }
 
-			if (right)
+        public static double GetScallingBaseOnMaxSize(ImageBuffer image, Vector2 maxSize, out Vector2 size)
+        {
+            double ratio = 1;
+            size = new Vector2(image.Width, image.Height);
+            if (size.X > maxSize.X)
+            {
+                size.X = maxSize.X;
+                ratio = size.X / image.Width;
+                size.Y = image.Height * ratio;
+            }
+
+            if (size.Y > maxSize.Y)
+            {
+                size.Y = maxSize.Y;
+                ratio = size.Y / image.Height;
+                size.X = image.Width * ratio;
+            }
+
+            return ratio;
+        }
+
+        /// <summary>
+        /// Renders the given image at the given position scaling down if bigger than maxSize
+        /// </summary>
+        /// <param name="image">The image to render</param>
+        /// <param name="position">The postion to render it at</param>
+        /// <param name="maxSize">The max size to allow it to render to. Will be scaled down to fit.</param>
+        /// <param name="origin">The postion in the sourc to hold at the 'positon'</param>
+        /// <param name="size"></param>
+        public void RenderMaxSize(ImageBuffer image, Vector2 position, Vector2 maxSize, Vector2 origin, out Vector2 size)
+		{
+			var ratio = GetScallingBaseOnMaxSize(image, maxSize, out size);
+            origin *= ratio;
+
+            if (size.X != image.Width)
 			{
-				var expectedRight = x + image.Width; 
-				if (preScale)
-				{
-					this.Render(image.CreateScaledImage(size.X / image.Width), x, y, size.X, size.Y);
-				}
-				else
-				{
-					this.Render(image, expectedRight - size.X, y, size.X, size.Y);
-				}
-			}
-			else
+                this.Render(image.CreateScaledImage(size.X / image.Width), position.X - origin.X, position.Y - origin.Y, size.X, size.Y);
+            }
+            else
 			{
-				if (preScale)
-				{
-					this.Render(image.CreateScaledImage(size.X / image.Width), x, y, size.X, size.Y);
-				}
-				else
-				{
-					this.Render(image, x, y, size.X, size.Y);
-				}
-			}
+                this.Render(image, position - origin);
+            }
 		}
 
 		public void RenderScale(IImageByte image, double x, double y, double sizeX)

@@ -311,16 +311,21 @@ namespace MatterHackers.Agg.UI
                     }
                     line.Append("|");
 
+                    var lineString = line.ToString();
                     if (writingSingleLine)
                     {
-                        allLineInfos[allLineInfos.Count - 1] = new LineInfo(line.ToString(), TextColor);
+                        if (allLineInfos[allLineInfos.Count - 1].Text != lineString)
+                        {
+                            allLineInfos[allLineInfos.Count - 1] = new LineInfo(lineString, TextColor);
+                            Invalidate();
+                        }
                     }
                     else
                     {
-                        allLineInfos.Add(new LineInfo(line.ToString(), TextColor));
+                        allLineInfos.Add(new LineInfo(lineString, TextColor));
                         writingSingleLine = true;
+                        Invalidate();
                     }
-                    Invalidate();
                 }
                 catch
                 {
