@@ -5,8 +5,8 @@
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007-2011
 //
-// Permission to copy, use, modify, sell and distribute this software 
-// is granted provided this copyright notice appears in all copies. 
+// Permission to copy, use, modify, sell and distribute this software
+// is granted provided this copyright notice appears in all copies.
 // This software is provided "as is" without express or implied
 // warranty, and with no claim as to its suitability for any purpose.
 //
@@ -15,97 +15,70 @@
 // Class FontSVG.cs
 //
 //----------------------------------------------------------------------------
-using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Globalization;
-
-using MatterHackers.Agg.Transform;
+using HtmlAgilityPack;
+using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
+using System.Collections.Generic;
+using System.IO;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace AGG
 {
-	public class SVGParser
-	{
-        public static IVertexSource PathStorageFromD(String DFromSVGFile, double xOffset, double yOffset)
+    public class SvgParser
+    {
+        public List<ColoredVertexSource> Items { get; set; }  = new List<ColoredVertexSource>();
+
+        public SvgParser(string filePath, double scale, int width = -1, int height = -1)
+            : this(File.OpenRead(filePath), scale, width, height)
         {
-            var path = new VertexStorage();
-            string[] splitOnSpace = DFromSVGFile.Split(' ');
-            string[] splitOnComma;
-            double xc1, yc1, xc2, yc2, x, y;
-            for (int i = 0; i < splitOnSpace.Length; i++)
+        }
+
+        public SvgParser(Stream stream, double scale, int width = -1, int height = -1)
+        {
+            var svgDocument = new HtmlDocument();
+            svgDocument.Load(stream);
+
+            // get the viewBox
+            var viewBox = svgDocument.DocumentNode.SelectSingleNode("//svg").Attributes["viewBox"].Value;
+
+            this.Scale = scale;
+
+            if (!string.IsNullOrEmpty(viewBox))
             {
-                switch (splitOnSpace[i++])
+                var segments = viewBox.Split(' ');
+
+                if (width == -1)
                 {
-                    case "M":
-                        {
-                            splitOnComma = splitOnSpace[i].Split(',');
-                            double.TryParse(splitOnComma[0], NumberStyles.Number, null, out x);
-                            double.TryParse(splitOnComma[1], NumberStyles.Number, null, out y);
-                            path.MoveTo(x, y + yOffset);
-                        }
-                        break;
+                    int.TryParse(segments[2], out width);
+                }
 
-                    case "L":
-                        {
-                            splitOnComma = splitOnSpace[i].Split(',');
-                            double.TryParse(splitOnComma[0], NumberStyles.Number, null, out x);
-                            double.TryParse(splitOnComma[1], NumberStyles.Number, null, out y);
-                            path.LineTo(x, y + yOffset);
-                        }
-                        break;
-
-                    case "C":
-                        {
-                            splitOnComma = splitOnSpace[i++].Split(',');
-                            double.TryParse(splitOnComma[0], NumberStyles.Number, null, out xc1);
-                            double.TryParse(splitOnComma[1], NumberStyles.Number, null, out yc1);
-
-                            splitOnComma = splitOnSpace[i++].Split(',');
-                            double.TryParse(splitOnComma[0], NumberStyles.Number, null, out xc2);
-                            double.TryParse(splitOnComma[1], NumberStyles.Number, null, out yc2);
-
-                            splitOnComma = splitOnSpace[i].Split(',');
-                            double.TryParse(splitOnComma[0], NumberStyles.Number, null, out x);
-                            double.TryParse(splitOnComma[1], NumberStyles.Number, null, out y);
-                            path.curve4(xc1, yc1 + yOffset, xc2, yc2 + yOffset, x, y + yOffset);
-                        }
-                        break;
-
-                    case "z":
-                        if (i < splitOnSpace.Length)
-                        {
-                            throw new Exception();
-                        }
-                        break;
-
-                    default:
-                        throw new NotImplementedException();
+                if (height == -1)
+                {
+                    int.TryParse(segments[3], out height);
                 }
             }
 
-			throw new NotImplementedException();
-            //path.arrange_orientations_all_paths(AGG.ShapePath.FlagsAndCommand.FlagCW);
-            VertexSourceApplyTransform flipped = new VertexSourceApplyTransform(path, Affine.NewScaling(1, -1));
-            return flipped;
+            var currentPath = new VertexStorage();
+            // process all the paths and polygons
+            foreach (var pathNode in svgDocument.DocumentNode.SelectNodes("//path"))
+            {
+                var pathDString = pathNode.Attributes["d"].Value;
+                var vertexStorage = new VertexStorage(pathDString);
+
+                currentPath = new VertexStorage(currentPath.CombineWith(vertexStorage));
+            }
+            Items.Add(new ColoredVertexSource() { VertexSource = currentPath, Color = Color.Black });
+
+            stream.Dispose();
         }
-	}
 
-#if false
-	public class Glyph : IVertexSource
-	{
-		VertexStorage glyphData;
-		
-        public void rewind(int pathId)
-		{
-			glyphData.rewind(pathId);
-		}
-		
-        public Path.FlagsAndCommand vertex(out double x, out double y)
-		{
-			return glyphData.vertex(out x, out y);
-		}
-	}
-#endif
+        public double Scale { get; set; } = 0.7;
+
+        public class ColoredVertexSource
+        {
+            public Color Color { get; set; }
+            public IVertexSource VertexSource { get; set; }
+        }
+    }
 }
-

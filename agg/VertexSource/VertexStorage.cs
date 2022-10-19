@@ -850,7 +850,18 @@ namespace MatterHackers.Agg.VertexSource
 				Char command = dString[parseIndex];
 				switch (command)
 				{
-					case 'c': // curve to relative
+                    case 'a': // relative arc
+                    case 'A': // absolute arc
+						{
+							do
+							{
+								parseIndex++;
+                            } while (NextElementIsANumber(dString, parseIndex));
+                        }
+						break;
+                            
+
+                    case 'c': // curve to relative
 					case 'C': // curve to absolute
 						{
 							do
