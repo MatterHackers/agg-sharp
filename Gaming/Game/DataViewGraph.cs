@@ -167,7 +167,7 @@ namespace Gaming.Game
 			// if the 0 line is within the window than draw it.
 			if (m_DataViewMinY < 0 && m_DataViewMaxY > 0)
 			{
-				m_LinesToDraw.remove_all();
+				m_LinesToDraw.Clear();
 				m_LinesToDraw.MoveTo(m_Position.X,
 					m_Position.Y + ((0 - m_DataViewMinY) * m_Height / Range));
 				m_LinesToDraw.LineTo(m_Position.X + m_Width,
@@ -183,7 +183,7 @@ namespace Gaming.Game
 			foreach (KeyValuePair<string, HistoryData> historyKeyValue in m_DataHistoryArray)
 			{
 				HistoryData history = historyKeyValue.Value;
-				m_LinesToDraw.remove_all();
+				m_LinesToDraw.Clear();
 				MaxMax = System.Math.Max(MaxMax, history.GetMaxValue());
 				MinMin = System.Math.Min(MinMin, history.GetMinValue());
 				MaxAverage = System.Math.Max(MaxAverage, history.GetAverageValue());

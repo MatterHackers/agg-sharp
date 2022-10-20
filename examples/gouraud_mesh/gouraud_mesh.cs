@@ -109,7 +109,7 @@ namespace MatterHackers.Agg
 				m_start_x = start_x;
 				m_start_y = start_y;
 
-				m_vertices.remove_all();
+				m_vertices.Clear();
 				for (int i = 0; i < m_rows; i++)
 				{
 					double x = start_x;
@@ -130,8 +130,8 @@ namespace MatterHackers.Agg
 				//  | / |
 				//  |/t1|
 				//  1---2
-				m_triangles.remove_all();
-				m_edges.remove_all();
+				m_triangles.Clear();
+				m_edges.Clear();
 				for (int i = 0; i < m_rows - 1; i++)
 				{
 					for (int j = 0; j < m_cols - 1; j++)
@@ -200,7 +200,7 @@ namespace MatterHackers.Agg
 			public void rotate_colors()
 			{
 				int i;
-				for (i = 1; i < m_vertices.size(); i++)
+				for (i = 1; i < m_vertices.Count; i++)
 				{
 					Color c = m_vertices[i].color;
 					Color dc = m_vertices[i].dc;
@@ -223,7 +223,7 @@ namespace MatterHackers.Agg
 				if (mouseEvent.Button == MouseButtons.Left)
 				{
 					int i;
-					for (i = 0; i < m_vertices.size(); i++)
+					for (i = 0; i < m_vertices.Count; i++)
 					{
 						if (agg_math.calc_distance(x, y, m_vertices[i].x, m_vertices[i].y) < 5)
 						{
@@ -263,7 +263,7 @@ namespace MatterHackers.Agg
 
 			public int num_vertices()
 			{
-				return m_vertices.size();
+				return m_vertices.Count;
 			}
 
 			public mesh_point vertex(int i)
@@ -278,7 +278,7 @@ namespace MatterHackers.Agg
 
 			public int num_triangles()
 			{
-				return m_triangles.size();
+				return m_triangles.Count;
 			}
 
 			public mesh_triangle triangle(int i)
@@ -288,7 +288,7 @@ namespace MatterHackers.Agg
 
 			public int num_edges()
 			{
-				return m_edges.size();
+				return m_edges.Count;
 			}
 
 			public mesh_edge edge(int i)

@@ -244,7 +244,7 @@ namespace MatterHackers.Agg
 			double xs = x;
 			double ys = y;
 
-			for (i = 1; i < st.size(); i++)
+			for (i = 1; i < st.Count; i++)
 			{
 				VertexDistance v = st[i];
 				sum += x * v.y - y * v.x;

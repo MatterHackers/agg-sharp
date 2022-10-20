@@ -283,7 +283,7 @@ namespace MatterHackers.Agg
 					int i;
 					int start_cell = 0;
 					style_info[] stylesArray = m_styles.Array;
-					for (i = 0; i < m_ast.size(); i++)
+					for (i = 0; i < m_ast.Count; i++)
 					{
 						int IndexToModify = (int)m_ast[i];
 						int v = stylesArray[IndexToModify].start_cell;
@@ -344,14 +344,14 @@ namespace MatterHackers.Agg
 						}
 					}
 				}
-				if (m_ast.size() > 1) break;
+				if (m_ast.Count > 1) break;
 				++m_scan_y;
 			}
 			++m_scan_y;
 
 			if (m_layer_order != layer_order_e.layer_unsorted)
 			{
-				VectorPOD_RangeAdaptor ra = new VectorPOD_RangeAdaptor(m_ast, 1, m_ast.size() - 1);
+				VectorPOD_RangeAdaptor ra = new VectorPOD_RangeAdaptor(m_ast, 1, m_ast.Count - 1);
 				if (m_layer_order == layer_order_e.layer_direct)
 				{
 					QuickSort_range_adaptor_uint m_QSorter = new QuickSort_range_adaptor_uint();
@@ -367,7 +367,7 @@ namespace MatterHackers.Agg
 				}
 			}
 
-			return m_ast.size() - 1;
+			return m_ast.Count - 1;
 		}
 
 		// Returns style ID depending of the existing style index
@@ -425,7 +425,7 @@ namespace MatterHackers.Agg
 		{
 			if (style >= 0)
 			{
-				while ((int)m_master_alpha.size() <= style)
+				while ((int)m_master_alpha.Count <= style)
 				{
 					m_master_alpha.add(aa_mask);
 				}
@@ -598,7 +598,7 @@ namespace MatterHackers.Agg
 
 		private void allocate_master_alpha()
 		{
-			while ((int)m_master_alpha.size() <= m_max_style)
+			while ((int)m_master_alpha.Count <= m_max_style)
 			{
 				m_master_alpha.add(aa_mask);
 			}

@@ -369,7 +369,7 @@ namespace MatterHackers.Agg
 			}
 
 			var lineToDraw = new VertexStorage();
-			lineToDraw.remove_all();
+			lineToDraw.Clear();
 			lineToDraw.MoveTo(x1, y1);
 			lineToDraw.LineTo(x2, y2);
 

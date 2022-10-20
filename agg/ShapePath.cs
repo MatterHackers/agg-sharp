@@ -130,10 +130,10 @@ namespace MatterHackers.Agg
 
 		static public void shorten_path(VertexSequence vs, double s, int closed)
 		{
-			if (s > 0.0 && vs.size() > 1)
+			if (s > 0.0 && vs.Count > 1)
 			{
 				double d;
-				int n = (int)(vs.size() - 2);
+				int n = (int)(vs.Count - 2);
 				while (n != 0)
 				{
 					d = vs[n].dist;
@@ -142,13 +142,13 @@ namespace MatterHackers.Agg
 					s -= d;
 					--n;
 				}
-				if (vs.size() < 2)
+				if (vs.Count < 2)
 				{
-					vs.remove_all();
+					vs.Clear();
 				}
 				else
 				{
-					n = (int)vs.size() - 1;
+					n = (int)vs.Count - 1;
 					VertexDistance prev = vs[n - 1];
 					VertexDistance last = vs[n];
 					d = (prev.dist - s) / prev.dist;

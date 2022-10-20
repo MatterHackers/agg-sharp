@@ -300,7 +300,7 @@ namespace MatterHackers.MarchingSquares
 			foreach (LineSegmentFloat lineSegment in LineSegments)
 			{
 				VertexStorage m_LinesToDraw = new VertexStorage();
-				m_LinesToDraw.remove_all();
+				m_LinesToDraw.Clear();
 				m_LinesToDraw.MoveTo(lineSegment.start.X, lineSegment.start.Y);
 				m_LinesToDraw.LineTo(lineSegment.end.X, lineSegment.end.Y);
 				Stroke StrockedLineToDraw = new Stroke(m_LinesToDraw, .25);
