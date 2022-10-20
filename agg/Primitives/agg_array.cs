@@ -306,11 +306,6 @@ namespace MatterHackers.Agg
 			currentSize += size;
 		}
 
-		public int size()
-		{
-			return currentSize;
-		}
-
 		public DataType this[int i]
 		{
 			get
@@ -340,11 +335,6 @@ namespace MatterHackers.Agg
 		public DataType[] data()
 		{
 			return internalArray;
-		}
-
-		public void remove_all()
-		{
-			currentSize = 0;
 		}
 
 		public void clear()

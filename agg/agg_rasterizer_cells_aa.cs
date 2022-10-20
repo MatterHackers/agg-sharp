@@ -349,7 +349,7 @@ namespace MatterHackers.Agg
 
 			// Convert the Y-histogram into the array of starting indexes
 			int start = 0;
-			int SortedYSize = m_sorted_y.size();
+			int SortedYSize = m_sorted_y.Count;
 			for (int i = 0; i < SortedYSize; i++)
 			{
 				int v = sortedYData[i].start;

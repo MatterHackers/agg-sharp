@@ -139,7 +139,7 @@ namespace SmartSweeper
 			{
 				//plot the graph for the best fitness
 				double x = 0;
-				m_BestPathToDraw.remove_all();
+				m_BestPathToDraw.Clear();
 				m_BestPathToDraw.MoveTo(0, 0);
 				for (int i = 0; i < m_vecBestFitness.Count; ++i)
 				{
@@ -152,7 +152,7 @@ namespace SmartSweeper
 				//plot the graph for the average fitness
 				x = 0;
 
-				m_AveragePathToDraw.remove_all();
+				m_AveragePathToDraw.Clear();
 				m_AveragePathToDraw.MoveTo(0, 0);
 				for (int i = 0; i < m_vecAvFitness.Count; ++i)
 				{
@@ -258,7 +258,7 @@ namespace SmartSweeper
 					WorldTransform(mineVB, m_vecMines[i]);
 
 					//draw the mines
-					m_LinesToDraw.remove_all();
+					m_LinesToDraw.Clear();
 					m_LinesToDraw.MoveTo(mineVB[0].X, mineVB[0].Y);
 					for (int vert = 1; vert < mineVB.Count; ++vert)
 					{
@@ -283,7 +283,7 @@ namespace SmartSweeper
 					Sweepers[i].WorldTransform(sweeperVB);
 
 					//draw the sweeper left track
-					m_LinesToDraw.remove_all();
+					m_LinesToDraw.Clear();
 					m_LinesToDraw.MoveTo(sweeperVB[0].X, sweeperVB[0].Y);
 					for (int vert = 1; vert < 4; ++vert)
 					{
@@ -298,7 +298,7 @@ namespace SmartSweeper
 					renderer.Render(m_LinesToDraw, currentColor);
 
 					//draw the sweeper right track
-					m_LinesToDraw.remove_all();
+					m_LinesToDraw.Clear();
 					m_LinesToDraw.MoveTo(sweeperVB[4].X, sweeperVB[4].Y);
 					for (int vert = 5; vert < 8; ++vert)
 					{
@@ -307,7 +307,7 @@ namespace SmartSweeper
 					renderer.Render(m_LinesToDraw, currentColor);
 
 					// draw the body
-					m_LinesToDraw.remove_all();
+					m_LinesToDraw.Clear();
 					m_LinesToDraw.MoveTo(sweeperVB[8].X, sweeperVB[8].Y);
 					m_LinesToDraw.LineTo(sweeperVB[9].X, sweeperVB[9].Y);
 					m_LinesToDraw.MoveTo(sweeperVB[10].X, sweeperVB[10].Y);

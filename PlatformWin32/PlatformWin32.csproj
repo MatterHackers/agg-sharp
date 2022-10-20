@@ -26,7 +26,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-		<PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.4.336902">
+		<PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.4.346202">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
 		<PackageReference Condition="$(UsingOpenTK4)" Include="OpenTK.WinForms" Version="4.0.0-pre.6" />

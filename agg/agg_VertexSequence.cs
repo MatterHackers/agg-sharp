@@ -64,9 +64,9 @@ namespace MatterHackers.Agg
 	{
 		public override void add(VertexDistance val)
 		{
-			if (base.size() > 1)
+			if (base.Count > 1)
 			{
-				if (!Array[base.size() - 2].IsEqual(Array[base.size() - 1]))
+				if (!Array[base.Count - 2].IsEqual(Array[base.Count - 1]))
 				{
 					base.RemoveLast();
 				}
@@ -82,19 +82,19 @@ namespace MatterHackers.Agg
 
 		public void close(bool closed)
 		{
-			while (base.size() > 1)
+			while (base.Count > 1)
 			{
-				if (Array[base.size() - 2].IsEqual(Array[base.size() - 1])) break;
-				VertexDistance t = this[base.size() - 1];
+				if (Array[base.Count - 2].IsEqual(Array[base.Count - 1])) break;
+				VertexDistance t = this[base.Count - 1];
 				base.RemoveLast();
 				modify_last(t);
 			}
 
 			if (closed)
 			{
-				while (base.size() > 1)
+				while (base.Count > 1)
 				{
-					if (Array[base.size() - 1].IsEqual(Array[0])) break;
+					if (Array[base.Count - 1].IsEqual(Array[0])) break;
 					base.RemoveLast();
 				}
 			}

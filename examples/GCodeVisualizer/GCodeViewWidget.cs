@@ -284,7 +284,7 @@ namespace MatterHackers.GCodeVisualizer
 			Vector2 gridOffset = gridCenterMm - gridSizeMm / 2;
 			if (gridSizeMm.X > 0 && gridSizeMm.Y > 0)
 			{
-				grid.remove_all();
+				grid.Clear();
 				for (int y = 0; y <= gridSizeMm.Y; y += 10)
 				{
 					Vector2 start = new Vector2(0, y) + gridOffset;

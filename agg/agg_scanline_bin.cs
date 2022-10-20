@@ -148,7 +148,7 @@ namespace MatterHackers.Agg
 		}
 	};
 
-	/*
+    /*
 //===========================================================scanline32_bin
 class scanline32_bin
 {
@@ -192,7 +192,7 @@ public:
 	void reset(int min_x, int max_x)
 	{
 		m_last_x = 0x7FFFFFF0;
-		m_spans.remove_all();
+		m_spans.Clear;
 	}
 
 	//--------------------------------------------------------------------
@@ -239,7 +239,7 @@ public:
 	void reset_spans()
 	{
 		m_last_x = 0x7FFFFFF0;
-		m_spans.remove_all();
+		m_spans.Clear;
 	}
 
 	//--------------------------------------------------------------------

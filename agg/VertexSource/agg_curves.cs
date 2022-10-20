@@ -335,14 +335,14 @@ namespace MatterHackers.Agg.VertexSource
 
 		public void reset()
 		{
-			m_points.remove_all(); m_count = 0;
+			m_points.Clear(); m_count = 0;
 		}
 
 		public void init(double x1, double y1,
 				  double cx, double cy,
 				  double x2, double y2)
 		{
-			m_points.remove_all();
+			m_points.Clear();
 			m_distance_tolerance_square = 0.5 / m_approximation_scale;
 			m_distance_tolerance_square *= m_distance_tolerance_square;
 			bezier(x1, y1, cx, cy, x2, y2);
@@ -389,7 +389,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public IEnumerable<VertexData> Vertices()
 		{
-			for (int i = 0; i < m_points.size(); i++)
+			for (int i = 0; i < m_points.Count; i++)
 			{
 				if (i == 0)
 				{
@@ -411,7 +411,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
 		{
-			if (m_count >= m_points.size())
+			if (m_count >= m_points.Count)
 			{
 				x = 0;
 				y = 0;
@@ -818,7 +818,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public void reset()
 		{
-			m_points.remove_all(); m_count = 0;
+			m_points.Clear(); m_count = 0;
 		}
 
 		public void init(double x1, double y1,
@@ -826,7 +826,7 @@ namespace MatterHackers.Agg.VertexSource
 				  double x3, double y3,
 				  double x4, double y4)
 		{
-			m_points.remove_all();
+			m_points.Clear();
 			m_distance_tolerance_square = 0.5 / m_approximation_scale;
 			m_distance_tolerance_square *= m_distance_tolerance_square;
 			bezier(x1, y1, x2, y2, x3, y3, x4, y4);
@@ -885,7 +885,7 @@ namespace MatterHackers.Agg.VertexSource
 			yield return vertexData;
 
 			vertexData.command = FlagsAndCommand.LineTo;
-			for (int i = 1; i < m_points.size(); i++)
+			for (int i = 1; i < m_points.Count; i++)
 			{
 				vertexData.position = m_points[i];
 				yield return vertexData;
@@ -903,7 +903,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
 		{
-			if (m_count >= m_points.size())
+			if (m_count >= m_points.Count)
 			{
 				x = 0;
 				y = 0;

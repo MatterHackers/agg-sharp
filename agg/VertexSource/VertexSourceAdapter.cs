@@ -25,7 +25,7 @@ namespace MatterHackers.Agg.VertexSource
 	//------------------------------------------------------------null_markers
 	public struct null_markers : IMarkers
 	{
-		public void remove_all()
+		public void Clear()
 		{
 		}
 
@@ -119,7 +119,7 @@ namespace MatterHackers.Agg.VertexSource
 				switch (m_status)
 				{
 					case status.initial:
-						markers.remove_all();
+						markers.Clear();
 						m_last_cmd = VertexSource.vertex(out m_start_x, out m_start_y);
 						m_status = status.accumulate;
 						goto case status.accumulate;

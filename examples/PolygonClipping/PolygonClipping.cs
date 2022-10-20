@@ -385,7 +385,7 @@ namespace MatterHackers.Agg
 
 		private void make_arrows(VertexStorage ps)
 		{
-			ps.remove_all();
+			ps.Clear();
 
 			ps.MoveTo(1330.599999999999909, 1282.399999999999864);
 			ps.LineTo(1377.400000000000091, 1282.399999999999864);
