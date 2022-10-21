@@ -22,28 +22,28 @@ using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using static System.Net.Mime.MediaTypeNames;
 
-namespace Agg.SvgTools
+namespace MatterHackers.Agg.SvgTools
 {
-    public class SvgParser
-    {
-        public List<ColoredVertexSource> Items { get; set; } = new List<ColoredVertexSource>();
+    public record ColoredVertexSource(IVertexSource VertexSource, Color Color);
 
-        public SvgParser(string filePath, double scale, int width = -1, int height = -1)
-            : this(File.OpenRead(filePath), scale, width, height)
+    public static class SvgParser
+    {
+        public static List<ColoredVertexSource> Parse(string filePath, double scale, int width = -1, int height = -1)
         {
+            using (var stream = File.OpenRead(filePath))
+            {
+                return Parse(stream, scale, width, height);
+            }
         }
 
-        public SvgParser(Stream stream, double scale, int width = -1, int height = -1)
+        public static List<ColoredVertexSource> Parse(Stream stream, double scale, int width = -1, int height = -1)
         {
             var svgDocument = new HtmlDocument();
             svgDocument.Load(stream);
 
             // get the viewBox
             var viewBox = svgDocument.DocumentNode.SelectSingleNode("//svg").Attributes["viewBox"].Value;
-
-            Scale = scale;
 
             if (!string.IsNullOrEmpty(viewBox))
             {
@@ -60,12 +60,26 @@ namespace Agg.SvgTools
                 }
             }
 
+            var items = new List<ColoredVertexSource>();
+
             // process all the paths and polygons
             foreach (var pathNode in svgDocument.DocumentNode.SelectNodes("//path"))
             {
                 var pathDString = pathNode.Attributes["d"].Value;
                 var vertexStorage = new VertexStorage(pathDString);
-                Items.Add(new ColoredVertexSource() { VertexSource = vertexStorage, Color = Color.Black });
+
+                // get the fill color
+                var fillColor = Color.Black;
+                if (pathNode.Attributes["fill"] != null)
+                {
+                    var fillString = pathNode.Attributes["fill"].Value;
+                    if (fillString.StartsWith("#"))
+                    {
+                        fillColor = new Color(fillString);
+                    }
+                }
+
+                items.Add(new ColoredVertexSource(vertexStorage, fillColor));
             }
 
             var fastSimpleNumbers = true;
@@ -93,10 +107,10 @@ namespace Agg.SvgTools
 
                 vertexStorage.ClosePolygon();
 
-                Items.Add(new ColoredVertexSource() { VertexSource = vertexStorage, Color = Color.Black });
+                items.Add(new ColoredVertexSource(vertexStorage, Color.Black));
             }
 
-            stream.Dispose();
+            return items;
         }
 
         private static Vector2 Reflect(Vector2 point, Vector2 mirror)
@@ -379,14 +393,6 @@ namespace Agg.SvgTools
 
                 lastXY = curXY;
             }
-        }
-
-        public double Scale { get; set; } = 0.7;
-
-        public class ColoredVertexSource
-        {
-            public Color Color { get; set; }
-            public IVertexSource VertexSource { get; set; }
         }
     }
 }
