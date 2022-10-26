@@ -52,7 +52,7 @@ namespace MatterHackers.Agg
 			transform *= Affine.NewTranslation(Width / 20, Height / 20);
 
 			// draw all the triangles
-			var index = 0;
+			var colorIndex = 0;
 			foreach (var poly in Polygons)
 			{
 				var numPoints = poly.Count;
@@ -74,16 +74,19 @@ namespace MatterHackers.Agg
 						}
 					}
 				
-					graphics2D.Render(new VertexSourceApplyTransform(vertexStorage, transform), 0, 0, colors[index].WithAlpha(190));
+					graphics2D.Render(new VertexSourceApplyTransform(vertexStorage, transform), 0, 0, colors[colorIndex++].WithAlpha(190));
 				}
 				else if (numPoints > 1)
 				{
 					var p0 = poly[numPoints - 1];
 					var p1 = poly[numPoints - 2];
-					graphics2D.Line(transform.Transform(p0), transform.Transform(p1), colors[index]);
+					graphics2D.Line(transform.Transform(p0), transform.Transform(p1), Color.Green);
 				}
-
-				index++;
+				else if (numPoints == 1)
+				{
+                    var p0 = poly[numPoints - 1];
+                    graphics2D.Circle(transform.Transform(p0), 5, Color.Red);
+                }
 			}
 
 			base.OnDraw(graphics2D);

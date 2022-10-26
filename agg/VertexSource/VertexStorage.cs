@@ -764,7 +764,7 @@ namespace MatterHackers.Agg.VertexSource
 
 			set
 			{
-				SvgParser.ParseSvgDString(this, value);
+                this.ParseSvgDString(value);
 			}
 		}
 

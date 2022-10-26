@@ -59,7 +59,7 @@ namespace MatterHackers.Agg.UI
 
 		public void LoadSvg(Stream stream, double scale, int width = -1, int height = -1)
 		{
-			items = SvgParser.Parse(stream, scale, width, height);
+			items = SvgParser.Parse(stream, false);
 
 			this.Scale = scale;
 

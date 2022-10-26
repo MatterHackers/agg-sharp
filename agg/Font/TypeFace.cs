@@ -285,7 +285,7 @@ namespace MatterHackers.Agg.Font
 
 			if (newGlyph.glyphData is VertexStorage storage)
 			{
-				SvgParser.ParseSvgDString(storage, dString);
+                storage.ParseSvgDString(dString);
 			}
 
 			return newGlyph;

@@ -55,7 +55,10 @@ namespace MatterHackers.Agg.UI
 
 		public override void CopyBackBufferToScreen(Graphics displayGraphics)
 		{
-			var intRect = new RectangleInt(0, 0, (int)AggSystemWindow.Width, (int)AggSystemWindow.Height);
+			var intRect = new RectangleInt(0,
+				0,
+				Math.Min(bitmapBackBuffer.windowsBitmap.Width, (int)AggSystemWindow.Width),
+                Math.Min(bitmapBackBuffer.windowsBitmap.Height, (int)AggSystemWindow.Height));
 			bitmapBackBuffer.UpdateHardwareSurface(intRect);
 
 			if (AggContext.OperatingSystem != OSType.Windows)

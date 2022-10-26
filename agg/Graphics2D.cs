@@ -23,9 +23,14 @@ using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using Typography.OpenFont;
 
 namespace MatterHackers.Agg
 {
+    public record ColoredVertexSource(IVertexSource VertexSource, Color Color);
+
     public interface IStyleHandler
     {
         Color color(int style);
@@ -105,6 +110,13 @@ namespace MatterHackers.Agg
         }
 
         public abstract int Width { get; }
+
+        public static void AssertDebugNotDefined()
+        {
+#if DEBUG
+            throw new Exception("DEBUG is defined and should not be!");
+#endif
+        }
 
         public static double GetScallingBaseOnMaxSize(ImageBuffer image, Vector2 maxSize, out Vector2 size)
         {
@@ -398,6 +410,55 @@ namespace MatterHackers.Agg
             }
         }
 
+
+        /// <summary>
+        /// Renders the given vector source making scaled to fit the given rect. Scalling will remain proportional.
+        /// If the vector source is smaller in one dimension it will be offset based on the position ratio
+        /// </summary>
+        /// <param name="source">The vector source to render</param>
+        /// <param name="fitRect">The rect to scale to fit within</param>
+        /// <param name="xPostionRatio">The ratio of the width to offset in x if not fully utilized</param>
+        /// <param name="yPositionRatio">The ratio of the height to offset in y if not fully utilized</param>
+        /// <param name="debugShowBounds">Render an outline of the total rectangle</param>
+        public void RenderInRect(List<ColoredVertexSource> source, RectangleDouble fitRect, double xPostionRatio = 0, double yPositionRatio = 0, bool debugShowBounds = false)
+        {
+            RectangleDouble totalBounds = RectangleDouble.ZeroIntersection;
+            foreach (var colorVertices in source)
+            {
+                var bounds = colorVertices.VertexSource.GetBounds();
+                totalBounds.ExpandToInclude(bounds);
+            }
+            
+            foreach (var colorVertices in source)
+            {
+                double scale;
+                if (totalBounds.Width > fitRect.Width
+                    || totalBounds.Height > fitRect.Height)
+                {
+                    // we need to scale down
+                    scale = Math.Min(fitRect.Width / totalBounds.Width, fitRect.Height / totalBounds.Height);
+                }
+                else
+                {
+                    // we need to scale up
+                    scale = Math.Max(fitRect.Width / totalBounds.Width, fitRect.Height / totalBounds.Height);
+                }
+
+                // zero out the offset
+                var transform = Affine.NewTranslation(-totalBounds.Left, -totalBounds.Bottom);
+                // scale
+                transform *= Affine.NewScaling(scale);
+                // offset to the fit rect
+                transform *= Affine.NewTranslation(fitRect.Left, fitRect.Bottom);
+                this.Render(new FlattenCurves(new VertexSourceApplyTransform(colorVertices.VertexSource, transform)), colorVertices.Color);
+            }
+
+            if (debugShowBounds)
+            {
+                this.Rectangle(fitRect, Color.Red);
+            }
+        }
+
         public void RenderScale(IImageByte image, double x, double y, double sizeX)
         {
             var ratio = sizeX / image.Width;
@@ -411,13 +472,6 @@ namespace MatterHackers.Agg
         {
             affineTransformStack.Pop();
             affineTransformStack.Push(value);
-        }
-
-        public static void AssertDebugNotDefined()
-        {
-#if DEBUG
-            throw new Exception("DEBUG is defined and should not be!");
-#endif
         }
     }
 }
