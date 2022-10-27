@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace MatterHackers.Agg.SvgTools
 {
@@ -124,6 +125,82 @@ namespace MatterHackers.Agg.SvgTools
             }
 
             return items;
+        }
+
+        public static string GetSvgDString(this IVertexSource vertexSource)
+        {
+            var dstring = new StringBuilder();
+            var pendingPositions = new List<Vector2>();
+            foreach (var vertexData in vertexSource.Vertices())
+            {
+                if (vertexData.IsStop)
+                {
+                    break;
+                }
+                else if (vertexData.IsMoveTo)
+                {
+                    pendingPositions.Add(vertexData.position);
+                }
+                else if (vertexData.IsClose)
+                {
+                    AppendPositions(dstring, pendingPositions, closePath: true);
+                }
+                else // Assuming this is a line to. if (vertexData.IsLineTo)
+                {
+                    pendingPositions.Add(vertexData.position);
+                }
+            }
+
+            if (pendingPositions.Count > 0)
+            {
+                AppendPositions(dstring, pendingPositions);
+            }
+
+            return dstring.ToString();
+        }
+
+        private static void AppendPositions(StringBuilder dstring, List<Vector2> pendingPositions, bool closePath = false, bool reverse = false)
+        {
+            bool first = true;
+
+            if (reverse)
+            {
+                // reverse the output so it is wound correctly for SVG
+                for (int i = pendingPositions.Count - 1; i >= 0; i--)
+                {
+                    if (first)
+                    {
+                        first = false;
+                        dstring.Append($"M {pendingPositions[i].X:0.###} {pendingPositions[i].Y:0.###}");
+                    }
+                    else
+                    {
+                        dstring.Append($"L {pendingPositions[i].X:0.###} {pendingPositions[i].Y:0.###}");
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < pendingPositions.Count; i++)
+                {
+                    if (first)
+                    {
+                        first = false;
+                        dstring.Append($"M {pendingPositions[i].X:0.###} {pendingPositions[i].Y:0.###}");
+                    }
+                    else
+                    {
+                        dstring.Append($"L {pendingPositions[i].X:0.###} {pendingPositions[i].Y:0.###}");
+                    }
+                }
+            }
+
+            if (closePath)
+            {
+                dstring.Append("Z");
+            }
+
+            pendingPositions.Clear();
         }
 
         public static void ParseSvgDString(this VertexStorage vertexStorage, string dString)
