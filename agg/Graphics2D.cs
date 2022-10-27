@@ -417,11 +417,14 @@ namespace MatterHackers.Agg
         /// </summary>
         /// <param name="source">The vector source to render</param>
         /// <param name="fitRect">The rect to scale to fit within</param>
-        /// <param name="xPostionRatio">The ratio of the width to offset in x if not fully utilized</param>
+        /// <param name="xPositionRatio">The ratio of the width to offset in x if not fully utilized</param>
         /// <param name="yPositionRatio">The ratio of the height to offset in y if not fully utilized</param>
         /// <param name="debugShowBounds">Render an outline of the total rectangle</param>
-        public void RenderInRect(List<ColoredVertexSource> source, RectangleDouble fitRect, double xPostionRatio = 0, double yPositionRatio = 0, bool debugShowBounds = false)
+        public void RenderInRect(List<ColoredVertexSource> source, RectangleDouble fitRect, double xPositionRatio = 0, double yPositionRatio = 0, double debugBoundsWidth = 0)
         {
+            xPositionRatio = Math.Max(0, Math.Min(1, xPositionRatio));
+            yPositionRatio = Math.Max(0, Math.Min(1, yPositionRatio));
+
             RectangleDouble totalBounds = RectangleDouble.ZeroIntersection;
             foreach (var colorVertices in source)
             {
@@ -450,12 +453,17 @@ namespace MatterHackers.Agg
                 transform *= Affine.NewScaling(scale);
                 // offset to the fit rect
                 transform *= Affine.NewTranslation(fitRect.Left, fitRect.Bottom);
+
+                // do we need to move it to account for position ratios
+                var scaledBounds = totalBounds * scale;
+                transform *= Affine.NewTranslation((fitRect.Width - scaledBounds.Width) * xPositionRatio, (fitRect.Height - scaledBounds.Height) * yPositionRatio);
+
                 this.Render(new FlattenCurves(new VertexSourceApplyTransform(colorVertices.VertexSource, transform)), colorVertices.Color);
             }
 
-            if (debugShowBounds)
+            if (debugBoundsWidth > 0)
             {
-                this.Rectangle(fitRect, Color.Red);
+                this.Rectangle(fitRect, Color.Red, debugBoundsWidth);
             }
         }
 
