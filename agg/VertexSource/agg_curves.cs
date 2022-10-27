@@ -617,22 +617,22 @@ namespace MatterHackers.Agg.VertexSource
 			m_num_steps = 0; m_step = -1;
 		}
 
-		public void init(double x1, double y1,
-				  double cx1, double cy1,
-				  double cx2, double cy2,
-				  double x2, double y2)
+		public void init(double xStart, double yStart,
+				  double xContorl1, double yControl1,
+				  double xControl2, double yControl2,
+				  double xEnd, double yEnd)
 		{
-			m_start_x = x1;
-			m_start_y = y1;
-			m_end_x = x2;
-			m_end_y = y2;
+			m_start_x = xStart;
+			m_start_y = yStart;
+			m_end_x = xEnd;
+			m_end_y = yEnd;
 
-			double dx1 = cx1 - x1;
-			double dy1 = cy1 - y1;
-			double dx2 = cx2 - cx1;
-			double dy2 = cy2 - cy1;
-			double dx3 = x2 - cx2;
-			double dy3 = y2 - cy2;
+			double dx1 = xContorl1 - xStart;
+			double dy1 = yControl1 - yStart;
+			double dx2 = xControl2 - xContorl1;
+			double dy2 = yControl2 - yControl1;
+			double dx3 = xEnd - xControl2;
+			double dy3 = yEnd - yControl2;
 
 			double len = (Math.Sqrt(dx1 * dx1 + dy1 * dy1) +
 						  Math.Sqrt(dx2 * dx2 + dy2 * dy2) +
@@ -654,17 +654,17 @@ namespace MatterHackers.Agg.VertexSource
 			double pre4 = 6.0 * subdivide_step2;
 			double pre5 = 6.0 * subdivide_step3;
 
-			double tmp1x = x1 - cx1 * 2.0 + cx2;
-			double tmp1y = y1 - cy1 * 2.0 + cy2;
+			double tmp1x = xStart - xContorl1 * 2.0 + xControl2;
+			double tmp1y = yStart - yControl1 * 2.0 + yControl2;
 
-			double tmp2x = (cx1 - cx2) * 3.0 - x1 + x2;
-			double tmp2y = (cy1 - cy2) * 3.0 - y1 + y2;
+			double tmp2x = (xContorl1 - xControl2) * 3.0 - xStart + xEnd;
+			double tmp2y = (yControl1 - yControl2) * 3.0 - yStart + yEnd;
 
-			m_saved_fx = m_fx = x1;
-			m_saved_fy = m_fy = y1;
+			m_saved_fx = m_fx = xStart;
+			m_saved_fy = m_fy = yStart;
 
-			m_saved_dfx = m_dfx = (cx1 - x1) * pre1 + tmp1x * pre2 + tmp2x * subdivide_step3;
-			m_saved_dfy = m_dfy = (cy1 - y1) * pre1 + tmp1y * pre2 + tmp2y * subdivide_step3;
+			m_saved_dfx = m_dfx = (xContorl1 - xStart) * pre1 + tmp1x * pre2 + tmp2x * subdivide_step3;
+			m_saved_dfy = m_dfy = (yControl1 - yStart) * pre1 + tmp1y * pre2 + tmp2y * subdivide_step3;
 
 			m_saved_ddfx = m_ddfx = tmp1x * pre4 + tmp2x * pre5;
 			m_saved_ddfy = m_ddfy = tmp1y * pre4 + tmp2y * pre5;
@@ -1301,18 +1301,18 @@ namespace MatterHackers.Agg.VertexSource
 			m_curve_div.reset();
 		}
 
-		public void init(double x1, double y1,
-			   double cx1, double cy1,
-			   double cx2, double cy2,
-			   double x2, double y2)
+		public void init(double xStart, double yStart,
+			   double xControl1, double yControl1,
+			   double xControl2, double yControl2,
+			   double xEnd, double yEnd)
 		{
 			if (m_approximation_method == Curves.CurveApproximationMethod.curve_inc)
 			{
-				m_curve_inc.init(x1, y1, cx1, cy1, cx2, cy2, x2, y2);
+				m_curve_inc.init(xStart, yStart, xControl1, yControl1, xControl2, yControl2, xEnd, yEnd);
 			}
 			else
 			{
-				m_curve_div.init(x1, y1, cx1, cy1, cx2, cy2, x2, y2);
+				m_curve_div.init(xStart, yStart, xControl1, yControl1, xControl2, yControl2, xEnd, yEnd);
 			}
 		}
 

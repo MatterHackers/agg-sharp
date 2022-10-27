@@ -1,7 +1,6 @@
-using Agg.SvgTools;
+using MatterHackers.Agg.SvgTools;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
@@ -21,7 +20,6 @@ using Newtonsoft.Json.Linq;
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
-using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -766,7 +764,7 @@ namespace MatterHackers.Agg.VertexSource
 
 			set
 			{
-				SvgParser.ParseSvgDString(this, value);
+                this.ParseSvgDString(value);
 			}
 		}
 

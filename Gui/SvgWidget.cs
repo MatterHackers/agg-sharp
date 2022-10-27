@@ -29,11 +29,9 @@ either expressed or implied, of the FreeBSD Project.
 
 using System.Collections.Generic;
 using System.IO;
-using System.Xml.Linq;
-using MatterHackers.Agg;
+using MatterHackers.Agg.SvgTools;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
-using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
@@ -43,43 +41,27 @@ namespace MatterHackers.Agg.UI
 	{
 		List<ColoredVertexSource> items = new List<ColoredVertexSource>();
 
-		private static XNamespace svg = "http://www.w3.org/2000/svg";
-
 		private ImageBuffer imageBuffer;
 
 		public double Scale { get; set; } = 0.7;
 
-		public SvgWidget(string filePath, double scale, int width = -1, int height = -1)
-			: this (File.OpenRead(filePath), scale, width, height)
+        public SvgWidget()
 		{
 		}
 
-		public SvgWidget(Stream stream, double scale, int width = -1, int height = -1)
+        public SvgWidget(string filePath, double scale, int width = -1, int height = -1)
 		{
-			var root = XElement.Load(stream);
+			using (var stream = File.OpenRead(filePath))
+			{
+				LoadSvg(stream, scale, width, height);
+			}
+		}
+
+		public void LoadSvg(Stream stream, double scale, int width = -1, int height = -1)
+		{
+			items = SvgParser.Parse(stream, false);
 
 			this.Scale = scale;
-
-			string viewBox = (string)root.Attribute("viewBox");
-			if (!string.IsNullOrEmpty(viewBox))
-			{
-				var segments = viewBox.Split(' ');
-
-				if (width == -1)
-				{
-					int.TryParse(segments[2], out width);
-				}
-
-				if (height == -1)
-				{
-					int.TryParse(segments[3], out height);
-				}
-			}
-
-			foreach (var elem in root.Elements(svg + "g"))
-			{
-				ProcTree(elem);
-			}
 
 			width = (int)(width * this.Scale);
 			height = (int)(height * this.Scale);
@@ -97,72 +79,6 @@ namespace MatterHackers.Agg.UI
 			}
 
 			imageBuffer.FlipY();
-
-			stream.Dispose();
-			//this.source = new PathStorage(svgDString);
-		}
-
-		private void ProcTree(XElement g)
-		{
-			foreach (var elem in g.Elements())
-			{
-				switch (elem.Name.LocalName)
-				{
-					case "path":
-					case "polygon":
-
-						string htmlColor = ((string)elem.Attribute("style"))?.Replace("fill:", "").Replace(";", "") ?? "#999";
-
-						if (elem.Name.LocalName == "polygon")
-						{
-							var path = new VertexStorage();
-
-							string pointsLine = ((string)elem.Attribute("points"))?.Trim();
-
-							var segments = pointsLine.Split(' ');
-
-							bool firstMove = true;
-							foreach(var segment in segments)
-							{
-								var point = segment.Split(',');
-
-								if (firstMove)
-								{
-									path.MoveTo(new Vector2(double.Parse(point[0]), double.Parse(point[1])));
-									firstMove = false;
-								}
-								else
-								{
-									path.LineTo(new Vector2(double.Parse(point[0]), double.Parse(point[1])));
-								}
-							}
-
-							path.ClosePolygon();
-
-							items.Add(new ColoredVertexSource()
-							{
-								VertexSource = path,
-								Color = new Color(htmlColor)
-							});
-
-						}
-						else
-						{
-							string dString = (string)elem.Attribute("d");
-							items.Add(new ColoredVertexSource()
-							{
-								VertexSource = new VertexStorage(dString),
-								Color = new Color(htmlColor)
-							});
-						}
-
-						break;
-
-					case "g":
-						ProcTree(elem);
-						break;
-				}
-			}
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)
@@ -170,12 +86,6 @@ namespace MatterHackers.Agg.UI
 			graphics2D.Render(imageBuffer, Point2D.Zero);
 
 			base.OnDraw(graphics2D);
-		}
-
-		public class ColoredVertexSource
-		{
-			public IVertexSource VertexSource { get; set; }
-			public Color Color { get; set; }
 		}
 	}
 }

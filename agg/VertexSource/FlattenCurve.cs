@@ -165,11 +165,14 @@ namespace MatterHackers.Agg.VertexSource
 					case ShapePath.FlagsAndCommand.Curve4:
 						{
 							vertexDataEnumerator.MoveNext();
-							VertexData vertexDataControl = vertexDataEnumerator.Current;
+							var vertexDataControl2 = vertexDataEnumerator.Current;
 							vertexDataEnumerator.MoveNext();
-							VertexData vertexDataEnd = vertexDataEnumerator.Current;
-							m_curve4.init(lastPosition.position.X, lastPosition.position.Y, vertexData.position.X, vertexData.position.Y, vertexDataControl.position.X, vertexDataControl.position.Y, vertexDataEnd.position.X, vertexDataEnd.position.Y);
-							IEnumerator<VertexData> curveIterator = m_curve4.Vertices().GetEnumerator();
+							var vertexDataEnd = vertexDataEnumerator.Current;
+							m_curve4.init(lastPosition.position.X, lastPosition.position.Y,
+								vertexData.position.X, vertexData.position.Y,
+								vertexDataControl2.position.X, vertexDataControl2.position.Y,
+								vertexDataEnd.position.X, vertexDataEnd.position.Y);
+							var curveIterator = m_curve4.Vertices().GetEnumerator();
 							curveIterator.MoveNext(); // First call returns path_cmd_move_to
 							while (!ShapePath.is_stop(vertexData.command))
 							{

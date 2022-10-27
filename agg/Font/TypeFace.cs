@@ -17,7 +17,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using Agg.SvgTools;
+using MatterHackers.Agg.SvgTools;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
@@ -285,7 +285,7 @@ namespace MatterHackers.Agg.Font
 
 			if (newGlyph.glyphData is VertexStorage storage)
 			{
-				SvgParser.ParseSvgDString(storage, dString);
+                storage.ParseSvgDString(dString);
 			}
 
 			return newGlyph;

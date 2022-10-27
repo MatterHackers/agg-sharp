@@ -326,7 +326,7 @@ namespace MatterHackers.Agg
 				}
 			}
 
-			public bool is_solid(int style)
+			public bool IsSolid(int style)
 			{
 				return false;
 			}
@@ -336,7 +336,7 @@ namespace MatterHackers.Agg
 				return new Color(0, 0, 0, 0);
 			}
 
-			public void generate_span(Color[] span, int spanIndex, int x, int y, int len, int style)
+			public void GenerateSpan(Color[] span, int spanIndex, int x, int y, int len, int style)
 			{
 				m_triangles[style].generate(span, spanIndex, x, y, len);
 			}
