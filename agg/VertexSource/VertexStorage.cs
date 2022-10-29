@@ -759,72 +759,13 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			get
 			{
-				return GetSvgDString();
+				return this.GetSvgDString();
 			}
 
 			set
 			{
-                this.ParseSvgDString(value);
+                this.ParseSvgDString(value); 
 			}
-		}
-
-
-		public string GetSvgDString()
-		{
-			var dstring = new StringBuilder();
-			var pendingPositions = new List<Vector2>();
-			foreach (var vertexData in this.Vertices())
-			{
-				if (vertexData.IsStop)
-				{
-					break;
-				}
-				else if (vertexData.IsMoveTo)
-				{
-					pendingPositions.Add(vertexData.position);
-				}
-				else if (vertexData.IsClose)
-				{
-					ReverseAndAdd(dstring, pendingPositions, closePath: true);
-				}
-				else // Assuming this is a line to. if (vertexData.IsLineTo)
-				{
-					pendingPositions.Add(vertexData.position);
-				}
-			}
-
-			if (pendingPositions.Count > 0)
-			{
-				ReverseAndAdd(dstring, pendingPositions);
-			}
-
-			return dstring.ToString();
-		}
-
-		private static void ReverseAndAdd(StringBuilder dstring, List<Vector2> pendingPositions, bool closePath = false)
-		{
-			// reverse the output so it is wound correctly for SVG
-			bool first = true;
-
-			for (int i = pendingPositions.Count - 1; i >= 0; i--)
-			{
-				if (first)
-				{
-					first = false;
-					dstring.Append($"M {pendingPositions[i].X:0.###} {pendingPositions[i].Y:0.###}");
-				}
-				else
-				{
-					dstring.Append($"L {pendingPositions[i].X:0.###} {pendingPositions[i].Y:0.###}");
-				}
-			}
-
-			if (closePath)
-			{
-				dstring.Append("Z");
-			}
-
-			pendingPositions.Clear();
 		}
 
 		public ShapePath.FlagsAndCommand prev_vertex(out double x, out double y)
