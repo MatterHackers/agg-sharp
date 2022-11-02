@@ -31,7 +31,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using MatterHackers.Agg;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform;
@@ -86,7 +85,17 @@ namespace MatterHackers.Agg.UI
 							return;
 						}
 
-						TreeView.SelectedNode = this;
+						// find the child that is a TreeExpandWidget
+						TreeExpandWidget treeExpandWidget = this.Descendants<TreeExpandWidget>(tew => tew.ContainsFirstUnderMouseRecursive()).FirstOrDefault();
+
+						// if there was a tree expand widget that got clicked (under the mouse)
+						if (treeExpandWidget != null)
+						{
+							// already selected and will have open / close processing done by the treeExpandWidget. Return without doing any double clicking.
+							return;
+                        }
+
+                        TreeView.SelectedNode = this;
 
 						if (this.Nodes.Count > 0)
 						{
