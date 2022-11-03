@@ -270,7 +270,16 @@ namespace MatterHackers.Agg.UI
 			return content?.Children.Where((c) => c is TreeNode).Count() ?? 0;
 		}
 
-		public bool AlwaysExpandable
+        public void ApplyRecursive(Action<TreeNode> action)
+        {
+            action(this);
+            foreach (var node in Nodes)
+            {
+                node.ApplyRecursive(action);
+            }
+        }
+
+        public bool AlwaysExpandable
 		{
 			get => expandWidget.AlwaysExpandable;
 			set => expandWidget.AlwaysExpandable = value;
@@ -529,6 +538,33 @@ namespace MatterHackers.Agg.UI
 		{
 			ImageChanged?.Invoke(this, null);
 		}
+
+        public string GetNodeKey()
+		{
+            var parentNames = new List<string>();
+            var parent = this;
+            while (parent != null)
+            {
+                parentNames.Add(parent.Text);
+                parent = parent.NodeParent;
+            }
+
+            parentNames.Reverse();
+
+            return string.Join("/", parentNames);
+        }
+    
+		public Dictionary<string, bool> GetExpandedStates()
+		{
+            var expandedStates = new Dictionary<string, bool>();
+            foreach (var node in Nodes)
+            {
+                expandedStates[node.GetNodeKey()] = node.Expanded;
+                expandedStates = expandedStates.Concat(node.GetExpandedStates()).ToDictionary(x => x.Key, x => x.Value);
+            }
+
+            return expandedStates;
+        }
 
 		public event EventHandler CheckedStateChanged;
 
