@@ -78,9 +78,12 @@ namespace MatterHackers.Agg.UI
 					}
 					else if (e.Clicks == 2)
 					{
+						var focusedChild = this.DescendantsAndSelf().Where(d => d.Focused).FirstOrDefault();
+
 						// Nodes can move around in the tree between clicks.
 						// Make sure we're hitting the same node twice.
-						if (this != hitNode)
+						if (this != hitNode
+							|| !(focusedChild is FlowLayoutWidget))
 						{
 							return;
 						}
@@ -270,12 +273,12 @@ namespace MatterHackers.Agg.UI
 			return content?.Children.Where((c) => c is TreeNode).Count() ?? 0;
 		}
 
-        public void ApplyRecursive(Action<TreeNode> action)
+        public void DescendantsAndSelf(Action<TreeNode> action)
         {
             action(this);
             foreach (var node in Nodes)
             {
-                node.ApplyRecursive(action);
+                node.DescendantsAndSelf(action);
             }
         }
 
