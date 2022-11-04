@@ -31,7 +31,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using MatterHackers.Agg;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform;
@@ -79,14 +78,27 @@ namespace MatterHackers.Agg.UI
 					}
 					else if (e.Clicks == 2)
 					{
+						var focusedChild = this.DescendantsAndSelf().Where(d => d.Focused).FirstOrDefault();
+
 						// Nodes can move around in the tree between clicks.
 						// Make sure we're hitting the same node twice.
-						if (this != hitNode)
+						if (this != hitNode
+							|| !(focusedChild is FlowLayoutWidget))
 						{
 							return;
 						}
 
-						TreeView.SelectedNode = this;
+						// find the child that is a TreeExpandWidget
+						TreeExpandWidget treeExpandWidget = this.Descendants<TreeExpandWidget>(tew => tew.ContainsFirstUnderMouseRecursive()).FirstOrDefault();
+
+						// if there was a tree expand widget that got clicked (under the mouse)
+						if (treeExpandWidget != null)
+						{
+							// already selected and will have open / close processing done by the treeExpandWidget. Return without doing any double clicking.
+							return;
+                        }
+
+                        TreeView.SelectedNode = this;
 
 						if (this.Nodes.Count > 0)
 						{
@@ -261,7 +273,16 @@ namespace MatterHackers.Agg.UI
 			return content?.Children.Where((c) => c is TreeNode).Count() ?? 0;
 		}
 
-		public bool AlwaysExpandable
+        public void DescendantsAndSelf(Action<TreeNode> action)
+        {
+            action(this);
+            foreach (var node in Nodes)
+            {
+                node.DescendantsAndSelf(action);
+            }
+        }
+
+        public bool AlwaysExpandable
 		{
 			get => expandWidget.AlwaysExpandable;
 			set => expandWidget.AlwaysExpandable = value;
@@ -520,6 +541,33 @@ namespace MatterHackers.Agg.UI
 		{
 			ImageChanged?.Invoke(this, null);
 		}
+
+        public string GetNodeKey()
+		{
+            var parentNames = new List<string>();
+            var parent = this;
+            while (parent != null)
+            {
+                parentNames.Add(parent.Text);
+                parent = parent.NodeParent;
+            }
+
+            parentNames.Reverse();
+
+            return string.Join("/", parentNames);
+        }
+    
+		public Dictionary<string, bool> GetExpandedStates()
+		{
+            var expandedStates = new Dictionary<string, bool>();
+            foreach (var node in Nodes)
+            {
+                expandedStates[node.GetNodeKey()] = node.Expanded;
+                expandedStates = expandedStates.Concat(node.GetExpandedStates()).ToDictionary(x => x.Key, x => x.Value);
+            }
+
+            return expandedStates;
+        }
 
 		public event EventHandler CheckedStateChanged;
 

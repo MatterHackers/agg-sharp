@@ -49,7 +49,8 @@ namespace MatterHackers.Agg.UI
 
 		public MenuItem(GuiWidget viewItem, string value = null)
 		{
-			Value = value;
+            Margin = new BorderDouble(8, 3);
+            Value = value;
 			HAnchor = HAnchor.Stretch | HAnchor.Fit;
 			VAnchor = VAnchor.Fit;
 			AddChild(viewItem);
@@ -76,6 +77,6 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
-		public new bool KeepMenuOpen => false;
+        public new bool KeepMenuOpen => false;
 	}
 }
