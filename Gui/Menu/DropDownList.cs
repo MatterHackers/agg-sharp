@@ -128,7 +128,7 @@ namespace MatterHackers.Agg.UI
 			this.MenuItemsBorderWidth = 1;
 			this.MenuItemsBackgroundColor = Color.White;
 			this.MenuItemsBorderColor = borderColor;
-			this.MenuItemsPadding = new BorderDouble(10, 7, 7, 7);
+			this.MenuItemsPadding = new BorderDouble(10, 3, 7, 3);
 			this.MenuItemsBackgroundHoverColor = new Color("#EC6788FF");
 			this.MenuItemsTextHoverColor = Color.Black;
 			this.MenuItemsTextColor = Color.Black;

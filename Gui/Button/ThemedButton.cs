@@ -43,7 +43,7 @@ namespace MatterHackers.Agg.UI
             this.theme = theme;
             HoverColor = theme.SlightShade;
             MouseDownColor = theme.MinimalShade;
-            Margin = 3;
+            Margin = new BorderDouble(3, 0);
             Cursor = Cursors.Hand;
             BackgroundColor = theme.ButtonBackgroundColor;
 
