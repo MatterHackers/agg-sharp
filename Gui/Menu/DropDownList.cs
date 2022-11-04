@@ -115,9 +115,9 @@ namespace MatterHackers.Agg.UI
 			mainControlText = new TextWidget(noSelectionString, pointSize: pointSize, textColor: textColor)
 			{
 				AutoExpandBoundsToText = true,
-				VAnchor = VAnchor.Bottom | VAnchor.Fit,
+				VAnchor = VAnchor.Center | VAnchor.Fit,
 				HAnchor = HAnchor.Left | HAnchor.Fit,
-				Margin = new BorderDouble(10, 7, 7, 7),
+				Margin = new BorderDouble(10, 3, 7, 3),
 			};
 
 			AddChild(mainControlText);
