@@ -27,10 +27,10 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
 using System.Collections.Generic;
 using ClipperLib;
 using MatterHackers.DataConverters2D;
+using MatterHackers.QuadTree;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Processors
@@ -146,13 +146,21 @@ namespace MatterHackers.PolygonMesh.Processors
 				var nextIndexA = (curIndexA + 1) % loopA.Count;
 				var nextIndexB = (curIndexB + 1) % loopB.Count;
 
-				var lengthCurAToNextB = (loopA[curIndexA] - loopB[nextIndexB]).LengthSquared();
-				// make sure this segments does not intersect either loop
+				var segmentCurAToNextB = new Polygon() { loopA[curIndexA], loopB[nextIndexB] };
+				var lengthCurAToNextB = segmentCurAToNextB.LengthSquared(false);
+                // make sure this segments does not intersect either loop
+                var intersectsWithA = loopA.FindIntersection(loopA[curIndexA], loopB[nextIndexB]) == MatterHackers.QuadTree.Intersection.Intersect;
                 
-				var lengthCurBToNextA = (loopB[curIndexB] - loopA[nextIndexA]).LengthSquared();
+                if (intersectsWithA)
+                {
+					int a = 0;
+                }
+
+                var segmentCurBToNextA = new Polygon() { loopB[curIndexB], loopA[nextIndexA] };
+				var lengthCurBToNextA = segmentCurBToNextA.LengthSquared();
 				// make sure this segments does not intersect either loop
 
-				if ((lengthCurAToNextB > lengthCurBToNextA && !loopedA)
+				if ((lengthCurAToNextB > lengthCurBToNextA && !loopedA && intersectsWithA)
 					|| loopedB)
 				{
 					mesh.CreateFace(new Vector3[]
