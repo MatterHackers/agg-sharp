@@ -60,7 +60,7 @@ namespace MatterHackers.Agg
 				),
 				@"(\p{Ll})(\P{Ll})",
 				"$1 $2"
-			);
+			).Replace("_", " ");
 		}
 	}
 }

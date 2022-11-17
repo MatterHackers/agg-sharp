@@ -165,7 +165,10 @@ namespace Markdig.Renderers
 			if (stack.Count > 0)
 			{
 				var top = stack.Peek();
-				top.AddChild(popped);
+				using (top.LayoutLock())
+				{
+					top.AddChild(popped);
+				}
 			}
 		}
 
