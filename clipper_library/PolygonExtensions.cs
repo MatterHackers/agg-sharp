@@ -38,9 +38,30 @@ namespace ClipperLib
 
     public static class PolygonExtensions
     {
+        public static IntRect ExpandToInclude(this IntRect inRect, IntRect otherRect)
+        {
+            if (otherRect.minX < inRect.minX) inRect.minX = otherRect.minX;
+            if (otherRect.minY < inRect.minY) inRect.minY = otherRect.minY;
+            if (otherRect.maxX > inRect.maxX) inRect.maxX = otherRect.maxX;
+            if (otherRect.maxY > inRect.maxY) inRect.maxY = otherRect.maxY;
+
+            return inRect;
+        }
+
         public static RectangleDouble GetBounds(this Polygon poly)
         {
             RectangleDouble bounds = RectangleDouble.ZeroIntersection;
+            foreach (var point in poly)
+            {
+                bounds.ExpandToInclude(point.X, point.Y);
+            }
+
+            return bounds;
+        }
+
+        public static RectangleLong GetBoundsLong(this Polygon poly)
+        {
+            var bounds = RectangleLong.ZeroIntersection;
             foreach (var point in poly)
             {
                 bounds.ExpandToInclude(point.X, point.Y);
@@ -109,6 +130,32 @@ namespace ClipperLib
             return totalTurns > 0 ? 1 : -1;
         }
 
+        public static double Length(this Polygon polygon, bool isClosed = true)
+        {
+            return Math.Sqrt(polygon.LengthSquared(isClosed));
+        }
+
+        public static double LengthSquared(this Polygon polygon, bool isClosed = true)
+        {
+            double length = 0;
+            if (polygon.Count > 1)
+            {
+                IntPoint previousPoint = polygon[0];
+                if (isClosed)
+                {
+                    previousPoint = polygon[polygon.Count - 1];
+                }
+                for (int i = isClosed ? 0 : 1; i < polygon.Count; i++)
+                {
+                    IntPoint currentPoint = polygon[i];
+                    length += (previousPoint - currentPoint).LengthSquared();
+                    previousPoint = currentPoint;
+                }
+            }
+
+            return length;
+        }
+
         public static Polygons Offset(this Polygon polygon, double distance)
         {
             var offseter = new ClipperOffset();
@@ -118,6 +165,38 @@ namespace ClipperLib
             offseter.Execute(ref solution, distance);
 
             return solution;
+        }
+
+        public static IntPoint PositionAllongPath(this Polygon polygon, double ratioAlongPath, bool isClosed = true)
+        {
+            var position = new IntPoint();
+            var totalLength = polygon.Length(isClosed);
+            var distanceToGoal = (long)(totalLength * ratioAlongPath + .5);
+            long length = 0;
+            if (polygon.Count > 1)
+            {
+                position = polygon[0];
+                IntPoint currentPoint = polygon[0];
+
+                int polygonCount = polygon.Count;
+                for (int i = 1; i < (isClosed ? polygonCount + 1 : polygonCount); i++)
+                {
+                    IntPoint nextPoint = polygon[i % polygonCount];
+                    var segmentLength = (nextPoint - currentPoint).Length();
+                    if (length + segmentLength > distanceToGoal)
+                    {
+                        // return the distance along this segment
+                        var distanceAlongThisSegment = distanceToGoal - length;
+                        var delteFromCurrent = (nextPoint - currentPoint) * distanceAlongThisSegment / segmentLength;
+                        return currentPoint + delteFromCurrent;
+                    }
+                    position = nextPoint;
+                    length += segmentLength;
+                    currentPoint = nextPoint;
+                }
+            }
+
+            return position;
         }
 
         public static Polygon Rotate(this Polygon poly, double radians)

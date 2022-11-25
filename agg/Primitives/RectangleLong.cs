@@ -32,11 +32,19 @@ using System;
 
 namespace MatterHackers.Agg
 {
-    public struct RectangleInt
+    public struct RectangleLong
     {
-        public int Left, Bottom, Right, Top;
+        public long Left, Bottom, Right, Top;
 
-        public RectangleInt(int left, int bottom, int right, int top)
+        public long minX { get => Left; set => Left = value; }
+        public long minY { get => Bottom; set => Bottom = value; }
+        public long maxX { get => Right; set => Right = value; }
+        public long maxY { get => Top; set => Top = value; }
+        
+
+        public static readonly RectangleLong ZeroIntersection = new RectangleLong(long.MaxValue, long.MaxValue, long.MinValue, long.MinValue);
+
+        public RectangleLong(long left, long bottom, long right, long top)
         {
             Left = left;
             Bottom = bottom;
@@ -46,7 +54,7 @@ namespace MatterHackers.Agg
 
         // This function assumes the rect is normalized
         [JsonIgnoreAttribute]
-        public int Height
+        public long Height
         {
             get
             {
@@ -56,7 +64,7 @@ namespace MatterHackers.Agg
 
         // This function assumes the rect is normalized
         [JsonIgnoreAttribute]
-        public int Width
+        public long Width
         {
             get
             {
@@ -64,8 +72,7 @@ namespace MatterHackers.Agg
             }
         }
 
-        //***************************************************************************************************************************************************
-        public static bool ClipRect(RectangleInt pBoundingRect, ref RectangleInt pDestRect)
+        public static bool ClipRect(RectangleLong pBoundingRect, ref RectangleLong pDestRect)
         {
             // clip off the top so we don't write into random memory
             if (pDestRect.Top < pBoundingRect.Top)
@@ -109,7 +116,7 @@ namespace MatterHackers.Agg
             return true;
         }
 
-        public static bool ClipRects(RectangleInt pBoundingRect, ref RectangleInt pSourceRect, ref RectangleInt pDestRect)
+        public static bool ClipRects(RectangleLong pBoundingRect, ref RectangleLong pSourceRect, ref RectangleLong pDestRect)
         {
             // clip off the top so we don't write into random memory
             if (pDestRect.Top < pBoundingRect.Top)
@@ -184,12 +191,12 @@ namespace MatterHackers.Agg
             return true;
         }
 
-        public static bool DoIntersect(RectangleInt rect1, RectangleInt rect2)
+        public static bool DoIntersect(RectangleLong rect1, RectangleLong rect2)
         {
-            int x1 = rect1.Left;
-            int y1 = rect1.Bottom;
-            int x2 = rect1.Right;
-            int y2 = rect1.Top;
+            long x1 = rect1.Left;
+            long y1 = rect1.Bottom;
+            long x2 = rect1.Right;
+            long y2 = rect1.Top;
 
             if (x1 < rect2.Left) x1 = rect2.Left;
             if (y1 < rect2.Bottom) y1 = rect2.Bottom;
@@ -204,7 +211,7 @@ namespace MatterHackers.Agg
             return false;
         }
 
-        public bool clip(RectangleInt r)
+        public bool clip(RectangleLong r)
         {
             if (Right > r.Right) Right = r.Right;
             if (Top > r.Top) Top = r.Top;
@@ -213,7 +220,7 @@ namespace MatterHackers.Agg
             return Left <= Right && Bottom <= Top;
         }
 
-        public void ExpandToInclude(RectangleInt rectToInclude)
+        public void ExpandToInclude(RectangleLong rectToInclude)
         {
             if (Right < rectToInclude.Right) Right = rectToInclude.Right;
             if (Top < rectToInclude.Top) Top = rectToInclude.Top;
@@ -221,17 +228,26 @@ namespace MatterHackers.Agg
             if (Bottom > rectToInclude.Bottom) Bottom = rectToInclude.Bottom;
         }
 
-        public override int GetHashCode()
+        public void ExpandToInclude(long x, long y)
         {
-            return new { x1 = Left, x2 = Right, y1 = Bottom, y2 = Top }.GetHashCode();
+            if (Right < x) Right = x;
+            if (Top < y) Top = y;
+            if (Left > x) Left = x;
+            if (Bottom > y) Bottom = y;
         }
 
-        public bool hit_test(int x, int y)
+        public override int GetHashCode()
+        {
+            var hash = Left.GetLongHashCode(Bottom.GetLongHashCode(Right.GetLongHashCode(Top.GetLongHashCode())));
+            return (int)hash;
+        }
+
+        public bool hit_test(long x, long y)
         {
             return (x >= Left && x <= Right && y >= Bottom && y <= Top);
         }
 
-        public void Inflate(int inflateSize)
+        public void Inflate(long inflateSize)
         {
             Left = Left - inflateSize;
             Bottom = Bottom - inflateSize;
@@ -239,7 +255,7 @@ namespace MatterHackers.Agg
             Top = Top + inflateSize;
         }
 
-        public void init(int x1_, int y1_, int x2_, int y2_)
+        public void init(long x1_, long y1_, long x2_, long y2_)
         {
             Left = x1_;
             Bottom = y1_;
@@ -247,7 +263,7 @@ namespace MatterHackers.Agg
             Top = y2_;
         }
 
-        public bool IntersectRectangles(RectangleInt rectToCopy, RectangleInt rectToIntersectWith)
+        public bool IntersectRectangles(RectangleLong rectToCopy, RectangleLong rectToIntersectWith)
         {
             Left = rectToCopy.Left;
             Bottom = rectToCopy.Bottom;
@@ -267,7 +283,7 @@ namespace MatterHackers.Agg
             return false;
         }
 
-        public bool IntersectWithRectangle(RectangleInt rectToIntersectWith)
+        public bool IntersectWithRectangle(RectangleLong rectToIntersectWith)
         {
             if (Left < rectToIntersectWith.Left) Left = rectToIntersectWith.Left;
             if (Bottom < rectToIntersectWith.Bottom) Bottom = rectToIntersectWith.Bottom;
@@ -287,15 +303,15 @@ namespace MatterHackers.Agg
             return Left <= Right && Bottom <= Top;
         }
 
-        public RectangleInt normalize()
+        public RectangleLong normalize()
         {
-            int t;
+            long t;
             if (Left > Right) { t = Left; Left = Right; Right = t; }
             if (Bottom > Top) { t = Bottom; Bottom = Top; Top = t; }
             return this;
         }
 
-        public void Offset(int x, int y)
+        public void Offset(long x, long y)
         {
             Left = Left + x;
             Bottom = Bottom + y;
@@ -303,13 +319,13 @@ namespace MatterHackers.Agg
             Top = Top + y;
         }
 
-        public void SetRect(int left, int bottom, int right, int top)
+        public void SetRect(long left, long bottom, long right, long top)
         {
             init(left, bottom, right, top);
         }
 
         //---------------------------------------------------------unite_rectangles
-        public void unite_rectangles(RectangleInt r1, RectangleInt r2)
+        public void unite_rectangles(RectangleLong r1, RectangleLong r2)
         {
             Left = r1.Left;
             Bottom = r1.Bottom;

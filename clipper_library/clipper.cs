@@ -457,7 +457,13 @@ namespace ClipperLib
     public cInt right;
     public cInt bottom;
 
-    public IntRect(cInt l, cInt t, cInt r, cInt b)
+        public cInt minX {get => left; set => left = value;}
+        public cInt minY { get => top; set => top = value; }
+        public cInt maxX { get => right; set => right = value; }
+        public cInt maxY { get => bottom; set => bottom = value; }
+        
+
+        public IntRect(cInt l, cInt t, cInt r, cInt b)
     {
       this.left = l; this.top = t;
       this.right = r; this.bottom = b;

@@ -27,10 +27,10 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
 using System.Collections.Generic;
 using ClipperLib;
 using MatterHackers.DataConverters2D;
+using MatterHackers.QuadTree;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Processors
@@ -109,74 +109,83 @@ namespace MatterHackers.PolygonMesh.Processors
 			return mesh;
 		}
 
-		public static (int bs, int ts) BestStart(Polygon outerLoop, Polygon innerLoop)
+		public static (int indexA, int indexB) BestStartIndices(Polygon loopA, Polygon loopB)
 		{
 			var bestDistance = double.MaxValue;
-			var bestOs = 0;
-			var bestIs = 0;
-			for (var oi = 0; oi < outerLoop.Count; oi++)
+			var bestIndexA = 0;
+			var bestIndexB = 0;
+			for (var indexA = 0; indexA < loopA.Count; indexA++)
 			{
-				for (var ii = 0; ii < innerLoop.Count; ii++)
+				for (var indexB = 0; indexB < loopB.Count; indexB++)
 				{
-					var distance = (outerLoop[oi] - innerLoop[ii]).LengthSquared();
+					var distance = (loopA[indexA] - loopB[indexB]).LengthSquared();
 					if (distance < bestDistance)
 					{
 						bestDistance = distance;
-						bestOs = oi;
-						bestIs = ii;
+						bestIndexA = indexA;
+						bestIndexB = indexB;
 					}
 				}
 			}
 
-			return (bestOs, bestIs);
+			return (bestIndexA, bestIndexB);
 		}
 
-		private static Mesh Stitch2SingleWalls(Polygon bottomLoop, double bottomHeight, Polygon topLoop, double topHeight)
+		private static Mesh Stitch2SingleWalls(Polygon loopA, double heightA, Polygon loopB, double heightB)
 		{
 			var mesh = new Mesh();
 
-			var (bs, ts) = BestStart(bottomLoop, topLoop);
+			var (startIndexA, startIndexB) = BestStartIndices(loopA, loopB);
 
-			var bc = bs;
-			var tc = ts;
+			var curIndexA = startIndexA;
+			var curIndexB = startIndexB;
+			var loopedA = false;
 			var loopedB = false;
-			var loopedT = false;
 			do
 			{
-				var b1 = bc;
-				var b2 = (bc + 1) % bottomLoop.Count;
-				var t1 = tc;
-				var t2 = (tc + 1) % topLoop.Count;
+				var nextIndexA = (curIndexA + 1) % loopA.Count;
+				var nextIndexB = (curIndexB + 1) % loopB.Count;
 
-				var b1b2 = (bottomLoop[b1] - bottomLoop[b2]).LengthSquared();
-				var t1t2 = (topLoop[t1] - topLoop[t2]).LengthSquared();
+				var segmentCurAToNextB = new Polygon() { loopA[curIndexA], loopB[nextIndexB] };
+				var lengthCurAToNextB = segmentCurAToNextB.LengthSquared(false);
+                // make sure this segments does not intersect either loop
+                var intersectsWithA = loopA.FindIntersection(loopA[curIndexA], loopB[nextIndexB]) == MatterHackers.QuadTree.Intersection.Intersect;
+                
+                if (intersectsWithA)
+                {
+					int a = 0;
+                }
 
-				if ((b1b2 < t1t2 && !loopedB)
-					|| loopedT)
+                var segmentCurBToNextA = new Polygon() { loopB[curIndexB], loopA[nextIndexA] };
+				var lengthCurBToNextA = segmentCurBToNextA.LengthSquared();
+				// make sure this segments does not intersect either loop
+
+				if ((lengthCurAToNextB > lengthCurBToNextA && !loopedA && intersectsWithA)
+					|| loopedB)
 				{
 					mesh.CreateFace(new Vector3[]
 					{
-						new Vector3(bottomLoop[b1].X, bottomLoop[b1].Y, bottomHeight),
-						new Vector3(bottomLoop[b2].X, bottomLoop[b2].Y, bottomHeight),
-						new Vector3(topLoop[tc].X, topLoop[tc].Y, topHeight)
+						new Vector3(loopA[curIndexA].X, loopA[curIndexA].Y, heightA),
+						new Vector3(loopA[nextIndexA].X, loopA[nextIndexA].Y, heightA),
+						new Vector3(loopB[curIndexB].X, loopB[curIndexB].Y, heightB),
 					});
 
-					bc = b2;
-					loopedB = bc == bs;
+					curIndexA = nextIndexA;
+					loopedA = curIndexA == startIndexA;
 				}
 				else
 				{
 					mesh.CreateFace(new Vector3[]
 					{
-						new Vector3(bottomLoop[bc].X, bottomLoop[bc].Y, bottomHeight),
-						new Vector3(topLoop[t1].X, topLoop[t1].Y, topHeight),
-						new Vector3(topLoop[t2].X, topLoop[t2].Y, topHeight)
+						new Vector3(loopA[curIndexA].X, loopA[curIndexA].Y, heightA),
+						new Vector3(loopB[nextIndexB].X, loopB[nextIndexB].Y, heightB),
+						new Vector3(loopB[curIndexB].X, loopB[curIndexB].Y, heightB),
 					});
 
-					tc = t2;
-					loopedT = tc == ts;
+					curIndexB = nextIndexB;
+					loopedB = curIndexB == startIndexB;
 				}
-			} while (bc != bs || tc != ts);
+			} while (curIndexA != startIndexA || curIndexB != startIndexB);
 
 
 			return mesh;

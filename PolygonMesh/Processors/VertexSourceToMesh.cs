@@ -324,7 +324,8 @@ namespace MatterHackers.PolygonMesh.Processors
 
         public static Mesh Extrude(this IVertexSource vertexSourceIn,
 			double zHeightTop,
-			List<(double height, double insetAmount)> bevel = null)
+			List<(double height, double insetAmount)> bevel = null,
+			ClipperLib.JoinType joinType = JoinType.jtRound)
 		{
 			Polygons bottomPolygons = vertexSourceIn.CreatePolygons();
 
@@ -333,7 +334,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			if (bevel != null)
 			{
-				return GetLoopMesh(zHeightTop, bevel, bottomPolygons);
+				return GetLoopMesh(zHeightTop, bevel, bottomPolygons, joinType);
 			}
 
 			var bottomTeselatedSource = new CachedTesselator();
@@ -400,7 +401,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			return mesh;
 		}
 
-		private static Mesh GetLoopMesh(double zHeightTop, List<(double height, double insetAmount)> bevel, Polygons inputPolygons)
+		private static Mesh GetLoopMesh(double zHeightTop, List<(double height, double insetAmount)> bevel, Polygons inputPolygons, ClipperLib.JoinType joinType)
 		{
 			var bottomPolygonsSets = inputPolygons.SeparatePolygonGroups();
 
@@ -415,7 +416,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				var bottomHeight = 0.0;
 				// create all the walls
 				var topLoop = bottomPolygons;
-				var topHeight = bevel[0].height;
+				var topHeight = bevel.Count > 0 ? bevel[0].height : zHeightTop;
 
 				int i = -1;
 				while (i < bevel.Count)
@@ -429,7 +430,7 @@ namespace MatterHackers.PolygonMesh.Processors
 					i++;
 					if (i < bevel.Count)
 					{
-						topLoop = bottomPolygons.Offset(bevel[i].insetAmount * 1000, JoinType.jtRound);
+						topLoop = bottomPolygons.Offset(bevel[i].insetAmount * 1000, joinType);
 						if (i == bevel.Count - 1)
 						{
 							topHeight = zHeightTop;

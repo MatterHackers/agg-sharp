@@ -165,7 +165,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
             var outerLoop = PolygonsExtensions.CreateFromString("x:1000, y:0,x:0, y:1000,x:-1000, y:0,|");
             var innerLoop = PolygonsExtensions.CreateFromString("x:-500, y:500,x:0, y:750,x:500, y:500,x:0, y:250,|");
 
-			var (outerStart, innerStart) = PathStitcher.BestStart(outerLoop[0], innerLoop[0]);
+			var (outerStart, innerStart) = PathStitcher.BestStartIndices(outerLoop[0], innerLoop[0]);
 
 			Assert.AreEqual(1, outerStart);
 			Assert.AreEqual(1, innerStart);

@@ -25,6 +25,7 @@
     <ProjectReference Include="..\clipper_library\clipper_library.csproj" />
     <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj" />
     <ProjectReference Include="..\geometry3Sharp\geometry3Sharp.csproj" />
+    <ProjectReference Include="..\QuadTree\QuadTree.csproj" />
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
 
