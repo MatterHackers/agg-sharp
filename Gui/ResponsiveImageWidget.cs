@@ -37,8 +37,9 @@ namespace MatterHackers.Agg.UI
 	{
 		private ImageBuffer checkerboard;
 		private ImageBuffer _image;
+        private bool maxWidthSetExplicitly;
 
-		public bool RenderCheckerboard { get; set; }
+        public bool RenderCheckerboard { get; set; }
 
 		public ResponsiveImageWidget(ImageBuffer initialImage)
 		{
@@ -62,15 +63,25 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void ImageChanged(object s, EventArgs e)
+        public override void OnMaximumSizeChanged(EventArgs e)
+        {
+            if (MaximumSize.X != Image.Width * GuiWidget.DeviceScale)
+            {
+				maxWidthSetExplicitly = true;
+            }
+            
+            base.OnMaximumSizeChanged(e);
+        }
+
+        private void ImageChanged(object s, EventArgs e)
 		{
 			// kill whatever resize process we are running
 			var newBounds = LocalBounds;
 			if (Image.Width > 0)
 			{
 				var scale = Math.Min(GuiWidget.DeviceScale, newBounds.Width / Image.Width);
-				MaximumSize = new Vector2(Image.Width * GuiWidget.DeviceScale,
-					Image.Height * GuiWidget.DeviceScale);
+                var maxX = maxWidthSetExplicitly ? MaximumSize.X : Image.Width * GuiWidget.DeviceScale;
+                MaximumSize = new Vector2(maxX, Image.Height * GuiWidget.DeviceScale);
 				newBounds.Top = newBounds.Bottom + Image.Height * scale;
 				base.LocalBounds = newBounds;
 			}
