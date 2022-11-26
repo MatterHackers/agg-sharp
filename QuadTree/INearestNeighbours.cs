@@ -22,7 +22,7 @@
 
 using ClipperLib;
 
-namespace MatterHackers.QuadTree
+namespace MatterHackers.Agg.QuadTree
 {
     public interface INearestNeighbours<T>
     {

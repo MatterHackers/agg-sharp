@@ -23,7 +23,7 @@
 using ClipperLib;
 using System;
 
-namespace MatterHackers.QuadTree
+namespace MatterHackers.Agg.QuadTree
 {
     /// <summary>
     /// Used by the QuadTree to represent a rectangular area.

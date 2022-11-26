@@ -25,7 +25,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace MatterHackers.QuadTree
+namespace MatterHackers.Agg.QuadTree
 {
     /// <summary>
     /// A quad tree where leaf nodes contain a quad and a unique instance of T.
