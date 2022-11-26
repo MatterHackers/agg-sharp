@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System.Collections.Generic;
 using ClipperLib;
 using MatterHackers.DataConverters2D;
-using MatterHackers.QuadTree;
+using MatterHackers.Agg.QuadTree;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Processors
@@ -149,7 +149,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				var segmentCurAToNextB = new Polygon() { loopA[curIndexA], loopB[nextIndexB] };
 				var lengthCurAToNextB = segmentCurAToNextB.LengthSquared(false);
                 // make sure this segments does not intersect either loop
-                var intersectsWithA = loopA.FindIntersection(loopA[curIndexA], loopB[nextIndexB]) == MatterHackers.QuadTree.Intersection.Intersect;
+                var intersectsWithA = loopA.FindIntersection(loopA[curIndexA], loopB[nextIndexB]) == Agg.QuadTree.Intersection.Intersect;
                 
                 if (intersectsWithA)
                 {

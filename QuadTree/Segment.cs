@@ -31,7 +31,7 @@ using ClipperLib;
 using System;
 using System.Collections.Generic;
 
-namespace MatterHackers.QuadTree
+namespace MatterHackers.Agg.QuadTree
 {
     using Polygon = List<IntPoint>;
     using Polygons = List<List<IntPoint>>;
