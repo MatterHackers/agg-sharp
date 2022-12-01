@@ -69,26 +69,31 @@ namespace MatterHackers.Agg
 		[JsonIgnore]
 		public byte alpha;
 
+        public static readonly Color DarkBlue = new Color("#0000A0");
+        public static readonly Color DarkGreen = new Color(0, 100, 0);
+        public static readonly Color DarkMagenta = new Color(139, 0, 139);
+        public static readonly Color DarkRed = new Color(139, 0, 0);
+        public static readonly Color DarkYellow = new Color(139, 139, 0);
+        public static readonly Color Green = new Color(0, 255, 0);
+        public static readonly Color Magenta = new Color(255, 0, 255);
+        public static readonly Color Red = new Color(255, 0, 0);
+        public static readonly Color Yellow = new Color(255, 255, 0);
 		public static readonly Color Black = new Color(0, 0, 0);
 		public static readonly Color Blue = new Color("#0000FF");
 		public static readonly Color Crimson = new Color("#DC143C");
 		public static readonly Color Cyan = new Color(0, 255, 255);
-		public static readonly Color DarkBlue = new Color("#0000A0");
+		public static readonly Color DarkCyan = new Color(0, 139, 139);
 		public static readonly Color DarkGray = new Color(85, 85, 85);
 		public static readonly Color FireEngineRed = new Color("#F62817");
 		public static readonly Color Gray = new Color(125, 125, 125);
-		public static readonly Color Green = new Color(0, 255, 0);
 		public static readonly Color Indigo = new Color(75, 0, 130);
 		public static readonly Color LightBlue = new Color("#ADD8E6");
 		public static readonly Color LightGray = new Color(225, 225, 225);
-		public static readonly Color Magenta = new Color(255, 0, 255);
 		public static readonly Color Orange = new Color(255, 127, 0);
 		public static readonly Color Pink = new Color(255, 192, 203);
-		public static readonly Color Red = new Color(255, 0, 0);
 		public static readonly Color Transparent = new Color(0, 0, 0, 0);
 		public static readonly Color Violet = new Color(143, 0, 255);
 		public static readonly Color White = new Color(255, 255, 255);
-		public static readonly Color Yellow = new Color(255, 255, 0);
 		public static readonly Color YellowGreen = new Color(154, 205, 50);
 
 		[JsonIgnore]
