@@ -297,8 +297,8 @@ namespace MatterHackers.Agg.UI
 			if (AggSystemWindow != null && !AggSystemWindow.HasBeenClosed)
 			{
 				// Call on closing and check if we can close (a "do you want to save" might cancel the close. :).
-				var eventArgs = new ClosingEventArgs();
-				AggSystemWindow.OnClosing(eventArgs);
+				var eventArgs = new ShouldCloseEventArgs();
+				AggSystemWindow.OnShouldClose(eventArgs);
 
 				if (eventArgs.Cancel)
 				{

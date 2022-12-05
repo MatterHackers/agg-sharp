@@ -642,9 +642,24 @@ namespace MatterHackers.Agg.UI
 
 		public event EventHandler<KeyEventArgs> KeyUp;
 
-		public event EventHandler Closed;
+        #region close events
+        /// <summary>
+		/// This is called when the user clicks the close button on the window.
+		/// </summary>
+        public event EventHandler<ShouldCloseEventArgs> ShouldClose;
 
-		public event EventHandler ParentChanged;
+        /// <summary>
+		/// This is called before calling Closed and before any children are removed 
+		/// </summary>
+        public event EventHandler Closing2;
+        
+		/// <summary>
+		/// This is called after children have been removed for any last minute cleanup
+		/// </summary>
+		public event EventHandler Closed;
+        #endregion
+
+        public event EventHandler ParentChanged;
 
 		public event EventHandler FocusChanged;
 
@@ -2481,34 +2496,51 @@ namespace MatterHackers.Agg.UI
 				BreakInDebugger("You should put this close onto the UiThread.RunOnIdle so it can happen after the child list is unlocked.");
 			}
 
-			// Validate via OnClosing if SystemWindow.Close is called
-			if (this is SystemWindow systemWindow)
+			if (HasBeenClosed)
 			{
-				var closingArgs = new ClosingEventArgs();
-				systemWindow.OnClosing(closingArgs);
-
-				if (closingArgs.Cancel)
-				{
-					return;
-				}
+				// already closed don't need to do anything more
+				return;
 			}
 
-			if (!HasBeenClosed)
+			// Validate via OnClosing if this should close
+			var shouldCloseArgs = new ShouldCloseEventArgs();
+			OnShouldClose(shouldCloseArgs);
+
+			if (shouldCloseArgs.Cancel)
 			{
-				HasBeenClosed = true;
+				// exit without doing anything
+				return;
+			}
 
-				this.CloseChildren();
+			// we are closed, there is no turning back
+            HasBeenClosed = true;
+            
+			// let any listeners know we are closed before we remove our children
+            OnClosing2(null);
 
-				OnClosed(null);
-				if (Parent != null)
-				{
-					// This code will only execute if this is the actual widget we called close on (not a child of the widget we called close on).
-					Parent.RemoveChild(this);
-					this.Parent = null;
-				}
+			// close all the children
+			this.CloseChildren();
+
+			// let listeners know we are done closing
+			OnClosed(null);
+			if (Parent != null)
+			{
+				// This code will only execute if this is the actual widget we called close on (not a child of the widget we called close on).
+				Parent.RemoveChild(this);
+				this.Parent = null;
 			}
 		}
 
+		public virtual void OnShouldClose(ShouldCloseEventArgs e)
+		{
+			ShouldClose?.Invoke(this, e);
+		}
+
+        public virtual void OnClosing2(EventArgs eventArgs)
+        {
+            Closing2?.Invoke(this, eventArgs);
+        }
+        
 		public virtual void OnClosed(EventArgs e)
 		{
 			Closed?.Invoke(this, e);
