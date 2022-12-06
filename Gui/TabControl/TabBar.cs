@@ -102,6 +102,11 @@ namespace MatterHackers.Agg.UI
 			{
 				return currentVisibleTab?.Name;
 			}
+
+			set
+			{
+				SelectTab(value);
+            }
 		}
 
 		public void SelectTab(int index)

@@ -168,7 +168,18 @@ namespace MatterHackers.Agg.UI
 			return tabPage;
 		}
 
-		public string SelectedTabName => tabBar.SelectedTabName;
+		public string SelectedTabName
+		{
+			get
+			{
+				return tabBar.SelectedTabName;
+			}
+
+            set
+			{
+                tabBar.SelectedTabName = value;
+            }
+		}
 
 		public int TabCount => tabPages.Count;
 
