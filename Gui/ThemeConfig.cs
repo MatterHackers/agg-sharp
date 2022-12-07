@@ -244,10 +244,9 @@ namespace MatterHackers.Agg.UI
 
 		public Color DarkShade { get; set; }
 
+        public Color TabBarBackground { get; set; } = new Color("#f5f5f5");
 
-		public Color TabBarBackground { get; set; }
-
-		public Color InactiveTabColor { get; set; }
+        public Color InactiveTabColor { get; set; }
 
 		public Color InteractionLayerOverlayColor { get; set; }
 
