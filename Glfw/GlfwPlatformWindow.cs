@@ -882,9 +882,9 @@ namespace MatterHackers.GlfwProvider
 
 		private void CloseCallback(Window window)
 		{
-			var closing = new ClosingEventArgs();
-			aggSystemWindow.OnClosing(closing);
-			if (closing.Cancel)
+			var shouldClose = new ShouldCloseEventArgs();
+			aggSystemWindow.OnShouldClose(shouldClose);
+			if (shouldClose.Cancel)
 			{
 				Glfw.SetWindowShouldClose(glfwWindow, false);
 			}

@@ -69,15 +69,16 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public TabControl(Orientation orientation = Orientation.Horizontal, GuiWidget separator = null)
+		public TabControl(ThemeConfig theme, Orientation orientation = Orientation.Horizontal, GuiWidget separator = null)
 		{
 			AnchorAll();
 
 			GuiWidget tabPageArea = new GuiWidget();
 
 			tabBar = new TabBar(FlowDirection.LeftToRight, tabPageArea);
-			
-			base.AddChild(tabBar);
+			// tabBar.BackgroundColor = theme.TabBarBackground;
+
+            base.AddChild(tabBar);
 
 			if (separator != null)
 			{
@@ -168,7 +169,18 @@ namespace MatterHackers.Agg.UI
 			return tabPage;
 		}
 
-		public string SelectedTabName => tabBar.SelectedTabName;
+		public string SelectedTabName
+		{
+			get
+			{
+				return tabBar.SelectedTabName;
+			}
+
+            set
+			{
+                tabBar.SelectedTabName = value;
+            }
+		}
 
 		public int TabCount => tabPages.Count;
 

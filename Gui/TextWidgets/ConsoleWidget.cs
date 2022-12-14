@@ -34,7 +34,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Text;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace MatterHackers.Agg.UI
 {
@@ -56,20 +56,21 @@ namespace MatterHackers.Agg.UI
 
         private int lineHeight;
         private TypeFacePrinter typeFacePrinter;
-        private bool writingSingleLine;
 
         public ConsoleWidget()
         {
             if (typeFace == null)
             {
-                var basePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                typeFace = TypeFace.LoadFrom(StaticData.Instance.ReadAllText(Path.Combine(basePath, "fonts", "LiberationMono.svg")));
+                typeFace = TypeFace.LoadFrom(StaticData.Instance.ReadAllText(Path.Combine("fonts", "LiberationMono.svg")));
             }
 
-            _primary = this;
             PointSize = 10;
             this.BorderColor = Color.Black;
             this.BackgroundOutlineWidth = 1;
+
+            BackgroundColor = Color.White;
+            // and hook up the callback functions
+            _primary = this;
         }
 
         public static ConsoleWidget Primary
@@ -84,8 +85,6 @@ namespace MatterHackers.Agg.UI
                 return _primary;
             }
         }
-
-        public int Indent { get; set; }
 
         public int NumVisibleLines => (int)Math.Ceiling(Height / styledTypeFace.EmSizeInPixels);
 
@@ -144,7 +143,35 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public Color TextColor { get; set; } = Color.Black;
+        public ConsoleColor ForgroundColor { get; set; } = ConsoleColor.Black;
+        
+        public int CursorPostionOverride
+        {
+            get
+            {
+                if (allLineInfos.Count > 0
+                    && string.IsNullOrEmpty(allLineInfos[allLineInfos.Count - 1].Text))
+                {
+                    return allLineInfos[allLineInfos.Count - 1].Text.Length;
+                }
+
+                return 0;
+            }
+
+            set
+            {
+                lock (locker)
+                {
+                    if (allLineInfos.Count > 0
+                        && !string.IsNullOrEmpty(allLineInfos[allLineInfos.Count - 1].Text))
+                    {
+                        var current = allLineInfos[allLineInfos.Count - 1];
+
+                        allLineInfos[allLineInfos.Count - 1] = new LineInfo(current.Text.Substring(0, Math.Min(current.Text.Length, value)), current.Color);
+                    }
+                }
+            }
+        }
 
         public override void OnDraw(Graphics2D graphics2D)
         {
@@ -285,71 +312,71 @@ namespace MatterHackers.Agg.UI
             Position0To1 = newPos;
         }
 
-        /// <summary>
-        /// Draw a progress bar to the consol
-        /// </summary>
-        /// <param name="fullRatio">The amount the bar is full</param>
-        public void ShowProgressBar(double fullRatio)
+        private Color ConsoleColorToColor()
         {
-            lock (locker)
+            switch (ForgroundColor)
             {
-                int width = 60;
-                var x = (int)(Math.Round(width * fullRatio));
-                try
-                {
-                    var line = new StringBuilder(new String(' ', Indent) + "|");
-                    for (int i = 0; i < width; i++)
-                    {
-                        if (i < x)
-                        {
-                            line.Append("X");
-                        }
-                        else
-                        {
-                            line.Append("_");
-                        }
-                    }
-                    line.Append("|");
-
-                    var lineString = line.ToString();
-                    if (writingSingleLine)
-                    {
-                        if (allLineInfos[allLineInfos.Count - 1].Text != lineString)
-                        {
-                            allLineInfos[allLineInfos.Count - 1] = new LineInfo(lineString, TextColor);
-                            Invalidate();
-                        }
-                    }
-                    else
-                    {
-                        allLineInfos.Add(new LineInfo(lineString, TextColor));
-                        writingSingleLine = true;
-                        Invalidate();
-                    }
-                }
-                catch
-                {
-                }
+                case ConsoleColor.Black:
+                    return Color.Black;
+                case ConsoleColor.DarkBlue:
+                    return Color.DarkBlue;
+                case ConsoleColor.DarkGreen:
+                    return Color.DarkGreen;
+                case ConsoleColor.DarkCyan:
+                    return Color.DarkCyan;
+                case ConsoleColor.DarkRed:
+                    return Color.DarkRed;
+                case ConsoleColor.DarkMagenta:
+                    return Color.DarkMagenta;
+                case ConsoleColor.DarkYellow:
+                    return Color.DarkYellow;
+                case ConsoleColor.Gray:
+                    return Color.Gray;
+                case ConsoleColor.DarkGray:
+                    return Color.DarkGray;
+                case ConsoleColor.Blue:
+                    return Color.Blue;
+                case ConsoleColor.Green:
+                    return Color.Green;
+                case ConsoleColor.Cyan:
+                    return Color.Cyan;
+                case ConsoleColor.Red:
+                    return Color.Red;
+                case ConsoleColor.Magenta:
+                    return Color.Magenta;
+                case ConsoleColor.Yellow:
+                    return Color.Yellow;
+                case ConsoleColor.White:
+                    return Color.White;
             }
-        }
 
-        public void ShowProgressBar(int current, int total)
-        {
-            ShowProgressBar((double)current / total);
+            return Color.White;
         }
 
         public void Write(string text)
         {
-            if (writingSingleLine)
+            lock (locker)
             {
-                allLineInfos[allLineInfos.Count - 1] = new LineInfo(allLineInfos[allLineInfos.Count - 1] + text, TextColor);
+                if (text.EndsWith("\n"))
+                {
+                    WriteLine(text);
+                }
+                else if (text.Contains("\n"))
+                {
+                    string[] lines = text.Split('\n');
+                    // print all the lines but the last one
+                    for (int i = 0; i < lines.Length - 1; i++)
+                    {
+                        WriteLine(lines[i]);
+                    }
+
+                    text = lines[lines.Length - 1];
+                }
+
+                allLineInfos[allLineInfos.Count - 1] = new LineInfo(allLineInfos[allLineInfos.Count - 1].Text + text, ConsoleColorToColor());
+
+                Invalidate();
             }
-            else
-            {
-                allLineInfos.Add(new LineInfo(new String(' ', Indent) + text, TextColor));
-                writingSingleLine = true;
-            }
-            Invalidate();
         }
 
         public void WriteLine(string line)
@@ -368,9 +395,19 @@ namespace MatterHackers.Agg.UI
                 return;
             }
 
-            writingSingleLine = false;
-            // add the indent and the new line
-            allLineInfos.Add(new LineInfo(new String(' ', Indent) + line, TextColor));
+            if (allLineInfos.Count > 0 
+                && string.IsNullOrEmpty(allLineInfos[allLineInfos.Count - 1].Text))
+            {
+                allLineInfos[allLineInfos.Count - 1] = new LineInfo(line, ConsoleColorToColor());
+            }
+            else
+            {
+                // add the the new line
+                allLineInfos.Add(new LineInfo(line, ConsoleColorToColor()));
+            }
+
+            // add a blank line
+            allLineInfos.Add(new LineInfo("", ConsoleColorToColor()));
             Invalidate();
         }
     }

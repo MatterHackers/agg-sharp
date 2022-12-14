@@ -35,7 +35,7 @@ namespace MatterHackers.Agg.UI
 	public class TextTab : ThreeViewTab
 	{
 		public TextTab(TabPage tabPage, string internalTabName)
-			: this(tabPage, internalTabName, 12, Color.DarkGray, Color.White, Color.Black, Color.White)
+			: this(tabPage, internalTabName, 12, Color.Black, Color.White, Color.DarkGray, Color.White)
 		{
 		}
 
@@ -48,10 +48,13 @@ namespace MatterHackers.Agg.UI
 			this.Margin = 0;
 
 			normalWidget.HAnchor = HAnchor.Fit;
-			normalWidget.Padding = new BorderDouble(10);
+            normalWidget.VAnchor = VAnchor.Fit;
+            normalWidget.Padding = new BorderDouble(10);
 
 			selectedWidget.HAnchor = HAnchor.Fit;
-			selectedWidget.Padding = new BorderDouble(10, 0);
+			selectedWidget.VAnchor = VAnchor.Fit;
+
+            selectedWidget.Padding = new BorderDouble(10, 0);
 
 			AddText(tabPage.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize, true, fixedSize, useUnderlineStyling);
 			AddText(tabPage.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize, false, fixedSize, useUnderlineStyling);

@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2017, Lars Brubaker, John Lewin
+Copyright (c) 2022, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -40,8 +40,6 @@ namespace MatterHackers.Agg.UI
 		public static bool EnableAllowDrop = true;
 
 		private string _title = "";
-
-		public event EventHandler<ClosingEventArgs> Closing;
 
 		public bool AlwaysOnTopOfMain { get; set; }
 
@@ -91,11 +89,6 @@ namespace MatterHackers.Agg.UI
 			// Invoke Close on our PlatformWindow and release our reference when complete
 			systemWindowProvider?.CloseSystemWindow(this);
 			this.PlatformWindow = null;
-		}
-
-		public virtual void OnClosing(ClosingEventArgs eventArgs)
-		{
-			Closing?.Invoke(this, eventArgs);
 		}
 
 		private static readonly List<SystemWindow> _openWindows = new List<SystemWindow>();
