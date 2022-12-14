@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\MHDataLab\C Sharp Tools\MhUtil\MhUtil.csproj" />
     <ProjectReference Include="..\agg\Agg.csproj" />
     <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj" />
     <ProjectReference Include="..\ImageProcessing\ImageProcessing.csproj" />

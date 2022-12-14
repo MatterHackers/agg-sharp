@@ -29,7 +29,6 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Platform;
-using MatterHackers.Utility;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
@@ -62,8 +61,7 @@ namespace MatterHackers.Agg.UI
         {
             if (typeFace == null)
             {
-                var basePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                typeFace = TypeFace.LoadFrom(StaticData.Instance.ReadAllText(Path.Combine(basePath, "StaticData", "fonts", "LiberationMono.svg")));
+                typeFace = TypeFace.LoadFrom(StaticData.Instance.ReadAllText(Path.Combine("fonts", "LiberationMono.svg")));
             }
 
             PointSize = 10;
@@ -73,10 +71,6 @@ namespace MatterHackers.Agg.UI
             BackgroundColor = Color.White;
             // and hook up the callback functions
             _primary = this;
-            MhConsole.writeOverride += Primary.Write;
-            MhConsole.writeLineOverride += Primary.WriteLine;
-            MhConsole.forgroundColorOverride += (color) => Primary.ForgroundColor = color;
-            MhConsole.setCursorPostionOverride += (x) => CursorPostionOverride = x;
         }
 
         public static ConsoleWidget Primary
