@@ -32,7 +32,7 @@ namespace MatterHackers.Agg
 
 			var appWidgetFinder = PluginFinder.CreateInstancesOf<IDemoApp>().OrderBy(a => a.Title).ToList();
 
-			TabControl tabControl = new TabControl(Orientation.Vertical);
+			TabControl tabControl = new TabControl(ThemeConfig.DefaultTheme(), Orientation.Vertical);
 			AddChild(tabControl);
 			tabControl.AnchorAll();
 

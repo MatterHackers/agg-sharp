@@ -27,7 +27,7 @@ namespace MatterHackers.Agg
 
 		public GuiTester()
 		{
-			mainNavigationTabControl = new TabControl(Orientation.Vertical);
+			mainNavigationTabControl = new TabControl(ThemeConfig.DefaultTheme(), Orientation.Vertical);
 
 			
 			mainNavigationTabControl.AddTab(new GridControlPage(), "GridControl");

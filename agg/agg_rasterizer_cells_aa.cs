@@ -39,7 +39,7 @@ namespace MatterHackers.Agg
 	// A pixel cell. There are no constructors defined and it was done
 	// intentionally in order to avoid extra overhead when allocating an
 	// array of cells.
-	public struct cell_aa
+	public struct PixelCellAa
 	{
 		public int x;
 		public int y;
@@ -47,7 +47,7 @@ namespace MatterHackers.Agg
 		public int area;
 		public int left, right;
 
-		public void initial()
+		public void Initial()
 		{
 			x = 0x7FFFFFFF;
 			y = 0x7FFFFFFF;
@@ -57,7 +57,7 @@ namespace MatterHackers.Agg
 			right = -1;
 		}
 
-		public void Set(cell_aa cellB)
+		public void Set(PixelCellAa cellB)
 		{
 			x = cellB.x;
 			y = cellB.y;
@@ -67,13 +67,13 @@ namespace MatterHackers.Agg
 			right = cellB.right;
 		}
 
-		public void style(cell_aa cellB)
+		public void Style(PixelCellAa cellB)
 		{
 			left = cellB.left;
 			right = cellB.right;
 		}
 
-		public bool not_equal(int ex, int ey, cell_aa cell)
+		public bool NotEqual(int ex, int ey, PixelCellAa cell)
 		{
 			unchecked
 			{
@@ -85,16 +85,16 @@ namespace MatterHackers.Agg
 	//-----------------------------------------------------rasterizer_cells_aa
 	// An internal class that implements the main rasterization algorithm.
 	// Used in the rasterizer. Should not be used directly.
-	public sealed class rasterizer_cells_aa
+	public sealed class RasterizerCellsAa
 	{
 		private int m_num_used_cells;
-		private VectorPOD<cell_aa> m_cells;
-		private VectorPOD<cell_aa> m_sorted_cells;
+		private VectorPOD<PixelCellAa> m_cells;
+		private VectorPOD<PixelCellAa> m_sorted_cells;
 		private VectorPOD<sorted_y> m_sorted_y;
-		private QuickSort_cell_aa m_QSorter;
+		private QuickSortCellAa m_QSorter;
 
-		private cell_aa m_curr_cell;
-		private cell_aa m_style_cell;
+		private PixelCellAa m_curr_cell;
+		private PixelCellAa m_style_cell;
 		private int m_min_x;
 		private int m_min_y;
 		private int m_max_x;
@@ -116,10 +116,10 @@ namespace MatterHackers.Agg
 			internal int num;
 		};
 
-		public rasterizer_cells_aa()
+		public RasterizerCellsAa()
 		{
-			m_QSorter = new QuickSort_cell_aa();
-			m_sorted_cells = new VectorPOD<cell_aa>();
+			m_QSorter = new QuickSortCellAa();
+			m_sorted_cells = new VectorPOD<PixelCellAa>();
 			m_sorted_y = new VectorPOD<sorted_y>();
 			m_min_x = (0x7FFFFFFF);
 			m_min_y = (0x7FFFFFFF);
@@ -127,16 +127,16 @@ namespace MatterHackers.Agg
 			m_max_y = (-0x7FFFFFFF);
 			m_sorted = (false);
 
-			m_style_cell.initial();
-			m_curr_cell.initial();
+			m_style_cell.Initial();
+			m_curr_cell.Initial();
 		}
 
 		public void reset()
 		{
 			m_num_used_cells = 0;
 
-			m_curr_cell.initial();
-			m_style_cell.initial();
+			m_curr_cell.Initial();
+			m_style_cell.Initial();
 			m_sorted = false;
 			m_min_x = 0x7FFFFFFF;
 			m_min_y = 0x7FFFFFFF;
@@ -144,9 +144,9 @@ namespace MatterHackers.Agg
 			m_max_y = -0x7FFFFFFF;
 		}
 
-		public void style(cell_aa style_cell)
+		public void style(PixelCellAa style_cell)
 		{
-			m_style_cell.style(style_cell);
+			m_style_cell.Style(style_cell);
 		}
 
 		private enum dx_limit_e { dx_limit = 16384 << agg_basics.poly_subpixel_scale_e.poly_subpixel_shift };
@@ -336,9 +336,9 @@ namespace MatterHackers.Agg
 			// Allocate and zero the Y array
 			m_sorted_y.Allocate((int)(m_max_y - m_min_y + 1));
 			m_sorted_y.zero();
-			cell_aa[] cells = m_cells.Array;
+			PixelCellAa[] cells = m_cells.Array;
 			sorted_y[] sortedYData = m_sorted_y.Array;
-			cell_aa[] sortedCellsData = m_sorted_cells.Array;
+			PixelCellAa[] sortedCellsData = m_sorted_cells.Array;
 
 			// Create the Y-histogram (count the numbers of cells for each Y)
 			for (int i = 0; i < m_num_used_cells; i++)
@@ -388,7 +388,7 @@ namespace MatterHackers.Agg
 			return (int)m_sorted_y.data()[y - m_min_y].num;
 		}
 
-		public void scanline_cells(int y, out cell_aa[] CellData, out int Offset)
+		public void scanline_cells(int y, out PixelCellAa[] CellData, out int Offset)
 		{
 			CellData = m_sorted_cells.data();
 			Offset = m_sorted_y[y - m_min_y].start;
@@ -401,10 +401,10 @@ namespace MatterHackers.Agg
 
 		private void set_curr_cell(int x, int y)
 		{
-			if (m_curr_cell.not_equal(x, y, m_style_cell))
+			if (m_curr_cell.NotEqual(x, y, m_style_cell))
 			{
 				add_curr_cell();
-				m_curr_cell.style(m_style_cell);
+				m_curr_cell.Style(m_style_cell);
 				m_curr_cell.x = x;
 				m_curr_cell.y = y;
 				m_curr_cell.cover = 0;
@@ -451,7 +451,7 @@ namespace MatterHackers.Agg
 				}
 
 				int new_num_allocated_cells = m_num_used_cells + (int)cell_block_scale_e.cell_block_size;
-				VectorPOD<cell_aa> new_cells = new VectorPOD<cell_aa>(new_num_allocated_cells);
+				VectorPOD<PixelCellAa> new_cells = new VectorPOD<PixelCellAa>(new_num_allocated_cells);
 				if (m_cells != null)
 				{
 					new_cells.CopyFrom(m_cells);
@@ -553,9 +553,9 @@ namespace MatterHackers.Agg
 			m_curr_cell.area += (fx2 + (int)poly_subpixel_scale_e.poly_subpixel_scale - first) * delta;
 		}
 
-		private static void swap_cells(cell_aa a, cell_aa b)
+		private static void swap_cells(PixelCellAa a, PixelCellAa b)
 		{
-			cell_aa temp = a;
+			PixelCellAa temp = a;
 			a = b;
 			b = temp;
 		}

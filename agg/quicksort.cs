@@ -29,18 +29,18 @@ either expressed or implied, of the FreeBSD Project.
 
 namespace MatterHackers.Agg
 {
-	public class QuickSort_cell_aa
+	public class QuickSortCellAa
 	{
-		public QuickSort_cell_aa()
+		public QuickSortCellAa()
 		{
 		}
 
-		public void Sort(cell_aa[] dataToSort)
+		public void Sort(PixelCellAa[] dataToSort)
 		{
 			Sort(dataToSort, 0, (int)(dataToSort.Length - 1));
 		}
 
-		public void Sort(cell_aa[] dataToSort, int beg, int end)
+		public void Sort(PixelCellAa[] dataToSort, int beg, int end)
 		{
 			if (end == beg)
 			{
@@ -48,7 +48,7 @@ namespace MatterHackers.Agg
 			}
 			else
 			{
-				int pivot = getPivotPoint(dataToSort, beg, end);
+				int pivot = GetPivotPoint(dataToSort, beg, end);
 				if (pivot > beg)
 				{
 					Sort(dataToSort, beg, pivot - 1);
@@ -61,7 +61,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		private int getPivotPoint(cell_aa[] dataToSort, int begPoint, int endPoint)
+		private int GetPivotPoint(PixelCellAa[] dataToSort, int begPoint, int endPoint)
 		{
 			int pivot = begPoint;
 			int m = begPoint + 1;
@@ -78,7 +78,7 @@ namespace MatterHackers.Agg
 			}
 			while (m < n)
 			{
-				cell_aa temp = dataToSort[m];
+				PixelCellAa temp = dataToSort[m];
 				dataToSort[m] = dataToSort[n];
 				dataToSort[n] = temp;
 
@@ -94,7 +94,7 @@ namespace MatterHackers.Agg
 			}
 			if (pivot != n)
 			{
-				cell_aa temp2 = dataToSort[n];
+				PixelCellAa temp2 = dataToSort[n];
 				dataToSort[n] = dataToSort[pivot];
 				dataToSort[pivot] = temp2;
 			}
@@ -102,18 +102,18 @@ namespace MatterHackers.Agg
 		}
 	}
 
-	public class QuickSort_range_adaptor_uint
+	public class QuickSortRangeAdaptorUint
 	{
-		public QuickSort_range_adaptor_uint()
+		public QuickSortRangeAdaptorUint()
 		{
 		}
 
-		public void Sort(VectorPOD_RangeAdaptor dataToSort)
+		public void Sort(VectorPodRangeAdaptor dataToSort)
 		{
-			Sort(dataToSort, 0, (int)(dataToSort.size() - 1));
+			Sort(dataToSort, 0, (int)(dataToSort.Size() - 1));
 		}
 
-		public void Sort(VectorPOD_RangeAdaptor dataToSort, int beg, int end)
+		public void Sort(VectorPodRangeAdaptor dataToSort, int beg, int end)
 		{
 			if (end == beg)
 			{
@@ -121,7 +121,7 @@ namespace MatterHackers.Agg
 			}
 			else
 			{
-				int pivot = getPivotPoint(dataToSort, beg, end);
+				int pivot = GetPivotPoint(dataToSort, beg, end);
 				if (pivot > beg)
 				{
 					Sort(dataToSort, beg, pivot - 1);
@@ -134,7 +134,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		private int getPivotPoint(VectorPOD_RangeAdaptor dataToSort, int begPoint, int endPoint)
+		private int GetPivotPoint(VectorPodRangeAdaptor dataToSort, int begPoint, int endPoint)
 		{
 			int pivot = begPoint;
 			int m = begPoint + 1;
