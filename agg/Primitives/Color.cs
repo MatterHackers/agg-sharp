@@ -89,8 +89,9 @@ namespace MatterHackers.Agg
 		public static readonly Color Indigo = new Color(75, 0, 130);
 		public static readonly Color LightBlue = new Color("#ADD8E6");
 		public static readonly Color LightGray = new Color(225, 225, 225);
-		public static readonly Color Orange = new Color(255, 127, 0);
-		public static readonly Color Pink = new Color(255, 192, 203);
+        public static readonly Color Orange = new Color(255, 127, 0);
+        public static readonly Color Purple = new Color(128, 0, 128);
+        public static readonly Color Pink = new Color(255, 192, 203);
 		public static readonly Color Transparent = new Color(0, 0, 0, 0);
 		public static readonly Color Violet = new Color(143, 0, 255);
 		public static readonly Color White = new Color(255, 255, 255);
@@ -130,6 +131,44 @@ namespace MatterHackers.Agg
 
 			set
 			{
+				switch(value.Trim().ToLower())
+				{
+					case "blue":
+						this = Blue;
+						return;
+
+					case "green":
+						this = Green;
+						return;
+
+					case "red":
+						this = Red;
+						return;
+
+					case "black":
+						this = Black;
+                        return;
+
+					case "gray":
+						this = Gray;
+						return;
+
+					case "orange":
+						this = Orange;
+						return;
+
+					case "purple":
+						this = Purple;
+						return;
+
+					case "yellow":
+						this = Yellow;
+						return;
+
+                    default:
+						break;
+				}
+
 				switch(value.Length)
 				{
 					case 4: // #CCC, single char rgb
