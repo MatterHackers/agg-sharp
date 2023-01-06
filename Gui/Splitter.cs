@@ -92,7 +92,7 @@ namespace MatterHackers.Agg.UI
 					{
 						// make sure we respect minimum size
 						_splitterDistance = Math.Max(_splitterDistance, Panel2.MinimumSize.X);
-						_splitterDistance = Height == 0 ? _splitterDistance : Math.Min(_splitterDistance, Height - Panel1.MinimumSize.X - splitterBar.Width);
+						_splitterDistance = Width == 0 ? _splitterDistance : Math.Min(_splitterDistance, Width - Panel1.MinimumSize.X - splitterBar.Width);
 						if (Panel1Ratio != 0)
 						{
 							Panel1Ratio = Width / _splitterDistance;
