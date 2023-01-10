@@ -615,9 +615,19 @@ namespace MatterHackers.DataConverters3D
 
 					case ".3MF":
 #if DEBUG
-						throw new NotImplementedException();
+						// create the file
+						var threeMfFile = new ThreeMfFile();
+                        // add the thumnail
+                        // add ThreeMfModel
+						foreach(var child in item.DescendantsAndSelf())
+						{
+							// save all the meshes and 
+						}
+
+						// save the mcx file into the archive
+                        threeMfFile.Save(meshPathAndFileName);
 #endif
-						return false;
+                        return false;
 
 					case ".OBJ":
 						outputInfo.ReportProgress = reportProgress;
