@@ -460,7 +460,7 @@ namespace MatterHackers.DataConverters3D
 					}
 				}
 
-				var json = SourceItem.ToJson().Result;
+				var json = await SourceItem.ToJson();
 
 				// Restore the selection after saving
 				foreach (var item in selectedItems)

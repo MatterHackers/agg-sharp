@@ -100,7 +100,7 @@ namespace MatterHackers.Agg
 		}
 
 		//------------------------------------------------------------------------
-		private void line_clip_y(rasterizer_cells_aa ras,
+		private void line_clip_y(RasterizerCellsAa ras,
 									int x1, int y1,
 									int x2, int y2,
 									int f1, int f2)
@@ -154,7 +154,7 @@ namespace MatterHackers.Agg
 		}
 
 		//--------------------------------------------------------------------
-		public void line_to(rasterizer_cells_aa ras, int x2, int y2)
+		public void line_to(RasterizerCellsAa ras, int x2, int y2)
 		{
 			if (m_clipping)
 			{

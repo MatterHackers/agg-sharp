@@ -31,289 +31,288 @@ using System;
 
 namespace MatterHackers.Agg
 {
-	public struct Point2D
-	{
-		public int x, y;
+    public struct Point2D
+    {
+        public static readonly Point2D Zero = new Point2D();
+        public int x, y;
 
-		public readonly static Point2D Zero = new Point2D();
+        public Point2D(int x, int y)
+        {
+            this.x = x;
+            this.y = y;
+        }
 
-		public Point2D(int newX, int newY)
-		{
-			x = newX;
-			y = newY;
-		}
+        public Point2D(double x, double y)
+        {
+            this.x = (int)Math.Round(x);
+            this.y = (int)Math.Round(y);
+        }
 
-		public Point2D(double newX, double newY)
-		{
-			x = Convert.ToInt32(newX);
-			y = Convert.ToInt32(newY);
-		}
+        public static double GetDeltaAngle(double StartAngle, double EndAngle)
+        {
+            if (StartAngle != Range0To2PI(StartAngle)) throw new Exception("StartAngle == Range0To2PI(StartAngle)");
+            if (EndAngle != Range0To2PI(EndAngle)) throw new Exception("EndAngle   == Range0To2PI(EndAngle)");
 
-		public void Set(int inX, int inY)
-		{
-			x = inX;
-			y = inY;
-		}
+            double DeltaAngle = EndAngle - StartAngle;
+            if (DeltaAngle > System.Math.PI)
+            {
+                DeltaAngle -= 2 * Math.PI;
+            }
 
-		static public Point2D operator +(Point2D A, Point2D B)
-		{
-			Point2D temp = new Point2D();
-			temp.x = A.x + B.x;
-			temp.y = A.y + B.y;
-			return temp;
-		}
+            if (DeltaAngle < -System.Math.PI)
+            {
+                DeltaAngle += 2 * Math.PI;
+            }
 
-		static public Point2D operator -(Point2D A, Point2D B)
-		{
-			Point2D temp = new Point2D();
-			temp.x = A.x - B.x;
-			temp.y = A.y - B.y;
-			return temp;
-		}
+            return DeltaAngle;
+        }
 
-		static public Point2D operator *(Point2D A, Point2D B)
-		{
-			Point2D temp = new Point2D();
-			temp.x = A.x * B.x;
-			temp.y = A.y * B.y;
-			return temp;
-		}
+        public static double GetDistanceBetween(Point2D a, Point2D b)
+        {
+            return (double)System.Math.Sqrt(GetDistanceBetweenSquared(a, b));
+        }
 
-		static public Point2D operator *(Point2D A, int B)
-		{
-			Point2D temp = new Point2D();
-			temp.x = A.x * B;
-			temp.y = A.y * B;
-			return temp;
-		}
+        public static double GetDistanceBetweenSquared(Point2D a, Point2D b)
+        {
+            return ((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+        }
 
-		static public Point2D operator *(int B, Point2D A)
-		{
-			Point2D temp = new Point2D();
-			temp.x = A.x * B;
-			temp.y = A.y * B;
-			return temp;
-		}
+        public static Point2D operator -(Point2D a, Point2D b)
+        {
+            Point2D temp = new Point2D();
+            temp.x = a.x - b.x;
+            temp.y = a.y - b.y;
+            return temp;
+        }
 
-		static public Point2D operator /(Point2D A, Point2D B)
-		{
-			Point2D temp = new Point2D();
-			temp.x = A.x / B.x;
-			temp.y = A.y / B.y;
-			return temp;
-		}
+        public static bool operator !=(Point2D a, Point2D b)
+        {
+            return !a.Equals(b);
+        }
 
-		static public Point2D operator /(Point2D A, int B)
-		{
-			Point2D temp = new Point2D();
-			temp.x = A.x / B;
-			temp.y = A.y / B;
-			return temp;
-		}
+        public static Point2D operator *(Point2D a, Point2D b)
+        {
+            Point2D temp = new Point2D();
+            temp.x = a.x * b.x;
+            temp.y = a.y * b.y;
+            return temp;
+        }
 
-		static public Point2D operator /(int B, Point2D A)
-		{
-			Point2D temp = new Point2D();
-			temp.x = A.x / B;
-			temp.y = A.y / B;
-			return temp;
-		}
+        public static Point2D operator *(Point2D a, int b)
+        {
+            Point2D temp = new Point2D();
+            temp.x = a.x * b;
+            temp.y = a.y * b;
+            return temp;
+        }
 
-		// are they the same within the error value?
-		public bool Equals(Point2D OtherVector)
-		{
-			if (x == OtherVector.x && y == OtherVector.y)
-			{
-				return true;
-			}
+        public static Point2D operator *(int b, Point2D a)
+        {
+            Point2D temp = new Point2D();
+            temp.x = a.x * b;
+            temp.y = a.y * b;
+            return temp;
+        }
 
-			return false;
-		}
+        public static Point2D operator /(Point2D a, Point2D b)
+        {
+            Point2D temp = new Point2D();
+            temp.x = a.x / b.x;
+            temp.y = a.y / b.y;
+            return temp;
+        }
 
-		public override bool Equals(System.Object obj)
-		{
-			// If parameter is null return false.
-			if (obj == null)
-			{
-				return false;
-			}
+        public static Point2D operator /(Point2D a, int b)
+        {
+            Point2D temp = new Point2D();
+            temp.x = a.x / b;
+            temp.y = a.y / b;
+            return temp;
+        }
 
-			// If parameter cannot be cast to Point return false.
-			Point2D p = (Point2D)obj;
-			if ((System.Object)p == null)
-			{
-				return false;
-			}
+        public static Point2D operator /(int b, Point2D a)
+        {
+            Point2D temp = new Point2D();
+            temp.x = a.x / b;
+            temp.y = a.y / b;
+            return temp;
+        }
 
-			// Return true if the fields match:
-			return (x == p.x) && (y == p.y);
-		}
+        public static Point2D operator +(Point2D a, Point2D b)
+        {
+            Point2D temp = new Point2D();
+            temp.x = a.x + b.x;
+            temp.y = a.y + b.y;
+            return temp;
+        }
 
-		public override int GetHashCode()
-		{
-			return new { x, y }.GetHashCode();
-		}
+        public static bool operator ==(Point2D a, Point2D b)
+        {
+            return a.Equals(b);
+        }
 
-		public static bool operator ==(Point2D a, Point2D b)
-		{
-			return a.Equals(b);
-		}
+        public static double Range0To2PI(double Value)
+        {
+            if (Value < 0)
+            {
+                Value += 2 * Math.PI;
+            }
 
-		public static bool operator !=(Point2D a, Point2D b)
-		{
-			return !a.Equals(b);
-		}
+            if (Value >= 2 * Math.PI)
+            {
+                Value -= 2 * Math.PI;
+            }
 
-		public Point2D GetNormal()
-		{
-			Point2D normal = this;
-			normal.Normalize();
-			return normal;
-		}
+            if (Value < 0 || Value > 2 * System.Math.PI) throw new Exception("Value >= 0 && Value <= 2 * PI");
 
-		public Point2D GetPerpendicular()
-		{
-			Point2D temp = new Point2D(y, -x);
+            return Value;
+        }
 
-			return temp;
-		}
+        public double Cross(Point2D B)
+        {
+            return x * B.y - y * B.x;
+        }
 
-		public Point2D GetPerpendicularNormal()
-		{
-			Point2D Perpendicular = GetPerpendicular();
-			Perpendicular.Normalize();
-			return Perpendicular;
-		}
+        public double Dot(Point2D B)
+        {
+            return (x * B.x + y * B.y);
+        }
 
-		public double GetLength()
-		{
-			return System.Math.Sqrt((x * x) + (y * y));
-		}
+        // are they the same within the error value?
+        public bool Equals(Point2D otherVector)
+        {
+            if (x == otherVector.x && y == otherVector.y)
+            {
+                return true;
+            }
 
-		public double GetLengthSquared()
-		{
-			return Dot(this);
-		}
+            return false;
+        }
 
-		public static double GetDistanceBetween(Point2D A, Point2D B)
-		{
-			return (double)System.Math.Sqrt(GetDistanceBetweenSquared(A, B));
-		}
+        public override bool Equals(object obj)
+        {
+            // If parameter is null return false.
+            if (obj == null)
+            {
+                return false;
+            }
 
-		public static double GetDistanceBetweenSquared(Point2D A, Point2D B)
-		{
-			return ((A.x - B.x) * (A.x - B.x) + (A.y - B.y) * (A.y - B.y));
-		}
+            // If parameter cannot be cast to Point return false.
+            Point2D p = (Point2D)obj;
+            if ((System.Object)p == null)
+            {
+                return false;
+            }
 
-		public double GetSquaredDistanceTo(Point2D Other)
-		{
-			return ((x - Other.x) * (x - Other.x) + (y - Other.y) * (y - Other.y));
-		}
+            // Return true if the fields match:
+            return (x == p.x) && (y == p.y);
+        }
 
-		static public double Range0To2PI(double Value)
-		{
-			if (Value < 0)
-			{
-				Value += 2 * (double)System.Math.PI;
-			}
+        public double GetAngle0To2PI()
+        {
+            return (double)Range0To2PI((double)System.Math.Atan2(y, x));
+        }
 
-			if (Value >= 2 * (double)System.Math.PI)
-			{
-				Value -= 2 * (double)System.Math.PI;
-			}
+        public double GetDeltaAngle(Point2D point)
+        {
+            return (double)GetDeltaAngle(GetAngle0To2PI(), point.GetAngle0To2PI());
+        }
 
-			if (Value < 0 || Value > 2 * System.Math.PI) throw new Exception("Value >= 0 && Value <= 2 * PI");
+        public override int GetHashCode()
+        {
+            return new { x, y }.GetHashCode();
+        }
 
-			return Value;
-		}
+        public double GetLength()
+        {
+            return Math.Sqrt((x * x) + (y * y));
+        }
 
-		static public double GetDeltaAngle(double StartAngle, double EndAngle)
-		{
-			if (StartAngle != Range0To2PI(StartAngle)) throw new Exception("StartAngle == Range0To2PI(StartAngle)");
-			if (EndAngle != Range0To2PI(EndAngle)) throw new Exception("EndAngle   == Range0To2PI(EndAngle)");
+        public double GetLengthSquared()
+        {
+            return Dot(this);
+        }
 
-			double DeltaAngle = EndAngle - StartAngle;
-			if (DeltaAngle > System.Math.PI)
-			{
-				DeltaAngle -= 2 * (double)System.Math.PI;
-			}
+        public Point2D GetNormal()
+        {
+            Point2D normal = this;
+            normal.Normalize();
+            return normal;
+        }
 
-			if (DeltaAngle < -System.Math.PI)
-			{
-				DeltaAngle += 2 * (double)System.Math.PI;
-			}
+        public Point2D GetPerpendicular()
+        {
+            Point2D temp = new Point2D(y, -x);
 
-			return DeltaAngle;
-		}
+            return temp;
+        }
 
-		public double GetAngle0To2PI()
-		{
-			return (double)Range0To2PI((double)System.Math.Atan2((double)y, (double)x));
-		}
+        public Point2D GetPerpendicularNormal()
+        {
+            Point2D Perpendicular = GetPerpendicular();
+            Perpendicular.Normalize();
+            return Perpendicular;
+        }
 
-		public double GetDeltaAngle(Point2D A)
-		{
-			return (double)GetDeltaAngle(GetAngle0To2PI(), A.GetAngle0To2PI());
-		}
+        public double GetSquaredDistanceTo(Point2D other)
+        {
+            return ((x - other.x) * (x - other.x) + (y - other.y) * (y - other.y));
+        }
 
-		public void Normalize()
-		{
-			double Length;
+        public void Negate()
+        {
+            x = -x;
+            y = -y;
+        }
 
-			Length = GetLength();
+        public void Normalize()
+        {
+            double Length;
 
-			if (Length == 0) throw new Exception("Length != 0.f");
+            Length = GetLength();
 
-			if (Length != 0.0f)
-			{
-				double InversLength = 1.0f / Length;
-				x = Convert.ToInt32(x * InversLength);
-				y = Convert.ToInt32(y * InversLength);
-			}
-		}
+            if (Length == 0) throw new Exception("Length != 0.f");
 
-		public void Normalize(double Length)
-		{
-			if (Length == 0) throw new Exception("Length == 0.f");
+            if (Length != 0.0f)
+            {
+                double InversLength = 1.0f / Length;
+                x = Convert.ToInt32(x * InversLength);
+                y = Convert.ToInt32(y * InversLength);
+            }
+        }
 
-			if (Length != 0.0f)
-			{
-				double InversLength = 1.0f / Length;
-				x = Convert.ToInt32(x * InversLength);
-				y = Convert.ToInt32(y * InversLength);
-			}
-		}
+        public void Normalize(double Length)
+        {
+            if (Length == 0) throw new Exception("Length == 0.f");
 
-		public double NormalizeAndReturnLength()
-		{
-			double Length;
+            if (Length != 0.0f)
+            {
+                double InversLength = 1.0f / Length;
+                x = Convert.ToInt32(x * InversLength);
+                y = Convert.ToInt32(y * InversLength);
+            }
+        }
 
-			Length = GetLength();
+        public double NormalizeAndReturnLength()
+        {
+            double Length;
 
-			if (Length != 0.0f)
-			{
-				double InversLength = 1.0f / Length;
-				x = Convert.ToInt32(x * InversLength);
-				y = Convert.ToInt32(y * InversLength);
-			}
+            Length = GetLength();
 
-			return Length;
-		}
+            if (Length != 0.0f)
+            {
+                double InversLength = 1.0f / Length;
+                x = Convert.ToInt32(x * InversLength);
+                y = Convert.ToInt32(y * InversLength);
+            }
 
-		public void Negate()
-		{
-			x = -x;
-			y = -y;
-		}
+            return Length;
+        }
 
-		public double Dot(Point2D B)
-		{
-			return (x * B.x + y * B.y);
-		}
-
-		public double Cross(Point2D B)
-		{
-			return x * B.y - y * B.x;
-		}
-	};
+        public void Set(int x, int y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+    };
 }

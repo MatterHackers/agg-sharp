@@ -50,7 +50,7 @@ namespace MatterHackers.Agg
 
 		private TabControl CreatePopulatedTabControl(Orientation orientation)
 		{
-			TabControl tabControl = new TabControl(orientation);
+			TabControl tabControl = new TabControl(ThemeConfig.DefaultTheme(), orientation);
 			{
 				TabPage page1 = new TabPage("Page 1");
 				page1.Padding = new BorderDouble(5);
