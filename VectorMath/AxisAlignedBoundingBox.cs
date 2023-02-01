@@ -472,5 +472,20 @@ namespace MatterHackers.VectorMath
 		{
 			return string.Format("min {0} - max {1}", MinXYZ, MaxXYZ);
 		}
-	}
+
+		private bool ValidDouble(double value, double largestPossibleValue)
+		{
+			return !double.IsNaN(value) && Math.Abs(value) < largestPossibleValue;
+		}
+
+		private bool ValidVector(Vector3 vector, double largestPossibleValue)
+		{
+			return ValidDouble(vector.X, largestPossibleValue) && ValidDouble(vector.Y, largestPossibleValue) && ValidDouble(vector.Z, largestPossibleValue);
+		}
+
+        public bool Valid(double largestPossibleValue)
+        {
+			return ValidVector(MinXYZ, largestPossibleValue) && ValidVector(MaxXYZ, largestPossibleValue);
+        }
+    }
 }
