@@ -142,7 +142,7 @@ namespace MatterHackers.DataConverters3D
 					item.Name = item.TypeName;
 				}
 
-				item.Name = agg_basics.GetNonCollidingName(item.Name, names);
+				item.Name = Util.GetNonCollidingName(item.Name, names);
 			}
 		}
 

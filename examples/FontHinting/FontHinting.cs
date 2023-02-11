@@ -201,7 +201,7 @@ namespace MatterHackers.Agg
 				c3 = new byte[len + 4];
 			}
 
-			agg_basics.memset(c3, 0, 0, len + 4);
+			Util.memset(c3, 0, 0, len + 4);
 
 			int i;
 			for (i = 0; i < len; i++)

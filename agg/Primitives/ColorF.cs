@@ -41,16 +41,16 @@ namespace MatterHackers.Agg
 		public float alpha;
 
 		[JsonIgnore]
-		public int Red0To255 { get { return (int)agg_basics.uround(Math.Max(0, Math.Min(255, red)) * (float)base_mask); } set { red = (float)value / (float)base_mask; } }
+		public int Red0To255 { get { return (int)Util.uround(Math.Max(0, Math.Min(255, red)) * (float)base_mask); } set { red = (float)value / (float)base_mask; } }
 
 		[JsonIgnore]
-		public int Green0To255 { get { return (int)agg_basics.uround(Math.Max(0, Math.Min(255, green)) * (float)base_mask); } set { green = (float)value / (float)base_mask; } }
+		public int Green0To255 { get { return (int)Util.uround(Math.Max(0, Math.Min(255, green)) * (float)base_mask); } set { green = (float)value / (float)base_mask; } }
 
 		[JsonIgnore]
-		public int Blue0To255 { get { return (int)agg_basics.uround(Math.Max(0, Math.Min(255, blue)) * (float)base_mask); } set { blue = (float)value / (float)base_mask; } }
+		public int Blue0To255 { get { return (int)Util.uround(Math.Max(0, Math.Min(255, blue)) * (float)base_mask); } set { blue = (float)value / (float)base_mask; } }
 
 		[JsonIgnore]
-		public int Alpha0To255 { get { return (int)agg_basics.uround(Math.Max(0, Math.Min(255, alpha)) * (float)base_mask); } set { alpha = (float)value / (float)base_mask; } }
+		public int Alpha0To255 { get { return (int)Util.uround(Math.Max(0, Math.Min(255, alpha)) * (float)base_mask); } set { alpha = (float)value / (float)base_mask; } }
 
 		[JsonIgnore]
 		public float Red0To1 { get { return red; } set { red = value; } }

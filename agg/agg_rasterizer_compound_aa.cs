@@ -48,7 +48,7 @@ namespace MatterHackers.Agg
 	{
 		private RasterizerCellsAa rasterizerCellsAa;
 		private VectorClipper vectorClipper;
-		private agg_basics.filling_rule_e fillingRule;
+		private Util.filling_rule_e fillingRule;
 		private LayerOrder layerOrder;
 		private VectorPOD<style_info> activeStyles;  // Active Styles
 		private VectorPOD<int> activeStyleTable;     // Active Style Table (unique values)
@@ -78,13 +78,13 @@ namespace MatterHackers.Agg
 		private const int aa_scale2 = aa_scale * 2;
 		private const int aa_mask2 = aa_scale2 - 1;
 
-		private const int poly_subpixel_shift = (int)agg_basics.poly_subpixel_scale_e.poly_subpixel_shift;
+		private const int poly_subpixel_shift = (int)Util.poly_subpixel_scale_e.poly_subpixel_shift;
 
 		public rasterizer_compound_aa()
 		{
 			rasterizerCellsAa = new RasterizerCellsAa();
 			vectorClipper = new VectorClipper();
-			fillingRule = agg_basics.filling_rule_e.fill_non_zero;
+			fillingRule = Util.filling_rule_e.fill_non_zero;
 			layerOrder = LayerOrder.Direct;
 			activeStyles = new VectorPOD<style_info>();  // Active Styles
 			activeStyleTable = new VectorPOD<int>();     // Active Style Table (unique values)
@@ -116,7 +116,7 @@ namespace MatterHackers.Agg
 			m_sl_len = 0;
 		}
 
-		private void filling_rule(agg_basics.filling_rule_e filling_rule)
+		private void filling_rule(Util.filling_rule_e filling_rule)
 		{
 			fillingRule = filling_rule;
 		}
@@ -429,7 +429,7 @@ namespace MatterHackers.Agg
 				{
 					m_master_alpha.add(aa_mask);
 				}
-				m_master_alpha.Array[style] = agg_basics.uround(alpha * aa_mask);
+				m_master_alpha.Array[style] = Util.uround(alpha * aa_mask);
 			}
 		}
 
@@ -496,7 +496,7 @@ namespace MatterHackers.Agg
 		{
 			int cover = area >> (poly_subpixel_shift * 2 + 1 - aa_shift);
 			if (cover < 0) cover = -cover;
-			if (fillingRule == agg_basics.filling_rule_e.fill_even_odd)
+			if (fillingRule == Util.filling_rule_e.fill_even_odd)
 			{
 				cover &= aa_mask2;
 				if (cover > aa_scale)

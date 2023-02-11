@@ -32,8 +32,8 @@
 //----------------------------------------------------------------------------
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using filling_rule_e = MatterHackers.Agg.agg_basics.filling_rule_e;
-using poly_subpixel_scale_e = MatterHackers.Agg.agg_basics.poly_subpixel_scale_e;
+using filling_rule_e = MatterHackers.Agg.Util.filling_rule_e;
+using poly_subpixel_scale_e = MatterHackers.Agg.Util.poly_subpixel_scale_e;
 
 namespace MatterHackers.Agg
 {
@@ -94,7 +94,7 @@ namespace MatterHackers.Agg
 		private RasterizerCellsAa m_outline;
 		private VectorClipper m_VectorClipper;
 		private int[] m_gamma = new int[(int)aa_scale_e.aa_scale];
-		private agg_basics.filling_rule_e m_filling_rule;
+		private Util.filling_rule_e m_filling_rule;
 		private bool m_auto_close;
 		private int m_start_x;
 		private int m_start_y;
@@ -189,7 +189,7 @@ namespace MatterHackers.Agg
 							   m_VectorClipper.upscale(x2), m_VectorClipper.upscale(y2));
 		}
 
-		public void filling_rule(agg_basics.filling_rule_e filling_rule)
+		public void filling_rule(Util.filling_rule_e filling_rule)
 		{
 			m_filling_rule = filling_rule;
 		}
@@ -204,7 +204,7 @@ namespace MatterHackers.Agg
 		{
 			for (int i = 0; i < (int)aa_scale_e.aa_scale; i++)
 			{
-				m_gamma[i] = (int)agg_basics.uround(gamma_function.GetGamma((double)(i) / (int)aa_scale_e.aa_mask) * (int)aa_scale_e.aa_mask);
+				m_gamma[i] = (int)Util.uround(gamma_function.GetGamma((double)(i) / (int)aa_scale_e.aa_mask) * (int)aa_scale_e.aa_mask);
 			}
 		}
 

@@ -192,7 +192,7 @@ namespace MatterHackers.Agg.VertexSource
 
 			double len = Math.Sqrt(dx1 * dx1 + dy1 * dy1) + Math.Sqrt(dx2 * dx2 + dy2 * dy2);
 
-			m_num_steps = agg_basics.uround(len * 0.25 * m_scale);
+			m_num_steps = Util.uround(len * 0.25 * m_scale);
 
 			if (m_num_steps < 4)
 			{
@@ -636,7 +636,7 @@ namespace MatterHackers.Agg.VertexSource
 				  xContorl1, yControl1,
 				  xControl2, yControl2,
 				  xEnd, yEnd,
-				  agg_basics.uround(len));
+				  Util.uround(len));
 		}
 
         public void Init(double xStart, double yStart,

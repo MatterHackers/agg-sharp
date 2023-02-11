@@ -1212,9 +1212,9 @@ namespace MatterHackers.Agg.Image
 
 		public override void to_pix(ref Color c)
 		{
-			c.red = (byte)agg_basics.uround(r);
-			c.green = (byte)agg_basics.uround(g);
-			c.blue = (byte)agg_basics.uround(b);
+			c.red = (byte)Util.uround(r);
+			c.green = (byte)Util.uround(g);
+			c.blue = (byte)Util.uround(b);
 		}
 	};
 
@@ -1245,10 +1245,10 @@ namespace MatterHackers.Agg.Image
 
 		public override void to_pix(ref Color c)
 		{
-			c.red = (byte)agg_basics.uround(r);
-			c.green = (byte)agg_basics.uround(g);
-			c.blue = (byte)agg_basics.uround(b);
-			c.alpha = (byte)agg_basics.uround(a);
+			c.red = (byte)Util.uround(r);
+			c.green = (byte)Util.uround(g);
+			c.blue = (byte)Util.uround(b);
+			c.alpha = (byte)Util.uround(a);
 		}
 	};
 
@@ -1273,7 +1273,7 @@ namespace MatterHackers.Agg.Image
 
 		public override void to_pix(ref Color c)
 		{
-			c.red = (byte)agg_basics.uround(r);
+			c.red = (byte)Util.uround(r);
 		}
 	};
 }

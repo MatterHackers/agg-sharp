@@ -42,7 +42,7 @@ namespace MatterHackers.Agg.Tests
 		public static bool GetNextNumberSameResult(String source, int startIndex, double expectedValue)
 		{
 			int startIndexNew = startIndex;
-			double newNumber = agg_basics.ParseDouble(source, ref startIndexNew, true);
+			double newNumber = Util.ParseDouble(source, ref startIndexNew, true);
 			int startIndexOld = startIndex;
 			double oldNumber = double.Parse(source.Substring(startIndexOld).Replace(" ", ""));
 			if (Math.Abs(newNumber - oldNumber) > .0001

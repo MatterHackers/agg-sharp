@@ -61,8 +61,8 @@ namespace MatterHackers.Agg
 			m_interpolator = inter;
 			m_gradient_function = gradient_function;
 			m_color_function = color_function;
-			m_d1 = (agg_basics.iround(d1 * gradient_subpixel_scale));
-			m_d2 = (agg_basics.iround(d2 * gradient_subpixel_scale));
+			m_d1 = (Util.iround(d1 * gradient_subpixel_scale));
+			m_d2 = (Util.iround(d2 * gradient_subpixel_scale));
 		}
 
 		//--------------------------------------------------------------------
@@ -109,12 +109,12 @@ namespace MatterHackers.Agg
 
 		public void d1(double v)
 		{
-			m_d1 = agg_basics.iround(v * gradient_subpixel_scale);
+			m_d1 = Util.iround(v * gradient_subpixel_scale);
 		}
 
 		public void d2(double v)
 		{
-			m_d2 = agg_basics.iround(v * gradient_subpixel_scale);
+			m_d2 = Util.iround(v * gradient_subpixel_scale);
 		}
 
 		//--------------------------------------------------------------------
@@ -217,7 +217,7 @@ namespace MatterHackers.Agg
 	{
 		public int calculate(int x, int y, int d)
 		{
-			return (int)agg_basics.uround(System.Math.Sqrt((double)(x) * (double)(x) + (double)(y) * (double)(y)));
+			return (int)Util.uround(System.Math.Sqrt((double)(x) * (double)(x) + (double)(y) * (double)(y)));
 		}
 	};
 
@@ -244,18 +244,18 @@ namespace MatterHackers.Agg
 		//---------------------------------------------------------------------
 		public gradient_radial_focus(double r, double fx, double fy)
 		{
-			m_r = (agg_basics.iround(r * span_gradient.gradient_subpixel_scale));
-			m_fx = (agg_basics.iround(fx * span_gradient.gradient_subpixel_scale));
-			m_fy = (agg_basics.iround(fy * span_gradient.gradient_subpixel_scale));
+			m_r = (Util.iround(r * span_gradient.gradient_subpixel_scale));
+			m_fx = (Util.iround(fx * span_gradient.gradient_subpixel_scale));
+			m_fy = (Util.iround(fy * span_gradient.gradient_subpixel_scale));
 			update_values();
 		}
 
 		//---------------------------------------------------------------------
 		public void init(double r, double fx, double fy)
 		{
-			m_r = agg_basics.iround(r * span_gradient.gradient_subpixel_scale);
-			m_fx = agg_basics.iround(fx * span_gradient.gradient_subpixel_scale);
-			m_fy = agg_basics.iround(fy * span_gradient.gradient_subpixel_scale);
+			m_r = Util.iround(r * span_gradient.gradient_subpixel_scale);
+			m_fx = Util.iround(fx * span_gradient.gradient_subpixel_scale);
+			m_fy = Util.iround(fy * span_gradient.gradient_subpixel_scale);
 			update_values();
 		}
 
@@ -282,7 +282,7 @@ namespace MatterHackers.Agg
 			double dy = y - m_fy;
 			double d2 = dx * m_fy - dy * m_fx;
 			double d3 = m_r2 * (dx * dx + dy * dy) - d2 * d2;
-			return agg_basics.iround((dx * m_fx + dy * m_fy + System.Math.Sqrt(System.Math.Abs(d3))) * m_mul);
+			return Util.iround((dx * m_fx + dy * m_fy + System.Math.Sqrt(System.Math.Abs(d3))) * m_mul);
 		}
 
 		//---------------------------------------------------------------------
@@ -371,7 +371,7 @@ namespace MatterHackers.Agg
 	{
 		public int calculate(int x, int y, int d)
 		{
-			return (int)agg_basics.uround(System.Math.Abs(System.Math.Atan2((double)(y), (double)(x))) * (double)(d) / System.Math.PI);
+			return (int)Util.uround(System.Math.Abs(System.Math.Atan2((double)(y), (double)(x))) * (double)(d) / System.Math.PI);
 		}
 	};
 

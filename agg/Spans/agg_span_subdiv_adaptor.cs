@@ -100,7 +100,7 @@ namespace MatterHackers.Agg
 		public void begin(double x, double y, int len)
 		{
 			m_pos = 1;
-			m_src_x = agg_basics.iround(x * subpixel_scale) + subpixel_scale;
+			m_src_x = Util.iround(x * subpixel_scale) + subpixel_scale;
 			m_src_y = y;
 			m_len = len;
 			if (len > m_subdiv_size) len = (int)m_subdiv_size;

@@ -90,7 +90,7 @@ namespace MatterHackers.Agg.Image
 			int offset = sourceImage.GetBufferOffsetXY(0, 0);
 			float[] buffer = sourceImage.GetBuffer();
 			float[] newBuffer = new float[buffer.Length];
-			agg_basics.memcpy(newBuffer, offset, buffer, offset, buffer.Length - offset);
+			Util.memcpy(newBuffer, offset, buffer, offset, buffer.Length - offset);
 			SetBuffer(newBuffer, offset);
 			SetRecieveBlender(blender);
 		}
@@ -239,7 +239,7 @@ namespace MatterHackers.Agg.Image
 
 				for (int i = 0; i < clippedSourceImageRect.Height; i++)
 				{
-					agg_basics.memmove(destBuffer, destOffset, sourceBuffer, sourceOffset, lengthInFloats);
+					Util.memmove(destBuffer, destOffset, sourceBuffer, sourceOffset, lengthInFloats);
 					sourceOffset += sourceImage.StrideInFloats();
 					destOffset += StrideInFloats();
 				}

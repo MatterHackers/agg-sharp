@@ -123,7 +123,7 @@ namespace MatterHackers.Agg.Image
 			int offset = sourceImage.GetBufferOffsetXY(0, 0);
 			byte[] buffer = sourceImage.GetBuffer();
 			byte[] newBuffer = new byte[buffer.Length];
-			agg_basics.memcpy(newBuffer, offset, buffer, offset, buffer.Length - offset);
+			Util.memcpy(newBuffer, offset, buffer, offset, buffer.Length - offset);
 			SetBuffer(newBuffer, offset);
 			SetRecieveBlender(recieveBlender);
 		}
@@ -134,7 +134,7 @@ namespace MatterHackers.Agg.Image
 			int offset = sourceImage.GetBufferOffsetXY(0, 0);
 			byte[] buffer = sourceImage.GetBuffer();
 			byte[] newBuffer = new byte[buffer.Length];
-			agg_basics.memcpy(newBuffer, offset, buffer, offset, buffer.Length - offset);
+			Util.memcpy(newBuffer, offset, buffer, offset, buffer.Length - offset);
 			SetBuffer(newBuffer, offset);
 			SetRecieveBlender(sourceImage.GetRecieveBlender());
 		}
@@ -175,7 +175,7 @@ namespace MatterHackers.Agg.Image
 			int offset = sourceImageToCopy.GetBufferOffsetXY(0, 0);
 			byte[] buffer = sourceImageToCopy.GetBuffer();
 			byte[] newBuffer = new byte[buffer.Length];
-			agg_basics.memcpy(newBuffer, offset, buffer, offset, buffer.Length - offset);
+			Util.memcpy(newBuffer, offset, buffer, offset, buffer.Length - offset);
 			SetBuffer(newBuffer, offset + bufferOffset);
 			SetRecieveBlender(blender);
 		}
@@ -349,7 +349,7 @@ namespace MatterHackers.Agg.Image
 
 				for (int i = 0; i < clippedSourceImageRect.Height; i++)
 				{
-					agg_basics.memmove(destBuffer, destOffset, sourceBuffer, sourceOffset, lengthInBytes);
+					Util.memmove(destBuffer, destOffset, sourceBuffer, sourceOffset, lengthInBytes);
 					sourceOffset += sourceImage.StrideInBytes();
 					destOffset += StrideInBytes();
 				}

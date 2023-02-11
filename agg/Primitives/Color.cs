@@ -209,7 +209,7 @@ namespace MatterHackers.Agg
 
 		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
 		{
-			return agg_basics.ComputeHash(new byte[] { red, green, blue, alpha}, hash);
+			return Util.ComputeHash(new byte[] { red, green, blue, alpha}, hash);
 		}
 
 		public Color(string htmlString)
@@ -232,26 +232,26 @@ namespace MatterHackers.Agg
 
 		public Color(double r_, double g_, double b_, double a_)
 		{
-			red = ((byte)agg_basics.uround(r_ * (double)base_mask));
-			green = ((byte)agg_basics.uround(g_ * (double)base_mask));
-			blue = ((byte)agg_basics.uround(b_ * (double)base_mask));
-			alpha = ((byte)agg_basics.uround(a_ * (double)base_mask));
+			red = ((byte)Util.uround(r_ * (double)base_mask));
+			green = ((byte)Util.uround(g_ * (double)base_mask));
+			blue = ((byte)Util.uround(b_ * (double)base_mask));
+			alpha = ((byte)Util.uround(a_ * (double)base_mask));
 		}
 
 		public Color(double r_, double g_, double b_)
 		{
-			red = ((byte)agg_basics.uround(r_ * (double)base_mask));
-			green = ((byte)agg_basics.uround(g_ * (double)base_mask));
-			blue = ((byte)agg_basics.uround(b_ * (double)base_mask));
+			red = ((byte)Util.uround(r_ * (double)base_mask));
+			green = ((byte)Util.uround(g_ * (double)base_mask));
+			blue = ((byte)Util.uround(b_ * (double)base_mask));
 			alpha = (byte)base_mask;
 		}
 
 		public Color(ColorF c, double a_)
 		{
-			red = ((byte)agg_basics.uround(c.red * (double)base_mask));
-			green = ((byte)agg_basics.uround(c.green * (double)base_mask));
-			blue = ((byte)agg_basics.uround(c.blue * (double)base_mask));
-			alpha = ((byte)agg_basics.uround(a_ * (double)base_mask));
+			red = ((byte)Util.uround(c.red * (double)base_mask));
+			green = ((byte)Util.uround(c.green * (double)base_mask));
+			blue = ((byte)Util.uround(c.blue * (double)base_mask));
+			alpha = ((byte)Util.uround(a_ * (double)base_mask));
 		}
 
 		public Color(Color c)
@@ -277,10 +277,10 @@ namespace MatterHackers.Agg
 
 		public Color(ColorF c)
 		{
-			red = ((byte)agg_basics.uround(c.red * (double)base_mask));
-			green = ((byte)agg_basics.uround(c.green * (double)base_mask));
-			blue = ((byte)agg_basics.uround(c.blue * (double)base_mask));
-			alpha = ((byte)agg_basics.uround(c.alpha * (double)base_mask));
+			red = ((byte)Util.uround(c.red * (double)base_mask));
+			green = ((byte)Util.uround(c.green * (double)base_mask));
+			blue = ((byte)Util.uround(c.blue * (double)base_mask));
+			alpha = ((byte)Util.uround(c.alpha * (double)base_mask));
 		}
 
 		public static bool operator ==(Color a, Color b)
@@ -357,7 +357,7 @@ namespace MatterHackers.Agg
 		public Color gradient(Color c, double k)
 		{
 			Color ret = new Color();
-			int ik = agg_basics.uround(k * base_scale);
+			int ik = Util.uround(k * base_scale);
 			ret.Red0To255 = (byte)((int)(Red0To255) + ((((int)(c.Red0To255) - Red0To255) * ik) >> base_shift));
 			ret.Green0To255 = (byte)((int)(Green0To255) + ((((int)(c.Green0To255) - Green0To255) * ik) >> base_shift));
 			ret.Blue0To255 = (byte)((int)(Blue0To255) + ((((int)(c.Blue0To255) - Blue0To255) * ik) >> base_shift));

@@ -42,7 +42,7 @@ namespace MatterHackers.Agg.Image
 		private void init_span(int len, byte cover)
 		{
 			realloc_span(len);
-			agg_basics.memset(m_span.Array, 0, cover, len);
+			Util.memset(m_span.Array, 0, cover, len);
 		}
 
 		private void init_span(int len, byte[] covers, int coversIndex)
