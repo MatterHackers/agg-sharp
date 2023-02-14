@@ -25,6 +25,7 @@ using MatterHackers.Agg.VertexSource;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -96,6 +97,24 @@ namespace MatterHackers.Agg
 
         private static Regex fileNameNumberMatch = new Regex("\\(\\d+\\)\\s*$", RegexOptions.Compiled);
         private static Regex fileNameUnderscoreNumberMatch = new Regex("_\\d+\\s*$", RegexOptions.Compiled);
+
+        public static string GetNonCollidingFileName(string pathAndFilename)
+        {
+            string extension = Path.GetExtension(pathAndFilename);
+
+            // get the file name without the path
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(Path.GetFileName(pathAndFilename));
+
+            var directory = Path.GetDirectoryName(pathAndFilename);
+            var existingSimilarFilenames = Directory.GetFiles(directory, "*.*");
+            // remove all the file extensions
+            existingSimilarFilenames = existingSimilarFilenames.Select(f => Path.GetFileNameWithoutExtension(f)).ToArray();
+
+            var validName = Util.GetNonCollidingName(fileNameWithoutExtension, new HashSet<string>(existingSimilarFilenames));
+
+            // return the validName with path and extension
+            return Path.Combine(directory, validName) + extension;
+        }
 
         public static string GetNonCollidingName(string desiredName, HashSet<string> listToCheck, bool lookForParens = true)
         {

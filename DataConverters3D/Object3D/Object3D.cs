@@ -582,7 +582,8 @@ namespace MatterHackers.DataConverters3D
             bool mergeMeshes,
 			CancellationToken cancellationToken,
 			MeshOutputSettings outputInfo = null,
-			Action<double, string> reportProgress = null)
+			Action<double, string> reportProgress = null,
+			bool saveMultipleStls = false)
 		{
 			try
 			{
@@ -602,12 +603,45 @@ namespace MatterHackers.DataConverters3D
 					// return true;
 
 					case ".STL":
-                        if (mergeMeshes)
-                        {
-							outputInfo.CsgOptionState = MeshOutputSettings.CsgOption.DoCsgMerge;
+						if (saveMultipleStls)
+						{
+                            bool success = true;
+                            foreach (var child in item.VisibleMeshes())
+                            {
+								var firstValidName = child.Name;
+								if (string.IsNullOrEmpty(firstValidName))
+								{
+                                    firstValidName = child.Parents().Where(i => !string.IsNullOrEmpty(i.Name)).FirstOrDefault().Name;
+									if (firstValidName == null)
+									{
+										Path.GetFileName(meshPathAndFileName);
+									}
+								}
+
+                                // remove any extension
+                                firstValidName = Path.GetFileNameWithoutExtension(firstValidName);
+                                var childMeshPathAndFileName = Path.Combine(Path.GetDirectoryName(meshPathAndFileName), firstValidName + ".stl");
+
+                                childMeshPathAndFileName = Util.GetNonCollidingFileName(childMeshPathAndFileName);
+
+                                if (mergeMeshes)
+                                {
+                                    outputInfo.CsgOptionState = MeshOutputSettings.CsgOption.DoCsgMerge;
+                                }
+                                Mesh mesh = DoMergeAndTransform(child, outputInfo, cancellationToken, reportProgress);
+                                success &= StlProcessing.Save(mesh, childMeshPathAndFileName, cancellationToken, outputInfo);
+                            }
+                            return success;
                         }
-						Mesh mesh = DoMergeAndTransform(item, outputInfo, cancellationToken, reportProgress);
-						return StlProcessing.Save(mesh, meshPathAndFileName, cancellationToken, outputInfo);
+						else
+						{
+							if (mergeMeshes)
+							{
+								outputInfo.CsgOptionState = MeshOutputSettings.CsgOption.DoCsgMerge;
+							}
+							Mesh mesh = DoMergeAndTransform(item, outputInfo, cancellationToken, reportProgress);
+							return StlProcessing.Save(mesh, meshPathAndFileName, cancellationToken, outputInfo);
+						}
 
 					case ".AMF":
 						outputInfo.ReportProgress = reportProgress;
