@@ -703,26 +703,40 @@ namespace MatterHackers.DataConverters3D
 					// union every solid (non-hole, not support structures)
 					var solidsObject = new Object3D()
 					{
-						Mesh = CombineParticipants(item, solidsToUnion, cancellationToken, new Reporter(reportProgress, 0, .33))
+						Mesh = CombineParticipants(item, solidsToUnion, cancellationToken, (ratio, message) =>
+						{
+							reportProgress?.Invoke(Util.GetRatio(0, .33, ratio), null);
+						})
 					};
 
 					// union every hole
 					var holesObject = new Object3D()
 					{
-						Mesh = CombineParticipants(item, holesToSubtract, cancellationToken, new Reporter(reportProgress, .33, .66))
-					};
+						Mesh = CombineParticipants(item, holesToSubtract, cancellationToken, (ratio, message) =>
+                        {
+                            reportProgress?.Invoke(Util.GetRatio(.33, .66, ratio), null);
+                        })
+                    };
 
 					// subtract all holes from all solids
 
-					var result = DoSubtract(item, new IObject3D[] { solidsObject }, new IObject3D[] { holesObject }, new Reporter(reportProgress, .66, 1), cancellationToken);
+					var result = DoSubtract(item, new IObject3D[] { solidsObject }, 
+						new IObject3D[] { holesObject }, 
+						(ratio, message) =>
+						{
+							reportProgress?.Invoke(Util.GetRatio(.66, 1, ratio), null);
+						}, cancellationToken);
 
 					return result.First().Mesh;
 				}
 				else // we only have meshes to union
 				{
 					// union every solid (non-hole, not support structures)
-					return CombineParticipants(item, solidsToUnion, cancellationToken, new Reporter(reportProgress));
-				}
+					return CombineParticipants(item, solidsToUnion, cancellationToken, (ratio, message) =>
+					{
+						reportProgress?.Invoke(ratio, null);
+					});
+                }
 			}
 			else
 			{
@@ -737,25 +751,6 @@ namespace MatterHackers.DataConverters3D
 				return allPolygons;
 			}
 		}
-        
-        public class Reporter : IProgress<ProgressStatus>
-        {
-            public Reporter(Action<double, string> reportProgress, double startRatio = 0, double endRatio = 1)
-            {
-				this.startRatio = startRatio;
-				this.endRatio = endRatio;
-                this.reportProgress = reportProgress;
-            }
-
-			private Action<double, string> reportProgress;
-            private double startRatio;
-            private double endRatio;
-
-            public void Report(ProgressStatus value)
-            {
-                reportProgress?.Invoke(value.Progress0To1 * (endRatio - startRatio) + startRatio, value.Status);
-            }
-        }
 
         /// <summary>
         /// Called when loading existing content and needing to bypass the clearing of MeshPath that normally occurs in the this.Mesh setter
@@ -1389,7 +1384,7 @@ namespace MatterHackers.DataConverters3D
 		public static IEnumerable<IObject3D> DoSubtract(IObject3D rootObject,
 			IEnumerable<IObject3D> keepItems,
 			IEnumerable<IObject3D> removeItems,
-			IProgress<ProgressStatus> reporter,
+			Action<double, string> reporter,
 			CancellationToken cancellationToken,
 			ProcessingModes processingMode = ProcessingModes.Polygons,
 			ProcessingResolution inputResolution = ProcessingResolution._64,
@@ -1417,8 +1412,6 @@ namespace MatterHackers.DataConverters3D
 							reporter,
 							cancellationToken);
 #else
-						var progressStatus = new ProgressStatus();
-
 						var resultsMesh = keep.Mesh;
 						var keepWorldMatrix = keep.Matrix;
 						if (rootObject != null)
@@ -1448,7 +1441,6 @@ namespace MatterHackers.DataConverters3D
 								reporter,
 								amountPerOperation,
 								ratioCompleted,
-								progressStatus,
 								cancellationToken);
 
 							// after the first time we get a result the results mesh is in the right coordinate space
@@ -1456,8 +1448,7 @@ namespace MatterHackers.DataConverters3D
 
 							// report our progress
 							ratioCompleted += amountPerOperation;
-							progressStatus.Progress0To1 = ratioCompleted;
-							reporter?.Report(progressStatus);
+							reporter?.Invoke(ratioCompleted, null);
 						}
 
 #endif
@@ -1491,7 +1482,7 @@ namespace MatterHackers.DataConverters3D
 		public static Mesh CombineParticipants(IObject3D rootObject,
 			IEnumerable<IObject3D> participants,
 			CancellationToken cancellationToken,
-			IProgress<ProgressStatus> reporter = null,
+			Action<double, string> reporter = null,
 			ProcessingModes processingMode = ProcessingModes.Polygons,
 			ProcessingResolution inputResolution = ProcessingResolution._64,
 			ProcessingResolution outputResolution = ProcessingResolution._64)
@@ -1502,8 +1493,6 @@ namespace MatterHackers.DataConverters3D
 
 			double amountPerOperation = 1.0 / totalOperations;
 			double ratioCompleted = 0;
-
-			var progressStatus = new ProgressStatus();
 
 			var setMeshes = new List<Mesh>();
 			foreach (var set in touchingSets)
@@ -1566,8 +1555,7 @@ namespace MatterHackers.DataConverters3D
 					setMesh.Transform(keepWorldMatrix);
 					// report our progress
 					ratioCompleted += amountPerOperation;
-					progressStatus.Progress0To1 = ratioCompleted;
-					reporter?.Report(progressStatus);
+					reporter?.Invoke(ratioCompleted, null);
 					setMeshes.Add(setMesh);
 				}
 			}

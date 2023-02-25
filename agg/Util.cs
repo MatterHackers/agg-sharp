@@ -28,6 +28,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using static MatterHackers.Agg.ScanlineRasterizer;
 
 namespace MatterHackers.Agg
 {
@@ -39,6 +40,17 @@ namespace MatterHackers.Agg
             fill_non_zero,
             fill_even_odd
         }
+
+        public static double GetRatio(double startRatio, double endRatio, int index, int count)
+        {
+            return startRatio + (endRatio - startRatio) * index / count;
+        }
+
+        public static double GetRatio(double startRatio, double endRatio, double partialRatio)
+        {
+            return startRatio + (endRatio - startRatio) * partialRatio;
+        }
+
 
         public static void memcpy(byte[] dest, int destIndex, byte[] source, int sourceIndex, int count)
         {

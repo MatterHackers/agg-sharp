@@ -84,7 +84,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			ProcessingModes processingMode,
 			ProcessingResolution inputResolution,
 			ProcessingResolution outputResolution,
-			IProgress<ProgressStatus> reporter,
+			Action<double, string> reporter,
 			CancellationToken cancellationToken,
 			double amountPerOperation = 1,
 			double ratioCompleted = 0)
@@ -97,12 +97,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				return csgBySlicing.Calculate(operation,
 					(ratio, message) =>
                     {
-						reporter?.Report(new ProgressStatus()
-						{
-							Progress0To1 = ratio * amountPerOperation + ratioCompleted,
-							Status = message
-						});
-
+						reporter?.Invoke(ratio * amountPerOperation + ratioCompleted, message);
 					},
 					cancellationToken);
 			}
@@ -251,10 +246,9 @@ namespace MatterHackers.PolygonMesh.Csg
 			ProcessingResolution inputResolution = ProcessingResolution._64,
 			ProcessingResolution outputResolution = ProcessingResolution._64,
 			// reporting
-			IProgress<ProgressStatus> reporter = null,
+			Action<double, string> reporter = null,
 			double amountPerOperation = 1,
 			double ratioCompleted = 0,
-			ProgressStatus progressStatus = null,
 			CancellationToken cancellationToken = default(CancellationToken))
 		{
 			if (processingMode == ProcessingModes.Polygons)
