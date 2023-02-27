@@ -142,8 +142,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
             //       /\1
             //      /1 \
             //     / /\ \
-            //    / /  \2\
-            //   / 0\  /  \
+            //    / /  \0\
+            //   / 2\  /  \
             //  /    \/3   \
             // /____________\
             // 2             0
@@ -163,7 +163,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
             // back to start, done
 
             var outerLoop = PolygonsExtensions.CreateFromString("x:1000, y:0,x:0, y:1000,x:-1000, y:0,|");
-            var innerLoop = PolygonsExtensions.CreateFromString("x:-500, y:500,x:0, y:750,x:500, y:500,x:0, y:250,|");
+            var innerLoop = PolygonsExtensions.CreateFromString("x:4000, y:500,x:0, y:750,x:-400, y:500,x:0, y:250,|");
 
 			var (outerStart, innerStart) = PathStitcher.BestStartIndices(outerLoop[0], innerLoop[0]);
 
@@ -172,17 +172,18 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			var expected = new List<(int outerIndex, int innerIndex, int polyIndex)>()
 			{
-				(1,1,0),
-				(1,0,1),
-				(2,0,0),
-				(2,3,0),
-				(0,2,1),
+				(1,1,1), // the point on outer, the point on inner, the polygon to advance on
 				(1,2,0),
-				(1,1,1),
+				(2,2,1),
+				(2,3,0),
+				(0,3,1),
+				(0,0,0),
+				(1,0,1),
 			};
-			foreach (var data in expected)
+			for (var i = 0; i < expected.Count; i++)
 			{
-				Assert.AreEqual(data.polyIndex, PathStitcher.GetPolygonToAdvance(outerLoop[0], data.outerIndex, innerLoop[0], data.innerIndex), "Validate Advance");
+				var data = expected[i];
+                Assert.AreEqual(data.polyIndex, PathStitcher.GetPolygonToAdvance(outerLoop[0], data.outerIndex, innerLoop[0], data.innerIndex), "Validate Advance");
 			}
         }
 
