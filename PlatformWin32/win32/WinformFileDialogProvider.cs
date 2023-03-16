@@ -67,7 +67,27 @@ namespace MatterHackers.Agg.Platform
 					folderBrowserDialog.RootFolder = Environment.SpecialFolder.MyComputer;
 					break;
 
-				default:
+				case SelectFolderDialogParams.RootFolderTypes.Specify:
+                    var rootFolder = folderParams.FolderPath;
+                    // check each folder of the folder path to find the first one that exsits
+                    while (!Directory.Exists(rootFolder))
+                    {
+                        rootFolder = Path.GetDirectoryName(rootFolder);
+                    }
+
+                    // check if the folder exists
+                    if (Directory.Exists(rootFolder))
+                    {
+                        folderBrowserDialog.SelectedPath = rootFolder;
+                    }
+					else
+					{
+                        folderBrowserDialog.RootFolder = Environment.SpecialFolder.MyComputer;
+                    }
+
+                    break;
+
+                default:
 					throw new NotImplementedException();
 			}
 			folderBrowserDialog.ShowNewFolderButton = folderParams.ShowNewFolderButton;
