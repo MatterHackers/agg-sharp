@@ -92,14 +92,14 @@ namespace MatterHackers.Agg
 			tx = x;
 			ty = y;
 			m_trans.transform(ref tx, ref ty);
-			int x1 = agg_basics.iround(tx * (double)subpixel_scale_e.subpixel_scale);
-			int y1 = agg_basics.iround(ty * (double)subpixel_scale_e.subpixel_scale);
+			int x1 = Util.iround(tx * (double)subpixel_scale_e.subpixel_scale);
+			int y1 = Util.iround(ty * (double)subpixel_scale_e.subpixel_scale);
 
 			tx = x + len;
 			ty = y;
 			m_trans.transform(ref tx, ref ty);
-			int x2 = agg_basics.iround(tx * (double)subpixel_scale_e.subpixel_scale);
-			int y2 = agg_basics.iround(ty * (double)subpixel_scale_e.subpixel_scale);
+			int x2 = Util.iround(tx * (double)subpixel_scale_e.subpixel_scale);
+			int y2 = Util.iround(ty * (double)subpixel_scale_e.subpixel_scale);
 
 			m_li_x = new dda2_line_interpolator(x1, x2, (int)len);
 			m_li_y = new dda2_line_interpolator(y1, y2, (int)len);
@@ -109,8 +109,8 @@ namespace MatterHackers.Agg
 		public void resynchronize(double xe, double ye, int len)
 		{
 			m_trans.transform(ref xe, ref ye);
-			m_li_x = new dda2_line_interpolator(m_li_x.y(), agg_basics.iround(xe * (double)subpixel_scale_e.subpixel_scale), (int)len);
-			m_li_y = new dda2_line_interpolator(m_li_y.y(), agg_basics.iround(ye * (double)subpixel_scale_e.subpixel_scale), (int)len);
+			m_li_x = new dda2_line_interpolator(m_li_x.y(), Util.iround(xe * (double)subpixel_scale_e.subpixel_scale), (int)len);
+			m_li_y = new dda2_line_interpolator(m_li_y.y(), Util.iround(ye * (double)subpixel_scale_e.subpixel_scale), (int)len);
 		}
 
 		//----------------------------------------------------------------

@@ -105,8 +105,8 @@ namespace MatterHackers.Agg.SvgTools
                     bool first = true;
                     do
                     {
-                        var x = agg_basics.ParseDouble(pointsString, ref parseIndex, fastSimpleNumbers);
-                        var y = agg_basics.ParseDouble(pointsString, ref parseIndex, fastSimpleNumbers);
+                        var x = Util.ParseDouble(pointsString, ref parseIndex, fastSimpleNumbers);
+                        var y = Util.ParseDouble(pointsString, ref parseIndex, fastSimpleNumbers);
                         if (first)
                         {
                             vertexStorage.MoveTo(x, y);
@@ -228,13 +228,13 @@ namespace MatterHackers.Agg.SvgTools
                             do
                             {
                                 Vector2 radii;
-                                radii.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                radii.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                var angle = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                var largeArcFlag = (int)agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                var sweepFlag = (int)agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                radii.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                radii.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                var angle = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                var largeArcFlag = (int)Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                var sweepFlag = (int)Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 
                                 if (command == 'a')
                                 {
@@ -264,12 +264,12 @@ namespace MatterHackers.Agg.SvgTools
                             do
                             {
                                 Vector2 controlPoint1;
-                                controlPoint1.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                controlPoint1.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                secondControlPoint.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                secondControlPoint.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                controlPoint1.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                controlPoint1.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                secondControlPoint.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                secondControlPoint.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
                                 if (command == 'c')
                                 {
                                     controlPoint1 += lastXY;
@@ -304,10 +304,10 @@ namespace MatterHackers.Agg.SvgTools
                                     controlPoint = curXY;
                                 }
 
-                                secondControlPoint.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                secondControlPoint.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                secondControlPoint.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                secondControlPoint.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
                                 if (command == 's')
                                 {
                                     secondControlPoint += lastXY;
@@ -328,7 +328,7 @@ namespace MatterHackers.Agg.SvgTools
                         do
                         {
                             curXY.Y = lastXY.Y;
-                            curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                            curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
                             if (command == 'h')
                             {
                                 curXY.X += lastXY.X;
@@ -345,8 +345,8 @@ namespace MatterHackers.Agg.SvgTools
                         parseIndex++;
                         do
                         {
-                            curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                            curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                            curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
                             if (command == 'l')
                             {
                                 curXY += lastXY;
@@ -364,8 +364,8 @@ namespace MatterHackers.Agg.SvgTools
                         {
                             // svg fonts are stored cw and agg expects its shapes to be ccw.  cw shapes are holes.
                             // so we store the position of the start of this polygon so we can flip it when we close it.
-                            curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                            curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                            curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
                             if (command == 'm')
                             {
                                 curXY += lastXY;
@@ -383,10 +383,10 @@ namespace MatterHackers.Agg.SvgTools
                         do
                         {
                             Vector2 controlPoint;
-                            controlPoint.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            controlPoint.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                            controlPoint.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                            controlPoint.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                            curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                            curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
                             if (command == 'q')
                             {
                                 controlPoint += lastXY;
@@ -403,8 +403,8 @@ namespace MatterHackers.Agg.SvgTools
                         parseIndex++;
                         do
                         {
-                            curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                            curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                            curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
                             if (command == 't')
                             {
                                 curXY += lastXY;
@@ -419,7 +419,7 @@ namespace MatterHackers.Agg.SvgTools
                     case 'V': // vertical line to absolute
                         parseIndex++;
                         curXY.X = lastXY.X;
-                        curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                        curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
                         if (command == 'v')
                         {
                             curXY.Y += lastXY.Y;

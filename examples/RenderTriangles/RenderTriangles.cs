@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.UI.Examples;
@@ -12,9 +13,12 @@ namespace MatterHackers.Agg
     public class TriangleRenderer : GuiWidget
     {
 		public static List<Color> colors = null;
+        public bool DrawNumbers { get; set; }
 
-		public TriangleRenderer()
+        public TriangleRenderer()
         {
+			this.DrawNumbers = DrawNumbers;
+
 			if (colors == null)
             {
 				colors = new List<Color>();
@@ -89,6 +93,22 @@ namespace MatterHackers.Agg
                 }
 			}
 
+			if (DrawNumbers)
+			{
+				// draw all the numbers
+                foreach (var poly in Polygons.Where(poly => poly.Count > 1))
+				{
+                    var numPoints = poly.Count;
+                    for (int i = 0; i < numPoints; i++)
+					{
+                        var p0 = poly[i];
+                        graphics2D.DrawString(i.ToString(), transform.Transform(p0));
+                    }
+
+                    colorIndex++;
+                }
+			}
+
 			base.OnDraw(graphics2D);
         }
 
@@ -99,7 +119,7 @@ namespace MatterHackers.Agg
 	{
         private ThemedTextEditWidget textWidget;
 
-		string CurrentFile()
+        string CurrentFile()
 		{
 			return "Polygons_0.txt";
 		}
@@ -129,7 +149,7 @@ namespace MatterHackers.Agg
 
 			AddChild(spliter);
 
-			var leftSideTopToBottom = new FlowLayoutWidget()
+			var leftSideTopToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom)
             {
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Stretch,
@@ -149,9 +169,17 @@ namespace MatterHackers.Agg
 			textWidget.ActualTextEditWidget.VAnchor = VAnchor.Stretch;
 			textWidget.ActualTextEditWidget.HAnchor = HAnchor.Stretch;
 
-			leftSideTopToBottom.AddChild(textWidget);
+			var showNumbers = new CheckBox("Show Numbers")
+			{
+				Margin = new BorderDouble(7),
+				HAnchor = HAnchor.Left
+			};
 
-			spliter.AddChild(new VerticalLine());
+            leftSideTopToBottom.AddChild(textWidget);
+
+            leftSideTopToBottom.AddChild(showNumbers);
+
+            spliter.AddChild(new VerticalLine());
 
 			var triangleRenderer = new TriangleRenderer()
 			{
@@ -159,7 +187,12 @@ namespace MatterHackers.Agg
 				VAnchor = VAnchor.Stretch
 			};
 
-			spliter.Panel2.AddChild(triangleRenderer);
+			showNumbers.CheckedStateChanged += (s, e) =>
+			{
+				triangleRenderer.DrawNumbers = showNumbers.Checked;
+			};
+
+            spliter.Panel2.AddChild(triangleRenderer);
 
 			textWidget.TextChanged += (sender, e) =>
 			{

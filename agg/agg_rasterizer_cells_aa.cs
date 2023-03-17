@@ -31,7 +31,7 @@
 //
 //----------------------------------------------------------------------------
 
-using poly_subpixel_scale_e = MatterHackers.Agg.agg_basics.poly_subpixel_scale_e;
+using poly_subpixel_scale_e = MatterHackers.Agg.Util.poly_subpixel_scale_e;
 
 namespace MatterHackers.Agg
 {
@@ -149,13 +149,13 @@ namespace MatterHackers.Agg
 			m_style_cell.Style(style_cell);
 		}
 
-		private enum dx_limit_e { dx_limit = 16384 << agg_basics.poly_subpixel_scale_e.poly_subpixel_shift };
+		private enum dx_limit_e { dx_limit = 16384 << Util.poly_subpixel_scale_e.poly_subpixel_shift };
 
 		public void line(int x1, int y1, int x2, int y2)
 		{
-			int poly_subpixel_shift = (int)agg_basics.poly_subpixel_scale_e.poly_subpixel_shift;
-			int poly_subpixel_mask = (int)agg_basics.poly_subpixel_scale_e.poly_subpixel_mask;
-			int poly_subpixel_scale = (int)agg_basics.poly_subpixel_scale_e.poly_subpixel_scale;
+			int poly_subpixel_shift = (int)Util.poly_subpixel_scale_e.poly_subpixel_shift;
+			int poly_subpixel_mask = (int)Util.poly_subpixel_scale_e.poly_subpixel_mask;
+			int poly_subpixel_scale = (int)Util.poly_subpixel_scale_e.poly_subpixel_scale;
 			int dx = x2 - x1;
 
 			if (dx >= (int)dx_limit_e.dx_limit || dx <= -(int)dx_limit_e.dx_limit)

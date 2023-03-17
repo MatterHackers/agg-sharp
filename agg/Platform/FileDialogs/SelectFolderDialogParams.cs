@@ -4,7 +4,11 @@ namespace MatterHackers.Agg.Platform
 {
 	public class SelectFolderDialogParams
 	{
-		public enum RootFolderTypes { MyComputer };
+		public enum RootFolderTypes
+		{
+			MyComputer,
+            Specify
+		};
 
 		public string Description { get; set; }
 

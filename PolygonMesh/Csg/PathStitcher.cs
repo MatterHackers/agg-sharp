@@ -214,21 +214,22 @@ namespace MatterHackers.PolygonMesh.Processors
 			return mesh;
 		}
 
-		public static int GetPolygonToAdvance(Polygon outerLoop, int oStart, Polygon innerLoop, int iStart)
+		public static int GetPolygonToAdvance(Polygon outerLoop, int outerIndex, Polygon innerLoop, int innerIndex)
 		{
 			// given the start, find the closest next point along either polygon to move to
-			var outerStart = outerLoop[oStart];
-			var outerNextIndex = oStart + 1 % outerLoop.Count;
+			var outerStart = outerLoop[outerIndex];
+			var outerNextIndex = outerIndex + 1 % outerLoop.Count;
 			var outerNext = outerLoop[outerNextIndex];
             
-			var innerStart = innerLoop[iStart];
-			var innerNextIndex = iStart + 1 % innerLoop.Count;
+			var innerStart = innerLoop[innerIndex];
+			var innerNextIndex = innerIndex + 1 % innerLoop.Count;
 			var innerNext = innerLoop[innerNextIndex];
 
 			var distanceToInnerNext = (innerNext - outerStart).LengthSquared();
 			var distanceToOuterNext = (innerStart - outerNext).LengthSquared();
             
-            if (distanceToInnerNext < distanceToOuterNext)
+            if (distanceToInnerNext < distanceToOuterNext
+                && !innerLoop.SegmentTouching(outerStart, innerNext))
 			{
                 // check if segment innerNext - outerStart crosses any other line segments
                 return 1;

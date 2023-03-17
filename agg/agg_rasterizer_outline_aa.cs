@@ -38,7 +38,7 @@ namespace MatterHackers.Agg
 		{
 			double dx = val.x - x;
 			double dy = val.y - y;
-			return (len = agg_basics.uround(Math.Sqrt(dx * dx + dy * dy))) >
+			return (len = Util.uround(Math.Sqrt(dx * dx + dy * dy))) >
 				   (LineAABasics.line_subpixel_scale + LineAABasics.line_subpixel_scale / 2);
 		}
 	};

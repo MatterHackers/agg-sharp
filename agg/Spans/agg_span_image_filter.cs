@@ -114,8 +114,8 @@ namespace MatterHackers.Agg
 		{
 			m_dx_dbl = dx;
 			m_dy_dbl = dy;
-			m_dx_int = (int)agg_basics.iround(dx * (int)image_subpixel_scale_e.image_subpixel_scale);
-			m_dy_int = (int)agg_basics.iround(dy * (int)image_subpixel_scale_e.image_subpixel_scale);
+			m_dx_int = (int)Util.iround(dx * (int)image_subpixel_scale_e.image_subpixel_scale);
+			m_dy_int = (int)Util.iround(dy * (int)image_subpixel_scale_e.image_subpixel_scale);
 		}
 
 		public void filter_offset(double d)
@@ -352,17 +352,17 @@ namespace MatterHackers.Agg
 
 		private void blur_x(double v)
 		{
-			m_blur_x = (int)agg_basics.uround(v * (double)((int)image_subpixel_scale_e.image_subpixel_scale));
+			m_blur_x = (int)Util.uround(v * (double)((int)image_subpixel_scale_e.image_subpixel_scale));
 		}
 
 		private void blur_y(double v)
 		{
-			m_blur_y = (int)agg_basics.uround(v * (double)((int)image_subpixel_scale_e.image_subpixel_scale));
+			m_blur_y = (int)Util.uround(v * (double)((int)image_subpixel_scale_e.image_subpixel_scale));
 		}
 
 		public void blur(double v)
 		{
-			m_blur_x = m_blur_y = (int)agg_basics.uround(v * (double)((int)image_subpixel_scale_e.image_subpixel_scale));
+			m_blur_x = m_blur_y = (int)Util.uround(v * (double)((int)image_subpixel_scale_e.image_subpixel_scale));
 		}
 
 		protected void adjust_scale(ref int rx, ref int ry)

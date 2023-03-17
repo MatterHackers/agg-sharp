@@ -151,7 +151,7 @@ namespace MatterHackers.GCodeVisualizer
 				&& (stopPos == -1 || stringPos < stopPos))
 			{
 				stringPos += stringToCheckAfter.Length;
-				readValue = agg_basics.ParseDouble(stringWithNumber, ref stringPos, true);
+				readValue = Util.ParseDouble(stringWithNumber, ref stringPos, true);
 
 				return true;
 			}

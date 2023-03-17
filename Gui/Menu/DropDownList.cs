@@ -378,7 +378,7 @@ namespace MatterHackers.Agg.UI
 				{
 					var gradientDistanceMinusBorder = (int)(gradientDistance - Border.Width);
 
-					gradientBackground = agg_basics.TrasparentToColorGradientX(
+					gradientBackground = Util.TrasparentToColorGradientX(
 						(int)(dropArrowBounds.Width + gradientDistanceMinusBorder),
 						(int)(this.LocalBounds.Height - Border.Height),
 						background,

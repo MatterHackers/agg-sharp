@@ -128,22 +128,27 @@ namespace MatterHackers.Agg.VertexSource
 			}
 		}
 
+        /// <summary>
+		/// This is the number of segments that will be used in each turn. Set to 0 to use the default of an angle approximation.
+		/// </summary>
+        public int NumSegments { get; set; } = 0;
+        
 		public override IEnumerable<VertexData> Vertices()
 		{
 			var allPaths = new JoinPaths();
-			allPaths.SourcePaths.Add(new Arc(bounds.Left + leftBottomRadius.X, bounds.Bottom + leftBottomRadius.Y, leftBottomRadius.X, leftBottomRadius.Y, Math.PI, Math.PI + Math.PI * 0.5)
+			allPaths.SourcePaths.Add(new Arc(bounds.Left + leftBottomRadius.X, bounds.Bottom + leftBottomRadius.Y, leftBottomRadius.X, leftBottomRadius.Y, Math.PI, Math.PI + Math.PI * 0.5, numSegments: NumSegments)
 			{
 				ResolutionScale = ResolutionScale
 			});
-			allPaths.SourcePaths.Add(new Arc(bounds.Right - rightBottomRadius.X, bounds.Bottom + rightBottomRadius.Y, rightBottomRadius.X, rightBottomRadius.Y, Math.PI + Math.PI * 0.5, 0.0)
+			allPaths.SourcePaths.Add(new Arc(bounds.Right - rightBottomRadius.X, bounds.Bottom + rightBottomRadius.Y, rightBottomRadius.X, rightBottomRadius.Y, Math.PI + Math.PI * 0.5, 0.0, numSegments: NumSegments)
 			{
 				ResolutionScale = ResolutionScale
 			});
-			allPaths.SourcePaths.Add(new Arc(bounds.Right - rightTopRadius.X, bounds.Top - rightTopRadius.Y, rightTopRadius.X, rightTopRadius.Y, 0.0, Math.PI * 0.5)
+			allPaths.SourcePaths.Add(new Arc(bounds.Right - rightTopRadius.X, bounds.Top - rightTopRadius.Y, rightTopRadius.X, rightTopRadius.Y, 0.0, Math.PI * 0.5, numSegments: NumSegments)
 			{
 				ResolutionScale = ResolutionScale
 			});
-			allPaths.SourcePaths.Add(new Arc(bounds.Left + leftTopRadius.X, bounds.Top - leftTopRadius.Y, leftTopRadius.X, leftTopRadius.Y, Math.PI * 0.5, Math.PI)
+			allPaths.SourcePaths.Add(new Arc(bounds.Left + leftTopRadius.X, bounds.Top - leftTopRadius.Y, leftTopRadius.X, leftTopRadius.Y, Math.PI * 0.5, Math.PI, numSegments: NumSegments)
 			{
 				ResolutionScale = ResolutionScale
 			});

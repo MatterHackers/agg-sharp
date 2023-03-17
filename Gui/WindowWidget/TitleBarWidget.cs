@@ -65,8 +65,8 @@ namespace MatterHackers.Agg.UI
 				var windowToDragParent = windowToDrag.Parent;
 				if (windowToDragParent != null)
 				{
-					dragPosition.X = agg_basics.Clamp(dragPosition.X, -windowToDrag.Width + 10, windowToDragParent.Width - 10);
-					dragPosition.Y = agg_basics.Clamp(dragPosition.Y, -windowToDrag.Height + 10, windowToDragParent.Height - windowToDrag.Height);
+					dragPosition.X = Util.Clamp(dragPosition.X, -windowToDrag.Width + 10, windowToDragParent.Width - 10);
+					dragPosition.Y = Util.Clamp(dragPosition.Y, -windowToDrag.Height + 10, windowToDragParent.Height - windowToDrag.Height);
 				}
 
 				windowToDrag.Position = dragPosition;

@@ -548,7 +548,6 @@ namespace MatterHackers.DataConverters3D
 
 			return selectedItems;
 		}
-
-		#endregion
-	}
+        #endregion
+    }
 }

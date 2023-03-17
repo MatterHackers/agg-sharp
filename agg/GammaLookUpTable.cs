@@ -61,13 +61,13 @@ namespace MatterHackers.Agg
 
 			for (uint i = 0; i < (uint)gamma_scale_e.gamma_size; i++)
 			{
-				m_dir_gamma[i] = (byte)agg_basics.uround(Math.Pow(i / (double)gamma_scale_e.gamma_mask, m_gamma) * (double)gamma_scale_e.gamma_mask);
+				m_dir_gamma[i] = (byte)Util.uround(Math.Pow(i / (double)gamma_scale_e.gamma_mask, m_gamma) * (double)gamma_scale_e.gamma_mask);
 			}
 
 			double inv_g = 1.0 / g;
 			for (uint i = 0; i < (uint)gamma_scale_e.gamma_size; i++)
 			{
-				m_inv_gamma[i] = (byte)agg_basics.uround(Math.Pow(i / (double)gamma_scale_e.gamma_mask, inv_g) * (double)gamma_scale_e.gamma_mask);
+				m_inv_gamma[i] = (byte)Util.uround(Math.Pow(i / (double)gamma_scale_e.gamma_mask, inv_g) * (double)gamma_scale_e.gamma_mask);
 			}
 		}
 

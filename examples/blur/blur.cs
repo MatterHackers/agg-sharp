@@ -192,7 +192,7 @@ and the filter produces quite adequate result.";
 						// Works only for 8 bits per channel and only with radii <= 254.
 						//------------------
 						stack_blur test = new stack_blur();
-						test.Blur(image2, agg_basics.uround(m_radius.Value), agg_basics.uround(m_radius.Value));
+						test.Blur(image2, Util.uround(m_radius.Value), Util.uround(m_radius.Value));
 					}
 					else
 					{

@@ -497,84 +497,85 @@ namespace MatterHackers.DataConverters3D
 				cacheContext = new CacheContext();
 			}
 
-			switch (extension.ToUpper())
+			try
 			{
-				case ".MCX":
-					try
-					{
-						string json;
-						// check if the file is binary
-						if (IsBinaryMCX(stream))
+				switch (extension.ToUpper())
+				{
+					case ".MCX":
 						{
-							// it looks like a binary mcx file (which is a zip file). Load the contents
-							using (var archive = new ZipArchive(stream, ZipArchiveMode.Read))
+							string json;
+							// check if the file is binary
+							if (IsBinaryMCX(stream))
 							{
-								var sceneEntryName = archive.Entries.Where(e => e.Name.Contains("scene.mcx")).First().FullName;
-								json = new StreamReader(archive.GetEntry(sceneEntryName).Open()).ReadToEnd();
-							}
-						}
-						else
-						{
-							json = new StreamReader(stream).ReadToEnd();
-						}
-
-						// Load the meta file and convert MeshPath links into objects
-						var loadedItem = JsonConvert.DeserializeObject<Object3D>(
-							json,
-							new JsonSerializerSettings
-							{
-								ContractResolver = new IObject3DContractResolver(),
-								NullValueHandling = NullValueHandling.Ignore,
-								MaxDepth = MaxJsonDepth
-							});
-
-						loadedItem?.LoadMeshLinks(cancellationToken, cacheContext, progress);
-
-						return loadedItem;
-					}
-					catch
-					{
-					}
-					return null;
-
-				case ".STL":
-					var result = new Object3D();
-					result.SetMeshDirect(StlProcessing.Load(stream, cancellationToken, progress));
-					return result;
-
-				case ".AMF":
-					return AmfDocument.Load(stream, cancellationToken, progress);
-
-				case ".3MF":
-					{
-						var file = ThreeMfFile.Load(stream);
-						var object3D = new Object3D();
-						foreach (var model in file.Models)
-                        {
-							foreach (var item in model.Items)
-							{
-								if (item.Object is ThreeMfObject itemObject)
+								// it looks like a binary mcx file (which is a zip file). Load the contents
+								using (var archive = new ZipArchive(stream, ZipArchiveMode.Read))
 								{
-									var transform = item.Transform;
-									AddObject(object3D, itemObject, ToMatrix4X4(transform));
+									var sceneEntryName = archive.Entries.Where(e => e.Name.Contains("scene.mcx")).First().FullName;
+									json = new StreamReader(archive.GetEntry(sceneEntryName).Open()).ReadToEnd();
 								}
 							}
-                        }
+							else
+							{
+								json = new StreamReader(stream).ReadToEnd();
+							}
 
-						if (object3D?.Children.Count > 0)
-                        {
-							return object3D;
-                        }
+							// Load the meta file and convert MeshPath links into objects
+							var loadedItem = JsonConvert.DeserializeObject<Object3D>(
+								json,
+								new JsonSerializerSettings
+								{
+									ContractResolver = new IObject3DContractResolver(),
+									NullValueHandling = NullValueHandling.Ignore,
+									MaxDepth = MaxJsonDepth
+								});
 
+							loadedItem?.LoadMeshLinks(cancellationToken, cacheContext, progress);
+
+							return loadedItem;
+						}
+
+					case ".STL":
+						var result = new Object3D();
+						result.SetMeshDirect(StlProcessing.Load(stream, cancellationToken, progress));
+						return result;
+
+					case ".AMF":
+						return AmfDocument.Load(stream, cancellationToken, progress);
+
+					case ".3MF":
+						{
+							var file = ThreeMfFile.Load(stream);
+							var object3D = new Object3D();
+							foreach (var model in file.Models)
+							{
+								foreach (var item in model.Items)
+								{
+									if (item.Object is ThreeMfObject itemObject)
+									{
+										var transform = item.Transform;
+										AddObject(object3D, itemObject, ToMatrix4X4(transform));
+									}
+								}
+							}
+
+							if (object3D?.Children.Count > 0)
+							{
+								return object3D;
+							}
+
+							return null;
+						}
+
+					case ".OBJ":
+						return ObjSupport.Load(stream, progress);
+
+					default:
 						return null;
-					}
-
-				case ".OBJ":
-					return ObjSupport.Load(stream, progress);
-
-				default:
-					return null;
+				}
 			}
+            catch { }
+
+			return null;
 		}
 
 		public static bool Save(IObject3D item,
@@ -582,7 +583,8 @@ namespace MatterHackers.DataConverters3D
             bool mergeMeshes,
 			CancellationToken cancellationToken,
 			MeshOutputSettings outputInfo = null,
-			Action<double, string> reportProgress = null)
+			Action<double, string> reportProgress = null,
+			bool saveMultipleStls = false)
 		{
 			try
 			{
@@ -602,12 +604,45 @@ namespace MatterHackers.DataConverters3D
 					// return true;
 
 					case ".STL":
-                        if (mergeMeshes)
-                        {
-							outputInfo.CsgOptionState = MeshOutputSettings.CsgOption.DoCsgMerge;
+						if (saveMultipleStls)
+						{
+                            bool success = true;
+                            foreach (var child in item.VisibleMeshes())
+                            {
+								var firstValidName = child.Name;
+								if (string.IsNullOrEmpty(firstValidName))
+								{
+                                    firstValidName = child.Parents().Where(i => !string.IsNullOrEmpty(i.Name)).FirstOrDefault().Name;
+									if (firstValidName == null)
+									{
+										Path.GetFileName(meshPathAndFileName);
+									}
+								}
+
+                                // remove any extension
+                                firstValidName = Path.GetFileNameWithoutExtension(firstValidName);
+                                var childMeshPathAndFileName = Path.Combine(Path.GetDirectoryName(meshPathAndFileName), firstValidName + ".stl");
+
+                                childMeshPathAndFileName = Util.GetNonCollidingFileName(childMeshPathAndFileName);
+
+                                if (mergeMeshes)
+                                {
+                                    outputInfo.CsgOptionState = MeshOutputSettings.CsgOption.DoCsgMerge;
+                                }
+                                Mesh mesh = DoMergeAndTransform(child, outputInfo, cancellationToken, reportProgress);
+                                success &= StlProcessing.Save(mesh, childMeshPathAndFileName, cancellationToken, outputInfo);
+                            }
+                            return success;
                         }
-						Mesh mesh = DoMergeAndTransform(item, outputInfo, cancellationToken, reportProgress);
-						return StlProcessing.Save(mesh, meshPathAndFileName, cancellationToken, outputInfo);
+						else
+						{
+							if (mergeMeshes)
+							{
+								outputInfo.CsgOptionState = MeshOutputSettings.CsgOption.DoCsgMerge;
+							}
+							Mesh mesh = DoMergeAndTransform(item, outputInfo, cancellationToken, reportProgress);
+							return StlProcessing.Save(mesh, meshPathAndFileName, cancellationToken, outputInfo);
+						}
 
 					case ".AMF":
 						outputInfo.ReportProgress = reportProgress;
@@ -669,26 +704,40 @@ namespace MatterHackers.DataConverters3D
 					// union every solid (non-hole, not support structures)
 					var solidsObject = new Object3D()
 					{
-						Mesh = CombineParticipants(item, solidsToUnion, cancellationToken, new Reporter(reportProgress, 0, .33))
+						Mesh = CombineParticipants(item, solidsToUnion, cancellationToken, (ratio, message) =>
+						{
+							reportProgress?.Invoke(Util.GetRatio(0, .33, ratio), null);
+						})
 					};
 
 					// union every hole
 					var holesObject = new Object3D()
 					{
-						Mesh = CombineParticipants(item, holesToSubtract, cancellationToken, new Reporter(reportProgress, .33, .66))
-					};
+						Mesh = CombineParticipants(item, holesToSubtract, cancellationToken, (ratio, message) =>
+                        {
+                            reportProgress?.Invoke(Util.GetRatio(.33, .66, ratio), null);
+                        })
+                    };
 
 					// subtract all holes from all solids
 
-					var result = DoSubtract(item, new IObject3D[] { solidsObject }, new IObject3D[] { holesObject }, new Reporter(reportProgress, .66, 1), cancellationToken);
+					var result = DoSubtract(item, new IObject3D[] { solidsObject }, 
+						new IObject3D[] { holesObject }, 
+						(ratio, message) =>
+						{
+							reportProgress?.Invoke(Util.GetRatio(.66, 1, ratio), null);
+						}, cancellationToken);
 
 					return result.First().Mesh;
 				}
 				else // we only have meshes to union
 				{
 					// union every solid (non-hole, not support structures)
-					return CombineParticipants(item, solidsToUnion, cancellationToken, new Reporter(reportProgress));
-				}
+					return CombineParticipants(item, solidsToUnion, cancellationToken, (ratio, message) =>
+					{
+						reportProgress?.Invoke(ratio, null);
+					});
+                }
 			}
 			else
 			{
@@ -703,25 +752,6 @@ namespace MatterHackers.DataConverters3D
 				return allPolygons;
 			}
 		}
-        
-        public class Reporter : IProgress<ProgressStatus>
-        {
-            public Reporter(Action<double, string> reportProgress, double startRatio = 0, double endRatio = 1)
-            {
-				this.startRatio = startRatio;
-				this.endRatio = endRatio;
-                this.reportProgress = reportProgress;
-            }
-
-			private Action<double, string> reportProgress;
-            private double startRatio;
-            private double endRatio;
-
-            public void Report(ProgressStatus value)
-            {
-                reportProgress?.Invoke(value.Progress0To1 * (endRatio - startRatio) + startRatio, value.Status);
-            }
-        }
 
         /// <summary>
         /// Called when loading existing content and needing to bypass the clearing of MeshPath that normally occurs in the this.Mesh setter
@@ -1355,7 +1385,7 @@ namespace MatterHackers.DataConverters3D
 		public static IEnumerable<IObject3D> DoSubtract(IObject3D rootObject,
 			IEnumerable<IObject3D> keepItems,
 			IEnumerable<IObject3D> removeItems,
-			IProgress<ProgressStatus> reporter,
+			Action<double, string> reporter,
 			CancellationToken cancellationToken,
 			ProcessingModes processingMode = ProcessingModes.Polygons,
 			ProcessingResolution inputResolution = ProcessingResolution._64,
@@ -1383,8 +1413,6 @@ namespace MatterHackers.DataConverters3D
 							reporter,
 							cancellationToken);
 #else
-						var progressStatus = new ProgressStatus();
-
 						var resultsMesh = keep.Mesh;
 						var keepWorldMatrix = keep.Matrix;
 						if (rootObject != null)
@@ -1414,7 +1442,6 @@ namespace MatterHackers.DataConverters3D
 								reporter,
 								amountPerOperation,
 								ratioCompleted,
-								progressStatus,
 								cancellationToken);
 
 							// after the first time we get a result the results mesh is in the right coordinate space
@@ -1422,8 +1449,7 @@ namespace MatterHackers.DataConverters3D
 
 							// report our progress
 							ratioCompleted += amountPerOperation;
-							progressStatus.Progress0To1 = ratioCompleted;
-							reporter?.Report(progressStatus);
+							reporter?.Invoke(ratioCompleted, null);
 						}
 
 #endif
@@ -1457,7 +1483,7 @@ namespace MatterHackers.DataConverters3D
 		public static Mesh CombineParticipants(IObject3D rootObject,
 			IEnumerable<IObject3D> participants,
 			CancellationToken cancellationToken,
-			IProgress<ProgressStatus> reporter = null,
+			Action<double, string> reporter = null,
 			ProcessingModes processingMode = ProcessingModes.Polygons,
 			ProcessingResolution inputResolution = ProcessingResolution._64,
 			ProcessingResolution outputResolution = ProcessingResolution._64)
@@ -1468,8 +1494,6 @@ namespace MatterHackers.DataConverters3D
 
 			double amountPerOperation = 1.0 / totalOperations;
 			double ratioCompleted = 0;
-
-			var progressStatus = new ProgressStatus();
 
 			var setMeshes = new List<Mesh>();
 			foreach (var set in touchingSets)
@@ -1532,8 +1556,7 @@ namespace MatterHackers.DataConverters3D
 					setMesh.Transform(keepWorldMatrix);
 					// report our progress
 					ratioCompleted += amountPerOperation;
-					progressStatus.Progress0To1 = ratioCompleted;
-					reporter?.Report(progressStatus);
+					reporter?.Invoke(ratioCompleted, null);
 					setMeshes.Add(setMesh);
 				}
 			}

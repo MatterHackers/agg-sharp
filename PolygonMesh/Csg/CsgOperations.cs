@@ -57,7 +57,6 @@ namespace MatterHackers.PolygonMesh.Csg
 				null,
 				1,
 				0,
-				null,
 				cancellationToken);
 		}
 
@@ -98,7 +97,6 @@ namespace MatterHackers.PolygonMesh.Csg
 				null,
 				1,
 				0,
-				null,
 				cancellationToken);
 		}
 
@@ -132,7 +130,6 @@ namespace MatterHackers.PolygonMesh.Csg
 				null,
 				1,
 				0,
-				null,
 				cancellationToken);
 		}
 
@@ -157,7 +154,6 @@ namespace MatterHackers.PolygonMesh.Csg
 				null,
 				1,
 				0,
-				null,
 				cancellationToken);
 
 			var intersect = BooleanProcessing.Do(a,
@@ -174,7 +170,6 @@ namespace MatterHackers.PolygonMesh.Csg
 				null,
 				1,
 				0,
-				null,
 				cancellationToken);
 
 			return (subtract, intersect);

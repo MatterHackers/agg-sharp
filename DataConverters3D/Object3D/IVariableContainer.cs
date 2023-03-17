@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2019, Lars Brubaker, John Lewin
+Copyright (c) 2022 Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,19 +27,13 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-
-namespace MatterHackers.Agg
+namespace MatterHackers.DataConverters3D
 {
-	public class ProgressStatus : EventArgs
+    /// <summary>
+    /// This is to contain variables that can be used in scripting child objects
+    /// </summary>
+    public interface IVariableContainer
 	{
-		public string Status { get; set; }
-
-		public double Progress0To1 { get; set; }
-
-		/// <summary>
-		/// Gets or sets an idicator of the output target
-		/// </summary>
-		public string Target { get; set; }
-	}
+        public string EvaluateExpression(string inExpression);
+    }
 }

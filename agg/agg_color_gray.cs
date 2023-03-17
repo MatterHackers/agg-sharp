@@ -53,15 +53,15 @@ namespace MatterHackers.Agg
 		//--------------------------------------------------------------------
 		public gray8(ColorF c)
 		{
-			v = ((byte)agg_basics.uround((0.299 * c.Red0To255 + 0.587 * c.Green0To255 + 0.114 * c.Blue0To255) * (double)(base_mask)));
-			a = ((byte)agg_basics.uround(c.Alpha0To255 * (double)(base_mask)));
+			v = ((byte)Util.uround((0.299 * c.Red0To255 + 0.587 * c.Green0To255 + 0.114 * c.Blue0To255) * (double)(base_mask)));
+			a = ((byte)Util.uround(c.Alpha0To255 * (double)(base_mask)));
 		}
 
 		//--------------------------------------------------------------------
 		public gray8(ColorF c, double a_)
 		{
-			v = ((byte)agg_basics.uround((0.299 * c.Red0To255 + 0.587 * c.Green0To255 + 0.114 * c.Blue0To255) * (double)(base_mask)));
-			a = ((byte)agg_basics.uround(a_ * (double)(base_mask)));
+			v = ((byte)Util.uround((0.299 * c.Red0To255 + 0.587 * c.Green0To255 + 0.114 * c.Blue0To255) * (double)(base_mask)));
+			a = ((byte)Util.uround(a_ * (double)(base_mask)));
 		}
 
 		//--------------------------------------------------------------------
@@ -108,7 +108,7 @@ namespace MatterHackers.Agg
 		public gray8 gradient(gray8 c, double k)
 		{
 			gray8 ret;
-			int ik = agg_basics.uround(k * (int)base_scale);
+			int ik = Util.uround(k * (int)base_scale);
 			ret.v = (byte)((int)(v) + ((((int)(c.v) - v) * ik) >> base_shift));
 			ret.a = (byte)((int)(a) + ((((int)(c.a) - a) * ik) >> base_shift));
 			return ret;
@@ -119,7 +119,7 @@ namespace MatterHackers.Agg
 		{
 			if (a_ < 0.0) a_ = 0.0;
 			if (a_ > 1.0) a_ = 1.0;
-			a = (byte)agg_basics.uround(a_ * (double)(base_mask));
+			a = (byte)Util.uround(a_ * (double)(base_mask));
 		}
 
 		//--------------------------------------------------------------------

@@ -109,8 +109,8 @@ namespace MatterHackers.Agg.UI
 			{
 				if (Width > 0)
 				{
-					EnglishTextWrapping wrapper = new EnglishTextWrapping(TextWidget.Printer.TypeFaceStyle.EmSizeInPoints);
-					string wrappedMessage = wrapper.InsertCRs(unwrappedText, Width);
+					var wrapper = new EnglishTextWrapping(TextWidget.Printer.TypeFaceStyle.EmSizeInPoints);
+					var wrappedMessage = wrapper.InsertCRs(unwrappedText, Width);
 					wrappedWidth = Width;
 					TextWidget.Text = wrappedMessage;
 				}

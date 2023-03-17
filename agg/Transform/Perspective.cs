@@ -495,15 +495,15 @@ namespace MatterHackers.Agg.Transform
 
 		public bool is_identity(double epsilon)
 		{
-			return agg_basics.is_equal_eps(sx, 1.0, epsilon) &&
-				   agg_basics.is_equal_eps(shy, 0.0, epsilon) &&
-				   agg_basics.is_equal_eps(w0, 0.0, epsilon) &&
-				   agg_basics.is_equal_eps(shx, 0.0, epsilon) &&
-				   agg_basics.is_equal_eps(sy, 1.0, epsilon) &&
-				   agg_basics.is_equal_eps(w1, 0.0, epsilon) &&
-				   agg_basics.is_equal_eps(tx, 0.0, epsilon) &&
-				   agg_basics.is_equal_eps(ty, 0.0, epsilon) &&
-				   agg_basics.is_equal_eps(w2, 1.0, epsilon);
+			return Util.is_equal_eps(sx, 1.0, epsilon) &&
+				   Util.is_equal_eps(shy, 0.0, epsilon) &&
+				   Util.is_equal_eps(w0, 0.0, epsilon) &&
+				   Util.is_equal_eps(shx, 0.0, epsilon) &&
+				   Util.is_equal_eps(sy, 1.0, epsilon) &&
+				   Util.is_equal_eps(w1, 0.0, epsilon) &&
+				   Util.is_equal_eps(tx, 0.0, epsilon) &&
+				   Util.is_equal_eps(ty, 0.0, epsilon) &&
+				   Util.is_equal_eps(w2, 1.0, epsilon);
 		}
 
 		public bool is_equal(Perspective m)
@@ -513,15 +513,15 @@ namespace MatterHackers.Agg.Transform
 
 		public bool is_equal(Perspective m, double epsilon)
 		{
-			return agg_basics.is_equal_eps(sx, m.sx, epsilon) &&
-				   agg_basics.is_equal_eps(shy, m.shy, epsilon) &&
-				   agg_basics.is_equal_eps(w0, m.w0, epsilon) &&
-				   agg_basics.is_equal_eps(shx, m.shx, epsilon) &&
-				   agg_basics.is_equal_eps(sy, m.sy, epsilon) &&
-				   agg_basics.is_equal_eps(w1, m.w1, epsilon) &&
-				   agg_basics.is_equal_eps(tx, m.tx, epsilon) &&
-				   agg_basics.is_equal_eps(ty, m.ty, epsilon) &&
-				   agg_basics.is_equal_eps(w2, m.w2, epsilon);
+			return Util.is_equal_eps(sx, m.sx, epsilon) &&
+				   Util.is_equal_eps(shy, m.shy, epsilon) &&
+				   Util.is_equal_eps(w0, m.w0, epsilon) &&
+				   Util.is_equal_eps(shx, m.shx, epsilon) &&
+				   Util.is_equal_eps(sy, m.sy, epsilon) &&
+				   Util.is_equal_eps(w1, m.w1, epsilon) &&
+				   Util.is_equal_eps(tx, m.tx, epsilon) &&
+				   Util.is_equal_eps(ty, m.ty, epsilon) &&
+				   Util.is_equal_eps(w2, m.w2, epsilon);
 		}
 
 		// Determine the major affine parameters. Use with caution

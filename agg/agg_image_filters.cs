@@ -70,7 +70,7 @@ namespace MatterHackers.Agg
 				double x = (double)i / (double)image_subpixel_scale_e.image_subpixel_scale;
 				double y = filter.calc_weight(x);
 				m_weight_array.Array[pivot + i] =
-				m_weight_array.Array[pivot - i] = agg_basics.iround(y * (int)image_filter_scale_e.image_filter_scale);
+				m_weight_array.Array[pivot - i] = Util.iround(y * (int)image_filter_scale_e.image_filter_scale);
 			}
 			int end = (diameter() << (int)image_subpixel_scale_e.image_subpixel_shift) - 1;
 			m_weight_array.Array[0] = m_weight_array.Array[end];
@@ -149,7 +149,7 @@ namespace MatterHackers.Agg
 					for (j = 0; j < m_diameter; j++)
 					{
 						sum += m_weight_array.Array[j * (int)image_subpixel_scale_e.image_subpixel_scale + i] =
-							(int)agg_basics.iround(m_weight_array.Array[j * (int)image_subpixel_scale_e.image_subpixel_scale + i] * k);
+							(int)Util.iround(m_weight_array.Array[j * (int)image_subpixel_scale_e.image_subpixel_scale + i] * k);
 					}
 
 					sum -= (int)image_filter_scale_e.image_filter_scale;
@@ -182,7 +182,7 @@ namespace MatterHackers.Agg
 		private void realloc_lut(double radius)
 		{
 			m_radius = radius;
-			m_diameter = agg_basics.uceil(radius) * 2;
+			m_diameter = Util.uceil(radius) * 2;
 			m_start = -(int)(m_diameter / 2 - 1);
 			int size = (int)m_diameter << (int)image_subpixel_scale_e.image_subpixel_shift;
 			if (size > m_weight_array.Size())

@@ -495,6 +495,8 @@ namespace MatterHackers.GlfwProvider
 					return Agg.UI.Keys.Tab;
 				case GLFW.Keys.Enter:
 					return Agg.UI.Keys.Return;
+				case GLFW.Keys.Period:
+					return Agg.UI.Keys.OemPeriod;
 
 				case GLFW.Keys.A:
 					return Agg.UI.Keys.A;
