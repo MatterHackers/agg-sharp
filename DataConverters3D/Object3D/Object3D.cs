@@ -497,84 +497,85 @@ namespace MatterHackers.DataConverters3D
 				cacheContext = new CacheContext();
 			}
 
-			switch (extension.ToUpper())
+			try
 			{
-				case ".MCX":
-					try
-					{
-						string json;
-						// check if the file is binary
-						if (IsBinaryMCX(stream))
+				switch (extension.ToUpper())
+				{
+					case ".MCX":
 						{
-							// it looks like a binary mcx file (which is a zip file). Load the contents
-							using (var archive = new ZipArchive(stream, ZipArchiveMode.Read))
+							string json;
+							// check if the file is binary
+							if (IsBinaryMCX(stream))
 							{
-								var sceneEntryName = archive.Entries.Where(e => e.Name.Contains("scene.mcx")).First().FullName;
-								json = new StreamReader(archive.GetEntry(sceneEntryName).Open()).ReadToEnd();
-							}
-						}
-						else
-						{
-							json = new StreamReader(stream).ReadToEnd();
-						}
-
-						// Load the meta file and convert MeshPath links into objects
-						var loadedItem = JsonConvert.DeserializeObject<Object3D>(
-							json,
-							new JsonSerializerSettings
-							{
-								ContractResolver = new IObject3DContractResolver(),
-								NullValueHandling = NullValueHandling.Ignore,
-								MaxDepth = MaxJsonDepth
-							});
-
-						loadedItem?.LoadMeshLinks(cancellationToken, cacheContext, progress);
-
-						return loadedItem;
-					}
-					catch
-					{
-					}
-					return null;
-
-				case ".STL":
-					var result = new Object3D();
-					result.SetMeshDirect(StlProcessing.Load(stream, cancellationToken, progress));
-					return result;
-
-				case ".AMF":
-					return AmfDocument.Load(stream, cancellationToken, progress);
-
-				case ".3MF":
-					{
-						var file = ThreeMfFile.Load(stream);
-						var object3D = new Object3D();
-						foreach (var model in file.Models)
-                        {
-							foreach (var item in model.Items)
-							{
-								if (item.Object is ThreeMfObject itemObject)
+								// it looks like a binary mcx file (which is a zip file). Load the contents
+								using (var archive = new ZipArchive(stream, ZipArchiveMode.Read))
 								{
-									var transform = item.Transform;
-									AddObject(object3D, itemObject, ToMatrix4X4(transform));
+									var sceneEntryName = archive.Entries.Where(e => e.Name.Contains("scene.mcx")).First().FullName;
+									json = new StreamReader(archive.GetEntry(sceneEntryName).Open()).ReadToEnd();
 								}
 							}
-                        }
+							else
+							{
+								json = new StreamReader(stream).ReadToEnd();
+							}
 
-						if (object3D?.Children.Count > 0)
-                        {
-							return object3D;
-                        }
+							// Load the meta file and convert MeshPath links into objects
+							var loadedItem = JsonConvert.DeserializeObject<Object3D>(
+								json,
+								new JsonSerializerSettings
+								{
+									ContractResolver = new IObject3DContractResolver(),
+									NullValueHandling = NullValueHandling.Ignore,
+									MaxDepth = MaxJsonDepth
+								});
 
+							loadedItem?.LoadMeshLinks(cancellationToken, cacheContext, progress);
+
+							return loadedItem;
+						}
+
+					case ".STL":
+						var result = new Object3D();
+						result.SetMeshDirect(StlProcessing.Load(stream, cancellationToken, progress));
+						return result;
+
+					case ".AMF":
+						return AmfDocument.Load(stream, cancellationToken, progress);
+
+					case ".3MF":
+						{
+							var file = ThreeMfFile.Load(stream);
+							var object3D = new Object3D();
+							foreach (var model in file.Models)
+							{
+								foreach (var item in model.Items)
+								{
+									if (item.Object is ThreeMfObject itemObject)
+									{
+										var transform = item.Transform;
+										AddObject(object3D, itemObject, ToMatrix4X4(transform));
+									}
+								}
+							}
+
+							if (object3D?.Children.Count > 0)
+							{
+								return object3D;
+							}
+
+							return null;
+						}
+
+					case ".OBJ":
+						return ObjSupport.Load(stream, progress);
+
+					default:
 						return null;
-					}
-
-				case ".OBJ":
-					return ObjSupport.Load(stream, progress);
-
-				default:
-					return null;
+				}
 			}
+            catch { }
+
+			return null;
 		}
 
 		public static bool Save(IObject3D item,
