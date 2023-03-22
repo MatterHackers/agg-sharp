@@ -43,26 +43,11 @@ namespace MatterHackers.Agg.UI
 
 		private SystemWindow _topWindow;
 
-		private static Color textColor;
-		private static int fontSize;
-		private static Func<GuiWidget> getCloseButton;
-		private static BorderDouble titleBarPadding;
-		private static Color backgroundColor;
-		private static Color borderColor;
+		private static ThemeConfig theme;
 
-		public static void SetWindowTheme(Color textColor,
-			int fontSize,
-			Func<GuiWidget> getCloseButton,
-			BorderDouble titleBarPadding,
-			Color backgroundColor,
-			Color borderColor)
+		public static void SetWindowTheme(ThemeConfig theme)
 		{
-			SingleWindowProvider.textColor = textColor;
-			SingleWindowProvider.fontSize = fontSize;
-			SingleWindowProvider.getCloseButton = getCloseButton;
-			SingleWindowProvider.titleBarPadding = titleBarPadding;
-			SingleWindowProvider.backgroundColor = backgroundColor;
-			SingleWindowProvider.borderColor = borderColor;
+            SingleWindowProvider.theme = theme;
 		}
 
 		public SystemWindow TopWindow
@@ -101,14 +86,6 @@ namespace MatterHackers.Agg.UI
 		// Creates or connects a PlatformWindow to the given SystemWindow
 		public virtual void ShowSystemWindow(SystemWindow systemWindow)
 		{
-			if (getCloseButton == null)
-			{
-				getCloseButton = () =>
-				{
-					return new Button("X", 0, 0);
-				};
-			}
-
 			if (_openWindows.Count == 0)
 			{
 				this._openWindows.Add(systemWindow);
@@ -132,42 +109,27 @@ namespace MatterHackers.Agg.UI
 
 				var movable = new WindowWidget(systemWindow)
 				{
-					WindowBorderColor = new Color(borderColor, 175)
+					WindowBorderColor = theme.BorderColor.WithAlpha(175)
 				};
+
+     //           .TextColor,
+					//theme.DefaultFontSize - 1,
+					//() => theme.CreateSmallResetButton(),
+					//theme.TabBarBackground,
+					//new Color(theme.PrimaryAccentColor, 175)
+
+
+                movable.AddTitleBar(theme, systemWindow.Title, () =>
+				{
+					systemWindow.Close();
+				});
 
 				movable.Width = Math.Min(overlayWindow.Width, movable.Width);
 				movable.Height = Math.Min(overlayWindow.Height, movable.Height);
 
 				overlayWindow.AddChild(movable);
 
-				var closeButton = getCloseButton();
-				closeButton.HAnchor = HAnchor.Right;
-				closeButton.ToolTipText = "Close".Localize();
-				closeButton.Click += (s, e) =>
-				{
-					systemWindow.Close();
-				};
-
-				var titleBarRow = new Toolbar(titleBarPadding, closeButton)
-				{
-					HAnchor = HAnchor.Stretch,
-					VAnchor = VAnchor.Fit | VAnchor.Center,
-				};
-
-				titleBarRow.AddChild(new ImageWidget(StaticData.Instance.LoadIcon("mh.png", 16, 16).SetToColor(textColor))
-				{
-					Margin = new BorderDouble(4, 0, 6, 0),
-					VAnchor = VAnchor.Center
-				});
-
-				titleBarRow.ActionArea.AddChild(new TextWidget(systemWindow.Title ?? "", pointSize: fontSize, textColor: textColor)
-				{
-					VAnchor = VAnchor.Center,
-				});
-
-				movable.TitleBar.BackgroundColor = backgroundColor;
-
-				movable.TitleBar.AddChild(titleBarRow);
+				movable.TitleBar.BackgroundColor = theme.BackgroundColor;
 
 				void SystemWindow_VisibleChanged(object sender, EventArgs e)
 				{

@@ -70,7 +70,7 @@ namespace MatterHackers.Agg.Platform
 				case SelectFolderDialogParams.RootFolderTypes.Specify:
                     var rootFolder = folderParams.FolderPath;
                     // check each folder of the folder path to find the first one that exsits
-                    while (!Directory.Exists(rootFolder))
+                    while (rootFolder != null && !Directory.Exists(rootFolder))
                     {
                         rootFolder = Path.GetDirectoryName(rootFolder);
                     }

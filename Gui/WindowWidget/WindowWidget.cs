@@ -1,3 +1,6 @@
+using MatterHackers.Agg.Platform;
+using MatterHackers.ImageProcessing;
+using MatterHackers.Localizations;
 using MatterHackers.VectorMath;
 using System;
 
@@ -15,7 +18,7 @@ using System;
 
 namespace MatterHackers.Agg.UI
 {
-	public class WindowWidget : GuiWidget
+    public class WindowWidget : GuiWidget
 	{
 		private int grabWidth2 = 5;
 
@@ -74,10 +77,45 @@ namespace MatterHackers.Agg.UI
 
 		public TitleBarWidget TitleBar { get; private set; }
 
-		public override void OnDrawBackground(Graphics2D graphics2D)
+        public void AddTitleBar(ThemeConfig theme, string title, Action closeAction)
 		{
-			// draw the shadow
-			for (int i = 0; i < deviceGrabWidth; i++)
+            var closeButton = theme.CreateSmallResetButton();
+
+            closeButton.HAnchor = HAnchor.Right;
+            closeButton.ToolTipText = "Close".Localize();
+            closeButton.Click += (s, e) =>
+            {
+                closeAction?.Invoke();
+            };
+
+            var titleBarRow = new Toolbar(theme.TabbarPadding, closeButton)
+            {
+                HAnchor = HAnchor.Stretch,
+                VAnchor = VAnchor.Fit | VAnchor.Center,
+            };
+
+            titleBarRow.AddChild(new ImageWidget(StaticData.Instance.LoadIcon("mh.png", 16, 16).SetToColor(theme.TextColor))
+            {
+                Margin = new BorderDouble(4, 0, 6, 0),
+                VAnchor = VAnchor.Center
+            });
+
+            titleBarRow.ActionArea.AddChild(new TextWidget(title ?? "", pointSize: theme.DefaultFontSize, textColor: theme.TextColor)
+            {
+                VAnchor = VAnchor.Center,
+            });
+
+            TitleBar.AddChild(titleBarRow);
+        }
+
+        public override void OnDrawBackground(Graphics2D graphics2D)
+		{
+            var bounds = this.LocalBounds;
+			bounds.Deflate(new BorderDouble(deviceGrabWidth));
+            graphics2D.FillRectangle(bounds, BackgroundColor);
+
+            // draw the shadow
+            for (int i = 0; i < deviceGrabWidth; i++)
 			{
 				var color = new Color(Color.Black, (int)(50 * i / deviceGrabWidth));
 				// left line
