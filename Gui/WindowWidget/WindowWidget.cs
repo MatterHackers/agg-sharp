@@ -20,9 +20,9 @@ namespace MatterHackers.Agg.UI
 {
     public class WindowWidget : GuiWidget
 	{
-		private int grabWidth2 = 5;
+		private int grabWidth = 5;
 
-		private double deviceGrabWidth => grabWidth2 * DeviceScale;
+		private double deviceGrabWidth => grabWidth * DeviceScale;
 
         private readonly ThemeConfig theme;
         private readonly GuiWidget windowBackground;
@@ -46,7 +46,7 @@ namespace MatterHackers.Agg.UI
 			{
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Stretch,
-				Margin = new BorderDouble(grabWidth2),
+				Margin = new BorderDouble(grabWidth),
 			};
 
 			AddChild(windowBackground);
@@ -169,7 +169,8 @@ namespace MatterHackers.Agg.UI
 				BackgroundColor = grabEdgeColor,
 				HAnchor = HAnchor.Left,
 				VAnchor = VAnchor.Stretch,
-				Size = new Vector2(deviceGrabWidth, 0),
+                Margin = new BorderDouble(0, deviceGrabWidth, 0, deviceGrabWidth),
+                Size = new Vector2(deviceGrabWidth, 0),
 				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
@@ -186,7 +187,8 @@ namespace MatterHackers.Agg.UI
 				BackgroundColor = grabEdgeColor,
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Bottom,
-				Size = new Vector2(0, deviceGrabWidth),
+                Margin = new BorderDouble(deviceGrabWidth, 0, deviceGrabWidth, 0),
+                Size = new Vector2(0, deviceGrabWidth),
 				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
@@ -225,8 +227,8 @@ namespace MatterHackers.Agg.UI
 					var delta = e.Position - s.downPosition;
 					var startSize = Size;
 					Size = new Vector2(Size.X - delta.X, Size.Y + delta.Y);
-					Position += new Vector2(startSize.X - Size.X, 0);
-				}
+                    Position += new Vector2(startSize.X - Size.X, 0);
+                }
 			});
 
 			// right grab control
@@ -235,7 +237,8 @@ namespace MatterHackers.Agg.UI
 				BackgroundColor = grabEdgeColor,
 				VAnchor = VAnchor.Stretch,
 				HAnchor = HAnchor.Right,
-				Size = new Vector2(deviceGrabWidth, 0),
+                Margin = new BorderDouble(0, deviceGrabWidth, 0, deviceGrabWidth),
+                Size = new Vector2(deviceGrabWidth, 0),
 				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
@@ -243,27 +246,28 @@ namespace MatterHackers.Agg.UI
 				}
 			});
 
-			// right top grab control
-			this.AddChild(new GrabControl(Cursors.SizeNESW)
-			{
-				BackgroundColor = grabCornnerColor,
-				HAnchor = HAnchor.Right,
-				VAnchor = VAnchor.Top,
-				Size = new Vector2(deviceGrabWidth, deviceGrabWidth),
-				AdjustParent = (s, e) =>
-				{
-					var delta = e.Position - s.downPosition;
-					Size = new Vector2(Size.X + delta.X, Size.Y + delta.Y);
-				}
-			});
-
-			// top grab control
-			this.AddChild(new GrabControl(Cursors.SizeNS)
+            // right top grab control
+            this.AddChild(new GrabControl(Cursors.SizeNESW)
+            {
+                BackgroundColor = grabCornnerColor,
+                HAnchor = HAnchor.Right,
+                VAnchor = VAnchor.Top,
+                Size = new Vector2(deviceGrabWidth, deviceGrabWidth),
+                AdjustParent = (s, e) =>
+                {
+                    var delta = e.Position - s.downPosition;
+                    Size = new Vector2(Size.X + delta.X, Size.Y + delta.Y);
+                }
+            });
+            
+            // top grab control
+            this.AddChild(new GrabControl(Cursors.SizeNS)
 			{
 				BackgroundColor = grabEdgeColor,
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Top,
-				Size = new Vector2(0, deviceGrabWidth),
+                Margin = new BorderDouble(deviceGrabWidth, 0, deviceGrabWidth, 0),
+                Size = new Vector2(0, deviceGrabWidth),
 				AdjustParent = (s, e) =>
 				{
 					var delta = e.Position - s.downPosition;
