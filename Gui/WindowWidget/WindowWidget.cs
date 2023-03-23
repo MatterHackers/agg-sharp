@@ -24,10 +24,11 @@ namespace MatterHackers.Agg.UI
 
 		private double deviceGrabWidth => grabWidth2 * DeviceScale;
 
-		private readonly GuiWidget windowBackground;
+        private readonly ThemeConfig theme;
+        private readonly GuiWidget windowBackground;
 
-		public WindowWidget(RectangleDouble inBounds)
-			: this(new GuiWidget(inBounds.Width, inBounds.Height)
+		public WindowWidget(ThemeConfig theme, RectangleDouble inBounds)
+			: this(theme, new GuiWidget(inBounds.Width, inBounds.Height)
 			{
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Stretch,
@@ -36,9 +37,11 @@ namespace MatterHackers.Agg.UI
 			})
 		{
 		}
-
-		public WindowWidget(GuiWidget clientArea)
+        
+		public WindowWidget(ThemeConfig theme, GuiWidget clientArea)
 		{
+			this.theme = theme;
+            
 			windowBackground = new FlowLayoutWidget(FlowDirection.TopToBottom)
 			{
 				HAnchor = HAnchor.Stretch,
@@ -55,9 +58,11 @@ namespace MatterHackers.Agg.UI
 			};
 			windowBackground.AddChild(TitleBar);
 
-			MinimumSize = new Vector2(deviceGrabWidth * 8, deviceGrabWidth * 4 + TitleBar.Height * 2);
+            windowBackground.AddChild(new HorizontalLine(theme.PrimaryAccentColor));
+
+            MinimumSize = new Vector2(deviceGrabWidth * 8, deviceGrabWidth * 4 + TitleBar.Height * 2);
 			WindowBorder = new BorderDouble(1);
-			WindowBorderColor = Color.Cyan;
+			WindowBorderColor = theme.PrimaryAccentColor;
 
 			Position = clientArea.Position - new Vector2(deviceGrabWidth, deviceGrabWidth);
 			Size = clientArea.Size + new Vector2(deviceGrabWidth * 2, deviceGrabWidth * 2 + TitleBar.Height);
@@ -77,16 +82,20 @@ namespace MatterHackers.Agg.UI
 
 		public TitleBarWidget TitleBar { get; private set; }
 
-        public void AddTitleBar(ThemeConfig theme, string title, Action closeAction)
+        public void AddTitleBar(string title, Action closeAction)
 		{
-            var closeButton = theme.CreateSmallResetButton();
+			GuiWidget closeButton = null;
+			if (closeAction != null)
+			{
+				closeButton = theme.CreateSmallResetButton();
 
-            closeButton.HAnchor = HAnchor.Right;
-            closeButton.ToolTipText = "Close".Localize();
-            closeButton.Click += (s, e) =>
-            {
-                closeAction?.Invoke();
-            };
+				closeButton.HAnchor = HAnchor.Right;
+				closeButton.ToolTipText = "Close".Localize();
+				closeButton.Click += (s, e) =>
+				{
+					closeAction?.Invoke();
+				};
+			}
 
             var titleBarRow = new Toolbar(theme.TabbarPadding, closeButton)
             {

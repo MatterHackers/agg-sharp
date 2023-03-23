@@ -107,7 +107,7 @@ namespace MatterHackers.Agg.UI
 				systemWindow.HAnchor = HAnchor.Stretch;
 				systemWindow.VAnchor = VAnchor.Stretch;
 
-				var movable = new WindowWidget(systemWindow)
+				var movable = new WindowWidget(theme, systemWindow)
 				{
 					WindowBorderColor = theme.BorderColor.WithAlpha(175)
 				};
@@ -119,7 +119,7 @@ namespace MatterHackers.Agg.UI
 					//new Color(theme.PrimaryAccentColor, 175)
 
 
-                movable.AddTitleBar(theme, systemWindow.Title, () =>
+                movable.AddTitleBar(systemWindow.Title, () =>
 				{
 					systemWindow.Close();
 				});
