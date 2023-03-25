@@ -27,251 +27,354 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform;
 using MatterHackers.ImageProcessing;
 using MatterHackers.VectorMath;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
     public class TreeNode : FlowLayoutWidget, ICheckbox
-	{
-		private readonly GuiWidget content;
-		private TreeView _treeView;
-		private ImageBuffer _image = null;
-		private readonly TextWidget textWidget;
-		private readonly TreeExpandWidget expandWidget;
-		private readonly ImageWidget imageWidget;
-		private bool isDirty;
+    {
+        private readonly GuiWidget content;
+        private readonly TreeExpandWidget expandWidget;
+        private readonly ImageWidget imageWidget;
+        private readonly TextWidget textWidget;
+        private bool _expanded;
+        private ImageBuffer _image = null;
+        private TreeView _treeView;
+        private bool isDirty;
 
-		public TreeNode(ThemeConfig theme, bool useIcon = true, TreeNode nodeParent = null)
-			: base(FlowDirection.TopToBottom)
-		{
-			this.HAnchor = HAnchor.Fit | HAnchor.Left;
-			this.VAnchor = VAnchor.Fit;
+        public TreeNode(ThemeConfig theme, bool useIcon = true, TreeNode nodeParent = null)
+            : base(FlowDirection.TopToBottom)
+        {
+            this.HAnchor = HAnchor.Fit | HAnchor.Left;
+            this.VAnchor = VAnchor.Fit;
 
-			this.NodeParent = nodeParent;
+            this.NodeParent = nodeParent;
 
-			this.TitleBar = new FlowLayoutWidget();
-			this.TitleBar.Click += (s, e) =>
-			{
-				if (TreeView != null)
-				{
-					TreeView.SelectedNode = this;
-					TreeView.NotifyItemClicked(TitleBar, e);
-				}
-			};
+            this.TitleBar = new FlowLayoutWidget();
+            this.TitleBar.Click += (s, e) =>
+            {
+                if (TreeView != null)
+                {
+                    TreeView.SelectedNode = this;
+                    TreeView.NotifyItemClicked(TitleBar, e);
+                }
+            };
 
-			TreeNode hitNode = null;
-			this.TitleBar.MouseDown += (s, e) =>
-			{
-				if (TreeView != null && e.Button == MouseButtons.Left)
-				{
-					if (e.Clicks == 1)
-					{
-						hitNode = this;
-					}
-					else if (e.Clicks == 2)
-					{
-						var focusedChild = this.DescendantsAndSelf().Where(d => d.Focused).FirstOrDefault();
+            TreeNode hitNode = null;
+            this.TitleBar.MouseDown += (s, e) =>
+            {
+                if (TreeView != null && e.Button == MouseButtons.Left)
+                {
+                    if (e.Clicks == 1)
+                    {
+                        hitNode = this;
+                    }
+                    else if (e.Clicks == 2)
+                    {
+                        var focusedChild = this.DescendantsAndSelf().Where(d => d.Focused).FirstOrDefault();
 
-						// Nodes can move around in the tree between clicks.
-						// Make sure we're hitting the same node twice.
-						if (this != hitNode
-							|| !(focusedChild is FlowLayoutWidget))
-						{
-							return;
-						}
+                        // Nodes can move around in the tree between clicks.
+                        // Make sure we're hitting the same node twice.
+                        if (this != hitNode
+                            || !(focusedChild is FlowLayoutWidget))
+                        {
+                            return;
+                        }
 
-						// find the child that is a TreeExpandWidget
-						TreeExpandWidget treeExpandWidget = this.Descendants<TreeExpandWidget>(tew => tew.ContainsFirstUnderMouseRecursive()).FirstOrDefault();
+                        // find the child that is a TreeExpandWidget
+                        TreeExpandWidget treeExpandWidget = this.Descendants<TreeExpandWidget>(tew => tew.ContainsFirstUnderMouseRecursive()).FirstOrDefault();
 
-						// if there was a tree expand widget that got clicked (under the mouse)
-						if (treeExpandWidget != null)
-						{
-							// already selected and will have open / close processing done by the treeExpandWidget. Return without doing any double clicking.
-							return;
+                        // if there was a tree expand widget that got clicked (under the mouse)
+                        if (treeExpandWidget != null)
+                        {
+                            // already selected and will have open / close processing done by the treeExpandWidget. Return without doing any double clicking.
+                            return;
                         }
 
                         TreeView.SelectedNode = this;
 
-						if (this.Nodes.Count > 0)
-						{
-							this.Expanded = !this.Expanded;
-						}
-						else
-						{
-							this.TreeView.NotifyItemDoubleClicked(TitleBar, e);
-						}
-					}
-				}
-			};
+                        if (this.Nodes.Count > 0)
+                        {
+                            this.Expanded = !this.Expanded;
+                        }
+                        else
+                        {
+                            this.TreeView.NotifyItemDoubleClicked(TitleBar, e);
+                        }
+                    }
+                }
+            };
 
-			this.AddChild(this.TitleBar);
+            this.AddChild(this.TitleBar);
 
-			// add a check box
-			expandWidget = new TreeExpandWidget(theme)
-			{
-				Expandable = GetNodeCount(false) != 0,
-				VAnchor = VAnchor.Fit | VAnchor.Center,
-				Height = 16,
-				Width = 16,
-                Name = "Expand Widget"
-			};
-
-			expandWidget.Click += (s, e) =>
-			{
-				this.Expanded = !this.Expanded;
-				expandWidget.Expanded = this.Expanded;
-			};
-
-			this.TitleBar.AddChild(expandWidget);
-
-			this.HighlightRegion = new FlowLayoutWidget()
-			{
-				VAnchor = VAnchor.Fit,
-				HAnchor = HAnchor.Fit,
-				Padding = useIcon ? new BorderDouble(2) : new BorderDouble(4, 2),
-				Selectable = false,
-                Name = "Content Region"
-			};
-			this.TitleBar.AddChild(this.HighlightRegion);
-
-			// add a check box
-			if (useIcon)
-			{
-				_image = new ImageBuffer(16, 16);
-
-				this.HighlightRegion.AddChild(imageWidget = new ImageWidget(this.Image, listenForImageChanged: false)
-				{
-					VAnchor = VAnchor.Center,
-					Margin = new BorderDouble(right: 4),
-					Selectable = false,
-                    Name = "ImageIconWidget"
-				});
-			}
-
-			this.HighlightRegion.AddChild(textWidget = new TextWidget(this.Text, pointSize: theme.DefaultFontSize, textColor: theme.TextColor)
-			{
-				Selectable = false,
-				AutoExpandBoundsToText = true,
-				VAnchor = VAnchor.Center
-			});
-
-			content = new FlowLayoutWidget(FlowDirection.TopToBottom)
-			{
-				HAnchor = HAnchor.Fit | HAnchor.Left,
-				Visible = false, // content starts out not visible
-				Name = "content",
-				Margin = new BorderDouble(12, 3),
-			};
-			this.AddChild(content);
-
-			// Register listeners
-			this.Nodes.CollectionChanged += this.Nodes_CollectionChanged;
-		}
-
-		public override void OnKeyDown(KeyEventArgs keyEvent)
-		{
-			base.OnKeyDown(keyEvent);
-
-			var restoreFocus = Focused;
-
-			if (!keyEvent.Handled)
-			{
-				switch (keyEvent.KeyCode)
-				{
-					case Keys.Right:
-						this.Expanded = true;
-						keyEvent.Handled = true;
-						break;
-
-					case Keys.Left:
-						if (!this.Expanded)
-						{
-							if (this.NodeParent != null)
-							{
-								// navigate back up to the parent of this node
-								TreeView.SelectedNode = this.NodeParent;
-								TreeView.NotifyItemClicked(TreeView, new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
-							}
-
-							restoreFocus = false;
-						}
-						else
-						{
-							this.Expanded = false;
-						}
-
-						keyEvent.Handled = true;
-						break;
-				}
-			}
-
-			if (restoreFocus && !Focused)
-			{
-				Focus();
-			}
-		}
-
-		private void Nodes_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
-		{
-			if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add)
-			{
-				// Assign NodeParent when items are added
-				foreach (var item in e.NewItems)
-				{
-					if (item is TreeNode treeNode)
-					{
-						treeNode.NodeParent = this;
-					}
-				}
-			}
-
-			isDirty = true;
-		}
-
-		public FlowLayoutWidget TitleBar { get; }
-
-		public FlowLayoutWidget HighlightRegion { get; }
-
-		// **** Not implemented ****
-		public void BeginEdit() => throw new NotImplementedException();
-
-		public void Collapse(bool collapseChildren) => throw new NotImplementedException();
-
-		public void Collapse() => throw new NotImplementedException();
-
-		public void EndEdit(bool cancel) => throw new NotImplementedException();
-
-		public void EnsureVisible() => throw new NotImplementedException();
-
-		public void ExpandAll()
-		{
-            // expand everything recursively
-            foreach (var node in Nodes)
+            // add a check box
+            expandWidget = new TreeExpandWidget(theme)
             {
-                node.Expanded = true;
-                node.ExpandAll();
+                Expandable = GetNodeCount(false) != 0,
+                VAnchor = VAnchor.Fit | VAnchor.Center,
+                Height = 16,
+                Width = 16,
+                Name = "Expand Widget"
+            };
+
+            expandWidget.Click += (s, e) =>
+            {
+                this.Expanded = !this.Expanded;
+                expandWidget.Expanded = this.Expanded;
+            };
+
+            this.TitleBar.AddChild(expandWidget);
+
+            this.HighlightRegion = new FlowLayoutWidget()
+            {
+                VAnchor = VAnchor.Fit,
+                HAnchor = HAnchor.Fit,
+                Padding = useIcon ? new BorderDouble(2) : new BorderDouble(4, 2),
+                Selectable = false,
+                Name = "Content Region"
+            };
+            this.TitleBar.AddChild(this.HighlightRegion);
+
+            // add a check box
+            if (useIcon)
+            {
+                _image = new ImageBuffer(16, 16);
+
+                this.HighlightRegion.AddChild(imageWidget = new ImageWidget(this.Image, listenForImageChanged: false)
+                {
+                    VAnchor = VAnchor.Center,
+                    Margin = new BorderDouble(right: 4),
+                    Selectable = false,
+                    Name = "ImageIconWidget"
+                });
+            }
+
+            this.HighlightRegion.AddChild(textWidget = new TextWidget(this.Text, pointSize: theme.DefaultFontSize, textColor: theme.TextColor)
+            {
+                Selectable = false,
+                AutoExpandBoundsToText = true,
+                VAnchor = VAnchor.Center
+            });
+
+            content = new FlowLayoutWidget(FlowDirection.TopToBottom)
+            {
+                HAnchor = HAnchor.Fit | HAnchor.Left,
+                Visible = false, // content starts out not visible
+                Name = "content",
+                Margin = new BorderDouble(12, 3),
+            };
+            this.AddChild(content);
+
+            // Register listeners
+            this.Nodes.CollectionChanged += this.Nodes_CollectionChanged;
+        }
+
+        public event EventHandler CheckedStateChanged;
+
+        public event EventHandler ExpandedChanged;
+
+        public event EventHandler ImageChanged;
+
+        public bool AlwaysExpandable
+        {
+            get => expandWidget.AlwaysExpandable;
+            set => expandWidget.AlwaysExpandable = value;
+        }
+
+        public bool Checked { get; set; }
+
+        public bool Editing { get; }
+
+        public bool Expandable
+        {
+            get => expandWidget.Expandable;
+            set => expandWidget.Expandable = value;
+        }
+
+        public bool Expanded
+        {
+            get => _expanded;
+            set
+            {
+                if (_expanded != value || content.Visible != value)
+                {
+                    _expanded = value;
+                    expandWidget.Expanded = _expanded;
+
+                    content.Visible = _expanded && this.Nodes.Count > 0;
+                    ExpandedChanged?.Invoke(this, null);
+                }
             }
         }
 
-		public void Remove() => throw new NotImplementedException();
+        public TreeNode FirstNode { get; }
 
-		public int GetNodeCount(bool includeSubTrees)
-		{
-			if (includeSubTrees)
-			{
-				return this.Descendants<TreeNode>().Count();
-			}
+        public FlowLayoutWidget HighlightRegion { get; }
 
-			return content?.Children.Where((c) => c is TreeNode).Count() ?? 0;
-		}
+        public ImageBuffer Image
+        {
+            get
+            {
+                return _image;
+            }
+
+            set
+            {
+                if (_image != value)
+                {
+                    _image = value;
+
+                    if (imageWidget != null)
+                    {
+                        imageWidget.Image = _image;
+                    }
+
+                    OnImageChanged(null);
+                }
+            }
+        }
+
+        public TreeNode LastNode { get; }
+
+        /// <summary>
+        /// Gets the zero-based depth of the tree node in the TreeView control.
+        /// </summary>
+        public int Level { get; }
+
+        // Summary:
+        //     Gets the next sibling tree node.
+        //
+        // Returns:
+        //     A TreeNode that represents the next sibling tree node.
+        public TreeNode NextNode { get; }
+
+        // Summary:
+        //     Gets the next visible tree node.
+        //
+        // Returns:
+        //     A TreeNode that represents the next visible tree node.
+        public TreeNode NextVisibleNode { get; }
+
+        // Summary:
+        //     Gets or sets the font that is used to display the text on the tree node label.
+        //
+        // Returns:
+        //     The StyledTypeFace that is used to display the text on the tree node label.
+        public StyledTypeFace NodeFont { get; set; }
+
+        // Summary:
+        //     Gets the parent tree node of the current tree node.
+        //
+        // Returns:
+        //     A TreeNode that represents the parent of the current tree
+        //     node.
+        public TreeNode NodeParent { get; protected set; }
+
+        public ObservableCollection<TreeNode> Nodes { get; } = new ObservableCollection<TreeNode>();
+
+        public int PointSize { get; set; }
+
+        // Summary:
+        //     Gets the previous sibling tree node.
+        //
+        // Returns:
+        //     A TreeNode that represents the previous sibling tree node.
+        public TreeNode PrevNode { get; }
+
+        // Summary:
+        //     Gets the previous visible tree node.
+        //
+        // Returns:
+        //     A TreeNode that represents the previous visible tree node.
+        public TreeNode PrevVisibleNode { get; }
+
+        public bool ReserveIconSpace
+        {
+            get => expandWidget.ReserveIconSpace;
+            set => expandWidget.ReserveIconSpace = value;
+        }
+
+        // Summary:
+        //     Gets a value indicating whether the tree node is in the selected state.
+        //
+        // Returns:
+        //     true if the tree node is in the selected state; otherwise, false.
+        public bool Selected
+        {
+            get
+            {
+                if (TreeView != null)
+                {
+                    return TreeView.SelectedNode == this;
+                }
+
+                return false;
+            }
+        }
+
+        // Summary:
+        //     Gets or sets the image list index value of the image that is displayed when the
+        //     tree node is in the selected state.
+        //
+        // Returns:
+        //     A zero-based index value that represents the image position in an ImageList.
+        public ImageBuffer SelectedImage { get; set; }
+
+        // Summary:
+        //     Gets or sets the index of the image that is used to indicate the state of the
+        //     TreeNode when the parent TreeView has
+        //     its TreeView.CheckBoxes property set to false.
+        //
+        // Returns:
+        //     The index of the image that is used to indicate the state of the TreeNode.
+        //
+        // Exceptions:
+        //   T:System.ArgumentOutOfRangeException:
+        //     The specified index is less than -1 or greater than 14.
+        public ImageBuffer StateImage { get; set; }
+
+        // Summary:
+        //     Gets or sets the object that contains data about the tree node.
+        //
+        // Returns:
+        //     An System.Object that contains data about the tree node. The default is null.
+        public object Tag { get; set; }
+
+        public Color TextColor { get; set; }
+
+        public FlowLayoutWidget TitleBar { get; }
+
+        public virtual TreeView TreeView
+        {
+            get => _treeView ?? NodeParent.TreeView;
+            set => _treeView = value;
+        }
+
+        public IEnumerable<TreeNode> Ancestors()
+        {
+            var context = this.NodeParent;
+            while (context != null)
+            {
+                yield return context;
+
+                context = context.NodeParent;
+            }
+        }
+
+        // **** Not implemented ****
+        public void BeginEdit() => throw new NotImplementedException();
+
+        public void Collapse(bool collapseChildren) => throw new NotImplementedException();
+
+        public void Collapse() => throw new NotImplementedException();
 
         public void DescendantsAndSelf(Action<TreeNode> action)
         {
@@ -282,268 +385,44 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public bool AlwaysExpandable
-		{
-			get => expandWidget.AlwaysExpandable;
-			set => expandWidget.AlwaysExpandable = value;
-		}
+        public void EndEdit(bool cancel) => throw new NotImplementedException();
 
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			if (isDirty)
-			{
-				// doing this during draw will often result in a enumeration changed
-				RebuildContentSection();
-			}
+        public void EnsureVisible() => throw new NotImplementedException();
 
-			base.OnDraw(graphics2D);
-		}
+        public void ExpandAll()
+        {
+            // expand everything recursively
+            foreach (var node in Nodes)
+            {
+                node.Expanded = true;
+                node.ExpandAll();
+            }
+        }
 
-		public override void OnTextChanged(EventArgs e)
-		{
-			if (textWidget != null)
-			{
-				textWidget.Text = this.Text;
-			}
+        public Dictionary<string, bool> GetExpandedStates()
+        {
+            var expandedStates = new Dictionary<string, bool>();
+            foreach (var node in Nodes)
+            {
+                expandedStates[node.GetNodeKey()] = node.Expanded;
+                expandedStates = expandedStates.Concat(node.GetExpandedStates()).ToDictionary(x => x.Key, x => x.Value);
+            }
 
-			base.OnTextChanged(e);
-		}
+            return expandedStates;
+        }
 
-		public override void OnClosed(EventArgs e)
-		{
-			// Unregister listeners
-			this.Nodes.CollectionChanged -= this.Nodes_CollectionChanged;
+        public int GetNodeCount(bool includeSubTrees)
+        {
+            if (includeSubTrees)
+            {
+                return this.Descendants<TreeNode>().Count();
+            }
 
-			base.OnClosed(e);
-		}
-
-		public void Toggle()
-		{
-			content.Visible = !content.Visible;
-		}
-
-		public IEnumerable<TreeNode> Ancestors()
-		{
-			var context = this.NodeParent;
-			while (context != null)
-			{
-				yield return context;
-
-				context = context.NodeParent;
-			}
-		}
-
-		private void RebuildContentSection()
-		{
-			// Remove but don't close all the current nodes
-			content.RemoveChildren();
-
-			using (content.LayoutLock())
-			{
-				// Then add them back in (after the change)
-				foreach (var node in Nodes)
-				{
-					node.NodeParent = this;
-					node.ClearRemovedFlag();
-					content.AddChild(node);
-				}
-			}
-
-			content.PerformLayout();
-
-			// If the node count is ending at 0 we removed content and need to rebuild the title bar so it will net have a + in it
-			expandWidget.Expandable = GetNodeCount(false) != 0;
-
-			isDirty = false;
-		}
-
-		public override string ToString()
-		{
-			return textWidget?.Text ?? "";
-		}
-
-		public bool Checked { get; set; }
-
-		public bool Editing { get; }
-
-		public bool Expandable
-		{
-			get => expandWidget.Expandable;
-			set => expandWidget.Expandable = value;
-		}
-
-		public bool ReserveIconSpace
-		{
-			get => expandWidget.ReserveIconSpace;
-			set => expandWidget.ReserveIconSpace = value;
-		}
-
-		private bool _expanded;
-
-		public bool Expanded
-		{
-			get => _expanded;
-			set
-			{
-				if (_expanded != value || content.Visible != value)
-				{
-					_expanded = value;
-					expandWidget.Expanded = _expanded;
-
-					content.Visible = _expanded && this.Nodes.Count > 0;
-					ExpandedChanged?.Invoke(this, null);
-				}
-			}
-		}
-
-		public TreeNode FirstNode { get; }
-
-		public ImageBuffer Image
-		{
-			get
-			{
-				return _image;
-			}
-
-			set
-			{
-				if (_image != value)
-				{
-					_image = value;
-
-					if (imageWidget != null)
-					{
-						imageWidget.Image = _image;
-					}
-
-					OnImageChanged(null);
-				}
-			}
-		}
-
-		public TreeNode LastNode { get; }
-
-		/// <summary>
-		/// Gets the zero-based depth of the tree node in the TreeView control.
-		/// </summary>
-		public int Level { get; }
-
-		// Summary:
-		//     Gets the next sibling tree node.
-		//
-		// Returns:
-		//     A TreeNode that represents the next sibling tree node.
-		public TreeNode NextNode { get; }
-
-		// Summary:
-		//     Gets the next visible tree node.
-		//
-		// Returns:
-		//     A TreeNode that represents the next visible tree node.
-		public TreeNode NextVisibleNode { get; }
-
-		// Summary:
-		//     Gets or sets the font that is used to display the text on the tree node label.
-		//
-		// Returns:
-		//     The StyledTypeFace that is used to display the text on the tree node label.
-		public StyledTypeFace NodeFont { get; set; }
-
-		// Summary:
-		//     Gets the parent tree node of the current tree node.
-		//
-		// Returns:
-		//     A TreeNode that represents the parent of the current tree
-		//     node.
-		public TreeNode NodeParent { get; protected set; }
-
-		public ObservableCollection<TreeNode> Nodes { get; } = new ObservableCollection<TreeNode>();
-
-		public int PointSize { get; set; }
-
-		// Summary:
-		//     Gets the previous sibling tree node.
-		//
-		// Returns:
-		//     A TreeNode that represents the previous sibling tree node.
-		public TreeNode PrevNode { get; }
-
-		// Summary:
-		//     Gets the previous visible tree node.
-		//
-		// Returns:
-		//     A TreeNode that represents the previous visible tree node.
-		public TreeNode PrevVisibleNode { get; }
-
-		// Summary:
-		//     Gets a value indicating whether the tree node is in the selected state.
-		//
-		// Returns:
-		//     true if the tree node is in the selected state; otherwise, false.
-		public bool Selected
-		{
-			get
-			{
-				if (TreeView != null)
-				{
-					return TreeView.SelectedNode == this;
-				}
-
-				return false;
-			}
-		}
-
-		// Summary:
-		//     Gets or sets the image list index value of the image that is displayed when the
-		//     tree node is in the selected state.
-		//
-		// Returns:
-		//     A zero-based index value that represents the image position in an ImageList.
-		public ImageBuffer SelectedImage { get; set; }
-
-		// Summary:
-		//     Gets or sets the index of the image that is used to indicate the state of the
-		//     TreeNode when the parent TreeView has
-		//     its TreeView.CheckBoxes property set to false.
-		//
-		// Returns:
-		//     The index of the image that is used to indicate the state of the TreeNode.
-		//
-		// Exceptions:
-		//   T:System.ArgumentOutOfRangeException:
-		//     The specified index is less than -1 or greater than 14.
-		public ImageBuffer StateImage { get; set; }
-
-		// Summary:
-		//     Gets or sets the object that contains data about the tree node.
-		//
-		// Returns:
-		//     An System.Object that contains data about the tree node. The default is null.
-		public object Tag { get; set; }
-
-		public Color TextColor { get; set; }
-
-		// Summary:
-		//     Gets the parent tree view that the tree node is assigned to.
-		//
-		// Returns:
-		//     A TreeView that represents the parent tree view that the
-		//     tree node is assigned to, or null if the node has not been assigned to a tree
-		//     view.
-
-		public virtual TreeView TreeView
-		{
-			get => _treeView ?? NodeParent.TreeView;
-			set => _treeView = value;
-		}
-
-		private void OnImageChanged(EventArgs args)
-		{
-			ImageChanged?.Invoke(this, null);
-		}
+            return content?.Children.Where((c) => c is TreeNode).Count() ?? 0;
+        }
 
         public string GetNodeKey()
-		{
+        {
             var parentNames = new List<string>();
             var parent = this;
             while (parent != null)
@@ -556,115 +435,233 @@ namespace MatterHackers.Agg.UI
 
             return string.Join("/", parentNames);
         }
-    
-		public Dictionary<string, bool> GetExpandedStates()
-		{
-            var expandedStates = new Dictionary<string, bool>();
-            foreach (var node in Nodes)
-            {
-                expandedStates[node.GetNodeKey()] = node.Expanded;
-                expandedStates = expandedStates.Concat(node.GetExpandedStates()).ToDictionary(x => x.Key, x => x.Value);
-            }
 
-            return expandedStates;
+        public override void OnClosed(EventArgs e)
+        {
+            // Unregister listeners
+            this.Nodes.CollectionChanged -= this.Nodes_CollectionChanged;
+
+            base.OnClosed(e);
         }
 
-		public event EventHandler CheckedStateChanged;
+        public override void OnDraw(Graphics2D graphics2D)
+        {
+            if (isDirty)
+            {
+                // doing this during draw will often result in a enumeration changed
+                RebuildContentSection();
+            }
 
-		public event EventHandler ExpandedChanged;
+            base.OnDraw(graphics2D);
+        }
 
-		public event EventHandler ImageChanged;
+        public override void OnKeyDown(KeyEventArgs keyEvent)
+        {
+            base.OnKeyDown(keyEvent);
 
-		private class TreeExpandWidget : FlowLayoutWidget
-		{
-			private readonly ImageBuffer arrowRight;
-			private readonly ImageBuffer arrowDown;
-			private readonly ImageBuffer placeholder;
-			private readonly ThemedIconButton imageButton = null;
+            var restoreFocus = Focused;
 
-			public TreeExpandWidget(ThemeConfig theme)
-			{
-				arrowRight = StaticData.Instance.LoadIcon("fa-angle-right_12.png", 12, 12).SetToColor(theme.TextColor);
-				arrowDown = StaticData.Instance.LoadIcon("fa-angle-down_12.png", 12, 12).SetToColor(theme.TextColor);
-				placeholder = new ImageBuffer(16, 16);
+            if (!keyEvent.Handled)
+            {
+                switch (keyEvent.KeyCode)
+                {
+                    case Keys.Right:
+                        this.Expanded = true;
+                        keyEvent.Handled = true;
+                        break;
 
-				this.Margin = new BorderDouble(right: 4);
+                    case Keys.Left:
+                        if (!this.Expanded)
+                        {
+                            if (this.NodeParent != null)
+                            {
+                                // navigate back up to the parent of this node
+                                TreeView.SelectedNode = this.NodeParent;
+                                TreeView.NotifyItemClicked(TreeView, new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
+                            }
 
-				imageButton = new ThemedIconButton(placeholder, theme)
-				{
-					MinimumSize = new Vector2(16 * DeviceScale, 16 * DeviceScale),
-					VAnchor = VAnchor.Center,
-					Selectable = false,
-					Width = 16 * DeviceScale,
-					Height = 16 * DeviceScale
-				};
+                            restoreFocus = false;
+                        }
+                        else
+                        {
+                            this.Expanded = false;
+                        }
 
-				this.AddChild(imageButton);
-			}
+                        keyEvent.Handled = true;
+                        break;
+                }
+            }
 
-			private bool _alwaysExpandable;
+            if (restoreFocus && !Focused)
+            {
+                Focus();
+            }
+        }
 
-			public bool AlwaysExpandable
-			{
-				get => _alwaysExpandable;
-				set
-				{
-					imageButton.SetIcon(_expanded ? arrowDown : arrowRight);
-					_alwaysExpandable = value;
-				}
-			}
+        public override void OnTextChanged(EventArgs e)
+        {
+            if (textWidget != null)
+            {
+                textWidget.Text = this.Text;
+            }
 
-			private bool? _expandable = null;
+            base.OnTextChanged(e);
+        }
 
-			public bool Expandable
-			{
-				get => _expandable == true || this.AlwaysExpandable;
-				set
-				{
-					if (_expandable != value)
-					{
-						_expandable = value;
-					}
+        public void Remove() => throw new NotImplementedException();
 
-					this.EnsureExpansionState();
-				}
-			}
+        public void Toggle()
+        {
+            content.Visible = !content.Visible;
+        }
 
-			private bool _expanded;
+        public override string ToString()
+        {
+            return textWidget?.Text ?? "";
+        }
 
-			public bool Expanded
-			{
-				get => _expanded;
-				set
-				{
-					if (_expanded != value)
-					{
-						_expanded = value;
+        private void Nodes_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add)
+            {
+                // Assign NodeParent when items are added
+                foreach (var item in e.NewItems)
+                {
+                    if (item is TreeNode treeNode)
+                    {
+                        treeNode.NodeParent = this;
+                    }
+                }
+            }
 
-						this.EnsureExpansionState();
-					}
-				}
-			}
+            isDirty = true;
+        }
 
-			private void EnsureExpansionState()
-			{
-				if (!this.Expandable)
-				{
-					if (this.ReserveIconSpace)
-					{
-						imageButton.SetIcon(placeholder);
-					}
+        // Summary:
+        //     Gets the parent tree view that the tree node is assigned to.
+        //
+        // Returns:
+        //     A TreeView that represents the parent tree view that the
+        //     tree node is assigned to, or null if the node has not been assigned to a tree
+        //     view.
+        private void OnImageChanged(EventArgs args)
+        {
+            ImageChanged?.Invoke(this, null);
+        }
 
-					imageButton.Visible = this.ReserveIconSpace;
-				}
-				else
-				{
-					imageButton.Visible = true;
-					imageButton.SetIcon(_expanded ? arrowDown : arrowRight);
-				}
-			}
+        private void RebuildContentSection()
+        {
+            // Remove but don't close all the current nodes
+            content.RemoveChildren();
 
-			public bool ReserveIconSpace { get; set; } = true;
-		}
-	}
+            using (content.LayoutLock())
+            {
+                // Then add them back in (after the change)
+                foreach (var node in Nodes)
+                {
+                    node.NodeParent = this;
+                    node.ClearRemovedFlag();
+                    content.AddChild(node);
+                }
+            }
+
+            content.PerformLayout();
+
+            // If the node count is ending at 0 we removed content and need to rebuild the title bar so it will net have a + in it
+            expandWidget.Expandable = GetNodeCount(false) != 0;
+
+            isDirty = false;
+        }
+
+        private class TreeExpandWidget : FlowLayoutWidget
+        {
+            private readonly ImageBuffer arrowDown;
+            private readonly ImageBuffer arrowRight;
+            private readonly ThemedIconButton imageButton = null;
+            private readonly ImageBuffer placeholder;
+            private bool _alwaysExpandable;
+
+            private bool? _expandable = null;
+
+            private bool _expanded;
+
+            public TreeExpandWidget(ThemeConfig theme)
+            {
+                arrowRight = StaticData.Instance.LoadIcon("fa-angle-right_12.png", 12, 12).SetToColor(theme.TextColor);
+                arrowDown = StaticData.Instance.LoadIcon("fa-angle-down_12.png", 12, 12).SetToColor(theme.TextColor);
+                placeholder = new ImageBuffer(16, 16);
+
+                this.Margin = new BorderDouble(right: 4);
+
+                imageButton = new ThemedIconButton(placeholder, theme)
+                {
+                    MinimumSize = new Vector2(16 * DeviceScale, 16 * DeviceScale),
+                    VAnchor = VAnchor.Center,
+                    Selectable = false,
+                    Width = 16 * DeviceScale,
+                    Height = 16 * DeviceScale
+                };
+
+                this.AddChild(imageButton);
+            }
+
+            public bool AlwaysExpandable
+            {
+                get => _alwaysExpandable;
+                set
+                {
+                    imageButton.SetIcon(_expanded ? arrowDown : arrowRight);
+                    _alwaysExpandable = value;
+                }
+            }
+
+            public bool Expandable
+            {
+                get => _expandable == true || this.AlwaysExpandable;
+                set
+                {
+                    if (_expandable != value)
+                    {
+                        _expandable = value;
+                    }
+
+                    this.EnsureExpansionState();
+                }
+            }
+
+            public bool Expanded
+            {
+                get => _expanded;
+                set
+                {
+                    if (_expanded != value)
+                    {
+                        _expanded = value;
+
+                        this.EnsureExpansionState();
+                    }
+                }
+            }
+
+            public bool ReserveIconSpace { get; set; } = true;
+
+            private void EnsureExpansionState()
+            {
+                if (!this.Expandable)
+                {
+                    if (this.ReserveIconSpace)
+                    {
+                        imageButton.SetIcon(placeholder);
+                    }
+
+                    imageButton.Visible = this.ReserveIconSpace;
+                }
+                else
+                {
+                    imageButton.Visible = true;
+                    imageButton.SetIcon(_expanded ? arrowDown : arrowRight);
+                }
+            }
+        }
+    }
 }
