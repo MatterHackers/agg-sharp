@@ -53,6 +53,12 @@ namespace MatterHackers.Agg.UI
                 AutoExpandBoundsToText = true
             });
         }
+        
+        public HAnchor TextHAnchor
+        {
+            get => textWidget.HAnchor;
+            set => textWidget.HAnchor = value;
+        }
 
         public Color TextColor
         {
