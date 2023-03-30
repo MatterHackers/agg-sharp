@@ -28,7 +28,9 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using static MatterHackers.Agg.ScanlineRasterizer;
+using static System.Net.WebRequestMethods;
 
 namespace MatterHackers.Agg
 {
@@ -80,6 +82,43 @@ namespace MatterHackers.Agg
             double returnVal;
             double.TryParse(returnString, NumberStyles.Number, CultureInfo.InvariantCulture, out returnVal);
             return returnVal;
+        }
+
+        public static void CopyFilesWithProgress(IEnumerable<string> sourceFiles, string destinationPath, Action<double, string> reporter, CancellationTokenSource cancellationToken)
+        {
+            var count = sourceFiles.Count();
+            var i = 0;
+            foreach (var file in sourceFiles)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                var destination = Path.Combine(destinationPath, Path.GetFileName(file));
+                var completedRatio = (double)i / count;
+                CopyFileWithProgress(file, destination, (ratio, message) => reporter?.Invoke(completedRatio + ratio / count, message));
+                i++;
+            }
+        }
+
+        public static void CopyFileWithProgress(string sourceFile, string destinationFile, Action<double, string> reporter)
+        {
+            const int bufferSize = 1024 * 1024; // 1MB buffer
+            byte[] buffer = new byte[bufferSize];
+            int bytesRead;
+
+            using (FileStream sourceStream = new FileStream(sourceFile, FileMode.Open, FileAccess.Read))
+            {
+                long totalBytes = sourceStream.Length;
+                using (FileStream destinationStream = new FileStream(destinationFile, FileMode.Create, FileAccess.Write))
+                {
+                    while ((bytesRead = sourceStream.Read(buffer, 0, bufferSize)) > 0)
+                    {
+                        destinationStream.Write(buffer, 0, bytesRead);
+                        reporter?.Invoke((double)destinationStream.Position / totalBytes, "Copying");
+                    }
+                }
+            }
         }
 
         public static double ParseDouble(string source, ref int startIndex, bool fastSimpleNumbers)
