@@ -84,7 +84,11 @@ namespace MatterHackers.Agg
             return returnVal;
         }
 
-        public static void CopyFilesWithProgress(IEnumerable<string> sourceFiles, string destinationPath, Action<double, string> reporter, CancellationTokenSource cancellationToken)
+        public static void CopyFilesWithProgress(IEnumerable<string> sourceFiles,
+            string destinationPath,
+            Action<double, string> reporter,
+            CancellationTokenSource cancellationToken,
+            string copyProgressMessage = "Copying")
         {
             var count = sourceFiles.Count();
             var i = 0;
@@ -96,12 +100,13 @@ namespace MatterHackers.Agg
                 }
                 var destination = Path.Combine(destinationPath, Path.GetFileName(file));
                 var completedRatio = (double)i / count;
-                CopyFileWithProgress(file, destination, (ratio, message) => reporter?.Invoke(completedRatio + ratio / count, message));
+                CopyFileWithProgress(file, destination, (ratio, message) => reporter?.Invoke(completedRatio + ratio / count, message), copyProgressMessage);
                 i++;
             }
+            reporter?.Invoke(1, copyProgressMessage);
         }
 
-        public static void CopyFileWithProgress(string sourceFile, string destinationFile, Action<double, string> reporter)
+        public static void CopyFileWithProgress(string sourceFile, string destinationFile, Action<double, string> reporter, string copyProgressMessage = "Copying")
         {
             const int bufferSize = 1024 * 1024; // 1MB buffer
             byte[] buffer = new byte[bufferSize];
@@ -115,7 +120,7 @@ namespace MatterHackers.Agg
                     while ((bytesRead = sourceStream.Read(buffer, 0, bufferSize)) > 0)
                     {
                         destinationStream.Write(buffer, 0, bytesRead);
-                        reporter?.Invoke((double)destinationStream.Position / totalBytes, "Copying");
+                        reporter?.Invoke((double)destinationStream.Position / totalBytes, copyProgressMessage);
                     }
                 }
             }
