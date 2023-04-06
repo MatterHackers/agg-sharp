@@ -18,14 +18,12 @@
 //----------------------------------------------------------------------------
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using Typography.OpenFont;
 
 namespace MatterHackers.Agg
 {
@@ -379,12 +377,13 @@ namespace MatterHackers.Agg
 
         public void RenderMaxSize(ImageBuffer image, Vector2 position, Vector2 maxSize)
         {
-            RenderMaxSize(image, position, maxSize, Vector2.Zero, out _);
+            var zero = Vector2.Zero;
+            RenderMaxSize(image, position, maxSize, ref zero, out _);
         }
 
-        public void RenderMaxSize(ImageBuffer image, Vector2 position, Vector2 maxSize, Vector2 origin)
+        public void RenderMaxSize(ImageBuffer image, Vector2 position, Vector2 maxSize, ref Vector2 origin)
         {
-            RenderMaxSize(image, position, maxSize, origin, out _);
+            RenderMaxSize(image, position, maxSize, ref origin, out _);
         }
 
         /// <summary>
@@ -395,7 +394,7 @@ namespace MatterHackers.Agg
         /// <param name="maxSize">The max size to allow it to render to. Will be scaled down to fit.</param>
         /// <param name="origin">The postion in the sourc to hold at the 'positon'</param>
         /// <param name="size"></param>
-        public void RenderMaxSize(ImageBuffer image, Vector2 position, Vector2 maxSize, Vector2 origin, out Vector2 size)
+        public void RenderMaxSize(ImageBuffer image, Vector2 position, Vector2 maxSize, ref Vector2 origin, out Vector2 size)
         {
             var ratio = GetScallingBaseOnMaxSize(image, maxSize, out size);
             origin *= ratio;
@@ -410,6 +409,30 @@ namespace MatterHackers.Agg
             }
         }
 
+        public void RenderInRect(string text,
+            double pointSize,
+            RectangleDouble fitRect,
+            out RectangleDouble renderedBounds,
+            double xPositionRatio = 0,
+            double yPositionRatio = 0,
+            double debugBoundsWidth = 0)
+        {
+            RenderInRect(text, AggContext.DefaultFont, pointSize, fitRect, out renderedBounds, xPositionRatio, yPositionRatio, debugBoundsWidth);
+        }
+
+        public void RenderInRect(string text,
+            TypeFace font,
+            double pointSize,
+            RectangleDouble fitRect,
+            out RectangleDouble renderedBounds,
+            double xPositionRatio = 0,
+            double yPositionRatio = 0,
+            double debugBoundsWidth = 0)
+        {
+            var styledTypeFace = new StyledTypeFace(font, pointSize * 300 / 72);
+            var typeFacePrinter = new TypeFacePrinter(text, styledTypeFace);
+            RenderInRect(new ColoredVertexSource[] { new ColoredVertexSource(typeFacePrinter, Color.Black) }, fitRect, out renderedBounds, xPositionRatio, yPositionRatio, debugBoundsWidth);
+        }
 
         /// <summary>
         /// Renders the given vector source making scaled to fit the given rect. Scalling will remain proportional.
@@ -420,8 +443,15 @@ namespace MatterHackers.Agg
         /// <param name="xPositionRatio">The ratio of the width to offset in x if not fully utilized</param>
         /// <param name="yPositionRatio">The ratio of the height to offset in y if not fully utilized</param>
         /// <param name="debugShowBounds">Render an outline of the total rectangle</param>
-        public void RenderInRect(List<ColoredVertexSource> source, RectangleDouble fitRect, double xPositionRatio = 0, double yPositionRatio = 0, double debugBoundsWidth = 0)
+        public void RenderInRect(IEnumerable<ColoredVertexSource> source,
+            RectangleDouble fitRect,
+            out RectangleDouble renderedBounds,
+            double xPositionRatio = 0,
+            double yPositionRatio = 0,
+            double debugBoundsWidth = 0)
         {
+            renderedBounds = RectangleDouble.ZeroIntersection;
+
             xPositionRatio = Math.Max(0, Math.Min(1, xPositionRatio));
             yPositionRatio = Math.Max(0, Math.Min(1, yPositionRatio));
 
@@ -457,8 +487,10 @@ namespace MatterHackers.Agg
                 // do we need to move it to account for position ratios
                 var scaledBounds = totalBounds * scale;
                 transform *= Affine.NewTranslation((fitRect.Width - scaledBounds.Width) * xPositionRatio, (fitRect.Height - scaledBounds.Height) * yPositionRatio);
+                var flattened = new FlattenCurves(new VertexSourceApplyTransform(colorVertices.VertexSource, transform));
+                renderedBounds.ExpandToInclude(flattened.GetBounds());
 
-                this.Render(new FlattenCurves(new VertexSourceApplyTransform(colorVertices.VertexSource, transform)), colorVertices.Color);
+                this.Render(flattened, colorVertices.Color);
             }
 
             if (debugBoundsWidth > 0)
@@ -480,6 +512,21 @@ namespace MatterHackers.Agg
         {
             affineTransformStack.Pop();
             affineTransformStack.Push(value);
+        }
+    }
+
+    public static class ColoredVertexSourceExtensions
+    {
+        public static RectangleDouble GetBounds(this IEnumerable<ColoredVertexSource> source)
+        {
+            RectangleDouble totalBounds = RectangleDouble.ZeroIntersection;
+            foreach (var colorVertices in source)
+            {
+                var bounds = colorVertices.VertexSource.GetBounds();
+                totalBounds.ExpandToInclude(bounds);
+            }
+
+            return totalBounds;
         }
     }
 }
