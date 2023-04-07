@@ -140,7 +140,7 @@ namespace MatterHackers.Agg.UI
 				graphics2D.Render(arrow, theme.TextColor);
 			}
 
-			public bool KeepMenuOpen
+			public new bool KeepMenuOpen
 			{
 				get
 				{
@@ -172,7 +172,7 @@ namespace MatterHackers.Agg.UI
 				base.OnLoad(args);
 			}
 
-			public bool KeepMenuOpen => false;
+			public new bool KeepMenuOpen => false;
 
 			public bool Checked
 			{

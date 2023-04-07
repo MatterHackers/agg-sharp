@@ -488,7 +488,6 @@ namespace MatterHackers.PolygonMesh.Csg
             var N1 = new double[3];
             var N2 = new double[3];
             var N = new double[3];
-            double alpha;
 
             // Compute distance signs  of p1, q1 and r1
             // to the plane of triangle(p2,q2,r2)

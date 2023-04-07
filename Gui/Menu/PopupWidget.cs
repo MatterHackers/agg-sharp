@@ -20,7 +20,7 @@ namespace MatterHackers.Agg.UI
 
 	public interface ISetableIgnoredPopupChild : IIgnoredPopupChild
 	{
-		bool KeepMenuOpen { get; set; }
+		new bool KeepMenuOpen { get; set; }
 	}
 
 	public interface IMenuCreator

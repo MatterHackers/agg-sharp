@@ -151,11 +151,6 @@ namespace MatterHackers.PolygonMesh.Processors
                 // make sure this segments does not intersect either loop
                 var intersectsWithA = loopA.FindIntersection(loopA[curIndexA], loopB[nextIndexB]) == Agg.QuadTree.Intersection.Intersect;
                 
-                if (intersectsWithA)
-                {
-					int a = 0;
-                }
-
                 var segmentCurBToNextA = new Polygon() { loopB[curIndexB], loopA[nextIndexA] };
 				var lengthCurBToNextA = segmentCurBToNextA.LengthSquared();
 				// make sure this segments does not intersect either loop

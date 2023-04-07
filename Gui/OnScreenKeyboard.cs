@@ -184,7 +184,6 @@ namespace MatterHackers.Agg.UI
 
 		public SoftKeyboardDisplayStateManager(SystemWindow rootSystemWindow)
 		{
-			this.content = content;
 			AnchorAll();
 			// AddChild(content);
 

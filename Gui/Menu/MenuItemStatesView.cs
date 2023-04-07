@@ -32,7 +32,6 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.Agg.Font;
 using System;
 using System.Linq;
-using MatterHackers.Agg.Font;
 
 namespace MatterHackers.Agg.UI
 {

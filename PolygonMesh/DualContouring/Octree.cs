@@ -266,10 +266,6 @@ namespace DualContouring
 				is5Ish |= Math.Abs(Math.Abs(position[1]) - 5) < debugError;
 				is5Ish |= Math.Abs(Math.Abs(position[2]) - 5) < debugError;
 
-				if (!is5Ish)
-				{
-					int a = 0;
-				}
 				Vector3 normal = CalculateSurfaceNormal(f, position);
 				qefSolver.Add(position, normal);
 
@@ -282,11 +278,6 @@ namespace DualContouring
 			is5Ish = Math.Abs(Math.Abs(qefPosition[0]) - 5) < debugError;
 			is5Ish |= Math.Abs(Math.Abs(qefPosition[1]) - 5) < debugError;
 			is5Ish |= Math.Abs(Math.Abs(qefPosition[2]) - 5) < debugError;
-
-			if (!is5Ish)
-			{
-				int a = 0;
-			}
 
 			var drawInfo = new OctreeDrawInfo();
 			drawInfo.corners = 0;

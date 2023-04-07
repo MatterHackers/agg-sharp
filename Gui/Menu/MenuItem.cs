@@ -77,6 +77,6 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
-        public new bool KeepMenuOpen => false;
+        public bool KeepMenuOpen => false;
 	}
 }

@@ -188,8 +188,6 @@ namespace MatterHackers.Agg.UI
 
         private double MicroButtonWidth => 30 * GuiWidget.DeviceScale;
 
-        private readonly int defaultScrollBarWidth = 120;
-
         public void MakeRoundedButton(GuiWidget button, Color? borderColor = null)
         {
             if (button is ThemedTextButton textButton)

@@ -101,13 +101,14 @@ namespace MatterHackers.VectorMath
 			Vector3 bottomNormal, Vector3 topNormal,
 			Vector3 backNormal, double distanceToBack)
 		{
-			Planes = new Plane[5];
+			Planes = new Plane[6];
 			Planes[0] = new Plane(leftNormal.GetNormal(), 0);
 			Planes[1] = new Plane(rightNormal.GetNormal(), 0);
 			Planes[2] = new Plane(bottomNormal.GetNormal(), 0);
 			Planes[3] = new Plane(topNormal.GetNormal(), 0);
 			Planes[4] = new Plane(backNormal.GetNormal(), distanceToBack);
-		}
+            Planes[5] = new Plane(-backNormal.GetNormal(), 0);
+        }
 
 		// Plane normals should point out.
 		public Frustum(Plane left, Plane right, Plane bottom, Plane top, Plane front, Plane back)
@@ -149,64 +150,61 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		public FrustumIntersection GetIntersect(AxisAlignedBoundingBox boundingBox)
-		{
-			FrustumIntersection returnValue = FrustumIntersection.Inside;
-			Vector3 vmin, vmax;
+        public FrustumIntersection GetIntersect(AxisAlignedBoundingBox boundingBox)
+        {
+            int insidePlaneCount = 0;
+            Vector3 vmin, vmax;
 
-			for (int i = 0; i < Planes.Length; ++i)
-			{
-				// X axis
-				if (Planes[i].Normal.X > 0)
-				{
-					vmin.X = boundingBox.MinXYZ.X;
-					vmax.X = boundingBox.MaxXYZ.X;
-				}
-				else
-				{
-					vmin.X = boundingBox.MaxXYZ.X;
-					vmax.X = boundingBox.MinXYZ.X;
-				}
+            for (int i = 0; i < Planes.Length; ++i)
+            {
+                // X axis
+                if (Planes[i].Normal.X > 0)
+                {
+                    vmin.X = boundingBox.MinXYZ.X;
+                    vmax.X = boundingBox.MaxXYZ.X;
+                }
+                else
+                {
+                    vmin.X = boundingBox.MaxXYZ.X;
+                    vmax.X = boundingBox.MinXYZ.X;
+                }
 
-				// Y axis
-				if (Planes[i].Normal.Y > 0)
-				{
-					vmin.Y = boundingBox.MinXYZ.Y;
-					vmax.Y = boundingBox.MaxXYZ.Y;
-				}
-				else
-				{
-					vmin.Y = boundingBox.MaxXYZ.Y;
-					vmax.Y = boundingBox.MinXYZ.Y;
-				}
+                // Y axis
+                if (Planes[i].Normal.Y > 0)
+                {
+                    vmin.Y = boundingBox.MinXYZ.Y;
+                    vmax.Y = boundingBox.MaxXYZ.Y;
+                }
+                else
+                {
+                    vmin.Y = boundingBox.MaxXYZ.Y;
+                    vmax.Y = boundingBox.MinXYZ.Y;
+                }
 
-				// Z axis
-				if (Planes[i].Normal.Z > 0)
-				{
-					vmin.Z = boundingBox.MinXYZ.Z;
-					vmax.Z = boundingBox.MaxXYZ.Z;
-				}
-				else
-				{
-					vmin.Z = boundingBox.MaxXYZ.Z;
-					vmax.Z = boundingBox.MinXYZ.Z;
-				}
+                // Z axis
+                if (Planes[i].Normal.Z > 0)
+                {
+                    vmin.Z = boundingBox.MinXYZ.Z;
+                    vmax.Z = boundingBox.MaxXYZ.Z;
+                }
+                else
+                {
+                    vmin.Z = boundingBox.MaxXYZ.Z;
+                    vmax.Z = boundingBox.MinXYZ.Z;
+                }
 
-				if (Planes[i].Normal.Dot(vmin) - Planes[i].DistanceFromOrigin > 0)
-				{
-					if (Planes[i].Normal.Dot(vmax) - Planes[i].DistanceFromOrigin >= 0)
-					{
-						return FrustumIntersection.Outside;
-					}
-				}
+                if (Planes[i].Normal.Dot(vmin) - Planes[i].DistanceFromOrigin > 0)
+                {
+                    return FrustumIntersection.Outside;
+                }
 
-				if (Planes[i].Normal.Dot(vmax) - Planes[i].DistanceFromOrigin >= 0)
-				{
-					returnValue = FrustumIntersection.Intersect;
-				}
-			}
+                if (Planes[i].Normal.Dot(vmax) - Planes[i].DistanceFromOrigin >= 0)
+                {
+                    insidePlaneCount++;
+                }
+            }
 
-			return returnValue;
-		}
-	}
+            return insidePlaneCount == Planes.Length ? FrustumIntersection.Inside : FrustumIntersection.Intersect;
+        }
+    }
 }

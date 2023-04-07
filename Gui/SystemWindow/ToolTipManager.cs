@@ -50,7 +50,6 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		public const double ReshowDelay = .2;
 
-		private static int count = 0;
 		private double CurrentAutoPopDelay = 5;
 		private Vector2 mousePosition;
 		private SystemWindow systemWindow;

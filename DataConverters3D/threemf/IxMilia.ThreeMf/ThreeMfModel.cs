@@ -97,7 +97,7 @@ namespace IxMilia.ThreeMf
             {
                 if (!KnownExtensionNamespaces.Contains(rns))
                 {
-                    throw new ThreeMfParseException($"The required namespace '{rns}' is not supported.");
+                    //throw new ThreeMfParseException($"The required namespace '{rns}' is not supported.");
                 }
             }
 

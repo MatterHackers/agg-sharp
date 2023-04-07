@@ -1629,7 +1629,6 @@ namespace MatterHackers.Agg.UI
 		public virtual GuiWidget RemoveChild(int index)
 		{
 			GuiWidget childThatWasRemove = null;
-			int i = 0;
 			Children.Modify((list) =>
 			{
 				if (index < list.Count)
@@ -2005,11 +2004,6 @@ namespace MatterHackers.Agg.UI
 			if (Visible && !LayoutLocked)
 			{
 				LayoutCount++;
-
-				if ((LayoutCount % 11057) == 0)
-				{
-					int a = 0;
-				}
 
 				if (LayoutEngine != null)
 				{
@@ -2582,7 +2576,6 @@ namespace MatterHackers.Agg.UI
 
 			if (bPosition != mPosition)
 			{
-				int a = 0;
 			}
 
 			return mPosition;

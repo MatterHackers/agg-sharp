@@ -338,10 +338,6 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				facePlane = plane.Value;
 			}
-			else
-            {
-				int a = 0;
-            }
 
 			if (!coPlanarFaces.ContainsKey(facePlane))
 			{

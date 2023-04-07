@@ -245,7 +245,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			// use this to debug that windows are drawing and updating.
-			// onPaintCount++;
+			onPaintCount++;
 			// Text = string.Format("Draw {0}, OnPaint {1}", drawCount, onPaintCount);
 		}
 

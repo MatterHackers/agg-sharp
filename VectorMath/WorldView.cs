@@ -93,7 +93,6 @@ namespace MatterHackers.VectorMath
 #if DEBUG
 					if (!value.IsValid())
 					{
-						int a = 0;
 					}
 #endif
 					_rotationMatrix = value;
@@ -132,7 +131,6 @@ namespace MatterHackers.VectorMath
 #if DEBUG
 					if (!value.IsValid())
 					{
-						int a = 0;
 					}
 #endif
 					_translationMatrix = value;

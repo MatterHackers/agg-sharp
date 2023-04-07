@@ -306,7 +306,6 @@ namespace MatterHackers.PolygonMesh.Csg
                                             if (deltaSquared == 0)
                                             {
                                                 // do nothing it already matches
-                                                var a = 0;
                                             }
                                             else if (deltaSquared < .00001)
                                             {

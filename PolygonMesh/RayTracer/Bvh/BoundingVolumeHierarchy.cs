@@ -111,7 +111,7 @@ namespace MatterHackers.RayTracer
 			}
 
 			int count = rayBundle.rayArray.Length;
-			// check if all bundle misses
+			// check if the bundle (the frustum) misses
 			if (!rayBundle.CheckIfBundleHitsAabb(Aabb))
 			{
 				return -1;

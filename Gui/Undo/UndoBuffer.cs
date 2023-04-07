@@ -57,7 +57,7 @@ namespace MatterHackers.Agg.UI
 						longHash = undo.GetHashCode().GetLongHashCode();
 					}
 				}
-				catch (Exception e)
+				catch (Exception)
 				{
 				}
 
