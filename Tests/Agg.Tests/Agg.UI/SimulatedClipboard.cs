@@ -29,17 +29,19 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Specialized;
+using HtmlAgilityPack;
 using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.UI.Tests
 {
 	public class SimulatedClipboard : ISystemClipboard
 	{
+        private ImageBuffer Image { get; set; }
 		private string Text { get; set; }
 
 		public bool ContainsFileDropList => throw new NotImplementedException();
 
-		public bool ContainsImage => throw new NotImplementedException();
+		public bool ContainsImage => Image != null;
 
 		public bool ContainsText => !string.IsNullOrEmpty(Text);
 
@@ -60,8 +62,8 @@ namespace MatterHackers.Agg.UI.Tests
 
 		public void SetImage(ImageBuffer imageBuffer)
 		{
-			throw new NotImplementedException();
-		}
+            Image = imageBuffer;
+        }
 
 		public void SetText(string text)
 		{
