@@ -94,18 +94,13 @@ namespace MatterHackers.RenderOpenGl
 			// do this in a background thread and wait for the results
 			Task.Run(() =>
 			{
-				var meshEdgeList = mesh.NewMeshEdges();
-
 				var filteredEdgeLines = new VectorPOD<WireVertexData>();
 
-				foreach (var meshEdge in meshEdgeList)
+				foreach (var meshEdge in mesh.GetNonManifoldEdges())
 				{
-					if (meshEdge.Faces.Count() != 2)
-					{
-						AddVertex(filteredEdgeLines,
-							mesh.Vertices[meshEdge.Vertex0Index],
-							mesh.Vertices[meshEdge.Vertex1Index]);
-					}
+					AddVertex(filteredEdgeLines,
+						mesh.Vertices[meshEdge.Vertex0Index],
+						mesh.Vertices[meshEdge.Vertex1Index]);
 				}
 
 				this.EdgeLines = filteredEdgeLines;

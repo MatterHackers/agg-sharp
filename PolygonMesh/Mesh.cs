@@ -34,6 +34,7 @@ using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
+using MIConvexHull;
 
 namespace MatterHackers.PolygonMesh
 {
@@ -918,12 +919,12 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public static IReadOnlyList<VertexFaceList> NewVertexFaceLists(this Mesh mesh)
+		public static IReadOnlyList<VertexFaceList> GetVertexFaceLists(this Mesh mesh)
 		{
 			return VertexFaceList.CreateVertexFaceList(mesh);
 		}
 
-		public static IReadOnlyList<MeshEdge> NewMeshEdges(this Mesh mesh)
+		public static IReadOnlyList<MeshEdge> GetMeshEdges(this Mesh mesh)
 		{
 			return MeshEdge.CreateMeshEdgeList(mesh);
 		}
@@ -1184,55 +1185,69 @@ namespace MatterHackers.PolygonMesh
 			// return texturedPlane;
 		}
 
-		/// <summary>
-		/// For every T Junction add a vertex to the mesh edge that needs one.
-		/// </summary>
-		/// <param name="mesh">The mesh to repair.</param>
-		public static void RepairTJunctions(this Mesh mesh)
+		public static IEnumerable<MeshEdge> GetNonManifoldEdges(this Mesh mesh)
 		{
-			throw new NotImplementedException();
-			// var nonManifoldEdges = mesh.GetNonManifoldEdges();
-
-			// foreach(MeshEdge edge in nonManifoldEdges)
-			// {
-			// IVertex start = edge.VertexOnEnd[0];
-			// IVertex end = edge.VertexOnEnd[1];
-			// Vector3 normal = (end.Position - start.Position).GetNormal();
-
-			// // Get all the vertices that lay on this edge
-			// foreach (var vertex in mesh.Vertices)
-			// {
-			// // test if it falls on the edge
-			// // split the edge at them
-			// IVertex createdVertex;
-			// MeshEdge createdMeshEdge;
-			// mesh.SplitMeshEdge(edge, out createdVertex, out createdMeshEdge);
-			// createdVertex.Position = vertex.Position;
-			// createdVertex.Normal = vertex.Normal;
-			// mesh.MergeVertices(vertex, createdVertex);
-			// }
-			// }
-
-			// throw new NotImplementedException();
-
-			// and merge the mesh edges that are now manifold
-			// mesh.MergeMeshEdges(CancellationToken.None);
+			foreach (var meshEdge in mesh.GetMeshEdges())
+			{
+				if (meshEdge.Faces.Count() != 2)
+				{
+					yield return meshEdge;
+				}
+			}
 		}
 
-		public static bool IsManifold(this Mesh mesh)
+        /// <summary>
+        /// For every T Junction add a vertex to the mesh edge that needs one.
+        /// </summary>
+        /// <param name="mesh">The mesh to repair.</param>
+        public static void RepairTJunctions(this Mesh mesh)
+        {
+            var nonManifoldEdges = mesh.GetNonManifoldEdges();
+
+            foreach (MeshEdge edge in nonManifoldEdges)
+            {
+                var start = mesh.Vertices[edge.Vertex0Index];
+                var end = mesh.Vertices[edge.Vertex1Index];
+                Vector3Float normal = (end - start).GetNormal();
+
+                // Get all the vertices that lay on this edge
+                foreach (var vertex in mesh.Vertices)
+                {
+                    // Test if the vertex falls on the edge
+                    Vector3Float edgeDirection = (end - start).GetNormal();
+                    Vector3Float vertexDirection = (vertex - start).GetNormal();
+                    float dotProduct = edgeDirection.Dot(vertexDirection);
+
+                    if (Math.Abs(dotProduct - 1) < 1e-6f)
+                    {
+                        // If the vertex falls on the edge, split the edge at the vertex
+                        IVertex createdVertex;
+                        MeshEdge createdMeshEdge;
+                        mesh.SplitMeshEdge(edge, out createdVertex, out createdMeshEdge);
+                        createdVertex.Position = vertex;
+                        createdVertex.Normal = normal;
+                        mesh.MergeVertices(vertex, createdVertex);
+                    }
+                }
+            }
+
+            // Merge the vertices for the edges that are now manifold
+            mesh.CleanAndMerge();
+        }
+
+        public static bool IsManifold(this Mesh mesh)
 		{
-			throw new NotImplementedException();
-			// var nonManifoldEdges = mesh.GetNonManifoldEdges();
+            var meshEdgeList = mesh.GetMeshEdges();
 
-			// if(nonManifoldEdges.Count == 0)
-			// {
-			// return true;
-			// }
+            foreach (var meshEdge in meshEdgeList)
+            {
+                if (meshEdge.Faces.Count() != 2)
+                {
+                    return false;
+                }
+            }
 
-			// Every non-manifold edge must have matching non-manifold edge(s) that it lines up with.
-			// If this is true the model is still functionally manifold.
-
-			return false;
-		}
-	}
+            return true;
+        }
+    }
 }
