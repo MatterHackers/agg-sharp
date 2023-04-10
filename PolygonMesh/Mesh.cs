@@ -278,11 +278,21 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		/// <summary>
-		/// Merge vertices that are less than a given distance apart
-		/// </summary>
-		/// <param name="treatAsSameDistance">The distance to merge vertices</param>
-		public void MergeVertices(double treatAsSameDistance)
+		public BvhTree<int> GetVertexBvhTree()
+		{
+            var tinyDistance = new Vector3Float(.001, .001, .001);
+            var vertexBvhTree = TradeOffBvhConstructor<int>.CreateNewHierachy(this.Vertices
+                .Select((v, i) => new BvhTreeItemData<int>(i, new AxisAlignedBoundingBox(v - tinyDistance, v + tinyDistance))).ToList(),
+                DoSimpleSortSize: 10);
+
+			return vertexBvhTree;
+        }
+
+        /// <summary>
+        /// Merge vertices that are less than a given distance apart
+        /// </summary>
+        /// <param name="treatAsSameDistance">The distance to merge vertices</param>
+        public void MergeVertices(double treatAsSameDistance)
 		{
 			if (Vertices.Count < 2)
 			{
@@ -290,11 +300,8 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			var sameDistance = new Vector3Float(treatAsSameDistance, treatAsSameDistance, treatAsSameDistance);
-			var tinyDistance = new Vector3Float(.001, .001, .001);
 			// build a bvh tree of all the vertices
-			var bvhTree = TradeOffBvhConstructor<int>.CreateNewHierachy(this.Vertices
-				.Select((v, i) => new BvhTreeItemData<int>(i, new AxisAlignedBoundingBox(v - tinyDistance, v + tinyDistance))).ToList(),
-				DoSimpleSortSize: 10);
+			var vertexBvhTree = GetVertexBvhTree();
 
 			var newVertices = new List<Vector3Float>(Vertices.Count);
 			var vertexIndexRemaping = Enumerable.Range(0, Vertices.Count).Select(i => -1).ToList();
@@ -313,7 +320,7 @@ namespace MatterHackers.PolygonMesh
 					// clear for new search
 					searchResults.Clear();
 					// find everything close
-					bvhTree.SearchBounds(new AxisAlignedBoundingBox(vertex - sameDistance, vertex + sameDistance), searchResults);
+					vertexBvhTree.SearchBounds(new AxisAlignedBoundingBox(vertex - sameDistance, vertex + sameDistance), searchResults);
 					// map them to this new vertex
 					foreach (var result in searchResults)
 					{
@@ -1203,6 +1210,8 @@ namespace MatterHackers.PolygonMesh
         public static void RepairTJunctions(this Mesh mesh)
         {
             var nonManifoldEdges = mesh.GetNonManifoldEdges();
+            var vertexBvhTree = mesh.GetVertexBvhTree();
+            var searchResults = new List<int>();
 
             foreach (MeshEdge edge in nonManifoldEdges)
             {
@@ -1211,22 +1220,28 @@ namespace MatterHackers.PolygonMesh
                 Vector3Float normal = (end - start).GetNormal();
 
                 // Get all the vertices that lay on this edge
-                foreach (var vertex in mesh.Vertices)
+				var edgeAabb = new AxisAlignedBoundingBox(start, end);
+				searchResults.Clear();
+
+                vertexBvhTree.SearchBounds(edgeAabb, searchResults);
+                // map them to this new vertex
+                foreach (var result in searchResults)
                 {
                     // Test if the vertex falls on the edge
                     Vector3Float edgeDirection = (end - start).GetNormal();
+					var vertex = mesh.Vertices[result];
                     Vector3Float vertexDirection = (vertex - start).GetNormal();
                     float dotProduct = edgeDirection.Dot(vertexDirection);
 
                     if (Math.Abs(dotProduct - 1) < 1e-6f)
                     {
                         // If the vertex falls on the edge, split the edge at the vertex
-                        IVertex createdVertex;
-                        MeshEdge createdMeshEdge;
-                        mesh.SplitMeshEdge(edge, out createdVertex, out createdMeshEdge);
-                        createdVertex.Position = vertex;
-                        createdVertex.Normal = normal;
-                        mesh.MergeVertices(vertex, createdVertex);
+                        //IVertex createdVertex;
+                        //MeshEdge createdMeshEdge;
+                        //mesh.SplitMeshEdge(edge, out createdVertex, out createdMeshEdge);
+                        //createdVertex.Position = vertex;
+                        //createdVertex.Normal = normal;
+                        //mesh.MergeVertices(vertex, createdVertex);
                     }
                 }
             }
