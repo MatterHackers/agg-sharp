@@ -474,7 +474,7 @@ namespace MatterHackers.Agg
                 else
                 {
                     // we need to scale up
-                    scale = Math.Max(fitRect.Width / totalBounds.Width, fitRect.Height / totalBounds.Height);
+                    scale = Math.Min(fitRect.Width / totalBounds.Width, fitRect.Height / totalBounds.Height);
                 }
 
                 // zero out the offset
