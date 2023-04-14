@@ -65,6 +65,18 @@ namespace MatterHackers.Agg
 #endif
         }
 
+        public static string AddQueryPram(string url, string key, string value)
+        {
+            if (url.Contains("?"))
+            {
+                return url + "&" + key + "=" + value;
+            }
+            else
+            {
+                return url + "?" + key + "=" + value;
+            }
+        }
+
         public static double ParseDouble(string source, bool fastSimpleNumbers)
         {
             int startIndex = 0;
