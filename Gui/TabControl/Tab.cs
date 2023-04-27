@@ -34,12 +34,17 @@ namespace MatterHackers.Agg.UI
 {
 	public class TextTab : ThreeViewTab
 	{
-		public TextTab(TabPage tabPage, string internalTabName)
-			: this(tabPage, internalTabName, 12, Color.Black, Color.White, Color.DarkGray, Color.White)
-		{
-		}
+        public TextTab(TabPage tabPage, string internalTabName)
+            : this(tabPage, internalTabName, 12, Color.Black, Color.White, Color.DarkGray, Color.White)
+        {
+        }
 
-		public TextTab(TabPage tabPage, string internalTabName, double pointSize,
+        public TextTab(ThemeConfig theme, TabPage tabPage, string internalTabName)
+			: this(tabPage, internalTabName, theme.DefaultFontSize, theme.LightTextColor, theme.PrimaryAccentColor, theme.TextColor, theme.BackgroundColor)
+        {
+        }
+
+        public TextTab(TabPage tabPage, string internalTabName, double pointSize,
 			Color selectedTextColor, Color selectedBackgroundColor,
 			Color normalTextColor, Color normalBackgroundColor, int fixedSize = 40, bool useUnderlineStyling = false)
 			: base(internalTabName, new GuiWidget(), new GuiWidget(), new GuiWidget(), tabPage)

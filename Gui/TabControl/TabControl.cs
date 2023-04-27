@@ -222,7 +222,12 @@ namespace MatterHackers.Agg.UI
 			AddTab(new TextTab(tabPageWidget, internalTabName));
 		}
 
-		public void AddTab(Tab newTab, int tabPosition = -1)
+        public void AddTab(ThemeConfig theme, TabPage tabPageWidget, string internalTabName)
+        {
+            AddTab(new TextTab(theme, tabPageWidget, internalTabName));
+        }
+
+        public void AddTab(Tab newTab, int tabPosition = -1)
 		{
 			var tabPage = newTab.TabPage;
 
