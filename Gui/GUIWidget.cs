@@ -2033,15 +2033,23 @@ namespace MatterHackers.Agg.UI
 			var rect = new RoundedRect(bounds.Left, bounds.Bottom, bounds.Right, bounds.Top);
 			rect.radius(BackgroundRadius.SW, BackgroundRadius.SE, BackgroundRadius.NE, BackgroundRadius.NW);
 
-			if (BackgroundColor.Alpha0To255 > 0)
-			{
-				graphics2D.Render(rect, BackgroundColor);
-			}
-
 			if (BorderColor.Alpha0To255 > 0 && BackgroundOutlineWidth > 0)
 			{
-				var stroke = BackgroundOutlineWidth * GuiWidget.DeviceScale;
-				var expand = stroke / 2;
+                var stroke = BackgroundOutlineWidth * GuiWidget.DeviceScale;
+
+				if (BackgroundColor.Alpha0To255 > 0)
+				{
+					// inset the bounds and draw the background
+					var insetBounds = bounds;
+					insetBounds.Inflate(-stroke);
+                    var insetRect = new RoundedRect(insetBounds.Left, insetBounds.Bottom, insetBounds.Right, insetBounds.Top);
+                    insetRect.radius(BackgroundRadius.SW, BackgroundRadius.SE, BackgroundRadius.NE, BackgroundRadius.NW);
+
+                    graphics2D.Render(insetRect, BackgroundColor);
+                }
+
+                // and draw the boarder
+                var expand = stroke / 2;
 				rect = new RoundedRect(bounds.Left + expand, bounds.Bottom + expand, bounds.Right - expand, bounds.Top - expand);
 				rect.radius(BackgroundRadius.SW, BackgroundRadius.SE, BackgroundRadius.NE, BackgroundRadius.NW);
 
@@ -2049,7 +2057,13 @@ namespace MatterHackers.Agg.UI
 
 				graphics2D.Render(rectOutline, BorderColor);
 			}
-		}
+			else if (BackgroundColor.Alpha0To255 > 0)
+            {
+                // only draw the background color
+                graphics2D.Render(rect, BackgroundColor);
+            }
+
+        }
 
 		public static int DrawCount;
 		public static int LayoutCount;
