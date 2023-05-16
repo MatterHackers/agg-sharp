@@ -40,7 +40,7 @@ namespace MatterHackers.Agg.UI
         }
 
         public TextTab(ThemeConfig theme, TabPage tabPage, string internalTabName)
-			: this(tabPage, internalTabName, theme.DefaultFontSize, theme.LightTextColor, theme.PrimaryAccentColor, theme.TextColor, theme.BackgroundColor)
+			: this(tabPage, internalTabName, theme.DefaultFontSize, theme.LightTextColor, Color.Transparent, theme.TextColor, Color.Transparent)
         {
         }
 
@@ -52,16 +52,21 @@ namespace MatterHackers.Agg.UI
 			this.Padding = 0;
 			this.Margin = 0;
 
-			normalWidget.HAnchor = HAnchor.Fit;
-            normalWidget.VAnchor = VAnchor.Fit;
-            normalWidget.Padding = new BorderDouble(10);
+			void SetValues(GuiWidget widget)
+			{
+                widget.HAnchor = HAnchor.Fit;
+                widget.VAnchor = VAnchor.Fit | VAnchor.Bottom;
+                widget.Margin = new BorderDouble(0, 0, 0, 5);
+                widget.Padding = new BorderDouble(10, 7, 10, 7);
+                widget.BackgroundOutlineWidth = 2;
+				widget.BorderColor = normalTextColor;
+                widget.BackgroundRadius = new RadiusCorners(8, 8, 0, 0);
+            }
 
-			selectedWidget.HAnchor = HAnchor.Fit;
-			selectedWidget.VAnchor = VAnchor.Fit;
+            SetValues(normalWidget);
+            SetValues(selectedWidget);
 
-            selectedWidget.Padding = new BorderDouble(10, 0);
-
-			AddText(tabPage.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize, true, fixedSize, useUnderlineStyling);
+            AddText(tabPage.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize, true, fixedSize, useUnderlineStyling);
 			AddText(tabPage.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize, false, fixedSize, useUnderlineStyling);
 
 			// Bind changes on TabPage.Text to ensure 

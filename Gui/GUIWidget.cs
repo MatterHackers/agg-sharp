@@ -2062,7 +2062,6 @@ namespace MatterHackers.Agg.UI
                 // only draw the background color
                 graphics2D.Render(rect, BackgroundColor);
             }
-
         }
 
 		public static int DrawCount;
