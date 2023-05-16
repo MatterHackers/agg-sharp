@@ -34,14 +34,17 @@ namespace MatterHackers.Agg.UI
 {
 	public class TextTab : ThreeViewTab
 	{
+        private ThemeConfig theme;
+
         public TextTab(TabPage tabPage, string internalTabName)
             : this(tabPage, internalTabName, 12, Color.Black, Color.White, Color.DarkGray, Color.White)
         {
         }
 
         public TextTab(ThemeConfig theme, TabPage tabPage, string internalTabName)
-			: this(tabPage, internalTabName, theme.DefaultFontSize, theme.LightTextColor, Color.Transparent, theme.TextColor, Color.Transparent)
+			: this(tabPage, internalTabName, theme.DefaultFontSize, theme.TextColor, Color.Transparent, theme.TextColor.WithAlpha(100), Color.Transparent)
         {
+			this.theme = theme;
         }
 
         public TextTab(TabPage tabPage, string internalTabName, double pointSize,
@@ -59,7 +62,7 @@ namespace MatterHackers.Agg.UI
                 widget.Margin = new BorderDouble(0, 0, 0, 5);
                 widget.Padding = new BorderDouble(10, 7, 10, 7);
                 widget.BackgroundOutlineWidth = 2;
-				widget.BorderColor = normalTextColor;
+				widget.BorderColor = selectedTextColor;
                 widget.BackgroundRadius = new RadiusCorners(8, 8, 0, 0);
             }
 
@@ -67,7 +70,20 @@ namespace MatterHackers.Agg.UI
             SetValues(selectedWidget);
 
             AddText(tabPage.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize, true, fixedSize, useUnderlineStyling);
-			AddText(tabPage.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize, false, fixedSize, useUnderlineStyling);
+			var hideLineColor = Color.White;
+			if (theme != null)
+			{
+				hideLineColor = theme.BackgroundColor;
+			}
+
+            selectedWidget.AfterDraw += (s, e) =>
+			{
+				var bounds = selectedWidget.LocalBounds;
+
+				e.Graphics2D.FillRectangle(bounds.Left + 2, bounds.Bottom, bounds.Right - 2, bounds.Bottom + 3, hideLineColor);
+			};
+
+            AddText(tabPage.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize, false, fixedSize, useUnderlineStyling);
 
 			// Bind changes on TabPage.Text to ensure 
 			tabPage.TextChanged += (s, e) =>
