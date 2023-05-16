@@ -71,13 +71,14 @@ namespace MatterHackers.Agg.UI
 
             AddText(tabPage.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize, true, fixedSize, useUnderlineStyling);
 			var hideLineColor = Color.White;
-			if (theme != null)
-			{
-				hideLineColor = theme.BackgroundColor;
-			}
 
             selectedWidget.AfterDraw += (s, e) =>
 			{
+                if (theme != null)
+                {
+                    hideLineColor = theme.BackgroundColor;
+                }
+                
 				var bounds = selectedWidget.LocalBounds;
 
 				e.Graphics2D.FillRectangle(bounds.Left + 2, bounds.Bottom, bounds.Right - 2, bounds.Bottom + 3, hideLineColor);
