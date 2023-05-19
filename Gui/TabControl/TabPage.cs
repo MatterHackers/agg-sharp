@@ -45,7 +45,7 @@ namespace MatterHackers.Agg.UI
 			widgetToAddToPage.AnchorAll();
 			AddChild(widgetToAddToPage);
 		}
-	}
+    }
 
 	/// <summary>
 	/// A TabPage widget which defers construction of its root widget until made visible

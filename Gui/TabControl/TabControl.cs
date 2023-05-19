@@ -69,6 +69,16 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+        public void AddLineRightOfTabs(ThemeConfig theme)
+        {
+            TabBar.AddChild(new GuiWidget(1, 1)
+            {
+                VAnchor = VAnchor.Bottom,
+                HAnchor = HAnchor.Stretch,
+                BackgroundColor = theme.TextColor
+            });
+        }
+        
 		public TabControl(ThemeConfig theme, Orientation orientation = Orientation.Horizontal, GuiWidget separator = null)
 		{
 			AnchorAll();
