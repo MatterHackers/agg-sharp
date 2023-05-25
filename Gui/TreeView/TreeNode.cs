@@ -369,6 +369,25 @@ namespace MatterHackers.Agg.UI
             }
         }
 
+        public TreeNode FindNodeKey(string nodeKey)
+        {
+            if (this.GetNodeKey() == nodeKey)
+            {
+                return this;
+            }
+            
+            foreach (var node in this.Nodes)
+            {
+                var foundNode = node.FindNodeKey(nodeKey);
+                if (foundNode != null)
+                {
+                    return foundNode;
+                }
+            }
+
+            return null;
+        }
+
         // **** Not implemented ****
         public void BeginEdit() => throw new NotImplementedException();
 
