@@ -642,6 +642,8 @@ namespace MatterHackers.Agg.UI
 
 		public event EventHandler<KeyEventArgs> KeyUp;
 
+        public event EventHandler<object> ObjectSent;
+
         #region close events
         /// <summary>
 		/// This is called when the user clicks the close button on the window.
@@ -3331,13 +3333,15 @@ namespace MatterHackers.Agg.UI
 			MouseLeave?.Invoke(this, mouseEvent);
 		}
 
-		public virtual void SendToChildren(object objectToRoute)
+		public void SendToChildren(object objectToRoute)
 		{
 			foreach (GuiWidget child in Children)
 			{
 				child.SendToChildren(objectToRoute);
 			}
-		}
+
+            ObjectSent?.Invoke(this, objectToRoute);
+        }
 
 		public class WidgetAndPosition
 		{
