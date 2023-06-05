@@ -38,6 +38,11 @@ namespace MatterHackers.Agg.UI
 
         private bool hasKeyboardFocus;
 
+        /// <summary>
+        /// If this button has focus and enter is pressed, press the button
+        /// </summary>
+        public bool ClickOnEnter { get; set; } = true;
+
         public ThemedButton(ThemeConfig theme)
         {
             this.theme = theme;
@@ -76,10 +81,12 @@ namespace MatterHackers.Agg.UI
 
         public override void OnKeyUp(KeyEventArgs keyEvent)
         {
-            if (keyEvent.KeyCode == Keys.Enter
-                || keyEvent.KeyCode == Keys.Space)
+            if (ClickOnEnter
+                && (keyEvent.KeyCode == Keys.Enter
+                || keyEvent.KeyCode == Keys.Space))
             {
                 UiThread.RunOnIdle(InvokeClick);
+                keyEvent.Handled = true;
             }
 
             base.OnKeyUp(keyEvent);
