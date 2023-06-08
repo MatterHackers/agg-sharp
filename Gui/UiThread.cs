@@ -107,7 +107,11 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public static void RunOnUiThread(Action action)
+        /// <summary>
+        /// If on the ui thread run this action now. If not queue for running on the ui thread.
+        /// </summary>
+        /// <param name="action">The action to run</param>
+        public static void RunOnUiThread(Action action)
         {
 			if (UiThread.IsUiThread)
 			{
@@ -119,7 +123,11 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public static void RunOnIdle(Action action)
+        /// <summary>
+        /// Queue this action to run on the uithread. It will queue even if currently on the ui thread.
+        /// </summary>
+        /// <param name="action">The action to run</param>
+        public static void RunOnIdle(Action action)
 		{
 			lock (locker)
 			{
@@ -127,6 +135,11 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Queue this action to run on the uithread after delayInSeconds has passed.
+		/// </summary>
+		/// <param name="action">The action to run</param>
+		/// <param name="delayInSeconds">The time to wait</param>
 		public static void RunOnIdle(Action action, double delayInSeconds)
 		{
 			lock (locker)
