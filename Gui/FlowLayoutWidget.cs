@@ -57,8 +57,18 @@ namespace MatterHackers.Agg.UI
                     && guiWidget.HAnchor != HAnchor.MaxFitOrStretch;
             }
 
+            // find the largest child count of all widgetWithFlowLayouts children
+            int maxChildCount = 0;
+            foreach (var child in widgetWithFlowLayouts.Children)
+            {
+                if (child is FlowLayoutWidget flowLayoutWidget)
+                {
+                    maxChildCount = Math.Max(maxChildCount, flowLayoutWidget.Children.Count);
+                }
+            }
+
             // keep track of the largest width of each child
-            var largestWidths = new double[widgetWithFlowLayouts.Children.Count];
+            var largestWidths = new double[maxChildCount];
 
             // for every child of widgetWithFlowLayouts that is a FlowLayoutWidget
             foreach (var child in widgetWithFlowLayouts.Children)
