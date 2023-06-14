@@ -28,7 +28,7 @@ namespace MatterHackers.Agg.UI
         private readonly GuiWidget windowBackground;
 
 		public WindowWidget(ThemeConfig theme, RectangleDouble inBounds)
-			: this(theme, new GuiWidget(inBounds.Width, inBounds.Height)
+			: this(theme, new GuiWidget(inBounds.Width, inBounds.Height, SizeLimitsToSet.None)
 			{
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Stretch,

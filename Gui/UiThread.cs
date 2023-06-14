@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 
 namespace MatterHackers.Agg.UI
@@ -234,6 +235,75 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+        /// <summary>
+        /// Stores actions that are pending execution along with their scheduled execution time in milliseconds.
+        /// Each action is identified by a unique string id.
+        /// </summary>
+        private static Dictionary<string, (Action action, long executeMs)> pendingLimitedActions = new Dictionary<string, (Action action, long executeMs)>();
+
+        /// <summary>
+        /// Represents an interval during which the pending actions are checked and executed if their scheduled time has passed.
+        /// </summary>
+        private static RunningInterval pendingLimitedActionsInterval = null;
+
+        /// <summary>
+        /// Schedules the provided action to be run after a certain delay, replacing any previously scheduled action with the same id.
+        /// The actions are run no more frequently than the specified delay.
+        /// </summary>
+        /// <param name="action">The action to be run.</param>
+        /// <param name="idToEnforceLimit">The id associated with the action. Used to enforce frequency limit.</param>
+        /// <param name="delayBeforeCall">The delay in seconds before the action should be run.</param>
+        public static void RunWithFrequencyLimit(Action action, string idToEnforceLimit, double delayBeforeCall)
+        {
+            lock (locker)
+            {
+                void CheckOnLimitActions()
+                {
+                    if (pendingLimitedActions.Any())
+					{
+                        // check if any times have expired
+                        foreach (var kvp in pendingLimitedActions)
+                        {
+                            if (kvp.Value.executeMs < UiThread.CurrentTimerMs)
+                            {
+                                var actionToRun = kvp.Value.action;
+                                pendingLimitedActions.Remove(kvp.Key);
+                                actionToRun?.Invoke();
+                            }
+                        }
+                    }
+                    else
+					{
+                        if (pendingLimitedActionsInterval != null)
+						{
+							// clear interval
+							UiThread.ClearInterval(pendingLimitedActionsInterval);
+							pendingLimitedActionsInterval = null;
+                        }
+
+                    }
+                }
+
+                if (pendingLimitedActionsInterval == null)
+				{
+                    pendingLimitedActionsInterval = UiThread.SetInterval(CheckOnLimitActions, .01);
+                }
+
+                // check if it is already in pendingLimitedActions
+                if (pendingLimitedActions.ContainsKey(idToEnforceLimit))
+                {
+                    // update the time
+                    pendingLimitedActions[idToEnforceLimit] = (action, UiThread.CurrentTimerMs + (long)(delayBeforeCall * 1000));
+                }
+                else
+                {
+                    // add it
+                    pendingLimitedActions.Add(idToEnforceLimit, (action, UiThread.CurrentTimerMs + (long)(delayBeforeCall * 1000)));
+                }
+            }
+        }
+
+        
 		public static void ExecuteWhen(Func<bool> readyCondition, Action actionToExecute, double secondsBeforeRecheck = .1, double maxSecondsToWait = 1)
 		{
 			long startTime = UiThread.CurrentTimerMs;
