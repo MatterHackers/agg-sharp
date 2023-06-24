@@ -163,7 +163,7 @@ namespace MatterHackers.Agg.UI
                 lock (locker)
                 {
                     if (allLineInfos.Count > 0
-                        && !string.IsNullOrEmpty(allLineInfos[allLineInfos.Count - 1].Text))
+                        && !string.IsNullOrEmpty(allLineInfos[allLineInfos.Count - 1]?.Text))
                     {
                         var current = allLineInfos[allLineInfos.Count - 1];
 
