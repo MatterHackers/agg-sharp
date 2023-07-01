@@ -43,7 +43,7 @@ namespace Gui.Charting
         /// <summary>
         /// Gets or sets the chart type.
         /// </summary>
-        public ChartType ChartType { get; set; }
+        public ChartType ChartType { get; set; } = ChartType.Bar;
 
         /// <summary>
         /// Gets or sets the datasets to be plotted on the chart.
