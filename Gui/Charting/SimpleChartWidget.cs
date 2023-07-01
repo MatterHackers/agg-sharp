@@ -94,7 +94,7 @@ namespace Gui.Charting
                 
                 for (int i=0; i<dataset.Data.Count; i++)
                 {
-                    graphics2D.FillRectangle(i * 5, 0, i * 5 + 3, Height, backgroundColor);
+                    graphics2D.FillRectangle(i * 5, 0, i * 5 + 3, Height / maxSize.Y * dataset.Data[i], backgroundColor);
                 }
             }
         }
