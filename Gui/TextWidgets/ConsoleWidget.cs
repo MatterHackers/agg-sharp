@@ -149,10 +149,13 @@ namespace MatterHackers.Agg.UI
         {
             get
             {
-                if (allLineInfos.Count > 0
-                    && string.IsNullOrEmpty(allLineInfos[allLineInfos.Count - 1].Text))
+                lock (locker)
                 {
-                    return allLineInfos[allLineInfos.Count - 1].Text.Length;
+                    if (allLineInfos.Count > 0
+                    && string.IsNullOrEmpty(allLineInfos[allLineInfos.Count - 1].Text))
+                    {
+                        return allLineInfos[allLineInfos.Count - 1].Text.Length;
+                    }
                 }
 
                 return 0;
@@ -373,7 +376,10 @@ namespace MatterHackers.Agg.UI
                     text = lines[lines.Length - 1];
                 }
 
-                allLineInfos[allLineInfos.Count - 1] = new LineInfo(allLineInfos[allLineInfos.Count - 1].Text + text, ConsoleColorToColor());
+                lock (locker)
+                {
+                    allLineInfos[allLineInfos.Count - 1] = new LineInfo(allLineInfos[allLineInfos.Count - 1].Text + text, ConsoleColorToColor());
+                }
 
                 Invalidate();
             }
@@ -395,19 +401,23 @@ namespace MatterHackers.Agg.UI
                 return;
             }
 
-            if (allLineInfos.Count > 0 
+            lock (locker)
+            {
+                if (allLineInfos.Count > 0
                 && string.IsNullOrEmpty(allLineInfos[allLineInfos.Count - 1].Text))
-            {
-                allLineInfos[allLineInfos.Count - 1] = new LineInfo(line, ConsoleColorToColor());
-            }
-            else
-            {
-                // add the the new line
-                allLineInfos.Add(new LineInfo(line, ConsoleColorToColor()));
-            }
+                {
+                    allLineInfos[allLineInfos.Count - 1] = new LineInfo(line, ConsoleColorToColor());
+                }
+                else
+                {
+                    // add the the new line
+                    allLineInfos.Add(new LineInfo(line, ConsoleColorToColor()));
+                }
 
-            // add a blank line
-            allLineInfos.Add(new LineInfo("", ConsoleColorToColor()));
+                // add a blank line
+                allLineInfos.Add(new LineInfo("", ConsoleColorToColor()));
+            }
+            
             Invalidate();
         }
     }
