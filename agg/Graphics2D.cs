@@ -172,23 +172,44 @@ namespace MatterHackers.Agg
             double pointSize = 12,
             Justification justification = Justification.Left,
             Baseline baseline = Baseline.Text,
-            Color color = default(Color),
+            Color color = default,
             bool drawFromHintedCach = false,
-            Color backgroundColor = default(Color),
+            Color backgroundColor = default,
             bool bold = false)
         {
             DrawString(text, position.X, position.Y, pointSize, justification, baseline, color, drawFromHintedCach, backgroundColor, bold);
         }
 
-        public void DrawString(string text,
+        /// <summary>
+        /// Draws a string on a typeface printer object with various optional styling parameters.
+        /// </summary>
+        /// <param name="text">The string text to be drawn.</param>
+        /// <param name="x">The x-coordinate where the string starts.</param>
+        /// <param name="y">The y-coordinate where the string starts.</param>
+        /// <param name="pointSize">The size of the point in pixels. Default is 12.</param>
+        /// <param name="justification">Defines the justification of the string, i.e., the alignment of the text. It can be left, right, or center. Default is 'Left'.</param>
+        /// <param name="baseline">Defines the baseline alignment of the text, i.e., the vertical alignment of the text. It can be 'Text', 'Ideographic', etc. Default is 'Text'.</param>
+        /// <param name="color">Defines the color of the text. Default is 'Black' if not specified.</param>
+        /// <param name="drawFromHintedCach">A boolean flag to indicate if the rendered string should be drawn from hinted cache. Default is 'false'.</param>
+        /// <param name="backgroundColor">Defines the background color of the text. No background color is applied if not specified.</param>
+        /// <param name="bold">A boolean flag to indicate if the text should be bold. Default is 'false'.</param>
+        /// <returns>Returns a TypeFacePrinter object that holds the rendered string and drawing settings.</returns>
+        /// <example>
+        /// TypeFacePrinter printer = DrawString("Hello World", 50, 50, 14, Justification.Center, Baseline.Text, Color.Red, true, Color.White, true);
+        /// </example>
+        /// <remarks>
+        /// If the 'color' parameter's alpha value is zero, the function will interpret it as the color black.
+        /// If the 'backgroundColor' parameter's alpha value is not zero, a rectangle of that color will be drawn as a background behind the string.
+        /// </remarks>
+        public TypeFacePrinter DrawString(string text,
             double x,
             double y,
             double pointSize = 12,
             Justification justification = Justification.Left,
             Baseline baseline = Baseline.Text,
-            Color color = default(Color),
+            Color color = default,
             bool drawFromHintedCach = false,
-            Color backgroundColor = default(Color),
+            Color backgroundColor = default,
             bool bold = false)
         {
             TypeFacePrinter stringPrinter = new TypeFacePrinter(text, pointSize, new Vector2(x, y), justification, baseline, bold);
@@ -204,6 +225,8 @@ namespace MatterHackers.Agg
 
             stringPrinter.DrawFromHintedCache = drawFromHintedCach;
             stringPrinter.Render(this, color);
+
+            return stringPrinter;
         }
 
         public void FillRectangle(RectangleDouble rect, IColorType fillColor)
@@ -260,6 +283,21 @@ namespace MatterHackers.Agg
 
             Line(start.X, start.Y, end.X, end.Y, color, strokeWidth);
         }
+        
+        public IVertexSource GetLine(double x1, double y1, double x2, double y2, double strokeWidth = -1)
+        {
+            if (strokeWidth == -1)
+            {
+                strokeWidth = 1 * DeviceScale;
+            }
+
+            var lineToDraw = new VertexStorage();
+            lineToDraw.Clear();
+            lineToDraw.MoveTo(x1, y1);
+            lineToDraw.LineTo(x2, y2);
+
+            return new Stroke(lineToDraw, strokeWidth);
+        }
 
         /// <summary>
         /// Render a line
@@ -272,19 +310,7 @@ namespace MatterHackers.Agg
         /// <param name="strokeWidth">The width in pixels, -1 will render 1 pixel scaled to device units</param>
         public virtual void Line(double x1, double y1, double x2, double y2, Color color, double strokeWidth = -1)
         {
-            if (strokeWidth == -1)
-            {
-                strokeWidth = 1 * DeviceScale;
-            }
-
-            var lineToDraw = new VertexStorage();
-            lineToDraw.Clear();
-            lineToDraw.MoveTo(x1, y1);
-            lineToDraw.LineTo(x2, y2);
-
-            this.Render(
-                new Stroke(lineToDraw, strokeWidth),
-                color);
+            this.Render(GetLine(x1, y1, x2, y2, strokeWidth), color);
         }
 
         public Affine PopTransform()

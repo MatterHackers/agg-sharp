@@ -21,6 +21,7 @@ using Newtonsoft.Json;
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace MatterHackers.Agg.VertexSource
@@ -152,10 +153,10 @@ namespace MatterHackers.Agg.VertexSource
 				return ShapePath.FlagsAndCommand.Stop;
 			}
 
-            public void Clear()
+			public void Clear()
 			{
-                numVertices = 0;
-            }
+				numVertices = 0;
+			}
 
 			public void swap_vertices(int v1, int v2)
 			{
@@ -202,26 +203,90 @@ namespace MatterHackers.Agg.VertexSource
 				}
 			}
 
-			public bool Contains(double x, double y)
-			{
-				foreach (var item in vertexData)
-				{
-					if (item.position.X < x + .001
-						&& item.position.X > x - .001
-						&& item.position.Y < y + .001
-						&& item.position.Y > y - .001)
-					{
-						return true;
-					}
-				}
+            /// <summary>
+            /// Determines if the given point lies within, on, or outside the polygon defined by vertex data.
+            /// Based on "The Point in Polygon Problem for Arbitrary Polygons" by Hormann & Agathos.
+            /// </summary>
+            /// <param name="pointToCheck">The point to check.</param>
+            /// <returns>
+            /// 0 if point is outside the polygon, 
+            /// +1 if point is inside the polygon, 
+            /// -1 if point is on the polygon boundary.
+            /// </returns>
+            public int CheckPointInPolygon(Vector2 pointToCheck)
+            {
+                int pointPosition = 0;
+                var vertexCount = vertexData.Length;
 
-				return false;
-			}
-		}
+                // If the polygon has less than 3 vertices, it's not valid, so the point is outside.
+                if (vertexCount < 3)
+                {
+                    return 0;
+                }
 
-		#endregion InternalVertexStorage
+                var currentVertex = vertexData[0];
+                for (int i = 1; i <= vertexCount; ++i)
+                {
+                    var nextVertex = (i == vertexCount ? vertexData[0] : vertexData[i]);
 
-		private int iteratorIndex;
+                    if (nextVertex.Y == pointToCheck.Y)
+                    {
+                        if ((nextVertex.X == pointToCheck.X) || (currentVertex.Y == pointToCheck.Y && ((nextVertex.X > pointToCheck.X) == (currentVertex.X < pointToCheck.X))))
+                        {
+                            return -1;
+                        }
+                    }
+
+                    if ((currentVertex.Y < pointToCheck.Y) != (nextVertex.Y < pointToCheck.Y))
+                    {
+                        if (currentVertex.X >= pointToCheck.X)
+                        {
+                            if (nextVertex.X > pointToCheck.X)
+                            {
+                                pointPosition = 1 - pointPosition;
+                            }
+                            else
+                            {
+                                double d = (double)(currentVertex.X - pointToCheck.X) * (nextVertex.Y - pointToCheck.Y) - (double)(nextVertex.X - pointToCheck.X) * (currentVertex.Y - pointToCheck.Y);
+
+                                if (d == 0)
+                                {
+                                    return -1;
+                                }
+                                else if ((d > 0) == (nextVertex.Y > currentVertex.Y))
+                                {
+                                    pointPosition = 1 - pointPosition;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (nextVertex.X > pointToCheck.X)
+                            {
+                                double d = (double)(currentVertex.X - pointToCheck.X) * (nextVertex.Y - pointToCheck.Y) - (double)(nextVertex.X - pointToCheck.X) * (currentVertex.Y - pointToCheck.Y);
+
+                                if (d == 0)
+                                {
+                                    return -1;
+                                }
+                                else if ((d > 0) == (nextVertex.Y > currentVertex.Y))
+                                {
+                                    pointPosition = 1 - pointPosition;
+                                }
+                            }
+                        }
+                    }
+
+                    currentVertex = nextVertex;
+                }
+
+                return pointPosition;
+            }
+        }
+
+        #endregion InternalVertexStorage
+
+        private int iteratorIndex;
 		private VertexDataManager vertexDataManager;
 
 		public VertexStorage()
@@ -254,10 +319,20 @@ namespace MatterHackers.Agg.VertexSource
 			}
 		}
 
-		public bool Contains(double x, double y)
-		{
-			return vertexDataManager.Contains(x, y);
-		}
+        /// <summary>
+        /// Determines if the given point lies within, on, or outside the polygon defined by vertex data.
+        /// Based on "The Point in Polygon Problem for Arbitrary Polygons" by Hormann & Agathos.
+        /// </summary>
+        /// <param name="pointToCheck">The point to check.</param>
+        /// <returns>
+        /// 0 if point is outside the polygon, 
+        /// +1 if point is inside the polygon, 
+        /// -1 if point is on the polygon boundary.
+        /// </returns>
+        public int CheckPointInPolygon(Vector2 pointToCheck)
+        {
+            return vertexDataManager.CheckPointInPolygon(pointToCheck);
+        }
 
 		public static bool OldEqualsNewStyle(IVertexSource control, IVertexSource test, double maxError = .0001)
 		{

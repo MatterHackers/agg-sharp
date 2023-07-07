@@ -25,6 +25,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
+using Typography.OpenFont;
 using static System.Math;
 using static MatterHackers.Agg.Color;
 
@@ -2024,46 +2025,55 @@ namespace MatterHackers.Agg.UI
 			ParentChanged?.Invoke(this, e);
 		}
 
-		/// <summary>
-		/// This is called before the OnDraw method.
-		/// When overriding OnPaintBackground in a derived class it is not necessary to call the base class's OnPaintBackground.
-		/// </summary>
-		/// <param name="graphics2D">The graphics 2D this is being drawn onto.</param>
-		public virtual void OnDrawBackground(Graphics2D graphics2D)
+        public static void RenderBackground(Graphics2D graphics2D,
+			RectangleDouble bounds,
+			Color backgroundColor,
+			RadiusCorners cornerRadius,
+			double outlineWidth,
+			Color outlineColor)
 		{
-			var bounds = this.LocalBounds;
-			var rect = new RoundedRect(bounds.Left, bounds.Bottom, bounds.Right, bounds.Top);
-			rect.radius(BackgroundRadius.SW, BackgroundRadius.SE, BackgroundRadius.NE, BackgroundRadius.NW);
+            var rect = new RoundedRect(bounds.Left, bounds.Bottom, bounds.Right, bounds.Top);
+            rect.radius(cornerRadius.SW, cornerRadius.SE, cornerRadius.NE, cornerRadius.NW);
 
-			if (BorderColor.Alpha0To255 > 0 && BackgroundOutlineWidth > 0)
-			{
-                var stroke = BackgroundOutlineWidth * GuiWidget.DeviceScale;
+            if (outlineColor.Alpha0To255 > 0 && outlineWidth > 0)
+            {
+                var stroke = outlineWidth * GuiWidget.DeviceScale;
 
-				if (BackgroundColor.Alpha0To255 > 0)
-				{
-					// inset the bounds and draw the background
-					var insetBounds = bounds;
-					insetBounds.Inflate(-stroke);
+                if (backgroundColor.Alpha0To255 > 0)
+                {
+                    // inset the bounds and draw the background
+                    var insetBounds = bounds;
+                    insetBounds.Inflate(-stroke);
                     var insetRect = new RoundedRect(insetBounds.Left, insetBounds.Bottom, insetBounds.Right, insetBounds.Top);
-                    insetRect.radius(BackgroundRadius.SW, BackgroundRadius.SE, BackgroundRadius.NE, BackgroundRadius.NW);
+                    insetRect.radius(cornerRadius.SW, cornerRadius.SE, cornerRadius.NE, cornerRadius.NW);
 
-                    graphics2D.Render(insetRect, BackgroundColor);
+                    graphics2D.Render(insetRect, backgroundColor);
                 }
 
-                // and draw the boarder
+                // and draw the border
                 var expand = stroke / 2;
-				rect = new RoundedRect(bounds.Left + expand, bounds.Bottom + expand, bounds.Right - expand, bounds.Top - expand);
-				rect.radius(BackgroundRadius.SW, BackgroundRadius.SE, BackgroundRadius.NE, BackgroundRadius.NW);
+                rect = new RoundedRect(bounds.Left + expand, bounds.Bottom + expand, bounds.Right - expand, bounds.Top - expand);
+                rect.radius(cornerRadius.SW, cornerRadius.SE, cornerRadius.NE, cornerRadius.NW);
 
-				var rectOutline = new Stroke(rect, stroke);
+                var rectOutline = new Stroke(rect, stroke);
 
-				graphics2D.Render(rectOutline, BorderColor);
-			}
-			else if (BackgroundColor.Alpha0To255 > 0)
+                graphics2D.Render(rectOutline, outlineColor);
+            }
+            else if (backgroundColor.Alpha0To255 > 0)
             {
                 // only draw the background color
-                graphics2D.Render(rect, BackgroundColor);
+                graphics2D.Render(rect, backgroundColor);
             }
+        }
+
+        /// <summary>
+        /// This is called before the OnDraw method.
+        /// When overriding OnPaintBackground in a derived class it is not necessary to call the base class's OnPaintBackground.
+        /// </summary>
+        /// <param name="graphics2D">The graphics 2D this is being drawn onto.</param>
+        public virtual void OnDrawBackground(Graphics2D graphics2D)
+		{
+            RenderBackground(graphics2D, this.LocalBounds, BackgroundColor, BackgroundRadius, BackgroundOutlineWidth, BorderColor);
         }
 
 		public static int DrawCount;

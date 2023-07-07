@@ -28,11 +28,12 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
+using MatterHackers.Agg.Font;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 
 namespace Gui.Charting
 {
@@ -42,6 +43,8 @@ namespace Gui.Charting
         private ChartOptions options;
         private ThemeConfig theme;
 
+        private List<(VertexStorage region, double value)> hoverAreas = new List<(VertexStorage region, double value)>();
+
         public SimpleChartWidget(ThemeConfig theme, ChartData chartData, ChartOptions options = null)
         {
             this.theme = theme;
@@ -50,6 +53,8 @@ namespace Gui.Charting
 
             DoubleBuffer = true;
         }
+
+        public (double x, double y, string value) HoverValue { get; private set; }
 
         public override void OnDraw(Graphics2D graphics2D)
         {
@@ -69,7 +74,33 @@ namespace Gui.Charting
                     throw new NotImplementedException();
             }
 
+            if (!string.IsNullOrEmpty(HoverValue.value))
+            {
+                graphics2D.DrawString(HoverValue.value, HoverValue.x, HoverValue.y);
+            }
+
             base.OnDraw(graphics2D);
+        }
+
+        public override void OnMouseMove(MouseEventArgs mouseEvent)
+        {
+            var hoverValue = (0.0, 0.0, "");
+            foreach(var area in hoverAreas)
+            {
+                if (area.region.CheckPointInPolygon(new Vector2(mouseEvent.X, mouseEvent.Y)) != 0)
+                {
+                    hoverValue = (mouseEvent.X, mouseEvent.Y, area.value.ToString());
+                    break;
+                }
+            }
+
+            if(HoverValue.Item3 != hoverValue.Item3)
+            {
+                HoverValue = hoverValue;
+                Invalidate();
+            }
+
+            base.OnMouseMove(mouseEvent);
         }
 
         private void DrawBarChart(Graphics2D graphics2D)
@@ -84,6 +115,36 @@ namespace Gui.Charting
                 }
             }
 
+            // draw the left widgets
+            var pointSize = 12;
+
+            // print the 0 at the bottom
+            var stringPrinter = new TypeFacePrinter($"{0}", pointSize);
+            stringPrinter.Render(graphics2D, theme.TextColor);
+            var textBounds = stringPrinter.LocalBounds;
+            var offset = new Vector2(textBounds.Right, textBounds.YCenter);
+            var singleWidth = textBounds.Right;
+
+            // print the top value
+            stringPrinter = new TypeFacePrinter($"{maxSize.Y}", pointSize, new Vector2(0, Height * .9 - 6 * DeviceScale));
+            stringPrinter.Render(graphics2D, theme.TextColor);
+            offset.X = Math.Max(offset.X, stringPrinter.LocalBounds.Right);
+
+            graphics2D.DrawLine(theme.TextColor, new Vector2(offset.X + singleWidth * .5, offset.Y), new Vector2(offset.X + singleWidth, offset.Y));
+            graphics2D.DrawLine(theme.TextColor, new Vector2(offset.X + singleWidth * .5, Height * .9), new Vector2(offset.X + singleWidth, Height * .9));
+            offset.X += singleWidth * 1.5;
+
+            // draw the graph background
+            var bounds = this.LocalBounds;
+            bounds.Left += offset.X;
+            bounds.Bottom += offset.Y;
+            RenderBackground(graphics2D, bounds, theme.TextColor.WithAlpha(20), 5, 1, theme.TextColor);
+
+            var barWidth = bounds.Width / (maxSize.X * 2 + 1 + 2);
+            var barOffset = barWidth * 2;
+
+            var hoverAreas = new List<(VertexStorage region, double value)>();
+            // draw the actual graph
             foreach (var dataset in chartData.Datasets)
             {
                 var backgroundColor = dataset.BackgroundColor;
@@ -92,11 +153,18 @@ namespace Gui.Charting
                     backgroundColor = theme.PrimaryAccentColor;
                 }
                 
-                for (int i=0; i<dataset.Data.Count; i++)
+                for (int j=0; j<dataset.Data.Count; j++)
                 {
-                    graphics2D.FillRectangle(i * 5, 0, i * 5 + 3, Height / maxSize.Y * dataset.Data[i], backgroundColor);
+                    var value = dataset.Data[j];
+                    var rectangle = new RoundedRect(offset.X + barOffset, offset.Y, offset.X + barOffset + barWidth, offset.Y + ((Height - offset.Y) * .9 / maxSize.Y * value));
+                    var region = new VertexStorage(rectangle);
+                    hoverAreas.Add((region, value));
+                    graphics2D.Render(region, backgroundColor);
+                    barOffset += barWidth * 2;
                 }
             }
+
+            this.hoverAreas = hoverAreas;
         }
     }
 }
