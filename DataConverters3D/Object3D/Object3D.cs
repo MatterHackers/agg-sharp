@@ -578,7 +578,23 @@ namespace MatterHackers.DataConverters3D
 			return null;
 		}
 
-		public static bool Save(IObject3D item,
+        private static Random rng = new Random();
+
+        public static string ValidateAndFixFilename(string filename)
+        {
+            string invalidChars = new string(Path.GetInvalidFileNameChars());
+            string validFilename = new string(filename.Where(ch => !invalidChars.Contains(ch)).ToArray());
+
+            if (validFilename.Length > 40) // check if filename is too long
+            {
+                string randomKey = rng.Next(10000, 99999).ToString(); // 5 digit random number
+                validFilename = validFilename.Substring(0, 40 - randomKey.Length) + randomKey; // truncate and append random key
+            }
+
+            return validFilename;
+        }
+
+        public static bool Save(IObject3D item,
 			string meshPathAndFileName,
             bool mergeMeshes,
 			CancellationToken cancellationToken,
@@ -621,6 +637,9 @@ namespace MatterHackers.DataConverters3D
 
                                 // remove any extension
                                 firstValidName = Path.GetFileNameWithoutExtension(firstValidName);
+								// make sure the name is valid
+								firstValidName = ValidateAndFixFilename(firstValidName);
+
                                 var childMeshPathAndFileName = Path.Combine(Path.GetDirectoryName(meshPathAndFileName), firstValidName + ".stl");
 
                                 childMeshPathAndFileName = Util.GetNonCollidingFileName(childMeshPathAndFileName);
