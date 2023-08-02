@@ -138,12 +138,15 @@ namespace Gui.Charting
             var bounds = this.LocalBounds;
             bounds.Left += offset.X;
             bounds.Bottom += offset.Y;
-            RenderBackground(graphics2D, bounds, theme.TextColor.WithAlpha(20), 5, 1, theme.TextColor);
+            RenderBackground(graphics2D, bounds, theme.TextColor.WithAlpha(20), 5, 1, Color.Transparent);
 
             var barWidth = bounds.Width / (maxSize.X * 2 + 1 + 2);
             var barOffset = barWidth * 2;
 
             var hoverAreas = new List<(VertexStorage region, double value)>();
+
+            offset.Y += 1 * DeviceScale;
+
             // draw the actual graph
             foreach (var dataset in chartData.Datasets)
             {
@@ -163,6 +166,8 @@ namespace Gui.Charting
                     barOffset += barWidth * 2;
                 }
             }
+
+            RenderBackground(graphics2D, bounds, Color.Transparent, 5, 1, theme.TextColor);
 
             this.hoverAreas = hoverAreas;
         }
