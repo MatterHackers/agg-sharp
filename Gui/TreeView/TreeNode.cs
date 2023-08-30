@@ -358,6 +358,24 @@ namespace MatterHackers.Agg.UI
             set => _treeView = value;
         }
 
+        public IEnumerable<TreeNode> DescendantsAndSelf()
+        {
+            var treeNodes = new Stack<TreeNode>();
+            treeNodes.Push(this);
+
+            while (treeNodes.Any())
+            {
+                TreeNode treeNode = treeNodes.Pop();
+                
+                foreach (var childNode in treeNode.Nodes)
+                {
+                    treeNodes.Push(childNode);
+                }
+
+                yield return treeNode;
+            }
+        }
+
         public IEnumerable<TreeNode> Ancestors()
         {
             var context = this.NodeParent;
