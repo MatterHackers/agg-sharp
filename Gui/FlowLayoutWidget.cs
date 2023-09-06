@@ -28,6 +28,8 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI
 {
@@ -48,7 +50,12 @@ namespace MatterHackers.Agg.UI
             set => layoutEngine.FlowDirection = value;
         }
 
-        public static void SetFixedWidthChildrenToLargestMatching(GuiWidget widgetWithFlowLayouts)
+        public static void SetFixedWidthChildrenToLargestMatching(GuiWidget widgetToFindChildrenIn)
+        {
+            SetFixedWidthChildrenToLargestMatching(widgetToFindChildrenIn.Children);
+        }
+        
+        public static void SetFixedWidthChildrenToLargestMatching(IEnumerable<GuiWidget> widgetsToSetFixedWidth)
         {
             bool IsSizeableChild(GuiWidget guiWidget)
             {
@@ -59,7 +66,7 @@ namespace MatterHackers.Agg.UI
 
             // find the largest child count of all widgetWithFlowLayouts children
             int maxChildCount = 0;
-            foreach (var child in widgetWithFlowLayouts.Children)
+            foreach (var child in widgetsToSetFixedWidth)
             {
                 if (child is FlowLayoutWidget flowLayoutWidget)
                 {
@@ -71,7 +78,7 @@ namespace MatterHackers.Agg.UI
             var largestWidths = new double[maxChildCount];
 
             // for every child of widgetWithFlowLayouts that is a FlowLayoutWidget
-            foreach (var child in widgetWithFlowLayouts.Children)
+            foreach (var child in widgetsToSetFixedWidth)
             {
                 if (child is FlowLayoutWidget flowLayoutWidget)
                 {
@@ -95,7 +102,7 @@ namespace MatterHackers.Agg.UI
             }
 
             // for every child of widgetWithFlowLayouts that is a FlowLayoutWidget
-            foreach (var child in widgetWithFlowLayouts.Children)
+            foreach (var child in widgetsToSetFixedWidth)
             {
                 if (child is FlowLayoutWidget flowLayoutWidget)
                 {
