@@ -45,7 +45,9 @@ namespace Gui.Charting
         /// <summary>
         /// Gets or sets the data points for the dataset.
         /// </summary>
-        public List<double> Data { get; set; }
+        public List<double> Data { get; set; } = new List<double>();
+
+        public List<string> HoverMarkdown { get; set; } = new List<string>();
 
         /// <summary>
         /// Gets or sets the background color for the dataset.
@@ -64,7 +66,6 @@ namespace Gui.Charting
 
         public Dataset()
         {
-            Data = new List<double>();
             Fill = false;
         }
     }

@@ -43,7 +43,7 @@ namespace Gui.Charting
         private ChartOptions options;
         private ThemeConfig theme;
 
-        private List<(VertexStorage region, double value)> hoverAreas = new List<(VertexStorage region, double value)>();
+        private List<(VertexStorage region, int index)> hoverAreas = new List<(VertexStorage region, int index)>();
 
         public SimpleChartWidget(ThemeConfig theme, ChartData chartData, ChartOptions options = null)
         {
@@ -89,12 +89,25 @@ namespace Gui.Charting
             {
                 if (area.region.CheckPointInPolygon(new Vector2(mouseEvent.X, mouseEvent.Y)) != 0)
                 {
-                    hoverValue = (mouseEvent.X, mouseEvent.Y, area.value.ToString());
+                    var newHoverText = "";
+                    var index = area.index;
+                    if (index < chartData.Datasets[0].Data.Count)
+                    {
+                        if (index < chartData.Datasets[0].HoverMarkdown.Count)
+                        {
+                            newHoverText = chartData.Datasets[0].HoverMarkdown[index].ToString();
+                        }
+                        else
+                        {
+                            newHoverText = chartData.Datasets[0].Data[index].ToString();
+                        }
+                    }
+                    hoverValue = (mouseEvent.X, mouseEvent.Y, newHoverText);
                     break;
                 }
             }
 
-            if(HoverValue.Item3 != hoverValue.Item3)
+            if (HoverValue.Item3 != hoverValue.Item3)
             {
                 HoverValue = hoverValue;
                 Invalidate();
@@ -143,7 +156,7 @@ namespace Gui.Charting
             var barWidth = bounds.Width / (maxSize.X * 2 + 1 + 2);
             var barOffset = barWidth * 2;
 
-            var hoverAreas = new List<(VertexStorage region, double value)>();
+            var hoverAreas = new List<(VertexStorage region, int index)>();
 
             offset.Y += 1 * DeviceScale;
 
@@ -156,12 +169,12 @@ namespace Gui.Charting
                     backgroundColor = theme.PrimaryAccentColor;
                 }
                 
-                for (int j=0; j<dataset.Data.Count; j++)
+                for (int i=0; i<dataset.Data.Count; i++)
                 {
-                    var value = dataset.Data[j];
+                    var value = dataset.Data[i];
                     var rectangle = new RoundedRect(offset.X + barOffset, offset.Y, offset.X + barOffset + barWidth, offset.Y + ((Height - offset.Y) * .9 / maxSize.Y * value));
                     var region = new VertexStorage(rectangle);
-                    hoverAreas.Add((region, value));
+                    hoverAreas.Add((region, i));
                     graphics2D.Render(region, backgroundColor);
                     barOffset += barWidth * 2;
                 }
