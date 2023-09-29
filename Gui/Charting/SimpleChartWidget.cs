@@ -87,7 +87,9 @@ namespace Gui.Charting
             var hoverValue = (0.0, 0.0, "");
             foreach(var area in hoverAreas)
             {
-                if (area.region.CheckPointInPolygon(new Vector2(mouseEvent.X, mouseEvent.Y)) != 0)
+                var regionBounds = area.region.GetBounds();
+
+                if (regionBounds.Contains(mouseEvent.X, mouseEvent.Y))
                 {
                     var newHoverText = "";
                     var index = area.index;
@@ -102,7 +104,9 @@ namespace Gui.Charting
                             newHoverText = chartData.Datasets[0].Data[index].ToString();
                         }
                     }
-                    hoverValue = (mouseEvent.X, mouseEvent.Y, newHoverText);
+                    var positionX = regionBounds.Right + 5;
+                    positionX = positionX > Width / 2 ? regionBounds.Left - 100 : positionX;
+                    hoverValue = (positionX, regionBounds.Top, newHoverText);
                     break;
                 }
             }
