@@ -163,7 +163,7 @@ namespace MatterHackers.Agg.UI
 			public CheckboxMenuItem(GuiWidget widget, ThemeConfig theme)
 				: base(widget, theme)
 			{
-				faChecked = StaticData.Instance.LoadIcon("fa-check_16.png", 16, 16).SetToColor(theme.TextColor);
+				faChecked = StaticData.Instance.LoadIcon("fa-check_16.png", 16, 16).GrayToColor(theme.TextColor);
 			}
 
 			public override void OnLoad(EventArgs args)

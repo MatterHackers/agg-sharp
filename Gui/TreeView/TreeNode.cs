@@ -624,8 +624,8 @@ namespace MatterHackers.Agg.UI
 
             public TreeExpandWidget(ThemeConfig theme)
             {
-                arrowRight = StaticData.Instance.LoadIcon("fa-angle-right_12.png", 12, 12).SetToColor(theme.TextColor);
-                arrowDown = StaticData.Instance.LoadIcon("fa-angle-down_12.png", 12, 12).SetToColor(theme.TextColor);
+                arrowRight = StaticData.Instance.LoadIcon("fa-angle-right_12.png", 12, 12).GrayToColor(theme.TextColor);
+                arrowDown = StaticData.Instance.LoadIcon("fa-angle-down_12.png", 12, 12).GrayToColor(theme.TextColor);
                 placeholder = new ImageBuffer(16, 16);
 
                 this.Margin = new BorderDouble(right: 4);

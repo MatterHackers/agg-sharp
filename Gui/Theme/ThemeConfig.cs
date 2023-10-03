@@ -360,7 +360,7 @@ namespace MatterHackers.Agg.UI
 
         public GuiWidget CreateSearchButton()
         {
-            return new ThemedIconButton(StaticData.Instance.LoadIcon("icon_search_24x24.png", 16, 16).SetToColor(TextColor), this)
+            return new ThemedIconButton(StaticData.Instance.LoadIcon("icon_search_24x24.png", 16, 16).GrayToColor(TextColor), this)
             {
                 ToolTipText = "Search".Localize(),
             };

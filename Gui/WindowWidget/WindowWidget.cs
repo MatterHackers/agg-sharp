@@ -103,7 +103,7 @@ namespace MatterHackers.Agg.UI
                 VAnchor = VAnchor.Fit | VAnchor.Center,
             };
 
-            titleBarRow.AddChild(new ImageWidget(StaticData.Instance.LoadIcon("mh.png", 16, 16).SetToColor(theme.TextColor))
+            titleBarRow.AddChild(new ImageWidget(StaticData.Instance.LoadIcon("mh.png", 16, 16).GrayToColor(theme.TextColor))
             {
                 Margin = new BorderDouble(4, 0, 6, 0),
                 VAnchor = VAnchor.Center
