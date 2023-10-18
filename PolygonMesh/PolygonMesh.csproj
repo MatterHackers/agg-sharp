@@ -26,6 +26,7 @@
     <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj" />
     <ProjectReference Include="..\geometry3Sharp\geometry3Sharp.csproj" />
     <ProjectReference Include="..\QuadTree\QuadTree.csproj" />
+    <ProjectReference Include="..\Triangle\Triangle.csproj" />
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
 

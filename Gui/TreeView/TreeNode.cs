@@ -69,22 +69,22 @@ namespace MatterHackers.Agg.UI
             };
 
             TreeNode hitNode = null;
+            var firstClickHandled = false;
             this.TitleBar.MouseDown += (s, e) =>
             {
                 if (TreeView != null && e.Button == MouseButtons.Left)
                 {
                     if (e.Clicks == 1)
                     {
+                        firstClickHandled = e.Handled;
                         hitNode = this;
                     }
                     else if (e.Clicks == 2)
                     {
-                        var focusedChild = this.DescendantsAndSelf().Where(d => d.Focused).FirstOrDefault();
-
                         // Nodes can move around in the tree between clicks.
-                        // Make sure we're hitting the same node twice.
+                        // Make sure we're hitting the same node twice, and the double click wasn't handled
                         if (this != hitNode
-                            || !(focusedChild is FlowLayoutWidget))
+                            || firstClickHandled)
                         {
                             return;
                         }

@@ -29,12 +29,14 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using ClipperLib;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters2D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
+using TriangleNet.Geometry;
 using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
 using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
 
@@ -412,25 +414,81 @@ namespace MatterHackers.PolygonMesh.Processors
 				var bottom = PathStitcher.Stitch(null, 0, bottomPolygons, 0);
 				mesh.CopyFaces(bottom);
 
-				var bottomLoop = bottomPolygons;
+				var bottomLoops = bottomPolygons;
 				var bottomHeight = 0.0;
 				// create all the walls
-				var topLoop = bottomPolygons;
+				var topLoops = bottomPolygons;
 				var topHeight = bevel.Count > 0 ? bevel[0].height : zHeightTop;
 
-				int i = -1;
+                int i = -1;
 				while (i < bevel.Count)
 				{
-					// add the top polygon
-					var walls = PathStitcher.Stitch(bottomLoop, bottomHeight, topLoop, topHeight);
-					mesh.CopyFaces(walls);
-					bottomLoop = topLoop;
+					var isSide = bottomLoops.Count > 0
+						&& bottomLoops.Count == topLoops.Count
+                        && bottomLoops[0].Count > 0
+                        && bottomLoops[0].Count == topLoops[0].Count
+						&& bottomLoops[0][0] == topLoops[0][0];
+
+                    if (isSide)
+					{
+						// add the top polygon
+						var walls = PathStitcher.Stitch(bottomLoops, bottomHeight, topLoops, topHeight);
+						mesh.CopyFaces(walls);
+					}
+					else
+					{
+						var polygon = new TriangleNet.Geometry.Polygon();
+						var hashSetBottomVertices = new HashSet<Vector2>();
+						foreach (var bottomLoop in bottomLoops)
+						{
+							polygon.Add(new TriangleNet.Geometry.Contour(bottomLoop.Select(p => new TriangleNet.Geometry.Vertex(p.X, p.Y))));
+                            foreach (var item in bottomLoop)
+                            {
+								hashSetBottomVertices.Add(new Vector2(item.X, item.Y));                                
+                            }
+                        }
+
+                        foreach (var topPolygon in topLoops)
+						{
+							polygon.Add(new TriangleNet.Geometry.Contour(topPolygon.Select(p => new TriangleNet.Geometry.Vertex(p.X, p.Y))), hole: true);
+						}
+
+                        // Triangulate the polygon.
+                        var mesh2 = polygon.Triangulate();// options: new TriangleNet.Meshing.ConstraintOptions() { ConformingDelaunay = true });
+
+						// Add the triangles to the mesh
+						foreach (var triangle in mesh2.Triangles)
+						{
+							var height = new double[3];
+							for (int j = 0; j < 3; j++)
+							{
+								var vertex = new Vector2(triangle.GetVertex(j).X, triangle.GetVertex(j).Y);
+								if (hashSetBottomVertices.Contains(vertex))
+								{
+									height[j] = bottomHeight;
+								}
+								else
+								{
+									height[j] = topHeight;
+								}
+                            }
+							
+							mesh.CreateFace(new Vector3[]
+							{
+								new Vector3(triangle.GetVertex(0).X / 1000, triangle.GetVertex(0).Y / 1000, height[0]),
+								new Vector3(triangle.GetVertex(1).X / 1000, triangle.GetVertex(1).Y / 1000, height[1]),
+                                new Vector3(triangle.GetVertex(2).X / 1000, triangle.GetVertex(2).Y / 1000, height[2]),
+                            });
+						}
+					}
+
+					bottomLoops = topLoops;
 					bottomHeight = topHeight;
 
 					i++;
 					if (i < bevel.Count)
 					{
-						topLoop = bottomPolygons.Offset(bevel[i].insetAmount * 1000, joinType);
+						topLoops = bottomPolygons.Offset(bevel[i].insetAmount * 1000, joinType);
 						if (i == bevel.Count - 1)
 						{
 							topHeight = zHeightTop;
@@ -443,7 +501,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				}
 
 				// create the top polygon
-				var top = PathStitcher.Stitch(topLoop, zHeightTop, null, 0);
+				var top = PathStitcher.Stitch(topLoops, zHeightTop, null, 0);
 				mesh.CopyFaces(top);
 			}
             

@@ -59,42 +59,26 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
 
 			// simple bottom and top
-			if (bottomLoop.Count == 1
-				&& topLoop.Count == 1)
+			if (bottomLoop.Count == topLoop.Count)
 			{
-				Mesh mesh = null;
-				if (bottomLoop[0].Count == topLoop[0].Count)
+				var mesh = new Mesh();
+				for (int i = 0; i < bottomLoop.Count; i++)
 				{
-					mesh = CreateSimpleWall(bottomLoop[0], bottomHeight * 1000, topLoop[0], topHeight * 1000);
-				}
-				else
-				{
-					mesh = Stitch2SingleWalls(bottomLoop[0], bottomHeight * 1000, topLoop[0], topHeight * 1000);
+					if (bottomLoop[i].Count == topLoop[i].Count)
+					{
+						mesh.CopyAllFaces(CreateSimpleWall(bottomLoop[i], bottomHeight * 1000, topLoop[i], topHeight * 1000), Matrix4X4.Identity);
+					}
+					else
+					{
+						mesh.CopyAllFaces(Stitch2SingleWalls(bottomLoop[i], bottomHeight * 1000, topLoop[i], topHeight * 1000), Matrix4X4.Identity);
+					}
 				}
 
 				mesh.Transform(Matrix4X4.CreateScale(1 / scaling));
 				return mesh;
 			}
 
-			var all = new Polygons();
-			if (bottomLoop != null)
-			{
-				all.AddRange(bottomLoop);
-			}
-			if (topLoop != null)
-			{
-				all.AddRange(topLoop);
-			}
-			all = all.GetCorrectedWinding();
-
-			var bevelLoop = all.CreateVertexStorage().TriangulateFaces();
-
-			for (var i = 0; i < bevelLoop.Vertices.Count; i++)
-			{
-				bevelLoop.Vertices[i] = bevelLoop.Vertices[i] + new Vector3Float(0, 0, bottomHeight);
-			}
-
-			return bevelLoop;
+			return null;
 		}
 
 		private static Mesh CreateTop(Polygons path, double topHeight, double scaling)
