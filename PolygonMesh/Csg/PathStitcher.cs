@@ -59,7 +59,9 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
 
 			// simple bottom and top
-			if (bottomLoop.Count == topLoop.Count)
+			if (bottomLoop != null
+				&& topLoop != null
+				&& bottomLoop.Count == topLoop.Count)
 			{
 				var mesh = new Mesh();
 				for (int i = 0; i < bottomLoop.Count; i++)

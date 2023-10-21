@@ -172,6 +172,58 @@ namespace ClipperLib
             return ret;
         }
 
+        public static void PolyTreeToOutlinesAndContainedHoles(PolyNode polyTree, List<Polygons> outlinesAndHoles)
+        {
+            var closed = !polyTree.IsOpen;
+
+            // if this is not a hole
+            if (polyTree.m_polygon.Count > 0
+                && closed
+                && !polyTree.IsHole)
+            {
+                // create a new shape for the polygon data
+                var outlineAndHoles = new Polygons
+                {
+                    new Polygon(polyTree.m_polygon)
+                };
+
+                outlinesAndHoles.Add(outlineAndHoles);
+
+                // add all the children that are holes as holes
+                foreach (var child in polyTree.Childs)
+                {
+                    if (child.m_polygon.Count > 0
+                        && !child.IsOpen
+                        && child.IsHole)
+                    {
+                        outlineAndHoles.Add(child.m_polygon);
+                    }
+                }
+            }
+
+            foreach (var child in polyTree.Childs)
+            {
+                PolyTreeToOutlinesAndContainedHoles(child, outlinesAndHoles);
+            }
+        }
+
+        /// <summary>
+        /// This will separate the polygons into outlines and holes. The outlines will be the first polygon in each set and the holes will be the rest.
+        /// </summary>
+        /// <param name="polygons"></param>
+        /// <returns></returns>
+        public static List<Polygons> SeparateIntoOutlinesAndContainedHoles(this Polygons polygons)
+        {
+            var ret = new List<Polygons>();
+            var clipper = new Clipper();
+            var polyTree = new PolyTree();
+            clipper.AddPaths(polygons, PolyType.ptSubject, true);
+            clipper.Execute(ClipType.ctUnion, polyTree);
+
+            PolyTreeToOutlinesAndContainedHoles(polyTree, ret);
+            return ret;
+        }
+
         public static Polygons Subtract(this Polygons polygons, Polygons other)
         {
             return polygons.CombinePolygons(other, ClipType.ctDifference);

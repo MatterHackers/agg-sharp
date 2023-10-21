@@ -436,53 +436,11 @@ namespace MatterHackers.PolygonMesh.Processors
 						mesh.CopyFaces(walls);
 					}
 					else
-					{
-						var polygon = new TriangleNet.Geometry.Polygon();
-						var hashSetBottomVertices = new HashSet<Vector2>();
-						foreach (var bottomLoop in bottomLoops)
-						{
-							polygon.Add(new TriangleNet.Geometry.Contour(bottomLoop.Select(p => new TriangleNet.Geometry.Vertex(p.X, p.Y))));
-                            foreach (var item in bottomLoop)
-                            {
-								hashSetBottomVertices.Add(new Vector2(item.X, item.Y));                                
-                            }
-                        }
+                    {
+                        CreateTriangulation(mesh, bottomLoops, bottomHeight, topLoops, topHeight);
+                    }
 
-                        foreach (var topPolygon in topLoops)
-						{
-							polygon.Add(new TriangleNet.Geometry.Contour(topPolygon.Select(p => new TriangleNet.Geometry.Vertex(p.X, p.Y))), hole: true);
-						}
-
-                        // Triangulate the polygon.
-                        var mesh2 = polygon.Triangulate();// options: new TriangleNet.Meshing.ConstraintOptions() { ConformingDelaunay = true });
-
-						// Add the triangles to the mesh
-						foreach (var triangle in mesh2.Triangles)
-						{
-							var height = new double[3];
-							for (int j = 0; j < 3; j++)
-							{
-								var vertex = new Vector2(triangle.GetVertex(j).X, triangle.GetVertex(j).Y);
-								if (hashSetBottomVertices.Contains(vertex))
-								{
-									height[j] = bottomHeight;
-								}
-								else
-								{
-									height[j] = topHeight;
-								}
-                            }
-							
-							mesh.CreateFace(new Vector3[]
-							{
-								new Vector3(triangle.GetVertex(0).X / 1000, triangle.GetVertex(0).Y / 1000, height[0]),
-								new Vector3(triangle.GetVertex(1).X / 1000, triangle.GetVertex(1).Y / 1000, height[1]),
-                                new Vector3(triangle.GetVertex(2).X / 1000, triangle.GetVertex(2).Y / 1000, height[2]),
-                            });
-						}
-					}
-
-					bottomLoops = topLoops;
+                    bottomLoops = topLoops;
 					bottomHeight = topHeight;
 
 					i++;
@@ -502,11 +460,86 @@ namespace MatterHackers.PolygonMesh.Processors
 
 				// create the top polygon
 				var top = PathStitcher.Stitch(topLoops, zHeightTop, null, 0);
-				mesh.CopyFaces(top);
+				if (top != null)
+				{
+					mesh.CopyFaces(top);
+				}
 			}
             
 			mesh.CleanAndMerge();
 			return mesh;
 		}
-	}
+
+        private static void CreateTriangulation(Mesh mesh, Polygons bottomLoops, double bottomHeight, Polygons topLoops, double topHeight)
+        {
+			// we want to fill the bottom and tho top using even odd winding rule
+            var hashSetBottomVertices = new HashSet<Vector2>();
+            foreach (var bottomLoop in bottomLoops)
+            {
+                foreach (var item in bottomLoop)
+                {
+                    hashSetBottomVertices.Add(new Vector2(item.X, item.Y));
+                }
+            }
+
+            var outlineLoops = new Polygons(bottomLoops);
+            outlineLoops.AddRange(topLoops);
+            var polyGroups = outlineLoops.SeparateIntoOutlinesAndContainedHoles();
+
+			foreach (var polyGroup in polyGroups)
+			{
+				if (polyGroup.Count > 0)
+				{
+					var holes = polyGroup.Skip(1).ToList();
+                    CreateMeshLoop(mesh, polyGroup[0], holes, bottomHeight, topHeight, hashSetBottomVertices);
+				}
+				else
+				{
+					var a = 0;
+				}
+			}
+        }
+
+        private static void CreateMeshLoop(Mesh mesh, Polygon outline, Polygons holes, double bottomHeight, double topHeight, HashSet<Vector2> hashSetBottomVertices)
+        {
+            var polygon = new TriangleNet.Geometry.Polygon();
+            polygon.Add(new TriangleNet.Geometry.Contour(outline.Select(p => new TriangleNet.Geometry.Vertex(p.X, p.Y))));
+
+            foreach (var topLoop in holes)
+            {
+                polygon.Add(new TriangleNet.Geometry.Contour(topLoop.Select(p => new TriangleNet.Geometry.Vertex(p.X, p.Y))), hole: true);
+            }
+
+            // Triangulate the polygon.
+            if (polygon.Count > 0)
+            {
+                var mesh2 = polygon.Triangulate();// options: new TriangleNet.Meshing.ConstraintOptions() { ConformingDelaunay = true });
+
+                // Add the triangles to the mesh
+                foreach (var triangle in mesh2.Triangles)
+                {
+                    var height = new double[3];
+                    for (int j = 0; j < 3; j++)
+                    {
+                        var vertex = new Vector2(triangle.GetVertex(j).X, triangle.GetVertex(j).Y);
+                        if (hashSetBottomVertices.Contains(vertex))
+                        {
+                            height[j] = bottomHeight;
+                        }
+                        else
+                        {
+                            height[j] = topHeight;
+                        }
+                    }
+
+                    mesh.CreateFace(new Vector3[]
+                    {
+                        new Vector3(triangle.GetVertex(0).X / 1000, triangle.GetVertex(0).Y / 1000, height[0]),
+                        new Vector3(triangle.GetVertex(1).X / 1000, triangle.GetVertex(1).Y / 1000, height[1]),
+                        new Vector3(triangle.GetVertex(2).X / 1000, triangle.GetVertex(2).Y / 1000, height[2]),
+                    });
+                }
+            }
+        }
+    }
 }
