@@ -405,7 +405,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 		private static Mesh GetLoopMesh(double zHeightTop, List<(double height, double insetAmount)> bevel, Polygons inputPolygons, ClipperLib.JoinType joinType)
 		{
-			var bottomPolygonsSets = inputPolygons.SeparatePolygonGroups();
+            var bottomPolygonsSets = inputPolygons.SeparatePolygonGroups();
 
             var mesh = new Mesh();
             foreach (var bottomPolygons in bottomPolygonsSets)

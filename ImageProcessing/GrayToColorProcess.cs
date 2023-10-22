@@ -75,10 +75,12 @@ namespace MatterHackers.ImageProcessing
 								}
 								else
 								{
-									destOffsetY += 4;
-									sourceOffsetY += 4;
-								}
-							}
+                                    destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
+									destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
+									destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
+                                    destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];                                    
+                                }
+                            }
 						}
 					}
 					break;
