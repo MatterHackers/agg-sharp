@@ -33,12 +33,18 @@ using System;
 
 namespace MatterHackers.ImageProcessing
 {
+	public enum DestIntensity
+	{
+		FromColor,
+		FromSource
+	}
+
     /// <summary>
     /// Set all gray pixels to a given color (including setting of black and white)
     /// </summary>
     public static class GrayToColorProcess
 	{
-		public static void GrayToColor(ImageBuffer destImage, ImageBuffer sourceImage, Color color)
+		public static void GrayToColor(ImageBuffer destImage, ImageBuffer sourceImage, Color color, DestIntensity destIntensity)
 		{
 			if (sourceImage.BitDepth != destImage.BitDepth)
 			{
@@ -68,10 +74,21 @@ namespace MatterHackers.ImageProcessing
 
 								if (s < .01)
 								{
-									destBuffer[destOffsetY++] = (byte)(color.blue); sourceOffsetY++;
-									destBuffer[destOffsetY++] = (byte)(color.green); sourceOffsetY++;
-									destBuffer[destOffsetY++] = (byte)(color.red); sourceOffsetY++;
-									destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
+									if (destIntensity == DestIntensity.FromColor)
+									{
+										destBuffer[destOffsetY++] = (byte)(color.blue); sourceOffsetY++;
+										destBuffer[destOffsetY++] = (byte)(color.green); sourceOffsetY++;
+										destBuffer[destOffsetY++] = (byte)(color.red); sourceOffsetY++;
+										destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
+									}
+									else
+									{
+										byte intensity = sourceBuffer[sourceOffsetY];
+										destBuffer[destOffsetY++] = (byte)(color.blue * intensity / 255); sourceOffsetY++;
+										destBuffer[destOffsetY++] = (byte)(color.green * intensity / 255); sourceOffsetY++;
+										destBuffer[destOffsetY++] = (byte)(color.red * intensity / 255); sourceOffsetY++;
+										destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
+									}
 								}
 								else
 								{
@@ -90,11 +107,11 @@ namespace MatterHackers.ImageProcessing
 			}
 		}
 
-		public static ImageBuffer GrayToColor(this ImageBuffer sourceImage, Color color)
+		public static ImageBuffer GrayToColor(this ImageBuffer sourceImage, Color color, DestIntensity destIntensity = DestIntensity.FromColor)
 		{
 			ImageBuffer destImage = new ImageBuffer(sourceImage.Width, sourceImage.Height);
 
-			GrayToColor(destImage, sourceImage, color);
+			GrayToColor(destImage, sourceImage, color, destIntensity);
 
 			return destImage;
 		}
