@@ -1,4 +1,4 @@
-//----------------------------------------------------------------------------
+﻿//----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
@@ -16,16 +16,11 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
-using System.Collections.Generic;
 
 namespace MatterHackers.Agg.VertexSource
 {
-    public interface IVertexSource
+    public interface IVertexSourceProxy : IVertexSource
     {
-        void rewind(int pathId = 0);
-
-        ShapePath.FlagsAndCommand vertex(out double x, out double y);
-
-        IEnumerable<VertexData> Vertices();
+        IVertexSource VertexSource { get; set; }
     }
 }
