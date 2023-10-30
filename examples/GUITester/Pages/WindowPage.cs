@@ -8,7 +8,7 @@ namespace MatterHackers.Agg
 		public WindowPage()
 			: base("Window")
 		{
-			WindowWidget widow = new WindowWidget(new RectangleDouble(20, 20, 400, 400));
+			WindowWidget widow = new WindowWidget(new ThemeConfig(), new RectangleDouble(20, 20, 400, 400));
 			AddChild(widow);
 
 			GroupBox groupBox = new GroupBox("Radio Group");

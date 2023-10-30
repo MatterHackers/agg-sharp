@@ -46,15 +46,15 @@ namespace MatterHackers.Agg.VertexSource
 		public void AddVertex(double x, double y, ShapePath.FlagsAndCommand cmd)
 		{
 			m_status = StrokeMath.status_e.initial;
-			if (ShapePath.is_move_to(cmd))
+			if (ShapePath.IsMoveTo(cmd))
 			{
 				m_src_vertices.modify_last(new VertexDistance(x, y));
 			}
 			else
 			{
-				if (ShapePath.is_vertex(cmd))
+				if (ShapePath.IsVertex(cmd))
 				{
-					m_src_vertices.add(new VertexDistance(x, y));
+					m_src_vertices.Add(new VertexDistance(x, y));
 				}
 				else
 				{
@@ -144,7 +144,7 @@ namespace MatterHackers.Agg.VertexSource
 		public ShapePath.FlagsAndCommand Vertex(ref double x, ref double y)
 		{
 			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.LineTo;
-			while (!ShapePath.is_stop(cmd))
+			while (!ShapePath.IsStop(cmd))
 			{
 				switch (m_status)
 				{

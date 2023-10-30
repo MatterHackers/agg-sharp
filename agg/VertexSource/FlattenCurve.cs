@@ -151,14 +151,14 @@ namespace MatterHackers.Agg.VertexSource
 							do
 							{
 								curveIterator.MoveNext();
-								if (ShapePath.is_stop(curveIterator.Current.command))
+								if (ShapePath.IsStop(curveIterator.Current.command))
 								{
 									break;
 								}
 								vertexData = new VertexData(ShapePath.FlagsAndCommand.LineTo, curveIterator.Current.position);
 								yield return vertexData;
 								lastPosition = vertexData;
-							} while (!ShapePath.is_stop(curveIterator.Current.command));
+							} while (!ShapePath.IsStop(curveIterator.Current.command));
 						}
 						break;
 
@@ -174,10 +174,10 @@ namespace MatterHackers.Agg.VertexSource
 								vertexDataEnd.position.X, vertexDataEnd.position.Y);
 							var curveIterator = m_curve4.Vertices().GetEnumerator();
 							curveIterator.MoveNext(); // First call returns path_cmd_move_to
-							while (!ShapePath.is_stop(vertexData.command))
+							while (!ShapePath.IsStop(vertexData.command))
 							{
 								curveIterator.MoveNext();
-								if (ShapePath.is_stop(curveIterator.Current.command))
+								if (ShapePath.IsStop(curveIterator.Current.command))
 								{
 									break;
 								}

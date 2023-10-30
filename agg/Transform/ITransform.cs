@@ -20,6 +20,6 @@ namespace MatterHackers.Agg.Transform
 {
 	public interface ITransform
 	{
-		void transform(ref double x, ref double y);
+		void Transform(ref double x, ref double y);
 	};
 }

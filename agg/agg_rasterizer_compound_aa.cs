@@ -183,12 +183,12 @@ namespace MatterHackers.Agg
 
 		private void add_vertex(double x, double y, ShapePath.FlagsAndCommand cmd)
 		{
-			if (ShapePath.is_move_to(cmd))
+			if (ShapePath.IsMoveTo(cmd))
 			{
 				move_to_d(x, y);
 			}
 			else
-				if (ShapePath.is_vertex(cmd))
+				if (ShapePath.IsVertex(cmd))
 				{
 					line_to_d(x, y);
 				}
@@ -265,7 +265,7 @@ namespace MatterHackers.Agg
 					// Pre-add zero (for no-fill style, that is, -1).
 					// We need that to ensure that the "-1 style" would go first.
 					activeStyleMask.Array[0] |= 1;
-					activeStyleTable.add(0);
+					activeStyleTable.Add(0);
 					activeStyles.Array[styleOffset].start_cell = 0;
 					activeStyles.Array[styleOffset].num_cells = 0;
 					activeStyles.Array[styleOffset].last_x = -0x7FFFFFFF;
@@ -427,7 +427,7 @@ namespace MatterHackers.Agg
 			{
 				while ((int)m_master_alpha.Count <= style)
 				{
-					m_master_alpha.add(aa_mask);
+					m_master_alpha.Add(aa_mask);
 				}
 				m_master_alpha.Array[style] = Util.uround(alpha * aa_mask);
 			}
@@ -444,9 +444,9 @@ namespace MatterHackers.Agg
 			double y;
 
 			ShapePath.FlagsAndCommand cmd;
-			vs.rewind(path_id);
+			vs.Rewind(path_id);
 			if (rasterizerCellsAa.sorted()) reset();
-			while (!ShapePath.is_stop(cmd = vs.vertex(out x, out y)))
+			while (!ShapePath.IsStop(cmd = vs.vertex(out x, out y)))
 			{
 				add_vertex(x, y, cmd);
 			}
@@ -587,7 +587,7 @@ namespace MatterHackers.Agg
 			style_info[] stylesArray = activeStyles.Array;
 			if ((activeStyleMask[nbyte] & mask) == 0)
 			{
-				activeStyleTable.add((int)style_id);
+				activeStyleTable.Add((int)style_id);
 				activeStyleMask.Array[nbyte] |= (byte)mask;
 				stylesArray[style_id].start_cell = 0;
 				stylesArray[style_id].num_cells = 0;
@@ -600,7 +600,7 @@ namespace MatterHackers.Agg
 		{
 			while ((int)m_master_alpha.Count <= m_max_style)
 			{
-				m_master_alpha.add(aa_mask);
+				m_master_alpha.Add(aa_mask);
 			}
 		}
 	};

@@ -434,10 +434,10 @@ namespace MatterHackers.Agg
 				double xn1 = m_quad.GetXN(1); double yn1 = m_quad.GetYN(1);
 				double xn2 = m_quad.GetXN(2); double yn2 = m_quad.GetYN(2);
 				double xn3 = m_quad.GetXN(3); double yn3 = m_quad.GetYN(3);
-				tr.transform(ref xn0, ref yn0);
-				tr.transform(ref xn1, ref yn1);
-				tr.transform(ref xn2, ref yn2);
-				tr.transform(ref xn3, ref yn3);
+				tr.Transform(ref xn0, ref yn0);
+				tr.Transform(ref xn1, ref yn1);
+				tr.Transform(ref xn2, ref yn2);
+				tr.Transform(ref xn3, ref yn3);
 				m_quad.SetXN(0, xn0); m_quad.SetYN(0, yn0);
 				m_quad.SetXN(1, xn1); m_quad.SetYN(1, yn1);
 				m_quad.SetXN(2, xn2); m_quad.SetYN(2, yn2);

@@ -67,7 +67,7 @@ namespace MatterHackers.Agg.UI
 			throw new NotImplementedException();
 		}
 
-		public void rewind(int idx)
+		public void Rewind(int idx)
 		{
 			m_vertex = 0;
 		}
@@ -239,14 +239,14 @@ namespace MatterHackers.Agg.UI
 			return 1;
 		}
 
-		public override void rewind(int path_id)
+		public override void Rewind(int path_id)
 		{
 			if (needToRecalculateBounds)
 			{
 				RecalculateBounds();
 			}
 			m_status = 0;
-			m_stroke.rewind(0);
+			m_stroke.Rewind(0);
 		}
 
 		private void RecalculateBounds()
@@ -278,9 +278,9 @@ namespace MatterHackers.Agg.UI
 			if (m_status == 0)
 			{
 				cmd = m_stroke.vertex(out x, out y);
-				if (!ShapePath.is_stop(cmd))
+				if (!ShapePath.IsStop(cmd))
 				{
-					ParentToChildTransform.transform(ref x, ref y);
+					ParentToChildTransform.Transform(ref x, ref y);
 					return cmd;
 				}
 				if (m_node >= 0 && m_node == (int)(m_status)) r *= 1.2;
@@ -288,9 +288,9 @@ namespace MatterHackers.Agg.UI
 				++m_status;
 			}
 			cmd = m_ellipse.vertex(out x, out y);
-			if (!ShapePath.is_stop(cmd))
+			if (!ShapePath.IsStop(cmd))
 			{
-				ParentToChildTransform.transform(ref x, ref y);
+				ParentToChildTransform.Transform(ref x, ref y);
 				return cmd;
 			}
 			if (m_status >= m_num_points) return ShapePath.FlagsAndCommand.Stop;
@@ -298,9 +298,9 @@ namespace MatterHackers.Agg.UI
 			m_ellipse.init(GetXN(m_status), GetYN(m_status), r, r, 32);
 			++m_status;
 			cmd = m_ellipse.vertex(out x, out y);
-			if (!ShapePath.is_stop(cmd))
+			if (!ShapePath.IsStop(cmd))
 			{
-				ParentToChildTransform.transform(ref x, ref y);
+				ParentToChildTransform.Transform(ref x, ref y);
 			}
 			return cmd;
 		}

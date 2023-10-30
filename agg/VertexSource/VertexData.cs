@@ -43,13 +43,13 @@ namespace MatterHackers.Agg.VertexSource
         public bool IsLineTo => ShapePath.is_line_to(command);
 
         [JsonIgnore]
-        public bool IsMoveTo => ShapePath.is_move_to(command);
+        public bool IsMoveTo => ShapePath.IsMoveTo(command);
 
         [JsonIgnore]
-        public bool IsStop => ShapePath.is_stop(command);
+        public bool IsStop => ShapePath.IsStop(command);
 
         [JsonIgnore]
-        public bool IsVertex => ShapePath.is_vertex(command);
+        public bool IsVertex => ShapePath.IsVertex(command);
 
         public Vector2 position { get; set; }
 

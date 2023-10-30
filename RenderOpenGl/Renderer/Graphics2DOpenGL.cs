@@ -148,7 +148,7 @@ namespace MatterHackers.RenderOpenGl
 
 		private void DrawAAShape(IVertexSource vertexSource, IColorType colorIn)
 		{
-			vertexSource.rewind(0);
+			vertexSource.Rewind(0);
 
 			Affine transform = GetTransform();
 			if (!transform.is_identity())
@@ -264,7 +264,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 			else
 			{
-				vertexSource.rewind(0);
+				vertexSource.Rewind(0);
 
 				Affine transform = GetTransform();
 				if (!transform.is_identity())
@@ -293,7 +293,7 @@ namespace MatterHackers.RenderOpenGl
 			if (!transform.is_identity())
 			{
 				// TODO: <BUG> make this do rotation and scaling
-				transform.transform(ref x, ref y);
+				transform.Transform(ref x, ref y);
 				scaleX *= transform.sx;
 				scaleY *= transform.sy;
 			}
@@ -360,8 +360,8 @@ namespace MatterHackers.RenderOpenGl
 			double fastRight = right;
 			double fastTop = top;
 
-			transform.transform(ref fastLeft, ref fastBottom);
-			transform.transform(ref fastRight, ref fastTop);
+			transform.Transform(ref fastLeft, ref fastBottom);
+			transform.Transform(ref fastRight, ref fastTop);
 
 			if (fastLeft == (int)fastLeft
 				&& fastBottom == (int)fastBottom
@@ -395,8 +395,8 @@ namespace MatterHackers.RenderOpenGl
 			double fastRight = right;
 			double fastTop = top;
 
-			transform.transform(ref fastLeft, ref fastBottom);
-			transform.transform(ref fastRight, ref fastTop);
+			transform.Transform(ref fastLeft, ref fastBottom);
+			transform.Transform(ref fastRight, ref fastTop);
 
 			if (Math.Abs(fastLeft - (int)fastLeft) < .01
 				&& Math.Abs(fastBottom - (int)fastBottom) < .01

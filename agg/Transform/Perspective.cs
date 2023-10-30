@@ -430,7 +430,7 @@ namespace MatterHackers.Agg.Transform
 
 		//---------------------------------------------------- Transformations
 		// Direct transformation of x and y
-		public void transform(ref double px, ref double py)
+		public void Transform(ref double px, ref double py)
 		{
 			double x = px;
 			double y = py;
@@ -462,7 +462,7 @@ namespace MatterHackers.Agg.Transform
 		public void inverse_transform(ref double x, ref double y)
 		{
 			Perspective t = new Perspective(this);
-			if (t.invert()) t.transform(ref x, ref y);
+			if (t.invert()) t.Transform(ref x, ref y);
 		}
 
 		//---------------------------------------------------------- Auxiliary
@@ -539,8 +539,8 @@ namespace MatterHackers.Agg.Transform
 			double y1 = 0.0;
 			double x2 = 1.0;
 			double y2 = 0.0;
-			transform(ref x1, ref y1);
-			transform(ref x2, ref y2);
+			Transform(ref x1, ref y1);
+			Transform(ref x2, ref y2);
 			return Math.Atan2(y2 - y1, x2 - x1);
 		}
 
@@ -558,8 +558,8 @@ namespace MatterHackers.Agg.Transform
 			double y2 = 1.0;
 			Perspective t = new Perspective(this);
 			t *= Affine.NewRotation(-rotation());
-			t.transform(ref x1, ref y1);
-			t.transform(ref x2, ref y2);
+			t.Transform(ref x1, ref y1);
+			t.Transform(ref x2, ref y2);
 			x = x2 - x1;
 			y = y2 - y1;
 		}

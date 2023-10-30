@@ -221,7 +221,7 @@ namespace MatterHackers.Agg.UI
 			double y = mouseEvent.Y;
 			calc_points();
 
-			if (agg_math.calc_distance(x, y, m_xp1, m_yp1) <= m_point_size + 1)
+			if (agg_math.CalcDistance(x, y, m_xp1, m_yp1) <= m_point_size + 1)
 			{
 				m_mouse_point = 1;
 				m_pdx = m_xp1 - x;
@@ -229,7 +229,7 @@ namespace MatterHackers.Agg.UI
 				m_p1_active = true;
 			}
 
-			if (agg_math.calc_distance(x, y, m_xp2, m_yp2) <= m_point_size + 1)
+			if (agg_math.CalcDistance(x, y, m_xp2, m_yp2) <= m_point_size + 1)
 			{
 				m_mouse_point = 2;
 				m_pdx = m_xp2 - x;
@@ -359,13 +359,13 @@ namespace MatterHackers.Agg.UI
 
 			graphics2D.Render(border, m_border_color);
 
-			rewind(0);
+			Rewind(0);
 			graphics2D.Render(this, m_curve_color);
-			rewind(1);
+			Rewind(1);
 			graphics2D.Render(this, m_grid_color);
-			rewind(2);
+			Rewind(2);
 			graphics2D.Render(this, m_inactive_pnt_color);
-			rewind(3);
+			Rewind(3);
 			graphics2D.Render(this, m_active_pnt_color);
 
 			// Ideally this should move to the setter of the gamma data
@@ -389,7 +389,7 @@ namespace MatterHackers.Agg.UI
 			throw new NotImplementedException();
 		}
 
-		public override void rewind(int idx)
+		public override void Rewind(int idx)
 		{
 			m_idx = idx;
 
@@ -400,7 +400,7 @@ namespace MatterHackers.Agg.UI
 				case 0:                 // Curve
 					m_gamma_spline.box(m_xs1, m_ys1, m_xs2, m_ys2);
 					m_curve_poly.Width = m_curve_width;
-					m_curve_poly.rewind(0);
+					m_curve_poly.Rewind(0);
 					break;
 
 				case 1:                 // Grid

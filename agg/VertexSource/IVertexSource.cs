@@ -22,7 +22,7 @@ namespace MatterHackers.Agg.VertexSource
 {
     public interface IVertexSource
     {
-        void rewind(int pathId = 0);
+        void Rewind(int pathId = 0);
 
         ShapePath.FlagsAndCommand vertex(out double x, out double y);
 

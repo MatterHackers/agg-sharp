@@ -57,7 +57,7 @@ namespace MatterHackers.Agg
 		}
 
 		//-----------------------------------------------------------calc_distance
-		public static double calc_distance(double x1, double y1, double x2, double y2)
+		public static double CalcDistance(double x1, double y1, double x2, double y2)
 		{
 			double dx = x2 - x1;
 			double dy = y2 - y1;
@@ -82,7 +82,7 @@ namespace MatterHackers.Agg
 			double d = Math.Sqrt(dx * dx + dy * dy);
 			if (d < vertex_dist_epsilon)
 			{
-				return calc_distance(x1, y1, x, y);
+				return CalcDistance(x1, y1, x, y);
 			}
 			return ((x - x2) * dy - (y - y2) * dx) / d;
 		}

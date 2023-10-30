@@ -45,7 +45,7 @@ namespace MatterHackers.Agg
 
 	public class line_aa_vertex_sequence : VectorPOD<line_aa_vertex>
 	{
-		public override void add(line_aa_vertex val)
+		public override void Add(line_aa_vertex val)
 		{
 			if (base.Count > 1)
 			{
@@ -54,13 +54,13 @@ namespace MatterHackers.Agg
 					base.RemoveLast();
 				}
 			}
-			base.add(val);
+			base.Add(val);
 		}
 
 		public void modify_last(line_aa_vertex val)
 		{
 			base.RemoveLast();
-			add(val);
+			Add(val);
 		}
 
 		public void close(bool closed)
@@ -259,7 +259,7 @@ namespace MatterHackers.Agg
 
 		public void line_to(int x, int y)
 		{
-			m_src_vertices.add(new line_aa_vertex(x, y));
+			m_src_vertices.Add(new line_aa_vertex(x, y));
 		}
 
 		public void move_to_d(double x, double y)
@@ -552,7 +552,7 @@ namespace MatterHackers.Agg
 
 		public void add_vertex(double x, double y, ShapePath.FlagsAndCommand cmd)
 		{
-			if (ShapePath.is_move_to(cmd))
+			if (ShapePath.IsMoveTo(cmd))
 			{
 				render(false);
 				move_to_d(x, y);
@@ -585,13 +585,13 @@ namespace MatterHackers.Agg
 			double y;
 
 			ShapePath.FlagsAndCommand cmd;
-			vs.rewind(path_id);
+			vs.Rewind(path_id);
 
 			//int index = 0;
 			//int start = 851;
 			//int num = 5;
 
-			while (!ShapePath.is_stop(cmd = vs.vertex(out x, out y)))
+			while (!ShapePath.IsStop(cmd = vs.vertex(out x, out y)))
 			{
 				//index++;
 				//if (index == 0

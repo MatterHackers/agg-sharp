@@ -277,7 +277,7 @@ namespace MatterHackers.Agg.SvgTools
                                     curXY += lastXY;
                                 }
 
-                                vertexStorage.curve4(controlPoint1.X, controlPoint1.Y, secondControlPoint.X, secondControlPoint.Y, curXY.X, curXY.Y);
+                                vertexStorage.Curve4(controlPoint1.X, controlPoint1.Y, secondControlPoint.X, secondControlPoint.Y, curXY.X, curXY.Y);
 
                                 lastXY = curXY;
 
@@ -314,7 +314,7 @@ namespace MatterHackers.Agg.SvgTools
                                     curXY += lastXY;
                                 }
 
-                                vertexStorage.curve4(controlPoint.X, controlPoint.Y, secondControlPoint.X, secondControlPoint.Y, curXY.X, curXY.Y);
+                                vertexStorage.Curve4(controlPoint.X, controlPoint.Y, secondControlPoint.X, secondControlPoint.Y, curXY.X, curXY.Y);
 
                                 lastXY = curXY;
                                 // if the next element is another coordinate than we just continue to add more curves.
@@ -393,7 +393,7 @@ namespace MatterHackers.Agg.SvgTools
                                 curXY += lastXY;
                             }
 
-                            vertexStorage.curve3(controlPoint.X, controlPoint.Y, curXY.X, curXY.Y);
+                            vertexStorage.Curve3(controlPoint.X, controlPoint.Y, curXY.X, curXY.Y);
                         } while (NextElementIsANumber(dString, parseIndex)) ;
                         lastXY = curXY;
                         break;
@@ -410,7 +410,7 @@ namespace MatterHackers.Agg.SvgTools
                                 curXY += lastXY;
                             }
 
-                            vertexStorage.curve3(curXY.X, curXY.Y);
+                            vertexStorage.Curve3(curXY.X, curXY.Y);
                         } while (NextElementIsANumber(dString, parseIndex));
                         lastXY = curXY;
                         break;
@@ -535,7 +535,7 @@ namespace MatterHackers.Agg.SvgTools
                 var dxe = t * (cosAngle * radii.X * sinTheta2 + sinAngle * radii.Y * cosTheta2);
                 var dye = t * (sinAngle * radii.X * sinTheta2 - cosAngle * radii.Y * cosTheta2);
 
-                vertexStorage.curve4(start.X + dx1, start.Y + dy1, endpoint.X + dxe, endpoint.Y + dye, endpoint.X, endpoint.Y);
+                vertexStorage.Curve4(start.X + dx1, start.Y + dy1, endpoint.X + dxe, endpoint.Y + dye, endpoint.X, endpoint.Y);
 
                 vectorAngle1 = theta2;
                 start = endpoint;

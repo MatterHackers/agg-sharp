@@ -350,7 +350,7 @@ namespace MatterHackers.Agg.UI
 					scrollingAreaY = InternalTextEditWidget.LocalBounds.Bottom;
 				}
 
-				ScrollArea.ParentToChildTransform.transform(ref scrollingAreaX, ref scrollingAreaY);
+				ScrollArea.ParentToChildTransform.Transform(ref scrollingAreaX, ref scrollingAreaY);
 				mouseEvent.X = scrollingAreaX;
 				mouseEvent.Y = scrollingAreaY;
 			}

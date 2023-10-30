@@ -56,7 +56,7 @@ namespace MatterHackers.Agg.VertexSource
 				foreach (VertexData vertexData in sourcePath.Vertices())
 				{
 					// when we hit a stop move on to the next path
-					if (ShapePath.is_stop(vertexData.command))
+					if (ShapePath.IsStop(vertexData.command))
 					{
 						break;
 					}

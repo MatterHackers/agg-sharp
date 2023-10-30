@@ -159,7 +159,7 @@ namespace MatterHackers.Agg.Font
 		public void Render(Graphics2D graphics2D, Color color, IVertexSourceProxy vertexSourceToApply)
 		{
 			vertexSourceToApply.VertexSource = this;
-			rewind(0);
+			Rewind(0);
 			if (DrawFromHintedCache)
 			{
 				// TODO: make this work
@@ -179,7 +179,7 @@ namespace MatterHackers.Agg.Font
 			}
 			else
 			{
-				rewind(0);
+				Rewind(0);
 				graphics2D.Render(this, color);
 			}
 		}

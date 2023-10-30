@@ -179,7 +179,7 @@ namespace MatterHackers.Agg
 					//throw new NotImplementedException();
 				}
 
-				graphicsTransform.transform(ref destX, ref destY);
+				graphicsTransform.Transform(ref destX, ref destY);
 			}
 
 #if false // this is an optimization that eliminates the drawing of images that have their alpha set to all 0 (happens with generated images like explosions).

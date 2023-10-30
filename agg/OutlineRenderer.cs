@@ -1916,7 +1916,7 @@ namespace MatterHackers.Agg
 					if (flags != 0)
 					{
 						line_parameters lp2 = new line_parameters(x1, y1, x2, y2,
-										   Util.uround(agg_math.calc_distance(x1, y1, x2, y2)));
+										   Util.uround(agg_math.CalcDistance(x1, y1, x2, y2)));
 						line0_no_clip(lp2);
 					}
 					else
@@ -1968,7 +1968,7 @@ namespace MatterHackers.Agg
 					if (flags != 0)
 					{
 						line_parameters lp2 = new line_parameters(x1, y1, x2, y2,
-										   Util.uround(agg_math.calc_distance(x1, y1, x2, y2)));
+										   Util.uround(agg_math.CalcDistance(x1, y1, x2, y2)));
 						if (((int)flags & 1) != 0)
 						{
 							sx = x1 + (y2 - y1);
@@ -2033,7 +2033,7 @@ namespace MatterHackers.Agg
 					if (flags != 0)
 					{
 						line_parameters lp2 = new line_parameters(x1, y1, x2, y2,
-										   Util.uround(agg_math.calc_distance(x1, y1, x2, y2)));
+										   Util.uround(agg_math.CalcDistance(x1, y1, x2, y2)));
 						if ((flags & 2) != 0)
 						{
 							ex = x2 + (y2 - y1);
@@ -2103,7 +2103,7 @@ namespace MatterHackers.Agg
 					if (flags != 0)
 					{
 						line_parameters lp2 = new line_parameters(x1, y1, x2, y2,
-							Util.uround(agg_math.calc_distance(x1, y1, x2, y2)));
+							Util.uround(agg_math.CalcDistance(x1, y1, x2, y2)));
 						if ((flags & 1) != 0)
 						{
 							sx = x1 + (y2 - y1);

@@ -78,7 +78,7 @@ namespace MatterHackers.Agg
 			foreach (VertexData vertexData in VertexSource.Vertices())
 			{
 				VertexData transformedVertex = vertexData;
-				if (ShapePath.is_vertex(transformedVertex.command))
+				if (ShapePath.IsVertex(transformedVertex.command))
 				{
 					var position = transformedVertex.position;
 					ApplayYWarp(ref position.X, ref position.Y);
@@ -93,15 +93,15 @@ namespace MatterHackers.Agg
 			// do the actual warp
 		}
 
-		public void rewind(int path_id)
+		public void Rewind(int path_id)
 		{
-			VertexSource.rewind(path_id);
+			VertexSource.Rewind(path_id);
 		}
 
 		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
 		{
 			ShapePath.FlagsAndCommand cmd = VertexSource.vertex(out x, out y);
-			if (ShapePath.is_vertex(cmd))
+			if (ShapePath.IsVertex(cmd))
 			{
 				ApplayYWarp(ref x, ref y);
 			}

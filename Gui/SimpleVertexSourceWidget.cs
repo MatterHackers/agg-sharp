@@ -42,12 +42,12 @@ namespace MatterHackers.Agg.UI
 				{
 					RectangleDouble localBounds = new RectangleDouble(double.PositiveInfinity, double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity);
 
-					rewind(0);
+					Rewind(0);
 					double x;
 					double y;
 					ShapePath.FlagsAndCommand cmd;
 					int numPoint = 0;
-					while (!ShapePath.is_stop(cmd = vertex(out x, out y)))
+					while (!ShapePath.IsStop(cmd = vertex(out x, out y)))
 					{
 						numPoint++;
 						localBounds.ExpandToInclude(x, y);
@@ -84,7 +84,7 @@ namespace MatterHackers.Agg.UI
 
 		public abstract IEnumerable<VertexData> Vertices();
 
-		public abstract void rewind(int path_id);
+		public abstract void Rewind(int path_id);
 
 		public abstract ShapePath.FlagsAndCommand vertex(out double x, out double y);
 

@@ -405,7 +405,7 @@ namespace MatterHackers.Agg.Font
 					// All MoveTo operations should be preceded by ClosePolygon 
 					if (i > 0 &&
 						current.IsMoveTo
-						&& ShapePath.is_vertex(previous.command))
+						&& ShapePath.IsVertex(previous.command))
 					{
 						storage.ClosePolygon();
 					}
@@ -421,9 +421,9 @@ namespace MatterHackers.Agg.Font
 				storage.ClosePolygon();
 			}
 
-			public void rewind(int pathId = 0)
+			public void Rewind(int pathId = 0)
 			{
-				storage.rewind(pathId);
+				storage.Rewind(pathId);
 			}
 
 			public ShapePath.FlagsAndCommand vertex(out double x, out double y)

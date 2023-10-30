@@ -314,7 +314,7 @@ namespace MatterHackers.Agg
 			// Calculate transformed coordinates at x1,y1
 			double xt = x;
 			double yt = y;
-			m_trans_dir.transform(ref xt, ref yt);
+			m_trans_dir.Transform(ref xt, ref yt);
 			int x1 = Util.iround(xt * subpixel_scale);
 			int y1 = Util.iround(yt * subpixel_scale);
 
@@ -325,7 +325,7 @@ namespace MatterHackers.Agg
 			// Calculate scale by X at x1,y1
 			dx = xt + delta;
 			dy = yt;
-			m_trans_inv.transform(ref dx, ref dy);
+			m_trans_inv.Transform(ref dx, ref dy);
 			dx -= x;
 			dy -= y;
 			int sx1 = (int)Util.uround(subpixel_scale / Math.Sqrt(dx * dx + dy * dy)) >> subpixel_shift;
@@ -333,7 +333,7 @@ namespace MatterHackers.Agg
 			// Calculate scale by Y at x1,y1
 			dx = xt;
 			dy = yt + delta;
-			m_trans_inv.transform(ref dx, ref dy);
+			m_trans_inv.Transform(ref dx, ref dy);
 			dx -= x;
 			dy -= y;
 			int sy1 = (int)Util.uround(subpixel_scale / Math.Sqrt(dx * dx + dy * dy)) >> subpixel_shift;
@@ -342,14 +342,14 @@ namespace MatterHackers.Agg
 			x += len;
 			xt = x;
 			yt = y;
-			m_trans_dir.transform(ref xt, ref yt);
+			m_trans_dir.Transform(ref xt, ref yt);
 			int x2 = Util.iround(xt * subpixel_scale);
 			int y2 = Util.iround(yt * subpixel_scale);
 
 			// Calculate scale by X at x2,y2
 			dx = xt + delta;
 			dy = yt;
-			m_trans_inv.transform(ref dx, ref dy);
+			m_trans_inv.Transform(ref dx, ref dy);
 			dx -= x;
 			dy -= y;
 			int sx2 = (int)Util.uround(subpixel_scale / Math.Sqrt(dx * dx + dy * dy)) >> subpixel_shift;
@@ -357,7 +357,7 @@ namespace MatterHackers.Agg
 			// Calculate scale by Y at x2,y2
 			dx = xt;
 			dy = yt + delta;
-			m_trans_inv.transform(ref dx, ref dy);
+			m_trans_inv.Transform(ref dx, ref dy);
 			dx -= x;
 			dy -= y;
 			int sy2 = (int)Util.uround(subpixel_scale / Math.Sqrt(dx * dx + dy * dy)) >> subpixel_shift;
@@ -381,7 +381,7 @@ namespace MatterHackers.Agg
 			// Calculate transformed coordinates at x2,y2
 			double xt = xe;
 			double yt = ye;
-			m_trans_dir.transform(ref xt, ref yt);
+			m_trans_dir.Transform(ref xt, ref yt);
 			int x2 = Util.iround(xt * subpixel_scale);
 			int y2 = Util.iround(yt * subpixel_scale);
 
@@ -392,7 +392,7 @@ namespace MatterHackers.Agg
 			// Calculate scale by X at x2,y2
 			dx = xt + delta;
 			dy = yt;
-			m_trans_inv.transform(ref dx, ref dy);
+			m_trans_inv.Transform(ref dx, ref dy);
 			dx -= xe;
 			dy -= ye;
 			int sx2 = (int)Util.uround(subpixel_scale / Math.Sqrt(dx * dx + dy * dy)) >> subpixel_shift;
@@ -400,7 +400,7 @@ namespace MatterHackers.Agg
 			// Calculate scale by Y at x2,y2
 			dx = xt;
 			dy = yt + delta;
-			m_trans_inv.transform(ref dx, ref dy);
+			m_trans_inv.Transform(ref dx, ref dy);
 			dx -= xe;
 			dy -= ye;
 			int sy2 = (int)Util.uround(subpixel_scale / Math.Sqrt(dx * dx + dy * dy)) >> subpixel_shift;
@@ -448,7 +448,7 @@ namespace MatterHackers.Agg
 		//----------------------------------------------------------------
 		public void transform(ref double x, ref double y)
 		{
-			m_trans_dir.transform(ref x, ref y);
+			m_trans_dir.Transform(ref x, ref y);
 		}
 	};
 }

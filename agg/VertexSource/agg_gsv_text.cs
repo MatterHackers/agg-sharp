@@ -202,7 +202,7 @@ namespace MatterHackers.Agg.VertexSource
 			throw new NotImplementedException();
 		}
 
-		public void rewind(int nothing)
+		public void Rewind(int nothing)
 		{
 			m_status = status.initial;
 			if (m_font == null) return;

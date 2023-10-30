@@ -90,7 +90,7 @@ namespace MatterHackers.Agg
             }
         }
 
-        public virtual void add(DataType v)
+        public virtual void Add(DataType v)
         {
             if (internalArray == null || internalArray.Length < (currentSize + 1))
             {
@@ -104,11 +104,6 @@ namespace MatterHackers.Agg
                 }
             }
             internalArray[currentSize++] = v;
-        }
-
-        public void Add(DataType v)
-        {
-            add(v);
         }
 
         // Allocate n elements. All data is lost,

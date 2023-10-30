@@ -146,7 +146,7 @@ namespace MatterHackers.Agg.UI
 			throw new NotImplementedException();
 		}
 
-		public override void rewind(int idx)
+		public override void Rewind(int idx)
 		{
 			m_cur_x = 0.0;
 		}

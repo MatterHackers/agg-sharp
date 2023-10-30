@@ -60,13 +60,13 @@ namespace MatterHackers.Agg.VertexSource
 					// skip the initial command if it is not the first path and is a moveto.
 					if (i > 0
 						&& firstMove
-						&& ShapePath.is_move_to(vertexData.command))
+						&& ShapePath.IsMoveTo(vertexData.command))
 					{
 						continue;
 					}
 
 					// when we hit a stop move on to the next path
-					if (ShapePath.is_stop(vertexData.command))
+					if (ShapePath.IsStop(vertexData.command))
 					{
 						break;
 					}

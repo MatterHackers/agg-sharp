@@ -62,7 +62,7 @@ namespace MatterHackers.Agg
 	//------------------------------------------------------------------------
 	public class VertexSequence : VectorPOD<VertexDistance>
 	{
-		public override void add(VertexDistance val)
+		public override void Add(VertexDistance val)
 		{
 			if (base.Count > 1)
 			{
@@ -71,13 +71,13 @@ namespace MatterHackers.Agg
 					base.RemoveLast();
 				}
 			}
-			base.add(val);
+			base.Add(val);
 		}
 
 		public void modify_last(VertexDistance val)
 		{
 			base.RemoveLast();
-			add(val);
+			Add(val);
 		}
 
 		public void close(bool closed)
@@ -135,7 +135,7 @@ namespace MatterHackers.Agg
 
 		public bool IsEqual(VertexDistance val)
 		{
-			bool ret = (dist = agg_math.calc_distance(x, y, val.x, val.y)) > agg_math.vertex_dist_epsilon;
+			bool ret = (dist = agg_math.CalcDistance(x, y, val.x, val.y)) > agg_math.vertex_dist_epsilon;
 			if (!ret) dist = 1.0 / agg_math.vertex_dist_epsilon;
 			return ret;
 		}

@@ -19,8 +19,8 @@ namespace MatterHackers.Agg.Tests
 			double newx = x;
 			double newy = y;
 
-			a.transform(ref newx, ref newy);
-			b.transform(ref newx, ref newy);
+			a.Transform(ref newx, ref newy);
+			b.Transform(ref newx, ref newy);
 			Assert.AreEqual(x, newx, .001);
 			Assert.AreEqual(y, newy, .001);
 		}
@@ -36,7 +36,7 @@ namespace MatterHackers.Agg.Tests
 			double newx = 0;
 			double newy = 0;
 
-			a.transform(ref newx, ref newy);
+			a.Transform(ref newx, ref newy);
 			Assert.AreEqual(x, newx, .001);
 			Assert.AreEqual(y, newy, .001);
 		}

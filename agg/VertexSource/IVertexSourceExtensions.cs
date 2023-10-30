@@ -21,6 +21,7 @@ using MatterHackers.Agg.Image.ThresholdFunctions;
 using MatterHackers.Agg.Transform;
 using MatterHackers.VectorMath;
 using System;
+using System.Linq;
 
 namespace MatterHackers.Agg.VertexSource
 {
@@ -117,6 +118,54 @@ namespace MatterHackers.Agg.VertexSource
             return centerPosition;
         }
 
+        public static void RenderCurve(this IVertexSource source, Graphics2D graphics2D, Color lineColor, double width = 1, bool showHandles = false, Color handleLineColor = default(Color), Color handleColor = default(Color))
+        {
+            if(source.Vertices().Count() < 2)
+            {
+                return;
+            }
+
+            // flaten the curve
+            var flattenedCurve = new FlattenCurves(source);
+            var stroked = new Stroke(flattenedCurve, width);
+
+            // render the curve
+            graphics2D.Render(stroked, lineColor);
+
+            if (showHandles)
+            {
+                if (handleLineColor == default(Color))
+                {
+                    handleLineColor = lineColor;
+                }
+                if (handleColor == default(Color))
+                {
+                    handleColor = lineColor;
+                }
+
+                // iterate the original source looking for curve vertices
+                var vertices = source.Vertices().ToArray();
+                for (int i = 0; i< vertices.Length; i++)
+                {
+                    var vertex = vertices[i];
+                    var nextVertex = vertices[(i + 1) % vertices.Length];
+                    var nextNextVertex = vertices[(i + 2) % vertices.Length];
+                    if (vertex.command == ShapePath.FlagsAndCommand.Curve4)
+                    {
+                        // render the control lines
+                        graphics2D.Line(vertex.position, nextVertex.position, handleLineColor);
+                        graphics2D.Line(vertex.position, nextNextVertex.position, handleLineColor);
+
+                        // render the control points
+                        graphics2D.Render(new Ellipse(nextVertex.position, 3), handleColor);
+                        graphics2D.Render(new Ellipse(nextNextVertex.position, 3), handleColor);
+
+                        i += 2;
+                    }
+                }
+            }
+        }
+
         public static double GetXAtY(this IVertexSource source, double y)
         {
             Vector2? previousVertex = null;
@@ -130,7 +179,9 @@ namespace MatterHackers.Agg.VertexSource
 
             foreach (var vertex in source.Vertices())
             {
-                if (previousVertex.HasValue && !vertex.IsClose && !vertex.IsStop)
+                if (previousVertex.HasValue 
+                    && vertex.IsVertex 
+                    && vertex.IsLineTo)
                 {
                     if ((y >= previousVertex.Value.Y && y <= vertex.position.Y)
                         || (y <= previousVertex.Value.Y && y >= vertex.position.Y))
@@ -142,9 +193,12 @@ namespace MatterHackers.Agg.VertexSource
                             return previousVertex.Value.X;
                         }
 
-                        // Interpolate to find the x value for the given y
-                        double t = (y - previousVertex.Value.Y) / (vertex.position.Y - previousVertex.Value.Y);
-                        double x = previousVertex.Value.X + t * (vertex.position.X - previousVertex.Value.X);
+                        // Interpolate to find the x value for the given
+                        var deltaFromPrevious = y - previousVertex.Value.Y;
+                        var segmentYLength = vertex.position.Y - previousVertex.Value.Y;
+                        double ratioOfLength = deltaFromPrevious / segmentYLength;
+                        var segmentXLength = vertex.position.X - previousVertex.Value.X;
+                        var x = previousVertex.Value.X + ratioOfLength * segmentXLength;
 
                         return x;
                     }

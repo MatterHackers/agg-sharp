@@ -275,7 +275,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 
 			MeshViewerApplication app = new MeshViewerApplication(true, meshPath);
-			SingleWindowProvider.SetWindowTheme(Color.Black, 12, () => new Button("X", 0, 0), 3, Color.LightGray, Color.DarkGray);
+			SingleWindowProvider.SetWindowTheme(new ThemeConfig());
 			app.ShowAsSystemWindow();
 		}
 	}

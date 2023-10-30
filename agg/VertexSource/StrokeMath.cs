@@ -378,7 +378,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		private void add_vertex(IVertexDest vc, double x, double y)
 		{
-			vc.add(new Vector2(x, y));
+			vc.Add(new Vector2(x, y));
 		}
 
 		private void calc_arc(IVertexDest vc,
@@ -446,7 +446,7 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				// Calculation of the intersection succeeded
 				//---------------------
-				di = agg_math.calc_distance(v1.x, v1.y, xi, yi);
+				di = agg_math.CalcDistance(v1.x, v1.y, xi, yi);
 				if (di <= lim)
 				{
 					// Inside the miter limit

@@ -117,7 +117,7 @@ namespace MatterHackers.Agg.VertexSource
 		}
 
 		// Vertex Source Interface to feed the coordinates to the rasterizer
-		public void rewind(int idx)
+		public void Rewind(int idx)
 		{
 			m_vertex = 0;
 		}

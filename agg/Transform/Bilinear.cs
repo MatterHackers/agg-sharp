@@ -111,7 +111,7 @@ namespace MatterHackers.Agg.Transform
 
 		//--------------------------------------------------------------------
 		// Transform a point (x, y)
-		public void transform(ref double x, ref double y)
+		public void Transform(ref double x, ref double y)
 		{
 			double tx = x;
 			double ty = y;

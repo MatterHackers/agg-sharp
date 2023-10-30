@@ -503,7 +503,7 @@ namespace MatterHackers.RenderOpenGl
 				GL.Disable(EnableCap.DepthTest);
 			}
 
-			vertexSource.rewind(0);
+			vertexSource.Rewind(0);
 
 			// the alpha has to come from the bound texture
 			GL.Color4(color.red, color.green, color.blue, (byte)255);

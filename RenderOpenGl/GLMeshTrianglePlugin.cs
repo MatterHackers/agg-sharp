@@ -188,7 +188,7 @@ namespace MatterHackers.RenderOpenGl
 				textureData.Add(tempTexture);
 				normalData.Add(tempNormal);
 				positionData.Add(tempPosition);
-				colorData.add(color);
+				colorData.Add(color);
 
 				tempTexture.textureU = faceTexture == null ? 0 : (float)faceTexture.uv1.X;
 				tempTexture.textureV = faceTexture == null ? 0 : (float)faceTexture.uv1.Y;
@@ -199,7 +199,7 @@ namespace MatterHackers.RenderOpenGl
 				textureData.Add(tempTexture);
 				normalData.Add(tempNormal);
 				positionData.Add(tempPosition);
-				colorData.add(color);
+				colorData.Add(color);
 
 				tempTexture.textureU = faceTexture == null ? 0 : (float)faceTexture.uv2.X;
 				tempTexture.textureV = faceTexture == null ? 0 : (float)faceTexture.uv2.Y;
@@ -210,7 +210,7 @@ namespace MatterHackers.RenderOpenGl
 				textureData.Add(tempTexture);
 				normalData.Add(tempNormal);
 				positionData.Add(tempPosition);
-				colorData.add(color);
+				colorData.Add(color);
 			}
 		}
 

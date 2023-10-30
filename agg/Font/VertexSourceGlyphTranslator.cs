@@ -42,8 +42,8 @@ namespace MatterHackers.Agg.Font
 			if (curve3Control.X != double.MinValue)
 			{
 				// we started this polygon with a control point so add the required curve3
-				var vertex = vertexStorage.vertex(polygonStartIndex, out var x, out var y);
-				vertexStorage.curve3(curve3Control.X, curve3Control.Y, x, y);
+				var vertex = vertexStorage.Vertex(polygonStartIndex, out var x, out var y);
+				vertexStorage.Curve3(curve3Control.X, curve3Control.Y, x, y);
 
 				// reset the curve3Control point to unitialized
 				curve3Control = new Vector2(double.MinValue, double.MinValue);
@@ -57,7 +57,7 @@ namespace MatterHackers.Agg.Font
 			//vertexStorage.ClosePolygon();
 			if (vertexStorage.Count > polygonStartIndex)
 			{
-				vertexStorage.invert_polygon(polygonStartIndex);
+				vertexStorage.InvertPolygon(polygonStartIndex);
 			}
 			polygonStartIndex = vertexStorage.Count;
 		}
@@ -74,13 +74,13 @@ namespace MatterHackers.Agg.Font
 			}
 			else
 			{
-				vertexStorage.curve3(xControl, yControl, x, y);
+				vertexStorage.Curve3(xControl, yControl, x, y);
 			}
 		}
 
 		public void Curve4(float x1, float y1, float x2, float y2, float x3, float y3)
 		{
-			vertexStorage.curve4(x1, y1, x2, y2, x3, y3);
+			vertexStorage.Curve4(x1, y1, x2, y2, x3, y3);
 		}
 
 		public void EndRead()

@@ -22,7 +22,7 @@ namespace MatterHackers.Agg
 			FlagsMask = 0xF0
 		};
 
-		public static bool is_vertex(FlagsAndCommand c)
+		public static bool IsVertex(FlagsAndCommand c)
 		{
 			return c >= FlagsAndCommand.MoveTo
 				&& c < FlagsAndCommand.EndPoly;
@@ -33,12 +33,12 @@ namespace MatterHackers.Agg
 			return c >= FlagsAndCommand.LineTo && c < FlagsAndCommand.EndPoly;
 		}
 
-		public static bool is_stop(FlagsAndCommand c)
+		public static bool IsStop(FlagsAndCommand c)
 		{
 			return c == FlagsAndCommand.Stop;
 		}
 
-		public static bool is_move_to(FlagsAndCommand c)
+		public static bool IsMoveTo(FlagsAndCommand c)
 		{
 			return c == FlagsAndCommand.MoveTo;
 		}
@@ -75,9 +75,9 @@ namespace MatterHackers.Agg
 				   (FlagsAndCommand.EndPoly | FlagsAndCommand.FlagClose);
 		}
 
-		public static bool is_next_poly(FlagsAndCommand c)
+		public static bool IsNextPoly(FlagsAndCommand c)
 		{
-			return is_stop(c) || is_move_to(c) || is_end_poly(c);
+			return IsStop(c) || IsMoveTo(c) || is_end_poly(c);
 		}
 
 		public static bool is_cw(FlagsAndCommand c)

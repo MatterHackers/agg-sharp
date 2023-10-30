@@ -26,6 +26,6 @@ namespace MatterHackers.Agg
 
 		int Count { get; }
 
-		void add(Vector2 vertex);
+		void Add(Vector2 vertex);
 	};
 }

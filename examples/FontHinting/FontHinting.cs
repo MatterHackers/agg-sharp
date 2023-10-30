@@ -67,7 +67,7 @@ namespace MatterHackers.Agg
 
 			StyledTypeFace type = new StyledTypeFace(LiberationSansFont.Instance, 12);
 			IVertexSource character = type.GetGlyphForCharacter('E');
-			character.rewind(0);
+			character.Rewind(0);
 			ras.reset();
 			ras.add_path(character);
 			ren_en.RenderSolid(clippingProxyGamma, ras, sl, Color.Black);

@@ -265,13 +265,13 @@ namespace MatterHackers.Agg
 
 		private void AddVertex(VertexData vertexData)
 		{
-			if (ShapePath.is_move_to(vertexData.command))
+			if (ShapePath.IsMoveTo(vertexData.command))
 			{
 				move_to_d(vertexData.position.X, vertexData.position.Y);
 			}
 			else
 			{
-				if (ShapePath.is_vertex(vertexData.command))
+				if (ShapePath.IsVertex(vertexData.command))
 				{
 					line_to_d(vertexData.position.X, vertexData.position.Y);
 				}
@@ -314,13 +314,13 @@ namespace MatterHackers.Agg
 			double y = 0;
 
 			ShapePath.FlagsAndCommand PathAndFlags;
-			vs.rewind(0);
+			vs.Rewind(0);
 			if (m_outline.sorted())
 			{
 				reset();
 			}
 
-			while (!ShapePath.is_stop(PathAndFlags = vs.vertex(out x, out y)))
+			while (!ShapePath.IsStop(PathAndFlags = vs.vertex(out x, out y)))
 			{
 				AddVertex(new VertexData(PathAndFlags, new Vector2(x, y)));
 			}

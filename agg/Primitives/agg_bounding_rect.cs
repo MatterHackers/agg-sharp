@@ -42,11 +42,11 @@ namespace MatterHackers.Agg
 
 			for (i = 0; i < num; i++)
 			{
-				vs.rewind(gi[start + i]);
+				vs.Rewind(gi[start + i]);
 				ShapePath.FlagsAndCommand PathAndFlags;
-				while (!ShapePath.is_stop(PathAndFlags = vs.vertex(out x, out y)))
+				while (!ShapePath.IsStop(PathAndFlags = vs.vertex(out x, out y)))
 				{
-					if (ShapePath.is_vertex(PathAndFlags))
+					if (ShapePath.IsVertex(PathAndFlags))
 					{
 						if (first)
 						{
@@ -101,11 +101,11 @@ namespace MatterHackers.Agg
 			x2 = 0;
 			y2 = 0;
 
-			vs.rewind(path_id);
+			vs.Rewind(path_id);
 			ShapePath.FlagsAndCommand PathAndFlags;
-			while (!ShapePath.is_stop(PathAndFlags = vs.vertex(out x, out y)))
+			while (!ShapePath.IsStop(PathAndFlags = vs.vertex(out x, out y)))
 			{
-				if (ShapePath.is_vertex(PathAndFlags))
+				if (ShapePath.IsVertex(PathAndFlags))
 				{
 					if (first)
 					{

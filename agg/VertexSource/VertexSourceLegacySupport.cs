@@ -24,7 +24,7 @@ namespace MatterHackers.Agg.VertexSource
     {
         private IEnumerator<VertexData> currentEnumerator;
 
-        public void rewind(int layerIndex)
+        public void Rewind(int layerIndex)
         {
             currentEnumerator = Vertices().GetEnumerator();
             currentEnumerator.MoveNext();
@@ -34,7 +34,7 @@ namespace MatterHackers.Agg.VertexSource
         {
             if (currentEnumerator == null)
             {
-                rewind(0);
+                Rewind(0);
             }
 
             x = currentEnumerator.Current.position.X;

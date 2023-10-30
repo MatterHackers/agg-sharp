@@ -119,7 +119,7 @@ namespace MatterHackers.Agg
 						double dy = random(-0.5, 0.5);
 						Color c = new Color(rand.Next() & 0xFF, rand.Next() & 0xFF, rand.Next() & 0xFF);
 						Color dc = new Color(rand.Next() & 1, rand.Next() & 1, rand.Next() & 1);
-						m_vertices.add(new mesh_point(x, start_y, dx, dy, c, dc));
+						m_vertices.Add(new mesh_point(x, start_y, dx, dy, c, dc));
 						x += cell_w;
 					}
 					start_y += cell_h;
@@ -140,8 +140,8 @@ namespace MatterHackers.Agg
 						int p2 = p1 + 1;
 						int p3 = p2 + m_cols;
 						int p4 = p1 + m_cols;
-						m_triangles.add(new mesh_triangle((int)p1, (int)p2, (int)p3));
-						m_triangles.add(new mesh_triangle((int)p3, (int)p4, (int)p1));
+						m_triangles.Add(new mesh_triangle((int)p1, (int)p2, (int)p3));
+						m_triangles.Add(new mesh_triangle((int)p3, (int)p4, (int)p1));
 
 						int curr_cell = i * (m_cols - 1) + j;
 						int left_cell = j != 0 ? (int)(curr_cell - 1) : -1;
@@ -156,18 +156,18 @@ namespace MatterHackers.Agg
 						int bott_t1 = (bott_cell >= 0) ? bott_cell * 2 : -1;
 						int bott_t2 = (bott_cell >= 0) ? bott_t1 + 1 : -1;
 
-						m_edges.add(new mesh_edge((int)p1, (int)p2, curr_t1, bott_t2));
-						m_edges.add(new mesh_edge((int)p1, (int)p3, curr_t2, curr_t1));
-						m_edges.add(new mesh_edge((int)p1, (int)p4, left_t1, curr_t2));
+						m_edges.Add(new mesh_edge((int)p1, (int)p2, curr_t1, bott_t2));
+						m_edges.Add(new mesh_edge((int)p1, (int)p3, curr_t2, curr_t1));
+						m_edges.Add(new mesh_edge((int)p1, (int)p4, left_t1, curr_t2));
 
 						if (j == m_cols - 2) // Last column
 						{
-							m_edges.add(new mesh_edge((int)p2, (int)p3, curr_t1, -1));
+							m_edges.Add(new mesh_edge((int)p2, (int)p3, curr_t1, -1));
 						}
 
 						if (i == m_rows - 2) // Last row
 						{
-							m_edges.add(new mesh_edge((int)p3, (int)p4, curr_t2, -1));
+							m_edges.Add(new mesh_edge((int)p3, (int)p4, curr_t2, -1));
 						}
 					}
 				}
@@ -225,7 +225,7 @@ namespace MatterHackers.Agg
 					int i;
 					for (i = 0; i < m_vertices.Count; i++)
 					{
-						if (agg_math.calc_distance(x, y, m_vertices[i].x, m_vertices[i].y) < 5)
+						if (agg_math.CalcDistance(x, y, m_vertices[i].x, m_vertices[i].y) < 5)
 						{
 							m_drag_idx = i;
 							m_drag_dx = x - m_vertices[i].x;

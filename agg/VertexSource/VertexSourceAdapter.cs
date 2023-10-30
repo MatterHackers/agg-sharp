@@ -91,7 +91,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public IEnumerable<VertexData> Vertices()
 		{
-			rewind(0);
+			Rewind(0);
 			ShapePath.FlagsAndCommand command = ShapePath.FlagsAndCommand.Stop;
 			do
 			{
@@ -102,9 +102,9 @@ namespace MatterHackers.Agg.VertexSource
 			} while (command != ShapePath.FlagsAndCommand.Stop);
 		}
 
-		public void rewind(int path_id)
+		public void Rewind(int path_id)
 		{
-			VertexSource.rewind(path_id);
+			VertexSource.Rewind(path_id);
 			m_status = status.initial;
 		}
 
@@ -125,7 +125,7 @@ namespace MatterHackers.Agg.VertexSource
 						goto case status.accumulate;
 
 					case status.accumulate:
-						if (ShapePath.is_stop(m_last_cmd))
+						if (ShapePath.IsStop(m_last_cmd))
 						{
 							return ShapePath.FlagsAndCommand.Stop;
 						}
@@ -138,10 +138,10 @@ namespace MatterHackers.Agg.VertexSource
 						{
 							command = VertexSource.vertex(out x, out y);
 							//DebugFile.Print("x=" + x.ToString() + " y=" + y.ToString() + "\n");
-							if (ShapePath.is_vertex(command))
+							if (ShapePath.IsVertex(command))
 							{
 								m_last_cmd = command;
-								if (ShapePath.is_move_to(command))
+								if (ShapePath.IsMoveTo(command))
 								{
 									m_start_x = x;
 									m_start_y = y;
@@ -152,7 +152,7 @@ namespace MatterHackers.Agg.VertexSource
 							}
 							else
 							{
-								if (ShapePath.is_stop(command))
+								if (ShapePath.IsStop(command))
 								{
 									m_last_cmd = ShapePath.FlagsAndCommand.Stop;
 									break;
@@ -171,7 +171,7 @@ namespace MatterHackers.Agg.VertexSource
 					case status.generate:
 						command = generator.Vertex(ref x, ref y);
 						//DebugFile.Print("x=" + x.ToString() + " y=" + y.ToString() + "\n");
-						if (ShapePath.is_stop(command))
+						if (ShapePath.IsStop(command))
 						{
 							m_status = status.accumulate;
 							break;

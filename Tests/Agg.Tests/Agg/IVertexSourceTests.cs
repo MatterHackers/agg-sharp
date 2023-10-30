@@ -166,7 +166,7 @@ namespace MatterHackers.Agg.Tests
 		{
 			IVertexSource glyphForCharacter = typeface.GetGlyphForCharacter(character, 1);
 
-			glyphForCharacter.rewind(0);
+			glyphForCharacter.Rewind(0);
 
 			ShapePath.FlagsAndCommand curCommand;
 
