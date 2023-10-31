@@ -394,24 +394,24 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override ShapePath.FlagsAndCommand vertex(out double x, out double y)
+		public override FlagsAndCommand vertex(out double x, out double y)
 		{
 			x = 0;
 			y = 0;
-			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.LineTo;
+			FlagsAndCommand cmd = FlagsAndCommand.LineTo;
 			switch (m_idx)
 			{
 				case 0:
-					if (m_vertex == 0) cmd = ShapePath.FlagsAndCommand.MoveTo;
-					if (m_vertex >= 4) cmd = ShapePath.FlagsAndCommand.Stop;
+					if (m_vertex == 0) cmd = FlagsAndCommand.MoveTo;
+					if (m_vertex >= 4) cmd = FlagsAndCommand.Stop;
 					x = m_vx[m_vertex];
 					y = m_vy[m_vertex];
 					m_vertex++;
 					break;
 
 				case 1:
-					if (m_vertex == 0 || m_vertex == 4) cmd = ShapePath.FlagsAndCommand.MoveTo;
-					if (m_vertex >= 8) cmd = ShapePath.FlagsAndCommand.Stop;
+					if (m_vertex == 0 || m_vertex == 4) cmd = FlagsAndCommand.MoveTo;
+					if (m_vertex >= 8) cmd = FlagsAndCommand.Stop;
 					x = m_vx[m_vertex];
 					y = m_vy[m_vertex];
 					m_vertex++;
@@ -427,7 +427,7 @@ namespace MatterHackers.Agg.UI
 					break;
 
 				default:
-					cmd = ShapePath.FlagsAndCommand.Stop;
+					cmd = FlagsAndCommand.Stop;
 					break;
 			}
 

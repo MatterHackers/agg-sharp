@@ -13,10 +13,10 @@ namespace MatterHackers.Agg.VertexSource
 				string[] elements = line.Split(',');
 				double x = double.Parse(elements[0]);
 				double y = double.Parse(elements[1]);
-				ShapePath.FlagsAndCommand flagsAndCommand = (ShapePath.FlagsAndCommand)System.Enum.Parse(typeof(ShapePath.FlagsAndCommand), elements[2].Trim());
+				FlagsAndCommand flagsAndCommand = (FlagsAndCommand)System.Enum.Parse(typeof(FlagsAndCommand), elements[2].Trim());
 				for (int i = 3; i < elements.Length; i++)
 				{
-					flagsAndCommand |= (ShapePath.FlagsAndCommand)System.Enum.Parse(typeof(ShapePath.FlagsAndCommand), elements[i].Trim());
+					flagsAndCommand |= (FlagsAndCommand)System.Enum.Parse(typeof(FlagsAndCommand), elements[i].Trim());
 				}
 
 				vertexSource.Add(x, y, flagsAndCommand);
@@ -32,13 +32,13 @@ namespace MatterHackers.Agg.VertexSource
 					vertexSource.Rewind(0);
 					double x;
 					double y;
-					ShapePath.FlagsAndCommand flagsAndCommand = vertexSource.vertex(out x, out y);
+					FlagsAndCommand flagsAndCommand = vertexSource.vertex(out x, out y);
 					do
 					{
 						outFile.WriteLine("{0}, {1}, {2}", x, y, flagsAndCommand.ToString());
 						flagsAndCommand = vertexSource.vertex(out x, out y);
 					}
-					while (flagsAndCommand != ShapePath.FlagsAndCommand.Stop);
+					while (flagsAndCommand != FlagsAndCommand.Stop);
 				}
 			}
 			else
@@ -47,7 +47,7 @@ namespace MatterHackers.Agg.VertexSource
 				{
 					foreach (VertexData vertexData in vertexSource.Vertices())
 					{
-						outFile.WriteLine("{0}, {1}, {2}", vertexData.position.X, vertexData.position.Y, vertexData.command.ToString());
+						outFile.WriteLine("{0}, {1}, {2}", vertexData.Position.X, vertexData.Position.Y, vertexData.Command.ToString());
 					}
 				}
 			}

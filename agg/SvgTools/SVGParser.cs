@@ -139,7 +139,7 @@ namespace MatterHackers.Agg.SvgTools
                 }
                 else if (vertexData.IsMoveTo)
                 {
-                    pendingPositions.Add(vertexData.position);
+                    pendingPositions.Add(vertexData.Position);
                 }
                 else if (vertexData.IsClose)
                 {
@@ -147,7 +147,7 @@ namespace MatterHackers.Agg.SvgTools
                 }
                 else // Assuming this is a line to. if (vertexData.IsLineTo)
                 {
-                    pendingPositions.Add(vertexData.position);
+                    pendingPositions.Add(vertexData.Position);
                 }
             }
 
@@ -295,7 +295,7 @@ namespace MatterHackers.Agg.SvgTools
                             {
                                 Vector2 controlPoint = lastXY;
 
-                                if (vertexStorage[vertexStorage.Count - 1].command == ShapePath.FlagsAndCommand.Curve4)
+                                if (vertexStorage[vertexStorage.Count - 1].Command == FlagsAndCommand.Curve4)
                                 {
                                     controlPoint = Reflect(secondControlPoint, lastXY);
                                 }
@@ -567,48 +567,48 @@ namespace MatterHackers.Agg.SvgTools
             {
                 VertexData vertexData = vertexDataEnumerator.Current;
 
-                switch (vertexData.command)
+                switch (vertexData.Command)
                 {
-                    case ShapePath.FlagsAndCommand.Stop:
+                    case FlagsAndCommand.Stop:
                         break;
                         
-                    case ShapePath.FlagsAndCommand.MoveTo:
+                    case FlagsAndCommand.MoveTo:
                         break;
                         
-                    case ShapePath.FlagsAndCommand.LineTo:
+                    case FlagsAndCommand.LineTo:
                         break;
                         
-                    case ShapePath.FlagsAndCommand.Curve3:
+                    case FlagsAndCommand.Curve3:
                         break;
                         
-                    case ShapePath.FlagsAndCommand.Curve4:
+                    case FlagsAndCommand.Curve4:
                         {
                             vertexDataEnumerator.MoveNext();
                             var vertexDataControl2 = vertexDataEnumerator.Current;
                             vertexDataEnumerator.MoveNext();
                             var vertexDataEnd = vertexDataEnumerator.Current;
 
-                            graphics.Line(lastPosition.position, vertexData.position, Color.Green);
-                            graphics.Line(vertexDataControl2.position, vertexDataEnd.position, Color.Green);
-                            graphics.Circle(vertexData.position, 5, Color.Red);
-                            graphics.Circle(vertexDataControl2.position, 5, Color.Red);
+                            graphics.Line(lastPosition.Position, vertexData.Position, Color.Green);
+                            graphics.Line(vertexDataControl2.Position, vertexDataEnd.Position, Color.Green);
+                            graphics.Circle(vertexData.Position, 5, Color.Red);
+                            graphics.Circle(vertexDataControl2.Position, 5, Color.Red);
                             vertexData = vertexDataEnd;
                         }
                         break;
                         
-                    case ShapePath.FlagsAndCommand.EndPoly:
+                    case FlagsAndCommand.EndPoly:
                         break;
                         
-                    case ShapePath.FlagsAndCommand.FlagCCW:
+                    case FlagsAndCommand.FlagCCW:
                         break;
                         
-                    case ShapePath.FlagsAndCommand.FlagCW:
+                    case FlagsAndCommand.FlagCW:
                         break;
                         
-                    case ShapePath.FlagsAndCommand.FlagClose:
+                    case FlagsAndCommand.FlagClose:
                         break;
                         
-                    case ShapePath.FlagsAndCommand.FlagsMask:
+                    case FlagsAndCommand.FlagsMask:
                         break;
                 }
 

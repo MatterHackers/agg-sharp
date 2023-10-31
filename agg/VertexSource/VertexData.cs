@@ -23,51 +23,53 @@ namespace MatterHackers.Agg.VertexSource
 {
     public struct VertexData
     {
-        public VertexData(ShapePath.FlagsAndCommand command, Vector2 position)
+        public VertexData(FlagsAndCommand command, Vector2 position, CommandHint hint = CommandHint.None)
         {
-            this.command = command;
-            this.position = position;
+            this.Command = command;
+            this.Position = position;
+            this.Hint = hint;
         }
 
-        public VertexData(ShapePath.FlagsAndCommand command, double x, double y)
-            : this(command, new Vector2(x, y))
+        public VertexData(FlagsAndCommand command, double x, double y, CommandHint hint = CommandHint.None)
+            : this(command, new Vector2(x, y), hint)
         {
         }
 
-        public ShapePath.FlagsAndCommand command { get; set; }
+        public FlagsAndCommand Command { get; set; }
 
         [JsonIgnore]
-        public bool IsClose => ShapePath.is_close(command);
+        public bool IsClose => ShapePath.IsClose(Command);
 
         [JsonIgnore]
-        public bool IsLineTo => ShapePath.is_line_to(command);
+        public bool IsLineTo => ShapePath.IsLineTo(Command);
 
         [JsonIgnore]
-        public bool IsMoveTo => ShapePath.IsMoveTo(command);
+        public bool IsMoveTo => ShapePath.IsMoveTo(Command);
 
         [JsonIgnore]
-        public bool IsStop => ShapePath.IsStop(command);
+        public bool IsStop => ShapePath.IsStop(Command);
 
         [JsonIgnore]
-        public bool IsVertex => ShapePath.IsVertex(command);
+        public bool IsVertex => ShapePath.IsVertex(Command);
 
-        public Vector2 position { get; set; }
-
-        [JsonIgnore]
-        public double X => position.X;
+        public Vector2 Position { get; set; }
+        public CommandHint Hint { get; }
 
         [JsonIgnore]
-        public double Y => position.Y;
+        public double X => Position.X;
+
+        [JsonIgnore]
+        public double Y => Position.Y;
 
         public override string ToString()
         {
-            return $"{command}:{position}";
+            return $"{Command}:{Position}";
         }
 
         public ulong GetLongHashCode(ulong hash = 14695981039346656037)
         {
-            hash = position.GetLongHashCode(hash);
-            hash = hash * 1099511628211 + (ulong)command;
+            hash = Position.GetLongHashCode(hash);
+            hash = hash * 1099511628211 + (ulong)Command;
 
             return hash;
         }

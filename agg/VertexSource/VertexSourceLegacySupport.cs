@@ -30,16 +30,16 @@ namespace MatterHackers.Agg.VertexSource
             currentEnumerator.MoveNext();
         }
 
-        public ShapePath.FlagsAndCommand vertex(out double x, out double y)
+        public FlagsAndCommand vertex(out double x, out double y)
         {
             if (currentEnumerator == null)
             {
                 Rewind(0);
             }
 
-            x = currentEnumerator.Current.position.X;
-            y = currentEnumerator.Current.position.Y;
-            ShapePath.FlagsAndCommand command = currentEnumerator.Current.command;
+            x = currentEnumerator.Current.Position.X;
+            y = currentEnumerator.Current.Position.Y;
+            FlagsAndCommand command = currentEnumerator.Current.Command;
 
             currentEnumerator.MoveNext();
 

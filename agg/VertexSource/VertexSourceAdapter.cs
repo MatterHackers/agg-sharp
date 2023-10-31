@@ -29,7 +29,7 @@ namespace MatterHackers.Agg.VertexSource
 		{
 		}
 
-		public void add_vertex(double x, double y, ShapePath.FlagsAndCommand unknown)
+		public void add_vertex(double x, double y, FlagsAndCommand unknown)
 		{
 		}
 
@@ -41,9 +41,9 @@ namespace MatterHackers.Agg.VertexSource
 		{
 		}
 
-		public ShapePath.FlagsAndCommand vertex(ref double x, ref double y)
+		public FlagsAndCommand vertex(ref double x, ref double y)
 		{
-			return ShapePath.FlagsAndCommand.Stop;
+			return FlagsAndCommand.Stop;
 		}
 	};
 
@@ -53,7 +53,7 @@ namespace MatterHackers.Agg.VertexSource
 		private IGenerator generator;
 		private IMarkers markers;
 		private status m_status;
-		private ShapePath.FlagsAndCommand m_last_cmd;
+		private FlagsAndCommand m_last_cmd;
 		private double m_start_x;
 		private double m_start_y;
 
@@ -92,14 +92,14 @@ namespace MatterHackers.Agg.VertexSource
 		public IEnumerable<VertexData> Vertices()
 		{
 			Rewind(0);
-			ShapePath.FlagsAndCommand command = ShapePath.FlagsAndCommand.Stop;
+			FlagsAndCommand command = FlagsAndCommand.Stop;
 			do
 			{
 				double x;
 				double y;
 				command = vertex(out x, out y);
 				yield return new VertexData(command, new Vector2(x, y));
-			} while (command != ShapePath.FlagsAndCommand.Stop);
+			} while (command != FlagsAndCommand.Stop);
 		}
 
 		public void Rewind(int path_id)
@@ -108,11 +108,11 @@ namespace MatterHackers.Agg.VertexSource
 			m_status = status.initial;
 		}
 
-		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
+		public FlagsAndCommand vertex(out double x, out double y)
 		{
 			x = 0;
 			y = 0;
-			ShapePath.FlagsAndCommand command = ShapePath.FlagsAndCommand.Stop;
+			FlagsAndCommand command = FlagsAndCommand.Stop;
 			bool done = false;
 			while (!done)
 			{
@@ -127,12 +127,12 @@ namespace MatterHackers.Agg.VertexSource
 					case status.accumulate:
 						if (ShapePath.IsStop(m_last_cmd))
 						{
-							return ShapePath.FlagsAndCommand.Stop;
+							return FlagsAndCommand.Stop;
 						}
 
 						generator.RemoveAll();
-						generator.AddVertex(m_start_x, m_start_y, ShapePath.FlagsAndCommand.MoveTo);
-						markers.add_vertex(m_start_x, m_start_y, ShapePath.FlagsAndCommand.MoveTo);
+						generator.AddVertex(m_start_x, m_start_y, FlagsAndCommand.MoveTo);
+						markers.add_vertex(m_start_x, m_start_y, FlagsAndCommand.MoveTo);
 
 						for (; ; )
 						{
@@ -148,13 +148,13 @@ namespace MatterHackers.Agg.VertexSource
 									break;
 								}
 								generator.AddVertex(x, y, command);
-								markers.add_vertex(x, y, ShapePath.FlagsAndCommand.LineTo);
+								markers.add_vertex(x, y, FlagsAndCommand.LineTo);
 							}
 							else
 							{
 								if (ShapePath.IsStop(command))
 								{
-									m_last_cmd = ShapePath.FlagsAndCommand.Stop;
+									m_last_cmd = FlagsAndCommand.Stop;
 									break;
 								}
 								if (ShapePath.is_end_poly(command))

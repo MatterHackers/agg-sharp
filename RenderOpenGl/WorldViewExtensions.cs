@@ -327,17 +327,17 @@ namespace MatterHackers.RenderOpenGl
 			Vector3 prevPosition = default(Vector3);
 			foreach (var vertex in path.Vertices())
 			{
-				if (vertex.command == ShapePath.FlagsAndCommand.MoveTo)
+				if (vertex.Command == FlagsAndCommand.MoveTo)
 				{
-					firstPosition = prevPosition = new Vector3(vertex.position).Transform(worldMatrix);
+					firstPosition = prevPosition = new Vector3(vertex.Position).Transform(worldMatrix);
 				}
-				else if (vertex.command == ShapePath.FlagsAndCommand.LineTo)
+				else if (vertex.Command == FlagsAndCommand.LineTo)
 				{
-					var position = new Vector3(vertex.position).Transform(worldMatrix);
+					var position = new Vector3(vertex.Position).Transform(worldMatrix);
 					world.Render3DLineNoPrep(frustum, prevPosition, position, color, lineWidth);
 					prevPosition = position;
 				}
-				else if (vertex.command.HasFlag(ShapePath.FlagsAndCommand.FlagClose))
+				else if (vertex.Command.HasFlag(FlagsAndCommand.FlagClose))
 				{
 					world.Render3DLineNoPrep(frustum, prevPosition, firstPosition, color, lineWidth);
 				}
@@ -354,13 +354,13 @@ namespace MatterHackers.RenderOpenGl
 			Vector3 prevPosition = default(Vector3);
 			foreach (var vertex in path.Vertices())
 			{
-				if (vertex.command == ShapePath.FlagsAndCommand.MoveTo)
+				if (vertex.Command == FlagsAndCommand.MoveTo)
 				{
-					prevPosition = new Vector3(vertex.position).Transform(worldMatrix);
+					prevPosition = new Vector3(vertex.Position).Transform(worldMatrix);
 				}
-				else if (vertex.command == ShapePath.FlagsAndCommand.LineTo)
+				else if (vertex.Command == FlagsAndCommand.LineTo)
 				{
-					var position = new Vector3(vertex.position).Transform(worldMatrix);
+					var position = new Vector3(vertex.Position).Transform(worldMatrix);
 					box.ExpandToInclude(prevPosition);
 					box.ExpandToInclude(position);
 					prevPosition = position;

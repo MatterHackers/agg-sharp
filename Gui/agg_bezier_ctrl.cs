@@ -296,11 +296,11 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override ShapePath.FlagsAndCommand vertex(out double x, out double y)
+		public override FlagsAndCommand vertex(out double x, out double y)
 		{
 			x = 0;
 			y = 0;
-			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.Stop;
+			FlagsAndCommand cmd = FlagsAndCommand.Stop;
 			switch (m_idx)
 			{
 				case 0:
@@ -573,11 +573,11 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override ShapePath.FlagsAndCommand vertex(out double x, out double y)
+		public override FlagsAndCommand vertex(out double x, out double y)
 		{
 			x = 0;
 			y = 0;
-			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.Stop;
+			FlagsAndCommand cmd = FlagsAndCommand.Stop;
 			switch (m_idx)
 			{
 				case 0:

@@ -2,26 +2,34 @@
 
 namespace MatterHackers.Agg
 {
+	public enum CommandHint
+	{
+        None,
+        C4ControlFromPrev,
+		C4ControlToPoint,
+		C4Point,
+	}
+
+    [Flags]
+    public enum FlagsAndCommand
+    {
+        Stop = 0x00,
+        MoveTo = 0x01,
+        LineTo = 0x02,
+        Curve3 = 0x03,
+        Curve4 = 0x04,
+        EndPoly = 0x0F,
+        CommandsMask = 0x0F,
+
+        FlagNone = 0x00,
+        FlagCCW = 0x10,
+        FlagCW = 0x20,
+        FlagClose = 0x40,
+        FlagsMask = 0xF0
+    };
+    
 	public static class ShapePath
 	{
-		[Flags]
-		public enum FlagsAndCommand
-		{
-			Stop = 0x00,
-			MoveTo = 0x01,
-			LineTo = 0x02,
-			Curve3 = 0x03,
-			Curve4 = 0x04,
-			EndPoly = 0x0F,
-			CommandsMask = 0x0F,
-
-			FlagNone = 0x00,
-			FlagCCW = 0x10,
-			FlagCW = 0x20,
-			FlagClose = 0x40,
-			FlagsMask = 0xF0
-		};
-
 		public static bool IsVertex(FlagsAndCommand c)
 		{
 			return c >= FlagsAndCommand.MoveTo
@@ -43,12 +51,12 @@ namespace MatterHackers.Agg
 			return c == FlagsAndCommand.MoveTo;
 		}
 
-		public static bool is_line_to(FlagsAndCommand c)
+		public static bool IsLineTo(FlagsAndCommand c)
 		{
 			return c == FlagsAndCommand.LineTo;
 		}
 
-		public static bool is_curve(FlagsAndCommand c)
+		public static bool IsCurve(FlagsAndCommand c)
 		{
 			return c == FlagsAndCommand.Curve3
 				|| c == FlagsAndCommand.Curve4;
@@ -69,7 +77,7 @@ namespace MatterHackers.Agg
 			return (c & FlagsAndCommand.CommandsMask) == FlagsAndCommand.EndPoly;
 		}
 
-		public static bool is_close(FlagsAndCommand c)
+		public static bool IsClose(FlagsAndCommand c)
 		{
 			return (c & ~(FlagsAndCommand.FlagCW | FlagsAndCommand.FlagCCW)) ==
 				   (FlagsAndCommand.EndPoly | FlagsAndCommand.FlagClose);

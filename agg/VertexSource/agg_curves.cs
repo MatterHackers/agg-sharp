@@ -17,7 +17,7 @@ using MatterHackers.VectorMath;
 //----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
-using FlagsAndCommand = MatterHackers.Agg.ShapePath.FlagsAndCommand;
+using FlagsAndCommand = MatterHackers.Agg.FlagsAndCommand;
 
 namespace MatterHackers.Agg.VertexSource
 {
@@ -884,19 +884,19 @@ namespace MatterHackers.Agg.VertexSource
 		public IEnumerable<VertexData> Vertices()
 		{
 			VertexData vertexData = new VertexData();
-			vertexData.command = FlagsAndCommand.MoveTo;
-			vertexData.position = m_points[0];
+			vertexData.Command = FlagsAndCommand.MoveTo;
+			vertexData.Position = m_points[0];
 			yield return vertexData;
 
-			vertexData.command = FlagsAndCommand.LineTo;
+			vertexData.Command = FlagsAndCommand.LineTo;
 			for (int i = 1; i < m_points.Count; i++)
 			{
-				vertexData.position = m_points[i];
+				vertexData.Position = m_points[i];
 				yield return vertexData;
 			}
 
-			vertexData.command = FlagsAndCommand.Stop;
-			vertexData.position = new Vector2();
+			vertexData.Command = FlagsAndCommand.Stop;
+			vertexData.Position = new Vector2();
 			yield return vertexData;
 		}
 

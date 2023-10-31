@@ -272,10 +272,10 @@ namespace MatterHackers.PolygonMesh.Processors
 
 				if (vertexData.IsMoveTo)
 				{
-					firstPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
+					firstPosition = new Vector3(vertexData.Position.X, 0, vertexData.Position.Y);
 					if (!revolveAroundZ)
 					{
-						firstPosition = new Vector3(vertexData.position.X, vertexData.position.Y, 0);
+						firstPosition = new Vector3(vertexData.Position.X, vertexData.Position.Y, 0);
 					}
 
 					lastPosition = firstPosition;
@@ -284,10 +284,10 @@ namespace MatterHackers.PolygonMesh.Processors
 				if (vertexData.IsLineTo || vertexData.IsClose)
 				{
 
-					var currentPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
+					var currentPosition = new Vector3(vertexData.Position.X, 0, vertexData.Position.Y);
 					if (!revolveAroundZ)
 					{
-						currentPosition = new Vector3(vertexData.position.X, vertexData.position.Y, 0);
+						currentPosition = new Vector3(vertexData.Position.X, vertexData.Position.Y, 0);
 					}
 
 					if (vertexData.IsClose)

@@ -181,7 +181,7 @@ namespace MatterHackers.Agg
 							  vectorClipper.upscale(y));
 		}
 
-		private void add_vertex(double x, double y, ShapePath.FlagsAndCommand cmd)
+		private void add_vertex(double x, double y, FlagsAndCommand cmd)
 		{
 			if (ShapePath.IsMoveTo(cmd))
 			{
@@ -193,7 +193,7 @@ namespace MatterHackers.Agg
 					line_to_d(x, y);
 				}
 				else
-					if (ShapePath.is_close(cmd))
+					if (ShapePath.IsClose(cmd))
 					{
 						vectorClipper.line_to(rasterizerCellsAa, m_start_x, m_start_y);
 					}
@@ -443,7 +443,7 @@ namespace MatterHackers.Agg
 			double x;
 			double y;
 
-			ShapePath.FlagsAndCommand cmd;
+			FlagsAndCommand cmd;
 			vs.Rewind(path_id);
 			if (rasterizerCellsAa.sorted()) reset();
 			while (!ShapePath.IsStop(cmd = vs.vertex(out x, out y)))

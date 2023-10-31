@@ -168,7 +168,7 @@ namespace MatterHackers.Agg.Tests
 
 			glyphForCharacter.Rewind(0);
 
-			ShapePath.FlagsAndCommand curCommand;
+			FlagsAndCommand curCommand;
 
 			var bounds = RectangleDouble.ZeroIntersection;
 
@@ -176,12 +176,12 @@ namespace MatterHackers.Agg.Tests
 			{
 				curCommand = glyphForCharacter.vertex(out double x, out double y);
 
-				if (curCommand != ShapePath.FlagsAndCommand.Stop
-					&& !ShapePath.is_close(curCommand))
+				if (curCommand != FlagsAndCommand.Stop
+					&& !ShapePath.IsClose(curCommand))
 				{
 					bounds.ExpandToInclude(x, y);
 				}
-			} while (curCommand != ShapePath.FlagsAndCommand.Stop);
+			} while (curCommand != FlagsAndCommand.Stop);
 
 			return bounds;
 		}

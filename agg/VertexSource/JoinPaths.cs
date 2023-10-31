@@ -60,13 +60,13 @@ namespace MatterHackers.Agg.VertexSource
 					// skip the initial command if it is not the first path and is a moveto.
 					if (i > 0
 						&& firstMove
-						&& ShapePath.IsMoveTo(vertexData.command))
+						&& ShapePath.IsMoveTo(vertexData.Command))
 					{
 						continue;
 					}
 
 					// when we hit a stop move on to the next path
-					if (ShapePath.IsStop(vertexData.command))
+					if (ShapePath.IsStop(vertexData.Command))
 					{
 						break;
 					}
@@ -75,8 +75,8 @@ namespace MatterHackers.Agg.VertexSource
 			}
 
 			// and send the actual stop
-			yield return new VertexData(ShapePath.FlagsAndCommand.EndPoly | ShapePath.FlagsAndCommand.FlagClose | ShapePath.FlagsAndCommand.FlagCCW, new Vector2());
-			yield return new VertexData(ShapePath.FlagsAndCommand.Stop, new Vector2());
+			yield return new VertexData(FlagsAndCommand.EndPoly | FlagsAndCommand.FlagClose | FlagsAndCommand.FlagCCW, new Vector2());
+			yield return new VertexData(FlagsAndCommand.Stop, new Vector2());
 		}
 	}
 }

@@ -43,7 +43,7 @@ namespace MatterHackers.Agg.VertexSource
 			m_status = StrokeMath.status_e.initial;
 		}
 
-		public void AddVertex(double x, double y, ShapePath.FlagsAndCommand cmd)
+		public void AddVertex(double x, double y, FlagsAndCommand cmd)
 		{
 			m_status = StrokeMath.status_e.initial;
 			if (ShapePath.IsMoveTo(cmd))
@@ -141,9 +141,9 @@ namespace MatterHackers.Agg.VertexSource
 			m_out_vertex = 0;
 		}
 
-		public ShapePath.FlagsAndCommand Vertex(ref double x, ref double y)
+		public FlagsAndCommand Vertex(ref double x, ref double y)
 		{
-			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.LineTo;
+			FlagsAndCommand cmd = FlagsAndCommand.LineTo;
 			while (!ShapePath.IsStop(cmd))
 			{
 				switch (m_status)
@@ -155,11 +155,11 @@ namespace MatterHackers.Agg.VertexSource
 					case StrokeMath.status_e.ready:
 						if (m_src_vertices.Count < 2 + (m_closed != 0 ? 1 : 0))
 						{
-							cmd = ShapePath.FlagsAndCommand.Stop;
+							cmd = FlagsAndCommand.Stop;
 							break;
 						}
 						m_status = (m_closed != 0) ? StrokeMath.status_e.outline1 : StrokeMath.status_e.cap1;
-						cmd = ShapePath.FlagsAndCommand.MoveTo;
+						cmd = FlagsAndCommand.MoveTo;
 						m_src_vertex = 0;
 						m_out_vertex = 0;
 						break;
@@ -215,7 +215,7 @@ namespace MatterHackers.Agg.VertexSource
 
 					case StrokeMath.status_e.close_first:
 						m_status = StrokeMath.status_e.outline2;
-						cmd = ShapePath.FlagsAndCommand.MoveTo;
+						cmd = FlagsAndCommand.MoveTo;
 						goto case StrokeMath.status_e.outline2;
 
 					case StrokeMath.status_e.outline2:
@@ -255,18 +255,18 @@ namespace MatterHackers.Agg.VertexSource
 
 					case StrokeMath.status_e.end_poly1:
 						m_status = m_prev_status;
-						return ShapePath.FlagsAndCommand.EndPoly
-							| ShapePath.FlagsAndCommand.FlagClose
-							| ShapePath.FlagsAndCommand.FlagCCW;
+						return FlagsAndCommand.EndPoly
+							| FlagsAndCommand.FlagClose
+							| FlagsAndCommand.FlagCCW;
 
 					case StrokeMath.status_e.end_poly2:
 						m_status = m_prev_status;
-						return ShapePath.FlagsAndCommand.EndPoly
-							| ShapePath.FlagsAndCommand.FlagClose
-							| ShapePath.FlagsAndCommand.FlagCW;
+						return FlagsAndCommand.EndPoly
+							| FlagsAndCommand.FlagClose
+							| FlagsAndCommand.FlagCW;
 
 					case StrokeMath.status_e.stop:
-						cmd = ShapePath.FlagsAndCommand.Stop;
+						cmd = FlagsAndCommand.Stop;
 						break;
 				}
 			}

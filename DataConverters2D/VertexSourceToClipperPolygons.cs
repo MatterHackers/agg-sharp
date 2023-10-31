@@ -52,12 +52,12 @@ namespace MatterHackers.DataConverters2D
 				{
 					if (first)
 					{
-						output.Add(point.X / scaling, point.Y / scaling, ShapePath.FlagsAndCommand.MoveTo);
+						output.Add(point.X / scaling, point.Y / scaling, FlagsAndCommand.MoveTo);
 						first = false;
 					}
 					else
 					{
-						output.Add(point.X / scaling, point.Y / scaling, ShapePath.FlagsAndCommand.LineTo);
+						output.Add(point.X / scaling, point.Y / scaling, FlagsAndCommand.LineTo);
 					}
 				}
 
@@ -82,7 +82,7 @@ namespace MatterHackers.DataConverters2D
 
 			VertexStorage output = solution.CreateVertexStorage();
 
-			output.Add(0, 0, ShapePath.FlagsAndCommand.Stop);
+			output.Add(0, 0, FlagsAndCommand.Stop);
 
 			return output;
 		}
@@ -127,11 +127,11 @@ namespace MatterHackers.DataConverters2D
 
 			foreach (VertexData vertexData in vertices)
 			{
-				if (vertexData.command == ShapePath.FlagsAndCommand.MoveTo
+				if (vertexData.Command == FlagsAndCommand.MoveTo
 					|| vertexData.IsLineTo)
 				{
 					// MoveTo always creates a new polygon
-					if (vertexData.command == ShapePath.FlagsAndCommand.MoveTo)
+					if (vertexData.Command == FlagsAndCommand.MoveTo)
 					{
 						currentPoly = null;
 					}
@@ -144,9 +144,9 @@ namespace MatterHackers.DataConverters2D
 					}
 
 					// Add polygon point for LineTo or MoveTo command
-					currentPoly.Add(new IntPoint(vertexData.position.X * scaling, vertexData.position.Y * scaling));
+					currentPoly.Add(new IntPoint(vertexData.Position.X * scaling, vertexData.Position.Y * scaling));
 				}
-				else if (vertexData.command != ShapePath.FlagsAndCommand.FlagNone)
+				else if (vertexData.Command != FlagsAndCommand.FlagNone)
 				{
 					// Clear active, reconstructed on first valid point
 					currentPoly = null;

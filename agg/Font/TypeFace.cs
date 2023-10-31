@@ -394,7 +394,7 @@ namespace MatterHackers.Agg.Font
 			{
 				storage = new VertexStorage();
 
-				var vertexData = source.Vertices().Where(v => v.command != ShapePath.FlagsAndCommand.FlagNone).ToArray();
+				var vertexData = source.Vertices().Where(v => v.Command != FlagsAndCommand.FlagNone).ToArray();
 
 				var previous = default(VertexData);
 
@@ -405,13 +405,13 @@ namespace MatterHackers.Agg.Font
 					// All MoveTo operations should be preceded by ClosePolygon 
 					if (i > 0 &&
 						current.IsMoveTo
-						&& ShapePath.IsVertex(previous.command))
+						&& ShapePath.IsVertex(previous.Command))
 					{
 						storage.ClosePolygon();
 					}
 
 					// Add original VertexData
-					storage.Add(current.position.X, current.position.Y, current.command);
+					storage.Add(current.Position.X, current.Position.Y, current.Command);
 
 					// Hold prior item
 					previous = current;
@@ -426,7 +426,7 @@ namespace MatterHackers.Agg.Font
 				storage.Rewind(pathId);
 			}
 
-			public ShapePath.FlagsAndCommand vertex(out double x, out double y)
+			public FlagsAndCommand vertex(out double x, out double y)
 			{
 				return storage.vertex(out x, out y);
 			}

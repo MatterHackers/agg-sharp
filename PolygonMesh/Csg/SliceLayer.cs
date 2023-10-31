@@ -478,12 +478,12 @@ namespace MatterHackers.PolygonMesh.Csg
 		public static IEnumerable<VertexData> AsVertices(this List<IntPoint> polygon, double outputScale = 1000)
 		{
 			// start at the last point
-			yield return new VertexData(Agg.ShapePath.FlagsAndCommand.MoveTo,
+			yield return new VertexData(Agg.FlagsAndCommand.MoveTo,
 				new Vector2(polygon[polygon.Count - 1].X / outputScale, polygon[polygon.Count - 1].Y / outputScale));
 
 			for (int i = 0; i < polygon.Count; i++)
 			{
-				yield return new VertexData(Agg.ShapePath.FlagsAndCommand.LineTo,
+				yield return new VertexData(Agg.FlagsAndCommand.LineTo,
 					new Vector2(polygon[i].X / outputScale, polygon[i].Y / outputScale));
 			}
 		}

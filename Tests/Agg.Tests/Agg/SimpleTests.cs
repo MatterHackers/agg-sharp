@@ -74,8 +74,8 @@ namespace MatterHackers.Agg.Tests
 				result.MoveNext();
 				var controlVertex = control.Current;
 				var resultVertex = result.Current;
-				Assert.AreEqual(controlVertex.command, resultVertex.command);
-				Assert.AreEqual(controlVertex.position, resultVertex.position);
+				Assert.AreEqual(controlVertex.Command, resultVertex.Command);
+				Assert.AreEqual(controlVertex.Position, resultVertex.Position);
 			}
 		}
 

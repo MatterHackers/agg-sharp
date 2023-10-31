@@ -24,7 +24,7 @@ using MatterHackers.VectorMath;
 //----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
-using FlagsAndCommand = MatterHackers.Agg.ShapePath.FlagsAndCommand;
+using FlagsAndCommand = MatterHackers.Agg.FlagsAndCommand;
 
 namespace MatterHackers.Agg.VertexSource
 {
@@ -117,34 +117,34 @@ namespace MatterHackers.Agg.VertexSource
 		public override IEnumerable<VertexData> Vertices()
 		{
 			VertexData vertexData = new VertexData();
-			vertexData.command = FlagsAndCommand.MoveTo;
-			vertexData.position = new Vector2(originX + radiusX, originY);
+			vertexData.Command = FlagsAndCommand.MoveTo;
+			vertexData.Position = new Vector2(originX + radiusX, originY);
 			yield return vertexData;
 
 			double anglePerStep = MathHelper.Tau / (double)numSteps;
 			double angle = 0;
-			vertexData.command = FlagsAndCommand.LineTo;
+			vertexData.Command = FlagsAndCommand.LineTo;
 			for (int i = 1; i < numSteps; i++)
 			{
 				angle += anglePerStep;
 
 				if (m_cw)
 				{
-					vertexData.position = new Vector2(originX + Math.Cos(MathHelper.Tau - angle) * radiusX,
+					vertexData.Position = new Vector2(originX + Math.Cos(MathHelper.Tau - angle) * radiusX,
 						originY + Math.Sin(MathHelper.Tau - angle) * radiusY);
 					yield return vertexData;
 				}
 				else
 				{
-					vertexData.position = new Vector2(originX + Math.Cos(angle) * radiusX, originY + Math.Sin(angle) * radiusY);
+					vertexData.Position = new Vector2(originX + Math.Cos(angle) * radiusX, originY + Math.Sin(angle) * radiusY);
 					yield return vertexData;
 				}
 			}
 
-			vertexData.position = new Vector2();
-			vertexData.command = FlagsAndCommand.EndPoly | FlagsAndCommand.FlagClose | FlagsAndCommand.FlagCCW;
+			vertexData.Position = new Vector2();
+			vertexData.Command = FlagsAndCommand.EndPoly | FlagsAndCommand.FlagClose | FlagsAndCommand.FlagCCW;
 			yield return vertexData;
-			vertexData.command = FlagsAndCommand.Stop;
+			vertexData.Command = FlagsAndCommand.Stop;
 			yield return vertexData;
 		}
 

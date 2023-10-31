@@ -151,7 +151,7 @@ namespace MatterHackers.Agg.UI
 			m_cur_x = 0.0;
 		}
 
-		public override ShapePath.FlagsAndCommand vertex(out double ox, out double oy)
+		public override FlagsAndCommand vertex(out double ox, out double oy)
 		{
 			RectangleDouble localBounds = new RectangleDouble(10, 10, 100, 100);
 
@@ -162,19 +162,19 @@ namespace MatterHackers.Agg.UI
 				ox = localBounds.Left;
 				oy = localBounds.Bottom;
 				m_cur_x += 1.0 / (localBounds.Right - localBounds.Left);
-				return ShapePath.FlagsAndCommand.MoveTo;
+				return FlagsAndCommand.MoveTo;
 			}
 
 			if (m_cur_x > 1.0)
 			{
-				return ShapePath.FlagsAndCommand.Stop;
+				return FlagsAndCommand.Stop;
 			}
 
 			ox = localBounds.Left + m_cur_x * (localBounds.Right - localBounds.Left);
 			oy = localBounds.Bottom + y(m_cur_x) * (localBounds.Top - localBounds.Bottom);
 
 			m_cur_x += 1.0 / (localBounds.Right - localBounds.Left);
-			return ShapePath.FlagsAndCommand.LineTo;
+			return FlagsAndCommand.LineTo;
 		}
 	};
 }

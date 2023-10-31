@@ -34,7 +34,7 @@ namespace MatterHackers.Agg.VertexSource
             {
                 if (!vertex.IsClose && !vertex.IsStop)
                 {
-                    bounds.ExpandToInclude(vertex.position);
+                    bounds.ExpandToInclude(vertex.Position);
                 }
             }
 
@@ -56,8 +56,8 @@ namespace MatterHackers.Agg.VertexSource
             {
                 if (!vertex.IsClose && !vertex.IsStop)
                 {
-                    totalLength += (lastVertex - vertex.position).Length;
-                    lastVertex = vertex.position;
+                    totalLength += (lastVertex - vertex.Position).Length;
+                    lastVertex = vertex.Position;
                 }
             }
 
@@ -71,18 +71,18 @@ namespace MatterHackers.Agg.VertexSource
             {
                 if (!vertex.IsClose && !vertex.IsStop)
                 {
-                    double segmentLength = (previousVertex - vertex.position).Length;
+                    double segmentLength = (previousVertex - vertex.Position).Length;
                     if (accumulatedLength + segmentLength >= targetLength)
                     {
                         // Interpolate between the two points to get the exact position.
                         double remainingLength = targetLength - accumulatedLength;
                         double segmentRatio = remainingLength / segmentLength;
 
-                        return Vector2.Lerp(previousVertex, vertex.position, segmentRatio);
+                        return Vector2.Lerp(previousVertex, vertex.Position, segmentRatio);
                     }
 
                     accumulatedLength += segmentLength;
-                    previousVertex = vertex.position;
+                    previousVertex = vertex.Position;
                 }
             }
 
@@ -152,17 +152,17 @@ namespace MatterHackers.Agg.VertexSource
                     var vertex = vertices[i];
                     var nextVertex = vertices[(i + 1) % vertices.Length];
                     var nextNextVertex = vertices[(i + 2) % vertices.Length];
-                    if (vertex.command == ShapePath.FlagsAndCommand.Curve4)
+                    if (vertex.Command == FlagsAndCommand.Curve4)
                     {
                         // render the control lines
-                        graphics2D.Line(vertex.position, nextVertex.position, handleLineColor);
-                        graphics2D.Line(vertex.position, nextNextVertex.position, handleLineColor);
+                        graphics2D.Line(vertex.Position, nextVertex.Position, handleLineColor);
+                        graphics2D.Line(vertex.Position, nextNextVertex.Position, handleLineColor);
 
                         // render the control points
-                        graphics2D.Render(new Ellipse(nextVertex.position, controlSize), handleColor);
-                        graphics2D.Render(new Ellipse(nextNextVertex.position, controlSize), handleColor);
+                        graphics2D.Render(new Ellipse(nextVertex.Position, controlSize), handleColor);
+                        graphics2D.Render(new Ellipse(nextNextVertex.Position, controlSize), handleColor);
 
-                        graphics2D.Render(new Ellipse(vertex.position, controlSize), lineColor);
+                        graphics2D.Render(new Ellipse(vertex.Position, controlSize), lineColor);
 
                         i += 2;
                     }
@@ -187,11 +187,11 @@ namespace MatterHackers.Agg.VertexSource
                     && vertex.IsVertex 
                     && vertex.IsLineTo)
                 {
-                    if ((y >= previousVertex.Value.Y && y <= vertex.position.Y)
-                        || (y <= previousVertex.Value.Y && y >= vertex.position.Y))
+                    if ((y >= previousVertex.Value.Y && y <= vertex.Position.Y)
+                        || (y <= previousVertex.Value.Y && y >= vertex.Position.Y))
                     {
                         // The y value lies between the y values of the current segment
-                        if (previousVertex.Value.Y == vertex.position.Y)
+                        if (previousVertex.Value.Y == vertex.Position.Y)
                         {
                             // If the segment is horizontal, just return any x as all x's will satisfy
                             return previousVertex.Value.X;
@@ -199,30 +199,30 @@ namespace MatterHackers.Agg.VertexSource
 
                         // Interpolate to find the x value for the given
                         var deltaFromPrevious = y - previousVertex.Value.Y;
-                        var segmentYLength = vertex.position.Y - previousVertex.Value.Y;
+                        var segmentYLength = vertex.Position.Y - previousVertex.Value.Y;
                         double ratioOfLength = deltaFromPrevious / segmentYLength;
-                        var segmentXLength = vertex.position.X - previousVertex.Value.X;
+                        var segmentXLength = vertex.Position.X - previousVertex.Value.X;
                         var x = previousVertex.Value.X + ratioOfLength * segmentXLength;
 
                         return x;
                     }
-                    else if (y > vertex.position.Y && vertex.position.Y > highestYBelow)
+                    else if (y > vertex.Position.Y && vertex.Position.Y > highestYBelow)
                     {
                         // Update the below bound
-                        highestYBelow = vertex.position.Y;
-                        belowBoundX = vertex.position.X;
+                        highestYBelow = vertex.Position.Y;
+                        belowBoundX = vertex.Position.X;
                     }
-                    else if (y < vertex.position.Y && vertex.position.Y < lowestYAbove)
+                    else if (y < vertex.Position.Y && vertex.Position.Y < lowestYAbove)
                     {
                         // Update the above bound
-                        lowestYAbove = vertex.position.Y;
-                        aboveBoundX = vertex.position.X;
+                        lowestYAbove = vertex.Position.Y;
+                        aboveBoundX = vertex.Position.X;
                     }
                 }
 
                 if (!vertex.IsClose && !vertex.IsStop)
                 {
-                    previousVertex = vertex.position;
+                    previousVertex = vertex.Position;
                 }
             }
 
@@ -261,7 +261,7 @@ namespace MatterHackers.Agg.VertexSource
             {
                 var position = new Vector3(vertex.X, vertex.Y, 0);
                 position = position.Transform(matrix);
-                output.Add(position.X, position.Y, vertex.command);
+                output.Add(position.X, position.Y, vertex.Command);
             }
 
             return output;

@@ -62,11 +62,11 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				VertexData transformedVertex = vertexData;
 
-				if (ShapePath.IsVertex(transformedVertex.command))
+				if (ShapePath.IsVertex(transformedVertex.Command))
 				{
-					var position = transformedVertex.position;
+					var position = transformedVertex.Position;
 					transformToApply.Transform(ref position.X, ref position.Y);
-					transformedVertex.position = position;
+					transformedVertex.Position = position;
 				}
 
 				yield return transformedVertex;
@@ -78,9 +78,9 @@ namespace MatterHackers.Agg.VertexSource
 			VertexSource.Rewind(path_id);
 		}
 
-		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
+		public FlagsAndCommand vertex(out double x, out double y)
 		{
-			ShapePath.FlagsAndCommand cmd = VertexSource.vertex(out x, out y);
+			FlagsAndCommand cmd = VertexSource.vertex(out x, out y);
 
 			if (ShapePath.IsVertex(cmd))
 			{

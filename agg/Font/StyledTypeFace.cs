@@ -40,7 +40,7 @@ namespace MatterHackers.Agg.Font
 			// return all the data for the glyph
 			foreach (VertexData vertexData in glyph.Vertices())
 			{
-				if (ShapePath.IsStop(vertexData.command))
+				if (ShapePath.IsStop(vertexData.Command))
 				{
 					break;
 				}

@@ -45,7 +45,7 @@ namespace MatterHackers.Agg.UI
 					Rewind(0);
 					double x;
 					double y;
-					ShapePath.FlagsAndCommand cmd;
+					FlagsAndCommand cmd;
 					int numPoint = 0;
 					while (!ShapePath.IsStop(cmd = vertex(out x, out y)))
 					{
@@ -86,7 +86,7 @@ namespace MatterHackers.Agg.UI
 
 		public abstract void Rewind(int path_id);
 
-		public abstract ShapePath.FlagsAndCommand vertex(out double x, out double y);
+		public abstract FlagsAndCommand vertex(out double x, out double y);
 
 		public virtual IColorType color(int i)
 		{

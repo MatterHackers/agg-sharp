@@ -23,6 +23,6 @@ namespace MatterHackers.Agg
 	{
 		void Clear();
 
-		void add_vertex(double x, double y, ShapePath.FlagsAndCommand unknown);
+		void add_vertex(double x, double y, FlagsAndCommand unknown);
 	};
 }

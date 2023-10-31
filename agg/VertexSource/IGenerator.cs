@@ -43,8 +43,8 @@ namespace MatterHackers.Agg.VertexSource
 
 		void RemoveAll();
 		void Rewind(int path_id);
-		void AddVertex(double x, double y, ShapePath.FlagsAndCommand unknown);
+		void AddVertex(double x, double y, FlagsAndCommand unknown);
 
-		ShapePath.FlagsAndCommand Vertex(ref double x, ref double y);
+		FlagsAndCommand Vertex(ref double x, ref double y);
 	};
 }

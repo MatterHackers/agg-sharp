@@ -550,7 +550,7 @@ namespace MatterHackers.Agg
 			m_src_vertices.Clear();
 		}
 
-		public void add_vertex(double x, double y, ShapePath.FlagsAndCommand cmd)
+		public void add_vertex(double x, double y, FlagsAndCommand cmd)
 		{
 			if (ShapePath.IsMoveTo(cmd))
 			{
@@ -584,7 +584,7 @@ namespace MatterHackers.Agg
 			double x;
 			double y;
 
-			ShapePath.FlagsAndCommand cmd;
+			FlagsAndCommand cmd;
 			vs.Rewind(path_id);
 
 			//int index = 0;
