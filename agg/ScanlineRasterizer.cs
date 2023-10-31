@@ -320,7 +320,7 @@ namespace MatterHackers.Agg
 				reset();
 			}
 
-			while (!ShapePath.IsStop(PathAndFlags = vs.vertex(out x, out y)))
+			while (!ShapePath.IsStop(PathAndFlags = vs.Vertex(out x, out y)))
 			{
 				AddVertex(new VertexData(PathAndFlags, new Vector2(x, y)));
 			}

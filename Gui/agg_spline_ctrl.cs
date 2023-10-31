@@ -394,7 +394,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override FlagsAndCommand vertex(out double x, out double y)
+		public override FlagsAndCommand Vertex(out double x, out double y)
 		{
 			x = 0;
 			y = 0;
@@ -418,12 +418,12 @@ namespace MatterHackers.Agg.UI
 					break;
 
 				case 2:
-					cmd = m_curve_poly.vertex(out x, out y);
+					cmd = m_curve_poly.Vertex(out x, out y);
 					break;
 
 				case 3:
 				case 4:
-					cmd = m_curve_pnt.vertex(out x, out y);
+					cmd = m_curve_pnt.Vertex(out x, out y);
 					break;
 
 				default:

@@ -174,7 +174,7 @@ namespace MatterHackers.Agg.Tests
 
 			do
 			{
-				curCommand = glyphForCharacter.vertex(out double x, out double y);
+				curCommand = glyphForCharacter.Vertex(out double x, out double y);
 
 				if (curCommand != FlagsAndCommand.Stop
 					&& !ShapePath.IsClose(curCommand))

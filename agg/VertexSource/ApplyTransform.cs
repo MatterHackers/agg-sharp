@@ -78,9 +78,9 @@ namespace MatterHackers.Agg.VertexSource
 			VertexSource.Rewind(path_id);
 		}
 
-		public FlagsAndCommand vertex(out double x, out double y)
+		public FlagsAndCommand Vertex(out double x, out double y)
 		{
-			FlagsAndCommand cmd = VertexSource.vertex(out x, out y);
+			FlagsAndCommand cmd = VertexSource.Vertex(out x, out y);
 
 			if (ShapePath.IsVertex(cmd))
 			{

@@ -72,7 +72,7 @@ namespace MatterHackers.Agg.UI
 			m_vertex = 0;
 		}
 
-		public FlagsAndCommand vertex(out double x, out double y)
+		public FlagsAndCommand Vertex(out double x, out double y)
 		{
 			x = 0;
 			y = 0;
@@ -271,13 +271,13 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
-		public override FlagsAndCommand vertex(out double x, out double y)
+		public override FlagsAndCommand Vertex(out double x, out double y)
 		{
 			FlagsAndCommand cmd = FlagsAndCommand.Stop;
 			double r = m_point_radius;
 			if (m_status == 0)
 			{
-				cmd = m_stroke.vertex(out x, out y);
+				cmd = m_stroke.Vertex(out x, out y);
 				if (!ShapePath.IsStop(cmd))
 				{
 					ParentToChildTransform.Transform(ref x, ref y);
@@ -287,7 +287,7 @@ namespace MatterHackers.Agg.UI
 				m_ellipse.init(GetXN(m_status), GetYN(m_status), r, r, 32);
 				++m_status;
 			}
-			cmd = m_ellipse.vertex(out x, out y);
+			cmd = m_ellipse.Vertex(out x, out y);
 			if (!ShapePath.IsStop(cmd))
 			{
 				ParentToChildTransform.Transform(ref x, ref y);
@@ -297,7 +297,7 @@ namespace MatterHackers.Agg.UI
 			if (m_node >= 0 && m_node == (int)(m_status)) r *= 1.2;
 			m_ellipse.init(GetXN(m_status), GetYN(m_status), r, r, 32);
 			++m_status;
-			cmd = m_ellipse.vertex(out x, out y);
+			cmd = m_ellipse.Vertex(out x, out y);
 			if (!ShapePath.IsStop(cmd))
 			{
 				ParentToChildTransform.Transform(ref x, ref y);

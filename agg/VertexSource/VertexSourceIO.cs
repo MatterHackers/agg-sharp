@@ -32,11 +32,11 @@ namespace MatterHackers.Agg.VertexSource
 					vertexSource.Rewind(0);
 					double x;
 					double y;
-					FlagsAndCommand flagsAndCommand = vertexSource.vertex(out x, out y);
+					FlagsAndCommand flagsAndCommand = vertexSource.Vertex(out x, out y);
 					do
 					{
 						outFile.WriteLine("{0}, {1}, {2}", x, y, flagsAndCommand.ToString());
-						flagsAndCommand = vertexSource.vertex(out x, out y);
+						flagsAndCommand = vertexSource.Vertex(out x, out y);
 					}
 					while (flagsAndCommand != FlagsAndCommand.Stop);
 				}

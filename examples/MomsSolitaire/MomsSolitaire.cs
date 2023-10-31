@@ -227,7 +227,7 @@ namespace MomsSolitaire
 				}
 			}
 
-			path.ArrangeOrientationsAllPaths(MatterHackers.Agg.ShapePath.FlagsAndCommand.FlagCW);
+			path.ArrangeOrientationsAllPaths(MatterHackers.Agg.FlagsAndCommand.FlagCW);
 			VertexSourceApplyTransform flipped = new VertexSourceApplyTransform(path, Affine.NewScaling(1, -1));
 			return flipped;
 		}

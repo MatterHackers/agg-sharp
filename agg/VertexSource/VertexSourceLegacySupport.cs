@@ -30,7 +30,7 @@ namespace MatterHackers.Agg.VertexSource
             currentEnumerator.MoveNext();
         }
 
-        public FlagsAndCommand vertex(out double x, out double y)
+        public FlagsAndCommand Vertex(out double x, out double y)
         {
             if (currentEnumerator == null)
             {

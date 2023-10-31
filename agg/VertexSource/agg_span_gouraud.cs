@@ -122,7 +122,7 @@ namespace MatterHackers.Agg.VertexSource
 			m_vertex = 0;
 		}
 
-		public FlagsAndCommand vertex(out double x, out double y)
+		public FlagsAndCommand Vertex(out double x, out double y)
 		{
 			x = m_x[m_vertex];
 			y = m_y[m_vertex];

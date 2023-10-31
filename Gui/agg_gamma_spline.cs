@@ -151,7 +151,7 @@ namespace MatterHackers.Agg.UI
 			m_cur_x = 0.0;
 		}
 
-		public override FlagsAndCommand vertex(out double ox, out double oy)
+		public override FlagsAndCommand Vertex(out double ox, out double oy)
 		{
 			RectangleDouble localBounds = new RectangleDouble(10, 10, 100, 100);
 

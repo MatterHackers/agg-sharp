@@ -426,9 +426,9 @@ namespace MatterHackers.Agg.Font
 				storage.Rewind(pathId);
 			}
 
-			public FlagsAndCommand vertex(out double x, out double y)
+			public FlagsAndCommand Vertex(out double x, out double y)
 			{
-				return storage.vertex(out x, out y);
+				return storage.Vertex(out x, out y);
 			}
 
 			public IEnumerable<VertexData> Vertices()

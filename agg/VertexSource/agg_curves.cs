@@ -1261,7 +1261,7 @@ namespace MatterHackers.Agg.VertexSource
 			}
 		}
 
-		public FlagsAndCommand vertex(out double x, out double y)
+		public FlagsAndCommand Vertex(out double x, out double y)
 		{
 			if (m_approximation_method == Curves.CurveApproximationMethod.curve_inc)
 			{
@@ -1390,7 +1390,7 @@ namespace MatterHackers.Agg.VertexSource
 			}
 		}
 
-		public FlagsAndCommand vertex(out double x, out double y)
+		public FlagsAndCommand Vertex(out double x, out double y)
 		{
 			if (m_approximation_method == Curves.CurveApproximationMethod.curve_inc)
 			{

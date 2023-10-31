@@ -591,7 +591,7 @@ namespace MatterHackers.Agg
 			//int start = 851;
 			//int num = 5;
 
-			while (!ShapePath.IsStop(cmd = vs.vertex(out x, out y)))
+			while (!ShapePath.IsStop(cmd = vs.Vertex(out x, out y)))
 			{
 				//index++;
 				//if (index == 0

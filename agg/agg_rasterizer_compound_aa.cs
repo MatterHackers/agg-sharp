@@ -446,7 +446,7 @@ namespace MatterHackers.Agg
 			FlagsAndCommand cmd;
 			vs.Rewind(path_id);
 			if (rasterizerCellsAa.sorted()) reset();
-			while (!ShapePath.IsStop(cmd = vs.vertex(out x, out y)))
+			while (!ShapePath.IsStop(cmd = vs.Vertex(out x, out y)))
 			{
 				add_vertex(x, y, cmd);
 			}

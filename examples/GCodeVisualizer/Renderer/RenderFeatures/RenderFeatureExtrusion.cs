@@ -148,8 +148,8 @@ namespace MatterHackers.GCodeVisualizer
 					Vector3Float start = this.GetStart(renderInfo);
 					Vector3Float end = this.GetEnd(renderInfo);
 
-					pathStorage.Add(start.X, start.Y, ShapePath.FlagsAndCommand.MoveTo);
-					pathStorage.Add(end.X, end.Y, ShapePath.FlagsAndCommand.LineTo);
+					pathStorage.Add(start.X, start.Y, FlagsAndCommand.MoveTo);
+					pathStorage.Add(end.X, end.Y, FlagsAndCommand.LineTo);
 
 					graphics2D.Render(stroke, extrusionColor);
 				}

@@ -333,7 +333,7 @@ namespace MatterHackers.Agg.VertexSource
 			control.Rewind(0);
 			double controlX;
 			double controlY;
-			FlagsAndCommand controlFlagsAndCommand = control.vertex(out controlX, out controlY);
+			FlagsAndCommand controlFlagsAndCommand = control.Vertex(out controlX, out controlY);
 
 			int index = 0;
 			foreach (VertexData vertexData in test.Vertices())
@@ -344,7 +344,7 @@ namespace MatterHackers.Agg.VertexSource
 				{
 					return false;
 				}
-				controlFlagsAndCommand = control.vertex(out controlX, out controlY);
+				controlFlagsAndCommand = control.Vertex(out controlX, out controlY);
 				index++;
 			}
 
@@ -361,20 +361,20 @@ namespace MatterHackers.Agg.VertexSource
 			control.Rewind(0);
 			double controlX;
 			double controlY;
-			FlagsAndCommand controlFlagsAndCommand = control.vertex(out controlX, out controlY);
+			FlagsAndCommand controlFlagsAndCommand = control.Vertex(out controlX, out controlY);
 
 			test.Rewind(0);
 			double testX;
 			double testY;
-			FlagsAndCommand otherFlagsAndCommand = test.vertex(out testX, out testY);
+			FlagsAndCommand otherFlagsAndCommand = test.Vertex(out testX, out testY);
 
 			int index = 1;
 			if (controlFlagsAndCommand == otherFlagsAndCommand && controlX == testX && Util.is_equal_eps(controlY, testY, .000000001))
 			{
 				while (controlFlagsAndCommand != FlagsAndCommand.Stop)
 				{
-					controlFlagsAndCommand = control.vertex(out controlX, out controlY);
-					otherFlagsAndCommand = test.vertex(out testX, out testY);
+					controlFlagsAndCommand = control.Vertex(out controlX, out controlY);
+					otherFlagsAndCommand = test.Vertex(out testX, out testY);
 					if (controlFlagsAndCommand != otherFlagsAndCommand
 						|| controlX < testX - maxError || controlX > testX + maxError
 						|| controlY < testY - maxError || controlY > testY + maxError)
@@ -498,7 +498,7 @@ namespace MatterHackers.Agg.VertexSource
 			double x, y;
 			FlagsAndCommand PathAndFlags;
 			vs.Rewind(path_id);
-			while (!ShapePath.IsStop(PathAndFlags = vs.vertex(out x, out y)))
+			while (!ShapePath.IsStop(PathAndFlags = vs.Vertex(out x, out y)))
 			{
 				vertexDataManager.AddVertex(x, y, PathAndFlags);
 			}
@@ -751,7 +751,7 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			double x, y;
 			vs.Rewind(path_id);
-			FlagsAndCommand PathAndFlags = vs.vertex(out x, out y);
+			FlagsAndCommand PathAndFlags = vs.Vertex(out x, out y);
 			if (!ShapePath.IsStop(PathAndFlags))
 			{
 				if (ShapePath.IsVertex(PathAndFlags))
@@ -779,7 +779,7 @@ namespace MatterHackers.Agg.VertexSource
 						vertexDataManager.AddVertex(x, y, PathAndFlags);
 					}
 				}
-				while (!ShapePath.IsStop(PathAndFlags = vs.vertex(out x, out y)))
+				while (!ShapePath.IsStop(PathAndFlags = vs.Vertex(out x, out y)))
 				{
 					vertexDataManager.AddVertex(x, y, ShapePath.IsMoveTo(PathAndFlags) ?
 													FlagsAndCommand.LineTo :
@@ -984,7 +984,7 @@ namespace MatterHackers.Agg.VertexSource
 			return vertexDataManager.Vertex(index, out x, out y);
 		}
 
-		public FlagsAndCommand vertex(out double x, out double y)
+		public FlagsAndCommand Vertex(out double x, out double y)
 		{
 			if (iteratorIndex >= vertexDataManager.TotalVertices())
 			{

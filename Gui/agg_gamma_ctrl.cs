@@ -462,7 +462,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override FlagsAndCommand vertex(out double x, out double y)
+		public override FlagsAndCommand Vertex(out double x, out double y)
 		{
 			x = 0;
 			y = 0;
@@ -470,7 +470,7 @@ namespace MatterHackers.Agg.UI
 			switch (m_idx)
 			{
 				case 0:
-					cmd = m_curve_poly.vertex(out x, out y);
+					cmd = m_curve_poly.Vertex(out x, out y);
 					break;
 
 				case 1:
@@ -487,7 +487,7 @@ namespace MatterHackers.Agg.UI
 
 				case 2:                 // Point1
 				case 3:                 // Point2
-					cmd = m_ellipse.vertex(out x, out y);
+					cmd = m_ellipse.Vertex(out x, out y);
 					break;
 
 				default:

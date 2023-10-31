@@ -296,7 +296,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override FlagsAndCommand vertex(out double x, out double y)
+		public override FlagsAndCommand Vertex(out double x, out double y)
 		{
 			x = 0;
 			y = 0;
@@ -306,7 +306,7 @@ namespace MatterHackers.Agg.UI
 				case 0:
 				case 1:
 				case 2:
-					cmd = m_stroke.vertex(out x, out y);
+					cmd = m_stroke.Vertex(out x, out y);
 					break;
 
 				case 3:
@@ -314,7 +314,7 @@ namespace MatterHackers.Agg.UI
 				case 5:
 				case 6:
 				case 7:
-					cmd = m_ellipse.vertex(out x, out y);
+					cmd = m_ellipse.Vertex(out x, out y);
 					break;
 			}
 
@@ -573,7 +573,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override FlagsAndCommand vertex(out double x, out double y)
+		public override FlagsAndCommand Vertex(out double x, out double y)
 		{
 			x = 0;
 			y = 0;
@@ -583,14 +583,14 @@ namespace MatterHackers.Agg.UI
 				case 0:
 				case 1:
 				case 2:
-					cmd = m_stroke.vertex(out x, out y);
+					cmd = m_stroke.Vertex(out x, out y);
 					break;
 
 				case 3:
 				case 4:
 				case 5:
 				case 6:
-					cmd = m_ellipse.vertex(out x, out y);
+					cmd = m_ellipse.Vertex(out x, out y);
 					break;
 			}
 

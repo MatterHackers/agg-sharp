@@ -97,7 +97,7 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				double x;
 				double y;
-				command = vertex(out x, out y);
+				command = Vertex(out x, out y);
 				yield return new VertexData(command, new Vector2(x, y));
 			} while (command != FlagsAndCommand.Stop);
 		}
@@ -108,7 +108,7 @@ namespace MatterHackers.Agg.VertexSource
 			m_status = status.initial;
 		}
 
-		public FlagsAndCommand vertex(out double x, out double y)
+		public FlagsAndCommand Vertex(out double x, out double y)
 		{
 			x = 0;
 			y = 0;
@@ -120,7 +120,7 @@ namespace MatterHackers.Agg.VertexSource
 				{
 					case status.initial:
 						markers.Clear();
-						m_last_cmd = VertexSource.vertex(out m_start_x, out m_start_y);
+						m_last_cmd = VertexSource.Vertex(out m_start_x, out m_start_y);
 						m_status = status.accumulate;
 						goto case status.accumulate;
 
@@ -136,7 +136,7 @@ namespace MatterHackers.Agg.VertexSource
 
 						for (; ; )
 						{
-							command = VertexSource.vertex(out x, out y);
+							command = VertexSource.Vertex(out x, out y);
 							//DebugFile.Print("x=" + x.ToString() + " y=" + y.ToString() + "\n");
 							if (ShapePath.IsVertex(command))
 							{

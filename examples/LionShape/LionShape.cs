@@ -184,7 +184,7 @@ namespace MatterHackers.Agg
 					if (currentPath != null)
 					{
 						currentPath.VertexStorage.ClosePolygon();
-						currentPath.VertexStorage.ArrangeOrientationsAllPaths(ShapePath.FlagsAndCommand.FlagCW);
+						currentPath.VertexStorage.ArrangeOrientationsAllPaths(FlagsAndCommand.FlagCW);
 					}
 
 					currentPath = new ColoredVertexStorage()
@@ -226,7 +226,7 @@ namespace MatterHackers.Agg
 			}
 
 			currentPath.VertexStorage.ClosePolygon();
-			currentPath.VertexStorage.ArrangeOrientationsAllPaths(ShapePath.FlagsAndCommand.FlagCW);
+			currentPath.VertexStorage.ArrangeOrientationsAllPaths(FlagsAndCommand.FlagCW);
 
 			return paths;
 		}

@@ -27,7 +27,7 @@ namespace MatterHackers.Agg
 
 			VertexStorage output = VertexSourceToClipperPolygons.CreateVertexStorage(intersectedPolys);
 
-			output.Add(0, 0, ShapePath.FlagsAndCommand.Stop);
+			output.Add(0, 0, FlagsAndCommand.Stop);
 
 			return output;
 		}
@@ -152,7 +152,7 @@ namespace MatterHackers.Agg
 						ps1.MoveTo(x + 220 - 50, y + 222);
 						ps1.LineTo(x + 265 - 50, y + 331);
 						ps1.LineTo(x + 363 - 50, y + 249);
-						ps1.ClosePolygon(ShapePath.FlagsAndCommand.FlagCCW);
+						ps1.ClosePolygon(FlagsAndCommand.FlagCCW);
 
 						ps2.MoveTo(100 + 32, 100 + 77);
 						ps2.LineTo(100 + 473, 100 + 263);
@@ -465,13 +465,13 @@ namespace MatterHackers.Agg
 			m_start = true;
 		}
 
-		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
+		public FlagsAndCommand Vertex(out double x, out double y)
 		{
 			x = 0;
 			y = 0;
 			if (m_curr_r > m_r2)
 			{
-				return ShapePath.FlagsAndCommand.Stop;
+				return FlagsAndCommand.Stop;
 			}
 
 			x = m_x + Math.Cos(m_angle) * m_curr_r;
@@ -481,9 +481,9 @@ namespace MatterHackers.Agg
 			if (m_start)
 			{
 				m_start = false;
-				return ShapePath.FlagsAndCommand.MoveTo;
+				return FlagsAndCommand.MoveTo;
 			}
-			return ShapePath.FlagsAndCommand.LineTo;
+			return FlagsAndCommand.LineTo;
 		}
 	}
 
@@ -499,12 +499,12 @@ namespace MatterHackers.Agg
 
 			foreach (VertexData vertexData in src.Vertices())
 			{
-				if (ShapePath.IsVertex(vertexData.command))
+				if (ShapePath.IsVertex(vertexData.Command))
 				{
 					++m_points;
 				}
 
-				if (ShapePath.IsMoveTo(vertexData.command))
+				if (ShapePath.IsMoveTo(vertexData.Command))
 				{
 					++m_contours;
 				}

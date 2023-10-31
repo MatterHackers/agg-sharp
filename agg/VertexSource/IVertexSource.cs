@@ -24,7 +24,7 @@ namespace MatterHackers.Agg.VertexSource
     {
         void Rewind(int pathId = 0);
 
-        FlagsAndCommand vertex(out double x, out double y);
+        FlagsAndCommand Vertex(out double x, out double y);
 
         IEnumerable<VertexData> Vertices();
     }
