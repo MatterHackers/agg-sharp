@@ -143,6 +143,8 @@ namespace MatterHackers.Agg.VertexSource
                     handleColor = lineColor;
                 }
 
+                var controlSize = width * 3;
+
                 // iterate the original source looking for curve vertices
                 var vertices = source.Vertices().ToArray();
                 for (int i = 0; i< vertices.Length; i++)
@@ -157,8 +159,10 @@ namespace MatterHackers.Agg.VertexSource
                         graphics2D.Line(vertex.position, nextNextVertex.position, handleLineColor);
 
                         // render the control points
-                        graphics2D.Render(new Ellipse(nextVertex.position, 3), handleColor);
-                        graphics2D.Render(new Ellipse(nextNextVertex.position, 3), handleColor);
+                        graphics2D.Render(new Ellipse(nextVertex.position, controlSize), handleColor);
+                        graphics2D.Render(new Ellipse(nextNextVertex.position, controlSize), handleColor);
+
+                        graphics2D.Render(new Ellipse(vertex.position, controlSize), lineColor);
 
                         i += 2;
                     }
@@ -236,6 +240,16 @@ namespace MatterHackers.Agg.VertexSource
 
             // If no segment is found containing the y value, throw an exception or handle accordingly
             throw new InvalidOperationException($"No x value found for y = {y} in the given path.");
+        }
+
+        public static ulong GetLongHashCode(this IVertexSource source, ulong hash = 14695981039346656037)
+        {
+            foreach (var vertex in source.Vertices())
+            {
+                hash = vertex.GetLongHashCode(hash);
+            }
+
+            return hash;
         }
 
         public static IVertexSource Transform(this IVertexSource source, Matrix4X4 matrix)

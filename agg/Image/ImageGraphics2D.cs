@@ -352,7 +352,13 @@ namespace MatterHackers.Agg
 			RectangleDouble clippingRect = GetClippingRect();
 			var clippingRectInt = new RectangleInt((int)clippingRect.Left, (int)clippingRect.Bottom, (int)clippingRect.Right, (int)clippingRect.Top);
 
-			if (DestImage != null)
+            if(clippingRect.Width == 0
+				|| clippingRect.Height == 0)
+			{
+                return;
+            }
+
+            if (DestImage != null)
 			{
 				var color = iColor.ToColor();
 				byte[] buffer = DestImage.GetBuffer();

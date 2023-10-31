@@ -63,5 +63,13 @@ namespace MatterHackers.Agg.VertexSource
         {
             return $"{command}:{position}";
         }
+
+        public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+        {
+            hash = position.GetLongHashCode(hash);
+            hash = hash * 1099511628211 + (ulong)command;
+
+            return hash;
+        }
     }
 }
