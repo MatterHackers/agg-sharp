@@ -63,6 +63,11 @@ namespace MatterHackers.Agg.VertexSource
 
         public override string ToString()
         {
+            if (Hint != CommandHint.None)
+            {
+                return $"{Command}:{Position} ({Hint})";
+            }
+            
             return $"{Command}:{Position}";
         }
 

@@ -599,32 +599,32 @@ namespace MatterHackers.Agg.VertexSource
 			Curve4(controlFromPrev.X, controlFromPrev.Y, controlToPoint.X, controlToPoint.Y, point.X, point.Y);
 		}
 
-        public void Curve4(double x_ctrl2, double y_ctrl2, double x_to, double y_to)
+        public void Curve4(double controlToPointX, double controlToPointY, double pointX, double pointY)
 		{
-			double x0;
-			double y0;
-			if (ShapePath.IsVertex(LastVertex(out x0, out y0)))
+			double lastX;
+			double lastY;
+			if (ShapePath.IsVertex(LastVertex(out lastX, out lastY)))
 			{
-				double x_ctrl1;
-				double y_ctrl1;
-				FlagsAndCommand prevVertex = PrevVertex(out x_ctrl1, out y_ctrl1);
+				double controlFromPrevX;
+				double controlFromPrevY;
+				FlagsAndCommand prevVertex = PrevVertex(out controlFromPrevX, out controlFromPrevY);
 				if (ShapePath.IsCurve(prevVertex))
 				{
-					x_ctrl1 = x0 + x0 - x_ctrl1;
-					y_ctrl1 = y0 + y0 - y_ctrl1;
+					controlFromPrevX = lastX + lastX - controlFromPrevX;
+					controlFromPrevY = lastY + lastY - controlFromPrevY;
 				}
 				else
 				{
-					x_ctrl1 = x0;
-					y_ctrl1 = y0;
+					controlFromPrevX = lastX;
+					controlFromPrevY = lastY;
 				}
-				Curve4(x_ctrl1, y_ctrl1, x_ctrl2, y_ctrl2, x_to, y_to);
+				Curve4(controlFromPrevX, controlFromPrevY, controlToPointX, controlToPointY, pointX, pointY);
 			}
 		}
 
-		public void Curve4(Vector2 control2, Vector2 point)
+		public void Curve4(Vector2 controlToPoint, Vector2 point)
 		{
-            Curve4(control2.X, control2.Y, point.X, point.Y);
+            Curve4(controlToPoint.X, controlToPoint.Y, point.X, point.Y);
         }
 
 		public void Curve4Rel(double dx_ctrl1, double dy_ctrl1,
@@ -1006,10 +1006,7 @@ namespace MatterHackers.Agg.VertexSource
 			int count = vertexDataManager.TotalVertices();
 			for (int i = 0; i < count; i++)
 			{
-				double x = 0;
-				double y = 0;
-				FlagsAndCommand command = vertexDataManager.Vertex(i, out x, out y);
-				yield return new VertexData(command, new Vector2(x, y));
+				yield return vertexDataManager[i];
 			}
 
 			yield return new VertexData(FlagsAndCommand.Stop, new Vector2(0, 0));

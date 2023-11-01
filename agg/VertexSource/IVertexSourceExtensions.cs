@@ -125,12 +125,8 @@ namespace MatterHackers.Agg.VertexSource
                 return;
             }
 
-            // flaten the curve
-            var flattenedCurve = new FlattenCurves(source);
-            var stroked = new Stroke(flattenedCurve, width);
-
-            // render the curve
-            graphics2D.Render(stroked, lineColor);
+            // render the flatened curve
+            graphics2D.Render(new Stroke(new FlattenCurves(source), width), lineColor);
 
             if (showHandles)
             {
@@ -147,24 +143,36 @@ namespace MatterHackers.Agg.VertexSource
 
                 // iterate the original source looking for curve vertices
                 var vertices = source.Vertices().ToArray();
-                for (int i = 0; i< vertices.Length; i++)
+                for (int i = 0; i < vertices.Length; i++)
                 {
                     var vertex = vertices[i];
+                    var prevVertex = vertices[(i - 1 + vertices.Length) % vertices.Length];
                     var nextVertex = vertices[(i + 1) % vertices.Length];
-                    var nextNextVertex = vertices[(i + 2) % vertices.Length];
                     if (vertex.Command == FlagsAndCommand.Curve4)
                     {
-                        // render the control lines
-                        graphics2D.Line(vertex.Position, nextVertex.Position, handleLineColor);
-                        graphics2D.Line(vertex.Position, nextNextVertex.Position, handleLineColor);
+                        switch (vertex.Hint)
+                        {
+                            case CommandHint.C4ControlFromPrev:
+                                // draw the line from the previous vertex to the control point
+                                graphics2D.Line(prevVertex.Position, vertex.Position, lineColor);
+                                // draw the control point for the previous vertex
+                                graphics2D.Render(new Ellipse(prevVertex.Position, controlSize), lineColor);
+                                //  draw the control point for the current vertex
+                                graphics2D.Render(new Ellipse(vertex.Position, controlSize), handleColor);
+                                break;
 
-                        // render the control points
-                        graphics2D.Render(new Ellipse(nextVertex.Position, controlSize), handleColor);
-                        graphics2D.Render(new Ellipse(nextNextVertex.Position, controlSize), handleColor);
+                            case CommandHint.C4ControlToPoint:
+                                // draw the line from the current vertex to the control point
+                                graphics2D.Line(vertex.Position, nextVertex.Position, lineColor);
+                                // draw the control point for the current vertex
+                                graphics2D.Render(new Ellipse(vertex.Position, controlSize), handleColor);
+                                break;
 
-                        graphics2D.Render(new Ellipse(vertex.Position, controlSize), lineColor);
-
-                        i += 2;
+                            case CommandHint.C4Point:
+                                // drow the control point
+                                graphics2D.Render(new Ellipse(vertex.Position, controlSize), lineColor);
+                                break;
+                        }
                     }
                 }
             }
@@ -176,10 +184,8 @@ namespace MatterHackers.Agg.VertexSource
 
             // These will store the x values for the highest y below the given y
             // and the lowest y above the given y, respectively.
-            double? belowBoundX = null;
-            double? aboveBoundX = null;
-            double highestYBelow = double.NegativeInfinity;
-            double lowestYAbove = double.PositiveInfinity;
+            var highestPoint = new Vector2(double.NegativeInfinity, double.NegativeInfinity);
+            var lowestPoint = new Vector2(double.PositiveInfinity, double.PositiveInfinity);
 
             foreach (var vertex in source.Vertices())
             {
@@ -206,40 +212,31 @@ namespace MatterHackers.Agg.VertexSource
 
                         return x;
                     }
-                    else if (y > vertex.Position.Y && vertex.Position.Y > highestYBelow)
-                    {
-                        // Update the below bound
-                        highestYBelow = vertex.Position.Y;
-                        belowBoundX = vertex.Position.X;
-                    }
-                    else if (y < vertex.Position.Y && vertex.Position.Y < lowestYAbove)
-                    {
-                        // Update the above bound
-                        lowestYAbove = vertex.Position.Y;
-                        aboveBoundX = vertex.Position.X;
-                    }
                 }
 
                 if (!vertex.IsClose && !vertex.IsStop)
                 {
+                    if (vertex.Position.Y > highestPoint.Y)
+                    {
+                        highestPoint = vertex.Position;
+                    }
+                    if (vertex.Position.Y < lowestPoint.Y)
+                    {
+                        lowestPoint = vertex.Position;
+                    }
+                    
                     previousVertex = vertex.Position;
                 }
             }
 
             // If we're out of bounds below the path, return the below bound x value
-            if (belowBoundX.HasValue && y < highestYBelow)
+            if (y < lowestPoint.Y)
             {
-                return belowBoundX.Value;
+                return lowestPoint.X;
             }
 
             // If we're out of bounds above the path, return the above bound x value
-            if (aboveBoundX.HasValue && y > lowestYAbove)
-            {
-                return aboveBoundX.Value;
-            }
-
-            // If no segment is found containing the y value, throw an exception or handle accordingly
-            throw new InvalidOperationException($"No x value found for y = {y} in the given path.");
+            return highestPoint.X;
         }
 
         public static ulong GetLongHashCode(this IVertexSource source, ulong hash = 14695981039346656037)
