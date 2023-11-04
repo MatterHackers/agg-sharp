@@ -127,7 +127,7 @@ namespace MatterHackers.Agg.SvgTools
             return items;
         }
 
-        public static string GetSvgDString(this IVertexSource vertexSource)
+        public static string GetSvgDStringOld(this IVertexSource vertexSource)
         {
             var dstring = new StringBuilder();
             var pendingPositions = new List<Vector2>();
@@ -157,6 +157,84 @@ namespace MatterHackers.Agg.SvgTools
             }
 
             return dstring.ToString();
+        }
+
+        public static string GetSvgDString(this IVertexSource vertexSource)
+        {
+            var wasCurve = false;
+            var dstring = new StringBuilder();
+            foreach (var vertexData in vertexSource.Vertices())
+            {
+                switch (vertexData.Command)
+                {
+                    case FlagsAndCommand.MoveTo:
+                        {
+                            dstring.Append($"M {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                            break;
+                        }
+
+                    case FlagsAndCommand.LineTo:
+                        {
+                            dstring.Append($"L {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                            break;
+                        }
+
+                    case FlagsAndCommand.Stop:
+                        break;
+
+                    case FlagsAndCommand.FlagClose:
+                        {
+                            dstring.Append($"Z");
+                            break;
+                        }
+
+                    case FlagsAndCommand.Curve4:
+                        {
+                            wasCurve = true;
+                            switch (vertexData.Hint)
+                            {
+                                case CommandHint.C4ControlFromPrev:
+                                    {
+                                        dstring.Append($"C {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                                    }
+                                    break;
+
+                                case CommandHint.C4ControlToPoint:
+                                    {
+                                        dstring.Append($" {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                                        {
+                                        }
+                                    }
+                                    break;
+
+                                case CommandHint.C4Point:
+                                    {
+                                        dstring.Append($" {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                                    }
+                                    break;
+                            }
+                        }
+                        break;
+
+                    default:
+                        if (vertexData.IsClose)
+                        {
+                            dstring.Append($"Z");
+                        }
+                        break;
+                }
+            }
+
+            var oldString = GetSvgDStringOld(vertexSource);
+            var newString = dstring.ToString();
+
+            if (!wasCurve
+                && oldString != newString)
+            {
+                throw new Exception("Differing D strings");
+            }
+
+            return newString;
         }
 
         private static void AppendPositions(StringBuilder dstring, List<Vector2> pendingPositions, bool closePath = false, bool reverse = false)
