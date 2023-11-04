@@ -659,8 +659,13 @@ namespace MatterHackers.DataConverters3D
 							{
 								outputInfo.CsgOptionState = MeshOutputSettings.CsgOption.DoCsgMerge;
 							}
-							Mesh mesh = DoMergeAndTransform(item, outputInfo, cancellationToken, reportProgress);
-							return StlProcessing.Save(mesh, meshPathAndFileName, cancellationToken, outputInfo);
+							var mesh = DoMergeAndTransform(item, outputInfo, cancellationToken, reportProgress);
+							if (mesh != null)
+							{
+								return StlProcessing.Save(mesh, meshPathAndFileName, cancellationToken, outputInfo);
+							}
+
+							return false;
 						}
 
 					case ".AMF":
@@ -718,7 +723,8 @@ namespace MatterHackers.DataConverters3D
 
 				var holesToSubtract = persistable.Where((i) => i.WorldOutputType() == PrintOutputTypes.Hole);
 
-				if (holesToSubtract.Any())
+				if (solidsToUnion.Any()
+					&& holesToSubtract.Any())
 				{
 					// union every solid (non-hole, not support structures)
 					var solidsObject = new Object3D()

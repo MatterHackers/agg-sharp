@@ -44,6 +44,11 @@ namespace MatterHackers.PolygonMesh.Processors
 			CancellationToken cancellationToken,
 			MeshOutputSettings outputInfo = null)
 		{
+			if (meshToSave == null)
+			{
+				return false;
+			}
+
 			using (var file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
 			{
 				if (outputInfo == null)
