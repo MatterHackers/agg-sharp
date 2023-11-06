@@ -225,14 +225,16 @@ namespace MatterHackers.Agg.SvgTools
                 }
             }
 
-            var oldString = GetSvgDStringOld(vertexSource);
             var newString = dstring.ToString();
+#if DEBUG
+            var oldString = GetSvgDStringOld(vertexSource);
 
             if (!wasCurve
                 && oldString != newString)
             {
                 throw new Exception("Differing D strings");
             }
+#endif
 
             return newString;
         }
