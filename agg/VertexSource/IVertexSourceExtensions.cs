@@ -118,7 +118,7 @@ namespace MatterHackers.Agg.VertexSource
             return centerPosition;
         }
 
-        public static void RenderCurve(this IVertexSource source, Graphics2D graphics2D, Color lineColor, double width = 1, bool showHandles = false, Color handleLineColor = default(Color), Color handleColor = default(Color))
+        public static void RenderPath(this IVertexSource source, Graphics2D graphics2D, Color lineColor, double width = 1, bool showHandles = false, Color handleLineColor = default(Color), Color handleColor = default(Color))
         {
             if(source.Vertices().Count() < 2)
             {
@@ -173,6 +173,10 @@ namespace MatterHackers.Agg.VertexSource
                                 graphics2D.Render(new Ellipse(vertex.Position, controlSize), lineColor);
                                 break;
                         }
+                    }
+                    else
+                    {
+                        graphics2D.Render(new Ellipse(vertex.Position, controlSize), lineColor);
                     }
                 }
             }
