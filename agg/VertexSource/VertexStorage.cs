@@ -394,9 +394,9 @@ namespace MatterHackers.Agg.VertexSource
             throw new System.NotImplementedException();
         }
 
-        public void Add(double x, double y, FlagsAndCommand flagsAndCommand)
+        public void Add(double x, double y, FlagsAndCommand flagsAndCommand, CommandHint hint = CommandHint.None)
         {
-            vertexDataManager.AddVertex(x, y, flagsAndCommand);
+            vertexDataManager.AddVertex(x, y, flagsAndCommand, hint);
         }
 
         public int ArrangeOrientations(int start, FlagsAndCommand orientation)
