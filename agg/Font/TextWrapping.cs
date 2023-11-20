@@ -129,7 +129,7 @@ namespace MatterHackers.Agg.Font
 						lines.Add(textToWrap.Substring(0, countBeforeWrap));
 					}
 
-					// check if we wrapped because of to long or a '\n'. If '\n' we only trim a leading space if to long.
+					// check if we wrapped because of too long or a '\n'. If '\n' we only trim a leading space if too long.
 					if (countBeforeWrap > 1 // we have more than 2 characters left
 						&& textToWrap.Length > countBeforeWrap // we are longer than the remaining text
 						&& textToWrap[countBeforeWrap] == ' ' // the first new character is a space

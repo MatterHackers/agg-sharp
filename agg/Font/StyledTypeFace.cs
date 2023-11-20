@@ -119,8 +119,8 @@ namespace MatterHackers.Agg.Font
 	{
 		public TypeFace TypeFace { get; private set; }
 
-		private const int PointsPerInch = 72;
-		private const int PixelsPerInch = 96;
+		public const int PointsPerInch = 72;
+		public const int PixelsPerInch = 96;
 
 		private double emSizeInPixels;
 		private double currentEmScaling;
