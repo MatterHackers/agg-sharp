@@ -27,6 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using System;
 
 namespace MatterHackers.VectorMath
@@ -37,7 +39,8 @@ namespace MatterHackers.VectorMath
 	 */
 	public class Easing
 	{
-		public enum EaseType
+        [JsonConverter(typeof(StringEnumConverter))]
+        public enum EaseType
 		{
 			Linear,
 			Quadratic,
@@ -47,7 +50,8 @@ namespace MatterHackers.VectorMath
 			Sinusoidal,
 		}
 
-		public enum EaseOption
+        [JsonConverter(typeof(StringEnumConverter))]
+        public enum EaseOption
 		{
 			In,
 			Out,
