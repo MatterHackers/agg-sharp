@@ -11,14 +11,7 @@ namespace IxMilia.ThreeMf
     {
         internal const string ModelNamespace = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02";
         internal const string MaterialNamespace = "http://schemas.microsoft.com/3dmanufacturing/material/2015/02";
-        private const string Metadata_Title = "Title";
-        private const string Metadata_Designer = "Designer";
-        private const string Metadata_Description = "Description";
-        private const string Metadata_Copyright = "Copyright";
-        private const string Metadata_LicenseTerms = "LicenseTerms";
-        private const string Metadata_Rating = "Rating";
-        private const string Metadata_CreationDate = "CreationDate";
-        private const string Metadata_ModificationDate = "ModificationDate";
+        internal const string ProductionNamespace = "http://schemas.microsoft.com/3dmanufacturing/production/2015/06";
         private const string UnitAttributeName = "unit";
         private const string NameAttributeName = "name";
         private const string RequiredExtensionsAttributeName = "requiredextensions";
@@ -34,18 +27,12 @@ namespace IxMilia.ThreeMf
         private static HashSet<string> KnownExtensionNamespaces = new HashSet<string>()
         {
             ModelNamespace,
-            MaterialNamespace
+            MaterialNamespace,
+            ProductionNamespace
         };
 
         public ThreeMfModelUnits ModelUnits { get; set; }
-        public string Title { get; set; }
-        public string Designer { get; set; }
-        public string Description { get; set; }
-        public string Copyright { get; set; }
-        public string LicenseTerms { get; set; }
-        public string Rating { get; set; }
-        public string CreationDate { get; set; }
-        public string ModificationDate { get; set; }
+        public Dictionary<string, string> Metadata { get; } = new Dictionary<string, string>();
 
         public IList<ThreeMfResource> Resources { get; } = new ListNonNull<ThreeMfResource>();
         public IList<ThreeMfModelItem> Items { get; } = new ListNonNull<ThreeMfModelItem>();
@@ -97,19 +84,18 @@ namespace IxMilia.ThreeMf
             {
                 if (!KnownExtensionNamespaces.Contains(rns))
                 {
-                    //throw new ThreeMfParseException($"The required namespace '{rns}' is not supported.");
+                    throw new ThreeMfParseException($"The required namespace '{rns}' is not supported.");
                 }
             }
 
             // metadata
-            model.Title = GetMetadataValue(root, Metadata_Title);
-            model.Designer = GetMetadataValue(root, Metadata_Designer);
-            model.Description = GetMetadataValue(root, Metadata_Description);
-            model.Copyright = GetMetadataValue(root, Metadata_Copyright);
-            model.LicenseTerms = GetMetadataValue(root, Metadata_LicenseTerms);
-            model.Rating = GetMetadataValue(root, Metadata_Rating);
-            model.CreationDate = GetMetadataValue(root, Metadata_CreationDate);
-            model.ModificationDate = GetMetadataValue(root, Metadata_ModificationDate);
+            foreach (var metadataElementGroup in root.Elements(MetadataName).Where(e => e.Attribute(NameAttributeName) != null).GroupBy(e => e.Attribute(NameAttributeName).Value))
+            {
+                var metadataName = metadataElementGroup.Key;
+                var metadataValues = metadataElementGroup.Select(e => e.Value);
+                var metadataValue = string.Join("\r\n", metadataValues);
+                model.Metadata[metadataName] = metadataValue;
+            }
 
             var resourceMap = model.ParseResources(root.Element(ResourcesName), package);
             model.ParseBuild(root.Element(BuildName), resourceMap);
@@ -188,14 +174,7 @@ namespace IxMilia.ThreeMf
                 new XAttribute(UnitAttributeName, ModelUnits.ToString().ToLowerInvariant()),
                 new XAttribute(XmlLanguageAttributeName, DefaultLanguage),
                 extensionNamespaces.Select(rns => new XAttribute(XNamespace.Xmlns + rns.Item2, rns.Item1)),
-                GetMetadataXElements(Metadata_Title, Title),
-                GetMetadataXElements(Metadata_Designer, Designer),
-                GetMetadataXElements(Metadata_Description, Description),
-                GetMetadataXElements(Metadata_Copyright, Copyright),
-                GetMetadataXElements(Metadata_LicenseTerms, LicenseTerms),
-                GetMetadataXElements(Metadata_Rating, Rating),
-                GetMetadataXElements(Metadata_CreationDate, CreationDate),
-                GetMetadataXElements(Metadata_ModificationDate, ModificationDate),
+                Metadata.Select(mdkvp => mdkvp.Value.Split('\n').Select(v => v.TrimEnd('\r')).Select(v => new XElement(MetadataName, new XAttribute(NameAttributeName, mdkvp.Key), v))),
                 new XElement(ResourcesName,
                     Resources.Select(r => r.ToXElement(resourceMap))),
                 new XElement(BuildName,
@@ -209,15 +188,6 @@ namespace IxMilia.ThreeMf
             {
                 resource.AfterPartAdded(package, packagePart);
             }
-        }
-
-        private IEnumerable<XElement> GetMetadataXElements(string metadataType, string value)
-        {
-            return string.IsNullOrEmpty(value)
-                ? null
-                : value.Split('\n')
-                    .Select(l => l.TrimEnd('\r'))
-                    .Select(l => new XElement(MetadataName, new XAttribute(NameAttributeName, metadataType), l));
         }
 
         private Dictionary<int, ThreeMfResource> ParseResources(XElement resources, Package package)
@@ -257,14 +227,6 @@ namespace IxMilia.ThreeMf
                     Items.Add(item);
                 }
             }
-        }
-
-        private static string GetMetadataValue(XElement root, string name)
-        {
-            var attributes = root.Elements(MetadataName)?.Where(e => e.Attribute(NameAttributeName)?.Value == name).ToList();
-            return attributes.Count == 0
-                ? null
-                : string.Join("\r\n", attributes.Select(a => a.Value));
         }
     }
 }
