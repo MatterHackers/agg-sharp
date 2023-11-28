@@ -117,8 +117,11 @@ namespace MatterHackers.DataConverters2D
 
 		public static Polygons CreatePolygons(this IVertexSource sourcePath, double scaling = 1000)
 		{
-			return CreatePolygons(sourcePath.Vertices());
-		}
+            return CreatePolygons(new FlattenCurves(sourcePath)
+            {
+                ResolutionScale = scaling
+            }.Vertices());
+        }
 
 		public static Polygons CreatePolygons(this IEnumerable<VertexData> vertices, double scaling = 1000)
 		{

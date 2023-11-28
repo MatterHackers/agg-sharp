@@ -85,8 +85,8 @@ namespace MatterHackers.Agg.UI
 			get => _splitterDistance;
 			set
 			{
-				if (_splitterDistance != value)
-				{
+                if (Math.Abs(_splitterDistance - value) > .000001)
+                {
 					_splitterDistance = value;
 					if (Orientation == Orientation.Vertical)
 					{
@@ -95,8 +95,8 @@ namespace MatterHackers.Agg.UI
 						_splitterDistance = Width == 0 ? _splitterDistance : Math.Min(_splitterDistance, Width - Panel1.MinimumSize.X - splitterBar.Width);
 						if (Panel1Ratio != 0)
 						{
-							Panel1Ratio = Width / _splitterDistance;
-						}
+                            Panel1Ratio = _splitterDistance / Width;
+                        }
 					}
 					else
 					{
@@ -133,13 +133,18 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				if (_panel1Ratio != value)
-				{
-					_panel1Ratio = value;
-					if (Height > 0)
-					{
-						SplitterDistance = Height * _panel1Ratio;
-					}
+                if (Math.Abs(_panel1Ratio - value) > .00001)
+                {
+                    _panel1Ratio = value;
+                    if (Orientation == Orientation.Vertical
+                        && Width > 0)
+                    {
+                        SplitterDistance = 1 - Width * _panel1Ratio;
+                    }
+                    else if (Height > 0)
+                    {
+                        SplitterDistance = Height * _panel1Ratio;
+                    }
 				}
 			}
 		}
