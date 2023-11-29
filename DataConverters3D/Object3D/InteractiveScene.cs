@@ -362,11 +362,6 @@ namespace MatterHackers.DataConverters3D
 		[JsonIgnore]
 		public string TypeName => SourceItem.TypeName;
 
-		public IVertexSource GetVertexSource()
-		{
-			return SourceItem.GetVertexSource();
-		}
-
 		[JsonIgnore]
 		public IVertexSource VertexSource
         {

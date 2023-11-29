@@ -39,7 +39,6 @@ using System.Threading.Tasks;
 using IxMilia.ThreeMf;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
-using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters3D.UndoCommands;
 using MatterHackers.Localizations;
 using MatterHackers.PolygonMesh;
@@ -52,7 +51,7 @@ using Newtonsoft.Json;
 
 namespace MatterHackers.DataConverters3D
 {
-	public class Object3D : IObject3D
+    public class Object3D : IObject3D
 	{
 		private RebuildLock deserializeLock = null;
 
@@ -231,21 +230,6 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-        /// <summary>
-		/// The vertex storage to use when an object is a path
-		/// </summary>
-		public VertexStorage VertexStorage { get; set; } = new VertexStorage();
-
-		public virtual IVertexSource GetVertexSource()
-        {
-            if (VertexStorage.Count > 0)
-            {
-				return VertexStorage;
-            }
-            
-			return null;
-        }
-
 		private object locker = new object();
 
 		[JsonIgnore]
@@ -316,7 +300,18 @@ namespace MatterHackers.DataConverters3D
 		[JsonIgnore]
 		public virtual bool Printable
 		{
-			get => GetVertexSource()?.Vertices()?.Count() != 0;
+			get
+			{
+				if (this is IPathObject3D pathObject)
+				{
+					if (pathObject.MeshIsSolidObject)
+					{
+						return true;
+					}
+				}
+
+				return false;
+			}
 		}
 
         public virtual bool Visible { get; set; } = true;
@@ -1603,17 +1598,4 @@ namespace MatterHackers.DataConverters3D
 		}
 	}
 
-	public interface IBuildsOnThread
-	{
-		bool IsBuilding { get; }
-
-		void CancelBuild();
-	}
-
-	public class CacheContext
-	{
-		public Dictionary<string, IObject3D> Items { get; set; } = new Dictionary<string, IObject3D>();
-
-		public Dictionary<string, Mesh> Meshes { get; set; } = new Dictionary<string, Mesh>();
-	}
 }

@@ -210,7 +210,7 @@ namespace MatterHackers.DataConverters3D
 		/// long operations are happening such as loading or mesh processing.
 		/// </summary>
 		/// <returns></returns>
-		public static IEnumerable<IObject3D> VisiblePaths(this IObject3D root, Func<IObject3D, bool> consider = null, bool onlyChildren = false)
+		public static IEnumerable<IPathObject3D> VisiblePaths2(this IObject3D root, Func<IObject3D, bool> consider = null, bool onlyChildren = false)
 		{
 			var items = new Stack<IObject3D>(new[] { root });
 			while (items.Count > 0)
@@ -219,10 +219,11 @@ namespace MatterHackers.DataConverters3D
 
 				// store the mesh so we are thread safe regarding having a valid object (not null)
                 if ((!onlyChildren || item != root)
-                    && item.GetVertexSource() != null)
+                    && item is IPathObject3D pathObject3D
+					&& pathObject3D.GetVertexSource() != null)
 				{
 					// there is a VertexSource return the object
-					yield return item;
+					yield return pathObject3D;
 				}
 				else // there is no mesh go into the object and iterate its children
 				{
@@ -240,7 +241,7 @@ namespace MatterHackers.DataConverters3D
 
         public static IVertexSource CombinedVisibleChildrenPaths(this IObject3D item)
         {
-			var visibleChildPaths = item.VisiblePaths(onlyChildren: true);
+			var visibleChildPaths = item.VisiblePaths2(onlyChildren: true);
 			if (visibleChildPaths != null
 				&& visibleChildPaths.Any())
 			{
@@ -248,11 +249,6 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			return null;
-		}
-
-		public static bool IsPathObject(this IObject3D item)
-		{
-			return item.GetVertexSource() != null;
 		}
 	}
 }
