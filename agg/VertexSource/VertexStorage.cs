@@ -298,7 +298,7 @@ namespace MatterHackers.Agg.VertexSource
         {
             foreach (var vertex in copyFrom.Vertices())
             {
-                this.Add(vertex.X, vertex.Y, vertex.Command);
+                this.Add(vertex.X, vertex.Y, vertex.Command, vertex.Hint);
             }
         }
 

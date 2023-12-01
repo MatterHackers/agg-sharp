@@ -86,19 +86,22 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 				// first get the bounds of all the items being added
 				var aabb2 = addItems.GetAxisAlignedBoundingBox();
 
-				// then move the all to account for the old center and bed position
-				foreach (var item in addItems)
+				if (aabb2.Size != Vector3.Zero)
 				{
-					if (maintainCenterAndZHeight
-						&& aabb.ZSize > 0)
+					// then move the all to account for the old center and bed position
+					foreach (var item in addItems)
 					{
-						// move our center back to where our center was
-						var centerDelta = (aabb.Center - aabb2.Center);
-						centerDelta.Z = 0;
-						item.Matrix *= Matrix4X4.CreateTranslation(centerDelta);
+						if (maintainCenterAndZHeight
+							&& aabb.ZSize > 0)
+						{
+							// move our center back to where our center was
+							var centerDelta = (aabb.Center - aabb2.Center);
+							centerDelta.Z = 0;
+							item.Matrix *= Matrix4X4.CreateTranslation(centerDelta);
 
-						// Make sure we also maintain our height
-						item.Matrix *= Matrix4X4.CreateTranslation(new Vector3(0, 0, aabb.MinXYZ.Z - aabb2.MinXYZ.Z));
+							// Make sure we also maintain our height
+							item.Matrix *= Matrix4X4.CreateTranslation(new Vector3(0, 0, aabb.MinXYZ.Z - aabb2.MinXYZ.Z));
+						}
 					}
 				}
 			}
