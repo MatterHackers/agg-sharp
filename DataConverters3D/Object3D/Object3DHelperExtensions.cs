@@ -210,7 +210,7 @@ namespace MatterHackers.DataConverters3D
 		/// long operations are happening such as loading or mesh processing.
 		/// </summary>
 		/// <returns></returns>
-		public static IEnumerable<IPathObject3D> VisiblePaths2(this IObject3D root, Func<IObject3D, bool> consider = null, bool onlyChildren = false)
+		public static IEnumerable<IPathObject3D> VisiblePaths(this IObject3D root, Func<IObject3D, bool> consider = null, bool onlyChildren = false)
 		{
 			var items = new Stack<IObject3D>(new[] { root });
 			while (items.Count > 0)
@@ -241,7 +241,7 @@ namespace MatterHackers.DataConverters3D
 
         public static IVertexSource CombinedVisibleChildrenPaths(this IObject3D item)
         {
-			var visibleChildPaths = item.VisiblePaths2(onlyChildren: true);
+			var visibleChildPaths = item.VisiblePaths(onlyChildren: true);
 			if (visibleChildPaths != null
 				&& visibleChildPaths.Any())
 			{
