@@ -161,10 +161,16 @@ namespace MatterHackers.Agg.SvgTools
 
         public static string GetSvgDString(this IVertexSource vertexSource)
         {
-            var wasCurve = false;
             var dstring = new StringBuilder();
+            var curveIndex = 0;
+            var lastCommand = FlagsAndCommand.Stop;
             foreach (var vertexData in vertexSource.Vertices())
             {
+                if (lastCommand != vertexData.Command)
+                {
+                    curveIndex = 0;
+                }
+
                 switch (vertexData.Command)
                 {
                     case FlagsAndCommand.MoveTo:
@@ -188,31 +194,59 @@ namespace MatterHackers.Agg.SvgTools
                             break;
                         }
 
+                    case FlagsAndCommand.Curve3:
+                        {
+                            switch (curveIndex)
+                            {
+                                case 0:
+                                    {
+                                        dstring.Append($"Q {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                                        curveIndex++;
+                                    }
+                                    break;
+
+                                case 1:
+                                    {
+                                        dstring.Append($" {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                                        curveIndex = 0;
+                                    }
+                                    break;
+
+                                default:
+                                    throw new NotImplementedException();
+                            }
+                        }
+                        break;
+
                     case FlagsAndCommand.Curve4:
                         {
-                            wasCurve = true;
-                            switch (vertexData.Hint)
+                            switch (curveIndex)
                             {
-                                case CommandHint.C4ControlFromPrev:
+                                case 0:
                                     {
                                         dstring.Append($"C {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                                        curveIndex++;
                                     }
                                     break;
 
-                                case CommandHint.C4ControlToPoint:
+                                case 1:
                                     {
                                         dstring.Append($" {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
-                                        {
-                                        }
+                                        curveIndex++;
                                     }
                                     break;
 
-                                case CommandHint.C4Point:
+                                case 2:
                                     {
                                         dstring.Append($" {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                                        curveIndex = 0;
                                     }
                                     break;
+
+                                default:
+                                    throw new NotImplementedException();
                             }
+
                         }
                         break;
 
@@ -223,18 +257,11 @@ namespace MatterHackers.Agg.SvgTools
                         }
                         break;
                 }
+
+                lastCommand = vertexData.Command;
             }
 
             var newString = dstring.ToString();
-#if DEBUG
-            var oldString = GetSvgDStringOld(vertexSource);
-
-            if (!wasCurve
-                && oldString != newString)
-            {
-                throw new Exception("Differing D strings");
-            }
-#endif
 
             return newString;
         }
