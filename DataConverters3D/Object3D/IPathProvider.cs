@@ -31,12 +31,30 @@ using MatterHackers.Agg.VertexSource;
 
 namespace MatterHackers.DataConverters3D
 {
-    public interface IPathObject3D
+    public interface IPathProvider
     {
-        IVertexSource GetVertexSource();
+        IVertexSource GetRawPath();
 
         // The mesh is a solid 3D Object. It is not a visualization of the path.
         bool MeshIsSolidObject { get; }
     }
 
+    public static class IPathProviderExtensions
+    {
+        public static IVertexSource GetTransformedPath(this IPathProvider pathProvider, IObject3D relativeTo)
+        {
+            var rawPath = pathProvider.GetRawPath();
+            var transformedPath = new VertexStorage(rawPath);
+            var pathObject3D = pathProvider as IObject3D;
+
+            if (pathProvider != relativeTo)
+            {
+                return transformedPath.Transform(pathObject3D.WorldMatrix(relativeTo));
+            }
+            else
+            {
+                return transformedPath.Transform(pathObject3D.Matrix);
+            }
+        }
+    }
 }

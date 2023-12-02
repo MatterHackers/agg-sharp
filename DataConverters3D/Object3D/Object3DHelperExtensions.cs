@@ -210,7 +210,7 @@ namespace MatterHackers.DataConverters3D
 		/// long operations are happening such as loading or mesh processing.
 		/// </summary>
 		/// <returns></returns>
-		public static IEnumerable<IPathObject3D> VisiblePaths(this IObject3D root, Func<IObject3D, bool> consider = null, bool onlyChildren = false)
+		public static IEnumerable<IPathProvider> VisiblePathProviders(this IObject3D root, Func<IObject3D, bool> consider = null, bool onlyChildren = false)
 		{
 			var items = new Stack<IObject3D>(new[] { root });
 			while (items.Count > 0)
@@ -219,8 +219,8 @@ namespace MatterHackers.DataConverters3D
 
 				// store the mesh so we are thread safe regarding having a valid object (not null)
                 if ((!onlyChildren || item != root)
-                    && item is IPathObject3D pathObject3D
-					&& pathObject3D.GetVertexSource() != null)
+                    && item is IPathProvider pathObject3D
+					&& pathObject3D.GetRawPath() != null)
 				{
 					// there is a VertexSource return the object
 					yield return pathObject3D;
@@ -241,11 +241,11 @@ namespace MatterHackers.DataConverters3D
 
         public static IVertexSource CombinedVisibleChildrenPaths(this IObject3D item)
         {
-			var visibleChildPaths = item.VisiblePaths(onlyChildren: true);
+			var visibleChildPaths = item.VisiblePathProviders(onlyChildren: true);
 			if (visibleChildPaths != null
 				&& visibleChildPaths.Any())
 			{
-				return new CombinePaths(visibleChildPaths.Select(i => i.GetVertexSource()));
+				return new CombinePaths(visibleChildPaths.Select(i => i.GetTransformedPath(item)));
 			}
 
 			return null;

@@ -302,7 +302,7 @@ namespace MatterHackers.DataConverters3D
 		{
 			get
 			{
-				if (this is IPathObject3D pathObject)
+				if (this is IPathProvider pathObject)
 				{
 					if (pathObject.MeshIsSolidObject)
 					{
