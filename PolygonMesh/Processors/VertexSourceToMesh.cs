@@ -150,20 +150,24 @@ namespace MatterHackers.PolygonMesh.Processors
 				polygons = polygons.GetCorrectedWinding();
 				var bounds = polygons.GetBounds();
 				bounds.Inflate(10);
-				// clip against x=0 left and right
-				var leftClip = new Polygon();
-				leftClip.Add(new IntPoint(0, bounds.Bottom));
-				leftClip.Add(new IntPoint(0, bounds.Top));
-				leftClip.Add(new IntPoint(bounds.Left, bounds.Top));
-				leftClip.Add(new IntPoint(bounds.Left, bounds.Bottom));
-				var rightStuff = polygons.Subtract(leftClip);
+                // clip against x=0 left and right
+                var leftClip = new Polygon
+                {
+                    new IntPoint(0, bounds.Bottom),
+                    new IntPoint(0, bounds.Top),
+                    new IntPoint(bounds.Left, bounds.Top),
+                    new IntPoint(bounds.Left, bounds.Bottom)
+                };
+                var rightStuff = polygons.Subtract(leftClip);
 
-				var rightClip = new Polygon();
-				rightClip.Add(new IntPoint(0, bounds.Top));
-				rightClip.Add(new IntPoint(0, bounds.Bottom));
-				rightClip.Add(new IntPoint(bounds.Right, bounds.Bottom));
-				rightClip.Add(new IntPoint(bounds.Right, bounds.Top));
-				var leftStuff = polygons.Subtract(rightClip);
+                var rightClip = new Polygon
+                {
+                    new IntPoint(0, bounds.Top),
+                    new IntPoint(0, bounds.Bottom),
+                    new IntPoint(bounds.Right, bounds.Bottom),
+                    new IntPoint(bounds.Right, bounds.Top)
+                };
+                var leftStuff = polygons.Subtract(rightClip);
 				// mirror left material across the origin
 				var leftAdd = leftStuff.Scale(-1, 1);
 				if (leftAdd.Count > 0)
@@ -245,7 +249,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				}
 				else
 				{
-					extrudedVertexSource.Transform(Matrix4X4.CreateRotationY(angleStart));
+					extrudedVertexSource.Transform(Matrix4X4.CreateRotationY(angleEnd));
 				}
 
 				extrudedVertexSource.ReverseFaces();
