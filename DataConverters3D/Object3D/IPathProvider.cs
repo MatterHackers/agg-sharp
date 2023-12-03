@@ -49,7 +49,7 @@ namespace MatterHackers.DataConverters3D
 
             if (pathProvider != relativeTo)
             {
-                return transformedPath.Transform(pathObject3D.WorldMatrix(relativeTo));
+                return transformedPath.Transform(pathObject3D.WorldMatrix(relativeTo, false));
             }
             else
             {
