@@ -325,7 +325,7 @@ namespace MatterHackers.RenderOpenGl
 
 			Vector3 firstPosition = default(Vector3);
 			Vector3 prevPosition = default(Vector3);
-			foreach (var vertex in path.Vertices())
+			foreach (var vertex in new FlattenCurves(path).Vertices())
 			{
 				if (vertex.Command == FlagsAndCommand.MoveTo)
 				{
