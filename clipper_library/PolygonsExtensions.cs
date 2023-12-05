@@ -255,6 +255,11 @@ namespace ClipperLib
             return polygons.CombinePolygons(new Polygons() { other }, ClipType.ctUnion);
         }
 
+        public static Polygons Intersect(this Polygons polygons, Polygons other, PolyFillType fillType = PolyFillType.pftEvenOdd)
+        {
+            return polygons.CombinePolygons(other, ClipType.ctIntersection, fillType);
+        }
+
         private static double GetDouble(string doubleString, double scale)
         {
             // strip leading characters up to and including ':'
