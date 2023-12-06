@@ -172,6 +172,55 @@ namespace ClipperLib
             return ret;
         }
 
+        public static IEnumerable<(Polygon polygon, int group, int path, int depth)> DescribeAllPolygons(this Polygons polygons)
+        {
+            var clipper = new Clipper();
+            var polyTree = new PolyTree();
+            clipper.AddPaths(polygons, PolyType.ptSubject, true);
+            clipper.Execute(ClipType.ctUnion, polyTree);
+
+            return DescribeAllPolygons(polyTree);
+        }
+
+        public static IEnumerable<(Polygon polygon, int group, int path, int depth)> DescribeAllPolygons(PolyNode polyTree, int group = 0, int path = 0, int depth = 0)
+        {
+            var closed = !polyTree.IsOpen;
+
+            // if this is not a hole
+            if (polyTree.m_polygon.Count > 0
+                && closed
+                && !polyTree.IsHole)
+            {
+                yield return (polyTree.m_polygon, group, path++, depth);
+
+                if (polyTree.ChildCount > 0)
+                {
+                    depth++;
+                }
+
+                // add all the children that are holes as holes
+                foreach (var child in polyTree.Childs)
+                {
+                    if (child.m_polygon.Count > 0
+                        && !child.IsOpen
+                        && child.IsHole)
+                    {
+                        yield return (child.m_polygon, group, path++, depth);
+                    }
+                }
+            }
+
+            foreach (var child in polyTree.Childs)
+            {
+                foreach(var childPolygon in DescribeAllPolygons(child, group, path, depth))
+                {
+                    yield return childPolygon;
+                }
+
+                group++;
+            }
+        }
+
         public static void PolyTreeToOutlinesAndContainedHoles(PolyNode polyTree, List<Polygons> outlinesAndHoles)
         {
             var closed = !polyTree.IsOpen;
