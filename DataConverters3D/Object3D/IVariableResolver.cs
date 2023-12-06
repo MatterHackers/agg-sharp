@@ -30,9 +30,17 @@ either expressed or implied, of the FreeBSD Project.
 namespace MatterHackers.DataConverters3D
 {
     /// <summary>
-    /// This is to contain variables that can be used in scripting child objects
+    /// This is for objects like the sheed data or a named value variable set, that have data that can be used in scripting.
     /// </summary>
-    public interface IVariableContainer
+    public interface IVariableResolver
+    {
+        public string EvaluateExpression(string inExpression);
+    }
+
+    /// <summary>
+    /// This is for objects that have state that can be used in scripting.
+    /// </summary>
+    public interface IInternalStateResolver
 	{
         public string EvaluateExpression(string inExpression);
     }
