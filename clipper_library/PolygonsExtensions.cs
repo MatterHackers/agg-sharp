@@ -172,7 +172,7 @@ namespace ClipperLib
             return ret;
         }
 
-        public static IEnumerable<(Polygon polygon, int group, int path, int depth)> DescribeAllPolygons(this Polygons polygons)
+        public static IEnumerable<(Polygon polygon, int group, int count, int path, int depth)> DescribeAllPolygons(this Polygons polygons)
         {
             var clipper = new Clipper();
             var polyTree = new PolyTree();
@@ -182,7 +182,7 @@ namespace ClipperLib
             return DescribeAllPolygons(polyTree);
         }
 
-        public static IEnumerable<(Polygon polygon, int group, int path, int depth)> DescribeAllPolygons(PolyNode polyTree, int group = 0, int path = 0, int depth = 0)
+        public static IEnumerable<(Polygon polygon, int group, int count, int path, int depth)> DescribeAllPolygons(PolyNode polyTree, int group = 0, int path = 0, int depth = 0)
         {
             var closed = !polyTree.IsOpen;
 
@@ -191,7 +191,7 @@ namespace ClipperLib
                 && closed
                 && !polyTree.IsHole)
             {
-                yield return (polyTree.m_polygon, group, path++, depth);
+                yield return (polyTree.m_polygon, group, polyTree.ChildCount, path++, depth);
 
                 if (polyTree.ChildCount > 0)
                 {
@@ -205,7 +205,7 @@ namespace ClipperLib
                         && !child.IsOpen
                         && child.IsHole)
                     {
-                        yield return (child.m_polygon, group, path++, depth);
+                        yield return (child.m_polygon, group, polyTree.ChildCount, path++, depth);
                     }
                 }
             }
