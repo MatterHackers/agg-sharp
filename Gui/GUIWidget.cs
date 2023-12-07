@@ -1051,14 +1051,6 @@ namespace MatterHackers.Agg.UI
 						{
 							this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Position));
 						}
-						#if false
-						// and it also means the mouse moved relative to this widget (so the parent and it's children)
-						Vector2 parentMousePosition;
-						if (Parent.GetMousePosition(out parentMousePosition))
-						{
-							this.Parent.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, parentMousePosition.x, parentMousePosition.y, 0));
-						}
-#endif
 					}
 
 					OnPositionChanged(null);
