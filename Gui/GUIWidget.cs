@@ -1030,7 +1030,7 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				Affine tempLocalToParentTransform = ParentToChildTransform;
+				var tempLocalToParentTransform = ParentToChildTransform;
 				if (EnforceIntegerBounds)
 				{
 					value.X = Math.Round(value.X);
@@ -1039,7 +1039,6 @@ namespace MatterHackers.Agg.UI
 
 				if (tempLocalToParentTransform.tx != value.X || tempLocalToParentTransform.ty != value.Y)
 				{
-					screenClipping.MarkRecalculate();
 					tempLocalToParentTransform.tx = value.X;
 					tempLocalToParentTransform.ty = value.Y;
 					ParentToChildTransform = tempLocalToParentTransform;
