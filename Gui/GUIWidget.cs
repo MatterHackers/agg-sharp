@@ -2618,8 +2618,8 @@ namespace MatterHackers.Agg.UI
 			while (widgetToTransformBy != null
 				&& widgetToTransformBy != parentToGetRelativeTo)
 			{
-				rectangleToTransform.Offset(widgetToTransformBy.OriginRelativeParent);
-				widgetToTransformBy = widgetToTransformBy.Parent;
+                widgetToTransformBy.ParentToChildTransform.transform(ref rectangleToTransform);
+                widgetToTransformBy = widgetToTransformBy.Parent;
 			}
 
 			return rectangleToTransform;
@@ -2656,14 +2656,7 @@ namespace MatterHackers.Agg.UI
 
 		public RectangleDouble TransformToScreenSpace(RectangleDouble rectangleToTransform)
 		{
-			GuiWidget prevGUIWidget = this;
-			while (prevGUIWidget != null)
-			{
-				rectangleToTransform.Offset(prevGUIWidget.OriginRelativeParent);
-				prevGUIWidget = prevGUIWidget.Parent;
-			}
-
-			return rectangleToTransform;
+            return TransformToParentSpace(null, rectangleToTransform);            
 		}
 
 		public RectangleDouble TransformFromScreenSpace(RectangleDouble rectangleToTransform)
