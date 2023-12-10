@@ -26,7 +26,9 @@ namespace MatterHackers.Agg.UI
 			this.windowToDrag = windowToDrag;
 		}
 
-		protected bool MouseDownOnBar
+		public bool ClampToParent { get; set; } = true;
+
+        protected bool MouseDownOnBar
 		{
 			get { return mouseDownOnBar; }
 			set { mouseDownOnBar = value; }
@@ -62,11 +64,14 @@ namespace MatterHackers.Agg.UI
 					dragPosition.Y = windowToDrag.Parent.Height - windowToDrag.Height + (Height - DownPosition.Y);
 				}
 
-				var windowToDragParent = windowToDrag.Parent;
-				if (windowToDragParent != null)
+				if (ClampToParent)
 				{
-					dragPosition.X = Util.Clamp(dragPosition.X, -windowToDrag.Width + 10, windowToDragParent.Width - 10);
-					dragPosition.Y = Util.Clamp(dragPosition.Y, -windowToDrag.Height + 10, windowToDragParent.Height - windowToDrag.Height);
+					var windowToDragParent = windowToDrag.Parent;
+					if (windowToDragParent != null)
+					{
+						dragPosition.X = Util.Clamp(dragPosition.X, -windowToDrag.Width + 10, windowToDragParent.Width - 10);
+						dragPosition.Y = Util.Clamp(dragPosition.Y, -windowToDrag.Height + 10, windowToDragParent.Height - windowToDrag.Height);
+					}
 				}
 
 				windowToDrag.Position = dragPosition;

@@ -76,7 +76,11 @@ namespace MatterHackers.DataConverters2D
 							haveBegunContour = true;
 						}
 
-						tesselator.AddVertex(vertexData.Position.X, vertexData.Position.Y);
+						if (!double.IsNaN(vertexData.Position.X)
+							&& !double.IsNaN(vertexData.Position.Y))
+						{
+							tesselator.AddVertex(vertexData.Position.X, vertexData.Position.Y);
+						}
 					}
 				}
 
