@@ -476,7 +476,12 @@ namespace MatterHackers.Agg.Transform
 			return temp;
 		}
 
-		public static Affine operator +(Affine a, Vector2 b)
+        public override string ToString()
+        {
+            return $"sx: {sx}, sy: {sy}, tx: {tx}, ty: {ty}";
+        }
+
+        public static Affine operator +(Affine a, Vector2 b)
 		{
 			Affine temp = new Affine(a);
 			temp.tx += b.X;
@@ -678,5 +683,4 @@ namespace MatterHackers.Agg.Transform
 			x = Math.Sqrt(sx * sx + shx * shx);
 			y = Math.Sqrt(shy * shy + sy * sy);
 		}
-	};
-}
+	}}

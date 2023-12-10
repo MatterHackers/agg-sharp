@@ -1145,17 +1145,6 @@ namespace MatterHackers.Agg.UI
 				{
 					value.Offset(-OriginRelativeParent.X, -OriginRelativeParent.Y);
 					LocalBounds = value;
-#if false
-                    if (Parent != null)
-                    {
-                        // and it also means the mouse moved relative to this widget (so the parent and it's children)
-                        Vector2 parentMousePosition;
-                        if (Parent.GetMousePosition(out parentMousePosition))
-                        {
-                            this.Parent.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, parentMousePosition.x, parentMousePosition.y, 0));
-                        }
-                    }
-#endif
 				}
 			}
 		}
@@ -2135,8 +2124,9 @@ namespace MatterHackers.Agg.UI
 					graphics2D.PushTransform();
 					{
 						Affine currentGraphics2DTransform = graphics2D.GetTransform();
-						Affine accumulatedTransform = currentGraphics2DTransform * child.ParentToChildTransform;
-						graphics2D.SetTransform(accumulatedTransform);
+                        Affine accumulatedTransform = currentGraphics2DTransform * child.ParentToChildTransform;
+                        accumulatedTransform = child.ParentToChildTransform * currentGraphics2DTransform;
+                        graphics2D.SetTransform(accumulatedTransform);
 
 						if (child.CurrentScreenClipping(out RectangleDouble currentScreenClipping))
 						{
@@ -2151,10 +2141,10 @@ namespace MatterHackers.Agg.UI
 
 							graphics2D.SetClippingRect(currentScreenClipping);
 
-							if (child.DoubleBuffer)
+							if (child.DoubleBuffer && accumulatedTransform.sx <= 1)
 							{
 								var offsetToRenderSurface = new Vector2(currentGraphics2DTransform.tx, currentGraphics2DTransform.ty);
-								offsetToRenderSurface += child.OriginRelativeParent;
+								offsetToRenderSurface += new Vector2(child.OriginRelativeParent.X * currentGraphics2DTransform.sx, child.OriginRelativeParent.Y * currentGraphics2DTransform.sy);
 
 								double yFraction = offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y;
 								double xFraction = offsetToRenderSurface.X - (int)offsetToRenderSurface.X;
@@ -2185,7 +2175,7 @@ namespace MatterHackers.Agg.UI
 
 								graphics2D.SetTransform(Affine.NewTranslation(offsetToRenderSurface));
 
-								graphics2D.Render(child.backBuffer, 0, 0);
+								graphics2D.Render(child.backBuffer, 0, 0, 0, currentGraphics2DTransform.sx, currentGraphics2DTransform.sy);
 							}
 							else
 							{

@@ -47,6 +47,7 @@ namespace MatterHackers.Agg.UI
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Stretch,
 				Margin = new BorderDouble(grabWidth),
+				BackgroundRadius = 3,
 			};
 
 			AddChild(windowBackground);
@@ -61,7 +62,7 @@ namespace MatterHackers.Agg.UI
             windowBackground.AddChild(new HorizontalLine(theme.PrimaryAccentColor));
 
             MinimumSize = new Vector2(deviceGrabWidth * 8, deviceGrabWidth * 4 + TitleBar.Height * 2);
-			WindowBorder = new BorderDouble(1);
+			WindowBorder = 1;
 			WindowBorderColor = theme.PrimaryAccentColor;
 
 			Position = clientArea.Position - new Vector2(deviceGrabWidth, deviceGrabWidth);
@@ -74,7 +75,7 @@ namespace MatterHackers.Agg.UI
 			windowBackground.AddChild(ClientArea);
 		}
 
-		public BorderDouble WindowBorder { get => windowBackground.Border; set => windowBackground.Border = value; }
+		public double WindowBorder { get => windowBackground.BackgroundOutlineWidth; set => windowBackground.BackgroundOutlineWidth = value; }
 
 		public Color WindowBorderColor { get => windowBackground.BorderColor; set => windowBackground.BorderColor = value; }
 
