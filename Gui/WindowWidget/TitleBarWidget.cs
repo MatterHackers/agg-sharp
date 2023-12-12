@@ -59,13 +59,14 @@ namespace MatterHackers.Agg.UI
 				Vector2 dragPosition = windowToDrag.Position;
 				dragPosition.X += mousePosition.X - DownPosition.X;
 				dragPosition.Y += mousePosition.Y - DownPosition.Y;
-				if (dragPosition.Y + windowToDrag.Height - (Height - DownPosition.Y) > windowToDrag.Parent.Height)
-				{
-					dragPosition.Y = windowToDrag.Parent.Height - windowToDrag.Height + (Height - DownPosition.Y);
-				}
 
 				if (ClampToParent)
 				{
+                    if (dragPosition.Y + windowToDrag.Height - (Height - DownPosition.Y) > windowToDrag.Parent.Height)
+                    {
+                        dragPosition.Y = windowToDrag.Parent.Height - windowToDrag.Height + (Height - DownPosition.Y);
+                    }
+                    
 					var windowToDragParent = windowToDrag.Parent;
 					if (windowToDragParent != null)
 					{
