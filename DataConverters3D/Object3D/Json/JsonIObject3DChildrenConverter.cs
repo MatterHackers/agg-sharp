@@ -36,7 +36,7 @@ using Newtonsoft.Json.Linq;
 
 namespace MatterHackers.DataConverters3D
 {
-	public class IObject3DChildrenConverter : JsonConverter
+	public class JsonIObject3DChildrenConverter : JsonConverter
 	{
 		// Register type mappings to support deserializing to the IObject3D concrete type - long term hopefully via configuration mapping, short term via IObject3D inheritance
 		private Dictionary<string, string> mappingTypesCache;

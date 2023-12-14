@@ -39,7 +39,10 @@ using Newtonsoft.Json.Serialization;
 
 namespace MatterHackers.DataConverters3D
 {
-	public class IObject3DContractResolver : DefaultContractResolver
+	/// <summary>
+	/// A custom contract resolver for IObject3D types
+	/// </summary>
+	public class JsonIObject3DContractResolver : DefaultContractResolver
 	{
 		private static Type IObject3DType = typeof(IObject3D);
 

@@ -519,7 +519,7 @@ namespace MatterHackers.DataConverters3D
 								json,
 								new JsonSerializerSettings
 								{
-									ContractResolver = new IObject3DContractResolver(),
+									ContractResolver = new JsonIObject3DContractResolver(),
 									NullValueHandling = NullValueHandling.Ignore,
 									MaxDepth = MaxJsonDepth
 								});
@@ -1193,7 +1193,7 @@ namespace MatterHackers.DataConverters3D
 				Formatting.Indented,
 				new JsonSerializerSettings
 				{
-					ContractResolver = new IObject3DContractResolver(),
+					ContractResolver = new JsonIObject3DContractResolver(),
 					NullValueHandling = NullValueHandling.Ignore,
 					MaxDepth = MaxJsonDepth
 				}));

@@ -91,7 +91,7 @@ namespace MatterHackers.DataConverters3D
 		[JsonIgnore]
 		bool CanApply { get; }
 
-		[JsonConverter(typeof(IObject3DChildrenConverter))]
+		[JsonConverter(typeof(JsonIObject3DChildrenConverter))]
 		AscendableSafeList<IObject3D> Children { get; set; }
 
 		Color Color { get; set; }
