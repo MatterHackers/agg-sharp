@@ -308,9 +308,10 @@ namespace MatterHackers.DataConverters3D
 					{
 						return true;
 					}
+					return false;
 				}
 
-				return false;
+				return true;
 			}
 		}
 

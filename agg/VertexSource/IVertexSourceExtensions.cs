@@ -118,7 +118,11 @@ namespace MatterHackers.Agg.VertexSource
             return centerPosition;
         }
 
-        public static void RenderPath(this IVertexSource source, Graphics2D graphics2D, Color lineColor, double width = 1, bool showHandles = false, Color handleLineColor = default(Color), Color handleColor = default(Color))
+        public static void RenderPath(this IVertexSource source, 
+            Graphics2D graphics2D, 
+            Color lineColor, double width = 1, 
+            bool showHandles = false, Color handleLineColor = default(Color), 
+            Color handleColor = default(Color))
         {
             if(source.Vertices().Count() < 2)
             {
@@ -142,42 +146,77 @@ namespace MatterHackers.Agg.VertexSource
                 var controlSize = width * 3;
 
                 // iterate the original source looking for curve vertices
+                var curveIndex = 0;
+                var lastCommand = FlagsAndCommand.Stop;
                 var vertices = source.Vertices().ToArray();
                 for (int i = 0; i < vertices.Length; i++)
                 {
-                    var vertex = vertices[i];
+                    var vertexData = vertices[i];
+                    if (lastCommand != vertexData.Command)
+                    {
+                        curveIndex = 0;
+                    }
+
                     var prevVertex = vertices[(i - 1 + vertices.Length) % vertices.Length];
                     var nextVertex = vertices[(i + 1) % vertices.Length];
-                    if (vertex.Command == FlagsAndCommand.Curve4)
+                    switch (vertexData.Command)
                     {
-                        switch (vertex.Hint)
-                        {
-                            case CommandHint.C4ControlFromPrev:
-                                // draw the line from the previous vertex to the control point
-                                graphics2D.Line(prevVertex.Position, vertex.Position, lineColor);
-                                // draw the control point for the previous vertex
-                                graphics2D.Render(new Ellipse(prevVertex.Position, controlSize), lineColor);
-                                //  draw the control point for the current vertex
-                                graphics2D.Render(new Ellipse(vertex.Position, controlSize), handleColor);
-                                break;
+                        case FlagsAndCommand.Curve4:
+                            switch (curveIndex)
+                            {
+                                case 0:
+                                    // draw the line from the previous vertex to the control point
+                                    graphics2D.Line(prevVertex.Position, vertexData.Position, lineColor);
+                                    //  draw the control point for the current vertex
+                                    graphics2D.Render(new Ellipse(vertexData.Position, controlSize), handleColor);
+                                    curveIndex++;
+                                    break;
 
-                            case CommandHint.C4ControlToPoint:
-                                // draw the line from the current vertex to the control point
-                                graphics2D.Line(vertex.Position, nextVertex.Position, lineColor);
-                                // draw the control point for the current vertex
-                                graphics2D.Render(new Ellipse(vertex.Position, controlSize), handleColor);
-                                break;
+                                case 1:
+                                    // draw the line from the current vertex to the control point
+                                    graphics2D.Line(vertexData.Position, nextVertex.Position, lineColor);
+                                    // draw the control point for the current vertex
+                                    graphics2D.Render(new Ellipse(vertexData.Position, controlSize), handleColor);
+                                    curveIndex++;
+                                    break;
 
-                            case CommandHint.C4Point:
-                                // drow the control point
-                                graphics2D.Render(new Ellipse(vertex.Position, controlSize), lineColor);
-                                break;
-                        }
+                                case 2:
+                                default:
+                                    // draw the control point
+                                    graphics2D.Render(new Ellipse(vertexData.Position, controlSize), lineColor);
+                                    curveIndex = 0;
+                                    break;
+                            }
+                            break;
+
+                        case FlagsAndCommand.Curve3:
+                            switch (curveIndex)
+                            {
+                                case 0:
+                                    // draw the line from the previous vertex to the control point
+                                    graphics2D.Line(prevVertex.Position, vertexData.Position, lineColor);
+                                    // draw the line from the control ponit to the next vertex
+                                    graphics2D.Line(vertexData.Position, nextVertex.Position, lineColor);
+                                    //  draw the control point for the current vertex
+                                    graphics2D.Render(new Ellipse(vertexData.Position, controlSize), handleColor);
+                                    curveIndex++;
+                                    break;
+
+                                case 1:
+                                default:
+                                    // draw the control point
+                                    graphics2D.Render(new Ellipse(vertexData.Position, controlSize), lineColor);
+                                    curveIndex = 0;
+                                    break;
+                            }
+                            break;
+
+                        default:
+                            graphics2D.Render(new Ellipse(vertexData.Position, controlSize), lineColor);
+                            break;
                     }
-                    else
-                    {
-                        graphics2D.Render(new Ellipse(vertex.Position, controlSize), lineColor);
-                    }
+
+                    lastCommand = vertexData.Command;
                 }
             }
         }
