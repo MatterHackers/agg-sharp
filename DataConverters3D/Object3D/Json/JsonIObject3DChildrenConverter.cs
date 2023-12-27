@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2017, Lars Brubaker, John Lewin
+Copyright (c) 2023, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,14 +30,14 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using MatterHackers.Agg;
-using MatterHackers.DataConverters3D;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace MatterHackers.DataConverters3D
 {
 	/// <summary>
-	/// Convert a list of IObject3D to and from JSON
+	/// Convert a list of IObject3D to JSON. This is the class for reading IObject3D from JSON.
+	/// Specifically, this converter is used to deserialize the Children property of IObject3D
 	/// </summary>
 	public class JsonIObject3DChildrenConverter : JsonConverter
 	{

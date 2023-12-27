@@ -187,7 +187,29 @@ namespace MatterHackers.VectorMath
 		public static void SanitisePerspectiveNearFar(ref double near, ref double far)
 		{
 			near = Math.Max(near, PerspectiveProjectionMinimumNearZ);
+			if (double.IsNaN(near))
+			{
+				near = PerspectiveProjectionMinimumNearZ;
+			}
 			far = Math.Max(far, near * PerspectiveProjectionMinimumFarNearRatio);
+			if (double.IsNaN(far)
+				|| double.IsInfinity(far))
+			{
+                far = near * PerspectiveProjectionMinimumFarNearRatio;
+            }
+			if (far <= near)
+			{
+				// zNear is so large that the addition didn't make a difference.
+				// Hope it's not infinity and do something multiplicative instead.
+				if (near >= 0)
+				{
+					far = near * 2;
+				}
+				else
+				{
+					far = near / 2;
+				}
+            }
 		}
 
 		/// <param name="distance">Signed distance from the camera to the plane.</param>

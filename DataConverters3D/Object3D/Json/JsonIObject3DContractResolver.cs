@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2017, John Lewin
+Copyright (c) 2023, John Lewin, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@ using Newtonsoft.Json.Serialization;
 namespace MatterHackers.DataConverters3D
 {
 	/// <summary>
-	/// A custom contract resolver for IObject3D types
+	/// A custom contract resolver for IObject3D types. This is the class for writing IObject3D to JSON
 	/// </summary>
 	public class JsonIObject3DContractResolver : DefaultContractResolver
 	{

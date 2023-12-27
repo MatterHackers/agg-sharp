@@ -522,8 +522,9 @@ namespace MatterHackers.DataConverters3D
 								{
 									ContractResolver = new JsonIObject3DContractResolver(),
 									NullValueHandling = NullValueHandling.Ignore,
-									MaxDepth = MaxJsonDepth
-								});
+									MaxDepth = MaxJsonDepth,
+                                    Converters = new List<JsonConverter> { new JsonINodeObjectConverter() }
+                                });
 
 							loadedItem?.LoadMeshLinks(cancellationToken, cacheContext, progress);
 
