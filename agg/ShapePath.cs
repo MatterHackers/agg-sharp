@@ -8,7 +8,9 @@ namespace MatterHackers.Agg
         C4ControlFromPrev,
 		C4ControlToPoint,
 		C4Point,
-	}
+        C3ControlFromPrev,
+        C3Point,
+    }
 
     [Flags]
     public enum FlagsAndCommand

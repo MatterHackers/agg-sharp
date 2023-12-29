@@ -21,6 +21,8 @@ using MatterHackers.Agg.Image.ThresholdFunctions;
 using MatterHackers.Agg.Transform;
 using MatterHackers.VectorMath;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace MatterHackers.Agg.VertexSource
@@ -121,8 +123,10 @@ namespace MatterHackers.Agg.VertexSource
         public static void RenderPath(this IVertexSource source, 
             Graphics2D graphics2D, 
             Color lineColor, double width = 1, 
-            bool showHandles = false, Color handleLineColor = default(Color), 
-            Color handleColor = default(Color))
+            bool showHandles = false, Color handleLineColor = default, 
+            Color handleColor = default,
+            IEnumerable<int> selectedPoints = null,
+            Color selectedPointColor = default)
         {
             if(source.Vertices().Count() < 2)
             {
@@ -134,11 +138,11 @@ namespace MatterHackers.Agg.VertexSource
 
             if (showHandles)
             {
-                if (handleLineColor == default(Color))
+                if (handleLineColor == default)
                 {
                     handleLineColor = lineColor;
                 }
-                if (handleColor == default(Color))
+                if (handleColor == default)
                 {
                     handleColor = lineColor;
                 }
@@ -157,6 +161,12 @@ namespace MatterHackers.Agg.VertexSource
                         curveIndex = 0;
                     }
 
+                    if (selectedPoints != null
+                        && selectedPoints.Contains(i))
+                    {
+                        graphics2D.Render(new Stroke(new Ellipse(vertexData.Position, controlSize * 1.5), 2), selectedPointColor);
+                    }
+
                     var prevVertex = vertices[(i - 1 + vertices.Length) % vertices.Length];
                     var nextVertex = vertices[(i + 1) % vertices.Length];
                     switch (vertexData.Command)
@@ -165,6 +175,7 @@ namespace MatterHackers.Agg.VertexSource
                             switch (curveIndex)
                             {
                                 case 0:
+                                    Assert(source.GetCommandHint(i) == CommandHint.C4ControlFromPrev);
                                     // draw the line from the previous vertex to the control point
                                     graphics2D.Line(prevVertex.Position, vertexData.Position, lineColor);
                                     //  draw the control point for the current vertex
@@ -173,6 +184,7 @@ namespace MatterHackers.Agg.VertexSource
                                     break;
 
                                 case 1:
+                                    Assert(source.GetCommandHint(i) == CommandHint.C4ControlToPoint);
                                     // draw the line from the current vertex to the control point
                                     graphics2D.Line(vertexData.Position, nextVertex.Position, lineColor);
                                     // draw the control point for the current vertex
@@ -182,6 +194,7 @@ namespace MatterHackers.Agg.VertexSource
 
                                 case 2:
                                 default:
+                                    Assert(source.GetCommandHint(i) == CommandHint.C4Point);
                                     // draw the control point
                                     graphics2D.Render(new Ellipse(vertexData.Position, controlSize), lineColor);
                                     curveIndex = 0;
@@ -193,6 +206,7 @@ namespace MatterHackers.Agg.VertexSource
                             switch (curveIndex)
                             {
                                 case 0:
+                                    Assert(source.GetCommandHint(i) == CommandHint.C3ControlFromPrev);
                                     // draw the line from the previous vertex to the control point
                                     graphics2D.Line(prevVertex.Position, vertexData.Position, lineColor);
                                     // draw the line from the control ponit to the next vertex
@@ -204,6 +218,7 @@ namespace MatterHackers.Agg.VertexSource
 
                                 case 1:
                                 default:
+                                    Assert(source.GetCommandHint(i) == CommandHint.C3Point);
                                     // draw the control point
                                     graphics2D.Render(new Ellipse(vertexData.Position, controlSize), lineColor);
                                     curveIndex = 0;
@@ -219,6 +234,87 @@ namespace MatterHackers.Agg.VertexSource
                     lastCommand = vertexData.Command;
                 }
             }
+        }
+
+        // make this debug only
+        private static void Assert(bool condition)
+        {
+#if DEBUG
+            if (!condition)
+            {
+                throw new NotImplementedException();
+            }
+#endif
+        }
+
+        public static CommandHint GetCommandHint(this IVertexSource vertexSource, int pointIndex)
+        {
+            var interationIndex = 0;
+            var curveIndex = 0;
+            var lastCommand = FlagsAndCommand.Stop;
+            var commandHint = CommandHint.None;
+            foreach (var vertexData in vertexSource.Vertices())
+            {
+                if (lastCommand != vertexData.Command)
+                {
+                    curveIndex = 0;
+                    lastCommand = vertexData.Command;
+                }
+
+                commandHint = CommandHint.None;
+
+                switch (vertexData.Command & FlagsAndCommand.CommandsMask)
+                {
+                    case FlagsAndCommand.Curve4:
+                        switch (curveIndex)
+                        {
+                            case 0:
+                                commandHint = CommandHint.C4ControlFromPrev;
+                                curveIndex++;
+                                break;
+
+                            case 1:
+                                commandHint = CommandHint.C4ControlToPoint;
+                                curveIndex++;
+                                break;
+
+                            case 2:
+                                commandHint = CommandHint.C4Point;
+                                curveIndex = 0;
+                                break;
+
+                            default:
+                                throw new System.Exception("Invalid curve index");
+                        }
+                        break;
+
+                    case FlagsAndCommand.Curve3:
+                        switch (curveIndex)
+                        {
+                            case 0:
+                                commandHint = CommandHint.C3ControlFromPrev;
+                                curveIndex++;
+                                break;
+                            case 1:
+                                commandHint = CommandHint.C3Point;
+                                curveIndex = 0;
+                                break;
+
+                            default:
+                                throw new System.Exception("Invalid curve index");
+                        }
+                        break;
+                }
+
+                if (interationIndex == pointIndex)
+                {
+                    return commandHint;
+                }
+
+                interationIndex++;
+            }
+
+            return commandHint;
         }
 
         public static double GetXAtY(this IVertexSource source, double y)
