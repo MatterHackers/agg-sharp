@@ -48,7 +48,12 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public static void UpDownArrowsSelectRadioButtons(this GuiWidget container)
+		/// <summary>
+		/// When the up or down arrow is pressed, select the appropriate IRadioButton in the list.
+		/// If a parent is a ScrollableWidget then scroll the selected IRadioButton into view.
+		/// </summary>
+		/// <param name="container">The container that has IRadioButtons</param>
+		public static void HookUpDownArrowsToScrollParent(GuiWidget container)
 		{
 			void ScrollIntoView(GuiWidget widget)
 			{

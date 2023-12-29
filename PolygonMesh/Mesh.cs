@@ -1162,7 +1162,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			var faceTextures = mesh.FaceTextures;
 			if (faceTextures.ContainsKey(faceIndex)
-				&& faceTextures[faceIndex].image == texture)
+				&& faceTextures[faceIndex]?.image == texture)
 			{
 				faceTextures.Remove(faceIndex);
 				mesh.MarkAsChanged();
