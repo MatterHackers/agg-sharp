@@ -1291,7 +1291,7 @@ namespace MatterHackers.Agg.UI
 
 		/// <summary>
 		/// Gets or sets if this is set the control will show tool tips on hover, if the platform specific SystemWindow implements tool tips.
-		/// You can change the settings for the tool tip delays in the containing SystemWindow.
+		/// You can change the settings for the tool tip delays in the containing SystemWindow. Shows a hint or help text.
 		/// </summary>
 		public virtual string ToolTipText { get; set; }
 
