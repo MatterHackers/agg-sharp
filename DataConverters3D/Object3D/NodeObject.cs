@@ -32,7 +32,6 @@ using MatterHackers.VectorMath;
 namespace MatterHackers.DataConverters3D
 
 {
-
     public class NodeObject : INodeObject
     {
         public Vector2 WindowSize { get; set; } = new Vector2(400, 10);

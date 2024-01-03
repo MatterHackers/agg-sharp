@@ -315,6 +315,9 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		/// <summary>
+		/// Is this object visible in the scene
+		/// </summary>
         public virtual bool Visible { get; set; } = true;
 
 		public virtual bool CanApply
@@ -336,6 +339,9 @@ namespace MatterHackers.DataConverters3D
 		[JsonIgnore]
 		internal int RebuildLockCount { get; set; }
 
+		/// <summary>
+		/// Is this object expanded in the tree view
+		/// </summary>
 		public bool Expanded { get; set; }
 		public static int MaxJsonDepth => 256;
 
@@ -520,7 +526,8 @@ namespace MatterHackers.DataConverters3D
 								json,
 								new JsonSerializerSettings
 								{
-									ContractResolver = new JsonIObject3DContractResolver(),
+                                    // we need the JsonIObject3DContractResolver.CreateObjectContract to set the parent on the children
+                                    ContractResolver = new JsonIObject3DContractResolver(),
 									NullValueHandling = NullValueHandling.Ignore,
 									MaxDepth = MaxJsonDepth,
                                     Converters = new List<JsonConverter> { new JsonINodeObjectConverter() }
