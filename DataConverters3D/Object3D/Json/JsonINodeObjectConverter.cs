@@ -36,11 +36,15 @@ using System;
 namespace MatterHackers.DataConverters3D
 {
     /// <summary>
-    /// Convert a list of INodeObject to JSON. This is the class for reading INodeObject from JSON.
+    /// This is the class for reading INodeObject from JSON.
     /// Specifically, this converter is used to deserialize INodeObject
     /// </summary>
     public class JsonINodeObjectConverter : JsonConverter
     {
+        public JsonINodeObjectConverter()
+        {
+
+        }
         // Register type mappings to support deserializing to the INodeObject concrete type - long term hopefully via configuration mapping, short term via INodeObject inheritance
         private Dictionary<string, string> mappingTypesCache;
 
@@ -62,8 +66,6 @@ namespace MatterHackers.DataConverters3D
             }
         }
 
-        public override bool CanWrite { get; } = false;
-
         public override bool CanConvert(Type objectType) => objectType is INodeObject;
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
@@ -79,7 +81,9 @@ namespace MatterHackers.DataConverters3D
 
                 INodeObject childItem;
 
-                if (string.IsNullOrEmpty(typeName) || typeName == "NodeObject" || !MappingTypes.TryGetValue(typeName, out string fullTypeName))
+                if (string.IsNullOrEmpty(typeName)
+                    || typeName == "NodeObject"
+                    || !MappingTypes.TryGetValue(typeName, out string fullTypeName))
                 {
                     // Use a normal NodeObject type if the TypeName field is missing, invalid or has no mapping entry
                     childItem = item.ToObject<NodeObject>(serializer);
@@ -97,6 +101,7 @@ namespace MatterHackers.DataConverters3D
             return new SafeList<INodeObject>(items);
         }
 
+        public override bool CanWrite { get; } = false;
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
         }

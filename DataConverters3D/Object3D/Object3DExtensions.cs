@@ -511,19 +511,7 @@ namespace MatterHackers.DataConverters3D
 
 				if (checkOutputType)
 				{
-					if (item.WorldOutputType() == PrintOutputTypes.Support)
-					{
-						lastColorFound = new Color(Color.Yellow, 120);
-					}
-					else if (item.WorldOutputType() == PrintOutputTypes.WipeTower)
-					{
-						lastColorFound = new Color(Color.Cyan, 120);
-					}
-					else if (item.WorldOutputType() == PrintOutputTypes.Fuzzy)
-					{
-						lastColorFound = new Color(108, 209, 98, 120);
-					}
-					else if (item.WorldOutputType() == PrintOutputTypes.Hole)
+					if (item.WorldOutputType() == PrintOutputTypes.Hole)
                     {
 						lastColorFound = Color.DarkGray.WithAlpha(120);
 					}

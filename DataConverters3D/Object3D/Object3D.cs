@@ -189,18 +189,6 @@ namespace MatterHackers.DataConverters3D
 					// prevent recursion errors by holding a local pointer
 					var localMesh = Mesh;
 					_outputType = value;
-					if (_outputType == PrintOutputTypes.Support
-						&& localMesh != null
-						&& localMesh.FaceBspTree == null
-						&& localMesh.Faces.Count < 2000)
-					{
-						Task.Run(() =>
-						{
-							var bspTree = FaceBspTree.Create(localMesh);
-							UiThread.RunOnIdle(() => localMesh.FaceBspTree = bspTree);
-						});
-					}
-
 					Invalidate(InvalidateType.OutputType);
 				}
 			}

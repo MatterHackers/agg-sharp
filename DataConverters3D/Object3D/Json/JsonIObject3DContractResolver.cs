@@ -40,7 +40,7 @@ using Newtonsoft.Json.Serialization;
 namespace MatterHackers.DataConverters3D
 {
 	/// <summary>
-	/// A custom contract resolver for IObject3D types. This is the class for writing IObject3D to JSON
+	/// A custom contract resolver for IObject3D types.
 	/// </summary>
 	public class JsonIObject3DContractResolver : DefaultContractResolver
 	{
@@ -48,6 +48,7 @@ namespace MatterHackers.DataConverters3D
 
 		private static Type ColorType = typeof(Color);
 
+		// This function only effects the deserialization of properties. It is not called while serializing.
 		protected override JsonObjectContract CreateObjectContract(Type objectType)
 		{
 			var result = base.CreateObjectContract(objectType);
@@ -73,14 +74,15 @@ namespace MatterHackers.DataConverters3D
 			return result;
 		}
 
+		// This function only effects the serialization of properties. It is not called while deserializing.
 		protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
 		{
 			var properties = base.CreateProperties(type, memberSerialization);
 
 			// Custom sort order for properties, [ID] first, alpha by name, [Children] last
-			return properties.OrderBy(p =>
+			return properties.OrderBy(property =>
 			{
-				switch (p.PropertyName)
+				switch (property.PropertyName)
 				{
 					case "ID":
 						return 0;
@@ -89,16 +91,17 @@ namespace MatterHackers.DataConverters3D
 					default:
 						return 1;
 				}
-			}).ThenBy(p => p.PropertyName).ToList();
+			}).ThenBy(property => property.PropertyName).ToList();
 		}
 
 		protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
 		{
-			JsonProperty property = base.CreateProperty(member, memberSerialization);
+			JsonProperty jsonProperty = base.CreateProperty(member, memberSerialization);
 
-			if (property.PropertyName == "Children" && IObject3DType.IsAssignableFrom(property.DeclaringType))
+			if (jsonProperty.PropertyName == "Children"
+				&& IObject3DType.IsAssignableFrom(jsonProperty.DeclaringType))
 			{
-				property.ShouldSerialize = (instance) =>
+				jsonProperty.ShouldSerialize = (instance) =>
 				{
 					// Serialize if has children and MeshPath is unset or is a relative path (i.e. no DirectoryName part), otherwise
 					// we truncate the in memory Children property and fall back to the MeshPath value on reload
@@ -109,9 +112,10 @@ namespace MatterHackers.DataConverters3D
 				};
 			}
 
-			if (property.PropertyName == "Color" && ColorType.IsAssignableFrom(property.PropertyType))
+			if (jsonProperty.PropertyName == "Color"
+				&& ColorType.IsAssignableFrom(jsonProperty.PropertyType))
 			{
-				property.ShouldSerialize = (instance) =>
+				jsonProperty.ShouldSerialize = (instance) =>
 				{
 					// Serialize Color property as long as we're not the default value
 					return instance is IObject3D object3D
@@ -119,9 +123,12 @@ namespace MatterHackers.DataConverters3D
 				};
 			}
 
-			if (property.PropertyName == "Matrix")
+			if (jsonProperty.PropertyType == typeof(Matrix4X4)
+				&& jsonProperty.PropertyName == "Matrix")
 			{
-				property.ShouldSerialize = (instance) =>
+				// We don't want to serialize the matrix if it is the identity matrix.
+				// This keeps the json files smaller and easier to read.
+				jsonProperty.ShouldSerialize = (instance) =>
 				{
 					// Only serialize Matrix values off by more than .001 from Matrix4X4.Identity
 					return instance is Object3D object3D
@@ -129,20 +136,21 @@ namespace MatterHackers.DataConverters3D
 				};
 			}
 
-			if (property.PropertyName == "NameOverriden")
+			if (jsonProperty.PropertyType == typeof(bool)
+				&& jsonProperty.PropertyName == "NameOverriden")
 			{
-				property.ShouldSerialize = (instance) =>
+				jsonProperty.ShouldSerialize = (instance) =>
 				{
-					// Only serialize Matrix values off by more than .001 from Matrix4X4.Identity
+					// Only serialize non-default (false) value
 					return instance is Object3D object3D
 						&& object3D.NameOverriden == false;
 				};
 			}
 
-			if (property.PropertyType == typeof(bool)
-				&& property.PropertyName == "Persistable")
+			if (jsonProperty.PropertyType == typeof(bool)
+				&& jsonProperty.PropertyName == "Persistable")
 			{
-				property.ShouldSerialize = (instance) =>
+				jsonProperty.ShouldSerialize = (instance) =>
 				{
 					// Only serialize non-default (false) value
 					return instance is IObject3D object3D
@@ -150,10 +158,10 @@ namespace MatterHackers.DataConverters3D
 				};
 			}
 
-			if (property.PropertyType == typeof(bool)
-				&& property.PropertyName == "Visible")
+			if (jsonProperty.PropertyType == typeof(bool)
+				&& jsonProperty.PropertyName == "Visible")
 			{
-				property.ShouldSerialize = (instance) =>
+				jsonProperty.ShouldSerialize = (instance) =>
 				{
 					// Only serialize non-default (false) value
 					return instance is IObject3D object3D
@@ -161,10 +169,10 @@ namespace MatterHackers.DataConverters3D
 				};
 			}
 
-			if (property.PropertyType == typeof(bool)
-				&& property.PropertyName == "Expanded")
+			if (jsonProperty.PropertyType == typeof(bool)
+				&& jsonProperty.PropertyName == "Expanded")
 			{
-				property.ShouldSerialize = (instance) =>
+				jsonProperty.ShouldSerialize = (instance) =>
 				{
 					// Only serialize non-default (false) value
 					return instance is IObject3D object3D
@@ -172,10 +180,10 @@ namespace MatterHackers.DataConverters3D
 				};
 			}
 
-			if (property.PropertyType == typeof(PrintOutputTypes)
-				&& property.PropertyName == "OutputType")
+			if (jsonProperty.PropertyType == typeof(PrintOutputTypes)
+				&& jsonProperty.PropertyName == "OutputType")
 			{
-				property.ShouldSerialize = (instance) =>
+				jsonProperty.ShouldSerialize = (instance) =>
 				{
 					// Only serialize non-default (false) value
 					return instance is IObject3D object3D
@@ -183,10 +191,10 @@ namespace MatterHackers.DataConverters3D
 				};
 			}
 
-			if (property.PropertyType == typeof(int)
-				&& property.PropertyName == "MaterialIndex")
+			if (jsonProperty.PropertyType == typeof(int)
+				&& jsonProperty.PropertyName == "MaterialIndex")
 			{
-				property.ShouldSerialize = (instance) =>
+				jsonProperty.ShouldSerialize = (instance) =>
 				{
 					// Only serialize non-default (false) value
 					return instance is IObject3D object3D
@@ -194,7 +202,7 @@ namespace MatterHackers.DataConverters3D
 				};
 			}
 
-			return property;
+			return jsonProperty;
 		}
 	}
 }
