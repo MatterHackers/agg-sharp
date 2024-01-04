@@ -446,6 +446,11 @@ namespace MatterHackers.RenderOpenGl
 
 		public override void Line(double x1, double y1, double x2, double y2, Color color, double strokeWidth = 1)
 		{
+            if (strokeWidth == -1)
+            {
+                strokeWidth = 1 * DeviceScale;
+            }
+            
 			RectangleDouble strokeBounds;
 			if (x1 == x2) // vertical line
 			{

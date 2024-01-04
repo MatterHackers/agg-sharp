@@ -46,7 +46,6 @@ namespace MatterHackers.Agg.UI
         private readonly ImageWidget imageWidget;
         private readonly TextWidget textWidget;
         private bool _expanded;
-        private ImageBuffer _image = null;
         private TreeView _treeView;
         private bool isDirty;
         private ThemeConfig theme;
@@ -149,9 +148,9 @@ namespace MatterHackers.Agg.UI
             // add a check box
             if (useIcon)
             {
-                _image = new ImageBuffer(16, 16);
+                var image = new ImageBuffer(16, 16);
 
-                this.HighlightRegion.AddChild(imageWidget = new ImageWidget(this.Image, listenForImageChanged: false)
+                this.HighlightRegion.AddChild(imageWidget = new ImageWidget(image, listenForImageChanged: false)
                 {
                     VAnchor = VAnchor.Center,
                     Margin = new BorderDouble(right: 4),
@@ -187,17 +186,17 @@ namespace MatterHackers.Agg.UI
             if (TreeView?.ShowLines == true)
             {
                 var xOffset = -.5;
-                var shortLine = 5;
-                var longLine = 25;
+                var shortLine = 5 * DeviceScale;
+                var longLine = 25 * DeviceScale;
 
                 foreach (var treeNodeWidget in content.Children.OfType<TreeNode>())
                 {
                     var firstChildOfLast = treeNodeWidget.Children.OfType<FlowLayoutWidget>().FirstOrDefault();
-                    var yOffset = 0.0;
+                    var yOffset = 0.5;
                     if (firstChildOfLast != null)
                     {
                         var firstChildOfLastBounds = firstChildOfLast.TransformToParentSpace(this, firstChildOfLast.LocalBounds);
-                        yOffset = firstChildOfLastBounds.Center.Y + .5;
+                        yOffset = Math.Round(firstChildOfLastBounds.Center.Y) + .5;
                         if (treeNodeWidget.Nodes.Count > 0)
                         {
                             // and draw a little horizontal line from the line to the right
@@ -264,19 +263,14 @@ namespace MatterHackers.Agg.UI
         {
             get
             {
-                return _image;
+                return imageWidget.Image;
             }
 
             set
             {
-                if (_image != value)
+                if (Image != value)
                 {
-                    _image = value;
-
-                    if (imageWidget != null)
-                    {
-                        imageWidget.Image = _image;
-                    }
+                    imageWidget.Image = value;
 
                     OnImageChanged(null);
                 }
@@ -339,8 +333,8 @@ namespace MatterHackers.Agg.UI
 
         public bool ReserveIconSpace
         {
-            get => expandWidget.ReserveIconSpace;
-            set => expandWidget.ReserveIconSpace = value;
+            get => imageWidget.Visible;
+            set => imageWidget.Visible = value;
         }
 
         // Summary:
@@ -721,27 +715,11 @@ namespace MatterHackers.Agg.UI
                 }
             }
 
-            private bool _reserveIconSpace = true;
-            public bool ReserveIconSpace
-            {
-                get => _reserveIconSpace;
-                set
-                {
-                    _reserveIconSpace = value;
-                    this.EnsureExpansionState();
-                }
-            }
-
             private void EnsureExpansionState()
             {
                 if (!this.Expandable)
                 {
-                    if (this.ReserveIconSpace)
-                    {
-                        imageButton.SetIcon(placeholder);
-                    }
-
-                    imageButton.Visible = this.ReserveIconSpace;
+                    imageButton.SetIcon(placeholder);
                 }
                 else
                 {
