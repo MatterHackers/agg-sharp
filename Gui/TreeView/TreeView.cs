@@ -307,11 +307,11 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public bool ShowLines { get; set; }
+		public bool ShowLines { get; set; }  = true;
 
 		public bool ShowNodeToolTips { get; set; }
 
-		public bool ShowPlusMinus { get; set; }
+		public bool ShowPlusMinus { get; set; } = true;
 
 		public bool ShowRootLines { get; set; }
 

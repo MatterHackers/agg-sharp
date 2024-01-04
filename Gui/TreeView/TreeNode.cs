@@ -49,10 +49,13 @@ namespace MatterHackers.Agg.UI
         private ImageBuffer _image = null;
         private TreeView _treeView;
         private bool isDirty;
+        private ThemeConfig theme;
 
         public TreeNode(ThemeConfig theme, bool useIcon = true, TreeNode nodeParent = null)
             : base(FlowDirection.TopToBottom)
         {
+            this.theme = theme;
+
             this.HAnchor = HAnchor.Fit | HAnchor.Left;
             this.VAnchor = VAnchor.Fit;
 
@@ -169,12 +172,50 @@ namespace MatterHackers.Agg.UI
                 HAnchor = HAnchor.Fit | HAnchor.Left,
                 Visible = false, // content starts out not visible
                 Name = "content",
-                Margin = new BorderDouble(12, 3),
+                //Margin = new BorderDouble(12, 3),
+                Padding = new BorderDouble(12, 3),
             };
+            content.AfterDraw += Content_AfterDraw;
             this.AddChild(content);
 
             // Register listeners
             this.Nodes.CollectionChanged += this.Nodes_CollectionChanged;
+        }
+
+        private void Content_AfterDraw(object sender, DrawEventArgs e)
+        {
+            if (TreeView?.ShowLines == true)
+            {
+                var xOffset = -.5;
+                var shortLine = 5;
+                var longLine = 25;
+
+                foreach (var treeNodeWidget in content.Children.OfType<TreeNode>())
+                {
+                    var firstChildOfLast = treeNodeWidget.Children.OfType<FlowLayoutWidget>().FirstOrDefault();
+                    var yOffset = 0.0;
+                    if (firstChildOfLast != null)
+                    {
+                        var firstChildOfLastBounds = firstChildOfLast.TransformToParentSpace(this, firstChildOfLast.LocalBounds);
+                        yOffset = firstChildOfLastBounds.Center.Y + .5;
+                        if (treeNodeWidget.Nodes.Count > 0)
+                        {
+                            // and draw a little horizontal line from the line to the right
+                            e.Graphics2D.Line(xOffset, yOffset, xOffset + shortLine, yOffset, theme.TextColor.WithAlpha(100));
+                        }
+                        else
+                        {
+                            e.Graphics2D.Line(xOffset, yOffset, xOffset + longLine, yOffset, theme.TextColor.WithAlpha(100));
+                        }
+                    }
+
+                    if (treeNodeWidget == content.Children.OfType<TreeNode>().LastOrDefault())
+                    {
+                        // draw a line from the center of the height of the last child to the top
+                        e.Graphics2D.Line(xOffset, yOffset, xOffset, Height, theme.TextColor.WithAlpha(100));
+                    }
+                }
+            }
         }
 
         public event EventHandler CheckedStateChanged;
@@ -680,7 +721,16 @@ namespace MatterHackers.Agg.UI
                 }
             }
 
-            public bool ReserveIconSpace { get; set; } = true;
+            private bool _reserveIconSpace = true;
+            public bool ReserveIconSpace
+            {
+                get => _reserveIconSpace;
+                set
+                {
+                    _reserveIconSpace = value;
+                    this.EnsureExpansionState();
+                }
+            }
 
             private void EnsureExpansionState()
             {
