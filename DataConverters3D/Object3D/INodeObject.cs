@@ -33,7 +33,7 @@ namespace MatterHackers.DataConverters3D
 {
     public interface INodeObject
     {
-        string NodeTypeName { get; set; }
+        string TypeName { get; set; }
         Vector2 WindowPosition { get; set; }
         Vector2 WindowSize { get; set; }
     }

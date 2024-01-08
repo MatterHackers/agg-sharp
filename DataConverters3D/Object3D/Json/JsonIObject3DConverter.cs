@@ -122,7 +122,7 @@ namespace MatterHackers.DataConverters3D
             var jArray = JArray.Load(reader);
             foreach (var item in jArray)
             {
-                string typeName = item["TypeName"]?.ToString();
+                string typeName = item[nameof(IObject3D.TypeName)]?.ToString();
 
                 IObject3D childItem;
 
@@ -155,7 +155,7 @@ namespace MatterHackers.DataConverters3D
             var jArray = JArray.Load(reader);
             foreach (var item in jArray)
             {
-                string typeName = item["NodeTypeName"]?.ToString();
+                string typeName = item[nameof(INodeObject.TypeName)]?.ToString();
 
                 INodeObject childItem;
 

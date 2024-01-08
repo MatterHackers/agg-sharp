@@ -38,14 +38,14 @@ namespace MatterHackers.DataConverters3D
         public Vector2 WindowPosition { get; set; }
 
         // used for json serialization and deserialization
-        public string NodeTypeName { get; set; } = "";
+        public string TypeName { get; set; } = "";
 
         public NodeObject()
         {
             var type = this.GetType();
             if (type != typeof(NodeObject))
             {
-                this.NodeTypeName = type.Name;
+                this.TypeName = type.Name;
             }
         }
     }
