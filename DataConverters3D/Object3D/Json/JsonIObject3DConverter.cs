@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Data;
 using MatterHackers.Agg;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -40,10 +41,10 @@ namespace MatterHackers.DataConverters3D
     /// Specifically, this converter is used to deserialize the Children property of IObject3D
     /// </summary>
     public class JsonIObject3DConverter : JsonConverter
-    {
+	{
         // Register type mappings to support deserializing to the IObject3D concrete type - long term hopefully via configuration mapping, short term via IObject3D inheritance
         private static Dictionary<string, string> _mappingTypesCache;
-        internal static Dictionary<string, string> MappingTypesCache
+        private static Dictionary<string, string> Object3DMappingTypesCache
         {
             get
             {
@@ -63,56 +64,55 @@ namespace MatterHackers.DataConverters3D
             }
         }
 
-        public Dictionary<string, string> MappingTypes => MappingTypesCache;
+        // Register type mappings to support deserializing to the INodeObject concrete type - long term hopefully via configuration mapping, short term via INodeObject inheritance
+        private Dictionary<string, string> INodeObjectMappingTypesCache;
 
-        public override bool CanConvert(Type objectType) => objectType is IObject3D;
+        private Dictionary<string, string> INodeObjectMappingTypes
+        {
+            get
+            {
+                if (INodeObjectMappingTypesCache == null)
+                {
+                    INodeObjectMappingTypesCache = new Dictionary<string, string>();
+
+                    foreach (var type in PluginFinder.FindTypes<INodeObject>())
+                    {
+                        INodeObjectMappingTypesCache.Add(type.Name, type.AssemblyQualifiedName);
+                    }
+                }
+
+                return INodeObjectMappingTypesCache;
+            }
+        }
+
+
+        public override bool CanConvert(Type objectType)
+        {
+            var isObjectType = typeof(AscendableSafeList<IObject3D>).IsAssignableFrom(objectType);
+            var isINodeObjectType = typeof(SafeList<INodeObject>).IsAssignableFrom(objectType);
+
+            return isObjectType || isINodeObjectType;
+        }
 
         public override bool CanRead { get; } = true;
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            reader.MaxDepth = Object3D.MaxJsonDepth;
-            var parentItem = existingValue as IObject3D;
+            var isObjectType = typeof(AscendableSafeList<IObject3D>).IsAssignableFrom(objectType);
+            var isINodeObjectType = typeof(SafeList<INodeObject>).IsAssignableFrom(objectType);
 
-            var item = JArray.Load(reader);
-            string typeName = item["TypeName"]?.ToString();
-
-            IObject3D childItem;
-
-            if (string.IsNullOrEmpty(typeName) || typeName == "Object3D" || !MappingTypes.TryGetValue(typeName, out string fullTypeName))
+            if (isObjectType)
             {
-                // Use a normal Object3D type if the TypeName field is missing, invalid or has no mapping entry
-                childItem = item.ToObject<Object3D>(serializer);
+                return IObject3DReadJson(reader, objectType, existingValue, serializer);
             }
-            else
+            else if (isINodeObjectType)
             {
-                // If a mapping entry exists, try to find the type for the given entry falling back to Object3D if that fails
-                Type type = Type.GetType(fullTypeName) ?? typeof(Object3D);
-                childItem = (IObject3D)item.ToObject(type, serializer);
+                return INodeObjectReadJson(reader, objectType, existingValue, serializer);
             }
 
-            childItem.Parent = parentItem;
-
-            return item;
+            return null;
         }
 
-        public override bool CanWrite { get; } = false;
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-        }
-    }
-
-    /// <summary>
-    /// Convert a list of IObject3D to JSON. This is the class for reading IObject3D from JSON.
-    /// Specifically, this converter is used to deserialize the Children property of IObject3D
-    /// </summary>
-    public class JsonIObject3DChildrenConverter : JsonConverter
-	{
-        public Dictionary<string, string> MappingTypes => JsonIObject3DConverter.MappingTypesCache;
-
-        public override bool CanConvert(Type objectType) => objectType is IObject3D;
-
-        public override bool CanRead { get; } = true;
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public object IObject3DReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             reader.MaxDepth = Object3D.MaxJsonDepth;
             var parentItem = existingValue as IObject3D;
@@ -126,7 +126,7 @@ namespace MatterHackers.DataConverters3D
 
                 IObject3D childItem;
 
-                if (string.IsNullOrEmpty(typeName) || typeName == "Object3D" || !MappingTypes.TryGetValue(typeName, out string fullTypeName))
+                if (string.IsNullOrEmpty(typeName) || typeName == "Object3D" || !Object3DMappingTypesCache.TryGetValue(typeName, out string fullTypeName))
                 {
                     // Use a normal Object3D type if the TypeName field is missing, invalid or has no mapping entry
                     childItem = item.ToObject<Object3D>(serializer);
@@ -144,6 +144,39 @@ namespace MatterHackers.DataConverters3D
             }
 
             return new AscendableSafeList<IObject3D>(items, null);
+        }
+
+        public object INodeObjectReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            reader.MaxDepth = Object3D.MaxJsonDepth;
+
+            var items = new List<INodeObject>();
+
+            var jArray = JArray.Load(reader);
+            foreach (var item in jArray)
+            {
+                string typeName = item["NodeTypeName"]?.ToString();
+
+                INodeObject childItem;
+
+                if (string.IsNullOrEmpty(typeName)
+                    || typeName == "NodeObject"
+                    || !INodeObjectMappingTypes.TryGetValue(typeName, out string fullTypeName))
+                {
+                    // Use a normal NodeObject type if the TypeName field is missing, invalid or has no mapping entry
+                    childItem = item.ToObject<NodeObject>(serializer);
+                }
+                else
+                {
+                    // If a mapping entry exists, try to find the type for the given entry falling back to NodeObject if that fails
+                    Type type = Type.GetType(fullTypeName) ?? typeof(NodeObject);
+                    childItem = (INodeObject)item.ToObject(type, serializer);
+                }
+
+                items.Add(childItem);
+            }
+
+            return new SafeList<INodeObject>(items);
         }
 
         public override bool CanWrite { get; } = false;
