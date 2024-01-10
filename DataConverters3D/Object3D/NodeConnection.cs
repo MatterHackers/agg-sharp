@@ -35,7 +35,5 @@ namespace MatterHackers.DataConverters3D
         public int OutputIndex { get; set; }
         public int InputNodeIndex { get; set; }
         public int InputIndex { get; set; }
-
-
     }
 }

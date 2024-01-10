@@ -1,6 +1,8 @@
 using MatterHackers.Agg.SvgTools;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
+using System;
+
 
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
@@ -277,6 +279,18 @@ namespace MatterHackers.Agg.VertexSource
 
                 return pointPosition;
             }
+
+            public void RemoveAt(int index)
+            {
+                // remove the vertex and compact the array
+                for (int i = index; i < numVertices - 1; i++)
+                {
+                    vertexData[i] = vertexData[i + 1];
+                }
+
+                // remove the last vertex
+                numVertices--;
+            }
         }
 
         private int iteratorIndex;
@@ -352,6 +366,68 @@ namespace MatterHackers.Agg.VertexSource
             }
 
             return false;
+        }
+
+        public void RemoveAt(int index)
+        {
+            // find out what type of point we are deleting
+            var command = vertexDataManager.Command(index);
+            var hint = this.GetCommandHint(index);
+
+            switch(command)
+            {
+                case FlagsAndCommand.Curve3:
+                    switch (hint)
+                    {
+                        case CommandHint.C3ControlFromPrev:
+                            throw new Exception("Not implemented yet");
+                            break;
+                        
+                        case CommandHint.C3Point:
+                            throw new Exception("Not implemented yet");
+                            break;
+
+                        default:
+                            throw new NotImplementedException("This sholud not happen for curve3");
+                    }
+                    break;
+
+                case FlagsAndCommand.Curve4:
+                    switch (hint)
+                    {
+                        case CommandHint.C4ControlFromPrev:
+                            throw new Exception("Not implemented yet");
+                            break;
+
+                        case CommandHint.C4ControlToPoint:
+                            throw new Exception("Not implemented yet");
+                            break;
+
+                        case CommandHint.C4Point:
+                            throw new Exception("Not implemented yet");
+                            break;
+
+                        default:
+                            throw new NotImplementedException("This sholud not happen for curve4");
+                    }
+                    break;
+
+                case FlagsAndCommand.LineTo:
+                    // delete the vertex
+                    vertexDataManager.RemoveAt(index);
+                    break;
+
+                case FlagsAndCommand.MoveTo:
+                    throw new Exception("Not implemented yet");
+                    break;
+
+                case FlagsAndCommand.EndPoly:
+                    throw new Exception("Not implemented yet");
+                    break;
+
+                default:
+                    throw new NotImplementedException("Add this case and test it");
+            }
         }
 
         public static bool OldEqualsOldStyle(IVertexSource control, IVertexSource test, double maxError = .0001)
