@@ -2141,7 +2141,9 @@ namespace MatterHackers.Agg.UI
 
 							graphics2D.SetClippingRect(currentScreenClipping);
 
-							if (child.DoubleBuffer && accumulatedTransform.sx <= 1)
+							if (child.DoubleBuffer
+								&& accumulatedTransform.sx < 1.05 
+								&& accumulatedTransform.sx > .95)
 							{
 								var offsetToRenderSurface = new Vector2(currentGraphics2DTransform.tx, currentGraphics2DTransform.ty);
 								offsetToRenderSurface += new Vector2(child.OriginRelativeParent.X * currentGraphics2DTransform.sx, child.OriginRelativeParent.Y * currentGraphics2DTransform.sy);
