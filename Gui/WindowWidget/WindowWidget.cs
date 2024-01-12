@@ -37,8 +37,26 @@ namespace MatterHackers.Agg.UI
 			})
 		{
 		}
-        
-		public WindowWidget(ThemeConfig theme, GuiWidget clientArea)
+
+        public override void OnContainsFocusChanged(FocusChangedArgs e)
+        {
+            base.OnContainsFocusChanged(e);
+
+			UiThread.RunOnIdle(() =>
+			{
+				var parent = Parent;
+				// move this window to the first position in the children list
+				if (ContainsFocus
+					&& parent != null)
+				{
+                    parent.RemoveChild(this);
+					this.ClearRemovedFlag();
+                    parent.AddChild(this);
+                }
+			});
+        }
+
+        public WindowWidget(ThemeConfig theme, GuiWidget clientArea)
 		{
 			this.theme = theme;
             
