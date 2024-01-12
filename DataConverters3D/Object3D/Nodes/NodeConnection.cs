@@ -27,7 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-namespace MatterHackers.DataConverters3D
+namespace DataConverters3D.Object3D.Nodes
 {
     public record NodeConnection
     {

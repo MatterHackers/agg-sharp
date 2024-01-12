@@ -29,24 +29,12 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.DataConverters3D
-
+namespace DataConverters3D.Object3D.Nodes
 {
-    public class NodeObject : INodeObject
+    public interface INodeObject
     {
-        public Vector2 WindowSize { get; set; } = new Vector2(400, 10);
-        public Vector2 WindowPosition { get; set; }
-
-        // used for json serialization and deserialization
-        public string TypeName { get; set; } = "";
-
-        public NodeObject()
-        {
-            var type = this.GetType();
-            if (type != typeof(NodeObject))
-            {
-                this.TypeName = type.Name;
-            }
-        }
+        string TypeName { get; set; }
+        Vector2 WindowPosition { get; set; }
+        Vector2 WindowSize { get; set; }
     }
 }
