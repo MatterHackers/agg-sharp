@@ -45,7 +45,6 @@ namespace MatterHackers.DataConverters3D
 		Children = 1 << 0,
 		Color = 1 << 1,
 		Image = 1 << 2,
-		Material = 1 << 3,
 		Matrix = 1 << 4,
 		Mesh = 1 << 5,
 		Name = 1 << 6,
@@ -61,7 +60,6 @@ namespace MatterHackers.DataConverters3D
 	{
 		Matrix = 0x01,
 		Color = 0x02,
-		MaterialIndex = 0x04,
 		Name = 0x8,
 		OutputType = 0x10,
 		Visible = 0x20,
@@ -100,8 +98,6 @@ namespace MatterHackers.DataConverters3D
 
 		string ID { get; set; }
 
-		int MaterialIndex { get; set; }
-
 		[JsonConverter(typeof(MatrixConverter))]
 		Matrix4X4 Matrix { get; set; }
 
@@ -129,12 +125,6 @@ namespace MatterHackers.DataConverters3D
 		new IObject3D Parent { get; set; }
 
 		/// <summary>
-		/// Identifies if this object can be printed. Things like design tools
-		/// that are editor only do not print.
-		/// </summary>
-		bool Printable { get; }
-
-		/// <summary>
 		/// Identifies if this object and its children should save their meshes
 		/// </summary>
 		bool Persistable { get; }
@@ -150,7 +140,7 @@ namespace MatterHackers.DataConverters3D
 		/// Create a deep copy of the IObject3D objects
 		/// </summary>
 		/// <returns></returns>
-		IObject3D Clone();
+		IObject3D DeepCopy();
 
 		/// <summary>
 		/// Remove the IObject3D from the tree and keep whatever functionality it was adding.

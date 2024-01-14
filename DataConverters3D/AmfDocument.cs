@@ -166,7 +166,6 @@ namespace MatterHackers.DataConverters3D
 				{
 					keyValue.Key.Name = data.name;
 					keyValue.Key.Color = data.color;
-					keyValue.Key.MaterialIndex = data.material;
 					keyValue.Key.OutputType = data.output;
 				}
 			}
@@ -261,7 +260,7 @@ namespace MatterHackers.DataConverters3D
 				double currentRatio = 0;
 
 				var groupedByNameColorMaterial = visibleMeshes
-					.GroupBy(i => (i.Name, i.Color, i.WorldMaterialIndex(), i.WorldOutputType()));
+					.GroupBy(i => (i.Name, i.Color, i.WorldOutputType()));
 
 				int objectId = 0;
 				foreach (var group in groupedByNameColorMaterial)
@@ -385,12 +384,12 @@ namespace MatterHackers.DataConverters3D
 					amfFile.WriteEndElement();
 				}
 
-				var nameColorMaterials = new HashSet<(string name, Color c, int material, PrintOutputTypes output)>();
+				var nameColorMaterials = new HashSet<(string name, Color c, PrintOutputTypes output)>();
 				foreach (var group in groupedByNameColorMaterial)
 				{
 					foreach (var item in group)
 					{
-						nameColorMaterials.Add((item.Name, item.WorldColor(), item.WorldMaterialIndex(), item.WorldOutputType()));
+						nameColorMaterials.Add((item.Name, item.WorldColor(), item.WorldOutputType()));
 					}
 				}
 
@@ -414,7 +413,6 @@ namespace MatterHackers.DataConverters3D
 						// <metadata type="MaterialIndex">{ncm.material}</metadata>
 						amfFile.WriteStartElement("metadata");
 						amfFile.WriteAttributeString("type", "MaterialIndex");
-						amfFile.WriteValue(ncm.material);
 						amfFile.WriteEndElement();
 
 						// <color>

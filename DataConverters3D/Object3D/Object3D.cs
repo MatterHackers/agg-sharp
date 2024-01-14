@@ -156,25 +156,6 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		private int _materialIndex = -1;
-
-		public int MaterialIndex
-		{
-			get
-			{
-				return _materialIndex;
-			}
-
-			set
-			{
-				if (value != _materialIndex)
-				{
-					_materialIndex = value;
-					Invalidate(InvalidateType.Material);
-				}
-			}
-		}
-
 		private PrintOutputTypes _outputType = PrintOutputTypes.Default;
 
 		public PrintOutputTypes OutputType
@@ -401,7 +382,7 @@ namespace MatterHackers.DataConverters3D
 			else
 			{
 				// Clone required for instancing
-				loadedItem = loadedItem?.Clone();
+				loadedItem = loadedItem?.DeepCopy();
 			}
 
 			return loadedItem;
@@ -878,8 +859,8 @@ namespace MatterHackers.DataConverters3D
 				});
 		}
 
-		// Deep clone via json serialization
-		public IObject3D Clone()
+		// Deep copy via json serialization
+		public IObject3D DeepCopy()
 		{
 			IObject3D clonedItem;
 
@@ -1206,7 +1187,7 @@ namespace MatterHackers.DataConverters3D
 				// push our matrix into a copy of our children
 				foreach (var child in this.Children)
 				{
-					var newChild = child.Clone();
+					var newChild = child.DeepCopy();
 					newChildren.Add(newChild);
 					newChild.Matrix *= this.Matrix;
 					var flags = Object3DPropertyFlags.Visible;
@@ -1218,11 +1199,6 @@ namespace MatterHackers.DataConverters3D
 					if (this.OutputType != PrintOutputTypes.Default)
 					{
 						flags |= Object3DPropertyFlags.OutputType;
-					}
-
-					if (this.MaterialIndex != -1)
-					{
-						flags |= Object3DPropertyFlags.MaterialIndex;
 					}
 
 					newChild.CopyProperties(this, flags);
@@ -1264,7 +1240,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				if (undoBuffer != null)
 				{
-					var newTree = this.Clone();
+					var newTree = this.DeepCopy();
 					using (newTree.RebuildLock())
 					{
 						// push our matrix into a copy of our children (so they don't jump away)

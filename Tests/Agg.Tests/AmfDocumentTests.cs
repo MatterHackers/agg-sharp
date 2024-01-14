@@ -71,7 +71,6 @@ namespace MatterHackers.Agg.Tests
 			var child = amfObject.Children.First();
 			Assert.IsNotNull(child.Mesh);
 			Assert.AreEqual("Cube", child.Name);
-			Assert.AreEqual(-1, child.MaterialIndex);
 			Assert.AreEqual(new Color(0, 128, 255), child.Color);
 			Assert.AreEqual(PrintOutputTypes.Solid, child.OutputType);
 		}

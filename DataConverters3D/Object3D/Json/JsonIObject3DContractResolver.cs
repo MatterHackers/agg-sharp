@@ -191,17 +191,6 @@ namespace MatterHackers.DataConverters3D
 				};
 			}
 
-			if (jsonProperty.PropertyType == typeof(int)
-				&& jsonProperty.PropertyName == "MaterialIndex")
-			{
-				jsonProperty.ShouldSerialize = (instance) =>
-				{
-					// Only serialize non-default (false) value
-					return instance is IObject3D object3D
-						&& object3D.MaterialIndex != -1;
-				};
-			}
-
 			return jsonProperty;
 		}
 	}

@@ -59,11 +59,6 @@ namespace MatterHackers.DataConverters3D
 				copyTo.Color = copyFrom.WorldColor(root, includingRoot);
 			}
 
-			if (flags.HasFlag(Object3DPropertyFlags.MaterialIndex))
-			{
-				copyTo.MaterialIndex = copyFrom.WorldMaterialIndex(root, includingRoot);
-			}
-
 			if (flags.HasFlag(Object3DPropertyFlags.Name))
 			{
 				copyTo.Name = copyFrom.Name;
@@ -90,11 +85,6 @@ namespace MatterHackers.DataConverters3D
 			if (flags.HasFlag(Object3DPropertyFlags.Color))
 			{
 				copyTo.Color = copyFrom.Color;
-			}
-
-			if (flags.HasFlag(Object3DPropertyFlags.MaterialIndex))
-			{
-				copyTo.MaterialIndex = copyFrom.MaterialIndex;
 			}
 
 			if (flags.HasFlag(Object3DPropertyFlags.Name))

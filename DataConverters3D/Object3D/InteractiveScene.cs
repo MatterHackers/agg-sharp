@@ -320,9 +320,6 @@ namespace MatterHackers.DataConverters3D
 		[JsonIgnore]
 		public Color Color { get => SourceItem.Color; set => SourceItem.Color = value; }
 
-		[JsonIgnore]
-		public int MaterialIndex { get => SourceItem.MaterialIndex; set => SourceItem.MaterialIndex = value; }
-
 		public bool Contains(IObject3D item)
 		{
 			if (item?.Parent == null)
@@ -382,9 +379,6 @@ namespace MatterHackers.DataConverters3D
 		public bool Persistable => SourceItem.Persistable;
 
 		[JsonIgnore]
-		public bool Printable => SourceItem.Printable;
-
-		[JsonIgnore]
 		public bool Visible { get => SourceItem.Visible; set => SourceItem.Visible = value; }
 
 		public string ID { get => SourceItem.ID; set => SourceItem.ID = value; }
@@ -429,7 +423,7 @@ namespace MatterHackers.DataConverters3D
 
         public event EventHandler ItemsModified;
 
-		public IObject3D Clone() => SourceItem.Clone();
+		public IObject3D DeepCopy() => SourceItem.DeepCopy();
 
 		public async Task<string> ToJson(Action<double, string> progress = null)
 		{
@@ -486,6 +480,7 @@ namespace MatterHackers.DataConverters3D
             // If the Source has a clone ID, find all clones and replace them with a clone of the Source
 			var source = invalidateType.Source;
 			if (source != null
+				&& invalidateType.InvalidateType != InvalidateType.DisplayValues
 				&& !string.IsNullOrEmpty(source.CloneID))
 			{
 				var clones = this.DescendantsAndSelf().Where(i => i.CloneID == invalidateType.Source.CloneID && i != source).ToList();
@@ -497,7 +492,7 @@ namespace MatterHackers.DataConverters3D
 						cloneParent.Children.Modify(parentChildren =>
 						{
 							var cloneIndex = parentChildren.IndexOf(clone);
-							parentChildren[cloneIndex] = source.Clone();
+							parentChildren[cloneIndex] = source.DeepCopy();
 						});
 					}
 

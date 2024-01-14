@@ -546,25 +546,6 @@ namespace MatterHackers.DataConverters3D
 			return true;
 		}
 
-		public static bool WorldPrintable(this IObject3D child, IObject3D rootOverride = null)
-		{
-			foreach (var item in child.AncestorsAndSelf())
-			{
-				if (!item.Printable)
-				{
-					return false;
-				}
-
-				// If the root override has been matched, break and return latest
-				if (item == rootOverride)
-				{
-					break;
-				}
-			}
-
-			return true;
-		}
-
 		public static PrintOutputTypes WorldOutputType(this IObject3D child, IObject3D rootOverride = null, bool includingRoot = true)
 		{
 			var lastOutputTypeFound = PrintOutputTypes.Default;
@@ -617,35 +598,6 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			return true;
-		}
-
-		public static int WorldMaterialIndex(this IObject3D child, IObject3D rootOverride = null, bool includingRoot = true)
-		{
-			var lastMaterialIndexFound = -1;
-			foreach (var item in child.AncestorsAndSelf())
-			{
-				if (!includingRoot
-					&& item == rootOverride)
-				{
-					// exit before the root item is included
-					break;
-				}
-
-				if (item.MaterialIndex != -1)
-				{
-					// use collection as the color for all recursive children
-					lastMaterialIndexFound = item.MaterialIndex;
-				}
-
-				// If the root override has been matched, break and return latest
-				if (item == rootOverride)
-				{
-					break;
-				}
-			}
-
-			// If we don't find a color (-1) return 0
-			return lastMaterialIndexFound;
 		}
 
 		public class RebuildLocks : IDisposable
@@ -821,11 +773,6 @@ namespace MatterHackers.DataConverters3D
 					if (objectToCollapse.Color != Color.Transparent)
 					{
 						child.Color = objectToCollapse.Color;
-					}
-
-					if (objectToCollapse.MaterialIndex != -1)
-					{
-						child.MaterialIndex = objectToCollapse.MaterialIndex;
 					}
 
 					if (objectToCollapse.OutputType != PrintOutputTypes.Default)
