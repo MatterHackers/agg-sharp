@@ -119,6 +119,12 @@ namespace MatterHackers.DataConverters3D
 
 		string OwnerID { get; set; }
 
+		/// <summary>
+		/// Every object that is of the same type and has the same CloneID is considered a clone.
+		/// If any of the clones are changed, all of the clones are changed to match.
+		/// </summary>
+		string CloneID { get; set; }
+
 		[JsonIgnore]
 		new IObject3D Parent { get; set; }
 

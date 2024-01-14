@@ -94,6 +94,8 @@ namespace MatterHackers.DataConverters3D
 
 		public string OwnerID { get; set; }
 
+		public string CloneID { get; set; }
+
 		public AscendableSafeList<IObject3D> Children
 		{
 			get => _children;

@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2018, John Lewin, Lars Brubaker
+Copyright (c) 2023, John Lewin, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -240,8 +240,6 @@ namespace MatterHackers.DataConverters3D
 			this.SourceItem = sourceItem;
 		}
 
-		#region IObject3D
-
 		IObject3D _sourceItem  = null;
 
         private void ValidateSceneStructure()
@@ -312,6 +310,8 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		public string OwnerID { get => SourceItem.OwnerID; set => SourceItem.OwnerID = value; }
+
+		public string CloneID { get => SourceItem.CloneID; set => SourceItem.CloneID = value; }
 
 		public AscendableSafeList<IObject3D> Children { get => SourceItem.Children; set => SourceItem.Children = value; }
 
@@ -482,9 +482,40 @@ namespace MatterHackers.DataConverters3D
 		public void Invalidate(InvalidateArgs invalidateType)
 		{
 			this.Invalidated?.Invoke(this, invalidateType);
-		}
 
-		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix)
+            // If the Source has a clone ID, find all clones and replace them with a clone of the Source
+			var source = invalidateType.Source;
+			if (source != null
+				&& !string.IsNullOrEmpty(source.CloneID))
+			{
+				var clones = this.DescendantsAndSelf().Where(i => i.CloneID == invalidateType.Source.CloneID && i != source).ToList();
+				if (clones.Count > 0)
+				{
+					foreach (var clone in clones)
+					{
+						var cloneParent = clone.Parent;
+						cloneParent.Children.Modify(parentChildren =>
+						{
+							var cloneIndex = parentChildren.IndexOf(clone);
+							parentChildren[cloneIndex] = source.Clone();
+						});
+					}
+
+					foreach(var clone in clones)
+					{
+                        var cloneParent = clone.Parent;
+                        cloneParent.Invalidate(new InvalidateArgs(cloneParent, InvalidateType.Children));
+                    }
+				}
+				else
+				{
+					// If no clones were found, the source is not a clone, so we can remove the clone ID
+					source.CloneID = null; 
+				}
+			}
+        }
+
+        public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix)
 		{
 			return SourceItem.GetAxisAlignedBoundingBox(matrix);
 		}
@@ -543,6 +574,5 @@ namespace MatterHackers.DataConverters3D
 
 			return selectedItems;
 		}
-        #endregion
     }
 }
