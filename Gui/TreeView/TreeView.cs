@@ -296,7 +296,12 @@ namespace MatterHackers.Agg.UI
 						_selectedNode.HighlightRegion.BackgroundColor = theme.AccentMimimalOverlay;
 					}
 
-					this.ScrollIntoView(_selectedNode);
+					// wait for the refresh of the tree view before scrolling
+					UiThread.RunOnIdle(() =>
+					{
+						this.ScrollIntoView(_selectedNode);
+					});
+
 					if (hadFocus)
 					{
 						_selectedNode?.Focus();
