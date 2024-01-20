@@ -21,8 +21,8 @@ namespace MatterHackers.Agg.UI
 {
 	public interface IUndoRedoCommand
 	{
-		void Do();
-
+        string Name { get; }
+        void Do();
 		void Undo();
 	}
 }

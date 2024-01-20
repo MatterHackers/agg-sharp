@@ -70,8 +70,11 @@ namespace MatterHackers.Agg.UI
 			get => undoBuffer.Limit;
 			set => undoBuffer.Limit = value;
 		}
+        public string UndoName => undoBuffer.Count > 0 ? undoBuffer.Peek()?.Name : "None";
 
-		public void Add(IUndoRedoCommand command)
+		public string RedoName => redoBuffer.Count > 0 ? redoBuffer.Peek()?.Name : "None";
+
+        public void Add(IUndoRedoCommand command)
 		{
 			lock (locker)
 			{

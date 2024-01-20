@@ -59,5 +59,15 @@ namespace MatterHackers.Agg.UI
 		{
 			content.Clear();
 		}
+
+		public T Peek()
+		{
+			if (content.Count == 0)
+			{
+				return default(T);
+			}
+
+            return content[content.Count - 1];
+        }
 	}
 }

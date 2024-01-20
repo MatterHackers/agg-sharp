@@ -20,19 +20,20 @@ using System;
 
 namespace MatterHackers.Agg.UI
 {
-	public class UndoRedoActions : IUndoRedoCommand
-	{
-		private Action undoAction;
-		private Action doAction;
+    public class DoUndoActions : IUndoRedoCommand
+    {
+        private Action doAction;
+        private Action undoAction;
+        public DoUndoActions(string name, Action doAction, Action undoAction)
+        {
+            this.doAction = doAction;
+            this.Name = name;
+            this.undoAction = undoAction;
+        }
 
-		public UndoRedoActions(Action undoAction, Action doAction)
-		{
-			this.doAction = doAction;
-			this.undoAction = undoAction;
-		}
+        public string Name { get; }
+        public void Do() => doAction?.Invoke();
 
-		public void Do() => doAction?.Invoke();
-
-		public void Undo() => undoAction?.Invoke();
-	}
+        public void Undo() => undoAction?.Invoke();
+    }
 }

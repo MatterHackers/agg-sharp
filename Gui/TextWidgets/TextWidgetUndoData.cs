@@ -16,6 +16,7 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
+using MatterHackers.Localizations;
 using System;
 
 namespace MatterHackers.Agg.UI
@@ -26,7 +27,7 @@ namespace MatterHackers.Agg.UI
 		private bool selecting;
 		private int selectionIndexToStartBefore;
 		private InternalTextEditWidget textEditWidget;
-		private String undoString;
+		private string undoString;
 
 		internal TextWidgetUndoCommand(InternalTextEditWidget textEditWidget)
 		{
@@ -36,6 +37,8 @@ namespace MatterHackers.Agg.UI
 			selectionIndexToStartBefore = textEditWidget.SelectionIndexToStartBefore;
 			selecting = textEditWidget.Selecting;
 		}
+
+		public string Name => "Text Change".Localize();
 
 		public void Do()
 		{
