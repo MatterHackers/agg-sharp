@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.VectorMath;
 using System;
 using System.Diagnostics;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -75,7 +76,7 @@ namespace MatterHackers.Agg.UI
 
 			// Register listeners
 			systemWindow.MouseMove += this.SystemWindow_MouseMove;
-			runningInterval = UiThread.SetInterval(CheckIfNeedToDisplayToolTip, .05);
+			runningInterval = UiThread.SetInterval(() => CheckIfNeedToDisplayToolTip(), .05);
 		}
 
 		private void SystemWindow_MouseMove(object sender, MouseEventArgs e)
@@ -93,21 +94,35 @@ namespace MatterHackers.Agg.UI
 		public static bool AllowToolTips { get; set; } = true;
 		public static bool DebugKeepOpen { get; set; }
 
-		public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
+		private string lastTextShown = "";
+		Action<GuiWidget, string> changeWidgetText;
+
+        public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
 		{
 			if (!AllowToolTips)
 			{
 				return;
 			}
 
-			if (this.widgetThatWantsToShowToolTip != widgetToShowToolTipFor)
+            if (this.widgetThatWantsToShowToolTip != widgetToShowToolTipFor)
 			{
 				timeSinceMouseOver.Restart();
 				this.widgetThatWantsToShowToolTip = widgetToShowToolTipFor;
-			}
-		}
+				this.lastTextShown = widgetToShowToolTipFor.ToolTipText;
+            }
+			else if (toolTipWidget != null
+				&& widgetToShowToolTipFor != null
+				&& lastTextShown != widgetToShowToolTipFor.ToolTipText)
+			{
+				// change the text and reset the timer
+				timeSinceMouseOver.Restart();
+				this.lastTextShown = widgetToShowToolTipFor.ToolTipText;
+                // and set the text of the current widget
+                changeWidgetText?.Invoke(toolTipWidget, widgetToShowToolTipFor.ToolTipText);
+            }
+        }
 
-		private void CheckIfNeedToDisplayToolTip()
+		private void CheckIfNeedToDisplayToolTip(bool forceRemove = false)
 		{
 			//DebugStopTimers();
 
@@ -146,7 +161,8 @@ namespace MatterHackers.Agg.UI
 			if (!didShow)
 			{
 				bool didRemove = false;
-				if (timeCurrentToolTipHasBeenShowing.Elapsed.TotalSeconds > CurrentAutoPopDelay)
+				if (timeCurrentToolTipHasBeenShowing.Elapsed.TotalSeconds > CurrentAutoPopDelay
+					|| forceRemove)
 				{
 					RemoveToolTip();
 					widgetThatWasShowingToolTip = widgetThatIsShowingToolTip;
@@ -215,7 +231,9 @@ namespace MatterHackers.Agg.UI
 					toolTipWidget.Name = "ToolTipWidget";
 
 					// Make sure we wrap long text
-					toolTipWidget.AddChild(CreateToolTip(toolTipText));
+					var (widgetToShow, changeText) = CreateToolTip(toolTipText);
+					changeWidgetText = changeText;
+					toolTipWidget.AddChild(widgetToShow);
 
 					// Increase the delay to make long text stay on screen long enough to read
 					double ratioOfExpectedText = Math.Max(1, widgetThatWantsToShowToolTip.ToolTipText.Length / 50.0);
@@ -256,7 +274,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private static GuiWidget DefaultToolTipWidget(string toolTipText)
+		private static (GuiWidget widgetToShow, Action<GuiWidget, string> changeWidgetText) DefaultToolTipWidget(string toolTipText)
 		{
 			var content = new WrappedTextWidget(toolTipText)
 			{
@@ -271,10 +289,20 @@ namespace MatterHackers.Agg.UI
 				drawEventHandler.Graphics2D.Rectangle(content.LocalBounds, Color.Black);
 			};
 
-			return content;
+			void ChangeWidgetText(GuiWidget widget, string newText)
+			{
+				var wrappedTextWidget = widget.DescendantsAndSelf<WrappedTextWidget>().FirstOrDefault();
+
+                if (wrappedTextWidget != null)
+				{
+					wrappedTextWidget.Text = newText;
+                }
+            }
+
+			return (content, ChangeWidgetText);
 		}
 
-		public static Func<string, GuiWidget> CreateToolTip = DefaultToolTipWidget;
+		public static Func<string, (GuiWidget widgetToShow, Action<GuiWidget, string> changeWidgetText)> CreateToolTip = DefaultToolTipWidget;
 
 		public void Clear()
 		{
