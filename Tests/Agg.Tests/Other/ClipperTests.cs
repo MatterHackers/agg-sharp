@@ -30,10 +30,8 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using ClipperLib;
-using MatterHackers.Agg.Transform;
 using MatterHackers.VectorMath;
-using NUnit.Framework;
-using MatterHackers.DataConverters2D;
+using Xunit;
 using System.IO;
 
 namespace MatterHackers.Agg.Tests
@@ -43,7 +41,7 @@ namespace MatterHackers.Agg.Tests
 
 	public class ClipperTests
 	{
-		[Test]
+		[Fact]
 		public void CleanPolygonsTest()
 		{
 			var polygon = new Polygon();
@@ -69,8 +67,8 @@ namespace MatterHackers.Agg.Tests
 			{
 				var centerPoint = (cleanedPolygon[i + 1] + cleanedPolygon[i]) / 2;
 				var distToCenter = centerPoint.Length();
-				Assert.AreEqual(length, distToCenter, 3);
-			}
+				Assert.Equal(length, distToCenter); //, 3);
+            }
 		}
 
 		private void WriteSvg(string filePath, string dstring)

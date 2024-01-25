@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using NUnit.Framework;
+using Xunit;
 
 namespace MatterHackers.Agg.Tests
 {
@@ -16,9 +16,16 @@ namespace MatterHackers.Agg.Tests
 
 		private static Regex quotedStrings = new Regex("[^\"]*");
 
-		private static string solutionFilePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..", "..", "agg-sharp.sln");
+		private static string solutionFilePath
+		{
+			get
+			{
+				throw new NotImplementedException();
+				//Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..", "..", "agg-sharp.sln");
+			}
+		}
 
-		// [Test]
+		// [Fact]
 		public void ConvertWinExeProjectsToPackageReference()
 		{
 			foreach(var csproj in allCSProjFiles)

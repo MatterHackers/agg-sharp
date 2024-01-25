@@ -32,12 +32,11 @@ using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
-using NUnit.Framework;
-using TestInvoker;
+using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA)]
+	//[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA)]
 	public class FlowLayoutTests
 	{
 		public static bool saveImagesForDebug = false;
@@ -64,7 +63,7 @@ namespace MatterHackers.Agg.UI.Tests
 			OutputImage(test, "image-test.tga");
 		}
 
-		[Test]
+		[Fact]
 		public void TopToBottomContainerAppliesExpectedMargin()
 		{
 			int marginSize = 40;
@@ -100,13 +99,13 @@ namespace MatterHackers.Agg.UI.Tests
 			// OutputImages(outerContainer, outerContainer);
 
 			var bounds = childWidget.BoundsRelativeToParent;
-			Assert.IsTrue(bounds.Left == marginSize, "Left margin is incorrect");
-			Assert.IsTrue(bounds.Right == dimensions - marginSize, "Right margin is incorrect");
-			Assert.IsTrue(bounds.Top == dimensions - marginSize, "Top margin is incorrect");
-			Assert.IsTrue(bounds.Bottom == marginSize, "Bottom margin is incorrect");
+			Assert.True(bounds.Left == marginSize, "Left margin is incorrect");
+			Assert.True(bounds.Right == dimensions - marginSize, "Right margin is incorrect");
+			Assert.True(bounds.Top == dimensions - marginSize, "Top margin is incorrect");
+			Assert.True(bounds.Bottom == marginSize, "Bottom margin is incorrect");
 		}
 #if !__ANDROID__
-		[Test, ChildProcessTest]
+		[Fact]
 		public async Task SpacingClearedAfterLoadPositionsCorrectly()
 		{
 			var systemWindow = new SystemWindow(700, 200)
@@ -182,14 +181,14 @@ namespace MatterHackers.Agg.UI.Tests
 				// Enable to observe
 				// testRunner.Delay(30);
 
-				Assert.AreEqual(0, footerRow.Position.Y, "Footer should be positioned at Y0 when it is the first item in a TopToBottom FlowlayoutWidget");
+				Assert.Equal(0, footerRow.Position.Y);//, "Footer should be positioned at Y0 when it is the first item in a TopToBottom FlowlayoutWidget");
 
-				return Task.CompletedTask;
+                return Task.CompletedTask;
 			});
 		}
 #endif
 
-		[Test]
+		[Fact]
 		public void NestedLayoutTopToBottomTests()
 		{
 			NestedLayoutTopToBottomTest(default(BorderDouble), default(BorderDouble));
@@ -199,7 +198,7 @@ namespace MatterHackers.Agg.UI.Tests
 			NestedLayoutTopToBottomTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		[Test]
+		[Fact]
 		public void ChangingChildVisiblityUpdatesFlow()
 		{
 			// ___________________________________________________
@@ -247,8 +246,8 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 			flow2.AddChild(size2);
 
-			Assert.IsTrue(flow1.Width == containerControl.Width);
-			Assert.IsTrue(flow2.Width == size2.Width + size1.Width);
+			Assert.True(flow1.Width == containerControl.Width);
+			Assert.True(flow2.Width == size2.Width + size1.Width);
 
 			size1.Visible = false;
 			// ___________________________________________________
@@ -266,11 +265,11 @@ namespace MatterHackers.Agg.UI.Tests
 			//  | |_____________________________________________| |
 			//  |_________________________________________________|
 
-			Assert.IsTrue(flow1.Width == containerControl.Width);
-			Assert.IsTrue(flow2.Width == size2.Width);
+			Assert.True(flow1.Width == containerControl.Width);
+			Assert.True(flow2.Width == size2.Width);
 		}
 
-		[Test]
+		[Fact]
 		public void ChangingChildFlowWidgetVisiblityUpdatesParentFlow()
 		{
 			// ___________________________________________________
@@ -327,9 +326,9 @@ namespace MatterHackers.Agg.UI.Tests
 			flow2.AddChild(size2);
 
 
-			Assert.IsTrue(flow1.Width == containerControl.Width);
-			Assert.IsTrue(flow3.Width == size1.Width);
-			Assert.IsTrue(flow2.Width == size2.Width + flow3.Width);
+			Assert.True(flow1.Width == containerControl.Width);
+			Assert.True(flow3.Width == size1.Width);
+			Assert.True(flow2.Width == size2.Width + flow3.Width);
 
 			size1.Visible = false;
 			// ___________________________________________________
@@ -348,8 +347,8 @@ namespace MatterHackers.Agg.UI.Tests
 			//  |_________________________________________________|
 			//
 
-			Assert.IsTrue(flow1.Width == containerControl.Width);
-			Assert.IsTrue(flow2.Width == size2.Width);
+			Assert.True(flow1.Width == containerControl.Width);
+			Assert.True(flow2.Width == size2.Width);
 		}
 
 		public void NestedLayoutTopToBottomTest(BorderDouble controlPadding, BorderDouble buttonMargin)
@@ -413,11 +412,11 @@ namespace MatterHackers.Agg.UI.Tests
 
 			OutputImages(containerControl, containerTest);
 
-			Assert.IsTrue(containerTest.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-			Assert.IsTrue(containerTest.BackBuffer.Equals(containerControl.BackBuffer, 1), "The test should contain the same image as the control.");
+			Assert.True(containerTest.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.True(containerTest.BackBuffer.Equals(containerControl.BackBuffer, 1), "The test should contain the same image as the control.");
 		}
 
-		[Test]
+		[Fact]
 		public void NestedLayoutTopToBottomWithResizeTests()
 		{
 			NestedLayoutTopToBottomWithResizeTest(default(BorderDouble), default(BorderDouble));
@@ -480,11 +479,11 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImage(containerTest, "image-test.tga");
 
-			Assert.IsTrue(containerTest.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-			Assert.IsTrue(containerTest.BackBuffer == controlImage, "The control should contain the same image after being scaled away and back to the same size.");
+			Assert.True(containerTest.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.True(containerTest.BackBuffer == controlImage, "The control should contain the same image after being scaled away and back to the same size.");
 		}
 
-		[Test]
+		[Fact]
 		public void LeftToRightTests()
 		{
 			LeftToRightTest(default(BorderDouble), default(BorderDouble));
@@ -531,22 +530,22 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
+			Assert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 
 			// make sure it can resize without breaking
 			RectangleDouble bounds = containerTest.LocalBounds;
 			RectangleDouble newBounds = bounds;
 			newBounds.Right += 10;
 			containerTest.LocalBounds = newBounds;
-			Assert.IsTrue(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.");
+			Assert.True(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.");
 			containerTest.LocalBounds = bounds;
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
-			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
+			Assert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
+		[Fact]
 		public void RightToLeftTests()
 		{
 			RightToLeftTest(default(BorderDouble), default(BorderDouble));
@@ -593,22 +592,22 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-			Assert.IsTrue(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
+			Assert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 
 			// make sure it can resize without breaking
 			RectangleDouble bounds = containerTest.LocalBounds;
 			RectangleDouble newBounds = bounds;
 			newBounds.Right += 10;
 			containerTest.LocalBounds = newBounds;
-			Assert.IsTrue(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.");
+			Assert.True(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.");
 			containerTest.LocalBounds = bounds;
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
-			Assert.IsTrue(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
+			Assert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
+		[Fact]
 		public void NestedMaxFitOrStretchToChildrenParentWidth()
 		{
 			// child of flow layout is Stretch
@@ -645,16 +644,16 @@ namespace MatterHackers.Agg.UI.Tests
 				maxFitOrStretch.AddChild(fixed10x10);
 				containerControl.OnDraw(containerControl.NewGraphics2D());
 
-				Assert.IsTrue(maxFitOrStretch.Width == containerControl.Width);
-				Assert.IsTrue(stretch.Width + fixed10x10.Width == containerControl.Width);
+				Assert.True(maxFitOrStretch.Width == containerControl.Width);
+				Assert.True(stretch.Width + fixed10x10.Width == containerControl.Width);
 
 				containerControl.Width = 350;
-				Assert.IsTrue(maxFitOrStretch.Width == containerControl.Width);
-				Assert.IsTrue(stretch.Width + fixed10x10.Width == containerControl.Width);
+				Assert.True(maxFitOrStretch.Width == containerControl.Width);
+				Assert.True(stretch.Width + fixed10x10.Width == containerControl.Width);
 
 				containerControl.Width = 310;
-				Assert.IsTrue(maxFitOrStretch.Width == containerControl.Width);
-				Assert.IsTrue(stretch.Width + fixed10x10.Width == containerControl.Width);
+				Assert.True(maxFitOrStretch.Width == containerControl.Width);
+				Assert.True(stretch.Width + fixed10x10.Width == containerControl.Width);
 			}
 
 			// child of flow layout is MaxFitOrStretch
@@ -690,20 +689,20 @@ namespace MatterHackers.Agg.UI.Tests
 				flowWidget.AddChild(fixed10x10);
 				containerControl.OnDraw(containerControl.NewGraphics2D());
 
-				Assert.IsTrue(flowWidget.Width == containerControl.Width);
-				Assert.IsTrue(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width);
+				Assert.True(flowWidget.Width == containerControl.Width);
+				Assert.True(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width);
 
 				containerControl.Width = 350;
-				Assert.IsTrue(flowWidget.Width == containerControl.Width);
-				Assert.IsTrue(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width);
+				Assert.True(flowWidget.Width == containerControl.Width);
+				Assert.True(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width);
 
 				containerControl.Width = 310;
-				Assert.IsTrue(flowWidget.Width == containerControl.Width);
-				Assert.IsTrue(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width);
+				Assert.True(flowWidget.Width == containerControl.Width);
+				Assert.True(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width);
 			}
 		}
 
-		[Test]
+		[Fact]
 		public void NestedMinFitOrStretchToChildrenParentWidth()
 		{
 			// child of flow layout is Stretch
@@ -731,23 +730,23 @@ namespace MatterHackers.Agg.UI.Tests
 					HAnchor = HAnchor.MinFitOrStretch,
 				};
 				containerControl.AddChild(minFitOrStretch);
-				Assert.AreEqual(0, minFitOrStretch.Width);
+				Assert.Equal(0, minFitOrStretch.Width);
 
 				var fixed150x10 = new GuiWidget(150, 10)
 				{
 					MinimumSize = Vector2.Zero
 				};
 				minFitOrStretch.AddChild(fixed150x10);
-				Assert.AreEqual(150, minFitOrStretch.Width);
+				Assert.Equal(150, minFitOrStretch.Width);
 
 				containerControl.Width = 100;
-				Assert.AreEqual(100, minFitOrStretch.Width);
+				Assert.Equal(100, minFitOrStretch.Width);
 
 				containerControl.Width = 200;
-				Assert.AreEqual(150, minFitOrStretch.Width);
+				Assert.Equal(150, minFitOrStretch.Width);
 
 				fixed150x10.Width = 21;
-				Assert.AreEqual(21, minFitOrStretch.Width);
+				Assert.Equal(21, minFitOrStretch.Width);
 			}
 
 			// in this test the main container starts out as the constraint
@@ -775,24 +774,24 @@ namespace MatterHackers.Agg.UI.Tests
 					HAnchor = HAnchor.MinFitOrStretch,
 				};
 				containerControl.AddChild(minFitOrStretch);
-				Assert.AreEqual(0, minFitOrStretch.Width);
+				Assert.Equal(0, minFitOrStretch.Width);
 
 				var fixed150x10 = new GuiWidget(150, 10)
 				{
 					MinimumSize = Vector2.Zero
 				};
 				minFitOrStretch.AddChild(fixed150x10);
-				Assert.AreEqual(123, minFitOrStretch.Width);
+				Assert.Equal(123, minFitOrStretch.Width);
 
 				containerControl.Width = 100;
-				Assert.AreEqual(100, minFitOrStretch.Width);
+				Assert.Equal(100, minFitOrStretch.Width);
 
 				containerControl.Width = 200;
-				Assert.AreEqual(150, minFitOrStretch.Width);
+				Assert.Equal(150, minFitOrStretch.Width);
 
 				fixed150x10.Width = 21;
-				Assert.AreEqual(21, fixed150x10.Width);
-				Assert.AreEqual(21, minFitOrStretch.Width);
+				Assert.Equal(21, fixed150x10.Width);
+				Assert.Equal(21, minFitOrStretch.Width);
 			}
 
 			// child of flow layout is Stretch
@@ -828,20 +827,20 @@ namespace MatterHackers.Agg.UI.Tests
 				minFitOrStretch.AddChild(fixed10x10);
 				containerControl.OnDraw(containerControl.NewGraphics2D());
 
-				Assert.AreEqual(30, minFitOrStretch.Width);
-				Assert.AreEqual(20, stretch.Width);
+				Assert.Equal(30, minFitOrStretch.Width);
+				Assert.Equal(20, stretch.Width);
 
 				containerControl.Width = 350;
-				Assert.AreEqual(30, minFitOrStretch.Width);
-				Assert.AreEqual(20, stretch.Width);
+				Assert.Equal(30, minFitOrStretch.Width);
+				Assert.Equal(20, stretch.Width);
 
 				containerControl.Width = 310;
-				Assert.AreEqual(30, minFitOrStretch.Width);
-				Assert.AreEqual(20, stretch.Width);
+				Assert.Equal(30, minFitOrStretch.Width);
+				Assert.Equal(20, stretch.Width);
 
 				fixed10x10.Width = 21;
-				Assert.AreEqual(41, minFitOrStretch.Width);
-				Assert.AreEqual(20, stretch.Width);
+				Assert.Equal(41, minFitOrStretch.Width);
+				Assert.Equal(20, stretch.Width);
 			}
 
 			return; // this last test does not work yet
@@ -886,20 +885,20 @@ namespace MatterHackers.Agg.UI.Tests
 
 				minFitOrStretchInner.AddChild(fixed10x10);
 
-				Assert.AreEqual(10, minFitOrStretchInner.Width);
-				Assert.AreEqual(10, minFitOrStretchOuter.Width);
+				Assert.Equal(10, minFitOrStretchInner.Width);
+				Assert.Equal(10, minFitOrStretchOuter.Width);
 
 				containerControl.Width = 350;
-				Assert.AreEqual(10, minFitOrStretchInner.Width);
-				Assert.AreEqual(10, minFitOrStretchOuter.Width);
+				Assert.Equal(10, minFitOrStretchInner.Width);
+				Assert.Equal(10, minFitOrStretchOuter.Width);
 
 				containerControl.Width = 300;
-				Assert.AreEqual(10, minFitOrStretchInner.Width);
-				Assert.AreEqual(10, minFitOrStretchOuter.Width);
+				Assert.Equal(10, minFitOrStretchInner.Width);
+				Assert.Equal(10, minFitOrStretchOuter.Width);
 			}
 		}
 
-		[Test]
+		[Fact]
 		public void LeftToRightAnchorLeftBottomTests()
 		{
 			LeftToRightAnchorLeftBottomTest(default(BorderDouble), default(BorderDouble));
@@ -948,22 +947,22 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
+			Assert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 
 			// make sure it can resize without breaking
 			RectangleDouble bounds = containerTest.LocalBounds;
 			RectangleDouble newBounds = bounds;
 			newBounds.Right += 10;
 			containerTest.LocalBounds = newBounds;
-			Assert.IsTrue(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.");
+			Assert.True(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.");
 			containerTest.LocalBounds = bounds;
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
-			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
+			Assert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
+		[Fact]
 		public void AnchorLeftRightTests()
 		{
 			FlowTopBottomAnchorChildrenLeftRightTest(default(BorderDouble), default(BorderDouble));
@@ -1003,7 +1002,7 @@ namespace MatterHackers.Agg.UI.Tests
 			flowLayout.AddChild(testButtonWide);
 
 			double correctHeightOfFlowLayout = testButtonWide.Height + flowLayout.Padding.Height + testButtonWide.Margin.Height;
-			Assert.AreEqual(flowLayout.Height, correctHeightOfFlowLayout, .001);
+			Assert.Equal(flowLayout.Height, correctHeightOfFlowLayout, .001);
 
 			var testButton1 = new Button("button1")
 			{
@@ -1013,7 +1012,7 @@ namespace MatterHackers.Agg.UI.Tests
 			flowLayout.AddChild(testButton1);
 
 			correctHeightOfFlowLayout += testButton1.Height + testButton1.Margin.Height;
-			Assert.AreEqual(flowLayout.Height, correctHeightOfFlowLayout, .001);
+			Assert.Equal(flowLayout.Height, correctHeightOfFlowLayout, .001);
 
 			flowLayout.HAnchor = HAnchor.Left;
 			flowLayout.VAnchor = VAnchor.Bottom;
@@ -1025,22 +1024,22 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-			Assert.IsTrue(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
+			Assert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 
 			// make sure it can resize without breaking
 			RectangleDouble bounds = containerTest.LocalBounds;
 			RectangleDouble newBounds = bounds;
 			newBounds.Right += 10;
 			containerTest.LocalBounds = newBounds;
-			Assert.IsTrue(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.");
+			Assert.True(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.");
 			containerTest.LocalBounds = bounds;
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
-			Assert.IsTrue(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
+			Assert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
+		[Fact]
 		public void NestedFlowWidgetsTopToBottomTests()
 		{
 			NestedFlowWidgetsTopToBottomTest(default(BorderDouble), default(BorderDouble));
@@ -1103,11 +1102,11 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
+			Assert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
+		[Fact]
 		public void NestedFlowWidgetsRightToLeftTests()
 		{
 			NestedFlowWidgetsRightToLeftTest(default(BorderDouble), default(BorderDouble));
@@ -1172,13 +1171,13 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 			// we use a least squares match because the erase background that is setting the widgets is integer pixel based and the fill rectangle is not.
-			Assert.IsTrue(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 50), "The test and control need to match.");
-			Assert.IsTrue(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
+			Assert.True(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 50), "The test and control need to match.");
+			Assert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
+		[Fact]
 		public void NestedFlowWidgetsLeftToRightTests()
 		{
 			NestedFlowWidgetsLeftToRightTest(default(BorderDouble), default(BorderDouble));
@@ -1241,11 +1240,11 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
+			Assert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
+		[Fact]
 		public void FlowWithMaxSizeChildAllocatesToOthers()
 		{
 			var container = new GuiWidget(200, 300);
@@ -1268,16 +1267,16 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 			leftToRightFlowLayout.AddChild(rightItem);
 
-			Assert.AreEqual(100, leftItem.Width);
-			Assert.AreEqual(100, rightItem.Width);
+			Assert.Equal(100, leftItem.Width);
+			Assert.Equal(100, rightItem.Width);
 
 			leftItem.MaximumSize = new Vector2(50, 500);
 
-			Assert.AreEqual(50, leftItem.Width);
-			Assert.AreEqual(150, rightItem.Width);
+			Assert.Equal(50, leftItem.Width);
+			Assert.Equal(150, rightItem.Width);
 		}
 
-		[Test]
+		[Fact]
 		public void LeftRightWithAnchorLeftRightChildTests()
 		{
 			LeftRightWithAnchorLeftRightChildTest(default(BorderDouble), default(BorderDouble));
@@ -1375,13 +1374,13 @@ namespace MatterHackers.Agg.UI.Tests
 			int index = 0;
 			foreach (var child in leftToRightFlowLayoutAll.Children)
 			{
-				Assert.IsTrue(eightControlRectangles[index++] == child.BoundsRelativeToParent);
+				Assert.True(eightControlRectangles[index++] == child.BoundsRelativeToParent);
 			}
 
-			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 
 			// we use a least squares match because the erase background that is setting the widgets is integer pixel based and the fill rectangle is not.
-			Assert.IsTrue(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
+			Assert.True(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
 		}
 
 		private GuiWidget CreateLeftToRightMiddleWidget(BorderDouble buttonMargin, double buttonSize, VAnchor vAnchor, Color color)
@@ -1396,7 +1395,7 @@ namespace MatterHackers.Agg.UI.Tests
 			return middle;
 		}
 
-		[Test]
+		[Fact]
 		public void RightLeftWithAnchorLeftRightChildTests()
 		{
 			RightLeftWithAnchorLeftRightChildTest(default(BorderDouble), default(BorderDouble));
@@ -1494,16 +1493,16 @@ namespace MatterHackers.Agg.UI.Tests
 			int index = 0;
 			foreach (var child in rightToLeftFlowLayoutAll.Children)
 			{
-				Assert.IsTrue(eightControlRectangles[index++].Equals(child.BoundsRelativeToParent, .001));
+				Assert.True(eightControlRectangles[index++].Equals(child.BoundsRelativeToParent, .001));
 			}
 
-			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 
 			// we use a least squares match because the erase background that is setting the widgets is integer pixel based and the fill rectangle is not.
-			Assert.IsTrue(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
+			Assert.True(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
 		}
 
-		[Test]
+		[Fact]
 		public void BottomTopWithAnchorBottomTopChildTests()
 		{
 			BottomTopWithAnchorBottomTopChildTest(default(BorderDouble), default(BorderDouble));
@@ -1601,13 +1600,13 @@ namespace MatterHackers.Agg.UI.Tests
 			int index = 0;
 			foreach (var child in bottomToTopFlowLayoutAll.Children)
 			{
-				Assert.IsTrue(eightControlRectangles[index++] == child.BoundsRelativeToParent);
+				Assert.True(eightControlRectangles[index++] == child.BoundsRelativeToParent);
 			}
 
-			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 
 			// we use a least squares match because the erase background that is setting the widgets is integer pixel based and the fill rectangle is not.
-			Assert.IsTrue(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
+			Assert.True(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
 		}
 
 		private GuiWidget CreateBottomToTopMiddleWidget(BorderDouble buttonMargin, double buttonSize, HAnchor hAnchor, Color color)
@@ -1622,7 +1621,7 @@ namespace MatterHackers.Agg.UI.Tests
 			return middle;
 		}
 
-		[Test]
+		[Fact]
 		public void TopBottomWithAnchorBottomTopChildTests()
 		{
 			TopBottomWithAnchorBottomTopChildTest(default(BorderDouble), default(BorderDouble));
@@ -1720,13 +1719,13 @@ namespace MatterHackers.Agg.UI.Tests
 			int index = 0;
 			foreach (var child in bottomToTopFlowLayoutAll.Children)
 			{
-				Assert.IsTrue(eightControlRectangles[index++].Equals(child.BoundsRelativeToParent, .001));
+				Assert.True(eightControlRectangles[index++].Equals(child.BoundsRelativeToParent, .001));
 			}
 
-			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 
 			// we use a least squares match because the erase background that is setting the widgets is integer pixel based and the fill rectangle is not.
-			Assert.IsTrue(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
+			Assert.True(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
 		}
 
 		public void EnsureFlowLayoutMinSizeFitsChildrenMinSize()
@@ -1750,25 +1749,25 @@ namespace MatterHackers.Agg.UI.Tests
 			bottomLeftToRight.AddChild(bottomContentTopToBottom);
 
 			var button1 = new Button("button1");
-			Assert.IsTrue(button1.MinimumSize.X > 0, "Buttons should set their min size on construction.");
+			Assert.True(button1.MinimumSize.X > 0, "Buttons should set their min size on construction.");
 			bottomContentTopToBottom.AddChild(button1);
-			// Assert.IsTrue(bottomContentTopToBottom.MinimumSize.x >= button1.MinimumSize.x, "There should be space for the button.");
+			// Assert.True(bottomContentTopToBottom.MinimumSize.x >= button1.MinimumSize.x, "There should be space for the button.");
 			bottomContentTopToBottom.AddChild(new Button("button2"));
 			var wideButton = new Button("button3 Wide");
 			bottomContentTopToBottom.AddChild(wideButton);
-			// Assert.IsTrue(bottomContentTopToBottom.MinimumSize.x >= wideButton.MinimumSize.x, "These should be space for the button.");
+			// Assert.True(bottomContentTopToBottom.MinimumSize.x >= wideButton.MinimumSize.x, "These should be space for the button.");
 
 			containerTest.BackgroundColor = Color.White;
 			containerTest.OnDrawBackground(containerTest.NewGraphics2D());
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImage(containerTest.BackBuffer, "zFlowLaoutsGetMinSize.tga");
 
-			Assert.IsTrue(bottomLeftToRight.Width > 0, "This needs to have been expanded when the bottomContentTopToBottom grew.");
-			Assert.IsTrue(bottomLeftToRight.MinimumSize.X >= bottomContentTopToBottom.MinimumSize.X, "These should be space for the next flowLayout.");
-			Assert.IsTrue(containerTest.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.True(bottomLeftToRight.Width > 0, "This needs to have been expanded when the bottomContentTopToBottom grew.");
+			Assert.True(bottomLeftToRight.MinimumSize.X >= bottomContentTopToBottom.MinimumSize.X, "These should be space for the next flowLayout.");
+			Assert.True(containerTest.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 		}
 
-		[Test]
+		[Fact]
 		public void ChildVisibilityChangeCauseResize()
 		{
 			// Test whether toggling the visibility of children changes the flow layout
@@ -1781,15 +1780,15 @@ namespace MatterHackers.Agg.UI.Tests
 			var item3 = new GuiWidget(1, 40);
 
 			topToBottomFlowLayoutAll.AddChild(item1);
-			Assert.IsTrue(topToBottomFlowLayoutAll.Height == 20);
+			Assert.True(topToBottomFlowLayoutAll.Height == 20);
 			topToBottomFlowLayoutAll.AddChild(item2);
-			Assert.IsTrue(topToBottomFlowLayoutAll.Height == 50);
+			Assert.True(topToBottomFlowLayoutAll.Height == 50);
 			topToBottomFlowLayoutAll.AddChild(item3);
-			Assert.IsTrue(topToBottomFlowLayoutAll.Height == 90);
+			Assert.True(topToBottomFlowLayoutAll.Height == 90);
 
 			item2.Visible = false;
 
-			Assert.IsTrue(topToBottomFlowLayoutAll.Height == 60);
+			Assert.True(topToBottomFlowLayoutAll.Height == 60);
 		}
 
 		internal void EnsureCorrectMinimumSize()
@@ -1815,34 +1814,34 @@ namespace MatterHackers.Agg.UI.Tests
 
 				leftToRightLayout.AnchorAll();
 				containerTest.OnDraw(containerTest.NewGraphics2D());
-				Assert.IsTrue(leftToRightLayout.Width == 640);
-				// Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
-				Assert.IsTrue(leftToRightLayout.Height == 480);
-				// Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
-				Assert.IsTrue(item3.Width == 610);
+				Assert.True(leftToRightLayout.Width == 640);
+				// Assert.True(leftToRightLayout.MinimumSize.x == 60);
+				Assert.True(leftToRightLayout.Height == 480);
+				// Assert.True(leftToRightLayout.MinimumSize.y == 33);
+				Assert.True(item3.Width == 610);
 
 				containerTest.OnDraw(containerTest.NewGraphics2D());
-				Assert.IsTrue(leftToRightLayout.Width == 640);
-				// Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
-				Assert.IsTrue(leftToRightLayout.Height == 480);
-				// Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
-				Assert.IsTrue(item3.Width == 610);
+				Assert.True(leftToRightLayout.Width == 640);
+				// Assert.True(leftToRightLayout.MinimumSize.x == 60);
+				Assert.True(leftToRightLayout.Height == 480);
+				// Assert.True(leftToRightLayout.MinimumSize.y == 33);
+				Assert.True(item3.Width == 610);
 
 				containerTest.Width = 650;
 				containerTest.OnDraw(containerTest.NewGraphics2D());
-				Assert.IsTrue(leftToRightLayout.Width == 650);
-				// Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
-				Assert.IsTrue(leftToRightLayout.Height == 480);
-				// Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
-				Assert.IsTrue(item3.Width == 620);
+				Assert.True(leftToRightLayout.Width == 650);
+				// Assert.True(leftToRightLayout.MinimumSize.x == 60);
+				Assert.True(leftToRightLayout.Height == 480);
+				// Assert.True(leftToRightLayout.MinimumSize.y == 33);
+				Assert.True(item3.Width == 620);
 
 				containerTest.Width = 640;
 				containerTest.OnDraw(containerTest.NewGraphics2D());
-				Assert.IsTrue(leftToRightLayout.Width == 640);
-				// Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
-				Assert.IsTrue(leftToRightLayout.Height == 480);
-				// Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
-				Assert.IsTrue(item3.Width == 610);
+				Assert.True(leftToRightLayout.Width == 640);
+				// Assert.True(leftToRightLayout.MinimumSize.x == 60);
+				Assert.True(leftToRightLayout.Height == 480);
+				// Assert.True(leftToRightLayout.MinimumSize.y == 33);
+				Assert.True(item3.Width == 610);
 			}
 
 			{
@@ -1866,11 +1865,11 @@ namespace MatterHackers.Agg.UI.Tests
 
 				leftToRightLayout.AnchorAll();
 				containerTest.OnDraw(containerTest.NewGraphics2D());
-				Assert.IsTrue(leftToRightLayout.Width == 640);
-				// Assert.IsTrue(leftToRightLayout.MinimumSize.x == 30);
+				Assert.True(leftToRightLayout.Width == 640);
+				// Assert.True(leftToRightLayout.MinimumSize.x == 30);
 
-				Assert.IsTrue(leftToRightLayout.Height == 480);
-				// Assert.IsTrue(leftToRightLayout.MinimumSize.y == 66);
+				Assert.True(leftToRightLayout.Height == 480);
+				// Assert.True(leftToRightLayout.MinimumSize.y == 66);
 			}
 		}
 
@@ -1895,22 +1894,22 @@ namespace MatterHackers.Agg.UI.Tests
 			leftToRightLayout.AddChild(item3);
 
 			containerTest.OnDraw(containerTest.NewGraphics2D());
-			Assert.IsTrue(leftToRightLayout.Width == 60);
-			Assert.IsTrue(leftToRightLayout.MinimumSize.X == 0);
-			Assert.IsTrue(leftToRightLayout.Height == 33);
-			Assert.IsTrue(leftToRightLayout.MinimumSize.Y == 0);
-			Assert.IsTrue(item3.Width == 30);
+			Assert.True(leftToRightLayout.Width == 60);
+			Assert.True(leftToRightLayout.MinimumSize.X == 0);
+			Assert.True(leftToRightLayout.Height == 33);
+			Assert.True(leftToRightLayout.MinimumSize.Y == 0);
+			Assert.True(item3.Width == 30);
 
 			containerTest.Width = 650;
 			containerTest.OnDraw(containerTest.NewGraphics2D());
-			Assert.IsTrue(leftToRightLayout.Width == 60);
-			Assert.IsTrue(leftToRightLayout.MinimumSize.X == 0);
-			Assert.IsTrue(leftToRightLayout.Height == 33);
-			Assert.IsTrue(leftToRightLayout.MinimumSize.Y == 0);
-			Assert.IsTrue(item3.Width == 30);
+			Assert.True(leftToRightLayout.Width == 60);
+			Assert.True(leftToRightLayout.MinimumSize.X == 0);
+			Assert.True(leftToRightLayout.Height == 33);
+			Assert.True(leftToRightLayout.MinimumSize.Y == 0);
+			Assert.True(item3.Width == 30);
 		}
 
-		[Test]
+		[Fact]
 		public void EnsureCorrectSizeOnChildrenVisibleChange()
 		{
 			// just one column changes correctly
@@ -1926,7 +1925,7 @@ namespace MatterHackers.Agg.UI.Tests
 				};
 				testColumn.AddChild(item1);
 
-				Assert.IsTrue(testColumn.Height == 10);
+				Assert.True(testColumn.Height == 10);
 
 				var item2 = new GuiWidget(11, 11)
 				{
@@ -1934,7 +1933,7 @@ namespace MatterHackers.Agg.UI.Tests
 				};
 				testColumn.AddChild(item2);
 
-				Assert.IsTrue(testColumn.Height == 21);
+				Assert.True(testColumn.Height == 21);
 
 				var item3 = new GuiWidget(12, 12)
 				{
@@ -1942,15 +1941,15 @@ namespace MatterHackers.Agg.UI.Tests
 				};
 				testColumn.AddChild(item3);
 
-				Assert.IsTrue(testColumn.Height == 33);
+				Assert.True(testColumn.Height == 33);
 
 				item2.Visible = false;
 
-				Assert.IsTrue(testColumn.Height == 22);
+				Assert.True(testColumn.Height == 22);
 
 				item2.Visible = true;
 
-				Assert.IsTrue(testColumn.Height == 33);
+				Assert.True(testColumn.Height == 33);
 			}
 
 			// nested columns change correctly
@@ -2015,30 +2014,30 @@ namespace MatterHackers.Agg.UI.Tests
 
 					everything.AddChild(twoColumns);
 
-					Assert.IsTrue(firstItem.OriginRelativeParent.Y == 54);
-					// Assert.IsTrue(firstItem.OriginRelativeParent.y - topLeftStuff.LocalBounds.Bottom == 54);
-					Assert.IsTrue(twoColumns.BoundsRelativeToParent.Top == 500);
-					Assert.IsTrue(leftColumn.BoundsRelativeToParent.Top == 67);
-					Assert.IsTrue(leftColumn.BoundsRelativeToParent.Bottom == 0);
-					Assert.IsTrue(leftColumn.OriginRelativeParent.Y == 0);
-					Assert.IsTrue(topLeftStuff.BoundsRelativeToParent.Top == 67);
-					Assert.IsTrue(topLeftStuff.Height == 67);
-					Assert.IsTrue(leftColumn.Height == 67);
+					Assert.True(firstItem.OriginRelativeParent.Y == 54);
+					// Assert.True(firstItem.OriginRelativeParent.y - topLeftStuff.LocalBounds.Bottom == 54);
+					Assert.True(twoColumns.BoundsRelativeToParent.Top == 500);
+					Assert.True(leftColumn.BoundsRelativeToParent.Top == 67);
+					Assert.True(leftColumn.BoundsRelativeToParent.Bottom == 0);
+					Assert.True(leftColumn.OriginRelativeParent.Y == 0);
+					Assert.True(topLeftStuff.BoundsRelativeToParent.Top == 67);
+					Assert.True(topLeftStuff.Height == 67);
+					Assert.True(leftColumn.Height == 67);
 
 					hideCheckBox.Checked = true;
 
-					Assert.IsTrue(firstItem.OriginRelativeParent.Y == 21);
-					Assert.IsTrue(leftColumn.OriginRelativeParent.Y == 0);
-					Assert.IsTrue(leftColumn.BoundsRelativeToParent.Bottom == 0);
-					Assert.IsTrue(topLeftStuff.Height == 34);
-					Assert.IsTrue(leftColumn.Height == 34);
+					Assert.True(firstItem.OriginRelativeParent.Y == 21);
+					Assert.True(leftColumn.OriginRelativeParent.Y == 0);
+					Assert.True(leftColumn.BoundsRelativeToParent.Bottom == 0);
+					Assert.True(topLeftStuff.Height == 34);
+					Assert.True(leftColumn.Height == 34);
 				}
 
 				GuiWidget.DefaultEnforceIntegerBounds = false;
 			}
 		}
 
-		[Test]
+		[Fact]
 		public void ChildHAnchorPriority()
 		{
 			// make sure a middle spacer grows and shrinks correctly
@@ -2047,17 +2046,17 @@ namespace MatterHackers.Agg.UI.Tests
 				{
 					Name = "leftRightFlowLayout"
 				};
-				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
+				Assert.True(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
 				// [no content] // attempting to make a visual description of what is happening
-				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
+				Assert.True(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 				var leftWidget = new GuiWidget(10, 10)
 				{
 					Name = "leftWidget"
 				}; // we call it left widget as it will be the first one in the left to right flow layout
 				leftRightFlowLayout.AddChild(leftWidget); // add in a child with a width of 10
 				// [<->(10)<->] // the flow layout should now be forced to be 10 wide
-				Assert.IsTrue(leftRightFlowLayout.Width == 10);
+				Assert.True(leftRightFlowLayout.Width == 10);
 
 				var middleSpacer = new GuiWidget(0, 10)
 				{
@@ -2066,40 +2065,40 @@ namespace MatterHackers.Agg.UI.Tests
 				middleSpacer.HAnchor = HAnchor.Stretch; // by resizing to whatever width it can be
 				leftRightFlowLayout.AddChild(middleSpacer);
 				// [<->(10)(<->)<->]
-				Assert.IsTrue(leftRightFlowLayout.Width == 10);
-				Assert.IsTrue(middleSpacer.Width == 0);
+				Assert.True(leftRightFlowLayout.Width == 10);
+				Assert.True(middleSpacer.Width == 0);
 
 				var rightItem = new GuiWidget(10, 10);
 				leftRightFlowLayout.AddChild(rightItem);
 				// [<->(10)(<->)(10)<->]
-				Assert.IsTrue(leftRightFlowLayout.Width == 20);
+				Assert.True(leftRightFlowLayout.Width == 20);
 
 				var container = new GuiWidget(40, 20);
 				container.AddChild(leftRightFlowLayout);
 				// (40[<->(10)(<->)(10)<->]) // the extra 20 must be put into the expandable (<->)
-				Assert.IsTrue(container.Width == 40);
-				Assert.IsTrue(leftRightFlowLayout.Width == 40);
-				Assert.IsTrue(middleSpacer.Width == 20);
+				Assert.True(container.Width == 40);
+				Assert.True(leftRightFlowLayout.Width == 40);
+				Assert.True(middleSpacer.Width == 20);
 
 				container.Width = 50;
 				// (50[<->(10)(<->)(10)<->]) // the extra 30 must be put into the expandable (<->)
-				Assert.IsTrue(container.Width == 50);
-				Assert.IsTrue(leftRightFlowLayout.Width == 50);
-				Assert.IsTrue(middleSpacer.Width == 30);
+				Assert.True(container.Width == 50);
+				Assert.True(leftRightFlowLayout.Width == 50);
+				Assert.True(middleSpacer.Width == 30);
 
 				container.Width = 40;
 				// (40[<->(10)(<->)(10)<->]) // the extra 20 must be put into the expandable (<->) by shrinking it
-				Assert.IsTrue(container.Width == 40);
-				Assert.IsTrue(leftRightFlowLayout.Width == 40);
-				Assert.IsTrue(middleSpacer.Width == 20);
+				Assert.True(container.Width == 40);
+				Assert.True(leftRightFlowLayout.Width == 40);
+				Assert.True(middleSpacer.Width == 20);
 
-				Assert.IsTrue(container.MinimumSize.X == 40); // minimum size is set to the construction size for normal GuiWidgets
+				Assert.True(container.MinimumSize.X == 40); // minimum size is set to the construction size for normal GuiWidgets
 				container.MinimumSize = new Vector2(0, 0); // make sure we can make this smaller
 				container.Width = 10;
 				// (10[<->(10)(<->)(10)<->]) // the extra 20 must be put into the expandable (<->) by shrinking it
-				Assert.IsTrue(container.Width == 10); // nothing should be keeping this big
-				Assert.IsTrue(leftRightFlowLayout.Width == 20); // it can't get smaller than its contents
-				Assert.IsTrue(middleSpacer.Width == 0);
+				Assert.True(container.Width == 10); // nothing should be keeping this big
+				Assert.True(leftRightFlowLayout.Width == 20); // it can't get smaller than its contents
+				Assert.True(middleSpacer.Width == 0);
 			}
 
 			// make sure the middle spacer works the same when in a flow layout
@@ -2108,17 +2107,17 @@ namespace MatterHackers.Agg.UI.Tests
 				{
 					Name = "leftRightFlowLayout"
 				};
-				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
+				Assert.True(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
 				// [<-><->] // attempting to make a visual description of what is happening
-				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
+				Assert.True(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 				var leftWidget = new GuiWidget(10, 10)
 				{
 					Name = "leftWidget"
 				}; // we call it left widget as it will be the first one in the left to right flow layout
 				leftRightFlowLayout.AddChild(leftWidget); // add in a child with a width of 10
 				// [<->(10)<->] // the flow layout should now be forced to be 10 wide
-				Assert.IsTrue(leftRightFlowLayout.Width == 10);
+				Assert.True(leftRightFlowLayout.Width == 10);
 
 				var middleFlowLayoutWrapper = new FlowLayoutWidget
 				{
@@ -2134,9 +2133,9 @@ namespace MatterHackers.Agg.UI.Tests
 				// {<->(<->)<->}
 				leftRightFlowLayout.AddChild(middleFlowLayoutWrapper);
 				// [<->(10){<->(<->)<->}<->]
-				Assert.IsTrue(leftRightFlowLayout.Width == 10);
-				Assert.IsTrue(middleFlowLayoutWrapper.Width == 0);
-				Assert.IsTrue(middleSpacer.Width == 0);
+				Assert.True(leftRightFlowLayout.Width == 10);
+				Assert.True(middleFlowLayoutWrapper.Width == 0);
+				Assert.True(middleSpacer.Width == 0);
 
 				var rightWidget = new GuiWidget(10, 10)
 				{
@@ -2144,7 +2143,7 @@ namespace MatterHackers.Agg.UI.Tests
 				};
 				leftRightFlowLayout.AddChild(rightWidget);
 				// [<->(10){<->(<->)<->}(10)<->]
-				Assert.IsTrue(leftRightFlowLayout.Width == 20);
+				Assert.True(leftRightFlowLayout.Width == 20);
 
 				var container = new GuiWidget(40, 20)
 				{
@@ -2152,19 +2151,19 @@ namespace MatterHackers.Agg.UI.Tests
 				};
 				container.AddChild(leftRightFlowLayout);
 				// (40[<->(10){<->(<->)<->}(10)<->]) // the extra 20 must be put into the expandable (<->)
-				Assert.IsTrue(leftRightFlowLayout.Width == 40);
-				Assert.IsTrue(middleFlowLayoutWrapper.Width == 20);
-				Assert.IsTrue(middleSpacer.Width == 20);
+				Assert.True(leftRightFlowLayout.Width == 40);
+				Assert.True(middleFlowLayoutWrapper.Width == 20);
+				Assert.True(middleSpacer.Width == 20);
 
 				container.Width = 50;
 				// (50[<->(10){<->(<->)<->}(10)<->]) // the extra 30 must be put into the expandable (<->)
-				Assert.IsTrue(leftRightFlowLayout.Width == 50);
-				Assert.IsTrue(middleSpacer.Width == 30);
+				Assert.True(leftRightFlowLayout.Width == 50);
+				Assert.True(middleSpacer.Width == 30);
 
 				container.Width = 40;
 				// (50[<->(10){<->(<->)<->}(10)<->]) // the extra 20 must be put into the expandable (<->) by shrinking it
-				Assert.IsTrue(leftRightFlowLayout.Width == 40);
-				Assert.IsTrue(middleSpacer.Width == 20);
+				Assert.True(leftRightFlowLayout.Width == 40);
+				Assert.True(middleSpacer.Width == 20);
 			}
 
 			// make sure a middle spacer grows and shrinks correctly when in another guiwidget (not a flow widget) that is LeftRight
@@ -2173,10 +2172,10 @@ namespace MatterHackers.Agg.UI.Tests
 				{
 					Name = "leftRightFlowLayout"
 				};
-				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
+				Assert.True(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
 				// [<-><->] // attempting to make a visual description of what is happening
-				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
+				Assert.True(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 
 				var middleSpacer = new GuiWidget(0, 10)
 				{
@@ -2185,10 +2184,10 @@ namespace MatterHackers.Agg.UI.Tests
 				}; // this widget will hold the space
 				leftRightFlowLayout.AddChild(middleSpacer);
 				// [<->(<->)<->]
-				Assert.IsTrue(leftRightFlowLayout.Width == 0);
-				Assert.IsTrue(middleSpacer.Width == 0);
+				Assert.True(leftRightFlowLayout.Width == 0);
+				Assert.True(middleSpacer.Width == 0);
 
-				Assert.IsTrue(leftRightFlowLayout.Width == 0);
+				Assert.True(leftRightFlowLayout.Width == 0);
 
 				var containerOuter = new GuiWidget(40, 20)
 				{
@@ -2200,37 +2199,37 @@ namespace MatterHackers.Agg.UI.Tests
 					Name = "containerInner"
 				};
 				containerOuter.AddChild(containerInner);
-				Assert.IsTrue(containerInner.Width == 40);
+				Assert.True(containerInner.Width == 40);
 				containerInner.AddChild(leftRightFlowLayout);
 				// (40(<-[<->(<->)<->]->)) // the extra 20 must be put into the expandable (<->)
-				Assert.IsTrue(containerInner.Width == 40);
-				Assert.IsTrue(leftRightFlowLayout.Width == 40);
-				Assert.IsTrue(middleSpacer.Width == 40);
+				Assert.True(containerInner.Width == 40);
+				Assert.True(leftRightFlowLayout.Width == 40);
+				Assert.True(middleSpacer.Width == 40);
 
 				containerOuter.Width = 50;
 				// (50(<-[<->(<->)<->]->) // the extra 30 must be put into the expandable (<->)
-				Assert.IsTrue(containerInner.Width == 50);
-				Assert.IsTrue(leftRightFlowLayout.Width == 50);
-				Assert.IsTrue(middleSpacer.Width == 50);
+				Assert.True(containerInner.Width == 50);
+				Assert.True(leftRightFlowLayout.Width == 50);
+				Assert.True(middleSpacer.Width == 50);
 
 				containerOuter.Width = 40;
 				// (40(<-[<->(<->)<->]->) // the extra 20 must be put into the expandable (<->) by shrinking it
-				Assert.IsTrue(containerInner.Width == 40);
-				Assert.IsTrue(leftRightFlowLayout.Width == 40);
-				Assert.IsTrue(middleSpacer.Width == 40);
+				Assert.True(containerInner.Width == 40);
+				Assert.True(leftRightFlowLayout.Width == 40);
+				Assert.True(middleSpacer.Width == 40);
 			}
 
 			// make sure a middle spacer grows and shrinks correctly when in another guiwidget (not a flow widget) that is LeftRight
 			{
 				var leftRightFlowLayout = new FlowLayoutWidget();
-				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
+				Assert.True(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
 				// [<-><->] // attempting to make a visual description of what is happening
-				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
+				Assert.True(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 				var leftWidget = new GuiWidget(10, 10); // we call it left widget as it will be the first one in the left to right flow layout
 				leftRightFlowLayout.AddChild(leftWidget); // add in a child with a width of 10
 				// [<->(10)<->] // the flow layout should now be forced to be 10 wide
-				Assert.IsTrue(leftRightFlowLayout.Width == 10);
+				Assert.True(leftRightFlowLayout.Width == 10);
 
 				var middleSpacer = new GuiWidget(0, 10)
 				{
@@ -2238,13 +2237,13 @@ namespace MatterHackers.Agg.UI.Tests
 				}; // this widget will hold the space
 				leftRightFlowLayout.AddChild(middleSpacer);
 				// [<->(10)(<->)<->]
-				Assert.IsTrue(leftRightFlowLayout.Width == 10);
-				Assert.IsTrue(middleSpacer.Width == 0);
+				Assert.True(leftRightFlowLayout.Width == 10);
+				Assert.True(middleSpacer.Width == 0);
 
 				var rightItem = new GuiWidget(10, 10);
 				leftRightFlowLayout.AddChild(rightItem);
 				// [<->(10)(<->)(10)<->]
-				Assert.IsTrue(leftRightFlowLayout.Width == 20);
+				Assert.True(leftRightFlowLayout.Width == 20);
 
 				var containerOuter = new GuiWidget(40, 20)
 				{
@@ -2256,28 +2255,28 @@ namespace MatterHackers.Agg.UI.Tests
 					Name = "containerInner"
 				};
 				containerOuter.AddChild(containerInner);
-				Assert.IsTrue(containerInner.Width == 40);
+				Assert.True(containerInner.Width == 40);
 				containerInner.AddChild(leftRightFlowLayout);
 				// (40(<-[<->(10)(<->)(10)<->]->)) // the extra 20 must be put into the expandable (<->)
-				Assert.IsTrue(containerInner.Width == 40);
-				Assert.IsTrue(leftRightFlowLayout.Width == 40);
-				Assert.IsTrue(middleSpacer.Width == 20);
+				Assert.True(containerInner.Width == 40);
+				Assert.True(leftRightFlowLayout.Width == 40);
+				Assert.True(middleSpacer.Width == 20);
 
 				containerOuter.Width = 50;
 				// (50(<-[<->(10)(<->)(10)<->]->) // the extra 30 must be put into the expandable (<->)
-				Assert.IsTrue(containerInner.Width == 50);
-				Assert.IsTrue(leftRightFlowLayout.Width == 50);
-				Assert.IsTrue(middleSpacer.Width == 30);
+				Assert.True(containerInner.Width == 50);
+				Assert.True(leftRightFlowLayout.Width == 50);
+				Assert.True(middleSpacer.Width == 30);
 
 				containerOuter.Width = 40;
 				// (40(<-[<->(10)(<->)(10)<->]->) // the extra 20 must be put into the expandable (<->) by shrinking it
-				Assert.IsTrue(containerInner.Width == 40);
-				Assert.IsTrue(leftRightFlowLayout.Width == 40);
-				Assert.IsTrue(middleSpacer.Width == 20);
+				Assert.True(containerInner.Width == 40);
+				Assert.True(leftRightFlowLayout.Width == 40);
+				Assert.True(middleSpacer.Width == 20);
 			}
 		}
 
-		[Test]
+		[Fact]
 		public void TestVAnchorCenter()
 		{
 			var searchPanel = new FlowLayoutWidget
@@ -2300,9 +2299,9 @@ namespace MatterHackers.Agg.UI.Tests
 				};
 
 				searchPanel.AddChild(searchInput);
-				Assert.IsTrue(searchInput.BoundsRelativeToParent.Bottom - searchPanel.BoundsRelativeToParent.Bottom == searchPanel.BoundsRelativeToParent.Top - searchInput.BoundsRelativeToParent.Top);
+				Assert.True(searchInput.BoundsRelativeToParent.Bottom - searchPanel.BoundsRelativeToParent.Bottom == searchPanel.BoundsRelativeToParent.Top - searchInput.BoundsRelativeToParent.Top);
 				searchPanel.AddChild(searchButton);
-				Assert.IsTrue(searchInput.BoundsRelativeToParent.Bottom - searchPanel.BoundsRelativeToParent.Bottom == searchPanel.BoundsRelativeToParent.Top - searchInput.BoundsRelativeToParent.Top);
+				Assert.True(searchInput.BoundsRelativeToParent.Bottom - searchPanel.BoundsRelativeToParent.Bottom == searchPanel.BoundsRelativeToParent.Top - searchInput.BoundsRelativeToParent.Top);
 			}
 
 			searchPanel.Close();

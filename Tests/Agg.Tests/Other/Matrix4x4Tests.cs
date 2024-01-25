@@ -27,11 +27,11 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using NUnit.Framework;
+using Xunit;
 
 namespace MatterHackers.Agg.Tests
 {
-	[TestFixture]
+	//[TestFixture]
 	public class Matrix4x4Tests
 	{
 #if false
@@ -63,7 +63,7 @@ namespace MatterHackers.Agg.Tests
             InverseMatrixFromNormalMatrix.TransformVector(ref v1);
 
 	        // make sure they are the same within an error range
-            Assert.IsTrue(v1.Equals(UnitVectorY, .01f));
+            Assert.True(v1.Equals(UnitVectorY, .01f));
 
             NormalMatrix.TransformVector(ref v1);
 
@@ -71,7 +71,7 @@ namespace MatterHackers.Agg.Tests
             InverseMatrixCalculated.TransformVector(ref v1);
 
 	        // make sure they are the same within an error range
-            Assert.IsTrue(v1.Equals(UnitVectorY, .001f));
+            Assert.True(v1.Equals(UnitVectorY, .001f));
 
 	        // And just a bit more checking [7/26/2001] LBB
 	        // and now just check that TransformVector is always working
@@ -79,13 +79,13 @@ namespace MatterHackers.Agg.Tests
             NormalMatrix.TransformVector3X3(ref v1);
 	        InverseMatrixCalculated.PrepareInvMatrix(-Tx, -Ty, -Tz, -Rx, -Ry, -Rz, 1.0f/Sx, 1.0f/Sy, 1.0f/Sz);
             InverseMatrixCalculated.TransformVector3X3(ref v1);
-            Assert.IsTrue(v1.Equals(UnitVectorY, .001f));
+            Assert.True(v1.Equals(UnitVectorY, .001f));
 
 	        NormalMatrix.PrepareMatrix(Tx, Ty, Tz, Rx, Ry, Rz, Sx, Sy, Sz);
             NormalMatrix.TransformVector3X3(ref v1);
             InverseMatrixCalculated.SetToInverse(NormalMatrix);
             InverseMatrixCalculated.TransformVector3X3(ref v1);
-            Assert.IsTrue(v1.Equals(UnitVectorY, .001f));
+            Assert.True(v1.Equals(UnitVectorY, .001f));
 
 	        return true;
         }
@@ -95,7 +95,7 @@ namespace MatterHackers.Agg.Tests
             return (double)Rand.NextDouble() * (Max - Min) + Min;
         }
 
-        [Test]
+        [Fact]
         public void MatrixColumnMajor()
         {
             // Make sure our matrix is set up column major like opengl. LBB [7/11/2003]
@@ -113,10 +113,10 @@ namespace MatterHackers.Agg.Tests
 	        };
             Matrix4X4 KnownMatrixForm = Matrix4X4.Identity;
             KnownMatrixForm.SetElements(KnownMatrixFormFloats);
-            Assert.IsTrue(KnownMatrixForm.Equals(ColumnMajorAccumulatedMatrix, .01f));
+            Assert.True(KnownMatrixForm.Equals(ColumnMajorAccumulatedMatrix, .01f));
         }
 
-        [Test]
+        [Fact]
         public void RotateAboutXAxis()
         {
             Vector3 RotateAboutX = new Vector3(1.0f, 0.0f, 0.0f);
@@ -124,9 +124,9 @@ namespace MatterHackers.Agg.Tests
             RotationMatrix.Rotate(RotateAboutX, (double)(System.Math.PI / 2));
             Vector3 PointToRotate = new Vector3(0, 40, 0);
             RotationMatrix.TransformVector(ref PointToRotate);
-            Assert.IsTrue(PointToRotate.Equals(new Vector3(0, 0, 40), .01f));
+            Assert.True(PointToRotate.Equals(new Vector3(0, 0, 40), .01f));
         }
-        [Test]
+        [Fact]
         public void RotateAboutYAxis()
         {
             Vector3 RotateAboutY = new Vector3(0.0f, 1.0f, 0.0f);
@@ -134,9 +134,9 @@ namespace MatterHackers.Agg.Tests
             RotationMatrix.Rotate(RotateAboutY, (double)(System.Math.PI / 2));
             Vector3 PointToRotate = new Vector3(40, 0, 0);
             RotationMatrix.TransformVector(ref PointToRotate);
-            Assert.IsTrue(PointToRotate.Equals(new Vector3(0, 0, -40), .01f));
+            Assert.True(PointToRotate.Equals(new Vector3(0, 0, -40), .01f));
         }
-        [Test]
+        [Fact]
         public void RotateAboutZAxis()
         {
             Vector3 RotateAboutZ = new Vector3(0.0f, 0.0f, 1.0f);
@@ -144,10 +144,10 @@ namespace MatterHackers.Agg.Tests
             RotationMatrix.Rotate(RotateAboutZ, (double)(System.Math.PI / 2));
             Vector3 PointToRotate = new Vector3(40, 0, 0);
             RotationMatrix.TransformVector(ref PointToRotate);
-            Assert.IsTrue(PointToRotate.Equals(new Vector3(0, 40, 0), .01f));
+            Assert.True(PointToRotate.Equals(new Vector3(0, 40, 0), .01f));
         }
 
-        [Test]
+        [Fact]
         public void ConcatenatedMatrixIsSameAsIndividualMatrices ()
         {
             // Make sure that pushing a concatenated matrix is the same as through a bunch of individual matrices [7/30/2001] LBB
@@ -185,11 +185,11 @@ namespace MatterHackers.Agg.Tests
                 ConcatenatedMatrix.Multiply(pTranforms[CurTransform]); // this is working for rotation
                 ConcatenatedMatrixVector = UnitVectorY;
                 ConcatenatedMatrix.TransformVector(ref ConcatenatedMatrixVector);
-                Assert.IsTrue(ConcatenatedMatrixVector.Equals(EachMatrixVector, .01f));
+                Assert.True(ConcatenatedMatrixVector.Equals(EachMatrixVector, .01f));
             }
         }
 
-        [Test]
+        [Fact]
         public void PrepareAsInveresAndInverseAreSame()
         {
             //***************************************
@@ -233,7 +233,7 @@ namespace MatterHackers.Agg.Tests
             }
         }
 
-        [Test]
+        [Fact]
         public void PrepareMatrixFromPositionAndDirection()
         {
 	        // Test the PrepareMatrixFromPositionAndDirection function.
@@ -248,7 +248,7 @@ namespace MatterHackers.Agg.Tests
 	        };
             Matrix4X4 TestACorrectResult = Matrix4X4.Identity;
 	        TestACorrectResult.SetElements(TestACorrectResultFloats);
-	        Assert.IsTrue(TestACorrectResult.Equals(TestA, .01f));
+	        Assert.True(TestACorrectResult.Equals(TestA, .01f));
 
             Matrix4X4 TestB = Matrix4X4.Identity;
             TestB.PrepareMatrixFromPositionAndDirection(new Vector3(1.0f, 2.0f, 3.0f), new Vector3(1.0f, 0.0f, 0.01f));
@@ -261,7 +261,7 @@ namespace MatterHackers.Agg.Tests
 	        };
             Matrix4X4 TestBCorrectResult = Matrix4X4.Identity;
 	        TestBCorrectResult.SetElements(TestBCorrectResultFloats);
-	        Assert.IsTrue(TestBCorrectResult.Equals(TestB, .01f));
+	        Assert.True(TestBCorrectResult.Equals(TestB, .01f));
         }
 #endif
 	}

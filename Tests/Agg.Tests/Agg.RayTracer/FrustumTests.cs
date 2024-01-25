@@ -29,15 +29,15 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using MatterHackers.VectorMath;
-using NUnit.Framework;
+using Xunit;
 using MatterHackers.VectorMath.Tests;
 
 namespace MatterHackers.RayTracer
 {
-    [TestFixture, Ignore("WorkInProgress")]
+    //[TestFixture, Ignore("WorkInProgress")]
 	public class FrustumTests
 	{
-		[Test]
+		[Fact]
 		public void RayBundleSameResultAsIndividualRays()
 		{
 		}

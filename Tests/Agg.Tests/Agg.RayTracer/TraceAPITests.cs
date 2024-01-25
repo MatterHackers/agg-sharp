@@ -30,16 +30,16 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
-using NUnit.Framework;
+using Xunit;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace MatterHackers.RayTracer
 {
-	[TestFixture, Category("Agg.RayTracer")]
+	//[TestFixture, Category("Agg.RayTracer")]
 	public class TraceAPITests
 	{
-		[Test]
+		[Fact]
 		public void EnumerateBvh()
 		{
 			// create a bvh hierarchy
@@ -54,7 +54,7 @@ namespace MatterHackers.RayTracer
 			var root = new Transform(level1);
 
 			// enumerate it and check it
-			Assert.AreEqual(9, new BvhIterator(root).Count());
+			Assert.Equal(9, new BvhIterator(root).Count());
 
 			int count = 0;
 			foreach(var item in new BvhIterator(root))
@@ -62,55 +62,55 @@ namespace MatterHackers.RayTracer
 				switch(count++)
 				{
 					case 0:
-						Assert.IsTrue(item.Bvh is Transform);
-						Assert.AreEqual(0, item.Depth);
-						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
+						Assert.True(item.Bvh is Transform);
+						Assert.Equal(0, item.Depth);
+						Assert.Equal(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
 						break;
 					case 1:
-						Assert.IsTrue(item.Bvh is UnboundCollection);
-						Assert.AreEqual(1, item.Depth);
-						Assert.AreEqual(Matrix4X4.CreateTranslation(0,0,0), item.TransformToWorld);
+						Assert.True(item.Bvh is UnboundCollection);
+						Assert.Equal(1, item.Depth);
+						Assert.Equal(Matrix4X4.CreateTranslation(0,0,0), item.TransformToWorld);
 						break;
 					case 2:
-						Assert.IsTrue(item.Bvh is Transform);
-						Assert.AreEqual(2, item.Depth);
-						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
+						Assert.True(item.Bvh is Transform);
+						Assert.Equal(2, item.Depth);
+						Assert.Equal(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
 						break;
 					case 3:
-						Assert.IsTrue(item.Bvh is UnboundCollection);
-						Assert.AreEqual(3, item.Depth);
-						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
+						Assert.True(item.Bvh is UnboundCollection);
+						Assert.Equal(3, item.Depth);
+						Assert.Equal(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
 						break;
 					case 4:
-						Assert.IsTrue(item.Bvh is TriangleShape);
-						Assert.AreEqual(4, item.Depth);
-						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
+						Assert.True(item.Bvh is TriangleShape);
+						Assert.Equal(4, item.Depth);
+						Assert.Equal(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
 						break;
 					case 5:
-						Assert.IsTrue(item.Bvh is TriangleShape);
-						Assert.AreEqual(4, item.Depth);
-						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
+						Assert.True(item.Bvh is TriangleShape);
+						Assert.Equal(4, item.Depth);
+						Assert.Equal(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
 						break;
 					case 6:
-						Assert.IsTrue(item.Bvh is TriangleShape);
-						Assert.AreEqual(4, item.Depth);
-						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
+						Assert.True(item.Bvh is TriangleShape);
+						Assert.Equal(4, item.Depth);
+						Assert.Equal(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
 						break;
 					case 7:
-						Assert.IsTrue(item.Bvh is Transform);
-						Assert.AreEqual(2, item.Depth);
-						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
+						Assert.True(item.Bvh is Transform);
+						Assert.Equal(2, item.Depth);
+						Assert.Equal(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
 						break;
 					case 8:
-						Assert.IsTrue(item.Bvh is TriangleShape);
-						Assert.AreEqual(3, item.Depth);
-						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 40, 0), item.TransformToWorld);
+						Assert.True(item.Bvh is TriangleShape);
+						Assert.Equal(3, item.Depth);
+						Assert.Equal(Matrix4X4.CreateTranslation(0, 40, 0), item.TransformToWorld);
 						break;
 				}
 			}
 		}
 
-		[Test]
+		[Fact]
 		public void PlaneGetDistanceToIntersection()
 		{
 			Plane testPlane = new Plane(Vector3.UnitZ, 10);
@@ -118,24 +118,24 @@ namespace MatterHackers.RayTracer
 			double distanceToHit;
 
 			Ray lookingAtFrontOfPlane = new Ray(new Vector3(0, 0, 11), new Vector3(0, 0, -1));
-			Assert.IsTrue(testPlane.RayHitPlane(lookingAtFrontOfPlane, out distanceToHit, out hitFrontOfPlane));
-			Assert.IsTrue(distanceToHit == 1);
-			Assert.IsTrue(hitFrontOfPlane);
+			Assert.True(testPlane.RayHitPlane(lookingAtFrontOfPlane, out distanceToHit, out hitFrontOfPlane));
+			Assert.True(distanceToHit == 1);
+			Assert.True(hitFrontOfPlane);
 
 			Ray notLookingAtFrontOfPlane = new Ray(new Vector3(0, 0, 11), new Vector3(0, 0, 1));
-			Assert.IsTrue(!testPlane.RayHitPlane(notLookingAtFrontOfPlane, out distanceToHit, out hitFrontOfPlane));
-			Assert.IsTrue(distanceToHit == double.PositiveInfinity);
-			Assert.IsTrue(!hitFrontOfPlane);
+			Assert.True(!testPlane.RayHitPlane(notLookingAtFrontOfPlane, out distanceToHit, out hitFrontOfPlane));
+			Assert.True(distanceToHit == double.PositiveInfinity);
+			Assert.True(!hitFrontOfPlane);
 
 			Ray lookingAtBackOfPlane = new Ray(new Vector3(0, 0, 9), new Vector3(0, 0, 1));
-			Assert.IsTrue(testPlane.RayHitPlane(lookingAtBackOfPlane, out distanceToHit, out hitFrontOfPlane));
-			Assert.IsTrue(distanceToHit == 1);
-			Assert.IsTrue(!hitFrontOfPlane);
+			Assert.True(testPlane.RayHitPlane(lookingAtBackOfPlane, out distanceToHit, out hitFrontOfPlane));
+			Assert.True(distanceToHit == 1);
+			Assert.True(!hitFrontOfPlane);
 
 			Ray notLookingAtBackOfPlane = new Ray(new Vector3(0, 0, 9), new Vector3(0, 0, -1));
-			Assert.IsTrue(!testPlane.RayHitPlane(notLookingAtBackOfPlane, out distanceToHit, out hitFrontOfPlane));
-			Assert.IsTrue(distanceToHit == double.PositiveInfinity);
-			Assert.IsTrue(hitFrontOfPlane);
+			Assert.True(!testPlane.RayHitPlane(notLookingAtBackOfPlane, out distanceToHit, out hitFrontOfPlane));
+			Assert.True(distanceToHit == double.PositiveInfinity);
+			Assert.True(hitFrontOfPlane);
 		}
 	}
 }

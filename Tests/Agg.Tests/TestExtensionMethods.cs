@@ -31,10 +31,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using NUnit.Framework;
+using Xunit;
 
 namespace MatterHackers.Agg.Tests
 {
+	public class TestContext
+	{
+
+	}
+
 	public static class TestExtensionMethods
 	{
 		public static string ResolveProjectPath(this TestContext context, string[] relativePathPieces, [System.Runtime.CompilerServices.CallerFilePath] string sourceFilePath = null)

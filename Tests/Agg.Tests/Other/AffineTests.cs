@@ -28,15 +28,15 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.Transform;
-using NUnit.Framework;
+using Xunit;
 
 namespace MatterHackers.Agg.Tests
 {
 
-    [TestFixture]
+    //[TestFixture]
 	public class AffineTests
 	{
-		[Test]
+		[Fact]
 		public void invert_test()
 		{
 			Affine a = Affine.NewIdentity();
@@ -51,11 +51,11 @@ namespace MatterHackers.Agg.Tests
 
 			a.Transform(ref newx, ref newy);
 			b.Transform(ref newx, ref newy);
-			Assert.AreEqual(x, newx, .001);
-			Assert.AreEqual(y, newy, .001);
+			Assert.Equal(x, newx, .001);
+			Assert.Equal(y, newy, .001);
 		}
 
-		[Test]
+		[Fact]
 		public void transform_test()
 		{
 			Affine a = Affine.NewIdentity();
@@ -67,8 +67,8 @@ namespace MatterHackers.Agg.Tests
 			double newy = 0;
 
 			a.Transform(ref newx, ref newy);
-			Assert.AreEqual(x, newx, .001);
-			Assert.AreEqual(y, newy, .001);
+			Assert.Equal(x, newx, .001);
+			Assert.Equal(y, newy, .001);
 		}
 	}
 }

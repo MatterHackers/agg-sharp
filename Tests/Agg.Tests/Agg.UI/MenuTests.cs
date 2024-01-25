@@ -33,12 +33,11 @@ using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
-using NUnit.Framework;
-using TestInvoker;
+using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
+	//[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
 	public class MenuTests
 	{
 		public static bool SaveImagesForDebug = false;
@@ -51,7 +50,7 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Test, ChildProcessTest]
+		[Fact]
 		public async Task OpenAndCloseMenus()
 		{
 			int item1ClickCount = 0;
@@ -68,61 +67,61 @@ namespace MatterHackers.Agg.UI.Tests
 
 			AutomationTest testToRun = (testRunner) =>
 			{
-				Assert.AreEqual(0, item1ClickCount);
-				Assert.AreEqual(0, item2ClickCount);
-				Assert.AreEqual(0, item3ClickCount);
+				Assert.Equal(0, item1ClickCount);
+				Assert.Equal(0, item2ClickCount);
+				Assert.Equal(0, item3ClickCount);
 
 				testRunner.ClickByName("menu1");
 				testRunner.ClickByName("item1");
 
 				testRunner.WaitFor(() => !testList.IsOpen, 2);
-				Assert.IsTrue(!testList.IsOpen);
-				Assert.AreEqual(1, item1ClickCount);
-				Assert.AreEqual(0, item2ClickCount);
-				Assert.AreEqual(0, item3ClickCount);
+				Assert.True(!testList.IsOpen);
+				Assert.Equal(1, item1ClickCount);
+				Assert.Equal(0, item2ClickCount);
+				Assert.Equal(0, item3ClickCount);
 
 				testRunner.ClickByName("menu1");
 				testRunner.ClickByName("item2");
 
 				testRunner.WaitFor(() => !testList.IsOpen, 2);
-				Assert.IsTrue(!testList.IsOpen);
-				Assert.AreEqual(1, item1ClickCount);
-				Assert.AreEqual(1, item2ClickCount);
-				Assert.AreEqual(0, item3ClickCount);
+				Assert.True(!testList.IsOpen);
+				Assert.Equal(1, item1ClickCount);
+				Assert.Equal(1, item2ClickCount);
+				Assert.Equal(0, item3ClickCount);
 
 				testRunner.ClickByName("menu1");
 				testRunner.ClickByName("item3");
 
 				testRunner.WaitFor(() => testList.IsOpen, 2);
-				Assert.IsTrue(testList.IsOpen, "It should remain open when clicking on a disabled item.");
-				Assert.AreEqual(1, item1ClickCount);
-				Assert.AreEqual(1, item2ClickCount);
-				Assert.AreEqual(0, item3ClickCount);
+				Assert.True(testList.IsOpen, "It should remain open when clicking on a disabled item.");
+				Assert.Equal(1, item1ClickCount);
+				Assert.Equal(1, item2ClickCount);
+				Assert.Equal(0, item3ClickCount);
 				testRunner.ClickByName("item2");
 
 				testRunner.WaitFor(() => !testList.IsOpen, 2);
-				Assert.IsTrue(!testList.IsOpen);
-				Assert.AreEqual(1, item1ClickCount);
-				Assert.AreEqual(2, item2ClickCount);
-				Assert.AreEqual(0, item3ClickCount);
+				Assert.True(!testList.IsOpen);
+				Assert.Equal(1, item1ClickCount);
+				Assert.Equal(2, item2ClickCount);
+				Assert.Equal(0, item3ClickCount);
 
 				testRunner.ClickByName("menu1");
 				testRunner.ClickByName("OffMenu");
 
 				testRunner.WaitFor(() => !testList.IsOpen, 2);
 				//if (testList.IsOpen) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
-				Assert.IsTrue(!testList.IsOpen);
+				Assert.True(!testList.IsOpen);
 
 				testRunner.ClickByName("menu1");
 				testRunner.Delay(.1);
 				//testRunner.Delay(5);
 				//if (!testList.IsOpen) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
-				Assert.IsTrue(testList.IsOpen);
+				Assert.True(testList.IsOpen);
 
 				testRunner.ClickByName("item3");
 				testRunner.Delay(.1);
 				//if (!testList.IsOpen) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
-				Assert.IsTrue(testList.IsOpen);
+				Assert.True(testList.IsOpen);
 
 				//testRunner.Delay(5);
 				testRunner.MoveToByName("OffMenu");
@@ -130,11 +129,11 @@ namespace MatterHackers.Agg.UI.Tests
 				// NOTE: The menu was once closed for those 10s...
 				// Update: Failures may have been due to tests fighting over platform UI focus.
 				//if (!testList.IsOpen) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
-				Assert.IsTrue(testList.IsOpen);
+				Assert.True(testList.IsOpen);
 
 				testRunner.ClickByName("OffMenu");
 				testRunner.WaitFor(() => !testList.IsOpen, 2);
-				Assert.IsFalse(testList.IsOpen, "Menus should close when clicking off menu");
+				Assert.False(testList.IsOpen, "Menus should close when clicking off menu");
 
 				return Task.CompletedTask;
 			};

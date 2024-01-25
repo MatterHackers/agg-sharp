@@ -29,11 +29,11 @@ either expressed or implied, of the FreeBSD Project.
 
 using System.Diagnostics;
 using MatterHackers.Agg.Image;
-using NUnit.Framework;
+using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI")]
+	//[TestFixture, Category("Agg.UI")]
 	public class BorderTests
 	{
 		private int borderSize = 1;
@@ -48,7 +48,7 @@ namespace MatterHackers.Agg.UI.Tests
 			All = 4
 		}
 
-		[Test]
+		[Fact]
 		public void BorderTestLeft()
 		{
 			var border = new BorderDouble(left: borderSize);
@@ -57,7 +57,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Left, border, surface);
 		}
 
-		[Test]
+		[Fact]
 		public void BorderTestBottom()
 		{
 			var border = new BorderDouble(bottom: borderSize);
@@ -66,7 +66,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Bottom, border, surface);
 		}
 
-		[Test]
+		[Fact]
 		public void BorderTestRight()
 		{
 			var border = new BorderDouble(right: borderSize);
@@ -75,7 +75,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Right, border, surface);
 		}
 
-		[Test]
+		[Fact]
 		public void BorderTestTop()
 		{
 			var border = new BorderDouble(top: borderSize);
@@ -232,12 +232,12 @@ namespace MatterHackers.Agg.UI.Tests
 					bool shouldBeRed = borderBounds.Contains(new Point2D(x + .5, y + .5));
 					if (shouldBeRed)
 					{
-						Assert.AreEqual(Color.Red, pixel);
+						Assert.Equal(Color.Red, pixel);
 
 					}
 					else
 					{
-						Assert.AreNotEqual(Color.Red, pixel);
+						Assert.NotEqual(Color.Red, pixel);
 					}
 				}
 			}

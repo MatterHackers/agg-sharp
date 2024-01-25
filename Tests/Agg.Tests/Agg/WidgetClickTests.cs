@@ -27,27 +27,18 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg.UI;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
-using NUnit.Framework;
-using System.Diagnostics;
-using NUnit.Framework.Internal.Commands;
-using NUnit.Framework.Internal;
-using NUnit.Framework.Interfaces;
-using System.Xml.Serialization;
-using System.Xml;
-using TestInvoker;
+using Xunit;
 
 namespace MatterHackers.Agg.Tests
 {
-	[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
+	//[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
 	public class WidgetClickTests
 	{
-		[Test, ChildProcessTest]
+		[Fact]
 		public async Task ClickFiresOnCorrectWidgets()
 		{
 			var testWindow = new ClickTestsWindow(300, 200);
@@ -58,39 +49,39 @@ namespace MatterHackers.Agg.Tests
 				{
 					testRunner.ClickByName("blueWidget");
 					testRunner.Delay(.1);
-					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
-					Assert.AreEqual(0, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
-					Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
+					Assert.Equal(1, testWindow.BlueWidget.ClickCount);//, "Unexpected click count on blue widget");
+                    Assert.Equal(0, testWindow.OrangeWidget.ClickCount);//, "Unexpected click count on orange widget");
+                    Assert.Equal(0, testWindow.PurpleWidget.ClickCount);//, "Unexpected click count on purple widget");
 
-					testRunner.ClickByName("orangeWidget");
+                    testRunner.ClickByName("orangeWidget");
 					testRunner.Delay(.1);
-					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
-					Assert.AreEqual(1, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
-					Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
+					Assert.Equal(1, testWindow.BlueWidget.ClickCount);//, "Unexpected click count on blue widget");
+                    Assert.Equal(1, testWindow.OrangeWidget.ClickCount);//, "Unexpected click count on orange widget");
+                    Assert.Equal(0, testWindow.PurpleWidget.ClickCount);//, "Unexpected click count on purple widget");
 
-					testRunner.ClickByName("blueWidget");
+                    testRunner.ClickByName("blueWidget");
 					testRunner.Delay(.1);
-					Assert.AreEqual(2, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
-					Assert.AreEqual(1, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
-					Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
+					Assert.Equal(2, testWindow.BlueWidget.ClickCount);//, "Unexpected click count on blue widget");
+                    Assert.Equal(1, testWindow.OrangeWidget.ClickCount);//, "Unexpected click count on orange widget");
+                    Assert.Equal(0, testWindow.PurpleWidget.ClickCount);//, "Unexpected click count on purple widget");
 
-					testRunner.ClickByName("orangeWidget");
+                    testRunner.ClickByName("orangeWidget");
 					testRunner.Delay(.1);
-					Assert.AreEqual(2, testWindow.BlueWidget.ClickCount, "Unexpected click count on root widget");
-					Assert.AreEqual(2, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
-					Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
+					Assert.Equal(2, testWindow.BlueWidget.ClickCount);//, "Unexpected click count on root widget");
+                    Assert.Equal(2, testWindow.OrangeWidget.ClickCount);//, "Unexpected click count on orange widget");
+                    Assert.Equal(0, testWindow.PurpleWidget.ClickCount);//, "Unexpected click count on purple widget");
 
-					testRunner.ClickByName("purpleWidget");
+                    testRunner.ClickByName("purpleWidget");
 					testRunner.Delay(.1);
-					Assert.AreEqual(2, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
-					Assert.AreEqual(2, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
-					Assert.AreEqual(1, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
+					Assert.Equal(2, testWindow.BlueWidget.ClickCount);//, "Unexpected click count on blue widget");
+                    Assert.Equal(2, testWindow.OrangeWidget.ClickCount);//, "Unexpected click count on orange widget");
+                    Assert.Equal(1, testWindow.PurpleWidget.ClickCount);//, "Unexpected click count on purple widget");
 
-					return Task.CompletedTask;
+                    return Task.CompletedTask;
 				});
 		}
 
-		[Test, ChildProcessTest]
+		[Fact]
 		public async Task ClickSuppressedOnExternalMouseUp()
 		{
 			var testWindow = new ClickTestsWindow(300, 200);
@@ -115,12 +106,12 @@ namespace MatterHackers.Agg.Tests
 					testRunner.SetMouseCursorPosition(testWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
 					testWindow.OnMouseUp(mouseEvent);
 
-					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Expected 1 click on root widget");
+					Assert.Equal(1, testWindow.BlueWidget.ClickCount);//, "Expected 1 click on root widget");
 
-					// ** Click should not occur when mouse up is outside of the control bounds **
-					//
-					// Move to a position within BlueWidget for mousedown
-					mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, mouseDownPosition.X, mouseDownPosition.Y, 0);
+                    // ** Click should not occur when mouse up is outside of the control bounds **
+                    //
+                    // Move to a position within BlueWidget for mousedown
+                    mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, mouseDownPosition.X, mouseDownPosition.Y, 0);
 					testRunner.SetMouseCursorPosition(testWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
 					testWindow.OnMouseDown(mouseEvent);
 
@@ -130,13 +121,13 @@ namespace MatterHackers.Agg.Tests
 					testWindow.OnMouseUp(mouseEvent);
 
 					// There should be no increment in the click count
-					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Expected 1 click on root widget");
+					Assert.Equal(1, testWindow.BlueWidget.ClickCount);//, "Expected 1 click on root widget");
 
-					return Task.CompletedTask;
+                    return Task.CompletedTask;
 				});
 		}
 
-		[Test, ChildProcessTest]
+		[Fact]
 		public async Task ClickSuppressedOnMouseUpWithinChild2()
 		{
 			// Agg currently fires mouse up events in child controls when the parent has the mouse captured
@@ -169,12 +160,12 @@ namespace MatterHackers.Agg.Tests
 					testRunner.SetMouseCursorPosition(testWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
 					testWindow.OnMouseUp(mouseEvent);
 
-					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Expected 1 click on root widget");
+					Assert.Equal(1, testWindow.BlueWidget.ClickCount);//, "Expected 1 click on root widget");
 
-					// ** Click should not occur when mouse up occurs on child controls **
-					//
-					// Move to a position within BlueWidget for mousedown
-					mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, mouseDownPosition.X, mouseDownPosition.Y, 0);
+                    // ** Click should not occur when mouse up occurs on child controls **
+                    //
+                    // Move to a position within BlueWidget for mousedown
+                    mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, mouseDownPosition.X, mouseDownPosition.Y, 0);
 					testRunner.SetMouseCursorPosition(testWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
 					testWindow.OnMouseDown(mouseEvent);
 
@@ -184,9 +175,9 @@ namespace MatterHackers.Agg.Tests
 					testWindow.OnMouseUp(mouseEvent);
 
 					// There should be no increment in the click count
-					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Expected click count to not increment on mouse up within child control");
+					Assert.Equal(1, testWindow.BlueWidget.ClickCount);//, "Expected click count to not increment on mouse up within child control");
 
-					return Task.CompletedTask;
+                    return Task.CompletedTask;
 				});
 		}
 

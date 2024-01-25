@@ -6,10 +6,6 @@
     <ReleaseVersion>2.20.12</ReleaseVersion>
   </PropertyGroup>
   
-  <PropertyGroup Condition="'$(SolutionFileName)'=='MatterControlAndroid.sln'">
-    <DefineConstants>$(DefineConstants);__ANDROID__</DefineConstants>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>

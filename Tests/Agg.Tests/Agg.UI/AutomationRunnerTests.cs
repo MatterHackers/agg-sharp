@@ -31,15 +31,18 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.GuiAutomation;
-using NUnit.Framework;
-using TestInvoker;
+using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
+	//[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
+	// change to xunit
+
 	public class AutomationRunnerTests
 	{
-		[Test, ChildProcessTest]
+		//[Fact]
+		// change to xunit
+		[Fact]
 		public async Task GetWidgetByNameTestNoRegionSingleWindow()
 		{
 			// single system window
@@ -57,14 +60,16 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.ClickByName("left");
 				testRunner.Delay(.5);
 
-				Assert.IsTrue(leftClickCount == 1, "Got left button click");
+				Assert.True(leftClickCount == 1);//, "Got left button click");
 
 				return Task.CompletedTask;
 			});
 		}
 
-		[Test, ChildProcessTest]
-		public void AutomationRunnerTimeoutTest()
+		//[Fact]
+		// change to xunit
+		[Fact]
+		public async Task AutomationRunnerTimeoutTest()
 		{
 			// Ensure AutomationRunner throws timeout exceptions
 			var systemWindow = new SystemWindow(300, 200);
@@ -73,22 +78,28 @@ namespace MatterHackers.Agg.UI.Tests
 			leftButton.Name = "left";
 			systemWindow.AddChild(leftButton);
 
-			// NOTE: This test once failed. Possibly due to ShowWindowAndExecuteTests using different timing sources. A Stopwatch and a Task.Delay.
+            // NOTE: This test once failed. Possibly due to ShowWindowAndExecuteTests using different timing sources. A Stopwatch and a Task.Delay.
 
-			Assert.ThrowsAsync<TimeoutException>(
-				() => AutomationRunner.ShowWindowAndExecuteTests(
-					systemWindow,
-					(testRunner) =>
-					{
-						// Test method that runs for 10+ seconds
-						Thread.Sleep(10 * 1000);
-						return Task.CompletedTask;
-					},
-					// Timeout after 1 second
-					secondsToTestFailure: 1));
-		}
+            //Assert.ThrowsAsync<TimeoutException>(
+            // convert to xunit
+            await Assert.ThrowsAsync<TimeoutException>(async () =>
+            {
+                await AutomationRunner.ShowWindowAndExecuteTests(
+                    systemWindow,
+                    (testRunner) =>
+                    {
+                        // Test method that runs for 10+ seconds
+                        Thread.Sleep(10 * 1000);
+                        return Task.CompletedTask;
+                    },
+                    // Timeout after 1 second
+                    secondsToTestFailure: 1);
+            });
+        }
 
-		[Test, ChildProcessTest]
+        //[Fact]
+        // change to xunit
+        [Fact]
 		public async Task GetWidgetByNameTestRegionSingleWindow()
 		{
 			int leftClickCount = 0;
@@ -108,9 +119,9 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				testRunner.ClickByName("left");
 				testRunner.Delay(.5);
-				Assert.AreEqual(1, leftClickCount, "Should have one left click count after click");
+				Assert.Equal(1, leftClickCount);//, "Should have one left click count after click");
 
-				Assert.IsTrue(testRunner.NameExists("left"), "Left button should exist");
+				Assert.True(testRunner.NameExists("left"), "Left button should exist");
 
 				var widget = testRunner.GetWidgetByName(
 					"left",
@@ -118,7 +129,7 @@ namespace MatterHackers.Agg.UI.Tests
 					5,
 					testRunner.GetRegionByName("right"));
 
-				Assert.IsNull(widget, "Left button should not exist in the right button region");
+				Assert.Null(widget);//, "Left button should not exist in the right button region");
 
 				return Task.CompletedTask;
 			});

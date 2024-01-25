@@ -28,10 +28,9 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.GuiAutomation;
-using NUnit.Framework;
 using System.Threading;
 using System.Threading.Tasks;
-using TestInvoker;
+using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -42,7 +41,7 @@ namespace MatterHackers.Agg.UI.Tests
 		internal int popCount;
 	}
 
-	[TestFixture, Category("Agg.UI.ToolTip"), Apartment(ApartmentState.STA), Parallelizable(ParallelScope.All)]
+	//[TestFixture, Category("Agg.UI.ToolTip"), Apartment(ApartmentState.STA), Parallelizable(ParallelScope.All)]
 	public class ToolTipTests
 	{
 		static readonly string toolTip1Text = "toolTip1";
@@ -51,7 +50,7 @@ namespace MatterHackers.Agg.UI.Tests
 		static readonly int minMsTimeToRespond = 60;
 		static readonly int minMsToBias = 80;
 
-		[Test]
+		[Fact]
 		public void ToolTipInitialOpenTests()
 		{
 			TempData tempData = new TempData();
@@ -63,46 +62,46 @@ namespace MatterHackers.Agg.UI.Tests
 			UiThread.InvokePendingActions();
 
 			// show that initially we don't have a tooltip
-			Assert.IsTrue(systemWindow.Children.Count == 2);
+			Assert.True(systemWindow.Children.Count == 2);
 
 			// sleep 1/2 long enough to show the tool tip
 			Thread.Sleep((int)(ToolTipManager.InitialDelay / 2 * 1000 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure it is still not up
-			Assert.IsTrue(systemWindow.Children.Count == 2);
-			Assert.IsTrue(tempData.showCount == 0);
-			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+			Assert.True(systemWindow.Children.Count == 2);
+			Assert.True(tempData.showCount == 0);
+			Assert.True(systemWindow.ToolTipManager.CurrentText == "");
 
 			// sleep 1/2 long enough to show the tool tip
 			Thread.Sleep((int)(ToolTipManager.InitialDelay / 2 * 1000 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure the tool tip came up
-			Assert.IsTrue(systemWindow.Children.Count == 3);
-			Assert.IsTrue(tempData.showCount == 1);
-			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
+			Assert.True(systemWindow.Children.Count == 3);
+			Assert.True(tempData.showCount == 1);
+			Assert.True(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
 
 			// wait 1/2 long enough for the tool tip to go away
 			Thread.Sleep((int)(ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure the tool did not go away
-			Assert.IsTrue(systemWindow.Children.Count == 3);
-			Assert.IsTrue(tempData.popCount == 0);
-			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
+			Assert.True(systemWindow.Children.Count == 3);
+			Assert.True(tempData.popCount == 0);
+			Assert.True(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
 
 			// wait 1/2 long enough for the tool tip to go away
 			Thread.Sleep((int)(ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure the tool tip went away
-			Assert.IsTrue(systemWindow.Children.Count == 2);
-			Assert.IsTrue(tempData.popCount == 1);
-			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+			Assert.True(systemWindow.Children.Count == 2);
+			Assert.True(tempData.popCount == 1);
+			Assert.True(systemWindow.ToolTipManager.CurrentText == "");
 		}
 
-		[Test, ChildProcessTest]
+		[Fact]
 		public async Task ToolTipsShow()
 		{
 			SystemWindow buttonContainer = new SystemWindow(300, 200)
@@ -117,10 +116,10 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.MoveToByName("ButtonWithToolTip");
 				testRunner.Delay(1.5);
 				GuiWidget toolTipWidget = buttonContainer.FindDescendant("ToolTipWidget");
-				Assert.IsTrue(toolTipWidget != null, "Tool tip is showing");
+				Assert.True(toolTipWidget != null, "Tool tip is showing");
 				testRunner.MoveToByName("right");
 				toolTipWidget = buttonContainer.FindDescendant("ToolTipWidget");
-				Assert.IsTrue(toolTipWidget == null, "Tool tip is not showing");
+				Assert.True(toolTipWidget == null, "Tool tip is not showing");
 
 				testRunner.Delay(1);
 				buttonContainer.CloseOnIdle();
@@ -139,7 +138,7 @@ namespace MatterHackers.Agg.UI.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun);
 		}
 
-		[Test]
+		[Fact]
 		public void ToolTipCloseOnLeave()
 		{
 			TempData tempData = new TempData();
@@ -154,9 +153,9 @@ namespace MatterHackers.Agg.UI.Tests
 			UiThread.InvokePendingActions();
 
 			// make sure the tool tip came up
-			Assert.IsTrue(systemWindow.Children.Count == 3);
-			Assert.IsTrue(tempData.showCount == 1);
-			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
+			Assert.True(systemWindow.Children.Count == 3);
+			Assert.True(tempData.showCount == 1);
+			Assert.True(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
 
 			// move off the first widget 
 			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 9, 9, 0));
@@ -164,12 +163,12 @@ namespace MatterHackers.Agg.UI.Tests
 			UiThread.InvokePendingActions();
 
 			// make sure the tool tip went away
-			Assert.IsTrue(systemWindow.Children.Count == 2);
-			Assert.IsTrue(tempData.popCount == 1);
-			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+			Assert.True(systemWindow.Children.Count == 2);
+			Assert.True(tempData.popCount == 1);
+			Assert.True(systemWindow.ToolTipManager.CurrentText == "");
 		}
 
-		[Test]
+		[Fact]
 		public void MoveFromToolTipToToolTip()
 		{
 			TempData tempData = new TempData();
@@ -184,9 +183,9 @@ namespace MatterHackers.Agg.UI.Tests
 			UiThread.InvokePendingActions();
 
 			// make sure the tool tip came up
-			Assert.IsTrue(systemWindow.Children.Count == 3);
-			Assert.IsTrue(tempData.showCount == 1);
-			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
+			Assert.True(systemWindow.Children.Count == 3);
+			Assert.True(tempData.showCount == 1);
+			Assert.True(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
 
 			// move off the first widget
 			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 29, 29, 0));
@@ -194,18 +193,18 @@ namespace MatterHackers.Agg.UI.Tests
 			UiThread.InvokePendingActions();
 
 			// make sure the first tool tip went away 
-			Assert.IsTrue(systemWindow.Children.Count == 2);
-			Assert.IsTrue(tempData.popCount == 1);
-			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+			Assert.True(systemWindow.Children.Count == 2);
+			Assert.True(tempData.popCount == 1);
+			Assert.True(systemWindow.ToolTipManager.CurrentText == "");
 
 			// sleep long enough to clear the fast move time
 			Thread.Sleep((int)(ToolTipManager.ReshowDelay * 1000 * 2));
 			UiThread.InvokePendingActions();
 
 			// make sure the first tool still gone
-			Assert.IsTrue(systemWindow.Children.Count == 2);
-			Assert.IsTrue(tempData.popCount == 1);
-			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+			Assert.True(systemWindow.Children.Count == 2);
+			Assert.True(tempData.popCount == 1);
+			Assert.True(systemWindow.ToolTipManager.CurrentText == "");
 
 			// move onto the other widget
 			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 31, 31, 0));
@@ -213,30 +212,30 @@ namespace MatterHackers.Agg.UI.Tests
 			UiThread.InvokePendingActions();
 
 			// make sure the first tool tip still gone
-			Assert.IsTrue(systemWindow.Children.Count == 2);
-			Assert.IsTrue(tempData.popCount == 1);
-			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+			Assert.True(systemWindow.Children.Count == 2);
+			Assert.True(tempData.popCount == 1);
+			Assert.True(systemWindow.ToolTipManager.CurrentText == "");
 
 			// wait 1/2 long enough for the second tool tip to come up
 			Thread.Sleep((int)(ToolTipManager.InitialDelay * 1000 / 2 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure the second tool tip not showing
-			Assert.IsTrue(systemWindow.Children.Count == 2);
-			Assert.IsTrue(tempData.popCount == 1);
-			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+			Assert.True(systemWindow.Children.Count == 2);
+			Assert.True(tempData.popCount == 1);
+			Assert.True(systemWindow.ToolTipManager.CurrentText == "");
 
 			// wait 1/2 long enough for the second tool tip to come up
 			Thread.Sleep((int)(ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure the tool tip 2 came up
-			Assert.IsTrue(systemWindow.Children.Count == 3);
-			Assert.IsTrue(tempData.showCount == 2);
-			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip2Text);
+			Assert.True(systemWindow.Children.Count == 3);
+			Assert.True(tempData.showCount == 2);
+			Assert.True(systemWindow.ToolTipManager.CurrentText == toolTip2Text);
 		}
 
-		[Test]
+		[Fact]
 		public void MoveFastFromToolTipToToolTip()
 		{
 			TempData tempData = new TempData();
@@ -251,9 +250,9 @@ namespace MatterHackers.Agg.UI.Tests
 			UiThread.InvokePendingActions();
 
 			// make sure the tool tip came up
-			Assert.IsTrue(systemWindow.Children.Count == 3);
-			Assert.IsTrue(tempData.showCount == 1);
-			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
+			Assert.True(systemWindow.Children.Count == 3);
+			Assert.True(tempData.showCount == 1);
+			Assert.True(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
 
 			// wait 1/2 long enough for the tool tip to go away
 			Thread.Sleep((int)(ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
@@ -265,18 +264,18 @@ namespace MatterHackers.Agg.UI.Tests
 			UiThread.InvokePendingActions();
 
 			// make sure the first tool tip went away 
-			Assert.IsTrue(systemWindow.Children.Count == 2);
-			Assert.IsTrue(tempData.popCount == 1);
-			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+			Assert.True(systemWindow.Children.Count == 2);
+			Assert.True(tempData.popCount == 1);
+			Assert.True(systemWindow.ToolTipManager.CurrentText == "");
 
 			// wait long enough for the second tool tip to come up
 			Thread.Sleep((int)(ToolTipManager.ReshowDelay * 1000 + minMsToBias));
 			UiThread.InvokePendingActions();
 
 			// make sure the tool tip 2 came up
-			Assert.IsTrue(systemWindow.Children.Count == 3);
-			Assert.IsTrue(tempData.showCount == 2);
-			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip2Text);
+			Assert.True(systemWindow.Children.Count == 3);
+			Assert.True(tempData.showCount == 2);
+			Assert.True(systemWindow.ToolTipManager.CurrentText == toolTip2Text);
 		}
 
 		private static SystemWindow CreateTwoChildWindow(TempData tempData)
@@ -307,12 +306,12 @@ namespace MatterHackers.Agg.UI.Tests
 			systemWindow.AddChild(toolTip1);
 			systemWindow.AddChild(toolTip2);
 
-			Assert.IsTrue(systemWindow.Children.Count == 2);
+			Assert.True(systemWindow.Children.Count == 2);
 
 			// make sure we start out with only the widgets (no tool tip)
 			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 0, 0, 0));
 			UiThread.InvokePendingActions();
-			Assert.IsTrue(systemWindow.Children.Count == 2);
+			Assert.True(systemWindow.Children.Count == 2);
 
 			tempData.lastShownText = "";
 			tempData.showCount = 0;
