@@ -34,7 +34,7 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.Tests
 {
-	//[TestFixture]
+	//
 	public class Vector2Tests
 	{
 		[Fact]
@@ -107,13 +107,13 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(new Vector2(10, 5).Equals(line1.GetPositionAt(-2 + 23 * 40), error), "Negative values are still valid");
 		}
 
-		[Fact]//, Ignore("FixNeeded")]
+		[Fact]
 		public void ScalerOperations()
 		{
 			var scalarMultiplicationArgument = new Vector2(5.0f, 4.0f);
 			Assert.True(scalarMultiplicationArgument * -.5 == new Vector2(-2.5f, -2));
-			Assert.True(scalarMultiplicationArgument / 2 == new Vector2(2.5f, 2));
-			Assert.True(2 / scalarMultiplicationArgument == new Vector2(2.5f, 2));
+			Assert.True(scalarMultiplicationArgument / 2 == new Vector2(2.5, 2));
+			Assert.True(2 / scalarMultiplicationArgument == new Vector2(.4, .5));
 			Assert.True(5 * scalarMultiplicationArgument == new Vector2(25, 20));
 		}
 

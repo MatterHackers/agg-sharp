@@ -27,18 +27,33 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Windows.Forms;
 using Xunit;
 
 namespace MatterHackers.Agg.Tests
 {
 	public class TestContext
 	{
+		public class CurrentTestContext
+		{
+			public void SetCompatibleWorkingDirectory()
+			{
+                throw new NotImplementedException();
+			}
 
-	}
+			public string ResolveProjectPath(string[] path)
+			{
+				throw new NotImplementedException();
+			}
+        }
+
+        public CurrentTestContext CurrentContext = new CurrentTestContext();
+    }
 
 	public static class TestExtensionMethods
 	{

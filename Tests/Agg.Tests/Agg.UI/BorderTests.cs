@@ -33,8 +33,8 @@ using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	//[TestFixture, Category("Agg.UI")]
-	public class BorderTests
+    [Collection("Opens Winforms Window")]
+    public class BorderTests
 	{
 		private int borderSize = 1;
 		private static bool debugResult = false;
@@ -85,7 +85,7 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		// Enable to visually debug
-		//[Test, Apartment(System.Threading.ApartmentState.STA)]
+		[Fact] // [Test, Apartment(System.Threading.ApartmentState.STA)]
 		public void BorderTestsVisualizer()
 		{
 			var systemWindow = new SystemWindow(700, 660)

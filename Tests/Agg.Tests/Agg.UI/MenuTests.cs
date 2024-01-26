@@ -37,8 +37,8 @@ using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	//[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
-	public class MenuTests
+    [Collection("Opens Winforms Window")]
+    public class MenuTests
 	{
 		public static bool SaveImagesForDebug = false;
 

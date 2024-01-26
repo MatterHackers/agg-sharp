@@ -41,8 +41,8 @@ namespace MatterHackers.Agg.UI.Tests
 		internal int popCount;
 	}
 
-	//[TestFixture, Category("Agg.UI.ToolTip"), Apartment(ApartmentState.STA), Parallelizable(ParallelScope.All)]
-	public class ToolTipTests
+    [Collection("Opens Winforms Window")]
+    public class ToolTipTests
 	{
 		static readonly string toolTip1Text = "toolTip1";
 		static readonly string toolTip2Text = "toolTip2";

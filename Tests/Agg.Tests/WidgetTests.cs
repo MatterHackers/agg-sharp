@@ -31,8 +31,8 @@ using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	//[TestFixture, Category("Agg.UI")]
-	public class WidgetTests
+    [Collection("Opens Winforms Window")]
+    public class WidgetTests
 	{
 		[Fact]
 		public void LoadEventFiresOnlyOnce()

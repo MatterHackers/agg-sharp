@@ -35,8 +35,8 @@ using System.Linq;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    //[TestFixture, Category("Agg.UI")]
-	public class AnchorTests
+    [Collection("Opens Winforms Window")]
+    public class AnchorTests
 	{
 		public static bool saveImagesForDebug = true;
 

@@ -34,7 +34,7 @@ using Tesselate;
 
 namespace MatterHackers.Agg.Tests
 {
-	//[TestFixture]
+	//
 	public class TesselatorTests
 	{
 		public static string[][] InsructionStream = new string[][]

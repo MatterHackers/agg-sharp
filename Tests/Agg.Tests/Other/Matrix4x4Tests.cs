@@ -31,7 +31,7 @@ using Xunit;
 
 namespace MatterHackers.Agg.Tests
 {
-	//[TestFixture]
+	//
 	public class Matrix4x4Tests
 	{
 #if false

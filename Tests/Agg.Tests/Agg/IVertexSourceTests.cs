@@ -13,7 +13,7 @@ using Xunit;
 
 namespace MatterHackers.Agg.Tests
 {
-	//[TestFixture]
+	//
 	public class IVertexSourceTests
 	{
 		[Fact]
@@ -83,7 +83,7 @@ namespace MatterHackers.Agg.Tests
 
 			var polygons = square.CreatePolygons();
 
-			Assert.Equal(1, polygons.Count); //, "One polygon should be created for a simple 4 point cube path");
+			Assert.Single(polygons); //, "One polygon should be created for a simple 4 point cube path");
         }
 
 		[Fact]

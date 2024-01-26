@@ -35,10 +35,8 @@ using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	//[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
-	// change to xunit
-
-	public class AutomationRunnerTests
+    [Collection("Opens Winforms Window")]
+    public class AutomationRunnerTests
 	{
 		//[Fact]
 		// change to xunit

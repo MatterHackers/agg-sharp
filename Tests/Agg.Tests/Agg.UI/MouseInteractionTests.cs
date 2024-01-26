@@ -38,8 +38,8 @@ using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	//[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
-	public class MouseInteractionTests
+    [Collection("Opens Winforms Window")]
+    public class MouseInteractionTests
 	{
 		[Fact]
 		public async Task DoClickButtonInWindow()

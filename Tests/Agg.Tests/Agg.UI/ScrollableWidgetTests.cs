@@ -32,8 +32,8 @@ using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	//[TestFixture, Category("Agg.UI")]
-	public class ScrollableWidgetTests
+    [Collection("Opens Winforms Window")]
+    public class ScrollableWidgetTests
 	{
 		public static bool saveImagesForDebug = false;
 

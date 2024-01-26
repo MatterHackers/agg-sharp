@@ -36,8 +36,8 @@ using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	//[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA)]
-	public class FlowLayoutTests
+    [Collection("Opens Winforms Window")]
+    public class FlowLayoutTests
 	{
 		public static bool saveImagesForDebug = false;
 

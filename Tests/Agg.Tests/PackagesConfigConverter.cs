@@ -9,7 +9,7 @@ using Xunit;
 
 namespace MatterHackers.Agg.Tests
 {
-	// [TestFixture]
+	// 
 	public class PackagesConfigConverter
 	{
 		private static XNamespace ns = "http://schemas.microsoft.com/developer/msbuild/2003";

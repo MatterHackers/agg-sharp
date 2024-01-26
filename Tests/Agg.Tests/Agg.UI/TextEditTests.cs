@@ -767,8 +767,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 		}
 	}
 
-#if !__ANDROID__
-	public class TextEditFocusTests
+    [Collection("Opens Winforms Window")]
+    public class TextEditFocusTests
 	{
 		[Fact]
 		public async Task VerifyFocusMakesTextWidgetEditable()
@@ -871,5 +871,4 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);
 		}
 	}
-#endif
 }

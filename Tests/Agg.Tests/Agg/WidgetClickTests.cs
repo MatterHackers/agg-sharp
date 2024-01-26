@@ -35,8 +35,8 @@ using Xunit;
 
 namespace MatterHackers.Agg.Tests
 {
-	//[TestFixture, Category("Agg.UI"), Parallelizable(ParallelScope.All)]
-	public class WidgetClickTests
+    [Collection("Opens Winforms Window")]
+    public class WidgetClickTests
 	{
 		[Fact]
 		public async Task ClickFiresOnCorrectWidgets()

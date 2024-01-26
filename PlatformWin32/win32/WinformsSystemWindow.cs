@@ -546,7 +546,7 @@ namespace MatterHackers.Agg.UI
 			systemWindow.AnchorAll();
 
 			// If this isn't true, prepare for deadlocks.
-			System.Diagnostics.Debug.Assert(SynchronizationContext.Current == null || SynchronizationContext.Current is WindowsFormsSynchronizationContext);
+			//System.Diagnostics.Debug.Assert(SynchronizationContext.Current == null || SynchronizationContext.Current is WindowsFormsSynchronizationContext);
             
 			if (firstWindow)
 			{

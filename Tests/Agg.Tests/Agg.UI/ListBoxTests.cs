@@ -33,8 +33,8 @@ using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	//[TestFixture, Category("Agg.UI")]
-	public class ListBoxTests
+    [Collection("Opens Winforms Window")]
+    public class ListBoxTests
 	{
 		public static bool saveImagesForDebug = false;
 

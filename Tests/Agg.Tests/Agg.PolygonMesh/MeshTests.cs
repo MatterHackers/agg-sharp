@@ -278,7 +278,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				tetrahedron.Translate(new Vector3(0, 0, -tetrahedron.GetAxisAlignedBoundingBox().MinXYZ.Z));
 				var cutPlane = new Plane(Vector3.UnitZ, new Vector3(0, 0, 3));
 				var slice = SliceLayer.CreateSlice(tetrahedron, cutPlane);
-				Assert.Equal(1, slice.Count);
+				Assert.Single(slice);
 				Assert.Equal(3, slice[0].Count);
 			}
 
@@ -286,7 +286,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var cube = PlatonicSolids.CreateCube(10, 10, 10);
 				var cutPlane = new Plane(Vector3.UnitX, new Vector3(3, 0, 0));
 				var slice = SliceLayer.CreateSlice(cube, cutPlane);
-				Assert.Equal(1, slice.Count);
+				Assert.Single(slice);
 				Assert.Equal(4, slice[0].Count);
 			}
 
@@ -299,7 +299,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var fastLookups = SliceLayer.CreateFastIndexLookup(unorderedSegments);
 				Assert.Equal(8, fastLookups.Count);
 				var closedLoops = SliceLayer.FindClosedPolygons(unorderedSegments);
-				Assert.Equal(1, closedLoops.Count);
+				Assert.Single(closedLoops);
 			}
 
 			{
@@ -311,7 +311,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var fastLookups = SliceLayer.CreateFastIndexLookup(unorderedSegments);
 				Assert.Equal(8, fastLookups.Count);
 				var closedLoops = SliceLayer.FindClosedPolygons(unorderedSegments);
-				Assert.Equal(1, closedLoops.Count);
+				Assert.Single(closedLoops);
 			}
 
 			{
@@ -330,7 +330,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 var closedLoops = SliceLayer.FindClosedPolygons(unorderedSegments);
 				Assert.Equal(2, closedLoops.Count);
 				var union = SliceLayer.UnionClosedPolygons(closedLoops);
-				Assert.Equal(1, union.Count);
+				Assert.Single(union);
 			}
 		}
 
@@ -378,7 +378,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var bottom = PolygonsExtensions.CreateFromString("0,0, 0,100, 100,100, 100,0");
 				var top = PolygonsExtensions.CreateFromString("0,0, 0,100, 100,100, 100,0");
 				var mesh = PathStitcher.Stitch(bottom, 0, top, 10);
-				Assert.Equal(0, mesh.Faces.Count);
+				Assert.Empty(mesh.Faces);
 			}
 
 			// only a CW bottom (error condition)
@@ -387,7 +387,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var top = PolygonsExtensions.CreateFromString("");
 				var mesh = PathStitcher.Stitch(bottom, 0, top, 10);
 				// only a bottom face, no walls
-				Assert.Equal(0, mesh.Faces.Count);
+				Assert.Empty(mesh.Faces);
 			}
 
 			// only a CW top (error condition)
@@ -397,7 +397,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var mesh = PathStitcher.Stitch(bottom, 0, top, 10);
 				// only a top face, no walls
 				// only a bottom face, no walls
-				Assert.Equal(0, mesh.Faces.Count);
+				Assert.Empty(mesh.Faces);
 			}
 		}
 
@@ -420,7 +420,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				// . /___|___\
 				// .     |
 				mesh.CreateFace(new Vector3[] { positions[p0], positions[p1], positions[p2] });
-				Assert.Equal(1, mesh.Faces.Count);
+				Assert.Single(mesh.Faces);
 				Assert.Equal(3, mesh.Vertices.Count);
 
 				// we find a split
@@ -430,9 +430,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				// we now have 5 verts
 				// the have all the expected x values
 				Assert.Equal(4, mesh.Vertices.Count);
-				Assert.Equal(1, mesh.Vertices.Where(v => v.X == 0).Count());
+				Assert.Single(mesh.Vertices.Where(v => v.X == 0));
 				Assert.Equal(2, mesh.Vertices.Where(v => v.X == 5).Count());
-				Assert.Equal(1, mesh.Vertices.Where(v => v.X == 10).Count());
+				Assert.Single(mesh.Vertices.Where(v => v.X == 10));
 				// no face crosses the split line
 				Assert.Equal(2, mesh.Faces.Where(f =>
 				{
@@ -465,7 +465,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				// .  |_____|_______
 				// . 1      |       2
 				mesh.CreateFace(new Vector3[] { positions[p0], positions[p1], positions[p2] });
-				Assert.Equal(1, mesh.Faces.Count);
+				Assert.Single(mesh.Faces);
 				Assert.Equal(3, mesh.Vertices.Count);
 
 				// we find a split
@@ -477,7 +477,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Assert.Equal(5, mesh.Vertices.Count);
 				Assert.Equal(2, mesh.Vertices.Where(v => v.X == 0).Count());
 				Assert.Equal(2, mesh.Vertices.Where(v => v.X == 5).Count());
-				Assert.Equal(1, mesh.Vertices.Where(v => v.X == 10).Count());
+				Assert.Single(mesh.Vertices.Where(v => v.X == 10));
 				// no face crosses the split line
 				Assert.Equal(3, mesh.Faces.Where(f =>
 				{

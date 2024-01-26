@@ -33,7 +33,7 @@ using Xunit;
 
 namespace MatterHackers.Agg.Tests
 {
-	//[TestFixture]
+	//
 	public class Vector3Tests
 	{
 		[Fact]

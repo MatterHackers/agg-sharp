@@ -36,8 +36,9 @@ using System;
 
 namespace MatterHackers.Agg.Tests
 {
-	//[TestFixture]
-	public class AggDrawingTests
+    //
+    [Collection("Opens Winforms Window")]
+    public class AggDrawingTests
 	{
 		public static void RunAllTests()
 		{

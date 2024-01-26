@@ -36,8 +36,8 @@ using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	//[TestFixture, Category("Agg.UI")]
-	public class TextAndTextWidgetTests
+    [Collection("Opens Winforms Window")]
+    public class TextAndTextWidgetTests
 	{
 		public bool saveImagesForDebug;
 
