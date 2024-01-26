@@ -67,7 +67,7 @@ namespace MatterHackers.Agg.Tests
 			{
 				var centerPoint = (cleanedPolygon[i + 1] + cleanedPolygon[i]) / 2;
 				var distToCenter = centerPoint.Length();
-				Assert.Equal(length, distToCenter); //, 3);
+				Assert.True(Math.Abs(length - distToCenter) <= 3);
             }
 		}
 
