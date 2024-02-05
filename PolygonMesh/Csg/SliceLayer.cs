@@ -36,9 +36,12 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
+    using Polygon = List<IntPoint>;
+    using Polygons = List<List<IntPoint>>;
+    
 	public static class SliceLayer
 	{
-		public static List<List<IntPoint>> GetPolygonXYLoopsAt0(this Mesh mesh, Matrix4X4 matrix, double outputScale = 1000)
+		public static Polygons GetPolygonXYLoopsAt0(this Mesh mesh, Matrix4X4 matrix, double outputScale = 1000)
 		{
 			var slicePlane = new Plane(Vector3.UnitZ, 0);
 
@@ -51,14 +54,14 @@ namespace MatterHackers.PolygonMesh.Csg
 			return CreateSlice(mesh, planeInMeshSpace);
 		}
 
-		public static List<List<IntPoint>> CreateSlice(Mesh mesh, Plane plane, int outputScale = 1000, bool includeBehindThePlane = true)
+		public static Polygons CreateSlice(Mesh mesh, Plane plane, int outputScale = 1000, bool includeBehindThePlane = true)
 		{
 			var transformTo0Plane = GetTransformTo0Plane(plane, outputScale);
 
 			return CreateSlice(mesh, plane, transformTo0Plane, null, includeBehindThePlane);
 		}
 
-        public static List<List<IntPoint>> CreateSlice(Mesh mesh,
+        public static Polygons CreateSlice(Mesh mesh,
 			Plane plane,
 			Matrix4X4 transformTo0Plane,
 			IBvhItem acccelerator = null,
@@ -70,7 +73,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			return FindClosedPolygons(unorderedSegments);
 		}
 
-		public static List<List<IntPoint>> UnionClosedPolygons(List<List<IntPoint>> closedPolygons)
+		public static Polygons UnionClosedPolygons(Polygons closedPolygons)
 		{
 			if (closedPolygons.Count > 1)
 			{
@@ -175,14 +178,14 @@ namespace MatterHackers.PolygonMesh.Csg
 			return unorderedSegments;
 		}
 
-		public static List<List<IntPoint>> FindClosedPolygons(List<Segment> UnorderedSegments)
+		public static Polygons FindClosedPolygons(List<Segment> UnorderedSegments)
 		{
 			var startIndexes = CreateFastIndexLookup(UnorderedSegments);
 
 			var segmentHasBeenAdded = new bool[UnorderedSegments.Count];
 
-			var openPolygonList = new List<List<IntPoint>>();
-			var closedPolygons = new List<List<IntPoint>>();
+			var openPolygonList = new Polygons();
+			var closedPolygons = new Polygons();
 
 			for (int startingSegmentIndex = 0; startingSegmentIndex < UnorderedSegments.Count; startingSegmentIndex++)
 			{
@@ -191,7 +194,7 @@ namespace MatterHackers.PolygonMesh.Csg
 					continue;
 				}
 
-				var poly = new List<IntPoint>();
+				var poly = new Polygon();
 				// We start by adding the start, as we will add ends from now on.
 				var polygonStartPosition = UnorderedSegments[startingSegmentIndex].Start;
 				poly.Add(polygonStartPosition);
@@ -347,7 +350,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 				if (bestA == bestB) // This loop connects to itself, close the polygon.
 				{
-					closedPolygons.Add(new List<IntPoint>(openPolygonList[bestA]));
+					closedPolygons.Add(new Polygon(openPolygonList[bestA]));
 					openPolygonList[bestA].Clear(); // B is cleared as it is A
 					endSorter.Remove(bestA);
 					startSorter.Remove(bestA);
@@ -458,7 +461,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 	public static class IntPointPolygonsExtensions
 	{
-		public static IEnumerable<VertexData> AsVertices(this List<List<IntPoint>> polygons, double outputScale = 1000)
+		public static IEnumerable<VertexData> AsVertices(this Polygons polygons, double outputScale = 1000)
 		{
 			foreach (var polygon in polygons)
 			{
@@ -475,7 +478,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 	public static class IntPointPolygonExtensions
 	{
-		public static IEnumerable<VertexData> AsVertices(this List<IntPoint> polygon, double outputScale = 1000)
+		public static IEnumerable<VertexData> AsVertices(this Polygon polygon, double outputScale = 1000)
 		{
 			// start at the last point
 			yield return new VertexData(Agg.FlagsAndCommand.MoveTo,
@@ -488,7 +491,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 		}
 
-		public static double Area(this List<IntPoint> polygon)
+		public static double Area(this Polygon polygon)
 		{
 			var count = polygon.Count;
 
