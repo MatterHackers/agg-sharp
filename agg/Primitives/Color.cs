@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.Linq;
 
 namespace MatterHackers.Agg
 {
@@ -135,7 +136,13 @@ namespace MatterHackers.Agg
 
             set
             {
-                switch (value.Trim().ToLower())
+                var named = value.Trim().ToLower();
+                if (named.StartsWith("#"))
+                {
+                    named = named.Substring(1);
+                }
+
+                switch (named)
                 {
                     case "blue":
                         this = Blue;
@@ -154,6 +161,7 @@ namespace MatterHackers.Agg
                         return;
 
                     case "gray":
+                    case "grey":
                         this = Gray;
                         return;
 
@@ -169,44 +177,56 @@ namespace MatterHackers.Agg
                         this = Yellow;
                         return;
 
+                    case "white":
+                        this = White;
+                        return;
+
                     default:
                         break;
                 }
 
-                switch (value.Length)
+                // check that it has a length
+                // starts with a #
+                // and is anly characters 0-9 and a-f
+                if (value.Length > 3
+                    && value.StartsWith("#")
+                    && value.Substring(1).All(c => "0123456789abcdef".Contains(c)))
                 {
-                    case 4: // #CCC, single char rgb
-                    case 5: // also has alpha
-                        red = (byte)Convert.ToInt32(value.Substring(1, 1) + value.Substring(1, 1), 16);
-                        green = (byte)Convert.ToInt32(value.Substring(2, 1) + value.Substring(2, 1), 16);
-                        blue = (byte)Convert.ToInt32(value.Substring(3, 1) + value.Substring(3, 1), 16);
-                        if (value.Length == 5)
-                        {
-                            alpha = (byte)Convert.ToInt32(value.Substring(4, 1) + value.Substring(4, 1), 16);
-                        }
-                        else
-                        {
-                            alpha = 255;
-                        }
-                        break;
+                    switch (value.Length)
+                    {
+                        case 4: // #CCC, single char rgb
+                        case 5: // also has alpha
+                            red = (byte)Convert.ToInt32(value.Substring(1, 1) + value.Substring(1, 1), 16);
+                            green = (byte)Convert.ToInt32(value.Substring(2, 1) + value.Substring(2, 1), 16);
+                            blue = (byte)Convert.ToInt32(value.Substring(3, 1) + value.Substring(3, 1), 16);
+                            if (value.Length == 5)
+                            {
+                                alpha = (byte)Convert.ToInt32(value.Substring(4, 1) + value.Substring(4, 1), 16);
+                            }
+                            else
+                            {
+                                alpha = 255;
+                            }
+                            break;
 
-                    case 7: // #ACACAC, two char rgb
-                    case 9: // also has alpha
-                        red = (byte)Convert.ToInt32(value.Substring(1, 2), 16);
-                        green = (byte)Convert.ToInt32(value.Substring(3, 2), 16);
-                        blue = (byte)Convert.ToInt32(value.Substring(5, 2), 16);
-                        if (value.Length == 9)
-                        {
-                            alpha = (byte)Convert.ToInt32(value.Substring(7, 2), 16);
-                        }
-                        else
-                        {
-                            alpha = 255;
-                        }
-                        break;
+                        case 7: // #ACACAC, two char rgb
+                        case 9: // also has alpha
+                            red = (byte)Convert.ToInt32(value.Substring(1, 2), 16);
+                            green = (byte)Convert.ToInt32(value.Substring(3, 2), 16);
+                            blue = (byte)Convert.ToInt32(value.Substring(5, 2), 16);
+                            if (value.Length == 9)
+                            {
+                                alpha = (byte)Convert.ToInt32(value.Substring(7, 2), 16);
+                            }
+                            else
+                            {
+                                alpha = 255;
+                            }
+                            break;
 
-                    default:
-                        break; // don't know what it is, do nothing
+                        default:
+                            break; // don't know what it is, do nothing
+                    }
                 }
             }
         }
