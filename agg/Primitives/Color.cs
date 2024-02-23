@@ -136,72 +136,24 @@ namespace MatterHackers.Agg
 
             set
             {
-                var named = value.Trim().ToLower();
-                if (named.StartsWith("#"))
-                {
-                    named = named.Substring(1);
-                }
-
-                switch (named)
-                {
-                    case "blue":
-                        this = Blue;
-                        return;
-
-                    case "green":
-                        this = Green;
-                        return;
-
-                    case "red":
-                        this = Red;
-                        return;
-
-                    case "black":
-                        this = Black;
-                        return;
-
-                    case "gray":
-                    case "grey":
-                        this = Gray;
-                        return;
-
-                    case "orange":
-                        this = Orange;
-                        return;
-
-                    case "purple":
-                        this = Purple;
-                        return;
-
-                    case "yellow":
-                        this = Yellow;
-                        return;
-
-                    case "white":
-                        this = White;
-                        return;
-
-                    default:
-                        break;
-                }
-
+                var lowered = value.Trim().ToLower();
                 // check that it has a length
                 // starts with a #
                 // and is anly characters 0-9 and a-f
-                if (value.Length > 3
-                    && value.StartsWith("#")
-                    && value.Substring(1).All(c => "0123456789abcdef".Contains(c)))
+                if (lowered.Length > 3
+                    && lowered.StartsWith("#")
+                    && lowered.Substring(1).All(c => "0123456789abcdef".Contains(c)))
                 {
-                    switch (value.Length)
+                    switch (lowered.Length)
                     {
                         case 4: // #CCC, single char rgb
                         case 5: // also has alpha
-                            red = (byte)Convert.ToInt32(value.Substring(1, 1) + value.Substring(1, 1), 16);
-                            green = (byte)Convert.ToInt32(value.Substring(2, 1) + value.Substring(2, 1), 16);
-                            blue = (byte)Convert.ToInt32(value.Substring(3, 1) + value.Substring(3, 1), 16);
-                            if (value.Length == 5)
+                            red = (byte)Convert.ToInt32(lowered.Substring(1, 1) + lowered.Substring(1, 1), 16);
+                            green = (byte)Convert.ToInt32(lowered.Substring(2, 1) + lowered.Substring(2, 1), 16);
+                            blue = (byte)Convert.ToInt32(lowered.Substring(3, 1) + lowered.Substring(3, 1), 16);
+                            if (lowered.Length == 5)
                             {
-                                alpha = (byte)Convert.ToInt32(value.Substring(4, 1) + value.Substring(4, 1), 16);
+                                alpha = (byte)Convert.ToInt32(lowered.Substring(4, 1) + lowered.Substring(4, 1), 16);
                             }
                             else
                             {
@@ -211,12 +163,12 @@ namespace MatterHackers.Agg
 
                         case 7: // #ACACAC, two char rgb
                         case 9: // also has alpha
-                            red = (byte)Convert.ToInt32(value.Substring(1, 2), 16);
-                            green = (byte)Convert.ToInt32(value.Substring(3, 2), 16);
-                            blue = (byte)Convert.ToInt32(value.Substring(5, 2), 16);
-                            if (value.Length == 9)
+                            red = (byte)Convert.ToInt32(lowered.Substring(1, 2), 16);
+                            green = (byte)Convert.ToInt32(lowered.Substring(3, 2), 16);
+                            blue = (byte)Convert.ToInt32(lowered.Substring(5, 2), 16);
+                            if (lowered.Length == 9)
                             {
-                                alpha = (byte)Convert.ToInt32(value.Substring(7, 2), 16);
+                                alpha = (byte)Convert.ToInt32(lowered.Substring(7, 2), 16);
                             }
                             else
                             {
@@ -226,6 +178,57 @@ namespace MatterHackers.Agg
 
                         default:
                             break; // don't know what it is, do nothing
+                    }
+                }
+                else
+                {
+                    var named = lowered.Trim().ToLower();
+                    if (named.StartsWith("#"))
+                    {
+                        named = named.Substring(1);
+                    }
+
+                    switch (named)
+                    {
+                        case "blue":
+                            this = Blue;
+                            return;
+
+                        case "green":
+                            this = Green;
+                            return;
+
+                        case "red":
+                            this = Red;
+                            return;
+
+                        case "black":
+                            this = Black;
+                            return;
+
+                        case "gray":
+                        case "grey":
+                            this = Gray;
+                            return;
+
+                        case "orange":
+                            this = Orange;
+                            return;
+
+                        case "purple":
+                            this = Purple;
+                            return;
+
+                        case "yellow":
+                            this = Yellow;
+                            return;
+
+                        case "white":
+                            this = White;
+                            return;
+
+                        default:
+                            break;
                     }
                 }
             }
