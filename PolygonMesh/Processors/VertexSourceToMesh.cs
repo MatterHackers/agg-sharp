@@ -87,16 +87,14 @@ namespace MatterHackers.PolygonMesh.Processors
 				if (!isIdentity)
 				{
 					var matrix = inMatrix.Value;
-					meshToAddTo.CreateFace(new Vector3[] 
-					{ 
+					meshToAddTo.CreateFace(
 						new Vector3(v0, zHeight).Transform(matrix),
 						new Vector3(v1, zHeight).Transform(matrix), 
-						new Vector3(v2, zHeight).Transform(matrix)
-					});
+						new Vector3(v2, zHeight).Transform(matrix));
 				}
 				else
 				{
-					meshToAddTo.CreateFace(new Vector3[] { new Vector3(v0, zHeight), new Vector3(v1, zHeight), new Vector3(v2, zHeight) });
+					meshToAddTo.CreateFace(new Vector3(v0, zHeight), new Vector3(v1, zHeight), new Vector3(v2, zHeight));
 				}
 			}
 
@@ -303,23 +301,19 @@ namespace MatterHackers.PolygonMesh.Processors
 					{
 						if (revolveAroundZ)
 						{
-							mesh.CreateFace(new Vector3[]
-							{
+							mesh.CreateFace(
 								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(endAngle)),
 								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(startAngle)),
 								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationZ(startAngle)),
-								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationZ(endAngle)),
-							});
+								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationZ(endAngle)));
 						}
 						else
 						{
-							mesh.CreateFace(new Vector3[]
-							{
+							mesh.CreateFace(
 								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationY(endAngle)),
 								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationY(startAngle)),
 								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationY(startAngle)),
-								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationY(endAngle)),
-							});
+								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationY(endAngle)));
 						}
 					}
 
@@ -374,17 +368,17 @@ namespace MatterHackers.PolygonMesh.Processors
 
 				if (bottomTeselatedSource.IndicesCache[i + 0].IsEdge)
 				{
-					mesh.CreateFace(new Vector3[] { bottomVertex0, bottomVertex1, topVertex1, topVertex0 });
+					mesh.CreateFace(bottomVertex0, bottomVertex1, topVertex1, topVertex0);
 				}
 
 				if (bottomTeselatedSource.IndicesCache[i + 1].IsEdge)
 				{
-					mesh.CreateFace(new Vector3[] { bottomVertex1, bottomVertex2, topVertex2, topVertex1 });
+					mesh.CreateFace(bottomVertex1, bottomVertex2, topVertex2, topVertex1);
 				}
 
 				if (bottomTeselatedSource.IndicesCache[i + 2].IsEdge)
 				{
-					mesh.CreateFace(new Vector3[] { bottomVertex2, bottomVertex0, topVertex0, topVertex2 });
+					mesh.CreateFace(bottomVertex2, bottomVertex0, topVertex0, topVertex2);
 				}
 			}
 
@@ -399,7 +393,7 @@ namespace MatterHackers.PolygonMesh.Processors
 					continue;
 				}
 
-				mesh.CreateFace(new Vector3[] { new Vector3(v2, 0), new Vector3(v1, 0), new Vector3(v0, 0) });
+				mesh.CreateFace(new Vector3(v2, 0), new Vector3(v1, 0), new Vector3(v0, 0));
 			}
 
 			mesh.CleanAndMerge();

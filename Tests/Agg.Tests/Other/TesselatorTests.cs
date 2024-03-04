@@ -460,7 +460,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(GetNextOutputAsString() == "E");
 		}
 
-		[Fact]
+		[StaFact]
 		public void MatchesGLUTesselator()
 		{
 			for (CurrentInputTest = 0; CurrentInputTest < InsructionStream.Length; CurrentInputTest++)

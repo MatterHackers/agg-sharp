@@ -37,7 +37,7 @@ namespace MatterHackers.RayTracer
     //[TestFixture, Ignore("WorkInProgress")]
 	public class FrustumTests
 	{
-		[Fact]
+		[StaFact]
 		public void RayBundleSameResultAsIndividualRays()
 		{
 		}

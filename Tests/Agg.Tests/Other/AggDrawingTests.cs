@@ -149,8 +149,8 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-		[Fact]
-		public void DrawCircle()
+        [StaFact]
+        public void DrawCircle()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
 			testImage.NewGraphics2D().Clear(Color.White);
@@ -164,8 +164,8 @@ namespace MatterHackers.Agg.Tests
 			CheckTestAgainstControl(new Ellipse(0, 0, 20, 20), "ShapeCicle");
 		}
 
-		[Fact]
-		public void DrawCurve3()
+        [StaFact]
+        public void DrawCurve3()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
 			testImage.NewGraphics2D().Clear(Color.White);
@@ -175,8 +175,8 @@ namespace MatterHackers.Agg.Tests
 			CheckTestAgainstControl(new Curve3(10, 10, 50, 90, 90, 90), "ShapeCurve3");
 		}
 
-		[Fact]
-		public void DrawCurve4()
+        [StaFact]
+        public void DrawCurve4()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
 			testImage.NewGraphics2D().Clear(Color.White);
@@ -186,8 +186,8 @@ namespace MatterHackers.Agg.Tests
 			CheckTestAgainstControl(new Curve4(10, 50, 25, 10, 75, 90, 90, 50), "ShapeCurve4");
 		}
 
-		[Fact]
-		public void DrawString()
+        [StaFact]
+        public void DrawString()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
 			testImage.NewGraphics2D().DrawString("Test", 30, 50, color: Color.Magenta, justification: Justification.Center);
@@ -223,8 +223,8 @@ namespace MatterHackers.Agg.Tests
 			CheckTestAgainstControl(stringPrinterTest, "ShapeStringTestFlattened");
 		}
 
-		[Fact]
-		public void StrokedShape()
+        [StaFact]
+        public void StrokedShape()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
 			RoundedRect rect = new RoundedRect(20, 20, 80, 80, 5);

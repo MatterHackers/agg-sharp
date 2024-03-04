@@ -34,8 +34,8 @@ namespace MatterHackers.Agg.UI.Tests
     [Collection("Opens Winforms Window")]
     public class WidgetTests
 	{
-		[Fact]
-		public void LoadEventFiresOnlyOnce()
+        [StaFact]
+        public void LoadEventFiresOnlyOnce()
 		{
 			// Issue MatterHackers/MCCentral#5072 - OnLoad / Load can fire more than once
 			var widget = new GuiWidget()

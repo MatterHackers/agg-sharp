@@ -60,7 +60,10 @@ namespace MatterHackers.Agg
 				}
 			}
 
-			assemblyAndTypes.Add(assembly, assemblyTypes);
+			if (!assemblyAndTypes.ContainsKey(assembly))
+			{
+				assemblyAndTypes.Add(assembly, assemblyTypes);
+			}
 		}
 
 		public static IEnumerable<Type> FindTypes<T>()

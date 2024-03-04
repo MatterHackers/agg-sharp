@@ -46,8 +46,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Fact]
-		public void LimitScrolToContetsTests()
+        [StaFact]
+        public void LimitScrolToContetsTests()
 		{
 			GuiWidget containerControl = new GuiWidget(200, 200);
 			containerControl.DoubleBuffer = true;

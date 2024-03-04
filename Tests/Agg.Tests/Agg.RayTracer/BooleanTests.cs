@@ -40,7 +40,7 @@ namespace MatterHackers.RayTracer
 	//[TestFixture, Category("Agg.RayTracer")]
 	public class BooleanTests
 	{
-		[Fact]
+		[StaFact]
 		public void DifferenceTestsForBox()
 		{
 			SolidMaterial redMaterial = new SolidMaterial(ColorF.Red, 0, 0, 0);
@@ -120,7 +120,7 @@ namespace MatterHackers.RayTracer
 #endif
 		}
 
-		[Fact]
+		[StaFact]
 		public void DiscoveredBadIntersectInfoListSubtraction()
 		{
 			string primaryString = @"2

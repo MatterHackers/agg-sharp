@@ -16,7 +16,7 @@ namespace MatterHackers.Agg.Tests
 	//
 	public class IVertexSourceTests
 	{
-		[Fact]
+		[StaFact]
 		public void CharacterBoundsTest()
 		{
 			// Validates character bounds computation from IVertexSource
@@ -71,7 +71,7 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-		[Fact]
+		[StaFact]
 		public void CubePolygonCountTest()
 		{
 			var square = new VertexStorage();
@@ -86,7 +86,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.Single(polygons); //, "One polygon should be created for a simple 4 point cube path");
         }
 
-		[Fact]
+		[StaFact]
 		public void MoveToCreatesAdditionalPolygonTest()
 		{
 			// Any MoveTo should always create a new Polygon
@@ -103,7 +103,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.Equal(2, polygons.Count); //, "Two polygons should be created for a path with a floating MoveTo command");
         }
 
-		[Fact]
+		[StaFact]
 		public void TwoItemPolygonCountTest()
 		{
 			var square = new VertexStorage();
@@ -120,14 +120,14 @@ namespace MatterHackers.Agg.Tests
 			Assert.Equal(2, polygons.Count); //, "Two polygons should be create for a combined square and ellipse");
         }
 
-		[Fact]
+		[StaFact]
         public void ParseSvgDPaths()
 		{
 			var dString = "M797.92,443.43a360.33,360.33,0,1,0,28.25,139.86A357.92,357.92,0,0,0,797.92,443.43ZM662.66,586.82,594.25,705.31a41.07,41.07,0,0,1-35.47,20.48H422.54l-36.61,63.4a40.43,40.43,0,0,1-35.19,20.53,42.21,42.21,0,0,1-10.88-1.44,40.51,40.51,0,0,1-30.35-39.57v-197A41,41,0,0,1,315,551.22l71.5-123.84A41.09,41.09,0,0,1,422,406.9H558.78a41.07,41.07,0,0,1,35.47,20.48l68.41,118.49A41.07,41.07,0,0,1,662.66,586.82Z";
 			var vertexStorage = new VertexStorage(dString);
         }
 
-		[Fact]
+		[StaFact]
 		public void ThreeItemPolygonCountTest()
 		{
 			var storage = new VertexStorage();

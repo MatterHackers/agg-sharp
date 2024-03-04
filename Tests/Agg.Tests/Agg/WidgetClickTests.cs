@@ -38,8 +38,8 @@ namespace MatterHackers.Agg.Tests
     [Collection("Opens Winforms Window")]
     public class WidgetClickTests
 	{
-		[Fact]
-		public async Task ClickFiresOnCorrectWidgets()
+        [StaFact]
+        public async Task ClickFiresOnCorrectWidgets()
 		{
 			var testWindow = new ClickTestsWindow(300, 200);
 
@@ -81,8 +81,8 @@ namespace MatterHackers.Agg.Tests
 				});
 		}
 
-		[Fact]
-		public async Task ClickSuppressedOnExternalMouseUp()
+        [StaFact]
+        public async Task ClickSuppressedOnExternalMouseUp()
 		{
 			var testWindow = new ClickTestsWindow(300, 200);
 			var bounds = testWindow.BlueWidget.BoundsRelativeToParent;
@@ -127,8 +127,8 @@ namespace MatterHackers.Agg.Tests
 				});
 		}
 
-		[Fact]
-		public async Task ClickSuppressedOnMouseUpWithinChild2()
+        [StaFact]
+        public async Task ClickSuppressedOnMouseUpWithinChild2()
 		{
 			// Agg currently fires mouse up events in child controls when the parent has the mouse captured
 			// and is performing drag like operations. If the mouse goes down in the parent and comes up on the child

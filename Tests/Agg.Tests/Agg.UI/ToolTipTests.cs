@@ -50,8 +50,8 @@ namespace MatterHackers.Agg.UI.Tests
 		static readonly int minMsTimeToRespond = 60;
 		static readonly int minMsToBias = 80;
 
-		[Fact]
-		public void ToolTipInitialOpenTests()
+        [StaFact]
+        public void ToolTipInitialOpenTests()
 		{
 			TempData tempData = new TempData();
 			// test simple open then wait for pop
@@ -101,8 +101,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(systemWindow.ToolTipManager.CurrentText == "");
 		}
 
-		[Fact]
-		public async Task ToolTipsShow()
+        [StaFact]
+        public async Task ToolTipsShow()
 		{
 			SystemWindow buttonContainer = new SystemWindow(300, 200)
 			{
@@ -138,8 +138,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun);
 		}
 
-		[Fact]
-		public void ToolTipCloseOnLeave()
+        [StaFact]
+        public void ToolTipCloseOnLeave()
 		{
 			TempData tempData = new TempData();
 			SystemWindow systemWindow = CreateTwoChildWindow(tempData);
@@ -168,8 +168,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(systemWindow.ToolTipManager.CurrentText == "");
 		}
 
-		[Fact]
-		public void MoveFromToolTipToToolTip()
+        [StaFact]
+        public void MoveFromToolTipToToolTip()
 		{
 			TempData tempData = new TempData();
 			SystemWindow systemWindow = CreateTwoChildWindow(tempData);
@@ -235,8 +235,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(systemWindow.ToolTipManager.CurrentText == toolTip2Text);
 		}
 
-		[Fact]
-		public void MoveFastFromToolTipToToolTip()
+        [StaFact]
+        public void MoveFastFromToolTipToToolTip()
 		{
 			TempData tempData = new TempData();
 			SystemWindow systemWindow = CreateTwoChildWindow(tempData);

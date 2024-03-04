@@ -39,7 +39,7 @@ namespace MatterHackers.RayTracer
 	//[TestFixture, Category("Agg.RayTracer")]
 	public class TraceAPITests
 	{
-		[Fact]
+		[StaFact]
 		public void EnumerateBvh()
 		{
 			// create a bvh hierarchy
@@ -110,7 +110,7 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		[Fact]
+		[StaFact]
 		public void PlaneGetDistanceToIntersection()
 		{
 			Plane testPlane = new Plane(Vector3.UnitZ, 10);

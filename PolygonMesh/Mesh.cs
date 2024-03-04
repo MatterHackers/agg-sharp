@@ -580,7 +580,7 @@ namespace MatterHackers.PolygonMesh
 			return (int)GetLongHashCode();
 		}
 
-		public void CreateFace(IEnumerable<Vector3> positionsIn)
+		public void CreateFace(params Vector3[] positionsIn)
 		{
 			var positions = positionsIn.Distinct();
 			int firstVertex = this.Vertices.Count;

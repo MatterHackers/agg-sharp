@@ -70,8 +70,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Fact]
-		public void CorectLineCounts()
+        [StaFact]
+        public void CorectLineCounts()
 		{
 			var lines7 = @"; activate T0
 ; move up a bit
@@ -95,8 +95,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			Assert.Equal(8, printer8.NumLines());
 		}
 
-		[Fact]
-		public void TextEditTextSelectionTests()
+        [StaFact]
+        public void TextEditTextSelectionTests()
 		{
 			var container = new GuiWidget
 			{
@@ -170,8 +170,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
             container.Close();
 		}
 
-		[Fact]
-		public void TextSelectionWithShiftClick()
+        [StaFact]
+        public void TextSelectionWithShiftClick()
 		{
 			const string fullText = "This is a text";
 
@@ -226,8 +226,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
             container.Close();
 		}
 
-		[Fact]
-		public void TextChangedEventsTests()
+        [StaFact]
+        public void TextChangedEventsTests()
 		{
 			var container = new GuiWidget
 			{
@@ -302,8 +302,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.Close();
 		}
 
-		[Fact]
-		public void TextEditGetsFocusTests()
+        [StaFact]
+        public void TextEditGetsFocusTests()
 		{
 			var container = new GuiWidget
 			{
@@ -360,8 +360,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.Close();
 		}
 
-		[Fact]
-		public void AddThenDeleteCausesNoVisualChange()
+        [StaFact]
+        public void AddThenDeleteCausesNoVisualChange()
 		{
 			var container = new GuiWidget
 			{
@@ -407,8 +407,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			Assert.True(container.BackBuffer == beforeEditImage);
 		}
 
-		[Fact]
-		public void MultiLineTests()
+        [StaFact]
+        public void MultiLineTests()
 		{
 			// make sure selection ranges are always working
 			{
@@ -578,8 +578,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			}
 		}
 
-		[Fact]
-		public void NumEditHandlesNonNumberChars()
+        [StaFact]
+        public void NumEditHandlesNonNumberChars()
 		{
 			var container = new GuiWidget
 			{
@@ -611,11 +611,11 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 		}
 
 #if __ANDROID__
-		[Fact]
+		[StaFact]
 #else
-		[Fact]
+        [StaFact]
 #endif
-		public void TextEditingSpecialKeysWork()
+        public void TextEditingSpecialKeysWork()
 		{
 			var container = new GuiWidget
 			{
@@ -711,8 +711,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.Close();
 		}
 
-		[Fact]
-		public void ScrollingToEndShowsEnd()
+        [StaFact]
+        public void ScrollingToEndShowsEnd()
 		{
 			var container = new GuiWidget
 			{
@@ -770,8 +770,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
     [Collection("Opens Winforms Window")]
     public class TextEditFocusTests
 	{
-		[Fact]
-		public async Task VerifyFocusMakesTextWidgetEditable()
+        [StaFact]
+        public async Task VerifyFocusMakesTextWidgetEditable()
 		{
 			TextEditWidget editField = null;
 			var systemWindow = new SystemWindow(300, 200)
@@ -801,8 +801,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);
 		}
 
-		[Fact]
-		public async Task VerifyFocusProperty()
+        [StaFact]
+        public async Task VerifyFocusProperty()
 		{
 			var systemWindow = new SystemWindow(300, 200)
 			{
@@ -830,8 +830,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);
 		}
 
-		[Fact]
-		public async Task SelectAllOnFocusCanStillClickAfterSelection()
+        [StaFact]
+        public async Task SelectAllOnFocusCanStillClickAfterSelection()
 		{
 			var editField = new TextEditWidget(pixelWidth: 200)
 			{

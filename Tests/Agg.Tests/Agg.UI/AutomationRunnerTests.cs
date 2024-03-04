@@ -38,10 +38,8 @@ namespace MatterHackers.Agg.UI.Tests
     [Collection("Opens Winforms Window")]
     public class AutomationRunnerTests
 	{
-		//[Fact]
-		// change to xunit
-		[Fact]
-		public async Task GetWidgetByNameTestNoRegionSingleWindow()
+        [StaFact]
+        public async Task GetWidgetByNameTestNoRegionSingleWindow()
 		{
 			// single system window
 			int leftClickCount = 0;
@@ -64,10 +62,8 @@ namespace MatterHackers.Agg.UI.Tests
 			});
 		}
 
-		//[Fact]
-		// change to xunit
-		[Fact]
-		public async Task AutomationRunnerTimeoutTest()
+        [StaFact]
+        public async Task AutomationRunnerTimeoutTest()
 		{
 			// Ensure AutomationRunner throws timeout exceptions
 			var systemWindow = new SystemWindow(300, 200);
@@ -95,10 +91,8 @@ namespace MatterHackers.Agg.UI.Tests
             });
         }
 
-        //[Fact]
-        // change to xunit
-        [Fact]
-		public async Task GetWidgetByNameTestRegionSingleWindow()
+        [StaFact]
+        public async Task GetWidgetByNameTestRegionSingleWindow()
 		{
 			int leftClickCount = 0;
 

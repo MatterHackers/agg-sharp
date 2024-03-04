@@ -41,8 +41,8 @@ namespace MatterHackers.Agg.UI.Tests
 	{
 		public bool saveImagesForDebug;
 
-		[Fact]
-		public void TextWidgetAutoSizeTest()
+        [StaFact]
+        public void TextWidgetAutoSizeTest()
 		{
 			// resize works on text widgets
 			{
@@ -106,8 +106,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Fact]
-		public void TextWidgetVisibleTest()
+        [StaFact]
+        public void TextWidgetVisibleTest()
 		{
 			{
 				GuiWidget rectangleWidget = new GuiWidget(100, 50);

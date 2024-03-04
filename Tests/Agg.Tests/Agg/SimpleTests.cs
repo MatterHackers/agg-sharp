@@ -54,7 +54,7 @@ namespace MatterHackers.Agg.Tests
 			return true;
 		}
 
-		[Fact]
+		[StaFact]
 		public void JsonSerializeVertexStorage()
 		{
 			var test1Control = new VertexStorage();
@@ -79,7 +79,7 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-		[Fact]
+		[StaFact]
 		public void GetNextNumberWorks()
 		{
 			Assert.True(GetNextNumberSameResult("1234", 0, 1234));
@@ -94,7 +94,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(GetNextNumberSameResult(".123", 0, .123));
 		}
 
-		[Fact]
+		[StaFact]
 		public void TestGetHashCode()
 		{
 			{

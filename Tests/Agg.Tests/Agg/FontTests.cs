@@ -7,7 +7,7 @@ namespace MatterHackers.Agg.Font
 	//[TestFixture, Category("Agg.Font")]
 	public class FontTests
 	{
-		[Fact]
+		[StaFact]
 		public void CanPrintTests()
 		{
 			// Invoke DrawString with a carriage return. If any part of the font pipeline throws, this test fails
@@ -15,7 +15,7 @@ namespace MatterHackers.Agg.Font
 			testImage.NewGraphics2D().DrawString("\r", 30, 30);
 		}
 
-		[Fact]
+		[StaFact]
 		public void TextWrappingTest()
 		{
 			EnglishTextWrapping englishWrapping = new EnglishTextWrapping(8);

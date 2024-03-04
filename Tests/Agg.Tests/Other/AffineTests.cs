@@ -36,7 +36,7 @@ namespace MatterHackers.Agg.Tests
     //
 	public class AffineTests
 	{
-		[Fact]
+		[StaFact]
 		public void invert_test()
 		{
 			Affine a = Affine.NewIdentity();
@@ -55,7 +55,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.Equal(y, newy, .001);
 		}
 
-		[Fact]
+		[StaFact]
 		public void transform_test()
 		{
 			Affine a = Affine.NewIdentity();

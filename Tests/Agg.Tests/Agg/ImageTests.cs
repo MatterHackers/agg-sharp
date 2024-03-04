@@ -52,7 +52,7 @@ namespace MatterHackers.Agg.Image
 			return true;
 		}
 
-		[Fact]
+		[StaFact]
 		public void ColorHTMLTranslations()
 		{
 			Assert.Equal(new Color("#FFFFFFFF"), new Color(255, 255, 255, 255));
@@ -68,7 +68,7 @@ namespace MatterHackers.Agg.Image
 			Assert.Equal(new Color("#A1FFFF"), new Color(161, 255, 255, 255));
 		}
 
-		[Fact]
+		[StaFact]
 		public void ClearTests()
 		{
 			ImageBuffer clearSurface24 = new ImageBuffer(50, 50, 24, new BlenderBGR());

@@ -41,7 +41,7 @@ namespace MatterHackers.Agg.Tests
 
 	public class ClipperTests
 	{
-		[Fact]
+		[StaFact]
 		public void CleanPolygonsTest()
 		{
 			var polygon = new Polygon();

@@ -95,7 +95,7 @@ namespace MatterHackers.Agg.Tests
             return (double)Rand.NextDouble() * (Max - Min) + Min;
         }
 
-        [Fact]
+        [StaFact]
         public void MatrixColumnMajor()
         {
             // Make sure our matrix is set up column major like opengl. LBB [7/11/2003]
@@ -116,7 +116,7 @@ namespace MatterHackers.Agg.Tests
             Assert.True(KnownMatrixForm.Equals(ColumnMajorAccumulatedMatrix, .01f));
         }
 
-        [Fact]
+        [StaFact]
         public void RotateAboutXAxis()
         {
             Vector3 RotateAboutX = new Vector3(1.0f, 0.0f, 0.0f);
@@ -126,7 +126,7 @@ namespace MatterHackers.Agg.Tests
             RotationMatrix.TransformVector(ref PointToRotate);
             Assert.True(PointToRotate.Equals(new Vector3(0, 0, 40), .01f));
         }
-        [Fact]
+        [StaFact]
         public void RotateAboutYAxis()
         {
             Vector3 RotateAboutY = new Vector3(0.0f, 1.0f, 0.0f);
@@ -136,7 +136,7 @@ namespace MatterHackers.Agg.Tests
             RotationMatrix.TransformVector(ref PointToRotate);
             Assert.True(PointToRotate.Equals(new Vector3(0, 0, -40), .01f));
         }
-        [Fact]
+        [StaFact]
         public void RotateAboutZAxis()
         {
             Vector3 RotateAboutZ = new Vector3(0.0f, 0.0f, 1.0f);
@@ -147,7 +147,7 @@ namespace MatterHackers.Agg.Tests
             Assert.True(PointToRotate.Equals(new Vector3(0, 40, 0), .01f));
         }
 
-        [Fact]
+        [StaFact]
         public void ConcatenatedMatrixIsSameAsIndividualMatrices ()
         {
             // Make sure that pushing a concatenated matrix is the same as through a bunch of individual matrices [7/30/2001] LBB
@@ -189,7 +189,7 @@ namespace MatterHackers.Agg.Tests
             }
         }
 
-        [Fact]
+        [StaFact]
         public void PrepareAsInveresAndInverseAreSame()
         {
             //***************************************
@@ -233,7 +233,7 @@ namespace MatterHackers.Agg.Tests
             }
         }
 
-        [Fact]
+        [StaFact]
         public void PrepareMatrixFromPositionAndDirection()
         {
 	        // Test the PrepareMatrixFromPositionAndDirection function.

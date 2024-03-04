@@ -60,8 +60,8 @@ namespace MatterHackers.Agg.UI.Tests
 			OutputImage(test, "image-test.tga");
 		}
 
-		[Fact]
-		public void SingleItemVisibleTest()
+        [StaFact]
+        public void SingleItemVisibleTest()
 		{
 			{
 				ListBox containerListBox = new ListBox(new RectangleDouble(0, 0, 100, 100));
@@ -130,8 +130,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Fact]
-		public void ScrollPositionStartsCorrect()
+        [StaFact]
+        public void ScrollPositionStartsCorrect()
 		{
 			GuiWidget contents = new GuiWidget(300, 300);
 			contents.DoubleBuffer = true;

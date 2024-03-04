@@ -75,7 +75,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 #endif
 		}
 
-        [Fact]
+        [StaFact]
         public void SdfDensityFunctions()
         {
             var cylinder = new Cylinder()
@@ -91,7 +91,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Assert.Equal(.5, cylinder.Sdf(new Vector3(1, 0, 1)));
 		}
 
-		[Fact]
+		[StaFact]
         public void PolygonRequirements()
 		{
             //       /\1
@@ -135,7 +135,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
             }
         }
 
-        [Fact]
+        [StaFact]
         public void EnsureCorrectStitchOrder()
 		{
             //       /\1
@@ -186,7 +186,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
             }
         }
 
-        [Fact]
+        [StaFact]
 		public void FaceCutWoundCorrectly()
 		{
 			var vertices = new List<Vector3Float>()
@@ -229,7 +229,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			ImageIO.SaveImageData(path, image);
 		}
 		
-		[Fact]
+		[StaFact]
 		public void CutsRespectWindingOrder()
 		{
 			var cube = PlatonicSolids.CreateCube(10, 10, 10);
@@ -270,7 +270,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			}
 		}
 
-		[Fact]
+		[StaFact]
 		public void GetSliceLoop()
 		{
 			{
@@ -334,7 +334,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			}
 		}
 
-		[Fact]
+		[StaFact]
 		public void SingleLoopStiching()
 		{
 			return;
@@ -406,7 +406,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			// throw new NotImplementedException();
 		}
 
-		[Fact]
+		[StaFact]
 		public void SplitFaceEdgeEdge()
 		{
 			void TestPositions(int p0, int p1, int p2)
@@ -419,7 +419,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				// .  /  |  \
 				// . /___|___\
 				// .     |
-				mesh.CreateFace(new Vector3[] { positions[p0], positions[p1], positions[p2] });
+				mesh.CreateFace(positions[p0], positions[p1], positions[p2]);
 				Assert.Single(mesh.Faces);
 				Assert.Equal(3, mesh.Vertices.Count);
 
@@ -451,7 +451,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			TestPositions(2, 1, 0);
 		}
 
-		[Fact]
+		[StaFact]
 		public void SplitFaceTwoEdges()
 		{
 			void TestPositions(int p0, int p1, int p2)
@@ -464,7 +464,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				// .  |     | __
 				// .  |_____|_______
 				// . 1      |       2
-				mesh.CreateFace(new Vector3[] { positions[p0], positions[p1], positions[p2] });
+				mesh.CreateFace(positions[p0], positions[p1], positions[p2]);
 				Assert.Single(mesh.Faces);
 				Assert.Equal(3, mesh.Vertices.Count);
 
@@ -496,7 +496,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			TestPositions(2, 1, 0);
 		}
 
-		[Fact]
+		[StaFact]
 		public void CreateBspFaceTrees()
 		{
 			// a simple list of 3 faces
@@ -509,25 +509,22 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			var testMesh = new Mesh();
 
-			testMesh.CreateFace(new Vector3[]
-			{
+			testMesh.CreateFace(
 				new Vector3(0, 0, 2),
 				new Vector3(10, 0, 2),
 				new Vector3(5, 5, 2)
-			});
+			);
 
-			testMesh.CreateFace(new Vector3[]
-			{
+			testMesh.CreateFace(
 				new Vector3(0, 0, 3),
 				new Vector3(10, 0, 3),
 				new Vector3(5, 5, 3)
-			});
-			testMesh.CreateFace(new Vector3[]
-			{
+			);
+			testMesh.CreateFace(
 				new Vector3(0, 0, 1),
 				new Vector3(10, 0, 1),
 				new Vector3(5, 5, 1)
-			});
+			);
 
 			// test they are in the right order
 			{
@@ -544,7 +541,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			}
 		}
 
-		[Fact]
+		[StaFact]
 		public void CreateDualContouringCube()
 		{
 			foreach (var size in new[] { 1, 15, 200 })

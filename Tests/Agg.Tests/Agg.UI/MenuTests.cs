@@ -50,8 +50,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Fact]
-		public async Task OpenAndCloseMenus()
+        [StaFact]
+        public async Task OpenAndCloseMenus()
 		{
 			int item1ClickCount = 0;
 			int item2ClickCount = 0;

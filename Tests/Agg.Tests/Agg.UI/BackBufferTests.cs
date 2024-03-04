@@ -46,8 +46,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Fact]
-		public void DoubleBufferTests()
+        [StaFact]
+        public void DoubleBufferTests()
 		{
 			bool textWidgetDoubleBufferDefault = TextWidget.DoubleBufferDefault;
 

@@ -25,7 +25,7 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-		// [Fact]
+		// [StaFact]
 		public void ConvertWinExeProjectsToPackageReference()
 		{
 			foreach(var csproj in allCSProjFiles)

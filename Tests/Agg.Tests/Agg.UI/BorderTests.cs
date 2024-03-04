@@ -48,8 +48,8 @@ namespace MatterHackers.Agg.UI.Tests
 			All = 4
 		}
 
-		[Fact]
-		public void BorderTestLeft()
+        [StaFact]
+        public void BorderTestLeft()
 		{
 			var border = new BorderDouble(left: borderSize);
 			var surface = DrawBorderOnSurface(border, "left");
@@ -57,8 +57,8 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Left, border, surface);
 		}
 
-		[Fact]
-		public void BorderTestBottom()
+        [StaFact]
+        public void BorderTestBottom()
 		{
 			var border = new BorderDouble(bottom: borderSize);
 			var surface = DrawBorderOnSurface(border, "bottom");
@@ -66,8 +66,8 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Bottom, border, surface);
 		}
 
-		[Fact]
-		public void BorderTestRight()
+        [StaFact]
+        public void BorderTestRight()
 		{
 			var border = new BorderDouble(right: borderSize);
 			var surface = DrawBorderOnSurface(border, "right");
@@ -75,8 +75,8 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Right, border, surface);
 		}
 
-		[Fact]
-		public void BorderTestTop()
+        [StaFact]
+        public void BorderTestTop()
 		{
 			var border = new BorderDouble(top: borderSize);
 			var surface = DrawBorderOnSurface(border, "top");
@@ -84,9 +84,9 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Top, border, surface);
 		}
 
-		// Enable to visually debug
-		[Fact] // [Test, Apartment(System.Threading.ApartmentState.STA)]
-		public void BorderTestsVisualizer()
+        // Enable to visually debug
+        [StaFact]
+        public void BorderTestsVisualizer()
 		{
 			var systemWindow = new SystemWindow(700, 660)
 			{

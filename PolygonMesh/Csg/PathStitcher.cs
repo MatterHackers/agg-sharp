@@ -144,24 +144,20 @@ namespace MatterHackers.PolygonMesh.Processors
 				if ((lengthCurAToNextB > lengthCurBToNextA && !loopedA && intersectsWithA)
 					|| loopedB)
 				{
-					mesh.CreateFace(new Vector3[]
-					{
+					mesh.CreateFace(
 						new Vector3(loopA[curIndexA].X, loopA[curIndexA].Y, heightA),
 						new Vector3(loopA[nextIndexA].X, loopA[nextIndexA].Y, heightA),
-						new Vector3(loopB[curIndexB].X, loopB[curIndexB].Y, heightB),
-					});
+						new Vector3(loopB[curIndexB].X, loopB[curIndexB].Y, heightB));
 
 					curIndexA = nextIndexA;
 					loopedA = curIndexA == startIndexA;
 				}
 				else
 				{
-					mesh.CreateFace(new Vector3[]
-					{
+					mesh.CreateFace(
 						new Vector3(loopA[curIndexA].X, loopA[curIndexA].Y, heightA),
 						new Vector3(loopB[nextIndexB].X, loopB[nextIndexB].Y, heightB),
-						new Vector3(loopB[curIndexB].X, loopB[curIndexB].Y, heightB),
-					});
+						new Vector3(loopB[curIndexB].X, loopB[curIndexB].Y, heightB));
 
 					curIndexB = nextIndexB;
 					loopedB = curIndexB == startIndexB;
@@ -178,18 +174,14 @@ namespace MatterHackers.PolygonMesh.Processors
 			for (int i=0; i<bottomLoop.Count; i++)
 			{
 				var next = (i + 1) % bottomLoop.Count;
-				mesh.CreateFace(new Vector3[]
-				{
+				mesh.CreateFace(
 					new Vector3(bottomLoop[i].X, bottomLoop[i].Y, bottomHeight),
 					new Vector3(bottomLoop[next].X, bottomLoop[next].Y, bottomHeight),
-					new Vector3(topLoop[i].X, topLoop[i].Y, topHeight),
-				});
-				mesh.CreateFace(new Vector3[]
-				{
+					new Vector3(topLoop[i].X, topLoop[i].Y, topHeight));
+				mesh.CreateFace(
 					new Vector3(bottomLoop[next].X, bottomLoop[next].Y, bottomHeight),
 					new Vector3(topLoop[next].X, topLoop[next].Y, topHeight),
-					new Vector3(topLoop[i].X, topLoop[i].Y, topHeight),
-				});
+					new Vector3(topLoop[i].X, topLoop[i].Y, topHeight));
 			}
 
 			return mesh;

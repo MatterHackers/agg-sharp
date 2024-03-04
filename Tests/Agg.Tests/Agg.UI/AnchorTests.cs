@@ -51,8 +51,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Fact]
-		public void BottomAndTop()
+        [StaFact]
+        public void BottomAndTop()
 		{
 			BottomAndTopTextControl(0, 0);
 			BottomAndTopTextControl(0, 3);
@@ -71,7 +71,7 @@ namespace MatterHackers.Agg.UI.Tests
 			BottomAndTopButton(2.2, 3.3);
 		}
 
-		public void BottomAndTopTextControl(double controlPadding, double buttonMargin)
+		private void BottomAndTopTextControl(double controlPadding, double buttonMargin)
 		{
 			GuiWidget containerControl = new GuiWidget(200, 300);
 			containerControl.DoubleBuffer = true;
@@ -106,7 +106,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		public void BottomAndTopButton(double controlPadding, double buttonMargin)
+		private void BottomAndTopButton(double controlPadding, double buttonMargin)
 		{
 			GuiWidget containerControl = new GuiWidget(200, 300);
 			containerControl.Padding = new BorderDouble(controlPadding);
@@ -136,8 +136,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Fact]
-		public void BottomAndTopSetAnchorBeforAddChildTest()
+        [StaFact]
+        public void BottomAndTopSetAnchorBeforAddChildTest()
 		{
 			CenterBothTest(new BorderDouble(), new BorderDouble());
 			CenterBothTest(new BorderDouble(), new BorderDouble(3));
@@ -146,8 +146,8 @@ namespace MatterHackers.Agg.UI.Tests
 			CenterBothTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		[Fact]
-		public void ParentStretchAndFitToChildren()
+        [StaFact]
+        public void ParentStretchAndFitToChildren()
 		{
 			// Make sure normal nested layouts works as expected. First inner added then outer
 			{
@@ -228,8 +228,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Fact]
-		public void SimpleFitToChildren()
+        [StaFact]
+        public void SimpleFitToChildren()
 		{
 			// this is what will happen when the default of minimum size gets set on guiwidget construction
 			{
@@ -314,8 +314,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Fact]
-		public void AnchorLeftBottomTests()
+        [StaFact]
+        public void AnchorLeftBottomTests()
 		{
 			// bottom left. this is the easiest as there should be nothing to it.
 			{
@@ -441,8 +441,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Fact]
-		public void AnchorRightBottomTests()
+        [StaFact]
+        public void AnchorRightBottomTests()
 		{
 			// bottom right.
 			{
@@ -514,8 +514,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Fact]
-		public void AnchorRightTopTests()
+        [StaFact]
+        public void AnchorRightTopTests()
 		{
 			// bottom Top.
 			{
@@ -564,8 +564,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Fact]
-		public void CenterBothTests()
+        [StaFact]
+        public void CenterBothTests()
 		{
 			CenterBothTest(new BorderDouble(), new BorderDouble());
 			CenterBothTest(new BorderDouble(), new BorderDouble(3));
@@ -574,7 +574,7 @@ namespace MatterHackers.Agg.UI.Tests
 			CenterBothTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		public void CenterBothTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+		private void CenterBothTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			GuiWidget containerControl = new GuiWidget(200, 300);
 			containerControl.Padding = controlPadding;
@@ -607,8 +607,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 		}
 
-		[Fact]
-		public void CenterBothOffsetBoundsTests()
+        [StaFact]
+        public void CenterBothOffsetBoundsTests()
 		{
 			CenterBothOffsetBoundsTest(new BorderDouble(), new BorderDouble());
 			CenterBothOffsetBoundsTest(new BorderDouble(), new BorderDouble(3));
@@ -617,7 +617,7 @@ namespace MatterHackers.Agg.UI.Tests
 			CenterBothOffsetBoundsTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		public void CenterBothOffsetBoundsTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+        private void CenterBothOffsetBoundsTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			GuiWidget containerControl = new GuiWidget(200, 300);
 			containerControl.Padding = controlPadding;
@@ -654,8 +654,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Fact]
-		public void VAnchorFitIgnoresChildrenWithVAnchorStretch()
+        [StaFact]
+        public void VAnchorFitIgnoresChildrenWithVAnchorStretch()
 		{
 			//  ______________________________________________________________
 			//  |       containerControl 300                                  |
@@ -714,8 +714,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.Equal(80, childA.Height);
 		}
 
-		[Fact]
-		public void HAnchorFitIgnoresChildrenWithHAnchorStretch()
+        [StaFact]
+        public void HAnchorFitIgnoresChildrenWithHAnchorStretch()
 		{
 			//  ______________________________________________________________
 			//  |       containerControl 300                                  |
@@ -774,8 +774,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.Equal(80, childA.Width);
 		}
 
-		[Fact]
-		public void VAnchorCenterAndVAnchorFitWorkCorrectlyTogetherTest()
+        [StaFact]
+        public void VAnchorCenterAndVAnchorFitWorkCorrectlyTogetherTest()
 		{
 			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble());
 			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble(3));
@@ -784,7 +784,7 @@ namespace MatterHackers.Agg.UI.Tests
 			//VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		public void VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(BorderDouble padding, BorderDouble childMargin)
+        private void VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(BorderDouble padding, BorderDouble childMargin)
 		{
 			//  ______________________________________________________________
 			//  |       containerControl 200, 300                             |
@@ -838,8 +838,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.Equal((containerControl.Height - childA.Height) / 2, childA.Position.Y);
 		}
 
-		[Fact]
-		public void HAnchorCenterAndHAnchorFitWorkCorrectlyTogetherTest()
+        [StaFact]
+        public void HAnchorCenterAndHAnchorFitWorkCorrectlyTogetherTest()
 		{
 			HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble());
 			HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble(3));
@@ -848,7 +848,7 @@ namespace MatterHackers.Agg.UI.Tests
 			//HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		public void HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(BorderDouble padding, BorderDouble childMargin)
+        private void HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(BorderDouble padding, BorderDouble childMargin)
 		{
 			//  ______________________________________________________________
 			//  |       containerControl 200, 300                             |
@@ -902,8 +902,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.Equal((containerControl.Width - childA.Width) / 2, childA.Position.X);
 		}
 
-		[Fact]
-		public void HCenterHRightAndVCenterVTopTests()
+        [StaFact]
+        public void HCenterHRightAndVCenterVTopTests()
 		{
 			HCenterHRightAndVCenterVTopTest(new BorderDouble(), new BorderDouble());
 			HCenterHRightAndVCenterVTopTest(new BorderDouble(), new BorderDouble(3));
@@ -912,7 +912,7 @@ namespace MatterHackers.Agg.UI.Tests
 			HCenterHRightAndVCenterVTopTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		public void HCenterHRightAndVCenterVTopTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+        private void HCenterHRightAndVCenterVTopTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			GuiWidget containerControl = new GuiWidget(200, 300);
 			containerControl.Padding = controlPadding;
@@ -946,8 +946,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Fact]
-		public void GroupBoxResizeThenLayoutBeforeMatchChildren()
+        [StaFact]
+        public void GroupBoxResizeThenLayoutBeforeMatchChildren()
 		{
 			bool integerBounds = GuiWidget.DefaultEnforceIntegerBounds;
 			GuiWidget.DefaultEnforceIntegerBounds = true;

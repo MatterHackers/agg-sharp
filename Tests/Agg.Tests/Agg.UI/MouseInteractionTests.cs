@@ -41,8 +41,8 @@ namespace MatterHackers.Agg.UI.Tests
     [Collection("Opens Winforms Window")]
     public class MouseInteractionTests
 	{
-		[Fact]
-		public async Task DoClickButtonInWindow()
+        [StaFact]
+        public async Task DoClickButtonInWindow()
 		{
 			int leftClickCount = 0;
 			int rightClickCount = 0;
@@ -84,8 +84,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun);
 		}
 
-		[Fact]
-		public async Task RadioButtonSiblingsAreChildren()
+        [StaFact]
+        public async Task RadioButtonSiblingsAreChildren()
 		{
 			AutomationRunner.TimeToMoveMouse = .1;
 
@@ -148,8 +148,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(buttonWindow, testToRun);
 		}
 
-		[Fact]
-		public void ExtensionMethodsTests()
+        [StaFact]
+        public void ExtensionMethodsTests()
 		{
 			var level0 = new GuiWidget() { Name = "level0" };
 			var level1 = new GuiWidget() { Name = "level1" };
@@ -191,8 +191,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(parentCount == 3);
 		}
 
-		[Fact]
-		public void ValidateSimpleLeftClick()
+        [StaFact]
+        public void ValidateSimpleLeftClick()
 		{
 			var container = new GuiWidget
 			{
@@ -233,8 +233,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(button.Focused == false);
 		}
 
-		[Fact]
-		public void ValidateOnlyTopWidgetGetsLeftClick()
+        [StaFact]
+        public void ValidateOnlyTopWidgetGetsLeftClick()
 		{
 			bool gotClick = false;
 			var container = new GuiWidget
@@ -285,8 +285,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(gotClick == false);
 		}
 
-		[Fact]
-		public void ValidateSimpleMouseUpDown()
+        [StaFact]
+        public void ValidateSimpleMouseUpDown()
 		{
 			var container = new GuiWidget
 			{
@@ -382,8 +382,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(topWidgetGotMouseDownInBounds == 1);
 		}
 
-		[Fact]
-		public void ValidateOnlyTopWidgetGetsMouseUp()
+        [StaFact]
+        public void ValidateOnlyTopWidgetGetsMouseUp()
 		{
 			bool topGotMouseUp = false;
 			var container = new GuiWidget
@@ -426,8 +426,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(topGotMouseUp == false);
 		}
 
-		[Fact]
-		public void ValidateEnterAndLeaveEvents()
+        [StaFact]
+        public void ValidateEnterAndLeaveEvents()
 		{
 			int mouseEnter = 0;
 			int mouseLeave = 0;
@@ -581,8 +581,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(mouseEnterBounds == 0);
 		}
 
-		[Fact]//, Ignore("WorkInProgress - Functionality needs to be implemented")]
-		public void ValidateEnterLeaveOnWidgetMoves()
+        [StaFact]//, Ignore("WorkInProgress - Functionality needs to be implemented")]
+        public void ValidateEnterLeaveOnWidgetMoves()
 		{
 			GuiWidget container = new SystemWindow(200, 200)
 			{
@@ -674,8 +674,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(gotEnterBounds == 1);
 		}
 
-		[Fact]//, Ignore("WorkInProgress - Functionality needs to be implemented")]
-		public void ValidateEnterLeaveOnWidgetBoundsChange()
+        [StaFact]//, Ignore("WorkInProgress - Functionality needs to be implemented")]
+        public void ValidateEnterLeaveOnWidgetBoundsChange()
 		{
 			GuiWidget container = new SystemWindow(200, 200)
 			{
@@ -777,8 +777,8 @@ namespace MatterHackers.Agg.UI.Tests
 			return radioButton;
 		}
 
-		[Fact]
-		public void ValidateEnterAndLeaveEventsWhenNested()
+        [StaFact]
+        public void ValidateEnterAndLeaveEventsWhenNested()
 		{
 			// ___container__(200, 200)_______________________________________
 			// |                                                             |
@@ -1026,8 +1026,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(gotEnterBoundsB == 0);
 		}
 
-		[Fact]
-		public void ValidateEnterAndLeaveEventsWhenCoverd()
+        [StaFact]
+        public void ValidateEnterAndLeaveEventsWhenCoverd()
 		{
 			// A widget contains two children the second completely covering the first.
 			// When the mouse moves into the first it should not receive an enter event only a bounds enter event.
@@ -1302,8 +1302,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(gotEnterBoundsCoveredChild == 0);
 		}
 
-		[Fact]
-		public void ValidateEnterAndLeaveInOverlapArea()
+        [StaFact]
+        public void ValidateEnterAndLeaveInOverlapArea()
 		{
 			var container = new GuiWidget
 			{
@@ -1469,8 +1469,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(topGotLeaveBounds == 0);
 		}
 
-		[Fact]
-		public void MouseCapturedSpressesLeaveEvents()
+        [StaFact]
+        public void MouseCapturedSpressesLeaveEvents()
 		{
 			var container = new GuiWidget
 			{
@@ -1660,8 +1660,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.True(bGotMove == 0);
 		}
 
-		[Fact]
-		public void MouseCapturedSpressesLeaveEventsInButtonsSameAsRectangles()
+        [StaFact]
+        public void MouseCapturedSpressesLeaveEventsInButtonsSameAsRectangles()
 		{
 			var container = new GuiWidget
 			{
