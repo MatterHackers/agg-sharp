@@ -284,7 +284,8 @@ namespace MatterHackers.Agg.Platform
 
 		public string ReadAllText(string path)
 		{
-			return File.ReadAllText(MapPath(path));
+			var allText = File.ReadAllText(MapPath(path));
+            return allText;
 		}
 
 		public string MapPath(string path)
