@@ -48,7 +48,7 @@ namespace MatterHackers.Agg.UI
 			'\'', '"', '`', // quotes
 			',', '.', '?', '!', '@', '&', // punctuation
 			'(', ')', '<', '>', '[', ']', '{', '}', // parents (or equivalent)
-			'-', '+', '*', '/', '=', '\\', '#', '$', '^', '|', // math symbols
+			'-', '+', '*', '/', '=', '\\', '#', '$', '^', '|', '°', '²', '³'// math symbols
 		});
 
 		private static HashSet<char> WordBreakCharsAndCR
