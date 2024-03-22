@@ -127,7 +127,7 @@ namespace MatterHackers.Agg.SvgTools
             return items;
         }
 
-        public static string GetSvgDString(this IVertexSource vertexSource)
+        public static string SvgDString(this IVertexSource vertexSource)
         {
             var dstring = new StringBuilder();
             var curveIndex = 0;

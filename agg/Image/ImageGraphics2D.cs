@@ -397,7 +397,39 @@ namespace MatterHackers.Agg
 						break;
 
 					case 32:
+						if (DestImage.GetBytesBetweenPixelsInclusive() == 4)
 						{
+                            unsafe
+                            {
+                                fixed (byte* pBufferIn = buffer)
+                                {
+                                    uint colorValue = (uint)color.Alpha0To255 << 24 | (uint)color.Red0To255 | (uint)color.Green0To255 << 8 | (uint)color.Blue0To255 << 16;
+                                    ulong colorValue2 = (ulong)colorValue << 32 | colorValue;
+
+									var widthDiv2 = clippingRectInt.Width / 2;
+
+									for(int y = clippingRectInt.Bottom; y < clippingRectInt.Top; y++)
+									{
+                                        byte* pBuffer = pBufferIn + DestImage.GetBufferOffsetXY((int)clippingRect.Left, y);
+										for (int x = 0; x < widthDiv2; x++)
+										{
+											// Convert the buffer offset to a pointer to the location where we want to copy the color.
+											// Copy the color value into the destination buffer in one operation.
+											*(ulong*)pBuffer = colorValue2;
+                                            pBuffer += 8;
+										}
+                                    
+										if (clippingRectInt.Width % 2 == 1)
+                                        {
+                                            // there is one more pixel to draw. Fill it with colorValue
+                                            *(uint*)pBuffer = colorValue;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+						else
+                        {
 							for (int y = clippingRectInt.Bottom; y < clippingRectInt.Top; y++)
 							{
 								int bufferOffset = DestImage.GetBufferOffsetXY((int)clippingRect.Left, y);

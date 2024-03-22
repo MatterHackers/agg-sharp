@@ -911,7 +911,7 @@ namespace MatterHackers.Agg.VertexSource
         {
             get
             {
-                return this.GetSvgDString();
+                return this.SvgDString();
             }
 
             set
