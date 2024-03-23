@@ -347,79 +347,81 @@ namespace MatterHackers.Agg
 			throw new NotImplementedException();
 		}
 
-		public override void Clear(IColorType iColor)
+		public override void Clear(RectangleDouble bounds, IColorType iColor)
 		{
-			RectangleDouble clippingRect = GetClippingRect();
-			var clippingRectInt = new RectangleInt((int)clippingRect.Left, (int)clippingRect.Bottom, (int)clippingRect.Right, (int)clippingRect.Top);
-
-            if(clippingRect.Width == 0
-				|| clippingRect.Height == 0)
+			var intBounds = new RectangleInt(bounds);
+			var clippingRect = GetClippingRect();
+			var clippingRectInt = new RectangleInt(clippingRect);
+			// find the intersection of the clipping rect and the bounds
+			clippingRectInt.IntersectWithRectangle(intBounds);
+			if (clippingRectInt.Width == 0
+				|| clippingRectInt.Height == 0)
 			{
-                return;
-            }
+				return;
+			}
 
             if (DestImage != null)
-			{
-				var color = iColor.ToColor();
-				byte[] buffer = DestImage.GetBuffer();
-				switch (DestImage.BitDepth)
-				{
-					case 8:
-						{
-							for (int y = clippingRectInt.Bottom; y < clippingRectInt.Top; y++)
-							{
-								int bufferOffset = DestImage.GetBufferOffsetXY((int)clippingRect.Left, y);
-								int bytesBetweenPixels = DestImage.GetBytesBetweenPixelsInclusive();
-								for (int x = 0; x < clippingRectInt.Width; x++)
-								{
-									buffer[bufferOffset] = color.blue;
-									bufferOffset += bytesBetweenPixels;
-								}
-							}
-						}
+            {
+                var color = iColor.ToColor();
+                byte[] buffer = DestImage.GetBuffer();
+                switch (DestImage.BitDepth)
+                {
+                    case 8:
+                        {
+                            for (int y = clippingRectInt.Bottom; y < clippingRectInt.Top; y++)
+                            {
+                                int bufferOffset = DestImage.GetBufferOffsetXY((int)clippingRectInt.Left, y);
+                                int bytesBetweenPixels = DestImage.GetBytesBetweenPixelsInclusive();
+                                for (int x = 0; x < clippingRectInt.Width; x++)
+                                {
+                                    buffer[bufferOffset] = color.blue;
+                                    bufferOffset += bytesBetweenPixels;
+                                }
+                            }
+                        }
 
-						break;
+                        break;
 
-					case 24:
-						for (int y = clippingRectInt.Bottom; y < clippingRectInt.Top; y++)
-						{
-							int bufferOffset = DestImage.GetBufferOffsetXY((int)clippingRect.Left, y);
-							int bytesBetweenPixels = DestImage.GetBytesBetweenPixelsInclusive();
-							for (int x = 0; x < clippingRectInt.Width; x++)
-							{
-								buffer[bufferOffset + 0] = color.blue;
-								buffer[bufferOffset + 1] = color.green;
-								buffer[bufferOffset + 2] = color.red;
-								bufferOffset += bytesBetweenPixels;
-							}
-						}
+                    case 24:
+                        for (int y = clippingRectInt.Bottom; y < clippingRectInt.Top; y++)
+                        {
+                            int bufferOffset = DestImage.GetBufferOffsetXY((int)clippingRectInt.Left, y);
+                            int bytesBetweenPixels = DestImage.GetBytesBetweenPixelsInclusive();
+                            for (int x = 0; x < clippingRectInt.Width; x++)
+                            {
+                                buffer[bufferOffset + 0] = color.blue;
+                                buffer[bufferOffset + 1] = color.green;
+                                buffer[bufferOffset + 2] = color.red;
+                                bufferOffset += bytesBetweenPixels;
+                            }
+                        }
 
-						break;
+                        break;
 
-					case 32:
-						if (DestImage.GetBytesBetweenPixelsInclusive() == 4)
-						{
+                    case 32:
+                        if (DestImage.GetBytesBetweenPixelsInclusive() == 4)
+                        {
                             unsafe
                             {
                                 fixed (byte* pBufferIn = buffer)
                                 {
-                                    uint colorValue = (uint)color.Alpha0To255 << 24 | (uint)color.Red0To255 | (uint)color.Green0To255 << 8 | (uint)color.Blue0To255 << 16;
+                                    uint colorValue = (uint)color.Alpha0To255 << 24 | (uint)color.Red0To255 << 16 | (uint)color.Green0To255 << 8 | (uint)color.Blue0To255;
                                     ulong colorValue2 = (ulong)colorValue << 32 | colorValue;
 
-									var widthDiv2 = clippingRectInt.Width / 2;
+                                    var widthDiv2 = clippingRectInt.Width / 2;
 
-									for(int y = clippingRectInt.Bottom; y < clippingRectInt.Top; y++)
-									{
-                                        byte* pBuffer = pBufferIn + DestImage.GetBufferOffsetXY((int)clippingRect.Left, y);
-										for (int x = 0; x < widthDiv2; x++)
-										{
-											// Convert the buffer offset to a pointer to the location where we want to copy the color.
-											// Copy the color value into the destination buffer in one operation.
-											*(ulong*)pBuffer = colorValue2;
+                                    for (int y = clippingRectInt.Bottom; y < clippingRectInt.Top; y++)
+                                    {
+                                        byte* pBuffer = pBufferIn + DestImage.GetBufferOffsetXY((int)clippingRectInt.Left, y);
+                                        for (int x = 0; x < widthDiv2; x++)
+                                        {
+                                            // Convert the buffer offset to a pointer to the location where we want to copy the color.
+                                            // Copy the color value into the destination buffer in one operation.
+                                            *(ulong*)pBuffer = colorValue2;
                                             pBuffer += 8;
-										}
-                                    
-										if (clippingRectInt.Width % 2 == 1)
+                                        }
+
+                                        if (clippingRectInt.Width % 2 == 1)
                                         {
                                             // there is one more pixel to draw. Fill it with colorValue
                                             *(uint*)pBuffer = colorValue;
@@ -428,64 +430,72 @@ namespace MatterHackers.Agg
                                 }
                             }
                         }
-						else
+                        else
                         {
-							for (int y = clippingRectInt.Bottom; y < clippingRectInt.Top; y++)
-							{
-								int bufferOffset = DestImage.GetBufferOffsetXY((int)clippingRect.Left, y);
-								int bytesBetweenPixels = DestImage.GetBytesBetweenPixelsInclusive();
-								for (int x = 0; x < clippingRectInt.Width; x++)
-								{
-									buffer[bufferOffset + 0] = color.blue;
-									buffer[bufferOffset + 1] = color.green;
-									buffer[bufferOffset + 2] = color.red;
-									buffer[bufferOffset + 3] = color.alpha;
-									bufferOffset += bytesBetweenPixels;
-								}
-							}
-						}
+                            for (int y = clippingRectInt.Bottom; y < clippingRectInt.Top; y++)
+                            {
+                                int bufferOffset = DestImage.GetBufferOffsetXY((int)clippingRectInt.Left, y);
+                                int bytesBetweenPixels = DestImage.GetBytesBetweenPixelsInclusive();
+                                for (int x = 0; x < clippingRectInt.Width; x++)
+                                {
+                                    buffer[bufferOffset + 0] = color.blue;
+                                    buffer[bufferOffset + 1] = color.green;
+                                    buffer[bufferOffset + 2] = color.red;
+                                    buffer[bufferOffset + 3] = color.alpha;
+                                    bufferOffset += bytesBetweenPixels;
+                                }
+                            }
+                        }
 
-						break;
+                        break;
 
-					default:
-						throw new NotImplementedException();
-				}
+                    default:
+                        throw new NotImplementedException();
+                }
 
-				DestImage.MarkImageChanged();
-			}
-			else // it is a float
-			{
-				if (DestImageFloat == null)
-				{
-					throw new Exception("You have to have either a byte or float DestImage.");
-				}
+                DestImage.MarkImageChanged();
+            }
+            else // it is a float
+            {
+                if (DestImageFloat == null)
+                {
+                    throw new Exception("You have to have either a byte or float DestImage.");
+                }
 
-				var color = iColor.ToColorF();
-				int height = DestImageFloat.Height;
-				float[] buffer = DestImageFloat.GetBuffer();
-				switch (DestImageFloat.BitDepth)
-				{
-					case 128:
-						for (int y = 0; y < height; y++)
-						{
-							int bufferOffset = DestImageFloat.GetBufferOffsetXY(clippingRectInt.Left, y);
-							int bytesBetweenPixels = DestImageFloat.GetFloatsBetweenPixelsInclusive();
-							for (int x = 0; x < clippingRectInt.Width; x++)
-							{
-								buffer[bufferOffset + 0] = color.blue;
-								buffer[bufferOffset + 1] = color.green;
-								buffer[bufferOffset + 2] = color.red;
-								buffer[bufferOffset + 3] = color.alpha;
-								bufferOffset += bytesBetweenPixels;
-							}
-						}
+                var color = iColor.ToColorF();
+                int height = DestImageFloat.Height;
+                float[] buffer = DestImageFloat.GetBuffer();
+                switch (DestImageFloat.BitDepth)
+                {
+                    case 128:
+                        for (int y = 0; y < height; y++)
+                        {
+                            int bufferOffset = DestImageFloat.GetBufferOffsetXY(clippingRectInt.Left, y);
+                            int bytesBetweenPixels = DestImageFloat.GetFloatsBetweenPixelsInclusive();
+                            for (int x = 0; x < clippingRectInt.Width; x++)
+                            {
+                                buffer[bufferOffset + 0] = color.blue;
+                                buffer[bufferOffset + 1] = color.green;
+                                buffer[bufferOffset + 2] = color.red;
+                                buffer[bufferOffset + 3] = color.alpha;
+                                bufferOffset += bytesBetweenPixels;
+                            }
+                        }
 
-						break;
+                        break;
 
-					default:
-						throw new NotImplementedException();
-				}
-			}
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
+
+            //Rectangle(bounds, Color.Black);
+        }
+
+
+        public override void Clear(IColorType iColor)
+		{
+			Clear(GetClippingRect(), iColor);
 		}
 	}
 }

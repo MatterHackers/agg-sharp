@@ -44,6 +44,14 @@ namespace MatterHackers.Agg
             Top = top;
         }
 
+        public RectangleInt(RectangleDouble rect)
+        {
+            Left = (int)Math.Floor(rect.Left);
+            Bottom = (int)Math.Floor(rect.Bottom);
+            Right = (int)Math.Ceiling(rect.Right);
+            Top = (int)Math.Ceiling(rect.Top);
+        }
+
         // This function assumes the rect is normalized
         [JsonIgnoreAttribute]
         public int Height

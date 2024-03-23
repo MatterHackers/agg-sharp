@@ -150,6 +150,8 @@ namespace MatterHackers.Agg
 
         public abstract void Clear(IColorType color);
 
+        public abstract void Clear(RectangleDouble rect, IColorType color);
+
         /// <summary>
         /// Draws an arc representing a portion of an ellipse specified by a Rectangle structure.
         /// </summary>
