@@ -480,17 +480,31 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		public override void Clear(IColorType color)
-		{
+        public override void Clear(RectangleDouble rect, IColorType color)
+        {
 			Affine transform = GetTransform();
+			var transformedRect = new RectangleDouble(
+				rect.Left - transform.tx,
+				rect.Bottom - transform.ty,
+				rect.Right - transform.tx,
+				rect.Top - transform.ty);
 
-			var clearRect = new RoundedRect(new RectangleDouble(
+			var transformedClipRect = new RectangleDouble(
 				cachedClipRect.Left - transform.tx,
 				cachedClipRect.Bottom - transform.ty,
 				cachedClipRect.Right - transform.tx,
-				cachedClipRect.Top - transform.ty),
-				0);
+				cachedClipRect.Top - transform.ty);
+
+			transformedClipRect.IntersectWithRectangle(transformedRect);
+
+            var clearRect = new RoundedRect(transformedClipRect, 0);
+            
 			Render(clearRect, color.ToColor());
+        }
+
+        public override void Clear(IColorType color)
+		{
+			Clear(cachedClipRect, color);
 		}
 
 		public void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, Color color, bool doDepthTest)
