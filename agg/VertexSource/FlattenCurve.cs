@@ -133,6 +133,11 @@ namespace MatterHackers.Agg.VertexSource
 
 		public override IEnumerable<VertexData> Vertices()
 		{
+			if (VertexSource == null)
+			{
+				yield break;
+			}
+
 			VertexData lastPosition = new VertexData();
 
 			IEnumerator<VertexData> vertexDataEnumerator = VertexSource.Vertices().GetEnumerator();
