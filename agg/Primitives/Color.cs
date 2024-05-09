@@ -588,6 +588,8 @@ namespace MatterHackers.Agg
             { "LightSlateGray", new Color(119, 136, 153) },
             { "LightSteelBlue", new Color(176, 196, 222) },
             { "LightYellow", new Color(255, 255, 224) },
+            { "Beige", new Color("#F5F5DC") },
+            { "Brown", new Color("#8B4513") },
             { "LimeGreen", new Color(50, 205, 50) },
         };
 
