@@ -120,7 +120,7 @@ namespace MatterHackers.DataConverters2D
             return CreatePolygons(new FlattenCurves(sourcePath)
             {
                 ResolutionScale = scaling
-            }.Vertices());
+            }.Vertices(), scaling);
         }
 
 		public static Polygons CreatePolygons(this IEnumerable<VertexData> vertices, double scaling = 1000)
