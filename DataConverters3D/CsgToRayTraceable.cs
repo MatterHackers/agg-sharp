@@ -121,7 +121,7 @@ namespace MatterHackers.DataConverters3D
 				items.Add(GetIPrimitiveRecursive((dynamic)copiedObject));
 			}
 
-			return BoundingVolumeHierarchy.CreateNewHierachy(items);
+			return BoundingVolumeHierarchy.CreateNewHierarchy(items);
 		}
 
 		#endregion Union
@@ -136,7 +136,7 @@ namespace MatterHackers.DataConverters3D
 				subtractItems.Add(GetIPrimitiveRecursive((dynamic)copiedObject));
 			}
 
-			return new RayTracer.Traceable.Difference(GetIPrimitiveRecursive((dynamic)objectToProcess.Primary), BoundingVolumeHierarchy.CreateNewHierachy(subtractItems));
+			return new RayTracer.Traceable.Difference(GetIPrimitiveRecursive((dynamic)objectToProcess.Primary), BoundingVolumeHierarchy.CreateNewHierarchy(subtractItems));
 		}
 
 		#endregion Difference

@@ -80,12 +80,12 @@ namespace MatterHackers.RayTracer
                 BoxShape insideBox = new BoxShape(new Vector3(-.1, -.1, -.1), new Vector3(.1, .1, .1), blueMaterial);
                 primaryShapes.Add(box1X1);
                 primaryShapes.Add(insideBox);
-                IPrimitive primamryGroup = BoundingVolumeHierarchy.CreateNewHierachy(primaryShapes);
+                IPrimitive primamryGroup = BoundingVolumeHierarchy.CreateNewHierarchy(primaryShapes);
 
                 List<IPrimitive> subtractShapes = new List<IPrimitive>();
                 subtractShapes.Add(new BoxShape(new Vector3(-.5, -.5, -.5), new Vector3(.5, .4, .5), redMaterial));
 
-                IPrimitive subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
+                IPrimitive subtractGroup = BoundingVolumeHierarchy.CreateNewHierarchy(subtractShapes);
                 Difference merge = new Difference(primamryGroup, subtractGroup);
 
                 IntersectInfo testInfo = merge.GetClosestIntersection(castRay);
@@ -106,7 +106,7 @@ namespace MatterHackers.RayTracer
                     subtractShapes.Add(new BoxShape(new Vector3(-.5, -.5 + i * .1, -.5), new Vector3(.5, -.4 + i * .1, .5), redMaterial));
                 }
 
-                IPrimitive subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
+                IPrimitive subtractGroup = BoundingVolumeHierarchy.CreateNewHierarchy(subtractShapes);
                 Difference merge = new Difference(box1X1, subtractGroup);
 
                 IntersectInfo testInfo = merge.GetClosestIntersection(castRay);

@@ -75,9 +75,9 @@ namespace MatterHackers.RayTracer
 		/// to 'Shapes'.  You could also create a list of 'List<IPrimitive>' and put that directly into a BVH and then add that
 		/// to the Shapes list (there could be more than 1 BVH in the 'Shapes' list.
 		/// </summary>
-		public ITraceable MoveShapesIntoBoundingVolumeHierachy()
+		public ITraceable MoveShapesIntoBoundingVolumeHierarchy()
 		{
-			var rootObject = BoundingVolumeHierarchy.CreateNewHierachy(shapes);
+			var rootObject = BoundingVolumeHierarchy.CreateNewHierarchy(shapes);
 			if (rootObject != null)
 			{
 				shapes.Clear();

@@ -27,7 +27,7 @@ namespace MatterHackers.VectorMath
 {
 	public static class TradeOffBvhConstructor<T>
 	{
-		public static BvhTree<T> CreateNewHierachy(List<BvhTreeItemData<T>> itemsToAdd,
+		public static BvhTree<T> CreateNewHierarchy(List<BvhTreeItemData<T>> itemsToAdd,
 			int maxRecursion = int.MaxValue,
 			int recursionDepth = 0,
 			SortingAccelerator accelerator = null,
@@ -196,8 +196,8 @@ namespace MatterHackers.VectorMath
 				{
 					rightItems.Add(itemsToAdd[i]);
 				}
-				var leftGroup = CreateNewHierachy(leftItems, maxRecursion, recursionDepth + 1, accelerator);
-				var rightGroup = CreateNewHierachy(rightItems, maxRecursion, recursionDepth + 1, accelerator);
+				var leftGroup = CreateNewHierarchy(leftItems, maxRecursion, recursionDepth + 1, accelerator);
+				var rightGroup = CreateNewHierarchy(rightItems, maxRecursion, recursionDepth + 1, accelerator);
 				var newBVHNode = new BvhTree<T>(leftGroup, rightGroup, bestAxis);
 				return newBVHNode;
 			}

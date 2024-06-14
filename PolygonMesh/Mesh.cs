@@ -280,7 +280,7 @@ namespace MatterHackers.PolygonMesh
 		public BvhTree<int> GetVertexBvhTree()
 		{
             var tinyDistance = new Vector3Float(.001, .001, .001);
-            var vertexBvhTree = TradeOffBvhConstructor<int>.CreateNewHierachy(this.Vertices
+            var vertexBvhTree = TradeOffBvhConstructor<int>.CreateNewHierarchy(this.Vertices
                 .Select((v, i) => new BvhTreeItemData<int>(i, new AxisAlignedBoundingBox(v - tinyDistance, v + tinyDistance))).ToList(),
                 DoSimpleSortSize: 10);
 

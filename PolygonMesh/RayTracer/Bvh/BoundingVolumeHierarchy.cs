@@ -165,7 +165,7 @@ namespace MatterHackers.RayTracer
             }
         }
 
-        public static ITraceable CreateNewHierachy(List<ITraceable> tracePrimitives, BvhCreationOptions bvhCreationOptions = BvhCreationOptions.BottomUpClustering)
+        public static ITraceable CreateNewHierarchy(List<ITraceable> tracePrimitives, BvhCreationOptions bvhCreationOptions = BvhCreationOptions.BottomUpClustering)
         {
 			ITraceable output = null;
 

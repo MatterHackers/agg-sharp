@@ -80,7 +80,7 @@ namespace MatterHackers.PolygonMesh.Csg
             }
 
             // return an empty collection
-            return BoundingVolumeHierarchy.CreateNewHierachy(tracePrimitives);
+            return BoundingVolumeHierarchy.CreateNewHierarchy(tracePrimitives);
         }
 
         public void Setup(IEnumerable<(Mesh mesh, Matrix4X4 matrix)> meshAndMatrix,

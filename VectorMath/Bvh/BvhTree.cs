@@ -218,23 +218,43 @@ namespace MatterHackers.VectorMath
 			return GetClosestIntersection(ray);
 		}
 
-		public void SearchBounds(AxisAlignedBoundingBox bounds, List<T> results)
-		{
-			if (bounds.Intersects(Aabb))
-			{
-				// check all the items that are part of this object
-				foreach (var item in Items)
+        public void SearchBounds(AxisAlignedBoundingBox bounds, List<T> results)
+        {
+            Stack<BvhTree<T>> stack = new Stack<BvhTree<T>>();
+            stack.Push(this);
+
+            while (stack.Count > 0)
+            {
+                var currentNode = stack.Pop();
+
+				if (currentNode == null)
 				{
-					if (item.Aabb.Intersects(bounds))
-					{
-						results.Add(item.Item);
-					}
+					continue;
 				}
 
-				nodeA?.SearchBounds(bounds, results);
-				nodeB?.SearchBounds(bounds, results);
-			}
-		}
+                if (bounds.Intersects(currentNode.Aabb))
+                {
+                    // check all the items that are part of this object
+                    foreach (var item in currentNode.Items)
+                    {
+                        if (item.Aabb.Intersects(bounds))
+                        {
+                            results.Add(item.Item);
+                        }
+                    }
+
+					if (currentNode.nodeA != null)
+					{
+						stack.Push(currentNode.nodeA);
+					}
+
+					if (currentNode.nodeB != null)
+					{
+						stack.Push(currentNode.nodeB);
+					}
+                }
+            }
+        }
 
 		public void SearchBounds(double x, double y, double z,
 			double xSize, double ySize, double zSize,
