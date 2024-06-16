@@ -1472,16 +1472,6 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public class GuiWidgetEventArgs : EventArgs
-		{
-			public GuiWidget Child { get; private set; }
-
-			public GuiWidgetEventArgs(GuiWidget child)
-			{
-				Child = child;
-			}
-		}
-
 		/// <summary>
 		/// Add a child to this widget. It will layout right away.
 		/// </summary>
@@ -3759,4 +3749,14 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 	}
+
+    public class GuiWidgetEventArgs : EventArgs
+    {
+        public GuiWidget Child { get; private set; }
+
+        public GuiWidgetEventArgs(GuiWidget child)
+        {
+            Child = child;
+        }
+    }
 }
