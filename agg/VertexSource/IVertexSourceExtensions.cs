@@ -134,7 +134,10 @@ namespace MatterHackers.Agg.VertexSource
             }
 
             // render the flatened curve
-            graphics2D.Render(new Stroke(new FlattenCurves(source), width), lineColor);
+            using (new QuickTimerReport("View3DWidegt.RenderPath"))
+            {
+                graphics2D.Render(new Stroke(new FlattenCurves(source), width), lineColor);
+            }
 
             if (showHandles)
             {

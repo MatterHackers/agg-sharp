@@ -161,10 +161,16 @@ namespace MatterHackers.RenderOpenGl
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, (byte)255);
 
 			TriangleEdgeInfo.Clear();
-			VertexSourceToTesselator.SendShapeToTesselator(TriangleEdgeInfo, vertexSource);
+			using (new QuickTimerReport("Graphics2DOpenGl.SendShapeToTesselator"))
+			{
+				VertexSourceToTesselator.SendShapeToTesselator(TriangleEdgeInfo, vertexSource);
+			}
 
 			// now render it
-			TriangleEdgeInfo.RenderLastToGL();
+			using (new QuickTimerReport("Graphics2DOpenGl.RenderLastToGL"))
+			{
+				TriangleEdgeInfo.RenderLastToGL();
+			}
 		}
 
 		/// <summary>
@@ -260,7 +266,10 @@ namespace MatterHackers.RenderOpenGl
 
 			if (DoEdgeAntiAliasing)
 			{
-				DrawAAShape(vertexSource, colorIn);
+				using (new QuickTimerReport("Graphics2DOpenGl.DrawAAShape"))
+				{
+					DrawAAShape(vertexSource, colorIn);
+				}
 			}
 			else
 			{
