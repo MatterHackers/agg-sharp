@@ -522,9 +522,9 @@ namespace MatterHackers.Agg.Transform
 		// Direct transformation of x and y
 		public void Transform(ref double x, ref double y)
 		{
-			double tmp = x;
-			x = tmp * sx + y * shx + tx;
-			y = tmp * shy + y * sy + ty;
+			double tempX = x;
+			x = tempX * sx + y * shx + tx;
+			y = tempX * shy + y * sy + ty;
 		}
 
 		public void transform(ref Vector2 pointToTransform)

@@ -163,7 +163,11 @@ namespace MatterHackers.RenderOpenGl
 
 			var translation = Vector2.Zero;
 
-			if (vertexSource is Ellipse ellipse)
+            Affine transform = GetTransform();
+            
+			if (transform.sx == 1 && transform.sy == 1
+                && transform.shx == 0 && transform.shy == 0
+				&& vertexSource is Ellipse ellipse)
             {
                 translation = new Vector2(ellipse.originX, ellipse.originY);
 				// and zero out the origin by creating a new ellipse
@@ -179,7 +183,6 @@ namespace MatterHackers.RenderOpenGl
 				affine.ty = 0;
 			}
 
-			Affine transform = GetTransform();
 			if (transform.sx == 1 && transform.sy == 1
 				&& transform.shx == 0 && transform.shy == 0)
 			{
@@ -187,7 +190,18 @@ namespace MatterHackers.RenderOpenGl
 				translation.X += transform.tx;
 				translation.Y += transform.ty;
 			}
-			else
+			else if (transform.shx == 0 && transform.shy == 0)
+			{
+				// we have a translation and a scale
+				// lets keep the scale but 0 out the translation
+				// we need to apply the scale to the translation
+				translation.X = (float)(translation.X / transform.sx + transform.tx);
+				translation.Y = (float)(translation.Y / transform.sy + transform.ty);
+				transform.tx = 0;
+				transform.ty = 0;
+                vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
+            }
+            else
 			{
 				vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
 			}
