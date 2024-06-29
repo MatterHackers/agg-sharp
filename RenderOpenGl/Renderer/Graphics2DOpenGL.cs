@@ -43,9 +43,10 @@ namespace MatterHackers.RenderOpenGl
 {
 	public class Graphics2DOpenGL : Graphics2D
 	{
-		// We can have a single static instance because all gl rendering is required to happen on the ui thread so there can
-		// be no runtime contention for this object (no thread contention).
-		private static readonly AAGLTesselator TriangleEdgeInfo = new AAGLTesselator();
+        // We can have a single static instance because all gl rendering is required to happen on the ui thread so there can
+        // be no runtime contention for this object (no thread contention).
+        private static readonly Dictionary<ulong, AAGLTesselator> TriangleEdgeInfos = new Dictionary<ulong, AAGLTesselator>();
+        private static readonly List<AAGLTesselator> AvailableTriangleEdgeInfos = new List<AAGLTesselator>();
 
 		/// <summary>
 		/// A texture per alpha value
@@ -62,6 +63,15 @@ namespace MatterHackers.RenderOpenGl
 
 		public Graphics2DOpenGL(double deviceScale)
 		{
+            // if AvailableTriangleEdgeInfos is empty allocate 1000 of them
+            if (AvailableTriangleEdgeInfos.Count == 0)
+            {
+                for (int i = 0; i < 1000; i++)
+                {
+                    AvailableTriangleEdgeInfos.Add(new AAGLTesselator());
+                }
+            }
+            
 			this.DeviceScale = deviceScale;
 		}
 
@@ -146,12 +156,38 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		private void DrawAAShape(IVertexSource vertexSource, IColorType colorIn)
+		private void DrawAAShape(IVertexSource vertexSourceIn, IColorType colorIn)
 		{
-			vertexSource.Rewind(0);
+			var vertexSource = vertexSourceIn;
+            vertexSource.Rewind(0);
+
+			var translation = Vector2.Zero;
+
+			if (vertexSource is Ellipse ellipse)
+            {
+                translation = new Vector2(ellipse.originX, ellipse.originY);
+				// and zero out the origin by creating a new ellipse
+				vertexSource = new Ellipse(0, 0, ellipse.radiusX, ellipse.radiusY, ellipse.NumSteps, ellipse.IsCw);
+            }
+
+			else if (vertexSource is VertexSourceApplyTransform applyTransform
+				&& applyTransform.TransformToApply is Affine affine)
+			{
+				translation = new Vector2(affine.tx, affine.ty);
+                // and zero out the origin
+                affine.tx = 0;
+				affine.ty = 0;
+			}
 
 			Affine transform = GetTransform();
-			if (!transform.is_identity())
+			if (transform.sx == 1 && transform.sy == 1
+				&& transform.shx == 0 && transform.shy == 0)
+			{
+				// add in the translation
+				translation.X += transform.tx;
+				translation.Y += transform.ty;
+			}
+			else
 			{
 				vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
 			}
@@ -160,90 +196,40 @@ namespace MatterHackers.RenderOpenGl
 			// the alpha has come from the bound texture
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, (byte)255);
 
-			TriangleEdgeInfo.Clear();
-			using (new QuickTimerReport("Graphics2DOpenGl.SendShapeToTesselator"))
+            var longHash = vertexSource.GetLongHashCode();
+
+			// if we have used all the AvailableTriangleEdgeInfos then move them from the dictionary to the list
+            if (AvailableTriangleEdgeInfos.Count == 0)
+            {
+                foreach (var triangleEdgeInfoToMove in TriangleEdgeInfos.Values)
+                {
+                    AvailableTriangleEdgeInfos.Add(triangleEdgeInfoToMove);
+                }
+                TriangleEdgeInfos.Clear();
+            }
+
+            AAGLTesselator triangleEdgeInfo = null;
+            if (!TriangleEdgeInfos.TryGetValue(longHash, out triangleEdgeInfo))
 			{
-				VertexSourceToTesselator.SendShapeToTesselator(TriangleEdgeInfo, vertexSource);
-			}
+				triangleEdgeInfo = AvailableTriangleEdgeInfos[AvailableTriangleEdgeInfos.Count - 1];
+				AvailableTriangleEdgeInfos.RemoveAt(AvailableTriangleEdgeInfos.Count-1);
+				TriangleEdgeInfos.Add(longHash, triangleEdgeInfo);
 
-			// now render it
-			using (new QuickTimerReport("Graphics2DOpenGl.RenderLastToGL"))
+                triangleEdgeInfo.Clear();
+                using (new QuickTimerReport("Graphics2DOpenGl.SendShapeToTesselator"))
+                {
+                    VertexSourceToTesselator.SendShapeToTesselator(triangleEdgeInfo, vertexSource);
+                }
+            }
+
+            // now render it
+            using (new QuickTimerReport("Graphics2DOpenGl.RenderLastToGL"))
 			{
-				TriangleEdgeInfo.RenderLastToGL();
-			}
-		}
-
-		/// <summary>
-		/// Draws a line with low poly rounded endcaps (only in GL implementation/only used by 2D GCode)
-		/// </summary>
-		/// <param name="start">the start</param>
-		/// <param name="end">the end</param>
-		/// <param name="halfWidth">size of the line</param>
-		/// <param name="colorIn">the color</param>
-		public void DrawAALineRounded(Vector2 start, Vector2 end, double halfWidth, IColorType colorIn)
-		{
-			var colorBytes = colorIn.ToColor();
-			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
-
-			Affine transform = GetTransform();
-			if (!transform.is_identity())
-			{
-				transform.transform(ref start);
-				transform.transform(ref end);
-			}
-
-			// GL.Begin(BeginMode.Triangles);
-			Vector2 widthRightOffset = (end - start).GetPerpendicularRight().GetNormal() * halfWidth / 2;
-			// draw the main line part
-			TriangleEdgeInfo.Draw1EdgeTriangle(start - widthRightOffset, end - widthRightOffset, end + widthRightOffset);
-			TriangleEdgeInfo.Draw1EdgeTriangle(end + widthRightOffset, start + widthRightOffset, start - widthRightOffset);
-			// now draw the end rounds
-			int numSegments = 5;
-			Vector2 endCurveStart = end + widthRightOffset;
-			Vector2 startCurveStart = start + widthRightOffset;
-			for (int i = 0; i < numSegments + 1; i++)
-			{
-				Vector2 endCurveEnd = end + Vector2.Rotate(widthRightOffset, i * Math.PI / numSegments);
-				TriangleEdgeInfo.Draw1EdgeTriangle(endCurveStart, endCurveEnd, end);
-				endCurveStart = endCurveEnd;
-
-				Vector2 startCurveEnd = start + Vector2.Rotate(widthRightOffset, -i * Math.PI / numSegments);
-				TriangleEdgeInfo.Draw1EdgeTriangle(startCurveStart, startCurveEnd, start);
-				startCurveStart = startCurveEnd;
-			}
-
-			// GL.End();
-		}
-
-		/// <summary>
-		/// Draws a low poly circle (only in GL implementation/only used by 2D GCode)
-		/// </summary>
-		/// <param name="center">the center of the circle</param>
-		/// <param name="radius">the radius</param>
-		/// <param name="colorIn">the color</param>
-		public void DrawAACircle(Vector2 center, double radius, IColorType colorIn)
-		{
-			var colorBytes = colorIn.ToColor();
-			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
-
-			Affine transform = GetTransform();
-			if (!transform.is_identity())
-			{
-				transform.transform(ref center);
-			}
-
-			// now draw the end rounds
-			int numSegments = 12;
-			double anglePerSegment = MathHelper.Tau / numSegments;
-			var currentOffset = new Vector2(0, radius);
-			Vector2 curveStart = center + currentOffset;
-			for (int i = 0; i < numSegments; i++)
-			{
-				currentOffset.Rotate(anglePerSegment);
-				Vector2 curveEnd = center + currentOffset;
-
-				TriangleEdgeInfo.Draw1EdgeTriangle(curveStart, curveEnd, center);
-				curveStart = curveEnd;
+				// add the translation back in
+				GL.Translate(translation.X, translation.Y, 0);
+				triangleEdgeInfo.RenderLastToGL();
+				// remove the translation
+				GL.Translate(-translation.X, -translation.Y, 0);
 			}
 		}
 

@@ -48,9 +48,9 @@ namespace MatterHackers.Agg.VertexSource
 		}
 		#endregion
 
-		private int numSteps;
+		public int NumSteps { get; private set; }
 		//private int m_step;
-		private bool m_cw;
+		public bool IsCw;
 
 		public Ellipse()
 		{
@@ -58,9 +58,9 @@ namespace MatterHackers.Agg.VertexSource
 			originY = 0.0;
 			radiusX = 1.0;
 			radiusY = 1.0;
-			numSteps = 4;
+			NumSteps = 4;
 			//m_step = 0;
-			m_cw = false;
+			IsCw = false;
 		}
 
 		public Ellipse(Vector2 origin, double Radius)
@@ -79,10 +79,10 @@ namespace MatterHackers.Agg.VertexSource
 			this.originY = OriginY;
 			this.radiusX = RadiusX;
 			this.radiusY = RadiusY;
-			numSteps = num_steps;
+			NumSteps = num_steps;
 			//m_step = 0;
-			m_cw = cw;
-			if (numSteps == 0)
+			IsCw = cw;
+			if (NumSteps == 0)
 			{
 				calc_num_steps();
 			}
@@ -105,10 +105,10 @@ namespace MatterHackers.Agg.VertexSource
 			originY = OriginY;
 			radiusX = RadiusX;
 			radiusY = RadiusY;
-			numSteps = num_steps;
+			NumSteps = num_steps;
 			//m_step = 0;
-			m_cw = cw;
-			if (numSteps == 0)
+			IsCw = cw;
+			if (NumSteps == 0)
 			{
 				calc_num_steps();
 			}
@@ -121,14 +121,14 @@ namespace MatterHackers.Agg.VertexSource
 			vertexData.Position = new Vector2(originX + radiusX, originY);
 			yield return vertexData;
 
-			double anglePerStep = MathHelper.Tau / (double)numSteps;
+			double anglePerStep = MathHelper.Tau / (double)NumSteps;
 			double angle = 0;
 			vertexData.Command = FlagsAndCommand.LineTo;
-			for (int i = 1; i < numSteps; i++)
+			for (int i = 1; i < NumSteps; i++)
 			{
 				angle += anglePerStep;
 
-				if (m_cw)
+				if (IsCw)
 				{
 					vertexData.Position = new Vector2(originX + Math.Cos(MathHelper.Tau - angle) * radiusX,
 						originY + Math.Sin(MathHelper.Tau - angle) * radiusY);
@@ -152,7 +152,7 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			double ra = (Math.Abs(radiusX) + Math.Abs(radiusY)) / 2;
 			double da = Math.Acos(ra / (ra + 0.125 / ResolutionScale)) * 2;
-			numSteps = (int)Math.Round(2 * Math.PI / da);
+			NumSteps = (int)Math.Round(2 * Math.PI / da);
 		}
 	};
 }

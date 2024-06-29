@@ -126,17 +126,21 @@ namespace MatterHackers.Agg
 
 		public static void ReportAndRestart(Graphics2D drawTo, double x, double y)
 		{
+			// the draw operations have time tracking so make a copy of the times to do the DrawString
+			Dictionary<string, double> timersCopy;
 			lock (timers)
-			{
-				foreach (var kvp in timers)
-				{
-					var text = $"{kvp.Key}: {kvp.Value:0.00}ms";
-					drawTo.DrawString(text, x, y, backgroundColor: Color.White.WithAlpha(210), drawFromHintedCach: true);
-					y -= 18;
-				}
+            {
+                timersCopy = new Dictionary<string, double>(timers);
+            }
 
-				Restart();
+			foreach (var kvp in timersCopy)
+			{
+				var text = $"{kvp.Key}: {kvp.Value:0.00}ms";
+				drawTo.DrawString(text, x, y, backgroundColor: Color.White.WithAlpha(210), drawFromHintedCach: true);
+				y -= 18;
 			}
+
+			Restart();
 		}
 
 		public static void Restart()

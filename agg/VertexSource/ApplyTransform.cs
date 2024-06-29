@@ -26,12 +26,12 @@ namespace MatterHackers.Agg.VertexSource
 	// in the original agg this was conv_transform
 	public class VertexSourceApplyTransform : IVertexSourceProxy
 	{
-		private Transform.ITransform transformToApply;
+		public ITransform TransformToApply { get; private set; }
 
 		public ITransform Transform
 		{
-			get => transformToApply;
-			set => transformToApply = value;
+			get => TransformToApply;
+			set => TransformToApply = value;
 		}
 
 		public IVertexSource VertexSource { get; set; }
@@ -40,15 +40,15 @@ namespace MatterHackers.Agg.VertexSource
 		{
 		}
 
-		public VertexSourceApplyTransform(Transform.ITransform newTransformeToApply)
+		public VertexSourceApplyTransform(ITransform newTransformeToApply)
 			: this(null, newTransformeToApply)
 		{
 		}
 
-		public VertexSourceApplyTransform(IVertexSource vertexSource, Transform.ITransform newTransformeToApply)
+		public VertexSourceApplyTransform(IVertexSource vertexSource, ITransform newTransformeToApply)
 		{
 			VertexSource = vertexSource;
-			transformToApply = newTransformeToApply;
+			TransformToApply = newTransformeToApply;
 		}
 
 		public void attach(IVertexSource vertexSource)
@@ -65,7 +65,7 @@ namespace MatterHackers.Agg.VertexSource
 				if (ShapePath.IsVertex(transformedVertex.Command))
 				{
 					var position = transformedVertex.Position;
-					transformToApply.Transform(ref position.X, ref position.Y);
+					TransformToApply.Transform(ref position.X, ref position.Y);
 					transformedVertex.Position = position;
 				}
 
@@ -84,15 +84,15 @@ namespace MatterHackers.Agg.VertexSource
 
 			if (ShapePath.IsVertex(cmd))
 			{
-				transformToApply.Transform(ref x, ref y);
+				TransformToApply.Transform(ref x, ref y);
 			}
 
 			return cmd;
 		}
 
-		public void SetTransformToApply(Transform.ITransform newTransformeToApply)
+		public void SetTransformToApply(ITransform newTransformeToApply)
 		{
-			transformToApply = newTransformeToApply;
+			TransformToApply = newTransformeToApply;
 		}
 	}
 }
