@@ -325,6 +325,16 @@ namespace MatterHackers.Agg.VertexSource
             }
         }
 
+        public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+        {
+            foreach (var vertex in this.Vertices())
+            {
+                hash = vertex.GetLongHashCode(hash);
+            }
+
+            return hash;
+        }
+
         /// <summary>
         /// Determines if the given point lies within, on, or outside the polygon defined by vertex data.
         /// Based on "The Point in Polygon Problem for Arbitrary Polygons" by Hormann & Agathos.

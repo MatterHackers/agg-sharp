@@ -74,7 +74,17 @@ namespace MatterHackers.Agg.VertexSource
 			m_status = status.initial;
 		}
 
-		public VertexSourceAdapter(IVertexSource vertexSource, IGenerator generator, IMarkers markers)
+        public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+        {
+            foreach (var vertex in this.Vertices())
+            {
+                hash = vertex.GetLongHashCode(hash);
+            }
+
+            return hash;
+        }
+
+        public VertexSourceAdapter(IVertexSource vertexSource, IGenerator generator, IMarkers markers)
 			: this(vertexSource, generator)
 		{
 			this.markers = markers;

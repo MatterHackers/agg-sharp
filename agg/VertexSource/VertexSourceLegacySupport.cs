@@ -46,6 +46,16 @@ namespace MatterHackers.Agg.VertexSource
             return command;
         }
 
+        public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+        {
+            foreach (var vertex in this.Vertices())
+            {
+                hash = vertex.GetLongHashCode(hash);
+            }
+
+            return hash;
+        }
+
         public abstract IEnumerable<VertexData> Vertices();
     }
 }

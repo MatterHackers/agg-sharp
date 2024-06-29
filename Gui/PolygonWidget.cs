@@ -72,7 +72,17 @@ namespace MatterHackers.Agg.UI
 			m_vertex = 0;
 		}
 
-		public FlagsAndCommand Vertex(out double x, out double y)
+        public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+        {
+            foreach (var vertex in this.Vertices())
+            {
+                hash = vertex.GetLongHashCode(hash);
+            }
+
+            return hash;
+        }
+
+        public FlagsAndCommand Vertex(out double x, out double y)
 		{
 			x = 0;
 			y = 0;

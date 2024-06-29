@@ -45,7 +45,17 @@ namespace MatterHackers.Agg.VertexSource
 		{
 		}
 
-		public VertexSourceApplyTransform(IVertexSource vertexSource, ITransform newTransformeToApply)
+        public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+        {
+            foreach (var vertex in this.Vertices())
+            {
+                hash = vertex.GetLongHashCode(hash);
+            }
+
+            return hash;
+        }
+
+        public VertexSourceApplyTransform(IVertexSource vertexSource, ITransform newTransformeToApply)
 		{
 			VertexSource = vertexSource;
 			TransformToApply = newTransformeToApply;

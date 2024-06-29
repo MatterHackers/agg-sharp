@@ -104,7 +104,7 @@ namespace MatterHackers.Agg.VertexSource
 			m_SpaceBetweenLines = 0.0;
 		}
 
-		/*
+        /*
 		public void font(void* font)
 		{
 			m_font = font;
@@ -112,7 +112,17 @@ namespace MatterHackers.Agg.VertexSource
 		}
 		 */
 
-		public void load_font(string file)
+        public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+        {
+            foreach (var vertex in this.Vertices())
+            {
+                hash = vertex.GetLongHashCode(hash);
+            }
+
+            return hash;
+        }
+
+        public void load_font(string file)
 		{
 			throw new System.NotImplementedException();
 			/*

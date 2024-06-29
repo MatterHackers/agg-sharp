@@ -1200,7 +1200,17 @@ namespace MatterHackers.Agg.VertexSource
 			return m_approximation_method;
 		}
 
-		public void approximation_scale(double s)
+        public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+        {
+            foreach (var vertex in this.Vertices())
+            {
+                hash = vertex.GetLongHashCode(hash);
+            }
+
+            return hash;
+        }
+
+        public void approximation_scale(double s)
 		{
 			m_curve_inc.approximation_scale(s);
 			m_curve_div.approximation_scale(s);
@@ -1325,7 +1335,17 @@ namespace MatterHackers.Agg.VertexSource
 			init(cp[0], cp[1], cp[2], cp[3], cp[4], cp[5], cp[6], cp[7]);
 		}
 
-		public void approximation_method(Curves.CurveApproximationMethod v)
+        public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+        {
+            foreach (var vertex in this.Vertices())
+            {
+                hash = vertex.GetLongHashCode(hash);
+            }
+
+            return hash;
+        }
+
+        public void approximation_method(Curves.CurveApproximationMethod v)
 		{
 			m_approximation_method = v;
 		}

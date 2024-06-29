@@ -26,6 +26,8 @@ namespace MatterHackers.Agg.VertexSource
 
         FlagsAndCommand Vertex(out double x, out double y);
 
+        ulong GetLongHashCode(ulong hash = 14695981039346656037);
+
         IEnumerable<VertexData> Vertices();
     }
 }

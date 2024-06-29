@@ -93,7 +93,17 @@ namespace MatterHackers.Agg.UI
 			return (IColorType)new ColorF();
 		}
 
-		public override void OnDraw(Graphics2D graphics2D)
+        public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+        {
+            foreach (var vertex in this.Vertices())
+            {
+                hash = vertex.GetLongHashCode(hash);
+            }
+
+            return hash;
+        }
+
+        public override void OnDraw(Graphics2D graphics2D)
 		{
 			for (int i = 0; i < num_paths(); i++)
 			{

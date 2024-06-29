@@ -381,16 +381,6 @@ namespace MatterHackers.Agg.VertexSource
             return highestPoint.X;
         }
 
-        public static ulong GetLongHashCode(this IVertexSource source, ulong hash = 14695981039346656037)
-        {
-            foreach (var vertex in source.Vertices())
-            {
-                hash = vertex.GetLongHashCode(hash);
-            }
-
-            return hash;
-        }
-
         public static IVertexSource Transform(this IVertexSource source, Matrix4X4 matrix)
         {
             RectangleDouble bounds = RectangleDouble.ZeroIntersection;

@@ -421,7 +421,17 @@ namespace MatterHackers.Agg.Font
 				storage.ClosePolygon();
 			}
 
-			public void Rewind(int pathId = 0)
+            public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+            {
+                foreach (var vertex in this.Vertices())
+                {
+                    hash = vertex.GetLongHashCode(hash);
+                }
+
+                return hash;
+            }
+
+            public void Rewind(int pathId = 0)
 			{
 				storage.Rewind(pathId);
 			}

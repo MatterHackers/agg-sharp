@@ -56,7 +56,17 @@ namespace MatterHackers.Agg.VertexSource
 			triangle(x1, y1, x2, y2, x3, y3, d);
 		}
 
-		public void colors(IColorType c1, IColorType c2, IColorType c3)
+        public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+        {
+            foreach (var vertex in this.Vertices())
+            {
+                hash = vertex.GetLongHashCode(hash);
+            }
+
+            return hash;
+        }
+
+        public void colors(IColorType c1, IColorType c2, IColorType c3)
 		{
 			m_coord[0].color = c1.ToColor();
 			m_coord[1].color = c2.ToColor();
