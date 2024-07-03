@@ -539,6 +539,8 @@ namespace MatterHackers.Agg.UI
 
         public Action MenuAction { get; set; }
 
+        public Action<PopupMenu> ExtendPopupMenu { get; set; }
+
         public string ButtonText { get; set; }
 
         public Color BackgroundColor { get; set; }
