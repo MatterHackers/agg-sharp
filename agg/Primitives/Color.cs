@@ -80,6 +80,7 @@ namespace MatterHackers.Agg
         public static readonly Color DarkRed = new Color(139, 0, 0);
         public static readonly Color DarkYellow = new Color(139, 139, 0);
         public static readonly Color Green = new Color(0, 255, 0);
+        public static readonly Color LightGreen = new Color(144, 238, 144);
         public static readonly Color Magenta = new Color(255, 0, 255);
         public static readonly Color Red = new Color(255, 0, 0);
         public static readonly Color Yellow = new Color(255, 255, 0);
