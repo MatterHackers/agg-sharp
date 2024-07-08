@@ -31,20 +31,21 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Agg.Tests.Agg;
 using ClipperLib;
 using DualContouring;
 using MatterHackers.Agg.Image;
 using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
-using Xunit;
+
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
 	using Polygons = List<List<IntPoint>>;
 	using Polygon = List<IntPoint>;
 
-	//[TestFixture, Category("Agg.PolygonMesh")]
+	[TestFixture("Agg.PolygonMesh")]
 	public class MeshTests
 	{
 		// [TestFixtureSetUp]
@@ -75,7 +76,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 #endif
 		}
 
-        [StaFact]
+        [Test]
         public void SdfDensityFunctions()
         {
             var cylinder = new Cylinder()
@@ -91,7 +92,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Assert.Equal(.5, cylinder.Sdf(new Vector3(1, 0, 1)));
 		}
 
-		[StaFact]
+		[Test]
         public void PolygonRequirements()
 		{
             //       /\1
@@ -135,7 +136,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
             }
         }
 
-        [StaFact]
+        [Test]
         public void EnsureCorrectStitchOrder()
 		{
             //       /\1
@@ -186,7 +187,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
             }
         }
 
-        [StaFact]
+        [Test]
 		public void FaceCutWoundCorrectly()
 		{
 			var vertices = new List<Vector3Float>()
@@ -229,7 +230,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			ImageIO.SaveImageData(path, image);
 		}
 		
-		[StaFact]
+		[Test]
 		public void CutsRespectWindingOrder()
 		{
 			var cube = PlatonicSolids.CreateCube(10, 10, 10);
@@ -270,7 +271,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			}
 		}
 
-		[StaFact]
+		[Test]
 		public void GetSliceLoop()
 		{
 			{
@@ -334,7 +335,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			}
 		}
 
-		[StaFact]
+		[Test]
 		public void SingleLoopStiching()
 		{
 			return;
@@ -406,7 +407,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			// throw new NotImplementedException();
 		}
 
-		[StaFact]
+		[Test]
 		public void SplitFaceEdgeEdge()
 		{
 			void TestPositions(int p0, int p1, int p2)
@@ -451,7 +452,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			TestPositions(2, 1, 0);
 		}
 
-		[StaFact]
+		[Test]
 		public void SplitFaceTwoEdges()
 		{
 			void TestPositions(int p0, int p1, int p2)
@@ -496,7 +497,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			TestPositions(2, 1, 0);
 		}
 
-		[StaFact]
+		[Test]
 		public void CreateBspFaceTrees()
 		{
 			// a simple list of 3 faces
@@ -541,7 +542,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			}
 		}
 
-		[StaFact]
+		[Test]
 		public void CreateDualContouringCube()
 		{
 			foreach (var size in new[] { 1, 15, 200 })

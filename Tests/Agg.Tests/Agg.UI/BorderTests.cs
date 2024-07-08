@@ -28,12 +28,12 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System.Diagnostics;
+using Agg.Tests.Agg;
 using MatterHackers.Agg.Image;
-using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [Collection("Opens Winforms Window")]
+    [TestFixture("Opens Winforms Window")]
     public class BorderTests
 	{
 		private int borderSize = 1;
@@ -48,7 +48,7 @@ namespace MatterHackers.Agg.UI.Tests
 			All = 4
 		}
 
-        [StaFact]
+        [Test]
         public void BorderTestLeft()
 		{
 			var border = new BorderDouble(left: borderSize);
@@ -57,7 +57,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Left, border, surface);
 		}
 
-        [StaFact]
+        [Test]
         public void BorderTestBottom()
 		{
 			var border = new BorderDouble(bottom: borderSize);
@@ -66,7 +66,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Bottom, border, surface);
 		}
 
-        [StaFact]
+        [Test]
         public void BorderTestRight()
 		{
 			var border = new BorderDouble(right: borderSize);
@@ -75,7 +75,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Right, border, surface);
 		}
 
-        [StaFact]
+        [Test]
         public void BorderTestTop()
 		{
 			var border = new BorderDouble(top: borderSize);
@@ -85,7 +85,7 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
         // Enable to visually debug
-        [StaFact]
+        [Test]
         public void BorderTestsVisualizer()
 		{
 			var systemWindow = new SystemWindow(700, 660)

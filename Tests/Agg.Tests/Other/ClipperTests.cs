@@ -31,17 +31,18 @@ using System;
 using System.Collections.Generic;
 using ClipperLib;
 using MatterHackers.VectorMath;
-using Xunit;
 using System.IO;
+using Agg.Tests.Agg;
 
 namespace MatterHackers.Agg.Tests
 {
 	using Polygons = List<List<IntPoint>>;
 	using Polygon = List<IntPoint>;
 
+	[TestFixture]
 	public class ClipperTests
 	{
-		[StaFact]
+		[Test]
 		public void CleanPolygonsTest()
 		{
 			var polygon = new Polygon();

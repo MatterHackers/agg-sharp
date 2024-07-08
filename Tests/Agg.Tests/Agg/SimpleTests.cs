@@ -27,16 +27,14 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using Agg.Tests.Agg;
 using MatterHackers.Agg.VertexSource;
 using Newtonsoft.Json;
-using Xunit;
 using System;
-using System.Globalization;
-using System.Text.RegularExpressions;
 
 namespace MatterHackers.Agg.Tests
 {
-	//[TestFixture, Category("Agg.SimpleTests")]
+	[TestFixture("Agg.SimpleTests")]
 	public class SimpleTests
 	{
 		public static bool GetNextNumberSameResult(String source, int startIndex, double expectedValue)
@@ -54,7 +52,7 @@ namespace MatterHackers.Agg.Tests
 			return true;
 		}
 
-		[StaFact]
+		[Test]
 		public void JsonSerializeVertexStorage()
 		{
 			var test1Control = new VertexStorage();
@@ -79,7 +77,7 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-		[StaFact]
+		[Test]
 		public void GetNextNumberWorks()
 		{
 			Assert.True(GetNextNumberSameResult("1234", 0, 1234));
@@ -94,7 +92,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(GetNextNumberSameResult(".123", 0, .123));
 		}
 
-		[StaFact]
+		[Test]
 		public void TestGetHashCode()
 		{
 			{

@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using Xunit;
+
 
 namespace MatterHackers.Agg.Tests
 {
@@ -25,7 +25,7 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-		// [StaFact]
+		// [Test]
 		public void ConvertWinExeProjectsToPackageReference()
 		{
 			foreach(var csproj in allCSProjFiles)

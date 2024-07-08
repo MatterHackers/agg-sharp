@@ -27,16 +27,15 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-
+using Agg.Tests.Agg;
 using MatterHackers.VectorMath;
-using Xunit;
 
 namespace MatterHackers.Agg.Tests
 {
-	//
-	public class Vector3Tests
+    [TestFixture]
+    public class Vector3Tests
 	{
-		[StaFact]
+		[Test]
 		public void VectorAdditionAndSubtraction()
 		{
 			var point1 = default(Vector3);
@@ -68,7 +67,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(inlineOpLeftSide - inlineOpRightSide == new Vector3(10.0f, -7.0f, -1.0f));
 		}
 
-		[StaFact]
+		[Test]
 		public void ScalarMultiplication()
 		{
 			var scalarMultiplicationArgument = new Vector3(5.0f, 4.0f, 3.0f);
@@ -81,7 +80,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(point3.Equals(new Vector3(12, 18, 24), .01f));
 		}
 
-		[StaFact]
+		[Test]
 		public void ScalarDivision()
 		{
 			var scalarMultiplicationArgument = new Vector3(5.0f, 4.0f, 3.0f);
@@ -92,7 +91,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(point3.Equals(new Vector3(2, 3, 4), .01f));
 		}
 
-		[StaFact]
+		[Test]
 		public void DotProduct()
 		{
 			var test1 = new Vector3(10, 1, 2);
@@ -101,7 +100,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(dotResult == 10);
 		}
 
-		[StaFact]
+		[Test]
 		public void CrossProduct()
 		{
 			var test1 = new Vector3(10, 0, 0);
@@ -112,7 +111,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(crossResult.Z < 0);
 		}
 
-		[StaFact]
+		[Test]
 		public void Normalize()
 		{
 			var point3 = new Vector3(3, -4, 5);

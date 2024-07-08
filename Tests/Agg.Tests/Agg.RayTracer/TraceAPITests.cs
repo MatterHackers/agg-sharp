@@ -27,19 +27,19 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using Agg.Tests.Agg;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
-using Xunit;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace MatterHackers.RayTracer
 {
-	//[TestFixture, Category("Agg.RayTracer")]
+	[TestFixture("Agg.RayTracer")]
 	public class TraceAPITests
 	{
-		[StaFact]
+		[Test]
 		public void EnumerateBvh()
 		{
 			// create a bvh hierarchy
@@ -110,7 +110,7 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		[StaFact]
+		[Test]
 		public void PlaneGetDistanceToIntersection()
 		{
 			Plane testPlane = new Plane(Vector3.UnitZ, 10);

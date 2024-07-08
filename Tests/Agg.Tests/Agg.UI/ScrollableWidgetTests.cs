@@ -27,12 +27,12 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using Agg.Tests.Agg;
 using MatterHackers.Agg.Image;
-using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [Collection("Opens Winforms Window")]
+    [TestFixture("Opens Winforms Window")]
     public class ScrollableWidgetTests
 	{
 		public static bool saveImagesForDebug = false;
@@ -46,7 +46,7 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [StaFact]
+        [Test]
         public void LimitScrolToContetsTests()
 		{
 			GuiWidget containerControl = new GuiWidget(200, 200);

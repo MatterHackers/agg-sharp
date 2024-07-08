@@ -33,7 +33,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
-using Xunit;
+
 
 namespace MatterHackers.Agg.Tests
 {

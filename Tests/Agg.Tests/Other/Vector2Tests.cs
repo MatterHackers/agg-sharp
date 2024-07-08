@@ -27,17 +27,17 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using Agg.Tests.Agg;
 using MatterHackers.VectorMath;
-using Xunit;
 using System;
 using System.Collections.Generic;
 
 namespace MatterHackers.Agg.Tests
 {
-	//
-	public class Vector2Tests
+    [TestFixture]
+    public class Vector2Tests
 	{
-		[StaFact]
+		[Test]
 		public void ArithmaticOperations()
 		{
 			var point1 = new Vector2(1, 1);
@@ -66,7 +66,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(inlineOpLeftSide - inlineOpRightSide == new Vector2(10.0f, -7));
 		}
 
-		[StaFact]
+		[Test]
 		public void GetLengthAndNormalize()
 		{
 			var point3 = new Vector2(3, -4);
@@ -76,7 +76,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(point3.Length > 0.99f && point3.Length < 1.01f);
 		}
 
-		[StaFact]
+		[Test]
 		public void GetPositionAtTests()
 		{
 			var line1 = new List<Vector2>()
@@ -107,7 +107,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(new Vector2(10, 5).Equals(line1.GetPositionAt(-2 + 23 * 40), error), "Negative values are still valid");
 		}
 
-		[StaFact]
+		[Test]
 		public void ScalerOperations()
 		{
 			var scalarMultiplicationArgument = new Vector2(5.0f, 4.0f);
@@ -117,7 +117,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(5 * scalarMultiplicationArgument == new Vector2(25, 20));
 		}
 
-		[StaFact]
+		[Test]
 		public void CrossProduct()
 		{
 			var rand = new Random();
@@ -132,7 +132,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(cross3D.Z == cross2D);
 		}
 
-		[StaFact]
+		[Test]
 		public void DotProduct()
 		{
 			var rand = new Random();
@@ -147,7 +147,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(cross3D == cross2D);
 		}
 
-		[StaFact]
+		[Test]
 		public void LengthAndDistance()
 		{
 			var rand = new Random();

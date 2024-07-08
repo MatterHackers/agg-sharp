@@ -27,15 +27,16 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using Agg.Tests.Agg;
 using System;
 using System.Collections.Generic;
-using Xunit;
+
 using Tesselate;
 
 namespace MatterHackers.Agg.Tests
 {
-	//
-	public class TesselatorTests
+    [TestFixture]
+    public class TesselatorTests
 	{
 		public static string[][] InsructionStream = new string[][]
 			{
@@ -460,7 +461,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.True(GetNextOutputAsString() == "E");
 		}
 
-		[StaFact]
+		[Test]
 		public void MatchesGLUTesselator()
 		{
 			for (CurrentInputTest = 0; CurrentInputTest < InsructionStream.Length; CurrentInputTest++)

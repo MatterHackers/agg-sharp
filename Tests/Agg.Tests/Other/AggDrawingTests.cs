@@ -30,14 +30,14 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.VertexSource;
-using Xunit;
 using System.IO;
 using System;
+using Agg.Tests.Agg;
 
 namespace MatterHackers.Agg.Tests
 {
     //
-    [Collection("Opens Winforms Window")]
+    [TestFixture("Opens Winforms Window")]
     public class AggDrawingTests
 	{
 		public static void RunAllTests()
@@ -149,7 +149,7 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-        [StaFact]
+        [Test]
         public void DrawCircle()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
@@ -164,7 +164,7 @@ namespace MatterHackers.Agg.Tests
 			CheckTestAgainstControl(new Ellipse(0, 0, 20, 20), "ShapeCicle");
 		}
 
-        [StaFact]
+        [Test]
         public void DrawCurve3()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
@@ -175,7 +175,7 @@ namespace MatterHackers.Agg.Tests
 			CheckTestAgainstControl(new Curve3(10, 10, 50, 90, 90, 90), "ShapeCurve3");
 		}
 
-        [StaFact]
+        [Test]
         public void DrawCurve4()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
@@ -186,7 +186,7 @@ namespace MatterHackers.Agg.Tests
 			CheckTestAgainstControl(new Curve4(10, 50, 25, 10, 75, 90, 90, 50), "ShapeCurve4");
 		}
 
-        [StaFact]
+        [Test]
         public void DrawString()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
@@ -223,7 +223,7 @@ namespace MatterHackers.Agg.Tests
 			CheckTestAgainstControl(stringPrinterTest, "ShapeStringTestFlattened");
 		}
 
-        [StaFact]
+        [Test]
         public void StrokedShape()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());

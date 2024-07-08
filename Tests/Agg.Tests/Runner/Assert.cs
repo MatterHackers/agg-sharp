@@ -33,16 +33,25 @@ using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
+using MatterHackers.PolygonMesh;
 
 namespace Agg.Tests.Agg
 {
     public class Assert
     {
-        public static void Equal(int expectedCount, int count)
+        public static void Equal(int expected, int test)
         {
-            if (expectedCount != count)
+            if (expected != test)
             {
-                throw new Exception("Expected " + count + " but was " + expectedCount);
+                throw new Exception("Expected " + test + " but was " + expected);
+            }
+        }
+
+        public static void Equal(double expected, double test, double error = .001)
+        {
+            if (Math.Abs(expected - test) > error)
+            {
+                throw new Exception("Expected " + test + " but was " + expected);
             }
         }
 
@@ -55,24 +64,24 @@ namespace Agg.Tests.Agg
             }
         }
 
-        public static void Equal(object selectedItem1, object selectedItem2)
+        public static void Equal(object expected, object test)
         {
-            if (selectedItem1 == null && selectedItem2 == null)
+            if (expected == null && test == null)
             {
                 return;
             }
 
-            if (selectedItem1 == null || selectedItem2 == null)
+            if (expected == null || test == null)
             {
-                throw new Exception($"Expected {selectedItem2} but was {selectedItem1}");
+                throw new Exception($"Expected {test} but was {expected}");
             }
 
-            if (selectedItem1.GetType() != selectedItem2.GetType())
+            if (expected.GetType() != test.GetType())
             {
-                throw new Exception($"Expected type {selectedItem2.GetType()} but was {selectedItem1.GetType()}");
+                throw new Exception($"Expected type {test.GetType()} but was {expected.GetType()}");
             }
 
-            if (selectedItem1 is Array array1 && selectedItem2 is Array array2)
+            if (expected is Array array1 && test is Array array2)
             {
                 if (array1.Length != array2.Length)
                 {
@@ -84,9 +93,9 @@ namespace Agg.Tests.Agg
                     Equal(array1.GetValue(i), array2.GetValue(i));
                 }
             }
-            else if (!selectedItem1.Equals(selectedItem2))
+            else if (!expected.Equals(test))
             {
-                throw new Exception($"Expected {selectedItem2} but was {selectedItem1}");
+                throw new Exception($"Expected {test} but was {expected}");
             }
         }
 
@@ -180,19 +189,48 @@ namespace Agg.Tests.Agg
             }
         }
 
-        public static void NotEqual(Color expectedColor, Color currentColor)
+        public static void NotEqual(object expected, object test)
         {
-            if (expectedColor != currentColor)
+            if (expected == null && test == null)
             {
-                throw new Exception($"Colors not equal: expected {expectedColor.ToString()}, have {currentColor.ToString()}");
+                throw new Exception("Both objects are null, but they should be different.");
             }
-        }
 
-        public static void Equal(double expected, double actual, double allowedError = 0.001)
-        {
-            if (Math.Abs(actual - expected) > allowedError)
+            if (expected == null || test == null)
             {
-                throw new Exception($"Expected value {expected} not within allowed delte of actual {actual}.");
+                return; // One is null and the other isn't, so they're not equal
+            }
+
+            if (expected.GetType() != test.GetType())
+            {
+                return; // Different types, so they're not equal
+            }
+
+            if (expected is Array array1 && test is Array array2)
+            {
+                if (array1.Length != array2.Length)
+                {
+                    return; // Different lengths, so they're not equal
+                }
+
+                try
+                {
+                    for (int i = 0; i < array1.Length; i++)
+                    {
+                        Equal(array1.GetValue(i), array2.GetValue(i));
+                    }
+                }
+                catch
+                {
+                    return; // If Equal throws an exception, it means elements are different, so arrays are not equal
+                }
+
+                // If we've made it here, all elements are equal
+                throw new Exception("Arrays are equal, but they should be different.");
+            }
+            else if (expected.Equals(test))
+            {
+                throw new Exception($"Objects are equal, but they should be different. Value: {expected}");
             }
         }
 
@@ -211,6 +249,21 @@ namespace Agg.Tests.Agg
             {
                 throw new Exception("Expected exception of type " + typeof(T).Name + " but " + ex.GetType().Name + " was thrown.", ex);
             }
+        }
+
+        internal static void Empty(FaceList faces)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static void Empty(object userLayer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static void Fail(string description = "")
+        {
+            throw new NotImplementedException();
         }
     }
 }

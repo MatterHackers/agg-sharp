@@ -27,16 +27,15 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using Agg.Tests.Agg;
 using MatterHackers.Agg.Transform;
-using Xunit;
 
 namespace MatterHackers.Agg.Tests
 {
-
-    //
-	public class AffineTests
+	[TestFixture]
+    public class AffineTests
 	{
-		[StaFact]
+		[Test]
 		public void invert_test()
 		{
 			Affine a = Affine.NewIdentity();
@@ -55,7 +54,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.Equal(y, newy, .001);
 		}
 
-		[StaFact]
+		[Test]
 		public void transform_test()
 		{
 			Affine a = Affine.NewIdentity();

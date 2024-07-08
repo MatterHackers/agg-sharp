@@ -27,20 +27,20 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using Agg.Tests.Agg;
 using MatterHackers.Agg;
 using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
-using Xunit;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
 namespace MatterHackers.RayTracer
 {
-	//[TestFixture, Category("Agg.RayTracer")]
+	[TestFixture("Agg.RayTracer")]
 	public class BooleanTests
 	{
-		[StaFact]
+		[Test]
 		public void DifferenceTestsForBox()
 		{
 			SolidMaterial redMaterial = new SolidMaterial(ColorF.Red, 0, 0, 0);
@@ -120,7 +120,7 @@ namespace MatterHackers.RayTracer
 #endif
 		}
 
-		[StaFact]
+		[Test]
 		public void DiscoveredBadIntersectInfoListSubtraction()
 		{
 			string primaryString = @"2

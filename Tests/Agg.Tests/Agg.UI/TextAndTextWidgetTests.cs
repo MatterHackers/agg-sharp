@@ -27,21 +27,21 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using Agg.Tests.Agg;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using Xunit;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [Collection("Opens Winforms Window")]
+    [TestFixture("Opens Winforms Window")]
     public class TextAndTextWidgetTests
 	{
 		public bool saveImagesForDebug;
 
-        [StaFact]
+        [Test]
         public void TextWidgetAutoSizeTest()
 		{
 			// resize works on text widgets
@@ -106,7 +106,7 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [StaFact]
+        [Test]
         public void TextWidgetVisibleTest()
 		{
 			{

@@ -27,11 +27,13 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using Xunit;
+
+
+using Agg.Tests.Agg;
 
 namespace MatterHackers.Agg.Tests
 {
-	//
+    [TestFixture]
 	public class Matrix4x4Tests
 	{
 #if false
@@ -95,7 +97,7 @@ namespace MatterHackers.Agg.Tests
             return (double)Rand.NextDouble() * (Max - Min) + Min;
         }
 
-        [StaFact]
+        [Test]
         public void MatrixColumnMajor()
         {
             // Make sure our matrix is set up column major like opengl. LBB [7/11/2003]
@@ -116,7 +118,7 @@ namespace MatterHackers.Agg.Tests
             Assert.True(KnownMatrixForm.Equals(ColumnMajorAccumulatedMatrix, .01f));
         }
 
-        [StaFact]
+        [Test]
         public void RotateAboutXAxis()
         {
             Vector3 RotateAboutX = new Vector3(1.0f, 0.0f, 0.0f);
@@ -126,7 +128,7 @@ namespace MatterHackers.Agg.Tests
             RotationMatrix.TransformVector(ref PointToRotate);
             Assert.True(PointToRotate.Equals(new Vector3(0, 0, 40), .01f));
         }
-        [StaFact]
+        [Test]
         public void RotateAboutYAxis()
         {
             Vector3 RotateAboutY = new Vector3(0.0f, 1.0f, 0.0f);
@@ -136,7 +138,7 @@ namespace MatterHackers.Agg.Tests
             RotationMatrix.TransformVector(ref PointToRotate);
             Assert.True(PointToRotate.Equals(new Vector3(0, 0, -40), .01f));
         }
-        [StaFact]
+        [Test]
         public void RotateAboutZAxis()
         {
             Vector3 RotateAboutZ = new Vector3(0.0f, 0.0f, 1.0f);
@@ -147,7 +149,7 @@ namespace MatterHackers.Agg.Tests
             Assert.True(PointToRotate.Equals(new Vector3(0, 40, 0), .01f));
         }
 
-        [StaFact]
+        [Test]
         public void ConcatenatedMatrixIsSameAsIndividualMatrices ()
         {
             // Make sure that pushing a concatenated matrix is the same as through a bunch of individual matrices [7/30/2001] LBB
@@ -189,7 +191,7 @@ namespace MatterHackers.Agg.Tests
             }
         }
 
-        [StaFact]
+        [Test]
         public void PrepareAsInveresAndInverseAreSame()
         {
             //***************************************
@@ -233,7 +235,7 @@ namespace MatterHackers.Agg.Tests
             }
         }
 
-        [StaFact]
+        [Test]
         public void PrepareMatrixFromPositionAndDirection()
         {
 	        // Test the PrepareMatrixFromPositionAndDirection function.
