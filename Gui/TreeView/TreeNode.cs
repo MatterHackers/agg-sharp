@@ -499,7 +499,15 @@ namespace MatterHackers.Agg.UI
             var parent = this;
             while (parent != null)
             {
-                parentNames.Add(parent.Text);
+                // check if there is a Name before using the Text
+                if (!string.IsNullOrEmpty(parent.Name))
+                {
+                    parentNames.Add(parent.Name);
+                }
+                else
+                {
+                    parentNames.Add(parent.Text);
+                }
                 parent = parent.NodeParent;
             }
 
