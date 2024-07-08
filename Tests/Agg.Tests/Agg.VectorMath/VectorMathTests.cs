@@ -27,16 +27,16 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using Agg.Tests.Agg;
 using Newtonsoft.Json;
-using Xunit;
 using System;
 
 namespace MatterHackers.VectorMath.Tests
 {
-	//[TestFixture, Category("Agg.VectorMath")]
-	public class EasingTests
+    [TestFixture("Agg.VectorMath")]
+    public class EasingTests
 	{
-		[StaFact]
+		[Test]
 		public void StaticFunctionTests()
 		{
 			void InverseWorking(Easing.EaseType easeType, Easing.EaseOption easeOption, double k)
@@ -64,10 +64,10 @@ namespace MatterHackers.VectorMath.Tests
 		}
 	}
 
-	//[TestFixture, Category("Agg.VectorMath")]
+	[TestFixture("Agg.VectorMath")]
 	public class Vector2Tests
 	{
-		[StaFact]
+		[Test]
 		public void GetDeltaAngleTests()
 		{
 			// angles around 0
@@ -95,7 +95,7 @@ namespace MatterHackers.VectorMath.Tests
 			}
 		}
 
-		[StaFact]
+		[Test]
 		public void DistanceToLineTests()
 		{
 			// outside the line
@@ -113,17 +113,17 @@ namespace MatterHackers.VectorMath.Tests
 		}
 	}
 
-	//[TestFixture, Category("Agg.VectorMath")]
+	[TestFixture("Agg.VectorMath")]
 	public class Vector3Tests
 	{
-		[StaFact]
+		[Test]
 		public void StaticFunctionTests()
 		{
 			Assert.True(Vector3.Collinear(new Vector3(0, 0, 1), new Vector3(0, 0, 2), new Vector3(0, 0, 3)));
 			Assert.True(!Vector3.Collinear(new Vector3(0, 0, 1), new Vector3(0, 0, 2), new Vector3(0, 1, 3)));
 		}
 
-		[StaFact]
+		[Test]
 		public void Vector3ParseTest()
 		{
 			// Two segments
@@ -162,7 +162,7 @@ namespace MatterHackers.VectorMath.Tests
 				Vector3.Parse(""));
 		}
 
-		[StaFact]
+		[Test]
 		public void Vector2SerializeTest()
 		{
 			Assert.Equal(
@@ -170,7 +170,7 @@ namespace MatterHackers.VectorMath.Tests
 				JsonConvert.SerializeObject(new Vector2(1, 2))); //, "Unexpected properties serialized into json output");
         }
 
-		[StaFact]
+		[Test]
 		public void Vector2FloatSerializeTest()
 		{
 			Assert.Equal(
@@ -178,7 +178,7 @@ namespace MatterHackers.VectorMath.Tests
 				JsonConvert.SerializeObject(new Vector2Float(1.1, 2.2))); //, "Unexpected properties serialized into json output");
         }
 
-		[StaFact]
+		[Test]
 		public void Vector3FloatSerializeTest()
 		{
 			Assert.Equal(
@@ -186,7 +186,7 @@ namespace MatterHackers.VectorMath.Tests
 				JsonConvert.SerializeObject(new Vector3Float(1.1, 2.2, 3.3))); //, "Unexpected properties serialized into json output");
         }
 
-		[StaFact]
+		[Test]
 		public void Vector3SerializeTest()
 		{
 			Assert.Equal(
@@ -194,7 +194,7 @@ namespace MatterHackers.VectorMath.Tests
 				JsonConvert.SerializeObject(new Vector3(1, 2, 3))); //, "Unexpected properties serialized into json output");
         }
 
-		[StaFact]
+		[Test]
 		public void WorldViewPerspectiveProjectionTests()
 		{
 			var world = new WorldView(1, 1);
@@ -212,7 +212,7 @@ namespace MatterHackers.VectorMath.Tests
 			Assert.Equal(world.NearPlaneHeightInViewspace * 2 / 3, world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 123, 1e-3);
 		}
 
-		[StaFact]
+		[Test]
 		public void WorldViewOrthographicProjectionTests()
 		{
 			var world = new WorldView(1, 1);
@@ -232,7 +232,7 @@ namespace MatterHackers.VectorMath.Tests
 			Assert.Equal(world.NearPlaneHeightInViewspace / 3, world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 240, 1e-3);
 		}
 
-		[StaFact]
+		[Test]
 		public void WorldViewEyePositionTests()
 		{
 			var world = new WorldView(1, 1);
@@ -240,7 +240,7 @@ namespace MatterHackers.VectorMath.Tests
 			Assert.True(new Vector3(1, 2, 3).Equals(world.EyePosition, 1e-3));
 		}
 
-		[StaFact]
+		[Test]
 		public void FrustumExtractionTests()
 		{
 			{
@@ -279,7 +279,7 @@ namespace MatterHackers.VectorMath.Tests
 			}
 		}
 
-		[StaFact]
+		[Test]
 		public void FrustumIntersetAABBTests()
 		{
 			{
@@ -383,7 +383,7 @@ namespace MatterHackers.VectorMath.Tests
 			}
 		}
 
-		[StaFact]
+		[Test]
 		public void FrustumTransformTests()
 		{
 			{
@@ -488,7 +488,7 @@ namespace MatterHackers.VectorMath.Tests
 			}
 		}
 
-		[StaFact]
+		[Test]
 		public void PlaneClipLineTests()
 		{
 			{
@@ -530,7 +530,7 @@ namespace MatterHackers.VectorMath.Tests
 			}
 		}
 
-		[StaFact]
+		[Test]
 		public void TestGetHashCode()
 		{
 			{
