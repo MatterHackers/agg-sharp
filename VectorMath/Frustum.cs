@@ -150,61 +150,37 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-        public FrustumIntersection GetIntersect(AxisAlignedBoundingBox boundingBox)
-        {
-            int insidePlaneCount = 0;
-            Vector3 vmin, vmax;
+		public FrustumIntersection GetIntersect(AxisAlignedBoundingBox boundingBox)
+		{
+            Vector3[] corners = boundingBox.GetCorners(); // Assuming this method exists and correctly gets all 8 corners
+            bool allInside = true;
 
             for (int i = 0; i < Planes.Length; ++i)
             {
-                // X axis
-                if (Planes[i].Normal.X > 0)
+				var plane = Planes[i];
+                bool anyInside = false;
+                for (int c = 0; c < corners.Length; ++c)
                 {
-                    vmin.X = boundingBox.MinXYZ.X;
-                    vmax.X = boundingBox.MaxXYZ.X;
-                }
-                else
-                {
-                    vmin.X = boundingBox.MaxXYZ.X;
-                    vmax.X = boundingBox.MinXYZ.X;
+					var corner = corners[c];
+					var distFromPlane = plane.GetDistanceFromPlane(corner);
+
+                    if (distFromPlane < 0)
+                    {
+                        anyInside = true; // At least one corner is inside or on this plane
+                    }
+                    else
+                    {
+                        allInside = false; // If any corner is outside this plane, it cannot be completely inside the frustum
+                    }
                 }
 
-                // Y axis
-                if (Planes[i].Normal.Y > 0)
+                if (!anyInside)
                 {
-                    vmin.Y = boundingBox.MinXYZ.Y;
-                    vmax.Y = boundingBox.MaxXYZ.Y;
-                }
-                else
-                {
-                    vmin.Y = boundingBox.MaxXYZ.Y;
-                    vmax.Y = boundingBox.MinXYZ.Y;
-                }
-
-                // Z axis
-                if (Planes[i].Normal.Z > 0)
-                {
-                    vmin.Z = boundingBox.MinXYZ.Z;
-                    vmax.Z = boundingBox.MaxXYZ.Z;
-                }
-                else
-                {
-                    vmin.Z = boundingBox.MaxXYZ.Z;
-                    vmax.Z = boundingBox.MinXYZ.Z;
-                }
-
-                if (Planes[i].Normal.Dot(vmin) - Planes[i].DistanceFromOrigin > 0)
-                {
-                    return FrustumIntersection.Outside;
-                }
-
-                if (Planes[i].Normal.Dot(vmax) - Planes[i].DistanceFromOrigin >= 0)
-                {
-                    insidePlaneCount++;
+                    return FrustumIntersection.Outside; // If no corners are inside this plane, the box is outside
                 }
             }
 
-            return insidePlaneCount == Planes.Length ? FrustumIntersection.Inside : FrustumIntersection.Intersect;
+            return allInside ? FrustumIntersection.Inside : FrustumIntersection.Intersect;
         }
     }
 }

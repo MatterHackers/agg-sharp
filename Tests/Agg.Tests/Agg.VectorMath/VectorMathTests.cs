@@ -283,6 +283,7 @@ namespace MatterHackers.VectorMath.Tests
 		public void FrustumIntersetAABBTests()
 		{
 			{
+				// A box this is 40 units on each side centered at the origin
 				Frustum frustum = new Frustum(
 					new Plane(new Vector3(1, 0, 0), 20),
 					new Plane(new Vector3(-1, 0, 0), 20),
@@ -298,16 +299,23 @@ namespace MatterHackers.VectorMath.Tests
 					Assert.True(intersection == FrustumIntersection.Outside);
 				}
 
-				// intersect
-				{
-					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, 0, -10), new Vector3(-15, 10, 10));
-					FrustumIntersection intersection = frustum.GetIntersect(aabb);
-					Assert.True(intersection == FrustumIntersection.Intersect);
-				}
+                // intersect
+                {
+                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, 0, -10), new Vector3(-15, 10, 10));
+                    FrustumIntersection intersection = frustum.GetIntersect(aabb);
+                    Assert.True(intersection == FrustumIntersection.Intersect);
+                }
 
-				// not intersect
-				{
-					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, 0, 30), new Vector3(-15, 10, 35));
+                // intersect 2 // A thin bar at the center crossing both x planes
+                {
+                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, -5, -5), new Vector3(25, 5, 5));
+                    FrustumIntersection intersection = frustum.GetIntersect(aabb);
+                    Assert.True(intersection == FrustumIntersection.Intersect);
+                }
+
+                // not intersect
+                {
+                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, 0, 30), new Vector3(-15, 10, 35));
 					FrustumIntersection intersection = frustum.GetIntersect(aabb);
 					Assert.True(intersection == FrustumIntersection.Outside);
 				}
