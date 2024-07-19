@@ -969,5 +969,17 @@ namespace MatterHackers.RenderOpenGl.OpenGl
             Instance?.Viewport(x, y, width, height);
             CheckForError();
         }
+
+        public static void EnableOrDisable(EnableCap depthTest, bool doDepthTest)
+        {
+            if (doDepthTest)
+            {
+                Enable(depthTest);
+            }
+            else
+            {
+                Disable(depthTest);
+            }
+        }
     }
 }
