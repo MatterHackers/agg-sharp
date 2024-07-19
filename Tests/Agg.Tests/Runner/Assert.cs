@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2018, Lars Brubaker, John Lewin
+Copyright (c) 2024, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,57 +31,54 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MatterHackers.Agg;
-using MatterHackers.Agg.UI;
 using MatterHackers.PolygonMesh;
 
 namespace Agg.Tests.Agg
 {
     public class Assert
     {
-        public static void Equal(int expected, int test)
+        public static void Equal(int expected, int actual)
         {
-            if (expected != test)
+            if (expected != actual)
             {
-                throw new Exception("Expected " + test + " but was " + expected);
+                throw new Exception($"Expected {expected} but was {actual}");
             }
         }
 
-        public static void Equal(double expected, double test, double error = .001)
+        public static void Equal(double expected, double actual, double error = .001)
         {
-            if (Math.Abs(expected - test) > error)
+            if (Math.Abs(expected - actual) > error)
             {
-                throw new Exception("Expected " + test + " but was " + expected);
+                throw new Exception($"Expected {expected} but was {actual}");
             }
         }
 
-        public static void Equal(string expectedName, string name)
+        public static void Equal(string expected, string actual)
         {
-            if (expectedName != name)
+            if (expected != actual)
             {
-                throw new Exception("Expected " + name + " but was " + expectedName);
-
+                throw new Exception($"Expected {expected} but was {actual}");
             }
         }
 
-        public static void Equal(object expected, object test)
+        public static void Equal(object expected, object actual)
         {
-            if (expected == null && test == null)
+            if (expected == null && actual == null)
             {
                 return;
             }
 
-            if (expected == null || test == null)
+            if (expected == null || actual == null)
             {
-                throw new Exception($"Expected {test} but was {expected}");
+                throw new Exception($"Expected {expected} but was {actual}");
             }
 
-            if (expected.GetType() != test.GetType())
+            if (expected.GetType() != actual.GetType())
             {
-                throw new Exception($"Expected type {test.GetType()} but was {expected.GetType()}");
+                throw new Exception($"Expected type {expected.GetType()} but was {actual.GetType()}");
             }
 
-            if (expected is Array array1 && test is Array array2)
+            if (expected is Array array1 && actual is Array array2)
             {
                 if (array1.Length != array2.Length)
                 {
@@ -93,39 +90,39 @@ namespace Agg.Tests.Agg
                     Equal(array1.GetValue(i), array2.GetValue(i));
                 }
             }
-            else if (!expected.Equals(test))
+            else if (!expected.Equals(actual))
             {
-                throw new Exception($"Expected {test} but was {expected}");
+                throw new Exception($"Expected {expected} but was {actual}");
             }
         }
 
-        public static void False(bool expectedFalse)
+        public static void False(bool condition, string message = "Expected false but was true")
         {
-            if (expectedFalse)
+            if (condition)
             {
-                throw new Exception("Expected false but was true");
+                throw new Exception(message);
             }
         }
 
-        public static void IsTrue(bool isConditionTrue, string assertionMessage)
+        public static void True(bool condition, string message = "Expected true but was false")
         {
-            if (!isConditionTrue)
+            if (!condition)
             {
-                throw new Exception($"Expected true but was false, {assertionMessage}");
+                throw new Exception(message);
             }
         }
 
-        public static void NotNull(object nonNullObject)
+        public static void NotNull(object obj)
         {
-            if (nonNullObject == null)
+            if (obj == null)
             {
                 throw new Exception("Expected not null but was null");
             }
         }
 
-        public static void Null(object shouldBeNull)
+        public static void Null(object obj)
         {
-            if (shouldBeNull != null)
+            if (obj != null)
             {
                 throw new Exception("Expected null but was not null");
             }
@@ -135,78 +132,46 @@ namespace Agg.Tests.Agg
         {
             if (collection.Count() != 1)
             {
-                throw new Exception("Expected 1 but was " + collection.Count());
+                throw new Exception($"Expected 1 but was {collection.Count()}");
             }
 
             return collection.First();
         }
 
-        public static void True(bool expectedTrue, string assertionMessage)
+        public static void IsType<T>(object obj)
         {
-            if (!expectedTrue)
+            if (!(obj is T))
             {
-                throw new Exception("Expected true but was false, " + assertionMessage);
+                throw new Exception($"Expected {typeof(T)} but was {obj.GetType()}");
             }
         }
 
-        public static void True(bool expectedTrue)
+        public static void IsNotType<T>(object obj)
         {
-            if (!expectedTrue)
+            if (obj is T)
             {
-                throw new Exception("Expected true but was false");
+                throw new Exception($"Expected not {typeof(T)} but was {obj.GetType()}");
             }
         }
 
-        public static void False(bool v1, string v2)
+        public static void NotEqual(object expected, object actual)
         {
-            if (v1)
-            {
-                throw new Exception("Expected false but was true, " + v2);
-            }
-        }
-
-        public static void Null(TreeNode selectedNode)
-        {
-            if (selectedNode != null)
-            {
-                throw new Exception("Expected null but was not null");
-            }
-        }
-
-        public static void IsType<T>(object selectedItem)
-        {
-            if (!(selectedItem is T))
-            {
-                throw new Exception("Expected " + typeof(T) + " but was " + selectedItem.GetType());
-            }
-        }
-
-        public static void IsNotType<T>(object selectedItem)
-        {
-            if (selectedItem is T)
-            {
-                throw new Exception("Expected not " + typeof(T) + " but was " + selectedItem.GetType());
-            }
-        }
-
-        public static void NotEqual(object expected, object test)
-        {
-            if (expected == null && test == null)
+            if (expected == null && actual == null)
             {
                 throw new Exception("Both objects are null, but they should be different.");
             }
 
-            if (expected == null || test == null)
+            if (expected == null || actual == null)
             {
                 return; // One is null and the other isn't, so they're not equal
             }
 
-            if (expected.GetType() != test.GetType())
+            if (expected.GetType() != actual.GetType())
             {
                 return; // Different types, so they're not equal
             }
 
-            if (expected is Array array1 && test is Array array2)
+            if (expected is Array array1 && actual is Array array2)
             {
                 if (array1.Length != array2.Length)
                 {
@@ -228,18 +193,18 @@ namespace Agg.Tests.Agg
                 // If we've made it here, all elements are equal
                 throw new Exception("Arrays are equal, but they should be different.");
             }
-            else if (expected.Equals(test))
+            else if (expected.Equals(actual))
             {
                 throw new Exception($"Objects are equal, but they should be different. Value: {expected}");
             }
         }
 
-        public static async Task ThrowsAsync<T>(Func<Task> value) where T : Exception
+        public static async Task ThrowsAsync<T>(Func<Task> action) where T : Exception
         {
             try
             {
-                await value();
-                throw new Exception("Expected exception of type " + typeof(T).Name + " was not thrown.");
+                await action();
+                throw new Exception($"Expected exception of type {typeof(T).Name} was not thrown.");
             }
             catch (T)
             {
@@ -247,7 +212,7 @@ namespace Agg.Tests.Agg
             }
             catch (Exception ex)
             {
-                throw new Exception("Expected exception of type " + typeof(T).Name + " but " + ex.GetType().Name + " was thrown.", ex);
+                throw new Exception($"Expected exception of type {typeof(T).Name} but {ex.GetType().Name} was thrown.", ex);
             }
         }
 
