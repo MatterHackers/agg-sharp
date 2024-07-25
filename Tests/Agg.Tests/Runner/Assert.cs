@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -216,14 +217,12 @@ namespace Agg.Tests.Agg
             }
         }
 
-        internal static void Empty(FaceList faces)
+        public static void Empty(IEnumerable items)
         {
-            throw new NotImplementedException();
-        }
-
-        public static void Empty(object userLayer)
-        {
-            throw new NotImplementedException();
+            if (items.GetEnumerator().MoveNext())
+            {
+                throw new Exception("Expected empty but was not empty");
+            }
         }
 
         public static void Fail(string description = "")
