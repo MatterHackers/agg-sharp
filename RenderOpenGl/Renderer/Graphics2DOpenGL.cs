@@ -150,7 +150,7 @@ namespace MatterHackers.RenderOpenGl
             }
         }
 
-        private void DrawAAShape(IVertexSource vertexSourceIn, IColorType colorIn)
+        private void DrawAAShape(IVertexSource vertexSourceIn, IColorType colorIn, bool useCache)
         {
             var vertexSource = vertexSourceIn;
             vertexSource.Rewind(0);
@@ -158,25 +158,31 @@ namespace MatterHackers.RenderOpenGl
             var translation = Vector2.Zero;
             var transform = GetTransform();
 
-            if (IsTransformIdentity(transform) && vertexSource is Ellipse ellipse)
+            if (useCache
+                && IsTransformIdentity(transform) 
+                && vertexSource is Ellipse ellipse)
             {
                 translation = new Vector2(ellipse.originX, ellipse.originY);
                 vertexSource = new Ellipse(0, 0, ellipse.radiusX, ellipse.radiusY, ellipse.NumSteps, ellipse.IsCw);
             }
-            else if (vertexSource is VertexSourceApplyTransform applyTransform &&
-                     applyTransform.TransformToApply is Affine affine)
+            else if (useCache
+                && vertexSource is VertexSourceApplyTransform applyTransform
+                && applyTransform.TransformToApply is Affine affine)
             {
                 translation = new Vector2(affine.tx, affine.ty);
                 affine.tx = 0;
                 affine.ty = 0;
             }
 
-            if (IsTransformIdentity(transform))
+            if (useCache
+                && IsTransformIdentity(transform))
             {
                 translation.X += transform.tx;
                 translation.Y += transform.ty;
             }
-            else if (transform.shx == 0 && transform.shy == 0)
+            else if (useCache
+                && transform.shx == 0
+                && transform.shy == 0)
             {
                 translation.X = (float)(translation.X / transform.sx + transform.tx);
                 translation.Y = (float)(translation.Y / transform.sy + transform.ty);
@@ -268,7 +274,7 @@ namespace MatterHackers.RenderOpenGl
             {
                 using (new QuickTimerReport("Graphics2DOpenGl.DrawAAShape"))
                 {
-                    DrawAAShape(vertexSource, colorIn);
+                    DrawAAShape(vertexSource, colorIn, true);
                 }
             }
             else
@@ -476,7 +482,7 @@ namespace MatterHackers.RenderOpenGl
             GL.EnableOrDisable(EnableCap.DepthTest, doDepthTest);
 
             affineTransformStack.Push(Affine.NewIdentity());
-            DrawAAShape(path, color);
+            DrawAAShape(path, color, false);
             affineTransformStack.Pop();
 
             GL.PopMatrix();
