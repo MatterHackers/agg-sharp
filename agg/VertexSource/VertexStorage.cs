@@ -310,9 +310,12 @@ namespace MatterHackers.Agg.VertexSource
         public VertexStorage(IVertexSource copyFrom)
             : this()
         {
-            foreach (var vertex in copyFrom.Vertices())
+            if (copyFrom != null)
             {
-                this.Add(vertex.X, vertex.Y, vertex.Command, vertex.Hint);
+                foreach (var vertex in copyFrom.Vertices())
+                {
+                    this.Add(vertex.X, vertex.Y, vertex.Command, vertex.Hint);
+                }
             }
         }
 
