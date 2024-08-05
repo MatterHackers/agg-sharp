@@ -1045,5 +1045,30 @@ namespace MatterHackers.RenderOpenGl
         {
             throw new NotImplementedException();
         }
+
+        public int GenLists(int v)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void NewList(int displayListId, object compile)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void EndList()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void CallList(int displayListId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void DeleteLists(int id, int v)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

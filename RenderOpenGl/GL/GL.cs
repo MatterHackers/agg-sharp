@@ -70,6 +70,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         public const int TRIANGLES = 0x0004;
         public const int UNSIGNED_INT = 0x1405;
         public const int VERTEX_SHADER = 0x8B31;
+        public const int GL_COMPILE = 0x1300;
         #endregion constants
 
 
@@ -980,6 +981,37 @@ namespace MatterHackers.RenderOpenGl.OpenGl
             {
                 Disable(depthTest);
             }
+        }
+
+        public static int GenLists(int v)
+        {
+            var result = Instance?.GenLists(v);
+            CheckForError();
+            return result ?? 0;
+        }
+
+        public static void NewList(int displayListId, object compile)
+        {
+            Instance?.NewList(displayListId, compile);
+            CheckForError();
+        }
+
+        public static void EndList()
+        {
+            Instance?.EndList();
+            CheckForError();
+        }
+
+        public static void CallList(int displayListId)
+        {
+            Instance?.CallList(displayListId);
+            CheckForError();
+        }
+
+        public static void DeleteLists(int id, int v)
+        {
+            Instance?.DeleteLists(id, v);
+            CheckForError();
         }
     }
 }

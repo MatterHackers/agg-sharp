@@ -215,7 +215,7 @@ namespace MatterHackers.RenderOpenGl
                 }
             }
 
-            RenderTriangleEdgeInfo(triangleEdgeInfo, translation);
+            RenderTriangleEdgeInfo(triangleEdgeInfo, translation, longHash);
         }
 
         private static bool IsTransformIdentity(Affine transform)
@@ -253,6 +253,68 @@ namespace MatterHackers.RenderOpenGl
                 triangleEdgeInfo.RenderLastToGL();
                 GL.Translate(-translation.X, -translation.Y, 0);
             }
+        }
+
+        private const int MaxCacheSize = 1000;
+        private static readonly Dictionary<ulong, int> _displayListCache = new();
+
+        public void RenderTriangleEdgeInfo(AAGLTesselator triangleEdgeInfo, Vector2 translation, ulong cacheKey)
+        {
+            using (new QuickTimerReport("Graphics2DOpenGl.RenderLastToGL"))
+            {
+                var useLists = true;
+                {
+                    if (useLists)
+                    {
+                        int displayListId;
+
+                        if (!_displayListCache.TryGetValue(cacheKey, out displayListId))
+                        {
+                            // Create a new display list
+                            displayListId = GL.GenLists(1);
+                            GL.NewList(displayListId, GL.GL_COMPILE);
+
+                            // Perform the rendering
+                            triangleEdgeInfo.RenderLastToGL();
+
+                            GL.EndList();
+
+                            // Add to cache
+                            AddToCache(cacheKey, displayListId);
+                        }
+                        else
+                        {
+                            var a = 0;
+                        }
+
+                        // Call the cached display list
+                        GL.Translate(translation.X, translation.Y, 0);
+                        GL.CallList(displayListId);
+                        GL.Translate(-translation.X, -translation.Y, 0);
+                    }
+                    else
+                    {
+                        GL.Translate(translation.X, translation.Y, 0);
+                        triangleEdgeInfo.RenderLastToGL();
+                        GL.Translate(-translation.X, -translation.Y, 0);
+                    }
+                }
+            }
+        }
+
+        private void AddToCache(ulong cacheKey, int displayListId)
+        {
+            if (_displayListCache.Count >= MaxCacheSize)
+            {
+                // Clear and release all cached display lists if the cache size exceeds the limit
+                foreach (var id in _displayListCache.Values)
+                {
+                    GL.DeleteLists(id, 1);
+                }
+                _displayListCache.Clear();
+            }
+
+            _displayListCache[cacheKey] = displayListId;
         }
 
         public void PreRender(IColorType colorIn)

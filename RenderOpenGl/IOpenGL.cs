@@ -183,5 +183,10 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         void ClearColor(double r, double g, double b, double a);
         int GenFramebuffer();
         string GetShaderInfoLog(int shader);
+        int GenLists(int v);
+        void NewList(int displayListId, object compile);
+        void EndList();
+        void CallList(int displayListId);
+        void DeleteLists(int id, int v);
     }
 }

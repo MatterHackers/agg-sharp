@@ -1408,5 +1408,30 @@ namespace MatterHackers.Agg.UI
 		{
 			return OpenTK.Graphics.OpenGL.GL.GetShaderInfoLog(shader);
 		}
-	}
+
+        public int GenLists(int v)
+        {
+            return OpenTK.Graphics.OpenGL.GL.GenLists(v);
+        }
+
+        public void NewList(int displayListId, object compile)
+        {
+			OpenTK.Graphics.OpenGL.GL.NewList(displayListId, OpenTK.Graphics.OpenGL.ListMode.Compile);
+        }
+
+        public void EndList()
+        {
+			OpenTK.Graphics.OpenGL.GL.EndList();
+        }
+
+        public void CallList(int displayListId)
+        {
+            OpenTK.Graphics.OpenGL.GL.CallList(displayListId);
+        }
+
+        public void DeleteLists(int id, int v)
+        {
+            OpenTK.Graphics.OpenGL.GL.DeleteLists(id, v);
+        }
+    }
 }
