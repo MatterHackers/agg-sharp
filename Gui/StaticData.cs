@@ -43,7 +43,7 @@ namespace MatterHackers.Agg.Platform
 	public class StaticData
 	{
 		private static Dictionary<string, ImageBuffer> cachedImages = new Dictionary<string, ImageBuffer>();
-		private static Dictionary<(string, int, int), ImageBuffer> cachedIcons = new Dictionary<(string, int, int), ImageBuffer>();
+		private static Dictionary<(string, int, int, string), ImageBuffer> cachedIcons = new Dictionary<(string, int, int, string), ImageBuffer>();
 
 		private StaticData()
 		{
@@ -124,16 +124,21 @@ namespace MatterHackers.Agg.Platform
 			return null;
 		}
 
-		/// <summary>
-		/// Load the specified file from the StaticData/Icons path and scale it to the given size,
-		/// adjusting for the device scale in GuiWidget
-		/// </summary>
-		/// <param name="path">The file path to load</param>
-		/// <param name="width">Width to scale to</param>
-		/// <param name="height">Height to scale to</param>
-		/// <param name="invertImage">describes if the icon should be inverted</param>
-		/// <returns>The image buffer at the right scale</returns>
-		public ImageBuffer LoadIcon(string path, int width, int height, bool invertImage = false)
+        /// <summary>
+        /// Load the specified file from the StaticData/Icons path and scale it to the given size,
+        /// adjusting for the device scale in GuiWidget
+        /// </summary>
+        /// <param name="path">The file path to load</param>
+        /// <param name="width">Width to scale to</param>
+        /// <param name="height">Height to scale to</param>
+        /// <param name="invertImage">describes if the icon should be inverted</param>
+        /// <param name="processing">Optional function to process the source image before scaling.</param>
+        /// <returns>The image buffer at the right scale</returns>
+        public ImageBuffer LoadIcon(string path,
+			int width,
+			int height,
+			bool invertImage = false,
+            Func<ImageBuffer, (ImageBuffer processed, string key)> processSource = null)
 		{
 			int deviceWidth = (int)(width * DeviceScale);
 			int deviceHeight = (int)(height * DeviceScale);
@@ -141,7 +146,12 @@ namespace MatterHackers.Agg.Platform
 			ImageBuffer cachedIcon;
 			lock (locker)
 			{
-				if (!cachedIcons.TryGetValue((path, deviceWidth, deviceHeight), out cachedIcon))
+				var key = "";
+				if (processSource != null)
+                {
+                    (_, key) = processSource(null);
+                }
+				if (!cachedIcons.TryGetValue((path, deviceWidth, deviceHeight, key), out cachedIcon))
 				{
 					cachedIcon = LoadIcon(path);
 
@@ -164,6 +174,11 @@ namespace MatterHackers.Agg.Platform
 #endif
 					}
 
+					if (processSource != null)
+                    {
+						cachedIcon = processSource(cachedIcon).processed;
+                    }
+
 					cachedIcon.SetRecieveBlender(new BlenderPreMultBGRA());
 
 					// Scale if required
@@ -175,7 +190,7 @@ namespace MatterHackers.Agg.Platform
 					// only cache relatively small images
 					if (cachedIcon.Width < 200 && cachedIcon.Height < 200)
 					{
-						cachedIcons.Add((path, deviceWidth, deviceHeight), cachedIcon);
+						cachedIcons.Add((path, deviceWidth, deviceHeight, key), cachedIcon);
 					}
 				}
 			}

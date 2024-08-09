@@ -33,18 +33,9 @@ using System;
 
 namespace MatterHackers.ImageProcessing
 {
-    public enum DestIntensity
+    public static class WhiteToColorProcess
     {
-        FromColor,
-        FromSource
-    }
-
-    /// <summary>
-    /// Set all gray pixels to a given color (including setting of black and white)
-    /// </summary>
-    public static class GrayToColorProcess
-    {
-        public static void GrayToColor(ImageBuffer destImage, ImageBuffer sourceImage, Color color, DestIntensity destIntensity)
+        public static void ConvertWhiteToAlpha(ImageBuffer destImage, ImageBuffer sourceImage)
         {
             if (sourceImage.BitDepth != destImage.BitDepth)
             {
@@ -70,33 +61,30 @@ namespace MatterHackers.ImageProcessing
 
                             for (int x = 0; x < width; x++)
                             {
-                                sourceImage.GetPixel(x, y).ToColorF().GetHSL(out double _, out double s, out double _);
+                                byte sourceRed = sourceBuffer[sourceOffsetY];
+                                byte sourceGreen = sourceBuffer[sourceOffsetY + 1];
+                                byte sourceBlue = sourceBuffer[sourceOffsetY + 2];
+                                byte sourceAlpha = sourceBuffer[sourceOffsetY + 3];
 
-                                if (s < .01)
+                                // Check if the pixel is close to white and mostly non-transparent
+                                if (sourceRed > 240 && sourceGreen > 240 && sourceBlue > 240 && sourceAlpha > 200)
                                 {
-                                    if (destIntensity == DestIntensity.FromColor)
-                                    {
-                                        destBuffer[destOffsetY++] = (byte)(color.blue); sourceOffsetY++;
-                                        destBuffer[destOffsetY++] = (byte)(color.green); sourceOffsetY++;
-                                        destBuffer[destOffsetY++] = (byte)(color.red); sourceOffsetY++;
-                                        destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
-                                    }
-                                    else
-                                    {
-                                        byte intensity = sourceBuffer[sourceOffsetY];
-                                        destBuffer[destOffsetY++] = (byte)(color.blue * intensity / 255); sourceOffsetY++;
-                                        destBuffer[destOffsetY++] = (byte)(color.green * intensity / 255); sourceOffsetY++;
-                                        destBuffer[destOffsetY++] = (byte)(color.red * intensity / 255); sourceOffsetY++;
-                                        destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
-                                    }
+                                    // Set alpha to 0 (transparent)
+                                    destBuffer[destOffsetY++] = 255; // R
+                                    destBuffer[destOffsetY++] = 255; // G
+                                    destBuffer[destOffsetY++] = 255; // B
+                                    destBuffer[destOffsetY++] = 0;   // A (transparent)
                                 }
                                 else
                                 {
-                                    destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
-                                    destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
-                                    destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
-                                    destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
+                                    // Copy the original pixel if it's not white
+                                    destBuffer[destOffsetY++] = sourceRed;
+                                    destBuffer[destOffsetY++] = sourceGreen;
+                                    destBuffer[destOffsetY++] = sourceBlue;
+                                    destBuffer[destOffsetY++] = sourceAlpha;
                                 }
+
+                                sourceOffsetY += 4;
                             }
                         }
                     }
@@ -107,13 +95,26 @@ namespace MatterHackers.ImageProcessing
             }
         }
 
-        public static ImageBuffer GrayToColor(this ImageBuffer sourceImage, Color color, DestIntensity destIntensity = DestIntensity.FromColor)
+        public static ImageBuffer WhiteToAlpha(this ImageBuffer sourceImage)
         {
             ImageBuffer destImage = new ImageBuffer(sourceImage.Width, sourceImage.Height);
 
-            GrayToColor(destImage, sourceImage, color, destIntensity);
+            ConvertWhiteToAlpha(destImage, sourceImage);
 
             return destImage;
+        }
+
+        public static (ImageBuffer, string) WhiteToAlpha_GreyToColor(this ImageBuffer image, Color color)
+        {
+            var key = "WhiteToAlpha_GreyToColor" + color.GetLongHashCode().ToString();
+
+            if (image == null)
+            {
+                return (null, key);
+            }
+
+            var newImage = image.WhiteToAlpha().GrayToColor(color);
+            return (newImage, key);
         }
     }
 }
