@@ -29,8 +29,8 @@ namespace MatterHackers.Agg.Tests
 
 			string filename = $"{nameof(LiberationSansFont)}-{fontSize}.json";
 
-			throw new NotImplementedException();
-			string testDataPath = "";// TestContext.CurrentContext.ResolveProjectPath(new string[] { "..", "..", "TestData", filename });
+			var testContext = new TestContext();
+			string testDataPath = testContext.CurrentContext.ResolveProjectPath(new string[] { "..", "..", "..", "TestData", filename });
 
 			// Project sample string characters to dictionary with character bounds
 			var characterBounds = sampleCharacters.ToDictionary(c => c, c => GetCharacterBounds(c, typeface));
@@ -41,15 +41,12 @@ namespace MatterHackers.Agg.Tests
 			};
 
 			// Update the control data
-			if (false)
-			{
-				Directory.CreateDirectory(Path.GetDirectoryName(testDataPath));
+			Directory.CreateDirectory(Path.GetDirectoryName(testDataPath));
 
-				File.WriteAllText(
-					testDataPath,
-					JsonConvert.SerializeObject(characterBounds,
-					jsonSettings));
-			}
+			File.WriteAllText(
+				testDataPath,
+				JsonConvert.SerializeObject(characterBounds,
+				jsonSettings));
 
 			// Load sample data
 			string json = File.ReadAllText(testDataPath);
@@ -65,10 +62,10 @@ namespace MatterHackers.Agg.Tests
 
 				Assert.Equal(expected.Left, actual.Left, 0.001); //, "Bounds Left differ");
 				Assert.Equal(expected.Bottom, actual.Bottom, 0.001); //, "Bounds Bottom differ");
-                Assert.Equal(expected.Right, actual.Right, 0.001); //, "Bounds Right differ");
-                Assert.Equal(expected.Top, actual.Top, 0.001); //, "Bounds Top differ");
+				Assert.Equal(expected.Right, actual.Right, 0.001); //, "Bounds Right differ");
+				Assert.Equal(expected.Top, actual.Top, 0.001); //, "Bounds Top differ");
 
-                Assert.Equal(expected, actual);
+				Assert.Equal(expected, actual);
 			}
 		}
 

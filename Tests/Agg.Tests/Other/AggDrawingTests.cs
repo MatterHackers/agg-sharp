@@ -52,8 +52,9 @@ namespace MatterHackers.Agg.Tests
 
 		private void CheckTestAgainstControl(ImageBuffer testImage, string testTypeString)
 		{
-			throw new NotImplementedException();
-			//Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
+            var testContext = new TestContext();
+
+            Directory.SetCurrentDirectory(testContext.CurrentContext.TestDirectory);
 
 			// there is an assumption that we got to save valid images at least once.
 			string controlFileTga = testTypeString + " Control.tga";

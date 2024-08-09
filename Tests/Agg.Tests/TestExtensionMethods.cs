@@ -41,14 +41,39 @@ namespace MatterHackers.Agg.Tests
 	{
 		public class CurrentTestContext
 		{
-			public void SetCompatibleWorkingDirectory()
+			// default to c:\temp\MatterCADTests
+			private string _testDirectory = Path.Combine(Path.GetTempPath(), "MatterCADTests");
+            public string TestDirectory
+			{
+
+				get
+				{
+					if (!Directory.Exists(_testDirectory))
+					{
+						Directory.CreateDirectory(_testDirectory);
+					}
+
+					return _testDirectory;
+				}
+
+				set
+				{
+					_testDirectory = value;
+				}
+			}
+
+            public void SetCompatibleWorkingDirectory()
 			{
                 throw new NotImplementedException();
 			}
 
 			public string ResolveProjectPath(string[] path)
 			{
-				throw new NotImplementedException();
+				var applicationPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+				var combinedPath = Path.GetFullPath(Path.Combine(applicationPath, Path.Combine(path)));
+
+				return combinedPath;
 			}
         }
 

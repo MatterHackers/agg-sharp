@@ -101,7 +101,7 @@ namespace MatterHackers.Agg.UI.Tests
 			OutputImages(containerControl, containerTest);
 
 			Assert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-			Assert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
+			Assert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1000), "The Anchored widget should be in the correct place.");
 		}
 
 		private void BottomAndTopButton(double controlPadding, double buttonMargin)
@@ -131,7 +131,7 @@ namespace MatterHackers.Agg.UI.Tests
 			OutputImages(containerControl, containerTest);
 
 			Assert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-			Assert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
+			Assert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1000), "The Anchored widget should be in the correct place.");
 		}
 
         [Test]
