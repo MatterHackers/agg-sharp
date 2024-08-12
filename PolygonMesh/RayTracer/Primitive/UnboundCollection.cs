@@ -91,7 +91,7 @@ namespace MatterHackers.RayTracer
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
-			if (cachedAABB.MinXYZ.X == double.NegativeInfinity
+			if ((double.IsInfinity(cachedAABB.MinXYZ.X) || double.IsNaN(cachedAABB.MinXYZ.X))
 				&& Items.Count > 0)
 			{
 				var first = true;
@@ -102,14 +102,18 @@ namespace MatterHackers.RayTracer
 						continue;
 					}
 
-					if (first)
+					var itemAABB = Items[i].GetAxisAlignedBoundingBox();
+					if (!double.IsInfinity(itemAABB.MinXYZ.X) && !double.IsNaN(itemAABB.MinXYZ.X))
 					{
-						first = false;
-                        cachedAABB = Items[i].GetAxisAlignedBoundingBox();
-                    }
-                    else
-					{
-						cachedAABB += Items[i].GetAxisAlignedBoundingBox();
+						if (first)
+						{
+							first = false;
+							cachedAABB = Items[i].GetAxisAlignedBoundingBox();
+						}
+						else
+						{
+							cachedAABB += Items[i].GetAxisAlignedBoundingBox();
+						}
 					}
 				}
 			}
