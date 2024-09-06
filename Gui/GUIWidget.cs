@@ -25,7 +25,6 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using Typography.OpenFont;
 using static System.Math;
 using static MatterHackers.Agg.Color;
 
@@ -2607,22 +2606,22 @@ namespace MatterHackers.Agg.UI
 			return rectangleToTransform;
 		}
 
-		public Vector2 TransformToScreenSpace(Vector2 vectorToTransform)
-		{
-			GuiWidget prevGUIWidget = this;
+        public Vector2 TransformToScreenSpace(Vector2 vectorToTransform)
+        {
+            GuiWidget prevGUIWidget = this;
 
 			// Walk until we find a SystemWindow with a null parent or until the topmost GuiWidget
-			while (prevGUIWidget != null
-				&& !(prevGUIWidget is SystemWindow && prevGUIWidget.Parent == null))
-			{
-				vectorToTransform += prevGUIWidget.OriginRelativeParent;
-				prevGUIWidget = prevGUIWidget.Parent;
-			}
+            while (prevGUIWidget != null
+                && !(prevGUIWidget is SystemWindow && prevGUIWidget.Parent == null))
+            {
+				vectorToTransform = prevGUIWidget.ParentToChildTransform.Transform(vectorToTransform);
+                prevGUIWidget = prevGUIWidget.Parent;
+            }
 
-			return vectorToTransform;
-		}
+            return vectorToTransform;
+        }
 
-		public GuiWidget TopmostParent()
+        public GuiWidget TopmostParent()
 		{
 			if (this.Parent == null)
 			{
