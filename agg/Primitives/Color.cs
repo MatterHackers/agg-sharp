@@ -479,30 +479,6 @@ namespace MatterHackers.Agg
             return result;
         }
 
-        public string ColorToName(bool simpleNames = true)
-        {
-            var colorDictionary = SmallColorDictionary;
-            if(!simpleNames)
-            {
-                colorDictionary = DetailedColorDictionary;
-            }
-
-            string closestColorName = null;
-            double closestColorDistance = double.MaxValue;
-
-            foreach (var color in colorDictionary)
-            {
-                double distance = this.CalculateColorDistance(color.Value);
-                if (distance < closestColorDistance)
-                {
-                    closestColorName = color.Key;
-                    closestColorDistance = distance;
-                }
-            }
-
-            return closestColorName;
-        }
-
         private static readonly Dictionary<string, Color> SmallColorDictionary = new Dictionary<string, Color>
         {
             { "Red", new Color(255, 0, 0) },
@@ -594,6 +570,30 @@ namespace MatterHackers.Agg
             { "LimeGreen", new Color(50, 205, 50) },
         };
 
+        public string ColorToName()
+        {
+            var lab = RgbToLab(this);
+            var closestColor = FindClosestNamedColor(lab);
+            var distance = CalculateColorDistance(lab, RgbToLab(closestColor.Value));
+
+            if (distance < 10) // Threshold for considering it a direct match
+            {
+                return closestColor.Key;
+            }
+
+            var lightness = lab[0];
+            var lightnessDesc = GetLightnessDescription(lightness);
+            var saturation = Math.Sqrt(lab[1] * lab[1] + lab[2] * lab[2]);
+            var saturationDesc = GetSaturationDescription(saturation);
+
+            return $"{lightnessDesc}{saturationDesc}{closestColor.Key}";
+        }
+
+        // Helper method to find the closest named color
+        private static KeyValuePair<string, Color> FindClosestNamedColor(double[] labColor)
+        {
+            return DetailedColorDictionary.MinBy(kvp => CalculateColorDistance(labColor, RgbToLab(kvp.Value)));
+        }
 
         /// <summary>
         /// Calculates the Euclidean distance between two colors in the LAB color space.
@@ -610,6 +610,35 @@ namespace MatterHackers.Agg
             double bDiff = lab1[2] - lab2[2];
 
             return Math.Sqrt(lDiff * lDiff + aDiff * aDiff + bDiff * bDiff);
+        }
+
+        // Helper method to calculate color distance in LAB space
+        private static double CalculateColorDistance(double[] lab1, double[] lab2)
+        {
+            return Math.Sqrt(
+                Math.Pow(lab1[0] - lab2[0], 2) +
+                Math.Pow(lab1[1] - lab2[1], 2) +
+                Math.Pow(lab1[2] - lab2[2], 2)
+            );
+        }
+
+        // Helper method to get lightness description
+        private static string GetLightnessDescription(double lightness)
+        {
+            if (lightness >= 90) return "Very Light ";
+            if (lightness >= 70) return "Light ";
+            if (lightness <= 20) return "Very Dark ";
+            if (lightness <= 40) return "Dark ";
+            return "";
+        }
+
+        // Helper method to get saturation description
+        private static string GetSaturationDescription(double saturation)
+        {
+            if (saturation < 5) return "Grayish ";
+            if (saturation < 30) return "Muted ";
+            if (saturation > 60) return "Vivid ";
+            return "";
         }
 
         /// <summary>
