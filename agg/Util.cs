@@ -166,6 +166,12 @@ namespace MatterHackers.Agg
         private static Regex fileNameNumberMatch = new Regex("\\(\\d+\\)\\s*$", RegexOptions.Compiled);
         private static Regex fileNameUnderscoreNumberMatch = new Regex("_\\d+\\s*$", RegexOptions.Compiled);
 
+        /// <summary>
+        /// The GetNonCollidingFileName method in the Util class is used to generate a non-colliding 
+        /// file name by appending a unique number to the original file name.
+        /// </summary>
+        /// <param name="pathAndFilename"></param>
+        /// <returns>The name</returns>
         public static string GetNonCollidingFileName(string pathAndFilename)
         {
             string extension = Path.GetExtension(pathAndFilename);
