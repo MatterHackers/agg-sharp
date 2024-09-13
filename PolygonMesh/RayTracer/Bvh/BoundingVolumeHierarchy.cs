@@ -48,8 +48,8 @@ namespace MatterHackers.RayTracer
 	public class BoundingVolumeHierarchy : ITraceable
 	{
 		internal AxisAlignedBoundingBox Aabb;
-		private ITraceable nodeA;
-		private ITraceable nodeB;
+		public ITraceable Left { get; private set; }
+		public ITraceable Right { get; private set; }
 		private int splittingPlane;
 
 		public BoundingVolumeHierarchy()
@@ -58,8 +58,8 @@ namespace MatterHackers.RayTracer
 
 		public BoundingVolumeHierarchy(ITraceable nodeA, ITraceable nodeB)
         {
-			this.nodeA = nodeA;
-			this.nodeB = nodeB;
+			this.Left = nodeA;
+			this.Right = nodeB;
 			Aabb = nodeA.GetAxisAlignedBoundingBox() + nodeB.GetAxisAlignedBoundingBox();
 			splittingPlane = Aabb.XSize > Aabb.YSize ? 0 : 1;
 			splittingPlane = Aabb.Size[splittingPlane] > Aabb.ZSize ? splittingPlane : 2;
@@ -82,8 +82,8 @@ namespace MatterHackers.RayTracer
         {
 			get
 			{
-				yield return nodeA;
-				yield return nodeB;
+				yield return Left;
+				yield return Right;
 			}
         }
 
@@ -93,8 +93,8 @@ namespace MatterHackers.RayTracer
 		{
 			if (this.GetAxisAlignedBoundingBox().Contains(position))
 			{
-				if (nodeA.Contains(position)
-					|| nodeB.Contains(position))
+				if (Left.Contains(position)
+					|| Right.Contains(position))
 				{
 					return true;
 				}
@@ -145,8 +145,8 @@ namespace MatterHackers.RayTracer
 			else if (tracable is BoundingVolumeHierarchy bvh)
 			{
 				stream.WriteLine($"{indent}BoundingVolumeHierarchy {bvh.GetAxisAlignedBoundingBox()}");
-				PrintBvh(bvh.nodeA, stream, level + 1);
-				PrintBvh(bvh.nodeB, stream, level + 1);
+				PrintBvh(bvh.Left, stream, level + 1);
+				PrintBvh(bvh.Right, stream, level + 1);
 			}
 			else if (tracable is MinimalTriangle minTri)
 			{
@@ -217,13 +217,7 @@ namespace MatterHackers.RayTracer
 					using (new QuickTimer("LocFastContructionFastTracing", 1))
 					{
 						output = BvhBuilderLocallyOrderedClustering.Create(tracePrimitives);
-#if false
-						if (tracePrimitives.Count > 1000)
-						{
-							PrintBvh(output, "C:\\Temp\\Bvh LOC.txt");
-						}
-#endif
-					}
+                    }
 					break;
 
 				default:
@@ -252,12 +246,12 @@ namespace MatterHackers.RayTracer
 		{
 			if (ray.Intersection(Aabb))
 			{
-				var checkFirst = nodeA;
-				var checkSecond = nodeB;
+				var checkFirst = Left;
+				var checkSecond = Right;
 				if (ray.directionNormal[splittingPlane] < 0)
 				{
-					checkFirst = nodeB;
-					checkSecond = nodeA;
+					checkFirst = Right;
+					checkSecond = Left;
 				}
 
 				IntersectInfo infoFirst = checkFirst.GetClosestIntersection(ray);
@@ -314,12 +308,12 @@ namespace MatterHackers.RayTracer
 			int startRayIndex = FindFirstRay(rayBundle, rayIndexToStartCheckingFrom);
 			if (startRayIndex != -1)
 			{
-				var checkFirst = nodeA;
-				var checkSecond = nodeB;
+				var checkFirst = Left;
+				var checkSecond = Right;
 				if (rayBundle.rayArray[startRayIndex].directionNormal[splittingPlane] < 0)
 				{
-					checkFirst = nodeB;
-					checkSecond = nodeA;
+					checkFirst = Right;
+					checkSecond = Left;
 				}
 
 				checkFirst.GetClosestIntersections(rayBundle, startRayIndex, intersectionsForBundle);
@@ -340,8 +334,8 @@ namespace MatterHackers.RayTracer
 			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
 			if (bounds.Contains(subRegion))
 			{
-				bool resultA = this.nodeA.GetContained(results, subRegion);
-				bool resultB = this.nodeB.GetContained(results, subRegion);
+				bool resultA = this.Left.GetContained(results, subRegion);
+				bool resultB = this.Right.GetContained(results, subRegion);
 				return resultA | resultB;
 			}
 
@@ -362,12 +356,12 @@ namespace MatterHackers.RayTracer
 		{
 			if (ray.Intersection(Aabb))
 			{
-				var checkFirst = nodeA;
-				var checkSecond = nodeB;
+				var checkFirst = Left;
+				var checkSecond = Right;
 				if (ray.directionNormal[splittingPlane] < 0)
 				{
-					checkFirst = nodeB;
-					checkSecond = nodeA;
+					checkFirst = Right;
+					checkSecond = Left;
 				}
 
 				foreach (IntersectInfo info in checkFirst.IntersectionIterator(ray))
@@ -396,11 +390,11 @@ namespace MatterHackers.RayTracer
 			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
 			if (plane.CrossedBy(bounds))
 			{
-				foreach(var item in this.nodeA.GetCrossing(plane))
+				foreach(var item in this.Left.GetCrossing(plane))
                 {
 					yield return item;
                 }
-				foreach (var item in this.nodeB.GetCrossing(plane))
+				foreach (var item in this.Right.GetCrossing(plane))
 				{
 					yield return item;
 				}
@@ -412,11 +406,11 @@ namespace MatterHackers.RayTracer
 			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
 			if (bounds.Contains(position, error))
 			{
-				foreach (var item in this.nodeA.GetTouching(position, error))
+				foreach (var item in this.Left.GetTouching(position, error))
 				{
 					yield return item;
 				}
-				foreach (var item in this.nodeB.GetTouching(position, error))
+				foreach (var item in this.Right.GetTouching(position, error))
 				{
 					yield return item;
 				}
@@ -425,8 +419,8 @@ namespace MatterHackers.RayTracer
 
         public void SetNodes(ITraceable nodeA, ITraceable nodeB)
         {
-            this.nodeA = nodeA;
-            this.nodeB = nodeB;
+            this.Left = nodeA;
+            this.Right = nodeB;
 
             // Recalculate the Axis Aligned Bounding Box
             Aabb = nodeA.GetAxisAlignedBoundingBox() + nodeB.GetAxisAlignedBoundingBox();
