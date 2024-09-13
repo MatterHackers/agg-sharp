@@ -27,230 +27,169 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
 
 namespace MatterHackers.RayTracer
 {
     public class BvhBuilderLocallyOrderedClustering
     {
-        public static void RadixSort((ITraceable node, long mortonCode)[] a)
+        private const int MinNodesForParallel = 1000;
+
+        private static readonly BvhNodePool NodePool = new BvhNodePool();
+
+        public static ITraceable Create(List<ITraceable> sourceNodes)
         {
-            // our helper array 
-            var t = new (ITraceable node, long mortonCode)[a.Length];
+            if (sourceNodes.Count == 0) return null;
+            if (sourceNodes.Count == 1) return sourceNodes[0];
 
-            // number of bits our group will be long 
-            int r = 4; // try to set this also to 2, 8 or 16 to see if it is 
-                       // quicker or not 
+            var bounds = CalculateBounds(sourceNodes);
+            var scale = Vector3.Max(bounds.Size, Vector3.One) * 1.001;
+            var centersToMortonSpace = CalculateMortonTransform(bounds, scale);
 
-            // number of bits of a C# int 
-            int b = 32;
-
-            // counting and prefix arrays
-            // (note dimensions 2^r which is the number of all possible values of a 
-            // r-bit number) 
-            int[] count = new int[1 << r];
-            int[] pref = new int[1 << r];
-
-            // number of groups 
-            int groups = (int)Math.Ceiling((double)b / (double)r);
-
-            // the mask to identify groups 
-            int mask = (1 << r) - 1;
-
-            // the algorithm: 
-            for (int c = 0, shift = 0; c < groups; c++, shift += r)
+            var nodes = new (ITraceable node, long mortonCode)[sourceNodes.Count];
+            Parallel.For(0, sourceNodes.Count, i =>
             {
-                // reset count array 
-                for (int j = 0; j < count.Length; j++)
-                {
-                    count[j] = 0;
-                }
+                nodes[i] = (sourceNodes[i], CalculateMortonCode(sourceNodes[i], centersToMortonSpace));
+            });
 
-                // counting elements of the c-th group 
+            RadixSort(nodes);
+
+            return BuildTreeParallel(nodes, 0, nodes.Length - 1);
+        }
+
+        private static void RadixSort((ITraceable node, long mortonCode)[] a)
+        {
+            var t = new (ITraceable node, long mortonCode)[a.Length];
+            const int r = 8;
+            const int mask = (1 << r) - 1;
+            var count = new int[1 << r];
+            var pref = new int[1 << r];
+
+            for (int shift = 0; shift < 64; shift += r)
+            {
+                Array.Clear(count, 0, count.Length);
+
                 for (int i = 0; i < a.Length; i++)
                 {
                     count[(a[i].mortonCode >> shift) & mask]++;
                 }
 
-                // calculating prefixes 
                 pref[0] = 0;
                 for (int i = 1; i < count.Length; i++)
                 {
                     pref[i] = pref[i - 1] + count[i - 1];
                 }
 
-                // from a[] to t[] elements ordered by c-th group 
                 for (int i = 0; i < a.Length; i++)
                 {
-                    t[pref[(a[i].mortonCode >> shift) & mask]++] = a[i];
+                    int index = (int)((a[i].mortonCode >> shift) & mask);
+                    t[pref[index]++] = a[i];
                 }
 
-                // a[]=t[] and start again until the last group 
-                t.CopyTo(a, 0);
+                Array.Copy(t, a, a.Length);
             }
-            // a is sorted 
         }
-        
-        /// <summary>
-        /// Create a balanced BvhTree from the nodes
-        /// </summary>
-        /// <param name="nodes">The input nodes</param>
-        /// <param name="checkDistance">The distance before and after a given morton index to look for nearest matches</param>
-        /// <returns>The top of a new balanced tree</returns>
-        public static ITraceable Create(List<ITraceable> sourceNodes, int checkDistance = 20)
+
+        private static ITraceable BuildTreeParallel((ITraceable node, long mortonCode)[] nodes, int start, int end)
         {
-            if (sourceNodes.Count == 0)
+            if (start == end) return nodes[start].node;
+
+            if (end - start < MinNodesForParallel)
             {
-                return null;
+                return BuildTreeRecursive(nodes, start, end);
             }
 
-            if (sourceNodes.Count == 1)
+            int split = FindBestSplit(nodes, start, end);
+
+            ITraceable left = null, right = null;
+            Parallel.Invoke(
+                () => left = BuildTreeParallel(nodes, start, split),
+                () => right = BuildTreeParallel(nodes, split + 1, end)
+            );
+
+            return NodePool.Get(left, right);
+        }
+
+        private static ITraceable BuildTreeRecursive((ITraceable node, long mortonCode)[] nodes, int start, int end)
+        {
+            if (start == end) return nodes[start].node;
+
+            int split = FindBestSplit(nodes, start, end);
+
+            var left = BuildTreeRecursive(nodes, start, split);
+            var right = BuildTreeRecursive(nodes, split + 1, end);
+
+            return NodePool.Get(left, right);
+        }
+
+        private static int FindBestSplit((ITraceable node, long mortonCode)[] nodes, int start, int end)
+        {
+            if (end - start <= 1) return start;
+
+            int commonPrefix = System.Numerics.BitOperations.LeadingZeroCount((ulong)(nodes[start].mortonCode ^ nodes[end].mortonCode)) - 64;
+
+            int split = start;
+            int step = end - start;
+            do
             {
-                return sourceNodes[0];
-            }
-
-            Agg.Parallel.Sequential = false;
- 
-            // get the bounds of all the nodes
-            var bounds = AxisAlignedBoundingBox.Empty();
-            foreach (var node in sourceNodes)
-            {
-                bounds.ExpandToInclude(node.GetCenter());
-            }
-
-            var scale = Vector3.ComponentMax(bounds.Size) + 2;
-            // translate to all positive numbers
-            var centersToMortonSpace = Matrix4X4.CreateTranslation(-bounds.MinXYZ);
-            // scale to the morton space size
-            centersToMortonSpace *= Matrix4X4.CreateScale(MortonCodes.Size / scale);
-
-            var inputNodes = new List<(ITraceable node, long mortonCode)>(sourceNodes.Count);
-            var outputNodes = new List<(ITraceable node, long mortonCode)>(sourceNodes.Count);
-
-            long GetMortonCode(ITraceable node)
-            {
-                var mortonSpace = node.GetCenter().Transform(centersToMortonSpace);
-                return MortonCodes.Encode3(mortonSpace);
-            }
-
-            // add all the does after creating their morton codes for the center position
-            for (int i = 0; i < sourceNodes.Count; i++)
-            {
-                inputNodes.Add((sourceNodes[i], GetMortonCode(sourceNodes[i])));
-            }
-
-            // sort them
-            var inputNodesSorted = inputNodes.ToArray();
-            RadixSort(inputNodesSorted);
-            inputNodes = inputNodesSorted.ToList();
-
-            var bestNodeToMerge = new List<int>(new int[inputNodes.Count]);
-
-            // we will need to keep track of nodes for removal
-            var markedForRemoval = new List<bool>(new bool[inputNodes.Count]);
-
-            var error = .001;
-
-            while (inputNodes.Count > 1)
-            {
-                // find the nerest point for every point minimizing the surface area of what would be the enclosing aabb
-                // Parallel.For(0, inputNodes.Count, (index) =>
-                for(var index = 0; index < inputNodes.Count; index++)
+                step = (step + 1) >> 1;
+                int newSplit = split + step;
+                if (newSplit < end)
                 {
-                    var minSurfaceArea = double.MaxValue;
-                    var minIndex = -1;
-
-                    var node = inputNodes[index].node;
-                    var nodeBounds = node.GetAxisAlignedBoundingBox();
-
-                    void TestForMinSurfaceArea(int i)
-                    {
-                        var testNode = inputNodes[i].node;
-                        var testBounds = testNode.GetAxisAlignedBoundingBox() + nodeBounds;
-                        var surfaceArea = testBounds.GetSurfaceArea();
-                        if (surfaceArea < minSurfaceArea - error)
-                        {
-                            minSurfaceArea = surfaceArea;
-                            minIndex = i;
-                        }
-                    }
-
-                    // check the checkDistance behind
-                    // var start = Math.Max(0, index - checkDistance);
-                    var start = index / checkDistance * checkDistance;
-                    start = Math.Max(0, start);
-                    for (int i = start; i < index; i++)
-                    {
-                        TestForMinSurfaceArea(i);
-                    }
-
-                    // check the checkDistance in front
-                    // var end = Math.Min(inputNodes.Count, index + checkDistance);
-                    var end = ((index / checkDistance) + 1) * checkDistance;
-                    end = Math.Min(end, inputNodes.Count);
-                    for (int i = index + 1; i < end; i++)
-                    {
-                        TestForMinSurfaceArea(i);
-                    }
-
-                    // save the best index
-                    bestNodeToMerge[index] = minIndex;
-                }// );
-
-                // clear the markedForRemoval
-                for (int i = 0; i < inputNodes.Count; i++)
-                {
-                    markedForRemoval[i] = false;
+                    int splitPrefix = System.Numerics.BitOperations.LeadingZeroCount((ulong)(nodes[start].mortonCode ^ nodes[newSplit].mortonCode)) - 64;
+                    if (splitPrefix > commonPrefix)
+                        split = newSplit;
                 }
+            } while (step > 1);
 
-                // find all the nodes that agree on merging with eachother
-                for (int i = 0; i < inputNodes.Count; i++)
-                {
-                    if (markedForRemoval[i])
-                    {
-                        continue;
-                    }
+            return split;
+        }
 
-                    var nodeToMergeWith = bestNodeToMerge[i];
-                    // if the node we want to merge with wants to merge with us
-                    if (nodeToMergeWith != -1 && bestNodeToMerge[nodeToMergeWith] == i)
-                    {
-                        // create a new node that is the merge
-                        var newNode = new BoundingVolumeHierarchy(inputNodes[i].node, inputNodes[nodeToMergeWith].node);
-
-                        // replace the first node with the new node
-                        // nodesToAdd.Add((newNode, GetMortonCode(newNode)));
-                        inputNodes[i] = (newNode, inputNodes[i].mortonCode);
-
-                        // remember the nodes needs to be removed
-                        markedForRemoval[nodeToMergeWith] = true;
-                    }
-                }
-
-                // iterate over the inputNodes moving all the un-marked nodes to the outputNodes
-                outputNodes.Clear();
-                for (int i = 0; i < inputNodes.Count; i++)
-                {
-                    if (!markedForRemoval[i])
-                    {
-                        outputNodes.Add(inputNodes[i]);
-                    }
-                }
-
-                // swap the input and output Nodes
-                var temp = inputNodes;
-                inputNodes = outputNodes;
-                outputNodes = temp;
-                // checkDistance = 20;
-                
-                // continue until all nodes have been merged
+        private static AxisAlignedBoundingBox CalculateBounds(List<ITraceable> nodes)
+        {
+            var bounds = nodes[0].GetAxisAlignedBoundingBox();
+            for (int i = 1; i < nodes.Count; i++)
+            {
+                bounds.ExpandToInclude(nodes[i].GetAxisAlignedBoundingBox());
             }
+            return bounds;
+        }
 
-            return inputNodes[0].node;
+        private static Matrix4X4 CalculateMortonTransform(AxisAlignedBoundingBox bounds, Vector3 scale)
+        {
+            var translation = Matrix4X4.CreateTranslation(-bounds.MinXYZ);
+            var scaleMatrix = Matrix4X4.CreateScale(MortonCodes.Size / scale);
+            return Matrix4X4.Mult(translation, scaleMatrix);
+        }
+
+        private static long CalculateMortonCode(ITraceable node, Matrix4X4 transform)
+        {
+            var mortonSpace = node.GetCenter().Transform(transform);
+            return MortonCodes.Encode3(mortonSpace);
+        }
+    }
+
+    public class BvhNodePool
+    {
+        private readonly Stack<BoundingVolumeHierarchy> _pool = new Stack<BoundingVolumeHierarchy>();
+
+        public BoundingVolumeHierarchy Get(ITraceable nodeA, ITraceable nodeB)
+        {
+            if (_pool.Count > 0)
+            {
+                var node = _pool.Pop();
+                node.SetNodes(nodeA, nodeB);
+                return node;
+            }
+            return new BoundingVolumeHierarchy(nodeA, nodeB);
+        }
+
+        public void Return(BoundingVolumeHierarchy node)
+        {
+            _pool.Push(node);
         }
     }
 }

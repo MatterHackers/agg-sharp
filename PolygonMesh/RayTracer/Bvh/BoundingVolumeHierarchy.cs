@@ -48,8 +48,8 @@ namespace MatterHackers.RayTracer
 	public class BoundingVolumeHierarchy : ITraceable
 	{
 		internal AxisAlignedBoundingBox Aabb;
-		private readonly ITraceable nodeA;
-		private readonly ITraceable nodeB;
+		private ITraceable nodeA;
+		private ITraceable nodeB;
 		private int splittingPlane;
 
 		public BoundingVolumeHierarchy()
@@ -170,7 +170,10 @@ namespace MatterHackers.RayTracer
         {
 			ITraceable output = null;
 
-			switch (bvhCreationOptions)
+			bvhCreationOptions = BvhCreationOptions.LocalOrderClustering;
+
+
+            switch (bvhCreationOptions)
             {
 				case BvhCreationOptions.SingleUnboundCollection:
 					using (new QuickTimer("LegacyFastConstructionSlowTracing", 1))
@@ -419,5 +422,24 @@ namespace MatterHackers.RayTracer
 				}
 			}
 		}
-	}
+
+        public void SetNodes(ITraceable nodeA, ITraceable nodeB)
+        {
+            this.nodeA = nodeA;
+            this.nodeB = nodeB;
+
+            // Recalculate the Axis Aligned Bounding Box
+            Aabb = nodeA.GetAxisAlignedBoundingBox() + nodeB.GetAxisAlignedBoundingBox();
+
+            // Determine the splitting plane
+            if (Aabb.XSize > Aabb.YSize)
+            {
+                splittingPlane = Aabb.XSize > Aabb.ZSize ? 0 : 2;
+            }
+            else
+            {
+                splittingPlane = Aabb.YSize > Aabb.ZSize ? 1 : 2;
+            }
+        }
+    }
 }
