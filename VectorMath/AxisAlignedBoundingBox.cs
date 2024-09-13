@@ -487,5 +487,22 @@ namespace MatterHackers.VectorMath
         {
 			return ValidVector(MinXYZ, largestPossibleValue) && ValidVector(MaxXYZ, largestPossibleValue);
         }
+
+        public int GetLargestAxis()
+        {
+            Vector3 size = Size;
+            if (size.X > size.Y && size.X > size.Z)
+            {
+                return 0;
+            }
+            else if (size.Y > size.Z)
+            {
+                return 1;
+            }
+            else
+            {
+                return 2;
+            }
+        }
     }
 }

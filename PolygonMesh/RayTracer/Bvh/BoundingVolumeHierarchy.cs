@@ -41,6 +41,7 @@ namespace MatterHackers.RayTracer
 	{
 		SingleUnboundCollection,
 		BottomUpClustering,
+        ParallelBinnedSah,
         LocalOrderClustering
     }
 
@@ -165,7 +166,7 @@ namespace MatterHackers.RayTracer
             }
         }
 
-        public static ITraceable CreateNewHierarchy(List<ITraceable> tracePrimitives, BvhCreationOptions bvhCreationOptions = BvhCreationOptions.BottomUpClustering)
+        public static ITraceable CreateNewHierarchy(List<ITraceable> tracePrimitives, BvhCreationOptions bvhCreationOptions = BvhCreationOptions.ParallelBinnedSah)
         {
 			ITraceable output = null;
 
@@ -195,13 +196,21 @@ namespace MatterHackers.RayTracer
 					break;
 
 				case BvhCreationOptions.BottomUpClustering:
-					using (new QuickTimer("LegacySlowConstructionFastTracing", 1))
+					using (new QuickTimer("LegacySlowConstructionFastTracing", .1))
 					{
 						output = BvhBuilderBottomUp.Create(tracePrimitives);
 					}
 					break;
 
-				case BvhCreationOptions.LocalOrderClustering:
+				case BvhCreationOptions.ParallelBinnedSah:
+                    using (new QuickTimer("BvhBuilderOptimized", .1))
+                    {
+                        output = BvhBuilderParallelBinnedSah.Create(tracePrimitives);
+                    }
+                    break;
+
+
+                case BvhCreationOptions.LocalOrderClustering:
 					using (new QuickTimer("LocFastContructionFastTracing", 1))
 					{
 						output = BvhBuilderLocallyOrderedClustering.Create(tracePrimitives);
@@ -216,13 +225,6 @@ namespace MatterHackers.RayTracer
 
 				default:
 					throw new NotImplementedException();
-			}
-
-			if (tracePrimitives.Count > 100 && false)
-			{
-				PrintBvh(output, "C:\\Temp\\Bvh Bottom Up.txt");
-				var loc = BvhBuilderLocallyOrderedClustering.Create(tracePrimitives);
-				PrintBvh(loc, "C:\\Temp\\Bvh LOC.txt");
 			}
 
 			return output;

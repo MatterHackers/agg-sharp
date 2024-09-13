@@ -113,7 +113,7 @@ namespace MatterHackers.RayTracer
                 return sourceNodes[0];
             }
 
-            Parallel.Sequential = false;
+            Agg.Parallel.Sequential = false;
  
             // get the bounds of all the nodes
             var bounds = AxisAlignedBoundingBox.Empty();
