@@ -23,9 +23,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace MatterHackers.VectorMath
+namespace MatterHackers.VectorMath.Bvh
 {
-	public static class TradeOffBvhConstructor<T>
+    public static class TradeOffBvhConstructor<T>
 	{
 		public static BvhTree<T> CreateNewHierarchy(List<BvhTreeItemData<T>> itemsToAdd,
 			int maxRecursion = int.MaxValue,

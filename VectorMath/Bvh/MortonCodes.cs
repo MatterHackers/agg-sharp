@@ -29,7 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.VectorMath.Bvh
 {
     /// <summary>
     /// This is a morton encoder that creates 21 bits per channel for x,y,z data

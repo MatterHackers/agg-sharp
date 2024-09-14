@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.VectorMath;
+using MatterHackers.VectorMath.Bvh;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

@@ -23,7 +23,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace MatterHackers.VectorMath
+namespace MatterHackers.VectorMath.Bvh
 {
 	public partial class BvhTree<T> : IIntersectable
 	{

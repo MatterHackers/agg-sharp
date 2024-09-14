@@ -34,6 +34,7 @@ using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
+using MatterHackers.VectorMath.Bvh;
 
 namespace MatterHackers.PolygonMesh
 {
