@@ -431,11 +431,16 @@ namespace MatterHackers.Agg.VertexSource
                     break;
 
                 case FlagsAndCommand.MoveTo:
-                    throw new Exception("Not implemented yet");
+                    vertexDataManager.RemoveAt(index);
                     break;
 
                 case FlagsAndCommand.EndPoly:
                     throw new Exception("Not implemented yet");
+                    break;
+
+                case FlagsAndCommand.FlagClose:
+                case FlagsAndCommand.FlagClose | FlagsAndCommand.CommandsMask:
+                    vertexDataManager.RemoveAt(index);
                     break;
 
                 default:
