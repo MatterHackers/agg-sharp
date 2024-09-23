@@ -49,8 +49,8 @@ namespace MatterHackers.VectorMath
 
 		private const double CameraZTranslationFudge = -7;
 
-		public double Height { get; private set; } = 0;
-		public double Width { get; private set; } = 0;
+		public double Height { get; set; } = 0;
+		public double Width { get; set; } = 0;
 		public Vector2 ViewportSize { get { return new Vector2(Width, Height); } }
 		/// <summary>
 		/// The vertical FOV of the latest perspective projection. Untouched by orthographic projection.
@@ -169,15 +169,33 @@ namespace MatterHackers.VectorMath
 			this.CalculateModelviewMatrix();
 		}
 
+        // A copy constructor
+        public WorldView(WorldView copy)
+        {
+            this.Height = copy.Height;
+            this.Width = copy.Width;
+            this.VFovDegrees = copy.VFovDegrees;
+            this.HFovDegrees = copy.HFovDegrees;
+            this.NearPlaneHeightInViewspace = copy.NearPlaneHeightInViewspace;
+            this.IsOrthographic = copy.IsOrthographic;
+            this.ModelviewMatrix = copy.ModelviewMatrix;
+            this.ProjectionMatrix = copy.ProjectionMatrix;
+            this.InverseModelviewMatrix = copy.InverseModelviewMatrix;
+            this.InverseProjectionMatrix = copy.InverseProjectionMatrix;
+            this.NearZ = copy.NearZ;
+            this.FarZ = copy.FarZ;
+            this._rotationMatrix = copy._rotationMatrix;
+            this._translationMatrix = copy._translationMatrix;
+        }
 
-		/// <summary>
-		/// Sets a typical perspective projection with an FOV of 45.
-		/// </summary>
-		/// <param name="width">Width of the viewport.</param>
-		/// <param name="height">Height of the viewport.</param>
-		/// <param name="zNear">Positive position of the near plane along the forward axis.</param>
-		/// <param name="zFar">Positive position of the far plane along the forward axis.</param>
-		public void CalculatePerspectiveMatrix(
+        /// <summary>
+        /// Sets a typical perspective projection with an FOV of 45.
+        /// </summary>
+        /// <param name="width">Width of the viewport.</param>
+        /// <param name="height">Height of the viewport.</param>
+        /// <param name="zNear">Positive position of the near plane along the forward axis.</param>
+        /// <param name="zFar">Positive position of the far plane along the forward axis.</param>
+        public void CalculatePerspectiveMatrix(
 			double width, double height,
 			double zNear = DefaultNearZ, double zFar = DefaultFarZ)
 		{

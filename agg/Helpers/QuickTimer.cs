@@ -33,52 +33,74 @@ using System.Diagnostics;
 
 namespace MatterHackers.Agg
 {
-	/// <summary>
-	/// A tiny class to allow for the quick timing of a block of code in the debugger.
-	/// </summary>
-	/// /// <example> 
-	/// This sample shows how to use QuickTimer.
-	/// <code>
-	/// class SampleProgram
-	/// {
-	///     static int Main() 
-	///     {
-	///			// some code we want to time
-	///			using(new QuickTimer("Time To Get Cookies")
-	///			{
-	///				GetCookies();
-	///			}
-	///			
-	///         return 1;
-	///     }
-	/// }
-	/// </code>
-	/// </example>
-	public class QuickTimer : IDisposable
-	{
+    /// <summary>
+    /// A tiny class to allow for the quick timing of a block of code in the debugger.
+    /// </summary>
+    /// /// <example> 
+    /// This sample shows how to use QuickTimer.
+    /// <code>
+    /// class SampleProgram
+    /// {
+    ///     static int Main() 
+    ///     {
+    ///			// some code we want to time
+    ///			using(new QuickTimer("Time To Get Cookies")
+    ///			{
+    ///				GetCookies();
+    ///			}
+    ///			
+    ///         return 1;
+    ///     }
+    /// }
+    /// </code>
+    /// </example>
+    public unsafe class QuickTimer : IDisposable
+    {
         private double minTimeToReport;
         private string name;
-		private Stopwatch quickTimerTime = Stopwatch.StartNew();
-		private double startTime;
+        private Stopwatch quickTimerTime = Stopwatch.StartNew();
+        private double startTime;
+        private double* outSeconds; // Pointer to store the address of the out parameter
 
-		public QuickTimer(string name, double minTimeToReport = 0)
-		{
-			this.minTimeToReport = minTimeToReport;
-			this.name = name;
-			startTime = quickTimerTime.Elapsed.TotalMilliseconds;
-		}
+        public QuickTimer(string name, double minTimeToReport = 0)
+        {
+            this.minTimeToReport = minTimeToReport;
+            this.name = name;
+            startTime = quickTimerTime.Elapsed.TotalMilliseconds;
+            this.outSeconds = null;
+        }
 
-		public void Dispose()
-		{
-			double totalTime = (quickTimerTime.Elapsed.TotalMilliseconds - startTime) / 1000.0;
-			if (totalTime > minTimeToReport)
-			{
-				Debug.WriteLine(name + ": {0:0.0}s".FormatWith(totalTime));
-			}
-		}
-	}
+        public QuickTimer(string name, out double seconds, double minTimeToReport = 0)
+        {
+            this.minTimeToReport = minTimeToReport;
+            this.name = name;
+            startTime = quickTimerTime.Elapsed.TotalMilliseconds;
 
-	public class QuickTimerReport : IDisposable
+            // Store the address of the out parameter
+            fixed (double* p = &seconds)
+            {
+                this.outSeconds = p;
+            }
+        }
+
+        public void Dispose()
+        {
+            double totalTime = (quickTimerTime.Elapsed.TotalMilliseconds - startTime) / 1000.0;
+
+            // Update the out parameter if it was provided
+            if (outSeconds != null)
+            {
+                *outSeconds = totalTime;
+            }
+
+            if (totalTime > minTimeToReport)
+            {
+                Debug.WriteLine(name + ": {0:0.0}s".FormatWith(totalTime));
+            }
+        }
+    }
+
+    public class QuickTimerReport : IDisposable
 	{
 		private string name;
 		private Stopwatch quickTimerTime = Stopwatch.StartNew();
