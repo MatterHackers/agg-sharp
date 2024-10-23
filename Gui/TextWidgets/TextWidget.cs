@@ -272,8 +272,10 @@ namespace MatterHackers.Agg.UI
 			int numLines = Text.Split('\n').Length - 1;
 			if (Text.Contains("\r"))
 			{
-				throw new Exception("These should have be converted to \n.");
-			}
+				Text = Text.Trim();
+                Text = Text.Replace("\r\n", "\n");
+                Text = Text.Replace("\n\r", "\n");
+            }
 
 			double yOffsetForText = Printer.TypeFaceStyle.EmSizeInPixels * numLines;
 			double xOffsetForText = 0;
