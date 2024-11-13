@@ -78,13 +78,15 @@ namespace MatterHackers.Agg.UI
 			_downArrow.MoveTo(-ArrowHeight, 0);
 			_downArrow.LineTo(ArrowHeight, 0);
 			_downArrow.LineTo(0, -ArrowHeight);
+			_downArrow.ClosePolygon();
 
-			_upArrow = new VertexStorage();
+            _upArrow = new VertexStorage();
 			_upArrow.MoveTo(-ArrowHeight, -ArrowHeight);
 			_upArrow.LineTo(ArrowHeight, -ArrowHeight);
 			_upArrow.LineTo(0, 0);
+            _upArrow.ClosePolygon();
 
-			calculatedDeviceScale = GuiWidget.DeviceScale;
+            calculatedDeviceScale = GuiWidget.DeviceScale;
 		}
 	}
 }

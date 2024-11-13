@@ -169,6 +169,7 @@ namespace MatterHackers.RenderOpenGl
                 && vertexSource is VertexSourceApplyTransform applyTransform
                 && applyTransform.TransformToApply is Affine affine)
             {
+                vertexSource = applyTransform.VertexSource;
                 translation = new Vector2(affine.tx, affine.ty);
                 affine.tx = 0;
                 affine.ty = 0;
