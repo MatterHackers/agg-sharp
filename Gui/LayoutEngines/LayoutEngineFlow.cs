@@ -289,13 +289,18 @@ namespace MatterHackers.Agg.UI
 
 			if (numItemsNeedingExpanding > 0)
 			{
-				// Iterate all the children and add back in and size that they can't grow bigger than back into the sizePerChild.
+				// Iterate all the children and add back in any size that they can't grow bigger than back into the sizePerChild.
 				var extraSizeDueToMax = default(Vector2);
 				var maxSizeCount = default(Point2D);
 
 				foreach (GuiWidget child in parent.Children)
 				{
-					if (child.MaximumSize.X < sizePerChild.X)
+                    if (child.Visible == false)
+                    {
+                        continue;
+                    }
+
+                    if (child.MaximumSize.X < sizePerChild.X)
 					{
 						extraSizeDueToMax.X += sizePerChild.X - child.MaximumSize.X;
 						maxSizeCount.x++;
