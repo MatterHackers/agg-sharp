@@ -18,7 +18,7 @@
   <Import Project="..\Typography.OpenFont\Typography.OpenFont.projitems" Label="Shared" />
 
   <ItemGroup>
-    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.6.0" />
   </ItemGroup>
 
 </Project>
