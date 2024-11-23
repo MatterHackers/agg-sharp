@@ -29,7 +29,8 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
-using System.Net;
+using System.IO;
+using System.Net.Http;
 using Markdig.Renderers;
 using Markdig.Renderers.Agg;
 using MatterHackers.Agg.UI;
@@ -41,33 +42,33 @@ namespace Markdig.Agg
 		private string _markDownText = null;
 		private MarkdownPipeline _pipeLine = null;
 		private static readonly MarkdownPipeline DefaultPipeline = new MarkdownPipelineBuilder().UseSupportedExtensions().Build();
+        public string BasePath { get; private set; }
 
-		public AggMarkdownDocument()
+        public AggMarkdownDocument()
 		{
 		}
 
-		public AggMarkdownDocument(Uri baseUri)
+		public AggMarkdownDocument(string basePath)
 		{
-			this.BaseUri = baseUri;
+			this.BasePath = basePath;
 		}
 
 		public string MatchingText { get; set; }
 
-		public Uri BaseUri { get; set; } = new Uri("https://www.matterhackers.com/");
+        public List<MarkdownDocumentLink> Children { get; private set; } = new List<MarkdownDocumentLink>();
 
-		public List<MarkdownDocumentLink> Children { get; private set; } = new List<MarkdownDocumentLink>();
+        public static AggMarkdownDocument Load(string uri)
+        {
+            using (var httpClient = new HttpClient())
+            {
+                string rawText = httpClient.GetStringAsync(uri).Result;
 
-		public static AggMarkdownDocument Load(Uri uri)
-		{
-			var webClient = new WebClient();
-
-			string rawText = webClient.DownloadString(uri);
-
-			return new AggMarkdownDocument(uri)
-			{
-				Markdown = rawText,
-			};
-		}
+                return new AggMarkdownDocument(uri)
+                {
+                    Markdown = rawText,
+                };
+            }
+        }
 
 		/// <summary>
 		/// Gets or sets the Markdown to display.
@@ -121,7 +122,6 @@ namespace Markdig.Agg
 
 				var renderer = new AggRenderer(rootWidget, theme)
 				{
-					BaseUri = this.BaseUri,
 					ChildLinks = new List<MarkdownDocumentLink>()
 				};
 
@@ -135,4 +135,63 @@ namespace Markdig.Agg
 			}
 		}
 	}
+
+    public class MarkdownPathHandler
+    {
+        private string basePath;
+        private string currentDirectory;
+
+        public MarkdownPathHandler(string initialBasePath)
+        {
+            // Normalize the base path to use platform-specific directory separators
+            basePath = Path.GetFullPath(initialBasePath.Replace('/', Path.DirectorySeparatorChar));
+            currentDirectory = basePath;
+        }
+
+        public string ResolvePath(string relativePath)
+        {
+            // Handle absolute paths
+            if (Path.IsPathRooted(relativePath))
+            {
+                return Path.GetFullPath(relativePath);
+            }
+
+            // Normalize slashes to platform-specific separator
+            relativePath = relativePath.Replace('/', Path.DirectorySeparatorChar);
+
+            // Combine the current directory with the relative path
+            string fullPath = Path.Combine(currentDirectory, relativePath);
+
+            // Normalize the path (resolve .. and . segments)
+            fullPath = Path.GetFullPath(fullPath);
+
+            // Verify the resolved path is still under the base path for security
+            if (!fullPath.StartsWith(basePath))
+            {
+                throw new InvalidOperationException("Resolved path is outside the base directory");
+            }
+
+            return fullPath;
+        }
+
+        public void UpdateCurrentDirectory(string newPath)
+        {
+            // Get the directory of the new path
+            string newDir = Path.GetDirectoryName(newPath);
+            if (newDir != null)
+            {
+                // Update the current directory while maintaining the base path constraint
+                string fullPath = Path.GetFullPath(newDir);
+                if (fullPath.StartsWith(basePath))
+                {
+                    currentDirectory = fullPath;
+                }
+            }
+        }
+
+        public string GetRelativePath(string fullPath)
+        {
+            return Path.GetRelativePath(currentDirectory, fullPath);
+        }
+    }
 }

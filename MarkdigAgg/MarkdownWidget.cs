@@ -1,5 +1,5 @@
 ﻿/*
-Copyright(c) 2018, Lars Brubaker, John Lewin
+Copyright(c) 2024, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,18 +28,20 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Net;
+using System.IO;
 using System.Net.Http;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
-using MatterHackers.Localizations;
 using MatterHackers.VectorMath;
 
 namespace Markdig.Agg
 {
 	public class MarkdownWidget : ScrollableWidget
 	{
+        private MarkdownPathHandler pathHandler; 
+		
 		private string _markDownText = null;
 		private FlowLayoutWidget contentPanel;
 
@@ -53,12 +55,10 @@ namespace Markdig.Agg
         // string uriToLoad, Action<string> updateResult, bool addToAppCache = true, Action<HttpRequestMessage> addHeaders = null
 		public static Action<string, Action<string>, bool, Action<HttpRequestMessage>> RetrieveText;
 
-        public MarkdownWidget(ThemeConfig theme, Uri contentUri, bool scrollContent = true)
+        public MarkdownWidget(ThemeConfig theme, string contentUri, bool scrollContent = true)
 			: this(theme, scrollContent)
 		{
-			markdownDocument.BaseUri = contentUri;
-
-			this.LoadUri(contentUri);
+            pathHandler = new MarkdownPathHandler(contentUri);
 		}
 
 		public MarkdownWidget(ThemeConfig theme, bool scrollContent = true)
@@ -108,46 +108,39 @@ namespace Markdig.Agg
 			base.OnSizeChanged(e);
         }
 
-        public void LoadUri(Uri uri)
-		{
-			try
-			{
-				var webClient = new WebClient();
-				markdownDocument.BaseUri = uri;
+        public void LoadUri(string uri)
+        {
+            try
+            {
+                if (uri.StartsWith("Docs/Help") || uri.StartsWith("Docs\\Help"))
+                {
+                    uri = Path.Combine(StaticData.RootPath, uri);
+                }
 
-				try
-				{
-#if DEBUG
-                    if (MarkdownWidget.RetrieveText == null)
+                string fullPath = pathHandler.ResolvePath(uri);
+
+                if (File.Exists(fullPath))
+                {
+                    string markDown = File.ReadAllText(fullPath);
+                    pathHandler.UpdateCurrentDirectory(fullPath);
+
+                    UiThread.RunOnIdle(() =>
                     {
-                        throw new Exception("MarkdownWidget.RetrieveText is not set");
-                    }
-#endif
-                    // put in controls from the feed that show relevant printer information
-                    RetrieveText?.Invoke(uri.ToString(),
-						(markDown) =>
-						{
-							UiThread.RunOnIdle(() =>
-							{
-								this.Markdown = markDown;
-							});
-						}, true, null);
-				}
-				catch
-				{
-				}
-			}
-			catch
-			{
-				// On error, revert to empty content
-				this.Markdown = "";
-			}
-		}
+                        this.Markdown = markDown;
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle or log error
+                this.Markdown = "";
+            }
+        }
 
-		/// <summary>
-		/// Gets or sets the markdown to display.
-		/// </summary>
-		public string Markdown
+        /// <summary>
+        /// Gets or sets the markdown to display.
+        /// </summary>
+        public string Markdown
 		{
 			get => _markDownText;
 			set

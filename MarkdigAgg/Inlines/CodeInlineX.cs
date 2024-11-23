@@ -27,23 +27,26 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using Markdig.Syntax.Inlines;
+using MatterHackers.Agg.UI;
 
 namespace Markdig.Renderers.Agg.Inlines
 {
-	/// <summary>
-	/// A Agg renderer for a <see cref="LiteralInline"/>.
-	/// </summary>
-	/// <seealso cref="Markdig.Renderers.Agg.AggObjectRenderer{Markdig.Syntax.Inlines.LiteralInline}" />
-	public class AggLiteralInlineRenderer : AggObjectRenderer<LiteralInline>
+    public class CodeInlineX : FlowLayoutWidget
 	{
-		/// <inheritdoc/>
-		protected override void Write(AggRenderer renderer, LiteralInline obj)
-		{
-			if (obj.Content.IsEmpty)
-				return;
+		private ThemeConfig theme;
 
-			renderer.WriteText(ref obj.Content);
+		public CodeInlineX(ThemeConfig theme)
+		{
+			this.theme = theme;
+			this.HAnchor = HAnchor.Fit;
+			this.VAnchor = VAnchor.Fit;
+			this.Padding = 4;
+			this.BackgroundColor = theme.MinimalShade;
+		}
+
+		public override GuiWidget AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
+		{
+			return base.AddChild(childToAdd, indexInChildrenList);
 		}
 	}
 }

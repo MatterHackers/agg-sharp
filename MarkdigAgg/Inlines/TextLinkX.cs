@@ -27,23 +27,65 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+using System.Linq;
+using Markdig.Agg;
 using Markdig.Syntax.Inlines;
+using MatterHackers.Agg.UI;
 
 namespace Markdig.Renderers.Agg.Inlines
 {
-	/// <summary>
-	/// A Agg renderer for a <see cref="LiteralInline"/>.
-	/// </summary>
-	/// <seealso cref="Markdig.Renderers.Agg.AggObjectRenderer{Markdig.Syntax.Inlines.LiteralInline}" />
-	public class AggLiteralInlineRenderer : AggObjectRenderer<LiteralInline>
+    public class TextLinkX : FlowLayoutWidget
 	{
-		/// <inheritdoc/>
-		protected override void Write(AggRenderer renderer, LiteralInline obj)
-		{
-			if (obj.Content.IsEmpty)
-				return;
+		private LinkInline linkInline;
+		private string url;
+		private AggRenderer aggRenderer;
 
-			renderer.WriteText(ref obj.Content);
+		public TextLinkX(AggRenderer renderer, string url, LinkInline linkInline)
+		{
+			this.HAnchor = HAnchor.Fit;
+			this.VAnchor = VAnchor.Fit;
+			this.Cursor = Cursors.Hand;
+			this.linkInline = linkInline;
+			this.url = url;
+			this.aggRenderer = renderer;
+		}
+
+		protected override void OnClick(MouseEventArgs mouseEvent)
+		{
+			if (linkInline.Url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+			{
+#if DEBUG
+                if (MarkdownWidget.LaunchBrowser == null)
+				{
+                    throw new Exception("You must set the LaunchBrowser action to open a browser.");
+                }
+#endif
+                MarkdownWidget.LaunchBrowser?.Invoke(linkInline.Url);
+			}
+			else
+			{
+				if (aggRenderer.RootWidget.Parents<MarkdownWidget>().FirstOrDefault() is MarkdownWidget markdownWidget)
+				{
+					markdownWidget.LoadUri(linkInline.Url);
+				}
+			}
+
+			base.OnClick(mouseEvent);
+		}
+
+		public override GuiWidget AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
+		{
+			if (childToAdd is TextWidget textWidget)
+			{
+				// Underline TextWidget children of TextLink nodes
+				textWidget.Underline = true;
+			}
+
+			// Allow link parent to own mouse events
+			childToAdd.Selectable = false;
+
+			return base.AddChild(childToAdd, indexInChildrenList);
 		}
 	}
 }
