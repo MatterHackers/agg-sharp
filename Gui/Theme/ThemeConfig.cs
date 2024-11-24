@@ -325,8 +325,6 @@ namespace MatterHackers.Agg.UI
 
         public Color BorderColor { get; set; }
 
-        public Color BorderColor40 { get; set; }
-
         public Color BorderColor20 { get; set; }
 
         public void EnsureDefaults()
