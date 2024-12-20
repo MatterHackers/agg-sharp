@@ -758,7 +758,7 @@ namespace MatterHackers.Agg.UI
 		private static void BestPopupPosition(this SystemWindow systemWindow, MatePoint anchor, MatePoint popup, RectangleDouble altBounds)
 		{
 			// Calculate left aligned screen space position (using widgetRelativeTo.parent)
-			Vector2 anchorLeft = anchor.Widget.Parent.TransformToScreenSpace(anchor.Widget.Position);
+			Vector2 anchorLeft = anchor.Widget.Parent.TransformToParentSpace(systemWindow, anchor.Widget.Position);
 			anchorLeft += new Vector2(altBounds.Left, altBounds.Bottom);
 
 			Vector2 popupPosition = anchorLeft;

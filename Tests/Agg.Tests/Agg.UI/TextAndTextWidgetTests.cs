@@ -33,6 +33,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
+using System.IO;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -134,6 +135,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 
 			{
+				var oldEnforceIntegerBounds = GuiWidget.DefaultEnforceIntegerBounds;
+				GuiWidget.DefaultEnforceIntegerBounds = false;
 				GuiWidget rectangleWidget = new GuiWidget(100, 50);
 				TextEditWidget itemToAdd = new TextEditWidget("test Item", 10, 10);
 				rectangleWidget.AddChild(itemToAdd);
@@ -150,14 +153,18 @@ namespace MatterHackers.Agg.UI.Tests
 
 				if (saveImagesForDebug)
 				{
-					ImageTgaIO.Save(rectangleWidget.BackBuffer, "-rectangleWidget.tga");
-					//ImageTgaIO.Save(itemToAdd.Children[0].BackBuffer, "-internalTextWidget.tga");
-					ImageTgaIO.Save(textOnly, "-textOnly.tga");
+					var basePath = Path.Combine("C:", "Temp", "Debug");
+					Directory.CreateDirectory(basePath);
+
+                    ImageTgaIO.Save(rectangleWidget.BackBuffer, Path.Combine(basePath, "-rectangleWidget.tga"));
+                    //ImageTgaIO.Save(itemToAdd.Children[0].BackBuffer, Path.Combine(basePath, "-internalTextWidget.tga"));
+                    ImageTgaIO.Save(textOnly, Path.Combine(basePath, "-textOnly.tga"));
 				}
 
 				Assert.True(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1), "TextWidgets need to be drawing.");
 				rectangleWidget.Close();
-			}
+				GuiWidget.DefaultEnforceIntegerBounds = oldEnforceIntegerBounds;
+            }
 		}
 	}
 }

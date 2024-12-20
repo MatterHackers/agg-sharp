@@ -58,4 +58,10 @@ namespace Agg.Tests.Agg
     public class SetupAttribute : Attribute
     {
     }
+
+    // Create a Teardown function attribute
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
+    public class TearDownAttribute : Attribute
+    {
+    }
 }
