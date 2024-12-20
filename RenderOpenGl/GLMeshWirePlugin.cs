@@ -42,16 +42,24 @@ namespace MatterHackers.RenderOpenGl
 		VectorPOD<WireVertexData> EdgeLines { get; }
 	}
 
-	public struct WireVertexData
-	{
-		public float PositionsX;
-		public float PositionsY;
-		public float PositionsZ;
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct WireVertexData
+    {
+        // Color data
+        public byte r;
+        public byte g;
+        public byte b;
+        public byte a;
 
-		public static readonly int Stride = Marshal.SizeOf(default(WireVertexData));
-	}
+        // Position data
+        public float PositionsX;
+        public float PositionsY;
+        public float PositionsZ;
 
-	public class GLMeshWirePlugin : IEdgeLinesContainer
+        public static readonly int Stride = Marshal.SizeOf(default(WireVertexData));
+    }
+
+    public class GLMeshWirePlugin : IEdgeLinesContainer
 	{
 		public delegate void DrawToGL(Mesh meshToRender);
 
@@ -62,7 +70,7 @@ namespace MatterHackers.RenderOpenGl
 		private int meshUpdateCount;
 		private double nonPlanarAngleRequired;
 
-		public static GLMeshWirePlugin Get(Mesh mesh, double nonPlanarAngleRequired = 0, Action meshChanged = null)
+		public static GLMeshWirePlugin Get(Mesh mesh, Color wireColor, double nonPlanarAngleRequired = 0, Action meshChanged = null)
 		{
 			mesh.PropertyBag.TryGetValue(GLMeshWirePluginName, out object meshData);
 			if (meshData is GLMeshWirePlugin plugin)
@@ -79,7 +87,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 
 			var newPlugin = new GLMeshWirePlugin();
-			newPlugin.CreateRenderData(mesh, nonPlanarAngleRequired, meshChanged);
+			newPlugin.CreateRenderData(mesh, wireColor, nonPlanarAngleRequired, meshChanged);
 			newPlugin.meshUpdateCount = mesh.ChangedCount;
 			mesh.PropertyBag.Add(GLMeshWirePluginName, newPlugin);
 
@@ -91,7 +99,7 @@ namespace MatterHackers.RenderOpenGl
 			// This is private as you can't build one of these. You have to call GetImageGLDisplayListPlugin.
 		}
 
-		private void CreateRenderData(Mesh mesh, double nonPlanarAngleRequired = 0, Action meshChanged = null)
+		private void CreateRenderData(Mesh mesh, Color wireColor, double nonPlanarAngleRequired = 0, Action meshChanged = null)
 		{
 			this.nonPlanarAngleRequired = nonPlanarAngleRequired;
 			var edgeLines = new VectorPOD<WireVertexData>();
@@ -116,9 +124,10 @@ namespace MatterHackers.RenderOpenGl
 							double angle = faceNormal0.CalculateAngle(faceNormal1);
 							if (angle > nonPlanarAngleRequired)
 							{
-								AddVertex(filteredEdgeLines,
+								AddEdgeLine(filteredEdgeLines,
 									mesh.Vertices[meshEdge.Vertex0Index],
-									mesh.Vertices[meshEdge.Vertex1Index]);
+									mesh.Vertices[meshEdge.Vertex1Index],
+									wireColor);
 							}
 						}
 					}
@@ -133,24 +142,28 @@ namespace MatterHackers.RenderOpenGl
 				for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
 				{
 					var face = mesh.Faces[faceIndex];
-					AddVertex(edgeLines, mesh.Vertices[face.v0], mesh.Vertices[face.v1]);
-					AddVertex(edgeLines, mesh.Vertices[face.v1], mesh.Vertices[face.v2]);
-					AddVertex(edgeLines, mesh.Vertices[face.v2], mesh.Vertices[face.v0]);
+					AddEdgeLine(edgeLines, mesh.Vertices[face.v0], mesh.Vertices[face.v1], wireColor);
+					AddEdgeLine(edgeLines, mesh.Vertices[face.v1], mesh.Vertices[face.v2], wireColor);
+					AddEdgeLine(edgeLines, mesh.Vertices[face.v2], mesh.Vertices[face.v0], wireColor);
 				}
 			}
 		}
 
-		private void AddVertex(VectorPOD<WireVertexData> edgeLines, Vector3Float vertex0, Vector3Float vertex1)
+		public static void AddEdgeLine(VectorPOD<WireVertexData> edgeLines, Vector3Float vertex0, Vector3Float vertex1, Color wireColor)
 		{
 			WireVertexData tempVertex;
-			tempVertex.PositionsX = (float)vertex0.X;
-			tempVertex.PositionsY = (float)vertex0.Y;
-			tempVertex.PositionsZ = (float)vertex0.Z;
-			edgeLines.Add(tempVertex);
+			tempVertex.PositionsX = vertex0.X;
+			tempVertex.PositionsY = vertex0.Y;
+			tempVertex.PositionsZ = vertex0.Z;
+			tempVertex.r = wireColor.red;
+            tempVertex.g = wireColor.green;
+            tempVertex.b = wireColor.blue;
+			tempVertex.a = wireColor.alpha;
+            edgeLines.Add(tempVertex);
 
-			tempVertex.PositionsX = (float)vertex1.X;
-			tempVertex.PositionsY = (float)vertex1.Y;
-			tempVertex.PositionsZ = (float)vertex1.Z;
+			tempVertex.PositionsX = vertex1.X;
+			tempVertex.PositionsY = vertex1.Y;
+			tempVertex.PositionsZ = vertex1.Z;
 			edgeLines.Add(tempVertex);
 		}
 

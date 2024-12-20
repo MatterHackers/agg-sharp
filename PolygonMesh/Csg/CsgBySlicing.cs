@@ -358,7 +358,8 @@ namespace MatterHackers.PolygonMesh.Csg
             // handle the co-planar faces
             ProcessCoplanarFaces(operation, resultsMesh, coPlanarFaces);
 
-            resultsMesh.MergeVertices(.01);
+            // .001 represents 1 micron of surface arrea so we can remove vertices when the face is smaller than that
+            resultsMesh.MergeVertices(.01, .001);
             resultsMesh.CleanAndMerge();
             return resultsMesh;
         }

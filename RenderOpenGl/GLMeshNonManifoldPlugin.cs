@@ -48,7 +48,7 @@ namespace MatterHackers.RenderOpenGl
 
 		private int meshUpdateCount;
 
-		public static GLMeshNonManifoldPlugin Get(Mesh mesh, Action meshChanged = null)
+		public static GLMeshNonManifoldPlugin Get(Mesh mesh, Color minifoldWireColor, Action meshChanged = null)
 		{
 			mesh.PropertyBag.TryGetValue(GLMeshNonManifoldPluginName, out object meshData);
 			if (meshData is GLMeshNonManifoldPlugin plugin)
@@ -64,7 +64,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 
 			var newPlugin = new GLMeshNonManifoldPlugin();
-			newPlugin.CreateRenderData(mesh, meshChanged);
+			newPlugin.CreateRenderData(mesh, minifoldWireColor, meshChanged);
 			newPlugin.meshUpdateCount = mesh.ChangedCount;
 			mesh.PropertyBag.Add(GLMeshNonManifoldPluginName, newPlugin);
 
@@ -76,7 +76,7 @@ namespace MatterHackers.RenderOpenGl
 			// This is private as you can't build one of these. You have to call GetImageGLDisplayListPlugin.
 		}
 
-		private void CreateRenderData(Mesh mesh, Action meshChanged = null)
+		private void CreateRenderData(Mesh mesh, Color wireColor, Action meshChanged = null)
 		{
 			var edgeLines = new VectorPOD<WireVertexData>();
 
@@ -84,9 +84,9 @@ namespace MatterHackers.RenderOpenGl
 			for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
 			{
 				var face = mesh.Faces[faceIndex];
-				AddVertex(edgeLines, mesh.Vertices[face.v0], mesh.Vertices[face.v1]);
-				AddVertex(edgeLines, mesh.Vertices[face.v1], mesh.Vertices[face.v2]);
-				AddVertex(edgeLines, mesh.Vertices[face.v2], mesh.Vertices[face.v0]);
+                GLMeshWirePlugin.AddEdgeLine(edgeLines, mesh.Vertices[face.v0], mesh.Vertices[face.v1], wireColor);
+                GLMeshWirePlugin.AddEdgeLine(edgeLines, mesh.Vertices[face.v1], mesh.Vertices[face.v2], wireColor);
+                GLMeshWirePlugin.AddEdgeLine(edgeLines, mesh.Vertices[face.v2], mesh.Vertices[face.v0], wireColor);
 			}
 
 			this.EdgeLines = edgeLines;
@@ -96,30 +96,27 @@ namespace MatterHackers.RenderOpenGl
 			{
 				var filteredEdgeLines = new VectorPOD<WireVertexData>();
 
-				foreach (var meshEdge in mesh.GetNonManifoldEdges())
-				{
-					AddVertex(filteredEdgeLines,
-						mesh.Vertices[meshEdge.Vertex0Index],
-						mesh.Vertices[meshEdge.Vertex1Index]);
-				}
+                foreach (var meshEdge in mesh.GetMeshEdges())
+                {
+                    if (meshEdge.Faces.Count() != 2)
+                    {
+                        GLMeshWirePlugin.AddEdgeLine(filteredEdgeLines,
+                            mesh.Vertices[meshEdge.Vertex0Index],
+                            mesh.Vertices[meshEdge.Vertex1Index],
+							Color.Red);
+                    }
+					else
+					{
+                        GLMeshWirePlugin.AddEdgeLine(filteredEdgeLines,
+                            mesh.Vertices[meshEdge.Vertex0Index],
+                            mesh.Vertices[meshEdge.Vertex1Index],
+							wireColor);
+                    }
+                }
 
 				this.EdgeLines = filteredEdgeLines;
 				meshChanged?.Invoke();
 			});
-		}
-
-		private void AddVertex(VectorPOD<WireVertexData> edgeLines, Vector3Float vertex0, Vector3Float vertex1)
-		{
-			WireVertexData tempVertex;
-			tempVertex.PositionsX = (float)vertex0.X;
-			tempVertex.PositionsY = (float)vertex0.Y;
-			tempVertex.PositionsZ = (float)vertex0.Z;
-			edgeLines.Add(tempVertex);
-
-			tempVertex.PositionsX = (float)vertex1.X;
-			tempVertex.PositionsY = (float)vertex1.Y;
-			tempVertex.PositionsZ = (float)vertex1.Z;
-			edgeLines.Add(tempVertex);
 		}
 
 		public void Render()

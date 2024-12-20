@@ -220,15 +220,15 @@ namespace MatterHackers.PolygonMesh
 			face.normal *= -1;
 
 			if (markAsChange)
-            {
+			{
 				MarkAsChanged();
-            }
+			}
 		}
 
 		public void FlipFace(int faceIndex)
-        {
+		{
 			ReverseFace(faceIndex);
-        }
+		}
 
 		/// <summary>
 		/// Merge vertices that share the exact same coordinates
@@ -267,8 +267,8 @@ namespace MatterHackers.PolygonMesh
 			this.Vertices = newVertices;
 		}
 
-        public void CopyAllFaces(Mesh mesh, Matrix4X4 matrix)
-        {
+		public void CopyAllFaces(Mesh mesh, Matrix4X4 matrix)
+		{
 			foreach (var face in mesh.Faces)
 			{
 				var v0 = mesh.Vertices[face.v0].Transform(matrix);
@@ -280,92 +280,128 @@ namespace MatterHackers.PolygonMesh
 
 		public BvhTree<int> GetVertexBvhTree()
 		{
-            var tinyDistance = new Vector3Float(.001, .001, .001);
-            var vertexBvhTree = TradeOffBvhConstructor<int>.CreateNewHierarchy(this.Vertices
-                .Select((v, i) => new BvhTreeItemData<int>(i, new AxisAlignedBoundingBox(v - tinyDistance, v + tinyDistance))).ToList(),
-                DoSimpleSortSize: 10);
+			var tinyDistance = new Vector3Float(.001, .001, .001);
+			var vertexBvhTree = TradeOffBvhConstructor<int>.CreateNewHierarchy(this.Vertices
+				.Select((v, i) => new BvhTreeItemData<int>(i, new AxisAlignedBoundingBox(v - tinyDistance, v + tinyDistance))).ToList(),
+				DoSimpleSortSize: 10);
 
 			return vertexBvhTree;
-        }
+		}
 
         /// <summary>
         /// Merge vertices that are less than a given distance apart
         /// </summary>
         /// <param name="treatAsSameDistance">The distance to merge vertices</param>
-        public void MergeVertices(double treatAsSameDistance)
-		{
-			if (Vertices.Count < 2)
-			{
-				return;
-			}
+		/// <param name="minFaceArea">The minimum area of a face to keep it</param>"
+        public void MergeVertices(double treatAsSameDistance, double minFaceArea)
+        {
+            if (Vertices.Count < 2)
+            {
+                return;
+            }
 
-			var sameDistance = new Vector3Float(treatAsSameDistance, treatAsSameDistance, treatAsSameDistance);
-			// build a bvh tree of all the vertices
-			var vertexBvhTree = GetVertexBvhTree();
+            var sameDistance = new Vector3Float(treatAsSameDistance, treatAsSameDistance, treatAsSameDistance);
+            var vertexBvhTree = GetVertexBvhTree();
+            var newVertices = new List<Vector3Float>(Vertices.Count);
+            var vertexIndexRemaping = Enumerable.Range(0, Vertices.Count).Select(i => -1).ToList();
 
-			var newVertices = new List<Vector3Float>(Vertices.Count);
-			var vertexIndexRemaping = Enumerable.Range(0, Vertices.Count).Select(i => -1).ToList();
-			var searchResults = new List<int>();
-			// build up the list of index mapping
-			for (int i = 0; i < Vertices.Count; i++)
-			{
-				// first check if we have already found this vertex
-				if (vertexIndexRemaping[i] == -1)
-				{
-					var vertex = Vertices[i];
-					// remember the new index
-					var newIndex = newVertices.Count;
-					// add it to the vertices we will end up with
-					newVertices.Add(vertex);
-					// clear for new search
-					searchResults.Clear();
-					// find everything close
-					vertexBvhTree.SearchBounds(new AxisAlignedBoundingBox(vertex - sameDistance, vertex + sameDistance), searchResults);
-					// map them to this new vertex
-					foreach (var result in searchResults)
-					{
-						// this vertex has not been mapped
-						if (vertexIndexRemaping[result] == -1)
-						{
-							vertexIndexRemaping[result] = newIndex;
-						}
-					}
-				}
-			}
+            var searchResults = new List<int>();
+            // First pass: merge vertices
+            for (int i = 0; i < Vertices.Count; i++)
+            {
+                if (vertexIndexRemaping[i] == -1)
+                {
+                    var vertex = Vertices[i];
+                    var newIndex = newVertices.Count;
+                    newVertices.Add(vertex);
+                    searchResults.Clear();
+                    vertexBvhTree.SearchBounds(new AxisAlignedBoundingBox(vertex - sameDistance, vertex + sameDistance), searchResults);
 
-			// now make a new face list with the merge vertices
-			int GetIndex(int originalIndex)
-			{
-				return vertexIndexRemaping[originalIndex];
-			}
+                    foreach (var result in searchResults)
+                    {
+                        if (vertexIndexRemaping[result] == -1 &&
+                            (Vertices[result] - vertex).Length <= treatAsSameDistance)
+                        {
+                            vertexIndexRemaping[result] = newIndex;
+                        }
+                    }
+                }
+            }
 
-			var newFaces = new FaceList();
-			foreach (var face in Faces)
-			{
-				int iv0 = GetIndex(face.v0);
-				int iv1 = GetIndex(face.v1);
-				int iv2 = GetIndex(face.v2);
-				if (iv0 != iv1 && iv1 != iv2 && iv2 != iv0)
-				{
-					newFaces.Add(iv0, iv1, iv2, newVertices);
-				}
-			}
+            var addedFaces = new HashSet<(int, int, int)>();
+            var newFaces = new FaceList();
+            var vertexUsageCount = new int[newVertices.Count];
 
-			this.Faces = newFaces;
-			this.Vertices = newVertices;
-		}
+            foreach (var face in Faces)
+            {
+                int iv0 = vertexIndexRemaping[face.v0];
+                int iv1 = vertexIndexRemaping[face.v1];
+                int iv2 = vertexIndexRemaping[face.v2];
 
-		/// <summary>
-		/// Split the given face on the given plane. Remove the original face
-		/// and add as many new faces as required for the split.
-		/// </summary>
-		/// <param name="faceIndex">The index of the face to split.</param>
-		/// <param name="plane">The plane to split the face on. The face will not be split
-		/// if it is not intersected by this plane.</param>
-		/// <param name="onPlaneDistance">If a given edge of the face has a vertex that is within
-		/// this distance of the plane, the edge will not be split.</param>
-		/// <returns>Returns if the edge was actually split.</returns>
-		public bool SplitFace(int faceIndex, Plane plane, double onPlaneDistance = .001)
+                // Check for distinct vertices after merging
+                if (iv0 != iv1 && iv1 != iv2 && iv2 != iv0)
+                {
+                    // Create temporary face to check its area
+                    var tempFace = new Face(0, 1, 2, new List<Vector3Float> { newVertices[iv0], newVertices[iv1], newVertices[iv2] });
+                    var area = tempFace.GetArea(new Mesh(new List<Vector3Float> { newVertices[iv0], newVertices[iv1], newVertices[iv2] }, new FaceList()));
+
+                    if (area > minFaceArea)
+                    {
+                        var sorted = new[] { iv0, iv1, iv2 }.OrderBy(i => i).ToArray();
+                        if (addedFaces.Add((sorted[0], sorted[1], sorted[2])))
+                        {
+                            newFaces.Add(iv0, iv1, iv2, newVertices);
+                            vertexUsageCount[iv0]++;
+                            vertexUsageCount[iv1]++;
+                            vertexUsageCount[iv2]++;
+                        }
+                    }
+                }
+            }
+
+            // Create final vertex list with only used vertices
+            var finalVertices = new List<Vector3Float>();
+            var finalVertexMapping = new int[newVertices.Count];
+            for (int i = 0; i < newVertices.Count; i++)
+            {
+                if (vertexUsageCount[i] > 0)
+                {
+                    finalVertexMapping[i] = finalVertices.Count;
+                    finalVertices.Add(newVertices[i]);
+                }
+                else
+                {
+                    finalVertexMapping[i] = -1;
+                }
+            }
+
+            // Remap faces to use final vertex indices
+            var finalFaces = new FaceList();
+            foreach (var face in newFaces)
+            {
+                finalFaces.Add(
+                    finalVertexMapping[face.v0],
+                    finalVertexMapping[face.v1],
+                    finalVertexMapping[face.v2],
+                    finalVertices
+                );
+            }
+
+            this.Faces = finalFaces;
+            this.Vertices = finalVertices;
+        }
+
+        /// <summary>
+        /// Split the given face on the given plane. Remove the original face
+        /// and add as many new faces as required for the split.
+        /// </summary>
+        /// <param name="faceIndex">The index of the face to split.</param>
+        /// <param name="plane">The plane to split the face on. The face will not be split
+        /// if it is not intersected by this plane.</param>
+        /// <param name="onPlaneDistance">If a given edge of the face has a vertex that is within
+        /// this distance of the plane, the edge will not be split.</param>
+        /// <returns>Returns if the edge was actually split.</returns>
+        public bool SplitFace(int faceIndex, Plane plane, double onPlaneDistance = .001)
 		{
 			var newVertices = new List<Vector3Float>();
 			var newFaces = new List<Face>();
@@ -684,66 +720,66 @@ namespace MatterHackers.PolygonMesh
 
 			switch (segmentsClipped)
 			{
-			// if 2 sides are clipped we will add 2 new vertices and 3 polygons
-			case 2:
-				if (clipFace?.Invoke(new Mesh.SplitData(face, dist)) != false)
-				{
-					// find the side we are not going to clip
-					int vi0 = clipSegment[0] && clipSegment[1] ? 2
-						: clipSegment[0] && clipSegment[2] ? 1 : 0;
-					var vi1 = (vi0 + 1) % 3;
-					var vi2 = (vi0 + 2) % 3;
-					// get the current count
-					var vertexStart = newVertices.Count;
-					// add the existing vertices
-					newVertices.Add(v[vi0]);
-					newVertices.Add(v[vi1]);
-					newVertices.Add(v[vi2]);
-					// clip the edges, will add the new points
-					ClipEdge(vi1);
-					ClipEdge(vi2);
-					// add the new faces
-					if (!discardFacesOnNegativeSide || dist[vi0] > 0)
+				// if 2 sides are clipped we will add 2 new vertices and 3 polygons
+				case 2:
+					if (clipFace?.Invoke(new Mesh.SplitData(face, dist)) != false)
 					{
-						newFaces.Add(new Face(vertexStart, vertexStart + 1, vertexStart + 3, newVertices));
-						newFaces.Add(new Face(vertexStart, vertexStart + 3, vertexStart + 4, newVertices));
+						// find the side we are not going to clip
+						int vi0 = clipSegment[0] && clipSegment[1] ? 2
+							: clipSegment[0] && clipSegment[2] ? 1 : 0;
+						var vi1 = (vi0 + 1) % 3;
+						var vi2 = (vi0 + 2) % 3;
+						// get the current count
+						var vertexStart = newVertices.Count;
+						// add the existing vertices
+						newVertices.Add(v[vi0]);
+						newVertices.Add(v[vi1]);
+						newVertices.Add(v[vi2]);
+						// clip the edges, will add the new points
+						ClipEdge(vi1);
+						ClipEdge(vi2);
+						// add the new faces
+						if (!discardFacesOnNegativeSide || dist[vi0] > 0)
+						{
+							newFaces.Add(new Face(vertexStart, vertexStart + 1, vertexStart + 3, newVertices));
+							newFaces.Add(new Face(vertexStart, vertexStart + 3, vertexStart + 4, newVertices));
+						}
+						if (!discardFacesOnNegativeSide || !(dist[vi0] > 0))
+							newFaces.Add(new Face(vertexStart + 3, vertexStart + 2, vertexStart + 4, newVertices));
+						return true;
 					}
-					if (!discardFacesOnNegativeSide || !(dist[vi0] > 0))
-						newFaces.Add(new Face(vertexStart + 3, vertexStart + 2, vertexStart + 4, newVertices));
+
+					break;
+
+				// if 1 side is clipped we will add 1 new vertex and 2 polygons
+				case 1:
+					{
+						// find the side we are going to clip
+						int vi0 = clipSegment[0] ? 0 : clipSegment[1] ? 1 : 2;
+						var vi1 = (vi0 + 1) % 3;
+						var vi2 = (vi0 + 2) % 3;
+						// get the current count
+						var vertexStart = newVertices.Count;
+						// add the existing vertices
+						newVertices.Add(v[vi0]);
+						newVertices.Add(v[vi1]);
+						newVertices.Add(v[vi2]);
+						// clip the edge, will add the new point
+						ClipEdge(vi0);
+						// add the new faces
+						if (!discardFacesOnNegativeSide || dist[vi0] > 0)
+							newFaces.Add(new Face(vertexStart, vertexStart + 3, vertexStart + 2, newVertices));
+						if (!discardFacesOnNegativeSide || !(dist[vi0] > 0))
+							newFaces.Add(new Face(vertexStart + 3, vertexStart + 1, vertexStart + 2, newVertices));
+					}
+
 					return true;
-				}
 
-				break;
-
-			// if 1 side is clipped we will add 1 new vertex and 2 polygons
-			case 1:
-				{
-					// find the side we are going to clip
-					int vi0 = clipSegment[0] ? 0 : clipSegment[1] ? 1 : 2;
-					var vi1 = (vi0 + 1) % 3;
-					var vi2 = (vi0 + 2) % 3;
-					// get the current count
-					var vertexStart = newVertices.Count;
-					// add the existing vertices
-					newVertices.Add(v[vi0]);
-					newVertices.Add(v[vi1]);
-					newVertices.Add(v[vi2]);
-					// clip the edge, will add the new point
-					ClipEdge(vi0);
-					// add the new faces
-					if (!discardFacesOnNegativeSide || dist[vi0] > 0)
-						newFaces.Add(new Face(vertexStart, vertexStart + 3, vertexStart + 2, newVertices));
-					if (!discardFacesOnNegativeSide || !(dist[vi0] > 0))
-						newFaces.Add(new Face(vertexStart + 3, vertexStart + 1, vertexStart + 2, newVertices));
-				}
-
-				return true;
-
-			case 0:
-				// This face doesn't cross the plane.
-				if (discardFacesOnNegativeSide && !(dist.Max() > onPlaneDistance))
-					return true;
-				break;
+				case 0:
+					// This face doesn't cross the plane.
+					if (discardFacesOnNegativeSide && !(dist.Max() > onPlaneDistance))
+						return true;
+					break;
 			}
 
 			return false;
@@ -1139,7 +1175,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			int vStart = copyTo.Vertices.Count;
 			var face = copyFrom.Faces[faceIndex];
-			
+
 			// add all the vertices
 			copyTo.Vertices.Add(copyFrom.Vertices[face.v0]);
 			copyTo.Vertices.Add(copyFrom.Vertices[face.v1]);
@@ -1203,66 +1239,146 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-        /// <summary>
-        /// For every T Junction add a vertex to the mesh edge that needs one.
-        /// </summary>
-        /// <param name="mesh">The mesh to repair.</param>
-        public static void RepairTJunctions(this Mesh mesh)
-        {
-            var nonManifoldEdges = mesh.GetNonManifoldEdges();
-            var vertexBvhTree = mesh.GetVertexBvhTree();
-            var searchResults = new List<int>();
+		/// <summary>
+		/// For every T Junction add a vertex to the mesh edge that needs one.
+		/// </summary>
+		/// <param name="mesh">The mesh to repair.</param>
+		public static void RepairTJunctions(this Mesh mesh)
+		{
+			var nonManifoldEdges = mesh.GetNonManifoldEdges();
+			var vertexBvhTree = mesh.GetVertexBvhTree();
+			var searchResults = new List<int>();
 
-            foreach (MeshEdge edge in nonManifoldEdges)
-            {
-                var start = mesh.Vertices[edge.Vertex0Index];
-                var end = mesh.Vertices[edge.Vertex1Index];
-                Vector3Float normal = (end - start).GetNormal();
+			foreach (MeshEdge edge in nonManifoldEdges)
+			{
+				var start = mesh.Vertices[edge.Vertex0Index];
+				var end = mesh.Vertices[edge.Vertex1Index];
+				Vector3Float normal = (end - start).GetNormal();
 
-                // Get all the vertices that lay on this edge
+				// Get all the vertices that lay on this edge
 				var edgeAabb = new AxisAlignedBoundingBox(start, end);
 				searchResults.Clear();
 
-                vertexBvhTree.SearchBounds(edgeAabb, searchResults);
-                // map them to this new vertex
-                foreach (var result in searchResults)
-                {
-                    // Test if the vertex falls on the edge
-                    Vector3Float edgeDirection = (end - start).GetNormal();
+				vertexBvhTree.SearchBounds(edgeAabb, searchResults);
+				// map them to this new vertex
+				foreach (var result in searchResults)
+				{
+					// Test if the vertex falls on the edge
+					Vector3Float edgeDirection = (end - start).GetNormal();
 					var vertex = mesh.Vertices[result];
-                    Vector3Float vertexDirection = (vertex - start).GetNormal();
-                    float dotProduct = edgeDirection.Dot(vertexDirection);
+					Vector3Float vertexDirection = (vertex - start).GetNormal();
+					float dotProduct = edgeDirection.Dot(vertexDirection);
 
-                    if (Math.Abs(dotProduct - 1) < 1e-6f)
-                    {
-                        // If the vertex falls on the edge, split the edge at the vertex
-                        //IVertex createdVertex;
-                        //MeshEdge createdMeshEdge;
-                        //mesh.SplitMeshEdge(edge, out createdVertex, out createdMeshEdge);
-                        //createdVertex.Position = vertex;
-                        //createdVertex.Normal = normal;
-                        //mesh.MergeVertices(vertex, createdVertex);
-                    }
-                }
-            }
+					if (Math.Abs(dotProduct - 1) < 1e-6f)
+					{
+						// If the vertex falls on the edge, split the edge at the vertex
+						//IVertex createdVertex;
+						//MeshEdge createdMeshEdge;
+						//mesh.SplitMeshEdge(edge, out createdVertex, out createdMeshEdge);
+						//createdVertex.Position = vertex;
+						//createdVertex.Normal = normal;
+						//mesh.MergeVertices(vertex, createdVertex);
+					}
+				}
+			}
 
-            // Merge the vertices for the edges that are now manifold
-            mesh.CleanAndMerge();
-        }
+			// Merge the vertices for the edges that are now manifold
+			mesh.CleanAndMerge();
+		}
 
-        public static bool IsManifold(this Mesh mesh)
+		public static bool IsManifold(this Mesh mesh)
 		{
-            var meshEdgeList = mesh.GetMeshEdges();
+			var meshEdgeList = mesh.GetMeshEdges();
 
-            foreach (var meshEdge in meshEdgeList)
-            {
-                if (meshEdge.Faces.Count() != 2)
-                {
-                    return false;
-                }
-            }
+			foreach (var meshEdge in meshEdgeList)
+			{
+				if (meshEdge.Faces.Count() != 2)
+				{
+					return false;
+				}
+			}
 
-            return true;
-        }
-    }
+			return true;
+		}
+
+		public static void RemoveUnusedVertices(this Mesh mesh)
+		{
+			var usedVertices = new HashSet<int>();
+
+			// Collect vertices used in faces
+			foreach (var face in mesh.Faces)
+			{
+				usedVertices.Add(face.v0);
+				usedVertices.Add(face.v1);
+				usedVertices.Add(face.v2);
+			}
+
+			// Create new vertex list with only used vertices
+			var newVertices = new List<Vector3Float>();
+			var oldToNewIndex = new int[mesh.Vertices.Count];
+
+			for (int i = 0; i < mesh.Vertices.Count; i++)
+			{
+				if (usedVertices.Contains(i))
+				{
+					oldToNewIndex[i] = newVertices.Count;
+					newVertices.Add(mesh.Vertices[i]);
+				}
+				else
+				{
+					oldToNewIndex[i] = -1;
+				}
+			}
+
+			// Remap faces to use new vertex indices
+			var newFaces = new FaceList();
+			foreach (var face in mesh.Faces)
+			{
+				newFaces.Add(
+					oldToNewIndex[face.v0],
+					oldToNewIndex[face.v1],
+					oldToNewIndex[face.v2],
+					newVertices
+				);
+			}
+
+			mesh.Vertices = newVertices;
+			mesh.Faces = newFaces;
+			mesh.MarkAsChanged();
+		}
+
+		public static void RemoveDegenerateFaces(this Mesh mesh, double minFaceArea)
+		{
+			var newFaces = new FaceList();
+
+			foreach (var face in mesh.Faces)
+			{
+				// Only keep faces where all vertices are different
+				if (face.v0 != face.v1 && face.v1 != face.v2 && face.v2 != face.v0)
+				{
+                    var area = face.GetArea(mesh);
+
+                    if (area < minFaceArea)
+                    {
+                        continue;
+                    }
+                    
+					// Recalculate normal since we're creating a new face
+                    newFaces.Add(face.v0, face.v1, face.v2, mesh.Vertices);
+				}
+			}
+
+			mesh.Faces = newFaces;
+			mesh.MarkAsChanged();
+		}
+
+		public static void CleanupMesh(this Mesh mesh, double minFaceArea)
+		{
+			// First remove degenerate faces
+			mesh.RemoveDegenerateFaces(minFaceArea);
+
+			// Then remove any vertices that are no longer used
+			mesh.RemoveUnusedVertices();
+		}
+	}
 }

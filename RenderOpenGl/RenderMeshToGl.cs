@@ -89,7 +89,7 @@ namespace MatterHackers.RenderOpenGl
 			RenderTypes renderType = RenderTypes.Shaded,
 			Matrix4X4? meshToViewTransform = null,
 			Color wireFrameColor = default(Color),
-			Action meshChanged = null,
+            Action meshChanged = null,
 			bool blendTexture = true,
 			bool forceCullBackFaces = true)
 		{
@@ -98,11 +98,11 @@ namespace MatterHackers.RenderOpenGl
 
 		public static void Render(Mesh meshToRender,
 			Color color,
-			Matrix4X4 transform,
+            Matrix4X4 transform,
 			RenderTypes renderType = RenderTypes.Shaded,
 			Matrix4X4? meshToViewTransform = null,
 			Color wireFrameColor = default(Color),
-			Action meshChanged = null,
+            Action meshChanged = null,
 			bool blendTexture = true,
 			bool allowBspRendering = true,
 			bool forceCullBackFaces = true)
@@ -339,45 +339,50 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		private static void DrawWireOverlay(Mesh meshToRender, RenderTypes renderType, Color color, Action meshChanged = null)
-		{
-			GL.Color4(color.red, color.green, color.blue, color.alpha == 0 ? (byte)255 : color.alpha);
+        private static void DrawWireOverlay(Mesh meshToRender, RenderTypes renderType, Color wireColor, Action meshChanged = null)
+        {
+            GL.Disable(EnableCap.Lighting);
+            GL.DisableClientState(ArrayCap.TextureCoordArray);
+            IEdgeLinesContainer edgeLinesContainer = null;
+            if (renderType == RenderTypes.Outlines)
+            {
+                edgeLinesContainer = GLMeshWirePlugin.Get(meshToRender, wireColor, MathHelper.Tau / 8, meshChanged);
+            }
+            else if (renderType == RenderTypes.NonManifold)
+            {
+                edgeLinesContainer = GLMeshNonManifoldPlugin.Get(meshToRender, wireColor, meshChanged);
+            }
+            else
+            {
+                edgeLinesContainer = GLMeshWirePlugin.Get(meshToRender, wireColor);
+            }
 
-			GL.Disable(EnableCap.Lighting);
+            GL.EnableClientState(ArrayCap.VertexArray);
+            GL.EnableClientState(ArrayCap.ColorArray);
 
-			GL.DisableClientState(ArrayCap.TextureCoordArray);
-			IEdgeLinesContainer edgeLinesContainer = null;
-			if (renderType == RenderTypes.Outlines)
-			{
-				edgeLinesContainer = GLMeshWirePlugin.Get(meshToRender, MathHelper.Tau / 8, meshChanged);
-			}
-			else if (renderType == RenderTypes.NonManifold)
-			{
-				edgeLinesContainer = GLMeshNonManifoldPlugin.Get(meshToRender, meshChanged);
-				GL.Color4(255, 0, 0, 255);
-			}
-			else
-			{
-				edgeLinesContainer = GLMeshWirePlugin.Get(meshToRender);
-			}
+            VectorPOD<WireVertexData> edgeLines = edgeLinesContainer.EdgeLines;
+            unsafe
+            {
+                fixed (WireVertexData* pv = edgeLines.Array)
+                {
+                    int stride = WireVertexData.Stride;
 
-			GL.EnableClientState(ArrayCap.VertexArray);
-			VectorPOD<WireVertexData> edgeLines = edgeLinesContainer.EdgeLines;
+                    // Color pointer points to the start of the structure (r,g,b bytes)
+                    GL.ColorPointer(4, ColorPointerType.UnsignedByte, stride, new IntPtr(pv));
 
-			unsafe
-			{
-				fixed (WireVertexData* pv = edgeLines.Array)
-				{
-					GL.VertexPointer(3, VertexPointerType.Float, 0, new IntPtr(pv));
-					GL.DrawArrays(BeginMode.Lines, 0, edgeLines.Count);
-				}
-			}
+                    // Vertex pointer points to the float positions, after the color + padding byte
+                    GL.VertexPointer(3, VertexPointerType.Float, stride, new IntPtr(pv) + 4);
 
-			GL.DisableClientState(ArrayCap.VertexArray);
-			GL.Enable(EnableCap.Lighting);
-		}
+                    GL.DrawArrays(BeginMode.Lines, 0, edgeLines.Count);
+                }
+            }
 
-		public static void SetGlContext(WorldView worldView, RectangleDouble screenRect, LightingData lighting)
+            GL.DisableClientState(ArrayCap.ColorArray);
+            GL.DisableClientState(ArrayCap.VertexArray);
+            GL.Enable(EnableCap.Lighting);
+        }
+
+        public static void SetGlContext(WorldView worldView, RectangleDouble screenRect, LightingData lighting)
 		{
 			GL.ClearDepth(1.0);
 			GL.Clear(ClearBufferMask.DepthBufferBit);   // Clear the Depth Buffer
