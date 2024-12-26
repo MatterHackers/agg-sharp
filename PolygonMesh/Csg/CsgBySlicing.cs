@@ -61,7 +61,7 @@ namespace MatterHackers.PolygonMesh.Csg
         public bool WaitForStep { get; set; }
         public ManualResetEvent StepEvent { get; set; } = new ManualResetEvent(false);
 
-        public Action<CsgDebugState> OnFaceProcessed { get; set; }
+        public Action OnFaceProcessed { get; set; }
 
         public CsgDebugState CsgDebugState { get; private set; } = new CsgDebugState();
 
@@ -211,10 +211,19 @@ namespace MatterHackers.PolygonMesh.Csg
 
             var resultsMesh = new Mesh();
             var coPlanarFaces = new CoPlanarFaces(planeSorter);
-            var debugState = new CsgDebugState();
-            debugState.Operation = operation;
 
             CsgDebugger debugger = GlobalDebugger;
+            CsgDebugState debugState = null;
+            if (debugger != null)
+            {
+                debugState = debugger?.CsgDebugState;
+            }
+            else
+            {
+                debugState = new CsgDebugState();
+            }
+
+            debugState.Operation = operation;
 
             for (var mesh1Index = 0; mesh1Index < transformedMeshes.Count; mesh1Index++)
             {
@@ -243,7 +252,7 @@ namespace MatterHackers.PolygonMesh.Csg
                         debugState.CurrentPlane = cutPlane;
                         debugState.CurrentSlicePolygons = null;
                         debugState.ProcessingAction = "Starting face processing";
-                        debugger.OnFaceProcessed?.Invoke(debugState);
+                        debugger.OnFaceProcessed?.Invoke();
                         if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
                     }
 
@@ -275,7 +284,7 @@ namespace MatterHackers.PolygonMesh.Csg
                             {
                                 debugState.CurrentResultMesh = resultsMesh.Copy(cancellationToken);
                                 debugState.ProcessedFaces.Add((mesh1Index, faceIndex));
-                                debugger.OnFaceProcessed?.Invoke(debugState);
+                                debugger.OnFaceProcessed?.Invoke();
                                 if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
                             }
                         }
@@ -313,7 +322,7 @@ namespace MatterHackers.PolygonMesh.Csg
                     {
                         debugState.CurrentResultMesh = resultsMesh.Copy(cancellationToken);
                         debugState.CurrentSlicePolygons = totalSlice;
-                        debugger.OnFaceProcessed?.Invoke(debugState);
+                        debugger.OnFaceProcessed?.Invoke();
                         if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
                     }
 
@@ -355,7 +364,7 @@ namespace MatterHackers.PolygonMesh.Csg
                         debugState.CurrentResultMesh = resultsMesh.Copy(cancellationToken);
                         debugState.ClippingResult = polygonShape;
                         debugState.ProcessingAction = "Completed clipping operation";
-                        debugger.OnFaceProcessed?.Invoke(debugState);
+                        debugger.OnFaceProcessed?.Invoke();
                         if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
                     }
 
@@ -452,7 +461,7 @@ namespace MatterHackers.PolygonMesh.Csg
                         debugState.CurrentResultMesh = resultsMesh.Copy(cancellationToken);
                         debugState.ProcessedFaces.Add((mesh1Index, faceIndex));
                         debugState.ProcessingAction = "Completed face processing";
-                        debugger.OnFaceProcessed?.Invoke(debugState);
+                        debugger.OnFaceProcessed?.Invoke();
                         if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
                     }
 
@@ -471,7 +480,7 @@ namespace MatterHackers.PolygonMesh.Csg
             {
                 debugState.CurrentResultMesh = resultsMesh.Copy(cancellationToken);
                 debugState.ProcessingAction = "Starting co-planar face processing";
-                debugger.OnFaceProcessed?.Invoke(debugState);
+                debugger.OnFaceProcessed?.Invoke();
                 if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
             }
 
@@ -482,12 +491,12 @@ namespace MatterHackers.PolygonMesh.Csg
             {
                 debugState.CurrentResultMesh = resultsMesh.Copy(cancellationToken);
                 debugState.ProcessingAction = "Operation complete";
-                debugger.OnFaceProcessed?.Invoke(debugState);
+                debugger.OnFaceProcessed?.Invoke();
                 if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
             }
 
-            resultsMesh.MergeVertices(.01, .001);
-            resultsMesh.CleanAndMerge();
+            //resultsMesh.MergeVertices(.01, .001);
+            //resultsMesh.CleanAndMerge();
             return resultsMesh;
         }
 
