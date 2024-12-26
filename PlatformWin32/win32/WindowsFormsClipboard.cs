@@ -23,7 +23,14 @@ namespace MatterHackers.Agg.UI
 		{
 			try
 			{
-				System.Windows.Forms.Clipboard.SetText(text);
+				if (UiThread.IsUiThread)
+				{
+					System.Windows.Forms.Clipboard.SetText(text);
+				}
+				else
+				{
+					UiThread.RunOnIdle(() => System.Windows.Forms.Clipboard.SetText(text));
+				}
 			}
 			catch
 			{

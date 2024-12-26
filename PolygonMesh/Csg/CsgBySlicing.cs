@@ -40,8 +40,39 @@ namespace MatterHackers.PolygonMesh.Csg
 {
     using Polygons = List<List<IntPoint>>;
 
+    public class CsgDebugState
+    {
+        public int CurrentMeshIndex { get; set; }
+        public int CurrentFaceIndex { get; set; }
+        public Mesh CurrentResultMesh { get; set; }
+        public Polygons CurrentSlicePolygons { get; set; }
+        public Plane CurrentPlane { get; set; }
+        public List<(int meshIndex, int faceIndex)> ProcessedFaces { get; set; } = new List<(int meshIndex, int faceIndex)>();
+        public CsgModes Operation { get; set; }
+        public List<IntPoint> CurrentFacePolygon { get; set; }
+        public Polygons ClippingResult { get; set; }
+        public string ProcessingAction { get; set; }
+        public bool WasProcessed { get; set; }
+        public string SkipReason { get; set; }
+    }
+
+    public class CsgDebugger
+    {
+        public bool IsEnabled { get; set; }
+        public Action<CsgDebugState> OnFaceProcessed { get; set; }
+        public bool WaitForStep { get; set; }
+        public ManualResetEvent StepEvent { get; set; } = new ManualResetEvent(false);
+
+        public void Step()
+        {
+            StepEvent.Set();
+        }
+    }
+
     public class CsgBySlicing
     {
+        public static CsgDebugger GlobalDebugger { get; set; }
+
         private int totalOperations;
         private List<Mesh> transformedMeshes;
         private List<ITraceable> bvhAccelerators;
@@ -49,10 +80,12 @@ namespace MatterHackers.PolygonMesh.Csg
         private SimilarPlaneFinder planeSorter;
         private Dictionary<Plane, (Matrix4X4 matrix, Matrix4X4 inverted)> transformTo0Planes;
         private AxisAlignedBoundingBox activeOperationBounds;
+        private CsgDebugger debugger;
 
-        public CsgBySlicing()
-		{
-		}
+        public CsgBySlicing(CsgDebugger debugger = null)
+        {
+            this.debugger = debugger ?? GlobalDebugger ?? new CsgDebugger();
+        }
 
         public ITraceable GetBVH(Mesh mesh)
         {
@@ -170,19 +203,20 @@ namespace MatterHackers.PolygonMesh.Csg
         }
 
         public Mesh Calculate(CsgModes operation,
-			Action<double, string> progressReporter,
-			CancellationToken cancellationToken)
+            Action<double, string> progressReporter,
+            CancellationToken cancellationToken)
         {
             double amountPerOperation = 1.0 / totalOperations;
             double ratioCompleted = 0;
 
             var resultsMesh = new Mesh();
-
-            // keep track of all the faces added by their plane
             var coPlanarFaces = new CoPlanarFaces(planeSorter);
+            var debugState = new CsgDebugState();
+            debugState.Operation = operation;
 
             for (var mesh1Index = 0; mesh1Index < transformedMeshes.Count; mesh1Index++)
             {
+                debugState.CurrentMeshIndex = mesh1Index;
                 var mesh1 = transformedMeshes[mesh1Index];
 
                 if (cancellationToken.IsCancellationRequested)
@@ -194,9 +228,29 @@ namespace MatterHackers.PolygonMesh.Csg
 
                 for (int faceIndex = 0; faceIndex < mesh1.Faces.Count; faceIndex++)
                 {
+                    debugState.CurrentFaceIndex = faceIndex;
+                    debugState.WasProcessed = false;
+                    debugState.SkipReason = null;
+                    debugState.ProcessingAction = null;
                     var cutPlane = plansByMesh[mesh1Index][faceIndex];
+
+                    // Debug Point 1: Before face processing decision
+                    if (debugger.IsEnabled)
+                    {
+                        debugState.CurrentResultMesh = resultsMesh.Copy(cancellationToken);
+                        debugState.CurrentPlane = cutPlane;
+                        debugState.CurrentSlicePolygons = null;
+                        debugState.ProcessingAction = "Starting face processing";
+                        debugger.OnFaceProcessed?.Invoke(debugState);
+                        if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
+                    }
+
                     if (double.IsNaN(cutPlane.DistanceFromOrigin))
                     {
+                        if (debugger.IsEnabled)
+                        {
+                            debugState.SkipReason = "Invalid plane - NaN distance";
+                        }
                         continue;
                     }
 
@@ -205,36 +259,66 @@ namespace MatterHackers.PolygonMesh.Csg
                         if (operation == CsgModes.Union
                             || (operation == CsgModes.Subtract && mesh1Index == 0))
                         {
+                            if (debugger.IsEnabled)
+                            {
+                                debugState.ProcessingAction = "Adding non-intersecting face";
+                                debugState.WasProcessed = true;
+                            }
+
                             resultsMesh.AddFaceCopy(mesh1, faceIndex);
                             coPlanarFaces.StoreFaceAdd(cutPlane, mesh1Index, faceIndex, resultsMesh.Faces.Count - 1);
+
+                            // Debug Point 2: After non-intersection face added
+                            if (debugger.IsEnabled)
+                            {
+                                debugState.CurrentResultMesh = resultsMesh.Copy(cancellationToken);
+                                debugState.ProcessedFaces.Add((mesh1Index, faceIndex));
+                                debugger.OnFaceProcessed?.Invoke(debugState);
+                                if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
+                            }
+                        }
+                        else if (debugger.IsEnabled)
+                        {
+                            debugState.SkipReason = "Face not in intersection area and operation doesn't require it";
                         }
                         continue;
                     }
 
                     var face = mesh1.Faces[faceIndex];
-
                     var transformTo0Plane = transformTo0Planes[cutPlane].matrix;
 
                     Polygons totalSlice;
-                    
-                    // check if we have already calculated this exact plane
                     if (slicePolygons.ContainsKey(cutPlane))
                     {
                         totalSlice = slicePolygons[cutPlane];
+                        if (debugger.IsEnabled)
+                        {
+                            debugState.ProcessingAction = "Using cached slice polygons";
+                        }
                     }
                     else
                     {
+                        if (debugger.IsEnabled)
+                        {
+                            debugState.ProcessingAction = "Calculating new slice polygons";
+                        }
                         totalSlice = GetTotalSlice(mesh1Index, cutPlane, transformTo0Plane);
                         slicePolygons[cutPlane] = totalSlice;
                     }
-                    
 
-                    // now we have the total loops that this polygon can intersect from the other meshes
-                    // make a polygon for this face
+                    // Debug Point 3: After slice calculation
+                    if (debugger.IsEnabled)
+                    {
+                        debugState.CurrentResultMesh = resultsMesh.Copy(cancellationToken);
+                        debugState.CurrentSlicePolygons = totalSlice;
+                        debugger.OnFaceProcessed?.Invoke(debugState);
+                        if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
+                    }
+
                     var facePolygon = CoPlanarFaces.GetFacePolygon(mesh1, faceIndex, transformTo0Plane);
+                    debugState.CurrentFacePolygon = facePolygon;
 
                     var polygonShape = new Polygons();
-                    // clip against the slice based on the parameters
                     var clipper = new Clipper();
                     clipper.AddPath(facePolygon, PolyType.ptSubject, true);
                     clipper.AddPaths(totalSlice, PolyType.ptClip, true);
@@ -256,12 +340,21 @@ namespace MatterHackers.PolygonMesh.Csg
                                 expectedFaceNormal *= -1;
                                 clipper.Execute(ClipType.ctIntersection, polygonShape);
                             }
-
                             break;
 
                         case CsgModes.Intersect:
                             clipper.Execute(ClipType.ctIntersection, polygonShape);
                             break;
+                    }
+
+                    // Debug Point 4: After clipping operation
+                    if (debugger.IsEnabled)
+                    {
+                        debugState.CurrentResultMesh = resultsMesh.Copy(cancellationToken);
+                        debugState.ClippingResult = polygonShape;
+                        debugState.ProcessingAction = "Completed clipping operation";
+                        debugger.OnFaceProcessed?.Invoke(debugState);
+                        if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
                     }
 
                     var faceCountPreAdd = resultsMesh.Faces.Count;
@@ -272,21 +365,29 @@ namespace MatterHackers.PolygonMesh.Csg
                         && facePolygon.Contains(polygonShape[0][1])
                         && facePolygon.Contains(polygonShape[0][2]))
                     {
+                        if (debugger.IsEnabled)
+                        {
+                            debugState.ProcessingAction = "Adding original face - triangle unchanged";
+                            debugState.WasProcessed = true;
+                        }
                         resultsMesh.AddFaceCopy(mesh1, faceIndex);
                     }
                     else
                     {
+                        if (debugger.IsEnabled)
+                        {
+                            debugState.ProcessingAction = "Adding clipped face geometry";
+                            debugState.WasProcessed = true;
+                        }
+
                         var vertCountPreAdd = resultsMesh.Vertices.Count;
-                        // mesh the new polygon and add it to the resultsMesh
                         polygonShape.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, transformTo0Planes[cutPlane].inverted);
                         var postAddCount = resultsMesh.Vertices.Count;
 
                         var polygonPlane = mesh1.GetPlane(faceIndex);
 
-                        // for every vertex that we just added
                         for (int addedVertIndex = vertCountPreAdd; addedVertIndex < postAddCount; addedVertIndex++)
                         {
-                            // TODO: map all the added vertices that can be back to the original polygon positions
                             for (int meshIndex = 0; meshIndex < transformedMeshes.Count; meshIndex++)
                             {
                                 var bvhAccelerator = bvhAccelerators[meshIndex];
@@ -309,14 +410,10 @@ namespace MatterHackers.PolygonMesh.Csg
                                             }
                                             else if (deltaSquared < .00001)
                                             {
-                                                // we found a vertex that this is equivalent to
-                                                // make it exactly the same
                                                 resultsMesh.Vertices[addedVertIndex] = sourcePosition;
                                             }
                                             else
                                             {
-                                                // we did not find a matching vertex but we can still make sure
-                                                // the new vertex is on the right plane
                                                 var distanceToPlane = polygonPlane.GetDistanceFromPlane(resultsMesh.Vertices[addedVertIndex]);
                                                 resultsMesh.Vertices[addedVertIndex] -= new Vector3Float(polygonPlane.Normal * distanceToPlane);
                                             }
@@ -327,22 +424,34 @@ namespace MatterHackers.PolygonMesh.Csg
                         }
                     }
 
-                    if (resultsMesh.Faces.Count - faceCountPreAdd > 0)
+                    if (faceCountPreAdd < resultsMesh.Faces.Count)
                     {
-                        // keep track of the adds so we can process the coplanar faces after
                         for (int i = faceCountPreAdd; i < resultsMesh.Faces.Count; i++)
                         {
                             coPlanarFaces.StoreFaceAdd(cutPlane, mesh1Index, faceIndex, i);
-                            // make sure our added faces are the right direction
                             if (resultsMesh.Faces[i].normal.Dot(expectedFaceNormal) < 0)
                             {
                                 resultsMesh.FlipFace(i);
                             }
                         }
                     }
-                    else // we did not add any faces but we will still keep track of this polygons plane
+                    else
                     {
                         coPlanarFaces.StoreFaceAdd(cutPlane, mesh1Index, faceIndex, -1);
+                    }
+
+                    // Debug Point 5: After face addition
+                    if (debugger.IsEnabled)
+                    {
+                        if (!debugState.WasProcessed)
+                        {
+                            debugState.SkipReason = "Face did not meet processing criteria";
+                        }
+                        debugState.CurrentResultMesh = resultsMesh.Copy(cancellationToken);
+                        debugState.ProcessedFaces.Add((mesh1Index, faceIndex));
+                        debugState.ProcessingAction = "Completed face processing";
+                        debugger.OnFaceProcessed?.Invoke(debugState);
+                        if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
                     }
 
                     ratioCompleted += amountPerOperation;
@@ -355,10 +464,26 @@ namespace MatterHackers.PolygonMesh.Csg
                 }
             }
 
-            // handle the co-planar faces
+            // Debug Point 6: Before co-planar face processing
+            if (debugger.IsEnabled)
+            {
+                debugState.CurrentResultMesh = resultsMesh.Copy(cancellationToken);
+                debugState.ProcessingAction = "Starting co-planar face processing";
+                debugger.OnFaceProcessed?.Invoke(debugState);
+                if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
+            }
+
             ProcessCoplanarFaces(operation, resultsMesh, coPlanarFaces);
 
-            // .001 represents 1 micron of surface arrea so we can remove vertices when the face is smaller than that
+            // Debug Point 7: Final result
+            if (debugger.IsEnabled)
+            {
+                debugState.CurrentResultMesh = resultsMesh.Copy(cancellationToken);
+                debugState.ProcessingAction = "Operation complete";
+                debugger.OnFaceProcessed?.Invoke(debugState);
+                if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
+            }
+
             resultsMesh.MergeVertices(.01, .001);
             resultsMesh.CleanAndMerge();
             return resultsMesh;
