@@ -232,9 +232,9 @@ namespace MatterHackers.PolygonMesh.Csg
             Mesh resultsMesh,
             Matrix4X4 transformTo0Plane,
             HashSet<int> faceIndicesToRemove,
-            CsgBySlicing csgData)
+            CsgBySlicing csgData,
+            CsgDebugger debugger)
         {
-            var debugger = CsgBySlicing.GlobalDebugger;
             var debugState = debugger?.CsgDebugState;
 
             // Debug Point 1: Starting union faces

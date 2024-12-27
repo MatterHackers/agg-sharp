@@ -86,7 +86,8 @@ namespace MatterHackers.PolygonMesh.Csg
 			ProcessingResolution outputResolution,
 			Action<double, string> reporter,
 			CancellationToken cancellationToken,
-			double amountPerOperation = 1,
+            CsgDebugger csgDebugger = null,
+            double amountPerOperation = 1,
 			double ratioCompleted = 0)
 		{
 			if (processingMode == ProcessingModes.Polygons)
@@ -99,7 +100,8 @@ namespace MatterHackers.PolygonMesh.Csg
                     {
 						reporter?.Invoke(ratio * amountPerOperation + ratioCompleted, message);
 					},
-					cancellationToken);
+                    csgDebugger,
+                    cancellationToken);
 			}
 			else
 			{
@@ -242,14 +244,15 @@ namespace MatterHackers.PolygonMesh.Csg
 			Matrix4X4 matrixB,
 			// operation
 			CsgModes operation,
-			ProcessingModes processingMode = ProcessingModes.Polygons,
+            ProcessingModes processingMode = ProcessingModes.Polygons,
 			ProcessingResolution inputResolution = ProcessingResolution._64,
 			ProcessingResolution outputResolution = ProcessingResolution._64,
-			// reporting
-			Action<double, string> reporter = null,
+            // reporting
+            Action<double, string> reporter = null,
 			double amountPerOperation = 1,
 			double ratioCompleted = 0,
-			CancellationToken cancellationToken = default(CancellationToken))
+			CancellationToken cancellationToken = default(CancellationToken),
+            CsgDebugger csgDebugger = null)
 		{
 			if (processingMode == ProcessingModes.Polygons)
 			{
@@ -259,8 +262,9 @@ namespace MatterHackers.PolygonMesh.Csg
 					inputResolution,
 					outputResolution,
 					reporter,
-					cancellationToken,
-					amountPerOperation,
+                    cancellationToken,
+                    csgDebugger,
+                    amountPerOperation,
 					ratioCompleted);
 			}
 			else
