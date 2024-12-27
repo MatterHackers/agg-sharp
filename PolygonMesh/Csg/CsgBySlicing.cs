@@ -42,11 +42,12 @@ namespace MatterHackers.PolygonMesh.Csg
 
     public class CsgDebugState
     {
+        // Original properties
         public int CurrentMeshIndex { get; set; }
         public int CurrentFaceIndex { get; set; }
         public Mesh CurrentResultMesh { get; set; }
         public Polygons CurrentSlicePolygons { get; set; }
-        public Plane CurrentPlane { get; set; }
+        public Plane? CurrentPlane { get; set; }
         public List<(int meshIndex, int faceIndex)> ProcessedFaces { get; set; } = new List<(int meshIndex, int faceIndex)>();
         public CsgModes Operation { get; set; }
         public List<IntPoint> CurrentFacePolygon { get; set; }
@@ -54,6 +55,74 @@ namespace MatterHackers.PolygonMesh.Csg
         public string ProcessingAction { get; set; }
         public bool WasProcessed { get; set; }
         public string SkipReason { get; set; }
+
+        // Coplanar face processing properties
+        public string CoplanarProcessingPhase { get; set; }
+        public Plane? CurrentCoplanarPlane { get; set; }
+        public List<int> CurrentMeshIndices { get; set; }
+        public HashSet<int> FacesToRemove { get; set; }
+        public int TotalCoplanarFacesProcessed { get; set; }
+        public Dictionary<Plane, List<(int meshIndex, int faceIndex)>> CoplanarFaceGroups { get; set; }
+        public Polygons KeepPolygons { get; set; }
+        public Polygons RemovePolygons { get; set; }
+        public string PolygonOperationDescription { get; set; }
+        public Dictionary<int, List<IntPoint>> OriginalFacePolygons { get; set; } = new Dictionary<int, List<IntPoint>>();
+        public int CurrentProcessingFaceIndex { get; set; }
+        public ClipType? CurrentClipOperation { get; set; }
+
+        public CsgDebugState DeepCopy()
+        {
+            var copy = new CsgDebugState
+            {
+                // Copy original properties
+                CurrentMeshIndex = this.CurrentMeshIndex,
+                CurrentFaceIndex = this.CurrentFaceIndex,
+                CurrentResultMesh = this.CurrentResultMesh?.Copy(CancellationToken.None),
+                CurrentSlicePolygons = this.CurrentSlicePolygons?.Select(p => new List<IntPoint>(p)).ToList(),
+                CurrentPlane = this.CurrentPlane,
+                ProcessedFaces = new List<(int meshIndex, int faceIndex)>(this.ProcessedFaces),
+                Operation = this.Operation,
+                CurrentFacePolygon = this.CurrentFacePolygon != null ? new List<IntPoint>(this.CurrentFacePolygon) : null,
+                ClippingResult = this.ClippingResult?.Select(p => new List<IntPoint>(p)).ToList(),
+                ProcessingAction = this.ProcessingAction,
+                WasProcessed = this.WasProcessed,
+                SkipReason = this.SkipReason,
+
+                // Copy coplanar processing properties
+                CoplanarProcessingPhase = this.CoplanarProcessingPhase,
+                CurrentCoplanarPlane = this.CurrentCoplanarPlane,
+                CurrentMeshIndices = this.CurrentMeshIndices != null ? new List<int>(this.CurrentMeshIndices) : null,
+                FacesToRemove = this.FacesToRemove != null ? new HashSet<int>(this.FacesToRemove) : null,
+                TotalCoplanarFacesProcessed = this.TotalCoplanarFacesProcessed,
+                KeepPolygons = this.KeepPolygons?.Select(p => new List<IntPoint>(p)).ToList(),
+                RemovePolygons = this.RemovePolygons?.Select(p => new List<IntPoint>(p)).ToList(),
+                PolygonOperationDescription = this.PolygonOperationDescription,
+                CurrentProcessingFaceIndex = this.CurrentProcessingFaceIndex,
+                CurrentClipOperation = this.CurrentClipOperation
+            };
+
+            // Deep copy the CoplanarFaceGroups dictionary
+            if (this.CoplanarFaceGroups != null)
+            {
+                copy.CoplanarFaceGroups = new Dictionary<Plane, List<(int meshIndex, int faceIndex)>>();
+                foreach (var kvp in this.CoplanarFaceGroups)
+                {
+                    copy.CoplanarFaceGroups[kvp.Key] = new List<(int meshIndex, int faceIndex)>(kvp.Value);
+                }
+            }
+
+            // Deep copy the OriginalFacePolygons dictionary
+            if (this.OriginalFacePolygons != null)
+            {
+                copy.OriginalFacePolygons = new Dictionary<int, List<IntPoint>>();
+                foreach (var kvp in this.OriginalFacePolygons)
+                {
+                    copy.OriginalFacePolygons[kvp.Key] = new List<IntPoint>(kvp.Value);
+                }
+            }
+
+            return copy;
+        }
     }
 
     public class CsgDebugger
@@ -534,7 +603,7 @@ namespace MatterHackers.PolygonMesh.Csg
             var faceIndicesToRemove = new HashSet<int>();
             foreach (var plane in coPlanarFaces.Planes)
             {
-                var meshIndices = coPlanarFaces.MeshIndicesForPlane(plane).ToList();
+                var meshIndices = coPlanarFaces.MeshFaceIndicesForPlane(plane).ToList();
 
                 if (operation == CsgModes.Union)
                 {
@@ -547,7 +616,7 @@ namespace MatterHackers.PolygonMesh.Csg
                     if (negativePlane != null)
                     {
                         // add any negative faces
-                        meshIndices.AddRange(coPlanarFaces.MeshIndicesForPlane(negativePlane.Value));
+                        meshIndices.AddRange(coPlanarFaces.MeshFaceIndicesForPlane(negativePlane.Value));
                     }
                 }
 

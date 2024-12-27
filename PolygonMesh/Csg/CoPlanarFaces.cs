@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using ClipperLib;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
@@ -61,7 +62,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 		}
 
-		public IEnumerable<int> MeshIndicesForPlane(Plane plane)
+		public IEnumerable<int> MeshFaceIndicesForPlane(Plane plane)
 		{
 			if (coPlanarFaces.ContainsKey(plane))
 			{
@@ -104,21 +105,21 @@ namespace MatterHackers.PolygonMesh.Csg
 		public void SubtractFaces(Plane plane, List<Mesh> transformedMeshes, Mesh resultsMesh, Matrix4X4 transformTo0Plane, HashSet<int> faceIndicesToRemove)
         {
             // get all meshes that have faces on this plane
-            var meshesWithFaces = MeshIndicesForPlane(plane).ToList();
+            var meshesFaceIndicesForPlane = MeshFaceIndicesForPlane(plane).ToList();
 
             // we need more than one mesh and one of them needs to be the source (mesh 0)
-            if (meshesWithFaces.Count < 2
-                || !meshesWithFaces.Contains(0))
+            if (meshesFaceIndicesForPlane.Count < 2
+                || !meshesFaceIndicesForPlane.Contains(0))
             {
                 // no faces to add
                 return;
             }
 
             // sort them so we can process each group into intersections
-            meshesWithFaces.Sort();
+            meshesFaceIndicesForPlane.Sort();
 
-            // add the faces that we should
-            foreach (var meshIndex in meshesWithFaces)
+            // add the faces that we should remove
+            foreach (var meshIndex in meshesFaceIndicesForPlane)
             {
                 foreach (var faces in FacesSetsForPlaneAndMesh(plane, meshIndex))
                 {
@@ -137,7 +138,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
             // iterate all the meshes that need to be subtracted
             var removePoygons = new Polygons();
-            for (int removeMeshIndex = 1; removeMeshIndex < meshesWithFaces.Count; removeMeshIndex++)
+            for (int removeMeshIndex = 1; removeMeshIndex < meshesFaceIndicesForPlane.Count; removeMeshIndex++)
             {
                 foreach (var removeFaceSets in FacesSetsForPlaneAndMesh(plane, removeMeshIndex))
                 {
@@ -177,7 +178,7 @@ namespace MatterHackers.PolygonMesh.Csg
         public void IntersectFaces(Plane plane, List<Mesh> transformedMeshes, Mesh resultsMesh, Matrix4X4 transformTo0Plane, HashSet<int> faceIndicesToRemove)
 		{
 			// get all meshes that have faces on this plane
-			var meshesWithFaces = MeshIndicesForPlane(plane).ToList();
+			var meshesWithFaces = MeshFaceIndicesForPlane(plane).ToList();
 
 			// we need more than one mesh
 			if (meshesWithFaces.Count < 2)
@@ -226,108 +227,216 @@ namespace MatterHackers.PolygonMesh.Csg
 			EnsureFaceNormals(plane, resultsMesh, countPreAdd);
 		}
 
-		public void UnionFaces(Plane positivePlane,
-			List<Mesh> transformedMeshes,
-			Mesh resultsMesh,
-			Matrix4X4 transformTo0Plane,
-			HashSet<int> faceIndicesToRemove,
-			CsgBySlicing csgData)
-		{
-			// get all meshes that have faces on this plane
-			var meshesWithFaces = MeshIndicesForPlane(positivePlane).ToList();
+        public void UnionFaces(Plane positivePlane,
+            List<Mesh> transformedMeshes,
+            Mesh resultsMesh,
+            Matrix4X4 transformTo0Plane,
+            HashSet<int> faceIndicesToRemove,
+            CsgBySlicing csgData)
+        {
+            var debugger = CsgBySlicing.GlobalDebugger;
+            var debugState = debugger?.CsgDebugState;
 
-			var negativePlane = planeSorter.FindPlane(new Plane()
-			{
-				Normal = -positivePlane.Normal,
-				DistanceFromOrigin = -positivePlane.DistanceFromOrigin,
-			}, .02);
+            // Debug Point 1: Starting union faces
+            if (debugger != null)
+            {
+                debugState.CoplanarProcessingPhase = "Starting UnionFaces";
+                debugState.CurrentCoplanarPlane = positivePlane;
+                debugState.CurrentResultMesh = resultsMesh.Copy(CancellationToken.None);
+                debugger.OnFaceProcessed?.Invoke();
+                if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
+            }
 
-			if (negativePlane != null)
-			{
-				// add any negative faces
-				meshesWithFaces.AddRange(MeshIndicesForPlane(negativePlane.Value));
-			}
- 
-			if (meshesWithFaces.Count < 2)
-			{
-				// no faces to add
-				// return;
-			}
+            // get all meshes that have faces on this plane
+            var meshesWithFaces = MeshFaceIndicesForPlane(positivePlane).ToList();
 
-			// add the faces that we should union
-			foreach (var meshIndex in meshesWithFaces)
-			{
-				foreach (var faces in FacesSetsForPlaneAndMesh(positivePlane, meshIndex))
-				{
-					faceIndicesToRemove.Add(faces.destFaceIndex);
-				}
-			}
+            var negativePlane = planeSorter.FindPlane(new Plane()
+            {
+                Normal = -positivePlane.Normal,
+                DistanceFromOrigin = -positivePlane.DistanceFromOrigin,
+            }, .02);
 
-			// sort them so we can process each group into intersections
-			meshesWithFaces.Sort();
+            if (negativePlane != null)
+            {
+                // Debug Point 2: Found negative plane
+                if (debugger != null)
+                {
+                    debugState.CoplanarProcessingPhase = "Adding negative plane faces";
+                    debugState.CurrentResultMesh = resultsMesh.Copy(CancellationToken.None);
+                    debugger.OnFaceProcessed?.Invoke();
+                    if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
+                }
 
-			Polygons firstPositivePolygons = null;
-			var unionPolygons = new Polygons();
-			var first = true;
+                // add any negative faces
+                meshesWithFaces.AddRange(MeshFaceIndicesForPlane(negativePlane.Value));
+            }
+
+            if (meshesWithFaces.Count < 2)
+            {
+                // Debug Point 3: Not enough faces to process
+                if (debugger != null)
+                {
+                    debugState.CoplanarProcessingPhase = $"Insufficient faces to process: {meshesWithFaces.Count}";
+                    debugState.SkipReason = "Less than 2 faces to process";
+                    debugState.CurrentResultMesh = resultsMesh.Copy(CancellationToken.None);
+                    debugger.OnFaceProcessed?.Invoke();
+                    if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
+                }
+                return;
+            }
+
+            // add the faces that we should union
             foreach (var meshIndex in meshesWithFaces)
-			{
-				var meshPolygons = new Polygons();
-				var addedFaces = new HashSet<int>();
-				foreach (var (sourceFaceIndex, destFaceIndex) in this.FacesSetsForPlaneAndMesh(positivePlane, meshIndex))
-				{
-					if (!addedFaces.Contains(sourceFaceIndex))
-					{
-						meshPolygons.Add(GetFacePolygon(transformedMeshes[meshIndex], sourceFaceIndex, transformTo0Plane));
-						addedFaces.Add(sourceFaceIndex);
-					}
-				}
-
-				if (first)
+            {
+                foreach (var faces in FacesSetsForPlaneAndMesh(positivePlane, meshIndex))
                 {
-					firstPositivePolygons = meshPolygons;
-					first = false;
+                    faceIndicesToRemove.Add(faces.destFaceIndex);
+
+                    // Debug Point 4: Adding face to remove list
+                    if (debugger != null)
+                    {
+                        debugState.CoplanarProcessingPhase = $"Adding face {faces.destFaceIndex} to remove list";
+                        debugState.FacesToRemove = new HashSet<int>(faceIndicesToRemove);
+                        debugger.OnFaceProcessed?.Invoke();
+                        if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
+                    }
                 }
-				else
+            }
+
+            // sort them so we can process each group into intersections
+            meshesWithFaces.Sort();
+
+            Polygons firstPositivePolygons = null;
+            var unionPolygons = new Polygons();
+            var first = true;
+
+            foreach (var meshIndex in meshesWithFaces)
+            {
+                var meshPolygons = new Polygons();
+                var addedFaces = new HashSet<int>();
+
+                foreach (var (sourceFaceIndex, destFaceIndex) in this.FacesSetsForPlaneAndMesh(positivePlane, meshIndex))
                 {
-					unionPolygons.AddRange(meshPolygons);
+                    if (!addedFaces.Contains(sourceFaceIndex))
+                    {
+                        var facePolygon = GetFacePolygon(transformedMeshes[meshIndex], sourceFaceIndex, transformTo0Plane);
+                        meshPolygons.Add(facePolygon);
+                        addedFaces.Add(sourceFaceIndex);
+
+                        // Debug Point 5: Added face polygon
+                        if (debugger != null)
+                        {
+                            debugState.CoplanarProcessingPhase = $"Added polygon for face {sourceFaceIndex} from mesh {meshIndex}";
+                            debugState.OriginalFacePolygons[sourceFaceIndex] = facePolygon;
+                            debugState.CurrentProcessingFaceIndex = sourceFaceIndex;
+                            debugger.OnFaceProcessed?.Invoke();
+                            if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
+                        }
+                    }
                 }
-			}
 
-			// now union all the intersections
-			// clip against the slice based on the parameters
-			var unionClipper = new Clipper();
-			unionClipper.AddPaths(firstPositivePolygons, PolyType.ptSubject, true);
-			unionClipper.AddPaths(unionPolygons, PolyType.ptClip, true);
+                if (first)
+                {
+                    firstPositivePolygons = meshPolygons;
+                    if (debugger != null)
+                    {
+                        debugState.KeepPolygons = firstPositivePolygons;
+                    }
+                    first = false;
+                }
+                else
+                {
+                    unionPolygons.AddRange(meshPolygons);
+                    if (debugger != null)
+                    {
+                        debugState.RemovePolygons = unionPolygons;
+                    }
+                }
 
-			var totalSlices = new Polygons();
-			unionClipper.Execute(ClipType.ctUnion, totalSlices, PolyFillType.pftNonZero);
+                // Debug Point 6: Updated polygon collections
+                if (debugger != null)
+                {
+                    debugState.CoplanarProcessingPhase = "Updated keep/union polygons";
+                    debugState.KeepPolygons = firstPositivePolygons;
+                    debugState.RemovePolygons = unionPolygons;
+                    debugger.OnFaceProcessed?.Invoke();
+                    if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
+                }
+            }
 
-			var subtractPolygons = csgData.GetTotalSlice(-1, new Plane()
-			{
-				DistanceFromOrigin = positivePlane.DistanceFromOrigin + .001,
-				Normal = positivePlane.Normal
-			},
-			transformTo0Plane);
+            // now union all the intersections
+            // clip against the slice based on the parameters
+            var unionClipper = new Clipper();
+            unionClipper.AddPaths(firstPositivePolygons, PolyType.ptSubject, true);
+            unionClipper.AddPaths(unionPolygons, PolyType.ptClip, true);
 
-			if (subtractPolygons.Count > 0)
-			{
-				// subtract them from the other union faces
-				var subtractionClipper = new Clipper();
-				subtractionClipper.AddPaths(totalSlices, PolyType.ptSubject, true);
-				subtractionClipper.AddPaths(subtractPolygons, PolyType.ptClip, true);
+            var totalSlices = new Polygons();
+            unionClipper.Execute(ClipType.ctUnion, totalSlices, PolyFillType.pftNonZero);
 
-				var totalSlices2 = new Polygons();
-				subtractionClipper.Execute(ClipType.ctDifference, totalSlices2, PolyFillType.pftNonZero);
-				totalSlices = totalSlices2;
-			}
+            // Debug Point 7: After union operation
+            if (debugger != null)
+            {
+                debugState.CoplanarProcessingPhase = $"Completed union operation: {totalSlices.Count} resulting polygons";
+                debugState.ClippingResult = totalSlices;
+                debugState.CurrentClipOperation = ClipType.ctUnion;
+                debugger.OnFaceProcessed?.Invoke();
+                if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
+            }
 
-			// teselate and add all the new polygons
-			var countPreAdd = resultsMesh.Faces.Count;
-			totalSlices.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, transformTo0Plane.Inverted);
-			EnsureFaceNormals(positivePlane, resultsMesh, countPreAdd);
-		}
+            var subtractPolygons = csgData.GetTotalSlice(-1, new Plane()
+            {
+                DistanceFromOrigin = positivePlane.DistanceFromOrigin + .001,
+                Normal = positivePlane.Normal
+            },
+            transformTo0Plane);
 
-		public void StoreFaceAdd(Plane facePlane,
+            if (subtractPolygons.Count > 0)
+            {
+                // Debug Point 8: Before subtraction
+                if (debugger != null)
+                {
+                    debugState.CoplanarProcessingPhase = "Starting subtraction operation";
+                    debugState.RemovePolygons = subtractPolygons;
+                    debugger.OnFaceProcessed?.Invoke();
+                    if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
+                }
+
+                // subtract them from the other union faces
+                var subtractionClipper = new Clipper();
+                subtractionClipper.AddPaths(totalSlices, PolyType.ptSubject, true);
+                subtractionClipper.AddPaths(subtractPolygons, PolyType.ptClip, true);
+
+                var totalSlices2 = new Polygons();
+                subtractionClipper.Execute(ClipType.ctDifference, totalSlices2, PolyFillType.pftNonZero);
+                totalSlices = totalSlices2;
+
+                // Debug Point 9: After subtraction
+                if (debugger != null)
+                {
+                    debugState.CoplanarProcessingPhase = $"Completed subtraction: {totalSlices.Count} final polygons";
+                    debugState.ClippingResult = totalSlices;
+                    debugState.CurrentClipOperation = ClipType.ctDifference;
+                    debugger.OnFaceProcessed?.Invoke();
+                    if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
+                }
+            }
+
+            // teselate and add all the new polygons
+            var countPreAdd = resultsMesh.Faces.Count;
+            totalSlices.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, transformTo0Plane.Inverted);
+            EnsureFaceNormals(positivePlane, resultsMesh, countPreAdd);
+
+            // Debug Point 10: Final result
+            if (debugger != null)
+            {
+                debugState.CoplanarProcessingPhase = "Completed face processing";
+                debugState.CurrentResultMesh = resultsMesh.Copy(CancellationToken.None);
+                debugger.OnFaceProcessed?.Invoke();
+                if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
+            }
+        }
+
+        public void StoreFaceAdd(Plane facePlane,
 			int sourceMeshIndex,
 			int sourceFaceIndex,
 			int destFaceIndex)
