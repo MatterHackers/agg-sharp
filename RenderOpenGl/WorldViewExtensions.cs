@@ -59,7 +59,7 @@ namespace MatterHackers.RenderOpenGl
 			world.RenderPlane(plane.Normal * plane.DistanceFromOrigin, plane.Normal, color, doDepthTest, rectSize, lineWidth);
 		}
 
-		public static void RenderPlane(this WorldView world, Vector3 position, Vector3 normal, MatterHackers.Agg.Color color, bool doDepthTest, double rectSize, double lineWidth)
+		public static void RenderPlane(this WorldView world, Vector3 position, Vector3 normal, Color color, bool doDepthTest, double rectSize, double lineWidth)
 		{
 			var clipping = world.GetClippingFrustum();
 			// get any perpendicular to the normal (we call it x to make it clear where to apply it)

@@ -206,7 +206,7 @@ namespace MatterHackers.VectorMath
 		}
 
 		/// <summary>
-		/// Transform this mesh by the matrix and return the transformed mesh
+		/// Transform this plane by the matrix and return the transformed plane
 		/// </summary>
 		/// <param name="matrix">The matrix to transform by</param>
 		/// <returns>The mesh after being transformed</returns>
