@@ -21,7 +21,6 @@ using MatterHackers.Agg.Image.ThresholdFunctions;
 using MatterHackers.Agg.Transform;
 using MatterHackers.VectorMath;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -118,6 +117,17 @@ namespace MatterHackers.Agg.VertexSource
             polygonsToImageTransform.inverse_transform(ref centerPosition.X, ref centerPosition.Y);
 
             return centerPosition;
+        }
+
+        // Render to a rectangle scalling the path to fit the rectangle
+        public static void RenderToRectangle(this IVertexSource source, Graphics2D graphics2D, RectangleDouble rectangle, Color color)
+        {
+            var bounds = source.GetBounds();
+            var scale = Math.Min(rectangle.Width / bounds.Width, rectangle.Height / bounds.Height);
+            var translate = new Vector2(rectangle.Left + rectangle.Width / 2, rectangle.Bottom + rectangle.Height / 2) - bounds.Center;
+            var transform = Affine.NewScaling(scale) * Affine.NewTranslation(translate);
+
+            graphics2D.Render(new VertexSourceApplyTransform(source, transform), color);
         }
 
         public static void RenderPath(this IVertexSource source, 

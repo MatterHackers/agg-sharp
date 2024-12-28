@@ -241,7 +241,7 @@ namespace MatterHackers.PolygonMesh.Csg
             if (debugger != null)
             {
                 debugState.CoplanarProcessingPhase = "Starting UnionFaces";
-                debugState.CurrentCoplanarPlane = positivePlane;
+                debugState.CurrentPlane = positivePlane;
                 debugState.CurrentResultMesh = resultsMesh.Copy(CancellationToken.None);
                 debugger.OnFaceProcessed?.Invoke();
                 if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }

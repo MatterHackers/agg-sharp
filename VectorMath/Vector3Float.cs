@@ -545,15 +545,20 @@ namespace MatterHackers.VectorMath
 	{
 		#region Static
 
-		#region Add
+		public static float GetArea(this Vector3Float a, Vector3Float b, Vector3Float c)
+        {
+            return (b - a).Cross(c - a).Length / 2;
+        }
 
-		/// <summary>
-		/// Adds two vectors.
-		/// </summary>
-		/// <param name="a">Left operand.</param>
-		/// <param name="b">Right operand.</param>
-		/// <returns>Result of operation.</returns>
-		public static Vector3Float Add(Vector3Float a, Vector3Float b)
+        #region Add
+
+        /// <summary>
+        /// Adds two vectors.
+        /// </summary>
+        /// <param name="a">Left operand.</param>
+        /// <param name="b">Right operand.</param>
+        /// <returns>Result of operation.</returns>
+        public static Vector3Float Add(Vector3Float a, Vector3Float b)
 		{
 			Add(ref a, ref b, out a);
 			return a;

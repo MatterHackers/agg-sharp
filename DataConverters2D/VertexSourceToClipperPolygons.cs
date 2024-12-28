@@ -28,7 +28,6 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System.Collections.Generic;
-using System.Linq;
 using ClipperLib;
 using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;

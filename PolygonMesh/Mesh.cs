@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
@@ -295,100 +296,152 @@ namespace MatterHackers.PolygonMesh
 		/// <param name="minFaceArea">The minimum area of a face to keep it</param>"
         public void MergeVertices(double treatAsSameDistance, double minFaceArea)
         {
-            if (Vertices.Count < 2)
-            {
-                return;
-            }
-
-            var sameDistance = new Vector3Float(treatAsSameDistance, treatAsSameDistance, treatAsSameDistance);
-            var vertexBvhTree = GetVertexBvhTree();
-            var newVertices = new List<Vector3Float>(Vertices.Count);
-            var vertexIndexRemaping = Enumerable.Range(0, Vertices.Count).Select(i => -1).ToList();
-
-            var searchResults = new List<int>();
-            // First pass: merge vertices
+            // Build kdtree for initial vertex finding
+            var kdTree = new KDTree(Vertices.Count);
             for (int i = 0; i < Vertices.Count; i++)
             {
-                if (vertexIndexRemaping[i] == -1)
-                {
-                    var vertex = Vertices[i];
-                    var newIndex = newVertices.Count;
-                    newVertices.Add(vertex);
-                    searchResults.Clear();
-                    vertexBvhTree.SearchBounds(new AxisAlignedBoundingBox(vertex - sameDistance, vertex + sameDistance), searchResults);
+                kdTree.Add(Vertices[i], i);
+            }
+            kdTree.Balance();
 
-                    foreach (var result in searchResults)
+            // Find vertices to merge
+            var vertexMap = new Dictionary<int, int>();
+            var mergeGroups = new Dictionary<int, List<int>>();
+            float mergeDistance = (float)treatAsSameDistance;
+
+            // First pass: Find all vertices that should be merged
+            for (int i = 0; i < Vertices.Count; i++)
+            {
+                if (vertexMap.ContainsKey(i))
+                    continue;
+
+                var results = kdTree.FindInSphere(Vertices[i], mergeDistance);
+                if (results.Count > 1)
+                {
+                    // Sort to ensure consistent results
+                    results.Sort((a, b) => a.Index.CompareTo(b.Index));
+                    int targetIndex = results[0].Index;
+
+                    var group = new List<int>();
+                    foreach (var result in results)
                     {
-                        if (vertexIndexRemaping[result] == -1 &&
-                            (Vertices[result] - vertex).Length <= treatAsSameDistance)
+                        if (!vertexMap.ContainsKey(result.Index))
                         {
-                            vertexIndexRemaping[result] = newIndex;
+                            vertexMap[result.Index] = targetIndex;
+                            group.Add(result.Index);
                         }
+                    }
+
+                    if (group.Count > 1)
+                    {
+                        mergeGroups[targetIndex] = group;
                     }
                 }
             }
 
-            var addedFaces = new HashSet<(int, int, int)>();
-            var newFaces = new FaceList();
-            var vertexUsageCount = new int[newVertices.Count];
+            if (mergeGroups.Count == 0)
+                return;
 
+            // Create new vertex list
+            var newVertices = new List<Vector3Float>();
+            var oldToNewIndex = new Dictionary<int, int>();
+
+            // First add merged vertices
+            foreach (var group in mergeGroups.Values)
+            {
+                // Calculate average position
+                var avgPos = new Vector3Float(0, 0, 0);
+                foreach (int idx in group)
+                {
+                    avgPos += Vertices[idx];
+                }
+                avgPos /= group.Count;
+
+                int newIndex = newVertices.Count;
+                newVertices.Add(avgPos);
+
+                // Map all vertices in group to new index
+                foreach (int oldIndex in group)
+                {
+                    oldToNewIndex[oldIndex] = newIndex;
+                }
+            }
+
+            // Add remaining vertices
+            for (int i = 0; i < Vertices.Count; i++)
+            {
+                if (!oldToNewIndex.ContainsKey(i))
+                {
+                    oldToNewIndex[i] = newVertices.Count;
+                    newVertices.Add(Vertices[i]);
+                }
+            }
+
+            // Create new faces
+            var newFaces = new FaceList();
             foreach (var face in Faces)
             {
-                int iv0 = vertexIndexRemaping[face.v0];
-                int iv1 = vertexIndexRemaping[face.v1];
-                int iv2 = vertexIndexRemaping[face.v2];
+                int v0 = oldToNewIndex[face.v0];
+                int v1 = oldToNewIndex[face.v1];
+                int v2 = oldToNewIndex[face.v2];
 
-                // Check for distinct vertices after merging
-                if (iv0 != iv1 && iv1 != iv2 && iv2 != iv0)
+                // Skip degenerate faces
+                if (v0 != v1 && v1 != v2 && v2 != v0)
                 {
-                    // Create temporary face to check its area
-                    var tempFace = new Face(0, 1, 2, new List<Vector3Float> { newVertices[iv0], newVertices[iv1], newVertices[iv2] });
-                    var area = tempFace.GetArea(new Mesh(new List<Vector3Float> { newVertices[iv0], newVertices[iv1], newVertices[iv2] }, new FaceList()));
-
-                    if (area > minFaceArea)
+                    float area = newVertices[v0].GetArea(newVertices[v1], newVertices[v2]);
+                    if (area >= minFaceArea)
                     {
-                        var sorted = new[] { iv0, iv1, iv2 }.OrderBy(i => i).ToArray();
-                        if (addedFaces.Add((sorted[0], sorted[1], sorted[2])))
-                        {
-                            newFaces.Add(iv0, iv1, iv2, newVertices);
-                            vertexUsageCount[iv0]++;
-                            vertexUsageCount[iv1]++;
-                            vertexUsageCount[iv2]++;
-                        }
+                        newFaces.Add(v0, v1, v2, newVertices);
                     }
                 }
             }
 
-            // Create final vertex list with only used vertices
-            var finalVertices = new List<Vector3Float>();
-            var finalVertexMapping = new int[newVertices.Count];
-            for (int i = 0; i < newVertices.Count; i++)
+            // Finally, update the mesh
+            this.Vertices = newVertices;
+            this.Faces = newFaces;
+        }
+
+        public class KDTree
+        {
+            private List<(Vector3Float Position, int Index)> points;
+            private List<(Vector3Float Position, int Index)> sorted;
+
+            public KDTree(int capacity)
             {
-                if (vertexUsageCount[i] > 0)
-                {
-                    finalVertexMapping[i] = finalVertices.Count;
-                    finalVertices.Add(newVertices[i]);
-                }
-                else
-                {
-                    finalVertexMapping[i] = -1;
-                }
+                points = new List<(Vector3Float, int)>(capacity);
+                sorted = new List<(Vector3Float, int)>(capacity);
             }
 
-            // Remap faces to use final vertex indices
-            var finalFaces = new FaceList();
-            foreach (var face in newFaces)
+            public void Add(Vector3Float point, int index)
             {
-                finalFaces.Add(
-                    finalVertexMapping[face.v0],
-                    finalVertexMapping[face.v1],
-                    finalVertexMapping[face.v2],
-                    finalVertices
-                );
+                points.Add((point, index));
             }
 
-            this.Faces = finalFaces;
-            this.Vertices = finalVertices;
+            public void Balance()
+            {
+                sorted = new List<(Vector3Float, int)>(points);
+                sorted.Sort((a, b) => a.Position.X.CompareTo(b.Position.X));
+            }
+
+            public List<(Vector3Float Position, int Index)> FindInSphere(Vector3Float center, float radius)
+            {
+                var result = new List<(Vector3Float Position, int Index)>();
+                float radiusSquared = radius * radius;
+
+                foreach (var point in sorted)
+                {
+                    if (Math.Abs(point.Position.X - center.X) > radius)
+                        continue;
+
+                    float distSquared = (point.Position - center).LengthSquared;
+                    if (distSquared <= radiusSquared)
+                    {
+                        result.Add(point);
+                    }
+                }
+
+                return result;
+            }
         }
 
         /// <summary>
@@ -1370,15 +1423,6 @@ namespace MatterHackers.PolygonMesh
 
 			mesh.Faces = newFaces;
 			mesh.MarkAsChanged();
-		}
-
-		public static void CleanupMesh(this Mesh mesh, double minFaceArea)
-		{
-			// First remove degenerate faces
-			mesh.RemoveDegenerateFaces(minFaceArea);
-
-			// Then remove any vertices that are no longer used
-			mesh.RemoveUnusedVertices();
 		}
 	}
 }

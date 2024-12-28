@@ -55,7 +55,6 @@ namespace MatterHackers.PolygonMesh.Csg
 
         // Coplanar face processing properties
         public string CoplanarProcessingPhase { get; set; }
-        public Plane? CurrentCoplanarPlane { get; set; }
         public List<int> CurrentMeshIndices { get; set; }
         public HashSet<int> FacesToRemove { get; set; }
         public int TotalCoplanarFacesProcessed { get; set; }
@@ -87,7 +86,6 @@ namespace MatterHackers.PolygonMesh.Csg
 
                 // Copy coplanar processing properties
                 CoplanarProcessingPhase = this.CoplanarProcessingPhase,
-                CurrentCoplanarPlane = this.CurrentCoplanarPlane,
                 CurrentMeshIndices = this.CurrentMeshIndices != null ? new List<int>(this.CurrentMeshIndices) : null,
                 FacesToRemove = this.FacesToRemove != null ? new HashSet<int>(this.FacesToRemove) : null,
                 TotalCoplanarFacesProcessed = this.TotalCoplanarFacesProcessed,
