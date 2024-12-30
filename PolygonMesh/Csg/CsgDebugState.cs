@@ -35,6 +35,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
+    using Polygon = List<IntPoint>;
     using Polygons = List<List<IntPoint>>;
 
     public class CsgDebugState
@@ -47,7 +48,7 @@ namespace MatterHackers.PolygonMesh.Csg
         public Plane? CurrentPlane { get; set; }
         public List<(int meshIndex, int faceIndex)> ProcessedFaces { get; set; } = new List<(int meshIndex, int faceIndex)>();
         public CsgModes Operation { get; set; }
-        public List<IntPoint> CurrentFacePolygon { get; set; }
+        public Polygon CurrentFacePolygon { get; set; }
         public Polygons ClippingResult { get; set; }
         public string ProcessingAction { get; set; }
         public bool WasProcessed { get; set; }
@@ -62,61 +63,8 @@ namespace MatterHackers.PolygonMesh.Csg
         public Polygons KeepPolygons { get; set; }
         public Polygons RemovePolygons { get; set; }
         public string PolygonOperationDescription { get; set; }
-        public Dictionary<int, List<IntPoint>> OriginalFacePolygons { get; set; } = new Dictionary<int, List<IntPoint>>();
+        public Dictionary<int, Polygon> OriginalFacePolygons { get; set; } = new Dictionary<int, Polygon>();
         public int CurrentProcessingFaceIndex { get; set; }
         public ClipType? CurrentClipOperation { get; set; }
-
-        public CsgDebugState DeepCopy()
-        {
-            var copy = new CsgDebugState
-            {
-                // Copy original properties
-                CurrentMeshIndex = this.CurrentMeshIndex,
-                CurrentFaceIndex = this.CurrentFaceIndex,
-                CurrentResultMesh = this.CurrentResultMesh?.Copy(CancellationToken.None),
-                CurrentSlicePolygons = this.CurrentSlicePolygons?.Select(p => new List<IntPoint>(p)).ToList(),
-                CurrentPlane = this.CurrentPlane,
-                ProcessedFaces = new List<(int meshIndex, int faceIndex)>(this.ProcessedFaces),
-                Operation = this.Operation,
-                CurrentFacePolygon = this.CurrentFacePolygon != null ? new List<IntPoint>(this.CurrentFacePolygon) : null,
-                ClippingResult = this.ClippingResult?.Select(p => new List<IntPoint>(p)).ToList(),
-                ProcessingAction = this.ProcessingAction,
-                WasProcessed = this.WasProcessed,
-                SkipReason = this.SkipReason,
-
-                // Copy coplanar processing properties
-                CoplanarProcessingPhase = this.CoplanarProcessingPhase,
-                CurrentMeshIndices = this.CurrentMeshIndices != null ? new List<int>(this.CurrentMeshIndices) : null,
-                FacesToRemove = this.FacesToRemove != null ? new HashSet<int>(this.FacesToRemove) : null,
-                TotalCoplanarFacesProcessed = this.TotalCoplanarFacesProcessed,
-                KeepPolygons = this.KeepPolygons?.Select(p => new List<IntPoint>(p)).ToList(),
-                RemovePolygons = this.RemovePolygons?.Select(p => new List<IntPoint>(p)).ToList(),
-                PolygonOperationDescription = this.PolygonOperationDescription,
-                CurrentProcessingFaceIndex = this.CurrentProcessingFaceIndex,
-                CurrentClipOperation = this.CurrentClipOperation
-            };
-
-            // Deep copy the CoplanarFaceGroups dictionary
-            if (this.CoplanarFaceGroups != null)
-            {
-                copy.CoplanarFaceGroups = new Dictionary<Plane, List<(int meshIndex, int faceIndex)>>();
-                foreach (var kvp in this.CoplanarFaceGroups)
-                {
-                    copy.CoplanarFaceGroups[kvp.Key] = new List<(int meshIndex, int faceIndex)>(kvp.Value);
-                }
-            }
-
-            // Deep copy the OriginalFacePolygons dictionary
-            if (this.OriginalFacePolygons != null)
-            {
-                copy.OriginalFacePolygons = new Dictionary<int, List<IntPoint>>();
-                foreach (var kvp in this.OriginalFacePolygons)
-                {
-                    copy.OriginalFacePolygons[kvp.Key] = new List<IntPoint>(kvp.Value);
-                }
-            }
-
-            return copy;
-        }
     }
 }

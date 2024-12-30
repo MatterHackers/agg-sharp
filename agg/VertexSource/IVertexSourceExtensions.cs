@@ -124,8 +124,7 @@ namespace MatterHackers.Agg.VertexSource
         {
             var bounds = source.GetBounds();
             var scale = Math.Min(rectangle.Width / bounds.Width, rectangle.Height / bounds.Height);
-            var translate = new Vector2(rectangle.Left + rectangle.Width / 2, rectangle.Bottom + rectangle.Height / 2) - bounds.Center;
-            var transform = Affine.NewScaling(scale) * Affine.NewTranslation(translate);
+            var transform = Affine.NewTranslation(-bounds.Center) * Affine.NewScaling(scale) * Affine.NewTranslation(rectangle.Center);
 
             graphics2D.Render(new VertexSourceApplyTransform(source, transform), color);
         }

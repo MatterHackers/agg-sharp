@@ -159,7 +159,7 @@ namespace MatterHackers.RenderOpenGl
             var transform = GetTransform();
 
             if (useCache
-                && IsTransformIdentity(transform) 
+                && IsTransformIdentity(transform)
                 && vertexSource is Ellipse ellipse)
             {
                 translation = new Vector2(ellipse.originX, ellipse.originY);
@@ -169,10 +169,18 @@ namespace MatterHackers.RenderOpenGl
                 && vertexSource is VertexSourceApplyTransform applyTransform
                 && applyTransform.TransformToApply is Affine affine)
             {
-                vertexSource = applyTransform.VertexSource;
-                translation = new Vector2(affine.tx, affine.ty);
-                affine.tx = 0;
-                affine.ty = 0;
+                if ((affine.sx == 1 && affine.sy == 1)
+                    || (affine.sx == 0 && affine.sy == 0))
+                {
+                    vertexSource = applyTransform.VertexSource;
+                    translation = new Vector2(affine.tx, affine.ty);
+                    affine.tx = 0;
+                    affine.ty = 0;
+                }
+                else
+                {
+                    useCache = false;
+                }
             }
 
             if (useCache

@@ -42,6 +42,7 @@ namespace MatterHackers.PolygonMesh.Csg
         public Action OnFaceProcessed { get; set; }
 
         public CsgDebugState CsgDebugState { get; private set; } = new CsgDebugState();
+        public bool Done { get; set; }
 
         public void Step()
         {

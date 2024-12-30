@@ -250,7 +250,10 @@ namespace MatterHackers.PolygonMesh.Csg
                             if (csgDebugger != null)
                             {
                                 debugState.CurrentResultMesh = resultsMesh.Copy(cancellationToken);
-                                debugState.ProcessedFaces.Add((mesh1Index, faceIndex));
+                                lock (debugState)
+                                {
+                                    debugState.ProcessedFaces.Add((mesh1Index, faceIndex));
+                                }
                                 csgDebugger.OnFaceProcessed?.Invoke();
                                 if (csgDebugger.WaitForStep) { csgDebugger.StepEvent.Reset(); csgDebugger.StepEvent.WaitOne(); }
                             }
@@ -426,7 +429,10 @@ namespace MatterHackers.PolygonMesh.Csg
                             debugState.SkipReason = "Face did not meet processing criteria";
                         }
                         debugState.CurrentResultMesh = resultsMesh.Copy(cancellationToken);
-                        debugState.ProcessedFaces.Add((mesh1Index, faceIndex));
+                        lock (debugState)
+                        {
+                            debugState.ProcessedFaces.Add((mesh1Index, faceIndex));
+                        }
                         debugState.ProcessingAction = "Completed face processing";
                         csgDebugger.OnFaceProcessed?.Invoke();
                         if (csgDebugger.WaitForStep) { csgDebugger.StepEvent.Reset(); csgDebugger.StepEvent.WaitOne(); }
@@ -460,6 +466,7 @@ namespace MatterHackers.PolygonMesh.Csg
                 debugState.ProcessingAction = "Operation complete";
                 csgDebugger.OnFaceProcessed?.Invoke();
                 if (csgDebugger.WaitForStep) { csgDebugger.StepEvent.Reset(); csgDebugger.StepEvent.WaitOne(); }
+                csgDebugger.Done = true;
             }
 
             //resultsMesh.MergeVertices(.01, .001);
