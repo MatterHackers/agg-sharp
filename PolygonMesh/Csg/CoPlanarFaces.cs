@@ -332,7 +332,9 @@ namespace MatterHackers.PolygonMesh.Csg
 
             var subtractPolygons = csgData.GetTotalSlice(-1, new Plane()
             {
-                DistanceFromOrigin = positivePlane.DistanceFromOrigin + .001,
+                // We are checking if this surface is inside of another object.
+                // Offset to test slightly above the surface of the plane.
+                DistanceFromOrigin = positivePlane.DistanceFromOrigin + .01,
                 Normal = positivePlane.Normal
             },
             transformTo0Plane);
