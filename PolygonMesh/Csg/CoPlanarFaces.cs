@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -334,7 +335,9 @@ namespace MatterHackers.PolygonMesh.Csg
             {
                 // We are checking if this surface is inside of another object.
                 // Offset to test slightly above the surface of the plane.
-                DistanceFromOrigin = positivePlane.DistanceFromOrigin + .01,
+                // .04 is an amount that was found to be good for the custom spool holder layers to merge well.
+                // This bias can cause us to keep surfaces that should be removed.
+                DistanceFromOrigin = positivePlane.DistanceFromOrigin + .04,
                 Normal = positivePlane.Normal
             },
             transformTo0Plane);

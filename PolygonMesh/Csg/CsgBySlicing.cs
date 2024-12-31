@@ -440,7 +440,7 @@ namespace MatterHackers.PolygonMesh.Csg
                     }
 
                     ratioCompleted += amountPerOperation;
-                    progressReporter?.Invoke(ratioCompleted, "");
+                    progressReporter?.Invoke(ratioCompleted * .8, "");
 
                     if (cancellationToken.IsCancellationRequested)
                     {
@@ -458,7 +458,7 @@ namespace MatterHackers.PolygonMesh.Csg
                 if (csgDebugger.WaitForStep) { csgDebugger.StepEvent.Reset(); csgDebugger.StepEvent.WaitOne(); }
             }
 
-            ProcessCoplanarFaces(operation, resultsMesh, coPlanarFaces, csgDebugger);
+            ProcessCoplanarFaces(operation, resultsMesh, coPlanarFaces, (progress, description) =>  progressReporter?.Invoke(.8 + progress * .2, description), csgDebugger);
 
             // Debug Point 7: Final result
             if (csgDebugger != null)
@@ -504,9 +504,11 @@ namespace MatterHackers.PolygonMesh.Csg
             return totalSlice;
         }
 
-        private void ProcessCoplanarFaces(CsgModes operation, Mesh resultsMesh, CoPlanarFaces coPlanarFaces, CsgDebugger csgDebugger)
+        private void ProcessCoplanarFaces(CsgModes operation, Mesh resultsMesh, CoPlanarFaces coPlanarFaces, Action<double, string> progressReporter, CsgDebugger csgDebugger)
         {
             var faceIndicesToRemove = new HashSet<int>();
+            var numProcessed = 0;
+            var totalOpperations = coPlanarFaces.Planes.Count();
             foreach (var plane in coPlanarFaces.Planes)
             {
                 var meshIndices = coPlanarFaces.MeshFaceIndicesForPlane(plane).ToList();
@@ -546,8 +548,10 @@ namespace MatterHackers.PolygonMesh.Csg
                             coPlanarFaces.IntersectFaces(plane, transformedMeshes, resultsMesh, transformTo0Plane, faceIndicesToRemove);
                             break;
                     }
-
                 }
+
+                // report progress
+                progressReporter?.Invoke(numProcessed++ / (double)totalOpperations, "Union Faces");
             }
 
             // now rebuild the face list without the remove polygons
