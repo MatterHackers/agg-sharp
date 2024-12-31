@@ -161,6 +161,7 @@ namespace MatterHackers.PolygonMesh.Csg
         private bool InIntersection(Mesh mesh, int faceIndex)
         {
             var faceAabb = mesh.Faces[faceIndex].GetAxisAlignedBoundingBox(mesh);
+            faceAabb.Expand(.1);
             if (activeOperationBounds.Intersects(faceAabb))
             {
                 return true;
@@ -527,7 +528,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
                 if (meshIndices.Count() > 1)
                 {
-                    // check if more than one mesh has this polygons on this plane
+                    // check if more than one mesh has polygons on this plane
                     var transformTo0Plane = transformTo0Planes[plane].matrix;
 
                     // depending on the operation add or remove polygons that are planar
@@ -550,6 +551,11 @@ namespace MatterHackers.PolygonMesh.Csg
             }
 
             // now rebuild the face list without the remove polygons
+            RemoveUnsudeFaces(resultsMesh, faceIndicesToRemove);
+        }
+
+        public static void RemoveUnsudeFaces(Mesh resultsMesh, HashSet<int> faceIndicesToRemove)
+        {
             if (faceIndicesToRemove.Count > 0)
             {
                 var newFaces = new FaceList();

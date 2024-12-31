@@ -237,16 +237,6 @@ namespace MatterHackers.PolygonMesh.Csg
         {
             var debugState = debugger?.CsgDebugState;
 
-            // Debug Point 1: Starting union faces
-            if (debugger != null)
-            {
-                debugState.CoplanarProcessingPhase = "Starting UnionFaces";
-                debugState.CurrentPlane = positivePlane;
-                debugState.CurrentResultMesh = resultsMesh.Copy(CancellationToken.None);
-                debugger.OnFaceProcessed?.Invoke();
-                if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
-            }
-
             // get all meshes that have faces on this plane
             var meshesWithFaces = MeshFaceIndicesForPlane(positivePlane).ToList();
 
@@ -258,30 +248,12 @@ namespace MatterHackers.PolygonMesh.Csg
 
             if (negativePlane != null)
             {
-                // Debug Point 2: Found negative plane
-                if (debugger != null)
-                {
-                    debugState.CoplanarProcessingPhase = "Adding negative plane faces";
-                    debugState.CurrentResultMesh = resultsMesh.Copy(CancellationToken.None);
-                    debugger.OnFaceProcessed?.Invoke();
-                    if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
-                }
-
                 // add any negative faces
                 meshesWithFaces.AddRange(MeshFaceIndicesForPlane(negativePlane.Value));
             }
 
             if (meshesWithFaces.Count < 2)
             {
-                // Debug Point 3: Not enough faces to process
-                if (debugger != null)
-                {
-                    debugState.CoplanarProcessingPhase = $"Insufficient faces to process: {meshesWithFaces.Count}";
-                    debugState.SkipReason = "Less than 2 faces to process";
-                    debugState.CurrentResultMesh = resultsMesh.Copy(CancellationToken.None);
-                    debugger.OnFaceProcessed?.Invoke();
-                    if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
-                }
                 return;
             }
 
@@ -291,15 +263,6 @@ namespace MatterHackers.PolygonMesh.Csg
                 foreach (var faces in FacesSetsForPlaneAndMesh(positivePlane, meshIndex))
                 {
                     faceIndicesToRemove.Add(faces.destFaceIndex);
-
-                    // Debug Point 4: Adding face to remove list
-                    if (debugger != null)
-                    {
-                        debugState.CoplanarProcessingPhase = $"Adding face {faces.destFaceIndex} to remove list";
-                        debugState.FacesToRemove = new HashSet<int>(faceIndicesToRemove);
-                        debugger.OnFaceProcessed?.Invoke();
-                        if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
-                    }
                 }
             }
 
@@ -322,43 +285,27 @@ namespace MatterHackers.PolygonMesh.Csg
                         var facePolygon = GetFacePolygon(transformedMeshes[meshIndex], sourceFaceIndex, transformTo0Plane);
                         meshPolygons.Add(facePolygon);
                         addedFaces.Add(sourceFaceIndex);
-
-                        // Debug Point 5: Added face polygon
-                        if (debugger != null)
-                        {
-                            debugState.CoplanarProcessingPhase = $"Added polygon for face {sourceFaceIndex} from mesh {meshIndex}";
-                            debugState.OriginalFacePolygons[sourceFaceIndex] = facePolygon;
-                            debugState.CurrentProcessingFaceIndex = sourceFaceIndex;
-                            debugger.OnFaceProcessed?.Invoke();
-                            if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
-                        }
                     }
                 }
 
                 if (first)
                 {
                     firstPositivePolygons = meshPolygons;
-                    if (debugger != null)
-                    {
-                        debugState.KeepPolygons = firstPositivePolygons;
-                    }
                     first = false;
                 }
                 else
                 {
                     unionPolygons.AddRange(meshPolygons);
-                    if (debugger != null)
-                    {
-                        debugState.RemovePolygons = unionPolygons;
-                    }
                 }
 
                 // Debug Point 6: Updated polygon collections
                 if (debugger != null)
                 {
                     debugState.CoplanarProcessingPhase = "Updated keep/union polygons";
+                    debugState.CurrentPlane = positivePlane;
                     debugState.KeepPolygons = firstPositivePolygons;
                     debugState.RemovePolygons = unionPolygons;
+                    debugState.ClippingResult = new Polygons();
                     debugger.OnFaceProcessed?.Invoke();
                     if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
                 }
@@ -431,6 +378,9 @@ namespace MatterHackers.PolygonMesh.Csg
             {
                 debugState.CoplanarProcessingPhase = "Completed face processing";
                 debugState.CurrentResultMesh = resultsMesh.Copy(CancellationToken.None);
+
+                CsgBySlicing.RemoveUnsudeFaces(debugState.CurrentResultMesh, faceIndicesToRemove);
+
                 debugger.OnFaceProcessed?.Invoke();
                 if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
             }

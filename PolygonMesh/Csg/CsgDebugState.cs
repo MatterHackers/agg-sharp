@@ -63,7 +63,6 @@ namespace MatterHackers.PolygonMesh.Csg
         public Polygons KeepPolygons { get; set; }
         public Polygons RemovePolygons { get; set; }
         public string PolygonOperationDescription { get; set; }
-        public Dictionary<int, Polygon> OriginalFacePolygons { get; set; } = new Dictionary<int, Polygon>();
         public int CurrentProcessingFaceIndex { get; set; }
         public ClipType? CurrentClipOperation { get; set; }
     }

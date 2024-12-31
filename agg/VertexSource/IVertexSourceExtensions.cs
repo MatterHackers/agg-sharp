@@ -119,16 +119,6 @@ namespace MatterHackers.Agg.VertexSource
             return centerPosition;
         }
 
-        // Render to a rectangle scalling the path to fit the rectangle
-        public static void RenderToRectangle(this IVertexSource source, Graphics2D graphics2D, RectangleDouble rectangle, Color color)
-        {
-            var bounds = source.GetBounds();
-            var scale = Math.Min(rectangle.Width / bounds.Width, rectangle.Height / bounds.Height);
-            var transform = Affine.NewTranslation(-bounds.Center) * Affine.NewScaling(scale) * Affine.NewTranslation(rectangle.Center);
-
-            graphics2D.Render(new VertexSourceApplyTransform(source, transform), color);
-        }
-
         public static void RenderPath(this IVertexSource source, 
             Graphics2D graphics2D, 
             Color lineColor, double width = 1, 
