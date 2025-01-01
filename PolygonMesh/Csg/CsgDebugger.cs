@@ -36,6 +36,11 @@ namespace MatterHackers.PolygonMesh.Csg
 {
     public class CsgDebugger
     {
+        public CsgDebugger(bool enabled)
+        {
+            Enabled = enabled;
+        }
+
         public bool WaitForStep { get; set; }
         public ManualResetEvent StepEvent { get; set; } = new ManualResetEvent(false);
 
@@ -43,6 +48,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
         public CsgDebugState CsgDebugState { get; private set; } = new CsgDebugState();
         public bool Done { get; set; }
+        public bool Enabled { get; set; }
 
         public void Step()
         {
