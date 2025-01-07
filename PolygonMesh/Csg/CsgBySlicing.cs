@@ -43,6 +43,7 @@ namespace MatterHackers.PolygonMesh.Csg
     public class CsgBySlicing
     {
         private int totalOperations;
+        private List<List<bool>> isFaceIntersecting;
         private List<Mesh> transformedMeshes;
         private List<ITraceable> bvhAccelerators;
         private List<List<Plane>> plansByMesh;
@@ -103,7 +104,7 @@ namespace MatterHackers.PolygonMesh.Csg
             activeOperationBounds = transformedMeshes[0].GetAxisAlignedBoundingBox().GetIntersection(transformedMeshes[1].GetAxisAlignedBoundingBox());
             for (var meshIndex = 1; meshIndex < transformedMeshes.Count; meshIndex++)
             {
-                for (var meshIndex2 = meshIndex + 1; meshIndex2 <= transformedMeshes.Count; meshIndex2++)
+                for (var meshIndex2 = meshIndex + 1; meshIndex2 < transformedMeshes.Count; meshIndex2++)
                 {
                     var nextMeshIndex = meshIndex2 % transformedMeshes.Count;
                     var nextIntersectionBounds = transformedMeshes[meshIndex].GetAxisAlignedBoundingBox()
@@ -116,15 +117,27 @@ namespace MatterHackers.PolygonMesh.Csg
 
             // figure out how many faces we will process
             totalOperations = 0;
-            foreach (var mesh in transformedMeshes)
+            isFaceIntersecting = new List<List<bool>>();
+            for (int i = 0; i < transformedMeshes.Count; i++)
             {
+                isFaceIntersecting.Add(new List<bool>());
+            }
+
+            for (int i = 0; i < transformedMeshes.Count; i++)
+            {
+                var mesh = transformedMeshes[i];
                 if (mesh != null)
                 {
                     for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
                     {
                         if (InIntersection(mesh, faceIndex))
                         {
+                            isFaceIntersecting[i].Add(true);
                             totalOperations++;
+                        }
+                        else
+                        {
+                            isFaceIntersecting[i].Add(false);
                         }
                     }
                 }
@@ -233,7 +246,7 @@ namespace MatterHackers.PolygonMesh.Csg
                         continue;
                     }
 
-                    if (!InIntersection(mesh1, faceIndex))
+                    if (!isFaceIntersecting[mesh1Index][faceIndex])
                     {
                         if (operation == CsgModes.Union
                             || (operation == CsgModes.Subtract && mesh1Index == 0))
@@ -372,6 +385,7 @@ namespace MatterHackers.PolygonMesh.Csg
                         {
                             for (int meshIndex = 0; meshIndex < transformedMeshes.Count; meshIndex++)
                             {
+                                var foundMatch = false;
                                 var bvhAccelerator = bvhAccelerators[meshIndex];
                                 var mesh = transformedMeshes[meshIndex];
                                 var touchingBvhItems = bvhAccelerator.GetTouching(new Vector3(resultsMesh.Vertices[addedVertIndex]), .0001);
@@ -389,10 +403,14 @@ namespace MatterHackers.PolygonMesh.Csg
                                             if (deltaSquared == 0)
                                             {
                                                 // do nothing it already matches
+                                                foundMatch = true;
+                                                break;
                                             }
                                             else if (deltaSquared < .00001)
                                             {
                                                 resultsMesh.Vertices[addedVertIndex] = sourcePosition;
+                                                foundMatch = true;
+                                                break;
                                             }
                                             else
                                             {
@@ -400,6 +418,11 @@ namespace MatterHackers.PolygonMesh.Csg
                                                 resultsMesh.Vertices[addedVertIndex] -= new Vector3Float(polygonPlane.Normal * distanceToPlane);
                                             }
                                         }
+                                    }
+
+                                    if (foundMatch)
+                                    {
+                                        break;
                                     }
                                 }
                             }

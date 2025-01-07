@@ -27,7 +27,6 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -76,7 +75,12 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		public IEnumerable<(int sourceFaceIndex, int destFaceIndex)> FacesSetsForPlaneAndMesh(Plane plane, int meshIndex)
 		{
-			if (coPlanarFaces[plane].ContainsKey(meshIndex))
+            if (!coPlanarFaces.TryGetValue(plane, out var meshIndexMap))
+            {
+                yield break;
+            }
+            
+            if (coPlanarFaces[plane].ContainsKey(meshIndex))
 			{
 				foreach (var faceIndices in coPlanarFaces[plane][meshIndex])
 				{
@@ -100,10 +104,30 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 
 			return facePolygon;
-
 		}
 
-		public void SubtractFaces(Plane plane, List<Mesh> transformedMeshes, Mesh resultsMesh, Matrix4X4 transformTo0Plane, HashSet<int> faceIndicesToRemove)
+        // Optional cache: Key = (mesh, faceIndex, transformPointer)
+        private Dictionary<(Mesh mesh, int faceIndex, Matrix4X4 transform), Polygon> facePolygonCache
+            = new Dictionary<(Mesh, int, Matrix4X4), Polygon>();
+
+        /// <summary>
+        /// Returns a face polygon from the cache if available; otherwise computes, stores, and returns it.
+        /// </summary>
+        public Polygon GetFacePolygonCached(Mesh mesh, int faceIndex, Matrix4X4 meshTo0Plane)
+        {
+            var key = (mesh, faceIndex, meshTo0Plane);
+
+            if (!facePolygonCache.TryGetValue(key, out var cachedPolygon))
+            {
+                // Compute via the existing code
+                cachedPolygon = GetFacePolygon(mesh, faceIndex, meshTo0Plane);
+                facePolygonCache[key] = cachedPolygon;
+            }
+
+            return cachedPolygon;
+        }
+
+        public void SubtractFaces(Plane plane, List<Mesh> transformedMeshes, Mesh resultsMesh, Matrix4X4 transformTo0Plane, HashSet<int> faceIndicesToRemove)
         {
             // get all meshes that have faces on this plane
             var meshesFaceIndicesForPlane = MeshFaceIndicesForPlane(plane).ToList();
@@ -133,7 +157,7 @@ namespace MatterHackers.PolygonMesh.Csg
             var keepPolygons = new Polygons();
             foreach (var keepFaceSets in FacesSetsForPlaneAndMesh(plane, 0))
             {
-                var facePolygon = GetFacePolygon(transformedMeshes[0], keepFaceSets.sourceFaceIndex, transformTo0Plane);
+                var facePolygon = GetFacePolygonCached(transformedMeshes[0], keepFaceSets.sourceFaceIndex, transformTo0Plane);
                 keepPolygons = keepPolygons.Union(facePolygon);
             }
 
@@ -143,7 +167,7 @@ namespace MatterHackers.PolygonMesh.Csg
             {
                 foreach (var removeFaceSets in FacesSetsForPlaneAndMesh(plane, removeMeshIndex))
                 {
-                    removePoygons = removePoygons.Union(GetFacePolygon(transformedMeshes[removeMeshIndex], removeFaceSets.sourceFaceIndex, transformTo0Plane));
+                    removePoygons = removePoygons.Union(GetFacePolygonCached(transformedMeshes[removeMeshIndex], removeFaceSets.sourceFaceIndex, transformTo0Plane));
                 }
             }
 
@@ -204,7 +228,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				var unionedPoygons = new Polygons();
 				foreach (var removeFaceSets in FacesSetsForPlaneAndMesh(plane, meshIndex))
 				{
-					unionedPoygons = unionedPoygons.Union(GetFacePolygon(transformedMeshes[meshIndex], removeFaceSets.sourceFaceIndex, transformTo0Plane));
+					unionedPoygons = unionedPoygons.Union(GetFacePolygonCached(transformedMeshes[meshIndex], removeFaceSets.sourceFaceIndex, transformTo0Plane));
 				}
 
 				polygonsByMesh.Add(unionedPoygons);
@@ -283,7 +307,7 @@ namespace MatterHackers.PolygonMesh.Csg
                 {
                     if (!addedFaces.Contains(sourceFaceIndex))
                     {
-                        var facePolygon = GetFacePolygon(transformedMeshes[meshIndex], sourceFaceIndex, transformTo0Plane);
+                        var facePolygon = GetFacePolygonCached(transformedMeshes[meshIndex], sourceFaceIndex, transformTo0Plane);
                         meshPolygons.Add(facePolygon);
                         addedFaces.Add(sourceFaceIndex);
                     }
