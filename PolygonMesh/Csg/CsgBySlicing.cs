@@ -101,18 +101,30 @@ namespace MatterHackers.PolygonMesh.Csg
                 }
 			}
 
-            activeOperationBounds = transformedMeshes[0].GetAxisAlignedBoundingBox().GetIntersection(transformedMeshes[1].GetAxisAlignedBoundingBox());
+            // Start with the bounds of the first mesh since it's the primary one for subtraction
+            activeOperationBounds = transformedMeshes[0].GetAxisAlignedBoundingBox();
+
+            // Calculate the union of all intersections with the first mesh
             for (var meshIndex = 1; meshIndex < transformedMeshes.Count; meshIndex++)
             {
-                for (var meshIndex2 = meshIndex + 1; meshIndex2 < transformedMeshes.Count; meshIndex2++)
+                var intersection = transformedMeshes[0].GetAxisAlignedBoundingBox()
+                    .GetIntersection(transformedMeshes[meshIndex].GetAxisAlignedBoundingBox());
+
+                if (intersection.XSize > 0 && intersection.YSize > 0 && intersection.ZSize > 0)
                 {
-                    var nextMeshIndex = meshIndex2 % transformedMeshes.Count;
-                    var nextIntersectionBounds = transformedMeshes[meshIndex].GetAxisAlignedBoundingBox()
-                        .GetIntersection(transformedMeshes[nextMeshIndex].GetAxisAlignedBoundingBox());
-                    activeOperationBounds.ExpandToInclude(nextIntersectionBounds);
+                    // Only include valid intersections
+                    if (activeOperationBounds == null)
+                    {
+                        activeOperationBounds = intersection;
+                    }
+                    else
+                    {
+                        activeOperationBounds.ExpandToInclude(intersection);
+                    }
                 }
             }
 
+            // Add a small buffer for numerical stability
             activeOperationBounds.Expand(.1);
 
             // figure out how many faces we will process
