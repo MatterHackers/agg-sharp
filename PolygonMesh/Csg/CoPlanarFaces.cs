@@ -257,11 +257,8 @@ namespace MatterHackers.PolygonMesh.Csg
             Mesh resultsMesh,
             Matrix4X4 transformTo0Plane,
             HashSet<int> faceIndicesToRemove,
-            CsgBySlicing csgData,
-            CsgDebugger debugger)
+            CsgBySlicing csgData)
         {
-            var debugState = debugger?.CsgDebugState;
-
             // get all meshes that have faces on this plane
             var meshesWithFaces = MeshFaceIndicesForPlane(positivePlane).ToList();
 
@@ -322,18 +319,6 @@ namespace MatterHackers.PolygonMesh.Csg
                 {
                     unionPolygons.AddRange(meshPolygons);
                 }
-
-                // Debug Point 6: Updated polygon collections
-                if (debugger != null)
-                {
-                    debugState.CoplanarProcessingPhase = "Updated keep/union polygons";
-                    debugState.CurrentPlane = positivePlane;
-                    debugState.KeepPolygons = firstPositivePolygons;
-                    debugState.RemovePolygons = unionPolygons;
-                    debugState.ClippingResult = new Polygons();
-                    debugger.OnFaceProcessed?.Invoke();
-                    if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
-                }
             }
 
             // now union all the intersections
@@ -344,16 +329,6 @@ namespace MatterHackers.PolygonMesh.Csg
 
             var totalSlices = new Polygons();
             unionClipper.Execute(ClipType.ctUnion, totalSlices, PolyFillType.pftNonZero);
-
-            // Debug Point 7: After union operation
-            if (debugger != null)
-            {
-                debugState.CoplanarProcessingPhase = $"Completed union operation: {totalSlices.Count} resulting polygons";
-                debugState.ClippingResult = totalSlices;
-                debugState.CurrentClipOperation = ClipType.ctUnion;
-                debugger.OnFaceProcessed?.Invoke();
-                if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
-            }
 
             var subtractPolygons = csgData.GetTotalSlice(-1, new Plane()
             {
@@ -368,15 +343,6 @@ namespace MatterHackers.PolygonMesh.Csg
 
             if (subtractPolygons.Count > 0)
             {
-                // Debug Point 8: Before subtraction
-                if (debugger != null)
-                {
-                    debugState.CoplanarProcessingPhase = "Starting subtraction operation";
-                    debugState.RemovePolygons = subtractPolygons;
-                    debugger.OnFaceProcessed?.Invoke();
-                    if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
-                }
-
                 // subtract them from the other union faces
                 var subtractionClipper = new Clipper();
                 subtractionClipper.AddPaths(totalSlices, PolyType.ptSubject, true);
@@ -385,34 +351,12 @@ namespace MatterHackers.PolygonMesh.Csg
                 var totalSlices2 = new Polygons();
                 subtractionClipper.Execute(ClipType.ctDifference, totalSlices2, PolyFillType.pftNonZero);
                 totalSlices = totalSlices2;
-
-                // Debug Point 9: After subtraction
-                if (debugger != null)
-                {
-                    debugState.CoplanarProcessingPhase = $"Completed subtraction: {totalSlices.Count} final polygons";
-                    debugState.ClippingResult = totalSlices;
-                    debugState.CurrentClipOperation = ClipType.ctDifference;
-                    debugger.OnFaceProcessed?.Invoke();
-                    if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
-                }
             }
 
             // teselate and add all the new polygons
             var countPreAdd = resultsMesh.Faces.Count;
             totalSlices.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, transformTo0Plane.Inverted);
             EnsureFaceNormals(positivePlane, resultsMesh, countPreAdd);
-
-            // Debug Point 10: Final result
-            if (debugger != null)
-            {
-                debugState.CoplanarProcessingPhase = "Completed face processing";
-                debugState.CurrentResultMesh = resultsMesh.Copy(CancellationToken.None);
-
-                CsgBySlicing.RemoveUnsudeFaces(debugState.CurrentResultMesh, faceIndicesToRemove);
-
-                debugger.OnFaceProcessed?.Invoke();
-                if (debugger.WaitForStep) { debugger.StepEvent.Reset(); debugger.StepEvent.WaitOne(); }
-            }
         }
 
         public void StoreFaceAdd(Plane facePlane,

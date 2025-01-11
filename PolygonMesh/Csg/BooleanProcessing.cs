@@ -86,21 +86,18 @@ namespace MatterHackers.PolygonMesh.Csg
 			ProcessingResolution outputResolution,
 			Action<double, string> reporter,
 			CancellationToken cancellationToken,
-            CsgDebugger csgDebugger = null,
             double amountPerOperation = 1,
 			double ratioCompleted = 0)
 		{
 			if (processingMode == ProcessingModes.Polygons)
 			{
 				var csgBySlicing = new CsgBySlicing();
-				csgBySlicing.Setup(items, null, cancellationToken);
+				csgBySlicing.Setup(items, null, operation, cancellationToken);
 
-				return csgBySlicing.Calculate(operation,
-					(ratio, message) =>
+				return csgBySlicing.Calculate((ratio, message) =>
                     {
 						reporter?.Invoke(ratio * amountPerOperation + ratioCompleted, message);
 					},
-                    csgDebugger,
                     cancellationToken);
 			}
 			else
@@ -251,8 +248,7 @@ namespace MatterHackers.PolygonMesh.Csg
             Action<double, string> reporter = null,
 			double amountPerOperation = 1,
 			double ratioCompleted = 0,
-			CancellationToken cancellationToken = default(CancellationToken),
-            CsgDebugger csgDebugger = null)
+			CancellationToken cancellationToken = default)
 		{
 			if (processingMode == ProcessingModes.Polygons)
 			{
@@ -263,7 +259,6 @@ namespace MatterHackers.PolygonMesh.Csg
 					outputResolution,
 					reporter,
                     cancellationToken,
-                    csgDebugger,
                     amountPerOperation,
 					ratioCompleted);
 			}

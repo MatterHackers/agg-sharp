@@ -144,45 +144,50 @@ namespace MatterHackers.PolygonMesh
 			return (Math.Min(negativeDistance, positiveDistance), Math.Abs(negativeSideCount - positiveSideCount));
 		}
 
-		private static void CreateBackAndFrontFaceLists(Mesh mesh, int faceIndex, List<int> faces, List<int> backFaces, List<int> frontFaces)
-		{
-			var checkFaceIndex = faces[faceIndex];
-			var checkFace = mesh.Faces[checkFaceIndex];
-			var pointOnCheckFace = mesh.Vertices[mesh.Faces[checkFaceIndex].v0];
+        private static void CreateBackAndFrontFaceLists(Mesh mesh, int faceIndex, List<int> faces, List<int> backFaces, List<int> frontFaces)
+        {
+            var checkFaceIndex = faces[faceIndex];
+            var splittingFace = mesh.Faces[checkFaceIndex];
+            var pointOnSplittingFace = mesh.Vertices[splittingFace.v0];
+            var splittingNormal = splittingFace.normal;
 
-			for (int i = 0; i < faces.Count; i++)
-			{
-				if (i != faceIndex)
-				{
-					bool backFace = true;
-					var vertexIndices = new int[] { checkFace.v0, checkFace.v1, checkFace.v2 };
-					foreach (var vertexIndex in vertexIndices)
-					{
-						double distanceToPlan = mesh.Faces[checkFaceIndex].normal.Dot(mesh.Vertices[vertexIndex] - pointOnCheckFace);
-						if (Math.Abs(distanceToPlan) > considerCoplanar)
-						{
-							if (distanceToPlan > 0)
-							{
-								backFace = false;
-							}
-						}
-					}
+            for (int i = 0; i < faces.Count; i++)
+            {
+                if (i != faceIndex)
+                {
+                    // Get the face we are testing (rather than the face used to split).
+                    var iFace = mesh.Faces[faces[i]];
+                    var faceVertexIndices = new int[] { iFace.v0, iFace.v1, iFace.v2 };
 
-					if (backFace)
-					{
-						// it is a back face
-						backFaces.Add(faces[i]);
-					}
-					else
-					{
-						// it is a front face
-						frontFaces.Add(faces[i]);
-					}
-				}
-			}
-		}
+                    bool backFace = true;
+                    foreach (var vertexIndex in faceVertexIndices)
+                    {
+                        double distanceToPlane = splittingNormal.Dot(
+                            mesh.Vertices[vertexIndex] - pointOnSplittingFace
+                        );
 
-		private static void CreateNoSplittingFast(Mesh mesh, List<int> sourceFaces, BspNode node, List<int> faces, int maxFacesToTest, bool tryToBalanceTree)
+                        if (Math.Abs(distanceToPlane) > considerCoplanar && distanceToPlane > 0)
+                        {
+                            // Any vertex above the plane means it’s not a back face
+                            backFace = false;
+                            break;
+                        }
+                    }
+
+                    if (backFace)
+                    {
+                        backFaces.Add(faces[i]);
+                    }
+                    else
+                    {
+                        frontFaces.Add(faces[i]);
+                    }
+                }
+            }
+        }
+
+
+        private static void CreateNoSplittingFast(Mesh mesh, List<int> sourceFaces, BspNode node, List<int> faces, int maxFacesToTest, bool tryToBalanceTree)
 		{
 			if (faces.Count == 0)
 			{
