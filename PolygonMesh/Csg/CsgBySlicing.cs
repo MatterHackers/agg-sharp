@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using ClipperLib;
+using MatterHackers.Agg;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
@@ -90,6 +91,7 @@ namespace MatterHackers.PolygonMesh.Csg
             CsgModes operation,
             CancellationToken cancellationToken)
         {
+            var totalTimeTimer = new QuickTimer("CsgBySlicing_Setup");
             this.operation = operation;
             transformedMeshes = new List<Mesh>();
             bvhAccelerators = new List<ITraceable>();
@@ -119,6 +121,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
             // Build plane information
             BuildPlaneInformation(cancellationToken);
+            totalTimeTimer?.Dispose();
         }
 
         private void CalculateOperationBounds()
@@ -234,6 +237,7 @@ namespace MatterHackers.PolygonMesh.Csg
         public Mesh Calculate(Action<double, string> progressReporter,
             CancellationToken cancellationToken)
         {
+            var totalTimeTimer = new RecursiveReportTimer("CsgBySlicing_Calculate");
             double amountPerOperation = 1.0 / totalOperations;
             double ratioCompleted = 0;
 
@@ -248,8 +252,6 @@ namespace MatterHackers.PolygonMesh.Csg
                 {
                     return null;
                 }
-
-                var slicePolygons = new Dictionary<Plane, Polygons>();
 
                 for (int faceIndex = 0; faceIndex < mesh1.Faces.Count; faceIndex++)
                 {
@@ -275,14 +277,9 @@ namespace MatterHackers.PolygonMesh.Csg
                     var transformTo0Plane = transformTo0Planes[cutPlane].matrix;
 
                     Polygons totalSlice;
-                    if (slicePolygons.ContainsKey(cutPlane))
-                    {
-                        totalSlice = slicePolygons[cutPlane];
-                    }
-                    else
+                    using (new RecursiveReportTimer("CsgBySlicing_Calculate_GetTotalSlice"))
                     {
                         totalSlice = GetTotalSlice(mesh1Index, cutPlane, transformTo0Plane);
-                        slicePolygons[cutPlane] = totalSlice;
                     }
 
                     var facePolygon = CoPlanarFaces.GetFacePolygon(mesh1, faceIndex, transformTo0Plane);
@@ -296,7 +293,10 @@ namespace MatterHackers.PolygonMesh.Csg
                     switch (operation)
                     {
                         case CsgModes.Union:
-                            clipper.Execute(ClipType.ctDifference, polygonShape);
+                            using (new RecursiveReportTimer("CsgBySlicing_Calculate_Union"))
+                            {
+                                clipper.Execute(ClipType.ctDifference, polygonShape);
+                            }
                             break;
 
                         case CsgModes.Subtract:
@@ -408,8 +408,13 @@ namespace MatterHackers.PolygonMesh.Csg
                 }
             }
 
-            ProcessCoplanarFaces(operation, resultsMesh, coPlanarFaces, (progress, description) =>  progressReporter?.Invoke(.8 + progress * .2, description));
+            using (new RecursiveReportTimer("CsgBySlicing_Calculate_ProcessCoplanarFaces"))
+            {
+                ProcessCoplanarFaces(operation, resultsMesh, coPlanarFaces, (progress, description) => progressReporter?.Invoke(.8 + progress * .2, description));
+            }
 
+            totalTimeTimer?.Dispose();
+            RecursiveReportTimer.ReportAndRestart();
             return resultsMesh;
         }
 

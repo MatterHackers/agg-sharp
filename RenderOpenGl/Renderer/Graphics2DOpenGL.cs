@@ -218,7 +218,7 @@ namespace MatterHackers.RenderOpenGl
                 TriangleEdgeInfos.Add(longHash, triangleEdgeInfo);
 
                 triangleEdgeInfo.Clear();
-                using (new QuickTimerReport("Graphics2DOpenGl.SendShapeToTesselator"))
+                //using (new RecursiveReportTimer("Graphics2DOpenGl.SendShapeToTesselator"))
                 {
                     VertexSourceToTesselator.SendShapeToTesselator(triangleEdgeInfo, vertexSource);
                 }
@@ -256,7 +256,7 @@ namespace MatterHackers.RenderOpenGl
 
         private static void RenderTriangleEdgeInfo(AAGLTesselator triangleEdgeInfo, Vector2 translation)
         {
-            using (new QuickTimerReport("Graphics2DOpenGl.RenderLastToGL"))
+            //using (new RecursiveReportTimer("Graphics2DOpenGl.RenderLastToGL"))
             {
                 GL.Translate(translation.X, translation.Y, 0);
                 triangleEdgeInfo.RenderLastToGL();
@@ -269,7 +269,7 @@ namespace MatterHackers.RenderOpenGl
 
         public void RenderTriangleEdgeInfo(AAGLTesselator triangleEdgeInfo, Vector2 translation, ulong cacheKey)
         {
-            using (new QuickTimerReport("Graphics2DOpenGl.RenderLastToGL"))
+            //using (new RecursiveReportTimer("Graphics2DOpenGl.RenderLastToGL"))
             {
                 var useLists = true;
                 {
@@ -343,7 +343,7 @@ namespace MatterHackers.RenderOpenGl
 
             if (DoEdgeAntiAliasing)
             {
-                using (new QuickTimerReport("Graphics2DOpenGl.DrawAAShape"))
+                //using (new RecursiveReportTimer("Graphics2DOpenGl.DrawAAShape"))
                 {
                     DrawAAShape(vertexSource, colorIn, true);
                 }

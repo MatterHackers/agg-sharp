@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Collections.Generic;
 using MatterHackers.VectorMath;
 
@@ -68,5 +69,10 @@ namespace MatterHackers.PolygonMesh
 			var v2MinusV0 = position2 - position0;
 			normal = v11MinusV0.Cross(v2MinusV0).GetNormal();
 		}
-	}
+
+        public Face Flipped()
+        {
+            return new Face(v0, v2, v1, -normal);
+        }
+    }
 }

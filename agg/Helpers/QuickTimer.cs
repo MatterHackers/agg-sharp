@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2016, Lars Brubaker, Kevin Pope
+Copyright (c) 2025, Lars Brubaker, Kevin Pope
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,6 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace MatterHackers.Agg
@@ -99,78 +98,4 @@ namespace MatterHackers.Agg
             }
         }
     }
-
-    public class QuickTimerReport : IDisposable
-	{
-		private string name;
-		private Stopwatch quickTimerTime = Stopwatch.StartNew();
-		private double startTime;
-
-		private static Dictionary<string, double> timers = new Dictionary<string, double>();
-
-		public QuickTimerReport(string name)
-		{
-			lock (timers)
-			{
-				this.name = name;
-				if (!timers.ContainsKey(name))
-				{
-					timers.Add(name, 0);
-				}
-			}
-
-			startTime = quickTimerTime.Elapsed.TotalMilliseconds;
-		}
-
-		public void Dispose()
-		{
-			double totalTime = quickTimerTime.Elapsed.TotalMilliseconds - startTime;
-
-			lock (timers)
-			{
-				if (timers.ContainsKey(name))
-				{
-					timers[name] = timers[name] + totalTime;
-				}
-			}
-		}
-
-		public static void Report()
-		{
-			lock (timers)
-			{
-				foreach (var kvp in timers)
-				{
-					Debug.WriteLine(kvp.Key + ": {0:0.0}s".FormatWith(kvp.Value / 1000.0));
-				}
-			}
-		}
-
-		public static void ReportAndRestart(Graphics2D drawTo, double x, double y)
-		{
-			// the draw operations have time tracking so make a copy of the times to do the DrawString
-			Dictionary<string, double> timersCopy;
-			lock (timers)
-            {
-                timersCopy = new Dictionary<string, double>(timers);
-            }
-
-			foreach (var kvp in timersCopy)
-			{
-				var text = $"{kvp.Key}: {kvp.Value:0.00}ms";
-				drawTo.DrawString(text, x, y, backgroundColor: Color.White.WithAlpha(210), drawFromHintedCach: true);
-				y -= 18;
-			}
-
-			Restart();
-		}
-
-		public static void Restart()
-		{
-			lock (timers)
-			{
-				timers.Clear();
-			}
-		}
-	}
 }

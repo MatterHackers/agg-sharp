@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System.Collections.Generic;
 using ClipperLib;
+using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
@@ -67,10 +68,18 @@ namespace MatterHackers.PolygonMesh.Csg
 			IBvhItem acccelerator = null,
 			bool includeBehindThePlane = true)
 		{
-			var unorderedSegments = GetUnorderdSegments(mesh, plane, transformTo0Plane, acccelerator, includeBehindThePlane);
+			List<Segment> unorderedSegments;
+
+            using (new RecursiveReportTimer("SliceLayer_CreateSlice_GetUnorderSegments"))
+			{
+                unorderedSegments = GetUnorderdSegments(mesh, plane, transformTo0Plane, acccelerator, includeBehindThePlane);
+            }
 
 			// connect all the segments together into polygons
-			return FindClosedPolygons(unorderedSegments);
+			using (new RecursiveReportTimer("SliceLayer_CreateSlice_FindClosedPolygons"))
+			{
+				return FindClosedPolygons(unorderedSegments);
+			}
 		}
 
 		public static Polygons UnionClosedPolygons(Polygons closedPolygons)
