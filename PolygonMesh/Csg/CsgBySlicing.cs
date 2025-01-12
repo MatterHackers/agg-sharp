@@ -86,109 +86,137 @@ namespace MatterHackers.PolygonMesh.Csg
         }
 
         public void Setup(IEnumerable<(Mesh mesh, Matrix4X4 matrix)> meshAndMatrix,
-			Action<double, string> progressReporter,
+            Action<double, string> progressReporter,
             CsgModes operation,
             CancellationToken cancellationToken)
-		{
+        {
             this.operation = operation;
-
             transformedMeshes = new List<Mesh>();
-			bvhAccelerators = new List<ITraceable>();
-			foreach (var (mesh, matrix) in meshAndMatrix)
-			{
-                if (mesh != null)
-                {
-                    var meshCopy = mesh.Copy(cancellationToken);
-                    transformedMeshes.Add(meshCopy);
-                    meshCopy.Transform(matrix);
-                    bvhAccelerators.Add(GetBVH(meshCopy));
-                }
-			}
+            bvhAccelerators = new List<ITraceable>();
 
-            // Start with the bounds of the first mesh since it's the primary one for subtraction
-            activeOperationBounds = transformedMeshes[0].GetAxisAlignedBoundingBox();
-
-            // Calculate the union of all intersections with the first mesh
-            for (var meshIndex = 1; meshIndex < transformedMeshes.Count; meshIndex++)
+            // First pass: Transform meshes and build BVH accelerators
+            foreach (var (mesh, matrix) in meshAndMatrix)
             {
-                var nextBounds = transformedMeshes[meshIndex].GetAxisAlignedBoundingBox();
+                if (mesh == null) continue;
 
-                if (operation == CsgModes.Union)
+                cancellationToken.ThrowIfCancellationRequested();
+                var meshCopy = mesh.Copy(cancellationToken);
+                meshCopy.Transform(matrix);
+                transformedMeshes.Add(meshCopy);
+                bvhAccelerators.Add(GetBVH(meshCopy));
+            }
+
+            if (transformedMeshes.Count == 0)
+            {
+                throw new ArgumentException("No valid meshes provided");
+            }
+
+            // Calculate operation bounds based on CSG mode
+            CalculateOperationBounds();
+
+            // Initialize face intersection tracking
+            InitializeFaceIntersectionTracking();
+
+            // Build plane information
+            BuildPlaneInformation(cancellationToken);
+        }
+
+        private void CalculateOperationBounds()
+        {
+            // Calculate all pairwise intersections for any operation type
+            var allIntersections = new List<AxisAlignedBoundingBox>();
+
+            // Calculate all pairwise intersections
+            for (int i = 0; i < transformedMeshes.Count - 1; i++)
+            {
+                var bounds1 = transformedMeshes[i].GetAxisAlignedBoundingBox();
+
+                for (int j = i + 1; j < transformedMeshes.Count; j++)
                 {
-                    // Instead of "GetIntersection(...)"
-                    activeOperationBounds.ExpandToInclude(nextBounds);
-                }
-                else
-                {
-                    var intersection = activeOperationBounds.GetIntersection(nextBounds);
+                    var bounds2 = transformedMeshes[j].GetAxisAlignedBoundingBox();
+                    var intersection = bounds1.GetIntersection(bounds2);
+
+                    // Only add valid intersections (those with volume)
                     if (intersection.XSize > 0 && intersection.YSize > 0 && intersection.ZSize > 0)
                     {
-                        activeOperationBounds = intersection;
-                    }
-                    else
-                    {
-                        activeOperationBounds.ExpandToInclude(intersection);
+                        allIntersections.Add(intersection);
                     }
                 }
+            }
+
+            // If we found any valid intersections, expand to include all of them
+            if (allIntersections.Count > 0)
+            {
+                activeOperationBounds = allIntersections[0];
+                for (int i = 1; i < allIntersections.Count; i++)
+                {
+                    activeOperationBounds.ExpandToInclude(allIntersections[i]);
+                }
+            }
+            else
+            {
+                // No intersections found - use empty bounds
+                activeOperationBounds = new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero);
             }
 
             // Add a small buffer for numerical stability
             activeOperationBounds.Expand(.1);
+        }
 
-            // figure out how many faces we will process
+        private void InitializeFaceIntersectionTracking()
+        {
             totalOperations = 0;
             isFaceIntersecting = new List<List<bool>>();
-            for (int i = 0; i < transformedMeshes.Count; i++)
-            {
-                isFaceIntersecting.Add(new List<bool>());
-            }
 
+            // Initialize lists for each mesh
             for (int i = 0; i < transformedMeshes.Count; i++)
             {
-                var mesh = transformedMeshes[i];
-                if (mesh != null)
+                var intersectingFaces = new List<bool>();
+                var currentMesh = transformedMeshes[i];
+
+                for (int faceIndex = 0; faceIndex < currentMesh.Faces.Count; faceIndex++)
                 {
-                    for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
+                    bool isIntersecting = InIntersection(currentMesh, faceIndex);
+                    intersectingFaces.Add(isIntersecting);
+
+                    if (isIntersecting)
                     {
-                        if (InIntersection(mesh, faceIndex))
-                        {
-                            isFaceIntersecting[i].Add(true);
-                            totalOperations++;
-                        }
-                        else
-                        {
-                            isFaceIntersecting[i].Add(false);
-                        }
+                        totalOperations++;
                     }
                 }
+
+                isFaceIntersecting.Add(intersectingFaces);
             }
-            
+        }
+
+        private void BuildPlaneInformation(CancellationToken cancellationToken)
+        {
             plansByMesh = new List<List<Plane>>();
-			var uniquePlanes = new HashSet<Plane>();
-			for (int i = 0; i < transformedMeshes.Count; i++)
-			{
-				var mesh = transformedMeshes[i];
-				plansByMesh.Add(new List<Plane>());
-				for (int j = 0; j < transformedMeshes[i].Faces.Count; j++)
-				{
-                    var cutPlane = mesh.GetPlane(j);
-					plansByMesh[i].Add(cutPlane);
-					uniquePlanes.Add(cutPlane);
-				}
+            var uniquePlanes = new HashSet<Plane>();
 
-				if (cancellationToken.IsCancellationRequested)
+            foreach (var mesh in transformedMeshes)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var planesForMesh = new List<Plane>();
+                for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
                 {
-					return;
+                    var cutPlane = mesh.GetPlane(faceIndex);
+                    planesForMesh.Add(cutPlane);
+                    uniquePlanes.Add(cutPlane);
                 }
-			}
+                plansByMesh.Add(planesForMesh);
+            }
 
-			planeSorter = new SimilarPlaneFinder(uniquePlanes);
-			transformTo0Planes = new Dictionary<Plane, (Matrix4X4 matrix, Matrix4X4 inverted)>();
-			foreach (var plane in uniquePlanes)
-			{
-				var matrix = SliceLayer.GetTransformTo0Plane(plane, 10000);
-				transformTo0Planes[plane] = (matrix, matrix.Inverted);
-			}
+            // Initialize plane sorter and transforms
+            planeSorter = new SimilarPlaneFinder(uniquePlanes);
+            transformTo0Planes = new Dictionary<Plane, (Matrix4X4 matrix, Matrix4X4 inverted)>();
+
+            foreach (var plane in uniquePlanes)
+            {
+                var matrix = SliceLayer.GetTransformTo0Plane(plane, 10000);
+                transformTo0Planes[plane] = (matrix, matrix.Inverted);
+            }
         }
 
         private bool InIntersection(Mesh mesh, int faceIndex)
