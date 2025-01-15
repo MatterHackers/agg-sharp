@@ -133,7 +133,7 @@ namespace MatterHackers.Agg.VertexSource
             }
 
             // render the flatened curve
-            //using (new RecursiveReportTimer("View3DWidegt.RenderPath"))
+            using (new RecursiveReportTimer("View3DWidegt.RenderPath"))
             {
                 graphics2D.Render(new Stroke(new FlattenCurves(source), width), lineColor);
             }

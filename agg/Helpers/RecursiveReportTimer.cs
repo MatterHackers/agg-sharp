@@ -55,8 +55,8 @@ namespace MatterHackers.Agg
             public double TotalTime { get; set; }
             public int Depth { get; set; }
             public int TotalCallCount { get; set; }
-            public HashSet<string> Children { get; } = new HashSet<string>();
-            public Dictionary<string, TimerContext> TimePerParent { get; } = new Dictionary<string, TimerContext>();
+            public HashSet<string> Children { get; set; } = new HashSet<string>();  // Changed to { get; set; }
+            public Dictionary<string, TimerContext> TimePerParent { get; set; } = new Dictionary<string, TimerContext>();  // Changed to { get; set; }
         }
 
         public RecursiveReportTimer(string name)
@@ -114,20 +114,31 @@ namespace MatterHackers.Agg
             }
         }
 
-        private static double GetRootTime()
+        private static double GetRootTimeFromCopy(Dictionary<string, TimerInfo> timersCopy)
         {
-            var rootTimer = timers.FirstOrDefault(t => t.Value.Depth == 0);
+            var rootTimer = timersCopy.FirstOrDefault(t => t.Value.Depth == 0);
             return rootTimer.Value?.TotalTime ?? 0;
         }
 
-        private static void PrintTimerRecursive(string timerName, TimerInfo timer, StringBuilder sb, string indent = "", string currentParent = null)
+        private static void PrintTimerRecursive(string timerName, TimerInfo timer, StringBuilder sb,
+            Dictionary<string, TimerInfo> timersCopy, string indent = "", string currentParent = null,
+            HashSet<string> visited = null)
         {
-            double rootTime = GetRootTime();
+            visited ??= new HashSet<string>();
+
+            if (visited.Contains(timerName))
+            {
+                sb.AppendLine($"{indent}WARNING: Circular reference detected at {timerName}");
+                return;
+            }
+
+            visited.Add(timerName);
+
+            double rootTime = GetRootTimeFromCopy(timersCopy);
             string percentageStr = "";
             double timeToShow = timer.TotalTime;
             int callsToShow = timer.TotalCallCount;
 
-            // For non-root timers, get the context-specific time and percentage
             if (currentParent != null && rootTime > 0)
             {
                 if (timer.TimePerParent.TryGetValue(currentParent, out var context))
@@ -141,28 +152,55 @@ namespace MatterHackers.Agg
 
             sb.AppendLine($"{indent}{timerName} ({callsToShow}): {timeToShow:0.000}s{percentageStr}");
 
+            var levelVisited = new HashSet<string>(visited);
+
             foreach (var childName in timer.Children.OrderBy(x => x))
             {
-                if (timers.TryGetValue(childName, out var childTimer))
+                if (timersCopy.TryGetValue(childName, out var childTimer))
                 {
-                    PrintTimerRecursive(childName, childTimer, sb, indent + "  ", timerName);
+                    PrintTimerRecursive(childName, childTimer, sb, timersCopy, indent + "  ", timerName, levelVisited);
                 }
             }
+
+            visited.Remove(timerName);
         }
 
         public static void Report()
         {
+            Dictionary<string, TimerInfo> timersCopy;
             lock (timers)
             {
-                var sb = new StringBuilder();
-                var rootTimers = timers.Where(kvp => kvp.Value.Depth == 0)
-                                     .OrderBy(kvp => kvp.Key);
-                foreach (var kvp in rootTimers)
-                {
-                    PrintTimerRecursive(kvp.Key, kvp.Value, sb);
-                }
-                Debug.WriteLine(sb.ToString());
+                timersCopy = timers.ToDictionary(
+                    entry => entry.Key,
+                    entry => new TimerInfo
+                    {
+                        TotalTime = entry.Value.TotalTime,
+                        Depth = entry.Value.Depth,
+                        TotalCallCount = entry.Value.TotalCallCount,
+                        Children = new HashSet<string>(entry.Value.Children),
+                        TimePerParent = new Dictionary<string, TimerContext>(
+                            entry.Value.TimePerParent.ToDictionary(
+                                p => p.Key,
+                                p => new TimerContext
+                                {
+                                    Time = p.Value.Time,
+                                    CallCount = p.Value.CallCount
+                                }
+                            )
+                        )
+                    }
+                );
             }
+
+            var sb = new StringBuilder();
+            var rootTimers = timersCopy.Where(kvp => kvp.Value.Depth == 0)
+                                   .OrderBy(kvp => kvp.Key);
+
+            foreach (var kvp in rootTimers)
+            {
+                PrintTimerRecursive(kvp.Key, kvp.Value, sb, timersCopy);
+            }
+            Debug.WriteLine(sb.ToString());
         }
 
         public static void ReportAndRestart()
@@ -176,21 +214,44 @@ namespace MatterHackers.Agg
             Dictionary<string, TimerInfo> timersCopy;
             lock (timers)
             {
-                timersCopy = new Dictionary<string, TimerInfo>(timers);
+                timersCopy = timers.ToDictionary(
+                    entry => entry.Key,
+                    entry => new TimerInfo
+                    {
+                        TotalTime = entry.Value.TotalTime,
+                        Depth = entry.Value.Depth,
+                        TotalCallCount = entry.Value.TotalCallCount,
+                        Children = new HashSet<string>(entry.Value.Children),
+                        TimePerParent = new Dictionary<string, TimerContext>(
+                            entry.Value.TimePerParent.ToDictionary(
+                                p => p.Key,
+                                p => new TimerContext
+                                {
+                                    Time = p.Value.Time,
+                                    CallCount = p.Value.CallCount
+                                }
+                            )
+                        )
+                    }
+                );
             }
+
             var sb = new StringBuilder();
             var rootTimers = timersCopy.Where(kvp => kvp.Value.Depth == 0)
-                                     .OrderBy(kvp => kvp.Key);
+                                   .OrderBy(kvp => kvp.Key);
+
             foreach (var kvp in rootTimers)
             {
-                PrintTimerRecursive(kvp.Key, kvp.Value, sb);
+                PrintTimerRecursive(kvp.Key, kvp.Value, sb, timersCopy);
             }
+
             string[] lines = sb.ToString().TrimEnd().Split('\n');
             foreach (var line in lines)
             {
                 drawTo.DrawString(line, x, y, backgroundColor: Color.White.WithAlpha(210), drawFromHintedCach: true);
                 y -= 18;
             }
+
             Restart();
         }
 
