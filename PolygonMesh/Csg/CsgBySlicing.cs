@@ -52,6 +52,7 @@ namespace MatterHackers.PolygonMesh.Csg
         private SimilarPlaneFinder similarPlaneFinder;
         private Dictionary<Plane, Matrix4X4> planeTransformsToXy;
         private AxisAlignedBoundingBox activeOperationBounds;
+        private Dictionary<(int, Plane), Polygons> cachedSlices = new Dictionary<(int, Plane), Polygons>();
 
         public CsgBySlicing()
         {
@@ -244,45 +245,56 @@ namespace MatterHackers.PolygonMesh.Csg
             var resultsMesh = new Mesh();
             var coPlanarFaces = new CoPlanarFaces(similarPlaneFinder);
 
-            for (var mesh1Index = 0; mesh1Index < transformedMeshes.Count; mesh1Index++)
+            for (var currentMeshIndex = 0; currentMeshIndex < transformedMeshes.Count; currentMeshIndex++)
             {
-                var mesh1 = transformedMeshes[mesh1Index];
+                var currentMesh = transformedMeshes[currentMeshIndex];
 
                 if (cancellationToken.IsCancellationRequested)
                 {
                     return null;
                 }
 
-                for (int faceIndex = 0; faceIndex < mesh1.Faces.Count; faceIndex++)
+                for (int faceIndex = 0; faceIndex < currentMesh.Faces.Count; faceIndex++)
                 {
-                    var cutPlane = plansByMeshIndex[mesh1Index][faceIndex];
+                    var cutPlane = plansByMeshIndex[currentMeshIndex][faceIndex];
 
                     if (double.IsNaN(cutPlane.DistanceFromOrigin))
                     {
                         continue;
                     }
 
-                    if (!isFaceIntersecting[mesh1Index][faceIndex])
+                    if (!isFaceIntersecting[currentMeshIndex][faceIndex])
                     {
                         if (operation == CsgModes.Union
-                            || (operation == CsgModes.Subtract && mesh1Index == 0))
+                            || (operation == CsgModes.Subtract && currentMeshIndex == 0))
                         {
-                            resultsMesh.AddFaceCopy(mesh1, faceIndex);
-                            coPlanarFaces.StoreFaceAdd(cutPlane, mesh1Index, faceIndex, resultsMesh.Faces.Count - 1);
+                            resultsMesh.AddFaceCopy(currentMesh, faceIndex);
+                            coPlanarFaces.StoreFaceAdd(cutPlane, currentMeshIndex, faceIndex, resultsMesh.Faces.Count - 1);
                         }
                         continue;
                     }
 
-                    var face = mesh1.Faces[faceIndex];
-                    var planeTransformToXY = planeTransformsToXy[cutPlane];
+                    var face = currentMesh.Faces[faceIndex];
 
                     Polygons totalSlice;
-                    using (new ReportTimer("CsgBySlicing_Calculate_GetTotalSlice", 1))
+                    var similarPlane = similarPlaneFinder.FindPlane(cutPlane).Value;
+                    var planeTransformToXY = planeTransformsToXy[similarPlane];
+                    if (true
+                        //&& false
+                        && cachedSlices.ContainsKey((currentMeshIndex, similarPlane)))
                     {
-                        totalSlice = GetTotalSlice(mesh1Index, cutPlane, planeTransformToXY);
+                        totalSlice = cachedSlices[(currentMeshIndex, similarPlane)];
+                    }
+                    else
+                    {
+                        using (new ReportTimer("CsgBySlicing_Calculate_GetTotalSlice", 1))
+                        {
+                            totalSlice = GetTotalSlice(currentMeshIndex, similarPlane, planeTransformToXY);
+                            cachedSlices[(currentMeshIndex, similarPlane)] = totalSlice;
+                        }
                     }
 
-                    var facePolygon = CoPlanarFaces.GetFacePolygon(mesh1, faceIndex, planeTransformToXY);
+                    var facePolygon = CoPlanarFaces.GetFacePolygon(currentMesh, faceIndex, planeTransformToXY);
 
                     var polygonShape = new Polygons();
                     var clipper = new Clipper();
@@ -300,7 +312,7 @@ namespace MatterHackers.PolygonMesh.Csg
                             break;
 
                         case CsgModes.Subtract:
-                            if (mesh1Index == 0)
+                            if (currentMeshIndex == 0)
                             {
                                 clipper.Execute(ClipType.ctDifference, polygonShape);
                             }
@@ -324,7 +336,7 @@ namespace MatterHackers.PolygonMesh.Csg
                         && facePolygon.Contains(polygonShape[0][1])
                         && facePolygon.Contains(polygonShape[0][2]))
                     {
-                        resultsMesh.AddFaceCopy(mesh1, faceIndex);
+                        resultsMesh.AddFaceCopy(currentMesh, faceIndex);
                     }
                     else
                     {
@@ -332,7 +344,7 @@ namespace MatterHackers.PolygonMesh.Csg
                         polygonShape.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, planeTransformsToXy[cutPlane].Inverted);
                         var postAddCount = resultsMesh.Vertices.Count;
 
-                        var polygonPlane = mesh1.GetPlane(faceIndex);
+                        var polygonPlane = currentMesh.GetPlane(faceIndex);
 
                         for (int addedVertIndex = vertCountPreAdd; addedVertIndex < postAddCount; addedVertIndex++)
                         {
@@ -386,7 +398,7 @@ namespace MatterHackers.PolygonMesh.Csg
                     {
                         for (int i = faceCountPreAdd; i < resultsMesh.Faces.Count; i++)
                         {
-                            coPlanarFaces.StoreFaceAdd(cutPlane, mesh1Index, faceIndex, i);
+                            coPlanarFaces.StoreFaceAdd(cutPlane, currentMeshIndex, faceIndex, i);
                             if (resultsMesh.Faces[i].normal.Dot(expectedFaceNormal) < 0)
                             {
                                 resultsMesh.FlipFace(i);
@@ -395,7 +407,7 @@ namespace MatterHackers.PolygonMesh.Csg
                     }
                     else
                     {
-                        coPlanarFaces.StoreFaceAdd(cutPlane, mesh1Index, faceIndex, -1);
+                        coPlanarFaces.StoreFaceAdd(cutPlane, currentMeshIndex, faceIndex, -1);
                     }
 
                     ratioCompleted += amountPerOperation;
