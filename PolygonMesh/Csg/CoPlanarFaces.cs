@@ -127,7 +127,7 @@ namespace MatterHackers.PolygonMesh.Csg
             return cachedPolygon;
         }
 
-        public void SubtractFaces(Plane plane, List<Mesh> transformedMeshes, Mesh resultsMesh, Matrix4X4 transformTo0Plane, HashSet<int> faceIndicesToRemove)
+        public void SubtractFaces(Plane plane, List<Mesh> transformedMeshes, Mesh resultsMesh, Matrix4X4 planeTransformToXy, HashSet<int> faceIndicesToRemove)
         {
             // get all meshes that have faces on this plane
             var meshesFaceIndicesForPlane = MeshFaceIndicesForPlane(plane).ToList();
@@ -157,7 +157,7 @@ namespace MatterHackers.PolygonMesh.Csg
             var keepPolygons = new Polygons();
             foreach (var keepFaceSets in FacesSetsForPlaneAndMesh(plane, 0))
             {
-                var facePolygon = GetFacePolygonCached(transformedMeshes[0], keepFaceSets.sourceFaceIndex, transformTo0Plane);
+                var facePolygon = GetFacePolygonCached(transformedMeshes[0], keepFaceSets.sourceFaceIndex, planeTransformToXy);
                 keepPolygons = keepPolygons.Union(facePolygon);
             }
 
@@ -167,7 +167,7 @@ namespace MatterHackers.PolygonMesh.Csg
             {
                 foreach (var removeFaceSets in FacesSetsForPlaneAndMesh(plane, removeMeshIndex))
                 {
-                    removePoygons = removePoygons.Union(GetFacePolygonCached(transformedMeshes[removeMeshIndex], removeFaceSets.sourceFaceIndex, transformTo0Plane));
+                    removePoygons = removePoygons.Union(GetFacePolygonCached(transformedMeshes[removeMeshIndex], removeFaceSets.sourceFaceIndex, planeTransformToXy));
                 }
             }
 
@@ -179,7 +179,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
             // teselate and add all the new polygons
             var countPreAdd = resultsMesh.Faces.Count;
-            polygonShape.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, transformTo0Plane.Inverted);
+            polygonShape.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, planeTransformToXy.Inverted);
             EnsureFaceNormals(plane, resultsMesh, countPreAdd);
         }
 
@@ -200,7 +200,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 		}
 
-        public void IntersectFaces(Plane plane, List<Mesh> transformedMeshes, Mesh resultsMesh, Matrix4X4 transformTo0Plane, HashSet<int> faceIndicesToRemove)
+        public void IntersectFaces(Plane plane, List<Mesh> transformedMeshes, Mesh resultsMesh, Matrix4X4 planeTransformToXy, HashSet<int> faceIndicesToRemove)
 		{
 			// get all meshes that have faces on this plane
 			var meshesWithFaces = MeshFaceIndicesForPlane(plane).ToList();
@@ -228,7 +228,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				var unionedPoygons = new Polygons();
 				foreach (var removeFaceSets in FacesSetsForPlaneAndMesh(plane, meshIndex))
 				{
-					unionedPoygons = unionedPoygons.Union(GetFacePolygonCached(transformedMeshes[meshIndex], removeFaceSets.sourceFaceIndex, transformTo0Plane));
+					unionedPoygons = unionedPoygons.Union(GetFacePolygonCached(transformedMeshes[meshIndex], removeFaceSets.sourceFaceIndex, planeTransformToXy));
 				}
 
 				polygonsByMesh.Add(unionedPoygons);
@@ -248,14 +248,14 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			// teselate and add all the new polygons
 			var countPreAdd = resultsMesh.Faces.Count;
-			total.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, transformTo0Plane.Inverted);
+			total.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, planeTransformToXy.Inverted);
 			EnsureFaceNormals(plane, resultsMesh, countPreAdd);
 		}
 
         public void UnionFaces(Plane positivePlane,
             List<Mesh> transformedMeshes,
             Mesh resultsMesh,
-            Matrix4X4 transformTo0Plane,
+            Matrix4X4 planeTransformToXy,
             HashSet<int> faceIndicesToRemove,
             CsgBySlicing csgData)
         {
@@ -304,7 +304,7 @@ namespace MatterHackers.PolygonMesh.Csg
                 {
                     if (!addedFaces.Contains(sourceFaceIndex))
                     {
-                        var facePolygon = GetFacePolygonCached(transformedMeshes[meshIndex], sourceFaceIndex, transformTo0Plane);
+                        var facePolygon = GetFacePolygonCached(transformedMeshes[meshIndex], sourceFaceIndex, planeTransformToXy);
                         meshPolygons.Add(facePolygon);
                         addedFaces.Add(sourceFaceIndex);
                     }
@@ -339,7 +339,7 @@ namespace MatterHackers.PolygonMesh.Csg
                 DistanceFromOrigin = positivePlane.DistanceFromOrigin + .04,
                 Normal = positivePlane.Normal
             },
-            transformTo0Plane);
+            planeTransformToXy);
 
             if (subtractPolygons.Count > 0)
             {
@@ -355,7 +355,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
             // teselate and add all the new polygons
             var countPreAdd = resultsMesh.Faces.Count;
-            totalSlices.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, transformTo0Plane.Inverted);
+            totalSlices.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, planeTransformToXy.Inverted);
             EnsureFaceNormals(positivePlane, resultsMesh, countPreAdd);
         }
 

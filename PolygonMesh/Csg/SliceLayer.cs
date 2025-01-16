@@ -57,26 +57,26 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		public static Polygons CreateSlice(Mesh mesh, Plane plane, int outputScale = 1000, bool includeBehindThePlane = true)
 		{
-			var transformTo0Plane = GetTransformTo0Plane(plane, outputScale);
+			var planeTransformToXy = GetTransformToXy(plane, outputScale);
 
-			return CreateSlice(mesh, plane, transformTo0Plane, null, includeBehindThePlane);
+			return CreateSlice(mesh, plane, planeTransformToXy, null, includeBehindThePlane);
 		}
 
         public static Polygons CreateSlice(Mesh mesh,
 			Plane plane,
-			Matrix4X4 transformTo0Plane,
+			Matrix4X4 planeTransformToXy,
 			IBvhItem acccelerator = null,
 			bool includeBehindThePlane = true)
 		{
 			List<Segment> unorderedSegments;
 
-            using (new RecursiveReportTimer("SliceLayer_CreateSlice_GetUnorderSegments"))
+            using (new ReportTimer("SliceLayer_CreateSlice_GetUnorderSegments"))
 			{
-                unorderedSegments = GetUnorderdSegments(mesh, plane, transformTo0Plane, acccelerator, includeBehindThePlane);
+                unorderedSegments = GetUnorderdSegments(mesh, plane, planeTransformToXy, acccelerator, includeBehindThePlane);
             }
 
 			// connect all the segments together into polygons
-			using (new RecursiveReportTimer("SliceLayer_CreateSlice_FindClosedPolygons"))
+			using (new ReportTimer("SliceLayer_CreateSlice_FindClosedPolygons"))
 			{
 				return FindClosedPolygons(unorderedSegments);
 			}
@@ -98,14 +98,14 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <param name="plane">The plane to transform from</param>
 		/// <param name="outputScale">The amout to scale up when transforming</param>
 		/// <returns>The plane to accomplish the transform</returns>
-        public static Matrix4X4 GetTransformTo0Plane(Plane plane, int outputScale = 1000)
+        public static Matrix4X4 GetTransformToXy(Plane plane, int outputScale = 1000)
         {
             var rotation = new Quaternion(plane.Normal, Vector3.UnitZ);
             var flattenedMatrix = Matrix4X4.CreateRotation(rotation);
             flattenedMatrix *= Matrix4X4.CreateTranslation(0, 0, -plane.DistanceFromOrigin);
 
-            var transformTo0Plane = flattenedMatrix * Matrix4X4.CreateScale(outputScale);
-            return transformTo0Plane;
+            var planeTransformToXy = flattenedMatrix * Matrix4X4.CreateScale(outputScale);
+            return planeTransformToXy;
         }
 
 		public static Matrix4X4 GetFlattenedMatrix(Plane cutPlane)
@@ -119,7 +119,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		public static List<Segment> GetUnorderdSegments(Mesh mesh, Plane plane, IBvhItem acccelerator = null, bool includeBehindThePlane = true)
 		{
-			return GetUnorderdSegments(mesh, plane, GetTransformTo0Plane(plane), acccelerator, includeBehindThePlane);
+			return GetUnorderdSegments(mesh, plane, GetTransformToXy(plane), acccelerator, includeBehindThePlane);
 		}
 
 		public static List<Segment> GetUnorderdSegments(Mesh mesh,

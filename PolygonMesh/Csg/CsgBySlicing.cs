@@ -48,9 +48,9 @@ namespace MatterHackers.PolygonMesh.Csg
         private CsgModes operation;
         private List<Mesh> transformedMeshes;
         private List<ITraceable> bvhAccelerators;
-        private List<List<Plane>> plansByMesh;
-        private SimilarPlaneFinder planeSorter;
-        private Dictionary<Plane, (Matrix4X4 matrix, Matrix4X4 inverted)> transformTo0Planes;
+        private List<List<Plane>> plansByMeshIndex;
+        private SimilarPlaneFinder similarPlaneFinder;
+        private Dictionary<Plane, Matrix4X4> planeTransformsToXy;
         private AxisAlignedBoundingBox activeOperationBounds;
 
         public CsgBySlicing()
@@ -194,7 +194,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
         private void BuildPlaneInformation(CancellationToken cancellationToken)
         {
-            plansByMesh = new List<List<Plane>>();
+            plansByMeshIndex = new List<List<Plane>>();
             var uniquePlanes = new HashSet<Plane>();
 
             foreach (var mesh in transformedMeshes)
@@ -208,17 +208,17 @@ namespace MatterHackers.PolygonMesh.Csg
                     planesForMesh.Add(cutPlane);
                     uniquePlanes.Add(cutPlane);
                 }
-                plansByMesh.Add(planesForMesh);
+                plansByMeshIndex.Add(planesForMesh);
             }
 
             // Initialize plane sorter and transforms
-            planeSorter = new SimilarPlaneFinder(uniquePlanes);
-            transformTo0Planes = new Dictionary<Plane, (Matrix4X4 matrix, Matrix4X4 inverted)>();
+            similarPlaneFinder = new SimilarPlaneFinder(uniquePlanes);
+            planeTransformsToXy = new Dictionary<Plane, Matrix4X4>();
 
             foreach (var plane in uniquePlanes)
             {
-                var matrix = SliceLayer.GetTransformTo0Plane(plane, 10000);
-                transformTo0Planes[plane] = (matrix, matrix.Inverted);
+                var matrix = SliceLayer.GetTransformToXy(plane, 10000);
+                planeTransformsToXy[plane] = matrix;
             }
         }
 
@@ -237,12 +237,12 @@ namespace MatterHackers.PolygonMesh.Csg
         public Mesh Calculate(Action<double, string> progressReporter,
             CancellationToken cancellationToken)
         {
-            var totalTimeTimer = new RecursiveReportTimer("CsgBySlicing_Calculate");
+            var totalTimeTimer = new ReportTimer("CsgBySlicing_Calculate", 1);
             double amountPerOperation = 1.0 / totalOperations;
             double ratioCompleted = 0;
 
             var resultsMesh = new Mesh();
-            var coPlanarFaces = new CoPlanarFaces(planeSorter);
+            var coPlanarFaces = new CoPlanarFaces(similarPlaneFinder);
 
             for (var mesh1Index = 0; mesh1Index < transformedMeshes.Count; mesh1Index++)
             {
@@ -255,7 +255,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
                 for (int faceIndex = 0; faceIndex < mesh1.Faces.Count; faceIndex++)
                 {
-                    var cutPlane = plansByMesh[mesh1Index][faceIndex];
+                    var cutPlane = plansByMeshIndex[mesh1Index][faceIndex];
 
                     if (double.IsNaN(cutPlane.DistanceFromOrigin))
                     {
@@ -274,15 +274,15 @@ namespace MatterHackers.PolygonMesh.Csg
                     }
 
                     var face = mesh1.Faces[faceIndex];
-                    var transformTo0Plane = transformTo0Planes[cutPlane].matrix;
+                    var planeTransformToXY = planeTransformsToXy[cutPlane];
 
                     Polygons totalSlice;
-                    using (new RecursiveReportTimer("CsgBySlicing_Calculate_GetTotalSlice"))
+                    using (new ReportTimer("CsgBySlicing_Calculate_GetTotalSlice", 1))
                     {
-                        totalSlice = GetTotalSlice(mesh1Index, cutPlane, transformTo0Plane);
+                        totalSlice = GetTotalSlice(mesh1Index, cutPlane, planeTransformToXY);
                     }
 
-                    var facePolygon = CoPlanarFaces.GetFacePolygon(mesh1, faceIndex, transformTo0Plane);
+                    var facePolygon = CoPlanarFaces.GetFacePolygon(mesh1, faceIndex, planeTransformToXY);
 
                     var polygonShape = new Polygons();
                     var clipper = new Clipper();
@@ -293,7 +293,7 @@ namespace MatterHackers.PolygonMesh.Csg
                     switch (operation)
                     {
                         case CsgModes.Union:
-                            using (new RecursiveReportTimer("CsgBySlicing_Calculate_Union"))
+                            using (new ReportTimer("CsgBySlicing_Calculate_Union", 1))
                             {
                                 clipper.Execute(ClipType.ctDifference, polygonShape);
                             }
@@ -329,7 +329,7 @@ namespace MatterHackers.PolygonMesh.Csg
                     else
                     {
                         var vertCountPreAdd = resultsMesh.Vertices.Count;
-                        polygonShape.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, transformTo0Planes[cutPlane].inverted);
+                        polygonShape.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, planeTransformsToXy[cutPlane].Inverted);
                         var postAddCount = resultsMesh.Vertices.Count;
 
                         var polygonPlane = mesh1.GetPlane(faceIndex);
@@ -408,17 +408,17 @@ namespace MatterHackers.PolygonMesh.Csg
                 }
             }
 
-            using (new RecursiveReportTimer("CsgBySlicing_Calculate_ProcessCoplanarFaces"))
+            using (new ReportTimer("CsgBySlicing_Calculate_ProcessCoplanarFaces", 1))
             {
                 ProcessCoplanarFaces(operation, resultsMesh, coPlanarFaces, (progress, description) => progressReporter?.Invoke(.8 + progress * .2, description));
             }
 
             totalTimeTimer?.Dispose();
-            RecursiveReportTimer.ReportAndRestart();
+            ReportTimer.ReportAndRestart(1);
             return resultsMesh;
         }
 
-        public Polygons GetTotalSlice(int meshIndexToIgnore, Plane cutPlane, Matrix4X4 transformTo0Plane, bool includeBehindThePlane = true)
+        public Polygons GetTotalSlice(int meshIndexToIgnore, Plane cutPlane, Matrix4X4 planeTransformToXy, bool includeBehindThePlane = true)
         {
             var totalSlice = new Polygons();
 
@@ -432,7 +432,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
                 var mesh2 = transformedMeshes[sliceMeshIndex];
                 // calculate and add the PWN face from the loops
-                var slice = SliceLayer.CreateSlice(mesh2, cutPlane, transformTo0Plane, bvhAccelerators[sliceMeshIndex], includeBehindThePlane);
+                var slice = SliceLayer.CreateSlice(mesh2, cutPlane, planeTransformToXy, bvhAccelerators[sliceMeshIndex], includeBehindThePlane);
                 if (firstSlice)
                 {
                     totalSlice = slice;
@@ -458,7 +458,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
                 if (operation == CsgModes.Union)
                 {
-                    var negativePlane = planeSorter.FindPlane(new Plane()
+                    var negativePlane = similarPlaneFinder.FindPlane(new Plane()
                     {
                         Normal = -plane.Normal,
                         DistanceFromOrigin = -plane.DistanceFromOrigin,
@@ -474,21 +474,21 @@ namespace MatterHackers.PolygonMesh.Csg
                 if (meshIndices.Count() > 1)
                 {
                     // check if more than one mesh has polygons on this plane
-                    var transformTo0Plane = transformTo0Planes[plane].matrix;
+                    var planeTransformToXy = planeTransformsToXy[plane];
 
                     // depending on the operation add or remove polygons that are planar
                     switch (operation)
                     {
                         case CsgModes.Union:
-                            coPlanarFaces.UnionFaces(plane, transformedMeshes, resultsMesh, transformTo0Plane, faceIndicesToRemove, this);
+                            coPlanarFaces.UnionFaces(plane, transformedMeshes, resultsMesh, planeTransformToXy, faceIndicesToRemove, this);
                             break;
 
                         case CsgModes.Subtract:
-                            coPlanarFaces.SubtractFaces(plane, transformedMeshes, resultsMesh, transformTo0Plane, faceIndicesToRemove);
+                            coPlanarFaces.SubtractFaces(plane, transformedMeshes, resultsMesh, planeTransformToXy, faceIndicesToRemove);
                             break;
 
                         case CsgModes.Intersect:
-                            coPlanarFaces.IntersectFaces(plane, transformedMeshes, resultsMesh, transformTo0Plane, faceIndicesToRemove);
+                            coPlanarFaces.IntersectFaces(plane, transformedMeshes, resultsMesh, planeTransformToXy, faceIndicesToRemove);
                             break;
                     }
                 }

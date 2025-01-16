@@ -178,7 +178,7 @@ namespace MatterHackers.Agg.UI
 
         public override void OnDraw(Graphics2D graphics2D)
         {
-            using (new RecursiveReportTimer("Console Widget - OnDraw"))
+            using (new ReportTimer("Console Widget - OnDraw"))
             {
                 RectangleDouble bounds = LocalBounds;
 
