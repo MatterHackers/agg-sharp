@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2019, Lars Brubaker, John Lewin
+Copyright (c) 2025, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -279,9 +279,11 @@ namespace MatterHackers.PolygonMesh.Csg
                     Polygons totalSlice;
                     var similarPlane = similarPlaneFinder.FindPlane(cutPlane).Value;
                     var planeTransformToXY = planeTransformsToXy[similarPlane];
-                    if (true
-                        //&& false
-                        && cachedSlices.ContainsKey((currentMeshIndex, similarPlane)))
+                    var debugBuild = true;
+#if !DEBUG
+                    debugBuild = false;
+#endif
+                    if (debugBuild && cachedSlices.ContainsKey((currentMeshIndex, similarPlane)))
                     {
                         totalSlice = cachedSlices[(currentMeshIndex, similarPlane)];
                     }
