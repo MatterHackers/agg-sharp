@@ -278,17 +278,45 @@ namespace MatterHackers.PolygonMesh.Csg
                     var face = currentMesh.Faces[faceIndex];
                     var planeTransformToXy = planeTransformsToXy[cutPlane];
 
-                    Polygons totalSlice;
-                    if (slicePolygons.ContainsKey(cutPlane))
+                    var similarPlane = similarPlaneFinder.FindPlane(cutPlane).Value;
+                    var similarPlaneTransformToXY = planeTransformsToXy[similarPlane];
+
+                    bool useSimilar = true;
+                    if (!similarPlane.Equals(cutPlane)
+                        || !similarPlaneTransformToXY.AreTransformationsEquivalent(planeTransformToXy))
                     {
-                        totalSlice = slicePolygons[cutPlane];
+                        useSimilar = false;
+                    }
+
+                    Polygons totalSlice;
+                    if (useSimilar)
+                    {
+                        if (slicePolygons.ContainsKey(similarPlane))
+                        {
+                            totalSlice = slicePolygons[similarPlane];
+                        }
+                        else
+                        {
+                            using (new ReportTimer("CsgBySlicing_Calculate_GetTotalSlice", 1))
+                            {
+                                totalSlice = GetTotalSlice(currentMeshIndex, similarPlane, similarPlaneTransformToXY);
+                                slicePolygons[similarPlane] = totalSlice;
+                            }
+                        }
                     }
                     else
                     {
-                        using (new ReportTimer("CsgBySlicing_Calculate_GetTotalSlice", 1))
+                        if (slicePolygons.ContainsKey(cutPlane))
                         {
-                            totalSlice = GetTotalSlice(currentMeshIndex, cutPlane, planeTransformToXy);
-                            slicePolygons[cutPlane] = totalSlice;
+                            totalSlice = slicePolygons[cutPlane];
+                        }
+                        else
+                        {
+                            using (new ReportTimer("CsgBySlicing_Calculate_GetTotalSlice", 1))
+                            {
+                                totalSlice = GetTotalSlice(currentMeshIndex, cutPlane, planeTransformToXy);
+                                slicePolygons[cutPlane] = totalSlice;
+                            }
                         }
                     }
 

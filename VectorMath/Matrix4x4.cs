@@ -1419,9 +1419,57 @@ namespace MatterHackers.VectorMath
 				Row3.Equals(other.Row3, errorRange);
 		}
 
-				#endregion IEquatable<Matrix4d> Members
+        public bool AreTransformationsEquivalent(Matrix4X4 matrix2, double relativeError = 0.0001)
+        {
+            var matrix1 = this;
+            var testVectors = new[]
+            {
+				new Vector3(1, 0, 0),
+				new Vector3(0, 1, 0),
+				new Vector3(0, 0, 1),
+				new Vector3(1, 1, 0),
+				new Vector3(0, 1, 1),
+				new Vector3(1, 1, 1)
+			};
 
-		public float[] GetAsFloatArray()
+            foreach (var testVector in testVectors)
+            {
+                var result1 = testVector.Transform(matrix1);
+                var result2 = testVector.Transform(matrix2);
+
+                double length1Sqrd = result1.LengthSquared;
+                double length2Sqrd = result2.LengthSquared;
+                double allowedErrorSqrd = length1Sqrd * relativeError * 2;
+
+				if (Math.Abs(length1Sqrd - length2Sqrd) > allowedErrorSqrd)
+				{
+					return false;
+				}
+
+                if (length1Sqrd > double.Epsilon && length2Sqrd > double.Epsilon)
+                {
+                    var normalized1 = result1.GetNormal();
+                    var normalized2 = result2.GetNormal();
+                    double dot = normalized1.Dot(normalized2);
+					if (dot < 1 - relativeError)
+					{
+						return false;
+					}
+                }
+            }
+
+            var translation1 = matrix1.Translation;
+            var translation2 = matrix2.Translation;
+            double translationMagnitudeSqrd = Math.Max(translation1.LengthSquared, translation2.LengthSquared);
+            double translationErrorSqrd = translationMagnitudeSqrd * relativeError * 2;
+            return (translation1 - translation2).LengthSquared <= translationErrorSqrd;
+        }
+
+        public Vector4 Translation => Row3;
+
+        #endregion IEquatable<Matrix4d> Members
+
+        public float[] GetAsFloatArray()
 		{
 			float[] contents = new float[16];
 			contents[0] = (float)Row0[0]; contents[1] = (float)Row0[1]; contents[2] = (float)Row0[2]; contents[3] = (float)Row0[3];
