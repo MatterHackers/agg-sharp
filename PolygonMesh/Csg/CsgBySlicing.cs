@@ -52,7 +52,6 @@ namespace MatterHackers.PolygonMesh.Csg
         private SimilarPlaneFinder similarPlaneFinder;
         private Dictionary<Plane, Matrix4X4> planeTransformsToXy;
         private AxisAlignedBoundingBox activeOperationBounds;
-        private Dictionary<(int, Plane), Polygons> cachedSlices = new Dictionary<(int, Plane), Polygons>();
 
         public CsgBySlicing()
         {
@@ -254,6 +253,8 @@ namespace MatterHackers.PolygonMesh.Csg
                     return null;
                 }
 
+                var slicePolygons = new Dictionary<Plane, Polygons>();
+
                 for (int faceIndex = 0; faceIndex < currentMesh.Faces.Count; faceIndex++)
                 {
                     var cutPlane = plansByMeshIndex[currentMeshIndex][faceIndex];
@@ -275,28 +276,23 @@ namespace MatterHackers.PolygonMesh.Csg
                     }
 
                     var face = currentMesh.Faces[faceIndex];
+                    var planeTransformToXy = planeTransformsToXy[cutPlane];
 
                     Polygons totalSlice;
-                    var similarPlane = similarPlaneFinder.FindPlane(cutPlane).Value;
-                    var planeTransformToXY = planeTransformsToXy[similarPlane];
-                    var debugBuild = true;
-#if !DEBUG
-                    debugBuild = false;
-#endif
-                    if (debugBuild && cachedSlices.ContainsKey((currentMeshIndex, similarPlane)))
+                    if (slicePolygons.ContainsKey(cutPlane))
                     {
-                        totalSlice = cachedSlices[(currentMeshIndex, similarPlane)];
+                        totalSlice = slicePolygons[cutPlane];
                     }
                     else
                     {
                         using (new ReportTimer("CsgBySlicing_Calculate_GetTotalSlice", 1))
                         {
-                            totalSlice = GetTotalSlice(currentMeshIndex, similarPlane, planeTransformToXY);
-                            cachedSlices[(currentMeshIndex, similarPlane)] = totalSlice;
+                            totalSlice = GetTotalSlice(currentMeshIndex, cutPlane, planeTransformToXy);
+                            slicePolygons[cutPlane] = totalSlice;
                         }
                     }
 
-                    var facePolygon = CoPlanarFaces.GetFacePolygon(currentMesh, faceIndex, planeTransformToXY);
+                    var facePolygon = CoPlanarFaces.GetFacePolygon(currentMesh, faceIndex, planeTransformToXy);
 
                     var polygonShape = new Polygons();
                     var clipper = new Clipper();
@@ -309,7 +305,7 @@ namespace MatterHackers.PolygonMesh.Csg
                         case CsgModes.Union:
                             using (new ReportTimer("CsgBySlicing_Calculate_Union", 1))
                             {
-                                clipper.Execute(ClipType.ctDifference, polygonShape);
+                            clipper.Execute(ClipType.ctDifference, polygonShape);
                             }
                             break;
 
