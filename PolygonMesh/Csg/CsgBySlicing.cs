@@ -277,48 +277,7 @@ namespace MatterHackers.PolygonMesh.Csg
                     var face = currentMesh.Faces[faceIndex];
                     var planeTransformToXy = planeTransformsToXy[cutPlane];
 
-                    var similarPlane = similarPlaneFinder.FindPlane(cutPlane).Value;
-                    var similarPlaneTransformToXY = planeTransformsToXy[similarPlane];
-
-                    bool useSimilar = true;
-                    if (!similarPlane.Equals(cutPlane)
-                        || !similarPlaneTransformToXY.AreTransformationsEquivalent(planeTransformToXy))
-                    {
-                        useSimilar = false;
-                    }
-
-                    Polygons totalSlice;
-                    if (useSimilar)
-                    {
-                        if (cachedSlices.ContainsKey((currentMeshIndex, similarPlane)))
-                        {
-                            totalSlice = cachedSlices[(currentMeshIndex, similarPlane)];
-                        }
-                        else
-                        {
-                            using (new ReportTimer("CsgBySlicing_Calculate_GetTotalSlice", 1))
-                            {
-                                totalSlice = GetTotalSlice(currentMeshIndex, similarPlane, similarPlaneTransformToXY);
-                                cachedSlices[(currentMeshIndex, similarPlane)] = totalSlice;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (cachedSlices.ContainsKey((currentMeshIndex, cutPlane)))
-                        {
-                            totalSlice = cachedSlices[(currentMeshIndex, cutPlane)];
-                        }
-                        else
-                        {
-                            using (new ReportTimer("CsgBySlicing_Calculate_GetTotalSlice", 1))
-                            {
-                                totalSlice = GetTotalSlice(currentMeshIndex, cutPlane, planeTransformToXy);
-                                cachedSlices[(currentMeshIndex, cutPlane)] = totalSlice;
-                            }
-                        }
-                    }
-
+                    Polygons totalSlice = GetTotalSlice(currentMeshIndex, cutPlane, planeTransformToXy);
                     var facePolygon = CoPlanarFaces.GetFacePolygon(currentMesh, faceIndex, planeTransformToXy);
 
                     var polygonShape = new Polygons();
@@ -455,7 +414,66 @@ namespace MatterHackers.PolygonMesh.Csg
             return resultsMesh;
         }
 
-        public Polygons GetTotalSlice(int meshIndexToIgnore, Plane cutPlane, Matrix4X4 planeTransformToXy, bool includeBehindThePlane = true)
+        public Polygons GetTotalSlice(int currentMeshIndex, Plane cutPlane, Matrix4X4 planeTransformToXy, bool includeBehindThePlane = true)
+        {
+            //return CalculateTotalSlice(currentMeshIndex, cutPlane, planeTransformToXy, includeBehindThePlane);
+            Polygons totalSlice;
+
+            var nullableSimilarPlane = similarPlaneFinder.FindPlane(cutPlane, .0001);
+            if (nullableSimilarPlane == null)
+            {
+                totalSlice = CalculateTotalSlice(currentMeshIndex, cutPlane, planeTransformToXy, includeBehindThePlane);
+                similarPlaneFinder.AddPlaneToComparer(cutPlane);
+                planeTransformsToXy[cutPlane] = planeTransformToXy;
+                return totalSlice;
+            }
+
+            var similarPlane = nullableSimilarPlane.Value;
+            var similarPlaneTransformToXY = planeTransformsToXy[similarPlane];
+
+            bool useSimilar = true;
+            if (!similarPlane.Equals(cutPlane)
+                || !similarPlaneTransformToXY.AreTransformationsEquivalent(planeTransformToXy))
+            {
+                useSimilar = false;
+            }
+
+            if (useSimilar)
+            {
+                if (cachedSlices.ContainsKey((currentMeshIndex, similarPlane)))
+                {
+                    totalSlice = cachedSlices[(currentMeshIndex, similarPlane)];
+                }
+                else
+                {
+                    using (new ReportTimer("CsgBySlicing_Calculate_GetTotalSlice", 1))
+                    {
+                        totalSlice = CalculateTotalSlice(currentMeshIndex, similarPlane, similarPlaneTransformToXY);
+                        cachedSlices[(currentMeshIndex, similarPlane)] = totalSlice;
+                    }
+                }
+            }
+            else
+            {
+                if (cachedSlices.ContainsKey((currentMeshIndex, cutPlane)))
+                {
+                    totalSlice = cachedSlices[(currentMeshIndex, cutPlane)];
+                }
+                else
+                {
+                    using (new ReportTimer("CsgBySlicing_Calculate_GetTotalSlice", 1))
+                    {
+                        totalSlice = CalculateTotalSlice(currentMeshIndex, cutPlane, planeTransformToXy);
+                        cachedSlices[(currentMeshIndex, cutPlane)] = totalSlice;
+                    }
+                }
+            }
+
+            return totalSlice;
+        }
+
+
+        private Polygons CalculateTotalSlice(int meshIndexToIgnore, Plane cutPlane, Matrix4X4 planeTransformToXy, bool includeBehindThePlane = true)
         {
             var totalSlice = new Polygons();
 
