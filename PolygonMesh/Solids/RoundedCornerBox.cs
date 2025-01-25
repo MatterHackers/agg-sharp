@@ -8,7 +8,6 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can
 // obtain one at http://mozilla.org/MPL/2.0/.
 
-using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
@@ -33,10 +32,267 @@ namespace MatterHackers.PolygonMesh.Solids
 		{
 			var roundBox = new RoundedCornerBox(segments, sizeXyz, radius);
 
-			return new Mesh(roundBox.vertices, roundBox.indices);
+			var mesh = new Mesh(roundBox.vertices, roundBox.indices);
+			mesh.CleanAndMerge();
+			return mesh;
 		}
+        public RoundedCornerBox(int segments, Vector3 sizeXyz, double radius)
+		{
+            if (segments == 1)
+            {
+                // Build the single-segment geometry
+                BuildSingleSegmentBox(sizeXyz, radius);
+            }
+            else
+            {
+                // Use existing multi-segment logic
+                BuildMultiSegmentBox(segments - 1, sizeXyz, radius);
+            }
+        }
 
-		public RoundedCornerBox(int segments, Vector3 sizeXyz, double radius)
+        private void BuildSingleSegmentBox(Vector3 sizeXyz, double radius)
+        {
+            // Track positions and indices in some lists (you presumably have these in class scope)
+            vertices = new List<Vector3>();
+            indices = new List<int>();
+
+            double minSize = Math.Min(sizeXyz.X, Math.Min(sizeXyz.Y, sizeXyz.Z));
+            radius = global::System.Math.Min(radius, minSize / 2);
+
+            double xRight = sizeXyz.X / 2.0;
+            double yBack = sizeXyz.Y / 2.0;
+            double zTop = sizeXyz.Z / 2.0;
+
+            void AddQuad(Vector3 v1, Vector3 v2, Vector3 v3, Vector3 v4)
+            {
+                int i1 = vertices.Count; vertices.Add(v1);
+                int i2 = vertices.Count; vertices.Add(v2);
+                int i3 = vertices.Count; vertices.Add(v3);
+                int i4 = vertices.Count; vertices.Add(v4);
+
+                indices.Add(i1); indices.Add(i2); indices.Add(i3);
+                indices.Add(i1); indices.Add(i3); indices.Add(i4);
+            }
+
+            void AddTri(Vector3 v1, Vector3 v2, Vector3 v3, bool flip = false)
+            {
+                int i1 = vertices.Count; vertices.Add(v1);
+                int i2 = vertices.Count; vertices.Add(v2);
+                int i3 = vertices.Count; vertices.Add(v3);
+
+                if (!flip)
+                {
+                    indices.Add(i1); indices.Add(i2); indices.Add(i3);
+                }
+                else
+                {
+                    indices.Add(i1); indices.Add(i3); indices.Add(i2);
+                }
+            }
+
+            // ------------------------------------------------------------------
+            // 1) MAIN FACES (inset by radius)
+            // ------------------------------------------------------------------
+            // Top face, wound ccw
+            AddQuad(
+                new Vector3(xRight - radius, yBack - radius, zTop),
+                new Vector3(-xRight + radius, yBack - radius, zTop),
+                new Vector3(-xRight + radius, -yBack + radius, zTop),
+                new Vector3(xRight - radius, -yBack + radius, zTop)
+            );
+            // Bottom face
+            AddQuad(
+                new Vector3(xRight - radius, yBack - radius, -zTop),
+                new Vector3(xRight - radius, -yBack + radius, -zTop),
+                new Vector3(-xRight + radius, -yBack + radius, -zTop),
+                new Vector3(-xRight + radius, yBack - radius, -zTop)
+            );
+            // Left face
+            AddQuad(
+                new Vector3(-xRight, yBack - radius, -zTop + radius),
+                new Vector3(-xRight, -yBack + radius, -zTop + radius),
+                new Vector3(-xRight, -yBack + radius, zTop - radius),
+                new Vector3(-xRight, yBack - radius, zTop - radius)
+            );
+			// Right face
+			AddQuad(
+				new Vector3(xRight, -yBack + radius, -zTop + radius),
+				new Vector3(xRight, yBack - radius, -zTop + radius),
+				new Vector3(xRight, yBack - radius, zTop - radius),
+				new Vector3(xRight, -yBack + radius, zTop - radius)
+			);
+            // Front face (y = -hy), offset in X and Z by ir:
+            AddQuad(
+                new Vector3(-xRight + radius, -yBack, -zTop + radius),
+                new Vector3(xRight - radius, -yBack, -zTop + radius),
+                new Vector3(xRight - radius, -yBack, zTop - radius),
+                new Vector3(-xRight + radius, -yBack, zTop - radius)
+            );
+            // Back face (y = +hy), offset in X and Z by ir:
+            AddQuad(
+                new Vector3(-xRight + radius, yBack, -zTop + radius),
+                new Vector3(-xRight + radius, yBack, zTop - radius),
+                new Vector3(xRight - radius, yBack, zTop - radius),
+                new Vector3(xRight - radius, yBack, -zTop + radius)
+            );
+
+            // ------------------------------------------------------------------
+            // 2) EDGE "BRIDGING" QUADS
+            // ------------------------------------------------------------------
+            // -- Top Front
+            AddQuad(
+                new Vector3(xRight - radius, -yBack, zTop - radius),
+                new Vector3(xRight - radius, -yBack + radius, zTop),
+                new Vector3(-xRight + radius, -yBack + radius, zTop),
+                new Vector3(-xRight + radius, -yBack, zTop - radius)
+            );
+            
+			// Left Front
+            AddQuad(
+                new Vector3(-xRight, -yBack + radius, zTop - radius),
+                new Vector3(-xRight, -yBack + radius, -zTop + radius),
+                new Vector3(-xRight + radius, -yBack, -zTop + radius),
+                new Vector3(-xRight + radius, -yBack, zTop - radius)
+            );
+
+            // Right Front
+            AddQuad(
+                new Vector3(xRight, -yBack + radius, zTop - radius),
+                new Vector3(xRight - radius, -yBack, zTop - radius),
+                new Vector3(xRight - radius, -yBack, -zTop + radius),
+                new Vector3(xRight, -yBack + radius, -zTop + radius)
+            );
+
+            // Bottom Front
+            AddQuad(
+                new Vector3(xRight - radius, -yBack, -zTop + radius),
+                new Vector3(-xRight + radius, -yBack, -zTop + radius),
+                new Vector3(-xRight + radius, -yBack + radius, -zTop),
+                new Vector3(xRight - radius, -yBack + radius, -zTop)
+            );
+
+            // Left Top
+            AddQuad(
+                new Vector3(-xRight, yBack - radius, zTop - radius),
+                new Vector3(-xRight, -yBack + radius, zTop - radius),
+                new Vector3(-xRight + radius, -yBack + radius, zTop),
+                new Vector3(-xRight + radius, yBack - radius, zTop)
+            );
+
+            // Left Bottom
+            AddQuad(
+                new Vector3(-xRight + radius, yBack - radius, -zTop),
+                new Vector3(-xRight + radius, -yBack + radius, -zTop),
+                new Vector3(-xRight, -yBack + radius, -zTop + radius),
+                new Vector3(-xRight, yBack - radius, -zTop + radius)
+            );
+
+            // Right Top
+            AddQuad(
+                new Vector3(xRight - radius, yBack - radius, zTop),
+                new Vector3(xRight - radius, -yBack + radius, zTop),
+                new Vector3(xRight, -yBack + radius, zTop - radius),
+                new Vector3(xRight, yBack - radius, zTop - radius)
+            );
+
+            // Right Bottom
+            AddQuad(
+                new Vector3(xRight, yBack - radius, -zTop + radius),
+                new Vector3(xRight, -yBack + radius, -zTop + radius),
+                new Vector3(xRight - radius, -yBack + radius, -zTop),
+                new Vector3(xRight - radius, yBack - radius, -zTop)
+            );
+
+            // Back Top
+            AddQuad(
+                new Vector3(-xRight + radius, yBack, zTop - radius),
+                new Vector3(-xRight + radius, yBack - radius, zTop),
+                new Vector3(xRight - radius, yBack - radius, zTop),
+                new Vector3(xRight - radius, yBack, zTop - radius)
+            );
+
+            // Back Bottom
+            AddQuad(
+                new Vector3(-xRight + radius, yBack - radius, -zTop),
+                new Vector3(-xRight + radius, yBack, -zTop + radius),
+                new Vector3(xRight - radius, yBack, -zTop + radius),
+                new Vector3(xRight - radius, yBack - radius, -zTop)
+            );
+
+            // Back Left
+            AddQuad(
+                new Vector3(-xRight, yBack - radius, zTop - radius),
+                new Vector3(-xRight + radius, yBack, zTop - radius),
+                new Vector3(-xRight + radius, yBack, -zTop + radius),
+                new Vector3(-xRight, yBack - radius, -zTop + radius)
+            );
+
+            // Back Right
+            AddQuad(
+                new Vector3(xRight, yBack - radius, zTop - radius),
+                new Vector3(xRight, yBack - radius, -zTop + radius),
+                new Vector3(xRight - radius, yBack, -zTop + radius),
+                new Vector3(xRight - radius, yBack, zTop - radius)
+            );
+
+            // corners
+            // Front, Top, Right
+            AddTri(
+                new Vector3(xRight - radius, -yBack + radius, zTop),
+                new Vector3(xRight - radius, -yBack, zTop - radius),
+                new Vector3(xRight, -yBack + radius, zTop - radius)
+            );
+            // Front, Bottom, Right
+            AddTri(
+                new Vector3(xRight - radius, -yBack + radius, -zTop),
+                new Vector3(xRight, -yBack + radius, -zTop + radius),
+                new Vector3(xRight - radius, -yBack, -	zTop + radius)
+            );
+
+            // Front, Top, Left
+            AddTri(
+                new Vector3(-xRight + radius, -yBack + radius, zTop),
+                new Vector3(-xRight, -yBack + radius, zTop - radius),
+                new Vector3(-xRight + radius, -yBack, zTop - radius)
+            );
+
+            // Front, Bottom, Left
+            AddTri(
+                new Vector3(-xRight, -yBack + radius, -zTop + radius),
+                new Vector3(-xRight + radius, -yBack + radius, -zTop),
+                new Vector3(-xRight + radius, -yBack, -zTop + radius)
+            );
+
+            // Back, Top, Right
+            AddTri(
+                new Vector3(xRight - radius, yBack, zTop - radius),
+                new Vector3(xRight - radius, yBack - radius, zTop),
+                new Vector3(xRight, yBack - radius, zTop - radius)
+            );
+
+            // Back, Bottom, Right
+            AddTri(
+                new Vector3(xRight, yBack - radius, -zTop + radius),
+                new Vector3(xRight - radius, yBack - radius, -zTop),
+                new Vector3(xRight - radius, yBack, -zTop + radius)
+            );
+
+            // Back, Top, Left
+            AddTri(
+                new Vector3(-xRight + radius, yBack - radius, zTop),
+                new Vector3(-xRight + radius, yBack, zTop - radius),
+                new Vector3(-xRight, yBack - radius, zTop - radius)
+            );
+
+            // Back, Bottom, Left
+            AddTri(
+                new Vector3(-xRight + radius, yBack - radius, -zTop),
+                new Vector3(-xRight, yBack - radius, -zTop + radius),
+                new Vector3(-xRight + radius, yBack, -zTop + radius)
+            );
+        }
+
+        private void BuildMultiSegmentBox(int segments, Vector3 sizeXyz, double radius)
 		{
 			edgeCount = 2 * (segments + 1);
 			indexToVerts = new Dictionary<int, int>(edgeCount * edgeCount * edgeCount * 3);
