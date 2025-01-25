@@ -52,6 +52,7 @@ namespace MatterHackers.PolygonMesh.Csg
         private SimilarPlaneFinder similarPlaneFinder;
         private Dictionary<Plane, Matrix4X4> planeTransformsToXy;
         private AxisAlignedBoundingBox activeOperationBounds;
+        private Dictionary<(int, Plane), Polygons> cachedSlices = new Dictionary<(int, Plane), Polygons>();
 
         public CsgBySlicing()
         {
@@ -253,8 +254,6 @@ namespace MatterHackers.PolygonMesh.Csg
                     return null;
                 }
 
-                var slicePolygons = new Dictionary<Plane, Polygons>();
-
                 for (int faceIndex = 0; faceIndex < currentMesh.Faces.Count; faceIndex++)
                 {
                     var cutPlane = plansByMeshIndex[currentMeshIndex][faceIndex];
@@ -291,31 +290,31 @@ namespace MatterHackers.PolygonMesh.Csg
                     Polygons totalSlice;
                     if (useSimilar)
                     {
-                        if (slicePolygons.ContainsKey(similarPlane))
+                        if (cachedSlices.ContainsKey((currentMeshIndex, similarPlane)))
                         {
-                            totalSlice = slicePolygons[similarPlane];
+                            totalSlice = cachedSlices[(currentMeshIndex, similarPlane)];
                         }
                         else
                         {
                             using (new ReportTimer("CsgBySlicing_Calculate_GetTotalSlice", 1))
                             {
                                 totalSlice = GetTotalSlice(currentMeshIndex, similarPlane, similarPlaneTransformToXY);
-                                slicePolygons[similarPlane] = totalSlice;
+                                cachedSlices[(currentMeshIndex, similarPlane)] = totalSlice;
                             }
                         }
                     }
                     else
                     {
-                        if (slicePolygons.ContainsKey(cutPlane))
+                        if (cachedSlices.ContainsKey((currentMeshIndex, cutPlane)))
                         {
-                            totalSlice = slicePolygons[cutPlane];
+                            totalSlice = cachedSlices[(currentMeshIndex, cutPlane)];
                         }
                         else
                         {
                             using (new ReportTimer("CsgBySlicing_Calculate_GetTotalSlice", 1))
                             {
                                 totalSlice = GetTotalSlice(currentMeshIndex, cutPlane, planeTransformToXy);
-                                slicePolygons[cutPlane] = totalSlice;
+                                cachedSlices[(currentMeshIndex, cutPlane)] = totalSlice;
                             }
                         }
                     }
