@@ -264,9 +264,15 @@ namespace MatterHackers.PolygonMesh
 				}
 			}
 
-			this.Faces = newFaces;
-			this.Vertices = newVertices;
-		}
+			if (Faces.Count != newFaces.Count
+				|| Vertices.Count != newVertices.Count)
+			{
+				this.Faces = newFaces;
+				this.Vertices = newVertices;
+
+				MarkAsChanged();
+			}
+        }
 
 		public void CopyAllFaces(Mesh mesh, Matrix4X4 matrix)
 		{
@@ -396,9 +402,15 @@ namespace MatterHackers.PolygonMesh
                 }
             }
 
-            // Finally, update the mesh
-            this.Vertices = newVertices;
-            this.Faces = newFaces;
+			// Finally, update the mesh
+			if (Faces.Count != newFaces.Count
+				|| Vertices.Count != newVertices.Count)
+			{
+				Vertices = newVertices;
+				Faces = newFaces;
+
+				MarkAsChanged();
+			}
         }
 
         public class KDTree
