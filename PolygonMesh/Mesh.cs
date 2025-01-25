@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
@@ -302,13 +303,9 @@ namespace MatterHackers.PolygonMesh
 		/// <param name="minFaceArea">The minimum area of a face to keep it</param>"
         public void MergeVertices(double treatAsSameDistance, double minFaceArea)
         {
-            // Build kdtree for initial vertex finding
-            var kdTree = new KDTree(Vertices.Count);
-            for (int i = 0; i < Vertices.Count; i++)
-            {
-                kdTree.Add(Vertices[i], i);
-            }
-            kdTree.Balance();
+			// Build kdtree for initial vertex finding
+			var vertexBvhTree = GetVertexBvhTree();
+            var searchResults = new List<int>();
 
             // Find vertices to merge
             var vertexMap = new Dictionary<int, int>();
@@ -318,23 +315,29 @@ namespace MatterHackers.PolygonMesh
             // First pass: Find all vertices that should be merged
             for (int i = 0; i < Vertices.Count; i++)
             {
-                if (vertexMap.ContainsKey(i))
-                    continue;
+				if (vertexMap.ContainsKey(i))
+				{
+					continue;
+				}
 
-                var results = kdTree.FindInSphere(Vertices[i], mergeDistance);
-                if (results.Count > 1)
+                searchResults.Clear();
+
+				var offset = new Vector3Float(mergeDistance, mergeDistance, mergeDistance);
+                var edgeAabb = new AxisAlignedBoundingBox(Vertices[i] - offset, Vertices[i] + offset);
+                vertexBvhTree.SearchBounds(edgeAabb, searchResults);
+                if (searchResults.Count > 1)
                 {
                     // Sort to ensure consistent results
-                    results.Sort((a, b) => a.Index.CompareTo(b.Index));
-                    int targetIndex = results[0].Index;
+                    searchResults.Sort();
+                    int targetIndex = searchResults[0];
 
                     var group = new List<int>();
-                    foreach (var result in results)
+                    foreach (var result in searchResults)
                     {
-                        if (!vertexMap.ContainsKey(result.Index))
+                        if (!vertexMap.ContainsKey(result))
                         {
-                            vertexMap[result.Index] = targetIndex;
-                            group.Add(result.Index);
+                            vertexMap[result] = targetIndex;
+                            group.Add(result);
                         }
                     }
 
@@ -345,8 +348,10 @@ namespace MatterHackers.PolygonMesh
                 }
             }
 
-            if (mergeGroups.Count == 0)
-                return;
+			if (mergeGroups.Count == 0)
+			{
+				return;
+			}
 
             // Create new vertex list
             var newVertices = new List<Vector3Float>();
@@ -411,50 +416,7 @@ namespace MatterHackers.PolygonMesh
 
 				MarkAsChanged();
 			}
-        }
-
-        public class KDTree
-        {
-            private List<(Vector3Float Position, int Index)> points;
-            private List<(Vector3Float Position, int Index)> sorted;
-
-            public KDTree(int capacity)
-            {
-                points = new List<(Vector3Float, int)>(capacity);
-                sorted = new List<(Vector3Float, int)>(capacity);
-            }
-
-            public void Add(Vector3Float point, int index)
-            {
-                points.Add((point, index));
-            }
-
-            public void Balance()
-            {
-                sorted = new List<(Vector3Float, int)>(points);
-                sorted.Sort((a, b) => a.Position.X.CompareTo(b.Position.X));
-            }
-
-            public List<(Vector3Float Position, int Index)> FindInSphere(Vector3Float center, float radius)
-            {
-                var result = new List<(Vector3Float Position, int Index)>();
-                float radiusSquared = radius * radius;
-
-                foreach (var point in sorted)
-                {
-                    if (Math.Abs(point.Position.X - center.X) > radius)
-                        continue;
-
-                    float distSquared = (point.Position - center).LengthSquared;
-                    if (distSquared <= radiusSquared)
-                    {
-                        result.Add(point);
-                    }
-                }
-
-                return result;
-            }
-        }
+        }        
 
         /// <summary>
         /// Split the given face on the given plane. Remove the original face
