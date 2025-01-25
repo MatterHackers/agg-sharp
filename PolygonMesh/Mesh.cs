@@ -296,127 +296,159 @@ namespace MatterHackers.PolygonMesh
 			return vertexBvhTree;
 		}
 
-        /// <summary>
-        /// Merge vertices that are less than a given distance apart
-        /// </summary>
-        /// <param name="treatAsSameDistance">The distance to merge vertices</param>
-		/// <param name="minFaceArea">The minimum area of a face to keep it</param>"
-        public void MergeVertices(double treatAsSameDistance, double minFaceArea)
+        public class UnionFind
         {
-			// Build kdtree for initial vertex finding
-			var vertexBvhTree = GetVertexBvhTree();
+            private readonly int[] parent;
+            private readonly int[] size;
+
+            public UnionFind(int n)
+            {
+                parent = new int[n];
+                size = new int[n];
+                for (int i = 0; i < n; i++)
+                {
+                    parent[i] = i;
+                    size[i] = 1;
+                }
+            }
+
+            public int Find(int i)
+            {
+                if (parent[i] != i)
+                {
+                    parent[i] = Find(parent[i]); // Path compression
+                }
+                return parent[i];
+            }
+
+            public void Union(int a, int b)
+            {
+                int rootA = Find(a);
+                int rootB = Find(b);
+                if (rootA == rootB) return;
+
+                // Union by size
+                if (size[rootA] < size[rootB])
+                {
+                    parent[rootA] = rootB;
+                    size[rootB] += size[rootA];
+                }
+                else
+                {
+                    parent[rootB] = rootA;
+                    size[rootA] += size[rootB];
+                }
+            }
+        }
+
+        public void MergeVertices(double treatAsSameDistance, double minFaceArea, Action<double, string> reporter = null)
+        {
+            if (Vertices.Count == 0)
+            {
+                return;
+            }
+
+            // Initialize Union-Find data structure
+            var uf = new UnionFind(Vertices.Count);
+
+            // Reuse search results list to avoid allocations
             var searchResults = new List<int>();
 
-            // Find vertices to merge
-            var vertexMap = new Dictionary<int, int>();
-            var mergeGroups = new Dictionary<int, List<int>>();
-            float mergeDistance = (float)treatAsSameDistance;
+            // Build kdtree for initial vertex finding
+            var vertexBvhTree = GetVertexBvhTree();
+            var mergeDistance = (float)treatAsSameDistance;
+            var offset = new Vector3Float(mergeDistance, mergeDistance, mergeDistance);
 
             // First pass: Find all vertices that should be merged
             for (int i = 0; i < Vertices.Count; i++)
             {
-				if (vertexMap.ContainsKey(i))
+                // Skip if this vertex is already merged into another group
+                if (uf.Find(i) != i)
+                {
+                    continue;
+                }
+
+				if (reporter != null
+					&& i%256 == 0)
 				{
-					continue;
+					reporter(i / (double)Vertices.Count, "Merge Vertices");
 				}
 
                 searchResults.Clear();
-
-				var offset = new Vector3Float(mergeDistance, mergeDistance, mergeDistance);
                 var edgeAabb = new AxisAlignedBoundingBox(Vertices[i] - offset, Vertices[i] + offset);
                 vertexBvhTree.SearchBounds(edgeAabb, searchResults);
+
+                // Find minimum index in search results and union all vertices
                 if (searchResults.Count > 1)
                 {
-                    // Sort to ensure consistent results
-                    searchResults.Sort();
-                    int targetIndex = searchResults[0];
-
-                    var group = new List<int>();
                     foreach (var result in searchResults)
                     {
-                        if (!vertexMap.ContainsKey(result))
-                        {
-                            vertexMap[result] = targetIndex;
-                            group.Add(result);
-                        }
-                    }
-
-                    if (group.Count > 1)
-                    {
-                        mergeGroups[targetIndex] = group;
+                        uf.Union(i, result);
                     }
                 }
             }
 
-			if (mergeGroups.Count == 0)
-			{
-				return;
-			}
+            // Arrays to store position sums for each representative vertex
+            var xSum = new double[Vertices.Count];
+            var ySum = new double[Vertices.Count];
+            var zSum = new double[Vertices.Count];
+            var count = new int[Vertices.Count];
 
-            // Create new vertex list
-            var newVertices = new List<Vector3Float>();
-            var oldToNewIndex = new Dictionary<int, int>();
-
-            // First add merged vertices
-            foreach (var group in mergeGroups.Values)
-            {
-                // Calculate average position
-                var avgPos = new Vector3Float(0, 0, 0);
-                foreach (int idx in group)
-                {
-                    avgPos += Vertices[idx];
-                }
-                avgPos /= group.Count;
-
-                int newIndex = newVertices.Count;
-                newVertices.Add(avgPos);
-
-                // Map all vertices in group to new index
-                foreach (int oldIndex in group)
-                {
-                    oldToNewIndex[oldIndex] = newIndex;
-                }
-            }
-
-            // Add remaining vertices
+            // Accumulate positions for each representative
             for (int i = 0; i < Vertices.Count; i++)
             {
-                if (!oldToNewIndex.ContainsKey(i))
+                int rep = uf.Find(i);
+                var vertex = Vertices[i];
+                xSum[rep] += vertex.X;
+                ySum[rep] += vertex.Y;
+                zSum[rep] += vertex.Z;
+                count[rep]++;
+            }
+
+            // Create mapping from representative indices to new vertex indices
+            var repToNewIndex = new Dictionary<int, int>();
+            var newVertices = new List<Vector3Float>();
+
+            // Create new vertices for each representative
+            for (int i = 0; i < Vertices.Count; i++)
+            {
+                if (count[i] > 0)  // This is a representative vertex
                 {
-                    oldToNewIndex[i] = newVertices.Count;
-                    newVertices.Add(Vertices[i]);
+                    repToNewIndex[i] = newVertices.Count;
+                    newVertices.Add(new Vector3Float(
+                        (float)(xSum[i] / count[i]),
+                        (float)(ySum[i] / count[i]),
+                        (float)(zSum[i] / count[i])
+                    ));
                 }
             }
 
-            // Create new faces
+            // Create new faces, skipping degenerate ones
             var newFaces = new FaceList();
             foreach (var face in Faces)
             {
-                int v0 = oldToNewIndex[face.v0];
-                int v1 = oldToNewIndex[face.v1];
-                int v2 = oldToNewIndex[face.v2];
+                int newV0 = repToNewIndex[uf.Find(face.v0)];
+                int newV1 = repToNewIndex[uf.Find(face.v1)];
+                int newV2 = repToNewIndex[uf.Find(face.v2)];
 
-                // Skip degenerate faces
-                if (v0 != v1 && v1 != v2 && v2 != v0)
+                if (newV0 != newV1 && newV1 != newV2 && newV2 != newV0)
                 {
-                    float area = newVertices[v0].GetArea(newVertices[v1], newVertices[v2]);
+                    float area = newVertices[newV0].GetArea(newVertices[newV1], newVertices[newV2]);
                     if (area >= minFaceArea)
                     {
-                        newFaces.Add(v0, v1, v2, newVertices);
+                        newFaces.Add(newV0, newV1, newV2, newVertices);
                     }
                 }
             }
 
-			// Finally, update the mesh
-			if (Faces.Count != newFaces.Count
-				|| Vertices.Count != newVertices.Count)
-			{
-				Vertices = newVertices;
-				Faces = newFaces;
-
-				MarkAsChanged();
-			}
-        }        
+            // Update the mesh if changes were made
+            if (Faces.Count != newFaces.Count || Vertices.Count != newVertices.Count)
+            {
+                Vertices = newVertices;
+                Faces = newFaces;
+                MarkAsChanged();
+            }
+        }
 
         /// <summary>
         /// Split the given face on the given plane. Remove the original face
