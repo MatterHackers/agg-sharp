@@ -836,7 +836,9 @@ namespace MatterHackers.Agg
             }
 
             // Use .html if applicable
-            if (JObject.Load(reader)?["Html"] is JToken jtoken
+            if (reader.Value != null
+                && JObject.Load(reader)?["Html"] is JToken jtoken
+                && jtoken != null
                 && jtoken.Value<string>() is string html)
             {
                 return new Color(html);
