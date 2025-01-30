@@ -51,6 +51,9 @@ namespace MatterHackers.Agg.UI
 			'-', '+', '*', '/', '=', '\\', '#', '$', '^', '|', '°', '²', '³'// math symbols
 		});
 
+        private char? maskChar = null;
+        private string actualText = ""; 
+		
 		private static HashSet<char> WordBreakCharsAndCR
 		{
 			get
@@ -223,12 +226,48 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		/// <summary>
-		/// This is called when the user has modified the text control.  It will
-		/// be triggered when the control looses focus or enter is pressed on non-multi-line control.
-		/// </summary>
-		/// <param name="e">The event args to pass on to EditComplete</param>
-		public virtual void OnEditComplete(EventArgs e)
+        public char? MaskChar
+        {
+            get => maskChar;
+            set
+            {
+                if (maskChar != value)
+                {
+                    maskChar = value;
+                    UpdateDisplayText();
+                }
+            }
+        }
+
+        public string GetActualText()
+        {
+            return actualText;
+        }
+
+        public void SetActualTextAndUpdate(string text)
+        {
+            actualText = text;
+            UpdateDisplayText();
+        }
+
+        private void UpdateDisplayText()
+        {
+            if (maskChar.HasValue)
+            {
+                internalTextWidget.Text = new string(maskChar.Value, actualText.Length);
+            }
+            else
+            {
+                internalTextWidget.Text = actualText;
+            }
+        }
+
+        /// <summary>
+        /// This is called when the user has modified the text control.  It will
+        /// be triggered when the control looses focus or enter is pressed on non-multi-line control.
+        /// </summary>
+        /// <param name="e">The event args to pass on to EditComplete</param>
+        public virtual void OnEditComplete(EventArgs e)
 		{
 			EditComplete?.Invoke(this, e);
 			textWhenGotFocus = Text;
@@ -263,58 +302,58 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override string Text
-		{
-			get
-			{
-				return internalTextWidget.Text;
-			}
-
-			set
-			{
-				if (internalTextWidget.Text != value)
-				{
-					CharIndexToInsertBefore = 0;
-					internalTextWidget.Text = value;
-					OnTextChanged(null);
-					Invalidate();
-				}
-			}
-		}
-
-		public InternalTextEditWidget(string text, double pointSize, bool multiLine, int tabIndex, TypeFace typeFace = null)
-		{
-			if (DefaultRightClick == null)
+        public override string Text
+        {
+            get => actualText;
+            set
             {
-				var menuTheme = ThemeConfig.DefaultMenuTheme();
-				InternalTextEditWidget.AddTextWidgetRightClickMenu(menuTheme);
-			}
-            
-			TabIndex = tabIndex;
-			TabStop = true;
-			MergeTypingDuringUndo = true;
+                if (actualText != value)
+                {
+                    CharIndexToInsertBefore = 0;
+                    actualText = value ?? "";
+                    UpdateDisplayText();
+                    OnTextChanged(null);
+                    Invalidate();
+                }
+            }
+        }
 
-			internalTextWidget = new TextWidget(text, pointSize: pointSize, ellipsisIfClipped: false, textColor: _textColor, typeFace: typeFace);
-			internalTextWidget.Selectable = false;
-			internalTextWidget.AutoExpandBoundsToText = true;
-			AddChild(internalTextWidget);
+        public InternalTextEditWidget(string text, double pointSize, bool multiLine, int tabIndex, TypeFace typeFace = null)
+        {
+            if (DefaultRightClick == null)
+            {
+                var menuTheme = ThemeConfig.DefaultMenuTheme();
+                InternalTextEditWidget.AddTextWidgetRightClickMenu(menuTheme);
+            }
 
-			UpdateLocalBounds();
+            TabIndex = tabIndex;
+            TabStop = true;
+            MergeTypingDuringUndo = true;
 
-			Multiline = multiLine;
+            actualText = text ?? "";
+            internalTextWidget = new TextWidget("", pointSize: pointSize, ellipsisIfClipped: false, textColor: _textColor, typeFace: typeFace);
+            internalTextWidget.Selectable = false;
+            internalTextWidget.AutoExpandBoundsToText = true;
+            AddChild(internalTextWidget);
 
-			FixBarPosition(DesiredXPositionOnLine.Set);
+            UpdateDisplayText();
 
-			var newUndoData = new TextWidgetUndoCommand(this);
-			undoBuffer.Add(newUndoData);
+            UpdateLocalBounds();
 
-			Cursor = Cursors.IBeam;
+            Multiline = multiLine;
 
-			internalTextWidget.TextChanged += new EventHandler(InternalTextWidget_TextChanged);
-			internalTextWidget.BoundsChanged += new EventHandler(InternalTextWidget_BoundsChanged);
-		}
+            FixBarPosition(DesiredXPositionOnLine.Set);
 
-		private void UpdateLocalBounds()
+            var newUndoData = new TextWidgetUndoCommand(this);
+            undoBuffer.Add(newUndoData);
+
+            Cursor = Cursors.IBeam;
+
+            internalTextWidget.TextChanged += new EventHandler(InternalTextWidget_TextChanged);
+            internalTextWidget.BoundsChanged += new EventHandler(InternalTextWidget_BoundsChanged);
+        }
+
+        private void UpdateLocalBounds()
 		{
 			// double padding = 5;
 			double width = Math.Max(internalTextWidget.Width + 2, 3);
@@ -426,9 +465,9 @@ namespace MatterHackers.Agg.UI
 			return textWhenGotFocus != Text;
 		}
 
-		public Color CursorColor { get; set; } = Color.DarkGray;
+		public Color CursorColor { get; set; }
 
-		public Color HighlightColor { get; set; } = Color.Gray;
+		public Color HighlightColor { get; set; }
 
 		private Color _textColor = Color.Black;
 
@@ -462,112 +501,111 @@ namespace MatterHackers.Agg.UI
 			{
 				this._textColor = value;
 				internalTextWidget.TextColor = this._textColor;
-			}
+				CursorColor = value.WithAlpha(175);
+				HighlightColor = value.WithAlpha(100);
+            }
 		}
 
 		public bool ReadOnly { get; set; }
 
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			double fontHeight = internalTextWidget.Printer.TypeFaceStyle.EmSizeInPixels;
+        public override void OnDraw(Graphics2D graphics2D)
+        {
+            double fontHeight = internalTextWidget.Printer.TypeFaceStyle.EmSizeInPixels;
 
-			if (Selecting
-				&& SelectionIndexToStartBefore != CharIndexToInsertBefore)
-			{
-				Vector2 selectPosition = internalTextWidget.Printer.GetOffsetLeftOfCharacterIndex(SelectionIndexToStartBefore);
+            if (Selecting
+                && SelectionIndexToStartBefore != CharIndexToInsertBefore)
+            {
+                Vector2 selectPosition = internalTextWidget.Printer.GetOffsetLeftOfCharacterIndex(SelectionIndexToStartBefore);
 
-				// for each selected line draw a rect for the chars of that line
-				if (selectPosition.Y == InsertBarPosition.Y)
-				{
-					var bar = new RectangleDouble(Math.Ceiling(selectPosition.X),
-											Math.Ceiling(internalTextWidget.Height + selectPosition.Y),
-											Math.Ceiling(InsertBarPosition.X + 1),
-											Math.Ceiling(internalTextWidget.Height + InsertBarPosition.Y - fontHeight));
+                if (selectPosition.Y == InsertBarPosition.Y)
+                {
+                    var bar = new RectangleDouble(Math.Ceiling(selectPosition.X),
+                                            Math.Ceiling(internalTextWidget.Height + selectPosition.Y),
+                                            Math.Ceiling(InsertBarPosition.X + 1),
+                                            Math.Ceiling(internalTextWidget.Height + InsertBarPosition.Y - fontHeight));
 
-					var selectCursorRect = new RoundedRect(bar, 0);
-					graphics2D.Render(selectCursorRect, this.HighlightColor);
-				}
-				else
-				{
-					int firstCharToHighlight = Math.Min(CharIndexToInsertBefore, SelectionIndexToStartBefore);
-					int lastCharToHighlight = Math.Max(CharIndexToInsertBefore, SelectionIndexToStartBefore);
-					int lineStart = firstCharToHighlight;
-					Vector2 lineStartPos = internalTextWidget.Printer.GetOffsetLeftOfCharacterIndex(lineStart);
-					int lineEnd = lineStart + 1;
-					Vector2 lineEndPos = internalTextWidget.Printer.GetOffsetLeftOfCharacterIndex(lineEnd);
-					if (lineEndPos.Y != lineStartPos.Y)
-					{
-						// we are starting on a '\n', adjust so we will show the cr at the end of the line
-						lineEndPos = lineStartPos;
-					}
+                    var selectCursorRect = new RoundedRect(bar, 0);
+                    graphics2D.Render(selectCursorRect, this.HighlightColor);
+                }
+                else
+                {
+                    int firstCharToHighlight = Math.Min(CharIndexToInsertBefore, SelectionIndexToStartBefore);
+                    int lastCharToHighlight = Math.Max(CharIndexToInsertBefore, SelectionIndexToStartBefore);
+                    int lineStart = firstCharToHighlight;
+                    Vector2 lineStartPos = internalTextWidget.Printer.GetOffsetLeftOfCharacterIndex(lineStart);
+                    int lineEnd = lineStart + 1;
+                    Vector2 lineEndPos = internalTextWidget.Printer.GetOffsetLeftOfCharacterIndex(lineEnd);
+                    if (lineEndPos.Y != lineStartPos.Y)
+                    {
+                        lineEndPos = lineStartPos;
+                    }
 
-					bool firstCharOfLine = false;
-					for (int i = lineEnd; i < lastCharToHighlight + 1; i++)
-					{
-						Vector2 nextPos = internalTextWidget.Printer.GetOffsetLeftOfCharacterIndex(i);
-						if (firstCharOfLine)
-						{
-							if (lineEndPos.Y != lineStartPos.Y)
-							{
-								// we are starting on a '\n', adjust so we will show the cr at the end of the line
-								lineEndPos = lineStartPos;
-							}
+                    bool firstCharOfLine = false;
+                    for (int i = lineEnd; i < lastCharToHighlight + 1; i++)
+                    {
+                        Vector2 nextPos = internalTextWidget.Printer.GetOffsetLeftOfCharacterIndex(i);
+                        if (firstCharOfLine)
+                        {
+                            if (lineEndPos.Y != lineStartPos.Y)
+                            {
+                                lineEndPos = lineStartPos;
+                            }
 
-							firstCharOfLine = false;
-						}
+                            firstCharOfLine = false;
+                        }
 
-						if (nextPos.Y != lineStartPos.Y)
-						{
-							if (lineEndPos.X == lineStartPos.X)
-							{
-								lineEndPos.X += Printer.TypeFaceStyle.GetAdvanceForCharacter(' ');
-							}
+                        if (nextPos.Y != lineStartPos.Y)
+                        {
+                            if (lineEndPos.X == lineStartPos.X)
+                            {
+                                lineEndPos.X += Printer.TypeFaceStyle.GetAdvanceForCharacter(' ');
+                            }
 
-							var bar = new RectangleDouble(Math.Ceiling(lineStartPos.X),
-													Math.Ceiling(internalTextWidget.Height + lineStartPos.Y),
-													Math.Ceiling(lineEndPos.X + 1),
-													Math.Ceiling(internalTextWidget.Height + lineEndPos.Y - fontHeight));
+                            var bar = new RectangleDouble(Math.Ceiling(lineStartPos.X),
+                                                    Math.Ceiling(internalTextWidget.Height + lineStartPos.Y),
+                                                    Math.Ceiling(lineEndPos.X + 1),
+                                                    Math.Ceiling(internalTextWidget.Height + lineEndPos.Y - fontHeight));
 
-							var selectCursorRect = new RoundedRect(bar, 0);
-							graphics2D.Render(selectCursorRect, this.HighlightColor);
-							lineStartPos = nextPos;
-							firstCharOfLine = true;
-						}
-						else
-						{
-							lineEndPos = nextPos;
-						}
-					}
+                            var selectCursorRect = new RoundedRect(bar, 0);
+                            graphics2D.Render(selectCursorRect, this.HighlightColor);
+                            lineStartPos = nextPos;
+                            firstCharOfLine = true;
+                        }
+                        else
+                        {
+                            lineEndPos = nextPos;
+                        }
+                    }
 
-					if (lineEndPos.X != lineStartPos.X)
-					{
-						var bar = new RectangleDouble(Math.Ceiling(lineStartPos.X),
-												Math.Ceiling(internalTextWidget.Height + lineStartPos.Y),
-												Math.Ceiling(lineEndPos.X + 1),
-												Math.Ceiling(internalTextWidget.Height + lineEndPos.Y - fontHeight));
+                    if (lineEndPos.X != lineStartPos.X)
+                    {
+                        var bar = new RectangleDouble(Math.Ceiling(lineStartPos.X),
+                                                Math.Ceiling(internalTextWidget.Height + lineStartPos.Y),
+                                                Math.Ceiling(lineEndPos.X + 1),
+                                                Math.Ceiling(internalTextWidget.Height + lineEndPos.Y - fontHeight));
 
-						var selectCursorRect = new RoundedRect(bar, 0);
-						graphics2D.Render(selectCursorRect, this.HighlightColor);
-					}
-				}
-			}
+                        var selectCursorRect = new RoundedRect(bar, 0);
+                        graphics2D.Render(selectCursorRect, this.HighlightColor);
+                    }
+                }
+            }
 
-			if (this.Focused && BarIsShowing)
-			{
-				double xFraction = graphics2D.GetTransform().tx;
-				xFraction = xFraction - (int)xFraction;
-				var bar2 = new RectangleDouble(Math.Ceiling(InsertBarPosition.X) - xFraction,
-										Math.Ceiling(internalTextWidget.Height + InsertBarPosition.Y - fontHeight),
-										Math.Ceiling(InsertBarPosition.X + 1) - xFraction,
-										Math.Ceiling(internalTextWidget.Height + InsertBarPosition.Y));
-				var cursorRect = new RoundedRect(bar2, 0);
-				graphics2D.Render(cursorRect, this.CursorColor);
-			}
+            if (this.Focused && BarIsShowing)
+            {
+                double xFraction = graphics2D.GetTransform().tx;
+                xFraction = xFraction - (int)xFraction;
+                var bar2 = new RectangleDouble(Math.Ceiling(InsertBarPosition.X) - xFraction,
+                                        Math.Ceiling(internalTextWidget.Height + InsertBarPosition.Y - fontHeight),
+                                        Math.Ceiling(InsertBarPosition.X + 1) - xFraction,
+                                        Math.Ceiling(internalTextWidget.Height + InsertBarPosition.Y));
+                var cursorRect = new RoundedRect(bar2, 0);
+                graphics2D.Render(cursorRect, this.CursorColor);
+            }
 
-			base.OnDraw(graphics2D);
-		}
+            base.OnDraw(graphics2D);
+        }
 
-		public override void OnMouseDown(MouseEventArgs mouseEvent)
+        public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
 			if (mouseEvent.Button == MouseButtons.Left)
 			{
@@ -671,12 +709,11 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseUp(mouseEvent);
 		}
 
-		public override string ToString()
-		{
-			return internalTextWidget.Text;
-		}
-
-		protected enum DesiredXPositionOnLine
+        public override string ToString()
+        {
+            return actualText;
+        }
+        protected enum DesiredXPositionOnLine
 		{
 			Maintain,
 			Set
@@ -693,50 +730,52 @@ namespace MatterHackers.Agg.UI
 			Invalidate();
 		}
 
-		private void DeleteIndexRange(int startIndexInclusive, int endIndexInclusive)
-		{
-			// first make sure we are deleting something that exists
-			startIndexInclusive = Math.Max(0, Math.Min(startIndexInclusive, internalTextWidget.Text.Length));
-			endIndexInclusive = Math.Max(startIndexInclusive, Math.Min(endIndexInclusive, internalTextWidget.Text.Length));
-			int lengthToDelete = endIndexInclusive + 1 - startIndexInclusive;
-			if (lengthToDelete > 0 && internalTextWidget.Text.Length - startIndexInclusive >= lengthToDelete)
-			{
-				var stringBuilder = new StringBuilder(internalTextWidget.Text);
-				stringBuilder.Remove(startIndexInclusive, lengthToDelete);
-				internalTextWidget.Text = stringBuilder.ToString();
-			}
-		}
+        private void DeleteIndexRange(int startIndexInclusive, int endIndexInclusive)
+        {
+            startIndexInclusive = Math.Max(0, Math.Min(startIndexInclusive, actualText.Length));
+            endIndexInclusive = Math.Max(startIndexInclusive, Math.Min(endIndexInclusive, actualText.Length));
+            int lengthToDelete = endIndexInclusive + 1 - startIndexInclusive;
+            if (lengthToDelete > 0 && actualText.Length - startIndexInclusive >= lengthToDelete)
+            {
+                var stringBuilder = new StringBuilder(actualText);
+                stringBuilder.Remove(startIndexInclusive, lengthToDelete);
+                actualText = stringBuilder.ToString();
+                UpdateDisplayText();
+                OnTextChanged(null);
+                Invalidate();
+            }
+        }
 
-		public void DeleteSelection(bool createUndoMarker = true)
-		{
-			if (ReadOnly)
-			{
-				return;
-			}
+        public void DeleteSelection(bool createUndoMarker = true)
+        {
+            if (ReadOnly)
+            {
+                return;
+            }
 
-			if (Selecting)
-			{
-				if (CharIndexToInsertBefore < SelectionIndexToStartBefore)
-				{
-					DeleteIndexRange(CharIndexToInsertBefore, SelectionIndexToStartBefore - 1);
-				}
-				else
-				{
-					DeleteIndexRange(SelectionIndexToStartBefore, CharIndexToInsertBefore - 1);
-					CharIndexToInsertBefore = SelectionIndexToStartBefore;
-				}
+            if (Selecting)
+            {
+                if (CharIndexToInsertBefore < SelectionIndexToStartBefore)
+                {
+                    DeleteIndexRange(CharIndexToInsertBefore, SelectionIndexToStartBefore - 1);
+                }
+                else
+                {
+                    DeleteIndexRange(SelectionIndexToStartBefore, CharIndexToInsertBefore - 1);
+                    CharIndexToInsertBefore = SelectionIndexToStartBefore;
+                }
 
-				if (createUndoMarker)
-				{
-					var newUndoDeleteData = new TextWidgetUndoCommand(this);
-					undoBuffer.Add(newUndoDeleteData);
-				}
+                if (createUndoMarker)
+                {
+                    var newUndoDeleteData = new TextWidgetUndoCommand(this);
+                    undoBuffer.Add(newUndoDeleteData);
+                }
 
-				Selecting = false;
-			}
-		}
+                Selecting = false;
+            }
+        }
 
-		public void SetSelection(int firstIndexSelected, int lastIndexSelected)
+        public void SetSelection(int firstIndexSelected, int lastIndexSelected)
 		{
 			firstIndexSelected = Math.Max(0, Math.Min(firstIndexSelected, Text.Length - 1));
 			lastIndexSelected = Math.Max(0, Math.Min(lastIndexSelected, Text.Length));
@@ -1120,116 +1159,117 @@ namespace MatterHackers.Agg.UI
 			FixBarPosition(DesiredXPositionOnLine.Set);
 		}
 
-		public void CopySelection()
-		{
-			if (Selecting)
-			{
-				var text = Text;
-				var charIndexToInsertBefore = Math.Max(0, Math.Min(text.Length, CharIndexToInsertBefore));
-				var selectionIndexToStartBefore = Math.Max(0, Math.Min(text.Length, SelectionIndexToStartBefore));
-				if (charIndexToInsertBefore < selectionIndexToStartBefore)
-				{
-					Clipboard.Instance.SetText(text.Substring(charIndexToInsertBefore, selectionIndexToStartBefore - charIndexToInsertBefore));
-				}
-				else
-				{
-					Clipboard.Instance.SetText(text.Substring(selectionIndexToStartBefore, charIndexToInsertBefore - selectionIndexToStartBefore));
-				}
-			}
-			else if (Multiline)
-			{
-				// copy the line?
-			}
-		}
+        public void CopySelection()
+        {
+            if (Selecting)
+            {
+                var text = actualText;
+                var charIndexToInsertBefore = Math.Max(0, Math.Min(text.Length, CharIndexToInsertBefore));
+                var selectionIndexToStartBefore = Math.Max(0, Math.Min(text.Length, SelectionIndexToStartBefore));
+                if (charIndexToInsertBefore < selectionIndexToStartBefore)
+                {
+                    Clipboard.Instance.SetText(text.Substring(charIndexToInsertBefore, selectionIndexToStartBefore - charIndexToInsertBefore));
+                }
+                else
+                {
+                    Clipboard.Instance.SetText(text.Substring(selectionIndexToStartBefore, charIndexToInsertBefore - selectionIndexToStartBefore));
+                }
+            }
+            else if (Multiline)
+            {
+                // copy the line?
+            }
+        }
 
-		public void PasteFromClipboard()
-		{
-			if (ReadOnly)
-			{
-				return;
-			}
+        public void PasteFromClipboard()
+        {
+            if (ReadOnly)
+            {
+                return;
+            }
 
-			if (Clipboard.Instance.ContainsText)
-			{
-				if (Selecting)
-				{
-					DeleteSelection(false);
-				}
+            if (Clipboard.Instance.ContainsText)
+            {
+                if (Selecting)
+                {
+                    DeleteSelection(false);
+                }
 
-				var stringBuilder = new StringBuilder(internalTextWidget.Text);
-				string stringOnClipboard = Clipboard.Instance.GetText();
-				if (!Multiline)
-				{
-					stringOnClipboard = Regex.Replace(stringOnClipboard, @"\r\n?|\n", " ");
-				}
+                var stringBuilder = new StringBuilder(actualText);
+                string stringOnClipboard = Clipboard.Instance.GetText();
+                if (!Multiline)
+                {
+                    stringOnClipboard = Regex.Replace(stringOnClipboard, @"\r\n?|\n", " ");
+                }
 
-				stringBuilder.Insert(CharIndexToInsertBefore, stringOnClipboard);
-				CharIndexToInsertBefore += stringOnClipboard.Length;
-				internalTextWidget.Text = stringBuilder.ToString();
+                stringBuilder.Insert(CharIndexToInsertBefore, stringOnClipboard);
+                CharIndexToInsertBefore += stringOnClipboard.Length;
+                actualText = stringBuilder.ToString();
+                UpdateDisplayText();
 
-				var newUndoCommand = new TextWidgetUndoCommand(this);
-				undoBuffer.Add(newUndoCommand);
-			}
-		}
+                var newUndoCommand = new TextWidgetUndoCommand(this);
+                undoBuffer.Add(newUndoCommand);
+            }
+        }
 
-		public override void OnKeyPress(KeyPressEventArgs keyPressEvent)
-		{
-			// this must be called first to ensure we get the correct Handled state
-			base.OnKeyPress(keyPressEvent);
+        public override void OnKeyPress(KeyPressEventArgs keyPressEvent)
+        {
+            base.OnKeyPress(keyPressEvent);
 
-			if (!keyPressEvent.Handled)
-			{
-				if (keyPressEvent.KeyChar < 32
-					&& keyPressEvent.KeyChar != 13
-					&& keyPressEvent.KeyChar != 9)
-				{
-					return;
-				}
+            if (!keyPressEvent.Handled)
+            {
+                if (keyPressEvent.KeyChar < 32
+                    && keyPressEvent.KeyChar != 13
+                    && keyPressEvent.KeyChar != 9)
+                {
+                    return;
+                }
 
-				if (ReadOnly)
-				{
-					return;
-				}
+                if (ReadOnly)
+                {
+                    return;
+                }
 
-				if (Selecting)
-				{
-					DeleteSelection();
-					Selecting = false;
-				}
+                if (Selecting)
+                {
+                    DeleteSelection();
+                    Selecting = false;
+                }
 
-				var tempString = new StringBuilder(internalTextWidget.Text);
-				if (keyPressEvent.KeyChar == '\r')
-				{
-					tempString.Insert(CharIndexToInsertBefore, "\n");
-				}
-				else
-				{
-					tempString.Insert(CharIndexToInsertBefore, keyPressEvent.KeyChar.ToString());
-				}
+                var tempString = new StringBuilder(actualText);
+                if (keyPressEvent.KeyChar == '\r')
+                {
+                    tempString.Insert(CharIndexToInsertBefore, "\n");
+                }
+                else
+                {
+                    tempString.Insert(CharIndexToInsertBefore, keyPressEvent.KeyChar.ToString());
+                }
 
-				keyPressEvent.Handled = true;
-				CharIndexToInsertBefore++;
-				internalTextWidget.Text = tempString.ToString();
+                keyPressEvent.Handled = true;
+                CharIndexToInsertBefore++;
+                actualText = tempString.ToString();
+                UpdateDisplayText();
 
-				FixBarPosition(DesiredXPositionOnLine.Set);
+                FixBarPosition(DesiredXPositionOnLine.Set);
 
-				var newUndoData = new TextWidgetUndoCommand(this);
-				if (MergeTypingDuringUndo
-					&& charIndexToAcceptAsMerging == CharIndexToInsertBefore - 1
-					&& keyPressEvent.KeyChar != '\n' && keyPressEvent.KeyChar != '\r')
-				{
-					undoBuffer.Add(newUndoData);
-				}
-				else
-				{
-					undoBuffer.Add(newUndoData);
-				}
+                var newUndoData = new TextWidgetUndoCommand(this);
+                if (MergeTypingDuringUndo
+                    && charIndexToAcceptAsMerging == CharIndexToInsertBefore - 1
+                    && keyPressEvent.KeyChar != '\n' && keyPressEvent.KeyChar != '\r')
+                {
+                    undoBuffer.Add(newUndoData);
+                }
+                else
+                {
+                    undoBuffer.Add(newUndoData);
+                }
 
-				charIndexToAcceptAsMerging = CharIndexToInsertBefore;
-			}
-		}
+                charIndexToAcceptAsMerging = CharIndexToInsertBefore;
+            }
+        }
 
-		private int GetIndexOffset(int characterStartIndexInclusive, int maxCharacterEndIndexInclusive, double desiredPixelOffset)
+        private int GetIndexOffset(int characterStartIndexInclusive, int maxCharacterEndIndexInclusive, double desiredPixelOffset)
 		{
 			int offsetIndex = 0;
 			int endOffsetIndex = maxCharacterEndIndexInclusive - characterStartIndexInclusive;
@@ -1257,52 +1297,49 @@ namespace MatterHackers.Agg.UI
 			return characterStartIndexInclusive + maxLength;
 		}
 
-		// the '\n' is always considered to be the end of the line.
-		// if startIndexInclusive == endIndexInclusive, the line is empty (other than the return)
-		private void GetStartAndEndIndexForLineContainingChar(int charToFindLineContaining, out int startIndexOfLineInclusive, out int endIndexOfLineInclusive)
-		{
-			startIndexOfLineInclusive = 0;
-			endIndexOfLineInclusive = internalTextWidget.Text.Length;
-			if (endIndexOfLineInclusive == 0)
-			{
-				return;
-			}
+        // the '\n' is always considered to be the end of the line.
+        // if startIndexInclusive == endIndexInclusive, the line is empty (other than the return)
+        private void GetStartAndEndIndexForLineContainingChar(int charToFindLineContaining, out int startIndexOfLineInclusive, out int endIndexOfLineInclusive)
+        {
+            startIndexOfLineInclusive = 0;
+            endIndexOfLineInclusive = actualText.Length;
+            if (endIndexOfLineInclusive == 0)
+            {
+                return;
+            }
 
-			charToFindLineContaining = Math.Max(Math.Min(charToFindLineContaining, internalTextWidget.Text.Length), 0);
-			// first lets find the end of the line.  Check if we are on a '\n'
-			if (charToFindLineContaining == internalTextWidget.Text.Length
-				|| internalTextWidget.Text[charToFindLineContaining] == '\n')
-			{
-				// we are on the end of the line
-				endIndexOfLineInclusive = charToFindLineContaining;
-			}
-			else
-			{
-				int endReturn = internalTextWidget.Text.IndexOf('\n', charToFindLineContaining + 1);
-				if (endReturn != -1)
-				{
-					endIndexOfLineInclusive = endReturn;
-				}
-			}
+            charToFindLineContaining = Math.Max(Math.Min(charToFindLineContaining, actualText.Length), 0);
 
-			// check if the line is empty (the character to our left is the '\n' on the previous line
-			bool isIndex0AndNL = endIndexOfLineInclusive == 0 && internalTextWidget.Text[endIndexOfLineInclusive] == '\n';
-			if (isIndex0AndNL || internalTextWidget.Text[endIndexOfLineInclusive - 1] == '\n')
-			{
-				// the line is empty the start = the end.
-				startIndexOfLineInclusive = endIndexOfLineInclusive;
-			}
-			else
-			{
-				int returnAtStartOfCurrentLine = internalTextWidget.Text.LastIndexOf('\n', endIndexOfLineInclusive - 1);
-				if (returnAtStartOfCurrentLine != -1)
-				{
-					startIndexOfLineInclusive = returnAtStartOfCurrentLine + 1;
-				}
-			}
-		}
+            if (charToFindLineContaining == actualText.Length
+                || actualText[charToFindLineContaining] == '\n')
+            {
+                endIndexOfLineInclusive = charToFindLineContaining;
+            }
+            else
+            {
+                int endReturn = actualText.IndexOf('\n', charToFindLineContaining + 1);
+                if (endReturn != -1)
+                {
+                    endIndexOfLineInclusive = endReturn;
+                }
+            }
 
-		private void GotoLineAbove()
+            bool isIndex0AndNL = endIndexOfLineInclusive == 0 && actualText[endIndexOfLineInclusive] == '\n';
+            if (isIndex0AndNL || actualText[endIndexOfLineInclusive - 1] == '\n')
+            {
+                startIndexOfLineInclusive = endIndexOfLineInclusive;
+            }
+            else
+            {
+                int returnAtStartOfCurrentLine = actualText.LastIndexOf('\n', endIndexOfLineInclusive - 1);
+                if (returnAtStartOfCurrentLine != -1)
+                {
+                    startIndexOfLineInclusive = returnAtStartOfCurrentLine + 1;
+                }
+            }
+        }
+
+        private void GotoLineAbove()
 		{
 			GetStartAndEndIndexForLineContainingChar(CharIndexToInsertBefore, out int startIndexInclusive, out int endIndexInclusive);
 
@@ -1423,34 +1460,34 @@ namespace MatterHackers.Agg.UI
 			return prevToken + 1;
 		}
 
-		public void SelectAll()
-		{
-			CharIndexToInsertBefore = internalTextWidget.Text.Length;
-			SelectionIndexToStartBefore = 0;
-			Selecting = true;
-			FixBarPosition(DesiredXPositionOnLine.Set);
-			if (AllSelected != null)
-			{
-				AllSelected(this, null);
-			}
-		}
+        public void SelectAll()
+        {
+            CharIndexToInsertBefore = actualText.Length;
+            SelectionIndexToStartBefore = 0;
+            Selecting = true;
+            FixBarPosition(DesiredXPositionOnLine.Set);
+            if (AllSelected != null)
+            {
+                AllSelected(this, null);
+            }
+        }
 
-		internal void GotoEndOfCurrentLine()
-		{
-			int indexOfReturn = internalTextWidget.Text.IndexOf('\n', CharIndexToInsertBefore);
-			if (indexOfReturn == -1)
-			{
-				CharIndexToInsertBefore = internalTextWidget.Text.Length;
-			}
-			else
-			{
-				CharIndexToInsertBefore = indexOfReturn;
-			}
+        internal void GotoEndOfCurrentLine()
+        {
+            int indexOfReturn = actualText.IndexOf('\n', CharIndexToInsertBefore);
+            if (indexOfReturn == -1)
+            {
+                CharIndexToInsertBefore = actualText.Length;
+            }
+            else
+            {
+                CharIndexToInsertBefore = indexOfReturn;
+            }
 
-			FixBarPosition(DesiredXPositionOnLine.Set);
-		}
+            FixBarPosition(DesiredXPositionOnLine.Set);
+        }
 
-		public static int GotoStartOfCurrentLine(string text, int cursor)
+        public static int GotoStartOfCurrentLine(string text, int cursor)
 		{
 			if (cursor > 0)
 			{

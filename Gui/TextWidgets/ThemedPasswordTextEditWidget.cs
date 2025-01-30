@@ -34,65 +34,33 @@ namespace MatterHackers.Agg.UI
 {
 	public class ThemedPasswordTextEditWidget : ThemedTextEditWidget
 	{
-		private TextEditWidget passwordCoverText;
-
-		private class TextEditOverlay : TextEditWidget
-		{
-			public TextEditOverlay(string text, int pointSize, double pixelWidth, double pixelHeight, bool multiLine)
-				: base(text, 0, 0, pointSize, pixelWidth, pixelHeight, multiLine)
-			{
-			}
-
-			public override Color BackgroundColor
-			{
-				get => this.Parent.BackgroundColor;
-				set
-				{
-					if (this.Parent != null)
-					{
-						this.Parent.BackgroundColor = value;
-					}
-				}
-			}
-		}
-
 		public ThemedPasswordTextEditWidget(string text, ThemeConfig theme, double pixelWidth = 0, double pixelHeight = 0, bool multiLine = false, int tabIndex = 0, string messageWhenEmptyAndNotSelected = "")
 			: base(text, theme, pixelWidth, pixelHeight, multiLine, tabIndex, messageWhenEmptyAndNotSelected)
 		{
-			// remove this so that we can have other content first (the hidden letters)
-			this.RemoveChild(NoContentFieldDescription);
-
-			passwordCoverText = new TextEditOverlay(text, theme.DefaultFontSize, pixelWidth, pixelHeight, multiLine)
-			{
-				Selectable = false,
-				HAnchor = HAnchor.Stretch,
-				VAnchor = VAnchor.Bottom,
-				TextColor = theme.EditFieldColors.Inactive.TextColor
-			};
-			passwordCoverText.MinimumSize = new Vector2(Math.Max(passwordCoverText.MinimumSize.X, pixelWidth), Math.Max(passwordCoverText.MinimumSize.Y, pixelHeight));
-
 			var internalWidget = this.ActualTextEditWidget.InternalTextEditWidget;
-			internalWidget.FocusChanged += (s, e) =>
-			{
-				passwordCoverText.TextColor = (internalWidget.Focused) ? theme.EditFieldColors.Focused.TextColor : theme.EditFieldColors.Inactive.TextColor;
-			};
-
-			this.AddChild(passwordCoverText);
-
-			this.ActualTextEditWidget.TextChanged += (sender, e) =>
-			{
-				passwordCoverText.Text = new string('●', this.ActualTextEditWidget.Text.Length);
-			};
-
-			// put in back in after the hidden text
-			NoContentFieldDescription.ClearRemovedFlag();
-			this.AddChild(NoContentFieldDescription);
-		}
+			internalWidget.MaskChar = '●';
+        }
 
 		public bool Hidden
 		{
-			get => !passwordCoverText.Visible;
-			set => passwordCoverText.Visible = !value;
+			get
+			{
+                var internalWidget = this.ActualTextEditWidget.InternalTextEditWidget;
+                return internalWidget.MaskChar == '●';
+			}
+
+			set
+			{
+				var internalWidget = this.ActualTextEditWidget.InternalTextEditWidget;
+				if (value)
+				{
+					internalWidget.MaskChar = '●';
+				}
+				else
+				{
+					internalWidget.MaskChar = null;
+				}
+			}
 		}
 	}
 }
