@@ -235,8 +235,7 @@ namespace MatterHackers.PolygonMesh.Csg
             return false;
         }
 
-        public Mesh Calculate(Action<double, string> progressReporter,
-            CancellationToken cancellationToken)
+        public Mesh Calculate(Action<double, string> progressReporter, CancellationToken cancellationToken)
         {
             var totalTimeTimer = new ReportTimer("CsgBySlicing_Calculate", 1);
             double amountPerOperation = 1.0 / totalOperations;
@@ -406,7 +405,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
             using (new ReportTimer("CsgBySlicing_Calculate_ProcessCoplanarFaces", 1))
             {
-                ProcessCoplanarFaces(operation, resultsMesh, coPlanarFaces, (progress, description) => progressReporter?.Invoke(.8 + progress * .2, description));
+                ProcessCoplanarFaces(operation, resultsMesh, coPlanarFaces, (progress, description) => progressReporter?.Invoke(.8 + progress * .2, description), cancellationToken);
             }
 
             totalTimeTimer?.Dispose();
@@ -502,13 +501,19 @@ namespace MatterHackers.PolygonMesh.Csg
             return totalSlice;
         }
 
-        private void ProcessCoplanarFaces(CsgModes operation, Mesh resultsMesh, CoPlanarFaces coPlanarFaces, Action<double, string> progressReporter)
+        private void ProcessCoplanarFaces(CsgModes operation, Mesh resultsMesh, CoPlanarFaces coPlanarFaces, Action<double, string> progressReporter, CancellationToken cancellationToken)
         {
             var faceIndicesToRemove = new HashSet<int>();
             var numProcessed = 0;
             var totalOpperations = coPlanarFaces.Planes.Count();
             foreach (var plane in coPlanarFaces.Planes)
             {
+                // check the cancelation token
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 var meshIndices = coPlanarFaces.MeshFaceIndicesForPlane(plane).ToList();
 
                 if (operation == CsgModes.Union)
