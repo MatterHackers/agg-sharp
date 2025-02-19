@@ -89,17 +89,17 @@ namespace MatterHackers.MarchingSquares
 
         private bool IsEdgeCell(int x, int y)
         {
-            // Get the four corners of the cell
-            double point0 = thresholdPerPixel[(x + 0) + (y + 1) * imageToProcess.Width];
-            double point1 = thresholdPerPixel[(x + 1) + (y + 1) * imageToProcess.Width];
-            double point2 = thresholdPerPixel[(x + 1) + (y + 0) * imageToProcess.Width];
-            double point3 = thresholdPerPixel[(x + 0) + (y + 0) * imageToProcess.Width];
+            // Get the four corners of the cell using same order as MarchingSquares
+            double point0 = thresholdPerPixel[(x + 0) + (y + 0) * imageToProcess.Width]; // bottom-left
+            double point1 = thresholdPerPixel[(x + 1) + (y + 0) * imageToProcess.Width]; // bottom-right
+            double point2 = thresholdPerPixel[(x + 1) + (y + 1) * imageToProcess.Width]; // top-right
+            double point3 = thresholdPerPixel[(x + 0) + (y + 1) * imageToProcess.Width]; // top-left
 
-            // Match threshold behavior with MarchingSquares
-            int flags = (point0 > 0 ? 1 : 0);
-            flags = (flags << 1) | (point1 > 0 ? 1 : 0);
-            flags = (flags << 1) | (point2 > 0 ? 1 : 0);
-            flags = (flags << 1) | (point3 > 0 ? 1 : 0);
+            // Use consistent threshold (> 0.5) to match MarchingSquares
+            int flags = (point0 > 0.5 ? 1 : 0);
+            flags = (flags << 1) | (point1 > 0.5 ? 1 : 0);
+            flags = (flags << 1) | (point2 > 0.5 ? 1 : 0);
+            flags = (flags << 1) | (point3 > 0.5 ? 1 : 0);
 
             return flags != 0 && flags != 15;
         }
@@ -185,38 +185,36 @@ namespace MatterHackers.MarchingSquares
         private void AddSegmentsForCase(int x, int y, int caseIndex)
         {
             Color color = Color.Green;
+            double point0 = thresholdPerPixel[(x + 0) + (y + 0) * imageToProcess.Width];
+            double point1 = thresholdPerPixel[(x + 1) + (y + 0) * imageToProcess.Width];
+            double point2 = thresholdPerPixel[(x + 1) + (y + 1) * imageToProcess.Width];
+            double point3 = thresholdPerPixel[(x + 0) + (y + 1) * imageToProcess.Width];
 
-            // Handle ambiguous cases
+            // Handle ambiguous cases using 0.5 threshold like MarchingSquares
             if (caseIndex == 5 || caseIndex == 10)
             {
-                double average = (
-                    thresholdPerPixel[(x + 0) + (y + 1) * imageToProcess.Width] +
-                    thresholdPerPixel[(x + 1) + (y + 1) * imageToProcess.Width] +
-                    thresholdPerPixel[(x + 1) + (y + 0) * imageToProcess.Width] +
-                    thresholdPerPixel[(x + 0) + (y + 0) * imageToProcess.Width]
-                ) / 4.0;
-
-                if ((caseIndex == 5 && average > 0) ||
-                    (caseIndex == 10 && average <= 0))
+                double average = (point0 + point1 + point2 + point3) / 4.0;
+                if ((caseIndex == 5 && average > 0.5) ||
+                    (caseIndex == 10 && average <= 0.5))
                 {
                     caseIndex = (caseIndex == 5) ? 10 : 5;
                 }
             }
 
-            // Complete implementation of all marching squares cases
+            // Standard marching squares edge mapping: 0=bottom, 1=right, 2=top, 3=left
             switch (caseIndex)
             {
-                case 1:
+                case 1: // 0001
                     LineSegments.Add(new LineSegment(
-                        CalculateIntersection(x, y, 3),
-                        CalculateIntersection(x, y, 0),
+                        CalculateIntersection(x, y, 0), // bottom
+                        CalculateIntersection(x, y, 3), // left
                         color));
                     break;
 
-                case 2:
+                case 2: // 0010
                     LineSegments.Add(new LineSegment(
-                        CalculateIntersection(x, y, 0),
-                        CalculateIntersection(x, y, 1),
+                        CalculateIntersection(x, y, 0), // bottom
+                        CalculateIntersection(x, y, 1), // right
                         color));
                     break;
 
@@ -234,14 +232,14 @@ namespace MatterHackers.MarchingSquares
                         color));
                     break;
 
-                case 5:
+                case 5: // Special case - diagonal choice based on average
                     LineSegments.Add(new LineSegment(
-                        CalculateIntersection(x, y, 3),
-                        CalculateIntersection(x, y, 0),
+                        CalculateIntersection(x, y, 0), // bottom
+                        CalculateIntersection(x, y, 1), // right
                         color));
                     LineSegments.Add(new LineSegment(
-                        CalculateIntersection(x, y, 1),
-                        CalculateIntersection(x, y, 2),
+                        CalculateIntersection(x, y, 2), // top
+                        CalculateIntersection(x, y, 3), // left
                         color));
                     break;
 
@@ -273,14 +271,14 @@ namespace MatterHackers.MarchingSquares
                         color));
                     break;
 
-                case 10:
+                case 10: // Other diagonal case
                     LineSegments.Add(new LineSegment(
-                        CalculateIntersection(x, y, 0),
-                        CalculateIntersection(x, y, 1),
+                        CalculateIntersection(x, y, 1), // right
+                        CalculateIntersection(x, y, 2), // top
                         color));
                     LineSegments.Add(new LineSegment(
-                        CalculateIntersection(x, y, 2),
-                        CalculateIntersection(x, y, 3),
+                        CalculateIntersection(x, y, 3), // left
+                        CalculateIntersection(x, y, 0), // bottom
                         color));
                     break;
 
