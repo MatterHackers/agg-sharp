@@ -32,6 +32,7 @@ using MatterHackers.Agg.Platform;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using static System.Net.Mime.MediaTypeNames;
@@ -412,6 +413,11 @@ namespace MatterHackers.Agg.UI
                 {
                     // add the the new line
                     allLineInfos.Add(new LineInfo(line, ConsoleColorToColor()));
+                }
+
+                if (!line.Contains("XXX"))
+                {
+                    Debug.WriteLine(line);
                 }
 
                 // add a blank line
