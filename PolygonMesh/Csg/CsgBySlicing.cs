@@ -43,6 +43,11 @@ namespace MatterHackers.PolygonMesh.Csg
 
     public class CsgBySlicing
     {
+        // Define tolerance constants - make them public
+        public const double DefaultPlaneDistanceTolerance = 0.01; // Example value, adjust as needed
+        public const double DefaultPlaneNormalTolerance = 0.0001; // Example value, adjust as needed
+        public const double CoplanarPlaneDistanceTolerance = 0.02; // Existing value used in some places
+
         private int totalOperations;
         private List<List<bool>> isFaceIntersecting;
         private CsgModes operation;
@@ -313,79 +318,24 @@ namespace MatterHackers.PolygonMesh.Csg
 
                     var faceCountPreAdd = resultsMesh.Faces.Count;
 
-                    if (polygonShape.Count == 1
-                        && polygonShape[0].Count == 3
-                        && facePolygon.Contains(polygonShape[0][0])
-                        && facePolygon.Contains(polygonShape[0][1])
-                        && facePolygon.Contains(polygonShape[0][2]))
+                    if (polygonShape.Count > 0)
                     {
-                        resultsMesh.AddFaceCopy(currentMesh, faceIndex);
-                    }
-                    else
-                    {
-                        var vertCountPreAdd = resultsMesh.Vertices.Count;
-                        polygonShape.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, planeTransformsToXy[cutPlane].Inverted);
-                        var postAddCount = resultsMesh.Vertices.Count;
+                        polygonShape.AsVertices(1).TriangulateFaces(null, resultsMesh, 0, planeTransformToXy.Inverted);
 
-                        var polygonPlane = currentMesh.GetPlane(faceIndex);
-
-                        for (int addedVertIndex = vertCountPreAdd; addedVertIndex < postAddCount; addedVertIndex++)
+                        if (faceCountPreAdd < resultsMesh.Faces.Count)
                         {
-                            for (int meshIndex = 0; meshIndex < transformedMeshes.Count; meshIndex++)
+                            for (int i = faceCountPreAdd; i < resultsMesh.Faces.Count; i++)
                             {
-                                var foundMatch = false;
-                                var bvhAccelerator = bvhAccelerators[meshIndex];
-                                var mesh = transformedMeshes[meshIndex];
-                                var touchingBvhItems = bvhAccelerator.GetTouching(new Vector3(resultsMesh.Vertices[addedVertIndex]), .0001);
-                                foreach (var touchingBvhItem in touchingBvhItems)
+                                coPlanarFaces.StoreFaceAdd(cutPlane, currentMeshIndex, faceIndex, i);
+                                if (resultsMesh.Faces[i].normal.Dot(expectedFaceNormal) < 0)
                                 {
-                                    if (touchingBvhItem is MinimalTriangle triangleShape)
-                                    {
-                                        var sourceFaceIndex = triangleShape.FaceIndex;
-                                        var sourceFace = mesh.Faces[sourceFaceIndex];
-                                        var sourceVertexIndices = new int[] { sourceFace.v0, sourceFace.v1, sourceFace.v2 };
-                                        foreach (var sourceVertexIndex in sourceVertexIndices)
-                                        {
-                                            var sourcePosition = mesh.Vertices[sourceVertexIndex];
-                                            var deltaSquared = (resultsMesh.Vertices[addedVertIndex] - sourcePosition).LengthSquared;
-                                            if (deltaSquared == 0)
-                                            {
-                                                // do nothing it already matches
-                                                foundMatch = true;
-                                                break;
-                                            }
-                                            else if (deltaSquared < .00001)
-                                            {
-                                                resultsMesh.Vertices[addedVertIndex] = sourcePosition;
-                                                foundMatch = true;
-                                                break;
-                                            }
-                                            else
-                                            {
-                                                var distanceToPlane = polygonPlane.GetDistanceFromPlane(resultsMesh.Vertices[addedVertIndex]);
-                                                resultsMesh.Vertices[addedVertIndex] -= new Vector3Float(polygonPlane.Normal * distanceToPlane);
-                                            }
-                                        }
-                                    }
-
-                                    if (foundMatch)
-                                    {
-                                        break;
-                                    }
+                                    resultsMesh.FlipFace(i);
                                 }
                             }
                         }
-                    }
-
-                    if (faceCountPreAdd < resultsMesh.Faces.Count)
-                    {
-                        for (int i = faceCountPreAdd; i < resultsMesh.Faces.Count; i++)
+                        else
                         {
-                            coPlanarFaces.StoreFaceAdd(cutPlane, currentMeshIndex, faceIndex, i);
-                            if (resultsMesh.Faces[i].normal.Dot(expectedFaceNormal) < 0)
-                            {
-                                resultsMesh.FlipFace(i);
-                            }
+                            coPlanarFaces.StoreFaceAdd(cutPlane, currentMeshIndex, faceIndex, -1);
                         }
                     }
                     else
@@ -418,7 +368,8 @@ namespace MatterHackers.PolygonMesh.Csg
             //return CalculateTotalSlice(currentMeshIndex, cutPlane, planeTransformToXy, includeBehindThePlane);
             Polygons totalSlice;
 
-            var nullableSimilarPlane = similarPlaneFinder.FindPlane(cutPlane, .0001);
+            // Use consistent tolerance for finding similar planes
+            var nullableSimilarPlane = similarPlaneFinder.FindPlane(cutPlane, DefaultPlaneDistanceTolerance, DefaultPlaneNormalTolerance);
             if (nullableSimilarPlane == null)
             {
                 totalSlice = CalculateTotalSlice(currentMeshIndex, cutPlane, planeTransformToXy, includeBehindThePlane);

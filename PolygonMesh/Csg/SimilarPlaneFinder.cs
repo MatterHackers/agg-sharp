@@ -193,8 +193,11 @@ namespace MatterHackers.PolygonMesh.Csg
         private double normalErrorValue;
 
         public Plane? FindPlane(Plane searchPlane,
-			double distanceErrorValue = .01)
+			double distanceErrorValue = .01,
+			double normalErrorValueOverride = -1)
 		{
+			var currentNormalError = (normalErrorValueOverride == -1) ? this.normalErrorValue : normalErrorValueOverride;
+
 			var allPlanes = FindPlanes(searchPlane.Normal);
 
 			// first check if we have already found a plane that can match
@@ -202,7 +205,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				if (firstFoundPlanes.Contains(plane))
 				{
-					if (plane.Equals(searchPlane, distanceErrorValue, normalErrorValue))
+					if (plane.Equals(searchPlane, distanceErrorValue, currentNormalError))
 					{
 						return plane;
 					}
@@ -214,17 +217,17 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				foreach (var plane in firstFoundPlanes)
 				{
-					if (plane.Equals(searchPlane, distanceErrorValue, normalErrorValue))
+					if (plane.Equals(searchPlane, distanceErrorValue, currentNormalError))
 					{
 						return plane;
 					}
 				}
-            }
+			}
 
 			// 
 			foreach (var plane in allPlanes)
             {
-				if (plane.Equals(searchPlane, distanceErrorValue, normalErrorValue))
+				if (plane.Equals(searchPlane, distanceErrorValue, currentNormalError))
 				{
 					firstFoundPlanes.Add(plane);
 					return plane;

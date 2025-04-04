@@ -261,11 +261,12 @@ namespace MatterHackers.PolygonMesh.Csg
             // get all meshes that have faces on this plane
             var meshesWithFaces = MeshFaceIndicesForPlane(positivePlane).ToList();
 
+            // TODO: Consider passing tolerance from CsgBySlicing if needed for consistency
             var negativePlane = similarPlaneFinder.FindPlane(new Plane()
             {
                 Normal = -positivePlane.Normal,
                 DistanceFromOrigin = -positivePlane.DistanceFromOrigin,
-            }, .02);
+            }, CsgBySlicing.CoplanarPlaneDistanceTolerance); // Use the constant from CsgBySlicing
 
             if (negativePlane != null)
             {
@@ -364,7 +365,9 @@ namespace MatterHackers.PolygonMesh.Csg
 			int destFaceIndex)
 		{
 			// look through all the planes that are close to this one
-			var plane = similarPlaneFinder.FindPlane(facePlane, .02);
+			// Use consistent tolerance for finding similar planes
+			// TODO: Consider passing tolerance from CsgBySlicing if needed
+			var plane = similarPlaneFinder.FindPlane(facePlane, CsgBySlicing.CoplanarPlaneDistanceTolerance); // Use the constant from CsgBySlicing
 			if (plane != null)
 			{
 				facePlane = plane.Value;

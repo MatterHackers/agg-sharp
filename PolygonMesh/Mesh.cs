@@ -1298,53 +1298,6 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		/// <summary>
-		/// For every T Junction add a vertex to the mesh edge that needs one.
-		/// </summary>
-		/// <param name="mesh">The mesh to repair.</param>
-		public static void RepairTJunctions(this Mesh mesh)
-		{
-			var nonManifoldEdges = mesh.GetNonManifoldEdges();
-			var vertexBvhTree = mesh.GetVertexBvhTree();
-			var searchResults = new List<int>();
-
-			foreach (MeshEdge edge in nonManifoldEdges)
-			{
-				var start = mesh.Vertices[edge.Vertex0Index];
-				var end = mesh.Vertices[edge.Vertex1Index];
-				Vector3Float normal = (end - start).GetNormal();
-
-				// Get all the vertices that lay on this edge
-				var edgeAabb = new AxisAlignedBoundingBox(start, end);
-				searchResults.Clear();
-
-				vertexBvhTree.SearchBounds(edgeAabb, searchResults);
-				// map them to this new vertex
-				foreach (var result in searchResults)
-				{
-					// Test if the vertex falls on the edge
-					Vector3Float edgeDirection = (end - start).GetNormal();
-					var vertex = mesh.Vertices[result];
-					Vector3Float vertexDirection = (vertex - start).GetNormal();
-					float dotProduct = edgeDirection.Dot(vertexDirection);
-
-					if (Math.Abs(dotProduct - 1) < 1e-6f)
-					{
-						// If the vertex falls on the edge, split the edge at the vertex
-						//IVertex createdVertex;
-						//MeshEdge createdMeshEdge;
-						//mesh.SplitMeshEdge(edge, out createdVertex, out createdMeshEdge);
-						//createdVertex.Position = vertex;
-						//createdVertex.Normal = normal;
-						//mesh.MergeVertices(vertex, createdVertex);
-					}
-				}
-			}
-
-			// Merge the vertices for the edges that are now manifold
-			mesh.CleanAndMerge();
-		}
-
 		public static bool IsManifold(this Mesh mesh)
 		{
 			var meshEdgeList = mesh.GetMeshEdges();
@@ -1409,26 +1362,601 @@ namespace MatterHackers.PolygonMesh
 		public static void RemoveDegenerateFaces(this Mesh mesh, double minFaceArea)
 		{
 			var newFaces = new FaceList();
+			float minAreaF = (float)minFaceArea; // Use float for comparison with GetArea result
 
 			foreach (var face in mesh.Faces)
 			{
-				// Only keep faces where all vertices are different
+				// Only keep faces where all vertices are distinct first
 				if (face.v0 != face.v1 && face.v1 != face.v2 && face.v2 != face.v0)
 				{
-                    var area = face.GetArea(mesh);
+					var p0 = mesh.Vertices[face.v0];
+					var p1 = mesh.Vertices[face.v1];
+					var p2 = mesh.Vertices[face.v2];
 
-                    if (area < minFaceArea)
-                    {
-                        continue;
-                    }
-                    
-					// Recalculate normal since we're creating a new face
-                    newFaces.Add(face.v0, face.v1, face.v2, mesh.Vertices);
+					// Use the Vector3Float GetArea extension method
+					var area = p0.GetArea(p1, p2);
+
+					if (area >= minAreaF) // Check against float min area
+					{
+						// Recalculate normal when adding to ensure correctness if CleanAndMerge wasn't called recently
+						newFaces.Add(face.v0, face.v1, face.v2, mesh.Vertices);
+					}
 				}
 			}
 
-			mesh.Faces = newFaces;
-			mesh.MarkAsChanged();
+			// Only mark as changed if faces were actually removed
+			if (mesh.Faces.Count != newFaces.Count)
+			{
+				mesh.Faces = newFaces;
+				mesh.MarkAsChanged();
+			}
+		}
+
+		/// <summary>
+		/// For every T Junction add a vertex to the mesh edge that needs one.
+		/// </summary>
+		/// <param name="mesh">The mesh to repair.</param>
+		/// <param name="reporter">Progress reporter.</param>
+		/// <param name="aggressiveNonManifoldFix">When true, will move nearby vertices to non-manifold edges and split those edges.</param>
+		/// <param name="aggressiveMaxDistance">Maximum distance to consider moving a vertex to an edge (only used when aggressiveNonManifoldFix is true).</param>
+		public static void RepairTJunctions(this Mesh mesh, Action<double, string> reporter, 
+			bool aggressiveNonManifoldFix = false, double aggressiveMaxDistance = 0.1)
+		{
+			// Handle null reporter
+			reporter = reporter ?? ((ratio, message) => { });
+			
+			// Use a more forgiving tolerance - real-world meshes often have more imprecision
+			const float Epsilon = 1e-3f;
+			const float EpsilonSq = Epsilon * Epsilon;
+			
+			// For aggressive mode, use the provided max distance
+			float aggressiveDistanceThreshold = (float)aggressiveMaxDistance;
+			float aggressiveDistanceThresholdSq = aggressiveDistanceThreshold * aggressiveDistanceThreshold;
+
+			if (mesh.Vertices.Count == 0 || mesh.Faces.Count == 0)
+			{
+				reporter(1.0, "Empty mesh - no repair needed.");
+				return;
+			}
+
+			reporter(0.0, "Initial Cleanup");
+			// Initial cleanup to remove obviously degenerate features
+			mesh.RemoveDegenerateFaces(EpsilonSq);
+			mesh.RemoveUnusedVertices();
+			// Merge very close vertices to simplify the problem
+			mesh.MergeVertices(Epsilon, EpsilonSq, (r, m) => reporter(0.0 + r * 0.05, "Initial Merge"));
+
+			// Perform multiple passes to catch cascading T-junctions
+			bool repairMade = true;
+			int passCount = 0;
+			int maxPasses = aggressiveNonManifoldFix ? 4 : 3; // One extra pass for aggressive mode
+
+			while (repairMade && passCount < maxPasses)
+			{
+				passCount++;
+				reporter(0.05 + (passCount - 1) * 0.3 / maxPasses, $"T-Junction Pass {passCount}");
+				
+				// Use aggressive mode only on first pass
+				bool useAggressiveMode = aggressiveNonManifoldFix && passCount == 1;
+				
+				repairMade = RepairTJunctionsPass(mesh, Epsilon, EpsilonSq, 
+					useAggressiveMode, aggressiveDistanceThreshold, aggressiveDistanceThresholdSq,
+					(r, m) => reporter(0.05 + (passCount - 1) * 0.3 / maxPasses + r * 0.25, $"{m} (Pass {passCount})"));
+				
+				// If we made repairs, do an intermediate cleanup to prepare for next pass
+				if (repairMade)
+				{
+					mesh.RemoveDegenerateFaces(EpsilonSq);
+					mesh.RemoveUnusedVertices();
+					mesh.CalculateNormals();
+				}
+			}
+
+			reporter(0.9, "Final Cleanup");
+			// Final cleanup to ensure a good mesh
+			mesh.MergeVertices(Epsilon, EpsilonSq, (r, m) => reporter(0.9 + r * 0.05, "Final Merge"));
+			mesh.RemoveDegenerateFaces(EpsilonSq);
+			mesh.RemoveUnusedVertices();
+			mesh.CalculateNormals();
+
+			reporter(1.0, $"T-Junction repair complete ({passCount} passes).");
+		}
+
+		// Helper method to perform a single pass of T-junction repair
+		private static bool RepairTJunctionsPass(Mesh mesh, float epsilon, float epsilonSq, 
+			bool aggressiveMode, float aggressiveThreshold, float aggressiveThresholdSq,
+			Action<double, string> reporter)
+		{
+			reporter(0.0, "Get Mesh Edges");
+			var edges = mesh.GetMeshEdges();
+			
+			// Prioritize non-manifold edges first
+			var nonManifoldEdges = edges.Where(e => e.Faces.Count() != 2).ToList();
+			var manifoldEdges = edges.Where(e => e.Faces.Count() == 2).ToList();
+			
+			reporter(0.1, "Get Vertex Tree");
+			var vertexBvhTree = mesh.GetVertexBvhTree();
+			var searchResults = new List<int>();
+			var edgesToSplit = new Dictionary<MeshEdge, List<VertexSplitInfo>>();
+			var verticesToMove = new Dictionary<int, Vector3Float>();
+			
+			// For aggressive mode we'll need to track all vertices
+			var vertexFaceLists = aggressiveMode ? mesh.GetVertexFaceLists() : null;
+
+			reporter(0.15, "Finding T-Junctions");
+			
+			// Process edges
+			var processQueue = new List<MeshEdge>();
+			
+			// If in aggressive mode, we only want to process non-manifold edges
+			if (aggressiveMode)
+			{
+				processQueue.AddRange(nonManifoldEdges);
+			}
+			else
+			{
+				// Otherwise process all edges with priority to non-manifold
+				processQueue.AddRange(nonManifoldEdges);
+				processQueue.AddRange(manifoldEdges);
+			}
+			
+			int totalEdges = processQueue.Count;
+			int processedEdges = 0;
+
+			foreach (MeshEdge edge in processQueue)
+			{
+				processedEdges++;
+				
+				// Skip edges with fewer than 1 face
+				if (edge.Faces.Count() < 1)
+				{
+					continue;
+				}
+				
+				var start = mesh.Vertices[edge.Vertex0Index];
+				var end = mesh.Vertices[edge.Vertex1Index];
+				var edgeVector = end - start;
+				float edgeLengthSquared = edgeVector.LengthSquared;
+
+				// Skip degenerate edges
+				if (edgeLengthSquared < epsilonSq)
+				{
+					continue;
+				}
+
+				float edgeLength = (float)Math.Sqrt(edgeLengthSquared);
+				Vector3Float edgeDirection = edgeVector / edgeLength; // Normalized
+
+				// Search radius depends on mode
+				float searchRadius = aggressiveMode ? aggressiveThreshold : epsilon * 2;
+				
+				// Create a bounding box for the edge with expanded search radius
+				var edgeAabb = new AxisAlignedBoundingBox(start, end);
+				edgeAabb.Expand(searchRadius);
+				
+				searchResults.Clear();
+				vertexBvhTree.SearchBounds(edgeAabb, searchResults);
+
+				// Track split points for this edge
+				var edgeSplitInfos = new List<VertexSplitInfo>();
+
+				foreach (var vertexIndex in searchResults)
+				{
+					// Skip the edge's own endpoints
+					if (vertexIndex == edge.Vertex0Index || vertexIndex == edge.Vertex1Index)
+					{
+						continue;
+					}
+
+					var vertex = mesh.Vertices[vertexIndex];
+					var vertexVector = vertex - start; // Vector from edge start to vertex
+
+					// Project vertex onto edge line
+					float projectionScalar = vertexVector.Dot(edgeDirection);
+					
+					// Check if projection is within edge bounds (with tolerance)
+					bool projectionIsOnEdge = projectionScalar >= -epsilon && 
+										  projectionScalar <= edgeLength + epsilon;
+										  
+					if (!projectionIsOnEdge && !aggressiveMode)
+					{
+						continue; // Projection is outside edge and we're not in aggressive mode
+					}
+
+					// Clamp projection to the edge
+					float clampedProjection = Math.Max(0, Math.Min(edgeLength, projectionScalar));
+					
+					// Calculate closest point on edge
+					Vector3Float pointOnLine = start + edgeDirection * clampedProjection;
+					
+					// Distance from vertex to closest point
+					float distSq = (vertex - pointOnLine).LengthSquared;
+					
+					// Normal distance threshold based on mode
+					float thresholdSq = aggressiveMode ? aggressiveThresholdSq : epsilonSq;
+					
+					if (distSq <= thresholdSq)
+					{
+						// Check if this vertex is already part of a face that uses this edge
+						bool isVertexConnectedToEdge = false;
+						foreach (var faceIndex in edge.Faces)
+						{
+							var face = mesh.Faces[faceIndex];
+							if (face.v0 == vertexIndex || face.v1 == vertexIndex || face.v2 == vertexIndex)
+							{
+								isVertexConnectedToEdge = true;
+								break;
+							}
+						}
+
+						// Only process if vertex isn't already connected to this edge
+						if (!isVertexConnectedToEdge)
+						{
+							// Check if near an endpoint
+							bool nearStart = projectionScalar <= epsilon;
+							bool nearEnd = projectionScalar >= edgeLength - epsilon;
+							
+							if (nearStart || nearEnd)
+							{
+								// Skip if near endpoints - these will be handled by MergeVertices
+								continue;
+							}
+							
+							// For aggressive mode, we need to decide:
+							// 1. If we can move the vertex to the edge safely
+							// 2. Or if we should split the edge at the projection point
+							if (aggressiveMode && distSq > epsilonSq) // Only for vertices not already on the edge
+							{
+								// Check if this vertex is safe to move (not used by many faces)
+								bool canMoveVertex = true;
+								
+								if (vertexFaceLists != null && vertexIndex < vertexFaceLists.Count)
+								{
+									var vertexFaces = vertexFaceLists[vertexIndex].Faces;
+									
+									// Don't move vertices that are part of many faces
+									// as it would distort the mesh too much
+									if (vertexFaces.Count > 4)
+									{
+										canMoveVertex = false;
+									}
+									
+									// Check if moving this vertex would create degenerate faces
+									foreach (var connectedFaceIndex in vertexFaces)
+									{
+										var connectedFace = mesh.Faces[connectedFaceIndex];
+										
+										// Get the other two vertices of the face
+										Vector3Float v1, v2;
+										if (connectedFace.v0 == vertexIndex)
+										{
+											v1 = mesh.Vertices[connectedFace.v1];
+											v2 = mesh.Vertices[connectedFace.v2];
+										}
+										else if (connectedFace.v1 == vertexIndex)
+										{
+											v1 = mesh.Vertices[connectedFace.v0];
+											v2 = mesh.Vertices[connectedFace.v2];
+										}
+										else
+										{
+											v1 = mesh.Vertices[connectedFace.v0];
+											v2 = mesh.Vertices[connectedFace.v1];
+										}
+										
+										// Check if moving to pointOnLine would create a degenerate face
+										// by calculating area with the new point
+										float areaWithNewPoint = pointOnLine.GetArea(v1, v2);
+										if (areaWithNewPoint < epsilonSq)
+										{
+											canMoveVertex = false;
+											break;
+										}
+									}
+								}
+								
+								if (canMoveVertex)
+								{
+									// Record vertex to be moved to its projection on the edge
+									verticesToMove[vertexIndex] = pointOnLine;
+									
+									// Add to split info for this edge with the new position
+									edgeSplitInfos.Add(new VertexSplitInfo(vertexIndex, clampedProjection, pointOnLine));
+								}
+								else
+								{
+									// If we can't move the vertex, add a new vertex at the projection point
+									edgeSplitInfos.Add(new VertexSplitInfo(-1, clampedProjection, pointOnLine));
+								}
+							}
+							else
+							{
+								// Standard mode or vertex already very close to edge
+								// Just add the existing vertex index
+								edgeSplitInfos.Add(new VertexSplitInfo(vertexIndex, clampedProjection, new Vector3Float()));
+							}
+						}
+					}
+				}
+				
+				// If we have split points for this edge, add them to the collection
+				if (edgeSplitInfos.Count > 0)
+				{
+					edgesToSplit[edge] = edgeSplitInfos;
+				}
+				
+				if (totalEdges > 0)
+				{
+					reporter(0.15 + (processedEdges / (double)totalEdges * 0.5), 
+						$"Finding {(aggressiveMode ? "Aggressive " : "")}T-Junctions");
+				}
+			}
+
+			if (!edgesToSplit.Any() && !verticesToMove.Any())
+			{
+				reporter(1.0, "No T-Junctions found to repair in this pass.");
+				return false;
+			}
+
+			// First move any vertices that need moving
+			if (verticesToMove.Count > 0)
+			{
+				reporter(0.65, $"Moving {verticesToMove.Count} vertices to edges");
+				
+				foreach (var kvp in verticesToMove)
+				{
+					mesh.Vertices[kvp.Key] = kvp.Value;
+				}
+				
+				// Need to mark as changed after modifying vertices
+				mesh.MarkAsChanged();
+			}
+
+			// Then process edge splitting
+			if (edgesToSplit.Count > 0)
+			{
+				reporter(0.7, "Splitting Edges");
+				int edgesSplit = 0;
+				int edgesToSplitCount = edgesToSplit.Count;
+
+				var facesToRemove = new HashSet<int>();
+				var newFacesToAdd = new FaceList();
+				var newVerticesToAdd = new List<Vector3Float>();
+				var vertexIndexMapping = new Dictionary<int, int>();  // Maps placeholder indices to real ones
+
+				// --- Splitting logic ---
+				foreach (var kvp in edgesToSplit)
+				{
+					MeshEdge edgeToSplit = kvp.Key;
+					List<VertexSplitInfo> splitInfos = kvp.Value;
+					
+					// Skip if no valid split points
+					if (splitInfos.Count == 0)
+					{
+						continue;
+					}
+
+					int vStartIndex = edgeToSplit.Vertex0Index;
+					int vEndIndex = edgeToSplit.Vertex1Index;
+					var edgeStartPos = mesh.Vertices[vStartIndex];
+					
+					// Sort split points by distance along edge
+					splitInfos.Sort((a, b) => a.projectionScalar.CompareTo(b.projectionScalar));
+
+					// Build sequence of vertices along the edge (start, split points, end)
+					var splitSequence = new List<int>();
+					splitSequence.Add(vStartIndex);
+					
+					// Add split points, creating new vertices if needed
+					foreach (var splitInfo in splitInfos)
+					{
+						int vertexIndex;
+						
+						if (splitInfo.vertexIndex >= 0)
+						{
+							// Use existing vertex
+							vertexIndex = splitInfo.vertexIndex;
+						}
+						else
+						{
+							// Create a new vertex at the projection point
+							vertexIndex = -newVerticesToAdd.Count - 1; // Temporary negative index
+							newVerticesToAdd.Add(splitInfo.projectionPoint);
+							vertexIndexMapping[vertexIndex] = mesh.Vertices.Count + newVerticesToAdd.Count - 1;
+						}
+						
+						// Add to split sequence if unique
+						if (!splitSequence.Contains(vertexIndex))
+						{
+							splitSequence.Add(vertexIndex);
+						}
+					}
+					
+					// Add end vertex
+					if (!splitSequence.Contains(vEndIndex))
+					{
+						splitSequence.Add(vEndIndex);
+					}
+					
+					// Need at least 3 points to create new faces
+					if (splitSequence.Count < 3)
+					{
+						continue;
+					}
+
+					// Process each face connected to this edge
+					foreach (var faceIndex in edgeToSplit.Faces)
+					{
+						if (facesToRemove.Contains(faceIndex))
+						{
+							continue; // Skip already processed faces
+						}
+						
+						var originalFace = mesh.Faces[faceIndex];
+						facesToRemove.Add(faceIndex);
+
+						// Find the vertex opposite to the edge
+						int vOppositeIndex = -1;
+						
+						if (originalFace.v0 != vStartIndex && originalFace.v0 != vEndIndex)
+						{
+							vOppositeIndex = originalFace.v0;
+						}
+						else if (originalFace.v1 != vStartIndex && originalFace.v1 != vEndIndex)
+						{
+							vOppositeIndex = originalFace.v1;
+						}
+						else if (originalFace.v2 != vStartIndex && originalFace.v2 != vEndIndex)
+						{
+							vOppositeIndex = originalFace.v2;
+						}
+						
+						// Skip if we can't identify the opposite vertex
+						if (vOppositeIndex == -1)
+						{
+							continue;
+						}
+						
+						// Determine winding order
+						bool edgeForward;
+						
+						if ((originalFace.v0 == vStartIndex && originalFace.v1 == vEndIndex) ||
+							(originalFace.v1 == vStartIndex && originalFace.v2 == vEndIndex) ||
+							(originalFace.v2 == vStartIndex && originalFace.v0 == vEndIndex))
+						{
+							edgeForward = true;
+						}
+						else if ((originalFace.v0 == vEndIndex && originalFace.v1 == vStartIndex) ||
+								(originalFace.v1 == vEndIndex && originalFace.v2 == vStartIndex) ||
+								(originalFace.v2 == vEndIndex && originalFace.v0 == vStartIndex))
+						{
+							edgeForward = false;
+						}
+						else
+						{
+							// Edge doesn't form an edge in this face (shouldn't happen)
+							continue;
+						}
+						
+						// Function to get real vertex index (mapping temporary negative indices)
+						int GetActualIndex(int idx)
+						{
+							if (idx < 0)
+							{
+								return vertexIndexMapping.ContainsKey(idx) ? vertexIndexMapping[idx] : idx;
+							}
+							return idx;
+						}
+						
+						// Create new faces by fanning from opposite vertex to each segment
+						for (int i = 0; i < splitSequence.Count - 1; i++)
+						{
+							int segStart = GetActualIndex(splitSequence[i]);
+							int segEnd = GetActualIndex(splitSequence[i + 1]);
+							
+							// Skip degenerate triangles
+							if (segStart == segEnd || segStart == vOppositeIndex || segEnd == vOppositeIndex)
+							{
+								continue;
+							}
+							
+							// Determine the vertex positions for area calculation
+							Vector3Float p0, p1, p2;
+							
+							p0 = segStart >= 0 ? mesh.Vertices[segStart] : 
+								 newVerticesToAdd[-segStart - 1];
+								 
+							p1 = segEnd >= 0 ? mesh.Vertices[segEnd] : 
+								 newVerticesToAdd[-segEnd - 1];
+								 
+							p2 = mesh.Vertices[vOppositeIndex];
+							
+							// Calculate area to skip near-degenerate triangles
+							float area = p0.GetArea(p1, p2);
+							
+							if (area < epsilonSq)
+							{
+								continue;
+							}
+							
+							// Create new face with correct winding order
+							if (edgeForward)
+							{
+								newFacesToAdd.Add(new Face(segStart, segEnd, vOppositeIndex, mesh.Vertices));
+							}
+							else
+							{
+								newFacesToAdd.Add(new Face(segEnd, segStart, vOppositeIndex, mesh.Vertices));
+							}
+						}
+					}
+					
+					edgesSplit++;
+					if (edgesToSplitCount > 0)
+					{
+						reporter(0.7 + (edgesSplit / (double)edgesToSplitCount * 0.25), 
+							$"Splitting Edges ({edgesSplit}/{edgesToSplitCount})");
+					}
+				}
+				
+				// Skip the rest if no modifications needed
+				if (facesToRemove.Count == 0 && newFacesToAdd.Count == 0 && newVerticesToAdd.Count == 0)
+				{
+					return verticesToMove.Count > 0; // Return true if we moved vertices but didn't split
+				}
+				
+				reporter(0.95, "Updating Mesh");
+				
+				// Add new vertices
+				int initialVertexCount = mesh.Vertices.Count;
+				mesh.Vertices.AddRange(newVerticesToAdd);
+				
+				// Update vertex indices in new faces
+				foreach (var face in newFacesToAdd)
+				{
+					// Map any negative vertex indices to real indices
+					if (face.v0 < 0) face.v0 = vertexIndexMapping[face.v0];
+					if (face.v1 < 0) face.v1 = vertexIndexMapping[face.v1];
+					if (face.v2 < 0) face.v2 = vertexIndexMapping[face.v2];
+				}
+				
+				// Keep faces that weren't removed, add new ones
+				var finalFaces = new FaceList();
+				for (int i = 0; i < mesh.Faces.Count; i++)
+				{
+					if (!facesToRemove.Contains(i))
+					{
+						finalFaces.Add(mesh.Faces[i]);
+					}
+				}
+				
+				// Calculate normals for new faces
+				foreach (var face in newFacesToAdd)
+				{
+					face.CalculateNormal(mesh.Vertices);
+				}
+				
+				finalFaces.AddRange(newFacesToAdd);
+				mesh.Faces = finalFaces;
+				mesh.MarkAsChanged();
+			}
+			
+			return true; // Modifications were made
+		}
+
+		// Class to store information about a vertex split point
+		private class VertexSplitInfo
+		{
+			public int vertexIndex;         // Index of vertex to use (-1 for new vertex)
+			public float projectionScalar;  // Projection distance along edge
+			public Vector3Float projectionPoint; // Position on the edge (for new vertices)
+			
+			public VertexSplitInfo(int vertexIndex, float projectionScalar, Vector3Float projectionPoint)
+			{
+				this.vertexIndex = vertexIndex;
+				this.projectionScalar = projectionScalar;
+				this.projectionPoint = projectionPoint;
+			}
 		}
 	}
 }
