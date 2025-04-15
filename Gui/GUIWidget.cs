@@ -18,7 +18,6 @@
 //----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using MatterHackers.Agg.Image;
@@ -305,7 +304,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// Gets the border and padding scaled by the DeviceScale (used by the layout engine)
+		/// Gets the border and padding scaled by the DeviceScale
 		/// </summary>
 		public BorderDouble DevicePadding
 		{
@@ -323,7 +322,6 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// Gets or sets the space between the Widget and it's contents (the inside border).
 		/// </summary>
-		[Category("Layout")]
 		public virtual BorderDouble Padding
 		{
 			get => _padding;
@@ -341,7 +339,7 @@ namespace MatterHackers.Agg.UI
 						}
 
 						// the padding affects the children so make sure they are laid out
-						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Padding));
+						OnLayout(new LayoutEventArgs(this, null));
 						OnPaddingChanged();
 					}
 				}
@@ -384,7 +382,6 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// Gets or sets the space between the Widget and its border. If BorderColor is set this will render as BorderColor and be rectangular.
 		/// </summary>
-		[Category("Layout")]
 		public BorderDouble Border
 		{
 			get => _border;
@@ -402,7 +399,7 @@ namespace MatterHackers.Agg.UI
 						}
 
 						// the border affects the children so make sure they are laid out
-						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Border));
+						OnLayout(new LayoutEventArgs(this, null));
 						OnBorderChanged();
 					}
 				}
@@ -433,7 +430,6 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// Gets or sets the space between the Widget and it's parent (the outside border).
 		/// </summary>
-		[Category("Layout")]
 		public BorderDouble Margin
 		{
 			get => margin;
@@ -449,8 +445,8 @@ namespace MatterHackers.Agg.UI
 						deviceMargin.Round();
 					}
 
-					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Margin));
-					OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Margin));
+					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this));
+					OnLayout(new LayoutEventArgs(this, null));
 					OnMarginChanged();
 				}
 			}
@@ -506,7 +502,6 @@ namespace MatterHackers.Agg.UI
 
 		private HAnchor hAnchor;
 
-		[Category("Layout Anchor")]
 		public virtual HAnchor HAnchor
 		{
 			get => hAnchor;
@@ -524,11 +519,11 @@ namespace MatterHackers.Agg.UI
 						BreakInDebugger("You cannot have anything else set if you set MinFitOrStretch.");
 					}
 					hAnchor = value;
-					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.HAnchor));
+					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this));
 
 					if (HAnchorIsSet(HAnchor.Fit))
 					{
-						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.HAnchor));
+						OnLayout(new LayoutEventArgs(this, null));
 					}
 
 					HAnchorChanged?.Invoke(this, null);
@@ -567,7 +562,6 @@ namespace MatterHackers.Agg.UI
 
 		private VAnchor vAnchor;
 
-		[Category("Layout Anchor")]
 		public VAnchor VAnchor
 		{
 			get => vAnchor;
@@ -584,11 +578,11 @@ namespace MatterHackers.Agg.UI
 
 					if (this.Visible)
 					{
-						this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.VAnchor));
+						this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this));
 
 						if (VAnchorIsSet(VAnchor.Fit))
 						{
-							OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.VAnchor));
+							OnLayout(new LayoutEventArgs(this, null));
 						}
 					}
 
@@ -883,7 +877,6 @@ namespace MatterHackers.Agg.UI
 
 		private Vector2 minimumSize = default(Vector2);
 
-		[Category("Layout Constraints")]
 		public virtual Vector2 MinimumSize
 		{
 			get => minimumSize;
@@ -931,7 +924,6 @@ namespace MatterHackers.Agg.UI
 
 		private Vector2 maximumSize = new Vector2(double.MaxValue, double.MaxValue);
 
-		[Category("Layout Constraints")]
 		public Vector2 MaximumSize
 		{
 			get => maximumSize;
@@ -977,7 +969,6 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// Gets or sets the bottom left position of the widget in its parent space (or the logical/intuitive position).
 		/// </summary>
-		[Category("Layout")]
 		public Vector2 Position
 		{
 			get
@@ -1007,7 +998,6 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// Gets or sets the width height of the control (its size!)
 		/// </summary>
-		[Category("Layout")]
 		public Vector2 Size
 		{
 			get => new Vector2(LocalBounds.Width, LocalBounds.Height);
@@ -1047,7 +1037,7 @@ namespace MatterHackers.Agg.UI
 						// when this object moves it requires that the parent re-layout this object (and maybe others)
 						if (!this.Parent.LayoutLocked)
 						{
-							this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Position));
+							this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this));
 						}
 					}
 
@@ -1056,7 +1046,6 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		[Category("Layout")]
 		public virtual RectangleDouble LocalBounds
 		{
 			get => localBounds;
@@ -1097,11 +1086,11 @@ namespace MatterHackers.Agg.UI
 
 					localBounds = value;
 
-					OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.LocalBounds));
+					OnLayout(new LayoutEventArgs(this, null));
 					if (this.Parent != null
 						&& !this.Parent.LayoutLocked)
 					{
-						this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.ChildLocalBounds));
+						this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this));
 					}
 
 					Invalidate();
@@ -1325,8 +1314,8 @@ namespace MatterHackers.Agg.UI
 
 					OnVisibleChanged(null);
 
-					OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Visible));
-					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Visible));
+					OnLayout(new LayoutEventArgs(this, null));
+					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this));
 
 					Invalidate();
 					screenClipping.MarkRecalculate();
@@ -1441,7 +1430,6 @@ namespace MatterHackers.Agg.UI
 
 		// Place holder, this is not really implemented.
 
-		[Category("Layout")]
 		public double Width
 		{
 			get => LocalBounds.Width;
@@ -1456,7 +1444,6 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		[Category("Layout")]
 		public double Height
 		{
 			get => LocalBounds.Height;
@@ -1526,7 +1513,7 @@ namespace MatterHackers.Agg.UI
 			childToAdd.OnParentChanged(null);
 
 			childToAdd.InitLayout();
-			OnLayout(new LayoutEventArgs(this, childToAdd, PropertyCausingLayout.AddChild));
+			OnLayout(new LayoutEventArgs(this, childToAdd));
 
 			return childToAdd;
 		}
@@ -1637,7 +1624,7 @@ namespace MatterHackers.Agg.UI
 				Children.Remove(childToRemove);
 				childToRemove.Parent = null;
 				OnChildRemoved(new GuiWidgetEventArgs(childToRemove));
-				OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.RemoveChild));
+				OnLayout(new LayoutEventArgs(this, null));
 				Invalidate();
 			}
 		}
@@ -1961,7 +1948,7 @@ namespace MatterHackers.Agg.UI
 
 		public void PerformLayout()
 		{
-			OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.PerformLayout));
+			OnLayout(new LayoutEventArgs(this, null));
 		}
 
 		public virtual void InitLayout()

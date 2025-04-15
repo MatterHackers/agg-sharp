@@ -259,7 +259,7 @@ namespace MatterHackers.Agg.UI
 			}
 			else if (child.HAnchor == HAnchor.MinFitOrStretch)
 			{
-				child.OnLayout(new LayoutEventArgs(parent, child, PropertyCausingLayout.LocalBounds));
+				child.OnLayout(new LayoutEventArgs(parent, child));
 			}
 		}
 
