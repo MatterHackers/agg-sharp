@@ -14,7 +14,6 @@
 //
 
 using MatterHackers.VectorMath;
-using System.Collections.Generic;
 using System;
 using System.Threading;
 
