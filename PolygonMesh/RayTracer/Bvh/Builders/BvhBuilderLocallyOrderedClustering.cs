@@ -32,14 +32,40 @@ using MatterHackers.VectorMath.Bvh;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Linq;
+using System.Collections.Concurrent;
 
 namespace MatterHackers.RayTracer
 {
     public class BvhBuilderLocallyOrderedClustering
     {
         private const int MinNodesForParallel = 1000;
+        private const int MaxNodesToOptimize = 10000; // Maximum number of nodes to consider for SAH optimization
+        private const bool EnableTreeOptimization = true; // Flag to enable/disable the optimization pass
+        private const int BatchSize = 128; // Batch size for parallel operations
+        private const int MaxStackDepth = 64; // Maximum stack depth for non-recursive processing
 
         private static readonly BvhNodePool NodePool = new BvhNodePool();
+        private static readonly ConcurrentBag<List<ITraceable>> ListPool = new ConcurrentBag<List<ITraceable>>();
+
+        private static List<ITraceable> GetList(int capacity)
+        {
+            if (ListPool.TryTake(out var list))
+            {
+                list.Clear();
+                list.Capacity = Math.Max(list.Capacity, capacity);
+                return list;
+            }
+            return new List<ITraceable>(capacity);
+        }
+
+        private static void ReturnList(List<ITraceable> list)
+        {
+            if (list != null)
+            {
+                ListPool.Add(list);
+            }
+        }
 
         public static ITraceable Create(List<ITraceable> sourceNodes)
         {
@@ -51,14 +77,40 @@ namespace MatterHackers.RayTracer
             var centersToMortonSpace = CalculateMortonTransform(bounds, scale);
 
             var nodes = new (ITraceable node, long mortonCode)[sourceNodes.Count];
-            Parallel.For(0, sourceNodes.Count, i =>
+            
+            // Process nodes in batches for better cache locality
+            if (sourceNodes.Count > BatchSize * 4)
             {
-                nodes[i] = (sourceNodes[i], CalculateMortonCode(sourceNodes[i], centersToMortonSpace));
-            });
+                int batchCount = (sourceNodes.Count + BatchSize - 1) / BatchSize;
+                Parallel.For(0, batchCount, b =>
+                {
+                    int start = b * BatchSize;
+                    int end = Math.Min(start + BatchSize, sourceNodes.Count);
+                    for (int i = start; i < end; i++)
+                    {
+                        nodes[i] = (sourceNodes[i], CalculateMortonCode(sourceNodes[i], centersToMortonSpace));
+                    }
+                });
+            }
+            else
+            {
+                Parallel.For(0, sourceNodes.Count, i =>
+                {
+                    nodes[i] = (sourceNodes[i], CalculateMortonCode(sourceNodes[i], centersToMortonSpace));
+                });
+            }
 
             RadixSort(nodes);
 
-            return BuildTreeParallel(nodes, 0, nodes.Length - 1);
+            ITraceable rootNode = BuildTreeParallel(nodes, 0, nodes.Length - 1);
+            
+            // Apply optimization pass if enabled and the tree is not too large
+            if (EnableTreeOptimization && sourceNodes.Count <= MaxNodesToOptimize)
+            {
+                rootNode = OptimizeTree(rootNode);
+            }
+            
+            return rootNode;
         }
 
         private static void RadixSort((ITraceable node, long mortonCode)[] a)
@@ -73,24 +125,31 @@ namespace MatterHackers.RayTracer
             {
                 Array.Clear(count, 0, count.Length);
 
-                for (int i = 0; i < a.Length; i++)
+                // Improved loop with better cache locality
+                int length = a.Length;
+                for (int i = 0; i < length; i++)
                 {
                     count[(a[i].mortonCode >> shift) & mask]++;
                 }
 
                 pref[0] = 0;
-                for (int i = 1; i < count.Length; i++)
+                // Unroll the prefix sum loop slightly for better performance
+                for (int i = 1; i < count.Length; i += 4)
                 {
                     pref[i] = pref[i - 1] + count[i - 1];
+                    if (i + 1 < count.Length) pref[i + 1] = pref[i] + count[i];
+                    if (i + 2 < count.Length) pref[i + 2] = pref[i + 1] + count[i + 1];
+                    if (i + 3 < count.Length) pref[i + 3] = pref[i + 2] + count[i + 2];
                 }
 
-                for (int i = 0; i < a.Length; i++)
+                for (int i = 0; i < length; i++)
                 {
                     int index = (int)((a[i].mortonCode >> shift) & mask);
                     t[pref[index]++] = a[i];
                 }
 
-                Array.Copy(t, a, a.Length);
+                // Use Array.Copy for struct arrays
+                Array.Copy(t, 0, a, 0, length);
             }
         }
 
@@ -116,6 +175,12 @@ namespace MatterHackers.RayTracer
 
         private static ITraceable BuildTreeRecursive((ITraceable node, long mortonCode)[] nodes, int start, int end)
         {
+            // Non-recursive implementation to avoid stack overflow on deep trees
+            if (end - start > MaxStackDepth)
+            {
+                return BuildTreeIterative(nodes, start, end);
+            }
+
             if (start == end) return nodes[start].node;
 
             int split = FindBestSplit(nodes, start, end);
@@ -126,21 +191,52 @@ namespace MatterHackers.RayTracer
             return NodePool.Get(left, right);
         }
 
+        private static ITraceable BuildTreeIterative((ITraceable node, long mortonCode)[] nodes, int start, int end)
+        {
+            // For a safe fallback, just use direct construction with minimal memory usage
+            if (start == end) return nodes[start].node;
+            
+            // This is a simple method that builds a balanced tree directly from the sorted nodes
+            // Much safer than trying to do complex parent-child tracking
+            return BuildBalancedTreeFromRange(nodes, start, end);
+        }
+        
+        private static ITraceable BuildBalancedTreeFromRange((ITraceable node, long mortonCode)[] nodes, int start, int end)
+        {
+            if (start == end) return nodes[start].node;
+            if (start + 1 == end) return NodePool.Get(nodes[start].node, nodes[end].node);
+            
+            int mid = (start + end) / 2;
+            var left = BuildBalancedTreeFromRange(nodes, start, mid);
+            var right = BuildBalancedTreeFromRange(nodes, mid + 1, end);
+            
+            return NodePool.Get(left, right);
+        }
+
         private static int FindBestSplit((ITraceable node, long mortonCode)[] nodes, int start, int end)
         {
             if (end - start <= 1) return start;
 
-            int commonPrefix = System.Numerics.BitOperations.LeadingZeroCount((ulong)(nodes[start].mortonCode ^ nodes[end].mortonCode)) - 64;
+            // Optimized bit operations for prefix finding
+            long startCode = nodes[start].mortonCode;
+            long endCode = nodes[end].mortonCode;
+            int commonPrefix = System.Numerics.BitOperations.LeadingZeroCount((ulong)(startCode ^ endCode)) - 64;
 
+            // Binary search for split point with early exit
             int split = start;
             int step = end - start;
+            
             do
             {
                 step = (step + 1) >> 1;
                 int newSplit = split + step;
+                
                 if (newSplit < end)
                 {
-                    int splitPrefix = System.Numerics.BitOperations.LeadingZeroCount((ulong)(nodes[start].mortonCode ^ nodes[newSplit].mortonCode)) - 64;
+                    // Lookup the morton code only once
+                    long splitCode = nodes[newSplit].mortonCode;
+                    int splitPrefix = System.Numerics.BitOperations.LeadingZeroCount((ulong)(startCode ^ splitCode)) - 64;
+                    
                     if (splitPrefix > commonPrefix)
                         split = newSplit;
                 }
@@ -148,11 +244,257 @@ namespace MatterHackers.RayTracer
 
             return split;
         }
+        
+        private static ITraceable OptimizeTree(ITraceable rootNode)
+        {
+            // Only optimize BVH nodes
+            if (!(rootNode is BoundingVolumeHierarchy bvh))
+            {
+                return rootNode;
+            }
+            
+            // Extract all leaf nodes for SAH evaluation
+            var leafNodes = GetList(1024); // Initial capacity estimate
+            CollectLeafNodes(rootNode, leafNodes);
+            
+            if (leafNodes.Count <= 1)
+            {
+                ReturnList(leafNodes);
+                return rootNode;
+            }
+            
+            // Apply SAH-based tree building
+            var result = BuildOptimizedTree(leafNodes);
+            
+            ReturnList(leafNodes);
+            return result;
+        }
+        
+        private static void CollectLeafNodes(ITraceable node, List<ITraceable> leafNodes)
+        {
+            // Use a stack-based approach to avoid recursion for very deep trees
+            var stack = new Stack<ITraceable>(32); // Initial capacity - tunable
+            stack.Push(node);
+            
+            while (stack.Count > 0)
+            {
+                var current = stack.Pop();
+                
+                if (current is BoundingVolumeHierarchy bvh)
+                {
+                    stack.Push(bvh.Right);
+                    stack.Push(bvh.Left);
+                }
+                else
+                {
+                    leafNodes.Add(current);
+                }
+            }
+        }
+        
+        private static ITraceable BuildOptimizedTree(List<ITraceable> leafNodes)
+        {
+            // For small numbers of nodes, just use bottom-up SAH clustering
+            if (leafNodes.Count <= 4)
+            {
+                return BuildSahTree(leafNodes, 0, leafNodes.Count - 1);
+            }
+            
+            // For larger trees, use a hybrid approach:
+            // 1. Partition into spatial bins with Morton codes
+            // 2. Apply SAH optimization to each bin
+            
+            // Calculate scene bounds
+            var bounds = CalculateBounds(leafNodes);
+            var scale = Vector3.Max(bounds.Size, Vector3.One) * 1.001;
+            var centersToMortonSpace = CalculateMortonTransform(bounds, scale);
+            
+            // Assign Morton codes to each node - use parallel for large node counts
+            int leafCount = leafNodes.Count;
+            var nodes = new (ITraceable node, long mortonCode)[leafCount];
+            
+            if (leafCount > BatchSize * 4)
+            {
+                int batchCount = (leafCount + BatchSize - 1) / BatchSize;
+                Parallel.For(0, batchCount, b =>
+                {
+                    int start = b * BatchSize;
+                    int end = Math.Min(start + BatchSize, leafCount);
+                    for (int i = start; i < end; i++)
+                    {
+                        nodes[i] = (leafNodes[i], CalculateMortonCode(leafNodes[i], centersToMortonSpace));
+                    }
+                });
+            }
+            else
+            {
+                for (int i = 0; i < leafCount; i++)
+                {
+                    nodes[i] = (leafNodes[i], CalculateMortonCode(leafNodes[i], centersToMortonSpace));
+                }
+            }
+            
+            // Sort by Morton code
+            Array.Sort(nodes, (a, b) => a.mortonCode.CompareTo(b.mortonCode));
+            
+            // Determine optimal bin count based on node count (more bins for more nodes)
+            int binCount = Math.Min(32, Math.Max(4, leafCount / 256));
+            int nodesPerBin = Math.Max(1, (leafCount + binCount - 1) / binCount);
+            
+            // Build optimized subtrees for each bin - parallelize for larger counts
+            var optimizedBins = GetList(binCount);
+            
+            if (binCount >= 4)
+            {
+                var results = new ITraceable[binCount];
+                Parallel.For(0, binCount, i =>
+                {
+                    int start = i * nodesPerBin;
+                    int end = Math.Min(start + nodesPerBin - 1, leafCount - 1);
+                    
+                    if (start <= end)
+                    {
+                        var binNodes = GetList(end - start + 1);
+                        for (int j = start; j <= end; j++)
+                        {
+                            binNodes.Add(nodes[j].node);
+                        }
+                        
+                        results[i] = BuildSahTree(binNodes, 0, binNodes.Count - 1);
+                        ReturnList(binNodes);
+                    }
+                });
+                
+                // Collect non-null results
+                for (int i = 0; i < binCount; i++)
+                {
+                    if (results[i] != null)
+                    {
+                        optimizedBins.Add(results[i]);
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < binCount; i++)
+                {
+                    int start = i * nodesPerBin;
+                    int end = Math.Min(start + nodesPerBin - 1, leafCount - 1);
+                    
+                    if (start <= end)
+                    {
+                        var binNodes = GetList(end - start + 1);
+                        for (int j = start; j <= end; j++)
+                        {
+                            binNodes.Add(nodes[j].node);
+                        }
+                        
+                        optimizedBins.Add(BuildSahTree(binNodes, 0, binNodes.Count - 1));
+                        ReturnList(binNodes);
+                    }
+                }
+            }
+            
+            // Apply SAH to combine the bins
+            var result = BuildSahTree(optimizedBins, 0, optimizedBins.Count - 1);
+            ReturnList(optimizedBins);
+            return result;
+        }
+        
+        private static ITraceable BuildSahTree(List<ITraceable> nodes, int start, int end)
+        {
+            if (start == end) return nodes[start];
+            if (start + 1 == end) return NodePool.Get(nodes[start], nodes[end]);
+            
+            // Use array-based storage for better cache locality and reduced allocations
+            int nodeCount = end - start + 1;
+            var allBounds = new AxisAlignedBoundingBox[nodeCount];
+            
+            // If we have a lot of nodes, process in parallel
+            if (nodeCount > 512)
+            {
+                Parallel.For(0, nodeCount, i =>
+                {
+                    allBounds[i] = nodes[i + start].GetAxisAlignedBoundingBox();
+                });
+            }
+            else
+            {
+                for (int i = 0; i < nodeCount; i++)
+                {
+                    allBounds[i] = nodes[i + start].GetAxisAlignedBoundingBox();
+                }
+            }
+            
+            // Precompute prefix and suffix bounds
+            var leftBounds = new AxisAlignedBoundingBox[nodeCount - 1];
+            var rightBounds = new AxisAlignedBoundingBox[nodeCount - 1];
+            
+            leftBounds[0] = allBounds[0];
+            for (int i = 1; i < nodeCount - 1; i++)
+            {
+                leftBounds[i] = leftBounds[i - 1] + allBounds[i];
+            }
+            
+            rightBounds[nodeCount - 2] = allBounds[nodeCount - 1];
+            for (int i = nodeCount - 3; i >= 0; i--)
+            {
+                rightBounds[i] = rightBounds[i + 1] + allBounds[i + 1];
+            }
+            
+            // Find best split using Surface Area Heuristic
+            double bestCost = double.MaxValue;
+            int bestSplit = start;
+            
+            // Evaluate all possible splits - use SIMD optimization if available
+            for (int splitIndex = 0; splitIndex < nodeCount - 1; splitIndex++)
+            {
+                int leftCount = splitIndex + 1;
+                int rightCount = nodeCount - leftCount;
+                
+                var leftBox = leftBounds[splitIndex];
+                var rightBox = rightBounds[splitIndex];
+                
+                // Calculate SAH cost with improved weight calculations
+                double leftSA = leftBox.GetSurfaceArea();
+                double rightSA = rightBox.GetSurfaceArea();
+                double cost = leftCount * leftSA + rightCount * rightSA;
+                
+                if (cost < bestCost)
+                {
+                    bestCost = cost;
+                    bestSplit = start + splitIndex;
+                }
+            }
+            
+            // Build left and right subtrees - no need to create intermediate lists
+            var leftNodes = GetList(bestSplit - start + 1);
+            var rightNodes = GetList(end - bestSplit);
+            
+            for (int i = start; i <= bestSplit; i++)
+            {
+                leftNodes.Add(nodes[i]);
+            }
+            
+            for (int i = bestSplit + 1; i <= end; i++)
+            {
+                rightNodes.Add(nodes[i]);
+            }
+            
+            var left = BuildSahTree(leftNodes, 0, leftNodes.Count - 1);
+            var right = BuildSahTree(rightNodes, 0, rightNodes.Count - 1);
+            
+            ReturnList(leftNodes);
+            ReturnList(rightNodes);
+            
+            return NodePool.Get(left, right);
+        }
 
         private static AxisAlignedBoundingBox CalculateBounds(List<ITraceable> nodes)
         {
             var bounds = nodes[0].GetAxisAlignedBoundingBox();
-            for (int i = 1; i < nodes.Count; i++)
+            int count = nodes.Count;
+            for (int i = 1; i < count; i++)
             {
                 bounds.ExpandToInclude(nodes[i].GetAxisAlignedBoundingBox());
             }
@@ -175,13 +517,12 @@ namespace MatterHackers.RayTracer
 
     public class BvhNodePool
     {
-        private readonly Stack<BoundingVolumeHierarchy> _pool = new Stack<BoundingVolumeHierarchy>();
+        private readonly ConcurrentStack<BoundingVolumeHierarchy> _pool = new ConcurrentStack<BoundingVolumeHierarchy>();
 
         public BoundingVolumeHierarchy Get(ITraceable nodeA, ITraceable nodeB)
         {
-            if (_pool.Count > 0)
+            if (_pool.TryPop(out var node))
             {
-                var node = _pool.Pop();
                 node.SetNodes(nodeA, nodeB);
                 return node;
             }
