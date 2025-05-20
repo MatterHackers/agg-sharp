@@ -145,7 +145,7 @@ namespace MatterHackers.Agg.Platform
 			/// <summary>
 			/// Gets or sets the number of bits in the depth buffer - a System.Int32 that contains the bits per pixel for the depth buffer
 			/// </summary>
-			public int Depth { get; set; } = 32;
+			public int Depth { get; set; } = 24;
 
 			/// <summary>
 			/// Gets or sets the number of bits in the stencil buffer - a System.Int32 that contains the bits per pixel for the stencil buffer

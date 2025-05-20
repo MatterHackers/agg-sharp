@@ -36,7 +36,6 @@ using ClipperLib;
 using DualContouring;
 using g3;
 using gs;
-using MatterHackers.Agg;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 
@@ -91,15 +90,100 @@ namespace MatterHackers.PolygonMesh.Csg
 		{
 			if (processingMode == ProcessingModes.Polygons)
 			{
-				var csgBySlicing = new CsgBySlicing();
-				csgBySlicing.Setup(items, null, operation, cancellationToken);
+				var allManifold = items.All(i => i.mesh.IsManifold());
 
-				return csgBySlicing.Calculate((ratio, message) =>
-                    {
+				if (allManifold)
+				{
+					// Convert meshes to MeshLib format
+					var manifolds = new List<ManifoldNET.Manifold>();
+					foreach (var (mesh, matrix) in items)
+					{
+						var meshCopy = mesh.Copy(CancellationToken.None);
+						meshCopy.Transform(matrix);
+
+						// Convert to vertex and face arrays
+						var vertProperties = new List<float>();
+						var triVerts = new List<uint>();
+
+						foreach (var vertex in meshCopy.Vertices)
+						{
+							vertProperties.Add(vertex.X);
+							vertProperties.Add(vertex.Y);
+							vertProperties.Add(vertex.Z);
+						}
+
+						foreach (var face in meshCopy.Faces)
+						{
+							triVerts.Add((uint)face.v0);
+							triVerts.Add((uint)face.v1);
+							triVerts.Add((uint)face.v2);
+						}
+
+						var meshGlData = new ManifoldNET.MeshGLData(vertProperties.ToArray(), triVerts.ToArray());
+						var meshGl = new ManifoldNET.MeshGL(meshGlData);
+
+						manifolds.Add(ManifoldNET.Manifold.Create(meshGl));
+					}
+
+					// Perform boolean operation using MeshLib
+					// Convert operation type to MeshLib enum
+					var opperationType = ManifoldNET.BoolOperationType.Add;
+
+					if (operation == CsgModes.Subtract)
+					{
+						opperationType = ManifoldNET.BoolOperationType.Subtract;
+					}
+					else if (operation == CsgModes.Intersect)
+					{
+						opperationType = ManifoldNET.BoolOperationType.Intersect;
+					}
+
+
+					ManifoldNET.MeshGL result = null;
+					// Perform boolean operation on first two meshes
+					if (manifolds.Count >= 2)
+					{
+						result = ManifoldNET.Manifold.BatchBoolOperation(manifolds, opperationType).MeshGL;
+					}
+
+					// Convert result back to Mesh format
+					var resultMesh = new Mesh();
+
+					if (result != null)
+					{
+						var vertices = result.VerticesProperties;
+						for (int i = 0; i < vertices.Length; i += 3)
+						{
+							resultMesh.Vertices.Add(new Vector3(
+								vertices[i],
+								vertices[i + 1],
+								vertices[i + 2]));
+						}
+
+						var indices = result.TriangleVertices;
+						for (int i = 0; i < indices.Length; i += 3)
+						{
+							resultMesh.Faces.Add(new Face(
+								indices[i],
+								indices[i + 1],
+								indices[i + 2],
+								resultMesh.Vertices));
+						}
+					}
+                
+					return resultMesh;
+                }
+                else
+				{
+					var csgBySlicing = new CsgBySlicing();
+					csgBySlicing.Setup(items, null, operation, cancellationToken);
+					return csgBySlicing.Calculate((ratio, message) =>
+					{
 						reporter?.Invoke(ratio * amountPerOperation + ratioCompleted, message);
 					},
-                    cancellationToken);
-			}
+					cancellationToken);
+				}
+            }
 			else
 			{
 				return AsImplicitMeshes(items, operation, processingMode, inputResolution, outputResolution);
