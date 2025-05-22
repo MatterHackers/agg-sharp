@@ -138,13 +138,25 @@ namespace MatterHackers.PolygonMesh.Csg
 						opperationType = ManifoldNET.BoolOperationType.Intersect;
 					}
 
-
 					ManifoldNET.MeshGL result = null;
 					// Perform boolean operation on first two meshes
 					if (manifolds.Count >= 2)
 					{
-						result = ManifoldNET.Manifold.BatchBoolOperation(manifolds, opperationType).MeshGL;
-					}
+						try
+						{
+							result = ManifoldNET.Manifold.BatchBoolOperation(manifolds, opperationType).MeshGL;
+						}
+						catch 
+						{
+                            var csgBySlicing = new CsgBySlicing();
+                            csgBySlicing.Setup(items, null, operation, cancellationToken);
+                            return csgBySlicing.Calculate((ratio, message) =>
+                            {
+                                reporter?.Invoke(ratio * amountPerOperation + ratioCompleted, message);
+                            },
+                            cancellationToken);
+                        }
+                    }
 
 					// Convert result back to Mesh format
 					var resultMesh = new Mesh();
