@@ -96,6 +96,66 @@ namespace Agg.Tests.Agg
             }
         }
 
+        // Overloads with message parameter for better test documentation
+        public static void Equal(int expected, int actual, string message)
+        {
+            if (expected != actual)
+            {
+                throw new Exception($"{message}. Expected {expected} but was {actual}");
+            }
+        }
+
+        public static void Equal(double expected, double actual, string message, double error = .001)
+        {
+            if (Math.Abs(expected - actual) > error)
+            {
+                throw new Exception($"{message}. Expected {expected} but was {actual}");
+            }
+        }
+
+        public static void Equal(string expected, string actual, string message)
+        {
+            if (expected != actual)
+            {
+                throw new Exception($"{message}. Expected '{expected}' but was '{actual}'");
+            }
+        }
+
+        public static void Equal(object expected, object actual, string message)
+        {
+            if (expected == null && actual == null)
+            {
+                return;
+            }
+
+            if (expected == null || actual == null)
+            {
+                throw new Exception($"{message}. Expected {expected} but was {actual}");
+            }
+
+            if (expected.GetType() != actual.GetType())
+            {
+                throw new Exception($"{message}. Expected type {expected.GetType()} but was {actual.GetType()}");
+            }
+
+            if (expected is Array array1 && actual is Array array2)
+            {
+                if (array1.Length != array2.Length)
+                {
+                    throw new Exception($"{message}. Array lengths do not match.");
+                }
+
+                for (int i = 0; i < array1.Length; i++)
+                {
+                    Equal(array1.GetValue(i), array2.GetValue(i), $"{message}. Array element at index {i}");
+                }
+            }
+            else if (!expected.Equals(actual))
+            {
+                throw new Exception($"{message}. Expected {expected} but was {actual}");
+            }
+        }
+
         public static void False(bool condition, string message = "Expected false but was true")
         {
             if (condition)
@@ -120,11 +180,27 @@ namespace Agg.Tests.Agg
             }
         }
 
+        public static void NotNull(object obj, string message)
+        {
+            if (obj == null)
+            {
+                throw new Exception($"{message}. Expected not null but was null");
+            }
+        }
+
         public static void Null(object obj)
         {
             if (obj != null)
             {
                 throw new Exception("Expected null but was not null");
+            }
+        }
+
+        public static void Null(object obj, string message)
+        {
+            if (obj != null)
+            {
+                throw new Exception($"{message}. Expected null but was not null");
             }
         }
 
