@@ -33,7 +33,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestFixture("Opens Winforms Window")]
+    [MhTestFixture("Opens Winforms Window")]
     public class BackBufferTests
 	{
 		public bool saveImagesForDebug;
@@ -46,7 +46,7 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [Test]
+        [MhTest]
         public void DoubleBufferTests()
 		{
 			bool textWidgetDoubleBufferDefault = TextWidget.DoubleBufferDefault;
@@ -61,7 +61,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// make sure the frame comparison function works.
 			{
 				ImageBuffer doubleBufferImageCopy = new ImageBuffer(doubleBufferImage, new BlenderBGR());
-				Assert.True(doubleBufferImage == doubleBufferImageCopy);
+				MhAssert.True(doubleBufferImage == doubleBufferImageCopy);
 			}
 
 			// the text widget is not double buffered
@@ -71,7 +71,7 @@ namespace MatterHackers.Agg.UI.Tests
 			notDoubleBufferButton.OnDraw(notDoubleBufferImage.NewGraphics2D());
 			SaveImage(notDoubleBufferImage, "z test.tga");
 
-			Assert.True(doubleBufferImage == notDoubleBufferImage);
+			MhAssert.True(doubleBufferImage == notDoubleBufferImage);
 
 			TextWidget.DoubleBufferDefault = textWidgetDoubleBufferDefault;
 		}
@@ -96,7 +96,7 @@ namespace MatterHackers.Agg.UI.Tests
 					textWidget.OnDraw(textWidgetGraphics);
 				}
 
-				Assert.True(drawStringImage == textWidgetImage);
+				MhAssert.True(drawStringImage == textWidgetImage);
 			}
 
 			// make sure that a back buffer is always trying to draw 1:1 pixels to the buffer above
@@ -123,7 +123,7 @@ namespace MatterHackers.Agg.UI.Tests
 				double bestLeastSquares;
 				double maxError = 10;
 				container.BackBuffer.FindLeastSquaresMatch(drawStringOffsetImage, out bestPosition, out bestLeastSquares, maxError);
-				Assert.True(bestLeastSquares < maxError);
+				MhAssert.True(bestLeastSquares < maxError);
 			}
 
 			{
@@ -148,7 +148,7 @@ namespace MatterHackers.Agg.UI.Tests
 					SaveImage(container1.BackBuffer, "z offset text widget.tga");
 				}
 
-				Assert.True(container1.BackBuffer.FindLeastSquaresMatch(drawStringOffsetImage, 5));
+				MhAssert.True(container1.BackBuffer.FindLeastSquaresMatch(drawStringOffsetImage, 5));
 			}
 		}
 	}

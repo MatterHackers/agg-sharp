@@ -33,7 +33,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestFixture("Opens Winforms Window")]
+    [MhTestFixture("Opens Winforms Window")]
     public class ListBoxTests
 	{
 		public static bool saveImagesForDebug = false;
@@ -60,7 +60,7 @@ namespace MatterHackers.Agg.UI.Tests
 			OutputImage(test, "image-test.tga");
 		}
 
-        [Test]
+        [MhTest]
         public void SingleItemVisibleTest()
 		{
 			{
@@ -84,7 +84,7 @@ namespace MatterHackers.Agg.UI.Tests
 				double leastSquares;
 				containerListBox.BackBuffer.FindLeastSquaresMatch(textImage, out bestPosition, out leastSquares, maxError);
 
-				Assert.True(leastSquares < maxError, "The list box need to be showing the item we added to it.");
+				MhAssert.True(leastSquares < maxError, "The list box need to be showing the item we added to it.");
 			}
 
 			{
@@ -126,11 +126,11 @@ namespace MatterHackers.Agg.UI.Tests
 				double leastSquares;
 				container.BackBuffer.FindLeastSquaresMatch(textImage, out bestPosition, out leastSquares, maxError);
 
-				Assert.True(leastSquares < maxError, "The list box need to be showing the item we added to it.");
+				MhAssert.True(leastSquares < maxError, "The list box need to be showing the item we added to it.");
 			}
 		}
 
-        [Test]
+        [MhTest]
         public void ScrollPositionStartsCorrect()
 		{
 			GuiWidget contents = new GuiWidget(300, 300);
@@ -147,7 +147,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			contents.OnDraw(contents.NewGraphics2D());
 
-			Assert.True(container.TopLeftOffset.Y == 0);
+			MhAssert.True(container.TopLeftOffset.Y == 0);
 		}
 
 		private static void AddContents(GuiWidget widgetToAddItemsTo)

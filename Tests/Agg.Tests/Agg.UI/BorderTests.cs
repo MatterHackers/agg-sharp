@@ -33,7 +33,7 @@ using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestFixture("Opens Winforms Window")]
+    [MhTestFixture("Opens Winforms Window")]
     public class BorderTests
 	{
 		private int borderSize = 1;
@@ -48,7 +48,7 @@ namespace MatterHackers.Agg.UI.Tests
 			All = 4
 		}
 
-        [Test]
+        [MhTest]
         public void BorderTestLeft()
 		{
 			var border = new BorderDouble(left: borderSize);
@@ -57,7 +57,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Left, border, surface);
 		}
 
-        [Test]
+        [MhTest]
         public void BorderTestBottom()
 		{
 			var border = new BorderDouble(bottom: borderSize);
@@ -66,7 +66,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Bottom, border, surface);
 		}
 
-        [Test]
+        [MhTest]
         public void BorderTestRight()
 		{
 			var border = new BorderDouble(right: borderSize);
@@ -75,7 +75,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Right, border, surface);
 		}
 
-        [Test]
+        [MhTest]
         public void BorderTestTop()
 		{
 			var border = new BorderDouble(top: borderSize);
@@ -85,7 +85,7 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
         // Enable to visually debug
-        [Test]
+        [MhTest]
         public void BorderTestsVisualizer()
 		{
 			var systemWindow = new SystemWindow(700, 660)
@@ -232,12 +232,12 @@ namespace MatterHackers.Agg.UI.Tests
 					bool shouldBeRed = borderBounds.Contains(new Point2D(x + .5, y + .5));
 					if (shouldBeRed)
 					{
-						Assert.Equal(Color.Red, pixel);
+						MhAssert.Equal(Color.Red, pixel);
 
 					}
 					else
 					{
-						Assert.NotEqual(Color.Red, pixel);
+						MhAssert.NotEqual(Color.Red, pixel);
 					}
 				}
 			}

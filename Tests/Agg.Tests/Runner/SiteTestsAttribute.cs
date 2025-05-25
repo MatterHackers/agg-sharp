@@ -33,15 +33,15 @@ namespace Agg.Tests.Agg
 {
     // Create a SiteTests class attribute
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
-    public class TestFixtureAttribute : Attribute
+    public class MhTestFixtureAttribute : Attribute
     {
         public string Description { get; private set; }
 
-        public TestFixtureAttribute(string description)
+        public MhTestFixtureAttribute(string description)
         {
             Description = description;
         }
-        public TestFixtureAttribute()
+        public MhTestFixtureAttribute()
             : this("")
         {
         }
@@ -49,19 +49,19 @@ namespace Agg.Tests.Agg
 
     // Create a SiteTest function attribute
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-    public class TestAttribute : Attribute
+    public class MhTestAttribute : Attribute
     {
     }
 
     // Create a Startup function attribute
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-    public class SetupAttribute : Attribute
+    public class MhSetupAttribute : Attribute
     {
     }
 
     // Create a Teardown function attribute
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-    public class TearDownAttribute : Attribute
+    public class MhTearDownAttribute : Attribute
     {
     }
 }

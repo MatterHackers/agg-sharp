@@ -31,10 +31,10 @@ using Agg.Tests.Agg;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestFixture("Opens Winforms Window")]
+    [MhTestFixture("Opens Winforms Window")]
     public class WidgetTests
 	{
-        [Test]
+        [MhTest]
         public void LoadEventFiresOnlyOnce()
 		{
 			// Issue MatterHackers/MCCentral#5072 - OnLoad / Load can fire more than once
@@ -60,7 +60,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			widget.OnDraw(widget.NewGraphics2D());
 
-			Assert.Equal(1, loadCount); //, "Load should fire at most, one time");
+			MhAssert.Equal(1, loadCount); //, "Load should fire at most, one time");
         }
 	}
 }

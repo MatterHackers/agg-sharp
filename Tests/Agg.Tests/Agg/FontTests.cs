@@ -4,10 +4,10 @@ using System.Collections.Generic;
 
 namespace Agg.Tests.Agg
 {
-    [TestFixture("Agg.Font")]
+    [MhTestFixture("Agg.Font")]
     public class FontTests
     {
-        [Test]
+        [MhTest]
         public void CanPrintTests()
         {
             // Invoke DrawString with a carriage return. If any part of the font pipeline throws, this test fails
@@ -15,15 +15,15 @@ namespace Agg.Tests.Agg
             testImage.NewGraphics2D().DrawString("\r", 30, 30);
         }
 
-        [Test]
+        [MhTest]
         public void TextWrappingTest()
         {
             EnglishTextWrapping englishWrapping = new EnglishTextWrapping(8);
             List<string> wrappedLines = englishWrapping.WrapSingleLineOnWidth("Layers or MM", 30);
-            Assert.True(wrappedLines.Count == 3);
-            Assert.True(wrappedLines[0] == "Layer");
-            Assert.True(wrappedLines[1] == "s or");
-            Assert.True(wrappedLines[2] == "MM");
+            MhAssert.True(wrappedLines.Count == 3);
+            MhAssert.True(wrappedLines[0] == "Layer");
+            MhAssert.True(wrappedLines[1] == "s or");
+            MhAssert.True(wrappedLines[2] == "MM");
         }
     }
 }

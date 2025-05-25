@@ -45,7 +45,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 	using Polygons = List<List<IntPoint>>;
 	using Polygon = List<IntPoint>;
 
-	[TestFixture("Agg.PolygonMesh")]
+	[MhTestFixture("Agg.PolygonMesh")]
 	public class MeshTests
 	{
 		// [TestFixtureSetUp]
@@ -76,7 +76,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 #endif
 		}
 
-        [Test]
+        [MhTest]
         public void SdfDensityFunctions()
         {
             var cylinder = new Cylinder()
@@ -85,14 +85,14 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Radius = 0.5
             };
 
-			Assert.True(cylinder.Bounds.Equals(new AxisAlignedBoundingBox(-.5, -.5, -1, .5, .5, 1), .001));
-			Assert.Equal(1, cylinder.Sdf(new Vector3(0, 0, 2)));
-			Assert.Equal(1, cylinder.Sdf(new Vector3(0, 0, -2)));
-			Assert.Equal(.5, cylinder.Sdf(new Vector3(0, 1, 1)));
-			Assert.Equal(.5, cylinder.Sdf(new Vector3(1, 0, 1)));
+			MhAssert.True(cylinder.Bounds.Equals(new AxisAlignedBoundingBox(-.5, -.5, -1, .5, .5, 1), .001));
+			MhAssert.Equal(1, cylinder.Sdf(new Vector3(0, 0, 2)));
+			MhAssert.Equal(1, cylinder.Sdf(new Vector3(0, 0, -2)));
+			MhAssert.Equal(.5, cylinder.Sdf(new Vector3(0, 1, 1)));
+			MhAssert.Equal(.5, cylinder.Sdf(new Vector3(1, 0, 1)));
 		}
 
-		[Test]
+		[MhTest]
         public void PolygonRequirements()
 		{
             //       /\1
@@ -109,34 +109,34 @@ namespace MatterHackers.PolygonMesh.UnitTests
             // crossing the bottom
             {
                 var intersections = outerLoop[0].GetIntersections(new IntPoint(0, -10), new IntPoint(0, 10));
-                Assert.True(intersections.Count() == 1);
-                Assert.Equal(2, intersections.First().pointIndex);
-                Assert.Equal(ClipperLib.Intersection.Intersect, intersections.First().intersection);
-                Assert.Equal(new IntPoint(0, 0), intersections.First().position);
+                MhAssert.True(intersections.Count() == 1);
+                MhAssert.Equal(2, intersections.First().pointIndex);
+                MhAssert.Equal(ClipperLib.Intersection.Intersect, intersections.First().intersection);
+                MhAssert.Equal(new IntPoint(0, 0), intersections.First().position);
             }
 
             // touching the top point
             {
                 var intersections = outerLoop[0].GetIntersections(new IntPoint(0, 700), new IntPoint(0, 1000));
-                Assert.True(intersections.Count() == 2);
+                MhAssert.True(intersections.Count() == 2);
 				foreach (var intersection in intersections)
 				{
-					Assert.Equal(ClipperLib.Intersection.Colinear, intersection.intersection);
-					Assert.Equal(new IntPoint(0, 1000), intersection.position);
+					MhAssert.Equal(ClipperLib.Intersection.Colinear, intersection.intersection);
+					MhAssert.Equal(new IntPoint(0, 1000), intersection.position);
 				}
             }
 
             // touching the bottom line
             {
                 var intersections = outerLoop[0].GetIntersections(new IntPoint(0, -10), new IntPoint(0, 0));
-                Assert.True(intersections.Count() == 1);
-                Assert.Equal(2, intersections.First().pointIndex);
-                Assert.Equal(ClipperLib.Intersection.Colinear, intersections.First().intersection);
-                Assert.Equal(new IntPoint(0, 0), intersections.First().position);
+                MhAssert.True(intersections.Count() == 1);
+                MhAssert.Equal(2, intersections.First().pointIndex);
+                MhAssert.Equal(ClipperLib.Intersection.Colinear, intersections.First().intersection);
+                MhAssert.Equal(new IntPoint(0, 0), intersections.First().position);
             }
         }
 
-        [Test]
+        [MhTest]
         public void EnsureCorrectStitchOrder()
 		{
             //       /\1
@@ -167,8 +167,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			var (outerStart, innerStart) = PathStitcher.BestStartIndices(outerLoop[0], innerLoop[0]);
 
-			Assert.Equal(1, outerStart);
-			Assert.Equal(1, innerStart);
+			MhAssert.Equal(1, outerStart);
+			MhAssert.Equal(1, innerStart);
 
 			var expected = new List<(int outerIndex, int innerIndex, int polyIndex)>()
 			{
@@ -183,11 +183,11 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			for (var i = 0; i < expected.Count; i++)
 			{
 				var data = expected[i];
-                Assert.Equal(data.polyIndex, PathStitcher.GetPolygonToAdvance(outerLoop[0], data.outerIndex, innerLoop[0], data.innerIndex));//, "Validate Advance");
+                MhAssert.Equal(data.polyIndex, PathStitcher.GetPolygonToAdvance(outerLoop[0], data.outerIndex, innerLoop[0], data.innerIndex));//, "Validate Advance");
             }
         }
 
-        [Test]
+        [MhTest]
 		public void FaceCutWoundCorrectly()
 		{
 			var vertices = new List<Vector3Float>()
@@ -209,7 +209,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 				var direction = end - start;
 				var yDirection = new Vector2(direction.X, direction.Y).GetRotated(-angle);
-				Assert.True(yDirection.Y < 0);
+				MhAssert.True(yDirection.Y < 0);
 			}
 
 			CheckAngle(MathHelper.Tau / 3 * 0, .5);
@@ -230,7 +230,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			ImageIO.SaveImageData(path, image);
 		}
 		
-		[Test]
+		[MhTest]
 		public void CutsRespectWindingOrder()
 		{
 			var cube = PlatonicSolids.CreateCube(10, 10, 10);
@@ -245,22 +245,22 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				if (face.normal.Z == 0)
 				{
 					Vector3 start, end;
-					Assert.True(face.GetCutLine(cube.Vertices, cutPlane, out start, out end));
+					MhAssert.True(face.GetCutLine(cube.Vertices, cutPlane, out start, out end));
 					if (face.normal.X < 0)
 					{
-						Assert.True(start.Y > end.Y);
+						MhAssert.True(start.Y > end.Y);
 					}
 					else if (face.normal.Y < 0)
 					{
-						Assert.True(start.X < end.X);
+						MhAssert.True(start.X < end.X);
 					}
 					else if (face.normal.X > 0)
 					{
-						Assert.True(start.Y < end.Y);
+						MhAssert.True(start.Y < end.Y);
 					}
 					else if (face.normal.Y > 0)
 					{
-						Assert.True(start.X > end.X);
+						MhAssert.True(start.X > end.X);
 					}
 				}
 			}
@@ -271,7 +271,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			}
 		}
 
-		[Test]
+		[MhTest]
 		public void GetSliceLoop()
 		{
 			{
@@ -279,16 +279,16 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				tetrahedron.Translate(new Vector3(0, 0, -tetrahedron.GetAxisAlignedBoundingBox().MinXYZ.Z));
 				var cutPlane = new Plane(Vector3.UnitZ, new Vector3(0, 0, 3));
 				var slice = SliceLayer.CreateSlice(tetrahedron, cutPlane);
-				Assert.Single(slice);
-				Assert.Equal(3, slice[0].Count);
+				MhAssert.Single(slice);
+				MhAssert.Equal(3, slice[0].Count);
 			}
 
 			{
 				var cube = PlatonicSolids.CreateCube(10, 10, 10);
 				var cutPlane = new Plane(Vector3.UnitX, new Vector3(3, 0, 0));
 				var slice = SliceLayer.CreateSlice(cube, cutPlane);
-				Assert.Single(slice);
-				Assert.Equal(4, slice[0].Count);
+				MhAssert.Single(slice);
+				MhAssert.Equal(4, slice[0].Count);
 			}
 
 			{
@@ -296,11 +296,11 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				cube.Translate(0, 0, 5); // move bottom to z=0
 				var cutPlane = new Plane(Vector3.UnitZ, new Vector3(0, 0, 5));
 				var unorderedSegments = SliceLayer.GetUnorderdSegments(cube, cutPlane);
-				Assert.Equal(8, unorderedSegments.Count);
+				MhAssert.Equal(8, unorderedSegments.Count);
 				var fastLookups = SliceLayer.CreateFastIndexLookup(unorderedSegments);
-				Assert.Equal(8, fastLookups.Count);
+				MhAssert.Equal(8, fastLookups.Count);
 				var closedLoops = SliceLayer.FindClosedPolygons(unorderedSegments);
-				Assert.Single(closedLoops);
+				MhAssert.Single(closedLoops);
 			}
 
 			{
@@ -308,11 +308,11 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				cube.Translate(0, 0, 5); // move bottom to z=0
 				var cutPlane = new Plane(Vector3.UnitZ, new Vector3(0, 0, 5));
 				var unorderedSegments = SliceLayer.GetUnorderdSegments(cube, cutPlane);
-				Assert.Equal(8, unorderedSegments.Count);
+				MhAssert.Equal(8, unorderedSegments.Count);
 				var fastLookups = SliceLayer.CreateFastIndexLookup(unorderedSegments);
-				Assert.Equal(8, fastLookups.Count);
+				MhAssert.Equal(8, fastLookups.Count);
 				var closedLoops = SliceLayer.FindClosedPolygons(unorderedSegments);
-				Assert.Single(closedLoops);
+				MhAssert.Single(closedLoops);
 			}
 
 			{
@@ -325,17 +325,17 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				cubes.CopyFaces(cube2);
 				var cutPlane = new Plane(Vector3.UnitZ, new Vector3(0, 0, 5));
 				var unorderedSegments = SliceLayer.GetUnorderdSegments(cubes, cutPlane);
-				Assert.Equal(16, unorderedSegments.Count);
+				MhAssert.Equal(16, unorderedSegments.Count);
 				var fastLookups = SliceLayer.CreateFastIndexLookup(unorderedSegments);
-				Assert.Equal(16, fastLookups.Count);//, "There should be two loops of 8 segments that all have unique starts");
+				MhAssert.Equal(16, fastLookups.Count);//, "There should be two loops of 8 segments that all have unique starts");
                 var closedLoops = SliceLayer.FindClosedPolygons(unorderedSegments);
-				Assert.Equal(2, closedLoops.Count);
+				MhAssert.Equal(2, closedLoops.Count);
 				var union = SliceLayer.UnionClosedPolygons(closedLoops);
-				Assert.Single(union);
+				MhAssert.Single(union);
 			}
 		}
 
-		[Test]
+		[MhTest]
 		public void SingleLoopStiching()
 		{
 			return;
@@ -345,10 +345,10 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var top = PolygonsExtensions.CreateFromString("");
 				var mesh = PathStitcher.Stitch(bottom, 0, top, 10);
 				// only a bottom face, no walls
-				Assert.Equal(2, mesh.Faces.Count);
+				MhAssert.Equal(2, mesh.Faces.Count);
 				foreach (var vertex in mesh.Vertices)
 				{
-					Assert.Equal(0, vertex.Z);
+					MhAssert.Equal(0, vertex.Z);
 				}
 			}
 
@@ -359,10 +359,10 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var mesh = PathStitcher.Stitch(bottom, 0, top, 10);
 				// only a top face, no walls
 				// only a bottom face, no walls
-				Assert.Equal(2, mesh.Faces.Count);
+				MhAssert.Equal(2, mesh.Faces.Count);
 				foreach (var vertex in mesh.Vertices)
 				{
-					Assert.Equal(10, vertex.Z);
+					MhAssert.Equal(10, vertex.Z);
 				}
 			}
 
@@ -371,7 +371,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var bottom = PolygonsExtensions.CreateFromString("0,0, 100,0, 100,100, 0,100");
 				var top = PolygonsExtensions.CreateFromString("0,0 ,100,0, 100,100, 0,100");
 				var mesh = PathStitcher.Stitch(bottom, 0, top, 10);
-				Assert.Equal(8, mesh.Faces.Count);
+				MhAssert.Equal(8, mesh.Faces.Count);
 			}
 
 			// a simple skirt wound CW (error condition)
@@ -379,7 +379,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var bottom = PolygonsExtensions.CreateFromString("0,0, 0,100, 100,100, 100,0");
 				var top = PolygonsExtensions.CreateFromString("0,0, 0,100, 100,100, 100,0");
 				var mesh = PathStitcher.Stitch(bottom, 0, top, 10);
-				Assert.Empty(mesh.Faces);
+				MhAssert.Empty(mesh.Faces);
 			}
 
 			// only a CW bottom (error condition)
@@ -388,7 +388,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var top = PolygonsExtensions.CreateFromString("");
 				var mesh = PathStitcher.Stitch(bottom, 0, top, 10);
 				// only a bottom face, no walls
-				Assert.Empty(mesh.Faces);
+				MhAssert.Empty(mesh.Faces);
 			}
 
 			// only a CW top (error condition)
@@ -398,7 +398,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var mesh = PathStitcher.Stitch(bottom, 0, top, 10);
 				// only a top face, no walls
 				// only a bottom face, no walls
-				Assert.Empty(mesh.Faces);
+				MhAssert.Empty(mesh.Faces);
 			}
 		}
 
@@ -407,7 +407,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			// throw new NotImplementedException();
 		}
 
-		[Test]
+		[MhTest]
 		public void SplitFaceEdgeEdge()
 		{
 			void TestPositions(int p0, int p1, int p2)
@@ -421,21 +421,21 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				// . /___|___\
 				// .     |
 				mesh.CreateFace(positions[p0], positions[p1], positions[p2]);
-				Assert.Single(mesh.Faces);
-				Assert.Equal(3, mesh.Vertices.Count);
+				MhAssert.Single(mesh.Faces);
+				MhAssert.Equal(3, mesh.Vertices.Count);
 
 				// we find a split
-				Assert.True(mesh.SplitFace(0, new Plane(new Vector3(1, 0, 0), 5)));
+				MhAssert.True(mesh.SplitFace(0, new Plane(new Vector3(1, 0, 0), 5)));
 				// we now have 2 faces
-				Assert.Equal(2, mesh.Faces.Count);
+				MhAssert.Equal(2, mesh.Faces.Count);
 				// we now have 5 verts
 				// the have all the expected x values
-				Assert.Equal(4, mesh.Vertices.Count);
-				Assert.Single(mesh.Vertices.Where(v => v.X == 0));
-				Assert.Equal(2, mesh.Vertices.Where(v => v.X == 5).Count());
-				Assert.Single(mesh.Vertices.Where(v => v.X == 10));
+				MhAssert.Equal(4, mesh.Vertices.Count);
+				MhAssert.Single(mesh.Vertices.Where(v => v.X == 0));
+				MhAssert.Equal(2, mesh.Vertices.Where(v => v.X == 5).Count());
+				MhAssert.Single(mesh.Vertices.Where(v => v.X == 10));
 				// no face crosses the split line
-				Assert.Equal(2, mesh.Faces.Where(f =>
+				MhAssert.Equal(2, mesh.Faces.Where(f =>
 				{
 					// all face vertices are less than the split line or greater than the split line
 					return (mesh.Vertices[f.v0].X <= 5 && mesh.Vertices[f.v1].X <= 5 && mesh.Vertices[f.v2].X <= 5)
@@ -452,7 +452,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			TestPositions(2, 1, 0);
 		}
 
-		[Test]
+		[MhTest]
 		public void SplitFaceTwoEdges()
 		{
 			void TestPositions(int p0, int p1, int p2)
@@ -466,21 +466,21 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				// .  |_____|_______
 				// . 1      |       2
 				mesh.CreateFace(positions[p0], positions[p1], positions[p2]);
-				Assert.Single(mesh.Faces);
-				Assert.Equal(3, mesh.Vertices.Count);
+				MhAssert.Single(mesh.Faces);
+				MhAssert.Equal(3, mesh.Vertices.Count);
 
 				// we find a split
-				Assert.True(mesh.SplitFace(0, new Plane(new Vector3(1, 0, 0), 5)));
+				MhAssert.True(mesh.SplitFace(0, new Plane(new Vector3(1, 0, 0), 5)));
 				// we now have 3 faces
-				Assert.Equal(3, mesh.Faces.Count);
+				MhAssert.Equal(3, mesh.Faces.Count);
 				// we now have 5 verts
 				// the have all the expected x values
-				Assert.Equal(5, mesh.Vertices.Count);
-				Assert.Equal(2, mesh.Vertices.Where(v => v.X == 0).Count());
-				Assert.Equal(2, mesh.Vertices.Where(v => v.X == 5).Count());
-				Assert.Single(mesh.Vertices.Where(v => v.X == 10));
+				MhAssert.Equal(5, mesh.Vertices.Count);
+				MhAssert.Equal(2, mesh.Vertices.Where(v => v.X == 0).Count());
+				MhAssert.Equal(2, mesh.Vertices.Where(v => v.X == 5).Count());
+				MhAssert.Single(mesh.Vertices.Where(v => v.X == 10));
 				// no face crosses the split line
-				Assert.Equal(3, mesh.Faces.Where(f =>
+				MhAssert.Equal(3, mesh.Faces.Where(f =>
 				{
 					// all face vertices are less than the split line or greater than the split line
 					return (mesh.Vertices[f.v0].X <= 5 && mesh.Vertices[f.v1].X <= 5 && mesh.Vertices[f.v2].X <= 5)
@@ -497,7 +497,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			TestPositions(2, 1, 0);
 		}
 
-		[Test]
+		[MhTest]
 		public void CreateBspFaceTrees()
 		{
 			// a simple list of 3 faces
@@ -531,18 +531,18 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			{
 				var root = FaceBspTree.Create(testMesh);
 
-				Assert.True(root.Index == 1);
-				Assert.True(root.BackNode.Index == 0);
-				Assert.True(root.BackNode.BackNode.Index == 2);
+				MhAssert.True(root.Index == 1);
+				MhAssert.True(root.BackNode.Index == 0);
+				MhAssert.True(root.BackNode.BackNode.Index == 2);
 
 				var renderOredrList = FaceBspTree.GetFacesInVisibiltyOrder(testMesh, root, Matrix4X4.Identity, Matrix4X4.Identity).ToList();
-				Assert.True(renderOredrList[0] == 1);
-				Assert.True(renderOredrList[1] == 0);
-				Assert.True(renderOredrList[2] == 2);
+				MhAssert.True(renderOredrList[0] == 1);
+				MhAssert.True(renderOredrList[1] == 0);
+				MhAssert.True(renderOredrList[2] == 2);
 			}
 		}
 
-		[Test]
+		[MhTest]
 		public void CreateDualContouringCube()
 		{
 			foreach (var size in new[] { 1, 15, 200 })
@@ -562,8 +562,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				var octree = DualContouring.Octree.BuildOctree(box.Sdf, bounds.MinXYZ, bounds.Size, iterations, threshold: .001);
 				var mesh = DualContouring.Octree.GenerateMeshFromOctree(octree);
 
-				Assert.Equal(12, mesh.Faces.Count);
-				Assert.Equal(8, mesh.Vertices.Count);
+				MhAssert.Equal(12, mesh.Faces.Count);
+				MhAssert.Equal(8, mesh.Vertices.Count);
 
 				var expectedVertices = PlatonicSolids.CreateCube(size, size, size).Vertices
 							.OrderBy(v => v.X)
@@ -577,7 +577,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 				foreach (var (expected, actual) in expectedVertices.Zip(actualVertices))
 				{
-					Assert.True((expected - actual).Length < 1e-6);
+					MhAssert.True((expected - actual).Length < 1e-6);
 				}
 			}
 		}

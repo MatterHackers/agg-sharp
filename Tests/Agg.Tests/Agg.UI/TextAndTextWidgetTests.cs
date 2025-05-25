@@ -37,12 +37,12 @@ using System.IO;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestFixture("Opens Winforms Window")]
+    [MhTestFixture("Opens Winforms Window")]
     public class TextAndTextWidgetTests
 	{
 		public bool saveImagesForDebug;
 
-        [Test]
+        [MhTest]
         public void TextWidgetAutoSizeTest()
 		{
 			// resize works on text widgets
@@ -53,11 +53,11 @@ namespace MatterHackers.Agg.UI.Tests
 				double origWidth = textItem.Width;
 				textItem.Text = "test Items";
 				double newlineWidth = textItem.Width;
-				Assert.True(newlineWidth > origWidth);
+				MhAssert.True(newlineWidth > origWidth);
 
 				textItem.Text = "test Item";
 				double backToOrignWidth = textItem.Width;
-				Assert.True(backToOrignWidth == origWidth);
+				MhAssert.True(backToOrignWidth == origWidth);
 
 
 				double origHeight = textItem.Height;
@@ -66,7 +66,7 @@ namespace MatterHackers.Agg.UI.Tests
 				textItem.Text = "test Item";
 				double backToOrignHeight = textItem.Height;
 
-				Assert.True(backToOrignHeight == origHeight);
+				MhAssert.True(backToOrignHeight == origHeight);
 			}
 
 			// make sure text widget gets smaller vertically when it needs to
@@ -85,17 +85,17 @@ namespace MatterHackers.Agg.UI.Tests
 				holder.AddChild(textItem);
 
 				var origSize = textItem.Size;
-				Assert.True(origSize.X > 10, "The control expanded");
+				MhAssert.True(origSize.X > 10, "The control expanded");
 				holder.Width = 100;
 				var bigSize = textItem.Size;
 
-				Assert.True(bigSize.X < origSize.X, "The control got narrower and taller");
-				Assert.True(bigSize.Y > origSize.Y, "The control got narrower and taller");
+				MhAssert.True(bigSize.X < origSize.X, "The control got narrower and taller");
+				MhAssert.True(bigSize.Y > origSize.Y, "The control got narrower and taller");
 
 				holder.Width = 500;
 				var backToOrignSize = textItem.Size;
-				Assert.True(backToOrignSize.X == origSize.X);
-				Assert.True(backToOrignSize.Y == origSize.Y);
+				MhAssert.True(backToOrignSize.X == origSize.X);
+				MhAssert.True(backToOrignSize.Y == origSize.Y);
 
 				double origHeight = textItem.Height;
 				textItem.Text = "test\nItem";
@@ -103,11 +103,11 @@ namespace MatterHackers.Agg.UI.Tests
 				textItem.Text = "test Item";
 				double backToOrignHeight = textItem.Height;
 
-				Assert.True(backToOrignHeight == origHeight);
+				MhAssert.True(backToOrignHeight == origHeight);
 			}
 		}
 
-        [Test]
+        [MhTest]
         public void TextWidgetVisibleTest()
 		{
 			{
@@ -130,7 +130,7 @@ namespace MatterHackers.Agg.UI.Tests
 					ImageTgaIO.Save(textOnly, "-textOnly.tga");
 				}
 
-				Assert.True(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1), "TextWidgets need to be drawing.");
+				MhAssert.True(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1), "TextWidgets need to be drawing.");
 				rectangleWidget.Close();
 			}
 
@@ -161,7 +161,7 @@ namespace MatterHackers.Agg.UI.Tests
                     ImageTgaIO.Save(textOnly, Path.Combine(basePath, "-textOnly.tga"));
 				}
 
-				Assert.True(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1), "TextWidgets need to be drawing.");
+				MhAssert.True(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1), "TextWidgets need to be drawing.");
 				rectangleWidget.Close();
 				GuiWidget.DefaultEnforceIntegerBounds = oldEnforceIntegerBounds;
             }

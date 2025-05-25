@@ -31,10 +31,10 @@ using Agg.Tests.Agg;
 
 namespace MatterHackers.RayTracer
 {
-    [TestFixture("WorkInProgress")]
+    [MhTestFixture("WorkInProgress")]
 	public class FrustumTests
 	{
-		[Test]
+		[MhTest]
 		public void RayBundleSameResultAsIndividualRays()
 		{
 		}

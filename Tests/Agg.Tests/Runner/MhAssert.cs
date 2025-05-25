@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2024, Lars Brubaker
+Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -32,11 +32,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MatterHackers.PolygonMesh;
 
 namespace Agg.Tests.Agg
 {
-    public class Assert
+    public class MhAssert
     {
         public static void Equal(int expected, int actual)
         {

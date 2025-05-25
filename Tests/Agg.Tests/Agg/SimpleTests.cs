@@ -34,7 +34,7 @@ using System;
 
 namespace MatterHackers.Agg.Tests
 {
-	[TestFixture("Agg.SimpleTests")]
+	[MhTestFixture("Agg.SimpleTests")]
 	public class SimpleTests
 	{
 		public static bool GetNextNumberSameResult(String source, int startIndex, double expectedValue)
@@ -52,7 +52,7 @@ namespace MatterHackers.Agg.Tests
 			return true;
 		}
 
-		[Test]
+		[MhTest]
 		public void JsonSerializeVertexStorage()
 		{
 			var test1Control = new VertexStorage();
@@ -62,7 +62,7 @@ namespace MatterHackers.Agg.Tests
 			test1Control.ClosePolygon();
 			string jsonData = JsonConvert.SerializeObject(test1Control);
 			var test1Result = JsonConvert.DeserializeObject<VertexStorage>(jsonData);
-			Assert.Equal(test1Control.Count, test1Result.Count);
+			MhAssert.Equal(test1Control.Count, test1Result.Count);
 
 			var control = test1Control.Vertices().GetEnumerator();
 			var result = test1Result.Vertices().GetEnumerator();
@@ -72,58 +72,58 @@ namespace MatterHackers.Agg.Tests
 				result.MoveNext();
 				var controlVertex = control.Current;
 				var resultVertex = result.Current;
-				Assert.Equal(controlVertex.Command, resultVertex.Command);
-				Assert.Equal(controlVertex.Position, resultVertex.Position);
+				MhAssert.Equal(controlVertex.Command, resultVertex.Command);
+				MhAssert.Equal(controlVertex.Position, resultVertex.Position);
 			}
 		}
 
-		[Test]
+		[MhTest]
 		public void GetNextNumberWorks()
 		{
-			Assert.True(GetNextNumberSameResult("1234", 0, 1234));
-			Assert.True(GetNextNumberSameResult("1234 15", 5, 15));
-			Assert.True(GetNextNumberSameResult("-1234", 0, -1234));
-			Assert.True(GetNextNumberSameResult("- 1234", 0, -1234));
-			Assert.True(GetNextNumberSameResult("+1234", 0, 1234));
-			Assert.True(GetNextNumberSameResult("1234.3", 0, 1234.3));
-			Assert.True(GetNextNumberSameResult("1234.354", 0, 1234.354));
-			Assert.True(GetNextNumberSameResult("1234.354212", 0, 1234.354212));
-			Assert.True(GetNextNumberSameResult("0.123", 0, .123));
-			Assert.True(GetNextNumberSameResult(".123", 0, .123));
+			MhAssert.True(GetNextNumberSameResult("1234", 0, 1234));
+			MhAssert.True(GetNextNumberSameResult("1234 15", 5, 15));
+			MhAssert.True(GetNextNumberSameResult("-1234", 0, -1234));
+			MhAssert.True(GetNextNumberSameResult("- 1234", 0, -1234));
+			MhAssert.True(GetNextNumberSameResult("+1234", 0, 1234));
+			MhAssert.True(GetNextNumberSameResult("1234.3", 0, 1234.3));
+			MhAssert.True(GetNextNumberSameResult("1234.354", 0, 1234.354));
+			MhAssert.True(GetNextNumberSameResult("1234.354212", 0, 1234.354212));
+			MhAssert.True(GetNextNumberSameResult("0.123", 0, .123));
+			MhAssert.True(GetNextNumberSameResult(".123", 0, .123));
 		}
 
-		[Test]
+		[MhTest]
 		public void TestGetHashCode()
 		{
 			{
 				Color a = new Color(10, 11, 12);
 				Color b = new Color(10, 11, 12);
-				Assert.True(a.GetHashCode() == b.GetHashCode());
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 			{
 				ColorF a = new ColorF(10, 11, 12);
 				ColorF b = new ColorF(10, 11, 12);
-				Assert.True(a.GetHashCode() == b.GetHashCode());
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 			{
 				BorderDouble a = new BorderDouble(10, 11, 12, 13);
 				BorderDouble b = new BorderDouble(10, 11, 12, 13);
-				Assert.True(a.GetHashCode() == b.GetHashCode());
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 			{
 				Point2D a = new Point2D(10, 11);
 				Point2D b = new Point2D(10, 11);
-				Assert.True(a.GetHashCode() == b.GetHashCode());
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 			{
 				RectangleDouble a = new RectangleDouble(10, 11, 12, 13);
 				RectangleDouble b = new RectangleDouble(10, 11, 12, 13);
-				Assert.True(a.GetHashCode() == b.GetHashCode());
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 			{
 				RectangleInt a = new RectangleInt(10, 11, 12, 13);
 				RectangleInt b = new RectangleInt(10, 11, 12, 13);
-				Assert.True(a.GetHashCode() == b.GetHashCode());
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 		}
 	}

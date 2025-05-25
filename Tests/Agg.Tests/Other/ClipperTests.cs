@@ -39,10 +39,10 @@ namespace MatterHackers.Agg.Tests
 	using Polygons = List<List<IntPoint>>;
 	using Polygon = List<IntPoint>;
 
-	[TestFixture]
+	[MhTestFixture]
 	public class ClipperTests
 	{
-		[Test]
+		[MhTest]
 		public void CleanPolygonsTest()
 		{
 			var polygon = new Polygon();
@@ -68,7 +68,7 @@ namespace MatterHackers.Agg.Tests
 			{
 				var centerPoint = (cleanedPolygon[i + 1] + cleanedPolygon[i]) / 2;
 				var distToCenter = centerPoint.Length();
-				Assert.True(Math.Abs(length - distToCenter) <= 3);
+				MhAssert.True(Math.Abs(length - distToCenter) <= 3);
             }
 		}
 

@@ -32,7 +32,7 @@ using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestFixture("Opens Winforms Window")]
+    [MhTestFixture("Opens Winforms Window")]
     public class ScrollableWidgetTests
 	{
 		public static bool saveImagesForDebug = false;
@@ -46,7 +46,7 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [Test]
+        [MhTest]
         public void LimitScrolToContetsTests()
 		{
 			GuiWidget containerControl = new GuiWidget(200, 200);
@@ -61,8 +61,8 @@ namespace MatterHackers.Agg.UI.Tests
 
 			OutputImages(containerControl, containerTest);
 
-			Assert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-			Assert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			MhAssert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 	}
 }
