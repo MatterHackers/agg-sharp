@@ -736,7 +736,7 @@ namespace MatterHackers.MeshVisualizer
 				}
 			}
 
-			ITraceable allUiObjects = BoundingVolumeHierarchy.CreateNewHierachy(uiTraceables);
+			ITraceable allUiObjects = BoundingVolumeHierarchy.CreateNewHierarchy(uiTraceables);
 
 			info = allUiObjects.GetClosestIntersection(ray);
 			if (info != null)

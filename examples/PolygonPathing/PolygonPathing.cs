@@ -998,6 +998,16 @@ namespace MatterHackers.PolygonPathing
 		{
 			throw new NotImplementedException();
 		}
+
+		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+		{
+			foreach (var vertex in this.Vertices())
+			{
+				hash = vertex.GetLongHashCode(hash);
+			}
+
+			return hash;
+		}
 	}
 
 	internal class conv_poly_counter

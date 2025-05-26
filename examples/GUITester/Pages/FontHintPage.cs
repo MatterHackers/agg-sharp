@@ -88,6 +88,16 @@ namespace MatterHackers.Agg
 			}
 		}
 
+		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+		{
+			foreach (var vertex in this.Vertices())
+			{
+				hash = vertex.GetLongHashCode(hash);
+			}
+
+			return hash;
+		}
+
 		private void ApplayYWarp(ref double x, ref double y)
 		{
 			// do the actual warp

@@ -211,10 +211,16 @@ namespace TestInvoker // Note: actual namespace depends on the project name.
 			string methodName = args[4];
 
 			Assembly asm = Assembly.LoadFrom(assemblyPath!);
-            Assert.NotNull(asm);
+            if (asm == null)
+			{
+				throw new Exception("Assembly load failed.");
+			}
 
 			MethodInfo? methodInfo = asm.GetType(typeName)?.GetMethod(methodName);
-            Assert.NotNull(asm);
+            if (methodInfo == null)
+			{
+				throw new Exception("Method not found.");
+			}
 
 			var runner = new NUnitTestAssemblyRunner(new DefaultTestAssemblyBuilder());
 			runner.Load(asm, new Dictionary<string, object>());

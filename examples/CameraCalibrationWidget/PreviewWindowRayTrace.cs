@@ -182,7 +182,7 @@ namespace MatterHackers.MatterCad
 
             renderCollection.Add(MakerGearXCariage());
 
-            allObjects = BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
+            allObjects = BoundingVolumeHierarchy.CreateNewHierarchy(renderCollection);
             trackBallTransform = new Transform(allObjects);
             //allObjects = root;
             scene.shapes.Add(trackBallTransform);
@@ -280,7 +280,7 @@ namespace MatterHackers.MatterCad
                 scanData1.Add(littleShpere);
             }
 
-            renderCollection.Add(BoundingVolumeHierarchy.CreateNewHierachy(scanData1));
+            renderCollection.Add(BoundingVolumeHierarchy.CreateNewHierarchy(scanData1));
         }
 
         private void AddBoxAndSheresBooleanTest()
@@ -316,7 +316,7 @@ namespace MatterHackers.MatterCad
 #endif
 
 
-            IRayTraceable subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
+            IRayTraceable subtractGroup = BoundingVolumeHierarchy.CreateNewHierarchy(subtractShapes);
             Difference merge = new Difference(box1, subtractGroup);
 
             renderCollection.Add(merge);
@@ -331,7 +331,7 @@ namespace MatterHackers.MatterCad
             RayTracer.SolidMaterial material = new RayTracer.SolidMaterial(RGBA_Floats.Red, 0, 0, 0);
             subtractShapes.Add(new BoxShape(new Vector3(), new Vector3(1, 1, 1), material));
 
-            RayTracer.IRayTraceable subtractGroup = RayTracer.BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
+            RayTracer.IRayTraceable subtractGroup = RayTracer.BoundingVolumeHierarchy.CreateNewHierarchy(subtractShapes);
             Difference merge = new Difference(box1, subtractGroup);
 
             renderCollection.Add(merge);

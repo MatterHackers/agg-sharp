@@ -458,6 +458,16 @@ namespace MatterHackers.Agg
 			throw new NotImplementedException();
 		}
 
+		public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+		{
+			foreach (var vertex in this.Vertices())
+			{
+				hash = vertex.GetLongHashCode(hash);
+			}
+
+			return hash;
+		}
+
 		public void Rewind(int index)
 		{
 			m_angle = m_start_angle;
