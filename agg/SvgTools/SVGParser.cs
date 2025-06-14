@@ -32,7 +32,7 @@ namespace MatterHackers.Agg.SvgTools
     {
         private static HashSet<char> validNumberStartingCharacters = new HashSet<char> { '-', '.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
 
-        private static HashSet<char> validSkipCharacters = new HashSet<char> { ' ', ',' };
+        private static HashSet<char> validSkipCharacters = new HashSet<char> { ' ', '\t', '\n', '\r', ',' };
 
         public static List<ColoredVertexSource> Parse(string filePath, bool flipY)
         {
@@ -81,12 +81,24 @@ namespace MatterHackers.Agg.SvgTools
 
                     // get the fill color
                     var fillColor = Color.Black;
+                    
+                    // First check for direct fill attribute
                     if (pathNode.Attributes["fill"] != null)
                     {
                         var fillString = pathNode.Attributes["fill"].Value;
                         if (fillString.StartsWith("#"))
                         {
                             fillColor = new Color(fillString);
+                        }
+                    }
+                    // Then check for fill color in style attribute
+                    else if (pathNode.Attributes["style"] != null)
+                    {
+                        var styleString = pathNode.Attributes["style"].Value;
+                        var fillMatch = System.Text.RegularExpressions.Regex.Match(styleString, @"fill:\s*#([0-9A-Fa-f]{6})");
+                        if (fillMatch.Success)
+                        {
+                            fillColor = new Color("#" + fillMatch.Groups[1].Value);
                         }
                     }
 
@@ -408,8 +420,8 @@ namespace MatterHackers.Agg.SvgTools
                         } while (NextElementIsANumber(dString, parseIndex));
                         break;
 
-                    case 'q': // quadratic Bézier curveto relative
-                    case 'Q': // quadratic Bézier curveto absolute
+                    case 'q': // quadratic Bï¿½zier curveto relative
+                    case 'Q': // quadratic Bï¿½zier curveto absolute
                         parseIndex++;
                         do
                         {
@@ -429,8 +441,8 @@ namespace MatterHackers.Agg.SvgTools
                         lastXY = curXY;
                         break;
 
-                    case 't': // Shorthand/smooth quadratic Bézier curveto relative
-                    case 'T': // Shorthand/smooth quadratic Bézier curveto absolute
+                    case 't': // Shorthand/smooth quadratic Bï¿½zier curveto relative
+                    case 'T': // Shorthand/smooth quadratic Bï¿½zier curveto absolute
                         parseIndex++;
                         do
                         {
@@ -468,6 +480,7 @@ namespace MatterHackers.Agg.SvgTools
                         break;
 
                     case ' ':
+                    case '\t': // tab character
                     case '\n': // some white space we need to skip
                     case '\r':
                         parseIndex++;
