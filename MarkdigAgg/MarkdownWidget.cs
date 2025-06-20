@@ -1,5 +1,5 @@
 ﻿/*
-Copyright(c) 2024, Lars Brubaker, John Lewin
+Copyright(c) 2025, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
+using System.Linq;
 
 namespace Markdig.Agg
 {
@@ -122,6 +123,10 @@ namespace Markdig.Agg
                 if (File.Exists(fullPath))
                 {
                     string markDown = File.ReadAllText(fullPath);
+                    
+                    // Strip frontmatter before displaying
+                    markDown = StripFrontmatter(markDown);
+                    
                     pathHandler.UpdateCurrentDirectory(fullPath);
 
                     UiThread.RunOnIdle(() =>
@@ -135,6 +140,48 @@ namespace Markdig.Agg
                 // Handle or log error
                 this.Markdown = "";
             }
+        }
+
+        /// <summary>
+        /// Strips YAML frontmatter from markdown content if present
+        /// </summary>
+        /// <param name="content">The markdown content that may contain frontmatter</param>
+        /// <returns>The markdown content without frontmatter</returns>
+        private static string StripFrontmatter(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+            {
+                return content;
+            }
+
+            var lines = content.Split('\n');
+            if (lines.Length < 2 || !lines[0].Trim().Equals("---"))
+            {
+                // No frontmatter found
+                return content;
+            }
+
+            // Find the end of frontmatter
+            int frontmatterEndIndex = -1;
+            for (int i = 1; i < lines.Length; i++)
+            {
+                var line = lines[i].Trim();
+                if (line.Equals("---"))
+                {
+                    frontmatterEndIndex = i;
+                    break;
+                }
+            }
+
+            if (frontmatterEndIndex == -1)
+            {
+                // No closing frontmatter marker found, return original content
+                return content;
+            }
+
+            // Return content after frontmatter (skip the closing --- line)
+            var remainingLines = lines.Skip(frontmatterEndIndex + 1);
+            return string.Join("\n", remainingLines);
         }
 
         /// <summary>
