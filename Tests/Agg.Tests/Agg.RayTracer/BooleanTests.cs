@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -28,19 +28,26 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.RayTracer.Traceable;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.VectorMath;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Text;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.RayTracer
 {
-	[MhTestFixture("Agg.RayTracer")]
+	[TestClass]
 	public class BooleanTests
 	{
-		[MhTest]
+		[TestMethod]
 		public void DifferenceTestsForBox()
 		{
 			SolidMaterial redMaterial = new SolidMaterial(ColorF.Red, 0, 0, 0);
@@ -53,11 +60,11 @@ namespace MatterHackers.RayTracer
 			{
 				IntersectInfo testInfo = box1X1.GetClosestIntersection(castRay);
 
-				MhAssert.True(testInfo.HitType == IntersectionType.FrontFace, "Found Hit : Box No CSG");
-				MhAssert.True(testInfo.ClosestHitObject == box1X1, "Found Hit : Box No CSG");
-				MhAssert.True(testInfo.HitPosition == new Vector3(0, -.5, 0), "Hit position y = -.5 : Box No CSG");
-				MhAssert.True(testInfo.DistanceToHit == .5, "Hit length = .5 : Box No CSG");
-				MhAssert.True(testInfo.NormalAtHit == -Vector3.UnitY, "Normal Correct : Box No CSG");
+				Assert.IsTrue(testInfo.HitType == IntersectionType.FrontFace, "Found Hit : Box No CSG");
+				Assert.IsTrue(testInfo.ClosestHitObject == box1X1, "Found Hit : Box No CSG");
+				Assert.IsTrue(testInfo.HitPosition == new Vector3(0, -.5, 0), "Hit position y = -.5 : Box No CSG");
+				Assert.IsTrue(testInfo.DistanceToHit == .5, "Hit length = .5 : Box No CSG");
+				Assert.IsTrue(testInfo.NormalAtHit == -Vector3.UnitY, "Normal Correct : Box No CSG");
 			}
 
 			// one subtract from the front of a box, the front faces are aligned
@@ -66,11 +73,11 @@ namespace MatterHackers.RayTracer
 				Difference merge = new Difference(box1X1, subtractBox);
 				IntersectInfo testInfo = merge.GetClosestIntersection(castRay);
 
-				MhAssert.True(testInfo.HitType == IntersectionType.FrontFace, "Found Hit : One Subtract");
-				MhAssert.True(testInfo.ClosestHitObject == subtractBox, "Found Hit : One Subtract");
-				MhAssert.True(testInfo.HitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : One Subtract");
-				MhAssert.True(testInfo.DistanceToHit == 1, "Hit length = 1 : One Subtract");
-				MhAssert.True(testInfo.NormalAtHit == -Vector3.UnitY, "Normal Correct : One Subtract");
+				Assert.IsTrue(testInfo.HitType == IntersectionType.FrontFace, "Found Hit : One Subtract");
+				Assert.IsTrue(testInfo.ClosestHitObject == subtractBox, "Found Hit : One Subtract");
+				Assert.IsTrue(testInfo.HitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : One Subtract");
+				Assert.IsTrue(testInfo.DistanceToHit == 1, "Hit length = 1 : One Subtract");
+				Assert.IsTrue(testInfo.NormalAtHit == -Vector3.UnitY, "Normal Correct : One Subtract");
 			}
 
 #if false
@@ -120,7 +127,7 @@ namespace MatterHackers.RayTracer
 #endif
 		}
 
-		[MhTest]
+		[TestMethod]
 		public void DiscoveredBadIntersectInfoListSubtraction()
 		{
 			string primaryString = @"2

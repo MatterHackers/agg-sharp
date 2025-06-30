@@ -28,14 +28,16 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.Transform;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.Tests
 {
-	[MhTestFixture]
+	[TestClass]
     public class AffineTests
 	{
-		[MhTest]
+		[TestMethod]
 		public void invert_test()
 		{
 			Affine a = Affine.NewIdentity();
@@ -50,11 +52,11 @@ namespace MatterHackers.Agg.Tests
 
 			a.Transform(ref newx, ref newy);
 			b.Transform(ref newx, ref newy);
-			MhAssert.Equal(x, newx, .001);
-			MhAssert.Equal(y, newy, .001);
+			Assert.AreEqual(x, newx, .001);
+			Assert.AreEqual(y, newy, .001);
 		}
 
-		[MhTest]
+		[TestMethod]
 		public void transform_test()
 		{
 			Affine a = Affine.NewIdentity();
@@ -66,8 +68,8 @@ namespace MatterHackers.Agg.Tests
 			double newy = 0;
 
 			a.Transform(ref newx, ref newy);
-			MhAssert.Equal(x, newx, .001);
-			MhAssert.Equal(y, newy, .001);
+			Assert.AreEqual(x, newx, .001);
+			Assert.AreEqual(y, newy, .001);
 		}
 	}
 }

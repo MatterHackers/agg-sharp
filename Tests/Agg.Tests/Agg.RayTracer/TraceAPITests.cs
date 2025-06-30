@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -28,18 +28,24 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.PolygonMesh.Processors;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.RayTracer.Traceable;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.VectorMath;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.RayTracer
 {
-	[MhTestFixture("Agg.RayTracer")]
+	[TestClass]
 	public class TraceAPITests
 	{
-		[MhTest]
+		[TestMethod]
 		public void EnumerateBvh()
 		{
 			// create a bvh hierarchy
@@ -54,7 +60,7 @@ namespace MatterHackers.RayTracer
 			var root = new Transform(level1);
 
 			// enumerate it and check it
-			MhAssert.Equal(9, new BvhIterator(root).Count());
+			Assert.AreEqual(9, new BvhIterator(root).Count());
 
 			int count = 0;
 			foreach(var item in new BvhIterator(root))
@@ -62,55 +68,55 @@ namespace MatterHackers.RayTracer
 				switch(count++)
 				{
 					case 0:
-						MhAssert.True(item.Bvh is Transform);
-						MhAssert.Equal(0, item.Depth);
-						MhAssert.Equal(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
+						Assert.IsTrue(item.Bvh is Transform);
+						Assert.AreEqual(0, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
 						break;
 					case 1:
-						MhAssert.True(item.Bvh is UnboundCollection);
-						MhAssert.Equal(1, item.Depth);
-						MhAssert.Equal(Matrix4X4.CreateTranslation(0,0,0), item.TransformToWorld);
+						Assert.IsTrue(item.Bvh is UnboundCollection);
+						Assert.AreEqual(1, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0,0,0), item.TransformToWorld);
 						break;
 					case 2:
-						MhAssert.True(item.Bvh is Transform);
-						MhAssert.Equal(2, item.Depth);
-						MhAssert.Equal(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
+						Assert.IsTrue(item.Bvh is Transform);
+						Assert.AreEqual(2, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
 						break;
 					case 3:
-						MhAssert.True(item.Bvh is UnboundCollection);
-						MhAssert.Equal(3, item.Depth);
-						MhAssert.Equal(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
+						Assert.IsTrue(item.Bvh is UnboundCollection);
+						Assert.AreEqual(3, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
 						break;
 					case 4:
-						MhAssert.True(item.Bvh is TriangleShape);
-						MhAssert.Equal(4, item.Depth);
-						MhAssert.Equal(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
+						Assert.IsTrue(item.Bvh is TriangleShape);
+						Assert.AreEqual(4, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
 						break;
 					case 5:
-						MhAssert.True(item.Bvh is TriangleShape);
-						MhAssert.Equal(4, item.Depth);
-						MhAssert.Equal(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
+						Assert.IsTrue(item.Bvh is TriangleShape);
+						Assert.AreEqual(4, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
 						break;
 					case 6:
-						MhAssert.True(item.Bvh is TriangleShape);
-						MhAssert.Equal(4, item.Depth);
-						MhAssert.Equal(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
+						Assert.IsTrue(item.Bvh is TriangleShape);
+						Assert.AreEqual(4, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
 						break;
 					case 7:
-						MhAssert.True(item.Bvh is Transform);
-						MhAssert.Equal(2, item.Depth);
-						MhAssert.Equal(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
+						Assert.IsTrue(item.Bvh is Transform);
+						Assert.AreEqual(2, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
 						break;
 					case 8:
-						MhAssert.True(item.Bvh is TriangleShape);
-						MhAssert.Equal(3, item.Depth);
-						MhAssert.Equal(Matrix4X4.CreateTranslation(0, 40, 0), item.TransformToWorld);
+						Assert.IsTrue(item.Bvh is TriangleShape);
+						Assert.AreEqual(3, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 40, 0), item.TransformToWorld);
 						break;
 				}
 			}
 		}
 
-		[MhTest]
+		[TestMethod]
 		public void PlaneGetDistanceToIntersection()
 		{
 			Plane testPlane = new Plane(Vector3.UnitZ, 10);
@@ -118,24 +124,24 @@ namespace MatterHackers.RayTracer
 			double distanceToHit;
 
 			Ray lookingAtFrontOfPlane = new Ray(new Vector3(0, 0, 11), new Vector3(0, 0, -1));
-			MhAssert.True(testPlane.RayHitPlane(lookingAtFrontOfPlane, out distanceToHit, out hitFrontOfPlane));
-			MhAssert.True(distanceToHit == 1);
-			MhAssert.True(hitFrontOfPlane);
+			Assert.IsTrue(testPlane.RayHitPlane(lookingAtFrontOfPlane, out distanceToHit, out hitFrontOfPlane));
+			Assert.IsTrue(distanceToHit == 1);
+			Assert.IsTrue(hitFrontOfPlane);
 
 			Ray notLookingAtFrontOfPlane = new Ray(new Vector3(0, 0, 11), new Vector3(0, 0, 1));
-			MhAssert.True(!testPlane.RayHitPlane(notLookingAtFrontOfPlane, out distanceToHit, out hitFrontOfPlane));
-			MhAssert.True(distanceToHit == double.PositiveInfinity);
-			MhAssert.True(!hitFrontOfPlane);
+			Assert.IsTrue(!testPlane.RayHitPlane(notLookingAtFrontOfPlane, out distanceToHit, out hitFrontOfPlane));
+			Assert.IsTrue(distanceToHit == double.PositiveInfinity);
+			Assert.IsTrue(!hitFrontOfPlane);
 
 			Ray lookingAtBackOfPlane = new Ray(new Vector3(0, 0, 9), new Vector3(0, 0, 1));
-			MhAssert.True(testPlane.RayHitPlane(lookingAtBackOfPlane, out distanceToHit, out hitFrontOfPlane));
-			MhAssert.True(distanceToHit == 1);
-			MhAssert.True(!hitFrontOfPlane);
+			Assert.IsTrue(testPlane.RayHitPlane(lookingAtBackOfPlane, out distanceToHit, out hitFrontOfPlane));
+			Assert.IsTrue(distanceToHit == 1);
+			Assert.IsTrue(!hitFrontOfPlane);
 
 			Ray notLookingAtBackOfPlane = new Ray(new Vector3(0, 0, 9), new Vector3(0, 0, -1));
-			MhAssert.True(!testPlane.RayHitPlane(notLookingAtBackOfPlane, out distanceToHit, out hitFrontOfPlane));
-			MhAssert.True(distanceToHit == double.PositiveInfinity);
-			MhAssert.True(hitFrontOfPlane);
+			Assert.IsTrue(!testPlane.RayHitPlane(notLookingAtBackOfPlane, out distanceToHit, out hitFrontOfPlane));
+			Assert.IsTrue(distanceToHit == double.PositiveInfinity);
+			Assert.IsTrue(hitFrontOfPlane);
 		}
 	}
 }

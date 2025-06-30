@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2023, Lars Brubaker
 All rights reserved.
 
@@ -28,21 +28,27 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ClipperLib;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.VectorMath;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Agg.Tests.Agg;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.Tests
 {
 	using Polygons = List<List<IntPoint>>;
 	using Polygon = List<IntPoint>;
 
-	[MhTestFixture]
+	[TestClass]
 	public class ClipperTests
 	{
-		[MhTest]
+		[TestMethod]
 		public void CleanPolygonsTest()
 		{
 			var polygon = new Polygon();
@@ -68,7 +74,7 @@ namespace MatterHackers.Agg.Tests
 			{
 				var centerPoint = (cleanedPolygon[i + 1] + cleanedPolygon[i]) / 2;
 				var distToCenter = centerPoint.Length();
-				MhAssert.True(Math.Abs(length - distToCenter) <= 3);
+				Assert.IsTrue(Math.Abs(length - distToCenter) <= 3);
             }
 		}
 

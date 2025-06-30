@@ -1,13 +1,14 @@
-﻿using MatterHackers.Agg.Font;
+using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Agg.Tests.Agg
 {
-    [MhTestFixture("Agg.Font")]
+    [TestClass]
     public class FontTests
     {
-        [MhTest]
+        [TestMethod]
         public void CanPrintTests()
         {
             // Invoke DrawString with a carriage return. If any part of the font pipeline throws, this test fails
@@ -15,15 +16,15 @@ namespace Agg.Tests.Agg
             testImage.NewGraphics2D().DrawString("\r", 30, 30);
         }
 
-        [MhTest]
+        [TestMethod]
         public void TextWrappingTest()
         {
             EnglishTextWrapping englishWrapping = new EnglishTextWrapping(8);
             List<string> wrappedLines = englishWrapping.WrapSingleLineOnWidth("Layers or MM", 30);
-            MhAssert.True(wrappedLines.Count == 3);
-            MhAssert.True(wrappedLines[0] == "Layer");
-            MhAssert.True(wrappedLines[1] == "s or");
-            MhAssert.True(wrappedLines[2] == "MM");
+            Assert.IsTrue(wrappedLines.Count == 3);
+            Assert.IsTrue(wrappedLines[0] == "Layer");
+            Assert.IsTrue(wrappedLines[1] == "s or");
+            Assert.IsTrue(wrappedLines[2] == "MM");
         }
     }
 }

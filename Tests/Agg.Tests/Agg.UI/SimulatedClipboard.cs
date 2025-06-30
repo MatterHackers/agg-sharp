@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2018, John Lewin
 All rights reserved.
 

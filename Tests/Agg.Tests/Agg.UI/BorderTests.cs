@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2018, John Lewin
 All rights reserved.
 
@@ -28,12 +28,15 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System.Diagnostics;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Agg.Tests.Agg;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.Image;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [MhTestFixture("Opens Winforms Window")]
+    [TestClass]
     public class BorderTests
 	{
 		private int borderSize = 1;
@@ -48,7 +51,7 @@ namespace MatterHackers.Agg.UI.Tests
 			All = 4
 		}
 
-        [MhTest]
+        [TestMethod]
         public void BorderTestLeft()
 		{
 			var border = new BorderDouble(left: borderSize);
@@ -57,7 +60,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Left, border, surface);
 		}
 
-        [MhTest]
+        [TestMethod]
         public void BorderTestBottom()
 		{
 			var border = new BorderDouble(bottom: borderSize);
@@ -66,7 +69,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Bottom, border, surface);
 		}
 
-        [MhTest]
+        [TestMethod]
         public void BorderTestRight()
 		{
 			var border = new BorderDouble(right: borderSize);
@@ -75,7 +78,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Right, border, surface);
 		}
 
-        [MhTest]
+        [TestMethod]
         public void BorderTestTop()
 		{
 			var border = new BorderDouble(top: borderSize);
@@ -85,7 +88,7 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
         // Enable to visually debug
-        [MhTest]
+        [TestMethod]
         public void BorderTestsVisualizer()
 		{
 			var systemWindow = new SystemWindow(700, 660)
@@ -232,7 +235,7 @@ namespace MatterHackers.Agg.UI.Tests
 					bool shouldBeRed = borderBounds.Contains(new Point2D(x + .5, y + .5));
 					if (shouldBeRed)
 					{
-						MhAssert.Equal(Color.Red, pixel);
+						Assert.AreEqual(Color.Red, pixel);
 
 					}
 					else

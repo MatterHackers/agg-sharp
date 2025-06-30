@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -28,21 +28,28 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.Font;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.Image;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.Transform;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.VertexSource;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.VectorMath;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [MhTestFixture("Opens Winforms Window")]
+    [TestClass]
     public class TextAndTextWidgetTests
 	{
 		public bool saveImagesForDebug;
 
-        [MhTest]
+        [TestMethod]
         public void TextWidgetAutoSizeTest()
 		{
 			// resize works on text widgets
@@ -53,11 +60,11 @@ namespace MatterHackers.Agg.UI.Tests
 				double origWidth = textItem.Width;
 				textItem.Text = "test Items";
 				double newlineWidth = textItem.Width;
-				MhAssert.True(newlineWidth > origWidth);
+				Assert.IsTrue(newlineWidth > origWidth);
 
 				textItem.Text = "test Item";
 				double backToOrignWidth = textItem.Width;
-				MhAssert.True(backToOrignWidth == origWidth);
+				Assert.IsTrue(backToOrignWidth == origWidth);
 
 
 				double origHeight = textItem.Height;
@@ -66,7 +73,7 @@ namespace MatterHackers.Agg.UI.Tests
 				textItem.Text = "test Item";
 				double backToOrignHeight = textItem.Height;
 
-				MhAssert.True(backToOrignHeight == origHeight);
+				Assert.IsTrue(backToOrignHeight == origHeight);
 			}
 
 			// make sure text widget gets smaller vertically when it needs to
@@ -85,17 +92,17 @@ namespace MatterHackers.Agg.UI.Tests
 				holder.AddChild(textItem);
 
 				var origSize = textItem.Size;
-				MhAssert.True(origSize.X > 10, "The control expanded");
+				Assert.IsTrue(origSize.X > 10, "The control expanded");
 				holder.Width = 100;
 				var bigSize = textItem.Size;
 
-				MhAssert.True(bigSize.X < origSize.X, "The control got narrower and taller");
-				MhAssert.True(bigSize.Y > origSize.Y, "The control got narrower and taller");
+				Assert.IsTrue(bigSize.X < origSize.X, "The control got narrower and taller");
+				Assert.IsTrue(bigSize.Y > origSize.Y, "The control got narrower and taller");
 
 				holder.Width = 500;
 				var backToOrignSize = textItem.Size;
-				MhAssert.True(backToOrignSize.X == origSize.X);
-				MhAssert.True(backToOrignSize.Y == origSize.Y);
+				Assert.IsTrue(backToOrignSize.X == origSize.X);
+				Assert.IsTrue(backToOrignSize.Y == origSize.Y);
 
 				double origHeight = textItem.Height;
 				textItem.Text = "test\nItem";
@@ -103,11 +110,11 @@ namespace MatterHackers.Agg.UI.Tests
 				textItem.Text = "test Item";
 				double backToOrignHeight = textItem.Height;
 
-				MhAssert.True(backToOrignHeight == origHeight);
+				Assert.IsTrue(backToOrignHeight == origHeight);
 			}
 		}
 
-        [MhTest]
+        [TestMethod]
         public void TextWidgetVisibleTest()
 		{
 			{
@@ -130,7 +137,7 @@ namespace MatterHackers.Agg.UI.Tests
 					ImageTgaIO.Save(textOnly, "-textOnly.tga");
 				}
 
-				MhAssert.True(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1), "TextWidgets need to be drawing.");
+				Assert.IsTrue(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1), "TextWidgets need to be drawing.");
 				rectangleWidget.Close();
 			}
 
@@ -161,7 +168,7 @@ namespace MatterHackers.Agg.UI.Tests
                     ImageTgaIO.Save(textOnly, Path.Combine(basePath, "-textOnly.tga"));
 				}
 
-				MhAssert.True(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1), "TextWidgets need to be drawing.");
+				Assert.IsTrue(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1), "TextWidgets need to be drawing.");
 				rectangleWidget.Close();
 				GuiWidget.DefaultEnforceIntegerBounds = oldEnforceIntegerBounds;
             }

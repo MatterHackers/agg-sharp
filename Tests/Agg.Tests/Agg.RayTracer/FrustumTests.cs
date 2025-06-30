@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -28,13 +28,14 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.RayTracer
 {
-    [MhTestFixture("WorkInProgress")]
+    [TestClass]
 	public class FrustumTests
 	{
-		[MhTest]
+		[TestMethod]
 		public void RayBundleSameResultAsIndividualRays()
 		{
 		}

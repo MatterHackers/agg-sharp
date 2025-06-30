@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -28,12 +28,15 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.Image;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.VectorMath;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [MhTestFixture("Opens Winforms Window")]
+    [TestClass]
     public class BackBufferTests
 	{
 		public bool saveImagesForDebug;
@@ -46,7 +49,7 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [MhTest]
+        [TestMethod]
         public void DoubleBufferTests()
 		{
 			bool textWidgetDoubleBufferDefault = TextWidget.DoubleBufferDefault;
@@ -61,7 +64,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// make sure the frame comparison function works.
 			{
 				ImageBuffer doubleBufferImageCopy = new ImageBuffer(doubleBufferImage, new BlenderBGR());
-				MhAssert.True(doubleBufferImage == doubleBufferImageCopy);
+				Assert.IsTrue(doubleBufferImage == doubleBufferImageCopy);
 			}
 
 			// the text widget is not double buffered
@@ -71,7 +74,7 @@ namespace MatterHackers.Agg.UI.Tests
 			notDoubleBufferButton.OnDraw(notDoubleBufferImage.NewGraphics2D());
 			SaveImage(notDoubleBufferImage, "z test.tga");
 
-			MhAssert.True(doubleBufferImage == notDoubleBufferImage);
+			Assert.IsTrue(doubleBufferImage == notDoubleBufferImage);
 
 			TextWidget.DoubleBufferDefault = textWidgetDoubleBufferDefault;
 		}
@@ -96,7 +99,7 @@ namespace MatterHackers.Agg.UI.Tests
 					textWidget.OnDraw(textWidgetGraphics);
 				}
 
-				MhAssert.True(drawStringImage == textWidgetImage);
+				Assert.IsTrue(drawStringImage == textWidgetImage);
 			}
 
 			// make sure that a back buffer is always trying to draw 1:1 pixels to the buffer above
@@ -123,7 +126,7 @@ namespace MatterHackers.Agg.UI.Tests
 				double bestLeastSquares;
 				double maxError = 10;
 				container.BackBuffer.FindLeastSquaresMatch(drawStringOffsetImage, out bestPosition, out bestLeastSquares, maxError);
-				MhAssert.True(bestLeastSquares < maxError);
+				Assert.IsTrue(bestLeastSquares < maxError);
 			}
 
 			{
@@ -148,7 +151,7 @@ namespace MatterHackers.Agg.UI.Tests
 					SaveImage(container1.BackBuffer, "z offset text widget.tga");
 				}
 
-				MhAssert.True(container1.BackBuffer.FindLeastSquaresMatch(drawStringOffsetImage, 5));
+				Assert.IsTrue(container1.BackBuffer.FindLeastSquaresMatch(drawStringOffsetImage, 5));
 			}
 		}
 	}

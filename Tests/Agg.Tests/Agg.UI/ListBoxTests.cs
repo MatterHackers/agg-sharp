@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -28,12 +28,15 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.Image;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.VectorMath;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [MhTestFixture("Opens Winforms Window")]
+    [TestClass]
     public class ListBoxTests
 	{
 		public static bool saveImagesForDebug = false;
@@ -60,7 +63,7 @@ namespace MatterHackers.Agg.UI.Tests
 			OutputImage(test, "image-test.tga");
 		}
 
-        [MhTest]
+        [TestMethod]
         public void SingleItemVisibleTest()
 		{
 			{
@@ -84,7 +87,7 @@ namespace MatterHackers.Agg.UI.Tests
 				double leastSquares;
 				containerListBox.BackBuffer.FindLeastSquaresMatch(textImage, out bestPosition, out leastSquares, maxError);
 
-				MhAssert.True(leastSquares < maxError, "The list box need to be showing the item we added to it.");
+				Assert.IsTrue(leastSquares < maxError, "The list box need to be showing the item we added to it.");
 			}
 
 			{
@@ -126,11 +129,11 @@ namespace MatterHackers.Agg.UI.Tests
 				double leastSquares;
 				container.BackBuffer.FindLeastSquaresMatch(textImage, out bestPosition, out leastSquares, maxError);
 
-				MhAssert.True(leastSquares < maxError, "The list box need to be showing the item we added to it.");
+				Assert.IsTrue(leastSquares < maxError, "The list box need to be showing the item we added to it.");
 			}
 		}
 
-        [MhTest]
+        [TestMethod]
         public void ScrollPositionStartsCorrect()
 		{
 			GuiWidget contents = new GuiWidget(300, 300);
@@ -147,7 +150,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			contents.OnDraw(contents.NewGraphics2D());
 
-			MhAssert.True(container.TopLeftOffset.Y == 0);
+			Assert.IsTrue(container.TopLeftOffset.Y == 0);
 		}
 
 		private static void AddContents(GuiWidget widgetToAddItemsTo)

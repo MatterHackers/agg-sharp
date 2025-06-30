@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2023, Lars Brubaker
 All rights reserved.
 
@@ -28,16 +28,22 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.Font;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.Image;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.VertexSource;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Agg.Tests.Agg;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.Tests
 {
     //
-    [MhTestFixture("Opens Winforms Window")]
+    [TestClass]
     public class AggDrawingTests
 	{
 		public static void RunAllTests()
@@ -82,7 +88,7 @@ namespace MatterHackers.Agg.Tests
 					File.Delete(testFailPathAndFileName);
 				}
 
-				MhAssert.True(testIsSameAsControl);
+				Assert.IsTrue(testIsSameAsControl);
 				// If you want to create new control images select SetNextStatement to inside the else condition to create them.
 			}
 			else
@@ -121,7 +127,7 @@ namespace MatterHackers.Agg.Tests
 						File.Delete(testOldToOldFailPathAndFileName);
 					}
 
-					MhAssert.True(testOldToOldIsSameAsControl);
+					Assert.IsTrue(testOldToOldIsSameAsControl);
 				}
 
 				// this test the new vertex generator code
@@ -140,7 +146,7 @@ namespace MatterHackers.Agg.Tests
 						File.Delete(testOldToNewFailPathAndFileName);
 					}
 
-					MhAssert.True(testOldToNewIsSameAsControl);
+					Assert.IsTrue(testOldToNewIsSameAsControl);
 				}
 				// If you want to create new control VertexSources select SetNextStatement to inside the else condition to create them.
 			}
@@ -150,7 +156,7 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-        [MhTest]
+        [TestMethod]
         public void DrawCircle()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
@@ -165,7 +171,7 @@ namespace MatterHackers.Agg.Tests
 			CheckTestAgainstControl(new Ellipse(0, 0, 20, 20), "ShapeCicle");
 		}
 
-        [MhTest]
+        [TestMethod]
         public void DrawCurve3()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
@@ -176,7 +182,7 @@ namespace MatterHackers.Agg.Tests
 			CheckTestAgainstControl(new Curve3(10, 10, 50, 90, 90, 90), "ShapeCurve3");
 		}
 
-        [MhTest]
+        [TestMethod]
         public void DrawCurve4()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
@@ -187,7 +193,7 @@ namespace MatterHackers.Agg.Tests
 			CheckTestAgainstControl(new Curve4(10, 50, 25, 10, 75, 90, 90, 50), "ShapeCurve4");
 		}
 
-        [MhTest]
+        [TestMethod]
         public void DrawString()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
@@ -224,7 +230,7 @@ namespace MatterHackers.Agg.Tests
 			CheckTestAgainstControl(stringPrinterTest, "ShapeStringTestFlattened");
 		}
 
-        [MhTest]
+        [TestMethod]
         public void StrokedShape()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
