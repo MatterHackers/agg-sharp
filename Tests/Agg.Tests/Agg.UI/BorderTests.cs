@@ -240,7 +240,7 @@ namespace MatterHackers.Agg.UI.Tests
 					}
 					else
 					{
-						MhAssert.NotEqual(Color.Red, pixel);
+						Assert.AreNotEqual(Color.Red, pixel);
 					}
 				}
 			}

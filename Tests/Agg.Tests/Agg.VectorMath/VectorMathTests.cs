@@ -527,7 +527,7 @@ namespace MatterHackers.VectorMath.Tests
 				Vector3 startPoint = new Vector3(0, 0, 4);
 				Vector3 endPoint = new Vector3(0, 0, -2);
 				bool exists = testPlane.ClipLine(ref startPoint, ref endPoint);
-				MhAssert.False(exists);
+				Assert.IsFalse(exists);
 			}
 
 			{
