@@ -9,8 +9,11 @@
     <RuntimeIdentifier>win</RuntimeIdentifier>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\..\..\</SolutionDir>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-
-	
+    
+    <!-- Test execution configuration for automation tests -->
+    <VSTestCollectCodeCoverage>false</VSTestCollectCodeCoverage>
+    <VSTestUseMSBuildOutput>false</VSTestUseMSBuildOutput>
+    
 	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>

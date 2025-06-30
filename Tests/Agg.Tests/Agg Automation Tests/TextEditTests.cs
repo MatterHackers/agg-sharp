@@ -38,7 +38,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestClass]
+   	[TestClass]
+	[DoNotParallelize]
 	public class TextEditTests
 	{
 		public static bool SaveImagesForDebug = false;
@@ -409,13 +410,15 @@ G1 X-29.5 F6000 ; NO_PROCESSING
         [TestMethod]
         public void MultiLineTests()
 		{
+            Clipboard.SetSystemClipboard(new SimulatedClipboard());
+            
 			// make sure selection ranges are always working
-			{
-				//Clipboard.SetSystemClipboard(new SimulatedClipboard());
+            {
+                //Clipboard.SetSystemClipboard(new SimulatedClipboard());
 
-				var singleLine = new InternalTextEditWidget("test", 12, false, 0);
+                var singleLine = new InternalTextEditWidget("test", 12, false, 0);
 
-				void TestRange(int start, int end, string expected)
+                void TestRange(int start, int end, string expected)
 				{
 					singleLine.CharIndexToInsertBefore = start;
 					singleLine.SelectionIndexToStartBefore = end;

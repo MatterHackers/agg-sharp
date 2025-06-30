@@ -37,21 +37,22 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace MatterHackers.Agg.UI.Tests
 {
     [TestClass]
-    public class FlowLayoutTests
+	[DoNotParallelize]
+	public class FlowLayoutTests
 	{
 		public static bool saveImagesForDebug = false;
 
 
-		static bool enforceIntegerBounds;
+		bool enforceIntegerBounds;
         [TestInitialize]
-        public static void Setup()
+        public void Setup()
 		{
 			enforceIntegerBounds = GuiWidget.DefaultEnforceIntegerBounds;
             GuiWidget.DefaultEnforceIntegerBounds = false;
         }
 
 		[TestCleanup]
-		public static void Restore()
+		public void Restore()
         {
             GuiWidget.DefaultEnforceIntegerBounds = enforceIntegerBounds;
         }

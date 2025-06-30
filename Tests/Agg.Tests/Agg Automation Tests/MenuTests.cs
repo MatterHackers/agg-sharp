@@ -37,7 +37,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace MatterHackers.Agg.UI.Tests
 {
     [TestClass]
-    public class MenuTests
+	[DoNotParallelize]
+	public class MenuTests
 	{
 		public static bool SaveImagesForDebug = false;
 

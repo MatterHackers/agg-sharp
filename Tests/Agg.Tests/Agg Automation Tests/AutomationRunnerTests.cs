@@ -37,6 +37,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace MatterHackers.Agg.UI.Tests
 {
     [TestClass]
+    [DoNotParallelize]
     public class AutomationRunnerTests
 	{
         [TestMethod]

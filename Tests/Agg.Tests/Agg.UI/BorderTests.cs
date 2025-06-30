@@ -88,7 +88,7 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
         // Enable to visually debug
-        [TestMethod]
+        //[TestMethod]
         public void BorderTestsVisualizer()
 		{
 			var systemWindow = new SystemWindow(700, 660)
@@ -97,7 +97,9 @@ namespace MatterHackers.Agg.UI.Tests
 				Padding = 25
 			};
 
-			var column = new FlowLayoutWidget(FlowDirection.TopToBottom)
+            SystemWindow.EnableAllowDrop = false;
+
+            var column = new FlowLayoutWidget(FlowDirection.TopToBottom)
 			{
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Stretch,

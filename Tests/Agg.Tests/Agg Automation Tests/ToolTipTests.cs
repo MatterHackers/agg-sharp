@@ -43,7 +43,8 @@ namespace MatterHackers.Agg.UI.Tests
 	}
 
     [TestClass]
-    public class ToolTipTests
+	[DoNotParallelize]
+	public class ToolTipTests
 	{
 		static readonly string toolTip1Text = "toolTip1";
 		static readonly string toolTip2Text = "toolTip2";

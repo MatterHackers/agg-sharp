@@ -38,7 +38,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Matter_CAD_Lib.Tests.AutomationTests
 {
     [TestClass]
-    public class WidgetClickTests
+	[DoNotParallelize]
+	public class WidgetClickTests
 	{
         [TestMethod]
         public async Task ClickFiresOnCorrectWidgets()
@@ -80,7 +81,8 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
                     Assert.AreEqual(1, testWindow.PurpleWidget.ClickCount);//, "Unexpected click count on purple widget");
 
                     return Task.CompletedTask;
-				});
+				},
+				secondsToTestFailure: 30);
 		}
 
         [TestMethod]
@@ -126,7 +128,8 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount);//, "Expected 1 click on root widget");
 
                     return Task.CompletedTask;
-				});
+				},
+				secondsToTestFailure: 30);
 		}
 
         [TestMethod]
@@ -180,7 +183,8 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount);//, "Expected click count to not increment on mouse up within child control");
 
                     return Task.CompletedTask;
-				});
+				},
+				secondsToTestFailure: 30);
 		}
 
 		// Test SystemWindow with three clickable controls

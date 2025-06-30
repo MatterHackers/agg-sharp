@@ -35,7 +35,6 @@ using System.Reflection;
 using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 
 namespace MatterHackers.GuiAutomation
