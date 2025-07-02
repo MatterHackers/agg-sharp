@@ -54,16 +54,16 @@ namespace MatterHackers.GuiAutomation
 
 		private IInputMethod inputSystem;
 
-		private const double DefaultWidgetWaitSeconds = 5.0;
+		private const double DefaultWidgetWaitSeconds = 2.0;
 
 		/// <summary>
 		/// The number of seconds to move the mouse when going to a new position.
 		/// </summary>
-		public static double TimeToMoveMouse { get; set; } = .5;
+		public static double TimeToMoveMouse { get; set; } = .2;
 
 		private string imageDirectory;
 
-		public static double UpDelaySeconds { get; set; } = .2;
+		public static double UpDelaySeconds { get; set; } = .1;
 
 		public enum InputType
 		{
@@ -262,7 +262,7 @@ namespace MatterHackers.GuiAutomation
 			var satisfied = StaticDelay(checkConditionSatisfied, maxSeconds, checkInterval);
 
 			if (!satisfied)
-            {
+			{
 				throw new Exception($"Require Failed: {errorResponse}");
 			}
 
@@ -336,7 +336,7 @@ namespace MatterHackers.GuiAutomation
 				{
 					graphics2D.Render(circle, Color.Green);
 
-					var mods = string.Join("", new[] {(Keys.Shift, "S"), (Keys.Control, "C")}
+					var mods = string.Join("", new[] { (Keys.Shift, "S"), (Keys.Control, "C") }
 						.Select(x => Keyboard.IsKeyDown(x.Item1) ? x.Item2 : "")
 						.Where(v => !string.IsNullOrEmpty(v)));
 
@@ -736,7 +736,7 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			var namedWidgetsInRegion = new List<GetByNameResults>();
-			foreach(var systemWindow in SystemWindow.AllOpenSystemWindows.Reverse())
+			foreach (var systemWindow in SystemWindow.AllOpenSystemWindows.Reverse())
 			{
 				if (searchRegion != null) // only add the widgets that are in the screen region
 				{
@@ -1316,11 +1316,11 @@ namespace MatterHackers.GuiAutomation
 
 				return true;
 			}
-            catch (Exception)
-            {
+			catch (Exception)
+			{
 				return false;
-            }
-        }
+			}
+		}
 
 		/// <summary>
 		/// Wait up to secondsToWait for the named widget to disappear
@@ -1389,11 +1389,11 @@ namespace MatterHackers.GuiAutomation
 
 		public static bool DrawSimulatedMouse { get; set; } = true;
 
-				public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action<AutomationRunner> closeWindow = null)
+		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action<AutomationRunner> closeWindow = null)
 		{
 			// Enable debug logging for AutomationRunner
 			DebugLogger.EnableFilter("AutomationRunner");
-			
+
 			DebugLogger.LogMessage("AutomationRunner", $"=== TEST START === WindowTitle: {initialSystemWindow.Title}");
 
 			var testRunner = new AutomationRunner(InputMethod, DrawSimulatedMouse, imagesDirectory);
@@ -1417,7 +1417,7 @@ namespace MatterHackers.GuiAutomation
 				// Wait until the first system window draw before running the test method, up to the timeout
 				bool eventSet = resetEvent.WaitOne(testTimeout);
 				DebugLogger.LogMessage("AutomationRunner", $"RESET EVENT RESULT - EventSet: {eventSet}");
-				
+
 				if (eventSet)
 				{
 					DebugLogger.LogMessage("AutomationRunner", "EXECUTING TEST METHOD");
@@ -1450,7 +1450,7 @@ namespace MatterHackers.GuiAutomation
 			// Main thread blocks here until released via CloseOnIdle above
 			bool originalAllowDropState = SystemWindow.EnableAllowDrop;
 			SystemWindow.EnableAllowDrop = false;
-			
+
 			try
 			{
 				DebugLogger.LogMessage("AutomationRunner", "CALLING ShowAsSystemWindow");
@@ -1486,7 +1486,7 @@ namespace MatterHackers.GuiAutomation
 			{
 				DebugLogger.LogWarning("AutomationRunner", $"Failed to reset WinformsSystemWindow state: {ex.Message}");
 			}
-			
+
 			// Reset EnablePlatformWindowInput for the next test - this is critical for tests to receive input events
 			try
 			{
@@ -1508,7 +1508,7 @@ namespace MatterHackers.GuiAutomation
 			{
 				// Let any remaining RunOnIdle actions complete first
 				UiThread.InvokePendingActions();
-				
+
 				// Now reset UiThread static state for the next test
 				UiThread.ResetForTests();
 			}
