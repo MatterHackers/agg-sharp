@@ -97,11 +97,11 @@ namespace MatterHackers.RayTracer
 
                 IntersectInfo testInfo = merge.GetClosestIntersection(castRay);
 
-                Assert.True(testInfo.isHit == true, "Found Hit : 5 Subtracts");
-                //Assert.True(testInfo.closestHitObject == subtractBox, "Found Hit : 5 Subtracts");
-                Assert.True(testInfo.hitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : 5 Subtracts");
-                Assert.True(testInfo.distanceToHit == 1, "Hit length = 1 : 5 Subtracts");
-                Assert.True(testInfo.normalAtHit == -Vector3.UnitY, "Normal Correct : 5 Subtracts");
+                Assert.IsTrue(testInfo.isHit == true, "Found Hit : 5 Subtracts");
+                //Assert.IsTrue(testInfo.closestHitObject == subtractBox, "Found Hit : 5 Subtracts");
+                Assert.IsTrue(testInfo.hitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : 5 Subtracts");
+                Assert.IsTrue(testInfo.distanceToHit == 1, "Hit length = 1 : 5 Subtracts");
+                Assert.IsTrue(testInfo.normalAtHit == -Vector3.UnitY, "Normal Correct : 5 Subtracts");
             }
 
             // Go through 5 subtract boxes to get to 1/2 way through the main box.
@@ -118,11 +118,11 @@ namespace MatterHackers.RayTracer
 
                 IntersectInfo testInfo = merge.GetClosestIntersection(castRay);
 
-                Assert.True(testInfo.isHit == true, "Found Hit : 5 Subtracts");
-                //Assert.True(testInfo.closestHitObject == subtractBox, "Found Hit : 5 Subtracts");
-                Assert.True(testInfo.hitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : 5 Subtracts");
-                Assert.True(testInfo.distanceToHit == 1, "Hit length = 1 : 5 Subtracts");
-                Assert.True(testInfo.normalAtHit == -Vector3.UnitY, "Normal Correct : 5 Subtracts");
+                Assert.IsTrue(testInfo.isHit == true, "Found Hit : 5 Subtracts");
+                //Assert.IsTrue(testInfo.closestHitObject == subtractBox, "Found Hit : 5 Subtracts");
+                Assert.IsTrue(testInfo.hitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : 5 Subtracts");
+                Assert.IsTrue(testInfo.distanceToHit == 1, "Hit length = 1 : 5 Subtracts");
+                Assert.IsTrue(testInfo.normalAtHit == -Vector3.UnitY, "Normal Correct : 5 Subtracts");
             }
 #endif
 		}

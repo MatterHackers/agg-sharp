@@ -1766,11 +1766,11 @@ namespace MatterHackers.Agg.UI.Tests
 			var button1 = new Button("button1");
 			Assert.IsTrue(button1.MinimumSize.X > 0, "Buttons should set their min size on construction.");
 			bottomContentTopToBottom.AddChild(button1);
-			// Assert.True(bottomContentTopToBottom.MinimumSize.x >= button1.MinimumSize.x, "There should be space for the button.");
+			// Assert.IsTrue(bottomContentTopToBottom.MinimumSize.x >= button1.MinimumSize.x, "There should be space for the button.");
 			bottomContentTopToBottom.AddChild(new Button("button2"));
 			var wideButton = new Button("button3 Wide");
 			bottomContentTopToBottom.AddChild(wideButton);
-			// Assert.True(bottomContentTopToBottom.MinimumSize.x >= wideButton.MinimumSize.x, "These should be space for the button.");
+			// Assert.IsTrue(bottomContentTopToBottom.MinimumSize.x >= wideButton.MinimumSize.x, "These should be space for the button.");
 
 			containerTest.BackgroundColor = Color.White;
 			containerTest.OnDrawBackground(containerTest.NewGraphics2D());
@@ -1830,32 +1830,32 @@ namespace MatterHackers.Agg.UI.Tests
 				leftToRightLayout.AnchorAll();
 				containerTest.OnDraw(containerTest.NewGraphics2D());
 				Assert.IsTrue(leftToRightLayout.Width == 640);
-				// Assert.True(leftToRightLayout.MinimumSize.x == 60);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
 				Assert.IsTrue(leftToRightLayout.Height == 480);
-				// Assert.True(leftToRightLayout.MinimumSize.y == 33);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
 				Assert.IsTrue(item3.Width == 610);
 
 				containerTest.OnDraw(containerTest.NewGraphics2D());
 				Assert.IsTrue(leftToRightLayout.Width == 640);
-				// Assert.True(leftToRightLayout.MinimumSize.x == 60);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
 				Assert.IsTrue(leftToRightLayout.Height == 480);
-				// Assert.True(leftToRightLayout.MinimumSize.y == 33);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
 				Assert.IsTrue(item3.Width == 610);
 
 				containerTest.Width = 650;
 				containerTest.OnDraw(containerTest.NewGraphics2D());
 				Assert.IsTrue(leftToRightLayout.Width == 650);
-				// Assert.True(leftToRightLayout.MinimumSize.x == 60);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
 				Assert.IsTrue(leftToRightLayout.Height == 480);
-				// Assert.True(leftToRightLayout.MinimumSize.y == 33);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
 				Assert.IsTrue(item3.Width == 620);
 
 				containerTest.Width = 640;
 				containerTest.OnDraw(containerTest.NewGraphics2D());
 				Assert.IsTrue(leftToRightLayout.Width == 640);
-				// Assert.True(leftToRightLayout.MinimumSize.x == 60);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.x == 60);
 				Assert.IsTrue(leftToRightLayout.Height == 480);
-				// Assert.True(leftToRightLayout.MinimumSize.y == 33);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.y == 33);
 				Assert.IsTrue(item3.Width == 610);
 			}
 
@@ -1881,10 +1881,10 @@ namespace MatterHackers.Agg.UI.Tests
 				leftToRightLayout.AnchorAll();
 				containerTest.OnDraw(containerTest.NewGraphics2D());
 				Assert.IsTrue(leftToRightLayout.Width == 640);
-				// Assert.True(leftToRightLayout.MinimumSize.x == 30);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.x == 30);
 
 				Assert.IsTrue(leftToRightLayout.Height == 480);
-				// Assert.True(leftToRightLayout.MinimumSize.y == 66);
+				// Assert.IsTrue(leftToRightLayout.MinimumSize.y == 66);
 			}
 		}
 
@@ -2030,7 +2030,7 @@ namespace MatterHackers.Agg.UI.Tests
 					everything.AddChild(twoColumns);
 
 					Assert.IsTrue(firstItem.OriginRelativeParent.Y == 54);
-					// Assert.True(firstItem.OriginRelativeParent.y - topLeftStuff.LocalBounds.Bottom == 54);
+					// Assert.IsTrue(firstItem.OriginRelativeParent.y - topLeftStuff.LocalBounds.Bottom == 54);
 					Assert.IsTrue(twoColumns.BoundsRelativeToParent.Top == 500);
 					Assert.IsTrue(leftColumn.BoundsRelativeToParent.Top == 67);
 					Assert.IsTrue(leftColumn.BoundsRelativeToParent.Bottom == 0);
