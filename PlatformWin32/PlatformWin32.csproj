@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>net8.0-windows</TargetFramework>
@@ -16,7 +16,7 @@
 		<DefineConstants>TRACE;RELEASE;USE_OPENGL</DefineConstants>
 	</PropertyGroup>
 	<PropertyGroup>
-		<UsingOpenTK4>false</UsingOpenTK4>
+		<UsingOpenTK4>true</UsingOpenTK4>
 	</PropertyGroup>
 	<PropertyGroup Condition="$(UsingOpenTK4)">
 		<DefineConstants>$(DefineConstants);USE_OPENTK4</DefineConstants>
@@ -31,7 +31,7 @@
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
 		<PackageReference Condition="$(UsingOpenTK4)" Include="OpenTK.WinForms" Version="4.0.0-pre.6" />
-		<PackageReference Condition="!$(UsingOpenTK4)" Include="OpenTK.GLControl" Version="3.3.3" />
+		<PackageReference Condition="!$(UsingOpenTK4)" Include="OpenTK.GLControl" Version="4.0.2" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\agg\Agg.csproj" />
