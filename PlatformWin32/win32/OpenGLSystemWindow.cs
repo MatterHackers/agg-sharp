@@ -44,8 +44,8 @@ namespace MatterHackers.Agg.UI
 
 			// NOTE: OpenTK3 will run in Windows Sandbox (no proper GL driver), but OpenTK4 won't, it seems.
 
-#if USE_OPENTK4
-			var graphicsMode = new OpenTK.WinForms.GLControlSettings {
+			var graphicsMode = new OpenTK.WinForms.GLControlSettings
+			{
 				Profile = OpenTK.Windowing.Common.ContextProfile.Compatability,
 #if DEBUG
 				Flags = OpenTK.Windowing.Common.ContextFlags.Debug,
@@ -53,27 +53,15 @@ namespace MatterHackers.Agg.UI
 				NumberOfSamples = config.FSAASamples,
 				IsEventDriven = true,
 			};
-#else
-			var graphicsMode = new OpenTK.Graphics.GraphicsMode(config.Color, config.Depth, config.Stencil, config.FSAASamples);
-
-			// If the GPU driver is disabled in Windows, this could be used to test context creation failure.
-			//var graphicsMode = new OpenTK.Graphics.GraphicsMode(config.Color, config.Depth, config.Stencil, config.FSAASamples + 100, OpenTK.Graphics.ColorFormat.Empty, 100, true);
-#endif
 
 			glControl = new AggGLControl(graphicsMode)
 			{
 				Dock = DockStyle.Fill,
 				Location = new Point(0, 0),
 				TabIndex = 0,
-#if !USE_OPENTK4
-				VSync = false,
-#endif
 			};
 
 			// TODO: Disable VSync when using OpenTK 4? Current versions on NuGet do not expose VSync.
-#if !USE_OPENTK4
-			//(glControl.Context as OpenTK.Windowing.Desktop.GLFWGraphicsContext).SwapInterval = 0;
-#endif
 
 			RenderOpenGl.OpenGl.GL.Instance = new OpenTkGl();
 
@@ -82,13 +70,54 @@ namespace MatterHackers.Agg.UI
 
 		private bool doneLoading = false;
 
-		protected override void OnClosed(EventArgs e)
+				protected override void OnClosed(EventArgs e)
 		{
-			if (!this.IsDisposed
-				|| !glControl.IsDisposed)
+			try
 			{
-				glControl.MakeCurrent();
-				glControl.releaseAllGlData.Release();
+				if (!this.IsDisposed && glControl != null && !glControl.IsDisposed)
+				{
+					// Release GL data without making context current to avoid GLFW errors
+					try
+					{
+						glControl.releaseAllGlData.Release();
+					}
+					catch
+					{
+						// Ignore GL data release errors during shutdown
+					}
+					
+					// Ensure control is removed from parent before disposal
+					if (glControl.Parent != null)
+					{
+						glControl.Parent.Controls.Remove(glControl);
+					}
+					
+					// Force disposal of the GL control
+					glControl.Dispose();
+				}
+				
+				// Dispose of all child controls to free handles
+				while (this.Controls.Count > 0)
+				{
+					var control = this.Controls[0];
+					this.Controls.Remove(control);
+					control.Dispose();
+				}
+				
+				// Force handle destruction
+				if (this.IsHandleCreated)
+				{
+					this.DestroyHandle();
+				}
+			}
+			catch (Exception)
+			{
+				// Ignore errors during cleanup - the context may already be invalid
+				// This can happen during test scenarios or rapid window close/open cycles
+			}
+			finally
+			{
+				glControl = null;
 			}
 
 			base.OnClosed(e);
@@ -283,7 +312,8 @@ namespace MatterHackers.Agg.UI
 
 		public override Keys ModifierKeys
 		{
-			get {
+			get
+			{
 				if (modifiersOverridden)
 				{
 					return modifierKeys;

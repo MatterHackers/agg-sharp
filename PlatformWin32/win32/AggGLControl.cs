@@ -48,6 +48,31 @@ namespace MatterHackers.Agg.UI
 
 		// TODO: Set VSync off for OpenTK 4. Will need access to the NativeWindow.
 
+			/// <summary>
+	/// Resets static state to allow clean reinitialization
+	/// </summary>
+	public static void ResetStaticState()
+	{
+		// Clear the static reference without disposing the control
+		// The control will be properly disposed by its parent window/container
+		currentControl = null;
+		
+		// Force cleanup of any remaining OpenTK contexts and Windows messages
+		try
+		{
+			// Process any pending Windows messages to ensure cleanup is complete
+			System.Windows.Forms.Application.DoEvents();
+			
+			// Force garbage collection to clean up any lingering OpenGL resources
+			System.GC.Collect();
+			System.GC.WaitForPendingFinalizers();
+			System.GC.Collect();
+		}
+		catch
+		{
+			// Ignore cleanup errors
+		}
+	}
 
 #if USE_OPENTK4
 		public AggGLControl(GLControlSettings graphicsMode)
@@ -94,5 +119,54 @@ namespace MatterHackers.Agg.UI
 		{
 			return Id.ToString();
 		}
+
+			protected override void Dispose(bool disposing)
+	{
+		if (disposing)
+		{
+			// Clear static reference if this is the current control
+			if (currentControl == this)
+			{
+				currentControl = null;
+			}
+			
+			// Force release of GL data before disposing the base control
+			try
+			{
+				if (releaseAllGlData != null)
+				{
+					// Make current first to ensure proper GL context for cleanup
+					if (this.IsHandleCreated && !this.IsDisposed)
+					{
+						this.MakeCurrent();
+					}
+					releaseAllGlData.Release();
+				}
+			}
+			catch
+			{
+				// Ignore GL cleanup errors during disposal
+			}
+		}
+		
+		// Let the base class handle the OpenTK disposal properly
+		base.Dispose(disposing);
+		
+		if (disposing)
+		{
+			// Ensure handle is destroyed after base disposal
+			try
+			{
+				if (this.IsHandleCreated)
+				{
+					this.DestroyHandle();
+				}
+			}
+			catch
+			{
+				// Ignore handle cleanup errors
+			}
+		}
+	}
 	}
 }

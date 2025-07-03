@@ -16,7 +16,6 @@ using System.Threading.Tasks;
 
 namespace MatterCAD.Tests.MatterCAD
 {
-    // NOTE: These tests hang on GLFW currently as the window isn't closed properly.
     [TestClass]
     public class PopupAnchorTests
 	{
