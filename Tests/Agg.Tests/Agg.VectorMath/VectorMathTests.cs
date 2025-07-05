@@ -45,7 +45,7 @@ namespace MatterHackers.VectorMath.Tests
 			{
 				var output = Easing.Calculate(easeType, easeOption, k);
 				var input = Easing.CalculateInverse(easeType, easeOption, output);
-				await Assert.That(input).IsEqualTo(k, .001);
+				await Assert.That(input).IsEqualTo(k);
 			}
 
 			async Task RangeTest(Easing.EaseType easeType)
@@ -100,10 +100,10 @@ namespace MatterHackers.VectorMath.Tests
 			// outside the line
 			await Assert.That(Vector2.DistancePointToLine(new Vector2(0, 0), new Vector2(5, 0), new Vector2(10, 0))).IsEqualTo(5);
 			await Assert.That(Vector2.DistancePointToLine(new Vector2(15, 0), new Vector2(5, 0), new Vector2(10, 0))).IsEqualTo(5);
-			await Assert.That(Vector2.DistancePointToLine(new Vector2(-1, -1), new Vector2(0, 0), new Vector2(10, 0))).IsEqualTo(Math.Sqrt(2), .0001);
-			await Assert.That(Vector2.DistancePointToLine(new Vector2(-1, 1), new Vector2(0, 0), new Vector2(10, 0))).IsEqualTo(Math.Sqrt(2), .0001);
-			await Assert.That(Vector2.DistancePointToLine(new Vector2(11, -1), new Vector2(0, 0), new Vector2(10, 0))).IsEqualTo(Math.Sqrt(2), .0001);
-			await Assert.That(Vector2.DistancePointToLine(new Vector2(11, 1), new Vector2(0, 0), new Vector2(10, 0))).IsEqualTo(Math.Sqrt(2), .0001);
+			await Assert.That(Vector2.DistancePointToLine(new Vector2(-1, -1), new Vector2(0, 0), new Vector2(10, 0))).IsEqualTo(Math.Sqrt(2));
+			await Assert.That(Vector2.DistancePointToLine(new Vector2(-1, 1), new Vector2(0, 0), new Vector2(10, 0))).IsEqualTo(Math.Sqrt(2));
+			await Assert.That(Vector2.DistancePointToLine(new Vector2(11, -1), new Vector2(0, 0), new Vector2(10, 0))).IsEqualTo(Math.Sqrt(2));
+			await Assert.That(Vector2.DistancePointToLine(new Vector2(11, 1), new Vector2(0, 0), new Vector2(10, 0))).IsEqualTo(Math.Sqrt(2));
 			// inside the line
 			await Assert.That(Vector2.DistancePointToLine(new Vector2(7, 5), new Vector2(5, 0), new Vector2(10, 0))).IsEqualTo(5);
 			await Assert.That(Vector2.DistancePointToLine(new Vector2(7, -5), new Vector2(5, 0), new Vector2(10, 0))).IsEqualTo(5);
@@ -177,15 +177,15 @@ namespace MatterHackers.VectorMath.Tests
 			await Assert.That(world.EyePosition.Equals(Vector3.UnitZ * 7, 1e-3)).IsTrue();
 			world.CalculatePerspectiveMatrixOffCenter(567, 123, -200, 5, 55);
 			await Assert.That(world.GetScreenPosition(new Vector3(0, 0, 0)).Equals(new Vector2((567 - 200) / 2.0, 123 / 2.0), 1e-3)).IsTrue();
-			await Assert.That(world.NearZ).IsEqualTo(5, 1e-3);
-			await Assert.That(world.FarZ).IsEqualTo(55, 1e-3);
-			await Assert.That(world.NearPlaneHeightInViewspace).IsEqualTo(4.14213562373095, 1e-3);
+			await Assert.That(world.NearZ).IsEqualTo(5);
+			await Assert.That(world.FarZ).IsEqualTo(55);
+			await Assert.That(world.NearPlaneHeightInViewspace).IsEqualTo(4.14213562373095);
 			var ray = world.GetRayForLocalBounds(new Vector2((567 - 200) / 2.0, 123)); // top center
-			await Assert.That(MathHelper.RadiansToDegrees(Math.Atan2(ray.directionNormal.Y, -ray.directionNormal.Z))).IsEqualTo(WorldView.DefaultPerspectiveVFOVDegrees / 2, 1e-3);
+			await Assert.That(MathHelper.RadiansToDegrees(Math.Atan2(ray.directionNormal.Y, -ray.directionNormal.Z))).IsEqualTo(WorldView.DefaultPerspectiveVFOVDegrees / 2);
 			await Assert.That((Vector3.UnitZ * 7).Equals(ray.origin, 1e-3)).IsTrue();
-			await Assert.That(world.GetViewspaceHeightAtPosition(new Vector3(1, 1, -10))).IsEqualTo(world.NearPlaneHeightInViewspace * 2, 1e-3);
+			await Assert.That(world.GetViewspaceHeightAtPosition(new Vector3(1, 1, -10))).IsEqualTo(world.NearPlaneHeightInViewspace * 2);
 			world.Scale = 3;
-			await Assert.That(world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 123).IsEqualTo(world.NearPlaneHeightInViewspace * 2 / 3, 1e-3);
+			await Assert.That(world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 123).IsEqualTo(world.NearPlaneHeightInViewspace * 2 / 3);
 		}
 
 		[Test]
@@ -197,15 +197,15 @@ namespace MatterHackers.VectorMath.Tests
 			await Assert.That(world.GetScreenPosition(new Vector3(0, 0, 0)).Equals(new Vector2((680 - 200) / 2.0, 240 / 2.0), 1e-3)).IsTrue();
 			await Assert.That(world.GetScreenPosition(new Vector3(128, 64, 0)).Equals(new Vector2(680 - 200, 240), 1e-3)).IsTrue();
 			await Assert.That(world.GetScreenPosition(new Vector3(-128, -64, 0)).Equals(new Vector2(0, 0), 1e-3)).IsTrue();
-			await Assert.That(world.NearZ).IsEqualTo(5, 1e-3);
-			await Assert.That(world.FarZ).IsEqualTo(55, 1e-3);
-			await Assert.That(world.NearPlaneHeightInViewspace).IsEqualTo(128, 1e-3);
+			await Assert.That(world.NearZ).IsEqualTo(5);
+			await Assert.That(world.FarZ).IsEqualTo(55);
+			await Assert.That(world.NearPlaneHeightInViewspace).IsEqualTo(128);
 			var ray = world.GetRayForLocalBounds(new Vector2((680 - 200) / 2.0, 240)); // top center
 			await Assert.That(Vector3.UnitZ.Equals(-ray.directionNormal.GetNormal(), 1e-3)).IsTrue();
 			await Assert.That(new Vector3(0, 64, 2).Equals(ray.origin, 1e-3)).IsTrue();
-			await Assert.That(world.GetViewspaceHeightAtPosition(new Vector3(1, 1, -10))).IsEqualTo(world.NearPlaneHeightInViewspace, 1e-3);
+			await Assert.That(world.GetViewspaceHeightAtPosition(new Vector3(1, 1, -10))).IsEqualTo(world.NearPlaneHeightInViewspace);
 			world.Scale = 3;
-			await Assert.That(world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 240).IsEqualTo(world.NearPlaneHeightInViewspace / 3, 1e-3);
+			await Assert.That(world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 240).IsEqualTo(world.NearPlaneHeightInViewspace / 3);
 		}
 
 		[Test]
@@ -225,22 +225,22 @@ namespace MatterHackers.VectorMath.Tests
 
 				// left
 				await Assert.That(frustum.Planes[0].Normal.Equals(new Vector3(1, 0, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[0].DistanceFromOrigin).IsEqualTo(0, .0001);
+				await Assert.That(frustum.Planes[0].DistanceFromOrigin).IsEqualTo(0);
 				// right
 				await Assert.That(frustum.Planes[1].Normal.Equals(new Vector3(-1, 0, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[1].DistanceFromOrigin).IsEqualTo(0, .0001);
+				await Assert.That(frustum.Planes[1].DistanceFromOrigin).IsEqualTo(0);
 				// bottom
 				await Assert.That(frustum.Planes[2].Normal.Equals(new Vector3(0, 1, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[2].DistanceFromOrigin).IsEqualTo(0, .0001);
+				await Assert.That(frustum.Planes[2].DistanceFromOrigin).IsEqualTo(0);
 				// top
 				await Assert.That(frustum.Planes[3].Normal.Equals(new Vector3(0, -1, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[3].DistanceFromOrigin).IsEqualTo(0, .0001);
+				await Assert.That(frustum.Planes[3].DistanceFromOrigin).IsEqualTo(0);
 				// near
 				await Assert.That(frustum.Planes[4].Normal.Equals(new Vector3(0, 0, -1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3, .0001);
+				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3);
 				// far
 				await Assert.That(frustum.Planes[5].Normal.Equals(new Vector3(0, 0, 1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507, .0001);
+				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507);
 			}
 		}
 
@@ -425,22 +425,22 @@ namespace MatterHackers.VectorMath.Tests
 
 				// left
 				await Assert.That(frustum.Planes[0].Normal.Equals(new Vector3(-1, 0, 1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[0].DistanceFromOrigin).IsEqualTo(0, .0001);
+				await Assert.That(frustum.Planes[0].DistanceFromOrigin).IsEqualTo(0);
 				// right
 				await Assert.That(frustum.Planes[1].Normal.Equals(new Vector3(1, 0, 1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[1].DistanceFromOrigin).IsEqualTo(0, .0001);
+				await Assert.That(frustum.Planes[1].DistanceFromOrigin).IsEqualTo(0);
 				// bottom
 				await Assert.That(frustum.Planes[2].Normal.Equals(new Vector3(0, 1, 1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[2].DistanceFromOrigin).IsEqualTo(0, .0001);
+				await Assert.That(frustum.Planes[2].DistanceFromOrigin).IsEqualTo(0);
 				// top
 				await Assert.That(frustum.Planes[3].Normal.Equals(new Vector3(0, -1, 1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[3].DistanceFromOrigin).IsEqualTo(0, .0001);
+				await Assert.That(frustum.Planes[3].DistanceFromOrigin).IsEqualTo(0);
 				// near
 				await Assert.That(frustum.Planes[4].Normal.Equals(new Vector3(0, 0, 1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3, .0001);
+				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3);
 				// far
 				await Assert.That(frustum.Planes[5].Normal.Equals(new Vector3(0, 0, -1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507, .0001);
+				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507);
 			}
 
 			// translate 10 down z
@@ -453,22 +453,22 @@ namespace MatterHackers.VectorMath.Tests
 				double expectedPlaneOffset = Math.Sqrt(2 * (zMove / 2) * (zMove / 2));
 				// left
 				await Assert.That(frustum.Planes[0].Normal.Equals(new Vector3(1, 0, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[0].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset, .0001);
+				await Assert.That(frustum.Planes[0].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset);
 				// right
 				await Assert.That(frustum.Planes[1].Normal.Equals(new Vector3(-1, 0, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[1].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset, .0001);
+				await Assert.That(frustum.Planes[1].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset);
 				// bottom
 				await Assert.That(frustum.Planes[2].Normal.Equals(new Vector3(0, 1, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[2].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset, .0001);
+				await Assert.That(frustum.Planes[2].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset);
 				// top
 				await Assert.That(frustum.Planes[3].Normal.Equals(new Vector3(0, -1, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[3].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset, .0001);
+				await Assert.That(frustum.Planes[3].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset);
 				// near
 				await Assert.That(frustum.Planes[4].Normal.Equals(new Vector3(0, 0, -1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3 + zMove, .0001);
+				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3 + zMove);
 				// far
 				await Assert.That(frustum.Planes[5].Normal.Equals(new Vector3(0, 0, 1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507 - zMove, .0001);
+				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507 - zMove);
 			}
 		}
 

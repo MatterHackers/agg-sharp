@@ -53,8 +53,8 @@ namespace MatterHackers.Agg.Tests
 
 			a.Transform(ref newx, ref newy);
 			b.Transform(ref newx, ref newy);
-			await Assert.That(newx).IsEqualTo(x).Within(0.001);
-			await Assert.That(newy).IsEqualTo(y).Within(0.001);
+			await Assert.That(newx).IsEqualTo(x);
+			await Assert.That(newy).IsEqualTo(y);
 		}
 
 		[Test]
@@ -69,8 +69,8 @@ namespace MatterHackers.Agg.Tests
 			double newy = 0;
 
 			a.Transform(ref newx, ref newy);
-			await Assert.That(newx).IsEqualTo(x).Within(0.001);
-			await Assert.That(newy).IsEqualTo(y).Within(0.001);
+			await Assert.That(newx).IsEqualTo(x);
+			await Assert.That(newy).IsEqualTo(y);
 		}
 	}
 }

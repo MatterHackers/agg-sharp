@@ -437,16 +437,16 @@ namespace MatterHackers.Agg.Tests
 		{
 			double error = .001;
 			await Assert.That(GetNextOutputAsString() == "C").IsTrue();
-			await Assert.That(coords3[0]).IsEqualTo(GetNextOutputAsDouble()).Within(error);
-			await Assert.That(coords3[1]).IsEqualTo(GetNextOutputAsDouble()).Within(error);
+			await Assert.That(coords3[0]).IsEqualTo(GetNextOutputAsDouble());
+			await Assert.That(coords3[1]).IsEqualTo(GetNextOutputAsDouble());
 			await Assert.That(data4[0]).IsEqualTo(GetNextOutputAsInt());
 			await Assert.That(data4[1]).IsEqualTo(GetNextOutputAsInt());
 			await Assert.That(data4[2]).IsEqualTo(GetNextOutputAsInt());
 			await Assert.That(data4[3]).IsEqualTo(GetNextOutputAsInt());
-			await Assert.That(weight4[0]).IsEqualTo(GetNextOutputAsDouble()).Within(error);
-			await Assert.That(weight4[1]).IsEqualTo(GetNextOutputAsDouble()).Within(error);
-			await Assert.That(weight4[2]).IsEqualTo(GetNextOutputAsDouble()).Within(error);
-			await Assert.That(weight4[3]).IsEqualTo(GetNextOutputAsDouble()).Within(error);
+			await Assert.That(weight4[0]).IsEqualTo(GetNextOutputAsDouble());
+			await Assert.That(weight4[1]).IsEqualTo(GetNextOutputAsDouble());
+			await Assert.That(weight4[2]).IsEqualTo(GetNextOutputAsDouble());
+			await Assert.That(weight4[3]).IsEqualTo(GetNextOutputAsDouble());
 
 			VertexList.Add(new Vertex(coords3[0], coords3[1]));
 			return VertexList.Count-1;
@@ -549,7 +549,7 @@ namespace MatterHackers.Agg.Tests
 				return true;
 			}
 
-			Assert.AreEqual(asDouble, 0);
+			await Assert.That(asDouble).IsEqualTo(0.0);
 
 			return false;
 		}
@@ -562,7 +562,7 @@ namespace MatterHackers.Agg.Tests
 		private int GetNextOutputAsInt()
 		{
 			double asDouble = Convert.ToDouble(GetNextOutputAsString());
-			Assert.AreEqual((int)asDouble, asDouble);
+			await Assert.That(asDouble).IsEqualTo((int)asDouble);
 			return (int)asDouble;
 		}
 

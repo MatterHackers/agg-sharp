@@ -62,10 +62,10 @@ namespace MatterHackers.Agg.Tests
 				RectangleDouble actual = kvp.Value;
 				RectangleDouble expected = controlData[kvp.Key];
 
-				await Assert.That(actual.Left).IsEqualTo(expected.Left).Within(0.001);
-				await Assert.That(actual.Bottom).IsEqualTo(expected.Bottom).Within(0.001);
-				await Assert.That(actual.Right).IsEqualTo(expected.Right).Within(0.001);
-				await Assert.That(actual.Top).IsEqualTo(expected.Top).Within(0.001);
+				await Assert.That(actual.Left).IsEqualTo(expected.Left);
+				await Assert.That(actual.Bottom).IsEqualTo(expected.Bottom);
+				await Assert.That(actual.Right).IsEqualTo(expected.Right);
+				await Assert.That(actual.Top).IsEqualTo(expected.Top);
 
 				await Assert.That(actual).IsEqualTo(expected);
 			}
