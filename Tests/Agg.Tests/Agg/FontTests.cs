@@ -5,19 +5,19 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Agg.Tests.Agg
 {
-    [TestClass]
+    
     public class FontTests
     {
-        [TestMethod]
-        public void CanPrintTests()
+        [Test]
+        public async Task CanPrintTests()
         {
             // Invoke DrawString with a carriage return. If any part of the font pipeline throws, this test fails
             ImageBuffer testImage = new ImageBuffer(300, 300);
             testImage.NewGraphics2D().DrawString("\r", 30, 30);
         }
 
-        [TestMethod]
-        public void TextWrappingTest()
+        [Test]
+        public async Task TextWrappingTest()
         {
             EnglishTextWrapping englishWrapping = new EnglishTextWrapping(8);
             List<string> wrappedLines = englishWrapping.WrapSingleLineOnWidth("Layers or MM", 30);

@@ -36,7 +36,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestClass]
+    
     public class BackBufferTests
 	{
 		public bool saveImagesForDebug;
@@ -49,8 +49,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [TestMethod]
-        public void DoubleBufferTests()
+        [Test]
+        public async Task DoubleBufferTests()
 		{
 			bool textWidgetDoubleBufferDefault = TextWidget.DoubleBufferDefault;
 
@@ -79,7 +79,7 @@ namespace MatterHackers.Agg.UI.Tests
 			TextWidget.DoubleBufferDefault = textWidgetDoubleBufferDefault;
 		}
 
-		public void BackBuffersAreScreenAligned()
+		public async Task BackBuffersAreScreenAligned()
 		{
 			// make sure draw string and a text widget produce the same result when drawn to the same spot
 			{

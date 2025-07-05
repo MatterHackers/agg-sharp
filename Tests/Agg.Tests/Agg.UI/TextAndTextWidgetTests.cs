@@ -44,13 +44,13 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestClass]
+    
     public class TextAndTextWidgetTests
 	{
 		public bool saveImagesForDebug;
 
-        [TestMethod]
-        public void TextWidgetAutoSizeTest()
+        [Test]
+        public async Task TextWidgetAutoSizeTest()
 		{
 			// resize works on text widgets
 			{
@@ -114,8 +114,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [TestMethod]
-        public void TextWidgetVisibleTest()
+        [Test]
+        public async Task TextWidgetVisibleTest()
 		{
 			{
 				GuiWidget rectangleWidget = new GuiWidget(100, 50);

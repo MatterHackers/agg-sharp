@@ -34,7 +34,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestClass]
+    
     public class AnchorTests
 	{
 		public static bool saveImagesForDebug = true;
@@ -50,8 +50,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [TestMethod]
-        public void BottomAndTop()
+        [Test]
+        public async Task BottomAndTop()
 		{
 			BottomAndTopTextControl(0, 0);
 			BottomAndTopTextControl(0, 3);
@@ -135,8 +135,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1000), "The Anchored widget should be in the correct place.");
 		}
 
-        [TestMethod]
-        public void BottomAndTopSetAnchorBeforAddChildTest()
+        [Test]
+        public async Task BottomAndTopSetAnchorBeforAddChildTest()
 		{
 			CenterBothTest(new BorderDouble(), new BorderDouble());
 			CenterBothTest(new BorderDouble(), new BorderDouble(3));
@@ -145,8 +145,8 @@ namespace MatterHackers.Agg.UI.Tests
 			CenterBothTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-        [TestMethod]
-        public void ParentStretchAndFitToChildren()
+        [Test]
+        public async Task ParentStretchAndFitToChildren()
 		{
 			// Make sure normal nested layouts works as expected. First inner added then outer
 			{
@@ -227,8 +227,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [TestMethod]
-        public void SimpleFitToChildren()
+        [Test]
+        public async Task SimpleFitToChildren()
 		{
 			// this is what will happen when the default of minimum size gets set on guiwidget construction
 			{
@@ -313,8 +313,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-        [TestMethod]
-        public void AnchorLeftBottomTests()
+        [Test]
+        public async Task AnchorLeftBottomTests()
 		{
 			// bottom left. this is the easiest as there should be nothing to it.
 			{
@@ -440,8 +440,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [TestMethod]
-        public void AnchorRightBottomTests()
+        [Test]
+        public async Task AnchorRightBottomTests()
 		{
 			// bottom right.
 			{
@@ -513,8 +513,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [TestMethod]
-        public void AnchorRightTopTests()
+        [Test]
+        public async Task AnchorRightTopTests()
 		{
 			// bottom Top.
 			{
@@ -563,8 +563,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-        [TestMethod]
-        public void CenterBothTests()
+        [Test]
+        public async Task CenterBothTests()
 		{
 			CenterBothTest(new BorderDouble(), new BorderDouble());
 			CenterBothTest(new BorderDouble(), new BorderDouble(3));
@@ -606,8 +606,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 		}
 
-        [TestMethod]
-        public void CenterBothOffsetBoundsTests()
+        [Test]
+        public async Task CenterBothOffsetBoundsTests()
 		{
 			CenterBothOffsetBoundsTest(new BorderDouble(), new BorderDouble());
 			CenterBothOffsetBoundsTest(new BorderDouble(), new BorderDouble(3));
@@ -653,8 +653,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-        [TestMethod]
-        public void VAnchorFitIgnoresChildrenWithVAnchorStretch()
+        [Test]
+        public async Task VAnchorFitIgnoresChildrenWithVAnchorStretch()
 		{
 			//  ______________________________________________________________
 			//  |       containerControl 300                                  |
@@ -713,8 +713,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.AreEqual(80, childA.Height);
 		}
 
-        [TestMethod]
-        public void HAnchorFitIgnoresChildrenWithHAnchorStretch()
+        [Test]
+        public async Task HAnchorFitIgnoresChildrenWithHAnchorStretch()
 		{
 			//  ______________________________________________________________
 			//  |       containerControl 300                                  |
@@ -773,8 +773,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.AreEqual(80, childA.Width);
 		}
 
-        [TestMethod]
-        public void VAnchorCenterAndVAnchorFitWorkCorrectlyTogetherTest()
+        [Test]
+        public async Task VAnchorCenterAndVAnchorFitWorkCorrectlyTogetherTest()
 		{
 			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble());
 			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble(3));
@@ -837,8 +837,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.AreEqual((containerControl.Height - childA.Height) / 2, childA.Position.Y);
 		}
 
-        [TestMethod]
-        public void HAnchorCenterAndHAnchorFitWorkCorrectlyTogetherTest()
+        [Test]
+        public async Task HAnchorCenterAndHAnchorFitWorkCorrectlyTogetherTest()
 		{
 			HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble());
 			HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble(3));
@@ -901,8 +901,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.AreEqual((containerControl.Width - childA.Width) / 2, childA.Position.X);
 		}
 
-        [TestMethod]
-        public void HCenterHRightAndVCenterVTopTests()
+        [Test]
+        public async Task HCenterHRightAndVCenterVTopTests()
 		{
 			HCenterHRightAndVCenterVTopTest(new BorderDouble(), new BorderDouble());
 			HCenterHRightAndVCenterVTopTest(new BorderDouble(), new BorderDouble(3));
@@ -945,8 +945,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-        [TestMethod]
-        public void GroupBoxResizeThenLayoutBeforeMatchChildren()
+        [Test]
+        public async Task GroupBoxResizeThenLayoutBeforeMatchChildren()
 		{
 			bool integerBounds = GuiWidget.DefaultEnforceIntegerBounds;
 			GuiWidget.DefaultEnforceIntegerBounds = true;

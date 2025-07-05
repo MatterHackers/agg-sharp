@@ -36,7 +36,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestClass]
+    
     public class BorderTests
 	{
 		private int borderSize = 1;
@@ -51,8 +51,8 @@ namespace MatterHackers.Agg.UI.Tests
 			All = 4
 		}
 
-        [TestMethod]
-        public void BorderTestLeft()
+        [Test]
+        public async Task BorderTestLeft()
 		{
 			var border = new BorderDouble(left: borderSize);
 			var surface = DrawBorderOnSurface(border, "left");
@@ -60,8 +60,8 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Left, border, surface);
 		}
 
-        [TestMethod]
-        public void BorderTestBottom()
+        [Test]
+        public async Task BorderTestBottom()
 		{
 			var border = new BorderDouble(bottom: borderSize);
 			var surface = DrawBorderOnSurface(border, "bottom");
@@ -69,8 +69,8 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Bottom, border, surface);
 		}
 
-        [TestMethod]
-        public void BorderTestRight()
+        [Test]
+        public async Task BorderTestRight()
 		{
 			var border = new BorderDouble(right: borderSize);
 			var surface = DrawBorderOnSurface(border, "right");
@@ -78,8 +78,8 @@ namespace MatterHackers.Agg.UI.Tests
 			AssertBorderWhereExpected(Regions.Right, border, surface);
 		}
 
-        [TestMethod]
-        public void BorderTestTop()
+        [Test]
+        public async Task BorderTestTop()
 		{
 			var border = new BorderDouble(top: borderSize);
 			var surface = DrawBorderOnSurface(border, "top");
@@ -88,8 +88,8 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
         // Enable to visually debug
-        //[TestMethod]
-        public void BorderTestsVisualizer()
+        //[Test]
+        public async Task BorderTestsVisualizer()
 		{
 			var systemWindow = new SystemWindow(700, 660)
 			{

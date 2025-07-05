@@ -40,7 +40,7 @@ namespace MatterHackers.Csg
 	public class CSGTests
 	{
 		[Test]
-		public void MirrorTests()
+		public async Task MirrorTests()
 		{
 			{
 				Box leftBox = new Box(10, 20, 30, "leftBox", createCentered: false);

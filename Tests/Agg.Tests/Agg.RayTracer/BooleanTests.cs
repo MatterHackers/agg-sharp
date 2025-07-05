@@ -44,11 +44,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.RayTracer
 {
-	[TestClass]
+	
 	public class BooleanTests
 	{
-		[TestMethod]
-		public void DifferenceTestsForBox()
+		[Test]
+		public async Task DifferenceTestsForBox()
 		{
 			SolidMaterial redMaterial = new SolidMaterial(ColorF.Red, 0, 0, 0);
 			SolidMaterial blueMaterial = new SolidMaterial(ColorF.Blue, 0, 0, 0);
@@ -127,8 +127,8 @@ namespace MatterHackers.RayTracer
 #endif
 		}
 
-		[TestMethod]
-		public void DiscoveredBadIntersectInfoListSubtraction()
+		[Test]
+		public async Task DiscoveredBadIntersectInfoListSubtraction()
 		{
 			string primaryString = @"2
 FrontFace, 6.55505298172777

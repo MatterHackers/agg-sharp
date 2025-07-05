@@ -39,7 +39,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.Tests
 {
-    [TestClass]
+    
     public class TesselatorTests
 	{
 		public static string[][] InsructionStream = new string[][]
@@ -460,13 +460,13 @@ namespace MatterHackers.Agg.Tests
 			Assert.AreEqual(GetNextOutputAsBool(), IsEdge);
 		}
 
-		public void EndCallBack()
+		public async Task EndCallBack()
 		{
 			Assert.IsTrue(GetNextOutputAsString() == "E");
 		}
 
-		[TestMethod]
-		public void MatchesGLUTesselator()
+		[Test]
+		public async Task MatchesGLUTesselator()
 		{
 			for (CurrentInputTest = 0; CurrentInputTest < InsructionStream.Length; CurrentInputTest++)
 			{

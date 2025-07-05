@@ -32,11 +32,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.RayTracer
 {
-    [TestClass]
+    
 	public class FrustumTests
 	{
-		[TestMethod]
-		public void RayBundleSameResultAsIndividualRays()
+		[Test]
+		public async Task RayBundleSameResultAsIndividualRays()
 		{
 		}
 	}

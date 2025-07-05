@@ -59,7 +59,7 @@ namespace MatterHackers.Agg.Tests
 				}
 			}
 
-            public void SetCompatibleWorkingDirectory()
+            public async Task SetCompatibleWorkingDirectory()
 			{
                 throw new NotImplementedException();
 			}

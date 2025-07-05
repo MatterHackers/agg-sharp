@@ -42,7 +42,7 @@ namespace MatterHackers.Agg.UI.Tests
 		internal int popCount;
 	}
 
-    [TestClass]
+    
 	[DoNotParallelize]
 	public class ToolTipTests
 	{
@@ -52,8 +52,8 @@ namespace MatterHackers.Agg.UI.Tests
 		static readonly int minMsTimeToRespond = 60;
 		static readonly int minMsToBias = 80;
 
-        [TestMethod]
-        public void ToolTipInitialOpenTests()
+        [Test]
+        public async Task ToolTipInitialOpenTests()
 		{
 			TempData tempData = new TempData();
 			// test simple open then wait for pop
@@ -103,7 +103,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
 		}
 
-        [TestMethod]
+        [Test]
         public async Task ToolTipsShow()
 		{
 			SystemWindow buttonContainer = new SystemWindow(300, 200)
@@ -140,8 +140,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun);
 		}
 
-        [TestMethod]
-        public void ToolTipCloseOnLeave()
+        [Test]
+        public async Task ToolTipCloseOnLeave()
 		{
 			TempData tempData = new TempData();
 			SystemWindow systemWindow = CreateTwoChildWindow(tempData);
@@ -170,8 +170,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
 		}
 
-        [TestMethod]
-        public void MoveFromToolTipToToolTip()
+        [Test]
+        public async Task MoveFromToolTipToToolTip()
 		{
 			TempData tempData = new TempData();
 			SystemWindow systemWindow = CreateTwoChildWindow(tempData);
@@ -237,8 +237,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip2Text);
 		}
 
-        [TestMethod]
-        public void MoveFastFromToolTipToToolTip()
+        [Test]
+        public async Task MoveFastFromToolTipToToolTip()
 		{
 			TempData tempData = new TempData();
 			SystemWindow systemWindow = CreateTwoChildWindow(tempData);

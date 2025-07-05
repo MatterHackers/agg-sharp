@@ -37,11 +37,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Matter_CAD_Lib.Tests.AutomationTests
 {
-    [TestClass]
+    
 	[DoNotParallelize]
 	public class WidgetClickTests
 	{
-        [TestMethod]
+        [Test]
         public async Task ClickFiresOnCorrectWidgets()
 		{
 			var testWindow = new ClickTestsWindow(300, 200);
@@ -85,7 +85,7 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 				secondsToTestFailure: 30);
 		}
 
-        [TestMethod]
+        [Test]
         public async Task ClickSuppressedOnExternalMouseUp()
 		{
 			var testWindow = new ClickTestsWindow(300, 200);
@@ -132,7 +132,7 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 				secondsToTestFailure: 30);
 		}
 
-        [TestMethod]
+        [Test]
         public async Task ClickSuppressedOnMouseUpWithinChild2()
 		{
 			// Agg currently fires mouse up events in child controls when the parent has the mouse captured

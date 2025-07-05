@@ -42,11 +42,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.RayTracer
 {
-	[TestClass]
+	
 	public class TraceAPITests
 	{
-		[TestMethod]
-		public void EnumerateBvh()
+		[Test]
+		public async Task EnumerateBvh()
 		{
 			// create a bvh hierarchy
 			var level4_a = new TriangleShape(new Vector3(0, 0, 1), new Vector3(0, 0, 3), new Vector3(0, 1, 2), null);
@@ -116,8 +116,8 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		[TestMethod]
-		public void PlaneGetDistanceToIntersection()
+		[Test]
+		public async Task PlaneGetDistanceToIntersection()
 		{
 			Plane testPlane = new Plane(Vector3.UnitZ, 10);
 			bool hitFrontOfPlane;

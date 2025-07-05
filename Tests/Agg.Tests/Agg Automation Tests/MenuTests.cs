@@ -36,7 +36,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestClass]
+    
 	[DoNotParallelize]
 	public class MenuTests
 	{
@@ -50,7 +50,7 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [TestMethod]
+        [Test]
         public async Task OpenAndCloseMenus()
 		{
 			int item1ClickCount = 0;

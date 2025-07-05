@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.Image
 {
-	[TestClass]
+	
 	public class ImageTests
 	{
 		private bool ClearAndCheckImage(ImageBuffer image, Color color)
@@ -53,8 +53,8 @@ namespace MatterHackers.Agg.Image
 			return true;
 		}
 
-		[TestMethod]
-		public void ColorHTMLTranslations()
+		[Test]
+		public async Task ColorHTMLTranslations()
 		{
 			Assert.AreEqual(new Color("#FFFFFFFF"), new Color(255, 255, 255, 255));
 			Assert.AreEqual(new Color("#FFF"), new Color(255, 255, 255, 255));
@@ -69,8 +69,8 @@ namespace MatterHackers.Agg.Image
 			Assert.AreEqual(new Color("#A1FFFF"), new Color(161, 255, 255, 255));
 		}
 
-		[TestMethod]
-		public void ClearTests()
+		[Test]
+		public async Task ClearTests()
 		{
 			ImageBuffer clearSurface24 = new ImageBuffer(50, 50, 24, new BlenderBGR());
 			Assert.IsTrue(ClearAndCheckImage(clearSurface24, Color.White), "Clear 24 to white");
@@ -87,7 +87,7 @@ namespace MatterHackers.Agg.Image
 			Assert.IsTrue(ClearAndCheckImageFloat(clearSurface3ComponentFloat, new ColorF(0, 0, 0, 0)), "Clear float to nothing");
 		}
 
-		public void ContainsTests()
+		public async Task ContainsTests()
 		{
 			// look for 24 bit
 			{

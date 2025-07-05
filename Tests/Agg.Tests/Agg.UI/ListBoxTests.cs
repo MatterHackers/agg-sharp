@@ -36,7 +36,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestClass]
+    
     public class ListBoxTests
 	{
 		public static bool saveImagesForDebug = false;
@@ -63,8 +63,8 @@ namespace MatterHackers.Agg.UI.Tests
 			OutputImage(test, "image-test.tga");
 		}
 
-        [TestMethod]
-        public void SingleItemVisibleTest()
+        [Test]
+        public async Task SingleItemVisibleTest()
 		{
 			{
 				ListBox containerListBox = new ListBox(new RectangleDouble(0, 0, 100, 100));
@@ -133,8 +133,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [TestMethod]
-        public void ScrollPositionStartsCorrect()
+        [Test]
+        public async Task ScrollPositionStartsCorrect()
 		{
 			GuiWidget contents = new GuiWidget(300, 300);
 			contents.DoubleBuffer = true;

@@ -38,11 +38,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestClass]
+	
 	[DoNotParallelize]
 	public class MouseInteractionTests
 	{
-		[TestMethod]
+		[Test]
 		public async Task DoClickButtonInWindow()
 		{
 			int leftClickCount = 0;
@@ -85,7 +85,7 @@ namespace MatterHackers.Agg.UI.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, secondsToTestFailure: 30);
 		}
 
-		[TestMethod]
+		[Test]
 		public async Task RadioButtonSiblingsAreChildren()
 		{
 			AutomationRunner.TimeToMoveMouse = .1;
@@ -149,8 +149,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(buttonWindow, testToRun, secondsToTestFailure: 30);
 		}
 
-		[TestMethod]
-		public void ExtensionMethodsTests()
+		[Test]
+		public async Task ExtensionMethodsTests()
 		{
 			var level0 = new GuiWidget() { Name = "level0" };
 			var level1 = new GuiWidget() { Name = "level1" };
@@ -192,8 +192,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(parentCount == 3);
 		}
 
-		[TestMethod]
-		public void ValidateSimpleLeftClick()
+		[Test]
+		public async Task ValidateSimpleLeftClick()
 		{
 			var container = new GuiWidget
 			{
@@ -234,8 +234,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(button.Focused == false);
 		}
 
-		[TestMethod]
-		public void ValidateOnlyTopWidgetGetsLeftClick()
+		[Test]
+		public async Task ValidateOnlyTopWidgetGetsLeftClick()
 		{
 			bool gotClick = false;
 			var container = new GuiWidget
@@ -286,8 +286,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(gotClick == false);
 		}
 
-		[TestMethod]
-		public void ValidateSimpleMouseUpDown()
+		[Test]
+		public async Task ValidateSimpleMouseUpDown()
 		{
 			var container = new GuiWidget
 			{
@@ -383,8 +383,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(topWidgetGotMouseDownInBounds == 1);
 		}
 
-		[TestMethod]
-		public void ValidateOnlyTopWidgetGetsMouseUp()
+		[Test]
+		public async Task ValidateOnlyTopWidgetGetsMouseUp()
 		{
 			bool topGotMouseUp = false;
 			var container = new GuiWidget
@@ -427,8 +427,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(topGotMouseUp == false);
 		}
 
-		[TestMethod]
-		public void ValidateEnterAndLeaveEvents()
+		[Test]
+		public async Task ValidateEnterAndLeaveEvents()
 		{
 			int mouseEnter = 0;
 			int mouseLeave = 0;
@@ -597,8 +597,8 @@ namespace MatterHackers.Agg.UI.Tests
 			return radioButton;
 		}
 
-		[TestMethod]
-		public void ValidateEnterAndLeaveEventsWhenNested()
+		[Test]
+		public async Task ValidateEnterAndLeaveEventsWhenNested()
 		{
 			// ___container__(200, 200)_______________________________________
 			// |                                                             |
@@ -846,8 +846,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(gotEnterBoundsB == 0);
 		}
 
-		[TestMethod]
-		public void ValidateEnterAndLeaveEventsWhenCoverd()
+		[Test]
+		public async Task ValidateEnterAndLeaveEventsWhenCoverd()
 		{
 			// A widget contains two children the second completely covering the first.
 			// When the mouse moves into the first it should not receive an enter event only a bounds enter event.
@@ -1122,8 +1122,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(gotEnterBoundsCoveredChild == 0);
 		}
 
-		[TestMethod]
-		public void ValidateEnterAndLeaveInOverlapArea()
+		[Test]
+		public async Task ValidateEnterAndLeaveInOverlapArea()
 		{
 			var container = new GuiWidget
 			{
@@ -1289,8 +1289,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(topGotLeaveBounds == 0);
 		}
 
-		[TestMethod]
-		public void MouseCapturedSpressesLeaveEvents()
+		[Test]
+		public async Task MouseCapturedSpressesLeaveEvents()
 		{
 			var container = new GuiWidget
 			{
@@ -1480,8 +1480,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(bGotMove == 0);
 		}
 
-		[TestMethod]
-		public void MouseCapturedSpressesLeaveEventsInButtonsSameAsRectangles()
+		[Test]
+		public async Task MouseCapturedSpressesLeaveEventsInButtonsSameAsRectangles()
 		{
 			var container = new GuiWidget
 			{

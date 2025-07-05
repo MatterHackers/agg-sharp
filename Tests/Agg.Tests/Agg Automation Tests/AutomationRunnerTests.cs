@@ -36,11 +36,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestClass]
+    
     [DoNotParallelize]
     public class AutomationRunnerTests
 	{
-        [TestMethod]
+        [Test]
         public async Task GetWidgetByNameTestNoRegionSingleWindow()
 		{
 			// single system window
@@ -64,7 +64,7 @@ namespace MatterHackers.Agg.UI.Tests
 			});
 		}
 
-        [TestMethod]
+        [Test]
         public async Task AutomationRunnerTimeoutTest()
 		{
 			// Ensure AutomationRunner throws timeout exceptions
@@ -93,7 +93,7 @@ namespace MatterHackers.Agg.UI.Tests
             });
         }
 
-        [TestMethod]
+        [Test]
         public async Task GetWidgetByNameTestRegionSingleWindow()
 		{
 			int leftClickCount = 0;

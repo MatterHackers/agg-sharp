@@ -47,7 +47,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 	public class MeshCsgTests
 	{
 		[Test]
-		public void SubtractWorks()
+		public async Task SubtractWorks()
 		{
 			Vector3 centering = new Vector3(100, 100, 20);
 			Mesh meshA = PlatonicSolids.CreateCube(40, 40, 40);
@@ -71,7 +71,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		[Test, Ignore("TODO: Get this test passing")]
-		public void TopIsSolid()
+		public async Task TopIsSolid()
 		{
 			int sides = 3;
 			CsgObject keep = new Cylinder(20, 20, sides);
@@ -88,7 +88,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		[Test]
-		public void SubtractHasAllFaces()
+		public async Task SubtractHasAllFaces()
 		{
 			double XOffset = -.4;
 			CsgObject keep = new Box(10, 10, 10);
@@ -168,7 +168,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		[Test, Ignore("Crashes NUnit with an unrecoverable StackOverflow error, ending test passes on build servers")]
-		public void SubtractIcosahedronsWorks()
+		public async Task SubtractIcosahedronsWorks()
 		{
 			Vector3 centering = new Vector3(100, 100, 20);
 			Mesh meshA = PlatonicSolids.CreateIcosahedron(35);
@@ -195,7 +195,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		[Test]
-		public void UnionExactlyOnWorks()
+		public async Task UnionExactlyOnWorks()
 		{
 			Mesh meshA = PlatonicSolids.CreateCube(40, 40, 40);
 			Mesh meshB = PlatonicSolids.CreateCube(40, 40, 40);
@@ -214,7 +214,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		[Test]
-		public void EnsureSimpleCubeIntersection()
+		public async Task EnsureSimpleCubeIntersection()
 		{
 			// the intersection of 2 cubes
 			{
@@ -260,7 +260,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		[Test]
-		public void EnsureSimpleCubeUnion()
+		public async Task EnsureSimpleCubeUnion()
 		{
 			// the union of 2 cubes
 			{
@@ -285,7 +285,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		[Test]
-		public void EnsureSimpleCubeSubtraction()
+		public async Task EnsureSimpleCubeSubtraction()
 		{
 			// the subtraction of 2 cubes
 			{
@@ -310,7 +310,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		[Test, Ignore("Work in progress")]
-		public void SubtractionMakesClosedSolid()
+		public async Task SubtractionMakesClosedSolid()
 		{
 			double XOffset = -.4;
 

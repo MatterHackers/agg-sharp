@@ -36,7 +36,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestClass]
+    
 	[DoNotParallelize]
 	public class FlowLayoutTests
 	{
@@ -45,14 +45,14 @@ namespace MatterHackers.Agg.UI.Tests
 
 		bool enforceIntegerBounds;
         [TestInitialize]
-        public void Setup()
+        public async Task Setup()
 		{
 			enforceIntegerBounds = GuiWidget.DefaultEnforceIntegerBounds;
             GuiWidget.DefaultEnforceIntegerBounds = false;
         }
 
 		[TestCleanup]
-		public void Restore()
+		public async Task Restore()
         {
             GuiWidget.DefaultEnforceIntegerBounds = enforceIntegerBounds;
         }
@@ -79,8 +79,8 @@ namespace MatterHackers.Agg.UI.Tests
 			OutputImage(test, "image-test.tga");
 		}
 
-        [TestMethod]
-        public void TopToBottomContainerAppliesExpectedMargin()
+        [Test]
+        public async Task TopToBottomContainerAppliesExpectedMargin()
 		{
 			int marginSize = 40;
 			int dimensions = 300;
@@ -121,7 +121,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(bounds.Bottom == marginSize, "Bottom margin is incorrect");
 		}
 
-        [TestMethod]
+        [Test]
         public async Task SpacingClearedAfterLoadPositionsCorrectly()
 		{
 			var systemWindow = new SystemWindow(700, 200)
@@ -203,8 +203,8 @@ namespace MatterHackers.Agg.UI.Tests
 			});
 		}
 
-        [TestMethod]
-        public void NestedLayoutTopToBottomTests()
+        [Test]
+        public async Task NestedLayoutTopToBottomTests()
 		{
 			NestedLayoutTopToBottomTest(default(BorderDouble), default(BorderDouble));
 			NestedLayoutTopToBottomTest(default(BorderDouble), new BorderDouble(3));
@@ -213,8 +213,8 @@ namespace MatterHackers.Agg.UI.Tests
 			NestedLayoutTopToBottomTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-        [TestMethod]
-        public void ChangingChildVisiblityUpdatesFlow()
+        [Test]
+        public async Task ChangingChildVisiblityUpdatesFlow()
 		{
 			// ___________________________________________________
 			//  |       containerControl 300                      |
@@ -284,8 +284,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(flow2.Width == size2.Width);
 		}
 
-        [TestMethod]
-        public void ChangingChildFlowWidgetVisiblityUpdatesParentFlow()
+        [Test]
+        public async Task ChangingChildFlowWidgetVisiblityUpdatesParentFlow()
 		{
 			// ___________________________________________________
 			//  |       containerControl 300                      |
@@ -431,8 +431,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerTest.BackBuffer.Equals(containerControl.BackBuffer, 1), "The test should contain the same image as the control.");
 		}
 
-        [TestMethod]
-        public void NestedLayoutTopToBottomWithResizeTests()
+        [Test]
+        public async Task NestedLayoutTopToBottomWithResizeTests()
 		{
 			NestedLayoutTopToBottomWithResizeTest(default(BorderDouble), default(BorderDouble));
 			NestedLayoutTopToBottomWithResizeTest(default(BorderDouble), new BorderDouble(3));
@@ -498,8 +498,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerTest.BackBuffer == controlImage, "The control should contain the same image after being scaled away and back to the same size.");
 		}
 
-        [TestMethod]
-        public void LeftToRightTests()
+        [Test]
+        public async Task LeftToRightTests()
 		{
 			LeftToRightTest(default(BorderDouble), default(BorderDouble));
 			LeftToRightTest(default(BorderDouble), new BorderDouble(3));
@@ -560,8 +560,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-        [TestMethod]
-        public void RightToLeftTests()
+        [Test]
+        public async Task RightToLeftTests()
 		{
 			RightToLeftTest(default(BorderDouble), default(BorderDouble));
 			RightToLeftTest(default(BorderDouble), new BorderDouble(3));
@@ -622,8 +622,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 		}
 
-        [TestMethod]
-        public void NestedMaxFitOrStretchToChildrenParentWidth()
+        [Test]
+        public async Task NestedMaxFitOrStretchToChildrenParentWidth()
 		{
 			// child of flow layout is Stretch
 			{
@@ -717,8 +717,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [TestMethod]
-        public void NestedMinFitOrStretchToChildrenParentWidth()
+        [Test]
+        public async Task NestedMinFitOrStretchToChildrenParentWidth()
 		{
 			// child of flow layout is Stretch
 			{
@@ -913,8 +913,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [TestMethod]
-        public void LeftToRightAnchorLeftBottomTests()
+        [Test]
+        public async Task LeftToRightAnchorLeftBottomTests()
 		{
 			LeftToRightAnchorLeftBottomTest(default(BorderDouble), default(BorderDouble));
 			LeftToRightAnchorLeftBottomTest(default(BorderDouble), new BorderDouble(3));
@@ -977,8 +977,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-        [TestMethod]
-        public void AnchorLeftRightTests()
+        [Test]
+        public async Task AnchorLeftRightTests()
 		{
 			FlowTopBottomAnchorChildrenLeftRightTest(default(BorderDouble), default(BorderDouble));
 			FlowTopBottomAnchorChildrenLeftRightTest(default(BorderDouble), new BorderDouble(3));
@@ -1054,8 +1054,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 		}
 
-        [TestMethod]
-        public void NestedFlowWidgetsTopToBottomTests()
+        [Test]
+        public async Task NestedFlowWidgetsTopToBottomTests()
 		{
 			NestedFlowWidgetsTopToBottomTest(default(BorderDouble), default(BorderDouble));
 			NestedFlowWidgetsTopToBottomTest(default(BorderDouble), new BorderDouble(3));
@@ -1121,8 +1121,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-        [TestMethod]
-        public void NestedFlowWidgetsRightToLeftTests()
+        [Test]
+        public async Task NestedFlowWidgetsRightToLeftTests()
 		{
 			NestedFlowWidgetsRightToLeftTest(default(BorderDouble), default(BorderDouble));
 			NestedFlowWidgetsRightToLeftTest(default(BorderDouble), new BorderDouble(3));
@@ -1192,8 +1192,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 		}
 
-        [TestMethod]
-        public void NestedFlowWidgetsLeftToRightTests()
+        [Test]
+        public async Task NestedFlowWidgetsLeftToRightTests()
 		{
 			NestedFlowWidgetsLeftToRightTest(default(BorderDouble), default(BorderDouble));
 			NestedFlowWidgetsLeftToRightTest(default(BorderDouble), new BorderDouble(3));
@@ -1259,8 +1259,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-        [TestMethod]
-        public void FlowWithMaxSizeChildAllocatesToOthers()
+        [Test]
+        public async Task FlowWithMaxSizeChildAllocatesToOthers()
 		{
 			var container = new GuiWidget(200, 300);
 
@@ -1291,8 +1291,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.AreEqual(150, rightItem.Width);
 		}
 
-        [TestMethod]
-        public void LeftRightWithAnchorLeftRightChildTests()
+        [Test]
+        public async Task LeftRightWithAnchorLeftRightChildTests()
 		{
 			LeftRightWithAnchorLeftRightChildTest(default(BorderDouble), default(BorderDouble));
 			LeftRightWithAnchorLeftRightChildTest(default(BorderDouble), new BorderDouble(3));
@@ -1410,8 +1410,8 @@ namespace MatterHackers.Agg.UI.Tests
 			return middle;
 		}
 
-        [TestMethod]
-        public void RightLeftWithAnchorLeftRightChildTests()
+        [Test]
+        public async Task RightLeftWithAnchorLeftRightChildTests()
 		{
 			RightLeftWithAnchorLeftRightChildTest(default(BorderDouble), default(BorderDouble));
 			RightLeftWithAnchorLeftRightChildTest(default(BorderDouble), new BorderDouble(3));
@@ -1517,8 +1517,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
 		}
 
-        [TestMethod]
-        public void BottomTopWithAnchorBottomTopChildTests()
+        [Test]
+        public async Task BottomTopWithAnchorBottomTopChildTests()
 		{
 			BottomTopWithAnchorBottomTopChildTest(default(BorderDouble), default(BorderDouble));
 			BottomTopWithAnchorBottomTopChildTest(default(BorderDouble), new BorderDouble(3));
@@ -1636,8 +1636,8 @@ namespace MatterHackers.Agg.UI.Tests
 			return middle;
 		}
 
-        [TestMethod]
-        public void TopBottomWithAnchorBottomTopChildTests()
+        [Test]
+        public async Task TopBottomWithAnchorBottomTopChildTests()
 		{
 			TopBottomWithAnchorBottomTopChildTest(default(BorderDouble), default(BorderDouble));
 			TopBottomWithAnchorBottomTopChildTest(default(BorderDouble), new BorderDouble(3));
@@ -1743,7 +1743,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
 		}
 
-		public void EnsureFlowLayoutMinSizeFitsChildrenMinSize()
+		public async Task EnsureFlowLayoutMinSizeFitsChildrenMinSize()
 		{
 			// This test is to prove that a flow layout widget always has it's min size set
 			// to the enclosing bounds size of all it's childrens min size.
@@ -1782,8 +1782,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerTest.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 		}
 
-        [TestMethod]
-        public void ChildVisibilityChangeCauseResize()
+        [Test]
+        public async Task ChildVisibilityChangeCauseResize()
 		{
 			// Test whether toggling the visibility of children changes the flow layout
 			var containerTest = new GuiWidget(640, 480);
@@ -1924,8 +1924,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(item3.Width == 30);
 		}
 
-        [TestMethod]
-        public void EnsureCorrectSizeOnChildrenVisibleChange()
+        [Test]
+        public async Task EnsureCorrectSizeOnChildrenVisibleChange()
 		{
 			// just one column changes correctly
 			{
@@ -2052,8 +2052,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [TestMethod]
-        public void ChildHAnchorPriority()
+        [Test]
+        public async Task ChildHAnchorPriority()
 		{
 			// make sure a middle spacer grows and shrinks correctly
 			{
@@ -2291,8 +2291,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [TestMethod]
-        public void TestVAnchorCenter()
+        [Test]
+        public async Task TestVAnchorCenter()
 		{
 			var searchPanel = new FlowLayoutWidget
 			{

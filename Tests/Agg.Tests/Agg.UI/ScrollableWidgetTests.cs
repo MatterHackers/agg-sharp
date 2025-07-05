@@ -34,7 +34,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestClass]
+    
     public class ScrollableWidgetTests
 	{
 		public static bool saveImagesForDebug = false;
@@ -48,8 +48,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [TestMethod]
-        public void LimitScrolToContetsTests()
+        [Test]
+        public async Task LimitScrolToContetsTests()
 		{
 			GuiWidget containerControl = new GuiWidget(200, 200);
 			containerControl.DoubleBuffer = true;

@@ -34,11 +34,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.Tests
 {
-	[TestClass]
+	
     public class AffineTests
 	{
-		[TestMethod]
-		public void invert_test()
+		[Test]
+		public async Task invert_test()
 		{
 			Affine a = Affine.NewIdentity();
 			a.translate(10, 10);
@@ -56,8 +56,8 @@ namespace MatterHackers.Agg.Tests
 			Assert.AreEqual(y, newy, .001);
 		}
 
-		[TestMethod]
-		public void transform_test()
+		[Test]
+		public async Task transform_test()
 		{
 			Affine a = Affine.NewIdentity();
 			a.translate(10, 20);

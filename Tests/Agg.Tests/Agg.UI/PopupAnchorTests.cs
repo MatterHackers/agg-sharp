@@ -16,10 +16,10 @@ using System.Threading.Tasks;
 
 namespace MatterCAD.Tests.MatterCAD
 {
-    [TestClass]
+    
     public class PopupAnchorTests
 	{
-        [TestMethod]
+        [Test]
         public async Task WindowTest()
 		{
 			var systemWindow = new PopupsTestWindow(700, 300)
@@ -72,7 +72,7 @@ namespace MatterCAD.Tests.MatterCAD
 			}, 30);
 		}
 
-        [TestMethod]
+        [Test]
         public async Task TopBottomPopupTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -108,7 +108,7 @@ namespace MatterCAD.Tests.MatterCAD
 				});
 		}
 
-        [TestMethod]
+        [Test]
         public async Task TopTopPopupTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -144,7 +144,7 @@ namespace MatterCAD.Tests.MatterCAD
 				});
 		}
 
-        [TestMethod]
+        [Test]
         public async Task BottomTopPopupTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -180,7 +180,7 @@ namespace MatterCAD.Tests.MatterCAD
 				});
 		}
 
-        [TestMethod]
+        [Test]
         public async Task BottomBottomPopupTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -217,7 +217,7 @@ namespace MatterCAD.Tests.MatterCAD
 		}
 
         // Redirect down to up
-        [TestMethod]
+        [Test]
         public async Task BottomTopUpRedirectTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -259,7 +259,7 @@ namespace MatterCAD.Tests.MatterCAD
 				});
 		}
 
-        [TestMethod]
+        [Test]
         public async Task TopTopUpRedirectTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -303,7 +303,7 @@ namespace MatterCAD.Tests.MatterCAD
 
 
         // Redirect up to down
-        [TestMethod]
+        [Test]
         public async Task BottomTopDownRedirectTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -345,7 +345,7 @@ namespace MatterCAD.Tests.MatterCAD
 				});
 		}
 
-        [TestMethod]
+        [Test]
         public async Task TopTopDownRedirectTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -388,7 +388,7 @@ namespace MatterCAD.Tests.MatterCAD
 		}
 
         // Redirect left to right
-        [TestMethod]
+        [Test]
         public async Task LeftRightRedirectTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -442,7 +442,7 @@ namespace MatterCAD.Tests.MatterCAD
 		}
 
         // Redirect right to left
-        [TestMethod]
+        [Test]
         public async Task RightLeftRedirectTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)

@@ -26,7 +26,7 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		// [Test]
-		public void ConvertWinExeProjectsToPackageReference()
+		public async Task ConvertWinExeProjectsToPackageReference()
 		{
 			foreach(var csproj in allCSProjFiles)
 			{

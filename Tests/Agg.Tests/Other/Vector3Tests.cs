@@ -34,11 +34,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.Tests
 {
-    [TestClass]
+    
     public class Vector3Tests
 	{
-		[TestMethod]
-		public void VectorAdditionAndSubtraction()
+		[Test]
+		public async Task VectorAdditionAndSubtraction()
 		{
 			var point1 = default(Vector3);
 			point1 = new Vector3(1, 1, 1);
@@ -69,8 +69,8 @@ namespace MatterHackers.Agg.Tests
 			Assert.IsTrue(inlineOpLeftSide - inlineOpRightSide == new Vector3(10.0f, -7.0f, -1.0f));
 		}
 
-		[TestMethod]
-		public void ScalarMultiplication()
+		[Test]
+		public async Task ScalarMultiplication()
 		{
 			var scalarMultiplicationArgument = new Vector3(5.0f, 4.0f, 3.0f);
 			Assert.IsTrue(scalarMultiplicationArgument * -.5 == -new Vector3(2.5f, 2.0f, 1.5f));
@@ -82,8 +82,8 @@ namespace MatterHackers.Agg.Tests
 			Assert.IsTrue(point3.Equals(new Vector3(12, 18, 24), .01f));
 		}
 
-		[TestMethod]
-		public void ScalarDivision()
+		[Test]
+		public async Task ScalarDivision()
 		{
 			var scalarMultiplicationArgument = new Vector3(5.0f, 4.0f, 3.0f);
 			Assert.IsTrue(scalarMultiplicationArgument / 2 == new Vector3(2.5f, 2.0f, 1.5f));
@@ -93,8 +93,8 @@ namespace MatterHackers.Agg.Tests
 			Assert.IsTrue(point3.Equals(new Vector3(2, 3, 4), .01f));
 		}
 
-		[TestMethod]
-		public void DotProduct()
+		[Test]
+		public async Task DotProduct()
 		{
 			var test1 = new Vector3(10, 1, 2);
 			var test2 = new Vector3(1, 0, 0);
@@ -102,8 +102,8 @@ namespace MatterHackers.Agg.Tests
 			Assert.IsTrue(dotResult == 10);
 		}
 
-		[TestMethod]
-		public void CrossProduct()
+		[Test]
+		public async Task CrossProduct()
 		{
 			var test1 = new Vector3(10, 0, 0);
 			var test2 = new Vector3(1, 1, 0);
@@ -113,8 +113,8 @@ namespace MatterHackers.Agg.Tests
 			Assert.IsTrue(crossResult.Z < 0);
 		}
 
-		[TestMethod]
-		public void Normalize()
+		[Test]
+		public async Task Normalize()
 		{
 			var point3 = new Vector3(3, -4, 5);
 			point3.Normalize();

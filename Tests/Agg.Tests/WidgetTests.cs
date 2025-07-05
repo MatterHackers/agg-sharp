@@ -32,11 +32,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [TestClass]
+    
     public class WidgetTests
 	{
-        [TestMethod]
-        public void LoadEventFiresOnlyOnce()
+        [Test]
+        public async Task LoadEventFiresOnlyOnce()
 		{
 			// Issue MatterHackers/MCCentral#5072 - OnLoad / Load can fire more than once
 			var widget = new GuiWidget()

@@ -45,11 +45,11 @@ namespace MatterHackers.Agg.Tests
 	using Polygons = List<List<IntPoint>>;
 	using Polygon = List<IntPoint>;
 
-	[TestClass]
+	
 	public class ClipperTests
 	{
-		[TestMethod]
-		public void CleanPolygonsTest()
+		[Test]
+		public async Task CleanPolygonsTest()
 		{
 			var polygon = new Polygon();
 
