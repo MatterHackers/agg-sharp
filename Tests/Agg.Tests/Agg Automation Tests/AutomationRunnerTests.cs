@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,8 +31,8 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.GuiAutomation;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TUnit.Assertions;
+using TUnit.Core;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -58,7 +58,7 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.ClickByName("left");
 				testRunner.Delay(.5);
 
-				Assert.IsTrue(leftClickCount == 1);//, "Got left button click");
+				await Assert.That(leftClickCount == 1).IsTrue();
 
 				return Task.CompletedTask;
 			});
@@ -78,7 +78,7 @@ namespace MatterHackers.Agg.UI.Tests
 
             //Assert.ThrowsAsync<TimeoutException>(
             // convert to xunit
-            await Assert.ThrowsExceptionAsync<TimeoutException>(async () =>
+            await Assert.That(async () =>
             {
                 await AutomationRunner.ShowWindowAndExecuteTests(
                     systemWindow,
@@ -90,7 +90,7 @@ namespace MatterHackers.Agg.UI.Tests
                     },
                     // Timeout after 1 second
                     secondsToTestFailure: 1);
-            });
+            }).ThrowsAsync<TimeoutException>();
         }
 
         [Test]
@@ -113,9 +113,9 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				testRunner.ClickByName("left");
 				testRunner.Delay(.5);
-				Assert.AreEqual(1, leftClickCount);//, "Should have one left click count after click");
+				await Assert.That(leftClickCount).IsEqualTo(1);
 
-				Assert.IsTrue(testRunner.NameExists("left"), "Left button should exist");
+				await Assert.That(testRunner.NameExists("left")).IsTrue();
 
 				var widget = testRunner.GetWidgetByName(
 					"left",
@@ -123,7 +123,7 @@ namespace MatterHackers.Agg.UI.Tests
 					5,
 					testRunner.GetRegionByName("right"));
 
-				Assert.IsNull(widget);//, "Left button should not exist in the right button region");
+				await Assert.That(widget).IsNull();
 
 				return Task.CompletedTask;
 			});

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,19 +28,14 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TUnit.Assertions;
+using TUnit.Core;
 using MatterHackers.Agg;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.RayTracer.Traceable;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.VectorMath;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.RayTracer
 {
@@ -60,11 +55,11 @@ namespace MatterHackers.RayTracer
 			{
 				IntersectInfo testInfo = box1X1.GetClosestIntersection(castRay);
 
-				Assert.IsTrue(testInfo.HitType == IntersectionType.FrontFace, "Found Hit : Box No CSG");
-				Assert.IsTrue(testInfo.ClosestHitObject == box1X1, "Found Hit : Box No CSG");
-				Assert.IsTrue(testInfo.HitPosition == new Vector3(0, -.5, 0), "Hit position y = -.5 : Box No CSG");
-				Assert.IsTrue(testInfo.DistanceToHit == .5, "Hit length = .5 : Box No CSG");
-				Assert.IsTrue(testInfo.NormalAtHit == -Vector3.UnitY, "Normal Correct : Box No CSG");
+				await Assert.That(testInfo.HitType == IntersectionType.FrontFace).IsTrue();
+				await Assert.That(testInfo.ClosestHitObject == box1X1).IsTrue();
+				await Assert.That(testInfo.HitPosition == new Vector3(0, -.5, 0)).IsTrue();
+				await Assert.That(testInfo.DistanceToHit == .5).IsTrue();
+				await Assert.That(testInfo.NormalAtHit == -Vector3.UnitY).IsTrue();
 			}
 
 			// one subtract from the front of a box, the front faces are aligned
@@ -73,11 +68,11 @@ namespace MatterHackers.RayTracer
 				Difference merge = new Difference(box1X1, subtractBox);
 				IntersectInfo testInfo = merge.GetClosestIntersection(castRay);
 
-				Assert.IsTrue(testInfo.HitType == IntersectionType.FrontFace, "Found Hit : One Subtract");
-				Assert.IsTrue(testInfo.ClosestHitObject == subtractBox, "Found Hit : One Subtract");
-				Assert.IsTrue(testInfo.HitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : One Subtract");
-				Assert.IsTrue(testInfo.DistanceToHit == 1, "Hit length = 1 : One Subtract");
-				Assert.IsTrue(testInfo.NormalAtHit == -Vector3.UnitY, "Normal Correct : One Subtract");
+				await Assert.That(testInfo.HitType == IntersectionType.FrontFace).IsTrue();
+				await Assert.That(testInfo.ClosestHitObject == subtractBox).IsTrue();
+				await Assert.That(testInfo.HitPosition == new Vector3(0, 0, 0)).IsTrue();
+				await Assert.That(testInfo.DistanceToHit == 1).IsTrue();
+				await Assert.That(testInfo.NormalAtHit == -Vector3.UnitY).IsTrue();
 			}
 
 #if false

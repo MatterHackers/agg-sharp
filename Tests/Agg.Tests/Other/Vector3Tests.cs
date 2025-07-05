@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2023, Lars Brubaker
+Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,9 +28,9 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TUnit.Assertions;
+using TUnit.Core;
 using MatterHackers.VectorMath;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.Tests
 {
@@ -48,49 +48,49 @@ namespace MatterHackers.Agg.Tests
 
 			var point3 = default(Vector3);
 			point3 = Vector3.Add(point1, point2);
-			Assert.IsTrue(point3 == new Vector3(3, 3, 3));
+			await Assert.That(point3 == new Vector3(3, 3, 3)).IsTrue();
 
 			point3 = point1 - point2;
-			Assert.IsTrue(point3 == new Vector3(-1, -1, -1));
+			await Assert.That(point3 == new Vector3(-1, -1, -1)).IsTrue();
 
 			point3 += point1;
-			Assert.IsTrue(point3 == new Vector3(0, 0, 0));
+			await Assert.That(point3 == new Vector3(0, 0, 0)).IsTrue();
 
 			point3 += point2;
-			Assert.IsTrue(point3 == new Vector3(2, 2, 2));
+			await Assert.That(point3 == new Vector3(2, 2, 2)).IsTrue();
 
 			point3 = new Vector3(3, -4, 5);
-			Assert.IsTrue(point3.Length > 7.07 && point3.Length < 7.08);
+			await Assert.That(point3.Length > 7.07 && point3.Length < 7.08).IsTrue();
 
 			var inlineOpLeftSide = new Vector3(5.0f, -3.0f, .0f);
 			var inlineOpRightSide = new Vector3(-5.0f, 4.0f, 1.0f);
-			Assert.IsTrue(inlineOpLeftSide + inlineOpRightSide == new Vector3(.0f, 1.0f, 1.0f));
+			await Assert.That(inlineOpLeftSide + inlineOpRightSide == new Vector3(.0f, 1.0f, 1.0f)).IsTrue();
 
-			Assert.IsTrue(inlineOpLeftSide - inlineOpRightSide == new Vector3(10.0f, -7.0f, -1.0f));
+			await Assert.That(inlineOpLeftSide - inlineOpRightSide == new Vector3(10.0f, -7.0f, -1.0f)).IsTrue();
 		}
 
 		[Test]
 		public async Task ScalarMultiplication()
 		{
 			var scalarMultiplicationArgument = new Vector3(5.0f, 4.0f, 3.0f);
-			Assert.IsTrue(scalarMultiplicationArgument * -.5 == -new Vector3(2.5f, 2.0f, 1.5f));
-			Assert.IsTrue(-.5 * scalarMultiplicationArgument == -new Vector3(2.5f, 2.0f, 1.5f));
-			Assert.IsTrue(5 * scalarMultiplicationArgument == new Vector3(25.0f, 20.0f, 15.0f));
+			await Assert.That(scalarMultiplicationArgument * -.5 == -new Vector3(2.5f, 2.0f, 1.5f)).IsTrue();
+			await Assert.That(-.5 * scalarMultiplicationArgument == -new Vector3(2.5f, 2.0f, 1.5f)).IsTrue();
+			await Assert.That(5 * scalarMultiplicationArgument == new Vector3(25.0f, 20.0f, 15.0f)).IsTrue();
 
 			var point3 = new Vector3(2, 3, 4);
 			point3 *= 6;
-			Assert.IsTrue(point3.Equals(new Vector3(12, 18, 24), .01f));
+			await Assert.That(point3.Equals(new Vector3(12, 18, 24), .01f)).IsTrue();
 		}
 
 		[Test]
 		public async Task ScalarDivision()
 		{
 			var scalarMultiplicationArgument = new Vector3(5.0f, 4.0f, 3.0f);
-			Assert.IsTrue(scalarMultiplicationArgument / 2 == new Vector3(2.5f, 2.0f, 1.5f));
+			await Assert.That(scalarMultiplicationArgument / 2 == new Vector3(2.5f, 2.0f, 1.5f)).IsTrue();
 
 			var point3 = new Vector3(12, 18, 24);
 			point3 /= 6;
-			Assert.IsTrue(point3.Equals(new Vector3(2, 3, 4), .01f));
+			await Assert.That(point3.Equals(new Vector3(2, 3, 4), .01f)).IsTrue();
 		}
 
 		[Test]
@@ -99,7 +99,7 @@ namespace MatterHackers.Agg.Tests
 			var test1 = new Vector3(10, 1, 2);
 			var test2 = new Vector3(1, 0, 0);
 			double dotResult = Vector3Ex.Dot(test2, test1);
-			Assert.IsTrue(dotResult == 10);
+			await Assert.That(dotResult == 10).IsTrue();
 		}
 
 		[Test]
@@ -108,9 +108,9 @@ namespace MatterHackers.Agg.Tests
 			var test1 = new Vector3(10, 0, 0);
 			var test2 = new Vector3(1, 1, 0);
 			Vector3 crossResult = Vector3Ex.Cross(test2, test1);
-			Assert.IsTrue(crossResult.X == 0);
-			Assert.IsTrue(crossResult.Y == 0);
-			Assert.IsTrue(crossResult.Z < 0);
+			await Assert.That(crossResult.X == 0).IsTrue();
+			await Assert.That(crossResult.Y == 0).IsTrue();
+			await Assert.That(crossResult.Z < 0).IsTrue();
 		}
 
 		[Test]
@@ -118,7 +118,7 @@ namespace MatterHackers.Agg.Tests
 		{
 			var point3 = new Vector3(3, -4, 5);
 			point3.Normalize();
-			Assert.IsTrue(point3.Length > 0.99 && point3.Length < 1.01);
+			await Assert.That(point3.Length > 0.99 && point3.Length < 1.01).IsTrue();
 		}
 	}
 }

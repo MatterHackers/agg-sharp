@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,19 +28,14 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TUnit.Assertions;
+using TUnit.Core;
 using MatterHackers.Agg.Font;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.Image;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.Transform;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.VertexSource;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.VectorMath;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -60,11 +55,11 @@ namespace MatterHackers.Agg.UI.Tests
 				double origWidth = textItem.Width;
 				textItem.Text = "test Items";
 				double newlineWidth = textItem.Width;
-				Assert.IsTrue(newlineWidth > origWidth);
+				await Assert.That(newlineWidth > origWidth).IsTrue();
 
 				textItem.Text = "test Item";
 				double backToOrignWidth = textItem.Width;
-				Assert.IsTrue(backToOrignWidth == origWidth);
+				await Assert.That(backToOrignWidth == origWidth).IsTrue();
 
 
 				double origHeight = textItem.Height;
@@ -73,7 +68,7 @@ namespace MatterHackers.Agg.UI.Tests
 				textItem.Text = "test Item";
 				double backToOrignHeight = textItem.Height;
 
-				Assert.IsTrue(backToOrignHeight == origHeight);
+				await Assert.That(backToOrignHeight == origHeight).IsTrue();
 			}
 
 			// make sure text widget gets smaller vertically when it needs to
@@ -92,17 +87,17 @@ namespace MatterHackers.Agg.UI.Tests
 				holder.AddChild(textItem);
 
 				var origSize = textItem.Size;
-				Assert.IsTrue(origSize.X > 10, "The control expanded");
+				await Assert.That(origSize.X > 10).IsTrue();
 				holder.Width = 100;
 				var bigSize = textItem.Size;
 
-				Assert.IsTrue(bigSize.X < origSize.X, "The control got narrower and taller");
-				Assert.IsTrue(bigSize.Y > origSize.Y, "The control got narrower and taller");
+				await Assert.That(bigSize.X < origSize.X).IsTrue();
+				await Assert.That(bigSize.Y > origSize.Y).IsTrue();
 
 				holder.Width = 500;
 				var backToOrignSize = textItem.Size;
-				Assert.IsTrue(backToOrignSize.X == origSize.X);
-				Assert.IsTrue(backToOrignSize.Y == origSize.Y);
+				await Assert.That(backToOrignSize.X == origSize.X).IsTrue();
+				await Assert.That(backToOrignSize.Y == origSize.Y).IsTrue();
 
 				double origHeight = textItem.Height;
 				textItem.Text = "test\nItem";
@@ -110,7 +105,7 @@ namespace MatterHackers.Agg.UI.Tests
 				textItem.Text = "test Item";
 				double backToOrignHeight = textItem.Height;
 
-				Assert.IsTrue(backToOrignHeight == origHeight);
+				await Assert.That(backToOrignHeight == origHeight).IsTrue();
 			}
 		}
 
@@ -137,7 +132,7 @@ namespace MatterHackers.Agg.UI.Tests
 					ImageTgaIO.Save(textOnly, "-textOnly.tga");
 				}
 
-				Assert.IsTrue(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1), "TextWidgets need to be drawing.");
+				await Assert.That(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1)).IsTrue();
 				rectangleWidget.Close();
 			}
 
@@ -168,7 +163,7 @@ namespace MatterHackers.Agg.UI.Tests
                     ImageTgaIO.Save(textOnly, Path.Combine(basePath, "-textOnly.tga"));
 				}
 
-				Assert.IsTrue(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1), "TextWidgets need to be drawing.");
+				await Assert.That(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1)).IsTrue();
 				rectangleWidget.Close();
 				GuiWidget.DefaultEnforceIntegerBounds = oldEnforceIntegerBounds;
             }

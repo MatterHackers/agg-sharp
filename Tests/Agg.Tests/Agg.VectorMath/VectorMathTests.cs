@@ -32,6 +32,7 @@ using TUnit.Assertions;
 using TUnit.Core;
 using Newtonsoft.Json;
 using System;
+using System.Threading.Tasks;
 
 namespace MatterHackers.VectorMath.Tests
 {

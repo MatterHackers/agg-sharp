@@ -45,10 +45,6 @@
     <ProjectReference Include="..\..\Typography\Typography.One\Typography.One.csproj" />
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
   <ItemGroup>
     <Reference Include="PolyPartition">
       <HintPath>..\..\PolyPartition\PolyPartition.dll</HintPath>
@@ -64,5 +60,13 @@
     <Compile Include="Agg.PolygonMesh\MeshTests.cs" />
     <Compile Include="Agg Automation Tests\TextEditTests.cs" />
     <Compile Include="Agg.UI\SimulatedClipboard.cs" />
-    </ItemGroup>
+    
+    <!-- Adding new test files for conversion -->
+    <Compile Include="Agg\FontTests.cs" />
+    <Compile Include="Agg\ImageTests.cs" />
+        <Compile Include="Agg\SimpleTests.cs" />
+    
+    <!-- Adding smaller test files from Other directory -->
+    <Compile Include="Other\Vector2Tests.cs" />
+        </ItemGroup>
 </Project>

@@ -1,27 +1,17 @@
 using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TUnit.Assertions;
+using TUnit.Core;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Agg.Tests.Agg;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.Font;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.Image;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.Agg.VertexSource;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.DataConverters2D;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.VectorMath;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 
 namespace MatterHackers.Agg.Tests
@@ -67,17 +57,17 @@ namespace MatterHackers.Agg.Tests
 			// Validate each character against previously computed control data
 			foreach (var kvp in characterBounds)
 			{
-				Assert.IsTrue(controlData.ContainsKey(kvp.Key), "Expected key not found: " + kvp.Key);
+				await Assert.That(controlData.ContainsKey(kvp.Key)).IsTrue();
 
 				RectangleDouble actual = kvp.Value;
 				RectangleDouble expected = controlData[kvp.Key];
 
-				Assert.AreEqual(expected.Left, actual.Left, 0.001); //, "Bounds Left differ");
-				Assert.AreEqual(expected.Bottom, actual.Bottom, 0.001); //, "Bounds Bottom differ");
-				Assert.AreEqual(expected.Right, actual.Right, 0.001); //, "Bounds Right differ");
-				Assert.AreEqual(expected.Top, actual.Top, 0.001); //, "Bounds Top differ");
+				await Assert.That(actual.Left).IsEqualTo(expected.Left).Within(0.001);
+				await Assert.That(actual.Bottom).IsEqualTo(expected.Bottom).Within(0.001);
+				await Assert.That(actual.Right).IsEqualTo(expected.Right).Within(0.001);
+				await Assert.That(actual.Top).IsEqualTo(expected.Top).Within(0.001);
 
-				Assert.AreEqual(expected, actual);
+				await Assert.That(actual).IsEqualTo(expected);
 			}
 		}
 
@@ -93,7 +83,7 @@ namespace MatterHackers.Agg.Tests
 
 			var polygons = square.CreatePolygons();
 
-			Assert.AreEqual(1, polygons.Count()); //, "One polygon should be created for a simple 4 point cube path");
+			await Assert.That(polygons.Count()).IsEqualTo(1);
         }
 
 		[Test]
@@ -110,7 +100,7 @@ namespace MatterHackers.Agg.Tests
 
 			var polygons = storage.CreatePolygons();
 
-			Assert.AreEqual(2, polygons.Count); //, "Two polygons should be created for a path with a floating MoveTo command");
+			await Assert.That(polygons.Count).IsEqualTo(2);
         }
 
 		[Test]
@@ -127,7 +117,7 @@ namespace MatterHackers.Agg.Tests
 
 			var polygons = result.CreatePolygons();
 
-			Assert.AreEqual(2, polygons.Count); //, "Two polygons should be create for a combined square and ellipse");
+			await Assert.That(polygons.Count).IsEqualTo(2);
         }
 
 		[Test]
@@ -169,7 +159,7 @@ namespace MatterHackers.Agg.Tests
 			//graphics.Render(new Stroke(storage), Color.Blue);
 			//ImageTgaIO.Save(image, @"c:\temp\some.tga");
 
-			Assert.AreEqual(3, polygons.Count); //, "Three polygons should be create for a two squares and a triangle");
+			await Assert.That(polygons.Count).IsEqualTo(3);
         }
 
 		// Behavior which relies on classic IVertexSource.vertex iteration

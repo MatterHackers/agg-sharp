@@ -33,6 +33,7 @@ using TUnit.Core;
 using MatterHackers.Agg.VertexSource;
 using Newtonsoft.Json;
 using System;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.Tests
 {

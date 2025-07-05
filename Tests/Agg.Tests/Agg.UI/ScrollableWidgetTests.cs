@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,9 +28,9 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TUnit.Assertions;
+using TUnit.Core;
 using MatterHackers.Agg.Image;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -63,8 +63,8 @@ namespace MatterHackers.Agg.UI.Tests
 
 			OutputImages(containerControl, containerTest);
 
-			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
+			await Assert.That(containerControl.BackBuffer != null).IsTrue();
+			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer).IsTrue();
 		}
 	}
 }

@@ -28,7 +28,8 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TUnit.Assertions;
+using TUnit.Core;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -61,7 +62,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			widget.OnDraw(widget.NewGraphics2D());
 
-			Assert.AreEqual(1, loadCount); //, "Load should fire at most, one time");
+			await Assert.That(loadCount).IsEqualTo(1);
         }
 	}
 }

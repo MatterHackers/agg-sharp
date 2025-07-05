@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,11 +28,10 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TUnit.Assertions;
+using TUnit.Core;
 using MatterHackers.Agg.Image;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MatterHackers.VectorMath;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -87,7 +86,7 @@ namespace MatterHackers.Agg.UI.Tests
 				double leastSquares;
 				containerListBox.BackBuffer.FindLeastSquaresMatch(textImage, out bestPosition, out leastSquares, maxError);
 
-				Assert.IsTrue(leastSquares < maxError, "The list box need to be showing the item we added to it.");
+				await Assert.That(leastSquares < maxError).IsTrue();
 			}
 
 			{
@@ -129,7 +128,7 @@ namespace MatterHackers.Agg.UI.Tests
 				double leastSquares;
 				container.BackBuffer.FindLeastSquaresMatch(textImage, out bestPosition, out leastSquares, maxError);
 
-				Assert.IsTrue(leastSquares < maxError, "The list box need to be showing the item we added to it.");
+				await Assert.That(leastSquares < maxError).IsTrue();
 			}
 		}
 
@@ -150,7 +149,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			contents.OnDraw(contents.NewGraphics2D());
 
-			Assert.IsTrue(container.TopLeftOffset.Y == 0);
+			await Assert.That(container.TopLeftOffset.Y == 0).IsTrue();
 		}
 
 		private static void AddContents(GuiWidget widgetToAddItemsTo)

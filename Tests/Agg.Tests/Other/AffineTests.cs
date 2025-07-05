@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2023, Lars Brubaker
+Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,9 +28,9 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TUnit.Assertions;
+using TUnit.Core;
 using MatterHackers.Agg.Transform;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.Tests
 {
@@ -52,8 +52,8 @@ namespace MatterHackers.Agg.Tests
 
 			a.Transform(ref newx, ref newy);
 			b.Transform(ref newx, ref newy);
-			Assert.AreEqual(x, newx, .001);
-			Assert.AreEqual(y, newy, .001);
+			await Assert.That(newx).IsEqualTo(x).Within(0.001);
+			await Assert.That(newy).IsEqualTo(y).Within(0.001);
 		}
 
 		[Test]
@@ -68,8 +68,8 @@ namespace MatterHackers.Agg.Tests
 			double newy = 0;
 
 			a.Transform(ref newx, ref newy);
-			Assert.AreEqual(x, newx, .001);
-			Assert.AreEqual(y, newy, .001);
+			await Assert.That(newx).IsEqualTo(x).Within(0.001);
+			await Assert.That(newy).IsEqualTo(y).Within(0.001);
 		}
 	}
 }
