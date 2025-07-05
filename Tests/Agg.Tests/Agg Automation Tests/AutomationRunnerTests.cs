@@ -52,14 +52,12 @@ namespace MatterHackers.Agg.UI.Tests
 			leftButton.Click += (sender, e) => { leftClickCount++; };
 			buttonContainer.AddChild(leftButton);
 
-			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, (testRunner) =>
+			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, async (testRunner) =>
 			{
 				testRunner.ClickByName("left");
 				testRunner.Delay(.5);
 
 				await Assert.That(leftClickCount == 1).IsTrue();
-
-				return Task.CompletedTask;
 			});
 		}
 
@@ -74,10 +72,9 @@ namespace MatterHackers.Agg.UI.Tests
 			systemWindow.AddChild(leftButton);
 
             // NOTE: This test once failed. Possibly due to ShowWindowAndExecuteTests using different timing sources. A Stopwatch and a Task.Delay.
-
-            //Assert.ThrowsAsync<TimeoutException>(
-            // convert to xunit
-            await Assert.That(async () =>
+            // TODO: Convert to proper TUnit exception testing syntax once available
+            
+            try 
             {
                 await AutomationRunner.ShowWindowAndExecuteTests(
                     systemWindow,
@@ -89,7 +86,15 @@ namespace MatterHackers.Agg.UI.Tests
                     },
                     // Timeout after 1 second
                     secondsToTestFailure: 1);
-            }).ThrowsAsync<TimeoutException>();
+                    
+                // Should have thrown TimeoutException
+                await Assert.That(false).IsTrue(); // Fail if we reach here
+            }
+            catch (TimeoutException)
+            {
+                // Expected exception - test passes
+                await Assert.That(true).IsTrue();
+            }
         }
 
         [Test]
@@ -108,7 +113,7 @@ namespace MatterHackers.Agg.UI.Tests
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);
 
-			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, (testRunner) =>
+			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, async (testRunner) =>
 			{
 				testRunner.ClickByName("left");
 				testRunner.Delay(.5);
@@ -123,8 +128,6 @@ namespace MatterHackers.Agg.UI.Tests
 					testRunner.GetRegionByName("right"));
 
 				await Assert.That(widget).IsNull();
-
-				return Task.CompletedTask;
 			});
 		}
 	}

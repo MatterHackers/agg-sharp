@@ -78,8 +78,6 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 					await Assert.That(testWindow.BlueWidget.ClickCount).IsEqualTo(2);
                     await Assert.That(testWindow.OrangeWidget.ClickCount).IsEqualTo(2);
                     await Assert.That(testWindow.PurpleWidget.ClickCount).IsEqualTo(1);
-
-                    return Task.CompletedTask;
 				},
 				secondsToTestFailure: 30);
 		}
@@ -125,8 +123,6 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 
 					// There should be no increment in the click count
 					await Assert.That(testWindow.BlueWidget.ClickCount).IsEqualTo(1);
-
-                    return Task.CompletedTask;
 				},
 				secondsToTestFailure: 30);
 		}
@@ -180,8 +176,6 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 
 					// There should be no increment in the click count
 					await Assert.That(testWindow.BlueWidget.ClickCount).IsEqualTo(1);
-
-                    return Task.CompletedTask;
 				},
 				secondsToTestFailure: 30);
 		}

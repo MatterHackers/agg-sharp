@@ -133,8 +133,6 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.ClickByName("OffMenu");
 				testRunner.WaitFor(() => !testList.IsOpen, 2);
 				await Assert.That(testList.IsOpen).IsFalse();
-
-				return Task.CompletedTask;
 			};
 
 			var menuTestContainer = new SystemWindow(300, 200)

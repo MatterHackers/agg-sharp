@@ -50,8 +50,8 @@ namespace MatterHackers.Csg
 				CsgObject union = new Union(leftBox, rightBox);
 				await Assert.That(union.XSize == 21).IsTrue();
 				AxisAlignedBoundingBox unionBounds = union.GetAxisAlignedBoundingBox();
-				await Assert.That(unionBounds.minXYZ == new Vector3()).IsTrue();
-				await Assert.That(union.GetAxisAlignedBoundingBox().maxXYZ == new Vector3(21, 21, 31)).IsTrue();
+				await Assert.That(unionBounds.MinXYZ == new Vector3()).IsTrue();
+				await Assert.That(union.GetAxisAlignedBoundingBox().MaxXYZ == new Vector3(21, 21, 31)).IsTrue();
 			}
 
 			{
@@ -61,8 +61,8 @@ namespace MatterHackers.Csg
 				CsgObject union = new Union(leftBox, rightBox);
 				await Assert.That(union.XSize == 20).IsTrue();
 				AxisAlignedBoundingBox unionBounds = union.GetAxisAlignedBoundingBox();
-				await Assert.That(unionBounds.minXYZ == new Vector3()).IsTrue();
-				await Assert.That(union.GetAxisAlignedBoundingBox().maxXYZ == new Vector3(20, 20, 30)).IsTrue();
+				await Assert.That(unionBounds.MinXYZ == new Vector3()).IsTrue();
+				await Assert.That(union.GetAxisAlignedBoundingBox().MaxXYZ == new Vector3(20, 20, 30)).IsTrue();
 			}
 
 			{
@@ -72,8 +72,8 @@ namespace MatterHackers.Csg
 				CsgObject union = new Union(frontBox, backBox);
 				await Assert.That(union.YSize == 40).IsTrue();
 				AxisAlignedBoundingBox unionBounds = union.GetAxisAlignedBoundingBox();
-				await Assert.That(unionBounds.minXYZ == new Vector3()).IsTrue();
-				await Assert.That(union.GetAxisAlignedBoundingBox().maxXYZ == new Vector3(10, 40, 30)).IsTrue();
+				await Assert.That(unionBounds.MinXYZ == new Vector3()).IsTrue();
+				await Assert.That(union.GetAxisAlignedBoundingBox().MaxXYZ == new Vector3(10, 40, 30)).IsTrue();
 			}
 		}
 	}
