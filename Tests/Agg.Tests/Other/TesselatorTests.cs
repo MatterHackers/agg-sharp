@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2023, Lars Brubaker
+Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,14 +28,12 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TUnit.Assertions;
+using TUnit.Core;
 using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
+using System.Threading.Tasks;
 using Tesselate;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MatterHackers.Agg.Tests
 {
@@ -413,21 +411,21 @@ namespace MatterHackers.Agg.Tests
 		private int CurrentOutputTest;
 		private string LastString;
 
-		public void BeginCallBack(Tesselator.TriangleListType type)
+		public async Task BeginCallBack(Tesselator.TriangleListType type)
 		{
-			Assert.IsTrue(GetNextOutputAsString() == "B");
+			await Assert.That(GetNextOutputAsString() == "B").IsTrue();
 			switch (type)
 			{
 				case Tesselator.TriangleListType.Triangles:
-					Assert.IsTrue(GetNextOutputAsString() == "TRI");
+					await Assert.That(GetNextOutputAsString() == "TRI").IsTrue();
 					break;
 
 				case Tesselator.TriangleListType.TriangleFan:
-					Assert.IsTrue(GetNextOutputAsString() == "FAN");
+					await Assert.That(GetNextOutputAsString() == "FAN").IsTrue();
 					break;
 
 				case Tesselator.TriangleListType.TriangleStrip:
-					Assert.IsTrue(GetNextOutputAsString() == "STRIP");
+					await Assert.That(GetNextOutputAsString() == "STRIP").IsTrue();
 					break;
 
 				default:
@@ -435,34 +433,34 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-		public int CombineCallBack(double[] coords3, int[] data4, double[] weight4)
+		public async Task<int> CombineCallBack(double[] coords3, int[] data4, double[] weight4)
 		{
 			double error = .001;
-			Assert.IsTrue(GetNextOutputAsString() == "C");
-			Assert.AreEqual(GetNextOutputAsDouble(), coords3[0], error);
-			Assert.AreEqual(GetNextOutputAsDouble(), coords3[1], error);
-			Assert.AreEqual(GetNextOutputAsInt(), data4[0]);
-			Assert.AreEqual(GetNextOutputAsInt(), data4[1]);
-			Assert.AreEqual(GetNextOutputAsInt(), data4[2]);
-			Assert.AreEqual(GetNextOutputAsInt(), data4[3]);
-			Assert.AreEqual(GetNextOutputAsDouble(), weight4[0], error);
-			Assert.AreEqual(GetNextOutputAsDouble(), weight4[1], error);
-			Assert.AreEqual(GetNextOutputAsDouble(), weight4[2], error);
-			Assert.AreEqual(GetNextOutputAsDouble(), weight4[3], error);
+			await Assert.That(GetNextOutputAsString() == "C").IsTrue();
+			await Assert.That(coords3[0]).IsEqualTo(GetNextOutputAsDouble()).Within(error);
+			await Assert.That(coords3[1]).IsEqualTo(GetNextOutputAsDouble()).Within(error);
+			await Assert.That(data4[0]).IsEqualTo(GetNextOutputAsInt());
+			await Assert.That(data4[1]).IsEqualTo(GetNextOutputAsInt());
+			await Assert.That(data4[2]).IsEqualTo(GetNextOutputAsInt());
+			await Assert.That(data4[3]).IsEqualTo(GetNextOutputAsInt());
+			await Assert.That(weight4[0]).IsEqualTo(GetNextOutputAsDouble()).Within(error);
+			await Assert.That(weight4[1]).IsEqualTo(GetNextOutputAsDouble()).Within(error);
+			await Assert.That(weight4[2]).IsEqualTo(GetNextOutputAsDouble()).Within(error);
+			await Assert.That(weight4[3]).IsEqualTo(GetNextOutputAsDouble()).Within(error);
 
 			VertexList.Add(new Vertex(coords3[0], coords3[1]));
 			return VertexList.Count-1;
 		}
 
-		public void EdgeFlagCallBack(bool IsEdge)
+		public async Task EdgeFlagCallBack(bool IsEdge)
 		{
-			Assert.IsTrue(GetNextOutputAsString() == "F");
-			Assert.AreEqual(GetNextOutputAsBool(), IsEdge);
+			await Assert.That(GetNextOutputAsString() == "F").IsTrue();
+			await Assert.That(IsEdge).IsEqualTo(GetNextOutputAsBool());
 		}
 
 		public async Task EndCallBack()
 		{
-			Assert.IsTrue(GetNextOutputAsString() == "E");
+			await Assert.That(GetNextOutputAsString() == "E").IsTrue();
 		}
 
 		[Test]
@@ -537,10 +535,10 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-		public void VertexCallBack(int index)
+		public async Task VertexCallBack(int index)
 		{
-			Assert.IsTrue(GetNextOutputAsString() == "V");
-			Assert.AreEqual(GetNextOutputAsInt(), index);
+			await Assert.That(GetNextOutputAsString() == "V").IsTrue();
+			await Assert.That(index).IsEqualTo(GetNextOutputAsInt());
 		}
 
 		private bool GetNextOutputAsBool()

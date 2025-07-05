@@ -29,8 +29,10 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.VectorMath;
 using System.Linq;
+using System.Threading.Tasks;
 using Agg.Tests.Agg;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TUnit.Assertions;
+using TUnit.Core;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -70,40 +72,40 @@ namespace MatterHackers.Agg.UI.Tests
 			BottomAndTopButton(2.2, 3.3);
 		}
 
-		private void BottomAndTopTextControl(double controlPadding, double buttonMargin)
-		{
-			GuiWidget containerControl = new GuiWidget(200, 300);
-			containerControl.DoubleBuffer = true;
-			containerControl.BackBuffer.NewGraphics2D().Clear(Color.White);
-			TextWidget controlButton1 = new TextWidget("text1");
-			controlButton1.Margin = new BorderDouble(buttonMargin);
-			controlButton1.OriginRelativeParent = new Vector2(-controlButton1.LocalBounds.Left, -controlButton1.LocalBounds.Bottom + controlPadding + buttonMargin);
-			controlButton1.LocalBounds = new RectangleDouble(controlButton1.LocalBounds.Left, controlButton1.LocalBounds.Bottom, controlButton1.LocalBounds.Right, controlButton1.LocalBounds.Bottom + containerControl.Height - (controlPadding + buttonMargin) * 2);
-			containerControl.AddChild(controlButton1);
-			containerControl.OnDraw(containerControl.NewGraphics2D());
+			private void BottomAndTopTextControl(double controlPadding, double buttonMargin)
+	{
+		GuiWidget containerControl = new GuiWidget(200, 300);
+		containerControl.DoubleBuffer = true;
+		containerControl.BackBuffer.NewGraphics2D().Clear(Color.White);
+		TextWidget controlButton1 = new TextWidget("text1");
+		controlButton1.Margin = new BorderDouble(buttonMargin);
+		controlButton1.OriginRelativeParent = new Vector2(-controlButton1.LocalBounds.Left, -controlButton1.LocalBounds.Bottom + controlPadding + buttonMargin);
+		controlButton1.LocalBounds = new RectangleDouble(controlButton1.LocalBounds.Left, controlButton1.LocalBounds.Bottom, controlButton1.LocalBounds.Right, controlButton1.LocalBounds.Bottom + containerControl.Height - (controlPadding + buttonMargin) * 2);
+		containerControl.AddChild(controlButton1);
+		containerControl.OnDraw(containerControl.NewGraphics2D());
 
-			GuiWidget containerTest = new GuiWidget(200, 200);
-			containerTest.Padding = new BorderDouble(controlPadding);
-			containerTest.DoubleBuffer = true;
-			containerTest.BackBuffer.NewGraphics2D().Clear(Color.White);
+		GuiWidget containerTest = new GuiWidget(200, 200);
+		containerTest.Padding = new BorderDouble(controlPadding);
+		containerTest.DoubleBuffer = true;
+		containerTest.BackBuffer.NewGraphics2D().Clear(Color.White);
 
-			TextWidget testButton1 = new TextWidget("text1");
-			testButton1.Margin = new BorderDouble(buttonMargin);
-			testButton1.VAnchor = VAnchor.Bottom | VAnchor.Top;
-			containerTest.AddChild(testButton1);
-			containerTest.OnDraw(containerTest.NewGraphics2D());
-			OutputImages(containerControl, containerTest);
+		TextWidget testButton1 = new TextWidget("text1");
+		testButton1.Margin = new BorderDouble(buttonMargin);
+		testButton1.VAnchor = VAnchor.Bottom | VAnchor.Top;
+		containerTest.AddChild(testButton1);
+		containerTest.OnDraw(containerTest.NewGraphics2D());
+		OutputImages(containerControl, containerTest);
 
-			// now change it's size
-			containerTest.LocalBounds = containerControl.LocalBounds;
-			containerTest.BackBuffer.NewGraphics2D().Clear(Color.White);
+		// now change it's size
+		containerTest.LocalBounds = containerControl.LocalBounds;
+		containerTest.BackBuffer.NewGraphics2D().Clear(Color.White);
 
-			containerTest.OnDraw(containerTest.NewGraphics2D());
-			OutputImages(containerControl, containerTest);
+		containerTest.OnDraw(containerTest.NewGraphics2D());
+		OutputImages(containerControl, containerTest);
 
-			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-			Assert.IsTrue(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1000), "The Anchored widget should be in the correct place.");
-		}
+		await Assert.That(containerControl.BackBuffer != null).IsTrue();
+		await Assert.That(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1000)).IsTrue();
+	}
 
 		private void BottomAndTopButton(double controlPadding, double buttonMargin)
 		{

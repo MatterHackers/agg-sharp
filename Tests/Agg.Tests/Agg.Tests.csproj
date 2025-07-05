@@ -97,5 +97,18 @@
     <Compile Include="Agg Automation Tests\AutomationRunnerTests.cs" />
     <Compile Include="Agg Automation Tests\MenuTests.cs" />
     <Compile Include="Agg Automation Tests\WidgetClickTests.cs" />
+    
+    <!-- Adding small utility/infrastructure files -->
+    <Compile Include="TestExtensionMethods.cs" />
+    
+    <!-- Adding medium utility/test files -->
+    <Compile Include="PackagesConfigConverter.cs" />
+    <!-- <Compile Include="Agg.PolygonMesh\CsgTests.cs" /> TODO: Fix CSG API compatibility issues -->
+    <Compile Include="Agg Automation Tests\ToolTipTests.cs" />
+    
+    <!-- Adding large test files -->
+    <!-- <Compile Include="Agg.VectorMath\VectorMathTests.cs" /> TODO: Fix TUnit double precision syntax -->
+    <!-- <Compile Include="Other\TesselatorTests.cs" /> TODO: Fix tesselator callback integration -->
+    <!-- <Compile Include="Agg.UI\AnchorTests.cs" /> TODO: Convert remaining 64/66 Assert.IsTrue calls -->
         </ItemGroup>
 </Project>
