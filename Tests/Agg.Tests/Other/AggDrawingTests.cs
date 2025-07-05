@@ -35,6 +35,7 @@ using MatterHackers.Agg.VertexSource;
 using System.IO;
 using System;
 using Agg.Tests.Agg;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.Tests
 {
@@ -54,9 +55,7 @@ namespace MatterHackers.Agg.Tests
 
 		private async Task CheckTestAgainstControl(ImageBuffer testImage, string testTypeString)
 		{
-            var testContext = new TestContext();
-
-            Directory.SetCurrentDirectory(testContext.CurrentContext.TestDirectory);
+            // Use current directory for test output
 
 			// there is an assumption that we got to save valid images at least once.
 			string controlFileTga = testTypeString + " Control.tga";

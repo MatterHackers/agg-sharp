@@ -37,7 +37,6 @@ using TUnit.Core;
 namespace MatterHackers.Agg.UI.Tests
 {
     
-	[DoNotParallelize]
 	public class MenuTests
 	{
 		public static bool SaveImagesForDebug = false;

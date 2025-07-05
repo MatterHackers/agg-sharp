@@ -68,5 +68,34 @@
     
     <!-- Adding smaller test files from Other directory -->
     <Compile Include="Other\Vector2Tests.cs" />
+    <Compile Include="Other\Vector3Tests.cs" />
+    <Compile Include="Other\AffineTests.cs" />
+    <Compile Include="Other\ClipperTests.cs" />
+    <Compile Include="Other\AggDrawingTests.cs" />
+    
+    <!-- Adding agg-sharp test files we've converted -->
+    <Compile Include="Agg\IVertexSourceTests.cs" />
+    <Compile Include="WidgetTests.cs" />
+    
+    <!-- Adding UI test files we've converted -->
+    <Compile Include="Agg.UI\PopupAnchorTests.cs" />
+    <Compile Include="Agg.UI\ScrollableWidgetTests.cs" />
+    <Compile Include="Agg.UI\ListBoxTests.cs" />
+    <Compile Include="Agg.UI\BackBufferTests.cs" />
+    <Compile Include="Agg.UI\TextAndTextWidgetTests.cs" />
+    <Compile Include="Agg.UI\BorderTests.cs" />
+    
+    <!-- Adding RayTracer test files we've converted -->
+    <Compile Include="Agg.RayTracer\FrustumTests.cs" />
+    <Compile Include="Agg.RayTracer\BooleanTests.cs" />
+    <Compile Include="Agg.RayTracer\TraceAPITests.cs" />
+    
+    <!-- Adding CSG test files we've converted -->
+    <Compile Include="Agg.Csg\MirrorTests.cs" />
+    
+    <!-- Adding Automation test files we've converted -->
+    <Compile Include="Agg Automation Tests\AutomationRunnerTests.cs" />
+    <Compile Include="Agg Automation Tests\MenuTests.cs" />
+    <Compile Include="Agg Automation Tests\WidgetClickTests.cs" />
         </ItemGroup>
 </Project>

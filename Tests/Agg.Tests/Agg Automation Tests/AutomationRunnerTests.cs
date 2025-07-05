@@ -37,8 +37,7 @@ using TUnit.Core;
 namespace MatterHackers.Agg.UI.Tests
 {
     
-    [DoNotParallelize]
-    public class AutomationRunnerTests
+    	public class AutomationRunnerTests
 	{
         [Test]
         public async Task GetWidgetByNameTestNoRegionSingleWindow()

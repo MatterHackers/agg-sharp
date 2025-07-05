@@ -35,6 +35,7 @@ using ClipperLib;
 using MatterHackers.VectorMath;
 using System.IO;
 using Agg.Tests.Agg;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.Tests
 {

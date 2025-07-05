@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2022, Lars Brubaker
+Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 */
 
@@ -8,7 +8,8 @@ using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TUnit.Assertions;
+using TUnit.Core;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -31,7 +32,7 @@ namespace MatterCAD.Tests.MatterCAD
 				}
 			};
 
-            await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testRunner =>
+            await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, async testRunner =>
 			{
 				systemWindow.Padding = systemWindow.Padding.Clone(bottom: 180);
 
@@ -67,8 +68,6 @@ namespace MatterCAD.Tests.MatterCAD
 				testRunner.ClickByName("targetA");
 
 				testRunner.Delay();
-
-				return Task.CompletedTask;
 			}, 30);
 		}
 
@@ -99,12 +98,12 @@ namespace MatterCAD.Tests.MatterCAD
 					Name = "buttonA",
 					VAnchor = VAnchor.Bottom,
 				},
-				(buttonWidget, popupWidget) =>
+				async (buttonWidget, popupWidget) =>
 				{
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Top;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Bottom;
 
-                    Assert.AreEqual(buttonPosition, popupPosition);
+                    await Assert.That(popupPosition).IsEqualTo(buttonPosition);
 				});
 		}
 
@@ -135,12 +134,12 @@ namespace MatterCAD.Tests.MatterCAD
 					Name = "buttonA",
 					VAnchor = VAnchor.Bottom,
 				},
-				(buttonWidget, popupWidget) =>
+				async (buttonWidget, popupWidget) =>
 				{
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Top;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Top;
 
-                    Assert.AreEqual(buttonPosition, popupPosition);
+                    await Assert.That(popupPosition).IsEqualTo(buttonPosition);
 				});
 		}
 
@@ -171,12 +170,12 @@ namespace MatterCAD.Tests.MatterCAD
 					Name = "buttonA",
 					VAnchor = VAnchor.Bottom,
 				},
-				(buttonWidget, popupWidget) =>
+				async (buttonWidget, popupWidget) =>
 				{
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Bottom;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Top;
 
-                    Assert.AreEqual(buttonPosition, popupPosition);
+                    await Assert.That(popupPosition).IsEqualTo(buttonPosition);
 				});
 		}
 
@@ -207,12 +206,12 @@ namespace MatterCAD.Tests.MatterCAD
 					Name = "buttonA",
 					VAnchor = VAnchor.Bottom,
 				},
-				(buttonWidget, popupWidget) =>
+				async (buttonWidget, popupWidget) =>
 				{
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Bottom;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Bottom;
 
-                    Assert.AreEqual(buttonPosition, popupPosition);
+                    await Assert.That(popupPosition).IsEqualTo(buttonPosition);
 				});
 		}
 
@@ -246,12 +245,12 @@ namespace MatterCAD.Tests.MatterCAD
 					Name = "buttonA",
 					VAnchor = VAnchor.Bottom,
 				},
-				(buttonWidget, popupWidget) =>
+				async (buttonWidget, popupWidget) =>
 				{
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Top;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Bottom;
 
-                    Assert.AreEqual(buttonPosition, popupPosition);
+                    await Assert.That(popupPosition).IsEqualTo(buttonPosition);
 				},
 				(row) =>
 				{
@@ -288,12 +287,12 @@ namespace MatterCAD.Tests.MatterCAD
 					Name = "buttonA",
 					VAnchor = VAnchor.Bottom,
 				},
-				(buttonWidget, popupWidget) =>
+				async (buttonWidget, popupWidget) =>
 				{
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Bottom;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Bottom;
 
-                    Assert.AreEqual(buttonPosition, popupPosition);
+                    await Assert.That(popupPosition).IsEqualTo(buttonPosition);
 				},
 				(row) =>
 				{
@@ -332,12 +331,12 @@ namespace MatterCAD.Tests.MatterCAD
 					Name = "buttonA",
 					VAnchor = VAnchor.Bottom,
 				},
-				(buttonWidget, popupWidget) =>
+				async (buttonWidget, popupWidget) =>
 				{
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Bottom;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Top;
 
-                    Assert.AreEqual(buttonPosition, popupPosition);
+                    await Assert.That(popupPosition).IsEqualTo(buttonPosition);
 				},
 				(row) =>
 				{
@@ -374,12 +373,12 @@ namespace MatterCAD.Tests.MatterCAD
 					Name = "buttonA",
 					VAnchor = VAnchor.Bottom,
 				},
-				(buttonWidget, popupWidget) =>
+				async (buttonWidget, popupWidget) =>
 				{
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Top;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Top;
 
-                    Assert.AreEqual(buttonPosition, popupPosition);
+                    await Assert.That(popupPosition).IsEqualTo(buttonPosition);
 				},
 				(row) =>
 				{
@@ -421,7 +420,7 @@ namespace MatterCAD.Tests.MatterCAD
 					Name = "buttonA",
 					VAnchor = VAnchor.Bottom,
 				},
-				(buttonWidget, popupWidget) =>
+				async (buttonWidget, popupWidget) =>
 				{
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Left;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Left;
@@ -432,7 +431,7 @@ namespace MatterCAD.Tests.MatterCAD
 						buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Right;
 					}
 
-					Assert.AreEqual(buttonPosition, popupPosition);
+					await Assert.That(popupPosition).IsEqualTo(buttonPosition);
 				},
 				(row) =>
 				{
@@ -473,7 +472,7 @@ namespace MatterCAD.Tests.MatterCAD
 					Name = "buttonA",
 					VAnchor = VAnchor.Bottom,
 				},
-				(buttonWidget, popupWidget) =>
+				async (buttonWidget, popupWidget) =>
 				{
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Left;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Right;
@@ -484,7 +483,7 @@ namespace MatterCAD.Tests.MatterCAD
 						buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Right;
 					}
 
-                    Assert.AreEqual(buttonPosition, popupPosition);
+                    await Assert.That(popupPosition).IsEqualTo(buttonPosition);
 				},
 				(row) =>
 				{
@@ -494,9 +493,9 @@ namespace MatterCAD.Tests.MatterCAD
 		}
 
 
-		private static async Task AnchorTests(PopupsTestWindow systemWindow, MatePoint anchor, MatePoint popup, ThemedTextButton button, Action<GuiWidget, GuiWidget> validator, Action<GuiWidget> rowAdjuster = null)
+		private static async Task AnchorTests(PopupsTestWindow systemWindow, MatePoint anchor, MatePoint popup, ThemedTextButton button, Func<GuiWidget, GuiWidget, Task> validator, Action<GuiWidget> rowAdjuster = null)
 		{
-            await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testRunner =>
+            await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, async testRunner =>
 			{
 				button.BackgroundColor = Color.LightGray;
 				button.HoverColor = Color.LightBlue;
@@ -556,14 +555,12 @@ namespace MatterCAD.Tests.MatterCAD
 					testRunner.ClickByName("buttonA");
 					testRunner.Delay();
 
-					validator.Invoke(button, popup.Widget);
+					await validator.Invoke(button, popup.Widget);
 
 					popup.Widget.Unfocus();
 				}
 
 				testRunner.Delay();
-
-				return Task.CompletedTask;
 			}, 25);
 		}
 

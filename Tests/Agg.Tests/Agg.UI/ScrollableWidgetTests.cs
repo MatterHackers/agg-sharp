@@ -31,6 +31,7 @@ using Agg.Tests.Agg;
 using TUnit.Assertions;
 using TUnit.Core;
 using MatterHackers.Agg.Image;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {

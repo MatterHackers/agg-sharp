@@ -36,6 +36,7 @@ using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {

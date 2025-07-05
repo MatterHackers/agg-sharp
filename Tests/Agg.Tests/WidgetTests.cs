@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using Agg.Tests.Agg;
 using TUnit.Assertions;
 using TUnit.Core;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {

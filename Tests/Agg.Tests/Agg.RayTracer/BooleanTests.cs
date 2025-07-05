@@ -36,6 +36,7 @@ using MatterHackers.VectorMath;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace MatterHackers.RayTracer
 {
