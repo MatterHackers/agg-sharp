@@ -31,6 +31,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.GuiAutomation;
+using MatterHackers.Agg.Tests.TestingInfrastructure;
 using TUnit.Assertions;
 using TUnit.Core;
 
@@ -39,6 +40,16 @@ namespace MatterHackers.Agg.UI.Tests
     
     	public class AutomationRunnerTests
 	{
+        // Ensure TestSetup static constructor is called to initialize AutomationRunner.InputMethod
+        private static readonly bool testSetupInitialized = EnsureTestSetupInitialized();
+        
+        private static bool EnsureTestSetupInitialized()
+        {
+            // This forces the TestSetup static constructor to run
+            var temp = typeof(TestSetup);
+            return true;
+        }
+
         [Test]
         public async Task GetWidgetByNameTestNoRegionSingleWindow()
 		{
