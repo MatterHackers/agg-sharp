@@ -33,7 +33,6 @@ using System.IO;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Font;
 using MatterHackers.VectorMath;
-using System.Threading.Tasks;
 using TUnit.Assertions;
 using TUnit.Core;
 
@@ -80,7 +79,7 @@ G90
 ; do the switch to T0
 G1 X-29.5 F6000 ; NO_PROCESSING";
 			var printer7 = new TypeFacePrinter(lines7);
-			Assert.AreEqual(7, printer7.NumLines());
+			await Assert.That(printer7.NumLines()).IsEqualTo(7);
 
 			var lines8 = @"; activate T0
 ; move up a bit
@@ -91,7 +90,7 @@ G90
 G1 X-29.5 F6000 ; NO_PROCESSING
 ";
 			var printer8 = new TypeFacePrinter(lines8);
-			Assert.AreEqual(8, printer8.NumLines());
+			await Assert.That(printer8.NumLines()).IsEqualTo(8);
 		}
 
         [Test]
@@ -429,14 +428,14 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 				}
 
 				// ask for some selections
-				TestRange(-10, -8, "");
-				TestRange(-8, -10, "");
-				TestRange(18, 10, "");
-				TestRange(10, 18, "");
-				TestRange(2, -10, "te");
-				TestRange(-10, 2, "te");
-				TestRange(18, 2, "st");
-				TestRange(3, 22, "t");
+				await TestRange(-10, -8, "");
+				await TestRange(-8, -10, "");
+				await TestRange(18, 10, "");
+				await TestRange(10, 18, "");
+				await TestRange(2, -10, "te");
+				await TestRange(-10, 2, "te");
+				await TestRange(18, 2, "st");
+				await TestRange(3, 22, "t");
 			}
 
 			{
@@ -633,32 +632,32 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			await Assert.That(textEdit.TopLeftOffset.Y == 0).IsTrue();
 
 			// test that we move to the next character correctly
-			Assert.AreEqual(4, InternalTextEditWidget.IndexOfNextToken("235 12/6", 0));
-			Assert.AreEqual(6, InternalTextEditWidget.IndexOfNextToken("235   12/6", 0));
-			Assert.AreEqual(3, InternalTextEditWidget.IndexOfNextToken("235\n   12/6", 0));
-			Assert.AreEqual(7, InternalTextEditWidget.IndexOfNextToken("235\n   12/6", 3));
-			Assert.AreEqual(4, InternalTextEditWidget.IndexOfNextToken("235\n\n   12/6", 3));
-			Assert.AreEqual(8, InternalTextEditWidget.IndexOfNextToken("235\n\n   12/6", 4));
-			Assert.AreEqual(3, InternalTextEditWidget.IndexOfNextToken("123+ 235   12/6", 0));
-			Assert.AreEqual(3, InternalTextEditWidget.IndexOfNextToken("235+12/6", 0));
-			Assert.AreEqual(5, InternalTextEditWidget.IndexOfNextToken("+++++235   12/6", 0));
-			Assert.AreEqual(5, InternalTextEditWidget.IndexOfNextToken("+++++235   12/6", 0));
+			await Assert.That(InternalTextEditWidget.IndexOfNextToken("235 12/6", 0)).IsEqualTo(4);
+			await Assert.That(InternalTextEditWidget.IndexOfNextToken("235   12/6", 0)).IsEqualTo(6);
+			await Assert.That(InternalTextEditWidget.IndexOfNextToken("235\n   12/6", 0)).IsEqualTo(3);
+			await Assert.That(InternalTextEditWidget.IndexOfNextToken("235\n   12/6", 3)).IsEqualTo(7);
+			await Assert.That(InternalTextEditWidget.IndexOfNextToken("235\n\n   12/6", 3)).IsEqualTo(4);
+			await Assert.That(InternalTextEditWidget.IndexOfNextToken("235\n\n   12/6", 4)).IsEqualTo(8);
+			await Assert.That(InternalTextEditWidget.IndexOfNextToken("123+ 235   12/6", 0)).IsEqualTo(3);
+			await Assert.That(InternalTextEditWidget.IndexOfNextToken("235+12/6", 0)).IsEqualTo(3);
+			await Assert.That(InternalTextEditWidget.IndexOfNextToken("+++++235   12/6", 0)).IsEqualTo(5);
+			await Assert.That(InternalTextEditWidget.IndexOfNextToken("+++++235   12/6", 0)).IsEqualTo(5);
 
 			// test that we move to the previous character correctly
-			Assert.AreEqual(7, InternalTextEditWidget.IndexOfPreviousToken("=35+12/6", 8));
-			Assert.AreEqual(6, InternalTextEditWidget.IndexOfPreviousToken("35556+68384734", 10));
-			Assert.AreEqual(5, InternalTextEditWidget.IndexOfPreviousToken("35556+68384734", 6));
-			Assert.AreEqual(0, InternalTextEditWidget.IndexOfPreviousToken("35556+68384734", 5));
+			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("=35+12/6", 8)).IsEqualTo(7);
+			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("35556+68384734", 10)).IsEqualTo(6);
+			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("35556+68384734", 6)).IsEqualTo(5);
+			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("35556+68384734", 5)).IsEqualTo(0);
 			
-			Assert.AreEqual(11, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 12));
-			Assert.AreEqual(10, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 11));
-			Assert.AreEqual(8, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 10));
-			Assert.AreEqual(5, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 8));
-			Assert.AreEqual(4, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 5));
-			Assert.AreEqual(0, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 4));
-			Assert.AreEqual(0, InternalTextEditWidget.IndexOfPreviousToken("some starting text", 5));
+			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 12)).IsEqualTo(11);
+			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 11)).IsEqualTo(10);
+			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 10)).IsEqualTo(8);
+			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 8)).IsEqualTo(5);
+			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 5)).IsEqualTo(4);
+			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 4)).IsEqualTo(0);
+			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("some starting text", 5)).IsEqualTo(0);
 
-			void RunWithSpecificChar(string sep, string first, string second, string third)
+			async Task RunWithSpecificChar(string sep, string first, string second, string third)
 			{
 				var startText = $"{first}{sep}{second}{sep}{third}";
 				await Assert.That(textEdit.Text == startText).IsTrue();
@@ -698,18 +697,18 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 				Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
             }
 
-            void CheckChar(string sep)
+            async Task CheckChar(string sep)
 			{
 				textEdit.Text = $"some{sep}starting{sep}text";
 				// spaces work as expected
-				RunWithSpecificChar(sep, "some", "starting", "text");
+				await RunWithSpecificChar(sep, "some", "starting", "text");
 				textEdit.Text = $"123{sep}is{sep}number";
-				RunWithSpecificChar(sep, "123", "is", "number");
+				await RunWithSpecificChar(sep, "123", "is", "number");
 				textEdit.Text = $"123_1{sep}456_2{sep}789_3";
-				RunWithSpecificChar(sep, "123_1", "456_2", "789_3");
+				await RunWithSpecificChar(sep, "123_1", "456_2", "789_3");
 			}
 
-			CheckChar(" ");
+			await CheckChar(" ");
 
 			container.Close();
 		}
@@ -782,7 +781,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 				BackgroundColor = Color.Black,
 			};
 
-			Task TestToRun(AutomationRunner testRunner)
+			async Task TestToRun(AutomationRunner testRunner)
 			{
 				editField.Focus();
 
@@ -791,8 +790,6 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 
 				testRunner.Delay(1);
 				await Assert.That(editField.Text == "Test Text").IsTrue();
-
-				return Task.CompletedTask;
 			}
 
 			editField = new TextEditWidget(pixelWidth: 200)
@@ -820,15 +817,13 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			};
 			systemWindow.AddChild(editField);
 
-			Task TestToRun(AutomationRunner testRunner)
+			async Task TestToRun(AutomationRunner testRunner)
 			{
 				UiThread.RunOnIdle(editField.Focus);
 				testRunner.WaitFor(() => editField.ContainsFocus);
 				//if (!editField.ContainsFocus) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
 				// NOTE: Okay. During parallel testing, it seems that the avalanche of windows causes test UIs to lose control focus and get confused.
 				await Assert.That(editField.ContainsFocus).IsTrue();
-
-				return Task.CompletedTask;
 			}
 
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);
@@ -851,7 +846,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			};
 			systemWindow.AddChild(editField);
 
-			Task TestToRun(AutomationRunner testRunner)
+			async Task TestToRun(AutomationRunner testRunner)
 			{
 				editField.SelectAllOnFocus = true;
 				testRunner.Delay(1);
@@ -868,8 +863,6 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 				//testRunner.WaitFor(() => "123123" == editField.Text, maxSeconds: 60);
 				// NOTE: Used to get intermittent failures here. These issues might have been sorted out now.
 				await Assert.That(editField.Text).IsEqualTo("123123");//, "Text should be appended if control is focused and has already received input");
-
-                return Task.CompletedTask;
 			}
 
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);

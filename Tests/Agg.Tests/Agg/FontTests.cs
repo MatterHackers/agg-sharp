@@ -1,7 +1,9 @@
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Threading.Tasks;
+using TUnit.Assertions;
+using TUnit.Core;
 
 namespace Agg.Tests.Agg
 {
@@ -21,10 +23,10 @@ namespace Agg.Tests.Agg
         {
             EnglishTextWrapping englishWrapping = new EnglishTextWrapping(8);
             List<string> wrappedLines = englishWrapping.WrapSingleLineOnWidth("Layers or MM", 30);
-            Assert.IsTrue(wrappedLines.Count == 3);
-            Assert.IsTrue(wrappedLines[0] == "Layer");
-            Assert.IsTrue(wrappedLines[1] == "s or");
-            Assert.IsTrue(wrappedLines[2] == "MM");
+            await Assert.That(wrappedLines.Count).IsEqualTo(3);
+            await Assert.That(wrappedLines[0]).IsEqualTo("Layer");
+            await Assert.That(wrappedLines[1]).IsEqualTo("s or");
+            await Assert.That(wrappedLines[2]).IsEqualTo("MM");
         }
     }
 }
