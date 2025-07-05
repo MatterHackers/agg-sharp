@@ -110,5 +110,8 @@
     <!-- <Compile Include="Agg.VectorMath\VectorMathTests.cs" /> TODO: Fix TUnit double precision syntax -->
     <!-- <Compile Include="Other\TesselatorTests.cs" /> TODO: Fix tesselator callback integration -->
     <!-- <Compile Include="Agg.UI\AnchorTests.cs" /> TODO: Convert remaining 64/66 Assert.IsTrue calls -->
+    
+    <!-- Adding massive test files -->
+    <Compile Include="Agg Automation Tests\MouseInteractionTests.cs" />
         </ItemGroup>
 </Project>
