@@ -63,5 +63,6 @@
     <!-- Re-include only our successfully converted key test files -->
     <Compile Include="Agg.PolygonMesh\MeshTests.cs" />
     <Compile Include="Agg Automation Tests\TextEditTests.cs" />
+    <Compile Include="Agg.UI\SimulatedClipboard.cs" />
     </ItemGroup>
 </Project>

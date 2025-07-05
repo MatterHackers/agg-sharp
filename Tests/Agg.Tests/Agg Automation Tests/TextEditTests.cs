@@ -35,6 +35,7 @@ using MatterHackers.Agg.Font;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
 using TUnit.Core;
+using MatterHackers.Agg.UI.Tests;
 
 namespace MatterHackers.Agg.UI.Tests
 {
