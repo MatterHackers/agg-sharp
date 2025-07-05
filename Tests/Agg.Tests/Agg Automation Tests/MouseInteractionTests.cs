@@ -46,24 +46,24 @@ namespace MatterHackers.Agg.UI.Tests
 			int leftClickCount = 0;
 			int rightClickCount = 0;
 
-					AutomationTest testToRun = async (testRunner) =>
-		{
-			// Now do the actions specific to this test. (replace this for new tests)
-			testRunner.ClickByName("left");
-			testRunner.Delay(.5);
+			AutomationTest testToRun = async (testRunner) =>
+{
+	// Now do the actions specific to this test. (replace this for new tests)
+	testRunner.ClickByName("left");
+	testRunner.Delay(.5);
 
-			await Assert.That(leftClickCount == 1).IsTrue();
+	await Assert.That(leftClickCount == 1).IsTrue();
 
-			testRunner.ClickByName("right");
-			testRunner.Delay(.5);
+	testRunner.ClickByName("right");
+	testRunner.Delay(.5);
 
-			await Assert.That(rightClickCount == 1).IsTrue();
+	await Assert.That(rightClickCount == 1).IsTrue();
 
-			testRunner.DragDropByName("left", "right", offsetDrag: new Point2D(1, 0));
-			testRunner.Delay(.5);
+	testRunner.DragDropByName("left", "right", offsetDrag: new Point2D(1, 0));
+	testRunner.Delay(.5);
 
-			await Assert.That(leftClickCount == 1).IsTrue();
-		};
+	await Assert.That(leftClickCount == 1).IsTrue();
+};
 
 			var buttonContainer = new SystemWindow(300, 200);
 
@@ -74,7 +74,7 @@ namespace MatterHackers.Agg.UI.Tests
 			leftButton.Click += (sender, e) => { leftClickCount++; };
 			buttonContainer.AddChild(leftButton);
 			var rightButton = new Button("right", 110, 40);
-			rightButton.Click += async (sender, e) => { rightClickCount++; };
+			rightButton.Click += (sender, e) => { rightClickCount++; };
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);
 
@@ -87,20 +87,22 @@ namespace MatterHackers.Agg.UI.Tests
 			AutomationRunner.TimeToMoveMouse = .1;
 
 			var buttonCount = 5;
-					AutomationTest testToRun = async (testRunner) =>
-		{
-			for (int i = 0; i < buttonCount; i++)
+			AutomationTest testToRun = (testRunner) =>
 			{
-				testRunner.ClickByName($"button {i}");
-				testRunner.Delay(.5);
-			}
+				for (int i = 0; i < buttonCount; i++)
+				{
+					testRunner.ClickByName($"button {i}");
+					testRunner.Delay(.5);
+				}
 
-			for (int i = buttonCount - 1; i >= 0; i--)
-			{
-				testRunner.ClickByName($"button {i}");
-				testRunner.Delay(.5);
-			}
-		};
+				for (int i = buttonCount - 1; i >= 0; i--)
+				{
+					testRunner.ClickByName($"button {i}");
+					testRunner.Delay(.5);
+				}
+
+				return Task.CompletedTask;
+            };
 
 			var buttonWindow = new SystemWindow(300, 200)
 			{
@@ -121,22 +123,22 @@ namespace MatterHackers.Agg.UI.Tests
 				{
 					Name = $"button {i}"
 				};
-							var index = i;
-			radioButton.Click += async (sender, e) =>
-			{
-				var buttons = buttonContainer.Children.ToArray();
-				for (int j = 0; j < buttonCount; j++)
+				var index = i;
+				radioButton.Click += async (sender, e) =>
 				{
-					if (j == index)
+					var buttons = buttonContainer.Children.ToArray();
+					for (int j = 0; j < buttonCount; j++)
 					{
-						await Assert.That(((IRadioButton)buttons[j]).Checked).IsTrue();
+						if (j == index)
+						{
+							await Assert.That(((IRadioButton)buttons[j]).Checked).IsTrue();
+						}
+						else
+						{
+							await Assert.That(((IRadioButton)buttons[j]).Checked).IsFalse();
+						}
 					}
-					else
-					{
-						await Assert.That(((IRadioButton)buttons[j]).Checked).IsFalse();
-					}
-				}
-			};
+				};
 				buttonContainer.AddChild(radioButton);
 			}
 
@@ -155,35 +157,35 @@ namespace MatterHackers.Agg.UI.Tests
 			level2.AddChild(level3);
 			var allWidgets = new List<GuiWidget>() { level0, level1, level2, level3 };
 
-					foreach (var child in level0.Children<GuiWidget>())
-		{
-			await Assert.That(child == allWidgets[1]).IsTrue();
-		}
+			foreach (var child in level0.Children<GuiWidget>())
+			{
+				await Assert.That(child == allWidgets[1]).IsTrue();
+			}
 
-		foreach (var child in level1.Children<GuiWidget>())
-		{
-			await Assert.That(child == allWidgets[2]).IsTrue();
-		}
+			foreach (var child in level1.Children<GuiWidget>())
+			{
+				await Assert.That(child == allWidgets[2]).IsTrue();
+			}
 
-		foreach (var child in level2.Children<GuiWidget>())
-		{
-			await Assert.That(child == allWidgets[3]).IsTrue();
-		}
+			foreach (var child in level2.Children<GuiWidget>())
+			{
+				await Assert.That(child == allWidgets[3]).IsTrue();
+			}
 
-		foreach (var child in level3.Children<GuiWidget>())
-		{
-			await Assert.That(false).IsTrue(); // there are no children we should not get here
-		}
+			foreach (var child in level3.Children<GuiWidget>())
+			{
+				await Assert.That(false).IsTrue(); // there are no children we should not get here
+			}
 
-		int index = allWidgets.Count - 1;
-		int parentCount = 0;
-		foreach (var parent in level3.Parents<GuiWidget>())
-		{
-			parentCount++;
-			await Assert.That(parent == allWidgets[--index]).IsTrue();
-		}
+			int index = allWidgets.Count - 1;
+			int parentCount = 0;
+			foreach (var parent in level3.Parents<GuiWidget>())
+			{
+				parentCount++;
+				await Assert.That(parent == allWidgets[--index]).IsTrue();
+			}
 
-		await Assert.That(parentCount == 3).IsTrue();
+			await Assert.That(parentCount == 3).IsTrue();
 		}
 
 		[Test]

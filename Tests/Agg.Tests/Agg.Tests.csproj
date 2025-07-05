@@ -45,13 +45,4 @@
     <ProjectReference Include="..\..\Typography\Typography.One\Typography.One.csproj" />
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
-
-
-  <!-- All test files are now successfully converted to TUnit and included automatically -->
-  <ItemGroup>
-    <!-- Temporarily exclude problematic files for compatibility issues -->
-    <Compile Remove="Agg.PolygonMesh\CsgTests.cs" />
-    <Compile Remove="Other\TesselatorTests.cs" />
-    <Compile Remove="Other\RunTest.cs" />
-  </ItemGroup>
 </Project>

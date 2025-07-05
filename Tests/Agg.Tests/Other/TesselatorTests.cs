@@ -37,8 +37,8 @@ using Tesselate;
 
 namespace MatterHackers.Agg.Tests
 {
-    
-    public class TesselatorTests
+
+	public class TesselatorTests
 	{
 		public static string[][] InsructionStream = new string[][]
 			{
@@ -411,56 +411,55 @@ namespace MatterHackers.Agg.Tests
 		private int CurrentOutputTest;
 		private string LastString;
 
-		public async Task BeginCallBack(Tesselator.TriangleListType type)
+			public void BeginCallBack(Tesselator.TriangleListType type)
+	{
+		if (GetNextOutputAsString() != "B") throw new Exception("Expected 'B'");
+		switch (type)
 		{
-			await Assert.That(GetNextOutputAsString() == "B").IsTrue();
-			switch (type)
-			{
-				case Tesselator.TriangleListType.Triangles:
-					await Assert.That(GetNextOutputAsString() == "TRI").IsTrue();
-					break;
+			case Tesselator.TriangleListType.Triangles:
+				if (GetNextOutputAsString() != "TRI") throw new Exception("Expected 'TRI'");
+				break;
 
-				case Tesselator.TriangleListType.TriangleFan:
-					await Assert.That(GetNextOutputAsString() == "FAN").IsTrue();
-					break;
+			case Tesselator.TriangleListType.TriangleFan:
+				if (GetNextOutputAsString() != "FAN") throw new Exception("Expected 'FAN'");
+				break;
 
-				case Tesselator.TriangleListType.TriangleStrip:
-					await Assert.That(GetNextOutputAsString() == "STRIP").IsTrue();
-					break;
+			case Tesselator.TriangleListType.TriangleStrip:
+				if (GetNextOutputAsString() != "STRIP") throw new Exception("Expected 'STRIP'");
+				break;
 
-				default:
-					throw new Exception("unknown TriangleListType '" + type.ToString() + "'.");
-			}
+			default:
+				throw new Exception("unknown TriangleListType '" + type.ToString() + "'.");
 		}
+	}
 
-		public async Task<int> CombineCallBack(double[] coords3, int[] data4, double[] weight4)
+		public int CombineCallBack(double[] coords3, int[] data4, double[] weight4)
 		{
-			double error = .001;
-			await Assert.That(GetNextOutputAsString() == "C").IsTrue();
-			await Assert.That(coords3[0]).IsEqualTo(GetNextOutputAsDouble());
-			await Assert.That(coords3[1]).IsEqualTo(GetNextOutputAsDouble());
-			await Assert.That(data4[0]).IsEqualTo(GetNextOutputAsInt());
-			await Assert.That(data4[1]).IsEqualTo(GetNextOutputAsInt());
-			await Assert.That(data4[2]).IsEqualTo(GetNextOutputAsInt());
-			await Assert.That(data4[3]).IsEqualTo(GetNextOutputAsInt());
-			await Assert.That(weight4[0]).IsEqualTo(GetNextOutputAsDouble());
-			await Assert.That(weight4[1]).IsEqualTo(GetNextOutputAsDouble());
-			await Assert.That(weight4[2]).IsEqualTo(GetNextOutputAsDouble());
-			await Assert.That(weight4[3]).IsEqualTo(GetNextOutputAsDouble());
+			if (GetNextOutputAsString() != "C") throw new Exception("Expected 'C'");
+			if (coords3[0] != GetNextOutputAsDouble()) throw new Exception("coords3[0] mismatch");
+			if (coords3[1] != GetNextOutputAsDouble()) throw new Exception("coords3[1] mismatch");
+			if (data4[0] != GetNextOutputAsInt()) throw new Exception("data4[0] mismatch");
+			if (data4[1] != GetNextOutputAsInt()) throw new Exception("data4[1] mismatch");
+			if (data4[2] != GetNextOutputAsInt()) throw new Exception("data4[2] mismatch");
+			if (data4[3] != GetNextOutputAsInt()) throw new Exception("data4[3] mismatch");
+			if (weight4[0] != GetNextOutputAsDouble()) throw new Exception("weight4[0] mismatch");
+			if (weight4[1] != GetNextOutputAsDouble()) throw new Exception("weight4[1] mismatch");
+			if (weight4[2] != GetNextOutputAsDouble()) throw new Exception("weight4[2] mismatch");
+			if (weight4[3] != GetNextOutputAsDouble()) throw new Exception("weight4[3] mismatch");
 
 			VertexList.Add(new Vertex(coords3[0], coords3[1]));
-			return VertexList.Count-1;
+			return VertexList.Count - 1;
 		}
 
-		public async Task EdgeFlagCallBack(bool IsEdge)
+		public void EdgeFlagCallBack(bool IsEdge)
 		{
-			await Assert.That(GetNextOutputAsString() == "F").IsTrue();
-			await Assert.That(IsEdge).IsEqualTo(GetNextOutputAsBool());
+			if (GetNextOutputAsString() != "F") throw new Exception("Expected 'F'");
+			if (IsEdge != GetNextOutputAsBool()) throw new Exception("IsEdge mismatch");
 		}
 
-		public async Task EndCallBack()
+		public void EndCallBack()
 		{
-			await Assert.That(GetNextOutputAsString() == "E").IsTrue();
+			if (GetNextOutputAsString() != "E") throw new Exception("Expected 'E'");
 		}
 
 		[Test]
@@ -535,10 +534,10 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-		public async Task VertexCallBack(int index)
+		public void VertexCallBack(int index)
 		{
-			await Assert.That(GetNextOutputAsString() == "V").IsTrue();
-			await Assert.That(index).IsEqualTo(GetNextOutputAsInt());
+			if (GetNextOutputAsString() != "V") throw new Exception("Expected 'V'");
+			if (index != GetNextOutputAsInt()) throw new Exception("index mismatch");
 		}
 
 		private bool GetNextOutputAsBool()
@@ -549,7 +548,7 @@ namespace MatterHackers.Agg.Tests
 				return true;
 			}
 
-			await Assert.That(asDouble).IsEqualTo(0.0);
+			if (asDouble != 0.0) throw new Exception("asDouble not 0.0");
 
 			return false;
 		}
@@ -562,7 +561,7 @@ namespace MatterHackers.Agg.Tests
 		private int GetNextOutputAsInt()
 		{
 			double asDouble = Convert.ToDouble(GetNextOutputAsString());
-			await Assert.That(asDouble).IsEqualTo((int)asDouble);
+			if (asDouble != (int)asDouble) throw new Exception("asDouble not integer");
 			return (int)asDouble;
 		}
 

@@ -778,10 +778,10 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public async Task VAnchorCenterAndVAnchorFitWorkCorrectlyTogetherTest()
 		{
-			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble());
-			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble(3));
-			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(0));
-			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(3));
+			await VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble());
+			await VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble(3));
+			await VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(0));
+			await VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(3));
 			//VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
