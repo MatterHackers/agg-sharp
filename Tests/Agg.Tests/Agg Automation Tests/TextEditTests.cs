@@ -39,6 +39,7 @@ using MatterHackers.Agg.UI.Tests;
 
 namespace MatterHackers.Agg.UI.Tests
 {
+    [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
    	public class TextEditTests
 	{
 		public static bool SaveImagesForDebug = false;
@@ -771,6 +772,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 	}
 
     
+    [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
     public class TextEditFocusTests
 	{
         [Test]

@@ -38,6 +38,7 @@ using TUnit.Core;
 namespace Matter_CAD_Lib.Tests.AutomationTests
 {
     
+ [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
 	public class WidgetClickTests
 	{
         [Test]
@@ -181,6 +182,7 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 		}
 
 		// Test SystemWindow with three clickable controls
+  [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
 		private class ClickTestsWindow : SystemWindow
 		{
 			private GuiWidget lastClicked = null;
@@ -237,6 +239,7 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 			}
 
 			// Test class with a default size and a field to track click counts
+   [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
 			public class ClickableWidget : GuiWidget
 			{
 				public int ClickCount { get; set; } = 0;

@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 
 namespace MatterCAD.Tests.MatterCAD
 {
+	[NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
 	public class PopupAnchorTests
 	{
 		[Test]
@@ -559,6 +560,7 @@ namespace MatterCAD.Tests.MatterCAD
 			}, 25);
 		}
 
+		[NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
 		public class PopupsTestWindow : SystemWindow
 		{
 			private FlowLayoutWidget column;

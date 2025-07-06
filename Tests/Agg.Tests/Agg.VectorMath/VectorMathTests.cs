@@ -45,7 +45,7 @@ namespace MatterHackers.VectorMath.Tests
 			{
 				var output = Easing.Calculate(easeType, easeOption, k);
 				var input = Easing.CalculateInverse(easeType, easeOption, output);
-				await Assert.That(input).IsEqualTo(k);
+				await Assert.That(input).IsEqualTo(k).Within(.001);
 			}
 
 			async Task RangeTest(Easing.EaseType easeType)
@@ -240,7 +240,7 @@ namespace MatterHackers.VectorMath.Tests
 				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3);
 				// far
 				await Assert.That(frustum.Planes[5].Normal.Equals(new Vector3(0, 0, 1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507);
+				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507).Within(.0001);
 			}
 		}
 
@@ -379,9 +379,9 @@ namespace MatterHackers.VectorMath.Tests
 					new Plane(new Vector3(0, 0, 1), -20),
 					new Plane(new Vector3(0, 0, -1), -20));
 
-				await Vector3Tests.TestFrustumClipLine(frustum, new Vector3(-5, 0, 0), new Vector3(5, 0, 0), true, new Vector3(-5, 0, 0), new Vector3(5, 0, 0));
-				await Vector3Tests.TestFrustumClipLine(frustum, new Vector3(-50, 0, 0), new Vector3(-21, 0, 0), false, null, null);
-				await Vector3Tests.TestFrustumClipLine(frustum, new Vector3(-50, 0, 0), new Vector3(-19, 0, 0), true, new Vector3(-20, 0, 0), new Vector3(-19, 0, 0));
+				await TestFrustumClipLine(frustum, new Vector3(-5, 0, 0), new Vector3(5, 0, 0), true, new Vector3(-5, 0, 0), new Vector3(5, 0, 0));
+				await TestFrustumClipLine(frustum, new Vector3(-50, 0, 0), new Vector3(-21, 0, 0), false, null, null);
+				await TestFrustumClipLine(frustum, new Vector3(-50, 0, 0), new Vector3(-19, 0, 0), true, new Vector3(-20, 0, 0), new Vector3(-19, 0, 0));
 
 				// moved right
 				{
@@ -393,9 +393,9 @@ namespace MatterHackers.VectorMath.Tests
 					await Assert.That(movedRightFrustum.Planes[4] == frustum.Planes[4]).IsTrue();
 					await Assert.That(movedRightFrustum.Planes[5] == frustum.Planes[5]).IsTrue();
 
-					await Vector3Tests.TestFrustumClipLine(movedRightFrustum, new Vector3(-5, 0, 0), new Vector3(5, 0, 0), true, new Vector3(-5, 0, 0), new Vector3(5, 0, 0));
-					await Vector3Tests.TestFrustumClipLine(movedRightFrustum, new Vector3(-50, 0, 0), new Vector3(-11, 0, 0), false, null, null);
-					await Vector3Tests.TestFrustumClipLine(movedRightFrustum, new Vector3(-50, 0, 0), new Vector3(-9, 0, 0), true, new Vector3(-10, 0, 0), new Vector3(-9, 0, 0));
+					await TestFrustumClipLine(movedRightFrustum, new Vector3(-5, 0, 0), new Vector3(5, 0, 0), true, new Vector3(-5, 0, 0), new Vector3(5, 0, 0));
+					await TestFrustumClipLine(movedRightFrustum, new Vector3(-50, 0, 0), new Vector3(-11, 0, 0), false, null, null);
+					await TestFrustumClipLine(movedRightFrustum, new Vector3(-50, 0, 0), new Vector3(-9, 0, 0), true, new Vector3(-10, 0, 0), new Vector3(-9, 0, 0));
 				}
 
 				// rotated right

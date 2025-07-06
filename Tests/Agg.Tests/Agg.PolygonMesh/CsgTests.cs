@@ -223,7 +223,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			await Assert.That(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40).IsTrue();
 
 			// Todo: turn this on
-			//await Assert.That(result.IsManifold()).IsTrue();
+			await Assert.That(result.IsManifold()).IsTrue();
 		}
 
 		[Test]

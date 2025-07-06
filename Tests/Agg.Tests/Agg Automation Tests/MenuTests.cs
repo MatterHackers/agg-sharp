@@ -37,6 +37,7 @@ using TUnit.Core;
 namespace MatterHackers.Agg.UI.Tests
 {
     
+ [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
 	public class MenuTests
 	{
 		public static bool SaveImagesForDebug = false;

@@ -35,6 +35,7 @@ using TUnit.Core;
 
 namespace MatterHackers.Agg.UI.Tests
 {
+    [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
     internal class TempData
 	{
 		internal string lastShownText;
@@ -43,6 +44,7 @@ namespace MatterHackers.Agg.UI.Tests
 	}
 
     
+ [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
 	public class ToolTipTests
 	{
 		static readonly string toolTip1Text = "toolTip1";
