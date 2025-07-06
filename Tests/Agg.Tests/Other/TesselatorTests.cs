@@ -27,9 +27,6 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using Agg.Tests.Agg;
-using TUnit.Assertions;
-using TUnit.Core;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -406,34 +403,33 @@ namespace MatterHackers.Agg.Tests
 			"E", },
 		};
 
-		private int CurrentInputTest;
 		private int CurrentOutput;
 		private int CurrentOutputTest;
 		private string LastString;
 
-			public void BeginCallBack(Tesselator.TriangleListType type)
-	{
-		if (GetNextOutputAsString() != "B") throw new Exception("Expected 'B'");
-		switch (type)
+        private void BeginCallBack(Tesselator.TriangleListType type)
 		{
-			case Tesselator.TriangleListType.Triangles:
-				if (GetNextOutputAsString() != "TRI") throw new Exception("Expected 'TRI'");
-				break;
+			if (GetNextOutputAsString() != "B") throw new Exception("Expected 'B'");
+			switch (type)
+			{
+				case Tesselator.TriangleListType.Triangles:
+					if (GetNextOutputAsString() != "TRI") throw new Exception("Expected 'TRI'");
+					break;
 
-			case Tesselator.TriangleListType.TriangleFan:
-				if (GetNextOutputAsString() != "FAN") throw new Exception("Expected 'FAN'");
-				break;
+				case Tesselator.TriangleListType.TriangleFan:
+					if (GetNextOutputAsString() != "FAN") throw new Exception("Expected 'FAN'");
+					break;
 
-			case Tesselator.TriangleListType.TriangleStrip:
-				if (GetNextOutputAsString() != "STRIP") throw new Exception("Expected 'STRIP'");
-				break;
+				case Tesselator.TriangleListType.TriangleStrip:
+					if (GetNextOutputAsString() != "STRIP") throw new Exception("Expected 'STRIP'");
+					break;
 
-			default:
-				throw new Exception("unknown TriangleListType '" + type.ToString() + "'.");
+				default:
+					throw new Exception("unknown TriangleListType '" + type.ToString() + "'.");
+			}
 		}
-	}
 
-		public int CombineCallBack(double[] coords3, int[] data4, double[] weight4)
+		private int CombineCallBack(double[] coords3, int[] data4, double[] weight4)
 		{
 			if (GetNextOutputAsString() != "C") throw new Exception("Expected 'C'");
 			if (coords3[0] != GetNextOutputAsDouble()) throw new Exception("coords3[0] mismatch");
@@ -451,47 +447,49 @@ namespace MatterHackers.Agg.Tests
 			return VertexList.Count - 1;
 		}
 
-		public void EdgeFlagCallBack(bool IsEdge)
+		private void EdgeFlagCallBack(bool IsEdge)
 		{
 			if (GetNextOutputAsString() != "F") throw new Exception("Expected 'F'");
 			if (IsEdge != GetNextOutputAsBool()) throw new Exception("IsEdge mismatch");
 		}
 
-		public void EndCallBack()
+		private void EndCallBack()
 		{
 			if (GetNextOutputAsString() != "E") throw new Exception("Expected 'E'");
 		}
 
 		[Test]
-		public async Task MatchesGLUTesselator()
+		public Task MatchesGLUTesselator()
 		{
-			for (CurrentInputTest = 0; CurrentInputTest < InsructionStream.Length; CurrentInputTest++)
+			for (int currentInputTest = 0; currentInputTest < InsructionStream.Length; currentInputTest++)
 			{
-				RunTest(CurrentInputTest, Tesselator.WindingRuleType.Odd, false);
+				RunTest(currentInputTest, Tesselator.WindingRuleType.Odd, false);
 				CurrentOutputTest++;
-				RunTest(CurrentInputTest, Tesselator.WindingRuleType.NonZero, false);
+				RunTest(currentInputTest, Tesselator.WindingRuleType.NonZero, false);
 				CurrentOutputTest++;
-				RunTest(CurrentInputTest, Tesselator.WindingRuleType.Positive, false);
+				RunTest(currentInputTest, Tesselator.WindingRuleType.Positive, false);
 				CurrentOutputTest++;
-				RunTest(CurrentInputTest, Tesselator.WindingRuleType.Negative, false);
+				RunTest(currentInputTest, Tesselator.WindingRuleType.Negative, false);
 				CurrentOutputTest++;
-				RunTest(CurrentInputTest, Tesselator.WindingRuleType.ABS_GEQ_Two, false);
+				RunTest(currentInputTest, Tesselator.WindingRuleType.ABS_GEQ_Two, false);
 				CurrentOutputTest++;
 
-				RunTest(CurrentInputTest, Tesselator.WindingRuleType.Odd, true);
+				RunTest(currentInputTest, Tesselator.WindingRuleType.Odd, true);
 				CurrentOutputTest++;
-				RunTest(CurrentInputTest, Tesselator.WindingRuleType.NonZero, true);
+				RunTest(currentInputTest, Tesselator.WindingRuleType.NonZero, true);
 				CurrentOutputTest++;
-				RunTest(CurrentInputTest, Tesselator.WindingRuleType.Positive, true);
+				RunTest(currentInputTest, Tesselator.WindingRuleType.Positive, true);
 				CurrentOutputTest++;
-				RunTest(CurrentInputTest, Tesselator.WindingRuleType.Negative, true);
+				RunTest(currentInputTest, Tesselator.WindingRuleType.Negative, true);
 				CurrentOutputTest++;
-				RunTest(CurrentInputTest, Tesselator.WindingRuleType.ABS_GEQ_Two, true);
+				RunTest(currentInputTest, Tesselator.WindingRuleType.ABS_GEQ_Two, true);
 				CurrentOutputTest++;
 			}
-		}
 
-		public void ParseStreamForTesselator(Tesselate.Tesselator tesselator, int instructionStreamIndex)
+			return Task.CompletedTask;
+        }
+
+        private void ParseStreamForTesselator(Tesselate.Tesselator tesselator, int instructionStreamIndex)
 		{
 			VertexList.Clear();
 			CurrentOutput = 0;
@@ -534,7 +532,7 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-		public void VertexCallBack(int index)
+        private void VertexCallBack(int index)
 		{
 			if (GetNextOutputAsString() != "V") throw new Exception("Expected 'V'");
 			if (index != GetNextOutputAsInt()) throw new Exception("index mismatch");

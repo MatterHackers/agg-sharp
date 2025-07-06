@@ -47,4 +47,11 @@
     <ProjectReference Include="..\..\Typography\Typography.One\Typography.One.csproj" />
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
+
+  <!-- Copy native DLLs to output directory for test execution -->
+  <Target Name="CopyNativeDlls" AfterTargets="Build">
+    <Copy SourceFiles="$(OutDir)runtimes\win-x64\native\manifoldc.dll" DestinationFiles="$(OutDir)manifoldc.dll" SkipUnchangedFiles="true" Condition="Exists('$(OutDir)runtimes\win-x64\native\manifoldc.dll')" />
+    <Copy SourceFiles="$(OutDir)runtimes\win-x64\native\tbb12.dll" DestinationFiles="$(OutDir)tbb12.dll" SkipUnchangedFiles="true" Condition="Exists('$(OutDir)runtimes\win-x64\native\tbb12.dll')" />
+  </Target>
+
 </Project>
