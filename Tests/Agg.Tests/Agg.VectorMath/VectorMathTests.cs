@@ -36,7 +36,7 @@ using System.Threading.Tasks;
 
 namespace MatterHackers.VectorMath.Tests
 {
-    public class EasingTests
+	public class EasingTests
 	{
 		[Test]
 		public async Task StaticFunctionTests()
@@ -150,25 +150,25 @@ namespace MatterHackers.VectorMath.Tests
 		public async Task Vector2SerializeTest()
 		{
 			await Assert.That(JsonConvert.SerializeObject(new Vector2(1, 2))).IsEqualTo("{\"X\":1.0,\"Y\":2.0}");
-        }
+		}
 
 		[Test]
 		public async Task Vector2FloatSerializeTest()
 		{
 			await Assert.That(JsonConvert.SerializeObject(new Vector2Float(1.1, 2.2))).IsEqualTo("{\"X\":1.1,\"Y\":2.2}");
-        }
+		}
 
 		[Test]
 		public async Task Vector3FloatSerializeTest()
 		{
 			await Assert.That(JsonConvert.SerializeObject(new Vector3Float(1.1, 2.2, 3.3))).IsEqualTo("{\"X\":1.1,\"Y\":2.2,\"Z\":3.3}");
-        }
+		}
 
 		[Test]
 		public async Task Vector3SerializeTest()
 		{
 			await Assert.That(JsonConvert.SerializeObject(new Vector3(1, 2, 3))).IsEqualTo("{\"X\":1.0,\"Y\":2.0,\"Z\":3.0}");
-        }
+		}
 
 		[Test]
 		public async Task WorldViewPerspectiveProjectionTests()
@@ -275,23 +275,23 @@ namespace MatterHackers.VectorMath.Tests
 					await Assert.That(intersection == FrustumIntersection.Outside).IsTrue();
 				}
 
-                // intersect
-                {
-                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, 0, -10), new Vector3(-15, 10, 10));
-                    FrustumIntersection intersection = frustum.GetIntersect(aabb);
-                    await Assert.That(intersection == FrustumIntersection.Intersect).IsTrue();
-                }
+				// intersect
+				{
+					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, 0, -10), new Vector3(-15, 10, 10));
+					FrustumIntersection intersection = frustum.GetIntersect(aabb);
+					await Assert.That(intersection == FrustumIntersection.Intersect).IsTrue();
+				}
 
-                // intersect 2 // A thin bar at the center crossing both x planes
-                {
-                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, -5, -5), new Vector3(25, 5, 5));
-                    FrustumIntersection intersection = frustum.GetIntersect(aabb);
-                    await Assert.That(intersection == FrustumIntersection.Intersect).IsTrue();
-                }
+				// intersect 2 // A thin bar at the center crossing both x planes
+				{
+					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, -5, -5), new Vector3(25, 5, 5));
+					FrustumIntersection intersection = frustum.GetIntersect(aabb);
+					await Assert.That(intersection == FrustumIntersection.Intersect).IsTrue();
+				}
 
-                // not intersect
-                {
-                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, 0, 30), new Vector3(-15, 10, 35));
+				// not intersect
+				{
+					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, 0, 30), new Vector3(-15, 10, 35));
 					FrustumIntersection intersection = frustum.GetIntersect(aabb);
 					await Assert.That(intersection == FrustumIntersection.Outside).IsTrue();
 				}

@@ -70,7 +70,7 @@ namespace MatterHackers.Agg.UI
 
 		private bool doneLoading = false;
 
-				protected override void OnClosed(EventArgs e)
+		protected override void OnClosed(EventArgs e)
 		{
 			try
 			{
@@ -85,17 +85,17 @@ namespace MatterHackers.Agg.UI
 					{
 						// Ignore GL data release errors during shutdown
 					}
-					
+
 					// Ensure control is removed from parent before disposal
 					if (glControl.Parent != null)
 					{
 						glControl.Parent.Controls.Remove(glControl);
 					}
-					
+
 					// Force disposal of the GL control
 					glControl.Dispose();
 				}
-				
+
 				// Dispose of all child controls to free handles
 				while (this.Controls.Count > 0)
 				{
@@ -103,7 +103,7 @@ namespace MatterHackers.Agg.UI
 					this.Controls.Remove(control);
 					control.Dispose();
 				}
-				
+
 				// Force handle destruction
 				if (this.IsHandleCreated)
 				{

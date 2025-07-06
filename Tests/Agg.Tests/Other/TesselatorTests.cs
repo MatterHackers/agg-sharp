@@ -407,7 +407,7 @@ namespace MatterHackers.Agg.Tests
 		private int CurrentOutputTest;
 		private string LastString;
 
-        private void BeginCallBack(Tesselator.TriangleListType type)
+		private void BeginCallBack(Tesselator.TriangleListType type)
 		{
 			if (GetNextOutputAsString() != "B") throw new Exception("Expected 'B'");
 			switch (type)
@@ -487,9 +487,9 @@ namespace MatterHackers.Agg.Tests
 			}
 
 			return Task.CompletedTask;
-        }
+		}
 
-        private void ParseStreamForTesselator(Tesselate.Tesselator tesselator, int instructionStreamIndex)
+		private void ParseStreamForTesselator(Tesselate.Tesselator tesselator, int instructionStreamIndex)
 		{
 			VertexList.Clear();
 			CurrentOutput = 0;
@@ -532,7 +532,7 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-        private void VertexCallBack(int index)
+		private void VertexCallBack(int index)
 		{
 			if (GetNextOutputAsString() != "V") throw new Exception("Expected 'V'");
 			if (index != GetNextOutputAsInt()) throw new Exception("index mismatch");

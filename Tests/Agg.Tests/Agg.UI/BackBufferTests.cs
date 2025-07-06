@@ -36,8 +36,8 @@ using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    
-    public class BackBufferTests
+
+	public class BackBufferTests
 	{
 		public bool saveImagesForDebug;
 
@@ -49,8 +49,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [Test]
-        public async Task DoubleBufferTests()
+		[Test]
+		public async Task DoubleBufferTests()
 		{
 			bool textWidgetDoubleBufferDefault = TextWidget.DoubleBufferDefault;
 

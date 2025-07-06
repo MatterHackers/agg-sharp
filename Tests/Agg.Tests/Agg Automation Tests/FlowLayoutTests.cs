@@ -37,28 +37,28 @@ using TUnit.Core;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    
- [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
+
+	[NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
 	public class FlowLayoutTests
 	{
 		public static bool saveImagesForDebug = false;
 
 
 		bool enforceIntegerBounds;
-        [Before(HookType.Test)]
-        public async Task Setup()
+		[Before(HookType.Test)]
+		public async Task Setup()
 		{
 			enforceIntegerBounds = GuiWidget.DefaultEnforceIntegerBounds;
-            GuiWidget.DefaultEnforceIntegerBounds = false;
-        }
+			GuiWidget.DefaultEnforceIntegerBounds = false;
+		}
 
 		[After(HookType.Test)]
 		public async Task Restore()
-        {
-            GuiWidget.DefaultEnforceIntegerBounds = enforceIntegerBounds;
-        }
+		{
+			GuiWidget.DefaultEnforceIntegerBounds = enforceIntegerBounds;
+		}
 
-        private void OutputImage(ImageBuffer imageToOutput, string fileName)
+		private void OutputImage(ImageBuffer imageToOutput, string fileName)
 		{
 			if (saveImagesForDebug)
 			{
@@ -80,8 +80,8 @@ namespace MatterHackers.Agg.UI.Tests
 			OutputImage(test, "image-test.tga");
 		}
 
-        [Test]
-        public async Task TopToBottomContainerAppliesExpectedMargin()
+		[Test]
+		public async Task TopToBottomContainerAppliesExpectedMargin()
 		{
 			int marginSize = 40;
 			int dimensions = 300;
@@ -122,8 +122,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(bounds.Bottom == marginSize, "Bottom margin is incorrect").IsTrue();
 		}
 
-        [Test]
-        public async Task SpacingClearedAfterLoadPositionsCorrectly()
+		[Test]
+		public async Task SpacingClearedAfterLoadPositionsCorrectly()
 		{
 			var systemWindow = new SystemWindow(700, 200)
 			{
@@ -191,19 +191,19 @@ namespace MatterHackers.Agg.UI.Tests
 				}
 			};
 
-					await AutomationRunner.ShowWindowAndExecuteTests(
-		systemWindow,
-		async (testRunner) =>
-		{
-			// Enable to observe
-			// testRunner.Delay(30);
+			await AutomationRunner.ShowWindowAndExecuteTests(
+systemWindow,
+async (testRunner) =>
+{
+	// Enable to observe
+	// testRunner.Delay(30);
 
-			await Assert.That(footerRow.Position.Y).IsEqualTo(0);//, "Footer should be positioned at Y0 when it is the first item in a TopToBottom FlowlayoutWidget");
-		});
+	await Assert.That(footerRow.Position.Y).IsEqualTo(0);//, "Footer should be positioned at Y0 when it is the first item in a TopToBottom FlowlayoutWidget");
+});
 		}
 
-        [Test]
-        public async Task NestedLayoutTopToBottomTests()
+		[Test]
+		public async Task NestedLayoutTopToBottomTests()
 		{
 			NestedLayoutTopToBottomTest(default(BorderDouble), default(BorderDouble));
 			NestedLayoutTopToBottomTest(default(BorderDouble), new BorderDouble(3));
@@ -212,8 +212,8 @@ namespace MatterHackers.Agg.UI.Tests
 			NestedLayoutTopToBottomTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-        [Test]
-        public async Task ChangingChildVisiblityUpdatesFlow()
+		[Test]
+		public async Task ChangingChildVisiblityUpdatesFlow()
 		{
 			// ___________________________________________________
 			//  |       containerControl 300                      |
@@ -283,8 +283,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(flow2.Width == size2.Width).IsTrue();
 		}
 
-        [Test]
-        public async Task ChangingChildFlowWidgetVisiblityUpdatesParentFlow()
+		[Test]
+		public async Task ChangingChildFlowWidgetVisiblityUpdatesParentFlow()
 		{
 			// ___________________________________________________
 			//  |       containerControl 300                      |
@@ -430,14 +430,14 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(containerTest.BackBuffer.Equals(containerControl.BackBuffer, 1), "The test should contain the same image as the control.").IsTrue();
 		}
 
-        [Test]
-        public async Task NestedLayoutTopToBottomWithResizeTests()
+		[Test]
+		public async Task NestedLayoutTopToBottomWithResizeTests()
 		{
-					await NestedLayoutTopToBottomWithResizeTest(default(BorderDouble), default(BorderDouble));
-		await NestedLayoutTopToBottomWithResizeTest(default(BorderDouble), new BorderDouble(3));
-		await NestedLayoutTopToBottomWithResizeTest(new BorderDouble(2), new BorderDouble(0));
-		await NestedLayoutTopToBottomWithResizeTest(new BorderDouble(2), new BorderDouble(3));
-		await NestedLayoutTopToBottomWithResizeTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
+			await NestedLayoutTopToBottomWithResizeTest(default(BorderDouble), default(BorderDouble));
+			await NestedLayoutTopToBottomWithResizeTest(default(BorderDouble), new BorderDouble(3));
+			await NestedLayoutTopToBottomWithResizeTest(new BorderDouble(2), new BorderDouble(0));
+			await NestedLayoutTopToBottomWithResizeTest(new BorderDouble(2), new BorderDouble(3));
+			await NestedLayoutTopToBottomWithResizeTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
 		public async Task NestedLayoutTopToBottomWithResizeTest(BorderDouble controlPadding, BorderDouble buttonMargin)
@@ -497,14 +497,14 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(containerTest.BackBuffer == controlImage, "The control should contain the same image after being scaled away and back to the same size.").IsTrue();
 		}
 
-        [Test]
-        public async Task LeftToRightTests()
+		[Test]
+		public async Task LeftToRightTests()
 		{
-					await LeftToRightTest(default(BorderDouble), default(BorderDouble));
-		await LeftToRightTest(default(BorderDouble), new BorderDouble(3));
-		await LeftToRightTest(new BorderDouble(2), new BorderDouble(0));
-		await LeftToRightTest(new BorderDouble(2), new BorderDouble(3));
-		await LeftToRightTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
+			await LeftToRightTest(default(BorderDouble), default(BorderDouble));
+			await LeftToRightTest(default(BorderDouble), new BorderDouble(3));
+			await LeftToRightTest(new BorderDouble(2), new BorderDouble(0));
+			await LeftToRightTest(new BorderDouble(2), new BorderDouble(3));
+			await LeftToRightTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
 		private async Task LeftToRightTest(BorderDouble controlPadding, BorderDouble buttonMargin)
@@ -559,14 +559,14 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
 		}
 
-        [Test]
-        public async Task RightToLeftTests()
+		[Test]
+		public async Task RightToLeftTests()
 		{
-					await RightToLeftTest(default(BorderDouble), default(BorderDouble));
-		await RightToLeftTest(default(BorderDouble), new BorderDouble(3));
-		await RightToLeftTest(new BorderDouble(2), new BorderDouble(0));
-		await RightToLeftTest(new BorderDouble(2), new BorderDouble(3));
-		await RightToLeftTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
+			await RightToLeftTest(default(BorderDouble), default(BorderDouble));
+			await RightToLeftTest(default(BorderDouble), new BorderDouble(3));
+			await RightToLeftTest(new BorderDouble(2), new BorderDouble(0));
+			await RightToLeftTest(new BorderDouble(2), new BorderDouble(3));
+			await RightToLeftTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
 		private async Task RightToLeftTest(BorderDouble controlPadding, BorderDouble buttonMargin)
@@ -621,8 +621,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.").IsTrue();
 		}
 
-        [Test]
-        public async Task NestedMaxFitOrStretchToChildrenParentWidth()
+		[Test]
+		public async Task NestedMaxFitOrStretchToChildrenParentWidth()
 		{
 			// child of flow layout is Stretch
 			{
@@ -716,8 +716,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [Test]
-        public async Task NestedMinFitOrStretchToChildrenParentWidth()
+		[Test]
+		public async Task NestedMinFitOrStretchToChildrenParentWidth()
 		{
 			// child of flow layout is Stretch
 			{
@@ -858,7 +858,7 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 
 			return; // this last test does not work yet
-			// child of flow layout is MaxFitOrStretch
+					// child of flow layout is MaxFitOrStretch
 			{
 				// ___________________________________________________
 				//  |            containerControl 300x200             |
@@ -912,14 +912,14 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [Test]
-        public async Task LeftToRightAnchorLeftBottomTests()
+		[Test]
+		public async Task LeftToRightAnchorLeftBottomTests()
 		{
-					await LeftToRightAnchorLeftBottomTest(default(BorderDouble), default(BorderDouble));
-		await LeftToRightAnchorLeftBottomTest(default(BorderDouble), new BorderDouble(3));
-		await LeftToRightAnchorLeftBottomTest(new BorderDouble(2), new BorderDouble(0));
-		await LeftToRightAnchorLeftBottomTest(new BorderDouble(2), new BorderDouble(3));
-		await LeftToRightAnchorLeftBottomTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
+			await LeftToRightAnchorLeftBottomTest(default(BorderDouble), default(BorderDouble));
+			await LeftToRightAnchorLeftBottomTest(default(BorderDouble), new BorderDouble(3));
+			await LeftToRightAnchorLeftBottomTest(new BorderDouble(2), new BorderDouble(0));
+			await LeftToRightAnchorLeftBottomTest(new BorderDouble(2), new BorderDouble(3));
+			await LeftToRightAnchorLeftBottomTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
 		private async Task LeftToRightAnchorLeftBottomTest(BorderDouble controlPadding, BorderDouble buttonMargin)
@@ -976,8 +976,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
 		}
 
-        [Test]
-        public async Task AnchorLeftRightTests()
+		[Test]
+		public async Task AnchorLeftRightTests()
 		{
 			FlowTopBottomAnchorChildrenLeftRightTest(default(BorderDouble), default(BorderDouble));
 			FlowTopBottomAnchorChildrenLeftRightTest(default(BorderDouble), new BorderDouble(3));
@@ -1053,8 +1053,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.").IsTrue();
 		}
 
-        [Test]
-        public async Task NestedFlowWidgetsTopToBottomTests()
+		[Test]
+		public async Task NestedFlowWidgetsTopToBottomTests()
 		{
 			NestedFlowWidgetsTopToBottomTest(default(BorderDouble), default(BorderDouble));
 			NestedFlowWidgetsTopToBottomTest(default(BorderDouble), new BorderDouble(3));
@@ -1120,8 +1120,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
 		}
 
-        [Test]
-        public async Task NestedFlowWidgetsRightToLeftTests()
+		[Test]
+		public async Task NestedFlowWidgetsRightToLeftTests()
 		{
 			NestedFlowWidgetsRightToLeftTest(default(BorderDouble), default(BorderDouble));
 			NestedFlowWidgetsRightToLeftTest(default(BorderDouble), new BorderDouble(3));
@@ -1191,8 +1191,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.").IsTrue();
 		}
 
-        [Test]
-        public async Task NestedFlowWidgetsLeftToRightTests()
+		[Test]
+		public async Task NestedFlowWidgetsLeftToRightTests()
 		{
 			NestedFlowWidgetsLeftToRightTest(default(BorderDouble), default(BorderDouble));
 			NestedFlowWidgetsLeftToRightTest(default(BorderDouble), new BorderDouble(3));
@@ -1258,8 +1258,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
 		}
 
-        [Test]
-        public async Task FlowWithMaxSizeChildAllocatesToOthers()
+		[Test]
+		public async Task FlowWithMaxSizeChildAllocatesToOthers()
 		{
 			var container = new GuiWidget(200, 300);
 
@@ -1290,8 +1290,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(rightItem.Width).IsEqualTo(150);
 		}
 
-        [Test]
-        public async Task LeftRightWithAnchorLeftRightChildTests()
+		[Test]
+		public async Task LeftRightWithAnchorLeftRightChildTests()
 		{
 			LeftRightWithAnchorLeftRightChildTest(default(BorderDouble), default(BorderDouble));
 			LeftRightWithAnchorLeftRightChildTest(default(BorderDouble), new BorderDouble(3));
@@ -1409,8 +1409,8 @@ namespace MatterHackers.Agg.UI.Tests
 			return middle;
 		}
 
-        [Test]
-        public async Task RightLeftWithAnchorLeftRightChildTests()
+		[Test]
+		public async Task RightLeftWithAnchorLeftRightChildTests()
 		{
 			RightLeftWithAnchorLeftRightChildTest(default(BorderDouble), default(BorderDouble));
 			RightLeftWithAnchorLeftRightChildTest(default(BorderDouble), new BorderDouble(3));
@@ -1516,8 +1516,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.").IsTrue();
 		}
 
-        [Test]
-        public async Task BottomTopWithAnchorBottomTopChildTests()
+		[Test]
+		public async Task BottomTopWithAnchorBottomTopChildTests()
 		{
 			BottomTopWithAnchorBottomTopChildTest(default(BorderDouble), default(BorderDouble));
 			BottomTopWithAnchorBottomTopChildTest(default(BorderDouble), new BorderDouble(3));
@@ -1635,8 +1635,8 @@ namespace MatterHackers.Agg.UI.Tests
 			return middle;
 		}
 
-        [Test]
-        public async Task TopBottomWithAnchorBottomTopChildTests()
+		[Test]
+		public async Task TopBottomWithAnchorBottomTopChildTests()
 		{
 			TopBottomWithAnchorBottomTopChildTest(default(BorderDouble), default(BorderDouble));
 			TopBottomWithAnchorBottomTopChildTest(default(BorderDouble), new BorderDouble(3));
@@ -1781,8 +1781,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(containerTest.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
 		}
 
-        [Test]
-        public async Task ChildVisibilityChangeCauseResize()
+		[Test]
+		public async Task ChildVisibilityChangeCauseResize()
 		{
 			// Test whether toggling the visibility of children changes the flow layout
 			var containerTest = new GuiWidget(640, 480);
@@ -1923,8 +1923,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(item3.Width == 30).IsTrue();
 		}
 
-        [Test]
-        public async Task EnsureCorrectSizeOnChildrenVisibleChange()
+		[Test]
+		public async Task EnsureCorrectSizeOnChildrenVisibleChange()
 		{
 			// just one column changes correctly
 			{
@@ -2051,8 +2051,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [Test]
-        public async Task ChildHAnchorPriority()
+		[Test]
+		public async Task ChildHAnchorPriority()
 		{
 			// make sure a middle spacer grows and shrinks correctly
 			{
@@ -2062,14 +2062,14 @@ namespace MatterHackers.Agg.UI.Tests
 				};
 				await Assert.That(leftRightFlowLayout.HAnchor == HAnchor.Fit).IsTrue(); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-				// [no content] // attempting to make a visual description of what is happening
+																// [no content] // attempting to make a visual description of what is happening
 				await Assert.That(leftRightFlowLayout.Width == 0).IsTrue(); // nothing is forcing it to have a width so it doesn't
 				var leftWidget = new GuiWidget(10, 10)
 				{
 					Name = "leftWidget"
 				}; // we call it left widget as it will be the first one in the left to right flow layout
 				leftRightFlowLayout.AddChild(leftWidget); // add in a child with a width of 10
-				// [<->(10)<->] // the flow layout should now be forced to be 10 wide
+														  // [<->(10)<->] // the flow layout should now be forced to be 10 wide
 				await Assert.That(leftRightFlowLayout.Width == 10).IsTrue();
 
 				var middleSpacer = new GuiWidget(0, 10)
@@ -2123,14 +2123,14 @@ namespace MatterHackers.Agg.UI.Tests
 				};
 				await Assert.That(leftRightFlowLayout.HAnchor == HAnchor.Fit).IsTrue(); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-				// [<-><->] // attempting to make a visual description of what is happening
+																// [<-><->] // attempting to make a visual description of what is happening
 				await Assert.That(leftRightFlowLayout.Width == 0).IsTrue(); // nothing is forcing it to have a width so it doesn't
 				var leftWidget = new GuiWidget(10, 10)
 				{
 					Name = "leftWidget"
 				}; // we call it left widget as it will be the first one in the left to right flow layout
 				leftRightFlowLayout.AddChild(leftWidget); // add in a child with a width of 10
-				// [<->(10)<->] // the flow layout should now be forced to be 10 wide
+														  // [<->(10)<->] // the flow layout should now be forced to be 10 wide
 				await Assert.That(leftRightFlowLayout.Width == 10).IsTrue();
 
 				var middleFlowLayoutWrapper = new FlowLayoutWidget
@@ -2188,7 +2188,7 @@ namespace MatterHackers.Agg.UI.Tests
 				};
 				await Assert.That(leftRightFlowLayout.HAnchor == HAnchor.Fit).IsTrue(); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-				// [<-><->] // attempting to make a visual description of what is happening
+																// [<-><->] // attempting to make a visual description of what is happening
 				await Assert.That(leftRightFlowLayout.Width == 0).IsTrue(); // nothing is forcing it to have a width so it doesn't
 
 				var middleSpacer = new GuiWidget(0, 10)
@@ -2238,11 +2238,11 @@ namespace MatterHackers.Agg.UI.Tests
 				var leftRightFlowLayout = new FlowLayoutWidget();
 				await Assert.That(leftRightFlowLayout.HAnchor == HAnchor.Fit).IsTrue(); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-				// [<-><->] // attempting to make a visual description of what is happening
+																// [<-><->] // attempting to make a visual description of what is happening
 				await Assert.That(leftRightFlowLayout.Width == 0).IsTrue(); // nothing is forcing it to have a width so it doesn't
 				var leftWidget = new GuiWidget(10, 10); // we call it left widget as it will be the first one in the left to right flow layout
 				leftRightFlowLayout.AddChild(leftWidget); // add in a child with a width of 10
-				// [<->(10)<->] // the flow layout should now be forced to be 10 wide
+														  // [<->(10)<->] // the flow layout should now be forced to be 10 wide
 				await Assert.That(leftRightFlowLayout.Width == 10).IsTrue();
 
 				var middleSpacer = new GuiWidget(0, 10)
@@ -2290,8 +2290,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [Test]
-        public async Task TestVAnchorCenter()
+		[Test]
+		public async Task TestVAnchorCenter()
 		{
 			var searchPanel = new FlowLayoutWidget
 			{

@@ -89,89 +89,89 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			//await Assert.That(resultMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
 		}
 
-			[Test, Skip("CSG API changes - Face.Normal and Face.Vertices() methods have changed")]
-	public async Task SubtractHasAllFaces()
-	{
-		double XOffset = -.4;
-		CsgObject keep = new Box(10, 10, 10);
-		var keepMesh = CsgToMesh.Convert(keep, true);
-		var subtract = new Translate(new Box(10, 10, 10), XOffset, -3, 2);
-		var subtractMesh = CsgToMesh.Convert(subtract, true);
-		CsgObject result = keep - subtract;
-		var resultMesh =  CsgToMesh.Convert(result);
-		//mesh.Save("C:/Temp/TempCsgMesh.stl");
-		
-		// TODO: Fix CSG API usage - these properties/methods have changed:
-		// - f.Normal.Z should be f.GetNormal().Z or similar
-		// - face.Vertices() should be different iteration method  
-		// - vertex.Position should be different property access
-		/*
-		var bottomOfSubtractFaces = resultMesh.Faces.Where((f) =>
-			AreEqual(f.Normal.Z, 1)
-			&&
-			FaceAtHeight(f, -3)
-			).ToArray();
-
-		var allVertices = new HashSet<object>();
-		foreach(var face in bottomOfSubtractFaces)
+		[Test, Skip("CSG API changes - Face.Normal and Face.Vertices() methods have changed")]
+		public async Task SubtractHasAllFaces()
 		{
-			foreach(var vertex in face.Vertices())
+			double XOffset = -.4;
+			CsgObject keep = new Box(10, 10, 10);
+			var keepMesh = CsgToMesh.Convert(keep, true);
+			var subtract = new Translate(new Box(10, 10, 10), XOffset, -3, 2);
+			var subtractMesh = CsgToMesh.Convert(subtract, true);
+			CsgObject result = keep - subtract;
+			var resultMesh = CsgToMesh.Convert(result);
+			//mesh.Save("C:/Temp/TempCsgMesh.stl");
+
+			// TODO: Fix CSG API usage - these properties/methods have changed:
+			// - f.Normal.Z should be f.GetNormal().Z or similar
+			// - face.Vertices() should be different iteration method  
+			// - vertex.Position should be different property access
+			/*
+			var bottomOfSubtractFaces = resultMesh.Faces.Where((f) =>
+				AreEqual(f.Normal.Z, 1)
+				&&
+				FaceAtHeight(f, -3)
+				).ToArray();
+
+			var allVertices = new HashSet<object>();
+			foreach(var face in bottomOfSubtractFaces)
 			{
-				if (!allVertices.Contains(vertex))
+				foreach(var vertex in face.Vertices())
 				{
-					allVertices.Add(vertex);
+					if (!allVertices.Contains(vertex))
+					{
+						allVertices.Add(vertex);
+					}
 				}
 			}
+
+			// back right
+			await Assert.That(HasPosition(allVertices, new Vector3(4.6, 2, -3))).IsTrue();
+			// front right
+			await Assert.That(HasPosition(allVertices, new Vector3(4.6, -5, -3))).IsTrue();
+			// back left
+			await Assert.That(HasPosition(allVertices, new Vector3(-5, 2, -3))).IsTrue();
+			// front left
+			await Assert.That(HasPosition(allVertices, new Vector3(-5, -5, -3))).IsTrue();
+			*/
+
+			await Assert.That(keepMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
+			await Assert.That(subtractMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
+			//await Assert.That(resultMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
 		}
 
-		// back right
-		await Assert.That(HasPosition(allVertices, new Vector3(4.6, 2, -3))).IsTrue();
-		// front right
-		await Assert.That(HasPosition(allVertices, new Vector3(4.6, -5, -3))).IsTrue();
-		// back left
-		await Assert.That(HasPosition(allVertices, new Vector3(-5, 2, -3))).IsTrue();
-		// front left
-		await Assert.That(HasPosition(allVertices, new Vector3(-5, -5, -3))).IsTrue();
-		*/
-
-		await Assert.That(keepMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
-		await Assert.That(subtractMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
-		//await Assert.That(resultMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
-	}
-
-			private bool HasPosition(HashSet<object> allVertices, Vector3 position)
-	{
-		// TODO: Fix CSG API - vertex.Position has changed
-		/*
-		foreach(var vertex in allVertices)
+		private bool HasPosition(HashSet<object> allVertices, Vector3 position)
 		{
-			if(vertex.Position.Equals(position, .0001))
+			// TODO: Fix CSG API - vertex.Position has changed
+			/*
+			foreach(var vertex in allVertices)
 			{
-				return true;
+				if(vertex.Position.Equals(position, .0001))
+				{
+					return true;
+				}
 			}
+			*/
+			return false; // Temporarily return false until CSG API is fixed
 		}
-		*/
-		return false; // Temporarily return false until CSG API is fixed
-	}
 
-	bool FaceAtHeight(Face face, double height)
-	{
-		// TODO: Fix CSG API - face.Vertices() and vertex.Position have changed
-		/*
-		foreach (var vertex in face.Vertices())
+		bool FaceAtHeight(Face face, double height)
 		{
-			if(!AreEqual(vertex.Position.Z, height))
+			// TODO: Fix CSG API - face.Vertices() and vertex.Position have changed
+			/*
+			foreach (var vertex in face.Vertices())
 			{
-				return false;
+				if(!AreEqual(vertex.Position.Z, height))
+				{
+					return false;
+				}
 			}
+			*/
+			return true; // Temporarily return true until CSG API is fixed
 		}
-		*/
-		return true; // Temporarily return true until CSG API is fixed
-	}
 
 		bool AreEqual(double a, double b, double errorRange = .001)
 		{
-			if(a < b + errorRange
+			if (a < b + errorRange
 				&& a > b - errorRange)
 			{
 				return true;

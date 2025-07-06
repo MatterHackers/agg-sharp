@@ -48,7 +48,6 @@ namespace MatterHackers.Agg.UI
 
 		internal RemoveGlDataCallBackHolder releaseAllGlData = new RemoveGlDataCallBackHolder();
 
-		// ENHANCED: Global GLFW thread tracking to persist across test runs
 		private static int? glfwMainThreadId = null;
 		private static System.Windows.Forms.Control glfwMainThreadControl = null;
 		private static readonly object glfwLock = new object();
@@ -71,67 +70,6 @@ namespace MatterHackers.Agg.UI
 					glfwMainThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
 					glfwMainThreadControl = control;
 					System.Diagnostics.Debug.WriteLine($"GLFW main thread recorded: {glfwMainThreadId}");
-				}
-			}
-		}
-
-		/// <summary>
-		/// Ensures OpenGL operations happen on the GLFW main thread
-		/// </summary>
-		private static void ExecuteOnGlfwMainThread(System.Windows.Forms.Control control, Action action)
-		{
-			lock (glfwLock)
-			{
-				int currentThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
-				
-				// If we don't have a recorded GLFW thread yet, or we're already on it, execute directly
-				if (glfwMainThreadId == null || glfwMainThreadId == currentThreadId)
-				{
-					action();
-					return;
-				}
-				
-				// We need to marshal to the GLFW main thread
-				System.Windows.Forms.Control targetControl = glfwMainThreadControl ?? control;
-				
-				if (targetControl != null && !targetControl.IsDisposed)
-				{
-					try
-					{
-						if (targetControl.InvokeRequired)
-						{
-							System.Diagnostics.Debug.WriteLine($"Marshaling from thread {currentThreadId} to GLFW main thread {glfwMainThreadId}");
-							targetControl.Invoke(action);
-						}
-						else
-						{
-							action();
-						}
-					}
-					catch (ObjectDisposedException)
-					{
-						// Control was disposed - reset GLFW state and try current thread
-						System.Diagnostics.Debug.WriteLine("Stored control disposed, resetting GLFW state");
-						glfwMainThreadId = null;
-						glfwMainThreadControl = null;
-						action();
-					}
-					catch (InvalidOperationException)
-					{
-						// Control invoke failed - reset GLFW state and try current thread
-						System.Diagnostics.Debug.WriteLine("Control invoke failed, resetting GLFW state");
-						glfwMainThreadId = null;
-						glfwMainThreadControl = null;
-						action();
-					}
-				}
-				else
-				{
-					// No valid control for marshaling - reset GLFW state and execute on current thread
-					System.Diagnostics.Debug.WriteLine("No valid control for marshaling, resetting GLFW state");
-					glfwMainThreadId = null;
-					glfwMainThreadControl = null;
-					action();
 				}
 			}
 		}
@@ -172,23 +110,23 @@ namespace MatterHackers.Agg.UI
 				currentControl = null;
 				// Reset ID counter to prevent issues with stale ID references
 				nextId = 0;
-				
+
 				// Step 1.5: CRITICAL - Reset GLFW state for fresh start between tests
 				// This allows each test to establish its own GLFW thread instead of being bound to the first test's thread
 				ResetGlfwState();
-				
+
 				// Step 2: Force comprehensive garbage collection to clear any lingering GL objects
 				for (int i = 0; i < 5; i++)
 				{
 					System.GC.Collect();
 					System.GC.WaitForPendingFinalizers();
 				}
-				
+
 				// Step 3: Process all Windows messages to ensure handle cleanup is complete
 				System.Windows.Forms.Application.DoEvents();
 				System.Threading.Thread.Sleep(100);
 				System.Windows.Forms.Application.DoEvents();
-				
+
 				// Step 3.5: ENHANCED - Force comprehensive Windows handle cleanup
 				try
 				{
@@ -198,15 +136,15 @@ namespace MatterHackers.Agg.UI
 						System.Windows.Forms.Application.DoEvents();
 						System.Threading.Thread.Sleep(10);
 					}
-					
+
 					// Additional garbage collection focused on handle cleanup
 					System.GC.Collect();
 					System.GC.WaitForPendingFinalizers();
 					System.GC.Collect();
-					
+
 					// Allow Windows time to actually destroy handles
 					System.Threading.Thread.Sleep(200);
-					
+
 					// Final message pump to ensure all WM_DESTROY messages are processed
 					for (int i = 0; i < 5; i++)
 					{
@@ -218,7 +156,7 @@ namespace MatterHackers.Agg.UI
 				{
 					// Ignore handle cleanup errors but continue
 				}
-				
+
 				// Step 4: Force WGL context cleanup using WinAPI directly
 				try
 				{
@@ -233,7 +171,7 @@ namespace MatterHackers.Agg.UI
 							var makeCurrentDelegate = (WglMakeCurrentDelegate)System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer(wglMakeCurrent, typeof(WglMakeCurrentDelegate));
 							makeCurrentDelegate(IntPtr.Zero, IntPtr.Zero);
 						}
-						
+
 						// Force WGL to flush all contexts
 						var wglDeleteContext = GetProcAddress(opengl32, "wglDeleteContext");
 						// Note: We can't call wglDeleteContext without a specific context handle,
@@ -244,7 +182,7 @@ namespace MatterHackers.Agg.UI
 				{
 					// Ignore WGL direct cleanup errors
 				}
-				
+
 				// Step 5: Force GLFW complete reset
 				// NOTE: Commented out GLFW terminate/reinitialize cycle to avoid timing conflicts
 				// The automatic GLFW initialization in OnHandleCreated should handle initialization as needed
@@ -269,18 +207,18 @@ namespace MatterHackers.Agg.UI
 					System.Diagnostics.Debug.WriteLine($"GLFW reset warning: {ex.Message}");
 				}
 				*/
-				
+
 				// Step 6: Final cleanup pass with extended handle cleanup
 				System.Windows.Forms.Application.DoEvents();
 				System.Threading.Thread.Sleep(50);
-				
+
 				// ENHANCED: Additional Windows handle cleanup pass
 				try
 				{
 					// Force one more round of garbage collection after all cleanup
 					System.GC.Collect();
 					System.GC.WaitForPendingFinalizers();
-					
+
 					// Extended message processing to ensure all handles are released
 					for (int i = 0; i < 15; i++)
 					{
@@ -299,14 +237,14 @@ namespace MatterHackers.Agg.UI
 				System.Diagnostics.Debug.WriteLine($"Context reset warning: {ex.Message}");
 			}
 		}
-		
+
 		// WGL P/Invoke delegates for direct context cleanup
 		[System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
 		private static extern IntPtr LoadLibrary(string lpFileName);
-		
+
 		[System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
 		private static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
-		
+
 		private delegate bool WglMakeCurrentDelegate(IntPtr hdc, IntPtr hglrc);
 
 		/// <summary>
@@ -329,28 +267,28 @@ namespace MatterHackers.Agg.UI
 			{
 				// Ignore errors - context might already be cleared
 			}
-			
+
 			// Clear the static reference without disposing the control
 			// The control will be properly disposed by its parent window/container
 			currentControl = null;
-			
+
 			// ENHANCED CLEANUP: Force comprehensive OpenGL context reset for multi-test scenarios
 			try
 			{
 				// Step 1: Force all pending Windows messages to complete
 				System.Windows.Forms.Application.DoEvents();
-				
+
 				// Step 2: Aggressive garbage collection to release OpenGL resources
 				for (int i = 0; i < 3; i++)
 				{
 					System.GC.Collect();
 					System.GC.WaitForPendingFinalizers();
 				}
-				
+
 				// Step 3: Let Windows process any cleanup messages
 				System.Threading.Thread.Sleep(100); // Allow time for WGL cleanup
 				System.Windows.Forms.Application.DoEvents();
-				
+
 				// Step 4: Force reset of OpenTK static state if possible
 				try
 				{
@@ -366,7 +304,7 @@ namespace MatterHackers.Agg.UI
 				{
 					// Ignore reflection errors - this is best-effort cleanup
 				}
-				
+
 				// Step 5: Final Windows message processing
 				System.Windows.Forms.Application.DoEvents();
 			}
@@ -459,7 +397,7 @@ namespace MatterHackers.Agg.UI
 				// Log thread information for debugging
 				int currentThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
 				DebugLogger.LogMessage("AggGLControl", $"OnHandleCreated starting on thread {currentThreadId}");
-				
+
 				// ENHANCED: Handle recreation detection for multi-test scenarios
 				bool wasRecreated = false;
 				if (this.IsHandleCreated)
@@ -482,9 +420,9 @@ namespace MatterHackers.Agg.UI
 				// SIMPLIFIED: Let OpenTK handle GLFW initialization and threading
 				System.Diagnostics.Debug.WriteLine($"Creating OpenGL context on thread {System.Threading.Thread.CurrentThread.ManagedThreadId}");
 				DebugLogger.LogMessage("AggGLControl", $"About to call base.OnHandleCreated on thread {currentThreadId}");
-				
+
 				base.OnHandleCreated(e);
-				
+
 				System.Diagnostics.Debug.WriteLine("OpenGL context creation successful");
 				DebugLogger.LogMessage("AggGLControl", "base.OnHandleCreated completed successfully");
 
@@ -506,7 +444,7 @@ namespace MatterHackers.Agg.UI
 
 				this.MakeCurrent();
 				ImageGlPlugin.SetCurrentContextData(Id, releaseAllGlData);
-				
+
 				DebugLogger.LogMessage("AggGLControl", $"OnHandleCreated completed successfully on thread {currentThreadId}");
 			}
 			catch (Exception ex)
@@ -540,7 +478,7 @@ namespace MatterHackers.Agg.UI
 					{
 						// Ignore MakeCurrent errors during destruction
 					}
-					
+
 					releaseAllGlData.Release();
 				}
 			}
@@ -548,7 +486,7 @@ namespace MatterHackers.Agg.UI
 			{
 				// Ignore GL cleanup errors during handle destruction
 			}
-			
+
 			// CRITICAL: Clear the OpenGL context before destroying the handle
 			// This prevents WGL handle errors in subsequent tests
 			try
@@ -582,7 +520,7 @@ namespace MatterHackers.Agg.UI
 				{
 					currentControl = null;
 				}
-				
+
 				// ENHANCED: Force comprehensive GL context cleanup for multi-test scenarios
 				try
 				{
@@ -607,7 +545,7 @@ namespace MatterHackers.Agg.UI
 				{
 					// Ignore GL cleanup errors during disposal
 				}
-				
+
 				// ENHANCED: Pre-disposal context cleanup
 				try
 				{
@@ -624,10 +562,10 @@ namespace MatterHackers.Agg.UI
 					// Ignore pre-disposal cleanup errors
 				}
 			}
-			
+
 			// Let the base class handle the OpenTK disposal properly
 			base.Dispose(disposing);
-			
+
 			if (disposing)
 			{
 				// ENHANCED: Post-disposal handle cleanup with retries
@@ -643,16 +581,16 @@ namespace MatterHackers.Agg.UI
 				{
 					// Ignore handle cleanup errors
 				}
-				
+
 				// ENHANCED: Additional cleanup for multi-test scenarios
 				try
 				{
 					// Force Windows message processing to complete handle cleanup
 					System.Windows.Forms.Application.DoEvents();
-					
+
 					// Brief pause to allow WGL context cleanup to complete
 					System.Threading.Thread.Sleep(10);
-					
+
 					// ENHANCED: Extended handle cleanup to prevent handle exhaustion
 					// Force multiple rounds of message processing to ensure proper cleanup
 					for (int i = 0; i < 5; i++)
@@ -660,11 +598,11 @@ namespace MatterHackers.Agg.UI
 						System.Windows.Forms.Application.DoEvents();
 						System.Threading.Thread.Sleep(5);
 					}
-					
+
 					// Force additional garbage collection round to clean up any remaining references
 					System.GC.Collect();
 					System.GC.WaitForPendingFinalizers();
-					
+
 					// Final message processing
 					System.Windows.Forms.Application.DoEvents();
 				}
