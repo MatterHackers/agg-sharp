@@ -43,6 +43,7 @@ namespace MatterHackers.Agg
             "Microsoft.Testing.Platform.MSBuild",
             "Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter",
             "Microsoft.VisualStudio.TestPlatform.MSTestAdapter.PlatformServices",
+            "Microsoft.VisualStudio.TestPlatform.TestFramework.Extensions"
         };
 
 
