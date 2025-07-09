@@ -1,7 +1,8 @@
-﻿// Copyright (c) Ryan Schmidt (rms@gradientspace.com) - All Rights Reserved
+﻿// Copyright (c) 2025 Ryan Schmidt (rms@gradientspace.com) - All Rights Reserved
 // Distributed under the Boost Software License, Version 1.0. http://www.boost.org/LICENSE_1_0.txt
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using g3;
 
 namespace gs
@@ -17,6 +18,11 @@ namespace gs
 
 		public bool OnlyUniquePairs = false;
 
+		/// <summary>
+		/// Progress reporter that takes a ratio (0-1) and a message string
+		/// </summary>
+		public Action<double, string> ProgressReporter = null;
+
 		public MergeCoincidentEdges(DMesh3 mesh)
 		{
 			Mesh = mesh;
@@ -27,6 +33,8 @@ namespace gs
 		public virtual bool Apply()
 		{
 			merge_r2 = MergeDistance * MergeDistance;
+
+			ProgressReporter?.Invoke(0.0, "Building edge hash table");
 
 			// construct hash table for edge midpoints
 			var pointset = new MeshBoundaryEdgeMidpoints(this.Mesh);
@@ -44,6 +52,8 @@ namespace gs
 
 			hash.Build(hashN);
 
+			ProgressReporter?.Invoke(0.1, "Finding edge equivalence sets");
+
 			Vector3d a = Vector3d.Zero, b = Vector3d.Zero;
 			Vector3d c = Vector3d.Zero, d = Vector3d.Zero;
 
@@ -52,8 +62,15 @@ namespace gs
 			int[] buffer = new int[1024];
 			var EquivSets = new List<int>[Mesh.MaxEdgeID];
 			var remaining = new HashSet<int>();
-			foreach (int eid in Mesh.BoundaryEdgeIndices())
+			
+			var boundaryEdges = Mesh.BoundaryEdgeIndices().ToList();
+			int totalEdges = boundaryEdges.Count;
+			int reportSpan = Math.Max(1, totalEdges / 150); // Limit to ~150 reports for this phase
+
+			for (int edgeIdx = 0; edgeIdx < totalEdges; edgeIdx++)
 			{
+				int eid = boundaryEdges[edgeIdx];
+				
 				Vector3d midpt = Mesh.GetEdgePoint(eid, 0.5);
 				int N;
 				while (hash.FindInBall(midpt, MergeDistance, buffer, out N) == false)
@@ -91,7 +108,16 @@ namespace gs
 					EquivSets[eid] = equiv;
 					remaining.Add(eid);
 				}
+
+				// Report progress with limited frequency
+				if (edgeIdx % reportSpan == 0 || edgeIdx == totalEdges - 1)
+				{
+					double ratio = 0.1 + (double)(edgeIdx + 1) / totalEdges * 0.4; // This phase is ~40% of total
+					ProgressReporter?.Invoke(ratio, $"Finding equivalence sets)");
+				}
 			}
+
+			ProgressReporter?.Invoke(0.5, "Building priority queue");
 
 			// [TODO] could replace remaining hashset w/ PQ, and use conservative count?
 
@@ -120,9 +146,17 @@ namespace gs
 				Q.Enqueue(new DuplicateEdge() { eid = i }, EquivSets[i].Count);
 			}
 
+			ProgressReporter?.Invoke(0.6, "Merging coincident edges");
+
+			int initialQueueSize = Q.Count;
+			int processedEdges = 0;
+			int mergeReportSpan = Math.Max(1, initialQueueSize / 150); // Limit to ~150 reports for merge phase
+
 			while (Q.Count > 0)
 			{
 				DuplicateEdge e = Q.Dequeue();
+				processedEdges++;
+
 				if (Mesh.IsEdge(e.eid) == false || EquivSets[e.eid] == null || remaining.Contains(e.eid) == false)
 				{
 					continue;               // dealt with this edge already
@@ -182,8 +216,15 @@ namespace gs
 					remaining.Remove(e.eid);
 				}
 
+				// Report progress with limited frequency
+				if (processedEdges % mergeReportSpan == 0 || Q.Count == 0)
+				{
+					double ratio = 0.6 + (double)processedEdges / initialQueueSize * 0.4; // Merge phase is ~40% of total
+					ProgressReporter?.Invoke(ratio, $"Merging edges ({processedEdges}/{initialQueueSize} processed)");
+				}
 			}
 
+			ProgressReporter?.Invoke(1.0, "Edge merging complete");
 			return true;
 		}
 

@@ -83,7 +83,7 @@ namespace gs
              * Remove parts of the mesh we don't want before we bother with anything else
              * TODO: maybe we need to repair orientation first? if we want to use MWN...
              */
-			ProgressReporter?.Invoke(0.05, "Removing interior parts");
+			ProgressReporter?.Invoke(0.0, "Removing interior parts");
 			do_remove_inside();
 			if (Cancelled())
 			{
@@ -97,8 +97,10 @@ namespace gs
              * make sure orientation of connected components is consistent
              * TODO: what about mobius strip problems?
              */
-			ProgressReporter?.Invoke(0.1, "Repairing orientation");
-			repair_orientation(false);
+			repair_orientation(false, (ratio, message) =>
+			{
+				ProgressReporter?.Invoke(ratio * 0.33, message ?? "Repairing orientation");
+			});
 			if (Cancelled())
 			{
 				return false;
@@ -107,8 +109,10 @@ namespace gs
 			/*
              *  Do safe close-cracks to handle easy cases
              */
-			ProgressReporter?.Invoke(0.2, "Repairing cracks (safe)");
-			repair_cracks(true, RepairTolerance);
+			repair_cracks(true, RepairTolerance, (ratio, message) =>
+			{
+				ProgressReporter?.Invoke(0.33 + ratio * 0.33, message ?? "Repairing cracks (safe)");
+			});
 			if (Mesh.IsClosed())
 			{
 				goto all_done;
@@ -123,21 +127,21 @@ namespace gs
              * Collapse tiny edges and then try easy cases again, and
              * then allow for handling of ambiguous cases
              */
-			ProgressReporter?.Invoke(0.3, "Collapsing degenerate edges");
+			ProgressReporter?.Invoke(0.66, "Collapsing degenerate edges");
 			collapse_all_degenerate_edges(RepairTolerance * 0.5, true);
 			if (Cancelled())
 			{
 				return false;
 			}
 
-			ProgressReporter?.Invoke(0.4, "Repairing cracks (aggressive 1)");
+			ProgressReporter?.Invoke(0.7, "Repairing cracks (aggressive 1)");
 			repair_cracks(true, 2 * RepairTolerance);
 			if (Cancelled())
 			{
 				return false;
 			}
 
-			ProgressReporter?.Invoke(0.45, "Repairing cracks (aggressive 2)");
+			ProgressReporter?.Invoke(0.75, "Repairing cracks (aggressive 2)");
 			repair_cracks(false, 2 * RepairTolerance);
 			if (Cancelled())
 			{
@@ -153,7 +157,7 @@ namespace gs
              * Possibly we have joined regions with different orientation (is it?), fix that
              * TODO: mobius strips again
              */
-			ProgressReporter?.Invoke(0.5, "Re-checking orientation");
+			ProgressReporter?.Invoke(0.8, "Re-checking orientation");
 			repair_orientation(false);
 			if (Cancelled())
 			{
@@ -166,7 +170,7 @@ namespace gs
 			}
 
 			// get rid of any remaining single-triangles before we start filling holes
-			ProgressReporter?.Invoke(0.55, "Removing isolated triangles");
+			ProgressReporter?.Invoke(0.82, "Removing isolated triangles");
 			remove_loners();
 
 			/*
@@ -174,7 +178,7 @@ namespace gs
              */
 			int nRemainingBowties = 0;
 			int nHoles; bool bSawSpans;
-			ProgressReporter?.Invoke(0.6, "Filling trivial holes");
+			ProgressReporter?.Invoke(0.85, "Filling trivial holes");
 			fill_trivial_holes(out nHoles, out bSawSpans);
 			if (Cancelled())
 			{
@@ -190,7 +194,7 @@ namespace gs
              * Now fill harder holes. If we saw spans, that means boundary loops could
              * not be resolved in some cases, do we disconnect bowties and try again.
              */
-			ProgressReporter?.Invoke(0.7, "Filling complex holes");
+			ProgressReporter?.Invoke(0.87, "Filling complex holes");
 			fill_any_holes(out nHoles, out bSawSpans);
 			if (Cancelled())
 			{
@@ -199,9 +203,9 @@ namespace gs
 
 			if (bSawSpans)
 			{
-				ProgressReporter?.Invoke(0.75, "Disconnecting bowties");
+				ProgressReporter?.Invoke(0.89, "Disconnecting bowties");
 				disconnect_bowties(out nRemainingBowties);
-				ProgressReporter?.Invoke(0.78, "Re-filling holes after bowtie disconnect");
+				ProgressReporter?.Invoke(0.9, "Re-filling holes after bowtie disconnect");
 				fill_any_holes(out nHoles, out bSawSpans);
 			}
 			if (Cancelled())
@@ -218,7 +222,7 @@ namespace gs
              * We may have a closed mesh now but it might still have bowties (eg
              * tetrahedra sharing vtx case). So disconnect those.
              */
-			ProgressReporter?.Invoke(0.8, "Final bowtie disconnect");
+			ProgressReporter?.Invoke(0.91, "Final bowtie disconnect");
 			disconnect_bowties(out nRemainingBowties);
 			if (Cancelled())
 			{
@@ -231,7 +235,7 @@ namespace gs
 			if (repeat_count == 0 && Mesh.IsClosed() == false)
 			{
 				repeat_count++;
-				ProgressReporter?.Invoke(0.82, "Retrying repair process");
+				ProgressReporter?.Invoke(0.92, "Retrying repair process");
 				goto repeat_all;
 			}
 
@@ -243,7 +247,7 @@ namespace gs
 			if (repeat_count <= ErosionIterations && Mesh.IsClosed() == false)
 			{
 				repeat_count++;
-				ProgressReporter?.Invoke(0.85, $"Erosion iteration {repeat_count}");
+				ProgressReporter?.Invoke(0.93, $"Erosion iteration {repeat_count}");
 				var bdry_faces = new MeshFaceSelection(Mesh);
 				foreach (int eid in MeshIterators.BoundaryEdges(Mesh))
 				{
@@ -261,7 +265,7 @@ namespace gs
              */
 			if (MinEdgeLengthTol > 0)
 			{
-				ProgressReporter?.Invoke(0.9, "Final edge cleanup");
+				ProgressReporter?.Invoke(0.95, "Final edge cleanup");
 				collapse_all_degenerate_edges(MinEdgeLengthTol, false);
 			}
 			if (Cancelled())
@@ -272,7 +276,7 @@ namespace gs
 			/*
              * finally do global orientation
              */
-			ProgressReporter?.Invoke(0.95, "Final orientation repair");
+			ProgressReporter?.Invoke(0.97, "Final orientation repair");
 			repair_orientation(true);
 			if (Cancelled())
 			{
@@ -368,13 +372,14 @@ namespace gs
 
 
 
-		bool repair_cracks(bool bUniqueOnly, double mergeDist)
+		bool repair_cracks(bool bUniqueOnly, double mergeDist, Action<double, string> progressReporter = null)
 		{
 			try
 			{
 				var merge = new MergeCoincidentEdges(Mesh);
 				merge.OnlyUniquePairs = bUniqueOnly;
 				merge.MergeDistance = mergeDist;
+				merge.ProgressReporter = progressReporter;
 				return merge.Apply();
 			}
 			catch (Exception /*e*/)
@@ -481,9 +486,10 @@ namespace gs
 		}
 
 
-		void repair_orientation(bool bGlobal)
+		void repair_orientation(bool bGlobal, Action<double, string> progressReporter = null)
 		{
 			var orient = new MeshRepairOrientation(Mesh);
+			orient.ProgressReporter = progressReporter;
 			orient.OrientComponents();
 			if (Cancelled())
 			{

@@ -1,4 +1,4 @@
-﻿// Copyright (c) Ryan Schmidt (rms@gradientspace.com) - All Rights Reserved
+﻿// Copyright (c) 2025 Ryan Schmidt (rms@gradientspace.com) - All Rights Reserved
 // Distributed under the Boost Software License, Version 1.0. http://www.boost.org/LICENSE_1_0.txt
 using System;
 using System.Collections.Generic;
@@ -11,6 +11,11 @@ namespace gs
 	public class MeshRepairOrientation
 	{
 		public DMesh3 Mesh;
+
+		/// <summary>
+		/// Progress reporter that takes a ratio (0-1) and a message string
+		/// </summary>
+		public Action<double, string> ProgressReporter = null;
 
 		DMeshAABBTree3 spatial;
 		protected DMeshAABBTree3 Spatial
@@ -57,6 +62,11 @@ namespace gs
 
 			var remaining = new HashSet<int>(Mesh.TriangleIndices());
 			var stack = new List<int>();
+
+			int totalTriangles = remaining.Count;
+			int processedTriangles = 0;
+			int reportSpan = Math.Max(1, totalTriangles / 300); // Limit to ~300 reports
+
 			while (remaining.Count > 0)
 			{
 				var c = new Component();
@@ -67,6 +77,8 @@ namespace gs
 				remaining.Remove(start);
 				c.triangles.Add(start);
 				stack.Add(start);
+				processedTriangles++;
+
 				while (stack.Count > 0)
 				{
 					int cur = stack[stack.Count - 1];
@@ -93,8 +105,15 @@ namespace gs
 						stack.Add(nbr);
 						remaining.Remove(nbr);
 						c.triangles.Add(nbr);
-					}
+						processedTriangles++;
 
+						// Report progress with limited frequency
+						if (processedTriangles % reportSpan == 0 || processedTriangles == totalTriangles)
+						{
+							double ratio = (double)processedTriangles / totalTriangles * 0.5; // OrientComponents is ~50% of repair_orientation
+							ProgressReporter?.Invoke(ratio, $"Orienting components ({processedTriangles}/{totalTriangles} triangles)");
+						}
+					}
 				}
 
 				Components.Add(c);
@@ -110,9 +129,20 @@ namespace gs
 			var s = this.Spatial;  // make sure this exists
 								   // Cannot do in parallel because we set a filter on spatial DS. 
 								   // Also we are doing rays in parallel anyway...
-			foreach (var c in Components)
+			
+			int totalComponents = Components.Count;
+			int reportSpan = Math.Max(1, totalComponents / 150); // Limit to ~150 reports for this half
+
+			for (int i = 0; i < totalComponents; i++)
 			{
-				compute_statistics(c);
+				compute_statistics(Components[i]);
+				
+				// Report progress with limited frequency
+				if (i % reportSpan == 0 || i == totalComponents - 1)
+				{
+					double ratio = 0.5 + (double)(i + 1) / totalComponents * 0.5; // ComputeStatistics is ~50% of repair_orientation
+					ProgressReporter?.Invoke(ratio, $"Computing statistics ({i + 1}/{totalComponents} components)");
+				}
 			}
 		}
 		void compute_statistics(Component c)
