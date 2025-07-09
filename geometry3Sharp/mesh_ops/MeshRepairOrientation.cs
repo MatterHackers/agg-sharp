@@ -111,7 +111,7 @@ namespace gs
 						if (processedTriangles % reportSpan == 0 || processedTriangles == totalTriangles)
 						{
 							double ratio = (double)processedTriangles / totalTriangles * 0.5; // OrientComponents is ~50% of repair_orientation
-							ProgressReporter?.Invoke(ratio, $"Orienting components ({processedTriangles}/{totalTriangles} triangles)");
+							ProgressReporter?.Invoke(ratio, $"Orienting components)");
 						}
 					}
 				}
@@ -141,7 +141,7 @@ namespace gs
 				if (i % reportSpan == 0 || i == totalComponents - 1)
 				{
 					double ratio = 0.5 + (double)(i + 1) / totalComponents * 0.5; // ComputeStatistics is ~50% of repair_orientation
-					ProgressReporter?.Invoke(ratio, $"Computing statistics ({i + 1}/{totalComponents} components)");
+					ProgressReporter?.Invoke(ratio, $"Computing statistics");
 				}
 			}
 		}

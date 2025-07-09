@@ -220,7 +220,7 @@ namespace gs
 				if (processedEdges % mergeReportSpan == 0 || Q.Count == 0)
 				{
 					double ratio = 0.6 + (double)processedEdges / initialQueueSize * 0.4; // Merge phase is ~40% of total
-					ProgressReporter?.Invoke(ratio, $"Merging edges ({processedEdges}/{initialQueueSize} processed)");
+					ProgressReporter?.Invoke(ratio, $"Merging edges)");
 				}
 			}
 

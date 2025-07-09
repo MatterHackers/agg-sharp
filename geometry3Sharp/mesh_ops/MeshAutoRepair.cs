@@ -83,8 +83,10 @@ namespace gs
              * Remove parts of the mesh we don't want before we bother with anything else
              * TODO: maybe we need to repair orientation first? if we want to use MWN...
              */
-			ProgressReporter?.Invoke(0.0, "Removing interior parts");
-			do_remove_inside();
+			do_remove_inside((ratio, message) =>
+			{
+				ProgressReporter?.Invoke(ratio * 0.33, message ?? "Removing interior parts");
+			});
 			if (Cancelled())
 			{
 				return false;
@@ -99,7 +101,7 @@ namespace gs
              */
 			repair_orientation(false, (ratio, message) =>
 			{
-				ProgressReporter?.Invoke(ratio * 0.33, message ?? "Repairing orientation");
+				ProgressReporter?.Invoke(0.33 + ratio * 0.33, message ?? "Repairing orientation");
 			});
 			if (Cancelled())
 			{
@@ -109,10 +111,8 @@ namespace gs
 			/*
              *  Do safe close-cracks to handle easy cases
              */
-			repair_cracks(true, RepairTolerance, (ratio, message) =>
-			{
-				ProgressReporter?.Invoke(0.33 + ratio * 0.33, message ?? "Repairing cracks (safe)");
-			});
+			ProgressReporter?.Invoke(0.66, "Repairing cracks (safe)");
+			repair_cracks(true, RepairTolerance);
 			if (Mesh.IsClosed())
 			{
 				goto all_done;
@@ -127,21 +127,21 @@ namespace gs
              * Collapse tiny edges and then try easy cases again, and
              * then allow for handling of ambiguous cases
              */
-			ProgressReporter?.Invoke(0.66, "Collapsing degenerate edges");
+			ProgressReporter?.Invoke(0.7, "Collapsing degenerate edges");
 			collapse_all_degenerate_edges(RepairTolerance * 0.5, true);
 			if (Cancelled())
 			{
 				return false;
 			}
 
-			ProgressReporter?.Invoke(0.7, "Repairing cracks (aggressive 1)");
+			ProgressReporter?.Invoke(0.75, "Repairing cracks (aggressive 1)");
 			repair_cracks(true, 2 * RepairTolerance);
 			if (Cancelled())
 			{
 				return false;
 			}
 
-			ProgressReporter?.Invoke(0.75, "Repairing cracks (aggressive 2)");
+			ProgressReporter?.Invoke(0.78, "Repairing cracks (aggressive 2)");
 			repair_cracks(false, 2 * RepairTolerance);
 			if (Cancelled())
 			{
@@ -505,34 +505,41 @@ namespace gs
 
 
 
-		bool remove_interior(out int nRemoved)
+		bool remove_interior(out int nRemoved, Action<double, string> progressReporter = null)
 		{
 			var remove = new RemoveOccludedTriangles(Mesh);
 			remove.PerVertex = true;
 			remove.InsideMode = RemoveOccludedTriangles.CalculationMode.FastWindingNumber;
+			remove.ProgressReporter = progressReporter;
 			remove.Apply();
 			nRemoved = remove.RemovedT.Count();
 			return true;
 		}
-		bool remove_occluded(out int nRemoved)
+		bool remove_occluded(out int nRemoved, Action<double, string> progressReporter = null)
 		{
 			var remove = new RemoveOccludedTriangles(Mesh);
 			remove.PerVertex = true;
 			remove.InsideMode = RemoveOccludedTriangles.CalculationMode.SimpleOcclusionTest;
+			remove.ProgressReporter = progressReporter;
 			remove.Apply();
 			nRemoved = remove.RemovedT.Count();
 			return true;
 		}
-		bool do_remove_inside()
+		bool do_remove_inside(Action<double, string> progressReporter = null)
 		{
 			int nRemoved = 0;
 			if (RemoveMode == RemoveModes.Interior)
 			{
-				return remove_interior(out nRemoved);
+				return remove_interior(out nRemoved, progressReporter);
 			}
 			else if (RemoveMode == RemoveModes.Occluded)
 			{
-				return remove_occluded(out nRemoved);
+				return remove_occluded(out nRemoved, progressReporter);
+			}
+			else
+			{
+				// No removal needed, report completion
+				progressReporter?.Invoke(1.0, "No interior removal needed");
 			}
 			return true;
 		}
