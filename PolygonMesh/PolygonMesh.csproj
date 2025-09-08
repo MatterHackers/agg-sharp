@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="ManifoldNET" Version="1.0.7-alpha" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.6" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0-preview.7.25380.108" />
   </ItemGroup>
 
   <ItemGroup>

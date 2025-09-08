@@ -21,11 +21,11 @@
 		<Service Include="{63A7B48D-3B50-4B1E-B85E-2ADB8510F352}" />
 	</ItemGroup>
   <ItemGroup>
-    <PackageReference Include="TUnit" Version="0.25.21" />
-    <PackageReference Include="TUnit.Engine" Version="0.25.21" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
-    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="17.14.2" />
-    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" Version="1.7.3" />
+    <PackageReference Include="TUnit" Version="0.57.24" />
+    <PackageReference Include="TUnit.Engine" Version="0.57.24" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.1.0-preview.25412.3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" Version="2.0.0-preview.25454.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\agg\agg.csproj" />

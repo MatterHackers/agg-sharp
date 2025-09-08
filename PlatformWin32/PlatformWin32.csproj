@@ -26,11 +26,11 @@
 		<Compile Remove="win32\WindowsFormsDXBackedGui.cs" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4-beta1" />
 		<PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.4.421302">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
-		<PackageReference Condition="$(UsingOpenTK4)" Include="OpenTK.WinForms" Version="4.0.0-pre.6" />
+		<PackageReference Condition="$(UsingOpenTK4)" Include="OpenTK.WinForms" Version="4.0.0-pre.8" />
 		<PackageReference Condition="!$(UsingOpenTK4)" Include="OpenTK.GLControl" Version="4.0.2" />
 	</ItemGroup>
 	<ItemGroup>
