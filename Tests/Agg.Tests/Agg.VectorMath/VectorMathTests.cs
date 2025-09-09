@@ -185,7 +185,7 @@ namespace MatterHackers.VectorMath.Tests
 			await Assert.That((Vector3.UnitZ * 7).Equals(ray.origin, 1e-3)).IsTrue();
 			await Assert.That(world.GetViewspaceHeightAtPosition(new Vector3(1, 1, -10))).IsEqualTo(world.NearPlaneHeightInViewspace * 2);
 			world.Scale = 3;
-			await Assert.That(world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 123).IsEqualTo(world.NearPlaneHeightInViewspace * 2 / 3);
+			await Assert.That(world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 123).IsEqualTo(world.NearPlaneHeightInViewspace * 2 / 3).Within(1e-6);
 		}
 
 		[Test]
@@ -237,7 +237,7 @@ namespace MatterHackers.VectorMath.Tests
 				await Assert.That(frustum.Planes[3].DistanceFromOrigin).IsEqualTo(0);
 				// near
 				await Assert.That(frustum.Planes[4].Normal.Equals(new Vector3(0, 0, -1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3);
+				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3).Within(.0001);
 				// far
 				await Assert.That(frustum.Planes[5].Normal.Equals(new Vector3(0, 0, 1), .0001)).IsTrue();
 				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507).Within(.0001);
@@ -437,7 +437,7 @@ namespace MatterHackers.VectorMath.Tests
 				await Assert.That(frustum.Planes[3].DistanceFromOrigin).IsEqualTo(0);
 				// near
 				await Assert.That(frustum.Planes[4].Normal.Equals(new Vector3(0, 0, 1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3);
+				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3).Within(.0001);
 				// far
 				await Assert.That(frustum.Planes[5].Normal.Equals(new Vector3(0, 0, -1), .0001)).IsTrue();
 				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507);

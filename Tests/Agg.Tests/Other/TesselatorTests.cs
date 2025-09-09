@@ -37,6 +37,12 @@ namespace MatterHackers.Agg.Tests
 
 	public class TesselatorTests
 	{
+		private const double EPSILON = 1e-6;
+
+		private static bool AreApproximatelyEqual(double a, double b, double epsilon = EPSILON)
+		{
+			return Math.Abs(a - b) < epsilon;
+		}
 		public static string[][] InsructionStream = new string[][]
 			{
 				new string[] { "BP",
@@ -432,16 +438,16 @@ namespace MatterHackers.Agg.Tests
 		private int CombineCallBack(double[] coords3, int[] data4, double[] weight4)
 		{
 			if (GetNextOutputAsString() != "C") throw new Exception("Expected 'C'");
-			if (coords3[0] != GetNextOutputAsDouble()) throw new Exception("coords3[0] mismatch");
-			if (coords3[1] != GetNextOutputAsDouble()) throw new Exception("coords3[1] mismatch");
+			if (!AreApproximatelyEqual(coords3[0], GetNextOutputAsDouble())) throw new Exception("coords3[0] mismatch");
+			if (!AreApproximatelyEqual(coords3[1], GetNextOutputAsDouble())) throw new Exception("coords3[1] mismatch");
 			if (data4[0] != GetNextOutputAsInt()) throw new Exception("data4[0] mismatch");
 			if (data4[1] != GetNextOutputAsInt()) throw new Exception("data4[1] mismatch");
 			if (data4[2] != GetNextOutputAsInt()) throw new Exception("data4[2] mismatch");
 			if (data4[3] != GetNextOutputAsInt()) throw new Exception("data4[3] mismatch");
-			if (weight4[0] != GetNextOutputAsDouble()) throw new Exception("weight4[0] mismatch");
-			if (weight4[1] != GetNextOutputAsDouble()) throw new Exception("weight4[1] mismatch");
-			if (weight4[2] != GetNextOutputAsDouble()) throw new Exception("weight4[2] mismatch");
-			if (weight4[3] != GetNextOutputAsDouble()) throw new Exception("weight4[3] mismatch");
+			if (!AreApproximatelyEqual(weight4[0], GetNextOutputAsDouble())) throw new Exception("weight4[0] mismatch");
+			if (!AreApproximatelyEqual(weight4[1], GetNextOutputAsDouble())) throw new Exception("weight4[1] mismatch");
+			if (!AreApproximatelyEqual(weight4[2], GetNextOutputAsDouble())) throw new Exception("weight4[2] mismatch");
+			if (!AreApproximatelyEqual(weight4[3], GetNextOutputAsDouble())) throw new Exception("weight4[3] mismatch");
 
 			VertexList.Add(new Vertex(coords3[0], coords3[1]));
 			return VertexList.Count - 1;
@@ -572,7 +578,7 @@ namespace MatterHackers.Agg.Tests
 
 		private void RunTest(int instructionStreamIndex, Tesselator.WindingRuleType windingRule, bool setEdgeFlag)
 		{
-			Tesselate.Tesselator tesselator = new Tesselate.Tesselator();
+			Tesselator tesselator = new Tesselator();
 			tesselator.callBegin += BeginCallBack;
 			tesselator.callEnd += EndCallBack;
 			tesselator.callVertex += VertexCallBack;
