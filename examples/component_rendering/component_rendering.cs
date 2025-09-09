@@ -161,19 +161,5 @@ namespace MatterHackers.Agg
 
 			base.OnDraw(graphics2D);
 		}
-
-		[STAThread]
-		public static void Main(string[] args)
-		{
-			Tests.AggDrawingTests.RunAllTests();
-
-			var demoWidget = new ComponentRendering();
-
-			var systemWindow = new SystemWindow(320, 320);
-			systemWindow.Title = demoWidget.Title;
-			systemWindow.AddChild(demoWidget);
-			systemWindow.ShowAsSystemWindow();
-
-		}
 	}
 }
