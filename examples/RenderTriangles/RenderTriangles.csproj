@@ -65,7 +65,6 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\Agg\Agg.csproj" />
-		<ProjectReference Include="..\..\Glfw\GlfwProvider.csproj" />
 		<ProjectReference Include="..\..\Gui\Gui.csproj" />
 		<ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj" />
 		<ProjectReference Include="..\..\RenderOpenGl\RenderOpenGl.csproj" />

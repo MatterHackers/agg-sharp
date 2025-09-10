@@ -414,7 +414,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
             
 			// make sure selection ranges are always working
             {
-                //Clipboard.SetSystemClipboard(new SimulatedClipboard());
+                Clipboard.SetSystemClipboard(new SimulatedClipboard());
 
                 var singleLine = new InternalTextEditWidget("test", 12, false, 0);
 

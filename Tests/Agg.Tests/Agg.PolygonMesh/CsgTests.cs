@@ -72,7 +72,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			//await Assert.That(result.IsManifold()).IsTrue();
 		}
 
-		[Test, Skip("TODO: Get this test passing")]
+		[Test]
 		public async Task TopIsSolid()
 		{
 			int sides = 3;
@@ -246,17 +246,23 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				await Assert.That(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10).IsTrue();
 				await Assert.That(intersect_aabb.XSize == 6 && intersect_aabb.YSize == 6 && intersect_aabb.ZSize == 6).IsTrue();
 
-				// Todo: turn this on
-				//await Assert.That(result.IsManifold()).IsTrue();
-			}
+                // Assert a is manifold
+                await Assert.That(meshA.IsManifold()).IsTrue();
 
-			// the intersection of 2 cubes that miss eachother
-			{
+                // Assert b is manifold
+				await Assert.That(meshB.IsManifold()).IsTrue();
+
+                // Assert the result is manifold
+                await Assert.That(result.IsManifold()).IsTrue();
+            }
+
+            // the intersection of 2 cubes that miss eachother
+            {
 				Mesh meshA = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
 
 				meshA.Translate(new Vector3(-5, -5, -5));
 				Mesh meshB = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
-				meshB.Translate(new Vector3(2, 2, 2));
+				meshB.Translate(new Vector3(5, 5, 5));
 
 				Mesh result = CsgOperations.Intersect(meshA, meshB);
 
@@ -264,11 +270,18 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
 				AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
+				// assert a size
 				await Assert.That(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10).IsTrue();
-				await Assert.That(intersect_aabb.XSize == 0 && intersect_aabb.YSize == 0 && intersect_aabb.ZSize == 0).IsTrue();
+                // assert a bounding box
+				await Assert.That(a_aabb.MinXYZ == new Vector3(-10, -10, -10) && a_aabb.MaxXYZ == new Vector3(0, 0, 0)).IsTrue();
 
-				// Todo: turn this on
-				//await Assert.That(result.IsManifold()).IsTrue();
+                // assert b size
+                await Assert.That(b_aabb.XSize == 10 && b_aabb.YSize == 10 && b_aabb.ZSize == 10).IsTrue();
+                // assert b bounding box
+				await Assert.That(b_aabb.MinXYZ == new Vector3(0, 0, 0) && b_aabb.MaxXYZ == new Vector3(10, 10, 10)).IsTrue();
+
+                // assert intersection size
+                await Assert.That(intersect_aabb.XSize == 0 && intersect_aabb.YSize == 0 && intersect_aabb.ZSize == 0).IsTrue();
 			}
 		}
 
