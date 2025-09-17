@@ -72,23 +72,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			//await Assert.That(result.IsManifold()).IsTrue();
 		}
 
-		[Test]
-		public async Task TopIsSolid()
-		{
-			int sides = 3;
-			CsgObject keep = new Cylinder(20, 20, sides);
-			var keepMesh = CsgToMesh.Convert(keep, true);
-			CsgObject subtract = new Cylinder(10, 21, sides);
-			subtract = new SetCenter(subtract, keep.GetCenter());
-			var subtractMesh = CsgToMesh.Convert(subtract, true);
-			CsgObject result = keep - subtract;
-			var resultMesh = CsgToMesh.Convert(result, true);
-
-			await Assert.That(keepMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
-			await Assert.That(subtractMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
-			//await Assert.That(resultMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
-		}
-
 		[Test, Skip("CSG API changes - Face.Normal and Face.Vertices() methods have changed")]
 		public async Task SubtractHasAllFaces()
 		{

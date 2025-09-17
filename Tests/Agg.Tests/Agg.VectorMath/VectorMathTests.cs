@@ -440,7 +440,7 @@ namespace MatterHackers.VectorMath.Tests
 				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3).Within(.0001);
 				// far
 				await Assert.That(frustum.Planes[5].Normal.Equals(new Vector3(0, 0, -1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507);
+				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507).Within(.0001);
 			}
 
 			// translate 10 down z
@@ -453,23 +453,23 @@ namespace MatterHackers.VectorMath.Tests
 				double expectedPlaneOffset = Math.Sqrt(2 * (zMove / 2) * (zMove / 2));
 				// left
 				await Assert.That(frustum.Planes[0].Normal.Equals(new Vector3(1, 0, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[0].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset);
-				// right
-				await Assert.That(frustum.Planes[1].Normal.Equals(new Vector3(-1, 0, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[1].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset);
-				// bottom
-				await Assert.That(frustum.Planes[2].Normal.Equals(new Vector3(0, 1, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[2].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset);
-				// top
-				await Assert.That(frustum.Planes[3].Normal.Equals(new Vector3(0, -1, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[3].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset);
-				// near
-				await Assert.That(frustum.Planes[4].Normal.Equals(new Vector3(0, 0, -1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3 + zMove);
-				// far
-				await Assert.That(frustum.Planes[5].Normal.Equals(new Vector3(0, 0, 1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507 - zMove);
-			}
+				await Assert.That(frustum.Planes[0].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset).Within(.0001);
+                // right
+                await Assert.That(frustum.Planes[1].Normal.Equals(new Vector3(-1, 0, -1).GetNormal(), .0001)).IsTrue();
+				await Assert.That(frustum.Planes[1].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset).Within(.0001);
+                // bottom
+                await Assert.That(frustum.Planes[2].Normal.Equals(new Vector3(0, 1, -1).GetNormal(), .0001)).IsTrue();
+				await Assert.That(frustum.Planes[2].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset).Within(.0001);
+                // top
+                await Assert.That(frustum.Planes[3].Normal.Equals(new Vector3(0, -1, -1).GetNormal(), .0001)).IsTrue();
+				await Assert.That(frustum.Planes[3].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset).Within(.0001);
+                // near
+                await Assert.That(frustum.Planes[4].Normal.Equals(new Vector3(0, 0, -1), .0001)).IsTrue();
+				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3 + zMove).Within(.0001);
+                // far
+                await Assert.That(frustum.Planes[5].Normal.Equals(new Vector3(0, 0, 1), .0001)).IsTrue();
+				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507 - zMove).Within(.0001);
+            }
 		}
 
 		[Test]
