@@ -209,10 +209,11 @@ namespace MatterHackers.Agg.UI
 			LocalBounds = Printer.LocalBounds;
 			if (Text == "" || LocalBounds.Width < 1)
 			{
-				Printer.Text = " ";
+				var oldText = Printer.Text;
+                Printer.Text += " ";
 				LocalBounds = Printer.LocalBounds;
-				Printer.Text = "";
-			}
+				Printer.Text = oldText;
+            }
 
 			Invalidate();
 		}

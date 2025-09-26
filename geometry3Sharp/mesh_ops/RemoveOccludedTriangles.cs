@@ -1,8 +1,9 @@
-﻿// Copyright (c) Ryan Schmidt (rms@gradientspace.com) - All Rights Reserved
+﻿// Copyright (c) 2025 Ryan Schmidt (rms@gradientspace.com) - All Rights Reserved
 // Distributed under the Boost Software License, Version 1.0. http://www.boost.org/LICENSE_1_0.txt
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using g3;
 
@@ -51,6 +52,11 @@ namespace gs
 		public ProgressCancel Progress = null;
 
 		/// <summary>
+		/// Progress reporter that takes a ratio (0-1) and a message string
+		/// </summary>
+		public Action<double, string> ProgressReporter = null;
+
+		/// <summary>
 		/// if this returns true, abort computation. 
 		/// </summary>
 		protected virtual bool Cancelled()
@@ -74,12 +80,15 @@ namespace gs
 
 		public virtual bool Apply()
 		{
+			ProgressReporter?.Invoke(0.0, "Building spatial tree");
+
 			DMesh3 testAgainstMesh = Mesh;
 			if (InsideMode == CalculationMode.RayParity)
 			{
 				var loops = new MeshBoundaryLoops(testAgainstMesh);
 				if (loops.Count > 0)
 				{
+					ProgressReporter?.Invoke(0.05, "Filling holes for ray parity test");
 					testAgainstMesh = new DMesh3(Mesh);
 					foreach (var loop in loops)
 					{
@@ -98,10 +107,12 @@ namespace gs
 				Spatial : new DMeshAABBTree3(testAgainstMesh, true);
 			if (InsideMode == CalculationMode.AnalyticWindingNumber)
 			{
+				ProgressReporter?.Invoke(0.1, "Initializing analytic winding number");
 				spatial.WindingNumber(Vector3d.Zero);
 			}
 			else if (InsideMode == CalculationMode.FastWindingNumber)
 			{
+				ProgressReporter?.Invoke(0.1, "Initializing fast winding number");
 				spatial.FastWindingNumber(Vector3d.Zero);
 			}
 
@@ -155,6 +166,8 @@ namespace gs
 			BitArray vertices = null;
 			if (PerVertex)
 			{
+				ProgressReporter?.Invoke(0.15, "Testing vertices for occlusion");
+				
 				vertices = new BitArray(Mesh.MaxVertexID);
 
 				MeshNormals normals = null;
@@ -164,7 +177,13 @@ namespace gs
 					normals.Compute();
 				}
 
-				gParallel.ForEach(Mesh.VertexIndices(), (vid) =>
+				var vertexIndices = Mesh.VertexIndices().ToArray();
+				int totalVertices = vertexIndices.Length;
+				int processedVertices = 0;
+				int reportSpan = Math.Max(1, totalVertices / 150); // Limit to ~150 reports for vertex phase
+				object progressLock = new object();
+
+				gParallel.ForEach(vertexIndices, (vid) =>
 				{
 					if (cancel)
 					{
@@ -180,6 +199,14 @@ namespace gs
 					Vector3d n = (normals == null) ? Mesh.GetVertexNormal(vid) : normals[vid];
 					c += n * NormalOffset;
 					vertices[vid] = isOccludedF(c);
+
+					// Report progress with limited frequency
+					int currentProcessed = Interlocked.Increment(ref processedVertices);
+					if (currentProcessed % reportSpan == 0 || currentProcessed == totalVertices)
+					{
+						double ratio = 0.15 + (double)currentProcessed / totalVertices * 0.35; // Vertex phase is ~35% of total
+						ProgressReporter?.Invoke(ratio, $"Testing vertices)");
+					}
 				});
 			}
 			if (Cancelled())
@@ -187,10 +214,17 @@ namespace gs
 				return false;
 			}
 
+			ProgressReporter?.Invoke(0.5, "Testing triangles for occlusion");
+
 			RemovedT = new List<int>();
 			var removeLock = new SpinLock();
 
-			gParallel.ForEach(Mesh.TriangleIndices(), (tid) =>
+			var triangleIndices = Mesh.TriangleIndices().ToArray();
+			int totalTriangles = triangleIndices.Length;
+			int processedTriangles = 0;
+			int triangleReportSpan = Math.Max(1, totalTriangles / 150); // Limit to ~150 reports for triangle phase
+
+			gParallel.ForEach(triangleIndices, (tid) =>
 			{
 				if (cancel)
 				{
@@ -224,6 +258,14 @@ namespace gs
 					RemovedT.Add(tid);
 					removeLock.Exit();
 				}
+
+				// Report progress with limited frequency
+				int currentProcessed = Interlocked.Increment(ref processedTriangles);
+				if (currentProcessed % triangleReportSpan == 0 || currentProcessed == totalTriangles)
+				{
+					double ratio = 0.5 + (double)currentProcessed / totalTriangles * 0.4; // Triangle phase is ~40% of total
+					ProgressReporter?.Invoke(ratio, $"Testing triangles)");
+				}
 			});
 
 			if (Cancelled())
@@ -233,11 +275,13 @@ namespace gs
 
 			if (RemovedT.Count > 0)
 			{
+				ProgressReporter?.Invoke(0.9, $"Removing {RemovedT.Count} occluded triangles");
 				var editor = new MeshEditor(Mesh);
 				bool bOK = editor.RemoveTriangles(RemovedT, true);
 				RemoveFailed = (bOK == false);
 			}
 
+			ProgressReporter?.Invoke(1.0, "Occlusion removal complete");
 			return true;
 		}
 

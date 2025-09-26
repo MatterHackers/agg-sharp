@@ -6,7 +6,7 @@ using MatterHackers.VectorMath;
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2025 Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -136,22 +136,69 @@ namespace MatterHackers.Agg.VertexSource
 		public override IEnumerable<VertexData> Vertices()
 		{
 			var allPaths = new JoinPaths();
-			allPaths.SourcePaths.Add(new Arc(bounds.Left + leftBottomRadius.X, bounds.Bottom + leftBottomRadius.Y, leftBottomRadius.X, leftBottomRadius.Y, Math.PI, Math.PI + Math.PI * 0.5, numSegments: NumSegments)
+
+			// Add each corner - either as a single point (if radius = 0) or as an arc
+			if (leftBottomRadius.X == 0 && leftBottomRadius.Y == 0)
 			{
-				ResolutionScale = ResolutionScale
-			});
-			allPaths.SourcePaths.Add(new Arc(bounds.Right - rightBottomRadius.X, bounds.Bottom + rightBottomRadius.Y, rightBottomRadius.X, rightBottomRadius.Y, Math.PI + Math.PI * 0.5, 0.0, numSegments: NumSegments)
+				// Sharp corner - add single point
+				var singlePoint = new VertexStorage();
+				singlePoint.Add(bounds.Left, bounds.Bottom, FlagsAndCommand.MoveTo);
+				allPaths.SourcePaths.Add(singlePoint);
+			}
+			else
 			{
-				ResolutionScale = ResolutionScale
-			});
-			allPaths.SourcePaths.Add(new Arc(bounds.Right - rightTopRadius.X, bounds.Top - rightTopRadius.Y, rightTopRadius.X, rightTopRadius.Y, 0.0, Math.PI * 0.5, numSegments: NumSegments)
+				// Rounded corner - add arc
+				allPaths.SourcePaths.Add(new Arc(bounds.Left + leftBottomRadius.X, bounds.Bottom + leftBottomRadius.Y, 
+					leftBottomRadius.X, leftBottomRadius.Y, Math.PI, Math.PI + Math.PI * 0.5, numSegments: NumSegments)
+				{
+					ResolutionScale = ResolutionScale
+				});
+			}
+
+			if (rightBottomRadius.X == 0 && rightBottomRadius.Y == 0)
 			{
-				ResolutionScale = ResolutionScale
-			});
-			allPaths.SourcePaths.Add(new Arc(bounds.Left + leftTopRadius.X, bounds.Top - leftTopRadius.Y, leftTopRadius.X, leftTopRadius.Y, Math.PI * 0.5, Math.PI, numSegments: NumSegments)
+				var singlePoint = new VertexStorage();
+				singlePoint.Add(bounds.Right, bounds.Bottom, FlagsAndCommand.LineTo);
+				allPaths.SourcePaths.Add(singlePoint);
+			}
+			else
 			{
-				ResolutionScale = ResolutionScale
-			});
+				allPaths.SourcePaths.Add(new Arc(bounds.Right - rightBottomRadius.X, bounds.Bottom + rightBottomRadius.Y, 
+					rightBottomRadius.X, rightBottomRadius.Y, Math.PI + Math.PI * 0.5, 0.0, numSegments: NumSegments)
+				{
+					ResolutionScale = ResolutionScale
+				});
+			}
+
+			if (rightTopRadius.X == 0 && rightTopRadius.Y == 0)
+			{
+				var singlePoint = new VertexStorage();
+				singlePoint.Add(bounds.Right, bounds.Top, FlagsAndCommand.LineTo);
+				allPaths.SourcePaths.Add(singlePoint);
+			}
+			else
+			{
+				allPaths.SourcePaths.Add(new Arc(bounds.Right - rightTopRadius.X, bounds.Top - rightTopRadius.Y, 
+					rightTopRadius.X, rightTopRadius.Y, 0.0, Math.PI * 0.5, numSegments: NumSegments)
+				{
+					ResolutionScale = ResolutionScale
+				});
+			}
+
+			if (leftTopRadius.X == 0 && leftTopRadius.Y == 0)
+			{
+				var singlePoint = new VertexStorage();
+				singlePoint.Add(bounds.Left, bounds.Top, FlagsAndCommand.LineTo);
+				allPaths.SourcePaths.Add(singlePoint);
+			}
+			else
+			{
+				allPaths.SourcePaths.Add(new Arc(bounds.Left + leftTopRadius.X, bounds.Top - leftTopRadius.Y, 
+					leftTopRadius.X, leftTopRadius.Y, Math.PI * 0.5, Math.PI, numSegments: NumSegments)
+				{
+					ResolutionScale = ResolutionScale
+				});
+			}
 
 			return allPaths.Vertices();
 		}

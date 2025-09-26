@@ -1,4 +1,6 @@
-﻿using System;
+using System;
+using TUnit.Assertions;
+using TUnit.Core;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,15 +12,16 @@ using MatterHackers.DataConverters2D;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Threading.Tasks;
 
 
 namespace MatterHackers.Agg.Tests
 {
-	[MhTestFixture]
+	
 	public class IVertexSourceTests
 	{
-		[MhTest]
-		public void CharacterBoundsTest()
+		[Test]
+		public async Task CharacterBoundsTest()
 		{
 			// Validates character bounds computation from IVertexSource
 			char[] sampleCharacters = "@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{}[]| !\"#$%&?'()*+,-./0123456789".ToCharArray();
@@ -29,8 +32,7 @@ namespace MatterHackers.Agg.Tests
 
 			string filename = $"{nameof(LiberationSansFont)}-{fontSize}.json";
 
-			var testContext = new TestContext();
-			string testDataPath = testContext.CurrentContext.ResolveProjectPath(new string[] { "..", "..", "..", "TestData", filename });
+			string testDataPath = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(typeof(IVertexSourceTests).Assembly.Location))))), "TestData", filename);
 
 			// Project sample string characters to dictionary with character bounds
 			var characterBounds = sampleCharacters.ToDictionary(c => c, c => GetCharacterBounds(c, typeface));
@@ -55,22 +57,22 @@ namespace MatterHackers.Agg.Tests
 			// Validate each character against previously computed control data
 			foreach (var kvp in characterBounds)
 			{
-				MhAssert.True(controlData.ContainsKey(kvp.Key), "Expected key not found: " + kvp.Key);
+				await Assert.That(controlData.ContainsKey(kvp.Key)).IsTrue();
 
 				RectangleDouble actual = kvp.Value;
 				RectangleDouble expected = controlData[kvp.Key];
 
-				MhAssert.Equal(expected.Left, actual.Left, 0.001); //, "Bounds Left differ");
-				MhAssert.Equal(expected.Bottom, actual.Bottom, 0.001); //, "Bounds Bottom differ");
-				MhAssert.Equal(expected.Right, actual.Right, 0.001); //, "Bounds Right differ");
-				MhAssert.Equal(expected.Top, actual.Top, 0.001); //, "Bounds Top differ");
+				await Assert.That(actual.Left).IsEqualTo(expected.Left);
+				await Assert.That(actual.Bottom).IsEqualTo(expected.Bottom);
+				await Assert.That(actual.Right).IsEqualTo(expected.Right);
+				await Assert.That(actual.Top).IsEqualTo(expected.Top);
 
-				MhAssert.Equal(expected, actual);
+				await Assert.That(actual).IsEqualTo(expected);
 			}
 		}
 
-		[MhTest]
-		public void CubePolygonCountTest()
+		[Test]
+		public async Task CubePolygonCountTest()
 		{
 			var square = new VertexStorage();
 			square.MoveTo(0, 0);
@@ -81,11 +83,11 @@ namespace MatterHackers.Agg.Tests
 
 			var polygons = square.CreatePolygons();
 
-			MhAssert.Single(polygons); //, "One polygon should be created for a simple 4 point cube path");
+			await Assert.That(polygons.Count()).IsEqualTo(1);
         }
 
-		[MhTest]
-		public void MoveToCreatesAdditionalPolygonTest()
+		[Test]
+		public async Task MoveToCreatesAdditionalPolygonTest()
 		{
 			// Any MoveTo should always create a new Polygon
 			var storage = new VertexStorage();
@@ -98,11 +100,11 @@ namespace MatterHackers.Agg.Tests
 
 			var polygons = storage.CreatePolygons();
 
-			MhAssert.Equal(2, polygons.Count); //, "Two polygons should be created for a path with a floating MoveTo command");
+			await Assert.That(polygons.Count).IsEqualTo(2);
         }
 
-		[MhTest]
-		public void TwoItemPolygonCountTest()
+		[Test]
+		public async Task TwoItemPolygonCountTest()
 		{
 			var square = new VertexStorage();
 			square.MoveTo(0, 0);
@@ -115,18 +117,18 @@ namespace MatterHackers.Agg.Tests
 
 			var polygons = result.CreatePolygons();
 
-			MhAssert.Equal(2, polygons.Count); //, "Two polygons should be create for a combined square and ellipse");
+			await Assert.That(polygons.Count).IsEqualTo(2);
         }
 
-		[MhTest]
-        public void ParseSvgDPaths()
+		[Test]
+        public async Task ParseSvgDPaths()
 		{
 			var dString = "M797.92,443.43a360.33,360.33,0,1,0,28.25,139.86A357.92,357.92,0,0,0,797.92,443.43ZM662.66,586.82,594.25,705.31a41.07,41.07,0,0,1-35.47,20.48H422.54l-36.61,63.4a40.43,40.43,0,0,1-35.19,20.53,42.21,42.21,0,0,1-10.88-1.44,40.51,40.51,0,0,1-30.35-39.57v-197A41,41,0,0,1,315,551.22l71.5-123.84A41.09,41.09,0,0,1,422,406.9H558.78a41.07,41.07,0,0,1,35.47,20.48l68.41,118.49A41.07,41.07,0,0,1,662.66,586.82Z";
 			var vertexStorage = new VertexStorage(dString);
         }
 
-		[MhTest]
-		public void ThreeItemPolygonCountTest()
+		[Test]
+		public async Task ThreeItemPolygonCountTest()
 		{
 			var storage = new VertexStorage();
 
@@ -157,7 +159,7 @@ namespace MatterHackers.Agg.Tests
 			//graphics.Render(new Stroke(storage), Color.Blue);
 			//ImageTgaIO.Save(image, @"c:\temp\some.tga");
 
-			MhAssert.Equal(3, polygons.Count); //, "Three polygons should be create for a two squares and a triangle");
+			await Assert.That(polygons.Count).IsEqualTo(3);
         }
 
 		// Behavior which relies on classic IVertexSource.vertex iteration

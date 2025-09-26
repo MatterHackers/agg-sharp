@@ -12,7 +12,7 @@ namespace MatterHackers.Agg
 	{
 		public DemoRunner()
 		{
-			string searchPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			string searchPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
 			// Load plugins from all assemblies the startup directory
 			var dlls = Directory.GetFiles(searchPath, "*.dll");
@@ -22,7 +22,7 @@ namespace MatterHackers.Agg
 			{
 				try
 				{
-					PluginFinder.LoadTypesFromAssembly(Assembly.LoadFile(file));
+					PluginFinder.LoadTypesFromAssembly(System.Reflection.Assembly.LoadFile(file));
 				}
 				catch (Exception ex)
 				{
@@ -64,17 +64,6 @@ namespace MatterHackers.Agg
 			}
 
 			AnchorAll();
-		}
-
-		[STAThread]
-		public static void Main(string[] args)
-		{
-			Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
-
-			var systemWindow = new SystemWindow(640, 480);
-			systemWindow.Title = "Demo Runner";
-			systemWindow.AddChild(new DemoRunner());
-			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

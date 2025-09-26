@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2022, Lars Brubaker
+Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -34,6 +34,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Agg;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
@@ -53,16 +54,16 @@ namespace MatterHackers.GuiAutomation
 
 		private IInputMethod inputSystem;
 
-		private const double DefaultWidgetWaitSeconds = 5.0;
+		private const double DefaultWidgetWaitSeconds = 2.0;
 
 		/// <summary>
 		/// The number of seconds to move the mouse when going to a new position.
 		/// </summary>
-		public static double TimeToMoveMouse { get; set; } = .5;
+		public static double TimeToMoveMouse { get; set; } = .2;
 
 		private string imageDirectory;
 
-		public static double UpDelaySeconds { get; set; } = .2;
+		public static double UpDelaySeconds { get; set; } = .1;
 
 		public enum InputType
 		{
@@ -261,7 +262,7 @@ namespace MatterHackers.GuiAutomation
 			var satisfied = StaticDelay(checkConditionSatisfied, maxSeconds, checkInterval);
 
 			if (!satisfied)
-            {
+			{
 				throw new Exception($"Require Failed: {errorResponse}");
 			}
 
@@ -335,7 +336,7 @@ namespace MatterHackers.GuiAutomation
 				{
 					graphics2D.Render(circle, Color.Green);
 
-					var mods = string.Join("", new[] {(Keys.Shift, "S"), (Keys.Control, "C")}
+					var mods = string.Join("", new[] { (Keys.Shift, "S"), (Keys.Control, "C") }
 						.Select(x => Keyboard.IsKeyDown(x.Item1) ? x.Item2 : "")
 						.Where(v => !string.IsNullOrEmpty(v)));
 
@@ -735,7 +736,7 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			var namedWidgetsInRegion = new List<GetByNameResults>();
-			foreach(var systemWindow in SystemWindow.AllOpenSystemWindows.Reverse())
+			foreach (var systemWindow in SystemWindow.AllOpenSystemWindows.Reverse())
 			{
 				if (searchRegion != null) // only add the widgets that are in the screen region
 				{
@@ -1315,11 +1316,11 @@ namespace MatterHackers.GuiAutomation
 
 				return true;
 			}
-            catch (Exception)
-            {
+			catch (Exception)
+			{
 				return false;
-            }
-        }
+			}
+		}
 
 		/// <summary>
 		/// Wait up to secondsToWait for the named widget to disappear
@@ -1390,6 +1391,11 @@ namespace MatterHackers.GuiAutomation
 
 		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action<AutomationRunner> closeWindow = null)
 		{
+			// Enable debug logging for AutomationRunner
+			DebugLogger.EnableFilter("AutomationRunner");
+
+			DebugLogger.LogMessage("AutomationRunner", $"=== TEST START === WindowTitle: {initialSystemWindow.Title}");
+
 			var testRunner = new AutomationRunner(InputMethod, DrawSimulatedMouse, imagesDirectory);
 
 			var resetEvent = new AutoResetEvent(false);
@@ -1397,24 +1403,39 @@ namespace MatterHackers.GuiAutomation
 			// On load, release the reset event
 			initialSystemWindow.Load += (s, e) =>
 			{
+				DebugLogger.LogMessage("AutomationRunner", $"LOAD EVENT FIRED - Setting resetEvent");
 				resetEvent.Set();
 			};
 
 			int testTimeout = (int)(1000 * secondsToTestFailure);
-
 			Task delayTask = Task.Delay(testTimeout);
 
 			// Start two tasks, the timeout and the test method. Block in the test method until the first draw
 			var task = Task.WhenAny(delayTask, Task.Run(() =>
 			{
+				DebugLogger.LogMessage("AutomationRunner", "TASK STARTED - Waiting for resetEvent");
 				// Wait until the first system window draw before running the test method, up to the timeout
-				resetEvent.WaitOne(testTimeout);
-				return testMethod(testRunner);
+				bool eventSet = resetEvent.WaitOne(testTimeout);
+				DebugLogger.LogMessage("AutomationRunner", $"RESET EVENT RESULT - EventSet: {eventSet}");
+
+				if (eventSet)
+				{
+					DebugLogger.LogMessage("AutomationRunner", "EXECUTING TEST METHOD");
+					var result = testMethod(testRunner);
+					DebugLogger.LogMessage("AutomationRunner", "TEST METHOD COMPLETED");
+					return result;
+				}
+				else
+				{
+					DebugLogger.LogError("AutomationRunner", "TIMEOUT - Reset event never set");
+					throw new TimeoutException("Reset event timed out");
+				}
 			}));
 
 			// Once either the timeout or the test method has completed, store if a timeout occurred and shutdown the SystemWindow
 			task.ContinueWith(innerTask =>
 			{
+				DebugLogger.LogMessage("AutomationRunner", "CLEANUP - Task completed, calling CloseOnIdle");
 				// Invoke the callers close implementation or fall back to CloseOnIdle
 				if (closeWindow != null)
 				{
@@ -1427,20 +1448,92 @@ namespace MatterHackers.GuiAutomation
 			});
 
 			// Main thread blocks here until released via CloseOnIdle above
+			bool originalAllowDropState = SystemWindow.EnableAllowDrop;
 			SystemWindow.EnableAllowDrop = false;
-			initialSystemWindow.ShowAsSystemWindow();
+
+			try
+			{
+				DebugLogger.LogMessage("AutomationRunner", "CALLING ShowAsSystemWindow");
+				initialSystemWindow.ShowAsSystemWindow();
+			}
+			catch (Exception ex)
+			{
+				DebugLogger.LogError("AutomationRunner", $"ShowAsSystemWindow failed: {ex.Message}");
+				SystemWindow.EnableAllowDrop = originalAllowDropState;
+				throw;
+			}
 
 			bool timedOut = task.Result == delayTask;
+			DebugLogger.LogMessage("AutomationRunner", $"SHOW COMPLETED - TimedOut: {timedOut}");
 
 			// Wait for CloseOnIdle to complete
 			testRunner.WaitFor(() => initialSystemWindow.HasBeenClosed);
+			DebugLogger.LogMessage("AutomationRunner", $"WINDOW CLOSED - HasBeenClosed: {initialSystemWindow.HasBeenClosed}");
+
+			// Restore the original EnableAllowDrop state
+			SystemWindow.EnableAllowDrop = originalAllowDropState;
+
+			// Reset the static window provider and firstWindow flag for the next test
+			SystemWindow.ResetSystemWindowProvider();
+			try
+			{
+				// Use reflection to call the static method since we can't directly reference the platform-specific class
+				var winformsType = System.Type.GetType("MatterHackers.Agg.UI.WinformsSystemWindow, agg_platform_win32");
+				var resetMethod = winformsType?.GetMethod("ResetFirstWindowFlag", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+				resetMethod?.Invoke(null, null);
+			}
+			catch (Exception ex)
+			{
+				DebugLogger.LogWarning("AutomationRunner", $"Failed to reset WinformsSystemWindow state: {ex.Message}");
+			}
+
+			// Reset EnablePlatformWindowInput for the next test - this is critical for tests to receive input events
+			try
+			{
+				// Use reflection to access the static property
+				var platformWindowType = System.Type.GetType("MatterHackers.Agg.UI.IPlatformWindow, agg");
+				var enableInputProperty = platformWindowType?.GetProperty("EnablePlatformWindowInput");
+				if (enableInputProperty != null)
+				{
+					enableInputProperty.SetValue(null, true);
+				}
+			}
+			catch (Exception ex)
+			{
+				DebugLogger.LogWarning("AutomationRunner", $"Failed to reset EnablePlatformWindowInput: {ex.Message}");
+			}
+
+			// IMPORTANT: Reset UiThread LAST after window is fully closed to avoid clearing CloseOnIdle actions
+			try
+			{
+				// Let any remaining RunOnIdle actions complete first
+				UiThread.InvokePendingActions();
+
+				// Now reset UiThread static state for the next test
+				UiThread.ResetForTests();
+			}
+			catch (Exception ex)
+			{
+				DebugLogger.LogWarning("AutomationRunner", $"Failed to reset UiThread state: {ex.Message}");
+			}
+
+			// Reset Keyboard static state for the next test  
+			try
+			{
+				Keyboard.Clear();
+			}
+			catch (Exception ex)
+			{
+				DebugLogger.LogWarning("AutomationRunner", $"Failed to reset Keyboard state: {ex.Message}");
+			}
 
 			if (timedOut)
 			{
-				// Throw an exception for test timeouts
+				DebugLogger.LogError("AutomationRunner", "TEST TIMED OUT");
 				throw new TimeoutException("TestMethod timed out");
 			}
 
+			DebugLogger.LogMessage("AutomationRunner", "=== TEST COMPLETE ===");
 			// After the system window is closed return the task and any exception to the calling context
 			return task?.Result ?? Task.CompletedTask;
 		}

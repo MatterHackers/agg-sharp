@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet test:*)",
+      "Bash(dotnet run:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dir)",
+      "Bash(\"C:\\Development\\MatterCAD\\Submodules\\agg-sharp\\Tests\\Agg.Tests\\bin\\Release\\Agg.Tests.dll\" --help)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet clean:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:tunit.dev)",
+      "Bash(csc:*)",
+      "Bash(TestFloatComparison.exe)",
+      "Bash(dotnet exec:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": []
+  }
+}

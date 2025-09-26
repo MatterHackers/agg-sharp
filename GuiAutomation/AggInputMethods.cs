@@ -35,7 +35,6 @@ using System.Reflection;
 using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 
 namespace MatterHackers.GuiAutomation
@@ -403,7 +402,6 @@ namespace MatterHackers.GuiAutomation
 			setModifiers(mods, Keys.Control);
 			setModifiers(mods, Keys.Alt);
 
-			// TODO: GLFW support for ControlClickInDesignTreeView() (MatterHackers.MatterControl.Tests.Automation.PartPreviewTests).
 			var platformWindowType = systemWindow.PlatformWindow.GetType();
 			if (platformWindowType.Name == "OpenGLSystemWindow")
 			{

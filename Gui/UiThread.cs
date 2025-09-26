@@ -324,6 +324,41 @@ namespace MatterHackers.Agg.UI
 
 			interval = UiThread.SetInterval(WaitForCondition, secondsBeforeRecheck);
 		}
+
+		/// <summary>
+		/// Resets all static state in UiThread - used for test cleanup
+		/// </summary>
+		public static void ResetForTests()
+		{
+			lock (locker)
+			{
+				// Clear all deferred actions
+				deferredActions.Clear();
+				
+				// Clear call later lists
+				listA.Clear();
+				listB.Clear();
+				callLater = listA;
+				
+				// Clear all running intervals
+				foreach (var interval in intervalActions)
+				{
+					interval.Shutdown();
+				}
+				intervalActions.Clear();
+				
+				// Clear limited actions
+				pendingLimitedActions.Clear();
+				if (pendingLimitedActionsInterval != null)
+				{
+					pendingLimitedActionsInterval.Shutdown();
+					pendingLimitedActionsInterval = null;
+				}
+				
+				// Reset UI thread ID
+				uiThreadId = -1;
+			}
+		}
 	}
 
 	public class RunningInterval : UiThread.DeferredAction
