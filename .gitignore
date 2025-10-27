@@ -113,3 +113,4 @@ UpgradeLog*.XML
 examples/AllDemos.userprefs
 examples/PolygonPathing/.vs/
 examples/RockBlaster/GameData/
+NUL

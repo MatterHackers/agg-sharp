@@ -2803,7 +2803,7 @@ namespace ClipperLib
                       }
                   }
                   else
-                  {
+                  { 
                       while (currMax != null && currMax.X > e.Curr.X)
                       {
                           if (horzEdge.OutIdx >= 0 && !IsOpen)
