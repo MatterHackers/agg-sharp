@@ -1,5 +1,5 @@
-/*
-Copyright (c) 2025, Lars Brubaker
+﻿/*
+Copyright (c) 2023, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,18 +28,15 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
-using TUnit.Assertions;
-using TUnit.Core;
 using MatterHackers.VectorMath;
-using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.Tests
 {
-    
+    [MhTestFixture]
     public class Vector3Tests
 	{
-		[Test]
-		public async Task VectorAdditionAndSubtraction()
+		[MhTest]
+		public void VectorAdditionAndSubtraction()
 		{
 			var point1 = default(Vector3);
 			point1 = new Vector3(1, 1, 1);
@@ -49,77 +46,77 @@ namespace MatterHackers.Agg.Tests
 
 			var point3 = default(Vector3);
 			point3 = Vector3.Add(point1, point2);
-			await Assert.That(point3 == new Vector3(3, 3, 3)).IsTrue();
+			MhAssert.True(point3 == new Vector3(3, 3, 3));
 
 			point3 = point1 - point2;
-			await Assert.That(point3 == new Vector3(-1, -1, -1)).IsTrue();
+			MhAssert.True(point3 == new Vector3(-1, -1, -1));
 
 			point3 += point1;
-			await Assert.That(point3 == new Vector3(0, 0, 0)).IsTrue();
+			MhAssert.True(point3 == new Vector3(0, 0, 0));
 
 			point3 += point2;
-			await Assert.That(point3 == new Vector3(2, 2, 2)).IsTrue();
+			MhAssert.True(point3 == new Vector3(2, 2, 2));
 
 			point3 = new Vector3(3, -4, 5);
-			await Assert.That(point3.Length > 7.07 && point3.Length < 7.08).IsTrue();
+			MhAssert.True(point3.Length > 7.07 && point3.Length < 7.08);
 
 			var inlineOpLeftSide = new Vector3(5.0f, -3.0f, .0f);
 			var inlineOpRightSide = new Vector3(-5.0f, 4.0f, 1.0f);
-			await Assert.That(inlineOpLeftSide + inlineOpRightSide == new Vector3(.0f, 1.0f, 1.0f)).IsTrue();
+			MhAssert.True(inlineOpLeftSide + inlineOpRightSide == new Vector3(.0f, 1.0f, 1.0f));
 
-			await Assert.That(inlineOpLeftSide - inlineOpRightSide == new Vector3(10.0f, -7.0f, -1.0f)).IsTrue();
+			MhAssert.True(inlineOpLeftSide - inlineOpRightSide == new Vector3(10.0f, -7.0f, -1.0f));
 		}
 
-		[Test]
-		public async Task ScalarMultiplication()
+		[MhTest]
+		public void ScalarMultiplication()
 		{
 			var scalarMultiplicationArgument = new Vector3(5.0f, 4.0f, 3.0f);
-			await Assert.That(scalarMultiplicationArgument * -.5 == -new Vector3(2.5f, 2.0f, 1.5f)).IsTrue();
-			await Assert.That(-.5 * scalarMultiplicationArgument == -new Vector3(2.5f, 2.0f, 1.5f)).IsTrue();
-			await Assert.That(5 * scalarMultiplicationArgument == new Vector3(25.0f, 20.0f, 15.0f)).IsTrue();
+			MhAssert.True(scalarMultiplicationArgument * -.5 == -new Vector3(2.5f, 2.0f, 1.5f));
+			MhAssert.True(-.5 * scalarMultiplicationArgument == -new Vector3(2.5f, 2.0f, 1.5f));
+			MhAssert.True(5 * scalarMultiplicationArgument == new Vector3(25.0f, 20.0f, 15.0f));
 
 			var point3 = new Vector3(2, 3, 4);
 			point3 *= 6;
-			await Assert.That(point3.Equals(new Vector3(12, 18, 24), .01f)).IsTrue();
+			MhAssert.True(point3.Equals(new Vector3(12, 18, 24), .01f));
 		}
 
-		[Test]
-		public async Task ScalarDivision()
+		[MhTest]
+		public void ScalarDivision()
 		{
 			var scalarMultiplicationArgument = new Vector3(5.0f, 4.0f, 3.0f);
-			await Assert.That(scalarMultiplicationArgument / 2 == new Vector3(2.5f, 2.0f, 1.5f)).IsTrue();
+			MhAssert.True(scalarMultiplicationArgument / 2 == new Vector3(2.5f, 2.0f, 1.5f));
 
 			var point3 = new Vector3(12, 18, 24);
 			point3 /= 6;
-			await Assert.That(point3.Equals(new Vector3(2, 3, 4), .01f)).IsTrue();
+			MhAssert.True(point3.Equals(new Vector3(2, 3, 4), .01f));
 		}
 
-		[Test]
-		public async Task DotProduct()
+		[MhTest]
+		public void DotProduct()
 		{
 			var test1 = new Vector3(10, 1, 2);
 			var test2 = new Vector3(1, 0, 0);
 			double dotResult = Vector3Ex.Dot(test2, test1);
-			await Assert.That(dotResult == 10).IsTrue();
+			MhAssert.True(dotResult == 10);
 		}
 
-		[Test]
-		public async Task CrossProduct()
+		[MhTest]
+		public void CrossProduct()
 		{
 			var test1 = new Vector3(10, 0, 0);
 			var test2 = new Vector3(1, 1, 0);
 			Vector3 crossResult = Vector3Ex.Cross(test2, test1);
-			await Assert.That(crossResult.X == 0).IsTrue();
-			await Assert.That(crossResult.Y == 0).IsTrue();
-			await Assert.That(crossResult.Z < 0).IsTrue();
+			MhAssert.True(crossResult.X == 0);
+			MhAssert.True(crossResult.Y == 0);
+			MhAssert.True(crossResult.Z < 0);
 		}
 
-		[Test]
-		public async Task Normalize()
+		[MhTest]
+		public void Normalize()
 		{
 			var point3 = new Vector3(3, -4, 5);
 			point3.Normalize();
-			await Assert.That(point3.Length > 0.99 && point3.Length < 1.01).IsTrue();
+			MhAssert.True(point3.Length > 0.99 && point3.Length < 1.01);
 		}
 	}
 }

@@ -1,5 +1,5 @@
-/*
-Copyright (c) 2025, Lars Brubaker
+﻿/*
+Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,57 +28,58 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
-using TUnit.Assertions;
-using TUnit.Core;
 using Newtonsoft.Json;
 using System;
-using System.Threading.Tasks;
 
 namespace MatterHackers.VectorMath.Tests
 {
-	public class EasingTests
+    [MhTestFixture("Agg.VectorMath")]
+    public class EasingTests
 	{
-		[Test]
-		public async Task StaticFunctionTests()
+		[MhTest]
+		public void StaticFunctionTests()
 		{
-			async Task InverseWorking(Easing.EaseType easeType, Easing.EaseOption easeOption, double k)
+			void InverseWorking(Easing.EaseType easeType, Easing.EaseOption easeOption, double k)
 			{
 				var output = Easing.Calculate(easeType, easeOption, k);
+
 				var input = Easing.CalculateInverse(easeType, easeOption, output);
-				await Assert.That(input).IsEqualTo(k).Within(.001);
+
+				MhAssert.Equal(k, input, .001);
 			}
 
-			async Task RangeTest(Easing.EaseType easeType)
+			void RangeTest(Easing.EaseType easeType)
 			{
 				for (double i = 0; i <= 1; i += .05)
 				{
-					await InverseWorking(easeType, Easing.EaseOption.In, i);
-					await InverseWorking(easeType, Easing.EaseOption.InOut, i);
-					await InverseWorking(easeType, Easing.EaseOption.Out, i);
+					InverseWorking(easeType, Easing.EaseOption.In, i);
+					InverseWorking(easeType, Easing.EaseOption.InOut, i);
+					InverseWorking(easeType, Easing.EaseOption.Out, i);
 				}
 			}
 
-			await RangeTest(Easing.EaseType.Linear);
-			await RangeTest(Easing.EaseType.Cubic);
-			await RangeTest(Easing.EaseType.Quadratic);
+			RangeTest(Easing.EaseType.Linear);
+			RangeTest(Easing.EaseType.Cubic);
+			RangeTest(Easing.EaseType.Quadratic);
 		}
 	}
 
+	[MhTestFixture("Agg.VectorMath")]
 	public class Vector2Tests
 	{
-		[Test]
-		public async Task GetDeltaAngleTests()
+		[MhTest]
+		public void GetDeltaAngleTests()
 		{
 			// angles around 0
 			{
 				var center = new Vector2(0, 0);
 				var start = new Vector2(1, 0);
 				var end = new Vector2(0, 1);
-				await Assert.That(Math.Abs(MathHelper.Tau / 4 - center.GetDeltaAngle(start, end)) < .0001).IsTrue();
+				MhAssert.True(Math.Abs(MathHelper.Tau / 4 - center.GetDeltaAngle(start, end)) < .0001);
 
 				start = new Vector2(-1, 0);
 				end = new Vector2(0, 1);
-				await Assert.That(Math.Abs(-MathHelper.Tau / 4 - center.GetDeltaAngle(start, end)) < .0001).IsTrue();
+				MhAssert.True(Math.Abs(-MathHelper.Tau / 4 - center.GetDeltaAngle(start, end)) < .0001);
 			}
 
 			// angles around 1,2
@@ -86,177 +87,200 @@ namespace MatterHackers.VectorMath.Tests
 				var center = new Vector2(1, 2);
 				var start = new Vector2(2, 2);
 				var end = new Vector2(1, 3);
-				await Assert.That(Math.Abs(MathHelper.Tau / 4 - center.GetDeltaAngle(start, end)) < .0001).IsTrue();
+				MhAssert.True(Math.Abs(MathHelper.Tau / 4 - center.GetDeltaAngle(start, end)) < .0001);
 
 				start = new Vector2(0, 2);
 				end = new Vector2(1, 3);
-				await Assert.That(Math.Abs(-MathHelper.Tau / 4 - center.GetDeltaAngle(start, end)) < .0001).IsTrue();
+				MhAssert.True(Math.Abs(-MathHelper.Tau / 4 - center.GetDeltaAngle(start, end)) < .0001);
 			}
 		}
 
-		[Test]
-		public async Task DistanceToLineTests()
+		[MhTest]
+		public void DistanceToLineTests()
 		{
 			// outside the line
-			await Assert.That(Vector2.DistancePointToLine(new Vector2(0, 0), new Vector2(5, 0), new Vector2(10, 0))).IsEqualTo(5);
-			await Assert.That(Vector2.DistancePointToLine(new Vector2(15, 0), new Vector2(5, 0), new Vector2(10, 0))).IsEqualTo(5);
-			await Assert.That(Vector2.DistancePointToLine(new Vector2(-1, -1), new Vector2(0, 0), new Vector2(10, 0))).IsEqualTo(Math.Sqrt(2));
-			await Assert.That(Vector2.DistancePointToLine(new Vector2(-1, 1), new Vector2(0, 0), new Vector2(10, 0))).IsEqualTo(Math.Sqrt(2));
-			await Assert.That(Vector2.DistancePointToLine(new Vector2(11, -1), new Vector2(0, 0), new Vector2(10, 0))).IsEqualTo(Math.Sqrt(2));
-			await Assert.That(Vector2.DistancePointToLine(new Vector2(11, 1), new Vector2(0, 0), new Vector2(10, 0))).IsEqualTo(Math.Sqrt(2));
+			MhAssert.Equal(5, Vector2.DistancePointToLine(new Vector2(0, 0), new Vector2(5, 0), new Vector2(10, 0)));
+			MhAssert.Equal(5, Vector2.DistancePointToLine(new Vector2(15, 0), new Vector2(5, 0), new Vector2(10, 0)));
+			MhAssert.Equal(Math.Sqrt(2), Vector2.DistancePointToLine(new Vector2(-1, -1), new Vector2(0, 0), new Vector2(10, 0)), .0001);
+			MhAssert.Equal(Math.Sqrt(2), Vector2.DistancePointToLine(new Vector2(-1, 1), new Vector2(0, 0), new Vector2(10, 0)), .0001);
+			MhAssert.Equal(Math.Sqrt(2), Vector2.DistancePointToLine(new Vector2(11, -1), new Vector2(0, 0), new Vector2(10, 0)), .0001);
+			MhAssert.Equal(Math.Sqrt(2), Vector2.DistancePointToLine(new Vector2(11, 1), new Vector2(0, 0), new Vector2(10, 0)), .0001);
 			// inside the line
-			await Assert.That(Vector2.DistancePointToLine(new Vector2(7, 5), new Vector2(5, 0), new Vector2(10, 0))).IsEqualTo(5);
-			await Assert.That(Vector2.DistancePointToLine(new Vector2(7, -5), new Vector2(5, 0), new Vector2(10, 0))).IsEqualTo(5);
+			MhAssert.Equal(5, Vector2.DistancePointToLine(new Vector2(7, 5), new Vector2(5, 0), new Vector2(10, 0)));
+			MhAssert.Equal(5, Vector2.DistancePointToLine(new Vector2(7, -5), new Vector2(5, 0), new Vector2(10, 0)));
 			// line is a point
-			await Assert.That(Vector2.DistancePointToLine(new Vector2(0, 0), new Vector2(5, 0), new Vector2(5, 0))).IsEqualTo(5);
+			MhAssert.Equal(5, Vector2.DistancePointToLine(new Vector2(0, 0), new Vector2(5, 0), new Vector2(5, 0)));
 		}
 	}
 
+	[MhTestFixture("Agg.VectorMath")]
 	public class Vector3Tests
 	{
-		[Test]
-		public async Task StaticFunctionTests()
+		[MhTest]
+		public void StaticFunctionTests()
 		{
-			await Assert.That(Vector3.Collinear(new Vector3(0, 0, 1), new Vector3(0, 0, 2), new Vector3(0, 0, 3))).IsTrue();
-			await Assert.That(!Vector3.Collinear(new Vector3(0, 0, 1), new Vector3(0, 0, 2), new Vector3(0, 1, 3))).IsTrue();
+			MhAssert.True(Vector3.Collinear(new Vector3(0, 0, 1), new Vector3(0, 0, 2), new Vector3(0, 0, 3)));
+			MhAssert.True(!Vector3.Collinear(new Vector3(0, 0, 1), new Vector3(0, 0, 2), new Vector3(0, 1, 3)));
 		}
 
-		[Test]
-		public async Task Vector3ParseTest()
+		[MhTest]
+		public void Vector3ParseTest()
 		{
 			// Two segments
-			await Assert.That(Vector3.Parse("1, 2")).IsEqualTo(new Vector3(1, 2, 0));
+			MhAssert.Equal(
+				new Vector3(1, 2, 0),
+				Vector3.Parse("1, 2"));
 
 			// Two segments, trailing comma
-			await Assert.That(Vector3.Parse("1, 2,")).IsEqualTo(new Vector3(1, 2, 0));
+			MhAssert.Equal(
+				new Vector3(1, 2, 0),
+				Vector3.Parse("1, 2,"));
 
 			// Three segments with whitespace
-			await Assert.That(Vector3.Parse("1, 2, 3")).IsEqualTo(new Vector3(1, 2, 3));
+			MhAssert.Equal(
+				new Vector3(1, 2, 3),
+				Vector3.Parse("1, 2, 3"));
 
 			// Three segments without whitespace
-			await Assert.That(Vector3.Parse("1,2,3")).IsEqualTo(new Vector3(1, 2, 3));
+			MhAssert.Equal(
+				new Vector3(1, 2, 3),
+				Vector3.Parse("1,2,3"));
 
 			// Doubles
-			await Assert.That(Vector3.Parse("1.1, 2.2, 3.3")).IsEqualTo(new Vector3(1.1, 2.2, 3.3));
+			MhAssert.Equal(
+				new Vector3(1.1, 2.2, 3.3),
+				Vector3.Parse("1.1, 2.2, 3.3"));
 
 			// Negative values
-			await Assert.That(Vector3.Parse("-1, -2, -3")).IsEqualTo(new Vector3(-1, -2, -3));
+			MhAssert.Equal(
+				new Vector3(-1, -2, -3),
+				Vector3.Parse("-1, -2, -3"));
 
 			// Empty
-			await Assert.That(Vector3.Parse("")).IsEqualTo(Vector3.Zero);
+			MhAssert.Equal(
+				Vector3.Zero,
+				Vector3.Parse(""));
 		}
 
-		[Test]
-		public async Task Vector2SerializeTest()
+		[MhTest]
+		public void Vector2SerializeTest()
 		{
-			await Assert.That(JsonConvert.SerializeObject(new Vector2(1, 2))).IsEqualTo("{\"X\":1.0,\"Y\":2.0}");
-		}
+			MhAssert.Equal(
+				"{\"X\":1.0,\"Y\":2.0}",
+				JsonConvert.SerializeObject(new Vector2(1, 2))); //, "Unexpected properties serialized into json output");
+        }
 
-		[Test]
-		public async Task Vector2FloatSerializeTest()
+		[MhTest]
+		public void Vector2FloatSerializeTest()
 		{
-			await Assert.That(JsonConvert.SerializeObject(new Vector2Float(1.1, 2.2))).IsEqualTo("{\"X\":1.1,\"Y\":2.2}");
-		}
+			MhAssert.Equal(
+				"{\"X\":1.1,\"Y\":2.2}",
+				JsonConvert.SerializeObject(new Vector2Float(1.1, 2.2))); //, "Unexpected properties serialized into json output");
+        }
 
-		[Test]
-		public async Task Vector3FloatSerializeTest()
+		[MhTest]
+		public void Vector3FloatSerializeTest()
 		{
-			await Assert.That(JsonConvert.SerializeObject(new Vector3Float(1.1, 2.2, 3.3))).IsEqualTo("{\"X\":1.1,\"Y\":2.2,\"Z\":3.3}");
-		}
+			MhAssert.Equal(
+				"{\"X\":1.1,\"Y\":2.2,\"Z\":3.3}",
+				JsonConvert.SerializeObject(new Vector3Float(1.1, 2.2, 3.3))); //, "Unexpected properties serialized into json output");
+        }
 
-		[Test]
-		public async Task Vector3SerializeTest()
+		[MhTest]
+		public void Vector3SerializeTest()
 		{
-			await Assert.That(JsonConvert.SerializeObject(new Vector3(1, 2, 3))).IsEqualTo("{\"X\":1.0,\"Y\":2.0,\"Z\":3.0}");
-		}
+			MhAssert.Equal(
+				"{\"X\":1.0,\"Y\":2.0,\"Z\":3.0}",
+				JsonConvert.SerializeObject(new Vector3(1, 2, 3))); //, "Unexpected properties serialized into json output");
+        }
 
-		[Test]
-		public async Task WorldViewPerspectiveProjectionTests()
+		[MhTest]
+		public void WorldViewPerspectiveProjectionTests()
 		{
 			var world = new WorldView(1, 1);
-			await Assert.That(world.EyePosition.Equals(Vector3.UnitZ * 7, 1e-3)).IsTrue();
+			MhAssert.True(world.EyePosition.Equals(Vector3.UnitZ * 7, 1e-3));
 			world.CalculatePerspectiveMatrixOffCenter(567, 123, -200, 5, 55);
-			await Assert.That(world.GetScreenPosition(new Vector3(0, 0, 0)).Equals(new Vector2((567 - 200) / 2.0, 123 / 2.0), 1e-3)).IsTrue();
-			await Assert.That(world.NearZ).IsEqualTo(5);
-			await Assert.That(world.FarZ).IsEqualTo(55);
-			await Assert.That(world.NearPlaneHeightInViewspace).IsEqualTo(4.14213562373095);
+			MhAssert.True(world.GetScreenPosition(new Vector3(0, 0, 0)).Equals(new Vector2((567 - 200) / 2.0, 123 / 2.0), 1e-3));
+			MhAssert.Equal(5, world.NearZ, 1e-3);
+			MhAssert.Equal(55, world.FarZ, 1e-3);
+			MhAssert.Equal(4.14213562373095, world.NearPlaneHeightInViewspace, 1e-3);
 			var ray = world.GetRayForLocalBounds(new Vector2((567 - 200) / 2.0, 123)); // top center
-			await Assert.That(MathHelper.RadiansToDegrees(Math.Atan2(ray.directionNormal.Y, -ray.directionNormal.Z))).IsEqualTo(WorldView.DefaultPerspectiveVFOVDegrees / 2);
-			await Assert.That((Vector3.UnitZ * 7).Equals(ray.origin, 1e-3)).IsTrue();
-			await Assert.That(world.GetViewspaceHeightAtPosition(new Vector3(1, 1, -10))).IsEqualTo(world.NearPlaneHeightInViewspace * 2);
+			MhAssert.Equal(WorldView.DefaultPerspectiveVFOVDegrees / 2, MathHelper.RadiansToDegrees(Math.Atan2(ray.directionNormal.Y, -ray.directionNormal.Z)), 1e-3);
+			MhAssert.True((Vector3.UnitZ * 7).Equals(ray.origin, 1e-3));
+			MhAssert.Equal(world.NearPlaneHeightInViewspace * 2, world.GetViewspaceHeightAtPosition(new Vector3(1, 1, -10)), 1e-3);
 			world.Scale = 3;
-			await Assert.That(world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 123).IsEqualTo(world.NearPlaneHeightInViewspace * 2 / 3).Within(1e-6);
+			MhAssert.Equal(world.NearPlaneHeightInViewspace * 2 / 3, world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 123, 1e-3);
 		}
 
-		[Test]
-		public async Task WorldViewOrthographicProjectionTests()
+		[MhTest]
+		public void WorldViewOrthographicProjectionTests()
 		{
 			var world = new WorldView(1, 1);
-			await Assert.That(world.EyePosition.Equals(Vector3.UnitZ * 7, 1e-3)).IsTrue();
+			MhAssert.True(world.EyePosition.Equals(Vector3.UnitZ * 7, 1e-3));
 			world.CalculateOrthogrphicMatrixOffCenterWithViewspaceHeight(680, 240, -200, 128, 5, 55);
-			await Assert.That(world.GetScreenPosition(new Vector3(0, 0, 0)).Equals(new Vector2((680 - 200) / 2.0, 240 / 2.0), 1e-3)).IsTrue();
-			await Assert.That(world.GetScreenPosition(new Vector3(128, 64, 0)).Equals(new Vector2(680 - 200, 240), 1e-3)).IsTrue();
-			await Assert.That(world.GetScreenPosition(new Vector3(-128, -64, 0)).Equals(new Vector2(0, 0), 1e-3)).IsTrue();
-			await Assert.That(world.NearZ).IsEqualTo(5);
-			await Assert.That(world.FarZ).IsEqualTo(55);
-			await Assert.That(world.NearPlaneHeightInViewspace).IsEqualTo(128);
+			MhAssert.True(world.GetScreenPosition(new Vector3(0, 0, 0)).Equals(new Vector2((680 - 200) / 2.0, 240 / 2.0), 1e-3));
+			MhAssert.True(world.GetScreenPosition(new Vector3(128, 64, 0)).Equals(new Vector2(680 - 200, 240), 1e-3));
+			MhAssert.True(world.GetScreenPosition(new Vector3(-128, -64, 0)).Equals(new Vector2(0, 0), 1e-3));
+			MhAssert.Equal(5, world.NearZ, 1e-3);
+			MhAssert.Equal(55, world.FarZ, 1e-3);
+			MhAssert.Equal(128, world.NearPlaneHeightInViewspace, 1e-3);
 			var ray = world.GetRayForLocalBounds(new Vector2((680 - 200) / 2.0, 240)); // top center
-			await Assert.That(Vector3.UnitZ.Equals(-ray.directionNormal.GetNormal(), 1e-3)).IsTrue();
-			await Assert.That(new Vector3(0, 64, 2).Equals(ray.origin, 1e-3)).IsTrue();
-			await Assert.That(world.GetViewspaceHeightAtPosition(new Vector3(1, 1, -10))).IsEqualTo(world.NearPlaneHeightInViewspace);
+			MhAssert.True(Vector3.UnitZ.Equals(-ray.directionNormal.GetNormal(), 1e-3));
+			MhAssert.True(new Vector3(0, 64, 2).Equals(ray.origin, 1e-3));
+			MhAssert.Equal(world.NearPlaneHeightInViewspace, world.GetViewspaceHeightAtPosition(new Vector3(1, 1, -10)), 1e-3);
 			world.Scale = 3;
-			await Assert.That(world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 240).IsEqualTo(world.NearPlaneHeightInViewspace / 3);
+			MhAssert.Equal(world.NearPlaneHeightInViewspace / 3, world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 240, 1e-3);
 		}
 
-		[Test]
-		public async Task WorldViewEyePositionTests()
+		[MhTest]
+		public void WorldViewEyePositionTests()
 		{
 			var world = new WorldView(1, 1);
 			world.EyePosition = new Vector3(1, 2, 3);
-			await Assert.That(new Vector3(1, 2, 3).Equals(world.EyePosition, 1e-3)).IsTrue();
+			MhAssert.True(new Vector3(1, 2, 3).Equals(world.EyePosition, 1e-3));
 		}
 
-		[Test]
-		public async Task FrustumExtractionTests()
+		[MhTest]
+		public void FrustumExtractionTests()
 		{
 			{
 				Matrix4X4 perspectiveMatrix = Matrix4X4.CreatePerspectiveFieldOfView(MathHelper.Tau / 4, 1, 3, 507);
 				Frustum frustum = Frustum.FrustumFromProjectionMatrix(perspectiveMatrix);
 
 				// left
-				await Assert.That(frustum.Planes[0].Normal.Equals(new Vector3(1, 0, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[0].DistanceFromOrigin).IsEqualTo(0);
+				MhAssert.True(frustum.Planes[0].Normal.Equals(new Vector3(1, 0, -1).GetNormal(), .0001));
+				MhAssert.Equal(frustum.Planes[0].DistanceFromOrigin, 0, .0001);
 				// right
-				await Assert.That(frustum.Planes[1].Normal.Equals(new Vector3(-1, 0, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[1].DistanceFromOrigin).IsEqualTo(0);
+				MhAssert.True(frustum.Planes[1].Normal.Equals(new Vector3(-1, 0, -1).GetNormal(), .0001));
+				MhAssert.Equal(frustum.Planes[1].DistanceFromOrigin, 0, .0001);
 				// bottom
-				await Assert.That(frustum.Planes[2].Normal.Equals(new Vector3(0, 1, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[2].DistanceFromOrigin).IsEqualTo(0);
+				MhAssert.True(frustum.Planes[2].Normal.Equals(new Vector3(0, 1, -1).GetNormal(), .0001));
+				MhAssert.Equal(frustum.Planes[2].DistanceFromOrigin, 0, .0001);
 				// top
-				await Assert.That(frustum.Planes[3].Normal.Equals(new Vector3(0, -1, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[3].DistanceFromOrigin).IsEqualTo(0);
+				MhAssert.True(frustum.Planes[3].Normal.Equals(new Vector3(0, -1, -1).GetNormal(), .0001));
+				MhAssert.Equal(frustum.Planes[3].DistanceFromOrigin, 0, .0001);
 				// near
-				await Assert.That(frustum.Planes[4].Normal.Equals(new Vector3(0, 0, -1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3).Within(.0001);
+				MhAssert.True(frustum.Planes[4].Normal.Equals(new Vector3(0, 0, -1), .0001));
+				MhAssert.Equal(frustum.Planes[4].DistanceFromOrigin, 3, .0001);
 				// far
-				await Assert.That(frustum.Planes[5].Normal.Equals(new Vector3(0, 0, 1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507).Within(.0001);
+				MhAssert.True(frustum.Planes[5].Normal.Equals(new Vector3(0, 0, 1), .0001));
+				MhAssert.Equal(frustum.Planes[5].DistanceFromOrigin, -507, .0001);
 			}
 		}
 
-		public static async Task TestFrustumClipLine(Frustum frustum, Vector3 lineStart, Vector3 lineEnd, bool expectInFrustum, Vector3? startClipped, Vector3? endClipped)
+		public static void TestFrustumClipLine(Frustum frustum, Vector3 lineStart, Vector3 lineEnd, bool expectInFrustum, Vector3? startClipped, Vector3? endClipped)
 		{
 			var inFrustum = frustum.ClipLine(ref lineStart, ref lineEnd);
-			await Assert.That(inFrustum).IsEqualTo(expectInFrustum);
+			MhAssert.Equal(expectInFrustum, inFrustum);
 			if (expectInFrustum)
 			{
-				await Assert.That(lineStart.Equals((Vector3)startClipped, .0001)).IsTrue();
-				await Assert.That(lineEnd.Equals((Vector3)endClipped, .001)).IsTrue();
+				MhAssert.True(lineStart.Equals((Vector3)startClipped, .0001));
+				MhAssert.True(lineEnd.Equals((Vector3)endClipped, .001));
 			}
 		}
 
-		[Test]
-		public async Task FrustumIntersetAABBTests()
+		[MhTest]
+		public void FrustumIntersetAABBTests()
 		{
 			{
 				// A box this is 40 units on each side centered at the origin
@@ -272,35 +296,35 @@ namespace MatterHackers.VectorMath.Tests
 				{
 					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-30, -10, -10), new Vector3(-25, 10, 10));
 					FrustumIntersection intersection = frustum.GetIntersect(aabb);
-					await Assert.That(intersection == FrustumIntersection.Outside).IsTrue();
+					MhAssert.True(intersection == FrustumIntersection.Outside);
 				}
 
-				// intersect
-				{
-					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, 0, -10), new Vector3(-15, 10, 10));
-					FrustumIntersection intersection = frustum.GetIntersect(aabb);
-					await Assert.That(intersection == FrustumIntersection.Intersect).IsTrue();
-				}
+                // intersect
+                {
+                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, 0, -10), new Vector3(-15, 10, 10));
+                    FrustumIntersection intersection = frustum.GetIntersect(aabb);
+                    MhAssert.True(intersection == FrustumIntersection.Intersect);
+                }
 
-				// intersect 2 // A thin bar at the center crossing both x planes
-				{
-					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, -5, -5), new Vector3(25, 5, 5));
-					FrustumIntersection intersection = frustum.GetIntersect(aabb);
-					await Assert.That(intersection == FrustumIntersection.Intersect).IsTrue();
-				}
+                // intersect 2 // A thin bar at the center crossing both x planes
+                {
+                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, -5, -5), new Vector3(25, 5, 5));
+                    FrustumIntersection intersection = frustum.GetIntersect(aabb);
+                    MhAssert.True(intersection == FrustumIntersection.Intersect);
+                }
 
-				// not intersect
-				{
-					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, 0, 30), new Vector3(-15, 10, 35));
+                // not intersect
+                {
+                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, 0, 30), new Vector3(-15, 10, 35));
 					FrustumIntersection intersection = frustum.GetIntersect(aabb);
-					await Assert.That(intersection == FrustumIntersection.Outside).IsTrue();
+					MhAssert.True(intersection == FrustumIntersection.Outside);
 				}
 
 				// inside
 				{
 					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-5, -5, -5), new Vector3(5, 5, 5));
 					FrustumIntersection intersection = frustum.GetIntersect(aabb);
-					await Assert.That(intersection == FrustumIntersection.Inside).IsTrue();
+					MhAssert.True(intersection == FrustumIntersection.Inside);
 				}
 			}
 
@@ -317,21 +341,21 @@ namespace MatterHackers.VectorMath.Tests
 				{
 					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-110, 0, -10), new Vector3(-100, 10, 10));
 					FrustumIntersection intersection = frustum.GetIntersect(aabb);
-					await Assert.That(intersection == FrustumIntersection.Outside).IsTrue();
+					MhAssert.True(intersection == FrustumIntersection.Outside);
 				}
 
 				// intersect with origin (front)
 				{
 					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-10, -10, -10), new Vector3(10, 10, 10));
 					FrustumIntersection intersection = frustum.GetIntersect(aabb);
-					await Assert.That(intersection == FrustumIntersection.Intersect).IsTrue();
+					MhAssert.True(intersection == FrustumIntersection.Intersect);
 				}
 
 				// inside
 				{
 					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-5, 100, -5), new Vector3(5, 110, 5));
 					FrustumIntersection intersection = frustum.GetIntersect(aabb);
-					await Assert.That(intersection == FrustumIntersection.Inside).IsTrue();
+					MhAssert.True(intersection == FrustumIntersection.Inside);
 				}
 			}
 
@@ -348,27 +372,27 @@ namespace MatterHackers.VectorMath.Tests
 				{
 					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-110, 0, -10), new Vector3(-100, 10, 10));
 					FrustumIntersection intersection = frustum5PlaneNegZ.GetIntersect(aabb);
-					await Assert.That(intersection == FrustumIntersection.Outside).IsTrue();
+					MhAssert.True(intersection == FrustumIntersection.Outside);
 				}
 
 				// intersect with origin (front)
 				{
 					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-10, -10, -10), new Vector3(10, 10, 10));
 					FrustumIntersection intersection = frustum5PlaneNegZ.GetIntersect(aabb);
-					await Assert.That(intersection == FrustumIntersection.Intersect).IsTrue();
+					MhAssert.True(intersection == FrustumIntersection.Intersect);
 				}
 
 				// inside
 				{
 					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-5, -5, -110), new Vector3(5, 5, -100));
 					FrustumIntersection intersection = frustum5PlaneNegZ.GetIntersect(aabb);
-					await Assert.That(intersection == FrustumIntersection.Inside).IsTrue();
+					MhAssert.True(intersection == FrustumIntersection.Inside);
 				}
 			}
 		}
 
-		[Test]
-		public async Task FrustumTransformTests()
+		[MhTest]
+		public void FrustumTransformTests()
 		{
 			{
 				Frustum frustum = new Frustum(
@@ -379,23 +403,23 @@ namespace MatterHackers.VectorMath.Tests
 					new Plane(new Vector3(0, 0, 1), -20),
 					new Plane(new Vector3(0, 0, -1), -20));
 
-				await TestFrustumClipLine(frustum, new Vector3(-5, 0, 0), new Vector3(5, 0, 0), true, new Vector3(-5, 0, 0), new Vector3(5, 0, 0));
-				await TestFrustumClipLine(frustum, new Vector3(-50, 0, 0), new Vector3(-21, 0, 0), false, null, null);
-				await TestFrustumClipLine(frustum, new Vector3(-50, 0, 0), new Vector3(-19, 0, 0), true, new Vector3(-20, 0, 0), new Vector3(-19, 0, 0));
+				Vector3Tests.TestFrustumClipLine(frustum, new Vector3(-5, 0, 0), new Vector3(5, 0, 0), true, new Vector3(-5, 0, 0), new Vector3(5, 0, 0));
+				Vector3Tests.TestFrustumClipLine(frustum, new Vector3(-50, 0, 0), new Vector3(-21, 0, 0), false, null, null);
+				Vector3Tests.TestFrustumClipLine(frustum, new Vector3(-50, 0, 0), new Vector3(-19, 0, 0), true, new Vector3(-20, 0, 0), new Vector3(-19, 0, 0));
 
 				// moved right
 				{
 					Frustum movedRightFrustum = Frustum.Transform(frustum, Matrix4X4.CreateTranslation(10, 0, 0));
-					await Assert.That(movedRightFrustum.Planes[0] == new Plane(new Vector3(1, 0, 0), -10)).IsTrue();
-					await Assert.That(movedRightFrustum.Planes[1] == new Plane(new Vector3(-1, 0, 0), -30)).IsTrue();
-					await Assert.That(movedRightFrustum.Planes[2] == frustum.Planes[2]).IsTrue();
-					await Assert.That(movedRightFrustum.Planes[3] == frustum.Planes[3]).IsTrue();
-					await Assert.That(movedRightFrustum.Planes[4] == frustum.Planes[4]).IsTrue();
-					await Assert.That(movedRightFrustum.Planes[5] == frustum.Planes[5]).IsTrue();
+					MhAssert.True(movedRightFrustum.Planes[0] == new Plane(new Vector3(1, 0, 0), -10));
+					MhAssert.True(movedRightFrustum.Planes[1] == new Plane(new Vector3(-1, 0, 0), -30));
+					MhAssert.True(movedRightFrustum.Planes[2] == frustum.Planes[2]);
+					MhAssert.True(movedRightFrustum.Planes[3] == frustum.Planes[3]);
+					MhAssert.True(movedRightFrustum.Planes[4] == frustum.Planes[4]);
+					MhAssert.True(movedRightFrustum.Planes[5] == frustum.Planes[5]);
 
-					await TestFrustumClipLine(movedRightFrustum, new Vector3(-5, 0, 0), new Vector3(5, 0, 0), true, new Vector3(-5, 0, 0), new Vector3(5, 0, 0));
-					await TestFrustumClipLine(movedRightFrustum, new Vector3(-50, 0, 0), new Vector3(-11, 0, 0), false, null, null);
-					await TestFrustumClipLine(movedRightFrustum, new Vector3(-50, 0, 0), new Vector3(-9, 0, 0), true, new Vector3(-10, 0, 0), new Vector3(-9, 0, 0));
+					Vector3Tests.TestFrustumClipLine(movedRightFrustum, new Vector3(-5, 0, 0), new Vector3(5, 0, 0), true, new Vector3(-5, 0, 0), new Vector3(5, 0, 0));
+					Vector3Tests.TestFrustumClipLine(movedRightFrustum, new Vector3(-50, 0, 0), new Vector3(-11, 0, 0), false, null, null);
+					Vector3Tests.TestFrustumClipLine(movedRightFrustum, new Vector3(-50, 0, 0), new Vector3(-9, 0, 0), true, new Vector3(-10, 0, 0), new Vector3(-9, 0, 0));
 				}
 
 				// rotated right
@@ -403,12 +427,12 @@ namespace MatterHackers.VectorMath.Tests
 					Frustum movedRightFrustum = Frustum.Transform(frustum, Matrix4X4.CreateRotationY(MathHelper.DegreesToRadians(45)));
 					Matrix4X4 testMatrix = Matrix4X4.CreateRotationY(MathHelper.DegreesToRadians(45));
 					Plane control = new Plane(Vector3Ex.TransformNormal(frustum.Planes[0].Normal, testMatrix), frustum.Planes[0].DistanceFromOrigin);
-					await Assert.That(movedRightFrustum.Planes[0].Equals(control, .001, .01)).IsTrue();
-					await Assert.That(movedRightFrustum.Planes[1].Equals(new Plane(Vector3Ex.TransformNormal(frustum.Planes[1].Normal, testMatrix), frustum.Planes[1].DistanceFromOrigin))).IsTrue();
-					await Assert.That(movedRightFrustum.Planes[2].Equals(frustum.Planes[2])).IsTrue();
-					await Assert.That(movedRightFrustum.Planes[3].Equals(frustum.Planes[3])).IsTrue();
-					await Assert.That(movedRightFrustum.Planes[4].Equals(new Plane(Vector3Ex.TransformNormal(frustum.Planes[4].Normal, testMatrix), frustum.Planes[4].DistanceFromOrigin))).IsTrue();
-					await Assert.That(movedRightFrustum.Planes[5].Equals(new Plane(Vector3Ex.TransformNormal(frustum.Planes[5].Normal, testMatrix), frustum.Planes[5].DistanceFromOrigin))).IsTrue();
+					MhAssert.True(movedRightFrustum.Planes[0].Equals(control, .001, .01));
+					MhAssert.True(movedRightFrustum.Planes[1].Equals(new Plane(Vector3Ex.TransformNormal(frustum.Planes[1].Normal, testMatrix), frustum.Planes[1].DistanceFromOrigin)));
+					MhAssert.True(movedRightFrustum.Planes[2].Equals(frustum.Planes[2]));
+					MhAssert.True(movedRightFrustum.Planes[3].Equals(frustum.Planes[3]));
+					MhAssert.True(movedRightFrustum.Planes[4].Equals(new Plane(Vector3Ex.TransformNormal(frustum.Planes[4].Normal, testMatrix), frustum.Planes[4].DistanceFromOrigin)));
+					MhAssert.True(movedRightFrustum.Planes[5].Equals(new Plane(Vector3Ex.TransformNormal(frustum.Planes[5].Normal, testMatrix), frustum.Planes[5].DistanceFromOrigin)));
 				}
 			}
 
@@ -417,30 +441,30 @@ namespace MatterHackers.VectorMath.Tests
 				Matrix4X4 perspectiveMatrix = Matrix4X4.CreatePerspectiveFieldOfView(MathHelper.Tau / 4, 1, 3, 507);
 				Frustum perspectiveFrustum = Frustum.FrustumFromProjectionMatrix(perspectiveMatrix);
 
-				await Vector3Tests.TestFrustumClipLine(perspectiveFrustum, new Vector3(-10, 0, -5), new Vector3(0, 0, -5), true, new Vector3(-5, 0, -5), new Vector3(0, 0, -5));
-				await Vector3Tests.TestFrustumClipLine(perspectiveFrustum, new Vector3(-50, 0, -5), new Vector3(-21, 0, -5), false, null, null);
-				await Vector3Tests.TestFrustumClipLine(perspectiveFrustum, new Vector3(-50, 0, -20), new Vector3(-19, 0, -20), true, new Vector3(-20, 0, -20), new Vector3(-19, 0, -20));
+				Vector3Tests.TestFrustumClipLine(perspectiveFrustum, new Vector3(-10, 0, -5), new Vector3(0, 0, -5), true, new Vector3(-5, 0, -5), new Vector3(0, 0, -5));
+				Vector3Tests.TestFrustumClipLine(perspectiveFrustum, new Vector3(-50, 0, -5), new Vector3(-21, 0, -5), false, null, null);
+				Vector3Tests.TestFrustumClipLine(perspectiveFrustum, new Vector3(-50, 0, -20), new Vector3(-19, 0, -20), true, new Vector3(-20, 0, -20), new Vector3(-19, 0, -20));
 
 				var frustum = Frustum.Transform(perspectiveFrustum, Matrix4X4.CreateRotationY(MathHelper.Tau / 2));
 
 				// left
-				await Assert.That(frustum.Planes[0].Normal.Equals(new Vector3(-1, 0, 1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[0].DistanceFromOrigin).IsEqualTo(0);
+				MhAssert.True(frustum.Planes[0].Normal.Equals(new Vector3(-1, 0, 1).GetNormal(), .0001));
+				MhAssert.Equal(frustum.Planes[0].DistanceFromOrigin, 0, .0001);
 				// right
-				await Assert.That(frustum.Planes[1].Normal.Equals(new Vector3(1, 0, 1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[1].DistanceFromOrigin).IsEqualTo(0);
+				MhAssert.True(frustum.Planes[1].Normal.Equals(new Vector3(1, 0, 1).GetNormal(), .0001));
+				MhAssert.Equal(frustum.Planes[1].DistanceFromOrigin, 0, .0001);
 				// bottom
-				await Assert.That(frustum.Planes[2].Normal.Equals(new Vector3(0, 1, 1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[2].DistanceFromOrigin).IsEqualTo(0);
+				MhAssert.True(frustum.Planes[2].Normal.Equals(new Vector3(0, 1, 1).GetNormal(), .0001));
+				MhAssert.Equal(frustum.Planes[2].DistanceFromOrigin, 0, .0001);
 				// top
-				await Assert.That(frustum.Planes[3].Normal.Equals(new Vector3(0, -1, 1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[3].DistanceFromOrigin).IsEqualTo(0);
+				MhAssert.True(frustum.Planes[3].Normal.Equals(new Vector3(0, -1, 1).GetNormal(), .0001));
+				MhAssert.Equal(frustum.Planes[3].DistanceFromOrigin, 0, .0001);
 				// near
-				await Assert.That(frustum.Planes[4].Normal.Equals(new Vector3(0, 0, 1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3).Within(.0001);
+				MhAssert.True(frustum.Planes[4].Normal.Equals(new Vector3(0, 0, 1), .0001));
+				MhAssert.Equal(frustum.Planes[4].DistanceFromOrigin, 3, .0001);
 				// far
-				await Assert.That(frustum.Planes[5].Normal.Equals(new Vector3(0, 0, -1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507).Within(.0001);
+				MhAssert.True(frustum.Planes[5].Normal.Equals(new Vector3(0, 0, -1), .0001));
+				MhAssert.Equal(frustum.Planes[5].DistanceFromOrigin, -507, .0001);
 			}
 
 			// translate 10 down z
@@ -452,80 +476,95 @@ namespace MatterHackers.VectorMath.Tests
 
 				double expectedPlaneOffset = Math.Sqrt(2 * (zMove / 2) * (zMove / 2));
 				// left
-				await Assert.That(frustum.Planes[0].Normal.Equals(new Vector3(1, 0, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[0].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset).Within(.0001);
-                // right
-                await Assert.That(frustum.Planes[1].Normal.Equals(new Vector3(-1, 0, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[1].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset).Within(.0001);
-                // bottom
-                await Assert.That(frustum.Planes[2].Normal.Equals(new Vector3(0, 1, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[2].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset).Within(.0001);
-                // top
-                await Assert.That(frustum.Planes[3].Normal.Equals(new Vector3(0, -1, -1).GetNormal(), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[3].DistanceFromOrigin).IsEqualTo(expectedPlaneOffset).Within(.0001);
-                // near
-                await Assert.That(frustum.Planes[4].Normal.Equals(new Vector3(0, 0, -1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[4].DistanceFromOrigin).IsEqualTo(3 + zMove).Within(.0001);
-                // far
-                await Assert.That(frustum.Planes[5].Normal.Equals(new Vector3(0, 0, 1), .0001)).IsTrue();
-				await Assert.That(frustum.Planes[5].DistanceFromOrigin).IsEqualTo(-507 - zMove).Within(.0001);
-            }
+				MhAssert.True(frustum.Planes[0].Normal.Equals(new Vector3(1, 0, -1).GetNormal(), .0001));
+				MhAssert.Equal(expectedPlaneOffset, frustum.Planes[0].DistanceFromOrigin, .0001);
+				// right
+				MhAssert.True(frustum.Planes[1].Normal.Equals(new Vector3(-1, 0, -1).GetNormal(), .0001));
+				MhAssert.Equal(expectedPlaneOffset, frustum.Planes[1].DistanceFromOrigin, .0001);
+				// bottom
+				MhAssert.True(frustum.Planes[2].Normal.Equals(new Vector3(0, 1, -1).GetNormal(), .0001));
+				MhAssert.Equal(expectedPlaneOffset, frustum.Planes[2].DistanceFromOrigin, .0001);
+				// top
+				MhAssert.True(frustum.Planes[3].Normal.Equals(new Vector3(0, -1, -1).GetNormal(), .0001));
+				MhAssert.Equal(expectedPlaneOffset, frustum.Planes[3].DistanceFromOrigin, .0001);
+				// near
+				MhAssert.True(frustum.Planes[4].Normal.Equals(new Vector3(0, 0, -1), .0001));
+				MhAssert.Equal(frustum.Planes[4].DistanceFromOrigin, 3 + zMove, .0001);
+				// far
+				MhAssert.True(frustum.Planes[5].Normal.Equals(new Vector3(0, 0, 1), .0001));
+				MhAssert.Equal(frustum.Planes[5].DistanceFromOrigin, -507 - zMove, .0001);
+			}
 		}
 
-		[Test]
-		public async Task PlaneClipLineTests()
+		[MhTest]
+		public void PlaneClipLineTests()
 		{
 			{
-				Plane plane = new Plane(new Vector3(1, 0, 0), 0);
-				var lineStart = new Vector3(-5, 0, 0);
-				var lineEnd = new Vector3(5, 0, 0);
-				var clipped = plane.ClipLine(ref lineStart, ref lineEnd);
-				await Assert.That(clipped).IsTrue();
-				await Assert.That(lineStart.Equals(new Vector3(0, 0, 0), .0001)).IsTrue();
-				await Assert.That(lineEnd.Equals(new Vector3(5, 0, 0), .0001)).IsTrue();
+				Plane testPlane = new Plane(Vector3.UnitZ, 5);
+				Vector3 startPoint = new Vector3(0, 0, -2);
+				Vector3 endPoint = new Vector3(0, 0, 8);
+				bool exists = testPlane.ClipLine(ref startPoint, ref endPoint);
+				MhAssert.True(exists);
+				MhAssert.True(startPoint.Z == 5);
+				MhAssert.True(endPoint.Z == 8);
 			}
 
 			{
-				Plane plane = new Plane(new Vector3(1, 0, 0), 0);
-				var lineStart = new Vector3(-5, 0, 0);
-				var lineEnd = new Vector3(-1, 0, 0);
-				var clipped = plane.ClipLine(ref lineStart, ref lineEnd);
-				await Assert.That(clipped).IsFalse();
+				Plane testPlane = new Plane(Vector3.UnitZ, 5);
+				Vector3 startPoint = new Vector3(0, 0, 8);
+				Vector3 endPoint = new Vector3(0, 0, -2);
+				bool exists = testPlane.ClipLine(ref startPoint, ref endPoint);
+				MhAssert.True(exists);
+				MhAssert.True(startPoint.Z == 8);
+				MhAssert.True(endPoint.Z == 5);
 			}
 
 			{
-				Plane plane = new Plane(new Vector3(1, 0, 0), 0);
-				var lineStart = new Vector3(1, 0, 0);
-				var lineEnd = new Vector3(5, 0, 0);
-				var clipped = plane.ClipLine(ref lineStart, ref lineEnd);
-				await Assert.That(clipped).IsTrue();
-				await Assert.That(lineStart.Equals(new Vector3(1, 0, 0), .0001)).IsTrue();
-				await Assert.That(lineEnd.Equals(new Vector3(5, 0, 0), .0001)).IsTrue();
+				Plane testPlane = new Plane(Vector3.UnitZ, 5);
+				Vector3 startPoint = new Vector3(0, 0, 4);
+				Vector3 endPoint = new Vector3(0, 0, -2);
+				bool exists = testPlane.ClipLine(ref startPoint, ref endPoint);
+				MhAssert.False(exists);
+			}
+
+			{
+				Plane testPlane = new Plane(Vector3.UnitZ, 5);
+				Vector3 startPoint = new Vector3(0, 0, 6);
+				Vector3 endPoint = new Vector3(0, 0, 12);
+				bool exists = testPlane.ClipLine(ref startPoint, ref endPoint);
+				MhAssert.True(exists);
+				MhAssert.True(startPoint.Z == 6);
+				MhAssert.True(endPoint.Z == 12);
 			}
 		}
 
-		[Test]
-		public async Task TestGetHashCode()
+		[MhTest]
+		public void TestGetHashCode()
 		{
 			{
 				Vector2 a = new Vector2(10, 11);
 				Vector2 b = new Vector2(10, 11);
-				await Assert.That(a.GetHashCode() == b.GetHashCode()).IsTrue();
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 			{
 				Vector3 a = new Vector3(10, 11, 12);
 				Vector3 b = new Vector3(10, 11, 12);
-				await Assert.That(a.GetHashCode() == b.GetHashCode()).IsTrue();
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 			{
 				Vector4 a = new Vector4(10, 11, 12, 13);
 				Vector4 b = new Vector4(10, 11, 12, 13);
-				await Assert.That(a.GetHashCode() == b.GetHashCode()).IsTrue();
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 			{
-				Matrix4X4 a = new Matrix4X4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-				Matrix4X4 b = new Matrix4X4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-				await Assert.That(a.GetHashCode() == b.GetHashCode()).IsTrue();
+				Quaternion a = new Quaternion(10, 11, 12, 13);
+				Quaternion b = new Quaternion(10, 11, 12, 13);
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
+			}
+			{
+				Matrix4X4 a = Matrix4X4.CreateRotationX(3);
+				Matrix4X4 b = Matrix4X4.CreateRotationX(3);
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 		}
 	}

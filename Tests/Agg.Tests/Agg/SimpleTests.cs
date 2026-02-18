@@ -1,5 +1,5 @@
-/*
-Copyright (c) 2025, Lars Brubaker
+﻿/*
+Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,15 +28,13 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
-using TUnit.Assertions;
-using TUnit.Core;
 using MatterHackers.Agg.VertexSource;
 using Newtonsoft.Json;
 using System;
-using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.Tests
 {
+	[MhTestFixture("Agg.SimpleTests")]
 	public class SimpleTests
 	{
 		public static bool GetNextNumberSameResult(String source, int startIndex, double expectedValue)
@@ -54,8 +52,8 @@ namespace MatterHackers.Agg.Tests
 			return true;
 		}
 
-		[Test]
-		public async Task JsonSerializeVertexStorage()
+		[MhTest]
+		public void JsonSerializeVertexStorage()
 		{
 			var test1Control = new VertexStorage();
 			test1Control.MoveTo(10, 11);
@@ -64,7 +62,7 @@ namespace MatterHackers.Agg.Tests
 			test1Control.ClosePolygon();
 			string jsonData = JsonConvert.SerializeObject(test1Control);
 			var test1Result = JsonConvert.DeserializeObject<VertexStorage>(jsonData);
-			await Assert.That(test1Control.Count).IsEqualTo(test1Result.Count);
+			MhAssert.Equal(test1Control.Count, test1Result.Count);
 
 			var control = test1Control.Vertices().GetEnumerator();
 			var result = test1Result.Vertices().GetEnumerator();
@@ -74,58 +72,58 @@ namespace MatterHackers.Agg.Tests
 				result.MoveNext();
 				var controlVertex = control.Current;
 				var resultVertex = result.Current;
-				await Assert.That(controlVertex.Command).IsEqualTo(resultVertex.Command);
-				await Assert.That(controlVertex.Position).IsEqualTo(resultVertex.Position);
+				MhAssert.Equal(controlVertex.Command, resultVertex.Command);
+				MhAssert.Equal(controlVertex.Position, resultVertex.Position);
 			}
 		}
 
-		[Test]
-		public async Task GetNextNumberWorks()
+		[MhTest]
+		public void GetNextNumberWorks()
 		{
-			await Assert.That(GetNextNumberSameResult("1234", 0, 1234)).IsTrue();
-			await Assert.That(GetNextNumberSameResult("1234 15", 5, 15)).IsTrue();
-			await Assert.That(GetNextNumberSameResult("-1234", 0, -1234)).IsTrue();
-			await Assert.That(GetNextNumberSameResult("- 1234", 0, -1234)).IsTrue();
-			await Assert.That(GetNextNumberSameResult("+1234", 0, 1234)).IsTrue();
-			await Assert.That(GetNextNumberSameResult("1234.3", 0, 1234.3)).IsTrue();
-			await Assert.That(GetNextNumberSameResult("1234.354", 0, 1234.354)).IsTrue();
-			await Assert.That(GetNextNumberSameResult("1234.354212", 0, 1234.354212)).IsTrue();
-			await Assert.That(GetNextNumberSameResult("0.123", 0, .123)).IsTrue();
-			await Assert.That(GetNextNumberSameResult(".123", 0, .123)).IsTrue();
+			MhAssert.True(GetNextNumberSameResult("1234", 0, 1234));
+			MhAssert.True(GetNextNumberSameResult("1234 15", 5, 15));
+			MhAssert.True(GetNextNumberSameResult("-1234", 0, -1234));
+			MhAssert.True(GetNextNumberSameResult("- 1234", 0, -1234));
+			MhAssert.True(GetNextNumberSameResult("+1234", 0, 1234));
+			MhAssert.True(GetNextNumberSameResult("1234.3", 0, 1234.3));
+			MhAssert.True(GetNextNumberSameResult("1234.354", 0, 1234.354));
+			MhAssert.True(GetNextNumberSameResult("1234.354212", 0, 1234.354212));
+			MhAssert.True(GetNextNumberSameResult("0.123", 0, .123));
+			MhAssert.True(GetNextNumberSameResult(".123", 0, .123));
 		}
 
-		[Test]
-		public async Task TestGetHashCode()
+		[MhTest]
+		public void TestGetHashCode()
 		{
 			{
 				Color a = new Color(10, 11, 12);
 				Color b = new Color(10, 11, 12);
-				await Assert.That(a.GetHashCode() == b.GetHashCode()).IsTrue();
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 			{
 				ColorF a = new ColorF(10, 11, 12);
 				ColorF b = new ColorF(10, 11, 12);
-				await Assert.That(a.GetHashCode() == b.GetHashCode()).IsTrue();
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 			{
 				BorderDouble a = new BorderDouble(10, 11, 12, 13);
 				BorderDouble b = new BorderDouble(10, 11, 12, 13);
-				await Assert.That(a.GetHashCode() == b.GetHashCode()).IsTrue();
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 			{
 				Point2D a = new Point2D(10, 11);
 				Point2D b = new Point2D(10, 11);
-				await Assert.That(a.GetHashCode() == b.GetHashCode()).IsTrue();
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 			{
 				RectangleDouble a = new RectangleDouble(10, 11, 12, 13);
 				RectangleDouble b = new RectangleDouble(10, 11, 12, 13);
-				await Assert.That(a.GetHashCode() == b.GetHashCode()).IsTrue();
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 			{
 				RectangleInt a = new RectangleInt(10, 11, 12, 13);
 				RectangleInt b = new RectangleInt(10, 11, 12, 13);
-				await Assert.That(a.GetHashCode() == b.GetHashCode()).IsTrue();
+				MhAssert.True(a.GetHashCode() == b.GetHashCode());
 			}
 		}
 	}

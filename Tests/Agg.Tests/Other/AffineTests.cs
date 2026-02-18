@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2023, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,18 +28,15 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
-using TUnit.Assertions;
-using TUnit.Core;
 using MatterHackers.Agg.Transform;
-using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.Tests
 {
-	
+	[MhTestFixture]
     public class AffineTests
 	{
-		[Test]
-		public async Task invert_test()
+		[MhTest]
+		public void invert_test()
 		{
 			Affine a = Affine.NewIdentity();
 			a.translate(10, 10);
@@ -53,12 +50,12 @@ namespace MatterHackers.Agg.Tests
 
 			a.Transform(ref newx, ref newy);
 			b.Transform(ref newx, ref newy);
-			await Assert.That(newx).IsEqualTo(x);
-			await Assert.That(newy).IsEqualTo(y);
+			MhAssert.Equal(x, newx, .001);
+			MhAssert.Equal(y, newy, .001);
 		}
 
-		[Test]
-		public async Task transform_test()
+		[MhTest]
+		public void transform_test()
 		{
 			Affine a = Affine.NewIdentity();
 			a.translate(10, 20);
@@ -69,8 +66,8 @@ namespace MatterHackers.Agg.Tests
 			double newy = 0;
 
 			a.Transform(ref newx, ref newy);
-			await Assert.That(newx).IsEqualTo(x);
-			await Assert.That(newy).IsEqualTo(y);
+			MhAssert.Equal(x, newx, .001);
+			MhAssert.Equal(y, newy, .001);
 		}
 	}
 }

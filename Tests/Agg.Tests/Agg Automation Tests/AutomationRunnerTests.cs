@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,28 +30,15 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Agg.Tests.Agg;
 using MatterHackers.GuiAutomation;
-using MatterHackers.Agg.Tests.TestingInfrastructure;
-using TUnit.Assertions;
-using TUnit.Core;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    
-     [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
-    	public class AutomationRunnerTests
+    [MhTestFixture("Opens Winforms Window")]
+    public class AutomationRunnerTests
 	{
-        // Ensure TestSetup static constructor is called to initialize AutomationRunner.InputMethod
-        private static readonly bool testSetupInitialized = EnsureTestSetupInitialized();
-        
-        private static bool EnsureTestSetupInitialized()
-        {
-            // This forces the TestSetup static constructor to run
-            var temp = typeof(TestSetup);
-            return true;
-        }
-
-        [Test]
+        [MhTest]
         public async Task GetWidgetByNameTestNoRegionSingleWindow()
 		{
 			// single system window
@@ -64,16 +51,18 @@ namespace MatterHackers.Agg.UI.Tests
 			leftButton.Click += (sender, e) => { leftClickCount++; };
 			buttonContainer.AddChild(leftButton);
 
-			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, async (testRunner) =>
+			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, (testRunner) =>
 			{
 				testRunner.ClickByName("left");
 				testRunner.Delay(.5);
 
-				await Assert.That(leftClickCount == 1).IsTrue();
+				MhAssert.True(leftClickCount == 1);//, "Got left button click");
+
+				return Task.CompletedTask;
 			});
 		}
 
-        [Test]
+        [MhTest]
         public async Task AutomationRunnerTimeoutTest()
 		{
 			// Ensure AutomationRunner throws timeout exceptions
@@ -84,9 +73,10 @@ namespace MatterHackers.Agg.UI.Tests
 			systemWindow.AddChild(leftButton);
 
             // NOTE: This test once failed. Possibly due to ShowWindowAndExecuteTests using different timing sources. A Stopwatch and a Task.Delay.
-            // TODO: Convert to proper TUnit exception testing syntax once available
-            
-            try 
+
+            //Assert.ThrowsAsync<TimeoutException>(
+            // convert to xunit
+            await MhAssert.ThrowsAsync<TimeoutException>(async () =>
             {
                 await AutomationRunner.ShowWindowAndExecuteTests(
                     systemWindow,
@@ -98,18 +88,10 @@ namespace MatterHackers.Agg.UI.Tests
                     },
                     // Timeout after 1 second
                     secondsToTestFailure: 1);
-                    
-                // Should have thrown TimeoutException
-                await Assert.That(false).IsTrue(); // Fail if we reach here
-            }
-            catch (TimeoutException)
-            {
-                // Expected exception - test passes
-                await Assert.That(true).IsTrue();
-            }
+            });
         }
 
-        [Test]
+        [MhTest]
         public async Task GetWidgetByNameTestRegionSingleWindow()
 		{
 			int leftClickCount = 0;
@@ -125,13 +107,13 @@ namespace MatterHackers.Agg.UI.Tests
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);
 
-			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, async (testRunner) =>
+			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, (testRunner) =>
 			{
 				testRunner.ClickByName("left");
 				testRunner.Delay(.5);
-				await Assert.That(leftClickCount).IsEqualTo(1);
+				MhAssert.Equal(1, leftClickCount);//, "Should have one left click count after click");
 
-				await Assert.That(testRunner.NameExists("left")).IsTrue();
+				MhAssert.True(testRunner.NameExists("left"), "Left button should exist");
 
 				var widget = testRunner.GetWidgetByName(
 					"left",
@@ -139,7 +121,9 @@ namespace MatterHackers.Agg.UI.Tests
 					5,
 					testRunner.GetRegionByName("right"));
 
-				await Assert.That(widget).IsNull();
+				MhAssert.Null(widget);//, "Left button should not exist in the right button region");
+
+				return Task.CompletedTask;
 			});
 		}
 	}

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,17 +28,15 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System.Threading.Tasks;
+using Agg.Tests.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
-using TUnit.Assertions;
-using TUnit.Core;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    
- [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
-	public class MenuTests
+    [MhTestFixture("Opens Winforms Window")]
+    public class MenuTests
 	{
 		public static bool SaveImagesForDebug = false;
 
@@ -50,7 +48,7 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [Test]
+        [MhTest]
         public async Task OpenAndCloseMenus()
 		{
 			int item1ClickCount = 0;
@@ -65,63 +63,63 @@ namespace MatterHackers.Agg.UI.Tests
 				HoverColor = Color.Green
 			};
 
-			AutomationTest testToRun = async (testRunner) =>
+			AutomationTest testToRun = (testRunner) =>
 			{
-				await Assert.That(item1ClickCount).IsEqualTo(0);
-				await Assert.That(item2ClickCount).IsEqualTo(0);
-				await Assert.That(item3ClickCount).IsEqualTo(0);
+				MhAssert.Equal(0, item1ClickCount);
+				MhAssert.Equal(0, item2ClickCount);
+				MhAssert.Equal(0, item3ClickCount);
 
 				testRunner.ClickByName("menu1");
 				testRunner.ClickByName("item1");
 
 				testRunner.WaitFor(() => !testList.IsOpen, 2);
-				await Assert.That(!testList.IsOpen).IsTrue();
-				await Assert.That(item1ClickCount).IsEqualTo(1);
-				await Assert.That(item2ClickCount).IsEqualTo(0);
-				await Assert.That(item3ClickCount).IsEqualTo(0);
+				MhAssert.True(!testList.IsOpen);
+				MhAssert.Equal(1, item1ClickCount);
+				MhAssert.Equal(0, item2ClickCount);
+				MhAssert.Equal(0, item3ClickCount);
 
 				testRunner.ClickByName("menu1");
 				testRunner.ClickByName("item2");
 
 				testRunner.WaitFor(() => !testList.IsOpen, 2);
-				await Assert.That(!testList.IsOpen).IsTrue();
-				await Assert.That(item1ClickCount).IsEqualTo(1);
-				await Assert.That(item2ClickCount).IsEqualTo(1);
-				await Assert.That(item3ClickCount).IsEqualTo(0);
+				MhAssert.True(!testList.IsOpen);
+				MhAssert.Equal(1, item1ClickCount);
+				MhAssert.Equal(1, item2ClickCount);
+				MhAssert.Equal(0, item3ClickCount);
 
 				testRunner.ClickByName("menu1");
 				testRunner.ClickByName("item3");
 
 				testRunner.WaitFor(() => testList.IsOpen, 2);
-				await Assert.That(testList.IsOpen).IsTrue();
-				await Assert.That(item1ClickCount).IsEqualTo(1);
-				await Assert.That(item2ClickCount).IsEqualTo(1);
-				await Assert.That(item3ClickCount).IsEqualTo(0);
+				MhAssert.True(testList.IsOpen, "It should remain open when clicking on a disabled item.");
+				MhAssert.Equal(1, item1ClickCount);
+				MhAssert.Equal(1, item2ClickCount);
+				MhAssert.Equal(0, item3ClickCount);
 				testRunner.ClickByName("item2");
 
 				testRunner.WaitFor(() => !testList.IsOpen, 2);
-				await Assert.That(!testList.IsOpen).IsTrue();
-				await Assert.That(item1ClickCount).IsEqualTo(1);
-				await Assert.That(item2ClickCount).IsEqualTo(2);
-				await Assert.That(item3ClickCount).IsEqualTo(0);
+				MhAssert.True(!testList.IsOpen);
+				MhAssert.Equal(1, item1ClickCount);
+				MhAssert.Equal(2, item2ClickCount);
+				MhAssert.Equal(0, item3ClickCount);
 
 				testRunner.ClickByName("menu1");
 				testRunner.ClickByName("OffMenu");
 
 				testRunner.WaitFor(() => !testList.IsOpen, 2);
 				//if (testList.IsOpen) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
-				await Assert.That(!testList.IsOpen).IsTrue();
+				MhAssert.True(!testList.IsOpen);
 
 				testRunner.ClickByName("menu1");
 				testRunner.Delay(.1);
 				//testRunner.Delay(5);
 				//if (!testList.IsOpen) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
-				await Assert.That(testList.IsOpen).IsTrue();
+				MhAssert.True(testList.IsOpen);
 
 				testRunner.ClickByName("item3");
 				testRunner.Delay(.1);
 				//if (!testList.IsOpen) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
-				await Assert.That(testList.IsOpen).IsTrue();
+				MhAssert.True(testList.IsOpen);
 
 				//testRunner.Delay(5);
 				testRunner.MoveToByName("OffMenu");
@@ -129,11 +127,13 @@ namespace MatterHackers.Agg.UI.Tests
 				// NOTE: The menu was once closed for those 10s...
 				// Update: Failures may have been due to tests fighting over platform UI focus.
 				//if (!testList.IsOpen) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
-				await Assert.That(testList.IsOpen).IsTrue();
+				MhAssert.True(testList.IsOpen);
 
 				testRunner.ClickByName("OffMenu");
 				testRunner.WaitFor(() => !testList.IsOpen, 2);
-				await Assert.That(testList.IsOpen).IsFalse();
+				MhAssert.False(testList.IsOpen, "Menus should close when clicking off menu");
+
+				return Task.CompletedTask;
 			};
 
 			var menuTestContainer = new SystemWindow(300, 200)

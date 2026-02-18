@@ -1,5 +1,5 @@
-/*
-Copyright (c) 2025, Lars Brubaker
+﻿/*
+Copyright (c) 2023, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,19 +28,16 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.Font;
-using TUnit.Assertions;
-using TUnit.Core;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.VertexSource;
 using System.IO;
 using System;
 using Agg.Tests.Agg;
-using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.Tests
 {
     //
-    
+    [MhTestFixture("Opens Winforms Window")]
     public class AggDrawingTests
 	{
 		public static void RunAllTests()
@@ -53,9 +50,11 @@ namespace MatterHackers.Agg.Tests
 			tests.StrokedShape();
 		}
 
-		private async Task CheckTestAgainstControl(ImageBuffer testImage, string testTypeString)
+		private void CheckTestAgainstControl(ImageBuffer testImage, string testTypeString)
 		{
-            // Use current directory for test output
+            var testContext = new TestContext();
+
+            Directory.SetCurrentDirectory(testContext.CurrentContext.TestDirectory);
 
 			// there is an assumption that we got to save valid images at least once.
 			string controlFileTga = testTypeString + " Control.tga";
@@ -83,7 +82,7 @@ namespace MatterHackers.Agg.Tests
 					File.Delete(testFailPathAndFileName);
 				}
 
-				await Assert.That(testIsSameAsControl).IsTrue();
+				MhAssert.True(testIsSameAsControl);
 				// If you want to create new control images select SetNextStatement to inside the else condition to create them.
 			}
 			else
@@ -92,7 +91,7 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-		private async Task CheckTestAgainstControl(IVertexSource testVertexSource, string testTypeString)
+		private void CheckTestAgainstControl(IVertexSource testVertexSource, string testTypeString)
 		{
 			// there is an assumption that we got to save valid vertex lists at least once.
 			string controlFileTxt = testTypeString + " Control.Txt";
@@ -122,7 +121,7 @@ namespace MatterHackers.Agg.Tests
 						File.Delete(testOldToOldFailPathAndFileName);
 					}
 
-					await Assert.That(testOldToOldIsSameAsControl).IsTrue();
+					MhAssert.True(testOldToOldIsSameAsControl);
 				}
 
 				// this test the new vertex generator code
@@ -141,7 +140,7 @@ namespace MatterHackers.Agg.Tests
 						File.Delete(testOldToNewFailPathAndFileName);
 					}
 
-					await Assert.That(testOldToNewIsSameAsControl).IsTrue();
+					MhAssert.True(testOldToNewIsSameAsControl);
 				}
 				// If you want to create new control VertexSources select SetNextStatement to inside the else condition to create them.
 			}
@@ -151,8 +150,8 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-        [Test]
-        public async Task DrawCircle()
+        [MhTest]
+        public void DrawCircle()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
 			testImage.NewGraphics2D().Clear(Color.White);
@@ -162,34 +161,34 @@ namespace MatterHackers.Agg.Tests
 			testImage.NewGraphics2D().Circle(50, 70.3, 20, Color.Orange);
 			testImage.NewGraphics2D().Circle(50, 50, 20, Color.Yellow);
 
-			await CheckTestAgainstControl(testImage, "DrawCicle");
-			await CheckTestAgainstControl(new Ellipse(0, 0, 20, 20), "ShapeCicle");
+			CheckTestAgainstControl(testImage, "DrawCicle");
+			CheckTestAgainstControl(new Ellipse(0, 0, 20, 20), "ShapeCicle");
 		}
 
-        [Test]
-        public async Task DrawCurve3()
+        [MhTest]
+        public void DrawCurve3()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
 			testImage.NewGraphics2D().Clear(Color.White);
 			testImage.NewGraphics2D().Render(new Curve3(10, 10, 50, 90, 90, 90), Color.Black);
 
-			await CheckTestAgainstControl(testImage, "DrawCurve3");
-			await CheckTestAgainstControl(new Curve3(10, 10, 50, 90, 90, 90), "ShapeCurve3");
+			CheckTestAgainstControl(testImage, "DrawCurve3");
+			CheckTestAgainstControl(new Curve3(10, 10, 50, 90, 90, 90), "ShapeCurve3");
 		}
 
-        [Test]
-        public async Task DrawCurve4()
+        [MhTest]
+        public void DrawCurve4()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
 			testImage.NewGraphics2D().Clear(Color.White);
 			testImage.NewGraphics2D().Render(new Curve4(10, 50, 25, 10, 75, 90, 90, 50), Color.Black);
 
-			await CheckTestAgainstControl(testImage, "DrawCurve4");
-			await CheckTestAgainstControl(new Curve4(10, 50, 25, 10, 75, 90, 90, 50), "ShapeCurve4");
+			CheckTestAgainstControl(testImage, "DrawCurve4");
+			CheckTestAgainstControl(new Curve4(10, 50, 25, 10, 75, 90, 90, 50), "ShapeCurve4");
 		}
 
-        [Test]
-        public async Task DrawString()
+        [MhTest]
+        public void DrawString()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
 			testImage.NewGraphics2D().DrawString("Test", 30, 50, color: Color.Magenta, justification: Justification.Center);
@@ -198,43 +197,43 @@ namespace MatterHackers.Agg.Tests
 			testImage.NewGraphics2D().DrawString("Test", 50, 70.3, color: Color.Orange, justification: Justification.Center);
 			testImage.NewGraphics2D().DrawString("Test", 50, 50, color: Color.Yellow, justification: Justification.Center);
 
-			await CheckTestAgainstControl(testImage, "DrawString");
+			CheckTestAgainstControl(testImage, "DrawString");
 
 			TypeFacePrinter stringPrinterA = new TypeFacePrinter("A");
 			stringPrinterA.TypeFaceStyle.FlattenCurves = false;
-			await CheckTestAgainstControl(stringPrinterA, "ShapeStringANotFlattened");
+			CheckTestAgainstControl(stringPrinterA, "ShapeStringANotFlattened");
 			stringPrinterA.TypeFaceStyle.FlattenCurves = true;
-			await CheckTestAgainstControl(stringPrinterA, "ShapeStringAFlattened");
+			CheckTestAgainstControl(stringPrinterA, "ShapeStringAFlattened");
 
 			TypeFacePrinter stringPrintere = new TypeFacePrinter("e");
 			stringPrintere.TypeFaceStyle.FlattenCurves = false;
-			await CheckTestAgainstControl(stringPrintere, "ShapeStringeNotFlattened");
+			CheckTestAgainstControl(stringPrintere, "ShapeStringeNotFlattened");
 			stringPrintere.TypeFaceStyle.FlattenCurves = true;
-			await CheckTestAgainstControl(stringPrintere, "ShapeStringeFlattened");
+			CheckTestAgainstControl(stringPrintere, "ShapeStringeFlattened");
 
 			TypeFacePrinter stringPrinterAe = new TypeFacePrinter("Ae");
 			stringPrinterAe.TypeFaceStyle.FlattenCurves = false;
-			await CheckTestAgainstControl(stringPrinterAe, "ShapeStringAeNotFlattened");
+			CheckTestAgainstControl(stringPrinterAe, "ShapeStringAeNotFlattened");
 			stringPrinterAe.TypeFaceStyle.FlattenCurves = true;
-			await CheckTestAgainstControl(stringPrinterAe, "ShapeStringAeFlattened");
+			CheckTestAgainstControl(stringPrinterAe, "ShapeStringAeFlattened");
 
 			TypeFacePrinter stringPrinterTest = new TypeFacePrinter("Test");
 			stringPrinterTest.TypeFaceStyle.FlattenCurves = false;
-			await CheckTestAgainstControl(stringPrinterTest, "ShapeStringTestNotFlattened");
+			CheckTestAgainstControl(stringPrinterTest, "ShapeStringTestNotFlattened");
 			stringPrinterTest.TypeFaceStyle.FlattenCurves = true;
-			await CheckTestAgainstControl(stringPrinterTest, "ShapeStringTestFlattened");
+			CheckTestAgainstControl(stringPrinterTest, "ShapeStringTestFlattened");
 		}
 
-        [Test]
-        public async Task StrokedShape()
+        [MhTest]
+        public void StrokedShape()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
 			RoundedRect rect = new RoundedRect(20, 20, 80, 80, 5);
 			Stroke rectOutline = new Stroke(rect, 1);
 			testImage.NewGraphics2D().Render(rectOutline, Color.White);
 
-			await CheckTestAgainstControl(testImage, "DrawStroked");
-			await CheckTestAgainstControl(rectOutline, "ShapeStroked");
+			CheckTestAgainstControl(testImage, "DrawStroked");
+			CheckTestAgainstControl(rectOutline, "ShapeStroked");
 		}
 	}
 }

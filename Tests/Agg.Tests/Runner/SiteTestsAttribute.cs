@@ -1,5 +1,5 @@
-﻿/*
-Copyright (c) 2018, John Lewin
+/*
+Copyright (c) 2022, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,46 +28,40 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Collections.Specialized;
-using HtmlAgilityPack;
-using MatterHackers.Agg.Image;
 
-namespace MatterHackers.Agg.UI.Tests
+namespace Agg.Tests.Agg
 {
-	public class SimulatedClipboard : ISystemClipboard
-	{
-        private ImageBuffer Image { get; set; }
-		private string Text { get; set; }
+    // Create a SiteTests class attribute
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
+    public class MhTestFixtureAttribute : Attribute
+    {
+        public string Description { get; private set; }
 
-		public bool ContainsFileDropList => throw new NotImplementedException();
-
-		public bool ContainsImage => Image != null;
-
-		public bool ContainsText => !string.IsNullOrEmpty(Text);
-
-		public StringCollection GetFileDropList()
-		{
-			throw new NotImplementedException();
-		}
-
-		public ImageBuffer GetImage()
-		{
-			throw new NotImplementedException();
-		}
-
-		public string GetText()
-		{
-			return Text;
-		}
-
-		public void SetImage(ImageBuffer imageBuffer)
-		{
-            Image = imageBuffer;
+        public MhTestFixtureAttribute(string description)
+        {
+            Description = description;
         }
+        public MhTestFixtureAttribute()
+            : this("")
+        {
+        }
+    }
 
-		public void SetText(string text)
-		{
-			Text = text;
-		}
-	}
+    // Create a SiteTest function attribute
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
+    public class MhTestAttribute : Attribute
+    {
+    }
+
+    // Create a Startup function attribute
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
+    public class MhSetupAttribute : Attribute
+    {
+    }
+
+    // Create a Teardown function attribute
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
+    public class MhTearDownAttribute : Attribute
+    {
+    }
 }

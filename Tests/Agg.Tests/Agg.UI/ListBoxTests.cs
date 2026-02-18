@@ -1,5 +1,5 @@
-/*
-Copyright (c) 2025, Lars Brubaker
+﻿/*
+Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,15 +28,12 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
-using TUnit.Assertions;
-using TUnit.Core;
 using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
-using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    
+    [MhTestFixture("Opens Winforms Window")]
     public class ListBoxTests
 	{
 		public static bool saveImagesForDebug = false;
@@ -63,8 +60,8 @@ namespace MatterHackers.Agg.UI.Tests
 			OutputImage(test, "image-test.tga");
 		}
 
-        [Test]
-        public async Task SingleItemVisibleTest()
+        [MhTest]
+        public void SingleItemVisibleTest()
 		{
 			{
 				ListBox containerListBox = new ListBox(new RectangleDouble(0, 0, 100, 100));
@@ -87,7 +84,7 @@ namespace MatterHackers.Agg.UI.Tests
 				double leastSquares;
 				containerListBox.BackBuffer.FindLeastSquaresMatch(textImage, out bestPosition, out leastSquares, maxError);
 
-				await Assert.That(leastSquares < maxError).IsTrue();
+				MhAssert.True(leastSquares < maxError, "The list box need to be showing the item we added to it.");
 			}
 
 			{
@@ -129,12 +126,12 @@ namespace MatterHackers.Agg.UI.Tests
 				double leastSquares;
 				container.BackBuffer.FindLeastSquaresMatch(textImage, out bestPosition, out leastSquares, maxError);
 
-				await Assert.That(leastSquares < maxError).IsTrue();
+				MhAssert.True(leastSquares < maxError, "The list box need to be showing the item we added to it.");
 			}
 		}
 
-        [Test]
-        public async Task ScrollPositionStartsCorrect()
+        [MhTest]
+        public void ScrollPositionStartsCorrect()
 		{
 			GuiWidget contents = new GuiWidget(300, 300);
 			contents.DoubleBuffer = true;
@@ -150,7 +147,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			contents.OnDraw(contents.NewGraphics2D());
 
-			await Assert.That(container.TopLeftOffset.Y == 0).IsTrue();
+			MhAssert.True(container.TopLeftOffset.Y == 0);
 		}
 
 		private static void AddContents(GuiWidget widgetToAddItemsTo)

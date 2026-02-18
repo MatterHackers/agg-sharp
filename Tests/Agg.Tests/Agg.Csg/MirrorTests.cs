@@ -1,5 +1,5 @@
-/*
-Copyright (c) 2025, Lars Brubaker
+﻿/*
+Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,27 +31,26 @@ using MatterHackers.Csg.Operations;
 using MatterHackers.Csg.Solids;
 using MatterHackers.Csg.Transform;
 using MatterHackers.VectorMath;
-using TUnit.Assertions;
-using TUnit.Core;
+using NUnit.Framework;
 using System;
-using System.Threading.Tasks;
 
 namespace MatterHackers.Csg
 {
+	[TestFixture, Category("Agg.Csg")]
 	public class CSGTests
 	{
 		[Test]
-		public async Task MirrorTests()
+		public void MirrorTests()
 		{
 			{
 				Box leftBox = new Box(10, 20, 30, "leftBox", createCentered: false);
 				CsgObject rightBox = new Box(11, 21, 31, "rightBox", createCentered: false);
 				rightBox = new Align(rightBox, Face.Left, leftBox, Face.Right);
 				CsgObject union = new Union(leftBox, rightBox);
-				await Assert.That(union.XSize == 21).IsTrue();
+				Assert.IsTrue(union.XSize == 21, "Correct XSize");
 				AxisAlignedBoundingBox unionBounds = union.GetAxisAlignedBoundingBox();
-				await Assert.That(unionBounds.MinXYZ == new Vector3()).IsTrue();
-				await Assert.That(union.GetAxisAlignedBoundingBox().MaxXYZ == new Vector3(21, 21, 31)).IsTrue();
+				Assert.IsTrue(unionBounds.minXYZ == new Vector3(), "MinXYZ at 0");
+				Assert.IsTrue(union.GetAxisAlignedBoundingBox().maxXYZ == new Vector3(21, 21, 31), "MaxXYZ correct");
 			}
 
 			{
@@ -59,10 +58,10 @@ namespace MatterHackers.Csg
 				CsgObject rightBox = leftBox.NewMirrorAccrossX(name: "rightBox");
 				rightBox = new Align(rightBox, Face.Left, leftBox, Face.Right);
 				CsgObject union = new Union(leftBox, rightBox);
-				await Assert.That(union.XSize == 20).IsTrue();
+				Assert.IsTrue(union.XSize == 20, "Correct XSize");
 				AxisAlignedBoundingBox unionBounds = union.GetAxisAlignedBoundingBox();
-				await Assert.That(unionBounds.MinXYZ == new Vector3()).IsTrue();
-				await Assert.That(union.GetAxisAlignedBoundingBox().MaxXYZ == new Vector3(20, 20, 30)).IsTrue();
+				Assert.IsTrue(unionBounds.minXYZ == new Vector3(), "MinXYZ at 0");
+				Assert.IsTrue(union.GetAxisAlignedBoundingBox().maxXYZ == new Vector3(20, 20, 30), "MaxXYZ correct");
 			}
 
 			{
@@ -70,10 +69,10 @@ namespace MatterHackers.Csg
 				CsgObject backBox = frontBox.NewMirrorAccrossY();
 				backBox = new Align(backBox, Face.Front, frontBox, Face.Back);
 				CsgObject union = new Union(frontBox, backBox);
-				await Assert.That(union.YSize == 40).IsTrue();
+				Assert.IsTrue(union.YSize == 40, "Correct YSize");
 				AxisAlignedBoundingBox unionBounds = union.GetAxisAlignedBoundingBox();
-				await Assert.That(unionBounds.MinXYZ == new Vector3()).IsTrue();
-				await Assert.That(union.GetAxisAlignedBoundingBox().MaxXYZ == new Vector3(10, 40, 30)).IsTrue();
+				Assert.IsTrue(unionBounds.minXYZ == new Vector3(), "MinXYZ at 0");
+				Assert.IsTrue(union.GetAxisAlignedBoundingBox().maxXYZ == new Vector3(10, 40, 30), "MaxXYZ correct");
 			}
 		}
 	}

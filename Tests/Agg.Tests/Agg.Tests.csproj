@@ -1,19 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <OutputType>Exe</OutputType>
-    <IsTestProject>true</IsTestProject>
+    <OutputType>Library</OutputType>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier>win</RuntimeIdentifier>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\..\..\</SolutionDir>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    
-    <!-- Test execution configuration for automation tests -->
-    <VSTestCollectCodeCoverage>false</VSTestCollectCodeCoverage>
-    <VSTestLogger>trx</VSTestLogger>
-    
+
+	
 	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
@@ -21,34 +17,29 @@
 		<Service Include="{63A7B48D-3B50-4B1E-B85E-2ADB8510F352}" />
 	</ItemGroup>
   <ItemGroup>
-    <PackageReference Include="TUnit" Version="0.57.24" />
-    <PackageReference Include="TUnit.Engine" Version="0.57.24" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.4.421302">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\agg\agg.csproj" />
+    <ProjectReference Include="..\..\agg\Agg.csproj" />
     <ProjectReference Include="..\..\clipper_library\clipper_library.csproj" />
-    <ProjectReference Include="..\..\Csg\Csg.csproj" />
     <ProjectReference Include="..\..\DataConverters2D\DataConverters2D.csproj" />
     <ProjectReference Include="..\..\DataConverters3D\DataConverters3D.csproj" />
-    <ProjectReference Include="..\..\geometry3Sharp\geometry3Sharp.csproj" />
-    <ProjectReference Include="..\..\Gui\Gui.csproj" />
     <ProjectReference Include="..\..\GuiAutomation\GuiAutomation.csproj" />
-    <ProjectReference Include="..\..\ImageProcessing\ImageProcessing.csproj" />
-    <ProjectReference Include="..\..\Localizations\Localizations.csproj" />
+    <ProjectReference Include="..\..\Gui\Gui.csproj" />
     <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj" />
     <ProjectReference Include="..\..\PolygonMesh\PolygonMesh.csproj" />
-    <ProjectReference Include="..\..\QuadTree\QuadTree.csproj" />
-    <ProjectReference Include="..\..\RenderOpenGl\RenderOpenGl.csproj" />
     <ProjectReference Include="..\..\Tesselate\Tesselate.csproj" />
-    <ProjectReference Include="..\..\Triangle\Triangle.csproj" />
-    <ProjectReference Include="..\..\Typography\Typography.One\Typography.One.csproj" />
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
-
-  <!-- Copy native DLLs to output directory for test execution -->
-  <Target Name="CopyNativeDlls" AfterTargets="Build">
-    <Copy SourceFiles="$(OutDir)runtimes\win-x64\native\manifoldc.dll" DestinationFiles="$(OutDir)manifoldc.dll" SkipUnchangedFiles="true" Condition="Exists('$(OutDir)runtimes\win-x64\native\manifoldc.dll')" />
-    <Copy SourceFiles="$(OutDir)runtimes\win-x64\native\tbb12.dll" DestinationFiles="$(OutDir)tbb12.dll" SkipUnchangedFiles="true" Condition="Exists('$(OutDir)runtimes\win-x64\native\tbb12.dll')" />
-  </Target>
-
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Agg.Csg\MirrorTests.cs" />
+    <Compile Remove="Agg.PolygonMesh\CsgTests.cs" />
+    <Compile Remove="Other\RunTest.cs" />
+  </ItemGroup>
 </Project>

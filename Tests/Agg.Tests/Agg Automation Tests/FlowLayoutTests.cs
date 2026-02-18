@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,37 +28,34 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System.Threading.Tasks;
+using Agg.Tests.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 
-using TUnit.Assertions;
-using TUnit.Core;
-
 namespace MatterHackers.Agg.UI.Tests
 {
-
-	[NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
-	public class FlowLayoutTests
+    [MhTestFixture("Opens Winforms Window")]
+    public class FlowLayoutTests
 	{
 		public static bool saveImagesForDebug = false;
 
 
-		bool enforceIntegerBounds;
-		[Before(HookType.Test)]
-		public async Task Setup()
+		static bool enforceIntegerBounds;
+        [MhSetupAttribute]
+        public static void Setup()
 		{
 			enforceIntegerBounds = GuiWidget.DefaultEnforceIntegerBounds;
-			GuiWidget.DefaultEnforceIntegerBounds = false;
-		}
+            GuiWidget.DefaultEnforceIntegerBounds = false;
+        }
 
-		[After(HookType.Test)]
-		public async Task Restore()
-		{
-			GuiWidget.DefaultEnforceIntegerBounds = enforceIntegerBounds;
-		}
+		[MhTearDownAttribute]
+		public static void Restore()
+        {
+            GuiWidget.DefaultEnforceIntegerBounds = enforceIntegerBounds;
+        }
 
-		private void OutputImage(ImageBuffer imageToOutput, string fileName)
+        private void OutputImage(ImageBuffer imageToOutput, string fileName)
 		{
 			if (saveImagesForDebug)
 			{
@@ -80,8 +77,8 @@ namespace MatterHackers.Agg.UI.Tests
 			OutputImage(test, "image-test.tga");
 		}
 
-		[Test]
-		public async Task TopToBottomContainerAppliesExpectedMargin()
+        [MhTest]
+        public void TopToBottomContainerAppliesExpectedMargin()
 		{
 			int marginSize = 40;
 			int dimensions = 300;
@@ -116,14 +113,14 @@ namespace MatterHackers.Agg.UI.Tests
 			// OutputImages(outerContainer, outerContainer);
 
 			var bounds = childWidget.BoundsRelativeToParent;
-			await Assert.That(bounds.Left == marginSize, "Left margin is incorrect").IsTrue();
-			await Assert.That(bounds.Right == dimensions - marginSize, "Right margin is incorrect").IsTrue();
-			await Assert.That(bounds.Top == dimensions - marginSize, "Top margin is incorrect").IsTrue();
-			await Assert.That(bounds.Bottom == marginSize, "Bottom margin is incorrect").IsTrue();
+			MhAssert.True(bounds.Left == marginSize, "Left margin is incorrect");
+			MhAssert.True(bounds.Right == dimensions - marginSize, "Right margin is incorrect");
+			MhAssert.True(bounds.Top == dimensions - marginSize, "Top margin is incorrect");
+			MhAssert.True(bounds.Bottom == marginSize, "Bottom margin is incorrect");
 		}
 
-		[Test]
-		public async Task SpacingClearedAfterLoadPositionsCorrectly()
+        [MhTest]
+        public async Task SpacingClearedAfterLoadPositionsCorrectly()
 		{
 			var systemWindow = new SystemWindow(700, 200)
 			{
@@ -192,18 +189,20 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 
 			await AutomationRunner.ShowWindowAndExecuteTests(
-systemWindow,
-async (testRunner) =>
-{
-	// Enable to observe
-	// testRunner.Delay(30);
+			systemWindow,
+			(testRunner) =>
+			{
+				// Enable to observe
+				// testRunner.Delay(30);
 
-	await Assert.That(footerRow.Position.Y).IsEqualTo(0);//, "Footer should be positioned at Y0 when it is the first item in a TopToBottom FlowlayoutWidget");
-});
+				MhAssert.Equal(0, footerRow.Position.Y);//, "Footer should be positioned at Y0 when it is the first item in a TopToBottom FlowlayoutWidget");
+
+                return Task.CompletedTask;
+			});
 		}
 
-		[Test]
-		public async Task NestedLayoutTopToBottomTests()
+        [MhTest]
+        public void NestedLayoutTopToBottomTests()
 		{
 			NestedLayoutTopToBottomTest(default(BorderDouble), default(BorderDouble));
 			NestedLayoutTopToBottomTest(default(BorderDouble), new BorderDouble(3));
@@ -212,8 +211,8 @@ async (testRunner) =>
 			NestedLayoutTopToBottomTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		[Test]
-		public async Task ChangingChildVisiblityUpdatesFlow()
+        [MhTest]
+        public void ChangingChildVisiblityUpdatesFlow()
 		{
 			// ___________________________________________________
 			//  |       containerControl 300                      |
@@ -260,8 +259,8 @@ async (testRunner) =>
 			};
 			flow2.AddChild(size2);
 
-			await Assert.That(flow1.Width == containerControl.Width).IsTrue();
-			await Assert.That(flow2.Width == size2.Width + size1.Width).IsTrue();
+			MhAssert.True(flow1.Width == containerControl.Width);
+			MhAssert.True(flow2.Width == size2.Width + size1.Width);
 
 			size1.Visible = false;
 			// ___________________________________________________
@@ -279,12 +278,12 @@ async (testRunner) =>
 			//  | |_____________________________________________| |
 			//  |_________________________________________________|
 
-			await Assert.That(flow1.Width == containerControl.Width).IsTrue();
-			await Assert.That(flow2.Width == size2.Width).IsTrue();
+			MhAssert.True(flow1.Width == containerControl.Width);
+			MhAssert.True(flow2.Width == size2.Width);
 		}
 
-		[Test]
-		public async Task ChangingChildFlowWidgetVisiblityUpdatesParentFlow()
+        [MhTest]
+        public void ChangingChildFlowWidgetVisiblityUpdatesParentFlow()
 		{
 			// ___________________________________________________
 			//  |       containerControl 300                      |
@@ -340,9 +339,9 @@ async (testRunner) =>
 			flow2.AddChild(size2);
 
 
-			await Assert.That(flow1.Width == containerControl.Width).IsTrue();
-			await Assert.That(flow3.Width == size1.Width).IsTrue();
-			await Assert.That(flow2.Width == size2.Width + flow3.Width).IsTrue();
+			MhAssert.True(flow1.Width == containerControl.Width);
+			MhAssert.True(flow3.Width == size1.Width);
+			MhAssert.True(flow2.Width == size2.Width + flow3.Width);
 
 			size1.Visible = false;
 			// ___________________________________________________
@@ -361,11 +360,11 @@ async (testRunner) =>
 			//  |_________________________________________________|
 			//
 
-			await Assert.That(flow1.Width == containerControl.Width).IsTrue();
-			await Assert.That(flow2.Width == size2.Width).IsTrue();
+			MhAssert.True(flow1.Width == containerControl.Width);
+			MhAssert.True(flow2.Width == size2.Width);
 		}
 
-		public async Task NestedLayoutTopToBottomTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+		public void NestedLayoutTopToBottomTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			var containerControl = new GuiWidget(300, 200)
 			{
@@ -426,21 +425,21 @@ async (testRunner) =>
 
 			OutputImages(containerControl, containerTest);
 
-			await Assert.That(containerTest.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-			await Assert.That(containerTest.BackBuffer.Equals(containerControl.BackBuffer, 1), "The test should contain the same image as the control.").IsTrue();
+			MhAssert.True(containerTest.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			MhAssert.True(containerTest.BackBuffer.Equals(containerControl.BackBuffer, 1), "The test should contain the same image as the control.");
 		}
 
-		[Test]
-		public async Task NestedLayoutTopToBottomWithResizeTests()
+        [MhTest]
+        public void NestedLayoutTopToBottomWithResizeTests()
 		{
-			await NestedLayoutTopToBottomWithResizeTest(default(BorderDouble), default(BorderDouble));
-			await NestedLayoutTopToBottomWithResizeTest(default(BorderDouble), new BorderDouble(3));
-			await NestedLayoutTopToBottomWithResizeTest(new BorderDouble(2), new BorderDouble(0));
-			await NestedLayoutTopToBottomWithResizeTest(new BorderDouble(2), new BorderDouble(3));
-			await NestedLayoutTopToBottomWithResizeTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
+			NestedLayoutTopToBottomWithResizeTest(default(BorderDouble), default(BorderDouble));
+			NestedLayoutTopToBottomWithResizeTest(default(BorderDouble), new BorderDouble(3));
+			NestedLayoutTopToBottomWithResizeTest(new BorderDouble(2), new BorderDouble(0));
+			NestedLayoutTopToBottomWithResizeTest(new BorderDouble(2), new BorderDouble(3));
+			NestedLayoutTopToBottomWithResizeTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		public async Task NestedLayoutTopToBottomWithResizeTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+		public void NestedLayoutTopToBottomWithResizeTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			var containerTest = new GuiWidget(300, 200)
 			{
@@ -493,21 +492,21 @@ async (testRunner) =>
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImage(containerTest, "image-test.tga");
 
-			await Assert.That(containerTest.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-			await Assert.That(containerTest.BackBuffer == controlImage, "The control should contain the same image after being scaled away and back to the same size.").IsTrue();
+			MhAssert.True(containerTest.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			MhAssert.True(containerTest.BackBuffer == controlImage, "The control should contain the same image after being scaled away and back to the same size.");
 		}
 
-		[Test]
-		public async Task LeftToRightTests()
+        [MhTest]
+        public void LeftToRightTests()
 		{
-			await LeftToRightTest(default(BorderDouble), default(BorderDouble));
-			await LeftToRightTest(default(BorderDouble), new BorderDouble(3));
-			await LeftToRightTest(new BorderDouble(2), new BorderDouble(0));
-			await LeftToRightTest(new BorderDouble(2), new BorderDouble(3));
-			await LeftToRightTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
+			LeftToRightTest(default(BorderDouble), default(BorderDouble));
+			LeftToRightTest(default(BorderDouble), new BorderDouble(3));
+			LeftToRightTest(new BorderDouble(2), new BorderDouble(0));
+			LeftToRightTest(new BorderDouble(2), new BorderDouble(3));
+			LeftToRightTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		private async Task LeftToRightTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+		private void LeftToRightTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			var containerControl = new GuiWidget(300, 200)
 			{
@@ -544,32 +543,32 @@ async (testRunner) =>
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			MhAssert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 
 			// make sure it can resize without breaking
 			RectangleDouble bounds = containerTest.LocalBounds;
 			RectangleDouble newBounds = bounds;
 			newBounds.Right += 10;
 			containerTest.LocalBounds = newBounds;
-			await Assert.That(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.");
 			containerTest.LocalBounds = bounds;
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
-			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
-		public async Task RightToLeftTests()
+        [MhTest]
+        public void RightToLeftTests()
 		{
-			await RightToLeftTest(default(BorderDouble), default(BorderDouble));
-			await RightToLeftTest(default(BorderDouble), new BorderDouble(3));
-			await RightToLeftTest(new BorderDouble(2), new BorderDouble(0));
-			await RightToLeftTest(new BorderDouble(2), new BorderDouble(3));
-			await RightToLeftTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
+			RightToLeftTest(default(BorderDouble), default(BorderDouble));
+			RightToLeftTest(default(BorderDouble), new BorderDouble(3));
+			RightToLeftTest(new BorderDouble(2), new BorderDouble(0));
+			RightToLeftTest(new BorderDouble(2), new BorderDouble(3));
+			RightToLeftTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		private async Task RightToLeftTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+		private void RightToLeftTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			var containerControl = new GuiWidget(300, 200)
 			{
@@ -606,23 +605,23 @@ async (testRunner) =>
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-			await Assert.That(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			MhAssert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 
 			// make sure it can resize without breaking
 			RectangleDouble bounds = containerTest.LocalBounds;
 			RectangleDouble newBounds = bounds;
 			newBounds.Right += 10;
 			containerTest.LocalBounds = newBounds;
-			await Assert.That(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.");
 			containerTest.LocalBounds = bounds;
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
-			await Assert.That(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
-		public async Task NestedMaxFitOrStretchToChildrenParentWidth()
+        [MhTest]
+        public void NestedMaxFitOrStretchToChildrenParentWidth()
 		{
 			// child of flow layout is Stretch
 			{
@@ -658,16 +657,16 @@ async (testRunner) =>
 				maxFitOrStretch.AddChild(fixed10x10);
 				containerControl.OnDraw(containerControl.NewGraphics2D());
 
-				await Assert.That(maxFitOrStretch.Width == containerControl.Width).IsTrue();
-				await Assert.That(stretch.Width + fixed10x10.Width == containerControl.Width).IsTrue();
+				MhAssert.True(maxFitOrStretch.Width == containerControl.Width);
+				MhAssert.True(stretch.Width + fixed10x10.Width == containerControl.Width);
 
 				containerControl.Width = 350;
-				await Assert.That(maxFitOrStretch.Width == containerControl.Width).IsTrue();
-				await Assert.That(stretch.Width + fixed10x10.Width == containerControl.Width).IsTrue();
+				MhAssert.True(maxFitOrStretch.Width == containerControl.Width);
+				MhAssert.True(stretch.Width + fixed10x10.Width == containerControl.Width);
 
 				containerControl.Width = 310;
-				await Assert.That(maxFitOrStretch.Width == containerControl.Width).IsTrue();
-				await Assert.That(stretch.Width + fixed10x10.Width == containerControl.Width).IsTrue();
+				MhAssert.True(maxFitOrStretch.Width == containerControl.Width);
+				MhAssert.True(stretch.Width + fixed10x10.Width == containerControl.Width);
 			}
 
 			// child of flow layout is MaxFitOrStretch
@@ -703,21 +702,21 @@ async (testRunner) =>
 				flowWidget.AddChild(fixed10x10);
 				containerControl.OnDraw(containerControl.NewGraphics2D());
 
-				await Assert.That(flowWidget.Width == containerControl.Width).IsTrue();
-				await Assert.That(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width).IsTrue();
+				MhAssert.True(flowWidget.Width == containerControl.Width);
+				MhAssert.True(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width);
 
 				containerControl.Width = 350;
-				await Assert.That(flowWidget.Width == containerControl.Width).IsTrue();
-				await Assert.That(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width).IsTrue();
+				MhAssert.True(flowWidget.Width == containerControl.Width);
+				MhAssert.True(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width);
 
 				containerControl.Width = 310;
-				await Assert.That(flowWidget.Width == containerControl.Width).IsTrue();
-				await Assert.That(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width).IsTrue();
+				MhAssert.True(flowWidget.Width == containerControl.Width);
+				MhAssert.True(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width);
 			}
 		}
 
-		[Test]
-		public async Task NestedMinFitOrStretchToChildrenParentWidth()
+        [MhTest]
+        public void NestedMinFitOrStretchToChildrenParentWidth()
 		{
 			// child of flow layout is Stretch
 			{
@@ -744,23 +743,23 @@ async (testRunner) =>
 					HAnchor = HAnchor.MinFitOrStretch,
 				};
 				containerControl.AddChild(minFitOrStretch);
-				await Assert.That(minFitOrStretch.Width).IsEqualTo(0);
+				MhAssert.Equal(0, minFitOrStretch.Width);
 
 				var fixed150x10 = new GuiWidget(150, 10)
 				{
 					MinimumSize = Vector2.Zero
 				};
 				minFitOrStretch.AddChild(fixed150x10);
-				await Assert.That(minFitOrStretch.Width).IsEqualTo(150);
+				MhAssert.Equal(150, minFitOrStretch.Width);
 
 				containerControl.Width = 100;
-				await Assert.That(minFitOrStretch.Width).IsEqualTo(100);
+				MhAssert.Equal(100, minFitOrStretch.Width);
 
 				containerControl.Width = 200;
-				await Assert.That(minFitOrStretch.Width).IsEqualTo(150);
+				MhAssert.Equal(150, minFitOrStretch.Width);
 
 				fixed150x10.Width = 21;
-				await Assert.That(minFitOrStretch.Width).IsEqualTo(21);
+				MhAssert.Equal(21, minFitOrStretch.Width);
 			}
 
 			// in this test the main container starts out as the constraint
@@ -788,24 +787,24 @@ async (testRunner) =>
 					HAnchor = HAnchor.MinFitOrStretch,
 				};
 				containerControl.AddChild(minFitOrStretch);
-				await Assert.That(minFitOrStretch.Width).IsEqualTo(0);
+				MhAssert.Equal(0, minFitOrStretch.Width);
 
 				var fixed150x10 = new GuiWidget(150, 10)
 				{
 					MinimumSize = Vector2.Zero
 				};
 				minFitOrStretch.AddChild(fixed150x10);
-				await Assert.That(minFitOrStretch.Width).IsEqualTo(123);
+				MhAssert.Equal(123, minFitOrStretch.Width);
 
 				containerControl.Width = 100;
-				await Assert.That(minFitOrStretch.Width).IsEqualTo(100);
+				MhAssert.Equal(100, minFitOrStretch.Width);
 
 				containerControl.Width = 200;
-				await Assert.That(minFitOrStretch.Width).IsEqualTo(150);
+				MhAssert.Equal(150, minFitOrStretch.Width);
 
 				fixed150x10.Width = 21;
-				await Assert.That(fixed150x10.Width).IsEqualTo(21);
-				await Assert.That(minFitOrStretch.Width).IsEqualTo(21);
+				MhAssert.Equal(21, fixed150x10.Width);
+				MhAssert.Equal(21, minFitOrStretch.Width);
 			}
 
 			// child of flow layout is Stretch
@@ -841,24 +840,24 @@ async (testRunner) =>
 				minFitOrStretch.AddChild(fixed10x10);
 				containerControl.OnDraw(containerControl.NewGraphics2D());
 
-				await Assert.That(minFitOrStretch.Width).IsEqualTo(30);
-				await Assert.That(stretch.Width).IsEqualTo(20);
+				MhAssert.Equal(30, minFitOrStretch.Width);
+				MhAssert.Equal(20, stretch.Width);
 
 				containerControl.Width = 350;
-				await Assert.That(minFitOrStretch.Width).IsEqualTo(30);
-				await Assert.That(stretch.Width).IsEqualTo(20);
+				MhAssert.Equal(30, minFitOrStretch.Width);
+				MhAssert.Equal(20, stretch.Width);
 
 				containerControl.Width = 310;
-				await Assert.That(minFitOrStretch.Width).IsEqualTo(30);
-				await Assert.That(stretch.Width).IsEqualTo(20);
+				MhAssert.Equal(30, minFitOrStretch.Width);
+				MhAssert.Equal(20, stretch.Width);
 
 				fixed10x10.Width = 21;
-				await Assert.That(minFitOrStretch.Width).IsEqualTo(41);
-				await Assert.That(stretch.Width).IsEqualTo(20);
+				MhAssert.Equal(41, minFitOrStretch.Width);
+				MhAssert.Equal(20, stretch.Width);
 			}
 
 			return; // this last test does not work yet
-					// child of flow layout is MaxFitOrStretch
+			// child of flow layout is MaxFitOrStretch
 			{
 				// ___________________________________________________
 				//  |            containerControl 300x200             |
@@ -899,30 +898,30 @@ async (testRunner) =>
 
 				minFitOrStretchInner.AddChild(fixed10x10);
 
-				await Assert.That(minFitOrStretchInner.Width).IsEqualTo(10);
-				await Assert.That(minFitOrStretchOuter.Width).IsEqualTo(10);
+				MhAssert.Equal(10, minFitOrStretchInner.Width);
+				MhAssert.Equal(10, minFitOrStretchOuter.Width);
 
 				containerControl.Width = 350;
-				await Assert.That(minFitOrStretchInner.Width).IsEqualTo(10);
-				await Assert.That(minFitOrStretchOuter.Width).IsEqualTo(10);
+				MhAssert.Equal(10, minFitOrStretchInner.Width);
+				MhAssert.Equal(10, minFitOrStretchOuter.Width);
 
 				containerControl.Width = 300;
-				await Assert.That(minFitOrStretchInner.Width).IsEqualTo(10);
-				await Assert.That(minFitOrStretchOuter.Width).IsEqualTo(10);
+				MhAssert.Equal(10, minFitOrStretchInner.Width);
+				MhAssert.Equal(10, minFitOrStretchOuter.Width);
 			}
 		}
 
-		[Test]
-		public async Task LeftToRightAnchorLeftBottomTests()
+        [MhTest]
+        public void LeftToRightAnchorLeftBottomTests()
 		{
-			await LeftToRightAnchorLeftBottomTest(default(BorderDouble), default(BorderDouble));
-			await LeftToRightAnchorLeftBottomTest(default(BorderDouble), new BorderDouble(3));
-			await LeftToRightAnchorLeftBottomTest(new BorderDouble(2), new BorderDouble(0));
-			await LeftToRightAnchorLeftBottomTest(new BorderDouble(2), new BorderDouble(3));
-			await LeftToRightAnchorLeftBottomTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
+			LeftToRightAnchorLeftBottomTest(default(BorderDouble), default(BorderDouble));
+			LeftToRightAnchorLeftBottomTest(default(BorderDouble), new BorderDouble(3));
+			LeftToRightAnchorLeftBottomTest(new BorderDouble(2), new BorderDouble(0));
+			LeftToRightAnchorLeftBottomTest(new BorderDouble(2), new BorderDouble(3));
+			LeftToRightAnchorLeftBottomTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		private async Task LeftToRightAnchorLeftBottomTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+		private void LeftToRightAnchorLeftBottomTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			var containerControl = new GuiWidget(300, 200)
 			{
@@ -961,23 +960,23 @@ async (testRunner) =>
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			MhAssert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 
 			// make sure it can resize without breaking
 			RectangleDouble bounds = containerTest.LocalBounds;
 			RectangleDouble newBounds = bounds;
 			newBounds.Right += 10;
 			containerTest.LocalBounds = newBounds;
-			await Assert.That(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.");
 			containerTest.LocalBounds = bounds;
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
-			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
-		public async Task AnchorLeftRightTests()
+        [MhTest]
+        public void AnchorLeftRightTests()
 		{
 			FlowTopBottomAnchorChildrenLeftRightTest(default(BorderDouble), default(BorderDouble));
 			FlowTopBottomAnchorChildrenLeftRightTest(default(BorderDouble), new BorderDouble(3));
@@ -986,7 +985,7 @@ async (testRunner) =>
 			FlowTopBottomAnchorChildrenLeftRightTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		public async Task FlowTopBottomAnchorChildrenLeftRightTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+		public void FlowTopBottomAnchorChildrenLeftRightTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			var containerControl = new GuiWidget(300, 500)
 			{
@@ -1016,7 +1015,7 @@ async (testRunner) =>
 			flowLayout.AddChild(testButtonWide);
 
 			double correctHeightOfFlowLayout = testButtonWide.Height + flowLayout.Padding.Height + testButtonWide.Margin.Height;
-			await Assert.That(correctHeightOfFlowLayout).IsEqualTo(flowLayout.Height);
+			MhAssert.Equal(flowLayout.Height, correctHeightOfFlowLayout, .001);
 
 			var testButton1 = new Button("button1")
 			{
@@ -1026,7 +1025,7 @@ async (testRunner) =>
 			flowLayout.AddChild(testButton1);
 
 			correctHeightOfFlowLayout += testButton1.Height + testButton1.Margin.Height;
-			await Assert.That(correctHeightOfFlowLayout).IsEqualTo(flowLayout.Height);
+			MhAssert.Equal(flowLayout.Height, correctHeightOfFlowLayout, .001);
 
 			flowLayout.HAnchor = HAnchor.Left;
 			flowLayout.VAnchor = VAnchor.Bottom;
@@ -1038,23 +1037,23 @@ async (testRunner) =>
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-			await Assert.That(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			MhAssert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 
 			// make sure it can resize without breaking
 			RectangleDouble bounds = containerTest.LocalBounds;
 			RectangleDouble newBounds = bounds;
 			newBounds.Right += 10;
 			containerTest.LocalBounds = newBounds;
-			await Assert.That(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != containerTest.BackBuffer, "The Anchored widget should not be the same size.");
 			containerTest.LocalBounds = bounds;
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
-			await Assert.That(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
-		public async Task NestedFlowWidgetsTopToBottomTests()
+        [MhTest]
+        public void NestedFlowWidgetsTopToBottomTests()
 		{
 			NestedFlowWidgetsTopToBottomTest(default(BorderDouble), default(BorderDouble));
 			NestedFlowWidgetsTopToBottomTest(default(BorderDouble), new BorderDouble(3));
@@ -1063,7 +1062,7 @@ async (testRunner) =>
 			NestedFlowWidgetsTopToBottomTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		public async Task NestedFlowWidgetsTopToBottomTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+		public void NestedFlowWidgetsTopToBottomTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			var containerControl = new GuiWidget(300, 500)
 			{
@@ -1116,12 +1115,12 @@ async (testRunner) =>
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			MhAssert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
-		public async Task NestedFlowWidgetsRightToLeftTests()
+        [MhTest]
+        public void NestedFlowWidgetsRightToLeftTests()
 		{
 			NestedFlowWidgetsRightToLeftTest(default(BorderDouble), default(BorderDouble));
 			NestedFlowWidgetsRightToLeftTest(default(BorderDouble), new BorderDouble(3));
@@ -1130,7 +1129,7 @@ async (testRunner) =>
 			NestedFlowWidgetsRightToLeftTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		public async Task NestedFlowWidgetsRightToLeftTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+		public void NestedFlowWidgetsRightToLeftTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			var containerControl = new GuiWidget(500, 300)
 			{
@@ -1185,14 +1184,14 @@ async (testRunner) =>
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 			// we use a least squares match because the erase background that is setting the widgets is integer pixel based and the fill rectangle is not.
-			await Assert.That(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 50), "The test and control need to match.").IsTrue();
-			await Assert.That(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 50), "The test and control need to match.");
+			MhAssert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
-		public async Task NestedFlowWidgetsLeftToRightTests()
+        [MhTest]
+        public void NestedFlowWidgetsLeftToRightTests()
 		{
 			NestedFlowWidgetsLeftToRightTest(default(BorderDouble), default(BorderDouble));
 			NestedFlowWidgetsLeftToRightTest(default(BorderDouble), new BorderDouble(3));
@@ -1201,7 +1200,7 @@ async (testRunner) =>
 			NestedFlowWidgetsLeftToRightTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		public async Task NestedFlowWidgetsLeftToRightTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+		public void NestedFlowWidgetsLeftToRightTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			var containerControl = new GuiWidget(500, 300)
 			{
@@ -1254,12 +1253,12 @@ async (testRunner) =>
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			MhAssert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
-		public async Task FlowWithMaxSizeChildAllocatesToOthers()
+        [MhTest]
+        public void FlowWithMaxSizeChildAllocatesToOthers()
 		{
 			var container = new GuiWidget(200, 300);
 
@@ -1281,17 +1280,17 @@ async (testRunner) =>
 			};
 			leftToRightFlowLayout.AddChild(rightItem);
 
-			await Assert.That(leftItem.Width).IsEqualTo(100);
-			await Assert.That(rightItem.Width).IsEqualTo(100);
+			MhAssert.Equal(100, leftItem.Width);
+			MhAssert.Equal(100, rightItem.Width);
 
 			leftItem.MaximumSize = new Vector2(50, 500);
 
-			await Assert.That(leftItem.Width).IsEqualTo(50);
-			await Assert.That(rightItem.Width).IsEqualTo(150);
+			MhAssert.Equal(50, leftItem.Width);
+			MhAssert.Equal(150, rightItem.Width);
 		}
 
-		[Test]
-		public async Task LeftRightWithAnchorLeftRightChildTests()
+        [MhTest]
+        public void LeftRightWithAnchorLeftRightChildTests()
 		{
 			LeftRightWithAnchorLeftRightChildTest(default(BorderDouble), default(BorderDouble));
 			LeftRightWithAnchorLeftRightChildTest(default(BorderDouble), new BorderDouble(3));
@@ -1300,7 +1299,7 @@ async (testRunner) =>
 			LeftRightWithAnchorLeftRightChildTest(new BorderDouble(2, 4, 6, 8), new BorderDouble(1, 3, 5, 7));
 		}
 
-		public async Task LeftRightWithAnchorLeftRightChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+		public void LeftRightWithAnchorLeftRightChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			double buttonSize = 40;
 			var containerControl = new GuiWidget(buttonSize * 6, buttonSize * 3)
@@ -1388,13 +1387,13 @@ async (testRunner) =>
 			int index = 0;
 			foreach (var child in leftToRightFlowLayoutAll.Children)
 			{
-				await Assert.That(eightControlRectangles[index++] == child.BoundsRelativeToParent).IsTrue();
+				MhAssert.True(eightControlRectangles[index++] == child.BoundsRelativeToParent);
 			}
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 
 			// we use a least squares match because the erase background that is setting the widgets is integer pixel based and the fill rectangle is not.
-			await Assert.That(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
 		}
 
 		private GuiWidget CreateLeftToRightMiddleWidget(BorderDouble buttonMargin, double buttonSize, VAnchor vAnchor, Color color)
@@ -1409,8 +1408,8 @@ async (testRunner) =>
 			return middle;
 		}
 
-		[Test]
-		public async Task RightLeftWithAnchorLeftRightChildTests()
+        [MhTest]
+        public void RightLeftWithAnchorLeftRightChildTests()
 		{
 			RightLeftWithAnchorLeftRightChildTest(default(BorderDouble), default(BorderDouble));
 			RightLeftWithAnchorLeftRightChildTest(default(BorderDouble), new BorderDouble(3));
@@ -1419,7 +1418,7 @@ async (testRunner) =>
 			RightLeftWithAnchorLeftRightChildTest(new BorderDouble(2, 4, 6, 8), new BorderDouble(1, 3, 5, 7));
 		}
 
-		public async Task RightLeftWithAnchorLeftRightChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+		public void RightLeftWithAnchorLeftRightChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			double buttonSize = 40;
 			var containerControl = new GuiWidget(buttonSize * 6, buttonSize * 3)
@@ -1507,17 +1506,17 @@ async (testRunner) =>
 			int index = 0;
 			foreach (var child in rightToLeftFlowLayoutAll.Children)
 			{
-				await Assert.That(eightControlRectangles[index++].Equals(child.BoundsRelativeToParent, .001)).IsTrue();
+				MhAssert.True(eightControlRectangles[index++].Equals(child.BoundsRelativeToParent, .001));
 			}
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 
 			// we use a least squares match because the erase background that is setting the widgets is integer pixel based and the fill rectangle is not.
-			await Assert.That(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
 		}
 
-		[Test]
-		public async Task BottomTopWithAnchorBottomTopChildTests()
+        [MhTest]
+        public void BottomTopWithAnchorBottomTopChildTests()
 		{
 			BottomTopWithAnchorBottomTopChildTest(default(BorderDouble), default(BorderDouble));
 			BottomTopWithAnchorBottomTopChildTest(default(BorderDouble), new BorderDouble(3));
@@ -1526,7 +1525,7 @@ async (testRunner) =>
 			BottomTopWithAnchorBottomTopChildTest(new BorderDouble(2, 4, 6, 8), new BorderDouble(1, 3, 5, 7));
 		}
 
-		public async Task BottomTopWithAnchorBottomTopChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+		public void BottomTopWithAnchorBottomTopChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			double buttonSize = 40;
 			var containerControl = new GuiWidget(buttonSize * 3, buttonSize * 6)
@@ -1614,13 +1613,13 @@ async (testRunner) =>
 			int index = 0;
 			foreach (var child in bottomToTopFlowLayoutAll.Children)
 			{
-				await Assert.That(eightControlRectangles[index++] == child.BoundsRelativeToParent).IsTrue();
+				MhAssert.True(eightControlRectangles[index++] == child.BoundsRelativeToParent);
 			}
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 
 			// we use a least squares match because the erase background that is setting the widgets is integer pixel based and the fill rectangle is not.
-			await Assert.That(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
 		}
 
 		private GuiWidget CreateBottomToTopMiddleWidget(BorderDouble buttonMargin, double buttonSize, HAnchor hAnchor, Color color)
@@ -1635,8 +1634,8 @@ async (testRunner) =>
 			return middle;
 		}
 
-		[Test]
-		public async Task TopBottomWithAnchorBottomTopChildTests()
+        [MhTest]
+        public void TopBottomWithAnchorBottomTopChildTests()
 		{
 			TopBottomWithAnchorBottomTopChildTest(default(BorderDouble), default(BorderDouble));
 			TopBottomWithAnchorBottomTopChildTest(default(BorderDouble), new BorderDouble(3));
@@ -1645,7 +1644,7 @@ async (testRunner) =>
 			TopBottomWithAnchorBottomTopChildTest(new BorderDouble(2, 4, 6, 8), new BorderDouble(1, 3, 5, 7));
 		}
 
-		public async Task TopBottomWithAnchorBottomTopChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+		public void TopBottomWithAnchorBottomTopChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			double buttonSize = 40;
 			var containerControl = new GuiWidget(buttonSize * 3, buttonSize * 6)
@@ -1733,16 +1732,16 @@ async (testRunner) =>
 			int index = 0;
 			foreach (var child in bottomToTopFlowLayoutAll.Children)
 			{
-				await Assert.That(eightControlRectangles[index++].Equals(child.BoundsRelativeToParent, .001)).IsTrue();
+				MhAssert.True(eightControlRectangles[index++].Equals(child.BoundsRelativeToParent, .001));
 			}
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 
 			// we use a least squares match because the erase background that is setting the widgets is integer pixel based and the fill rectangle is not.
-			await Assert.That(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
 		}
 
-		public async Task EnsureFlowLayoutMinSizeFitsChildrenMinSize()
+		public void EnsureFlowLayoutMinSizeFitsChildrenMinSize()
 		{
 			// This test is to prove that a flow layout widget always has it's min size set
 			// to the enclosing bounds size of all it's childrens min size.
@@ -1763,26 +1762,26 @@ async (testRunner) =>
 			bottomLeftToRight.AddChild(bottomContentTopToBottom);
 
 			var button1 = new Button("button1");
-			await Assert.That(button1.MinimumSize.X > 0, "Buttons should set their min size on construction.").IsTrue();
+			MhAssert.True(button1.MinimumSize.X > 0, "Buttons should set their min size on construction.");
 			bottomContentTopToBottom.AddChild(button1);
-			// await Assert.That(bottomContentTopToBottom.MinimumSize.x >= button1.MinimumSize.x, "There should be space for the button.").IsTrue();
+			// Assert.True(bottomContentTopToBottom.MinimumSize.x >= button1.MinimumSize.x, "There should be space for the button.");
 			bottomContentTopToBottom.AddChild(new Button("button2"));
 			var wideButton = new Button("button3 Wide");
 			bottomContentTopToBottom.AddChild(wideButton);
-			// await Assert.That(bottomContentTopToBottom.MinimumSize.x >= wideButton.MinimumSize.x, "These should be space for the button.").IsTrue();
+			// Assert.True(bottomContentTopToBottom.MinimumSize.x >= wideButton.MinimumSize.x, "These should be space for the button.");
 
 			containerTest.BackgroundColor = Color.White;
 			containerTest.OnDrawBackground(containerTest.NewGraphics2D());
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImage(containerTest.BackBuffer, "zFlowLaoutsGetMinSize.tga");
 
-			await Assert.That(bottomLeftToRight.Width > 0, "This needs to have been expanded when the bottomContentTopToBottom grew.").IsTrue();
-			await Assert.That(bottomLeftToRight.MinimumSize.X >= bottomContentTopToBottom.MinimumSize.X, "These should be space for the next flowLayout.").IsTrue();
-			await Assert.That(containerTest.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
+			MhAssert.True(bottomLeftToRight.Width > 0, "This needs to have been expanded when the bottomContentTopToBottom grew.");
+			MhAssert.True(bottomLeftToRight.MinimumSize.X >= bottomContentTopToBottom.MinimumSize.X, "These should be space for the next flowLayout.");
+			MhAssert.True(containerTest.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 		}
 
-		[Test]
-		public async Task ChildVisibilityChangeCauseResize()
+        [MhTest]
+        public void ChildVisibilityChangeCauseResize()
 		{
 			// Test whether toggling the visibility of children changes the flow layout
 			var containerTest = new GuiWidget(640, 480);
@@ -1794,18 +1793,18 @@ async (testRunner) =>
 			var item3 = new GuiWidget(1, 40);
 
 			topToBottomFlowLayoutAll.AddChild(item1);
-			await Assert.That(topToBottomFlowLayoutAll.Height == 20).IsTrue();
+			MhAssert.True(topToBottomFlowLayoutAll.Height == 20);
 			topToBottomFlowLayoutAll.AddChild(item2);
-			await Assert.That(topToBottomFlowLayoutAll.Height == 50).IsTrue();
+			MhAssert.True(topToBottomFlowLayoutAll.Height == 50);
 			topToBottomFlowLayoutAll.AddChild(item3);
-			await Assert.That(topToBottomFlowLayoutAll.Height == 90).IsTrue();
+			MhAssert.True(topToBottomFlowLayoutAll.Height == 90);
 
 			item2.Visible = false;
 
-			await Assert.That(topToBottomFlowLayoutAll.Height == 60).IsTrue();
+			MhAssert.True(topToBottomFlowLayoutAll.Height == 60);
 		}
 
-		internal async Task EnsureCorrectMinimumSize()
+		internal void EnsureCorrectMinimumSize()
 		{
 			{
 				var containerTest = new GuiWidget(640, 480)
@@ -1828,34 +1827,34 @@ async (testRunner) =>
 
 				leftToRightLayout.AnchorAll();
 				containerTest.OnDraw(containerTest.NewGraphics2D());
-				await Assert.That(leftToRightLayout.Width == 640).IsTrue();
-				// await Assert.That(leftToRightLayout.MinimumSize.x == 60).IsTrue();
-				await Assert.That(leftToRightLayout.Height == 480).IsTrue();
-				// await Assert.That(leftToRightLayout.MinimumSize.y == 33).IsTrue();
-				await Assert.That(item3.Width == 610).IsTrue();
+				MhAssert.True(leftToRightLayout.Width == 640);
+				// Assert.True(leftToRightLayout.MinimumSize.x == 60);
+				MhAssert.True(leftToRightLayout.Height == 480);
+				// Assert.True(leftToRightLayout.MinimumSize.y == 33);
+				MhAssert.True(item3.Width == 610);
 
 				containerTest.OnDraw(containerTest.NewGraphics2D());
-				await Assert.That(leftToRightLayout.Width == 640).IsTrue();
-				// await Assert.That(leftToRightLayout.MinimumSize.x == 60).IsTrue();
-				await Assert.That(leftToRightLayout.Height == 480).IsTrue();
-				// await Assert.That(leftToRightLayout.MinimumSize.y == 33).IsTrue();
-				await Assert.That(item3.Width == 610).IsTrue();
+				MhAssert.True(leftToRightLayout.Width == 640);
+				// Assert.True(leftToRightLayout.MinimumSize.x == 60);
+				MhAssert.True(leftToRightLayout.Height == 480);
+				// Assert.True(leftToRightLayout.MinimumSize.y == 33);
+				MhAssert.True(item3.Width == 610);
 
 				containerTest.Width = 650;
 				containerTest.OnDraw(containerTest.NewGraphics2D());
-				await Assert.That(leftToRightLayout.Width == 650).IsTrue();
-				// await Assert.That(leftToRightLayout.MinimumSize.x == 60).IsTrue();
-				await Assert.That(leftToRightLayout.Height == 480).IsTrue();
-				// await Assert.That(leftToRightLayout.MinimumSize.y == 33).IsTrue();
-				await Assert.That(item3.Width == 620).IsTrue();
+				MhAssert.True(leftToRightLayout.Width == 650);
+				// Assert.True(leftToRightLayout.MinimumSize.x == 60);
+				MhAssert.True(leftToRightLayout.Height == 480);
+				// Assert.True(leftToRightLayout.MinimumSize.y == 33);
+				MhAssert.True(item3.Width == 620);
 
 				containerTest.Width = 640;
 				containerTest.OnDraw(containerTest.NewGraphics2D());
-				await Assert.That(leftToRightLayout.Width == 640).IsTrue();
-				// await Assert.That(leftToRightLayout.MinimumSize.x == 60).IsTrue();
-				await Assert.That(leftToRightLayout.Height == 480).IsTrue();
-				// await Assert.That(leftToRightLayout.MinimumSize.y == 33).IsTrue();
-				await Assert.That(item3.Width == 610).IsTrue();
+				MhAssert.True(leftToRightLayout.Width == 640);
+				// Assert.True(leftToRightLayout.MinimumSize.x == 60);
+				MhAssert.True(leftToRightLayout.Height == 480);
+				// Assert.True(leftToRightLayout.MinimumSize.y == 33);
+				MhAssert.True(item3.Width == 610);
 			}
 
 			{
@@ -1879,15 +1878,15 @@ async (testRunner) =>
 
 				leftToRightLayout.AnchorAll();
 				containerTest.OnDraw(containerTest.NewGraphics2D());
-				await Assert.That(leftToRightLayout.Width == 640).IsTrue();
-				// await Assert.That(leftToRightLayout.MinimumSize.x == 30).IsTrue();
+				MhAssert.True(leftToRightLayout.Width == 640);
+				// Assert.True(leftToRightLayout.MinimumSize.x == 30);
 
-				await Assert.That(leftToRightLayout.Height == 480).IsTrue();
-				// await Assert.That(leftToRightLayout.MinimumSize.y == 66).IsTrue();
+				MhAssert.True(leftToRightLayout.Height == 480);
+				// Assert.True(leftToRightLayout.MinimumSize.y == 66);
 			}
 		}
 
-		internal async Task EnsureNestedAreMinimumSize()
+		internal void EnsureNestedAreMinimumSize()
 		{
 			var containerTest = new GuiWidget(640, 480)
 			{
@@ -1908,23 +1907,23 @@ async (testRunner) =>
 			leftToRightLayout.AddChild(item3);
 
 			containerTest.OnDraw(containerTest.NewGraphics2D());
-			await Assert.That(leftToRightLayout.Width == 60).IsTrue();
-			await Assert.That(leftToRightLayout.MinimumSize.X == 0).IsTrue();
-			await Assert.That(leftToRightLayout.Height == 33).IsTrue();
-			await Assert.That(leftToRightLayout.MinimumSize.Y == 0).IsTrue();
-			await Assert.That(item3.Width == 30).IsTrue();
+			MhAssert.True(leftToRightLayout.Width == 60);
+			MhAssert.True(leftToRightLayout.MinimumSize.X == 0);
+			MhAssert.True(leftToRightLayout.Height == 33);
+			MhAssert.True(leftToRightLayout.MinimumSize.Y == 0);
+			MhAssert.True(item3.Width == 30);
 
 			containerTest.Width = 650;
 			containerTest.OnDraw(containerTest.NewGraphics2D());
-			await Assert.That(leftToRightLayout.Width == 60).IsTrue();
-			await Assert.That(leftToRightLayout.MinimumSize.X == 0).IsTrue();
-			await Assert.That(leftToRightLayout.Height == 33).IsTrue();
-			await Assert.That(leftToRightLayout.MinimumSize.Y == 0).IsTrue();
-			await Assert.That(item3.Width == 30).IsTrue();
+			MhAssert.True(leftToRightLayout.Width == 60);
+			MhAssert.True(leftToRightLayout.MinimumSize.X == 0);
+			MhAssert.True(leftToRightLayout.Height == 33);
+			MhAssert.True(leftToRightLayout.MinimumSize.Y == 0);
+			MhAssert.True(item3.Width == 30);
 		}
 
-		[Test]
-		public async Task EnsureCorrectSizeOnChildrenVisibleChange()
+        [MhTest]
+        public void EnsureCorrectSizeOnChildrenVisibleChange()
 		{
 			// just one column changes correctly
 			{
@@ -1939,7 +1938,7 @@ async (testRunner) =>
 				};
 				testColumn.AddChild(item1);
 
-				await Assert.That(testColumn.Height == 10).IsTrue();
+				MhAssert.True(testColumn.Height == 10);
 
 				var item2 = new GuiWidget(11, 11)
 				{
@@ -1947,7 +1946,7 @@ async (testRunner) =>
 				};
 				testColumn.AddChild(item2);
 
-				await Assert.That(testColumn.Height == 21).IsTrue();
+				MhAssert.True(testColumn.Height == 21);
 
 				var item3 = new GuiWidget(12, 12)
 				{
@@ -1955,15 +1954,15 @@ async (testRunner) =>
 				};
 				testColumn.AddChild(item3);
 
-				await Assert.That(testColumn.Height == 33).IsTrue();
+				MhAssert.True(testColumn.Height == 33);
 
 				item2.Visible = false;
 
-				await Assert.That(testColumn.Height == 22).IsTrue();
+				MhAssert.True(testColumn.Height == 22);
 
 				item2.Visible = true;
 
-				await Assert.That(testColumn.Height == 33).IsTrue();
+				MhAssert.True(testColumn.Height == 33);
 			}
 
 			// nested columns change correctly
@@ -2028,31 +2027,31 @@ async (testRunner) =>
 
 					everything.AddChild(twoColumns);
 
-					await Assert.That(firstItem.OriginRelativeParent.Y == 54).IsTrue();
-					// await Assert.That(firstItem.OriginRelativeParent.y - topLeftStuff.LocalBounds.Bottom == 54).IsTrue();
-					await Assert.That(twoColumns.BoundsRelativeToParent.Top == 500).IsTrue();
-					await Assert.That(leftColumn.BoundsRelativeToParent.Top == 67).IsTrue();
-					await Assert.That(leftColumn.BoundsRelativeToParent.Bottom == 0).IsTrue();
-					await Assert.That(leftColumn.OriginRelativeParent.Y == 0).IsTrue();
-					await Assert.That(topLeftStuff.BoundsRelativeToParent.Top == 67).IsTrue();
-					await Assert.That(topLeftStuff.Height == 67).IsTrue();
-					await Assert.That(leftColumn.Height == 67).IsTrue();
+					MhAssert.True(firstItem.OriginRelativeParent.Y == 54);
+					// Assert.True(firstItem.OriginRelativeParent.y - topLeftStuff.LocalBounds.Bottom == 54);
+					MhAssert.True(twoColumns.BoundsRelativeToParent.Top == 500);
+					MhAssert.True(leftColumn.BoundsRelativeToParent.Top == 67);
+					MhAssert.True(leftColumn.BoundsRelativeToParent.Bottom == 0);
+					MhAssert.True(leftColumn.OriginRelativeParent.Y == 0);
+					MhAssert.True(topLeftStuff.BoundsRelativeToParent.Top == 67);
+					MhAssert.True(topLeftStuff.Height == 67);
+					MhAssert.True(leftColumn.Height == 67);
 
 					hideCheckBox.Checked = true;
 
-					await Assert.That(firstItem.OriginRelativeParent.Y == 21).IsTrue();
-					await Assert.That(leftColumn.OriginRelativeParent.Y == 0).IsTrue();
-					await Assert.That(leftColumn.BoundsRelativeToParent.Bottom == 0).IsTrue();
-					await Assert.That(topLeftStuff.Height == 34).IsTrue();
-					await Assert.That(leftColumn.Height == 34).IsTrue();
+					MhAssert.True(firstItem.OriginRelativeParent.Y == 21);
+					MhAssert.True(leftColumn.OriginRelativeParent.Y == 0);
+					MhAssert.True(leftColumn.BoundsRelativeToParent.Bottom == 0);
+					MhAssert.True(topLeftStuff.Height == 34);
+					MhAssert.True(leftColumn.Height == 34);
 				}
 
 				GuiWidget.DefaultEnforceIntegerBounds = false;
 			}
 		}
 
-		[Test]
-		public async Task ChildHAnchorPriority()
+        [MhTest]
+        public void ChildHAnchorPriority()
 		{
 			// make sure a middle spacer grows and shrinks correctly
 			{
@@ -2060,17 +2059,17 @@ async (testRunner) =>
 				{
 					Name = "leftRightFlowLayout"
 				};
-				await Assert.That(leftRightFlowLayout.HAnchor == HAnchor.Fit).IsTrue(); // flow layout starts with FitToChildren
+				MhAssert.True(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-																// [no content] // attempting to make a visual description of what is happening
-				await Assert.That(leftRightFlowLayout.Width == 0).IsTrue(); // nothing is forcing it to have a width so it doesn't
+				// [no content] // attempting to make a visual description of what is happening
+				MhAssert.True(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 				var leftWidget = new GuiWidget(10, 10)
 				{
 					Name = "leftWidget"
 				}; // we call it left widget as it will be the first one in the left to right flow layout
 				leftRightFlowLayout.AddChild(leftWidget); // add in a child with a width of 10
-														  // [<->(10)<->] // the flow layout should now be forced to be 10 wide
-				await Assert.That(leftRightFlowLayout.Width == 10).IsTrue();
+				// [<->(10)<->] // the flow layout should now be forced to be 10 wide
+				MhAssert.True(leftRightFlowLayout.Width == 10);
 
 				var middleSpacer = new GuiWidget(0, 10)
 				{
@@ -2079,40 +2078,40 @@ async (testRunner) =>
 				middleSpacer.HAnchor = HAnchor.Stretch; // by resizing to whatever width it can be
 				leftRightFlowLayout.AddChild(middleSpacer);
 				// [<->(10)(<->)<->]
-				await Assert.That(leftRightFlowLayout.Width == 10).IsTrue();
-				await Assert.That(middleSpacer.Width == 0).IsTrue();
+				MhAssert.True(leftRightFlowLayout.Width == 10);
+				MhAssert.True(middleSpacer.Width == 0);
 
 				var rightItem = new GuiWidget(10, 10);
 				leftRightFlowLayout.AddChild(rightItem);
 				// [<->(10)(<->)(10)<->]
-				await Assert.That(leftRightFlowLayout.Width == 20).IsTrue();
+				MhAssert.True(leftRightFlowLayout.Width == 20);
 
 				var container = new GuiWidget(40, 20);
 				container.AddChild(leftRightFlowLayout);
 				// (40[<->(10)(<->)(10)<->]) // the extra 20 must be put into the expandable (<->)
-				await Assert.That(container.Width == 40).IsTrue();
-				await Assert.That(leftRightFlowLayout.Width == 40).IsTrue();
-				await Assert.That(middleSpacer.Width == 20).IsTrue();
+				MhAssert.True(container.Width == 40);
+				MhAssert.True(leftRightFlowLayout.Width == 40);
+				MhAssert.True(middleSpacer.Width == 20);
 
 				container.Width = 50;
 				// (50[<->(10)(<->)(10)<->]) // the extra 30 must be put into the expandable (<->)
-				await Assert.That(container.Width == 50).IsTrue();
-				await Assert.That(leftRightFlowLayout.Width == 50).IsTrue();
-				await Assert.That(middleSpacer.Width == 30).IsTrue();
+				MhAssert.True(container.Width == 50);
+				MhAssert.True(leftRightFlowLayout.Width == 50);
+				MhAssert.True(middleSpacer.Width == 30);
 
 				container.Width = 40;
 				// (40[<->(10)(<->)(10)<->]) // the extra 20 must be put into the expandable (<->) by shrinking it
-				await Assert.That(container.Width == 40).IsTrue();
-				await Assert.That(leftRightFlowLayout.Width == 40).IsTrue();
-				await Assert.That(middleSpacer.Width == 20).IsTrue();
+				MhAssert.True(container.Width == 40);
+				MhAssert.True(leftRightFlowLayout.Width == 40);
+				MhAssert.True(middleSpacer.Width == 20);
 
-				await Assert.That(container.MinimumSize.X == 40).IsTrue(); // minimum size is set to the construction size for normal GuiWidgets
+				MhAssert.True(container.MinimumSize.X == 40); // minimum size is set to the construction size for normal GuiWidgets
 				container.MinimumSize = new Vector2(0, 0); // make sure we can make this smaller
 				container.Width = 10;
 				// (10[<->(10)(<->)(10)<->]) // the extra 20 must be put into the expandable (<->) by shrinking it
-				await Assert.That(container.Width == 10).IsTrue(); // nothing should be keeping this big
-				await Assert.That(leftRightFlowLayout.Width == 20).IsTrue(); // it can't get smaller than its contents
-				await Assert.That(middleSpacer.Width == 0).IsTrue();
+				MhAssert.True(container.Width == 10); // nothing should be keeping this big
+				MhAssert.True(leftRightFlowLayout.Width == 20); // it can't get smaller than its contents
+				MhAssert.True(middleSpacer.Width == 0);
 			}
 
 			// make sure the middle spacer works the same when in a flow layout
@@ -2121,17 +2120,17 @@ async (testRunner) =>
 				{
 					Name = "leftRightFlowLayout"
 				};
-				await Assert.That(leftRightFlowLayout.HAnchor == HAnchor.Fit).IsTrue(); // flow layout starts with FitToChildren
+				MhAssert.True(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-																// [<-><->] // attempting to make a visual description of what is happening
-				await Assert.That(leftRightFlowLayout.Width == 0).IsTrue(); // nothing is forcing it to have a width so it doesn't
+				// [<-><->] // attempting to make a visual description of what is happening
+				MhAssert.True(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 				var leftWidget = new GuiWidget(10, 10)
 				{
 					Name = "leftWidget"
 				}; // we call it left widget as it will be the first one in the left to right flow layout
 				leftRightFlowLayout.AddChild(leftWidget); // add in a child with a width of 10
-														  // [<->(10)<->] // the flow layout should now be forced to be 10 wide
-				await Assert.That(leftRightFlowLayout.Width == 10).IsTrue();
+				// [<->(10)<->] // the flow layout should now be forced to be 10 wide
+				MhAssert.True(leftRightFlowLayout.Width == 10);
 
 				var middleFlowLayoutWrapper = new FlowLayoutWidget
 				{
@@ -2147,9 +2146,9 @@ async (testRunner) =>
 				// {<->(<->)<->}
 				leftRightFlowLayout.AddChild(middleFlowLayoutWrapper);
 				// [<->(10){<->(<->)<->}<->]
-				await Assert.That(leftRightFlowLayout.Width == 10).IsTrue();
-				await Assert.That(middleFlowLayoutWrapper.Width == 0).IsTrue();
-				await Assert.That(middleSpacer.Width == 0).IsTrue();
+				MhAssert.True(leftRightFlowLayout.Width == 10);
+				MhAssert.True(middleFlowLayoutWrapper.Width == 0);
+				MhAssert.True(middleSpacer.Width == 0);
 
 				var rightWidget = new GuiWidget(10, 10)
 				{
@@ -2157,7 +2156,7 @@ async (testRunner) =>
 				};
 				leftRightFlowLayout.AddChild(rightWidget);
 				// [<->(10){<->(<->)<->}(10)<->]
-				await Assert.That(leftRightFlowLayout.Width == 20).IsTrue();
+				MhAssert.True(leftRightFlowLayout.Width == 20);
 
 				var container = new GuiWidget(40, 20)
 				{
@@ -2165,19 +2164,19 @@ async (testRunner) =>
 				};
 				container.AddChild(leftRightFlowLayout);
 				// (40[<->(10){<->(<->)<->}(10)<->]) // the extra 20 must be put into the expandable (<->)
-				await Assert.That(leftRightFlowLayout.Width == 40).IsTrue();
-				await Assert.That(middleFlowLayoutWrapper.Width == 20).IsTrue();
-				await Assert.That(middleSpacer.Width == 20).IsTrue();
+				MhAssert.True(leftRightFlowLayout.Width == 40);
+				MhAssert.True(middleFlowLayoutWrapper.Width == 20);
+				MhAssert.True(middleSpacer.Width == 20);
 
 				container.Width = 50;
 				// (50[<->(10){<->(<->)<->}(10)<->]) // the extra 30 must be put into the expandable (<->)
-				await Assert.That(leftRightFlowLayout.Width == 50).IsTrue();
-				await Assert.That(middleSpacer.Width == 30).IsTrue();
+				MhAssert.True(leftRightFlowLayout.Width == 50);
+				MhAssert.True(middleSpacer.Width == 30);
 
 				container.Width = 40;
 				// (50[<->(10){<->(<->)<->}(10)<->]) // the extra 20 must be put into the expandable (<->) by shrinking it
-				await Assert.That(leftRightFlowLayout.Width == 40).IsTrue();
-				await Assert.That(middleSpacer.Width == 20).IsTrue();
+				MhAssert.True(leftRightFlowLayout.Width == 40);
+				MhAssert.True(middleSpacer.Width == 20);
 			}
 
 			// make sure a middle spacer grows and shrinks correctly when in another guiwidget (not a flow widget) that is LeftRight
@@ -2186,10 +2185,10 @@ async (testRunner) =>
 				{
 					Name = "leftRightFlowLayout"
 				};
-				await Assert.That(leftRightFlowLayout.HAnchor == HAnchor.Fit).IsTrue(); // flow layout starts with FitToChildren
+				MhAssert.True(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-																// [<-><->] // attempting to make a visual description of what is happening
-				await Assert.That(leftRightFlowLayout.Width == 0).IsTrue(); // nothing is forcing it to have a width so it doesn't
+				// [<-><->] // attempting to make a visual description of what is happening
+				MhAssert.True(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 
 				var middleSpacer = new GuiWidget(0, 10)
 				{
@@ -2198,10 +2197,10 @@ async (testRunner) =>
 				}; // this widget will hold the space
 				leftRightFlowLayout.AddChild(middleSpacer);
 				// [<->(<->)<->]
-				await Assert.That(leftRightFlowLayout.Width == 0).IsTrue();
-				await Assert.That(middleSpacer.Width == 0).IsTrue();
+				MhAssert.True(leftRightFlowLayout.Width == 0);
+				MhAssert.True(middleSpacer.Width == 0);
 
-				await Assert.That(leftRightFlowLayout.Width == 0).IsTrue();
+				MhAssert.True(leftRightFlowLayout.Width == 0);
 
 				var containerOuter = new GuiWidget(40, 20)
 				{
@@ -2213,37 +2212,37 @@ async (testRunner) =>
 					Name = "containerInner"
 				};
 				containerOuter.AddChild(containerInner);
-				await Assert.That(containerInner.Width == 40).IsTrue();
+				MhAssert.True(containerInner.Width == 40);
 				containerInner.AddChild(leftRightFlowLayout);
 				// (40(<-[<->(<->)<->]->)) // the extra 20 must be put into the expandable (<->)
-				await Assert.That(containerInner.Width == 40).IsTrue();
-				await Assert.That(leftRightFlowLayout.Width == 40).IsTrue();
-				await Assert.That(middleSpacer.Width == 40).IsTrue();
+				MhAssert.True(containerInner.Width == 40);
+				MhAssert.True(leftRightFlowLayout.Width == 40);
+				MhAssert.True(middleSpacer.Width == 40);
 
 				containerOuter.Width = 50;
 				// (50(<-[<->(<->)<->]->) // the extra 30 must be put into the expandable (<->)
-				await Assert.That(containerInner.Width == 50).IsTrue();
-				await Assert.That(leftRightFlowLayout.Width == 50).IsTrue();
-				await Assert.That(middleSpacer.Width == 50).IsTrue();
+				MhAssert.True(containerInner.Width == 50);
+				MhAssert.True(leftRightFlowLayout.Width == 50);
+				MhAssert.True(middleSpacer.Width == 50);
 
 				containerOuter.Width = 40;
 				// (40(<-[<->(<->)<->]->) // the extra 20 must be put into the expandable (<->) by shrinking it
-				await Assert.That(containerInner.Width == 40).IsTrue();
-				await Assert.That(leftRightFlowLayout.Width == 40).IsTrue();
-				await Assert.That(middleSpacer.Width == 40).IsTrue();
+				MhAssert.True(containerInner.Width == 40);
+				MhAssert.True(leftRightFlowLayout.Width == 40);
+				MhAssert.True(middleSpacer.Width == 40);
 			}
 
 			// make sure a middle spacer grows and shrinks correctly when in another guiwidget (not a flow widget) that is LeftRight
 			{
 				var leftRightFlowLayout = new FlowLayoutWidget();
-				await Assert.That(leftRightFlowLayout.HAnchor == HAnchor.Fit).IsTrue(); // flow layout starts with FitToChildren
+				MhAssert.True(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-																// [<-><->] // attempting to make a visual description of what is happening
-				await Assert.That(leftRightFlowLayout.Width == 0).IsTrue(); // nothing is forcing it to have a width so it doesn't
+				// [<-><->] // attempting to make a visual description of what is happening
+				MhAssert.True(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 				var leftWidget = new GuiWidget(10, 10); // we call it left widget as it will be the first one in the left to right flow layout
 				leftRightFlowLayout.AddChild(leftWidget); // add in a child with a width of 10
-														  // [<->(10)<->] // the flow layout should now be forced to be 10 wide
-				await Assert.That(leftRightFlowLayout.Width == 10).IsTrue();
+				// [<->(10)<->] // the flow layout should now be forced to be 10 wide
+				MhAssert.True(leftRightFlowLayout.Width == 10);
 
 				var middleSpacer = new GuiWidget(0, 10)
 				{
@@ -2251,13 +2250,13 @@ async (testRunner) =>
 				}; // this widget will hold the space
 				leftRightFlowLayout.AddChild(middleSpacer);
 				// [<->(10)(<->)<->]
-				await Assert.That(leftRightFlowLayout.Width == 10).IsTrue();
-				await Assert.That(middleSpacer.Width == 0).IsTrue();
+				MhAssert.True(leftRightFlowLayout.Width == 10);
+				MhAssert.True(middleSpacer.Width == 0);
 
 				var rightItem = new GuiWidget(10, 10);
 				leftRightFlowLayout.AddChild(rightItem);
 				// [<->(10)(<->)(10)<->]
-				await Assert.That(leftRightFlowLayout.Width == 20).IsTrue();
+				MhAssert.True(leftRightFlowLayout.Width == 20);
 
 				var containerOuter = new GuiWidget(40, 20)
 				{
@@ -2269,29 +2268,29 @@ async (testRunner) =>
 					Name = "containerInner"
 				};
 				containerOuter.AddChild(containerInner);
-				await Assert.That(containerInner.Width == 40).IsTrue();
+				MhAssert.True(containerInner.Width == 40);
 				containerInner.AddChild(leftRightFlowLayout);
 				// (40(<-[<->(10)(<->)(10)<->]->)) // the extra 20 must be put into the expandable (<->)
-				await Assert.That(containerInner.Width == 40).IsTrue();
-				await Assert.That(leftRightFlowLayout.Width == 40).IsTrue();
-				await Assert.That(middleSpacer.Width == 20).IsTrue();
+				MhAssert.True(containerInner.Width == 40);
+				MhAssert.True(leftRightFlowLayout.Width == 40);
+				MhAssert.True(middleSpacer.Width == 20);
 
 				containerOuter.Width = 50;
 				// (50(<-[<->(10)(<->)(10)<->]->) // the extra 30 must be put into the expandable (<->)
-				await Assert.That(containerInner.Width == 50).IsTrue();
-				await Assert.That(leftRightFlowLayout.Width == 50).IsTrue();
-				await Assert.That(middleSpacer.Width == 30).IsTrue();
+				MhAssert.True(containerInner.Width == 50);
+				MhAssert.True(leftRightFlowLayout.Width == 50);
+				MhAssert.True(middleSpacer.Width == 30);
 
 				containerOuter.Width = 40;
 				// (40(<-[<->(10)(<->)(10)<->]->) // the extra 20 must be put into the expandable (<->) by shrinking it
-				await Assert.That(containerInner.Width == 40).IsTrue();
-				await Assert.That(leftRightFlowLayout.Width == 40).IsTrue();
-				await Assert.That(middleSpacer.Width == 20).IsTrue();
+				MhAssert.True(containerInner.Width == 40);
+				MhAssert.True(leftRightFlowLayout.Width == 40);
+				MhAssert.True(middleSpacer.Width == 20);
 			}
 		}
 
-		[Test]
-		public async Task TestVAnchorCenter()
+        [MhTest]
+        public void TestVAnchorCenter()
 		{
 			var searchPanel = new FlowLayoutWidget
 			{
@@ -2313,9 +2312,9 @@ async (testRunner) =>
 				};
 
 				searchPanel.AddChild(searchInput);
-				await Assert.That(searchInput.BoundsRelativeToParent.Bottom - searchPanel.BoundsRelativeToParent.Bottom == searchPanel.BoundsRelativeToParent.Top - searchInput.BoundsRelativeToParent.Top).IsTrue();
+				MhAssert.True(searchInput.BoundsRelativeToParent.Bottom - searchPanel.BoundsRelativeToParent.Bottom == searchPanel.BoundsRelativeToParent.Top - searchInput.BoundsRelativeToParent.Top);
 				searchPanel.AddChild(searchButton);
-				await Assert.That(searchInput.BoundsRelativeToParent.Bottom - searchPanel.BoundsRelativeToParent.Bottom == searchPanel.BoundsRelativeToParent.Top - searchInput.BoundsRelativeToParent.Top).IsTrue();
+				MhAssert.True(searchInput.BoundsRelativeToParent.Bottom - searchPanel.BoundsRelativeToParent.Bottom == searchPanel.BoundsRelativeToParent.Top - searchInput.BoundsRelativeToParent.Top);
 			}
 
 			searchPanel.Close();

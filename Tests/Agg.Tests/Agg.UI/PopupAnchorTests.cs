@@ -3,6 +3,7 @@ Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 */
 
+using Agg.Tests.Agg;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.GuiAutomation;
@@ -13,10 +14,10 @@ using System.Threading.Tasks;
 
 namespace MatterCAD.Tests.MatterCAD
 {
-	[NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
+	[MhTestFixture("Opens Winforms Window")]
 	public class PopupAnchorTests
 	{
-		[Test]
+		[MhTest]
 		public async Task WindowTest()
 		{
 			var systemWindow = new PopupsTestWindow(700, 300)
@@ -67,7 +68,7 @@ namespace MatterCAD.Tests.MatterCAD
 			}, 30);
 		}
 
-		[Test]
+		[MhTest]
 		public async Task TopBottomPopupTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -99,11 +100,11 @@ namespace MatterCAD.Tests.MatterCAD
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Top;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Bottom;
 
-					await Assert.That(popupPosition).IsEqualTo(buttonPosition);
+					MhAssert.Equal(buttonPosition, popupPosition);
 				});
 		}
 
-		[Test]
+		[MhTest]
 		public async Task TopTopPopupTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -135,11 +136,11 @@ namespace MatterCAD.Tests.MatterCAD
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Top;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Top;
 
-					await Assert.That(popupPosition).IsEqualTo(buttonPosition);
+					MhAssert.Equal(buttonPosition, popupPosition);
 				});
 		}
 
-		[Test]
+		[MhTest]
 		public async Task BottomTopPopupTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -171,11 +172,11 @@ namespace MatterCAD.Tests.MatterCAD
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Bottom;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Top;
 
-					await Assert.That(popupPosition).IsEqualTo(buttonPosition);
+					MhAssert.Equal(buttonPosition, popupPosition);
 				});
 		}
 
-		[Test]
+		[MhTest]
 		public async Task BottomBottomPopupTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -207,12 +208,12 @@ namespace MatterCAD.Tests.MatterCAD
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Bottom;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Bottom;
 
-					await Assert.That(popupPosition).IsEqualTo(buttonPosition);
+					MhAssert.Equal(buttonPosition, popupPosition);
 				});
 		}
 
 		// Redirect down to up
-		[Test]
+		[MhTest]
 		public async Task BottomTopUpRedirectTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -246,7 +247,7 @@ namespace MatterCAD.Tests.MatterCAD
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Top;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Bottom;
 
-					await Assert.That(popupPosition).IsEqualTo(buttonPosition);
+					MhAssert.Equal(buttonPosition, popupPosition);
 				},
 				(row) =>
 				{
@@ -254,7 +255,7 @@ namespace MatterCAD.Tests.MatterCAD
 				});
 		}
 
-		[Test]
+		[MhTest]
 		public async Task TopTopUpRedirectTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -288,7 +289,7 @@ namespace MatterCAD.Tests.MatterCAD
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Bottom;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Bottom;
 
-					await Assert.That(popupPosition).IsEqualTo(buttonPosition);
+					MhAssert.Equal(buttonPosition, popupPosition);
 				},
 				(row) =>
 				{
@@ -298,7 +299,7 @@ namespace MatterCAD.Tests.MatterCAD
 
 
 		// Redirect up to down
-		[Test]
+		[MhTest]
 		public async Task BottomTopDownRedirectTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -332,7 +333,7 @@ namespace MatterCAD.Tests.MatterCAD
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Bottom;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Top;
 
-					await Assert.That(popupPosition).IsEqualTo(buttonPosition);
+					MhAssert.Equal(buttonPosition, popupPosition);
 				},
 				(row) =>
 				{
@@ -340,7 +341,7 @@ namespace MatterCAD.Tests.MatterCAD
 				});
 		}
 
-		[Test]
+		[MhTest]
 		public async Task TopTopDownRedirectTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -374,7 +375,7 @@ namespace MatterCAD.Tests.MatterCAD
 					double buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Top;
 					double popupPosition = popupWidget.TransformToScreenSpace(popupWidget.LocalBounds).Top;
 
-					await Assert.That(popupPosition).IsEqualTo(buttonPosition);
+					MhAssert.Equal(buttonPosition, popupPosition);
 				},
 				(row) =>
 				{
@@ -383,7 +384,7 @@ namespace MatterCAD.Tests.MatterCAD
 		}
 
 		// Redirect left to right
-		[Test]
+		[MhTest]
 		public async Task LeftRightRedirectTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -427,7 +428,7 @@ namespace MatterCAD.Tests.MatterCAD
 						buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Right;
 					}
 
-					await Assert.That(popupPosition).IsEqualTo(buttonPosition);
+					MhAssert.Equal(buttonPosition, popupPosition);
 				},
 				(row) =>
 				{
@@ -437,7 +438,7 @@ namespace MatterCAD.Tests.MatterCAD
 		}
 
 		// Redirect right to left
-		[Test]
+		[MhTest]
 		public async Task RightLeftRedirectTest()
 		{
 			var systemWindow = new PopupsTestWindow(800, 600)
@@ -479,7 +480,7 @@ namespace MatterCAD.Tests.MatterCAD
 						buttonPosition = buttonWidget.TransformToScreenSpace(buttonWidget.LocalBounds).Right;
 					}
 
-					await Assert.That(popupPosition).IsEqualTo(buttonPosition);
+					MhAssert.Equal(buttonPosition, popupPosition);
 				},
 				(row) =>
 				{
@@ -560,7 +561,6 @@ namespace MatterCAD.Tests.MatterCAD
 			}, 25);
 		}
 
-		[NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
 		public class PopupsTestWindow : SystemWindow
 		{
 			private FlowLayoutWidget column;

@@ -33,14 +33,12 @@ using System.IO;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Font;
 using MatterHackers.VectorMath;
-using TUnit.Assertions;
-using TUnit.Core;
-using MatterHackers.Agg.UI.Tests;
+using Agg.Tests.Agg;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
-   	public class TextEditTests
+    [MhTestFixture]
+	public class TextEditTests
 	{
 		public static bool SaveImagesForDebug = false;
 
@@ -70,8 +68,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [Test]
-        public async Task CorectLineCounts()
+        [MhTest]
+        public void CorectLineCounts()
 		{
 			var lines7 = @"; activate T0
 ; move up a bit
@@ -81,7 +79,7 @@ G90
 ; do the switch to T0
 G1 X-29.5 F6000 ; NO_PROCESSING";
 			var printer7 = new TypeFacePrinter(lines7);
-			await Assert.That(printer7.NumLines()).IsEqualTo(7);
+			MhAssert.Equal(7, printer7.NumLines());
 
 			var lines8 = @"; activate T0
 ; move up a bit
@@ -92,11 +90,11 @@ G90
 G1 X-29.5 F6000 ; NO_PROCESSING
 ";
 			var printer8 = new TypeFacePrinter(lines8);
-			await Assert.That(printer8.NumLines()).IsEqualTo(8);
+			MhAssert.Equal(8, printer8.NumLines());
 		}
 
-        [Test]
-        public async Task TextEditTextSelectionTests()
+        [MhTest]
+        public void TextEditTextSelectionTests()
 		{
 			var container = new GuiWidget
 			{
@@ -109,38 +107,38 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			SendKey(Keys.A, 'a', container);
-			await Assert.That(editField1.Text == "a").IsTrue();
+			MhAssert.True(editField1.Text == "a", "It should have a in it.");
 
 			// select the beginning again and type something else in it
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			SendKey(Keys.B, 'b', container);
-			await Assert.That(editField1.Text == "ba").IsTrue();
+			MhAssert.True(editField1.Text == "ba", "It should have ba in it.");
 
 			// select the ba and delete them
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
 			container.OnMouseMove(new MouseEventArgs(MouseButtons.Left, 0, 15, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 15, 0, 0));
 			SendKey(Keys.Back, ' ', container);
-			await Assert.That(editField1.Text == "").IsTrue();
+			MhAssert.True(editField1.Text == "", "It should have nothing in it.");
 
 			// select the other way
 			editField1.Text = "ab";
-			await Assert.That(editField1.Text == "ab").IsTrue();
+			MhAssert.True(editField1.Text == "ab", "It should have ab in it.");
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 15, 0, 0));
 			container.OnMouseMove(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			SendKey(Keys.Back, ' ', container);
-			await Assert.That(editField1.Text == "").IsTrue();
+			MhAssert.True(editField1.Text == "", "It should have nothing in it.");
 
 			// select the other way but start far to the right
 			editField1.Text = "abc";
-			await Assert.That(editField1.Text == "abc").IsTrue();
+			MhAssert.True(editField1.Text == "abc", "It should have abc in it.");
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 30, 0, 0));
 			container.OnMouseMove(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			SendKey(Keys.Back, ' ', container);
-			await Assert.That(editField1.Text == "").IsTrue();
+			MhAssert.True(editField1.Text == "", "It should have nothing in it.");
 
 			// double click empty does nothing
 			// select the other way but start far to the right
@@ -149,7 +147,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 2, 1, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
-			await Assert.That(editField1.Selection).IsEqualTo("");//, "First word selected");
+			MhAssert.Equal("", editField1.Selection);//, "First word selected");
 
             // double click first word selects
             editField1.Text = "abc 123";
@@ -157,7 +155,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 2, 1, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
-			await Assert.That(editField1.Selection).IsEqualTo("abc");//, "First word selected");
+			MhAssert.Equal("abc", editField1.Selection);//, "First word selected");
 
             // double click last word selects
             editField1.Text = "abc 123";
@@ -165,13 +163,13 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 2, 30, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
-			await Assert.That(editField1.Selection).IsEqualTo("123");//, "Second word selected");
+			MhAssert.Equal("123", editField1.Selection);//, "Second word selected");
 
             container.Close();
 		}
 
-        [Test]
-        public async Task TextSelectionWithShiftClick()
+        [MhTest]
+        public void TextSelectionWithShiftClick()
 		{
 			const string fullText = "This is a text";
 
@@ -182,52 +180,52 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			// select all from left to right with shift click
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 0, 0));
-			await Assert.That(editField1.CharIndexToInsertBefore).IsEqualTo(0);
-			await Assert.That(editField1.Selection).IsEqualTo("");
+			MhAssert.Equal(0, editField1.CharIndexToInsertBefore);
+			MhAssert.Equal("", editField1.Selection);
 			Keyboard.SetKeyDownState(Keys.Shift, true);
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 100, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 100, 0, 0));
 			Keyboard.SetKeyDownState(Keys.Shift, false);
-			await Assert.That(editField1.CharIndexToInsertBefore).IsEqualTo(fullText.Length);
-			await Assert.That(editField1.Selection).IsEqualTo(fullText);//, "It should select full text");
+			MhAssert.Equal(fullText.Length, editField1.CharIndexToInsertBefore);
+			MhAssert.Equal(fullText, editField1.Selection);//, "It should select full text");
 
             // select all from right to left with shift click
             container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 100, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 100, 0, 0));
-			await Assert.That(editField1.CharIndexToInsertBefore).IsEqualTo(fullText.Length);
-			await Assert.That(editField1.Selection).IsEqualTo("");
+			MhAssert.Equal(fullText.Length, editField1.CharIndexToInsertBefore);
+			MhAssert.Equal("", editField1.Selection);
 			Keyboard.SetKeyDownState(Keys.Shift, true);
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 0, 0));
 			Keyboard.SetKeyDownState(Keys.Shift, false);
-			await Assert.That(editField1.CharIndexToInsertBefore).IsEqualTo(0);
-			await Assert.That(editField1.Selection).IsEqualTo(fullText);//, "It should select full text");
+			MhAssert.Equal(0, editField1.CharIndexToInsertBefore);
+			MhAssert.Equal(fullText, editField1.Selection);//, "It should select full text");
 
             // select parts of the text with shift click
             container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 0, 0));
 			SendKey(Keys.Control | Keys.Right, ' ', container);
 			SendKey(Keys.Control | Keys.Right, ' ', container);
-			await Assert.That(editField1.CharIndexToInsertBefore).IsEqualTo("This is ".Length);
-			await Assert.That(editField1.Selection).IsEqualTo("");
+			MhAssert.Equal("This is ".Length, editField1.CharIndexToInsertBefore);
+			MhAssert.Equal("", editField1.Selection);
 			Keyboard.SetKeyDownState(Keys.Shift, true);
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 100, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 100, 0, 0));
 			Keyboard.SetKeyDownState(Keys.Shift, false);
-			await Assert.That(editField1.CharIndexToInsertBefore).IsEqualTo(fullText.Length);
-			await Assert.That(editField1.Selection).IsEqualTo("a text");//, "It should select second part of the text");
+			MhAssert.Equal(fullText.Length, editField1.CharIndexToInsertBefore);
+			MhAssert.Equal("a text", editField1.Selection);//, "It should select second part of the text");
             Keyboard.SetKeyDownState(Keys.Shift, true);
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 0, 0));
 			Keyboard.SetKeyDownState(Keys.Shift, false);
-			await Assert.That(editField1.CharIndexToInsertBefore).IsEqualTo(0);
-			await Assert.That(editField1.Selection).IsEqualTo("This is ");//, "It should select first part of the text");
+			MhAssert.Equal(0, editField1.CharIndexToInsertBefore);
+			MhAssert.Equal("This is ", editField1.Selection);//, "It should select first part of the text");
 
             container.Close();
 		}
 
-        [Test]
-        public async Task TextChangedEventsTests()
+        [MhTest]
+        public void TextChangedEventsTests()
 		{
 			var container = new GuiWidget
 			{
@@ -238,7 +236,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			{
 				Name = "editField1"
 			};
-			await Assert.That(editField1.BoundsRelativeToParent.Top < 40).IsTrue();
+			MhAssert.True(editField1.BoundsRelativeToParent.Top < 40, "We make this assumption in the code below, so make sure it's true.");
 			bool textField1EditComplete = false;
 			editField1.EditComplete += (sender, e) => { textField1EditComplete = true; };
 			bool textField1LostFocus = false;
@@ -266,44 +264,44 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			// mouse select on the control when it contains nothing
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 1, 0));
-			await Assert.That(textField1GotFocus).IsTrue();
-			await Assert.That(textField1EditComplete).IsFalse();
+			MhAssert.True(textField1GotFocus);
+			MhAssert.False(textField1EditComplete);
 			SendKey(Keys.B, 'b', container);
-			await Assert.That(editField1.Text == "b").IsTrue();
-			await Assert.That(textField1EditComplete).IsFalse();
+			MhAssert.True(editField1.Text == "b");
+			MhAssert.False(textField1EditComplete, "We do not change with each keystroke.");
 			SendKey(Keys.Enter, '\n', container);
-			await Assert.That(textField1EditComplete).IsTrue();
+			MhAssert.True(textField1EditComplete, "Enter must send a EditComplete if changed.");
 			textField1EditComplete = false;
 			SendKey(Keys.A, 'a', container);
-			await Assert.That(editField1.Text == "ba").IsTrue();
-			await Assert.That(textField1EditComplete).IsFalse();
+			MhAssert.True(editField1.Text == "ba");
+			MhAssert.False(textField1EditComplete, "We do not change with each keystroke.");
 
-			await Assert.That(textField1LostFocus).IsFalse();
+			MhAssert.False(textField1LostFocus);
 			textField1GotFocus = false;
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 41, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 1, 0));
 			SendKey(Keys.E, 'e', container);
-			await Assert.That(textField1LostFocus).IsTrue();
-			await Assert.That(textField1EditComplete).IsTrue();
-			await Assert.That(editField1.Text == "ba").IsTrue();
-			await Assert.That(editField2.Text == "e").IsTrue();
+			MhAssert.True(textField1LostFocus);
+			MhAssert.True(textField1EditComplete, "Loosing focus should send a text changed.");
+			MhAssert.True(editField1.Text == "ba");
+			MhAssert.True(editField2.Text == "e");
 
 			textField1EditComplete = false;
 			textField1LostFocus = false;
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 1, 0));
-			await Assert.That(textField1LostFocus).IsFalse();
-			await Assert.That(textField1EditComplete).IsFalse();
+			MhAssert.False(textField1LostFocus);
+			MhAssert.False(textField1EditComplete);
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 41, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 1, 0));
-			await Assert.That(textField1LostFocus).IsTrue();
-			await Assert.That(textField1EditComplete).IsFalse();
+			MhAssert.True(textField1LostFocus);
+			MhAssert.False(textField1EditComplete, "The text did not change even though we lost focus we should not call textChanged.");
 
 			container.Close();
 		}
 
-        [Test]
-        public async Task TextEditGetsFocusTests()
+        [MhTest]
+        public void TextEditGetsFocusTests()
 		{
 			var container = new GuiWidget
 			{
@@ -323,45 +321,45 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.AddChild(editField2);
 
 			// select no edit field
-			await Assert.That(editField1.Text == "").IsTrue();
+			MhAssert.True(editField1.Text == "");
 			SendKey(Keys.D, 'a', container);
-			await Assert.That(editField1.Text == "").IsTrue();
-			await Assert.That(editField2.Text == "").IsTrue();
+			MhAssert.True(editField1.Text == "");
+			MhAssert.True(editField2.Text == "");
 
 			// select edit field 1
 			container.OnMouseMove(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0)); // we move into the widget to make sure we have separate focus and enter events.
-			await Assert.That(editField1.ContainsFocus == false).IsTrue();
-			await Assert.That(editField1.Focused == false).IsTrue();
+			MhAssert.True(editField1.ContainsFocus == false);
+			MhAssert.True(editField1.Focused == false);
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
-			await Assert.That(editField1.ContainsFocus == true).IsTrue();
-			await Assert.That(editField1.Focused == false).IsTrue();
+			MhAssert.True(editField1.ContainsFocus == true);
+			MhAssert.True(editField1.Focused == false, "The internal text widget must be focused.");
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
-			await Assert.That(editField1.ContainsFocus == true).IsTrue();
-			await Assert.That(editField1.Focused == false).IsTrue();
+			MhAssert.True(editField1.ContainsFocus == true);
+			MhAssert.True(editField1.Focused == false);
 			SendKey(Keys.B, 'b', container);
-			await Assert.That(editField1.Text == "b").IsTrue();
+			MhAssert.True(editField1.Text == "b", "It should have b a in it.");
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 150, 1, 0));
-			await Assert.That(editField1.ContainsFocus == true).IsTrue();
-			await Assert.That(editField1.Focused == false).IsTrue();
+			MhAssert.True(editField1.ContainsFocus == true);
+			MhAssert.True(editField1.Focused == false, "The internal text widget must be focused.");
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 150, 1, 0));
-			await Assert.That(editField1.ContainsFocus == true).IsTrue();
-			await Assert.That(editField1.Focused == false).IsTrue();
+			MhAssert.True(editField1.ContainsFocus == true);
+			MhAssert.True(editField1.Focused == false);
 			SendKey(Keys.D, 'c', container);
-			await Assert.That(editField1.Text == "bc").IsTrue();
+			MhAssert.True(editField1.Text == "bc", "It should have b a in it.");
 
 			// select edit field 2
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 21, 0));
-			await Assert.That(editField2.ContainsFocus == true).IsTrue();
+			MhAssert.True(editField2.ContainsFocus == true);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, 21, 0));
 			SendKey(Keys.D, 'd', container);
-			await Assert.That(editField1.Text == "bc").IsTrue();
-			await Assert.That(editField2.Text == "d").IsTrue();
+			MhAssert.True(editField1.Text == "bc", "It should have a bc in it.");
+			MhAssert.True(editField2.Text == "d", "It should have d in it.");
 
 			container.Close();
 		}
 
-        [Test]
-        public async Task AddThenDeleteCausesNoVisualChange()
+        [MhTest]
+        public void AddThenDeleteCausesNoVisualChange()
 		{
 			var container = new GuiWidget
 			{
@@ -380,70 +378,68 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 10, 10, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 10, 10, 0));
-			await Assert.That(editField1.ContainsFocus == true).IsTrue();
+			MhAssert.True(editField1.ContainsFocus == true);
 			SendKey(Keys.B, 'b', container);
-			await Assert.That(editField1.Text == "bTest").IsTrue();
+			MhAssert.True(editField1.Text == "bTest", "It should have b a in it.");
 			RectangleDouble afterBLocalBounds = editField1.LocalBounds;
-			await Assert.That(beforeLocalBounds.Bottom == afterBLocalBounds.Bottom && beforeLocalBounds.Top == afterBLocalBounds.Top).IsTrue();
+			MhAssert.True(beforeLocalBounds.Bottom == afterBLocalBounds.Bottom && beforeLocalBounds.Top == afterBLocalBounds.Top);
 
 			SendKey(Keys.Back, ' ', container);
-			await Assert.That(editField1.Text == "Test").IsTrue();
+			MhAssert.True(editField1.Text == "Test", "It should not have b a in it.");
 
 			RectangleDouble afterLocalBounds = editField1.LocalBounds;
 			Vector2 afterOrigin = editField1.OriginRelativeParent;
 
-			await Assert.That(beforeLocalBounds == afterLocalBounds).IsTrue();
-			await Assert.That(beforeOrigin == afterOrigin).IsTrue();
+			MhAssert.True(beforeLocalBounds == afterLocalBounds);
+			MhAssert.True(beforeOrigin == afterOrigin);
 
 			// click off it so the cursor is not in it.
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
-			await Assert.That(editField1.Focused == false).IsTrue();
+			MhAssert.True(editField1.Focused == false);
 
 			container.BackBuffer.NewGraphics2D().Clear(Color.White);
 			container.OnDraw(container.BackBuffer.NewGraphics2D());
 			OutputImage(container.BackBuffer, "z text edited.tga");
 
-			await Assert.That(container.BackBuffer == beforeEditImage).IsTrue();
+			MhAssert.True(container.BackBuffer == beforeEditImage);
 		}
 
-        [Test]
-        public async Task MultiLineTests()
+        [MhTest]
+        public void MultiLineTests()
 		{
-            Clipboard.SetSystemClipboard(new SimulatedClipboard());
-            
 			// make sure selection ranges are always working
-            {
-                Clipboard.SetSystemClipboard(new SimulatedClipboard());
+			{
+				//Clipboard.SetSystemClipboard(new SimulatedClipboard());
 
-                var singleLine = new InternalTextEditWidget("test", 12, false, 0);
+				var singleLine = new InternalTextEditWidget("test", 12, false, 0);
 
-                async Task TestRange(int start, int end, string expected)
+				void TestRange(int start, int end, string expected)
 				{
 					singleLine.CharIndexToInsertBefore = start;
 					singleLine.SelectionIndexToStartBefore = end;
 					singleLine.Selecting = true;
-					await Assert.That(singleLine.Selection).IsEqualTo(expected);
+					MhAssert.Equal(expected, singleLine.Selection);
 					singleLine.CopySelection();
 
-					await Assert.That(Clipboard.Instance.GetText()).IsEqualTo(expected);
+					MhAssert.Equal(expected, Clipboard.Instance.GetText());
 				}
 
 				// ask for some selections
-				await TestRange(-10, -8, "");
-				await TestRange(-8, -10, "");
-				await TestRange(18, 10, "");
-				await TestRange(10, 18, "");
-				await TestRange(2, -10, "te");
-				await TestRange(-10, 2, "te");
-				await TestRange(18, 2, "st");
-				await TestRange(3, 22, "t");
+				TestRange(-10, -8, "");
+				TestRange(-8, -10, "");
+				TestRange(18, 10, "");
+				TestRange(10, 18, "");
+				TestRange(2, -10, "te");
+				TestRange(-10, 2, "te");
+				TestRange(18, 2, "st");
+				TestRange(3, 22, "t");
 			}
 
 			{
 				var singleLine = new InternalTextEditWidget("test", 12, false, 0);
 				var multiLine = new InternalTextEditWidget("test\ntest\ntest", 12, true, 0);
-				await Assert.That(multiLine.Height >= singleLine.Height * 3).IsTrue();
+				MhAssert.True(multiLine.Height >= singleLine.Height * 3);
 			}
 
 			// we get the typed results we expect
@@ -457,25 +453,25 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 
 				container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
 				container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
-				await Assert.That(multiLine.ContainsFocus == true).IsTrue();
-				await Assert.That(multiLine.SelectionIndexToStartBefore == 4).IsTrue();
-				await Assert.That(multiLine.Text == "\n\n\n\n").IsTrue();
+				MhAssert.True(multiLine.ContainsFocus == true);
+				MhAssert.True(multiLine.SelectionIndexToStartBefore == 4);
+				MhAssert.True(multiLine.Text == "\n\n\n\n");
 				SendKey(Keys.A, 'a', container);
-				await Assert.That(multiLine.Text == "\n\n\n\na").IsTrue();
+				MhAssert.True(multiLine.Text == "\n\n\n\na");
 				SendKey(Keys.Up, ' ', container);
 				SendKey(Keys.A, 'a', container);
-				await Assert.That(multiLine.Text == "\n\n\na\na").IsTrue();
+				MhAssert.True(multiLine.Text == "\n\n\na\na");
 
 				container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, multiLine.Height - 1, 0));
 				container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, multiLine.Height - 1, 0));
-				await Assert.That(multiLine.ContainsFocus == true).IsTrue();
-				await Assert.That(multiLine.SelectionIndexToStartBefore == 0).IsTrue();
-				await Assert.That(multiLine.Text == "\n\n\na\na").IsTrue();
+				MhAssert.True(multiLine.ContainsFocus == true);
+				MhAssert.True(multiLine.SelectionIndexToStartBefore == 0);
+				MhAssert.True(multiLine.Text == "\n\n\na\na");
 				SendKey(Keys.A, 'a', container);
-				await Assert.That(multiLine.Text == "a\n\n\na\na").IsTrue();
+				MhAssert.True(multiLine.Text == "a\n\n\na\na");
 				SendKey(Keys.Down, ' ', container);
 				SendKey(Keys.A | Keys.Shift, 'A', container);
-				await Assert.That(multiLine.Text == "a\nA\n\na\na").IsTrue();
+				MhAssert.True(multiLine.Text == "a\nA\n\na\na");
 
 				container.Close();
 			}
@@ -491,16 +487,16 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 
 				container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 5, 1, 0));
 				container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 5, 1, 0));
-				await Assert.That(multiLine.ContainsFocus == true).IsTrue();
-				await Assert.That(multiLine.InsertBarPosition.Y == -32).IsTrue();
+				MhAssert.True(multiLine.ContainsFocus == true);
+				MhAssert.True(multiLine.InsertBarPosition.Y == -32);
 				SendKey(Keys.Home, ' ', container);
-				await Assert.That(multiLine.InsertBarPosition.Y == -32).IsTrue();
-				await Assert.That(multiLine.Text == "line1\nline2\nline3").IsTrue();
+				MhAssert.True(multiLine.InsertBarPosition.Y == -32);
+				MhAssert.True(multiLine.Text == "line1\nline2\nline3");
 				SendKey(Keys.A, 'a', container);
-				await Assert.That(multiLine.Text == "line1\nline2\naline3").IsTrue();
+				MhAssert.True(multiLine.Text == "line1\nline2\naline3");
 				SendKey(Keys.Back, ' ', container);
-				await Assert.That(multiLine.Text == "line1\nline2\nline3").IsTrue();
-				await Assert.That(multiLine.InsertBarPosition.Y == -32).IsTrue();
+				MhAssert.True(multiLine.Text == "line1\nline2\nline3");
+				MhAssert.True(multiLine.InsertBarPosition.Y == -32);
 				container.Close();
 			}
 
@@ -515,18 +511,18 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 
 				container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
 				container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
-				await Assert.That(multiLine.ContainsFocus == true).IsTrue();
-				await Assert.That(multiLine.CharIndexToInsertBefore == 0).IsTrue();
-				await Assert.That(multiLine.InsertBarPosition.X == 0).IsTrue();
+				MhAssert.True(multiLine.ContainsFocus == true);
+				MhAssert.True(multiLine.CharIndexToInsertBefore == 0);
+				MhAssert.True(multiLine.InsertBarPosition.X == 0);
 				SendKey(Keys.Home, ' ', container);
-				await Assert.That(multiLine.CharIndexToInsertBefore == 0).IsTrue();
-				await Assert.That(multiLine.InsertBarPosition.X == 0).IsTrue();
+				MhAssert.True(multiLine.CharIndexToInsertBefore == 0);
+				MhAssert.True(multiLine.InsertBarPosition.X == 0);
 				SendKey(Keys.Right, ' ', container);
-				await Assert.That(multiLine.CharIndexToInsertBefore == 1).IsTrue();
+				MhAssert.True(multiLine.CharIndexToInsertBefore == 1);
 				double leftOne = multiLine.InsertBarPosition.X;
 				SendKey(Keys.Right, ' ', container);
-				await Assert.That(multiLine.CharIndexToInsertBefore == 2).IsTrue();
-				await Assert.That(multiLine.InsertBarPosition.X == leftOne * 2).IsTrue();
+				MhAssert.True(multiLine.CharIndexToInsertBefore == 2);
+				MhAssert.True(multiLine.InsertBarPosition.X == leftOne * 2);
 				container.Close();
 			}
 
@@ -538,50 +534,50 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 					LocalBounds = new RectangleDouble(0, 0, 200, 200)
 				};
 				var multiLine = new InternalTextEditWidget("\n1\n\n3\n", 12, true, 0);
-				await Assert.That(multiLine.LocalBounds.Height == 16 * 5).IsTrue();
+				MhAssert.True(multiLine.LocalBounds.Height == 16 * 5);
 				container.AddChild(multiLine);
 
 				container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, multiLine.Height - 1, 0));
 				container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, multiLine.Height - 1, 0));
 
-				await Assert.That(multiLine.CharIndexToInsertBefore == 0).IsTrue();
-				await Assert.That(multiLine.InsertBarPosition.Y == 0).IsTrue();
+				MhAssert.True(multiLine.CharIndexToInsertBefore == 0);
+				MhAssert.True(multiLine.InsertBarPosition.Y == 0);
 
 				// move past \n
 				SendKey(Keys.Right, ' ', container);
-				await Assert.That(multiLine.CharIndexToInsertBefore == 1).IsTrue();
-				await Assert.That(multiLine.InsertBarPosition.Y == -16).IsTrue();
+				MhAssert.True(multiLine.CharIndexToInsertBefore == 1);
+				MhAssert.True(multiLine.InsertBarPosition.Y == -16);
 
 				// move past 1
 				SendKey(Keys.Right, ' ', container);
-				await Assert.That(multiLine.CharIndexToInsertBefore == 2).IsTrue();
-				await Assert.That(multiLine.InsertBarPosition.Y == -16).IsTrue();
+				MhAssert.True(multiLine.CharIndexToInsertBefore == 2);
+				MhAssert.True(multiLine.InsertBarPosition.Y == -16);
 
 				// move past \n
 				SendKey(Keys.Right, ' ', container);
-				await Assert.That(multiLine.CharIndexToInsertBefore == 3).IsTrue();
-				await Assert.That(multiLine.InsertBarPosition.Y == -32).IsTrue();
+				MhAssert.True(multiLine.CharIndexToInsertBefore == 3);
+				MhAssert.True(multiLine.InsertBarPosition.Y == -32);
 
 				// move past \n
 				SendKey(Keys.Right, ' ', container);
-				await Assert.That(multiLine.CharIndexToInsertBefore == 4).IsTrue();
-				await Assert.That(multiLine.InsertBarPosition.Y == -48).IsTrue();
+				MhAssert.True(multiLine.CharIndexToInsertBefore == 4);
+				MhAssert.True(multiLine.InsertBarPosition.Y == -48);
 
 				// move past 3
 				SendKey(Keys.Right, ' ', container);
-				await Assert.That(multiLine.CharIndexToInsertBefore == 5).IsTrue();
-				await Assert.That(multiLine.InsertBarPosition.Y == -48).IsTrue();
+				MhAssert.True(multiLine.CharIndexToInsertBefore == 5);
+				MhAssert.True(multiLine.InsertBarPosition.Y == -48);
 
 				// move past \n
 				SendKey(Keys.Right, ' ', container);
-				await Assert.That(multiLine.CharIndexToInsertBefore == 6).IsTrue();
-				await Assert.That(multiLine.InsertBarPosition.Y == -64).IsTrue();
+				MhAssert.True(multiLine.CharIndexToInsertBefore == 6);
+				MhAssert.True(multiLine.InsertBarPosition.Y == -64);
 				container.Close();
 			}
 		}
 
-        [Test]
-        public async Task NumEditHandlesNonNumberChars()
+        [MhTest]
+        public void NumEditHandlesNonNumberChars()
 		{
 			var container = new GuiWidget
 			{
@@ -594,20 +590,20 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
 
-			await Assert.That(numberEdit.CharIndexToInsertBefore == 0).IsTrue();
-			await Assert.That(numberEdit.TopLeftOffset.Y == 0).IsTrue();
+			MhAssert.True(numberEdit.CharIndexToInsertBefore == 0);
+			MhAssert.True(numberEdit.TopLeftOffset.Y == 0);
 
 			// type a . (non numeric character)
 			SendKey(Keys.Back, ' ', container);
 			SendKey(Keys.Delete, ' ', container);
 			SendKey(Keys.OemMinus, '-', container);
-			await Assert.That(numberEdit.Value == 0).IsTrue();
+			MhAssert.True(numberEdit.Value == 0);
 			SendKey(Keys.OemPeriod, '.', container);
-			await Assert.That(numberEdit.Value == 0).IsTrue();
+			MhAssert.True(numberEdit.Value == 0);
 			SendKey(Keys.D0, '.', container);
-			await Assert.That(numberEdit.Value == 0).IsTrue();
+			MhAssert.True(numberEdit.Value == 0);
 			SendKey(Keys.A, 'A', container);
-			await Assert.That(numberEdit.Value == 0).IsTrue();
+			MhAssert.True(numberEdit.Value == 0);
 
 			container.Close();
 		}
@@ -615,9 +611,9 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 #if __ANDROID__
 		[Test]
 #else
-        [Test]
+        [MhTest]
 #endif
-        public async Task TextEditingSpecialKeysWork()
+        public void TextEditingSpecialKeysWork()
 		{
 			var container = new GuiWidget
 			{
@@ -630,59 +626,59 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, textEdit.Height - 1, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, textEdit.Height - 1, 0));
 
-			await Assert.That(textEdit.CharIndexToInsertBefore == 0).IsTrue();
-			await Assert.That(textEdit.TopLeftOffset.Y == 0).IsTrue();
+			MhAssert.True(textEdit.CharIndexToInsertBefore == 0);
+			MhAssert.True(textEdit.TopLeftOffset.Y == 0);
 
 			// test that we move to the next character correctly
-			await Assert.That(InternalTextEditWidget.IndexOfNextToken("235 12/6", 0)).IsEqualTo(4);
-			await Assert.That(InternalTextEditWidget.IndexOfNextToken("235   12/6", 0)).IsEqualTo(6);
-			await Assert.That(InternalTextEditWidget.IndexOfNextToken("235\n   12/6", 0)).IsEqualTo(3);
-			await Assert.That(InternalTextEditWidget.IndexOfNextToken("235\n   12/6", 3)).IsEqualTo(7);
-			await Assert.That(InternalTextEditWidget.IndexOfNextToken("235\n\n   12/6", 3)).IsEqualTo(4);
-			await Assert.That(InternalTextEditWidget.IndexOfNextToken("235\n\n   12/6", 4)).IsEqualTo(8);
-			await Assert.That(InternalTextEditWidget.IndexOfNextToken("123+ 235   12/6", 0)).IsEqualTo(3);
-			await Assert.That(InternalTextEditWidget.IndexOfNextToken("235+12/6", 0)).IsEqualTo(3);
-			await Assert.That(InternalTextEditWidget.IndexOfNextToken("+++++235   12/6", 0)).IsEqualTo(5);
-			await Assert.That(InternalTextEditWidget.IndexOfNextToken("+++++235   12/6", 0)).IsEqualTo(5);
+			MhAssert.Equal(4, InternalTextEditWidget.IndexOfNextToken("235 12/6", 0));
+			MhAssert.Equal(6, InternalTextEditWidget.IndexOfNextToken("235   12/6", 0));
+			MhAssert.Equal(3, InternalTextEditWidget.IndexOfNextToken("235\n   12/6", 0));
+			MhAssert.Equal(7, InternalTextEditWidget.IndexOfNextToken("235\n   12/6", 3));
+			MhAssert.Equal(4, InternalTextEditWidget.IndexOfNextToken("235\n\n   12/6", 3));
+			MhAssert.Equal(8, InternalTextEditWidget.IndexOfNextToken("235\n\n   12/6", 4));
+			MhAssert.Equal(3, InternalTextEditWidget.IndexOfNextToken("123+ 235   12/6", 0));
+			MhAssert.Equal(3, InternalTextEditWidget.IndexOfNextToken("235+12/6", 0));
+			MhAssert.Equal(5, InternalTextEditWidget.IndexOfNextToken("+++++235   12/6", 0));
+			MhAssert.Equal(5, InternalTextEditWidget.IndexOfNextToken("+++++235   12/6", 0));
 
 			// test that we move to the previous character correctly
-			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("=35+12/6", 8)).IsEqualTo(7);
-			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("35556+68384734", 10)).IsEqualTo(6);
-			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("35556+68384734", 6)).IsEqualTo(5);
-			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("35556+68384734", 5)).IsEqualTo(0);
+			MhAssert.Equal(7, InternalTextEditWidget.IndexOfPreviousToken("=35+12/6", 8));
+			MhAssert.Equal(6, InternalTextEditWidget.IndexOfPreviousToken("35556+68384734", 10));
+			MhAssert.Equal(5, InternalTextEditWidget.IndexOfPreviousToken("35556+68384734", 6));
+			MhAssert.Equal(0, InternalTextEditWidget.IndexOfPreviousToken("35556+68384734", 5));
 			
-			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 12)).IsEqualTo(11);
-			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 11)).IsEqualTo(10);
-			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 10)).IsEqualTo(8);
-			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 8)).IsEqualTo(5);
-			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 5)).IsEqualTo(4);
-			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 4)).IsEqualTo(0);
-			await Assert.That(InternalTextEditWidget.IndexOfPreviousToken("some starting text", 5)).IsEqualTo(0);
+			MhAssert.Equal(11, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 12));
+			MhAssert.Equal(10, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 11));
+			MhAssert.Equal(8, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 10));
+			MhAssert.Equal(5, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 8));
+			MhAssert.Equal(4, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 5));
+			MhAssert.Equal(0, InternalTextEditWidget.IndexOfPreviousToken("235\n\n   12/6", 4));
+			MhAssert.Equal(0, InternalTextEditWidget.IndexOfPreviousToken("some starting text", 5));
 
-			async Task RunWithSpecificChar(string sep, string first, string second, string third)
+			void RunWithSpecificChar(string sep, string first, string second, string third)
 			{
 				var startText = $"{first}{sep}{second}{sep}{third}";
-				await Assert.That(textEdit.Text == startText).IsTrue();
+				MhAssert.True(textEdit.Text == startText);
 				// this is to select some text
 				SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
-				await Assert.That(textEdit.Selection == first+sep).IsTrue();
-				await Assert.That(textEdit.Text == startText).IsTrue();
+				MhAssert.True(textEdit.Selection == first+sep);
+				MhAssert.True(textEdit.Text == startText);
 				// this is to prove that we don't loose the selection when pressing Control
 				SendKeyDown(Keys.Control, container);
-				await Assert.That(textEdit.Selection == first + sep).IsTrue();
-				await Assert.That(textEdit.Text == startText).IsTrue();
+				MhAssert.True(textEdit.Selection == first + sep);
+				MhAssert.True(textEdit.Text == startText);
 				// this is to prove that we don't loose the selection when pressing Shift
 				SendKeyDown(Keys.Shift, container);
-				await Assert.That(textEdit.Text == startText).IsTrue();
-				await Assert.That(textEdit.Selection == first + sep).IsTrue();
+				MhAssert.True(textEdit.Text == startText);
+				MhAssert.True(textEdit.Selection == first + sep);
 				SendKeyDown(Keys.Right, container);
-				await Assert.That(textEdit.Selection == "").IsTrue();
+				MhAssert.True(textEdit.Selection == "");
 				SendKey(Keys.Shift | Keys.Control | Keys.Left, ' ', container);
-				await Assert.That(textEdit.Selection == first + sep).IsTrue();
+				MhAssert.True(textEdit.Selection == first + sep);
 				SendKey(Keys.Delete, ' ', container);
-				await Assert.That(textEdit.Text == $"{second}{sep}{third}").IsTrue();
+				MhAssert.True(textEdit.Text == $"{second}{sep}{third}");
 				SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
-				await Assert.That(textEdit.Selection == $"{second}{sep}").IsTrue();
+				MhAssert.True(textEdit.Selection == $"{second}{sep}");
 
 				// if this fails add
 				// GuiHalWidget.SetClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
@@ -690,33 +686,33 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 				Clipboard.SetSystemClipboard(new SimulatedClipboard());
 
 				SendKey(Keys.Control | Keys.C, 'c', container);
-				await Assert.That(textEdit.Selection == $"{second}{sep}").IsTrue();
-				await Assert.That(textEdit.Text == $"{second}{sep}{third}").IsTrue();
+				MhAssert.True(textEdit.Selection == $"{second}{sep}");
+				MhAssert.True(textEdit.Text == $"{second}{sep}{third}");
 				SendKeyDown(Keys.Right, container); // move to the right
 				SendKey(Keys.Control | Keys.V, 'v', container);
-				await Assert.That(textEdit.Text == $"{second}{sep}{second}{sep}{third}").IsTrue();
+				MhAssert.True(textEdit.Text == $"{second}{sep}{second}{sep}{third}");
             
 				Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
             }
 
-            async Task CheckChar(string sep)
+            void CheckChar(string sep)
 			{
 				textEdit.Text = $"some{sep}starting{sep}text";
 				// spaces work as expected
-				await RunWithSpecificChar(sep, "some", "starting", "text");
+				RunWithSpecificChar(sep, "some", "starting", "text");
 				textEdit.Text = $"123{sep}is{sep}number";
-				await RunWithSpecificChar(sep, "123", "is", "number");
+				RunWithSpecificChar(sep, "123", "is", "number");
 				textEdit.Text = $"123_1{sep}456_2{sep}789_3";
-				await RunWithSpecificChar(sep, "123_1", "456_2", "789_3");
+				RunWithSpecificChar(sep, "123_1", "456_2", "789_3");
 			}
 
-			await CheckChar(" ");
+			CheckChar(" ");
 
 			container.Close();
 		}
 
-        [Test]
-        public async Task ScrollingToEndShowsEnd()
+        [MhTest]
+        public void ScrollingToEndShowsEnd()
 		{
 			var container = new GuiWidget
 			{
@@ -746,16 +742,16 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 1, 0));
-			await Assert.That(editField1.ContainsFocus == true).IsTrue();
+			MhAssert.True(editField1.ContainsFocus == true);
 
 			container.OnDraw(container.BackBuffer.NewGraphics2D());
 			OutputImage(firstWordText.BackBuffer, "Control - Left.tga");
 			OutputImage(lastWordText.BackBuffer, "Control - Right.tga");
 			OutputImage(container.BackBuffer, "Test - Start.tga");
 			container.BackBuffer.FindLeastSquaresMatch(firstWordText.BackBuffer, out _, out double bestLeastSquares);
-			await Assert.That(bestLeastSquares < 2000000).IsTrue();
+			MhAssert.True(bestLeastSquares < 2000000);
 			container.BackBuffer.FindLeastSquaresMatch(lastWordText.BackBuffer, out _, out bestLeastSquares);
-			await Assert.That(bestLeastSquares > 2000000).IsTrue();
+			MhAssert.True(bestLeastSquares > 2000000);
 
 			SendKeyDown(Keys.End, container);
 
@@ -763,19 +759,18 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			OutputImage(container.BackBuffer, "Test - Scrolled.tga");
 
 			container.BackBuffer.FindLeastSquaresMatch(firstWordText.BackBuffer, out _, out bestLeastSquares);
-			await Assert.That(bestLeastSquares > 2000000).IsTrue();
+			MhAssert.True(bestLeastSquares > 2000000);
 			container.BackBuffer.FindLeastSquaresMatch(lastWordText.BackBuffer, out _, out bestLeastSquares);
-			await Assert.That(bestLeastSquares < 2000000).IsTrue();
+			MhAssert.True(bestLeastSquares < 2000000);
 
 			container.Close();
 		}
 	}
 
-    
-    [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
+    [MhTestFixture("Opens Winforms Window")]
     public class TextEditFocusTests
 	{
-        [Test]
+        [MhTest]
         public async Task VerifyFocusMakesTextWidgetEditable()
 		{
 			TextEditWidget editField = null;
@@ -784,7 +779,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 				BackgroundColor = Color.Black,
 			};
 
-			async Task TestToRun(AutomationRunner testRunner)
+			Task TestToRun(AutomationRunner testRunner)
 			{
 				editField.Focus();
 
@@ -792,7 +787,9 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 				testRunner.Type("Test Text");
 
 				testRunner.Delay(1);
-				await Assert.That(editField.Text == "Test Text").IsTrue();
+				MhAssert.True(editField.Text == "Test Text", "validate text is typed");
+
+				return Task.CompletedTask;
 			}
 
 			editField = new TextEditWidget(pixelWidth: 200)
@@ -805,7 +802,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);
 		}
 
-        [Test]
+        [MhTest]
         public async Task VerifyFocusProperty()
 		{
 			var systemWindow = new SystemWindow(300, 200)
@@ -820,19 +817,21 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			};
 			systemWindow.AddChild(editField);
 
-			async Task TestToRun(AutomationRunner testRunner)
+			Task TestToRun(AutomationRunner testRunner)
 			{
 				UiThread.RunOnIdle(editField.Focus);
 				testRunner.WaitFor(() => editField.ContainsFocus);
 				//if (!editField.ContainsFocus) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
 				// NOTE: Okay. During parallel testing, it seems that the avalanche of windows causes test UIs to lose control focus and get confused.
-				await Assert.That(editField.ContainsFocus).IsTrue();
+				MhAssert.True(editField.ContainsFocus, "Focused property should be true after invoking Focus method");
+
+				return Task.CompletedTask;
 			}
 
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);
 		}
 
-        [Test]
+        [MhTest]
         public async Task SelectAllOnFocusCanStillClickAfterSelection()
 		{
 			var editField = new TextEditWidget(pixelWidth: 200)
@@ -849,7 +848,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			};
 			systemWindow.AddChild(editField);
 
-			async Task TestToRun(AutomationRunner testRunner)
+			Task TestToRun(AutomationRunner testRunner)
 			{
 				editField.SelectAllOnFocus = true;
 				testRunner.Delay(1);
@@ -857,7 +856,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 
 				editField.SelectAllOnFocus = true;
 				testRunner.Type("123");
-				await Assert.That(editField.Text).IsEqualTo("123");//, "Text input on newly focused control should replace selection");
+				MhAssert.Equal("123", editField.Text);//, "Text input on newly focused control should replace selection");
 
                 testRunner.ClickByName(editField.Name);
 				//testRunner.WaitFor(() => editField.ContainsFocus);
@@ -865,7 +864,9 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 				testRunner.Type("123");
 				//testRunner.WaitFor(() => "123123" == editField.Text, maxSeconds: 60);
 				// NOTE: Used to get intermittent failures here. These issues might have been sorted out now.
-				await Assert.That(editField.Text).IsEqualTo("123123");//, "Text should be appended if control is focused and has already received input");
+				MhAssert.Equal("123123", editField.Text);//, "Text should be appended if control is focused and has already received input");
+
+                return Task.CompletedTask;
 			}
 
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);

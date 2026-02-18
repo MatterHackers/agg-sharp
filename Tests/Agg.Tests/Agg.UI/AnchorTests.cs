@@ -1,5 +1,5 @@
-/*
-Copyright (c) 2025, Lars Brubaker
+﻿/*
+Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -29,15 +29,12 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.VectorMath;
 using System.Linq;
-using System.Threading.Tasks;
 using Agg.Tests.Agg;
-using TUnit.Assertions;
-using TUnit.Core;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-
-	public class AnchorTests
+    [MhTestFixture("Opens Winforms Window")]
+    public class AnchorTests
 	{
 		public static bool saveImagesForDebug = true;
 
@@ -52,27 +49,27 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Test]
-		public async Task BottomAndTop()
+        [MhTest]
+        public void BottomAndTop()
 		{
-			await BottomAndTopTextControl(0, 0);
-			await BottomAndTopTextControl(0, 3);
-			await BottomAndTopTextControl(2, 0);
-			await BottomAndTopTextControl(2.2, 3.3);
-			await BottomAndTopTextControl(0, 3.3);
-			await BottomAndTopTextControl(2.2, 0);
-			await BottomAndTopTextControl(2.2, 3.3);
+			BottomAndTopTextControl(0, 0);
+			BottomAndTopTextControl(0, 3);
+			BottomAndTopTextControl(2, 0);
+			BottomAndTopTextControl(2.2, 3.3);
+			BottomAndTopTextControl(0, 3.3);
+			BottomAndTopTextControl(2.2, 0);
+			BottomAndTopTextControl(2.2, 3.3);
 
-			await BottomAndTopButton(0, 0);
-			await BottomAndTopButton(0, 3);
-			await BottomAndTopButton(2, 0);
-			await BottomAndTopButton(2.2, 3.3);
-			await BottomAndTopButton(0, 3.3);
-			await BottomAndTopButton(2.2, 0);
-			await BottomAndTopButton(2.2, 3.3);
+			BottomAndTopButton(0, 0);
+			BottomAndTopButton(0, 3);
+			BottomAndTopButton(2, 0);
+			BottomAndTopButton(2.2, 3.3);
+			BottomAndTopButton(0, 3.3);
+			BottomAndTopButton(2.2, 0);
+			BottomAndTopButton(2.2, 3.3);
 		}
 
-		private async Task BottomAndTopTextControl(double controlPadding, double buttonMargin)
+		private void BottomAndTopTextControl(double controlPadding, double buttonMargin)
 		{
 			GuiWidget containerControl = new GuiWidget(200, 300);
 			containerControl.DoubleBuffer = true;
@@ -103,11 +100,11 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			await Assert.That(containerControl.BackBuffer != null).IsTrue();
-			await Assert.That(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1000)).IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			MhAssert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1000), "The Anchored widget should be in the correct place.");
 		}
 
-		private async Task BottomAndTopButton(double controlPadding, double buttonMargin)
+		private void BottomAndTopButton(double controlPadding, double buttonMargin)
 		{
 			GuiWidget containerControl = new GuiWidget(200, 300);
 			containerControl.Padding = new BorderDouble(controlPadding);
@@ -133,22 +130,22 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-			await Assert.That(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1000), "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			MhAssert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1000), "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
-		public async Task BottomAndTopSetAnchorBeforAddChildTest()
+        [MhTest]
+        public void BottomAndTopSetAnchorBeforAddChildTest()
 		{
-			await CenterBothTest(new BorderDouble(), new BorderDouble());
-			await CenterBothTest(new BorderDouble(), new BorderDouble(3));
-			await CenterBothTest(new BorderDouble(2), new BorderDouble(0));
-			await CenterBothTest(new BorderDouble(2), new BorderDouble(3));
-			await CenterBothTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
+			CenterBothTest(new BorderDouble(), new BorderDouble());
+			CenterBothTest(new BorderDouble(), new BorderDouble(3));
+			CenterBothTest(new BorderDouble(2), new BorderDouble(0));
+			CenterBothTest(new BorderDouble(2), new BorderDouble(3));
+			CenterBothTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		[Test]
-		public async Task ParentStretchAndFitToChildren()
+        [MhTest]
+        public void ParentStretchAndFitToChildren()
 		{
 			// Make sure normal nested layouts works as expected. First inner added then outer
 			{
@@ -156,16 +153,16 @@ namespace MatterHackers.Agg.UI.Tests
 
 				GuiWidget childOuter = new GuiWidget(31, 32);
 				childOuter.VAnchor = VAnchor.Fit | VAnchor.Stretch;
-				await Assert.That(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 32)).IsTrue();
+				MhAssert.True(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 32));
 
 				GuiWidget childInner = new GuiWidget(41, 42);
 				childOuter.AddChild(childInner);
 
-				await Assert.That(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 42)).IsTrue();
+				MhAssert.True(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 42));
 
 				parent.AddChild(childOuter);
 
-				await Assert.That(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 200)).IsTrue();
+				MhAssert.True(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 200));
 			}
 
 			// Make sure vertical flow layout nested works with both top bottom and children
@@ -176,17 +173,17 @@ namespace MatterHackers.Agg.UI.Tests
 				FlowLayoutWidget childOuter = new FlowLayoutWidget(FlowDirection.TopToBottom);
 				childOuter.Name = "childOuter";
 				childOuter.VAnchor = VAnchor.Fit | VAnchor.Stretch;
-				await Assert.That(childOuter.LocalBounds == new RectangleDouble(0, 0, 0, 0)).IsTrue();
+				MhAssert.True(childOuter.LocalBounds == new RectangleDouble(0, 0, 0, 0));
 
 				GuiWidget childInner = new GuiWidget(41, 42);
 				childInner.Name = "childInner";
 				childOuter.AddChild(childInner);
 
-				await Assert.That(childOuter.LocalBounds == new RectangleDouble(0, 0, 41, 42)).IsTrue();
+				MhAssert.True(childOuter.LocalBounds == new RectangleDouble(0, 0, 41, 42));
 
 				parent.AddChild(childOuter);
 
-				await Assert.That(childOuter.LocalBounds == new RectangleDouble(0, 0, 41, 200)).IsTrue();
+				MhAssert.True(childOuter.LocalBounds == new RectangleDouble(0, 0, 41, 200));
 			}
 
 			// Make sure horizontal flow layout nested works with both top bottom and children
@@ -197,17 +194,17 @@ namespace MatterHackers.Agg.UI.Tests
 				FlowLayoutWidget childOuter = new FlowLayoutWidget(FlowDirection.TopToBottom);
 				childOuter.Name = "childOuter";
 				childOuter.HAnchor = HAnchor.Fit | HAnchor.Stretch;
-				await Assert.That(childOuter.LocalBounds == new RectangleDouble(0, 0, 0, 0)).IsTrue();
+				MhAssert.True(childOuter.LocalBounds == new RectangleDouble(0, 0, 0, 0));
 
 				GuiWidget childInner = new GuiWidget(41, 42);
 				childInner.Name = "childInner";
 				childOuter.AddChild(childInner);
 
-				await Assert.That(childOuter.LocalBounds == new RectangleDouble(0, 0, 41, 42)).IsTrue();
+				MhAssert.True(childOuter.LocalBounds == new RectangleDouble(0, 0, 41, 42));
 
 				parent.AddChild(childOuter);
 
-				await Assert.That(childOuter.LocalBounds == new RectangleDouble(0, 0, 100, 42)).IsTrue();
+				MhAssert.True(childOuter.LocalBounds == new RectangleDouble(0, 0, 100, 42));
 			}
 
 			// Make sure normal nested layouts works as expected. First outer than inner added
@@ -216,21 +213,21 @@ namespace MatterHackers.Agg.UI.Tests
 
 				GuiWidget childOuter = new GuiWidget(31, 32);
 				childOuter.VAnchor = VAnchor.Fit | VAnchor.Stretch;
-				await Assert.That(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 32)).IsTrue();
+				MhAssert.True(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 32));
 
 				parent.AddChild(childOuter);
 
-				await Assert.That(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 200)).IsTrue();
+				MhAssert.True(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 200));
 
 				GuiWidget childInner = new GuiWidget(41, 42);
 				childOuter.AddChild(childInner);
 
-				await Assert.That(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 200)).IsTrue();
+				MhAssert.True(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 200));
 			}
 		}
 
-		[Test]
-		public async Task SimpleFitToChildren()
+        [MhTest]
+        public void SimpleFitToChildren()
 		{
 			// this is what will happen when the default of minimum size gets set on guiwidget construction
 			{
@@ -238,16 +235,16 @@ namespace MatterHackers.Agg.UI.Tests
 				parent.HAnchor = HAnchor.Fit;
 
 				GuiWidget child = new GuiWidget(30, 30);
-				await Assert.That(parent.LocalBounds == new RectangleDouble(0, 0, 10, 10)).IsTrue();
+				MhAssert.True(parent.LocalBounds == new RectangleDouble(0, 0, 10, 10));
 				parent.AddChild(child);
-				await Assert.That(parent.LocalBounds == new RectangleDouble(0, 0, 30, 10)).IsTrue();
+				MhAssert.True(parent.LocalBounds == new RectangleDouble(0, 0, 30, 10));
 				child.LocalBounds = new RectangleDouble(-10, -11, 10, 11);
-				await Assert.That(child.LocalBounds == new RectangleDouble(-10, -11, 20, 19)).IsTrue();
-				await Assert.That(parent.LocalBounds == new RectangleDouble(-10, 0, 20, 10)).IsTrue();
+				MhAssert.True(child.LocalBounds == new RectangleDouble(-10, -11, 20, 19));
+				MhAssert.True(parent.LocalBounds == new RectangleDouble(-10, 0, 20, 10));
 				parent.VAnchor = VAnchor.Fit;
-				await Assert.That(parent.LocalBounds == new RectangleDouble(-10, -11, 20, 19)).IsTrue();
+				MhAssert.True(parent.LocalBounds == new RectangleDouble(-10, -11, 20, 19));
 				child.Width = 50; // we set the max so this won't work
-				await Assert.That(child.LocalBounds == new RectangleDouble(-10, -11, 40, 19)).IsTrue();
+				MhAssert.True(child.LocalBounds == new RectangleDouble(-10, -11, 40, 19));
 			}
 
 			// this is how it should be resized when we set it change to get smaller than the initial size
@@ -256,16 +253,16 @@ namespace MatterHackers.Agg.UI.Tests
 				parent.HAnchor = HAnchor.Fit;
 
 				GuiWidget child = new GuiWidget(30, 30, SizeLimitsToSet.None);
-				await Assert.That(parent.LocalBounds == new RectangleDouble(0, 0, 10, 10)).IsTrue();
+				MhAssert.True(parent.LocalBounds == new RectangleDouble(0, 0, 10, 10));
 				parent.AddChild(child);
-				await Assert.That(parent.LocalBounds == new RectangleDouble(0, 0, 30, 10)).IsTrue();
+				MhAssert.True(parent.LocalBounds == new RectangleDouble(0, 0, 30, 10));
 				child.LocalBounds = new RectangleDouble(-10, -11, 10, 11);
-				await Assert.That(child.LocalBounds == new RectangleDouble(-10, -11, 10, 11)).IsTrue();
-				await Assert.That(parent.LocalBounds == new RectangleDouble(-10, 0, 10, 10)).IsTrue();
+				MhAssert.True(child.LocalBounds == new RectangleDouble(-10, -11, 10, 11));
+				MhAssert.True(parent.LocalBounds == new RectangleDouble(-10, 0, 10, 10));
 				parent.VAnchor = VAnchor.Fit;
-				await Assert.That(parent.LocalBounds == new RectangleDouble(-10, -11, 10, 11)).IsTrue();
+				MhAssert.True(parent.LocalBounds == new RectangleDouble(-10, -11, 10, 11));
 				child.Width = 50; // we set the max so this won't work
-				await Assert.That(child.LocalBounds == new RectangleDouble(-10, -11, 40, 11)).IsTrue();
+				MhAssert.True(child.LocalBounds == new RectangleDouble(-10, -11, 40, 11));
 			}
 
 			// if we set min an max size it should no change size at all
@@ -274,20 +271,20 @@ namespace MatterHackers.Agg.UI.Tests
 				parent.HAnchor = HAnchor.Fit;
 
 				GuiWidget child = new GuiWidget(30, 30, SizeLimitsToSet.Minimum | SizeLimitsToSet.Maximum);
-				await Assert.That(parent.LocalBounds == new RectangleDouble(0, 0, 10, 10)).IsTrue();
+				MhAssert.True(parent.LocalBounds == new RectangleDouble(0, 0, 10, 10));
 				parent.AddChild(child);
-				await Assert.That(parent.LocalBounds == new RectangleDouble(0, 0, 30, 10)).IsTrue();
+				MhAssert.True(parent.LocalBounds == new RectangleDouble(0, 0, 30, 10));
 				child.LocalBounds = new RectangleDouble(-10, -11, 10, 11);
-				await Assert.That(child.LocalBounds == new RectangleDouble(-10, -11, 20, 19)).IsTrue();
+				MhAssert.True(child.LocalBounds == new RectangleDouble(-10, -11, 20, 19));
 				child.Width = 50; // we set the max so this won't work
-				await Assert.That(child.LocalBounds == new RectangleDouble(-10, -11, 20, 19)).IsTrue();
-				await Assert.That(parent.LocalBounds == new RectangleDouble(-10, 0, 20, 10)).IsTrue();
+				MhAssert.True(child.LocalBounds == new RectangleDouble(-10, -11, 20, 19));
+				MhAssert.True(parent.LocalBounds == new RectangleDouble(-10, 0, 20, 10));
 				parent.VAnchor = VAnchor.Fit;
-				await Assert.That(parent.LocalBounds == new RectangleDouble(-10, -11, 20, 19)).IsTrue();
+				MhAssert.True(parent.LocalBounds == new RectangleDouble(-10, -11, 20, 19));
 			}
 		}
 
-		private async Task BottomAndTopSetAnchorBeforAddChild(double controlPadding, double buttonMargin)
+		public void BottomAndTopSetAnchorBeforAddChild(double controlPadding, double buttonMargin)
 		{
 			GuiWidget containerControl = new GuiWidget(200, 300);
 			containerControl.Padding = new BorderDouble(controlPadding);
@@ -311,12 +308,12 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			MhAssert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
-		public async Task AnchorLeftBottomTests()
+        [MhTest]
+        public void AnchorLeftBottomTests()
 		{
 			// bottom left. this is the easiest as there should be nothing to it.
 			{
@@ -337,8 +334,8 @@ namespace MatterHackers.Agg.UI.Tests
 
 				OutputImages(containerNoAnchor, containerAnchor);
 
-				await Assert.That(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-				await Assert.That(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+				MhAssert.True(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+				MhAssert.True(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.");
 			}
 
 			// bottom left with some crazy localBounds.
@@ -367,8 +364,8 @@ namespace MatterHackers.Agg.UI.Tests
 
 				OutputImages(containerNoAnchor, containerAnchor);
 
-				await Assert.That(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-				await Assert.That(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+				MhAssert.True(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+				MhAssert.True(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.");
 			}
 
 			// bottom left, respect margin. this is the easiest as there should be nothing to it.
@@ -390,8 +387,8 @@ namespace MatterHackers.Agg.UI.Tests
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 				OutputImages(containerNoAnchor, containerAnchor);
 
-				await Assert.That(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-				await Assert.That(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+				MhAssert.True(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+				MhAssert.True(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.");
 			}
 
 			// bottom left, respect margin and padding. this is the easiest as there should be nothing to it.
@@ -414,8 +411,8 @@ namespace MatterHackers.Agg.UI.Tests
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 				OutputImages(containerNoAnchor, containerAnchor);
 
-				await Assert.That(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-				await Assert.That(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+				MhAssert.True(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+				MhAssert.True(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.");
 			}
 
 			// bottom left, respect margin. This time we set the Margin after the AnchorFlags.
@@ -437,13 +434,13 @@ namespace MatterHackers.Agg.UI.Tests
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 				OutputImages(containerNoAnchor, containerAnchor);
 
-				await Assert.That(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-				await Assert.That(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+				MhAssert.True(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+				MhAssert.True(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.");
 			}
 		}
 
-		[Test]
-		public async Task AnchorRightBottomTests()
+        [MhTest]
+        public void AnchorRightBottomTests()
 		{
 			// bottom right.
 			{
@@ -464,8 +461,8 @@ namespace MatterHackers.Agg.UI.Tests
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 				OutputImages(containerNoAnchor, containerAnchor);
 
-				await Assert.That(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-				await Assert.That(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+				MhAssert.True(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+				MhAssert.True(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.");
 			}
 
 			// bottom right, respect margin. this is the easiest as there should be nothing to it.
@@ -487,8 +484,8 @@ namespace MatterHackers.Agg.UI.Tests
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 				OutputImages(containerNoAnchor, containerAnchor);
 
-				await Assert.That(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-				await Assert.That(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+				MhAssert.True(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+				MhAssert.True(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.");
 			}
 
 			// bottom right, respect margin. This time we set the Margin after the AnchorFlags.
@@ -510,13 +507,13 @@ namespace MatterHackers.Agg.UI.Tests
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 				OutputImages(containerNoAnchor, containerAnchor);
 
-				await Assert.That(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-				await Assert.That(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+				MhAssert.True(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+				MhAssert.True(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.");
 			}
 		}
 
-		[Test]
-		public async Task AnchorRightTopTests()
+        [MhTest]
+        public void AnchorRightTopTests()
 		{
 			// bottom Top.
 			{
@@ -537,12 +534,12 @@ namespace MatterHackers.Agg.UI.Tests
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 				OutputImages(containerNoAnchor, containerAnchor);
 
-				await Assert.That(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-				await Assert.That(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+				MhAssert.True(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+				MhAssert.True(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.");
 			}
 		}
 
-		internal async Task AnchorAllTests()
+		internal void AnchorAllTests()
 		{
 			GuiWidget containerNoAnchor = new GuiWidget(300, 200);
 			containerNoAnchor.DoubleBuffer = true;
@@ -561,21 +558,21 @@ namespace MatterHackers.Agg.UI.Tests
 			containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 			OutputImages(containerNoAnchor, containerAnchor);
 
-			await Assert.That(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-			await Assert.That(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			MhAssert.True(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
-		public async Task CenterBothTests()
+        [MhTest]
+        public void CenterBothTests()
 		{
-			await CenterBothTest(new BorderDouble(), new BorderDouble());
-			await CenterBothTest(new BorderDouble(), new BorderDouble(3));
-			await CenterBothTest(new BorderDouble(2), new BorderDouble(0));
-			await CenterBothTest(new BorderDouble(2), new BorderDouble(3));
-			await CenterBothTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
+			CenterBothTest(new BorderDouble(), new BorderDouble());
+			CenterBothTest(new BorderDouble(), new BorderDouble(3));
+			CenterBothTest(new BorderDouble(2), new BorderDouble(0));
+			CenterBothTest(new BorderDouble(2), new BorderDouble(3));
+			CenterBothTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		private async Task CenterBothTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+		private void CenterBothTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			GuiWidget containerControl = new GuiWidget(200, 300);
 			containerControl.Padding = controlPadding;
@@ -603,22 +600,22 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 			OutputImages(containerControl, containerTest);
-			await Assert.That(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer.Equals(containerTest.BackBuffer, 1), "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
-		public async Task CenterBothOffsetBoundsTests()
+        [MhTest]
+        public void CenterBothOffsetBoundsTests()
 		{
-			await CenterBothOffsetBoundsTest(new BorderDouble(), new BorderDouble());
-			await CenterBothOffsetBoundsTest(new BorderDouble(), new BorderDouble(3));
-			await CenterBothOffsetBoundsTest(new BorderDouble(2), new BorderDouble(0));
-			await CenterBothOffsetBoundsTest(new BorderDouble(2), new BorderDouble(3));
-			await CenterBothOffsetBoundsTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
+			CenterBothOffsetBoundsTest(new BorderDouble(), new BorderDouble());
+			CenterBothOffsetBoundsTest(new BorderDouble(), new BorderDouble(3));
+			CenterBothOffsetBoundsTest(new BorderDouble(2), new BorderDouble(0));
+			CenterBothOffsetBoundsTest(new BorderDouble(2), new BorderDouble(3));
+			CenterBothOffsetBoundsTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		private async Task CenterBothOffsetBoundsTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+        private void CenterBothOffsetBoundsTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			GuiWidget containerControl = new GuiWidget(200, 300);
 			containerControl.Padding = controlPadding;
@@ -651,12 +648,12 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			MhAssert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
-		public async Task VAnchorFitIgnoresChildrenWithVAnchorStretch()
+        [MhTest]
+        public void VAnchorFitIgnoresChildrenWithVAnchorStretch()
 		{
 			//  ______________________________________________________________
 			//  |       containerControl 300                                  |
@@ -682,7 +679,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Name = "childA",
 				MinimumSize = Vector2.Zero
 			};
-			await Assert.That(childA.Height).IsEqualTo(10);
+			MhAssert.Equal(10, childA.Height);
 			containerControl.AddChild(childA);
 			var childB = new GuiWidget(100, 100)
 			{
@@ -690,7 +687,7 @@ namespace MatterHackers.Agg.UI.Tests
 				MinimumSize = Vector2.Zero
 			};
 			childA.AddChild(childB);
-			await Assert.That(childA.Height).IsEqualTo(100);
+			MhAssert.Equal(100, childA.Height);
 			var childC = new GuiWidget(100, 100)
 			{
 				VAnchor = VAnchor.Stretch,
@@ -700,23 +697,23 @@ namespace MatterHackers.Agg.UI.Tests
 			childA.AddChild(childC);
 
 			// assert sizes
-			await Assert.That(childA.Height).IsEqualTo(100);
+			MhAssert.Equal(100, childA.Height);
 
 			// expand B
 			childB.Height = 120;
 
 			// assert sizes
-			await Assert.That(childA.Height).IsEqualTo(120);
+			MhAssert.Equal(120, childA.Height);
 
 			// compact B
 			childB.Height = 80;
 
 			// assert sizes
-			await Assert.That(childA.Height).IsEqualTo(80);
+			MhAssert.Equal(80, childA.Height);
 		}
 
-		[Test]
-		public async Task HAnchorFitIgnoresChildrenWithHAnchorStretch()
+        [MhTest]
+        public void HAnchorFitIgnoresChildrenWithHAnchorStretch()
 		{
 			//  ______________________________________________________________
 			//  |       containerControl 300                                  |
@@ -742,7 +739,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Name = "childA",
 				MinimumSize = Vector2.Zero
 			};
-			await Assert.That(childA.Width).IsEqualTo(10);
+			MhAssert.Equal(10, childA.Width);
 			containerControl.AddChild(childA);
 			var childB = new GuiWidget(100, 100)
 			{
@@ -750,7 +747,7 @@ namespace MatterHackers.Agg.UI.Tests
 				MinimumSize = Vector2.Zero
 			};
 			childA.AddChild(childB);
-			await Assert.That(childA.Width).IsEqualTo(100);
+			MhAssert.Equal(100, childA.Width);
 			var childC = new GuiWidget(100, 100)
 			{
 				HAnchor = HAnchor.Stretch,
@@ -760,32 +757,32 @@ namespace MatterHackers.Agg.UI.Tests
 			childA.AddChild(childC);
 
 			// assert sizes
-			await Assert.That(childA.Width).IsEqualTo(100);
+			MhAssert.Equal(100, childA.Width);
 
 			// expand B
 			childB.Width = 120;
 
 			// assert sizes
-			await Assert.That(childA.Width).IsEqualTo(120);
+			MhAssert.Equal(120, childA.Width);
 
 			// compact B
 			childB.Width = 80;
 
 			// assert sizes
-			await Assert.That(childA.Width).IsEqualTo(80);
+			MhAssert.Equal(80, childA.Width);
 		}
 
-		[Test]
-		public async Task VAnchorCenterAndVAnchorFitWorkCorrectlyTogetherTest()
+        [MhTest]
+        public void VAnchorCenterAndVAnchorFitWorkCorrectlyTogetherTest()
 		{
-			await VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble());
-			await VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble(3));
-			await VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(0));
-			await VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(3));
+			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble());
+			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble(3));
+			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(0));
+			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(3));
 			//VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		private async Task VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(BorderDouble padding, BorderDouble childMargin)
+        private void VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(BorderDouble padding, BorderDouble childMargin)
 		{
 			//  ______________________________________________________________
 			//  |       containerControl 200, 300                             |
@@ -821,35 +818,35 @@ namespace MatterHackers.Agg.UI.Tests
 			childA.AddChild(childB);
 
 			// assert sizes and positions
-			await Assert.That(childB.Height).IsEqualTo(50);
-			await Assert.That(childA.Height).IsEqualTo(50 + childMargin.Height + padding.Height);
-			await Assert.That(childA.Position.Y).IsEqualTo((containerControl.Height - childA.Height) / 2);
-			await Assert.That(childB.Position.Y).IsEqualTo(0);
+			MhAssert.Equal(50, childB.Height);
+			MhAssert.Equal(50 + childMargin.Height + padding.Height, childA.Height, .001);
+			MhAssert.Equal((containerControl.Height - childA.Height) / 2, childA.Position.Y);
+			MhAssert.Equal(0, childB.Position.Y);
 			// expand B
 			childB.Height = 60;
 			// assert sizes and positions
-			await Assert.That(childB.Height).IsEqualTo(60);
-			await Assert.That(childA.Height).IsEqualTo(60 + childMargin.Height + padding.Height);
-			await Assert.That(childA.Position.Y).IsEqualTo((containerControl.Height - childA.Height) / 2);
+			MhAssert.Equal(60, childB.Height);
+			MhAssert.Equal(60 + childMargin.Height + padding.Height, childA.Height);
+			MhAssert.Equal((containerControl.Height - childA.Height) / 2, childA.Position.Y);
 			// compact B
 			childB.Height = 40;
 			// assert sizes and positions
-			await Assert.That(childB.Height).IsEqualTo(40);
-			await Assert.That(childA.Height).IsEqualTo(40 + childMargin.Height + padding.Height);
-			await Assert.That(childA.Position.Y).IsEqualTo((containerControl.Height - childA.Height) / 2);
+			MhAssert.Equal(40, childB.Height);
+			MhAssert.Equal(40 + childMargin.Height + padding.Height, childA.Height);
+			MhAssert.Equal((containerControl.Height - childA.Height) / 2, childA.Position.Y);
 		}
 
-		[Test]
-		public async Task HAnchorCenterAndHAnchorFitWorkCorrectlyTogetherTest()
+        [MhTest]
+        public void HAnchorCenterAndHAnchorFitWorkCorrectlyTogetherTest()
 		{
-			await HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble());
-			await HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble(3));
-			await HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(0));
-			await HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(3));
+			HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble());
+			HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble(3));
+			HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(0));
+			HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(3));
 			//HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		private async Task HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(BorderDouble padding, BorderDouble childMargin)
+        private void HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(BorderDouble padding, BorderDouble childMargin)
 		{
 			//  ______________________________________________________________
 			//  |       containerControl 200, 300                             |
@@ -885,35 +882,35 @@ namespace MatterHackers.Agg.UI.Tests
 			childA.AddChild(childB);
 
 			// assert sizes and positions
-			await Assert.That(childB.Width).IsEqualTo(50);
-			await Assert.That(childA.Width).IsEqualTo(50 + childMargin.Width + padding.Width);
-			await Assert.That(childA.Position.X).IsEqualTo((containerControl.Width - childA.Width) / 2);
-			await Assert.That(childB.Position.X).IsEqualTo(0);
+			MhAssert.Equal(50, childB.Width);
+			MhAssert.Equal(50 + childMargin.Width + padding.Width, childA.Width, .001);
+			MhAssert.Equal((containerControl.Width - childA.Width) / 2, childA.Position.X);
+			MhAssert.Equal(0, childB.Position.X);
 			// expand B
 			childB.Width = 60;
 			// assert sizes and positions
-			await Assert.That(childB.Width).IsEqualTo(60);
-			await Assert.That(childA.Width).IsEqualTo(60 + childMargin.Width + padding.Width);
-			await Assert.That(childA.Position.X).IsEqualTo((containerControl.Width - childA.Width) / 2);
+			MhAssert.Equal(60, childB.Width);
+			MhAssert.Equal(60 + childMargin.Width + padding.Width, childA.Width);
+			MhAssert.Equal((containerControl.Width - childA.Width) / 2, childA.Position.X);
 			// compact B
 			childB.Width = 40;
 			// assert sizes and positions
-			await Assert.That(childB.Width).IsEqualTo(40);
-			await Assert.That(childA.Width).IsEqualTo(40 + childMargin.Width + padding.Width);
-			await Assert.That(childA.Position.X).IsEqualTo((containerControl.Width - childA.Width) / 2);
+			MhAssert.Equal(40, childB.Width);
+			MhAssert.Equal(40 + childMargin.Width + padding.Width, childA.Width);
+			MhAssert.Equal((containerControl.Width - childA.Width) / 2, childA.Position.X);
 		}
 
-		[Test]
-		public async Task HCenterHRightAndVCenterVTopTests()
+        [MhTest]
+        public void HCenterHRightAndVCenterVTopTests()
 		{
-			await HCenterHRightAndVCenterVTopTest(new BorderDouble(), new BorderDouble());
-			await HCenterHRightAndVCenterVTopTest(new BorderDouble(), new BorderDouble(3));
-			await HCenterHRightAndVCenterVTopTest(new BorderDouble(2), new BorderDouble(0));
-			await HCenterHRightAndVCenterVTopTest(new BorderDouble(2), new BorderDouble(3));
-			await HCenterHRightAndVCenterVTopTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
+			HCenterHRightAndVCenterVTopTest(new BorderDouble(), new BorderDouble());
+			HCenterHRightAndVCenterVTopTest(new BorderDouble(), new BorderDouble(3));
+			HCenterHRightAndVCenterVTopTest(new BorderDouble(2), new BorderDouble(0));
+			HCenterHRightAndVCenterVTopTest(new BorderDouble(2), new BorderDouble(3));
+			HCenterHRightAndVCenterVTopTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
-		private async Task HCenterHRightAndVCenterVTopTest(BorderDouble controlPadding, BorderDouble buttonMargin)
+        private void HCenterHRightAndVCenterVTopTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			GuiWidget containerControl = new GuiWidget(200, 300);
 			containerControl.Padding = controlPadding;
@@ -943,12 +940,12 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			await Assert.That(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.").IsTrue();
-			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
+			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			MhAssert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Test]
-		public async Task GroupBoxResizeThenLayoutBeforeMatchChildren()
+        [MhTest]
+        public void GroupBoxResizeThenLayoutBeforeMatchChildren()
 		{
 			bool integerBounds = GuiWidget.DefaultEnforceIntegerBounds;
 			GuiWidget.DefaultEnforceIntegerBounds = true;
@@ -964,17 +961,17 @@ namespace MatterHackers.Agg.UI.Tests
 
 			groupBox.AddChild(contents);
 
-			await Assert.That(contents.Height == 20).IsTrue();
-			await Assert.That(groupBox.ClientArea.Height == 20).IsTrue();
-			await Assert.That(groupBox.Height == 50).IsTrue();
+			MhAssert.True(contents.Height == 20);
+			MhAssert.True(groupBox.ClientArea.Height == 20);
+			MhAssert.True(groupBox.Height == 50);
 			TextWidget groupBoxLabel = groupBox.Children.FirstOrDefault() as TextWidget;
 			groupBoxLabel.Name = "groupBoxLabel";
-			await Assert.That(groupBoxLabel.BoundsRelativeToParent.Top == groupBox.LocalBounds.Top).IsTrue();
+			MhAssert.True(groupBoxLabel.BoundsRelativeToParent.Top == groupBox.LocalBounds.Top);
 			contents.Height = 10;
-			await Assert.That(groupBoxLabel.BoundsRelativeToParent.Top == groupBox.LocalBounds.Top).IsTrue();
-			await Assert.That(contents.Height == 10).IsTrue();
-			await Assert.That(groupBox.ClientArea.Height == 10).IsTrue();
-			await Assert.That(groupBox.Height == 40).IsTrue();
+			MhAssert.True(groupBoxLabel.BoundsRelativeToParent.Top == groupBox.LocalBounds.Top);
+			MhAssert.True(contents.Height == 10);
+			MhAssert.True(groupBox.ClientArea.Height == 10);
+			MhAssert.True(groupBox.Height == 40);
 
 			GuiWidget.DefaultEnforceIntegerBounds = integerBounds;
 		}

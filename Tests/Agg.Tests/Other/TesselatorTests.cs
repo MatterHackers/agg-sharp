@@ -1,5 +1,5 @@
-/*
-Copyright (c) 2025, Lars Brubaker
+﻿/*
+Copyright (c) 2023, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,22 +27,17 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using Agg.Tests.Agg;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+
 using Tesselate;
 
 namespace MatterHackers.Agg.Tests
 {
-
-	public class TesselatorTests
+    [MhTestFixture]
+    public class TesselatorTests
 	{
-		private const double EPSILON = 1e-6;
-
-		private static bool AreApproximatelyEqual(double a, double b, double epsilon = EPSILON)
-		{
-			return Math.Abs(a - b) < epsilon;
-		}
 		public static string[][] InsructionStream = new string[][]
 			{
 				new string[] { "BP",
@@ -409,25 +404,26 @@ namespace MatterHackers.Agg.Tests
 			"E", },
 		};
 
+		private int CurrentInputTest;
 		private int CurrentOutput;
 		private int CurrentOutputTest;
 		private string LastString;
 
-		private void BeginCallBack(Tesselator.TriangleListType type)
+		public void BeginCallBack(Tesselator.TriangleListType type)
 		{
-			if (GetNextOutputAsString() != "B") throw new Exception("Expected 'B'");
+			MhAssert.True(GetNextOutputAsString() == "B");
 			switch (type)
 			{
 				case Tesselator.TriangleListType.Triangles:
-					if (GetNextOutputAsString() != "TRI") throw new Exception("Expected 'TRI'");
+					MhAssert.True(GetNextOutputAsString() == "TRI");
 					break;
 
 				case Tesselator.TriangleListType.TriangleFan:
-					if (GetNextOutputAsString() != "FAN") throw new Exception("Expected 'FAN'");
+					MhAssert.True(GetNextOutputAsString() == "FAN");
 					break;
 
 				case Tesselator.TriangleListType.TriangleStrip:
-					if (GetNextOutputAsString() != "STRIP") throw new Exception("Expected 'STRIP'");
+					MhAssert.True(GetNextOutputAsString() == "STRIP");
 					break;
 
 				default:
@@ -435,67 +431,66 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-		private int CombineCallBack(double[] coords3, int[] data4, double[] weight4)
+		public int CombineCallBack(double[] coords3, int[] data4, double[] weight4)
 		{
-			if (GetNextOutputAsString() != "C") throw new Exception("Expected 'C'");
-			if (!AreApproximatelyEqual(coords3[0], GetNextOutputAsDouble())) throw new Exception("coords3[0] mismatch");
-			if (!AreApproximatelyEqual(coords3[1], GetNextOutputAsDouble())) throw new Exception("coords3[1] mismatch");
-			if (data4[0] != GetNextOutputAsInt()) throw new Exception("data4[0] mismatch");
-			if (data4[1] != GetNextOutputAsInt()) throw new Exception("data4[1] mismatch");
-			if (data4[2] != GetNextOutputAsInt()) throw new Exception("data4[2] mismatch");
-			if (data4[3] != GetNextOutputAsInt()) throw new Exception("data4[3] mismatch");
-			if (!AreApproximatelyEqual(weight4[0], GetNextOutputAsDouble())) throw new Exception("weight4[0] mismatch");
-			if (!AreApproximatelyEqual(weight4[1], GetNextOutputAsDouble())) throw new Exception("weight4[1] mismatch");
-			if (!AreApproximatelyEqual(weight4[2], GetNextOutputAsDouble())) throw new Exception("weight4[2] mismatch");
-			if (!AreApproximatelyEqual(weight4[3], GetNextOutputAsDouble())) throw new Exception("weight4[3] mismatch");
+			double error = .001;
+			MhAssert.True(GetNextOutputAsString() == "C");
+			MhAssert.Equal(GetNextOutputAsDouble(), coords3[0], error);
+			MhAssert.Equal(GetNextOutputAsDouble(), coords3[1], error);
+			MhAssert.Equal(GetNextOutputAsInt(), data4[0]);
+			MhAssert.Equal(GetNextOutputAsInt(), data4[1]);
+			MhAssert.Equal(GetNextOutputAsInt(), data4[2]);
+			MhAssert.Equal(GetNextOutputAsInt(), data4[3]);
+			MhAssert.Equal(GetNextOutputAsDouble(), weight4[0], error);
+			MhAssert.Equal(GetNextOutputAsDouble(), weight4[1], error);
+			MhAssert.Equal(GetNextOutputAsDouble(), weight4[2], error);
+			MhAssert.Equal(GetNextOutputAsDouble(), weight4[3], error);
 
 			VertexList.Add(new Vertex(coords3[0], coords3[1]));
-			return VertexList.Count - 1;
+			return VertexList.Count-1;
 		}
 
-		private void EdgeFlagCallBack(bool IsEdge)
+		public void EdgeFlagCallBack(bool IsEdge)
 		{
-			if (GetNextOutputAsString() != "F") throw new Exception("Expected 'F'");
-			if (IsEdge != GetNextOutputAsBool()) throw new Exception("IsEdge mismatch");
+			MhAssert.True(GetNextOutputAsString() == "F");
+			MhAssert.Equal(GetNextOutputAsBool(), IsEdge);
 		}
 
-		private void EndCallBack()
+		public void EndCallBack()
 		{
-			if (GetNextOutputAsString() != "E") throw new Exception("Expected 'E'");
+			MhAssert.True(GetNextOutputAsString() == "E");
 		}
 
-		[Test]
-		public Task MatchesGLUTesselator()
+		[MhTest]
+		public void MatchesGLUTesselator()
 		{
-			for (int currentInputTest = 0; currentInputTest < InsructionStream.Length; currentInputTest++)
+			for (CurrentInputTest = 0; CurrentInputTest < InsructionStream.Length; CurrentInputTest++)
 			{
-				RunTest(currentInputTest, Tesselator.WindingRuleType.Odd, false);
+				RunTest(CurrentInputTest, Tesselator.WindingRuleType.Odd, false);
 				CurrentOutputTest++;
-				RunTest(currentInputTest, Tesselator.WindingRuleType.NonZero, false);
+				RunTest(CurrentInputTest, Tesselator.WindingRuleType.NonZero, false);
 				CurrentOutputTest++;
-				RunTest(currentInputTest, Tesselator.WindingRuleType.Positive, false);
+				RunTest(CurrentInputTest, Tesselator.WindingRuleType.Positive, false);
 				CurrentOutputTest++;
-				RunTest(currentInputTest, Tesselator.WindingRuleType.Negative, false);
+				RunTest(CurrentInputTest, Tesselator.WindingRuleType.Negative, false);
 				CurrentOutputTest++;
-				RunTest(currentInputTest, Tesselator.WindingRuleType.ABS_GEQ_Two, false);
+				RunTest(CurrentInputTest, Tesselator.WindingRuleType.ABS_GEQ_Two, false);
 				CurrentOutputTest++;
 
-				RunTest(currentInputTest, Tesselator.WindingRuleType.Odd, true);
+				RunTest(CurrentInputTest, Tesselator.WindingRuleType.Odd, true);
 				CurrentOutputTest++;
-				RunTest(currentInputTest, Tesselator.WindingRuleType.NonZero, true);
+				RunTest(CurrentInputTest, Tesselator.WindingRuleType.NonZero, true);
 				CurrentOutputTest++;
-				RunTest(currentInputTest, Tesselator.WindingRuleType.Positive, true);
+				RunTest(CurrentInputTest, Tesselator.WindingRuleType.Positive, true);
 				CurrentOutputTest++;
-				RunTest(currentInputTest, Tesselator.WindingRuleType.Negative, true);
+				RunTest(CurrentInputTest, Tesselator.WindingRuleType.Negative, true);
 				CurrentOutputTest++;
-				RunTest(currentInputTest, Tesselator.WindingRuleType.ABS_GEQ_Two, true);
+				RunTest(CurrentInputTest, Tesselator.WindingRuleType.ABS_GEQ_Two, true);
 				CurrentOutputTest++;
 			}
-
-			return Task.CompletedTask;
 		}
 
-		private void ParseStreamForTesselator(Tesselate.Tesselator tesselator, int instructionStreamIndex)
+		public void ParseStreamForTesselator(Tesselate.Tesselator tesselator, int instructionStreamIndex)
 		{
 			VertexList.Clear();
 			CurrentOutput = 0;
@@ -538,10 +533,10 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
-		private void VertexCallBack(int index)
+		public void VertexCallBack(int index)
 		{
-			if (GetNextOutputAsString() != "V") throw new Exception("Expected 'V'");
-			if (index != GetNextOutputAsInt()) throw new Exception("index mismatch");
+			MhAssert.True(GetNextOutputAsString() == "V");
+			MhAssert.Equal(GetNextOutputAsInt(), index);
 		}
 
 		private bool GetNextOutputAsBool()
@@ -552,7 +547,7 @@ namespace MatterHackers.Agg.Tests
 				return true;
 			}
 
-			if (asDouble != 0.0) throw new Exception("asDouble not 0.0");
+			MhAssert.Equal(asDouble, 0);
 
 			return false;
 		}
@@ -565,7 +560,7 @@ namespace MatterHackers.Agg.Tests
 		private int GetNextOutputAsInt()
 		{
 			double asDouble = Convert.ToDouble(GetNextOutputAsString());
-			if (asDouble != (int)asDouble) throw new Exception("asDouble not integer");
+			MhAssert.Equal((int)asDouble, asDouble);
 			return (int)asDouble;
 		}
 
@@ -578,7 +573,7 @@ namespace MatterHackers.Agg.Tests
 
 		private void RunTest(int instructionStreamIndex, Tesselator.WindingRuleType windingRule, bool setEdgeFlag)
 		{
-			Tesselator tesselator = new Tesselator();
+			Tesselate.Tesselator tesselator = new Tesselate.Tesselator();
 			tesselator.callBegin += BeginCallBack;
 			tesselator.callEnd += EndCallBack;
 			tesselator.callVertex += VertexCallBack;

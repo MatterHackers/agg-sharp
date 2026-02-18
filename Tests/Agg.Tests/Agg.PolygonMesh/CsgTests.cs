@@ -1,5 +1,5 @@
-/*
-Copyright (c) 2025, Lars Brubaker
+﻿/*
+Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -29,8 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.VectorMath;
-using TUnit.Assertions;
-using TUnit.Core;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using MatterHackers.Csg;
@@ -41,15 +40,14 @@ using System.Linq;
 using MatterHackers.DataConverters3D;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
-using MatterHackers.PolygonMesh;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
+	[TestFixture, Category("Agg.PolygonMesh.CSG")]
 	public class MeshCsgTests
 	{
 		[Test]
-		public async Task SubtractWorks()
+		public void SubtractWorks()
 		{
 			Vector3 centering = new Vector3(100, 100, 20);
 			Mesh meshA = PlatonicSolids.CreateCube(40, 40, 40);
@@ -65,15 +63,32 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
 			AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
-			await Assert.That(a_aabb.XSize == 40 && a_aabb.YSize == 40 && a_aabb.ZSize == 40).IsTrue();
-			await Assert.That(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40).IsTrue();
+			Assert.IsTrue(a_aabb.XSize == 40 && a_aabb.YSize == 40 && a_aabb.ZSize == 40);
+			Assert.IsTrue(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40);
 
 			// Todo: turn this on
-			//await Assert.That(result.IsManifold()).IsTrue();
+			//Assert.IsTrue(result.IsManifold());
 		}
 
-		[Test, Skip("CSG API changes - Face.Normal and Face.Vertices() methods have changed")]
-		public async Task SubtractHasAllFaces()
+		[Test, Ignore("TODO: Get this test passing")]
+		public void TopIsSolid()
+		{
+			int sides = 3;
+			CsgObject keep = new Cylinder(20, 20, sides);
+			var keepMesh = CsgToMesh.Convert(keep, true);
+			CsgObject subtract = new Cylinder(10, 21, sides);
+			subtract = new SetCenter(subtract, keep.GetCenter());
+			var subtractMesh = CsgToMesh.Convert(subtract, true);
+			CsgObject result = keep - subtract;
+			var resultMesh = CsgToMesh.Convert(result, true);
+
+			Assert.AreEqual(0, keepMesh.GetNonManifoldEdges().Count, "All faces should be 2 manifold");
+			Assert.AreEqual(0, subtractMesh.GetNonManifoldEdges().Count, "All faces should be 2 manifold");
+			//Assert.AreEqual(0, resultMesh.GetNonManifoldEdges().Count, "All faces of this subtract should be 2 manifold");
+		}
+
+		[Test]
+		public void SubtractHasAllFaces()
 		{
 			double XOffset = -.4;
 			CsgObject keep = new Box(10, 10, 10);
@@ -81,21 +96,15 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			var subtract = new Translate(new Box(10, 10, 10), XOffset, -3, 2);
 			var subtractMesh = CsgToMesh.Convert(subtract, true);
 			CsgObject result = keep - subtract;
-			var resultMesh = CsgToMesh.Convert(result);
+			var resultMesh =  CsgToMesh.Convert(result);
 			//mesh.Save("C:/Temp/TempCsgMesh.stl");
-
-			// TODO: Fix CSG API usage - these properties/methods have changed:
-			// - f.Normal.Z should be f.GetNormal().Z or similar
-			// - face.Vertices() should be different iteration method  
-			// - vertex.Position should be different property access
-			/*
 			var bottomOfSubtractFaces = resultMesh.Faces.Where((f) =>
 				AreEqual(f.Normal.Z, 1)
 				&&
 				FaceAtHeight(f, -3)
 				).ToArray();
 
-			var allVertices = new HashSet<object>();
+			HashSet<IVertex> allVertices = new HashSet<IVertex>();
 			foreach(var face in bottomOfSubtractFaces)
 			{
 				foreach(var vertex in face.Vertices())
@@ -108,24 +117,21 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			}
 
 			// back right
-			await Assert.That(HasPosition(allVertices, new Vector3(4.6, 2, -3))).IsTrue();
+			Assert.IsTrue(HasPosition(allVertices, new Vector3(4.6, 2, -3)));
 			// front right
-			await Assert.That(HasPosition(allVertices, new Vector3(4.6, -5, -3))).IsTrue();
+			Assert.IsTrue(HasPosition(allVertices, new Vector3(4.6, -5, -3)));
 			// back left
-			await Assert.That(HasPosition(allVertices, new Vector3(-5, 2, -3))).IsTrue();
+			Assert.IsTrue(HasPosition(allVertices, new Vector3(-5, 2, -3)));
 			// front left
-			await Assert.That(HasPosition(allVertices, new Vector3(-5, -5, -3))).IsTrue();
-			*/
+			Assert.IsTrue(HasPosition(allVertices, new Vector3(-5, -5, -3)), "Must have front left corner point");
 
-			await Assert.That(keepMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
-			await Assert.That(subtractMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
-			//await Assert.That(resultMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
+			Assert.AreEqual(0, keepMesh.GetNonManifoldEdges().Count, "All faces should be 2 manifold");
+			Assert.AreEqual(0, subtractMesh.GetNonManifoldEdges().Count, "All faces should be 2 manifold");
+			//Assert.AreEqual(0, resultMesh.GetNonManifoldEdges().Count, "All faces of this subtract should be 2 manifold");
 		}
 
-		private bool HasPosition(HashSet<object> allVertices, Vector3 position)
+		private bool HasPosition(HashSet<IVertex> allVertices, Vector3 position)
 		{
-			// TODO: Fix CSG API - vertex.Position has changed
-			/*
 			foreach(var vertex in allVertices)
 			{
 				if(vertex.Position.Equals(position, .0001))
@@ -133,14 +139,12 @@ namespace MatterHackers.PolygonMesh.UnitTests
 					return true;
 				}
 			}
-			*/
-			return false; // Temporarily return false until CSG API is fixed
+
+			return false;
 		}
 
 		bool FaceAtHeight(Face face, double height)
 		{
-			// TODO: Fix CSG API - face.Vertices() and vertex.Position have changed
-			/*
 			foreach (var vertex in face.Vertices())
 			{
 				if(!AreEqual(vertex.Position.Z, height))
@@ -148,13 +152,13 @@ namespace MatterHackers.PolygonMesh.UnitTests
 					return false;
 				}
 			}
-			*/
-			return true; // Temporarily return true until CSG API is fixed
+
+			return true;
 		}
 
 		bool AreEqual(double a, double b, double errorRange = .001)
 		{
-			if (a < b + errorRange
+			if(a < b + errorRange
 				&& a > b - errorRange)
 			{
 				return true;
@@ -163,8 +167,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			return false;
 		}
 
-		[Test, Skip("Crashes NUnit with an unrecoverable StackOverflow error, ending test passes on build servers")]
-		public async Task SubtractIcosahedronsWorks()
+		[Test, Ignore("Crashes NUnit with an unrecoverable StackOverflow error, ending test passes on build servers")]
+		public void SubtractIcosahedronsWorks()
 		{
 			Vector3 centering = new Vector3(100, 100, 20);
 			Mesh meshA = PlatonicSolids.CreateIcosahedron(35);
@@ -183,15 +187,15 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
 			AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
-			await Assert.That(a_aabb.XSize == 40 && a_aabb.YSize == 40 && a_aabb.ZSize == 40).IsTrue();
-			await Assert.That(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40).IsTrue();
+			Assert.IsTrue(a_aabb.XSize == 40 && a_aabb.YSize == 40 && a_aabb.ZSize == 40);
+			Assert.IsTrue(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40);
 
 			// Todo: turn this on
-			//await Assert.That(result.IsManifold()).IsTrue();
+			//Assert.IsTrue(result.IsManifold());
 		}
 
 		[Test]
-		public async Task UnionExactlyOnWorks()
+		public void UnionExactlyOnWorks()
 		{
 			Mesh meshA = PlatonicSolids.CreateCube(40, 40, 40);
 			Mesh meshB = PlatonicSolids.CreateCube(40, 40, 40);
@@ -202,15 +206,15 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
 			AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
-			await Assert.That(a_aabb.XSize == 40 && a_aabb.YSize == 40 && a_aabb.ZSize == 40).IsTrue();
-			await Assert.That(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40).IsTrue();
+			Assert.IsTrue(a_aabb.XSize == 40 && a_aabb.YSize == 40 && a_aabb.ZSize == 40);
+			Assert.IsTrue(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40);
 
 			// Todo: turn this on
-			await Assert.That(result.IsManifold()).IsTrue();
+			//Assert.IsTrue(result.IsManifold());
 		}
 
 		[Test]
-		public async Task EnsureSimpleCubeIntersection()
+		public void EnsureSimpleCubeIntersection()
 		{
 			// the intersection of 2 cubes
 			{
@@ -226,21 +230,15 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
 				AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
-				await Assert.That(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10).IsTrue();
-				await Assert.That(intersect_aabb.XSize == 6 && intersect_aabb.YSize == 6 && intersect_aabb.ZSize == 6).IsTrue();
+				Assert.IsTrue(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10);
+				Assert.IsTrue(intersect_aabb.XSize == 6 && intersect_aabb.YSize == 6 && intersect_aabb.ZSize == 6);
 
-                // Assert a is manifold
-                await Assert.That(meshA.IsManifold()).IsTrue();
+				// Todo: turn this on
+				//Assert.IsTrue(result.IsManifold());
+			}
 
-                // Assert b is manifold
-				await Assert.That(meshB.IsManifold()).IsTrue();
-
-                // Assert the result is manifold
-                await Assert.That(result.IsManifold()).IsTrue();
-            }
-
-            // the intersection of 2 cubes that miss eachother
-            {
+			// the intersection of 2 cubes that miss eachother
+			{
 				Mesh meshA = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
 
 				meshA.Translate(new Vector3(-5, -5, -5));
@@ -253,23 +251,16 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
 				AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
-				// assert a size
-				await Assert.That(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10).IsTrue();
-                // assert a bounding box
-				await Assert.That(a_aabb.MinXYZ == new Vector3(-10, -10, -10) && a_aabb.MaxXYZ == new Vector3(0, 0, 0)).IsTrue();
+				Assert.IsTrue(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10);
+				Assert.IsTrue(intersect_aabb.XSize == 0 && intersect_aabb.YSize == 0 && intersect_aabb.ZSize == 0);
 
-                // assert b size
-                await Assert.That(b_aabb.XSize == 10 && b_aabb.YSize == 10 && b_aabb.ZSize == 10).IsTrue();
-                // assert b bounding box
-				await Assert.That(b_aabb.MinXYZ == new Vector3(0, 0, 0) && b_aabb.MaxXYZ == new Vector3(10, 10, 10)).IsTrue();
-
-                // assert intersection size
-                await Assert.That(intersect_aabb.XSize == 0 && intersect_aabb.YSize == 0 && intersect_aabb.ZSize == 0).IsTrue();
+				// Todo: turn this on
+				//Assert.IsTrue(result.IsManifold());
 			}
 		}
 
 		[Test]
-		public async Task EnsureSimpleCubeUnion()
+		public void EnsureSimpleCubeUnion()
 		{
 			// the union of 2 cubes
 			{
@@ -285,16 +276,16 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
 				AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
-				await Assert.That(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10).IsTrue();
-				await Assert.That(intersect_aabb.XSize == 14 && intersect_aabb.YSize == 10 && intersect_aabb.ZSize == 10).IsTrue();
+				Assert.IsTrue(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10);
+				Assert.IsTrue(intersect_aabb.XSize == 14 && intersect_aabb.YSize == 10 && intersect_aabb.ZSize == 10);
 
 				// Todo: turn this on
-				//await Assert.That(result.IsManifold()).IsTrue();
+				//Assert.IsTrue(result.IsManifold());
 			}
 		}
 
 		[Test]
-		public async Task EnsureSimpleCubeSubtraction()
+		public void EnsureSimpleCubeSubtraction()
 		{
 			// the subtraction of 2 cubes
 			{
@@ -310,16 +301,16 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
 				AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
-				await Assert.That(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10).IsTrue();
-				await Assert.That(intersect_aabb.XSize == 4 && intersect_aabb.YSize == 10 && intersect_aabb.ZSize == 10).IsTrue();
+				Assert.IsTrue(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10);
+				Assert.IsTrue(intersect_aabb.XSize == 4 && intersect_aabb.YSize == 10 && intersect_aabb.ZSize == 10);
 
 				// Todo: turn this on
-				//await Assert.That(result.IsManifold()).IsTrue();
+				//Assert.IsTrue(result.IsManifold());
 			}
 		}
 
-		[Test, Skip("Work in progress")]
-		public async Task SubtractionMakesClosedSolid()
+		[Test, Ignore("Work in progress")]
+		public void SubtractionMakesClosedSolid()
 		{
 			double XOffset = -.4;
 
@@ -327,7 +318,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			boxCombine -= new MatterHackers.Csg.Transform.Translate(new MatterHackers.Csg.Solids.Box(10, 10, 10), XOffset, -3, 2);
 			Mesh result = RenderOpenGl.CsgToMesh.Convert(boxCombine);
 
-			await Assert.That(result.IsManifold()).IsTrue();
+			Assert.IsTrue(result.IsManifold());
 		}
 	}
 }

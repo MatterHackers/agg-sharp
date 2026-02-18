@@ -31,8 +31,6 @@ using System;
 using System.Threading.Tasks;
 using MatterHackers.GuiAutomation;
 using MatterHackers.Agg.Platform;
-using TUnit.Core;
-
 namespace MatterHackers.Agg.Tests.TestingInfrastructure
 {
     public static class TestSetup

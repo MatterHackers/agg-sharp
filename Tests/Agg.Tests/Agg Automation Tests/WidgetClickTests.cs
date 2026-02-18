@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, John Lewin, Lars Brubaker
+Copyright (c) 2017, John Lewin, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,62 +28,61 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System.Threading.Tasks;
+using Agg.Tests.Agg;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
-using TUnit.Assertions;
-using TUnit.Core;
 
 namespace Matter_CAD_Lib.Tests.AutomationTests
 {
-    
- [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
-	public class WidgetClickTests
+    [MhTestFixture("Opens Winforms Window")]
+    public class WidgetClickTests
 	{
-        [Test]
+        [MhTest]
         public async Task ClickFiresOnCorrectWidgets()
 		{
 			var testWindow = new ClickTestsWindow(300, 200);
 
 			await AutomationRunner.ShowWindowAndExecuteTests(
 				testWindow,
-				async (testRunner) =>
+				(testRunner) =>
 				{
 					testRunner.ClickByName("blueWidget");
 					testRunner.Delay(.1);
-					await Assert.That(testWindow.BlueWidget.ClickCount).IsEqualTo(1);
-                    await Assert.That(testWindow.OrangeWidget.ClickCount).IsEqualTo(0);
-                    await Assert.That(testWindow.PurpleWidget.ClickCount).IsEqualTo(0);
+					MhAssert.Equal(1, testWindow.BlueWidget.ClickCount);//, "Unexpected click count on blue widget");
+                    MhAssert.Equal(0, testWindow.OrangeWidget.ClickCount);//, "Unexpected click count on orange widget");
+                    MhAssert.Equal(0, testWindow.PurpleWidget.ClickCount);//, "Unexpected click count on purple widget");
 
                     testRunner.ClickByName("orangeWidget");
 					testRunner.Delay(.1);
-					await Assert.That(testWindow.BlueWidget.ClickCount).IsEqualTo(1);
-                    await Assert.That(testWindow.OrangeWidget.ClickCount).IsEqualTo(1);
-                    await Assert.That(testWindow.PurpleWidget.ClickCount).IsEqualTo(0);
+					MhAssert.Equal(1, testWindow.BlueWidget.ClickCount);//, "Unexpected click count on blue widget");
+                    MhAssert.Equal(1, testWindow.OrangeWidget.ClickCount);//, "Unexpected click count on orange widget");
+                    MhAssert.Equal(0, testWindow.PurpleWidget.ClickCount);//, "Unexpected click count on purple widget");
 
                     testRunner.ClickByName("blueWidget");
 					testRunner.Delay(.1);
-					await Assert.That(testWindow.BlueWidget.ClickCount).IsEqualTo(2);
-                    await Assert.That(testWindow.OrangeWidget.ClickCount).IsEqualTo(1);
-                    await Assert.That(testWindow.PurpleWidget.ClickCount).IsEqualTo(0);
+					MhAssert.Equal(2, testWindow.BlueWidget.ClickCount);//, "Unexpected click count on blue widget");
+                    MhAssert.Equal(1, testWindow.OrangeWidget.ClickCount);//, "Unexpected click count on orange widget");
+                    MhAssert.Equal(0, testWindow.PurpleWidget.ClickCount);//, "Unexpected click count on purple widget");
 
                     testRunner.ClickByName("orangeWidget");
 					testRunner.Delay(.1);
-					await Assert.That(testWindow.BlueWidget.ClickCount).IsEqualTo(2);
-                    await Assert.That(testWindow.OrangeWidget.ClickCount).IsEqualTo(2);
-                    await Assert.That(testWindow.PurpleWidget.ClickCount).IsEqualTo(0);
+					MhAssert.Equal(2, testWindow.BlueWidget.ClickCount);//, "Unexpected click count on root widget");
+                    MhAssert.Equal(2, testWindow.OrangeWidget.ClickCount);//, "Unexpected click count on orange widget");
+                    MhAssert.Equal(0, testWindow.PurpleWidget.ClickCount);//, "Unexpected click count on purple widget");
 
                     testRunner.ClickByName("purpleWidget");
 					testRunner.Delay(.1);
-					await Assert.That(testWindow.BlueWidget.ClickCount).IsEqualTo(2);
-                    await Assert.That(testWindow.OrangeWidget.ClickCount).IsEqualTo(2);
-                    await Assert.That(testWindow.PurpleWidget.ClickCount).IsEqualTo(1);
-				},
-				secondsToTestFailure: 30);
+					MhAssert.Equal(2, testWindow.BlueWidget.ClickCount);//, "Unexpected click count on blue widget");
+                    MhAssert.Equal(2, testWindow.OrangeWidget.ClickCount);//, "Unexpected click count on orange widget");
+                    MhAssert.Equal(1, testWindow.PurpleWidget.ClickCount);//, "Unexpected click count on purple widget");
+
+                    return Task.CompletedTask;
+				});
 		}
 
-        [Test]
+        [MhTest]
         public async Task ClickSuppressedOnExternalMouseUp()
 		{
 			var testWindow = new ClickTestsWindow(300, 200);
@@ -92,7 +91,7 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 
 			await AutomationRunner.ShowWindowAndExecuteTests(
 				testWindow,
-				async (testRunner) =>
+				(testRunner) =>
 				{
 					MouseEventArgs mouseEvent;
 
@@ -108,7 +107,7 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 					testRunner.SetMouseCursorPosition(testWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
 					testWindow.OnMouseUp(mouseEvent);
 
-					await Assert.That(testWindow.BlueWidget.ClickCount).IsEqualTo(1);
+					MhAssert.Equal(1, testWindow.BlueWidget.ClickCount);//, "Expected 1 click on root widget");
 
                     // ** Click should not occur when mouse up is outside of the control bounds **
                     //
@@ -123,12 +122,13 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 					testWindow.OnMouseUp(mouseEvent);
 
 					// There should be no increment in the click count
-					await Assert.That(testWindow.BlueWidget.ClickCount).IsEqualTo(1);
-				},
-				secondsToTestFailure: 30);
+					MhAssert.Equal(1, testWindow.BlueWidget.ClickCount);//, "Expected 1 click on root widget");
+
+                    return Task.CompletedTask;
+				});
 		}
 
-        [Test]
+        [MhTest]
         public async Task ClickSuppressedOnMouseUpWithinChild2()
 		{
 			// Agg currently fires mouse up events in child controls when the parent has the mouse captured
@@ -145,7 +145,7 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 
 			await AutomationRunner.ShowWindowAndExecuteTests(
 				testWindow,
-				async (testRunner) =>
+				(testRunner) =>
 				{
 					MouseEventArgs mouseEvent;
 
@@ -161,7 +161,7 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 					testRunner.SetMouseCursorPosition(testWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
 					testWindow.OnMouseUp(mouseEvent);
 
-					await Assert.That(testWindow.BlueWidget.ClickCount).IsEqualTo(1);
+					MhAssert.Equal(1, testWindow.BlueWidget.ClickCount);//, "Expected 1 click on root widget");
 
                     // ** Click should not occur when mouse up occurs on child controls **
                     //
@@ -176,13 +176,13 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 					testWindow.OnMouseUp(mouseEvent);
 
 					// There should be no increment in the click count
-					await Assert.That(testWindow.BlueWidget.ClickCount).IsEqualTo(1);
-				},
-				secondsToTestFailure: 30);
+					MhAssert.Equal(1, testWindow.BlueWidget.ClickCount);//, "Expected click count to not increment on mouse up within child control");
+
+                    return Task.CompletedTask;
+				});
 		}
 
 		// Test SystemWindow with three clickable controls
-  [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
 		private class ClickTestsWindow : SystemWindow
 		{
 			private GuiWidget lastClicked = null;
@@ -239,7 +239,6 @@ namespace Matter_CAD_Lib.Tests.AutomationTests
 			}
 
 			// Test class with a default size and a field to track click counts
-   [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
 			public class ClickableWidget : GuiWidget
 			{
 				public int ClickCount { get; set; } = 0;
