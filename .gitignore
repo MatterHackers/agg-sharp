@@ -2,7 +2,7 @@
 [Bb]in/
 [Oo]bj/
 
-# mstest test results
+# test results
 TestResults
 
 ## Ignore Visual Studio temporary files, build results, and

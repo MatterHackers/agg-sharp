@@ -93,7 +93,7 @@ namespace MatterHackers.Agg.Tests.TestingInfrastructure
 
         /// <summary>
         /// Static constructor ensures automation infrastructure is initialized when the assembly loads.
-        /// This is a simple approach that works with TUnit 0.25.21.
+        /// This is a simple approach that works with the custom test runner.
         /// </summary>
         static TestSetup()
         {

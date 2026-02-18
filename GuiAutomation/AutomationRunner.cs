@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
@@ -1473,48 +1473,63 @@ namespace MatterHackers.GuiAutomation
 			// Restore the original EnableAllowDrop state
 			SystemWindow.EnableAllowDrop = originalAllowDropState;
 
-			// Reset the static window provider and firstWindow flag for the next test
-			SystemWindow.ResetSystemWindowProvider();
+			// Check if we're running inside an existing single-window application (e.g. MatterCAD's built-in test runner).
+			// If so, we must NOT reset the provider, firstWindow flag, UiThread, or platform input because the
+			// host application's main window still depends on them.
+			bool isSingleWindowMode = false;
 			try
 			{
-				// Use reflection to call the static method since we can't directly reference the platform-specific class
 				var winformsType = System.Type.GetType("MatterHackers.Agg.UI.WinformsSystemWindow, agg_platform_win32");
-				var resetMethod = winformsType?.GetMethod("ResetFirstWindowFlag", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
-				resetMethod?.Invoke(null, null);
-			}
-			catch (Exception ex)
-			{
-				DebugLogger.LogWarning("AutomationRunner", $"Failed to reset WinformsSystemWindow state: {ex.Message}");
-			}
-
-			// Reset EnablePlatformWindowInput for the next test - this is critical for tests to receive input events
-			try
-			{
-				// Use reflection to access the static property
-				var platformWindowType = System.Type.GetType("MatterHackers.Agg.UI.IPlatformWindow, agg");
-				var enableInputProperty = platformWindowType?.GetProperty("EnablePlatformWindowInput");
-				if (enableInputProperty != null)
+				var singleWindowModeProperty = winformsType?.GetProperty("SingleWindowMode", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+				if (singleWindowModeProperty != null)
 				{
-					enableInputProperty.SetValue(null, true);
+					isSingleWindowMode = (bool)(singleWindowModeProperty.GetValue(null) ?? false);
 				}
 			}
-			catch (Exception ex)
+			catch
 			{
-				DebugLogger.LogWarning("AutomationRunner", $"Failed to reset EnablePlatformWindowInput: {ex.Message}");
 			}
 
-			// IMPORTANT: Reset UiThread LAST after window is fully closed to avoid clearing CloseOnIdle actions
-			try
+			if (!isSingleWindowMode)
 			{
-				// Let any remaining RunOnIdle actions complete first
-				UiThread.InvokePendingActions();
+				// Reset the static window provider and firstWindow flag for the next test
+				SystemWindow.ResetSystemWindowProvider();
+				try
+				{
+					var winformsType = System.Type.GetType("MatterHackers.Agg.UI.WinformsSystemWindow, agg_platform_win32");
+					var resetMethod = winformsType?.GetMethod("ResetFirstWindowFlag", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+					resetMethod?.Invoke(null, null);
+				}
+				catch (Exception ex)
+				{
+					DebugLogger.LogWarning("AutomationRunner", $"Failed to reset WinformsSystemWindow state: {ex.Message}");
+				}
 
-				// Now reset UiThread static state for the next test
-				UiThread.ResetForTests();
-			}
-			catch (Exception ex)
-			{
-				DebugLogger.LogWarning("AutomationRunner", $"Failed to reset UiThread state: {ex.Message}");
+				// Reset EnablePlatformWindowInput for the next test - this is critical for tests to receive input events
+				try
+				{
+					var platformWindowType = System.Type.GetType("MatterHackers.Agg.UI.IPlatformWindow, agg");
+					var enableInputProperty = platformWindowType?.GetProperty("EnablePlatformWindowInput");
+					if (enableInputProperty != null)
+					{
+						enableInputProperty.SetValue(null, true);
+					}
+				}
+				catch (Exception ex)
+				{
+					DebugLogger.LogWarning("AutomationRunner", $"Failed to reset EnablePlatformWindowInput: {ex.Message}");
+				}
+
+				// IMPORTANT: Reset UiThread LAST after window is fully closed to avoid clearing CloseOnIdle actions
+				try
+				{
+					UiThread.InvokePendingActions();
+					UiThread.ResetForTests();
+				}
+				catch (Exception ex)
+				{
+					DebugLogger.LogWarning("AutomationRunner", $"Failed to reset UiThread state: {ex.Message}");
+				}
 			}
 
 			// Reset Keyboard static state for the next test  
