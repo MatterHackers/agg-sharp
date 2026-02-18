@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2021, Lars Brubaker
 All rights reserved.
 
@@ -191,11 +191,11 @@ namespace MatterHackers.PolygonMesh.Processors
 		{
 			// given the start, find the closest next point along either polygon to move to
 			var outerStart = outerLoop[outerIndex];
-			var outerNextIndex = outerIndex + 1 % outerLoop.Count;
+			var outerNextIndex = (outerIndex + 1) % outerLoop.Count;
 			var outerNext = outerLoop[outerNextIndex];
             
 			var innerStart = innerLoop[innerIndex];
-			var innerNextIndex = innerIndex + 1 % innerLoop.Count;
+			var innerNextIndex = (innerIndex + 1) % innerLoop.Count;
 			var innerNext = innerLoop[innerNextIndex];
 
 			var distanceToInnerNext = (innerNext - outerStart).LengthSquared();
