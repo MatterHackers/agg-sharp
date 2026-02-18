@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2025, Lars Brubaker, John Lewin
 All rights reserved.
 
@@ -206,22 +206,23 @@ namespace MatterHackers.Agg.UI
 			
 			if (systemWindowProvider == null)
 			{
-				DebugLogger.LogMessage("SystemWindow", "systemWindowProvider is null, creating new instance");
-				systemWindowProvider = AggContext.CreateInstanceFrom<ISystemWindowProvider>(AggContext.Config.ProviderTypes.SystemWindowProvider);
-				DebugLogger.LogMessage("SystemWindow", $"Created systemWindowProvider type: {systemWindowProvider?.GetType().Name}");
-			}
-			else
-			{
-				DebugLogger.LogMessage("SystemWindow", $"Using existing systemWindowProvider type: {systemWindowProvider.GetType().Name}");
+				var providerTypeName = AggContext.Config.ProviderTypes.SystemWindowProvider;
+				DebugLogger.LogMessage("SystemWindow", $"systemWindowProvider is null, creating from '{providerTypeName}'");
+				systemWindowProvider = AggContext.CreateInstanceFrom<ISystemWindowProvider>(providerTypeName);
+
+				if (systemWindowProvider == null)
+				{
+					throw new InvalidOperationException(
+						$"Failed to create ISystemWindowProvider from type '{providerTypeName}'. " +
+						"Ensure AggContext.Config.ProviderTypes.SystemWindowProvider is set to a valid type name.");
+				}
+
+				DebugLogger.LogMessage("SystemWindow", $"Created systemWindowProvider type: {systemWindowProvider.GetType().Name}");
 			}
 
 			_openWindows.Add(this);
-			DebugLogger.LogMessage("SystemWindow", $"Added to _openWindows, count now: {_openWindows.Count}");
-			DebugLogger.LogMessage("SystemWindow", $"AllOpenSystemWindows count: {AllOpenSystemWindows.Count()}");
 
 			// Create the backing IPlatformWindow object and set its AggSystemWindow property to this new SystemWindow
-			DebugLogger.LogMessage("SystemWindow", "Calling systemWindowProvider.ShowSystemWindow");
-
             systemWindowProvider.ShowSystemWindow(this);
 			DebugLogger.LogMessage("SystemWindow", $"systemWindowProvider.ShowSystemWindow completed - PlatformWindow null: {PlatformWindow == null}");
 		}

@@ -1,5 +1,5 @@
-﻿/*
-Copyright (c) 2018, Lars Brubaker, John Lewin
+/*
+Copyright (c) 2025, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -95,6 +95,12 @@ namespace MatterHackers.Agg.UI
 				if (systemWindow.PlatformWindow != null)
 				{
 					return;
+				}
+
+				if (theme == null)
+				{
+					throw new InvalidOperationException(
+						"SingleWindowProvider.theme is null. Call SingleWindowProvider.SetWindowTheme() before showing system windows.");
 				}
 
 				var overlayWindow = new SystemWindow(_openWindows.FirstOrDefault().Width, _openWindows.FirstOrDefault().Height)

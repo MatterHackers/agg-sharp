@@ -1,4 +1,4 @@
-﻿//----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
@@ -108,8 +108,6 @@ namespace MatterHackers.Agg.UI
 			{
 				// Step 1: Clear all static references
 				currentControl = null;
-				// Reset ID counter to prevent issues with stale ID references
-				nextId = 0;
 
 				// Step 1.5: CRITICAL - Reset GLFW state for fresh start between tests
 				// This allows each test to establish its own GLFW thread instead of being bound to the first test's thread

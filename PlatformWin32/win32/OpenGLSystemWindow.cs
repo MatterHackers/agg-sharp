@@ -323,23 +323,9 @@ namespace MatterHackers.Agg.UI
 
 		private bool CheckGlControl()
 		{
-			if (firstGlControlSeen == null)
-			{
-				firstGlControlSeen = AggGLControl.currentControl;
-			}
-
-			// if (firstGlControlSeen != MyGLControl.currentControl)
-			if (AggGLControl.currentControl.Id != this.id)
-			{
-				Debug.WriteLine("Is {0} Should be {1}".FormatWith(firstGlControlSeen.Id, AggGLControl.currentControl.Id));
-				// throw new Exception("We have the wrong gl control realized.");
-				return false;
-			}
-
-			return true;
+			// Verify the active GL context belongs to this window's control
+			return AggGLControl.currentControl == glControl;
 		}
-
-		private AggGLControl firstGlControlSeen = null;
 
 		public override Graphics2D NewGraphics2D()
 		{
