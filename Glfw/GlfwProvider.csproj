@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -25,13 +25,8 @@
     <ProjectReference Include="..\glfw-net\GLFW.NET\GLFW.NETStandard.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="glfw.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="glfw3.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+  <!-- Windows: native GLFW comes from NuGet package "glfw". macOS/Linux: use bundled binaries below. -->
+  <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
     <None Update="glfw.dylib">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -48,5 +43,17 @@
   <ItemGroup>
     <PackageReference Update="StyleCop.Analyzers" Version="1.1.118" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="glfw" Version="3.4.0" />
+  </ItemGroup>
+
+  <!-- Copy glfw3.dll from NuGet package to output when building for Windows (C# P/Invoke; package targets are for C++). -->
+  <Target Name="CopyGlfwNativeWindows" AfterTargets="Build;Publish" Condition="'$(RuntimeIdentifier)' != '' and $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win')) or ('$(RuntimeIdentifier)' == '' and '$(OS)' == 'Windows_NT')">
+    <PropertyGroup>
+      <_GlfwPkgDir>$(NuGetPackageRoot)glfw\3.4.0\build\native\bin\dynamic\v143\x64</_GlfwPkgDir>
+    </PropertyGroup>
+    <Copy SourceFiles="$(_GlfwPkgDir)\glfw3.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="Exists('$(_GlfwPkgDir)\glfw3.dll')" />
+  </Target>
 
 </Project>

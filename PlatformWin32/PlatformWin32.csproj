@@ -1,7 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net6.0-windows</TargetFramework>
+		<TargetFramework Condition="'$(NetVersion)' != ''">$(NetVersion)-windows</TargetFramework>
+		<TargetFramework Condition="'$(NetVersion)' == ''">net6.0-windows</TargetFramework>
 		<Company>MatterHackers Inc.</Company>
+		<!-- Allow restore/build on non-Windows (e.g. CI); required for NETSDK1100 when targeting Windows TFM -->
+		<EnableWindowsTargeting>true</EnableWindowsTargeting>
+		<!-- Suppress .NET 10 WinForms serialization analyzer until properties are annotated -->
+		<NoWarn>$(NoWarn);WFO1000</NoWarn>
 		<AssemblyName>agg_platform_win32</AssemblyName>
 		<RootNamespace>agg_platform_win32</RootNamespace>
 		<UseWindowsForms>true</UseWindowsForms>

@@ -2,7 +2,7 @@
 {
 	public class Array2D<dataType>
 	{
-		private dataType[][] internalArray;
+		private readonly dataType[][] internalArray;
 
 		public Array2D(int width, int height)
 		{
