@@ -39,10 +39,10 @@ namespace MatterHackers.Csg.Solids
 
 		public class CylinderPrimitive : Solid
 		{
-			public int Sides { get; }
-			public double Radius1 { get; }
-			public double Radius2 { get; }
-			public double Height { get; }
+			public int Sides { get; set; }
+			public double Radius1 { get; set; }
+			public double Radius2 { get; set; }
+			public double Height { get; set; }
 
 			internal CylinderPrimitive(double radius1, double radius2, double height, int sides, string name)
 				: base(name)

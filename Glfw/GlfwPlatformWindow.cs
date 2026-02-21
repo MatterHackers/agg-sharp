@@ -161,6 +161,12 @@ namespace MatterHackers.GlfwProvider
 			Invalidated = true;
 		}
 
+		private void ResetDeviceScale()
+		{
+			Glfw.GetWindowContentScale(glfwWindow, out float xScale, out float yScale);
+			GuiWidget.DeviceScale = xScale;
+		}
+
 		public Graphics2D NewGraphics2D()
 		{
 			// this is for testing the openGL implementation
@@ -699,17 +705,17 @@ namespace MatterHackers.GlfwProvider
 			int w = (int)aggSystemWindow.Width;
 			int h = (int)aggSystemWindow.Height;
 
-			Glfw.GetWindowContentScale(glfwWindow, out float xScale, out float yScale);
+			Glfw.GetFramebufferSize(glfwWindow, out int fbWidth, out int fbHeight);
 
 			GL.MatrixMode(MatrixMode.Modelview);
 			GL.LoadIdentity();
-			GL.Scissor(0, 0, w, h);
+			GL.Scissor(0, 0, fbWidth, fbHeight);
 
 			GL.MatrixMode(MatrixMode.Projection);
 			GL.LoadIdentity();
 
 			GL.Ortho(0, w, 0, h, -1, 1); // Bottom-left corner pixel has coordinate (0, 0)
-			GL.Viewport(0, 0, w, h); // Use all of the glControl painting area
+			GL.Viewport(0, 0, fbWidth, fbHeight); // Use all of the glControl painting area
 		}
 
 		private void Show()
@@ -730,6 +736,8 @@ namespace MatterHackers.GlfwProvider
 			}
 
 			glfwWindow = Glfw.CreateWindow((int)aggSystemWindow.Width, (int)aggSystemWindow.Height, aggSystemWindow.Title, GLFW.Monitor.None, Window.None);
+
+			Clipboard.SetSystemClipboard(new GlfwClipboard(glfwWindow));
 
 			Glfw.MakeContextCurrent(glfwWindow);
 
@@ -795,7 +803,13 @@ namespace MatterHackers.GlfwProvider
 			var glfwGl = new GlfwGL();
 			GL.Instance = glfwGl;
 
+			ResetDeviceScale();
+
 			Glfw.ShowWindow(glfwWindow);
+
+			Glfw.GetWindowSize(glfwWindow, out int width, out int height);
+			aggSystemWindow.Size = new VectorMath.Vector2(width, height);
+			ResetViewport();
 
 			while (!Glfw.WindowShouldClose(glfwWindow))
 			{
@@ -893,7 +907,8 @@ namespace MatterHackers.GlfwProvider
 		private void SizeCallback(Window window, int width, int height)
 		{
 			aggSystemWindow.Size = new VectorMath.Vector2(width, height);
-			GL.Viewport(0, 0, width, height); // Use all of the glControl painting area
+			Glfw.GetFramebufferSize(glfwWindow, out int fbWidth, out int fbHeight);
+			GL.Viewport(0, 0, fbWidth, fbHeight); // Use all of the glControl painting area
 			ConditionalDrawAndRefresh(aggSystemWindow);
 		}
 

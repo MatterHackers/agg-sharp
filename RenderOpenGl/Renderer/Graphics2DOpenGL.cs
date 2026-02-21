@@ -81,10 +81,10 @@ namespace MatterHackers.RenderOpenGl
 		public override void SetClippingRect(RectangleDouble clippingRect)
 		{
 			cachedClipRect = clippingRect;
-			GL.Scissor((int)Math.Floor(Math.Max(clippingRect.Left, 0)),
-				(int)Math.Floor(Math.Max(clippingRect.Bottom, 0)),
-				(int)Math.Ceiling(Math.Max(clippingRect.Width, 0)),
-				(int)Math.Ceiling(Math.Max(clippingRect.Height, 0)));
+			GL.Scissor((int)Math.Floor(Math.Max(clippingRect.Left * DeviceScale, 0)),
+				(int)Math.Floor(Math.Max(clippingRect.Bottom * DeviceScale, 0)),
+				(int)Math.Ceiling(Math.Max(clippingRect.Width * DeviceScale, 0)),
+				(int)Math.Ceiling(Math.Max(clippingRect.Height * DeviceScale, 0)));
 			GL.Enable(EnableCap.ScissorTest);
 		}
 

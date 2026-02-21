@@ -412,9 +412,38 @@ namespace MatterHackers.Agg.UI
 
 		public bool ReadOnly { get; set; }
 
+		public HashSet<int> ErrorLineIndices { get; } = new HashSet<int>();
+
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			double fontHeight = internalTextWidget.Printer.TypeFaceStyle.EmSizeInPixels;
+
+			if (ErrorLineIndices.Count > 0)
+			{
+				string text = Text;
+				int currentIndex = 0;
+				int currentLine = 0;
+
+				while (currentIndex <= text.Length)
+				{
+					if (ErrorLineIndices.Contains(currentLine))
+					{
+						Vector2 lineStartPos = internalTextWidget.Printer.GetOffsetLeftOfCharacterIndex(currentIndex);
+						var bar = new RectangleDouble(0,
+							Math.Ceiling(internalTextWidget.Height + lineStartPos.Y),
+							Width,
+							Math.Ceiling(internalTextWidget.Height + lineStartPos.Y - fontHeight));
+
+						graphics2D.Render(new RoundedRect(bar, 0), new Color(Color.Red, 178));
+					}
+					
+					int nextNewline = text.IndexOf('\n', currentIndex);
+					if (nextNewline == -1) break;
+					
+					currentIndex = nextNewline + 1;
+					currentLine++;
+				}
+			}
 
 			if (Selecting
 				&& SelectionIndexToStartBefore != CharIndexToInsertBefore)
@@ -1422,6 +1451,38 @@ namespace MatterHackers.Agg.UI
 			}
 
 			return 0;
+		}
+
+		public void JumpToLine(int lineNumber)
+		{
+			string text = Text;
+			int currentIndex = 0;
+			int currentLine = 0;
+
+			while (currentLine < lineNumber && currentIndex < text.Length)
+			{
+				if (text[currentIndex] == '\n')
+				{
+					currentLine++;
+				}
+				currentIndex++;
+			}
+
+			if (currentLine == lineNumber)
+			{
+				int lineStart = currentIndex;
+				int lineEnd = text.IndexOf('\n', lineStart);
+				if (lineEnd == -1)
+				{
+					lineEnd = text.Length;
+				}
+
+				SelectionIndexToStartBefore = lineStart;
+				CharIndexToInsertBefore = lineEnd;
+				Selecting = true;
+				FixBarPosition(DesiredXPositionOnLine.Set);
+				Focus();
+			}
 		}
 
 		public void ClearUndoHistory()

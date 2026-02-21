@@ -210,6 +210,11 @@ namespace MatterHackers.Agg.UI
 			return topToBottomItemList.RemoveChild(index);
 		}
 
+		public void Clear()
+		{
+			topToBottomItemList.RemoveChildren();
+		}
+
 		public override void RemoveChild(GuiWidget childToRemove)
 		{
 			foreach (GuiWidget itemHolder in topToBottomItemList.Children.Reverse())

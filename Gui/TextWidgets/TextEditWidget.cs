@@ -106,6 +106,16 @@ namespace MatterHackers.Agg.UI
 			InternalTextEditWidget.ClearUndoHistory();
 		}
 
+		public void JumpToLine(int lineNumber)
+		{
+			InternalTextEditWidget.JumpToLine(lineNumber);
+		}
+
+		public System.Collections.Generic.HashSet<int> ErrorLineIndices
+		{
+			get { return InternalTextEditWidget.ErrorLineIndices; }
+		}
+
 		public Color HighlightColor
 		{
 			get

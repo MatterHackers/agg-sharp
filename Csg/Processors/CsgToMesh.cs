@@ -137,32 +137,45 @@ namespace MatterHackers.RenderOpenGl
 
 		public static PolygonMesh.Mesh CreateCylinder(Cylinder.CylinderPrimitive cylinderToMeasure)
 		{
-			throw new NotImplementedException();
-			//PolygonMesh.Mesh cylinder = new PolygonMesh.Mesh();
-			//List<IVertex> bottomVerts = new List<IVertex>();
-			//List<IVertex> topVerts = new List<IVertex>();
+			PolygonMesh.Mesh cylinder = new PolygonMesh.Mesh();
+            int sides = cylinderToMeasure.Sides;
 
-			//int sides = cylinderToMeasure.Sides;
-			//for (int i = 0; i < sides; i++)
-			//{
-			//	Vector2 bottomRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius1, 0), MathHelper.Tau * i / sides);
-			//	IVertex bottomVertex = cylinder.CreateVertex(new Vector3(bottomRadialPos.X, bottomRadialPos.Y, -cylinderToMeasure.Height / 2));
-			//	bottomVerts.Add(bottomVertex);
-			//	Vector2 topRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius1, 0), MathHelper.Tau * i / sides);
-			//	IVertex topVertex = cylinder.CreateVertex(new Vector3(topRadialPos.X, topRadialPos.Y, cylinderToMeasure.Height / 2));
-			//	topVerts.Add(topVertex);
-			//}
+			// Bottom center = 0
+			cylinder.Vertices.Add(new Vector3Float(0, 0, -cylinderToMeasure.Height / 2.0));
+			// Top center = 1
+			cylinder.Vertices.Add(new Vector3Float(0, 0, cylinderToMeasure.Height / 2.0));
 
-			//cylinder.ReverseFaceEdges(cylinder.CreateFace(bottomVerts.ToArray()));
-			//cylinder.CreateFace(topVerts.ToArray());
+			int bottomStart = 2;
+			int topStart = 2 + sides;
 
-			//for (int i = 0; i < sides - 1; i++)
-			//{
-			//	cylinder.CreateFace(new IVertex[] { topVerts[i], bottomVerts[i], bottomVerts[i + 1], topVerts[i + 1] });
-			//}
-			//cylinder.CreateFace(new IVertex[] { topVerts[sides - 1], bottomVerts[sides - 1], bottomVerts[0], topVerts[0] });
+			for (int i = 0; i < sides; i++)
+			{
+				Vector2 bottomRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius1, 0), MathHelper.Tau * i / sides);
+				cylinder.Vertices.Add(new Vector3Float(bottomRadialPos.X, bottomRadialPos.Y, -cylinderToMeasure.Height / 2.0));
+			}
 
-			//return cylinder;
+			for (int i = 0; i < sides; i++)
+			{
+				Vector2 topRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius2, 0), MathHelper.Tau * i / sides);
+				cylinder.Vertices.Add(new Vector3Float(topRadialPos.X, topRadialPos.Y, cylinderToMeasure.Height / 2.0));
+			}
+
+			for (int i = 0; i < sides; i++)
+			{
+				int next = (i + 1) % sides;
+
+				// Bottom face (pointing down)
+				cylinder.Faces.Add(0, bottomStart + next, bottomStart + i, cylinder.Vertices);
+
+				// Top face (pointing up)
+				cylinder.Faces.Add(1, topStart + i, topStart + next, cylinder.Vertices);
+
+				// Side faces
+				cylinder.Faces.Add(bottomStart + i, bottomStart + next, topStart + next, cylinder.Vertices);
+				cylinder.Faces.Add(bottomStart + i, topStart + next, topStart + i, cylinder.Vertices);
+			}
+
+			return cylinder;
 		}
 
 		public PolygonMesh.Mesh CsgToMeshRecursive(Cylinder.CylinderPrimitive objectToProcess)
