@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2018, John Lewin
 All rights reserved.
 
@@ -85,7 +85,7 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
         // Enable to visually debug
-        [MhTest]
+        // [MhTest] // TODO: Aspirational test, currently disabled
         public void BorderTestsVisualizer()
 		{
 			var systemWindow = new SystemWindow(700, 660)

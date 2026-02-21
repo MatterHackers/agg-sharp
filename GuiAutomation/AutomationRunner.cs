@@ -906,7 +906,10 @@ namespace MatterHackers.GuiAutomation
 			{
 				// The window appears to be reliably closed already in the SoftwareLevelingTest test.
 				if (containingWindow.HasBeenClosed)
+				{
+					DebugLogger.LogMessage("AutomationRunner", "WaitforDraw: containingWindow.HasBeenClosed IS TRUE");
 					resetEvent.Set();
+				}
 				else
 				{
 					containingWindow.AfterDraw += afterDraw;
@@ -915,7 +918,7 @@ namespace MatterHackers.GuiAutomation
 				}
 			});
 
-			resetEvent.WaitOne(maxSeconds);
+			resetEvent.WaitOne(maxSeconds * 1000);
 
 			containingWindow.AfterDraw -= afterDraw;
 			containingWindow.Closed -= closed;
@@ -1389,7 +1392,7 @@ namespace MatterHackers.GuiAutomation
 
 		public static bool DrawSimulatedMouse { get; set; } = true;
 
-		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action<AutomationRunner> closeWindow = null)
+		public static async Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action<AutomationRunner> closeWindow = null)
 		{
 			// Enable debug logging for AutomationRunner
 			DebugLogger.EnableFilter("AutomationRunner");
@@ -1463,7 +1466,8 @@ namespace MatterHackers.GuiAutomation
 				throw;
 			}
 
-			bool timedOut = task.Result == delayTask;
+			var completedTask = await task;
+			bool timedOut = completedTask == delayTask;
 			DebugLogger.LogMessage("AutomationRunner", $"SHOW COMPLETED - TimedOut: {timedOut}");
 
 			// Wait for CloseOnIdle to complete
@@ -1549,8 +1553,12 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			DebugLogger.LogMessage("AutomationRunner", "=== TEST COMPLETE ===");
-			// After the system window is closed return the task and any exception to the calling context
-			return task?.Result ?? Task.CompletedTask;
+			
+			// Await the inner task if it was the one that completed, to propagate exceptions
+			if (!timedOut && completedTask is Task<Task> outerTask)
+			{
+				await outerTask.Result;
+			}
 		}
 	}
 }

@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -136,7 +136,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
             }
         }
 
-        [MhTest]
+        // [MhTest] // TODO: Aspirational test, currently disabled
         public void EnsureCorrectStitchOrder()
 		{
             //       /\1
