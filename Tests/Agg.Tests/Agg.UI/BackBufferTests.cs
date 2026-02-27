@@ -152,26 +152,6 @@ namespace MatterHackers.Agg.UI.Tests
 					SaveImage(container1.BackBuffer, "z offset text widget.tga");
 				}
 
-				Vector2 bestPos3;
-				double bestLS3;
-				container1.BackBuffer.FindLeastSquaresMatch(drawStringOffsetImage, out bestPos3, out bestLS3, 1000);
-				System.Console.WriteLine($"DIAG: bestPos={bestPos3}, bestLeastSquares={bestLS3}, backBuffer={container1.BackBuffer.Width}x{container1.BackBuffer.Height}x{container1.BackBuffer.BitDepth}, ref={drawStringOffsetImage.Width}x{drawStringOffsetImage.Height}x{drawStringOffsetImage.BitDepth}");
-				// Also dump first non-white pixel differences
-				var bbBuf = container1.BackBuffer.GetBuffer();
-				var refBuf = drawStringOffsetImage.GetBuffer();
-				int diffCount = 0;
-				for (int i = 0; i < System.Math.Min(bbBuf.Length, refBuf.Length) && diffCount < 20; i++)
-				{
-					if (bbBuf[i] != refBuf[i])
-					{
-						int pixel = i / (container1.BackBuffer.BitDepth / 8);
-						int channel = i % (container1.BackBuffer.BitDepth / 8);
-						int px = pixel % container1.BackBuffer.Width;
-						int py = pixel / container1.BackBuffer.Width;
-						System.Console.WriteLine($"DIAG: diff at pixel ({px},{py}) ch{channel}: bb={bbBuf[i]} ref={refBuf[i]} delta={bbBuf[i]-refBuf[i]}");
-						diffCount++;
-					}
-				}
 				await Assert.That(container1.BackBuffer.FindLeastSquaresMatch(drawStringOffsetImage, 5)).IsTrue();
 			}
 		}

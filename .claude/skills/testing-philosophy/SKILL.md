@@ -21,17 +21,31 @@ dotnet test Tests/Agg.Tests/Agg.Tests.csproj
 
 # Run with verbose output
 dotnet test Tests/Agg.Tests/Agg.Tests.csproj --verbosity normal
-
-# Run a specific test by filter
-dotnet test Tests/Agg.Tests/Agg.Tests.csproj --filter "FullyQualifiedName~SimpleTests"
-
-# Run a specific test method
-dotnet test Tests/Agg.Tests/Agg.Tests.csproj --filter "FullyQualifiedName~MethodName"
-
-# Run via the test executable directly
-Tests\Agg.Tests\bin\Debug\Agg.Tests.exe --list-tests
-Tests\Agg.Tests\bin\Debug\Agg.Tests.exe --treenode-filter "/Agg.Tests.dll/..."
 ```
+
+**Running a single test (preferred method):**
+
+Build the test project first, then run the compiled executable directly with `--treenode-filter`. This is faster and avoids `dotnet test` running all tests before filtering.
+
+```bash
+# Build once
+dotnet build Tests/Agg.Tests/Agg.Tests.csproj
+
+# Run a single test by method name (4 levels: assembly/namespace/class/method)
+Tests\Agg.Tests\bin\Debug\Agg.Tests.exe --treenode-filter "/*/*/*/MyTestMethodName"
+
+# Examples
+Tests\Agg.Tests\bin\Debug\Agg.Tests.exe --treenode-filter "/*/*/*/BackBuffersAreScreenAligned"
+Tests\Agg.Tests\bin\Debug\Agg.Tests.exe --treenode-filter "/*/*/*/DoubleBufferTests"
+
+# Run all tests in a class (3 levels: assembly/namespace/class)
+Tests\Agg.Tests\bin\Debug\Agg.Tests.exe --treenode-filter "/*/*/BackBufferTests"
+
+# List all available tests
+Tests\Agg.Tests\bin\Debug\Agg.Tests.exe --list-tests
+```
+
+> **Important:** `dotnet test --filter` with TUnit can be unreliable and may run all tests. Always prefer the executable + `--treenode-filter` approach for running specific tests.
 
 **Configuration:**
 - Test project: `Tests/Agg.Tests/Agg.Tests.csproj`

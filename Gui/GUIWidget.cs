@@ -816,8 +816,9 @@ namespace MatterHackers.Agg.UI
 		private void AllocateBackBuffer()
 		{
 			RectangleDouble localBounds = LocalBounds;
-			int intWidth = Max((int)(Ceiling(localBounds.Right) - Floor(localBounds.Left)), 1);
-			int intHeight = Max((int)(Ceiling(localBounds.Top) - Floor(localBounds.Bottom)), 1);
+			// +1 accounts for sub-pixel offsets when compositing at fractional screen positions
+			int intWidth = Max((int)(Ceiling(localBounds.Right) - Floor(localBounds.Left)) + 1, 1);
+			int intHeight = Max((int)(Ceiling(localBounds.Top) - Floor(localBounds.Bottom)) + 1, 1);
 			if (backBuffer == null || backBuffer.Width != intWidth || backBuffer.Height != intHeight)
 			{
 				backBuffer = new ImageBuffer(intWidth, intHeight, 32, new BlenderPreMultBGRA());
@@ -2100,8 +2101,7 @@ namespace MatterHackers.Agg.UI
 					graphics2D.PushTransform();
 					{
 						Affine currentGraphics2DTransform = graphics2D.GetTransform();
-                        Affine accumulatedTransform = currentGraphics2DTransform * child.ParentToChildTransform;
-                        accumulatedTransform = child.ParentToChildTransform * currentGraphics2DTransform;
+                        Affine accumulatedTransform = child.ParentToChildTransform * currentGraphics2DTransform;
                         graphics2D.SetTransform(accumulatedTransform);
 
 						if (child.CurrentScreenClipping(out RectangleDouble currentScreenClipping))
