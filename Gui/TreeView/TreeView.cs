@@ -1,5 +1,5 @@
-/*
-Copyright (c) 2025, Lars Brubaker, John Lewin
+﻿/*
+Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -299,12 +299,12 @@ namespace MatterHackers.Agg.UI
 					// wait for the refresh of the tree view before scrolling
 					UiThread.RunOnIdle(() =>
 					{
-						if (_selectedNode != null)
-						{
-							// Scroll only the selected row/header, not the expanded node body.
-							// This prevents large expanded nodes from jumping to the bottom.
-							this.ScrollIntoView(_selectedNode.TitleBar ?? _selectedNode);
-						}
+                        if (_selectedNode != null)
+                        {
+                            // Scroll only the selected row/header, not the expanded node body.
+                            // This prevents large expanded nodes from jumping to the bottom.
+                            this.ScrollIntoView(_selectedNode.TitleBar ?? _selectedNode);
+                        }
 					});
 
 					if (hadFocus)

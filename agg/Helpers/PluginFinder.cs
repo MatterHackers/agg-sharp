@@ -1,5 +1,5 @@
-/*
-Copyright (c) 2025, Lars Brubaker, John Lewin
+﻿/*
+Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,8 @@ namespace MatterHackers.Agg
 		private static HashSet<string> AssembliesToIgnore = new HashSet<string>
 		{
             "Microsoft.Testing.Platform.MSBuild",
+            "Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter",
+            "Microsoft.VisualStudio.TestPlatform.MSTestAdapter.PlatformServices",
             "Microsoft.VisualStudio.TestPlatform.TestFramework.Extensions"
         };
 

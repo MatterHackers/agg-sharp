@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Linq;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
@@ -163,10 +164,16 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			// Init agg with our OpenGL window definition
-			// AggContext.Init(embeddedResourceName: "lion.config.json");
-			AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.OpenGLWinformsWindowProvider, agg_platform_win32";
-			// AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.GlfwProvider.GlfwWindowProvider, MatterHackers.GlfwProvider";
+			var useD3D11 = args.Contains("--d3d11");
+			useD3D11 = true;
+            if (useD3D11)
+			{
+				AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.D3D11WinformsWindowProvider, agg_platform_win32";
+			}
+			else
+			{
+				AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.OpenGLWinformsWindowProvider, agg_platform_win32";
+			}
 
 			var demoWidget = new Lion();
 

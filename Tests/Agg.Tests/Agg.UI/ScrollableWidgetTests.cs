@@ -1,5 +1,5 @@
-﻿/*
-Copyright (c) 2014, Lars Brubaker
+/*
+Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,11 +28,14 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
+using TUnit.Assertions;
+using TUnit.Core;
 using MatterHackers.Agg.Image;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [MhTestFixture("Opens Winforms Window")]
+    
     public class ScrollableWidgetTests
 	{
 		public static bool saveImagesForDebug = false;
@@ -46,8 +49,8 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-        [MhTest]
-        public void LimitScrolToContetsTests()
+        [Test]
+        public async Task LimitScrolToContetsTests()
 		{
 			GuiWidget containerControl = new GuiWidget(200, 200);
 			containerControl.DoubleBuffer = true;
@@ -61,8 +64,8 @@ namespace MatterHackers.Agg.UI.Tests
 
 			OutputImages(containerControl, containerTest);
 
-			MhAssert.True(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-			MhAssert.True(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
+			await Assert.That(containerControl.BackBuffer != null).IsTrue();
+			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer).IsTrue();
 		}
 	}
 }

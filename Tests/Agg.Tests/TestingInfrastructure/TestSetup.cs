@@ -31,6 +31,8 @@ using System;
 using System.Threading.Tasks;
 using MatterHackers.GuiAutomation;
 using MatterHackers.Agg.Platform;
+using TUnit.Core;
+
 namespace MatterHackers.Agg.Tests.TestingInfrastructure
 {
     public static class TestSetup
@@ -93,7 +95,7 @@ namespace MatterHackers.Agg.Tests.TestingInfrastructure
 
         /// <summary>
         /// Static constructor ensures automation infrastructure is initialized when the assembly loads.
-        /// This is a simple approach that works with the custom test runner.
+        /// This is a simple approach that works with TUnit 0.25.21.
         /// </summary>
         static TestSetup()
         {

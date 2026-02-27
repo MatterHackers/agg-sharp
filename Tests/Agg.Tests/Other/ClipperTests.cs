@@ -1,5 +1,5 @@
-﻿/*
-Copyright (c) 2023, Lars Brubaker
+/*
+Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,22 +28,25 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using TUnit.Assertions;
+using TUnit.Core;
 using System.Collections.Generic;
 using ClipperLib;
 using MatterHackers.VectorMath;
 using System.IO;
 using Agg.Tests.Agg;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.Tests
 {
 	using Polygons = List<List<IntPoint>>;
 	using Polygon = List<IntPoint>;
 
-	[MhTestFixture]
+	
 	public class ClipperTests
 	{
-		[MhTest]
-		public void CleanPolygonsTest()
+		[Test]
+		public async Task CleanPolygonsTest()
 		{
 			var polygon = new Polygon();
 
@@ -68,7 +71,7 @@ namespace MatterHackers.Agg.Tests
 			{
 				var centerPoint = (cleanedPolygon[i + 1] + cleanedPolygon[i]) / 2;
 				var distToCenter = centerPoint.Length();
-				MhAssert.True(Math.Abs(length - distToCenter) <= 3);
+				await Assert.That(Math.Abs(length - distToCenter) <= 3).IsTrue();
             }
 		}
 

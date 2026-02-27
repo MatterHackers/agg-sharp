@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2021, Lars Brubaker
+Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -189,29 +189,47 @@ namespace MatterHackers.PolygonMesh.Processors
 
 		public static int GetPolygonToAdvance(Polygon outerLoop, int outerIndex, Polygon innerLoop, int innerIndex)
 		{
-			// given the start, find the closest next point along either polygon to move to
 			var outerStart = outerLoop[outerIndex];
 			var outerNextIndex = (outerIndex + 1) % outerLoop.Count;
 			var outerNext = outerLoop[outerNextIndex];
-            
+
 			var innerStart = innerLoop[innerIndex];
 			var innerNextIndex = (innerIndex + 1) % innerLoop.Count;
 			var innerNext = innerLoop[innerNextIndex];
 
 			var distanceToInnerNext = (innerNext - outerStart).LengthSquared();
 			var distanceToOuterNext = (innerStart - outerNext).LengthSquared();
-            
-            if (distanceToInnerNext < distanceToOuterNext
-                && !innerLoop.SegmentTouching(outerStart, innerNext))
+
+			var innerAdvanceCrosses = SegmentCrossesPolygon(innerLoop, outerStart, innerNext);
+			var outerAdvanceCrosses = SegmentCrossesPolygon(innerLoop, innerStart, outerNext);
+
+			if (!innerAdvanceCrosses && (outerAdvanceCrosses || distanceToInnerNext <= distanceToOuterNext))
 			{
-                // check if segment innerNext - outerStart crosses any other line segments
-                return 1;
-            }
-            else
+				return 1;
+			}
+
+			return 0;
+		}
+
+		private static bool SegmentCrossesPolygon(Polygon polygon, IntPoint start, IntPoint end)
+		{
+			for (int i = 0; i < polygon.Count; i++)
 			{
-                // check if segment innerStart - outerNext crosses any other line segments
-                return 0;
-            }
-        }
+				var edgeStart = polygon[i];
+				var edgeEnd = polygon[(i + 1) % polygon.Count];
+
+				if (start == edgeStart || start == edgeEnd || end == edgeStart || end == edgeEnd)
+				{
+					continue;
+				}
+
+				if (QTPolygonExtensions.GetIntersection(start, end, edgeStart, edgeEnd) != MatterHackers.Agg.QuadTree.Intersection.None)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
 	}
 }

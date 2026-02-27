@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2025, John Lewin, Lars Brubaker
 All rights reserved.
 
@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 
 
 namespace MatterHackers.Agg.Tests
@@ -59,14 +60,14 @@ namespace MatterHackers.Agg.Tests
 				}
 			}
 
-            public void SetCompatibleWorkingDirectory()
+            public async Task SetCompatibleWorkingDirectory()
 			{
                 throw new NotImplementedException();
 			}
 
 			public string ResolveProjectPath(string[] path)
 			{
-				var applicationPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+				var applicationPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
 				var combinedPath = Path.GetFullPath(Path.Combine(applicationPath, Path.Combine(path)));
 
