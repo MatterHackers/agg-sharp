@@ -9,6 +9,7 @@
       "Bash(dotnet restore:*)",
       "Bash(dotnet clean:*)",
       "WebFetch(domain:github.com)",
+      "WebFetch(domain:tunit.dev)",
       "Bash(csc:*)",
       "Bash(TestFloatComparison.exe)",
       "Bash(dotnet exec:*)",

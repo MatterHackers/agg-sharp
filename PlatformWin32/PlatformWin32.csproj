@@ -40,6 +40,7 @@
 		<ProjectReference Include="..\ImageProcessing\ImageProcessing.csproj" />
 		<ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj" />
 		<ProjectReference Include="..\VectorMath\VectorMath.csproj" />
+		<ProjectReference Include="..\VorticeD3D\MatterHackers.VorticeD3D.csproj" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Update="StyleCop.Analyzers" Version="1.1.118" />

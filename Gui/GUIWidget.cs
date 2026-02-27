@@ -815,9 +815,14 @@ namespace MatterHackers.Agg.UI
 
 		private void AllocateBackBuffer()
 		{
+			AllocateBackBuffer(0, 0);
+		}
+
+		private void AllocateBackBuffer(int extraWidth, int extraHeight)
+		{
 			RectangleDouble localBounds = LocalBounds;
-			int intWidth = Max((int)(Ceiling(localBounds.Right) - Floor(localBounds.Left)), 1);
-			int intHeight = Max((int)(Ceiling(localBounds.Top) - Floor(localBounds.Bottom)), 1);
+			int intWidth = Max((int)(Ceiling(localBounds.Right) - Floor(localBounds.Left)) + extraWidth, 1);
+			int intHeight = Max((int)(Ceiling(localBounds.Top) - Floor(localBounds.Bottom)) + extraHeight, 1);
 			if (backBuffer == null || backBuffer.Width != intWidth || backBuffer.Height != intHeight)
 			{
 				backBuffer = new ImageBuffer(intWidth, intHeight, 32, new BlenderPreMultBGRA());
@@ -2100,8 +2105,7 @@ namespace MatterHackers.Agg.UI
 					graphics2D.PushTransform();
 					{
 						Affine currentGraphics2DTransform = graphics2D.GetTransform();
-                        Affine accumulatedTransform = currentGraphics2DTransform * child.ParentToChildTransform;
-                        accumulatedTransform = child.ParentToChildTransform * currentGraphics2DTransform;
+                        Affine accumulatedTransform = child.ParentToChildTransform * currentGraphics2DTransform;
                         graphics2D.SetTransform(accumulatedTransform);
 
 						if (child.CurrentScreenClipping(out RectangleDouble currentScreenClipping))
@@ -2130,6 +2134,13 @@ namespace MatterHackers.Agg.UI
 								int yOffset = (int)Floor(child.LocalBounds.Bottom);
 								if (child.isCurrentlyInvalid)
 								{
+									int extraW = xFraction > 0 ? 1 : 0;
+									int extraH = yFraction > 0 ? 1 : 0;
+									if (extraW > 0 || extraH > 0)
+									{
+										child.AllocateBackBuffer(extraW, extraH);
+									}
+
 									Graphics2D childBackBufferGraphics2D = child.backBuffer.NewGraphics2D();
 									childBackBufferGraphics2D.Clear(new Color(0, 0, 0, 0));
 									var transformToBuffer = Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction);

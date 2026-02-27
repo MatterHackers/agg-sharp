@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
@@ -906,10 +906,7 @@ namespace MatterHackers.GuiAutomation
 			{
 				// The window appears to be reliably closed already in the SoftwareLevelingTest test.
 				if (containingWindow.HasBeenClosed)
-				{
-					DebugLogger.LogMessage("AutomationRunner", "WaitforDraw: containingWindow.HasBeenClosed IS TRUE");
 					resetEvent.Set();
-				}
 				else
 				{
 					containingWindow.AfterDraw += afterDraw;
@@ -918,7 +915,7 @@ namespace MatterHackers.GuiAutomation
 				}
 			});
 
-			resetEvent.WaitOne(maxSeconds * 1000);
+			resetEvent.WaitOne(maxSeconds);
 
 			containingWindow.AfterDraw -= afterDraw;
 			containingWindow.Closed -= closed;
@@ -1392,7 +1389,7 @@ namespace MatterHackers.GuiAutomation
 
 		public static bool DrawSimulatedMouse { get; set; } = true;
 
-		public static async Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action<AutomationRunner> closeWindow = null)
+		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action<AutomationRunner> closeWindow = null)
 		{
 			// Enable debug logging for AutomationRunner
 			DebugLogger.EnableFilter("AutomationRunner");
@@ -1466,8 +1463,7 @@ namespace MatterHackers.GuiAutomation
 				throw;
 			}
 
-			var completedTask = await task;
-			bool timedOut = completedTask == delayTask;
+			bool timedOut = task.Result == delayTask;
 			DebugLogger.LogMessage("AutomationRunner", $"SHOW COMPLETED - TimedOut: {timedOut}");
 
 			// Wait for CloseOnIdle to complete
@@ -1477,63 +1473,48 @@ namespace MatterHackers.GuiAutomation
 			// Restore the original EnableAllowDrop state
 			SystemWindow.EnableAllowDrop = originalAllowDropState;
 
-			// Check if we're running inside an existing single-window application (e.g. MatterCAD's built-in test runner).
-			// If so, we must NOT reset the provider, firstWindow flag, UiThread, or platform input because the
-			// host application's main window still depends on them.
-			bool isSingleWindowMode = false;
+			// Reset the static window provider and firstWindow flag for the next test
+			SystemWindow.ResetSystemWindowProvider();
 			try
 			{
+				// Use reflection to call the static method since we can't directly reference the platform-specific class
 				var winformsType = System.Type.GetType("MatterHackers.Agg.UI.WinformsSystemWindow, agg_platform_win32");
-				var singleWindowModeProperty = winformsType?.GetProperty("SingleWindowMode", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
-				if (singleWindowModeProperty != null)
-				{
-					isSingleWindowMode = (bool)(singleWindowModeProperty.GetValue(null) ?? false);
-				}
+				var resetMethod = winformsType?.GetMethod("ResetFirstWindowFlag", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+				resetMethod?.Invoke(null, null);
 			}
-			catch
+			catch (Exception ex)
 			{
+				DebugLogger.LogWarning("AutomationRunner", $"Failed to reset WinformsSystemWindow state: {ex.Message}");
 			}
 
-			if (!isSingleWindowMode)
+			// Reset EnablePlatformWindowInput for the next test - this is critical for tests to receive input events
+			try
 			{
-				// Reset the static window provider and firstWindow flag for the next test
-				SystemWindow.ResetSystemWindowProvider();
-				try
+				// Use reflection to access the static property
+				var platformWindowType = System.Type.GetType("MatterHackers.Agg.UI.IPlatformWindow, agg");
+				var enableInputProperty = platformWindowType?.GetProperty("EnablePlatformWindowInput");
+				if (enableInputProperty != null)
 				{
-					var winformsType = System.Type.GetType("MatterHackers.Agg.UI.WinformsSystemWindow, agg_platform_win32");
-					var resetMethod = winformsType?.GetMethod("ResetFirstWindowFlag", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
-					resetMethod?.Invoke(null, null);
+					enableInputProperty.SetValue(null, true);
 				}
-				catch (Exception ex)
-				{
-					DebugLogger.LogWarning("AutomationRunner", $"Failed to reset WinformsSystemWindow state: {ex.Message}");
-				}
+			}
+			catch (Exception ex)
+			{
+				DebugLogger.LogWarning("AutomationRunner", $"Failed to reset EnablePlatformWindowInput: {ex.Message}");
+			}
 
-				// Reset EnablePlatformWindowInput for the next test - this is critical for tests to receive input events
-				try
-				{
-					var platformWindowType = System.Type.GetType("MatterHackers.Agg.UI.IPlatformWindow, agg");
-					var enableInputProperty = platformWindowType?.GetProperty("EnablePlatformWindowInput");
-					if (enableInputProperty != null)
-					{
-						enableInputProperty.SetValue(null, true);
-					}
-				}
-				catch (Exception ex)
-				{
-					DebugLogger.LogWarning("AutomationRunner", $"Failed to reset EnablePlatformWindowInput: {ex.Message}");
-				}
+			// IMPORTANT: Reset UiThread LAST after window is fully closed to avoid clearing CloseOnIdle actions
+			try
+			{
+				// Let any remaining RunOnIdle actions complete first
+				UiThread.InvokePendingActions();
 
-				// IMPORTANT: Reset UiThread LAST after window is fully closed to avoid clearing CloseOnIdle actions
-				try
-				{
-					UiThread.InvokePendingActions();
-					UiThread.ResetForTests();
-				}
-				catch (Exception ex)
-				{
-					DebugLogger.LogWarning("AutomationRunner", $"Failed to reset UiThread state: {ex.Message}");
-				}
+				// Now reset UiThread static state for the next test
+				UiThread.ResetForTests();
+			}
+			catch (Exception ex)
+			{
+				DebugLogger.LogWarning("AutomationRunner", $"Failed to reset UiThread state: {ex.Message}");
 			}
 
 			// Reset Keyboard static state for the next test  
@@ -1553,12 +1534,8 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			DebugLogger.LogMessage("AutomationRunner", "=== TEST COMPLETE ===");
-			
-			// Await the inner task if it was the one that completed, to propagate exceptions
-			if (!timedOut && completedTask is Task<Task> outerTask)
-			{
-				await outerTask.Result;
-			}
+			// After the system window is closed return the task and any exception to the calling context
+			return task?.Result ?? Task.CompletedTask;
 		}
 	}
 }

@@ -1,5 +1,5 @@
-﻿/*
-Copyright (c) 2019, John Lewin
+/*
+Copyright (c) 2025, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,14 +28,17 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
+using TUnit.Assertions;
+using TUnit.Core;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [MhTestFixture("Opens Winforms Window")]
+    
     public class WidgetTests
 	{
-        [MhTest]
-        public void LoadEventFiresOnlyOnce()
+        [Test]
+        public async Task LoadEventFiresOnlyOnce()
 		{
 			// Issue MatterHackers/MCCentral#5072 - OnLoad / Load can fire more than once
 			var widget = new GuiWidget()
@@ -60,7 +63,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			widget.OnDraw(widget.NewGraphics2D());
 
-			MhAssert.Equal(1, loadCount); //, "Load should fire at most, one time");
+			await Assert.That(loadCount).IsEqualTo(1);
         }
 	}
 }

@@ -68,6 +68,7 @@
 		<ProjectReference Include="..\..\Gui\Gui.csproj" />
 		<ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj" />
 		<ProjectReference Include="..\..\RenderOpenGl\RenderOpenGl.csproj" />
+		<ProjectReference Include="..\..\VorticeD3D\MatterHackers.VorticeD3D.csproj" />
 		<ProjectReference Include="..\..\VectorMath\VectorMath.csproj" />
 		<ProjectReference Include="..\LionShape\LionShape.csproj" />
 	</ItemGroup>

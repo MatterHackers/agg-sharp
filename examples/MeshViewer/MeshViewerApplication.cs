@@ -53,10 +53,9 @@ namespace MatterHackers.MeshVisualizer
 			get { return meshViewerWidget; }
 		}
 
-		public MeshViewerApplication(bool doDepthPeeling, string meshFileToLoad = "")
+		public MeshViewerApplication(string meshFileToLoad = "")
 			: base(2200, 600)
 		{
-			this.doDepthPeeling = doDepthPeeling;
 			BackgroundColor = Color.White;
 			MinimumSize = new Vector2(200, 200);
 			Title = "MatterHackers MeshViewr";
@@ -74,10 +73,7 @@ namespace MatterHackers.MeshVisualizer
 
 			meshViewerWidget.AnchorAll();
 
-			if (!doDepthPeeling)
-			{
-				viewArea.AddChild(meshViewerWidget);
-			}
+			viewArea.AddChild(meshViewerWidget);
 
 			mainContainer.AddChild(viewArea);
 
@@ -206,24 +202,9 @@ namespace MatterHackers.MeshVisualizer
 
 		private Stopwatch totalDrawTime = new Stopwatch();
 		private int drawCount = 0;
-		private DepthPeeling depthPeeling;
-		private bool doDepthPeeling;
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			if (doDepthPeeling)
-			{
-				if (depthPeeling != null)
-				{
-					depthPeeling.glutDisplayFunc(meshViewerWidget.World, meshViewerWidget.Scene.Children[0]);
-				}
-				else if (meshViewerWidget.Scene.Children.Count > 0)
-				{
-					depthPeeling = new DepthPeeling(meshViewerWidget.Scene.Children[0].Mesh);
-					depthPeeling.ReshapeFunc((int)Width, (int)Height);
-				}
-			}
-
 			totalDrawTime.Restart();
 			base.OnDraw(graphics2D);
 			totalDrawTime.Stop();
@@ -274,7 +255,7 @@ namespace MatterHackers.MeshVisualizer
 				}
 			}
 
-			MeshViewerApplication app = new MeshViewerApplication(true, meshPath);
+			MeshViewerApplication app = new MeshViewerApplication(meshPath);
 			SingleWindowProvider.SetWindowTheme(new ThemeConfig());
 			app.ShowAsSystemWindow();
 		}

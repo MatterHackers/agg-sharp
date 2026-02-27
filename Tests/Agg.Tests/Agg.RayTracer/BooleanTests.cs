@@ -1,5 +1,5 @@
-﻿/*
-Copyright (c) 2014, Lars Brubaker
+/*
+Copyright (c) 2025, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,20 +28,23 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using Agg.Tests.Agg;
+using TUnit.Assertions;
+using TUnit.Core;
 using MatterHackers.Agg;
 using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace MatterHackers.RayTracer
 {
-	[MhTestFixture("Agg.RayTracer")]
+	
 	public class BooleanTests
 	{
-		[MhTest]
-		public void DifferenceTestsForBox()
+		[Test]
+		public async Task DifferenceTestsForBox()
 		{
 			SolidMaterial redMaterial = new SolidMaterial(ColorF.Red, 0, 0, 0);
 			SolidMaterial blueMaterial = new SolidMaterial(ColorF.Blue, 0, 0, 0);
@@ -53,11 +56,11 @@ namespace MatterHackers.RayTracer
 			{
 				IntersectInfo testInfo = box1X1.GetClosestIntersection(castRay);
 
-				MhAssert.True(testInfo.HitType == IntersectionType.FrontFace, "Found Hit : Box No CSG");
-				MhAssert.True(testInfo.ClosestHitObject == box1X1, "Found Hit : Box No CSG");
-				MhAssert.True(testInfo.HitPosition == new Vector3(0, -.5, 0), "Hit position y = -.5 : Box No CSG");
-				MhAssert.True(testInfo.DistanceToHit == .5, "Hit length = .5 : Box No CSG");
-				MhAssert.True(testInfo.NormalAtHit == -Vector3.UnitY, "Normal Correct : Box No CSG");
+				await Assert.That(testInfo.HitType == IntersectionType.FrontFace).IsTrue();
+				await Assert.That(testInfo.ClosestHitObject == box1X1).IsTrue();
+				await Assert.That(testInfo.HitPosition == new Vector3(0, -.5, 0)).IsTrue();
+				await Assert.That(testInfo.DistanceToHit == .5).IsTrue();
+				await Assert.That(testInfo.NormalAtHit == -Vector3.UnitY).IsTrue();
 			}
 
 			// one subtract from the front of a box, the front faces are aligned
@@ -66,11 +69,11 @@ namespace MatterHackers.RayTracer
 				Difference merge = new Difference(box1X1, subtractBox);
 				IntersectInfo testInfo = merge.GetClosestIntersection(castRay);
 
-				MhAssert.True(testInfo.HitType == IntersectionType.FrontFace, "Found Hit : One Subtract");
-				MhAssert.True(testInfo.ClosestHitObject == subtractBox, "Found Hit : One Subtract");
-				MhAssert.True(testInfo.HitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : One Subtract");
-				MhAssert.True(testInfo.DistanceToHit == 1, "Hit length = 1 : One Subtract");
-				MhAssert.True(testInfo.NormalAtHit == -Vector3.UnitY, "Normal Correct : One Subtract");
+				await Assert.That(testInfo.HitType == IntersectionType.FrontFace).IsTrue();
+				await Assert.That(testInfo.ClosestHitObject == subtractBox).IsTrue();
+				await Assert.That(testInfo.HitPosition == new Vector3(0, 0, 0)).IsTrue();
+				await Assert.That(testInfo.DistanceToHit == 1).IsTrue();
+				await Assert.That(testInfo.NormalAtHit == -Vector3.UnitY).IsTrue();
 			}
 
 #if false
@@ -90,11 +93,11 @@ namespace MatterHackers.RayTracer
 
                 IntersectInfo testInfo = merge.GetClosestIntersection(castRay);
 
-                Assert.True(testInfo.isHit == true, "Found Hit : 5 Subtracts");
-                //Assert.True(testInfo.closestHitObject == subtractBox, "Found Hit : 5 Subtracts");
-                Assert.True(testInfo.hitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : 5 Subtracts");
-                Assert.True(testInfo.distanceToHit == 1, "Hit length = 1 : 5 Subtracts");
-                Assert.True(testInfo.normalAtHit == -Vector3.UnitY, "Normal Correct : 5 Subtracts");
+                Assert.IsTrue(testInfo.isHit == true, "Found Hit : 5 Subtracts");
+                //Assert.IsTrue(testInfo.closestHitObject == subtractBox, "Found Hit : 5 Subtracts");
+                Assert.IsTrue(testInfo.hitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : 5 Subtracts");
+                Assert.IsTrue(testInfo.distanceToHit == 1, "Hit length = 1 : 5 Subtracts");
+                Assert.IsTrue(testInfo.normalAtHit == -Vector3.UnitY, "Normal Correct : 5 Subtracts");
             }
 
             // Go through 5 subtract boxes to get to 1/2 way through the main box.
@@ -111,17 +114,17 @@ namespace MatterHackers.RayTracer
 
                 IntersectInfo testInfo = merge.GetClosestIntersection(castRay);
 
-                Assert.True(testInfo.isHit == true, "Found Hit : 5 Subtracts");
-                //Assert.True(testInfo.closestHitObject == subtractBox, "Found Hit : 5 Subtracts");
-                Assert.True(testInfo.hitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : 5 Subtracts");
-                Assert.True(testInfo.distanceToHit == 1, "Hit length = 1 : 5 Subtracts");
-                Assert.True(testInfo.normalAtHit == -Vector3.UnitY, "Normal Correct : 5 Subtracts");
+                Assert.IsTrue(testInfo.isHit == true, "Found Hit : 5 Subtracts");
+                //Assert.IsTrue(testInfo.closestHitObject == subtractBox, "Found Hit : 5 Subtracts");
+                Assert.IsTrue(testInfo.hitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : 5 Subtracts");
+                Assert.IsTrue(testInfo.distanceToHit == 1, "Hit length = 1 : 5 Subtracts");
+                Assert.IsTrue(testInfo.normalAtHit == -Vector3.UnitY, "Normal Correct : 5 Subtracts");
             }
 #endif
 		}
 
-		[MhTest]
-		public void DiscoveredBadIntersectInfoListSubtraction()
+		[Test]
+		public async Task DiscoveredBadIntersectInfoListSubtraction()
 		{
 			string primaryString = @"2
 FrontFace, 6.55505298172777

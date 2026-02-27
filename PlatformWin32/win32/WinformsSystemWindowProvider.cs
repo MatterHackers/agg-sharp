@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
@@ -37,6 +37,10 @@ namespace MatterHackers.Agg.UI
 	}
 
 	public class OpenGLWinformsWindowProvider : WinformsSystemWindowProvider<OpenGLSystemWindow>
+	{
+	}
+
+	public class D3D11WinformsWindowProvider : WinformsSystemWindowProvider<D3D11SystemWindow>
 	{
 	}
 
