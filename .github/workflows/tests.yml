@@ -1,0 +1,24 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build tests
+        run: dotnet build Tests/Agg.Tests/Agg.Tests.csproj --configuration Release
+
+      - name: Run tests
+        run: dotnet test Tests/Agg.Tests/Agg.Tests.csproj --configuration Release --no-build --logger "trx;LogFileName=results.trx"
