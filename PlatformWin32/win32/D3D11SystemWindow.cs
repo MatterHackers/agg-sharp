@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using MatterHackers.RenderOpenGl;
@@ -37,6 +38,17 @@ namespace MatterHackers.Agg.UI
 {
 	public class D3D11SystemWindow : WinformsSystemWindow
 	{
+		/// <summary>
+		/// When set to a value greater than 0, the window will automatically close after the specified number of seconds.
+		/// </summary>
+		public static double ExitAfterXSeconds { get; set; } = 0.0;
+
+		/// <summary>
+		/// Frame numbers at which to capture a screenshot to the desktop (e.g. { 2, 10, 50 }).
+		/// Empty by default (no screenshots captured).
+		/// </summary>
+		public static List<int> ScreenshotAtFrames { get; set; } = new List<int>();
+
 		private D3D11Control d3dControl;
 		private bool doneLoading = false;
 		private bool viewPortHasBeenSet = false;
@@ -54,46 +66,17 @@ namespace MatterHackers.Agg.UI
 			this.Controls.Add(d3dControl);
 		}
 
-		private Timer screenshotTimer;
-
 		protected override void OnLoad(EventArgs e)
 		{
 			base.OnLoad(e);
 
-			DebugLog("OnLoad: Initializing D3D11...");
 			d3dControl.InitializeD3D();
 			GL.Instance = d3dControl.GlBackend;
-			DebugLog($"OnLoad: D3D11 initialized. Device={d3dControl.Device != null}, GL.Instance={GL.Instance?.GetType().Name}");
 
-			screenshotTimer = new Timer { Interval = 8000 };
-			screenshotTimer.Tick += (s, ev) =>
+			if (ExitAfterXSeconds > 0)
 			{
-				screenshotTimer.Stop();
-				screenshotTimer.Dispose();
-				screenshotTimer = null;
-				Invalidate();
-				Application.DoEvents();
-				try
-				{
-					var path = System.IO.Path.Combine(
-						Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-						"mattercad_d3d11_timed.png");
-					d3dControl.CaptureScreenshot(path);
-					DebugLog($"Timed screenshot saved: {path}");
-				}
-				catch (Exception ex) { DebugLog($"Timed screenshot error: {ex.Message}"); }
-			};
-			screenshotTimer.Start();
-
-			var autoExitTimer = new Timer { Interval = 15000 };
-			autoExitTimer.Tick += (s, ev) =>
-			{
-				autoExitTimer.Stop();
-				autoExitTimer.Dispose();
-				DebugLog("Auto-exit timer fired, closing application.");
-				Close();
-			};
-			autoExitTimer.Start();
+				SetupAutoExit();
+			}
 
 			doneLoading = true;
 
@@ -110,6 +93,18 @@ namespace MatterHackers.Agg.UI
 
 			this.IsInitialized = true;
 			initHasBeenCalled = true;
+		}
+
+		private void SetupAutoExit()
+		{
+			var autoExitTimer = new Timer { Interval = (int)(ExitAfterXSeconds * 1000) };
+			autoExitTimer.Tick += (s, ev) =>
+			{
+				autoExitTimer.Stop();
+				autoExitTimer.Dispose();
+				Close();
+			};
+			autoExitTimer.Start();
 		}
 
 		protected override void OnClosed(EventArgs e)
@@ -188,54 +183,36 @@ namespace MatterHackers.Agg.UI
 			{
 				Invalidate();
 				d3dControl.Bounds = bounds;
-
-				if (initHasBeenCalled)
-				{
-					SetAndClearViewPort();
-					base.OnResize(e);
-				}
-				else
-				{
-					base.OnResize(e);
-				}
+				SetAndClearViewPort();
+				base.OnResize(e);
 			}
 		}
 
 		private int frameCount;
-		private static readonly string debugLogPath = System.IO.Path.Combine(
-			Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "d3d11_debug.log");
-
-		private void DebugLog(string msg)
-		{
-			try { System.IO.File.AppendAllText(debugLogPath, $"{DateTime.Now:HH:mm:ss.fff} {msg}\n"); } catch { }
-		}
 
 		public override void CopyBackBufferToScreen(Graphics displayGraphics)
 		{
 			if (d3dControl != null && !d3dControl.IsDisposed)
 			{
+				d3dControl.Present();
+				viewPortHasBeenSet = false;
+
 				frameCount++;
 
-				if (frameCount <= 3 || frameCount % 100 == 0)
-				{
-					DebugLog($"Frame {frameCount}, ClientSize={ClientSize}");
-				}
-
-				if (frameCount == 2 || frameCount == 10 || frameCount == 50)
+				if (ScreenshotAtFrames.Count > 0 && ScreenshotAtFrames.Contains(frameCount))
 				{
 					try
 					{
-						var path = System.IO.Path.Combine(
+						var dir = System.IO.Path.Combine(
 							Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-							$"mattercad_d3d11_frame{frameCount}.png");
-						d3dControl.CaptureScreenshot(path);
-						DebugLog($"Screenshot saved: {path}");
+							"D3D11_Screen_Shots");
+						System.IO.Directory.CreateDirectory(dir);
+						d3dControl.CaptureScreenshot(System.IO.Path.Combine(dir, $"frame{frameCount}.png"));
 					}
-					catch (Exception ex) { DebugLog($"Screenshot error: {ex.Message}"); }
+					catch
+					{
+					}
 				}
-
-				d3dControl.Present();
-				viewPortHasBeenSet = false;
 			}
 		}
 

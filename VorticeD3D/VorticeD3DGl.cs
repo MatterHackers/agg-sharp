@@ -74,9 +74,9 @@ namespace MatterHackers.RenderOpenGl
 		private ID3D11BlendState blendStateEnabled;
 		private ID3D11BlendState blendStateDisabled;
 
-		// Depth stencil states
-		private ID3D11DepthStencilState depthTestEnabled;
-		private ID3D11DepthStencilState depthTestDisabled;
+		// Depth stencil state cache
+		private Dictionary<(bool enabled, ComparisonFunction func, bool writeMask), ID3D11DepthStencilState> depthStencilCache
+			= new Dictionary<(bool, ComparisonFunction, bool), ID3D11DepthStencilState>();
 
 		// Rasterizer states
 		private ID3D11RasterizerState rasterizerNoCull;
@@ -115,7 +115,12 @@ namespace MatterHackers.RenderOpenGl
 		private int blendSrcFactor = (int)BlendingFactorSrc.One;
 		private int blendDstFactor = (int)BlendingFactorDest.Zero;
 		private bool depthMaskEnabled = true;
+		private ComparisonFunction depthCompareFunc = ComparisonFunction.Less;
 		private bool scissorEnabled = false;
+		private CullMode currentCullMode = CullMode.Back;
+		private bool frontFaceCCW = true;
+		private float polygonOffsetFactor = 0;
+		private float polygonOffsetUnits = 0;
 		private Color4 clearColor = new Color4(0, 0, 0, 1);
 
 		// Lighting data
@@ -161,6 +166,9 @@ namespace MatterHackers.RenderOpenGl
 		// VAO management
 		private int nextVaoId = 1;
 
+		// Render target dimensions (for OpenGL-to-D3D11 coordinate conversion)
+		private int renderTargetHeight;
+
 		// Viewport
 		private int viewportX, viewportY, viewportWidth, viewportHeight;
 
@@ -188,6 +196,7 @@ namespace MatterHackers.RenderOpenGl
 			currentBackBuffer?.Dispose();
 			currentBackBuffer = swapChain.GetBuffer<ID3D11Texture2D>(0);
 			renderTargetView = device.CreateRenderTargetView(currentBackBuffer);
+			renderTargetHeight = (int)currentBackBuffer.Description.Height;
 
 			var depthDesc = new Texture2DDescription
 			{
@@ -285,21 +294,7 @@ namespace MatterHackers.RenderOpenGl
 				blendStateDisabled = device.CreateBlendState(desc);
 			}
 
-			// Depth stencil states
-			{
-				depthTestEnabled = device.CreateDepthStencilState(new DepthStencilDescription
-				{
-					DepthEnable = true,
-					DepthWriteMask = DepthWriteMask.All,
-					DepthFunc = ComparisonFunction.Less,
-				});
-
-				depthTestDisabled = device.CreateDepthStencilState(new DepthStencilDescription
-				{
-					DepthEnable = false,
-					DepthWriteMask = DepthWriteMask.All,
-				});
-			}
+			// Depth stencil states are created on demand via GetOrCreateDepthStencilState
 
 			// Rasterizer states
 			{
@@ -354,7 +349,7 @@ namespace MatterHackers.RenderOpenGl
 
 			// Set initial states
 			context.RSSetState(rasterizerNoCull);
-			context.OMSetDepthStencilState(depthTestDisabled);
+			context.OMSetDepthStencilState(GetOrCreateDepthStencilState(false, ComparisonFunction.Less, true));
 			context.OMSetBlendState(blendStateDisabled);
 		}
 
@@ -568,21 +563,61 @@ namespace MatterHackers.RenderOpenGl
 			};
 		}
 
+		private ID3D11DepthStencilState GetOrCreateDepthStencilState(bool enabled, ComparisonFunction func, bool writeMask)
+		{
+			var key = (enabled, func, writeMask);
+			if (!depthStencilCache.TryGetValue(key, out var state))
+			{
+				state = device.CreateDepthStencilState(new DepthStencilDescription
+				{
+					DepthEnable = enabled,
+					DepthWriteMask = writeMask ? DepthWriteMask.All : DepthWriteMask.Zero,
+					DepthFunc = enabled ? func : ComparisonFunction.Always,
+				});
+				depthStencilCache[key] = state;
+			}
+			return state;
+		}
+
+		private Dictionary<(CullMode cull, bool scissor, int depthBias, float slopeBias), ID3D11RasterizerState> rasterizerCache
+			= new Dictionary<(CullMode, bool, int, float), ID3D11RasterizerState>();
+
+		private ID3D11RasterizerState GetOrCreateRasterizerState(CullMode cull, bool scissor, int depthBias, float slopeBias)
+		{
+			var key = (cull, scissor, depthBias, slopeBias);
+			if (!rasterizerCache.TryGetValue(key, out var state))
+			{
+				state = device.CreateRasterizerState(new RasterizerDescription
+				{
+					FillMode = FillMode.Solid,
+					CullMode = cull,
+					FrontCounterClockwise = frontFaceCCW,
+					ScissorEnable = scissor,
+					DepthClipEnable = true,
+					DepthBias = depthBias,
+					SlopeScaledDepthBias = slopeBias,
+				});
+				rasterizerCache[key] = state;
+			}
+			return state;
+		}
+
 		private void ApplyRenderState()
 		{
 			bool blendEnabled = enableCapState.TryGetValue((int)EnableCap.Blend, out var b) && b;
 			context.OMSetBlendState(blendEnabled ? blendStateEnabled : blendStateDisabled);
 
 			bool depthEnabled = enableCapState.TryGetValue((int)EnableCap.DepthTest, out var d) && d;
-			context.OMSetDepthStencilState(depthEnabled ? depthTestEnabled : depthTestDisabled);
+			context.OMSetDepthStencilState(GetOrCreateDepthStencilState(depthEnabled, depthCompareFunc, depthMaskEnabled));
 
 			bool cullEnabled = enableCapState.TryGetValue((int)EnableCap.CullFace, out var c) && c;
-			if (scissorEnabled)
-				context.RSSetState(rasterizerScissor);
-			else if (cullEnabled)
-				context.RSSetState(rasterizerCullBack);
-			else
-				context.RSSetState(rasterizerNoCull);
+			bool polyOffsetEnabled = enableCapState.TryGetValue((int)EnableCap.PolygonOffsetFill, out var po) && po;
+
+			CullMode cull = cullEnabled ? currentCullMode : CullMode.None;
+			int depthBias = polyOffsetEnabled ? (int)(polygonOffsetUnits) : 0;
+			float slopeBias = polyOffsetEnabled ? polygonOffsetFactor : 0;
+
+			context.RSSetState(GetOrCreateRasterizerState(cull, scissorEnabled, depthBias, slopeBias));
 		}
 
 		private List<float> ConvertTriangleFanToList(List<float> positions, List<byte> colors, List<float> texCoords)
@@ -718,7 +753,6 @@ namespace MatterHackers.RenderOpenGl
 		private static readonly string diagPath = System.IO.Path.Combine(
 			Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "d3d11_diag.log");
 		private int drawCallNumber;
-		private int litDrawCallsLogged;
 
 		private void DiagLog(string msg)
 		{
@@ -817,7 +851,7 @@ namespace MatterHackers.RenderOpenGl
 			b = Math.Min(1.0f, b * lb);
 		}
 
-		private bool diagLoggedVertexTransform;
+		private int litDrawCallsDiagLogged;
 
 		private void DrawArraysColored(BeginMode mode, int first, int totalCount, bool hasColorPointer, bool hasNormalPointer, bool lightingOn, bool light0On, bool light1On)
 		{
@@ -825,14 +859,18 @@ namespace MatterHackers.RenderOpenGl
 
 			UpdateTransformBuffer();
 
-			if (!diagLoggedVertexTransform && lightingOn && totalCount > 10)
+			if (litDrawCallsDiagLogged < 5 && lightingOn && totalCount > 10)
 			{
-				diagLoggedVertexTransform = true;
+				litDrawCallsDiagLogged++;
 				var mv = modelViewStack.Peek();
 				var p = projectionStack.Peek();
-				DiagLog($"DrawArraysColored DIAG: count={totalCount}, first={first}");
+				DiagLog($"DrawArraysColored #{litDrawCallsDiagLogged}: count={totalCount} first={first} hasColor={hasColorPointer} hasNormal={hasNormalPointer}");
 				DiagLog($"  MV Row0=[{mv.Row0.X:F3},{mv.Row0.Y:F3},{mv.Row0.Z:F3},{mv.Row0.W:F3}]");
 				DiagLog($"  MV Row3=[{mv.Row3.X:F3},{mv.Row3.Y:F3},{mv.Row3.Z:F3},{mv.Row3.W:F3}]");
+				DiagLog($"  P  Row2=[{p.Row2.X:F3},{p.Row2.Y:F3},{p.Row2.Z:F3},{p.Row2.W:F3}]");
+				DiagLog($"  P  Row3=[{p.Row3.X:F3},{p.Row3.Y:F3},{p.Row3.Z:F3},{p.Row3.W:F3}]");
+				DiagLog($"  Light0 pos=[{lights[0].Position[0]:F3},{lights[0].Position[1]:F3},{lights[0].Position[2]:F3},{lights[0].Position[3]:F3}]");
+				DiagLog($"  Light0 amb=[{lights[0].Ambient[0]:F3},{lights[0].Ambient[1]:F3},{lights[0].Ambient[2]:F3}] diff=[{lights[0].Diffuse[0]:F3},{lights[0].Diffuse[1]:F3},{lights[0].Diffuse[2]:F3}]");
 				unsafe
 				{
 					float* srcVert = (float*)vertexPointerData.pointer;
@@ -849,7 +887,9 @@ namespace MatterHackers.RenderOpenGl
 				}
 				bool depthOn = enableCapState.TryGetValue((int)EnableCap.DepthTest, out var dep) && dep;
 				bool blendOn = enableCapState.TryGetValue((int)EnableCap.Blend, out var bl) && bl;
-				DiagLog($"  depth={depthOn} blend={blendOn} depthMask={depthMaskEnabled}");
+				GetVertexColor(0, first, hasColorPointer, out float cr, out float cg, out float cb, out float ca);
+				DiagLog($"  depth={depthOn}(func={depthCompareFunc}) blend={blendOn} depthMask={depthMaskEnabled} color=[{cr:F3},{cg:F3},{cb:F3},{ca:F3}]");
+				DiagLog($"  viewport=({currentViewport.x},{currentViewport.y},{currentViewport.w},{currentViewport.h})");
 			}
 
 			context.IASetInputLayout(posColorInputLayout);
@@ -1071,7 +1111,21 @@ namespace MatterHackers.RenderOpenGl
 			};
 		}
 
-		public void DepthFunc(int func) { }
+		public void DepthFunc(int func)
+		{
+			depthCompareFunc = func switch
+			{
+				0x0200 => ComparisonFunction.Never,       // GL_NEVER
+				0x0201 => ComparisonFunction.Less,        // GL_LESS
+				0x0202 => ComparisonFunction.Equal,       // GL_EQUAL
+				0x0203 => ComparisonFunction.LessEqual,   // GL_LEQUAL
+				0x0204 => ComparisonFunction.Greater,     // GL_GREATER
+				0x0205 => ComparisonFunction.NotEqual,    // GL_NOTEQUAL
+				0x0206 => ComparisonFunction.GreaterEqual, // GL_GEQUAL
+				0x0207 => ComparisonFunction.Always,      // GL_ALWAYS
+				_ => ComparisonFunction.Less,
+			};
+		}
 
 		public void DepthMask(bool flag)
 		{
@@ -1082,13 +1136,23 @@ namespace MatterHackers.RenderOpenGl
 
 		public void ColorMaterial(MaterialFace face, ColorMaterialParameter mode) { }
 
-		public void CullFace(CullFaceMode mode) { }
+		public void CullFace(CullFaceMode mode)
+		{
+			currentCullMode = mode == CullFaceMode.Front ? CullMode.Front : CullMode.Back;
+		}
 
-		public void FrontFace(FrontFaceDirection mode) { }
+		public void FrontFace(FrontFaceDirection mode)
+		{
+			frontFaceCCW = mode == FrontFaceDirection.Ccw;
+		}
 
 		public void ShadeModel(ShadingModel model) { }
 
-		public void PolygonOffset(float factor, float units) { }
+		public void PolygonOffset(float factor, float units)
+		{
+			polygonOffsetFactor = factor;
+			polygonOffsetUnits = units;
+		}
 
 		public void Light(LightName light, LightParameter pname, float[] param)
 		{
@@ -1100,7 +1164,18 @@ namespace MatterHackers.RenderOpenGl
 				case LightParameter.Ambient: Array.Copy(param, lights[idx].Ambient, Math.Min(param.Length, 4)); break;
 				case LightParameter.Diffuse: Array.Copy(param, lights[idx].Diffuse, Math.Min(param.Length, 4)); break;
 				case LightParameter.Specular: Array.Copy(param, lights[idx].Specular, Math.Min(param.Length, 4)); break;
-				case LightParameter.Position: Array.Copy(param, lights[idx].Position, Math.Min(param.Length, 4)); break;
+				case LightParameter.Position:
+					// OpenGL transforms light position by the current modelview matrix
+					var mv = modelViewStack.Peek();
+					float px = param.Length > 0 ? param[0] : 0;
+					float py = param.Length > 1 ? param[1] : 0;
+					float pz = param.Length > 2 ? param[2] : 0;
+					float pw = param.Length > 3 ? param[3] : 0;
+					lights[idx].Position[0] = (float)(px * mv.Row0.X + py * mv.Row1.X + pz * mv.Row2.X + pw * mv.Row3.X);
+					lights[idx].Position[1] = (float)(px * mv.Row0.Y + py * mv.Row1.Y + pz * mv.Row2.Y + pw * mv.Row3.Y);
+					lights[idx].Position[2] = (float)(px * mv.Row0.Z + py * mv.Row1.Z + pz * mv.Row2.Z + pw * mv.Row3.Z);
+					lights[idx].Position[3] = (float)(px * mv.Row0.W + py * mv.Row1.W + pz * mv.Row2.W + pw * mv.Row3.W);
+					break;
 			}
 		}
 
@@ -1305,17 +1380,20 @@ namespace MatterHackers.RenderOpenGl
 			currentViewport = (x, y, width, height);
 			viewportChangeCount++;
 
+			// Convert from OpenGL convention (y=0 at bottom) to D3D11 convention (y=0 at top)
+			int d3dY = renderTargetHeight - y - height;
+
 			if (viewportChangeCount <= 20)
 			{
-				DiagLog($"Viewport #{viewportChangeCount}: x={x} y={y} w={width} h={height}");
+				DiagLog($"Viewport #{viewportChangeCount}: x={x} y={y} w={width} h={height} -> d3dY={d3dY} (rtHeight={renderTargetHeight})");
 			}
 
-			context.RSSetViewport(x, y, width, height);
+			context.RSSetViewport(x, d3dY, width, height);
 		}
 
 		public void Scissor(int x, int y, int width, int height)
 		{
-			context.RSSetScissorRect(x, viewportHeight - y - height, x + width, viewportHeight - y);
+			context.RSSetScissorRect(x, renderTargetHeight - y - height, x + width, renderTargetHeight - y);
 		}
 
 		// --- Buffer management ---
@@ -1442,44 +1520,92 @@ namespace MatterHackers.RenderOpenGl
 			if (currentBoundTexture <= 0 || !textures.ContainsKey(currentBoundTexture)) return;
 
 			var texInfo = textures[currentBoundTexture];
-			texInfo.ShaderResourceView?.Dispose();
-			texInfo.Texture?.Dispose();
 
-			// Determine the correct D3D11 format based on the OpenGL pixel format
 			// 0x1908 = GL_RGBA, 0x80E1 = GL_BGRA
 			var d3dFormat = format == 0x80E1 ? Format.B8G8R8A8_UNorm : Format.R8G8B8A8_UNorm;
 
+			if (level == 0)
+			{
+				texInfo.ShaderResourceView?.Dispose();
+				texInfo.Texture?.Dispose();
+				texInfo.Texture = null;
+				texInfo.ShaderResourceView = null;
+
+				texInfo.D3DFormat = d3dFormat;
+				texInfo.Width = width;
+				texInfo.Height = height;
+				texInfo.ExpectedMipCount = 1 + (int)Math.Floor(Math.Log(Math.Max(width, height), 2));
+				texInfo.PendingMipData = new List<(byte[], int, int)> { (pixels != null ? (byte[])pixels.Clone() : null, width, height) };
+
+				FinalizeTextureIfReady(texInfo);
+			}
+			else
+			{
+				if (texInfo.PendingMipData != null)
+				{
+					while (texInfo.PendingMipData.Count <= level)
+						texInfo.PendingMipData.Add((null, 0, 0));
+					texInfo.PendingMipData[level] = (pixels != null ? (byte[])pixels.Clone() : null, width, height);
+
+					FinalizeTextureIfReady(texInfo);
+				}
+			}
+		}
+
+		private void FinalizeTextureIfReady(TextureInfo texInfo)
+		{
+			if (texInfo.PendingMipData == null || texInfo.PendingMipData.Count == 0) return;
+
+			bool hasMips = texInfo.PendingMipData.Count > 1;
+			if (hasMips && texInfo.PendingMipData.Count < texInfo.ExpectedMipCount) return;
+
+			int mipCount = texInfo.PendingMipData.Count;
+
+			texInfo.Texture?.Dispose();
+			texInfo.ShaderResourceView?.Dispose();
+
 			var texDesc = new Texture2DDescription
 			{
-				Width = (uint)width,
-				Height = (uint)height,
-				MipLevels = 1,
+				Width = (uint)texInfo.Width,
+				Height = (uint)texInfo.Height,
+				MipLevels = (uint)mipCount,
 				ArraySize = 1,
-				Format = d3dFormat,
+				Format = texInfo.D3DFormat,
 				SampleDescription = new SampleDescription(1, 0),
 				Usage = ResourceUsage.Default,
 				BindFlags = BindFlags.ShaderResource,
 			};
 
-			if (pixels != null)
+			var initDataArray = new SubresourceData[mipCount];
+			var handles = new System.Runtime.InteropServices.GCHandle[mipCount];
+			try
 			{
-				unsafe
+				for (int i = 0; i < mipCount; i++)
 				{
-					fixed (byte* ptr = pixels)
+					var (pixels, w, h) = texInfo.PendingMipData[i];
+					if (pixels != null)
 					{
-						var initData = new SubresourceData((IntPtr)ptr, (uint)(width * 4));
-						texInfo.Texture = device.CreateTexture2D(texDesc, new[] { initData });
+						handles[i] = System.Runtime.InteropServices.GCHandle.Alloc(pixels, System.Runtime.InteropServices.GCHandleType.Pinned);
+						initDataArray[i] = new SubresourceData(handles[i].AddrOfPinnedObject(), (uint)(w * 4));
+					}
+					else
+					{
+						initDataArray[i] = new SubresourceData(IntPtr.Zero, (uint)(w * 4));
 					}
 				}
+
+				texInfo.Texture = device.CreateTexture2D(texDesc, initDataArray);
 			}
-			else
+			finally
 			{
-				texInfo.Texture = device.CreateTexture2D(texDesc);
+				for (int i = 0; i < mipCount; i++)
+				{
+					if (handles[i].IsAllocated) handles[i].Free();
+				}
 			}
 
 			texInfo.ShaderResourceView = device.CreateShaderResourceView(texInfo.Texture);
-			texInfo.Width = width;
-			texInfo.Height = height;
+			texInfo.PendingMipData = null;
 		}
 
 		public void TexParameter(TextureTarget target, TextureParameterName pname, int param)
@@ -1774,12 +1900,14 @@ namespace MatterHackers.RenderOpenGl
 			posTexInputLayout?.Dispose();
 			blendStateEnabled?.Dispose();
 			blendStateDisabled?.Dispose();
-			depthTestEnabled?.Dispose();
-			depthTestDisabled?.Dispose();
+			foreach (var ds in depthStencilCache.Values) ds?.Dispose();
+			depthStencilCache.Clear();
 			rasterizerNoCull?.Dispose();
 			rasterizerCullBack?.Dispose();
 			rasterizerCullFront?.Dispose();
 			rasterizerScissor?.Dispose();
+			foreach (var rs in rasterizerCache.Values) rs?.Dispose();
+			rasterizerCache.Clear();
 			defaultSampler?.Dispose();
 			depthStencilView?.Dispose();
 			depthStencilBuffer?.Dispose();
@@ -1809,6 +1937,9 @@ namespace MatterHackers.RenderOpenGl
 			public bool MagFilterLinear = true;
 			public bool MinFilterLinear = true;
 			public ID3D11SamplerState Sampler;
+			public Format D3DFormat;
+			public int ExpectedMipCount;
+			public List<(byte[] pixels, int width, int height)> PendingMipData;
 		}
 
 		private class ShaderProgramInfo
