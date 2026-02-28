@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -63,11 +63,23 @@ namespace MatterHackers.RenderOpenGl
 		private ID3D11PixelShader posTexPS;
 		private ID3D11InputLayout posTexInputLayout;
 
-		// Constant buffer for transforms
-		private ID3D11Buffer transformBuffer;
+		// Shaders for lit position+color rendering (lighting computed on GPU)
+		private ID3D11VertexShader posColorLitVS;
+		private ID3D11PixelShader posColorLitPS;
+		private ID3D11InputLayout posColorLitInputLayout;
 
-		// Dynamic vertex buffer for immediate mode
+		// Shaders for lit position+texture rendering (lighting computed on GPU)
+		private ID3D11VertexShader posTexLitVS;
+		private ID3D11PixelShader posTexLitPS;
+		private ID3D11InputLayout posTexLitInputLayout;
+
+		// Constant buffers
+		private ID3D11Buffer transformBuffer;
+		private ID3D11Buffer lightBuffer;
+
+		// Dynamic vertex buffers (reused every frame via MapMode.WriteDiscard)
 		private ID3D11Buffer dynamicVertexBuffer;
+		private ID3D11Buffer dynamicTexVertexBuffer;
 		private const int MaxVertices = 65536;
 
 		// Blend states
@@ -122,6 +134,13 @@ namespace MatterHackers.RenderOpenGl
 		private float polygonOffsetFactor = 0;
 		private float polygonOffsetUnits = 0;
 		private Color4 clearColor = new Color4(0, 0, 0, 1);
+
+		// Dirty-state tracking to avoid redundant D3D11 calls
+		private bool transformDirty = true;
+		private bool renderStateDirty = true;
+		private ID3D11BlendState lastAppliedBlendState;
+		private ID3D11DepthStencilState lastAppliedDepthStencilState;
+		private ID3D11RasterizerState lastAppliedRasterizerState;
 
 		// Lighting data
 		private class LightData
@@ -189,6 +208,7 @@ namespace MatterHackers.RenderOpenGl
 			CreateStates();
 			CreateDynamicVertexBuffer();
 			CreateTransformBuffer();
+			CreateLightBuffer();
 		}
 
 		private void CreateRenderTarget()
@@ -269,6 +289,45 @@ namespace MatterHackers.RenderOpenGl
 				};
 
 				posTexInputLayout = device.CreateInputLayout(inputElements, vsByteCode);
+			}
+
+			// Lit Position+Color shader (lighting on GPU)
+			{
+				string hlsl = ReadEmbeddedResource("MatterHackers.VorticeD3D.Shaders.PositionColorLit.hlsl");
+				byte[] vsByteCode = Compiler.Compile(hlsl, "VS", "PositionColorLit.hlsl", "vs_5_0").ToArray();
+				byte[] psByteCode = Compiler.Compile(hlsl, "PS", "PositionColorLit.hlsl", "ps_5_0").ToArray();
+
+				posColorLitVS = device.CreateVertexShader(vsByteCode);
+				posColorLitPS = device.CreatePixelShader(psByteCode);
+
+				var inputElements = new[]
+				{
+					new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
+					new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
+					new InputElementDescription("COLOR", 0, Format.R32G32B32A32_Float, 24, 0),
+				};
+
+				posColorLitInputLayout = device.CreateInputLayout(inputElements, vsByteCode);
+			}
+
+			// Lit Position+Texture shader (lighting on GPU)
+			{
+				string hlsl = ReadEmbeddedResource("MatterHackers.VorticeD3D.Shaders.PositionTextureLit.hlsl");
+				byte[] vsByteCode = Compiler.Compile(hlsl, "VS", "PositionTextureLit.hlsl", "vs_5_0").ToArray();
+				byte[] psByteCode = Compiler.Compile(hlsl, "PS", "PositionTextureLit.hlsl", "ps_5_0").ToArray();
+
+				posTexLitVS = device.CreateVertexShader(vsByteCode);
+				posTexLitPS = device.CreatePixelShader(psByteCode);
+
+				var inputElements = new[]
+				{
+					new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
+					new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
+					new InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 24, 0),
+					new InputElementDescription("COLOR", 0, Format.R32G32B32A32_Float, 32, 0),
+				};
+
+				posTexLitInputLayout = device.CreateInputLayout(inputElements, vsByteCode);
 			}
 		}
 
@@ -355,15 +414,25 @@ namespace MatterHackers.RenderOpenGl
 
 		private void CreateDynamicVertexBuffer()
 		{
-			int vertexSize = 7 * sizeof(float); // position(3) + color(4)
-			var desc = new BufferDescription
+			// Colored: pos(3) + normal(3) + color(4) = 10 floats (enough for lit and unlit)
+			int coloredVertexSize = 10 * sizeof(float);
+			dynamicVertexBuffer = device.CreateBuffer(new BufferDescription
 			{
-				ByteWidth = (uint)(MaxVertices * vertexSize),
+				ByteWidth = (uint)(MaxVertices * coloredVertexSize),
 				Usage = ResourceUsage.Dynamic,
 				BindFlags = BindFlags.VertexBuffer,
 				CPUAccessFlags = CpuAccessFlags.Write,
-			};
-			dynamicVertexBuffer = device.CreateBuffer(desc);
+			});
+
+			// Textured: pos(3) + normal(3) + texcoord(2) + color(4) = 12 floats (enough for lit and unlit)
+			int texturedVertexSize = 12 * sizeof(float);
+			dynamicTexVertexBuffer = device.CreateBuffer(new BufferDescription
+			{
+				ByteWidth = (uint)(MaxVertices * texturedVertexSize),
+				Usage = ResourceUsage.Dynamic,
+				BindFlags = BindFlags.VertexBuffer,
+				CPUAccessFlags = CpuAccessFlags.Write,
+			});
 		}
 
 		private void CreateTransformBuffer()
@@ -378,6 +447,41 @@ namespace MatterHackers.RenderOpenGl
 			transformBuffer = device.CreateBuffer(desc);
 		}
 
+		private void CreateLightBuffer()
+		{
+			// 2 lights * (position float4 + ambient float4 + diffuse float4) + flags float4 = 7 float4s = 112 bytes
+			lightBuffer = device.CreateBuffer(new BufferDescription
+			{
+				ByteWidth = 112,
+				Usage = ResourceUsage.Dynamic,
+				BindFlags = BindFlags.ConstantBuffer,
+				CPUAccessFlags = CpuAccessFlags.Write,
+			});
+		}
+
+		private void UpdateLightBuffer(bool light0On, bool light1On)
+		{
+			var mapped = context.Map(lightBuffer, MapMode.WriteDiscard);
+			unsafe
+			{
+				float* ptr = (float*)mapped.DataPointer;
+				// Light 0: position(4) + ambient(4) + diffuse(4)
+				ptr[0] = lights[0].Position[0]; ptr[1] = lights[0].Position[1]; ptr[2] = lights[0].Position[2]; ptr[3] = lights[0].Position[3];
+				ptr[4] = lights[0].Ambient[0]; ptr[5] = lights[0].Ambient[1]; ptr[6] = lights[0].Ambient[2]; ptr[7] = lights[0].Ambient[3];
+				ptr[8] = lights[0].Diffuse[0]; ptr[9] = lights[0].Diffuse[1]; ptr[10] = lights[0].Diffuse[2]; ptr[11] = lights[0].Diffuse[3];
+				// Light 1: position(4) + ambient(4) + diffuse(4)
+				ptr[12] = lights[1].Position[0]; ptr[13] = lights[1].Position[1]; ptr[14] = lights[1].Position[2]; ptr[15] = lights[1].Position[3];
+				ptr[16] = lights[1].Ambient[0]; ptr[17] = lights[1].Ambient[1]; ptr[18] = lights[1].Ambient[2]; ptr[19] = lights[1].Ambient[3];
+				ptr[20] = lights[1].Diffuse[0]; ptr[21] = lights[1].Diffuse[1]; ptr[22] = lights[1].Diffuse[2]; ptr[23] = lights[1].Diffuse[3];
+				// Flags
+				ptr[24] = light0On ? 1.0f : 0.0f;
+				ptr[25] = light1On ? 1.0f : 0.0f;
+				ptr[26] = 0;
+				ptr[27] = 0;
+			}
+			context.Unmap(lightBuffer, 0);
+		}
+
 		private string ReadEmbeddedResource(string name)
 		{
 			var assembly = Assembly.GetExecutingAssembly();
@@ -390,25 +494,17 @@ namespace MatterHackers.RenderOpenGl
 
 		private void UpdateTransformBuffer()
 		{
+			if (!transformDirty) return;
+			transformDirty = false;
+
 			var mv = modelViewStack.Peek();
 			// Apply Z correction: map OpenGL clip-space Z [-1,1] to D3D11 [0,1]
-			// Post-multiply projection by the Z correction matrix:
-			// z_new = z_old * 0.5 + w_old * 0.5, w_new = w_old
-			// This modifies column 2 of each row
 			var p = projectionStack.Peek();
 			var proj = new Matrix4X4(
 				new Vector4(p.Row0.X, p.Row0.Y, p.Row0.Z * 0.5 + p.Row0.W * 0.5, p.Row0.W),
 				new Vector4(p.Row1.X, p.Row1.Y, p.Row1.Z * 0.5 + p.Row1.W * 0.5, p.Row1.W),
 				new Vector4(p.Row2.X, p.Row2.Y, p.Row2.Z * 0.5 + p.Row2.W * 0.5, p.Row2.W),
 				new Vector4(p.Row3.X, p.Row3.Y, p.Row3.Z * 0.5 + p.Row3.W * 0.5, p.Row3.W));
-
-			// Log the first time we see a non-ortho projection (perspective)
-			if (!diagLoggedProjection && Math.Abs(p.Row2.W) > 0.5)
-			{
-				diagLoggedProjection = true;
-				DiagLog($"Perspective projection BEFORE correction: Row2=[{p.Row2.X:F3},{p.Row2.Y:F3},{p.Row2.Z:F3},{p.Row2.W:F3}] Row3=[{p.Row3.X:F3},{p.Row3.Y:F3},{p.Row3.Z:F3},{p.Row3.W:F3}]");
-				DiagLog($"Perspective projection AFTER  correction: Row2=[{proj.Row2.X:F3},{proj.Row2.Y:F3},{proj.Row2.Z:F3},{proj.Row2.W:F3}] Row3=[{proj.Row3.X:F3},{proj.Row3.Y:F3},{proj.Row3.Z:F3},{proj.Row3.W:F3}]");
-			}
 
 			var mapped = context.Map(transformBuffer, MapMode.WriteDiscard);
 			unsafe
@@ -420,13 +516,12 @@ namespace MatterHackers.RenderOpenGl
 			context.Unmap(transformBuffer, 0);
 		}
 
-		private bool diagLoggedProjection;
-
 		private static unsafe void WriteMatrix(float* dest, Matrix4X4 m)
 		{
-			float[] arr = m.GetAsFloatArray();
-			for (int i = 0; i < 16; i++)
-				dest[i] = arr[i];
+			dest[0] = (float)m.Row0.X; dest[1] = (float)m.Row0.Y; dest[2] = (float)m.Row0.Z; dest[3] = (float)m.Row0.W;
+			dest[4] = (float)m.Row1.X; dest[5] = (float)m.Row1.Y; dest[6] = (float)m.Row1.Z; dest[7] = (float)m.Row1.W;
+			dest[8] = (float)m.Row2.X; dest[9] = (float)m.Row2.Y; dest[10] = (float)m.Row2.Z; dest[11] = (float)m.Row2.W;
+			dest[12] = (float)m.Row3.X; dest[13] = (float)m.Row3.Y; dest[14] = (float)m.Row3.Z; dest[15] = (float)m.Row3.W;
 		}
 
 		private void FlushImmediateMode()
@@ -496,59 +591,58 @@ namespace MatterHackers.RenderOpenGl
 		private void FlushTexturedVertices(int vertexCount)
 		{
 			int stride = 9 * sizeof(float); // pos(3) + texcoord(2) + color(4)
+			int batchSize = Math.Min(vertexCount, MaxVertices);
 
-			// Create or reuse a texture vertex buffer
-			var desc = new BufferDescription
+			int offset = 0;
+			while (offset < vertexCount)
 			{
-				ByteWidth = (uint)(vertexCount * stride),
-				Usage = ResourceUsage.Dynamic,
-				BindFlags = BindFlags.VertexBuffer,
-				CPUAccessFlags = CpuAccessFlags.Write,
-			};
+				int count = Math.Min(batchSize, vertexCount - offset);
 
-			using var texVertexBuffer = device.CreateBuffer(desc);
-
-			var mapped = context.Map(texVertexBuffer, MapMode.WriteDiscard);
-			unsafe
-			{
-				float* ptr = (float*)mapped.DataPointer;
-				for (int i = 0; i < vertexCount; i++)
+				var mapped = context.Map(dynamicTexVertexBuffer, MapMode.WriteDiscard);
+				unsafe
 				{
-					int vi = i * 3;
-					int ti = i * 2;
-					int ci = i * 4;
+					float* ptr = (float*)mapped.DataPointer;
+					for (int i = 0; i < count; i++)
+					{
+						int si = offset + i;
+						int vi = si * 3;
+						int ti = si * 2;
+						int ci = si * 4;
 
-					ptr[i * 9 + 0] = immediateData.Positions[vi];
-					ptr[i * 9 + 1] = immediateData.Positions[vi + 1];
-					ptr[i * 9 + 2] = immediateData.Positions[vi + 2];
-					ptr[i * 9 + 3] = ti < immediateData.TexCoords.Count ? immediateData.TexCoords[ti] : 0;
-					ptr[i * 9 + 4] = ti + 1 < immediateData.TexCoords.Count ? immediateData.TexCoords[ti + 1] : 0;
-					ptr[i * 9 + 5] = immediateData.Colors[ci] / 255f;
-					ptr[i * 9 + 6] = immediateData.Colors[ci + 1] / 255f;
-					ptr[i * 9 + 7] = immediateData.Colors[ci + 2] / 255f;
-					ptr[i * 9 + 8] = immediateData.Colors[ci + 3] / 255f;
+						ptr[i * 9 + 0] = immediateData.Positions[vi];
+						ptr[i * 9 + 1] = immediateData.Positions[vi + 1];
+						ptr[i * 9 + 2] = immediateData.Positions[vi + 2];
+						ptr[i * 9 + 3] = ti < immediateData.TexCoords.Count ? immediateData.TexCoords[ti] : 0;
+						ptr[i * 9 + 4] = ti + 1 < immediateData.TexCoords.Count ? immediateData.TexCoords[ti + 1] : 0;
+						ptr[i * 9 + 5] = immediateData.Colors[ci] / 255f;
+						ptr[i * 9 + 6] = immediateData.Colors[ci + 1] / 255f;
+						ptr[i * 9 + 7] = immediateData.Colors[ci + 2] / 255f;
+						ptr[i * 9 + 8] = immediateData.Colors[ci + 3] / 255f;
+					}
 				}
+				context.Unmap(dynamicTexVertexBuffer, 0);
+
+				UpdateTransformBuffer();
+
+				context.IASetInputLayout(posTexInputLayout);
+				context.IASetVertexBuffer(0, dynamicTexVertexBuffer, (uint)stride);
+				context.IASetPrimitiveTopology(GetTopology(immediateData.Mode));
+				context.VSSetShader(posTexVS);
+				context.PSSetShader(posTexPS);
+				context.VSSetConstantBuffer(0, transformBuffer);
+
+				if (textures.TryGetValue(currentBoundTexture, out var texInfo) && texInfo.ShaderResourceView != null)
+				{
+					context.PSSetShaderResource(0, texInfo.ShaderResourceView);
+					context.PSSetSampler(0, texInfo.Sampler ?? defaultSampler);
+				}
+
+				ApplyRenderState();
+
+				context.Draw((uint)count, 0);
+
+				offset += count;
 			}
-			context.Unmap(texVertexBuffer, 0);
-
-			UpdateTransformBuffer();
-
-			context.IASetInputLayout(posTexInputLayout);
-			context.IASetVertexBuffer(0, texVertexBuffer, (uint)stride);
-			context.IASetPrimitiveTopology(GetTopology(immediateData.Mode));
-			context.VSSetShader(posTexVS);
-			context.PSSetShader(posTexPS);
-			context.VSSetConstantBuffer(0, transformBuffer);
-
-			if (textures.TryGetValue(currentBoundTexture, out var texInfo) && texInfo.ShaderResourceView != null)
-			{
-				context.PSSetShaderResource(0, texInfo.ShaderResourceView);
-				context.PSSetSampler(0, texInfo.Sampler ?? defaultSampler);
-			}
-
-			ApplyRenderState();
-
-			context.Draw((uint)vertexCount, 0);
 		}
 
 		private static PrimitiveTopology GetTopology(BeginMode mode)
@@ -604,20 +698,37 @@ namespace MatterHackers.RenderOpenGl
 
 		private void ApplyRenderState()
 		{
+			if (!renderStateDirty) return;
+			renderStateDirty = false;
+
 			bool blendEnabled = enableCapState.TryGetValue((int)EnableCap.Blend, out var b) && b;
-			context.OMSetBlendState(blendEnabled ? blendStateEnabled : blendStateDisabled);
+			var desiredBlend = blendEnabled ? blendStateEnabled : blendStateDisabled;
+			if (desiredBlend != lastAppliedBlendState)
+			{
+				context.OMSetBlendState(desiredBlend);
+				lastAppliedBlendState = desiredBlend;
+			}
 
 			bool depthEnabled = enableCapState.TryGetValue((int)EnableCap.DepthTest, out var d) && d;
-			context.OMSetDepthStencilState(GetOrCreateDepthStencilState(depthEnabled, depthCompareFunc, depthMaskEnabled));
+			var desiredDepth = GetOrCreateDepthStencilState(depthEnabled, depthCompareFunc, depthMaskEnabled);
+			if (desiredDepth != lastAppliedDepthStencilState)
+			{
+				context.OMSetDepthStencilState(desiredDepth);
+				lastAppliedDepthStencilState = desiredDepth;
+			}
 
 			bool cullEnabled = enableCapState.TryGetValue((int)EnableCap.CullFace, out var c) && c;
 			bool polyOffsetEnabled = enableCapState.TryGetValue((int)EnableCap.PolygonOffsetFill, out var po) && po;
-
 			CullMode cull = cullEnabled ? currentCullMode : CullMode.None;
 			int depthBias = polyOffsetEnabled ? (int)(polygonOffsetUnits) : 0;
 			float slopeBias = polyOffsetEnabled ? polygonOffsetFactor : 0;
 
-			context.RSSetState(GetOrCreateRasterizerState(cull, scissorEnabled, depthBias, slopeBias));
+			var desiredRasterizer = GetOrCreateRasterizerState(cull, scissorEnabled, depthBias, slopeBias);
+			if (desiredRasterizer != lastAppliedRasterizerState)
+			{
+				context.RSSetState(desiredRasterizer);
+				lastAppliedRasterizerState = desiredRasterizer;
+			}
 		}
 
 		private List<float> ConvertTriangleFanToList(List<float> positions, List<byte> colors, List<float> texCoords)
@@ -750,15 +861,6 @@ namespace MatterHackers.RenderOpenGl
 			immediateData.Normals.Add((float)z);
 		}
 
-		private static readonly string diagPath = System.IO.Path.Combine(
-			Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "d3d11_diag.log");
-		private int drawCallNumber;
-
-		private void DiagLog(string msg)
-		{
-			try { System.IO.File.AppendAllText(diagPath, msg + "\n"); } catch { }
-		}
-
 		public void DrawArrays(BeginMode mode, int first, int count)
 		{
 			if (isRecordingDisplayList) return;
@@ -771,8 +873,6 @@ namespace MatterHackers.RenderOpenGl
 			bool hasNormalPointer = arrayCapState.TryGetValue(ArrayCap.NormalArray, out var na) && na;
 
 			if (!hasVertexPointer && immediateData.Positions.Count == 0) return;
-
-			drawCallNumber++;
 
 			if (hasVertexPointer && vertexPointerData.pointer != IntPtr.Zero)
 			{
@@ -851,52 +951,32 @@ namespace MatterHackers.RenderOpenGl
 			b = Math.Min(1.0f, b * lb);
 		}
 
-		private int litDrawCallsDiagLogged;
-
 		private void DrawArraysColored(BeginMode mode, int first, int totalCount, bool hasColorPointer, bool hasNormalPointer, bool lightingOn, bool light0On, bool light1On)
 		{
-			int stride = 7 * sizeof(float);
+			bool useLitShader = lightingOn && hasNormalPointer && normalPointerData.pointer != IntPtr.Zero;
+
+			int stride;
+			if (useLitShader)
+			{
+				stride = 10 * sizeof(float); // pos(3) + normal(3) + color(4)
+				UpdateLightBuffer(light0On, light1On);
+				context.IASetInputLayout(posColorLitInputLayout);
+				context.VSSetShader(posColorLitVS);
+				context.PSSetShader(posColorLitPS);
+				context.VSSetConstantBuffer(1, lightBuffer);
+			}
+			else
+			{
+				stride = 7 * sizeof(float); // pos(3) + color(4)
+				context.IASetInputLayout(posColorInputLayout);
+				context.VSSetShader(posColorVS);
+				context.PSSetShader(posColorPS);
+			}
 
 			UpdateTransformBuffer();
 
-			if (litDrawCallsDiagLogged < 5 && lightingOn && totalCount > 10)
-			{
-				litDrawCallsDiagLogged++;
-				var mv = modelViewStack.Peek();
-				var p = projectionStack.Peek();
-				DiagLog($"DrawArraysColored #{litDrawCallsDiagLogged}: count={totalCount} first={first} hasColor={hasColorPointer} hasNormal={hasNormalPointer}");
-				DiagLog($"  MV Row0=[{mv.Row0.X:F3},{mv.Row0.Y:F3},{mv.Row0.Z:F3},{mv.Row0.W:F3}]");
-				DiagLog($"  MV Row3=[{mv.Row3.X:F3},{mv.Row3.Y:F3},{mv.Row3.Z:F3},{mv.Row3.W:F3}]");
-				DiagLog($"  P  Row2=[{p.Row2.X:F3},{p.Row2.Y:F3},{p.Row2.Z:F3},{p.Row2.W:F3}]");
-				DiagLog($"  P  Row3=[{p.Row3.X:F3},{p.Row3.Y:F3},{p.Row3.Z:F3},{p.Row3.W:F3}]");
-				DiagLog($"  Light0 pos=[{lights[0].Position[0]:F3},{lights[0].Position[1]:F3},{lights[0].Position[2]:F3},{lights[0].Position[3]:F3}]");
-				DiagLog($"  Light0 amb=[{lights[0].Ambient[0]:F3},{lights[0].Ambient[1]:F3},{lights[0].Ambient[2]:F3}] diff=[{lights[0].Diffuse[0]:F3},{lights[0].Diffuse[1]:F3},{lights[0].Diffuse[2]:F3}]");
-				unsafe
-				{
-					float* srcVert = (float*)vertexPointerData.pointer;
-					int vertStride = vertexPointerData.stride > 0 ? vertexPointerData.stride / sizeof(float) : vertexPointerData.size;
-					for (int vi = 0; vi < Math.Min(3, totalCount); vi++)
-					{
-						int idx = (first + vi) * vertStride;
-						double vx = srcVert[idx], vy = srcVert[idx + 1], vz = srcVert[idx + 2];
-						double ex = vx * mv.Row0.X + vy * mv.Row1.X + vz * mv.Row2.X + mv.Row3.X;
-						double ey = vx * mv.Row0.Y + vy * mv.Row1.Y + vz * mv.Row2.Y + mv.Row3.Y;
-						double ez = vx * mv.Row0.Z + vy * mv.Row1.Z + vz * mv.Row2.Z + mv.Row3.Z;
-						DiagLog($"  V{vi}: model=[{vx:F3},{vy:F3},{vz:F3}] eye=[{ex:F3},{ey:F3},{ez:F3}]");
-					}
-				}
-				bool depthOn = enableCapState.TryGetValue((int)EnableCap.DepthTest, out var dep) && dep;
-				bool blendOn = enableCapState.TryGetValue((int)EnableCap.Blend, out var bl) && bl;
-				GetVertexColor(0, first, hasColorPointer, out float cr, out float cg, out float cb, out float ca);
-				DiagLog($"  depth={depthOn}(func={depthCompareFunc}) blend={blendOn} depthMask={depthMaskEnabled} color=[{cr:F3},{cg:F3},{cb:F3},{ca:F3}]");
-				DiagLog($"  viewport=({currentViewport.x},{currentViewport.y},{currentViewport.w},{currentViewport.h})");
-			}
-
-			context.IASetInputLayout(posColorInputLayout);
 			context.IASetVertexBuffer(0, dynamicVertexBuffer, (uint)stride);
 			context.IASetPrimitiveTopology(GetTopology(mode));
-			context.VSSetShader(posColorVS);
-			context.PSSetShader(posColorPS);
 			context.VSSetConstantBuffer(0, transformBuffer);
 			ApplyRenderState();
 
@@ -916,26 +996,51 @@ namespace MatterHackers.RenderOpenGl
 					int vertStride = vertexPointerData.stride > 0 ? vertexPointerData.stride / sizeof(float) : vertexPointerData.size;
 					int normStride = normalPointerData.stride > 0 ? normalPointerData.stride / sizeof(float) : 3;
 
-					for (int i = 0; i < batchCount; i++)
+					if (useLitShader)
 					{
-						int globalIdx = first + offset + i;
-						int srcIdx = globalIdx * vertStride;
-						dest[i * 7 + 0] = srcVert[srcIdx];
-						dest[i * 7 + 1] = srcVert[srcIdx + 1];
-						dest[i * 7 + 2] = vertexPointerData.size >= 3 ? srcVert[srcIdx + 2] : 0;
-
-						GetVertexColor(i, globalIdx, hasColorPointer, out float r, out float g, out float b, out float a);
-
-						if (lightingOn && srcNormal != null)
+						for (int i = 0; i < batchCount; i++)
 						{
+							int globalIdx = first + offset + i;
+							int srcIdx = globalIdx * vertStride;
 							int ni = globalIdx * normStride;
-							ApplyLighting(ref r, ref g, ref b, srcNormal[ni], srcNormal[ni + 1], srcNormal[ni + 2], light0On, light1On);
-						}
 
-						dest[i * 7 + 3] = r;
-						dest[i * 7 + 4] = g;
-						dest[i * 7 + 5] = b;
-						dest[i * 7 + 6] = a;
+							dest[i * 10 + 0] = srcVert[srcIdx];
+							dest[i * 10 + 1] = srcVert[srcIdx + 1];
+							dest[i * 10 + 2] = vertexPointerData.size >= 3 ? srcVert[srcIdx + 2] : 0;
+							dest[i * 10 + 3] = srcNormal[ni];
+							dest[i * 10 + 4] = srcNormal[ni + 1];
+							dest[i * 10 + 5] = srcNormal[ni + 2];
+
+							GetVertexColor(i, globalIdx, hasColorPointer, out float r, out float g, out float b, out float a);
+							dest[i * 10 + 6] = r;
+							dest[i * 10 + 7] = g;
+							dest[i * 10 + 8] = b;
+							dest[i * 10 + 9] = a;
+						}
+					}
+					else
+					{
+						for (int i = 0; i < batchCount; i++)
+						{
+							int globalIdx = first + offset + i;
+							int srcIdx = globalIdx * vertStride;
+							dest[i * 7 + 0] = srcVert[srcIdx];
+							dest[i * 7 + 1] = srcVert[srcIdx + 1];
+							dest[i * 7 + 2] = vertexPointerData.size >= 3 ? srcVert[srcIdx + 2] : 0;
+
+							GetVertexColor(i, globalIdx, hasColorPointer, out float r, out float g, out float b, out float a);
+
+							if (lightingOn && srcNormal != null)
+							{
+								int ni = globalIdx * normStride;
+								ApplyLighting(ref r, ref g, ref b, srcNormal[ni], srcNormal[ni + 1], srcNormal[ni + 2], light0On, light1On);
+							}
+
+							dest[i * 7 + 3] = r;
+							dest[i * 7 + 4] = g;
+							dest[i * 7 + 5] = b;
+							dest[i * 7 + 6] = a;
+						}
 					}
 				}
 				context.Unmap(dynamicVertexBuffer, 0);
@@ -948,25 +1053,29 @@ namespace MatterHackers.RenderOpenGl
 
 		private void DrawArraysTextured(BeginMode mode, int first, int totalCount, bool hasColorPointer, bool hasNormalPointer, bool lightingOn, bool light0On, bool light1On)
 		{
-			int stride = 9 * sizeof(float); // pos(3) + texcoord(2) + color(4)
+			bool useLitShader = lightingOn && hasNormalPointer && normalPointerData.pointer != IntPtr.Zero;
 
-			int bufferSize = Math.Min(totalCount, MaxVertices);
-			var desc = new BufferDescription
+			int stride;
+			if (useLitShader)
 			{
-				ByteWidth = (uint)(bufferSize * stride),
-				Usage = ResourceUsage.Dynamic,
-				BindFlags = BindFlags.VertexBuffer,
-				CPUAccessFlags = CpuAccessFlags.Write,
-			};
-
-			using var texVertexBuffer = device.CreateBuffer(desc);
+				stride = 12 * sizeof(float); // pos(3) + normal(3) + texcoord(2) + color(4)
+				UpdateLightBuffer(light0On, light1On);
+				context.IASetInputLayout(posTexLitInputLayout);
+				context.VSSetShader(posTexLitVS);
+				context.PSSetShader(posTexLitPS);
+				context.VSSetConstantBuffer(1, lightBuffer);
+			}
+			else
+			{
+				stride = 9 * sizeof(float); // pos(3) + texcoord(2) + color(4)
+				context.IASetInputLayout(posTexInputLayout);
+				context.VSSetShader(posTexVS);
+				context.PSSetShader(posTexPS);
+			}
 
 			UpdateTransformBuffer();
-			context.IASetInputLayout(posTexInputLayout);
-			context.IASetVertexBuffer(0, texVertexBuffer, (uint)stride);
+			context.IASetVertexBuffer(0, dynamicTexVertexBuffer, (uint)stride);
 			context.IASetPrimitiveTopology(GetTopology(mode));
-			context.VSSetShader(posTexVS);
-			context.PSSetShader(posTexPS);
 			context.VSSetConstantBuffer(0, transformBuffer);
 
 			if (textures.TryGetValue(currentBoundTexture, out var texInfo) && texInfo.ShaderResourceView != null)
@@ -982,7 +1091,7 @@ namespace MatterHackers.RenderOpenGl
 			{
 				int batchCount = Math.Min(totalCount - offset, MaxVertices);
 
-				var mapped = context.Map(texVertexBuffer, MapMode.WriteDiscard);
+				var mapped = context.Map(dynamicTexVertexBuffer, MapMode.WriteDiscard);
 				unsafe
 				{
 					float* dest = (float*)mapped.DataPointer;
@@ -995,33 +1104,61 @@ namespace MatterHackers.RenderOpenGl
 					int texStride = texCoordPointerData.stride > 0 ? texCoordPointerData.stride / sizeof(float) : texCoordPointerData.size;
 					int normStride = normalPointerData.stride > 0 ? normalPointerData.stride / sizeof(float) : 3;
 
-					for (int i = 0; i < batchCount; i++)
+					if (useLitShader)
 					{
-						int globalIdx = first + offset + i;
-						int vi = globalIdx * vertStride;
-						int ti = globalIdx * texStride;
-
-						dest[i * 9 + 0] = srcVert[vi];
-						dest[i * 9 + 1] = srcVert[vi + 1];
-						dest[i * 9 + 2] = vertexPointerData.size >= 3 ? srcVert[vi + 2] : 0;
-						dest[i * 9 + 3] = srcTex[ti];
-						dest[i * 9 + 4] = srcTex[ti + 1];
-
-						GetVertexColor(i, globalIdx, hasColorPointer, out float r, out float g, out float b, out float a);
-
-						if (lightingOn && srcNormal != null)
+						for (int i = 0; i < batchCount; i++)
 						{
+							int globalIdx = first + offset + i;
+							int vi = globalIdx * vertStride;
+							int ti = globalIdx * texStride;
 							int ni = globalIdx * normStride;
-							ApplyLighting(ref r, ref g, ref b, srcNormal[ni], srcNormal[ni + 1], srcNormal[ni + 2], light0On, light1On);
-						}
 
-						dest[i * 9 + 5] = r;
-						dest[i * 9 + 6] = g;
-						dest[i * 9 + 7] = b;
-						dest[i * 9 + 8] = a;
+							dest[i * 12 + 0] = srcVert[vi];
+							dest[i * 12 + 1] = srcVert[vi + 1];
+							dest[i * 12 + 2] = vertexPointerData.size >= 3 ? srcVert[vi + 2] : 0;
+							dest[i * 12 + 3] = srcNormal[ni];
+							dest[i * 12 + 4] = srcNormal[ni + 1];
+							dest[i * 12 + 5] = srcNormal[ni + 2];
+							dest[i * 12 + 6] = srcTex[ti];
+							dest[i * 12 + 7] = srcTex[ti + 1];
+
+							GetVertexColor(i, globalIdx, hasColorPointer, out float r, out float g, out float b, out float a);
+							dest[i * 12 + 8] = r;
+							dest[i * 12 + 9] = g;
+							dest[i * 12 + 10] = b;
+							dest[i * 12 + 11] = a;
+						}
+					}
+					else
+					{
+						for (int i = 0; i < batchCount; i++)
+						{
+							int globalIdx = first + offset + i;
+							int vi = globalIdx * vertStride;
+							int ti = globalIdx * texStride;
+
+							dest[i * 9 + 0] = srcVert[vi];
+							dest[i * 9 + 1] = srcVert[vi + 1];
+							dest[i * 9 + 2] = vertexPointerData.size >= 3 ? srcVert[vi + 2] : 0;
+							dest[i * 9 + 3] = srcTex[ti];
+							dest[i * 9 + 4] = srcTex[ti + 1];
+
+							GetVertexColor(i, globalIdx, hasColorPointer, out float r, out float g, out float b, out float a);
+
+							if (lightingOn && srcNormal != null)
+							{
+								int ni = globalIdx * normStride;
+								ApplyLighting(ref r, ref g, ref b, srcNormal[ni], srcNormal[ni + 1], srcNormal[ni + 2], light0On, light1On);
+							}
+
+							dest[i * 9 + 5] = r;
+							dest[i * 9 + 6] = g;
+							dest[i * 9 + 7] = b;
+							dest[i * 9 + 8] = a;
+						}
 					}
 				}
-				context.Unmap(texVertexBuffer, 0);
+				context.Unmap(dynamicTexVertexBuffer, 0);
 
 				context.Draw((uint)batchCount, 0);
 
@@ -1046,6 +1183,7 @@ namespace MatterHackers.RenderOpenGl
 			enableCapState[cap] = true;
 			if (cap == (int)EnableCap.Texture2D) texture2DEnabled = true;
 			if (cap == (int)EnableCap.ScissorTest) scissorEnabled = true;
+			renderStateDirty = true;
 		}
 
 		public void Disable(int cap)
@@ -1053,6 +1191,7 @@ namespace MatterHackers.RenderOpenGl
 			enableCapState[cap] = false;
 			if (cap == (int)EnableCap.Texture2D) texture2DEnabled = false;
 			if (cap == (int)EnableCap.ScissorTest) scissorEnabled = false;
+			renderStateDirty = true;
 		}
 
 		public void EnableClientState(ArrayCap arrayCap)
@@ -1071,6 +1210,7 @@ namespace MatterHackers.RenderOpenGl
 		{
 			blendSrcFactor = sfactor;
 			blendDstFactor = dfactor;
+			renderStateDirty = true;
 
 			var key = (sfactor, dfactor);
 			if (!blendStateCache.ContainsKey(key))
@@ -1113,6 +1253,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DepthFunc(int func)
 		{
+			renderStateDirty = true;
 			depthCompareFunc = func switch
 			{
 				0x0200 => ComparisonFunction.Never,       // GL_NEVER
@@ -1130,6 +1271,7 @@ namespace MatterHackers.RenderOpenGl
 		public void DepthMask(bool flag)
 		{
 			depthMaskEnabled = flag;
+			renderStateDirty = true;
 		}
 
 		public void ColorMask(bool red, bool green, bool blue, bool alpha) { }
@@ -1139,11 +1281,13 @@ namespace MatterHackers.RenderOpenGl
 		public void CullFace(CullFaceMode mode)
 		{
 			currentCullMode = mode == CullFaceMode.Front ? CullMode.Front : CullMode.Back;
+			renderStateDirty = true;
 		}
 
 		public void FrontFace(FrontFaceDirection mode)
 		{
 			frontFaceCCW = mode == FrontFaceDirection.Ccw;
+			renderStateDirty = true;
 		}
 
 		public void ShadeModel(ShadingModel model) { }
@@ -1152,6 +1296,7 @@ namespace MatterHackers.RenderOpenGl
 		{
 			polygonOffsetFactor = factor;
 			polygonOffsetUnits = units;
+			renderStateDirty = true;
 		}
 
 		public void Light(LightName light, LightParameter pname, float[] param)
@@ -1198,6 +1343,7 @@ namespace MatterHackers.RenderOpenGl
 				projectionStack.Pop();
 				projectionStack.Push(Matrix4X4.Identity);
 			}
+			transformDirty = true;
 		}
 
 		public void LoadMatrix(double[] m)
@@ -1218,6 +1364,7 @@ namespace MatterHackers.RenderOpenGl
 				projectionStack.Pop();
 				projectionStack.Push(matrix);
 			}
+			transformDirty = true;
 		}
 
 		public void MultMatrix(float[] m)
@@ -1231,6 +1378,7 @@ namespace MatterHackers.RenderOpenGl
 			{
 				projectionStack.Push(projectionStack.Pop() * matrix);
 			}
+			transformDirty = true;
 		}
 
 		public void PushMatrix()
@@ -1255,12 +1403,11 @@ namespace MatterHackers.RenderOpenGl
 			{
 				if (projectionStack.Count > 1) projectionStack.Pop();
 			}
+			transformDirty = true;
 		}
 
 		public void Ortho(double left, double right, double bottom, double top, double zNear, double zFar)
 		{
-			// Standard OpenGL orthographic projection (Z maps to [-1,1]).
-			// Z correction to D3D11 [0,1] is applied in UpdateTransformBuffer.
 			double w = right - left;
 			double h = top - bottom;
 			double d = zFar - zNear;
@@ -1279,6 +1426,7 @@ namespace MatterHackers.RenderOpenGl
 			{
 				projectionStack.Push(projectionStack.Pop() * ortho);
 			}
+			transformDirty = true;
 		}
 
 		public void Translate(Vector3 vector)
@@ -1297,6 +1445,7 @@ namespace MatterHackers.RenderOpenGl
 			{
 				projectionStack.Push(projectionStack.Pop() * translation);
 			}
+			transformDirty = true;
 		}
 
 		public void Rotate(double angle, double x, double y, double z)
@@ -1313,6 +1462,7 @@ namespace MatterHackers.RenderOpenGl
 			{
 				projectionStack.Push(projectionStack.Pop() * rotation);
 			}
+			transformDirty = true;
 		}
 
 		public void Scale(double x, double y, double z)
@@ -1326,6 +1476,7 @@ namespace MatterHackers.RenderOpenGl
 			{
 				projectionStack.Push(projectionStack.Pop() * scale);
 			}
+			transformDirty = true;
 		}
 
 		private Stack<(AttribMask mask, int x, int y, int w, int h)> attribStack = new Stack<(AttribMask, int, int, int, int)>();
@@ -1369,7 +1520,6 @@ namespace MatterHackers.RenderOpenGl
 		}
 
 		private (int x, int y, int w, int h) currentViewport;
-		private int viewportChangeCount;
 
 		public void Viewport(int x, int y, int width, int height)
 		{
@@ -1378,16 +1528,9 @@ namespace MatterHackers.RenderOpenGl
 			viewportWidth = width;
 			viewportHeight = height;
 			currentViewport = (x, y, width, height);
-			viewportChangeCount++;
 
 			// Convert from OpenGL convention (y=0 at bottom) to D3D11 convention (y=0 at top)
 			int d3dY = renderTargetHeight - y - height;
-
-			if (viewportChangeCount <= 20)
-			{
-				DiagLog($"Viewport #{viewportChangeCount}: x={x} y={y} w={width} h={height} -> d3dY={d3dY} (rtHeight={renderTargetHeight})");
-			}
-
 			context.RSSetViewport(x, d3dY, width, height);
 		}
 
@@ -1865,7 +2008,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void Present()
 		{
-			swapChain.Present(1, PresentFlags.None);
+			swapChain.Present(0, PresentFlags.None);
 
 			// With FlipDiscard, the back buffer changes after Present.
 			// Re-acquire the render target view for the new back buffer.
@@ -1891,13 +2034,21 @@ namespace MatterHackers.RenderOpenGl
 			blendStateCache.Clear();
 
 			dynamicVertexBuffer?.Dispose();
+			dynamicTexVertexBuffer?.Dispose();
 			transformBuffer?.Dispose();
+			lightBuffer?.Dispose();
 			posColorVS?.Dispose();
 			posColorPS?.Dispose();
 			posColorInputLayout?.Dispose();
 			posTexVS?.Dispose();
 			posTexPS?.Dispose();
 			posTexInputLayout?.Dispose();
+			posColorLitVS?.Dispose();
+			posColorLitPS?.Dispose();
+			posColorLitInputLayout?.Dispose();
+			posTexLitVS?.Dispose();
+			posTexLitPS?.Dispose();
+			posTexLitInputLayout?.Dispose();
 			blendStateEnabled?.Dispose();
 			blendStateDisabled?.Dispose();
 			foreach (var ds in depthStencilCache.Values) ds?.Dispose();

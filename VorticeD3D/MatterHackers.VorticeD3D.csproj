@@ -25,6 +25,8 @@
   <ItemGroup>
     <EmbeddedResource Include="Shaders\PositionColor.hlsl" />
     <EmbeddedResource Include="Shaders\PositionTexture.hlsl" />
+    <EmbeddedResource Include="Shaders\PositionColorLit.hlsl" />
+    <EmbeddedResource Include="Shaders\PositionTextureLit.hlsl" />
   </ItemGroup>
 
 </Project>
