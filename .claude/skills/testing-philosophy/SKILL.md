@@ -7,6 +7,12 @@ description: "This skill provides guidance on writing and running tests in this 
 
 This skill documents the testing approach and infrastructure for the agg-sharp project.
 
+## Why We Test
+
+Tests exist to give us **confidence to change code.** A good test suite means you can refactor, fix bugs, and add features knowing that if you break something, you'll find out immediately -- not from a user report weeks later.
+
+This means tests are most valuable when they're fast (so you actually run them), when they test real behavior (so passing means something), and when they fail for meaningful reasons (so a failure tells you what went wrong).
+
 ## Test Runner: TUnit
 
 This project uses TUnit (v0.57.24) for all C# testing on .NET 8.0.
@@ -72,49 +78,50 @@ Tests are organized by module:
 - `*Tests.cs` - Test classes that TUnit will discover
 - Classes end with `Tests` suffix (e.g., `SimpleTests`, `MeshTests`, `VectorMathTests`)
 
-## Core Testing Principles
+## What to Test
 
-### Speed Matters
+### Write tests for:
+- **Bug fixes** -- a regression test proves the bug is fixed and prevents it from returning. This is the highest-value test you can write.
+- **Complex logic** -- algorithms, mesh operations, vector math, edge cases where it's easy to introduce subtle errors
+- **GUI widget behavior** -- via automation tests, for interactions that must not break
+- **Graphics rendering and image processing** -- operations where correctness is visually important
 
-Tests should run as fast as possible. Fast tests get run more often, which means faster feedback and fewer bugs reaching production.
+### Consider skipping tests for:
+- Trivial one-line properties with no logic
+- Code that's pure wiring (no branching, no computation)
+- Temporary/experimental code that will be rewritten soon
 
-- Prefer Standard (unit) tests over AutomationTests when possible
+### Speed matters
+Fast tests get run more often, which means faster feedback and fewer bugs reaching production.
+- Prefer unit tests over automation tests when possible
 - Avoid unnecessary setup/teardown
 - Don't test the same behavior multiple times
 - Use `[Before(Class)]` for expensive one-time setup
 
-### Test What Matters
+## Bug Fix Workflow: Failing Test First
 
-Write tests for:
-- Regressions (bugs that were fixed - prevent them from returning)
-- Complex logic (algorithms, mesh operations, vector math, edge cases)
-- GUI widget behavior (via automation tests)
-- Graphics rendering and image processing operations
+When fixing a bug, write a failing test before writing the fix. This approach:
 
-Avoid:
-- Redundant tests that verify the same behavior
-- Tests for trivial code
-- Tests that just verify framework behavior
+1. Proves the bug exists and is reproducible
+2. Ensures you understand the actual problem
+3. Verifies your fix actually works
+4. Prevents the bug from returning (regression protection)
 
-### Test Failures Are Real Bugs (No Cheating)
+**The process:**
+1. Reproduce the bug manually to understand it
+2. Write a test that fails because of the bug
+3. Run the test to confirm it fails (red)
+4. Fix the bug in production code
+5. Run the test to confirm it passes (green)
+6. Commit both the test and the fix together
 
-**Every test failure indicates a real bug in the production code.** Tests gate deployment and protect user experience - there are no workarounds.
+## When Tests Fail
 
-When a test fails:
+A failing test is valuable information. The goal is always to understand what it's telling you before changing anything.
 
-1. Investigate the failure
-2. Add instrumentation (debug output) to understand what's happening
-3. Find and fix the root cause in production code
-4. Never weaken or skip tests to make them pass
+Most failures are real bugs in production code. Occasionally a test has a problem, or requirements genuinely changed. In every case, investigate first -- see the `fix-test-failures` skill for the full diagnostic process.
 
-**Forbidden actions:**
-- Weakening assertions or changing expected values
-- Using `[Skip]` as a permanent solution
-- Using `--no-verify` to bypass pre-commit hooks
-- Adding try/catch to swallow errors
-- Mocking away the behavior being tested
-
-See the `fix-test-failures` skill for the detailed debugging process.
+The key distinction: **updating a test because requirements changed** is fine. **Weakening a test to make it pass without understanding why it failed** hides real problems.
 
 ## Standard Tests (Unit Tests)
 
@@ -182,35 +189,3 @@ public class FeatureTests
     }
 }
 ```
-
-## When to Write Tests
-
-**Always write tests for:**
-- Bug fixes (regression test to prevent the bug from returning)
-- Complex algorithms or mesh/geometry logic
-- Critical user-facing features
-- File format loading and saving
-- Edge cases that are easy to break
-
-**Consider skipping tests for:**
-- Trivial one-line properties
-- Code that's just wiring (no logic)
-- Temporary/experimental code that will be rewritten
-
-## Bug Fix Workflow: Failing Test First
-
-**When fixing a bug, always write a failing test before writing the fix.**
-
-This approach:
-1. Proves the bug exists and is reproducible
-2. Ensures you understand the actual problem
-3. Verifies your fix actually works
-4. Prevents the bug from returning (regression protection)
-
-**The process:**
-1. Reproduce the bug manually to understand it
-2. Write a test that fails because of the bug
-3. Run the test to confirm it fails (red)
-4. Fix the bug in production code
-5. Run the test to confirm it passes (green)
-6. Commit both the test and the fix together
