@@ -194,6 +194,7 @@ namespace MatterHackers.Agg.UI
 			DebugLogger.EnableFilter("SystemWindow");
 			DebugLogger.LogMessage("SystemWindow", $"ResetSystemWindowProvider called - Current provider: {systemWindowProvider?.GetType().Name ?? "null"}");
 			systemWindowProvider = null;
+			_openWindows.Clear();
 		}
 
 		public void ShowAsSystemWindow()

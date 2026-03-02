@@ -57,6 +57,20 @@ namespace MatterHackers.RenderOpenGl
 
         public bool DoEdgeAntiAliasing { get; set; } = true;
 
+        /// <summary>
+        /// Clears all static GL-context-dependent caches. Must be called when the GL context
+        /// is destroyed and recreated (e.g., between automation tests) to prevent stale
+        /// display list IDs and tessellation data from causing rendering failures.
+        /// </summary>
+        public static void InvalidateGlCaches()
+        {
+            _displayListCache.Clear();
+            TriangleEdgeInfos.Clear();
+            AvailableTriangleEdgeInfos.Clear();
+            aATextureImages = null;
+            ImageGlPlugin.MarkAllImagesNeedRefresh();
+        }
+
         public Graphics2DOpenGL(double deviceScale)
         {
             if (AvailableTriangleEdgeInfos.Count == 0)

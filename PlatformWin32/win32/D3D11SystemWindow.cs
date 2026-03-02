@@ -73,6 +73,10 @@ namespace MatterHackers.Agg.UI
 			d3dControl.InitializeD3D();
 			GL.Instance = d3dControl.GlBackend;
 
+			// Clear all cached GL resources (display lists, textures, tessellations)
+			// that may be stale from a previous GL context (e.g., between automation tests).
+			Graphics2DOpenGL.InvalidateGlCaches();
+
 			if (ExitAfterXSeconds > 0)
 			{
 				SetupAutoExit();
