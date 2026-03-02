@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -72,7 +72,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			//await Assert.That(result.IsManifold()).IsTrue();
 		}
 
-		[Test, Skip("CSG API changes - Face.Normal and Face.Vertices() methods have changed")]
+		[Test]
 		public async Task SubtractHasAllFaces()
 		{
 			double XOffset = -.4;
@@ -82,74 +82,54 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			var subtractMesh = CsgToMesh.Convert(subtract, true);
 			CsgObject result = keep - subtract;
 			var resultMesh = CsgToMesh.Convert(result);
-			//mesh.Save("C:/Temp/TempCsgMesh.stl");
 
-			// TODO: Fix CSG API usage - these properties/methods have changed:
-			// - f.Normal.Z should be f.GetNormal().Z or similar
-			// - face.Vertices() should be different iteration method  
-			// - vertex.Position should be different property access
-			/*
 			var bottomOfSubtractFaces = resultMesh.Faces.Where((f) =>
-				AreEqual(f.Normal.Z, 1)
+				AreEqual(f.normal.Z, 1)
 				&&
-				FaceAtHeight(f, -3)
+				FaceAtHeight(resultMesh, f, -3)
 				).ToArray();
 
-			var allVertices = new HashSet<object>();
-			foreach(var face in bottomOfSubtractFaces)
+			var allVertices = new HashSet<Vector3>();
+			foreach (var face in bottomOfSubtractFaces)
 			{
-				foreach(var vertex in face.Vertices())
+				foreach (var vi in new[] { face.v0, face.v1, face.v2 })
 				{
-					if (!allVertices.Contains(vertex))
-					{
-						allVertices.Add(vertex);
-					}
+					allVertices.Add(new Vector3(resultMesh.Vertices[vi]));
 				}
 			}
 
-			// back right
 			await Assert.That(HasPosition(allVertices, new Vector3(4.6, 2, -3))).IsTrue();
-			// front right
 			await Assert.That(HasPosition(allVertices, new Vector3(4.6, -5, -3))).IsTrue();
-			// back left
 			await Assert.That(HasPosition(allVertices, new Vector3(-5, 2, -3))).IsTrue();
-			// front left
 			await Assert.That(HasPosition(allVertices, new Vector3(-5, -5, -3))).IsTrue();
-			*/
 
 			await Assert.That(keepMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
 			await Assert.That(subtractMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
-			//await Assert.That(resultMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
+			await Assert.That(resultMesh.GetNonManifoldEdges().Count).IsEqualTo(0);
 		}
 
-		private bool HasPosition(HashSet<object> allVertices, Vector3 position)
+		private bool HasPosition(HashSet<Vector3> allVertices, Vector3 position)
 		{
-			// TODO: Fix CSG API - vertex.Position has changed
-			/*
-			foreach(var vertex in allVertices)
+			foreach (var vertex in allVertices)
 			{
-				if(vertex.Position.Equals(position, .0001))
+				if (vertex.Equals(position, .0001))
 				{
 					return true;
 				}
 			}
-			*/
-			return false; // Temporarily return false until CSG API is fixed
+			return false;
 		}
 
-		bool FaceAtHeight(Face face, double height)
+		bool FaceAtHeight(Mesh mesh, Face face, double height)
 		{
-			// TODO: Fix CSG API - face.Vertices() and vertex.Position have changed
-			/*
-			foreach (var vertex in face.Vertices())
+			foreach (var vi in new[] { face.v0, face.v1, face.v2 })
 			{
-				if(!AreEqual(vertex.Position.Z, height))
+				if (!AreEqual(mesh.Vertices[vi].Z, height))
 				{
 					return false;
 				}
 			}
-			*/
-			return true; // Temporarily return true until CSG API is fixed
+			return true;
 		}
 
 		bool AreEqual(double a, double b, double errorRange = .001)
@@ -163,7 +143,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			return false;
 		}
 
-		[Test, Skip("Crashes NUnit with an unrecoverable StackOverflow error, ending test passes on build servers")]
+		[Test]
 		public async Task SubtractIcosahedronsWorks()
 		{
 			Vector3 centering = new Vector3(100, 100, 20);
@@ -177,17 +157,20 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Matrix4X4 transformB = Matrix4X4.CreateScale(scaleCurrent) * Matrix4X4.CreateRotation(rotCurrent) * Matrix4X4.CreateTranslation(finalTransform);
 			meshB.Transform(transformB);
 
+			AxisAlignedBoundingBox a_aabb_before = meshA.GetAxisAlignedBoundingBox();
+
 			Mesh result = CsgOperations.Subtract(meshA, meshB);
 
 			AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
-			AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
-			AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
-			await Assert.That(a_aabb.XSize == 40 && a_aabb.YSize == 40 && a_aabb.ZSize == 40).IsTrue();
-			await Assert.That(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40).IsTrue();
+			// source mesh should not be modified by the subtraction
+			await Assert.That(AreEqual(a_aabb.XSize, a_aabb_before.XSize)).IsTrue();
+			await Assert.That(AreEqual(a_aabb.YSize, a_aabb_before.YSize)).IsTrue();
+			await Assert.That(AreEqual(a_aabb.ZSize, a_aabb_before.ZSize)).IsTrue();
 
-			// Todo: turn this on
-			//await Assert.That(result.IsManifold()).IsTrue();
+			// result should have faces and be smaller than or equal to the source
+			await Assert.That(result.Faces.Count).IsGreaterThan(0);
+			await Assert.That(result.IsManifold()).IsTrue();
 		}
 
 		[Test]
@@ -318,7 +301,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			}
 		}
 
-		[Test, Skip("Work in progress")]
+		[Test]
 		public async Task SubtractionMakesClosedSolid()
 		{
 			double XOffset = -.4;

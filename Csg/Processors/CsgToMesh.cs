@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -34,7 +34,6 @@ using MatterHackers.Csg.Transform;
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 using System;
-using System.Threading;
 
 namespace MatterHackers.RenderOpenGl
 {
@@ -46,7 +45,7 @@ namespace MatterHackers.RenderOpenGl
 			var mesh = visitor.CsgToMeshRecursive((dynamic)objectToProcess);
 			if(cleanMeshAfterConvert)
 			{
-				mesh.CleanAndMergMesh(CancellationToken.None);
+				mesh.CleanAndMerge();
 			}
 
 			return mesh;
