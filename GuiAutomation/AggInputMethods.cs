@@ -363,6 +363,21 @@ namespace MatterHackers.GuiAutomation
 
 		private static readonly uint ModifierKeyMask = ModifierKeyList.Aggregate(0u, (acc, v) => acc | (uint)v);
 
+		private static void TrySetModifierKeys(IPlatformWindow platformWindow, Keys mods)
+		{
+			var type = platformWindow.GetType();
+			while (type != null)
+			{
+				var method = type.GetMethod("SetModifierKeys", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+				if (method != null)
+				{
+					method.Invoke(platformWindow, new object[] { mods });
+					return;
+				}
+				type = type.BaseType;
+			}
+		}
+
 		public void PressModifierKeys(Keys modifierKeys)
 		{
 			var mods = (uint)modifierKeys & ModifierKeyMask;
@@ -402,12 +417,7 @@ namespace MatterHackers.GuiAutomation
 			setModifiers(mods, Keys.Control);
 			setModifiers(mods, Keys.Alt);
 
-			var platformWindowType = systemWindow.PlatformWindow.GetType();
-			if (platformWindowType.Name == "OpenGLSystemWindow")
-			{
-				var methodInfo = platformWindowType.GetMethod("SetModifierKeys", BindingFlags.Instance | BindingFlags.NonPublic);
-				methodInfo.Invoke(systemWindow.PlatformWindow, new object[] { (Keys)mods });
-			}
+			TrySetModifierKeys(systemWindow.PlatformWindow, (Keys)mods);
 
 			systemWindow.OnKeyDown(keyDownEvent);
 		}
@@ -451,12 +461,7 @@ namespace MatterHackers.GuiAutomation
 			unsetModifier(mods, Keys.Control);
 			unsetModifier(mods, Keys.Alt);
 
-			var platformWindowType = systemWindow.PlatformWindow.GetType();
-			if (platformWindowType.Name == "OpenGLSystemWindow")
-			{
-				var methodInfo = platformWindowType.GetMethod("SetModifierKeys", BindingFlags.Instance | BindingFlags.NonPublic);
-				methodInfo.Invoke(systemWindow.PlatformWindow, new object[] { (Keys)mods });
-			}
+			TrySetModifierKeys(systemWindow.PlatformWindow, (Keys)mods);
 
 			systemWindow.OnKeyUp(keyUpEvent);
 		}

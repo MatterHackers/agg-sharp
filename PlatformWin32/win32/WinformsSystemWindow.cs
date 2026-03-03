@@ -334,7 +334,26 @@ namespace MatterHackers.Agg.UI
 
 		public ISystemWindowProvider WindowProvider { get; set; }
 
-		public new virtual Keys ModifierKeys => (Keys)Control.ModifierKeys;
+		private Keys overrideModifierKeys = Keys.None;
+		private bool modifiersOverridden = false;
+
+		internal void SetModifierKeys(Keys modifiers)
+		{
+			overrideModifierKeys = modifiers;
+			modifiersOverridden = true;
+		}
+
+		public new virtual Keys ModifierKeys
+		{
+			get
+			{
+				if (modifiersOverridden)
+				{
+					return overrideModifierKeys;
+				}
+				return (Keys)Control.ModifierKeys;
+			}
+		}
 
 		// TODO: Why is this member named Caption instead of Title?
 		public string Caption
