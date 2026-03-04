@@ -790,7 +790,8 @@ namespace MatterHackers.GuiAutomation
 				return this;
 			}
 
-			throw new Exception($"ClickByName Failed: Named GuiWidget not found [{widgetName}]");
+            // If we see "Queue... Menu" we should be changing the test to look for a different source. There is no longer a queue menu.
+            throw new Exception($"ClickByName Failed: Named GuiWidget not found [{widgetName}]");
 		}
 
 		/// <summary>

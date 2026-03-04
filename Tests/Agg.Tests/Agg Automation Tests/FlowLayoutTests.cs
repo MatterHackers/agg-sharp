@@ -192,14 +192,14 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 
 			await AutomationRunner.ShowWindowAndExecuteTests(
-systemWindow,
-async (testRunner) =>
-{
-	// Enable to observe
-	// testRunner.Delay(30);
+				systemWindow,
+				async (testRunner) =>
+				{
+					// Enable to observe
+					// testRunner.Delay(30);
 
-	await Assert.That(footerRow.Position.Y).IsEqualTo(0);//, "Footer should be positioned at Y0 when it is the first item in a TopToBottom FlowlayoutWidget");
-});
+					await Assert.That(footerRow.Position.Y).IsEqualTo(0);//, "Footer should be positioned at Y0 when it is the first item in a TopToBottom FlowlayoutWidget");
+				});
 		}
 
 		[Test]
