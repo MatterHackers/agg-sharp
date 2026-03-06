@@ -27,10 +27,69 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-namespace MatterHackers.Agg.UI
+using System;
+using MatterHackers.Agg;
+using MatterHackers.PolygonMesh;
+using MatterHackers.VectorMath;
+
+namespace MatterHackers.RenderOpenGl
 {
-	// Compatibility alias for legacy provider names after retiring the OpenTK host.
-	public class OpenGLSystemWindow : D3D11SystemWindow
+	public enum SceneRenderPass
 	{
+		Opaque,
+		Transparent,
+		Overlay,
+	}
+
+	public sealed class SceneRenderContext
+	{
+		public SceneRenderContext(WorldView worldView, RectangleDouble viewport, LightingData lighting)
+		{
+			WorldView = worldView;
+			Viewport = viewport;
+			Lighting = lighting;
+		}
+
+		public LightingData Lighting { get; }
+
+		public RectangleDouble Viewport { get; }
+
+		public WorldView WorldView { get; }
+	}
+
+	public sealed class MeshRenderCommand
+	{
+		public bool AllowBspRendering { get; init; } = true;
+
+		public bool BlendTexture { get; init; } = true;
+
+		public Color Color { get; init; }
+
+		public bool ForceCullBackFaces { get; init; } = true;
+
+		public Mesh Mesh { get; init; }
+
+		public Action MeshChanged { get; init; }
+
+		public Matrix4X4? MeshToViewTransform { get; init; }
+
+		public RenderTypes RenderType { get; init; } = RenderTypes.Shaded;
+
+		public Matrix4X4 Transform { get; init; } = Matrix4X4.Identity;
+
+		public Color WireFrameColor { get; init; } = default;
+	}
+
+	public interface INativeSceneRenderer
+	{
+		bool IsSceneRenderingActive { get; }
+
+		void BeginSceneRendering(SceneRenderContext context);
+
+		void EndSceneRendering();
+
+		bool CanRender(MeshRenderCommand command);
+
+		bool TryRender(MeshRenderCommand command);
 	}
 }

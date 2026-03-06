@@ -43,7 +43,7 @@ using Vortice.Mathematics;
 
 namespace MatterHackers.RenderOpenGl
 {
-	public class VorticeD3DGl : IOpenGL
+	public partial class VorticeD3DGl : IOpenGL, INativeSceneRenderer
 	{
 		private ID3D11Device device;
 		private ID3D11DeviceContext context;

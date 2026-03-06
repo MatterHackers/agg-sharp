@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -109,6 +109,29 @@ namespace MatterHackers.RenderOpenGl
 		{
 			if (meshToRender != null)
 			{
+				if (GL.Instance is INativeSceneRenderer nativeSceneRenderer)
+				{
+					var command = new MeshRenderCommand
+					{
+						Mesh = meshToRender,
+						Color = color,
+						Transform = transform,
+						RenderType = renderType,
+						MeshToViewTransform = meshToViewTransform,
+						WireFrameColor = wireFrameColor,
+						MeshChanged = meshChanged,
+						BlendTexture = blendTexture,
+						AllowBspRendering = allowBspRendering,
+						ForceCullBackFaces = forceCullBackFaces,
+					};
+
+					if (nativeSceneRenderer.CanRender(command)
+						&& nativeSceneRenderer.TryRender(command))
+					{
+						return;
+					}
+				}
+
 				GL.Color4(color.Red0To255, color.Green0To255, color.Blue0To255, color.Alpha0To255);
 
 				GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
