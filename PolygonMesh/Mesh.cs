@@ -590,13 +590,6 @@ namespace MatterHackers.PolygonMesh
 			{
 				transformedAabbCache.Changed();
 				cachedAABB = null;
-
-				// Clear any cached mesh trace/BVH data that depends on previous geometry.
-				// This keeps hit testing in sync after mesh edits while preserving cache behavior.
-				if (PropertyBag.ContainsKey("MeshTraceData"))
-				{
-					PropertyBag.Remove("MeshTraceData");
-				}
 				ChangedCount++;
 				Changed?.Invoke(this, null);
 			}

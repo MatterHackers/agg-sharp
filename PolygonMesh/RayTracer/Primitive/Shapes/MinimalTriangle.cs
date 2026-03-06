@@ -39,10 +39,11 @@ namespace MatterHackers.RayTracer
 			double distanceFromOrigin = vertex(0).Dot(planeNormal);
 			Plane = new PlaneFloat(new Vector3Float(planeNormal), (float)distanceFromOrigin);
 
-			var aabbMin = vertex(0).ComponentMin(vertex(1)).ComponentMin(vertex(2));
-			var aabbMax = vertex(0).ComponentMax(vertex(1)).ComponentMax(vertex(2));
-			center = new Vector3Float((aabbMin + aabbMax) / 2);
-			aabbSize = aabbMax - aabbMin;
+			center = new Vector3Float((vertex(0) + vertex(1) + vertex(2)) / 3);
+			var aabbMinXYZ = vertex(0).ComponentMin(vertex(1)).ComponentMin(vertex(2));
+			var aabbMaxXYZ = vertex(0).ComponentMax(vertex(1)).ComponentMax(vertex(2));
+			var aabb = new AxisAlignedBoundingBox(aabbMinXYZ, aabbMaxXYZ);
+			aabbSize = new Vector3Float(aabb.Size);
 
 			var normalLengths = new[] { Math.Abs(planeNormal.X), Math.Abs(planeNormal.Y), Math.Abs(planeNormal.Z) };
 			MajorAxis = (byte)normalLengths.Select((v, i) => new { Axis = i, Value = Math.Abs(v) }).OrderBy(o => o.Value).Last().Axis;
@@ -100,8 +101,7 @@ namespace MatterHackers.RayTracer
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
-			Vector3Float halfSize = aabbSize / 2;
-			return new AxisAlignedBoundingBox(center - halfSize, center + halfSize);
+			return new AxisAlignedBoundingBox(center - aabbSize, center + aabbSize);
 		}
 
 		public double GetAxisCenter(int axis)
@@ -243,30 +243,24 @@ namespace MatterHackers.RayTracer
 
 		private bool Check2DHitOnMajorAxis(double x, double y)
 		{
-			// quick reject against projected triangle bounds
-			const double boundsEpsilon = 1e-8;
-			if (!(x >= boundsOnMajorAxis.Left - boundsEpsilon && x <= boundsOnMajorAxis.Right + boundsEpsilon
-				&& y >= boundsOnMajorAxis.Bottom - boundsEpsilon && y <= boundsOnMajorAxis.Top + boundsEpsilon))
+			// check the bounding rect
+			if (x >= boundsOnMajorAxis.Left && x <= boundsOnMajorAxis.Right &&
+				y >= boundsOnMajorAxis.Bottom && y <= boundsOnMajorAxis.Top)
 			{
-				return false;
+				Vector2 vertex0 = new Vector2(vertex(0)[xForMajorAxis], vertex(0)[yForMajorAxis]);
+				Vector2 vertex1 = new Vector2(vertex(1)[xForMajorAxis], vertex(1)[yForMajorAxis]);
+				Vector2 vertex2 = new Vector2(vertex(2)[xForMajorAxis], vertex(2)[yForMajorAxis]);
+				Vector2 hitPosition = new Vector2(x, y);
+				int sumOfLineSides = FindSideOfLine(vertex0, vertex1, hitPosition);
+				sumOfLineSides += FindSideOfLine(vertex1, vertex2, hitPosition);
+				sumOfLineSides += FindSideOfLine(vertex2, vertex0, hitPosition);
+				if (sumOfLineSides == -3 || sumOfLineSides == 3)
+				{
+					return true;
+				}
 			}
 
-			Vector2 v0 = new Vector2(vertex(0)[xForMajorAxis], vertex(0)[yForMajorAxis]);
-			Vector2 v1 = new Vector2(vertex(1)[xForMajorAxis], vertex(1)[yForMajorAxis]);
-			Vector2 v2 = new Vector2(vertex(2)[xForMajorAxis], vertex(2)[yForMajorAxis]);
-			Vector2 p = new Vector2(x, y);
-
-			// Robust edge-inclusive test. This avoids misses when the ray lands exactly
-			// on a shared edge/vertex (common with AABB-center clicks on pointed geometry).
-			const double epsilon = 1e-9;
-			double c0 = Vector2.Cross(p - v0, v1 - v0);
-			double c1 = Vector2.Cross(p - v1, v2 - v1);
-			double c2 = Vector2.Cross(p - v2, v0 - v2);
-
-			bool hasNeg = c0 < -epsilon || c1 < -epsilon || c2 < -epsilon;
-			bool hasPos = c0 > epsilon || c1 > epsilon || c2 > epsilon;
-
-			return !(hasNeg && hasPos);
+			return false;
 		}
 
 		private Vector3Float vertex(int i)

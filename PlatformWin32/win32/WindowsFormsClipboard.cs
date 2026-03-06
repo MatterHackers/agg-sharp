@@ -2,26 +2,15 @@
 using System.Collections.Specialized;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Threading;
 
 namespace MatterHackers.Agg.UI
 {
 	public class WindowsFormsClipboard : ISystemClipboard
 	{
-		private static bool CanAccessClipboard()
-		{
-			return Thread.CurrentThread.GetApartmentState() == ApartmentState.STA;
-		}
-
 		public string GetText()
 		{
 			try
 			{
-				if (!CanAccessClipboard())
-				{
-					return "Clipboard Failed";
-				}
-
 				return System.Windows.Forms.Clipboard.GetText();
 			}
 			catch
@@ -54,11 +43,6 @@ namespace MatterHackers.Agg.UI
 			{
 				try
 				{
-					if (!CanAccessClipboard())
-					{
-						return false;
-					}
-
 					return System.Windows.Forms.Clipboard.ContainsText();
 				}
 				catch
@@ -74,11 +58,6 @@ namespace MatterHackers.Agg.UI
 			{
 				try
 				{
-					if (!CanAccessClipboard())
-					{
-						return false;
-					}
-
 					return System.Windows.Forms.Clipboard.ContainsImage();
 				}
 				catch
@@ -225,11 +204,6 @@ namespace MatterHackers.Agg.UI
 		{
 			try
 			{
-				if (!CanAccessClipboard())
-				{
-					return null;
-				}
-
 				var bitmap = new Bitmap(System.Windows.Forms.Clipboard.GetImage());
 				var image = new ImageBuffer();
 				if (ConvertBitmapToImage(image, bitmap))
