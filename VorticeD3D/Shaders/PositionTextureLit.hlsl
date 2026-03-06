@@ -12,7 +12,7 @@ cbuffer LightBuffer : register(b1)
     float4 Light1Position;
     float4 Light1Ambient;
     float4 Light1Diffuse;
-    float4 LightFlags; // x = light0On, y = light1On
+    float4 LightFlags;
 };
 
 Texture2D diffuseTexture : register(t0);
@@ -29,41 +29,44 @@ struct VS_INPUT
 struct PS_INPUT
 {
     float4 Position : SV_POSITION;
-    float2 TexCoord : TEXCOORD0;
+    float3 ViewNormal : TEXCOORD0;
+    float2 TexCoord : TEXCOORD1;
     float4 Color : COLOR;
 };
 
 PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output;
-    float4 worldPos = mul(float4(input.Position, 1.0), ModelView);
-    output.Position = mul(worldPos, Projection);
-    output.Position.z = (output.Position.z + output.Position.w) * 0.5;
+    float4 viewPosition = mul(float4(input.Position, 1.0), ModelView);
+    output.Position = mul(viewPosition, Projection);
+    output.ViewNormal = normalize(mul(float4(input.Normal, 0.0), ModelView).xyz);
     output.TexCoord = input.TexCoord;
+    output.Color = input.vertColor;
+    return output;
+}
 
-    float3 viewNormal = normalize(mul(input.Normal, (float3x3)ModelView));
-    float3 litColor = float3(0.2, 0.2, 0.2); // Global ambient
+float3 ApplyLighting(float3 baseColor, float3 viewNormal)
+{
+    float3 normal = normalize(viewNormal);
+    float3 litColor = baseColor * 0.2;
 
     if (LightFlags.x > 0.5)
     {
-        float3 lightDir = normalize(Light0Position.xyz);
-        float ndotl = max(0, dot(viewNormal, lightDir));
-        litColor += Light0Ambient.rgb + Light0Diffuse.rgb * ndotl;
+        float diffuse = max(0.0, dot(normal, normalize(Light0Position.xyz)));
+        litColor += baseColor * (Light0Ambient.rgb + Light0Diffuse.rgb * diffuse);
     }
 
     if (LightFlags.y > 0.5)
     {
-        float3 lightDir = normalize(Light1Position.xyz);
-        float ndotl = max(0, dot(viewNormal, lightDir));
-        litColor += Light1Ambient.rgb + Light1Diffuse.rgb * ndotl;
+        float diffuse = max(0.0, dot(normal, normalize(Light1Position.xyz)));
+        litColor += baseColor * (Light1Ambient.rgb + Light1Diffuse.rgb * diffuse);
     }
 
-    output.Color = float4(min(1, input.vertColor.rgb * litColor), input.vertColor.a);
-    return output;
+    return saturate(litColor);
 }
 
 float4 PS(PS_INPUT input) : SV_TARGET
 {
-    float4 texColor = diffuseTexture.Sample(textureSampler, input.TexCoord);
-    return texColor * input.Color;
+    float4 texColor = diffuseTexture.Sample(textureSampler, input.TexCoord) * input.Color;
+    return float4(ApplyLighting(texColor.rgb, input.ViewNormal), texColor.a);
 }

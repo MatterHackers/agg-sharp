@@ -46,17 +46,23 @@ namespace MatterHackers.RenderOpenGl
 			activeSceneRenderContext = context;
 			savedSceneModelView = modelViewStack.Peek();
 			savedSceneProjection = projectionStack.Peek();
+			ClearQueuedSceneEffects();
 		}
 
 		public bool CanRender(MeshRenderCommand command)
 		{
 			return activeSceneRenderContext != null
 				&& command?.Mesh != null
-				&& command.RenderType == RenderTypes.Shaded;
+				&& (command.RenderType == RenderTypes.Shaded
+					|| command.RenderType == RenderTypes.Outlines
+					|| command.RenderType == RenderTypes.Wireframe
+					|| command.RenderType == RenderTypes.Polygons);
 		}
 
 		public void EndSceneRendering()
 		{
+			RenderQueuedSceneEffects();
+			ClearQueuedSceneEffects();
 			activeSceneRenderContext = null;
 			SetSceneMatrices(savedSceneModelView, savedSceneProjection);
 		}
@@ -68,7 +74,7 @@ namespace MatterHackers.RenderOpenGl
 				return false;
 			}
 
-			RenderShadedMesh(command);
+			QueueSceneCommand(command);
 			return true;
 		}
 

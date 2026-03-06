@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -91,9 +91,10 @@ namespace MatterHackers.RenderOpenGl
 			Color wireFrameColor = default(Color),
             Action meshChanged = null,
 			bool blendTexture = true,
-			bool forceCullBackFaces = true)
+			bool forceCullBackFaces = true,
+			bool isSelected = false)
 		{
-			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture, forceCullBackFaces: forceCullBackFaces);
+			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture, forceCullBackFaces: forceCullBackFaces, isSelected: isSelected);
 		}
 
 		public static void Render(Mesh meshToRender,
@@ -104,8 +105,9 @@ namespace MatterHackers.RenderOpenGl
 			Color wireFrameColor = default(Color),
             Action meshChanged = null,
 			bool blendTexture = true,
-			bool allowBspRendering = true,
-			bool forceCullBackFaces = true)
+			bool allowBspRendering = false,
+			bool forceCullBackFaces = true,
+			bool isSelected = false)
 		{
 			if (meshToRender != null)
 			{
@@ -123,6 +125,7 @@ namespace MatterHackers.RenderOpenGl
 						BlendTexture = blendTexture,
 						AllowBspRendering = allowBspRendering,
 						ForceCullBackFaces = forceCullBackFaces,
+						IsSelected = isSelected,
 					};
 
 					if (nativeSceneRenderer.CanRender(command)
@@ -203,25 +206,6 @@ namespace MatterHackers.RenderOpenGl
 			{
 				// Turn off default GL_MODULATE mode
 				GL.TexEnv(TextureEnvironmentTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, GL_REPLACE);
-			}
-
-			if (meshToViewTransform != null
-				&& isTransparent
-				&& meshToRender.FaceBspTree != null
-				&& meshToRender.Faces.Count > 0
-				&& allowBspRendering)
-			{
-				var invMeshToViewTransform = meshToViewTransform.Value;
-				invMeshToViewTransform.Invert();
-				DrawToGLZSorted(meshToRender, meshToViewTransform.Value, invMeshToViewTransform);
-
-				if (!blendTexture)
-				{
-					// Restore default GL_MODULATE mode
-					GL.TexEnv(TextureEnvironmentTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, GL_MODULATE);
-				}
-
-				return;
 			}
 
 			var glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);

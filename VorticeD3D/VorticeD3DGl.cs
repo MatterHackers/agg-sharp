@@ -2785,6 +2785,8 @@ namespace MatterHackers.RenderOpenGl
 
 		public void Dispose()
 		{
+			DisposeSceneEffects();
+
 			foreach (var buf in buffers.Values) buf?.Dispose();
 			foreach (var tex in textures.Values)
 			{

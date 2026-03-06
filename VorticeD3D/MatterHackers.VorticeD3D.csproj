@@ -23,6 +23,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Shaders\NodeDesignerPostProcess.hlsl" />
+    <EmbeddedResource Include="Shaders\NodeDesignerScene.hlsl" />
     <EmbeddedResource Include="Shaders\PositionColor.hlsl" />
     <EmbeddedResource Include="Shaders\PositionTexture.hlsl" />
     <EmbeddedResource Include="Shaders\PositionColorLit.hlsl" />

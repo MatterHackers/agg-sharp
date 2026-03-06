@@ -59,7 +59,7 @@ namespace MatterHackers.RenderOpenGl
 
 	public sealed class MeshRenderCommand
 	{
-		public bool AllowBspRendering { get; init; } = true;
+		public bool AllowBspRendering { get; init; } = false;
 
 		public bool BlendTexture { get; init; } = true;
 
@@ -72,6 +72,8 @@ namespace MatterHackers.RenderOpenGl
 		public Action MeshChanged { get; init; }
 
 		public Matrix4X4? MeshToViewTransform { get; init; }
+
+		public bool IsSelected { get; init; }
 
 		public RenderTypes RenderType { get; init; } = RenderTypes.Shaded;
 
@@ -91,5 +93,7 @@ namespace MatterHackers.RenderOpenGl
 		bool CanRender(MeshRenderCommand command);
 
 		bool TryRender(MeshRenderCommand command);
+
+		void QueueSelectionOutline(Mesh mesh, Color color, Matrix4X4 transform);
 	}
 }

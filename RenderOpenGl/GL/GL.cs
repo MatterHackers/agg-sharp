@@ -101,7 +101,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
                     throw new Exception("You must only call GL on the main thread.");
                 }
 
-                CheckForError();
+                if (_instance != null)
+                {
+                    CheckForError();
+                }
+
                 return _instance;
             }
 
@@ -177,6 +181,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         public static void CheckForError()
         {
 #if DEBUG
+            if (_instance == null)
+            {
+                return;
+            }
+
             if (!inBegin)
             {
                 var code = _instance.GetError();

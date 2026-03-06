@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2014-2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -57,6 +57,12 @@ namespace MatterHackers.RenderOpenGl
 			internal int glTextureHandle;
 			internal int refreshCountCreatedOn;
 			internal int glContextId;
+			internal int imageWidth;
+			internal int imageHeight;
+			internal int hardwareWidth;
+			internal int hardwareHeight;
+			internal float offsetX;
+			internal float offsetY;
 			public float[] textureUVs;
 			public float[] positions;
 
@@ -177,6 +183,30 @@ namespace MatterHackers.RenderOpenGl
 		private bool hwSupportsOnlyPowerOfTwoTextures = true;
 		private bool checkedForHwSupportsOnlyPowerOfTwoTextures = false;
 
+		public static (float[] TextureUVs, float[] Positions) CreateQuadData(
+			int imageWidth,
+			int imageHeight,
+			int hardwareWidth,
+			int hardwareHeight,
+			double offsetX,
+			double offsetY)
+		{
+			float texCoordX = imageWidth / (float)hardwareWidth;
+			float texCoordY = imageHeight / (float)hardwareHeight;
+			float offsetXF = (float)offsetX;
+			float offsetYF = (float)offsetY;
+
+			var textureUVs = new float[8];
+			var positions = new float[8];
+
+			textureUVs[0] = 0; textureUVs[1] = 0; positions[0] = 0 - offsetXF; positions[1] = 0 - offsetYF;
+			textureUVs[2] = 0; textureUVs[3] = texCoordY; positions[2] = 0 - offsetXF; positions[3] = imageHeight - offsetYF;
+			textureUVs[4] = texCoordX; textureUVs[5] = texCoordY; positions[4] = imageWidth - offsetXF; positions[5] = imageHeight - offsetYF;
+			textureUVs[6] = texCoordX; textureUVs[7] = 0; positions[6] = imageWidth - offsetXF; positions[7] = 0 - offsetYF;
+
+			return (textureUVs, positions);
+		}
+
 		private int SmallestHardwareCompatibleTextureSize(int size)
 		{
 			if (!checkedForHwSupportsOnlyPowerOfTwoTextures)
@@ -209,6 +239,8 @@ namespace MatterHackers.RenderOpenGl
 			int imageHeight = bufferedImage.Height;
 			int hardwareWidth = SmallestHardwareCompatibleTextureSize(imageWidth);
 			int hardwareHeight = SmallestHardwareCompatibleTextureSize(imageHeight);
+			float offsetX = (float)bufferedImage.OriginOffset.X;
+			float offsetY = (float)bufferedImage.OriginOffset.Y;
 
 			bufferedImage = FixImageSizePower2IfRequired(bufferedImage);
 			FixImageColors(bufferedImage);
@@ -292,19 +324,16 @@ namespace MatterHackers.RenderOpenGl
 				}
 			}
 
-			float texCoordX = imageWidth / (float)hardwareWidth;
-			float texCoordY = imageHeight / (float)hardwareHeight;
+			glData.imageWidth = imageWidth;
+			glData.imageHeight = imageHeight;
+			glData.hardwareWidth = hardwareWidth;
+			glData.hardwareHeight = hardwareHeight;
+			glData.offsetX = offsetX;
+			glData.offsetY = offsetY;
 
-			float offsetX = (float)bufferedImage.OriginOffset.X;
-			float offsetY = (float)bufferedImage.OriginOffset.Y;
-
-			glData.textureUVs = new float[8];
-			glData.positions = new float[8];
-
-			glData.textureUVs[0] = 0; glData.textureUVs[1] = 0; glData.positions[0] = 0 - offsetX; glData.positions[1] = 0 - offsetY;
-			glData.textureUVs[2] = 0; glData.textureUVs[3] = texCoordY; glData.positions[2] = 0 - offsetX; glData.positions[3] = imageHeight - offsetY;
-			glData.textureUVs[4] = texCoordX; glData.textureUVs[5] = texCoordY; glData.positions[4] = imageWidth - offsetX; glData.positions[5] = imageHeight - offsetY;
-			glData.textureUVs[6] = texCoordX; glData.textureUVs[7] = 0; glData.positions[6] = imageWidth - offsetX; glData.positions[7] = 0 - offsetY;
+			var quadData = CreateQuadData(imageWidth, imageHeight, hardwareWidth, hardwareHeight, offsetX, offsetY);
+			glData.textureUVs = quadData.TextureUVs;
+			glData.positions = quadData.Positions;
 		}
 
 		private void FixImageColors(ImageBuffer bufferedImage)
@@ -361,6 +390,20 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DrawToGL()
 		{
+			if (glData.textureUVs == null || glData.positions == null)
+			{
+				var quadData = CreateQuadData(
+					glData.imageWidth,
+					glData.imageHeight,
+					glData.hardwareWidth,
+					glData.hardwareHeight,
+					glData.offsetX,
+					glData.offsetY);
+
+				glData.textureUVs = quadData.TextureUVs;
+				glData.positions = quadData.Positions;
+			}
+
 			GL.BindTexture(TextureTarget.Texture2D, GLTextureHandle);
 			GL.Begin(BeginMode.TriangleFan);
 
