@@ -409,7 +409,7 @@ namespace MatterHackers.RenderOpenGl
 		private void CompositeSceneTargets()
 		{
 			context.OMSetRenderTargets(renderTargetView, depthStencilView);
-			context.RSSetViewport(new Viewport((float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height));
+			ApplyDefaultSceneViewport();
 			context.IASetInputLayout(null);
 			context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
 			context.VSSetShader(fullscreenVS);
@@ -462,7 +462,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 
 			context.OMSetRenderTargets(renderTargetView, depthStencilView);
-			context.RSSetViewport(new Viewport((float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height));
+			ApplyDefaultSceneViewport();
 			context.IASetInputLayout(null);
 			context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
 			context.VSSetShader(fullscreenVS);
@@ -665,9 +665,15 @@ namespace MatterHackers.RenderOpenGl
 		private void RestoreDefaultSceneTarget()
 		{
 			context.OMSetRenderTargets(renderTargetView, depthStencilView);
-			context.RSSetViewport(new Viewport((float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height));
+			ApplyDefaultSceneViewport();
 			renderStateDirty = true;
 			transformDirty = true;
+		}
+
+		private void ApplyDefaultSceneViewport()
+		{
+			var viewport = SceneViewportUtilities.CreateDefaultFramebufferViewport(activeSceneRenderContext.Viewport, renderTargetHeight);
+			context.RSSetViewport(viewport);
 		}
 
 		private void UnbindSceneTextures()
