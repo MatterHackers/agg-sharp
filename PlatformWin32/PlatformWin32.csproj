@@ -9,17 +9,14 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<DefineConstants>TRACE;DEBUG;USE_OPENGL</DefineConstants>
+		<DefineConstants>TRACE;DEBUG</DefineConstants>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<DefineConstants>TRACE;RELEASE;USE_OPENGL</DefineConstants>
+		<DefineConstants>TRACE;RELEASE</DefineConstants>
 	</PropertyGroup>
 	<ItemGroup>
-		<Compile Remove="win32\RendererOpenGL.cs" />
 		<Compile Remove="win32\WindowsFormsDXBackedGui.cs" />
-		<Compile Remove="win32\AggGLControl.cs" />
-		<Compile Remove="win32\OpenTkGl.cs" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />

@@ -21,12 +21,6 @@
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="OpenTK, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\PlatformWin32\OpenTK.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Remove="Game\Joystick.cs" />
     <Compile Remove="Graphics\Model3D.cs" />
     <Compile Remove="Graphics\ScreenImageOpenGL.cs" />

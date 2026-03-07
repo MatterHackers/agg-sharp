@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -33,10 +33,6 @@ using System.Linq;
 namespace MatterHackers.Agg.UI
 {
 	public class BitmapWinformsWindowProvider : WinformsSystemWindowProvider<BitmapSystemWindow>
-	{
-	}
-
-	public class OpenGLWinformsWindowProvider : WinformsSystemWindowProvider<OpenGLSystemWindow>
 	{
 	}
 
