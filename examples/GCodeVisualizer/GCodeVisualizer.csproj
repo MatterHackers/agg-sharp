@@ -73,7 +73,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\agg\Agg.csproj" />
     <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj" />
-    <ProjectReference Include="..\..\RenderOpenGl\RenderOpenGl.csproj" />
+    <ProjectReference Include="..\..\RenderGl\RenderGl.csproj" />
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj" />
     <ProjectReference Include="..\..\Gui\Gui.csproj" />
   </ItemGroup>

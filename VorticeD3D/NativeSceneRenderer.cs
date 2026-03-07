@@ -28,10 +28,10 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.Image;
-using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.RenderGl
 {
 	public partial class VorticeD3DGl
 	{

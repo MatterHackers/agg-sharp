@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -82,9 +82,9 @@
       <Project>{1e01abe0-b494-4fe4-b0d6-540133286887}</Project>
       <Name>RayTracer</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\RenderOpenGl\RenderOpenGl.csproj">
+    <ProjectReference Include="..\..\RenderGl\RenderGl.csproj">
       <Project>{545b6912-77ff-4b34-ba76-6c3d6a32be6a}</Project>
-      <Name>RenderOpenGl</Name>
+      <Name>RenderGl</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Tesselate\Tesselate.csproj">
       <Project>{ae37de1f-22f7-49ee-8732-fc6bc8dc58d9}</Project>

@@ -1,12 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using ClipperLib;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D;
-using MatterHackers.RenderOpenGl;
-using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.RenderGl;
+using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
 using Microsoft.VisualStudio.DebuggerVisualizers;
 using Newtonsoft.Json;

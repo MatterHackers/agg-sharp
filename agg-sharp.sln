@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agg", "agg\Agg.csproj", "{6
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gui", "Gui\Gui.csproj", "{74F6BB6C-9D02-4512-A59A-21940E35C532}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RenderOpenGl", "RenderOpenGl\RenderOpenGl.csproj", "{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RenderGl", "RenderGl\RenderGl.csproj", "{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Demos", "Demos", "{3563E6F6-44B1-4E8E-9110-10042F60F3CD}"
 EndProject

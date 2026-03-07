@@ -38,7 +38,7 @@
     <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj" />
     <ProjectReference Include="..\..\PolygonMesh\PolygonMesh.csproj" />
     <ProjectReference Include="..\..\QuadTree\QuadTree.csproj" />
-    <ProjectReference Include="..\..\RenderOpenGl\RenderOpenGl.csproj" />
+    <ProjectReference Include="..\..\RenderGl\RenderGl.csproj" />
     <ProjectReference Include="..\..\Tesselate\Tesselate.csproj" />
     <ProjectReference Include="..\..\Triangle\Triangle.csproj" />
     <ProjectReference Include="..\..\Typography\Typography.One\Typography.One.csproj" />

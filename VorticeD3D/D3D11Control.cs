@@ -36,7 +36,7 @@ using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.RenderGl
 {
 	public class D3D11Control : Control
 	{

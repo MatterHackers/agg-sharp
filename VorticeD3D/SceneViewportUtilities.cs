@@ -31,7 +31,7 @@ using System;
 using MatterHackers.Agg;
 using Vortice.Mathematics;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.RenderGl
 {
 	public static class SceneViewportUtilities
 	{

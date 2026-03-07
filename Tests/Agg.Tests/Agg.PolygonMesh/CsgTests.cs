@@ -36,7 +36,7 @@ using System.Collections.Generic;
 using MatterHackers.Csg;
 using MatterHackers.Csg.Solids;
 using MatterHackers.Csg.Transform;
-using MatterHackers.RenderOpenGl;
+using MatterHackers.RenderGl;
 using System.Linq;
 using MatterHackers.DataConverters3D;
 using System.IO;
@@ -308,7 +308,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			MatterHackers.Csg.CsgObject boxCombine = new MatterHackers.Csg.Solids.Box(10, 10, 10);
 			boxCombine -= new MatterHackers.Csg.Transform.Translate(new MatterHackers.Csg.Solids.Box(10, 10, 10), XOffset, -3, 2);
-			Mesh result = RenderOpenGl.CsgToMesh.Convert(boxCombine);
+			Mesh result = RenderGl.CsgToMesh.Convert(boxCombine);
 
 			await Assert.That(result.IsManifold()).IsTrue();
 		}

@@ -35,7 +35,7 @@ using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 using System;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.RenderGl
 {
 	public class CsgToMesh
 	{

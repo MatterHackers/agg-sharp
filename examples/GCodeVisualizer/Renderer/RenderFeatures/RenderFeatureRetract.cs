@@ -1,7 +1,7 @@
-﻿using MatterHackers.Agg;
+using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.MeshVisualizer;
-using MatterHackers.RenderOpenGl;
+using MatterHackers.RenderGl;
 using MatterHackers.VectorMath;
 
 /*

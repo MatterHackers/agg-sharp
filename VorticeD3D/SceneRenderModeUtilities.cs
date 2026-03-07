@@ -29,7 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.RenderGl
 {
 	public static class SceneRenderModeUtilities
 	{

@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2018, Lars Brubaker
 All rights reserved.
 
@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RenderOpenGl.OpenGl
+namespace MatterHackers.RenderGl.OpenGl
 {
 	public interface IOpenGL
 	{

@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -29,7 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
-using MatterHackers.RenderOpenGl;
+using MatterHackers.RenderGl;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.GCodeVisualizer

@@ -48,7 +48,7 @@ namespace MatterHackers.Agg.UI
 
 		public bool IsModal { get; set; }
 
-		public bool UseOpenGL { get; set; }
+		public bool UseGpu { get; set; }
 
 		public int StencilBufferDepth { get; set; }
 

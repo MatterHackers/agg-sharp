@@ -31,10 +31,10 @@ using System;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.PolygonMesh;
-using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.RenderGl
 {
 	public enum RenderTypes
 	{

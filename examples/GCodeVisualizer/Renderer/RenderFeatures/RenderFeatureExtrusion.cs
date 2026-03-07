@@ -1,8 +1,8 @@
-﻿using MatterHackers.Agg;
+using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.MeshVisualizer;
-using MatterHackers.RenderOpenGl;
-using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.RenderGl;
+using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
 /*
 Copyright (c) 2014, Lars Brubaker

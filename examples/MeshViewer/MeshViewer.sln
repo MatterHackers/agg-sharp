@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27421.1
@@ -15,7 +15,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlatformWin32", "..\..\Plat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gui", "..\..\Gui\Gui.csproj", "{74F6BB6C-9D02-4512-A59A-21940E35C532}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RenderOpenGl", "..\..\RenderOpenGl\RenderOpenGl.csproj", "{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RenderGl", "..\..\RenderGl\RenderGl.csproj", "{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tesselate", "..\..\Tesselate\Tesselate.csproj", "{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}"
 EndProject

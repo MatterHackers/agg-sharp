@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2017, Lars Brubaker, John Lewin
 All rights reserved.
 
@@ -30,8 +30,8 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using MatterHackers.Agg;
-using MatterHackers.RenderOpenGl;
-using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.RenderGl;
+using MatterHackers.RenderGl.OpenGl;
 
 namespace MatterHackers.GCodeVisualizer
 {

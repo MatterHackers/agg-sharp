@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoveTest", "MoveTest.csproj", "{D0B56F16-6191-4337-8DA1-9B0A59708C7F}"
@@ -21,7 +21,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gui", "..\..\Gui\Gui.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tesselate", "..\..\Tesselate\Tesselate.csproj", "{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RenderOpenGl", "..\..\RenderOpenGl\RenderOpenGl.csproj", "{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RenderGl", "..\..\RenderGl\RenderGl.csproj", "{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VectorMath", "..\..\VectorMath\VectorMath.csproj", "{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}"
 EndProject

@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2016, Lars Brubaker, John Lewin
 All rights reserved.
 
@@ -38,8 +38,8 @@ using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
 using MatterHackers.RayTracer.Traceable;
-using MatterHackers.RenderOpenGl;
-using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.RenderGl;
+using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
 using System;

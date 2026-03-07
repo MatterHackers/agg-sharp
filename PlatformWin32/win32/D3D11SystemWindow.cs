@@ -31,8 +31,8 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
-using MatterHackers.RenderOpenGl;
-using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.RenderGl;
+using MatterHackers.RenderGl.OpenGl;
 
 namespace MatterHackers.Agg.UI
 {

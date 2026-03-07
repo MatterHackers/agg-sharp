@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -33,12 +33,12 @@ using MatterHackers.Csg.Operations;
 using MatterHackers.Csg.Solids;
 using MatterHackers.Csg.Transform;
 using MatterHackers.PolygonMesh;
-using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.RenderGl
 {
 	public class RenderCsgToGl
 	{

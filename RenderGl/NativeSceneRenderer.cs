@@ -32,7 +32,7 @@ using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.RenderGl
 {
 	public enum SceneRenderPass
 	{

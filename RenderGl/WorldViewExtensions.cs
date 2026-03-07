@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2019, Lars Brubaker, John Lewin
 All rights reserved.
 
@@ -35,10 +35,10 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters2D;
 using MatterHackers.PolygonMesh;
-using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.RenderGl
 {
 	public static class WorldViewExtensions
 	{
@@ -485,7 +485,7 @@ namespace MatterHackers.RenderOpenGl
 			// TODO: Necessary?
 			// CheckLineImageCache();
 			// GL.Enable(EnableCap.Texture2D);
-			// GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageTexturePlugin.GetImageTexturePlugin(AATextureImages[color.Alpha0To255], false).GLTextureHandle);
+			// GL.BindTexture(TextureTarget.Texture2D, RenderGl.ImageTexturePlugin.GetImageTexturePlugin(AATextureImages[color.Alpha0To255], false).GLTextureHandle);
 
 			// the source is always all white so has no does not have its color changed by the alpha
 			GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);

@@ -29,7 +29,7 @@
 		<ProjectReference Include="..\GuiAutomation\GuiAutomation.csproj" />
 		<ProjectReference Include="..\Gui\Gui.csproj" />
 		<ProjectReference Include="..\ImageProcessing\ImageProcessing.csproj" />
-		<ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj" />
+		<ProjectReference Include="..\RenderGl\RenderGl.csproj" />
 		<ProjectReference Include="..\VectorMath\VectorMath.csproj" />
 		<ProjectReference Include="..\VorticeD3D\MatterHackers.VorticeD3D.csproj" />
 	</ItemGroup>

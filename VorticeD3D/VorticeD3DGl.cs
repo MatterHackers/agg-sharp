@@ -33,7 +33,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using MatterHackers.Agg;
-using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
 using Vortice.D3DCompiler;
 using Vortice.Direct3D;
@@ -41,7 +41,7 @@ using Vortice.Direct3D11;
 using Vortice.DXGI;
 using Vortice.Mathematics;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.RenderGl
 {
 	public partial class VorticeD3DGl : IOpenGL, INativeSceneRenderer
 	{

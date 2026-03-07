@@ -35,7 +35,7 @@ using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RenderOpenGl.OpenGl
+namespace MatterHackers.RenderGl.OpenGl
 {
     public static class GL
     {

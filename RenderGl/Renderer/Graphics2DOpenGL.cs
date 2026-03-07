@@ -36,10 +36,10 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters2D;
-using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.RenderGl
 {
 	public class Graphics2DOpenGL : Graphics2D
 	{
@@ -349,7 +349,7 @@ namespace MatterHackers.RenderOpenGl
             PushOrthoProjection();
 
             GL.Enable(EnableCap.Texture2D);
-            GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageTexturePlugin.GetImageTexturePlugin(aATextureImages[colorIn.Alpha0To255], false).GLTextureHandle);
+            GL.BindTexture(TextureTarget.Texture2D, RenderGl.ImageTexturePlugin.GetImageTexturePlugin(aATextureImages[colorIn.Alpha0To255], false).GLTextureHandle);
             GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
             GL.Enable(EnableCap.Blend);
         }
@@ -559,7 +559,7 @@ namespace MatterHackers.RenderOpenGl
         {
             CheckLineImageCache();
             GL.Enable(EnableCap.Texture2D);
-            GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageTexturePlugin.GetImageTexturePlugin(aATextureImages[color.Alpha0To255], false).GLTextureHandle);
+            GL.BindTexture(TextureTarget.Texture2D, RenderGl.ImageTexturePlugin.GetImageTexturePlugin(aATextureImages[color.Alpha0To255], false).GLTextureHandle);
             GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
             GL.Enable(EnableCap.Blend);
             GL.Disable(EnableCap.CullFace);

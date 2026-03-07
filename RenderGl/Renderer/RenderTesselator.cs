@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2019, Lars Brubaker, John Lewin
 All rights reserved.
 
@@ -31,11 +31,11 @@ either expressed or implied, of the FreeBSD Project.
 
 using System.Collections.Generic;
 using MatterHackers.DataConverters2D;
-using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
 using Tesselate;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.RenderGl
 {
 	public class RenderTesselator : VertexTesselatorAbstract
 	{

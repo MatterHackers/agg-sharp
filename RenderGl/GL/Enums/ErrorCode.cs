@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2018, Lars Brubaker
 All rights reserved.
 
@@ -29,7 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg;
 
-namespace MatterHackers.RenderOpenGl.OpenGl
+namespace MatterHackers.RenderGl.OpenGl
 {
 	public enum ErrorCode
 	{

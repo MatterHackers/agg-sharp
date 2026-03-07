@@ -34,7 +34,7 @@ using System.IO;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
-using MatterHackers.RenderOpenGl;
+using MatterHackers.RenderGl;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.MeshVisualizer
@@ -59,7 +59,7 @@ namespace MatterHackers.MeshVisualizer
 			BackgroundColor = Color.White;
 			MinimumSize = new Vector2(200, 200);
 			Title = "MatterHackers MeshViewr";
-			UseOpenGL = true;
+			UseGpu = true;
 
 			FlowLayoutWidget mainContainer = new FlowLayoutWidget(FlowDirection.TopToBottom);
 			mainContainer.AnchorAll();

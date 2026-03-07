@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Numerics;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.RenderGl
 {
 	public static class DualDepthPeelingMath
 	{

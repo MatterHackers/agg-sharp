@@ -33,7 +33,7 @@ using System.Linq;
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.RenderGl
 {
 	public sealed class SceneEdgeShaderSubMeshData
 	{

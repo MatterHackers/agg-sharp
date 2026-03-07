@@ -1,5 +1,5 @@
-﻿using MatterHackers.Agg.UI;
-using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.Agg.UI;
+using MatterHackers.RenderGl.OpenGl;
 
 /*
 Copyright (c) 2014, Lars Brubaker

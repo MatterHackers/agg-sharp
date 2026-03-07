@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2012, Lars Brubaker
 All rights reserved.
 
@@ -38,7 +38,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.Csg;
 using MatterHackers.PolygonMesh;
-using MatterHackers.RenderOpenGl;
+using MatterHackers.RenderGl;
 using MatterHackers.VectorMath;
 using RayTracer;
 
