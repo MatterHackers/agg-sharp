@@ -22,7 +22,7 @@
 		<Compile Remove="win32\OpenTkGl.cs" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.4.421302">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>

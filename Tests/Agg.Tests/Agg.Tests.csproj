@@ -21,8 +21,8 @@
 		<Service Include="{63A7B48D-3B50-4B1E-B85E-2ADB8510F352}" />
 	</ItemGroup>
   <ItemGroup>
-    <PackageReference Include="TUnit" Version="0.57.24" />
-    <PackageReference Include="TUnit.Engine" Version="0.57.24" />
+    <PackageReference Include="TUnit" Version="1.19.0" />
+    <PackageReference Include="TUnit.Engine" Version="1.19.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\agg\agg.csproj" />

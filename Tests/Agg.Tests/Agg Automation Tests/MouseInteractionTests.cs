@@ -125,18 +125,18 @@ namespace MatterHackers.Agg.UI.Tests
 					Name = $"button {i}"
 				};
 				var index = i;
-				radioButton.Click += async (sender, e) =>
+				radioButton.Click += (sender, e) =>
 				{
 					var buttons = buttonContainer.Children.ToArray();
 					for (int j = 0; j < buttonCount; j++)
 					{
 						if (j == index)
 						{
-							await Assert.That(((IRadioButton)buttons[j]).Checked).IsTrue();
+							if (!((IRadioButton)buttons[j]).Checked) throw new Exception($"Button {j} should be checked");
 						}
 						else
 						{
-							await Assert.That(((IRadioButton)buttons[j]).Checked).IsFalse();
+							if (((IRadioButton)buttons[j]).Checked) throw new Exception($"Button {j} should not be checked");
 						}
 					}
 				};
@@ -202,7 +202,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Name = "button"
 			};
 			bool gotClick = false;
-			button.Click += async (sender, e) => { gotClick = true; };
+			button.Click += (sender, e) => { gotClick = true; };
 			container.AddChild(button);
 
 			await Assert.That(gotClick == false).IsTrue();
@@ -307,7 +307,7 @@ namespace MatterHackers.Agg.UI.Tests
 			int topWidgetGotMouseDownInBounds = 0;
 			topWidget.MouseUpCaptured += (sender, e) => { topWidgetGotMouseUp++; };
 			topWidget.MouseDownCaptured += (sender, e) => { topWidgetGotMouseDown++; };
-			topWidget.MouseDown += async (sender, e) => { topWidgetGotMouseDownInBounds++; };
+			topWidget.MouseDown += (sender, e) => { topWidgetGotMouseDownInBounds++; };
 			container.AddChild(topWidget);
 
 			await Assert.That(containerGotMouseUp == 0).IsTrue();
@@ -403,7 +403,7 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				Name = "blockingWidegt"
 			};
-			blockingWidegt.MouseUpCaptured += async (sender, e) => { blockingGotMouseUp = true; };
+			blockingWidegt.MouseUpCaptured += (sender, e) => { blockingGotMouseUp = true; };
 			blockingWidegt.LocalBounds = new RectangleDouble(105, 105, 125, 125);
 			container.AddChild(blockingWidegt);
 
@@ -623,32 +623,32 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 			int gotEnterA = 0;
 			int gotLeaveA = 0;
-			regionA.MouseEnter += async (sender, e) =>
+			regionA.MouseEnter += (sender, e) =>
 			{
-				await Assert.That(regionA.UnderMouseState).IsEqualTo(UnderMouseState.FirstUnderMouse);//, "It must be the first under the mouse.");
-				await Assert.That(regionB.UnderMouseState).IsEqualTo(UnderMouseState.UnderMouseNotFirst);//, "It must be under the mouse not first.");
-				await Assert.That(container.UnderMouseState).IsEqualTo(UnderMouseState.UnderMouseNotFirst);//, "It must be under the mouse not first.");
+				if (regionA.UnderMouseState != UnderMouseState.FirstUnderMouse) throw new Exception("It must be the first under the mouse.");
+				if (regionB.UnderMouseState != UnderMouseState.UnderMouseNotFirst) throw new Exception("It must be under the mouse not first.");
+				if (container.UnderMouseState != UnderMouseState.UnderMouseNotFirst) throw new Exception("It must be under the mouse not first.");
 				gotEnterA++;
 			};
-			regionA.MouseLeave += async (sender, e) =>
+			regionA.MouseLeave += (sender, e) =>
 			{
-				await Assert.That(regionA.UnderMouseState).IsEqualTo(UnderMouseState.NotUnderMouse);//, "It must be not under the mouse.");
-				await Assert.That(regionB.UnderMouseState).IsEqualTo(UnderMouseState.NotUnderMouse);//, "It must be not under the mouse.");
+				if (regionA.UnderMouseState != UnderMouseState.NotUnderMouse) throw new Exception("It must be not under the mouse.");
+				if (regionB.UnderMouseState != UnderMouseState.NotUnderMouse) throw new Exception("It must be not under the mouse.");
 				gotLeaveA++;
 			};
 			int gotEnterBoundsA = 0;
 			int gotLeaveBoundsA = 0;
-			regionA.MouseEnterBounds += async (sender, e) =>
+			regionA.MouseEnterBounds += (sender, e) =>
 			{
-				await Assert.That(regionA.UnderMouseState).IsEqualTo(UnderMouseState.FirstUnderMouse);//, "It must be the first under the mouse.");
-				await Assert.That(regionB.UnderMouseState).IsEqualTo(UnderMouseState.UnderMouseNotFirst);//, "It must be under the mouse not first.");
-				await Assert.That(container.UnderMouseState).IsEqualTo(UnderMouseState.UnderMouseNotFirst);//, "It must be under the mouse not first.");
+				if (regionA.UnderMouseState != UnderMouseState.FirstUnderMouse) throw new Exception("It must be the first under the mouse.");
+				if (regionB.UnderMouseState != UnderMouseState.UnderMouseNotFirst) throw new Exception("It must be under the mouse not first.");
+				if (container.UnderMouseState != UnderMouseState.UnderMouseNotFirst) throw new Exception("It must be under the mouse not first.");
 				gotEnterBoundsA++;
 			};
-			regionA.MouseLeaveBounds += async (sender, e) =>
+			regionA.MouseLeaveBounds += (sender, e) =>
 			{
-				await Assert.That(regionA.UnderMouseState).IsEqualTo(UnderMouseState.NotUnderMouse);//, "It must be not under the mouse.");
-				await Assert.That(regionB.UnderMouseState).IsEqualTo(UnderMouseState.NotUnderMouse);//, "It must be not under the mouse.");
+				if (regionA.UnderMouseState != UnderMouseState.NotUnderMouse) throw new Exception("It must be not under the mouse.");
+				if (regionB.UnderMouseState != UnderMouseState.NotUnderMouse) throw new Exception("It must be not under the mouse.");
 				gotLeaveBoundsA++;
 			};
 
@@ -658,31 +658,31 @@ namespace MatterHackers.Agg.UI.Tests
 			container.AddChild(regionB);
 			int gotEnterB = 0;
 			int gotLeaveB = 0;
-			regionB.MouseEnter += async (sender, e) =>
+			regionB.MouseEnter += (sender, e) =>
 			{
-				await Assert.That(regionA.UnderMouseState).IsEqualTo(UnderMouseState.FirstUnderMouse);//, "It must be the first under the mouse.");
-				await Assert.That(regionB.UnderMouseState).IsEqualTo(UnderMouseState.UnderMouseNotFirst);//, "It must be under the mouse not first.");
-				await Assert.That(container.UnderMouseState).IsEqualTo(UnderMouseState.UnderMouseNotFirst);//, "It must be under the mouse not first.");
+				if (regionA.UnderMouseState != UnderMouseState.FirstUnderMouse) throw new Exception("It must be the first under the mouse.");
+				if (regionB.UnderMouseState != UnderMouseState.UnderMouseNotFirst) throw new Exception("It must be under the mouse not first.");
+				if (container.UnderMouseState != UnderMouseState.UnderMouseNotFirst) throw new Exception("It must be under the mouse not first.");
 				gotEnterB++;
 			};
-			regionB.MouseLeave += async (sender, e) =>
+			regionB.MouseLeave += (sender, e) =>
 			{
-				await Assert.That(regionA.UnderMouseState).IsEqualTo(UnderMouseState.NotUnderMouse);//, "It must be not under the mouse.");
-				await Assert.That(regionB.UnderMouseState).IsEqualTo(UnderMouseState.NotUnderMouse);//, "It must be not under the mouse.");
-				await Assert.That(container.UnderMouseState).IsEqualTo(UnderMouseState.NotUnderMouse);//, "It must be not under the mouse.");
+				if (regionA.UnderMouseState != UnderMouseState.NotUnderMouse) throw new Exception("It must be not under the mouse.");
+				if (regionB.UnderMouseState != UnderMouseState.NotUnderMouse) throw new Exception("It must be not under the mouse.");
+				if (container.UnderMouseState != UnderMouseState.NotUnderMouse) throw new Exception("It must be not under the mouse.");
 				gotLeaveB++;
 			};
 			int gotEnterBoundsB = 0;
 			int gotLeaveBoundsB = 0;
-			regionB.MouseEnterBounds += async (sender, e) =>
+			regionB.MouseEnterBounds += (sender, e) =>
 			{
-				await Assert.That(regionB.UnderMouseState).IsEqualTo(UnderMouseState.UnderMouseNotFirst);//, "It must be under the mouse not first.");
-				await Assert.That(container.UnderMouseState).IsEqualTo(UnderMouseState.UnderMouseNotFirst);//, "It must be under the mouse not first.");
+				if (regionB.UnderMouseState != UnderMouseState.UnderMouseNotFirst) throw new Exception("It must be under the mouse not first.");
+				if (container.UnderMouseState != UnderMouseState.UnderMouseNotFirst) throw new Exception("It must be under the mouse not first.");
 				gotEnterBoundsB++;
 			};
-			regionB.MouseLeaveBounds += async (sender, e) =>
+			regionB.MouseLeaveBounds += (sender, e) =>
 			{
-				await Assert.That(regionB.UnderMouseState).IsEqualTo(UnderMouseState.NotUnderMouse);//, "It must be not under the mouse.");
+				if (regionB.UnderMouseState != UnderMouseState.NotUnderMouse) throw new Exception("It must be not under the mouse.");
 				gotLeaveBoundsB++;
 			};
 
@@ -1332,7 +1332,7 @@ namespace MatterHackers.Agg.UI.Tests
 				aGotLeaveBounds++;
 			};
 			regionA.MouseMove += (sender, e) => { aGotMove++; };
-			regionA.MouseUpCaptured += async (sender, e) => { aGotUp++; };
+			regionA.MouseUpCaptured += (sender, e) => { aGotUp++; };
 
 			// make sure we know we are entered and captured on a down event
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 15, 15, 0));
@@ -1443,7 +1443,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				bGotLeaveBounds++;
 			};
-			regionB.MouseMove += async (sender, e) => { bGotMove++; };
+			regionB.MouseMove += (sender, e) => { bGotMove++; };
 
 			aGotUp = aGotEnter = aGotLeave = aGotEnterBounds = aGotLeaveBounds = aGotMove = 0;
 			// when captured regionA make sure regionB can not see move events

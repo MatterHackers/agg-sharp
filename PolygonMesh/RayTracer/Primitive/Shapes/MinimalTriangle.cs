@@ -1,4 +1,4 @@
-﻿// Copyright 2006 Herre Kuijpers - <herre@xs4all.nl>
+// Copyright 2006 Herre Kuijpers - <herre@xs4all.nl>
 //
 // This source file(s) may be redistributed, altered and customized
 // by any means PROVIDING the authors name and all copyright
@@ -93,7 +93,7 @@ namespace MatterHackers.RayTracer
 
 		public int FindSideOfLine(Vector2 sidePoint0, Vector2 sidePoint1, Vector2 testPosition)
 		{
-			if (Vector2.Cross(testPosition - sidePoint0, sidePoint1 - sidePoint0) < 0)
+			if (Vector2.Cross(testPosition - sidePoint0, sidePoint1 - sidePoint0) <= 0)
 			{
 				return 1;
 			}
