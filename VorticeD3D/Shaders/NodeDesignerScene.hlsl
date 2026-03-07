@@ -25,7 +25,7 @@ cbuffer SceneEffectBuffer : register(b2)
 
 Texture2D diffuseTexture : register(t0);
 Texture2D opaqueDepthTexture : register(t1);
-Texture2D nearDepthTexture : register(t2);
+Texture2D dualDepthTexture : register(t2);
 
 SamplerState linearSampler : register(s0);
 SamplerState pointSampler : register(s1);
@@ -72,6 +72,20 @@ float WireframeEdge(float3 barycentric, float width)
     return 1.0 - min(min(edge.x, edge.y), edge.z);
 }
 
+struct DualPeelOutput
+{
+    float2 DepthRange : SV_TARGET0;
+    float4 FrontColor : SV_TARGET1;
+    float4 BackColor : SV_TARGET2;
+};
+
+static const float DepthPeelBias = 1e-5;
+
+float2 GetScreenUv(float4 position)
+{
+    return position.xy / ResolutionAndWidth.xy;
+}
+
 void ApplyDepthPeeling(float4 position)
 {
     if (EffectFlags.z < 0.5)
@@ -79,21 +93,41 @@ void ApplyDepthPeeling(float4 position)
         return;
     }
 
-    float2 screenUv = position.xy / ResolutionAndWidth.xy;
+    float2 screenUv = GetScreenUv(position);
     float opaqueDepth = opaqueDepthTexture.Sample(pointSampler, screenUv).r;
-    if (opaqueDepth < position.z)
+    if (opaqueDepth < position.z - DepthPeelBias)
     {
         discard;
     }
 
     if (EffectFlags.w < 0.5)
     {
-        float nearDepth = nearDepthTexture.Sample(pointSampler, screenUv).r;
-        if (nearDepth >= position.z - 1e-5)
+        float nearDepth = dualDepthTexture.Sample(pointSampler, screenUv).r;
+        if (nearDepth >= position.z - DepthPeelBias)
         {
             discard;
         }
     }
+}
+
+bool RejectBehindOpaque(float4 position)
+{
+    float2 screenUv = GetScreenUv(position);
+    float opaqueDepth = opaqueDepthTexture.Sample(pointSampler, screenUv).r;
+    return opaqueDepth < position.z - DepthPeelBias;
+}
+
+void DiscardIfInvisible(float alpha)
+{
+    if (alpha <= DepthPeelBias)
+    {
+        discard;
+    }
+}
+
+float GetEffectiveTextureAlpha(float2 texCoord)
+{
+    return diffuseTexture.Sample(linearSampler, texCoord).a * MeshColor.a;
 }
 
 float3 ApplyLighting(float3 baseColor, float3 viewNormal)
@@ -135,10 +169,58 @@ float4 ComposeSceneColor(float4 shadedColor, float3 barycentric)
     return float4(lerp(shadedColor.rgb, wireColor.rgb, edge), shadedColor.a);
 }
 
+DualPeelOutput CreateEmptyDualPeelOutput()
+{
+    DualPeelOutput output;
+    output.DepthRange = float2(-1.0, -1.0);
+    output.FrontColor = float4(0.0, 0.0, 0.0, 0.0);
+    output.BackColor = float4(0.0, 0.0, 0.0, 0.0);
+    return output;
+}
+
+DualPeelOutput ApplyDualDepthPeeling(float4 position, float4 shadedColor)
+{
+    if (RejectBehindOpaque(position))
+    {
+        discard;
+    }
+
+    float2 screenUv = GetScreenUv(position);
+    float2 previousDepth = dualDepthTexture.Sample(pointSampler, screenUv).rg;
+    float frontDepth = -previousDepth.x;
+    float backDepth = previousDepth.y;
+    float currentDepth = position.z;
+
+    DualPeelOutput output = CreateEmptyDualPeelOutput();
+
+    if (currentDepth + DepthPeelBias < frontDepth || currentDepth - DepthPeelBias > backDepth)
+    {
+        discard;
+    }
+
+    if (currentDepth - DepthPeelBias > frontDepth && currentDepth + DepthPeelBias < backDepth)
+    {
+        output.DepthRange = float2(-currentDepth, currentDepth);
+        return output;
+    }
+
+    if (abs(currentDepth - frontDepth) <= DepthPeelBias)
+    {
+        output.FrontColor = float4(shadedColor.rgb * shadedColor.a, shadedColor.a);
+    }
+    else
+    {
+        output.BackColor = shadedColor;
+    }
+
+    return output;
+}
+
 float4 SceneColorPS(PS_INPUT input) : SV_TARGET
 {
     ApplyDepthPeeling(input.Position);
     float4 baseColor = MeshColor;
+    DiscardIfInvisible(baseColor.a);
     float3 litColor = ApplyLighting(baseColor.rgb, input.ViewNormal);
     return ComposeSceneColor(float4(litColor, baseColor.a), input.Barycentric);
 }
@@ -147,8 +229,39 @@ float4 SceneTexturePS(PS_INPUT input) : SV_TARGET
 {
     ApplyDepthPeeling(input.Position);
     float4 sampledColor = diffuseTexture.Sample(linearSampler, input.TexCoord) * MeshColor;
+    DiscardIfInvisible(sampledColor.a);
     float3 litColor = ApplyLighting(sampledColor.rgb, input.ViewNormal);
     return ComposeSceneColor(float4(litColor, sampledColor.a), input.Barycentric);
+}
+
+float2 DualDepthInitPS(PS_INPUT input) : SV_TARGET0
+{
+    DiscardIfInvisible(GetEffectiveTextureAlpha(input.TexCoord));
+
+    if (RejectBehindOpaque(input.Position))
+    {
+        discard;
+    }
+
+    return float2(-input.Position.z, input.Position.z);
+}
+
+DualPeelOutput SceneColorDualPeelPS(PS_INPUT input)
+{
+    float4 baseColor = MeshColor;
+    DiscardIfInvisible(baseColor.a);
+    float3 litColor = ApplyLighting(baseColor.rgb, input.ViewNormal);
+    float4 shadedColor = ComposeSceneColor(float4(litColor, baseColor.a), input.Barycentric);
+    return ApplyDualDepthPeeling(input.Position, shadedColor);
+}
+
+DualPeelOutput SceneTextureDualPeelPS(PS_INPUT input)
+{
+    float4 sampledColor = diffuseTexture.Sample(linearSampler, input.TexCoord) * MeshColor;
+    DiscardIfInvisible(sampledColor.a);
+    float3 litColor = ApplyLighting(sampledColor.rgb, input.ViewNormal);
+    float4 shadedColor = ComposeSceneColor(float4(litColor, sampledColor.a), input.Barycentric);
+    return ApplyDualDepthPeeling(input.Position, shadedColor);
 }
 
 float4 SelectionMaskPS(PS_INPUT input) : SV_TARGET
@@ -158,6 +271,6 @@ float4 SelectionMaskPS(PS_INPUT input) : SV_TARGET
 
 float4 DepthOnlyPS(PS_INPUT input) : SV_TARGET
 {
-    discard;
+    DiscardIfInvisible(GetEffectiveTextureAlpha(input.TexCoord));
     return 0.0;
 }

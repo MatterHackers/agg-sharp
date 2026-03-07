@@ -4,9 +4,9 @@ cbuffer OutlineCompositeBuffer : register(b0)
     float4 OutlinePadding;
 };
 
-Texture2D inputTexture : register(t0);
-Texture2D selectionDepthTexture : register(t1);
-Texture2D sceneDepthTexture : register(t2);
+Texture2D texture0 : register(t0);
+Texture2D texture1 : register(t1);
+Texture2D texture2 : register(t2);
 
 SamplerState pointSampler : register(s0);
 
@@ -27,7 +27,26 @@ VS_OUTPUT FullScreenVS(uint vertexId : SV_VertexID)
 
 float4 CopyTexturePS(VS_OUTPUT input) : SV_TARGET
 {
-    return inputTexture.Sample(pointSampler, input.TexCoord);
+    return texture0.Sample(pointSampler, input.TexCoord);
+}
+
+float4 ResolveDualPeelPS(VS_OUTPUT input) : SV_TARGET
+{
+    float4 sceneColor = texture0.Sample(pointSampler, input.TexCoord);
+    float4 frontAccum = texture1.Sample(pointSampler, input.TexCoord);
+    float4 backAccum = texture2.Sample(pointSampler, input.TexCoord);
+
+    float remainingTransmittance = saturate(frontAccum.a * (1.0 - backAccum.a));
+    float transparentAlpha = 1.0 - remainingTransmittance;
+    float combinedAlpha = sceneColor.a + (1.0 - sceneColor.a) * transparentAlpha;
+    float sceneWeight = sceneColor.a * remainingTransmittance;
+    float3 premultipliedColor = frontAccum.rgb + frontAccum.a * backAccum.rgb + sceneWeight * sceneColor.rgb;
+    if (combinedAlpha <= 1e-6)
+    {
+        return 0.0;
+    }
+
+    return float4(premultipliedColor / combinedAlpha, combinedAlpha);
 }
 
 float4 OutlineCompositePS(VS_OUTPUT input) : SV_TARGET
@@ -37,15 +56,15 @@ float4 OutlineCompositePS(VS_OUTPUT input) : SV_TARGET
     float2 resolution = OutlineSettings.zw;
     float2 texel = 1.0 / resolution;
 
-    float4 center = inputTexture.Sample(pointSampler, input.TexCoord);
-    float4 right = inputTexture.Sample(pointSampler, input.TexCoord + float2(texel.x * outlineWidth, 0.0));
-    float4 left = inputTexture.Sample(pointSampler, input.TexCoord - float2(texel.x * outlineWidth, 0.0));
-    float4 up = inputTexture.Sample(pointSampler, input.TexCoord + float2(0.0, texel.y * outlineWidth));
-    float4 down = inputTexture.Sample(pointSampler, input.TexCoord - float2(0.0, texel.y * outlineWidth));
-    float4 topRight = inputTexture.Sample(pointSampler, input.TexCoord + float2(texel.x, texel.y) * outlineWidth * 0.707);
-    float4 topLeft = inputTexture.Sample(pointSampler, input.TexCoord + float2(-texel.x, texel.y) * outlineWidth * 0.707);
-    float4 bottomRight = inputTexture.Sample(pointSampler, input.TexCoord + float2(texel.x, -texel.y) * outlineWidth * 0.707);
-    float4 bottomLeft = inputTexture.Sample(pointSampler, input.TexCoord + float2(-texel.x, -texel.y) * outlineWidth * 0.707);
+    float4 center = texture0.Sample(pointSampler, input.TexCoord);
+    float4 right = texture0.Sample(pointSampler, input.TexCoord + float2(texel.x * outlineWidth, 0.0));
+    float4 left = texture0.Sample(pointSampler, input.TexCoord - float2(texel.x * outlineWidth, 0.0));
+    float4 up = texture0.Sample(pointSampler, input.TexCoord + float2(0.0, texel.y * outlineWidth));
+    float4 down = texture0.Sample(pointSampler, input.TexCoord - float2(0.0, texel.y * outlineWidth));
+    float4 topRight = texture0.Sample(pointSampler, input.TexCoord + float2(texel.x, texel.y) * outlineWidth * 0.707);
+    float4 topLeft = texture0.Sample(pointSampler, input.TexCoord + float2(-texel.x, texel.y) * outlineWidth * 0.707);
+    float4 bottomRight = texture0.Sample(pointSampler, input.TexCoord + float2(texel.x, -texel.y) * outlineWidth * 0.707);
+    float4 bottomLeft = texture0.Sample(pointSampler, input.TexCoord + float2(-texel.x, -texel.y) * outlineWidth * 0.707);
 
     bool hasNeighbor = right.a > 0.0 || left.a > 0.0 || up.a > 0.0 || down.a > 0.0 ||
         topRight.a > 0.0 || topLeft.a > 0.0 || bottomRight.a > 0.0 || bottomLeft.a > 0.0;
@@ -58,13 +77,13 @@ float4 OutlineCompositePS(VS_OUTPUT input) : SV_TARGET
     }
 
     float selectedDepth = 1.0;
-    if (center.a > 0.0) selectedDepth = min(selectedDepth, selectionDepthTexture.Sample(pointSampler, input.TexCoord).r);
-    if (right.a > 0.0) selectedDepth = min(selectedDepth, selectionDepthTexture.Sample(pointSampler, input.TexCoord + float2(texel.x * outlineWidth, 0.0)).r);
-    if (left.a > 0.0) selectedDepth = min(selectedDepth, selectionDepthTexture.Sample(pointSampler, input.TexCoord - float2(texel.x * outlineWidth, 0.0)).r);
-    if (up.a > 0.0) selectedDepth = min(selectedDepth, selectionDepthTexture.Sample(pointSampler, input.TexCoord + float2(0.0, texel.y * outlineWidth)).r);
-    if (down.a > 0.0) selectedDepth = min(selectedDepth, selectionDepthTexture.Sample(pointSampler, input.TexCoord - float2(0.0, texel.y * outlineWidth)).r);
+    if (center.a > 0.0) selectedDepth = min(selectedDepth, texture1.Sample(pointSampler, input.TexCoord).r);
+    if (right.a > 0.0) selectedDepth = min(selectedDepth, texture1.Sample(pointSampler, input.TexCoord + float2(texel.x * outlineWidth, 0.0)).r);
+    if (left.a > 0.0) selectedDepth = min(selectedDepth, texture1.Sample(pointSampler, input.TexCoord - float2(texel.x * outlineWidth, 0.0)).r);
+    if (up.a > 0.0) selectedDepth = min(selectedDepth, texture1.Sample(pointSampler, input.TexCoord + float2(0.0, texel.y * outlineWidth)).r);
+    if (down.a > 0.0) selectedDepth = min(selectedDepth, texture1.Sample(pointSampler, input.TexCoord - float2(0.0, texel.y * outlineWidth)).r);
 
-    float sceneDepth = sceneDepthTexture.Sample(pointSampler, input.TexCoord).r;
+    float sceneDepth = texture2.Sample(pointSampler, input.TexCoord).r;
     bool occluded = selectedDepth > sceneDepth + 1e-4;
 
     float4 outlineColor = center.a > 0.0 ? center : right.a > 0.0 ? right : left.a > 0.0 ? left : up.a > 0.0 ? up : down.a > 0.0 ? down : topRight.a > 0.0 ? topRight : topLeft.a > 0.0 ? topLeft : bottomRight.a > 0.0 ? bottomRight : bottomLeft;
