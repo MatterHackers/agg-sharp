@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -89,6 +89,11 @@ namespace MatterHackers.RenderOpenGl
 		/// Renderer-specific cached GPU buffer (e.g. ID3D11Buffer). Avoids per-frame upload when set.
 		/// </summary>
 		public object CachedGpuBuffer;
+
+		/// <summary>
+		/// Renderer-specific cached GPU buffer for position-only passes such as selection masks.
+		/// </summary>
+		public object CachedSelectionGpuBuffer;
 
 		public bool UseVertexColors { get; set; }
 	}

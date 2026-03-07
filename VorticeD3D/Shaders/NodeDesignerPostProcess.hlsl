@@ -7,6 +7,7 @@ cbuffer OutlineCompositeBuffer : register(b0)
 Texture2D texture0 : register(t0);
 Texture2D texture1 : register(t1);
 Texture2D texture2 : register(t2);
+Texture2D texture3 : register(t3);
 
 SamplerState pointSampler : register(s0);
 
@@ -35,6 +36,7 @@ float4 ResolveDualPeelPS(VS_OUTPUT input) : SV_TARGET
     float4 sceneColor = texture0.Sample(pointSampler, input.TexCoord);
     float4 frontAccum = texture1.Sample(pointSampler, input.TexCoord);
     float4 backAccum = texture2.Sample(pointSampler, input.TexCoord);
+    float4 transparentOverlay = texture3.Sample(pointSampler, input.TexCoord);
 
     float remainingTransmittance = saturate(frontAccum.a * (1.0 - backAccum.a));
     float transparentAlpha = 1.0 - remainingTransmittance;
@@ -46,7 +48,11 @@ float4 ResolveDualPeelPS(VS_OUTPUT input) : SV_TARGET
         return 0.0;
     }
 
-    return float4(premultipliedColor / combinedAlpha, combinedAlpha);
+    float4 resolvedColor = float4(premultipliedColor / combinedAlpha, combinedAlpha);
+    float overlayWeight = transparentOverlay.a;
+    return float4(
+        lerp(resolvedColor.rgb, transparentOverlay.rgb, overlayWeight),
+        resolvedColor.a + (1.0 - resolvedColor.a) * overlayWeight);
 }
 
 float4 OutlineCompositePS(VS_OUTPUT input) : SV_TARGET

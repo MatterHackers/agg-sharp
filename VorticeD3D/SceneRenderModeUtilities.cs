@@ -44,6 +44,21 @@ namespace MatterHackers.RenderOpenGl
 				|| renderType == RenderTypes.Wireframe;
 		}
 
+		public static bool RequiresSceneMeshPass(RenderTypes renderType)
+		{
+			return renderType != RenderTypes.Hidden;
+		}
+
+		public static bool ShouldRenderTransparentFill(RenderTypes renderType)
+		{
+			return ShouldRenderFilledSurface(renderType);
+		}
+
+		public static bool ShouldRenderTransparentOverlay(RenderTypes renderType)
+		{
+			return ShouldDrawWireframeOverlay(renderType);
+		}
+
 		public static bool IsWireframeOnly(RenderTypes renderType)
 		{
 			return renderType == RenderTypes.Wireframe;

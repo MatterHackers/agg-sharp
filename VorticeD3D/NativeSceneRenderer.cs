@@ -55,6 +55,7 @@ namespace MatterHackers.RenderOpenGl
 				&& command?.Mesh != null
 				&& (command.RenderType == RenderTypes.Shaded
 					|| command.RenderType == RenderTypes.Outlines
+					|| command.RenderType == RenderTypes.NonManifold
 					|| command.RenderType == RenderTypes.Wireframe
 					|| command.RenderType == RenderTypes.Polygons);
 		}

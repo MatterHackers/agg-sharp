@@ -35,6 +35,7 @@ struct VS_INPUT
     float3 Position : POSITION;
     float3 Normal : NORMAL;
     float2 TexCoord : TEXCOORD0;
+    float3 EdgeHints : TEXCOORD1;
     uint VertexId : SV_VertexID;
 };
 
@@ -44,6 +45,7 @@ struct PS_INPUT
     float3 ViewNormal : TEXCOORD0;
     float2 TexCoord : TEXCOORD1;
     float3 Barycentric : TEXCOORD2;
+    float3 EdgeHints : TEXCOORD3;
 };
 
 float3 GetBarycentric(uint vertexId)
@@ -62,14 +64,25 @@ PS_INPUT SceneVS(VS_INPUT input)
     output.ViewNormal = normalize(mul(float4(input.Normal, 0.0), ModelView).xyz);
     output.TexCoord = input.TexCoord;
     output.Barycentric = GetBarycentric(input.VertexId);
+    output.EdgeHints = input.EdgeHints;
     return output;
 }
 
-float WireframeEdge(float3 barycentric, float width)
+struct SELECTION_VS_INPUT
+{
+    float3 Position : POSITION;
+};
+
+float4 SelectionVS(SELECTION_VS_INPUT input) : SV_POSITION
+{
+    float4 viewPosition = mul(float4(input.Position, 1.0), ModelView);
+    return mul(viewPosition, Projection);
+}
+
+float3 WireframeEdgeFactors(float3 barycentric, float width)
 {
     float3 derivatives = fwidth(barycentric);
-    float3 edge = smoothstep(float3(0.0, 0.0, 0.0), derivatives * max(width, 0.375), barycentric);
-    return 1.0 - min(min(edge.x, edge.y), edge.z);
+    return 1.0 - smoothstep(float3(0.0, 0.0, 0.0), derivatives * max(width, 0.375), barycentric);
 }
 
 struct DualPeelOutput
@@ -152,21 +165,41 @@ float3 ApplyLighting(float3 baseColor, float3 viewNormal)
     return saturate(litColor);
 }
 
-float4 ComposeSceneColor(float4 shadedColor, float3 barycentric)
+float4 ComposeSceneColor(float4 shadedColor, float3 barycentric, float3 edgeHints)
 {
     if (EffectFlags.x < 0.5)
     {
         return shadedColor;
     }
 
-    float edge = WireframeEdge(barycentric, ResolutionAndWidth.z);
-    float4 wireColor = WireframeColor;
-    if (EffectFlags.y > 0.5)
+    float3 edgeFactors = WireframeEdgeFactors(barycentric, ResolutionAndWidth.z);
+    float3 visibleEdges = edgeFactors * step(float3(0.5, 0.5, 0.5), edgeHints);
+    float edge = max(max(visibleEdges.x, visibleEdges.y), visibleEdges.z);
+
+    if (edge <= 1e-5)
     {
-        return float4(wireColor.rgb, edge * shadedColor.a);
+        if (EffectFlags.y > 0.5)
+        {
+            discard;
+        }
+
+        return shadedColor;
     }
 
-    return float4(lerp(shadedColor.rgb, wireColor.rgb, edge), shadedColor.a);
+    float3 highlightedEdges = edgeFactors * step(float3(1.5, 1.5, 1.5), edgeHints);
+    float highlight = max(max(highlightedEdges.x, highlightedEdges.y), highlightedEdges.z);
+    float4 wireColor = WireframeColor;
+    if (highlight > 1e-5)
+    {
+        wireColor.rgb = float3(1.0, 0.0, 0.0);
+    }
+
+    if (EffectFlags.y > 0.5)
+    {
+        return float4(wireColor.rgb, edge * max(shadedColor.a, wireColor.a));
+    }
+
+    return float4(lerp(shadedColor.rgb, wireColor.rgb, edge), max(shadedColor.a, edge * wireColor.a));
 }
 
 DualPeelOutput CreateEmptyDualPeelOutput()
@@ -222,7 +255,7 @@ float4 SceneColorPS(PS_INPUT input) : SV_TARGET
     float4 baseColor = MeshColor;
     DiscardIfInvisible(baseColor.a);
     float3 litColor = ApplyLighting(baseColor.rgb, input.ViewNormal);
-    return ComposeSceneColor(float4(litColor, baseColor.a), input.Barycentric);
+    return ComposeSceneColor(float4(litColor, baseColor.a), input.Barycentric, input.EdgeHints);
 }
 
 float4 SceneTexturePS(PS_INPUT input) : SV_TARGET
@@ -231,7 +264,7 @@ float4 SceneTexturePS(PS_INPUT input) : SV_TARGET
     float4 sampledColor = diffuseTexture.Sample(linearSampler, input.TexCoord) * MeshColor;
     DiscardIfInvisible(sampledColor.a);
     float3 litColor = ApplyLighting(sampledColor.rgb, input.ViewNormal);
-    return ComposeSceneColor(float4(litColor, sampledColor.a), input.Barycentric);
+    return ComposeSceneColor(float4(litColor, sampledColor.a), input.Barycentric, input.EdgeHints);
 }
 
 float2 DualDepthInitPS(PS_INPUT input) : SV_TARGET0
@@ -251,7 +284,7 @@ DualPeelOutput SceneColorDualPeelPS(PS_INPUT input)
     float4 baseColor = MeshColor;
     DiscardIfInvisible(baseColor.a);
     float3 litColor = ApplyLighting(baseColor.rgb, input.ViewNormal);
-    float4 shadedColor = ComposeSceneColor(float4(litColor, baseColor.a), input.Barycentric);
+    float4 shadedColor = ComposeSceneColor(float4(litColor, baseColor.a), input.Barycentric, input.EdgeHints);
     return ApplyDualDepthPeeling(input.Position, shadedColor);
 }
 
@@ -260,7 +293,7 @@ DualPeelOutput SceneTextureDualPeelPS(PS_INPUT input)
     float4 sampledColor = diffuseTexture.Sample(linearSampler, input.TexCoord) * MeshColor;
     DiscardIfInvisible(sampledColor.a);
     float3 litColor = ApplyLighting(sampledColor.rgb, input.ViewNormal);
-    float4 shadedColor = ComposeSceneColor(float4(litColor, sampledColor.a), input.Barycentric);
+    float4 shadedColor = ComposeSceneColor(float4(litColor, sampledColor.a), input.Barycentric, input.EdgeHints);
     return ApplyDualDepthPeeling(input.Position, shadedColor);
 }
 
