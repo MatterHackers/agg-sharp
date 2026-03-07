@@ -53,7 +53,8 @@ namespace MatterHackers.RenderOpenGl
 		private readonly List<SceneTextureTarget> transparentLayerTargets = new();
 		private readonly NativeSceneRenderPlanner renderPlanner = new();
 
-		// Pipeline state tracking to skip redundant D3D calls across render commands
+		// Pipeline state tracking to skip redundant D3D calls across render commands.
+		// These must be reset whenever another pass mutates the pipeline outside this cached path.
 		private ID3D11PixelShader lastBoundPixelShader;
 		private ID3D11ShaderResourceView lastBoundTextureView;
 		private ID3D11RasterizerState lastBoundRasterizerState;
@@ -565,24 +566,21 @@ namespace MatterHackers.RenderOpenGl
 			context.PSSetShaderResource(1, opaqueDepthView);
 			context.PSSetShaderResource(2, nearDepthView);
 			var depthState = GetOrCreateDepthStencilState(true, ComparisonFunction.LessEqual, true);
-			if (depthState != lastBoundDepthStencilState)
+			if (ShouldBindDepthStencilState(depthState))
 			{
 				context.OMSetDepthStencilState(depthState);
-				lastBoundDepthStencilState = depthState;
 			}
 
 			var blendState = GetOrCreateBlendState(false, (int)BlendingFactorSrc.One, (int)BlendingFactorDest.Zero, colorWritesEnabled ? ColorWriteEnable.All : ColorWriteEnable.None);
-			if (blendState != lastBoundBlendState)
+			if (ShouldBindBlendState(blendState))
 			{
 				context.OMSetBlendState(blendState);
-				lastBoundBlendState = blendState;
 			}
 
 			var rasterizerState = GetSceneRasterizerState(command.ForceCullBackFaces, offsetFill);
-			if (rasterizerState != lastBoundRasterizerState)
+			if (ShouldBindRasterizerState(rasterizerState))
 			{
 				context.RSSetState(rasterizerState);
-				lastBoundRasterizerState = rasterizerState;
 			}
 
 			var glMeshPlugin = MeshTrianglePlugin.Get(command.Mesh);
@@ -590,10 +588,9 @@ namespace MatterHackers.RenderOpenGl
 			{
 				var pixelShader = overridePixelShader ?? (subMesh.texture != null ? sceneEffectTexturePS : sceneEffectColorPS);
 
-				if (pixelShader != lastBoundPixelShader)
+				if (ShouldBindPixelShader(pixelShader))
 				{
 					context.PSSetShader(pixelShader);
-					lastBoundPixelShader = pixelShader;
 				}
 
 				var textureView = whiteTextureView;
@@ -608,10 +605,9 @@ namespace MatterHackers.RenderOpenGl
 					}
 				}
 
-				if (textureView != lastBoundTextureView)
+				if (ShouldBindTextureView(textureView))
 				{
 					context.PSSetShaderResource(0, textureView);
-					lastBoundTextureView = textureView;
 				}
 
 				int vertexCount = subMesh.interleavedData.Length / SubTriangleMesh.InterleavedStride;
@@ -692,6 +688,61 @@ namespace MatterHackers.RenderOpenGl
 			lastBoundDepthStencilState = null;
 		}
 
+		private bool ShouldBindBlendState(ID3D11BlendState blendState)
+		{
+			if (blendState == lastBoundBlendState)
+			{
+				return false;
+			}
+
+			lastBoundBlendState = blendState;
+			return true;
+		}
+
+		private bool ShouldBindDepthStencilState(ID3D11DepthStencilState depthStencilState)
+		{
+			if (depthStencilState == lastBoundDepthStencilState)
+			{
+				return false;
+			}
+
+			lastBoundDepthStencilState = depthStencilState;
+			return true;
+		}
+
+		private bool ShouldBindPixelShader(ID3D11PixelShader pixelShader)
+		{
+			if (pixelShader == lastBoundPixelShader)
+			{
+				return false;
+			}
+
+			lastBoundPixelShader = pixelShader;
+			return true;
+		}
+
+		private bool ShouldBindRasterizerState(ID3D11RasterizerState rasterizerState)
+		{
+			if (rasterizerState == lastBoundRasterizerState)
+			{
+				return false;
+			}
+
+			lastBoundRasterizerState = rasterizerState;
+			return true;
+		}
+
+		private bool ShouldBindTextureView(ID3D11ShaderResourceView textureView)
+		{
+			if (textureView == lastBoundTextureView)
+			{
+				return false;
+			}
+
+			lastBoundTextureView = textureView;
+			return true;
+		}
+
 		private void RenderEdgeLines(
 			MeshRenderCommand command,
 			bool enableDepthPeeling,
@@ -699,6 +750,8 @@ namespace MatterHackers.RenderOpenGl
 			ID3D11ShaderResourceView opaqueDepthView,
 			ID3D11ShaderResourceView nearDepthView)
 		{
+			ResetPipelineStateTracking();
+
 			if (!SceneRenderModeUtilities.ShouldDrawWireframeOverlay(command.RenderType))
 			{
 				return;
@@ -875,6 +928,7 @@ namespace MatterHackers.RenderOpenGl
 			context.PSSetShaderResource(0, null);
 			context.PSSetShaderResource(1, null);
 			context.PSSetShaderResource(2, null);
+			lastBoundTextureView = null;
 		}
 
 		private void ClearQueuedSceneEffects()
