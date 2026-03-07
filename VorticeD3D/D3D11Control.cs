@@ -57,9 +57,6 @@ namespace MatterHackers.RenderOpenGl
 			if (isInitialized || IsDisposed || !IsHandleCreated) return;
 
 			DeviceCreationFlags flags = DeviceCreationFlags.BgraSupport;
-#if DEBUG
-			flags |= DeviceCreationFlags.Debug;
-#endif
 
 			var featureLevels = new[]
 			{

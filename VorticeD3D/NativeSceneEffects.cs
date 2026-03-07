@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
@@ -45,12 +46,17 @@ namespace MatterHackers.RenderOpenGl
 {
 	public partial class VorticeD3DGl
 	{
+		private const int BedCompositeTextureSize = 2048;
+		private const int BedShadowTextureSize = 512;
+		private const float BedShadowStrength = .35f;
+		private const float BedShadowViewDistance = 1000;
 		private const int SceneEffectVertexFloatStride = SubTriangleMesh.InterleavedStride + 3;
 		private const int SceneEffectVertexStride = SceneEffectVertexFloatStride * sizeof(float);
-			private const int TransparentPeelLayerCount = 6;
-			private static readonly int DualDepthPeelIterationCount = DualDepthPeelingMath.GetIterationCount(TransparentPeelLayerCount);
+		private const int TransparentPeelLayerCount = 6;
+		private static readonly int DualDepthPeelIterationCount = DualDepthPeelingMath.GetIterationCount(TransparentPeelLayerCount);
 
 		private readonly List<MeshRenderCommand> queuedSceneCommands = new();
+		private BedRenderCommand queuedBedCommand;
 		private readonly List<SelectionOutlineCommand> queuedSelectionOutlines = new();
 		private readonly NativeSceneRenderPlanner renderPlanner = new();
 
@@ -66,10 +72,14 @@ namespace MatterHackers.RenderOpenGl
 		private SceneTextureTarget sceneDepthTarget;
 		private SceneTextureTarget selectionTarget;
 		private ColorTextureTarget transparentOverlayTarget;
-			private ColorTextureTarget dualDepthPeelTarget0;
-			private ColorTextureTarget dualDepthPeelTarget1;
-			private ColorTextureTarget dualFrontAccumTarget;
-			private ColorTextureTarget dualBackAccumTarget;
+		private ColorTextureTarget dualDepthPeelTarget0;
+		private ColorTextureTarget dualDepthPeelTarget1;
+		private ColorTextureTarget dualFrontAccumTarget;
+		private ColorTextureTarget dualBackAccumTarget;
+		private ColorTextureTarget bedShadowMaskTarget;
+		private ColorTextureTarget bedShadowBlurTargetA;
+		private ColorTextureTarget bedShadowBlurTargetB;
+		private ColorTextureTarget bedCompositeTarget;
 
 		private ID3D11VertexShader sceneEffectVS;
 		private ID3D11VertexShader sceneEffectSelectionVS;
@@ -77,23 +87,30 @@ namespace MatterHackers.RenderOpenGl
 		private ID3D11PixelShader sceneEffectTexturePS;
 		private ID3D11PixelShader sceneEffectSelectionPS;
 		private ID3D11PixelShader sceneEffectDepthPS;
-			private ID3D11PixelShader sceneEffectDualDepthInitPS;
-			private ID3D11PixelShader sceneEffectDualPeelColorPS;
-			private ID3D11PixelShader sceneEffectDualPeelTexturePS;
+		private ID3D11PixelShader sceneEffectDualDepthInitPS;
+		private ID3D11PixelShader sceneEffectDualPeelColorPS;
+		private ID3D11PixelShader sceneEffectDualPeelTexturePS;
 		private ID3D11InputLayout sceneEffectInputLayout;
 		private ID3D11InputLayout sceneEffectSelectionInputLayout;
 
 		private ID3D11VertexShader fullscreenVS;
 		private ID3D11PixelShader copyTexturePS;
-			private ID3D11PixelShader resolveDualPeelPS;
+		private ID3D11PixelShader resolveDualPeelPS;
+		private ID3D11PixelShader bedShadowBlurPS;
+		private ID3D11PixelShader bedShadowCompositePS;
 		private ID3D11PixelShader outlineCompositePS;
-			private ID3D11BlendState dualDepthPeelBlendState;
+		private ID3D11BlendState dualDepthPeelBlendState;
 
 		private ID3D11Buffer sceneEffectBuffer;
 		private ID3D11Buffer outlineCompositeBuffer;
+		private ID3D11Buffer bedShadowPostProcessBuffer;
 		private ID3D11SamplerState pointClampSampler;
+		private ID3D11SamplerState linearClampSampler;
 		private ID3D11Texture2D whiteTexture;
 		private ID3D11ShaderResourceView whiteTextureView;
+		private ImageTextureSource bedTopBaseTexture;
+		private ImageTextureSource bedUnderBaseTexture;
+		private int lastBedShadowSignature;
 
 		private bool sceneEffectsInitialized;
 
@@ -139,6 +156,19 @@ namespace MatterHackers.RenderOpenGl
 			{
 				ShaderResourceView?.Dispose();
 				RenderTargetView?.Dispose();
+				Texture?.Dispose();
+			}
+		}
+
+		private sealed class ImageTextureSource : IDisposable
+		{
+			public MatterHackers.Agg.Image.ImageBuffer SourceImage;
+			public ID3D11ShaderResourceView ShaderResourceView;
+			public ID3D11Texture2D Texture;
+
+			public void Dispose()
+			{
+				ShaderResourceView?.Dispose();
 				Texture?.Dispose();
 			}
 		}
@@ -195,11 +225,15 @@ namespace MatterHackers.RenderOpenGl
 			byte[] fullscreenVsByteCode = Compiler.Compile(postProcessHlsl, "FullScreenVS", "NodeDesignerPostProcess.hlsl", "vs_5_0").ToArray();
 			byte[] copyPsByteCode = Compiler.Compile(postProcessHlsl, "CopyTexturePS", "NodeDesignerPostProcess.hlsl", "ps_5_0").ToArray();
 			byte[] resolvePsByteCode = Compiler.Compile(postProcessHlsl, "ResolveDualPeelPS", "NodeDesignerPostProcess.hlsl", "ps_5_0").ToArray();
+			byte[] bedBlurPsByteCode = Compiler.Compile(postProcessHlsl, "BedShadowBlurPS", "NodeDesignerPostProcess.hlsl", "ps_5_0").ToArray();
+			byte[] bedCompositePsByteCode = Compiler.Compile(postProcessHlsl, "BedShadowCompositePS", "NodeDesignerPostProcess.hlsl", "ps_5_0").ToArray();
 			byte[] outlinePsByteCode = Compiler.Compile(postProcessHlsl, "OutlineCompositePS", "NodeDesignerPostProcess.hlsl", "ps_5_0").ToArray();
 
 			fullscreenVS = device.CreateVertexShader(fullscreenVsByteCode);
 			copyTexturePS = device.CreatePixelShader(copyPsByteCode);
 			resolveDualPeelPS = device.CreatePixelShader(resolvePsByteCode);
+			bedShadowBlurPS = device.CreatePixelShader(bedBlurPsByteCode);
+			bedShadowCompositePS = device.CreatePixelShader(bedCompositePsByteCode);
 			outlineCompositePS = device.CreatePixelShader(outlinePsByteCode);
 		}
 
@@ -220,6 +254,14 @@ namespace MatterHackers.RenderOpenGl
 				BindFlags = BindFlags.ConstantBuffer,
 				CPUAccessFlags = CpuAccessFlags.Write,
 			});
+
+			bedShadowPostProcessBuffer = device.CreateBuffer(new BufferDescription
+			{
+				ByteWidth = 16,
+				Usage = ResourceUsage.Dynamic,
+				BindFlags = BindFlags.ConstantBuffer,
+				CPUAccessFlags = CpuAccessFlags.Write,
+			});
 		}
 
 		private void CreateSceneEffectStates()
@@ -227,6 +269,17 @@ namespace MatterHackers.RenderOpenGl
 			pointClampSampler = device.CreateSamplerState(new SamplerDescription
 			{
 				Filter = Filter.MinMagMipPoint,
+				AddressU = TextureAddressMode.Clamp,
+				AddressV = TextureAddressMode.Clamp,
+				AddressW = TextureAddressMode.Clamp,
+				ComparisonFunc = ComparisonFunction.Never,
+				MinLOD = 0,
+				MaxLOD = float.MaxValue,
+			});
+
+			linearClampSampler = device.CreateSamplerState(new SamplerDescription
+			{
+				Filter = Filter.MinMagMipLinear,
 				AddressU = TextureAddressMode.Clamp,
 				AddressV = TextureAddressMode.Clamp,
 				AddressW = TextureAddressMode.Clamp,
@@ -329,6 +382,16 @@ namespace MatterHackers.RenderOpenGl
 			queuedSceneCommands.Add(command);
 		}
 
+		private void QueueBedCommand(BedRenderCommand command)
+		{
+			if (command?.Mesh == null)
+			{
+				return;
+			}
+
+			queuedBedCommand = command;
+		}
+
 		private void RenderQueuedSceneEffects()
 		{
 			if (activeSceneRenderContext == null)
@@ -337,7 +400,9 @@ namespace MatterHackers.RenderOpenGl
 				return;
 			}
 
-			if (queuedSceneCommands.Count == 0 && queuedSelectionOutlines.Count == 0)
+			if (queuedSceneCommands.Count == 0
+				&& queuedSelectionOutlines.Count == 0
+				&& queuedBedCommand == null)
 			{
 				return;
 			}
@@ -350,13 +415,17 @@ namespace MatterHackers.RenderOpenGl
 			int height = Math.Max(1, (int)Math.Ceiling(activeSceneRenderContext.Viewport.Height));
 
 			EnsureSceneTargets(width, height);
+			if (queuedBedCommand != null)
+			{
+				RenderBedShadowTexture(queuedBedCommand);
+			}
 
 			ResetPipelineStateTracking();
 			var renderPlan = renderPlanner.Build(queuedSceneCommands);
 
 			RenderOpaqueCommands(renderPlan.OpaqueCommands);
-			RenderSceneDepth(renderPlan);
-			RenderTransparentLayers(renderPlan.TransparentCommands);
+			RenderSceneDepth(renderPlan, queuedBedCommand);
+			RenderTransparentLayers(renderPlan.TransparentCommands, queuedBedCommand);
 			RenderTransparentOverlays(renderPlan.TransparentCommands);
 			CompositeSceneTargets();
 			RenderSelectionOutlines();
@@ -470,6 +539,233 @@ namespace MatterHackers.RenderOpenGl
 			return newTarget;
 		}
 
+		private ImageTextureSource EnsureImageTextureSource(ImageTextureSource existingSource, MatterHackers.Agg.Image.ImageBuffer sourceImage)
+		{
+			if (sourceImage == null)
+			{
+				existingSource?.Dispose();
+				return null;
+			}
+
+			if (ReferenceEquals(existingSource?.SourceImage, sourceImage)
+				&& existingSource.ShaderResourceView != null)
+			{
+				return existingSource;
+			}
+
+			existingSource?.Dispose();
+			var textureSource = new ImageTextureSource
+			{
+				SourceImage = sourceImage,
+			};
+
+			var textureDescription = new Texture2DDescription
+			{
+				Width = (uint)sourceImage.Width,
+				Height = (uint)sourceImage.Height,
+				MipLevels = 1,
+				ArraySize = 1,
+				Format = Format.B8G8R8A8_UNorm,
+				SampleDescription = new SampleDescription(1, 0),
+				Usage = ResourceUsage.Default,
+				BindFlags = BindFlags.ShaderResource,
+			};
+
+			var pixels = sourceImage.GetBuffer();
+			var handle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
+			try
+			{
+				textureSource.Texture = device.CreateTexture2D(
+					textureDescription,
+					new[]
+					{
+						new SubresourceData(handle.AddrOfPinnedObject(), (uint)(sourceImage.Width * 4))
+					});
+			}
+			finally
+			{
+				handle.Free();
+			}
+
+			textureSource.ShaderResourceView = device.CreateShaderResourceView(textureSource.Texture);
+			return textureSource;
+		}
+
+		private void EnsureBedTargets(int width, int height)
+		{
+			var shadowWidth = Math.Min(width, BedShadowTextureSize);
+			var shadowHeight = Math.Min(height, BedShadowTextureSize);
+
+			var prevComposite = bedCompositeTarget;
+			bedShadowMaskTarget = EnsureColorTarget(bedShadowMaskTarget, shadowWidth, shadowHeight, Format.R8G8B8A8_UNorm);
+			bedShadowBlurTargetA = EnsureColorTarget(bedShadowBlurTargetA, shadowWidth, shadowHeight, Format.R8G8B8A8_UNorm);
+			bedShadowBlurTargetB = EnsureColorTarget(bedShadowBlurTargetB, shadowWidth, shadowHeight, Format.R8G8B8A8_UNorm);
+			bedCompositeTarget = EnsureColorTarget(
+				bedCompositeTarget,
+				Math.Min(width, BedCompositeTextureSize),
+				Math.Min(height, BedCompositeTextureSize),
+				Format.R8G8B8A8_UNorm);
+
+			if (bedCompositeTarget != prevComposite)
+			{
+				lastBedShadowSignature = 0;
+			}
+		}
+
+		private void RenderBedShadowTexture(BedRenderCommand bedCommand)
+		{
+			if (bedCommand?.TopBaseTexture == null
+				|| bedCommand.UnderBaseTexture == null)
+			{
+				return;
+			}
+
+			EnsureBedTargets(bedCommand.TopBaseTexture.Width, bedCommand.TopBaseTexture.Height);
+			bedTopBaseTexture = EnsureImageTextureSource(bedTopBaseTexture, bedCommand.TopBaseTexture);
+			bedUnderBaseTexture = EnsureImageTextureSource(bedUnderBaseTexture, bedCommand.UnderBaseTexture);
+
+			var signature = ComputeBedShadowSignature(bedCommand);
+			if (signature == lastBedShadowSignature
+				&& bedCompositeTarget?.ShaderResourceView != null)
+			{
+				return;
+			}
+
+			lastBedShadowSignature = signature;
+
+			RenderBedShadowMask(bedCommand);
+			RenderBedBlurPass(bedShadowMaskTarget.ShaderResourceView, bedShadowBlurTargetA, 1.0f / bedShadowMaskTarget.Width, 0);
+			RenderBedBlurPass(bedShadowBlurTargetA.ShaderResourceView, bedShadowBlurTargetB, 0, 1.0f / bedShadowMaskTarget.Height);
+			RenderBedCompositePass(bedCommand);
+		}
+
+		private int ComputeBedShadowSignature(BedRenderCommand bedCommand)
+		{
+			var hash = new HashCode();
+			hash.Add(bedCommand.LookingDownOnBed);
+			hash.Add(bedCommand.BedBounds.Left);
+			hash.Add(bedCommand.BedBounds.Right);
+			hash.Add(bedCommand.BedBounds.Bottom);
+			hash.Add(bedCommand.BedBounds.Top);
+			hash.Add(RuntimeHelpers.GetHashCode(bedCommand.TopBaseTexture));
+			hash.Add(RuntimeHelpers.GetHashCode(bedCommand.UnderBaseTexture));
+
+			foreach (var command in queuedSceneCommands)
+			{
+				if (!ShouldRenderCommandIntoBedShadow(command, bedCommand.BedBounds))
+				{
+					continue;
+				}
+
+				hash.Add(RuntimeHelpers.GetHashCode(command.Mesh));
+				hash.Add(command.Mesh.ChangedCount);
+				hash.Add(command.Transform);
+			}
+
+			return hash.ToHashCode();
+		}
+
+		private void RenderBedShadowMask(BedRenderCommand bedCommand)
+		{
+			BindColorTarget(bedShadowMaskTarget);
+			ClearColorTarget(bedShadowMaskTarget, new Color4(0, 0, 0, 0));
+
+			var bedCenter = new Vector3(
+				(bedCommand.BedBounds.Left + bedCommand.BedBounds.Right) * .5,
+				(bedCommand.BedBounds.Bottom + bedCommand.BedBounds.Top) * .5,
+				0);
+			var shadowView = Matrix4X4.LookAt(
+				bedCenter + new Vector3(0, 0, BedShadowViewDistance),
+				bedCenter,
+				Vector3.UnitY);
+			var shadowProjection = Matrix4X4.CreateOrthographicOffCenter(
+				bedCommand.BedBounds.Left,
+				bedCommand.BedBounds.Right,
+				bedCommand.BedBounds.Bottom,
+				bedCommand.BedBounds.Top,
+				1,
+				BedShadowViewDistance * 2);
+
+			foreach (var command in queuedSceneCommands)
+			{
+				if (!ShouldRenderCommandIntoBedShadow(command, bedCommand.BedBounds))
+				{
+					continue;
+				}
+
+				RenderFlatMask(command, command.Transform * shadowView, shadowProjection, AggColor.Black, enableDepthTest: false);
+			}
+
+			UnbindSceneTextures();
+		}
+
+		private static bool ShouldRenderCommandIntoBedShadow(MeshRenderCommand command, RectangleDouble bedBounds)
+		{
+			if (command?.Mesh == null
+				|| !SceneRenderModeUtilities.RequiresSceneMeshPass(command.RenderType))
+			{
+				return false;
+			}
+
+			var bounds = command.Mesh.GetAxisAlignedBoundingBox(command.Transform);
+			if (bounds.MaxXYZ.Z <= 0)
+			{
+				return false;
+			}
+
+			return !(bounds.MaxXYZ.X < bedBounds.Left
+				|| bounds.MinXYZ.X > bedBounds.Right
+				|| bounds.MaxXYZ.Y < bedBounds.Bottom
+				|| bounds.MinXYZ.Y > bedBounds.Top);
+		}
+
+		private void RenderBedBlurPass(ID3D11ShaderResourceView sourceTexture, ColorTextureTarget destinationTarget, float directionX, float directionY)
+		{
+			BindColorTarget(destinationTarget);
+			ClearColorTarget(destinationTarget, new Color4(0, 0, 0, 0));
+			context.IASetInputLayout(null);
+			context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+			context.VSSetShader(fullscreenVS);
+			context.PSSetShader(bedShadowBlurPS);
+			context.PSSetSampler(0, pointClampSampler);
+			context.PSSetSampler(1, linearClampSampler);
+			context.PSSetConstantBuffer(1, bedShadowPostProcessBuffer);
+			context.PSSetShaderResource(0, sourceTexture);
+			context.OMSetDepthStencilState(GetOrCreateDepthStencilState(false, ComparisonFunction.Always, false));
+			context.OMSetBlendState(GetOrCreateBlendState(false, (int)BlendingFactorSrc.One, (int)BlendingFactorDest.Zero, ColorWriteEnable.All));
+			context.RSSetState(rasterizerNoCull);
+			UpdateBedShadowPostProcessBuffer(directionX, directionY, BedShadowStrength);
+			context.Draw(3, 0);
+			UnbindSceneTextures();
+		}
+
+		private void RenderBedCompositePass(BedRenderCommand bedCommand)
+		{
+			var baseTexture = bedCommand.LookingDownOnBed ? bedTopBaseTexture : bedUnderBaseTexture;
+			if (baseTexture?.ShaderResourceView == null)
+			{
+				return;
+			}
+
+			BindColorTarget(bedCompositeTarget);
+			ClearColorTarget(bedCompositeTarget, new Color4(0, 0, 0, 0));
+			context.IASetInputLayout(null);
+			context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+			context.VSSetShader(fullscreenVS);
+			context.PSSetShader(bedShadowCompositePS);
+			context.PSSetSampler(0, pointClampSampler);
+			context.PSSetSampler(1, linearClampSampler);
+			context.PSSetConstantBuffer(1, bedShadowPostProcessBuffer);
+			context.PSSetShaderResource(0, baseTexture.ShaderResourceView);
+			context.PSSetShaderResource(1, bedShadowBlurTargetB.ShaderResourceView);
+			context.OMSetDepthStencilState(GetOrCreateDepthStencilState(false, ComparisonFunction.Always, false));
+			context.OMSetBlendState(GetOrCreateBlendState(false, (int)BlendingFactorSrc.One, (int)BlendingFactorDest.Zero, ColorWriteEnable.All));
+			context.RSSetState(rasterizerNoCull);
+			UpdateBedShadowPostProcessBuffer(0, 0, BedShadowStrength);
+			context.Draw(3, 0);
+			UnbindSceneTextures();
+		}
+
 		private void RenderOpaqueCommands(IReadOnlyList<MeshRenderCommand> commands)
 		{
 			if (commands.Count == 0)
@@ -499,7 +795,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		private void RenderSceneDepth(NativeSceneRenderPlan renderPlan)
+		private void RenderSceneDepth(NativeSceneRenderPlan renderPlan, BedRenderCommand bedCommand)
 		{
 			BindSceneTarget(sceneDepthTarget);
 			ClearDepthOnlyTarget(sceneDepthTarget);
@@ -513,22 +809,38 @@ namespace MatterHackers.RenderOpenGl
 			{
 				RenderMeshCommand(command, sceneEffectDepthPS, false, false, false, false, false, null, null, colorWritesEnabled: false);
 			}
+
+			if (bedCommand != null && bedCompositeTarget?.ShaderResourceView != null)
+			{
+				RenderMeshCommand(
+					CreateBedSceneCommand(bedCommand),
+					sceneEffectDepthPS,
+					false,
+					false,
+					false,
+					false,
+					false,
+					null,
+					null,
+					colorWritesEnabled: false,
+					forcedTextureView: bedCompositeTarget.ShaderResourceView);
+			}
 		}
 
-		private void RenderTransparentLayers(IReadOnlyList<MeshRenderCommand> transparentCommands)
+		private void RenderTransparentLayers(IReadOnlyList<MeshRenderCommand> transparentCommands, BedRenderCommand bedCommand)
 		{
 			ClearColorTarget(dualFrontAccumTarget, new Color4(0, 0, 0, 1));
 			ClearColorTarget(dualBackAccumTarget, new Color4(0, 0, 0, 0));
 			ClearColorTarget(dualDepthPeelTarget0, new Color4(-1, -1, 0, 0));
 			ClearColorTarget(dualDepthPeelTarget1, new Color4(-1, -1, 0, 0));
 
-			if (transparentCommands.Count == 0)
+			if (transparentCommands.Count == 0 && bedCommand == null)
 			{
 				return;
 			}
 
 			var dualPeelDepthState = GetOrCreateDepthStencilState(false, ComparisonFunction.Always, false);
-			InitializeDualDepthPeel(transparentCommands, dualPeelDepthState);
+			InitializeDualDepthPeel(transparentCommands, bedCommand, dualPeelDepthState);
 
 			var sourceDepthTarget = dualDepthPeelTarget0;
 			var destinationDepthTarget = dualDepthPeelTarget1;
@@ -559,6 +871,25 @@ namespace MatterHackers.RenderOpenGl
 						blendStateOverride: dualDepthPeelBlendState,
 						depthStencilStateOverride: dualPeelDepthState,
 						useDualDepthPeelingShader: true);
+				}
+
+				if (bedCommand != null && bedCompositeTarget?.ShaderResourceView != null)
+				{
+					RenderMeshCommand(
+						CreateBedSceneCommand(bedCommand),
+						null,
+						enableWireframe: false,
+						wireframeOnly: false,
+						offsetFill: false,
+						enableDepthPeeling: false,
+						firstPeelPass: false,
+						opaqueDepthView: sceneColorTarget.DepthShaderResourceView,
+						nearDepthView: sourceDepthTarget.ShaderResourceView,
+						colorWritesEnabled: true,
+						blendStateOverride: dualDepthPeelBlendState,
+						depthStencilStateOverride: dualPeelDepthState,
+						useDualDepthPeelingShader: true,
+						forcedTextureView: bedCompositeTarget.ShaderResourceView);
 				}
 
 				(sourceDepthTarget, destinationDepthTarget) = (destinationDepthTarget, sourceDepthTarget);
@@ -592,7 +923,7 @@ namespace MatterHackers.RenderOpenGl
 			ClearColorTarget(transparentOverlayTarget, new Color4(0, 0, 0, 0));
 		}
 
-		private void InitializeDualDepthPeel(IReadOnlyList<MeshRenderCommand> transparentCommands, ID3D11DepthStencilState depthState)
+		private void InitializeDualDepthPeel(IReadOnlyList<MeshRenderCommand> transparentCommands, BedRenderCommand bedCommand, ID3D11DepthStencilState depthState)
 		{
 			BindColorTarget(dualDepthPeelTarget0);
 			ClearColorTarget(dualDepthPeelTarget0, new Color4(-1, -1, 0, 0));
@@ -619,6 +950,24 @@ namespace MatterHackers.RenderOpenGl
 					blendStateOverride: dualDepthPeelBlendState,
 					depthStencilStateOverride: depthState);
 			}
+
+			if (bedCommand != null && bedCompositeTarget?.ShaderResourceView != null)
+			{
+				RenderMeshCommand(
+					CreateBedSceneCommand(bedCommand),
+					sceneEffectDualDepthInitPS,
+					enableWireframe: false,
+					wireframeOnly: false,
+					offsetFill: false,
+					enableDepthPeeling: false,
+					firstPeelPass: false,
+					opaqueDepthView: sceneColorTarget.DepthShaderResourceView,
+					nearDepthView: null,
+					colorWritesEnabled: true,
+					blendStateOverride: dualDepthPeelBlendState,
+					depthStencilStateOverride: depthState,
+					forcedTextureView: bedCompositeTarget.ShaderResourceView);
+			}
 		}
 
 		private void RenderSelectionOutlines()
@@ -642,7 +991,12 @@ namespace MatterHackers.RenderOpenGl
 					ForceCullBackFaces = false,
 				};
 
-				RenderSelectionMask(command);
+				RenderFlatMask(
+					command,
+					command.Transform * activeSceneRenderContext.WorldView.ModelviewMatrix,
+					activeSceneRenderContext.WorldView.ProjectionMatrix,
+					command.Color,
+					enableDepthTest: true);
 			}
 
 			context.OMSetRenderTargets(renderTargetView, depthStencilView);
@@ -672,11 +1026,25 @@ namespace MatterHackers.RenderOpenGl
 			context.PSSetShaderResource(0, null);
 		}
 
-		private unsafe void RenderSelectionMask(MeshRenderCommand command)
+		private MeshRenderCommand CreateBedSceneCommand(BedRenderCommand bedCommand)
 		{
-			SetSceneMatrices(command.Transform * activeSceneRenderContext.WorldView.ModelviewMatrix, activeSceneRenderContext.WorldView.ProjectionMatrix);
+			return new MeshRenderCommand
+			{
+				Color = bedCommand.Color,
+				Mesh = bedCommand.Mesh,
+				Transform = bedCommand.Transform,
+				RenderType = RenderTypes.Shaded,
+				WireFrameColor = AggColor.Transparent,
+				BlendTexture = false,
+				ForceCullBackFaces = false,
+			};
+		}
+
+		private unsafe void RenderFlatMask(MeshRenderCommand command, Matrix4X4 modelView, Matrix4X4 projection, AggColor color, bool enableDepthTest)
+		{
+			SetSceneMatrices(modelView, projection);
 			UpdateTransformBuffer();
-			UpdateSceneEffectBuffer(command.Color, AggColor.Transparent, false, false, false, false, (float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height);
+			UpdateSceneEffectBuffer(color, AggColor.Transparent, false, false, false, false, (float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height);
 
 			context.IASetInputLayout(sceneEffectSelectionInputLayout);
 			context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
@@ -685,7 +1053,9 @@ namespace MatterHackers.RenderOpenGl
 			context.PSSetShader(sceneEffectSelectionPS);
 			context.PSSetConstantBuffer(2, sceneEffectBuffer);
 
-			var depthState = GetOrCreateDepthStencilState(true, ComparisonFunction.LessEqual, true);
+			var depthState = enableDepthTest
+				? GetOrCreateDepthStencilState(true, ComparisonFunction.LessEqual, true)
+				: GetOrCreateDepthStencilState(false, ComparisonFunction.Always, false);
 			if (ShouldBindDepthStencilState(depthState))
 			{
 				context.OMSetDepthStencilState(depthState);
@@ -814,7 +1184,8 @@ namespace MatterHackers.RenderOpenGl
 			bool colorWritesEnabled = true,
 			ID3D11BlendState blendStateOverride = null,
 			ID3D11DepthStencilState depthStencilStateOverride = null,
-			bool useDualDepthPeelingShader = false)
+			bool useDualDepthPeelingShader = false,
+			ID3D11ShaderResourceView forcedTextureView = null)
 		{
 			SetSceneMatrices(command.Transform * activeSceneRenderContext.WorldView.ModelviewMatrix, activeSceneRenderContext.WorldView.ProjectionMatrix);
 			UpdateTransformBuffer();
@@ -854,18 +1225,19 @@ namespace MatterHackers.RenderOpenGl
 			{
 				var subMesh = glMeshPlugin.subMeshs[subMeshIndex];
 				var sceneSubMesh = sceneShaderData.SubMeshes[subMeshIndex];
+				bool useTexture = forcedTextureView != null || subMesh.texture != null;
 				var pixelShader = overridePixelShader
 					?? (useDualDepthPeelingShader
-						? (subMesh.texture != null ? sceneEffectDualPeelTexturePS : sceneEffectDualPeelColorPS)
-						: (subMesh.texture != null ? sceneEffectTexturePS : sceneEffectColorPS));
+						? (useTexture ? sceneEffectDualPeelTexturePS : sceneEffectDualPeelColorPS)
+						: (useTexture ? sceneEffectTexturePS : sceneEffectColorPS));
 
 				if (ShouldBindPixelShader(pixelShader))
 				{
 					context.PSSetShader(pixelShader);
 				}
 
-				var textureView = whiteTextureView;
-				if (subMesh.texture != null)
+				var textureView = forcedTextureView ?? whiteTextureView;
+				if (forcedTextureView == null && subMesh.texture != null)
 				{
 					var texturePlugin = ImageTexturePlugin.GetImageTexturePlugin(subMesh.texture, true);
 					if (texturePlugin != null
@@ -1082,6 +1454,17 @@ namespace MatterHackers.RenderOpenGl
 			context.Unmap(outlineCompositeBuffer, 0);
 		}
 
+		private unsafe void UpdateBedShadowPostProcessBuffer(float directionX, float directionY, float shadowStrength)
+		{
+			var mapped = context.Map(bedShadowPostProcessBuffer, MapMode.WriteDiscard);
+			float* values = (float*)mapped.DataPointer;
+			values[0] = directionX;
+			values[1] = directionY;
+			values[2] = shadowStrength;
+			values[3] = 0.0f;
+			context.Unmap(bedShadowPostProcessBuffer, 0);
+		}
+
 		private void RestoreDefaultSceneTarget()
 		{
 			context.OMSetRenderTargets(renderTargetView, depthStencilView);
@@ -1108,6 +1491,7 @@ namespace MatterHackers.RenderOpenGl
 		private void ClearQueuedSceneEffects()
 		{
 			queuedSceneCommands.Clear();
+			queuedBedCommand = null;
 			queuedSelectionOutlines.Clear();
 		}
 
@@ -1127,10 +1511,18 @@ namespace MatterHackers.RenderOpenGl
 			dualDepthPeelTarget1?.Dispose();
 			dualFrontAccumTarget?.Dispose();
 			dualBackAccumTarget?.Dispose();
+			bedShadowMaskTarget?.Dispose();
+			bedShadowBlurTargetA?.Dispose();
+			bedShadowBlurTargetB?.Dispose();
+			bedCompositeTarget?.Dispose();
 			dualDepthPeelTarget0 = null;
 			dualDepthPeelTarget1 = null;
 			dualFrontAccumTarget = null;
 			dualBackAccumTarget = null;
+			bedShadowMaskTarget = null;
+			bedShadowBlurTargetA = null;
+			bedShadowBlurTargetB = null;
+			bedCompositeTarget = null;
 
 			sceneEffectVS?.Dispose();
 			sceneEffectSelectionVS?.Dispose();
@@ -1146,13 +1538,19 @@ namespace MatterHackers.RenderOpenGl
 			fullscreenVS?.Dispose();
 			copyTexturePS?.Dispose();
 			resolveDualPeelPS?.Dispose();
+			bedShadowBlurPS?.Dispose();
+			bedShadowCompositePS?.Dispose();
 			outlineCompositePS?.Dispose();
 			sceneEffectBuffer?.Dispose();
 			outlineCompositeBuffer?.Dispose();
+			bedShadowPostProcessBuffer?.Dispose();
 			pointClampSampler?.Dispose();
+			linearClampSampler?.Dispose();
 			dualDepthPeelBlendState?.Dispose();
 			whiteTextureView?.Dispose();
 			whiteTexture?.Dispose();
+			bedTopBaseTexture?.Dispose();
+			bedUnderBaseTexture?.Dispose();
 
 			sceneEffectVS = null;
 			sceneEffectSelectionVS = null;
@@ -1168,13 +1566,19 @@ namespace MatterHackers.RenderOpenGl
 			fullscreenVS = null;
 			copyTexturePS = null;
 			resolveDualPeelPS = null;
+			bedShadowBlurPS = null;
+			bedShadowCompositePS = null;
 			outlineCompositePS = null;
 			sceneEffectBuffer = null;
 			outlineCompositeBuffer = null;
+			bedShadowPostProcessBuffer = null;
 			pointClampSampler = null;
+			linearClampSampler = null;
 			dualDepthPeelBlendState = null;
 			whiteTextureView = null;
 			whiteTexture = null;
+			bedTopBaseTexture = null;
+			bedUnderBaseTexture = null;
 			sceneEffectsInitialized = false;
 		}
 	}

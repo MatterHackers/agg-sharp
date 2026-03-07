@@ -79,6 +79,20 @@ namespace MatterHackers.RenderOpenGl
 			return true;
 		}
 
+		public bool TryRender(BedRenderCommand command)
+		{
+			if (activeSceneRenderContext == null
+				|| command?.Mesh == null
+				|| command.TopBaseTexture == null
+				|| command.UnderBaseTexture == null)
+			{
+				return false;
+			}
+
+			queuedBedCommand = command;
+			return true;
+		}
+
 		private void ApplySceneLighting(LightingData lighting)
 		{
 			if (lighting == null)

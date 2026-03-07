@@ -4,12 +4,18 @@ cbuffer OutlineCompositeBuffer : register(b0)
     float4 OutlinePadding;
 };
 
+cbuffer BedShadowPostProcessBuffer : register(b1)
+{
+    float4 BedShadowSettings;
+};
+
 Texture2D texture0 : register(t0);
 Texture2D texture1 : register(t1);
 Texture2D texture2 : register(t2);
 Texture2D texture3 : register(t3);
 
 SamplerState pointSampler : register(s0);
+SamplerState linearSampler : register(s1);
 
 struct VS_OUTPUT
 {
@@ -29,6 +35,25 @@ VS_OUTPUT FullScreenVS(uint vertexId : SV_VertexID)
 float4 CopyTexturePS(VS_OUTPUT input) : SV_TARGET
 {
     return texture0.Sample(pointSampler, input.TexCoord);
+}
+
+float4 BedShadowBlurPS(VS_OUTPUT input) : SV_TARGET
+{
+    float2 direction = BedShadowSettings.xy;
+    float4 color = texture0.Sample(linearSampler, input.TexCoord) * 0.227027f;
+    color += texture0.Sample(linearSampler, input.TexCoord + direction * 1.384615f) * 0.316216f;
+    color += texture0.Sample(linearSampler, input.TexCoord - direction * 1.384615f) * 0.316216f;
+    color += texture0.Sample(linearSampler, input.TexCoord + direction * 3.230769f) * 0.070270f;
+    color += texture0.Sample(linearSampler, input.TexCoord - direction * 3.230769f) * 0.070270f;
+    return color;
+}
+
+float4 BedShadowCompositePS(VS_OUTPUT input) : SV_TARGET
+{
+    float4 baseColor = texture0.Sample(linearSampler, input.TexCoord);
+    float2 shadowUv = float2(input.TexCoord.x, 1.0f - input.TexCoord.y);
+    float shadowAmount = saturate(texture1.Sample(linearSampler, shadowUv).a * BedShadowSettings.z);
+    return float4(baseColor.rgb * (1.0f - shadowAmount), baseColor.a);
 }
 
 float4 ResolveDualPeelPS(VS_OUTPUT input) : SV_TARGET
