@@ -91,7 +91,7 @@ namespace MatterHackers.RayTracer
 
 		public int FindSideOfLine(Vector2 sidePoint0, Vector2 sidePoint1, Vector2 testPosition)
 		{
-			if (Vector2.Cross(testPosition - sidePoint0, sidePoint1 - sidePoint0) < 0)
+			if (Vector2.Cross(testPosition - sidePoint0, sidePoint1 - sidePoint0) <= 0)
 			{
 				return 1;
 			}
