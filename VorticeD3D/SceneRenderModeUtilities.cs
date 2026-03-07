@@ -27,83 +27,32 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System.Collections.Generic;
-using System.Linq;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderOpenGl
 {
-	public sealed class NativeSceneRenderPlan
+	public static class SceneRenderModeUtilities
 	{
-		internal readonly List<MeshRenderCommand> opaque = new();
-		internal readonly List<MeshRenderCommand> transparent = new();
-		internal readonly List<MeshRenderCommand> selected = new();
+		public const float DefaultWireframeWidth = 0.6f;
+		public const double OutlineFeatureAngleRadians = MathHelper.Tau / 8;
 
-		public IReadOnlyList<MeshRenderCommand> OpaqueCommands => opaque;
-
-		public IReadOnlyList<MeshRenderCommand> TransparentCommands => transparent;
-
-		public IReadOnlyList<MeshRenderCommand> SelectedCommands => selected;
-
-		internal void Clear()
+		public static bool ShouldDrawWireframeOverlay(RenderTypes renderType)
 		{
-			opaque.Clear();
-			transparent.Clear();
-			selected.Clear();
-		}
-	}
-
-	public class NativeSceneRenderPlanner
-	{
-		private readonly NativeSceneRenderPlan plan = new();
-
-		public NativeSceneRenderPlan Build(IReadOnlyList<MeshRenderCommand> commands)
-		{
-			plan.Clear();
-
-			foreach (var command in commands)
-			{
-				if (RequiresTransparency(command))
-				{
-					plan.transparent.Add(command);
-				}
-				else
-				{
-					plan.opaque.Add(command);
-				}
-
-				if (command.IsSelected)
-				{
-					plan.selected.Add(command);
-				}
-			}
-
-			return plan;
+			return renderType == RenderTypes.Outlines
+				|| renderType == RenderTypes.Polygons
+				|| renderType == RenderTypes.NonManifold
+				|| renderType == RenderTypes.Wireframe;
 		}
 
-		public static bool RequiresTransparency(MeshRenderCommand command)
+		public static bool IsWireframeOnly(RenderTypes renderType)
 		{
-			if (command == null)
-			{
-				return false;
-			}
+			return renderType == RenderTypes.Wireframe;
+		}
 
-			if (command.Color.Alpha0To1 < 1)
-			{
-				return true;
-			}
-
-			if (!command.ForceCullBackFaces)
-			{
-				return true;
-			}
-
-			var mesh = command.Mesh;
-			if (mesh == null)
-			{
-				return false;
-			}
-
-			return mesh.FaceTextures.Values.Any(faceTexture => faceTexture?.image?.HasTransparency == true);
+		public static bool ShouldRenderFilledSurface(RenderTypes renderType)
+		{
+			return renderType != RenderTypes.Hidden
+				&& renderType != RenderTypes.Wireframe;
 		}
 	}
 }

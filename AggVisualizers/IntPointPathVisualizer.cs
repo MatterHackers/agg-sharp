@@ -56,9 +56,9 @@ namespace AggVisualizers
 					//world.Translate(new Vector3(0, 0, 0));
 					//world.Rotate(Quaternion.FromEulerAngles(new Vector3(rotateX, 0, 0)));
 
-					GLHelper.SetGlContext(world, screenSpaceBounds, lighting);
-					GLHelper.Render(polygonsMesh, Color.White);
-					GLHelper.UnsetGlContext();
+					RenderHelper.SetGlContext(world, screenSpaceBounds, lighting);
+					RenderHelper.Render(polygonsMesh, Color.White);
+					RenderHelper.UnsetGlContext();
 				};
 
 				using (var displayForm = new OpenGLSystemWindow()

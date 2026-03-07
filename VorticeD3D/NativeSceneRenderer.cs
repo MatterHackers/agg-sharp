@@ -135,13 +135,13 @@ namespace MatterHackers.RenderOpenGl
 			ConfigureShadedMeshState(command);
 			SetSceneMatrices(command.Transform * activeSceneRenderContext.WorldView.ModelviewMatrix, activeSceneRenderContext.WorldView.ProjectionMatrix);
 
-			var glMeshPlugin = GLMeshTrianglePlugin.Get(command.Mesh);
+			var glMeshPlugin = MeshTrianglePlugin.Get(command.Mesh);
 			foreach (var subMesh in glMeshPlugin.subMeshs)
 			{
 				bool useTexture = subMesh.texture != null;
 				if (useTexture)
 				{
-					var glPlugin = ImageGlPlugin.GetImageGlPlugin(subMesh.texture, true);
+					var glPlugin = ImageTexturePlugin.GetImageTexturePlugin(subMesh.texture, true);
 					Enable((int)EnableCap.Texture2D);
 					BindTexture((int)TextureTarget.Texture2D, glPlugin.GLTextureHandle);
 					EnableClientState(ArrayCap.TextureCoordArray);

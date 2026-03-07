@@ -64,7 +64,7 @@ namespace MatterHackers.RenderOpenGl
 		public void RenderToGlRecursive(Csg.Solids.MeshContainer objectToProcess)
 		{
 			var partColor = new ColorF(.8, .8, 1).ToColor();
-			GLHelper.Render(objectToProcess.GetMesh(), partColor);
+			RenderHelper.Render(objectToProcess.GetMesh(), partColor);
 		}
 
 		#endregion Mesh
@@ -129,7 +129,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 
 			var partColor = new ColorF(.8, .8, 1).ToColor();
-			GLHelper.Render(CreateBox(objectToProcess.GetAxisAlignedBoundingBox()), partColor);
+			RenderHelper.Render(CreateBox(objectToProcess.GetAxisAlignedBoundingBox()), partColor);
 		}
 
 		#endregion Box
@@ -168,7 +168,7 @@ namespace MatterHackers.RenderOpenGl
 		public void RenderToGlRecursive(Cylinder.CylinderPrimitive objectToProcess)
 		{
 			var partColor = new ColorF(.8, .8, 1).ToColor();
-			GLHelper.Render(CreateCylinder(objectToProcess), partColor);
+			RenderHelper.Render(CreateCylinder(objectToProcess), partColor);
 		}
 
 		#endregion Cylinder

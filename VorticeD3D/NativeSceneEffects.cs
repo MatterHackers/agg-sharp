@@ -51,6 +51,7 @@ namespace MatterHackers.RenderOpenGl
 		private readonly List<MeshRenderCommand> queuedSceneCommands = new();
 		private readonly List<SelectionOutlineCommand> queuedSelectionOutlines = new();
 		private readonly List<SceneTextureTarget> transparentLayerTargets = new();
+		private readonly NativeSceneRenderPlanner renderPlanner = new();
 
 		private SceneTextureTarget sceneColorTarget;
 		private SceneTextureTarget sceneDepthTarget;
@@ -248,7 +249,7 @@ namespace MatterHackers.RenderOpenGl
 
 			EnsureSceneTargets(width, height);
 
-			var renderPlan = NativeSceneRenderPlanner.Build(queuedSceneCommands);
+			var renderPlan = renderPlanner.Build(queuedSceneCommands);
 
 			RenderOpaqueCommands(renderPlan.OpaqueCommands);
 			RenderSceneDepth(renderPlan);
@@ -347,15 +348,21 @@ namespace MatterHackers.RenderOpenGl
 
 			foreach (var command in commands)
 			{
-				RenderMeshCommand(
-					command,
-					null,
-					enableWireframe: command.RenderType == RenderTypes.Outlines,
-					wireframeOnly: command.RenderType == RenderTypes.Wireframe,
-					enableDepthPeeling: false,
-					firstPeelPass: false,
-					opaqueDepthView: null,
-					nearDepthView: null);
+				if (SceneRenderModeUtilities.ShouldRenderFilledSurface(command.RenderType))
+				{
+					RenderMeshCommand(
+						command,
+						null,
+						enableWireframe: false,
+						wireframeOnly: false,
+						offsetFill: SceneRenderModeUtilities.ShouldDrawWireframeOverlay(command.RenderType),
+						enableDepthPeeling: false,
+						firstPeelPass: false,
+						opaqueDepthView: null,
+						nearDepthView: null);
+				}
+
+				RenderEdgeLines(command, enableDepthPeeling: false, firstPeelPass: false, opaqueDepthView: null, nearDepthView: null);
 			}
 		}
 
@@ -366,12 +373,12 @@ namespace MatterHackers.RenderOpenGl
 
 			foreach (var command in renderPlan.OpaqueCommands)
 			{
-				RenderMeshCommand(command, sceneEffectDepthPS, false, false, false, false, null, null, colorWritesEnabled: false);
+				RenderMeshCommand(command, sceneEffectDepthPS, false, false, false, false, false, null, null, colorWritesEnabled: false);
 			}
 
 			foreach (var command in renderPlan.TransparentCommands)
 			{
-				RenderMeshCommand(command, sceneEffectDepthPS, false, false, false, false, null, null, colorWritesEnabled: false);
+				RenderMeshCommand(command, sceneEffectDepthPS, false, false, false, false, false, null, null, colorWritesEnabled: false);
 			}
 		}
 
@@ -393,11 +400,22 @@ namespace MatterHackers.RenderOpenGl
 
 				foreach (var command in transparentCommands)
 				{
-					RenderMeshCommand(
+					if (SceneRenderModeUtilities.ShouldRenderFilledSurface(command.RenderType))
+					{
+						RenderMeshCommand(
+							command,
+							null,
+							enableWireframe: false,
+							wireframeOnly: false,
+							offsetFill: SceneRenderModeUtilities.ShouldDrawWireframeOverlay(command.RenderType),
+							enableDepthPeeling: true,
+							firstPeelPass: firstPass,
+							opaqueDepthView: sceneColorTarget.DepthShaderResourceView,
+							nearDepthView: nearDepth);
+					}
+
+					RenderEdgeLines(
 						command,
-						null,
-						enableWireframe: command.RenderType == RenderTypes.Outlines || command.RenderType == RenderTypes.Wireframe,
-						wireframeOnly: command.RenderType == RenderTypes.Wireframe,
 						enableDepthPeeling: true,
 						firstPeelPass: firstPass,
 						opaqueDepthView: sceneColorTarget.DepthShaderResourceView,
@@ -455,6 +473,7 @@ namespace MatterHackers.RenderOpenGl
 					sceneEffectSelectionPS,
 					enableWireframe: false,
 					wireframeOnly: false,
+					offsetFill: false,
 					enableDepthPeeling: false,
 					firstPeelPass: false,
 					opaqueDepthView: null,
@@ -516,6 +535,7 @@ namespace MatterHackers.RenderOpenGl
 			ID3D11PixelShader overridePixelShader,
 			bool enableWireframe,
 			bool wireframeOnly,
+			bool offsetFill,
 			bool enableDepthPeeling,
 			bool firstPeelPass,
 			ID3D11ShaderResourceView opaqueDepthView,
@@ -539,9 +559,9 @@ namespace MatterHackers.RenderOpenGl
 			context.PSSetShaderResource(2, nearDepthView);
 			context.OMSetDepthStencilState(GetOrCreateDepthStencilState(true, ComparisonFunction.LessEqual, true));
 			context.OMSetBlendState(GetOrCreateBlendState(false, (int)BlendingFactorSrc.One, (int)BlendingFactorDest.Zero, colorWritesEnabled ? ColorWriteEnable.All : ColorWriteEnable.None));
-			context.RSSetState(command.ForceCullBackFaces ? rasterizerCullBack : rasterizerNoCull);
+			context.RSSetState(GetSceneRasterizerState(command.ForceCullBackFaces, offsetFill));
 
-			var glMeshPlugin = GLMeshTrianglePlugin.Get(command.Mesh);
+			var glMeshPlugin = MeshTrianglePlugin.Get(command.Mesh);
 			foreach (var subMesh in glMeshPlugin.subMeshs)
 			{
 				var pixelShader = overridePixelShader ?? (subMesh.texture != null ? sceneEffectTexturePS : sceneEffectColorPS);
@@ -551,7 +571,7 @@ namespace MatterHackers.RenderOpenGl
 				var textureView = whiteTextureView;
 				if (subMesh.texture != null)
 				{
-					var texturePlugin = ImageGlPlugin.GetImageGlPlugin(subMesh.texture, true);
+					var texturePlugin = ImageTexturePlugin.GetImageTexturePlugin(subMesh.texture, true);
 					if (texturePlugin != null
 						&& textures.TryGetValue(texturePlugin.GLTextureHandle, out var textureInfo)
 						&& textureInfo.ShaderResourceView != null)
@@ -605,6 +625,113 @@ namespace MatterHackers.RenderOpenGl
 			UnbindSceneTextures();
 		}
 
+		private void RenderEdgeLines(
+			MeshRenderCommand command,
+			bool enableDepthPeeling,
+			bool firstPeelPass,
+			ID3D11ShaderResourceView opaqueDepthView,
+			ID3D11ShaderResourceView nearDepthView)
+		{
+			if (!SceneRenderModeUtilities.ShouldDrawWireframeOverlay(command.RenderType))
+			{
+				return;
+			}
+
+			var edgeLines = GetEdgeLines(command);
+			if (edgeLines == null
+				|| edgeLines.Count == 0)
+			{
+				return;
+			}
+
+			SetSceneMatrices(command.Transform * activeSceneRenderContext.WorldView.ModelviewMatrix, activeSceneRenderContext.WorldView.ProjectionMatrix);
+			UpdateTransformBuffer();
+			UpdateSceneEffectBuffer(command.Color, command.WireFrameColor, false, false, enableDepthPeeling, firstPeelPass, (float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height);
+
+			context.IASetInputLayout(posColorInputLayout);
+			context.IASetPrimitiveTopology(PrimitiveTopology.LineList);
+			context.IASetVertexBuffer(0, dynamicVertexBuffer, 7 * sizeof(float));
+			context.VSSetShader(posColorVS);
+			context.PSSetShader(posColorPS);
+			context.VSSetConstantBuffer(0, transformBuffer);
+			context.PSSetShaderResource(1, opaqueDepthView);
+			context.PSSetShaderResource(2, nearDepthView);
+			context.PSSetConstantBuffer(2, sceneEffectBuffer);
+			context.PSSetSampler(1, pointClampSampler);
+			context.OMSetDepthStencilState(GetOrCreateDepthStencilState(true, ComparisonFunction.LessEqual, false));
+			context.OMSetBlendState(GetOrCreateBlendState(true, (int)BlendingFactorSrc.SrcAlpha, (int)BlendingFactorDest.OneMinusSrcAlpha, ColorWriteEnable.All));
+			context.RSSetState(rasterizerNoCull);
+
+			int offset = 0;
+			while (offset < edgeLines.Count)
+			{
+				int batchCount = Math.Min(MaxVertices, edgeLines.Count - offset);
+				batchCount -= batchCount % 2;
+				if (batchCount <= 0)
+				{
+					break;
+				}
+
+				UploadEdgeLineBatch(edgeLines, offset, batchCount);
+				context.Draw((uint)batchCount, 0);
+				offset += batchCount;
+			}
+
+			UnbindSceneTextures();
+		}
+
+		private unsafe void UploadEdgeLineBatch(VectorPOD<WireVertexData> edgeLines, int offset, int count)
+		{
+			var mapped = context.Map(dynamicVertexBuffer, MapMode.WriteDiscard);
+			float* destination = (float*)mapped.DataPointer;
+
+			fixed (WireVertexData* source = edgeLines.Array)
+			{
+				for (int vertexIndex = 0; vertexIndex < count; vertexIndex++)
+				{
+					var wireVertex = source[offset + vertexIndex];
+					int destinationIndex = vertexIndex * 7;
+
+					destination[destinationIndex + 0] = wireVertex.PositionsX;
+					destination[destinationIndex + 1] = wireVertex.PositionsY;
+					destination[destinationIndex + 2] = wireVertex.PositionsZ;
+					destination[destinationIndex + 3] = wireVertex.r / 255f;
+					destination[destinationIndex + 4] = wireVertex.g / 255f;
+					destination[destinationIndex + 5] = wireVertex.b / 255f;
+					destination[destinationIndex + 6] = wireVertex.a / 255f;
+				}
+			}
+
+			context.Unmap(dynamicVertexBuffer, 0);
+		}
+
+		private static VectorPOD<WireVertexData> GetEdgeLines(MeshRenderCommand command)
+		{
+			var wireColor = command.WireFrameColor.Alpha0To1 > 0
+				? command.WireFrameColor
+				: new AggColor(25, 25, 25);
+
+			return command.RenderType switch
+			{
+				RenderTypes.Outlines => MeshWirePlugin.Get(command.Mesh, wireColor, SceneRenderModeUtilities.OutlineFeatureAngleRadians, command.MeshChanged).EdgeLines,
+				RenderTypes.NonManifold => MeshNonManifoldPlugin.Get(command.Mesh, wireColor, command.MeshChanged).EdgeLines,
+				RenderTypes.Polygons => MeshWirePlugin.Get(command.Mesh, wireColor, meshChanged: command.MeshChanged).EdgeLines,
+				RenderTypes.Wireframe => MeshWirePlugin.Get(command.Mesh, wireColor, meshChanged: command.MeshChanged).EdgeLines,
+				_ => null,
+			};
+		}
+
+		private ID3D11RasterizerState GetSceneRasterizerState(bool forceCullBackFaces, bool offsetFill)
+		{
+			if (!offsetFill)
+			{
+				return forceCullBackFaces ? rasterizerCullBack : rasterizerNoCull;
+			}
+
+			var cullMode = forceCullBackFaces ? CullMode.Back : CullMode.None;
+			return GetOrCreateRasterizerState(cullMode, scissor: false, depthBias: 1, slopeBias: 1);
+		}
+
 		private unsafe void UpdateSceneEffectBuffer(
 			AggColor meshColor,
 			AggColor wireframeColor,
@@ -639,7 +766,7 @@ namespace MatterHackers.RenderOpenGl
 
 			values[12] = width;
 			values[13] = height;
-			values[14] = 1.2f;
+			values[14] = SceneRenderModeUtilities.DefaultWireframeWidth;
 			values[15] = 0.0f;
 
 			context.Unmap(sceneEffectBuffer, 0);

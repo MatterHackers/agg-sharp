@@ -38,20 +38,20 @@ using MatterHackers.VectorMath;
 namespace MatterHackers.RenderOpenGl
 {
 
-	public class GLMeshNonManifoldPlugin : IEdgeLinesContainer
+	public class MeshNonManifoldPlugin : IEdgeLinesContainer
 	{
 		public delegate void DrawToGL(Mesh meshToRender);
 
-		public static string GLMeshNonManifoldPluginName => nameof(GLMeshNonManifoldPluginName);
+		public static string MeshNonManifoldPluginName => nameof(MeshNonManifoldPluginName);
 
 		public VectorPOD<WireVertexData> EdgeLines { get; private set; } = new VectorPOD<WireVertexData>();
 
 		private int meshUpdateCount;
 
-		public static GLMeshNonManifoldPlugin Get(Mesh mesh, Color minifoldWireColor, Action meshChanged = null)
+		public static MeshNonManifoldPlugin Get(Mesh mesh, Color minifoldWireColor, Action meshChanged = null)
 		{
-			mesh.PropertyBag.TryGetValue(GLMeshNonManifoldPluginName, out object meshData);
-			if (meshData is GLMeshNonManifoldPlugin plugin)
+			mesh.PropertyBag.TryGetValue(MeshNonManifoldPluginName, out object meshData);
+			if (meshData is MeshNonManifoldPlugin plugin)
 			{
 				if (mesh.ChangedCount == plugin.meshUpdateCount)
 				{
@@ -60,18 +60,18 @@ namespace MatterHackers.RenderOpenGl
 
 				// else we need to rebuild the data
 				plugin.meshUpdateCount = mesh.ChangedCount;
-				mesh.PropertyBag.Remove(GLMeshNonManifoldPluginName);
+				mesh.PropertyBag.Remove(MeshNonManifoldPluginName);
 			}
 
-			var newPlugin = new GLMeshNonManifoldPlugin();
+			var newPlugin = new MeshNonManifoldPlugin();
 			newPlugin.CreateRenderData(mesh, minifoldWireColor, meshChanged);
 			newPlugin.meshUpdateCount = mesh.ChangedCount;
-			mesh.PropertyBag.Add(GLMeshNonManifoldPluginName, newPlugin);
+			mesh.PropertyBag.Add(MeshNonManifoldPluginName, newPlugin);
 
 			return newPlugin;
 		}
 
-		private GLMeshNonManifoldPlugin()
+		private MeshNonManifoldPlugin()
 		{
 			// This is private as you can't build one of these. You have to call GetImageGLDisplayListPlugin.
 		}
@@ -84,9 +84,9 @@ namespace MatterHackers.RenderOpenGl
 			for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
 			{
 				var face = mesh.Faces[faceIndex];
-                GLMeshWirePlugin.AddEdgeLine(edgeLines, mesh.Vertices[face.v0], mesh.Vertices[face.v1], wireColor);
-                GLMeshWirePlugin.AddEdgeLine(edgeLines, mesh.Vertices[face.v1], mesh.Vertices[face.v2], wireColor);
-                GLMeshWirePlugin.AddEdgeLine(edgeLines, mesh.Vertices[face.v2], mesh.Vertices[face.v0], wireColor);
+                MeshWirePlugin.AddEdgeLine(edgeLines, mesh.Vertices[face.v0], mesh.Vertices[face.v1], wireColor);
+                MeshWirePlugin.AddEdgeLine(edgeLines, mesh.Vertices[face.v1], mesh.Vertices[face.v2], wireColor);
+                MeshWirePlugin.AddEdgeLine(edgeLines, mesh.Vertices[face.v2], mesh.Vertices[face.v0], wireColor);
 			}
 
 			this.EdgeLines = edgeLines;
@@ -100,14 +100,14 @@ namespace MatterHackers.RenderOpenGl
                 {
                     if (meshEdge.Faces.Count() != 2)
                     {
-                        GLMeshWirePlugin.AddEdgeLine(filteredEdgeLines,
+                        MeshWirePlugin.AddEdgeLine(filteredEdgeLines,
                             mesh.Vertices[meshEdge.Vertex0Index],
                             mesh.Vertices[meshEdge.Vertex1Index],
 							Color.Red);
                     }
 					else
 					{
-                        GLMeshWirePlugin.AddEdgeLine(filteredEdgeLines,
+                        MeshWirePlugin.AddEdgeLine(filteredEdgeLines,
                             mesh.Vertices[meshEdge.Vertex0Index],
                             mesh.Vertices[meshEdge.Vertex1Index],
 							wireColor);

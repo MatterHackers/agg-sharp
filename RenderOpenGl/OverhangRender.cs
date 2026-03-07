@@ -68,7 +68,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 
 			// change the color to be the right thing per face normal
-			GLMeshTrianglePlugin.Get(
+			MeshTrianglePlugin.Get(
 				meshToRender,
 				(normal) =>
 				{

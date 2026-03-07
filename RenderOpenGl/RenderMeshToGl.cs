@@ -47,7 +47,7 @@ namespace MatterHackers.RenderOpenGl
 		Wireframe
 	}
 
-	public static class GLHelper
+	public static class RenderHelper
 	{
 		private const float GL_MODULATE = (float)0x2100;
 
@@ -208,7 +208,7 @@ namespace MatterHackers.RenderOpenGl
 				GL.TexEnv(TextureEnvironmentTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, GL_REPLACE);
 			}
 
-			var glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);
+			var glMeshPlugin = MeshTrianglePlugin.Get(meshToRender);
 			for (int i = 0; i < glMeshPlugin.subMeshs.Count; i++)
 			{
 				SubTriangleMesh subMesh = glMeshPlugin.subMeshs[i];
@@ -220,7 +220,7 @@ namespace MatterHackers.RenderOpenGl
 						GL.Enable(EnableCap.Blend);
 					}
 
-					var glPlugin = ImageGlPlugin.GetImageGlPlugin(subMesh.texture, true);
+					var glPlugin = ImageTexturePlugin.GetImageTexturePlugin(subMesh.texture, true);
 					GL.Enable(EnableCap.Texture2D);
 					GL.BindTexture(TextureTarget.Texture2D, glPlugin.GLTextureHandle);
 					GL.EnableClientState(ArrayCap.TextureCoordArray);
@@ -308,7 +308,7 @@ namespace MatterHackers.RenderOpenGl
 					// Make sure the GLMeshPlugin has a reference to hold onto the image so it does not go away before this.
 					if (faceTexture != null)
 					{
-						var glPlugin = ImageGlPlugin.GetImageGlPlugin(faceTexture.image, true);
+						var glPlugin = ImageTexturePlugin.GetImageTexturePlugin(faceTexture.image, true);
 						GL.Enable(EnableCap.Texture2D);
 						GL.BindTexture(TextureTarget.Texture2D, glPlugin.GLTextureHandle);
 					}
@@ -353,15 +353,15 @@ namespace MatterHackers.RenderOpenGl
             IEdgeLinesContainer edgeLinesContainer = null;
             if (renderType == RenderTypes.Outlines)
             {
-                edgeLinesContainer = GLMeshWirePlugin.Get(meshToRender, wireColor, MathHelper.Tau / 8, meshChanged);
+                edgeLinesContainer = MeshWirePlugin.Get(meshToRender, wireColor, MathHelper.Tau / 8, meshChanged);
             }
             else if (renderType == RenderTypes.NonManifold)
             {
-                edgeLinesContainer = GLMeshNonManifoldPlugin.Get(meshToRender, wireColor, meshChanged);
+                edgeLinesContainer = MeshNonManifoldPlugin.Get(meshToRender, wireColor, meshChanged);
             }
             else
             {
-                edgeLinesContainer = GLMeshWirePlugin.Get(meshToRender, wireColor);
+                edgeLinesContainer = MeshWirePlugin.Get(meshToRender, wireColor);
             }
 
             GL.EnableClientState(ArrayCap.VertexArray);

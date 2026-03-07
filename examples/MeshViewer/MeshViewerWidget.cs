@@ -311,12 +311,12 @@ namespace MatterHackers.MeshVisualizer
 		{
 			if(item.Mesh != null)
 			{
-				GLMeshTrianglePlugin.Get(item.Mesh);
+				MeshTrianglePlugin.Get(item.Mesh);
 			}
 
 			foreach (IObject3D child in item.Children.Where(o => o.Mesh != null))
 			{
-				GLMeshTrianglePlugin.Get(child.Mesh);
+				MeshTrianglePlugin.Get(child.Mesh);
 			}
 		}
 
@@ -483,12 +483,12 @@ namespace MatterHackers.MeshVisualizer
 
 			if (RenderBed)
 			{
-				GLHelper.Render(printerBed, this.BedColor);
+				RenderHelper.Render(printerBed, this.BedColor);
 			}
 
 			if (buildVolume != null && RenderBuildVolume)
 			{
-				GLHelper.Render(buildVolume, this.BuildVolumeColor);
+				RenderHelper.Render(buildVolume, this.BuildVolumeColor);
 			}
 
 			// we don't want to render the bed or build volume before we load a model.
@@ -499,11 +499,11 @@ namespace MatterHackers.MeshVisualizer
 					double big = 10;
 					double small = 1;
 					Mesh xAxis = PlatonicSolids.CreateCube(big, small, small);
-					GLHelper.Render(xAxis, Color.Red);
+					RenderHelper.Render(xAxis, Color.Red);
 					Mesh yAxis = PlatonicSolids.CreateCube(small, big, small);
-					GLHelper.Render(yAxis, Color.Green);
+					RenderHelper.Render(yAxis, Color.Green);
 					Mesh zAxis = PlatonicSolids.CreateCube(small, small, big);
-					GLHelper.Render(zAxis, Color.Blue);
+					RenderHelper.Render(zAxis, Color.Blue);
 				}
 			}
 
@@ -799,7 +799,7 @@ namespace MatterHackers.MeshVisualizer
 				bool isSelected = parentSelected ||
 					Scene.SelectedItem != null && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
 
-				GLHelper.Render(item.Mesh, item.WorldColor(), item.WorldMatrix(), RenderType);
+				RenderHelper.Render(item.Mesh, item.WorldColor(), item.WorldMatrix(), RenderType);
 			}
 		}
 

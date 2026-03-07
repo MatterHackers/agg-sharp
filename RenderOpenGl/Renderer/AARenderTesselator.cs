@@ -33,7 +33,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderOpenGl
 {
-	public class AAGLTesselator : CachedTesselator
+	public class AARenderTesselator : CachedTesselator
 	{
 		private Vector2 fanPStart;
 		private Vector2 fanTStart;
@@ -41,11 +41,11 @@ namespace MatterHackers.RenderOpenGl
 		private Vector2 fanTNext;
 		private WorldView world;
 
-		public AAGLTesselator()
+		public AARenderTesselator()
 		{
 		}
 
-		public AAGLTesselator(WorldView world)
+		public AARenderTesselator(WorldView world)
 		{
 			this.world = world;
 		}

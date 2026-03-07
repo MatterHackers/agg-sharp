@@ -59,21 +59,21 @@ namespace MatterHackers.RenderOpenGl
         public static readonly int Stride = Marshal.SizeOf(default(WireVertexData));
     }
 
-    public class GLMeshWirePlugin : IEdgeLinesContainer
+    public class MeshWirePlugin : IEdgeLinesContainer
 	{
 		public delegate void DrawToGL(Mesh meshToRender);
 
-		public static string GLMeshWirePluginName => nameof(GLMeshWirePluginName);
+		public static string MeshWirePluginName => nameof(MeshWirePluginName);
 
 		public VectorPOD<WireVertexData> EdgeLines { get; private set; } = new VectorPOD<WireVertexData>();
 
 		private int meshUpdateCount;
 		private double nonPlanarAngleRequired;
 
-		public static GLMeshWirePlugin Get(Mesh mesh, Color wireColor, double nonPlanarAngleRequired = 0, Action meshChanged = null)
+		public static MeshWirePlugin Get(Mesh mesh, Color wireColor, double nonPlanarAngleRequired = 0, Action meshChanged = null)
 		{
-			mesh.PropertyBag.TryGetValue(GLMeshWirePluginName, out object meshData);
-			if (meshData is GLMeshWirePlugin plugin)
+			mesh.PropertyBag.TryGetValue(MeshWirePluginName, out object meshData);
+			if (meshData is MeshWirePlugin plugin)
 			{
 				if (mesh.ChangedCount == plugin.meshUpdateCount
 					&& nonPlanarAngleRequired == plugin.nonPlanarAngleRequired)
@@ -83,18 +83,18 @@ namespace MatterHackers.RenderOpenGl
 
 				// else we need to rebuild the data
 				plugin.meshUpdateCount = mesh.ChangedCount;
-				mesh.PropertyBag.Remove(GLMeshWirePluginName);
+				mesh.PropertyBag.Remove(MeshWirePluginName);
 			}
 
-			var newPlugin = new GLMeshWirePlugin();
+			var newPlugin = new MeshWirePlugin();
 			newPlugin.CreateRenderData(mesh, wireColor, nonPlanarAngleRequired, meshChanged);
 			newPlugin.meshUpdateCount = mesh.ChangedCount;
-			mesh.PropertyBag.Add(GLMeshWirePluginName, newPlugin);
+			mesh.PropertyBag.Add(MeshWirePluginName, newPlugin);
 
 			return newPlugin;
 		}
 
-		private GLMeshWirePlugin()
+		private MeshWirePlugin()
 		{
 			// This is private as you can't build one of these. You have to call GetImageGLDisplayListPlugin.
 		}

@@ -80,7 +80,7 @@ namespace MatterHackers.RenderOpenGl
 		public bool UseVertexColors { get; set; }
 	}
 
-	public class GLMeshTrianglePlugin
+	public class MeshTrianglePlugin
 	{
 		public delegate void DrawToGL(Mesh meshToRender);
 
@@ -88,13 +88,13 @@ namespace MatterHackers.RenderOpenGl
 
 		private int meshUpdateCount;
 
-		public static string GLMeshTrianglePluginName => nameof(GLMeshTrianglePluginName);
+		public static string MeshTrianglePluginName => nameof(MeshTrianglePluginName);
 
-		static public GLMeshTrianglePlugin Get(Mesh mesh, Func<Vector3Float, Color> getColorFunc = null)
+		static public MeshTrianglePlugin Get(Mesh mesh, Func<Vector3Float, Color> getColorFunc = null)
 		{
 			object meshData;
-			mesh.PropertyBag.TryGetValue(GLMeshTrianglePluginName, out meshData);
-			if (meshData is GLMeshTrianglePlugin plugin)
+			mesh.PropertyBag.TryGetValue(MeshTrianglePluginName, out meshData);
+			if (meshData is MeshTrianglePlugin plugin)
 			{
 				if (mesh.ChangedCount == plugin.meshUpdateCount)
 				{
@@ -103,18 +103,18 @@ namespace MatterHackers.RenderOpenGl
 
 				// else we need to rebuild the data
 				plugin.meshUpdateCount = mesh.ChangedCount;
-				mesh.PropertyBag.Remove(GLMeshTrianglePluginName);
+				mesh.PropertyBag.Remove(MeshTrianglePluginName);
 			}
 
-			GLMeshTrianglePlugin newPlugin = new GLMeshTrianglePlugin();
+			MeshTrianglePlugin newPlugin = new MeshTrianglePlugin();
 			newPlugin.CreateRenderData(mesh, getColorFunc);
 			newPlugin.meshUpdateCount = mesh.ChangedCount;
-			mesh.PropertyBag.Add(GLMeshTrianglePluginName, newPlugin);
+			mesh.PropertyBag.Add(MeshTrianglePluginName, newPlugin);
 
 			return newPlugin;
 		}
 
-		private GLMeshTrianglePlugin()
+		private MeshTrianglePlugin()
 		{
 			// This is private as you can't build one of these. You have to call GetImageGLDisplayListPlugin.
 		}
@@ -134,7 +134,7 @@ namespace MatterHackers.RenderOpenGl
 				meshToBuildListFor.FaceTextures.TryGetValue(faceIndex, out faceTexture);
 				if (faceTexture?.image != null)
 				{
-					ImageGlPlugin.GetImageGlPlugin(faceTexture.image, true);
+					ImageTexturePlugin.GetImageTexturePlugin(faceTexture.image, true);
 				}
 
 				// don't compare the data of the texture but rather if they are just the same object

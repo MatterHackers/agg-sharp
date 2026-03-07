@@ -68,7 +68,7 @@ PS_INPUT SceneVS(VS_INPUT input)
 float WireframeEdge(float3 barycentric, float width)
 {
     float3 derivatives = fwidth(barycentric);
-    float3 edge = smoothstep(float3(0.0, 0.0, 0.0), derivatives * max(width, 0.75), barycentric);
+    float3 edge = smoothstep(float3(0.0, 0.0, 0.0), derivatives * max(width, 0.375), barycentric);
     return 1.0 - min(min(edge.x, edge.y), edge.z);
 }
 

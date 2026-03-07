@@ -45,11 +45,11 @@ namespace MatterHackers.RenderOpenGl
 	{
         // We can have a single static instance because all gl rendering is required to happen on the ui thread so there can
         // be no runtime contention for this object (no thread contention).
-        private static readonly Dictionary<ulong, AAGLTesselator> TriangleEdgeInfos = new Dictionary<ulong, AAGLTesselator>();
-        private static readonly List<AAGLTesselator> AvailableTriangleEdgeInfos = new List<AAGLTesselator>();
+        private static readonly Dictionary<ulong, AARenderTesselator> TriangleEdgeInfos = new Dictionary<ulong, AARenderTesselator>();
+        private static readonly List<AARenderTesselator> AvailableTriangleEdgeInfos = new List<AARenderTesselator>();
         private static List<ImageBuffer> aATextureImages;
 
-        private static readonly GLTesselator RenderNowTesselator = new GLTesselator();
+        private static readonly RenderTesselator RenderNowTesselator = new RenderTesselator();
 
         private readonly int width;
         private readonly int height;
@@ -68,7 +68,7 @@ namespace MatterHackers.RenderOpenGl
             TriangleEdgeInfos.Clear();
             AvailableTriangleEdgeInfos.Clear();
             aATextureImages = null;
-            ImageGlPlugin.MarkAllImagesNeedRefresh();
+            ImageTexturePlugin.MarkAllImagesNeedRefresh();
         }
 
         public Graphics2DOpenGL(double deviceScale)
@@ -77,7 +77,7 @@ namespace MatterHackers.RenderOpenGl
             {
                 for (int i = 0; i < 1000; i++)
                 {
-                    AvailableTriangleEdgeInfos.Add(new AAGLTesselator());
+                    AvailableTriangleEdgeInfos.Add(new AARenderTesselator());
                 }
             }
 
@@ -261,14 +261,14 @@ namespace MatterHackers.RenderOpenGl
             TriangleEdgeInfos.Clear();
         }
 
-        private static AAGLTesselator GetAvailableTriangleEdgeInfo()
+        private static AARenderTesselator GetAvailableTriangleEdgeInfo()
         {
             var triangleEdgeInfo = AvailableTriangleEdgeInfos[^1];
             AvailableTriangleEdgeInfos.RemoveAt(AvailableTriangleEdgeInfos.Count - 1);
             return triangleEdgeInfo;
         }
 
-        private static void RenderTriangleEdgeInfo(AAGLTesselator triangleEdgeInfo, Vector2 translation)
+        private static void RenderTriangleEdgeInfo(AARenderTesselator triangleEdgeInfo, Vector2 translation)
         {
             //using (new RecursiveReportTimer("Graphics2DOpenGl.RenderLastToGL"))
             {
@@ -281,7 +281,7 @@ namespace MatterHackers.RenderOpenGl
         private const int MaxCacheSize = 1000;
         private static readonly Dictionary<ulong, int> _displayListCache = new();
 
-        public void RenderTriangleEdgeInfo(AAGLTesselator triangleEdgeInfo, Vector2 translation, ulong cacheKey)
+        public void RenderTriangleEdgeInfo(AARenderTesselator triangleEdgeInfo, Vector2 translation, ulong cacheKey)
         {
             //using (new RecursiveReportTimer("Graphics2DOpenGl.RenderLastToGL"))
             {
@@ -346,7 +346,7 @@ namespace MatterHackers.RenderOpenGl
             PushOrthoProjection();
 
             GL.Enable(EnableCap.Texture2D);
-            GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(aATextureImages[colorIn.Alpha0To255], false).GLTextureHandle);
+            GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageTexturePlugin.GetImageTexturePlugin(aATextureImages[colorIn.Alpha0To255], false).GLTextureHandle);
             GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
             GL.Enable(EnableCap.Blend);
         }
@@ -405,7 +405,7 @@ namespace MatterHackers.RenderOpenGl
             }
 
             var sourceAsImageBuffer = (ImageBuffer)source;
-            var glPlugin = ImageGlPlugin.GetImageGlPlugin(sourceAsImageBuffer, false);
+            var glPlugin = ImageTexturePlugin.GetImageTexturePlugin(sourceAsImageBuffer, false);
 
             PushOrthoProjection();
             GL.Disable(EnableCap.Lighting);
@@ -556,7 +556,7 @@ namespace MatterHackers.RenderOpenGl
         {
             CheckLineImageCache();
             GL.Enable(EnableCap.Texture2D);
-            GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(aATextureImages[color.Alpha0To255], false).GLTextureHandle);
+            GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageTexturePlugin.GetImageTexturePlugin(aATextureImages[color.Alpha0To255], false).GLTextureHandle);
             GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
             GL.Enable(EnableCap.Blend);
             GL.Disable(EnableCap.CullFace);

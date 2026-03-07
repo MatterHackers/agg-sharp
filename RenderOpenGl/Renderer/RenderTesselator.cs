@@ -37,11 +37,11 @@ using Tesselate;
 
 namespace MatterHackers.RenderOpenGl
 {
-	public class GLTesselator : VertexTesselatorAbstract
+	public class RenderTesselator : VertexTesselatorAbstract
 	{
 		private readonly List<Vector2> verticesCache = new List<Vector2>();
 
-		public GLTesselator()
+		public RenderTesselator()
 		{
 			callBegin = BeginCallBack;
 			callEnd = EndCallBack;

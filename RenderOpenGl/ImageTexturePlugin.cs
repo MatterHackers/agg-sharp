@@ -48,9 +48,9 @@ namespace MatterHackers.RenderOpenGl
 		}
 	}
 
-	public class ImageGlPlugin
+	public class ImageTexturePlugin
 	{
-		private static ConditionalWeakTable<byte[], ImageGlPlugin> imagesWithCacheData = new ConditionalWeakTable<byte[], ImageGlPlugin>();
+		private static ConditionalWeakTable<byte[], ImageTexturePlugin> imagesWithCacheData = new ConditionalWeakTable<byte[], ImageTexturePlugin>();
 
 		internal class glAllocatedData
 		{
@@ -98,9 +98,9 @@ namespace MatterHackers.RenderOpenGl
 			removeGlDataCallBackHolder = inCallBackHolder;
 		}
 
-		public static ImageGlPlugin GetImageGlPlugin(ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps, bool textureMagFilterLinear = true, bool clamp = true)
+		public static ImageTexturePlugin GetImageTexturePlugin(ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps, bool textureMagFilterLinear = true, bool clamp = true)
 		{
-			imagesWithCacheData.TryGetValue(imageToGetDisplayListFor.GetBuffer(), out ImageGlPlugin plugin);
+			imagesWithCacheData.TryGetValue(imageToGetDisplayListFor.GetBuffer(), out ImageTexturePlugin plugin);
 
 			lock (glDataNeedingToBeDeleted)
 			{
@@ -145,7 +145,7 @@ namespace MatterHackers.RenderOpenGl
 
 			if (plugin == null)
 			{
-				var newPlugin = new ImageGlPlugin();
+				var newPlugin = new ImageTexturePlugin();
 				imagesWithCacheData.Add(imageToGetDisplayListFor.GetBuffer(), newPlugin);
 				newPlugin.createdWithMipMaps = createAndUseMipMaps;
 				newPlugin.clamp = clamp;
@@ -167,12 +167,12 @@ namespace MatterHackers.RenderOpenGl
 
 		public int GLTextureHandle => glData.glTextureHandle;
 
-		private ImageGlPlugin()
+		private ImageTexturePlugin()
 		{
-			// This is private as you can't build one of these. You have to call GetImageGlPlugin.
+			// This is private as you can't build one of these. You have to call GetImageTexturePlugin.
 		}
 
-		~ImageGlPlugin()
+		~ImageTexturePlugin()
 		{
 			lock (glDataNeedingToBeDeleted)
 			{
