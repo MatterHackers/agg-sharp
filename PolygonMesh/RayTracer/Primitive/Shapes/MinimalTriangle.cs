@@ -26,7 +26,7 @@ namespace MatterHackers.RayTracer
 		private RectangleFloat boundsOnMajorAxis = new RectangleFloat(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue); // 128 bits
 
 		private Vector3Float center; // 96 bits
-		private Vector3Float aabbSize; // 96 bits
+		private Vector3Float halfSize; // 96 bits
 
 		public int FaceIndex { get; set; } // 32 bits
 		private Func<int, int, Vector3Float> vertexFunc; // 64 bits
@@ -35,15 +35,17 @@ namespace MatterHackers.RayTracer
 		{
 			this.FaceIndex = faceIndex;
 			this.vertexFunc = vertexFunc;
-			var planeNormal = (vertex(1) - vertex(0)).Cross(vertex(2) - vertex(0)).GetNormal();
-			double distanceFromOrigin = vertex(0).Dot(planeNormal);
+			Vector3 v0 = new Vector3(vertex(0));
+			Vector3 v1 = new Vector3(vertex(1));
+			Vector3 v2 = new Vector3(vertex(2));
+			Vector3 planeNormal = Vector3Ex.Cross(v1 - v0, v2 - v0).GetNormal();
+			double distanceFromOrigin = Vector3Ex.Dot(v0, planeNormal);
 			Plane = new PlaneFloat(new Vector3Float(planeNormal), (float)distanceFromOrigin);
 
-			center = new Vector3Float((vertex(0) + vertex(1) + vertex(2)) / 3);
-			var aabbMinXYZ = vertex(0).ComponentMin(vertex(1)).ComponentMin(vertex(2));
-			var aabbMaxXYZ = vertex(0).ComponentMax(vertex(1)).ComponentMax(vertex(2));
-			var aabb = new AxisAlignedBoundingBox(aabbMinXYZ, aabbMaxXYZ);
-			aabbSize = new Vector3Float(aabb.Size);
+			var aabbMin = vertex(0).ComponentMin(vertex(1)).ComponentMin(vertex(2));
+			var aabbMax = vertex(0).ComponentMax(vertex(1)).ComponentMax(vertex(2));
+			center = (aabbMin + aabbMax) / 2;
+			halfSize = (aabbMax - aabbMin) / 2;
 
 			var normalLengths = new[] { Math.Abs(planeNormal.X), Math.Abs(planeNormal.Y), Math.Abs(planeNormal.Z) };
 			MajorAxis = (byte)normalLengths.Select((v, i) => new { Axis = i, Value = Math.Abs(v) }).OrderBy(o => o.Value).Last().Axis;
@@ -91,7 +93,7 @@ namespace MatterHackers.RayTracer
 
 		public int FindSideOfLine(Vector2 sidePoint0, Vector2 sidePoint1, Vector2 testPosition)
 		{
-			if (Vector2.Cross(testPosition - sidePoint0, sidePoint1 - sidePoint0) <= 0)
+			if (Vector2.Cross(testPosition - sidePoint0, sidePoint1 - sidePoint0) < 0)
 			{
 				return 1;
 			}
@@ -101,7 +103,7 @@ namespace MatterHackers.RayTracer
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
-			return new AxisAlignedBoundingBox(center - aabbSize, center + aabbSize);
+			return new AxisAlignedBoundingBox(new Vector3(center - halfSize), new Vector3(center + halfSize));
 		}
 
 		public double GetAxisCenter(int axis)
