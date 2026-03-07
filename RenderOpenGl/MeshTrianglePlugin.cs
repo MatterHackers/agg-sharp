@@ -77,6 +77,19 @@ namespace MatterHackers.RenderOpenGl
 		public VectorPOD<VertexNormalData> normalData = new VectorPOD<VertexNormalData>();
 		public VectorPOD<VertexPositionData> positionData = new VectorPOD<VertexPositionData>();
 
+		/// <summary>
+		/// Pre-interleaved vertex data: [posX, posY, posZ, normX, normY, normZ, texU, texV] per vertex.
+		/// Built once in CreateRenderData so the D3D render loop can memcpy instead of scatter-gathering.
+		/// </summary>
+		public float[] interleavedData;
+
+		public const int InterleavedStride = 8; // floats per vertex
+
+		/// <summary>
+		/// Renderer-specific cached GPU buffer (e.g. ID3D11Buffer). Avoids per-frame upload when set.
+		/// </summary>
+		public object CachedGpuBuffer;
+
 		public bool UseVertexColors { get; set; }
 	}
 
@@ -211,6 +224,28 @@ namespace MatterHackers.RenderOpenGl
 				normalData.Add(tempNormal);
 				positionData.Add(tempPosition);
 				colorData.Add(color);
+			}
+
+			// Build pre-interleaved vertex arrays for fast GPU upload
+			foreach (var subMesh in subMeshs)
+			{
+				int vertexCount = subMesh.positionData.Count;
+				subMesh.interleavedData = new float[vertexCount * SubTriangleMesh.InterleavedStride];
+				var positions = subMesh.positionData.Array;
+				var normals = subMesh.normalData.Array;
+				var textures = subMesh.textureData.Array;
+				for (int i = 0; i < vertexCount; i++)
+				{
+					int offset = i * SubTriangleMesh.InterleavedStride;
+					subMesh.interleavedData[offset + 0] = positions[i].positionX;
+					subMesh.interleavedData[offset + 1] = positions[i].positionY;
+					subMesh.interleavedData[offset + 2] = positions[i].positionZ;
+					subMesh.interleavedData[offset + 3] = normals[i].normalX;
+					subMesh.interleavedData[offset + 4] = normals[i].normalY;
+					subMesh.interleavedData[offset + 5] = normals[i].normalZ;
+					subMesh.interleavedData[offset + 6] = textures[i].textureU;
+					subMesh.interleavedData[offset + 7] = textures[i].textureV;
+				}
 			}
 		}
 

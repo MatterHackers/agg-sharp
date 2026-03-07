@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace MatterHackers.RenderOpenGl
 {
@@ -76,6 +77,9 @@ namespace MatterHackers.RenderOpenGl
 					plan.selected.Add(command);
 				}
 			}
+
+			// Sort opaque commands by mesh identity to group draws sharing the same GPU buffers/textures
+			plan.opaque.Sort((a, b) => RuntimeHelpers.GetHashCode(a.Mesh).CompareTo(RuntimeHelpers.GetHashCode(b.Mesh)));
 
 			return plan;
 		}

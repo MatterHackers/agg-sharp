@@ -53,6 +53,13 @@ namespace MatterHackers.RenderOpenGl
 		private readonly List<SceneTextureTarget> transparentLayerTargets = new();
 		private readonly NativeSceneRenderPlanner renderPlanner = new();
 
+		// Pipeline state tracking to skip redundant D3D calls across render commands
+		private ID3D11PixelShader lastBoundPixelShader;
+		private ID3D11ShaderResourceView lastBoundTextureView;
+		private ID3D11RasterizerState lastBoundRasterizerState;
+		private ID3D11BlendState lastBoundBlendState;
+		private ID3D11DepthStencilState lastBoundDepthStencilState;
+
 		private SceneTextureTarget sceneColorTarget;
 		private SceneTextureTarget sceneDepthTarget;
 		private SceneTextureTarget selectionTarget;
@@ -249,6 +256,7 @@ namespace MatterHackers.RenderOpenGl
 
 			EnsureSceneTargets(width, height);
 
+			ResetPipelineStateTracking();
 			var renderPlan = renderPlanner.Build(queuedSceneCommands);
 
 			RenderOpaqueCommands(renderPlan.OpaqueCommands);
@@ -548,7 +556,6 @@ namespace MatterHackers.RenderOpenGl
 
 			context.IASetInputLayout(sceneEffectInputLayout);
 			context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
-			context.IASetVertexBuffer(0, dynamicTexVertexBuffer, SceneEffectVertexStride);
 			context.VSSetShader(sceneEffectVS);
 			context.VSSetConstantBuffer(0, transformBuffer);
 			context.PSSetConstantBuffer(1, lightBuffer);
@@ -557,16 +564,37 @@ namespace MatterHackers.RenderOpenGl
 			context.PSSetSampler(1, pointClampSampler);
 			context.PSSetShaderResource(1, opaqueDepthView);
 			context.PSSetShaderResource(2, nearDepthView);
-			context.OMSetDepthStencilState(GetOrCreateDepthStencilState(true, ComparisonFunction.LessEqual, true));
-			context.OMSetBlendState(GetOrCreateBlendState(false, (int)BlendingFactorSrc.One, (int)BlendingFactorDest.Zero, colorWritesEnabled ? ColorWriteEnable.All : ColorWriteEnable.None));
-			context.RSSetState(GetSceneRasterizerState(command.ForceCullBackFaces, offsetFill));
+			var depthState = GetOrCreateDepthStencilState(true, ComparisonFunction.LessEqual, true);
+			if (depthState != lastBoundDepthStencilState)
+			{
+				context.OMSetDepthStencilState(depthState);
+				lastBoundDepthStencilState = depthState;
+			}
+
+			var blendState = GetOrCreateBlendState(false, (int)BlendingFactorSrc.One, (int)BlendingFactorDest.Zero, colorWritesEnabled ? ColorWriteEnable.All : ColorWriteEnable.None);
+			if (blendState != lastBoundBlendState)
+			{
+				context.OMSetBlendState(blendState);
+				lastBoundBlendState = blendState;
+			}
+
+			var rasterizerState = GetSceneRasterizerState(command.ForceCullBackFaces, offsetFill);
+			if (rasterizerState != lastBoundRasterizerState)
+			{
+				context.RSSetState(rasterizerState);
+				lastBoundRasterizerState = rasterizerState;
+			}
 
 			var glMeshPlugin = MeshTrianglePlugin.Get(command.Mesh);
 			foreach (var subMesh in glMeshPlugin.subMeshs)
 			{
 				var pixelShader = overridePixelShader ?? (subMesh.texture != null ? sceneEffectTexturePS : sceneEffectColorPS);
 
-				context.PSSetShader(pixelShader);
+				if (pixelShader != lastBoundPixelShader)
+				{
+					context.PSSetShader(pixelShader);
+					lastBoundPixelShader = pixelShader;
+				}
 
 				var textureView = whiteTextureView;
 				if (subMesh.texture != null)
@@ -580,49 +608,88 @@ namespace MatterHackers.RenderOpenGl
 					}
 				}
 
-				context.PSSetShaderResource(0, textureView);
-
-				int vertexCount = subMesh.positionData.Count;
-				int batchOffset = 0;
-				while (batchOffset < vertexCount)
+				if (textureView != lastBoundTextureView)
 				{
-					int batchCount = Math.Min(MaxVertices, vertexCount - batchOffset);
-					batchCount -= batchCount % 3;
-					if (batchCount <= 0)
+					context.PSSetShaderResource(0, textureView);
+					lastBoundTextureView = textureView;
+				}
+
+				int vertexCount = subMesh.interleavedData.Length / SubTriangleMesh.InterleavedStride;
+
+				// Try to use or create a static GPU buffer for this submesh
+				var staticBuffer = subMesh.CachedGpuBuffer as ID3D11Buffer;
+				if (staticBuffer == null && subMesh.interleavedData != null)
+				{
+					fixed (float* pData = subMesh.interleavedData)
 					{
-						break;
+						staticBuffer = device.CreateBuffer(
+							new BufferDescription
+							{
+								ByteWidth = (uint)(subMesh.interleavedData.Length * sizeof(float)),
+								Usage = ResourceUsage.Immutable,
+								BindFlags = BindFlags.VertexBuffer,
+							},
+							new SubresourceData((IntPtr)pData));
 					}
 
-					var mapped = context.Map(dynamicTexVertexBuffer, MapMode.WriteDiscard);
-					float* destination = (float*)mapped.DataPointer;
+					subMesh.CachedGpuBuffer = staticBuffer;
+				}
 
-					fixed (VertexPositionData* pPosition = subMesh.positionData.Array)
-					fixed (VertexNormalData* pNormal = subMesh.normalData.Array)
-					fixed (VertexTextureData* pTexture = subMesh.textureData.Array)
+				if (staticBuffer != null)
+				{
+					// Fast path: bind static buffer and draw in one call (no Map/Unmap)
+					context.IASetInputLayout(sceneEffectInputLayout);
+					context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+					context.IASetVertexBuffer(0, staticBuffer, SceneEffectVertexStride);
+					context.Draw((uint)vertexCount, 0);
+				}
+				else
+				{
+					// Fallback: dynamic upload in batches
+					context.IASetInputLayout(sceneEffectInputLayout);
+					context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+					context.IASetVertexBuffer(0, dynamicTexVertexBuffer, SceneEffectVertexStride);
+
+					int batchOffset = 0;
+					while (batchOffset < vertexCount)
 					{
-						for (int vertexIndex = 0; vertexIndex < batchCount; vertexIndex++)
+						int batchCount = Math.Min(MaxVertices, vertexCount - batchOffset);
+						batchCount -= batchCount % 3;
+						if (batchCount <= 0)
 						{
-							int sourceIndex = batchOffset + vertexIndex;
-							int destinationIndex = vertexIndex * 8;
-
-							destination[destinationIndex + 0] = pPosition[sourceIndex].positionX;
-							destination[destinationIndex + 1] = pPosition[sourceIndex].positionY;
-							destination[destinationIndex + 2] = pPosition[sourceIndex].positionZ;
-							destination[destinationIndex + 3] = pNormal[sourceIndex].normalX;
-							destination[destinationIndex + 4] = pNormal[sourceIndex].normalY;
-							destination[destinationIndex + 5] = pNormal[sourceIndex].normalZ;
-							destination[destinationIndex + 6] = pTexture[sourceIndex].textureU;
-							destination[destinationIndex + 7] = pTexture[sourceIndex].textureV;
+							break;
 						}
-					}
 
-					context.Unmap(dynamicTexVertexBuffer, 0);
-					context.Draw((uint)batchCount, 0);
-					batchOffset += batchCount;
+						var mapped = context.Map(dynamicTexVertexBuffer, MapMode.WriteDiscard);
+
+						int sourceFloatOffset = batchOffset * SubTriangleMesh.InterleavedStride;
+						int copyFloats = batchCount * SubTriangleMesh.InterleavedStride;
+						fixed (float* pSource = subMesh.interleavedData)
+						{
+							Buffer.MemoryCopy(
+								pSource + sourceFloatOffset,
+								(float*)mapped.DataPointer,
+								(long)copyFloats * sizeof(float),
+								(long)copyFloats * sizeof(float));
+						}
+
+						context.Unmap(dynamicTexVertexBuffer, 0);
+						context.Draw((uint)batchCount, 0);
+						batchOffset += batchCount;
+					}
 				}
 			}
 
 			UnbindSceneTextures();
+		}
+
+		private void ResetPipelineStateTracking()
+		{
+			lastBoundPixelShader = null;
+			lastBoundTextureView = null;
+			lastBoundRasterizerState = null;
+			lastBoundBlendState = null;
+			lastBoundDepthStencilState = null;
 		}
 
 		private void RenderEdgeLines(

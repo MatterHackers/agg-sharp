@@ -219,7 +219,10 @@ namespace MatterHackers.RenderOpenGl
             }
 
             SetColor(colorIn);
+            var colorBytes = colorIn.ToColor();
             var longHash = vertexSource.GetLongHashCode();
+            // Include color in cache key so same geometry with different colors gets separate display lists
+            longHash = longHash * 31 + (ulong)(colorBytes.red | (colorBytes.green << 8) | (colorBytes.blue << 16) | (colorBytes.Alpha0To255 << 24));
 
             if (AvailableTriangleEdgeInfos.Count == 0)
             {
