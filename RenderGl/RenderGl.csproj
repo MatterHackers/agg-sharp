@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="RenderCsgToGl.cs" />
+    <Compile Remove="CsgRenderer.cs" />
   </ItemGroup>
 
   <ItemGroup>

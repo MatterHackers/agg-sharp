@@ -143,7 +143,7 @@ namespace MatterHackers.MatterCad
         {
             if (objectToRender != null)
             {
-                RenderCsgToGl.Render(objectToRender);
+                CsgRenderer.Render(objectToRender);
             }
         }
 

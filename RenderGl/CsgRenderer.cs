@@ -40,15 +40,15 @@ using System.Collections.Generic;
 
 namespace MatterHackers.RenderGl
 {
-	public class RenderCsgToGl
+	public class CsgRenderer
 	{
 		public static void Render(CsgObject objectToProcess)
 		{
-			RenderCsgToGl visitor = new RenderCsgToGl();
+			CsgRenderer visitor = new CsgRenderer();
 			visitor.RenderToGlRecursive((dynamic)objectToProcess);
 		}
 
-		public RenderCsgToGl()
+		public CsgRenderer()
 		{
 		}
 

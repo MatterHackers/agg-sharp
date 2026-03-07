@@ -196,7 +196,7 @@ namespace MatterHackers.GCodeVisualizer
 					startFeature = Math.Max(endFeature - 1, 0);
 				}
 
-				Graphics2DOpenGL graphics2DGl = graphics2D as Graphics2DOpenGL;
+				Graphics2DGpu graphics2DGl = graphics2D as Graphics2DGpu;
 				if (graphics2DGl != null)
 				{
 					graphics2DGl.PreRender(Color.White);

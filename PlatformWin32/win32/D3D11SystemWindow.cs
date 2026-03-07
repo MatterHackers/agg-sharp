@@ -75,7 +75,7 @@ namespace MatterHackers.Agg.UI
 
 			// Clear all cached GL resources (display lists, textures, tessellations)
 			// that may be stale from a previous GL context (e.g., between automation tests).
-			Graphics2DOpenGL.InvalidateGlCaches();
+			Graphics2DGpu.InvalidateGlCaches();
 
 			if (ExitAfterXSeconds > 0)
 			{
@@ -264,7 +264,7 @@ namespace MatterHackers.Agg.UI
 				SetAndClearViewPort();
 			}
 
-			Graphics2D graphics2D = new Graphics2DOpenGL(this.ClientSize.Width, this.ClientSize.Height, GuiWidget.DeviceScale);
+			Graphics2D graphics2D = new Graphics2DGpu(this.ClientSize.Width, this.ClientSize.Height, GuiWidget.DeviceScale);
 			graphics2D.PushTransform();
 
 			return graphics2D;

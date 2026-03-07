@@ -123,7 +123,7 @@ namespace MatterHackers.GCodeVisualizer
                 }
 
                 // render the part using opengl
-                Graphics2DOpenGL graphics2DGl = graphics2D as Graphics2DOpenGL;
+                Graphics2DGpu graphics2DGl = graphics2D as Graphics2DGpu;
 				if (graphics2DGl != null)
 				{
 					Vector3Float startF = this.GetStart(renderInfo);

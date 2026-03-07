@@ -43,7 +43,7 @@ using Vortice.Mathematics;
 
 namespace MatterHackers.RenderGl
 {
-	public partial class VorticeD3DGl : IOpenGL, INativeSceneRenderer
+	public partial class VorticeD3DGl : IGpuContext, INativeSceneRenderer
 	{
 		private ID3D11Device device;
 		private ID3D11DeviceContext context;
@@ -895,7 +895,7 @@ namespace MatterHackers.RenderGl
 			dest.Add(src[index * 2 + 1]);
 		}
 
-		// --- IOpenGL implementation ---
+		// --- IGpuContext implementation ---
 
 		public void Begin(BeginMode mode)
 		{

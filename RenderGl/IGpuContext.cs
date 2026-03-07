@@ -32,7 +32,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderGl.OpenGl
 {
-	public interface IOpenGL
+	public interface IGpuContext
 	{
 		bool GlHasBufferObjects { get; }
 

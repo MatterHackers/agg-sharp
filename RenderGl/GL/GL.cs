@@ -75,7 +75,7 @@ namespace MatterHackers.RenderGl.OpenGl
 
 
         private static readonly Dictionary<int, bool> IsEnabled = new Dictionary<int, bool>();
-        private static IOpenGL _instance = null;
+        private static IGpuContext _instance = null;
         private static bool inBegin;
         private static int pushAttribCount = 0;
         private static Dictionary<MatrixMode, int> pushMatrixCount = new Dictionary<MatrixMode, int>()
@@ -87,7 +87,7 @@ namespace MatterHackers.RenderGl.OpenGl
         private static int threadId = -1;
         private static MatrixMode matrixMode = OpenGl.MatrixMode.Modelview;
 
-        public static IOpenGL Instance
+        public static IGpuContext Instance
         {
             get
             {
@@ -191,7 +191,7 @@ namespace MatterHackers.RenderGl.OpenGl
                 var code = _instance.GetError();
                 if (code != ErrorCode.NoError)
                 {
-                    throw new Exception($"OpenGL Error: {code}");
+                    throw new Exception($"GL Error: {code}");
                 }
             }
 #endif

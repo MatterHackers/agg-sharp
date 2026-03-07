@@ -41,7 +41,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderGl
 {
-	public class Graphics2DOpenGL : Graphics2D
+	public class Graphics2DGpu : Graphics2D
 	{
         // We can have a single static instance because all gl rendering is required to happen on the ui thread so there can
         // be no runtime contention for this object (no thread contention).
@@ -71,7 +71,7 @@ namespace MatterHackers.RenderGl
             ImageTexturePlugin.MarkAllImagesNeedRefresh();
         }
 
-        public Graphics2DOpenGL(double deviceScale)
+        public Graphics2DGpu(double deviceScale)
         {
             if (AvailableTriangleEdgeInfos.Count == 0)
             {
@@ -84,7 +84,7 @@ namespace MatterHackers.RenderGl
             DeviceScale = deviceScale;
         }
 
-        public Graphics2DOpenGL(int width, int height, double deviceScale)
+        public Graphics2DGpu(int width, int height, double deviceScale)
             : this(deviceScale)
         {
             this.width = width;
