@@ -17,6 +17,7 @@
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
 using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -54,6 +55,7 @@ namespace MatterHackers.Agg.UI
 		private int onPaintCount;
 		private bool enableIdleProcessing;
 
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 		public SystemWindow AggSystemWindow
 		{
 			get => _systemWindow;
@@ -85,6 +87,7 @@ namespace MatterHackers.Agg.UI
 
 		public bool IsMainWindow { get; } = false;
 
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 		public bool IsInitialized { get; set; } = false;
 
 		public WinformsSystemWindow()
@@ -332,6 +335,7 @@ namespace MatterHackers.Agg.UI
 			base.OnClosing(e);
 		}
 
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 		public ISystemWindowProvider WindowProvider { get; set; }
 
 		private Keys overrideModifierKeys = Keys.None;
@@ -356,6 +360,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		// TODO: Why is this member named Caption instead of Title?
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 		public string Caption
 		{
 			get => this.Text;
@@ -372,6 +377,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 		public Point2D DesktopPosition
 		{
 			get => new Point2D(this.DesktopLocation.X, this.DesktopLocation.Y);
@@ -558,6 +564,7 @@ namespace MatterHackers.Agg.UI
 
         public int TitleBarHeight { get; private set; } = 0;
 
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 		public new Vector2 MinimumSize
 		{
 			get => new Vector2(base.MinimumSize.Width, base.MinimumSize.Height);
@@ -740,7 +747,8 @@ namespace MatterHackers.Agg.UI
 
 		public class FormInspector : Form
 		{
-			public virtual bool Inspecting { get; set; } = true;
+			[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		public virtual bool Inspecting { get; set; } = true;
 		}
 	}
 }
