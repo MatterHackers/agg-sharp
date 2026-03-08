@@ -99,9 +99,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				{
 					bool trackColors = meshColors != null;
 
-					// Convert meshes to Manifold format using shared vertices (numProp=3)
 					var manifolds = new List<ManifoldNET.Manifold>();
-					// Map OriginalID -> color for each input mesh
 					var originalIdToColor = new Dictionary<int, Color>();
 					int meshIndex = 0;
 					foreach (var (mesh, matrix) in items)
@@ -109,35 +107,48 @@ namespace MatterHackers.PolygonMesh.Csg
 						var meshCopy = mesh.Copy(CancellationToken.None);
 						meshCopy.Transform(matrix);
 
-						var vertProperties = new List<float>();
-						var triVerts = new List<uint>();
+						ManifoldNET.Manifold manifold = null;
 
-						foreach (var vertex in meshCopy.Vertices)
+						// Try to split by face colors if the mesh already has per-face colors
+						// (e.g., from a previous boolean or CopyAllFaces merge).
+						// This only works when each color group is individually manifold.
+						if (trackColors && meshCopy.FaceColors != null)
 						{
-							vertProperties.Add(vertex.X);
-							vertProperties.Add(vertex.Y);
-							vertProperties.Add(vertex.Z);
+							manifold = TrySplitByFaceColors(meshCopy, originalIdToColor);
 						}
 
-						foreach (var face in meshCopy.Faces)
+						// If no face colors, or splitting failed, create a single manifold
+						if (manifold == null)
 						{
-							triVerts.Add((uint)face.v0);
-							triVerts.Add((uint)face.v1);
-							triVerts.Add((uint)face.v2);
-						}
+							var vertProperties = new List<float>();
+							var triVerts = new List<uint>();
 
-						var meshGlData = new ManifoldNET.MeshGLData(vertProperties.ToArray(), triVerts.ToArray(), 3);
-						var meshGl = new ManifoldNET.MeshGL(meshGlData);
-						var manifold = ManifoldNET.Manifold.Create(meshGl);
+							foreach (var vertex in meshCopy.Vertices)
+							{
+								vertProperties.Add(vertex.X);
+								vertProperties.Add(vertex.Y);
+								vertProperties.Add(vertex.Z);
+							}
 
-						if (trackColors)
-						{
-							// Mark as original to get a unique ID for run tracking
-							manifold = manifold.AsOriginal();
-							var color = (meshColors != null && meshIndex < meshColors.Length)
-								? meshColors[meshIndex]
-								: new Color(200, 200, 200, 255);
-							originalIdToColor[manifold.OriginalID] = color;
+							foreach (var face in meshCopy.Faces)
+							{
+								triVerts.Add((uint)face.v0);
+								triVerts.Add((uint)face.v1);
+								triVerts.Add((uint)face.v2);
+							}
+
+							var meshGlData = new ManifoldNET.MeshGLData(vertProperties.ToArray(), triVerts.ToArray(), 3);
+							var meshGl = new ManifoldNET.MeshGL(meshGlData);
+							manifold = ManifoldNET.Manifold.Create(meshGl);
+
+							if (trackColors)
+							{
+								manifold = manifold.AsOriginal();
+								var color = (meshColors != null && meshIndex < meshColors.Length)
+									? meshColors[meshIndex]
+									: new Color(200, 200, 200, 255);
+								originalIdToColor[manifold.OriginalID] = color;
+							}
 						}
 
 						manifolds.Add(manifold);
@@ -459,6 +470,104 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 
 			return null;
+		}
+
+		/// <summary>
+		/// Try to split a mesh with FaceColors into sub-manifolds by color group.
+		/// Returns a single manifold (union of sub-manifolds) on success, or null if
+		/// any color group doesn't form a valid manifold (e.g., from boolean results
+		/// where color groups share boundaries).
+		/// </summary>
+		private static ManifoldNET.Manifold TrySplitByFaceColors(
+			Mesh meshCopy,
+			Dictionary<int, Color> originalIdToColor)
+		{
+			try
+			{
+				var colorGroups = new Dictionary<Color, List<int>>();
+				for (int faceIdx = 0; faceIdx < meshCopy.Faces.Count; faceIdx++)
+				{
+					var faceColor = faceIdx < meshCopy.FaceColors.Length
+						? meshCopy.FaceColors[faceIdx]
+						: new Color(200, 200, 200, 255);
+					if (!colorGroups.TryGetValue(faceColor, out var faceList))
+					{
+						faceList = new List<int>();
+						colorGroups[faceColor] = faceList;
+					}
+
+					faceList.Add(faceIdx);
+				}
+
+				var subManifolds = new List<ManifoldNET.Manifold>();
+				foreach (var (color, faceIndices) in colorGroups)
+				{
+					var subMesh = new Mesh();
+					var vertexMap = new Dictionary<int, int>();
+
+					foreach (var faceIdx in faceIndices)
+					{
+						var face = meshCopy.Faces[faceIdx];
+						int GetOrAddVertex(int origIdx)
+						{
+							if (!vertexMap.TryGetValue(origIdx, out int newIdx))
+							{
+								newIdx = subMesh.Vertices.Count;
+								subMesh.Vertices.Add(meshCopy.Vertices[origIdx]);
+								vertexMap[origIdx] = newIdx;
+							}
+
+							return newIdx;
+						}
+
+						subMesh.Faces.Add(new Face(
+							GetOrAddVertex(face.v0),
+							GetOrAddVertex(face.v1),
+							GetOrAddVertex(face.v2),
+							subMesh.Vertices));
+					}
+
+					// Check if sub-mesh is manifold before trying to create a Manifold
+					if (!subMesh.IsManifold())
+					{
+						return null;
+					}
+
+					var subVertProps = new List<float>();
+					var subTriVerts = new List<uint>();
+					foreach (var v in subMesh.Vertices)
+					{
+						subVertProps.Add(v.X);
+						subVertProps.Add(v.Y);
+						subVertProps.Add(v.Z);
+					}
+
+					foreach (var f in subMesh.Faces)
+					{
+						subTriVerts.Add((uint)f.v0);
+						subTriVerts.Add((uint)f.v1);
+						subTriVerts.Add((uint)f.v2);
+					}
+
+					var subGlData = new ManifoldNET.MeshGLData(subVertProps.ToArray(), subTriVerts.ToArray(), 3);
+					var subGl = new ManifoldNET.MeshGL(subGlData);
+					var subManifold = ManifoldNET.Manifold.Create(subGl);
+					subManifold = subManifold.AsOriginal();
+					originalIdToColor[subManifold.OriginalID] = color;
+					subManifolds.Add(subManifold);
+				}
+
+				if (subManifolds.Count == 1)
+				{
+					return subManifolds[0];
+				}
+
+				return ManifoldNET.Manifold.BatchBoolOperation(subManifolds, ManifoldNET.BoolOperationType.Add);
+			}
+			catch
+			{
+				return null;
+			}
 		}
 
 		class MWNImplicit : BoundedImplicitFunction3d
