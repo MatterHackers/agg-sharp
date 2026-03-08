@@ -108,6 +108,25 @@ namespace MatterHackers.PolygonMesh.Csg
 					int meshIndex = 0;
 					foreach (var (mesh, matrix) in items)
 					{
+						if (mesh.Vertices.Count == 0 || mesh.Faces.Count == 0)
+						{
+							// Intersect with any empty operand produces empty result
+							if (operation == CsgModes.Intersect)
+							{
+								return new Mesh();
+							}
+
+							// Subtract with empty first operand produces empty result
+							if (meshIndex == 0 && operation == CsgModes.Subtract)
+							{
+								return new Mesh();
+							}
+
+							// Skip empty meshes for union (A ∪ ∅ = A) and subtract (A - ∅ = A)
+							meshIndex++;
+							continue;
+						}
+
 						var meshCopy = mesh.Copy(CancellationToken.None);
 						meshCopy.Transform(matrix);
 
@@ -194,7 +213,11 @@ namespace MatterHackers.PolygonMesh.Csg
 					}
 
 					ManifoldNET.Manifold boolResult = null;
-					if (manifolds.Count >= 2)
+					if (manifolds.Count == 1)
+					{
+						boolResult = manifolds[0];
+					}
+					else if (manifolds.Count >= 2)
 					{
 						try
 						{
