@@ -41,6 +41,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderGl
 {
+	// NOTE: GL render path is deprecated and will be removed. D3D is the active render path.
 	public class Graphics2DGpu : Graphics2D
 	{
         // We can have a single static instance because all gl rendering is required to happen on the ui thread so there can

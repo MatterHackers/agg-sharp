@@ -21,6 +21,7 @@ cbuffer SceneEffectBuffer : register(b2)
     float4 WireframeColor;
     float4 EffectFlags;
     float4 ResolutionAndWidth;
+    float4 ExtraFlags; // x = useVertexColor
 };
 
 Texture2D diffuseTexture : register(t0);
@@ -36,6 +37,7 @@ struct VS_INPUT
     float3 Normal : NORMAL;
     float2 TexCoord : TEXCOORD0;
     float3 EdgeHints : TEXCOORD1;
+    float4 VertexColor : COLOR0;
     uint VertexId : SV_VertexID;
 };
 
@@ -46,6 +48,7 @@ struct PS_INPUT
     float2 TexCoord : TEXCOORD1;
     float3 Barycentric : TEXCOORD2;
     float3 EdgeHints : TEXCOORD3;
+    float4 VertexColor : COLOR0;
 };
 
 float3 GetBarycentric(uint vertexId)
@@ -65,6 +68,7 @@ PS_INPUT SceneVS(VS_INPUT input)
     output.TexCoord = input.TexCoord;
     output.Barycentric = GetBarycentric(input.VertexId);
     output.EdgeHints = input.EdgeHints;
+    output.VertexColor = input.VertexColor;
     return output;
 }
 
@@ -249,10 +253,20 @@ DualPeelOutput ApplyDualDepthPeeling(float4 position, float4 shadedColor)
     return output;
 }
 
+float4 GetEffectiveColor(float4 vertexColor)
+{
+    // When useVertexColor flag is set, use per-vertex face colors (including alpha)
+    if (ExtraFlags.x > 0.5)
+    {
+        return vertexColor;
+    }
+    return MeshColor;
+}
+
 float4 SceneColorPS(PS_INPUT input) : SV_TARGET
 {
     ApplyDepthPeeling(input.Position);
-    float4 baseColor = MeshColor;
+    float4 baseColor = GetEffectiveColor(input.VertexColor);
     DiscardIfInvisible(baseColor.a);
     float3 litColor = ApplyLighting(baseColor.rgb, input.ViewNormal);
     return ComposeSceneColor(float4(litColor, baseColor.a), input.Barycentric, input.EdgeHints);
@@ -261,7 +275,8 @@ float4 SceneColorPS(PS_INPUT input) : SV_TARGET
 float4 SceneTexturePS(PS_INPUT input) : SV_TARGET
 {
     ApplyDepthPeeling(input.Position);
-    float4 sampledColor = diffuseTexture.Sample(linearSampler, input.TexCoord) * MeshColor;
+    float4 effectiveColor = GetEffectiveColor(input.VertexColor);
+    float4 sampledColor = diffuseTexture.Sample(linearSampler, input.TexCoord) * effectiveColor;
     DiscardIfInvisible(sampledColor.a);
     float3 color = ResolutionAndWidth.w > 0.5 ? sampledColor.rgb : ApplyLighting(sampledColor.rgb, input.ViewNormal);
     return ComposeSceneColor(float4(color, sampledColor.a), input.Barycentric, input.EdgeHints);
@@ -281,7 +296,7 @@ float2 DualDepthInitPS(PS_INPUT input) : SV_TARGET0
 
 DualPeelOutput SceneColorDualPeelPS(PS_INPUT input)
 {
-    float4 baseColor = MeshColor;
+    float4 baseColor = GetEffectiveColor(input.VertexColor);
     DiscardIfInvisible(baseColor.a);
     float3 litColor = ApplyLighting(baseColor.rgb, input.ViewNormal);
     float4 shadedColor = ComposeSceneColor(float4(litColor, baseColor.a), input.Barycentric, input.EdgeHints);
@@ -290,7 +305,8 @@ DualPeelOutput SceneColorDualPeelPS(PS_INPUT input)
 
 DualPeelOutput SceneTextureDualPeelPS(PS_INPUT input)
 {
-    float4 sampledColor = diffuseTexture.Sample(linearSampler, input.TexCoord) * MeshColor;
+    float4 effectiveColor = GetEffectiveColor(input.VertexColor);
+    float4 sampledColor = diffuseTexture.Sample(linearSampler, input.TexCoord) * effectiveColor;
     DiscardIfInvisible(sampledColor.a);
     float3 color = ResolutionAndWidth.w > 0.5 ? sampledColor.rgb : ApplyLighting(sampledColor.rgb, input.ViewNormal);
     float4 shadedColor = ComposeSceneColor(float4(color, sampledColor.a), input.Barycentric, input.EdgeHints);

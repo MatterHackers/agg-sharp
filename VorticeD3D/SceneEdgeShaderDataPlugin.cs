@@ -39,6 +39,8 @@ namespace MatterHackers.RenderGl
 	{
 		public float[] InterleavedData { get; init; }
 
+		public bool HasVertexColors { get; init; }
+
 		public object CachedGpuBuffer { get; set; }
 	}
 
@@ -46,6 +48,12 @@ namespace MatterHackers.RenderGl
 	{
 		private const int BaseVertexStride = SubTriangleMesh.InterleavedStride;
 		private const int EdgeHintStride = 3;
+		private const int ColorStride = 4; // RGBA as floats
+
+		/// <summary>
+		/// Total floats per vertex in the scene effect interleaved data.
+		/// </summary>
+		public const int TotalVertexFloatStride = BaseVertexStride + EdgeHintStride + ColorStride;
 
 		private int meshUpdateCount;
 
@@ -97,21 +105,47 @@ namespace MatterHackers.RenderGl
 				var baseSubMesh = trianglePlugin.subMeshs[subMeshIndex];
 				var edgeHints = edgeHintsBySubMesh[subMeshIndex];
 				int vertexCount = baseSubMesh.interleavedData.Length / BaseVertexStride;
-				var interleavedData = new float[vertexCount * (BaseVertexStride + EdgeHintStride)];
+				var interleavedData = new float[vertexCount * TotalVertexFloatStride];
+
+				bool hasVertexColors = baseSubMesh.UseVertexColors && baseSubMesh.colorData.Count == vertexCount;
 
 				for (int vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
 				{
 					int baseOffset = vertexIndex * BaseVertexStride;
-					int sceneOffset = vertexIndex * (BaseVertexStride + EdgeHintStride);
+					int sceneOffset = vertexIndex * TotalVertexFloatStride;
+
+					// Copy base vertex data (position, normal, texcoord)
 					Array.Copy(baseSubMesh.interleavedData, baseOffset, interleavedData, sceneOffset, BaseVertexStride);
-					interleavedData[sceneOffset + BaseVertexStride + 0] = edgeHints[vertexIndex * EdgeHintStride + 0];
-					interleavedData[sceneOffset + BaseVertexStride + 1] = edgeHints[vertexIndex * EdgeHintStride + 1];
-					interleavedData[sceneOffset + BaseVertexStride + 2] = edgeHints[vertexIndex * EdgeHintStride + 2];
+
+					// Edge hints
+					int edgeOffset = sceneOffset + BaseVertexStride;
+					interleavedData[edgeOffset + 0] = edgeHints[vertexIndex * EdgeHintStride + 0];
+					interleavedData[edgeOffset + 1] = edgeHints[vertexIndex * EdgeHintStride + 1];
+					interleavedData[edgeOffset + 2] = edgeHints[vertexIndex * EdgeHintStride + 2];
+
+					// Per-vertex color (RGBA as 0-1 floats)
+					int colorOffset = sceneOffset + BaseVertexStride + EdgeHintStride;
+					if (hasVertexColors)
+					{
+						var c = baseSubMesh.colorData.Array[vertexIndex];
+						interleavedData[colorOffset + 0] = c.red / 255f;
+						interleavedData[colorOffset + 1] = c.green / 255f;
+						interleavedData[colorOffset + 2] = c.blue / 255f;
+						interleavedData[colorOffset + 3] = c.alpha / 255f;
+					}
+					else
+					{
+						interleavedData[colorOffset + 0] = 1f;
+						interleavedData[colorOffset + 1] = 1f;
+						interleavedData[colorOffset + 2] = 1f;
+						interleavedData[colorOffset + 3] = 1f;
+					}
 				}
 
 				subMeshes.Add(new SceneEdgeShaderSubMeshData
 				{
 					InterleavedData = interleavedData,
+					HasVertexColors = hasVertexColors,
 				});
 			}
 		}

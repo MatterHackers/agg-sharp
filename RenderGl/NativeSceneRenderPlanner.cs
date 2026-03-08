@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using MatterHackers.Agg;
 
 namespace MatterHackers.RenderGl
 {
@@ -105,6 +106,12 @@ namespace MatterHackers.RenderGl
 			if (mesh == null)
 			{
 				return false;
+			}
+
+			// Check if any per-face colors have transparency
+			if (mesh.FaceColors != null && mesh.FaceColors.Any(c => c.alpha < 255))
+			{
+				return true;
 			}
 
 			return mesh.FaceTextures.Values.Any(faceTexture => faceTexture?.image?.HasTransparency == true);

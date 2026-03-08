@@ -177,12 +177,35 @@ namespace MatterHackers.RenderGl
 					DisableClientState(ArrayCap.TextureCoordArray);
 				}
 
-				byte red = useTexture && !command.BlendTexture ? (byte)255 : (byte)command.Color.Red0To255;
-				byte green = useTexture && !command.BlendTexture ? (byte)255 : (byte)command.Color.Green0To255;
-				byte blue = useTexture && !command.BlendTexture ? (byte)255 : (byte)command.Color.Blue0To255;
-				Color4(red, green, blue, (byte)command.Color.Alpha0To255);
+				// Use per-vertex face colors when the mesh has them.
+				// WorldColor() defaults to White (alpha=255) even when no explicit color
+				// is set, so we can't rely on alpha to detect an override. Instead, always
+				// use face colors when present — the pipeline already excludes Color from
+				// CopyProperties when FaceColors exist, and explicit user overrides will
+				// clear FaceColors or be handled upstream.
+				bool hasFaceColors = command.Mesh.FaceColors != null && subMesh.UseVertexColors;
+				bool useFaceColors = hasFaceColors;
 
-				if (subMesh.UseVertexColors)
+				byte red, green, blue, alpha;
+				if (useFaceColors)
+				{
+					// Per-face vertex colors provide RGB; set base color to white with full alpha
+					red = 255;
+					green = 255;
+					blue = 255;
+					alpha = 255;
+				}
+				else
+				{
+					red = useTexture && !command.BlendTexture ? (byte)255 : (byte)command.Color.Red0To255;
+					green = useTexture && !command.BlendTexture ? (byte)255 : (byte)command.Color.Green0To255;
+					blue = useTexture && !command.BlendTexture ? (byte)255 : (byte)command.Color.Blue0To255;
+					alpha = (byte)command.Color.Alpha0To255;
+				}
+
+				Color4(red, green, blue, alpha);
+
+				if (useFaceColors || (subMesh.UseVertexColors && !hasFaceColors))
 				{
 					EnableClientState(ArrayCap.ColorArray);
 				}
@@ -211,7 +234,7 @@ namespace MatterHackers.RenderGl
 
 						if (subMesh.UseVertexColors && pColorData != null)
 						{
-							ColorPointer(3, ColorPointerType.UnsignedByte, 0, new System.IntPtr(pColorData));
+							ColorPointer(4, ColorPointerType.UnsignedByte, 0, new System.IntPtr(pColorData));
 						}
 
 						DrawArrays(BeginMode.Triangles, 0, subMesh.positionData.Count);

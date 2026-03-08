@@ -31,11 +31,13 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using ClipperLib;
 using DualContouring;
 using g3;
 using gs;
+using MatterHackers.Agg;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 
@@ -86,7 +88,8 @@ namespace MatterHackers.PolygonMesh.Csg
 			Action<double, string> reporter,
 			CancellationToken cancellationToken,
             double amountPerOperation = 1,
-			double ratioCompleted = 0)
+			double ratioCompleted = 0,
+			Color[] meshColors = null)
 		{
 			if (processingMode == ProcessingModes.Polygons)
 			{
@@ -94,14 +97,18 @@ namespace MatterHackers.PolygonMesh.Csg
 
 				if (allManifold)
 				{
-					// Convert meshes to MeshLib format
+					bool trackColors = meshColors != null;
+
+					// Convert meshes to Manifold format using shared vertices (numProp=3)
 					var manifolds = new List<ManifoldNET.Manifold>();
+					// Map OriginalID -> color for each input mesh
+					var originalIdToColor = new Dictionary<int, Color>();
+					int meshIndex = 0;
 					foreach (var (mesh, matrix) in items)
 					{
 						var meshCopy = mesh.Copy(CancellationToken.None);
 						meshCopy.Transform(matrix);
 
-						// Convert to vertex and face arrays
 						var vertProperties = new List<float>();
 						var triVerts = new List<uint>();
 
@@ -119,14 +126,25 @@ namespace MatterHackers.PolygonMesh.Csg
 							triVerts.Add((uint)face.v2);
 						}
 
-						var meshGlData = new ManifoldNET.MeshGLData(vertProperties.ToArray(), triVerts.ToArray());
+						var meshGlData = new ManifoldNET.MeshGLData(vertProperties.ToArray(), triVerts.ToArray(), 3);
 						var meshGl = new ManifoldNET.MeshGL(meshGlData);
+						var manifold = ManifoldNET.Manifold.Create(meshGl);
 
-						manifolds.Add(ManifoldNET.Manifold.Create(meshGl));
+						if (trackColors)
+						{
+							// Mark as original to get a unique ID for run tracking
+							manifold = manifold.AsOriginal();
+							var color = (meshColors != null && meshIndex < meshColors.Length)
+								? meshColors[meshIndex]
+								: new Color(200, 200, 200, 255);
+							originalIdToColor[manifold.OriginalID] = color;
+						}
+
+						manifolds.Add(manifold);
+						meshIndex++;
 					}
 
-					// Perform boolean operation using MeshLib
-					// Convert operation type to MeshLib enum
+					// Convert operation type
 					var opperationType = ManifoldNET.BoolOperationType.Add;
 
 					if (operation == CsgModes.Subtract)
@@ -138,15 +156,14 @@ namespace MatterHackers.PolygonMesh.Csg
 						opperationType = ManifoldNET.BoolOperationType.Intersect;
 					}
 
-					ManifoldNET.MeshGL result = null;
-					// Perform boolean operation on first two meshes
+					ManifoldNET.Manifold boolResult = null;
 					if (manifolds.Count >= 2)
 					{
 						try
 						{
-							result = ManifoldNET.Manifold.BatchBoolOperation(manifolds, opperationType).MeshGL;
+							boolResult = ManifoldNET.Manifold.BatchBoolOperation(manifolds, opperationType);
 						}
-						catch 
+						catch
 						{
                             var csgBySlicing = new CsgBySlicing();
                             csgBySlicing.Setup(items, null, operation, cancellationToken);
@@ -161,10 +178,15 @@ namespace MatterHackers.PolygonMesh.Csg
 					// Convert result back to Mesh format
 					var resultMesh = new Mesh();
 
-					if (result != null)
+					if (boolResult != null)
 					{
+						var result = boolResult.MeshGL;
+						var resultNumProp = result.PropertiesNumber;
 						var vertices = result.VerticesProperties;
-						for (int i = 0; i < vertices.Length; i += 3)
+						var indices = result.TriangleVertices;
+
+						// Build vertices and faces
+						for (int i = 0; i < vertices.Length; i += resultNumProp)
 						{
 							resultMesh.Vertices.Add(new Vector3(
 								vertices[i],
@@ -172,7 +194,6 @@ namespace MatterHackers.PolygonMesh.Csg
 								vertices[i + 2]));
 						}
 
-						var indices = result.TriangleVertices;
 						for (int i = 0; i < indices.Length; i += 3)
 						{
 							resultMesh.Faces.Add(new Face(
@@ -181,8 +202,19 @@ namespace MatterHackers.PolygonMesh.Csg
 								indices[i + 2],
 								resultMesh.Vertices));
 						}
+
+						// Extract per-face colors from run data
+						if (trackColors && resultMesh.Faces.Count > 0)
+						{
+							var faceColors = ManifoldRunHelper.ExtractFaceColors(
+								result, resultMesh.Faces.Count, originalIdToColor);
+							if (faceColors != null)
+							{
+								resultMesh.FaceColors = faceColors;
+							}
+						}
 					}
-                
+
 					return resultMesh;
                 }
                 else
@@ -344,7 +376,8 @@ namespace MatterHackers.PolygonMesh.Csg
             Action<double, string> reporter = null,
 			double amountPerOperation = 1,
 			double ratioCompleted = 0,
-			CancellationToken cancellationToken = default)
+			CancellationToken cancellationToken = default,
+			Color[] meshColors = null)
 		{
 			if (processingMode == ProcessingModes.Polygons)
 			{
@@ -356,7 +389,8 @@ namespace MatterHackers.PolygonMesh.Csg
 					reporter,
                     cancellationToken,
                     amountPerOperation,
-					ratioCompleted);
+					ratioCompleted,
+					meshColors);
 			}
 			else
 			{
@@ -461,4 +495,105 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 		}
     }
+
+	/// <summary>
+	/// Helper to read run data from Manifold's MeshGL via P/Invoke.
+	/// ManifoldNET 1.0.7-alpha exposes RunIndexLength/RunOriginalIdLength
+	/// but not the actual data arrays — we access those through the native C API directly.
+	/// </summary>
+	internal static class ManifoldRunHelper
+	{
+		[DllImport("manifoldc", CallingConvention = CallingConvention.Cdecl)]
+		private static extern ulong manifold_meshgl_run_index_length(IntPtr m);
+
+		[DllImport("manifoldc", CallingConvention = CallingConvention.Cdecl)]
+		private static extern ulong manifold_meshgl_run_original_id_length(IntPtr m);
+
+		[DllImport("manifoldc", CallingConvention = CallingConvention.Cdecl)]
+		private static extern IntPtr manifold_meshgl_run_index(IntPtr mem, IntPtr m);
+
+		[DllImport("manifoldc", CallingConvention = CallingConvention.Cdecl)]
+		private static extern IntPtr manifold_meshgl_run_original_id(IntPtr mem, IntPtr m);
+
+		/// <summary>
+		/// Extract per-face colors from a boolean result MeshGL using run data.
+		/// Each "run" in the result maps a contiguous range of triangles to an OriginalID
+		/// (the source mesh). We look up each OriginalID in the color map to assign colors.
+		/// </summary>
+		public static Color[] ExtractFaceColors(
+			ManifoldNET.MeshGL resultMeshGl,
+			int faceCount,
+			Dictionary<int, Color> originalIdToColor)
+		{
+			// Get the native pointer from MeshGL using reflection
+			// MeshGL inherits from ManifoldObject which has _pointer field
+			var pointerField = typeof(ManifoldNET.MeshGL).BaseType?.GetField("_pointer",
+				System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+			if (pointerField == null)
+			{
+				return null;
+			}
+
+			var meshGlPtr = (IntPtr)pointerField.GetValue(resultMeshGl);
+			if (meshGlPtr == IntPtr.Zero)
+			{
+				return null;
+			}
+
+			var runIndexLen = (int)manifold_meshgl_run_index_length(meshGlPtr);
+			var runOriginalIdLen = (int)manifold_meshgl_run_original_id_length(meshGlPtr);
+
+			if (runIndexLen < 2 || runOriginalIdLen < 1)
+			{
+				return null;
+			}
+
+			// Allocate memory for the native arrays to write into
+			var runIndexMem = Marshal.AllocHGlobal(runIndexLen * sizeof(int));
+			var runOriginalIdMem = Marshal.AllocHGlobal(runOriginalIdLen * sizeof(int));
+
+			try
+			{
+				var runIndexDataPtr = manifold_meshgl_run_index(runIndexMem, meshGlPtr);
+				var runOriginalIdDataPtr = manifold_meshgl_run_original_id(runOriginalIdMem, meshGlPtr);
+
+				// Copy native data to managed arrays
+				var runIndex = new int[runIndexLen];
+				var runOriginalId = new int[runOriginalIdLen];
+
+				Marshal.Copy(runIndexDataPtr, runIndex, 0, runIndexLen);
+				Marshal.Copy(runOriginalIdDataPtr, runOriginalId, 0, runOriginalIdLen);
+
+				// Build face colors from runs
+				// runIndex[i] = first triangle index of run i
+				// runOriginalId[i] = OriginalID of run i
+				// Number of runs = runOriginalIdLen (runIndex has one extra entry at the end)
+				var faceColors = new Color[faceCount];
+				var defaultColor = new Color(200, 200, 200, 255);
+
+				for (int runIdx = 0; runIdx < runOriginalIdLen; runIdx++)
+				{
+					// runIndex values are triangle vertex indices (i.e., triVerts indices),
+					// so divide by 3 to get face indices
+					int startTri = runIndex[runIdx] / 3;
+					int endTri = (runIdx + 1 < runIndexLen) ? runIndex[runIdx + 1] / 3 : faceCount;
+					var origId = runOriginalId[runIdx];
+
+					var color = originalIdToColor.TryGetValue(origId, out var c) ? c : defaultColor;
+
+					for (int tri = startTri; tri < endTri && tri < faceCount; tri++)
+					{
+						faceColors[tri] = color;
+					}
+				}
+
+				return faceColors;
+			}
+			finally
+			{
+				Marshal.FreeHGlobal(runIndexMem);
+				Marshal.FreeHGlobal(runOriginalIdMem);
+			}
+		}
+	}
 }

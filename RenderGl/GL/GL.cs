@@ -37,6 +37,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderGl.OpenGl
 {
+    // NOTE: GL render path is deprecated and will be removed. D3D is the active render path.
     public static class GL
     {
         #region constants

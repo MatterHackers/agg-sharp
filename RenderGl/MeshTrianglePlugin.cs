@@ -50,6 +50,7 @@ namespace MatterHackers.RenderGl
 		public byte red;
 		public byte green;
 		public byte blue;
+		public byte alpha;
 		public static readonly int Stride = Marshal.SizeOf(default(VertexColorData));
 	}
 
@@ -139,6 +140,9 @@ namespace MatterHackers.RenderGl
 
 		private void CreateRenderData(Mesh meshToBuildListFor, Func<Vector3Float, Color> getColorFunc)
 		{
+			bool hasFaceColors = meshToBuildListFor.FaceColors != null
+				&& meshToBuildListFor.FaceColors.Length > 0;
+
 			subMeshs = new List<SubTriangleMesh>();
 			SubTriangleMesh currentSubMesh = null;
 			VectorPOD<VertexTextureData> textureData = null;
@@ -156,16 +160,16 @@ namespace MatterHackers.RenderGl
 				}
 
 				// don't compare the data of the texture but rather if they are just the same object
-				if (subMeshs.Count == 0 
-					|| (faceTexture != null 
+				if (subMeshs.Count == 0
+					|| (faceTexture != null
 						&& (object)subMeshs[subMeshs.Count - 1].texture != (object)faceTexture.image)
-					|| (faceTexture == null 
+					|| (faceTexture == null
 						&& subMeshs[subMeshs.Count - 1].texture != null))
 				{
 					SubTriangleMesh newSubMesh = new SubTriangleMesh();
 					newSubMesh.texture = faceTexture == null ? null : faceTexture.image;
 					subMeshs.Add(newSubMesh);
-					if (getColorFunc != null)
+					if (getColorFunc != null || hasFaceColors)
 					{
 						newSubMesh.UseVertexColors = true;
 					}
@@ -186,7 +190,19 @@ namespace MatterHackers.RenderGl
 					{
 						red = faceColor.red,
 						green = faceColor.green,
-						blue = faceColor.blue
+						blue = faceColor.blue,
+						alpha = faceColor.alpha
+					};
+				}
+				else if (hasFaceColors && faceIndex < meshToBuildListFor.FaceColors.Length)
+				{
+					var faceColor = meshToBuildListFor.FaceColors[faceIndex];
+					color = new VertexColorData
+					{
+						red = faceColor.red,
+						green = faceColor.green,
+						blue = faceColor.blue,
+						alpha = faceColor.alpha
 					};
 				}
 

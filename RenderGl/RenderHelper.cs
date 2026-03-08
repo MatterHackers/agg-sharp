@@ -47,6 +47,7 @@ namespace MatterHackers.RenderGl
 		Wireframe
 	}
 
+	// NOTE: GL render path is deprecated and will be removed. D3D is the active render path.
 	public static class RenderHelper
 	{
 		private const float GL_MODULATE = (float)0x2100;
@@ -253,7 +254,7 @@ namespace MatterHackers.RenderGl
 									GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pTextureData));
 									if (pColorData != null)
 									{
-										GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, new IntPtr(pColorData));
+										GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pColorData));
 									}
 
 									GL.DrawArrays(BeginMode.Triangles, 0, subMesh.positionData.Count);
@@ -269,7 +270,7 @@ namespace MatterHackers.RenderGl
 				GL.DisableClientState(ArrayCap.ColorArray);
 
 				GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(0));
-				GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, new IntPtr(0));
+				GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(0));
 				GL.NormalPointer(NormalPointerType.Float, 0, new IntPtr(0));
 				GL.VertexPointer(3, VertexPointerType.Float, 0, new IntPtr(0));
 

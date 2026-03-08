@@ -68,6 +68,13 @@ namespace MatterHackers.PolygonMesh
 		/// </summary>
 		public Dictionary<int, FaceTextureData> FaceTextures { get; set; } = new Dictionary<int, FaceTextureData>();
 
+		/// <summary>
+		/// Optional per-face colors. When non-null, FaceColors[faceIndex] gives the color
+		/// for that face. Null means no per-face coloring (default behavior unchanged).
+		/// Used to preserve per-mesh colors through Boolean operations.
+		/// </summary>
+		public Color[] FaceColors { get; set; }
+
 		private static object nextIdLocker = new object();
 
 		public BspNode FaceBspTree { get; set; } = null;
@@ -239,6 +246,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			var newVertices = new List<Vector3Float>();
 			var newFaces = new FaceList();
+			List<Color> newFaceColors = FaceColors != null ? new List<Color>() : null;
 
 			var positionToIndex = new Dictionary<(float, float, float), int>();
 			int GetIndex(Vector3Float position)
@@ -254,14 +262,19 @@ namespace MatterHackers.PolygonMesh
 				return count;
 			}
 
-			foreach (var face in Faces)
+			for (int faceIdx = 0; faceIdx < Faces.Count; faceIdx++)
 			{
+				var face = Faces[faceIdx];
 				int iv0 = GetIndex(Vertices[face.v0]);
 				int iv1 = GetIndex(Vertices[face.v1]);
 				int iv2 = GetIndex(Vertices[face.v2]);
 				if (iv0 != iv1 && iv1 != iv2 && iv2 != iv0)
 				{
 					newFaces.Add(iv0, iv1, iv2, newVertices);
+					if (newFaceColors != null && faceIdx < FaceColors.Length)
+					{
+						newFaceColors.Add(FaceColors[faceIdx]);
+					}
 				}
 			}
 
@@ -270,6 +283,7 @@ namespace MatterHackers.PolygonMesh
 			{
 				this.Faces = newFaces;
 				this.Vertices = newVertices;
+				this.FaceColors = newFaceColors?.ToArray();
 
 				MarkAsChanged();
 			}
@@ -277,12 +291,37 @@ namespace MatterHackers.PolygonMesh
 
 		public void CopyAllFaces(Mesh mesh, Matrix4X4 matrix)
 		{
-			foreach (var face in mesh.Faces)
+			int fStart = this.Faces.Count;
+
+			for (int i = 0; i < mesh.Faces.Count; i++)
 			{
+				var face = mesh.Faces[i];
 				var v0 = mesh.Vertices[face.v0].Transform(matrix);
 				var v1 = mesh.Vertices[face.v1].Transform(matrix);
 				var v2 = mesh.Vertices[face.v2].Transform(matrix);
 				this.CreateFace(new[] { v0, v1, v2 });
+			}
+
+			// copy face colors if source has them
+			if (mesh.FaceColors != null)
+			{
+				int totalFaces = fStart + mesh.Faces.Count;
+				var colors = this.FaceColors ?? new Color[totalFaces];
+				if (colors.Length < totalFaces)
+				{
+					Array.Resize(ref colors, totalFaces);
+				}
+
+				Array.Copy(mesh.FaceColors, 0, colors, fStart,
+					Math.Min(mesh.FaceColors.Length, mesh.Faces.Count));
+				this.FaceColors = colors;
+			}
+			else if (this.FaceColors != null)
+			{
+				int totalFaces = fStart + mesh.Faces.Count;
+				var colors = this.FaceColors;
+				Array.Resize(ref colors, totalFaces);
+				this.FaceColors = colors;
 			}
 		}
 
@@ -577,6 +616,18 @@ namespace MatterHackers.PolygonMesh
 					hash = face.v0.GetLongHashCode(hash);
 					hash = face.v1.GetLongHashCode(hash);
 					hash = face.v2.GetLongHashCode(hash);
+				}
+
+				// Include FaceColors so meshes with different per-face colors
+				// produce different hashes and aren't served from stale cache
+				if (FaceColors != null)
+				{
+					hash = FaceColors.Length.GetLongHashCode(hash);
+					int colorStep = Math.Max(1, FaceColors.Length / 1000);
+					for (int i = 0; i < FaceColors.Length; i += colorStep)
+					{
+						hash = FaceColors[i].GetLongHashCode(hash);
+					}
 				}
 
 				return hash;
@@ -967,7 +1018,13 @@ namespace MatterHackers.PolygonMesh
 		{
 			if (meshToCopyIn != null)
 			{
-				return new Mesh(meshToCopyIn.Vertices, meshToCopyIn.Faces);
+				var copy = new Mesh(meshToCopyIn.Vertices, meshToCopyIn.Faces);
+				if (meshToCopyIn.FaceColors != null)
+				{
+					copy.FaceColors = (Color[])meshToCopyIn.FaceColors.Clone();
+				}
+
+				return copy;
 			}
 
 			return null;
@@ -1210,6 +1267,8 @@ namespace MatterHackers.PolygonMesh
 		public static void CopyFaces(this Mesh copyTo, Mesh copyFrom)
 		{
 			int vStart = copyTo.Vertices.Count;
+			int fStart = copyTo.Faces.Count;
+
 			// add all the vertices
 			for (int i = 0; i < copyFrom.Vertices.Count; i++)
 			{
@@ -1221,6 +1280,33 @@ namespace MatterHackers.PolygonMesh
 			{
 				var face = copyFrom.Faces[i];
 				copyTo.Faces.Add(face.v0 + vStart, face.v1 + vStart, face.v2 + vStart, face.normal);
+			}
+
+			// copy face colors if source has them
+			if (copyFrom.FaceColors != null)
+			{
+				int totalFaces = fStart + copyFrom.Faces.Count;
+				var colors = copyTo.FaceColors;
+				if (colors == null)
+				{
+					colors = new Color[totalFaces];
+				}
+				else if (colors.Length < totalFaces)
+				{
+					Array.Resize(ref colors, totalFaces);
+				}
+
+				Array.Copy(copyFrom.FaceColors, 0, colors, fStart,
+					Math.Min(copyFrom.FaceColors.Length, copyFrom.Faces.Count));
+				copyTo.FaceColors = colors;
+			}
+			else if (copyTo.FaceColors != null)
+			{
+				// target has face colors but source doesn't — extend with transparent
+				int totalFaces = fStart + copyFrom.Faces.Count;
+				var colors = copyTo.FaceColors;
+				Array.Resize(ref colors, totalFaces);
+				copyTo.FaceColors = colors;
 			}
 		}
 
@@ -1362,10 +1448,12 @@ namespace MatterHackers.PolygonMesh
 		public static void RemoveDegenerateFaces(this Mesh mesh, double minFaceArea)
 		{
 			var newFaces = new FaceList();
+			List<Color> newFaceColors = mesh.FaceColors != null ? new List<Color>() : null;
 			float minAreaF = (float)minFaceArea; // Use float for comparison with GetArea result
 
-			foreach (var face in mesh.Faces)
+			for (int faceIdx = 0; faceIdx < mesh.Faces.Count; faceIdx++)
 			{
+				var face = mesh.Faces[faceIdx];
 				// Only keep faces where all vertices are distinct first
 				if (face.v0 != face.v1 && face.v1 != face.v2 && face.v2 != face.v0)
 				{
@@ -1378,8 +1466,11 @@ namespace MatterHackers.PolygonMesh
 
 					if (area >= minAreaF) // Check against float min area
 					{
-						// Recalculate normal when adding to ensure correctness if CleanAndMerge wasn't called recently
 						newFaces.Add(face.v0, face.v1, face.v2, mesh.Vertices);
+						if (newFaceColors != null && faceIdx < mesh.FaceColors.Length)
+						{
+							newFaceColors.Add(mesh.FaceColors[faceIdx]);
+						}
 					}
 				}
 			}
@@ -1388,6 +1479,7 @@ namespace MatterHackers.PolygonMesh
 			if (mesh.Faces.Count != newFaces.Count)
 			{
 				mesh.Faces = newFaces;
+				mesh.FaceColors = newFaceColors?.ToArray();
 				mesh.MarkAsChanged();
 			}
 		}

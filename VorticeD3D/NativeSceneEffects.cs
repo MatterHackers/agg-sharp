@@ -50,7 +50,7 @@ namespace MatterHackers.RenderGl
 		private const int BedShadowTextureSize = 512;
 		private const float BedShadowStrength = .35f;
 		private const float BedShadowViewDistance = 1000;
-		private const int SceneEffectVertexFloatStride = SubTriangleMesh.InterleavedStride + 3;
+		private const int SceneEffectVertexFloatStride = SceneEdgeShaderDataPlugin.TotalVertexFloatStride;
 		private const int SceneEffectVertexStride = SceneEffectVertexFloatStride * sizeof(float);
 		public int DepthPeelingLayers { get; set; } = 6;
 
@@ -217,6 +217,7 @@ namespace MatterHackers.RenderGl
 				new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
 				new InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 24, 0),
 				new InputElementDescription("TEXCOORD", 1, Format.R32G32B32_Float, 32, 0),
+				new InputElementDescription("COLOR", 0, Format.R32G32B32A32_Float, 44, 0),
 			}, sceneVsByteCode);
 			sceneEffectSelectionInputLayout = device.CreateInputLayout(new[]
 			{
@@ -245,7 +246,7 @@ namespace MatterHackers.RenderGl
 		{
 			sceneEffectBuffer = device.CreateBuffer(new BufferDescription
 			{
-				ByteWidth = 64,
+				ByteWidth = 80, // 5 float4s: MeshColor, WireframeColor, EffectFlags, ResolutionAndWidth, ExtraFlags
 				Usage = ResourceUsage.Dynamic,
 				BindFlags = BindFlags.ConstantBuffer,
 				CPUAccessFlags = CpuAccessFlags.Write,
@@ -1233,7 +1234,8 @@ namespace MatterHackers.RenderGl
 		{
 			SetSceneMatrices(command.Transform * activeSceneRenderContext.WorldView.ModelviewMatrix, activeSceneRenderContext.WorldView.ProjectionMatrix);
 			UpdateTransformBuffer();
-			UpdateSceneEffectBuffer(command.Color, command.WireFrameColor, enableWireframe, wireframeOnly, enableDepthPeeling, firstPeelPass, (float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height, unlit);
+			bool useVertexColor = command.Mesh.FaceColors != null && command.Mesh.FaceColors.Length > 0;
+			UpdateSceneEffectBuffer(command.Color, command.WireFrameColor, enableWireframe, wireframeOnly, enableDepthPeeling, firstPeelPass, (float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height, unlit, useVertexColor);
 
 			context.IASetInputLayout(sceneEffectInputLayout);
 			context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
@@ -1450,7 +1452,8 @@ namespace MatterHackers.RenderGl
 			bool firstPeelPass,
 			float width,
 			float height,
-			bool unlit = false)
+			bool unlit = false,
+			bool useVertexColor = false)
 		{
 			var effectiveWireframeColor = wireframeColor.Alpha0To1 > 0
 				? wireframeColor
@@ -1478,6 +1481,11 @@ namespace MatterHackers.RenderGl
 			values[13] = height;
 			values[14] = SceneRenderModeUtilities.DefaultWireframeWidth;
 			values[15] = unlit ? 1.0f : 0.0f;
+
+			values[16] = useVertexColor ? 1.0f : 0.0f;
+			values[17] = 0.0f;
+			values[18] = 0.0f;
+			values[19] = 0.0f;
 
 			context.Unmap(sceneEffectBuffer, 0);
 		}
