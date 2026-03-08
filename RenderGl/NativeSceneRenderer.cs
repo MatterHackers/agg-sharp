@@ -75,6 +75,12 @@ namespace MatterHackers.RenderGl
 
 		public bool IsSelected { get; init; }
 
+		/// <summary>
+		/// When true, per-face colors on the mesh are ignored and the command's Color
+		/// is used instead. Set when an ancestor in the scene has an explicit color override.
+		/// </summary>
+		public bool OverrideFaceColors { get; init; }
+
 		public RenderTypes RenderType { get; init; } = RenderTypes.Shaded;
 
 		public Matrix4X4 Transform { get; init; } = Matrix4X4.Identity;

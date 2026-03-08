@@ -93,9 +93,10 @@ namespace MatterHackers.RenderGl
             Action meshChanged = null,
 			bool blendTexture = true,
 			bool forceCullBackFaces = true,
-			bool isSelected = false)
+			bool isSelected = false,
+			bool overrideFaceColors = false)
 		{
-			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture, forceCullBackFaces: forceCullBackFaces, isSelected: isSelected);
+			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture, forceCullBackFaces: forceCullBackFaces, isSelected: isSelected, overrideFaceColors: overrideFaceColors);
 		}
 
 		public static void Render(Mesh meshToRender,
@@ -108,7 +109,8 @@ namespace MatterHackers.RenderGl
 			bool blendTexture = true,
 			bool allowBspRendering = false,
 			bool forceCullBackFaces = true,
-			bool isSelected = false)
+			bool isSelected = false,
+			bool overrideFaceColors = false)
 		{
 			if (meshToRender != null)
 			{
@@ -127,6 +129,7 @@ namespace MatterHackers.RenderGl
 						AllowBspRendering = allowBspRendering,
 						ForceCullBackFaces = forceCullBackFaces,
 						IsSelected = isSelected,
+						OverrideFaceColors = overrideFaceColors,
 					};
 
 					if (nativeSceneRenderer.CanRender(command)

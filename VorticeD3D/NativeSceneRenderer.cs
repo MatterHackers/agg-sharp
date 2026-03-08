@@ -177,14 +177,10 @@ namespace MatterHackers.RenderGl
 					DisableClientState(ArrayCap.TextureCoordArray);
 				}
 
-				// Use per-vertex face colors when the mesh has them.
-				// WorldColor() defaults to White (alpha=255) even when no explicit color
-				// is set, so we can't rely on alpha to detect an override. Instead, always
-				// use face colors when present — the pipeline already excludes Color from
-				// CopyProperties when FaceColors exist, and explicit user overrides will
-				// clear FaceColors or be handled upstream.
+				// Use per-vertex face colors when the mesh has them, unless an ancestor
+				// in the scene hierarchy has an explicit color override.
 				bool hasFaceColors = command.Mesh.FaceColors != null && subMesh.UseVertexColors;
-				bool useFaceColors = hasFaceColors;
+				bool useFaceColors = hasFaceColors && !command.OverrideFaceColors;
 
 				byte red, green, blue, alpha;
 				if (useFaceColors)
