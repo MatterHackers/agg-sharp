@@ -50,7 +50,7 @@ namespace MatterHackers.RenderGl
 		private IDXGISwapChain swapChain;
 		private ID3D11RenderTargetView renderTargetView;
 		private ID3D11Texture2D currentBackBuffer;
-		private ID3D11Texture2D msaaRenderTarget;
+		private ID3D11Texture2D mainRenderTarget;
 		private ID3D11DepthStencilView depthStencilView;
 		private ID3D11Texture2D depthStencilBuffer;
 
@@ -267,16 +267,14 @@ namespace MatterHackers.RenderGl
 			currentBackBuffer = swapChain.GetBuffer<ID3D11Texture2D>(0);
 			renderTargetHeight = (int)currentBackBuffer.Description.Height;
 
-			int sampleCount = 4; // Use 4x MSAA
-
-			msaaRenderTarget?.Dispose();
-			var msaaDesc = currentBackBuffer.Description;
-			msaaDesc.SampleDescription = new SampleDescription((uint)sampleCount, 0);
-			msaaDesc.BindFlags = BindFlags.RenderTarget;
-			msaaRenderTarget = device.CreateTexture2D(msaaDesc);
+			mainRenderTarget?.Dispose();
+			var desc = currentBackBuffer.Description;
+			desc.SampleDescription = new SampleDescription(1, 0);
+			desc.BindFlags = BindFlags.RenderTarget;
+			mainRenderTarget = device.CreateTexture2D(desc);
 
 			renderTargetView?.Dispose();
-			renderTargetView = device.CreateRenderTargetView(msaaRenderTarget);
+			renderTargetView = device.CreateRenderTargetView(mainRenderTarget);
 
 			var depthDesc = new Texture2DDescription
 			{
@@ -285,7 +283,7 @@ namespace MatterHackers.RenderGl
 				MipLevels = 1,
 				ArraySize = 1,
 				Format = Format.D24_UNorm_S8_UInt,
-				SampleDescription = new SampleDescription((uint)sampleCount, 0),
+				SampleDescription = new SampleDescription(1, 0),
 				Usage = ResourceUsage.Default,
 				BindFlags = BindFlags.DepthStencil,
 			};
@@ -305,8 +303,8 @@ namespace MatterHackers.RenderGl
 			renderTargetView = null;
 			currentBackBuffer?.Dispose();
 			currentBackBuffer = null;
-			msaaRenderTarget?.Dispose();
-			msaaRenderTarget = null;
+			mainRenderTarget?.Dispose();
+			mainRenderTarget = null;
 			depthStencilView?.Dispose();
 			depthStencilBuffer?.Dispose();
 
@@ -2801,9 +2799,9 @@ namespace MatterHackers.RenderGl
 
 		public void Present()
 		{
-			if (msaaRenderTarget != null && currentBackBuffer != null)
+			if (mainRenderTarget != null && currentBackBuffer != null)
 			{
-				context.ResolveSubresource(currentBackBuffer, 0, msaaRenderTarget, 0, currentBackBuffer.Description.Format);
+				context.CopyResource(currentBackBuffer, mainRenderTarget);
 			}
 
 			swapChain.Present(0, PresentFlags.None);
@@ -2811,7 +2809,7 @@ namespace MatterHackers.RenderGl
 			// With FlipDiscard, the back buffer changes after Present.
 			currentBackBuffer?.Dispose();
 			currentBackBuffer = swapChain.GetBuffer<ID3D11Texture2D>(0);
-			// Do not recreate renderTargetView because it points to msaaRenderTarget, which is stable!
+			// renderTargetView points to mainRenderTarget (stable), not the swapchain backbuffer
 			context.OMSetRenderTargets(renderTargetView, depthStencilView);
 		}
 
@@ -2826,7 +2824,7 @@ namespace MatterHackers.RenderGl
 				tex.Texture?.Dispose();
 			}
 
-			msaaRenderTarget?.Dispose();
+			mainRenderTarget?.Dispose();
 
 			foreach (var prog in shaderPrograms.Values) prog?.Dispose();
 			shaderPrograms.Clear();
