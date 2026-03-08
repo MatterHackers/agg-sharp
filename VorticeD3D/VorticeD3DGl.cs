@@ -183,10 +183,22 @@ namespace MatterHackers.RenderGl
 			for (int i = 0; i < boundTextures.Length; i++)
 			{
 				int tex = boundTextures[i];
-				if (tex > 0 && textures.TryGetValue(tex, out var texInfo) && texInfo.ShaderResourceView != null)
+				if (tex > 0 && textures.TryGetValue(tex, out var texInfo))
 				{
-					context.PSSetShaderResource((uint)i, texInfo.ShaderResourceView);
-					context.PSSetSampler((uint)i, texInfo.Sampler ?? defaultSampler);
+					if (texInfo.ShaderResourceView == null)
+					{
+						FinalizeTextureIfReady(texInfo, force: true);
+					}
+
+					if (texInfo.ShaderResourceView != null)
+					{
+						context.PSSetShaderResource((uint)i, texInfo.ShaderResourceView);
+						context.PSSetSampler((uint)i, texInfo.Sampler ?? defaultSampler);
+					}
+					else
+					{
+						context.PSSetShaderResource((uint)i, null);
+					}
 				}
 				else
 				{
@@ -1122,7 +1134,7 @@ namespace MatterHackers.RenderGl
 					context.VSSetShader(posColorLitVS);
 					context.PSSetShader(flatShading ? posColorLitFlatPS : posColorLitPS);
 				}
-				context.VSSetConstantBuffer(1, lightBuffer);
+				context.PSSetConstantBuffer(1, lightBuffer);
 			}
 			else
 			{
@@ -1235,7 +1247,7 @@ namespace MatterHackers.RenderGl
 					context.VSSetShader(posTexLitVS);
 					context.PSSetShader(flatShading ? posTexLitFlatPS : posTexLitPS);
 				}
-				context.VSSetConstantBuffer(1, lightBuffer);
+				context.PSSetConstantBuffer(1, lightBuffer);
 			}
 			else
 			{
@@ -1444,7 +1456,7 @@ namespace MatterHackers.RenderGl
 					context.VSSetShader(posColorLitVS);
 					context.PSSetShader(posColorLitPS);
 				}
-				context.VSSetConstantBuffer(1, lightBuffer);
+				context.PSSetConstantBuffer(1, lightBuffer);
 			}
 			else
 			{
@@ -1580,7 +1592,7 @@ namespace MatterHackers.RenderGl
 					context.VSSetShader(posTexLitVS);
 					context.PSSetShader(posTexLitPS);
 				}
-				context.VSSetConstantBuffer(1, lightBuffer);
+				context.PSSetConstantBuffer(1, lightBuffer);
 			}
 			else
 			{
@@ -2201,8 +2213,6 @@ namespace MatterHackers.RenderGl
 				texInfo.Height = height;
 				texInfo.ExpectedMipCount = 1 + (int)Math.Floor(Math.Log(Math.Max(width, height), 2));
 				texInfo.PendingMipData = new List<(byte[], int, int)> { (pixels != null ? (byte[])pixels.Clone() : null, width, height) };
-
-				FinalizeTextureIfReady(texInfo);
 			}
 			else
 			{
@@ -2211,18 +2221,17 @@ namespace MatterHackers.RenderGl
 					while (texInfo.PendingMipData.Count <= level)
 						texInfo.PendingMipData.Add((null, 0, 0));
 					texInfo.PendingMipData[level] = (pixels != null ? (byte[])pixels.Clone() : null, width, height);
-
-					FinalizeTextureIfReady(texInfo);
 				}
 			}
+
+			FinalizeTextureIfReady(texInfo);
 		}
 
-		private void FinalizeTextureIfReady(TextureInfo texInfo)
+		private void FinalizeTextureIfReady(TextureInfo texInfo, bool force = false)
 		{
 			if (texInfo.PendingMipData == null || texInfo.PendingMipData.Count == 0) return;
 
-			bool hasMips = texInfo.PendingMipData.Count > 1;
-			if (hasMips && texInfo.PendingMipData.Count < texInfo.ExpectedMipCount) return;
+			if (!force && texInfo.PendingMipData.Count < texInfo.ExpectedMipCount) return;
 
 			int mipCount = texInfo.PendingMipData.Count;
 
