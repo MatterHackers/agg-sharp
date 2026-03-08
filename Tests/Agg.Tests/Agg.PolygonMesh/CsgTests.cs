@@ -312,5 +312,44 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			await Assert.That(result.IsManifold()).IsTrue();
 		}
+
+		[Test]
+		public async Task BooleanWithEmptyMeshDoesNotThrow()
+		{
+			var emptyMesh = new Mesh();
+			var cube = PlatonicSolids.CreateCube(10, 10, 10);
+
+			// Subtract with empty mesh as operand B should return the original mesh unchanged
+			var subtractResult = BooleanProcessing.Do(
+				cube, Matrix4X4.Identity,
+				emptyMesh, Matrix4X4.Identity,
+				CsgModes.Subtract,
+				ProcessingModes.Polygons);
+			await Assert.That(subtractResult.Vertices.Count).IsGreaterThan(0);
+
+			// Subtract with empty mesh as operand A should return empty
+			var subtractResult2 = BooleanProcessing.Do(
+				emptyMesh, Matrix4X4.Identity,
+				cube, Matrix4X4.Identity,
+				CsgModes.Subtract,
+				ProcessingModes.Polygons);
+			await Assert.That(subtractResult2.Faces.Count).IsEqualTo(0);
+
+			// Intersect with empty mesh should return empty
+			var intersectResult = BooleanProcessing.Do(
+				cube, Matrix4X4.Identity,
+				emptyMesh, Matrix4X4.Identity,
+				CsgModes.Intersect,
+				ProcessingModes.Polygons);
+			await Assert.That(intersectResult.Faces.Count).IsEqualTo(0);
+
+			// Union with empty mesh should return the non-empty mesh
+			var unionResult = BooleanProcessing.Do(
+				cube, Matrix4X4.Identity,
+				emptyMesh, Matrix4X4.Identity,
+				CsgModes.Union,
+				ProcessingModes.Polygons);
+			await Assert.That(unionResult.Vertices.Count).IsGreaterThan(0);
+		}
 	}
 }

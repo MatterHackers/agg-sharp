@@ -97,6 +97,11 @@ namespace MatterHackers.RenderGl
 				return true;
 			}
 
+			if (command.AlphaMultiplier < 1.0f)
+			{
+				return true;
+			}
+
 			if (!command.ForceCullBackFaces)
 			{
 				return true;

@@ -81,6 +81,13 @@ namespace MatterHackers.RenderGl
 		/// </summary>
 		public bool OverrideFaceColors { get; init; }
 
+		/// <summary>
+		/// Multiplier applied to the final alpha of all colors (including per-face vertex colors).
+		/// Use to make an entire mesh dramatically transparent regardless of its original colors.
+		/// Default is 1.0 (no change). Values less than 1.0 reduce opacity proportionally.
+		/// </summary>
+		public float AlphaMultiplier { get; init; } = 1.0f;
+
 		public RenderTypes RenderType { get; init; } = RenderTypes.Shaded;
 
 		public Matrix4X4 Transform { get; init; } = Matrix4X4.Identity;

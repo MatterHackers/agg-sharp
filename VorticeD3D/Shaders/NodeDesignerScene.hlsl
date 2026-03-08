@@ -21,7 +21,7 @@ cbuffer SceneEffectBuffer : register(b2)
     float4 WireframeColor;
     float4 EffectFlags;
     float4 ResolutionAndWidth;
-    float4 ExtraFlags; // x = useVertexColor
+    float4 ExtraFlags; // x = useVertexColor, y = alphaMultiplier
 };
 
 Texture2D diffuseTexture : register(t0);
@@ -255,12 +255,19 @@ DualPeelOutput ApplyDualDepthPeeling(float4 position, float4 shadedColor)
 
 float4 GetEffectiveColor(float4 vertexColor)
 {
+    float4 color;
     // When useVertexColor flag is set, use per-vertex face colors (including alpha)
     if (ExtraFlags.x > 0.5)
     {
-        return vertexColor;
+        color = vertexColor;
     }
-    return MeshColor;
+    else
+    {
+        color = MeshColor;
+    }
+    // Apply alpha multiplier to scale transparency (e.g. for subtract component preview)
+    color.a *= ExtraFlags.y;
+    return color;
 }
 
 float4 SceneColorPS(PS_INPUT input) : SV_TARGET

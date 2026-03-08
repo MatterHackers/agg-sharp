@@ -185,11 +185,11 @@ namespace MatterHackers.RenderGl
 				byte red, green, blue, alpha;
 				if (useFaceColors)
 				{
-					// Per-face vertex colors provide RGB; set base color to white with full alpha
+					// Per-face vertex colors provide RGB; apply alpha multiplier for transparency override
 					red = 255;
 					green = 255;
 					blue = 255;
-					alpha = 255;
+					alpha = (byte)(255 * command.AlphaMultiplier);
 				}
 				else
 				{

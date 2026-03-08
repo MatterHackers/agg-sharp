@@ -1235,7 +1235,7 @@ namespace MatterHackers.RenderGl
 			SetSceneMatrices(command.Transform * activeSceneRenderContext.WorldView.ModelviewMatrix, activeSceneRenderContext.WorldView.ProjectionMatrix);
 			UpdateTransformBuffer();
 			bool useVertexColor = command.Mesh.FaceColors != null && command.Mesh.FaceColors.Length > 0 && !command.OverrideFaceColors;
-			UpdateSceneEffectBuffer(command.Color, command.WireFrameColor, enableWireframe, wireframeOnly, enableDepthPeeling, firstPeelPass, (float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height, unlit, useVertexColor);
+			UpdateSceneEffectBuffer(command.Color, command.WireFrameColor, enableWireframe, wireframeOnly, enableDepthPeeling, firstPeelPass, (float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height, unlit, useVertexColor, command.AlphaMultiplier);
 
 			context.IASetInputLayout(sceneEffectInputLayout);
 			context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
@@ -1453,7 +1453,8 @@ namespace MatterHackers.RenderGl
 			float width,
 			float height,
 			bool unlit = false,
-			bool useVertexColor = false)
+			bool useVertexColor = false,
+			float alphaMultiplier = 1.0f)
 		{
 			var effectiveWireframeColor = wireframeColor.Alpha0To1 > 0
 				? wireframeColor
@@ -1483,7 +1484,7 @@ namespace MatterHackers.RenderGl
 			values[15] = unlit ? 1.0f : 0.0f;
 
 			values[16] = useVertexColor ? 1.0f : 0.0f;
-			values[17] = 0.0f;
+			values[17] = alphaMultiplier;
 			values[18] = 0.0f;
 			values[19] = 0.0f;
 
