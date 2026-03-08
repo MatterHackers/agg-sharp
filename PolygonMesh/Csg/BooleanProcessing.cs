@@ -101,6 +101,10 @@ namespace MatterHackers.PolygonMesh.Csg
 
 					var manifolds = new List<ManifoldNET.Manifold>();
 					var originalIdToColor = new Dictionary<int, Color>();
+					// Spatial face color data keyed by OriginalID, used when a mesh has FaceColors
+					// but can't be split into manifold sub-meshes per color group.
+					// Stores (centroid, color) pairs for spatial proximity matching after boolean.
+					var originalIdToSpatialColors = new Dictionary<int, List<(Vector3, Color)>>();
 					int meshIndex = 0;
 					foreach (var (mesh, matrix) in items)
 					{
@@ -144,10 +148,32 @@ namespace MatterHackers.PolygonMesh.Csg
 							if (trackColors)
 							{
 								manifold = manifold.AsOriginal();
-								var color = (meshColors != null && meshIndex < meshColors.Length)
-									? meshColors[meshIndex]
-									: new Color(200, 200, 200, 255);
-								originalIdToColor[manifold.OriginalID] = color;
+								if (meshCopy.FaceColors != null)
+								{
+									// Build spatial color data: centroid + color per face
+									// Used for spatial matching after boolean since Manifold
+									// reorders faces, making index-based lookup unreliable
+									var spatialColors = new List<(Vector3, Color)>();
+									for (int fi = 0; fi < meshCopy.Faces.Count; fi++)
+									{
+										var face = meshCopy.Faces[fi];
+										var centroid = new Vector3(
+											(meshCopy.Vertices[face.v0] + meshCopy.Vertices[face.v1] + meshCopy.Vertices[face.v2]) / 3f);
+										var faceColor = fi < meshCopy.FaceColors.Length
+											? meshCopy.FaceColors[fi]
+											: new Color(200, 200, 200, 255);
+										spatialColors.Add((centroid, faceColor));
+									}
+
+									originalIdToSpatialColors[manifold.OriginalID] = spatialColors;
+								}
+								else
+								{
+									var color = (meshColors != null && meshIndex < meshColors.Length)
+										? meshColors[meshIndex]
+										: new Color(200, 200, 200, 255);
+									originalIdToColor[manifold.OriginalID] = color;
+								}
 							}
 						}
 
@@ -218,7 +244,7 @@ namespace MatterHackers.PolygonMesh.Csg
 						if (trackColors && resultMesh.Faces.Count > 0)
 						{
 							var faceColors = ManifoldRunHelper.ExtractFaceColors(
-								result, resultMesh.Faces.Count, originalIdToColor);
+								result, resultMesh, originalIdToColor, originalIdToSpatialColors);
 							if (faceColors != null)
 							{
 								resultMesh.FaceColors = faceColors;
@@ -624,26 +650,32 @@ namespace MatterHackers.PolygonMesh.Csg
 		[DllImport("manifoldc", CallingConvention = CallingConvention.Cdecl)]
 		private static extern IntPtr manifold_meshgl_run_original_id(IntPtr mem, IntPtr m);
 
-		/// <summary>
-		/// Extract per-face colors from a boolean result MeshGL using run data.
-		/// Each "run" in the result maps a contiguous range of triangles to an OriginalID
-		/// (the source mesh). We look up each OriginalID in the color map to assign colors.
-		/// </summary>
-		public static Color[] ExtractFaceColors(
-			ManifoldNET.MeshGL resultMeshGl,
-			int faceCount,
-			Dictionary<int, Color> originalIdToColor)
+		private static IntPtr GetMeshGlPointer(ManifoldNET.MeshGL meshGl)
 		{
-			// Get the native pointer from MeshGL using reflection
-			// MeshGL inherits from ManifoldObject which has _pointer field
 			var pointerField = typeof(ManifoldNET.MeshGL).BaseType?.GetField("_pointer",
 				System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 			if (pointerField == null)
 			{
-				return null;
+				return IntPtr.Zero;
 			}
 
-			var meshGlPtr = (IntPtr)pointerField.GetValue(resultMeshGl);
+			return (IntPtr)pointerField.GetValue(meshGl);
+		}
+
+		/// <summary>
+		/// Extract per-face colors from a boolean result MeshGL using run data.
+		/// Uses run data to find which source mesh each result face came from,
+		/// then uses spatial centroid matching for per-face color lookup when
+		/// the source had multiple face colors.
+		/// </summary>
+		public static Color[] ExtractFaceColors(
+			ManifoldNET.MeshGL resultMeshGl,
+			Mesh resultMesh,
+			Dictionary<int, Color> originalIdToColor,
+			Dictionary<int, List<(Vector3 centroid, Color color)>> originalIdToSpatialColors = null)
+		{
+			var faceCount = resultMesh.Faces.Count;
+			var meshGlPtr = GetMeshGlPointer(resultMeshGl);
 			if (meshGlPtr == IntPtr.Zero)
 			{
 				return null;
@@ -657,7 +689,6 @@ namespace MatterHackers.PolygonMesh.Csg
 				return null;
 			}
 
-			// Allocate memory for the native arrays to write into
 			var runIndexMem = Marshal.AllocHGlobal(runIndexLen * sizeof(int));
 			var runOriginalIdMem = Marshal.AllocHGlobal(runOriginalIdLen * sizeof(int));
 
@@ -666,33 +697,63 @@ namespace MatterHackers.PolygonMesh.Csg
 				var runIndexDataPtr = manifold_meshgl_run_index(runIndexMem, meshGlPtr);
 				var runOriginalIdDataPtr = manifold_meshgl_run_original_id(runOriginalIdMem, meshGlPtr);
 
-				// Copy native data to managed arrays
 				var runIndex = new int[runIndexLen];
 				var runOriginalId = new int[runOriginalIdLen];
-
 				Marshal.Copy(runIndexDataPtr, runIndex, 0, runIndexLen);
 				Marshal.Copy(runOriginalIdDataPtr, runOriginalId, 0, runOriginalIdLen);
 
-				// Build face colors from runs
-				// runIndex[i] = first triangle index of run i
-				// runOriginalId[i] = OriginalID of run i
-				// Number of runs = runOriginalIdLen (runIndex has one extra entry at the end)
 				var faceColors = new Color[faceCount];
 				var defaultColor = new Color(200, 200, 200, 255);
 
 				for (int runIdx = 0; runIdx < runOriginalIdLen; runIdx++)
 				{
-					// runIndex values are triangle vertex indices (i.e., triVerts indices),
-					// so divide by 3 to get face indices
 					int startTri = runIndex[runIdx] / 3;
 					int endTri = (runIdx + 1 < runIndexLen) ? runIndex[runIdx + 1] / 3 : faceCount;
 					var origId = runOriginalId[runIdx];
 
-					var color = originalIdToColor.TryGetValue(origId, out var c) ? c : defaultColor;
-
-					for (int tri = startTri; tri < endTri && tri < faceCount; tri++)
+					// Check if this OriginalID has spatial face colors
+					List<(Vector3 centroid, Color color)> spatialColors = null;
+					if (originalIdToSpatialColors != null)
 					{
-						faceColors[tri] = color;
+						originalIdToSpatialColors.TryGetValue(origId, out spatialColors);
+					}
+
+					if (spatialColors != null)
+					{
+						// Match each result face to the nearest source face by centroid
+						for (int tri = startTri; tri < endTri && tri < faceCount; tri++)
+						{
+							var face = resultMesh.Faces[tri];
+							var centroid = new Vector3(
+								(resultMesh.Vertices[face.v0]
+								+ resultMesh.Vertices[face.v1]
+								+ resultMesh.Vertices[face.v2]) / 3f);
+
+							// Find nearest source centroid
+							double bestDistSq = double.MaxValue;
+							var bestColor = defaultColor;
+							for (int si = 0; si < spatialColors.Count; si++)
+							{
+								var diff = centroid - spatialColors[si].centroid;
+								var distSq = diff.LengthSquared;
+								if (distSq < bestDistSq)
+								{
+									bestDistSq = distSq;
+									bestColor = spatialColors[si].color;
+								}
+							}
+
+							faceColors[tri] = bestColor;
+						}
+					}
+					else
+					{
+						// Single color for this OriginalID
+						var color = originalIdToColor.TryGetValue(origId, out var c) ? c : defaultColor;
+						for (int tri = startTri; tri < endTri && tri < faceCount; tri++)
+						{
+							faceColors[tri] = color;
+						}
 					}
 				}
 

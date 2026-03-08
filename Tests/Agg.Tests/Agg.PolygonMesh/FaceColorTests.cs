@@ -363,5 +363,58 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			await Assert.That(mesh.FaceColors).IsNotNull();
 			await Assert.That(mesh.FaceColors.Length).IsEqualTo(mesh.Faces.Count);
 		}
+		[Test]
+		public async Task SubtractFromMeshWithFaceColorsPreservesColors()
+		{
+			// First, create a combined mesh with FaceColors via boolean union
+			var cubeA = PlatonicSolids.CreateCube(15, 15, 15);
+			var cubeB = PlatonicSolids.CreateCube(15, 15, 15);
+
+			// Union two overlapping cubes with different colors
+			var combinedMesh = BooleanProcessing.Do(
+				cubeA, Matrix4X4.CreateTranslation(3, 0, 0),
+				cubeB, Matrix4X4.CreateTranslation(-3, 0, 0),
+				CsgModes.Union,
+				meshColors: new[] { Color.Blue, Color.Green });
+
+			await Assert.That(combinedMesh.FaceColors).IsNotNull()
+				.Because("Union with meshColors should produce FaceColors");
+
+			bool hasBlue = combinedMesh.FaceColors.Any(c => c.Blue0To255 == 255 && c.Red0To255 == 0);
+			bool hasGreen = combinedMesh.FaceColors.Any(c => c.Green0To255 == 255 && c.Red0To255 == 0);
+			await Assert.That(hasBlue).IsTrue().Because("Combined mesh should have blue faces");
+			await Assert.That(hasGreen).IsTrue().Because("Combined mesh should have green faces");
+
+			// Now subtract this combined mesh (which has FaceColors) from a larger cube
+			var keepCube = PlatonicSolids.CreateCube(40, 40, 40);
+			var resultMesh = BooleanProcessing.Do(
+				keepCube, Matrix4X4.Identity,
+				combinedMesh, Matrix4X4.Identity,
+				CsgModes.Subtract,
+				meshColors: new[] { Color.Red, Color.White }); // White is placeholder for remove
+
+			await Assert.That(resultMesh).IsNotNull();
+			await Assert.That(resultMesh.Faces.Count).IsGreaterThan(12);
+			await Assert.That(resultMesh.FaceColors).IsNotNull()
+				.Because("Subtract result should have FaceColors");
+
+			// The result should have red faces (from keep cube) and blue+green faces (from cavity)
+			bool resultHasRed = resultMesh.FaceColors.Any(c => c.Red0To255 == 255 && c.Green0To255 == 0 && c.Blue0To255 == 0);
+			bool resultHasBlue = resultMesh.FaceColors.Any(c => c.Blue0To255 == 255 && c.Red0To255 == 0);
+			bool resultHasGreen = resultMesh.FaceColors.Any(c => c.Green0To255 == 255 && c.Red0To255 == 0);
+			await Assert.That(resultHasRed).IsTrue().Because("Keep surfaces should be red");
+
+			// Log what colors we actually got for debugging
+			var distinctColors = resultMesh.FaceColors.Distinct().ToList();
+			System.Diagnostics.Debug.WriteLine($"Result has {resultMesh.Faces.Count} faces, {distinctColors.Count} distinct colors:");
+			foreach (var c in distinctColors)
+			{
+				var count = resultMesh.FaceColors.Count(fc => fc == c);
+				System.Diagnostics.Debug.WriteLine($"  R={c.Red0To255} G={c.Green0To255} B={c.Blue0To255} A={c.Alpha0To255}: {count} faces");
+			}
+
+			await Assert.That(resultHasBlue).IsTrue().Because("Cavity should have blue faces from combined mesh");
+			await Assert.That(resultHasGreen).IsTrue().Because("Cavity should have green faces from combined mesh");
+		}
 	}
 }
