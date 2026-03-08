@@ -100,6 +100,14 @@ namespace MatterHackers.RenderGl
 				return;
 			}
 
+			// In OpenGL, glLightfv(GL_POSITION) transforms the direction by the current
+			// modelview matrix. RenderHelper.SetGlContext sets lights before loading the
+			// camera modelview, so the GL modelview is identity — placing lights in eye
+			// space (camera-attached). We must match that here: temporarily set identity
+			// so the Light(Position) transform produces eye-space directions.
+			var savedModelView = modelViewStack.Peek();
+			ReplaceStackTop(modelViewStack, Matrix4X4.Identity);
+
 			Light(LightName.Light0, LightParameter.Ambient, lighting.AmbientLight);
 			Light(LightName.Light0, LightParameter.Diffuse, lighting.DiffuseLight0);
 			Light(LightName.Light0, LightParameter.Specular, lighting.SpecularLight0);
@@ -108,6 +116,8 @@ namespace MatterHackers.RenderGl
 			Light(LightName.Light1, LightParameter.Diffuse, lighting.DiffuseLight1);
 			Light(LightName.Light1, LightParameter.Specular, lighting.SpecularLight1);
 			Light(LightName.Light1, LightParameter.Position, lighting.LightDirection1);
+
+			ReplaceStackTop(modelViewStack, savedModelView);
 
 			Enable((int)EnableCap.Light0);
 			Enable((int)EnableCap.Light1);
