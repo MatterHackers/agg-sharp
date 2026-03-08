@@ -889,7 +889,8 @@ namespace MatterHackers.RenderGl
 						blendStateOverride: dualDepthPeelBlendState,
 						depthStencilStateOverride: dualPeelDepthState,
 						useDualDepthPeelingShader: true,
-						forcedTextureView: bedCompositeTarget.ShaderResourceView);
+						forcedTextureView: bedCompositeTarget.ShaderResourceView,
+						unlit: true);
 				}
 
 				(sourceDepthTarget, destinationDepthTarget) = (destinationDepthTarget, sourceDepthTarget);
@@ -1185,11 +1186,12 @@ namespace MatterHackers.RenderGl
 			ID3D11BlendState blendStateOverride = null,
 			ID3D11DepthStencilState depthStencilStateOverride = null,
 			bool useDualDepthPeelingShader = false,
-			ID3D11ShaderResourceView forcedTextureView = null)
+			ID3D11ShaderResourceView forcedTextureView = null,
+			bool unlit = false)
 		{
 			SetSceneMatrices(command.Transform * activeSceneRenderContext.WorldView.ModelviewMatrix, activeSceneRenderContext.WorldView.ProjectionMatrix);
 			UpdateTransformBuffer();
-			UpdateSceneEffectBuffer(command.Color, command.WireFrameColor, enableWireframe, wireframeOnly, enableDepthPeeling, firstPeelPass, (float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height);
+			UpdateSceneEffectBuffer(command.Color, command.WireFrameColor, enableWireframe, wireframeOnly, enableDepthPeeling, firstPeelPass, (float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height, unlit);
 
 			context.IASetInputLayout(sceneEffectInputLayout);
 			context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
@@ -1405,7 +1407,8 @@ namespace MatterHackers.RenderGl
 			bool enableDepthPeeling,
 			bool firstPeelPass,
 			float width,
-			float height)
+			float height,
+			bool unlit = false)
 		{
 			var effectiveWireframeColor = wireframeColor.Alpha0To1 > 0
 				? wireframeColor
@@ -1432,7 +1435,7 @@ namespace MatterHackers.RenderGl
 			values[12] = width;
 			values[13] = height;
 			values[14] = SceneRenderModeUtilities.DefaultWireframeWidth;
-			values[15] = 0.0f;
+			values[15] = unlit ? 1.0f : 0.0f;
 
 			context.Unmap(sceneEffectBuffer, 0);
 		}
@@ -1469,6 +1472,14 @@ namespace MatterHackers.RenderGl
 		{
 			context.OMSetRenderTargets(renderTargetView, depthStencilView);
 			ApplyDefaultSceneViewport();
+
+			// The native scene renderer changed D3D state directly, bypassing the GL
+			// emulation layer. Invalidate the cached state so ApplyRenderState() will
+			// re-apply the correct state on the next GL emulation draw call.
+			lastAppliedBlendState = null;
+			lastAppliedDepthStencilState = null;
+			lastAppliedRasterizerState = null;
+
 			renderStateDirty = true;
 			transformDirty = true;
 		}

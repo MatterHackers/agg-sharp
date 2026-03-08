@@ -263,8 +263,8 @@ float4 SceneTexturePS(PS_INPUT input) : SV_TARGET
     ApplyDepthPeeling(input.Position);
     float4 sampledColor = diffuseTexture.Sample(linearSampler, input.TexCoord) * MeshColor;
     DiscardIfInvisible(sampledColor.a);
-    float3 litColor = ApplyLighting(sampledColor.rgb, input.ViewNormal);
-    return ComposeSceneColor(float4(litColor, sampledColor.a), input.Barycentric, input.EdgeHints);
+    float3 color = ResolutionAndWidth.w > 0.5 ? sampledColor.rgb : ApplyLighting(sampledColor.rgb, input.ViewNormal);
+    return ComposeSceneColor(float4(color, sampledColor.a), input.Barycentric, input.EdgeHints);
 }
 
 float2 DualDepthInitPS(PS_INPUT input) : SV_TARGET0
@@ -292,8 +292,8 @@ DualPeelOutput SceneTextureDualPeelPS(PS_INPUT input)
 {
     float4 sampledColor = diffuseTexture.Sample(linearSampler, input.TexCoord) * MeshColor;
     DiscardIfInvisible(sampledColor.a);
-    float3 litColor = ApplyLighting(sampledColor.rgb, input.ViewNormal);
-    float4 shadedColor = ComposeSceneColor(float4(litColor, sampledColor.a), input.Barycentric, input.EdgeHints);
+    float3 color = ResolutionAndWidth.w > 0.5 ? sampledColor.rgb : ApplyLighting(sampledColor.rgb, input.ViewNormal);
+    float4 shadedColor = ComposeSceneColor(float4(color, sampledColor.a), input.Barycentric, input.EdgeHints);
     return ApplyDualDepthPeeling(input.Position, shadedColor);
 }
 

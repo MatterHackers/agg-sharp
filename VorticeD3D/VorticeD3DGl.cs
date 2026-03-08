@@ -142,6 +142,10 @@ namespace MatterHackers.RenderGl
 		private float polygonOffsetUnits = 0;
 		private Color4 clearColor = new Color4(0, 0, 0, 1);
 
+		private const int GL_MODULATE = 0x2100;
+		private const int GL_REPLACE = 0x1E01;
+		private int texEnvMode = GL_MODULATE;
+
 		// Dirty-state tracking to avoid redundant D3D11 calls
 		private bool transformDirty = true;
 		private bool renderStateDirty = true;
@@ -1216,7 +1220,9 @@ namespace MatterHackers.RenderGl
 
 		private void DrawArraysTextured(BeginMode mode, int first, int totalCount, bool hasColorPointer, bool hasNormalPointer, bool lightingOn, bool light0On, bool light1On)
 		{
-			bool useLitShader = lightingOn && hasNormalPointer && normalPointerData.pointer != IntPtr.Zero;
+			// GL_REPLACE means the texture color replaces the vertex/lighting result entirely
+			bool texReplace = texEnvMode == GL_REPLACE;
+			bool useLitShader = lightingOn && hasNormalPointer && normalPointerData.pointer != IntPtr.Zero && !texReplace;
 
 			int stride;
 			if (useLitShader)
@@ -1310,10 +1316,15 @@ namespace MatterHackers.RenderGl
 
 							GetVertexColor(i, globalIdx, hasColorPointer, out float r, out float g, out float b, out float a);
 
-							if (lightingOn && srcNormal != null)
+							if (lightingOn && !texReplace && srcNormal != null)
 							{
 								int ni = globalIdx * normStride;
 								ApplyLighting(ref r, ref g, ref b, srcNormal[ni], srcNormal[ni + 1], srcNormal[ni + 2], light0On, light1On);
+							}
+
+							if (texReplace)
+							{
+								r = 1; g = 1; b = 1; a = 1;
 							}
 
 							dest[i * 9 + 5] = r;
@@ -1497,7 +1508,7 @@ namespace MatterHackers.RenderGl
 			}
 		}
 
-		private unsafe void ProcessBatchTextured(BeginMode mode, float* dest, float* srcVert, float* srcTex, float* srcNormal, int vertStride, int texStride, int normStride, void* indicesPtr, int type, int offset, int batchCount, bool useLitShader, bool hasColorPointer, bool lightingOn, bool light0On, bool light1On)
+		private unsafe void ProcessBatchTextured(BeginMode mode, float* dest, float* srcVert, float* srcTex, float* srcNormal, int vertStride, int texStride, int normStride, void* indicesPtr, int type, int offset, int batchCount, bool useLitShader, bool hasColorPointer, bool lightingOn, bool light0On, bool light1On, bool texReplace = false)
 		{
 			for (int i = 0; i < batchCount; i++)
 			{
@@ -1536,9 +1547,14 @@ namespace MatterHackers.RenderGl
 
 					GetVertexColor(colorElementIndex, colorIndex, hasColorPointer, out float r, out float g, out float b, out float a);
 
-					if (lightingOn && srcNormal != null)
+					if (lightingOn && !texReplace && srcNormal != null)
 					{
 						ApplyLighting(ref r, ref g, ref b, srcNormal[ni], srcNormal[ni + 1], srcNormal[ni + 2], light0On, light1On);
+					}
+
+					if (texReplace)
+					{
+						r = 1; g = 1; b = 1; a = 1;
 					}
 
 					dest[i * 9 + 5] = r;
@@ -1551,7 +1567,8 @@ namespace MatterHackers.RenderGl
 
 		private void DrawElementsTextured(BeginMode mode, int count, int type, IntPtr indices, bool hasColorPointer, bool hasNormalPointer, bool lightingOn, bool light0On, bool light1On)
 		{
-			bool useLitShader = lightingOn && hasNormalPointer && normalPointerData.pointer != IntPtr.Zero;
+			bool texReplace = texEnvMode == GL_REPLACE;
+			bool useLitShader = lightingOn && hasNormalPointer && normalPointerData.pointer != IntPtr.Zero && !texReplace;
 
 			int stride = useLitShader ? 12 * sizeof(float) : 9 * sizeof(float);
 			if (useLitShader)
@@ -1614,12 +1631,12 @@ namespace MatterHackers.RenderGl
 						fixed (byte* vboPtr = vboData)
 						{
 							indicesPtr = vboPtr + (int)indices;
-							ProcessBatchTextured(mode, dest, srcVert, srcTex, srcNormal, vertStride, texStride, normStride, indicesPtr, type, offset, batchCount, useLitShader, hasColorPointer, lightingOn, light0On, light1On);
+							ProcessBatchTextured(mode, dest, srcVert, srcTex, srcNormal, vertStride, texStride, normStride, indicesPtr, type, offset, batchCount, useLitShader, hasColorPointer, lightingOn, light0On, light1On, texReplace);
 						}
 					}
 					else
 					{
-						ProcessBatchTextured(mode, dest, srcVert, srcTex, srcNormal, vertStride, texStride, normStride, indicesPtr, type, offset, batchCount, useLitShader, hasColorPointer, lightingOn, light0On, light1On);
+						ProcessBatchTextured(mode, dest, srcVert, srcTex, srcNormal, vertStride, texStride, normStride, indicesPtr, type, offset, batchCount, useLitShader, hasColorPointer, lightingOn, light0On, light1On, texReplace);
 					}
 				}
 				context.Unmap(dynamicTexVertexBuffer, 0);
@@ -2310,7 +2327,13 @@ namespace MatterHackers.RenderGl
 		{
 			TexParameter(TextureTarget.Texture2D, (TextureParameterName)pname, param);
 		}
-		public void TexEnv(TextureEnvironmentTarget target, TextureEnvParameter pname, float param) { }
+		public void TexEnv(TextureEnvironmentTarget target, TextureEnvParameter pname, float param)
+		{
+			if (pname == TextureEnvParameter.TextureEnvMode)
+			{
+				texEnvMode = (int)param;
+			}
+		}
 		public void ActiveTexture(int texture)
 		{
 			if (texture >= 0x84C0 && texture < 0x84C0 + 8) // GL_TEXTURE0

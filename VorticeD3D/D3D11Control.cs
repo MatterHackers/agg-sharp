@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -92,6 +92,7 @@ namespace MatterHackers.RenderGl
 				BufferUsage = Usage.RenderTargetOutput,
 				BufferCount = 2,
 				SwapEffect = SwapEffect.FlipDiscard,
+				AlphaMode = AlphaMode.Ignore,
 				Flags = SwapChainFlags.AllowModeSwitch,
 			};
 
