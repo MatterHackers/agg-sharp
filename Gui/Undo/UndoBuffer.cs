@@ -39,6 +39,17 @@ namespace MatterHackers.Agg.UI
 
 		public int RedoCount => redoBuffer.Count;
 
+		/// <summary>
+		/// Returns the top undo command without removing it, or null if the undo stack is empty.
+		/// </summary>
+		public IUndoRedoCommand PeekUndo()
+		{
+			lock (locker)
+			{
+				return undoBuffer.Count > 0 ? undoBuffer.Peek() : null;
+			}
+		}
+
 		public ulong GetLongHashCode()
         {
 			lock (locker)
