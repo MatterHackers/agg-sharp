@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -761,6 +761,76 @@ namespace MatterHackers.PolygonMesh
 			{
 				this.Faces.Add(firstVertex, firstVertex + i + 1, firstVertex + i + 2, this.Vertices);
 			}
+		}
+		/// <summary>
+		/// Build a list of (centroid, color) pairs from the current FaceColors.
+		/// Returns null if FaceColors is null. Used to save color data before
+		/// operations that lose per-face colors (e.g. DMesh3 round-trip).
+		/// </summary>
+		public List<(Vector3 centroid, Color color)> SaveFaceCentroidColors()
+		{
+			if (FaceColors == null)
+			{
+				return null;
+			}
+
+			var result = new List<(Vector3, Color)>(Faces.Count);
+			for (int i = 0; i < Faces.Count; i++)
+			{
+				var face = Faces[i];
+				var centroid = new Vector3(
+					(Vertices[face.v0] + Vertices[face.v1] + Vertices[face.v2]) / 3f);
+				var color = i < FaceColors.Length
+					? FaceColors[i]
+					: new Color(200, 200, 200, 255);
+				result.Add((centroid, color));
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// Find the color from savedColors whose centroid is nearest to the given point.
+		/// </summary>
+		public static Color FindNearestCentroidColor(Vector3 point, List<(Vector3 centroid, Color color)> savedColors)
+		{
+			double bestDistSq = double.MaxValue;
+			var bestColor = new Color(200, 200, 200, 255);
+			for (int i = 0; i < savedColors.Count; i++)
+			{
+				var diff = point - savedColors[i].centroid;
+				var distSq = diff.LengthSquared;
+				if (distSq < bestDistSq)
+				{
+					bestDistSq = distSq;
+					bestColor = savedColors[i].color;
+				}
+			}
+
+			return bestColor;
+		}
+
+		/// <summary>
+		/// Restore per-face colors by matching each face's centroid to the nearest
+		/// saved centroid. Does nothing if savedColors is null.
+		/// </summary>
+		public void RestoreFaceColorsFromCentroids(List<(Vector3 centroid, Color color)> savedColors)
+		{
+			if (savedColors == null)
+			{
+				return;
+			}
+
+			var faceColors = new Color[Faces.Count];
+			for (int i = 0; i < Faces.Count; i++)
+			{
+				var face = Faces[i];
+				var centroid = new Vector3(
+					(Vertices[face.v0] + Vertices[face.v1] + Vertices[face.v2]) / 3f);
+				faceColors[i] = FindNearestCentroidColor(centroid, savedColors);
+			}
+
+			FaceColors = faceColors;
 		}
 	}
 

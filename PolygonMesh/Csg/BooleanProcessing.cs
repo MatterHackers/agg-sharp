@@ -169,22 +169,7 @@ namespace MatterHackers.PolygonMesh.Csg
 								manifold = manifold.AsOriginal();
 								if (meshCopy.FaceColors != null)
 								{
-									// Build spatial color data: centroid + color per face
-									// Used for spatial matching after boolean since Manifold
-									// reorders faces, making index-based lookup unreliable
-									var spatialColors = new List<(Vector3, Color)>();
-									for (int fi = 0; fi < meshCopy.Faces.Count; fi++)
-									{
-										var face = meshCopy.Faces[fi];
-										var centroid = new Vector3(
-											(meshCopy.Vertices[face.v0] + meshCopy.Vertices[face.v1] + meshCopy.Vertices[face.v2]) / 3f);
-										var faceColor = fi < meshCopy.FaceColors.Length
-											? meshCopy.FaceColors[fi]
-											: new Color(200, 200, 200, 255);
-										spatialColors.Add((centroid, faceColor));
-									}
-
-									originalIdToSpatialColors[manifold.OriginalID] = spatialColors;
+									originalIdToSpatialColors[manifold.OriginalID] = meshCopy.SaveFaceCentroidColors();
 								}
 								else
 								{
@@ -751,22 +736,7 @@ namespace MatterHackers.PolygonMesh.Csg
 								(resultMesh.Vertices[face.v0]
 								+ resultMesh.Vertices[face.v1]
 								+ resultMesh.Vertices[face.v2]) / 3f);
-
-							// Find nearest source centroid
-							double bestDistSq = double.MaxValue;
-							var bestColor = defaultColor;
-							for (int si = 0; si < spatialColors.Count; si++)
-							{
-								var diff = centroid - spatialColors[si].centroid;
-								var distSq = diff.LengthSquared;
-								if (distSq < bestDistSq)
-								{
-									bestDistSq = distSq;
-									bestColor = spatialColors[si].color;
-								}
-							}
-
-							faceColors[tri] = bestColor;
+							faceColors[tri] = Mesh.FindNearestCentroidColor(centroid, spatialColors);
 						}
 					}
 					else
