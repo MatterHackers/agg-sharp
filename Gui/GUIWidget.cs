@@ -17,6 +17,7 @@
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -2058,21 +2059,15 @@ namespace MatterHackers.Agg.UI
 			this.Load?.Invoke(this, args);
 		}
 
-		public static Dictionary<int, int> DrawsByDepth { get; private set; } = new Dictionary<int, int>();
+		public static ConcurrentDictionary<int, int> DrawsByDepth { get; private set; } = new ConcurrentDictionary<int, int>();
 
-		private static int drawDepth = 0;
+		[ThreadStatic]
+		private static int drawDepth;
 
 		public virtual void OnDraw(Graphics2D graphics2D)
 		{
 			drawDepth++;
-			if (DrawsByDepth.ContainsKey(drawDepth))
-			{
-				DrawsByDepth[drawDepth]++;
-			}
-			else
-			{
-				DrawsByDepth[drawDepth] = 1;
-			}
+			DrawsByDepth.AddOrUpdate(drawDepth, 1, (key, oldValue) => oldValue + 1);
 
 			if (!onloadInvoked)
 			{
