@@ -18,12 +18,6 @@ When a bug is reported, always follow this workflow:
 2. **Fix the bug** - Make the minimal change needed to address the issue
 3. **Verify via passing test** - The previously failing test should now pass
 
-This approach works because:
-- The failing test proves you understand the bug
-- The fix is verifiable, not just "looks right"
-- You can't accidentally break it again (regression protection)
-- It aligns with the principle that coding is high-leverage because it's **partially verifiable**
-
 **Do not skip the reproducing test.** Even if the fix seems obvious, the test validates your understanding and prevents regressions.
 
 ## Testing
@@ -45,13 +39,29 @@ This approach works because:
 - **Test Project:** `Tests/Agg.Tests/Agg.Tests.csproj`
 - **What is agg-sharp:** Core graphics/UI framework library used as a submodule by MatterCAD. Includes 2D graphics (agg), GUI widgets (Gui), polygon mesh, vector math, image processing, CSG, ray tracing, and GUI automation.
 
+### Project Map
+
+- `agg/` — Core 2D graphics engine (Graphics2D, image buffers, font rendering, scanline rasterizer)
+- `Gui/` — Widget toolkit (buttons, text, layout, theming, windowing)
+- `GuiAutomation/` — Automated UI testing framework
+- `PolygonMesh/` — 3D mesh data structures, operations, BVH acceleration
+- `VectorMath/` — Math primitives (Vector2/3, Matrix4x4, Quaternion, AABB)
+- `Csg/` — Constructive solid geometry (boolean operations on meshes)
+- `DataConverters2D/` — 2D path/shape conversion utilities
+- `DataConverters3D/` — 3D file format loaders (STL, AMF, OBJ, 3MF)
+- `RenderOpenGl/` — OpenGL rendering backend
+- `VorticeD3D/` — Direct3D rendering backend (via Vortice.Windows)
+- `ImageProcessing/` — Image filters, transforms, analysis
+- `PlatformWin32/` — Windows platform abstraction (input, clipboard, system windows)
+- `Tests/Agg.Tests/` — All tests
+
 ## Code Quality
 
 **Names** - Choose carefully. Good names make code self-documenting.
 
-**Comments** - Explain *why*, not *what*. The code shows what it does; comments should reveal intent, tradeoffs, and non-obvious reasoning.
+**Comments** - Explain *why*, not *what*. The code shows what it does; comments should reveal intent, tradeoffs, and non-obvious reasoning. When investigating code, persist what you learn — add `/// <summary>` to undocumented public methods you had to study, and inline comments where non-obvious logic required investigation. If behavior surprised you, it will surprise the next reader.
 
-**Refactoring** - Improve code when it serves a purpose, not for aesthetics. Refactor to fix bugs, add features, or improve clarity when you're already working in that area.
+**Refactoring** - Improve code when it serves a purpose, not for aesthetics. Refactor to fix bugs, add features, or improve clarity when you're already working in that area. This includes adding documentation — treat it as part of the improvement, not a separate task.
 
 **Copyright** - When updating files with copyright notices, update the year to 2026 if not already current. Include Lars Brubaker in the copyright notice.
 
