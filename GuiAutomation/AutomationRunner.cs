@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,22 @@ namespace MatterHackers.GuiAutomation
 		private IInputMethod inputSystem;
 
 		private const double DefaultWidgetWaitSeconds = 2.0;
+
+		/// <summary>
+		/// Indicates whether the test called MarkTestComplete() before returning.
+		/// Used to detect tests that exit early without reaching their final statement.
+		/// </summary>
+		public bool TestWasCompleted { get; private set; }
+
+		/// <summary>
+		/// Call this as the last action in an automation test to signal that
+		/// the test executed all the way to its final statement. If a test
+		/// returns without calling this, the framework will report a failure.
+		/// </summary>
+		public void MarkTestComplete()
+		{
+			TestWasCompleted = true;
+		}
 
 		/// <summary>
 		/// The number of seconds to move the mouse when going to a new position.
@@ -1532,6 +1548,15 @@ namespace MatterHackers.GuiAutomation
 			{
 				DebugLogger.LogError("AutomationRunner", "TEST TIMED OUT");
 				throw new TimeoutException("TestMethod timed out");
+			}
+
+			// Verify the test signaled completion by calling MarkTestComplete().
+			// This catches tests that exit early (e.g., silent return) without
+			// reaching their final statement.
+			if (!testRunner.TestWasCompleted)
+			{
+				DebugLogger.LogError("AutomationRunner", "TEST DID NOT CALL MarkTestComplete() - test may have exited early");
+				throw new Exception("Test did not call MarkTestComplete(). The test may have exited before reaching its last statement.");
 			}
 
 			DebugLogger.LogMessage("AutomationRunner", "=== TEST COMPLETE ===");
