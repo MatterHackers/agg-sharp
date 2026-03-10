@@ -70,6 +70,7 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.Delay(.5);
 
 				await Assert.That(leftClickCount == 1).IsTrue();
+				testRunner.MarkTestComplete();
 			});
 		}
 
@@ -94,6 +95,7 @@ namespace MatterHackers.Agg.UI.Tests
                     {
                         // Test method that runs for 10+ seconds
                         Thread.Sleep(10 * 1000);
+                        testRunner.MarkTestComplete();
                         return Task.CompletedTask;
                     },
                     // Timeout after 1 second
@@ -140,6 +142,7 @@ namespace MatterHackers.Agg.UI.Tests
 					testRunner.GetRegionByName("right"));
 
 				await Assert.That(widget).IsNull();
+				testRunner.MarkTestComplete();
 			});
 		}
 	}

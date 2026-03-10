@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 */
 
@@ -64,6 +64,7 @@ namespace MatterCAD.Tests.MatterCAD
 				testRunner.ClickByName("targetA");
 
 				testRunner.Delay();
+				testRunner.MarkTestComplete();
 			}, 30);
 		}
 
@@ -557,6 +558,7 @@ namespace MatterCAD.Tests.MatterCAD
 				}
 
 				testRunner.Delay();
+				testRunner.MarkTestComplete();
 			}, 25);
 		}
 

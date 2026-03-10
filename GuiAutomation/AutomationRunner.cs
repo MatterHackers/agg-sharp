@@ -57,15 +57,30 @@ namespace MatterHackers.GuiAutomation
 		private const double DefaultWidgetWaitSeconds = 2.0;
 
 		/// <summary>
+		/// IMPORTANT: Every automation test MUST call <see cref="MarkTestComplete()"/>
+		/// as its last action. This is how we verify that tests execute all the way
+		/// to their final statement. If a test exits early — due to an exception,
+		/// a silent WaitFor timeout, or an accidental early return — MarkTestComplete()
+		/// is never called and the framework reports the test as failed.
+		///
+		/// If you are adding a new test that calls ShowWindowAndExecuteTests directly
+		/// (rather than through a wrapper like RunTest or NewPartTabTest), you must
+		/// call testRunner.MarkTestComplete() as the last line of your test lambda.
+		///
+		/// Tests going through MatterCADUtilities.RunTest or NewPartTabTest get this
+		/// automatically — the wrapper calls MarkTestComplete() after your lambda returns.
+		/// </summary>
+		public bool RequireTestCompletion { get; set; } = true;
+
+		/// <summary>
 		/// Indicates whether the test called MarkTestComplete() before returning.
-		/// Used to detect tests that exit early without reaching their final statement.
 		/// </summary>
 		public bool TestWasCompleted { get; private set; }
 
 		/// <summary>
-		/// Call this as the last action in an automation test to signal that
-		/// the test executed all the way to its final statement. If a test
-		/// returns without calling this, the framework will report a failure.
+		/// Signals that the test executed all the way to its final statement.
+		/// Must be the last call in every automation test lambda. The framework
+		/// verifies this was called; if not, the test is reported as failed.
 		/// </summary>
 		public void MarkTestComplete()
 		{
@@ -1550,10 +1565,10 @@ namespace MatterHackers.GuiAutomation
 				throw new TimeoutException("TestMethod timed out");
 			}
 
-			// Verify the test signaled completion by calling MarkTestComplete().
-			// This catches tests that exit early (e.g., silent return) without
-			// reaching their final statement.
-			if (!testRunner.TestWasCompleted)
+			// When RequireTestCompletion is set, verify the test signaled
+			// completion by calling MarkTestComplete(). This catches tests that
+			// exit early (e.g., silent return) without reaching their final statement.
+			if (testRunner.RequireTestCompletion && !testRunner.TestWasCompleted)
 			{
 				DebugLogger.LogError("AutomationRunner", "TEST DID NOT CALL MarkTestComplete() - test may have exited early");
 				throw new Exception("Test did not call MarkTestComplete(). The test may have exited before reaching its last statement.");

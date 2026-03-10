@@ -793,6 +793,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 
 				testRunner.Delay(1);
 				await Assert.That(editField.Text == "Test Text").IsTrue();
+				testRunner.MarkTestComplete();
 			}
 
 			editField = new TextEditWidget(pixelWidth: 200)
@@ -827,6 +828,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 				//if (!editField.ContainsFocus) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
 				// NOTE: Okay. During parallel testing, it seems that the avalanche of windows causes test UIs to lose control focus and get confused.
 				await Assert.That(editField.ContainsFocus).IsTrue();
+				testRunner.MarkTestComplete();
 			}
 
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);
@@ -866,6 +868,7 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 				//testRunner.WaitFor(() => "123123" == editField.Text, maxSeconds: 60);
 				// NOTE: Used to get intermittent failures here. These issues might have been sorted out now.
 				await Assert.That(editField.Text).IsEqualTo("123123");//, "Text should be appended if control is focused and has already received input");
+				testRunner.MarkTestComplete();
 			}
 
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);

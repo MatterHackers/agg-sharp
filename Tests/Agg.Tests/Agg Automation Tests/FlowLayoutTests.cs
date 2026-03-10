@@ -199,6 +199,7 @@ namespace MatterHackers.Agg.UI.Tests
 					// testRunner.Delay(30);
 
 					await Assert.That(footerRow.Position.Y).IsEqualTo(0);//, "Footer should be positioned at Y0 when it is the first item in a TopToBottom FlowlayoutWidget");
+					testRunner.MarkTestComplete();
 				});
 		}
 
