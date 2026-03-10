@@ -48,6 +48,13 @@ namespace MatterHackers.RenderGl
 
 		public bool LookingDownOnBed { get; set; }
 
+		/// <summary>
+		/// True when any scene object extends more than 1mm below the bed surface,
+		/// causing the bed to become semi-transparent even when viewed from above
+		/// so the user can see what's underneath.
+		/// </summary>
+		public bool ObjectsBelowBed { get; set; }
+
 		public Mesh Mesh { get; set; }
 
 		public ImageBuffer TopBaseTexture { get; set; }
@@ -58,10 +65,15 @@ namespace MatterHackers.RenderGl
 
 		/// <summary>
 		/// Creates the MeshRenderCommand for rendering the bed, applying semi-transparency
-		/// when the camera is looking up through the bed from below.
+		/// when the camera is looking up through the bed from below, or when looking down
+		/// and objects extend below the bed surface.
 		/// </summary>
 		public MeshRenderCommand CreateSceneCommand()
 		{
+			// Bed is transparent when looking from below, or when looking from above
+			// and objects are hidden underneath
+			var shouldBeTransparent = !LookingDownOnBed || (LookingDownOnBed && ObjectsBelowBed);
+
 			return new MeshRenderCommand
 			{
 				Color = Color,
@@ -71,7 +83,7 @@ namespace MatterHackers.RenderGl
 				WireFrameColor = Color.Transparent,
 				BlendTexture = false,
 				ForceCullBackFaces = false,
-				AlphaMultiplier = LookingDownOnBed ? 1.0f : BelowBedAlphaMultiplier,
+				AlphaMultiplier = shouldBeTransparent ? BelowBedAlphaMultiplier : 1.0f,
 			};
 		}
 	}

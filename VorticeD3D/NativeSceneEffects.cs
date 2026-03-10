@@ -658,6 +658,7 @@ namespace MatterHackers.RenderGl
 		{
 			var hash = new HashCode();
 			hash.Add(bedCommand.LookingDownOnBed);
+			hash.Add(bedCommand.ObjectsBelowBed);
 			hash.Add(bedCommand.BedBounds.Left);
 			hash.Add(bedCommand.BedBounds.Right);
 			hash.Add(bedCommand.BedBounds.Bottom);
