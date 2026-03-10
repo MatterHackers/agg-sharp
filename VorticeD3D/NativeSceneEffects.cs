@@ -1070,18 +1070,9 @@ namespace MatterHackers.RenderGl
 			context.PSSetShaderResource(0, null);
 		}
 
-		private MeshRenderCommand CreateBedSceneCommand(BedRenderCommand bedCommand)
+		private static MeshRenderCommand CreateBedSceneCommand(BedRenderCommand bedCommand)
 		{
-			return new MeshRenderCommand
-			{
-				Color = bedCommand.Color,
-				Mesh = bedCommand.Mesh,
-				Transform = bedCommand.Transform,
-				RenderType = RenderTypes.Shaded,
-				WireFrameColor = AggColor.Transparent,
-				BlendTexture = false,
-				ForceCullBackFaces = false,
-			};
+			return bedCommand.CreateSceneCommand();
 		}
 
 		private unsafe void RenderFlatMask(MeshRenderCommand command, Matrix4X4 modelView, Matrix4X4 projection, AggColor color, bool enableDepthTest)

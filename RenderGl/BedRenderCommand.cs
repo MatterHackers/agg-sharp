@@ -36,6 +36,12 @@ namespace MatterHackers.RenderGl
 {
 	public sealed class BedRenderCommand
 	{
+		/// <summary>
+		/// Alpha multiplier applied to the bed when viewing from below,
+		/// making it semi-transparent so objects beneath the bed are visible.
+		/// </summary>
+		public const float BelowBedAlphaMultiplier = 0.3f;
+
 		public RectangleDouble BedBounds { get; set; }
 
 		public Color Color { get; set; } = Color.White;
@@ -49,5 +55,24 @@ namespace MatterHackers.RenderGl
 		public Matrix4X4 Transform { get; set; } = Matrix4X4.Identity;
 
 		public ImageBuffer UnderBaseTexture { get; set; }
+
+		/// <summary>
+		/// Creates the MeshRenderCommand for rendering the bed, applying semi-transparency
+		/// when the camera is looking up through the bed from below.
+		/// </summary>
+		public MeshRenderCommand CreateSceneCommand()
+		{
+			return new MeshRenderCommand
+			{
+				Color = Color,
+				Mesh = Mesh,
+				Transform = Transform,
+				RenderType = RenderTypes.Shaded,
+				WireFrameColor = Color.Transparent,
+				BlendTexture = false,
+				ForceCullBackFaces = false,
+				AlphaMultiplier = LookingDownOnBed ? 1.0f : BelowBedAlphaMultiplier,
+			};
+		}
 	}
 }
