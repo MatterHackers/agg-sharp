@@ -197,9 +197,9 @@ namespace MatterHackers.Agg.UI
                     {
                         var firstChildOfLastBounds = firstChildOfLast.TransformToParentSpace(this, firstChildOfLast.LocalBounds);
                         yOffset = Math.Round(firstChildOfLastBounds.Center.Y) + .5;
-                        if (treeNodeWidget.Nodes.Count > 0)
+                        if (treeNodeWidget.Nodes.Count > 0 || treeNodeWidget.Expandable)
                         {
-                            // and draw a little horizontal line from the line to the right
+                            // short line for nodes that have children or are expandable (e.g. lazy-loaded containers)
                             e.Graphics2D.Line(xOffset, yOffset, xOffset + shortLine, yOffset, theme.TextColor.WithAlpha(100));
                         }
                         else
