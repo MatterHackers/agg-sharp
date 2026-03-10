@@ -1495,7 +1495,8 @@ namespace MatterHackers.GuiAutomation
 				throw;
 			}
 
-			bool timedOut = task.Result == delayTask;
+			var completedTask = task.Result;
+			bool timedOut = completedTask == delayTask;
 			DebugLogger.LogMessage("AutomationRunner", $"SHOW COMPLETED - TimedOut: {timedOut}");
 
 			// Wait for CloseOnIdle to complete
@@ -1565,6 +1566,15 @@ namespace MatterHackers.GuiAutomation
 				throw new TimeoutException("TestMethod timed out");
 			}
 
+			// If the test task threw an exception, propagate it before checking
+			// MarkTestComplete. The original exception is more useful than the
+			// generic "did not call MarkTestComplete" message.
+			if (completedTask != null && completedTask.IsFaulted)
+			{
+				DebugLogger.LogError("AutomationRunner", $"TEST FAULTED: {completedTask.Exception?.InnerException?.Message}");
+				completedTask.GetAwaiter().GetResult(); // throws the original exception
+			}
+
 			// When RequireTestCompletion is set, verify the test signaled
 			// completion by calling MarkTestComplete(). This catches tests that
 			// exit early (e.g., silent return) without reaching their final statement.
@@ -1576,7 +1586,7 @@ namespace MatterHackers.GuiAutomation
 
 			DebugLogger.LogMessage("AutomationRunner", "=== TEST COMPLETE ===");
 			// After the system window is closed return the task and any exception to the calling context
-			return task?.Result ?? Task.CompletedTask;
+			return completedTask ?? Task.CompletedTask;
 		}
 	}
 }

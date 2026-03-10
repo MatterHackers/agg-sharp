@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -64,6 +64,8 @@ namespace MatterHackers.Agg.UI.Tests
 	testRunner.Delay(.5);
 
 	await Assert.That(leftClickCount == 1).IsTrue();
+
+	testRunner.MarkTestComplete();
 };
 
 			var buttonContainer = new SystemWindow(300, 200);
@@ -102,6 +104,7 @@ namespace MatterHackers.Agg.UI.Tests
 					testRunner.Delay(.5);
 				}
 
+				testRunner.MarkTestComplete();
 				return Task.CompletedTask;
             };
 
