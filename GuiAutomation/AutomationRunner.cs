@@ -692,20 +692,30 @@ namespace MatterHackers.GuiAutomation
 			if (getResults != null
 				&& getResults.Count > 0)
 			{
-				// TODO: Widgets really shouldn't have the same ID for testing. But some cases still occur:
-				//       PrinterTabRemainsAfterReloadAll: "Distance or Loops Field"
-				//       AddingImageConverterWorks: "Row Item Image Converter"
-				//       PulseLevelingTest: "Stop Task Button"
-				//       But, well, what about common dialog box widgets?
-				//if (getResults.Count > 1)
-				//	throw new Exception($"Widgets have duplicate names: {widgetName}");
+				// When multiple widgets share the same name, prefer the one with the
+				// largest clipped visible area — it is most likely the interactive one.
+				var best = getResults[0];
+				if (getResults.Count > 1)
+				{
+					double bestArea = 0;
+					foreach (var result in getResults)
+					{
+						var clipped = result.Widget.ClippedOnScreenBounds();
+						double area = clipped.Width * clipped.Height;
+						if (area > bestArea)
+						{
+							bestArea = area;
+							best = result;
+						}
+					}
+				}
 
-				this.SetTarget(getResults[0].Widget);
+				this.SetTarget(best.Widget);
 
-				containingWindow = getResults[0].ContainingSystemWindow;
-				offsetHint = getResults[0].OffsetHint;
+				containingWindow = best.ContainingSystemWindow;
+				offsetHint = best.OffsetHint;
 
-				return getResults[0].Widget;
+				return best.Widget;
 			}
 
 			return null;
