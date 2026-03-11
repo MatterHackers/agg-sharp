@@ -99,12 +99,10 @@ namespace MatterHackers.RenderGl
 		private ID3D11PixelShader bedShadowBlurPS;
 		private ID3D11PixelShader bedShadowCompositePS;
 		private ID3D11PixelShader outlineCompositePS;
-		private ID3D11PixelShader fxaaPS;
 		private ID3D11BlendState dualDepthPeelBlendState;
 
 		private ID3D11Buffer sceneEffectBuffer;
 		private ID3D11Buffer outlineCompositeBuffer;
-		private ID3D11Buffer fxaaBuffer;
 		private ID3D11Buffer bedShadowPostProcessBuffer;
 		private ID3D11SamplerState pointClampSampler;
 		private ID3D11SamplerState linearClampSampler;
@@ -231,7 +229,6 @@ namespace MatterHackers.RenderGl
 			byte[] bedBlurPsByteCode = Compiler.Compile(postProcessHlsl, "BedShadowBlurPS", "NodeDesignerPostProcess.hlsl", "ps_5_0").ToArray();
 			byte[] bedCompositePsByteCode = Compiler.Compile(postProcessHlsl, "BedShadowCompositePS", "NodeDesignerPostProcess.hlsl", "ps_5_0").ToArray();
 			byte[] outlinePsByteCode = Compiler.Compile(postProcessHlsl, "OutlineCompositePS", "NodeDesignerPostProcess.hlsl", "ps_5_0").ToArray();
-			byte[] fxaaPsByteCode = Compiler.Compile(postProcessHlsl, "FxaaPS", "NodeDesignerPostProcess.hlsl", "ps_5_0").ToArray();
 
 			fullscreenVS = device.CreateVertexShader(fullscreenVsByteCode);
 			copyTexturePS = device.CreatePixelShader(copyPsByteCode);
@@ -239,7 +236,6 @@ namespace MatterHackers.RenderGl
 			bedShadowBlurPS = device.CreatePixelShader(bedBlurPsByteCode);
 			bedShadowCompositePS = device.CreatePixelShader(bedCompositePsByteCode);
 			outlineCompositePS = device.CreatePixelShader(outlinePsByteCode);
-			fxaaPS = device.CreatePixelShader(fxaaPsByteCode);
 		}
 
 		private void CreateSceneEffectBuffers()
@@ -255,14 +251,6 @@ namespace MatterHackers.RenderGl
 			outlineCompositeBuffer = device.CreateBuffer(new BufferDescription
 			{
 				ByteWidth = 32,
-				Usage = ResourceUsage.Dynamic,
-				BindFlags = BindFlags.ConstantBuffer,
-				CPUAccessFlags = CpuAccessFlags.Write,
-			});
-
-			fxaaBuffer = device.CreateBuffer(new BufferDescription
-			{
-				ByteWidth = 16,
 				Usage = ResourceUsage.Dynamic,
 				BindFlags = BindFlags.ConstantBuffer,
 				CPUAccessFlags = CpuAccessFlags.Write,
@@ -441,7 +429,6 @@ namespace MatterHackers.RenderGl
 			RenderTransparentLayers(renderPlan.TransparentCommands, queuedBedCommand);
 			RenderTransparentOverlays(renderPlan.TransparentCommands);
 			CompositeSceneTargets();
-			ApplyFxaa();
 			RenderSelectionOutlines();
 			RestoreDefaultSceneTarget();
 		}
@@ -931,34 +918,6 @@ namespace MatterHackers.RenderGl
 				dualBackAccumTarget.ShaderResourceView,
 				transparentOverlayTarget.ShaderResourceView);
 
-			UnbindSceneTextures();
-		}
-
-		private unsafe void ApplyFxaa()
-		{
-			context.OMSetRenderTargets(renderTargetView, depthStencilView);
-			ApplyDefaultSceneViewport();
-			context.IASetInputLayout(null);
-			context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
-			context.VSSetShader(fullscreenVS);
-			context.PSSetShader(fxaaPS);
-			context.PSSetSampler(0, pointClampSampler);
-			context.PSSetSampler(1, linearClampSampler);
-			context.OMSetDepthStencilState(GetOrCreateDepthStencilState(false, ComparisonFunction.Always, false));
-			context.RSSetState(rasterizerNoCull);
-			context.OMSetBlendState(GetOrCreateBlendState(true, (int)BlendingFactorSrc.SrcAlpha, (int)BlendingFactorDest.OneMinusSrcAlpha, ColorWriteEnable.All));
-
-			var mapped = context.Map(fxaaBuffer, MapMode.WriteDiscard);
-			float* values = (float*)mapped.DataPointer;
-			values[0] = 1.0f / resolvedSceneTarget.Width;
-			values[1] = 1.0f / resolvedSceneTarget.Height;
-			values[2] = 0.0f;
-			values[3] = 0.0f;
-			context.Unmap(fxaaBuffer, 0);
-
-			context.PSSetConstantBuffer(2, fxaaBuffer);
-			context.PSSetShaderResource(0, resolvedSceneTarget.ShaderResourceView);
-			context.Draw(3, 0);
 			UnbindSceneTextures();
 		}
 
@@ -1597,10 +1556,8 @@ namespace MatterHackers.RenderGl
 			bedShadowBlurPS?.Dispose();
 			bedShadowCompositePS?.Dispose();
 			outlineCompositePS?.Dispose();
-			fxaaPS?.Dispose();
 			sceneEffectBuffer?.Dispose();
 			outlineCompositeBuffer?.Dispose();
-			fxaaBuffer?.Dispose();
 			bedShadowPostProcessBuffer?.Dispose();
 			pointClampSampler?.Dispose();
 			linearClampSampler?.Dispose();
@@ -1627,10 +1584,8 @@ namespace MatterHackers.RenderGl
 			bedShadowBlurPS = null;
 			bedShadowCompositePS = null;
 			outlineCompositePS = null;
-			fxaaPS = null;
 			sceneEffectBuffer = null;
 			outlineCompositeBuffer = null;
-			fxaaBuffer = null;
 			bedShadowPostProcessBuffer = null;
 			pointClampSampler = null;
 			linearClampSampler = null;
