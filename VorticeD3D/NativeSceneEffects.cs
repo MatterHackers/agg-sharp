@@ -429,6 +429,7 @@ namespace MatterHackers.RenderGl
 			RenderTransparentLayers(renderPlan.TransparentCommands, queuedBedCommand);
 			RenderTransparentOverlays(renderPlan.TransparentCommands);
 			CompositeSceneTargets();
+			BlitResolvedSceneToScreen();
 			RenderSelectionOutlines();
 			RestoreDefaultSceneTarget();
 		}
@@ -918,6 +919,23 @@ namespace MatterHackers.RenderGl
 				dualBackAccumTarget.ShaderResourceView,
 				transparentOverlayTarget.ShaderResourceView);
 
+			UnbindSceneTextures();
+		}
+
+		private void BlitResolvedSceneToScreen()
+		{
+			context.OMSetRenderTargets(renderTargetView, depthStencilView);
+			ApplyDefaultSceneViewport();
+			context.IASetInputLayout(null);
+			context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+			context.VSSetShader(fullscreenVS);
+			context.PSSetShader(copyTexturePS);
+			context.PSSetSampler(0, pointClampSampler);
+			context.OMSetDepthStencilState(GetOrCreateDepthStencilState(false, ComparisonFunction.Always, false));
+			context.RSSetState(rasterizerNoCull);
+			context.OMSetBlendState(GetOrCreateBlendState(true, (int)BlendingFactorSrc.SrcAlpha, (int)BlendingFactorDest.OneMinusSrcAlpha, ColorWriteEnable.All));
+			context.PSSetShaderResource(0, resolvedSceneTarget.ShaderResourceView);
+			context.Draw(3, 0);
 			UnbindSceneTextures();
 		}
 
