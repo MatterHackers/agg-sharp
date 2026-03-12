@@ -567,7 +567,21 @@ namespace MatterHackers.RenderGl
 			var mv = modelViewStack.Peek();
 			// Apply Z correction: map OpenGL clip-space Z [-1,1] to D3D11 [0,1]
 			var p = projectionStack.Peek();
-			
+
+			// Apply sub-pixel jitter for progressive accumulation anti-aliasing.
+			// This shifts the projection in NDC space without modifying WorldView
+			// (which would trigger scene invalidation and reset accumulation).
+			if ((jitterOffsetX != 0 || jitterOffsetY != 0) && viewportWidth > 0 && viewportHeight > 0)
+			{
+				double jx = jitterOffsetX * 2.0 / viewportWidth;
+				double jy = jitterOffsetY * 2.0 / viewportHeight;
+				p = p * new Matrix4X4(
+					new Vector4(1, 0, 0, 0),
+					new Vector4(0, 1, 0, 0),
+					new Vector4(0, 0, 1, 0),
+					new Vector4(jx, jy, 0, 1));
+			}
+
 			double flipY = (currentBoundFramebuffer != 0) ? -1.0 : 1.0;
 
 			var proj = new Matrix4X4(
@@ -2062,7 +2076,7 @@ namespace MatterHackers.RenderGl
 
 			if (width < 0) width = 0;
 			if (height < 0) height = 0;
-			
+
 			int d3dY = renderTargetHeight - y - height;
 			context.RSSetScissorRect(x, d3dY, width, height);
 		}
@@ -2815,6 +2829,7 @@ namespace MatterHackers.RenderGl
 
 		public void Dispose()
 		{
+			DisposeAccumulator();
 			DisposeSceneEffects();
 
 			foreach (var buf in buffers.Values) buf?.Dispose();

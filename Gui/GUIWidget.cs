@@ -1924,41 +1924,6 @@ namespace MatterHackers.Agg.UI
 			return sawSystemWindow;
 		}
 
-		/// <summary>
-		/// Returns a detailed trace of the visibility walk for debugging why
-		/// <see cref="ActuallyVisibleOnScreen"/> returns an unexpected result.
-		/// </summary>
-		public string ActuallyVisibleOnScreenTrace()
-		{
-			var sb = new System.Text.StringBuilder();
-			GuiWidget curGUIWidget = this;
-			RectangleDouble visibleBounds = this.LocalBounds;
-			sb.AppendLine($"Widget: '{this.Name}' Type={this.GetType().Name} LocalBounds={this.LocalBounds}");
-
-			while (curGUIWidget != null)
-			{
-				sb.AppendLine($"  [{curGUIWidget.GetType().Name}] Name='{curGUIWidget.Name}' Visible={curGUIWidget.Visible} LocalBounds={curGUIWidget.LocalBounds} Origin={curGUIWidget.OriginRelativeParent} visibleBounds={visibleBounds}");
-
-				if (!curGUIWidget.Visible || visibleBounds.Width <= 0 || visibleBounds.Height <= 0)
-				{
-					sb.AppendLine($"  -> STOPPED: Visible={curGUIWidget.Visible} W={visibleBounds.Width:F1} H={visibleBounds.Height:F1}");
-					return sb.ToString();
-				}
-
-				if (curGUIWidget.Parent != null)
-				{
-					visibleBounds.Offset(curGUIWidget.OriginRelativeParent.X, curGUIWidget.OriginRelativeParent.Y);
-					visibleBounds.IntersectWithRectangle(curGUIWidget.Parent.LocalBounds);
-					sb.AppendLine($"    -> after clip to parent '{curGUIWidget.Parent.Name}': visibleBounds={visibleBounds}");
-				}
-
-				curGUIWidget = curGUIWidget.Parent;
-			}
-
-			sb.AppendLine("  -> VISIBLE (reached root)");
-			return sb.ToString();
-		}
-
 		public virtual bool CanFocus => this.Visible && this.Enabled;
 
 		public bool Focused

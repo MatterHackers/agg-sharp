@@ -100,6 +100,7 @@ namespace MatterHackers.RenderGl
 		private ID3D11PixelShader bedShadowCompositePS;
 		private ID3D11PixelShader outlineCompositePS;
 		private ID3D11BlendState dualDepthPeelBlendState;
+		private ID3D11BlendState resolvedSceneBlitBlendState;
 
 		private ID3D11Buffer sceneEffectBuffer;
 		private ID3D11Buffer outlineCompositeBuffer;
@@ -933,7 +934,31 @@ namespace MatterHackers.RenderGl
 			context.PSSetSampler(0, pointClampSampler);
 			context.OMSetDepthStencilState(GetOrCreateDepthStencilState(false, ComparisonFunction.Always, false));
 			context.RSSetState(rasterizerNoCull);
-			context.OMSetBlendState(GetOrCreateBlendState(true, (int)BlendingFactorSrc.SrcAlpha, (int)BlendingFactorDest.OneMinusSrcAlpha, ColorWriteEnable.All));
+
+			// Use separate alpha blend factors: color uses SrcAlpha/OneMinusSrcAlpha
+			// (standard alpha blend for non-premultiplied resolve output), but alpha
+			// channel uses One/OneMinusSrcAlpha for correct alpha compositing.
+			// Without this, alpha gets squared (src.a * src.a) when blitting to a
+			// transparent target (the accumulation sample frame), causing semi-transparent
+			// content like the bed to progressively disappear.
+			if (resolvedSceneBlitBlendState == null)
+			{
+				var desc = new BlendDescription();
+				desc.RenderTarget[0] = new RenderTargetBlendDescription
+				{
+					BlendEnable = true,
+					SourceBlend = Blend.SourceAlpha,
+					DestinationBlend = Blend.InverseSourceAlpha,
+					BlendOperation = BlendOperation.Add,
+					SourceBlendAlpha = Blend.One,
+					DestinationBlendAlpha = Blend.InverseSourceAlpha,
+					BlendOperationAlpha = BlendOperation.Add,
+					RenderTargetWriteMask = ColorWriteEnable.All,
+				};
+				resolvedSceneBlitBlendState = device.CreateBlendState(desc);
+			}
+
+			context.OMSetBlendState(resolvedSceneBlitBlendState);
 			context.PSSetShaderResource(0, resolvedSceneTarget.ShaderResourceView);
 			context.Draw(3, 0);
 			UnbindSceneTextures();
@@ -1580,6 +1605,7 @@ namespace MatterHackers.RenderGl
 			pointClampSampler?.Dispose();
 			linearClampSampler?.Dispose();
 			dualDepthPeelBlendState?.Dispose();
+			resolvedSceneBlitBlendState?.Dispose();
 			whiteTextureView?.Dispose();
 			whiteTexture?.Dispose();
 			bedTopBaseTexture?.Dispose();

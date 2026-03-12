@@ -80,6 +80,20 @@ float4 ResolveDualPeelPS(VS_OUTPUT input) : SV_TARGET
         resolvedColor.a + (1.0 - resolvedColor.a) * overlayWeight);
 }
 
+// Progressive accumulation: blends a new sample into the running average.
+// texture0 = new jittered sample, texture1 = previous accumulation result.
+cbuffer AccumulationBuffer : register(b2)
+{
+    float4 AccumSettings; // x = blend weight (1/N), yzw = unused
+};
+
+float4 AccumulatePS(VS_OUTPUT input) : SV_TARGET
+{
+    float4 newSample = texture0.Sample(pointSampler, input.TexCoord);
+    float4 prevAccum = texture1.Sample(pointSampler, input.TexCoord);
+    return lerp(prevAccum, newSample, AccumSettings.x);
+}
+
 float4 OutlineCompositePS(VS_OUTPUT input) : SV_TARGET
 {
     float outlineWidth = OutlineSettings.x;

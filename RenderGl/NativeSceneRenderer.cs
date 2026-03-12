@@ -108,5 +108,78 @@ namespace MatterHackers.RenderGl
 		bool TryRender(MeshRenderCommand command);
 
 		void QueueSelectionOutline(Mesh mesh, Color color, Matrix4X4 transform);
+
+		// Progressive accumulation anti-aliasing
+		int AccumulatedSampleCount { get; }
+
+		bool IsAccumulationComplete { get; }
+
+		int MaxAccumulationSamples { get; set; }
+
+		void SetJitterOffset(double x, double y);
+
+		void ResetAccumulation();
+
+		/// <summary>
+		/// Redirects all subsequent rendering (scene pipeline AND GL immediate mode)
+		/// to an off-screen sample target by swapping renderTargetView/depthStencilView.
+		/// Call before any 3D rendering begins for this frame.
+		/// </summary>
+		void BeginFullFrameCapture(RectangleDouble viewport);
+
+		/// <summary>
+		/// Restores the original render target after full-frame capture.
+		/// Call after all 3D rendering is complete for this frame.
+		/// </summary>
+		void EndFullFrameCapture();
+
+		/// <summary>
+		/// Blends the captured full-frame sample into the accumulation buffer
+		/// and blits the accumulated result to the screen.
+		/// Call after EndFullFrameCapture.
+		/// </summary>
+		void AccumulateAndBlitFullFrame();
+
+		/// <summary>
+		/// Composites the previously accumulated result to screen without re-rendering.
+		/// </summary>
+		void CompositeAccumulatedResult();
+	}
+
+	/// <summary>
+	/// Utility for generating sub-pixel jitter offsets using a Halton sequence.
+	/// Used by the progressive accumulation anti-aliasing system.
+	/// </summary>
+	public static class AccumulationJitter
+	{
+		/// <summary>
+		/// Returns a Halton(2,3) sub-pixel jitter offset for the given sample index.
+		/// Sample 0 returns (0,0) so the first frame is un-jittered and sharp.
+		/// Subsequent samples return offsets in [-0.5, 0.5] pixel range.
+		/// </summary>
+		public static (double x, double y) GetOffset(int sampleIndex)
+		{
+			if (sampleIndex == 0)
+			{
+				return (0, 0);
+			}
+
+			return (Halton(sampleIndex, 2) - 0.5, Halton(sampleIndex, 3) - 0.5);
+		}
+
+		private static double Halton(int index, int baseValue)
+		{
+			double result = 0;
+			double f = 1.0 / baseValue;
+			int i = index;
+			while (i > 0)
+			{
+				result += f * (i % baseValue);
+				i /= baseValue;
+				f /= baseValue;
+			}
+
+			return result;
+		}
 	}
 }
