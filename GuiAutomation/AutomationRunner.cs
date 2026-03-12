@@ -1053,9 +1053,9 @@ namespace MatterHackers.GuiAutomation
 			return this;
 		}
 
-		public AutomationRunner DoubleClickByName(string widgetName, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public AutomationRunner DoubleClickByName(string widgetName, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, double secondsToWait = 2)
 		{
-			return this.ClickByName(widgetName, searchRegion, offset, origin, isDoubleClick: true);
+			return this.ClickByName(widgetName, searchRegion, offset, origin, isDoubleClick: true, secondsToWait);
 		}
 
 		public bool MoveToByName(string widgetName, double secondsToWait = DefaultWidgetWaitSeconds, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
