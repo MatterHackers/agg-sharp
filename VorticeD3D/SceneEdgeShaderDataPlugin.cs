@@ -229,7 +229,7 @@ namespace MatterHackers.RenderGl
 						break;
 
 					case RenderTypes.NonManifold:
-						edgeClass = meshEdge.Faces.Count() == 2 ? 1 : 2;
+						edgeClass = meshEdge.Faces.Count() == 2 ? 0 : 2;
 						break;
 				}
 
