@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
@@ -65,7 +65,13 @@ namespace MatterHackers.Agg.UI
             {
                 if (TreeView != null)
                 {
-                    TreeView.SelectedNode = this;
+                    // Keep right-click non-destructive so callers can show a context menu
+                    // without changing tree selection or triggering navigation.
+                    if (e.Button == MouseButtons.Left)
+                    {
+                        TreeView.SelectedNode = this;
+                    }
+
                     TreeView.NotifyItemClicked(TitleBar, e);
                 }
             };
