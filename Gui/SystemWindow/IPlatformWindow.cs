@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2018, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -67,5 +67,10 @@ namespace MatterHackers.Agg.UI
 		void ShowSystemWindow(SystemWindow systemWindow);
 
 		void CloseSystemWindow(SystemWindow systemWindow);
+
+		/// <summary>
+		/// Captures a screenshot of the current window contents and saves it to the given path.
+		/// </summary>
+		void CaptureScreenshot(string path);
 	}
 }

@@ -697,6 +697,36 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Captures a screenshot of the current window contents.
+		/// </summary>
+		public virtual void CaptureScreenshot(string path)
+		{
+			void saveScreenshot()
+			{
+				if (this.ClientSize.Width <= 0 || this.ClientSize.Height <= 0)
+				{
+					return;
+				}
+
+				using (var bitmap = new Bitmap(this.ClientSize.Width, this.ClientSize.Height))
+				using (var graphics = Graphics.FromImage(bitmap))
+				{
+					CopyBackBufferToScreen(graphics);
+					bitmap.Save(path);
+				}
+			}
+
+			if (this.InvokeRequired)
+			{
+				this.Invoke((Action)saveScreenshot);
+			}
+			else
+			{
+				saveScreenshot();
+			}
+		}
+
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
 			// Prevent our call to SystemWindow.Close from recursing

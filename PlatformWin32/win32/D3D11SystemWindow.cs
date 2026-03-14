@@ -194,7 +194,7 @@ namespace MatterHackers.Agg.UI
 
 		private int frameCount;
 
-		public void CaptureScreenshot(string path)
+		public override void CaptureScreenshot(string path)
 		{
 			if (d3dControl != null && !d3dControl.IsDisposed)
 			{

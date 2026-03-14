@@ -292,5 +292,14 @@ namespace MatterHackers.Agg.UI
 		public IPlatformWindow PlatformWindow { get; set; }
 
 		public override Keys ModifierKeys => PlatformWindow.ModifierKeys;
+
+		/// <summary>
+		/// Captures a screenshot of this window and saves it to the given file path.
+		/// Delegates to the platform window implementation (e.g. D3D11, OpenGL).
+		/// </summary>
+		public void CaptureScreenshot(string path)
+		{
+			PlatformWindow?.CaptureScreenshot(path);
+		}
 	}
 }
