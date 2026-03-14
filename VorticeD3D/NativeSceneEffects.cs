@@ -55,6 +55,7 @@ namespace MatterHackers.RenderGl
 		public int DepthPeelingLayers { get; set; } = 6;
 
 		private readonly List<MeshRenderCommand> queuedSceneCommands = new();
+		private readonly List<MeshRenderCommand> queuedOverlayCommands = new();
 		private BedRenderCommand queuedBedCommand;
 		private readonly List<SelectionOutlineCommand> queuedSelectionOutlines = new();
 		private readonly NativeSceneRenderPlanner renderPlanner = new();
@@ -403,6 +404,7 @@ namespace MatterHackers.RenderGl
 			}
 
 			if (queuedSceneCommands.Count == 0
+				&& queuedOverlayCommands.Count == 0
 				&& queuedSelectionOutlines.Count == 0
 				&& queuedBedCommand == null)
 			{
@@ -428,7 +430,7 @@ namespace MatterHackers.RenderGl
 			RenderOpaqueCommands(renderPlan.OpaqueCommands);
 			RenderSceneDepth(renderPlan, queuedBedCommand);
 			RenderTransparentLayers(renderPlan.TransparentCommands, queuedBedCommand);
-			RenderTransparentOverlays(renderPlan.TransparentCommands);
+			RenderTransparentOverlays();
 			CompositeSceneTargets();
 			BlitResolvedSceneToScreen();
 			RenderSelectionOutlines();
@@ -964,10 +966,46 @@ namespace MatterHackers.RenderGl
 			UnbindSceneTextures();
 		}
 
-		private void RenderTransparentOverlays(IReadOnlyList<MeshRenderCommand> transparentCommands)
+		private void RenderTransparentOverlays()
 		{
 			BindColorTarget(transparentOverlayTarget);
 			ClearColorTarget(transparentOverlayTarget, new Color4(0, 0, 0, 0));
+
+			if (queuedOverlayCommands.Count == 0)
+			{
+				return;
+			}
+
+			// Render overlay commands with no depth test and alpha blending.
+			// These are 3D controls drawn as semi-transparent ghosts, always visible on top.
+			var noDepthState = GetOrCreateDepthStencilState(false, ComparisonFunction.Always, false);
+			var alphaBlend = GetOrCreateBlendState(
+				true,
+				(int)BlendingFactorSrc.SrcAlpha,
+				(int)BlendingFactorDest.OneMinusSrcAlpha,
+				ColorWriteEnable.All);
+
+			foreach (var command in queuedOverlayCommands)
+			{
+				if (!SceneRenderModeUtilities.RequiresSceneMeshPass(command.RenderType))
+				{
+					continue;
+				}
+
+				RenderMeshCommand(
+					command,
+					null,
+					enableWireframe: false,
+					wireframeOnly: false,
+					offsetFill: false,
+					enableDepthPeeling: false,
+					firstPeelPass: false,
+					opaqueDepthView: null,
+					nearDepthView: null,
+					colorWritesEnabled: true,
+					blendStateOverride: alphaBlend,
+					depthStencilStateOverride: noDepthState);
+			}
 		}
 
 		private void InitializeDualDepthPeel(IReadOnlyList<MeshRenderCommand> transparentCommands, BedRenderCommand bedCommand, ID3D11DepthStencilState depthState)
@@ -1547,6 +1585,7 @@ namespace MatterHackers.RenderGl
 		private void ClearQueuedSceneEffects()
 		{
 			queuedSceneCommands.Clear();
+			queuedOverlayCommands.Clear();
 			queuedBedCommand = null;
 			queuedSelectionOutlines.Clear();
 		}

@@ -75,7 +75,18 @@ namespace MatterHackers.RenderGl
 				return false;
 			}
 
-			QueueSceneCommand(command);
+			// When depth test is disabled, the caller wants this rendered as an
+			// always-visible overlay (e.g., 3D control ghost pass with alpha < 255).
+			bool depthTestEnabled = enableCapState.TryGetValue((int)EnableCap.DepthTest, out var d) && d;
+			if (depthTestEnabled)
+			{
+				QueueSceneCommand(command);
+			}
+			else
+			{
+				queuedOverlayCommands.Add(command);
+			}
+
 			return true;
 		}
 

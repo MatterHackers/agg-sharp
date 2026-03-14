@@ -177,7 +177,24 @@ namespace MatterHackers.RenderGl
 					}
 				}
 
-				// render the line mesh directly
+				// When the D3D scene pipeline is active, create a fresh mesh with baked
+				// world-space vertices and route it through the same pipeline as other
+				// control geometry (opaque or overlay depending on current depth test state).
+				if (GL.Instance is INativeSceneRenderer nativeSceneRenderer
+					&& nativeSceneRenderer.IsSceneRenderingActive)
+				{
+					var lineMesh = CreateTransformedLineMesh(lineTransform);
+
+					if (startArrow || endArrow)
+					{
+						AppendArrowHeads(lineMesh, start, end, startScale, normal, arrowWidth, arrowLength, startArrow, endArrow);
+					}
+
+					RenderHelper.Render(lineMesh, color, Matrix4X4.Identity, RenderTypes.Shaded, forceCullBackFaces: false);
+					return;
+				}
+
+				// GL compat fallback: render the line mesh directly
 				GL.Color4(color.Red0To255, color.Green0To255, color.Blue0To255, color.Alpha0To255);
 				GL.Enable(EnableCap.Blend);
 
@@ -211,6 +228,78 @@ namespace MatterHackers.RenderGl
 				{
 					RenderHead(end, startScale, normal, arrowWidth, arrowLength, true);
 				}
+			}
+		}
+
+		/// <summary>
+		/// Creates a fresh mesh from scaledLineMesh with vertices pre-transformed by lineTransform.
+		/// Each line needs its own mesh because scaledLineMesh is shared and modified per-call.
+		/// </summary>
+		private static Mesh CreateTransformedLineMesh(Matrix4X4 lineTransform)
+		{
+			var mesh = new Mesh();
+			for (int i = 0; i < scaledLineMesh.Vertices.Count; i++)
+			{
+				var pos = Vector3Ex.Transform(new Vector3(scaledLineMesh.Vertices[i]), lineTransform);
+				mesh.Vertices.Add(new Vector3Float(pos));
+			}
+
+			for (int faceIndex = 0; faceIndex < scaledLineMesh.Faces.Count; faceIndex++)
+			{
+				mesh.Faces.Add(scaledLineMesh.Faces[faceIndex]);
+			}
+
+			mesh.CalculateNormals();
+			return mesh;
+		}
+
+		/// <summary>
+		/// Appends arrow head cone geometry to an existing mesh.
+		/// </summary>
+		private static void AppendArrowHeads(Mesh mesh, Vector3 start, Vector3 end, double startScale, Vector3 normal, double arrowWidth, double arrowLength, bool startArrow, bool endArrow)
+		{
+			if (startArrow)
+			{
+				AppendCone(mesh, start, startScale, -normal, arrowWidth, arrowLength);
+			}
+
+			if (endArrow)
+			{
+				AppendCone(mesh, end, startScale, normal, arrowWidth, arrowLength);
+			}
+		}
+
+		private static void AppendCone(Mesh mesh, Vector3 basePos, double scale, Vector3 normal, double arrowWidth, double arrowLength)
+		{
+			var sides = 12;
+			var perpendicular = normal.GetPerpendicular().GetNormal();
+			var rotation = Matrix4X4.CreateRotation(normal, MathHelper.Tau / sides);
+			var offset = perpendicular * arrowWidth * scale;
+			var tipPos = basePos + (normal * arrowLength * scale);
+
+			int baseVertexIndex = mesh.Vertices.Count;
+			// Add tip vertex
+			mesh.Vertices.Add(new Vector3Float(tipPos));
+			// Add base center vertex
+			mesh.Vertices.Add(new Vector3Float(basePos));
+
+			// Add ring vertices
+			for (int side = 0; side <= sides; side++)
+			{
+				mesh.Vertices.Add(new Vector3Float(basePos + offset));
+				offset = offset.Transform(rotation);
+			}
+
+			int tipIndex = baseVertexIndex;
+			int baseCenterIndex = baseVertexIndex + 1;
+			int ringStart = baseVertexIndex + 2;
+
+			for (int side = 0; side < sides; side++)
+			{
+				// Side triangle (tip to ring edge)
+				mesh.Faces.Add(ringStart + side, tipIndex, ringStart + side + 1, mesh.Vertices);
+				// Base triangle (center to ring edge)
+				mesh.Faces.Add(baseCenterIndex, ringStart + side, ringStart + side + 1, mesh.Vertices);
 			}
 		}
 
