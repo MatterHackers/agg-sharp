@@ -104,6 +104,21 @@ namespace MatterHackers.RenderGl
 			isInitialized = true;
 		}
 
+		protected override bool IsInputKey(Keys keyData)
+		{
+			switch (keyData & Keys.KeyCode)
+			{
+				case Keys.Up:
+				case Keys.Down:
+				case Keys.Left:
+				case Keys.Right:
+				case Keys.Tab:
+					return true;
+			}
+
+			return base.IsInputKey(keyData);
+		}
+
 		protected override void OnResize(EventArgs e)
 		{
 			base.OnResize(e);

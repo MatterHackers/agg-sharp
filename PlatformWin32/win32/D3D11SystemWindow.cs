@@ -198,7 +198,14 @@ namespace MatterHackers.Agg.UI
 		{
 			if (d3dControl != null && !d3dControl.IsDisposed)
 			{
-				d3dControl.CaptureScreenshot(path);
+				if (InvokeRequired)
+				{
+					Invoke(new Action(() => d3dControl.CaptureScreenshot(path)));
+				}
+				else
+				{
+					d3dControl.CaptureScreenshot(path);
+				}
 			}
 		}
 
