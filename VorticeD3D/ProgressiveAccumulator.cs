@@ -64,6 +64,8 @@ namespace MatterHackers.RenderGl
 
 		public int MaxAccumulationSamples { get; set; } = 16;
 
+		public AccumulationClientTracker ClientTracker { get; } = new AccumulationClientTracker();
+
 		public int AccumulatedSampleCount => accumulatedSampleCount;
 
 		public bool IsAccumulationComplete => accumulatedSampleCount >= MaxAccumulationSamples;

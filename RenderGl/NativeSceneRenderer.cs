@@ -144,6 +144,14 @@ namespace MatterHackers.RenderGl
 		/// Composites the previously accumulated result to screen without re-rendering.
 		/// </summary>
 		void CompositeAccumulatedResult();
+
+		/// <summary>
+		/// Tracks which 3D viewport (tab) last used the accumulation buffer.
+		/// Different viewports sharing the same renderer must reset accumulation
+		/// when the active viewport changes, since the cached content belongs
+		/// to a different scene.
+		/// </summary>
+		AccumulationClientTracker ClientTracker { get; }
 	}
 
 	/// <summary>
