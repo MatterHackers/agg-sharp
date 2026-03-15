@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -108,17 +108,17 @@ namespace MatterHackers.Agg.UI
 			{
 				timeSinceMouseOver.Restart();
 				this.widgetThatWantsToShowToolTip = widgetToShowToolTipFor;
-				this.lastTextShown = widgetToShowToolTipFor.ToolTipText;
+				this.lastTextShown = widgetToShowToolTipFor.ToolTipText ?? "";
             }
 			else if (toolTipWidget != null
 				&& widgetToShowToolTipFor != null
-				&& lastTextShown != widgetToShowToolTipFor.ToolTipText)
+				&& lastTextShown != (widgetToShowToolTipFor.ToolTipText ?? ""))
 			{
 				// change the text and reset the timer
 				timeSinceMouseOver.Restart();
-				this.lastTextShown = widgetToShowToolTipFor.ToolTipText;
+				this.lastTextShown = widgetToShowToolTipFor.ToolTipText ?? "";
                 // and set the text of the current widget
-                changeWidgetText?.Invoke(toolTipWidget, widgetToShowToolTipFor.ToolTipText);
+                changeWidgetText?.Invoke(toolTipWidget, widgetToShowToolTipFor.ToolTipText ?? "");
             }
         }
 
@@ -221,7 +221,12 @@ namespace MatterHackers.Agg.UI
 					RemoveToolTip();
 					widgetThatIsShowingToolTip = null;
 
-					toolTipText = widgetThatWantsToShowToolTip.ToolTipText;
+					toolTipText = widgetThatWantsToShowToolTip.ToolTipText ?? "";
+					if (toolTipText.Length == 0)
+					{
+						widgetThatWantsToShowToolTip = null;
+						return;
+					}
 					toolTipWidget = new FlowLayoutWidget()
 					{
 						OriginRelativeParent = new Vector2((int)mousePosition.X, (int)mousePosition.Y),
@@ -236,7 +241,7 @@ namespace MatterHackers.Agg.UI
 					toolTipWidget.AddChild(widgetToShow);
 
 					// Increase the delay to make long text stay on screen long enough to read
-					double ratioOfExpectedText = Math.Max(1, widgetThatWantsToShowToolTip.ToolTipText.Length / 50.0);
+					double ratioOfExpectedText = Math.Max(1, toolTipText.Length / 50.0);
 					CurrentAutoPopDelay = ratioOfExpectedText * AutoPopDelay;
 
 					systemWindow.AddChild(toolTipWidget);
