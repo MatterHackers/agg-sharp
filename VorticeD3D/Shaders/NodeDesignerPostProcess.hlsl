@@ -7,6 +7,7 @@ cbuffer OutlineCompositeBuffer : register(b0)
 cbuffer BedShadowPostProcessBuffer : register(b1)
 {
     float4 BedShadowSettings;
+    float4 BedShadowColor;
 };
 
 Texture2D texture0 : register(t0);
@@ -53,7 +54,10 @@ float4 BedShadowCompositePS(VS_OUTPUT input) : SV_TARGET
     float4 baseColor = texture0.Sample(linearSampler, input.TexCoord);
     float2 shadowUv = float2(input.TexCoord.x, 1.0f - input.TexCoord.y);
     float shadowAmount = saturate(texture1.Sample(linearSampler, shadowUv).a * BedShadowSettings.z);
-    return float4(baseColor.rgb * (1.0f - shadowAmount), baseColor.a);
+    float shadowTintAmount = saturate(shadowAmount * BedShadowColor.a);
+    float3 shadowRgb = lerp(baseColor.rgb, BedShadowColor.rgb, shadowTintAmount);
+    float shadowAlpha = saturate(baseColor.a + shadowAmount * (1.0f - baseColor.a));
+    return float4(shadowRgb, shadowAlpha);
 }
 
 float4 ResolveDualPeelPS(VS_OUTPUT input) : SV_TARGET

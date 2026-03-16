@@ -94,8 +94,7 @@ namespace MatterHackers.RenderGl
 		{
 			if (activeSceneRenderContext == null
 				|| command?.Mesh == null
-				|| command.TopBaseTexture == null
-				|| command.UnderBaseTexture == null)
+				|| command.TopBaseTexture == null)
 			{
 				return false;
 			}

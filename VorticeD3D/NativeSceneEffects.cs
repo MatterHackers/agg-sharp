@@ -110,8 +110,7 @@ namespace MatterHackers.RenderGl
 		private ID3D11SamplerState linearClampSampler;
 		private ID3D11Texture2D whiteTexture;
 		private ID3D11ShaderResourceView whiteTextureView;
-		private ImageTextureSource bedTopBaseTexture;
-		private ImageTextureSource bedUnderBaseTexture;
+		private ImageTextureSource bedBaseTexture;
 		private int lastBedShadowSignature;
 
 		private bool sceneEffectsInitialized;
@@ -260,7 +259,7 @@ namespace MatterHackers.RenderGl
 
 			bedShadowPostProcessBuffer = device.CreateBuffer(new BufferDescription
 			{
-				ByteWidth = 16,
+				ByteWidth = 32,
 				Usage = ResourceUsage.Dynamic,
 				BindFlags = BindFlags.ConstantBuffer,
 				CPUAccessFlags = CpuAccessFlags.Write,
@@ -620,15 +619,13 @@ namespace MatterHackers.RenderGl
 
 		private void RenderBedShadowTexture(BedRenderCommand bedCommand)
 		{
-			if (bedCommand?.TopBaseTexture == null
-				|| bedCommand.UnderBaseTexture == null)
+			if (bedCommand?.TopBaseTexture == null)
 			{
 				return;
 			}
 
 			EnsureBedTargets(bedCommand.TopBaseTexture.Width, bedCommand.TopBaseTexture.Height);
-			bedTopBaseTexture = EnsureImageTextureSource(bedTopBaseTexture, bedCommand.TopBaseTexture);
-			bedUnderBaseTexture = EnsureImageTextureSource(bedUnderBaseTexture, bedCommand.UnderBaseTexture);
+			bedBaseTexture = EnsureImageTextureSource(bedBaseTexture, bedCommand.TopBaseTexture);
 
 			var signature = ComputeBedShadowSignature(bedCommand);
 			if (signature == lastBedShadowSignature
@@ -648,14 +645,12 @@ namespace MatterHackers.RenderGl
 		private int ComputeBedShadowSignature(BedRenderCommand bedCommand)
 		{
 			var hash = new HashCode();
-			hash.Add(bedCommand.LookingDownOnBed);
 			hash.Add(bedCommand.ObjectsBelowBed);
 			hash.Add(bedCommand.BedBounds.Left);
 			hash.Add(bedCommand.BedBounds.Right);
 			hash.Add(bedCommand.BedBounds.Bottom);
 			hash.Add(bedCommand.BedBounds.Top);
 			hash.Add(RuntimeHelpers.GetHashCode(bedCommand.TopBaseTexture));
-			hash.Add(RuntimeHelpers.GetHashCode(bedCommand.UnderBaseTexture));
 
 			foreach (var command in queuedSceneCommands)
 			{
@@ -741,15 +736,14 @@ namespace MatterHackers.RenderGl
 			context.OMSetDepthStencilState(GetOrCreateDepthStencilState(false, ComparisonFunction.Always, false));
 			context.OMSetBlendState(GetOrCreateBlendState(false, (int)BlendingFactorSrc.One, (int)BlendingFactorDest.Zero, ColorWriteEnable.All));
 			context.RSSetState(rasterizerNoCull);
-			UpdateBedShadowPostProcessBuffer(directionX, directionY, BedShadowStrength);
+			UpdateBedShadowPostProcessBuffer(directionX, directionY, BedShadowStrength, AggColor.Transparent);
 			context.Draw(3, 0);
 			UnbindSceneTextures();
 		}
 
 		private void RenderBedCompositePass(BedRenderCommand bedCommand)
 		{
-			var baseTexture = bedCommand.LookingDownOnBed ? bedTopBaseTexture : bedUnderBaseTexture;
-			if (baseTexture?.ShaderResourceView == null)
+			if (bedBaseTexture?.ShaderResourceView == null)
 			{
 				return;
 			}
@@ -763,12 +757,12 @@ namespace MatterHackers.RenderGl
 			context.PSSetSampler(0, pointClampSampler);
 			context.PSSetSampler(1, linearClampSampler);
 			context.PSSetConstantBuffer(1, bedShadowPostProcessBuffer);
-			context.PSSetShaderResource(0, baseTexture.ShaderResourceView);
+			context.PSSetShaderResource(0, bedBaseTexture.ShaderResourceView);
 			context.PSSetShaderResource(1, bedShadowBlurTargetB.ShaderResourceView);
 			context.OMSetDepthStencilState(GetOrCreateDepthStencilState(false, ComparisonFunction.Always, false));
 			context.OMSetBlendState(GetOrCreateBlendState(false, (int)BlendingFactorSrc.One, (int)BlendingFactorDest.Zero, ColorWriteEnable.All));
 			context.RSSetState(rasterizerNoCull);
-			UpdateBedShadowPostProcessBuffer(0, 0, BedShadowStrength);
+			UpdateBedShadowPostProcessBuffer(0, 0, BedShadowStrength, bedCommand.ShadowColor);
 			context.Draw(3, 0);
 			UnbindSceneTextures();
 		}
@@ -1540,7 +1534,7 @@ namespace MatterHackers.RenderGl
 			context.Unmap(outlineCompositeBuffer, 0);
 		}
 
-		private unsafe void UpdateBedShadowPostProcessBuffer(float directionX, float directionY, float shadowStrength)
+		private unsafe void UpdateBedShadowPostProcessBuffer(float directionX, float directionY, float shadowStrength, AggColor shadowColor)
 		{
 			var mapped = context.Map(bedShadowPostProcessBuffer, MapMode.WriteDiscard);
 			float* values = (float*)mapped.DataPointer;
@@ -1548,6 +1542,10 @@ namespace MatterHackers.RenderGl
 			values[1] = directionY;
 			values[2] = shadowStrength;
 			values[3] = 0.0f;
+			values[4] = shadowColor.Red0To1;
+			values[5] = shadowColor.Green0To1;
+			values[6] = shadowColor.Blue0To1;
+			values[7] = shadowColor.Alpha0To1;
 			context.Unmap(bedShadowPostProcessBuffer, 0);
 		}
 
@@ -1647,8 +1645,7 @@ namespace MatterHackers.RenderGl
 			resolvedSceneBlitBlendState?.Dispose();
 			whiteTextureView?.Dispose();
 			whiteTexture?.Dispose();
-			bedTopBaseTexture?.Dispose();
-			bedUnderBaseTexture?.Dispose();
+			bedBaseTexture?.Dispose();
 
 			sceneEffectVS = null;
 			sceneEffectSelectionVS = null;
@@ -1675,8 +1672,7 @@ namespace MatterHackers.RenderGl
 			dualDepthPeelBlendState = null;
 			whiteTextureView = null;
 			whiteTexture = null;
-			bedTopBaseTexture = null;
-			bedUnderBaseTexture = null;
+			bedBaseTexture = null;
 			sceneEffectsInitialized = false;
 		}
 	}

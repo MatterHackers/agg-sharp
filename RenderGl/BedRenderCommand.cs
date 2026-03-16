@@ -36,17 +36,9 @@ namespace MatterHackers.RenderGl
 {
 	public sealed class BedRenderCommand
 	{
-		/// <summary>
-		/// Alpha multiplier applied to the bed when viewing from below,
-		/// making it semi-transparent so objects beneath the bed are visible.
-		/// </summary>
-		public const float BelowBedAlphaMultiplier = 0.3f;
-
 		public RectangleDouble BedBounds { get; set; }
 
 		public Color Color { get; set; } = Color.White;
-
-		public bool LookingDownOnBed { get; set; }
 
 		/// <summary>
 		/// True when any scene object extends more than 1mm below the bed surface,
@@ -57,23 +49,19 @@ namespace MatterHackers.RenderGl
 
 		public Mesh Mesh { get; set; }
 
+		public Color ShadowColor { get; set; } = Color.Black;
+
 		public ImageBuffer TopBaseTexture { get; set; }
 
 		public Matrix4X4 Transform { get; set; } = Matrix4X4.Identity;
 
-		public ImageBuffer UnderBaseTexture { get; set; }
-
 		/// <summary>
-		/// Creates the MeshRenderCommand for rendering the bed, applying semi-transparency
-		/// when the camera is looking up through the bed from below, or when looking down
-		/// and objects extend below the bed surface.
+		/// Creates the MeshRenderCommand for rendering the bed. Bed translucency is
+		/// encoded in the texture itself so the command alpha remains stable as the
+		/// camera moves above or below the bed.
 		/// </summary>
 		public MeshRenderCommand CreateSceneCommand()
 		{
-			// Bed is transparent when looking from below, or when looking from above
-			// and objects are hidden underneath
-			var shouldBeTransparent = !LookingDownOnBed || (LookingDownOnBed && ObjectsBelowBed);
-
 			return new MeshRenderCommand
 			{
 				Color = Color,
@@ -83,7 +71,7 @@ namespace MatterHackers.RenderGl
 				WireFrameColor = Color.Transparent,
 				BlendTexture = false,
 				ForceCullBackFaces = false,
-				AlphaMultiplier = shouldBeTransparent ? BelowBedAlphaMultiplier : 1.0f,
+				AlphaMultiplier = 1.0f,
 			};
 		}
 	}
