@@ -33,6 +33,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using MatterHackers.RenderGl;
 using MatterHackers.RenderGl.OpenGl;
+using SharpGen.Runtime;
 
 namespace MatterHackers.Agg.UI
 {
@@ -176,6 +177,10 @@ namespace MatterHackers.Agg.UI
 			}
 			catch (InvalidOperationException)
 			{
+			}
+           catch (SharpGenException)
+			{
+				d3dControl?.TryRecoverDevice();
 			}
 		}
 

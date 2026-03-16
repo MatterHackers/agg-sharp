@@ -32,6 +32,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using SharpGen.Runtime;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -46,6 +47,12 @@ namespace MatterHackers.RenderGl
 		public VorticeD3DGl GlBackend { get; private set; }
 
 		private bool isInitialized;
+		private bool isRecoveringDevice;
+
+		private const int DxgiErrorDeviceRemoved = unchecked((int)0x887A0005);
+		private const int DxgiErrorDeviceHung = unchecked((int)0x887A0006);
+		private const int DxgiErrorDeviceReset = unchecked((int)0x887A0007);
+		private const int DxgiErrorDriverInternalError = unchecked((int)0x887A0020);
 
 		public D3D11Control()
 		{
@@ -55,6 +62,13 @@ namespace MatterHackers.RenderGl
 		public void InitializeD3D()
 		{
 			if (isInitialized || IsDisposed || !IsHandleCreated) return;
+
+			CreateDeviceResources();
+			isInitialized = true;
+		}
+
+		private void CreateDeviceResources()
+		{
 
 			DeviceCreationFlags flags = DeviceCreationFlags.BgraSupport;
 
@@ -100,8 +114,6 @@ namespace MatterHackers.RenderGl
 
 			GlBackend = new VorticeD3DGl();
 			GlBackend.Initialize(Device, DeviceContext, SwapChain);
-
-			isInitialized = true;
 		}
 
 		protected override bool IsInputKey(Keys keyData)
@@ -125,7 +137,13 @@ namespace MatterHackers.RenderGl
 
 			if (isInitialized && ClientSize.Width > 0 && ClientSize.Height > 0)
 			{
-				GlBackend.ResizeBuffers(ClientSize.Width, ClientSize.Height);
+               try
+				{
+					GlBackend.ResizeBuffers(ClientSize.Width, ClientSize.Height);
+				}
+				catch (Exception ex) when (TryRecoverIfDeviceLost(ex))
+				{
+				}
 			}
 		}
 
@@ -133,8 +151,86 @@ namespace MatterHackers.RenderGl
 		{
 			if (isInitialized)
 			{
-				GlBackend.Present();
+                try
+				{
+					GlBackend.Present();
+				}
+				catch (Exception ex) when (TryRecoverIfDeviceLost(ex))
+				{
+				}
 			}
+		}
+
+		public bool TryRecoverDevice()
+		{
+			if (isRecoveringDevice || IsDisposed || !IsHandleCreated)
+			{
+				return false;
+			}
+
+			try
+			{
+				isRecoveringDevice = true;
+				DisposeDeviceResources();
+				CreateDeviceResources();
+				isInitialized = true;
+
+                MatterHackers.RenderGl.OpenGl.GL.Instance = GlBackend;
+				Graphics2DGpu.InvalidateGlCaches();
+
+				return true;
+			}
+			catch
+			{
+				return false;
+			}
+			finally
+			{
+				isRecoveringDevice = false;
+			}
+		}
+
+		private bool TryRecoverIfDeviceLost(Exception ex)
+		{
+			if (!IsDeviceLostException(ex))
+			{
+				return false;
+			}
+
+			TryRecoverDevice();
+			return true;
+		}
+
+		private static bool IsDeviceLostException(Exception ex)
+		{
+			if (ex is SharpGenException sharpGenException)
+			{
+				return sharpGenException.HResult == DxgiErrorDeviceRemoved
+					|| sharpGenException.HResult == DxgiErrorDeviceHung
+					|| sharpGenException.HResult == DxgiErrorDeviceReset
+					|| sharpGenException.HResult == DxgiErrorDriverInternalError;
+			}
+
+			if (ex.InnerException != null)
+			{
+				return IsDeviceLostException(ex.InnerException);
+			}
+
+			return false;
+		}
+
+		private void DisposeDeviceResources()
+		{
+			GlBackend?.Dispose();
+			SwapChain?.Dispose();
+			DeviceContext?.Dispose();
+			Device?.Dispose();
+
+			GlBackend = null;
+			SwapChain = null;
+			DeviceContext = null;
+			Device = null;
+			isInitialized = false;
 		}
 
 		public void CaptureScreenshot(string path)
@@ -184,10 +280,7 @@ namespace MatterHackers.RenderGl
 		{
 			if (disposing)
 			{
-				GlBackend?.Dispose();
-				SwapChain?.Dispose();
-				DeviceContext?.Dispose();
-				Device?.Dispose();
+               DisposeDeviceResources();
 			}
 
 			base.Dispose(disposing);
