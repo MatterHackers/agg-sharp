@@ -625,6 +625,11 @@ namespace MatterHackers.Agg.UI
 						SelectionIndexToStartBefore = CharIndexToInsertBefore;
 						Selecting = false;
 					}
+					else
+					{
+						// Shift+Click: extend selection from existing position
+						Selecting = true;
+					}
 
 					mouseIsDownLeft = true;
 				}
