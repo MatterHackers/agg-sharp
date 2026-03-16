@@ -88,6 +88,12 @@ namespace MatterHackers.RenderGl
 		/// </summary>
 		public float AlphaMultiplier { get; init; } = 1.0f;
 
+		/// <summary>
+		/// When true, the scene renderer skips lighting and uses the command color directly.
+		/// Intended for path-based overlays promoted into the native scene compositor.
+		/// </summary>
+		public bool Unlit { get; init; }
+
 		public RenderTypes RenderType { get; init; } = RenderTypes.Shaded;
 
 		public Matrix4X4 Transform { get; init; } = Matrix4X4.Identity;

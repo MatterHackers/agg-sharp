@@ -1267,7 +1267,7 @@ namespace MatterHackers.RenderGl
 			SetSceneMatrices(command.Transform * activeSceneRenderContext.WorldView.ModelviewMatrix, activeSceneRenderContext.WorldView.ProjectionMatrix);
 			UpdateTransformBuffer();
 			bool useVertexColor = command.Mesh.FaceColors != null && command.Mesh.FaceColors.Length > 0 && !command.OverrideFaceColors;
-			UpdateSceneEffectBuffer(command.Color, command.WireFrameColor, enableWireframe, wireframeOnly, enableDepthPeeling, firstPeelPass, (float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height, unlit, useVertexColor, command.AlphaMultiplier);
+			UpdateSceneEffectBuffer(command.Color, command.WireFrameColor, enableWireframe, wireframeOnly, enableDepthPeeling, firstPeelPass, (float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height, unlit || command.Unlit, useVertexColor, command.AlphaMultiplier);
 
 			context.IASetInputLayout(sceneEffectInputLayout);
 			context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);

@@ -275,8 +275,8 @@ float4 SceneColorPS(PS_INPUT input) : SV_TARGET
     ApplyDepthPeeling(input.Position);
     float4 baseColor = GetEffectiveColor(input.VertexColor);
     DiscardIfInvisible(baseColor.a);
-    float3 litColor = ApplyLighting(baseColor.rgb, input.ViewNormal);
-    return ComposeSceneColor(float4(litColor, baseColor.a), input.Barycentric, input.EdgeHints);
+    float3 color = ResolutionAndWidth.w > 0.5 ? baseColor.rgb : ApplyLighting(baseColor.rgb, input.ViewNormal);
+    return ComposeSceneColor(float4(color, baseColor.a), input.Barycentric, input.EdgeHints);
 }
 
 float4 SceneTexturePS(PS_INPUT input) : SV_TARGET
@@ -305,8 +305,8 @@ DualPeelOutput SceneColorDualPeelPS(PS_INPUT input)
 {
     float4 baseColor = GetEffectiveColor(input.VertexColor);
     DiscardIfInvisible(baseColor.a);
-    float3 litColor = ApplyLighting(baseColor.rgb, input.ViewNormal);
-    float4 shadedColor = ComposeSceneColor(float4(litColor, baseColor.a), input.Barycentric, input.EdgeHints);
+    float3 color = ResolutionAndWidth.w > 0.5 ? baseColor.rgb : ApplyLighting(baseColor.rgb, input.ViewNormal);
+    float4 shadedColor = ComposeSceneColor(float4(color, baseColor.a), input.Barycentric, input.EdgeHints);
     return ApplyDualDepthPeeling(input.Position, shadedColor);
 }
 

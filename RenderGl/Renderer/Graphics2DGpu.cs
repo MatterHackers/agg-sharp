@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,8 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters2D;
+using MatterHackers.PolygonMesh;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
 
@@ -48,6 +50,7 @@ namespace MatterHackers.RenderGl
         // be no runtime contention for this object (no thread contention).
         private static readonly Dictionary<ulong, AARenderTesselator> TriangleEdgeInfos = new Dictionary<ulong, AARenderTesselator>();
         private static readonly List<AARenderTesselator> AvailableTriangleEdgeInfos = new List<AARenderTesselator>();
+        private static readonly Dictionary<ulong, Mesh> NativeScenePathMeshes = new Dictionary<ulong, Mesh>();
         private static List<ImageBuffer> aATextureImages;
 
         private static readonly RenderTesselator RenderNowTesselator = new RenderTesselator();
@@ -68,6 +71,7 @@ namespace MatterHackers.RenderGl
             _displayListCache.Clear();
             TriangleEdgeInfos.Clear();
             AvailableTriangleEdgeInfos.Clear();
+            NativeScenePathMeshes.Clear();
             aATextureImages = null;
             ImageTexturePlugin.MarkAllImagesNeedRefresh();
         }
@@ -556,8 +560,57 @@ namespace MatterHackers.RenderGl
 
         public override void Clear(IColorType color) => Clear(cachedClipRect, color);
 
+        internal static Mesh CreateNativeScenePathMesh(Matrix4X4 transform, IVertexSource path)
+        {
+            var sourceMesh = GetOrCreateNativeScenePathMesh(path);
+            var transformedMesh = new Mesh(sourceMesh.Vertices, sourceMesh.Faces);
+            transformedMesh.Transform(transform);
+            return transformedMesh;
+        }
+
+        private static Mesh GetOrCreateNativeScenePathMesh(IVertexSource path)
+        {
+            ulong pathHash = path.GetLongHashCode();
+            if (!NativeScenePathMeshes.TryGetValue(pathHash, out var mesh))
+            {
+                // Native scene rendering composites mesh overlays correctly after opaque content.
+                // Cache the local-space tessellation so repeated gizmo redraws only vary by transform.
+                mesh = new FlattenCurves(path).Vertices().TriangulateFaces();
+                NativeScenePathMeshes[pathHash] = mesh;
+            }
+
+            return mesh;
+        }
+
         public void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, Color color, bool doDepthTest)
         {
+            if (GL.Instance is INativeSceneRenderer nativeSceneRenderer
+                && nativeSceneRenderer.IsSceneRenderingActive)
+            {
+                GL.EnableOrDisable(EnableCap.DepthTest, doDepthTest);
+
+                var mesh = GetOrCreateNativeScenePathMesh(path);
+                if (mesh.Faces.Count > 0)
+                {
+                    var command = new MeshRenderCommand
+                    {
+                        Mesh = mesh,
+                        Color = color,
+                        Transform = transform,
+                        RenderType = RenderTypes.Shaded,
+                        BlendTexture = false,
+                        ForceCullBackFaces = false,
+                        Unlit = true,
+                    };
+
+                    if (nativeSceneRenderer.CanRender(command)
+                        && nativeSceneRenderer.TryRender(command))
+                    {
+                        return;
+                    }
+                }
+            }
+
             CheckLineImageCache();
             GL.Enable(EnableCap.Texture2D);
             GL.BindTexture(TextureTarget.Texture2D, RenderGl.ImageTexturePlugin.GetImageTexturePlugin(aATextureImages[color.Alpha0To255], false).GLTextureHandle);
