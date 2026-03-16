@@ -289,6 +289,23 @@ float4 SceneTexturePS(PS_INPUT input) : SV_TARGET
     return ComposeSceneColor(float4(color, sampledColor.a), input.Barycentric, input.EdgeHints);
 }
 
+float4 SceneColorAlphaBlendPS(PS_INPUT input) : SV_TARGET
+{
+    float4 baseColor = GetEffectiveColor(input.VertexColor);
+    DiscardIfInvisible(baseColor.a);
+    float3 color = ResolutionAndWidth.w > 0.5 ? baseColor.rgb : ApplyLighting(baseColor.rgb, input.ViewNormal);
+    return ComposeSceneColor(float4(color, baseColor.a), input.Barycentric, input.EdgeHints);
+}
+
+float4 SceneTextureAlphaBlendPS(PS_INPUT input) : SV_TARGET
+{
+    float4 effectiveColor = GetEffectiveColor(input.VertexColor);
+    float4 sampledColor = diffuseTexture.Sample(linearSampler, input.TexCoord) * effectiveColor;
+    DiscardIfInvisible(sampledColor.a);
+    float3 color = ResolutionAndWidth.w > 0.5 ? sampledColor.rgb : ApplyLighting(sampledColor.rgb, input.ViewNormal);
+    return ComposeSceneColor(float4(color, sampledColor.a), input.Barycentric, input.EdgeHints);
+}
+
 float2 DualDepthInitPS(PS_INPUT input) : SV_TARGET0
 {
     DiscardIfInvisible(GetEffectiveTextureAlpha(input.TexCoord));
