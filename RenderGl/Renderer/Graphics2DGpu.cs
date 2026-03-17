@@ -600,6 +600,7 @@ namespace MatterHackers.RenderGl
                         RenderType = RenderTypes.Shaded,
                         BlendTexture = false,
                         ForceCullBackFaces = false,
+						CastsBedShadow = false,
                         Unlit = true,
                     };
 

@@ -48,8 +48,8 @@ namespace MatterHackers.RenderGl
 	public partial class VorticeD3DGl
 	{
 		private const int BedCompositeTextureSize = 2048;
-		private const int BedShadowTextureSize = 512;
-		private const float BedShadowStrength = .35f;
+		private const int BedShadowTextureSize = 2048;
+		private const float BedShadowStrength = .70f;
 		private const float BedShadowViewDistance = 1000;
 		private const int SceneEffectVertexFloatStride = SceneEdgeShaderDataPlugin.TotalVertexFloatStride;
 		private const int SceneEffectVertexStride = SceneEffectVertexFloatStride * sizeof(float);
@@ -758,7 +758,10 @@ namespace MatterHackers.RenderGl
 					continue;
 				}
 
-				RenderFlatMask(command, command.Transform * shadowView, shadowProjection, AggColor.Black, enableDepthTest: false);
+				// Glyph meshes can have mixed winding on their caps and sides; forcing the
+				// shadow mask to render without culling avoids clipped letter silhouettes.
+				var shadowCommand = RenderHelper.CreateBedShadowCommand(command);
+				RenderFlatMask(shadowCommand, shadowCommand.Transform * shadowView, shadowProjection, AggColor.Black, enableDepthTest: false);
 			}
 
 			UnbindSceneTextures();
@@ -766,22 +769,7 @@ namespace MatterHackers.RenderGl
 
 		private static bool ShouldRenderCommandIntoBedShadow(MeshRenderCommand command, RectangleDouble bedBounds)
 		{
-			if (command?.Mesh == null
-				|| !SceneRenderModeUtilities.RequiresSceneMeshPass(command.RenderType))
-			{
-				return false;
-			}
-
-			var bounds = command.Mesh.GetAxisAlignedBoundingBox(command.Transform);
-			if (bounds.MaxXYZ.Z <= 0)
-			{
-				return false;
-			}
-
-			return !(bounds.MaxXYZ.X < bedBounds.Left
-				|| bounds.MinXYZ.X > bedBounds.Right
-				|| bounds.MaxXYZ.Y < bedBounds.Bottom
-				|| bounds.MinXYZ.Y > bedBounds.Top);
+			return RenderHelper.ShouldRenderInBedShadow(command, bedBounds);
 		}
 
 		private void RenderBedBlurPass(ID3D11ShaderResourceView sourceTexture, ColorTextureTarget destinationTarget, float directionX, float directionY)

@@ -63,6 +63,8 @@ namespace MatterHackers.RenderGl
 
 		public bool BlendTexture { get; init; } = true;
 
+		public bool CastsBedShadow { get; init; } = true;
+
 		public Color Color { get; init; }
 
 		public bool ForceCullBackFaces { get; init; } = true;

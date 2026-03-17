@@ -54,6 +54,8 @@ namespace MatterHackers.RenderGl
 
 		private const float GL_REPLACE = (float)0x1E01;
 
+		private static int suppressBedShadowCastingDepth;
+
 		public static void ExtendLineEnds(ref Vector3 start, ref Vector3 end, double length)
 		{
 			// extend both sides
@@ -85,6 +87,78 @@ namespace MatterHackers.RenderGl
 			}
 		}
 
+		public static MeshRenderCommand CreateBedShadowCommand(MeshRenderCommand command)
+		{
+			if (command == null)
+			{
+				return null;
+			}
+
+			return new MeshRenderCommand
+			{
+				Mesh = command.Mesh,
+				Color = command.Color,
+				Transform = command.Transform,
+				RenderType = command.RenderType,
+				MeshToViewTransform = command.MeshToViewTransform,
+				WireFrameColor = command.WireFrameColor,
+				MeshChanged = command.MeshChanged,
+				BlendTexture = command.BlendTexture,
+				AllowBspRendering = command.AllowBspRendering,
+				ForceCullBackFaces = false,
+				IsSelected = command.IsSelected,
+				OverrideFaceColors = command.OverrideFaceColors,
+				AlphaMultiplier = command.AlphaMultiplier,
+				Unlit = command.Unlit,
+				CastsBedShadow = command.CastsBedShadow,
+			};
+		}
+
+		public static bool ResolveBedShadowCasting(bool castsBedShadow)
+		{
+			return castsBedShadow
+				&& suppressBedShadowCastingDepth == 0;
+		}
+
+		public static bool ShouldRenderInBedShadow(MeshRenderCommand command, RectangleDouble bedBounds)
+		{
+			if (command?.Mesh == null
+				|| !command.CastsBedShadow)
+			{
+				return false;
+			}
+
+			switch (command.RenderType)
+			{
+				case RenderTypes.Shaded:
+				case RenderTypes.Outlines:
+				case RenderTypes.NonManifold:
+				case RenderTypes.Wireframe:
+				case RenderTypes.Polygons:
+					break;
+
+				default:
+					return false;
+			}
+
+			var bounds = command.Mesh.GetAxisAlignedBoundingBox(command.Transform);
+			if (bounds.MaxXYZ.Z <= 0)
+			{
+				return false;
+			}
+
+			return !(bounds.MaxXYZ.X < bedBounds.Left
+				|| bounds.MinXYZ.X > bedBounds.Right
+				|| bounds.MaxXYZ.Y < bedBounds.Bottom
+				|| bounds.MinXYZ.Y > bedBounds.Top);
+		}
+
+		public static IDisposable SuppressBedShadowCasting()
+		{
+			suppressBedShadowCastingDepth++;
+			return new DisposableScope(() => suppressBedShadowCastingDepth--);
+		}
+
 		public static void Render(Mesh meshToRender,
 			Color partColor,
 			RenderTypes renderType = RenderTypes.Shaded,
@@ -93,11 +167,12 @@ namespace MatterHackers.RenderGl
             Action meshChanged = null,
 			bool blendTexture = true,
 			bool forceCullBackFaces = true,
+			bool castsBedShadow = true,
 			bool isSelected = false,
 			bool overrideFaceColors = false,
 			float alphaMultiplier = 1.0f)
 		{
-			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture, forceCullBackFaces: forceCullBackFaces, isSelected: isSelected, overrideFaceColors: overrideFaceColors, alphaMultiplier: alphaMultiplier);
+			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture, forceCullBackFaces: forceCullBackFaces, castsBedShadow: castsBedShadow, isSelected: isSelected, overrideFaceColors: overrideFaceColors, alphaMultiplier: alphaMultiplier);
 		}
 
 		public static void Render(Mesh meshToRender,
@@ -110,6 +185,7 @@ namespace MatterHackers.RenderGl
 			bool blendTexture = true,
 			bool allowBspRendering = false,
 			bool forceCullBackFaces = true,
+			bool castsBedShadow = true,
 			bool isSelected = false,
 			bool overrideFaceColors = false,
 			float alphaMultiplier = 1.0f)
@@ -130,6 +206,7 @@ namespace MatterHackers.RenderGl
 						BlendTexture = blendTexture,
 						AllowBspRendering = allowBspRendering,
 						ForceCullBackFaces = forceCullBackFaces,
+						CastsBedShadow = ResolveBedShadowCasting(castsBedShadow),
 						IsSelected = isSelected,
 						OverrideFaceColors = overrideFaceColors,
 						AlphaMultiplier = alphaMultiplier,
@@ -468,6 +545,28 @@ namespace MatterHackers.RenderGl
 			GL.Disable(EnableCap.DepthTest);
 
 			GL.PopAttrib();
+		}
+
+		private sealed class DisposableScope : IDisposable
+		{
+			private readonly Action onDispose;
+			private bool disposed;
+
+			public DisposableScope(Action onDispose)
+			{
+				this.onDispose = onDispose;
+			}
+
+			public void Dispose()
+			{
+				if (disposed)
+				{
+					return;
+				}
+
+				disposed = true;
+				onDispose?.Invoke();
+			}
 		}
 	}
 }
