@@ -185,6 +185,7 @@ namespace MatterHackers.Agg.UI
 				}
 				catch (Exception ex)
 				{
+					UiThread.ReportUnhandledException(ex);
 					Console.WriteLine(ex.Message);
 				}
 				finally

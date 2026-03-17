@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Agg;
@@ -1441,6 +1442,89 @@ namespace MatterHackers.GuiAutomation
 			var testRunner = new AutomationRunner(InputMethod, DrawSimulatedMouse, imagesDirectory);
 
 			var resetEvent = new AutoResetEvent(false);
+			var uiThreadExceptionSignal = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			var uiThreadExceptionLock = new object();
+			ExceptionDispatchInfo capturedUiThreadException = null;
+
+			int closeRequested = 0;
+			void RequestWindowClose()
+			{
+				if (Interlocked.Exchange(ref closeRequested, 1) != 0)
+				{
+					return;
+				}
+
+				DebugLogger.LogMessage("AutomationRunner", "REQUESTING WINDOW CLOSE");
+				if (closeWindow != null)
+				{
+					closeWindow(testRunner);
+				}
+				else
+				{
+					initialSystemWindow.CloseOnIdle();
+				}
+			}
+
+			void CaptureUiThreadException(Exception exception)
+			{
+				var exceptionToCapture = exception ?? new Exception("Unhandled UI thread exception.");
+				bool shouldSignal = false;
+
+				lock (uiThreadExceptionLock)
+				{
+					if (capturedUiThreadException == null)
+					{
+						capturedUiThreadException = ExceptionDispatchInfo.Capture(exceptionToCapture);
+						shouldSignal = true;
+					}
+				}
+
+				if (!shouldSignal)
+				{
+					return;
+				}
+
+				DebugLogger.LogError("AutomationRunner", $"UI THREAD EXCEPTION: {exceptionToCapture}");
+				uiThreadExceptionSignal.TrySetResult(true);
+				RequestWindowClose();
+			}
+
+			System.Threading.ThreadExceptionEventHandler threadExceptionHandler = (s, e) =>
+			{
+				CaptureUiThreadException(e.Exception);
+			};
+			Action<Exception> uiThreadUnhandledExceptionHandler = CaptureUiThreadException;
+			System.Reflection.EventInfo threadExceptionEvent = null;
+			Delegate threadExceptionDelegate = null;
+
+			UiThread.UnhandledException += uiThreadUnhandledExceptionHandler;
+
+			try
+			{
+				var applicationType = System.Type.GetType("System.Windows.Forms.Application, System.Windows.Forms");
+				var unhandledExceptionModeType = System.Type.GetType("System.Windows.Forms.UnhandledExceptionMode, System.Windows.Forms");
+				if (applicationType != null
+					&& unhandledExceptionModeType != null)
+				{
+					var catchExceptionMode = Enum.Parse(unhandledExceptionModeType, "CatchException");
+					applicationType.GetMethod("SetUnhandledExceptionMode", new[] { unhandledExceptionModeType })
+						?.Invoke(null, new[] { catchExceptionMode });
+				}
+
+				threadExceptionEvent = applicationType?.GetEvent("ThreadException");
+				if (threadExceptionEvent != null)
+				{
+					threadExceptionDelegate = Delegate.CreateDelegate(
+						threadExceptionEvent.EventHandlerType,
+						threadExceptionHandler.Target,
+						threadExceptionHandler.Method);
+					threadExceptionEvent.AddEventHandler(null, threadExceptionDelegate);
+				}
+			}
+			catch (Exception ex)
+			{
+				DebugLogger.LogWarning("AutomationRunner", $"Failed to register UI thread exception handler: {ex.Message}");
+			}
 
 			// On load, release the reset event
 			initialSystemWindow.Load += (s, e) =>
@@ -1451,6 +1535,7 @@ namespace MatterHackers.GuiAutomation
 
 			int testTimeout = (int)(1000 * secondsToTestFailure);
 			Task delayTask = Task.Delay(testTimeout);
+			Task uiExceptionTask = uiThreadExceptionSignal.Task;
 
 			// Start two tasks, the timeout and the test method. Block in the test method until the first draw
 			var task = Task.WhenAny(delayTask, Task.Run(() =>
@@ -1472,21 +1557,13 @@ namespace MatterHackers.GuiAutomation
 					DebugLogger.LogError("AutomationRunner", "TIMEOUT - Reset event never set");
 					throw new TimeoutException("Reset event timed out");
 				}
-			}));
+			}), uiExceptionTask);
 
 			// Once either the timeout or the test method has completed, store if a timeout occurred and shutdown the SystemWindow
 			task.ContinueWith(innerTask =>
 			{
 				DebugLogger.LogMessage("AutomationRunner", "CLEANUP - Task completed, calling CloseOnIdle");
-				// Invoke the callers close implementation or fall back to CloseOnIdle
-				if (closeWindow != null)
-				{
-					closeWindow(testRunner);
-				}
-				else
-				{
-					initialSystemWindow.CloseOnIdle();
-				}
+				RequestWindowClose();
 			});
 
 			// Main thread blocks here until released via CloseOnIdle above
@@ -1504,9 +1581,15 @@ namespace MatterHackers.GuiAutomation
 				SystemWindow.EnableAllowDrop = originalAllowDropState;
 				throw;
 			}
+			finally
+			{
+				UiThread.UnhandledException -= uiThreadUnhandledExceptionHandler;
+				threadExceptionEvent?.RemoveEventHandler(null, threadExceptionDelegate);
+			}
 
 			var completedTask = task.Result;
 			bool timedOut = completedTask == delayTask;
+			bool uiThreadFaulted = completedTask == uiExceptionTask;
 			DebugLogger.LogMessage("AutomationRunner", $"SHOW COMPLETED - TimedOut: {timedOut}");
 
 			// Wait for CloseOnIdle to complete
@@ -1574,6 +1657,12 @@ namespace MatterHackers.GuiAutomation
 			{
 				DebugLogger.LogError("AutomationRunner", "TEST TIMED OUT");
 				throw new TimeoutException("TestMethod timed out");
+			}
+
+			if (uiThreadFaulted && capturedUiThreadException != null)
+			{
+				DebugLogger.LogError("AutomationRunner", $"TEST FAULTED ON UI THREAD: {capturedUiThreadException.SourceException.Message}");
+				capturedUiThreadException.Throw();
 			}
 
 			// If the test task threw an exception, propagate it before checking

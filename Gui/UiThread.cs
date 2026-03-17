@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
@@ -158,6 +158,23 @@ namespace MatterHackers.Agg.UI
 		}
 
 		private static int uiThreadId = -1;
+
+		/// <summary>
+		/// Raised when a queued UI-thread action throws after it has been dispatched.
+		/// Automation tests subscribe so silent UI failures become test failures.
+		/// </summary>
+		public static event Action<Exception> UnhandledException;
+
+		public static void ReportUnhandledException(Exception exception)
+		{
+			try
+			{
+				UnhandledException?.Invoke(exception);
+			}
+			catch
+			{
+			}
+		}
 
 		public static void InvokePendingActions()
 		{
