@@ -182,6 +182,7 @@ namespace MatterHackers.RenderGl
 
 		private sealed class ImageTextureSource : IDisposable
 		{
+			public bool ConvertPremultipliedToStraightAlpha;
 			public MatterHackers.Agg.Image.ImageBuffer SourceImage;
 			public ID3D11ShaderResourceView ShaderResourceView;
 			public ID3D11Texture2D Texture;
@@ -593,7 +594,10 @@ namespace MatterHackers.RenderGl
 			return newTarget;
 		}
 
-		private ImageTextureSource EnsureImageTextureSource(ImageTextureSource existingSource, MatterHackers.Agg.Image.ImageBuffer sourceImage)
+		private ImageTextureSource EnsureImageTextureSource(
+			ImageTextureSource existingSource,
+			MatterHackers.Agg.Image.ImageBuffer sourceImage,
+			bool convertPremultipliedToStraightAlpha = false)
 		{
 			if (sourceImage == null)
 			{
@@ -602,6 +606,7 @@ namespace MatterHackers.RenderGl
 			}
 
 			if (ReferenceEquals(existingSource?.SourceImage, sourceImage)
+				&& existingSource.ConvertPremultipliedToStraightAlpha == convertPremultipliedToStraightAlpha
 				&& existingSource.ShaderResourceView != null)
 			{
 				return existingSource;
@@ -610,6 +615,7 @@ namespace MatterHackers.RenderGl
 			existingSource?.Dispose();
 			var textureSource = new ImageTextureSource
 			{
+				ConvertPremultipliedToStraightAlpha = convertPremultipliedToStraightAlpha,
 				SourceImage = sourceImage,
 			};
 
@@ -625,7 +631,9 @@ namespace MatterHackers.RenderGl
 				BindFlags = BindFlags.ShaderResource,
 			};
 
-			var pixels = sourceImage.GetBuffer();
+			var pixels = convertPremultipliedToStraightAlpha
+				? ImageAlphaConverter.ConvertPremultipliedBgraToStraightAlpha(sourceImage.GetBuffer())
+				: sourceImage.GetBuffer();
 			var handle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
 			try
 			{
@@ -674,7 +682,13 @@ namespace MatterHackers.RenderGl
 			}
 
 			EnsureBedTargets(bedCommand.TopBaseTexture.Width, bedCommand.TopBaseTexture.Height);
-			bedBaseTexture = EnsureImageTextureSource(bedBaseTexture, bedCommand.TopBaseTexture);
+			// AGG stores this generated texture with premultiplied color channels.
+			// Convert it back to straight alpha for the D3D textured mesh pipeline so
+			// a translucent white bed stays visually white instead of turning gray.
+			bedBaseTexture = EnsureImageTextureSource(
+				bedBaseTexture,
+				bedCommand.TopBaseTexture,
+				convertPremultipliedToStraightAlpha: true);
 
 			var signature = ComputeBedShadowSignature(bedCommand);
 			if (signature == lastBedShadowSignature
