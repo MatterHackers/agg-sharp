@@ -57,9 +57,17 @@ namespace Markdig.Renderers.Agg
 					if (HasImages)
 					{
 						double maxColumnWidth = this.Columns.Max(c => c.CellWidth);
+
+						// Expand columns to fill container width, divided equally.
+						// Each cell has a 1px left border; the last cell also has 1px right.
+						double totalBorderWidth = this.Columns.Count + 1;
+						double containerSharePerColumn = (this.Width - totalBorderWidth) / this.Columns.Count;
+
+						double targetWidth = System.Math.Max(maxColumnWidth, containerSharePerColumn);
+
 						foreach (var column in this.Columns)
 						{
-							column.SetCellWidths(maxColumnWidth);
+							column.SetCellWidths(targetWidth);
 						}
 					}
 				}
