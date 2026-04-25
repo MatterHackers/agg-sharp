@@ -34,6 +34,7 @@ using System.Linq;
 using System.Reflection;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.ImageProcessing;
+using MatterHackers.Agg.SvgTools;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
@@ -117,6 +118,12 @@ namespace MatterHackers.Agg.Platform
 			var fullPath = Path.Combine("Icons", path);
 			if (FileExists(fullPath))
 			{
+				if (Path.GetExtension(path).Equals(".svg", StringComparison.OrdinalIgnoreCase))
+				{
+					var defaultSize = (int)(16 * DeviceScale);
+					return SvgParser.ParseAndRender(MapPath(fullPath), defaultSize, defaultSize);
+				}
+
 				var icon = LoadImage(fullPath);
 				return (DeviceScale == 1) ? icon : icon.CreateScaledImage(DeviceScale);
 			}
@@ -153,7 +160,18 @@ namespace MatterHackers.Agg.Platform
                 }
 				if (!cachedIcons.TryGetValue((path, deviceWidth, deviceHeight, key), out cachedIcon))
 				{
-					cachedIcon = LoadIcon(path);
+					// SVG icons are rendered directly at the device-scaled size for best quality
+					if (Path.GetExtension(path).Equals(".svg", StringComparison.OrdinalIgnoreCase))
+					{
+						var svgFullPath = MapPath(Path.Combine("Icons", path));
+						cachedIcon = File.Exists(svgFullPath)
+							? SvgParser.ParseAndRender(svgFullPath, deviceWidth, deviceHeight)
+							: null;
+					}
+					else
+					{
+						cachedIcon = LoadIcon(path);
+					}
 
 					if (cachedIcon == null)
 					{

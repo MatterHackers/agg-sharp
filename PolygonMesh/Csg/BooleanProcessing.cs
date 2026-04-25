@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019, Lars Brubaker, John Lewin
+Copyright (c) 2019, 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -247,6 +247,15 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			if (boolResult != null)
 			{
+				// Guard against calling MeshGL on an invalid manifold — manifold_get_meshgl can
+				// crash the CLR (ExecutionEngineException) when the result is in InvalidConstruction
+				// state. Throwing a managed exception here lets the caller's catch block fall back
+				// to CsgBySlicing instead of killing the process.
+				if (boolResult.Status != ManifoldNET.ManifoldError.NoError)
+				{
+					throw new InvalidOperationException($"Manifold boolean result has error status: {boolResult.Status}");
+				}
+
 				var result = boolResult.MeshGL;
 				var resultNumProp = result.PropertiesNumber;
 				var vertices = result.VerticesProperties;

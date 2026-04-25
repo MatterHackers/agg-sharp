@@ -86,6 +86,27 @@ namespace MatterHackers.Agg.UI
 
         public ImageWidget ImageWidget { get; }
 
-        public override string Text { get => textWidget.Text; set => textWidget.Text = value; }
+        /// <summary>
+        /// When true, the button will resize to fit its text whenever Text is changed.
+        /// Enable this on buttons whose label changes dynamically at runtime.
+        /// </summary>
+        public bool AutoExpandBoundsToText
+        {
+            get => textWidget.AutoExpandBoundsToText;
+            set => textWidget.AutoExpandBoundsToText = value;
+        }
+
+        public override string Text
+        {
+            get => textWidget.Text;
+            set
+            {
+                textWidget.Text = value;
+                if (textWidget.AutoExpandBoundsToText)
+                {
+                    textWidget.DoExpandBoundsToText();
+                }
+            }
+        }
     }
 }

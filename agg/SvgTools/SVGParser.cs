@@ -16,12 +16,12 @@
 //
 //----------------------------------------------------------------------------
 using HtmlAgilityPack;
+using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -36,31 +36,87 @@ namespace MatterHackers.Agg.SvgTools
 
         public static List<ColoredVertexSource> Parse(string filePath, bool flipY)
         {
-            using (var stream = File.OpenRead(filePath))
-            {
-                return Parse(stream, flipY);
-            }
+            using var stream = File.OpenRead(filePath);
+            return ParseFull(stream, flipY).elements;
         }
 
         public static List<ColoredVertexSource> Parse(Stream stream, bool flipY)
         {
+            return ParseFull(stream, flipY).elements;
+        }
+
+        /// <summary>
+        /// Renders an SVG file directly to an ImageBuffer at the specified pixel dimensions.
+        /// SVG coordinates (top-left origin, Y-down) are transformed to agg-sharp's coordinate
+        /// space (bottom-left origin, Y-up). The viewBox is scaled to exactly fill the target size.
+        /// </summary>
+        public static ImageBuffer ParseAndRender(string filePath, int targetWidth, int targetHeight)
+        {
+            using var stream = File.OpenRead(filePath);
+            var (elements, viewBoxWidth, viewBoxHeight) = ParseFull(stream, flipY: false);
+            return RenderToImageBuffer(elements, viewBoxWidth, viewBoxHeight, targetWidth, targetHeight);
+        }
+
+        /// <summary>
+        /// Rasterizes a list of colored vector elements (from ParseFull) into an ImageBuffer.
+        /// Scales from the SVG viewBox coordinate space to the target pixel dimensions.
+        /// Uses the same rendering approach as SvgWidget: scale transform + FlipY after rendering.
+        /// </summary>
+        public static ImageBuffer RenderToImageBuffer(
+            List<ColoredVertexSource> elements,
+            double viewBoxWidth,
+            double viewBoxHeight,
+            int targetWidth,
+            int targetHeight)
+        {
+            var image = new ImageBuffer(targetWidth, targetHeight, 32, new BlenderBGRA());
+            var graphics = image.NewGraphics2D();
+            graphics.Clear(Color.Transparent);
+
+            double scaleX = targetWidth / viewBoxWidth;
+            double scaleY = targetHeight / viewBoxHeight;
+            graphics.SetTransform(Affine.NewScaling(scaleX, scaleY));
+
+            foreach (var element in elements)
+            {
+                if (element.FillEvenOdd)
+                    graphics.Rasterizer.filling_rule(Util.filling_rule_e.fill_even_odd);
+                graphics.Render(element.VertexSource, element.Color);
+                if (element.FillEvenOdd)
+                    graphics.Rasterizer.filling_rule(Util.filling_rule_e.fill_non_zero);
+            }
+
+            // SVG has Y=0 at top (Y increases down); agg-sharp has Y=0 at bottom (Y increases up).
+            // FlipY corrects the coordinate inversion — same approach used by SvgWidget.
+            image.FlipY();
+
+            return image;
+        }
+
+        private static (List<ColoredVertexSource> elements, double viewBoxWidth, double viewBoxHeight) ParseFull(Stream stream, bool flipY)
+        {
             var svgDocument = new HtmlDocument();
             svgDocument.Load(stream);
 
-            // get the viewBox
-            var viewBox = svgDocument.DocumentNode.SelectSingleNode("//svg").Attributes["viewBox"].Value;
-
-            // if we want to parse size at some point
-            if (!string.IsNullOrEmpty(viewBox))
+            // Parse viewBox to get the coordinate space dimensions
+            double viewBoxWidth = 16;
+            double viewBoxHeight = 16;
+            var svgNode = svgDocument.DocumentNode.SelectSingleNode("//svg");
+            var viewBoxAttr = svgNode?.Attributes["viewBox"];
+            if (viewBoxAttr != null && !string.IsNullOrEmpty(viewBoxAttr.Value))
             {
-                var segments = viewBox.Split(' ');
-                int.TryParse(segments[2], out int width);
-                int.TryParse(segments[3], out int height);
+                var segments = viewBoxAttr.Value.Split(' ');
+                if (segments.Length >= 4)
+                {
+                    double.TryParse(segments[2], out viewBoxWidth);
+                    double.TryParse(segments[3], out viewBoxHeight);
+                }
             }
 
             var items = new List<ColoredVertexSource>();
 
-            VertexStorage FlipIfRequired(VertexStorage source)
+            // Accept any IVertexSource so Ellipse and Stroke don't need to be converted first
+            IVertexSource FlipIfRequired(IVertexSource source)
             {
                 if (flipY)
                 {
@@ -71,7 +127,7 @@ namespace MatterHackers.Agg.SvgTools
                 return source;
             }
 
-            // process all the paths and polygons
+            // process all paths
             if (svgDocument.DocumentNode.Descendants("path").Any())
             {
                 foreach (var pathNode in svgDocument.DocumentNode.SelectNodes("//path"))
@@ -79,30 +135,61 @@ namespace MatterHackers.Agg.SvgTools
                     var pathDString = pathNode.Attributes["d"].Value;
                     var vertexStorage = new VertexStorage(pathDString);
 
-                    // get the fill color
-                    var fillColor = Color.Black;
-                    
-                    // First check for direct fill attribute
-                    if (pathNode.Attributes["fill"] != null)
+                    if (HasFill(pathNode))
                     {
-                        var fillString = pathNode.Attributes["fill"].Value;
-                        if (fillString.StartsWith("#"))
-                        {
-                            fillColor = new Color(fillString);
-                        }
-                    }
-                    // Then check for fill color in style attribute
-                    else if (pathNode.Attributes["style"] != null)
-                    {
-                        var styleString = pathNode.Attributes["style"].Value;
-                        var fillMatch = System.Text.RegularExpressions.Regex.Match(styleString, @"fill:\s*#([0-9A-Fa-f]{6})");
-                        if (fillMatch.Success)
-                        {
-                            fillColor = new Color("#" + fillMatch.Groups[1].Value);
-                        }
+                        bool fillEvenOdd = pathNode.Attributes["fill-rule"]?.Value == "evenodd";
+                        items.Add(new ColoredVertexSource(FlipIfRequired(vertexStorage), ExtractFillColor(pathNode), fillEvenOdd));
                     }
 
-                    items.Add(new ColoredVertexSource(FlipIfRequired(vertexStorage), fillColor));
+                    var (strokeColor, strokeWidth) = ExtractStroke(pathNode);
+                    if (strokeWidth > 0)
+                    {
+                        items.Add(new ColoredVertexSource(FlipIfRequired(new Stroke(vertexStorage, strokeWidth)), strokeColor));
+                    }
+                }
+            }
+
+            // process all circles
+            if (svgDocument.DocumentNode.Descendants("circle").Any())
+            {
+                foreach (var circleNode in svgDocument.DocumentNode.SelectNodes("//circle"))
+                {
+                    double cx = ParseAttrDouble(circleNode, "cx", 0);
+                    double cy = ParseAttrDouble(circleNode, "cy", 0);
+                    double r = ParseAttrDouble(circleNode, "r", 0);
+                    var ellipse = new Ellipse(cx, cy, r, r);
+
+                    if (HasFill(circleNode))
+                    {
+                        items.Add(new ColoredVertexSource(FlipIfRequired(ellipse), ExtractFillColor(circleNode)));
+                    }
+
+                    var (strokeColor, strokeWidth) = ExtractStroke(circleNode);
+                    if (strokeWidth > 0)
+                    {
+                        items.Add(new ColoredVertexSource(FlipIfRequired(new Stroke(ellipse, strokeWidth)), strokeColor));
+                    }
+                }
+            }
+
+            // process all rects
+            if (svgDocument.DocumentNode.Descendants("rect").Any())
+            {
+                foreach (var rectNode in svgDocument.DocumentNode.SelectNodes("//rect"))
+                {
+                    double rx = ParseAttrDouble(rectNode, "x", 0);
+                    double ry = ParseAttrDouble(rectNode, "y", 0);
+                    double rw = ParseAttrDouble(rectNode, "width", 0);
+                    double rh = ParseAttrDouble(rectNode, "height", 0);
+
+                    var vertexStorage = new VertexStorage();
+                    vertexStorage.MoveTo(rx, ry);
+                    vertexStorage.LineTo(rx + rw, ry);
+                    vertexStorage.LineTo(rx + rw, ry + rh);
+                    vertexStorage.LineTo(rx, ry + rh);
+                    vertexStorage.ClosePolygon();
+
+                    items.Add(new ColoredVertexSource(FlipIfRequired(vertexStorage), ExtractFillColor(rectNode)));
                 }
             }
 
@@ -132,11 +219,78 @@ namespace MatterHackers.Agg.SvgTools
 
                     vertexStorage.ClosePolygon();
 
-                    items.Add(new ColoredVertexSource(FlipIfRequired(vertexStorage), Color.Black));
+                    items.Add(new ColoredVertexSource(FlipIfRequired(vertexStorage), ExtractFillColor(polgonNode)));
                 }
             }
 
-            return items;
+            return (items, viewBoxWidth, viewBoxHeight);
+        }
+
+        private static double ParseAttrDouble(HtmlNode node, string attrName, double defaultValue)
+        {
+            var attr = node.Attributes[attrName];
+            if (attr != null && double.TryParse(attr.Value, out double result))
+            {
+                return result;
+            }
+
+            return defaultValue;
+        }
+
+        /// <summary>
+        /// Returns true if the node should render a fill.
+        /// Nodes with explicit fill="none" are not filled. Nodes with no fill attribute but an
+        /// explicit stroke are treated as stroke-only (the common pattern for open-path icons).
+        /// </summary>
+        private static bool HasFill(HtmlNode node)
+        {
+            var fill = node.Attributes["fill"]?.Value;
+            if (fill == null)
+            {
+                // No explicit fill — if there's a stroke, treat as stroke-only
+                return node.Attributes["stroke"] == null;
+            }
+
+            return fill != "none" && fill != "transparent";
+        }
+
+        /// <summary>
+        /// Extracts stroke color and width from an SVG node.
+        /// Returns (default, 0) if no usable stroke is present.
+        /// </summary>
+        private static (Color color, double width) ExtractStroke(HtmlNode node)
+        {
+            var strokeStr = node.Attributes["stroke"]?.Value;
+            if (strokeStr != null && strokeStr != "none" && strokeStr.StartsWith('#'))
+            {
+                double width = ParseAttrDouble(node, "stroke-width", 1.0);
+                return (new Color(strokeStr), width);
+            }
+
+            return (default, 0);
+        }
+
+        private static Color ExtractFillColor(HtmlNode node)
+        {
+            if (node.Attributes["fill"] != null)
+            {
+                var fillString = node.Attributes["fill"].Value;
+                if (fillString.StartsWith('#'))
+                {
+                    return new Color(fillString);
+                }
+            }
+            else if (node.Attributes["style"] != null)
+            {
+                var styleString = node.Attributes["style"].Value;
+                var fillMatch = System.Text.RegularExpressions.Regex.Match(styleString, @"fill:\s*#([0-9A-Fa-f]{6})");
+                if (fillMatch.Success)
+                {
+                    return new Color("#" + fillMatch.Groups[1].Value);
+                }
+            }
+
+            return Color.Black;
         }
 
         public static string SvgDString(this IVertexSource vertexSource)

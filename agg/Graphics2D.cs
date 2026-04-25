@@ -27,7 +27,10 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg
 {
-    public record ColoredVertexSource(IVertexSource VertexSource, Color Color);
+    /// <param name="FillEvenOdd">When true, the rasterizer uses the even-odd fill rule instead of
+    /// non-zero winding. Use this for compound paths where sub-path overlaps should create
+    /// transparent cutouts (e.g. a circle with a hole punched through it).</param>
+    public record ColoredVertexSource(IVertexSource VertexSource, Color Color, bool FillEvenOdd = false);
 
     public interface IStyleHandler
     {
@@ -518,7 +521,11 @@ namespace MatterHackers.Agg
                 var flattened = new FlattenCurves(new VertexSourceApplyTransform(colorVertices.VertexSource, transform));
                 renderedBounds.ExpandToInclude(flattened.GetBounds());
 
+                if (colorVertices.FillEvenOdd)
+                    this.Rasterizer.filling_rule(Util.filling_rule_e.fill_even_odd);
                 this.Render(flattened, colorVertices.Color);
+                if (colorVertices.FillEvenOdd)
+                    this.Rasterizer.filling_rule(Util.filling_rule_e.fill_non_zero);
             }
 
             if (debugBoundsWidth > 0)
