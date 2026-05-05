@@ -113,7 +113,8 @@ namespace Markdig.Agg
 			contentPanel = new FlowLayoutWidget(FlowDirection.TopToBottom)
 			{
 				HAnchor = HAnchor.Stretch,
-				VAnchor = VAnchor.Fit
+				VAnchor = VAnchor.Fit,
+				Padding = new BorderDouble(10, 0),
 			};
 
 			this.AddChild(contentPanel);
