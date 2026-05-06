@@ -18,7 +18,7 @@ namespace Markdig.Renderers.Agg
 		{
 			this.VAnchor = VAnchor.Fit;
 			this.HAnchor = HAnchor.Stretch;
-			this.Margin = new BorderDouble(left: depth * 14);
+			this.Margin = new BorderDouble(left: (depth + 1) * 14);
 		}
 	}
 

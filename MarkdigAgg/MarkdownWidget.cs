@@ -114,7 +114,6 @@ namespace Markdig.Agg
 			{
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Fit,
-				Padding = new BorderDouble(10, 0),
 			};
 
 			this.AddChild(contentPanel);
