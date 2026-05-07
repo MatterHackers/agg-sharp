@@ -210,12 +210,21 @@ namespace Markdig.Agg
 		{
 			if (!string.IsNullOrWhiteSpace(contentUri))
 			{
-				// Use the directory containing the file as the base path so relative links resolve correctly.
-				// If contentUri is already a directory, GetDirectoryName returns the parent, so check first.
 				var directory = File.Exists(contentUri)
 					? Path.GetDirectoryName(contentUri)
 					: contentUri;
-				pathHandler = new MarkdownPathHandler(directory);
+
+				if (pathHandler == null)
+				{
+					pathHandler = new MarkdownPathHandler(directory);
+				}
+				else
+				{
+					// Preserve the existing basePath (set at construction to the doc root) so that
+					// cross-directory relative links don't throw "outside base directory".
+					// Only shift currentDirectory to resolve links relative to the new article.
+					pathHandler.SetCurrentDirectory(directory);
+				}
 			}
 		}
 

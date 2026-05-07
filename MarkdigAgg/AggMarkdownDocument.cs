@@ -418,6 +418,16 @@ namespace Markdig.Agg
             }
         }
 
+        /// <summary>
+        /// Directly sets the working directory for relative link resolution without modifying basePath.
+        /// Used when navigating between articles within a known-safe document root.
+        /// </summary>
+        public void SetCurrentDirectory(string directory)
+        {
+            directory = directory.Replace('/', Path.DirectorySeparatorChar).TrimEnd(Path.DirectorySeparatorChar);
+            currentDirectory = Path.GetFullPath(directory);
+        }
+
         public string GetRelativePath(string fullPath)
         {
             return Path.GetRelativePath(currentDirectory, fullPath);
