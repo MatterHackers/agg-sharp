@@ -270,7 +270,8 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
 
 			string first160BytesOfSTLFile = System.Text.Encoding.UTF8.GetString(first160Bytes, startOfString, first160Bytes.Length - startOfString);
-			if (first160BytesOfSTLFile.StartsWith("solid") && first160BytesOfSTLFile.Contains("facet"))
+			if (first160BytesOfSTLFile.StartsWith("solid", StringComparison.OrdinalIgnoreCase)
+				&& first160BytesOfSTLFile.IndexOf("facet", StringComparison.OrdinalIgnoreCase) >= 0)
 			{
 				stlStream.Position = 0;
 				var stlReader = new StreamReader(stlStream);
@@ -283,7 +284,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				while (line != null)
 				{
 					line = line.Trim();
-					if (line.StartsWith("vertex"))
+					if (line.StartsWith("vertex", StringComparison.OrdinalIgnoreCase))
 					{
 						vectorIndex++;
 						switch (vectorIndex)
@@ -341,7 +342,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				long bytesForAttributs = numTriangles * 2;
 				currentPosition += 4;
 				long numBytesRequiredForVertexData = currentPosition + bytesForNormals + bytesForVertices + bytesForAttributs;
-				if (fileContents.Length < numBytesRequiredForVertexData || numTriangles < 4)
+				if (fileContents.Length < numBytesRequiredForVertexData || numTriangles < 1)
 				{
 					stlStream.Close();
 					return null;
