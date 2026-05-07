@@ -166,6 +166,10 @@ namespace Markdig.Agg
 						UriNavigated?.Invoke(this, fullPath);
 					});
 				}
+				else
+				{
+					UriNavigated?.Invoke(this, fullPath);
+				}
 			}
 			catch
 			{
@@ -210,7 +214,7 @@ namespace Markdig.Agg
 		{
 			if (!string.IsNullOrWhiteSpace(contentUri))
 			{
-				var directory = File.Exists(contentUri)
+				var directory = File.Exists(contentUri) || Path.HasExtension(contentUri)
 					? Path.GetDirectoryName(contentUri)
 					: contentUri;
 
