@@ -93,6 +93,58 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			await Assert.That(cylinder.Sdf(new Vector3(1, 0, 1))).IsEqualTo(.5);
 		}
 
+		// Reproduces the Cloud Library ".stl downloads but nothing loads" report. The downloaded file is a
+		// valid OpenSCAD-style ASCII STL (CRLF line endings, integer coordinates, "facet normal -1 0 0").
+		// This exercises the real production parser to prove whether the empty viewport is a parse failure.
+		[Test]
+		public async Task AsciiStlOpenScadFormatParsesToFaces()
+		{
+			// Tetrahedron in the exact textual style produced by OpenSCAD (matches the failing cloud file):
+			// CRLF endings, two-space facet indent, bare integer vertex coordinates.
+			string[] lines =
+			{
+				"solid OpenSCAD_Model",
+				"  facet normal 0 0 -1",
+				"    outer loop",
+				"      vertex 0 0 0",
+				"      vertex 0 10 0",
+				"      vertex 10 0 0",
+				"    endloop",
+				"  endfacet",
+				"  facet normal -1 0 0",
+				"    outer loop",
+				"      vertex 0 0 0",
+				"      vertex 0 0 10",
+				"      vertex 0 10 0",
+				"    endloop",
+				"  endfacet",
+				"  facet normal 0 -1 0",
+				"    outer loop",
+				"      vertex 0 0 0",
+				"      vertex 10 0 0",
+				"      vertex 0 0 10",
+				"    endloop",
+				"  endfacet",
+				"  facet normal 1 1 1",
+				"    outer loop",
+				"      vertex 10 0 0",
+				"      vertex 0 10 0",
+				"      vertex 0 0 10",
+				"    endloop",
+				"  endfacet",
+				"endsolid OpenSCAD_Model",
+			};
+			string asciiStl = string.Join("\r\n", lines) + "\r\n";
+
+			using (var stream = new System.IO.MemoryStream(System.Text.Encoding.ASCII.GetBytes(asciiStl)))
+			{
+				var mesh = StlProcessing.Load(stream, System.Threading.CancellationToken.None);
+
+				await Assert.That(mesh).IsNotNull();
+				await Assert.That(mesh.Faces.Count).IsEqualTo(4);
+			}
+		}
+
 		[Test]
 		public async Task PolygonRequirements()
 		{
