@@ -203,6 +203,12 @@ namespace MatterHackers.Agg.UI
 			set
 			{
 				InternalTextEditWidget.Text = value;
+
+				// When the content is replaced programmatically, show its beginning rather than
+				// leaving the view scrolled wherever it was for the previous (possibly longer) value -
+				// otherwise a shorter new value can appear blank because the view is scrolled past it.
+				// (Typing does not go through this setter, so caret-following while editing is unaffected.)
+				this.TopLeftOffset = VectorMath.Vector2.Zero;
 			}
 		}
 
