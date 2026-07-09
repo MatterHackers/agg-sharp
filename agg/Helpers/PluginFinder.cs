@@ -38,6 +38,16 @@ namespace MatterHackers.Agg
 	{
 		private static Dictionary<Assembly, List<Type>> assemblyAndTypes = new Dictionary<Assembly, List<Type>>();
 
+		/// <summary>
+		/// Gets a monotonically increasing token that changes every time a new assembly's types are
+		/// registered. Consumers that memoize results derived from <see cref="FindTypes{T}"/> (e.g. the
+		/// IObject3D deserialization type map) can compare against this to detect that more types became
+		/// available and rebuild their cache. Without this, a cache built before the plugin assemblies are
+		/// loaded (which happens easily in parallel test runs, where hook ordering is non-deterministic)
+		/// would be frozen empty for the life of the process and every object would deserialize to its base type.
+		/// </summary>
+		public static int Generation { get; private set; }
+
 		private static HashSet<string> AssembliesToIgnore = new HashSet<string>
 		{
             "Microsoft.Testing.Platform.MSBuild",
@@ -76,6 +86,7 @@ namespace MatterHackers.Agg
 			if (!assemblyAndTypes.ContainsKey(assembly))
 			{
 				assemblyAndTypes.Add(assembly, assemblyTypes);
+				Generation++;
 			}
 		}
 
