@@ -457,8 +457,11 @@ namespace MatterHackers.RenderGl
 			ApplySceneLighting(activeSceneRenderContext.Lighting);
 			UpdateLightBuffer(true, true);
 
-			int width = Math.Max(1, (int)Math.Ceiling(activeSceneRenderContext.Viewport.Width));
-			int height = Math.Max(1, (int)Math.Ceiling(activeSceneRenderContext.Viewport.Height));
+			// During full-frame supersample capture the scene pipeline renders at
+			// supersampleScale times the logical viewport so its output matches the
+			// resolution of the capture target it composites into.
+			int width = Math.Max(1, (int)Math.Ceiling(activeSceneRenderContext.Viewport.Width)) * supersampleScale;
+			int height = Math.Max(1, (int)Math.Ceiling(activeSceneRenderContext.Viewport.Height)) * supersampleScale;
 
 			EnsureSceneTargets(width, height);
 			if (queuedBedCommand != null)
@@ -1737,9 +1740,13 @@ namespace MatterHackers.RenderGl
 			values[10] = enableDepthPeeling ? 1.0f : 0.0f;
 			values[11] = firstPeelPass ? 1.0f : 0.0f;
 
-			values[12] = width;
-			values[13] = height;
-			values[14] = SceneRenderModeUtilities.DefaultWireframeWidth;
+			// Callers pass the logical viewport size; the scene targets (and SV_POSITION
+			// pixel coordinates the shaders divide by this resolution) are scaled by
+			// supersampleScale during full-frame capture. The wireframe width is in
+			// device pixels, so scale it to keep the same on-screen thickness.
+			values[12] = width * supersampleScale;
+			values[13] = height * supersampleScale;
+			values[14] = SceneRenderModeUtilities.DefaultWireframeWidth * supersampleScale;
 			values[15] = unlit ? 1.0f : 0.0f;
 
 			values[16] = useVertexColor ? 1.0f : 0.0f;
@@ -1755,10 +1762,12 @@ namespace MatterHackers.RenderGl
 			var mapped = context.Map(outlineCompositeBuffer, MapMode.WriteDiscard);
 			float* values = (float*)mapped.DataPointer;
 
-			values[0] = 2.0f;
+			// Outline width is in target pixels: scale by supersampleScale so it
+			// downsamples to the same ~2 screen pixels during full-frame capture.
+			values[0] = 2.0f * supersampleScale;
 			values[1] = 0.35f;
-			values[2] = width;
-			values[3] = height;
+			values[2] = width * supersampleScale;
+			values[3] = height * supersampleScale;
 			values[4] = 0;
 			values[5] = 0;
 			values[6] = 0;
@@ -1800,7 +1809,10 @@ namespace MatterHackers.RenderGl
 
 		private void ApplyDefaultSceneViewport()
 		{
-			var viewport = SceneViewportUtilities.CreateDefaultFramebufferViewport(activeSceneRenderContext.Viewport, renderTargetHeight);
+			// renderTargetHeight is in device pixels (scaled during supersample
+			// capture); the context viewport is logical, so pass the scale along.
+			var viewport = SceneViewportUtilities.CreateDefaultFramebufferViewport(
+				activeSceneRenderContext.Viewport, renderTargetHeight, supersampleScale);
 			context.RSSetViewport(viewport);
 		}
 

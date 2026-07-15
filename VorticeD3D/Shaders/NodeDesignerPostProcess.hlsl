@@ -84,18 +84,31 @@ float4 ResolveDualPeelPS(VS_OUTPUT input) : SV_TARGET
         resolvedColor.a + (1.0 - resolvedColor.a) * overlayWeight);
 }
 
-// Progressive accumulation: blends a new sample into the running average.
-// texture0 = new jittered sample, texture1 = previous accumulation result.
-cbuffer AccumulationBuffer : register(b2)
+// 3x3 supersample downsample: texture0 = scene rendered at 3x resolution.
+// A single bilinear tap at 3x minification only reads the corner 2x2 block of
+// each 3x3 source cell, losing 5 of the 9 supersamples. The 9 explicit taps
+// land exactly on source texel centers (the dest pixel center maps to the
+// center texel of its 3x3 cell), so every supersample contributes with
+// weight 1/9.
+cbuffer DownsampleBuffer : register(b2)
 {
-    float4 AccumSettings; // x = blend weight (1/N), yzw = unused
+    float4 DownsampleSettings; // xy = source texel size (1/width, 1/height), zw = unused
 };
 
-float4 AccumulatePS(VS_OUTPUT input) : SV_TARGET
+float4 Downsample3x3PS(VS_OUTPUT input) : SV_TARGET
 {
-    float4 newSample = texture0.Sample(pointSampler, input.TexCoord);
-    float4 prevAccum = texture1.Sample(pointSampler, input.TexCoord);
-    return lerp(prevAccum, newSample, AccumSettings.x);
+    float4 sum = 0.0;
+    [unroll]
+    for (int dy = -1; dy <= 1; dy++)
+    {
+        [unroll]
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            sum += texture0.Sample(pointSampler, input.TexCoord + float2(dx, dy) * DownsampleSettings.xy);
+        }
+    }
+
+    return sum * (1.0 / 9.0);
 }
 
 float4 OutlineCompositePS(VS_OUTPUT input) : SV_TARGET

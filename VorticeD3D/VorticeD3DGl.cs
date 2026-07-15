@@ -630,20 +630,6 @@ namespace MatterHackers.RenderGl
 			// Apply Z correction: map OpenGL clip-space Z [-1,1] to D3D11 [0,1]
 			var p = projectionStack.Peek();
 
-			// Apply sub-pixel jitter for progressive accumulation anti-aliasing.
-			// This shifts the projection in NDC space without modifying WorldView
-			// (which would trigger scene invalidation and reset accumulation).
-			if ((jitterOffsetX != 0 || jitterOffsetY != 0) && viewportWidth > 0 && viewportHeight > 0)
-			{
-				double jx = jitterOffsetX * 2.0 / viewportWidth;
-				double jy = jitterOffsetY * 2.0 / viewportHeight;
-				p = p * new Matrix4X4(
-					new Vector4(1, 0, 0, 0),
-					new Vector4(0, 1, 0, 0),
-					new Vector4(0, 0, 1, 0),
-					new Vector4(jx, jy, 0, 1));
-			}
-
 			double flipY = (currentBoundFramebuffer != 0) ? -1.0 : 1.0;
 
 			var proj = new Matrix4X4(
@@ -2116,6 +2102,14 @@ namespace MatterHackers.RenderGl
 
 		private (int x, int y, int w, int h) currentViewport;
 
+		/// <summary>
+		/// Scale from logical GL coordinates to device pixels for the active render
+		/// target. User framebuffers (render-to-texture) are addressed in their own
+		/// texture pixels and are never supersampled, so only the default framebuffer
+		/// scales during full-frame capture.
+		/// </summary>
+		private int ActiveCoordinateScale => currentBoundFramebuffer == 0 ? supersampleScale : 1;
+
 		public void Viewport(int x, int y, int width, int height)
 		{
 			viewportX = x;
@@ -2124,9 +2118,12 @@ namespace MatterHackers.RenderGl
 			viewportHeight = height;
 			currentViewport = (x, y, width, height);
 
-			// Convert from OpenGL convention (y=0 at bottom) to D3D11 convention (y=0 at top)
-			int d3dY = renderTargetHeight - y - height;
-			context.RSSetViewport(x, d3dY, width, height);
+			// Convert from OpenGL convention (y=0 at bottom) to D3D11 convention (y=0 at top).
+			// renderTargetHeight is in device pixels (already scaled during supersample
+			// capture), so scale the logical coordinates to match.
+			int scale = ActiveCoordinateScale;
+			int d3dY = renderTargetHeight - (y + height) * scale;
+			context.RSSetViewport(x * scale, d3dY, width * scale, height * scale);
 		}
 
 		public void Scissor(int x, int y, int width, int height)
@@ -2139,8 +2136,9 @@ namespace MatterHackers.RenderGl
 			if (width < 0) width = 0;
 			if (height < 0) height = 0;
 
-			int d3dY = renderTargetHeight - y - height;
-			context.RSSetScissorRect(x, d3dY, width, height);
+			int scale = ActiveCoordinateScale;
+			int d3dY = renderTargetHeight - (y + height) * scale;
+			context.RSSetScissorRect(x * scale, d3dY, width * scale, height * scale);
 		}
 
 		// --- Buffer management ---
@@ -2726,7 +2724,9 @@ namespace MatterHackers.RenderGl
 				context.OMSetRenderTargets(renderTargetView, depthStencilView);
 				if (currentBackBuffer != null)
 				{
-					renderTargetHeight = (int)currentBackBuffer.Description.Height;
+					// During full-frame capture the default framebuffer is the
+					// supersample target, which is supersampleScale times the backbuffer.
+					renderTargetHeight = (int)currentBackBuffer.Description.Height * supersampleScale;
 				}
 			}
 			else if (framebuffers.TryGetValue(buffer, out var fbo))
@@ -2906,7 +2906,7 @@ namespace MatterHackers.RenderGl
 
 		public void Dispose()
 		{
-			DisposeAccumulator();
+			DisposeSupersampleResources();
 			DisposeSceneEffects();
 
 			foreach (var buf in buffers.Values) buf?.Dispose();

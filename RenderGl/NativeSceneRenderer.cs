@@ -117,20 +117,13 @@ namespace MatterHackers.RenderGl
 
 		void QueueSelectionOutline(Mesh mesh, Color color, Matrix4X4 transform);
 
-		// Progressive accumulation anti-aliasing
-		int AccumulatedSampleCount { get; }
-
-		bool IsAccumulationComplete { get; }
-
-		int MaxAccumulationSamples { get; set; }
-
-		void SetJitterOffset(double x, double y);
-
-		void ResetAccumulation();
+		// 3x3 (9x) supersampled anti-aliasing: the whole frame renders into an
+		// off-screen target at 3x resolution, then downsamples to the backbuffer
+		// with a 9-tap box filter — full anti-aliasing quality every frame.
 
 		/// <summary>
 		/// Redirects all subsequent rendering (scene pipeline AND GL immediate mode)
-		/// to an off-screen sample target by swapping renderTargetView/depthStencilView.
+		/// to an off-screen supersample target by swapping renderTargetView/depthStencilView.
 		/// Call before any 3D rendering begins for this frame.
 		/// </summary>
 		void BeginFullFrameCapture(RectangleDouble viewport);
@@ -142,60 +135,9 @@ namespace MatterHackers.RenderGl
 		void EndFullFrameCapture();
 
 		/// <summary>
-		/// Blends the captured full-frame sample into the accumulation buffer
-		/// and blits the accumulated result to the screen.
-		/// Call after EndFullFrameCapture.
+		/// Box-downsamples the captured supersample target onto the backbuffer.
+		/// Call after EndFullFrameCapture — this completes the frame.
 		/// </summary>
-		void AccumulateAndBlitFullFrame();
-
-		/// <summary>
-		/// Composites the previously accumulated result to screen without re-rendering.
-		/// </summary>
-		void CompositeAccumulatedResult();
-
-		/// <summary>
-		/// Tracks which 3D viewport (tab) last used the accumulation buffer.
-		/// Different viewports sharing the same renderer must reset accumulation
-		/// when the active viewport changes, since the cached content belongs
-		/// to a different scene.
-		/// </summary>
-		AccumulationClientTracker ClientTracker { get; }
-	}
-
-	/// <summary>
-	/// Utility for generating sub-pixel jitter offsets using a Halton sequence.
-	/// Used by the progressive accumulation anti-aliasing system.
-	/// </summary>
-	public static class AccumulationJitter
-	{
-		/// <summary>
-		/// Returns a Halton(2,3) sub-pixel jitter offset for the given sample index.
-		/// Sample 0 returns (0,0) so the first frame is un-jittered and sharp.
-		/// Subsequent samples return offsets in [-0.5, 0.5] pixel range.
-		/// </summary>
-		public static (double x, double y) GetOffset(int sampleIndex)
-		{
-			if (sampleIndex == 0)
-			{
-				return (0, 0);
-			}
-
-			return (Halton(sampleIndex, 2) - 0.5, Halton(sampleIndex, 3) - 0.5);
-		}
-
-		private static double Halton(int index, int baseValue)
-		{
-			double result = 0;
-			double f = 1.0 / baseValue;
-			int i = index;
-			while (i > 0)
-			{
-				result += f * (i % baseValue);
-				i /= baseValue;
-				f /= baseValue;
-			}
-
-			return result;
-		}
+		void DownsampleAndBlitFullFrame();
 	}
 }

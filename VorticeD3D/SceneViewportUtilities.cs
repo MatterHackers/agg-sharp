@@ -35,12 +35,19 @@ namespace MatterHackers.RenderGl
 {
 	public static class SceneViewportUtilities
 	{
-		public static Viewport CreateDefaultFramebufferViewport(RectangleDouble openGlViewport, int renderTargetHeight)
+		/// <summary>
+		/// Converts a logical GL viewport (bottom-left origin) into a D3D viewport
+		/// (top-left origin). <paramref name="scale"/> maps logical coordinates to
+		/// device pixels; it is greater than 1 while rendering into a supersampled
+		/// full-frame capture target, whose height <paramref name="renderTargetHeight"/>
+		/// is already in device pixels.
+		/// </summary>
+		public static Viewport CreateDefaultFramebufferViewport(RectangleDouble openGlViewport, int renderTargetHeight, int scale = 1)
 		{
-			int x = (int)openGlViewport.Left;
-			int y = (int)openGlViewport.Bottom;
-			int width = Math.Max(1, (int)Math.Ceiling(openGlViewport.Width));
-			int height = Math.Max(1, (int)Math.Ceiling(openGlViewport.Height));
+			int x = (int)openGlViewport.Left * scale;
+			int y = (int)openGlViewport.Bottom * scale;
+			int width = Math.Max(1, (int)Math.Ceiling(openGlViewport.Width)) * scale;
+			int height = Math.Max(1, (int)Math.Ceiling(openGlViewport.Height)) * scale;
 
 			// GL viewports are measured from the bottom-left; D3D expects top-left origin.
 			int d3dY = renderTargetHeight - y - height;
