@@ -182,6 +182,31 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		[Test]
+		public async Task MeshWirePluginKeepsBothAngleListsCachedAtOnce()
+		{
+			// The regression test for making the angle part of the cache key rather than only part of the
+			// freshness check. With one entry per mesh the two angles evicted each other, so every fetch
+			// found the entry stale and re-walked the whole mesh.
+			var mesh = PlatonicSolids.CreateCube(10, 10, 10);
+
+			var wireframe = MeshWirePlugin.Get(mesh, Color.White);
+			var outlines = MeshWirePlugin.Get(mesh, Color.White, MathHelper.Tau / 8);
+
+			for (int i = 0; i < 5; i++)
+			{
+				await Assert.That(ReferenceEquals(wireframe, MeshWirePlugin.Get(mesh, Color.White)))
+					.IsTrue()
+					.Because("a ui viewport drawing this mesh in wireframe while a thumbnail worker draws its "
+						+ "outlines must keep its unfiltered list cached, not have the outline fetch evict it");
+
+				await Assert.That(ReferenceEquals(outlines, MeshWirePlugin.Get(mesh, Color.White, MathHelper.Tau / 8)))
+					.IsTrue()
+					.Because("and the thumbnail worker's filtered list has to survive the viewport's fetch too - "
+						+ "otherwise both threads re-walk the unchanged mesh on every single frame");
+			}
+		}
+
+		[Test]
 		public async Task MeshWirePluginSwapsInTheFilteredListWhenTheBackgroundPassFinishes()
 		{
 			// A cube: every edge is a 90 degree crease, so the whole mesh survives the filter.

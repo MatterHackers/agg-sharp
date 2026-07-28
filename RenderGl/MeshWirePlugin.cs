@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -76,15 +77,17 @@ namespace MatterHackers.RenderGl
 		}
 
 		private int meshUpdateCount;
-		private double nonPlanarAngleRequired;
 
 		// The edge list is pure cpu data - RenderHelper.DrawWireOverlay hands it to gl as a client side
 		// vertex array and the D3D backend copies it into a per draw dynamic buffer - so unlike
 		// MeshTrianglePlugin nothing in here names a resource on one context and the cache does not have
 		// to be keyed by GL. It does still have to survive being reached from two threads at once:
 		// MatterCAD renders thumbnails on background workers that ask for RenderTypes.Outlines while the
-		// ui thread paints. A weak table so the cache dies with the mesh.
-		private static readonly ConditionalWeakTable<Mesh, MeshWirePlugin> pluginsByMesh = new ConditionalWeakTable<Mesh, MeshWirePlugin>();
+		// ui thread paints. A weak table so the cache dies with the mesh, holding a small map of one
+		// plugin per filter angle - a mesh is drawn at only a couple of angles in practice. The inner
+		// Dictionary is a plain one rather than a concurrent one because every read and write of it
+		// happens inside one of the two cacheLock sections of Get.
+		private static readonly ConditionalWeakTable<Mesh, Dictionary<double, MeshWirePlugin>> pluginsByMesh = new ConditionalWeakTable<Mesh, Dictionary<double, MeshWirePlugin>>();
 
 		// Guards the lookup and the publish. This cache used to live in Mesh.PropertyBag, a plain
 		// Dictionary that the ui thread and the thumbnail workers did Remove/Add on unguarded, which
@@ -97,14 +100,11 @@ namespace MatterHackers.RenderGl
 		/// </summary>
 		/// <remarks>
 		/// <paramref name="wireColor"/> is deliberately not part of the cache identity - the first caller
-		/// wins - but <paramref name="nonPlanarAngleRequired"/> is, because it changes which edges are in
-		/// the list at all. It is only part of the freshness check, not of the cache key, so there is one
-		/// entry per mesh: RenderHelper asks for a filtered list for RenderTypes.Outlines and an
-		/// unfiltered one for RenderTypes.Wireframe, and a mesh drawn both ways at once (a ui viewport in
-		/// wireframe while a thumbnail worker renders outlines) has the two invalidating each other, so
-		/// every fetch walks the whole mesh again. That behavior predates this cache move and is left
-		/// alone; making the angle part of the key so both lists can be cached at once is the known
-		/// follow-up.
+		/// wins - but <paramref name="nonPlanarAngleRequired"/> is part of the cache key, because it
+		/// changes which edges are in the list at all. RenderHelper asks for a filtered list for
+		/// RenderTypes.Outlines and an unfiltered one for RenderTypes.Wireframe, so a mesh drawn both
+		/// ways at once (a ui viewport in wireframe while a thumbnail worker renders outlines) keeps both
+		/// lists cached instead of the two evicting each other and re-walking the mesh on every fetch.
 		/// </remarks>
 		public static MeshWirePlugin Get(Mesh mesh, Color wireColor, double nonPlanarAngleRequired = 0, Action meshChanged = null)
 		{
@@ -147,7 +147,10 @@ namespace MatterHackers.RenderGl
 				// plugin with an empty list and draw nothing for a frame or two - which is why
 				// DrawWireOverlay snapshots EdgeLines into a local before iterating, and why that field
 				// is volatile rather than a plain one: this lock does not cover the later swap.
-				pluginsByMesh.AddOrUpdate(mesh, newPlugin);
+				// A stale entry at some other angle is left where it is - it is replaced on its own next
+				// fetch, and the map only ever holds the handful of angles the mesh is drawn at.
+				var pluginsByAngle = pluginsByMesh.GetOrCreateValue(mesh);
+				pluginsByAngle[nonPlanarAngleRequired] = newPlugin;
 			}
 
 			return newPlugin;
@@ -159,9 +162,11 @@ namespace MatterHackers.RenderGl
 		/// </summary>
 		private static bool TryGetFreshPlugin(Mesh mesh, double nonPlanarAngleRequired, out MeshWirePlugin freshPlugin)
 		{
-			if (pluginsByMesh.TryGetValue(mesh, out var plugin)
-				&& plugin.meshUpdateCount == mesh.ChangedCount
-				&& plugin.nonPlanarAngleRequired == nonPlanarAngleRequired)
+			// The angle is the key of the inner map, so finding an entry there already proves it was built
+			// for the requested filter - only the mesh's change count is left to check.
+			if (pluginsByMesh.TryGetValue(mesh, out var pluginsByAngle)
+				&& pluginsByAngle.TryGetValue(nonPlanarAngleRequired, out var plugin)
+				&& plugin.meshUpdateCount == mesh.ChangedCount)
 			{
 				freshPlugin = plugin;
 				return true;
@@ -178,7 +183,6 @@ namespace MatterHackers.RenderGl
 
 		private void CreateRenderData(Mesh mesh, Color wireColor, double nonPlanarAngleRequired = 0, Action meshChanged = null)
 		{
-			this.nonPlanarAngleRequired = nonPlanarAngleRequired;
 			var unfilteredEdgeLines = new VectorPOD<WireVertexData>();
 
 			this.EdgeLines = unfilteredEdgeLines;
