@@ -31,6 +31,8 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
@@ -48,14 +50,53 @@ namespace MatterHackers.RenderGl
 	{
         public readonly GL gl;
 
-        // We can have a single static instance because all gl rendering is required to happen on the ui thread so there can
-        // be no runtime contention for this object (no thread contention).
-        private static readonly Dictionary<ulong, AARenderTesselator> TriangleEdgeInfos = new Dictionary<ulong, AARenderTesselator>();
-        private static readonly List<AARenderTesselator> AvailableTriangleEdgeInfos = new List<AARenderTesselator>();
-        private static readonly Dictionary<ulong, Mesh> NativeScenePathMeshes = new Dictionary<ulong, Mesh>();
-        private static List<ImageBuffer> aATextureImages;
+        /// <summary>
+        /// The GL objects a Graphics2DGpu caches - tesselators that emit immediate mode vertices into
+        /// a captured <see cref="GL"/>, and display list ids minted by a specific context - are only
+        /// meaningful on the context that created them. These used to be process wide statics on the
+        /// assumption that all gl rendering happened on the ui thread, which is no longer true:
+        /// MatterCAD renders thumbnails on background worker threads that each own their own GL
+        /// context. A tesselator built for the ui thread's context, driven from a worker, pushes
+        /// vertices into the ui thread's in-flight vertex buffer and corrupts the paint that is
+        /// flushing it.
+        /// The caches are keyed by context rather than being plain instance fields because several
+        /// call sites build a short lived Graphics2DGpu on every draw - per instance state would
+        /// rebuild the tesselator pool and leak a fresh display list every frame.
+        /// </summary>
+        private class GlContextCaches
+        {
+            public readonly Dictionary<ulong, AARenderTesselator> TriangleEdgeInfos = new Dictionary<ulong, AARenderTesselator>();
+            public readonly List<AARenderTesselator> AvailableTriangleEdgeInfos = new List<AARenderTesselator>();
+            public readonly Dictionary<ulong, int> DisplayListCache = new Dictionary<ulong, int>();
+            public RenderTesselator RenderNowTesselator;
 
-        private static RenderTesselator RenderNowTesselator;
+            /// <summary>
+            /// The value of <see cref="cacheGeneration"/> these caches were last reset at. Only ever
+            /// read and written by the thread that owns this context.
+            /// </summary>
+            public int Generation = Volatile.Read(ref cacheGeneration);
+        }
+
+        // Weak on the GL so a closed window's caches go away with its context. Guarded because the ui
+        // thread and the thumbnail workers all create Graphics2DGpu instances.
+        private static readonly ConditionalWeakTable<GL, GlContextCaches> cachesByContext = new ConditionalWeakTable<GL, GlContextCaches>();
+        private static readonly object contextCachesLock = new object();
+
+        // Bumped by InvalidateGlCaches. Each context notices the bump on its own thread at its next
+        // render and resets its own caches there - see SyncCacheGeneration.
+        private static int cacheGeneration;
+
+        // Mesh tessellation of a path is pure cpu work with no gl affinity, so it can stay shared -
+        // but it is now reached from more than one thread and needs guarding.
+        private static readonly Dictionary<ulong, Mesh> NativeScenePathMeshes = new Dictionary<ulong, Mesh>();
+
+        // The anti-aliasing alpha ramp textures are cpu side ImageBuffers with no gl affinity, so they
+        // are built once and never invalidated - only the gl textures made from them are context bound.
+        // Volatile plus publish-when-complete so a racing thread can never see a half filled list.
+        private static volatile List<ImageBuffer> aATextureImages;
+        private static readonly object aATextureImagesLock = new object();
+
+        private readonly GlContextCaches caches;
 
         private readonly int width;
         private readonly int height;
@@ -64,34 +105,92 @@ namespace MatterHackers.RenderGl
         public bool DoEdgeAntiAliasing { get; set; } = true;
 
         /// <summary>
-        /// Clears all static GL-context-dependent caches. Must be called when the GL context
-        /// is destroyed and recreated (e.g., between automation tests) to prevent stale
+        /// Marks all GL-context-dependent caches, for every context, as stale. Must be called when a GL
+        /// context is destroyed and recreated (e.g., between automation tests) to prevent stale
         /// display list IDs and tessellation data from causing rendering failures.
         /// </summary>
         public static void InvalidateGlCaches()
         {
-            _displayListCache.Clear();
-            TriangleEdgeInfos.Clear();
-            AvailableTriangleEdgeInfos.Clear();
-            NativeScenePathMeshes.Clear();
-            aATextureImages = null;
+            // Bump a generation rather than reaching into the other contexts' caches. The readers of
+            // those caches (DrawAAShape, RenderTriangleEdgeInfo, ...) run lock free on their own
+            // threads, so clearing from here - typically the ui thread, while a thumbnail worker is
+            // mid render - would corrupt their dictionaries. Each context notices the bump at its next
+            // render entry point and resets itself, which is also the only place its display lists can
+            // legally be deleted (a list id may only be freed by the context that minted it).
+            Interlocked.Increment(ref cacheGeneration);
+
+            lock (NativeScenePathMeshes)
+            {
+                NativeScenePathMeshes.Clear();
+            }
+
             ImageTexturePlugin.MarkAllImagesNeedRefresh();
+        }
+
+        private static GlContextCaches GetCachesForContext(GL gl)
+        {
+            lock (contextCachesLock)
+            {
+                if (!cachesByContext.TryGetValue(gl, out var contextCaches))
+                {
+                    contextCaches = new GlContextCaches();
+                    cachesByContext.Add(gl, contextCaches);
+                }
+
+                return contextCaches;
+            }
+        }
+
+        /// <summary>
+        /// Resets this context's caches if <see cref="InvalidateGlCaches"/> has run since they were
+        /// populated. Called at every entry point that touches the caches, on the thread that owns
+        /// this context - which is what makes it safe to delete the display lists here.
+        /// </summary>
+        private void SyncCacheGeneration()
+        {
+            var generation = Volatile.Read(ref cacheGeneration);
+            if (caches.Generation == generation)
+            {
+                return;
+            }
+
+            foreach (var displayListId in caches.DisplayListCache.Values)
+            {
+                gl.DeleteLists(displayListId, 1);
+            }
+
+            caches.DisplayListCache.Clear();
+            caches.TriangleEdgeInfos.Clear();
+            caches.AvailableTriangleEdgeInfos.Clear();
+            caches.RenderNowTesselator = null;
+            caches.Generation = generation;
         }
 
         public Graphics2DGpu(GL gl, double deviceScale)
         {
             this.gl = gl;
 
-            if (RenderNowTesselator == null)
-            {
-                RenderNowTesselator = new RenderTesselator(gl);
-            }
+            // D3D11SystemWindow builds a Graphics2DGpu before the device is initialized and again
+            // after teardown. Such an instance can not draw anything, so give it throwaway caches
+            // instead of keying the context table on null (which throws) or minting a thousand
+            // tesselators bound to nothing.
+            this.caches = gl == null ? new GlContextCaches() : GetCachesForContext(gl);
 
-            if (AvailableTriangleEdgeInfos.Count == 0)
+            if (gl != null)
             {
-                for (int i = 0; i < 1000; i++)
+                SyncCacheGeneration();
+
+                if (caches.RenderNowTesselator == null)
                 {
-                    AvailableTriangleEdgeInfos.Add(new AARenderTesselator(gl));
+                    caches.RenderNowTesselator = new RenderTesselator(gl);
+                }
+
+                if (caches.AvailableTriangleEdgeInfos.Count == 0)
+                {
+                    for (int i = 0; i < 1000; i++)
+                    {
+                        caches.AvailableTriangleEdgeInfos.Add(new AARenderTesselator(gl));
+                    }
                 }
             }
 
@@ -152,34 +251,52 @@ namespace MatterHackers.RenderGl
             gl.PopMatrix();
         }
 
-        private void CheckLineImageCache()
+        /// <summary>
+        /// Builds (once) and returns the anti-aliasing alpha ramp images. Returns the list rather than
+        /// leaving callers to read the field, so a caller can never index a field that changed between
+        /// the check and the read.
+        /// </summary>
+        private static List<ImageBuffer> GetLineImageCache()
         {
-            if (aATextureImages != null) return;
+            var existing = aATextureImages;
+            if (existing != null) return existing;
 
-            aATextureImages = new List<ImageBuffer>();
-            for (int i = 0; i < 256; i++)
+            lock (aATextureImagesLock)
             {
-                var texture = new ImageBuffer(1024, 4);
-                aATextureImages.Add(texture);
-                var hardwarePixelBuffer = texture.GetBuffer();
-                for (int y = 0; y < 4; y++)
+                if (aATextureImages != null) return aATextureImages;
+
+                // Fill a local list and publish it only when it is complete - a thumbnail worker and
+                // the ui thread can both land here, and a partially filled list would index-fault.
+                var textureImages = new List<ImageBuffer>();
+                for (int i = 0; i < 256; i++)
                 {
-                    byte alpha = 0;
-                    for (int x = 0; x < 1024; x++)
+                    var texture = new ImageBuffer(1024, 4);
+                    textureImages.Add(texture);
+                    var hardwarePixelBuffer = texture.GetBuffer();
+                    for (int y = 0; y < 4; y++)
                     {
-                        var index = (y * 1024 + x) * 4;
-                        hardwarePixelBuffer[index + 0] = 255;
-                        hardwarePixelBuffer[index + 1] = 255;
-                        hardwarePixelBuffer[index + 2] = 255;
-                        hardwarePixelBuffer[index + 3] = alpha;
-                        alpha = (byte)i;
+                        byte alpha = 0;
+                        for (int x = 0; x < 1024; x++)
+                        {
+                            var index = (y * 1024 + x) * 4;
+                            hardwarePixelBuffer[index + 0] = 255;
+                            hardwarePixelBuffer[index + 1] = 255;
+                            hardwarePixelBuffer[index + 2] = 255;
+                            hardwarePixelBuffer[index + 3] = alpha;
+                            alpha = (byte)i;
+                        }
                     }
                 }
+
+                aATextureImages = textureImages;
+                return textureImages;
             }
         }
 
         private void DrawAAShape(IVertexSource vertexSourceIn, IColorType colorIn, bool useCache)
         {
+            SyncCacheGeneration();
+
             var vertexSource = vertexSourceIn;
             vertexSource.Rewind(0);
 
@@ -238,15 +355,15 @@ namespace MatterHackers.RenderGl
             // Include color in cache key so same geometry with different colors gets separate display lists
             longHash = longHash * 31 + (ulong)(colorBytes.red | (colorBytes.green << 8) | (colorBytes.blue << 16) | (colorBytes.Alpha0To255 << 24));
 
-            if (AvailableTriangleEdgeInfos.Count == 0)
+            if (caches.AvailableTriangleEdgeInfos.Count == 0)
             {
                 MoveTriangleEdgeInfos();
             }
 
-            if (!TriangleEdgeInfos.TryGetValue(longHash, out var triangleEdgeInfo))
+            if (!caches.TriangleEdgeInfos.TryGetValue(longHash, out var triangleEdgeInfo))
             {
                 triangleEdgeInfo = GetAvailableTriangleEdgeInfo();
-                TriangleEdgeInfos.Add(longHash, triangleEdgeInfo);
+                caches.TriangleEdgeInfos.Add(longHash, triangleEdgeInfo);
 
                 triangleEdgeInfo.Clear();
                 //using (new RecursiveReportTimer("Graphics2DOpenGl.SendShapeToTesselator"))
@@ -269,19 +386,26 @@ namespace MatterHackers.RenderGl
             gl.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, (byte)255);
         }
 
-        private static void MoveTriangleEdgeInfos()
+        private void MoveTriangleEdgeInfos()
         {
-            foreach (var triangleEdgeInfoToMove in TriangleEdgeInfos.Values)
+            foreach (var triangleEdgeInfoToMove in caches.TriangleEdgeInfos.Values)
             {
-                AvailableTriangleEdgeInfos.Add(triangleEdgeInfoToMove);
+                caches.AvailableTriangleEdgeInfos.Add(triangleEdgeInfoToMove);
             }
-            TriangleEdgeInfos.Clear();
+            caches.TriangleEdgeInfos.Clear();
         }
 
-        private static AARenderTesselator GetAvailableTriangleEdgeInfo()
+        private AARenderTesselator GetAvailableTriangleEdgeInfo()
         {
-            var triangleEdgeInfo = AvailableTriangleEdgeInfos[^1];
-            AvailableTriangleEdgeInfos.RemoveAt(AvailableTriangleEdgeInfos.Count - 1);
+            var available = caches.AvailableTriangleEdgeInfos;
+            if (available.Count == 0)
+            {
+                // The pool is emptied by a generation reset; refill it bound to this context's gl.
+                return new AARenderTesselator(gl);
+            }
+
+            var triangleEdgeInfo = available[^1];
+            available.RemoveAt(available.Count - 1);
             return triangleEdgeInfo;
         }
 
@@ -296,10 +420,11 @@ namespace MatterHackers.RenderGl
         }
 
         private const int MaxCacheSize = 1000;
-        private static readonly Dictionary<ulong, int> _displayListCache = new();
 
         public void RenderTriangleEdgeInfo(AARenderTesselator triangleEdgeInfo, Vector2 translation, ulong cacheKey)
         {
+            SyncCacheGeneration();
+
             //using (new RecursiveReportTimer("Graphics2DOpenGl.RenderLastToGL"))
             {
                 var useLists = true;
@@ -308,7 +433,7 @@ namespace MatterHackers.RenderGl
                     {
                         int displayListId;
 
-                        if (!_displayListCache.TryGetValue(cacheKey, out displayListId))
+                        if (!caches.DisplayListCache.TryGetValue(cacheKey, out displayListId))
                         {
                             // Create a new display list
                             displayListId = gl.GenLists(1);
@@ -344,26 +469,28 @@ namespace MatterHackers.RenderGl
 
         private void AddToCache(ulong cacheKey, int displayListId)
         {
-            if (_displayListCache.Count >= MaxCacheSize)
+            if (caches.DisplayListCache.Count >= MaxCacheSize)
             {
                 // Clear and release all cached display lists if the cache size exceeds the limit
-                foreach (var id in _displayListCache.Values)
+                foreach (var id in caches.DisplayListCache.Values)
                 {
                     gl.DeleteLists(id, 1);
                 }
-                _displayListCache.Clear();
+                caches.DisplayListCache.Clear();
             }
 
-            _displayListCache[cacheKey] = displayListId;
+            caches.DisplayListCache[cacheKey] = displayListId;
         }
 
         public void PreRender(IColorType colorIn)
         {
-            CheckLineImageCache();
+            SyncCacheGeneration();
+
+            var lineImages = GetLineImageCache();
             PushOrthoProjection();
 
             gl.Enable(EnableCap.Texture2D);
-            gl.BindTexture(TextureTarget.Texture2D, RenderGl.ImageTexturePlugin.GetImageTexturePlugin(gl, aATextureImages[colorIn.Alpha0To255], false).GLTextureHandle);
+            gl.BindTexture(TextureTarget.Texture2D, RenderGl.ImageTexturePlugin.GetImageTexturePlugin(gl, lineImages[colorIn.Alpha0To255], false).GLTextureHandle);
             gl.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
             gl.Enable(EnableCap.Blend);
         }
@@ -389,8 +516,10 @@ namespace MatterHackers.RenderGl
                 }
 
                 SetColor(colorIn);
-                RenderNowTesselator.Clear();
-                VertexSourceToTesselator.SendShapeToTesselator(RenderNowTesselator, vertexSource);
+                // May have been dropped by a generation reset; it has to be bound to this context's gl.
+                var renderNowTesselator = caches.RenderNowTesselator ??= new RenderTesselator(gl);
+                renderNowTesselator.Clear();
+                VertexSourceToTesselator.SendShapeToTesselator(renderNowTesselator, vertexSource);
             }
 
             PopOrthoProjection();
@@ -580,15 +709,33 @@ namespace MatterHackers.RenderGl
         private static Mesh GetOrCreateNativeScenePathMesh(IVertexSource path)
         {
             ulong pathHash = path.GetLongHashCode();
-            if (!NativeScenePathMeshes.TryGetValue(pathHash, out var mesh))
+
+            // Reachable from the ui thread and the thumbnail workers at the same time.
+            lock (NativeScenePathMeshes)
             {
-                // Native scene rendering composites mesh overlays correctly after opaque content.
-                // Cache the local-space tessellation so repeated gizmo redraws only vary by transform.
-                mesh = new FlattenCurves(path).Vertices().TriangulateFaces();
-                NativeScenePathMeshes[pathHash] = mesh;
+                if (NativeScenePathMeshes.TryGetValue(pathHash, out var cachedMesh))
+                {
+                    return cachedMesh;
+                }
             }
 
-            return mesh;
+            // Native scene rendering composites mesh overlays correctly after opaque content.
+            // Cache the local-space tessellation so repeated gizmo redraws only vary by transform.
+            // Tessellate outside the lock - it is the expensive part, and holding the lock through it
+            // would park the ui thread behind a thumbnail worker. Two threads racing on the same path
+            // just tessellate it twice and the first one published wins.
+            var mesh = new FlattenCurves(path).Vertices().TriangulateFaces();
+
+            lock (NativeScenePathMeshes)
+            {
+                if (NativeScenePathMeshes.TryGetValue(pathHash, out var publishedMesh))
+                {
+                    return publishedMesh;
+                }
+
+                NativeScenePathMeshes[pathHash] = mesh;
+                return mesh;
+            }
         }
 
         public void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, Color color, bool doDepthTest)
@@ -621,9 +768,9 @@ namespace MatterHackers.RenderGl
                 }
             }
 
-            CheckLineImageCache();
+            var lineImages = GetLineImageCache();
             gl.Enable(EnableCap.Texture2D);
-            gl.BindTexture(TextureTarget.Texture2D, RenderGl.ImageTexturePlugin.GetImageTexturePlugin(gl, aATextureImages[color.Alpha0To255], false).GLTextureHandle);
+            gl.BindTexture(TextureTarget.Texture2D, RenderGl.ImageTexturePlugin.GetImageTexturePlugin(gl, lineImages[color.Alpha0To255], false).GLTextureHandle);
             gl.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
             gl.Enable(EnableCap.Blend);
             gl.Disable(EnableCap.CullFace);

@@ -50,13 +50,30 @@ namespace MatterHackers.RenderGl
 
 	public class ImageTexturePlugin
 	{
-		private static ConditionalWeakTable<byte[], ImageTexturePlugin> imagesWithCacheData = new ConditionalWeakTable<byte[], ImageTexturePlugin>();
+		// A plugin owns a texture handle minted by, and a captured GL bound to, one specific context.
+		// MatterCAD renders thumbnails on background worker threads that each have their own GL
+		// context, so caching by pixel buffer alone would hand a worker the ui thread's plugin - and
+		// DrawToGL would then pump immediate mode vertices into the ui thread's context while it is
+		// mid-flush. Key by image buffer and then by context.
+		// The inner map is a weak table too: a Dictionary<GL, ...> would keep every context that ever
+		// drew this image alive forever, so a closed window would leak its whole gl cache. A weak
+		// table's value may reference its own key (the plugin captures the gl) without pinning it.
+		private static readonly ConditionalWeakTable<byte[], ConditionalWeakTable<GL, ImageTexturePlugin>> imagesWithCacheData = new ConditionalWeakTable<byte[], ConditionalWeakTable<GL, ImageTexturePlugin>>();
+
+		// Guards the compound check-invalidate-recreate sequence over the inner per-image tables.
+		// GetImageTexturePlugin is called concurrently by the ui thread and the thumbnail workers.
+		private static readonly object cacheLock = new object();
 
 		internal class glAllocatedData
 		{
-			internal GL gl;
+			// Weak so an entry parked in glDataNeedingToBeDeleted (waiting for its context to come back
+			// through and free the texture name) can not keep a dead context's GL alive.
+			internal WeakReference<GL> gl;
 			internal int glTextureHandle;
 			internal int refreshCountCreatedOn;
+
+			// Informational only - SetCurrentContextData is not wired up on desktop, so the deferred
+			// delete pass identifies the owning context by comparing gl instances instead.
 			internal int glContextId;
 			internal int imageWidth;
 			internal int imageHeight;
@@ -69,7 +86,13 @@ namespace MatterHackers.RenderGl
 
 			internal void DeleteTextureData(object sender, EventArgs e)
 			{
-				gl.DeleteTexture(glTextureHandle);
+				// If the context is already collected the texture died with it and there is nothing
+				// left to release.
+				if (gl != null && gl.TryGetTarget(out var owningGl))
+				{
+					owningGl.DeleteTexture(glTextureHandle);
+				}
+
 				glTextureHandle = -1;
 			}
 		}
@@ -102,7 +125,15 @@ namespace MatterHackers.RenderGl
 
 		public static ImageTexturePlugin GetImageTexturePlugin(GL gl, ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps, bool textureMagFilterLinear = true, bool clamp = true)
 		{
-			imagesWithCacheData.TryGetValue(imageToGetDisplayListFor.GetBuffer(), out ImageTexturePlugin plugin);
+			var pluginsForImage = imagesWithCacheData.GetValue(
+				imageToGetDisplayListFor.GetBuffer(),
+				_ => new ConditionalWeakTable<GL, ImageTexturePlugin>());
+
+			ImageTexturePlugin plugin;
+			lock (cacheLock)
+			{
+				pluginsForImage.TryGetValue(gl, out plugin);
+			}
 
 			lock (glDataNeedingToBeDeleted)
 			{
@@ -110,15 +141,31 @@ namespace MatterHackers.RenderGl
 				// glcontext realized.
 				for (int i = glDataNeedingToBeDeleted.Count - 1; i >= 0; i--)
 				{
-					int textureToDelete = glDataNeedingToBeDeleted[i].glTextureHandle;
+					var pendingDelete = glDataNeedingToBeDeleted[i];
+					if (pendingDelete.gl == null
+						|| !pendingDelete.gl.TryGetTarget(out var owningGl))
+					{
+						// The owning context is gone and took its textures with it. There is nothing to
+						// free, but the entry must not sit here forever.
+						glDataNeedingToBeDeleted.RemoveAt(i);
+						continue;
+					}
+
+					// Only the owning context may delete its own texture names. Entries belonging to
+					// another live context stay in the list until that context next comes through here.
+					if (owningGl != gl)
+					{
+						continue;
+					}
+
+					int textureToDelete = pendingDelete.glTextureHandle;
 					if (textureToDelete != -1
-						&& glDataNeedingToBeDeleted[i].glContextId == contextId
-						&& glDataNeedingToBeDeleted[i].refreshCountCreatedOn == currentGlobalRefreshCount) // this is to leak on purpose on android for some gl that kills textures
+						&& pendingDelete.refreshCountCreatedOn == currentGlobalRefreshCount) // this is to leak on purpose on android for some gl that kills textures
 					{
 						gl.DeleteTexture(textureToDelete);
 						if (removeGlDataCallBackHolder != null)
 						{
-							removeGlDataCallBackHolder.releaseAllGlData -= glDataNeedingToBeDeleted[i].DeleteTextureData;
+							removeGlDataCallBackHolder.releaseAllGlData -= pendingDelete.DeleteTextureData;
 						}
 					}
 
@@ -138,7 +185,12 @@ namespace MatterHackers.RenderGl
 				}
 
 				plugin.glData.glTextureHandle = -1;
-				imagesWithCacheData.Remove(imageToGetDisplayListFor.GetBuffer());
+				lock (cacheLock)
+				{
+					// Only drop this context's entry - the other contexts' textures are still valid.
+					pluginsForImage.Remove(gl);
+				}
+
 				// use the original settings
 				createAndUseMipMaps = plugin.createdWithMipMaps;
 				clamp = plugin.clamp;
@@ -148,11 +200,15 @@ namespace MatterHackers.RenderGl
 			if (plugin == null)
 			{
 				var newPlugin = new ImageTexturePlugin(gl);
-				imagesWithCacheData.Add(imageToGetDisplayListFor.GetBuffer(), newPlugin);
+				lock (cacheLock)
+				{
+					pluginsForImage.AddOrUpdate(gl, newPlugin);
+				}
+
 				newPlugin.createdWithMipMaps = createAndUseMipMaps;
 				newPlugin.clamp = clamp;
 				newPlugin.glData.glContextId = contextId;
-				newPlugin.glData.gl = gl;
+				newPlugin.glData.gl = new WeakReference<GL>(gl);
 				newPlugin.CreateGlDataForImage(imageToGetDisplayListFor, textureMagFilterLinear);
 				newPlugin.imageUpdateCount = imageToGetDisplayListFor.ChangedCount;
 				newPlugin.glData.refreshCountCreatedOn = currentGlobalRefreshCount;

@@ -562,18 +562,40 @@ namespace MatterHackers.RenderGl
 			return AxisAlignedBoundingBox.CenteredHalfExtents(Vector3.One * size, position).NewTransformed(matrix);
 		}
 
-		private static readonly ConditionalWeakTable<WorldView, AARenderTesselator> TesselatorsByWorld = new ConditionalWeakTable<WorldView, AARenderTesselator>();
+		// A tesselator emits immediate mode vertices into the GL it captured, so one cached per world
+		// would hand whichever context rendered that world first to every context that renders it
+		// afterwards. MatterCAD renders thumbnails on background worker threads that each own their
+		// own GL context, so that pushes a worker's geometry into the ui thread's in-flight vertex
+		// buffer. Key by world and then by context.
+		// The inner map is a weak table too: a Dictionary<GL, ...> would keep every context that ever
+		// rendered this world alive forever, so a closed window would leak its whole gl cache. A weak
+		// table's value may reference its own key (the tesselator captures the gl) without pinning it.
+		private static readonly ConditionalWeakTable<WorldView, ConditionalWeakTable<GL, AARenderTesselator>> TesselatorsByWorld = new ConditionalWeakTable<WorldView, ConditionalWeakTable<GL, AARenderTesselator>>();
+
+		// Guards the compound check-then-create over the inner per world tables. RenderPath is called
+		// concurrently by the ui thread and the thumbnail workers.
+		// The lock covers creation only - the tesselator is then mutated freely during rendering below,
+		// outside it. That is safe because a tesselator is reachable only through its own GL and a GL
+		// context is driven by exactly one thread at a time, so the only thread that can find this
+		// tesselator to render with is the one that owns its context.
+		private static readonly object tesselatorsLock = new object();
 
 		public static void RenderPath(this WorldView world, GL gl, IVertexSource vertexSource, Color color, bool doDepthTest)
 		{
+			var tesselatorsForWorld = TesselatorsByWorld.GetValue(
+				world,
+				_ => new ConditionalWeakTable<GL, AARenderTesselator>());
+
 			AARenderTesselator tesselator;
-
-			if (!TesselatorsByWorld.TryGetValue(world, out tesselator))
+			lock (tesselatorsLock)
 			{
-				// Update reference and store in dictionary
-				tesselator = new AARenderTesselator(gl, world);
+				if (!tesselatorsForWorld.TryGetValue(gl, out tesselator))
+				{
+					// Cheap to build, so there is no reason to do it outside the lock.
+					tesselator = new AARenderTesselator(gl, world);
 
-				TesselatorsByWorld.Add(world, tesselator);
+					tesselatorsForWorld.Add(gl, tesselator);
+				}
 			}
 
 			// TODO: Necessary?

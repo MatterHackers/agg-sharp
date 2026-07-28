@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using MatterHackers.Agg;
@@ -42,33 +43,85 @@ namespace MatterHackers.RenderGl
 	{
 		public delegate void DrawToGL(Mesh meshToRender);
 
-		public static string MeshNonManifoldPluginName => nameof(MeshNonManifoldPluginName);
+		// Volatile because the non manifold pass below finishes on a background task and swaps the
+		// finished list in on that thread. The swap is a single reference store of an already complete
+		// list, so a reader either sees the unfiltered list it started with or the finished one, never a
+		// half filled one.
+		private volatile VectorPOD<WireVertexData> edgeLines = new VectorPOD<WireVertexData>();
 
-		public VectorPOD<WireVertexData> EdgeLines { get; private set; } = new VectorPOD<WireVertexData>();
+		public VectorPOD<WireVertexData> EdgeLines
+		{
+			get => edgeLines;
+			private set => edgeLines = value;
+		}
 
 		private int meshUpdateCount;
 
+		// Pure cpu data with no context affinity, same as MeshWirePlugin - see the note there. Keyed by
+		// mesh only, in a weak table so the cache dies with the mesh.
+		private static readonly ConditionalWeakTable<Mesh, MeshNonManifoldPlugin> pluginsByMesh = new ConditionalWeakTable<Mesh, MeshNonManifoldPlugin>();
+
+		// Guards the lookup and the publish. This cache used to live in Mesh.PropertyBag, a plain
+		// Dictionary that the ui thread and the thumbnail workers did Remove/Add on unguarded.
+		private static readonly object cacheLock = new object();
+
+		/// <summary>
+		/// Gets the non manifold edge lines for a mesh, building them if they are missing or stale.
+		/// </summary>
+		/// <remarks>
+		/// <paramref name="minifoldWireColor"/> is deliberately not part of the cache identity - the
+		/// first caller wins, which is the behavior every caller has always depended on.
+		/// </remarks>
 		public static MeshNonManifoldPlugin Get(Mesh mesh, Color minifoldWireColor, Action meshChanged = null)
 		{
-			mesh.PropertyBag.TryGetValue(MeshNonManifoldPluginName, out object meshData);
-			if (meshData is MeshNonManifoldPlugin plugin)
+			lock (cacheLock)
 			{
-				if (mesh.ChangedCount == plugin.meshUpdateCount)
+				if (TryGetFreshPlugin(mesh, out var cachedPlugin))
 				{
-					return plugin;
+					return cachedPlugin;
 				}
-
-				// else we need to rebuild the data
-				plugin.meshUpdateCount = mesh.ChangedCount;
-				mesh.PropertyBag.Remove(MeshNonManifoldPluginName);
 			}
 
+			// Build outside the lock - walking every face is O(mesh) and the ui thread's render path
+			// must not queue behind a thumbnail worker doing it. Read the change count before building
+			// so a mesh edited mid build leaves this entry stale and rebuilds on the next Get.
+			var changedCountBuiltFor = mesh.ChangedCount;
 			var newPlugin = new MeshNonManifoldPlugin();
 			newPlugin.CreateRenderData(mesh, minifoldWireColor, meshChanged);
-			newPlugin.meshUpdateCount = mesh.ChangedCount;
-			mesh.PropertyBag.Add(MeshNonManifoldPluginName, newPlugin);
+			newPlugin.meshUpdateCount = changedCountBuiltFor;
+
+			lock (cacheLock)
+			{
+				// Another thread may have published while we were building. Hand back what is already
+				// visible rather than swapping it out, so repeat fetches keep returning one instance.
+				if (TryGetFreshPlugin(mesh, out var publishedPlugin))
+				{
+					return publishedPlugin;
+				}
+
+				// Replace the entry rather than mutating the cached plugin in place: the other thread may
+				// be part way through drawing from the instance it already fetched.
+				pluginsByMesh.AddOrUpdate(mesh, newPlugin);
+			}
 
 			return newPlugin;
+		}
+
+		/// <summary>
+		/// Looks up the cached plugin and reports whether it was built for the mesh as it stands now.
+		/// Callers must hold <see cref="cacheLock"/>.
+		/// </summary>
+		private static bool TryGetFreshPlugin(Mesh mesh, out MeshNonManifoldPlugin freshPlugin)
+		{
+			if (pluginsByMesh.TryGetValue(mesh, out var plugin)
+				&& plugin.meshUpdateCount == mesh.ChangedCount)
+			{
+				freshPlugin = plugin;
+				return true;
+			}
+
+			freshPlugin = null;
+			return false;
 		}
 
 		private MeshNonManifoldPlugin()
@@ -78,18 +131,18 @@ namespace MatterHackers.RenderGl
 
 		private void CreateRenderData(Mesh mesh, Color wireColor, Action meshChanged = null)
 		{
-			var edgeLines = new VectorPOD<WireVertexData>();
+			var unfilteredEdgeLines = new VectorPOD<WireVertexData>();
 
 			// create a quick edge list of all the polygon edges
 			for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
 			{
 				var face = mesh.Faces[faceIndex];
-                MeshWirePlugin.AddEdgeLine(edgeLines, mesh.Vertices[face.v0], mesh.Vertices[face.v1], wireColor);
-                MeshWirePlugin.AddEdgeLine(edgeLines, mesh.Vertices[face.v1], mesh.Vertices[face.v2], wireColor);
-                MeshWirePlugin.AddEdgeLine(edgeLines, mesh.Vertices[face.v2], mesh.Vertices[face.v0], wireColor);
+                MeshWirePlugin.AddEdgeLine(unfilteredEdgeLines, mesh.Vertices[face.v0], mesh.Vertices[face.v1], wireColor);
+                MeshWirePlugin.AddEdgeLine(unfilteredEdgeLines, mesh.Vertices[face.v1], mesh.Vertices[face.v2], wireColor);
+                MeshWirePlugin.AddEdgeLine(unfilteredEdgeLines, mesh.Vertices[face.v2], mesh.Vertices[face.v0], wireColor);
 			}
 
-			this.EdgeLines = edgeLines;
+			this.EdgeLines = unfilteredEdgeLines;
 
 			// do this in a background thread and wait for the results
 			Task.Run(() =>

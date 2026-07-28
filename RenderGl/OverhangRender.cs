@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Runtime.CompilerServices;
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RenderGl.OpenGl;
@@ -42,6 +43,25 @@ namespace MatterHackers.RenderGl
 
 	public static class OverhangRender
 	{
+		// The marker that records which way face 0 was facing the last time this mesh was colored for
+		// overhangs. Pure cpu state - it holds no gl handles - so it is keyed by mesh alone, but it used
+		// to live in Mesh.PropertyBag, a plain Dictionary that the ui thread and the thumbnail workers
+		// mutated unguarded. A weak table so the marker dies with the mesh, and GetValue is atomic, so
+		// two threads arriving at once get one marker rather than an ArgumentException or a corrupted
+		// bucket chain.
+		private static readonly ConditionalWeakTable<Mesh, NormalZ> face0WorldZAngleByMesh = new ConditionalWeakTable<Mesh, NormalZ>();
+
+		/// <summary>
+		/// Colors a mesh by how far each face overhangs, rebuilding the coloring if the mesh has turned
+		/// since the last pass.
+		/// </summary>
+		/// <remarks>
+		/// Today only the 3d view reaches this, on the ui thread: it is the one caller that renders with
+		/// RenderTypes.Overhang, and the D3D thumbnail workers ask for RenderTypes.Outlines. The compare
+		/// and set below is still guarded, because it is a read-modify-write that ends in MarkAsChanged
+		/// and a second overhang viewport would otherwise have the two of them re-marking the mesh past
+		/// each other forever, re-tesselating it on every frame.
+		/// </remarks>
 		public static void EnsureUpdated(GL gl, Mesh meshToRender, Matrix4X4 transform)
 		{
 			var faces = meshToRender.Faces;
@@ -51,21 +71,28 @@ namespace MatterHackers.RenderGl
 				return;
 			}
 
-			if (!meshToRender.PropertyBag.ContainsKey("Face0WorldZAngle"))
-			{
-				meshToRender.PropertyBag.Add("Face0WorldZAngle", new NormalZ());
-			}
-
-			var normalZ = meshToRender.PropertyBag["Face0WorldZAngle"] as NormalZ;
+			var normalZ = face0WorldZAngleByMesh.GetValue(meshToRender, _ => new NormalZ());
 
 			var face0Normal = faces[0].normal.TransformNormal(transform).GetNormal();
 
 			var error = .0001;
-			if (normalZ.z < face0Normal.Z - error
-				|| normalZ.z > face0Normal.Z + error)
+			bool meshTurnedSinceLastPass;
+			lock (normalZ)
+			{
+				meshTurnedSinceLastPass = normalZ.z < face0Normal.Z - error
+					|| normalZ.z > face0Normal.Z + error;
+				if (meshTurnedSinceLastPass)
+				{
+					normalZ.z = face0Normal.Z;
+				}
+			}
+
+			// Outside the lock, and after the marker is recorded: MarkAsChanged raises Mesh.Changed to
+			// arbitrary handlers, and neither an unknown handler's locks nor a handler that renders its
+			// way back in here should be able to tangle with this one.
+			if (meshTurnedSinceLastPass)
 			{
 				meshToRender.MarkAsChanged();
-				normalZ.z = face0Normal.Z;
 			}
 
 			// change the color to be the right thing per face normal
