@@ -205,6 +205,28 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		private bool drawOnTopOfSiblings = false;
+
+		/// <summary>
+		/// Draw this child after all of its siblings that do not have this set, so it paints above them.
+		/// This exists for widgets that must keep their slot in the parent's Children list (layout engines
+		/// such as flow layout assign position from list order) while still rendering on top, for example a
+		/// tab being dragged to a new position. It changes only render order, not child order or hit testing.
+		/// </summary>
+		public bool DrawOnTopOfSiblings
+		{
+			get => drawOnTopOfSiblings;
+
+			set
+			{
+				if (drawOnTopOfSiblings != value)
+				{
+					drawOnTopOfSiblings = value;
+					Invalidate();
+				}
+			}
+		}
+
 		public LayoutEngine LayoutEngine { get; protected set; }
 
 		public UnderMouseState UnderMouseState { get; private set; }
@@ -2097,98 +2119,29 @@ namespace MatterHackers.Agg.UI
 
 			OnBeforeDraw(graphics2D);
 
+			bool haveDrawOnTopChildren = false;
+
 			foreach (var child in Children)
 			{
-				if (child.Visible)
+				if (child.DrawOnTopOfSiblings)
 				{
-					if (child.DebugShowBounds)
+					// hold these back so they paint above the rest of their siblings
+					haveDrawOnTopChildren = true;
+					continue;
+				}
+
+				DrawChild(child, graphics2D);
+			}
+
+			// only walk the children a second time if there is actually something to draw on top
+			if (haveDrawOnTopChildren)
+			{
+				foreach (var child in Children)
+				{
+					if (child.DrawOnTopOfSiblings)
 					{
-						// draw the margin
-						BorderDouble invertedMargin = child.DeviceMarginAndBorder;
-						invertedMargin.Left = -invertedMargin.Left;
-						invertedMargin.Bottom = -invertedMargin.Bottom;
-						invertedMargin.Right = -invertedMargin.Right;
-						invertedMargin.Top = -invertedMargin.Top;
-						DrawBorderAndPaddingBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new Color(Red, 128));
+						DrawChild(child, graphics2D);
 					}
-
-					RectangleDouble oldClippingRect = graphics2D.GetClippingRect();
-					graphics2D.PushTransform();
-					{
-						Affine currentGraphics2DTransform = graphics2D.GetTransform();
-                        Affine accumulatedTransform = child.ParentToChildTransform * currentGraphics2DTransform;
-                        graphics2D.SetTransform(accumulatedTransform);
-
-						if (child.CurrentScreenClipping(out RectangleDouble currentScreenClipping))
-						{
-							currentScreenClipping.Left = Floor(currentScreenClipping.Left);
-							currentScreenClipping.Right = Ceiling(currentScreenClipping.Right);
-							currentScreenClipping.Bottom = Floor(currentScreenClipping.Bottom);
-							currentScreenClipping.Top = Ceiling(currentScreenClipping.Top);
-							if (currentScreenClipping.Right < currentScreenClipping.Left || currentScreenClipping.Top < currentScreenClipping.Bottom)
-							{
-								BreakInDebugger("Right is less than Left or Top is less than Bottom");
-							}
-
-							graphics2D.SetClippingRect(currentScreenClipping);
-
-							if (child.DoubleBuffer
-								&& accumulatedTransform.sx < 1.05 
-								&& accumulatedTransform.sx > .95)
-							{
-								var offsetToRenderSurface = new Vector2(currentGraphics2DTransform.tx, currentGraphics2DTransform.ty);
-								offsetToRenderSurface += new Vector2(child.OriginRelativeParent.X * currentGraphics2DTransform.sx, child.OriginRelativeParent.Y * currentGraphics2DTransform.sy);
-
-								double yFraction = offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y;
-								double xFraction = offsetToRenderSurface.X - (int)offsetToRenderSurface.X;
-								int xOffset = (int)Floor(child.LocalBounds.Left);
-								int yOffset = (int)Floor(child.LocalBounds.Bottom);
-								if (child.isCurrentlyInvalid)
-								{
-									int extraW = xFraction > 0 ? 1 : 0;
-									int extraH = yFraction > 0 ? 1 : 0;
-									if (extraW > 0 || extraH > 0)
-									{
-										child.AllocateBackBuffer(extraW, extraH);
-									}
-
-									Graphics2D childBackBufferGraphics2D = child.backBuffer.NewGraphics2D();
-									childBackBufferGraphics2D.Clear(new Color(0, 0, 0, 0));
-									var transformToBuffer = Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction);
-									childBackBufferGraphics2D.SetTransform(transformToBuffer);
-									child.OnDrawBackground(childBackBufferGraphics2D);
-									child.OnDraw(childBackBufferGraphics2D);
-
-									child.backBuffer.MarkImageChanged();
-									child.isCurrentlyInvalid = false;
-								}
-
-								offsetToRenderSurface.X = (int)offsetToRenderSurface.X + xOffset;
-								offsetToRenderSurface.Y = (int)offsetToRenderSurface.Y + yOffset;
-								// The transform to draw the back-buffer to the graphics2D must not have a factional amount
-								// or we will get aliasing in the image and we want our back buffer pixels to map 1:1 to the next buffer
-								if (offsetToRenderSurface.X - (int)offsetToRenderSurface.X != 0
-									|| offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y != 0)
-								{
-									BreakInDebugger("The transform for a back buffer must be integer to avoid aliasing.");
-								}
-
-								graphics2D.SetTransform(Affine.NewTranslation(offsetToRenderSurface));
-
-								graphics2D.Render(child.backBuffer, 0, 0, 0, currentGraphics2DTransform.sx, currentGraphics2DTransform.sy);
-							}
-							else
-							{
-								child.OnDrawBackground(graphics2D);
-								child.OnDraw(graphics2D);
-							}
-						}
-					}
-
-					graphics2D.PopTransform();
-					graphics2D.SetClippingRect(oldClippingRect);
-
-					DrawBorder(graphics2D, child);
 				}
 			}
 
@@ -2206,6 +2159,106 @@ namespace MatterHackers.Agg.UI
 			}
 
 			drawDepth--;
+		}
+
+		/// <summary>
+		/// Render a single child of this widget, applying its transform, screen clipping and back buffer.
+		/// </summary>
+		/// <param name="child">The child to draw. It is skipped if it is not visible.</param>
+		/// <param name="graphics2D">The graphics 2D this widget is being drawn onto.</param>
+		private void DrawChild(GuiWidget child, Graphics2D graphics2D)
+		{
+			if (child.Visible)
+			{
+				if (child.DebugShowBounds)
+				{
+					// draw the margin
+					BorderDouble invertedMargin = child.DeviceMarginAndBorder;
+					invertedMargin.Left = -invertedMargin.Left;
+					invertedMargin.Bottom = -invertedMargin.Bottom;
+					invertedMargin.Right = -invertedMargin.Right;
+					invertedMargin.Top = -invertedMargin.Top;
+					DrawBorderAndPaddingBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new Color(Red, 128));
+				}
+
+				RectangleDouble oldClippingRect = graphics2D.GetClippingRect();
+				graphics2D.PushTransform();
+				{
+					Affine currentGraphics2DTransform = graphics2D.GetTransform();
+					Affine accumulatedTransform = child.ParentToChildTransform * currentGraphics2DTransform;
+					graphics2D.SetTransform(accumulatedTransform);
+
+					if (child.CurrentScreenClipping(out RectangleDouble currentScreenClipping))
+					{
+						currentScreenClipping.Left = Floor(currentScreenClipping.Left);
+						currentScreenClipping.Right = Ceiling(currentScreenClipping.Right);
+						currentScreenClipping.Bottom = Floor(currentScreenClipping.Bottom);
+						currentScreenClipping.Top = Ceiling(currentScreenClipping.Top);
+						if (currentScreenClipping.Right < currentScreenClipping.Left || currentScreenClipping.Top < currentScreenClipping.Bottom)
+						{
+							BreakInDebugger("Right is less than Left or Top is less than Bottom");
+						}
+
+						graphics2D.SetClippingRect(currentScreenClipping);
+
+						if (child.DoubleBuffer
+							&& accumulatedTransform.sx < 1.05
+							&& accumulatedTransform.sx > .95)
+						{
+							var offsetToRenderSurface = new Vector2(currentGraphics2DTransform.tx, currentGraphics2DTransform.ty);
+							offsetToRenderSurface += new Vector2(child.OriginRelativeParent.X * currentGraphics2DTransform.sx, child.OriginRelativeParent.Y * currentGraphics2DTransform.sy);
+
+							double yFraction = offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y;
+							double xFraction = offsetToRenderSurface.X - (int)offsetToRenderSurface.X;
+							int xOffset = (int)Floor(child.LocalBounds.Left);
+							int yOffset = (int)Floor(child.LocalBounds.Bottom);
+							if (child.isCurrentlyInvalid)
+							{
+								int extraW = xFraction > 0 ? 1 : 0;
+								int extraH = yFraction > 0 ? 1 : 0;
+								if (extraW > 0 || extraH > 0)
+								{
+									child.AllocateBackBuffer(extraW, extraH);
+								}
+
+								Graphics2D childBackBufferGraphics2D = child.backBuffer.NewGraphics2D();
+								childBackBufferGraphics2D.Clear(new Color(0, 0, 0, 0));
+								var transformToBuffer = Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction);
+								childBackBufferGraphics2D.SetTransform(transformToBuffer);
+								child.OnDrawBackground(childBackBufferGraphics2D);
+								child.OnDraw(childBackBufferGraphics2D);
+
+								child.backBuffer.MarkImageChanged();
+								child.isCurrentlyInvalid = false;
+							}
+
+							offsetToRenderSurface.X = (int)offsetToRenderSurface.X + xOffset;
+							offsetToRenderSurface.Y = (int)offsetToRenderSurface.Y + yOffset;
+							// The transform to draw the back-buffer to the graphics2D must not have a factional amount
+							// or we will get aliasing in the image and we want our back buffer pixels to map 1:1 to the next buffer
+							if (offsetToRenderSurface.X - (int)offsetToRenderSurface.X != 0
+								|| offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y != 0)
+							{
+								BreakInDebugger("The transform for a back buffer must be integer to avoid aliasing.");
+							}
+
+							graphics2D.SetTransform(Affine.NewTranslation(offsetToRenderSurface));
+
+							graphics2D.Render(child.backBuffer, 0, 0, 0, currentGraphics2DTransform.sx, currentGraphics2DTransform.sy);
+						}
+						else
+						{
+							child.OnDrawBackground(graphics2D);
+							child.OnDraw(graphics2D);
+						}
+					}
+				}
+
+				graphics2D.PopTransform();
+				graphics2D.SetClippingRect(oldClippingRect);
+
+				DrawBorder(graphics2D, child);
+			}
 		}
 
 		virtual public void OnBeforeDraw(Graphics2D graphics2D)
