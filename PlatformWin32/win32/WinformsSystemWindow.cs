@@ -174,6 +174,16 @@ namespace MatterHackers.Agg.UI
 
 				try
 				{
+					if (!IsHandleCreated)
+					{
+						// This handler runs on the timer's threadpool thread. InvokeRequired reports false
+						// both before the handle is created and after it has been destroyed, so trusting it
+						// here would run UI callbacks (GL, textures, widget code) on the timer thread and
+						// latch that thread as UiThread's "ui thread". Leave the actions queued instead;
+						// they run on the next tick once the window can marshal them.
+						return;
+					}
+
 					if (InvokeRequired)
 					{
 						Invoke(new Action(UiThread.InvokePendingActions));
@@ -182,6 +192,16 @@ namespace MatterHackers.Agg.UI
 					{
 						UiThread.InvokePendingActions();
 					}
+				}
+				catch (ObjectDisposedException) when (IsDisposed || !IsHandleCreated)
+				{
+					// The window was disposed between the checks above and the marshaled call - benign teardown race.
+					// The filter matters: a marshaled action on a live window can also throw ObjectDisposedException
+					// and that is a real failure, so it must fall through to the reporting catch below.
+				}
+				catch (InvalidOperationException) when (!IsHandleCreated)
+				{
+					// The handle was destroyed between the checks above and the marshaled call - benign teardown race
 				}
 				catch (Exception ex)
 				{
