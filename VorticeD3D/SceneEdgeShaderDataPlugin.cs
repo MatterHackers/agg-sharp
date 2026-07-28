@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
@@ -64,34 +65,99 @@ namespace MatterHackers.RenderGl
 
 		public IReadOnlyList<SceneEdgeShaderSubMeshData> SubMeshes => subMeshes;
 
-		public static string SceneEdgeShaderDataPluginName => nameof(SceneEdgeShaderDataPluginName);
+		// A plugin is bound to one context: NativeSceneEffects fills each submesh's
+		// SceneEdgeShaderSubMeshData.CachedGpuBuffer with an ID3D11Buffer minted by one specific device.
+		// MatterCAD renders thumbnails on background worker threads that each own their own GL context,
+		// so caching by mesh alone would bind the ui window device's buffer on the thumbnail device.
+		// Key by mesh, then by context, then by render type.
+		// Both outer levels are weak tables: the cache has to die with the mesh, and a
+		// Dictionary<GL, ...> would keep every context that ever drew this mesh alive forever, so a
+		// closed window would leak its whole gl cache.
+		private static readonly ConditionalWeakTable<Mesh, ConditionalWeakTable<GL, Dictionary<RenderTypes, SceneEdgeShaderDataPlugin>>> pluginsByMesh = new ConditionalWeakTable<Mesh, ConditionalWeakTable<GL, Dictionary<RenderTypes, SceneEdgeShaderDataPlugin>>>();
 
+		// Guards the compound lookup and the publish, including the plain per render type Dictionary at
+		// the leaf. Get is called concurrently by the ui thread and the thumbnail workers. This cache
+		// used to live in Mesh.PropertyBag, a plain Dictionary that those threads mutated unguarded -
+		// concurrent adds of the plugin key corrupted the bag outright.
+		// It is held only across the two short sections of Get, never across the build between them, so
+		// MeshTrianglePlugin's cache lock (taken from inside CreateRenderData) is never acquired while
+		// this one is held. The one way order that does exist is this plugin -> MeshTrianglePlugin ->
+		// ImageTexturePlugin, and nothing anywhere walks it backwards.
+		private static readonly object cacheLock = new object();
+
+		/// <summary>
+		/// Gets the scene edge render data for a mesh on a specific context and render type, building it
+		/// if it is missing or stale.
+		/// </summary>
 		public static SceneEdgeShaderDataPlugin Get(GL gl, Mesh mesh, RenderTypes renderType)
 		{
-			mesh.PropertyBag.TryGetValue(SceneEdgeShaderDataPluginName, out object meshData);
-			if (meshData is Dictionary<RenderTypes, SceneEdgeShaderDataPlugin> pluginsByRenderType
-				&& pluginsByRenderType.TryGetValue(renderType, out var plugin))
+			lock (cacheLock)
 			{
-				if (plugin.meshUpdateCount == mesh.ChangedCount)
+				if (TryGetFreshPlugin(gl, mesh, renderType, out var cachedPlugin))
 				{
-					return plugin;
+					return cachedPlugin;
 				}
-
-				pluginsByRenderType.Remove(renderType);
-			}
-			else
-			{
-				pluginsByRenderType = new Dictionary<RenderTypes, SceneEdgeShaderDataPlugin>();
-				mesh.PropertyBag[SceneEdgeShaderDataPluginName] = pluginsByRenderType;
 			}
 
+			// Build outside the lock - this walks every edge of the mesh and re-interleaves every
+			// vertex, so holding the global lock across it would stall the ui thread's render path
+			// behind a thumbnail worker chewing on a large mesh.
+			// Read the change count before building, exactly as MeshTrianglePlugin.Get does. Stamping
+			// the post-build count instead would let a mesh edited mid-build leave this plugin looking
+			// fresh while the triangle plugin it was built against looks stale: NativeSceneEffects then
+			// rebuilds the triangle plugin, cache hits this one, and walks the two submesh lists by the
+			// same index straight off the end of the shorter one.
+			var changedCountBuiltFor = mesh.ChangedCount;
 			var newPlugin = new SceneEdgeShaderDataPlugin();
 			newPlugin.CreateRenderData(gl, mesh, renderType);
-			newPlugin.meshUpdateCount = mesh.ChangedCount;
+			newPlugin.meshUpdateCount = changedCountBuiltFor;
 			newPlugin.renderType = renderType;
-			pluginsByRenderType[renderType] = newPlugin;
+
+			lock (cacheLock)
+			{
+				// Another thread may have published for this context and render type while we were
+				// building. Hand back what is already visible rather than swapping it out, so repeat
+				// fetches on one context keep returning one instance.
+				if (TryGetFreshPlugin(gl, mesh, renderType, out var publishedPlugin))
+				{
+					return publishedPlugin;
+				}
+
+				// Re-fetch the tables instead of reusing ones looked up before the build: nothing in here
+				// keeps the mesh alive, so if the caller's own reference died the outer entry could have
+				// been collected, and publishing into an orphaned table would rebuild forever.
+				// Only ever replace this context's own entry for this render type - another context's
+				// plugin owns gpu buffers that only its own thread may touch, and it picks the mesh
+				// change up on its own next fetch.
+				var pluginsForMesh = pluginsByMesh.GetValue(
+					mesh,
+					_ => new ConditionalWeakTable<GL, Dictionary<RenderTypes, SceneEdgeShaderDataPlugin>>());
+				var pluginsByRenderType = pluginsForMesh.GetValue(
+					gl,
+					_ => new Dictionary<RenderTypes, SceneEdgeShaderDataPlugin>());
+				pluginsByRenderType[renderType] = newPlugin;
+			}
 
 			return newPlugin;
+		}
+
+		/// <summary>
+		/// Looks up the cached plugin for a context and render type and reports whether it was built for
+		/// the mesh as it stands now. Callers must hold <see cref="cacheLock"/>.
+		/// </summary>
+		private static bool TryGetFreshPlugin(GL gl, Mesh mesh, RenderTypes renderType, out SceneEdgeShaderDataPlugin freshPlugin)
+		{
+			if (pluginsByMesh.TryGetValue(mesh, out var pluginsForMesh)
+				&& pluginsForMesh.TryGetValue(gl, out var pluginsByRenderType)
+				&& pluginsByRenderType.TryGetValue(renderType, out var plugin)
+				&& plugin.meshUpdateCount == mesh.ChangedCount)
+			{
+				freshPlugin = plugin;
+				return true;
+			}
+
+			freshPlugin = null;
+			return false;
 		}
 
 		private void CreateRenderData(GL gl, Mesh mesh, RenderTypes renderType)
