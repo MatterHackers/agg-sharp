@@ -440,6 +440,14 @@ namespace MatterHackers.Agg.UI
 
 		public long LastMouseDownMs { get; private set; }
 
+		/// <summary>
+		/// The Clicks value of the mouse-down currently being processed or most recently pressed on
+		/// this widget, cleared again when the press is released. Kept because the platform only
+		/// reports Clicks == 2 on the second DOWN of a double click - the matching up arrives with
+		/// Clicks == 1 - so an up-time <see cref="IsDoubleClick"/> query has to remember the down.
+		/// </summary>
+		private int lastMouseDownClicks;
+
 		private BorderDouble deviceMargin;
 
 		/// <summary>
@@ -2914,6 +2922,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			LastMouseDownMs = UiThread.CurrentTimerMs;
+			lastMouseDownClicks = mouseEvent.Clicks;
 
 			if (focusStateBeforeProcessing != containsFocus)
 			{
@@ -2921,11 +2930,16 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Whether the event being processed belongs to a double click on this widget. Works from
+		/// both halves of the second click: the DOWN carries Clicks == 2 from the platform, and for
+		/// the matching UP - which the platform reports with Clicks == 1 - the click count recorded
+		/// at the down is consulted instead. The time window keeps a press held longer than a real
+		/// double click from counting, and confirms the click landed on this control.
+		/// </summary>
 		public bool IsDoubleClick(MouseEventArgs mouseEvent)
 		{
-			// The OS told us the mouse is 2 clicks (shot time between clicks)
-			// but we also want to check if the original click happened on our control.
-			if (mouseEvent.Clicks == 2
+			if ((mouseEvent.Clicks == 2 || lastMouseDownClicks == 2)
 				&& LastMouseDownMs > UiThread.CurrentTimerMs - 550)
 			{
 				return true;
@@ -3335,6 +3349,12 @@ namespace MatterHackers.Agg.UI
 			}
 
 			MouseUp?.Invoke(this, mouseEvent);
+
+			// The press is over, so the remembered down no longer describes a live click. Without
+			// this, a single click arriving shortly after a double click could still see the stale
+			// 2 through IsDoubleClick (widgets like ListViewItemBase ask during their own
+			// OnMouseDown, before the base records the new event's clicks).
+			lastMouseDownClicks = 0;
 
 			childrenLockedInMouseUpCount--;
 

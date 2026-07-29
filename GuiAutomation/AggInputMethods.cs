@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -53,6 +53,14 @@ namespace MatterHackers.GuiAutomation
 
 		void SetCursorPosition(int x, int y);
 
+		/// <summary>
+		/// Sends one mouse button transition, mirroring the Win32 mouse_event signature. For DOWN
+		/// events <paramref name="cButtons"/> carries the click number the event should report
+		/// (pass 2 for the second press of a double click, anything else means a single click).
+		/// The caller states this explicitly rather than the input method inferring it from
+		/// wall-clock spacing, so a loaded machine cannot silently turn an intended double click
+		/// into two singles. Hardware input methods ignore it - the OS counts real clicks itself.
+		/// </summary>
 		void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
 
 		void PressModifierKeys(Keys modifierKeys);
@@ -153,6 +161,19 @@ namespace MatterHackers.GuiAutomation
 
 		public void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
 		{
+			// The Clicks values here deliberately mirror what WinForms delivers for real input (see
+			// WinformsEventSink): a down reports 1, except the second press of a double click which
+			// reports 2 - and EVERY up reports 1, even the one ending a double click. Widgets that
+			// need to act on the up of a double click (GuiWidget.IsDoubleClick) remember the down's
+			// click count themselves, exactly because production ups never carry a 2.
+			bool isDownEvent = dwFlags == MouseConsts.MOUSEEVENTF_LEFTDOWN
+				|| dwFlags == MouseConsts.MOUSEEVENTF_RIGHTDOWN
+				|| dwFlags == MouseConsts.MOUSEEVENTF_MIDDLEDOWN;
+
+			bool isUpEvent = dwFlags == MouseConsts.MOUSEEVENTF_LEFTUP
+				|| dwFlags == MouseConsts.MOUSEEVENTF_RIGHTUP
+				|| dwFlags == MouseConsts.MOUSEEVENTF_MIDDLEUP;
+
 			// Send mouse event into the first SystemWindow (reverse order) containing the mouse
 			foreach (var systemWindow in SystemWindow.AllOpenSystemWindows.Reverse().ToList())
 			{
@@ -160,75 +181,29 @@ namespace MatterHackers.GuiAutomation
 				if (systemWindow.LocalBounds.Contains(windowPosition))
 				{
 					MouseButtons mouseButtons = MapButtons(dwFlags);
-					if (dwFlags == MouseConsts.MOUSEEVENTF_LEFTDOWN)
+					if (isDownEvent)
 					{
-						this.ClickCount = this.LeftButtonDown ? 2 : 1;
+						// The caller states the click number (see IInputMethod.CreateMouseEvent);
+						// only "second press of a double click" is meaningful, everything else is 1.
+						// Captured into a local so a down queued behind another down cannot read the
+						// later event's count when the idle action finally runs.
+						var clicks = cButtons == 2 ? 2 : 1;
+						this.ClickCount = clicks;
 
 						UiThread.RunOnIdle(() =>
 						{
-							systemWindow.OnMouseDown(new MouseEventArgs(mouseButtons, this.ClickCount, windowPosition.x, windowPosition.y, 0));
+							systemWindow.OnMouseDown(new MouseEventArgs(mouseButtons, clicks, windowPosition.x, windowPosition.y, 0));
 							systemWindow.Invalidate();
 						});
 
 						// Stop processing after first match
 						break;
 					}
-					else if (dwFlags == MouseConsts.MOUSEEVENTF_LEFTUP)
+					else if (isUpEvent)
 					{
-						// send it to the window
 						UiThread.RunOnIdle(() =>
 						{
-							systemWindow.OnMouseUp(new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0));
-							systemWindow.Invalidate();
-						});
-
-						// Stop processing after first match
-						break;
-					}
-					else if (dwFlags == MouseConsts.MOUSEEVENTF_RIGHTDOWN)
-					{
-						this.ClickCount = this.RightButtonDown ? 2 : 1;
-
-						UiThread.RunOnIdle(() =>
-						{
-							systemWindow.OnMouseDown(new MouseEventArgs(mouseButtons, this.ClickCount, windowPosition.x, windowPosition.y, 0));
-							systemWindow.Invalidate();
-						});
-
-						// Stop processing after first match
-						break;
-					}
-					else if (dwFlags == MouseConsts.MOUSEEVENTF_RIGHTUP)
-					{
-						// send it to the window
-						UiThread.RunOnIdle(() =>
-						{
-							systemWindow.OnMouseUp(new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0));
-							systemWindow.Invalidate();
-						});
-
-						// Stop processing after first match
-						break;
-					}
-					else if (dwFlags == MouseConsts.MOUSEEVENTF_MIDDLEDOWN)
-					{
-						this.ClickCount = this.MiddleButtonDown ? 2 : 1;
-
-						UiThread.RunOnIdle(() =>
-						{
-							systemWindow.OnMouseDown(new MouseEventArgs(mouseButtons, this.ClickCount, windowPosition.x, windowPosition.y, 0));
-							systemWindow.Invalidate();
-						});
-
-						// Stop processing after first match
-						break;
-					}
-					else if (dwFlags == MouseConsts.MOUSEEVENTF_MIDDLEUP)
-					{
-						// send it to the window
-						UiThread.RunOnIdle(() =>
-						{
-							systemWindow.OnMouseUp(new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0));
+							systemWindow.OnMouseUp(new MouseEventArgs(mouseButtons, 1, windowPosition.x, windowPosition.y, 0));
 							systemWindow.Invalidate();
 						});
 

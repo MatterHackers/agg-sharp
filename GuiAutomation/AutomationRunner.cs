@@ -865,8 +865,16 @@ namespace MatterHackers.GuiAutomation
 
 			if (isDoubleClick)
 			{
-				Thread.Sleep(150);
-				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+				// A real double click is two complete press/release pairs - down(1) up down(2) up -
+				// with only the second DOWN reporting a click count of 2 (WinForms semantics; ups
+				// always report 1). The click number is stated explicitly on the second down rather
+				// than inferred from event spacing, so the sequence stays a double click no matter
+				// how long the draws in between take.
+				Delay(UpDelaySeconds);
+				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+				WaitforDraw(containingWindow);
+
+				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 2, 0);
 				WaitforDraw(containingWindow);
 			}
 
@@ -924,8 +932,13 @@ namespace MatterHackers.GuiAutomation
 
 			if (isDoubleClick)
 			{
-				Thread.Sleep(150);
-				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+				// Same authentic double-click shape as ClickWidget: two full press/release pairs,
+				// the second down carrying the click count of 2.
+				Delay(UpDelaySeconds);
+				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
+				WaitforDraw(containingWindow);
+
+				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 2, 0);
 				WaitforDraw(containingWindow);
 			}
 

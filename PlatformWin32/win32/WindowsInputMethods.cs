@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -49,7 +49,11 @@ namespace MatterHackers.GuiAutomation
 		{
 			this.LeftButtonDown = (dwFlags == MouseConsts.MOUSEEVENTF_LEFTDOWN);
 
-			NativeMethods.mouse_event(dwFlags, dx, dy, cButtons, dwExtraInfo);
+			// cButtons carries the simulated click number for AggInputMethods (see
+			// IInputMethod.CreateMouseEvent). Real hardware input must not forward it:
+			// mouse_event's dwData is documented to be zero for plain button flags, and the OS
+			// derives click counts from real timing anyway.
+			NativeMethods.mouse_event(dwFlags, dx, dy, 0, dwExtraInfo);
 		}
 
 		public void SetCursorPosition(int x, int y)

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.GuiAutomation;
@@ -109,6 +110,45 @@ namespace MatterHackers.Agg.UI.Tests
                 // Expected exception - test passes
                 await Assert.That(true).IsTrue();
             }
+        }
+
+        // The simulated input must deliver the same event shape real Windows input does: a single
+        // click is one down(Clicks=1)/up(Clicks=1) pair, and a double click is TWO full pairs where
+        // only the second down reports Clicks == 2 - ups NEVER carry the 2 (verified against real
+        // WinForms). Widgets that act on the up of a double click rely on GuiWidget.IsDoubleClick
+        // remembering the down, so that is asserted from the up handler here as well.
+        [Test]
+        public async Task DoubleClickByNameSendsTwoFullClickPairsWithProductionClickCounts()
+        {
+            var events = new List<string>();
+
+            var systemWindow = new SystemWindow(300, 200);
+
+            var target = new GuiWidget(100, 100)
+            {
+                Name = "target"
+            };
+            systemWindow.AddChild(target);
+
+            target.MouseDown += (s, e) => events.Add($"down:{e.Clicks}");
+            target.MouseUp += (s, e) => events.Add($"up:{e.Clicks}:{(target.IsDoubleClick(e) ? "double" : "single")}");
+
+            await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, async (testRunner) =>
+            {
+                testRunner.ClickByName("target");
+
+                // Joined so the assertion is order-exact - the SEQUENCE is the contract.
+                await Assert.That(string.Join(",", events)).IsEqualTo("down:1,up:1:single")
+                    .Because("a single click is one press/release pair and must not read as a double click");
+
+                events.Clear();
+                testRunner.DoubleClickByName("target");
+
+                await Assert.That(string.Join(",", events)).IsEqualTo("down:1,up:1:single,down:2,up:1:double")
+                    .Because("a double click is two full pairs; only the second down carries Clicks == 2, and the final up - which the platform reports with Clicks == 1 - must still answer IsDoubleClick");
+
+                testRunner.MarkTestComplete();
+            });
         }
 
         [Test]
