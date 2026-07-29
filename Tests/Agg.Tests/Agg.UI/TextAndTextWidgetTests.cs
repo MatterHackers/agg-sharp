@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -151,8 +151,14 @@ namespace MatterHackers.Agg.UI.Tests
 				textOnly.NewGraphics2D().Clear(Color.White);
 
 				TypeFacePrinter stringPrinter = new TypeFacePrinter("test Item", 12);
-				IVertexSource offsetText = new VertexSourceApplyTransform(stringPrinter, Affine.NewTranslation(1, -stringPrinter.LocalBounds.Bottom));
-				textOnly.NewGraphics2D().Render(offsetText, Color.Black);
+				// Position the reference text with the graphics2D transform and let the printer render
+				// itself, rather than hand-offsetting its vertex source. The widget under test draws via
+				// TypeFacePrinter.Render, which snaps the baseline to a whole device pixel
+				// (TypeFacePrinter.SnapBaselinesToWholePixels); a hand-rolled offset bypasses that snap
+				// and would land the reference text a fraction of a pixel away from the widget's.
+				var textOnlyGraphics = textOnly.NewGraphics2D();
+				textOnlyGraphics.SetTransform(Affine.NewTranslation(1, -stringPrinter.LocalBounds.Bottom));
+				stringPrinter.Render(textOnlyGraphics, Color.Black);
 
 				if (saveImagesForDebug)
 				{

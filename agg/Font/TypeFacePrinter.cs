@@ -3,7 +3,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007-2011
+// Copyright (C) 2007-2026, Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform;
+using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
@@ -43,6 +44,14 @@ namespace MatterHackers.Agg.Font
 
 	public class TypeFacePrinter : VertexSourceLegacySupport
 	{
+		/// <summary>
+		/// When true (the default), each text line's baseline Y is snapped to the nearest
+		/// whole pixel using the (y + 0.5).floor() convention, and Render() nudges the result
+		/// so the snapped baselines land on whole *device* pixels. Y only — horizontal subpixel
+		/// positioning is preserved. Improves the crispness of horizontal stems at 1:1 scale.
+		/// </summary>
+		public static bool SnapBaselinesToWholePixels { get; set; } = true;
+
 		private string text = "";
 
 		private Vector2 totalSizeCache;
@@ -180,8 +189,70 @@ namespace MatterHackers.Agg.Font
 			else
 			{
 				Rewind(0);
-				graphics2D.Render(this, color);
+				graphics2D.Render(GetDeviceSnappedSource(graphics2D), color);
 			}
+		}
+
+		/// <summary>
+		/// Returns this printer, optionally wrapped in the local Y nudge needed to land its
+		/// whole-pixel baselines on whole *device* pixels.
+		/// </summary>
+		/// <remarks>
+		/// Integer local baselines are useless on their own: widget offsets and TextWidget's
+		/// yOffsetForText are fractional doubles that ride in on the graphics2D transform, so a
+		/// baseline snapped to 0 can still be rasterized at device y 8.4. Only a translation-only,
+		/// unit-scale transform can be corrected this way - under scale or rotation a whole-pixel
+		/// local nudge is not a whole-pixel device nudge, and applying one would just misplace the
+		/// text. X translation is deliberately left alone to preserve horizontal subpixel positioning.
+		/// <para>
+		/// The nudge must round the *total* device baseline once. Rounding transform.ty on its own
+		/// would add a second rounding on top of the one Vertices() already did, so the same true
+		/// device baseline would land on different pixels depending on how the Y was split between
+		/// Origin.Y and the transform (Origin.Y 8.6 + ty 0.6 would render a pixel below Origin.Y 9.2
+		/// + ty 0). Instead we give back the residue the local snap discarded, leaving the first
+		/// line's device baseline at exactly Math.Floor(unsnappedBaseline + ty + 0.5).
+		/// </para>
+		/// <para>
+		/// Multi-line text with a fractional ty can still see a line's spacing differ by a pixel from
+		/// the theoretical ideal, because the per-line snap was computed before this nudge was known.
+		/// Every line does still land on a whole device pixel, which is what the snap is for.
+		/// </para>
+		/// </remarks>
+		private IVertexSource GetDeviceSnappedSource(Graphics2D graphics2D)
+		{
+			if (!SnapBaselinesToWholePixels)
+			{
+				return this;
+			}
+
+			Affine transform = graphics2D.GetTransform();
+			if (Math.Abs(transform.sx - 1) > 1e-6
+				|| Math.Abs(transform.sy - 1) > 1e-6
+				|| Math.Abs(transform.shx) > 1e-6
+				|| Math.Abs(transform.shy) > 1e-6)
+			{
+				return this;
+			}
+
+			double unsnappedBaselineY = GetFirstLineBaselineY();
+			double snappedBaselineY = Math.Floor(unsnappedBaselineY + 0.5);
+			double deltaY = Math.Floor(unsnappedBaselineY + transform.ty + 0.5) - snappedBaselineY - transform.ty;
+			// With ty == 0 the two floors are identical, so the common whole-pixel case allocates nothing.
+			if (deltaY == 0)
+			{
+				return this;
+			}
+
+			return new VertexSourceApplyTransform(this, Affine.NewTranslation(0, deltaY));
+		}
+
+		/// <summary>
+		/// The first line's local baseline Y before snapping - exactly the value <see cref="Vertices"/>
+		/// computes for line 0. Shared with the device nudge so the two cannot drift apart.
+		/// </summary>
+		private double GetFirstLineBaselineY()
+		{
+			return GetBaseline(Vector2.Zero).Y + Origin.Y;
 		}
 
 		private void RenderFromCache(Graphics2D graphics2D, Color color)
@@ -237,6 +308,20 @@ namespace MatterHackers.Agg.Font
 				{
 					currentOffset = GetXPositionForLineBasedOnJustification(currentOffset, line);
 
+					// Snap this line's baseline to a whole pixel so its horizontal stems land on pixel
+					// edges. Origin.Y is folded in first because Origin is baked into the vertex
+					// positions below rather than carried by the transform - that is the path
+					// Graphics2D.DrawString(text, x, y) uses to place text.
+					//
+					// The snap is applied to the *rendered* baseline while currentOffset.Y keeps
+					// running unsnapped, so line spacing cannot accumulate drift: with a 12.6 pixel
+					// em the baselines land at 0, -13, -25, -38 rather than 0, -13, -26, -39.
+					double lineBaselineY = currentOffset.Y + Origin.Y;
+					if (SnapBaselinesToWholePixels)
+					{
+						lineBaselineY = Math.Floor(lineBaselineY + 0.5);
+					}
+
 					for (int currentChar = 0; currentChar < line.Length; currentChar++)
 					{
 						IVertexSource currentGlyph = TypeFaceStyle.GetGlyphForCharacter(line[currentChar], ResolutionScale);
@@ -247,7 +332,11 @@ namespace MatterHackers.Agg.Font
 							{
 								if (vertexData.Command != FlagsAndCommand.Stop)
 								{
-									var offsetVertex = new VertexData(vertexData.Command, vertexData.Position + currentOffset + Origin);
+									var offsetVertex = new VertexData(
+										vertexData.Command,
+										new Vector2(
+											vertexData.Position.X + currentOffset.X + Origin.X,
+											vertexData.Position.Y + lineBaselineY));
 									yield return offsetVertex;
 								}
 							}
