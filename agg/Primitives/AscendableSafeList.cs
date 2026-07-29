@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2017, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -61,8 +61,12 @@ namespace MatterHackers.Agg
 
 		/// <summary>
 		/// Provides a safe context to manipulate items. Copies items into a new list, invokes the 'modifier'
-		/// Action passing in the copied list and finally swaps the modified list into place after the invoked Action completes
+		/// Action passing in the copied list and finally swaps the modified list into place after the invoked Action completes.
 		/// </summary>
+		/// <remarks>
+		/// As with <see cref="SafeList{T}.Modify"/>, the list handed to the modifier is never the one that
+		/// gets published - see that method for why a leaked reference to the live list is a process killer.
+		/// </remarks>
 		/// <param name="modifier">The Action to invoke</param>
 		override public void Modify(Action<List<T>> modifier)
 		{
@@ -72,8 +76,8 @@ namespace MatterHackers.Agg
 			// Pass the new list to the Action for manipulation
 			modifier(safeClone);
 
-			// Swap the modified list into place
-			items = safeClone;
+			// Swap a private copy of the modified list into place - never the modifier's own instance
+			items = new List<T>(safeClone);
 
 			if (parentItem != null)
 			{

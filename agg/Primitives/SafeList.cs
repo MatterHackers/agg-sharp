@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2017, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -72,8 +72,20 @@ namespace MatterHackers.Agg
 
 		/// <summary>
 		/// Provides a safe context to manipulate items. Copies items into a new list, invokes the 'modifier'
-		/// Action passing in the copied list and finally swaps the modified list into place after the invoked Action completes
+		/// Action passing in the copied list and finally swaps the modified list into place after the invoked Action completes.
 		/// </summary>
+		/// <remarks>
+		/// The modifier only owns its list for the duration of the call. Publishing that same instance let
+		/// anything still holding it - most importantly an `async` lambda bound to this Action, which returns
+		/// at its first await and resumes on a thread pool thread long after Modify returned - keep calling
+		/// Add on the LIVE list from outside Modify. That is not merely a lost update: List&lt;T&gt;.Add
+		/// publishes the incremented Count before it stores the element, so a concurrent reader (the next
+		/// Modify's `new List&lt;T&gt;(items)`, which copies via ICollection.CopyTo and therefore skips the
+		/// enumerator's version check) can capture a null element. A null child in an Object3D tree then
+		/// throws a bare NullReferenceException in the next Object3DExtensions.DescendantsAndSelf walk - on
+		/// whichever background rebuild thread happens to walk it, which takes the whole process down.
+		/// Publishing a private copy makes the live list unreachable, so no leaked reference can corrupt it.
+		/// </remarks>
 		/// <param name="modifier">The Action to invoke</param>
 		virtual public void Modify(Action<List<T>> modifier)
 		{
@@ -83,8 +95,8 @@ namespace MatterHackers.Agg
 			// Pass the new list to the Action for manipulation
 			modifier(safeClone);
 
-			// Swap the modified list into place
-			items = safeClone;
+			// Swap a private copy of the modified list into place - never the modifier's own instance
+			items = new List<T>(safeClone);
 
 			this.OnItemsModified(null);
 		}
