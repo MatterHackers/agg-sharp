@@ -71,6 +71,12 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Folds every command currently on the undo stack into a single FNV-1a hash, so that
+		/// two different histories hash differently even when they end with the same command.
+		/// Used for unsaved-changes tracking (compare a saved hash against the current one).
+		/// </summary>
+		/// <returns>0 for an empty undo stack, otherwise the chained hash of all undo commands.</returns>
 		public ulong GetLongHashCode()
         {
 			lock (locker)
@@ -86,7 +92,8 @@ namespace MatterHackers.Agg.UI
 				{
 					foreach (var undo in undoBuffer.Iterate())
 					{
-						longHash = undo.GetHashCode().GetLongHashCode();
+						// pass the running hash as the seed so each command contributes to the result
+						longHash = undo.GetHashCode().GetLongHashCode(longHash);
 					}
 				}
 				catch (Exception)
