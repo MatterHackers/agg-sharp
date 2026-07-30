@@ -33,4 +33,8 @@
     <PackageReference Update="StyleCop.Analyzers" Version="1.1.118" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Agg.Tests" />
+  </ItemGroup>
+
 </Project>
