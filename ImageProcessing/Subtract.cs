@@ -34,27 +34,22 @@ namespace MatterHackers.Agg.ImageProcessing
 {
 	public static class Subtract
 	{
-		private static int[] lookupSubtractAndClamp;
+		// Filled eagerly by the type initializer so concurrent first-use never observes a partially built table.
+		private static readonly int[] lookupSubtractAndClamp = BuildSubtractAndClampLookup();
 
-		private static void CreateLookup()
+		private static int[] BuildSubtractAndClampLookup()
 		{
-			if (lookupSubtractAndClamp == null)
+			int[] table = new int[512];
+			for (int i = 0; i < table.Length; i++)
 			{
-				lookupSubtractAndClamp = new int[512];
-				for (int i = 0; i < lookupSubtractAndClamp.Length; i++)
-				{
-					lookupSubtractAndClamp[i] = Math.Max(0, Math.Min(255, i - 255));
-				}
+				table[i] = Math.Max(0, Math.Min(255, i - 255));
 			}
+
+			return table;
 		}
 
 		public static void DoSubtract(ImageBuffer result, ImageBuffer imageToSubtractFrom, ImageBuffer imageToSubtract)
 		{
-			if (lookupSubtractAndClamp == null)
-			{
-				CreateLookup();
-			}
-
 			if (imageToSubtractFrom.BitDepth != imageToSubtract.BitDepth || imageToSubtract.BitDepth != result.BitDepth)
 			{
 				throw new NotImplementedException("All the images have to be the same bit depth.");
