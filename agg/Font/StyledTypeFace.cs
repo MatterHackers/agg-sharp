@@ -64,6 +64,16 @@ namespace MatterHackers.Agg.Font
 		// concurrent callers with different TypeFaces still serialize access to the shared cache.
 		internal static readonly object SyncRoot = new object();
 
+		// Upper bound on the total number of cached glyph images across all (TypeFace, color, size)
+		// styles. A glyph ImageBuffer is roughly emSizeInPixels^2 * 4 bytes, so at a typical UI em of
+		// ~20px that is ~1.6KB per image and 8192 images is ~13MB worst case (~100MB at a large 64px
+		// em). When an insert would exceed the cap the whole cache is cleared and repopulates on
+		// demand. Internal (not const) so tests can lower it to force eviction.
+		internal static int MaxCachedImages = 8192;
+
+		// Total images across all leaf dictionaries; guarded by SyncRoot.
+		private int cachedImageCount;
+
         // Keys: TypeFace, Color, FontSize, Character
         private Dictionary<TypeFace, Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>>> typeFaceImageCache = new Dictionary<TypeFace, Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>>>();
 
@@ -72,12 +82,61 @@ namespace MatterHackers.Agg.Font
 		{
 		}
 
-		public static Dictionary<char, ImageBuffer> GetCorrectCache(TypeFace typeFace, Color color, double emSizeInPoints)
+		internal static int CachedImageCount
+		{
+			get
+			{
+				lock (SyncRoot)
+				{
+					return Instance.cachedImageCount;
+				}
+			}
+		}
+
+		internal static bool TryGetImage(TypeFace typeFace, Color color, double emSizeInPoints, char character, out ImageBuffer image)
 		{
 			lock (SyncRoot)
 			{
-				// TODO: check if the cache is getting too big and if so prune it (or just delete it and start over).
+				return GetCorrectCache(typeFace, color, emSizeInPoints).TryGetValue(character, out image);
+			}
+		}
 
+		internal static void StoreImage(TypeFace typeFace, Color color, double emSizeInPoints, char character, ImageBuffer image)
+		{
+			lock (SyncRoot)
+			{
+				var characterImageCache = GetCorrectCache(typeFace, color, emSizeInPoints);
+				if (!characterImageCache.ContainsKey(character))
+				{
+					if (Instance.cachedImageCount + 1 > MaxCachedImages)
+					{
+						// Simplest provably-correct eviction: drop everything and let renders
+						// repopulate on demand. The leaf dictionary must be re-fetched because
+						// Clear() orphaned the one we navigated to above.
+						Clear();
+						characterImageCache = GetCorrectCache(typeFace, color, emSizeInPoints);
+					}
+
+					Instance.cachedImageCount++;
+				}
+
+				characterImageCache[character] = image;
+			}
+		}
+
+		internal static void Clear()
+		{
+			lock (SyncRoot)
+			{
+				Instance.typeFaceImageCache.Clear();
+				Instance.cachedImageCount = 0;
+			}
+		}
+
+		private static Dictionary<char, ImageBuffer> GetCorrectCache(TypeFace typeFace, Color color, double emSizeInPoints)
+		{
+			lock (SyncRoot)
+			{
 				Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>> foundTypeFaceColor;
 				if (!Instance.typeFaceImageCache.TryGetValue(typeFace, out foundTypeFaceColor))
 				{
@@ -181,14 +240,9 @@ namespace MatterHackers.Agg.Font
 				throw new ArgumentException("The x and y fractions must both be between 0 and 1.");
 			}
 
-			var characterImageCache = StyledTypeFaceImageCache.GetCorrectCache(this.TypeFace, color, emSizeInPixels);
-			lock (StyledTypeFaceImageCache.SyncRoot)
+			if (StyledTypeFaceImageCache.TryGetImage(this.TypeFace, color, emSizeInPixels, character, out ImageBuffer imageForCharacter))
 			{
-				characterImageCache.TryGetValue(character, out ImageBuffer imageForCharacter);
-				if (imageForCharacter != null)
-				{
-					return imageForCharacter;
-				}
+				return imageForCharacter;
 			}
 
 			IVertexSource glyphForCharacter = GetGlyphForCharacter(character, 1);
@@ -209,10 +263,7 @@ namespace MatterHackers.Agg.Font
 			graphics.Render(glyphForCharacter, xFraction, yFraction + (-DescentInPixels) + 1, color);
 			// Rendering happens outside the lock; if two threads race on the same character
 			// the last write wins and both return a valid image.
-			lock (StyledTypeFaceImageCache.SyncRoot)
-			{
-				characterImageCache[character] = charImage;
-			}
+			StyledTypeFaceImageCache.StoreImage(this.TypeFace, color, emSizeInPixels, character, charImage);
 
 			return charImage;
 		}
