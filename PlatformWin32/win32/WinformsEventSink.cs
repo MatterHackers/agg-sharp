@@ -162,6 +162,11 @@ namespace MatterHackers.Agg.UI
 			controlToHook.MouseCaptureChanged -= ControlToHook_MouseCaptureChanged;
 
 			controlToHook.MouseLeave -= ControlToHook_MouseLeave;
+
+			// Drop the SystemWindow reference so an unhooked sink cannot keep it alive.
+			// No handlers can fire after the removals above; a reused sink gets a new
+			// window via SetActiveSystemWindow.
+			widgetToSendTo = null;
 		}
 
 		private void ControlToHook_DragDrop(object sender, DragEventArgs dragevent)

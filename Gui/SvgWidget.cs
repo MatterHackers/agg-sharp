@@ -111,6 +111,16 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
+			if (!onloadInvoked)
+			{
+				// Set onloadInvoked before invoking OnLoad to ensure we only fire once.
+				// This draw happens before base.OnDraw would fire OnLoad, and the deferred
+				// parse/rasterize in OnLoad must run before imageBuffer is rendered.
+				onloadInvoked = true;
+
+				this.OnLoad(null);
+			}
+
 			graphics2D.Render(imageBuffer, Point2D.Zero);
 
 			base.OnDraw(graphics2D);

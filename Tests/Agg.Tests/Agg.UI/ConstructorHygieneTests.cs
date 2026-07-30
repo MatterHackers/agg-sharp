@@ -155,7 +155,9 @@ namespace MatterHackers.Agg.UI.Tests
 				await Assert.That(widget.MinimumSize.Y).IsEqualTo(20.0);
 				await Assert.That(GetPrivateField(widget, "imageBuffer")).IsNull();
 
-				widget.OnLoad(null);
+				// Drive the lifecycle through a real draw. OnDraw must trigger the deferred
+				// load itself (it renders imageBuffer before base.OnDraw would fire OnLoad).
+				widget.OnDraw(new ImageBuffer(30, 30).NewGraphics2D());
 
 				var deferredBuffer = (ImageBuffer)GetPrivateField(widget, "imageBuffer");
 				await Assert.That(deferredBuffer).IsNotNull();
