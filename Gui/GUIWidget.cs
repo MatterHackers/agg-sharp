@@ -319,6 +319,18 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Constructor-safe initialization of BackgroundColor. Writes the backing field without
+		/// virtual dispatch so derived overrides cannot run before their constructor body has
+		/// executed. The change notification and Invalidate the BackgroundColor setter performs
+		/// are no-ops for a widget still under construction (no subscribers, no parent, and the
+		/// widget is created already invalid), so only the field write is replicated.
+		/// </summary>
+		protected void SetBackgroundColorWithoutDispatch(Color value)
+		{
+			_backgroundColor = value;
+		}
+
 		public event EventHandler BackgroundColorChanged;
 
 		public virtual void OnBackgroundColorChanged(EventArgs e)
@@ -773,17 +785,71 @@ namespace MatterHackers.Agg.UI
 			: this()
 		{
 			screenClipping = new ScreenClipping(this);
+
+			// Direct backing-field initialization. The MinimumSize/MaximumSize/LocalBounds
+			// property setters must not be used here: they are (or call) virtual members, and a
+			// derived override would run before the derived constructor body has executed. The
+			// writes below replicate the setters' effects for a freshly constructed widget
+			// (no parent, no children, no event subscribers, default anchors).
 			if ((sizeLimits & SizeLimitsToSet.Minimum) == SizeLimitsToSet.Minimum)
 			{
-				MinimumSize = new Vector2(width, height);
+				if (width < 0 || height < 0)
+				{
+					BreakInDebugger("These have to be 0 or greater.");
+				}
+
+				minimumSize = new Vector2(width, height);
+				maximumSize.X = Max(minimumSize.X, maximumSize.X);
+				maximumSize.Y = Max(minimumSize.Y, maximumSize.Y);
 			}
 
 			if ((sizeLimits & SizeLimitsToSet.Maximum) == SizeLimitsToSet.Maximum)
 			{
-				MaximumSize = new Vector2(width, height);
+				if (width < 0 || height < 0)
+				{
+					BreakInDebugger("These have to be 0 or greater.");
+				}
+
+				maximumSize = new Vector2(width, height);
+				minimumSize.X = Min(minimumSize.X, maximumSize.X);
+				minimumSize.Y = Min(minimumSize.Y, maximumSize.Y);
 			}
 
-			LocalBounds = new RectangleDouble(0, 0, width, height);
+			// same normalization the LocalBounds setter performs
+			var bounds = new RectangleDouble(0, 0, width, height);
+			if (bounds.Width < minimumSize.X)
+			{
+				bounds.Right = bounds.Left + minimumSize.X;
+			}
+			else if (bounds.Width > maximumSize.X)
+			{
+				bounds.Right = bounds.Left + maximumSize.X;
+			}
+
+			if (bounds.Height < minimumSize.Y)
+			{
+				bounds.Top = bounds.Bottom + minimumSize.Y;
+			}
+			else if (bounds.Height > maximumSize.Y)
+			{
+				bounds.Top = bounds.Bottom + maximumSize.Y;
+			}
+
+			if (EnforceIntegerBounds)
+			{
+				bounds.Left = Floor(bounds.Left);
+				bounds.Bottom = Floor(bounds.Bottom);
+				bounds.Right = Ceiling(bounds.Right);
+				bounds.Top = Ceiling(bounds.Top);
+			}
+
+			if (!LargestValidBounds.Contains(bounds))
+			{
+				BreakInDebugger("The bounds you are passing seems like they are probably wrong.  Check it.");
+			}
+
+			localBounds = bounds;
+			screenClipping.MarkRecalculate();
 		}
 
 		public GuiWidget()
@@ -791,8 +857,6 @@ namespace MatterHackers.Agg.UI
 			Children = new AscendableSafeList<GuiWidget>(this);
 			screenClipping = new ScreenClipping(this);
 			LayoutEngine = new LayoutEngineSimpleAlign();
-			HAnchor = hAnchor;
-			VAnchor = vAnchor;
 		}
 
 		public override string ToString()

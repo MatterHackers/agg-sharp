@@ -103,7 +103,10 @@ namespace MatterHackers.Agg.UI
 			// subscription + UiThread interval) once the window is shown or first receives
 			// mouse input, so no callbacks can observe a partially-constructed window.
 			ToolTipManager = new ToolTipManager(this);
-			this.BackgroundColor = new Color("#444444");
+
+			// non-virtual initialization path; the virtual BackgroundColor setter must not be
+			// dispatched while derived windows are still constructing
+			SetBackgroundColorWithoutDispatch(new Color("#444444"));
 		}
 
 		public override void OnMinimumSizeChanged(EventArgs e)
