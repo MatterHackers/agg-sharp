@@ -1,0 +1,16 @@
+# The LCD byte-exactness fixture is raw coverage/pixel dumps whose whole point is that every byte
+# survives the round trip. Git's automatic binary detection looks for a NUL byte, and some of these
+# blobs legitimately contain none (star_nonzero.dst is fully opaque, so no channel is ever 0, and the
+# LcdBuffer planes are cleared to a non-zero background), which would let core.autocrlf treat them as
+# text and rewrite every 0x0A into 0x0D 0x0A on checkout - silently corrupting the reference the port
+# is compared against. Declare them binary explicitly.
+TestData/LcdFixture/*.lcd binary
+TestData/LcdFixture/*.gray binary
+TestData/LcdFixture/*.dst binary
+TestData/LcdFixture/*.bufcolor binary
+TestData/LcdFixture/*.bufalpha binary
+
+# The manifest beside them is text and is meant to stay readable in a diff. Pinning it to LF keeps
+# the working-tree bytes identical to what the Rust generator writes, so regenerating the fixture
+# never shows up as whole-file line-ending churn.
+TestData/LcdFixture/manifest.txt text eol=lf

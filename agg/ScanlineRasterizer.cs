@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026, Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -193,6 +193,18 @@ namespace MatterHackers.Agg
 		{
 			m_filling_rule = filling_rule;
 		}
+
+		/// <summary>
+		/// The fill rule currently in effect, as last set by <see cref="filling_rule"/>
+		/// (<see cref="filling_rule_e.fill_non_zero"/> until then).
+		/// </summary>
+		/// <remarks>
+		/// Callers set the rule on the rasterizer and then fill (see <c>Graphics2D.RenderInRect</c>), so an
+		/// alternative fill path that does not run this rasterizer - <c>Graphics2D.RenderLcd</c>, which
+		/// rasterizes into a coverage mask instead - has to be able to read the rule back to stay consistent
+		/// with the fill it replaces.
+		/// </remarks>
+		public Util.filling_rule_e FillingRule => m_filling_rule;
 
 		public void auto_close(bool flag)
 		{

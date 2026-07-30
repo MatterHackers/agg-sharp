@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026, Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -18,6 +18,7 @@
 //----------------------------------------------------------------------------
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.LcdCoverage;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
@@ -356,6 +357,173 @@ namespace MatterHackers.Agg
         }
 
         public abstract void Render(IVertexSource vertexSource, IColorType colorType);
+
+        /// <summary>
+        /// Whether this destination can composite per-channel LCD coverage. False means
+        /// <see cref="RenderLcd"/> silently falls back to <see cref="Render"/> on this Graphics2D, so a
+        /// caller never has to know which backend it is talking to.
+        /// </summary>
+        /// <remarks>
+        /// Mirrors the reference's <c>DrawCtx::has_lcd_mask_composite</c> (<c>draw_ctx.rs:424</c>), which
+        /// defaults false for the same reason: a backend that cannot write three independent channel
+        /// coverages must receive ordinary anti-aliased fills rather than a mask it would have to flatten.
+        /// </remarks>
+        public virtual bool CanCompositeLcd => false;
+
+        /// <summary>
+        /// Whether subpixel chroma is valid on this destination. True (the default) takes the LCD filter;
+        /// false takes the chroma-free collapse (<see cref="LcdMaskBuilder.FinalizeGray"/>) - the same raster,
+        /// the same layout and the same composite, with r == g == b coverage everywhere.
+        /// </summary>
+        /// <remarks>
+        /// The reference's validity gate (<c>text_render.rs:56-62</c>): LCD geometry is only meaningful
+        /// against the final opaque surface, because a transparent compositing layer's pixels get blended
+        /// again later, against content the R/G/B phase knew nothing about. Separate from
+        /// <see cref="CanCompositeLcd"/> - <b>can</b> this destination take a per-channel mask at all, versus
+        /// <b>should</b> that mask carry chroma - and only consulted when that one is true. The transparent
+        /// backbuffer destination that answers false is the layer above this one; nothing in agg-sharp
+        /// overrides it yet.
+        /// </remarks>
+        protected virtual bool LcdChromaAllowed => true;
+
+        /// <summary>
+        /// Fills <paramref name="vertexSource"/> through the LCD subpixel pipeline when every gate allows
+        /// it, and through the ordinary <see cref="Render"/> path when any of them does not.
+        /// </summary>
+        /// <param name="vertexSource">Any vertex source; the current transform is applied, as
+        /// <see cref="Render"/> does.</param>
+        /// <param name="colorType">The fill color. Applied at composite time, per channel - the mask itself
+        /// carries no color.</param>
+        /// <param name="pathCacheKey">Optional caller-supplied identity of the geometry, letting the mask be
+        /// reused across draws; null (the default) rasterizes every call. See <see cref="LcdMaskKey"/> for
+        /// what makes a valid identity - notably, not a mutable path object.</param>
+        /// <remarks>
+        /// This is the general vector chokepoint the LCD design is built on, not a text feature: rect fills,
+        /// strokes, icons and glyph runs all reach the same pipeline through here, and text is simply the
+        /// caller that benefits most. It mirrors the reference's <c>draw_lcd_mask</c> hook and the gates its
+        /// callers apply before reaching for it.
+        /// <para>
+        /// The gates, in the order this method checks them - all three have to pass, so the order is about
+        /// cost and nothing else:
+        /// <list type="number">
+        /// <item><description>destination validity (<see cref="CanCompositeLcd"/>, plus a rasterizer to read
+        /// the fill rule from), which stays local to this object;</description></item>
+        /// <item><description>the effective-scale cap, which overrides the user toggle
+        /// (<see cref="LcdRenderSettings.EffectiveScaleAllowsLcd"/>);</description></item>
+        /// <item><description>the toggle itself (<see cref="LcdRenderSettings.Enabled"/>), which takes the
+        /// settings lock.</description></item>
+        /// </list>
+        /// The last two are in the reference's order (the cap is evaluated first precisely because it
+        /// overrides the toggle rather than being overridden by it). Any of them failing takes
+        /// <see cref="Render"/>, which is a real fill and not a degraded one - just without subpixel chroma.
+        /// That fallback is itself a deliberate divergence: the reference's text path always goes through a
+        /// mask, taking <see cref="LcdMaskBuilder.FinalizeGray"/> when chroma is invalid, but agg-sharp's
+        /// disabled path has to stay byte-identical to the pre-LCD renderer, so a refused fill goes back to
+        /// the scanline renderer rather than to a gray mask.
+        /// </para>
+        /// <para>
+        /// <b>Chroma, separately from LCD-or-not.</b> A destination that can composite a mask but must not
+        /// carry subpixel chroma - a transparent compositing layer, where the R/G/B phase would be blended
+        /// against unknown pixels later - reports <see cref="LcdChromaAllowed"/> false and gets the
+        /// chroma-free collapse through this same bounded-mask, cache and composite path, which is
+        /// <c>text_render.rs:56-62</c>'s structure.
+        /// </para>
+        /// <para>
+        /// <b>The clip is whole-pixel granular here.</b> A mask has no unit finer than a pixel to enforce a
+        /// clip in: <see cref="BoundedMaskBuilder"/> rounds its clip outward - floor on left and bottom, ceil
+        /// on right and top, as the reference's <c>rect_to_pixel_clip</c> does - and the rect it gets from
+        /// <see cref="GetClippingRect"/> has already lost its fraction, because the rasterizer reports its
+        /// 24.8 clip box back through an integer divide. The two roundings compose to a floor on every edge,
+        /// so a clip edge falling inside a pixel snaps: at the left and bottom edge that pixel is painted in
+        /// full (up to a whole pixel of ink the caller did not ask for), at the right and top edge it is
+        /// dropped in full (up to a whole pixel of ink the caller did ask for). <see cref="Render"/> clips
+        /// the same geometry to 1/256 of a pixel and anti-aliases that pixel instead. The granularity is the
+        /// reference's and is deliberate, not a rounding bug (which way each edge snaps is agg-sharp's, from
+        /// that integer divide); both are pinned by test. It does mean a caller that needs an exact fractional
+        /// clip has to snap its clip to whole pixels itself or stay off this path.
+        /// </para>
+        /// <para>
+        /// The composite origin is whole pixels because <see cref="BoundedMaskBuilder"/> reports whole
+        /// pixels, which discharges the rounding obligation the reference meets with an explicit
+        /// <c>sx.round()</c> in <c>draw_lcd_mask</c> (<c>gfx_ctx\draw_impl.rs:605</c>). It is unconditional:
+        /// sub-pixel placement of a finished mask smears each channel's phase into its neighbours and
+        /// destroys the subpixel geometry, independent of any baseline-snapping setting.
+        /// </para>
+        /// <para>
+        /// <b>Known limitation.</b> The clip is read through <see cref="GetClippingRect"/>, which for image
+        /// destinations reports the rasterizer's vector clip box - and that box reads as empty when no clip
+        /// was ever set, because the rasterizer keeps "clipping is off" in a flag it does not expose. Every
+        /// destination built by <see cref="Image.ImageBuffer.NewGraphics2D"/> sets the box to the buffer
+        /// bounds, so this only bites a hand-constructed <see cref="ImageGraphics2D"/> that never called
+        /// <see cref="SetClippingRect"/>: it paints nothing here, where <see cref="Render"/> would paint
+        /// unclipped. Distinguishing the two needs the rasterizer to report whether clipping is active.
+        /// </para>
+        /// </remarks>
+        public void RenderLcd(IVertexSource vertexSource, IColorType colorType, object pathCacheKey = null)
+        {
+            if (vertexSource == null)
+            {
+                throw new ArgumentNullException(nameof(vertexSource));
+            }
+
+            Affine transform = GetTransform();
+            if (!this.CanCompositeLcd
+                || this.rasterizer == null
+                || !LcdRenderSettings.IsEnabledAtScale(LcdRenderSettings.EffectiveScaleOf(transform)))
+            {
+                Render(vertexSource, colorType);
+                return;
+            }
+
+            // The clip comes from the destination the same way every other fill's does: GetClippingRect is
+            // the rasterizer's vector clip box for image destinations, which is what SetClippingRect (and
+            // through it GuiWidget's clipping) writes. BoundedMaskBuilder trims the mask to it, rounded out
+            // to whole pixels - see the remarks on the granularity that costs.
+            RectangleDouble clip = GetClippingRect();
+
+            if (!LcdMaskCache.TryGetBoundedMask(
+                pathCacheKey,
+                this.Width,
+                this.Height,
+                vertexSource,
+                transform,
+                out LcdMask mask,
+                out int originX,
+                out int originY,
+                clip,
+                this.rasterizer.FillingRule,
+                LcdRenderSettings.PrimaryWeight,
+                LcdRenderSettings.Gamma,
+                !this.LcdChromaAllowed))
+            {
+                // Nothing to paint: off the destination, entirely clipped away, or an empty path. The
+                // ordinary path would have painted nothing too, so there is nothing to fall back to.
+                return;
+            }
+
+            CompositeLcdMask(mask, colorType.ToColor(), originX, originY);
+        }
+
+        /// <summary>
+        /// Composites a finished coverage mask onto this destination, applying <paramref name="color"/> per
+        /// channel, with the mask's bottom-left pixel at (<paramref name="originX"/>,
+        /// <paramref name="originY"/>) - both whole pixels, always.
+        /// </summary>
+        /// <remarks>
+        /// The destination-specific half of <see cref="RenderLcd"/>, mirroring the reference's
+        /// <c>DrawCtx::draw_lcd_mask</c>. Only reached when <see cref="CanCompositeLcd"/> is true, hence the
+        /// throwing default rather than the reference's silent no-op: in C# an override pair that disagrees
+        /// with itself is a bug worth hearing about, where in Rust the no-op default exists to let callers
+        /// that skip the capability check degrade instead of failing to compile.
+        /// <para>
+        /// <paramref name="mask"/> may be shared with the mask cache and must be treated as read-only.
+        /// </para>
+        /// </remarks>
+        protected virtual void CompositeLcdMask(LcdMask mask, Color color, int originX, int originY)
+        {
+            throw new NotSupportedException(
+                $"{this.GetType().Name} reports CanCompositeLcd but does not implement CompositeLcdMask.");
+        }
 
         public void Render(IImageByte imageSource, Point2D position)
         {

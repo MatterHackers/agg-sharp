@@ -46,6 +46,18 @@
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
 
+  <!-- LCD byte-exactness fixture: raw mask/composite dumps from the agg-gui Rust reference, read by
+       LcdRustFixtureTests. Copied next to the test binary so the fixture travels with the build and the
+       exe runs from a bare bin\. Note this copy is only the fallback: the reader prefers the repo-tree
+       TestData folder (where the older test data lives) precisely so a PreserveNewest copy that did not
+       happen cannot leave a stale fixture in bin\ shadowing the checked-in one. -->
+  <ItemGroup>
+    <Content Include="..\..\TestData\LcdFixture\**\*">
+      <Link>TestData\LcdFixture\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
   <!-- Copy native DLLs to output directory for test execution -->
   <Target Name="CopyNativeDlls" AfterTargets="Build">
     <Copy SourceFiles="$(OutDir)runtimes\win-x64\native\manifoldc.dll" DestinationFiles="$(OutDir)manifoldc.dll" SkipUnchangedFiles="true" Condition="Exists('$(OutDir)runtimes\win-x64\native\manifoldc.dll')" />

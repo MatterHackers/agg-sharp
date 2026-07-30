@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026, Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -18,6 +18,7 @@
 //----------------------------------------------------------------------------
 using System;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.LcdCoverage;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
@@ -83,6 +84,69 @@ namespace MatterHackers.Agg
 				scanlineRenderer.RenderSolid(destImageFloat, rasterizer, scanlineCache, colorBytes.ToColorF());
 				destImageFloat.MarkImageChanged();
 			}
+		}
+
+		/// <summary>
+		/// True for a 32 bit-per-pixel <see cref="ImageBuffer"/> destination, reached either directly or
+		/// through <see cref="ImageClippingProxy"/> wrappers - which is what
+		/// <see cref="ImageBuffer.NewGraphics2D"/> hands this class, never the buffer itself.
+		/// </summary>
+		/// <remarks>
+		/// The limits are all real, not conservatism:
+		/// <list type="bullet">
+		/// <item><description>32 bits per pixel, because per-channel coverage has nothing to write into an
+		/// 8 or 24 bit destination's missing channels;</description></item>
+		/// <item><description>a concrete <see cref="ImageBuffer"/>, because
+		/// <see cref="LcdComposite.Composite"/> writes bytes directly - per-channel coverage cannot travel
+		/// through <see cref="IRecieveBlenderByte"/>, which is the whole reason this is a mask pipeline
+		/// rather than a blender;</description></item>
+		/// <item><description>and <see cref="ImageClippingProxy"/> as the only proxy walked through, because
+		/// it is the only one whose byte writes land unchanged on its linked buffer. Every other
+		/// <see cref="ImageProxy"/> exists precisely to reinterpret them - <see cref="FormatTransposer"/>
+		/// swaps the axes, <see cref="AlphaMaskAdaptor"/> multiplies in a mask - so a direct write behind one
+		/// would land in the wrong place or skip its effect. Those report false and take the ordinary fill
+		/// through the proxy, which is the answer that stays correct;</description></item>
+		/// <item><description>float destinations are out, since there is no float composite.</description></item>
+		/// </list>
+		/// <para>
+		/// <b>Opacity is the caller's obligation, not something checked here.</b> LCD subpixel geometry is
+		/// only meaningful against an opaque destination, and the straight-alpha composite coincides with a
+		/// premultiplied one only where the destination's alpha is already 255 (see
+		/// <see cref="LcdComposite"/>). A destination that is genuinely transparent under the fill wants the
+		/// chroma-free <see cref="LcdMaskBuilder.FinalizeGray"/> sibling; that gate belongs with whoever
+		/// knows the layer is transparent, which is the widget backbuffer layer above this one.
+		/// </para>
+		/// </remarks>
+		public override bool CanCompositeLcd => ResolveLcdDestination() != null;
+
+		/// <inheritdoc/>
+		protected override void CompositeLcdMask(LcdMask mask, Color color, int originX, int originY)
+		{
+			ImageBuffer destination = ResolveLcdDestination();
+			if (destination == null)
+			{
+				base.CompositeLcdMask(mask, color, originX, originY);
+				return;
+			}
+
+			LcdComposite.Composite(destination, mask, color, originX, originY);
+			destImageByte.MarkImageChanged();
+		}
+
+		/// <summary>
+		/// The <see cref="ImageBuffer"/> behind <c>destImageByte</c>, unwrapping clipping proxies only, or
+		/// null when this destination cannot take an LCD composite. See <see cref="CanCompositeLcd"/> for why
+		/// the walk stops at any other proxy.
+		/// </summary>
+		private ImageBuffer ResolveLcdDestination()
+		{
+			IImageByte image = destImageByte;
+			while (image is ImageClippingProxy clippingProxy)
+			{
+				image = clippingProxy.LinkedImage;
+			}
+
+			return image is ImageBuffer buffer && buffer.BitDepth == 32 ? buffer : null;
 		}
 
 		private void DrawImageGetDestBounds(IImageByte sourceImage,
