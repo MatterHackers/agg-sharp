@@ -69,7 +69,10 @@ namespace MatterHackers.Agg.UI
 		private GuiWidget widgetThatWantsToShowToolTip;
 		private GuiWidget widgetThatWasShowingToolTip;
 		private RunningInterval runningInterval;
-		private bool initialized;
+
+		// 0 = not initialized, 1 = initialized. Latched with Interlocked.CompareExchange so
+		// racing callers cannot double-subscribe MouseMove or leak a second interval.
+		private int initialized;
 
 		internal ToolTipManager(SystemWindow owner)
 		{
@@ -86,12 +89,10 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		internal void Initialize()
 		{
-			if (initialized)
+			if (System.Threading.Interlocked.CompareExchange(ref initialized, 1, 0) != 0)
 			{
 				return;
 			}
-
-			initialized = true;
 
 			// Register listeners
 			systemWindow.MouseMove += this.SystemWindow_MouseMove;

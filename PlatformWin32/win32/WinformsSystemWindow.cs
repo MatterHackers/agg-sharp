@@ -150,6 +150,9 @@ namespace MatterHackers.Agg.UI
 
 			if (ApplicationIcon.Value != null)
 			{
+				// This Icon instance is process-shared across all windows (static Lazy).
+				// Form.Dispose does not dispose an assigned Icon, so this is safe - but never
+				// Dispose it per-window or every other window's icon handle dies with it.
 				this.Icon = ApplicationIcon.Value;
 			}
 		}
@@ -456,6 +459,15 @@ namespace MatterHackers.Agg.UI
 			// Center the window if specified on the SystemWindow
 			if (MainWindowsFormsWindow != this && AggSystemWindow.CenterInParent)
 			{
+				// TitleBarHeight is 0 until the Win32 handle exists (it is computed in
+				// OnHandleCreated). The window is about to be shown, so forcing handle
+				// creation here is no longer premature and keeps the centering math correct
+				// on the first Show, matching the pre-lazy behavior.
+				if (!IsHandleCreated)
+				{
+					_ = this.Handle;
+				}
+
 				Rectangle desktopBounds = MainWindowsFormsWindow.DesktopBounds;
 				RectangleDouble newItemBounds = AggSystemWindow.LocalBounds;
 

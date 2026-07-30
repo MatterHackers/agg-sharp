@@ -75,6 +75,41 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
+		public async Task ConcurrentActivationInitializesExactlyOnce()
+		{
+			var systemWindow = new SystemWindow(200, 200);
+
+			var initialize = typeof(ToolTipManager).GetMethod("Initialize", BindingFlags.Instance | BindingFlags.NonPublic);
+
+			// Race N first-touch activations through the Interlocked latch
+			const int threadCount = 8;
+			using (var barrier = new System.Threading.Barrier(threadCount))
+			{
+				var tasks = new Task[threadCount];
+				for (int i = 0; i < threadCount; i++)
+				{
+					tasks[i] = Task.Run(() =>
+					{
+						barrier.SignalAndWait();
+						initialize.Invoke(systemWindow.ToolTipManager, null);
+					});
+				}
+
+				await Task.WhenAll(tasks);
+			}
+
+			// Exactly one interval scheduled
+			await Assert.That(GetToolTipInterval(systemWindow) != null).IsTrue();
+
+			// Exactly one MouseMove subscription - a double-run of Initialize would leave two
+			var mouseMoveField = typeof(GuiWidget).GetField("MouseMove", BindingFlags.Instance | BindingFlags.NonPublic);
+			var handlers = (System.Delegate)mouseMoveField.GetValue(systemWindow);
+			await Assert.That(handlers != null && handlers.GetInvocationList().Length == 1).IsTrue();
+
+			systemWindow.ToolTipManager.Dispose();
+		}
+
+		[Test]
 		public async Task DisposeIsSafeWhenNeverActivated()
 		{
 			var systemWindow = new SystemWindow(100, 100);
