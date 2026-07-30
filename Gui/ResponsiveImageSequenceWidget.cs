@@ -41,6 +41,10 @@ namespace MatterHackers.Agg.UI
 
 		private double currentTime = 0;
 
+		// Set when AnimationRunning is requested before the widget has loaded; the actual
+		// UiThread interval registration is deferred to OnLoad.
+		private bool animationRunningPending;
+
 		public ResponsiveImageSequenceWidget(ImageSequence initialSequence)
 		{
 			HAnchor = HAnchor.Stretch;
@@ -48,28 +52,26 @@ namespace MatterHackers.Agg.UI
 			ImageSequence = initialSequence;
 			MaximumSize = new Vector2(initialSequence.Width * GuiWidget.DeviceScale,
 				initialSequence.Height * GuiWidget.DeviceScale);
-			if (ImageSequence != null)
-			{
-				ImageSequence.Invalidated += ImageChanged;
-			}
 
 			animation.DrawTarget = this;
-			animation.Update += (s, updateEvent) =>
-			{
-				var currentImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
-
-				currentTime += updateEvent.SecondsPassed;
-				while (ImageSequence.Time > 0
-					&& currentTime > ImageSequence.Time)
-				{
-					currentTime -= ImageSequence.Time;
-				}
-
-				var newImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
-				updateEvent.ShouldDraw = currentImageIndex != newImageIndex;
-			};
+			animation.Update += Animation_Update;
 
 			AnimationRunning = true;
+		}
+
+		private void Animation_Update(object s, Animation.UpdateEvent updateEvent)
+		{
+			var currentImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
+
+			currentTime += updateEvent.SecondsPassed;
+			while (ImageSequence.Time > 0
+				&& currentTime > ImageSequence.Time)
+			{
+				currentTime -= ImageSequence.Time;
+			}
+
+			var newImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
+			updateEvent.ShouldDraw = currentImageIndex != newImageIndex;
 		}
 
 		public ImageSequence ImageSequence
@@ -84,12 +86,15 @@ namespace MatterHackers.Agg.UI
 					if (_imageSequence != null)
 					{
 						_imageSequence.Invalidated -= ResetImageIndex;
+						_imageSequence.Invalidated -= ImageChanged;
 					}
 
 					_imageSequence = value;
 					animation.FramesPerSecond = _imageSequence.FramesPerSecond;
 					currentTime = 0;
+					// subscribe each handler exactly once, on the sequence we currently hold
 					_imageSequence.Invalidated += ResetImageIndex;
+					_imageSequence.Invalidated += ImageChanged;
 				}
 			}
 		}
@@ -115,13 +120,22 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				return animation != null && animation.IsRunning;
+				return (animation != null && animation.IsRunning) || animationRunningPending;
 			}
 
 			set
 			{
-				if (animation != null
-					&& value != animation.IsRunning)
+				if (animation == null)
+				{
+					return;
+				}
+
+				if (!onloadInvoked)
+				{
+					// Defer starting the animation (UiThread.SetInterval) until OnLoad
+					animationRunningPending = value;
+				}
+				else if (value != animation.IsRunning)
 				{
 					if (value)
 					{
@@ -133,6 +147,36 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 			}
+		}
+
+		public override void OnLoad(EventArgs args)
+		{
+			if (animationRunningPending)
+			{
+				animationRunningPending = false;
+				if (!animation.IsRunning)
+				{
+					animation.Start();
+				}
+			}
+
+			base.OnLoad(args);
+		}
+
+		public override void OnClosed(EventArgs e)
+		{
+			// Unregister listeners
+			animationRunningPending = false;
+			animation.Update -= Animation_Update;
+			animation.Dispose();
+
+			if (_imageSequence != null)
+			{
+				_imageSequence.Invalidated -= ResetImageIndex;
+				_imageSequence.Invalidated -= ImageChanged;
+			}
+
+			base.OnClosed(e);
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)

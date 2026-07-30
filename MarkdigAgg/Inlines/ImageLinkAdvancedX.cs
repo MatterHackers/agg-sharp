@@ -42,9 +42,15 @@ namespace Markdig.Renderers.Agg.Inlines
 	{
 		private static HttpClient client = new HttpClient();
 
-		private static ImageBuffer icon = StaticData.Instance.LoadIcon("internet.png", 16, 16);
+		// Lazy so the StaticData I/O happens at first use rather than at type initialization
+		private static readonly Lazy<ImageBuffer> icon = new Lazy<ImageBuffer>(
+			() => StaticData.Instance.LoadIcon("internet.png", 16, 16));
 
 		public string Url { get; }
+
+		private readonly ImageBuffer imageBuffer;
+		private readonly ImageWidget imageWidget;
+		private bool fetchStarted;
 
 		public ImageLinkAdvancedX(string url)
 		{
@@ -52,16 +58,31 @@ namespace Markdig.Renderers.Agg.Inlines
 			VAnchor = VAnchor.Fit;
 			this.Url = url;
 
-			var imageBuffer = new ImageBuffer(icon);
-			var imageWidget = new ImageWidget(imageBuffer);
+			imageBuffer = new ImageBuffer(icon.Value);
+			imageWidget = new ImageWidget(imageBuffer);
 
 			this.AddChild(imageWidget);
+		}
 
+		public override void OnLoad(EventArgs args)
+		{
+			base.OnLoad(args);
+
+			// kick off the fetch once the widget is part of a live tree (not in the constructor)
+			if (!fetchStarted)
+			{
+				fetchStarted = true;
+				this.StartFetch();
+			}
+		}
+
+		private void StartFetch()
+		{
 			try
 			{
-				if (url.StartsWith("http"))
+				if (Url.StartsWith("http"))
 				{
-					client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ContinueWith(task =>
+					client.GetAsync(Url, HttpCompletionOption.ResponseHeadersRead).ContinueWith(task =>
 					{
 						var response = task.Result;
 
@@ -69,35 +90,48 @@ namespace Markdig.Renderers.Agg.Inlines
 						{
 							response.Content.ReadAsStreamAsync().ContinueWith(streamTask =>
 							{
-								// response.Headers.TryGetValues("", s[""] == "" ||
-								if (string.Equals(Path.GetExtension(url), ".svg", StringComparison.OrdinalIgnoreCase))
+								var stream = streamTask.Result;
+
+								// The continuation runs on a thread-pool thread; all widget-tree and
+								// image-buffer mutation must be marshaled to the UI thread.
+								UiThread.RunOnIdle(() =>
 								{
-									// Load svg into SvgWidget, swap for ImageWidget
-									try
+									if (this.HasBeenClosed)
 									{
-										var svgWidget = new SvgWidget()
+										// the widget went away before the response arrived
+										return;
+									}
+
+									// response.Headers.TryGetValues("", s[""] == "" ||
+									if (string.Equals(Path.GetExtension(Url), ".svg", StringComparison.OrdinalIgnoreCase))
+									{
+										// Load svg into SvgWidget, swap for ImageWidget
+										try
 										{
-											Border = 1,
-											BorderColor = Color.YellowGreen
-										};
+											var svgWidget = new SvgWidget()
+											{
+												Border = 1,
+												BorderColor = Color.YellowGreen
+											};
 
-										svgWidget.LoadSvg(streamTask.Result, 1);
+											svgWidget.LoadSvg(stream, 1);
 
-                                        this.ReplaceChild(imageWidget, svgWidget);
+											this.ReplaceChild(imageWidget, svgWidget);
+										}
+										catch (Exception svgEx)
+										{
+											Debug.WriteLine("Error loading svg: {0} :: {1}", Url, svgEx.Message);
+										}
 									}
-									catch (Exception svgEx)
+									else
 									{
-										Debug.WriteLine("Error loading svg: {0} :: {1}", url, svgEx.Message);
+										// Load img
+										if (!ImageIO.LoadImageData(stream, imageBuffer))
+										{
+											Debug.WriteLine("Error loading image: " + Url);
+										}
 									}
-								}
-								else
-								{
-									// Load img
-									if (!ImageIO.LoadImageData(streamTask.Result, imageBuffer))
-									{
-										Debug.WriteLine("Error loading image: " + url);
-									}
-								}
+								});
 							});
 						}
 					});

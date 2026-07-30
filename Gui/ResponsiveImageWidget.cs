@@ -104,6 +104,17 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public override void OnClosed(EventArgs e)
+		{
+			// stop listening to the externally owned image
+			if (_image != null)
+			{
+				_image.ImageChanged -= ImageChanged;
+			}
+
+			base.OnClosed(e);
+		}
+
 		private void RenderCheckerboard2(ImageBuffer image, int size, Color colorA, Color colorB)
 		{
 			var graphics2D = image.NewGraphics2D();

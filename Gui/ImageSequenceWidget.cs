@@ -37,6 +37,9 @@ namespace MatterHackers.Agg.UI
 		private ImageSequence _imageSequence;
 		private readonly Animation animation;
 		private double currentTime = 0;
+		// Set when RunAnimation is requested before the widget has loaded; the actual
+		// UiThread interval registration is deferred to OnLoad.
+		private bool runAnimationPending;
 
 		public ImageSequenceWidget(int width, int height)
 		{
@@ -107,11 +110,20 @@ namespace MatterHackers.Agg.UI
 
 		public bool RunAnimation
 		{
-			get => animation != null && animation.IsRunning;
+			get => (animation != null && animation.IsRunning) || runAnimationPending;
 			set
 			{
-				if (animation != null
-					&& value != animation.IsRunning)
+				if (animation == null)
+				{
+					return;
+				}
+
+				if (!onloadInvoked)
+				{
+					// Defer starting the animation (UiThread.SetInterval) until OnLoad
+					runAnimationPending = value;
+				}
+				else if (value != animation.IsRunning)
 				{
 					if (value)
 					{
@@ -125,13 +137,33 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public override void OnLoad(EventArgs args)
+		{
+			if (runAnimationPending)
+			{
+				runAnimationPending = false;
+				if (!animation.IsRunning)
+				{
+					animation.Start();
+				}
+			}
+
+			base.OnLoad(args);
+		}
+
 		public bool AllowStretching { get; set; } = false;
 
 		public override void OnClosed(EventArgs e)
 		{
 			// Unregister listeners
+			runAnimationPending = false;
 			animation.Update -= this.Animation_Update;
 			animation.Dispose();
+
+			if (_imageSequence != null)
+			{
+				_imageSequence.Invalidated -= ResetImageIndex;
+			}
 
 			base.OnClosed(e);
 		}
