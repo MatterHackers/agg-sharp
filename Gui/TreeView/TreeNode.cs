@@ -661,10 +661,13 @@ namespace MatterHackers.Agg.UI
 
         private class TreeExpandWidget : FlowLayoutWidget
         {
-            private readonly ImageBuffer arrowDown;
-            private readonly ImageBuffer arrowRight;
+            // Loaded in OnLoad rather than the constructor (disk I/O + recolor per node),
+            // matching the PopupMenu.RadioMenuItem pattern.
+            private ImageBuffer arrowDown;
+            private ImageBuffer arrowRight;
             private readonly ThemedIconButton imageButton = null;
             private readonly ImageBuffer placeholder;
+            private readonly ThemeConfig theme;
             private bool _alwaysExpandable;
 
             private bool? _expandable = null;
@@ -673,8 +676,7 @@ namespace MatterHackers.Agg.UI
 
             public TreeExpandWidget(ThemeConfig theme)
             {
-                arrowRight = StaticData.Instance.LoadIcon("fa-angle-right_12.png", 12, 12).GrayToColor(theme.TextColor);
-                arrowDown = StaticData.Instance.LoadIcon("fa-angle-down_12.png", 12, 12).GrayToColor(theme.TextColor);
+                this.theme = theme;
                 placeholder = new ImageBuffer(16, 16);
 
                 this.Margin = new BorderDouble(right: 4);
@@ -691,12 +693,30 @@ namespace MatterHackers.Agg.UI
                 this.AddChild(imageButton);
             }
 
+            public override void OnLoad(EventArgs args)
+            {
+                if (arrowRight == null)
+                {
+                    arrowRight = StaticData.Instance.LoadIcon("fa-angle-right_12.png", 12, 12).GrayToColor(theme.TextColor);
+                    arrowDown = StaticData.Instance.LoadIcon("fa-angle-down_12.png", 12, 12).GrayToColor(theme.TextColor);
+
+                    // Catch up on any expansion-state changes made before load
+                    this.EnsureExpansionState();
+                }
+
+                base.OnLoad(args);
+            }
+
             public bool AlwaysExpandable
             {
                 get => _alwaysExpandable;
                 set
                 {
-                    imageButton.SetIcon(_expanded ? arrowDown : arrowRight);
+                    if (arrowRight != null)
+                    {
+                        imageButton.SetIcon(_expanded ? arrowDown : arrowRight);
+                    }
+
                     _alwaysExpandable = value;
                 }
             }
@@ -735,7 +755,7 @@ namespace MatterHackers.Agg.UI
                 {
                     imageButton.SetIcon(placeholder);
                 }
-                else
+                else if (arrowRight != null)
                 {
                     imageButton.Visible = true;
                     imageButton.SetIcon(_expanded ? arrowDown : arrowRight);

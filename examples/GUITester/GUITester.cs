@@ -70,7 +70,7 @@ namespace MatterHackers.Agg
 		{
 			if (!putUpDiagnostics)
 			{
-				//DiagnosticWidget diagnosticView = new DiagnosticWidget(this);
+				//DiagnosticWidget diagnosticView = DiagnosticWidget.Show(this);
 				putUpDiagnostics = true;
 			}
 			this.NewGraphics2D().Clear(new Color(255, 255, 255));
