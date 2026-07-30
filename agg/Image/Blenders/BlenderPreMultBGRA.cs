@@ -30,17 +30,22 @@ namespace MatterHackers.Agg.Image
 {
     public sealed class BlenderPreMultBGRA : BlenderBase8888, IRecieveBlenderByte
 	{
-		private static int[] m_Saturate9BitToByte = new int[1 << 9];
+		// Filled eagerly by the type initializer so concurrent first-use never observes a partially built table.
+		private static readonly int[] m_Saturate9BitToByte = BuildSaturate9BitToByteTable();
+
+		private static int[] BuildSaturate9BitToByteTable()
+		{
+			int[] table = new int[1 << 9];
+			for (int i = 0; i < table.Length; i++)
+			{
+				table[i] = Math.Min(i, 255);
+			}
+
+			return table;
+		}
 
 		public BlenderPreMultBGRA()
 		{
-			if (m_Saturate9BitToByte[2] == 0)
-			{
-				for (int i = 0; i < m_Saturate9BitToByte.Length; i++)
-				{
-					m_Saturate9BitToByte[i] = Math.Min(i, 255);
-				}
-			}
 		}
 
 		public Color PixelToColor(byte[] buffer, int bufferOffset)
