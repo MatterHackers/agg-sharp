@@ -175,6 +175,10 @@ namespace MatterHackers.Agg.UI
 				MainWindowsFormsWindow = null;
 			}
 
+			// Remove the input handlers the sink wired onto the hooked control in its constructor
+			EventSink?.Unhook();
+			EventSink = null;
+
 			AggSystemWindow = null;
 
 			base.OnClosed(e);

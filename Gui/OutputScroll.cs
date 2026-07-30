@@ -51,10 +51,18 @@ namespace MatterHackers.Agg.UI
 			Write(lineString.Data + "\n");
 		}
 
-		private TypeFacePrinter printer = new TypeFacePrinter();
+		// Created lazily on first use so constructing an OutputScroll does not force
+		// the font machinery to initialize. The check-then-create in Write is intentionally
+		// unsynchronized; like the rest of this widget it assumes single-threaded (UI) use.
+		private TypeFacePrinter printer;
 
 		public void Write(string lineString)
 		{
+			if (printer == null)
+			{
+				printer = new TypeFacePrinter();
+			}
+
 			string[] splitOnNL = lineString.Split('\n');
 			foreach (string line in splitOnNL)
 			{

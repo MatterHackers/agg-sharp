@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using MatterHackers.Agg.SvgTools;
@@ -42,6 +43,13 @@ namespace MatterHackers.Agg.UI
 
 		private ImageBuffer imageBuffer;
 
+		// Deferred-load state for the file-path constructor. The file read, SVG parse and
+		// software rasterization are heavy, so they run in OnLoad rather than the constructor.
+		private string deferredFilePath;
+		private double deferredScale;
+		private int deferredWidth;
+		private int deferredHeight;
+
 		public double Scale { get; set; } = 0.7;
 
         public SvgWidget()
@@ -50,10 +58,31 @@ namespace MatterHackers.Agg.UI
 
         public SvgWidget(string filePath, double scale, int width = -1, int height = -1)
 		{
-			using (var stream = File.OpenRead(filePath))
+			deferredFilePath = filePath;
+			deferredScale = scale;
+			deferredWidth = width;
+			deferredHeight = height;
+
+			// Sizing does not depend on the parse - it is computed from the passed-in
+			// dimensions exactly as LoadSvg does - so set it now and defer the heavy work.
+			this.Scale = scale;
+			this.MinimumSize = new Vector2((int)(width * scale), (int)(height * scale));
+		}
+
+		public override void OnLoad(EventArgs args)
+		{
+			if (deferredFilePath != null)
 			{
-				LoadSvg(stream, scale, width, height);
+				var filePath = deferredFilePath;
+				deferredFilePath = null;
+
+				using (var stream = File.OpenRead(filePath))
+				{
+					LoadSvg(stream, deferredScale, deferredWidth, deferredHeight);
+				}
 			}
+
+			base.OnLoad(args);
 		}
 
 		public void LoadSvg(Stream stream, double scale, int width = -1, int height = -1)
@@ -82,6 +111,16 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
+			if (!onloadInvoked)
+			{
+				// Set onloadInvoked before invoking OnLoad to ensure we only fire once.
+				// This draw happens before base.OnDraw would fire OnLoad, and the deferred
+				// parse/rasterize in OnLoad must run before imageBuffer is rendered.
+				onloadInvoked = true;
+
+				this.OnLoad(null);
+			}
+
 			graphics2D.Render(imageBuffer, Point2D.Zero);
 
 			base.OnDraw(graphics2D);

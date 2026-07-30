@@ -30,8 +30,19 @@ namespace MatterHackers.Agg.UI
 			this.topLevelWindow = topLevelWindow;
 			BackgroundColor = Color.White;
 			topLevelWindow.MouseMove += topLevelWindow_MouseMove;
+		}
 
-			ShowAsSystemWindow();
+		/// <summary>
+		/// Creates a DiagnosticWidget and shows it as a system window. Showing is not done in
+		/// the constructor so the instance is fully constructed before it escapes to the
+		/// window system.
+		/// </summary>
+		public static DiagnosticWidget Show(GuiWidget topLevelWindow)
+		{
+			var diagnosticWidget = new DiagnosticWidget(topLevelWindow);
+			diagnosticWidget.ShowAsSystemWindow();
+
+			return diagnosticWidget;
 		}
 
 		public override void OnClosed(EventArgs e)
