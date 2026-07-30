@@ -228,6 +228,13 @@ namespace MatterHackers.Agg.UI
 				OnDrawBackground(lcdBufferGraphics2D);
 				OnDraw(lcdBufferGraphics2D);
 
+				// The twin of the RGBA arm's MarkImageChanged below. Defensive rather than load-bearing as it
+				// stands: a widget re-rasters into the same LcdBuffer instance whenever its size did not
+				// change, and the GPU composite's per-channel texture cache has only the stamp to tell this
+				// frame's pixels from last frame's - but the Clear above already bumps it, and so does any
+				// paint. It stands as the stamp of record for a repaint that ends up drawing nothing at all.
+				lcdBackBuffer.MarkChanged();
+
 				return;
 			}
 

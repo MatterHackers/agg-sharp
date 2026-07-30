@@ -177,6 +177,10 @@ namespace MatterHackers.Agg.LcdCoverage
 			byte green = Premultiply(fill.green, alpha);
 			byte blue = Premultiply(fill.blue, alpha);
 
+			// This arm writes the planes directly rather than through a method on the buffer, so it owes the
+			// change stamp by hand - see LcdBuffer.ChangedCount.
+			this.buffer.MarkChanged();
+
 			for (int y = pixelBounds.Bottom; y < pixelBounds.Top; y++)
 			{
 				int offset = this.buffer.PixelOffset(pixelBounds.Left, y);
@@ -369,6 +373,9 @@ namespace MatterHackers.Agg.LcdCoverage
 
 			byte[] source = imageSource.GetBuffer();
 			int sourceBytesPerPixel = imageSource.GetBytesBetweenPixelsInclusive();
+
+			// Direct plane writes below, so the change stamp is owed by hand - see LcdBuffer.ChangedCount.
+			this.buffer.MarkChanged();
 
 			for (int row = 0; row < paintedHeight; row++)
 			{

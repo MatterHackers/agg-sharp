@@ -109,6 +109,38 @@ namespace MatterHackers.Agg.LcdCoverage
 		public int Height { get; }
 
 		/// <summary>
+		/// Bumped every time this buffer's pixels change, so a consumer holding something derived from them -
+		/// the per-channel GL textures, above all - can tell a repaint from a no-op without comparing planes.
+		/// The <see cref="Image.ImageBuffer.ChangedCount"/> analogue, and for the same consumer.
+		/// </summary>
+		/// <remarks>
+		/// It has to be a stamp on the buffer rather than the buffer's identity, because a widget re-rasters
+		/// into the <i>same</i> <see cref="LcdBuffer"/> instance whenever its size has not changed
+		/// (<c>GuiWidget.AllocateLcdBackBuffer</c>) - so identity alone would serve last frame's textures
+		/// forever.
+		/// <para>
+		/// Every mutating method here bumps it. Code that writes <see cref="ColorPlane"/> or
+		/// <see cref="AlphaPlane"/> directly - which this class hands out on purpose - owes a call to
+		/// <see cref="MarkChanged"/>, exactly as a direct writer of <see cref="Image.ImageBuffer.GetBuffer()"/>
+		/// owes <see cref="Image.ImageBuffer.MarkImageChanged"/>.
+		/// </para>
+		/// </remarks>
+		public int ChangedCount { get; private set; }
+
+		/// <summary>
+		/// Records that this buffer's pixels changed. See <see cref="ChangedCount"/> for who has to call it.
+		/// </summary>
+		public void MarkChanged()
+		{
+			// Unchecked for the same reason ImageBuffer's counter is: consumers compare for inequality, so a
+			// rollover is harmless and throwing in a paint path would not be.
+			unchecked
+			{
+				this.ChangedCount++;
+			}
+		}
+
+		/// <summary>
 		/// Premultiplied per-channel color, length <c>Width * Height * 3</c>, stride <c>Width * 3</c>,
 		/// channel order R, G, B. Each byte is <c>channel_color * channel_alpha</c>.
 		/// </summary>
@@ -153,6 +185,8 @@ namespace MatterHackers.Agg.LcdCoverage
 			byte greenByte = ToByte((fill.green / 255.0f) * a);
 			byte blueByte = ToByte((fill.blue / 255.0f) * a);
 			byte alphaByte = ToByte(a);
+
+			this.MarkChanged();
 
 			for (int offset = 0; offset < this.color.Length; offset += 3)
 			{
@@ -275,6 +309,11 @@ namespace MatterHackers.Agg.LcdCoverage
 			float sourceGreen = fill.green / 255.0f;
 			float sourceBlue = fill.blue / 255.0f;
 
+			// Bumped for an attempted composite rather than a proven write: telling "the mask was entirely
+			// transparent" from "the mask painted" would cost a second pass over it, and the only price of an
+			// over-count is one redundant texture repack.
+			this.MarkChanged();
+
 			for (int maskY = 0; maskY < mask.Height; maskY++)
 			{
 				int y = destY + maskY;
@@ -356,6 +395,8 @@ namespace MatterHackers.Agg.LcdCoverage
 			{
 				return;
 			}
+
+			this.MarkChanged();
 
 			for (int sourceY = 0; sourceY < source.Height; sourceY++)
 			{

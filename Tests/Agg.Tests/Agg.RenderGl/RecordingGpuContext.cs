@@ -75,8 +75,35 @@ namespace MatterHackers.Agg.Tests
 		public List<int> DeletedLists { get; } = new List<int>();
 
 		/// <summary>
+		/// Every <see cref="ColorMask"/> in the order it was set. The LCD backbuffer composite is defined by
+		/// this sequence - three single-channel passes and a restore - so a test has to be able to read it.
+		/// </summary>
+		public List<(bool Red, bool Green, bool Blue, bool Alpha)> ColorMasks { get; } = new List<(bool, bool, bool, bool)>();
+
+		/// <summary>Every <see cref="BlendFunc"/> in the order it was set, as raw GL enum values.</summary>
+		public List<(int Source, int Destination)> BlendFuncs { get; } = new List<(int, int)>();
+
+		/// <summary>
+		/// Every <see cref="Translate(double, double, double)"/>, with the number of <see cref="Begin"/> calls
+		/// that had already been made when it arrived. The LCD backbuffer composite places its quad by a
+		/// modelview translate and nothing else, so this is the only record of <b>where</b> the composited
+		/// pixels land - and <c>BeforeBeginCount</c> is what says the placement happened before the passes were
+		/// drawn rather than between or after them.
+		/// </summary>
+		public List<(double X, double Y, double Z, int BeforeBeginCount)> Translates { get; } = new List<(double, double, double, int)>();
+
+		/// <summary>
+		/// The pixels handed to <see cref="TexImage2D"/>, with the texture that was bound at the time. This is
+		/// what actually reached the driver, so it is the only place a test can pin what a texture's contents
+		/// and row order really are.
+		/// </summary>
+		public List<RecordedTextureUpload> TextureUploads { get; } = new List<RecordedTextureUpload>();
+
+		private int lastBoundTexture;
+
+		/// <summary>
 		/// Zeros the recorded counters so a test can measure only the calls made after this point.
-		/// Generated handle history is intentionally kept.
+		/// Generated handle and texture upload history is intentionally kept.
 		/// </summary>
 		public void ResetCallRecording()
 		{
@@ -86,6 +113,9 @@ namespace MatterHackers.Agg.Tests
 			TexCoord2Count = 0;
 			BoundTextures.Clear();
 			CalledLists.Clear();
+			ColorMasks.Clear();
+			BlendFuncs.Clear();
+			Translates.Clear();
 		}
 
 		/// <summary>
@@ -105,7 +135,11 @@ namespace MatterHackers.Agg.Tests
 
 		public void TexCoord2(double x, double y) => TexCoord2Count++;
 
-		public void BindTexture(int target, int texture) => BoundTextures.Add(texture);
+		public void BindTexture(int target, int texture)
+		{
+			lastBoundTexture = texture;
+			BoundTextures.Add(texture);
+		}
 
 		public int GenTexture()
 		{
@@ -156,7 +190,7 @@ namespace MatterHackers.Agg.Tests
 
 		public void BindVertexArray(int vertexArray) { }
 
-		public void BlendFunc(int sfactor, int dfactor) { }
+		public void BlendFunc(int sfactor, int dfactor) => BlendFuncs.Add((sfactor, dfactor));
 
 		public void BufferData(int target, int size, IntPtr data, int usage) { }
 
@@ -170,7 +204,7 @@ namespace MatterHackers.Agg.Tests
 
 		public void Color4(byte red, byte green, byte blue, byte alpha) { }
 
-		public void ColorMask(bool red, bool green, bool blue, bool alpha) { }
+		public void ColorMask(bool red, bool green, bool blue, bool alpha) => ColorMasks.Add((red, green, blue, alpha));
 
 		public void ColorMaterial(MaterialFace face, ColorMaterialParameter mode) { }
 
@@ -264,15 +298,19 @@ namespace MatterHackers.Agg.Tests
 
 		public void TexEnv(TextureEnvironmentTarget target, TextureEnvParameter pname, float param) { }
 
-		public void TexImage2D(int target, int level, int internalFormat, int width, int height, int border, int format, int type, byte[] pixels) { }
+		public void TexImage2D(int target, int level, int internalFormat, int width, int height, int border, int format, int type, byte[] pixels)
+		{
+			// Copied, not referenced: the uploader hands over a scratch buffer it is free to reuse.
+			TextureUploads.Add(new RecordedTextureUpload(lastBoundTexture, level, width, height, (byte[])pixels?.Clone()));
+		}
 
 		public void TexParameter(TextureTarget target, TextureParameterName pname, int param) { }
 
 		public void TexParameteri(int target, int pname, int param) { }
 
-		public void Translate(Vector3 vector) { }
+		public void Translate(Vector3 vector) => Translate(vector.X, vector.Y, vector.Z);
 
-		public void Translate(double x, double y, double z) { }
+		public void Translate(double x, double y, double z) => Translates.Add((x, y, z, BeginCount));
 
 		public void Uniform1f(int location, float v0) { }
 
@@ -290,5 +328,42 @@ namespace MatterHackers.Agg.Tests
 
 		public void Viewport(int x, int y, int width, int height) { }
 		#endregion no-op members
+	}
+
+	/// <summary>
+	/// One <c>glTexImage2D</c> as it reached the context: the texture bound at the time, the mip level, the
+	/// dimensions, and a copy of the pixels. Pixels are in the byte order the uploader produced - R, G, B, A,
+	/// row 0 first, which is GL's <c>t = 0</c> edge.
+	/// </summary>
+	public class RecordedTextureUpload
+	{
+		public RecordedTextureUpload(int texture, int level, int width, int height, byte[] pixels)
+		{
+			this.Texture = texture;
+			this.Level = level;
+			this.Width = width;
+			this.Height = height;
+			this.Pixels = pixels;
+		}
+
+		public int Texture { get; }
+
+		public int Level { get; }
+
+		public int Width { get; }
+
+		public int Height { get; }
+
+		public byte[] Pixels { get; }
+
+		/// <summary>
+		/// The R, G, B, A bytes of one texel, with (0, 0) the first row uploaded - the bottom of the drawn
+		/// quad.
+		/// </summary>
+		public (byte Red, byte Green, byte Blue, byte Alpha) Texel(int x, int y)
+		{
+			int offset = ((y * this.Width) + x) * 4;
+			return (this.Pixels[offset], this.Pixels[offset + 1], this.Pixels[offset + 2], this.Pixels[offset + 3]);
+		}
 	}
 }

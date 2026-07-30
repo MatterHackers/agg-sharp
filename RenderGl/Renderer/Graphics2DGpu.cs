@@ -46,7 +46,8 @@ using MatterHackers.VectorMath;
 namespace MatterHackers.RenderGl
 {
 	// NOTE: GL render path is deprecated and will be removed. D3D is the active render path.
-	public class Graphics2DGpu : Graphics2D
+	// The LCD coverage composite lives in Graphics2DGpu.Lcd.cs.
+	public partial class Graphics2DGpu : Graphics2D
 	{
         public readonly GL gl;
 
@@ -559,6 +560,12 @@ namespace MatterHackers.RenderGl
             gl.Enable(EnableCap.Texture2D);
             gl.Disable(EnableCap.DepthTest);
             gl.Enable(EnableCap.Blend);
+
+            // Known asymmetry with the LCD arm, and pre-existing: this is the path a widget's ordinary RGBA
+            // backbuffer blits through, and it uses non-premultiplied source over on a source that is in fact
+            // premultiplied, which double-darkens partially covered pixels. CompositeLcdBuffer uses the
+            // correct One / OneMinusSrcAlpha. Boundary pixels that differ between the two backbuffer modes are
+            // therefore this, not an LCD regression - fixing it means auditing every Render(IImageByte) caller.
             gl.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
 
             gl.Translate(x, y, 0);

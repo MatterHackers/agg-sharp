@@ -437,10 +437,10 @@ namespace MatterHackers.Agg
         /// </summary>
         /// <remarks>
         /// False by default, so a backend that has not been taught the per-channel composite keeps the
-        /// behaviour it always had rather than silently receiving a collapsed blit. The GL destination is
-        /// exactly that case today: <see cref="CompositeLcdBuffer"/> would flatten every frame and defeat its
-        /// texture cache, so it answers false and its widgets stay on the ordinary RGBA backbuffer until the
-        /// color-masked GL passes land.
+        /// behaviour it always had rather than silently receiving a collapsed blit. The destinations that
+        /// override it to true are the ones with a real per-channel composite to offer:
+        /// <see cref="Image.ImageGraphics2D"/> through the software <see cref="LcdBuffer.CompositeOnto"/>, and
+        /// <c>Graphics2DGpu</c> through three color-masked GL passes.
         /// </remarks>
         public virtual bool CanCompositeLcdBuffer => false;
 
