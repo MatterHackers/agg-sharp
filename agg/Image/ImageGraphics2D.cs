@@ -110,20 +110,34 @@ namespace MatterHackers.Agg
 		/// <item><description>float destinations are out, since there is no float composite.</description></item>
 		/// </list>
 		/// <para>
-		/// <b>Opacity is the caller's obligation, not something checked here.</b> LCD subpixel geometry is
-		/// only meaningful against an opaque destination, and the straight-alpha composite coincides with a
-		/// premultiplied one only where the destination's alpha is already 255 (see
-		/// <see cref="LcdComposite"/>). A destination that is genuinely transparent under the fill wants the
-		/// chroma-free <see cref="LcdMaskBuilder.FinalizeGray"/> sibling; that gate belongs with whoever
-		/// knows the layer is transparent, which is the widget backbuffer layer above this one.
+		/// <b>A transparent compositing layer is refused outright</b>, rather than being handed the
+		/// chroma-free mask the validity gate calls for on a per-channel target. The reason is specific to a
+		/// single-alpha destination: <see cref="LcdComposite"/> writes colour and deliberately leaves
+		/// destination alpha alone, which is right on an opaque surface and useless on a layer whose alpha is
+		/// still zero - the paint would be invisible the moment the layer was blended onto anything. Such a
+		/// destination takes the ordinary anti-aliased fill, which writes alpha, and so renders exactly as it
+		/// did before the LCD path existed. The gray arm is still the right answer for a target that carries
+		/// alpha per channel; that is <see cref="LcdBufferGraphics2D"/>, which keeps this true and switches
+		/// <see cref="Graphics2D.LcdChromaAllowed"/> instead. The caller declares the layer through
+		/// <see cref="Graphics2D.IsTransparentCompositingLayer"/>; opacity is not measured here.
+		/// </para>
+		/// <para>
+		/// <b>The reference does not share this hazard, and the divergence is worth naming.</b> Rust's
+		/// framebuffer composite writes the destination alpha too, by a max rule over the three channel
+		/// coverages (<c>gfx_ctx\draw_impl.rs:568-570</c>), so a layer it paints into comes out with alpha and
+		/// survives being blended onward. agg-sharp ported the other composite - the straight-RGBA one from
+		/// <c>mask.rs</c>, which leaves destination alpha untouched - and the refusal above is the honest
+		/// consequence of that choice rather than a limit of the design. Teaching
+		/// <see cref="LcdComposite"/> the max-alpha write is what would close the gap, and would let a
+		/// transparent single-alpha layer take the gray mask like every other target.
 		/// </para>
 		/// </remarks>
-		public override bool CanCompositeLcd => ResolveLcdDestination() != null;
+		public override bool CanCompositeLcd => !this.IsTransparentCompositingLayer && ResolveLcdDestination() != null;
 
 		/// <inheritdoc/>
 		protected override void CompositeLcdMask(LcdMask mask, Color color, int originX, int originY, RectangleDouble? clip = null)
 		{
-			ImageBuffer destination = ResolveLcdDestination();
+			ImageBuffer destination = this.CanCompositeLcd ? ResolveLcdDestination() : null;
 			if (destination == null)
 			{
 				base.CompositeLcdMask(mask, color, originX, originY, clip);
@@ -131,6 +145,51 @@ namespace MatterHackers.Agg
 			}
 
 			LcdComposite.Composite(destination, mask, color, originX, originY, clip);
+			destImageByte.MarkImageChanged();
+		}
+
+		/// <summary>
+		/// True on the same destinations <see cref="CanCompositeLcd"/> accepts, minus the ones flagged
+		/// <see cref="Graphics2D.IsTransparentCompositingLayer"/>.
+		/// </summary>
+		/// <remarks>
+		/// The extra condition is the validity gate, applied one level up from a mask: per-channel planes are
+		/// only meaningful against pixels nothing will blend again later, and a transparent layer's pixels are
+		/// blended again by definition. A widget asking this question is deciding whether to keep its whole
+		/// backbuffer in LCD coverage, so answering false here sends it to the ordinary RGBA backbuffer rather
+		/// than producing chroma that would be collapsed - or worse, composited against unknown pixels - on
+		/// the way to the screen.
+		/// </remarks>
+		public override bool CanCompositeLcdBuffer => !this.IsTransparentCompositingLayer && ResolveLcdDestination() != null;
+
+		/// <inheritdoc/>
+		/// <remarks>
+		/// The per-channel override of the base class's collapsing default: each subpixel's alpha drives its
+		/// own source-over, so a cached LCD backbuffer keeps its chroma all the way onto this surface. The
+		/// destination is treated as premultiplied, which it is where this is reached - a widget backbuffer
+		/// (<see cref="BlenderPreMultBGRA"/>), or an opaque final surface, where premultiplied and straight
+		/// coincide.
+		/// <para>
+		/// The clipping rect is honoured, because the widget layer sets it to the child's screen clipping
+		/// before compositing and a partially scrolled-out widget must not paint over its siblings. Like <see cref="LcdComposite"/>, the placement is in raw buffer pixels and takes
+		/// no account of <see cref="ImageBuffer.OriginOffset"/>.
+		/// </para>
+		/// </remarks>
+		public override void CompositeLcdBuffer(LcdBuffer buffer, int destX, int destY)
+		{
+			if (buffer == null)
+			{
+				throw new ArgumentNullException(nameof(buffer));
+			}
+
+			ImageBuffer destination = this.CanCompositeLcdBuffer ? ResolveLcdDestination() : null;
+			if (destination == null)
+			{
+				base.CompositeLcdBuffer(buffer, destX, destY);
+				return;
+			}
+
+			buffer.CompositeOnto(destination, destX, destY, 1.0, LcdBuffer.ToPixelClip(GetClippingRect()));
 			destImageByte.MarkImageChanged();
 		}
 

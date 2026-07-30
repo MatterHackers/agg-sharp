@@ -446,7 +446,13 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// <see cref="BoundedMaskBuilder"/> already applies to the mask, so the two clips cannot disagree
 		/// about which pixels are in.
 		/// </summary>
-		private static RectangleInt? ToPixelClip(RectangleDouble? clip)
+		/// <remarks>
+		/// Public because every caller that has a clip in continuous coordinates - a
+		/// <see cref="MatterHackers.Agg.Graphics2D"/>'s clipping rect, say - needs this exact rounding to
+		/// reach <see cref="CompositeMask"/> or <see cref="CompositeOnto"/>, and a second implementation of it
+		/// would be a second chance to disagree about a boundary pixel.
+		/// </remarks>
+		public static RectangleInt? ToPixelClip(RectangleDouble? clip)
 		{
 			if (clip == null)
 			{

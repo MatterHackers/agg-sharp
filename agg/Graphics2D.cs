@@ -393,6 +393,22 @@ namespace MatterHackers.Agg
         public virtual bool CanCompositeLcd => false;
 
         /// <summary>
+        /// Set by whoever knows this destination is an offscreen surface that will be blended onto something
+        /// else later - a widget's transparent backbuffer, a compositing layer - rather than the final opaque
+        /// surface. It turns subpixel chroma off (see <see cref="LcdChromaAllowed"/>) and stops this
+        /// destination accepting a per-channel <see cref="LcdBuffer"/> (see
+        /// <see cref="CanCompositeLcdBuffer"/>).
+        /// </summary>
+        /// <remarks>
+        /// A property rather than an override because the same <see cref="Graphics2D"/> class draws both
+        /// kinds of surface: <see cref="Image.ImageGraphics2D"/> is the final window surface in one call and a
+        /// widget's transparent backbuffer in the next, and only the caller that allocated the buffer knows
+        /// which. It is the plumbing half of the reference's validity gate (<c>text_render.rs:56-62</c>),
+        /// whose Rust equivalent is knowing whether the active target is a layer.
+        /// </remarks>
+        public bool IsTransparentCompositingLayer { get; set; }
+
+        /// <summary>
         /// Whether subpixel chroma is valid on this destination. True (the default) takes the LCD filter;
         /// false takes the chroma-free collapse (<see cref="LcdMaskBuilder.FinalizeGray"/>) - the same raster,
         /// the same layout and the same composite, with r == g == b coverage everywhere.
@@ -402,11 +418,73 @@ namespace MatterHackers.Agg
         /// against the final opaque surface, because a transparent compositing layer's pixels get blended
         /// again later, against content the R/G/B phase knew nothing about. Separate from
         /// <see cref="CanCompositeLcd"/> - <b>can</b> this destination take a per-channel mask at all, versus
-        /// <b>should</b> that mask carry chroma - and only consulted when that one is true. The transparent
-        /// backbuffer destination that answers false is the layer above this one; nothing in agg-sharp
-        /// overrides it yet.
+        /// <b>should</b> that mask carry chroma - and only consulted when that one is true.
+        /// <para>
+        /// The default reads <see cref="IsTransparentCompositingLayer"/>, but the only destination that ever
+        /// reaches this check with that flag set is <see cref="LcdCoverage.LcdBufferGraphics2D"/>, whose two
+        /// planes can carry gray coverage perfectly well. A transparent <see cref="Image.ImageGraphics2D"/>
+        /// never gets here at all: it answers <see cref="CanCompositeLcd"/> false and takes the ordinary
+        /// anti-aliased fill instead (see that override for why a single-alpha layer needs a composite that
+        /// writes alpha, which the gray mask still would not do).
+        /// </para>
         /// </remarks>
-        protected virtual bool LcdChromaAllowed => true;
+        protected virtual bool LcdChromaAllowed => !this.IsTransparentCompositingLayer;
+
+        /// <summary>
+        /// Whether this destination can take a whole two-plane <see cref="LcdBuffer"/> without collapsing it -
+        /// the buffer-level twin of <see cref="CanCompositeLcd"/>, and the gate a widget consults before
+        /// choosing an LCD-coverage backbuffer at all.
+        /// </summary>
+        /// <remarks>
+        /// False by default, so a backend that has not been taught the per-channel composite keeps the
+        /// behaviour it always had rather than silently receiving a collapsed blit. The GL destination is
+        /// exactly that case today: <see cref="CompositeLcdBuffer"/> would flatten every frame and defeat its
+        /// texture cache, so it answers false and its widgets stay on the ordinary RGBA backbuffer until the
+        /// color-masked GL passes land.
+        /// </remarks>
+        public virtual bool CanCompositeLcdBuffer => false;
+
+        /// <summary>
+        /// Paints a finished LCD-coverage buffer onto this destination with its bottom-left pixel at
+        /// (<paramref name="destX"/>, <paramref name="destY"/>) - whole destination pixels, and
+        /// <b>not</b> transformed by the current transform.
+        /// </summary>
+        /// <param name="buffer">The source planes. Pixels with no coverage in any channel leave the
+        /// destination untouched.</param>
+        /// <param name="destX">Destination x of the buffer's left column.</param>
+        /// <param name="destY">Destination y of the buffer's bottom row; both are Y-up, so there is no flip.</param>
+        /// <remarks>
+        /// The default collapses to a single alpha (<see cref="LcdBuffer.ToImageBufferCollapsed"/>, Rec.709
+        /// weighted) and blits that through the ordinary image path, which is lossy of chroma wherever the
+        /// three channel alphas diverge but preserves luminance. That is the reference's arrangement exactly:
+        /// <c>DrawCtx::draw_lcd_backbuffer_arc</c> (<c>draw_ctx.rs:553-574</c>) has a live collapsing body and
+        /// the backends that can do better override it - here <see cref="Image.ImageGraphics2D"/>, with the
+        /// per-channel <see cref="LcdBuffer.CompositeOnto"/>.
+        /// <para>
+        /// The placement is integer and untransformed because the planes are finished pixels: resampling them
+        /// would smear each channel's phase into its neighbours and destroy the subpixel geometry. The
+        /// transform is neutralized rather than merely ignored so the collapsed blit lands where the caller
+        /// asked whatever transform happened to be current.
+        /// </para>
+        /// </remarks>
+        public virtual void CompositeLcdBuffer(LcdBuffer buffer, int destX, int destY)
+        {
+            if (buffer == null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+
+            PushTransform();
+            try
+            {
+                SetTransform(Affine.NewIdentity());
+                Render(buffer.ToImageBufferCollapsed(), destX, destY);
+            }
+            finally
+            {
+                PopTransform();
+            }
+        }
 
         /// <summary>
         /// Fills <paramref name="vertexSource"/> through the LCD subpixel pipeline when every gate allows

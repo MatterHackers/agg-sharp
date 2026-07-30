@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.LcdCoverage;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
@@ -159,7 +160,11 @@ namespace MatterHackers.Agg.UI
 		FirstUnderMouse
 	}
 
-	public class GuiWidget : IAscendable<GuiWidget>, IEquatable<GuiWidget>
+	/// <summary>
+	/// The base of every widget. The double-buffering concern - the backbuffer fields, their modes and the
+	/// raster and composite that use them - lives in <c>GuiWidget.Backbuffer.cs</c>.
+	/// </summary>
+	public partial class GuiWidget : IAscendable<GuiWidget>, IEquatable<GuiWidget>
 	{
 		public static double DeviceScale { get; set; } = 1;
 
@@ -172,9 +177,6 @@ namespace MatterHackers.Agg.UI
 		private bool isCurrentlyInvalid = true;
 
 		public static bool DebugBoundsUnderMouse = false;
-
-		private bool doubleBuffer;
-		private ImageBuffer backBuffer;
 
 		public bool HasBeenClosed { get; private set; }
 
@@ -908,60 +910,6 @@ namespace MatterHackers.Agg.UI
 		public virtual void OnContainsFocusChanged(FocusChangedArgs e)
 		{
 			ContainsFocusChanged?.Invoke(this, e);
-		}
-
-		private void AllocateBackBuffer()
-		{
-			AllocateBackBuffer(0, 0);
-		}
-
-		private void AllocateBackBuffer(int extraWidth, int extraHeight)
-		{
-			RectangleDouble localBounds = LocalBounds;
-			int intWidth = Max((int)(Ceiling(localBounds.Right) - Floor(localBounds.Left)) + extraWidth, 1);
-			int intHeight = Max((int)(Ceiling(localBounds.Top) - Floor(localBounds.Bottom)) + extraHeight, 1);
-			if (backBuffer == null || backBuffer.Width != intWidth || backBuffer.Height != intHeight)
-			{
-				backBuffer = new ImageBuffer(intWidth, intHeight, 32, new BlenderPreMultBGRA());
-			}
-		}
-
-		/// <summary>
-		/// Gets the backBuffer object for widgets that are double buffered.  It will return null if they are not.
-		/// </summary>
-		public ImageBuffer BackBuffer
-		{
-			get
-			{
-				if (DoubleBuffer)
-				{
-					return backBuffer;
-				}
-
-				return null;
-			}
-		}
-
-		public bool DoubleBuffer
-		{
-			get => doubleBuffer;
-			set
-			{
-				if (this.DoubleBuffer != value)
-				{
-					doubleBuffer = value;
-					if (doubleBuffer)
-					{
-						AllocateBackBuffer();
-					}
-					else
-					{
-						backBuffer = null;
-					}
-
-					Invalidate();
-				}
-			}
 		}
 
 		public virtual Keys ModifierKeys
@@ -2284,23 +2232,37 @@ namespace MatterHackers.Agg.UI
 							double xFraction = offsetToRenderSurface.X - (int)offsetToRenderSurface.X;
 							int xOffset = (int)Floor(child.LocalBounds.Left);
 							int yOffset = (int)Floor(child.LocalBounds.Bottom);
+
+							// Re-decided every paint, so the LCD setting takes effect on the next frame. Both a
+							// mode flip and a change to the filter's style parameters force a re-raster: the
+							// pixels already in the buffer are in the wrong representation in the first case and
+							// rastered under superseded settings in the second.
+							BackbufferMode mode = child.ResolveBackbufferMode(graphics2D);
+
+							// Read once, before the raster, and used for both the compare and the store: read
+							// again afterwards it would stamp pixels rastered under the old settings with an
+							// epoch that says they are current, and a settings change that landed mid-raster
+							// would never be re-rastered.
+							long lcdEpoch = LcdRenderSettings.Epoch;
+							if (mode != child.backBufferMode
+								|| (mode == BackbufferMode.LcdCoverage && child.backBufferLcdEpoch != lcdEpoch))
+							{
+								child.isCurrentlyInvalid = true;
+							}
+
 							if (child.isCurrentlyInvalid)
 							{
 								int extraW = xFraction > 0 ? 1 : 0;
 								int extraH = yFraction > 0 ? 1 : 0;
-								if (extraW > 0 || extraH > 0)
-								{
-									child.AllocateBackBuffer(extraW, extraH);
-								}
 
-								Graphics2D childBackBufferGraphics2D = child.backBuffer.NewGraphics2D();
-								childBackBufferGraphics2D.Clear(new Color(0, 0, 0, 0));
-								var transformToBuffer = Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction);
-								childBackBufferGraphics2D.SetTransform(transformToBuffer);
-								child.OnDrawBackground(childBackBufferGraphics2D);
-								child.OnDraw(childBackBufferGraphics2D);
+								child.RasterizeBackbuffer(
+									mode,
+									extraW,
+									extraH,
+									Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction));
 
-								child.backBuffer.MarkImageChanged();
+								child.backBufferMode = mode;
+								child.backBufferLcdEpoch = lcdEpoch;
 								child.isCurrentlyInvalid = false;
 							}
 
@@ -2316,7 +2278,11 @@ namespace MatterHackers.Agg.UI
 
 							graphics2D.SetTransform(Affine.NewTranslation(offsetToRenderSurface));
 
-							graphics2D.Render(child.backBuffer, 0, 0, 0, currentGraphics2DTransform.sx, currentGraphics2DTransform.sy);
+							child.CompositeBackbufferOnto(
+								graphics2D,
+								offsetToRenderSurface,
+								currentGraphics2DTransform.sx,
+								currentGraphics2DTransform.sy);
 						}
 						else
 						{
