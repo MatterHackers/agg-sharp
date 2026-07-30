@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg.Font;
 using System;
+using System.Threading;
 
 namespace MatterHackers.Agg.Platform
 {
@@ -44,9 +45,13 @@ namespace MatterHackers.Agg.Platform
 
 	public static class AggContext
 	{
-		private static IFileDialogProvider _fileDialogs = null;
-		private static IOsInformationProvider _osInformation = null;
-		private static PlatformConfig _config = null;
+		// Guards lazy creation of the providers below. Monitor is reentrant, so the
+		// FileDialogs/OsInformation getters may safely resolve Config while holding it.
+		private static readonly object initLock = new object();
+
+		private static volatile IFileDialogProvider _fileDialogs = null;
+		private static volatile IOsInformationProvider _osInformation = null;
+		private static volatile PlatformConfig _config = null;
 
 		/// <summary>
 		/// Construct the specified type from a fully qualified typename
@@ -67,8 +72,14 @@ namespace MatterHackers.Agg.Platform
 			{
 				if (_fileDialogs == null)
 				{
-					// FileDialog Provider
-					FileDialogs = CreateInstanceFrom<IFileDialogProvider>(Config.ProviderTypes.DialogProvider);
+					lock (initLock)
+					{
+						if (_fileDialogs == null)
+						{
+							// FileDialog Provider
+							_fileDialogs = CreateInstanceFrom<IFileDialogProvider>(Config.ProviderTypes.DialogProvider);
+						}
+					}
 				}
 
 				return _fileDialogs;
@@ -86,8 +97,14 @@ namespace MatterHackers.Agg.Platform
 			{
 				if (_osInformation == null)
 				{
-					// OsInformation Provider
-					OsInformation = CreateInstanceFrom<IOsInformationProvider>(Config.ProviderTypes.OsInformationProvider);
+					lock (initLock)
+					{
+						if (_osInformation == null)
+						{
+							// OsInformation Provider
+							_osInformation = CreateInstanceFrom<IOsInformationProvider>(Config.ProviderTypes.OsInformationProvider);
+						}
+					}
 				}
 
 				return _osInformation;
@@ -111,7 +128,13 @@ namespace MatterHackers.Agg.Platform
 			{
 				if (_config == null)
 				{
-					_config = new PlatformConfig();
+					lock (initLock)
+					{
+						if (_config == null)
+						{
+							_config = new PlatformConfig();
+						}
+					}
 				}
 
 				return _config;
@@ -157,12 +180,42 @@ namespace MatterHackers.Agg.Platform
 			public int FSAASamples { get; set; } = 8;
 		}
 
-		public static TypeFace DefaultFont { get; set; } = LiberationSansFont.Instance;
+		// Lazy backing fields so that touching AggContext does not parse the embedded
+		// SVG fonts under the CLR type-initialization lock. A set replaces the whole
+		// Lazy (reference assignment is atomic), so readers see either the old or the
+		// new fully-resolved value.
+		private static volatile Lazy<TypeFace> _defaultFont = new Lazy<TypeFace>(() => LiberationSansFont.Instance, LazyThreadSafetyMode.ExecutionAndPublication);
+		private static volatile Lazy<TypeFace> _defaultFontBold = new Lazy<TypeFace>(() => LiberationSansBoldFont.Instance, LazyThreadSafetyMode.ExecutionAndPublication);
+		private static volatile Lazy<TypeFace> _defaultFontItalic = new Lazy<TypeFace>(() => LiberationSansFont.Instance, LazyThreadSafetyMode.ExecutionAndPublication);
+		private static volatile Lazy<TypeFace> _defaultFontBoldItalic = new Lazy<TypeFace>(() => LiberationSansBoldFont.Instance, LazyThreadSafetyMode.ExecutionAndPublication);
 
-		public static TypeFace DefaultFontBold { get; set; } = LiberationSansBoldFont.Instance;
+		private static Lazy<TypeFace> AlreadyResolved(TypeFace value)
+		{
+			return new Lazy<TypeFace>(() => value, LazyThreadSafetyMode.ExecutionAndPublication);
+		}
 
-		public static TypeFace DefaultFontItalic { get; set; } = LiberationSansFont.Instance;
+		public static TypeFace DefaultFont
+		{
+			get => _defaultFont.Value;
+			set => _defaultFont = AlreadyResolved(value);
+		}
 
-		public static TypeFace DefaultFontBoldItalic { get; set; } = LiberationSansBoldFont.Instance;
+		public static TypeFace DefaultFontBold
+		{
+			get => _defaultFontBold.Value;
+			set => _defaultFontBold = AlreadyResolved(value);
+		}
+
+		public static TypeFace DefaultFontItalic
+		{
+			get => _defaultFontItalic.Value;
+			set => _defaultFontItalic = AlreadyResolved(value);
+		}
+
+		public static TypeFace DefaultFontBoldItalic
+		{
+			get => _defaultFontBoldItalic.Value;
+			set => _defaultFontBoldItalic = AlreadyResolved(value);
+		}
 	}
 }
