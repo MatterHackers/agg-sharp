@@ -228,9 +228,70 @@ namespace MatterHackers.Agg.UI
 			this.parentScrollWidget.ScrollArea.Padding = 0;
 		}
 
-		public static Color DefaultBackgroundColor { get; set; } = Color.LightGray;
-		public static Color DefaultThumbColor { get; set; } = Color.DarkGray;
-		public static Color DefaultThumbHoverColor { get; set; } = Color.DarkGray;
+		// Color is a multi-field struct, so unsynchronized cross-thread writes (e.g. from
+		// ThemeConfig.RebuildTheme) could be observed torn or stale by ScrollBar constructors.
+		private static readonly object defaultColorLocker = new object();
+
+		private static Color defaultBackgroundColor = Color.LightGray;
+		private static Color defaultThumbColor = Color.DarkGray;
+		private static Color defaultThumbHoverColor = Color.DarkGray;
+
+		public static Color DefaultBackgroundColor
+		{
+			get
+			{
+				lock (defaultColorLocker)
+				{
+					return defaultBackgroundColor;
+				}
+			}
+
+			set
+			{
+				lock (defaultColorLocker)
+				{
+					defaultBackgroundColor = value;
+				}
+			}
+		}
+
+		public static Color DefaultThumbColor
+		{
+			get
+			{
+				lock (defaultColorLocker)
+				{
+					return defaultThumbColor;
+				}
+			}
+
+			set
+			{
+				lock (defaultColorLocker)
+				{
+					defaultThumbColor = value;
+				}
+			}
+		}
+
+		public static Color DefaultThumbHoverColor
+		{
+			get
+			{
+				lock (defaultColorLocker)
+				{
+					return defaultThumbHoverColor;
+				}
+			}
+
+			set
+			{
+				lock (defaultColorLocker)
+				{
+					defaultThumbHoverColor = value;
+				}
+			}
+		}
 	}
 
 	public class ThumDragWidget : GuiWidget

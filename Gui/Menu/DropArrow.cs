@@ -33,18 +33,23 @@ namespace MatterHackers.Agg.UI
 {
 	public class DropArrow
 	{
+		private static readonly object buildLocker = new object();
+
 		private static VertexStorage _downArrow;
 
 		public static VertexStorage DownArrow
 		{
 			get
 			{
-				if (calculatedDeviceScale != GuiWidget.DeviceScale)
+				lock (buildLocker)
 				{
-					BuildDropArrow();
-				}
+					if (calculatedDeviceScale != GuiWidget.DeviceScale)
+					{
+						BuildDropArrow();
+					}
 
-				return _downArrow;
+					return _downArrow;
+				}
 			}
 		}
 
@@ -54,12 +59,15 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				if (calculatedDeviceScale != GuiWidget.DeviceScale)
+				lock (buildLocker)
 				{
-					BuildDropArrow();
-				}
+					if (calculatedDeviceScale != GuiWidget.DeviceScale)
+					{
+						BuildDropArrow();
+					}
 
-				return _upArrow;
+					return _upArrow;
+				}
 			}
 		}
 
@@ -74,19 +82,27 @@ namespace MatterHackers.Agg.UI
 
 		private static void BuildDropArrow()
 		{
-			_downArrow = new VertexStorage();
-			_downArrow.MoveTo(-ArrowHeight, 0);
-			_downArrow.LineTo(ArrowHeight, 0);
-			_downArrow.LineTo(0, -ArrowHeight);
-			_downArrow.ClosePolygon();
+			// Build into locals and publish only fully populated storage so a concurrent reader
+			// can never observe an empty or partially built arrow. Capture DeviceScale once so
+			// both arrows are built at the same scale, and record it last.
+			var deviceScale = GuiWidget.DeviceScale;
+			var arrowHeight = 5 * deviceScale;
 
-            _upArrow = new VertexStorage();
-			_upArrow.MoveTo(-ArrowHeight, -ArrowHeight);
-			_upArrow.LineTo(ArrowHeight, -ArrowHeight);
-			_upArrow.LineTo(0, 0);
-            _upArrow.ClosePolygon();
+			var downArrow = new VertexStorage();
+			downArrow.MoveTo(-arrowHeight, 0);
+			downArrow.LineTo(arrowHeight, 0);
+			downArrow.LineTo(0, -arrowHeight);
+			downArrow.ClosePolygon();
 
-            calculatedDeviceScale = GuiWidget.DeviceScale;
+			var upArrow = new VertexStorage();
+			upArrow.MoveTo(-arrowHeight, -arrowHeight);
+			upArrow.LineTo(arrowHeight, -arrowHeight);
+			upArrow.LineTo(0, 0);
+			upArrow.ClosePolygon();
+
+			_downArrow = downArrow;
+			_upArrow = upArrow;
+			calculatedDeviceScale = deviceScale;
 		}
 	}
 }
