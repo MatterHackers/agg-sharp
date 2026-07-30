@@ -57,7 +57,17 @@ namespace Markdig.Agg
 		private string documentText = string.Empty;
 		private MarkdownPathHandler pathHandler;
 		private string _markDownText = null;
-		public static ThemeConfig Theme { get; private set; }
+
+		private static ThemeConfig _theme;
+
+		// Process-global theme, overwritten by every constructor. Volatile so a theme written on
+		// one thread is fully published before another thread's widget renders with it.
+		// TODO: constructor-injection per widget is the eventual fix (audit Phase 2).
+		public static ThemeConfig Theme
+		{
+			get => System.Threading.Volatile.Read(ref _theme);
+			private set => System.Threading.Volatile.Write(ref _theme, value);
+		}
 
 		/// <summary>
 		/// Fired when a relative link is navigated within the markdown content.
@@ -84,7 +94,11 @@ namespace Markdig.Agg
 		{
 			markdownDocument = new AggMarkdownDocument();
 
-			MarkdownWidget.Theme = theme;
+			// Only publish when the theme actually changes to avoid redundant global writes.
+			if (!ReferenceEquals(MarkdownWidget.Theme, theme))
+			{
+				MarkdownWidget.Theme = theme;
+			}
 			this.HAnchor = HAnchor.Stretch;
 			this.ScrollArea.HAnchor = HAnchor.Stretch;
 			this.ScrollArea.VAnchor = VAnchor.Fit;

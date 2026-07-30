@@ -57,7 +57,13 @@ namespace MatterHackers.Agg.Platform
 			}
 		}
 
+		// Guards singleton creation and RootPath so the constructor's default RootPath write
+		// cannot race another thread's read or write of RootPath.
+		private static readonly object instanceLocker = new object();
+
 		private static StaticData _instance = null;
+
+		private static string rootPath;
 
 		public static double DeviceScale => GuiWidget.DeviceScale;
 
@@ -65,16 +71,36 @@ namespace MatterHackers.Agg.Platform
 		{
 			get
 			{
-				if (_instance == null)
+				lock (instanceLocker)
 				{
-					_instance = new StaticData();
-				}
+					if (_instance == null)
+					{
+						_instance = new StaticData();
+					}
 
-				return _instance;
+					return _instance;
+				}
 			}
 		}
 
-		public static string RootPath { get; set; }
+		public static string RootPath
+		{
+			get
+			{
+				lock (instanceLocker)
+				{
+					return rootPath;
+				}
+			}
+
+			set
+			{
+				lock (instanceLocker)
+				{
+					rootPath = value;
+				}
+			}
+		}
 
 		public static void OverrideRootPath(string overridePath)
 		{

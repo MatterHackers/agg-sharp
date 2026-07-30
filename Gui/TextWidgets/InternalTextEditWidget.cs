@@ -67,6 +67,11 @@ namespace MatterHackers.Agg.UI
 
 		public static Action<InternalTextEditWidget, MouseEventArgs> DefaultRightClick;
 
+		// Guards the one-time wiring of the default right-click menu so concurrent constructors
+		// cannot both see null and double-subscribe. A consumer that pre-seeds DefaultRightClick
+		// before creating any widget still suppresses the default wiring.
+		private static readonly object defaultRightClickLocker = new object();
+
 		public static void AddTextWidgetRightClickMenu(ThemeConfig theme)
 		{
 			InternalTextEditWidget.DefaultRightClick += (s, e) =>
@@ -369,10 +374,13 @@ namespace MatterHackers.Agg.UI
 
         public InternalTextEditWidget(string text, double pointSize, bool multiLine, int tabIndex, TypeFace typeFace = null)
         {
-            if (DefaultRightClick == null)
+            lock (defaultRightClickLocker)
             {
-                var menuTheme = ThemeConfig.DefaultMenuTheme();
-                InternalTextEditWidget.AddTextWidgetRightClickMenu(menuTheme);
+                if (DefaultRightClick == null)
+                {
+                    var menuTheme = ThemeConfig.DefaultMenuTheme();
+                    InternalTextEditWidget.AddTextWidgetRightClickMenu(menuTheme);
+                }
             }
 
             TabIndex = tabIndex;
