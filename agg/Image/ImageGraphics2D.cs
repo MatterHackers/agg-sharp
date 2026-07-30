@@ -64,7 +64,8 @@ namespace MatterHackers.Agg
 			return Rasterizer.GetVectorClipBox();
 		}
 
-		public override void Render(IVertexSource vertexSource, IColorType colorBytes)
+		/// <inheritdoc/>
+		protected override void RenderVertexSource(IVertexSource vertexSource, IColorType colorBytes)
 		{
 			rasterizer.reset();
 			Affine transform = GetTransform();
@@ -120,16 +121,16 @@ namespace MatterHackers.Agg
 		public override bool CanCompositeLcd => ResolveLcdDestination() != null;
 
 		/// <inheritdoc/>
-		protected override void CompositeLcdMask(LcdMask mask, Color color, int originX, int originY)
+		protected override void CompositeLcdMask(LcdMask mask, Color color, int originX, int originY, RectangleDouble? clip = null)
 		{
 			ImageBuffer destination = ResolveLcdDestination();
 			if (destination == null)
 			{
-				base.CompositeLcdMask(mask, color, originX, originY);
+				base.CompositeLcdMask(mask, color, originX, originY, clip);
 				return;
 			}
 
-			LcdComposite.Composite(destination, mask, color, originX, originY);
+			LcdComposite.Composite(destination, mask, color, originX, originY, clip);
 			destImageByte.MarkImageChanged();
 		}
 

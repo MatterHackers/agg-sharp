@@ -124,7 +124,23 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		internal static void Clear()
+		/// <summary>
+		/// Drops every cached glyph image.
+		/// </summary>
+		/// <remarks>
+		/// Public rather than internal as groundwork, not because anything calls it from outside today:
+		/// nothing does, and nothing needs to yet, because the hinted-cache path these images serve never
+		/// takes the LCD path - it blits pre-rendered glyph images and is unaffected by
+		/// <c>LcdRenderSettings</c>. What is coming is the settings-toggle invalidation chain (the LCD plan's
+		/// stage 8), where the application layer that owns the toggle UI lives in another assembly and has to
+		/// be able to drop every cache holding pixels rendered under the old settings. This is one of them,
+		/// and internal would put it out of reach.
+		/// <para>
+		/// It is also the eviction the cap uses, and the reason the cap can be as simple as it is: dropping
+		/// everything is provably correct where evicting a chosen entry has to answer "which one".
+		/// </para>
+		/// </remarks>
+		public static void Clear()
 		{
 			lock (SyncRoot)
 			{

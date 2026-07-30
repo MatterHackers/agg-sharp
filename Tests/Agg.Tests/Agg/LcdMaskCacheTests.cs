@@ -205,6 +205,86 @@ namespace Agg.Tests.Agg
 		}
 
 		/// <summary>
+		/// The byte budget evicts on its own, before the entry cap is anywhere near reached: entries are not
+		/// the same size, and an untrimmed mask can be megabytes, so 1024 of them is not a bound on memory.
+		/// </summary>
+		/// <remarks>
+		/// The budget is lowered to the size of three of these masks rather than the test building 32MB of
+		/// them - the eviction rule is what is under test, not the constant. A console scrolling distinct
+		/// lines through the text path is the real case: every line is a genuine miss, so nothing is ever
+		/// promoted and the cache would keep whatever it was handed.
+		/// </remarks>
+		[Test]
+		[NotInParallel]
+		public async Task EvictionAtTheByteBudgetDropsTheLeastRecentlyUsed()
+		{
+			long wasBudget = LcdMaskCache.MaxCachedBytes;
+			try
+			{
+				LcdMaskCache.Clear();
+				VertexStorage path = Rectangle(2.3, 2.2, 13.7, 9.6);
+				Affine identityTransform = Affine.NewIdentity();
+
+				// Measure one mask rather than predicting it: the builder pads the bbox for the filter, so the
+				// byte count is its business and not this test's.
+				LcdMaskCache.TryGetBoundedMask("sizer", 16, 12, path, identityTransform, out LcdMask sizer, out _, out _);
+				long maskBytes = sizer.Data.Length;
+				await Assert.That(LcdMaskCache.CachedBytes).IsEqualTo(maskBytes)
+					.Because("the cache has to count the bytes it is holding");
+
+				LcdMaskCache.Clear();
+				await Assert.That(LcdMaskCache.CachedBytes).IsEqualTo(0L)
+					.Because("Clear drops the byte count with the entries");
+
+				// Room for two of these masks and not a byte more, so the third insert has to evict.
+				LcdMaskCache.MaxCachedBytes = 2 * maskBytes;
+
+				LcdMaskCache.TryGetBoundedMask("first", 16, 12, path, identityTransform, out _, out _, out _);
+				LcdMaskCache.TryGetBoundedMask("second", 16, 12, path, identityTransform, out _, out _, out _);
+
+				// Touch the oldest so recency, not insertion order, decides what goes.
+				LcdMaskCache.TryGetBoundedMask("first", 16, 12, path, identityTransform, out _, out _, out _);
+
+				LcdMaskCache.TryGetBoundedMask("third", 16, 12, path, identityTransform, out _, out _, out _);
+				await Assert.That(LcdMaskCache.Count).IsEqualTo(2)
+					.Because("three masks do not fit in a two-mask budget");
+				await Assert.That(LcdMaskCache.CachedBytes).IsEqualTo(2 * maskBytes)
+					.Because("the cache must be back inside its budget");
+				await Assert.That(LcdMaskCache.Count < LcdMaskCache.Capacity).IsTrue()
+					.Because("the entry cap was never in play - the bytes did this");
+
+				// The retained entry first: asking for the evicted one rebuilds it, which would push the cache
+				// over budget again and evict this one before it could be checked.
+				long beforeKept = LcdMaskCache.BuildCount;
+				LcdMaskCache.TryGetBoundedMask("first", 16, 12, path, identityTransform, out _, out _, out _);
+				await Assert.That(LcdMaskCache.BuildCount - beforeKept).IsEqualTo(0L)
+					.Because("the hit promoted 'first', so it must have survived");
+
+				long beforeEvicted = LcdMaskCache.BuildCount;
+				LcdMaskCache.TryGetBoundedMask("second", 16, 12, path, identityTransform, out _, out _, out _);
+				await Assert.That(LcdMaskCache.BuildCount - beforeEvicted).IsEqualTo(1L)
+					.Because("'second' was the least recently used and must have been evicted");
+
+				// A single mask bigger than the whole budget is still cached: it is what was just asked for,
+				// and refusing it would rasterize it again every frame.
+				LcdMaskCache.MaxCachedBytes = 1;
+				LcdMaskCache.TryGetBoundedMask("oversized", 16, 12, path, identityTransform, out _, out _, out _);
+				await Assert.That(LcdMaskCache.Count).IsEqualTo(1)
+					.Because("the byte cap evicts down to the newest entry, not past it");
+
+				long beforeOversizedHit = LcdMaskCache.BuildCount;
+				LcdMaskCache.TryGetBoundedMask("oversized", 16, 12, path, identityTransform, out _, out _, out _);
+				await Assert.That(LcdMaskCache.BuildCount - beforeOversizedHit).IsEqualTo(0L)
+					.Because("and that entry is a real one that can be hit");
+			}
+			finally
+			{
+				LcdMaskCache.MaxCachedBytes = wasBudget;
+				LcdMaskCache.Clear();
+			}
+		}
+
+		/// <summary>
 		/// Changing any LCD setting bumps <see cref="LcdRenderSettings.Epoch"/> - the reference's
 		/// <c>TYPOGRAPHY_EPOCH</c>, which backbuffered widgets compare against to self-invalidate - and
 		/// clears the mask cache outright.

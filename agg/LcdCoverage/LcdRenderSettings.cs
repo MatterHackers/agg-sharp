@@ -43,7 +43,9 @@ namespace MatterHackers.Agg.LcdCoverage
 	/// <c>current_primary_weight</c>, <c>current_gamma</c>, <c>TYPOGRAPHY_EPOCH</c>). The reference keeps
 	/// these in thread-locals because its UI is single threaded; agg-sharp paints from more than one thread
 	/// over its lifetime (widget paint, image export, tests), so they are process-wide and lock-guarded
-	/// here - a shared setting read once per fill is nowhere near the cost of the raster it gates.
+	/// here - a shared setting read once per fill is nowhere near the cost of the raster it gates. The one
+	/// exception is <see cref="Enabled"/>, which is read on every fill whether or not the feature is on and
+	/// so is read lock-free from a volatile field.
 	/// <para>
 	/// Deliberately <b>not</b> where the toggle is persisted: the application layer owns the UI and the
 	/// user-settings round trip (MatterCAD seeds <see cref="Enabled"/> at startup, next to the existing
@@ -70,7 +72,14 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// library with existing pixel-exact expectations - screenshot comparisons, image export, the test
 		/// suite - so the new raster path has to be opted into rather than appear under everything.
 		/// </summary>
-		private static bool enabled;
+		/// <remarks>
+		/// Volatile so <see cref="Enabled"/> can be read without taking <see cref="SyncRoot"/>: this one is
+		/// read on every fill that names its geometry, including every fill in a process that never turns the
+		/// feature on, and "off costs nothing" is a claim the render path makes (see
+		/// <c>Graphics2D.TryRenderThroughLcd</c>). Writes still take the lock, because a write is a
+		/// compare-then-set that also has to bump the epoch and clear the mask cache.
+		/// </remarks>
+		private static volatile bool enabled;
 
 		private static double primaryWeight = LcdFilter.DefaultPrimaryWeight;
 
@@ -88,14 +97,16 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// still refuse LCD when this is on (see <see cref="EffectiveScaleAllowsLcd"/>), but nothing turns
 		/// it on when this is off.
 		/// </summary>
+		/// <remarks>
+		/// Reading takes no lock - it is a volatile field read, see <see cref="enabled"/> - so a fill that
+		/// asks whether the feature is on pays a memory read and nothing more. Writing does take the lock,
+		/// so a change is one atomic (compare, set, bump epoch, clear masks) step.
+		/// </remarks>
 		public static bool Enabled
 		{
 			get
 			{
-				lock (SyncRoot)
-				{
-					return enabled;
-				}
+				return enabled;
 			}
 
 			set

@@ -356,7 +356,29 @@ namespace MatterHackers.Agg
             Rectangle(rect.Left, rect.Bottom, rect.Right, rect.Top, color);
         }
 
-        public abstract void Render(IVertexSource vertexSource, IColorType colorType);
+        /// <summary>
+        /// Fills <paramref name="vertexSource"/> with <paramref name="colorType"/> under the current
+        /// transform - the ordinary vector chokepoint every fill in agg-sharp goes through.
+        /// </summary>
+        /// <remarks>
+        /// It is also where the LCD subpixel path is offered, to sources that can name their own geometry
+        /// (<see cref="IVertexSourceRenderIdentity"/>) and only when every gate allows it - see
+        /// <see cref="TryRenderThroughLcd"/>. A source that says nothing, or any refused gate, reaches
+        /// <see cref="RenderVertexSource"/> and the bytes it always produced.
+        /// </remarks>
+        public void Render(IVertexSource vertexSource, IColorType colorType)
+        {
+            if (!TryRenderThroughLcd(vertexSource, colorType))
+            {
+                RenderVertexSource(vertexSource, colorType);
+            }
+        }
+
+        /// <summary>
+        /// The destination's own scanline fill, as it was before the LCD path existed. Reached from
+        /// <see cref="Render"/> for everything the LCD path does not take.
+        /// </summary>
+        protected abstract void RenderVertexSource(IVertexSource vertexSource, IColorType colorType);
 
         /// <summary>
         /// Whether this destination can composite per-channel LCD coverage. False means
@@ -410,12 +432,14 @@ namespace MatterHackers.Agg
         /// the fill rule from), which stays local to this object;</description></item>
         /// <item><description>the effective-scale cap, which overrides the user toggle
         /// (<see cref="LcdRenderSettings.EffectiveScaleAllowsLcd"/>);</description></item>
-        /// <item><description>the toggle itself (<see cref="LcdRenderSettings.Enabled"/>), which takes the
-        /// settings lock.</description></item>
+        /// <item><description>the toggle itself (<see cref="LcdRenderSettings.Enabled"/>), a lock-free
+        /// volatile read.</description></item>
         /// </list>
         /// The last two are in the reference's order (the cap is evaluated first precisely because it
         /// overrides the toggle rather than being overridden by it). Any of them failing takes
-        /// <see cref="Render"/>, which is a real fill and not a degraded one - just without subpixel chroma.
+        /// <see cref="Render"/> - which cannot come back here, since it offers the cached LCD path behind
+        /// these same gates and they have just refused - and is a real fill, not a degraded one, just without
+        /// subpixel chroma.
         /// That fallback is itself a deliberate divergence: the reference's text path always goes through a
         /// mask, taking <see cref="LcdMaskBuilder.FinalizeGray"/> when chroma is invalid, but agg-sharp's
         /// disabled path has to stay byte-identical to the pre-LCD renderer, so a refused fill goes back to
@@ -505,6 +529,218 @@ namespace MatterHackers.Agg
         }
 
         /// <summary>
+        /// Largest translation, in device pixels, that the cached LCD path will split into a whole-pixel
+        /// origin and a phase. Past it the whole half stops fitting an <see cref="int"/> comfortably, and a
+        /// fill that far off screen is not worth the arithmetic to find out.
+        /// </summary>
+        private const double MaxLcdPlacementInPixels = 1e7;
+
+        /// <summary>
+        /// Paints <paramref name="vertexSource"/> through the <b>cached</b> LCD subpixel pipeline, or returns
+        /// false to say it did not - in which case <see cref="Render"/> paints it the ordinary way, byte for
+        /// byte as it did before this path existed.
+        /// </summary>
+        /// <remarks>
+        /// This is the generic half of the LCD design, and the reason nothing above it has to know about LCD
+        /// at all: a source that can name its own geometry (<see cref="IVertexSourceRenderIdentity"/>) gets
+        /// its raster cached, whether it is a glyph run, an icon or anything else. The reference reaches the
+        /// same place from the other direction, by having its text renderer call a cached mask builder
+        /// (<c>rasterize_text_mask_cached</c>, <c>mask.rs:119-246</c>); putting the decision in the fill
+        /// keeps the text side a plain caller of <see cref="Render"/>.
+        /// <para>
+        /// <b>Cost when the feature is off.</b> The first thing checked is whether the source names itself,
+        /// which is a type test that fails for every rect, stroke and icon in the library. Nothing is
+        /// allocated and no lock is taken at any point on the refusing path - the toggle is a volatile field
+        /// read (<see cref="LcdRenderSettings.Enabled"/>) - and the identity itself is not even asked for
+        /// until the gates have passed.
+        /// </para>
+        /// <para>
+        /// <b>The placement split.</b> A cached mask must not know where it was drawn, so the device
+        /// placement is separated into two halves that add back up to it exactly: the whole part of the
+        /// transform's translation becomes the composite origin, and its fraction stays in the transform the
+        /// mask is rasterized with, so the fill keeps its true sub-pixel position. Two draws a whole number
+        /// of pixels apart therefore share one mask and differ only in where it lands. The reference goes
+        /// further and rounds the fraction away too (<c>sx.round()</c>, <c>draw_impl.rs:605</c>); keeping it
+        /// costs a cache entry per distinct fraction and preserves the horizontal sub-pixel positioning
+        /// agg-sharp's text has always had.
+        /// </para>
+        /// <para>
+        /// <b>The linear part is not split off</b> - scale and rotation go into the mask transform, so the
+        /// geometry is rasterized at its physical size and shape. That is the reference's HiDPI rule
+        /// (<c>logical x ctm_scale</c>, <c>gfx_ctx.rs:635-639</c>) generalized, and a strict improvement on
+        /// it for rotation, which its axis-aligned mask blit does not handle at all.
+        /// </para>
+        /// <para>
+        /// <b>Floating point.</b> Splitting the translation makes the device position
+        /// <c>(v + t - floor(t)) + floor(t)</c> where the ordinary path computes <c>v + t</c>. The two are
+        /// equal in exact arithmetic and can differ by one ulp in doubles, which is enough to move a coverage
+        /// value by one byte where an edge lands exactly on a 1/256 rasterizer boundary. It is deterministic
+        /// - the same fill always splits the same way, so a cached mask is never wrong about itself - and it
+        /// is why LCD text is compared against the LCD vector path rather than against the ordinary one.
+        /// </para>
+        /// <para>
+        /// Same gates and same integer-origin composite as <see cref="RenderLcd"/>; the difference is
+        /// entirely in what gets cached. <see cref="RenderLcd"/> trims its mask to the destination and the
+        /// clip, which bakes the fill's position into the coverage bytes; this one uses the untrimmed build
+        /// (<see cref="LcdMaskCache.GetUnclippedMask"/>) so the bytes depend only on the geometry and its
+        /// phase, and applies the clip at composite time instead. That is the difference between one cache
+        /// entry per shape and one per shape per position - and it is why an untrimmed mask has a size bound
+        /// (<see cref="BoundedMaskBuilder.MaxUnclippedMaskExtentInPixels"/>) that sends anything absurd back
+        /// to the ordinary path.
+        /// </para>
+        /// <para>
+        /// <b>Known limitation, inherited from <see cref="RenderLcd"/>.</b> The clip comes from
+        /// <see cref="GetClippingRect"/>, which for image destinations reports the rasterizer's vector clip
+        /// box - and that box reads as empty when nobody ever called <c>SetVectorClipBox</c> on it, because
+        /// the rasterizer keeps "clipping is off" in a flag it does not expose. Such a destination
+        /// would paint nothing here where <see cref="RenderVertexSource"/> would paint unclipped. Nothing
+        /// in-tree can reach it: every <see cref="ImageGraphics2D"/> comes from
+        /// <see cref="Image.ImageBuffer.NewGraphics2D"/>, which sets the box to the buffer bounds. It is
+        /// called out here because this is the universal fill chokepoint - a hand-built
+        /// <see cref="Graphics2D"/> that skips the clip box now silently loses identified fills rather than
+        /// only the explicit <see cref="RenderLcd"/> calls it never made.
+        /// </para>
+        /// </remarks>
+        private bool TryRenderThroughLcd(IVertexSource vertexSource, IColorType colorType)
+        {
+            if (!TryUnwrapIdentifiableSource(vertexSource, out IVertexSourceRenderIdentity identifiedSource, out Affine transform))
+            {
+                return false;
+            }
+
+            if (!this.CanCompositeLcd
+                || this.rasterizer == null
+                || !LcdRenderSettings.IsEnabledAtScale(LcdRenderSettings.EffectiveScaleOf(transform)))
+            {
+                return false;
+            }
+
+            object identity = identifiedSource.RenderIdentity;
+            if (identity == null)
+            {
+                return false;
+            }
+
+            // Written as negated comparisons so a NaN placement takes the ordinary path rather than the
+            // floor below.
+            if (!(Math.Abs(transform.tx) < MaxLcdPlacementInPixels)
+                || !(Math.Abs(transform.ty) < MaxLcdPlacementInPixels))
+            {
+                return false;
+            }
+
+            int compositeOffsetX = (int)Math.Floor(transform.tx);
+            int compositeOffsetY = (int)Math.Floor(transform.ty);
+
+            // tx and ty are the transform's final translation, so replacing them with their own fraction is
+            // exactly "the same transform, with the whole-pixel placement taken out".
+            Affine maskTransform = transform;
+            maskTransform.tx = NormalizeZeroPhase(transform.tx - compositeOffsetX);
+            maskTransform.ty = NormalizeZeroPhase(transform.ty - compositeOffsetY);
+
+            switch (LcdMaskCache.GetUnclippedMask(
+                identity,
+                identifiedSource,
+                maskTransform,
+                out LcdMask mask,
+                out int originX,
+                out int originY,
+                this.rasterizer.FillingRule,
+                LcdRenderSettings.PrimaryWeight,
+                LcdRenderSettings.Gamma,
+                !this.LcdChromaAllowed))
+            {
+                case UnclippedMaskResult.Built:
+                    // The clip is enforced here rather than by trimming the mask, because a trimmed mask
+                    // could not be shared across positions - see LcdMaskCache.GetUnclippedMask.
+                    CompositeLcdMask(mask, colorType.ToColor(), originX + compositeOffsetX, originY + compositeOffsetY, GetClippingRect());
+                    return true;
+
+                case UnclippedMaskResult.Empty:
+                    // Nothing to paint. The LCD path handled it - by painting nothing, which is what the
+                    // ordinary path would have done with the same geometry.
+                    return true;
+
+                default:
+                    // Too large to rasterize into a mask of its own. Still a real fill, so the ordinary path
+                    // has to paint it.
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Collapses a sub-pixel phase of -0.0 onto +0.0, leaving every other value exactly as it is.
+        /// </summary>
+        /// <remarks>
+        /// The two are the same placement, but <see cref="LcdMaskKey"/> compares its doubles by bit pattern,
+        /// so an unnormalized -0.0 files a second entry holding bytes identical to the first one's. It takes a
+        /// transform whose translation is already -0.0 to get here - subtracting the whole part from any other
+        /// value yields +0.0 - and the affine multiply in <see cref="TryUnwrapIdentifiableSource"/> turns most
+        /// of those into +0.0 on the way past, so this is a guard rather than a fix for an observed duplicate.
+        /// It is one comparison on a path that is about to rasterize, which is a fair price for not having to
+        /// reason about which mirrored or sheared transform survives that multiply with its sign intact.
+        /// <para>
+        /// Written as a comparison rather than <c>+ 0.0</c> because that trick is only a no-op for every value
+        /// <i>other</i> than -0.0, and relying on a compiler not to fold away an addition it is entitled to
+        /// consider redundant is the kind of thing that stops being true silently.
+        /// </para>
+        /// </remarks>
+        private static double NormalizeZeroPhase(double phase)
+        {
+            // -0.0 == 0 is true, so this catches both zeros and hands back the positive one.
+            return phase == 0 ? 0.0 : phase;
+        }
+
+        /// <summary>
+        /// Finds the source that names its own geometry inside <paramref name="vertexSource"/> and the full
+        /// path-space-to-device transform that applies to it, or answers false when there is no such source.
+        /// </summary>
+        /// <param name="vertexSource">The source handed to <see cref="Render"/>, possibly wrapped.</param>
+        /// <param name="identifiedSource">The source that names itself.</param>
+        /// <param name="transform">Everything between that source's own vertices and device pixels: the
+        /// wrappers' transforms followed by the current transform.</param>
+        /// <remarks>
+        /// <b>How identity and wrappers compose.</b> A <see cref="VertexSourceApplyTransform"/> holding an
+        /// <see cref="Affine"/> contributes placement, not shape - it moves vertices without changing which
+        /// vertices they are - so it joins the transform and leaves the identity underneath it intact. That
+        /// is what makes the split work for text: <see cref="Font.TypeFacePrinter"/> hands
+        /// <see cref="Render"/> either itself or itself wrapped in the whole-device-pixel baseline nudge, and
+        /// the two are the same run at two placements rather than two runs.
+        /// <para>
+        /// Every other proxy - a <see cref="Stroke"/>, a curve flattener - produces different vertices than
+        /// the source it wraps, and cannot claim that source's identity. The walk stops at the first one, and
+        /// the fill is rendered the ordinary way. So does a non-affine <see cref="ITransform"/>, whose effect
+        /// is not a matrix that can be folded into the current one.
+        /// </para>
+        /// </remarks>
+        private bool TryUnwrapIdentifiableSource(IVertexSource vertexSource, out IVertexSourceRenderIdentity identifiedSource, out Affine transform)
+        {
+            identifiedSource = null;
+            transform = default;
+
+            IVertexSource source = vertexSource;
+            Affine wrappers = Affine.NewIdentity();
+            while (source is VertexSourceApplyTransform applyTransform
+                && applyTransform.TransformToApply is Affine affine
+                && applyTransform.VertexSource != null)
+            {
+                // agg-sharp's operator * is a post-multiply ("a then b"), and a wrapper found further in is
+                // applied before every wrapper already collected outside it.
+                wrappers = affine * wrappers;
+                source = applyTransform.VertexSource;
+            }
+
+            if (!(source is IVertexSourceRenderIdentity identifiable))
+            {
+                return false;
+            }
+
+            identifiedSource = identifiable;
+            transform = wrappers * GetTransform();
+            return true;
+        }
+
+        /// <summary>
         /// Composites a finished coverage mask onto this destination, applying <paramref name="color"/> per
         /// channel, with the mask's bottom-left pixel at (<paramref name="originX"/>,
         /// <paramref name="originY"/>) - both whole pixels, always.
@@ -518,8 +754,13 @@ namespace MatterHackers.Agg
         /// <para>
         /// <paramref name="mask"/> may be shared with the mask cache and must be treated as read-only.
         /// </para>
+        /// <para>
+        /// <paramref name="clip"/> is null when the mask was already trimmed to the clip as it was built
+        /// (<see cref="RenderLcd"/>) and carries the clip rect when it was not
+        /// (<see cref="TryRenderThroughLcd"/>, whose mask is cached and therefore cannot be trimmed).
+        /// </para>
         /// </remarks>
-        protected virtual void CompositeLcdMask(LcdMask mask, Color color, int originX, int originY)
+        protected virtual void CompositeLcdMask(LcdMask mask, Color color, int originX, int originY, RectangleDouble? clip = null)
         {
             throw new NotSupportedException(
                 $"{this.GetType().Name} reports CanCompositeLcd but does not implement CompositeLcdMask.");

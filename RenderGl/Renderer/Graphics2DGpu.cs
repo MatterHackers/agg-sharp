@@ -495,7 +495,8 @@ namespace MatterHackers.RenderGl
             gl.Enable(EnableCap.Blend);
         }
 
-        public override void Render(IVertexSource vertexSource, IColorType colorIn)
+        /// <inheritdoc/>
+        protected override void RenderVertexSource(IVertexSource vertexSource, IColorType colorIn)
         {
             PreRender(colorIn);
 

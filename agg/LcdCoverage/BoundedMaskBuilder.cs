@@ -36,6 +36,30 @@ using filling_rule_e = MatterHackers.Agg.Util.filling_rule_e;
 namespace MatterHackers.Agg.LcdCoverage
 {
 	/// <summary>
+	/// What came of an attempt to build an <b>untrimmed</b> mask - the form that is sized to the geometry
+	/// rather than to a destination, and can therefore be refused for being too big.
+	/// </summary>
+	/// <remarks>
+	/// Three answers rather than a bool because the two failures oblige the caller to do opposite things:
+	/// <see cref="Empty"/> means the ordinary path would have painted nothing either, so painting nothing is
+	/// right; <see cref="TooLarge"/> means the fill is real and still has to happen, the ordinary way.
+	/// </remarks>
+	public enum UnclippedMaskResult
+	{
+		/// <summary>A mask was produced, with the origin it composites at.</summary>
+		Built,
+
+		/// <summary>Nothing to paint: the path carries no coordinate-bearing vertices.</summary>
+		Empty,
+
+		/// <summary>
+		/// Refused: the padded bbox is past <see cref="BoundedMaskBuilder.MaxUnclippedMaskExtentInPixels"/>
+		/// on an axis. The caller must paint this fill some other way.
+		/// </summary>
+		TooLarge
+	}
+
+	/// <summary>
 	/// Builds an <see cref="LcdMask"/> sized to a path's bounding box rather than to the whole render
 	/// target, and reports where that mask has to be composited.
 	/// </summary>
@@ -56,6 +80,26 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// neighborhood it would in a full-buffer mask (out-of-range taps read 0, they do not clamp).
 		/// </summary>
 		private const double Pad = 2.0;
+
+		/// <summary>
+		/// Largest padded bbox, in pixels on either axis, that <see cref="BuildUnclipped"/> will rasterize;
+		/// anything larger is refused with <see cref="UnclippedMaskResult.TooLarge"/>.
+		/// </summary>
+		/// <remarks>
+		/// An untrimmed mask is sized to the geometry rather than to the destination - that is what makes it
+		/// cacheable across positions - so without a bound one absurd fill would allocate a mask far larger
+		/// than the window it is drawn in, where the ordinary path only ever touches destination pixels. 4096
+		/// is generous next to any real label or icon and still bounds one mask to a few tens of megabytes at
+		/// worst; past it the caller falls back to the ordinary path, a quality difference nobody can see at
+		/// that size.
+		/// <para>
+		/// It has to be a property of the <b>geometry</b> and not of where it landed, so that the decision
+		/// cannot vary between two draws that would otherwise share a cache entry. It is: the bbox is
+		/// measured after the mask transform, which by then carries only the sub-pixel phase of the
+		/// placement.
+		/// </para>
+		/// </remarks>
+		public const double MaxUnclippedMaskExtentInPixels = 4096;
 
 		/// <summary>
 		/// Rasterizes <paramref name="path"/> into a bbox-sized LCD coverage mask.
@@ -105,6 +149,94 @@ namespace MatterHackers.Agg.LcdCoverage
 			double gamma = LcdFilter.DefaultGamma,
 			bool gray = false)
 		{
+			return BuildCore(
+				path,
+				transform,
+				trimToDestination: true,
+				bufferWidth,
+				bufferHeight,
+				clip,
+				out mask,
+				out originX,
+				out originY,
+				fillRule,
+				primaryWeight,
+				gamma,
+				gray) == UnclippedMaskResult.Built;
+		}
+
+		/// <summary>
+		/// <see cref="TryBuild"/> without a destination: the mask covers the path's whole padded bbox
+		/// wherever that lands, so <paramref name="originX"/> and <paramref name="originY"/> may be negative
+		/// and the mask may extend past the destination the caller will composite it onto.
+		/// </summary>
+		/// <remarks>
+		/// This is the form the <b>cached</b> callers need, and it is what the reference's text path uses: its
+		/// mask is sized from the run's own metrics with no knowledge of the destination
+		/// (<c>rasterize_text_mask_cached</c>, <c>mask.rs:119-246</c>), and clipping happens at composite time
+		/// instead (<c>composite_mask</c>'s clip argument, and the framebuffer bounds test in
+		/// <c>draw_lcd_mask</c>).
+		/// <para>
+		/// <b>Trimming and caching are mutually exclusive.</b> A trimmed mask's bytes depend on where the path
+		/// sat relative to the destination and the clip, so the same run drawn half off the left edge and then
+		/// scrolled into view produces different bytes - which is exactly what a cache keyed on the run's
+		/// identity must not have. Untrimmed, the bytes depend only on the geometry and its sub-pixel phase,
+		/// so one entry serves every position of that run and the caller composites it wherever it belongs.
+		/// </para>
+		/// <para>
+		/// The cost of not trimming is that the mask is sized to the geometry rather than to the window it is
+		/// seen through, so this form bounds how big that geometry may be
+		/// (<see cref="MaxUnclippedMaskExtentInPixels"/>) and refuses the rest.
+		/// </para>
+		/// </remarks>
+		public static UnclippedMaskResult BuildUnclipped(
+			IVertexSource path,
+			Affine transform,
+			out LcdMask mask,
+			out int originX,
+			out int originY,
+			filling_rule_e fillRule = filling_rule_e.fill_non_zero,
+			double primaryWeight = LcdFilter.DefaultPrimaryWeight,
+			double gamma = LcdFilter.DefaultGamma,
+			bool gray = false)
+		{
+			return BuildCore(
+				path,
+				transform,
+				trimToDestination: false,
+				0,
+				0,
+				null,
+				out mask,
+				out originX,
+				out originY,
+				fillRule,
+				primaryWeight,
+				gamma,
+				gray);
+		}
+
+		/// <summary>
+		/// The body of <see cref="TryBuild"/> and <see cref="BuildUnclipped"/>; the only difference between
+		/// them is whether the padded bbox is trimmed to the destination and clip
+		/// (<paramref name="trimToDestination"/>), which the untrimmed form must not do - see the remarks on
+		/// <see cref="BuildUnclipped"/>.
+		/// </summary>
+		private static UnclippedMaskResult BuildCore(
+			IVertexSource path,
+			Affine transform,
+			bool trimToDestination,
+			int bufferWidth,
+			int bufferHeight,
+			RectangleDouble? clip,
+			out LcdMask mask,
+			out int originX,
+			out int originY,
+			filling_rule_e fillRule,
+			double primaryWeight,
+			double gamma,
+			bool gray)
+		{
 			if (path == null)
 			{
 				throw new ArgumentNullException(nameof(path));
@@ -114,14 +246,15 @@ namespace MatterHackers.Agg.LcdCoverage
 			originX = 0;
 			originY = 0;
 
-			if (bufferWidth <= 0 || bufferHeight <= 0)
+			if (trimToDestination
+				&& (bufferWidth <= 0 || bufferHeight <= 0))
 			{
-				return false;
+				return UnclippedMaskResult.Empty;
 			}
 
 			if (!TryGetTransformedBounds(path, transform, out RectangleDouble bounds))
 			{
-				return false;
+				return UnclippedMaskResult.Empty;
 			}
 
 			// Every double to int conversion here saturates (see SaturatingMath), so a transformed edge past
@@ -132,24 +265,35 @@ namespace MatterHackers.Agg.LcdCoverage
 			int x2 = SaturatingMath.Ceiling(bounds.Right + Pad);
 			int y2 = SaturatingMath.Ceiling(bounds.Top + Pad);
 
-			if (clip != null)
+			if (trimToDestination)
 			{
-				// Floor on left/bottom and ceil on right/top so any pixel the clip rect touches at all is
-				// kept, matching the AGG raster-clip convention.
-				RectangleDouble clipRect = clip.Value;
-				x1 = Math.Max(x1, SaturatingMath.Floor(clipRect.Left));
-				y1 = Math.Max(y1, SaturatingMath.Floor(clipRect.Bottom));
-				x2 = Math.Min(x2, SaturatingMath.Ceiling(clipRect.Right));
-				y2 = Math.Min(y2, SaturatingMath.Ceiling(clipRect.Top));
+				if (clip != null)
+				{
+					// Floor on left/bottom and ceil on right/top so any pixel the clip rect touches at all is
+					// kept, matching the AGG raster-clip convention.
+					RectangleDouble clipRect = clip.Value;
+					x1 = Math.Max(x1, SaturatingMath.Floor(clipRect.Left));
+					y1 = Math.Max(y1, SaturatingMath.Floor(clipRect.Bottom));
+					x2 = Math.Min(x2, SaturatingMath.Ceiling(clipRect.Right));
+					y2 = Math.Min(y2, SaturatingMath.Ceiling(clipRect.Top));
+				}
+
+				x1 = Math.Max(x1, 0);
+				y1 = Math.Max(y1, 0);
+				x2 = Math.Min(x2, bufferWidth);
+				y2 = Math.Min(y2, bufferHeight);
+			}
+			else if ((double)x2 - x1 > MaxUnclippedMaskExtentInPixels
+				|| (double)y2 - y1 > MaxUnclippedMaskExtentInPixels)
+			{
+				// Widened to double first: with nothing trimming these, a saturated edge past int range
+				// would otherwise wrap the subtraction and read as a comfortably small mask.
+				return UnclippedMaskResult.TooLarge;
 			}
 
-			x1 = Math.Max(x1, 0);
-			y1 = Math.Max(y1, 0);
-			x2 = Math.Min(x2, bufferWidth);
-			y2 = Math.Min(y2, bufferHeight);
 			if (x1 >= x2 || y1 >= y2)
 			{
-				return false;
+				return UnclippedMaskResult.Empty;
 			}
 
 			originX = x1;
@@ -171,7 +315,7 @@ namespace MatterHackers.Agg.LcdCoverage
 			var builder = new LcdMaskBuilder(x2 - x1, y2 - y1, localClip, fillRule);
 			builder.AddPath(local, path);
 			mask = gray ? builder.FinalizeGray() : builder.FinalizeMask(primaryWeight, gamma);
-			return true;
+			return UnclippedMaskResult.Built;
 		}
 
 		/// <summary>

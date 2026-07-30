@@ -80,6 +80,17 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// <param name="destY">Destination y of the mask's <b>bottom</b> row - both the mask and
 		/// <see cref="ImageBuffer"/> are Y-up, so mask row <c>my</c> lands on destination row
 		/// <c>destY + my</c> with no flip.</param>
+		/// <param name="clip">Optional clip rect in destination pixels; null paints everywhere the destination
+		/// allows. This is for the caller whose mask was <b>not</b> trimmed to a clip when it was built - a
+		/// cached mask cannot be, because trimming would bake the clip into bytes that are meant to be shared
+		/// across positions (see <see cref="BoundedMaskBuilder.BuildUnclipped"/>) - which is the same split
+		/// the reference makes with <c>composite_mask</c>'s clip argument.
+		/// <para>
+		/// It is rounded <b>outward</b> to whole pixels, floor on left and bottom and ceil on right and top,
+		/// exactly as <see cref="BoundedMaskBuilder"/> rounds the clip it trims with, so a mask clipped here
+		/// and the same mask trimmed there cover the same pixels. A mask has no unit finer than a pixel to
+		/// enforce a clip in either way.
+		/// </para></param>
 		/// <remarks>
 		/// <b>The origin is integer on purpose.</b> Sub-pixel placement would smear each channel's phase
 		/// across neighboring pixels and destroy the subpixel geometry, so a caller working in continuous
@@ -91,7 +102,7 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// not an error.
 		/// </para>
 		/// </remarks>
-		public static void Composite(ImageBuffer destination, LcdMask mask, Color source, int destX, int destY)
+		public static void Composite(ImageBuffer destination, LcdMask mask, Color source, int destX, int destY, RectangleDouble? clip = null)
 		{
 			if (destination == null)
 			{
@@ -122,13 +133,27 @@ namespace MatterHackers.Agg.LcdCoverage
 
 			byte[] buffer = destination.GetBuffer();
 			int bytesPerPixel = destination.GetBytesBetweenPixelsInclusive();
-			int destWidth = destination.Width;
-			int destHeight = destination.Height;
+
+			// Half-open painted bounds: the destination, narrowed by the clip rect rounded outward. Doing it
+			// once here rather than per pixel keeps the inner loop the same shape it had before the clip
+			// existed.
+			int left = 0;
+			int bottom = 0;
+			int right = destination.Width;
+			int top = destination.Height;
+			if (clip != null)
+			{
+				RectangleDouble clipRect = clip.Value;
+				left = Math.Max(left, SaturatingMath.Floor(clipRect.Left));
+				bottom = Math.Max(bottom, SaturatingMath.Floor(clipRect.Bottom));
+				right = Math.Min(right, SaturatingMath.Ceiling(clipRect.Right));
+				top = Math.Min(top, SaturatingMath.Ceiling(clipRect.Top));
+			}
 
 			for (int maskY = 0; maskY < mask.Height; maskY++)
 			{
 				int destinationY = destY + maskY;
-				if (destinationY < 0 || destinationY >= destHeight)
+				if (destinationY < bottom || destinationY >= top)
 				{
 					continue;
 				}
@@ -141,7 +166,7 @@ namespace MatterHackers.Agg.LcdCoverage
 				for (int maskX = 0; maskX < mask.Width; maskX++)
 				{
 					int destinationX = destX + maskX;
-					if (destinationX < 0 || destinationX >= destWidth)
+					if (destinationX < left || destinationX >= right)
 					{
 						continue;
 					}

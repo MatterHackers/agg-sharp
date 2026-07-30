@@ -198,6 +198,15 @@ namespace MatterHackers.Agg.LcdCoverage
 	/// Ported from the agg-gui Rust reference's mask cache (<c>lcd_coverage\mask.rs:89-96</c> and the
 	/// get/insert/evict machinery around it), including the 1024-entry cap.
 	/// <para>
+	/// <b>Two caps, because entries are not the same size.</b> The reference counts entries only; agg-sharp
+	/// also counts bytes, because an untrimmed mask (the cached text path) is bounded by
+	/// <see cref="BoundedMaskBuilder.MaxUnclippedMaskExtentInPixels"/> rather than by any destination, so one
+	/// entry can be far larger than a glyph run's few kilobytes. A scrolling console
+	/// (<c>OutputScroll</c> paints every distinct line through <c>TypeFacePrinter</c>) fills entries with
+	/// genuinely different content, so the entry cap alone would let the cache grow without a useful bound -
+	/// see <see cref="MaxCachedBytes"/>.
+	/// </para>
+	/// <para>
 	/// <b>Masks are handed out shared and must be treated as read-only.</b> A hit returns the very same
 	/// <see cref="LcdMask"/> instance a previous caller got - the reference shares an <c>Arc</c> for the
 	/// same reason, and a GL backend can key a texture cache on that instance's identity. Writing into a
@@ -216,6 +225,23 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// </summary>
 		public const int Capacity = 1024;
 
+		/// <summary>
+		/// Total bytes of cached mask data before the least recently used entries are dropped, whatever the
+		/// entry count says.
+		/// </summary>
+		/// <remarks>
+		/// Sized the way <c>StyledTypeFaceImageCache.MaxCachedImages</c> is: from what the entries actually
+		/// cost. A mask is <c>Width * Height * 3</c> bytes, so a UI-sized glyph run (~100 x 20 pixels) is
+		/// ~6KB and the 1024-entry cap alone would bound that at ~6MB - but an untrimmed mask is only bounded
+		/// by <see cref="BoundedMaskBuilder.MaxUnclippedMaskExtentInPixels"/>, which is 48MB for a single
+		/// entry, so entry count says nothing about memory. 32MB holds several thousand ordinary text masks
+		/// and refuses to hold a screenful of enormous ones.
+		/// <para>
+		/// Internal (not const) so tests can lower it to force eviction without rasterizing 32MB of masks.
+		/// </para>
+		/// </remarks>
+		internal static long MaxCachedBytes = 32L * 1024 * 1024;
+
 		private static readonly object SyncRoot = new object();
 
 		private static readonly Dictionary<LcdMaskKey, Entry> Entries = new Dictionary<LcdMaskKey, Entry>();
@@ -228,6 +254,9 @@ namespace MatterHackers.Agg.LcdCoverage
 		private static readonly LinkedList<LcdMaskKey> Recency = new LinkedList<LcdMaskKey>();
 
 		private static long buildCount;
+
+		/// <summary>Sum of <c>Mask.Data.Length</c> over the entries currently held; guarded by SyncRoot.</summary>
+		private static long cachedBytes;
 
 		/// <summary>
 		/// How many masks this cache has actually rasterized since the process started - it does not go down
@@ -258,6 +287,21 @@ namespace MatterHackers.Agg.LcdCoverage
 		}
 
 		/// <summary>
+		/// Bytes of mask data currently held - what <see cref="MaxCachedBytes"/> bounds, and the only number
+		/// that describes what this cache costs (see the class remarks on why <see cref="Count"/> does not).
+		/// </summary>
+		public static long CachedBytes
+		{
+			get
+			{
+				lock (SyncRoot)
+				{
+					return cachedBytes;
+				}
+			}
+		}
+
+		/// <summary>
 		/// Drops every entry. Called whenever a setting that changes the raster changes
 		/// (<see cref="LcdRenderSettings"/>), and available to a caller that has invalidated the geometry
 		/// behind a path identity it already used.
@@ -268,6 +312,7 @@ namespace MatterHackers.Agg.LcdCoverage
 			{
 				Entries.Clear();
 				Recency.Clear();
+				cachedBytes = 0;
 			}
 		}
 
@@ -313,6 +358,107 @@ namespace MatterHackers.Agg.LcdCoverage
 			double gamma = LcdFilter.DefaultGamma,
 			bool gray = false)
 		{
+			return GetMask(
+				pathIdentity,
+				trimToDestination: true,
+				bufferWidth,
+				bufferHeight,
+				path,
+				transform,
+				out mask,
+				out originX,
+				out originY,
+				clip,
+				fillRule,
+				primaryWeight,
+				gamma,
+				gray) == UnclippedMaskResult.Built;
+		}
+
+		/// <summary>
+		/// The cached form of <see cref="BoundedMaskBuilder.BuildUnclipped"/>: the mask covers the path's
+		/// whole padded bbox with no reference to any destination, so <b>one entry serves the same geometry at
+		/// every whole-pixel position</b> and the caller composites it where it belongs.
+		/// </summary>
+		/// <remarks>
+		/// This is the pairing the reference's cached text path uses, and the two halves are inseparable: a
+		/// mask trimmed to a destination or a clip carries where it was drawn in its bytes, so it cannot be
+		/// shared across positions (see <see cref="BoundedMaskBuilder.BuildUnclipped"/>). Untrimmed, the
+		/// only thing position contributes is the sub-pixel phase in <paramref name="transform"/>'s
+		/// translation - which the caller is expected to have reduced to the fraction, keeping the whole-pixel
+		/// part for the composite origin.
+		/// <para>
+		/// Whoever composites the result owes it the clip that was not applied here.
+		/// </para>
+		/// </remarks>
+		/// <param name="pathIdentity">Identity of the geometry, or null to bypass the cache - see
+		/// <see cref="TryGetBoundedMask"/>.</param>
+		/// <param name="path">The vertex source to fill.</param>
+		/// <param name="transform">Path space to destination pixel space, ideally carrying only the sub-pixel
+		/// phase of the placement (see the remarks).</param>
+		/// <param name="mask">The coverage mask - <b>shared and read-only</b>.</param>
+		/// <param name="originX">Destination x of the mask's left column, <b>which may be negative</b>: with
+		/// no destination to trim against, the bbox lands wherever the transform puts it.</param>
+		/// <param name="originY">Destination y of the mask's bottom row (Y-up), which may also be
+		/// negative.</param>
+		/// <param name="fillRule">Fill rule for the path.</param>
+		/// <param name="primaryWeight">Filter center-tap weight.</param>
+		/// <param name="gamma">Post-filter curve.</param>
+		/// <param name="gray">True for the chroma-free fallback collapse.</param>
+		/// <returns><see cref="UnclippedMaskResult.Empty"/> when the path carries no vertices, the same
+		/// "nothing to paint" answer <see cref="TryGetBoundedMask"/> gives, and
+		/// <see cref="UnclippedMaskResult.TooLarge"/> when the geometry is too big to serve this way and the
+		/// caller has to paint it the ordinary way. Neither answer is cached: both are cheap to reach again
+		/// (a bbox test, no raster), and spending entries on them would evict the masks that are on
+		/// screen.</returns>
+		public static UnclippedMaskResult GetUnclippedMask(
+			object pathIdentity,
+			IVertexSource path,
+			Affine transform,
+			out LcdMask mask,
+			out int originX,
+			out int originY,
+			filling_rule_e fillRule = filling_rule_e.fill_non_zero,
+			double primaryWeight = LcdFilter.DefaultPrimaryWeight,
+			double gamma = LcdFilter.DefaultGamma,
+			bool gray = false)
+		{
+			// The 0 x 0 "destination" and null clip in the key are what keeps these entries from colliding
+			// with trimmed ones: TryGetBoundedMask refuses a destination that small outright, so no trimmed
+			// mask can ever be filed under those key values.
+			return GetMask(
+				pathIdentity,
+				trimToDestination: false,
+				0,
+				0,
+				path,
+				transform,
+				out mask,
+				out originX,
+				out originY,
+				null,
+				fillRule,
+				primaryWeight,
+				gamma,
+				gray);
+		}
+
+		private static UnclippedMaskResult GetMask(
+			object pathIdentity,
+			bool trimToDestination,
+			int bufferWidth,
+			int bufferHeight,
+			IVertexSource path,
+			Affine transform,
+			out LcdMask mask,
+			out int originX,
+			out int originY,
+			RectangleDouble? clip,
+			filling_rule_e fillRule,
+			double primaryWeight,
+			double gamma,
+			bool gray)
+		{
 			if (path == null)
 			{
 				throw new ArgumentNullException(nameof(path));
@@ -320,7 +466,7 @@ namespace MatterHackers.Agg.LcdCoverage
 
 			if (pathIdentity == null)
 			{
-				return Build(bufferWidth, bufferHeight, path, transform, out mask, out originX, out originY, clip, fillRule, primaryWeight, gamma, gray);
+				return Build(trimToDestination, bufferWidth, bufferHeight, path, transform, out mask, out originX, out originY, clip, fillRule, primaryWeight, gamma, gray);
 			}
 
 			var key = new LcdMaskKey(pathIdentity, transform, bufferWidth, bufferHeight, clip, fillRule, primaryWeight, gamma, gray);
@@ -337,13 +483,14 @@ namespace MatterHackers.Agg.LcdCoverage
 					mask = hit.Mask;
 					originX = hit.OriginX;
 					originY = hit.OriginY;
-					return true;
+					return UnclippedMaskResult.Built;
 				}
 			}
 
-			if (!Build(bufferWidth, bufferHeight, path, transform, out mask, out originX, out originY, clip, fillRule, primaryWeight, gamma, gray))
+			UnclippedMaskResult result = Build(trimToDestination, bufferWidth, bufferHeight, path, transform, out mask, out originX, out originY, clip, fillRule, primaryWeight, gamma, gray);
+			if (result != UnclippedMaskResult.Built)
 			{
-				return false;
+				return result;
 			}
 
 			lock (SyncRoot)
@@ -356,24 +503,35 @@ namespace MatterHackers.Agg.LcdCoverage
 					mask = raced.Mask;
 					originX = raced.OriginX;
 					originY = raced.OriginY;
-					return true;
+					return UnclippedMaskResult.Built;
 				}
 
 				LinkedListNode<LcdMaskKey> node = Recency.AddLast(key);
 				Entries[key] = new Entry(mask, originX, originY, node);
+				cachedBytes += mask.Data.Length;
 
-				while (Recency.Count > Capacity)
+				// Both caps evict the same way, least recently used first. The byte cap stops at one entry
+				// rather than emptying the cache: a single mask larger than the whole budget is still the one
+				// that was just asked for, and dropping it would leave the caller rasterizing it every frame
+				// for nothing. The next insert evicts it.
+				while (Recency.Count > Capacity
+					|| (cachedBytes > MaxCachedBytes && Recency.Count > 1))
 				{
 					LinkedListNode<LcdMaskKey> oldest = Recency.First;
 					Recency.RemoveFirst();
-					Entries.Remove(oldest.Value);
+					if (Entries.TryGetValue(oldest.Value, out Entry evicted))
+					{
+						cachedBytes -= evicted.Mask.Data.Length;
+						Entries.Remove(oldest.Value);
+					}
 				}
 			}
 
-			return true;
+			return UnclippedMaskResult.Built;
 		}
 
-		private static bool Build(
+		private static UnclippedMaskResult Build(
+			bool trimToDestination,
 			int bufferWidth,
 			int bufferHeight,
 			IVertexSource path,
@@ -387,21 +545,42 @@ namespace MatterHackers.Agg.LcdCoverage
 			double gamma,
 			bool gray)
 		{
-			bool built = BoundedMaskBuilder.TryBuild(
-				bufferWidth,
-				bufferHeight,
-				path,
-				transform,
-				out mask,
-				out originX,
-				out originY,
-				clip,
-				fillRule,
-				primaryWeight,
-				gamma,
-				gray);
+			UnclippedMaskResult built;
+			if (trimToDestination)
+			{
+				// A trimmed mask is bounded by the destination, so it has no size of its own to refuse:
+				// TooLarge is not one of the answers this branch can give.
+				built = BoundedMaskBuilder.TryBuild(
+					bufferWidth,
+					bufferHeight,
+					path,
+					transform,
+					out mask,
+					out originX,
+					out originY,
+					clip,
+					fillRule,
+					primaryWeight,
+					gamma,
+					gray)
+					? UnclippedMaskResult.Built
+					: UnclippedMaskResult.Empty;
+			}
+			else
+			{
+				built = BoundedMaskBuilder.BuildUnclipped(
+					path,
+					transform,
+					out mask,
+					out originX,
+					out originY,
+					fillRule,
+					primaryWeight,
+					gamma,
+					gray);
+			}
 
-			if (built)
+			if (built == UnclippedMaskResult.Built)
 			{
 				lock (SyncRoot)
 				{

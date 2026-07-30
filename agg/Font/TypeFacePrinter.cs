@@ -18,6 +18,7 @@
 //----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.Transform;
@@ -42,7 +43,7 @@ namespace MatterHackers.Agg.Font
 		BoundsBottom
 	}
 
-	public class TypeFacePrinter : VertexSourceLegacySupport
+	public class TypeFacePrinter : VertexSourceLegacySupport, IVertexSourceRenderIdentity
 	{
 		/// <summary>
 		/// When true (the default), each text line's baseline Y is snapped to the nearest
@@ -101,6 +102,57 @@ namespace MatterHackers.Agg.Font
 		public Vector2 Origin { get; set; }
 
 		public double ResolutionScale { get; set; } = 1;
+
+		/// <summary>
+		/// Everything that decides which vertices <see cref="Vertices"/> emits, as one comparable value - see
+		/// <see cref="IVertexSourceRenderIdentity"/>. Null while there is no typeface to shape with, since a
+		/// printer in that state cannot describe glyphs it has no way to produce.
+		/// </summary>
+		/// <remarks>
+		/// The list is the contract: the string, the outlines it is shaped with
+		/// (<see cref="Font.TypeFace"/> and the em size in pixels), everything that moves a glyph relative to
+		/// the others (<see cref="Justification"/>, <see cref="Baseline"/>, <see cref="Origin"/>, and
+		/// <see cref="SnapBaselinesToWholePixels"/>, which rounds each line's baseline), and everything that
+		/// changes an outline's own vertices (<see cref="StyledTypeFace.DoUnderline"/> adds geometry,
+		/// <see cref="StyledTypeFace.FlattenCurves"/> and <see cref="ResolutionScale"/> change how curves are
+		/// flattened).
+		/// <para>
+		/// <b><see cref="Origin"/> is in it because <see cref="Vertices"/> bakes it into the positions</b>
+		/// rather than leaving it to the caller's transform - that is the path
+		/// <see cref="Graphics2D.DrawString(string, double, double, double, Justification, Baseline, Color, bool, Color, bool)"/>
+		/// uses. A printer moved by the graphics transform instead keeps one identity, which is how a widget
+		/// that draws the same label at a new screen position every frame stays recognisable.
+		/// </para>
+		/// <para>
+		/// It names the <see cref="Font.TypeFace"/> and the em size rather than the
+		/// <see cref="StyledTypeFace"/> holding them, because a <see cref="StyledTypeFace"/> is routinely
+		/// constructed per draw - <see cref="TypeFacePrinter(string, double, Vector2, Justification, Baseline, bool)"/>
+		/// makes a new one every time - while the <see cref="Font.TypeFace"/> behind it is loaded once and
+		/// shared.
+		/// </para>
+		/// </remarks>
+		public object RenderIdentity
+		{
+			get
+			{
+				if (TypeFaceStyle == null)
+				{
+					return null;
+				}
+
+				return new TextRunIdentity(
+					text,
+					TypeFaceStyle.TypeFace,
+					TypeFaceStyle.EmSizeInPixels,
+					TypeFaceStyle.DoUnderline,
+					TypeFaceStyle.FlattenCurves,
+					ResolutionScale,
+					Justification,
+					Baseline,
+					Origin,
+					SnapBaselinesToWholePixels);
+			}
+		}
 
 		public TypeFacePrinter(string text = "", double pointSize = 12, Vector2 origin = default(Vector2), Justification justification = Justification.Left, Baseline baseline = Baseline.Text, bool bold = false)
 			: this(text,
@@ -605,6 +657,101 @@ namespace MatterHackers.Agg.Font
 					clostestXDistSquared = deltaXLengthSquared;
 					clostestIndex = i;
 				}
+			}
+		}
+
+		/// <summary>
+		/// The value <see cref="RenderIdentity"/> builds: two runs with equal identities emit identical
+		/// vertices. See <see cref="RenderIdentity"/> for why each field is here.
+		/// </summary>
+		/// <remarks>
+		/// A class rather than a struct because it is handed out as an <see cref="object"/>: a struct would
+		/// be boxed anyway, and a boxed struct without an explicit <see cref="object.Equals(object)"/>
+		/// override falls back to reflective field comparison on every lookup.
+		/// <para>
+		/// The <see cref="Font.TypeFace"/> is compared by reference: a typeface is loaded once and shared, and
+		/// two separately parsed copies of the same font file are two objects whose glyph outlines nobody has
+		/// promised are identical.
+		/// </para>
+		/// <para>
+		/// The doubles are compared by bit pattern - value equality with no epsilon that could let a changed
+		/// size keep serving a raster of the previous one.
+		/// </para>
+		/// </remarks>
+		private sealed class TextRunIdentity : IEquatable<TextRunIdentity>
+		{
+			private readonly string text;
+			private readonly TypeFace typeFace;
+			private readonly double emSizeInPixels;
+			private readonly bool underline;
+			private readonly bool flattenCurves;
+			private readonly double resolutionScale;
+			private readonly Justification justification;
+			private readonly Baseline baseline;
+			private readonly Vector2 origin;
+			private readonly bool snapBaselines;
+
+			internal TextRunIdentity(
+				string text,
+				TypeFace typeFace,
+				double emSizeInPixels,
+				bool underline,
+				bool flattenCurves,
+				double resolutionScale,
+				Justification justification,
+				Baseline baseline,
+				Vector2 origin,
+				bool snapBaselines)
+			{
+				this.text = text;
+				this.typeFace = typeFace;
+				this.emSizeInPixels = emSizeInPixels;
+				this.underline = underline;
+				this.flattenCurves = flattenCurves;
+				this.resolutionScale = resolutionScale;
+				this.justification = justification;
+				this.baseline = baseline;
+				this.origin = origin;
+				this.snapBaselines = snapBaselines;
+			}
+
+			public bool Equals(TextRunIdentity other)
+			{
+				return other != null
+					&& this.text == other.text
+					&& object.ReferenceEquals(this.typeFace, other.typeFace)
+					&& BitConverter.DoubleToInt64Bits(this.emSizeInPixels) == BitConverter.DoubleToInt64Bits(other.emSizeInPixels)
+					&& this.underline == other.underline
+					&& this.flattenCurves == other.flattenCurves
+					&& BitConverter.DoubleToInt64Bits(this.resolutionScale) == BitConverter.DoubleToInt64Bits(other.resolutionScale)
+					&& this.justification == other.justification
+					&& this.baseline == other.baseline
+					&& BitConverter.DoubleToInt64Bits(this.origin.X) == BitConverter.DoubleToInt64Bits(other.origin.X)
+					&& BitConverter.DoubleToInt64Bits(this.origin.Y) == BitConverter.DoubleToInt64Bits(other.origin.Y)
+					&& this.snapBaselines == other.snapBaselines;
+			}
+
+			public override bool Equals(object obj)
+			{
+				return this.Equals(obj as TextRunIdentity);
+			}
+
+			public override int GetHashCode()
+			{
+				var hash = default(HashCode);
+				hash.Add(this.text);
+				hash.Add(RuntimeHelpers.GetHashCode(this.typeFace));
+				hash.Add(BitConverter.DoubleToInt64Bits(this.emSizeInPixels));
+				hash.Add(this.underline);
+				hash.Add(this.flattenCurves);
+				hash.Add(BitConverter.DoubleToInt64Bits(this.resolutionScale));
+				hash.Add((int)this.justification);
+				hash.Add((int)this.baseline);
+				hash.Add(BitConverter.DoubleToInt64Bits(this.origin.X));
+				hash.Add(BitConverter.DoubleToInt64Bits(this.origin.Y));
+				hash.Add(this.snapBaselines);
+
+				return hash.ToHashCode();
 			}
 		}
 	}
