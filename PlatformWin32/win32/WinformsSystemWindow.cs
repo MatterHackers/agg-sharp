@@ -48,6 +48,33 @@ namespace MatterHackers.Agg.UI
 
 		private static readonly object SingleInvokeLock = new object();
 
+		// Guards one-time static initialization done from instance constructors
+		// (idleCallBackTimer creation and the MainWindowsFormsWindow first-window latch)
+		// so concurrent construction cannot create two timers or two "main" windows.
+		private static readonly object StaticInitLock = new object();
+
+		// Probe for the application icon once per process rather than in every window
+		// constructor. Preserves the original probe order and silent-failure behavior.
+		private static readonly Lazy<Icon> ApplicationIcon = new Lazy<Icon>(() =>
+		{
+			string iconPath = File.Exists("application.ico") ?
+				"application.ico" :
+				"../MonoBundle/StaticData/application.ico";
+
+			try
+			{
+				if (File.Exists(iconPath))
+				{
+					return new Icon(iconPath);
+				}
+			}
+			catch
+			{
+			}
+
+			return null;
+		});
+
 		protected WinformsEventSink EventSink;
 
 		private SystemWindow _systemWindow;
@@ -92,40 +119,49 @@ namespace MatterHackers.Agg.UI
 
 		public WinformsSystemWindow()
 		{
-			if (idleCallBackTimer == null)
+			lock (StaticInitLock)
 			{
-				idleCallBackTimer = new System.Timers.Timer();
-				// call up to 100 times a second
-				idleCallBackTimer.Interval = 10;
-				idleCallBackTimer.Elapsed += InvokePendingOnIdleActions;
-				idleCallBackTimer.Start();
+				if (idleCallBackTimer == null)
+				{
+					var newTimer = new System.Timers.Timer();
+					// call up to 100 times a second
+					newTimer.Interval = 10;
+					newTimer.Elapsed += InvokePendingOnIdleActions;
+					// Publish the fully-configured timer before starting it so no reader
+					// can observe a partially-configured instance.
+					idleCallBackTimer = newTimer;
+					newTimer.Start();
+				}
+
+				// Track first window
+				if (MainWindowsFormsWindow == null)
+				{
+					MainWindowsFormsWindow = this;
+					IsMainWindow = true;
+				}
 			}
 
-			// Track first window
-			if (MainWindowsFormsWindow == null)
-			{
-				MainWindowsFormsWindow = this;
-				IsMainWindow = true;
-			}
-
-			this.TitleBarHeight = RectangleToScreen(ClientRectangle).Top - this.Top;
+			// TitleBarHeight is intentionally NOT computed here: RectangleToScreen would force
+			// premature Win32 handle creation in the constructor. See OnHandleCreated.
 			if (SystemWindow.EnableAllowDrop)
 			{
 				this.AllowDrop = true;
 			}
 
-			string iconPath = File.Exists("application.ico") ?
-				"application.ico" :
-				"../MonoBundle/StaticData/application.ico";
-
-			try
+			if (ApplicationIcon.Value != null)
 			{
-				if (File.Exists(iconPath))
-				{
-					this.Icon = new Icon(iconPath);
-				}
+				this.Icon = ApplicationIcon.Value;
 			}
-			catch { }
+		}
+
+		protected override void OnHandleCreated(EventArgs e)
+		{
+			base.OnHandleCreated(e);
+
+			// Compute the title bar height now that the native handle exists. Doing this in
+			// the constructor forced premature handle creation via RectangleToScreen.
+			titleBarHeight = RectangleToScreen(ClientRectangle).Top - this.Top;
+			titleBarHeightComputed = true;
 		}
 
 		protected override void OnClosed(EventArgs e)
@@ -583,7 +619,27 @@ namespace MatterHackers.Agg.UI
 		}
 
 
-        public int TitleBarHeight { get; private set; } = 0;
+		private int titleBarHeight = 0;
+		private bool titleBarHeightComputed = false;
+
+		/// <summary>
+		/// Gets the height of the native title bar. Returns 0 until the Win32 handle exists;
+		/// computed in OnHandleCreated (and lazily here if the handle already exists) rather
+		/// than in the constructor to avoid forcing premature handle creation.
+		/// </summary>
+		public int TitleBarHeight
+		{
+			get
+			{
+				if (!titleBarHeightComputed && IsHandleCreated)
+				{
+					titleBarHeight = RectangleToScreen(ClientRectangle).Top - this.Top;
+					titleBarHeightComputed = true;
+				}
+
+				return titleBarHeight;
+			}
+		}
 
 		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 		public new Vector2 MinimumSize
@@ -615,18 +671,23 @@ namespace MatterHackers.Agg.UI
 			// Reset all other static state for clean test isolation
 			DebugLogger.LogMessage("WinformsSystemWindow", "Resetting WinForms static state");
 			
-			// Reset main window reference
-			MainWindowsFormsWindow = null;
-			
-			// Reset idle processing state
-			processingOnIdle = false;
-			
-			// Reset and recreate idle timer to ensure clean state
-			if (idleCallBackTimer != null)
+			// Use the same lock as the constructor so a reset cannot interleave with
+			// another thread's one-time static initialization.
+			lock (StaticInitLock)
 			{
-				idleCallBackTimer.Stop();
-				idleCallBackTimer.Dispose();
-				idleCallBackTimer = null;
+				// Reset main window reference
+				MainWindowsFormsWindow = null;
+
+				// Reset idle processing state
+				processingOnIdle = false;
+
+				// Reset and recreate idle timer to ensure clean state
+				if (idleCallBackTimer != null)
+				{
+					idleCallBackTimer.Stop();
+					idleCallBackTimer.Dispose();
+					idleCallBackTimer = null;
+				}
 			}
 			
 			DebugLogger.LogMessage("WinformsSystemWindow", "WinForms static state reset completed");

@@ -99,6 +99,9 @@ namespace MatterHackers.Agg.UI
 		public SystemWindow(double width, double height)
 			: base(width, height, SizeLimitsToSet.None)
 		{
+			// ToolTipManager construction only initializes fields; it is activated (event
+			// subscription + UiThread interval) once the window is shown or first receives
+			// mouse input, so no callbacks can observe a partially-constructed window.
 			ToolTipManager = new ToolTipManager(this);
 			this.BackgroundColor = new Color("#444444");
 		}
@@ -121,6 +124,11 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
+			// Mouse input can only arrive after construction is complete, so this is a safe
+			// activation point. Covers windows that receive events without ever going through
+			// ShowAsSystemWindow (e.g. headless tests). No-op after the first call.
+			ToolTipManager.Initialize();
+
 			lastMousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
 
 			base.OnMouseMove(mouseEvent);
@@ -186,6 +194,10 @@ namespace MatterHackers.Agg.UI
 
 		private static ISystemWindowProvider systemWindowProvider = null;
 
+		// Guards lazy creation of systemWindowProvider so concurrent first-show calls
+		// cannot create two providers.
+		private static readonly object systemWindowProviderLock = new object();
+
 		/// <summary>
 		/// Resets the static systemWindowProvider to allow fresh initialization for tests
 		/// </summary>
@@ -193,7 +205,12 @@ namespace MatterHackers.Agg.UI
 		{
 			DebugLogger.EnableFilter("SystemWindow");
 			DebugLogger.LogMessage("SystemWindow", $"ResetSystemWindowProvider called - Current provider: {systemWindowProvider?.GetType().Name ?? "null"}");
-			systemWindowProvider = null;
+
+			lock (systemWindowProviderLock)
+			{
+				systemWindowProvider = null;
+			}
+
 			_openWindows.Clear();
 		}
 
@@ -205,21 +222,30 @@ namespace MatterHackers.Agg.UI
 			DebugLogger.LogMessage("SystemWindow", $"PlatformWindow is null: {PlatformWindow == null}");
 			DebugLogger.LogMessage("SystemWindow", $"_openWindows count before add: {_openWindows.Count}");
 			
-			if (systemWindowProvider == null)
+			lock (systemWindowProviderLock)
 			{
-				var providerTypeName = AggContext.Config.ProviderTypes.SystemWindowProvider;
-				DebugLogger.LogMessage("SystemWindow", $"systemWindowProvider is null, creating from '{providerTypeName}'");
-				systemWindowProvider = AggContext.CreateInstanceFrom<ISystemWindowProvider>(providerTypeName);
-
+				// Lazy creation is done under the lock so concurrent first-show calls resolve
+				// to a single provider. A provider pre-set by the platform layer is preserved.
 				if (systemWindowProvider == null)
 				{
-					throw new InvalidOperationException(
-						$"Failed to create ISystemWindowProvider from type '{providerTypeName}'. " +
-						"Ensure AggContext.Config.ProviderTypes.SystemWindowProvider is set to a valid type name.");
-				}
+					var providerTypeName = AggContext.Config.ProviderTypes.SystemWindowProvider;
+					DebugLogger.LogMessage("SystemWindow", $"systemWindowProvider is null, creating from '{providerTypeName}'");
+					systemWindowProvider = AggContext.CreateInstanceFrom<ISystemWindowProvider>(providerTypeName);
 
-				DebugLogger.LogMessage("SystemWindow", $"Created systemWindowProvider type: {systemWindowProvider.GetType().Name}");
+					if (systemWindowProvider == null)
+					{
+						throw new InvalidOperationException(
+							$"Failed to create ISystemWindowProvider from type '{providerTypeName}'. " +
+							"Ensure AggContext.Config.ProviderTypes.SystemWindowProvider is set to a valid type name.");
+					}
+
+					DebugLogger.LogMessage("SystemWindow", $"Created systemWindowProvider type: {systemWindowProvider.GetType().Name}");
+				}
 			}
+
+			// The window is fully constructed and about to be shown - activate tooltip
+			// tracking now (idempotent if already activated by earlier mouse input).
+			ToolTipManager.Initialize();
 
 			_openWindows.Add(this);
 
