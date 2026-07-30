@@ -48,6 +48,9 @@ namespace MatterHackers.Agg.UI
 
 		private WinformsSystemWindow.FormInspector inspectForm;
 
+		// Stored so Unhook can remove it; only assigned when AllowInspector is true.
+		private System.Windows.Forms.KeyEventHandler inspectorKeyDownHandler;
+
 		public static bool AllowInspector = false;
 
 		public WinformsEventSink(Control controlToHook, SystemWindow systemWindow)
@@ -57,7 +60,7 @@ namespace MatterHackers.Agg.UI
 
 			if (AllowInspector)
 			{
-				this.controlToHook.KeyDown += (s, e) =>
+				this.inspectorKeyDownHandler = (s, e) =>
 				{
 					switch (e.KeyCode)
 					{
@@ -90,6 +93,8 @@ namespace MatterHackers.Agg.UI
 							return;
 					}
 				};
+
+				this.controlToHook.KeyDown += inspectorKeyDownHandler;
 			}
 
 			controlToHook.GotFocus += ControlToHook_GotFocus;
@@ -122,6 +127,46 @@ namespace MatterHackers.Agg.UI
 		public void SetActiveSystemWindow(SystemWindow systemWindow)
 		{
 			widgetToSendTo = systemWindow;
+		}
+
+		/// <summary>
+		/// Removes every handler the constructor wired onto the hooked control. Call from the
+		/// owning window's teardown so the control does not keep this sink (and the SystemWindow
+		/// it forwards to) alive. Safe to call more than once.
+		/// </summary>
+		public void Unhook()
+		{
+			if (inspectorKeyDownHandler != null)
+			{
+				controlToHook.KeyDown -= inspectorKeyDownHandler;
+				inspectorKeyDownHandler = null;
+			}
+
+			controlToHook.GotFocus -= ControlToHook_GotFocus;
+			controlToHook.LostFocus -= ControlToHook_LostFocus;
+
+			controlToHook.KeyDown -= ControlToHook_KeyDown;
+			controlToHook.KeyUp -= ControlToHook_KeyUp;
+			controlToHook.KeyPress -= ControlToHook_KeyPress;
+
+			controlToHook.MouseDown -= ControlToHook_MouseDown;
+			controlToHook.MouseMove -= FormToHook_MouseMove;
+			controlToHook.MouseUp -= ControlToHook_MouseUp;
+			controlToHook.MouseWheel -= ControlToHook_MouseWheel;
+
+			controlToHook.DragDrop -= ControlToHook_DragDrop;
+			controlToHook.DragEnter -= ControlToHook_DragEnter;
+			controlToHook.DragLeave -= ControlToHook_DragLeave;
+			controlToHook.DragOver -= ControlToHook_DragOver;
+
+			controlToHook.MouseCaptureChanged -= ControlToHook_MouseCaptureChanged;
+
+			controlToHook.MouseLeave -= ControlToHook_MouseLeave;
+
+			// Drop the SystemWindow reference so an unhooked sink cannot keep it alive.
+			// No handlers can fire after the removals above; a reused sink gets a new
+			// window via SetActiveSystemWindow.
+			widgetToSendTo = null;
 		}
 
 		private void ControlToHook_DragDrop(object sender, DragEventArgs dragevent)
