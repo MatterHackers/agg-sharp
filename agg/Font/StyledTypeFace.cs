@@ -57,7 +57,12 @@ namespace MatterHackers.Agg.Font
 
 	public class StyledTypeFaceImageCache
 	{
-		private static StyledTypeFaceImageCache instance;
+		private static readonly StyledTypeFaceImageCache instance = new StyledTypeFaceImageCache();
+
+		// Guards typeFaceImageCache and the leaf per-character dictionaries it hands out.
+		// A single static lock (rather than locking the caller-supplied TypeFace) so that
+		// concurrent callers with different TypeFaces still serialize access to the shared cache.
+		internal static readonly object SyncRoot = new object();
 
         // Keys: TypeFace, Color, FontSize, Character
         private Dictionary<TypeFace, Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>>> typeFaceImageCache = new Dictionary<TypeFace, Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>>>();
@@ -69,7 +74,7 @@ namespace MatterHackers.Agg.Font
 
 		public static Dictionary<char, ImageBuffer> GetCorrectCache(TypeFace typeFace, Color color, double emSizeInPoints)
 		{
-			lock (typeFace)
+			lock (SyncRoot)
 			{
 				// TODO: check if the cache is getting too big and if so prune it (or just delete it and start over).
 
@@ -101,18 +106,7 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		private static StyledTypeFaceImageCache Instance
-		{
-			get
-			{
-				if (instance == null)
-				{
-					instance = new StyledTypeFaceImageCache();
-				}
-
-				return instance;
-			}
-		}
+		private static StyledTypeFaceImageCache Instance => instance;
 	}
 
 	public class StyledTypeFace
@@ -188,10 +182,13 @@ namespace MatterHackers.Agg.Font
 			}
 
 			var characterImageCache = StyledTypeFaceImageCache.GetCorrectCache(this.TypeFace, color, emSizeInPixels);
-			characterImageCache.TryGetValue(character, out ImageBuffer imageForCharacter);
-			if (imageForCharacter != null)
+			lock (StyledTypeFaceImageCache.SyncRoot)
 			{
-				return imageForCharacter;
+				characterImageCache.TryGetValue(character, out ImageBuffer imageForCharacter);
+				if (imageForCharacter != null)
+				{
+					return imageForCharacter;
+				}
 			}
 
 			IVertexSource glyphForCharacter = GetGlyphForCharacter(character, 1);
@@ -210,7 +207,12 @@ namespace MatterHackers.Agg.Font
 
 			var graphics = charImage.NewGraphics2D();
 			graphics.Render(glyphForCharacter, xFraction, yFraction + (-DescentInPixels) + 1, color);
-			characterImageCache[character] = charImage;
+			// Rendering happens outside the lock; if two threads race on the same character
+			// the last write wins and both return a valid image.
+			lock (StyledTypeFaceImageCache.SyncRoot)
+			{
+				characterImageCache[character] = charImage;
+			}
 
 			return charImage;
 		}

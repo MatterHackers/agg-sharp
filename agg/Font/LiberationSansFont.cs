@@ -1,24 +1,19 @@
 ﻿using System;
+using System.Threading;
 
 namespace MatterHackers.Agg.Font
 {
 	public class LiberationSansFont
 	{
-		private static TypeFace instance;
-
-		public static TypeFace Instance
+		// Lazy so the TypeFace is fully constructed and parsed before it is published to other threads.
+		private static readonly Lazy<TypeFace> instance = new Lazy<TypeFace>(() =>
 		{
-			get
-			{
-				if (instance == null)
-				{
-					instance = new TypeFace();
-					instance.ReadSVG(FontData());
-				}
+			var typeFace = new TypeFace();
+			typeFace.ReadSVG(FontData());
+			return typeFace;
+		}, LazyThreadSafetyMode.ExecutionAndPublication);
 
-				return instance;
-			}
-		}
+		public static TypeFace Instance => instance.Value;
 
 		private static String FontData()
 		{
