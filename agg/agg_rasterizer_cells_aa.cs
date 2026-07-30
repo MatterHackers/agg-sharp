@@ -156,17 +156,21 @@ namespace MatterHackers.Agg
 			int poly_subpixel_shift = (int)Util.poly_subpixel_scale_e.poly_subpixel_shift;
 			int poly_subpixel_mask = (int)Util.poly_subpixel_scale_e.poly_subpixel_mask;
 			int poly_subpixel_scale = (int)Util.poly_subpixel_scale_e.poly_subpixel_scale;
-			int dx = x2 - x1;
+			// 64-bit: x2 - x1 overflows int for extreme coordinates (int.MaxValue - int.MinValue == -1),
+			// which would skip the subdivision below and leave the traversal walking a wrapped range.
+			long dx = (long)x2 - x1;
 
-			if (dx >= (int)dx_limit_e.dx_limit || dx <= -(int)dx_limit_e.dx_limit)
+			if (dx >= (long)dx_limit_e.dx_limit || dx <= -(long)dx_limit_e.dx_limit)
 			{
-				int cx = (x1 + x2) >> 1;
-				int cy = (y1 + y2) >> 1;
+				int cx = (int)(((long)x1 + x2) >> 1);
+				int cy = (int)(((long)y1 + y2) >> 1);
 				line(x1, y1, cx, cy);
 				line(cx, cy, x2, y2);
+				// The two halves fully cover the segment - falling through would render it a second time.
+				return;
 			}
 
-			int dy = y2 - y1;
+			long dy = (long)y2 - y1;
 			int ex1 = x1 >> poly_subpixel_shift;
 			int ex2 = x2 >> poly_subpixel_shift;
 			int ey1 = y1 >> poly_subpixel_shift;
@@ -175,7 +179,8 @@ namespace MatterHackers.Agg
 			int fy2 = y2 & poly_subpixel_mask;
 
 			int x_from, x_to;
-			int p, rem, mod, lift, delta, first, incr;
+			int lift, delta, first, incr;
+			long p, rem, mod;
 
 			if (ex1 < m_min_x) m_min_x = ex1;
 			if (ex1 > m_max_x) m_max_x = ex1;
@@ -249,7 +254,7 @@ namespace MatterHackers.Agg
 				dy = -dy;
 			}
 
-			delta = p / dy;
+			delta = (int)(p / dy);
 			mod = p % dy;
 
 			if (mod < 0)
@@ -267,7 +272,7 @@ namespace MatterHackers.Agg
 			if (ey1 != ey2)
 			{
 				p = poly_subpixel_scale * dx;
-				lift = p / dy;
+				lift = (int)(p / dy);
 				rem = p % dy;
 
 				if (rem < 0)
@@ -467,8 +472,10 @@ namespace MatterHackers.Agg
 			int fx1 = x1 & (int)poly_subpixel_scale_e.poly_subpixel_mask;
 			int fx2 = x2 & (int)poly_subpixel_scale_e.poly_subpixel_mask;
 
-			int delta, p, first, dx;
-			int incr, lift, mod, rem;
+			int delta, first;
+			int incr, lift;
+			// dx overflows int at extreme coordinates; p/mod/rem follow it to long to match the i64 reference.
+			long p, dx, mod, rem;
 
 			//trivial case. Happens often
 			if (y1 == y2)
@@ -487,21 +494,21 @@ namespace MatterHackers.Agg
 			}
 
 			//ok, we'll have to render a run of adjacent cells on the same hline...
-			p = ((int)poly_subpixel_scale_e.poly_subpixel_scale - fx1) * (y2 - y1);
+			p = (long)((int)poly_subpixel_scale_e.poly_subpixel_scale - fx1) * (y2 - y1);
 			first = (int)poly_subpixel_scale_e.poly_subpixel_scale;
 			incr = 1;
 
-			dx = x2 - x1;
+			dx = (long)x2 - x1;
 
 			if (dx < 0)
 			{
-				p = fx1 * (y2 - y1);
+				p = (long)fx1 * (y2 - y1);
 				first = 0;
 				incr = -1;
 				dx = -dx;
 			}
 
-			delta = p / dx;
+			delta = (int)(p / dx);
 			mod = p % dx;
 
 			if (mod < 0)
@@ -519,8 +526,8 @@ namespace MatterHackers.Agg
 
 			if (ex1 != ex2)
 			{
-				p = (int)poly_subpixel_scale_e.poly_subpixel_scale * (y2 - y1 + delta);
-				lift = p / dx;
+				p = (long)(int)poly_subpixel_scale_e.poly_subpixel_scale * (y2 - y1 + delta);
+				lift = (int)(p / dx);
 				rem = p % dx;
 
 				if (rem < 0)
