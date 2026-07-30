@@ -70,9 +70,29 @@ namespace MatterHackers.Agg.UI
 		private GuiWidget widgetThatWasShowingToolTip;
 		private RunningInterval runningInterval;
 
+		// 0 = not initialized, 1 = initialized. Latched with Interlocked.CompareExchange so
+		// racing callers cannot double-subscribe MouseMove or leak a second interval.
+		private int initialized;
+
 		internal ToolTipManager(SystemWindow owner)
 		{
+			// Field initialization only. The owning SystemWindow is still constructing, so no
+			// event subscriptions or UiThread scheduling may happen here - callbacks could run
+			// against a partially-constructed window. Activation happens in Initialize().
 			this.systemWindow = owner;
+		}
+
+		/// <summary>
+		/// Activates tooltip tracking for the owning window: subscribes to MouseMove and starts
+		/// the polling interval. Called once the window is being shown (or first receives mouse
+		/// input). Safe to call multiple times; only the first call has an effect.
+		/// </summary>
+		internal void Initialize()
+		{
+			if (System.Threading.Interlocked.CompareExchange(ref initialized, 1, 0) != 0)
+			{
+				return;
+			}
 
 			// Register listeners
 			systemWindow.MouseMove += this.SystemWindow_MouseMove;
@@ -347,9 +367,15 @@ namespace MatterHackers.Agg.UI
 
 		public void Dispose()
 		{
-			// Unregister listeners
+			// Unregister listeners. Idempotent and safe when Initialize() was never called
+			// (unsubscribing a never-subscribed handler is a no-op, interval will be null).
 			systemWindow.MouseMove -= this.SystemWindow_MouseMove;
-			UiThread.ClearInterval(runningInterval);
+
+			if (runningInterval != null)
+			{
+				UiThread.ClearInterval(runningInterval);
+				runningInterval = null;
+			}
 		}
 	}
 }
