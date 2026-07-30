@@ -68,6 +68,10 @@ namespace MatterHackers.Agg.UI
 		private TextEditWidget hadFocusWidget = null;
         private Layouts keyLayouts;
 
+		// handlers added to the static Keyboard.StateChanged event, tracked so they can
+		// be removed in OnClosed (otherwise the static event roots the whole keyboard tree)
+		private readonly List<EventHandler> keyboardStateChangedHandlers = new List<EventHandler>();
+
         public OnScreenKeyboard(int width, int height)
 			: base(FlowDirection.TopToBottom)
 		{
@@ -140,7 +144,7 @@ namespace MatterHackers.Agg.UI
 						{
 							container.AddChild(new TextWidget(key.Shifted));
 							container.Children.Last().Visible = false;
-							Keyboard.StateChanged += (s, e) =>
+							EventHandler stateChanged = (s, e) =>
 							{
 								if (Keyboard.IsKeyDown(Keys.ShiftKey))
 								{
@@ -153,6 +157,8 @@ namespace MatterHackers.Agg.UI
 									container.Children.Last().Visible = false;
 								}
 							};
+							Keyboard.StateChanged += stateChanged;
+							keyboardStateChangedHandlers.Add(stateChanged);
 						}
 						return container;
 					}
@@ -172,6 +178,19 @@ namespace MatterHackers.Agg.UI
 		public void SetFocusWidget(TextEditWidget hadFocusWidget)
 		{
 			this.hadFocusWidget = hadFocusWidget;
+		}
+
+		public override void OnClosed(EventArgs e)
+		{
+			// detach from the static Keyboard event so this widget tree can be collected
+			foreach (var handler in keyboardStateChangedHandlers)
+			{
+				Keyboard.StateChanged -= handler;
+			}
+
+			keyboardStateChangedHandlers.Clear();
+
+			base.OnClosed(e);
 		}
 	}
 
@@ -194,6 +213,15 @@ namespace MatterHackers.Agg.UI
 
 			TextEditWidget.ShowSoftwareKeyboard += DoShowSoftwareKeyboard;
 			TextEditWidget.HideSoftwareKeyboard += DoHideSoftwareKeyboard;
+		}
+
+		public override void OnClosed(EventArgs e)
+		{
+			// detach from the static TextEditWidget events so this widget tree can be collected
+			TextEditWidget.ShowSoftwareKeyboard -= DoShowSoftwareKeyboard;
+			TextEditWidget.HideSoftwareKeyboard -= DoHideSoftwareKeyboard;
+
+			base.OnClosed(e);
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)
@@ -410,6 +438,15 @@ namespace MatterHackers.Agg.UI
 
 			TextEditWidget.ShowSoftwareKeyboard += EnsureEditControlIsVisible;
 			TextEditWidget.KeyboardCollapsed += MoveContentBackDown;
+		}
+
+		public override void OnClosed(EventArgs e)
+		{
+			// detach from the static TextEditWidget events so this widget tree can be collected
+			TextEditWidget.ShowSoftwareKeyboard -= EnsureEditControlIsVisible;
+			TextEditWidget.KeyboardCollapsed -= MoveContentBackDown;
+
+			base.OnClosed(e);
 		}
 
 		public static int KeyboardHeight { get; set; }

@@ -40,7 +40,10 @@ namespace Markdig.Renderers.Agg.Inlines
 {
     public class ImageLinkSimpleX : FlowLayoutWidget
 	{
-		private static ImageBuffer icon = StaticData.Instance.LoadIcon("internet.png", 16, 16);
+		// Lazy so the StaticData I/O happens at first construction rather than at type initialization
+		private static readonly Lazy<ImageBuffer> icon = new Lazy<ImageBuffer>(
+			() => StaticData.Instance.LoadIcon("internet.png", 16, 16));
+
 		private string resolvedImageUrl;
 
 		public ImageLinkSimpleX(AggRenderer renderer, string imageUrl, string linkUrl = null)
@@ -59,7 +62,7 @@ namespace Markdig.Renderers.Agg.Inlines
 				this.Selectable = true;
 			}
 
-			sequenceWidget = new ResponsiveImageSequenceWidget(new ImageSequence(icon))
+			sequenceWidget = new ResponsiveImageSequenceWidget(new ImageSequence(icon.Value))
 			{
 				Cursor = Cursors.Hand,
 			};
