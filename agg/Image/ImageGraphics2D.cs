@@ -159,6 +159,26 @@ namespace MatterHackers.Agg
 		/// backbuffer in LCD coverage, so answering false here sends it to the ordinary RGBA backbuffer rather
 		/// than producing chroma that would be collapsed - or worse, composited against unknown pixels - on
 		/// the way to the screen.
+		/// <para>
+		/// <b>Unchecked precondition: the destination must hold premultiplied colour.</b> Saying true here is
+		/// what routes a widget's buffer into <see cref="LcdBuffer.CompositeOnto"/>, whose per-channel
+		/// <c>color_c + dest_c * (1 - alpha_c)</c> is source-over only against a premultiplied destination -
+		/// a straight-alpha one (<see cref="BlenderBGRA"/>) blends visibly wrong. Nothing verifies it, and a
+		/// blender test here would be wrong rather than merely absent: it would refuse the opaque final
+		/// surface, where the two conventions coincide and the composite is correct either way. The two
+		/// destinations this is reached on both satisfy it - a widget backbuffer is
+		/// <see cref="BlenderPreMultBGRA"/> by construction, and an opaque window surface has no partial
+		/// alpha to get wrong.
+		/// </para>
+		/// <para>
+		/// The precondition became load-bearing when <c>GuiWidget.ResolveBackbufferMode</c> stopped requiring
+		/// the widget to be opaque: while every channel alpha was 255 the <c>dest_c * (1 - alpha_c)</c> term
+		/// vanished and the destination's convention could not matter. The same change exposed a divergence in
+		/// the other direction - the buffered path writes <c>dest.alpha := max(alpha_c)</c> where the
+		/// unbuffered <see cref="LcdComposite"/> leaves destination alpha untouched. Harmless on the opaque
+		/// surfaces above, and the reason a buffered render is compared to a direct one within a tolerance
+		/// rather than byte for byte.
+		/// </para>
 		/// </remarks>
 		public override bool CanCompositeLcdBuffer => !this.IsTransparentCompositingLayer && ResolveLcdDestination() != null;
 

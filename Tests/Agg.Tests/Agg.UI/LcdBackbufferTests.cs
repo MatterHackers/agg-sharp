@@ -38,6 +38,7 @@ using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 using filling_rule_e = MatterHackers.Agg.Util.filling_rule_e;
+using static System.Math;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -95,29 +96,27 @@ namespace MatterHackers.Agg.UI.Tests
 				await Assert.That(widget.ResolveBackbufferMode(capable)).IsEqualTo(BackbufferMode.LcdCoverage)
 					.Because("an opaque widget on a capable destination is the case the mode exists for");
 
-				// Gate two, three ways of failing it - each one leaves genuinely transparent pixels in the
-				// buffer, which is what makes the subpixel geometry meaningless.
+				// The widget's own opacity is deliberately not a gate - see ResolveBackbufferMode's remarks.
+				// Each of these leaves genuinely transparent pixels in the buffer, and the two planes carry them
+				// with their per-channel coverage intact, so the composite reproduces them exactly.
 				widget.BackgroundColor = new Color(255, 255, 255, 128);
-				await Assert.That(widget.BackbufferIsOpaque).IsFalse();
-				await Assert.That(widget.ResolveBackbufferMode(capable)).IsEqualTo(BackbufferMode.Rgba)
-					.Because("a translucent background is not an opaque backbuffer");
+				await Assert.That(widget.ResolveBackbufferMode(capable)).IsEqualTo(BackbufferMode.LcdCoverage)
+					.Because("a translucent background composites per channel like any other partial coverage");
 
 				widget.BackgroundColor = Color.White;
 				widget.BackgroundRadius = new RadiusCorners(3);
-				await Assert.That(widget.ResolveBackbufferMode(capable)).IsEqualTo(BackbufferMode.Rgba)
-					.Because("a corner radius leaves the corners transparent");
+				await Assert.That(widget.ResolveBackbufferMode(capable)).IsEqualTo(BackbufferMode.LcdCoverage)
+					.Because("transparent corners are just zero coverage in both planes");
 
 				widget.BackgroundRadius = default(RadiusCorners);
 				widget.BackgroundOutlineWidth = 1;
 				widget.BorderColor = Color.Black;
-				await Assert.That(widget.ResolveBackbufferMode(capable)).IsEqualTo(BackbufferMode.Rgba)
-					.Because("an outline insets the background fill and leaves an anti-aliased edge");
+				await Assert.That(widget.ResolveBackbufferMode(capable)).IsEqualTo(BackbufferMode.LcdCoverage)
+					.Because("an anti-aliased outline edge is coverage the planes hold as well as any other");
 
 				widget.BackgroundOutlineWidth = 0;
-				await Assert.That(widget.ResolveBackbufferMode(capable)).IsEqualTo(BackbufferMode.LcdCoverage)
-					.Because("every gate is open again");
 
-				// Gate three: the destination.
+				// Gate two: the destination.
 				Graphics2D asLayer = surface.NewGraphics2D();
 				asLayer.IsTransparentCompositingLayer = true;
 				await Assert.That(widget.ResolveBackbufferMode(asLayer)).IsEqualTo(BackbufferMode.Rgba)
@@ -130,7 +129,7 @@ namespace MatterHackers.Agg.UI.Tests
 				await Assert.That(widget.ResolveBackbufferMode(null)).IsEqualTo(BackbufferMode.Rgba)
 					.Because("no destination is not a capable destination");
 
-				// Gate four: the transform the composite would happen under. The LCD composite is a whole-pixel
+				// Gate three: the transform the composite would happen under. The LCD composite is a whole-pixel
 				// 1:1 blit and cannot honour a scale, so anything but exact unit scale has to stay on the arm
 				// that can - a 4% scale is 12 pixels across a 300 pixel widget, not a rounding.
 				Graphics2D scaled = surface.NewGraphics2D();
@@ -558,38 +557,116 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
-		/// The validity gate end to end. An opaque widget takes the LCD arm and its text comes out with
-		/// subpixel chroma; the same widget with a translucent background falls to the RGBA arm, where its
-		/// backbuffer is a transparent compositing layer and the text is byte-for-byte what it was before the
-		/// LCD path existed - chroma-free, and with its alpha intact.
+		/// The case the feature actually lives or dies on in an application: a double-buffered widget whose
+		/// background is <b>not</b> opaque still takes the LCD arm, and its text still comes out with subpixel
+		/// chroma.
 		/// </summary>
+		/// <remarks>
+		/// This is not an edge case - it is the common one. <see cref="TextWidget"/> is double-buffered by
+		/// default (<see cref="TextWidget.DoubleBufferDefault"/>) and draws glyphs over a transparent
+		/// background, so every label in a MatterCAD window is exactly this widget. While a non-opaque
+		/// backbuffer was refused the LCD arm, all of them fell to the RGBA arm, whose buffer declares itself
+		/// <see cref="Graphics2D.IsTransparentCompositingLayer"/> and so refuses the mask pipeline outright -
+		/// and the user's setting reached nothing at all.
+		/// <para>
+		/// The equality is to a tolerance rather than byte-exact, unlike
+		/// <see cref="TextThroughAnLcdBackbufferLandsExactlyAsIfDrawnDirectly"/>, whose buffer is opaque and so
+		/// composites back with every channel alpha at 1 - arithmetically a copy, with nothing to round. Both
+		/// paths here do the same per-channel source-over in the same order - Porter-Duff over is associative,
+		/// which is what makes a non-opaque buffer valid at all - but the buffered one lands each paint in a
+		/// byte plane on the way past, and each of those quantizations can move a channel by one level.
+		/// </para>
+		/// <para>
+		/// <b>Which is where the tolerance comes from: one level per buffered composite.</b>
+		/// <see cref="BuildContainer"/> paints twice into the planes - the translucent background fill, then
+		/// the string over it - so two roundings accumulate and the worst case is 2. Derive it that way rather
+		/// than pinning the number observed, so a font, filter or blend change that legitimately costs a second
+		/// level does not read as a regression; a widget that painted a third time would want 3.
+		/// </para>
+		/// </remarks>
 		[Test]
 		[NotInParallel]
-		public async Task TransparentBackbufferKeepsTheOrdinaryRasterAndCarriesNoChroma()
+		public async Task ANonOpaqueWidgetsBackbufferStillCarriesChroma()
 		{
 			bool wasEnabled = LcdRenderSettings.Enabled;
 			try
 			{
 				var translucent = new Color(255, 255, 255, 128);
 
+				LcdRenderSettings.Enabled = true;
+
+				GuiWidget container = BuildContainer(translucent, doubleBuffer: true);
+				Graphics2D capable = OpaqueWhite(SurfaceWidth, SurfaceHeight).NewGraphics2D();
+				await Assert.That(container.Children[0].ResolveBackbufferMode(capable)).IsEqualTo(BackbufferMode.LcdCoverage)
+					.Because("a translucent widget's coverage is exactly what the two planes exist to carry");
+
+				ImageBuffer buffered = OpaqueWhite(SurfaceWidth, SurfaceHeight);
+				container.OnDraw(buffered.NewGraphics2D());
+
+				await Assert.That(HasChroma(buffered)).IsTrue()
+					.Because("this is the widget every label in an application is, and it has to get subpixel text");
+
+				// And the chroma is the right chroma: the same ink the unbuffered widget paints straight onto
+				// the destination, which is the render the backbuffer is only supposed to be caching.
+				ImageBuffer unbuffered = OpaqueWhite(SurfaceWidth, SurfaceHeight);
+				BuildContainer(translucent, doubleBuffer: false).OnDraw(unbuffered.NewGraphics2D());
+				// Two buffered composites - the background fill and the string - at one byte level each.
+				await AssertImagesClose(unbuffered, buffered, 2, "a non-opaque widget carried through an LCD backbuffer");
+			}
+			finally
+			{
+				LcdRenderSettings.Enabled = wasEnabled;
+			}
+		}
+
+		/// <summary>
+		/// The other half of the validity gate, end to end: a widget that lands on the <b>RGBA</b> arm paints
+		/// text byte for byte as it did before the LCD path existed - chroma-free - however the user's setting
+		/// is set.
+		/// </summary>
+		/// <remarks>
+		/// The widget's own opacity is no longer what routes it there (see
+		/// <see cref="GuiWidget.ResolveBackbufferMode"/>), so this drives the arm from the destination
+		/// instead: a transparent compositing layer, which is exactly what a widget nested inside another
+		/// widget's RGBA backbuffer is painted onto.
+		/// <para>
+		/// What this pins is the one line in <c>GuiWidget.RasterizeBackbuffer</c> that flags the RGBA buffer
+		/// <see cref="Graphics2D.IsTransparentCompositingLayer"/>. Without it the buffer is just a 32 bit
+		/// <see cref="ImageBuffer"/>, the mask pipeline accepts it, and the widget's text picks up subpixel
+		/// phase computed against pixels that get blended again later against content the phase knows nothing
+		/// about - chroma this test would then see. It is checked here rather than at the flag because the
+		/// flag has no observable meaning on its own.
+		/// </para>
+		/// </remarks>
+		[Test]
+		[NotInParallel]
+		public async Task AnRgbaBackbufferForcedByTheDestinationStaysChromaFree()
+		{
+			bool wasEnabled = LcdRenderSettings.Enabled;
+			try
+			{
+				// Opaque on purpose: the destination has to be the only thing keeping this off the LCD arm.
+				LcdRenderSettings.Enabled = true;
+				GuiWidget container = BuildContainer(Color.White, doubleBuffer: true);
+
+				ImageBuffer withLcdOn = OpaqueWhite(SurfaceWidth, SurfaceHeight);
+				Graphics2D asLayer = withLcdOn.NewGraphics2D();
+				asLayer.IsTransparentCompositingLayer = true;
+				await Assert.That(container.Children[0].ResolveBackbufferMode(asLayer)).IsEqualTo(BackbufferMode.Rgba)
+					.Because("a destination that cannot take the two planes is what sends a widget to the RGBA arm");
+				container.OnDraw(asLayer);
+
 				LcdRenderSettings.Enabled = false;
 				ImageBuffer baseline = OpaqueWhite(SurfaceWidth, SurfaceHeight);
-				BuildContainer(translucent, doubleBuffer: true).OnDraw(baseline.NewGraphics2D());
+				Graphics2D baselineAsLayer = baseline.NewGraphics2D();
+				baselineAsLayer.IsTransparentCompositingLayer = true;
+				BuildContainer(Color.White, doubleBuffer: true).OnDraw(baselineAsLayer);
 
-				LcdRenderSettings.Enabled = true;
-				ImageBuffer withLcdOn = OpaqueWhite(SurfaceWidth, SurfaceHeight);
-				BuildContainer(translucent, doubleBuffer: true).OnDraw(withLcdOn.NewGraphics2D());
-
-				await AssertImagesEqual(baseline, withLcdOn, "a widget whose backbuffer is a transparent layer");
+				await AssertImagesEqual(baseline, withLcdOn, "a widget whose destination refuses the per-channel composite");
 				await Assert.That(HasChroma(withLcdOn)).IsFalse()
 					.Because("subpixel geometry against pixels that get blended again later is not valid");
-
-				// The contrast that makes the above non-vacuous: opaque, everything else identical, and the
-				// ink now carries chroma.
-				ImageBuffer opaqueWidget = OpaqueWhite(SurfaceWidth, SurfaceHeight);
-				BuildContainer(Color.White, doubleBuffer: true).OnDraw(opaqueWidget.NewGraphics2D());
-				await Assert.That(HasChroma(opaqueWidget)).IsTrue()
-					.Because("the opaque widget is the one the LCD arm is for");
+				await Assert.That(withLcdOn.Equals(OpaqueWhite(SurfaceWidth, SurfaceHeight), 0)).IsFalse()
+					.Because("the widget has to actually paint, or there is no raster to be chroma-free about");
 			}
 			finally
 			{
@@ -750,6 +827,34 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 
 			return false;
+		}
+
+		/// <summary>
+		/// <see cref="AssertImagesEqual"/> with a per-channel tolerance, for the comparisons that cannot be
+		/// byte-exact: a composite through a non-opaque backbuffer quantizes to a byte plane on the way past,
+		/// once per paint. Callers derive <paramref name="maxDelta"/> from how many of those there were.
+		/// </summary>
+		private static async Task AssertImagesClose(ImageBuffer expected, ImageBuffer actual, int maxDelta, string what)
+		{
+			await Assert.That(actual.Width).IsEqualTo(expected.Width).Because($"width of {what}");
+			await Assert.That(actual.Height).IsEqualTo(expected.Height).Because($"height of {what}");
+
+			for (int y = 0; y < expected.Height; y++)
+			{
+				for (int x = 0; x < expected.Width; x++)
+				{
+					Color expectedPixel = expected.GetPixel(x, y);
+					Color actualPixel = actual.GetPixel(x, y);
+					if (Abs(expectedPixel.red - actualPixel.red) > maxDelta
+						|| Abs(expectedPixel.green - actualPixel.green) > maxDelta
+						|| Abs(expectedPixel.blue - actualPixel.blue) > maxDelta
+						|| Abs(expectedPixel.alpha - actualPixel.alpha) > maxDelta)
+					{
+						await Assert.That(actualPixel.ToString()).IsEqualTo(expectedPixel.ToString())
+							.Because($"pixel ({x}, {y}) of {what} is more than {maxDelta} from expected");
+					}
+				}
+			}
 		}
 
 		/// <summary>Pixel-wise, so a failure reports where and in which channel the images parted.</summary>

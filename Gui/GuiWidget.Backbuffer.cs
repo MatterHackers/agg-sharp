@@ -111,34 +111,6 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// Whether this widget paints opaque content across the whole of its bounds, which is what makes LCD
-		/// subpixel geometry meaningful inside its backbuffer.
-		/// </summary>
-		/// <remarks>
-		/// The reference states this as a contract a widget opts into by hand
-		/// (<c>BackbufferMode::LcdCoverage</c>'s "the widget is responsible for painting content that covers
-		/// its full bounds with opaque fills"); here it is derived from the background the base class already
-		/// paints, so no widget has to remember to keep a claim in sync with what it draws.
-		/// <para>
-		/// All three conditions are load-bearing, and each of them failing leaves genuinely transparent pixels
-		/// in the buffer: a translucent background colour leaves them everywhere, a corner radius leaves them
-		/// outside the curve, and an outline makes <see cref="RenderBackground"/> inset the fill and rely on
-		/// an anti-aliased stroke to cover the edge. Override to claim opacity a widget establishes some other
-		/// way - by covering its bounds with an opaque image, say - and to give it up when a subclass paints
-		/// over the background with something transparent.
-		/// </para>
-		/// </remarks>
-		public virtual bool BackbufferIsOpaque
-		{
-			get
-			{
-				return this.BackgroundColor.Alpha0To255 == 255
-					&& this.BackgroundRadius == default(RadiusCorners)
-					&& (this.BackgroundOutlineWidth <= 0 || this.BorderColor.Alpha0To255 == 0);
-			}
-		}
-
-		/// <summary>
 		/// Which backbuffer representation this widget should be painted into, given the surface it will be
 		/// composited onto. <see cref="BackbufferMode.Rgba"/> - today's behaviour, byte for byte - unless
 		/// every gate opens.
@@ -148,20 +120,40 @@ namespace MatterHackers.Agg.UI
 		/// <see cref="GuiWidget.DrawChild"/> has established by the time it asks. Null answers
 		/// <see cref="BackbufferMode.Rgba"/>.</param>
 		/// <remarks>
-		/// The four gates, and why each one is separate:
+		/// The three gates, and why each one is separate:
 		/// <list type="number">
 		/// <item><description><see cref="LcdRenderSettings.Enabled"/> - the user setting, a lock-free volatile
 		/// read, checked first so a process that never turns the feature on pays nothing
 		/// else;</description></item>
-		/// <item><description><see cref="BackbufferIsOpaque"/> - the validity gate, because subpixel geometry
-		/// computed against pixels that are later blended again is geometry against unknown
-		/// content;</description></item>
 		/// <item><description><see cref="Graphics2D.CanCompositeLcdBuffer"/> - the destination's capability,
 		/// which is what keeps the GL path on the untouched RGBA route until it learns the per-channel
 		/// composite. A destination that would have to flatten the planes gains nothing from them and would
 		/// pay for the flatten every frame;</description></item>
 		/// <item><description>exact unit scale - see below.</description></item>
 		/// </list>
+		/// <para>
+		/// <b>The widget's own opacity is deliberately not a gate</b>, which is a divergence from the
+		/// reference - it makes <c>BackbufferMode::LcdCoverage</c> a contract the widget opts into by
+		/// promising to cover its bounds with opaque fills. agg-sharp does not need that promise, because an
+		/// <see cref="LcdBuffer"/> carries per-channel <i>alpha</i> beside its per-channel colour and starts
+		/// out transparent in both planes, so unpainted and part-painted pixels come back out of it exactly as
+		/// they went in. Compositing it is a per-channel source-over, and source-over is associative, so a
+		/// widget's ink lands where it would have landed painted straight onto the destination whether the
+		/// widget covered its bounds or not.
+		/// </para>
+		/// <para>
+		/// Requiring opacity here did not merely lose an edge case: <see cref="TextWidget"/> is
+		/// double-buffered by default and draws glyphs over a transparent background, so <b>every label in an
+		/// application</b> failed the gate, fell to the RGBA arm - which declares itself
+		/// <see cref="Graphics2D.IsTransparentCompositingLayer"/>, and so refuses the mask pipeline
+		/// outright - and the user's LCD setting reached no text at all.
+		/// </para>
+		/// <para>
+		/// The unknown-content hazard the opacity rule was guarding against is real, but it belongs to the
+		/// <i>RGBA</i> arm, where three coverages have to collapse into one alpha and the phase is genuinely
+		/// lost. That arm still refuses chroma, through
+		/// <see cref="Graphics2D.IsTransparentCompositingLayer"/>.
+		/// </para>
 		/// <para>
 		/// <b>The scale gate is exact, not near.</b> The RGBA arm runs anywhere in 0.95..1.05 and passes that
 		/// scale to its blit, which resamples the buffer to honour it; the LCD composite cannot do the same,
@@ -179,7 +171,6 @@ namespace MatterHackers.Agg.UI
 		public BackbufferMode ResolveBackbufferMode(Graphics2D destination)
 		{
 			if (!LcdRenderSettings.Enabled
-				|| !this.BackbufferIsOpaque
 				|| destination == null
 				|| !destination.CanCompositeLcdBuffer)
 			{
