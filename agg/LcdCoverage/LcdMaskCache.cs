@@ -237,6 +237,15 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// entry, so entry count says nothing about memory. 32MB holds several thousand ordinary text masks
 		/// and refuses to hold a screenful of enormous ones.
 		/// <para>
+		/// <b>This counts mask bytes only, and on a GPU window a cached mask costs about five times them.</b>
+		/// <c>Graphics2DGpu.CompositeLcdMask</c> hangs three BGRA pass images off each mask it draws
+		/// (<c>3 * Width * Height * 4</c> bytes, ~4.4x the mask), plus up to three GL textures per context that
+		/// has drawn it. None of that is counted here, and none of it can be: it lives in another assembly and
+		/// is keyed weakly on the mask precisely so that eviction here releases it. So a full cache in front of
+		/// a GPU rendered window is ~160MB of managed memory rather than 32MB, and some VRAM on top - which is
+		/// the number to revisit if this cap is ever raised, not the 32MB.
+		/// </para>
+		/// <para>
 		/// Internal (not const) so tests can lower it to force eviction without rasterizing 32MB of masks.
 		/// </para>
 		/// </remarks>

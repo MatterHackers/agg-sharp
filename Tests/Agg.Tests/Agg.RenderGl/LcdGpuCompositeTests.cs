@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
@@ -44,10 +45,11 @@ using TUnit.Core;
 namespace MatterHackers.Agg.Tests
 {
 	/// <summary>
-	/// Covers the GPU arm of the LCD backbuffer composite: the three color-masked passes
-	/// <see cref="Graphics2DGpu.CompositeLcdBuffer"/> issues, the per-channel pass images
-	/// (<see cref="LcdBufferChannelImages"/>) those passes sample, and the cache that keeps them in step with
-	/// the buffer they came from.
+	/// Covers both GPU arms of the LCD composite: the three color-masked passes
+	/// <see cref="Graphics2DGpu.CompositeLcdBuffer"/> issues for a whole backbuffer, the per-channel pass
+	/// images (<see cref="LcdBufferChannelImages"/>) those passes sample and the cache that keeps them in step
+	/// with the buffer they came from - and the same three passes for a single cached
+	/// <see cref="LcdMask"/>, which is what an ordinary vector fill (text included) reaches.
 	/// </summary>
 	/// <remarks>
 	/// Nothing here needs a live GL context: <see cref="RecordingGpuContext"/> captures the command stream,
@@ -63,6 +65,11 @@ namespace MatterHackers.Agg.Tests
 		private const int BufferWidth = 7;
 
 		private const int BufferHeight = 5;
+
+		/// <summary>Surface the mask arm's tests fill into; big enough to hold the fill with room around it.</summary>
+		private const int MaskSurfaceWidth = 24;
+
+		private const int MaskSurfaceHeight = 12;
 
 		/// <summary>
 		/// The packing contract: pass <c>c</c>'s image carries channel <c>c</c>'s premultiplied color in its
@@ -368,10 +375,202 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		/// <summary>
+		/// The bug this file's mask arm exists to close: with the setting on, an ordinary vector fill through
+		/// <see cref="Graphics2D.Render(IVertexSource, IColorType)"/> on a GL destination has to reach the LCD
+		/// <b>mask</b> composite, not the tesselated fill. Every gate in
+		/// <c>Graphics2D.TryRenderThroughLcd</c> is checked against this destination, so a regression in any
+		/// one of them - the capability, the fill rule it needs to rasterize with - shows up here as three
+		/// missing passes.
+		/// </summary>
+		[Test]
+		public async Task GpuVectorFillTakesTheLcdMaskPath()
+		{
+			bool wasEnabled = LcdRenderSettings.Enabled;
+			try
+			{
+				LcdRenderSettings.Enabled = true;
+				LcdMaskCache.Clear();
+
+				var fake = new RecordingGpuContext(idBase: 44000);
+				var graphics = new Graphics2DGpu(new GL(fake), MaskSurfaceWidth, MaskSurfaceHeight, 1);
+
+				await Assert.That(graphics.CanCompositeLcd).IsTrue()
+					.Because("this is the first gate Graphics2D.Render consults before it builds a mask at all");
+
+				fake.ResetCallRecording();
+				long buildsBefore = LcdMaskCache.BuildCount;
+
+				// A clip narrower than the surface, whole pixels as a widget's clip always is by the time it
+				// reaches a destination (GuiWidget.DrawChild rounds all four edges out first).
+				var clip = new RectangleDouble(2, 1, 21, 11);
+				graphics.SetClippingRect(clip);
+
+				// Fractional edges, so the mask carries real per-channel coverage rather than whole pixels.
+				graphics.Render(new IdentifiedRectangle(new RectangleDouble(3.4, 2.7, 18.2, 8.35)), Color.Black);
+
+				await Assert.That(LcdMaskCache.BuildCount - buildsBefore).IsEqualTo(1L)
+					.Because("a source that names its own geometry has to be rasterized into a cacheable mask");
+
+				// The composite enforces no clip of its own - it draws its quads over the mask's full extent
+				// and lets the scissor cut them - so the scissor being exactly the clip the composite was
+				// handed is what makes that safe rather than a way to paint outside the caller's clip.
+				await Assert.That(graphics.GetClippingRect()).IsEqualTo(clip)
+					.Because("this is the rect TryRenderThroughLcd passes to CompositeLcdMask");
+				await Assert.That(fake.Scissors).IsEquivalentTo(new[] { (2, 1, 19, 10) })
+					.Because("the same rect is live as the GL scissor for all three passes, in GL's x, y, w, h form");
+
+				await Assert.That(fake.ColorMasks).IsEquivalentTo(new[]
+				{
+					(true, false, false, false),
+					(false, true, false, false),
+					(false, false, true, false),
+					(true, true, true, true),
+				}).Because("the mask composite is three single channel passes and a restore, as the buffer one is");
+
+				await Assert.That(fake.TextureUploads.Count).IsEqualTo(3)
+					.Because("each pass samples its own channel's coverage, so each needs a texture of its own");
+				await Assert.That(fake.BeginCount).IsEqualTo(3)
+					.Because("three quads and nothing else - the tesselated fallback fill would add geometry of its own");
+			}
+			finally
+			{
+				LcdRenderSettings.Enabled = wasEnabled;
+			}
+		}
+
+		/// <summary>
+		/// The mask arm's byte-exactness pin, the twin of
+		/// <see cref="ThreePassBlendReproducesTheSoftwareComposite"/>: GL's specified blend arithmetic over the
+		/// pixels, the draw color and the pass configuration that actually reached the context has to land
+		/// exactly what <see cref="LcdComposite.Composite"/> lands.
+		/// </summary>
+		/// <remarks>
+		/// The mask carries coverage and nothing else, so this is also what pins the color's route: it arrives
+		/// as the draw color and is applied by the default modulate texture environment, which is the only
+		/// reason one set of pass textures can serve every color and position a mask is ever drawn at.
+		/// <para>
+		/// The color is opaque because that is where the two are byte identical - see
+		/// <see cref="MaskPassesMatchTheSoftwareCompositeForATranslucentColor"/> for the case that pays the
+		/// premultiplied draw color's rounding.
+		/// </para>
+		/// </remarks>
+		[Test]
+		public async Task MaskPassesReproduceTheSoftwareComposite()
+		{
+			await AssertMaskPassesMatchSoftwareComposite(new Color(220, 130, 40), idBase: 45000, tolerance: 0);
+		}
+
+		/// <summary>
+		/// The same comparison for a <b>translucent</b> color, within one byte level. This is what holds the
+		/// premultiply in <c>Graphics2DGpu.CompositeLcdMask</c> honest: the draw color has to arrive
+		/// premultiplied for the modulate to land <c>color_c * cov</c>, and a composite that handed GL the
+		/// straight color instead would paint this fill at roughly <c>1 / alpha</c> times its ink - far outside
+		/// a level - while still passing the opaque test above.
+		/// </summary>
+		/// <remarks>
+		/// One level of slack, not zero, and the slack is the whole point: <see cref="GL.Color4(Color)"/> takes
+		/// bytes, so the premultiplied color is quantized before the GPU ever sees it where the software
+		/// composite multiplies in float. That is the documented deviation, and pinning it at ±1 is what would
+		/// make it a test failure if it ever grew.
+		/// </remarks>
+		[Test]
+		public async Task MaskPassesMatchTheSoftwareCompositeForATranslucentColor()
+		{
+			await AssertMaskPassesMatchSoftwareComposite(new Color(220, 130, 40, 137), idBase: 46000, tolerance: 1);
+		}
+
+		/// <summary>
+		/// Draws one masked fill on a GL destination, replays the recorded passes with GL's specified blend
+		/// arithmetic, and requires the result to match <see cref="LcdComposite.Composite"/> within
+		/// <paramref name="tolerance"/> byte levels.
+		/// </summary>
+		private static async Task AssertMaskPassesMatchSoftwareComposite(Color color, int idBase, int tolerance)
+		{
+			bool wasEnabled = LcdRenderSettings.Enabled;
+			try
+			{
+				LcdRenderSettings.Enabled = true;
+
+				VertexStorage path = Rectangle(new RectangleDouble(3.4, 2.7, 18.2, 8.35));
+
+				var fake = new RecordingGpuContext(idBase);
+				var graphics = new Graphics2DGpu(new GL(fake), MaskSurfaceWidth, MaskSurfaceHeight, 1);
+				fake.ResetCallRecording();
+				graphics.RenderLcd(path, color);
+
+				// The mask the composite was handed, rebuilt from the pipeline's own pieces - the same
+				// comparison Graphics2DLcdTests makes for the software destination.
+				bool built = BoundedMaskBuilder.TryBuild(
+					MaskSurfaceWidth,
+					MaskSurfaceHeight,
+					path,
+					Affine.NewIdentity(),
+					out LcdMask mask,
+					out int originX,
+					out int originY,
+					graphics.GetClippingRect());
+				await Assert.That(built).IsTrue();
+				await RequirePerChannelDivergence(mask);
+
+				ImageBuffer expected = MidGrayPremultiplied(MaskSurfaceWidth, MaskSurfaceHeight);
+				LcdComposite.Composite(expected, mask, color, originX, originY);
+
+				await Assert.That(fake.TextureUploads.Count).IsEqualTo(3);
+				await Assert.That(fake.Translates).IsEquivalentTo(new[] { ((double)originX, (double)originY, 0.0, 0) })
+					.Because("the mask is placed at the builder's whole pixel origin, before any pass is drawn");
+
+				Color modulate = fake.Color4s.Single();
+				ImageBuffer framebuffer = MidGrayPremultiplied(MaskSurfaceWidth, MaskSurfaceHeight);
+				(int Source, int Destination) blend = fake.BlendFuncs.Single();
+				for (int pass = 0; pass < 3; pass++)
+				{
+					(bool Red, bool Green, bool Blue, bool Alpha) writeMask = fake.ColorMasks[pass];
+					await Assert.That(writeMask.Alpha).IsFalse();
+
+					BlendOnePass(framebuffer, fake.TextureUploads[pass], writeMask, blend, originX, originY, modulate);
+				}
+
+				for (int y = 0; y < MaskSurfaceHeight; y++)
+				{
+					for (int x = 0; x < MaskSurfaceWidth; x++)
+					{
+						Color want = expected.GetPixel(x, y);
+						Color got = framebuffer.GetPixel(x, y);
+
+						if (tolerance == 0)
+						{
+							await Assert.That((got.red, got.green, got.blue))
+								.IsEqualTo((want.red, want.green, want.blue))
+								.Because($"the three GPU passes must land the software mask composite's pixel at {x}, {y}");
+							continue;
+						}
+
+						await Assert.That(Math.Abs(got.red - want.red)).IsLessThanOrEqualTo(tolerance)
+							.Because($"red at {x}, {y}: GPU {got.red} against software {want.red}");
+						await Assert.That(Math.Abs(got.green - want.green)).IsLessThanOrEqualTo(tolerance)
+							.Because($"green at {x}, {y}: GPU {got.green} against software {want.green}");
+						await Assert.That(Math.Abs(got.blue - want.blue)).IsLessThanOrEqualTo(tolerance)
+							.Because($"blue at {x}, {y}: GPU {got.blue} against software {want.blue}");
+					}
+				}
+			}
+			finally
+			{
+				LcdRenderSettings.Enabled = wasEnabled;
+			}
+		}
+
+		/// <summary>
 		/// One pass of the recorded command stream, applied by hand with GL's specified arithmetic, restricted
 		/// to the channels the pass's write mask leaves open. The uploaded texels are R, G, B, A with row 0 at
-		/// <c>t = 0</c>, and the quad is drawn 1:1, so texel (x, y) lands on framebuffer pixel (x, y).
+		/// <c>t = 0</c>, and the quad is drawn 1:1 at (<paramref name="destX"/>, <paramref name="destY"/>), so
+		/// texel (x, y) lands on framebuffer pixel (destX + x, destY + y).
 		/// </summary>
+		/// <param name="modulate">
+		/// The recorded draw color, applied to the texel as the default modulate texture environment applies
+		/// it - per component, alpha included. White is the identity, which is what the buffer composite draws
+		/// with; the mask composite is the one that carries its color here.
+		/// </param>
 		/// <param name="blend">
 		/// The pass's blend factors, taken from the recorded <c>glBlendFunc</c> rather than assumed. Hardcoding
 		/// premultiplied source over here would let a production swap to, say, <c>SrcAlpha</c> keep producing
@@ -381,33 +580,54 @@ namespace MatterHackers.Agg.Tests
 			ImageBuffer framebuffer,
 			RecordedTextureUpload upload,
 			(bool Red, bool Green, bool Blue, bool Alpha) mask,
-			(int Source, int Destination) blend)
+			(int Source, int Destination) blend,
+			int destX = 0,
+			int destY = 0,
+			Color? modulate = null)
 		{
+			Color drawColor = modulate ?? Color.White;
 			byte[] pixels = framebuffer.GetBuffer();
 			int bytesPerPixel = framebuffer.GetBytesBetweenPixelsInclusive();
 
 			for (int y = 0; y < upload.Height; y++)
 			{
-				int rowOffset = framebuffer.GetBufferOffsetXY(0, y);
+				int destinationY = destY + y;
+				if (destinationY < 0 || destinationY >= framebuffer.Height)
+				{
+					continue;
+				}
+
+				int rowOffset = framebuffer.GetBufferOffsetXY(0, destinationY);
 				for (int x = 0; x < upload.Width; x++)
 				{
+					int destinationX = destX + x;
+					if (destinationX < 0 || destinationX >= framebuffer.Width)
+					{
+						continue;
+					}
+
 					(byte Red, byte Green, byte Blue, byte Alpha) texel = upload.Texel(x, y);
-					float sourceAlpha = texel.Alpha / 255.0f;
-					int offset = rowOffset + (x * bytesPerPixel);
+
+					// The default modulate texture environment: source = texel * draw color, per component.
+					float sourceAlpha = (texel.Alpha / 255.0f) * (drawColor.alpha / 255.0f);
+					float sourceRed = (texel.Red / 255.0f) * (drawColor.red / 255.0f);
+					float sourceGreen = (texel.Green / 255.0f) * (drawColor.green / 255.0f);
+					float sourceBlue = (texel.Blue / 255.0f) * (drawColor.blue / 255.0f);
+					int offset = rowOffset + (destinationX * bytesPerPixel);
 
 					if (mask.Red)
 					{
-						pixels[offset + ImageBuffer.OrderR] = Blend(texel.Red, pixels[offset + ImageBuffer.OrderR], sourceAlpha, blend);
+						pixels[offset + ImageBuffer.OrderR] = Blend(sourceRed, pixels[offset + ImageBuffer.OrderR], sourceAlpha, blend);
 					}
 
 					if (mask.Green)
 					{
-						pixels[offset + ImageBuffer.OrderG] = Blend(texel.Green, pixels[offset + ImageBuffer.OrderG], sourceAlpha, blend);
+						pixels[offset + ImageBuffer.OrderG] = Blend(sourceGreen, pixels[offset + ImageBuffer.OrderG], sourceAlpha, blend);
 					}
 
 					if (mask.Blue)
 					{
-						pixels[offset + ImageBuffer.OrderB] = Blend(texel.Blue, pixels[offset + ImageBuffer.OrderB], sourceAlpha, blend);
+						pixels[offset + ImageBuffer.OrderB] = Blend(sourceBlue, pixels[offset + ImageBuffer.OrderB], sourceAlpha, blend);
 					}
 				}
 			}
@@ -416,9 +636,9 @@ namespace MatterHackers.Agg.Tests
 		/// <summary>
 		/// GL's blend equation for one channel: <c>source * sourceFactor + destination * destinationFactor</c>.
 		/// </summary>
-		private static byte Blend(byte source, byte destination, float sourceAlpha, (int Source, int Destination) blend)
+		private static byte Blend(float source, byte destination, float sourceAlpha, (int Source, int Destination) blend)
 		{
-			float blended = ((source / 255.0f) * BlendFactor(blend.Source, sourceAlpha))
+			float blended = (source * BlendFactor(blend.Source, sourceAlpha))
 				+ ((destination / 255.0f) * BlendFactor(blend.Destination, sourceAlpha));
 			return (byte)Math.Clamp((blended * 255.0f) + 0.5f, 0.0f, 255.0f);
 		}
@@ -534,6 +754,25 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		/// <summary>
+		/// The mask twin of the buffer check above: fails unless <paramref name="mask"/> holds pixels whose
+		/// three channel coverages differ, without which a composite that read the wrong channel would still
+		/// produce the right answer.
+		/// </summary>
+		private static async Task RequirePerChannelDivergence(LcdMask mask)
+		{
+			bool coverageDiverges = false;
+
+			for (int offset = 0; offset < mask.Data.Length; offset += 3)
+			{
+				coverageDiverges |= mask.Data[offset] != mask.Data[offset + 1]
+					|| mask.Data[offset + 1] != mask.Data[offset + 2];
+			}
+
+			await Assert.That(coverageDiverges).IsTrue()
+				.Because("a mask with no per-channel coverage cannot tell a subpixel composite from a gray one");
+		}
+
+		/// <summary>
 		/// An opaque mid gray destination in the widget backbuffer's premultiplied convention - a neutral
 		/// background where a per-channel composite and a collapsed one visibly disagree.
 		/// </summary>
@@ -542,6 +781,43 @@ namespace MatterHackers.Agg.Tests
 			var image = new ImageBuffer(width, height, 32, new BlenderPreMultBGRA());
 			image.NewGraphics2D().Clear(new Color(96, 112, 128));
 			return image;
+		}
+
+		/// <summary>A closed rectangle path, the plainest fill the LCD pipeline takes.</summary>
+		private static VertexStorage Rectangle(RectangleDouble rect)
+		{
+			var path = new VertexStorage();
+			path.MoveTo(rect.Left, rect.Bottom);
+			path.LineTo(rect.Right, rect.Bottom);
+			path.LineTo(rect.Right, rect.Top);
+			path.LineTo(rect.Left, rect.Top);
+			path.ClosePolygon();
+			return path;
+		}
+
+		/// <summary>
+		/// A rectangle that can name itself, so an ordinary <see cref="Graphics2D.Render"/> of it is eligible
+		/// for the cached LCD path. Nothing here knows about LCD, which is the point - the same class stands in
+		/// for a glyph run in the software tests.
+		/// </summary>
+		private class IdentifiedRectangle : VertexSourceLegacySupport, IVertexSourceRenderIdentity
+		{
+			private readonly RectangleDouble rect;
+
+			private readonly VertexStorage path;
+
+			internal IdentifiedRectangle(RectangleDouble rect)
+			{
+				this.rect = rect;
+				this.path = Rectangle(rect);
+			}
+
+			public object RenderIdentity => this.rect;
+
+			public override IEnumerable<VertexData> Vertices()
+			{
+				return this.path.Vertices();
+			}
 		}
 	}
 }

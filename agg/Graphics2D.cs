@@ -431,6 +431,25 @@ namespace MatterHackers.Agg
         protected virtual bool LcdChromaAllowed => !this.IsTransparentCompositingLayer;
 
         /// <summary>
+        /// The fill rule an LCD mask must be rasterized under to cover the same pixels this destination's own
+        /// fill would cover, or null when this destination cannot say - which refuses the LCD path outright.
+        /// </summary>
+        /// <remarks>
+        /// The mask is rasterized here, by <see cref="LcdMaskBuilder"/>, rather than by whatever the
+        /// destination fills with, so the rule has to be asked for rather than inherited. The default reads
+        /// the scanline rasterizer, which is where a caller's <c>filling_rule</c> lands (see
+        /// <see cref="RenderInRect"/>) - and is null when there is no rasterizer at all, because a mask built
+        /// under a guessed rule would paint a different shape than <see cref="RenderVertexSource"/> would have.
+        /// <para>
+        /// A destination that fills by other means overrides it with the rule its own filler uses -
+        /// <c>Graphics2DGpu</c> tessellates and has no rasterizer to read. That is the whole reason this is a
+        /// property and not a field read: before it existed, the missing rasterizer silently kept every GL
+        /// destination off the LCD path no matter what the user had turned on.
+        /// </para>
+        /// </remarks>
+        protected virtual Util.filling_rule_e? LcdFillingRule => this.rasterizer?.FillingRule;
+
+        /// <summary>
         /// Whether this destination can take a whole two-plane <see cref="LcdBuffer"/> without collapsing it -
         /// the buffer-level twin of <see cref="CanCompositeLcd"/>, and the gate a widget consults before
         /// choosing an LCD-coverage backbuffer at all.
@@ -506,8 +525,9 @@ namespace MatterHackers.Agg
         /// The gates, in the order this method checks them - all three have to pass, so the order is about
         /// cost and nothing else:
         /// <list type="number">
-        /// <item><description>destination validity (<see cref="CanCompositeLcd"/>, plus a rasterizer to read
-        /// the fill rule from), which stays local to this object;</description></item>
+        /// <item><description>destination validity (<see cref="CanCompositeLcd"/>, plus a fill rule to
+        /// rasterize the mask under - <see cref="LcdFillingRule"/>), which stays local to this
+        /// object;</description></item>
         /// <item><description>the effective-scale cap, which overrides the user toggle
         /// (<see cref="LcdRenderSettings.EffectiveScaleAllowsLcd"/>);</description></item>
         /// <item><description>the toggle itself (<see cref="LcdRenderSettings.Enabled"/>), a lock-free
@@ -570,7 +590,7 @@ namespace MatterHackers.Agg
 
             Affine transform = GetTransform();
             if (!this.CanCompositeLcd
-                || this.rasterizer == null
+                || !(this.LcdFillingRule is Util.filling_rule_e fillingRule)
                 || !LcdRenderSettings.IsEnabledAtScale(LcdRenderSettings.EffectiveScaleOf(transform)))
             {
                 Render(vertexSource, colorType);
@@ -593,7 +613,7 @@ namespace MatterHackers.Agg
                 out int originX,
                 out int originY,
                 clip,
-                this.rasterizer.FillingRule,
+                fillingRule,
                 LcdRenderSettings.PrimaryWeight,
                 LcdRenderSettings.Gamma,
                 !this.LcdChromaAllowed))
@@ -687,7 +707,7 @@ namespace MatterHackers.Agg
             }
 
             if (!this.CanCompositeLcd
-                || this.rasterizer == null
+                || !(this.LcdFillingRule is Util.filling_rule_e fillingRule)
                 || !LcdRenderSettings.IsEnabledAtScale(LcdRenderSettings.EffectiveScaleOf(transform)))
             {
                 return false;
@@ -723,7 +743,7 @@ namespace MatterHackers.Agg
                 out LcdMask mask,
                 out int originX,
                 out int originY,
-                this.rasterizer.FillingRule,
+                fillingRule,
                 LcdRenderSettings.PrimaryWeight,
                 LcdRenderSettings.Gamma,
                 !this.LcdChromaAllowed))

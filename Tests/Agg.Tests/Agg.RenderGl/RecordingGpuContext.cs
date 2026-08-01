@@ -84,6 +84,21 @@ namespace MatterHackers.Agg.Tests
 		public List<(int Source, int Destination)> BlendFuncs { get; } = new List<(int, int)>();
 
 		/// <summary>
+		/// Every <see cref="Scissor"/> in the order it was set, in GL's (x, y, width, height) form. The LCD
+		/// composites do not clip themselves - they rely on the scissor <c>SetClippingRect</c> left live - so
+		/// this is where a test reads what the clip they inherited actually was.
+		/// </summary>
+		public List<(int X, int Y, int Width, int Height)> Scissors { get; } = new List<(int, int, int, int)>();
+
+		/// <summary>
+		/// Every <see cref="Color4(byte, byte, byte, byte)"/> in the order it was set. The LCD <b>mask</b>
+		/// composite's pass textures carry coverage only - the fill color arrives as the draw color and is
+		/// applied by the default modulate texture environment - so this is the only record of what color a
+		/// masked fill actually painted in.
+		/// </summary>
+		public List<Color> Color4s { get; } = new List<Color>();
+
+		/// <summary>
 		/// Every <see cref="Translate(double, double, double)"/>, with the number of <see cref="Begin"/> calls
 		/// that had already been made when it arrived. The LCD backbuffer composite places its quad by a
 		/// modelview translate and nothing else, so this is the only record of <b>where</b> the composited
@@ -115,6 +130,8 @@ namespace MatterHackers.Agg.Tests
 			CalledLists.Clear();
 			ColorMasks.Clear();
 			BlendFuncs.Clear();
+			Color4s.Clear();
+			Scissors.Clear();
 			Translates.Clear();
 		}
 
@@ -202,7 +219,7 @@ namespace MatterHackers.Agg.Tests
 
 		public void ClearDepth(double depth) { }
 
-		public void Color4(byte red, byte green, byte blue, byte alpha) { }
+		public void Color4(byte red, byte green, byte blue, byte alpha) => Color4s.Add(new Color(red, green, blue, alpha));
 
 		public void ColorMask(bool red, bool green, bool blue, bool alpha) => ColorMasks.Add((red, green, blue, alpha));
 
@@ -288,7 +305,7 @@ namespace MatterHackers.Agg.Tests
 
 		public void Scale(double x, double y, double z) { }
 
-		public void Scissor(int x, int y, int width, int height) { }
+		public void Scissor(int x, int y, int width, int height) => Scissors.Add((x, y, width, height));
 
 		public void ShadeModel(ShadingModel model) { }
 
