@@ -111,15 +111,14 @@ namespace MatterHackers.Agg.Image
 					{
 						Color sourceColor = sourceColors[sourceColorsOffset];
 						int alpha = (sourceColor.alpha * sourceCovers[sourceCoversOffset] + 255) / 256;
-						if (alpha == 0)
-						{
-							continue;
-						}
-						else if (alpha == 255)
+						// A fully transparent pixel writes nothing, but the offsets must still
+						// advance or the loop re-reads the same source pixel and the rest of
+						// the span is never drawn.
+						if (alpha == 255)
 						{
 							CopyOpaquePixel(pDestBuffer, bufferOffset, sourceColor);
 						}
-						else
+						else if (alpha != 0)
 						{
 							BlendPixel(pDestBuffer, bufferOffset, sourceColor);
 						}

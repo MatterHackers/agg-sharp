@@ -108,6 +108,50 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		[Test]
+		public async Task BlendPixelsWithTransparentSourceKeepsRemainingPixelsAligned()
+		{
+			var blender = new BlenderPreMultBGRA();
+
+			// A fully transparent source pixel followed by two opaque ones. With a cover
+			// of 128 the transparent pixel's alpha computes to 0, which is the case that
+			// used to skip the loop without advancing the source/dest offsets - so the
+			// loop kept re-reading the transparent pixel and never drew the rest of the span.
+			var sourceColors = new Color[]
+			{
+				new Color(0, 0, 0, 0),
+				new Color(200, 0, 0, 255),
+				new Color(0, 200, 0, 255),
+			};
+			byte[] sourceCovers = new byte[] { 128 };
+
+			byte[] dest = new byte[12];
+			blender.BlendPixels(dest, 0, sourceColors, 0, sourceCovers, 0, true, 3);
+
+			// Pixel 0 came from the transparent color, so it must be untouched.
+			await Assert.That((int)dest[0 + ImageBuffer.OrderR]).IsEqualTo(0);
+			await Assert.That((int)dest[0 + ImageBuffer.OrderG]).IsEqualTo(0);
+			await Assert.That((int)dest[0 + ImageBuffer.OrderB]).IsEqualTo(0);
+			await Assert.That((int)dest[0 + ImageBuffer.OrderA]).IsEqualTo(0);
+
+			// Pixel 1 is the red source, pixel 2 the green one - under the bug both were
+			// left unwritten because the loop never advanced past the transparent pixel.
+			await Assert.That((int)dest[4 + ImageBuffer.OrderR]).IsGreaterThan(0);
+			await Assert.That((int)dest[4 + ImageBuffer.OrderG]).IsEqualTo(0);
+			await Assert.That((int)dest[8 + ImageBuffer.OrderG]).IsGreaterThan(0);
+			await Assert.That((int)dest[8 + ImageBuffer.OrderR]).IsEqualTo(0);
+
+			// Blending the same two opaque colors on their own must produce byte-identical
+			// pixels, which pins the exact values without restating the blend math here.
+			byte[] withoutTransparent = new byte[8];
+			blender.BlendPixels(withoutTransparent, 0, sourceColors, 1, sourceCovers, 0, true, 2);
+
+			for (int i = 0; i < 8; i++)
+			{
+				await Assert.That((int)dest[4 + i]).IsEqualTo((int)withoutTransparent[i]);
+			}
+		}
+
+		[Test]
 		public async Task SubtractLookupClampsCorrectly()
 		{
 			var imageA = new ImageBuffer(2, 1, 32);

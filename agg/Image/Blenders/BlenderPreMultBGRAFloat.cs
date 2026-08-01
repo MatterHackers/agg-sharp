@@ -129,18 +129,17 @@ namespace MatterHackers.Agg.Image
 						{
 							ColorF sourceColor = sourceColors[sourceColorsOffset];
 							float alpha = (sourceColor.alpha * sourceCovers[sourceCoversOffset] + 255) / 256;
-							if (alpha == 0)
-							{
-								continue;
-							}
-							else if (alpha == 255)
+							// A fully transparent pixel writes nothing, but the offsets must still
+							// advance or the loop re-reads the same source pixel and the rest of
+							// the span is never drawn.
+							if (alpha == 255)
 							{
 								pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)sourceColor.red;
 								pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)sourceColor.green;
 								pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)sourceColor.blue;
 								pDestBuffer[bufferOffset + ImageBuffer.OrderA] = (byte)alpha;
 							}
-							else
+							else if (alpha != 0)
 							{
 								float OneOverAlpha = base_mask - alpha;
 								unchecked
