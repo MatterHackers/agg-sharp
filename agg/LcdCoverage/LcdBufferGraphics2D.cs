@@ -169,6 +169,9 @@ namespace MatterHackers.Agg.LcdCoverage
 				return;
 			}
 
+			// The parameter shadows the field, and the qualifier is the only thing telling them apart:
+			// this.buffer is the destination, the parameter is the nested source being flushed into it. Keep
+			// it - dropping the "this." still compiles and silently composites the buffer onto itself.
 			this.buffer.CompositeBuffer(buffer, destX, destY, LcdBuffer.ToPixelClip(GetClippingRect()));
 		}
 
