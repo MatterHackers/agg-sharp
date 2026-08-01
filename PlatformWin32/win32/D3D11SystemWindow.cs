@@ -223,22 +223,6 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		/// <summary>
-		/// Forces the window and control handles into existence and creates the D3D device if it does not
-		/// exist yet. This can run before OnLoad (touching Handle creates the native window without showing
-		/// the form), so the rasterizer choice is seeded here as well.
-		/// </summary>
-		public void MakeCurrent()
-		{
-			if (d3dControl != null && !d3dControl.IsDisposed)
-			{
-				var dummy1 = this.Handle;
-				var dummy2 = d3dControl.Handle;
-				d3dControl.UseWarpSoftwareRasterizer = ShouldUseWarp(AggSystemWindow);
-				d3dControl.InitializeD3D();
-			}
-		}
-
 		public override void CopyBackBufferToScreen(Graphics displayGraphics)
 		{
 			if (d3dControl != null && !d3dControl.IsDisposed)
