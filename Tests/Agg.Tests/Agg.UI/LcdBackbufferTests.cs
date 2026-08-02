@@ -527,6 +527,66 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// <see cref="GuiWidget.NewGraphics2D"/> asks for a surface to draw this widget on outside of a paint,
+		/// and a double-buffered widget whose pixels are currently in <see cref="BackbufferMode.LcdCoverage"/>
+		/// has no <see cref="ImageBuffer"/> backbuffer to hand it one - <see cref="GuiWidget.BackBuffer"/>
+		/// answers null by design. Taking the backbuffer arm on <see cref="GuiWidget.DoubleBuffer"/> alone
+		/// therefore dereferenced null and threw, which is the regression this pins: the method has to fall
+		/// through to the parent-derived surface, exactly as an un-buffered widget does.
+		/// </summary>
+		/// <remarks>
+		/// The container is double-buffered too, but it is painted <i>directly</i> rather than through a
+		/// parent's <c>DrawChild</c>, so nothing ever re-rasters it into the LCD arm and its own RGBA buffer
+		/// stays live - which is what gives the parent path a real surface to derive from and keeps this test
+		/// about the child's missing buffer rather than about an empty ancestor chain.
+		/// </remarks>
+		[Test]
+		[NotInParallel]
+		public async Task NewGraphics2DFallsThroughToTheParentWhileTheBackbufferIsLcd()
+		{
+			bool wasEnabled = LcdRenderSettings.Enabled;
+			try
+			{
+				LcdRenderSettings.Enabled = true;
+
+				var container = new GuiWidget(SurfaceWidth, SurfaceHeight)
+				{
+					BackgroundColor = Color.White,
+					DoubleBuffer = true
+				};
+
+				var child = new GuiWidget(SurfaceWidth - 8, SurfaceHeight - 8)
+				{
+					OriginRelativeParent = new Vector2(4, 4),
+					BackgroundColor = Color.White,
+					DoubleBuffer = true
+				};
+
+				container.AddChild(child);
+
+				ImageBuffer surface = OpaqueWhite(SurfaceWidth, SurfaceHeight);
+				container.OnDraw(surface.NewGraphics2D());
+
+				await Assert.That(child.BackBuffer).IsNull()
+					.Because("the child has to actually be in LCD-coverage mode for this to be the case under test");
+
+				Graphics2D graphics = child.NewGraphics2D();
+				await Assert.That(graphics).IsNotNull()
+					.Because("a widget with no RGBA buffer still has a parent chain that can supply a surface");
+
+				// Light usability check: the surface it handed back is one that can actually be drawn on.
+				RectangleDouble clipping = graphics.GetClippingRect();
+				await Assert.That(clipping.Width > 0 && clipping.Height > 0).IsTrue()
+					.Because("a surface clipped away to nothing would be no more useful than null");
+				graphics.FillRectangle(0, 0, 1, 1, Color.Black);
+			}
+			finally
+			{
+				LcdRenderSettings.Enabled = wasEnabled;
+			}
+		}
+
+		/// <summary>
 		/// With the setting off, a double-buffered widget paints exactly what the same widget paints with no
 		/// backbuffer at all - the property the RGBA arm has always had, pinned here so the LCD seam cannot
 		/// quietly move it.

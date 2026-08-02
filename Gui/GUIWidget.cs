@@ -1698,11 +1698,27 @@ namespace MatterHackers.Agg.UI
 			ChildRemoved?.Invoke(this, e);
 		}
 
+		/// <summary>
+		/// A <see cref="Graphics2D"/> that draws onto this widget, outside of a paint.
+		/// </summary>
+		/// <returns>Graphics for this widget's own backbuffer when it is double buffered and that buffer
+		/// exists, otherwise one derived from the nearest ancestor that can supply a surface, transformed and
+		/// clipped to this widget. Null when no ancestor can supply one, or when this widget is clipped
+		/// away.</returns>
+		/// <remarks>
+		/// The buffer is checked for rather than inferred from <see cref="DoubleBuffer"/>, because while the
+		/// widget's pixels are in <see cref="BackbufferMode.LcdCoverage"/> the RGBA buffer genuinely does not
+		/// exist and <see cref="BackBuffer"/> answers null (see its remarks). A double-buffered widget in that
+		/// state behaves here as an un-buffered one does and derives its graphics from the parent chain -
+		/// drawing onto the parent's surface rather than into planes this method has no way to hand back.
+		/// </remarks>
 		public virtual Graphics2D NewGraphics2D()
 		{
-			if (DoubleBuffer)
+			// Read once: BackBuffer is computed, and the mode it keys on is not this method's to re-check.
+			ImageBuffer backBuffer = BackBuffer;
+			if (backBuffer != null)
 			{
-				return BackBuffer.NewGraphics2D();
+				return backBuffer.NewGraphics2D();
 			}
 
 			if (Parent != null)
