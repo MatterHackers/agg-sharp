@@ -109,6 +109,72 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// </summary>
 		public override bool CanCompositeLcd => true;
 
+		/// <summary>
+		/// True unless this is a compositing layer: the destination <b>is</b> per-channel coverage, so a whole
+		/// two-plane buffer needs no collapse at all - <see cref="LcdBuffer.CompositeBuffer"/> merges the two
+		/// planes into the two planes.
+		/// </summary>
+		/// <remarks>
+		/// This is the gate <c>GuiWidget.ResolveBackbufferMode</c> consults, so answering it is what lets a
+		/// double-buffered widget <i>nested inside</i> another one keep its chroma: the destination such a
+		/// widget is handed is its parent's <see cref="LcdBufferGraphics2D"/>, not an
+		/// <see cref="ImageGraphics2D"/>, and while this inherited the base class's false every nested widget
+		/// fell to the RGBA arm - whose buffer is flagged
+		/// <see cref="Graphics2D.IsTransparentCompositingLayer"/> and so rasters chroma-free. In a real widget
+		/// tree that is most of the text on screen.
+		/// <para>
+		/// The <see cref="Graphics2D.IsTransparentCompositingLayer"/> refusal is the same validity gate
+		/// <see cref="ImageGraphics2D.CanCompositeLcdBuffer"/> and <c>Graphics2DGpu</c> apply, for the same
+		/// reason: chroma computed against pixels that get blended again later is chroma against content the
+		/// subpixel phase knows nothing about. So a widget nested in a transparent-flagged LCD buffer stays on
+		/// the RGBA arm and drops its chroma, exactly as one nested in any other layer does.
+		/// </para>
+		/// </remarks>
+		public override bool CanCompositeLcdBuffer => !this.IsTransparentCompositingLayer;
+
+		/// <inheritdoc/>
+		/// <remarks>
+		/// The lossless override of the base class's collapsing default:
+		/// <see cref="LcdBuffer.CompositeBuffer"/> is a per-channel premultiplied source-over into a
+		/// per-channel target, so a nested widget's backbuffer flushes into its parent's with every subpixel
+		/// alpha intact.
+		/// <para>
+		/// The clipping rect is honoured for the reason <see cref="ImageGraphics2D.CompositeLcdBuffer"/> gives:
+		/// the widget layer sets it to the child's screen clipping before compositing, and a partially
+		/// scrolled-out child must not paint over its siblings. The placement is raw whole buffer pixels and
+		/// untransformed, like every other <see cref="Graphics2D.CompositeLcdBuffer"/> - the planes are
+		/// finished pixels, and resampling them would smear each channel's phase into its neighbours.
+		/// </para>
+		/// <para>
+		/// Unlike the direct plane writes elsewhere in this class, no change stamp is owed by hand:
+		/// <see cref="LcdBuffer.CompositeBuffer"/> does its own <see cref="LcdBuffer.MarkChanged"/>.
+		/// </para>
+		/// <para>
+		/// The refusal falls through to the base collapse, which does paint here rather than silently doing
+		/// nothing: it blits <see cref="LcdBuffer.ToImageBufferCollapsed"/>, whose image is built with a
+		/// <see cref="BlenderBGRA"/>, and that is one of the two alpha conventions this class's image blit
+		/// recognizes (see <see cref="SourceIsPremultiplied"/>).
+		/// </para>
+		/// </remarks>
+		public override void CompositeLcdBuffer(LcdBuffer buffer, int destX, int destY)
+		{
+			if (buffer == null)
+			{
+				throw new ArgumentNullException(nameof(buffer));
+			}
+
+			if (!this.CanCompositeLcdBuffer)
+			{
+				base.CompositeLcdBuffer(buffer, destX, destY);
+				return;
+			}
+
+			// The parameter shadows the field, and the qualifier is the only thing telling them apart:
+			// this.buffer is the destination, the parameter is the nested source being flushed into it. Keep
+			// it - dropping the "this." still compiles and silently composites the buffer onto itself.
+			this.buffer.CompositeBuffer(buffer, destX, destY, LcdBuffer.ToPixelClip(GetClippingRect()));
+		}
+
 		/// <inheritdoc/>
 		public override RectangleDouble GetClippingRect()
 		{

@@ -458,8 +458,11 @@ namespace MatterHackers.Agg
         /// False by default, so a backend that has not been taught the per-channel composite keeps the
         /// behaviour it always had rather than silently receiving a collapsed blit. The destinations that
         /// override it to true are the ones with a real per-channel composite to offer:
-        /// <see cref="Image.ImageGraphics2D"/> through the software <see cref="LcdBuffer.CompositeOnto"/>, and
-        /// <c>Graphics2DGpu</c> through three color-masked GL passes.
+        /// <see cref="Image.ImageGraphics2D"/> through the software <see cref="LcdBuffer.CompositeOnto"/>,
+        /// <c>Graphics2DGpu</c> through three color-masked GL passes, and
+        /// <see cref="LcdCoverage.LcdBufferGraphics2D"/> - the nested case - through
+        /// <see cref="LcdBuffer.CompositeBuffer"/>, which needs no collapse because its destination is already
+        /// two planes.
         /// </remarks>
         public virtual bool CanCompositeLcdBuffer => false;
 

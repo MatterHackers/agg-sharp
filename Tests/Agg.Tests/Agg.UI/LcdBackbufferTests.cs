@@ -719,6 +719,86 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// Two buffered levels deep: a double-buffered widget inside <b>another</b> double-buffered widget keeps
+		/// its subpixel chroma, rather than going gray the moment a parent starts caching its own pixels.
+		/// </summary>
+		/// <remarks>
+		/// The nesting is the ordinary case, not an exotic one - a double-buffered panel holding a
+		/// <see cref="TextWidget"/> is most of an application's widget tree - and the destination the inner
+		/// widget is handed there is not an <see cref="ImageBuffer"/>'s <see cref="ImageGraphics2D"/> but its
+		/// parent's <see cref="LcdBufferGraphics2D"/>. While that class did not answer
+		/// <see cref="Graphics2D.CanCompositeLcdBuffer"/>, it inherited the base's false, so
+		/// <see cref="GuiWidget.ResolveBackbufferMode"/> sent every nested widget to the RGBA arm - whose buffer
+		/// declares itself <see cref="Graphics2D.IsTransparentCompositingLayer"/> and so rasters chroma-free.
+		/// Turning LCD on lit up the top level of the tree and nothing underneath it.
+		/// <para>
+		/// An <see cref="LcdBuffer"/> is in fact the one destination that can take the two planes with nothing
+		/// lost at all: <see cref="LcdBuffer.CompositeBuffer"/> is a per-channel premultiplied source-over into
+		/// a per-channel target, so no collapse happens anywhere on the way up. That is what makes the
+		/// comparison below byte-exact rather than within a tolerance - every background here is opaque, so
+		/// each composite runs at channel alpha 1, where <c>source + dest * (1 - alpha)</c> is a copy and there
+		/// is nothing to round.
+		/// </para>
+		/// <para>
+		/// The refusal half is checked on the same class: an <see cref="LcdBufferGraphics2D"/> flagged
+		/// <see cref="Graphics2D.IsTransparentCompositingLayer"/> is exactly as invalid a place to compute
+		/// subpixel phase as any other layer, and applies the same gate
+		/// <see cref="ImageGraphics2D.CanCompositeLcdBuffer"/> and <c>Graphics2DGpu</c> do.
+		/// </para>
+		/// </remarks>
+		[Test]
+		[NotInParallel]
+		public async Task ANestedDoubleBufferedWidgetInsideAnLcdParentKeepsChroma()
+		{
+			bool wasEnabled = LcdRenderSettings.Enabled;
+			try
+			{
+				LcdRenderSettings.Enabled = true;
+
+				// The gate itself, on the destination a nested widget actually gets handed.
+				var parentGraphics = new LcdBufferGraphics2D(new LcdBuffer(SurfaceWidth, SurfaceHeight));
+				await Assert.That(parentGraphics.CanCompositeLcdBuffer).IsTrue()
+					.Because("an LCD-coverage buffer is the one destination that can take the two planes losslessly");
+
+				var nested = new GuiWidget(20, 10)
+				{
+					BackgroundColor = Color.White,
+					DoubleBuffer = true
+				};
+				await Assert.That(nested.ResolveBackbufferMode(parentGraphics)).IsEqualTo(BackbufferMode.LcdCoverage)
+					.Because("a widget inside an LCD-coverage parent has a per-channel destination to composite into");
+
+				var parentAsLayer = new LcdBufferGraphics2D(new LcdBuffer(SurfaceWidth, SurfaceHeight))
+				{
+					IsTransparentCompositingLayer = true
+				};
+				await Assert.That(parentAsLayer.CanCompositeLcdBuffer).IsFalse()
+					.Because("two planes that get blended again later cannot be the final word on subpixel geometry");
+				await Assert.That(nested.ResolveBackbufferMode(parentAsLayer)).IsEqualTo(BackbufferMode.Rgba)
+					.Because("that is the same refusal every other destination applies to a compositing layer");
+
+				// End to end: a buffered widget inside a buffered widget, both opaque, both on whole pixels.
+				ImageBuffer buffered = OpaqueWhite(SurfaceWidth, SurfaceHeight);
+				BuildNestedContainer(doubleBuffer: true).OnDraw(buffered.NewGraphics2D());
+
+				await Assert.That(HasChroma(buffered)).IsTrue()
+					.Because("a widget does not stop being eligible for subpixel text because its parent caches pixels");
+
+				// And the right chroma: the same ink the unbuffered tree paints straight onto the destination.
+				ImageBuffer unbuffered = OpaqueWhite(SurfaceWidth, SurfaceHeight);
+				BuildNestedContainer(doubleBuffer: false).OnDraw(unbuffered.NewGraphics2D());
+				await AssertImagesEqual(unbuffered, buffered, "text carried through two nested LCD backbuffers");
+
+				await Assert.That(buffered.Equals(OpaqueWhite(SurfaceWidth, SurfaceHeight), 0)).IsFalse()
+					.Because("the widgets have to actually paint");
+			}
+			finally
+			{
+				LcdRenderSettings.Enabled = wasEnabled;
+			}
+		}
+
+		/// <summary>
 		/// A container holding one double-bufferable child that paints a background and a string. The child is
 		/// placed on whole pixels so the backbuffer maps 1:1 onto the destination, which is what makes the
 		/// buffered and unbuffered renders comparable at all.
@@ -737,6 +817,40 @@ namespace MatterHackers.Agg.UI.Tests
 			// one backbuffer rather than about nested ones.
 			child.AfterDraw += (s, e) => e.Graphics2D.DrawString("Ag mix", 3, 6, color: Color.Black);
 			container.AddChild(child);
+
+			return container;
+		}
+
+		/// <summary>
+		/// <see cref="BuildContainer"/> with one more buffered level: an outer widget that itself holds the
+		/// child that paints the string, with <paramref name="doubleBuffer"/> driving <b>both</b> levels. The
+		/// outermost widget is never buffered because nothing buffers it - a widget's backbuffer is driven by
+		/// its parent's draw-child path, so the root of a render is always painted straight through.
+		/// </summary>
+		/// <remarks>
+		/// Both levels are opaque white on whole-pixel origins, which is what makes the buffered and unbuffered
+		/// renders comparable byte for byte: every composite on the way up runs at channel alpha 1.
+		/// </remarks>
+		private static GuiWidget BuildNestedContainer(bool doubleBuffer)
+		{
+			var container = new GuiWidget(SurfaceWidth, SurfaceHeight);
+			var outer = new GuiWidget(SurfaceWidth - 4, SurfaceHeight - 4)
+			{
+				OriginRelativeParent = new Vector2(2, 2),
+				BackgroundColor = Color.White,
+				DoubleBuffer = doubleBuffer
+			};
+
+			var inner = new GuiWidget(SurfaceWidth - 12, SurfaceHeight - 8)
+			{
+				OriginRelativeParent = new Vector2(4, 4),
+				BackgroundColor = Color.White,
+				DoubleBuffer = doubleBuffer
+			};
+
+			inner.AfterDraw += (s, e) => e.Graphics2D.DrawString("Ag mix", 3, 6, color: Color.Black);
+			outer.AddChild(inner);
+			container.AddChild(outer);
 
 			return container;
 		}
