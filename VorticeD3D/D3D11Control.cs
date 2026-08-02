@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
@@ -46,6 +47,18 @@ namespace MatterHackers.RenderGl
 		public IDXGISwapChain SwapChain { get; private set; }
 		public VorticeD3DGl GlBackend { get; private set; }
 		public MatterHackers.RenderGl.OpenGl.GL Gl { get; private set; }
+
+		/// <summary>
+		/// When true the D3D11 device is created with DriverType.Warp (Microsoft's software rasterizer)
+		/// rather than the GPU. Must be set before InitializeD3D to affect the initial device; it is also
+		/// honored on device recovery because CreateDeviceResources re-reads it each time it runs.
+		/// </summary>
+		/// <remarks>
+		/// Hidden from designer serialization (WFO1000): this is a runtime-only choice driven by the
+		/// command line, never something the forms designer should persist.
+		/// </remarks>
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		public bool UseWarpSoftwareRasterizer { get; set; }
 
 		private bool isInitialized;
 		private bool isRecoveringDevice;
@@ -85,7 +98,7 @@ namespace MatterHackers.RenderGl
 			ID3D11DeviceContext deviceContext;
 			D3D11.D3D11CreateDevice(
 				(IDXGIAdapter)null,
-				DriverType.Hardware,
+				UseWarpSoftwareRasterizer ? DriverType.Warp : DriverType.Hardware,
 				flags,
 				featureLevels,
 				out device,

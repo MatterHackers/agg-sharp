@@ -48,7 +48,12 @@ namespace MatterHackers.Agg.UI
 
 		public bool IsModal { get; set; }
 
-		public bool UseGpu { get; set; }
+		/// <summary>
+		/// Gets or sets a value indicating whether this window renders on the GPU. GPU rendering is the default for
+		/// every window; set false (e.g. via RootSystemWindow.DefaultUseGpu / the FORCE_SOFTWARE_RENDERING switch) to
+		/// request the WARP software rasterizer when hosted in a D3D11SystemWindow.
+		/// </summary>
+		public bool UseGpu { get; set; } = true;
 
 		public int StencilBufferDepth { get; set; }
 

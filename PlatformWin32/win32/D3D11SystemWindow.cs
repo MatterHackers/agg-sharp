@@ -50,6 +50,14 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		public static List<int> ScreenshotAtFrames { get; set; } = new List<int>();
 
+		/// <summary>
+		/// The single consumption point of <see cref="SystemWindow.UseGpu"/>, which is seeded from
+		/// RootSystemWindow.DefaultUseGpu by the FORCE_SOFTWARE_RENDERING command-line flag. Returns true
+		/// when the window asked for no GPU, so the D3D11 device is created on the WARP software
+		/// rasterizer. Defaults to hardware when there is no window to ask.
+		/// </summary>
+		public static bool ShouldUseWarp(SystemWindow systemWindow) => systemWindow?.UseGpu == false;
+
 		public D3D11Control D3DControl => d3dControl;
 		private D3D11Control d3dControl;
 		private bool doneLoading = false;
@@ -72,6 +80,7 @@ namespace MatterHackers.Agg.UI
 		{
 			base.OnLoad(e);
 
+			d3dControl.UseWarpSoftwareRasterizer = ShouldUseWarp(AggSystemWindow);
 			d3dControl.InitializeD3D();
 
 			// Clear all cached GL resources (display lists, textures, tessellations)
@@ -211,16 +220,6 @@ namespace MatterHackers.Agg.UI
 				{
 					d3dControl.CaptureScreenshot(path);
 				}
-			}
-		}
-
-		public void MakeCurrent()
-		{
-			if (d3dControl != null && !d3dControl.IsDisposed)
-			{
-				var dummy1 = this.Handle;
-				var dummy2 = d3dControl.Handle;
-				d3dControl.InitializeD3D();
 			}
 		}
 
