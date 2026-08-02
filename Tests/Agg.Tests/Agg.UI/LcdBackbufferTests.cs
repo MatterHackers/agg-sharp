@@ -578,7 +578,16 @@ namespace MatterHackers.Agg.UI.Tests
 				RectangleDouble clipping = graphics.GetClippingRect();
 				await Assert.That(clipping.Width > 0 && clipping.Height > 0).IsTrue()
 					.Because("a surface clipped away to nothing would be no more useful than null");
-				graphics.FillRectangle(0, 0, 1, 1, Color.Black);
+
+				// And it is the container's buffer specifically, drawn through the child's own transform: the
+				// unit square at the child's origin has to land at (4, 4) there, the child's OriginRelativeParent.
+				// Red rather than black, so an untouched (transparent black) pixel could not pass for the fill.
+				graphics.FillRectangle(0, 0, 1, 1, Color.Red);
+				Color inked = container.BackBuffer.GetPixel(4, 4);
+				await Assert.That(inked.red).IsEqualTo((byte)255).Because("red of the ink drawn through the returned surface");
+				await Assert.That(inked.green).IsEqualTo((byte)0).Because("green of the ink drawn through the returned surface");
+				await Assert.That(inked.blue).IsEqualTo((byte)0).Because("blue of the ink drawn through the returned surface");
+				await Assert.That(inked.alpha).IsEqualTo((byte)255).Because("alpha of the ink drawn through the returned surface");
 			}
 			finally
 			{
