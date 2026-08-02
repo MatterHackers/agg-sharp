@@ -291,6 +291,33 @@ namespace MatterHackers.Agg.VertexSource
                 // remove the last vertex
                 numVertices--;
             }
+
+            /// <summary>
+            /// Replaces the vertices in [start, endInclusive] with <paramref name="replacement"/>, shifting
+            /// everything after them. An edit that changes the shape of a contour rarely changes its vertex
+            /// count by one, so it needs a splice rather than a series of RemoveAt calls.
+            /// </summary>
+            public void ReplaceRange(int start, int endInclusive, IList<VertexData> replacement)
+            {
+                var tail = new VertexData[numVertices - endInclusive - 1];
+                for (int i = 0; i < tail.Length; i++)
+                {
+                    tail[i] = vertexData[endInclusive + 1 + i];
+                }
+
+                // rewind to the start of the range and re-add everything that follows it
+                numVertices = start;
+
+                foreach (var vertex in replacement)
+                {
+                    AddVertex(vertex.Position.X, vertex.Position.Y, vertex.Command, vertex.Hint);
+                }
+
+                foreach (var vertex in tail)
+                {
+                    AddVertex(vertex.Position.X, vertex.Position.Y, vertex.Command, vertex.Hint);
+                }
+            }
         }
 
         private int iteratorIndex;
@@ -381,71 +408,300 @@ namespace MatterHackers.Agg.VertexSource
             return false;
         }
 
+        /// <summary>
+        /// How close two anchors have to be to count as the same point. Coordinates survive a trip through
+        /// SvgDString at three decimal places, so anything meant to be the same point comes back identical.
+        /// </summary>
+        private const double CoincidentAnchorEpsilon = 0.000001;
+
+        /// <summary>
+        /// Removes the vertex at <paramref name="index"/> and repairs the contour it belonged to.
+        /// </summary>
+        /// <remarks>
+        /// A point is not always a single vertex. A bezier anchor is the third vertex of a Curve4 triple and
+        /// owns the handles on either side of it, and a closed contour whose last segment curves back to the
+        /// start has to repeat that start point as the closing anchor. So this works on an anchor/handle view
+        /// of the contour rather than on raw indexes:
+        /// <list type="bullet">
+        /// <item>removing an anchor merges the segments on either side of it into one, keeping the previous
+        /// anchor's outgoing handle and the next anchor's incoming handle (the removed anchor's own two
+        /// handles go with it),</item>
+        /// <item>removing a handle straightens that side of its segment,</item>
+        /// <item>removing the close vertex opens the contour,</item>
+        /// <item>removing the first point promotes the next anchor to the MoveTo.</item>
+        /// </list>
+        /// Only the contour containing <paramref name="index"/> is rewritten - every other vertex in the
+        /// storage is left exactly as it was.
+        /// </remarks>
         public void RemoveAt(int index)
         {
-            // find out what type of point we are deleting
-            var command = vertexDataManager.Command(index);
-            var hint = this.GetCommandHint(index);
-
-            switch(command)
+            if (index < 0 || index >= vertexDataManager.TotalVertices())
             {
-                case FlagsAndCommand.Curve3:
-                    switch (hint)
-                    {
-                        case CommandHint.C3ControlFromPrev:
-                            throw new Exception("Not implemented yet");
-                            break;
-                        
-                        case CommandHint.C3Point:
-                            throw new Exception("Not implemented yet");
-                            break;
-
-                        default:
-                            throw new NotImplementedException("This sholud not happen for curve3");
-                    }
-                    break;
-
-                case FlagsAndCommand.Curve4:
-                    switch (hint)
-                    {
-                        case CommandHint.C4ControlFromPrev:
-                            throw new Exception("Not implemented yet");
-                            break;
-
-                        case CommandHint.C4ControlToPoint:
-                            throw new Exception("Not implemented yet");
-                            break;
-
-                        case CommandHint.C4Point:
-                            throw new Exception("Not implemented yet");
-                            break;
-
-                        default:
-                            throw new NotImplementedException("This sholud not happen for curve4");
-                    }
-                    break;
-
-                case FlagsAndCommand.LineTo:
-                    // delete the vertex
-                    vertexDataManager.RemoveAt(index);
-                    break;
-
-                case FlagsAndCommand.MoveTo:
-                    vertexDataManager.RemoveAt(index);
-                    break;
-
-                case FlagsAndCommand.EndPoly:
-                    throw new Exception("Not implemented yet");
-                    break;
-
-                case FlagsAndCommand.FlagClose:
-                case FlagsAndCommand.FlagClose | FlagsAndCommand.CommandsMask:
-                    vertexDataManager.RemoveAt(index);
-                    break;
-
-                default:
-                    throw new NotImplementedException("Add this case and test it");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
+
+            // the close vertex is not part of the anchor structure, dropping it just opens the contour
+            if (ShapePath.is_end_poly(vertexDataManager.Command(index)))
+            {
+                vertexDataManager.RemoveAt(index);
+                return;
+            }
+
+            GetContourRange(index, out var contourStart, out var contourEnd);
+
+            var isClosed = ShapePath.is_end_poly(vertexDataManager.Command(contourEnd));
+            var closeVertex = isClosed ? (VertexData?)vertexDataManager[contourEnd] : null;
+            var lastAnchorVertex = isClosed ? contourEnd - 1 : contourEnd;
+
+            var anchors = BuildContourAnchors(contourStart, lastAnchorVertex, isClosed);
+            RemoveFromContourAnchors(anchors, index);
+            vertexDataManager.ReplaceRange(contourStart, contourEnd, EmitContourAnchors(anchors, closeVertex));
+        }
+
+        /// <summary>
+        /// One editable point of a contour: its position plus the bezier handles that shape the segments
+        /// arriving at and leaving it. The source vertex indexes ride along so a delete can tell which part of
+        /// the flat vertex array the caller asked to remove.
+        /// </summary>
+        private struct ContourAnchor
+        {
+            public Vector2 Position;
+
+            /// <summary>The C4ControlToPoint of the segment arriving at this anchor, if that segment curves.</summary>
+            public Vector2? InHandle;
+
+            /// <summary>The C4ControlFromPrev of the segment leaving this anchor, if that segment curves.</summary>
+            public Vector2? OutHandle;
+
+            public int AnchorIndex;
+            public int InHandleIndex;
+            public int OutHandleIndex;
+
+            /// <summary>
+            /// The repeated vertex a closing curve ends on, when that curve returns to this anchor. It is the
+            /// same point to the user, so a delete aimed at either index means this anchor.
+            /// </summary>
+            public int ClosingAnchorIndex;
+
+            public static ContourAnchor Create(Vector2 position, int anchorIndex)
+            {
+                return new ContourAnchor()
+                {
+                    Position = position,
+                    AnchorIndex = anchorIndex,
+                    InHandleIndex = -1,
+                    OutHandleIndex = -1,
+                    ClosingAnchorIndex = -1,
+                };
+            }
+        }
+
+        /// <summary>
+        /// Finds the vertex range of the contour containing <paramref name="index"/>. The range runs from the
+        /// contour's MoveTo up to (and including) its close vertex, stopping before the next contour.
+        /// </summary>
+        private void GetContourRange(int index, out int contourStart, out int contourEnd)
+        {
+            contourStart = index;
+            while (contourStart > 0
+                && !ShapePath.IsMoveTo(vertexDataManager.Command(contourStart)))
+            {
+                contourStart--;
+            }
+
+            contourEnd = index;
+            while (contourEnd + 1 < vertexDataManager.TotalVertices())
+            {
+                var nextCommand = vertexDataManager.Command(contourEnd + 1);
+                if (ShapePath.IsMoveTo(nextCommand) || ShapePath.IsStop(nextCommand))
+                {
+                    break;
+                }
+
+                contourEnd++;
+            }
+        }
+
+        private List<ContourAnchor> BuildContourAnchors(int contourStart, int lastAnchorVertex, bool isClosed)
+        {
+            if (!ShapePath.IsMoveTo(vertexDataManager.Command(contourStart)))
+            {
+                throw new NotImplementedException("RemoveAt requires the contour to start with a MoveTo.");
+            }
+
+            var anchors = new List<ContourAnchor>();
+            anchors.Add(ContourAnchor.Create(vertexDataManager[contourStart].Position, contourStart));
+
+            var i = contourStart + 1;
+            while (i <= lastAnchorVertex)
+            {
+                switch (vertexDataManager.Command(i) & FlagsAndCommand.CommandsMask)
+                {
+                    case FlagsAndCommand.LineTo:
+                        anchors.Add(ContourAnchor.Create(vertexDataManager[i].Position, i));
+                        i++;
+                        break;
+
+                    case FlagsAndCommand.Curve4:
+                        if (i + 2 > lastAnchorVertex)
+                        {
+                            throw new NotImplementedException("RemoveAt found an incomplete Curve4 segment.");
+                        }
+
+                        var previous = anchors[anchors.Count - 1];
+                        previous.OutHandle = vertexDataManager[i].Position;
+                        previous.OutHandleIndex = i;
+                        anchors[anchors.Count - 1] = previous;
+
+                        var anchor = ContourAnchor.Create(vertexDataManager[i + 2].Position, i + 2);
+                        anchor.InHandle = vertexDataManager[i + 1].Position;
+                        anchor.InHandleIndex = i + 1;
+                        anchors.Add(anchor);
+                        i += 3;
+                        break;
+
+                    default:
+                        throw new NotImplementedException($"RemoveAt does not handle {vertexDataManager.Command(i)} yet.");
+                }
+            }
+
+            FoldClosingAnchor(anchors, isClosed);
+
+            return anchors;
+        }
+
+        /// <summary>
+        /// Folds a closing vertex that sits on the contour's start point back into the first anchor. A closing
+        /// curve has to end on an anchor, so it always repeats the start point, and a contour can also run a
+        /// plain line back to it. Left as its own entry the same user point would be two anchors, and deleting
+        /// either one would strand the other.
+        /// </summary>
+        private static void FoldClosingAnchor(List<ContourAnchor> anchors, bool isClosed)
+        {
+            if (!isClosed || anchors.Count < 2)
+            {
+                return;
+            }
+
+            var last = anchors[anchors.Count - 1];
+            var first = anchors[0];
+
+            // coincidence alone decides, not whether the last segment curves - a contour that runs a line all
+            // the way back to its start stores that point twice as well, and an edit that treats the two
+            // vertices as separate points re-roots the same shape instead of changing it
+            if ((last.Position - first.Position).Length > CoincidentAnchorEpsilon)
+            {
+                return;
+            }
+
+            first.InHandle = last.InHandle;
+            first.InHandleIndex = last.InHandleIndex;
+            first.ClosingAnchorIndex = last.AnchorIndex;
+            anchors[0] = first;
+            anchors.RemoveAt(anchors.Count - 1);
+        }
+
+        private static void RemoveFromContourAnchors(List<ContourAnchor> anchors, int index)
+        {
+            for (int i = 0; i < anchors.Count; i++)
+            {
+                var anchor = anchors[i];
+
+                if (anchor.AnchorIndex == index || anchor.ClosingAnchorIndex == index)
+                {
+                    anchors.RemoveAt(i);
+                    return;
+                }
+
+                if (anchor.InHandleIndex == index)
+                {
+                    anchor.InHandle = null;
+                    anchor.InHandleIndex = -1;
+                    anchors[i] = anchor;
+                    return;
+                }
+
+                if (anchor.OutHandleIndex == index)
+                {
+                    anchor.OutHandle = null;
+                    anchor.OutHandleIndex = -1;
+                    anchors[i] = anchor;
+                    return;
+                }
+            }
+
+            throw new NotImplementedException($"RemoveAt could not place vertex {index} in its contour.");
+        }
+
+        private static List<VertexData> EmitContourAnchors(List<ContourAnchor> anchors, VertexData? closeVertex)
+        {
+            var vertices = new List<VertexData>();
+            if (anchors.Count == 0)
+            {
+                // the last point of the contour is gone, so the close goes with it
+                return vertices;
+            }
+
+            vertices.Add(new VertexData(FlagsAndCommand.MoveTo, anchors[0].Position));
+
+            for (int i = 1; i < anchors.Count; i++)
+            {
+                EmitContourSegment(vertices, anchors[i - 1], anchors[i]);
+            }
+
+            if (closeVertex.HasValue)
+            {
+                var last = anchors[anchors.Count - 1];
+                if (anchors.Count > 1
+                    && (EffectiveHandle(last.OutHandle, last.Position).HasValue
+                        || EffectiveHandle(anchors[0].InHandle, anchors[0].Position).HasValue))
+                {
+                    // the closing segment curves, so it needs its own anchor back on the start point
+                    EmitContourSegment(vertices, last, anchors[0]);
+                }
+
+                vertices.Add(closeVertex.Value);
+            }
+
+            return vertices;
+        }
+
+        /// <summary>
+        /// Writes the segment between two anchors. It stays a line only while neither end shapes it; a single
+        /// surviving handle still bends the segment, with the other control point resting on its own anchor.
+        /// </summary>
+        private static void EmitContourSegment(List<VertexData> vertices, ContourAnchor from, ContourAnchor to)
+        {
+            var outHandle = EffectiveHandle(from.OutHandle, from.Position);
+            var inHandle = EffectiveHandle(to.InHandle, to.Position);
+
+            if (outHandle.HasValue || inHandle.HasValue)
+            {
+                vertices.Add(new VertexData(FlagsAndCommand.Curve4, outHandle ?? from.Position, CommandHint.C4ControlFromPrev));
+                vertices.Add(new VertexData(FlagsAndCommand.Curve4, inHandle ?? to.Position, CommandHint.C4ControlToPoint));
+                vertices.Add(new VertexData(FlagsAndCommand.Curve4, to.Position, CommandHint.C4Point));
+            }
+            else
+            {
+                vertices.Add(new VertexData(FlagsAndCommand.LineTo, to.Position));
+            }
+        }
+
+        /// <summary>
+        /// Gets the handle to use for one end of a segment, treating a control point that rests on its own
+        /// anchor as no handle at all. Parking the control point on the anchor is how the storage has to spell
+        /// "this end is straight" while the other end still curves, so a rebuild must not read it back as a
+        /// real handle - otherwise deleting the second handle of a segment could never straighten it.
+        /// </summary>
+        private static Vector2? EffectiveHandle(Vector2? handle, Vector2 anchorPosition)
+        {
+            if (handle.HasValue
+                && (handle.Value - anchorPosition).Length > CoincidentAnchorEpsilon)
+            {
+                return handle;
+            }
+
+            return null;
         }
 
         public static bool OldEqualsOldStyle(IVertexSource control, IVertexSource test, double maxError = .0001)
