@@ -1698,11 +1698,41 @@ namespace MatterHackers.Agg.UI
 			ChildRemoved?.Invoke(this, e);
 		}
 
+		/// <summary>
+		/// A <see cref="Graphics2D"/> that draws onto this widget, outside of a paint.
+		/// </summary>
+		/// <returns>Graphics for this widget's own backbuffer when it is double buffered and that buffer
+		/// exists, otherwise one derived from the nearest ancestor that can supply a surface, transformed and
+		/// clipped to this widget. Null when no ancestor can supply one, or when this widget is clipped
+		/// away.</returns>
+		/// <remarks>
+		/// The buffer is checked for rather than inferred from <see cref="DoubleBuffer"/>, because while the
+		/// widget's pixels are in <see cref="BackbufferMode.LcdCoverage"/> the RGBA buffer genuinely does not
+		/// exist and <see cref="BackBuffer"/> answers null (see its remarks). A double-buffered widget in that
+		/// state behaves here as an un-buffered one does and derives its graphics from the parent chain.
+		/// <para>
+		/// Handing back an <see cref="LcdBufferGraphics2D"/> over the coverage planes was possible - that is a
+		/// real <see cref="Graphics2D"/>, and <see cref="RasterizeBackbuffer"/> constructs one - but was
+		/// deliberately chosen against. It is a paint-time surface, built for the duration of a raster and only
+		/// partially supported outside that pipeline (its <see cref="IImageFloat"/> <c>Render</c> overload
+		/// throws, for one), so giving it to arbitrary out-of-paint callers carries hazards of its own. The
+		/// parent-derived surface is the answer an un-buffered widget has always given, which is the behaviour
+		/// callers here already cope with.
+		/// </para>
+		/// <para>
+		/// <b>That surface is transient.</b> Ink drawn through it lands on the ancestor's pixels, so the next
+		/// time the parent composites this widget's coverage planes over that rect
+		/// (<see cref="CompositeBackbufferOnto"/>) it is painted over - unlike the RGBA arm above, where
+		/// drawing goes into the widget's own cache and survives until the widget re-rasters.
+		/// </para>
+		/// </remarks>
 		public virtual Graphics2D NewGraphics2D()
 		{
-			if (DoubleBuffer)
+			// Read once: BackBuffer is computed, and the mode it keys on is not this method's to re-check.
+			ImageBuffer rgbaBuffer = BackBuffer;
+			if (rgbaBuffer != null)
 			{
-				return BackBuffer.NewGraphics2D();
+				return rgbaBuffer.NewGraphics2D();
 			}
 
 			if (Parent != null)
