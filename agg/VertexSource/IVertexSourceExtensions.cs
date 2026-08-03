@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -384,32 +384,13 @@ namespace MatterHackers.Agg.VertexSource
         {
             var output = new VertexStorage();
 
-            // Vertices() ends every path with a synthetic Stop that was never in storage, so storing what we are
-            // handed makes each transform grow the stream by one. Hold Stops back and only write them out when a
-            // real vertex follows - that keeps a mid-stream Stop while dropping the terminal one, which the
-            // output's own Vertices() will synthesize again.
-            var pendingStops = new List<VertexData>();
-            foreach (var vertex in source.Vertices())
+            // AddRangeDroppingTrailingStops rather than a plain add - Vertices() ends every path with a synthetic
+            // Stop that was never in storage, and storing it would grow the stream by one on every transform.
+            output.AddRangeDroppingTrailingStops(source.Vertices().Select(vertex =>
             {
-                var position = new Vector3(vertex.X, vertex.Y, 0);
-                position = position.Transform(matrix);
-                var transformed = new VertexData(vertex.Command, new Vector2(position.X, position.Y), vertex.Hint);
-
-                if (transformed.IsStop)
-                {
-                    pendingStops.Add(transformed);
-                    continue;
-                }
-
-                foreach (var stop in pendingStops)
-                {
-                    output.Add(stop.X, stop.Y, stop.Command, stop.Hint);
-                }
-
-                pendingStops.Clear();
-
-                output.Add(transformed.X, transformed.Y, transformed.Command, transformed.Hint);
-            }
+                var position = new Vector3(vertex.X, vertex.Y, 0).Transform(matrix);
+                return new VertexData(vertex.Command, new Vector2(position.X, position.Y), vertex.Hint);
+            }));
 
             return output;
         }

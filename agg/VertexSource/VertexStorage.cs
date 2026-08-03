@@ -10,7 +10,7 @@ using System;
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -339,10 +339,49 @@ namespace MatterHackers.Agg.VertexSource
         {
             if (copyFrom != null)
             {
-                foreach (var vertex in copyFrom.Vertices())
+                this.AddRangeDroppingTrailingStops(copyFrom.Vertices());
+            }
+        }
+
+        /// <summary>
+        /// Appends vertices, discarding any run of Stops that reaches the end of the sequence.
+        /// </summary>
+        /// <remarks>
+        /// Vertices() synthesizes a terminal Stop that was never a stored vertex, so anything that reads a path
+        /// through it and stores what it is handed comes back one vertex longer than its source - and longer again
+        /// on the next copy. A Stop with real geometry after it means something entirely different: it ends one
+        /// contour and everything past it belongs to the next, so dropping that one would weld two contours into
+        /// one. Holding Stops back and writing them out only when a real vertex follows keeps the separators and
+        /// drops the terminator, which this storage's own Vertices() will invent again on demand.
+        /// Sources that stored their own trailing Stop - CreateVertexStorage callers and OutlinePathObject3D both
+        /// end that way - therefore copy one vertex shorter. That is deliberate: a trailing Stop carries no
+        /// geometry, and leaving it out is what makes a copy of a copy stop growing.
+        /// </remarks>
+        /// <param name="vertices">The vertices to append. Must not be null.</param>
+        public void AddRangeDroppingTrailingStops(IEnumerable<VertexData> vertices)
+        {
+            if (vertices == null)
+            {
+                throw new ArgumentNullException(nameof(vertices));
+            }
+
+            var pendingStops = new List<VertexData>();
+            foreach (var vertex in vertices)
+            {
+                if (vertex.IsStop)
                 {
-                    this.Add(vertex.X, vertex.Y, vertex.Command, vertex.Hint);
+                    pendingStops.Add(vertex);
+                    continue;
                 }
+
+                foreach (var stop in pendingStops)
+                {
+                    this.Add(stop.X, stop.Y, stop.Command, stop.Hint);
+                }
+
+                pendingStops.Clear();
+
+                this.Add(vertex.X, vertex.Y, vertex.Command, vertex.Hint);
             }
         }
 
