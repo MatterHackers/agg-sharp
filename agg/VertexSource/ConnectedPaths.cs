@@ -6,7 +6,7 @@ using MatterHackers.VectorMath;
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -50,6 +50,9 @@ namespace MatterHackers.Agg.VertexSource
 
 		public override IEnumerable<VertexData> Vertices()
 		{
+			// whether the last thing handed on was a contour closing itself
+			var endedClosed = false;
+
 			for (int i = 0; i < SourcePaths.Count; i++)
 			{
 				IVertexSource sourcePath = SourcePaths[i];
@@ -60,12 +63,24 @@ namespace MatterHackers.Agg.VertexSource
 					{
 						break;
 					}
+
+					endedClosed = vertexData.IsClose;
+
 					yield return vertexData;
 				}
 			}
 
+			// This terminator used to be sent unconditionally, which closed a final contour that had been
+			// deliberately left open - a line combined with anything came out the far end as a polygon, and
+			// consumers that tell the two apart by the close flag could no longer see the difference. It is
+			// only repeated now when the stream is already ending closed, so every path that was closed before
+			// produces exactly the vertices it always did.
+			if (endedClosed)
+			{
+				yield return new VertexData(FlagsAndCommand.EndPoly | FlagsAndCommand.FlagClose | FlagsAndCommand.FlagCCW, new Vector2());
+			}
+
 			// and send the actual stop
-			yield return new VertexData(FlagsAndCommand.EndPoly | FlagsAndCommand.FlagClose | FlagsAndCommand.FlagCCW, new Vector2());
 			yield return new VertexData(FlagsAndCommand.Stop, new Vector2());
 		}
 	}
