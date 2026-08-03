@@ -382,14 +382,33 @@ namespace MatterHackers.Agg.VertexSource
 
         public static IVertexSource Transform(this IVertexSource source, Matrix4X4 matrix)
         {
-            RectangleDouble bounds = RectangleDouble.ZeroIntersection;
-
             var output = new VertexStorage();
+
+            // Vertices() ends every path with a synthetic Stop that was never in storage, so storing what we are
+            // handed makes each transform grow the stream by one. Hold Stops back and only write them out when a
+            // real vertex follows - that keeps a mid-stream Stop while dropping the terminal one, which the
+            // output's own Vertices() will synthesize again.
+            var pendingStops = new List<VertexData>();
             foreach (var vertex in source.Vertices())
             {
                 var position = new Vector3(vertex.X, vertex.Y, 0);
                 position = position.Transform(matrix);
-                output.Add(position.X, position.Y, vertex.Command);
+                var transformed = new VertexData(vertex.Command, new Vector2(position.X, position.Y), vertex.Hint);
+
+                if (transformed.IsStop)
+                {
+                    pendingStops.Add(transformed);
+                    continue;
+                }
+
+                foreach (var stop in pendingStops)
+                {
+                    output.Add(stop.X, stop.Y, stop.Command, stop.Hint);
+                }
+
+                pendingStops.Clear();
+
+                output.Add(transformed.X, transformed.Y, transformed.Command, transformed.Hint);
             }
 
             return output;
