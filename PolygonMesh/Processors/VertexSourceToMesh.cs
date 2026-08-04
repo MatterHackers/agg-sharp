@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -321,19 +321,42 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
 		}
 
-        public static Mesh Extrude(this IVertexSource vertexSourceIn,
+        /// <summary>
+		/// Extrudes a closed 2D profile from z = 0 up to <paramref name="zHeightTop"/>, optionally rounding
+		/// (bevelling) either end.
+		/// </summary>
+		/// <param name="bevel">
+		/// The top bevel, ordered from the bottom of the bevel UPWARD, or null for a square top. Each entry's
+		/// <c>height</c> is an absolute Z and its <c>insetAmount</c> is measured in mm from the ORIGINAL
+		/// profile (negative shrinks it) - insets never compound. The wall rises un-inset to
+		/// <c>bevel[0].height</c>; from there entry i's inset is reached at <c>bevel[i + 1].height</c>, and the
+		/// LAST entry's inset is reached at <paramref name="zHeightTop"/>, which is the profile the top cap is
+		/// built from.
+		/// </param>
+		/// <param name="joinType">How the clipper offset rounds corners while insetting the top bevel.</param>
+		/// <param name="bottomBevel">
+		/// The bottom bevel, the mirror image of <paramref name="bevel"/>: ordered from the top of the bevel
+		/// DOWNWARD, so its heights descend, or null for a square bottom. The wall drops un-inset to
+		/// <c>bottomBevel[0].height</c>; from there entry i's inset is reached at
+		/// <c>bottomBevel[i + 1].height</c>, and the LAST entry's inset is reached at z = 0, which is the
+		/// profile the bottom cap is built from.
+		/// </param>
+		/// <param name="bottomJoinType">How the clipper offset rounds corners while insetting the bottom bevel.</param>
+		public static Mesh Extrude(this IVertexSource vertexSourceIn,
 			double zHeightTop,
 			List<(double height, double insetAmount)> bevel = null,
-			ClipperLib.JoinType joinType = JoinType.jtRound)
+			ClipperLib.JoinType joinType = JoinType.jtRound,
+			List<(double height, double insetAmount)> bottomBevel = null,
+			ClipperLib.JoinType bottomJoinType = JoinType.jtRound)
 		{
 			Polygons bottomPolygons = vertexSourceIn.CreatePolygons();
 
 			// ensure good winding and consistent shapes
 			bottomPolygons = bottomPolygons.GetCorrectedWinding();
 
-			if (bevel != null)
+			if (bevel != null || bottomBevel != null)
 			{
-				return GetLoopMesh(zHeightTop, bevel, bottomPolygons, joinType);
+				return GetLoopMesh(zHeightTop, bevel, bottomPolygons, joinType, bottomBevel, bottomJoinType);
 			}
 
 			var bottomTeselatedSource = new CachedTesselator();
@@ -400,26 +423,47 @@ namespace MatterHackers.PolygonMesh.Processors
 			return mesh;
 		}
 
-		private static Mesh GetLoopMesh(double zHeightTop, List<(double height, double insetAmount)> bevel, Polygons inputPolygons, ClipperLib.JoinType joinType)
+		private static Mesh GetLoopMesh(double zHeightTop,
+			List<(double height, double insetAmount)> bevel,
+			Polygons inputPolygons,
+			ClipperLib.JoinType joinType,
+			List<(double height, double insetAmount)> bottomBevel,
+			ClipperLib.JoinType bottomJoinType)
 		{
             var bottomPolygonsSets = inputPolygons.SeparatePolygonGroups();
 
             var mesh = new Mesh();
             foreach (var bottomPolygons in bottomPolygonsSets)
 			{
-				// create the bottom polygon
-				var bottom = PathStitcher.Stitch(null, 0, bottomPolygons, 0);
-				mesh.CopyFaces(bottom);
+				var rings = BuildBevelRings(bottomPolygons, zHeightTop, bevel, joinType, bottomBevel, bottomJoinType);
 
-				var bottomLoops = bottomPolygons;
-				var bottomHeight = 0.0;
-				// create all the walls
-				var topLoops = bottomPolygons;
-				var topHeight = bevel.Count > 0 ? bevel[0].height : zHeightTop;
+				// The first wall segments are the bottom bevel, where the profile GROWS as it rises. The
+				// triangulation fallback lays its triangles out counter clockwise in 2D, which only faces the
+				// right way for a profile that shrinks as it rises (a top bevel); the bottom bevel is that same
+				// shape mirrored through z, and mirroring reverses orientation, so those segments wind back.
+				var bottomBevelWallCount = bottomBevel != null ? bottomBevel.Count : 0;
 
-                int i = -1;
-				while (i < bevel.Count)
+				// create the bottom polygon from whatever profile the walls actually start at
+				var bottom = PathStitcher.Stitch(null, 0, rings[0].loops, rings[0].height);
+				if (bottom != null)
 				{
+					mesh.CopyFaces(bottom);
+				}
+
+				// create all the walls by skinning each neighbouring pair of rings
+				for (int i = 0; i < rings.Count - 1; i++)
+				{
+					var (bottomLoops, bottomHeight) = rings[i];
+					var (topLoops, topHeight) = rings[i + 1];
+
+					// A top and bottom bevel that exactly meet leave no straight wall between them; skinning
+					// that zero-height gap would only add degenerate faces.
+					if (ReferenceEquals(bottomLoops, topLoops)
+						&& bottomHeight == topHeight)
+					{
+						continue;
+					}
+
 					var isSide = bottomLoops.Count > 0
 						&& bottomLoops.Count == topLoops.Count
                         && bottomLoops[0].Count > 0
@@ -428,46 +472,91 @@ namespace MatterHackers.PolygonMesh.Processors
 
                     if (isSide)
 					{
-						// add the top polygon
 						var walls = PathStitcher.Stitch(bottomLoops, bottomHeight, topLoops, topHeight);
 						mesh.CopyFaces(walls);
 					}
 					else
                     {
-                        CreateTriangulation(mesh, bottomLoops, bottomHeight, topLoops, topHeight);
+                        CreateTriangulation(mesh, bottomLoops, bottomHeight, topLoops, topHeight, i < bottomBevelWallCount);
                     }
-
-                    bottomLoops = topLoops;
-					bottomHeight = topHeight;
-
-					i++;
-					if (i < bevel.Count)
-					{
-						topLoops = bottomPolygons.Offset(bevel[i].insetAmount * 1000, joinType);
-						if (i == bevel.Count - 1)
-						{
-							topHeight = zHeightTop;
-						}
-						else
-						{
-							topHeight = bevel[i + 1].height;
-						}
-					}
 				}
 
 				// create the top polygon
-				var top = PathStitcher.Stitch(topLoops, zHeightTop, null, 0);
+				var lastRing = rings[rings.Count - 1];
+				var top = PathStitcher.Stitch(lastRing.loops, lastRing.height, null, 0);
 				if (top != null)
 				{
 					mesh.CopyFaces(top);
 				}
 			}
-            
+
 			mesh.CleanAndMerge();
 			return mesh;
 		}
 
-        private static void CreateTriangulation(Mesh mesh, Polygons bottomLoops, double bottomHeight, Polygons topLoops, double topHeight)
+		/// <summary>
+		/// Turns the two bevel descriptions into the full stack of profile rings the extrusion passes through,
+		/// ordered bottom to top. The first ring is always at z = 0 and the last at
+		/// <paramref name="zHeightTop"/>, so the caps and every wall segment fall out of consecutive pairs.
+		/// </summary>
+		/// <remarks>
+		/// Both bevel lists inset the ORIGINAL profile rather than the previous ring, so insets never compound.
+		/// The un-inset profile is reused by reference at the ends of both bevels, which is what lets the
+		/// straight section of wall between them be recognised as a single simple side.
+		/// </remarks>
+		private static List<(Polygons loops, double height)> BuildBevelRings(Polygons profile,
+			double zHeightTop,
+			List<(double height, double insetAmount)> topBevel,
+			ClipperLib.JoinType topJoinType,
+			List<(double height, double insetAmount)> bottomBevel,
+			ClipperLib.JoinType bottomJoinType)
+		{
+			var rings = new List<(Polygons loops, double height)>();
+
+			if (bottomBevel != null && bottomBevel.Count > 0)
+			{
+				// the list runs downward, so its last entry is the narrowest ring - that is the z = 0 profile
+				rings.Add((profile.Offset(bottomBevel[bottomBevel.Count - 1].insetAmount * 1000, bottomJoinType), 0));
+				for (int i = bottomBevel.Count - 1; i > 0; i--)
+				{
+					rings.Add((profile.Offset(bottomBevel[i - 1].insetAmount * 1000, bottomJoinType), bottomBevel[i].height));
+				}
+
+				// where the bevel gives way to the straight wall the profile is back to full size
+				rings.Add((profile, bottomBevel[0].height));
+			}
+			else
+			{
+				rings.Add((profile, 0));
+			}
+
+			if (topBevel != null && topBevel.Count > 0)
+			{
+				rings.Add((profile, topBevel[0].height));
+				for (int i = 0; i < topBevel.Count - 1; i++)
+				{
+					rings.Add((profile.Offset(topBevel[i].insetAmount * 1000, topJoinType), topBevel[i + 1].height));
+				}
+
+				rings.Add((profile.Offset(topBevel[topBevel.Count - 1].insetAmount * 1000, topJoinType), zHeightTop));
+			}
+			else
+			{
+				rings.Add((profile, zHeightTop));
+			}
+
+			return rings;
+		}
+
+        /// <summary>
+		/// Skins the wall between two profiles that do not correspond point for point, by triangulating the
+		/// area between them in 2D and lifting each vertex to whichever profile it came from.
+		/// </summary>
+		/// <param name="flipWinding">
+		/// True when the profile grows as it rises (a bottom bevel). The triangulation is done in 2D and then
+		/// lifted, so its faces come out pointing into the solid for that case and have to be reversed.
+		/// </param>
+        private static void CreateTriangulation(Mesh mesh, Polygons bottomLoops, double bottomHeight, Polygons topLoops, double topHeight, bool flipWinding)
         {
 			// we want to fill the bottom and tho top using even odd winding rule
             var hashSetBottomVertices = new HashSet<Vector2>();
@@ -488,7 +577,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				if (polyGroup.Count > 0)
 				{
 					var holes = polyGroup.Skip(1).ToList();
-                    CreateMeshLoop(mesh, polyGroup[0], holes, bottomHeight, topHeight, hashSetBottomVertices);
+                    CreateMeshLoop(mesh, polyGroup[0], holes, bottomHeight, topHeight, hashSetBottomVertices, flipWinding);
 				}
 				else
 				{
@@ -497,7 +586,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
         }
 
-        private static void CreateMeshLoop(Mesh mesh, Polygon outline, Polygons holes, double bottomHeight, double topHeight, HashSet<Vector2> hashSetBottomVertices)
+        private static void CreateMeshLoop(Mesh mesh, Polygon outline, Polygons holes, double bottomHeight, double topHeight, HashSet<Vector2> hashSetBottomVertices, bool flipWinding)
         {
             var polygon = new TriangleNet.Geometry.Polygon();
             polygon.Add(new TriangleNet.Geometry.Contour(outline.Select(p => new TriangleNet.Geometry.Vertex(p.X, p.Y))));
@@ -529,12 +618,19 @@ namespace MatterHackers.PolygonMesh.Processors
                         }
                     }
 
-                    mesh.CreateFace(new Vector3[]
+                    var corners = new Vector3[]
                     {
                         new Vector3(triangle.GetVertex(0).X / 1000, triangle.GetVertex(0).Y / 1000, height[0]),
                         new Vector3(triangle.GetVertex(1).X / 1000, triangle.GetVertex(1).Y / 1000, height[1]),
                         new Vector3(triangle.GetVertex(2).X / 1000, triangle.GetVertex(2).Y / 1000, height[2]),
-                    });
+                    };
+
+                    if (flipWinding)
+                    {
+                        (corners[0], corners[2]) = (corners[2], corners[0]);
+                    }
+
+                    mesh.CreateFace(corners);
                 }
             }
         }

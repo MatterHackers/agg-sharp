@@ -892,7 +892,7 @@ namespace MatterHackers.Agg.VertexSource
         }
 
         /// <summary>
-        /// Draws a quadratic Bézier curve from the current point to the target point using the supplied control point.
+        /// Draws a quadratic Bezier curve from the current point to the target point using the supplied control point.
         /// </summary>
         /// <param name="controlPoint">The control point</param>
         /// <param name="point">The new target point</param>
@@ -902,7 +902,7 @@ namespace MatterHackers.Agg.VertexSource
         }
 
         /// <summary>
-        /// Draws a quadratic Bézier curve from the current point to (x,y) using (xControl,yControl) as the control point.
+        /// Draws a quadratic Bezier curve from the current point to (x,y) using (xControl,yControl) as the control point.
         /// </summary>
         /// <param name="xControl"></param>
         /// <param name="yControl"></param>
@@ -915,7 +915,7 @@ namespace MatterHackers.Agg.VertexSource
         }
 
         /// <summary>
-        /// <para>Draws a quadratic Bézier curve from the current point to (x,y).</para>
+        /// <para>Draws a quadratic Bezier curve from the current point to (x,y).</para>
         /// <para>The control point is assumed to be the reflection of the control point on the previous command relative to the current point.</para>
         /// <para>(If there is no previous command or if the previous command was not a curve, assume the control point is coincident with the current point.)</para>
         /// </summary>
@@ -945,7 +945,7 @@ namespace MatterHackers.Agg.VertexSource
         }
 
         /// <summary>
-        /// Draws a quadratic Bézier curve from the current point to (x,y) using (xControl,yControl) as the control point.
+        /// Draws a quadratic Bezier curve from the current point to (x,y) using (xControl,yControl) as the control point.
         /// </summary>
         /// <param name="xControl"></param>
         /// <param name="yControl"></param>
@@ -960,7 +960,7 @@ namespace MatterHackers.Agg.VertexSource
         }
 
         /// <summary>
-        /// <para>Draws a quadratic Bézier curve from the current point to (x,y).</para>
+        /// <para>Draws a quadratic Bezier curve from the current point to (x,y).</para>
         /// <para>The control point is assumed to be the reflection of the control point on the previous command relative to the current point.</para>
         /// <para>(If there is no previous command or if the previous command was not a curve, assume the control point is coincident with the current point.)</para>
         /// </summary>
