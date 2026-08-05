@@ -46,8 +46,8 @@ using MatterHackers.PolygonMesh;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
-	// Degenerate-input assertions here (an empty result must have exactly zero faces) are sensitive to
-	// which engine ran, so these must not observe a flipped BooleanProcessing.UseManifoldRust.
+	// Every boolean run here overwrites the process-wide BooleanProcessing.LastBackendUsed, so these
+	// share ManifoldRustBackendTests' group rather than racing its assertions on that value.
 	[NotInParallel(ManifoldRustBackendTests.ParallelKey)]
 	public class MeshCsgTests
 	{

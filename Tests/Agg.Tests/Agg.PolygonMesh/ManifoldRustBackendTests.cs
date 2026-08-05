@@ -40,45 +40,27 @@ using TUnit.Core;
 namespace MatterHackers.PolygonMesh.UnitTests
 {
 	/// <summary>
-	/// The ManifoldRust boolean backend, exercised through the same public
-	/// <see cref="BooleanProcessing"/> entry points the application uses - the toggle is
-	/// the only thing these tests do differently.
+	/// The ManifoldRust boolean backend - the only native boolean engine - exercised
+	/// through the same public <see cref="BooleanProcessing"/> entry points the
+	/// application uses.
 	/// </summary>
 	/// <remarks>
-	/// <see cref="BooleanProcessing.UseManifoldRust"/> and
-	/// <see cref="BooleanProcessing.LastBackendUsed"/> are both process wide, so every
-	/// test that touches either runs in the <see cref="ParallelKey"/> group and restores
-	/// the toggle in a <c>finally</c>. <see cref="MeshCsgTests"/> and
-	/// <see cref="FaceColorTests"/> are in that group too: they are the only remaining
-	/// coverage of the ManifoldNET engine, and running one of them under a flipped toggle
-	/// would silently test the wrong engine.
+	/// <see cref="BooleanProcessing.LastBackendUsed"/> is a process-wide static that every
+	/// boolean overwrites, so the tests here that assert on it run in the
+	/// <see cref="ParallelKey"/> group. <see cref="MeshCsgTests"/> and
+	/// <see cref="FaceColorTests"/> are in that group too - not because they assert on it,
+	/// but because they run booleans, and one landing between a DoArray call here and the
+	/// assertion that follows it would clobber the value being asserted.
 	/// </remarks>
 	[NotInParallel(ParallelKey)]
 	public class ManifoldRustBackendTests
 	{
 		/// <summary>
-		/// Serializes every test that reads or writes the process-wide boolean-engine
-		/// statics. Shared with <see cref="MeshCsgTests"/> and <see cref="FaceColorTests"/>.
+		/// Serializes every test that asserts on, or would overwrite, the process-wide
+		/// <see cref="BooleanProcessing.LastBackendUsed"/>. Shared with
+		/// <see cref="MeshCsgTests"/> and <see cref="FaceColorTests"/>.
 		/// </summary>
 		public const string ParallelKey = "BooleanEngineStatics";
-
-		/// <summary>
-		/// Runs an action with the Rust backend selected, restoring the previous engine
-		/// afterwards whether or not the action threw.
-		/// </summary>
-		private static async Task WithRustBackend(Func<Task> body)
-		{
-			bool previous = BooleanProcessing.UseManifoldRust;
-			BooleanProcessing.UseManifoldRust = true;
-			try
-			{
-				await body();
-			}
-			finally
-			{
-				BooleanProcessing.UseManifoldRust = previous;
-			}
-		}
 
 		private static Mesh UnionSubtractIntersect(CsgModes operation, Mesh a, Matrix4X4 matrixA, Mesh b, Matrix4X4 matrixB)
 		{
@@ -103,125 +85,68 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		[Test]
 		public async Task UnionOfOverlappingCubesIsClosedSolid()
 		{
-			await WithRustBackend(async () =>
-			{
-				var result = UnionSubtractIntersect(
-					CsgModes.Union,
-					PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(-3, 0, 0),
-					PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(3, 0, 0));
+			var result = UnionSubtractIntersect(
+				CsgModes.Union,
+				PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(-3, 0, 0),
+				PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(3, 0, 0));
 
-				await Assert.That(result.Faces.Count).IsGreaterThan(0);
-				await Assert.That(result.IsManifold()).IsTrue();
+			await Assert.That(result.Faces.Count).IsGreaterThan(0);
+			await Assert.That(result.IsManifold()).IsTrue();
 
-				// Without this the test passes just as well when the Rust engine throws and
-				// CsgBySlicing quietly produces the same box.
-				await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
+			// Without this the test passes just as well when the Rust engine throws and
+			// CsgBySlicing quietly produces the same box.
+			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
 
-				// The union of the two boxes is one box spanning both.
-				var bounds = result.GetAxisAlignedBoundingBox();
-				await Assert.That(bounds.XSize).IsEqualTo(16.0).Within(0.001);
-				await Assert.That(bounds.YSize).IsEqualTo(10.0).Within(0.001);
-				await Assert.That(bounds.ZSize).IsEqualTo(10.0).Within(0.001);
-			});
+			// The union of the two boxes is one box spanning both.
+			var bounds = result.GetAxisAlignedBoundingBox();
+			await Assert.That(bounds.XSize).IsEqualTo(16.0).Within(0.001);
+			await Assert.That(bounds.YSize).IsEqualTo(10.0).Within(0.001);
+			await Assert.That(bounds.ZSize).IsEqualTo(10.0).Within(0.001);
 		}
 
 		[Test]
 		public async Task SubtractOfOverlappingCubesIsClosedSolid()
 		{
-			await WithRustBackend(async () =>
-			{
-				var result = UnionSubtractIntersect(
-					CsgModes.Subtract,
-					PlatonicSolids.CreateCube(20, 20, 20), Matrix4X4.Identity,
-					PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(10, 10, 10));
+			var result = UnionSubtractIntersect(
+				CsgModes.Subtract,
+				PlatonicSolids.CreateCube(20, 20, 20), Matrix4X4.Identity,
+				PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(10, 10, 10));
 
-				// A corner bite out of a cube: still one closed solid, and more faces than the
-				// 12 the cube started with.
-				await Assert.That(result.Faces.Count).IsGreaterThan(12);
-				await Assert.That(result.IsManifold()).IsTrue();
+			// A corner bite out of a cube: still one closed solid, and more faces than the
+			// 12 the cube started with.
+			await Assert.That(result.Faces.Count).IsGreaterThan(12);
+			await Assert.That(result.IsManifold()).IsTrue();
 
-				// Without this the test passes just as well when the Rust engine throws and
-				// CsgBySlicing quietly produces the same box.
-				await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
+			// Without this the test passes just as well when the Rust engine throws and
+			// CsgBySlicing quietly produces the same box.
+			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
 
-				var bounds = result.GetAxisAlignedBoundingBox();
-				await Assert.That(bounds.XSize).IsEqualTo(20.0).Within(0.001);
-				await Assert.That(bounds.YSize).IsEqualTo(20.0).Within(0.001);
-				await Assert.That(bounds.ZSize).IsEqualTo(20.0).Within(0.001);
-			});
+			var bounds = result.GetAxisAlignedBoundingBox();
+			await Assert.That(bounds.XSize).IsEqualTo(20.0).Within(0.001);
+			await Assert.That(bounds.YSize).IsEqualTo(20.0).Within(0.001);
+			await Assert.That(bounds.ZSize).IsEqualTo(20.0).Within(0.001);
 		}
 
 		[Test]
 		public async Task IntersectOfOverlappingCubesIsTheOverlapBox()
 		{
-			await WithRustBackend(async () =>
-			{
-				var result = UnionSubtractIntersect(
-					CsgModes.Intersect,
-					PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(-3, 0, 0),
-					PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(3, 0, 0));
+			var result = UnionSubtractIntersect(
+				CsgModes.Intersect,
+				PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(-3, 0, 0),
+				PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(3, 0, 0));
 
-				await Assert.That(result.Faces.Count).IsGreaterThan(0);
-				await Assert.That(result.IsManifold()).IsTrue();
+			await Assert.That(result.Faces.Count).IsGreaterThan(0);
+			await Assert.That(result.IsManifold()).IsTrue();
 
-				// Without this the test passes just as well when the Rust engine throws and
-				// CsgBySlicing quietly produces the same box.
-				await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
+			// Without this the test passes just as well when the Rust engine throws and
+			// CsgBySlicing quietly produces the same box.
+			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
 
-				// The overlap of the two boxes is a 4 x 10 x 10 box.
-				var bounds = result.GetAxisAlignedBoundingBox();
-				await Assert.That(bounds.XSize).IsEqualTo(4.0).Within(0.001);
-				await Assert.That(bounds.YSize).IsEqualTo(10.0).Within(0.001);
-				await Assert.That(bounds.ZSize).IsEqualTo(10.0).Within(0.001);
-			});
-		}
-
-		[Test]
-		public async Task BooleanUnionPreservesFaceColors()
-		{
-			await WithRustBackend(FaceColorBooleanScenarios.BooleanUnionPreservesFaceColors);
-		}
-
-		[Test]
-		public async Task BooleanSubtractPreservesFaceColors()
-		{
-			await WithRustBackend(FaceColorBooleanScenarios.BooleanSubtractPreservesFaceColors);
-		}
-
-		[Test]
-		public async Task DoArrayWithColorsPreservesFaceColors()
-		{
-			await WithRustBackend(FaceColorBooleanScenarios.DoArrayWithColorsPreservesFaceColors);
-		}
-
-		[Test]
-		public async Task BooleanWithoutColorsReturnsNullFaceColors()
-		{
-			await WithRustBackend(FaceColorBooleanScenarios.BooleanWithoutColorsReturnsNullFaceColors);
-		}
-
-		[Test]
-		public async Task ManifoldRunDataExtractsFaceColorsCorrectly()
-		{
-			await WithRustBackend(FaceColorBooleanScenarios.ManifoldRunDataExtractsFaceColorsCorrectly);
-		}
-
-		[Test]
-		public async Task FaceColorsSurviveFullCleanupPipeline()
-		{
-			await WithRustBackend(FaceColorBooleanScenarios.FaceColorsSurviveFullCleanupPipeline);
-		}
-
-		[Test]
-		public async Task IntersectPreservesBothFaceColors()
-		{
-			await WithRustBackend(FaceColorBooleanScenarios.IntersectPreservesBothFaceColors);
-		}
-
-		[Test]
-		public async Task SubtractFromMeshWithFaceColorsPreservesColors()
-		{
-			await WithRustBackend(FaceColorBooleanScenarios.SubtractFromMeshWithFaceColorsPreservesColors);
+			// The overlap of the two boxes is a 4 x 10 x 10 box.
+			var bounds = result.GetAxisAlignedBoundingBox();
+			await Assert.That(bounds.XSize).IsEqualTo(4.0).Within(0.001);
+			await Assert.That(bounds.YSize).IsEqualTo(10.0).Within(0.001);
+			await Assert.That(bounds.ZSize).IsEqualTo(10.0).Within(0.001);
 		}
 
 		/// <summary>
@@ -231,76 +156,70 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		[Test]
 		public async Task NonManifoldInputFallsBackToCsgBySlicing()
 		{
-			await WithRustBackend(async () =>
-			{
-				var result = BooleanProcessing.DoArray(
-					new[]
-					{
-						(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.Identity),
-						(OpenBox(8), Matrix4X4.Identity),
-					},
-					CsgModes.Subtract,
-					ProcessingModes.Polygons,
-					ProcessingResolution._64,
-					ProcessingResolution._64,
-					null,
-					CancellationToken.None);
+			var result = BooleanProcessing.DoArray(
+				new[]
+				{
+					(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.Identity),
+					(OpenBox(8), Matrix4X4.Identity),
+				},
+				CsgModes.Subtract,
+				ProcessingModes.Polygons,
+				ProcessingResolution._64,
+				ProcessingResolution._64,
+				null,
+				CancellationToken.None);
 
-				await Assert.That(result).IsNotNull();
-				await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendCsgBySlicing)
-					.Because("an open surface never reaches a native engine - DoArray's IsManifold gate diverts it");
-			});
+			await Assert.That(result).IsNotNull();
+			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendCsgBySlicing)
+				.Because("an open surface never reaches the kernel - DoArray's IsManifold gate diverts it");
 		}
 
 		/// <summary>
-		/// The deliberate divergence from the ManifoldNET path: an operand the kernel
-		/// rejects is thrown on rather than absorbed. A boolean silently treats an
-		/// error-status operand as empty geometry and still reports success, so absorbing
-		/// it would show up as a part missing from the model with nothing logged.
+		/// An operand the kernel rejects is thrown on rather than absorbed. A boolean
+		/// silently treats an error-status operand as empty geometry and still reports
+		/// success, so absorbing it would show up as a part missing from the model with
+		/// nothing logged.
 		/// </summary>
 		[Test]
 		public async Task AnInputTheKernelRejectsThrowsRatherThanGoingMissing()
 		{
-			await WithRustBackend(async () =>
+			var items = new[]
 			{
-				var items = new[]
-				{
-					(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.Identity),
-					(CubeWithANonFiniteVertex(), Matrix4X4.Identity),
-				};
+				(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.Identity),
+				(CubeWithANonFiniteVertex(), Matrix4X4.Identity),
+			};
 
-				// A NaN coordinate leaves the surface closed, so DoArray's topological gate
-				// waves it through and it is the kernel that objects - which is exactly the
-				// case this path exists for.
-				await Assert.That(items[1].Item1.IsManifold()).IsTrue()
-					.Because("the test is only meaningful if the mesh gets past DoArray's IsManifold gate");
+			// A NaN coordinate leaves the surface closed, so DoArray's topological gate
+			// waves it through and it is the kernel that objects - which is exactly the
+			// case this path exists for.
+			await Assert.That(items[1].Item1.IsManifold()).IsTrue()
+				.Because("the test is only meaningful if the mesh gets past DoArray's IsManifold gate");
 
-				var thrown = Assert.Throws<InvalidOperationException>(() => BooleanProcessing.DoArrayViaManifoldRust(
-					items,
-					CsgModes.Union,
-					CancellationToken.None,
-					null,
-					1,
-					0,
-					null));
+			var thrown = Assert.Throws<InvalidOperationException>(() => BooleanProcessing.DoArrayViaManifoldRust(
+				items,
+				CsgModes.Union,
+				CancellationToken.None,
+				null,
+				1,
+				0,
+				null));
 
-				await Assert.That(thrown.Message).Contains(ManifoldStatus.NonFiniteVertex.ToString())
-					.Because("the status is the whole diagnostic value of refusing the input");
+			await Assert.That(thrown.Message).Contains(ManifoldStatus.NonFiniteVertex.ToString())
+				.Because("the status is the whole diagnostic value of refusing the input");
 
-				// And through the public entry point the same rejection is a fallback, not a
-				// failure the caller ever sees.
-				var result = BooleanProcessing.DoArray(
-					items,
-					CsgModes.Union,
-					ProcessingModes.Polygons,
-					ProcessingResolution._64,
-					ProcessingResolution._64,
-					null,
-					CancellationToken.None);
+			// And through the public entry point the same rejection is a fallback, not a
+			// failure the caller ever sees.
+			var result = BooleanProcessing.DoArray(
+				items,
+				CsgModes.Union,
+				ProcessingModes.Polygons,
+				ProcessingResolution._64,
+				ProcessingResolution._64,
+				null,
+				CancellationToken.None);
 
-				await Assert.That(result).IsNotNull();
-				await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendCsgBySlicing);
-			});
+			await Assert.That(result).IsNotNull();
+			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendCsgBySlicing);
 		}
 
 		/// <summary>
@@ -312,30 +231,27 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		[Test]
 		public async Task CancelledTokenPropagatesRatherThanFallingBack()
 		{
-			await WithRustBackend(async () =>
-			{
-				using var cancelled = new CancellationTokenSource();
-				cancelled.Cancel();
+			using var cancelled = new CancellationTokenSource();
+			cancelled.Cancel();
 
-				await Assert.That(() => BooleanProcessing.DoArray(
-					new[]
-					{
-						(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(-3, 0, 0)),
-						(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(3, 0, 0)),
-					},
-					CsgModes.Union,
-					ProcessingModes.Polygons,
-					ProcessingResolution._64,
-					ProcessingResolution._64,
-					null,
-					cancelled.Token)).Throws<OperationCanceledException>();
-			});
+			await Assert.That(() => BooleanProcessing.DoArray(
+				new[]
+				{
+					(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(-3, 0, 0)),
+					(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(3, 0, 0)),
+				},
+				CsgModes.Union,
+				ProcessingModes.Polygons,
+				ProcessingResolution._64,
+				ProcessingResolution._64,
+				null,
+				cancelled.Token)).Throws<OperationCanceledException>();
 		}
 
 		/// <summary>
 		/// A box missing its top face - edge manifold nowhere, so
 		/// <see cref="MeshExtensionMethods.IsManifold"/> rejects it and DoArray never reaches
-		/// either native engine.
+		/// the kernel.
 		/// </summary>
 		private static Mesh OpenBox(double size)
 		{

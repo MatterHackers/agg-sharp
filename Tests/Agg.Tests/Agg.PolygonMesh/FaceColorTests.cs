@@ -39,8 +39,8 @@ using TUnit.Core;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
-	// The boolean scenarios here are the only remaining coverage of the ManifoldNET engine, so they
-	// must never run while ManifoldRustBackendTests has the toggle flipped - same group, same reason.
+	// The boolean scenarios here overwrite the process-wide BooleanProcessing.LastBackendUsed, so they
+	// share ManifoldRustBackendTests' group rather than racing its assertions on that value.
 	[NotInParallel(ManifoldRustBackendTests.ParallelKey)]
 	public class FaceColorTests
 	{
@@ -79,9 +79,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			await Assert.That(copy.FaceColors).IsNull();
 		}
 
-		// The boolean scenarios below live in FaceColorBooleanScenarios so the ManifoldRust
-		// backend can be held to exactly these assertions rather than to a second copy of
-		// them - see ManifoldRustBackendTests.
+		// The boolean scenarios below live in FaceColorBooleanScenarios, one file removed from
+		// the fixtures, because they are the contract any CSG backend has to meet rather than
+		// anything specific to this class.
 
 		[Test]
 		public async Task BooleanUnionPreservesFaceColors()

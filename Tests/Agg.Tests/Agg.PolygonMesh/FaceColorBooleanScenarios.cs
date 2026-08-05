@@ -39,16 +39,14 @@ using TUnit.Assertions.Extensions;
 namespace MatterHackers.PolygonMesh.UnitTests
 {
 	/// <summary>
-	/// The face-colour behaviour a CSG backend has to deliver, written once so both
-	/// engines are held to the same assertions rather than to two drifting copies.
+	/// The face-colour behaviour a CSG backend has to deliver, stated once as a contract
+	/// rather than as assertions belonging to whichever engine happens to be in place.
 	/// </summary>
 	/// <remarks>
-	/// <see cref="FaceColorTests"/> runs these against the default (ManifoldNET) engine
-	/// and <see cref="ManifoldRustBackendTests"/> runs them again with
-	/// <see cref="BooleanProcessing.UseManifoldRust"/> set. Nothing here mentions a
-	/// backend: the scenarios go through the public
-	/// <see cref="BooleanProcessing"/> entry points, which is exactly the routing being
-	/// tested.
+	/// <see cref="FaceColorTests"/> runs each of these once, against whatever
+	/// <see cref="BooleanProcessing"/> routes to. Nothing here names a backend on purpose:
+	/// the scenarios go through the public entry points, so a future second engine can be
+	/// held to exactly these assertions rather than to a drifting copy of them.
 	/// </remarks>
 	internal static class FaceColorBooleanScenarios
 	{

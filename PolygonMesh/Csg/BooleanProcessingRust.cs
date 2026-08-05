@@ -33,10 +33,9 @@ using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 
-// The package's namespace is also the name of the toggle that selects it
-// (BooleanProcessing.UseManifoldRust), so every type from it is aliased rather
-// than reached through the namespace - that keeps a member name and a namespace
-// from ever having to be told apart at a use site.
+// Every type from the package is aliased rather than reached through its namespace:
+// ManifoldRust.Manifold and MatterHackers.PolygonMesh.Mesh are both "the mesh type"
+// at a glance, and the Rust prefix says which one a use site means.
 using RustManifold = ManifoldRust.Manifold;
 using RustMeshGL64 = ManifoldRust.MeshGL64;
 using RustOpType = ManifoldRust.ManifoldOpType;
@@ -45,19 +44,19 @@ using RustStatus = ManifoldRust.ManifoldStatus;
 namespace MatterHackers.PolygonMesh.Csg
 {
 	/// <summary>
-	/// The ManifoldRust boolean backend: the same pipeline
-	/// <see cref="BooleanProcessing.DoArray"/> runs through ManifoldNET, expressed
-	/// against the pure-Rust kernel instead.
+	/// The ManifoldRust boolean backend: the native kernel
+	/// <see cref="BooleanProcessing.DoArray"/> runs every polygon-mode boolean through.
 	/// </summary>
 	/// <remarks>
-	/// Kept in its own file so the ManifoldNET path stays exactly as it was - the two
-	/// engines share only the toggle and the entry point that picks between them.
+	/// Kept in its own file only to keep each half of the partial class a readable
+	/// length; there is no second native engine to sit beside any more.
 	/// <para>
-	/// Three things differ from the ManifoldNET half and are the reason this exists:
-	/// coordinates upload as <c>double</c> rather than being narrowed to <c>float</c>
-	/// at the boundary, the run data needed for face colours comes back as ordinary
-	/// managed arrays (no raw P/Invoke and no reflection into a private handle field),
-	/// and the caller's <see cref="CancellationToken"/> actually reaches the kernel.
+	/// Three things it does that the C++ ManifoldNET engine it replaced could not, and
+	/// which are why the migration happened: coordinates upload as <c>double</c> rather
+	/// than being narrowed to <c>float</c> at the boundary, the run data needed for face
+	/// colours comes back as ordinary managed arrays (no raw P/Invoke and no reflection
+	/// into a private handle field), and the caller's <see cref="CancellationToken"/>
+	/// actually reaches the kernel.
 	/// </para>
 	/// </remarks>
 	public static partial class BooleanProcessing
@@ -65,10 +64,9 @@ namespace MatterHackers.PolygonMesh.Csg
 		private static readonly Color DefaultFaceColor = new Color(200, 200, 200, 255);
 
 		/// <summary>
-		/// Perform a boolean operation via the ManifoldRust native library. Mirrors
-		/// DoArrayViaManifold's contract: every failure surfaces as a managed exception
-		/// so the caller can fall back to CsgBySlicing, except cancellation, which the
-		/// caller deliberately lets through.
+		/// Perform a boolean operation via the ManifoldRust native library. Every failure
+		/// surfaces as a managed exception so the caller can fall back to CsgBySlicing,
+		/// except cancellation, which the caller deliberately lets through.
 		/// </summary>
 		/// <remarks>
 		/// Internal rather than private only so the tests can watch it reject an input
@@ -135,9 +133,7 @@ namespace MatterHackers.PolygonMesh.Csg
 						{
 							// AsOriginal is what gives the input an OriginalId, and the run data
 							// that carries colours back is keyed on that. Without colours the run
-							// data is never read, so the extra native copy would be pure waste -
-							// the ManifoldNET path makes the same call conditional for the same
-							// reason.
+							// data is never read, so the extra native copy would be pure waste.
 							manifold = ImportAsOriginal(meshCopy);
 
 							if (meshCopy.FaceColors != null)
@@ -224,9 +220,9 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				if (boolResult.Status != RustStatus.NoError)
 				{
-					// Not a crash guard as it is on the ManifoldNET side - exporting an error
-					// manifold is safe here - but an error status still means the kernel could
-					// not build the solid, and CsgBySlicing may yet manage it.
+					// Exporting an error manifold is safe here - unlike the C++ engine, which
+					// could fault the CLR doing it - but an error status still means the kernel
+					// could not build the solid, and CsgBySlicing may yet manage it.
 					throw new InvalidOperationException($"Manifold boolean result has error status: {boolResult.Status}");
 				}
 
@@ -327,8 +323,8 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		/// <summary>
 		/// Flattens a mesh into the interleaved position array and triangle index array
-		/// the kernel takes. Positions widen to <c>double</c> without passing through the
-		/// <c>float</c> narrowing the ManifoldNET path applies at this boundary.
+		/// the kernel takes. Positions widen to <c>double</c>, with none of the <c>float</c>
+		/// narrowing the old C++ boundary imposed.
 		/// </summary>
 		private static (double[] vertProperties, uint[] triVerts) ToRustMeshData(Mesh mesh)
 		{
@@ -477,9 +473,9 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// through the nearest saved centroid.
 		/// </summary>
 		/// <remarks>
-		/// The ManifoldNET half of this file needs raw P/Invoke and reflection into a
-		/// private handle to reach the same two arrays; here they are plain managed
-		/// arrays on <see cref="RustMeshGL64"/>.
+		/// The C++ engine needed raw P/Invoke and reflection into a private handle to
+		/// reach these two arrays; here they are plain managed arrays on
+		/// <see cref="RustMeshGL64"/>.
 		/// </remarks>
 		private static Color[] ExtractFaceColorsFromRuns(
 			RustMeshGL64 resultMeshGl,

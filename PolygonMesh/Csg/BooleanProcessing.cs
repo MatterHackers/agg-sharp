@@ -31,7 +31,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using ClipperLib;
 using DualContouring;
@@ -78,29 +77,18 @@ namespace MatterHackers.PolygonMesh.Csg
 		_512 = 9,
 	}
 
+	/// <summary>
+	/// Entry points for constructive solid geometry over <see cref="Mesh"/>.
+	/// </summary>
+	/// <remarks>
+	/// Polygon mode runs on ManifoldRust, the single native boolean kernel
+	/// (see BooleanProcessingRust.cs, the other half of this partial class), and falls
+	/// back to the managed <see cref="CsgBySlicing"/> whenever the kernel cannot take the
+	/// input or does not return a solid. The other processing modes do not use a kernel at
+	/// all - they resample the operands as implicit surfaces.
+	/// </remarks>
 	public static partial class BooleanProcessing
 	{
-		/// <summary>
-		/// Selects the pure-Rust boolean kernel (see BooleanProcessingRust.cs) instead of
-		/// the ManifoldNET one. Off until asked for.
-		/// </summary>
-		/// <remarks>
-		/// A static rather than a setting because agg-sharp has no access to the
-		/// application's user settings; MatterCAD publishes the persisted value here at
-		/// startup and whenever the toggle changes.
-		/// <para>
-		/// Read once per <see cref="DoArray"/> call, so the engine is stable within one
-		/// call but not across a user-visible operation: callers such as
-		/// SubtractObject3D loop <see cref="Do"/> once per pair, so a flip landing
-		/// mid-rebuild can leave different pairs built by different engines. Harmless -
-		/// both produce a valid solid - but it is not a per-operation guarantee.
-		/// </para>
-		/// </remarks>
-		public static bool UseManifoldRust { get; set; }
-
-		/// <summary>Name reported by <see cref="LastBackendUsed"/> for the ManifoldNET (C++) engine.</summary>
-		public const string BackendManifoldCpp = "ManifoldCpp";
-
 		/// <summary>Name reported by <see cref="LastBackendUsed"/> for the ManifoldRust engine.</summary>
 		public const string BackendManifoldRust = "ManifoldRust";
 
@@ -108,9 +96,8 @@ namespace MatterHackers.PolygonMesh.Csg
 		public const string BackendCsgBySlicing = "CsgBySlicing";
 
 		/// <summary>
-		/// Which engine produced the most recent polygon-mode boolean: one of
-		/// <see cref="BackendManifoldCpp"/>, <see cref="BackendManifoldRust"/> or
-		/// <see cref="BackendCsgBySlicing"/>.
+		/// Which engine produced the most recent polygon-mode boolean: either
+		/// <see cref="BackendManifoldRust"/> or <see cref="BackendCsgBySlicing"/>.
 		/// </summary>
 		/// <remarks>
 		/// Diagnostic only - nothing in the pipeline branches on it. It exists because a
@@ -145,9 +132,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				{
 					try
 					{
-						return UseManifoldRust
-							? DoArrayViaManifoldRust(items, operation, cancellationToken, reporter, amountPerOperation, ratioCompleted, meshColors)
-							: DoArrayViaManifold(items, operation, cancellationToken, reporter, amountPerOperation, ratioCompleted, meshColors);
+						return DoArrayViaManifoldRust(items, operation, cancellationToken, reporter, amountPerOperation, ratioCompleted, meshColors);
 					}
 					catch (OperationCanceledException)
 					{
@@ -185,172 +170,6 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				return AsImplicitMeshes(items, operation, processingMode, inputResolution, outputResolution);
 			}
-		}
-
-		/// <summary>
-		/// Perform a boolean operation via the Manifold native library.
-		/// All native P/Invoke calls are contained here so the caller can catch
-		/// any managed exception and fall back to CsgBySlicing.
-		/// </summary>
-		private static Mesh DoArrayViaManifold(
-			IEnumerable<(Mesh mesh, Matrix4X4 matrix)> items,
-			CsgModes operation,
-			CancellationToken cancellationToken,
-			Action<double, string> reporter,
-			double amountPerOperation,
-			double ratioCompleted,
-			Color[] meshColors)
-		{
-			// Claimed on entry rather than on success: if this throws, the caller's fallback
-			// overwrites it, so the value always names whichever engine actually returned.
-			LastBackendUsed = BackendManifoldCpp;
-
-			bool trackColors = meshColors != null;
-
-			var manifolds = new List<ManifoldNET.Manifold>();
-			var originalIdToColor = new Dictionary<int, Color>();
-			var originalIdToSpatialColors = new Dictionary<int, List<(Vector3, Color)>>();
-			int meshIndex = 0;
-			foreach (var (mesh, matrix) in items)
-			{
-				if (mesh.Vertices.Count == 0 || mesh.Faces.Count == 0)
-				{
-					if (operation == CsgModes.Intersect)
-					{
-						return new Mesh();
-					}
-
-					if (meshIndex == 0 && operation == CsgModes.Subtract)
-					{
-						return new Mesh();
-					}
-
-					meshIndex++;
-					continue;
-				}
-
-				var meshCopy = mesh.Copy(CancellationToken.None);
-				meshCopy.Transform(matrix);
-
-				ManifoldNET.Manifold manifold = null;
-
-				if (trackColors && meshCopy.FaceColors != null)
-				{
-					manifold = TrySplitByFaceColors(meshCopy, originalIdToColor);
-				}
-
-				if (manifold == null)
-				{
-					var vertProperties = new List<float>();
-					var triVerts = new List<uint>();
-
-					foreach (var vertex in meshCopy.Vertices)
-					{
-						vertProperties.Add(vertex.X);
-						vertProperties.Add(vertex.Y);
-						vertProperties.Add(vertex.Z);
-					}
-
-					foreach (var face in meshCopy.Faces)
-					{
-						triVerts.Add((uint)face.v0);
-						triVerts.Add((uint)face.v1);
-						triVerts.Add((uint)face.v2);
-					}
-
-					var meshGlData = new ManifoldNET.MeshGLData(vertProperties.ToArray(), triVerts.ToArray(), 3);
-					var meshGl = new ManifoldNET.MeshGL(meshGlData);
-					manifold = ManifoldNET.Manifold.Create(meshGl);
-
-					if (trackColors)
-					{
-						manifold = manifold.AsOriginal();
-						if (meshCopy.FaceColors != null)
-						{
-							originalIdToSpatialColors[manifold.OriginalID] = meshCopy.SaveFaceCentroidColors();
-						}
-						else
-						{
-							var color = (meshColors != null && meshIndex < meshColors.Length)
-								? meshColors[meshIndex]
-								: new Color(200, 200, 200, 255);
-							originalIdToColor[manifold.OriginalID] = color;
-						}
-					}
-				}
-
-				manifolds.Add(manifold);
-				meshIndex++;
-			}
-
-			var opperationType = ManifoldNET.BoolOperationType.Add;
-
-			if (operation == CsgModes.Subtract)
-			{
-				opperationType = ManifoldNET.BoolOperationType.Subtract;
-			}
-			else if (operation == CsgModes.Intersect)
-			{
-				opperationType = ManifoldNET.BoolOperationType.Intersect;
-			}
-
-			ManifoldNET.Manifold boolResult = null;
-			if (manifolds.Count == 1)
-			{
-				boolResult = manifolds[0];
-			}
-			else if (manifolds.Count >= 2)
-			{
-				boolResult = ManifoldNET.Manifold.BatchBoolOperation(manifolds, opperationType);
-			}
-
-			var resultMesh = new Mesh();
-
-			if (boolResult != null)
-			{
-				// Guard against calling MeshGL on an invalid manifold — manifold_get_meshgl can
-				// crash the CLR (ExecutionEngineException) when the result is in InvalidConstruction
-				// state. Throwing a managed exception here lets the caller's catch block fall back
-				// to CsgBySlicing instead of killing the process.
-				if (boolResult.Status != ManifoldNET.ManifoldError.NoError)
-				{
-					throw new InvalidOperationException($"Manifold boolean result has error status: {boolResult.Status}");
-				}
-
-				var result = boolResult.MeshGL;
-				var resultNumProp = result.PropertiesNumber;
-				var vertices = result.VerticesProperties;
-				var indices = result.TriangleVertices;
-
-				for (int i = 0; i < vertices.Length; i += resultNumProp)
-				{
-					resultMesh.Vertices.Add(new Vector3(
-						vertices[i],
-						vertices[i + 1],
-						vertices[i + 2]));
-				}
-
-				for (int i = 0; i < indices.Length; i += 3)
-				{
-					resultMesh.Faces.Add(new Face(
-						indices[i],
-						indices[i + 1],
-						indices[i + 2],
-						resultMesh.Vertices));
-				}
-
-				if (trackColors && resultMesh.Faces.Count > 0)
-				{
-					var faceColors = ManifoldRunHelper.ExtractFaceColors(
-						result, resultMesh, originalIdToColor, originalIdToSpatialColors);
-					if (faceColors != null)
-					{
-						resultMesh.FaceColors = faceColors;
-					}
-				}
-			}
-
-			return resultMesh;
 		}
 
 		private static Mesh AsImplicitMeshes(IEnumerable<(Mesh mesh, Matrix4X4 matrix)> items,
@@ -580,104 +399,6 @@ namespace MatterHackers.PolygonMesh.Csg
 			return null;
 		}
 
-		/// <summary>
-		/// Try to split a mesh with FaceColors into sub-manifolds by color group.
-		/// Returns a single manifold (union of sub-manifolds) on success, or null if
-		/// any color group doesn't form a valid manifold (e.g., from boolean results
-		/// where color groups share boundaries).
-		/// </summary>
-		private static ManifoldNET.Manifold TrySplitByFaceColors(
-			Mesh meshCopy,
-			Dictionary<int, Color> originalIdToColor)
-		{
-			try
-			{
-				var colorGroups = new Dictionary<Color, List<int>>();
-				for (int faceIdx = 0; faceIdx < meshCopy.Faces.Count; faceIdx++)
-				{
-					var faceColor = faceIdx < meshCopy.FaceColors.Length
-						? meshCopy.FaceColors[faceIdx]
-						: new Color(200, 200, 200, 255);
-					if (!colorGroups.TryGetValue(faceColor, out var faceList))
-					{
-						faceList = new List<int>();
-						colorGroups[faceColor] = faceList;
-					}
-
-					faceList.Add(faceIdx);
-				}
-
-				var subManifolds = new List<ManifoldNET.Manifold>();
-				foreach (var (color, faceIndices) in colorGroups)
-				{
-					var subMesh = new Mesh();
-					var vertexMap = new Dictionary<int, int>();
-
-					foreach (var faceIdx in faceIndices)
-					{
-						var face = meshCopy.Faces[faceIdx];
-						int GetOrAddVertex(int origIdx)
-						{
-							if (!vertexMap.TryGetValue(origIdx, out int newIdx))
-							{
-								newIdx = subMesh.Vertices.Count;
-								subMesh.Vertices.Add(meshCopy.Vertices[origIdx]);
-								vertexMap[origIdx] = newIdx;
-							}
-
-							return newIdx;
-						}
-
-						subMesh.Faces.Add(new Face(
-							GetOrAddVertex(face.v0),
-							GetOrAddVertex(face.v1),
-							GetOrAddVertex(face.v2),
-							subMesh.Vertices));
-					}
-
-					// Check if sub-mesh is manifold before trying to create a Manifold
-					if (!subMesh.IsManifold())
-					{
-						return null;
-					}
-
-					var subVertProps = new List<float>();
-					var subTriVerts = new List<uint>();
-					foreach (var v in subMesh.Vertices)
-					{
-						subVertProps.Add(v.X);
-						subVertProps.Add(v.Y);
-						subVertProps.Add(v.Z);
-					}
-
-					foreach (var f in subMesh.Faces)
-					{
-						subTriVerts.Add((uint)f.v0);
-						subTriVerts.Add((uint)f.v1);
-						subTriVerts.Add((uint)f.v2);
-					}
-
-					var subGlData = new ManifoldNET.MeshGLData(subVertProps.ToArray(), subTriVerts.ToArray(), 3);
-					var subGl = new ManifoldNET.MeshGL(subGlData);
-					var subManifold = ManifoldNET.Manifold.Create(subGl);
-					subManifold = subManifold.AsOriginal();
-					originalIdToColor[subManifold.OriginalID] = color;
-					subManifolds.Add(subManifold);
-				}
-
-				if (subManifolds.Count == 1)
-				{
-					return subManifolds[0];
-				}
-
-				return ManifoldNET.Manifold.BatchBoolOperation(subManifolds, ManifoldNET.BoolOperationType.Add);
-			}
-			catch
-			{
-				return null;
-			}
-		}
-
 		class MWNImplicit : BoundedImplicitFunction3d
 		{
 			public DMeshAABBTree3 MeshAABBTree3;
@@ -712,125 +433,4 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 		}
     }
-
-	/// <summary>
-	/// Helper to read run data from Manifold's MeshGL via P/Invoke.
-	/// ManifoldNET 1.0.7-alpha exposes RunIndexLength/RunOriginalIdLength
-	/// but not the actual data arrays — we access those through the native C API directly.
-	/// </summary>
-	internal static class ManifoldRunHelper
-	{
-		[DllImport("manifoldc", CallingConvention = CallingConvention.Cdecl)]
-		private static extern ulong manifold_meshgl_run_index_length(IntPtr m);
-
-		[DllImport("manifoldc", CallingConvention = CallingConvention.Cdecl)]
-		private static extern ulong manifold_meshgl_run_original_id_length(IntPtr m);
-
-		[DllImport("manifoldc", CallingConvention = CallingConvention.Cdecl)]
-		private static extern IntPtr manifold_meshgl_run_index(IntPtr mem, IntPtr m);
-
-		[DllImport("manifoldc", CallingConvention = CallingConvention.Cdecl)]
-		private static extern IntPtr manifold_meshgl_run_original_id(IntPtr mem, IntPtr m);
-
-		private static IntPtr GetMeshGlPointer(ManifoldNET.MeshGL meshGl)
-		{
-			var pointerField = typeof(ManifoldNET.MeshGL).BaseType?.GetField("_pointer",
-				System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-			if (pointerField == null)
-			{
-				return IntPtr.Zero;
-			}
-
-			return (IntPtr)pointerField.GetValue(meshGl);
-		}
-
-		/// <summary>
-		/// Extract per-face colors from a boolean result MeshGL using run data.
-		/// Uses run data to find which source mesh each result face came from,
-		/// then uses spatial centroid matching for per-face color lookup when
-		/// the source had multiple face colors.
-		/// </summary>
-		public static Color[] ExtractFaceColors(
-			ManifoldNET.MeshGL resultMeshGl,
-			Mesh resultMesh,
-			Dictionary<int, Color> originalIdToColor,
-			Dictionary<int, List<(Vector3 centroid, Color color)>> originalIdToSpatialColors = null)
-		{
-			var faceCount = resultMesh.Faces.Count;
-			var meshGlPtr = GetMeshGlPointer(resultMeshGl);
-			if (meshGlPtr == IntPtr.Zero)
-			{
-				return null;
-			}
-
-			var runIndexLen = (int)manifold_meshgl_run_index_length(meshGlPtr);
-			var runOriginalIdLen = (int)manifold_meshgl_run_original_id_length(meshGlPtr);
-
-			if (runIndexLen < 2 || runOriginalIdLen < 1)
-			{
-				return null;
-			}
-
-			var runIndexMem = Marshal.AllocHGlobal(runIndexLen * sizeof(int));
-			var runOriginalIdMem = Marshal.AllocHGlobal(runOriginalIdLen * sizeof(int));
-
-			try
-			{
-				var runIndexDataPtr = manifold_meshgl_run_index(runIndexMem, meshGlPtr);
-				var runOriginalIdDataPtr = manifold_meshgl_run_original_id(runOriginalIdMem, meshGlPtr);
-
-				var runIndex = new int[runIndexLen];
-				var runOriginalId = new int[runOriginalIdLen];
-				Marshal.Copy(runIndexDataPtr, runIndex, 0, runIndexLen);
-				Marshal.Copy(runOriginalIdDataPtr, runOriginalId, 0, runOriginalIdLen);
-
-				var faceColors = new Color[faceCount];
-				var defaultColor = new Color(200, 200, 200, 255);
-
-				for (int runIdx = 0; runIdx < runOriginalIdLen; runIdx++)
-				{
-					int startTri = runIndex[runIdx] / 3;
-					int endTri = (runIdx + 1 < runIndexLen) ? runIndex[runIdx + 1] / 3 : faceCount;
-					var origId = runOriginalId[runIdx];
-
-					// Check if this OriginalID has spatial face colors
-					List<(Vector3 centroid, Color color)> spatialColors = null;
-					if (originalIdToSpatialColors != null)
-					{
-						originalIdToSpatialColors.TryGetValue(origId, out spatialColors);
-					}
-
-					if (spatialColors != null)
-					{
-						// Match each result face to the nearest source face by centroid
-						for (int tri = startTri; tri < endTri && tri < faceCount; tri++)
-						{
-							var face = resultMesh.Faces[tri];
-							var centroid = new Vector3(
-								(resultMesh.Vertices[face.v0]
-								+ resultMesh.Vertices[face.v1]
-								+ resultMesh.Vertices[face.v2]) / 3f);
-							faceColors[tri] = Mesh.FindNearestCentroidColor(centroid, spatialColors);
-						}
-					}
-					else
-					{
-						// Single color for this OriginalID
-						var color = originalIdToColor.TryGetValue(origId, out var c) ? c : defaultColor;
-						for (int tri = startTri; tri < endTri && tri < faceCount; tri++)
-						{
-							faceColors[tri] = color;
-						}
-					}
-				}
-
-				return faceColors;
-			}
-			finally
-			{
-				Marshal.FreeHGlobal(runIndexMem);
-				Marshal.FreeHGlobal(runOriginalIdMem);
-			}
-		}
-	}
 }

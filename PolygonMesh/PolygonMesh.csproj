@@ -14,10 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ManifoldNET" Version="1.0.7-alpha" />
-    <!-- The pure-Rust boolean backend, selected at run time by BooleanProcessing.UseManifoldRust.
-         Both engines ship: ManifoldNET stays the default until the Rust one has been exercised. -->
-    <PackageReference Include="ManifoldRust" Version="0.2.1" />
+    <!-- The one and only native boolean backend (see BooleanProcessingRust.cs). The C++
+         ManifoldNET engine it replaced is gone; CsgBySlicing remains as the managed fallback. -->
+    <PackageReference Include="ManifoldRust" Version="0.2.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
   </ItemGroup>
 
