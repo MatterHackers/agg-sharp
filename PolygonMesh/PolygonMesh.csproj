@@ -17,7 +17,7 @@
     <PackageReference Include="ManifoldNET" Version="1.0.7-alpha" />
     <!-- The pure-Rust boolean backend, selected at run time by BooleanProcessing.UseManifoldRust.
          Both engines ship: ManifoldNET stays the default until the Rust one has been exercised. -->
-    <PackageReference Include="ManifoldRust" Version="0.2.0" />
+    <PackageReference Include="ManifoldRust" Version="0.2.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
   </ItemGroup>
 
