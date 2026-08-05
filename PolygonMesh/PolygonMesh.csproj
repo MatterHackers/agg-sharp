@@ -15,11 +15,21 @@
 
   <ItemGroup>
     <PackageReference Include="ManifoldNET" Version="1.0.7-alpha" />
+    <!-- The pure-Rust boolean backend, selected at run time by BooleanProcessing.UseManifoldRust.
+         Both engines ship: ManifoldNET stays the default until the Rust one has been exercised. -->
+    <PackageReference Include="ManifoldRust" Version="0.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MIConvexHull" Version="1.1.19.1019" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Same arrangement agg and RenderGl already use: lets the tests reach the boolean
+         backends directly, so a rejected input can be observed as the exception it throws
+         rather than only as the CsgBySlicing fallback that hides it. -->
+    <InternalsVisibleTo Include="Agg.Tests" />
   </ItemGroup>
 
   <ItemGroup>

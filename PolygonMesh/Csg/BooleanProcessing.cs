@@ -78,8 +78,54 @@ namespace MatterHackers.PolygonMesh.Csg
 		_512 = 9,
 	}
 
-	public static class BooleanProcessing
+	public static partial class BooleanProcessing
 	{
+		/// <summary>
+		/// Selects the pure-Rust boolean kernel (see BooleanProcessingRust.cs) instead of
+		/// the ManifoldNET one. Off until asked for.
+		/// </summary>
+		/// <remarks>
+		/// A static rather than a setting because agg-sharp has no access to the
+		/// application's user settings; MatterCAD publishes the persisted value here at
+		/// startup and whenever the toggle changes.
+		/// <para>
+		/// Read once per <see cref="DoArray"/> call, so the engine is stable within one
+		/// call but not across a user-visible operation: callers such as
+		/// SubtractObject3D loop <see cref="Do"/> once per pair, so a flip landing
+		/// mid-rebuild can leave different pairs built by different engines. Harmless -
+		/// both produce a valid solid - but it is not a per-operation guarantee.
+		/// </para>
+		/// </remarks>
+		public static bool UseManifoldRust { get; set; }
+
+		/// <summary>Name reported by <see cref="LastBackendUsed"/> for the ManifoldNET (C++) engine.</summary>
+		public const string BackendManifoldCpp = "ManifoldCpp";
+
+		/// <summary>Name reported by <see cref="LastBackendUsed"/> for the ManifoldRust engine.</summary>
+		public const string BackendManifoldRust = "ManifoldRust";
+
+		/// <summary>Name reported by <see cref="LastBackendUsed"/> for the managed slicing fallback.</summary>
+		public const string BackendCsgBySlicing = "CsgBySlicing";
+
+		/// <summary>
+		/// Which engine produced the most recent polygon-mode boolean: one of
+		/// <see cref="BackendManifoldCpp"/>, <see cref="BackendManifoldRust"/> or
+		/// <see cref="BackendCsgBySlicing"/>.
+		/// </summary>
+		/// <remarks>
+		/// Diagnostic only - nothing in the pipeline branches on it. It exists because a
+		/// native engine failing is otherwise invisible: the fallback rescues the result,
+		/// so a broken backend and a working one look identical from the outside, and a
+		/// test asserting "a mesh came back" would pass either way.
+		/// <para>
+		/// A plain static write with no synchronization, and only meaningful for
+		/// <see cref="ProcessingModes.Polygons"/>. Concurrent booleans overwrite each
+		/// other, so a reader only gets a useful answer when it is the only thing running -
+		/// which is why the tests that assert on it are serialized.
+		/// </para>
+		/// </remarks>
+		public static string LastBackendUsed { get; private set; }
+
 		public static Mesh DoArray(IEnumerable<(Mesh mesh, Matrix4X4 matrix)> items,
 			CsgModes operation,
 			ProcessingModes processingMode,
@@ -99,11 +145,21 @@ namespace MatterHackers.PolygonMesh.Csg
 				{
 					try
 					{
-						return DoArrayViaManifold(items, operation, cancellationToken, reporter, amountPerOperation, ratioCompleted, meshColors);
+						return UseManifoldRust
+							? DoArrayViaManifoldRust(items, operation, cancellationToken, reporter, amountPerOperation, ratioCompleted, meshColors)
+							: DoArrayViaManifold(items, operation, cancellationToken, reporter, amountPerOperation, ratioCompleted, meshColors);
+					}
+					catch (OperationCanceledException)
+					{
+						// The caller asked to stop, so there is nothing to fall back to - CsgBySlicing
+						// would only spend the same cancelled time again in managed code. Let it out so
+						// the rebuild machinery sees a cancellation rather than a suspiciously empty result.
+						throw;
 					}
 					catch
 					{
 						// Manifold native library failed — fall back to managed CsgBySlicing
+						LastBackendUsed = BackendCsgBySlicing;
 						var csgBySlicing = new CsgBySlicing();
 						csgBySlicing.Setup(items, null, operation, cancellationToken);
 						return csgBySlicing.Calculate((ratio, message) =>
@@ -115,6 +171,7 @@ namespace MatterHackers.PolygonMesh.Csg
                 }
                 else
 				{
+					LastBackendUsed = BackendCsgBySlicing;
 					var csgBySlicing = new CsgBySlicing();
 					csgBySlicing.Setup(items, null, operation, cancellationToken);
 					return csgBySlicing.Calculate((ratio, message) =>
@@ -144,6 +201,10 @@ namespace MatterHackers.PolygonMesh.Csg
 			double ratioCompleted,
 			Color[] meshColors)
 		{
+			// Claimed on entry rather than on success: if this throws, the caller's fallback
+			// overwrites it, so the value always names whichever engine actually returned.
+			LastBackendUsed = BackendManifoldCpp;
+
 			bool trackColors = meshColors != null;
 
 			var manifolds = new List<ManifoldNET.Manifold>();
