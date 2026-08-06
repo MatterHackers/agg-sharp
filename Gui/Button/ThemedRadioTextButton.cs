@@ -38,6 +38,12 @@ namespace MatterHackers.Agg.UI
 
         public event EventHandler CheckedStateChanged;
 
+        /// <summary>
+        /// Whether a click on an already checked button unchecks it. Off by default, which is radio behavior -
+        /// clicking the checked one leaves it checked because some member of the group is always in force.
+        /// </summary>
+        public bool ToggleButton { get; set; } = false;
+
         public ThemedRadioTextButton(string text, ThemeConfig theme, double pointSize = -1)
             : base(text, theme, pointSize)
         {
@@ -82,7 +88,7 @@ namespace MatterHackers.Agg.UI
         {
             base.OnClick(mouseEvent);
 
-            bool newValue = true;
+            bool newValue = ToggleButton ? !Checked : true;
 
             bool checkStateChanged = newValue != Checked;
 
