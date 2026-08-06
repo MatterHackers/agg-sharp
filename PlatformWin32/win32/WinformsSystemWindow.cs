@@ -44,6 +44,16 @@ namespace MatterHackers.Agg.UI
 
 		private static System.Timers.Timer idleCallBackTimer = null;
 
+		// The window whose InvokePendingOnIdleActions is currently subscribed to the shared timer. Only one
+		// window drives the pump at a time; UiThread actions are marshaled through whichever window that is.
+		private static WinformsSystemWindow idleTimerWindow = null;
+
+		// Every constructed window that has not closed yet. More than one can be alive at a time (automation
+		// tests run windows back to back and in parallel), and the shared idle timer must keep being driven by
+		// one of them - stopping it while a window was still up left that window's RunOnIdle pump dead, so its
+		// message loop (and the close that ends it) never ran again.
+		private static readonly System.Collections.Generic.List<WinformsSystemWindow> LiveWindows = new System.Collections.Generic.List<WinformsSystemWindow>();
+
 		private static bool processingOnIdle = false;
 
 		private static readonly object SingleInvokeLock = new object();
@@ -121,17 +131,10 @@ namespace MatterHackers.Agg.UI
 		{
 			lock (StaticInitLock)
 			{
-				if (idleCallBackTimer == null)
-				{
-					var newTimer = new System.Timers.Timer();
-					// call up to 100 times a second
-					newTimer.Interval = 10;
-					newTimer.Elapsed += InvokePendingOnIdleActions;
-					// Publish the fully-configured timer before starting it so no reader
-					// can observe a partially-configured instance.
-					idleCallBackTimer = newTimer;
-					newTimer.Start();
-				}
+				LiveWindows.Add(this);
+
+				// Create the shared idle timer, or revive one that a previous window's teardown stopped.
+				EnsureIdleTimerDriving(this);
 
 				// Track first window
 				if (MainWindowsFormsWindow == null)
@@ -167,8 +170,103 @@ namespace MatterHackers.Agg.UI
 			titleBarHeightComputed = true;
 		}
 
+		/// <summary>
+		/// Makes sure the process-wide idle timer exists and is running against a window that can still
+		/// marshal work to the UI thread, or stops it when no such window is left. Must be called with
+		/// <see cref="StaticInitLock"/> held.
+		/// </summary>
+		/// <param name="preferredWindow">The window to drive the pump when the current driver is gone.</param>
+		private static void EnsureIdleTimerDriving(WinformsSystemWindow preferredWindow)
+		{
+			WinformsSystemWindow driver = null;
+
+			if (idleTimerWindow != null
+				&& !idleTimerWindow.IsDisposed
+				&& LiveWindows.Contains(idleTimerWindow))
+			{
+				// Keep the current driver - swapping it needlessly would drop timer ticks.
+				driver = idleTimerWindow;
+			}
+			else if (preferredWindow != null
+				&& !preferredWindow.IsDisposed)
+			{
+				driver = preferredWindow;
+			}
+			else
+			{
+				foreach (var window in LiveWindows)
+				{
+					if (!window.IsDisposed)
+					{
+						driver = window;
+						break;
+					}
+				}
+			}
+
+			if (driver == null)
+			{
+				// Nothing left to pump. Unsubscribe and stop, but keep the timer instance around so the
+				// next window can revive it - disposing it here is what used to make the pump unrecoverable.
+				if (idleCallBackTimer != null)
+				{
+					if (idleTimerWindow != null)
+					{
+						idleCallBackTimer.Elapsed -= idleTimerWindow.InvokePendingOnIdleActions;
+					}
+
+					idleTimerWindow = null;
+					idleCallBackTimer.Stop();
+				}
+
+				return;
+			}
+
+			if (idleCallBackTimer == null)
+			{
+				// call up to 100 times a second
+				idleCallBackTimer = new System.Timers.Timer { Interval = 10 };
+			}
+
+			if (idleTimerWindow != driver)
+			{
+				if (idleTimerWindow != null)
+				{
+					idleCallBackTimer.Elapsed -= idleTimerWindow.InvokePendingOnIdleActions;
+				}
+
+				idleCallBackTimer.Elapsed += driver.InvokePendingOnIdleActions;
+				idleTimerWindow = driver;
+			}
+
+			if (!idleCallBackTimer.Enabled)
+			{
+				idleCallBackTimer.Start();
+			}
+		}
+
+		/// <summary>
+		/// Drops this window from the live set and hands the shared idle pump to another live window
+		/// (or stops it when this was the last one).
+		/// </summary>
+		private void ReleaseIdleTimer()
+		{
+			lock (StaticInitLock)
+			{
+				LiveWindows.Remove(this);
+
+				// Windows that were disposed without ever reaching OnClosed would otherwise be held alive
+				// by this list forever.
+				LiveWindows.RemoveAll(window => window.IsDisposed);
+
+				EnsureIdleTimerDriving(null);
+			}
+		}
+
 		protected override void OnClosed(EventArgs e)
 		{
+			ReleaseIdleTimer();
+
 			if (IsMainWindow)
 			{
 				// Ensure that when the MainWindow is closed, we null the field so we can recreate the MainWindow
@@ -194,7 +292,13 @@ namespace MatterHackers.Agg.UI
 
 		private void InvokePendingOnIdleActions(object sender, ElapsedEventArgs e)
 		{
-			if (!this.IsDisposed)
+			if (this.IsDisposed)
+			{
+				// This window can no longer marshal anything. Hand the pump to a window that still can
+				// rather than silently swallowing every queued action from here on.
+				ReleaseIdleTimer();
+			}
+			else
 			{
 				lock (SingleInvokeLock)
 				{
@@ -374,11 +478,12 @@ namespace MatterHackers.Agg.UI
 				}
 				else
 				{
-					// Stop the RunOnIdle timer/pump
+					// Stop the RunOnIdle timer/pump - but only if no other window still needs it. Killing
+					// the shared pump outright left any window that was still up (parallel automation tests)
+					// with a dead RunOnIdle and an idle message loop that could never close itself.
 					if (this.IsMainWindow)
 					{
-						idleCallBackTimer.Elapsed -= InvokePendingOnIdleActions;
-						idleCallBackTimer.Stop();
+						ReleaseIdleTimer();
 
 						// Workaround for "Cannot access disposed object." exception
 						// https://stackoverflow.com/a/9669702/84369 - ".Stop() without .DoEvents() is not enough, as it'll dispose objects without waiting for your thread to finish its work"
@@ -697,13 +802,12 @@ namespace MatterHackers.Agg.UI
 				// Reset idle processing state
 				processingOnIdle = false;
 
-				// Reset and recreate idle timer to ensure clean state
-				if (idleCallBackTimer != null)
-				{
-					idleCallBackTimer.Stop();
-					idleCallBackTimer.Dispose();
-					idleCallBackTimer = null;
-				}
+				// Forget windows that are gone, then keep the idle pump running for any window that is
+				// still live. This used to stop and dispose the shared timer unconditionally, which killed
+				// RunOnIdle for a window another test was still running - that window's message loop then
+				// idled forever because even its close was queued through RunOnIdle.
+				LiveWindows.RemoveAll(window => window.IsDisposed);
+				EnsureIdleTimerDriving(null);
 			}
 			
 			DebugLogger.LogMessage("WinformsSystemWindow", "WinForms static state reset completed");

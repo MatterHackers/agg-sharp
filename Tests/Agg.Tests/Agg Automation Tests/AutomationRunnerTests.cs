@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.GuiAutomation;
@@ -193,6 +194,47 @@ namespace MatterHackers.Agg.UI.Tests
 
                 await Assert.That(vetoCount).IsGreaterThan(0).Because("the test window must actually have vetoed a close for this to be a valid repro");
                 await Assert.That(systemWindow.HasBeenClosed).IsTrue().Because("the watchdog must force the window closed so the run does not hang");
+            }
+            finally
+            {
+                AutomationRunner.CloseWindowTimeoutSeconds = originalCloseTimeout;
+            }
+        }
+
+        // The RunOnIdle pump is driven by a single process-wide timer in WinformsSystemWindow. Tearing down
+        // one window (ResetFirstWindowFlag is what the runner calls between tests, and it is what a test
+        // running in parallel calls while another test's window is still up) used to stop and dispose that
+        // shared timer, leaving the still-live window with a dead pump: RunOnIdle actions - including the
+        // CloseOnIdle that ends the message loop and the watchdog's own force close - never ran again and
+        // the whole run hung with an idle message pump. A live window must keep its pump.
+        [Test]
+        public async Task IdlePumpSurvivesAnotherWindowsTeardown()
+        {
+            var systemWindow = new SystemWindow(300, 200);
+
+            bool idleActionRan = false;
+
+            double originalCloseTimeout = AutomationRunner.CloseWindowTimeoutSeconds;
+            AutomationRunner.CloseWindowTimeoutSeconds = 5;
+
+            try
+            {
+                await AutomationRunner.ShowWindowAndExecuteTests(
+                    systemWindow,
+                    (testRunner) =>
+                    {
+                        // Exactly what the runner does when another test finishes while this window is live.
+                        WinformsSystemWindow.ResetFirstWindowFlag();
+
+                        UiThread.RunOnIdle(() => idleActionRan = true);
+                        testRunner.WaitFor(() => idleActionRan, maxSeconds: 5);
+
+                        testRunner.MarkTestComplete();
+                        return Task.CompletedTask;
+                    },
+                    secondsToTestFailure: 30);
+
+                await Assert.That(idleActionRan).IsTrue().Because("a live window's RunOnIdle pump must survive another window's teardown");
             }
             finally
             {

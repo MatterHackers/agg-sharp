@@ -1452,6 +1452,60 @@ namespace MatterHackers.GuiAutomation
 		/// </summary>
 		public static double CloseWindowTimeoutSeconds { get; set; } = 15;
 
+		/// <summary>
+		/// Posts the action to the platform window's UI thread. Reflection is used because GuiAutomation does
+		/// not reference WinForms; on Windows this reaches Control.BeginInvoke, which posts a real window
+		/// message and therefore still runs when the RunOnIdle timer pump is not running.
+		/// </summary>
+		/// <returns>True when the action was successfully posted.</returns>
+		private static bool TryBeginInvokeOnPlatformWindow(object platformWindow, Action action)
+		{
+			if (platformWindow == null)
+			{
+				return false;
+			}
+
+			try
+			{
+				var beginInvoke = platformWindow.GetType().GetMethod("BeginInvoke", new[] { typeof(Delegate) });
+				if (beginInvoke == null)
+				{
+					return false;
+				}
+
+				beginInvoke.Invoke(platformWindow, new object[] { action });
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				DebugLogger.LogWarning("AutomationRunner", $"Could not marshal the force close to the platform window: {ex.Message}");
+
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// Closes the platform window itself (Form.Close on Windows) so the message loop exits even when the
+		/// agg SystemWindow is already marked closed. Must be called on the UI thread.
+		/// </summary>
+		private static void ClosePlatformWindow(object platformWindow)
+		{
+			if (platformWindow == null)
+			{
+				return;
+			}
+
+			try
+			{
+				platformWindow.GetType().GetMethod("Close", System.Type.EmptyTypes)?.Invoke(platformWindow, null);
+			}
+			catch (Exception ex)
+			{
+				DebugLogger.LogWarning("AutomationRunner", $"Could not close the platform window: {ex.Message}");
+			}
+		}
+
 		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action<AutomationRunner> closeWindow = null)
 		{
 			// Enable debug logging for AutomationRunner
@@ -1468,6 +1522,12 @@ namespace MatterHackers.GuiAutomation
 
 			int closeRequested = 0;
 			int closePhaseTimedOut = 0;
+
+			// Set once the platform message loop has actually exited. HasBeenClosed is NOT a usable exit
+			// condition on its own: a Close() issued from a background thread can mark the agg window closed
+			// while the platform window stays up, and then the main thread sits in the pump forever.
+			int showCompleted = 0;
+
 			void RequestWindowClose()
 			{
 				if (Interlocked.Exchange(ref closeRequested, 1) != 0)
@@ -1478,14 +1538,62 @@ namespace MatterHackers.GuiAutomation
 				DebugLogger.LogMessage("AutomationRunner", "REQUESTING WINDOW CLOSE");
 
 				// Watch the close itself. If the application cancels the close (a "save changes?" dialog is
-				// the usual culprit) the main thread stays parked in ShowAsSystemWindow forever, so force the
-				// window closed and remember that we had to - the run must fail rather than hang or pass silently.
+				// the usual culprit) or the close never reaches the platform window, the main thread stays
+				// parked in ShowAsSystemWindow forever, so force the window closed and remember that we had
+				// to - the run must fail rather than hang or pass silently.
 				Task.Run(async () =>
 				{
+					// Remember the platform window while it is still reachable: SystemWindow.OnClosed nulls
+					// PlatformWindow, and the platform window is the only handle we have on the message loop.
+					object platformWindow = initialSystemWindow.PlatformWindow;
+
 					var closeWatch = Stopwatch.StartNew();
 					while (closeWatch.Elapsed.TotalSeconds < CloseWindowTimeoutSeconds)
 					{
-						if (initialSystemWindow.HasBeenClosed)
+						if (Volatile.Read(ref showCompleted) == 1)
+						{
+							return;
+						}
+
+						platformWindow = initialSystemWindow.PlatformWindow ?? platformWindow;
+
+						await Task.Delay(50);
+					}
+
+					// Re-check immediately before forcing - a window that closed just in time is not a failure.
+					if (Volatile.Read(ref showCompleted) == 1)
+					{
+						return;
+					}
+
+					DebugLogger.LogError("AutomationRunner", "WINDOW FAILED TO CLOSE - forcing close; a dialog or a dead idle pump is blocking shutdown");
+					Interlocked.Exchange(ref closePhaseTimedOut, 1);
+
+					void ForceCloseNow()
+					{
+						if (!initialSystemWindow.HasBeenClosed)
+						{
+							initialSystemWindow.ForceClose();
+						}
+
+						// Always close the platform window as well. When the agg window was already marked
+						// closed the ForceClose above is a no-op, and only closing the platform window can
+						// still get the message loop to exit.
+						ClosePlatformWindow(platformWindow);
+					}
+
+					// Marshal through the platform window first - that posts a real window message, so it
+					// works even when the RunOnIdle pump is dead, which is one of the ways a run hangs here.
+					// RunOnIdle is only the fallback.
+					TryBeginInvokeOnPlatformWindow(platformWindow, ForceCloseNow);
+					UiThread.RunOnIdle(ForceCloseNow);
+
+					// Give the force close a grace period. If the loop still has not exited there is nothing
+					// more this side can do, so say so loudly instead of hanging silently.
+					var forceWatch = Stopwatch.StartNew();
+					while (forceWatch.Elapsed.TotalSeconds < CloseWindowTimeoutSeconds)
+					{
+						if (Volatile.Read(ref showCompleted) == 1)
 						{
 							return;
 						}
@@ -1493,22 +1601,9 @@ namespace MatterHackers.GuiAutomation
 						await Task.Delay(50);
 					}
 
-					// Re-check immediately before forcing - a window that closed just in time is not a failure.
-					if (initialSystemWindow.HasBeenClosed)
-					{
-						return;
-					}
-
-					DebugLogger.LogError("AutomationRunner", "WINDOW FAILED TO CLOSE - forcing close; a dialog is likely blocking shutdown");
-					Interlocked.Exchange(ref closePhaseTimedOut, 1);
-
-					UiThread.RunOnIdle(() =>
-					{
-						if (!initialSystemWindow.HasBeenClosed)
-						{
-							initialSystemWindow.ForceClose();
-						}
-					});
+					string stillBlocked = $"FORCED CLOSE DID NOT RELEASE THE MESSAGE LOOP after {CloseWindowTimeoutSeconds} seconds - the test process is hung in the platform window pump.";
+					DebugLogger.LogError("AutomationRunner", stillBlocked);
+					Console.WriteLine(stillBlocked);
 				});
 
 				if (closeWindow != null)
@@ -1639,6 +1734,9 @@ namespace MatterHackers.GuiAutomation
 			}
 			finally
 			{
+				// The message loop has exited - this, not HasBeenClosed, is what the close watchdog waits for.
+				Interlocked.Exchange(ref showCompleted, 1);
+
 				UiThread.UnhandledException -= uiThreadUnhandledExceptionHandler;
 				threadExceptionEvent?.RemoveEventHandler(null, threadExceptionDelegate);
 			}
