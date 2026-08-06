@@ -2614,6 +2614,22 @@ namespace MatterHackers.Agg.UI
 
 		public void Close()
 		{
+			Close(force: false);
+		}
+
+		/// <summary>
+		/// Closes this widget even if a <see cref="ShouldClose"/> handler would cancel the close.
+		/// This exists for the automation watchdog: a window whose close is vetoed (typically to show a
+		/// "do you want to save?" dialog) blocks the message pump forever and hangs the entire test run,
+		/// so the runner needs a way out. Application code should call <see cref="Close()"/> so the veto is honored.
+		/// </summary>
+		public void ForceClose()
+		{
+			Close(force: true);
+		}
+
+		private void Close(bool force)
+		{
 			if (childrenLockedInMouseUpCount != 0)
 			{
 				BreakInDebugger("You should put this close onto the UiThread.RunOnIdle so it can happen after the child list is unlocked.");
@@ -2625,14 +2641,17 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			// Validate via OnClosing if this should close
-			var shouldCloseArgs = new ShouldCloseEventArgs();
-			OnShouldClose(shouldCloseArgs);
-
-			if (shouldCloseArgs.Cancel)
+			if (!force)
 			{
-				// exit without doing anything
-				return;
+				// Validate via OnClosing if this should close
+				var shouldCloseArgs = new ShouldCloseEventArgs();
+				OnShouldClose(shouldCloseArgs);
+
+				if (shouldCloseArgs.Cancel)
+				{
+					// exit without doing anything
+					return;
+				}
 			}
 
 			// we are closed, there is no turning back

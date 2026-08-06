@@ -1445,6 +1445,13 @@ namespace MatterHackers.GuiAutomation
 
 		public static bool DrawSimulatedMouse { get; set; } = true;
 
+		/// <summary>
+		/// Gets or sets how long the close phase of a test may take before the window is force closed.
+		/// An application that cancels its close (e.g. to show a "save changes?" dialog) would otherwise
+		/// leave the main thread blocked in the message pump forever. Tests may shorten this.
+		/// </summary>
+		public static double CloseWindowTimeoutSeconds { get; set; } = 15;
+
 		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action<AutomationRunner> closeWindow = null)
 		{
 			// Enable debug logging for AutomationRunner
@@ -1460,6 +1467,7 @@ namespace MatterHackers.GuiAutomation
 			ExceptionDispatchInfo capturedUiThreadException = null;
 
 			int closeRequested = 0;
+			int closePhaseTimedOut = 0;
 			void RequestWindowClose()
 			{
 				if (Interlocked.Exchange(ref closeRequested, 1) != 0)
@@ -1468,6 +1476,41 @@ namespace MatterHackers.GuiAutomation
 				}
 
 				DebugLogger.LogMessage("AutomationRunner", "REQUESTING WINDOW CLOSE");
+
+				// Watch the close itself. If the application cancels the close (a "save changes?" dialog is
+				// the usual culprit) the main thread stays parked in ShowAsSystemWindow forever, so force the
+				// window closed and remember that we had to - the run must fail rather than hang or pass silently.
+				Task.Run(async () =>
+				{
+					var closeWatch = Stopwatch.StartNew();
+					while (closeWatch.Elapsed.TotalSeconds < CloseWindowTimeoutSeconds)
+					{
+						if (initialSystemWindow.HasBeenClosed)
+						{
+							return;
+						}
+
+						await Task.Delay(50);
+					}
+
+					// Re-check immediately before forcing - a window that closed just in time is not a failure.
+					if (initialSystemWindow.HasBeenClosed)
+					{
+						return;
+					}
+
+					DebugLogger.LogError("AutomationRunner", "WINDOW FAILED TO CLOSE - forcing close; a dialog is likely blocking shutdown");
+					Interlocked.Exchange(ref closePhaseTimedOut, 1);
+
+					UiThread.RunOnIdle(() =>
+					{
+						if (!initialSystemWindow.HasBeenClosed)
+						{
+							initialSystemWindow.ForceClose();
+						}
+					});
+				});
+
 				if (closeWindow != null)
 				{
 					closeWindow(testRunner);
@@ -1685,6 +1728,13 @@ namespace MatterHackers.GuiAutomation
 			{
 				DebugLogger.LogError("AutomationRunner", $"TEST FAULTED: {completedTask.Exception?.InnerException?.Message}");
 				completedTask.GetAwaiter().GetResult(); // throws the original exception
+			}
+
+			// Checked after the test body results so a real test failure still wins - but before
+			// RequireTestCompletion, because a blocked shutdown is the more useful diagnosis.
+			if (Volatile.Read(ref closePhaseTimedOut) == 1)
+			{
+				throw new TimeoutException($"Test window failed to close within {CloseWindowTimeoutSeconds} seconds after the test completed - a blocking dialog (e.g. save-changes prompt) likely prevented shutdown.");
 			}
 
 			// When RequireTestCompletion is set, verify the test signaled

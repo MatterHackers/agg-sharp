@@ -151,6 +151,55 @@ namespace MatterHackers.Agg.UI.Tests
             });
         }
 
+        // A window whose ShouldClose handler cancels the close (the shape of a "do you want to save?"
+        // prompt) used to hang the whole run: RequestWindowClose was vetoed, the message pump never
+        // exited, and the test reported Passed only after a human closed the app by hand. The close
+        // phase watchdog must force the window closed and surface the hang as a failure.
+        [Test]
+        public async Task VetoedCloseIsForcedAndReportedAsFailure()
+        {
+            var systemWindow = new SystemWindow(300, 200);
+
+            int vetoCount = 0;
+            systemWindow.ShouldClose += (s, e) =>
+            {
+                // Always cancel - only a force close should be able to get past this.
+                vetoCount++;
+                e.Cancel = true;
+            };
+
+            double originalCloseTimeout = AutomationRunner.CloseWindowTimeoutSeconds;
+            AutomationRunner.CloseWindowTimeoutSeconds = 2;
+
+            try
+            {
+                try
+                {
+                    await AutomationRunner.ShowWindowAndExecuteTests(
+                        systemWindow,
+                        (testRunner) =>
+                        {
+                            testRunner.MarkTestComplete();
+                            return Task.CompletedTask;
+                        },
+                        secondsToTestFailure: 30);
+
+                    await Assert.That(false).IsTrue().Because("the vetoed close should have been reported as a TimeoutException");
+                }
+                catch (TimeoutException)
+                {
+                    // Expected - the close phase timed out and the watchdog forced the window closed.
+                }
+
+                await Assert.That(vetoCount).IsGreaterThan(0).Because("the test window must actually have vetoed a close for this to be a valid repro");
+                await Assert.That(systemWindow.HasBeenClosed).IsTrue().Because("the watchdog must force the window closed so the run does not hang");
+            }
+            finally
+            {
+                AutomationRunner.CloseWindowTimeoutSeconds = originalCloseTimeout;
+            }
+        }
+
         [Test]
         public async Task GetWidgetByNameTestRegionSingleWindow()
 		{
