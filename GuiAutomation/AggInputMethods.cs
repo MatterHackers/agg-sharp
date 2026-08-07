@@ -279,6 +279,28 @@ namespace MatterHackers.GuiAutomation
 						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Back));
 						break;
 
+					// The arrow keys carry no character, so they can not go through the default path below.
+					// The token spelling matches what SendKeys takes for the Windows input method.
+					case "{LEFT}":
+						systemWindow.OnKeyDown(new KeyEventArgs(Keys.Left));
+						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Left));
+						break;
+
+					case "{RIGHT}":
+						systemWindow.OnKeyDown(new KeyEventArgs(Keys.Right));
+						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Right));
+						break;
+
+					case "{UP}":
+						systemWindow.OnKeyDown(new KeyEventArgs(Keys.Up));
+						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Up));
+						break;
+
+					case "{DOWN}":
+						systemWindow.OnKeyDown(new KeyEventArgs(Keys.Down));
+						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Down));
+						break;
+
 					default:
 						foreach (char character in textToType)
 						{

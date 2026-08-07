@@ -109,7 +109,8 @@ namespace MatterHackers.Agg.UI
 
                         TreeView.SelectedNode = this;
 
-                        if (this.Nodes.Count > 0)
+                        if (this.Nodes.Count > 0
+                            && TreeView.DoubleClickTogglesExpansion)
                         {
                             this.Expanded = !this.Expanded;
                         }
@@ -559,14 +560,25 @@ namespace MatterHackers.Agg.UI
                     case Keys.Left:
                         if (!this.Expanded)
                         {
-                            if (this.NodeParent != null)
+                            // One key opens and closes the row - for trees that asked for it, and only where
+                            // there is something to open. A childless node still walks up to its parent.
+                            if (TreeView.LeftArrowTogglesExpansion
+                                && this.Nodes.Count > 0)
                             {
-                                // navigate back up to the parent of this node
-                                TreeView.SelectedNode = this.NodeParent;
-                                TreeView.NotifyItemClicked(TreeView, new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
+                                this.Expanded = true;
                             }
+                            else
+                            {
+                                if (this.NodeParent != null)
+                                {
+                                    // navigate back up to the parent of this node
+                                    TreeView.SelectedNode = this.NodeParent;
+                                    TreeView.NotifyItemClicked(TreeView, new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
+                                }
 
-                            restoreFocus = false;
+                                // the selection left this node, so it must not take the focus back
+                                restoreFocus = false;
+                            }
                         }
                         else
                         {

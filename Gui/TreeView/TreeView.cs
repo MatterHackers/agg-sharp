@@ -317,6 +317,27 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Whether double-clicking a node that has child nodes toggles it open and closed. Default true.
+		/// </summary>
+		/// <remarks>
+		/// A tree where double-click means something more fundamental than expanding a row - navigating into
+		/// what the row stands for - turns this off, and then EVERY node raises
+		/// <see cref="NodeMouseDoubleClick"/>, not just the childless ones. Expanding is still available on the
+		/// expand widget and the arrow keys.
+		/// </remarks>
+		public bool DoubleClickTogglesExpansion { get; set; } = true;
+
+		/// <summary>
+		/// Whether the left arrow key on a collapsed node expands it rather than moving the selection up to
+		/// its parent. Default false, which is the explorer-style convention.
+		/// </summary>
+		/// <remarks>
+		/// Trees that give double-click away to navigation (see <see cref="DoubleClickTogglesExpansion"/>)
+		/// turn this on so one key opens and closes a row.
+		/// </remarks>
+		public bool LeftArrowTogglesExpansion { get; set; }
+
 		public bool ShowLines { get; set; }  = true;
 
 		public bool ShowPlusMinus { get; set; } = true;
