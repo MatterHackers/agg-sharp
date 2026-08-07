@@ -28,9 +28,12 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ManifoldRust;
+using MatterHackers.Agg;
 using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
@@ -150,11 +153,96 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		/// <summary>
-		/// An input the kernel cannot accept must come back as geometry from the managed
-		/// CsgBySlicing fallback, not as an exception.
+		/// Closed but non-manifold geometry is the kernel's job now, not the fallback's:
+		/// the robust import accepts it and the Auto engine switches to the robust boolean
+		/// for it.
 		/// </summary>
 		[Test]
-		public async Task NonManifoldInputFallsBackToCsgBySlicing()
+		public async Task ClosedNonManifoldInputStillRunsOnTheKernel()
+		{
+			var pinched = TwoCubesSharingOneEdge();
+
+			// The whole point of the test is the input the old IsManifold pre-gate would
+			// have diverted: non-manifold, but with no boundary edges to be open at.
+			await Assert.That(pinched.IsManifold()).IsFalse();
+			await Assert.That(pinched.GetNonManifoldEdges().All(e => e.Faces.Count() == 4)).IsTrue()
+				.Because("a closed surface has no edge with fewer than two faces");
+
+			var result = BooleanProcessing.DoArray(
+				new[]
+				{
+					(pinched, Matrix4X4.Identity),
+					// Straddles the pinch, so the union is one honest solid rather than
+					// two lobes still touching along a single edge.
+					(PlatonicSolids.CreateCube(10, 10, 20), Matrix4X4.CreateTranslation(5, 5, 0)),
+				},
+				CsgModes.Union,
+				ProcessingModes.Polygons,
+				ProcessingResolution._64,
+				ProcessingResolution._64,
+				null,
+				CancellationToken.None);
+
+			result.CleanAndMerge();
+			result.RemoveUnusedVertices();
+
+			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
+			await Assert.That(result.Faces.Count).IsGreaterThan(0);
+			await Assert.That(result.IsManifold()).IsTrue();
+		}
+
+		/// <summary>
+		/// Colour tracking must not turn a soup operand into a failure. A soup handle cannot
+		/// be re-tagged as an original, so <see cref="BooleanProcessing"/> keeps the plain
+		/// import and that operand's faces arrive under a run it does not own - its colours
+		/// degrade. Degrading is fine; throwing, or handing back a FaceColors array that does
+		/// not line up with the faces, is not.
+		/// </summary>
+		[Test]
+		public async Task SoupOperandWithColorsStillRunsOnTheKernel()
+		{
+			var pinched = TwoCubesSharingOneEdge();
+
+			var result = BooleanProcessing.DoArray(
+				new[]
+				{
+					(pinched, Matrix4X4.Identity),
+					// Straddles the pinch, so the union is one honest solid rather than
+					// two lobes still touching along a single edge.
+					(PlatonicSolids.CreateCube(10, 10, 20), Matrix4X4.CreateTranslation(5, 5, 0)),
+				},
+				CsgModes.Union,
+				ProcessingModes.Polygons,
+				ProcessingResolution._64,
+				ProcessingResolution._64,
+				null,
+				CancellationToken.None,
+				meshColors: new[] { Color.Red, Color.Blue });
+
+			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust)
+				.Because("asking for colours must not push a soup operand onto the managed fallback");
+
+			result.CleanAndMerge();
+			result.RemoveUnusedVertices();
+
+			await Assert.That(result.Faces.Count).IsGreaterThan(0);
+			await Assert.That(result.IsManifold()).IsTrue();
+
+			// Colours may be lost for the soup operand, but whatever comes back has to be a
+			// usable parallel array - a mismatched length is what corrupts rendering later.
+			if (result.FaceColors != null)
+			{
+				await Assert.That(result.FaceColors.Length).IsEqualTo(result.Faces.Count);
+			}
+		}
+
+		/// <summary>
+		/// An input the kernel cannot accept must come back as geometry from the managed
+		/// CsgBySlicing fallback, not as an exception. An open surface is such an input:
+		/// even the robust import rejects it, because it is not closed.
+		/// </summary>
+		[Test]
+		public async Task OpenMeshFallsBackToCsgBySlicing()
 		{
 			var result = BooleanProcessing.DoArray(
 				new[]
@@ -171,7 +259,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			await Assert.That(result).IsNotNull();
 			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendCsgBySlicing)
-				.Because("an open surface never reaches the kernel - DoArray's IsManifold gate diverts it");
+				.Because("the robust import reports NotClosed for an open surface, which throws into the fallback");
 		}
 
 		/// <summary>
@@ -189,11 +277,11 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				(CubeWithANonFiniteVertex(), Matrix4X4.Identity),
 			};
 
-			// A NaN coordinate leaves the surface closed, so DoArray's topological gate
-			// waves it through and it is the kernel that objects - which is exactly the
-			// case this path exists for.
+			// A NaN coordinate leaves the surface perfectly manifold, so nothing about the
+			// topology is wrong and even the robust import has no reason to be lenient - it
+			// is the kernel's geometric validation that objects.
 			await Assert.That(items[1].Item1.IsManifold()).IsTrue()
-				.Because("the test is only meaningful if the mesh gets past DoArray's IsManifold gate");
+				.Because("the rejection under test has to be geometric, not topological");
 
 			var thrown = Assert.Throws<InvalidOperationException>(() => BooleanProcessing.DoArrayViaManifoldRust(
 				items,
@@ -249,9 +337,50 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		/// <summary>
-		/// A box missing its top face - edge manifold nowhere, so
-		/// <see cref="MeshExtensionMethods.IsManifold"/> rejects it and DoArray never reaches
-		/// the kernel.
+		/// Two cubes welded into one mesh so that they meet along exactly one shared edge -
+		/// four faces on that edge, so not manifold, but no boundary edges, so still closed
+		/// and orientable. Precisely the shape the robust import exists for.
+		/// </summary>
+		private static Mesh TwoCubesSharingOneEdge()
+		{
+			var mesh = new Mesh();
+			var vertexMap = new Dictionary<Vector3Float, int>();
+
+			void Append(Matrix4X4 matrix)
+			{
+				var cube = PlatonicSolids.CreateCube(10, 10, 10);
+				cube.Transform(matrix);
+
+				int Weld(int sourceIndex)
+				{
+					var position = cube.Vertices[sourceIndex];
+					if (!vertexMap.TryGetValue(position, out int index))
+					{
+						index = mesh.Vertices.Count;
+						mesh.Vertices.Add(position);
+						vertexMap[position] = index;
+					}
+
+					return index;
+				}
+
+				foreach (var face in cube.Faces)
+				{
+					mesh.Faces.Add(new Face(Weld(face.v0), Weld(face.v1), Weld(face.v2), mesh.Vertices));
+				}
+			}
+
+			// [-5, 5] and [5, 15] in both x and y: the two cubes touch only along the
+			// vertical line x = 5, y = 5, and welding makes that one shared mesh edge.
+			Append(Matrix4X4.Identity);
+			Append(Matrix4X4.CreateTranslation(10, 10, 0));
+
+			return mesh;
+		}
+
+		/// <summary>
+		/// A box missing its top face - not closed, so even the robust import rejects it
+		/// (NotClosed) and DoArray ends up on the managed fallback.
 		/// </summary>
 		private static Mesh OpenBox(double size)
 		{

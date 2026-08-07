@@ -36,6 +36,7 @@ using MatterHackers.VectorMath;
 // Every type from the package is aliased rather than reached through its namespace:
 // ManifoldRust.Manifold and MatterHackers.PolygonMesh.Mesh are both "the mesh type"
 // at a glance, and the Rust prefix says which one a use site means.
+using RustBooleanEngine = ManifoldRust.BooleanEngine;
 using RustManifold = ManifoldRust.Manifold;
 using RustMeshGL64 = ManifoldRust.MeshGL64;
 using RustOpType = ManifoldRust.ManifoldOpType;
@@ -62,6 +63,34 @@ namespace MatterHackers.PolygonMesh.Csg
 	public static partial class BooleanProcessing
 	{
 		private static readonly Color DefaultFaceColor = new Color(200, 200, 200, 255);
+
+		/// <summary>
+		/// Selects the kernel's boolean engine, once, before the first boolean runs.
+		/// </summary>
+		/// <remarks>
+		/// The setting is process-global on the native side, so it is done in a static
+		/// constructor rather than per call. <see cref="RustBooleanEngine.Auto"/> keeps the
+		/// fast exact pipeline for strictly manifold operands and only pays for the slower
+		/// rational-arithmetic engine when an operand came in through the robust import as
+		/// non-manifold soup.
+		/// </remarks>
+		static BooleanProcessing()
+		{
+			try
+			{
+				RustManifold.DefaultBooleanEngine = RustBooleanEngine.Auto;
+			}
+			catch
+			{
+				// A static constructor that throws poisons the whole type: every later member
+				// access - including the CsgBySlicing fallback path and the implicit-surface
+				// path, neither of which touches the kernel - would get a cached
+				// TypeInitializationException. If the native library cannot load or the version
+				// handshake fails, the per-call Import throws instead and DoArray's
+				// CsgBySlicing fallback handles it. A failed engine selection simply leaves the
+				// kernel's default Exact behaviour in place.
+			}
+		}
 
 		/// <summary>
 		/// Perform a boolean operation via the ManifoldRust native library. Every failure
@@ -279,6 +308,13 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <summary>
 		/// Uploads a mesh, rejecting one the kernel could not accept.
 		/// </summary>
+		/// <remarks>
+		/// Always the robust import. For strictly manifold input it is the plain import -
+		/// same result, and the handle is not marked soup, so the Auto engine still picks
+		/// the fast exact pipeline. Closed but non-manifold input is welded into a soup
+		/// handle instead of being rejected. Only geometry that is not even closed still
+		/// fails, as <see cref="RustStatus.NotClosed"/>.
+		/// </remarks>
 		/// <exception cref="InvalidOperationException">
 		/// The mesh failed the kernel's validation. Left to surface rather than absorbed:
 		/// a boolean swallows an error operand as empty geometry and still reports
@@ -288,7 +324,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		{
 			var (vertProperties, triVerts) = ToRustMeshData(mesh);
 
-			var imported = RustManifold.FromMesh64(vertProperties, triVerts);
+			var imported = RustManifold.FromMesh64Robust(vertProperties, triVerts);
 			try
 			{
 				if (imported.Status != RustStatus.NoError)
@@ -313,11 +349,42 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <inheritdoc cref="Import"/>
 		private static RustManifold ImportAsOriginal(Mesh mesh)
 		{
-			// AsOriginal returns a new manifold, so the import it was called on is a
-			// separate handle that still has to be released.
-			using (var imported = Import(mesh))
+			var imported = Import(mesh);
+
+			try
 			{
-				return imported.AsOriginal();
+				var asOriginal = imported.AsOriginal();
+
+				try
+				{
+					// Status itself can throw, so the new handle needs its own guard - without it
+					// asOriginal would be left to the finalizer on that path.
+					if (asOriginal.Status != RustStatus.NoError)
+					{
+						// A soup handle - closed but non-manifold input - cannot be re-tagged as an
+						// original; AsOriginal hands back an empty NotManifold manifold. Keep the
+						// import instead. Its triangles then arrive in the result under whatever run
+						// they inherit rather than one this operand owns, so it loses its face
+						// colours - much better than losing the boolean.
+						asOriginal.Dispose();
+						return imported;
+					}
+				}
+				catch
+				{
+					asOriginal.Dispose();
+					throw;
+				}
+
+				// AsOriginal returns a new manifold, so the import it was called on is a
+				// separate handle that still has to be released.
+				imported.Dispose();
+				return asOriginal;
+			}
+			catch
+			{
+				imported.Dispose();
+				throw;
 			}
 		}
 
@@ -326,7 +393,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// the kernel takes. Positions widen to <c>double</c>, with none of the <c>float</c>
 		/// narrowing the old C++ boundary imposed.
 		/// </summary>
-		private static (double[] vertProperties, uint[] triVerts) ToRustMeshData(Mesh mesh)
+		private static (double[] vertProperties, ulong[] triVerts) ToRustMeshData(Mesh mesh)
 		{
 			var vertProperties = new double[mesh.Vertices.Count * 3];
 			for (int i = 0; i < mesh.Vertices.Count; i++)
@@ -337,13 +404,15 @@ namespace MatterHackers.PolygonMesh.Csg
 				vertProperties[(i * 3) + 2] = vertex.Z;
 			}
 
-			var triVerts = new uint[mesh.Faces.Count * 3];
+			// 64-bit indices because that is the width the robust import takes; the values
+			// themselves are ordinary mesh vertex indices.
+			var triVerts = new ulong[mesh.Faces.Count * 3];
 			for (int i = 0; i < mesh.Faces.Count; i++)
 			{
 				var face = mesh.Faces[i];
-				triVerts[(i * 3) + 0] = (uint)face.v0;
-				triVerts[(i * 3) + 1] = (uint)face.v1;
-				triVerts[(i * 3) + 2] = (uint)face.v2;
+				triVerts[(i * 3) + 0] = (ulong)face.v0;
+				triVerts[(i * 3) + 1] = (ulong)face.v1;
+				triVerts[(i * 3) + 2] = (ulong)face.v2;
 			}
 
 			return (vertProperties, triVerts);

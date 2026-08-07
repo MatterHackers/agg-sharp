@@ -126,36 +126,26 @@ namespace MatterHackers.PolygonMesh.Csg
 		{
 			if (processingMode == ProcessingModes.Polygons)
 			{
-				var allManifold = items.All(i => i.mesh.IsManifold());
-
-				if (allManifold)
+				// Every input goes to the kernel first. There used to be an IsManifold
+				// pre-gate here, but the robust import plus the Auto engine handle closed
+				// non-manifold geometry directly, and diverting it to CsgBySlicing was
+				// giving up the kernel's speed and accuracy on input it can now take.
+				try
 				{
-					try
-					{
-						return DoArrayViaManifoldRust(items, operation, cancellationToken, reporter, amountPerOperation, ratioCompleted, meshColors);
-					}
-					catch (OperationCanceledException)
-					{
-						// The caller asked to stop, so there is nothing to fall back to - CsgBySlicing
-						// would only spend the same cancelled time again in managed code. Let it out so
-						// the rebuild machinery sees a cancellation rather than a suspiciously empty result.
-						throw;
-					}
-					catch
-					{
-						// Manifold native library failed — fall back to managed CsgBySlicing
-						LastBackendUsed = BackendCsgBySlicing;
-						var csgBySlicing = new CsgBySlicing();
-						csgBySlicing.Setup(items, null, operation, cancellationToken);
-						return csgBySlicing.Calculate((ratio, message) =>
-						{
-							reporter?.Invoke(ratio * amountPerOperation + ratioCompleted, message);
-						},
-						cancellationToken);
-					}
-                }
-                else
+					return DoArrayViaManifoldRust(items, operation, cancellationToken, reporter, amountPerOperation, ratioCompleted, meshColors);
+				}
+				catch (OperationCanceledException)
 				{
+					// The caller asked to stop, so there is nothing to fall back to - CsgBySlicing
+					// would only spend the same cancelled time again in managed code. Let it out so
+					// the rebuild machinery sees a cancellation rather than a suspiciously empty result.
+					throw;
+				}
+				catch
+				{
+					// The kernel refused the input or the native library failed. What is left is
+					// geometry it cannot represent at all - an open surface, non-finite
+					// coordinates - which CsgBySlicing may still make something of.
 					LastBackendUsed = BackendCsgBySlicing;
 					var csgBySlicing = new CsgBySlicing();
 					csgBySlicing.Setup(items, null, operation, cancellationToken);
