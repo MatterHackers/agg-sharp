@@ -510,6 +510,11 @@ namespace MatterCAD.Tests.MatterCAD
 
 				rowAdjuster?.Invoke(row);
 
+				// Clicking is asynchronous: ClickByName injects the mouse events and returns, while the
+				// Click handler below runs later on the UI thread. Counting the popups that have actually
+				// been shown gives the loop something real to wait on instead of a fixed delay.
+				var popupsShown = 0;
+
 				button.Click += (s, e) =>
 				{
 					popup.Widget = new GuiWidget(180d, 100d)
@@ -520,6 +525,10 @@ namespace MatterCAD.Tests.MatterCAD
 					};
 
 					systemWindow.ShowPopup(new ThemeConfig(), anchor, popup);
+
+					// ShowPopup positions the popup synchronously, so by this point popup.Widget is
+					// both created and placed - exactly the state the validator needs.
+					popupsShown++;
 				};
 
 				anchor.Widget = button;
@@ -549,8 +558,14 @@ namespace MatterCAD.Tests.MatterCAD
 							break;
 					}
 
+					var expectedPopupCount = i + 1;
+
 					testRunner.ClickByName("buttonA");
-					testRunner.Delay();
+
+					testRunner.Assert(
+						() => popupsShown == expectedPopupCount,
+						$"popup {expectedPopupCount} of 4 was never shown after clicking 'buttonA'",
+						10);
 
 					await validator.Invoke(button, popup.Widget);
 
