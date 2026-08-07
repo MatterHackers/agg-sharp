@@ -2622,6 +2622,12 @@ namespace MatterHackers.Agg.UI
 		/// This exists for the automation watchdog: a window whose close is vetoed (typically to show a
 		/// "do you want to save?" dialog) blocks the message pump forever and hangs the entire test run,
 		/// so the runner needs a way out. Application code should call <see cref="Close()"/> so the veto is honored.
+		/// <para>
+		/// Skipping the OnShouldClose path also skips whatever the application normally does there - saving
+		/// window size and position, prompting to save changes, and so on. That loss is acceptable on the
+		/// failure path this serves (the alternative is a hung test run), but it is why this is for the
+		/// automation watchdog only.
+		/// </para>
 		/// </summary>
 		public void ForceClose()
 		{

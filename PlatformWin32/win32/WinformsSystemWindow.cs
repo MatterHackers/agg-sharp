@@ -168,6 +168,14 @@ namespace MatterHackers.Agg.UI
 			// the constructor forced premature handle creation via RectangleToScreen.
 			titleBarHeight = RectangleToScreen(ClientRectangle).Top - this.Top;
 			titleBarHeightComputed = true;
+
+			// The constructor could not make this window the idle driver - a Form has no handle until it is
+			// shown and a handle-less window cannot marshal work to the UI thread. Now that it can, offer it
+			// (EnsureIdleTimerDriving keeps a working driver, so this is a no-op when one already exists).
+			lock (StaticInitLock)
+			{
+				EnsureIdleTimerDriving(this);
+			}
 		}
 
 		/// <summary>
@@ -176,19 +184,27 @@ namespace MatterHackers.Agg.UI
 		/// <see cref="StaticInitLock"/> held.
 		/// </summary>
 		/// <param name="preferredWindow">The window to drive the pump when the current driver is gone.</param>
+		/// <remarks>
+		/// A driver must have its native handle: a handle-less window cannot marshal anything, so parking the
+		/// pump on one is just the dead-pump bug by another name. Windows without a handle stay in
+		/// <see cref="LiveWindows"/> and become eligible again from OnHandleCreated.
+		/// </remarks>
 		private static void EnsureIdleTimerDriving(WinformsSystemWindow preferredWindow)
 		{
 			WinformsSystemWindow driver = null;
 
 			if (idleTimerWindow != null
 				&& !idleTimerWindow.IsDisposed
+				&& idleTimerWindow.IsHandleCreated
 				&& LiveWindows.Contains(idleTimerWindow))
 			{
 				// Keep the current driver - swapping it needlessly would drop timer ticks.
 				driver = idleTimerWindow;
 			}
 			else if (preferredWindow != null
-				&& !preferredWindow.IsDisposed)
+				&& !preferredWindow.IsDisposed
+				&& preferredWindow.IsHandleCreated
+				&& LiveWindows.Contains(preferredWindow))
 			{
 				driver = preferredWindow;
 			}
@@ -196,7 +212,8 @@ namespace MatterHackers.Agg.UI
 			{
 				foreach (var window in LiveWindows)
 				{
-					if (!window.IsDisposed)
+					if (!window.IsDisposed
+						&& window.IsHandleCreated)
 					{
 						driver = window;
 						break;
@@ -328,6 +345,15 @@ namespace MatterHackers.Agg.UI
 						// here would run UI callbacks (GL, textures, widget code) on the timer thread and
 						// latch that thread as UiThread's "ui thread". Leave the actions queued instead;
 						// they run on the next tick once the window can marshal them.
+						//
+						// Hand the pump to a window that can marshal right now rather than ticking uselessly
+						// here forever. This window is NOT removed from LiveWindows - its handle may simply not
+						// exist yet, and OnHandleCreated offers it back as a driver once it does.
+						lock (StaticInitLock)
+						{
+							EnsureIdleTimerDriving(null);
+						}
+
 						return;
 					}
 
@@ -940,7 +966,11 @@ namespace MatterHackers.Agg.UI
 			// Check for RootSystemWindow, close if found
 			string windowTypeName = systemWindow.GetType().Name;
 
-			if ((SingleWindowMode && windowTypeName == "RootSystemWindow")
+			bool closingRootInSingleWindowMode = SingleWindowMode && windowTypeName == "RootSystemWindow";
+
+			// MainWindowsFormsWindow can be null here even for a root close: ResetFirstWindowFlag and OnClosed
+			// null it between tests, and automation runs close the root after that has happened.
+			if ((closingRootInSingleWindowMode && MainWindowsFormsWindow != null)
 				|| (MainWindowsFormsWindow != null && systemWindow == MainWindowsFormsWindow.AggSystemWindow && !SingleWindowMode))
 			{
 				// Close the main (first) PlatformWindow if it's being requested and not this instance
@@ -956,13 +986,16 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			if (SingleWindowMode)
+			if (SingleWindowMode && !closingRootInSingleWindowMode)
 			{
 				AggSystemWindow = this.WindowProvider.TopWindow;
 				AggSystemWindow?.Invalidate();
 			}
 			else
 			{
+				// A root close in single window mode with no MainWindowsFormsWindow lands here: close this
+				// form so the message loop still exits. Falling into the "show the next top window" path
+				// above would leave the run parked with nothing left to close it.
 				if (!this.IsDisposed && !this.Disposing)
 				{
 					if (this.InvokeRequired)

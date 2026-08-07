@@ -1537,82 +1537,147 @@ namespace MatterHackers.GuiAutomation
 
 				DebugLogger.LogMessage("AutomationRunner", "REQUESTING WINDOW CLOSE");
 
+				// The close budget must not be spent by the application's own shutdown work: MatterCAD's
+				// closeWindow callback can legitimately take ~10 seconds before it even asks the window to
+				// close. So the watchdog only starts counting once the callback has returned, tracked here.
+				var closeWatch = Stopwatch.StartNew();
+				int closeCallbackReturned = 0;
+				double closeCallbackReturnedSeconds = 0;
+
 				// Watch the close itself. If the application cancels the close (a "save changes?" dialog is
 				// the usual culprit) or the close never reaches the platform window, the main thread stays
 				// parked in ShowAsSystemWindow forever, so force the window closed and remember that we had
 				// to - the run must fail rather than hang or pass silently.
 				Task.Run(async () =>
 				{
-					// Remember the platform window while it is still reachable: SystemWindow.OnClosed nulls
-					// PlatformWindow, and the platform window is the only handle we have on the message loop.
-					object platformWindow = initialSystemWindow.PlatformWindow;
-
-					var closeWatch = Stopwatch.StartNew();
-					while (closeWatch.Elapsed.TotalSeconds < CloseWindowTimeoutSeconds)
+					try
 					{
+						// Remember the platform window while it is still reachable: SystemWindow.OnClosed nulls
+						// PlatformWindow, and the platform window is the only handle we have on the message loop.
+						object platformWindow = initialSystemWindow.PlatformWindow;
+
+						while (true)
+						{
+							if (Volatile.Read(ref showCompleted) == 1)
+							{
+								return;
+							}
+
+							platformWindow = initialSystemWindow.PlatformWindow ?? platformWindow;
+
+							// Recomputed every pass because the callback can return while we are waiting. If it
+							// never returns (a hung shutdown) fall back to a hard cap so this still bails out.
+							double deadlineSeconds = Volatile.Read(ref closeCallbackReturned) == 1
+								? Volatile.Read(ref closeCallbackReturnedSeconds) + CloseWindowTimeoutSeconds
+								: CloseWindowTimeoutSeconds * 3;
+
+							if (closeWatch.Elapsed.TotalSeconds >= deadlineSeconds)
+							{
+								break;
+							}
+
+							await Task.Delay(50);
+						}
+
+						// Re-check immediately before forcing - a window that closed just in time is not a failure.
 						if (Volatile.Read(ref showCompleted) == 1)
 						{
 							return;
 						}
 
-						platformWindow = initialSystemWindow.PlatformWindow ?? platformWindow;
+						DebugLogger.LogError("AutomationRunner", "WINDOW FAILED TO CLOSE - forcing close; a dialog or a dead idle pump is blocking shutdown");
+						Interlocked.Exchange(ref closePhaseTimedOut, 1);
 
-						await Task.Delay(50);
-					}
-
-					// Re-check immediately before forcing - a window that closed just in time is not a failure.
-					if (Volatile.Read(ref showCompleted) == 1)
-					{
-						return;
-					}
-
-					DebugLogger.LogError("AutomationRunner", "WINDOW FAILED TO CLOSE - forcing close; a dialog or a dead idle pump is blocking shutdown");
-					Interlocked.Exchange(ref closePhaseTimedOut, 1);
-
-					void ForceCloseNow()
-					{
-						if (!initialSystemWindow.HasBeenClosed)
+						void ForceCloseNow()
 						{
-							initialSystemWindow.ForceClose();
+							try
+							{
+								if (!initialSystemWindow.HasBeenClosed)
+								{
+									initialSystemWindow.ForceClose();
+								}
+							}
+							catch (Exception ex)
+							{
+								// ForceClose runs the whole widget close cascade; a throw in there must neither
+								// vanish nor stop us from closing the platform window below - that close is the
+								// only thing that actually releases the parked message loop.
+								DebugLogger.LogError("AutomationRunner", $"ForceClose threw while forcing the test window closed: {ex}");
+							}
+							finally
+							{
+								// Always close the platform window as well. When the agg window was already marked
+								// closed the ForceClose above is a no-op, and only closing the platform window can
+								// still get the message loop to exit.
+								ClosePlatformWindow(platformWindow);
+							}
 						}
 
-						// Always close the platform window as well. When the agg window was already marked
-						// closed the ForceClose above is a no-op, and only closing the platform window can
-						// still get the message loop to exit.
-						ClosePlatformWindow(platformWindow);
-					}
+						// Marshal through the platform window first - that posts a real window message, so it
+						// works even when the RunOnIdle pump is dead, which is one of the ways a run hangs here.
+						// RunOnIdle is only the fallback.
+						TryBeginInvokeOnPlatformWindow(platformWindow, ForceCloseNow);
+						UiThread.RunOnIdle(ForceCloseNow);
 
-					// Marshal through the platform window first - that posts a real window message, so it
-					// works even when the RunOnIdle pump is dead, which is one of the ways a run hangs here.
-					// RunOnIdle is only the fallback.
-					TryBeginInvokeOnPlatformWindow(platformWindow, ForceCloseNow);
-					UiThread.RunOnIdle(ForceCloseNow);
+						// Give the force close a grace period. If the loop still has not exited there is nothing
+						// more this side can do, so say so loudly instead of hanging silently.
+						var forceWatch = Stopwatch.StartNew();
+						while (forceWatch.Elapsed.TotalSeconds < CloseWindowTimeoutSeconds)
+						{
+							if (Volatile.Read(ref showCompleted) == 1)
+							{
+								return;
+							}
 
-					// Give the force close a grace period. If the loop still has not exited there is nothing
-					// more this side can do, so say so loudly instead of hanging silently.
-					var forceWatch = Stopwatch.StartNew();
-					while (forceWatch.Elapsed.TotalSeconds < CloseWindowTimeoutSeconds)
-					{
+							await Task.Delay(50);
+						}
+
+						// One last look: the pump can exit in the window between the final poll and here.
 						if (Volatile.Read(ref showCompleted) == 1)
 						{
 							return;
 						}
 
-						await Task.Delay(50);
+						string stillBlocked = $"FORCED CLOSE DID NOT RELEASE THE MESSAGE LOOP after {CloseWindowTimeoutSeconds} seconds - the test process is hung in the platform window pump.";
+						DebugLogger.LogError("AutomationRunner", stillBlocked);
+						Console.WriteLine(stillBlocked);
 					}
-
-					string stillBlocked = $"FORCED CLOSE DID NOT RELEASE THE MESSAGE LOOP after {CloseWindowTimeoutSeconds} seconds - the test process is hung in the platform window pump.";
-					DebugLogger.LogError("AutomationRunner", stillBlocked);
-					Console.WriteLine(stillBlocked);
+					catch (Exception ex)
+					{
+						// Nothing observes this task, so an escaping exception (e.g. from touching
+						// PlatformWindow during teardown) would silently kill the watchdog - the one thing
+						// standing between a stuck close and a hung test run.
+						DebugLogger.LogError("AutomationRunner", $"CLOSE WATCHDOG FAULTED: {ex}");
+					}
 				});
 
-				if (closeWindow != null)
+				try
 				{
-					closeWindow(testRunner);
+					if (closeWindow != null)
+					{
+						closeWindow(testRunner);
+					}
+					else
+					{
+						initialSystemWindow.CloseOnIdle();
+					}
 				}
-				else
+				catch (Exception ex)
 				{
+					// A faulting shutdown callback would otherwise never reach a close request, and the run
+					// would be misreported as a close hang instead of the real failure.
+					DebugLogger.LogError("AutomationRunner", $"closeWindow callback threw: {ex}");
+
+					// CaptureUiThreadException calls back into RequestWindowClose, which is already latched,
+					// so close the window explicitly here.
+					CaptureUiThreadException(ex);
 					initialSystemWindow.CloseOnIdle();
+				}
+				finally
+				{
+					// Start the watchdog's real countdown now that the application's shutdown work is done.
+					Volatile.Write(ref closeCallbackReturnedSeconds, closeWatch.Elapsed.TotalSeconds);
+					Volatile.Write(ref closeCallbackReturned, 1);
 				}
 			}
 
