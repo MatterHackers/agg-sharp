@@ -86,38 +86,14 @@ namespace MatterHackers.PolygonMesh.Csg
 	/// Entry points for constructive solid geometry over <see cref="Mesh"/>.
 	/// </summary>
 	/// <remarks>
-	/// Polygon mode runs on ManifoldRust, the single native boolean kernel
-	/// (see BooleanProcessingRust.cs, the other half of this partial class), and falls
-	/// back to the managed <see cref="CsgBySlicing"/> whenever the kernel cannot take the
-	/// input or does not return a solid. The other processing modes do not use a kernel at
-	/// all - they resample the operands as implicit surfaces.
+	/// Polygon mode runs on ManifoldRust, the one and only boolean kernel
+	/// (see BooleanProcessingRust.cs, the other half of this partial class). There is no
+	/// second engine behind it: an input the kernel cannot take is an exception the caller
+	/// sees, not geometry built by different rules. The other processing modes do not use a
+	/// kernel at all - they resample the operands as implicit surfaces.
 	/// </remarks>
 	public static partial class BooleanProcessing
 	{
-		/// <summary>Name reported by <see cref="LastBackendUsed"/> for the ManifoldRust engine.</summary>
-		public const string BackendManifoldRust = "ManifoldRust";
-
-		/// <summary>Name reported by <see cref="LastBackendUsed"/> for the managed slicing fallback.</summary>
-		public const string BackendCsgBySlicing = "CsgBySlicing";
-
-		/// <summary>
-		/// Which engine produced the most recent polygon-mode boolean: either
-		/// <see cref="BackendManifoldRust"/> or <see cref="BackendCsgBySlicing"/>.
-		/// </summary>
-		/// <remarks>
-		/// Diagnostic only - nothing in the pipeline branches on it. It exists because a
-		/// native engine failing is otherwise invisible: the fallback rescues the result,
-		/// so a broken backend and a working one look identical from the outside, and a
-		/// test asserting "a mesh came back" would pass either way.
-		/// <para>
-		/// A plain static write with no synchronization, and only meaningful for
-		/// <see cref="ProcessingModes.Polygons"/>. Concurrent booleans overwrite each
-		/// other, so a reader only gets a useful answer when it is the only thing running -
-		/// which is why the tests that assert on it are serialized.
-		/// </para>
-		/// </remarks>
-		public static string LastBackendUsed { get; private set; }
-
 		/// <summary>
 		/// Combines every item into one mesh with a single n-ary boolean.
 		/// </summary>
@@ -125,8 +101,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// Which winding numbers the native kernel counts as solid.
 		/// <see cref="RustWindingRule.Nonzero"/> keeps inside-out shells as material
 		/// rather than letting them cancel, at the cost of forcing the slower robust
-		/// engine. Ignored by the CsgBySlicing fallback and by the implicit-surface
-		/// modes, neither of which has the concept.
+		/// engine. Ignored by the implicit-surface modes, which have no such concept.
 		/// </param>
 		/// <param name="repairOrientation">
 		/// Rewind each operand's inside-out shells before combining - the alternative
@@ -148,35 +123,12 @@ namespace MatterHackers.PolygonMesh.Csg
 		{
 			if (processingMode == ProcessingModes.Polygons)
 			{
-				// Every input goes to the kernel first. There used to be an IsManifold
-				// pre-gate here, but the robust import plus the Auto engine handle closed
-				// non-manifold geometry directly, and diverting it to CsgBySlicing was
-				// giving up the kernel's speed and accuracy on input it can now take.
-				try
-				{
-					return DoArrayViaManifoldRust(items, operation, cancellationToken, reporter, amountPerOperation, ratioCompleted, meshColors, windingRule, repairOrientation);
-				}
-				catch (OperationCanceledException)
-				{
-					// The caller asked to stop, so there is nothing to fall back to - CsgBySlicing
-					// would only spend the same cancelled time again in managed code. Let it out so
-					// the rebuild machinery sees a cancellation rather than a suspiciously empty result.
-					throw;
-				}
-				catch
-				{
-					// The kernel refused the input or the native library failed. What is left is
-					// geometry it cannot represent at all - an open surface, non-finite
-					// coordinates - which CsgBySlicing may still make something of.
-					LastBackendUsed = BackendCsgBySlicing;
-					var csgBySlicing = new CsgBySlicing();
-					csgBySlicing.Setup(items, null, operation, cancellationToken);
-					return csgBySlicing.Calculate((ratio, message) =>
-					{
-						reporter?.Invoke(ratio * amountPerOperation + ratioCompleted, message);
-					},
-					cancellationToken);
-				}
+				// Every input goes to the kernel, and whatever it says is the answer. Both of
+				// the gates that used to stand here are gone: the IsManifold pre-gate, because
+				// the robust import plus the Auto engine handle closed non-manifold geometry
+				// directly, and the catch-all fallback, because a mesh the kernel refused is
+				// better reported than silently replaced with one built by other rules.
+				return DoArrayViaManifoldRust(items, operation, cancellationToken, reporter, amountPerOperation, ratioCompleted, meshColors, windingRule, repairOrientation);
             }
 			else
 			{

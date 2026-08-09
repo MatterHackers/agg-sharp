@@ -43,28 +43,17 @@ using TUnit.Core;
 namespace MatterHackers.PolygonMesh.UnitTests
 {
 	/// <summary>
-	/// The ManifoldRust boolean backend - the only native boolean engine - exercised
+	/// The ManifoldRust boolean backend - the only boolean engine there is - exercised
 	/// through the same public <see cref="BooleanProcessing"/> entry points the
 	/// application uses.
 	/// </summary>
 	/// <remarks>
-	/// <see cref="BooleanProcessing.LastBackendUsed"/> is a process-wide static that every
-	/// boolean overwrites, so the tests here that assert on it run in the
-	/// <see cref="ParallelKey"/> group. <see cref="MeshCsgTests"/> and
-	/// <see cref="FaceColorTests"/> are in that group too - not because they assert on it,
-	/// but because they run booleans, and one landing between a DoArray call here and the
-	/// assertion that follows it would clobber the value being asserted.
+	/// There is no managed fallback behind these entry points any more, so a kernel failure
+	/// is an exception the caller sees rather than a quietly different mesh. That is what
+	/// makes the geometry assertions here meaningful without also asserting which engine ran.
 	/// </remarks>
-	[NotInParallel(ParallelKey)]
 	public class ManifoldRustBackendTests
 	{
-		/// <summary>
-		/// Serializes every test that asserts on, or would overwrite, the process-wide
-		/// <see cref="BooleanProcessing.LastBackendUsed"/>. Shared with
-		/// <see cref="MeshCsgTests"/> and <see cref="FaceColorTests"/>.
-		/// </summary>
-		public const string ParallelKey = "BooleanEngineStatics";
-
 		private static Mesh UnionSubtractIntersect(CsgModes operation, Mesh a, Matrix4X4 matrixA, Mesh b, Matrix4X4 matrixB)
 		{
 			var result = BooleanProcessing.DoArray(
@@ -96,10 +85,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			await Assert.That(result.Faces.Count).IsGreaterThan(0);
 			await Assert.That(result.IsManifold()).IsTrue();
 
-			// Without this the test passes just as well when the Rust engine throws and
-			// CsgBySlicing quietly produces the same box.
-			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
-
 			// The union of the two boxes is one box spanning both.
 			var bounds = result.GetAxisAlignedBoundingBox();
 			await Assert.That(bounds.XSize).IsEqualTo(16.0).Within(0.001);
@@ -120,10 +105,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			await Assert.That(result.Faces.Count).IsGreaterThan(12);
 			await Assert.That(result.IsManifold()).IsTrue();
 
-			// Without this the test passes just as well when the Rust engine throws and
-			// CsgBySlicing quietly produces the same box.
-			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
-
 			var bounds = result.GetAxisAlignedBoundingBox();
 			await Assert.That(bounds.XSize).IsEqualTo(20.0).Within(0.001);
 			await Assert.That(bounds.YSize).IsEqualTo(20.0).Within(0.001);
@@ -141,10 +122,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			await Assert.That(result.Faces.Count).IsGreaterThan(0);
 			await Assert.That(result.IsManifold()).IsTrue();
 
-			// Without this the test passes just as well when the Rust engine throws and
-			// CsgBySlicing quietly produces the same box.
-			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
-
 			// The overlap of the two boxes is a 4 x 10 x 10 box.
 			var bounds = result.GetAxisAlignedBoundingBox();
 			await Assert.That(bounds.XSize).IsEqualTo(4.0).Within(0.001);
@@ -153,9 +130,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		/// <summary>
-		/// Closed but non-manifold geometry is the kernel's job now, not the fallback's:
-		/// the robust import accepts it and the Auto engine switches to the robust boolean
-		/// for it.
+		/// Closed but non-manifold geometry is the kernel's job: the robust import accepts
+		/// it and the Auto engine switches to the robust boolean for it. With no fallback
+		/// left, returning at all is the assertion - anything the kernel refuses throws.
 		/// </summary>
 		[Test]
 		public async Task ClosedNonManifoldInputStillRunsOnTheKernel()
@@ -186,7 +163,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			result.CleanAndMerge();
 			result.RemoveUnusedVertices();
 
-			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
 			await Assert.That(result.Faces.Count).IsGreaterThan(0);
 			await Assert.That(result.IsManifold()).IsTrue();
 		}
@@ -196,7 +172,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		/// be re-tagged as an original, so <see cref="BooleanProcessing"/> keeps the plain
 		/// import and that operand's faces arrive under a run it does not own - its colours
 		/// degrade. Degrading is fine; throwing, or handing back a FaceColors array that does
-		/// not line up with the faces, is not.
+		/// not line up with the faces, is not. Asking for colours must not be what makes the
+		/// kernel refuse an operand.
 		/// </summary>
 		[Test]
 		public async Task SoupOperandWithColorsStillRunsOnTheKernel()
@@ -219,9 +196,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				CancellationToken.None,
 				meshColors: new[] { Color.Red, Color.Blue });
 
-			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust)
-				.Because("asking for colours must not push a soup operand onto the managed fallback");
-
 			result.CleanAndMerge();
 			result.RemoveUnusedVertices();
 
@@ -237,14 +211,15 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		/// <summary>
-		/// An input the kernel cannot accept must come back as geometry from the managed
-		/// CsgBySlicing fallback, not as an exception. An open surface is such an input:
-		/// even the robust import rejects it, because it is not closed.
+		/// An input the kernel cannot accept reaches the caller as an exception. There is no
+		/// managed fallback to rewrite it into a mesh built by different rules, so the honest
+		/// answer is the failure itself. An open surface is such an input: even the robust
+		/// import rejects it, because it is not closed.
 		/// </summary>
 		[Test]
-		public async Task OpenMeshFallsBackToCsgBySlicing()
+		public async Task OpenMeshThrowsRatherThanSilentlyProducingOtherGeometry()
 		{
-			var result = BooleanProcessing.DoArray(
+			var thrown = Assert.Throws<InvalidOperationException>(() => BooleanProcessing.DoArray(
 				new[]
 				{
 					(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.Identity),
@@ -255,11 +230,10 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				ProcessingResolution._64,
 				ProcessingResolution._64,
 				null,
-				CancellationToken.None);
+				CancellationToken.None));
 
-			await Assert.That(result).IsNotNull();
-			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendCsgBySlicing)
-				.Because("the robust import reports NotClosed for an open surface, which throws into the fallback");
+			await Assert.That(thrown.Message).Contains(ManifoldStatus.NotClosed.ToString())
+				.Because("the status is what tells the user which operand was unusable");
 		}
 
 		/// <summary>
@@ -295,29 +269,26 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			await Assert.That(thrown.Message).Contains(ManifoldStatus.NonFiniteVertex.ToString())
 				.Because("the status is the whole diagnostic value of refusing the input");
 
-			// And through the public entry point the same rejection is a fallback, not a
-			// failure the caller ever sees.
-			var result = BooleanProcessing.DoArray(
+			// And the public entry point passes it straight through - the same rejection, not
+			// a different mesh built by a second engine.
+			var throughDoArray = Assert.Throws<InvalidOperationException>(() => BooleanProcessing.DoArray(
 				items,
 				CsgModes.Union,
 				ProcessingModes.Polygons,
 				ProcessingResolution._64,
 				ProcessingResolution._64,
 				null,
-				CancellationToken.None);
+				CancellationToken.None));
 
-			await Assert.That(result).IsNotNull();
-			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendCsgBySlicing);
+			await Assert.That(throughDoArray.Message).Contains(ManifoldStatus.NonFiniteVertex.ToString());
 		}
 
 		/// <summary>
-		/// Cancellation has to reach the caller. The general catch in
-		/// <see cref="BooleanProcessing.DoArray"/> exists to fall back to CsgBySlicing when
-		/// the native engine fails; a cancelled operation is not a failure, and re-running
-		/// it in managed code would only spend the same abandoned time again.
+		/// Cancellation has to reach the caller as a cancellation, not as some other failure:
+		/// the rebuild machinery distinguishes "the user stopped this" from "this broke".
 		/// </summary>
 		[Test]
-		public async Task CancelledTokenPropagatesRatherThanFallingBack()
+		public async Task CancelledTokenPropagatesAsCancellation()
 		{
 			using var cancelled = new CancellationTokenSource();
 			cancelled.Cancel();
@@ -374,7 +345,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				AmountPerOperation,
 				RatioCompleted);
 
-			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
 			await Assert.That(reported.Count).IsGreaterThan(0)
 				.Because("a boolean that reports nothing leaves the progress bar frozen");
 
@@ -442,8 +412,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			var positive = VolumeUnder(WindingRule.Positive);
 			var nonzero = VolumeUnder(WindingRule.Nonzero);
 
-			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
-
 			// Positive keeps only the outward cube less the region the inverted one cancels;
 			// Nonzero keeps the inverted cube's own body as material too.
 			await Assert.That(positive).IsGreaterThan(0.0);
@@ -482,8 +450,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			var repaired = UnionVolume(inverted, repairOrientation: true);
 			var correct = UnionVolume(PlatonicSolids.CreateCube(10, 10, 10), repairOrientation: false);
-
-			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
 
 			// 16 x 10 x 10 either way - the repair is the whole difference between the
 			// inverted operand contributing its body and contributing nothing.
@@ -583,7 +549,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 		/// <summary>
 		/// A box missing its top face - not closed, so even the robust import rejects it
-		/// (NotClosed) and DoArray ends up on the managed fallback.
+		/// (NotClosed) and DoArray throws.
 		/// </summary>
 		private static Mesh OpenBox(double size)
 		{

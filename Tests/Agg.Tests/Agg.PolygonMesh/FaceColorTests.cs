@@ -39,9 +39,6 @@ using TUnit.Core;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
-	// The boolean scenarios here overwrite the process-wide BooleanProcessing.LastBackendUsed, so they
-	// share ManifoldRustBackendTests' group rather than racing its assertions on that value.
-	[NotInParallel(ManifoldRustBackendTests.ParallelKey)]
 	public class FaceColorTests
 	{
 		[Test]

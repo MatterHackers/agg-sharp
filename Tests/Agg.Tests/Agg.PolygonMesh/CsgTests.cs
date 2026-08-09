@@ -46,9 +46,6 @@ using MatterHackers.PolygonMesh;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
-	// Every boolean run here overwrites the process-wide BooleanProcessing.LastBackendUsed, so these
-	// share ManifoldRustBackendTests' group rather than racing its assertions on that value.
-	[NotInParallel(ManifoldRustBackendTests.ParallelKey)]
 	public class MeshCsgTests
 	{
 		[Test]

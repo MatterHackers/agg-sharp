@@ -84,19 +84,19 @@ namespace MatterHackers.PolygonMesh.Csg
 			catch
 			{
 				// A static constructor that throws poisons the whole type: every later member
-				// access - including the CsgBySlicing fallback path and the implicit-surface
-				// path, neither of which touches the kernel - would get a cached
-				// TypeInitializationException. If the native library cannot load or the version
-				// handshake fails, the per-call Import throws instead and DoArray's
-				// CsgBySlicing fallback handles it. A failed engine selection simply leaves the
-				// kernel's default Exact behaviour in place.
+				// access - including the implicit-surface path, which never touches the kernel -
+				// would get a cached TypeInitializationException naming the wrong problem. If the
+				// native library cannot load or the version handshake fails, the per-call Import
+				// throws instead, which says what actually went wrong. A failed engine selection
+				// simply leaves the kernel's default Exact behaviour in place.
 			}
 		}
 
 		/// <summary>
 		/// Perform a boolean operation via the ManifoldRust native library. Every failure
-		/// surfaces as a managed exception so the caller can fall back to CsgBySlicing,
-		/// except cancellation, which the caller deliberately lets through.
+		/// surfaces as a managed exception - including cancellation, as
+		/// <see cref="OperationCanceledException"/> - and <see cref="DoArray"/> passes them
+		/// all straight to the caller.
 		/// </summary>
 		/// <remarks>
 		/// Internal rather than private only so the tests can watch it reject an input
@@ -124,10 +124,6 @@ namespace MatterHackers.PolygonMesh.Csg
 			RustWindingRule windingRule = RustWindingRule.Positive,
 			bool repairOrientation = false)
 		{
-			// Claimed on entry rather than on success: if this throws, the caller's fallback
-			// overwrites it, so the value always names whichever engine actually returned.
-			LastBackendUsed = BackendManifoldRust;
-
 			bool trackColors = meshColors != null;
 
 			var manifolds = new List<RustManifold>();
@@ -292,7 +288,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				{
 					// Exporting an error manifold is safe here - unlike the C++ engine, which
 					// could fault the CLR doing it - but an error status still means the kernel
-					// could not build the solid, and CsgBySlicing may yet manage it.
+					// could not build the solid, and a half-built one is worse than a failure.
 					throw new InvalidOperationException($"Manifold boolean result has error status: {boolResult.Status}");
 				}
 
