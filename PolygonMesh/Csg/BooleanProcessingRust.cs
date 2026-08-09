@@ -41,6 +41,7 @@ using RustManifold = ManifoldRust.Manifold;
 using RustMeshGL64 = ManifoldRust.MeshGL64;
 using RustOpType = ManifoldRust.ManifoldOpType;
 using RustStatus = ManifoldRust.ManifoldStatus;
+using RustWindingRule = ManifoldRust.WindingRule;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
@@ -101,6 +102,17 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// Internal rather than private only so the tests can watch it reject an input
 		/// directly. <see cref="DoArray"/> is the entry point everything else uses.
 		/// </remarks>
+		/// <param name="windingRule">
+		/// Which winding numbers the kernel counts as solid.
+		/// <see cref="RustWindingRule.Nonzero"/> keeps inside-out shells as material
+		/// instead of letting them cancel; it also forces the robust engine, because
+		/// the rule has no meaning to the exact one.
+		/// </param>
+		/// <param name="repairOrientation">
+		/// Rewind each operand's inside-out shells before combining. The alternative to
+		/// <see cref="RustWindingRule.Nonzero"/>: it fixes the data once rather than
+		/// changing what every later operation means by "solid".
+		/// </param>
 		internal static Mesh DoArrayViaManifoldRust(
 			IEnumerable<(Mesh mesh, Matrix4X4 matrix)> items,
 			CsgModes operation,
@@ -108,7 +120,9 @@ namespace MatterHackers.PolygonMesh.Csg
 			Action<double, string> reporter,
 			double amountPerOperation,
 			double ratioCompleted,
-			Color[] meshColors)
+			Color[] meshColors,
+			RustWindingRule windingRule = RustWindingRule.Positive,
+			bool repairOrientation = false)
 		{
 			// Claimed on entry rather than on success: if this throws, the caller's fallback
 			// overwrites it, so the value always names whichever engine actually returned.
@@ -153,7 +167,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 					if (trackColors && meshCopy.FaceColors != null)
 					{
-						manifold = TrySplitByFaceColorsRust(meshCopy, originalIdToColor, cancellationToken);
+						manifold = TrySplitByFaceColorsRust(meshCopy, originalIdToColor, cancellationToken, repairOrientation);
 					}
 
 					if (manifold == null)
@@ -163,7 +177,7 @@ namespace MatterHackers.PolygonMesh.Csg
 							// AsOriginal is what gives the input an OriginalId, and the run data
 							// that carries colours back is keyed on that. Without colours the run
 							// data is never read, so the extra native copy would be pure waste.
-							manifold = ImportAsOriginal(meshCopy);
+							manifold = ImportAsOriginal(meshCopy, repairOrientation);
 
 							if (meshCopy.FaceColors != null)
 							{
@@ -179,7 +193,7 @@ namespace MatterHackers.PolygonMesh.Csg
 						}
 						else
 						{
-							manifold = Import(meshCopy);
+							manifold = Import(meshCopy, repairOrientation);
 						}
 					}
 
@@ -193,7 +207,11 @@ namespace MatterHackers.PolygonMesh.Csg
 					cancellationToken,
 					trackColors,
 					originalIdToColor,
-					originalIdToSpatialColors);
+					originalIdToSpatialColors,
+					windingRule,
+					reporter,
+					amountPerOperation,
+					ratioCompleted);
 			}
 			finally
 			{
@@ -217,7 +235,11 @@ namespace MatterHackers.PolygonMesh.Csg
 			CancellationToken cancellationToken,
 			bool trackColors,
 			Dictionary<int, Color> originalIdToColor,
-			Dictionary<int, List<(Vector3, Color)>> originalIdToSpatialColors)
+			Dictionary<int, List<(Vector3, Color)>> originalIdToSpatialColors,
+			RustWindingRule windingRule,
+			Action<double, string> reporter,
+			double amountPerOperation,
+			double ratioCompleted)
 		{
 			var resultMesh = new Mesh();
 
@@ -241,9 +263,28 @@ namespace MatterHackers.PolygonMesh.Csg
 			// only cost a copy. It is also the one case where the result is borrowed from
 			// the operand list, so it must not be disposed here.
 			bool ownsResult = manifolds.Count > 1;
-			RustManifold boolResult = ownsResult
-				? RustManifold.BatchBoolean(manifolds, operationType, cancellationToken)
-				: manifolds[0];
+
+			// BatchBoolean runs the kernel's CSG tree, which is what makes a large n-ary
+			// union tractable, but it reports no progress and takes no winding rule -
+			// it reads the process-global engine and the default rule. So it stays the
+			// path whenever neither is asked for, and asking for either drops to a
+			// pairwise left fold over the explicit binary entry point.
+			bool needsExplicitBoolean = reporter != null || windingRule != RustWindingRule.Positive;
+
+			RustManifold boolResult;
+			if (!ownsResult)
+			{
+				boolResult = manifolds[0];
+			}
+			else if (needsExplicitBoolean)
+			{
+				boolResult = CombinePairwise(
+					manifolds, operationType, windingRule, cancellationToken, reporter, amountPerOperation, ratioCompleted);
+			}
+			else
+			{
+				boolResult = RustManifold.BatchBoolean(manifolds, operationType, cancellationToken);
+			}
 
 			try
 			{
@@ -306,6 +347,70 @@ namespace MatterHackers.PolygonMesh.Csg
 		}
 
 		/// <summary>
+		/// Folds the operands together one pair at a time, which is what the explicit
+		/// binary entry point - the only one that takes a winding rule and a progress
+		/// sink - can express.
+		/// </summary>
+		/// <remarks>
+		/// A left fold, so subtraction still means <c>((a - b) - c)</c>, exactly what
+		/// BatchBoolean computes for the same list. The engine is passed explicitly
+		/// rather than read from the process-global default, but it is the same
+		/// <see cref="RustBooleanEngine.Auto"/> the static constructor installs; note
+		/// that Auto resolves to the robust engine for
+		/// <see cref="RustWindingRule.Nonzero"/>, which is the point of asking for it.
+		/// </remarks>
+		private static RustManifold CombinePairwise(
+			List<RustManifold> manifolds,
+			RustOpType operationType,
+			RustWindingRule windingRule,
+			CancellationToken cancellationToken,
+			Action<double, string> reporter,
+			double amountPerOperation,
+			double ratioCompleted)
+		{
+			var progress = reporter == null
+				? null
+				: new BooleanProgressAdapter(reporter, ratioCompleted, amountPerOperation, manifolds.Count - 1);
+
+			// Only ever holds an intermediate this method created; manifolds[0] is the
+			// caller's and is never assigned here, so the catch below cannot free it.
+			RustManifold accumulated = null;
+
+			try
+			{
+				for (int i = 1; i < manifolds.Count; i++)
+				{
+					var next = RustManifold.Boolean(
+						accumulated ?? manifolds[0],
+						manifolds[i],
+						operationType,
+						RustBooleanEngine.Auto,
+						windingRule,
+						progress,
+						cancellationToken);
+
+					accumulated?.Dispose();
+					accumulated = next;
+
+					progress?.CompleteOperation(CombineCompletePhase);
+				}
+
+				return accumulated;
+			}
+			catch
+			{
+				accumulated?.Dispose();
+				throw;
+			}
+		}
+
+		/// <summary>
+		/// Message phase for the boundary between two pairwise booleans, where the
+		/// kernel itself has nothing to report because no operation is running.
+		/// </summary>
+		private const string CombineCompletePhase = "combining";
+
+		/// <summary>
 		/// Uploads a mesh, rejecting one the kernel could not accept.
 		/// </summary>
 		/// <remarks>
@@ -320,7 +425,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// a boolean swallows an error operand as empty geometry and still reports
 		/// success, which would show up as a part silently missing from the output.
 		/// </exception>
-		private static RustManifold Import(Mesh mesh)
+		private static RustManifold Import(Mesh mesh, bool repairOrientation)
 		{
 			var (vertProperties, triVerts) = ToRustMeshData(mesh);
 
@@ -333,7 +438,33 @@ namespace MatterHackers.PolygonMesh.Csg
 						$"Manifold input has error status: {imported.Status} ({mesh.Vertices.Count} vertices, {mesh.Faces.Count} faces)");
 				}
 
-				return imported;
+				if (!repairOrientation)
+				{
+					return imported;
+				}
+
+				// On the handle rather than the mesh: the repair is a kernel operation over
+				// the imported shells, and doing it here means every caller - colour split
+				// included - gets it without repeating the check. A mesh that needs no
+				// repair comes back as a plain copy, so this is safe unconditionally.
+				var repaired = imported.RepairOrientation();
+
+				try
+				{
+					if (repaired.Status != RustStatus.NoError)
+					{
+						throw new InvalidOperationException(
+							$"Manifold orientation repair has error status: {repaired.Status} ({mesh.Vertices.Count} vertices, {mesh.Faces.Count} faces)");
+					}
+				}
+				catch
+				{
+					repaired.Dispose();
+					throw;
+				}
+
+				imported.Dispose();
+				return repaired;
 			}
 			catch
 			{
@@ -347,9 +478,9 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// its <see cref="RustManifold.OriginalId"/> in the run data.
 		/// </summary>
 		/// <inheritdoc cref="Import"/>
-		private static RustManifold ImportAsOriginal(Mesh mesh)
+		private static RustManifold ImportAsOriginal(Mesh mesh, bool repairOrientation)
 		{
-			var imported = Import(mesh);
+			var imported = Import(mesh, repairOrientation);
 
 			try
 			{
@@ -427,7 +558,8 @@ namespace MatterHackers.PolygonMesh.Csg
 		private static RustManifold TrySplitByFaceColorsRust(
 			Mesh meshCopy,
 			Dictionary<int, Color> originalIdToColor,
-			CancellationToken cancellationToken)
+			CancellationToken cancellationToken,
+			bool repairOrientation)
 		{
 			var subManifolds = new List<RustManifold>();
 			bool keepSubManifolds = false;
@@ -486,7 +618,7 @@ namespace MatterHackers.PolygonMesh.Csg
 						return null;
 					}
 
-					var subManifold = ImportAsOriginal(subMesh);
+					var subManifold = ImportAsOriginal(subMesh, repairOrientation);
 					originalIdToColor[subManifold.OriginalId] = color;
 					subManifolds.Add(subManifold);
 				}

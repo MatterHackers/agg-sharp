@@ -40,6 +40,11 @@ using MatterHackers.Agg;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 
+// Same aliasing convention as the other half of this partial class
+// (BooleanProcessingRust.cs): types that come from the native kernel are spelled
+// with a Rust prefix so a use site says which library it means.
+using RustWindingRule = ManifoldRust.WindingRule;
+
 namespace MatterHackers.PolygonMesh.Csg
 {
     using Polygon = List<IntPoint>;
@@ -113,6 +118,21 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// </remarks>
 		public static string LastBackendUsed { get; private set; }
 
+		/// <summary>
+		/// Combines every item into one mesh with a single n-ary boolean.
+		/// </summary>
+		/// <param name="windingRule">
+		/// Which winding numbers the native kernel counts as solid.
+		/// <see cref="RustWindingRule.Nonzero"/> keeps inside-out shells as material
+		/// rather than letting them cancel, at the cost of forcing the slower robust
+		/// engine. Ignored by the CsgBySlicing fallback and by the implicit-surface
+		/// modes, neither of which has the concept.
+		/// </param>
+		/// <param name="repairOrientation">
+		/// Rewind each operand's inside-out shells before combining - the alternative
+		/// to <see cref="RustWindingRule.Nonzero"/>, fixing the data once instead of
+		/// redefining "solid". Ignored on the same paths.
+		/// </param>
 		public static Mesh DoArray(IEnumerable<(Mesh mesh, Matrix4X4 matrix)> items,
 			CsgModes operation,
 			ProcessingModes processingMode,
@@ -122,7 +142,9 @@ namespace MatterHackers.PolygonMesh.Csg
 			CancellationToken cancellationToken,
             double amountPerOperation = 1,
 			double ratioCompleted = 0,
-			Color[] meshColors = null)
+			Color[] meshColors = null,
+			RustWindingRule windingRule = RustWindingRule.Positive,
+			bool repairOrientation = false)
 		{
 			if (processingMode == ProcessingModes.Polygons)
 			{
@@ -132,7 +154,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				// giving up the kernel's speed and accuracy on input it can now take.
 				try
 				{
-					return DoArrayViaManifoldRust(items, operation, cancellationToken, reporter, amountPerOperation, ratioCompleted, meshColors);
+					return DoArrayViaManifoldRust(items, operation, cancellationToken, reporter, amountPerOperation, ratioCompleted, meshColors, windingRule, repairOrientation);
 				}
 				catch (OperationCanceledException)
 				{
@@ -290,6 +312,10 @@ namespace MatterHackers.PolygonMesh.Csg
 			return implicitResult;
 		}
 
+		/// <summary>
+		/// The two-operand spelling of <see cref="DoArray"/>.
+		/// </summary>
+		/// <inheritdoc cref="DoArray"/>
 		public static Mesh Do(Mesh inMeshA,
 			Matrix4X4 matrixA,
 			// mesh B
@@ -305,7 +331,9 @@ namespace MatterHackers.PolygonMesh.Csg
 			double amountPerOperation = 1,
 			double ratioCompleted = 0,
 			CancellationToken cancellationToken = default,
-			Color[] meshColors = null)
+			Color[] meshColors = null,
+			RustWindingRule windingRule = RustWindingRule.Positive,
+			bool repairOrientation = false)
 		{
 			if (processingMode == ProcessingModes.Polygons)
 			{
@@ -318,7 +346,9 @@ namespace MatterHackers.PolygonMesh.Csg
                     cancellationToken,
                     amountPerOperation,
 					ratioCompleted,
-					meshColors);
+					meshColors,
+					windingRule,
+					repairOrientation);
 			}
 			else
 			{

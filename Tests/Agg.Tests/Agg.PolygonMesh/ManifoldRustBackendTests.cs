@@ -337,6 +337,209 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		/// <summary>
+		/// A reporter must see the kernel's progress, and attaching one must not change
+		/// the geometry: the progress path runs a pairwise fold rather than BatchBoolean,
+		/// and for two operands those have to be the same boolean.
+		/// </summary>
+		[Test]
+		public async Task ReporterSeesProgressWithoutChangingTheResult()
+		{
+			const double RatioCompleted = 0.25;
+			const double AmountPerOperation = 0.5;
+
+			var reported = new List<(double Ratio, string Message)>();
+
+			(Mesh, Matrix4X4)[] Operands() => new[]
+			{
+				(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(-3, 0, 0)),
+				(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(3, 0, 0)),
+			};
+
+			var withReporter = BooleanProcessing.DoArray(
+				Operands(),
+				CsgModes.Union,
+				ProcessingModes.Polygons,
+				ProcessingResolution._64,
+				ProcessingResolution._64,
+				(ratio, message) =>
+				{
+					// The kernel's callback can arrive on a native worker thread, so the list
+					// it lands in has to be guarded even though it is never re-entered.
+					lock (reported)
+					{
+						reported.Add((ratio, message));
+					}
+				},
+				CancellationToken.None,
+				AmountPerOperation,
+				RatioCompleted);
+
+			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
+			await Assert.That(reported.Count).IsGreaterThan(0)
+				.Because("a boolean that reports nothing leaves the progress bar frozen");
+
+			double previous = RatioCompleted;
+			foreach (var (ratio, message) in reported)
+			{
+				await Assert.That(ratio).IsGreaterThanOrEqualTo(RatioCompleted);
+				await Assert.That(ratio).IsLessThanOrEqualTo(RatioCompleted + AmountPerOperation);
+
+				// A bar that goes backwards is worse than no bar; the kernel's fraction
+				// restarts at every phase, so the adapter has to enforce this.
+				await Assert.That(ratio).IsGreaterThanOrEqualTo(previous);
+				previous = ratio;
+
+				await Assert.That(string.IsNullOrEmpty(message)).IsFalse();
+			}
+
+			var withoutReporter = BooleanProcessing.DoArray(
+				Operands(),
+				CsgModes.Union,
+				ProcessingModes.Polygons,
+				ProcessingResolution._64,
+				ProcessingResolution._64,
+				null,
+				CancellationToken.None,
+				AmountPerOperation,
+				RatioCompleted);
+
+			await Assert.That(withReporter.Vertices.Count).IsEqualTo(withoutReporter.Vertices.Count);
+			await Assert.That(withReporter.Faces.Count).IsEqualTo(withoutReporter.Faces.Count);
+			await Assert.That(SignedVolume(withReporter)).IsEqualTo(SignedVolume(withoutReporter)).Within(1e-9);
+		}
+
+		/// <summary>
+		/// The winding rule has to reach the kernel. An operand carrying an inside-out
+		/// shell loses that shell's material under Positive - it winds to -1 - and keeps
+		/// it under Nonzero.
+		/// </summary>
+		[Test]
+		public async Task NonzeroWindingKeepsInvertedMaterialThatPositiveDiscards()
+		{
+			// Two operands, not one: a single operand is its own answer and no boolean -
+			// and so no winding rule - ever runs.
+			(Mesh, Matrix4X4)[] Operands() => new[]
+			{
+				(OutwardCubeWithAnInvertedNeighbour(), Matrix4X4.Identity),
+				(PlatonicSolids.CreateCube(4, 4, 4), Matrix4X4.CreateTranslation(40, 0, 0)),
+			};
+
+			double VolumeUnder(WindingRule rule)
+			{
+				var result = BooleanProcessing.DoArray(
+					Operands(),
+					CsgModes.Union,
+					ProcessingModes.Polygons,
+					ProcessingResolution._64,
+					ProcessingResolution._64,
+					null,
+					CancellationToken.None,
+					windingRule: rule);
+
+				return SignedVolume(result);
+			}
+
+			var positive = VolumeUnder(WindingRule.Positive);
+			var nonzero = VolumeUnder(WindingRule.Nonzero);
+
+			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
+
+			// Positive keeps only the outward cube less the region the inverted one cancels;
+			// Nonzero keeps the inverted cube's own body as material too.
+			await Assert.That(positive).IsGreaterThan(0.0);
+			await Assert.That(nonzero).IsGreaterThan(positive);
+		}
+
+		/// <summary>
+		/// Repairing orientation is the other answer to inside-out input: it rewinds the
+		/// operand once, so the default Positive rule keeps working and the union is the
+		/// one the correctly wound operand would have produced.
+		/// </summary>
+		[Test]
+		public async Task RepairOrientationMakesAnInvertedOperandUnionLikeACorrectOne()
+		{
+			var inverted = PlatonicSolids.CreateCube(10, 10, 10);
+			inverted.ReverseFaces();
+
+			double UnionVolume(Mesh first, bool repairOrientation)
+			{
+				var result = BooleanProcessing.DoArray(
+					new[]
+					{
+						(first, Matrix4X4.CreateTranslation(-3, 0, 0)),
+						(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(3, 0, 0)),
+					},
+					CsgModes.Union,
+					ProcessingModes.Polygons,
+					ProcessingResolution._64,
+					ProcessingResolution._64,
+					null,
+					CancellationToken.None,
+					repairOrientation: repairOrientation);
+
+				return SignedVolume(result);
+			}
+
+			var repaired = UnionVolume(inverted, repairOrientation: true);
+			var correct = UnionVolume(PlatonicSolids.CreateCube(10, 10, 10), repairOrientation: false);
+
+			await Assert.That(BooleanProcessing.LastBackendUsed).IsEqualTo(BooleanProcessing.BackendManifoldRust);
+
+			// 16 x 10 x 10 either way - the repair is the whole difference between the
+			// inverted operand contributing its body and contributing nothing.
+			await Assert.That(correct).IsEqualTo(1600.0).Within(0.001);
+			await Assert.That(repaired).IsEqualTo(correct).Within(0.001);
+		}
+
+		/// <summary>
+		/// The signed volume of a closed mesh, positive when its faces wind outward.
+		/// Sums the tetrahedron each triangle forms with the origin, which is the
+		/// standard divergence-theorem sum and needs no topology.
+		/// </summary>
+		private static double SignedVolume(Mesh mesh)
+		{
+			double total = 0;
+
+			foreach (var face in mesh.Faces)
+			{
+				var a = new Vector3(mesh.Vertices[face.v0]);
+				var b = new Vector3(mesh.Vertices[face.v1]);
+				var c = new Vector3(mesh.Vertices[face.v2]);
+
+				total += a.Dot(b.Cross(c)) / 6.0;
+			}
+
+			return total;
+		}
+
+		/// <summary>
+		/// One mesh holding two cubes that overlap, the second of them wound inside out.
+		/// Self-intersecting, so it imports as soup and runs on the robust engine - which
+		/// is the only engine the winding rule means anything to.
+		/// </summary>
+		private static Mesh OutwardCubeWithAnInvertedNeighbour()
+		{
+			var mesh = PlatonicSolids.CreateCube(10, 10, 10);
+
+			var inverted = PlatonicSolids.CreateCube(10, 10, 10);
+			inverted.Transform(Matrix4X4.CreateTranslation(5, 5, 5));
+			inverted.ReverseFaces();
+
+			int offset = mesh.Vertices.Count;
+			foreach (var vertex in inverted.Vertices)
+			{
+				mesh.Vertices.Add(vertex);
+			}
+
+			foreach (var face in inverted.Faces)
+			{
+				mesh.Faces.Add(new Face(face.v0 + offset, face.v1 + offset, face.v2 + offset, mesh.Vertices));
+			}
+
+			return mesh;
+		}
+
+		/// <summary>
 		/// Two cubes welded into one mesh so that they meet along exactly one shared edge -
 		/// four faces on that edge, so not manifold, but no boundary edges, so still closed
 		/// and orientable. Precisely the shape the robust import exists for.
