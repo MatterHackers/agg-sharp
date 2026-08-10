@@ -861,21 +861,32 @@ namespace MatterHackers.GuiAutomation
 		{
 			MoveMouseToWidget(widget, containingWindow, offset, offsetHint, origin, out Point2D screenPosition);
 			inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
-			WaitforDraw(containingWindow);
+
+			if (!isDoubleClick)
+			{
+				// Only a single click can afford to settle here; for a double click this frame would be
+				// spent out of the 550ms the two presses have to share (see below).
+				WaitforDraw(containingWindow);
+			}
 
 			if (isDoubleClick)
 			{
 				// A real double click is two complete press/release pairs - down(1) up down(2) up -
 				// with only the second DOWN reporting a click count of 2 (WinForms semantics; ups
 				// always report 1). The click number is stated explicitly on the second down rather
-				// than inferred from event spacing, so the sequence stays a double click no matter
-				// how long the draws in between take.
-				Delay(UpDelaySeconds);
+				// than inferred from event spacing.
+				//
+				// Stating the count is necessary but not sufficient: GuiWidget.IsDoubleClick also
+				// requires the two DOWNs to be processed within 550ms of each other, and a widget that
+				// asks during its own OnMouseDown (ListViewItemBase does) is comparing against the
+				// FIRST down. So nothing may be waited on in here - no UpDelay, no draw - or a loaded
+				// machine spends the whole window on the intervening frames and the widget correctly
+				// concludes it received two single clicks. Two single clicks on a library folder row
+				// select it twice and open nothing, silently: no drill-in, no event, no error, and a
+				// test that then waits for content that will never load. Issue the three events
+				// back-to-back and let the draws happen after the pair has been delivered.
 				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
-				WaitforDraw(containingWindow);
-
 				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 2, 0);
-				WaitforDraw(containingWindow);
 			}
 
 			Delay(UpDelaySeconds);
