@@ -537,6 +537,63 @@ namespace MatterHackers.PolygonMesh.Csg
 		}
 
 		/// <summary>
+		/// What the kernel makes of a mesh offered to it as a boolean operand: whether it would
+		/// take it at all, and if so whether the solid intersects itself.
+		/// </summary>
+		/// <remarks>
+		/// Both halves of the answer come from one import, because both are properties of the same
+		/// upload and a caller that asked them separately would pay for the mesh twice.
+		/// <para>
+		/// Exposed because self-intersecting operands are the difference between a union that
+		/// finishes and one that does not: they force the kernel off its exact pipeline onto the
+		/// robust one, and on a set of large hole-filled meshes that has been measured in tens of
+		/// minutes with no end. A caller that has a choice about which operands to hand over needs
+		/// to be able to ask first.
+		/// </para>
+		/// <para>
+		/// The import is the same one <see cref="DoArrayViaManifoldRust"/> performs - transform
+		/// first, weld retry included - so the verdict is about the manifold the boolean would
+		/// actually see and not about some other reading of the same triangles.
+		/// </para>
+		/// </remarks>
+		/// <param name="matrix">
+		/// The operand's transform, applied before the import exactly as the boolean applies it. It
+		/// can change the answer on its own: a mirroring matrix turns every triangle inside out.
+		/// </param>
+		/// <param name="repairOrientation">
+		/// Import with the same shell-orientation repair the boolean would use, since that changes
+		/// which triangles the kernel ends up scanning.
+		/// </param>
+		public static BooleanOperandVerdict ClassifyBooleanOperand(Mesh mesh, Matrix4X4 matrix, bool repairOrientation = false)
+		{
+			if (mesh == null
+				|| mesh.Faces.Count == 0
+				|| mesh.Vertices.Count == 0)
+			{
+				return BooleanOperandVerdict.Refused;
+			}
+
+			try
+			{
+				var meshCopy = mesh.Copy(CancellationToken.None);
+				meshCopy.Transform(matrix);
+
+				using (var imported = Import(meshCopy, repairOrientation))
+				{
+					return imported.HasSelfIntersections
+						? BooleanOperandVerdict.SelfIntersecting
+						: BooleanOperandVerdict.Clean;
+				}
+			}
+			catch (Exception)
+			{
+				// Including the native failures: a mesh the kernel cannot be made to hold is one it
+				// would refuse as an operand too, and that is the only thing the caller is asking.
+				return BooleanOperandVerdict.Refused;
+			}
+		}
+
+		/// <summary>
 		/// Uploads a mesh, handing back null and the status that explains it rather than
 		/// throwing, so <see cref="Import"/> can decide whether the failure is worth a retry.
 		/// </summary>
