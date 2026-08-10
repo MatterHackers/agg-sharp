@@ -197,5 +197,72 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		{
 			await FaceColorBooleanScenarios.SubtractFromMeshWithFaceColorsPreservesColors();
 		}
+
+		[Test]
+		public async Task CopyAllFacesOfAnUncoloredMeshIntoAColoredOneLeavesNoTransparentFaces()
+		{
+			// default(Color) is rgba(0,0,0,0) - a face left at it draws as nothing, so an uncolored part
+			// merged into a painted result would silently disappear.
+			var colored = PlatonicSolids.CreateCube(10, 10, 10);
+			colored.FaceColors = Enumerable.Repeat(Color.Red, colored.Faces.Count).ToArray();
+
+			var uncolored = PlatonicSolids.CreateCube(5, 5, 5);
+			int coloredFaceCount = colored.Faces.Count;
+
+			colored.CopyAllFaces(uncolored, Matrix4X4.Identity);
+
+			await Assert.That(colored.FaceColors.Length).IsEqualTo(colored.Faces.Count);
+			await Assert.That(colored.FaceColors.Any(c => c.Alpha0To255 == 0)).IsFalse();
+
+			// The mesh that had colors keeps them, the merged-in one comes in as unpainted white
+			for (int i = 0; i < coloredFaceCount; i++)
+			{
+				await Assert.That(colored.FaceColors[i]).IsEqualTo(Color.Red);
+			}
+
+			for (int i = coloredFaceCount; i < colored.Faces.Count; i++)
+			{
+				await Assert.That(colored.FaceColors[i]).IsEqualTo(Color.White);
+			}
+		}
+
+		[Test]
+		public async Task CopyAllFacesOfAColoredMeshIntoAnUncoloredOneKeepsTheColors()
+		{
+			// The mirror case: without an array for the destination's own faces the source's colors are
+			// dropped entirely, so a painted set merged into an unpainted one loses its paint.
+			var uncolored = PlatonicSolids.CreateCube(10, 10, 10);
+			int uncoloredFaceCount = uncolored.Faces.Count;
+
+			var colored = PlatonicSolids.CreateCube(5, 5, 5);
+			colored.FaceColors = Enumerable.Repeat(Color.Blue, colored.Faces.Count).ToArray();
+
+			uncolored.CopyAllFaces(colored, Matrix4X4.Identity);
+
+			await Assert.That(uncolored.FaceColors).IsNotNull();
+			await Assert.That(uncolored.FaceColors.Length).IsEqualTo(uncolored.Faces.Count);
+			await Assert.That(uncolored.FaceColors.Any(c => c.Alpha0To255 == 0)).IsFalse();
+
+			for (int i = 0; i < uncoloredFaceCount; i++)
+			{
+				await Assert.That(uncolored.FaceColors[i]).IsEqualTo(Color.White);
+			}
+
+			for (int i = uncoloredFaceCount; i < uncolored.Faces.Count; i++)
+			{
+				await Assert.That(uncolored.FaceColors[i]).IsEqualTo(Color.Blue);
+			}
+		}
+
+		[Test]
+		public async Task CopyAllFacesBetweenUncoloredMeshesStaysUncolored()
+		{
+			// Nothing is painted, so the objects' own colors are doing the work - starting a FaceColors
+			// array here would override them with white.
+			var destination = PlatonicSolids.CreateCube(10, 10, 10);
+			destination.CopyAllFaces(PlatonicSolids.CreateCube(5, 5, 5), Matrix4X4.Identity);
+
+			await Assert.That(destination.FaceColors).IsNull();
+		}
 	}
 }

@@ -289,6 +289,26 @@ namespace MatterHackers.PolygonMesh
 			}
         }
 
+		/// <summary>
+		/// The color a face gets when a mesh with no per-face colors is merged into one that has them.
+		/// </summary>
+		/// <remarks>
+		/// White because the renderer uses FaceColors as the vertex color against a white material, so a
+		/// white face is an unpainted surface. It is not <c>default(Color)</c>, which is rgba(0, 0, 0, 0)
+		/// and draws as nothing - faces left at it are invisible rather than merely uncolored.
+		/// </remarks>
+		public static readonly Color UncoloredFace = Color.White;
+
+		/// <summary>
+		/// Appends every face of <paramref name="mesh"/>, transformed by <paramref name="matrix"/>, to this mesh.
+		/// </summary>
+		/// <remarks>
+		/// Per-face color is all-or-nothing per mesh: FaceColors is either null (the object's own color paints
+		/// every face) or one entry per face. Merging a painted mesh with an unpainted one therefore has to
+		/// invent entries for the unpainted side, and those get <see cref="UncoloredFace"/> - leaving them at
+		/// <c>default(Color)</c> made them transparent, and dropping the array made the painted side lose its
+		/// colors. Two unpainted meshes stay unpainted so their objects' own colors keep doing the work.
+		/// </remarks>
 		public void CopyAllFaces(Mesh mesh, Matrix4X4 matrix)
 		{
 			int fStart = this.Faces.Count;
@@ -302,27 +322,33 @@ namespace MatterHackers.PolygonMesh
 				this.CreateFace(new[] { v0, v1, v2 });
 			}
 
-			// copy face colors if source has them
+			if (mesh.FaceColors == null
+				&& this.FaceColors == null)
+			{
+				return;
+			}
+
+			int totalFaces = fStart + mesh.Faces.Count;
+			var colors = this.FaceColors;
+			int alreadyColored = colors?.Length ?? 0;
+
+			if (alreadyColored < totalFaces)
+			{
+				// Resize (or allocate) leaves the new entries at default(Color), which renders as nothing
+				Array.Resize(ref colors, totalFaces);
+				for (int i = alreadyColored; i < totalFaces; i++)
+				{
+					colors[i] = UncoloredFace;
+				}
+			}
+
 			if (mesh.FaceColors != null)
 			{
-				int totalFaces = fStart + mesh.Faces.Count;
-				var colors = this.FaceColors ?? new Color[totalFaces];
-				if (colors.Length < totalFaces)
-				{
-					Array.Resize(ref colors, totalFaces);
-				}
-
 				Array.Copy(mesh.FaceColors, 0, colors, fStart,
 					Math.Min(mesh.FaceColors.Length, mesh.Faces.Count));
-				this.FaceColors = colors;
 			}
-			else if (this.FaceColors != null)
-			{
-				int totalFaces = fStart + mesh.Faces.Count;
-				var colors = this.FaceColors;
-				Array.Resize(ref colors, totalFaces);
-				this.FaceColors = colors;
-			}
+
+			this.FaceColors = colors;
 		}
 
 		public BvhTree<int> GetVertexBvhTree()
