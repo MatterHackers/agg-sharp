@@ -29,7 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 
-// Aliased the same way BooleanProcessingRust.cs aliases them: ManifoldRust.Manifold and
+// Aliased the same way ManifoldKernel.cs aliases them: ManifoldRust.Manifold and
 // MatterHackers.PolygonMesh.Mesh are both "the mesh type" at a glance, and the Rust
 // prefix says which one a use site means.
 using RustManifold = ManifoldRust.Manifold;

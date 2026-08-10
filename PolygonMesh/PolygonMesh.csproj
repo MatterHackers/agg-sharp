@@ -14,9 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The one and only boolean backend (see BooleanProcessingRust.cs). The C++ ManifoldNET
+    <!-- The one and only boolean backend (see ManifoldKernel.cs). The C++ ManifoldNET
          engine it replaced is gone, and so is the managed CsgBySlicing fallback. -->
-    <PackageReference Include="ManifoldRust" Version="0.4.1" />
+    <PackageReference Include="ManifoldRust" Version="0.4.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
   </ItemGroup>
 

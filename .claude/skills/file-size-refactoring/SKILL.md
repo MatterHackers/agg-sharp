@@ -40,28 +40,49 @@ Group related methods that implement a specific feature:
 - All methods related to "file import" -> `FileImportService.cs`
 - All methods related to "undo/redo" -> `UndoRedoManager.cs`
 
-### 4. Extract Partial Classes
+### 4. Extract a Collaborator Class (never a partial class)
 
-For large classes where methods are tightly coupled to instance state, use C# partial classes:
+**Partial classes are not allowed in this project.** Splitting a type across files hides the
+problem rather than fixing it: the class still has every responsibility it had before, the
+compiler still sees one 2000-line type, and nothing about the coupling has to be justified.
+Every `partial class` in MatterCAD was dissolved for this reason.
+
+When methods are tightly coupled to instance state, extract the *cohesive slice of behaviour*
+into a real class that is handed the owner it works on:
+
 ```csharp
-// SceneContext.cs - core functionality
-public partial class SceneContext
+// Stateful slice -> instance collaborator, constructed with its owner
+internal class PathEditorDrag
 {
-    // Core scene management methods
-}
+    private readonly PathEditorWidget owner;
 
-// SceneContext.Selection.cs - selection-related methods
-public partial class SceneContext
-{
-    // Selection management methods
-}
+    public PathEditorDrag(PathEditorWidget owner) => this.owner = owner;
 
-// SceneContext.UndoRedo.cs - undo/redo methods
-public partial class SceneContext
-{
-    // Undo/redo methods
+    // Drag state (which point is grabbed, the down position, ...) lives HERE,
+    // not as more fields on the widget.
 }
 ```
+
+```csharp
+// Stateless slice -> static class taking what it needs as arguments
+internal static class SceneCloneSync
+{
+    public static void ApplyTo(IObject3D source, IObject3D clone) { ... }
+}
+```
+
+The shapes used when MatterCAD's partials were cleaned up are worth copying:
+
+- `PathEditorDrag` - the drag gesture owned its own state, so it became an instance
+  collaborator built with the widget it drives.
+- `SceneCloneSync` - pure source-to-clone synchronisation with no state of its own, so it
+  became a static class.
+- `LibraryMenuBuilder` - menu construction taking the widget as a parameter, so the widget's
+  file no longer carries hundreds of lines of menu wiring.
+
+The test of a good extraction is the same as everywhere else in this document: the new class
+has a name that says what it *is*, and it makes sense to read on its own. "The other half of
+`SceneContext`" is not a class.
 
 ### 5. Extract Interfaces and Implementations
 

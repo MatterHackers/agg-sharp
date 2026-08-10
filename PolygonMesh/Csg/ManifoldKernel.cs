@@ -50,8 +50,9 @@ namespace MatterHackers.PolygonMesh.Csg
 	/// <see cref="BooleanProcessing.DoArray"/> runs every polygon-mode boolean through.
 	/// </summary>
 	/// <remarks>
-	/// Kept in its own file only to keep each half of the partial class a readable
-	/// length; there is no second native engine to sit beside any more.
+	/// Internal, and everything a caller outside this assembly needs is re-exposed on
+	/// <see cref="BooleanProcessing"/>: which kernel does the arithmetic is not part of
+	/// the CSG contract, and there is no second native engine to sit beside this one.
 	/// <para>
 	/// Three things it does that the C++ ManifoldNET engine it replaced could not, and
 	/// which are why the migration happened: coordinates upload as <c>double</c> rather
@@ -61,7 +62,7 @@ namespace MatterHackers.PolygonMesh.Csg
 	/// actually reaches the kernel.
 	/// </para>
 	/// </remarks>
-	public static partial class BooleanProcessing
+	internal static class ManifoldKernel
 	{
 		private static readonly Color DefaultFaceColor = new Color(200, 200, 200, 255);
 
@@ -75,7 +76,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// rational-arithmetic engine when an operand came in through the robust import as
 		/// non-manifold soup.
 		/// </remarks>
-		static BooleanProcessing()
+		static ManifoldKernel()
 		{
 			try
 			{
@@ -84,8 +85,9 @@ namespace MatterHackers.PolygonMesh.Csg
 			catch
 			{
 				// A static constructor that throws poisons the whole type: every later member
-				// access - including the implicit-surface path, which never touches the kernel -
-				// would get a cached TypeInitializationException naming the wrong problem. If the
+				// access - including a classify call that only wants to know whether an operand
+				// imports - would get a cached TypeInitializationException naming the wrong
+				// problem rather than the failure it actually hit. If the
 				// native library cannot load or the version handshake fails, the per-call Import
 				// throws instead, which says what actually went wrong. A failed engine selection
 				// simply leaves the kernel's default Exact behaviour in place.
@@ -95,12 +97,13 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <summary>
 		/// Perform a boolean operation via the ManifoldRust native library. Every failure
 		/// surfaces as a managed exception - including cancellation, as
-		/// <see cref="OperationCanceledException"/> - and <see cref="DoArray"/> passes them
-		/// all straight to the caller.
+		/// <see cref="OperationCanceledException"/> - and
+		/// <see cref="BooleanProcessing.DoArray"/> passes them all straight to the caller.
 		/// </summary>
 		/// <remarks>
-		/// Internal rather than private only so the tests can watch it reject an input
-		/// directly. <see cref="DoArray"/> is the entry point everything else uses.
+		/// Reached through <see cref="BooleanProcessing.DoArrayViaManifoldRust"/>, which is
+		/// the name the tests use to watch the kernel reject an input directly;
+		/// <see cref="BooleanProcessing.DoArray"/> is the entry point everything else uses.
 		/// <para>
 		/// A union whose operands are not all usable degrades rather than failing outright: the
 		/// ones that imported are combined and the answer leaves as
@@ -120,7 +123,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <see cref="RustWindingRule.Nonzero"/>: it fixes the data once rather than
 		/// changing what every later operation means by "solid".
 		/// </param>
-		internal static Mesh DoArrayViaManifoldRust(
+		internal static Mesh RunBoolean(
 			IEnumerable<(Mesh mesh, Matrix4X4 matrix)> items,
 			CsgModes operation,
 			CancellationToken cancellationToken,
@@ -509,7 +512,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// a boolean swallows an error operand as empty geometry and still reports
 		/// success, which would show up as a part silently missing from the output.
 		/// </exception>
-		private static RustManifold Import(Mesh mesh, bool repairOrientation)
+		internal static RustManifold Import(Mesh mesh, bool repairOrientation)
 		{
 			var imported = TryImport(mesh, repairOrientation, out var status, out var failureMessage);
 
@@ -534,63 +537,6 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 
 			throw new MeshImportRejectedException(failureMessage, status);
-		}
-
-		/// <summary>
-		/// What the kernel makes of a mesh offered to it as a boolean operand: whether it would
-		/// take it at all, and if so whether the solid intersects itself.
-		/// </summary>
-		/// <remarks>
-		/// Both halves of the answer come from one import, because both are properties of the same
-		/// upload and a caller that asked them separately would pay for the mesh twice.
-		/// <para>
-		/// Exposed because self-intersecting operands are the difference between a union that
-		/// finishes and one that does not: they force the kernel off its exact pipeline onto the
-		/// robust one, and on a set of large hole-filled meshes that has been measured in tens of
-		/// minutes with no end. A caller that has a choice about which operands to hand over needs
-		/// to be able to ask first.
-		/// </para>
-		/// <para>
-		/// The import is the same one <see cref="DoArrayViaManifoldRust"/> performs - transform
-		/// first, weld retry included - so the verdict is about the manifold the boolean would
-		/// actually see and not about some other reading of the same triangles.
-		/// </para>
-		/// </remarks>
-		/// <param name="matrix">
-		/// The operand's transform, applied before the import exactly as the boolean applies it. It
-		/// can change the answer on its own: a mirroring matrix turns every triangle inside out.
-		/// </param>
-		/// <param name="repairOrientation">
-		/// Import with the same shell-orientation repair the boolean would use, since that changes
-		/// which triangles the kernel ends up scanning.
-		/// </param>
-		public static BooleanOperandVerdict ClassifyBooleanOperand(Mesh mesh, Matrix4X4 matrix, bool repairOrientation = false)
-		{
-			if (mesh == null
-				|| mesh.Faces.Count == 0
-				|| mesh.Vertices.Count == 0)
-			{
-				return BooleanOperandVerdict.Refused;
-			}
-
-			try
-			{
-				var meshCopy = mesh.Copy(CancellationToken.None);
-				meshCopy.Transform(matrix);
-
-				using (var imported = Import(meshCopy, repairOrientation))
-				{
-					return imported.HasSelfIntersections
-						? BooleanOperandVerdict.SelfIntersecting
-						: BooleanOperandVerdict.Clean;
-				}
-			}
-			catch (Exception)
-			{
-				// Including the native failures: a mesh the kernel cannot be made to hold is one it
-				// would refuse as an operand too, and that is the only thing the caller is asking.
-				return BooleanOperandVerdict.Refused;
-			}
 		}
 
 		/// <summary>

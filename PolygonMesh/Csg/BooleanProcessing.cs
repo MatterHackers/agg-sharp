@@ -40,9 +40,9 @@ using MatterHackers.Agg;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 
-// Same aliasing convention as the other half of this partial class
-// (BooleanProcessingRust.cs): types that come from the native kernel are spelled
-// with a Rust prefix so a use site says which library it means.
+// Same aliasing convention as the kernel itself (ManifoldKernel.cs): types that come
+// from the native kernel are spelled with a Rust prefix so a use site says which
+// library it means.
 using RustWindingRule = ManifoldRust.WindingRule;
 
 namespace MatterHackers.PolygonMesh.Csg
@@ -87,12 +87,12 @@ namespace MatterHackers.PolygonMesh.Csg
 	/// </summary>
 	/// <remarks>
 	/// Polygon mode runs on ManifoldRust, the one and only boolean kernel
-	/// (see BooleanProcessingRust.cs, the other half of this partial class). There is no
-	/// second engine behind it: an input the kernel cannot take is an exception the caller
+	/// (see <see cref="ManifoldKernel"/>, which this type is the public face of). There is
+	/// no second engine behind it: an input the kernel cannot take is an exception the caller
 	/// sees, not geometry built by different rules. The other processing modes do not use a
 	/// kernel at all - they resample the operands as implicit surfaces.
 	/// </remarks>
-	public static partial class BooleanProcessing
+	public static class BooleanProcessing
 	{
 		/// <summary>
 		/// Combines every item into one mesh with a single n-ary boolean.
@@ -133,6 +133,84 @@ namespace MatterHackers.PolygonMesh.Csg
 			else
 			{
 				return AsImplicitMeshes(items, operation, processingMode, inputResolution, outputResolution);
+			}
+		}
+
+		/// <summary>
+		/// The kernel path <see cref="DoArray"/> takes in <see cref="ProcessingModes.Polygons"/>,
+		/// named here so the tests can call it directly and watch the kernel reject an input at
+		/// the point it is rejected.
+		/// </summary>
+		/// <inheritdoc cref="ManifoldKernel.RunBoolean"/>
+		internal static Mesh DoArrayViaManifoldRust(
+			IEnumerable<(Mesh mesh, Matrix4X4 matrix)> items,
+			CsgModes operation,
+			CancellationToken cancellationToken,
+			Action<double, string> reporter,
+			double amountPerOperation,
+			double ratioCompleted,
+			Color[] meshColors,
+			RustWindingRule windingRule = RustWindingRule.Positive,
+			bool repairOrientation = false)
+		{
+			return ManifoldKernel.RunBoolean(
+				items, operation, cancellationToken, reporter, amountPerOperation, ratioCompleted, meshColors, windingRule, repairOrientation);
+		}
+
+		/// <summary>
+		/// What the kernel makes of a mesh offered to it as a boolean operand: whether it would
+		/// take it at all, and if so whether the solid intersects itself.
+		/// </summary>
+		/// <remarks>
+		/// Both halves of the answer come from one import, because both are properties of the same
+		/// upload and a caller that asked them separately would pay for the mesh twice.
+		/// <para>
+		/// Exposed because self-intersecting operands are the difference between a union that
+		/// finishes and one that does not: they force the kernel off its exact pipeline onto the
+		/// robust one, and on a set of large hole-filled meshes that has been measured in tens of
+		/// minutes with no end. A caller that has a choice about which operands to hand over needs
+		/// to be able to ask first.
+		/// </para>
+		/// <para>
+		/// The import is the same one <see cref="DoArray"/> performs - transform first, weld retry
+		/// included - so the verdict is about the manifold the boolean would actually see and not
+		/// about some other reading of the same triangles.
+		/// </para>
+		/// </remarks>
+		/// <param name="matrix">
+		/// The operand's transform, applied before the import exactly as the boolean applies it. It
+		/// can change the answer on its own: a mirroring matrix turns every triangle inside out.
+		/// </param>
+		/// <param name="repairOrientation">
+		/// Import with the same shell-orientation repair the boolean would use, since that changes
+		/// which triangles the kernel ends up scanning.
+		/// </param>
+		public static BooleanOperandVerdict ClassifyBooleanOperand(Mesh mesh, Matrix4X4 matrix, bool repairOrientation = false)
+		{
+			if (mesh == null
+				|| mesh.Faces.Count == 0
+				|| mesh.Vertices.Count == 0)
+			{
+				return BooleanOperandVerdict.Refused;
+			}
+
+			try
+			{
+				var meshCopy = mesh.Copy(CancellationToken.None);
+				meshCopy.Transform(matrix);
+
+				using (var imported = ManifoldKernel.Import(meshCopy, repairOrientation))
+				{
+					return imported.HasSelfIntersections
+						? BooleanOperandVerdict.SelfIntersecting
+						: BooleanOperandVerdict.Clean;
+				}
+			}
+			catch (Exception)
+			{
+				// Including the native failures: a mesh the kernel cannot be made to hold is one it
+				// would refuse as an operand too, and that is the only thing the caller is asking.
+				return BooleanOperandVerdict.Refused;
 			}
 		}
 
