@@ -699,7 +699,7 @@ namespace MatterHackers.Agg.UI.Tests
 		/// instead: a transparent compositing layer, which is exactly what a widget nested inside another
 		/// widget's RGBA backbuffer is painted onto.
 		/// <para>
-		/// What this pins is the one line in <c>GuiWidget.RasterizeBackbuffer</c> that flags the RGBA buffer
+		/// What this pins is the one line in <c>WidgetBackbuffer.Rasterize</c> that flags the RGBA buffer
 		/// <see cref="Graphics2D.IsTransparentCompositingLayer"/>. Without it the buffer is just a 32 bit
 		/// <see cref="ImageBuffer"/>, the mask pipeline accepts it, and the widget's text picks up subpixel
 		/// phase computed against pixels that get blended again later against content the phase knows nothing

@@ -161,10 +161,11 @@ namespace MatterHackers.Agg.UI
 	}
 
 	/// <summary>
-	/// The base of every widget. The double-buffering concern - the backbuffer fields, their modes and the
-	/// raster and composite that use them - lives in <c>GuiWidget.Backbuffer.cs</c>.
+	/// The base of every widget. The double-buffering concern - the backbuffer itself, its modes and the
+	/// raster and composite that use them - lives in <see cref="WidgetBackbuffer"/>, which this class owns
+	/// while <see cref="DoubleBuffer"/> is on.
 	/// </summary>
-	public partial class GuiWidget : IAscendable<GuiWidget>, IEquatable<GuiWidget>
+	public class GuiWidget : IAscendable<GuiWidget>, IEquatable<GuiWidget>
 	{
 		public static double DeviceScale { get; set; } = 1;
 
@@ -227,6 +228,65 @@ namespace MatterHackers.Agg.UI
 					Invalidate();
 				}
 			}
+		}
+
+		private bool doubleBuffer;
+
+		/// <summary>
+		/// This widget's pixel cache, or null while <see cref="DoubleBuffer"/> is off - which is the great
+		/// majority of widgets, and why it is built on demand rather than per widget.
+		/// </summary>
+		private WidgetBackbuffer backbuffer;
+
+		/// <summary>
+		/// Gets the backBuffer object for widgets that are double buffered.  It will return null if they are not.
+		/// </summary>
+		/// <remarks>
+		/// Also null while the widget's pixels are in <see cref="BackbufferMode.LcdCoverage"/>: those live in
+		/// two coverage planes, not in an <see cref="ImageBuffer"/>, and there is no lossless
+		/// <see cref="ImageBuffer"/> to hand back. Returning the last RGBA buffer instead would serve pixels
+		/// from whenever the widget was last painted the other way, which is worse than nothing. A caller that
+		/// wants pixels regardless has to either keep LCD rendering off (the default) or collapse the planes
+		/// itself through <see cref="LcdBuffer.ToImageBufferCollapsed"/>.
+		/// </remarks>
+		public ImageBuffer BackBuffer => this.backbuffer?.RgbaBuffer;
+
+		public bool DoubleBuffer
+		{
+			get => doubleBuffer;
+			set
+			{
+				if (this.DoubleBuffer != value)
+				{
+					doubleBuffer = value;
+					if (doubleBuffer)
+					{
+						backbuffer = new WidgetBackbuffer(this);
+						backbuffer.AllocateRgbaBuffer();
+					}
+					else
+					{
+						// Dropping the whole cache also drops the recorded mode with the pixels it describes:
+						// keeping LcdCoverage would let a later paint that resolves the same mode skip the
+						// re-raster and composite a buffer that is no longer there.
+						backbuffer = null;
+					}
+
+					Invalidate();
+				}
+			}
+		}
+
+		/// <summary>
+		/// Which backbuffer representation this widget should be painted into, given the surface it will be
+		/// composited onto. See <see cref="WidgetBackbuffer.ResolveMode"/> for the gates and why each one is
+		/// separate.
+		/// </summary>
+		/// <param name="destination">The graphics the backbuffer will be composited onto, with the transform
+		/// the composite will happen under already set.</param>
+		public BackbufferMode ResolveBackbufferMode(Graphics2D destination)
+		{
+			return WidgetBackbuffer.ResolveMode(destination);
 		}
 
 		public LayoutEngine LayoutEngine { get; protected set; }
@@ -1159,10 +1219,7 @@ namespace MatterHackers.Agg.UI
 
 					Invalidate();
 
-					if (DoubleBuffer)
-					{
-						AllocateBackBuffer();
-					}
+					backbuffer?.AllocateRgbaBuffer();
 
 					OnBoundsChanged(null);
 
@@ -1712,7 +1769,7 @@ namespace MatterHackers.Agg.UI
 		/// state behaves here as an un-buffered one does and derives its graphics from the parent chain.
 		/// <para>
 		/// Handing back an <see cref="LcdBufferGraphics2D"/> over the coverage planes was possible - that is a
-		/// real <see cref="Graphics2D"/>, and <see cref="RasterizeBackbuffer"/> constructs one - but was
+		/// real <see cref="Graphics2D"/>, and <see cref="WidgetBackbuffer.Rasterize"/> constructs one - but was
 		/// deliberately chosen against. It is a paint-time surface, built for the duration of a raster and only
 		/// partially supported outside that pipeline (its <see cref="IImageFloat"/> <c>Render</c> overload
 		/// throws, for one), so giving it to arbitrary out-of-paint callers carries hazards of its own. The
@@ -1722,7 +1779,7 @@ namespace MatterHackers.Agg.UI
 		/// <para>
 		/// <b>That surface is transient.</b> Ink drawn through it lands on the ancestor's pixels, so the next
 		/// time the parent composites this widget's coverage planes over that rect
-		/// (<see cref="CompositeBackbufferOnto"/>) it is painted over - unlike the RGBA arm above, where
+		/// (<see cref="WidgetBackbuffer.CompositeOnto"/>) it is painted over - unlike the RGBA arm above, where
 		/// drawing goes into the widget's own cache and survives until the widget re-rasters.
 		/// </para>
 		/// </remarks>
@@ -2274,8 +2331,8 @@ namespace MatterHackers.Agg.UI
 							// epoch that says they are current, and a settings change that landed mid-raster
 							// would never be re-rastered.
 							long lcdEpoch = LcdRenderSettings.Epoch;
-							if (mode != child.backBufferMode
-								|| (mode == BackbufferMode.LcdCoverage && child.backBufferLcdEpoch != lcdEpoch))
+							if (mode != child.backbuffer.Mode
+								|| (mode == BackbufferMode.LcdCoverage && child.backbuffer.LcdEpoch != lcdEpoch))
 							{
 								child.isCurrentlyInvalid = true;
 							}
@@ -2285,14 +2342,14 @@ namespace MatterHackers.Agg.UI
 								int extraW = xFraction > 0 ? 1 : 0;
 								int extraH = yFraction > 0 ? 1 : 0;
 
-								child.RasterizeBackbuffer(
+								child.backbuffer.Rasterize(
 									mode,
 									extraW,
 									extraH,
 									Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction));
 
-								child.backBufferMode = mode;
-								child.backBufferLcdEpoch = lcdEpoch;
+								child.backbuffer.Mode = mode;
+								child.backbuffer.LcdEpoch = lcdEpoch;
 								child.isCurrentlyInvalid = false;
 							}
 
@@ -2308,7 +2365,7 @@ namespace MatterHackers.Agg.UI
 
 							graphics2D.SetTransform(Affine.NewTranslation(offsetToRenderSurface));
 
-							child.CompositeBackbufferOnto(
+							child.backbuffer.CompositeOnto(
 								graphics2D,
 								offsetToRenderSurface,
 								currentGraphics2DTransform.sx,

@@ -25,7 +25,7 @@ using System.Collections.Generic;
 
 namespace MatterHackers.VectorMath.Bvh
 {
-	public partial class BvhTree<T> : IIntersectable
+	public class BvhTree<T> : IIntersectable
 	{
 		// any of the items that are in this node
 		public List<BvhTreeItemData<T>> Items = new List<BvhTreeItemData<T>>();

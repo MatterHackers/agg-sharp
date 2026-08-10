@@ -1,21 +1,32 @@
-//----------------------------------------------------------------------------
-// Anti-Grain Geometry - Version 2.4
-// Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
-//
-// C# port by: Lars Brubaker
-//                  larsbrubaker@gmail.com
-// Copyright (C) 2026 Lars Brubaker
-//
-// Permission to copy, use, modify, sell and distribute this software
-// is granted provided this copyright notice appears in all copies.
-// This software is provided "as is" without express or implied
-// warranty, and with no claim as to its suitability for any purpose.
-//
-//----------------------------------------------------------------------------
-// Contact: mcseem@antigrain.com
-//          mcseemagg@yahoo.com
-//          http://www.antigrain.com
-//----------------------------------------------------------------------------
+/*
+Copyright (c) 2026, Lars Brubaker
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied, of the FreeBSD Project.
+*/
+
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.LcdCoverage;
 using MatterHackers.Agg.Transform;
@@ -29,9 +40,17 @@ namespace MatterHackers.Agg.UI
 	/// live in (<see cref="BackbufferMode"/>), how that buffer is allocated and rastered, and how it is
 	/// composited back onto the parent surface.
 	/// </summary>
-	public partial class GuiWidget
+	/// <remarks>
+	/// Internal, and owned by exactly one widget: everything a caller outside the assembly ever reached stays
+	/// on <see cref="GuiWidget"/> itself (<see cref="GuiWidget.DoubleBuffer"/>,
+	/// <see cref="GuiWidget.BackBuffer"/>, <see cref="GuiWidget.ResolveBackbufferMode"/>), so this type is
+	/// free to change shape. A widget builds one when double buffering is turned on and drops it when it is
+	/// turned off, which keeps the great majority of widgets - the un-buffered ones - carrying nothing but a
+	/// null field.
+	/// </remarks>
+	internal class WidgetBackbuffer
 	{
-		private bool doubleBuffer;
+		private readonly GuiWidget widget;
 
 		private ImageBuffer backBuffer;
 
@@ -42,12 +61,17 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		private LcdBuffer lcdBackBuffer;
 
+		internal WidgetBackbuffer(GuiWidget widget)
+		{
+			this.widget = widget;
+		}
+
 		/// <summary>
 		/// The mode the pixels currently in the backbuffer were painted in. A paint that resolves a different
 		/// mode has to re-raster, because the two representations are not convertible in the direction that
 		/// matters (an RGBA buffer has no per-channel coverage to recover).
 		/// </summary>
-		private BackbufferMode backBufferMode = BackbufferMode.Rgba;
+		internal BackbufferMode Mode { get; set; } = BackbufferMode.Rgba;
 
 		/// <summary>
 		/// <see cref="LcdRenderSettings.Epoch"/> as of the last raster, so a change to the filter's style
@@ -55,63 +79,17 @@ namespace MatterHackers.Agg.UI
 		/// the old settings. The reference's <c>typography_epoch</c> on <c>BackbufferCache</c>, for the same
 		/// reason.
 		/// </summary>
-		private long backBufferLcdEpoch;
+		internal long LcdEpoch { get; set; }
 
 		/// <summary>
-		/// Gets the backBuffer object for widgets that are double buffered.  It will return null if they are not.
+		/// The cached pixels as an <see cref="ImageBuffer"/>, or null while they are in
+		/// <see cref="BackbufferMode.LcdCoverage"/>. See <see cref="GuiWidget.BackBuffer"/> for why the LCD
+		/// case answers null rather than the stale RGBA buffer.
 		/// </summary>
-		/// <remarks>
-		/// Also null while the widget's pixels are in <see cref="BackbufferMode.LcdCoverage"/>: those live in
-		/// two coverage planes, not in an <see cref="ImageBuffer"/>, and there is no lossless
-		/// <see cref="ImageBuffer"/> to hand back. Returning the last RGBA buffer instead would serve pixels
-		/// from whenever the widget was last painted the other way, which is worse than nothing. A caller that
-		/// wants pixels regardless has to either keep LCD rendering off (the default) or collapse the planes
-		/// itself through <see cref="LcdBuffer.ToImageBufferCollapsed"/>.
-		/// </remarks>
-		public ImageBuffer BackBuffer
-		{
-			get
-			{
-				if (DoubleBuffer
-					&& backBufferMode == BackbufferMode.Rgba)
-				{
-					return backBuffer;
-				}
-
-				return null;
-			}
-		}
-
-		public bool DoubleBuffer
-		{
-			get => doubleBuffer;
-			set
-			{
-				if (this.DoubleBuffer != value)
-				{
-					doubleBuffer = value;
-					if (doubleBuffer)
-					{
-						AllocateBackBuffer();
-					}
-					else
-					{
-						backBuffer = null;
-						lcdBackBuffer = null;
-
-						// The recorded mode has to drop with the pixels it describes: leaving it on
-						// LcdCoverage would let a later paint that resolves the same mode skip the re-raster
-						// and composite a buffer that is no longer there.
-						backBufferMode = BackbufferMode.Rgba;
-					}
-
-					Invalidate();
-				}
-			}
-		}
+		internal ImageBuffer RgbaBuffer => this.Mode == BackbufferMode.Rgba ? this.backBuffer : null;
 
 		/// <summary>
-		/// Which backbuffer representation this widget should be painted into, given the surface it will be
+		/// Which backbuffer representation a widget should be painted into, given the surface it will be
 		/// composited onto. <see cref="BackbufferMode.Rgba"/> - today's behaviour, byte for byte - unless
 		/// every gate opens.
 		/// </summary>
@@ -165,10 +143,11 @@ namespace MatterHackers.Agg.UI
 		/// </para>
 		/// <para>
 		/// Re-resolved every paint, like the reference's <c>backbuffer_mode()</c>, so the setting takes effect
-		/// on the next frame rather than at construction.
+		/// on the next frame rather than at construction. Static because it reads nothing but the destination
+		/// and the global setting, which is what lets a widget answer it with no backbuffer allocated yet.
 		/// </para>
 		/// </remarks>
-		public BackbufferMode ResolveBackbufferMode(Graphics2D destination)
+		internal static BackbufferMode ResolveMode(Graphics2D destination)
 		{
 			if (!LcdRenderSettings.Enabled
 				|| destination == null
@@ -190,11 +169,11 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// Paints this widget into its backbuffer in <paramref name="mode"/>, allocating whichever of the two
-		/// representations that takes and releasing the other.
+		/// Paints the owning widget into this backbuffer in <paramref name="mode"/>, allocating whichever of
+		/// the two representations that takes and releasing the other.
 		/// </summary>
 		/// <param name="mode">The representation to raster into, as
-		/// <see cref="ResolveBackbufferMode"/> decided it for this paint.</param>
+		/// <see cref="ResolveMode"/> decided it for this paint.</param>
 		/// <param name="extraWidth">Extra column for a fractional horizontal placement, 0 or 1.</param>
 		/// <param name="extraHeight">Extra row for a fractional vertical placement, 0 or 1.</param>
 		/// <param name="transformToBuffer">Widget space to buffer space, including that fractional part.</param>
@@ -203,44 +182,44 @@ namespace MatterHackers.Agg.UI
 		/// so a widget never holds two buffers' worth of pixels and can never composite a representation it
 		/// stopped painting into.
 		/// </remarks>
-		private void RasterizeBackbuffer(BackbufferMode mode, int extraWidth, int extraHeight, Affine transformToBuffer)
+		internal void Rasterize(BackbufferMode mode, int extraWidth, int extraHeight, Affine transformToBuffer)
 		{
 			if (mode == BackbufferMode.LcdCoverage)
 			{
-				AllocateLcdBackBuffer(extraWidth, extraHeight);
-				backBuffer = null;
+				this.AllocateLcdBuffer(extraWidth, extraHeight);
+				this.backBuffer = null;
 
 				// Cleared to fully transparent in both planes, exactly as the RGBA arm is: the widget's own
 				// opaque background is the first thing painted over it, and anywhere it does not reach carries
 				// no coverage and leaves the destination alone.
-				var lcdBufferGraphics2D = new LcdBufferGraphics2D(lcdBackBuffer);
+				var lcdBufferGraphics2D = new LcdBufferGraphics2D(this.lcdBackBuffer);
 				lcdBufferGraphics2D.Clear(new Color(0, 0, 0, 0));
 				lcdBufferGraphics2D.SetTransform(transformToBuffer);
-				OnDrawBackground(lcdBufferGraphics2D);
-				OnDraw(lcdBufferGraphics2D);
+				this.widget.OnDrawBackground(lcdBufferGraphics2D);
+				this.widget.OnDraw(lcdBufferGraphics2D);
 
 				// The twin of the RGBA arm's MarkImageChanged below. Defensive rather than load-bearing as it
 				// stands: a widget re-rasters into the same LcdBuffer instance whenever its size did not
 				// change, and the GPU composite's per-channel texture cache has only the stamp to tell this
 				// frame's pixels from last frame's - but the Clear above already bumps it, and so does any
 				// paint. It stands as the stamp of record for a repaint that ends up drawing nothing at all.
-				lcdBackBuffer.MarkChanged();
+				this.lcdBackBuffer.MarkChanged();
 
 				return;
 			}
 
 			// The buffer can be missing even when no extra row or column is wanted, because the previous paint
 			// may have been the LCD arm, which drops it.
-			if (backBuffer == null
+			if (this.backBuffer == null
 				|| extraWidth > 0
 				|| extraHeight > 0)
 			{
-				AllocateBackBuffer(extraWidth, extraHeight);
+				this.AllocateRgbaBuffer(extraWidth, extraHeight);
 			}
 
-			lcdBackBuffer = null;
+			this.lcdBackBuffer = null;
 
-			Graphics2D backBufferGraphics2D = backBuffer.NewGraphics2D();
+			Graphics2D backBufferGraphics2D = this.backBuffer.NewGraphics2D();
 
 			// The validity gate (LCD plan section 4): these pixels get blended onto the parent later, so
 			// subpixel geometry computed here would be geometry against content the R/G/B phase knows nothing
@@ -248,74 +227,74 @@ namespace MatterHackers.Agg.UI
 			backBufferGraphics2D.IsTransparentCompositingLayer = true;
 			backBufferGraphics2D.Clear(new Color(0, 0, 0, 0));
 			backBufferGraphics2D.SetTransform(transformToBuffer);
-			OnDrawBackground(backBufferGraphics2D);
-			OnDraw(backBufferGraphics2D);
+			this.widget.OnDrawBackground(backBufferGraphics2D);
+			this.widget.OnDraw(backBufferGraphics2D);
 
-			backBuffer.MarkImageChanged();
+			this.backBuffer.MarkImageChanged();
 		}
 
 		/// <summary>
-		/// Paints this widget's cached pixels onto <paramref name="graphics2D"/>, in whichever representation
-		/// they were last rastered in.
+		/// Paints the cached pixels onto <paramref name="graphics2D"/>, in whichever representation they were
+		/// last rastered in.
 		/// </summary>
 		/// <param name="graphics2D">The parent surface, with its transform already set to place the buffer.</param>
 		/// <param name="offsetToRenderSurface">Where the buffer's bottom-left pixel lands, in whole
 		/// destination pixels (the caller has already insisted it is integer).</param>
 		/// <param name="scaleX">Horizontal scale for the RGBA blit; ignored by the LCD arm, which only runs at
-		/// exact unit scale (see <see cref="ResolveBackbufferMode"/>).</param>
+		/// exact unit scale (see <see cref="ResolveMode"/>).</param>
 		/// <param name="scaleY">The vertical twin of <paramref name="scaleX"/>.</param>
-		private void CompositeBackbufferOnto(Graphics2D graphics2D, Vector2 offsetToRenderSurface, double scaleX, double scaleY)
+		internal void CompositeOnto(Graphics2D graphics2D, Vector2 offsetToRenderSurface, double scaleX, double scaleY)
 		{
 			// Keyed on what is in the buffer rather than on what this paint resolved: the two agree, because a
 			// mode flip forces the re-raster above, and keying on the pixels cannot composite a buffer that was
 			// never painted.
-			if (backBufferMode == BackbufferMode.LcdCoverage)
+			if (this.Mode == BackbufferMode.LcdCoverage)
 			{
 				// Whole destination pixels, not a transformed blit: the planes are finished pixels, and
 				// resampling them would smear each channel's phase into its neighbours. Nothing is lost by
 				// dropping the scale, because this arm only runs at exact unit scale.
-				graphics2D.CompositeLcdBuffer(lcdBackBuffer, (int)offsetToRenderSurface.X, (int)offsetToRenderSurface.Y);
+				graphics2D.CompositeLcdBuffer(this.lcdBackBuffer, (int)offsetToRenderSurface.X, (int)offsetToRenderSurface.Y);
 			}
 			else
 			{
-				graphics2D.Render(backBuffer, 0, 0, 0, scaleX, scaleY);
+				graphics2D.Render(this.backBuffer, 0, 0, 0, scaleX, scaleY);
 			}
 		}
 
-		private void AllocateBackBuffer()
+		internal void AllocateRgbaBuffer()
 		{
-			AllocateBackBuffer(0, 0);
+			this.AllocateRgbaBuffer(0, 0);
 		}
 
-		private void AllocateBackBuffer(int extraWidth, int extraHeight)
+		private void AllocateRgbaBuffer(int extraWidth, int extraHeight)
 		{
-			GetBackBufferSize(extraWidth, extraHeight, out int intWidth, out int intHeight);
-			if (backBuffer == null || backBuffer.Width != intWidth || backBuffer.Height != intHeight)
+			this.GetSize(extraWidth, extraHeight, out int intWidth, out int intHeight);
+			if (this.backBuffer == null || this.backBuffer.Width != intWidth || this.backBuffer.Height != intHeight)
 			{
-				backBuffer = new ImageBuffer(intWidth, intHeight, 32, new BlenderPreMultBGRA());
+				this.backBuffer = new ImageBuffer(intWidth, intHeight, 32, new BlenderPreMultBGRA());
 			}
 		}
 
 		/// <summary>
-		/// The <see cref="BackbufferMode.LcdCoverage"/> twin of <see cref="AllocateBackBuffer(int, int)"/>:
+		/// The <see cref="BackbufferMode.LcdCoverage"/> twin of <see cref="AllocateRgbaBuffer(int, int)"/>:
 		/// same size, two coverage planes instead of one premultiplied BGRA image.
 		/// </summary>
-		private void AllocateLcdBackBuffer(int extraWidth, int extraHeight)
+		private void AllocateLcdBuffer(int extraWidth, int extraHeight)
 		{
-			GetBackBufferSize(extraWidth, extraHeight, out int intWidth, out int intHeight);
-			if (lcdBackBuffer == null || lcdBackBuffer.Width != intWidth || lcdBackBuffer.Height != intHeight)
+			this.GetSize(extraWidth, extraHeight, out int intWidth, out int intHeight);
+			if (this.lcdBackBuffer == null || this.lcdBackBuffer.Width != intWidth || this.lcdBackBuffer.Height != intHeight)
 			{
-				lcdBackBuffer = new LcdBuffer(intWidth, intHeight);
+				this.lcdBackBuffer = new LcdBuffer(intWidth, intHeight);
 			}
 		}
 
 		/// <summary>
-		/// Pixel size of this widget's backbuffer: its bounds rounded out to whole pixels, plus the extra row
+		/// Pixel size of the widget's backbuffer: its bounds rounded out to whole pixels, plus the extra row
 		/// and column a fractional screen placement needs.
 		/// </summary>
-		private void GetBackBufferSize(int extraWidth, int extraHeight, out int intWidth, out int intHeight)
+		private void GetSize(int extraWidth, int extraHeight, out int intWidth, out int intHeight)
 		{
-			RectangleDouble localBounds = LocalBounds;
+			RectangleDouble localBounds = this.widget.LocalBounds;
 			intWidth = Max((int)(Ceiling(localBounds.Right) - Floor(localBounds.Left)) + extraWidth, 1);
 			intHeight = Max((int)(Ceiling(localBounds.Top) - Floor(localBounds.Bottom)) + extraHeight, 1);
 		}
