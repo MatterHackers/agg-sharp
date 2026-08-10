@@ -101,6 +101,13 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <remarks>
 		/// Internal rather than private only so the tests can watch it reject an input
 		/// directly. <see cref="DoArray"/> is the entry point everything else uses.
+		/// <para>
+		/// A union whose operands are not all usable degrades rather than failing outright: the
+		/// ones that imported are combined and the answer leaves as
+		/// <see cref="PartialBooleanException"/>, which carries both the result and the list of
+		/// operands that were left out. It is still a throw, so no caller loses a part quietly -
+		/// see that type for why.
+		/// </para>
 		/// </remarks>
 		/// <param name="windingRule">
 		/// Which winding numbers the kernel counts as solid.
@@ -129,6 +136,12 @@ namespace MatterHackers.PolygonMesh.Csg
 			var manifolds = new List<RustManifold>();
 			var originalIdToColor = new Dictionary<int, Color>();
 			var originalIdToSpatialColors = new Dictionary<int, List<(Vector3, Color)>>();
+
+			// A union is the one operation where leaving an operand out still has an answer:
+			// the other operands' union. Subtract and Intersect are defined by every operand,
+			// so dropping one of those would silently change what the operation means.
+			bool skipRefusedOperands = operation == CsgModes.Union;
+			var skipped = new List<SkippedBooleanOperand>();
 
 			try
 			{
@@ -159,45 +172,42 @@ namespace MatterHackers.PolygonMesh.Csg
 					var meshCopy = mesh.Copy(CancellationToken.None);
 					meshCopy.Transform(matrix);
 
-					RustManifold manifold = null;
+					RustManifold manifold;
 
-					if (trackColors && meshCopy.FaceColors != null)
+					try
 					{
-						manifold = TrySplitByFaceColorsRust(meshCopy, originalIdToColor, cancellationToken, repairOrientation);
+						manifold = ImportOperand(
+							meshCopy, meshIndex, trackColors, meshColors, originalIdToColor, originalIdToSpatialColors, cancellationToken, repairOrientation);
 					}
-
-					if (manifold == null)
+					catch (MeshImportRejectedException refused) when (skipRefusedOperands)
 					{
-						if (trackColors)
-						{
-							// AsOriginal is what gives the input an OriginalId, and the run data
-							// that carries colours back is keyed on that. Without colours the run
-							// data is never read, so the extra native copy would be pure waste.
-							manifold = ImportAsOriginal(meshCopy, repairOrientation);
-
-							if (meshCopy.FaceColors != null)
-							{
-								originalIdToSpatialColors[manifold.OriginalId] = meshCopy.SaveFaceCentroidColors();
-							}
-							else
-							{
-								var color = meshIndex < meshColors.Length
-									? meshColors[meshIndex]
-									: DefaultFaceColor;
-								originalIdToColor[manifold.OriginalId] = color;
-							}
-						}
-						else
-						{
-							manifold = Import(meshCopy, repairOrientation);
-						}
+						// Only the kernel's verdict on this operand's geometry is skippable. A
+						// failure from anywhere else in the import - the native library, a handle -
+						// propagates, because degrading on it would tell the user to Repair a part
+						// that has nothing wrong with it.
+						// Not swallowed: the throw below - or the exception the partial result is
+						// carried out on - names every operand that landed here.
+						skipped.Add(new SkippedBooleanOperand(meshIndex, refused.Message));
+						meshIndex++;
+						continue;
 					}
 
 					manifolds.Add(manifold);
 					meshIndex++;
 				}
 
-				return CombineAndRead(
+				if (skipped.Count > 0 && manifolds.Count == 0)
+				{
+					// Every operand refused. The union of nothing is not geometry, but it is still
+					// the partial answer rather than a different kind of failure: a caller combining
+					// several touching sets has to be able to keep the sets that worked and keep
+					// these parts visible, and a plain InvalidOperationException here would take the
+					// whole build down with them. Callers that do not handle the partial case see
+					// the same InvalidOperationException they always did, naming every operand.
+					throw new PartialBooleanException(DescribeSkipped(skipped, meshIndex), new Mesh(), skipped);
+				}
+
+				var result = CombineAndRead(
 					manifolds,
 					operation,
 					cancellationToken,
@@ -208,6 +218,13 @@ namespace MatterHackers.PolygonMesh.Csg
 					reporter,
 					amountPerOperation,
 					ratioCompleted);
+
+				if (skipped.Count > 0)
+				{
+					throw new PartialBooleanException(DescribeSkipped(skipped, meshIndex), result, skipped);
+				}
+
+				return result;
 			}
 			finally
 			{
@@ -219,6 +236,76 @@ namespace MatterHackers.PolygonMesh.Csg
 					manifold.Dispose();
 				}
 			}
+		}
+
+		/// <summary>
+		/// Uploads one already-transformed operand, recording whatever the colour machinery
+		/// needs to paint that operand's triangles in the result.
+		/// </summary>
+		/// <remarks>
+		/// Its own method so the caller can wrap exactly the import in a catch: a refused
+		/// operand has to be told apart from a failure anywhere else in the loop.
+		/// </remarks>
+		private static RustManifold ImportOperand(
+			Mesh meshCopy,
+			int meshIndex,
+			bool trackColors,
+			Color[] meshColors,
+			Dictionary<int, Color> originalIdToColor,
+			Dictionary<int, List<(Vector3, Color)>> originalIdToSpatialColors,
+			CancellationToken cancellationToken,
+			bool repairOrientation)
+		{
+			if (trackColors && meshCopy.FaceColors != null)
+			{
+				var split = TrySplitByFaceColorsRust(meshCopy, originalIdToColor, cancellationToken, repairOrientation);
+
+				if (split != null)
+				{
+					return split;
+				}
+			}
+
+			if (!trackColors)
+			{
+				return Import(meshCopy, repairOrientation);
+			}
+
+			// AsOriginal is what gives the input an OriginalId, and the run data
+			// that carries colours back is keyed on that. Without colours the run
+			// data is never read, so the extra native copy would be pure waste.
+			var manifold = ImportAsOriginal(meshCopy, repairOrientation);
+
+			if (meshCopy.FaceColors != null)
+			{
+				originalIdToSpatialColors[manifold.OriginalId] = meshCopy.SaveFaceCentroidColors();
+			}
+			else
+			{
+				var color = meshIndex < meshColors.Length
+					? meshColors[meshIndex]
+					: DefaultFaceColor;
+				originalIdToColor[manifold.OriginalId] = color;
+			}
+
+			return manifold;
+		}
+
+		/// <summary>
+		/// The message a partially completed union carries out, naming every operand the
+		/// kernel would not take and repeating its complaint.
+		/// </summary>
+		private static string DescribeSkipped(List<SkippedBooleanOperand> skipped, int operandCount)
+		{
+			var described = new List<string>();
+
+			foreach (var operand in skipped)
+			{
+				// One-based: these numbers are read by a human against a list of parts.
+				described.Add($"operand {operand.Index + 1} - {operand.Reason}");
+			}
+
+			return $"Manifold could not use {skipped.Count} of {operandCount} operands: {string.Join("; ", described)}";
 		}
 
 		/// <summary>
@@ -414,14 +501,51 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// same result, and the handle is not marked soup, so the Auto engine still picks
 		/// the fast exact pipeline. Closed but non-manifold input is welded into a soup
 		/// handle instead of being rejected. Only geometry that is not even closed still
-		/// fails, as <see cref="RustStatus.NotClosed"/>.
+		/// fails, as <see cref="RustStatus.NotClosed"/> - and that one gets a second chance
+		/// through <see cref="WeldSeams"/> before it is refused.
 		/// </remarks>
-		/// <exception cref="InvalidOperationException">
+		/// <exception cref="MeshImportRejectedException">
 		/// The mesh failed the kernel's validation. Left to surface rather than absorbed:
 		/// a boolean swallows an error operand as empty geometry and still reports
 		/// success, which would show up as a part silently missing from the output.
 		/// </exception>
 		private static RustManifold Import(Mesh mesh, bool repairOrientation)
+		{
+			var imported = TryImport(mesh, repairOrientation, out var status, out var failureMessage);
+
+			if (imported != null)
+			{
+				return imported;
+			}
+
+			if (status == RustStatus.NotClosed)
+			{
+				var welded = WeldSeams(mesh);
+
+				if (welded != null)
+				{
+					var retried = TryImport(welded, repairOrientation, out _, out _);
+
+					if (retried != null)
+					{
+						return retried;
+					}
+				}
+			}
+
+			throw new MeshImportRejectedException(failureMessage, status);
+		}
+
+		/// <summary>
+		/// Uploads a mesh, handing back null and the status that explains it rather than
+		/// throwing, so <see cref="Import"/> can decide whether the failure is worth a retry.
+		/// </summary>
+		/// <param name="status">
+		/// <see cref="RustStatus.NoError"/> when the import succeeded, otherwise whatever
+		/// the kernel objected to.
+		/// </param>
+		/// <param name="failureMessage">The message to throw with, or null on success.</param>
+		private static RustManifold TryImport(Mesh mesh, bool repairOrientation, out RustStatus status, out string failureMessage)
 		{
 			var (vertProperties, triVerts) = ToRustMeshData(mesh);
 
@@ -430,12 +554,16 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				if (imported.Status != RustStatus.NoError)
 				{
-					throw new InvalidOperationException(
-						$"Manifold input has error status: {imported.Status} ({mesh.Vertices.Count} vertices, {mesh.Faces.Count} faces)");
+					status = imported.Status;
+					failureMessage = $"Manifold input has error status: {status} ({mesh.Vertices.Count} vertices, {mesh.Faces.Count} faces)";
+					imported.Dispose();
+					return null;
 				}
 
 				if (!repairOrientation)
 				{
+					status = RustStatus.NoError;
+					failureMessage = null;
 					return imported;
 				}
 
@@ -449,8 +577,11 @@ namespace MatterHackers.PolygonMesh.Csg
 				{
 					if (repaired.Status != RustStatus.NoError)
 					{
-						throw new InvalidOperationException(
-							$"Manifold orientation repair has error status: {repaired.Status} ({mesh.Vertices.Count} vertices, {mesh.Faces.Count} faces)");
+						status = repaired.Status;
+						failureMessage = $"Manifold orientation repair has error status: {status} ({mesh.Vertices.Count} vertices, {mesh.Faces.Count} faces)";
+						repaired.Dispose();
+						imported.Dispose();
+						return null;
 					}
 				}
 				catch
@@ -460,6 +591,8 @@ namespace MatterHackers.PolygonMesh.Csg
 				}
 
 				imported.Dispose();
+				status = RustStatus.NoError;
+				failureMessage = null;
 				return repaired;
 			}
 			catch
@@ -467,6 +600,63 @@ namespace MatterHackers.PolygonMesh.Csg
 				imported.Dispose();
 				throw;
 			}
+		}
+
+		/// <summary>
+		/// A tolerance-welded copy of a mesh, or null when there is no sane scale to weld at.
+		/// </summary>
+		/// <remarks>
+		/// The kernel welds vertices by exact <c>f64</c> position and has no tolerance of its
+		/// own, so a seam whose two sides differ in the last bits is a pair of boundary edges
+		/// to it and a visually closed solid reports <see cref="RustStatus.NotClosed"/>.
+		/// Meshes arrive that way routinely rather than exceptionally: positions are stored as
+		/// <see cref="VectorMath.Vector3Float"/> and every transform on the way here re-rounds
+		/// them, so a seam that was shared on disk can come apart in the last digit. Welding
+		/// with a tolerance taken from the bounding box - both its size and how far it sits from
+		/// the origin, so the tolerance means the same thing for a 1mm part and a 300mm one, and
+		/// for a part at the origin and the same part moved across the bed - closes those seams
+		/// without moving anything a user could see. Only ever called on the failure path, so a good mesh pays nothing for it.
+		/// </remarks>
+		private static Mesh WeldSeams(Mesh mesh)
+		{
+			var aabb = mesh.GetAxisAlignedBoundingBox();
+			var diagonal = aabb.Size.Length;
+
+			if (!(diagonal > 0) || double.IsInfinity(diagonal))
+			{
+				// No extent to scale a tolerance against. A non-finite vertex lands here too,
+				// and welding is not the answer to that one anyway.
+				return null;
+			}
+
+			// The part's own size is only half of what sets the scale of a seam gap. Positions are
+			// stored as Vector3Float, so the rounding that splits a seam is a step of the float grid
+			// at that absolute coordinate, not at the part's size: out at x = 5000mm consecutive
+			// floats are ~4.9e-4mm apart, several times a tolerance scaled to a 10mm part's 17mm
+			// diagonal - so the same part welds at the origin and is refused after being moved
+			// across the bed. Whichever of the two is larger sets the tolerance.
+			var distanceFromOrigin = Math.Max(MaxAbsComponent(aabb.MinXYZ), MaxAbsComponent(aabb.MaxXYZ));
+
+			var tolerance = Math.Max(diagonal, distanceFromOrigin) * 1e-5;
+
+			// Area rather than length, and well under the tolerance squared: this only drops
+			// triangles the weld itself collapsed, not thin ones the model meant to have.
+			var minFaceArea = tolerance * tolerance / 10;
+
+			var welded = mesh.Copy(CancellationToken.None);
+			welded.MergeVertices(tolerance, minFaceArea);
+			welded.RemoveDegenerateFaces(minFaceArea);
+			welded.RemoveUnusedVertices();
+
+			return welded;
+		}
+
+		/// <summary>
+		/// How far the furthest of a corner's three coordinates is from zero.
+		/// </summary>
+		private static double MaxAbsComponent(Vector3 corner)
+		{
+			return Math.Max(Math.Abs(corner.X), Math.Max(Math.Abs(corner.Y), Math.Abs(corner.Z)));
 		}
 
 		/// <summary>

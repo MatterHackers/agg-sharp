@@ -234,6 +234,189 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			await Assert.That(thrown.Message).Contains(ManifoldStatus.NotClosed.ToString())
 				.Because("the status is what tells the user which operand was unusable");
+
+			// A subtraction is defined by every operand, so there is nothing to degrade to -
+			// this has to be the plain refusal, not a partial result.
+			await Assert.That(thrown is PartialBooleanException).IsFalse();
+		}
+
+		/// <summary>
+		/// A union does have something to degrade to - the union of the operands that worked -
+		/// so one unusable operand no longer costs the whole combine. What it must never cost is
+		/// the report: the refused operand is named in the exception that carries the partial
+		/// result out, so a caller that ignores it still fails loudly rather than quietly
+		/// dropping a part.
+		/// </summary>
+		[Test]
+		public async Task AUnionKeepsTheOperandsThatWorkedAndNamesTheOneThatDidNot()
+		{
+			var partial = Assert.Throws<PartialBooleanException>(() => BooleanProcessing.DoArray(
+				new[]
+				{
+					(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.Identity),
+					(OpenBox(8), Matrix4X4.CreateTranslation(20, 0, 0)),
+				},
+				CsgModes.Union,
+				ProcessingModes.Polygons,
+				ProcessingResolution._64,
+				ProcessingResolution._64,
+				null,
+				CancellationToken.None));
+
+			await Assert.That(partial.SkippedOperands.Count).IsEqualTo(1);
+			await Assert.That(partial.SkippedOperands[0].Index).IsEqualTo(1)
+				.Because("the caller names the part from its position in the list it handed in");
+			await Assert.That(partial.Message).Contains(ManifoldStatus.NotClosed.ToString())
+				.Because("a caller that only logs the message must still learn what was left out");
+
+			var result = partial.PartialResult;
+			result.CleanAndMerge();
+			result.RemoveUnusedVertices();
+
+			await Assert.That(result.IsManifold()).IsTrue();
+
+			// The good operand alone, untouched by the one that could not be used.
+			var bounds = result.GetAxisAlignedBoundingBox();
+			await Assert.That(bounds.XSize).IsEqualTo(10.0).Within(0.001);
+			await Assert.That(bounds.YSize).IsEqualTo(10.0).Within(0.001);
+			await Assert.That(bounds.ZSize).IsEqualTo(10.0).Within(0.001);
+		}
+
+		/// <summary>
+		/// A union in which the kernel refuses every operand still degrades rather than failing
+		/// outright. The union of nothing is not geometry, but the caller's answer is not "the
+		/// whole build failed" either: it is "these parts could not be used", with the parts
+		/// listed, so a caller combining several touching sets keeps the sets that worked and can
+		/// keep the refused parts visible itself.
+		/// </summary>
+		[Test]
+		public async Task AUnionWhoseOperandsAreAllRefusedStillNamesThemAllPartially()
+		{
+			var partial = Assert.Throws<PartialBooleanException>(() => BooleanProcessing.DoArray(
+				new[]
+				{
+					(OpenBox(8), Matrix4X4.Identity),
+					(OpenBox(8), Matrix4X4.CreateTranslation(20, 0, 0)),
+				},
+				CsgModes.Union,
+				ProcessingModes.Polygons,
+				ProcessingResolution._64,
+				ProcessingResolution._64,
+				null,
+				CancellationToken.None));
+
+			await Assert.That(partial.SkippedOperands.Count).IsEqualTo(2)
+				.Because("every operand was refused, so every one of them has to be named");
+
+			await Assert.That(partial.SkippedOperands.Select(i => i.Index)).IsEquivalentTo(new[] { 0, 1 });
+
+			await Assert.That(partial.Message).Contains(ManifoldStatus.NotClosed.ToString());
+
+			await Assert.That(partial.PartialResult).IsNotNull()
+				.Because("the caller copies the refused operands into the partial result, so it needs a mesh to copy into");
+
+			await Assert.That(partial.PartialResult.Faces.Count).IsEqualTo(0)
+				.Because("no operand contributed geometry - the answer is empty, not wrong");
+		}
+
+		/// <summary>
+		/// A solid whose seams came apart in the last digits still unions. The kernel welds by
+		/// exact position and has no tolerance of its own, so such a mesh reads as NotClosed to
+		/// it even though nothing about it looks open; the import retries with a tolerance-welded
+		/// copy rather than refusing the part.
+		/// </summary>
+		[Test]
+		public async Task ASeamSplitByRoundingStillUnions()
+		{
+			var split = CubeWithSplitSeams(10, 1e-6f);
+
+			// Every triangle owns its own corners, so every edge is a boundary edge - which is
+			// exactly what a seam that lost its shared vertices to rounding looks like.
+			await Assert.That(split.IsManifold()).IsFalse()
+				.Because("the input under test has to be one the kernel would refuse untouched");
+
+			var result = UnionSubtractIntersect(
+				CsgModes.Union,
+				split, Matrix4X4.CreateTranslation(-3, 0, 0),
+				PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(3, 0, 0));
+
+			await Assert.That(result.Faces.Count).IsGreaterThan(0);
+			await Assert.That(result.IsManifold()).IsTrue();
+
+			// The welded operand still has to be the same 10mm cube it looked like.
+			var bounds = result.GetAxisAlignedBoundingBox();
+			await Assert.That(bounds.XSize).IsEqualTo(16.0).Within(0.001);
+			await Assert.That(bounds.YSize).IsEqualTo(10.0).Within(0.001);
+			await Assert.That(bounds.ZSize).IsEqualTo(10.0).Within(0.001);
+		}
+
+		/// <summary>
+		/// The same split-seam solid, out where the coordinates are large, still unions. Positions
+		/// are stored as <see cref="Vector3Float"/>, so the rounding that splits a seam scales with
+		/// distance from the origin rather than with the part: at x = 5000mm consecutive floats are
+		/// ~4.9e-4mm apart, which is several times a weld tolerance scaled only to a 10mm part's
+		/// diagonal. A part is no less weldable for having been moved across the bed.
+		/// </summary>
+		[Test]
+		public async Task ASeamSplitByRoundingStillUnionsFarFromTheOrigin()
+		{
+			const double FarFromOrigin = 5000;
+
+			// Split by nothing but the float grid itself, so the size of the seam gaps is decided
+			// by where the part is rather than by a number chosen here. Two steps of that grid is
+			// under 1e-3mm out here and welds at the origin without complaint; it is only large
+			// against a 10mm part's diagonal, which is what the tolerance used to be scaled to.
+			var split = CubeWithSeamsSplitByFloatSpacing(10, new Vector3(FarFromOrigin, 0, 0), ulps: 2);
+
+			await Assert.That(split.IsManifold()).IsFalse()
+				.Because("the input under test has to be one the kernel would refuse untouched");
+
+			var result = UnionSubtractIntersect(
+				CsgModes.Union,
+				split, Matrix4X4.Identity,
+				PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(FarFromOrigin + 6, 0, 0));
+
+			await Assert.That(result.Faces.Count).IsGreaterThan(0);
+			await Assert.That(result.IsManifold()).IsTrue();
+
+			var bounds = result.GetAxisAlignedBoundingBox();
+			await Assert.That(bounds.XSize).IsEqualTo(16.0).Within(0.01);
+			await Assert.That(bounds.YSize).IsEqualTo(10.0).Within(0.01);
+			await Assert.That(bounds.ZSize).IsEqualTo(10.0).Within(0.01);
+		}
+
+		/// <summary>
+		/// A geometry the kernel refuses is refused per operand in a union - whatever it objected
+		/// to. A NaN coordinate is as much a property of that one part's geometry as a hole in it
+		/// is, and the answer for the user is the same: the other parts combine, and this one is
+		/// named. Only a failure that is not the kernel judging geometry - a load or binding
+		/// failure, say - is allowed to take the whole operation down, because "run Repair on it"
+		/// would be a lie about what went wrong.
+		/// </summary>
+		[Test]
+		public async Task ANonFiniteOperandIsSkippedPerOperandLikeAnyOtherRefusedGeometry()
+		{
+			var partial = Assert.Throws<PartialBooleanException>(() => BooleanProcessing.DoArray(
+				new[]
+				{
+					(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.Identity),
+					(CubeWithANonFiniteVertex(), Matrix4X4.CreateTranslation(20, 0, 0)),
+				},
+				CsgModes.Union,
+				ProcessingModes.Polygons,
+				ProcessingResolution._64,
+				ProcessingResolution._64,
+				null,
+				CancellationToken.None));
+
+			await Assert.That(partial.SkippedOperands.Count).IsEqualTo(1);
+			await Assert.That(partial.SkippedOperands[0].Index).IsEqualTo(1);
+			await Assert.That(partial.SkippedOperands[0].Reason).Contains(ManifoldStatus.NonFiniteVertex.ToString())
+				.Because("the status is the whole diagnostic value of refusing the input");
+
+			var bounds = partial.PartialResult.GetAxisAlignedBoundingBox();
+			await Assert.That(bounds.XSize).IsEqualTo(10.0).Within(0.001)
+				.Because("the good operand is the answer, unaffected by the one that was refused");
 		}
 
 		/// <summary>
@@ -561,6 +744,98 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			mesh.Faces.RemoveAt(mesh.Faces.Count - 1);
 
 			return mesh;
+		}
+
+		/// <summary>
+		/// A cube whose every triangle carries its own copy of its corners, each nudged by up to
+		/// <paramref name="jitter"/>. Geometrically the same cube; topologically 36 loose
+		/// triangles, which is what a seam looks like after float storage and a transform or two
+		/// have split the shared vertices apart.
+		/// </summary>
+		private static Mesh CubeWithSplitSeams(double size, float jitter)
+		{
+			var cube = PlatonicSolids.CreateCube(size, size, size);
+			var split = new Mesh();
+
+			// Deterministic, so a failure here is always the same failure.
+			var random = new Random(12345);
+
+			float Nudge() => (float)((random.NextDouble() - 0.5) * 2 * jitter);
+
+			Vector3Float Perturbed(Vector3Float position)
+			{
+				return new Vector3Float(position.X + Nudge(), position.Y + Nudge(), position.Z + Nudge());
+			}
+
+			foreach (var face in cube.Faces)
+			{
+				int start = split.Vertices.Count;
+				split.Vertices.Add(Perturbed(cube.Vertices[face.v0]));
+				split.Vertices.Add(Perturbed(cube.Vertices[face.v1]));
+				split.Vertices.Add(Perturbed(cube.Vertices[face.v2]));
+				split.Faces.Add(new Face(start, start + 1, start + 2, split.Vertices));
+			}
+
+			return split;
+		}
+
+		/// <summary>
+		/// A cube at <paramref name="at"/> whose every triangle carries its own copy of its corners,
+		/// each corner nudged <paramref name="ulps"/> steps along the <c>float</c> grid. The seams
+		/// are split by exactly the error the storage introduces and nothing else, so how far apart
+		/// the copies land follows the distance from the origin: a rounding error at the origin,
+		/// ~4.9e-4mm per step out at x = 5000mm, whatever the part's own size is.
+		/// </summary>
+		private static Mesh CubeWithSeamsSplitByFloatSpacing(double size, Vector3 at, int ulps = 1)
+		{
+			var cube = PlatonicSolids.CreateCube(size, size, size);
+			cube.Transform(Matrix4X4.CreateTranslation(at));
+
+			var split = new Mesh();
+
+			// Deterministic, so a failure here is always the same failure.
+			var random = new Random(12345);
+
+			float Nudged(float value)
+			{
+				switch (random.Next(3))
+				{
+					case 0:
+						for (int i = 0; i < ulps; i++)
+						{
+							value = MathF.BitDecrement(value);
+						}
+
+						return value;
+
+					case 1:
+						for (int i = 0; i < ulps; i++)
+						{
+							value = MathF.BitIncrement(value);
+						}
+
+						return value;
+
+					default:
+						return value;
+				}
+			}
+
+			Vector3Float Perturbed(Vector3Float position)
+			{
+				return new Vector3Float(Nudged(position.X), Nudged(position.Y), Nudged(position.Z));
+			}
+
+			foreach (var face in cube.Faces)
+			{
+				int start = split.Vertices.Count;
+				split.Vertices.Add(Perturbed(cube.Vertices[face.v0]));
+				split.Vertices.Add(Perturbed(cube.Vertices[face.v1]));
+				split.Vertices.Add(Perturbed(cube.Vertices[face.v2]));
+				split.Faces.Add(new Face(start, start + 1, start + 2, split.Vertices));
+			}
+
+			return split;
 		}
 
 		/// <summary>
