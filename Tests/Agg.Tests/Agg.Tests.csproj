@@ -58,4 +58,16 @@
     </Content>
   </ItemGroup>
 
+  <!-- Pixel-exact control images for AggDrawingTests. These are reviewed goldens, not build output: they
+       used to exist only in bin\, where a fresh checkout would silently create them from whatever it had
+       just rendered and nobody could see a rendering change in a diff. Copied beside the binary so the exe
+       still runs from a bare bin\, but AggDrawingTests prefers the copy in the tree - same reasoning as the
+       LCD fixture above. -->
+  <ItemGroup>
+    <Content Include="..\..\TestData\ControlImages\*.tga">
+      <Link>ControlImages\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
