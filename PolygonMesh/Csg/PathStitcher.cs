@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -117,6 +117,21 @@ namespace MatterHackers.PolygonMesh.Processors
 			return (bestIndexA, bestIndexB);
 		}
 
+		/// <summary>
+		/// Walls two loops that do not have the same number of vertices, by walking both at once and closing
+		/// one triangle per step. Each step chooses which loop to step forward on by taking the SHORTER of the
+		/// two candidate diagonals, which is what keeps the wall running straight up between the loops.
+		/// </summary>
+		/// <remarks>
+		/// This used to gate stepping forward on loop A behind "the diagonal to B crosses loop A", which is
+		/// almost never true for two loops that sit one above the other. The effect was that B was advanced
+		/// every step until it had been walked all the way round - fanning every vertex of B onto a single
+		/// vertex of A and then every vertex of A onto a single vertex of B. The result was a self
+		/// intersecting shell rather than a wall (a square lofted to a circle came out at under a third of
+		/// its true volume, and gave a different shape again when the two sections were swapped). The two
+		/// diagonals were also measured differently - one with <c>LengthSquared(false)</c> and one with the
+		/// closed default, which counts a two point segment twice - so even the comparison was biased.
+		/// </remarks>
 		private static Mesh Stitch2SingleWalls(Polygon loopA, double heightA, Polygon loopB, double heightB)
 		{
 			var mesh = new Mesh();
@@ -132,16 +147,12 @@ namespace MatterHackers.PolygonMesh.Processors
 				var nextIndexA = (curIndexA + 1) % loopA.Count;
 				var nextIndexB = (curIndexB + 1) % loopB.Count;
 
-				var segmentCurAToNextB = new Polygon() { loopA[curIndexA], loopB[nextIndexB] };
-				var lengthCurAToNextB = segmentCurAToNextB.LengthSquared(false);
-                // make sure this segments does not intersect either loop
-                var intersectsWithA = loopA.FindIntersection(loopA[curIndexA], loopB[nextIndexB]) == Agg.QuadTree.Intersection.Intersect;
-                
-                var segmentCurBToNextA = new Polygon() { loopB[curIndexB], loopA[nextIndexA] };
-				var lengthCurBToNextA = segmentCurBToNextA.LengthSquared();
-				// make sure this segments does not intersect either loop
+				// the diagonal each candidate triangle would add, measured the same way for both
+				var diagonalIfAdvancingA = (loopB[curIndexB] - loopA[nextIndexA]).LengthSquared();
+				var diagonalIfAdvancingB = (loopA[curIndexA] - loopB[nextIndexB]).LengthSquared();
 
-				if ((lengthCurAToNextB > lengthCurBToNextA && !loopedA && intersectsWithA)
+				// once a loop has been walked all the way round, every remaining step has to be taken on the other
+				if ((!loopedA && diagonalIfAdvancingA <= diagonalIfAdvancingB)
 					|| loopedB)
 				{
 					mesh.CreateFace(
