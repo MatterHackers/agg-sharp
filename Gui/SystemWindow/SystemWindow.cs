@@ -49,6 +49,14 @@ namespace MatterHackers.Agg.UI
 		public bool IsModal { get; set; }
 
 		/// <summary>
+		/// Gets or sets a value indicating whether this window is an application's top level shell rather than a
+		/// dialog or a child window. A single window provider hosts exactly one shell and draws every other
+		/// SystemWindow inside it as a titled child window - correct for a dialog, but for a second shell it
+		/// renders a whole second application inside the first. Providers use this to refuse that instead.
+		/// </summary>
+		public bool IsApplicationShell { get; set; }
+
+		/// <summary>
 		/// Gets or sets a value indicating whether this window renders on the GPU. GPU rendering is the default for
 		/// every window; set false (e.g. via RootSystemWindow.DefaultUseGpu / the FORCE_SOFTWARE_RENDERING switch) to
 		/// request the WARP software rasterizer when hosted in a D3D11SystemWindow.

@@ -92,6 +92,20 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
+				// Everything shown after the first window is nested: wrapped in a movable, titled
+				// WindowWidget and drawn inside the window already on screen. That is how this provider
+				// shows a dialog, and it is wrong for a second application shell - the result is a
+				// complete second application (menus, tabs, toolbars, viewport) rendered inside the
+				// first. Only one shell can be hosted, so say so rather than draw the impossible.
+				if (systemWindow.IsApplicationShell)
+				{
+					throw new InvalidOperationException(
+						$"Cannot show a second application shell window ('{systemWindow.Title}') in a single window provider "
+						+ $"that is already hosting '{_openWindows.FirstOrDefault()?.Title}'. Nesting one application shell "
+						+ "inside another renders an application inside an application. Close the first shell before showing "
+						+ "another, or give the second one its own window provider.");
+				}
+
 				if (systemWindow.PlatformWindow != null)
 				{
 					return;
