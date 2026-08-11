@@ -411,7 +411,11 @@ namespace MatterHackers.Agg.SvgTools
 
             var secondControlPoint = new Vector2();
             var polygonStart = new Vector2();
-            
+
+            // The previous path command letter, needed by the smooth curve commands. It has to be tracked
+            // here rather than inferred from the last stored vertex: arcs are emitted as Curve4 vertices,
+            // so the storage cannot tell "the author wrote a cubic" from "we approximated an arc".
+            var lastCommand = ' ';
 
             while (parseIndex < dString.Length)
             {
@@ -490,16 +494,18 @@ namespace MatterHackers.Agg.SvgTools
 
                             do
                             {
-                                Vector2 controlPoint = lastXY;
+                                // SVG 1.1 section 8.3.6: the first control point is the reflection of the
+                                // previous command's second control point about the current point, but only
+                                // when that previous command was a cubic (C, c, S or s). After anything else
+                                // - an arc, a line, a close - the first control point is the current point.
+                                // Reflecting a control point left over from an earlier cubic throws it wildly
+                                // off the path (a stray spike on the 'e' of the MatterHackers wordmark).
+                                var previousWasCubic = lastCommand == 'c' || lastCommand == 'C'
+                                    || lastCommand == 's' || lastCommand == 'S';
 
-                                if (vertexStorage[vertexStorage.Count - 1].Command == FlagsAndCommand.Curve4)
-                                {
-                                    controlPoint = Reflect(secondControlPoint, lastXY);
-                                }
-                                else
-                                {
-                                    controlPoint = curXY;
-                                }
+                                var controlPoint = previousWasCubic
+                                    ? Reflect(secondControlPoint, lastXY)
+                                    : lastXY;
 
                                 secondControlPoint.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
                                 secondControlPoint.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
@@ -514,6 +520,11 @@ namespace MatterHackers.Agg.SvgTools
                                 vertexStorage.Curve4(controlPoint.X, controlPoint.Y, secondControlPoint.X, secondControlPoint.Y, curXY.X, curXY.Y);
 
                                 lastXY = curXY;
+
+                                // repeated coordinate sets are further smooth cubics, so from here on the
+                                // previous command really is a cubic and reflection is correct
+                                lastCommand = command;
+
                                 // if the next element is another coordinate than we just continue to add more curves.
                             } while (NextElementIsANumber(dString, parseIndex));
                         }
@@ -642,6 +653,11 @@ namespace MatterHackers.Agg.SvgTools
 
                     default:
                         throw new NotImplementedException("unrecognized d command '" + command + "'.");
+                }
+
+                if (!validSkipCharacters.Contains(command))
+                {
+                    lastCommand = command;
                 }
             }
         }
