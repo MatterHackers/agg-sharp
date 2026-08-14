@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2017, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -286,6 +286,75 @@ namespace MatterHackers.Agg.UI
 			public event EventHandler CheckedStateChanged;
 		}
 
+		/// <summary>
+		/// The gap left between a clamped menu and the window edge, so the menu border does not draw on the
+		/// window boundary. Matches the inset <see cref="PopupLayoutEngine"/> uses for drop downs.
+		/// </summary>
+		internal const double WindowEdgeInset = 5;
+
+		/// <summary>
+		/// Constrain this menu to <paramref name="maxHeight"/>, moving its items into a scrolling area when
+		/// they do not fit. This is not the same operation as the same named
+		/// <see cref="PopupWidget.MakeMenuHaveScroll(double)"/>: that one resizes a scroll window the popup
+		/// already owns, while this one has no scroll window to start with and so reparents the menu items
+		/// into one it creates.
+		/// </summary>
+		/// <param name="maxHeight">The tallest this menu is allowed to be, typically the window height.</param>
+		/// <remarks>
+		/// Sub menus are anchored to the item that opened them (see <see cref="CreateSubMenu"/>) rather than
+		/// going through <see cref="PopupWidget"/>, so they get none of the clamp-and-scroll behavior that
+		/// drop downs have. Without this a tall menu (a 20 entry recent files list, say) is simply drawn off
+		/// the top of the window where most of its items can never be reached.
+		/// Only call this once the menu has been populated - the height of an empty menu tells us nothing.
+		/// </remarks>
+		internal void MakeMenuHaveScroll(double maxHeight)
+		{
+			if (maxHeight <= 0
+				|| this.Height <= maxHeight)
+			{
+				return;
+			}
+
+			// Capture the laid out width before the items leave - a Fit menu collapses without them
+			var contentWidth = this.Width;
+
+			var items = this.Children.ToList();
+			this.RemoveChildren();
+
+			var contentColumn = new FlowLayoutWidget(FlowDirection.TopToBottom)
+			{
+				HAnchor = HAnchor.Left | HAnchor.Fit,
+				VAnchor = VAnchor.Fit,
+			};
+
+			foreach (var item in items)
+			{
+				// Children remember that they were removed, which would keep them from laying out again
+				item.ClearRemovedFlag();
+				contentColumn.AddChild(item);
+			}
+
+			var scrollingWindow = new ScrollableWidget(true)
+			{
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Absolute,
+				Height = maxHeight,
+			};
+			scrollingWindow.ScrollArea.VAnchor = VAnchor.Fit;
+			scrollingWindow.AddChild(contentColumn);
+
+			// Fit anchoring would size us to the scroll window's content, which is the very thing we are
+			// trying to escape, so take explicit control of both axes
+			this.HAnchor = HAnchor.Absolute;
+			this.VAnchor = VAnchor.Absolute;
+
+			// Widen for the scroll bar so it does not cover the item text (matches PopupWidget)
+			this.Width = contentWidth + 15 * DeviceScale;
+			this.Height = maxHeight;
+
+			this.AddChild(scrollingWindow);
+		}
+
 		public void CreateSubMenu(string menuTitle, ThemeConfig menuTheme, Action<PopupMenu> populateSubMenu, ImageBuffer icon = null)
 		{
 			var content = new TextWidget(menuTitle, pointSize: Theme.DefaultFontSize, textColor: Theme.TextColor)
@@ -317,6 +386,10 @@ namespace MatterHackers.Agg.UI
 				UiThread.RunOnIdle(() =>
 				{
 					populateSubMenu(subMenu);
+
+					// Measure after populating - a sub menu taller than the window must be made to scroll
+					// before it is positioned, or it lands (and stays) off the top of the screen
+					subMenu.MakeMenuHaveScroll(systemWindow.Height - WindowEdgeInset);
 
 					systemWindow.ShowPopup(
                         Theme,
@@ -559,6 +632,12 @@ namespace MatterHackers.Agg.UI
 		{
 			var systemWindow = anchorWidget.Parents<SystemWindow>().LastOrDefault();
 			systemWindow.ToolTipManager.Clear();
+
+			// The menu is fully populated by the time it is shown, so this is the point at which we can tell
+			// whether it fits. A tall right click menu (MatterCAD's scene menu) would otherwise be positioned
+			// off the top of the window with no way to scroll to the items that ran off.
+			popupMenu.MakeMenuHaveScroll(systemWindow.Height - PopupMenu.WindowEdgeInset);
+
 			systemWindow.ShowPopup(
 				popupMenu.Theme,
 				new MatePoint(anchorWidget)
@@ -798,6 +877,23 @@ namespace MatterHackers.Agg.UI
 			}
 
 			popupPosition += yPosition;
+
+			// Flipping to the alt mate does not guarantee an on screen result - several mate combinations
+			// (anchor bottom to popup bottom, for one) resolve to no offset at all, leaving the popup exactly
+			// where it did not fit. Clamp vertically so the content stays reachable. Horizontal placement is
+			// left as the mate flip above decided it, as callers rely on that alignment.
+			double topAlignedY = systemWindow.Height - popup.Widget.Height;
+			if (popup.Widget.Height > systemWindow.Height)
+			{
+				// Nothing can show all of a popup that is taller than the window (menus avoid this by
+				// scrolling first, see PopupMenu.MakeMenuHaveScroll). Show its top - that is where the items
+				// a user is looking for are; bottom aligning it would push them above the top of the window.
+				popupPosition.Y = topAlignedY;
+			}
+			else
+			{
+				popupPosition.Y = Math.Max(0, Math.Min(popupPosition.Y, topAlignedY));
+			}
 
 			popup.Widget.Position = popupPosition;
 		}
