@@ -5295,6 +5295,11 @@ namespace MatterHackers.RenderGl
 			queuedOverlayCommands.Clear();
 			queuedBedCommand = null;
 			queuedSelectionOutlines.Clear();
+
+			// The planner's plan holds the same commands, so clearing only the queues left the frame's
+			// meshes rooted through this (process-lifetime) backend until some later frame rebuilt the
+			// plan - see NativeSceneRenderPlanner.ReleasePlan.
+			renderPlanner.ReleasePlan();
 		}
 
 		private void DisposeSceneEffects()

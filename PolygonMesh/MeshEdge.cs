@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -32,14 +32,28 @@ using System.Collections.Generic;
 
 namespace MatterHackers.PolygonMesh
 {
+	/// <summary>
+	/// One unique edge of a mesh, together with the faces that share it.
+	/// </summary>
+	/// <remarks>
+	/// This is the object-per-edge view of a mesh's edges. It costs a heap object and an array per edge, so
+	/// code that only walks the edges once (render paths especially) should use <see cref="MeshEdgeGraph"/>
+	/// instead, which holds the same information in flat arrays.
+	/// </remarks>
 	public class MeshEdge
 	{
-		private readonly List<int> _faces = new List<int>();
+		private readonly int[] _faces;
 
 		public MeshEdge(int vertex0Index, int vertex1Index)
+			: this(vertex0Index, vertex1Index, Array.Empty<int>())
+		{
+		}
+
+		internal MeshEdge(int vertex0Index, int vertex1Index, int[] faces)
 		{
 			Vertex0Index = vertex0Index;
 			Vertex1Index = vertex1Index;
+			_faces = faces;
 		}
 
 		/// <summary>
@@ -51,46 +65,25 @@ namespace MatterHackers.PolygonMesh
 
 		public int Vertex1Index { get; private set; }
 
+		/// <summary>
+		/// Builds a MeshEdge for every unique edge of the mesh.
+		/// </summary>
+		/// <remarks>
+		/// Built on <see cref="MeshEdgeGraph"/>, so the expensive dictionary-of-lists intermediate is gone,
+		/// but the returned list still costs an object and an array per edge. Prefer the graph directly when
+		/// you do not need the objects.
+		/// </remarks>
 		public static IReadOnlyList<MeshEdge> CreateMeshEdgeList(Mesh mesh)
 		{
-			// make a list of every face edge (faceIndex, vertex0Index, vertex1Index)
-			var faceEdges = new List<(int face, int start, int end)>(mesh.Faces.Count * 3);
-			for (int i = 0; i < mesh.Faces.Count; i++)
+			var graph = MeshEdgeGraph.Create(mesh);
+
+			var meshEdges = new List<MeshEdge>(graph.EdgeCount);
+			for (int edgeIndex = 0; edgeIndex < graph.EdgeCount; edgeIndex++)
 			{
-				var face = mesh.Faces[i];
-
-				// sort them so the start index is always the smaller index
-				faceEdges.Add((i, Math.Min(face.v0, face.v1), Math.Max(face.v0, face.v1)));
-				faceEdges.Add((i, Math.Min(face.v1, face.v2), Math.Max(face.v1, face.v2)));
-				faceEdges.Add((i, Math.Min(face.v2, face.v0), Math.Max(face.v2, face.v0)));
-			}
-
-			// make a dictionary, keyed on edge of faces
-			var faceEdgesThatShareStartIndex = new Dictionary<(int start, int end), List<int>>();
-			for (int i = 0; i < faceEdges.Count; i++)
-			{
-				var (face, start, end) = faceEdges[i];
-				if (!faceEdgesThatShareStartIndex.ContainsKey((start, end)))
-				{
-					faceEdgesThatShareStartIndex.Add((start, end), new List<int>());
-				}
-
-				faceEdgesThatShareStartIndex[(start, end)].Add(face);
-			}
-
-			// now that we have a dictionary of all the face edges by start index
-			// we can make the list of mesh edges
-			var meshEdges = new List<MeshEdge>();
-
-			foreach (var kvp in faceEdgesThatShareStartIndex)
-			{
-				var meshEdge = new MeshEdge(kvp.Key.start, kvp.Key.end);
-				foreach (var face in kvp.Value)
-				{
-					meshEdge._faces.Add(face);
-				}
-
-				meshEdges.Add(meshEdge);
+				meshEdges.Add(new MeshEdge(
+					graph.GetVertex0(edgeIndex),
+					graph.GetVertex1(edgeIndex),
+					graph.GetFaces(edgeIndex).ToArray()));
 			}
 
 			return meshEdges;

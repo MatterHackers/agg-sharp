@@ -74,7 +74,19 @@ namespace MatterHackers.RenderGl
 	public class SubTriangleMesh
 	{
 		public ImageBuffer texture = null;
+
+		/// <summary>
+		/// Per vertex uv coordinates. Only filled when <see cref="texture"/> is set - every draw path
+		/// binds the texture coordinate array only for a textured submesh, so filling this for an
+		/// untextured mesh is 8 bytes a vertex that nothing reads (122 MB on a 5.1M face mesh). The uvs
+		/// are in <see cref="interleavedData"/> either way.
+		/// </summary>
 		public VectorPOD<VertexTextureData> textureData = new VectorPOD<VertexTextureData>();
+
+		/// <summary>
+		/// Per vertex colors. Only filled when <see cref="UseVertexColors"/> is true - the color array is
+		/// only bound in that case, so an uncolored mesh left it full of zeroes nobody read.
+		/// </summary>
 		public VectorPOD<VertexColorData> colorData = new VectorPOD<VertexColorData>();
 		public VectorPOD<VertexNormalData> normalData = new VectorPOD<VertexNormalData>();
 		public VectorPOD<VertexPositionData> positionData = new VectorPOD<VertexPositionData>();
@@ -209,10 +221,61 @@ namespace MatterHackers.RenderGl
 			// This is private as you can't build one of these. You have to call GetImageGLDisplayListPlugin.
 		}
 
+		/// <summary>
+		/// Walks the faces once and returns the exact face count of each submesh the fill below will
+		/// produce, in the order it will produce them.
+		/// </summary>
+		/// <remarks>
+		/// The split is driven only by which texture image each face carries, so it can be measured
+		/// ahead of the fill. Guessing instead gets it wrong at both ends: an even share of the
+		/// remaining faces reserves almost nothing for a mesh where every face shares one texture
+		/// (FaceTextures has an entry per face, not per image), while reserving the whole remainder
+		/// for a mesh that alternates textures is O(n^2).
+		/// </remarks>
+		private static List<int> MeasureSubMeshFaceCounts(Mesh mesh)
+		{
+			var faceCounts = new List<int>();
+			ImageBuffer runTexture = null;
+			for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
+			{
+				mesh.FaceTextures.TryGetValue(faceIndex, out var faceTexture);
+
+				// Same test as the fill: submeshes break on the texture object, not on its contents.
+				var texture = faceTexture?.image;
+				if (faceCounts.Count == 0
+					|| !ReferenceEquals(texture, runTexture))
+				{
+					faceCounts.Add(0);
+					runTexture = texture;
+				}
+
+				faceCounts[faceCounts.Count - 1]++;
+			}
+
+			return faceCounts;
+		}
+
+		/// <summary>
+		/// Tessellates the mesh into per texture submeshes of loose triangles, filling both the vertex
+		/// arrays the immediate mode GL path binds and the interleaved buffer the D3D path uploads.
+		/// </summary>
+		/// <remarks>
+		/// This is the heaviest allocator in the thumbnail pipeline - a 5.1M face mesh measured 8,348 MB
+		/// allocated and 1,958 MB retained - so the vertex buffers are reserved to their final size up
+		/// front (VectorPOD otherwise grows by re-copying, ~5x the final bytes through the LOH), the
+		/// interleaved data is written as the triangles are emitted rather than in a second pass over the
+		/// finished arrays, and the uv and color arrays are left empty when no draw path will read them.
+		/// </remarks>
 		private void CreateRenderData(GL gl, Mesh meshToBuildListFor, Func<Vector3Float, Color> getColorFunc)
 		{
 			bool hasFaceColors = meshToBuildListFor.FaceColors != null
 				&& meshToBuildListFor.FaceColors.Length > 0;
+			bool useVertexColors = getColorFunc != null || hasFaceColors;
+
+			// With no face textures the whole mesh is a single submesh, so its exact vertex count is
+			// known before the fill and nothing has to grow at all.
+			bool meshHasFaceTextures = meshToBuildListFor.FaceTextures.Count > 0;
+			List<int> subMeshFaceCounts = meshHasFaceTextures ? MeasureSubMeshFaceCounts(meshToBuildListFor) : null;
 
 			subMeshs = new List<SubTriangleMesh>();
 			SubTriangleMesh currentSubMesh = null;
@@ -220,6 +283,9 @@ namespace MatterHackers.RenderGl
 			VectorPOD<VertexColorData> colorData = null;
 			VectorPOD<VertexNormalData> normalData = null;
 			VectorPOD<VertexPositionData> positionData = null;
+			bool fillTextureData = false;
+			float[] interleavedData = null;
+			int interleavedCount = 0;
 			// first make sure all the textures are created
 			for (int faceIndex = 0; faceIndex < meshToBuildListFor.Faces.Count; faceIndex++)
 			{
@@ -237,22 +303,56 @@ namespace MatterHackers.RenderGl
 					|| (faceTexture == null
 						&& subMeshs[subMeshs.Count - 1].texture != null))
 				{
+					// The submesh that was being filled is complete now that a new one is starting.
+					FinishSubMesh(currentSubMesh, interleavedData, interleavedCount);
+
 					SubTriangleMesh newSubMesh = new SubTriangleMesh();
 					newSubMesh.texture = faceTexture == null ? null : faceTexture.image;
 					subMeshs.Add(newSubMesh);
-					if (getColorFunc != null || hasFaceColors)
+					if (useVertexColors)
 					{
 						newSubMesh.UseVertexColors = true;
 					}
 
-					currentSubMesh = subMeshs[subMeshs.Count - 1];
+					currentSubMesh = newSubMesh;
 					textureData = currentSubMesh.textureData;
 					colorData = currentSubMesh.colorData;
 					normalData = currentSubMesh.normalData;
 					positionData = currentSubMesh.positionData;
+					fillTextureData = currentSubMesh.texture != null;
+
+					// Untextured meshes are one submesh holding every face; textured ones were measured
+					// above, so either way this submesh's final size is known before it is filled.
+					int facesToReserve = subMeshFaceCounts == null
+						? meshToBuildListFor.Faces.Count
+						: subMeshFaceCounts[subMeshs.Count - 1];
+
+					int verticesToReserve = facesToReserve * 3;
+					positionData.Capacity(verticesToReserve);
+					normalData.Capacity(verticesToReserve);
+					if (fillTextureData)
+					{
+						textureData.Capacity(verticesToReserve);
+					}
+
+					if (useVertexColors)
+					{
+						colorData.Capacity(verticesToReserve);
+					}
+
+					interleavedData = new float[verticesToReserve * SubTriangleMesh.InterleavedStride];
+					interleavedCount = 0;
 				}
 
-				VertexColorData color = new VertexColorData();
+				// One face is three vertices. The reservation above should already cover them, but keep
+				// the check so a face is never written into a buffer that is short of a whole face.
+				int interleavedNeeded = interleavedCount + (3 * SubTriangleMesh.InterleavedStride);
+				if (interleavedNeeded > interleavedData.Length)
+				{
+					Array.Resize(ref interleavedData, Math.Max(interleavedNeeded, interleavedData.Length * 2));
+				}
+
+				VertexColorData color = default(VertexColorData);
 
 				if (getColorFunc != null)
 				{
@@ -280,65 +380,88 @@ namespace MatterHackers.RenderGl
 				VertexTextureData tempTexture;
 				VertexNormalData tempNormal;
 				VertexPositionData tempPosition;
-				tempTexture.textureU = faceTexture == null ? 0 : (float)faceTexture.uv0.X;
-				tempTexture.textureV = faceTexture == null ? 0 : (float)faceTexture.uv0.Y;
-				var normal = meshToBuildListFor.Faces[faceIndex].normal;
+				var face = meshToBuildListFor.Faces[faceIndex];
+				var normal = face.normal;
 				tempNormal.normalX = normal.X;
 				tempNormal.normalY = normal.Y;
 				tempNormal.normalZ = normal.Z;
-				int vertexIndex = meshToBuildListFor.Faces[faceIndex].v0;
-				tempPosition.positionX = (float)meshToBuildListFor.Vertices[vertexIndex].X;
-				tempPosition.positionY = (float)meshToBuildListFor.Vertices[vertexIndex].Y;
-				tempPosition.positionZ = (float)meshToBuildListFor.Vertices[vertexIndex].Z;
-				textureData.Add(tempTexture);
-				normalData.Add(tempNormal);
-				positionData.Add(tempPosition);
-				colorData.Add(color);
 
-				tempTexture.textureU = faceTexture == null ? 0 : (float)faceTexture.uv1.X;
-				tempTexture.textureV = faceTexture == null ? 0 : (float)faceTexture.uv1.Y;
-				vertexIndex = meshToBuildListFor.Faces[faceIndex].v1;
-				tempPosition.positionX = (float)meshToBuildListFor.Vertices[vertexIndex].X;
-				tempPosition.positionY = (float)meshToBuildListFor.Vertices[vertexIndex].Y;
-				tempPosition.positionZ = (float)meshToBuildListFor.Vertices[vertexIndex].Z;
-				textureData.Add(tempTexture);
-				normalData.Add(tempNormal);
-				positionData.Add(tempPosition);
-				colorData.Add(color);
-
-				tempTexture.textureU = faceTexture == null ? 0 : (float)faceTexture.uv2.X;
-				tempTexture.textureV = faceTexture == null ? 0 : (float)faceTexture.uv2.Y;
-				vertexIndex = meshToBuildListFor.Faces[faceIndex].v2;
-				tempPosition.positionX = (float)meshToBuildListFor.Vertices[vertexIndex].X;
-				tempPosition.positionY = (float)meshToBuildListFor.Vertices[vertexIndex].Y;
-				tempPosition.positionZ = (float)meshToBuildListFor.Vertices[vertexIndex].Z;
-				textureData.Add(tempTexture);
-				normalData.Add(tempNormal);
-				positionData.Add(tempPosition);
-				colorData.Add(color);
-			}
-
-			// Build pre-interleaved vertex arrays for fast GPU upload
-			foreach (var subMesh in subMeshs)
-			{
-				int vertexCount = subMesh.positionData.Count;
-				subMesh.interleavedData = new float[vertexCount * SubTriangleMesh.InterleavedStride];
-				var positions = subMesh.positionData.Array;
-				var normals = subMesh.normalData.Array;
-				var textures = subMesh.textureData.Array;
-				for (int i = 0; i < vertexCount; i++)
+				for (int cornerIndex = 0; cornerIndex < 3; cornerIndex++)
 				{
-					int offset = i * SubTriangleMesh.InterleavedStride;
-					subMesh.interleavedData[offset + 0] = positions[i].positionX;
-					subMesh.interleavedData[offset + 1] = positions[i].positionY;
-					subMesh.interleavedData[offset + 2] = positions[i].positionZ;
-					subMesh.interleavedData[offset + 3] = normals[i].normalX;
-					subMesh.interleavedData[offset + 4] = normals[i].normalY;
-					subMesh.interleavedData[offset + 5] = normals[i].normalZ;
-					subMesh.interleavedData[offset + 6] = textures[i].textureU;
-					subMesh.interleavedData[offset + 7] = textures[i].textureV;
+					Vector2Float uv;
+					int vertexIndex;
+					switch (cornerIndex)
+					{
+						case 0:
+							uv = faceTexture == null ? default(Vector2Float) : faceTexture.uv0;
+							vertexIndex = face.v0;
+							break;
+
+						case 1:
+							uv = faceTexture == null ? default(Vector2Float) : faceTexture.uv1;
+							vertexIndex = face.v1;
+							break;
+
+						default:
+							uv = faceTexture == null ? default(Vector2Float) : faceTexture.uv2;
+							vertexIndex = face.v2;
+							break;
+					}
+
+					tempTexture.textureU = uv.X;
+					tempTexture.textureV = uv.Y;
+					tempPosition.positionX = (float)meshToBuildListFor.Vertices[vertexIndex].X;
+					tempPosition.positionY = (float)meshToBuildListFor.Vertices[vertexIndex].Y;
+					tempPosition.positionZ = (float)meshToBuildListFor.Vertices[vertexIndex].Z;
+
+					normalData.Add(tempNormal);
+					positionData.Add(tempPosition);
+
+					if (fillTextureData)
+					{
+						textureData.Add(tempTexture);
+					}
+
+					if (useVertexColors)
+					{
+						colorData.Add(color);
+					}
+
+					// Interleave as we go rather than in a second pass over the finished arrays: on a
+					// 5.1M face mesh that pass re-read ~550 MB of vertex data to write 490 MB back out.
+					interleavedData[interleavedCount + 0] = tempPosition.positionX;
+					interleavedData[interleavedCount + 1] = tempPosition.positionY;
+					interleavedData[interleavedCount + 2] = tempPosition.positionZ;
+					interleavedData[interleavedCount + 3] = tempNormal.normalX;
+					interleavedData[interleavedCount + 4] = tempNormal.normalY;
+					interleavedData[interleavedCount + 5] = tempNormal.normalZ;
+					interleavedData[interleavedCount + 6] = tempTexture.textureU;
+					interleavedData[interleavedCount + 7] = tempTexture.textureV;
+					interleavedCount += SubTriangleMesh.InterleavedStride;
 				}
 			}
+
+			FinishSubMesh(currentSubMesh, interleavedData, interleavedCount);
+		}
+
+		/// <summary>
+		/// Publishes the interleaved buffer that was filled for a submesh, trimming it to the vertices
+		/// actually emitted. The trim only copies when the reservation overshot, which cannot happen for
+		/// a mesh with no face textures.
+		/// </summary>
+		private static void FinishSubMesh(SubTriangleMesh subMesh, float[] interleavedData, int usedFloats)
+		{
+			if (subMesh == null)
+			{
+				return;
+			}
+
+			if (interleavedData.Length != usedFloats)
+			{
+				Array.Resize(ref interleavedData, usedFloats);
+			}
+
+			subMesh.interleavedData = interleavedData;
 		}
 
 		public void Render()

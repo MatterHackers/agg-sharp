@@ -192,22 +192,24 @@ namespace MatterHackers.RenderGl
 			{
 				Task.Run(() =>
 				{
-					var meshEdgeList = mesh.GetMeshEdges();
+					// The flat graph rather than GetMeshEdges() - this pass only reads each edge once, and on
+					// big meshes the object-per-edge list is hundreds of megabytes of pure waste.
+					var edgeGraph = mesh.GetMeshEdgeGraph();
 
 					var filteredEdgeLines = new VectorPOD<WireVertexData>();
 
-					foreach (var meshEdge in meshEdgeList)
+					for (int edgeIndex = 0; edgeIndex < edgeGraph.EdgeCount; edgeIndex++)
 					{
-						if (meshEdge.Faces.Count() == 2)
+						if (edgeGraph.GetFaceCount(edgeIndex) == 2)
 						{
-							var faceNormal0 = mesh.Faces[meshEdge.Faces[0]].normal;
-							var faceNormal1 = mesh.Faces[meshEdge.Faces[1]].normal;
+							var faceNormal0 = mesh.Faces[edgeGraph.GetFace(edgeIndex, 0)].normal;
+							var faceNormal1 = mesh.Faces[edgeGraph.GetFace(edgeIndex, 1)].normal;
 							double angle = faceNormal0.CalculateAngle(faceNormal1);
 							if (angle > nonPlanarAngleRequired)
 							{
 								AddEdgeLine(filteredEdgeLines,
-									mesh.Vertices[meshEdge.Vertex0Index],
-									mesh.Vertices[meshEdge.Vertex1Index],
+									mesh.Vertices[edgeGraph.GetVertex0(edgeIndex)],
+									mesh.Vertices[edgeGraph.GetVertex1(edgeIndex)],
 									wireColor);
 							}
 						}

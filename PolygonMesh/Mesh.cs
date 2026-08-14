@@ -1184,6 +1184,15 @@ namespace MatterHackers.PolygonMesh
 			return MeshEdge.CreateMeshEdgeList(mesh);
 		}
 
+		/// <summary>
+		/// Gets the mesh's unique edges and their adjacent faces as flat arrays. Much cheaper than
+		/// <see cref="GetMeshEdges"/> - prefer it wherever the edges are only walked, not retained.
+		/// </summary>
+		public static MeshEdgeGraph GetMeshEdgeGraph(this Mesh mesh)
+		{
+			return MeshEdgeGraph.Create(mesh);
+		}
+
 		public static IEnumerable<int> GetCoplanarFaces(this Mesh mesh, int faceIndex)
 		{
 			var plane = mesh.GetPlane(faceIndex);
@@ -1471,22 +1480,27 @@ namespace MatterHackers.PolygonMesh
 
 		public static IEnumerable<MeshEdge> GetNonManifoldEdges(this Mesh mesh)
 		{
-			foreach (var meshEdge in mesh.GetMeshEdges())
+			// Walk the flat graph and only materialize MeshEdge objects for the (usually very few) bad edges.
+			var graph = mesh.GetMeshEdgeGraph();
+			for (int edgeIndex = 0; edgeIndex < graph.EdgeCount; edgeIndex++)
 			{
-				if (meshEdge.Faces.Count() != 2)
+				if (graph.GetFaceCount(edgeIndex) != 2)
 				{
-					yield return meshEdge;
+					yield return new MeshEdge(
+						graph.GetVertex0(edgeIndex),
+						graph.GetVertex1(edgeIndex),
+						graph.GetFaces(edgeIndex).ToArray());
 				}
 			}
 		}
 
 		public static bool IsManifold(this Mesh mesh)
 		{
-			var meshEdgeList = mesh.GetMeshEdges();
+			var graph = mesh.GetMeshEdgeGraph();
 
-			foreach (var meshEdge in meshEdgeList)
+			for (int edgeIndex = 0; edgeIndex < graph.EdgeCount; edgeIndex++)
 			{
-				if (meshEdge.Faces.Count() != 2)
+				if (graph.GetFaceCount(edgeIndex) != 2)
 				{
 					return false;
 				}

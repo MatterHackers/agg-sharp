@@ -277,16 +277,20 @@ namespace MatterHackers.RenderGl
 				return edgeHintsByFace;
 			}
 
-			foreach (var meshEdge in mesh.GetMeshEdges())
+			// The flat graph rather than GetMeshEdges() - this pass only reads each edge once, and on big
+			// meshes the object-per-edge list is hundreds of megabytes of pure waste.
+			var edgeGraph = mesh.GetMeshEdgeGraph();
+			for (int edgeIndex = 0; edgeIndex < edgeGraph.EdgeCount; edgeIndex++)
 			{
+				int edgeFaceCount = edgeGraph.GetFaceCount(edgeIndex);
 				int edgeClass = 0;
 				switch (renderType)
 				{
 					case RenderTypes.Outlines:
-						if (meshEdge.Faces.Count() == 2)
+						if (edgeFaceCount == 2)
 						{
-							var faceNormal0 = mesh.Faces[meshEdge.Faces[0]].normal;
-							var faceNormal1 = mesh.Faces[meshEdge.Faces[1]].normal;
+							var faceNormal0 = mesh.Faces[edgeGraph.GetFace(edgeIndex, 0)].normal;
+							var faceNormal1 = mesh.Faces[edgeGraph.GetFace(edgeIndex, 1)].normal;
 							double angle = faceNormal0.CalculateAngle(faceNormal1);
 							if (angle > SceneRenderModeUtilities.OutlineFeatureAngleRadians)
 							{
@@ -296,7 +300,7 @@ namespace MatterHackers.RenderGl
 						break;
 
 					case RenderTypes.NonManifold:
-						edgeClass = meshEdge.Faces.Count() == 2 ? 0 : 2;
+						edgeClass = edgeFaceCount == 2 ? 0 : 2;
 						break;
 				}
 
@@ -305,9 +309,12 @@ namespace MatterHackers.RenderGl
 					continue;
 				}
 
-				foreach (int faceIndex in meshEdge.Faces)
+				int vertex0Index = edgeGraph.GetVertex0(edgeIndex);
+				int vertex1Index = edgeGraph.GetVertex1(edgeIndex);
+				for (int faceOffset = 0; faceOffset < edgeFaceCount; faceOffset++)
 				{
-					int faceEdgeIndex = GetFaceEdgeIndex(mesh.Faces[faceIndex], meshEdge.Vertex0Index, meshEdge.Vertex1Index);
+					int faceIndex = edgeGraph.GetFace(edgeIndex, faceOffset);
+					int faceEdgeIndex = GetFaceEdgeIndex(mesh.Faces[faceIndex], vertex0Index, vertex1Index);
 					if (faceEdgeIndex >= 0)
 					{
 						edgeHintsByFace[faceIndex][faceEdgeIndex] = edgeClass;

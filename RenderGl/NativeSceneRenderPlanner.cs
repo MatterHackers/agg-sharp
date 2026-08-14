@@ -58,6 +58,27 @@ namespace MatterHackers.RenderGl
 	{
 		private readonly NativeSceneRenderPlan plan = new();
 
+		/// <summary>
+		/// Drops the commands from the last <see cref="Build"/>, releasing the meshes they reference.
+		/// </summary>
+		/// <remarks>
+		/// The plan is a single reused instance, so without this it holds the last frame's commands
+		/// until some later frame happens to rebuild it. The renderer itself lives in a process-lifetime
+		/// static (D3D11ThumbnailRenderer's cached backend), which made that "until" mean "forever":
+		/// the last rendered mesh stayed rooted, and with it the ConditionalWeakTable render caches keyed
+		/// on the mesh - measured at ~2.3 GB retained after one 5.1M-face thumbnail. The plan is rebuilt
+		/// from scratch every frame, so releasing it at end of frame costs nothing.
+		/// </remarks>
+		public void ReleasePlan()
+		{
+			plan.Clear();
+		}
+
+		/// <summary>
+		/// Sorts the given commands into the opaque, transparent and selected passes for one frame.
+		/// The returned plan is a reused instance owned by this planner; it is valid only until the
+		/// next <see cref="Build"/> or <see cref="ReleasePlan"/> call.
+		/// </summary>
 		public NativeSceneRenderPlan Build(IReadOnlyList<MeshRenderCommand> commands)
 		{
 			plan.Clear();
