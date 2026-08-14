@@ -262,7 +262,9 @@ namespace MatterHackers.GuiAutomation
 		{
 			var timer = Stopwatch.StartNew();
 
-			while (timer.Elapsed.Seconds < maxSeconds)
+			// TotalSeconds, not Seconds: Seconds is the 0-59 component of the elapsed time, so any wait of a
+			// minute or more never expired - it silently became an infinite loop.
+			while (timer.Elapsed.TotalSeconds < maxSeconds)
 			{
 				if (checkConditionSatisfied())
 				{

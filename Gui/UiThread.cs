@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -39,10 +39,10 @@ namespace MatterHackers.Agg.UI
 	{
 		private static List<DeferredAction> deferredActions = new List<DeferredAction>();
 
-		private static readonly List<Action> listA = new List<Action>();
-		private static readonly List<Action> listB = new List<Action>();
-
-		private static List<Action> callLater = listA;
+		/// <summary>
+		/// Actions queued by RunOnIdle waiting for the next pump. Only ever touched under <see cref="locker"/>.
+		/// </summary>
+		private static readonly List<Action> callLater = new List<Action>();
 
 		private static Stopwatch timer = Stopwatch.StartNew();
 
@@ -60,7 +60,10 @@ namespace MatterHackers.Agg.UI
 			get
 			{
 				int count = 0;
-				lock (deferredActions)
+
+				// locker, not deferredActions: a pump removing expired entries holds locker, and locking a
+				// different object here would let that removal break this indexed walk.
+				lock (locker)
 				{
 					long currentMilliseconds = timer.ElapsedMilliseconds;
 					for (int i = 0; i < deferredActions.Count; i++)
@@ -183,17 +186,11 @@ namespace MatterHackers.Agg.UI
 				uiThreadId = Thread.CurrentThread.ManagedThreadId;
 			}
 
-			List<Action> callNow = callLater;
+			Action[] callNow;
 
 			// Don't keep this locked for long
 			lock (locker)
 			{
-				// Swap lists to an empty list per call
-				callLater = (callLater == listA) ? listB : listA;
-
-				// Actually empty the list
-				callLater.Clear();
-
 				// Loop over deferred RunOnIdle actions which previously had not yet reached their execution time
 				long currentMilliseconds = timer.ElapsedMilliseconds;
 				for (int i = deferredActions.Count - 1; i >= 0; i--)
@@ -202,7 +199,7 @@ namespace MatterHackers.Agg.UI
 					var deferred = deferredActions[i];
 					if (deferred.AbsoluteMillisecondsToRunAt <= currentMilliseconds)
 					{
-						callNow.Add(deferred.Execute);
+						callLater.Add(deferred.Execute);
 						deferredActions.RemoveAt(i);
 					}
 				}
@@ -214,9 +211,24 @@ namespace MatterHackers.Agg.UI
 					var intervalAction = intervalActions[i];
 					if (intervalAction.AbsoluteMillisecondsToRunAt <= currentMilliseconds)
 					{
-						callNow.Add(intervalAction.Execute);
+						// Advance the due time here, inside the lock, rather than in Execute: Execute runs
+						// outside the lock, so a second pump would still see the old due time and queue the
+						// same interval a second time.
+						intervalAction.ScheduleNextRun();
+						callLater.Add(intervalAction.Execute);
 					}
 				}
+
+				if (callLater.Count == 0)
+				{
+					return;
+				}
+
+				// Take a private copy to run outside the lock. It has to be a copy rather than a shared
+				// buffer: a nested pump (an action that runs a message loop) or a second thread pumping
+				// would otherwise clear and refill the very list being enumerated here.
+				callNow = callLater.ToArray();
+				callLater.Clear();
 			}
 
 			foreach (Action action in callNow)
@@ -353,11 +365,9 @@ namespace MatterHackers.Agg.UI
 				// Clear all deferred actions
 				deferredActions.Clear();
 				
-				// Clear call later lists
-				listA.Clear();
-				listB.Clear();
-				callLater = listA;
-				
+				// Clear queued call later actions
+				callLater.Clear();
+
 				// Clear all running intervals
 				foreach (var interval in intervalActions)
 				{
@@ -394,11 +404,17 @@ namespace MatterHackers.Agg.UI
 
 		public override void Execute()
 		{
-			// Schedule next execution before action invoke
-			this.AbsoluteMillisecondsToRunAt = this.NextRunMs;
-
-			// Invoke
+			// The next run was scheduled by ScheduleNextRun when this was queued
 			base.Execute();
+		}
+
+		/// <summary>
+		/// Pushes the next due time out by one interval. Called while the queue is locked, at the moment
+		/// this interval is queued, so no other pump can see it as still due and queue it again.
+		/// </summary>
+		internal void ScheduleNextRun()
+		{
+			this.AbsoluteMillisecondsToRunAt = this.NextRunMs;
 		}
 
 		internal void Shutdown()

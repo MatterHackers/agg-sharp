@@ -276,5 +276,21 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.MarkTestComplete();
 			});
 		}
+
+		// StaticDelay used to compare against TimeSpan.Seconds - the 0-59 second component - rather than
+		// TotalSeconds. A wait was therefore never shorter than a whole second, and, far worse, any wait of
+		// a minute or more could never expire at all: it became an infinite loop that outlived the test.
+		// Timing the sub-second case catches the same defect without a test that has to run for a minute.
+		[Test]
+		public async Task StaticDelayExpiresOnTotalElapsedTimeNotTheSecondsComponent()
+		{
+			var timer = System.Diagnostics.Stopwatch.StartNew();
+
+			var satisfied = AutomationRunner.StaticDelay(() => false, maxSeconds: .2, checkInterval: 10);
+
+			await Assert.That(satisfied).IsFalse();
+			await Assert.That(timer.Elapsed.TotalSeconds).IsLessThan(.9)
+				.Because("a .2 second wait must expire on total elapsed time, not on whole seconds ticking over");
+		}
 	}
 }
