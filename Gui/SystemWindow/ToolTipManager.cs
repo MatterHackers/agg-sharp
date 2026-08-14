@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -117,10 +117,34 @@ namespace MatterHackers.Agg.UI
 		private string lastTextShown = "";
 		Action<GuiWidget, string> changeWidgetText;
 
+		/// <summary>
+		/// Reports the widget currently under the mouse. Pass the widget even when it has no tooltip
+		/// text (or null when nothing is hovered) - that is what retires the tooltip of the widget we
+		/// moved off of.
+		/// </summary>
         public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
 		{
 			if (!AllowToolTips)
 			{
+				return;
+			}
+
+			// Hovering something with no tooltip must cancel anything pending or showing. The show/remove
+			// checks below are pure containment tests, so a tooltip whose widget is covered by the newly
+			// hovered widget would otherwise still "contain" the mouse and stay up over the new widget.
+			if (string.IsNullOrWhiteSpace(widgetToShowToolTipFor?.ToolTipText))
+			{
+				widgetThatWantsToShowToolTip = null;
+				lastTextShown = "";
+
+				if (widgetThatIsShowingToolTip != null)
+				{
+					RemoveToolTip();
+					widgetThatIsShowingToolTip = null;
+					timeCurrentToolTipHasBeenShowing.Stop();
+					timeCurrentToolTipHasBeenShowing.Reset();
+				}
+
 				return;
 			}
 
@@ -164,8 +188,9 @@ namespace MatterHackers.Agg.UI
 				RectangleDouble screenBounds = widgetThatWantsToShowToolTip.TransformToScreenSpace(widgetThatWantsToShowToolTip.LocalBounds);
 				if (screenBounds.Contains(mousePosition))
 				{
-					DoShowToolTip();
-					didShow = true;
+					// Only claim we showed a tooltip if one actually went up - otherwise this poll would
+					// skip the auto-pop and mouse-leave handling below for no reason
+					didShow = DoShowToolTip();
 				}
 			}
 
@@ -229,7 +254,11 @@ namespace MatterHackers.Agg.UI
 			timeSinceLastToolTipClose.Stop();
 		}
 
-		private void DoShowToolTip()
+		/// <summary>
+		/// Shows the tooltip for the widget that is waiting to show one.
+		/// </summary>
+		/// <returns>True if a tooltip was actually put on screen.</returns>
+		private bool DoShowToolTip()
 		{
 			if (widgetThatWantsToShowToolTip != null
 				&& widgetThatWantsToShowToolTip != widgetThatIsShowingToolTip
@@ -238,15 +267,19 @@ namespace MatterHackers.Agg.UI
 				RectangleDouble screenBoundsShowingTT = widgetThatWantsToShowToolTip.TransformToScreenSpace(widgetThatWantsToShowToolTip.LocalBounds);
 				if (screenBoundsShowingTT.Contains(mousePosition))
 				{
+					// Check for text before tearing down the current tooltip - a widget with nothing to
+					// say must not close a tooltip that is legitimately showing for another widget
+					var textToShow = widgetThatWantsToShowToolTip.ToolTipText ?? "";
+					if (textToShow.Length == 0)
+					{
+						widgetThatWantsToShowToolTip = null;
+						return false;
+					}
+
 					RemoveToolTip();
 					widgetThatIsShowingToolTip = null;
 
-					toolTipText = widgetThatWantsToShowToolTip.ToolTipText ?? "";
-					if (toolTipText.Length == 0)
-					{
-						widgetThatWantsToShowToolTip = null;
-						return;
-					}
+					toolTipText = textToShow;
 					toolTipWidget = new FlowLayoutWidget()
 					{
 						OriginRelativeParent = new Vector2((int)mousePosition.X, (int)mousePosition.Y),
@@ -295,8 +328,12 @@ namespace MatterHackers.Agg.UI
 					widgetThatIsShowingToolTip = widgetThatWantsToShowToolTip;
 					widgetThatWantsToShowToolTip = null;
 					widgetThatWasShowingToolTip = null;
+
+					return true;
 				}
 			}
+
+			return false;
 		}
 
 		private static (GuiWidget widgetToShow, Action<GuiWidget, string> changeWidgetText) DefaultToolTipWidget(string toolTipText)
@@ -329,11 +366,26 @@ namespace MatterHackers.Agg.UI
 
 		public static Func<string, (GuiWidget widgetToShow, Action<GuiWidget, string> changeWidgetText)> CreateToolTip = DefaultToolTipWidget;
 
+		/// <summary>
+		/// Takes down any tooltip, showing or merely armed. Callers are things that put something on top of
+		/// the window (menus, popups) and need the area clear.
+		/// </summary>
+		/// <remarks>
+		/// Dropping the armed widget matters as much as removing the visible one: a tooltip the mouse armed
+		/// on its way to a menu item has not been drawn yet, so removing only the visible tooltip lets it pop
+		/// over the menu a fraction of a second later.
+		/// Setting widgetThatWasShowingToolTip is what keeps the tooltip from immediately coming back for the
+		/// widget we just cleared while the mouse is still inside it - CheckIfNeedToDisplayToolTip only lets
+		/// go of that widget once the mouse leaves its bounds. That suppression is why Clear() is wrong for
+		/// the plain hover path (SetHoveredWidget), which must be able to re-show without a mouse exit.
+		/// </remarks>
 		public void Clear()
 		{
 			widgetThatWasShowingToolTip = widgetThatIsShowingToolTip;
 			RemoveToolTip();
 			widgetThatIsShowingToolTip = null;
+			widgetThatWantsToShowToolTip = null;
+			lastTextShown = "";
 			timeCurrentToolTipHasBeenShowing.Stop();
 			timeCurrentToolTipHasBeenShowing.Reset();
 		}

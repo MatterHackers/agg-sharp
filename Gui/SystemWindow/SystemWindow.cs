@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -167,6 +167,10 @@ namespace MatterHackers.Agg.UI
 				{
 					var screenSpaceChildBounds = child.TransformToScreenSpace(child.LocalBounds);
 
+					// Selectable rather than CanSelect on purpose. CanSelect also requires Enabled, which
+					// would make the walk match mouse routing, but a disabled control is exactly the one
+					// whose tooltip the user needs (MatterCAD's greyed Undo button says what it would undo).
+					// This walk answers "what is drawn on top here", not "what would get the click".
 					if (screenSpaceChildBounds.Contains(screenSpaceMouse)
 						&& child.Visible
 						&& child.Selectable)
@@ -179,10 +183,11 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 
-			if (!string.IsNullOrWhiteSpace(lastChild.ToolTipText))
-			{
-				SetHoveredWidget(lastChild);
-			}
+			// Always report the hovered widget, even when it has no tooltip of its own. Reporting only
+			// widgets that have tooltip text leaves the previously hovered widget armed, so its tooltip
+			// can appear (and linger) over a widget that is now covering it - the tooltip manager uses
+			// pure containment tests and cannot tell that the old widget is occluded.
+			SetHoveredWidget(lastChild);
 		}
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)

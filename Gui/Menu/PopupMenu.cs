@@ -355,6 +355,28 @@ namespace MatterHackers.Agg.UI
 			this.AddChild(scrollingWindow);
 		}
 
+		/// <summary>
+		/// Takes down any tooltip, shown or armed, on every SystemWindow above <paramref name="widget"/> before
+		/// a menu is opened over that area.
+		/// </summary>
+		/// <remarks>
+		/// This deliberately clears all of them rather than picking one. SystemWindows nest in single window
+		/// mode, and each one runs its own ToolTipManager over the same mouse position, so the tooltip that
+		/// would draw over the menu can belong to either. The two menu paths used to disagree about which one
+		/// to ask (CreateSubMenu took the innermost window, ShowMenu the outermost), which meant the submenu
+		/// path could clear an inner manager while an outer one still held the tooltip. Clearing an inner
+		/// window's manager when it holds nothing is free, so there is nothing to gain by guessing.
+		/// Note the window each path uses to *host* the popup still differs - that is a placement concern and
+		/// is unrelated to which manager owns the tooltip.
+		/// </remarks>
+		internal static void ClearToolTipsAbove(GuiWidget widget)
+		{
+			foreach (var window in widget.Parents<SystemWindow>())
+			{
+				window.ToolTipManager.Clear();
+			}
+		}
+
 		public void CreateSubMenu(string menuTitle, ThemeConfig menuTheme, Action<PopupMenu> populateSubMenu, ImageBuffer icon = null)
 		{
 			var content = new TextWidget(menuTitle, pointSize: Theme.DefaultFontSize, textColor: Theme.TextColor)
@@ -379,6 +401,10 @@ namespace MatterHackers.Agg.UI
 				{
 					return;
 				}
+
+				// Same as ShowMenu - a tooltip armed by whatever the mouse crossed on the way here must
+				// not float over the menu we are about to open
+				ClearToolTipsAbove(this);
 
 				var subMenu = new PopupMenu(menuTheme);
 				subMenuItemButton.SubMenu = subMenu;
@@ -631,7 +657,7 @@ namespace MatterHackers.Agg.UI
 		public static void ShowMenu(this PopupMenu popupMenu, GuiWidget anchorWidget, Vector2 menuPosition)
 		{
 			var systemWindow = anchorWidget.Parents<SystemWindow>().LastOrDefault();
-			systemWindow.ToolTipManager.Clear();
+			PopupMenu.ClearToolTipsAbove(anchorWidget);
 
 			// The menu is fully populated by the time it is shown, so this is the point at which we can tell
 			// whether it fits. A tall right click menu (MatterCAD's scene menu) would otherwise be positioned

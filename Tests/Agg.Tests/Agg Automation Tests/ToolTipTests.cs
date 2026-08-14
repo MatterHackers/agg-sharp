@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -278,6 +278,83 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(systemWindow.Children.Count == 3).IsTrue();
 			await Assert.That(tempData.showCount == 2).IsTrue();
 			await Assert.That(systemWindow.ToolTipManager.CurrentText == toolTip2Text).IsTrue();
+		}
+
+        [Test]
+        public async Task MoveFromToolTipToOverlappingWidgetWithNoToolTip()
+		{
+			TempData tempData = new TempData();
+			SystemWindow systemWindow = CreateTwoChildWindow(tempData);
+
+			// A widget with no tooltip that covers the right half of the first widget (added last so it is
+			// on top). This is the 'Open Recent' popup over a design tab case: the popup has no tooltip of
+			// its own, and it hides the widget that does.
+			systemWindow.AddChild(new GuiWidget()
+			{
+				LocalBounds = new RectangleDouble(14, 5, 25, 25),
+			});
+
+			// move into the uncovered part of the first widget
+			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 11, 11, 0));
+			UiThread.InvokePendingActions();
+
+			// sleep long enough to show the tool tip
+			Thread.Sleep((int)(ToolTipManager.InitialDelay * 1000 + minMsToBias));
+			UiThread.InvokePendingActions();
+
+			// make sure the tool tip came up
+			await Assert.That(systemWindow.Children.Count == 4).IsTrue();
+			await Assert.That(systemWindow.ToolTipManager.CurrentText == toolTip1Text).IsTrue();
+
+			// move onto the covering widget (still inside the first widget's bounds)
+			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 16, 16, 0));
+			Thread.Sleep(minMsTimeToRespond); // sleep enough for the tool tip to want to respond
+			UiThread.InvokePendingActions();
+
+			// the first widget's tool tip must go away even though the mouse is still over its bounds
+			await Assert.That(systemWindow.Children.Count == 3).IsTrue();
+			await Assert.That(tempData.popCount == 1).IsTrue();
+			await Assert.That(systemWindow.ToolTipManager.CurrentText == "").IsTrue();
+
+			// and it must not come back while we hover the widget that has no tool tip
+			Thread.Sleep((int)(ToolTipManager.InitialDelay * 1000 + minMsToBias));
+			UiThread.InvokePendingActions();
+
+			await Assert.That(systemWindow.Children.Count == 3).IsTrue();
+			await Assert.That(systemWindow.ToolTipManager.CurrentText == "").IsTrue();
+		}
+
+		/// <summary>
+		/// Opening a menu calls Clear() so no tooltip floats over it. The tooltip that is dangerous is often
+		/// the one the mouse armed on its way to the menu item and that has not appeared yet - it would pop
+		/// on top of the menu a fraction of a second after the menu opened.
+		/// </summary>
+		[Test]
+		public async Task ClearAlsoDropsAToolTipThatIsArmedButNotYetShown()
+		{
+			TempData tempData = new TempData();
+			SystemWindow systemWindow = CreateTwoChildWindow(tempData);
+
+			// hover the first widget, but not long enough for its tool tip to come up
+			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 11, 11, 0));
+			UiThread.InvokePendingActions();
+
+			Thread.Sleep((int)(ToolTipManager.InitialDelay / 2 * 1000));
+			UiThread.InvokePendingActions();
+
+			await Assert.That(systemWindow.Children.Count == 2).IsTrue();
+			await Assert.That(tempData.showCount == 0).IsTrue();
+
+			// this is what showing a menu does
+			systemWindow.ToolTipManager.Clear();
+
+			// wait well past the point the armed tool tip would have shown
+			Thread.Sleep((int)(ToolTipManager.InitialDelay * 1000 + minMsToBias));
+			UiThread.InvokePendingActions();
+
+			await Assert.That(systemWindow.Children.Count == 2).IsTrue();
+			await Assert.That(tempData.showCount == 0).IsTrue();
+			await Assert.That(systemWindow.ToolTipManager.CurrentText == "").IsTrue();
 		}
 
 		private static SystemWindow CreateTwoChildWindow(TempData tempData)
