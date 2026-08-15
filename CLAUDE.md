@@ -51,8 +51,9 @@ When a bug is reported, always follow this workflow:
 - `Csg/` — Constructive solid geometry (boolean operations on meshes)
 - `DataConverters2D/` — 2D path/shape conversion utilities
 - `DataConverters3D/` — 3D file format loaders (STL, AMF, OBJ, 3MF)
-- `RenderOpenGl/` — OpenGL rendering backend
-- `VorticeD3D/` — Direct3D rendering backend (via Vortice.Windows)
+- `RenderGl/` — Graphics abstraction layer for GPU rendering: `IGpuContext`, the `GL` facade class, `Graphics2DGpu` (GPU 2D drawing), `INativeSceneRenderer`. The "GL" in these names is a historical API shape, not OpenGL bindings.
+- `VorticeD3D/` — The production render backend: D3D11 via Vortice.Windows. Implements `IGpuContext` (`VorticeD3DGl.cs`) and `INativeSceneRenderer`; the swapchain host lives in `D3D11Control.cs`.
+- `RenderOpenGl/`, `Glfw/` — Removed. OpenGL/OpenTK/GLFW are gone; D3D11 is the only render backend. Any leftover folders on disk are stale build output and belong to no solution.
 - `ImageProcessing/` — Image filters, transforms, analysis
 - `PlatformWin32/` — Windows platform abstraction (input, clipboard, system windows)
 - `Tests/Agg.Tests/` — All tests

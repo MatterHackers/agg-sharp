@@ -47,7 +47,10 @@ using filling_rule_e = MatterHackers.Agg.Util.filling_rule_e;
 
 namespace MatterHackers.RenderGl
 {
-	// NOTE: GL render path is deprecated and will be removed. D3D is the active render path.
+	// This is the live GPU 2D render path - D3D11SystemWindow.NewGraphics2D hands out one of these.
+	// All drawing goes through the IGpuContext abstraction, which in production is implemented by
+	// VorticeD3DGl on top of D3D11. The OpenGL-flavored vocabulary in GL/IGpuContext is a historical
+	// API shape kept from the since-removed OpenGL backend, not a live OpenGL dependency.
 	public class Graphics2DGpu : Graphics2D
 	{
         public readonly GL gl;
