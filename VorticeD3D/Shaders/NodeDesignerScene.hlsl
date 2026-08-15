@@ -21,12 +21,20 @@ cbuffer SceneEffectBuffer : register(b2)
     float4 WireframeColor;
     float4 EffectFlags;
     float4 ResolutionAndWidth;
-    float4 ExtraFlags; // x = useVertexColor, y = alphaMultiplier
+    float4 ExtraFlags; // x = useVertexColor, y = alphaMultiplier, z = isBedGrid, w = bed shadow strength
+    float4 BedGridBounds; // xy = bed left/bottom in mm, zw = bed width/height in mm
+    float4 BedGridColor;
+    float4 BedAxisColorX; // the horizontal line at world y == 0
+    float4 BedAxisColorY; // the vertical line at world x == 0
+    float4 BedAxisColorZ; // the short stub at the origin
+    float4 BedGridParams; // x = spacing mm, y = grid half width px, z = axis half width px, w = axis height mm
+    float4 BedGridShadowColor; // matches BedShadowColor in NodeDesignerPostProcess.hlsl
 };
 
 Texture2D diffuseTexture : register(t0);
 Texture2D opaqueDepthTexture : register(t1);
 Texture2D dualDepthTexture : register(t2);
+Texture2D bedShadowTexture : register(t3); // blurred bed shadow mask, bound only for bed draws
 
 SamplerState linearSampler : register(s0);
 SamplerState pointSampler : register(s1);
@@ -270,6 +278,79 @@ float4 GetEffectiveColor(float4 vertexColor)
     return color;
 }
 
+// Composites one analytic line over the bed. The baked lines it replaces were fully
+// opaque over an 80/255 fill, so the line has to raise alpha the same way or the bed
+// grid would read as translucent where the texture used to be solid.
+float4 BlendBedLine(float4 color, float4 lineColor, float coverage)
+{
+    float weight = saturate(coverage) * lineColor.a;
+    color.rgb = lerp(color.rgb, lineColor.rgb, weight);
+    color.a = lerp(color.a, 1.0, weight);
+    return color;
+}
+
+// Tints a line color toward the bed shadow color exactly as BedShadowCompositePS tints
+// the bed base color, so a line crossing an object's shadow darkens with the fill.
+float4 ShadowTintBedLine(float4 lineColor, float shadowTint)
+{
+    lineColor.rgb = lerp(lineColor.rgb, BedGridShadowColor.rgb, shadowTint);
+    return lineColor;
+}
+
+// Draws the bed grid analytically instead of sampling it from the bed texture. Texture
+// space lines are magnified under perspective and bilinearly smeared, so they can never
+// stay one screen pixel wide; solving for the distance to the nearest line in world mm
+// and converting through fwidth gives a constant on-screen thickness at any depth.
+//
+// The UV to world reconstruction is exact: the bed is a single axis aligned quad whose
+// UVs span 0..1 across the bed bounds and whose transform is translation only, so
+// world = bounds.origin + uv * bounds.size holds at every pixel.
+float4 ApplyBedGrid(float4 baseColor, float2 uv)
+{
+    if (ExtraFlags.z < 0.5)
+    {
+        return baseColor;
+    }
+
+    float2 world = BedGridBounds.xy + uv * BedGridBounds.zw;
+    float2 deriv = max(fwidth(world), 1e-6); // mm per screen pixel
+    float spacing = max(BedGridParams.x, 1e-6);
+
+    // The baked lines were part of the bed base texture, so BedShadowCompositePS tinted
+    // them along with the fill. Analytic lines are drawn after that composite, so sample
+    // the same blurred mask (with the same v flip, since the mask is rendered upside down
+    // relative to the bed texture) and apply the identical tint to every line color.
+    float2 shadowUv = float2(uv.x, 1.0 - uv.y);
+    float shadowAmount = saturate(bedShadowTexture.Sample(linearSampler, shadowUv).a * ExtraFlags.w);
+    float shadowTint = saturate(shadowAmount * BedGridShadowColor.a);
+
+    // Each line family is only unresolvable along its own axis: at a grazing view the
+    // lines running toward the horizon crowd together while the ones crossing them stay
+    // perfectly readable, so fade the two families independently.
+    float2 gridPx = abs(frac(world / spacing + 0.5) - 0.5) * spacing / deriv;
+    float2 spacingPx = spacing / deriv;
+    float2 gridCoverage = saturate(BedGridParams.y + 0.5 - gridPx)
+        * saturate((spacingPx - 3.0) / 3.0);
+
+    float4 color = BlendBedLine(baseColor, ShadowTintBedLine(BedGridColor, shadowTint), max(gridCoverage.x, gridCoverage.y));
+
+    // Match the baked draw order: grid, then the Y axis, then the X axis, then the Z stub.
+    float axisHalfPx = BedGridParams.z;
+    float axisYCoverage = saturate(axisHalfPx + 0.5 - abs(world.x) / deriv.x);
+    color = BlendBedLine(color, ShadowTintBedLine(BedAxisColorY, shadowTint), axisYCoverage);
+
+    float axisXCoverage = saturate(axisHalfPx + 0.5 - abs(world.y) / deriv.y);
+    color = BlendBedLine(color, ShadowTintBedLine(BedAxisColorX, shadowTint), axisXCoverage);
+
+    // The Z axis has nowhere to go on a flat bed, so it shows as a short bar at the
+    // origin covering the same +/- AxisHeight mm the baked texture used. Feather the two
+    // ends over a pixel so they read the same as the anti-aliased sides.
+    float zEndCoverage = saturate((BedGridParams.w - abs(world.y)) / deriv.y + 0.5);
+    color = BlendBedLine(color, ShadowTintBedLine(BedAxisColorZ, shadowTint), axisYCoverage * zEndCoverage);
+
+    return color;
+}
+
 float4 SceneColorPS(PS_INPUT input) : SV_TARGET
 {
     ApplyDepthPeeling(input.Position);
@@ -302,6 +383,7 @@ float4 SceneTextureAlphaBlendPS(PS_INPUT input) : SV_TARGET
     float4 effectiveColor = GetEffectiveColor(input.VertexColor);
     float4 sampledColor = diffuseTexture.Sample(linearSampler, input.TexCoord) * effectiveColor;
     DiscardIfInvisible(sampledColor.a);
+    sampledColor = ApplyBedGrid(sampledColor, input.TexCoord);
     float3 color = ResolutionAndWidth.w > 0.5 ? sampledColor.rgb : ApplyLighting(sampledColor.rgb, input.ViewNormal);
     return ComposeSceneColor(float4(color, sampledColor.a), input.Barycentric, input.EdgeHints);
 }
@@ -332,6 +414,7 @@ DualPeelOutput SceneTextureDualPeelPS(PS_INPUT input)
     float4 effectiveColor = GetEffectiveColor(input.VertexColor);
     float4 sampledColor = diffuseTexture.Sample(linearSampler, input.TexCoord) * effectiveColor;
     DiscardIfInvisible(sampledColor.a);
+    sampledColor = ApplyBedGrid(sampledColor, input.TexCoord);
     float3 color = ResolutionAndWidth.w > 0.5 ? sampledColor.rgb : ApplyLighting(sampledColor.rgb, input.ViewNormal);
     float4 shadedColor = ComposeSceneColor(float4(color, sampledColor.a), input.Barycentric, input.EdgeHints);
     return ApplyDualDepthPeeling(input.Position, shadedColor);

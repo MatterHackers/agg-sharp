@@ -56,6 +56,37 @@ namespace MatterHackers.RenderGl
 		public Matrix4X4 Transform { get; set; } = Matrix4X4.Identity;
 
 		/// <summary>
+		/// Distance in mm between bed grid lines. The grid is drawn analytically by the
+		/// pixel shader rather than baked into <see cref="TopBaseTexture"/>: a texture-space
+		/// line is magnified and bilinearly smeared under perspective, so it can never stay
+		/// one screen pixel wide no matter how the texture is authored.
+		/// </summary>
+		public double GridSpacing { get; set; } = 50;
+
+		public Color GridLineColor { get; set; } = Color.Transparent;
+
+		/// <summary>Color of the world X axis, the horizontal line at world Y == 0.</summary>
+		public Color AxisXColor { get; set; } = Color.Transparent;
+
+		/// <summary>Color of the world Y axis, the vertical line at world X == 0.</summary>
+		public Color AxisYColor { get; set; } = Color.Transparent;
+
+		/// <summary>Color of the short Z axis stub drawn at the origin.</summary>
+		public Color AxisZColor { get; set; } = Color.Transparent;
+
+		/// <summary>Half length in mm of the Z axis stub drawn at the origin.</summary>
+		public double AxisHeight { get; set; } = 10;
+
+		/// <summary>
+		/// Grid line thickness in screen pixels. 1 pixel matches the weight of the baked
+		/// grid (2 texels of a 2048 texture across a 1200mm bed).
+		/// </summary>
+		public float GridLineWidthPixels { get; set; } = 1.0f;
+
+		/// <summary>Axis line thickness in screen pixels (the baked axes were 3 texels).</summary>
+		public float AxisLineWidthPixels { get; set; } = 1.5f;
+
+		/// <summary>
 		/// Creates the MeshRenderCommand for rendering the bed. Bed translucency is
 		/// encoded in the texture itself so the command alpha remains stable as the
 		/// camera moves above or below the bed.

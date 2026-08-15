@@ -3603,6 +3603,9 @@ namespace MatterHackers.RenderGl
 			public bool EnableWireframe;
 			public ID3D11ShaderResourceView ForcedTextureView;
 			public bool Unlit;
+
+			/// <summary>Set only for the bed, which draws its grid analytically in the pixel shader.</summary>
+			public BedRenderCommand BedGrid;
 		}
 
 		private sealed class SceneTextureTarget : IDisposable
@@ -3731,7 +3734,9 @@ namespace MatterHackers.RenderGl
 		{
 			sceneEffectBuffer = device.CreateBuffer(new BufferDescription
 			{
-				ByteWidth = 80, // 5 float4s: MeshColor, WireframeColor, EffectFlags, ResolutionAndWidth, ExtraFlags
+				// 12 float4s: MeshColor, WireframeColor, EffectFlags, ResolutionAndWidth, ExtraFlags,
+				// BedGridBounds, BedGridColor, BedAxisColorX/Y/Z, BedGridParams, BedGridShadowColor
+				ByteWidth = 192,
 				Usage = ResourceUsage.Dynamic,
 				BindFlags = BindFlags.ConstantBuffer,
 				CPUAccessFlags = CpuAccessFlags.Write,
@@ -4406,7 +4411,8 @@ namespace MatterHackers.RenderGl
 						depthStencilStateOverride: dualPeelDepthState,
 						useDualDepthPeelingShader: true,
 						forcedTextureView: bedCompositeTarget.ShaderResourceView,
-						unlit: true);
+						unlit: true,
+						bedGrid: bedCommand);
 				}
 
 				(sourceDepthTarget, destinationDepthTarget) = (destinationDepthTarget, sourceDepthTarget);
@@ -4490,6 +4496,7 @@ namespace MatterHackers.RenderGl
 				Command = CreateBedSceneCommand(bedCommand),
 				ForcedTextureView = bedCompositeTarget.ShaderResourceView,
 				Unlit = true,
+				BedGrid = bedCommand,
 			};
 		}
 
@@ -4541,7 +4548,8 @@ namespace MatterHackers.RenderGl
 				useDualDepthPeelingShader: false,
 				useAlphaBlendShader: true,
 				forcedTextureView: bedDrawCommand.ForcedTextureView,
-				unlit: bedDrawCommand.Unlit);
+				unlit: bedDrawCommand.Unlit,
+				bedGrid: bedDrawCommand.BedGrid);
 		}
 
 		private void ClearTransparentCompositeTargets()
@@ -4952,12 +4960,13 @@ namespace MatterHackers.RenderGl
 			bool useAlphaBlendShader = false,
 			ID3D11ShaderResourceView forcedTextureView = null,
 			bool unlit = false,
-			CullMode? cullModeOverride = null)
+			CullMode? cullModeOverride = null,
+			BedRenderCommand bedGrid = null)
 		{
 			SetSceneMatrices(command.Transform * activeSceneRenderContext.WorldView.ModelviewMatrix, activeSceneRenderContext.WorldView.ProjectionMatrix);
 			UpdateTransformBuffer();
 			bool useVertexColor = command.Mesh.FaceColors != null && command.Mesh.FaceColors.Length > 0 && !command.OverrideFaceColors;
-			UpdateSceneEffectBuffer(command.Color, command.WireFrameColor, enableWireframe, wireframeOnly, enableDepthPeeling, firstPeelPass, (float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height, unlit || command.Unlit, useVertexColor, command.AlphaMultiplier);
+			UpdateSceneEffectBuffer(command.Color, command.WireFrameColor, enableWireframe, wireframeOnly, enableDepthPeeling, firstPeelPass, (float)activeSceneRenderContext.Viewport.Width, (float)activeSceneRenderContext.Viewport.Height, unlit || command.Unlit, useVertexColor, command.AlphaMultiplier, bedGrid);
 
 			context.IASetInputLayout(sceneEffectInputLayout);
 			context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
@@ -4969,6 +4978,11 @@ namespace MatterHackers.RenderGl
 			context.PSSetSampler(1, pointClampSampler);
 			context.PSSetShaderResource(1, opaqueDepthView);
 			context.PSSetShaderResource(2, nearDepthView);
+
+			// The analytic bed grid needs the blurred shadow mask so it can tint its lines
+			// the way the composite pass already tinted the baked ones. Every other draw
+			// clears the slot so a stale bed shadow can never leak into an unrelated shader.
+			context.PSSetShaderResource(3, bedGrid != null ? bedShadowBlurTargetB?.ShaderResourceView : null);
 			var depthState = depthStencilStateOverride ?? GetOrCreateDepthStencilState(true, ComparisonFunction.LessEqual, true);
 			if (ShouldBindDepthStencilState(depthState))
 			{
@@ -5180,7 +5194,8 @@ namespace MatterHackers.RenderGl
 			float height,
 			bool unlit = false,
 			bool useVertexColor = false,
-			float alphaMultiplier = 1.0f)
+			float alphaMultiplier = 1.0f,
+			BedRenderCommand bedGrid = null)
 		{
 			var effectiveWireframeColor = wireframeColor.Alpha0To1 > 0
 				? wireframeColor
@@ -5215,10 +5230,62 @@ namespace MatterHackers.RenderGl
 
 			values[16] = useVertexColor ? 1.0f : 0.0f;
 			values[17] = alphaMultiplier;
-			values[18] = 0.0f;
-			values[19] = 0.0f;
+			values[18] = bedGrid != null ? 1.0f : 0.0f;
+			values[19] = bedGrid != null ? BedShadowStrength : 0.0f;
+
+			// The bed grid is drawn analytically by the pixel shader (see ApplyBedGrid), so
+			// every draw has to publish the bed bounds and line styling; non-bed draws leave
+			// the block zeroed and the flag above off.
+			WriteBedGridConstants(values, bedGrid);
 
 			context.Unmap(sceneEffectBuffer, 0);
+		}
+
+		/// <summary>
+		/// Fills the bed grid half of SceneEffectBuffer (float slots 20..47). Line widths are
+		/// halved here because the shader compares against a distance from the line center,
+		/// and scaled by supersampleScale so the on-screen thickness survives full-frame
+		/// capture the same way the wireframe width does.
+		/// </summary>
+		private unsafe void WriteBedGridConstants(float* values, BedRenderCommand bedGrid)
+		{
+			if (bedGrid == null)
+			{
+				for (int i = 20; i < 48; i++)
+				{
+					values[i] = 0.0f;
+				}
+
+				return;
+			}
+
+			var bounds = bedGrid.BedBounds;
+			values[20] = (float)bounds.Left;
+			values[21] = (float)bounds.Bottom;
+			values[22] = (float)bounds.Width;
+			values[23] = (float)bounds.Height;
+
+			WriteColor(values, 24, bedGrid.GridLineColor);
+			WriteColor(values, 28, bedGrid.AxisXColor);
+			WriteColor(values, 32, bedGrid.AxisYColor);
+			WriteColor(values, 36, bedGrid.AxisZColor);
+
+			values[40] = (float)bedGrid.GridSpacing;
+			values[41] = bedGrid.GridLineWidthPixels * 0.5f * supersampleScale;
+			values[42] = bedGrid.AxisLineWidthPixels * 0.5f * supersampleScale;
+			values[43] = (float)bedGrid.AxisHeight;
+
+			// Same shadow color the bed composite pass tints the fill with, so analytic
+			// lines darken identically where they cross an object's shadow.
+			WriteColor(values, 44, bedGrid.ShadowColor);
+		}
+
+		private static unsafe void WriteColor(float* values, int offset, AggColor color)
+		{
+			values[offset + 0] = color.Red0To1;
+			values[offset + 1] = color.Green0To1;
+			values[offset + 2] = color.Blue0To1;
+			values[offset + 3] = color.Alpha0To1;
 		}
 
 		private unsafe void UpdateOutlineCompositeBuffer(float width, float height)
