@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Threading;
@@ -228,6 +229,15 @@ namespace MatterHackers.PolygonMesh
 			face.v2 = hold;
 			face.normal *= -1;
 
+			// The UVs are per corner, so the winding flip has to take them along or the face's texture
+			// comes out mirrored. Replaced rather than edited in place because a FaceTextureData can be
+			// shared with another face or another mesh (Mesh.Copy shares the values).
+			if (FaceTextures != null
+				&& FaceTextures.TryGetValue(faceIndex, out var textureData))
+			{
+				FaceTextures[faceIndex] = new FaceTextureData(textureData.image, textureData.uv2, textureData.uv1, textureData.uv0);
+			}
+
 			if (markAsChange)
 			{
 				MarkAsChanged();
@@ -246,7 +256,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			var newVertices = new List<Vector3Float>();
 			var newFaces = new FaceList();
-			List<Color> newFaceColors = FaceColors != null ? new List<Color>() : null;
+			var sourceFaceIndex = new List<int>(Faces.Count);
 
 			var positionToIndex = new Dictionary<(float, float, float), int>();
 			int GetIndex(Vector3Float position)
@@ -271,10 +281,7 @@ namespace MatterHackers.PolygonMesh
 				if (iv0 != iv1 && iv1 != iv2 && iv2 != iv0)
 				{
 					newFaces.Add(iv0, iv1, iv2, newVertices);
-					if (newFaceColors != null && faceIdx < FaceColors.Length)
-					{
-						newFaceColors.Add(FaceColors[faceIdx]);
-					}
+					sourceFaceIndex.Add(faceIdx);
 				}
 			}
 
@@ -283,11 +290,123 @@ namespace MatterHackers.PolygonMesh
 			{
 				this.Faces = newFaces;
 				this.Vertices = newVertices;
-				this.FaceColors = newFaceColors?.ToArray();
+
+				// The welding only moves vertices onto each other, so the faces that survive keep their
+				// geometry and their UVs come across unchanged.
+				RemapFaceData(sourceFaceIndex);
 
 				MarkAsChanged();
 			}
         }
+
+		/// <summary>
+		/// Move the per face data (<see cref="FaceColors"/> and <see cref="FaceTextures"/>) onto a face
+		/// list that has just been rebuilt.
+		/// </summary>
+		/// <param name="sourceFaceIndexPerNewFace">For each face in the new list, the index it had in the
+		/// face list as it was BEFORE the rebuild, or -1 for a face with no source face.</param>
+		/// <param name="sourceFaces">The face list as it was before the rebuild. Pass it, together with
+		/// <paramref name="sourceVertices"/>, when faces were cut into pieces rather than merely dropped
+		/// or reordered.</param>
+		/// <param name="sourceVertices">The vertex list the source faces index into.</param>
+		/// <remarks>
+		/// FaceTextures is keyed by face index, so any rebuild that drops, reorders or appends faces
+		/// leaves its keys pointing at whatever face happens to land on that index - a texture painted
+		/// onto a triangle that never asked for it. FaceColors has the same problem in array form. Both
+		/// are repaired from the same map, so an operation only has to record where each new face came
+		/// from.
+		/// <para>
+		/// When the source faces and vertices are supplied the UVs are re-derived for each new face from
+		/// the barycentric position of its corners inside its source triangle. That is what keeps
+		/// texturing right through the operations that cut a face up: a piece carrying its parent's
+		/// corner UVs would be assigning them to vertices the parent never had.
+		/// </para>
+		/// </remarks>
+		internal void RemapFaceData(List<int> sourceFaceIndexPerNewFace, FaceList sourceFaces = null, List<Vector3Float> sourceVertices = null)
+		{
+			var oldColors = FaceColors;
+			if (oldColors != null)
+			{
+				var newColors = new Color[sourceFaceIndexPerNewFace.Count];
+				for (int i = 0; i < newColors.Length; i++)
+				{
+					var source = sourceFaceIndexPerNewFace[i];
+					newColors[i] = source >= 0 && source < oldColors.Length ? oldColors[source] : UncoloredFace;
+				}
+
+				FaceColors = newColors;
+			}
+
+			var oldTextures = FaceTextures;
+			if (oldTextures != null
+				&& oldTextures.Count > 0)
+			{
+				var newTextures = new Dictionary<int, FaceTextureData>(oldTextures.Count);
+				for (int i = 0; i < sourceFaceIndexPerNewFace.Count; i++)
+				{
+					var source = sourceFaceIndexPerNewFace[i];
+					if (source >= 0
+						&& oldTextures.TryGetValue(source, out var textureData))
+					{
+						if (sourceFaces != null
+							&& sourceVertices != null)
+						{
+							var sourceFace = sourceFaces[source];
+							var newFace = Faces[i];
+							newTextures[i] = InterpolateFaceTexture(textureData,
+								sourceVertices[sourceFace.v0], sourceVertices[sourceFace.v1], sourceVertices[sourceFace.v2],
+								Vertices[newFace.v0], Vertices[newFace.v1], Vertices[newFace.v2]);
+						}
+						else
+						{
+							newTextures[i] = textureData;
+						}
+					}
+				}
+
+				FaceTextures = newTextures;
+			}
+		}
+
+		/// <summary>
+		/// The texture data a triangle cut out of a source triangle should carry: the same image, with
+		/// each corner's UV blended from the source UVs by that corner's barycentric coordinates in the
+		/// source triangle. A degenerate (or sliver thin) source triangle has no usable barycentric
+		/// coordinates, so its data comes across unchanged rather than as NaNs or wild extrapolations.
+		/// </summary>
+		private static FaceTextureData InterpolateFaceTexture(FaceTextureData source,
+			Vector3Float s0, Vector3Float s1, Vector3Float s2,
+			Vector3Float p0, Vector3Float p1, Vector3Float p2)
+		{
+			var edge1 = new Vector3(s1 - s0);
+			var edge2 = new Vector3(s2 - s0);
+			var d00 = edge1.Dot(edge1);
+			var d01 = edge1.Dot(edge2);
+			var d11 = edge2.Dot(edge2);
+			var denominator = (d00 * d11) - (d01 * d01);
+			// The denominator is the squared area term of the source triangle (|e1 x e2|^2), so on a
+			// sliver it is a catastrophic cancellation of two nearly equal products - the UVs blow up
+			// into garbage long before it reaches exactly zero. Test it relative to the edge lengths
+			// instead: the ratio is sin(theta)^2 between the edges, so this rejects anything thinner
+			// than about a millionth of a radian, and !(> ) also rejects a NaN from an infinite vertex.
+			if (!(denominator > (d00 * d11) * 1e-12))
+			{
+				return source;
+			}
+
+			Vector2Float UvAt(Vector3Float position)
+			{
+				var toPoint = new Vector3(position - s0);
+				var d20 = toPoint.Dot(edge1);
+				var d21 = toPoint.Dot(edge2);
+				var v = ((d11 * d20) - (d01 * d21)) / denominator;
+				var w = ((d00 * d21) - (d01 * d20)) / denominator;
+				var u = 1 - v - w;
+				return (source.uv0 * (float)u) + (source.uv1 * (float)v) + (source.uv2 * (float)w);
+			}
+
+			return new FaceTextureData(source.image, UvAt(p0), UvAt(p1), UvAt(p2));
+		}
 
 		/// <summary>
 		/// The color a face gets when a mesh with no per-face colors is merged into one that has them.
@@ -313,13 +432,39 @@ namespace MatterHackers.PolygonMesh
 		{
 			int fStart = this.Faces.Count;
 
+			// CreateFace welds duplicate positions and then fans what is left, so a source face does not
+			// reliably produce exactly one face here: a degenerate triangle (two corners at the same
+			// position) produces none at all. FaceTextures and FaceColors are keyed by face index, so
+			// assuming a flat fStart + sourceIndex offset files them against the wrong triangles from the
+			// first dropped face onward. Record which source face actually produced each new face instead.
+			var sourceFaceOfNewFace = new List<int>(mesh.Faces.Count);
+
 			for (int i = 0; i < mesh.Faces.Count; i++)
 			{
 				var face = mesh.Faces[i];
 				var v0 = mesh.Vertices[face.v0].Transform(matrix);
 				var v1 = mesh.Vertices[face.v1].Transform(matrix);
 				var v2 = mesh.Vertices[face.v2].Transform(matrix);
+				int beforeCreate = this.Faces.Count;
 				this.CreateFace(new[] { v0, v1, v2 });
+				for (int added = beforeCreate; added < this.Faces.Count; added++)
+				{
+					sourceFaceOfNewFace.Add(i);
+				}
+			}
+
+			// The matrix only moves the vertices around, it does not change which corner is which, so
+			// the UVs come across as they are.
+			if (mesh.FaceTextures != null
+				&& mesh.FaceTextures.Count > 0)
+			{
+				for (int i = 0; i < sourceFaceOfNewFace.Count; i++)
+				{
+					if (mesh.FaceTextures.TryGetValue(sourceFaceOfNewFace[i], out var textureData))
+					{
+						this.FaceTextures[fStart + i] = textureData;
+					}
+				}
 			}
 
 			if (mesh.FaceColors == null
@@ -328,7 +473,7 @@ namespace MatterHackers.PolygonMesh
 				return;
 			}
 
-			int totalFaces = fStart + mesh.Faces.Count;
+			int totalFaces = this.Faces.Count;
 			var colors = this.FaceColors;
 			int alreadyColored = colors?.Length ?? 0;
 
@@ -344,8 +489,14 @@ namespace MatterHackers.PolygonMesh
 
 			if (mesh.FaceColors != null)
 			{
-				Array.Copy(mesh.FaceColors, 0, colors, fStart,
-					Math.Min(mesh.FaceColors.Length, mesh.Faces.Count));
+				for (int i = 0; i < sourceFaceOfNewFace.Count; i++)
+				{
+					var sourceFace = sourceFaceOfNewFace[i];
+					if (sourceFace < mesh.FaceColors.Length)
+					{
+						colors[fStart + i] = mesh.FaceColors[sourceFace];
+					}
+				}
 			}
 
 			this.FaceColors = colors;
@@ -490,8 +641,10 @@ namespace MatterHackers.PolygonMesh
 
             // Create new faces, skipping degenerate ones
             var newFaces = new FaceList();
-            foreach (var face in Faces)
+            var sourceFaceIndex = new List<int>(Faces.Count);
+            for (int faceIdx = 0; faceIdx < Faces.Count; faceIdx++)
             {
+                var face = Faces[faceIdx];
                 int newV0 = repToNewIndex[uf.Find(face.v0)];
                 int newV1 = repToNewIndex[uf.Find(face.v1)];
                 int newV2 = repToNewIndex[uf.Find(face.v2)];
@@ -502,6 +655,7 @@ namespace MatterHackers.PolygonMesh
                     if (area >= minFaceArea)
                     {
                         newFaces.Add(newV0, newV1, newV2, newVertices);
+                        sourceFaceIndex.Add(faceIdx);
                     }
                 }
             }
@@ -511,6 +665,11 @@ namespace MatterHackers.PolygonMesh
             {
                 Vertices = newVertices;
                 Faces = newFaces;
+
+                // Dropping the collapsed faces shifts every face after them down, so the colors and
+                // textures have to follow.
+                RemapFaceData(sourceFaceIndex);
+
                 MarkAsChanged();
             }
         }
@@ -532,7 +691,19 @@ namespace MatterHackers.PolygonMesh
 			if (Faces[faceIndex].Split(this.Vertices, plane, newFaces, newVertices, onPlaneDistance))
 			{
 				var vertexCount = Vertices.Count;
-				// remove the face index
+				var sourceFaces = Faces;
+				var sourceFaceIndex = new List<int>(Faces.Count + newFaces.Count);
+				for (int i = 0; i < Faces.Count; i++)
+				{
+					if (i != faceIndex)
+					{
+						sourceFaceIndex.Add(i);
+					}
+				}
+
+				// removing the face shifts everything after it down, and the pieces go on the end
+				Faces = new FaceList();
+				Faces.AddRange(sourceFaces);
 				Faces.RemoveAt(faceIndex);
 				// add the new vertices
 				Vertices.AddRange(newVertices);
@@ -544,7 +715,11 @@ namespace MatterHackers.PolygonMesh
 					faceNewIndices.v1 += vertexCount;
 					faceNewIndices.v2 += vertexCount;
 					Faces.Add(faceNewIndices);
+					sourceFaceIndex.Add(faceIndex);
 				}
+
+				// the pieces are cut out of the face that was split, so their UVs get interpolated
+				RemapFaceData(sourceFaceIndex, sourceFaces, Vertices);
 
 				CleanAndMerge();
 
@@ -572,25 +747,35 @@ namespace MatterHackers.PolygonMesh
 			var newVertices = new List<Vector3Float>();
 			var newFaces = new List<Face>();
 			var facesToRemove = new HashSet<int>();
+			// which face each entry of newFaces was cut out of, so the per face data can follow
+			var newFaceSource = new List<int>();
 
 			for (int i = 0; i < Faces.Count; i++)
 			{
 				var face = Faces[i];
+				var piecesBefore = newFaces.Count;
 
 				if (face.Split(this.Vertices, plane, newFaces, newVertices, onPlaneDistance, clipFace, discardFacesOnNegativeSide))
 				{
 					// record the face for removal
 					facesToRemove.Add(i);
+					for (int piece = piecesBefore; piece < newFaces.Count; piece++)
+					{
+						newFaceSource.Add(i);
+					}
 				}
 			}
 
 			// make a new list of all the faces we are keeping
+			var sourceFaces = Faces;
 			var keptFaces = new FaceList();
+			var sourceFaceIndex = new List<int>(Faces.Count + newFaces.Count);
 			for (int i = 0; i < Faces.Count; i++)
 			{
 				if (!facesToRemove.Contains(i))
 				{
 					keptFaces.Add(Faces[i]);
+					sourceFaceIndex.Add(i);
 				}
 			}
 
@@ -600,16 +785,20 @@ namespace MatterHackers.PolygonMesh
 			Vertices.AddRange(newVertices);
 
 			// add the new faces (have to make the vertex indices to the new vertices
-			foreach (var newFace in newFaces)
+			for (int i = 0; i < newFaces.Count; i++)
 			{
-				Face faceNewIndices = newFace;
+				Face faceNewIndices = newFaces[i];
 				faceNewIndices.v0 += vertexCount;
 				faceNewIndices.v1 += vertexCount;
 				faceNewIndices.v2 += vertexCount;
 				keptFaces.Add(faceNewIndices);
+				sourceFaceIndex.Add(newFaceSource[i]);
 			}
 
 			Faces = keptFaces;
+
+			// the added faces are pieces cut out of the faces they replaced, so their UVs get interpolated
+			RemapFaceData(sourceFaceIndex, sourceFaces, Vertices);
 
 			if (cleanAndMerge)
 			{
@@ -916,12 +1105,7 @@ namespace MatterHackers.PolygonMesh
 			void ClipEdge(int vi0)
 			{
 				var vi1 = (vi0 + 1) % 3;
-				var vi2 = (vi0 + 2) % 3;
-				var totalDistance = Math.Abs(dist[vi0]) + Math.Abs(dist[vi1]);
-				var ratioTodist0 = Math.Abs(dist[vi0]) / totalDistance;
-				var newPoint = v[vi0] + (v[vi1] - v[vi0]) * ratioTodist0;
-				// add the new vertex
-				newVertices.Add(newPoint);
+				newVertices.Add(ClipEdgeAtPlane(v[vi0], v[vi1], dist[vi0], dist[vi1]));
 			}
 
 			switch (segmentsClipped)
@@ -989,6 +1173,70 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			return false;
+		}
+
+		/// <summary>
+		/// Order two positions deterministically (x, then y, then z), so that an edge can be given a
+		/// canonical direction no matter which of its two faces is looking at it. Face.Split only ever
+		/// sees positions copied into a local array, so position is the only identity available here.
+		/// </summary>
+		/// <returns>Less than 0 if a sorts before b, greater than 0 if after, 0 if they are the same point.</returns>
+		private static int ComparePositions(Vector3Float a, Vector3Float b)
+		{
+			if (a.X != b.X)
+			{
+				return a.X < b.X ? -1 : 1;
+			}
+
+			if (a.Y != b.Y)
+			{
+				return a.Y < b.Y ? -1 : 1;
+			}
+
+			if (a.Z != b.Z)
+			{
+				return a.Z < b.Z ? -1 : 1;
+			}
+
+			return 0;
+		}
+
+		/// <summary>
+		/// The point where an edge crosses a plane, computed so that both faces sharing the edge get
+		/// bit identical results.
+		/// </summary>
+		/// <remarks>
+		/// The two faces that share an edge walk it in opposite directions, so left to their own winding
+		/// one computes a + (b - a) * t and the other b + (a - b) * (1 - t). Those are equal in exact
+		/// arithmetic but differ by an ulp or two in float, and <see cref="Mesh.CleanAndMerge"/> welds
+		/// only bit identical positions - so every crossed edge used to leave an open seam behind (a
+		/// single plane cut through a customer part left 28,708 boundary edges). Interpolating from the
+		/// lexicographically smaller end makes both faces produce the same bits. This is load bearing for
+		/// every cutting path in this file: pass it the ORIGINAL edge endpoints, never endpoints that one
+		/// side has already subdivided, or the two sides interpolate from different points and the seam
+		/// opens again.
+		/// </remarks>
+		/// <param name="a">One end of the edge.</param>
+		/// <param name="b">The other end of the edge.</param>
+		/// <param name="distA">Signed distance of <paramref name="a"/> from the plane.</param>
+		/// <param name="distB">Signed distance of <paramref name="b"/> from the plane.</param>
+		internal static Vector3Float ClipEdgeAtPlane(Vector3Float a, Vector3Float b, double distA, double distB)
+		{
+			var start = a;
+			var end = b;
+			var startDist = distA;
+			var endDist = distB;
+			if (ComparePositions(b, a) < 0)
+			{
+				start = b;
+				end = a;
+				startDist = distB;
+				endDist = distA;
+			}
+
+			var totalDistance = Math.Abs(startDist) + Math.Abs(endDist);
+			var ratioToStart = Math.Abs(startDist) / totalDistance;
+			return start + (end - start) * ratioToStart;
 		}
 
 		public static bool GetCutLine(this Face face,
@@ -1120,6 +1368,14 @@ namespace MatterHackers.PolygonMesh
 					copy.FaceColors = (Color[])meshToCopyIn.FaceColors.Clone();
 				}
 
+				if (meshToCopyIn.FaceTextures != null)
+				{
+					// A new dictionary so texturing one mesh does not texture the other. The
+					// FaceTextureData values are shared, which is safe because nothing edits one in
+					// place - the operations that change UVs replace the entry.
+					copy.FaceTextures = new Dictionary<int, FaceTextureData>(meshToCopyIn.FaceTextures);
+				}
+
 				return copy;
 			}
 
@@ -1237,37 +1493,359 @@ namespace MatterHackers.PolygonMesh
 		}
 
 		/// <summary>
-		/// Split a mesh at a series of coplanar planes.
+		/// Split a mesh at a series of parallel planes, leaving it as closed as it started.
 		/// </summary>
+		/// <remarks>
+		/// Each original face is sliced against all of the planes at once, so a face crossed by k planes
+		/// comes out as exactly 2k+1 triangles. Cutting plane by plane instead (a full
+		/// <see cref="Mesh.Split"/> per plane) is also watertight but every sweep re-triangulates the
+		/// fragments the earlier sweeps made, which cost about 2.5x the faces for the same cut surface
+		/// (a single triangle spanning 63 planes came out as 3,041 faces instead of 127).
+		/// <para>
+		/// Two invariants keep the result watertight, and both are about making the two faces that share
+		/// an edge agree without ever talking to each other:
+		/// </para>
+		/// <para>
+		/// 1. Whether a plane cuts an edge is decided from that edge's two endpoints only (both ends more
+		/// than onPlaneDistance off the plane, and on opposite sides) - exactly the test
+		/// <see cref="FaceExtensionMethods.Split"/> uses. No part of the test looks at the third, unshared,
+		/// corner, so neighbours never disagree. An earlier version did test the third corner and cut one
+		/// side of an edge in a different pass from the other; by then the shared edge had been
+		/// subdivided, the two sides interpolated from different endpoints, and the crossings landed up to
+		/// 1e-3 apart - 23,716 boundary edges on a customer part. Do not reintroduce a per face test.
+		/// </para>
+		/// <para>
+		/// 2. Every crossing is computed by <see cref="FaceExtensionMethods.ClipEdgeAtPlane"/> from the
+		/// ORIGINAL edge endpoints, in lexicographic order, so both faces produce bit identical points and
+		/// <see cref="Mesh.CleanAndMerge"/> welds them. Nothing here ever interpolates along an edge
+		/// created by an earlier cut; it does not need to, because cut edges are parallel to the planes
+		/// and so are never crossed by another plane.
+		/// </para>
+		/// <para>
+		/// Because the crossings are found per edge and not per face, a plane that only clips one corner
+		/// off a face - crossing a single one of its edges - still gets its point inserted. Skipping it
+		/// would leave a T junction wherever the neighbour across that edge was crossed twice by the same
+		/// plane. The slice walk is therefore driven by the points on the face's boundary ring, not by any
+		/// "does this plane cross me" decision.
+		/// </para>
+		/// </remarks>
 		/// <param name="mesh">The mesh to split faces on.</param>
 		/// <param name="planeNormal">The plane normal of the planes to split on.</param>
-		/// <param name="distancesFromOrigin">The series of coplanar planes to split the mash at.</param>
+		/// <param name="distancesFromOrigin">The series of coplanar planes to split the mesh at. Sorted
+		/// internally, so the caller may pass them in any order.</param>
 		/// <param name="onPlaneDistance">Any mesh edge that has a vertex at this distance or less from a cut plane
-		/// should not be cut by that plane.</param>
+		/// should not be cut by that plane. This is what keeps the cut from shaving slivers off vertices
+		/// that are already effectively on the plane. The test is edge symmetric, so neighbouring faces
+		/// always agree about it, but the tolerance is NOT free: it must stay well under half the spacing
+		/// between adjacent planes. At larger values a crossing inserted for plane p+1 classifies as "on"
+		/// plane p as well, so it lands in both the below and the above polygon and the two fans overlap
+		/// (measured at 589 boundary edges with the tolerance set to the full plane spacing). The value is
+		/// therefore clamped internally to at most 45% of the smallest gap between distinct planes; pass a
+		/// smaller number if you want a smaller tolerance, but a larger one buys nothing.</param>
 		public static void SplitOnPlanes(this Mesh mesh, Vector3 planeNormal, List<double> distancesFromOrigin, double onPlaneDistance)
 		{
-			for (int i = 0; i < distancesFromOrigin.Count; i++)
+			if (distancesFromOrigin == null || distancesFromOrigin.Count == 0)
 			{
-				mesh.Split(new Plane(planeNormal, distancesFromOrigin[i]), onPlaneDistance, (clipData) =>
+				return;
+			}
+
+			// Plane(normal, distance) normalizes, so match it or the distances mean something else.
+			var normal = planeNormal.GetNormal();
+
+			var sortedPlanes = distancesFromOrigin.ToArray();
+			Array.Sort(sortedPlanes);
+
+			// Exact duplicates would make a zero gap below and drive the tolerance to nothing, and the
+			// second copy of a plane can never cut anything anyway, so drop them.
+			var distinctPlanes = new List<double>(sortedPlanes.Length) { sortedPlanes[0] };
+			for (int i = 1; i < sortedPlanes.Length; i++)
+			{
+				if (sortedPlanes[i] != sortedPlanes[i - 1])
 				{
-					// if two distances are less than 0
-					if ((clipData.Dist[0] < 0 && clipData.Dist[1] < 0)
-						|| (clipData.Dist[1] < 0 && clipData.Dist[2] < 0)
-						|| (clipData.Dist[2] < 0 && clipData.Dist[0] < 0))
+					distinctPlanes.Add(sortedPlanes[i]);
+				}
+			}
+
+			var planes = distinctPlanes.ToArray();
+
+			// The tolerance has to stay well inside the plane spacing. If it reaches the gap between two
+			// planes then the crossing inserted for the upper plane also reads as "on" the lower one, so it
+			// is put into both the below and the above polygon and the two fans overlap - an open mesh.
+			// Clamp rather than throw: callers pass a tolerance derived from their own geometry and a
+			// too-large one should degrade to "as much tolerance as is safe", not fail. Planes that are
+			// merely near duplicates pull this near zero, which is the safe direction.
+			for (int i = 1; i < planes.Length; i++)
+			{
+				onPlaneDistance = Math.Min(onPlaneDistance, (planes[i] - planes[i - 1]) * .45);
+			}
+
+			var sourceVertices = mesh.Vertices;
+			var sourceFaces = mesh.Faces;
+
+			// Where each vertex sits along the plane normal. A plane at distance d cuts exactly where this
+			// equals d. Computed once per vertex, so the two faces sharing an edge see identical numbers.
+			var vertexOffset = new double[sourceVertices.Count];
+			for (int i = 0; i < sourceVertices.Count; i++)
+			{
+				var vertex = sourceVertices[i];
+				vertexOffset[i] = (normal.X * vertex.X) + (normal.Y * vertex.Y) + (normal.Z * vertex.Z);
+			}
+
+			// Start from the existing vertices so uncut faces keep their indices; cut points get appended.
+			var newVertices = new List<Vector3Float>(sourceVertices);
+			var newFaces = new FaceList();
+			// which source face each emitted triangle came out of; the colors and textures are moved onto
+			// the pieces from this one map once the new face list is in place
+			var sourceFaceIndex = new List<int>(sourceFaces.Count);
+
+			// The face's boundary ring: its corners plus every plane crossing found on its edges, walked
+			// in the face's winding order so the pieces we cut off keep the original orientation. Each
+			// entry carries its offset along the normal so the slice walk can classify it without
+			// recomputing a dot product.
+			var ring = new List<int>(8);
+			var ringOffset = new List<double>(8);
+			var below = new List<int>(8);
+			var belowOffset = new List<double>(8);
+			var above = new List<int>(8);
+			var aboveOffset = new List<double>(8);
+			var edgeCrossings = new List<int>(8);
+
+			// the face the slice walk is currently cutting up; every piece it emits is filed under it
+			int sourceFace = 0;
+
+			void AddTriangle(int v0, int v1, int v2)
+			{
+				if (v0 == v1 || v1 == v2 || v2 == v0)
+				{
+					return;
+				}
+
+				// A plane that grazes a corner can leave a zero area piece behind. CleanAndMerge would drop
+				// the ones with repeated vertices, but a collinear triple survives it with a NaN normal, so
+				// reject on area instead. This only rejects triangles whose area is zero in double; it is
+				// not a guarantee against NaN normals, because FaceList.Add computes the normal in float and
+				// a sliver thin enough can still underflow there. No NaN normal has been seen across the
+				// tolerance range this is used with, but a small enough triangle could produce one.
+				var p0 = new Vector3(newVertices[v0]);
+				var p1 = new Vector3(newVertices[v1]);
+				var p2 = new Vector3(newVertices[v2]);
+				if (Vector3Ex.Cross(p1 - p0, p2 - p0).LengthSquared == 0)
+				{
+					return;
+				}
+
+				newFaces.Add(v0, v1, v2, newVertices);
+				sourceFaceIndex.Add(sourceFace);
+			}
+
+			// Every piece here is convex (a convex polygon cut by planes stays convex) and has at most 5
+			// vertices, so a fan off the first vertex is a correct triangulation.
+			void EmitFan(List<int> polygon)
+			{
+				for (int i = 1; i + 1 < polygon.Count; i++)
+				{
+					AddTriangle(polygon[0], polygon[i], polygon[i + 1]);
+				}
+			}
+
+			// Index of the first plane strictly above offset.
+			int FirstPlaneAbove(double offset)
+			{
+				int low = 0;
+				int high = planes.Length;
+				while (low < high)
+				{
+					int mid = (low + high) / 2;
+					if (planes[mid] > offset)
 					{
-						return true;
+						high = mid;
+					}
+					else
+					{
+						low = mid + 1;
+					}
+				}
+
+				return low;
+			}
+
+			for (int faceIndex = 0; faceIndex < sourceFaces.Count; faceIndex++)
+			{
+				var face = sourceFaces[faceIndex];
+				sourceFace = faceIndex;
+
+				var corners = new int[] { face.v0, face.v1, face.v2 };
+
+				ring.Clear();
+				ringOffset.Clear();
+
+				for (int edge = 0; edge < 3; edge++)
+				{
+					int startIndex = corners[edge];
+					int endIndex = corners[(edge + 1) % 3];
+					ring.Add(startIndex);
+					ringOffset.Add(vertexOffset[startIndex]);
+
+					var startOffset = vertexOffset[startIndex];
+					var endOffset = vertexOffset[endIndex];
+					var lowOffset = Math.Min(startOffset, endOffset);
+					var highOffset = Math.Max(startOffset, endOffset);
+
+					edgeCrossings.Clear();
+					for (int plane = FirstPlaneAbove(lowOffset); plane < planes.Length && planes[plane] < highOffset; plane++)
+					{
+						var startDist = startOffset - planes[plane];
+						var endDist = endOffset - planes[plane];
+
+						// The edge symmetric crossing test - the same one Face.Split makes. Both faces on
+						// this edge run it on the same two numbers, so they always come to the same answer.
+						if (Math.Abs(startDist) > onPlaneDistance
+							&& Math.Abs(endDist) > onPlaneDistance
+							&& ((startDist < 0 && endDist > 0) || (startDist > 0 && endDist < 0)))
+						{
+							newVertices.Add(FaceExtensionMethods.ClipEdgeAtPlane(sourceVertices[startIndex], sourceVertices[endIndex], startDist, endDist));
+							edgeCrossings.Add(plane);
+						}
 					}
 
-					return false;
-				});
+					// The loop walks planes in ascending distance; along the edge that is start to end only
+					// when the edge itself runs that way.
+					if (startOffset > endOffset)
+					{
+						edgeCrossings.Reverse();
+					}
+
+					var crossingVertex = newVertices.Count - edgeCrossings.Count;
+					for (int i = 0; i < edgeCrossings.Count; i++)
+					{
+						// The crossing lies on its plane by construction, so give it the plane's exact
+						// distance rather than a re-derived dot product. That keeps it classified as "on"
+						// that plane below, with no epsilon to tune.
+						ring.Add(startOffset > endOffset ? crossingVertex + edgeCrossings.Count - 1 - i : crossingVertex + i);
+						ringOffset.Add(planes[edgeCrossings[i]]);
+					}
+				}
+
+				if (ring.Count == 3)
+				{
+					// No plane touched this face - keep it exactly as it was, normal included.
+					newFaces.Add(new Face(face.v0, face.v1, face.v2, face.normal));
+					sourceFaceIndex.Add(faceIndex);
+					continue;
+				}
+
+				var faceLow = Math.Min(vertexOffset[face.v0], Math.Min(vertexOffset[face.v1], vertexOffset[face.v2]));
+				var faceHigh = Math.Max(vertexOffset[face.v0], Math.Max(vertexOffset[face.v1], vertexOffset[face.v2]));
+
+				// Walk the planes upward, each time cutting the part of what is left that lies below the
+				// plane off as its own strip. Every point the cut needs is already in the ring.
+				for (int plane = FirstPlaneAbove(faceLow); plane < planes.Length && planes[plane] < faceHigh; plane++)
+				{
+					var planeDistance = planes[plane];
+
+					below.Clear();
+					belowOffset.Clear();
+					above.Clear();
+					aboveOffset.Clear();
+
+					var anyBelow = false;
+					var anyAbove = false;
+					for (int i = 0; i < ring.Count; i++)
+					{
+						var side = ringOffset[i] - planeDistance;
+						if (side < -onPlaneDistance)
+						{
+							anyBelow = true;
+						}
+						else if (side > onPlaneDistance)
+						{
+							anyAbove = true;
+						}
+					}
+
+					if (!anyBelow || !anyAbove)
+					{
+						// Nothing of the remainder is on one side of this plane, so there is nothing to cut.
+						continue;
+					}
+
+					for (int i = 0; i < ring.Count; i++)
+					{
+						int next = (i + 1) % ring.Count;
+						int side = Side(ringOffset[i], planeDistance, onPlaneDistance);
+						int nextSide = Side(ringOffset[next], planeDistance, onPlaneDistance);
+
+						if (side <= 0)
+						{
+							below.Add(ring[i]);
+							belowOffset.Add(ringOffset[i]);
+						}
+
+						if (side >= 0)
+						{
+							above.Add(ring[i]);
+							aboveOffset.Add(ringOffset[i]);
+						}
+
+						if (side != 0 && nextSide != 0 && side != nextSide)
+						{
+							// Should be unreachable. Along an original edge every crossing was inserted up
+							// front using the same tolerance this classification uses, and the chords left by
+							// earlier cuts are parallel to this plane, so no segment of the ring can straddle
+							// it. Interpolate anyway rather than fold the polygon - but from ring points,
+							// which is exactly the thing that opens seams, so it is worth knowing about.
+							// Assert so a broken invariant surfaces in debug; release still fails soft.
+							Debug.Assert(false, "SplitOnPlanes: ring segment straddles a plane; crossings should all have been inserted per edge.");
+							var point = FaceExtensionMethods.ClipEdgeAtPlane(
+								newVertices[ring[i]],
+								newVertices[ring[next]],
+								ringOffset[i] - planeDistance,
+								ringOffset[next] - planeDistance);
+							newVertices.Add(point);
+							var pointIndex = newVertices.Count - 1;
+							below.Add(pointIndex);
+							belowOffset.Add(planeDistance);
+							above.Add(pointIndex);
+							aboveOffset.Add(planeDistance);
+						}
+					}
+
+					EmitFan(below);
+
+					// Carry on with what is above the plane.
+					(ring, above) = (above, ring);
+					(ringOffset, aboveOffset) = (aboveOffset, ringOffset);
+				}
+
+				EmitFan(ring);
 			}
 
-			for (int i = distancesFromOrigin.Count - 1; i >= 0; i--)
+			mesh.Vertices = newVertices;
+			mesh.Faces = newFaces;
+
+			// Every emitted triangle is a piece of the face it came from, so its corners get the UVs the
+			// source face's mapping gives at those positions. The pieces of an uncut face are the face,
+			// so they come out with exactly the original UVs.
+			mesh.RemapFaceData(sourceFaceIndex, sourceFaces, sourceVertices);
+
+			mesh.CleanAndMerge();
+			mesh.MarkAsChanged();
+		}
+
+		/// <summary>
+		/// Which side of a plane a point sits on, counting anything within onPlaneDistance as on it. The
+		/// tolerance has to be the same one the edge crossing test uses, or the slice walk will look for a
+		/// crossing point that was never inserted.
+		/// </summary>
+		private static int Side(double offset, double planeDistance, double onPlaneDistance)
+		{
+			var distance = offset - planeDistance;
+			if (distance < -onPlaneDistance)
 			{
-				mesh.Split(new Plane(planeNormal, distancesFromOrigin[i]), .1);
+				return -1;
 			}
 
-			return;
+			return distance > onPlaneDistance ? 1 : 0;
 		}
 
 
@@ -1385,6 +1963,15 @@ namespace MatterHackers.PolygonMesh
 			{
 				var face = copyFrom.Faces[i];
 				copyTo.Faces.Add(face.v0 + vStart, face.v1 + vStart, face.v2 + vStart, face.normal);
+			}
+
+			// the copied faces land at fStart and up, so their texture keys move with them
+			if (copyFrom.FaceTextures != null)
+			{
+				foreach (var kvp in copyFrom.FaceTextures)
+				{
+					copyTo.FaceTextures[fStart + kvp.Key] = kvp.Value;
+				}
 			}
 
 			// copy face colors if source has them
@@ -1558,7 +2145,7 @@ namespace MatterHackers.PolygonMesh
 		public static void RemoveDegenerateFaces(this Mesh mesh, double minFaceArea)
 		{
 			var newFaces = new FaceList();
-			List<Color> newFaceColors = mesh.FaceColors != null ? new List<Color>() : null;
+			var sourceFaceIndex = new List<int>(mesh.Faces.Count);
 			float minAreaF = (float)minFaceArea; // Use float for comparison with GetArea result
 
 			for (int faceIdx = 0; faceIdx < mesh.Faces.Count; faceIdx++)
@@ -1577,10 +2164,7 @@ namespace MatterHackers.PolygonMesh
 					if (area >= minAreaF) // Check against float min area
 					{
 						newFaces.Add(face.v0, face.v1, face.v2, mesh.Vertices);
-						if (newFaceColors != null && faceIdx < mesh.FaceColors.Length)
-						{
-							newFaceColors.Add(mesh.FaceColors[faceIdx]);
-						}
+						sourceFaceIndex.Add(faceIdx);
 					}
 				}
 			}
@@ -1589,7 +2173,9 @@ namespace MatterHackers.PolygonMesh
 			if (mesh.Faces.Count != newFaces.Count)
 			{
 				mesh.Faces = newFaces;
-				mesh.FaceColors = newFaceColors?.ToArray();
+
+				// the surviving faces keep their geometry, they just move down the list
+				mesh.RemapFaceData(sourceFaceIndex);
 				mesh.MarkAsChanged();
 			}
 		}
@@ -1923,6 +2509,8 @@ namespace MatterHackers.PolygonMesh
 
 				var facesToRemove = new HashSet<int>();
 				var newFacesToAdd = new FaceList();
+				// the face each added face was fanned out of, so its color and texture come with it
+				var newFaceSource = new List<int>();
 				var newVerticesToAdd = new List<Vector3Float>();
 				var vertexIndexMapping = new Dictionary<int, int>();  // Maps placeholder indices to real ones
 
@@ -2090,6 +2678,8 @@ namespace MatterHackers.PolygonMesh
 							{
 								newFacesToAdd.Add(new Face(segEnd, segStart, vOppositeIndex, mesh.Vertices));
 							}
+
+							newFaceSource.Add(faceIndex);
 						}
 					}
 					
@@ -2123,12 +2713,15 @@ namespace MatterHackers.PolygonMesh
 				}
 				
 				// Keep faces that weren't removed, add new ones
+				var sourceFaces = mesh.Faces;
 				var finalFaces = new FaceList();
+				var sourceFaceIndex = new List<int>(mesh.Faces.Count + newFacesToAdd.Count);
 				for (int i = 0; i < mesh.Faces.Count; i++)
 				{
 					if (!facesToRemove.Contains(i))
 					{
 						finalFaces.Add(mesh.Faces[i]);
+						sourceFaceIndex.Add(i);
 					}
 				}
 				
@@ -2139,7 +2732,12 @@ namespace MatterHackers.PolygonMesh
 				}
 				
 				finalFaces.AddRange(newFacesToAdd);
+				sourceFaceIndex.AddRange(newFaceSource);
 				mesh.Faces = finalFaces;
+
+				// the added faces are fans cut out of the faces they replaced, so their UVs come from
+				// interpolating the source face's mapping at the new corners
+				mesh.RemapFaceData(sourceFaceIndex, sourceFaces, mesh.Vertices);
 				mesh.MarkAsChanged();
 			}
 			
