@@ -89,6 +89,10 @@ namespace MatterHackers.WebGpuRender
 		private WGPUAdapter adapter;
 		private WGPUDevice device;
 		private WGPUQueue queue;
+
+		// The device's own maxBufferSize, read once at creation. Nothing else about limits is needed yet,
+		// so only the one that is actually reachable by app data is kept.
+		private ulong maxBufferSize;
 		private WGPUCommandEncoder commandEncoder;
 		private WebGpuRenderEncoder openEncoder;
 
@@ -150,6 +154,7 @@ namespace MatterHackers.WebGpuRender
 					this.ReadAdapterInfo();
 					this.device = this.RequestDevice();
 					this.queue = wgpuDeviceGetQueue(this.device);
+					this.ReadDeviceLimits();
 
 					if (windowSurface != null)
 					{
@@ -285,6 +290,18 @@ namespace MatterHackers.WebGpuRender
 				size = size,
 				mappedAtCreation = mappedAtCreation,
 			};
+
+			// Checked here rather than left to wgpu: an over-limit buffer comes back as a valid-looking
+			// error handle, and the next call on it (wgpuBufferGetMappedRange, or the first draw) fails
+			// validation inside Rust, which panics non-unwinding and takes the whole process down with no
+			// managed stack. A caller can survive an exception; nobody survives that. Found by a
+			// half-gigabyte outline-geometry buffer from a thumbnail of a large mesh.
+			if (size > this.maxBufferSize)
+			{
+				throw new InvalidOperationException(
+					$"A {size:N0} byte buffer exceeds this device's maxBufferSize of {this.maxBufferSize:N0}"
+					+ $" bytes ('{this.label}').");
+			}
 
 			WGPUBuffer handle = wgpuDeviceCreateBuffer(this.device, &descriptor);
 			if (handle.IsNull)
@@ -1388,6 +1405,24 @@ namespace MatterHackers.WebGpuRender
 
 				return cell.Value.Adapter;
 			}
+		}
+
+		/// <summary>
+		/// Reads the limits the device was actually created with, so oversized resources can be refused in
+		/// managed code instead of tripping wgpu's validation.
+		/// </summary>
+		/// <remarks>
+		/// A failed query leaves the conservative WebGPU default in place (256 MiB) rather than disabling the
+		/// check: guessing high would put the process abort back.
+		/// </remarks>
+		private void ReadDeviceLimits()
+		{
+			const ulong DefaultMaxBufferSize = 268435456;
+
+			var limits = default(WGPULimits);
+			this.maxBufferSize = wgpuDeviceGetLimits(this.device, &limits) == WGPUStatus.Success && limits.maxBufferSize > 0
+				? limits.maxBufferSize
+				: DefaultMaxBufferSize;
 		}
 
 		private void ReadAdapterInfo()

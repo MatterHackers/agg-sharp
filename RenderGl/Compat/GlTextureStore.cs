@@ -166,6 +166,11 @@ namespace MatterHackers.RenderGl.Compat
 					// that sample the mip chain, and callers set this before uploading level 0, which is
 					// what lets UploadImage size the chain at creation.
 					entry.MipmapFilterEnabled = value >= 9984 && value <= 9987;
+
+					// Of those four, the two *_MIPMAP_LINEAR modes blend between adjacent levels;
+					// *_MIPMAP_NEAREST picks one. GL_NEAREST_MIPMAP_LINEAR is 9986, GL_LINEAR_MIPMAP_LINEAR
+					// is 9987.
+					entry.MipmapFilterLinear = value >= 9986 && value <= 9987;
 					break;
 
 				case TextureParameterName.TextureWrapS:
@@ -176,6 +181,12 @@ namespace MatterHackers.RenderGl.Compat
 		}
 
 		/// <summary>Returns the sampler matching a texture's filter and wrap state, cached by descriptor.</summary>
+		/// <remarks>
+		/// The mip filter follows the GL min filter mode rather than being pinned to nearest, which it was
+		/// until the mip chains started uploading for real: a <c>LINEAR_MIPMAP_LINEAR</c> texture sampled
+		/// with a nearest mip filter snaps between levels instead of blending them, which reads as a hard
+		/// change in sharpness as a textured surface recedes.
+		/// </remarks>
 		/// <param name="entry">The texture whose sampling state is wanted.</param>
 		public ISampler GetSampler(GlTextureEntry entry)
 		{
@@ -185,7 +196,7 @@ namespace MatterHackers.RenderGl.Compat
 				address,
 				entry.MagFilterLinear ? FilterMode.Linear : FilterMode.Nearest,
 				entry.MinFilterLinear ? FilterMode.Linear : FilterMode.Nearest,
-				FilterMode.Nearest);
+				entry.MipmapFilterLinear ? FilterMode.Linear : FilterMode.Nearest);
 
 			if (!this.samplers.TryGetValue(descriptor, out var sampler))
 			{
@@ -244,5 +255,11 @@ namespace MatterHackers.RenderGl.Compat
 		/// long a mip chain to allocate, because WebGPU cannot grow one afterwards.
 		/// </summary>
 		public bool MipmapFilterEnabled { get; set; }
+
+		/// <summary>
+		/// Whether the min filter blends between mip levels (the <c>*_MIPMAP_LINEAR</c> modes) rather than
+		/// picking one. Read by <see cref="GlTextureStore.GetSampler"/>, and so part of the sampler cache key.
+		/// </summary>
+		public bool MipmapFilterLinear { get; set; }
 	}
 }

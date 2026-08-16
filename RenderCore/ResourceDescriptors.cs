@@ -241,7 +241,7 @@ namespace MatterHackers.RenderCore
 
 		/// <inheritdoc/>
 		public override string ToString()
-			=> $"Sampler {this.AddressModeU}/{this.AddressModeV} mag {this.MagFilter} min {this.MinFilter}"
+			=> $"Sampler {this.AddressModeU}/{this.AddressModeV} mag {this.MagFilter} min {this.MinFilter} mip {this.MipmapFilter}"
 			+ (string.IsNullOrEmpty(this.Label) ? string.Empty : $" '{this.Label}'");
 	}
 }
