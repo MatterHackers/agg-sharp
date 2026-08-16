@@ -46,9 +46,21 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 	[NotInParallel]
 	public class GoldenSceneTests
 	{
-		private static async Task Check(string goldenName, bool supersample, Action<D3D11OffscreenCapture> drawScene)
+		/// <summary>Runs one scene and compares it against its golden.</summary>
+		/// <param name="goldenName">Golden image name.</param>
+		/// <param name="supersample">Routes the frame through the 3x full-frame capture.</param>
+		/// <param name="drawScene">Draws the scene.</param>
+		/// <param name="depthPeelingLayers">The transparency mode: the default peels, 2 selects the sorted
+		/// alpha-blend approximation.</param>
+		private static async Task Check(
+			string goldenName,
+			bool supersample,
+			Action<D3D11OffscreenCapture> drawScene,
+			int depthPeelingLayers = 6)
 		{
 			using var capture = D3D11OffscreenCapture.Create();
+
+			capture.DepthPeelingLayers = depthPeelingLayers;
 
 			capture.ClearTo(Golden3DScenes.Background);
 
@@ -80,6 +92,37 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		{
 			await Check("Scene.Transparent", supersample: false, capture =>
 				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 120));
+		}
+
+		/// <summary>
+		/// The same transparent scene in the <i>other</i> transparency mode: the sorted alpha-blend
+		/// approximation the setting falls back to when depth peeling is switched off. A different set of
+		/// passes entirely (no peel, no accumulation targets, a premultiplied blit), so it needs its own
+		/// golden.
+		/// </summary>
+		[Test]
+		public async Task TransparentAlphaBlendMode()
+		{
+			await Check(
+				"Scene.TransparentAlphaBlend",
+				supersample: false,
+				capture => Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 120),
+				depthPeelingLayers: 2);
+		}
+
+		/// <summary>
+		/// The bed in the alpha-blend transparency mode, where it is drawn by the ordinary transparent pass
+		/// rather than by the peel - the one scene that reaches the analytic grid through that pass's
+		/// shading entry point.
+		/// </summary>
+		[Test]
+		public async Task BedAlphaBlendMode()
+		{
+			await Check(
+				"Scene.BedAlphaBlend",
+				supersample: false,
+				capture => Golden3DScenes.DrawBedScene(capture.Gl, capture.SceneRenderer),
+				depthPeelingLayers: 2);
 		}
 
 		/// <summary>Opaque geometry in front of transparent geometry, which is the case that actually
@@ -157,6 +200,25 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		{
 			await Check("Scene.TexturedMesh", supersample: false, capture =>
 				Golden3DScenes.DrawTexturedMeshScene(capture.Gl));
+		}
+
+		/// <summary>
+		/// The gizmo overlay layer - 3D lines, arrow heads, the selection box, a rotate ring, the direction
+		/// axis and a minified textured glyph quad.
+		/// </summary>
+		/// <remarks>
+		/// Added in Phase 4 leg B because the full-app frame comparison found its only divergence here and no
+		/// golden covered it. The camera is rebuilt from <see cref="Golden3DScenes.CreateCamera"/> rather than
+		/// captured from <see cref="Check"/>: the overlay helpers take the world directly, and the factory is
+		/// the single definition of it, so both come from the same place.
+		/// </remarks>
+		[Test]
+		public async Task GizmoOverlay()
+		{
+			await Check("Scene.GizmoOverlay", supersample: false, capture =>
+				Golden3DScenes.DrawGizmoOverlayScene(
+					capture.Gl,
+					Golden3DScenes.CreateCamera(capture.Width, capture.Height)));
 		}
 
 		/// <summary>

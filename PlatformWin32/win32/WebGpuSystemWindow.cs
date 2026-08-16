@@ -25,6 +25,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Drawing;
+using System.Threading;
 using System.Windows.Forms;
 using MatterHackers.RenderGl;
 using MatterHackers.RenderGl.OpenGl;
@@ -42,6 +43,13 @@ namespace MatterHackers.Agg.UI
 	/// </summary>
 	public class WebGpuSystemWindow : WinformsSystemWindow
 	{
+		/// <summary>
+		/// How many times <see cref="CaptureScreenshot"/> pumps the message queue waiting for a capture
+		/// whose read-back suspended. Bounded so a window that never repaints cannot hang the caller; the
+		/// native path does not reach the loop at all.
+		/// </summary>
+		private const int ScreenshotPumpSpins = 200;
+
 		private WebGpuControl webGpuControl;
 		private bool doneLoading;
 		private bool viewPortHasBeenSet;
@@ -51,6 +59,14 @@ namespace MatterHackers.Agg.UI
 		/// so a request made at any other time waits here for one.
 		/// </summary>
 		private string pendingScreenshotPath;
+
+		/// <summary>Signalled by the paint that performs a queued capture, so the requester can return only
+		/// once the file is on disk.</summary>
+		private ManualResetEventSlim screenshotComplete;
+
+		/// <summary>True while a paint is running, so a capture requested from inside one (the smoke run)
+		/// queues instead of forcing a re-entrant paint.</summary>
+		private bool isInsidePaint;
 
 		public WebGpuSystemWindow()
 		{
@@ -161,7 +177,15 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
-				base.OnPaint(paintEventArgs);
+				this.isInsidePaint = true;
+				try
+				{
+					base.OnPaint(paintEventArgs);
+				}
+				finally
+				{
+					this.isInsidePaint = false;
+				}
 			}
 			catch (ObjectDisposedException)
 			{
@@ -184,16 +208,65 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// Reads the frame back through wgpu rather than through the base class's
 		/// <c>CopyBackBufferToScreen</c> trick - there is no CPU back buffer to blit, and calling that
-		/// path here would present the frame into a bitmap's Graphics and lose it.
+		/// path here would present the frame into a bitmap's Graphics and lose it. No
+		/// <c>System.Drawing</c> anywhere on the path: the pixels go through agg's own
+		/// <c>ImageBuffer</c>/<c>ImageIO</c>, which is what makes the same code work on mac later.
 		/// </summary>
 		/// <remarks>
-		/// The capture is deferred to the end of the next frame because that is the only moment a
-		/// swapchain texture exists and is still readable.
+		/// The read-back can only happen at the end of a frame - that is the only moment a swapchain
+		/// texture exists and is still readable - so the request is queued and a paint forced, and this
+		/// call does not return until that paint has written the file. Callers (failure diagnostics, the
+		/// automation harness) treat <c>CaptureScreenshot</c> as "the PNG exists when I get control back",
+		/// which is the contract every other <c>IPlatformWindow</c> gives them.
 		/// </remarks>
+		/// <param name="path">Where to write the PNG.</param>
 		public override void CaptureScreenshot(string path)
 		{
+			if (this.InvokeRequired)
+			{
+				this.Invoke((Action)(() => this.CaptureScreenshot(path)));
+				return;
+			}
+
+			if (this.webGpuControl == null || this.webGpuControl.IsDisposed)
+			{
+				return;
+			}
+
+			if (this.isInsidePaint)
+			{
+				// The smoke-run path asks from inside the paint, just before the present that would consume
+				// the request. Forcing another paint from here would re-enter WM_PAINT; queuing is enough,
+				// because this frame is about to run CopyBackBufferToScreen anyway.
+				this.pendingScreenshotPath = path;
+				return;
+			}
+
 			this.pendingScreenshotPath = path;
-			this.Invalidate();
+			this.screenshotComplete = new ManualResetEventSlim(false);
+
+			try
+			{
+				// Invalidate then Update: Update only sends WM_PAINT when there is an invalid region, and
+				// that paint is what runs CopyBackBufferToScreen and therefore the capture.
+				this.Invalidate();
+				this.Update();
+
+				// The native read-back completes inside the paint (wgpu's buffer map is polled to
+				// completion there), so this is normally already set. It is only not set if the await in
+				// CaptureThenPresent genuinely suspended, in which case its continuation is posted to this
+				// thread's message queue - hence pumping rather than blocking, which would deadlock.
+				for (int spin = 0; spin < ScreenshotPumpSpins && !this.screenshotComplete.IsSet; spin++)
+				{
+					Application.DoEvents();
+				}
+			}
+			finally
+			{
+				this.pendingScreenshotPath = null;
+				this.screenshotComplete.Dispose();
+				this.screenshotComplete = null;
+			}
 		}
 
 		/// <summary>
@@ -217,7 +290,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			this.pendingScreenshotPath = null;
-			this.CaptureThenPresent(screenshotPath);
+			this.CaptureThenPresent(screenshotPath, this.screenshotComplete);
 		}
 
 		public override Graphics2D NewGraphics2D()
@@ -254,7 +327,10 @@ namespace MatterHackers.Agg.UI
 		/// ValueTask is returned, so the present still happens inline, while the frame is alive.
 		/// </summary>
 		/// <param name="path">Where to write the PNG.</param>
-		private async void CaptureThenPresent(string path)
+		/// <param name="completed">Signalled once the file is written (or the attempt has failed), so a
+		/// synchronous <see cref="CaptureScreenshot"/> caller knows when to stop pumping. May be null when
+		/// the capture was requested by the smoke-run path, which does not wait.</param>
+		private async void CaptureThenPresent(string path, ManualResetEventSlim completed)
 		{
 			try
 			{
@@ -263,6 +339,10 @@ namespace MatterHackers.Agg.UI
 			catch (Exception ex)
 			{
 				Console.Error.WriteLine($"WebGpuSystemWindow screenshot failed: {ex.Message}");
+			}
+			finally
+			{
+				completed?.Set();
 			}
 
 			this.webGpuControl.Present();

@@ -52,14 +52,17 @@ namespace MatterHackers.WebGpuRender
 	public sealed unsafe class WebGpuSurfaceTarget : ISurfaceTarget
 	{
 		private readonly WebGpuRenderDevice owner;
+		private readonly WGPUPresentMode[] supportedPresentModes;
 		private WGPUSurface surface;
 		private WebGpuTexture frameTexture;
+		private WGPUPresentMode presentMode;
 
 		internal WebGpuSurfaceTarget(
 			WebGpuRenderDevice owner,
 			WGPUSurface surface,
 			WGPUTextureFormat surfaceFormat,
 			TextureUsage usage,
+			WGPUPresentMode[] supportedPresentModes,
 			string label)
 		{
 			this.owner = owner;
@@ -67,7 +70,13 @@ namespace MatterHackers.WebGpuRender
 			this.SurfaceFormat = surfaceFormat;
 			this.Format = WgpuEnums.ToRenderCore(surfaceFormat);
 			this.Usage = usage;
+			this.supportedPresentModes = supportedPresentModes ?? Array.Empty<WGPUPresentMode>();
 			this.Label = label ?? "surface";
+
+			// Fifo unless the environment asks otherwise: it is the only mode WebGPU guarantees, and it is
+			// what an interactive window wants (vsync, no tearing, no spinning the GPU). The automation
+			// harness sets AGG_PRESENT_MODE=immediate, where waiting for the display is pure wall time.
+			this.presentMode = this.ResolvePresentMode(PresentModeSettings.FromEnvironment());
 		}
 
 		/// <inheritdoc/>
@@ -100,6 +109,31 @@ namespace MatterHackers.WebGpuRender
 		/// <summary>How many frames this surface has presented. Frame pacing checks read it.</summary>
 		public long PresentedFrameCount { get; private set; }
 
+		/// <summary>
+		/// How the swapchain paces presents. Defaults to what <c>AGG_PRESENT_MODE</c> asks for, falling
+		/// back to Fifo; setting it reconfigures the swapchain, and a mode this surface does not support is
+		/// silently downgraded to Fifo rather than failing the window.
+		/// </summary>
+		public WGPUPresentMode PresentMode
+		{
+			get => this.presentMode;
+
+			set
+			{
+				var resolved = this.ResolvePresentMode(value);
+				if (resolved == this.presentMode)
+				{
+					return;
+				}
+
+				this.presentMode = resolved;
+				if (this.Width != 0 && this.Height != 0)
+				{
+					this.Configure(this.Width, this.Height);
+				}
+			}
+		}
+
 		internal WGPUSurface Handle => this.surface;
 
 		/// <summary>
@@ -131,7 +165,7 @@ namespace MatterHackers.WebGpuRender
 				// Opaque, not Auto: the LCD text passes deliberately never write alpha, so any
 				// alpha-respecting composition would render text as see-through.
 				alphaMode = WGPUCompositeAlphaMode.Opaque,
-				presentMode = WGPUPresentMode.Fifo,
+				presentMode = this.presentMode,
 			};
 
 			wgpuSurfaceConfigure(this.surface, &configuration);
@@ -208,6 +242,27 @@ namespace MatterHackers.WebGpuRender
 				wgpuSurfaceRelease(this.surface);
 				this.surface = default;
 			}
+		}
+
+		/// <summary>The requested mode if this surface supports it, Fifo otherwise (the one mode WebGPU
+		/// guarantees every surface has).</summary>
+		/// <param name="requested">The mode asked for.</param>
+		private WGPUPresentMode ResolvePresentMode(WGPUPresentMode requested)
+		{
+			if (requested == WGPUPresentMode.Fifo)
+			{
+				return requested;
+			}
+
+			foreach (var supported in this.supportedPresentModes)
+			{
+				if (supported == requested)
+				{
+					return requested;
+				}
+			}
+
+			return WGPUPresentMode.Fifo;
 		}
 
 		private WebGpuTexture TryAcquire(out bool retryWorthwhile)

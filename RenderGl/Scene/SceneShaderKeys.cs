@@ -57,6 +57,13 @@ namespace MatterHackers.RenderGl.Scene
 		/// <summary>Lit (or unlit) shading from the submesh's texture.</summary>
 		public const string SceneTextureEntryPoint = "sceneTextureMain";
 
+		/// <summary>
+		/// The sorted alpha-blend transparency mode's textured shading: <see cref="SceneTextureEntryPoint"/>
+		/// plus the analytic bed grid, because in that mode the bed is drawn by the ordinary transparent
+		/// pass rather than by the peel (the classic <c>SceneTextureAlphaBlendPS</c>).
+		/// </summary>
+		public const string SceneBedTextureEntryPoint = "sceneBedTextureMain";
+
 		/// <summary>Depth prepass: writes depth, discards what the colour pass would have discarded.</summary>
 		public const string SceneDepthOnlyEntryPoint = "sceneDepthOnlyMain";
 

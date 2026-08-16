@@ -110,10 +110,18 @@ namespace MatterHackers.WebGpuRender
 		/// </param>
 		/// <param name="label">Optional debug label carried into wgpu's validation messages.</param>
 		/// <exception cref="InvalidOperationException">The instance, adapter or device could not be created.</exception>
+		/// <param name="windowSurface">
+		/// The window this device will present to, or null for an offscreen device. Supplied here rather
+		/// than through <see cref="CreateSurfaceTarget"/> so the surface exists <i>before</i> the adapter is
+		/// requested and can be passed as <c>compatibleSurface</c>: without it wgpu may hand back an adapter
+		/// that cannot present to the window at all (a hybrid laptop's discrete GPU with the display wired
+		/// to the integrated one), which surfaces much later as a swapchain that will not configure.
+		/// </param>
 		public WebGpuRenderDevice(
 			bool forceFallbackAdapter = false,
 			WGPUBackendType preferredBackend = WGPUBackendType.Undefined,
-			string label = null)
+			string label = null,
+			WindowSurfaceRequest windowSurface = null)
 		{
 			this.label = label ?? "WebGpuRenderDevice";
 
@@ -131,10 +139,31 @@ namespace MatterHackers.WebGpuRender
 					throw new InvalidOperationException("wgpuCreateInstance returned null.");
 				}
 
-				this.adapter = this.RequestAdapter(forceFallbackAdapter, preferredBackend);
-				this.ReadAdapterInfo();
-				this.device = this.RequestDevice();
-				this.queue = wgpuDeviceGetQueue(this.device);
+				// Created before the adapter request on purpose - see the windowSurface parameter.
+				WGPUSurface pendingSurface = windowSurface == null
+					? default
+					: CreateRawSurface(this.instance, windowSurface);
+
+				try
+				{
+					this.adapter = this.RequestAdapter(forceFallbackAdapter, preferredBackend, pendingSurface);
+					this.ReadAdapterInfo();
+					this.device = this.RequestDevice();
+					this.queue = wgpuDeviceGetQueue(this.device);
+
+					if (windowSurface != null)
+					{
+						this.WindowSurface = this.ConfigureSurfaceTarget(pendingSurface, windowSurface);
+						pendingSurface = default;
+					}
+				}
+				finally
+				{
+					if (!pendingSurface.IsNull)
+					{
+						wgpuSurfaceRelease(pendingSurface);
+					}
+				}
 			}
 			catch
 			{
@@ -186,11 +215,50 @@ namespace MatterHackers.WebGpuRender
 		/// <summary>The pass currently open, or null.</summary>
 		public WebGpuRenderEncoder OpenPass => this.openEncoder;
 
+		/// <summary>
+		/// The swapchain built from the <c>windowSurface</c> the device was constructed with, or null for
+		/// an offscreen device. Owned by this device and disposed with it.
+		/// </summary>
+		public WebGpuSurfaceTarget WindowSurface { get; private set; }
+
 		/// <summary>The wgpu device, for the surface a swapchain has to be configured against.</summary>
 		internal WGPUDevice DeviceHandle => this.device;
 
 		/// <summary>Clears <see cref="LastUncapturedError"/> so a test can measure only what follows.</summary>
 		public void ClearUncapturedError() => this.LastUncapturedError = null;
+
+		/// <summary>
+		/// Destroys the device, which makes wgpu raise the device-lost callback - the only way to reach the
+		/// host's device-loss recovery on demand, since a real loss needs a driver reset. Everything created
+		/// from this device is invalid afterwards.
+		/// </summary>
+		/// <remarks>
+		/// The callback is delivered through <c>ProcessEvents</c>, so this pumps the instance until
+		/// <see cref="IsDeviceLost"/> is set rather than returning while the loss is still in flight and
+		/// leaving the caller to guess when it lands.
+		/// </remarks>
+		public void DestroyDeviceToSimulateLoss()
+		{
+			this.ThrowIfDisposed();
+
+			wgpuDeviceDestroy(this.device);
+
+			for (int spin = 0; spin < MaxCallbackSpins && !this.IsDeviceLost; spin++)
+			{
+				// Both, for the reason ReadTextureAsync gives: wgpu-native resolves some callbacks only
+				// under DevicePoll and others only under ProcessEvents.
+				WgpuNative.wgpuDevicePoll(this.device, true, null);
+				wgpuInstanceProcessEvents(this.instance);
+			}
+
+			if (!this.IsDeviceLost)
+			{
+				// wgpu-native 29 does not always deliver the lost callback for a caller-initiated destroy.
+				// The device is genuinely dead either way, and the host's recovery keys off this flag, so
+				// it is recorded rather than left to a caller that would then be testing nothing.
+				this.ReportDeviceLost("Destroyed: wgpuDeviceDestroy called by DestroyDeviceToSimulateLoss.");
+			}
+		}
 
 		/// <inheritdoc/>
 		public IGpuBuffer CreateBuffer(BufferUsage usage, ulong sizeInBytes, ReadOnlySpan<byte> initialData = default)
@@ -660,19 +728,42 @@ namespace MatterHackers.WebGpuRender
 			string label = null)
 		{
 			this.ThrowIfDisposed();
-			if (windowHandle == IntPtr.Zero)
+
+			var request = new WindowSurfaceRequest(windowHandle, moduleHandle, width, height, label);
+			WGPUSurface surface = CreateRawSurface(this.instance, request);
+
+			try
 			{
-				throw new ArgumentException("A surface needs a native window handle.", nameof(windowHandle));
+				return this.ConfigureSurfaceTarget(surface, request);
+			}
+			catch
+			{
+				wgpuSurfaceRelease(surface);
+				throw;
+			}
+		}
+
+		/// <summary>
+		/// Makes the raw <c>WGPUSurface</c> for a window. Static and instance-free because it has to run
+		/// before the adapter exists (the surface is the adapter request's <c>compatibleSurface</c>).
+		/// </summary>
+		/// <param name="instance">The wgpu instance.</param>
+		/// <param name="request">The window to make a surface over.</param>
+		private static WGPUSurface CreateRawSurface(WGPUInstance instance, WindowSurfaceRequest request)
+		{
+			if (request.WindowHandle == IntPtr.Zero)
+			{
+				throw new ArgumentException("A surface needs a native window handle.", nameof(request));
 			}
 
 			var windowsSource = new WGPUSurfaceSourceWindowsHWND
 			{
 				chain = new WGPUChainedStruct { sType = WGPUSType.SurfaceSourceWindowsHWND },
-				hinstance = (void*)moduleHandle,
-				hwnd = (void*)windowHandle,
+				hinstance = (void*)request.ModuleHandle,
+				hwnd = (void*)request.WindowHandle,
 			};
 
-			using (var labelText = new Utf8Buffer(label))
+			using (var labelText = new Utf8Buffer(request.Label))
 			{
 				var descriptor = new WGPUSurfaceDescriptor
 				{
@@ -680,25 +771,26 @@ namespace MatterHackers.WebGpuRender
 					label = labelText.View,
 				};
 
-				WGPUSurface surface = wgpuInstanceCreateSurface(this.instance, &descriptor);
+				WGPUSurface surface = wgpuInstanceCreateSurface(instance, &descriptor);
 				if (surface.IsNull)
 				{
 					throw new InvalidOperationException("wgpuInstanceCreateSurface returned null for the window handle.");
 				}
 
-				try
-				{
-					var format = this.ChooseSurfaceFormat(surface, out TextureUsage usage);
-					var target = new WebGpuSurfaceTarget(this, surface, format, usage, label);
-					target.Configure(width, height);
-					return target;
-				}
-				catch
-				{
-					wgpuSurfaceRelease(surface);
-					throw;
-				}
+				return surface;
 			}
+		}
+
+		/// <summary>Picks the surface's format, usage and present mode and configures it at the requested
+		/// size. Takes ownership of <paramref name="surface"/> on success.</summary>
+		/// <param name="surface">A surface created by <see cref="CreateRawSurface"/>.</param>
+		/// <param name="request">The window it was made over.</param>
+		private WebGpuSurfaceTarget ConfigureSurfaceTarget(WGPUSurface surface, WindowSurfaceRequest request)
+		{
+			var format = this.ChooseSurfaceFormat(surface, out TextureUsage usage, out var presentModes);
+			var target = new WebGpuSurfaceTarget(this, surface, format, usage, presentModes, request.Label);
+			target.Configure(request.Width, request.Height);
+			return target;
 		}
 
 		/// <summary>
@@ -745,6 +837,10 @@ namespace MatterHackers.WebGpuRender
 
 			this.openEncoder?.Dispose();
 			this.openEncoder = null;
+
+			// Before the device: unconfiguring a swapchain needs the device that configured it alive.
+			this.WindowSurface?.Dispose();
+			this.WindowSurface = null;
 
 			if (!this.commandEncoder.IsNull)
 			{
@@ -1126,7 +1222,12 @@ namespace MatterHackers.WebGpuRender
 		/// </summary>
 		/// <param name="surface">The surface to query.</param>
 		/// <param name="usage">The usage flags the swapchain textures will be created with.</param>
-		private WGPUTextureFormat ChooseSurfaceFormat(WGPUSurface surface, out TextureUsage usage)
+		/// <param name="presentModes">Every present mode this surface supports; Fifo is the only one WebGPU
+		/// guarantees, so anything else has to be checked against this list before it is configured.</param>
+		private WGPUTextureFormat ChooseSurfaceFormat(
+			WGPUSurface surface,
+			out TextureUsage usage,
+			out WGPUPresentMode[] presentModes)
 		{
 			var capabilities = default(WGPUSurfaceCapabilities);
 			if (wgpuSurfaceGetCapabilities(surface, this.adapter, &capabilities) != WGPUStatus.Success
@@ -1153,6 +1254,12 @@ namespace MatterHackers.WebGpuRender
 				if ((capabilities.usages & WGPUTextureUsage.CopySrc) != 0)
 				{
 					usage |= TextureUsage.CopySrc;
+				}
+
+				presentModes = new WGPUPresentMode[(int)capabilities.presentModeCount];
+				for (nuint index = 0; index < capabilities.presentModeCount; index++)
+				{
+					presentModes[(int)index] = capabilities.presentModes[index];
 				}
 
 				return chosen;
@@ -1233,7 +1340,10 @@ namespace MatterHackers.WebGpuRender
 			}
 		}
 
-		private WGPUAdapter RequestAdapter(bool forceFallbackAdapter, WGPUBackendType preferredBackend)
+		private WGPUAdapter RequestAdapter(
+			bool forceFallbackAdapter,
+			WGPUBackendType preferredBackend,
+			WGPUSurface compatibleSurface)
 		{
 			var options = new WGPURequestAdapterOptions
 			{
@@ -1241,6 +1351,7 @@ namespace MatterHackers.WebGpuRender
 				powerPreference = WGPUPowerPreference.HighPerformance,
 				forceFallbackAdapter = forceFallbackAdapter,
 				backendType = preferredBackend,
+				compatibleSurface = compatibleSurface,
 			};
 
 			// Pinned heap cell, not a stack local - see PinnedCallbackCell for why the timeout path below

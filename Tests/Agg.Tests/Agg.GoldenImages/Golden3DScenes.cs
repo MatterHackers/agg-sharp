@@ -329,6 +329,107 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 			return image;
 		}
 
+		/// <summary>
+		/// The gizmo overlay layer: the <see cref="WorldViewExtensions"/> drawing vocabulary every
+		/// <c>IObject3DControl</c> reaches for, plus a minified textured glyph quad standing in for the
+		/// tumble cube's face labels.
+		/// </summary>
+		/// <remarks>
+		/// This is the layer the full-app frame comparison found diverging in Phase 4 leg A, and nothing in
+		/// the rest of the suite touches it: the other scenes draw meshes queued straight on the renderer,
+		/// while this one goes through <c>Render3DLine</c>'s per-line generated geometry, the depth-test
+		/// on/off overlay states, and a texture small enough on screen that the mip chain is actually
+		/// sampled rather than being decoration.
+		/// <para>
+		/// The glyph cube is the reason for the 256 pixel source on a ~34mm body: at this camera it lands
+		/// well under 256 pixels wide, so minification picks a mip level above zero and any disagreement
+		/// about how levels are blended shows up as a whole-quad difference rather than as edge noise.
+		/// </para>
+		/// </remarks>
+		/// <param name="gl">The facade to draw through.</param>
+		/// <param name="world">The camera. Built by <see cref="CreateCamera"/> at the capture's size - the
+		/// overlay helpers need it directly (they scale line widths by world units per screen pixel), and it
+		/// is passed rather than rebuilt so the frame and the overlay cannot disagree about the view.</param>
+		public static void DrawGizmoOverlayScene(GL gl, WorldView world)
+		{
+			var body = PlatonicSolids.CreateCube(70, 70, 70);
+			RenderHelper.Render(
+				gl,
+				body,
+				new Color(150, 155, 165),
+				Matrix4X4.CreateTranslation(-30, 0, 0),
+				RenderTypes.Shaded);
+
+			// The tumble cube's textured glyph faces: a high frequency source minified onto a small body.
+			var glyphCube = PlatonicSolids.CreateCube(34, 34, 34);
+			var glyphTexture = CreateGlyphTexture(256);
+
+			// One texture fitted to each face, which is exactly how TumbleCubeControl labels its faces -
+			// a whole-face projection rather than the world-unit tiling PlaceTexture would give, so the
+			// on-screen minification really is 256 source pixels down to the face's width.
+			foreach (int face in new[] { 0, 2, 4, 6, 8, 10 })
+			{
+				glyphCube.PlaceTextureOnFaces(face, glyphTexture);
+			}
+
+			RenderHelper.Render(
+				gl,
+				glyphCube,
+				Color.White,
+				Matrix4X4.CreateTranslation(56, -12, 42),
+				RenderTypes.Shaded);
+
+			var frustum = world.GetClippingFrustum();
+
+			// The selection bounding box Object3DControlsLayer draws around the active item.
+			world.RenderAabb(
+				gl,
+				new AxisAlignedBoundingBox(new Vector3(-65, -35, -35), new Vector3(5, 35, 35)),
+				Matrix4X4.Identity,
+				new Color(80, 80, 85),
+				lineWidth: 1);
+
+			// Scale and move handle stems: arrow-headed 3D lines, one depth tested and one not, because the
+			// controls use both and the overlay depth state is part of what is being compared.
+			world.Render3DLine(gl, frustum, new Vector3(-30, 0, -40), new Vector3(-30, 0, 74), Color.Blue, doDepthTest: true, width: 2, endArrow: true);
+			world.Render3DLine(gl, frustum, new Vector3(-30, 0, 0), new Vector3(64, 0, 0), Color.Red, doDepthTest: false, width: 1.6, startArrow: true, endArrow: true);
+
+			// The rotate control's ring.
+			world.RenderRing(gl, Matrix4X4.Identity, new Vector3(-30, 0, 0), 96, 40, new Color(220, 200, 70), lineWidth: 1.4);
+
+			// The direction-axis indicator the snapping and align controls draw.
+			world.RenderAxis(gl, new Vector3(40, 24, -34), Matrix4X4.Identity, size: 26, lineWidth: 1);
+		}
+
+		/// <summary>
+		/// A deliberately high frequency glyph sheet: a fine checker with a filled disc over it. Fine detail
+		/// is the point - a flat image would look the same at every mip level and prove nothing about how the
+		/// levels are filtered.
+		/// </summary>
+		/// <param name="size">Edge length in pixels.</param>
+		public static ImageBuffer CreateGlyphTexture(int size)
+		{
+			var image = new ImageBuffer(size, size, 32, new BlenderBGRA());
+			var graphics = image.NewGraphics2D();
+			graphics.Clear(new Color(245, 245, 250));
+
+			int cellSize = Math.Max(1, size / 32);
+			for (int y = 0; y < size; y += cellSize)
+			{
+				for (int x = 0; x < size; x += cellSize)
+				{
+					if (((x / cellSize) + (y / cellSize)) % 2 == 0)
+					{
+						graphics.FillRectangle(x, y, x + cellSize, y + cellSize, new Color(30, 40, 70));
+					}
+				}
+			}
+
+			graphics.Circle(size / 2.0, size / 2.0, size / 3.0, new Color(220, 80, 40));
+			image.MarkImageChanged();
+			return image;
+		}
+
 		/// <summary>A selected box beside an unselected sphere, with the box's outline queued directly on
 		/// the renderer - reachable without any app-level machinery.</summary>
 		/// <param name="gl">The facade to draw through.</param>

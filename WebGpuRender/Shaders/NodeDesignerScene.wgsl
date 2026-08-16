@@ -406,6 +406,22 @@ fn shadeFromBedTexture(input : FragmentInput) -> ComposedColor
 	return result;
 }
 
+// SceneTextureAlphaBlendPS: the sorted alpha-blend transparency mode's textured shading. Identical to
+// sceneTextureMain except that it runs the analytic bed grid, because in that mode the bed is drawn by
+// this entry point rather than by the peel's. Non-bed draws pass through it with the grid switched off
+// (effect.extraFlags.z), exactly as the HLSL does.
+@fragment
+fn sceneBedTextureMain(input : FragmentInput) -> @location(0) vec4<f32>
+{
+	let composed = shadeFromBedTexture(input);
+	if (!composed.keep)
+	{
+		discard;
+	}
+
+	return composed.color;
+}
+
 // ---- Dual depth peeling ---------------------------------------------------------------------------
 //
 // The classic path keeps the peeled depth *range* in one Rg32Float target, blended with MAX: red holds

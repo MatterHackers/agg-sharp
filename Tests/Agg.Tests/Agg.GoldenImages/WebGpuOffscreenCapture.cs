@@ -141,6 +141,16 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		/// <summary>The whole capture area.</summary>
 		public RectangleDouble Viewport => new RectangleDouble(0, 0, Width, Height);
 
+		/// <summary>
+		/// The transparency mode's user setting: above 2 peels, 2 or below falls back to the sorted
+		/// alpha-blend approximation. Settable so one scene can be captured in both modes.
+		/// </summary>
+		public int DepthPeelingLayers
+		{
+			get => sceneRenderer.DepthPeelingLayers;
+			set => sceneRenderer.DepthPeelingLayers = value;
+		}
+
 		public static WebGpuOffscreenCapture Create(int width = DefaultWidth, int height = DefaultHeight)
 			=> new WebGpuOffscreenCapture(width, height);
 

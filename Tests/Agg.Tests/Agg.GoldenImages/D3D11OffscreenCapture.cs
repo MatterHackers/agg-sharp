@@ -117,6 +117,16 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		/// <summary>The whole capture area, in the form the scene renderer wants it.</summary>
 		public RectangleDouble Viewport => new RectangleDouble(0, 0, Width, Height);
 
+		/// <summary>
+		/// The transparency mode's user setting: above 2 peels, 2 or below falls back to the sorted
+		/// alpha-blend approximation. Settable so one scene can be captured in both modes.
+		/// </summary>
+		public int DepthPeelingLayers
+		{
+			get => backend.DepthPeelingLayers;
+			set => backend.DepthPeelingLayers = value;
+		}
+
 		public static D3D11OffscreenCapture Create(int width = DefaultWidth, int height = DefaultHeight)
 			=> new D3D11OffscreenCapture(width, height);
 

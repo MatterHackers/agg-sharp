@@ -55,10 +55,9 @@ namespace MatterHackers.RenderGl.Scene
 	/// <para>
 	/// <b>Scope.</b> The whole classic scene frame: opaque meshes with lighting, the wireframe/outline
 	/// render types, the always-visible overlay pass, selection outlines, the 3x supersampled full-frame
-	/// capture, the printer bed with its cast shadow and analytic grid, and dual depth peeled
-	/// transparency. The one thing deliberately left out is the classic path's <i>other</i> transparency
-	/// mode, the sorted alpha-blend approximation it falls back to when depth peeling is switched off -
-	/// see <see cref="DepthPeelingLayers"/>.
+	/// capture, the printer bed with its cast shadow and analytic grid, and both transparency modes - dual
+	/// depth peeling and the sorted alpha-blend approximation the user setting falls back to when peeling
+	/// is switched off (see <see cref="DepthPeelingLayers"/>).
 	/// </para>
 	/// </summary>
 	public sealed class WebGpuSceneRenderer : INativeSceneRenderer, IDisposable
@@ -194,6 +193,7 @@ namespace MatterHackers.RenderGl.Scene
 		private IGpuBuffer outlineUniform;
 		private IGpuBuffer downsampleUniform;
 		private ISampler linearSampler;
+		private ISampler meshTextureSampler;
 		private ISampler pointSampler;
 		private IGpuTexture whiteTexture;
 
@@ -556,6 +556,7 @@ namespace MatterHackers.RenderGl.Scene
 
 			this.bedShadowUniforms.Clear();
 			this.linearSampler?.Dispose();
+			this.meshTextureSampler?.Dispose();
 			this.pointSampler?.Dispose();
 
 			// The cache belongs to the compat context and can outlive this renderer, so the groups holding
@@ -571,6 +572,7 @@ namespace MatterHackers.RenderGl.Scene
 			this.outlineUniform = null;
 			this.downsampleUniform = null;
 			this.linearSampler = null;
+			this.meshTextureSampler = null;
 			this.pointSampler = null;
 			this.whiteTexture = null;
 			this.bedBaseTexture = null;
@@ -726,37 +728,32 @@ namespace MatterHackers.RenderGl.Scene
 		}
 
 		/// <summary>
-		/// Dual depth peeling: seeds the depth range from every transparent fragment, then peels the
-		/// nearest and farthest remaining layer per iteration into the two accumulation targets.
+		/// Draws the frame's transparency in whichever of the two modes the user setting asks for: dual
+		/// depth peeling, or the sorted alpha-blend approximation.
 		/// </summary>
 		/// <remarks>
-		/// The classic path's loop, one for one (<c>VorticeD3DGl.RenderTransparentLayers</c>), except that
-		/// each of its iterations is three passes here: the depth range it kept in a MAX-blended Rg32Float
-		/// target is kept in two hardware depth buffers instead, and a depth attachment cannot be written
-		/// by the same pass that writes colour. See the peel section of NodeDesignerScene.wgsl for why the
-		/// two formulations compute the same numbers.
+		/// The peel is the classic path's loop one for one (<c>VorticeD3DGl.RenderTransparentLayers</c>),
+		/// except that each of its iterations is three passes here: the depth range it kept in a MAX-blended
+		/// Rg32Float target is kept in two hardware depth buffers instead, and a depth attachment cannot be
+		/// written by the same pass that writes colour. See the peel section of NodeDesignerScene.wgsl for
+		/// why the two formulations compute the same numbers.
 		/// </remarks>
 		/// <param name="transparentCommands">The plan's transparent half, in queue order - the peel is
-		/// order independent, which is the entire reason it exists.</param>
+		/// order independent, which is the entire reason it exists; the alpha-blend mode sorts it.</param>
 		private void RenderTransparentLayers(IReadOnlyList<MeshRenderCommand> transparentCommands)
 		{
+			if (SceneTransparencyModeUtilities.GetSceneTransparencyMode(this.DepthPeelingLayers)
+				!= SceneTransparencyMode.DualDepthPeeling)
+			{
+				this.RenderTransparentAlphaBlend(transparentCommands);
+				return;
+			}
+
 			this.ClearTransparencyTargets();
 
 			if (transparentCommands.Count == 0 && !this.IsBedDrawable)
 			{
 				return;
-			}
-
-			// Below the early-out on purpose: a frame with nothing transparent in it renders identically
-			// in either transparency mode (the cleared accumulators resolve to an identity), so failing an
-			// opaque frame over a mode it never reaches would take the whole app down for nothing. Once
-			// there is transparency to draw the mode matters, and then this is as loud as it was.
-			if (SceneTransparencyModeUtilities.GetSceneTransparencyMode(this.DepthPeelingLayers)
-				!= SceneTransparencyMode.DualDepthPeeling)
-			{
-				throw new NotSupportedException(
-					"WebGpuSceneRenderer implements the dual depth peeling transparency mode only; the classic "
-					+ "path's sorted alpha-blend approximation (DepthPeelingLayers <= 2) is not ported.");
 			}
 
 			this.InitializeDualDepthPeel(transparentCommands);
@@ -772,6 +769,99 @@ namespace MatterHackers.RenderGl.Scene
 
 				(source, destination) = (destination, source);
 			}
+		}
+
+		/// <summary>
+		/// The other transparency mode: the classic path's sorted alpha-blend approximation
+		/// (<c>VorticeD3DGl.RenderTransparentAlphaBlend</c>), used when the user turns depth peeling off.
+		/// </summary>
+		/// <remarks>
+		/// No peel, no accumulation targets: the transparent commands are sorted back to front by view-space
+		/// centre and blended straight into the scene colour target, each one twice - back faces first (cull
+		/// front), then front faces - so a single hollow object still looks solid. Depth is tested against
+		/// the opaque scene but never written, which is what lets the sorted draws blend with each other.
+		/// It is an approximation and it is meant to be: it is cheap, and per-object sorting gets the
+		/// ordering wrong wherever two transparent objects interpenetrate.
+		/// <para>
+		/// The classic path also clears the peel accumulation targets here. They are not read in this mode
+		/// (its resolve is <see cref="CompositeSceneTargetsAlphaBlend"/>, which never samples them), so the
+		/// two clear passes are simply not run.
+		/// </para>
+		/// </remarks>
+		/// <param name="transparentCommands">The plan's transparent half, unsorted.</param>
+		private void RenderTransparentAlphaBlend(IReadOnlyList<MeshRenderCommand> transparentCommands)
+		{
+			var sorted = SceneTransparencyModeUtilities.SortTransparentCommandsBackToFront(
+				transparentCommands,
+				this.activeSceneRenderContext.WorldView.ModelviewMatrix);
+
+			bool bedAfterObjects = this.IsBedDrawable
+				&& SceneTransparencyModeUtilities.ShouldRenderBedAfterTransparentObjects(
+					this.queuedBedCommand.CreateSceneCommand().Transform,
+					this.activeSceneRenderContext.WorldView.EyePosition);
+
+			// LoadOp.Load on both attachments: the opaque pass already filled this target and its depth, and
+			// the transparent draws blend over the one and test against the other.
+			using (var encoder = this.device.BeginRenderPass(new RenderPassDescriptor(
+				new[] { new ColorAttachment(this.sceneColorTarget.Color, LoadOp.Load) },
+				new DepthAttachment(this.sceneColorTarget.Depth, LoadOp.Load),
+				"SceneAlphaBlend")))
+			{
+				if (this.IsBedDrawable && !bedAfterObjects)
+				{
+					this.DrawAlphaBlendBed(encoder);
+				}
+
+				foreach (var command in sorted)
+				{
+					if (!SceneRenderModeUtilities.RequiresSceneMeshPass(command.RenderType)
+						|| !SceneRenderModeUtilities.ShouldRenderTransparentFill(command.RenderType))
+					{
+						continue;
+					}
+
+					var state = this.AlphaBlendDrawState();
+					state.CullOverride = CullMode.Front;
+					this.DrawMeshCommand(encoder, command, state);
+
+					state.CullOverride = CullMode.Back;
+					state.EnableWireframe = SceneRenderModeUtilities.ShouldDrawWireframeOverlay(command.RenderType);
+					this.DrawMeshCommand(encoder, command, state);
+				}
+
+				if (bedAfterObjects)
+				{
+					this.DrawAlphaBlendBed(encoder);
+				}
+			}
+		}
+
+		/// <summary>The alpha-blend mode's shared per-draw state: source-over blending into the scene colour
+		/// target, depth tested but not written.</summary>
+		private MeshDrawState AlphaBlendDrawState()
+		{
+			return new MeshDrawState
+			{
+				ColorFormat = SceneColorFormat,
+				DepthFormat = SceneDepthFormat,
+				NoDepthWrite = true,
+				BlendEnabled = true,
+				Blend = BlendComponent.AlphaBlend,
+				AlphaBlendShading = true,
+			};
+		}
+
+		/// <summary>Draws the bed into the alpha-blend transparency pass, culled as the bed command asks
+		/// (the classic path passes no cull override for it) and with its analytic grid switched on.</summary>
+		/// <param name="encoder">The open alpha-blend pass.</param>
+		private void DrawAlphaBlendBed(IRenderEncoder encoder)
+		{
+			var state = this.AlphaBlendDrawState();
+			state.ForcedTexture = this.bedCompositeTarget;
+			state.Unlit = true;
+			state.BedGrid = this.queuedBedCommand;
+
+			this.DrawMeshCommand(encoder, this.queuedBedCommand.CreateSceneCommand(), state);
 		}
 
 		/// <summary>
@@ -921,6 +1011,12 @@ namespace MatterHackers.RenderGl.Scene
 
 		private void CompositeSceneTargets()
 		{
+			if (!SceneTransparencyModeUtilities.ShouldUseDualDepthPeelResolve(this.DepthPeelingLayers))
+			{
+				this.CompositeSceneTargetsAlphaBlend();
+				return;
+			}
+
 			var layout = new[]
 			{
 				new BindGroupLayoutEntry(0, 0, ShaderStage.Fragment, BindingType.Sampler),
@@ -961,10 +1057,78 @@ namespace MatterHackers.RenderGl.Scene
 		}
 
 		/// <summary>
-		/// Blits the resolved scene into the caller's target, over whatever was already there. The blend
-		/// is the classic path's resolvedSceneBlitBlendState - straight source-over, because the resolve
-		/// hands back straight (un-premultiplied) alpha.
+		/// The alpha-blend transparency mode's resolve (the classic <c>CompositeSceneTargetsAlphaBlend</c>):
+		/// no peel accumulators to unmix, so the scene colour target - which already has the sorted
+		/// transparent draws blended into it - is copied over and the overlay laid on top.
 		/// </summary>
+		private void CompositeSceneTargetsAlphaBlend()
+		{
+			var layout = new[]
+			{
+				new BindGroupLayoutEntry(0, 0, ShaderStage.Fragment, BindingType.Sampler),
+				new BindGroupLayoutEntry(0, 1, ShaderStage.Fragment, BindingType.Texture),
+			};
+
+			var copyPipeline = this.GetFullscreenPipeline(
+				SceneShaderKeys.CopyTextureEntryPoint,
+				new ColorTargetState(SceneColorFormat),
+				layout,
+				"SceneResolveCopy");
+
+			var overlayPipeline = this.GetFullscreenPipeline(
+				SceneShaderKeys.CopyTextureEntryPoint,
+				new ColorTargetState(
+					SceneColorFormat,
+					true,
+					BlendComponent.AlphaBlend,
+					new BlendComponent(BlendOperation.Add, BlendFactor.One, BlendFactor.OneMinusSrcAlpha)),
+				layout,
+				"SceneResolveOverlay");
+
+			var sceneBindGroup = this.cache.GetBindGroup(new BindGroupDescriptor(
+				copyPipeline,
+				0,
+				new[]
+				{
+					BindGroupEntry.ForSampler(0, this.pointSampler),
+					BindGroupEntry.ForTexture(1, this.sceneColorTarget.Color),
+				},
+				"SceneResolveCopy"));
+
+			var overlayBindGroup = this.cache.GetBindGroup(new BindGroupDescriptor(
+				overlayPipeline,
+				0,
+				new[]
+				{
+					BindGroupEntry.ForSampler(0, this.pointSampler),
+					BindGroupEntry.ForTexture(1, this.transparentOverlayTarget),
+				},
+				"SceneResolveOverlay"));
+
+			using (var encoder = this.device.BeginRenderPass(new RenderPassDescriptor(
+				new[] { new ColorAttachment(this.resolvedSceneTarget, LoadOp.Clear, ClearColor.Transparent) },
+				DepthAttachment.None,
+				"SceneResolveAlphaBlend")))
+			{
+				encoder.SetPipeline(copyPipeline);
+				encoder.SetBindGroup(0, sceneBindGroup);
+				encoder.Draw(3);
+
+				encoder.SetPipeline(overlayPipeline);
+				encoder.SetBindGroup(0, overlayBindGroup);
+				encoder.Draw(3);
+			}
+		}
+
+		/// <summary>
+		/// Blits the resolved scene into the caller's target, over whatever was already there.
+		/// </summary>
+		/// <remarks>
+		/// The source factor follows the transparency mode, as the classic path's two blit blend states do:
+		/// the peel resolve hands back straight (un-premultiplied) alpha and blends source-over, while the
+		/// alpha-blend resolve's target already holds premultiplied colour (everything drawn into it was
+		/// blended with SrcAlpha) and must not be multiplied by alpha a second time.
+		/// </remarks>
 		private void BlitResolvedSceneToTarget(IGpuTexture destination)
 		{
 			var layout = new[]
@@ -976,7 +1140,9 @@ namespace MatterHackers.RenderGl.Scene
 			var colorTarget = new ColorTargetState(
 				destination.Descriptor.Format,
 				true,
-				BlendComponent.AlphaBlend,
+				SceneTransparencyModeUtilities.ShouldUseDualDepthPeelResolve(this.DepthPeelingLayers)
+					? BlendComponent.AlphaBlend
+					: new BlendComponent(BlendOperation.Add, BlendFactor.One, BlendFactor.OneMinusSrcAlpha),
 				new BlendComponent(BlendOperation.Add, BlendFactor.One, BlendFactor.OneMinusSrcAlpha));
 
 			var pipeline = this.GetFullscreenPipeline(
@@ -1417,7 +1583,7 @@ namespace MatterHackers.RenderGl.Scene
 			var effectBuffer = this.effectUniforms[this.drawSlot];
 			this.drawSlot++;
 
-			var cullMode = command.ForceCullBackFaces ? CullMode.Back : CullMode.None;
+			var cullMode = drawState.CullOverride ?? (command.ForceCullBackFaces ? CullMode.Back : CullMode.None);
 
 			for (int subMeshIndex = 0; subMeshIndex < meshPlugin.subMeshs.Count; subMeshIndex++)
 			{
@@ -1530,7 +1696,7 @@ namespace MatterHackers.RenderGl.Scene
 					BindGroupEntry.ForBuffer(0, transformBuffer),
 					BindGroupEntry.ForBuffer(1, this.lightUniform),
 					BindGroupEntry.ForBuffer(2, effectBuffer),
-					BindGroupEntry.ForSampler(3, this.linearSampler),
+					BindGroupEntry.ForSampler(3, this.meshTextureSampler),
 					BindGroupEntry.ForTexture(4, this.whiteTexture),
 				},
 				label));
@@ -1739,6 +1905,15 @@ namespace MatterHackers.RenderGl.Scene
 			new BindGroupLayoutEntry(0, 10, ShaderStage.Fragment, BindingType.UniformBuffer),
 		};
 
+		/// <summary>
+		/// The mesh layout plus the blurred bed shadow, for the sorted alpha-blend transparency mode: its
+		/// textured entry point runs the analytic grid, which samples that texture before it checks whether
+		/// the grid is switched on at all (the sample has to stay in uniform control flow for fwidth).
+		/// </summary>
+		private static readonly BindGroupLayoutEntry[] SceneBedBindGroupLayout = AppendEntries(
+			SceneBindGroupLayout,
+			new BindGroupLayoutEntry(0, 8, ShaderStage.Fragment, BindingType.Texture));
+
 		private static BindGroupLayoutEntry[] AppendEntries(BindGroupLayoutEntry[] layout, params BindGroupLayoutEntry[] extra)
 		{
 			var combined = new BindGroupLayoutEntry[layout.Length + extra.Length];
@@ -1763,7 +1938,7 @@ namespace MatterHackers.RenderGl.Scene
 				BindGroupEntry.ForBuffer(0, transformBuffer),
 				BindGroupEntry.ForBuffer(1, this.lightUniform),
 				BindGroupEntry.ForBuffer(2, effectBuffer),
-				BindGroupEntry.ForSampler(3, this.linearSampler),
+				BindGroupEntry.ForSampler(3, this.meshTextureSampler),
 				BindGroupEntry.ForTexture(4, texture),
 			};
 
@@ -1776,6 +1951,10 @@ namespace MatterHackers.RenderGl.Scene
 			{
 				bindings.Add(BindGroupEntry.ForTexture(6, drawState.PeelSource.Near));
 				bindings.Add(BindGroupEntry.ForTexture(7, drawState.PeelSource.Far));
+				bindings.Add(BindGroupEntry.ForTexture(8, this.bedShadowBlurTargetB ?? this.whiteTexture));
+			}
+			else if (drawState.AlphaBlendShading)
+			{
 				bindings.Add(BindGroupEntry.ForTexture(8, this.bedShadowBlurTargetB ?? this.whiteTexture));
 			}
 
@@ -1817,7 +1996,21 @@ namespace MatterHackers.RenderGl.Scene
 				default:
 					fragmentEntry = drawState.DepthOnly
 						? SceneShaderKeys.SceneDepthOnlyEntryPoint
-						: useTexture ? SceneShaderKeys.SceneTextureEntryPoint : SceneShaderKeys.SceneColorEntryPoint;
+						: useTexture
+							? drawState.AlphaBlendShading
+								? SceneShaderKeys.SceneBedTextureEntryPoint
+								: SceneShaderKeys.SceneTextureEntryPoint
+							: SceneShaderKeys.SceneColorEntryPoint;
+
+					// The untextured alpha-blend entry point is sceneColorMain unchanged (the classic
+					// SceneColorAlphaBlendPS differs from SceneColorPS only by dropping ApplyDepthPeeling,
+					// which is a no-op with peeling off), but it still gets the wider layout so every draw in
+					// the pass shares one bind group shape.
+					if (drawState.AlphaBlendShading)
+					{
+						bindGroupLayout = SceneBedBindGroupLayout;
+					}
+
 					colorTargets = drawState.DepthOnly
 						? Array.Empty<ColorTargetState>()
 						: new[]
@@ -1838,7 +2031,7 @@ namespace MatterHackers.RenderGl.Scene
 			// peeled depth range) and writes.
 			var depth = drawState.DepthFormat == TextureFormat.Undefined
 				? DepthStencilState.None
-				: new DepthStencilState(drawState.DepthFormat, true, drawState.EffectiveDepthCompare);
+				: new DepthStencilState(drawState.DepthFormat, !drawState.NoDepthWrite, drawState.EffectiveDepthCompare);
 
 			return this.cache.GetPipeline(new RenderPipelineDescriptor(
 				module,
@@ -2073,6 +2266,21 @@ namespace MatterHackers.RenderGl.Scene
 		private void EnsureSharedResources()
 		{
 			this.linearSampler = this.linearSampler ?? this.device.CreateSampler(SamplerDescriptor.LinearClamp);
+
+			// Mesh face textures get their own sampler, matching the classic path's `defaultSampler` exactly:
+			// trilinear and wrapping. Both halves of that mattered, and neither showed until a mipmapped
+			// texture was minified in a golden - filtering within one level only made minified faces snap
+			// between mip levels, and clamping instead of wrapping changed the pixels along every uv seam.
+			// The full-screen bed passes keep the clamped sampler above, which is what the classic path binds
+			// for them (`linearClampSampler`).
+			this.meshTextureSampler = this.meshTextureSampler
+				?? this.device.CreateSampler(new SamplerDescriptor(
+					AddressMode.Repeat,
+					AddressMode.Repeat,
+					FilterMode.Linear,
+					FilterMode.Linear,
+					FilterMode.Linear,
+					"meshTexture"));
 			this.pointSampler = this.pointSampler ?? this.device.CreateSampler(SamplerDescriptor.NearestClamp);
 			this.lightUniform = this.lightUniform
 				?? this.device.CreateBuffer(BufferUsage.Uniform | BufferUsage.CopyDst, LightUniformSize);
@@ -2361,6 +2569,20 @@ namespace MatterHackers.RenderGl.Scene
 			public bool BlendEnabled;
 
 			public BlendComponent Blend;
+
+			/// <summary>
+			/// Shades through the alpha-blend transparency mode's entry points: the textured one runs the
+			/// analytic bed grid, so every draw in that pass binds the blurred shadow texture.
+			/// </summary>
+			public bool AlphaBlendShading;
+
+			/// <summary>Tests depth but leaves it alone - the classic path's noDepthWriteState, which is what
+			/// lets sorted transparent draws blend with each other.</summary>
+			public bool NoDepthWrite;
+
+			/// <summary>Overrides the culling the command asks for - the alpha-blend mode's two-pass
+			/// back-faces-then-front-faces draw (the classic <c>cullModeOverride</c>).</summary>
+			public CullMode? CullOverride;
 
 			public PeelStage Peel;
 

@@ -49,8 +49,12 @@ namespace MatterHackers.Agg.UI
 	/// time".
 	/// </para>
 	/// <para>
-	/// <b>Device loss.</b> Recorded and reported (<see cref="LastError"/>), not repaired; recreating the
-	/// device and invalidating every cache keyed on it is Phase 4 work.
+	/// <b>Device loss.</b> wgpu reports it out of band through the device-lost callback, so it is noticed
+	/// at the top of a frame (and when an acquire or present throws) rather than at the call that caused
+	/// it. <see cref="TryRecoverDevice"/> then does what <c>D3D11Control.TryRecoverDevice</c> does: throw
+	/// the device and everything hanging off it away, build a new one over the same HWND, and bump
+	/// <see cref="Graphics2DGpu.InvalidateGlCaches"/> so every texture, tessellation and display list
+	/// cached against the dead device is abandoned.
 	/// </para>
 	/// </summary>
 	public class WebGpuControl : Control
@@ -60,6 +64,15 @@ namespace MatterHackers.Agg.UI
 		private GlCompatContext compat;
 		private WebGpuSceneRenderer sceneRenderer;
 		private IGpuTexture depthTarget;
+
+		/// <summary>Guards against re-entering recovery from a failure raised by recovery itself.</summary>
+		private bool isRecoveringDevice;
+
+		/// <summary>How many times this control has rebuilt its device after a loss. Diagnostics and tests.</summary>
+		private int deviceRecoveryCount;
+
+		/// <summary>A present mode set before the swapchain existed, replayed onto it when it does.</summary>
+		private WGPUPresentMode? requestedPresentMode;
 
 		/// <summary>
 		/// Where a frame goes when the swapchain has none to give. Drawing has to land somewhere legal or
@@ -108,6 +121,29 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		public string LastError => this.device?.DeviceLostMessage ?? this.device?.LastUncapturedError;
 
+		/// <summary>How many times this control has rebuilt its device after a loss; zero on a healthy run.</summary>
+		public int DeviceRecoveryCount => this.deviceRecoveryCount;
+
+		/// <summary>
+		/// How the swapchain paces presents. Defaults to <c>AGG_PRESENT_MODE</c> (Fifo when unset); the
+		/// automation harness sets Immediate, because a vsync wait per frame is wall time a test suite pays
+		/// for nothing.
+		/// </summary>
+		[System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+		public WGPUPresentMode PresentMode
+		{
+			get => this.surface?.PresentMode ?? PresentModeSettings.FromEnvironment();
+
+			set
+			{
+				this.requestedPresentMode = value;
+				if (this.surface != null)
+				{
+					this.surface.PresentMode = value;
+				}
+			}
+		}
+
 		/// <summary>
 		/// Creates the device, the swapchain over this control's HWND, and the compat context. Safe to
 		/// call more than once; a call made before the handle exists is retried when it does.
@@ -134,13 +170,26 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			this.device = new WebGpuRenderDevice(false, WGPUBackendType.D3D12, "WebGpuControl");
-			this.surface = this.device.CreateSurfaceTarget(
-				this.Handle,
-				IntPtr.Zero,
-				(uint)Math.Max(1, this.ClientSize.Width),
-				(uint)Math.Max(1, this.ClientSize.Height),
-				"window");
+			// The surface is described to the constructor rather than made afterwards so that it exists
+			// before the adapter is requested and can be passed as compatibleSurface - without that, wgpu
+			// may pick an adapter that cannot present to this window at all.
+			this.device = new WebGpuRenderDevice(
+				false,
+				WGPUBackendType.D3D12,
+				"WebGpuControl",
+				new WindowSurfaceRequest(
+					this.Handle,
+					IntPtr.Zero,
+					(uint)Math.Max(1, this.ClientSize.Width),
+					(uint)Math.Max(1, this.ClientSize.Height),
+					"window"));
+
+			this.surface = this.device.WindowSurface;
+
+			if (this.requestedPresentMode.HasValue)
+			{
+				this.surface.PresentMode = this.requestedPresentMode.Value;
+			}
 
 			this.compat = new GlCompatContext(this.device);
 			this.Gl = new MatterHackers.RenderGl.OpenGl.GL(this.compat);
@@ -178,12 +227,30 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
+			// wgpu reports device loss through a callback, not by failing the call that hit it, so the top
+			// of a frame is the first place it can be acted on - and the only place where nothing is
+			// half-recorded.
+			if (this.device.IsDeviceLost && !this.TryRecoverDevice())
+			{
+				return;
+			}
+
 			if (this.compat.Passes.ColorTarget != null)
 			{
 				return;
 			}
 
-			var frame = this.surface.AcquireCurrentTexture();
+			IGpuTexture frame;
+			try
+			{
+				frame = this.surface.AcquireCurrentTexture();
+			}
+			catch (Exception) when (this.TryRecoverIfDeviceLost())
+			{
+				// Recovered; this frame is skipped and the next one draws on the new device.
+				return;
+			}
+
 			this.frameIsPresentable = frame != null;
 			this.compat.SetRenderTarget(frame ?? this.EnsureScratchTarget(), this.depthTarget);
 		}
@@ -196,20 +263,97 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			if (this.frameIsPresentable)
+			try
 			{
-				this.compat.Present(this.surface);
+				if (this.frameIsPresentable)
+				{
+					this.compat.Present(this.surface);
+				}
+				else
+				{
+					// Nothing to show, but the recorded commands still have to reach the queue or the next
+					// frame inherits a half-recorded encoder.
+					this.compat.Submit();
+				}
 			}
-			else
+			catch (Exception) when (this.TryRecoverIfDeviceLost())
 			{
-				// Nothing to show, but the recorded commands still have to reach the queue or the next
-				// frame inherits a half-recorded encoder.
-				this.compat.Submit();
+				return;
 			}
 
 			// Forgetting the target is what makes BeginFrame acquire again next time; the texture it
 			// referred to was released by the present.
 			this.compat.SetRenderTarget(null, null);
+		}
+
+		/// <summary>
+		/// Rebuilds the device, swapchain and compat context after a device loss, the way
+		/// <c>D3D11Control.TryRecoverDevice</c> does.
+		/// </summary>
+		/// <remarks>
+		/// Everything cached against the old device - textures, tessellations, display lists, mesh vertex
+		/// buffers - is keyed on the <see cref="Gl"/> facade and invalidated by the generation bump inside
+		/// <see cref="InitializeWebGpu"/>, which is why a new facade is made rather than the old one
+		/// re-pointed.
+		/// </remarks>
+		/// <returns>True if a working device now exists.</returns>
+		public bool TryRecoverDevice()
+		{
+			if (this.isRecoveringDevice || this.IsDisposed || !this.IsHandleCreated)
+			{
+				return false;
+			}
+
+			try
+			{
+				this.isRecoveringDevice = true;
+				this.DisposeDeviceResources();
+				this.InitializeWebGpu();
+				this.deviceRecoveryCount++;
+
+				return this.isInitialized;
+			}
+			catch
+			{
+				return false;
+			}
+			finally
+			{
+				this.isRecoveringDevice = false;
+			}
+		}
+
+		/// <summary>
+		/// An exception filter: recovers and swallows the exception when wgpu has reported the device lost,
+		/// and lets anything else propagate. Used as <c>catch (Exception) when (...)</c> so a genuine bug
+		/// still throws with its original stack.
+		/// </summary>
+		private bool TryRecoverIfDeviceLost()
+		{
+			return this.device != null && this.device.IsDeviceLost && this.TryRecoverDevice();
+		}
+
+		private void DisposeDeviceResources()
+		{
+			this.isInitialized = false;
+			this.frameIsPresentable = false;
+
+			this.sceneRenderer?.Dispose();
+			this.compat?.Dispose();
+			this.depthTarget?.Dispose();
+			this.scratchTarget?.Dispose();
+
+			// The surface belongs to the device now (it was made before the adapter), so the device's
+			// Dispose releases it - releasing it here as well would be a double free.
+			this.device?.Dispose();
+
+			this.sceneRenderer = null;
+			this.compat = null;
+			this.depthTarget = null;
+			this.scratchTarget = null;
+			this.surface = null;
+			this.device = null;
+			this.Gl = null;
 		}
 
 		/// <summary>
@@ -316,22 +460,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (disposing)
 			{
-				this.isInitialized = false;
-
-				this.sceneRenderer?.Dispose();
-				this.compat?.Dispose();
-				this.depthTarget?.Dispose();
-				this.scratchTarget?.Dispose();
-				this.surface?.Dispose();
-				this.device?.Dispose();
-
-				this.sceneRenderer = null;
-				this.compat = null;
-				this.depthTarget = null;
-				this.scratchTarget = null;
-				this.surface = null;
-				this.device = null;
-				this.Gl = null;
+				this.DisposeDeviceResources();
 
 				// Same reason as on creation: everything cached against this device is about to be a
 				// handle to freed memory.

@@ -54,9 +54,12 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 			string goldenName,
 			Action<WebGpuOffscreenCapture> drawScene,
 			double maxPercentDifferingPixels = 0,
-			bool supersample = false)
+			bool supersample = false,
+			int depthPeelingLayers = 6)
 		{
 			using var capture = WebGpuOffscreenCapture.Create();
+
+			capture.DepthPeelingLayers = depthPeelingLayers;
 
 			capture.ClearTo(Golden3DScenes.Background);
 
@@ -148,6 +151,32 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 120));
 		}
 
+		/// <summary>
+		/// The sorted alpha-blend transparency mode - the classic path's other transparency mode, ported in
+		/// Phase 4 because it is a user-facing setting rather than an implementation detail. No peel at all:
+		/// the transparent commands are sorted back to front and blended into the scene colour target, back
+		/// faces then front faces, and the resolve and blit change with them.
+		/// </summary>
+		[Test]
+		public async Task TransparentAlphaBlendMode()
+		{
+			await Check(
+				"Scene.TransparentAlphaBlend",
+				capture => Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 120),
+				depthPeelingLayers: 2);
+		}
+
+		/// <summary>The bed in the alpha-blend mode, which is what reaches that pass's textured shading
+		/// entry point and its analytic grid.</summary>
+		[Test]
+		public async Task BedAlphaBlendMode()
+		{
+			await Check(
+				"Scene.BedAlphaBlend",
+				capture => Golden3DScenes.DrawBedScene(capture.Gl, capture.SceneRenderer),
+				depthPeelingLayers: 2);
+		}
+
 		/// <summary>Opaque geometry in front of transparent geometry - the case that exercises the peel's
 		/// rejection against the opaque depth buffer rather than peeling alone.</summary>
 		[Test]
@@ -179,6 +208,18 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		public async Task TexturedMesh()
 		{
 			await Check("Scene.TexturedMesh", capture => Golden3DScenes.DrawTexturedMeshScene(capture.Gl));
+		}
+
+		/// <summary>
+		/// The gizmo overlay layer, which is the only part of the app frame Phase 4 leg A found diverging.
+		/// </summary>
+		[Test]
+		public async Task GizmoOverlay()
+		{
+			await Check("Scene.GizmoOverlay", capture =>
+				Golden3DScenes.DrawGizmoOverlayScene(
+					capture.Gl,
+					Golden3DScenes.CreateCamera(capture.Width, capture.Height)));
 		}
 
 		/// <summary>Overhang, drawn natively here and by the fallback on the oracle.</summary>
