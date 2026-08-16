@@ -190,6 +190,13 @@ namespace MatterHackers.RenderGl.Scene
 		private SceneRenderContext activeSceneRenderContext;
 		private int drawSlot;
 
+		/// <summary>
+		/// How many mesh vertex buffers this renderer has minted since it was created. The same number the
+		/// <c>Scene.VertexChunkCreate</c> frame counter reports, readable without the profiler switched on:
+		/// a scene that redraws unchanged geometry must not move it, and a test can say so.
+		/// </summary>
+		public int VertexBufferCreateCount { get; private set; }
+
 		/// <summary>Device pixels per logical pixel: 1 normally, <see cref="SupersampleScale"/> while a
 		/// full-frame capture is in progress. Applied to the scene's target sizes and to every width the
 		/// shaders measure in pixels, exactly as the classic path applies its supersampleScale.</summary>
@@ -219,6 +226,37 @@ namespace MatterHackers.RenderGl.Scene
 		private PeelDepthRange peelRangeB;
 		private int targetWidth;
 		private int targetHeight;
+
+		/// <summary>
+		/// The frame targets, kept one set per viewport size rather than one set full stop.
+		/// <para>
+		/// One renderer serves every 3D view in the window, and MatterCAD draws more than one per frame -
+		/// a full size part view and, say, a 300x300 preview. Sizing a single set from "the current
+		/// viewport" made every view rebuild all thirteen textures the previous view had just built: at a
+		/// 3213x1395 main view that is a quarter of a gigabyte of render targets created and destroyed
+		/// twice per frame, and - because the peel bindings sample the scene depth target - it also
+		/// invalidated and re-created every one of the ~800 cached mesh bind groups each frame. Measured
+		/// at 82 ms/frame with it, 8 ms without.
+		/// </para>
+		/// </summary>
+		private readonly Dictionary<(int Width, int Height), SceneFrameTargets> frameTargetSets
+			= new Dictionary<(int Width, int Height), SceneFrameTargets>();
+
+		/// <summary>
+		/// How many sizes' worth of frame targets to keep. Two covers the main view plus one preview,
+		/// which is the shape that hurts; the third is slack for a window mid-resize.
+		/// </summary>
+		private const int MaxFrameTargetSets = 3;
+
+		/// <summary>Monotonic use stamp, so the least recently drawn size is the one evicted.</summary>
+		private int frameTargetUseStamp;
+
+		/// <summary>
+		/// <c>AGG_FRAME_MESH_LOG=1</c>: names every mesh whose GPU buffers are minted, which is how a mesh
+		/// that is rebuilt every frame is found. Separate from the frame profile because it is loud.
+		/// </summary>
+		private static readonly bool LogMeshBufferCreation
+			= Environment.GetEnvironmentVariable("AGG_FRAME_MESH_LOG") == "1";
 
 		private int depthPeelingLayers = 6;
 
@@ -394,7 +432,10 @@ namespace MatterHackers.RenderGl.Scene
 		{
 			try
 			{
-				this.RenderQueuedSceneEffects();
+				using (FrameProfiler.Time("SceneRenderTotal"))
+				{
+					this.RenderQueuedSceneEffects();
+				}
 			}
 			finally
 			{
@@ -657,17 +698,46 @@ namespace MatterHackers.RenderGl.Scene
 
 			// Before the plan is built, because the shadow mask rasterizes the queued scene commands from
 			// above the bed and has nothing to do with the frame's opaque/transparent split.
-			this.RenderBedShadowTexture(this.queuedBedCommand);
+			using (FrameProfiler.Time("Scene.BedShadow"))
+			{
+				this.RenderBedShadowTexture(this.queuedBedCommand);
+			}
 
 			var renderPlan = this.renderPlanner.Build(this.queuedSceneCommands);
 
-			this.RenderOpaqueCommands(renderPlan.OpaqueCommands);
-			this.RenderSceneDepth(renderPlan);
-			this.RenderTransparentLayers(renderPlan.TransparentCommands);
-			this.RenderTransparentOverlays();
-			this.CompositeSceneTargets();
-			this.BlitResolvedSceneToTarget(destination);
-			this.RenderSelectionOutlines(destination);
+			using (FrameProfiler.Time("Scene.Opaque"))
+			{
+				this.RenderOpaqueCommands(renderPlan.OpaqueCommands);
+			}
+
+			using (FrameProfiler.Time("Scene.Depth"))
+			{
+				this.RenderSceneDepth(renderPlan);
+			}
+
+			using (FrameProfiler.Time("Scene.Transparent"))
+			{
+				this.RenderTransparentLayers(renderPlan.TransparentCommands);
+			}
+
+			using (FrameProfiler.Time("Scene.Overlays"))
+			{
+				this.RenderTransparentOverlays();
+			}
+
+			using (FrameProfiler.Time("Scene.Composite"))
+			{
+				this.CompositeSceneTargets();
+				this.BlitResolvedSceneToTarget(destination);
+			}
+
+			using (FrameProfiler.Time("Scene.SelectionOutlines"))
+			{
+				this.RenderSelectionOutlines(destination);
+			}
+
+			FrameProfiler.Count("Scene.DrawSlots", this.drawSlot);
+			FrameProfiler.Count("Scene.UniformPoolSize", this.transformUniforms.Count);
 
 			// Meshes the session has finished with give their buffers back here, one frame boundary after
 			// the collector took them.
@@ -1816,6 +1886,17 @@ namespace MatterHackers.RenderGl.Scene
 			}
 
 			var interleavedData = sceneSubMesh.InterleavedData;
+			if (LogMeshBufferCreation)
+			{
+				// A mesh whose buffers are minted every frame is a mesh something is rebuilding every
+				// frame; the identity and face count are what make it findable. Behind its own switch
+				// because in a scene that does it, this prints a hundred lines a frame.
+				Console.WriteLine(
+					$"[mesh] buffers for mesh#{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(mesh)}"
+					+ $" faces {mesh.Faces.Count} changed {mesh.ChangedCount} type {renderType}"
+					+ $" (frame {FrameProfiler.FrameCount})");
+			}
+
 			var chunks = this.CreateVertexChunks(
 				interleavedData.Length / SceneVertexFloatStride,
 				SceneVertexStride,
@@ -1897,6 +1978,8 @@ namespace MatterHackers.RenderGl.Scene
 				}
 
 				fillChunk(scratch, firstVertex, chunkByteCount);
+				FrameProfiler.Count("Scene.VertexChunkCreate");
+				this.VertexBufferCreateCount++;
 				chunks.Add(this.device.CreateBuffer(BufferUsage.Vertex, (ulong)chunkByteCount, scratch));
 			}
 
@@ -2421,6 +2504,7 @@ namespace MatterHackers.RenderGl.Scene
 		{
 			while (pool.Count <= this.drawSlot)
 			{
+				FrameProfiler.Count("Scene.UniformSlotCreate");
 				pool.Add(this.device.CreateBuffer(BufferUsage.Uniform | BufferUsage.CopyDst, (ulong)sizeInBytes));
 			}
 
@@ -2541,19 +2625,78 @@ namespace MatterHackers.RenderGl.Scene
 				return;
 			}
 
-			this.DisposeTargets();
-			this.targetWidth = width;
-			this.targetHeight = height;
+			var key = (Width: width, Height: height);
+			if (!this.frameTargetSets.TryGetValue(key, out var targets))
+			{
+				FrameProfiler.Count("Scene.TargetSetCreate");
 
-			this.sceneColorTarget = this.CreateSceneTarget(width, height, true, "sceneColor");
-			this.sceneDepthTarget = this.CreateSceneTarget(width, height, false, "sceneDepth");
-			this.selectionTarget = this.CreateSceneTarget(width, height, true, "sceneSelection");
-			this.resolvedSceneTarget = this.CreateColorTarget(width, height, "sceneResolved");
-			this.transparentOverlayTarget = this.CreateColorTarget(width, height, "sceneOverlay");
-			this.frontAccumTarget = this.CreateColorTarget(width, height, "sceneFrontAccum", TransparencyAccumFormat);
-			this.backAccumTarget = this.CreateColorTarget(width, height, "sceneBackAccum", TransparencyAccumFormat);
-			this.peelRangeA = this.CreatePeelRange(width, height, "peelRangeA");
-			this.peelRangeB = this.CreatePeelRange(width, height, "peelRangeB");
+				// Room is made before the new set exists so the peak is one set, not two.
+				this.EvictFrameTargetSets(MaxFrameTargetSets - 1);
+				targets = this.CreateFrameTargetSet(width, height);
+				this.frameTargetSets[key] = targets;
+			}
+
+			targets.LastUsedStamp = ++this.frameTargetUseStamp;
+			this.ActivateFrameTargets(targets);
+		}
+
+		/// <summary>Creates one size's worth of frame targets.</summary>
+		private SceneFrameTargets CreateFrameTargetSet(int width, int height)
+			=> new SceneFrameTargets
+			{
+				Width = width,
+				Height = height,
+				SceneColor = this.CreateSceneTarget(width, height, true, "sceneColor"),
+				SceneDepth = this.CreateSceneTarget(width, height, false, "sceneDepth"),
+				Selection = this.CreateSceneTarget(width, height, true, "sceneSelection"),
+				Resolved = this.CreateColorTarget(width, height, "sceneResolved"),
+				TransparentOverlay = this.CreateColorTarget(width, height, "sceneOverlay"),
+				FrontAccum = this.CreateColorTarget(width, height, "sceneFrontAccum", TransparencyAccumFormat),
+				BackAccum = this.CreateColorTarget(width, height, "sceneBackAccum", TransparencyAccumFormat),
+				PeelRangeA = this.CreatePeelRange(width, height, "peelRangeA"),
+				PeelRangeB = this.CreatePeelRange(width, height, "peelRangeB"),
+			};
+
+		/// <summary>Points the frame's drawing at one size's targets.</summary>
+		private void ActivateFrameTargets(SceneFrameTargets targets)
+		{
+			this.targetWidth = targets.Width;
+			this.targetHeight = targets.Height;
+			this.sceneColorTarget = targets.SceneColor;
+			this.sceneDepthTarget = targets.SceneDepth;
+			this.selectionTarget = targets.Selection;
+			this.resolvedSceneTarget = targets.Resolved;
+			this.transparentOverlayTarget = targets.TransparentOverlay;
+			this.frontAccumTarget = targets.FrontAccum;
+			this.backAccumTarget = targets.BackAccum;
+			this.peelRangeA = targets.PeelRangeA;
+			this.peelRangeB = targets.PeelRangeB;
+		}
+
+		/// <summary>
+		/// Drops least recently used target sets until at most <paramref name="keep"/> remain. A set being
+		/// evicted takes its cached bind groups with it, exactly as a resize does.
+		/// </summary>
+		/// <param name="keep">How many sets may remain.</param>
+		private void EvictFrameTargetSets(int keep)
+		{
+			while (this.frameTargetSets.Count > keep)
+			{
+				var oldest = default((int Width, int Height));
+				int oldestStamp = int.MaxValue;
+				foreach (var entry in this.frameTargetSets)
+				{
+					if (entry.Value.LastUsedStamp < oldestStamp)
+					{
+						oldestStamp = entry.Value.LastUsedStamp;
+						oldest = entry.Key;
+					}
+				}
+
+				var doomed = this.frameTargetSets[oldest];
+				this.frameTargetSets.Remove(oldest);
+				this.DisposeFrameTargetSet(doomed);
+			}
 		}
 
 		private PeelDepthRange CreatePeelRange(int width, int height, string label)
@@ -2620,37 +2763,49 @@ namespace MatterHackers.RenderGl.Scene
 			encoder.SetViewport(x, topDownY, width, height);
 		}
 
-		private void DisposeTargets()
+		/// <summary>Releases one size's targets and every bind group that sampled them.</summary>
+		private void DisposeFrameTargetSet(SceneFrameTargets targets)
 		{
 			// Every one of these is sampled by some pass (the composite reads the scene colour and the two
 			// accumulators, the peel reads its own depth ranges), so the bind groups built over them are
 			// cached against textures that are about to stop existing. A resize would otherwise strand one
 			// whole generation of groups per resize in a cache that never evicts.
 			this.cache.InvalidateBindGroupsUsing(
-				this.sceneColorTarget?.Color,
-				this.sceneColorTarget?.Depth,
-				this.sceneDepthTarget?.Color,
-				this.sceneDepthTarget?.Depth,
-				this.selectionTarget?.Color,
-				this.selectionTarget?.Depth,
-				this.resolvedSceneTarget,
-				this.transparentOverlayTarget,
-				this.frontAccumTarget,
-				this.backAccumTarget,
-				this.peelRangeA?.Near,
-				this.peelRangeA?.Far,
-				this.peelRangeB?.Near,
-				this.peelRangeB?.Far);
+				targets.SceneColor?.Color,
+				targets.SceneColor?.Depth,
+				targets.SceneDepth?.Color,
+				targets.SceneDepth?.Depth,
+				targets.Selection?.Color,
+				targets.Selection?.Depth,
+				targets.Resolved,
+				targets.TransparentOverlay,
+				targets.FrontAccum,
+				targets.BackAccum,
+				targets.PeelRangeA?.Near,
+				targets.PeelRangeA?.Far,
+				targets.PeelRangeB?.Near,
+				targets.PeelRangeB?.Far);
 
-			this.sceneColorTarget?.Dispose();
-			this.sceneDepthTarget?.Dispose();
-			this.selectionTarget?.Dispose();
-			this.resolvedSceneTarget?.Dispose();
-			this.transparentOverlayTarget?.Dispose();
-			this.frontAccumTarget?.Dispose();
-			this.backAccumTarget?.Dispose();
-			this.peelRangeA?.Dispose();
-			this.peelRangeB?.Dispose();
+			targets.SceneColor?.Dispose();
+			targets.SceneDepth?.Dispose();
+			targets.Selection?.Dispose();
+			targets.Resolved?.Dispose();
+			targets.TransparentOverlay?.Dispose();
+			targets.FrontAccum?.Dispose();
+			targets.BackAccum?.Dispose();
+			targets.PeelRangeA?.Dispose();
+			targets.PeelRangeB?.Dispose();
+		}
+
+		/// <summary>Releases every size's frame targets and forgets the active ones.</summary>
+		private void DisposeTargets()
+		{
+			foreach (var targets in this.frameTargetSets.Values)
+			{
+				this.DisposeFrameTargetSet(targets);
+			}
+
+			this.frameTargetSets.Clear();
 
 			this.peelRangeA = null;
 			this.peelRangeB = null;
@@ -2663,6 +2818,25 @@ namespace MatterHackers.RenderGl.Scene
 			this.backAccumTarget = null;
 			this.targetWidth = 0;
 			this.targetHeight = 0;
+		}
+
+		/// <summary>One viewport size's worth of scene render targets.</summary>
+		private sealed class SceneFrameTargets
+		{
+			public int Width;
+			public int Height;
+			public SceneTarget SceneColor;
+			public SceneTarget SceneDepth;
+			public SceneTarget Selection;
+			public IGpuTexture Resolved;
+			public IGpuTexture TransparentOverlay;
+			public IGpuTexture FrontAccum;
+			public IGpuTexture BackAccum;
+			public PeelDepthRange PeelRangeA;
+			public PeelDepthRange PeelRangeB;
+
+			/// <summary>When this set was last drawn into; the smallest stamp is evicted first.</summary>
+			public int LastUsedStamp;
 		}
 
 		private void ClearQueuedSceneEffects()

@@ -245,6 +245,11 @@ namespace MatterHackers.RenderGl
 
         private ImageBuffer EnsureCpuLayer()
         {
+            // Asking for DestImage on a GPU surface costs a full-screen upload and composite every frame
+            // after, so the first asker is worth naming out loud when the profiler is on.
+            MatterHackers.RenderCore.FrameProfiler.FirstTouch("Graphics2DGpu.DestImage");
+            MatterHackers.RenderCore.FrameProfiler.Count("DestImageAsks");
+
             if (this.width <= 0 || this.height <= 0)
             {
                 // A Graphics2DGpu built by the deviceless constructor has no size to allocate against.
@@ -488,6 +493,7 @@ namespace MatterHackers.RenderGl
 
             if (!caches.TriangleEdgeInfos.TryGetValue(longHash, out var triangleEdgeInfo))
             {
+                MatterHackers.RenderCore.FrameProfiler.Count("TesselateMiss");
                 triangleEdgeInfo = GetAvailableTriangleEdgeInfo();
                 caches.TriangleEdgeInfos.Add(longHash, triangleEdgeInfo);
 
@@ -561,6 +567,8 @@ namespace MatterHackers.RenderGl
 
                         if (!caches.DisplayListCache.TryGetValue(cacheKey, out displayListId))
                         {
+                            MatterHackers.RenderCore.FrameProfiler.Count("DisplayListMiss");
+
                             // Create a new display list
                             displayListId = gl.GenLists(1);
                             gl.NewList(displayListId, GL.GL_COMPILE);
@@ -575,7 +583,7 @@ namespace MatterHackers.RenderGl
                         }
                         else
                         {
-                            var a = 0;
+                            MatterHackers.RenderCore.FrameProfiler.Count("DisplayListHit");
                         }
 
                         // Call the cached display list

@@ -154,8 +154,13 @@ namespace MatterHackers.RenderGl.Compat
 			this.clearColorPending = false;
 			this.clearDepthPending = false;
 
-			this.encoder = this.device.BeginRenderPass(
-				new RenderPassDescriptor(new[] { color }, depth, "GlCompat"));
+			FrameProfiler.Count("PassOpen");
+			using (FrameProfiler.Time("PassOpen"))
+			{
+				this.encoder = this.device.BeginRenderPass(
+					new RenderPassDescriptor(new[] { color }, depth, "GlCompat"));
+			}
+
 			this.PassOpenCount++;
 
 			this.applyDynamicState?.Invoke(this.encoder);
@@ -176,7 +181,10 @@ namespace MatterHackers.RenderGl.Compat
 
 			var ending = this.encoder;
 			this.encoder = null;
-			ending.Dispose();
+			using (FrameProfiler.Time("PassEnd"))
+			{
+				ending.Dispose();
+			}
 		}
 
 		/// <summary>Ends any open pass and forgets the targets.</summary>

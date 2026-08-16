@@ -164,8 +164,11 @@ namespace MatterHackers.RenderGl.Compat
 			var key = (textured, flatShading);
 			if (entry.Baked.TryGetValue(key, out var buffer))
 			{
+				FrameProfiler.Count("BakeReplay");
 				return buffer;
 			}
+
+			FrameProfiler.Count("BakeNew");
 
 			byte[] bytes = textured
 				? GlImmediateModeBuffer.BuildTexturedVertices(entry.Mode, entry.Positions, entry.Colors, entry.TexCoords, flatShading)

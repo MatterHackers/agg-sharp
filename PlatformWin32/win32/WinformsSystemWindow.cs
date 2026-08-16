@@ -477,6 +477,7 @@ namespace MatterHackers.Agg.UI
 
 		private void PaintFrame(PaintEventArgs paintEventArgs)
 		{
+			MatterHackers.RenderCore.FrameProfiler.BeginFrame();
 
 			base.OnPaint(paintEventArgs);
 
@@ -493,21 +494,28 @@ namespace MatterHackers.Agg.UI
 			{
 				drawCount++;
 
-				var graphics2D = this.NewGraphics2D();
-
-				if (!SingleWindowMode)
+				Graphics2D graphics2D;
+				using (MatterHackers.RenderCore.FrameProfiler.Time("NewGraphics2D+Acquire"))
 				{
-					// We must call on draw background as this is effectively our child and that is the way it is done in GuiWidget.
-					// Parents call child OnDrawBackground before they call OnDraw
-					AggSystemWindow.OnDrawBackground(graphics2D);
-					AggSystemWindow.OnDraw(graphics2D);
+					graphics2D = this.NewGraphics2D();
 				}
-				else
+
+				using (MatterHackers.RenderCore.FrameProfiler.Time("WidgetTreeDraw"))
 				{
-					for (var i = 0; i < this.WindowProvider.OpenWindows.Count; i++)
+					if (!SingleWindowMode)
 					{
-						graphics2D.FillRectangle(this.WindowProvider.OpenWindows[0].LocalBounds, new Color(Color.Black, 160));
-						this.WindowProvider.OpenWindows[i].OnDraw(graphics2D);
+						// We must call on draw background as this is effectively our child and that is the way it is done in GuiWidget.
+						// Parents call child OnDrawBackground before they call OnDraw
+						AggSystemWindow.OnDrawBackground(graphics2D);
+						AggSystemWindow.OnDraw(graphics2D);
+					}
+					else
+					{
+						for (var i = 0; i < this.WindowProvider.OpenWindows.Count; i++)
+						{
+							graphics2D.FillRectangle(this.WindowProvider.OpenWindows[0].LocalBounds, new Color(Color.Black, 160));
+							this.WindowProvider.OpenWindows[i].OnDraw(graphics2D);
+						}
 					}
 				}
 
@@ -518,15 +526,26 @@ namespace MatterHackers.Agg.UI
 				// because DestImage *is* the frame.
 				if (graphics2D is Graphics2DGpu gpuGraphics && gpuGraphics.HasCpuLayer)
 				{
-					gpuGraphics.CompositeCpuLayer();
+					// A composite every frame means some widget is rasterizing on the CPU into DestImage;
+					// the stack of whoever first asked is printed by Graphics2DGpu.
+					MatterHackers.RenderCore.FrameProfiler.Count("CompositeCpuLayer");
+					using (MatterHackers.RenderCore.FrameProfiler.Time("CompositeCpuLayer"))
+					{
+						gpuGraphics.CompositeCpuLayer();
+					}
 				}
 
 				// Before the present, because a GPU window can only read a frame back while the frame's
 				// texture is still the one being drawn into.
 				CheckSmokeRunProgress();
 
-				CopyBackBufferToScreen(paintEventArgs.Graphics);
+				using (MatterHackers.RenderCore.FrameProfiler.Time("Present"))
+				{
+					CopyBackBufferToScreen(paintEventArgs.Graphics);
+				}
 			}
+
+			MatterHackers.RenderCore.FrameProfiler.EndFrame();
 
 			// A demo that has nothing to animate would paint once and wait forever for input that a smoke
 			// run never sends, so the run pumps its own frames.

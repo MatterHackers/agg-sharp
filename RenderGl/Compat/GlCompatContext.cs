@@ -182,7 +182,12 @@ namespace MatterHackers.RenderGl.Compat
 		public void Submit()
 		{
 			this.passes.FlushPass();
-			this.device.Submit();
+			FrameProfiler.Count("Submit");
+			using (FrameProfiler.Time("Submit"))
+			{
+				this.device.Submit();
+			}
+
 			this.submitter.ResetPerDrawPools();
 		}
 
@@ -485,7 +490,12 @@ namespace MatterHackers.RenderGl.Compat
 			// against the draws around it, so a glyph atlas updated mid-frame could appear in draws that
 			// were recorded before the update. End the pass; the next draw re-opens it with LoadOp.Load.
 			this.passes.FlushPass();
-			this.textures.UploadImage(this.state.BoundTexture(this.state.ActiveTextureUnit), level, width, height, format, pixels);
+			FrameProfiler.Count("TexImage2D");
+			FrameProfiler.Count("TexImage2DBytes", pixels?.Length ?? 0);
+			using (FrameProfiler.Time("TexImage2D"))
+			{
+				this.textures.UploadImage(this.state.BoundTexture(this.state.ActiveTextureUnit), level, width, height, format, pixels);
+			}
 		}
 
 		/// <inheritdoc/>

@@ -94,39 +94,56 @@ namespace MatterHackers.RenderGl.Compat
 		/// <param name="textured">Whether the draw samples the bound texture.</param>
 		public void Draw(IGpuBuffer vertexBuffer, int vertexCount, BeginMode mode, bool textured)
 		{
-			var descriptor = this.pipelines.BuildPipelineDescriptor(
-				this.state,
-				this.passes.ColorFormat,
-				this.passes.DepthFormat,
-				GlStateShadow.MapTopology(mode),
-				textured,
-				false);
+			FrameProfiler.Count("Draws");
 
-			var pipeline = this.pipelines.GetPipeline(descriptor);
-
-			var uniformBuffer = this.AcquireUniformBuffer();
-			this.device.WriteBuffer(uniformBuffer, 0, this.BuildUniformBlock());
-
-			var entries = new List<BindGroupEntry>
+			IRenderPipeline pipeline;
+			using (FrameProfiler.Time("Draw.Pipeline"))
 			{
-				BindGroupEntry.ForBuffer(GlShaderKeys.UniformBinding, uniformBuffer, 0, GlUniformBlock.SizeInBytes),
-			};
+				var descriptor = this.pipelines.BuildPipelineDescriptor(
+					this.state,
+					this.passes.ColorFormat,
+					this.passes.DepthFormat,
+					GlStateShadow.MapTopology(mode),
+					textured,
+					false);
 
-			if (textured)
-			{
-				var entry = this.textures.Find(this.state.BoundTexture(0));
-				entries.Add(BindGroupEntry.ForTexture(GlShaderKeys.TextureBinding, entry.Texture));
-				entries.Add(BindGroupEntry.ForSampler(GlShaderKeys.SamplerBinding, this.textures.GetSampler(entry)));
+				pipeline = this.pipelines.GetPipeline(descriptor);
 			}
 
-			var bindGroup = this.pipelines.GetBindGroup(
-				new BindGroupDescriptor(pipeline, GlShaderKeys.BindGroupIndex, entries.ToArray()));
+			IGpuBuffer uniformBuffer;
+			using (FrameProfiler.Time("Draw.Uniform"))
+			{
+				uniformBuffer = this.AcquireUniformBuffer();
+				this.device.WriteBuffer(uniformBuffer, 0, this.BuildUniformBlock());
+			}
 
-			var encoder = this.passes.EnsurePassOpen();
-			encoder.SetPipeline(pipeline);
-			encoder.SetBindGroup((int)GlShaderKeys.BindGroupIndex, bindGroup);
-			encoder.SetVertexBuffer(0, vertexBuffer);
-			encoder.Draw(vertexCount);
+			IBindGroup bindGroup;
+			using (FrameProfiler.Time("Draw.BindGroup"))
+			{
+				var entries = new List<BindGroupEntry>
+				{
+					BindGroupEntry.ForBuffer(GlShaderKeys.UniformBinding, uniformBuffer, 0, GlUniformBlock.SizeInBytes),
+				};
+
+				if (textured)
+				{
+					var entry = this.textures.Find(this.state.BoundTexture(0));
+					entries.Add(BindGroupEntry.ForTexture(GlShaderKeys.TextureBinding, entry.Texture));
+					entries.Add(BindGroupEntry.ForSampler(GlShaderKeys.SamplerBinding, this.textures.GetSampler(entry)));
+				}
+
+				bindGroup = this.pipelines.GetBindGroup(
+					new BindGroupDescriptor(pipeline, GlShaderKeys.BindGroupIndex, entries.ToArray()));
+			}
+
+			using (FrameProfiler.Time("Draw.Encode"))
+			{
+				var encoder = this.passes.EnsurePassOpen();
+				encoder.SetPipeline(pipeline);
+				encoder.SetBindGroup((int)GlShaderKeys.BindGroupIndex, bindGroup);
+				encoder.SetVertexBuffer(0, vertexBuffer);
+				encoder.Draw(vertexCount);
+			}
 		}
 
 		/// <summary>
@@ -224,6 +241,7 @@ namespace MatterHackers.RenderGl.Compat
 				return this.uniformPool[this.uniformPoolInUse++];
 			}
 
+			FrameProfiler.Count("UniformBufferCreate");
 			var buffer = this.device.CreateBuffer(
 				BufferUsage.Uniform | BufferUsage.CopyDst,
 				GlUniformBlock.SizeInBytes);
@@ -260,7 +278,10 @@ namespace MatterHackers.RenderGl.Compat
 		}
 
 		private IGpuBuffer CreateVertexBuffer(int sizeInBytes)
-			=> this.device.CreateBuffer(BufferUsage.Vertex | BufferUsage.CopyDst, RoundUpCapacity(sizeInBytes));
+		{
+			FrameProfiler.Count("VertexBufferCreate");
+			return this.device.CreateBuffer(BufferUsage.Vertex | BufferUsage.CopyDst, RoundUpCapacity(sizeInBytes));
+		}
 
 		private static ulong RoundUpCapacity(int sizeInBytes)
 		{

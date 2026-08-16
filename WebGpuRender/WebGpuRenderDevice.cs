@@ -271,6 +271,7 @@ namespace MatterHackers.WebGpuRender
 		/// <inheritdoc/>
 		public IGpuBuffer CreateBuffer(BufferUsage usage, ulong sizeInBytes, ReadOnlySpan<byte> initialData = default)
 		{
+			FrameProfiler.Count("dev.CreateBuffer");
 			this.ThrowIfDisposed();
 			if (initialData.Length > (int)Math.Min(sizeInBytes, int.MaxValue))
 			{
@@ -322,9 +323,31 @@ namespace MatterHackers.WebGpuRender
 			return new WebGpuBuffer(handle, usage, size, "buffer");
 		}
 
+		/// <summary>
+		/// Buckets a resource label for the frame profiler. Trailing digits are dropped because the
+		/// compat layer names its textures after GL texture ids, and one counter per id says nothing.
+		/// </summary>
+		private static string ProfileLabel(string label)
+		{
+			if (string.IsNullOrEmpty(label))
+			{
+				return "unlabeled";
+			}
+
+			int end = label.Length;
+			while (end > 0 && char.IsDigit(label[end - 1]))
+			{
+				end--;
+			}
+
+			return end == 0 ? label : label.Substring(0, end);
+		}
+
 		/// <inheritdoc/>
 		public IGpuTexture CreateTexture(in TextureDescriptor descriptor)
 		{
+			FrameProfiler.Count("dev.CreateTexture");
+			FrameProfiler.Count("tex:" + ProfileLabel(descriptor.Label));
 			this.ThrowIfDisposed();
 			using (var labelText = new Utf8Buffer(descriptor.Label))
 			{
@@ -472,6 +495,7 @@ namespace MatterHackers.WebGpuRender
 		/// <inheritdoc/>
 		public IBindGroup CreateBindGroup(in BindGroupDescriptor descriptor)
 		{
+			FrameProfiler.Count("dev.CreateBindGroup");
 			this.ThrowIfDisposed();
 			if (!(descriptor.Pipeline is WebGpuRenderPipeline pipeline))
 			{

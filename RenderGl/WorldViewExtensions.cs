@@ -140,6 +140,12 @@ namespace MatterHackers.RenderGl
 				double startScale = world.GetWorldUnitsPerScreenPixelAtPosition(start);
 				double endScale = world.GetWorldUnitsPerScreenPixelAtPosition(end);
 
+				// The mesh cache key, taken from the clipped endpoints before the arrow heads move them:
+				// every number below is a function of these, and the arrow adjustment is not injective for
+				// a line shorter than its own arrow heads.
+				var lineKeyStart = start;
+				var lineKeyEnd = end;
+
 				Vector3 delta = start - end;
 				var normal = delta.GetNormal();
 				var arrowWidth = 3 * width;
@@ -168,6 +174,35 @@ namespace MatterHackers.RenderGl
 
 				var startWidth = startScale * width;
 				var endWidth = endScale * width;
+
+				// When the D3D scene pipeline is active, route a mesh with baked world-space vertices
+				// through the same pipeline as other control geometry (opaque or overlay depending on
+				// current depth test state).
+				if (gl?.GpuContext is INativeSceneRenderer nativeSceneRenderer
+					&& nativeSceneRenderer.IsSceneRenderingActive)
+				{
+					// That pipeline retains a GPU vertex buffer per mesh *identity*, so a mesh minted here
+					// every frame costs a buffer creation - and the gizmos draw a hundred lines a frame.
+					// The geometry is a pure function of the key's fields, so a line that has not moved
+					// under a camera that has not moved gets the mesh it had last frame, and the retained
+					// buffer with it.
+					var key = new LineMeshKey(lineKeyStart, lineKeyEnd, startScale, endScale, width, startArrow, endArrow);
+					if (!TryGetCachedLineMesh(key, out var lineMesh))
+					{
+						lineMesh = CreateTransformedLineMesh(lineTransform, startWidth, endWidth);
+
+						if (startArrow || endArrow)
+						{
+							AppendArrowHeads(lineMesh, start, end, startScale, normal, arrowWidth, arrowLength, startArrow, endArrow);
+						}
+
+						CacheLineMesh(key, lineMesh);
+					}
+
+					RenderHelper.Render(gl, lineMesh, color, Matrix4X4.Identity, RenderTypes.Shaded, forceCullBackFaces: false);
+					return;
+				}
+
 				for (int i = 0; i < unscaledLineMesh.Vertices.Count; i++)
 				{
 					var vertexPosition = unscaledLineMesh.Vertices[i];
@@ -179,23 +214,6 @@ namespace MatterHackers.RenderGl
 					{
 						scaledLineMesh.Vertices[i] = new Vector3Float(vertexPosition.X, vertexPosition.Y * endWidth, vertexPosition.Z * endWidth);
 					}
-				}
-
-				// When the D3D scene pipeline is active, create a fresh mesh with baked
-				// world-space vertices and route it through the same pipeline as other
-				// control geometry (opaque or overlay depending on current depth test state).
-				if (gl?.GpuContext is INativeSceneRenderer nativeSceneRenderer
-					&& nativeSceneRenderer.IsSceneRenderingActive)
-				{
-					var lineMesh = CreateTransformedLineMesh(lineTransform);
-
-					if (startArrow || endArrow)
-					{
-						AppendArrowHeads(lineMesh, start, end, startScale, normal, arrowWidth, arrowLength, startArrow, endArrow);
-					}
-
-					RenderHelper.Render(gl, lineMesh, color, Matrix4X4.Identity, RenderTypes.Shaded, forceCullBackFaces: false);
-					return;
 				}
 
 				// GL compat fallback: render the line mesh directly
@@ -236,25 +254,115 @@ namespace MatterHackers.RenderGl
 		}
 
 		/// <summary>
-		/// Creates a fresh mesh from scaledLineMesh with vertices pre-transformed by lineTransform.
-		/// Each line needs its own mesh because scaledLineMesh is shared and modified per-call.
+		/// Creates a mesh for one 3D line: the unit line cube, tapered to the line's start and end widths
+		/// and baked into world space by <paramref name="lineTransform"/>.
 		/// </summary>
-		private static Mesh CreateTransformedLineMesh(Matrix4X4 lineTransform)
+		/// <remarks>
+		/// The taper is why this cannot be one shared mesh drawn with a per-line transform. A line is a
+		/// constant number of screen pixels wide, so under a perspective camera its near end is thinner in
+		/// world units than its far end, and no affine transform turns a box into a tapered box. The mesh
+		/// cache stands in for that sharing instead.
+		/// </remarks>
+		private static Mesh CreateTransformedLineMesh(Matrix4X4 lineTransform, double startWidth, double endWidth)
 		{
 			var mesh = new Mesh();
-			for (int i = 0; i < scaledLineMesh.Vertices.Count; i++)
+			for (int i = 0; i < unscaledLineMesh.Vertices.Count; i++)
 			{
-				var pos = Vector3Ex.Transform(new Vector3(scaledLineMesh.Vertices[i]), lineTransform);
+				var vertexPosition = unscaledLineMesh.Vertices[i];
+				var halfWidth = vertexPosition.X < 0 ? startWidth : endWidth;
+				var scaled = new Vector3Float(vertexPosition.X, vertexPosition.Y * halfWidth, vertexPosition.Z * halfWidth);
+				var pos = Vector3Ex.Transform(new Vector3(scaled), lineTransform);
 				mesh.Vertices.Add(new Vector3Float(pos));
 			}
 
-			for (int faceIndex = 0; faceIndex < scaledLineMesh.Faces.Count; faceIndex++)
+			for (int faceIndex = 0; faceIndex < unscaledLineMesh.Faces.Count; faceIndex++)
 			{
-				mesh.Faces.Add(scaledLineMesh.Faces[faceIndex]);
+				mesh.Faces.Add(unscaledLineMesh.Faces[faceIndex]);
 			}
 
 			mesh.CalculateNormals();
 			return mesh;
+		}
+
+		/// <summary>
+		/// Everything the geometry of a single 3D line is built from. Two lines with equal keys have
+		/// bit-identical meshes, which is what makes the cache safe: a hit returns geometry, not an
+		/// approximation of it.
+		/// </summary>
+		private readonly struct LineMeshKey : IEquatable<LineMeshKey>
+		{
+			private readonly Vector3 start;
+			private readonly Vector3 end;
+			private readonly double startScale;
+			private readonly double endScale;
+			private readonly double width;
+			private readonly bool startArrow;
+			private readonly bool endArrow;
+
+			public LineMeshKey(Vector3 start, Vector3 end, double startScale, double endScale, double width, bool startArrow, bool endArrow)
+			{
+				this.start = start;
+				this.end = end;
+				this.startScale = startScale;
+				this.endScale = endScale;
+				this.width = width;
+				this.startArrow = startArrow;
+				this.endArrow = endArrow;
+			}
+
+			public bool Equals(LineMeshKey other)
+			{
+				return this.start == other.start
+					&& this.end == other.end
+					&& this.startScale == other.startScale
+					&& this.endScale == other.endScale
+					&& this.width == other.width
+					&& this.startArrow == other.startArrow
+					&& this.endArrow == other.endArrow;
+			}
+
+			public override bool Equals(object obj) => obj is LineMeshKey other && this.Equals(other);
+
+			public override int GetHashCode()
+			{
+				return HashCode.Combine(this.start, this.end, this.startScale, this.endScale, this.width, this.startArrow, this.endArrow);
+			}
+		}
+
+		// Per thread, not shared: MatterCAD renders thumbnails on worker threads that own their own GL
+		// context, and a mesh handed to two contexts would be built into two plugin generations of the same
+		// cache entry. A thread's own lines are all this ever has to answer, and it needs no lock to do it.
+		[ThreadStatic]
+		private static Dictionary<LineMeshKey, Mesh> cachedLineMeshes;
+
+		/// <summary>
+		/// How many line meshes one thread keeps. Enough for every line of a busy gizmo frame several times
+		/// over; past it the cache is dropped whole, which is what an orbiting camera - where every line is
+		/// a miss anyway - deserves.
+		/// </summary>
+		private const int MaxCachedLineMeshes = 1024;
+
+		private static bool TryGetCachedLineMesh(LineMeshKey key, out Mesh mesh)
+		{
+			var cache = cachedLineMeshes;
+			if (cache == null)
+			{
+				mesh = null;
+				return false;
+			}
+
+			return cache.TryGetValue(key, out mesh);
+		}
+
+		private static void CacheLineMesh(LineMeshKey key, Mesh mesh)
+		{
+			var cache = cachedLineMeshes ??= new Dictionary<LineMeshKey, Mesh>();
+			if (cache.Count >= MaxCachedLineMeshes)
+			{
+				cache.Clear();
+			}
+
+			cache[key] = mesh;
 		}
 
 		/// <summary>

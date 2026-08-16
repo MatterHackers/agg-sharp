@@ -85,6 +85,7 @@ namespace MatterHackers.RenderGl.Compat
 		{
 			if (!this.pipelines.TryGetValue(descriptor, out var pipeline))
 			{
+				FrameProfiler.Count("PipelineMiss");
 				pipeline = this.device.CreateRenderPipeline(descriptor);
 				this.pipelines[descriptor] = pipeline;
 			}
@@ -98,11 +99,49 @@ namespace MatterHackers.RenderGl.Compat
 		{
 			if (!this.bindGroups.TryGetValue(descriptor, out var bindGroup))
 			{
+				FrameProfiler.Count("BindGroupMiss");
+				FrameProfiler.Count("bgMiss:" + (string.IsNullOrEmpty(descriptor.Label) ? "unlabeled" : descriptor.Label));
+				DumpMiss(descriptor);
 				bindGroup = this.device.CreateBindGroup(descriptor);
 				this.bindGroups[descriptor] = bindGroup;
 			}
 
 			return bindGroup;
+		}
+
+		// AGG_FRAME_PROFILE_BG=1 prints the resource identities behind the first few bind group misses of
+		// each frame. A cache that misses in the steady state is missing on one entry whose object identity
+		// changed, and only identities can say which - the labels are all the same.
+		// The value is the frame to start dumping at, so the first frames - where every miss is honest -
+		// and any slow-loading scene are past.
+		private static readonly int DumpFromFrame
+			= int.TryParse(Environment.GetEnvironmentVariable("AGG_FRAME_PROFILE_BG"), out var frame) ? frame : -1;
+
+		private static readonly bool DumpBindGroupMisses = DumpFromFrame >= 0;
+
+		private static int dumpedMisses;
+
+		private static void DumpMiss(in BindGroupDescriptor descriptor)
+		{
+			// Only after the caches have settled: every miss in the first frames is honest.
+			if (!DumpBindGroupMisses
+				|| dumpedMisses >= 24
+				|| FrameProfiler.FrameCount < DumpFromFrame
+				|| !string.Equals(descriptor.Label, Environment.GetEnvironmentVariable("AGG_FRAME_PROFILE_BG_LABEL") ?? descriptor.Label, StringComparison.Ordinal))
+			{
+				return;
+			}
+
+			dumpedMisses++;
+			var text = new System.Text.StringBuilder();
+			text.Append($"[bg] miss '{descriptor.Label}' pipeline#{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(descriptor.Pipeline)}");
+			foreach (var entry in descriptor.Entries)
+			{
+				object resource = (object)entry.Buffer ?? (object)entry.Texture ?? entry.Sampler;
+				text.Append($" [{entry.Binding}]#{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(resource)}");
+			}
+
+			Console.WriteLine(text.ToString());
 		}
 
 		/// <summary>

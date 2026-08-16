@@ -257,7 +257,10 @@ namespace MatterHackers.Agg.UI
 			IGpuTexture frame;
 			try
 			{
-				frame = this.surface.AcquireCurrentTexture();
+				using (FrameProfiler.Time("AcquireTexture"))
+				{
+					frame = this.surface.AcquireCurrentTexture();
+				}
 			}
 			catch (Exception) when (this.TryRecoverIfDeviceLost())
 			{
@@ -281,7 +284,10 @@ namespace MatterHackers.Agg.UI
 			{
 				if (this.frameIsPresentable)
 				{
-					this.compat.Present(this.surface);
+					using (FrameProfiler.Time("PresentSwapchain"))
+					{
+						this.compat.Present(this.surface);
+					}
 				}
 				else
 				{
