@@ -153,6 +153,45 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(container.TopLeftOffset.Y == 0).IsTrue();
 		}
 
+		/// <summary>
+		/// A <see cref="ListBox"/> redirects <see cref="GuiWidget.RemoveChild(GuiWidget)"/> into the flow
+		/// layout that holds its items, so for a long time it silently ignored a request to remove one of
+		/// its own structural children (the scroll area, the scroll bars). That made it impossible to close:
+		/// <see cref="GuiWidget.Close"/> asks the parent to remove the child and then nulls the child's
+		/// Parent, and the null-out throws when the child is still in Children - which took down the whole
+		/// window teardown, not just the list box.
+		/// </summary>
+		[Test]
+		public async Task ClosingAListBoxDoesNotThrow()
+		{
+			var container = new GuiWidget(300, 300);
+			var listBox = new ListBox(new RectangleDouble(0, 0, 200, 300));
+			container.AddChild(listBox);
+			listBox.AddChild(new ListBoxTextItem("hand.stl", "c:\\development\\hand.stl"));
+
+			container.Close();
+
+			await Assert.That(listBox.HasBeenClosed).IsTrue();
+			await Assert.That(listBox.Children.Count).IsEqualTo(0);
+		}
+
+		/// <summary>
+		/// The removal redirect must still fall through for widgets the list box owns itself, otherwise the
+		/// request is swallowed and the caller is left holding a widget that reports a parent it is no
+		/// longer supposed to belong to.
+		/// </summary>
+		[Test]
+		public async Task RemoveChildOfOwnStructureFallsThroughToBase()
+		{
+			var listBox = new ListBox(new RectangleDouble(0, 0, 200, 300));
+			GuiWidget scrollArea = listBox.ScrollArea;
+
+			listBox.RemoveChild(scrollArea);
+
+			await Assert.That(listBox.Children.Contains(scrollArea)).IsFalse();
+			await Assert.That(scrollArea.Parent).IsNull();
+		}
+
 		private static void AddContents(GuiWidget widgetToAddItemsTo)
 		{
 			string[] listItems = new string[] { "Item1", "Item2", "Item3", "Item4" };

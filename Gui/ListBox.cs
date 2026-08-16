@@ -210,14 +210,35 @@ namespace MatterHackers.Agg.UI
 			return topToBottomItemList.RemoveChild(index);
 		}
 
+		/// <summary>
+		/// Removes an item that was added through <see cref="AddChild"/>, unwrapping the holder widget every
+		/// item is added inside of, and falls through to the base implementation for anything that is not a
+		/// list item.
+		/// </summary>
+		/// <remarks>
+		/// The fall-through matters for the widget's own structure - the scroll area and the scroll bars.
+		/// Without it the redirect swallowed those removals entirely, and <see cref="GuiWidget.Close"/>
+		/// (which asks the parent to remove the child and then nulls the child's Parent) threw
+		/// "Take this out of the parent before setting this to null." on the way out. That threw from inside
+		/// the recursive CloseChildren walk, so it aborted the teardown of the whole window, not just of
+		/// this list box.
+		/// </remarks>
 		public override void RemoveChild(GuiWidget childToRemove)
 		{
+			bool removedListItem = false;
+
 			foreach (GuiWidget itemHolder in topToBottomItemList.Children.Reverse())
 			{
 				if (itemHolder == childToRemove || itemHolder.Children.FirstOrDefault() == childToRemove)
 				{
 					topToBottomItemList.RemoveChild(itemHolder);
+					removedListItem = true;
 				}
+			}
+
+			if (!removedListItem)
+			{
+				base.RemoveChild(childToRemove);
 			}
 		}
 

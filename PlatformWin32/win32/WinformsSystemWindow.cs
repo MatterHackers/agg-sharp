@@ -337,7 +337,11 @@ namespace MatterHackers.Agg.UI
 
 		private void InvokePendingOnIdleActions(object sender, ElapsedEventArgs e)
 		{
-			if (this.IsDisposed)
+			// Disposing matters as much as IsDisposed: IsDisposed only goes true once Dispose has run to
+			// completion, but Control.Invoke already throws ObjectDisposedException the moment Dispose
+			// starts - and the handle still reports as created right through that window. A tick landing
+			// there is what printed "Cannot access a disposed object" on every clean shutdown.
+			if (this.IsDisposed || this.Disposing)
 			{
 				// This window can no longer marshal anything. Hand the pump to a window that still can
 				// rather than silently swallowing every queued action from here on.
@@ -364,6 +368,12 @@ namespace MatterHackers.Agg.UI
 					processingOnIdle = true;
 				}
 
+				// A failure to hand the work to the UI thread and a failure inside that work surface here as
+				// the same exception type, and only the second is a real bug. This flag separates them: it is
+				// set on the UI thread before any queued action runs, so an exception seen with it still
+				// clear can only have come from Invoke itself never getting the work across.
+				bool reachedUiThread = false;
+
 				try
 				{
 					if (!IsHandleCreated)
@@ -387,22 +397,34 @@ namespace MatterHackers.Agg.UI
 
 					if (InvokeRequired)
 					{
-						Invoke(new Action(UiThread.InvokePendingActions));
+						Invoke(new Action(() =>
+						{
+							reachedUiThread = true;
+							UiThread.InvokePendingActions();
+						}));
 					}
 					else
 					{
+						reachedUiThread = true;
 						UiThread.InvokePendingActions();
 					}
 				}
-				catch (ObjectDisposedException) when (IsDisposed || !IsHandleCreated)
+				catch (ObjectDisposedException) when (!reachedUiThread)
 				{
-					// The window was disposed between the checks above and the marshaled call - benign teardown race.
-					// The filter matters: a marshaled action on a live window can also throw ObjectDisposedException
-					// and that is a real failure, so it must fall through to the reporting catch below.
+					// Invoke could not get the work across, which at this point only ever means teardown.
+					// Two shapes of it, both benign and both reported as ObjectDisposedException:
+					//   - the window is disposing or disposed (IsDisposed lags Disposing, and the handle keeps
+					//     answering as created right through Dispose, so neither is a reliable test on its own)
+					//   - the thread's WinForms message loop has already exited, which Invoke reports as a
+					//     disposed object naming the control even though the control itself is untouched
+					//     (IsDisposed, Disposing and IsHandleCreated all say it is healthy). This is what the
+					//     GPU windows hit: their close tears the loop down before the form.
+					// The queued actions stay queued either way; nothing is lost that a live window would run.
 				}
-				catch (InvalidOperationException) when (!IsHandleCreated)
+				catch (InvalidOperationException) when (!reachedUiThread)
 				{
-					// The handle was destroyed between the checks above and the marshaled call - benign teardown race
+					// The handle was destroyed between the checks above and the marshaled call - Invoke has no
+					// thread to marshal to. Benign teardown race, same as above.
 				}
 				catch (Exception ex)
 				{
@@ -592,22 +614,29 @@ namespace MatterHackers.Agg.UI
 				// The close raced its own teardown, or a demo threw on the way out. Worth saying out loud
 				// - it is the difference between "closed cleanly" and "the watchdog had to shoot it" - but
 				// not worth failing the run over, since the frames all rendered.
-				Console.Error.WriteLine($"AGG_SMOKE: close threw {ex.GetType().Name}: {ex.Message}");
+				Console.Error.WriteLine($"AGG_SMOKE: close threw {ex.GetType().Name}: {ex}");
 			}
 		}
 
 		/// <summary>
-		/// Guarantees a smoke run terminates. Closing the window ends the message loop, but a demo that
-		/// left a foreground thread running (GUITester does) would keep the process alive forever, and an
-		/// unattended run that never returns is indistinguishable from a hang in the renderer.
+		/// Guarantees a smoke run terminates. Closing the window ends the message loop, but a teardown that
+		/// throws part way (leaving the platform window up) or a demo that left a foreground thread running
+		/// would keep the process alive forever, and an unattended run that never returns is
+		/// indistinguishable from a hang in the renderer.
 		/// </summary>
+		/// <remarks>
+		/// Firing is itself a failure and is reported as one. It used to exit with whatever code the run had
+		/// earned, so a shutdown bug that only the watchdog caught scrolled past as a green run - which is
+		/// exactly how a teardown exception in ListBox.RemoveChild went unnoticed.
+		/// </remarks>
 		private static void StartSmokeExitWatchdog()
 		{
 			var watchdog = new System.Threading.Timer(
 				_ =>
 				{
 					Console.Error.WriteLine("AGG_SMOKE: the process did not exit on its own after closing; forcing exit.");
-					Environment.Exit(Environment.ExitCode);
+					Console.WriteLine("AGG_SMOKE FAILED: the exit watchdog had to force the process down.");
+					Environment.Exit(Environment.ExitCode != 0 ? Environment.ExitCode : 1);
 				},
 				null,
 				TimeSpan.FromSeconds(5),
