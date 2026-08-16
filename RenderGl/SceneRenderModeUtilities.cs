@@ -1,5 +1,5 @@
-﻿/*
-Copyright (c) 2014, Lars Brubaker
+/*
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,26 +27,47 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.UI;
-using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
-using System;
 
-namespace MatterHackers.MeshVisualizer
+namespace MatterHackers.RenderGl
 {
-	public class MouseEvent3DArgs : EventArgs
+	public static class SceneRenderModeUtilities
 	{
-		public IntersectInfo info;
-		public MouseEventArgs MouseEvent2D;
-		private Ray mouseRay;
+		public const float DefaultWireframeWidth = 0.6f;
+		public const double OutlineFeatureAngleRadians = MathHelper.Tau / 8;
 
-		public Ray MouseRay { get { return mouseRay; } }
-
-		public MouseEvent3DArgs(MouseEventArgs mouseEvent2D, Ray mouseRay, IntersectInfo info)
+		public static bool ShouldDrawWireframeOverlay(RenderTypes renderType)
 		{
-			this.info = info;
-			this.MouseEvent2D = mouseEvent2D;
-			this.mouseRay = mouseRay;
+			return renderType == RenderTypes.Outlines
+				|| renderType == RenderTypes.Polygons
+				|| renderType == RenderTypes.NonManifold
+				|| renderType == RenderTypes.Wireframe;
+		}
+
+		public static bool RequiresSceneMeshPass(RenderTypes renderType)
+		{
+			return renderType != RenderTypes.Hidden;
+		}
+
+		public static bool ShouldRenderTransparentFill(RenderTypes renderType)
+		{
+			return ShouldRenderFilledSurface(renderType);
+		}
+
+		public static bool ShouldRenderTransparentOverlay(RenderTypes renderType)
+		{
+			return ShouldDrawWireframeOverlay(renderType);
+		}
+
+		public static bool IsWireframeOnly(RenderTypes renderType)
+		{
+			return renderType == RenderTypes.Wireframe;
+		}
+
+		public static bool ShouldRenderFilledSurface(RenderTypes renderType)
+		{
+			return renderType != RenderTypes.Hidden
+				&& renderType != RenderTypes.Wireframe;
 		}
 	}
 }
