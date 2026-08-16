@@ -1301,6 +1301,20 @@ namespace MatterHackers.WebGpuRender
 			}
 		}
 
+		/// <summary>
+		/// Opens the device with no optional features.
+		/// <para>
+		/// Requesting a feature the adapter does not expose fails the whole device request, so anything
+		/// added here has to be intersected with <c>wgpuAdapterHasFeature</c> first. The one feature that
+		/// was ever wanted is <c>float32-blendable</c>, which is what would make blending a 32-bit float
+		/// attachment - a dual depth peeling depth range kept in a MAX-blended Rg32Float target, the way
+		/// the D3D11 path keeps it - legal. Measured 2026-08-15 on a GTX 1660 Ti: wgpu-native 29 exposes
+		/// it on Vulkan but <b>not</b> on D3D12, even though the same adapter reports R32G32_FLOAT as
+		/// Blendable through D3D11 natively. That is why this backend's peel is formulated against two
+		/// hardware depth buffers and depth tests instead of a blended float target, and why nothing here
+		/// needs the feature.
+		/// </para>
+		/// </summary>
 		private WGPUDevice RequestDevice()
 		{
 			void* self = (void*)GCHandle.ToIntPtr(this.selfHandle);
@@ -1312,6 +1326,8 @@ namespace MatterHackers.WebGpuRender
 				var descriptor = new WGPUDeviceDescriptor
 				{
 					label = labelText.View,
+					requiredFeatureCount = 0,
+					requiredFeatures = null,
 					defaultQueue = new WGPUQueueDescriptor { label = WgpuStrings.Null },
 					deviceLostCallbackInfo = new WGPUDeviceLostCallbackInfo
 					{

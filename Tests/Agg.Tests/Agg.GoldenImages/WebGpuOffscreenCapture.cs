@@ -30,6 +30,8 @@ using MatterHackers.RenderCore;
 using MatterHackers.RenderGl;
 using MatterHackers.RenderGl.Compat;
 using MatterHackers.RenderGl.OpenGl;
+using MatterHackers.RenderGl.Scene;
+using MatterHackers.VectorMath;
 using MatterHackers.WebGpu;
 using MatterHackers.WebGpuRender;
 
@@ -66,6 +68,7 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 
 		private WebGpuRenderDevice device;
 		private GlCompatContext context;
+		private WebGpuSceneRenderer sceneRenderer;
 		private IGpuTexture colorTarget;
 		private IGpuTexture depthTarget;
 
@@ -104,6 +107,13 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 				context.SetRenderTarget(colorTarget, depthTarget);
 
 				Gl = new GL(context);
+
+				// The scene compositor is a separate object here (the classic backend is one class that is
+				// both), so the context forwards INativeSceneRenderer to it and it is handed the facade the
+				// mesh render-data caches are keyed on - the same wiring D3D11OffscreenCapture does with
+				// VorticeD3DGl.OwnerGl.
+				sceneRenderer = new WebGpuSceneRenderer(context) { OwnerGl = Gl };
+				context.SceneRenderer = sceneRenderer;
 			}
 			catch
 			{
@@ -121,6 +131,9 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 
 		/// <summary>The compat context under the facade, for diagnostics (pipeline counts, pass counts).</summary>
 		public GlCompatContext Context => context;
+
+		/// <summary>The modern 3D seam, for the mesh suites.</summary>
+		public INativeSceneRenderer SceneRenderer => sceneRenderer;
 
 		/// <summary>The device, so a test can assert no wgpu validation error was reported.</summary>
 		public WebGpuRenderDevice Device => device;
@@ -167,6 +180,44 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		}
 
 		/// <summary>
+		/// Installs the 3D frame state (<see cref="RenderHelper.SetGlContext"/>) and opens a scene, runs
+		/// <paramref name="drawScene"/>, then closes both - member for member what
+		/// <see cref="D3D11OffscreenCapture.RenderScene"/> does, so one scene definition drives both
+		/// backends.
+		/// </summary>
+		/// <param name="world">The camera.</param>
+		/// <param name="lighting">The frame's lights.</param>
+		/// <param name="drawScene">Draws the scene through <see cref="Gl"/>.</param>
+		/// <param name="supersample">Routes the frame through the 3x full-frame capture. Phase 3 leg B;
+		/// the WebGPU renderer throws rather than silently rendering an unsupersampled frame.</param>
+		public void RenderScene(WorldView world, LightingData lighting, Action drawScene, bool supersample = false)
+		{
+			if (supersample)
+			{
+				sceneRenderer.BeginFullFrameCapture(Viewport);
+			}
+
+			RenderHelper.SetGlContext(Gl, world, Viewport, lighting);
+			sceneRenderer.BeginSceneRendering(new SceneRenderContext(world, Viewport, lighting));
+
+			try
+			{
+				drawScene();
+			}
+			finally
+			{
+				sceneRenderer.EndSceneRendering();
+				RenderHelper.UnsetGlContext(Gl);
+
+				if (supersample)
+				{
+					sceneRenderer.EndFullFrameCapture();
+					sceneRenderer.DownsampleAndBlitFullFrame();
+				}
+			}
+		}
+
+		/// <summary>
 		/// Ends the frame and copies the colour target into an <see cref="ImageBuffer"/> (BGRA, bottom-up),
 		/// in the same orientation <see cref="D3D11OffscreenCapture.Capture"/> produces.
 		/// </summary>
@@ -200,6 +251,8 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 
 		public void Dispose()
 		{
+			sceneRenderer?.Dispose();
+			sceneRenderer = null;
 			context?.Dispose();
 			colorTarget?.Dispose();
 			depthTarget?.Dispose();

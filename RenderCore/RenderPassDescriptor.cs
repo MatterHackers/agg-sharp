@@ -145,7 +145,8 @@ namespace MatterHackers.RenderCore
 		public override bool Equals(object obj) => obj is DepthAttachment other && this.Equals(other);
 
 		/// <inheritdoc/>
-		public override int GetHashCode() => HashCode.Combine(this.Target, this.LoadOp, this.ClearValue, this.StoreOp);
+		public override int GetHashCode()
+			=> HashCode.Combine(this.Target, this.LoadOp, this.ClearValue, this.StoreOp);
 
 		/// <inheritdoc/>
 		public override string ToString()

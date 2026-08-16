@@ -25,6 +25,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using MatterHackers.Agg;
 using MatterHackers.RenderCore;
 using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
@@ -54,7 +55,7 @@ namespace MatterHackers.RenderGl.Compat
 	/// toward deletion as they do.
 	/// </para>
 	/// </summary>
-	public class GlCompatContext : IGpuContext, IDisposable
+	public class GlCompatContext : IGpuContext, INativeSceneRenderer, IDisposable
 	{
 		private readonly IRenderDevice device;
 		private readonly GlStateShadow state = new GlStateShadow();
@@ -65,6 +66,8 @@ namespace MatterHackers.RenderGl.Compat
 		private readonly GlDisplayListStore displayLists;
 		private readonly GlRenderPassScope passes;
 		private readonly GlDrawSubmitter submitter;
+
+		private int coordinateScale = 1;
 
 		/// <summary>Creates a compat context over a retained device.</summary>
 		/// <param name="device">The device every draw is recorded on.</param>
@@ -87,8 +90,63 @@ namespace MatterHackers.RenderGl.Compat
 		/// <summary>The render pass this context keeps open across a frame.</summary>
 		public GlRenderPassScope Passes => this.passes;
 
+		/// <summary>
+		/// The GL-named textures and the device textures behind them. Exposed so the native scene
+		/// renderer can bind a mesh's face texture, which reaches the device through this store's upload
+		/// path exactly as a 2D image blit does.
+		/// </summary>
+		public GlTextureStore Textures => this.textures;
+
+		/// <summary>
+		/// The 3D scene compositor this context forwards <see cref="INativeSceneRenderer"/> calls to, or
+		/// null on a context that only draws 2D.
+		/// <para>
+		/// The forwarding exists because the whole application finds the scene renderer by asking whether
+		/// the <see cref="OpenGl.GL"/> facade's context implements the interface (RenderHelper.Render and
+		/// friends). The classic backend answers yes because one class is both; here they are two objects,
+		/// so this one answers on the other's behalf, and answers "cannot render" when there is none.
+		/// </para>
+		/// </summary>
+		public INativeSceneRenderer SceneRenderer { get; set; }
+
 		/// <summary>The shadowed fixed function state.</summary>
 		public GlStateShadow State => this.state;
+
+		/// <summary>
+		/// Device pixels per logical pixel for viewport and scissor rectangles. 1 normally; the scene
+		/// renderer raises it while a full-frame supersample capture points drawing at an oversized
+		/// offscreen target, so GL coordinates land on the same relative positions there.
+		/// </summary>
+		/// <remarks>
+		/// This is the compat-layer half of the classic path's <c>ActiveCoordinateScale</c>. It is not a
+		/// DPI scale: the widget stack already works in device pixels, and nothing but full-frame capture
+		/// ever moves it off 1.
+		/// </remarks>
+		public int CoordinateScale
+		{
+			get => this.coordinateScale;
+
+			set
+			{
+				if (value < 1)
+				{
+					throw new ArgumentOutOfRangeException(nameof(value), value, "The coordinate scale must be at least 1.");
+				}
+
+				if (this.coordinateScale == value)
+				{
+					return;
+				}
+
+				this.coordinateScale = value;
+
+				// Viewport and scissor are pass state that was recorded at the old scale.
+				if (this.passes.IsPassOpen)
+				{
+					this.ApplyDynamicState(this.passes.EnsurePassOpen());
+				}
+			}
+		}
 
 		/// <summary>The matrix stacks.</summary>
 		public GlMatrixStacks Matrices => this.matrices;
@@ -528,6 +586,39 @@ namespace MatterHackers.RenderGl.Compat
 		public void NormalPointer(NormalPointerType type, int stride, IntPtr pointer)
 			=> this.ArrayPointers.Normal = new GlClientArrayPointer(3, stride, pointer);
 
+		// --- INativeSceneRenderer, forwarded to the attached scene compositor ---
+
+		/// <inheritdoc/>
+		public bool IsSceneRenderingActive => this.SceneRenderer?.IsSceneRenderingActive ?? false;
+
+		/// <inheritdoc/>
+		public void BeginSceneRendering(SceneRenderContext context) => this.SceneRenderer?.BeginSceneRendering(context);
+
+		/// <inheritdoc/>
+		public void EndSceneRendering() => this.SceneRenderer?.EndSceneRendering();
+
+		/// <inheritdoc/>
+		public bool CanRender(MeshRenderCommand command) => this.SceneRenderer?.CanRender(command) ?? false;
+
+		/// <inheritdoc/>
+		public bool TryRender(MeshRenderCommand command) => this.SceneRenderer?.TryRender(command) ?? false;
+
+		/// <inheritdoc/>
+		public bool TryRender(BedRenderCommand command) => this.SceneRenderer?.TryRender(command) ?? false;
+
+		/// <inheritdoc/>
+		public void QueueSelectionOutline(MatterHackers.PolygonMesh.Mesh mesh, Color color, Matrix4X4 transform)
+			=> this.SceneRenderer?.QueueSelectionOutline(mesh, color, transform);
+
+		/// <inheritdoc/>
+		public void BeginFullFrameCapture(RectangleDouble viewport) => this.SceneRenderer?.BeginFullFrameCapture(viewport);
+
+		/// <inheritdoc/>
+		public void EndFullFrameCapture() => this.SceneRenderer?.EndFullFrameCapture();
+
+		/// <inheritdoc/>
+		public void DownsampleAndBlitFullFrame() => this.SceneRenderer?.DownsampleAndBlitFullFrame();
+
 		/// <summary>Releases the caches, stores and any open pass.</summary>
 		public void Dispose()
 		{
@@ -762,20 +853,21 @@ namespace MatterHackers.RenderGl.Compat
 		/// <param name="rect">The rectangle in GL coordinates.</param>
 		private (int X, int Y, int Width, int Height) ToDeviceRect(GlViewportRect rect)
 		{
-			// TODO (port plan, Phase 3): the classic path multiplies both rectangles by its
-			// ActiveCoordinateScale before handing them to the device, which is how supersampled
-			// offscreen captures keep their clip in step with the oversized attachment. Nothing sets a
-			// scale on this seam yet; when render-to-texture supersampling lands, it applies here.
-			int width = Math.Max(0, rect.Width);
-			int height = Math.Max(0, rect.Height);
+			// Callers speak in logical (backbuffer) pixels. While a full-frame supersample capture is
+			// redirecting drawing at an oversized offscreen target, every rectangle has to be scaled to
+			// match it or the clip would cover a ninth of the frame - the same multiplication the classic
+			// path does with its ActiveCoordinateScale.
+			int scale = this.CoordinateScale;
+			int width = Math.Max(0, rect.Width) * scale;
+			int height = Math.Max(0, rect.Height) * scale;
 
 			int targetWidth = this.passes.TargetWidth;
 			int targetHeight = this.passes.TargetHeight;
 
-			int left = Math.Clamp(rect.X, 0, targetWidth);
-			int right = Math.Clamp(rect.X + width, 0, targetWidth);
-			int top = Math.Clamp(targetHeight - (rect.Y + height), 0, targetHeight);
-			int bottom = Math.Clamp(targetHeight - rect.Y, 0, targetHeight);
+			int left = Math.Clamp(rect.X * scale, 0, targetWidth);
+			int right = Math.Clamp((rect.X * scale) + width, 0, targetWidth);
+			int top = Math.Clamp(targetHeight - ((rect.Y * scale) + height), 0, targetHeight);
+			int bottom = Math.Clamp(targetHeight - (rect.Y * scale), 0, targetHeight);
 
 			return (left, top, right - left, bottom - top);
 		}

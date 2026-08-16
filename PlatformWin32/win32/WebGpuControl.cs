@@ -30,6 +30,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.RenderCore;
 using MatterHackers.RenderGl;
 using MatterHackers.RenderGl.Compat;
+using MatterHackers.RenderGl.Scene;
 using MatterHackers.WebGpu;
 using MatterHackers.WebGpuRender;
 
@@ -57,6 +58,7 @@ namespace MatterHackers.Agg.UI
 		private WebGpuRenderDevice device;
 		private WebGpuSurfaceTarget surface;
 		private GlCompatContext compat;
+		private WebGpuSceneRenderer sceneRenderer;
 		private IGpuTexture depthTarget;
 
 		/// <summary>
@@ -84,6 +86,9 @@ namespace MatterHackers.Agg.UI
 
 		/// <summary>The compat context under the facade, for diagnostics.</summary>
 		public GlCompatContext Compat => this.compat;
+
+		/// <summary>The 3D scene compositor, or null before initialization.</summary>
+		public INativeSceneRenderer SceneRenderer => this.sceneRenderer;
 
 		/// <summary>The wgpu device, for diagnostics and error reporting.</summary>
 		public WebGpuRenderDevice Device => this.device;
@@ -139,6 +144,13 @@ namespace MatterHackers.Agg.UI
 
 			this.compat = new GlCompatContext(this.device);
 			this.Gl = new MatterHackers.RenderGl.OpenGl.GL(this.compat);
+
+			// The scene compositor is a separate object from the context here (the classic backend is one
+			// class that is both), so the context forwards INativeSceneRenderer to it - which is how
+			// RenderHelper and the editors find it - and it is handed the facade the mesh render-data
+			// caches are keyed on, exactly as D3D11Control sets VorticeD3DGl.OwnerGl.
+			this.sceneRenderer = new WebGpuSceneRenderer(this.compat) { OwnerGl = this.Gl };
+			this.compat.SceneRenderer = this.sceneRenderer;
 
 			// Textures, display lists and tessellations cached against a previous context belong to a
 			// device that no longer exists - the readers only notice through this generation bump.
@@ -306,12 +318,14 @@ namespace MatterHackers.Agg.UI
 			{
 				this.isInitialized = false;
 
+				this.sceneRenderer?.Dispose();
 				this.compat?.Dispose();
 				this.depthTarget?.Dispose();
 				this.scratchTarget?.Dispose();
 				this.surface?.Dispose();
 				this.device?.Dispose();
 
+				this.sceneRenderer = null;
 				this.compat = null;
 				this.depthTarget = null;
 				this.scratchTarget = null;

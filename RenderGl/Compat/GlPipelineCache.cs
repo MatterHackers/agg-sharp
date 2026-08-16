@@ -106,6 +106,76 @@ namespace MatterHackers.RenderGl.Compat
 		}
 
 		/// <summary>
+		/// Disposes and forgets every cached bind group that binds one of the given textures.
+		/// <para>
+		/// A bind group holds its texture views, so a group cached over a texture that is about to be
+		/// destroyed is both a leak and a trap: nothing would ever ask for that descriptor again (the new
+		/// textures make a different key), and the group would keep a dead view alive until the context
+		/// closed. Every place that destroys a texture it may have bound - a resize dropping the scene
+		/// targets, the bed dropping its shadow chain - calls this with what it is about to destroy.
+		/// Pipelines and modules are untouched: neither references a texture, only formats.
+		/// </para>
+		/// </summary>
+		/// <param name="textures">The textures being destroyed. Nulls are ignored.</param>
+		/// <returns>How many bind groups were evicted.</returns>
+		public int InvalidateBindGroupsUsing(params IGpuTexture[] textures)
+		{
+			if (textures == null || textures.Length == 0)
+			{
+				return 0;
+			}
+
+			List<BindGroupDescriptor> doomed = null;
+			foreach (var entry in this.bindGroups)
+			{
+				if (!BindsAny(entry.Key, textures))
+				{
+					continue;
+				}
+
+				doomed ??= new List<BindGroupDescriptor>();
+				doomed.Add(entry.Key);
+			}
+
+			if (doomed == null)
+			{
+				return 0;
+			}
+
+			foreach (var descriptor in doomed)
+			{
+				this.bindGroups[descriptor].Dispose();
+				this.bindGroups.Remove(descriptor);
+			}
+
+			return doomed.Count;
+		}
+
+		/// <summary>Whether a bind group descriptor binds any of the given textures.</summary>
+		/// <param name="descriptor">The cached descriptor.</param>
+		/// <param name="textures">The textures being destroyed; nulls are ignored.</param>
+		private static bool BindsAny(in BindGroupDescriptor descriptor, IGpuTexture[] textures)
+		{
+			foreach (var binding in descriptor.Entries)
+			{
+				if (binding.Texture == null)
+				{
+					continue;
+				}
+
+				foreach (var texture in textures)
+				{
+					if (texture != null && ReferenceEquals(binding.Texture, texture))
+					{
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+
+		/// <summary>
 		/// Builds the pipeline descriptor a draw needs from the current GL state. Everything GL treats
 		/// as dynamic - blend equation, color write mask, cull, depth test, topology - is baked in here,
 		/// so a state change simply lands on a different cache entry.

@@ -46,17 +46,13 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 	[NotInParallel]
 	public class GoldenSceneTests
 	{
-		/// <summary>Background for the scene captures - a mid grey, so both dark and light geometry show
-		/// their silhouette anti-aliasing against it.</summary>
-		private static readonly ColorF Background = new ColorF(0.31f, 0.33f, 0.36f, 1);
-
 		private static async Task Check(string goldenName, bool supersample, Action<D3D11OffscreenCapture> drawScene)
 		{
 			using var capture = D3D11OffscreenCapture.Create();
 
-			capture.ClearTo(Background);
+			capture.ClearTo(Golden3DScenes.Background);
 
-			var world = CreateCamera(capture.Width, capture.Height);
+			var world = Golden3DScenes.CreateCamera(capture.Width, capture.Height);
 
 			// A fresh LightingData per capture: RenderHelper.SetGlContext normalises LightDirection0 in
 			// place, so a shared instance would be renormalising an already normalised vector.
@@ -67,117 +63,11 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 			await GoldenImage.Check(capture.Capture(), goldenName);
 		}
 
-		/// <summary>
-		/// A fixed three-quarter view, framed by scale rather than by distance.
-		/// </summary>
-		/// <remarks>
-		/// <see cref="WorldView"/>'s default frustum is near 0.1 / far 100 with the camera parked 7 units
-		/// back, so millimetre-sized geometry has to be scaled into that range rather than pushed away from
-		/// the camera - a translate large enough to frame a 60mm box puts the whole scene behind the far
-		/// plane and renders an empty frame. This is the same arrangement <c>D3D11ThumbnailRenderer</c> uses.
-		/// </remarks>
-		private static WorldView CreateCamera(int width, int height)
-		{
-			var world = new WorldView(width, height);
-			world.Reset();
-			world.Scale = 0.035;
-			world.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, -MathHelper.Tau / 16)));
-			world.Rotate(Quaternion.FromEulerAngles(new Vector3(MathHelper.Tau * 0.19, 0, 0)));
-
-			return world;
-		}
-
-		/// <summary>
-		/// A UV sphere, generated here so the scenes have curvature (and therefore a dense, lighting
-		/// sensitive normal field) without depending on a mesh generator that may be tuned later.
-		/// </summary>
-		private static Mesh CreateSphere(double radius, int segments, int rings)
-		{
-			var mesh = new Mesh();
-
-			for (int ring = 0; ring < rings; ring++)
-			{
-				double phi0 = Math.PI * ring / rings;
-				double phi1 = Math.PI * (ring + 1) / rings;
-
-				for (int segment = 0; segment < segments; segment++)
-				{
-					double theta0 = Math.PI * 2 * segment / segments;
-					double theta1 = Math.PI * 2 * (segment + 1) / segments;
-
-					Vector3 a = OnSphere(radius, phi0, theta0);
-					Vector3 b = OnSphere(radius, phi1, theta0);
-					Vector3 c = OnSphere(radius, phi1, theta1);
-					Vector3 d = OnSphere(radius, phi0, theta1);
-
-					if (ring != 0)
-					{
-						mesh.CreateFace(a, b, d);
-					}
-
-					if (ring != rings - 1)
-					{
-						mesh.CreateFace(b, c, d);
-					}
-				}
-			}
-
-			mesh.CalculateNormals();
-			return mesh;
-		}
-
-		private static Vector3 OnSphere(double radius, double phi, double theta)
-			=> new Vector3(
-				radius * Math.Sin(phi) * Math.Cos(theta),
-				radius * Math.Sin(phi) * Math.Sin(theta),
-				radius * Math.Cos(phi));
-
-		/// <summary>Three boxes and a sphere, arranged so they overlap in screen space and therefore depend
-		/// on the depth buffer as well as on lighting.</summary>
-		private static void DrawStandardScene(D3D11OffscreenCapture capture, RenderTypes renderType, int alpha)
-		{
-			var box = PlatonicSolids.CreateCube(60, 60, 60);
-			var slab = PlatonicSolids.CreateCube(140, 40, 14);
-			var sphere = CreateSphere(38, 24, 16);
-
-			RenderHelper.Render(
-				capture.Gl,
-				slab,
-				new Color(200, 200, 205, alpha),
-				Matrix4X4.CreateTranslation(0, 0, -34),
-				renderType,
-				wireFrameColor: new Color(20, 20, 20));
-
-			RenderHelper.Render(
-				capture.Gl,
-				box,
-				new Color(210, 70, 50, alpha),
-				Matrix4X4.CreateRotationZ(MathHelper.Tau * 0.06) * Matrix4X4.CreateTranslation(-52, -18, 8),
-				renderType,
-				wireFrameColor: new Color(20, 20, 20));
-
-			RenderHelper.Render(
-				capture.Gl,
-				box,
-				new Color(60, 130, 220, alpha),
-				Matrix4X4.CreateRotationX(MathHelper.Tau * 0.11) * Matrix4X4.CreateTranslation(46, 12, 20),
-				renderType,
-				wireFrameColor: new Color(20, 20, 20));
-
-			RenderHelper.Render(
-				capture.Gl,
-				sphere,
-				new Color(90, 200, 120, alpha),
-				Matrix4X4.CreateTranslation(0, 34, 34),
-				renderType,
-				wireFrameColor: new Color(20, 20, 20));
-		}
-
 		[Test]
 		public async Task OpaqueMeshes()
 		{
 			await Check("Scene.Opaque", supersample: false, capture =>
-				DrawStandardScene(capture, RenderTypes.Shaded, 255));
+				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 255));
 		}
 
 		/// <summary>
@@ -189,7 +79,7 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		public async Task TransparentMeshes()
 		{
 			await Check("Scene.Transparent", supersample: false, capture =>
-				DrawStandardScene(capture, RenderTypes.Shaded, 120));
+				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 120));
 		}
 
 		/// <summary>Opaque geometry in front of transparent geometry, which is the case that actually
@@ -197,32 +87,7 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		[Test]
 		public async Task MixedOpaqueAndTransparent()
 		{
-			await Check("Scene.Mixed", supersample: false, capture =>
-			{
-				var box = PlatonicSolids.CreateCube(60, 60, 60);
-				var sphere = CreateSphere(46, 24, 16);
-
-				RenderHelper.Render(
-					capture.Gl,
-					box,
-					new Color(210, 70, 50),
-					Matrix4X4.CreateTranslation(-40, 0, 0),
-					RenderTypes.Shaded);
-
-				RenderHelper.Render(
-					capture.Gl,
-					sphere,
-					new Color(90, 200, 220, 110),
-					Matrix4X4.CreateTranslation(0, 0, 10),
-					RenderTypes.Shaded);
-
-				RenderHelper.Render(
-					capture.Gl,
-					box,
-					new Color(240, 210, 60, 150),
-					Matrix4X4.CreateRotationZ(MathHelper.Tau * 0.12) * Matrix4X4.CreateTranslation(46, 20, 26),
-					RenderTypes.Shaded);
-			});
+			await Check("Scene.Mixed", supersample: false, capture => Golden3DScenes.DrawMixedScene(capture.Gl));
 		}
 
 		/// <summary>The outline render type - shaded fill plus the mesh's edge overlay.</summary>
@@ -230,7 +95,7 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		public async Task OutlineRenderType()
 		{
 			await Check("Scene.Outlines", supersample: false, capture =>
-				DrawStandardScene(capture, RenderTypes.Outlines, 255));
+				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Outlines, 255));
 		}
 
 		/// <summary>Wireframe, where only the edge geometry is drawn - a different path again from the
@@ -239,7 +104,7 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		public async Task WireframeRenderType()
 		{
 			await Check("Scene.Wireframe", supersample: false, capture =>
-				DrawStandardScene(capture, RenderTypes.Wireframe, 255));
+				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Wireframe, 255));
 		}
 
 		/// <summary>Selection outlines, queued on the renderer directly. Reachable without any app-level
@@ -248,17 +113,7 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		public async Task SelectionOutline()
 		{
 			await Check("Scene.SelectionOutline", supersample: false, capture =>
-			{
-				var box = PlatonicSolids.CreateCube(70, 70, 70);
-				var sphere = CreateSphere(40, 24, 16);
-				var boxTransform = Matrix4X4.CreateRotationZ(MathHelper.Tau * 0.05) * Matrix4X4.CreateTranslation(-46, 0, 0);
-				var sphereTransform = Matrix4X4.CreateTranslation(48, 10, 8);
-
-				RenderHelper.Render(capture.Gl, box, new Color(210, 70, 50), boxTransform, RenderTypes.Shaded, isSelected: true);
-				RenderHelper.Render(capture.Gl, sphere, new Color(60, 130, 220), sphereTransform, RenderTypes.Shaded);
-
-				capture.SceneRenderer.QueueSelectionOutline(box, new Color(255, 255, 255), boxTransform);
-			});
+				Golden3DScenes.DrawSelectionOutlineScene(capture.Gl, capture.SceneRenderer));
 		}
 
 		/// <summary>
@@ -271,7 +126,7 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		public async Task SupersampledFullFrame()
 		{
 			await Check("Scene.Supersampled", supersample: true, capture =>
-				DrawStandardScene(capture, RenderTypes.Shaded, 255));
+				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 255));
 		}
 
 		/// <summary>Supersampled transparency: the capture target and the peel targets have to agree about
@@ -280,7 +135,45 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		public async Task SupersampledTransparent()
 		{
 			await Check("Scene.SupersampledTransparent", supersample: true, capture =>
-				DrawStandardScene(capture, RenderTypes.Shaded, 120));
+				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 120));
+		}
+
+		/// <summary>
+		/// The printer bed: shadow mask, blur, composite and the analytic grid, queued through the
+		/// renderer's bed entry point.
+		/// </summary>
+		[Test]
+		public async Task BedWithShadow()
+		{
+			await Check("Scene.Bed", supersample: false, capture =>
+				Golden3DScenes.DrawBedScene(capture.Gl, capture.SceneRenderer));
+		}
+
+		/// <summary>
+		/// A textured mesh - the one scene that reaches the shaders' texture entry points.
+		/// </summary>
+		[Test]
+		public async Task TexturedMesh()
+		{
+			await Check("Scene.TexturedMesh", supersample: false, capture =>
+				Golden3DScenes.DrawTexturedMeshScene(capture.Gl));
+		}
+
+		/// <summary>
+		/// The overhang render type.
+		/// </summary>
+		/// <remarks>
+		/// This golden is captured through the classic backend's <i>fallback</i> path, not its native scene
+		/// pipeline: <c>VorticeD3DGl.CanRender</c> refuses <see cref="RenderTypes.Overhang"/>, so
+		/// <c>RenderHelper.Render</c> drops through to immediate-mode GL. That is exactly the hole Phase 3
+		/// leg B closes on the WebGPU side, which is why the cross-backend twin of this test does not
+		/// compare against this image - see <c>GoldenSceneOnWebGpuTests.OverhangRenderType</c>.
+		/// </remarks>
+		[Test]
+		public async Task OverhangRenderType()
+		{
+			await Check("Scene.Overhang", supersample: false, capture =>
+				Golden3DScenes.DrawOverhangScene(capture.Gl));
 		}
 	}
 }

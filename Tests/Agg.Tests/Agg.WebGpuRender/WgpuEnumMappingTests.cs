@@ -29,6 +29,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.RenderCore;
 using MatterHackers.RenderGl.Compat;
+using MatterHackers.RenderGl.Scene;
 using MatterHackers.WebGpu;
 using MatterHackers.WebGpuRender;
 using TUnit.Assertions;
@@ -187,9 +188,16 @@ namespace MatterHackers.Agg.Tests
 		{
 			// WebGpuRender cannot reference RenderGl (that would point the backend at the layer above it),
 			// so the key strings are duplicated as literals. This is the test that keeps the duplicate
-			// honest, and the one place the two lists are ever compared.
+			// honest, and the one place the lists are ever compared. Two consumers ask for modules: the
+			// compat layer's canned 2D combos and the native scene renderer's 3D pipeline - together they
+			// must account for exactly what the backend serves, no more and no less.
+			var expectedKeys = GlShaderKeys.AllModuleKeys
+				.Concat(SceneShaderKeys.AllModuleKeys)
+				.OrderBy(key => key, StringComparer.Ordinal)
+				.ToList();
+
 			await Assert.That(WgslShaderSources.AllModuleKeys.OrderBy(key => key, StringComparer.Ordinal).ToList())
-				.IsEquivalentTo(GlShaderKeys.AllModuleKeys.OrderBy(key => key, StringComparer.Ordinal).ToList());
+				.IsEquivalentTo(expectedKeys);
 
 			var provider = new WgslShaderSources();
 			foreach (string key in GlShaderKeys.AllModuleKeys)

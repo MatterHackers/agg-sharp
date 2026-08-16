@@ -115,6 +115,22 @@ namespace MatterHackers.RenderGl
 
 		bool TryRender(MeshRenderCommand command);
 
+		/// <summary>
+		/// Queues the printer bed for this frame, or returns false if the caller has to draw it as an
+		/// ordinary textured mesh instead.
+		/// </summary>
+		/// <remarks>
+		/// The bed is not just a mesh: the renderer casts the scene's objects onto it as a blurred shadow,
+		/// composites that under the bed's own texture and draws the grid and axis lines analytically so
+		/// they stay one screen pixel wide under perspective. All of that needs the whole command, which
+		/// is why this is a second entry point rather than a <see cref="MeshRenderCommand"/> flag.
+		/// <para>
+		/// At most one bed is queued per frame; a second call replaces the first.
+		/// </para>
+		/// </remarks>
+		/// <param name="command">The bed, its texture and its grid styling.</param>
+		bool TryRender(BedRenderCommand command);
+
 		void QueueSelectionOutline(Mesh mesh, Color color, Matrix4X4 transform);
 
 		// 3x3 (9x) supersampled anti-aliasing: the whole frame renders into an

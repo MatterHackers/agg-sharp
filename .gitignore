@@ -117,3 +117,6 @@ examples/RockBlaster/GameData/
 NUL
 test_output.txt
 Test42.txt
+
+# Font measurement cache the demos write beside themselves the first time they draw text.
+examples/TestData/

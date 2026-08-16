@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.PolygonMesh;
@@ -55,6 +56,28 @@ namespace MatterHackers.RenderGl
 		private const float GL_REPLACE = (float)0x1E01;
 
 		private static int suppressBedShadowCastingDepth;
+
+		private static int legacyMeshFallbackCount;
+
+		/// <summary>
+		/// How many times a mesh has fallen through to the legacy immediate-mode GL draw below
+		/// <i>while a scene frame was open</i>, process wide.
+		/// </summary>
+		/// <remarks>
+		/// Zero is the only correct value: inside a scene frame the native renderer owns every mesh, and
+		/// the WebGPU backend's compat layer does not implement the client-array draws the fallback needs -
+		/// so a non-zero count is a gap in <c>INativeSceneRenderer.CanRender</c> that would render nothing
+		/// (or throw) on that backend. Tests assert against it rather than against pixels, because a mesh
+		/// that silently vanished looks exactly like a mesh that was never queued.
+		/// <para>
+		/// Draws outside a scene frame are not counted; those are the 2D and out-of-frame sites the port
+		/// plan closes in Phase 5.
+		/// </para>
+		/// </remarks>
+		public static int LegacyMeshFallbackCount => Volatile.Read(ref legacyMeshFallbackCount);
+
+		/// <summary>Resets <see cref="LegacyMeshFallbackCount"/>, so a test can measure one frame.</summary>
+		public static void ResetLegacyMeshFallbackCount() => Interlocked.Exchange(ref legacyMeshFallbackCount, 0);
 
 		public static void ExtendLineEnds(ref Vector3 start, ref Vector3 end, double length)
 		{
@@ -218,6 +241,16 @@ namespace MatterHackers.RenderGl
 						&& nativeSceneRenderer.TryRender(command))
 					{
 						return;
+					}
+
+					if (nativeSceneRenderer.IsSceneRenderingActive)
+					{
+						// Inside a scene frame the native renderer is supposed to draw everything - the
+						// compat layer behind the WebGPU backend does not implement the client-array draws
+						// the code below needs, so reaching here is a hole in CanRender rather than a
+						// graceful degradation. Counted so tests can assert it stays at zero; see
+						// LegacyMeshFallbackCount.
+						Interlocked.Increment(ref legacyMeshFallbackCount);
 					}
 				}
 

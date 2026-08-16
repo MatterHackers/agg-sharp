@@ -101,7 +101,9 @@ namespace MatterHackers.WebGpuRender
 				view = view,
 				depthLoadOp = loadOp,
 				depthStoreOp = storeOp,
-				depthClearValue = loadOp == WGPULoadOp.Clear ? clearValue : WGPUConstants.WGPU_DEPTH_CLEAR_VALUE_UNDEFINED,
+				depthClearValue = loadOp == WGPULoadOp.Clear
+					? clearValue
+					: WGPUConstants.WGPU_DEPTH_CLEAR_VALUE_UNDEFINED,
 			};
 
 		/// <summary>Multisample state with the non-zero defaults filled in.</summary>

@@ -60,12 +60,27 @@ namespace MatterHackers.WebGpuRender
 		/// <summary>Lit, textured. Matches <c>GlShaderKeys.PositionTextureLit</c>.</summary>
 		public const string PositionTextureLit = "PositionTextureLit";
 
+		/// <summary>
+		/// The native 3D scene pipeline: mesh vertex stage, lit/textured shading with the wireframe
+		/// overlay, the depth prepass and the selection mask. Consumed by the scene renderer, not by the
+		/// compat layer, so it has no <c>GlShaderKeys</c> counterpart.
+		/// </summary>
+		public const string NodeDesignerScene = "NodeDesignerScene";
+
+		/// <summary>
+		/// The scene compositor's full-screen passes: copy, the transparency resolve and the selection
+		/// outline composite.
+		/// </summary>
+		public const string NodeDesignerPostProcess = "NodeDesignerPostProcess";
+
 		private static readonly string[] Keys =
 		{
 			PositionColor,
 			PositionColorLit,
 			PositionTexture,
 			PositionTextureLit,
+			NodeDesignerScene,
+			NodeDesignerPostProcess,
 		};
 
 		private readonly Dictionary<string, string> cache = new Dictionary<string, string>(StringComparer.Ordinal);
