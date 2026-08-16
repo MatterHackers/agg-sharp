@@ -92,6 +92,34 @@ namespace MatterHackers.Agg.UI
 		private int onPaintCount;
 		private bool enableIdleProcessing;
 
+		// --- Unattended smoke runs -------------------------------------------------------------------
+		// Read once, from the environment, because the point is to drive an *unmodified* demo: no demo has
+		// to know it is being smoke tested, and with the variables unset none of this does anything.
+		private static readonly int SmokeFrameTarget = ParseSmokeFrames();
+		private static readonly string SmokeScreenshotPath = Environment.GetEnvironmentVariable("AGG_SMOKE_SCREENSHOT");
+
+		private bool smokeRunFinished;
+
+		/// <summary>
+		/// How many frames a smoke run draws before it screenshots and closes itself
+		/// (<c>AGG_SMOKE_FRAMES</c>), or 0 when the window should behave normally.
+		/// </summary>
+		public static int SmokeFrames => SmokeFrameTarget;
+
+		/// <summary>
+		/// What the renderer has to complain about, or null when it is happy. A smoke run turns a
+		/// non-null value into a non-zero process exit code; the classic paths report nothing, which is
+		/// as good as they can do - they fail by throwing.
+		/// </summary>
+		public virtual string RenderErrorReport => null;
+
+		/// <summary>
+		/// What the renderer wants said about a finished run - which backend, how many frames actually
+		/// reached the screen. A smoke run prints it, which is how "60 frames drawn" is distinguished
+		/// from "60 frames drawn and none of them presented".
+		/// </summary>
+		public virtual string RenderStatusReport => null;
+
 		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 		public SystemWindow AggSystemWindow
 		{
@@ -401,6 +429,32 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
+			// An unattended run must fail loudly rather than stopping at WinForms' modal
+			// unhandled-exception dialog, which nobody is there to dismiss - and a paint that throws
+			// takes the repaint pump with it, so the run would otherwise just sit there.
+			if (SmokeFrameTarget > 0)
+			{
+				try
+				{
+					this.PaintFrame(paintEventArgs);
+				}
+				catch (Exception ex)
+				{
+					Console.Error.WriteLine($"AGG_SMOKE paint failed on frame {drawCount}: {ex}");
+					Environment.ExitCode = 1;
+					smokeRunFinished = true;
+					this.BeginInvoke((Action)this.FinishSmokeRun);
+				}
+
+				return;
+			}
+
+			this.PaintFrame(paintEventArgs);
+		}
+
+		private void PaintFrame(PaintEventArgs paintEventArgs)
+		{
+
 			base.OnPaint(paintEventArgs);
 
 			if (ShowingSystemDialog)
@@ -439,7 +493,18 @@ namespace MatterHackers.Agg.UI
 				paintEventArgs.Graphics.DrawImage(bitmap, 0, 0);
 				bitmap.Save($"c:\\temp\\gah-{DateTime.Now.Ticks}.png");
 				*/
+				// Before the present, because a GPU window can only read a frame back while the frame's
+				// texture is still the one being drawn into.
+				CheckSmokeRunProgress();
+
 				CopyBackBufferToScreen(paintEventArgs.Graphics);
+			}
+
+			// A demo that has nothing to animate would paint once and wait forever for input that a smoke
+			// run never sends, so the run pumps its own frames.
+			if (SmokeFrameTarget > 0 && !smokeRunFinished)
+			{
+				this.Invalidate();
 			}
 
 			// use this to debug that windows are drawing and updating.
@@ -448,6 +513,119 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public abstract void CopyBackBufferToScreen(Graphics displayGraphics);
+
+		/// <summary>
+		/// Counts frames for an <c>AGG_SMOKE_FRAMES</c> run and, on the target frame, asks for the
+		/// screenshot and schedules the close. Called from inside the paint, after the widgets have drawn
+		/// and before the present, which is the only moment both a finished frame and its pixels exist.
+		/// </summary>
+		private void CheckSmokeRunProgress()
+		{
+			if (SmokeFrameTarget <= 0 || smokeRunFinished || drawCount < SmokeFrameTarget)
+			{
+				return;
+			}
+
+			smokeRunFinished = true;
+
+			if (!string.IsNullOrEmpty(SmokeScreenshotPath))
+			{
+				try
+				{
+					this.CaptureScreenshot(SmokeScreenshotPath);
+				}
+				catch (Exception ex)
+				{
+					Console.Error.WriteLine($"AGG_SMOKE screenshot failed: {ex}");
+					Environment.ExitCode = 1;
+				}
+			}
+
+			// Closing from inside a paint would tear down the window mid-frame (and, on a GPU window,
+			// before the screenshot's present has run), so the close waits for this message to finish.
+			this.BeginInvoke((Action)this.FinishSmokeRun);
+		}
+
+		private void FinishSmokeRun()
+		{
+			string report = this.RenderErrorReport;
+			if (!string.IsNullOrEmpty(report))
+			{
+				Console.Error.WriteLine($"AGG_SMOKE render error: {report}");
+				Environment.ExitCode = 1;
+			}
+
+			string status = this.RenderStatusReport;
+			string detail = $"{drawCount} frames on {this.GetType().Name}"
+				+ (string.IsNullOrEmpty(status) ? string.Empty : $" [{status}]");
+
+			// The exit code was already right, but a run that failed used to print "ok" anyway, and the
+			// console line is what a human (and every log scraper) reads first.
+			if (Environment.ExitCode != 0)
+			{
+				Console.WriteLine($"AGG_SMOKE FAILED: {detail}");
+			}
+			else
+			{
+				Console.WriteLine($"AGG_SMOKE ok: {detail}");
+			}
+
+			// Armed before the close, not after: a close that throws or blocks is exactly the case the
+			// watchdog exists for.
+			StartSmokeExitWatchdog();
+
+			try
+			{
+				// Closing the agg window is what tears the platform window down with it; the form's own
+				// Close is only the fallback for a window that was never attached to one.
+				if (this.AggSystemWindow != null)
+				{
+					this.AggSystemWindow.Close();
+				}
+				else
+				{
+					this.Close();
+				}
+			}
+			catch (Exception ex)
+			{
+				// The close raced its own teardown, or a demo threw on the way out. Worth saying out loud
+				// - it is the difference between "closed cleanly" and "the watchdog had to shoot it" - but
+				// not worth failing the run over, since the frames all rendered.
+				Console.Error.WriteLine($"AGG_SMOKE: close threw {ex.GetType().Name}: {ex.Message}");
+			}
+		}
+
+		/// <summary>
+		/// Guarantees a smoke run terminates. Closing the window ends the message loop, but a demo that
+		/// left a foreground thread running (GUITester does) would keep the process alive forever, and an
+		/// unattended run that never returns is indistinguishable from a hang in the renderer.
+		/// </summary>
+		private static void StartSmokeExitWatchdog()
+		{
+			var watchdog = new System.Threading.Timer(
+				_ =>
+				{
+					Console.Error.WriteLine("AGG_SMOKE: the process did not exit on its own after closing; forcing exit.");
+					Environment.Exit(Environment.ExitCode);
+				},
+				null,
+				TimeSpan.FromSeconds(5),
+				System.Threading.Timeout.InfiniteTimeSpan);
+
+			// Nothing else holds this; keeping the reference alive is the only thing standing between the
+			// timer and the collector.
+			smokeExitWatchdog = watchdog;
+		}
+
+		private static System.Threading.Timer smokeExitWatchdog;
+
+		private static int ParseSmokeFrames()
+		{
+			return int.TryParse(Environment.GetEnvironmentVariable("AGG_SMOKE_FRAMES"), out int frames) && frames > 0
+				? frames
+				: 0;
+		}
 
 		protected override void OnPaintBackground(PaintEventArgs e)
 		{

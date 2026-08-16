@@ -52,6 +52,9 @@
          target readback), so it needs the Vortice types directly rather than transitively. -->
     <ProjectReference Include="..\..\VorticeD3D\MatterHackers.VorticeD3D.csproj" />
     <ProjectReference Include="..\..\WebGpu\MatterHackers.WebGpu.csproj" />
+    <!-- The wgpu backend itself, plus its embedded WGSL. The integration suite drives GlCompatContext
+         over a real WebGpuRenderDevice, so the tests need the backend and not just the seam. -->
+    <ProjectReference Include="..\..\WebGpuRender\WebGpuRender.csproj" />
   </ItemGroup>
 
   <!-- LCD byte-exactness fixture: raw mask/composite dumps from the agg-gui Rust reference, read by

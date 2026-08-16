@@ -235,6 +235,50 @@ namespace MatterHackers.Agg.UI
 			_openWindows.Clear();
 		}
 
+		/// <summary>
+		/// The provider type name to build the platform window from: normally
+		/// <see cref="AggContext.Config.ProviderTypes.SystemWindowProvider"/>, but overridden by the
+		/// <c>AGG_WINDOW_PROVIDER</c> environment variable when it is set.
+		/// <para>
+		/// The override deliberately beats code that assigned the config value (several demos hard-code
+		/// theirs), because its whole purpose is running an unmodified demo on a different backend. It
+		/// understands the short names <c>bitmap</c>, <c>d3d11</c> and <c>webgpu</c>, and passes anything
+		/// else through as a fully qualified type name so an out-of-tree provider can be named too.
+		/// </para>
+		/// </summary>
+		/// <exception cref="InvalidOperationException">The variable names a short form that does not exist.</exception>
+		private static string ResolveSystemWindowProviderTypeName()
+		{
+			string requested = Environment.GetEnvironmentVariable("AGG_WINDOW_PROVIDER");
+			if (string.IsNullOrWhiteSpace(requested))
+			{
+				return AggContext.Config.ProviderTypes.SystemWindowProvider;
+			}
+
+			switch (requested.Trim().ToLowerInvariant())
+			{
+				case "bitmap":
+					return "MatterHackers.Agg.UI.BitmapWinformsWindowProvider, agg_platform_win32";
+
+				case "d3d11":
+					return "MatterHackers.Agg.UI.D3D11WinformsWindowProvider, agg_platform_win32";
+
+				case "webgpu":
+					return "MatterHackers.Agg.UI.WebGpuWinformsWindowProvider, agg_platform_win32";
+
+				default:
+					// A comma means the caller wrote "Type, Assembly" themselves; anything else is a
+					// misspelled short name, which is worth failing loudly rather than silently ignoring.
+					if (requested.Contains(","))
+					{
+						return requested;
+					}
+
+					throw new InvalidOperationException(
+						$"AGG_WINDOW_PROVIDER='{requested}' is not one of bitmap, d3d11, webgpu, and is not a 'Type, Assembly' name.");
+			}
+		}
+
 		public void ShowAsSystemWindow()
 		{
 			DebugLogger.EnableFilter("SystemWindow");
@@ -249,7 +293,7 @@ namespace MatterHackers.Agg.UI
 				// to a single provider. A provider pre-set by the platform layer is preserved.
 				if (systemWindowProvider == null)
 				{
-					var providerTypeName = AggContext.Config.ProviderTypes.SystemWindowProvider;
+					var providerTypeName = ResolveSystemWindowProviderTypeName();
 					DebugLogger.LogMessage("SystemWindow", $"systemWindowProvider is null, creating from '{providerTypeName}'");
 					systemWindowProvider = AggContext.CreateInstanceFrom<ISystemWindowProvider>(providerTypeName);
 

@@ -40,6 +40,14 @@ namespace MatterHackers.Agg.UI
 	{
 	}
 
+	/// <summary>
+	/// Hands out <see cref="WebGpuSystemWindow"/>s. Nothing selects this by default - it is reached
+	/// through <c>AGG_WINDOW_PROVIDER=webgpu</c> while the WebGPU path is being brought up.
+	/// </summary>
+	public class WebGpuWinformsWindowProvider : WinformsSystemWindowProvider<WebGpuSystemWindow>
+	{
+	}
+
 	public class WinformsSystemWindowProvider<T> : ISystemWindowProvider
 		where T : WinformsSystemWindow, new()
 	{

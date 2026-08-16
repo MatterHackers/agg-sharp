@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>MatterHackers.WebGpuRender</RootNamespace>
+    <Company>MatterHackers Inc.</Company>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <!-- The backend is the only thing between application code and raw P/Invoke; missing
+         documentation on a public member is a defect here for the same reason it is in RenderCore. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- Exactly two references, and no more: RenderCore is the seam being implemented and
+       MatterHackers.WebGpu is the binding it is implemented over. Anything else (agg, RenderGl,
+       VectorMath) would let backend code reach back into the layers that are supposed to sit on
+       top of it. Note the WebGpu reference also carries the pinned wgpu-native shared library
+       into this project's output and on to anything that references it. -->
+  <ItemGroup>
+    <ProjectReference Include="..\RenderCore\RenderCore.csproj" />
+    <ProjectReference Include="..\WebGpu\MatterHackers.WebGpu.csproj" />
+  </ItemGroup>
+
+  <!-- The canned WGSL travels inside the assembly rather than as loose files: a shader that can go
+       missing at runtime is a shader that fails on a customer machine and not on ours. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Shaders\*.wgsl" />
+  </ItemGroup>
+
+</Project>

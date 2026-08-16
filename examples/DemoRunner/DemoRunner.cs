@@ -63,7 +63,42 @@ namespace MatterHackers.Agg
 				}
 			}
 
+			// Which demo opens first matters more than it looks: several of these draw straight into the
+			// window's CPU pixel buffer and throw on a GPU window, so picking the starting tab is what
+			// makes an unattended run on a GPU backend possible at all.
+			string requestedTab = Environment.GetEnvironmentVariable("AGG_DEMO_TAB");
+			if (!string.IsNullOrWhiteSpace(requestedTab))
+			{
+				var match = appWidgetFinder.FirstOrDefault(
+					a => a.Title.IndexOf(requestedTab, StringComparison.OrdinalIgnoreCase) >= 0);
+				if (match != null)
+				{
+					tabControl.SelectTab(appWidgetFinder.IndexOf(match));
+				}
+				else
+				{
+					Console.WriteLine($"DemoRunner: no demo title contains '{requestedTab}'.");
+				}
+			}
+
 			AnchorAll();
+		}
+
+		/// <summary>
+		/// The demo browser's entry point. It had none of its own and ran on the one the TUnit source
+		/// generator emitted through a stale test-project reference, so launching DemoRunner ran the test
+		/// suite rather than the demos.
+		/// </summary>
+		/// <param name="args">Unused.</param>
+		[STAThread]
+		public static void Main(string[] args)
+		{
+			var demoRunner = new DemoRunner();
+
+			var systemWindow = new SystemWindow(800, 600);
+			systemWindow.Title = "Agg Demo Runner";
+			systemWindow.AddChild(demoRunner);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

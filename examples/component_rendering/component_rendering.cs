@@ -61,6 +61,23 @@ namespace MatterHackers.Agg
 
 		public string DemoCategory { get; } = "Vector";
 
+		/// <summary>
+		/// Every other demo has one of these; this project did not, and quietly borrowed the entry point
+		/// the TUnit source generator emitted through a stale test-project reference - so launching it ran
+		/// the test suite instead of the demo.
+		/// </summary>
+		/// <param name="args">Unused.</param>
+		[STAThread]
+		public static void Main(string[] args)
+		{
+			var demoWidget = new ComponentRendering();
+
+			var systemWindow = new SystemWindow(512, 400);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
+		}
+
 		public string DemoDescription { get; } = "AGG has a gray-scale renderer that can use any 8-bit color channel of an RGB or RGBA frame buffer. Most likely it will be used to draw gray-scale images directly in the alpha-channel.";
 
 		public override void OnParentChanged(EventArgs e)

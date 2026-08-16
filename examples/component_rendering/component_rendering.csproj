@@ -33,7 +33,6 @@
     <ProjectReference Include="..\..\agg\Agg.csproj" />
     <ProjectReference Include="..\..\Gui\Gui.csproj" />
     <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj" />
-    <ProjectReference Include="..\..\Tests\Agg.Tests\Agg.Tests.csproj" />
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
   <ItemGroup>

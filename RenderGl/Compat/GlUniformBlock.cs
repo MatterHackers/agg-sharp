@@ -107,9 +107,12 @@ namespace MatterHackers.RenderGl.Compat
 		/// one out and therefore what the ported shaders expect.
 		/// <para>
 		/// <b>Multiplication order follows from that.</b> The rows are stored exactly as written, but a
-		/// WGSL <c>mat4x4&lt;f32&gt;</c> is column-indexed, so those rows arrive in the shader as columns:
-		/// the shaders must multiply <c>vec * mat</c>, not <c>mat * vec</c>. Getting this backwards
-		/// transposes every transform, and there are twelve shader combinations to get it wrong in.
+		/// WGSL <c>mat4x4&lt;f32&gt;</c> is column-indexed, so those rows arrive in the shader as columns -
+		/// already transposed - and multiplying <c>mat * vec</c> transposes a second time, which computes
+		/// exactly the row-vector <c>vec * mat</c> the matrix stack means. So the shaders must multiply
+		/// <c>mat * vec</c>, not <c>vec * mat</c>. Getting this backwards transposes every transform, and
+		/// there are twelve shader combinations to get it wrong in. (Empirically confirmed in Phase 2 leg
+		/// A; see the header of <c>WebGpuRender/Shaders/PositionColor.wgsl</c>.)
 		/// </para>
 		/// </summary>
 		/// <param name="destination">The block being filled.</param>

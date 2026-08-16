@@ -29,7 +29,11 @@
 		<ProjectReference Include="..\GuiAutomation\GuiAutomation.csproj" />
 		<ProjectReference Include="..\Gui\Gui.csproj" />
 		<ProjectReference Include="..\ImageProcessing\ImageProcessing.csproj" />
+		<ProjectReference Include="..\RenderCore\RenderCore.csproj" />
 		<ProjectReference Include="..\RenderGl\RenderGl.csproj" />
+		<!-- The WebGPU window host lives here alongside the classic ones; this reference also carries the
+		     wgpu-native shared library into the output of every app that hosts a window. -->
+		<ProjectReference Include="..\WebGpuRender\WebGpuRender.csproj" />
 		<ProjectReference Include="..\VectorMath\VectorMath.csproj" />
 		<ProjectReference Include="..\VorticeD3D\MatterHackers.VorticeD3D.csproj" />
 	</ItemGroup>

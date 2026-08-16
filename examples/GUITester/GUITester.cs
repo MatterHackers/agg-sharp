@@ -50,7 +50,17 @@ namespace MatterHackers.Agg
 			mainNavigationTabControl.AddTab(new SliderControlsPage(), "SliderControlsPage");
 			mainNavigationTabControl.AddTab(new TabPage(new FontInfoWidget(), "Fonts"), "Fonts");
 			mainNavigationTabControl.AddTab(new TabPage(new FontHintWidget(), "Font Hinting"), "Font Hinting");
-			mainNavigationTabControl.AddTab(new TabPage(new WebCamWidget(), "Web Cam"), "WebCam");
+			try
+			{
+				mainNavigationTabControl.AddTab(new TabPage(new WebCamWidget(), "Web Cam"), "WebCam");
+			}
+			catch (Exception ex)
+			{
+				// AForge's capture dialog loads its icons through BinaryFormatter, which modern .NET
+				// refuses outright, so on many machines constructing this page kills the whole demo before
+				// a window ever opens. One unavailable page is not worth the other twenty.
+				Console.WriteLine($"GUITester: skipping the Web Cam page ({ex.Message})");
+			}
 #endif
 			this.AddChild(mainNavigationTabControl);
 
