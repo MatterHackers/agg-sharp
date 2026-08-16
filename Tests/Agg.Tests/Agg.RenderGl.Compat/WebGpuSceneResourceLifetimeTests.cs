@@ -23,8 +23,10 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RenderCore;
@@ -101,6 +103,111 @@ namespace MatterHackers.Agg.Tests
 
 			// ... and exactly one buffer for this mesh is still alive.
 			await Assert.That(allBuffers.Count(buffer => !buffer.IsDisposed)).IsEqualTo(1);
+		}
+
+		/// <summary>
+		/// The strong list that owns the mesh vertex buffers is not keyed weakly the way the slot table is,
+		/// so a mesh the session has dropped leaves its buffers - and, through the slot, its render-data
+		/// plugin's interleaved vertex array - alive for the life of the renderer. Drawing anything at all
+		/// afterwards has to give them back.
+		/// </summary>
+		[Test]
+		public async Task ADroppedMeshHasItsVertexBuffersSweptOnTheNextFrame()
+		{
+			var device = new RecordingRenderDevice();
+			var target = device.CreateTexture(new TextureDescriptor(
+				Width,
+				Height,
+				TextureFormat.Bgra8Unorm,
+				TextureUsage.RenderAttachment | TextureUsage.CopySrc,
+				1,
+				1,
+				"colorTarget"));
+
+			using var context = new GlCompatContext(device);
+			context.SetRenderTarget(target, null);
+
+			var gl = new GL(context);
+			using var renderer = new WebGpuSceneRenderer(context) { OwnerGl = gl };
+			context.SceneRenderer = renderer;
+
+			DrawAndForget(gl, renderer);
+
+			var doomedBuffers = MeshVertexBuffers(device);
+			await Assert.That(doomedBuffers.Count).IsEqualTo(1);
+			await Assert.That(doomedBuffers[0].IsDisposed).IsFalse();
+
+			GC.Collect();
+			GC.WaitForPendingFinalizers();
+			GC.Collect();
+
+			// Any frame at all is the sweep's opportunity; this one happens to draw a different mesh.
+			var survivor = PlatonicSolids.CreateCube(10, 10, 10);
+			RenderFrame(gl, renderer, survivor);
+
+			await Assert.That(doomedBuffers[0].IsDisposed).IsTrue()
+				.Because("the buffers of a collected mesh can never be drawn again and must be released deterministically");
+
+			await Assert.That(MeshVertexBuffers(device).Count(buffer => !buffer.IsDisposed)).IsEqualTo(1)
+				.Because("only the mesh that is still alive may still own a buffer");
+		}
+
+		/// <summary>
+		/// Thumbnails render a mesh once through a renderer that is cached for the life of the process, so
+		/// they release rather than cache - and the release has to leave the renderer able to draw the same
+		/// mesh again without handing a disposed buffer to the pass.
+		/// </summary>
+		[Test]
+		public async Task ReleaseAllMeshBuffersFreesThemAndTheNextFrameMintsNewOnes()
+		{
+			var device = new RecordingRenderDevice();
+			var target = device.CreateTexture(new TextureDescriptor(
+				Width,
+				Height,
+				TextureFormat.Bgra8Unorm,
+				TextureUsage.RenderAttachment | TextureUsage.CopySrc,
+				1,
+				1,
+				"colorTarget"));
+
+			using var context = new GlCompatContext(device);
+			context.SetRenderTarget(target, null);
+
+			var gl = new GL(context);
+			using var renderer = new WebGpuSceneRenderer(context) { OwnerGl = gl };
+			context.SceneRenderer = renderer;
+
+			var mesh = PlatonicSolids.CreateCube(20, 20, 20);
+
+			RenderFrame(gl, renderer, mesh);
+			renderer.ReleaseAllMeshBuffers();
+
+			var firstGeneration = MeshVertexBuffers(device);
+			await Assert.That(firstGeneration.Count).IsEqualTo(1);
+			await Assert.That(firstGeneration[0].IsDisposed).IsTrue()
+				.Because("a released buffer is disposed once the submit that could still reference it has happened");
+
+			// The mesh was never edited, so its submeshes are the same objects - and they must no longer be
+			// caching the buffer that was just disposed.
+			RenderFrame(gl, renderer, mesh);
+			var allBuffers = MeshVertexBuffers(device);
+			await Assert.That(allBuffers.Count).IsEqualTo(2);
+			await Assert.That(allBuffers[1].IsDisposed).IsFalse();
+
+			// And the new buffer is owned again: disposing the renderer releases it rather than leaking it.
+			renderer.Dispose();
+			await Assert.That(allBuffers[1].IsDisposed).IsTrue();
+		}
+
+		/// <summary>
+		/// Draws a mesh in its own frame so it is only ever a local here - a mesh in the caller's frame can
+		/// stay reachable through a stack slot the JIT has not reused, which would make the sweep look
+		/// broken when it is the test that is lying.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		private static void DrawAndForget(GL gl, WebGpuSceneRenderer renderer)
+		{
+			RenderFrame(gl, renderer, PlatonicSolids.CreateCube(20, 20, 20));
 		}
 
 		/// <summary>

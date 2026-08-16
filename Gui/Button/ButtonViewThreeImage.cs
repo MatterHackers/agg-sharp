@@ -109,16 +109,22 @@ namespace MatterHackers.Agg.UI
 						{
 							graphics2D.Render(normalImage, x, y);
 						}
+						// The blender swap only reaches the screen when this Graphics2D rasterizes through
+						// DestImage. Asking whether DestImage is null used to be the same question; it is not
+						// since Graphics2DGpu started handing out a CPU compositing layer on demand, and asking
+						// it there would allocate a window-sized buffer per button per frame to set a blender
+						// nothing would read.
+						var cpuRaster = graphics2D as ImageGraphics2D;
 						IRecieveBlenderByte oldBlender = null;
-						if (graphics2D.DestImage != null)
+						if (cpuRaster?.DestImage != null)
 						{
-							oldBlender = graphics2D.DestImage.GetRecieveBlender();
-							graphics2D.DestImage.SetRecieveBlender(new BlenderPolyColorPreMultBGRA(new Color(1, 1, 1, hoverOpacity)));
+							oldBlender = cpuRaster.DestImage.GetRecieveBlender();
+							cpuRaster.DestImage.SetRecieveBlender(new BlenderPolyColorPreMultBGRA(new Color(1, 1, 1, hoverOpacity)));
 						}
 						graphics2D.Render(hoverImage, x, y);
-						if (graphics2D.DestImage != null)
+						if (cpuRaster?.DestImage != null)
 						{
-							graphics2D.DestImage.SetRecieveBlender(oldBlender);
+							cpuRaster.DestImage.SetRecieveBlender(oldBlender);
 						}
 					}
 					else
@@ -138,17 +144,23 @@ namespace MatterHackers.Agg.UI
 				graphics2D.Render(normalImage, x, y);
 				if (NumSecondsToFade > 0 && hoverOpacity > 0)
 				{
+					// The blender swap only reaches the screen when this Graphics2D rasterizes through
+					// DestImage. Asking whether DestImage is null used to be the same question; it is not
+					// since Graphics2DGpu started handing out a CPU compositing layer on demand, and asking
+					// it there would allocate a window-sized buffer per button per frame to set a blender
+					// nothing would read.
+					var cpuRaster = graphics2D as ImageGraphics2D;
 					IRecieveBlenderByte oldBlender = null;
-					if (graphics2D.DestImage != null)
+					if (cpuRaster?.DestImage != null)
 					{
-						oldBlender = graphics2D.DestImage.GetRecieveBlender();
-						graphics2D.DestImage.SetRecieveBlender(new BlenderPolyColorPreMultBGRA(new Color(1, 1, 1, hoverOpacity)));
+						oldBlender = cpuRaster.DestImage.GetRecieveBlender();
+						cpuRaster.DestImage.SetRecieveBlender(new BlenderPolyColorPreMultBGRA(new Color(1, 1, 1, hoverOpacity)));
 					}
 
 					graphics2D.Render(hoverImage, x, y);
-					if (graphics2D.DestImage != null)
+					if (cpuRaster?.DestImage != null)
 					{
-						graphics2D.DestImage.SetRecieveBlender(oldBlender);
+						cpuRaster.DestImage.SetRecieveBlender(oldBlender);
 					}
 				}
 

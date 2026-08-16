@@ -32,17 +32,9 @@ using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
-	public class BitmapWinformsWindowProvider : WinformsSystemWindowProvider<BitmapSystemWindow>
-	{
-	}
-
-	public class D3D11WinformsWindowProvider : WinformsSystemWindowProvider<D3D11SystemWindow>
-	{
-	}
-
 	/// <summary>
-	/// Hands out <see cref="WebGpuSystemWindow"/>s. Nothing selects this by default - it is reached
-	/// through <c>AGG_WINDOW_PROVIDER=webgpu</c> while the WebGPU path is being brought up.
+	/// Hands out <see cref="WebGpuSystemWindow"/>s - the only window backend since the Phase 4.5 cutover,
+	/// and the default in <c>AggContext.Config.ProviderTypes.SystemWindowProvider</c>.
 	/// </summary>
 	public class WebGpuWinformsWindowProvider : WinformsSystemWindowProvider<WebGpuSystemWindow>
 	{

@@ -64,7 +64,7 @@ namespace MatterHackers.RenderGl
 		/// <remarks>
 		/// The plan is a single reused instance, so without this it holds the last frame's commands
 		/// until some later frame happens to rebuild it. The renderer itself lives in a process-lifetime
-		/// static (D3D11ThumbnailRenderer's cached backend), which made that "until" mean "forever":
+		/// static (the thumbnail renderer's cached device), which made that "until" mean "forever":
 		/// the last rendered mesh stayed rooted, and with it the ConditionalWeakTable render caches keyed
 		/// on the mesh - measured at ~2.3 GB retained after one 5.1M-face thumbnail. The plan is rebuilt
 		/// from scratch every frame, so releasing it at end of frame costs nothing.

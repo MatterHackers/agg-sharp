@@ -94,6 +94,20 @@ namespace MatterHackers.Agg.UI
 			SetStyle(ControlStyles.UserPaint | ControlStyles.Opaque | ControlStyles.AllPaintingInWmPaint, true);
 		}
 
+		/// <summary>
+		/// Gets or sets a value indicating whether to demand wgpu's software (fallback) adapter rather than
+		/// real hardware. Must be set before <see cref="InitializeWebGpu"/>; changing it later does nothing
+		/// until the device is rebuilt.
+		/// </summary>
+		/// <remarks>
+		/// This is where <see cref="SystemWindow.UseGpu"/> - and therefore the FORCE_SOFTWARE_RENDERING
+		/// command-line switch - actually lands. The deleted D3D11 host spent it on a WARP device request;
+		/// wgpu's equivalent is <c>forceFallbackAdapter</c>, which is opt-in for the same reason WARP was:
+		/// it costs roughly 100x the frame time, so it must never happen by accident.
+		/// </remarks>
+		[System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+		public bool UseSoftwareAdapter { get; set; }
+
 		/// <summary>The facade the 2D stack draws through, or null before initialization.</summary>
 		public MatterHackers.RenderGl.OpenGl.GL Gl { get; private set; }
 
@@ -174,7 +188,7 @@ namespace MatterHackers.Agg.UI
 			// before the adapter is requested and can be passed as compatibleSurface - without that, wgpu
 			// may pick an adapter that cannot present to this window at all.
 			this.device = new WebGpuRenderDevice(
-				false,
+				this.UseSoftwareAdapter,
 				WGPUBackendType.D3D12,
 				"WebGpuControl",
 				new WindowSurfaceRequest(

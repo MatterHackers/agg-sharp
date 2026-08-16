@@ -57,7 +57,8 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		/// <see cref="WorldView"/>'s default frustum is near 0.1 / far 100 with the camera parked 7 units
 		/// back, so millimetre-sized geometry has to be scaled into that range rather than pushed away from
 		/// the camera - a translate large enough to frame a 60mm box puts the whole scene behind the far
-		/// plane and renders an empty frame. This is the same arrangement <c>D3D11ThumbnailRenderer</c> uses.
+		/// plane and renders an empty frame. This is the same arrangement MatterCAD's
+		/// <c>ThumbnailRenderer</c> uses.
 		/// </remarks>
 		/// <param name="width">Viewport width in pixels.</param>
 		/// <param name="height">Viewport height in pixels.</param>

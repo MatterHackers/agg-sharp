@@ -100,7 +100,7 @@ namespace MatterHackers.RenderGl
 		public const int InterleavedStride = 8; // floats per vertex
 
 		/// <summary>
-		/// Renderer-specific cached GPU buffer (e.g. ID3D11Buffer). Avoids per-frame upload when set.
+		/// Renderer-specific cached GPU buffer (e.g. an <c>IGpuBuffer</c>). Avoids per-frame upload when set.
 		/// </summary>
 		public object CachedGpuBuffer;
 

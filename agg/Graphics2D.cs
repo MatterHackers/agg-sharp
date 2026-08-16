@@ -75,7 +75,15 @@ namespace MatterHackers.Agg
             Best
         }
 
-        public IImageByte DestImage
+        /// <summary>
+        /// The CPU back buffer this Graphics2D rasterizes into, or null when there is none.
+        /// </summary>
+        /// <remarks>
+        /// Virtual because a GPU surface has no CPU back buffer of its own and has to make one on demand -
+        /// see <c>Graphics2DGpu.DestImage</c>, which is what lets the agg demos that rasterize by hand
+        /// (aa_demo, gouraud, blur, image_resample) run on a GPU window at all.
+        /// </remarks>
+        public virtual IImageByte DestImage
         {
             get
             {

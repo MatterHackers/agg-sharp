@@ -26,6 +26,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
 using Agg;
+using MatterHackers.RenderGl;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
@@ -510,11 +511,16 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
-				/*
-				var bitmap = new Bitmap((int)SystemWindow.Width, (int)SystemWindow.Height);
-				paintEventArgs.Graphics.DrawImage(bitmap, 0, 0);
-				bitmap.Save($"c:\\temp\\gah-{DateTime.Now.Ticks}.png");
-				*/
+				// A widget that rasterized into Graphics2D.DestImage drew into a CPU buffer, not into the
+				// frame. On a GPU surface that buffer is a layer this uploads and draws over the frame now,
+				// after every widget has had its turn - the agg demos that rasterize by hand (aa_demo,
+				// FontHinting and friends) are the consumers, and on a CPU surface there is nothing to do
+				// because DestImage *is* the frame.
+				if (graphics2D is Graphics2DGpu gpuGraphics && gpuGraphics.HasCpuLayer)
+				{
+					gpuGraphics.CompositeCpuLayer();
+				}
+
 				// Before the present, because a GPU window can only read a frame back while the frame's
 				// texture is still the one being drawn into.
 				CheckSmokeRunProgress();

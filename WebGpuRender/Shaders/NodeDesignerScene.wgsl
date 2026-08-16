@@ -1,7 +1,7 @@
 // Copyright (c) 2026, Lars Brubaker. All rights reserved. See the license in the repository root.
 //
-// The native 3D scene pipeline. Ported from VorticeD3D/Shaders/NodeDesignerScene.hlsl, which stays on
-// disk untouched as the parity oracle the goldens were captured from.
+// The native 3D scene pipeline. Ported from VorticeD3D/Shaders/NodeDesignerScene.hlsl, which served as
+// the parity oracle until the Phase 4.5 re-baseline and was deleted with the rest of that backend.
 //
 // Rules that carry over from the 2D modules (see PositionColor.wgsl for the evidence):
 //

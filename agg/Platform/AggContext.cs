@@ -154,7 +154,7 @@ namespace MatterHackers.Agg.Platform
 
 			public string DialogProvider { get; set; } = "MatterHackers.Agg.Platform.WinformsFileDialogProvider, agg_platform_win32";
 
-			public string SystemWindowProvider { get; set; } = "MatterHackers.Agg.UI.BitmapWinformsWindowProvider, agg_platform_win32";
+			public string SystemWindowProvider { get; set; } = "MatterHackers.Agg.UI.WebGpuWinformsWindowProvider, agg_platform_win32";
 		}
 
 		public class AggGraphicsMode

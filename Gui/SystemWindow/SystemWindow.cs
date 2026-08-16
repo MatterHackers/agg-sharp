@@ -59,7 +59,7 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// Gets or sets a value indicating whether this window renders on the GPU. GPU rendering is the default for
 		/// every window; set false (e.g. via RootSystemWindow.DefaultUseGpu / the FORCE_SOFTWARE_RENDERING switch) to
-		/// request the WARP software rasterizer when hosted in a D3D11SystemWindow.
+		/// request wgpu's software (fallback) adapter when hosted in a WebGpuSystemWindow.
 		/// </summary>
 		public bool UseGpu { get; set; } = true;
 
@@ -241,9 +241,15 @@ namespace MatterHackers.Agg.UI
 		/// <c>AGG_WINDOW_PROVIDER</c> environment variable when it is set.
 		/// <para>
 		/// The override deliberately beats code that assigned the config value (several demos hard-code
-		/// theirs), because its whole purpose is running an unmodified demo on a different backend. It
-		/// understands the short names <c>bitmap</c>, <c>d3d11</c> and <c>webgpu</c>, and passes anything
-		/// else through as a fully qualified type name so an out-of-tree provider can be named too.
+		/// theirs), because its whole purpose is running an unmodified demo on a chosen host. It
+		/// understands the short name <c>webgpu</c>, and passes anything else through as a fully qualified
+		/// type name so an out-of-tree provider can be named too.
+		/// </para>
+		/// <para>
+		/// <c>bitmap</c> and <c>d3d11</c> were the other two short names. Both backends are deleted -
+		/// WebGPU is the only render path to screen - so they are still recognised here for exactly one
+		/// reason: to fail with a message that says what happened, rather than with "not a 'Type, Assembly'
+		/// name", which reads like a typo to whoever has the variable left over in a shell.
 		/// </para>
 		/// </summary>
 		/// <exception cref="InvalidOperationException">The variable names a short form that does not exist.</exception>
@@ -257,14 +263,14 @@ namespace MatterHackers.Agg.UI
 
 			switch (requested.Trim().ToLowerInvariant())
 			{
-				case "bitmap":
-					return "MatterHackers.Agg.UI.BitmapWinformsWindowProvider, agg_platform_win32";
-
-				case "d3d11":
-					return "MatterHackers.Agg.UI.D3D11WinformsWindowProvider, agg_platform_win32";
-
 				case "webgpu":
 					return "MatterHackers.Agg.UI.WebGpuWinformsWindowProvider, agg_platform_win32";
+
+				case "bitmap":
+				case "d3d11":
+					throw new InvalidOperationException(
+						$"AGG_WINDOW_PROVIDER='{requested}' names a render backend that no longer exists."
+						+ " WebGPU is the only window backend; use 'webgpu' or unset the variable.");
 
 				default:
 					// A comma means the caller wrote "Type, Assembly" themselves; anything else is a
@@ -275,7 +281,7 @@ namespace MatterHackers.Agg.UI
 					}
 
 					throw new InvalidOperationException(
-						$"AGG_WINDOW_PROVIDER='{requested}' is not one of bitmap, d3d11, webgpu, and is not a 'Type, Assembly' name.");
+						$"AGG_WINDOW_PROVIDER='{requested}' is not 'webgpu' and is not a 'Type, Assembly' name.");
 			}
 		}
 
@@ -386,7 +392,7 @@ namespace MatterHackers.Agg.UI
 
 		/// <summary>
 		/// Captures a screenshot of this window and saves it to the given file path.
-		/// Delegates to the platform window implementation (e.g. D3D11, OpenGL).
+		/// Delegates to the platform window implementation.
 		/// </summary>
 		public void CaptureScreenshot(string path)
 		{

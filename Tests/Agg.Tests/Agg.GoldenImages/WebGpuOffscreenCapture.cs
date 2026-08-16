@@ -38,33 +38,31 @@ using MatterHackers.WebGpuRender;
 namespace MatterHackers.Agg.Tests.GoldenImages
 {
 	/// <summary>
-	/// The wgpu twin of <see cref="D3D11OffscreenCapture"/>: a <see cref="WebGpuRenderDevice"/> with an
-	/// off-screen colour and depth target, a <see cref="GlCompatContext"/> over it, and the same
-	/// <see cref="GL"/> facade the whole 2D stack draws through - so one golden scene can be rendered on
-	/// either backend and the pixels compared.
+	/// The golden suites' capture end: a <see cref="WebGpuRenderDevice"/> with an off-screen colour and
+	/// depth target, a <see cref="GlCompatContext"/> over it, and the same <see cref="GL"/> facade the whole
+	/// 2D stack draws through - so a golden scene is rendered by exactly the code the application runs.
 	/// </summary>
 	/// <remarks>
-	/// Deliberately mirrors the classic capture member for member, including <see cref="BeginWidgetFrame"/>'s
-	/// odd double clear, because any divergence in frame setup would show up in the diff images as a port bug
-	/// that isn't one.
+	/// This mirrored a classic D3D11 capture member for member while the two backends were compared,
+	/// including <see cref="BeginWidgetFrame"/>'s odd double clear. The classic half is deleted; the frame
+	/// setup is kept as it was because the checked-in goldens are what it produces.
 	/// <para>
-	/// The colour target is <see cref="TextureFormat.Bgra8Unorm"/> - the format the classic off-screen target
-	/// uses (<c>Format.B8G8R8A8_UNorm</c>) and the byte order agg's 32-bit <see cref="ImageBuffer"/> stores -
-	/// so the read-back bytes land in the golden image without a swizzle that could hide a channel bug.
+	/// The colour target is <see cref="TextureFormat.Bgra8Unorm"/>, the byte order agg's 32-bit
+	/// <see cref="ImageBuffer"/> stores, so the read-back bytes land in the golden image without a swizzle
+	/// that could hide a channel bug.
 	/// </para>
 	/// <para>
 	/// D3D12 is requested explicitly, exactly as the wgpu unit-test harness does: a machine that silently
-	/// picked Vulkan would turn "wrong backend" into an unexplained pixel diff against goldens captured on
-	/// D3D11 hardware.
+	/// picked Vulkan would turn "wrong backend" into an unexplained pixel diff.
 	/// </para>
 	/// </remarks>
 	public sealed class WebGpuOffscreenCapture : IDisposable
 	{
-		/// <summary>Capture size for the golden suites; must match <see cref="D3D11OffscreenCapture.DefaultWidth"/>
-		/// or the comparison is against a different image.</summary>
-		public const int DefaultWidth = D3D11OffscreenCapture.DefaultWidth;
+		/// <summary>Capture size for the golden suites. Changing either dimension invalidates every
+		/// checked-in golden.</summary>
+		public const int DefaultWidth = 512;
 
-		public const int DefaultHeight = D3D11OffscreenCapture.DefaultHeight;
+		public const int DefaultHeight = 384;
 
 		private WebGpuRenderDevice device;
 		private GlCompatContext context;
@@ -108,10 +106,9 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 
 				Gl = new GL(context);
 
-				// The scene compositor is a separate object here (the classic backend is one class that is
-				// both), so the context forwards INativeSceneRenderer to it and it is handed the facade the
-				// mesh render-data caches are keyed on - the same wiring D3D11OffscreenCapture does with
-				// VorticeD3DGl.OwnerGl.
+				// The scene compositor is a separate object from the context, so the context forwards
+				// INativeSceneRenderer to it and it is handed the facade the mesh render-data caches are
+				// keyed on - the same wiring WebGpuControl does for the on-screen window.
 				sceneRenderer = new WebGpuSceneRenderer(context) { OwnerGl = Gl };
 				context.SceneRenderer = sceneRenderer;
 			}
@@ -154,7 +151,7 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		public static WebGpuOffscreenCapture Create(int width = DefaultWidth, int height = DefaultHeight)
 			=> new WebGpuOffscreenCapture(width, height);
 
-		/// <summary>Clears colour and depth to known values, as the classic capture does.</summary>
+		/// <summary>Clears colour and depth to known values.</summary>
 		public void ClearTo(ColorF color)
 		{
 			Gl.ClearColor(color.red, color.green, color.blue, color.alpha);
@@ -163,9 +160,8 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		}
 
 		/// <summary>
-		/// Sets up the frame the way <c>D3D11SystemWindow.SetAndClearViewPort</c> does - and the way
-		/// <see cref="D3D11OffscreenCapture.BeginWidgetFrame"/> does - and returns the widget-facing
-		/// <see cref="Graphics2D"/>.
+		/// Sets up the frame the way <c>WebGpuSystemWindow.SetAndClearViewPort</c> does, and returns the
+		/// widget-facing <see cref="Graphics2D"/>.
 		/// </summary>
 		public Graphics2DGpu BeginWidgetFrame(ColorF background)
 		{
@@ -191,15 +187,14 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 
 		/// <summary>
 		/// Installs the 3D frame state (<see cref="RenderHelper.SetGlContext"/>) and opens a scene, runs
-		/// <paramref name="drawScene"/>, then closes both - member for member what
-		/// <see cref="D3D11OffscreenCapture.RenderScene"/> does, so one scene definition drives both
-		/// backends.
+		/// <paramref name="drawScene"/>, then closes both - the same frame shape the on-screen viewport
+		/// uses, so a golden scene exercises the code the application runs.
 		/// </summary>
 		/// <param name="world">The camera.</param>
 		/// <param name="lighting">The frame's lights.</param>
 		/// <param name="drawScene">Draws the scene through <see cref="Gl"/>.</param>
-		/// <param name="supersample">Routes the frame through the 3x full-frame capture. Phase 3 leg B;
-		/// the WebGPU renderer throws rather than silently rendering an unsupersampled frame.</param>
+		/// <param name="supersample">Routes the frame through the 3x full-frame capture. The renderer throws
+		/// rather than silently rendering an unsupersampled frame.</param>
 		public void RenderScene(WorldView world, LightingData lighting, Action drawScene, bool supersample = false)
 		{
 			if (supersample)
@@ -228,8 +223,7 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		}
 
 		/// <summary>
-		/// Ends the frame and copies the colour target into an <see cref="ImageBuffer"/> (BGRA, bottom-up),
-		/// in the same orientation <see cref="D3D11OffscreenCapture.Capture"/> produces.
+		/// Ends the frame and copies the colour target into an <see cref="ImageBuffer"/> (BGRA, bottom-up).
 		/// </summary>
 		/// <remarks>
 		/// Asynchronous because WebGPU read-back is <c>mapAsync</c>-only by contract (the native backend

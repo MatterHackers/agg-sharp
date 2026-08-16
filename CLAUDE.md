@@ -51,11 +51,13 @@ When a bug is reported, always follow this workflow:
 - `Csg/` — Constructive solid geometry (boolean operations on meshes)
 - `DataConverters2D/` — 2D path/shape conversion utilities
 - `DataConverters3D/` — 3D file format loaders (STL, AMF, OBJ, 3MF)
-- `RenderGl/` — Graphics abstraction layer for GPU rendering: `IGpuContext`, the `GL` facade class, `Graphics2DGpu` (GPU 2D drawing), `INativeSceneRenderer`. The "GL" in these names is a historical API shape, not OpenGL bindings.
-- `VorticeD3D/` — The production render backend: D3D11 via Vortice.Windows. Implements `IGpuContext` (`VorticeD3DGl.cs`) and `INativeSceneRenderer`; the swapchain host lives in `D3D11Control.cs`.
-- `RenderOpenGl/`, `Glfw/` — Removed. OpenGL/OpenTK/GLFW are gone; D3D11 is the only render backend. Any leftover folders on disk are stale build output and belong to no solution.
+- `RenderCore/` — The backend-agnostic render seam: `IRenderDevice`, `IRenderEncoder`, resource descriptors, texture formats. What a backend implements.
+- `RenderGl/` — Graphics abstraction layer for GPU rendering: `IGpuContext`, the `GL` facade class, `Graphics2DGpu` (GPU 2D drawing), `INativeSceneRenderer`, and `Compat/` (the transitional GL-shaped layer over `RenderCore`). The "GL" in these names is a historical API shape, not OpenGL bindings.
+- `WebGpu/` — The generated `webgpu.h` binding plus its generator and the wgpu-native bootstrap (`native/WgpuNative.targets`).
+- `WebGpuRender/` — **The one render backend**: wgpu-native (D3D12 on Windows, Metal/Vulkan elsewhere) behind `RenderCore`, with WGSL shaders in `Shaders/`.
+- `RenderOpenGl/`, `Glfw/`, `VorticeD3D/` — Removed. OpenGL/OpenTK/GLFW and the D3D11/Vortice.Windows backend are gone; WebGPU is the only render path to screen. Any leftover folders on disk are stale build output and belong to no solution.
 - `ImageProcessing/` — Image filters, transforms, analysis
-- `PlatformWin32/` — Windows platform abstraction (input, clipboard, system windows)
+- `PlatformWin32/` — Windows platform abstraction (input, clipboard, system windows). `win32/WebGpuSystemWindow.cs` + `win32/WebGpuControl.cs` are the WinForms window host.
 - `Tests/Agg.Tests/` — All tests
 
 ## Code Quality

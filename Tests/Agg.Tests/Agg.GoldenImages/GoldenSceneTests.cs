@@ -25,40 +25,35 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Threading.Tasks;
-using MatterHackers.PolygonMesh;
 using MatterHackers.RenderGl;
-using MatterHackers.VectorMath;
+using TUnit.Assertions;
+using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
 namespace MatterHackers.Agg.Tests.GoldenImages
 {
 	/// <summary>
-	/// Goldens for the 3D path (<see cref="INativeSceneRenderer"/>) on the classic D3D11 backend: lit opaque
-	/// meshes, the dual-depth-peeling transparency compositor, the edge and wireframe render types, selection
-	/// outlines, and the 3x supersampled full-frame capture.
+	/// The 3D suite: the scenes in <see cref="Golden3DScenes"/> rendered by <c>WebGpuSceneRenderer</c> on
+	/// <c>WebGpuRenderDevice</c> and compared against the checked-in PNGs.
 	/// </summary>
 	/// <remarks>
-	/// Every scene here is built from generated geometry rather than a loaded file, so the goldens depend on
-	/// nothing but the renderer. The camera is set by hand (never <c>Fit</c>) for the same reason: a framing
-	/// derived from a bounding box would move the moment the geometry helpers changed and every golden would
-	/// go stale for a reason that has nothing to do with rendering.
+	/// Tolerance is zero, per O4 and per the Phase 2 result: the goal is 1:1 pixel identity, and a suite
+	/// that starts permissive can never be tightened afterwards because nobody knows which differences
+	/// were real. Where a difference turns out to be a genuine artifact rather than a bug, the tolerance
+	/// is raised <i>at the individual call site</i> with the evidence written next to it - as of the
+	/// Phase 4.5 re-baseline no scene here needs one.
 	/// </remarks>
 	[NotInParallel]
 	public class GoldenSceneTests
 	{
-		/// <summary>Runs one scene and compares it against its golden.</summary>
-		/// <param name="goldenName">Golden image name.</param>
-		/// <param name="supersample">Routes the frame through the 3x full-frame capture.</param>
-		/// <param name="drawScene">Draws the scene.</param>
-		/// <param name="depthPeelingLayers">The transparency mode: the default peels, 2 selects the sorted
-		/// alpha-blend approximation.</param>
 		private static async Task Check(
 			string goldenName,
-			bool supersample,
-			Action<D3D11OffscreenCapture> drawScene,
+			Action<WebGpuOffscreenCapture> drawScene,
+			double maxPercentDifferingPixels = 0,
+			bool supersample = false,
 			int depthPeelingLayers = 6)
 		{
-			using var capture = D3D11OffscreenCapture.Create();
+			using var capture = WebGpuOffscreenCapture.Create();
 
 			capture.DepthPeelingLayers = depthPeelingLayers;
 
@@ -70,172 +65,168 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 			// place, so a shared instance would be renormalising an already normalised vector.
 			var lighting = new LightingData();
 
+			RenderHelper.ResetLegacyMeshFallbackCount();
 			capture.RenderScene(world, lighting, () => drawScene(capture), supersample);
 
-			await GoldenImage.Check(capture.Capture(), goldenName);
+			var rendered = await capture.CaptureAsync();
+
+			// Checked before the image compare: a validation error explains a diff far better than the
+			// diff does, and wgpu reports it out of band rather than failing the call that caused it.
+			await Assert.That(capture.Device.LastUncapturedError).IsNull();
+
+			// The whole point of closing the CanRender gaps: no mesh in a scene frame may reach the legacy
+			// immediate-mode draw, which this backend's compat layer does not implement. A pixel diff would
+			// catch a mesh that vanished, but not one the fallback happened to draw acceptably - this does.
+			await Assert.That(RenderHelper.LegacyMeshFallbackCount).IsEqualTo(0)
+				.Because($"'{goldenName}' fell through INativeSceneRenderer.CanRender to the legacy GL mesh path");
+
+			await GoldenImage.Check(rendered, goldenName, channelTolerance: 0, maxPercentDifferingPixels);
 		}
 
 		[Test]
 		public async Task OpaqueMeshes()
 		{
-			await Check("Scene.Opaque", supersample: false, capture =>
+			await Check("Scene.Opaque", capture =>
 				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 255));
 		}
 
+		[Test]
+		public async Task OutlineRenderType()
+		{
+			await Check("Scene.Outlines", capture =>
+				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Outlines, 255));
+		}
+
+		[Test]
+		public async Task WireframeRenderType()
+		{
+			await Check("Scene.Wireframe", capture =>
+				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Wireframe, 255));
+		}
+
+		/// <summary>Selection outlines, queued on the renderer directly.</summary>
+		/// <remarks>
+		/// This is the one golden whose pixels changed at the Phase 4.5 re-baseline, and the change is a bug
+		/// fix rather than a port artifact. The classic D3D11 path dimmed the inner half of the outline where
+		/// it crossed geometry (1846 pixels, 0.94% of the frame): its selection mask asked for a depth-writing
+		/// state through <c>ShouldBindDepthStencilState</c>, but the composite and blit passes invalidated
+		/// that cache without updating it, so the state left bound was the blit's depth-off one and the
+		/// occlusion test degenerated into "is there geometry under this pixel". The bug was frame-shape
+		/// dependent - an overlay command in the same frame made the identical code path bind depth
+		/// correctly - so <c>WebGpuSceneRenderer</c> implements what the classic code <i>says</i> rather than
+		/// what its state cache did, and this golden now records that.
+		/// </remarks>
+		[Test]
+		public async Task SelectionOutline()
+		{
+			await Check(
+				"Scene.SelectionOutline",
+				capture => Golden3DScenes.DrawSelectionOutlineScene(capture.Gl, capture.SceneRenderer));
+		}
+
 		/// <summary>
-		/// The transparency compositor. Every mesh is partly transparent and they overlap each other, so the
-		/// image is entirely a product of the dual-depth-peeling passes - the hardest visual-parity item in
-		/// the port, and the one whose blend formulation has to be reproduced exactly in WGSL.
+		/// The transparency compositor: every mesh partly transparent and overlapping, so the image is
+		/// entirely a product of the dual depth peeling passes. This is the golden the leg C reformulation
+		/// exists for - the classic path's MAX-blended Rg32Float depth range against two hardware depth
+		/// tests here, which must peel the same layers in the same order and terminate on the same
+		/// iteration.
 		/// </summary>
 		[Test]
 		public async Task TransparentMeshes()
 		{
-			await Check("Scene.Transparent", supersample: false, capture =>
+			await Check("Scene.Transparent", capture =>
 				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 120));
 		}
 
 		/// <summary>
-		/// The same transparent scene in the <i>other</i> transparency mode: the sorted alpha-blend
-		/// approximation the setting falls back to when depth peeling is switched off. A different set of
-		/// passes entirely (no peel, no accumulation targets, a premultiplied blit), so it needs its own
-		/// golden.
+		/// The sorted alpha-blend transparency mode - the classic path's other transparency mode, ported in
+		/// Phase 4 because it is a user-facing setting rather than an implementation detail. No peel at all:
+		/// the transparent commands are sorted back to front and blended into the scene colour target, back
+		/// faces then front faces, and the resolve and blit change with them.
 		/// </summary>
 		[Test]
 		public async Task TransparentAlphaBlendMode()
 		{
 			await Check(
 				"Scene.TransparentAlphaBlend",
-				supersample: false,
 				capture => Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 120),
 				depthPeelingLayers: 2);
 		}
 
-		/// <summary>
-		/// The bed in the alpha-blend transparency mode, where it is drawn by the ordinary transparent pass
-		/// rather than by the peel - the one scene that reaches the analytic grid through that pass's
-		/// shading entry point.
-		/// </summary>
+		/// <summary>The bed in the alpha-blend mode, which is what reaches that pass's textured shading
+		/// entry point and its analytic grid.</summary>
 		[Test]
 		public async Task BedAlphaBlendMode()
 		{
 			await Check(
 				"Scene.BedAlphaBlend",
-				supersample: false,
 				capture => Golden3DScenes.DrawBedScene(capture.Gl, capture.SceneRenderer),
 				depthPeelingLayers: 2);
 		}
 
-		/// <summary>Opaque geometry in front of transparent geometry, which is the case that actually
-		/// exercises the peel-against-opaque-depth interaction rather than peeling alone.</summary>
+		/// <summary>Opaque geometry in front of transparent geometry - the case that exercises the peel's
+		/// rejection against the opaque depth buffer rather than peeling alone.</summary>
 		[Test]
 		public async Task MixedOpaqueAndTransparent()
 		{
-			await Check("Scene.Mixed", supersample: false, capture => Golden3DScenes.DrawMixedScene(capture.Gl));
-		}
-
-		/// <summary>The outline render type - shaded fill plus the mesh's edge overlay.</summary>
-		[Test]
-		public async Task OutlineRenderType()
-		{
-			await Check("Scene.Outlines", supersample: false, capture =>
-				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Outlines, 255));
-		}
-
-		/// <summary>Wireframe, where only the edge geometry is drawn - a different path again from the
-		/// outline overlay.</summary>
-		[Test]
-		public async Task WireframeRenderType()
-		{
-			await Check("Scene.Wireframe", supersample: false, capture =>
-				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Wireframe, 255));
-		}
-
-		/// <summary>Selection outlines, queued on the renderer directly. Reachable without any app-level
-		/// machinery, so the port's outline pass has a golden of its own.</summary>
-		[Test]
-		public async Task SelectionOutline()
-		{
-			await Check("Scene.SelectionOutline", supersample: false, capture =>
-				Golden3DScenes.DrawSelectionOutlineScene(capture.Gl, capture.SceneRenderer));
-		}
-
-		/// <summary>
-		/// The same opaque scene through <c>BeginFullFrameCapture</c> / <c>DownsampleAndBlitFullFrame</c> -
-		/// the 3x supersample target plus the 9-tap box downsample the viewport and thumbnails use. The
-		/// "swap the render target view" trick behind it has no WebGPU equivalent, so this golden is what
-		/// says the replacement produces the same pixels.
-		/// </summary>
-		[Test]
-		public async Task SupersampledFullFrame()
-		{
-			await Check("Scene.Supersampled", supersample: true, capture =>
-				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 255));
+			await Check("Scene.Mixed", capture => Golden3DScenes.DrawMixedScene(capture.Gl));
 		}
 
 		/// <summary>Supersampled transparency: the capture target and the peel targets have to agree about
-		/// resolution, which is exactly the kind of thing that breaks silently in a port.</summary>
+		/// resolution, and the peel shaders read their depth textures by pixel coordinate.</summary>
 		[Test]
 		public async Task SupersampledTransparent()
 		{
-			await Check("Scene.SupersampledTransparent", supersample: true, capture =>
-				Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 120));
+			await Check(
+				"Scene.SupersampledTransparent",
+				capture => Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 120),
+				supersample: true);
 		}
 
-		/// <summary>
-		/// The printer bed: shadow mask, blur, composite and the analytic grid, queued through the
-		/// renderer's bed entry point.
-		/// </summary>
+		/// <summary>The printer bed, with its cast shadow and analytic grid.</summary>
 		[Test]
 		public async Task BedWithShadow()
 		{
-			await Check("Scene.Bed", supersample: false, capture =>
-				Golden3DScenes.DrawBedScene(capture.Gl, capture.SceneRenderer));
+			await Check("Scene.Bed", capture => Golden3DScenes.DrawBedScene(capture.Gl, capture.SceneRenderer));
 		}
 
-		/// <summary>
-		/// A textured mesh - the one scene that reaches the shaders' texture entry points.
-		/// </summary>
+		/// <summary>A textured mesh - the only scene that reaches the shaders' texture entry points.</summary>
 		[Test]
 		public async Task TexturedMesh()
 		{
-			await Check("Scene.TexturedMesh", supersample: false, capture =>
-				Golden3DScenes.DrawTexturedMeshScene(capture.Gl));
+			await Check("Scene.TexturedMesh", capture => Golden3DScenes.DrawTexturedMeshScene(capture.Gl));
 		}
 
 		/// <summary>
-		/// The gizmo overlay layer - 3D lines, arrow heads, the selection box, a rotate ring, the direction
-		/// axis and a minified textured glyph quad.
+		/// The gizmo overlay layer, which is the only part of the app frame Phase 4 leg A found diverging.
 		/// </summary>
-		/// <remarks>
-		/// Added in Phase 4 leg B because the full-app frame comparison found its only divergence here and no
-		/// golden covered it. The camera is rebuilt from <see cref="Golden3DScenes.CreateCamera"/> rather than
-		/// captured from <see cref="Check"/>: the overlay helpers take the world directly, and the factory is
-		/// the single definition of it, so both come from the same place.
-		/// </remarks>
 		[Test]
 		public async Task GizmoOverlay()
 		{
-			await Check("Scene.GizmoOverlay", supersample: false, capture =>
+			await Check("Scene.GizmoOverlay", capture =>
 				Golden3DScenes.DrawGizmoOverlayScene(
 					capture.Gl,
 					Golden3DScenes.CreateCamera(capture.Width, capture.Height)));
 		}
 
-		/// <summary>
-		/// The overhang render type.
-		/// </summary>
-		/// <remarks>
-		/// This golden is captured through the classic backend's <i>fallback</i> path, not its native scene
-		/// pipeline: <c>VorticeD3DGl.CanRender</c> refuses <see cref="RenderTypes.Overhang"/>, so
-		/// <c>RenderHelper.Render</c> drops through to immediate-mode GL. That is exactly the hole Phase 3
-		/// leg B closes on the WebGPU side, which is why the cross-backend twin of this test does not
-		/// compare against this image - see <c>GoldenSceneOnWebGpuTests.OverhangRenderType</c>.
-		/// </remarks>
+		/// <summary>The overhang render type, drawn natively by the scene renderer.</summary>
 		[Test]
 		public async Task OverhangRenderType()
 		{
-			await Check("Scene.Overhang", supersample: false, capture =>
-				Golden3DScenes.DrawOverhangScene(capture.Gl));
+			await Check("Scene.Overhang", capture => Golden3DScenes.DrawOverhangScene(capture.Gl));
+		}
+
+		/// <summary>
+		/// The 3x supersampled full-frame capture: the compat layer swaps its render target, and this golden
+		/// pins the box filter and the pixel-space widths that come out of it.
+		/// </summary>
+		[Test]
+		public async Task SupersampledFullFrame()
+		{
+			await Check(
+				"Scene.Supersampled",
+				capture => Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 255),
+				supersample: true);
 		}
 	}
 }

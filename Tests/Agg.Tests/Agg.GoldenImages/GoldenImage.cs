@@ -35,8 +35,8 @@ using TUnit.Core;
 namespace MatterHackers.Agg.Tests.GoldenImages
 {
 	/// <summary>
-	/// The parity oracle for the wgpu port: renders are compared against checked-in golden PNGs captured
-	/// from the classic D3D11 path, so a later backend can be held to what the shipping one produced.
+	/// The rendering regression oracle: renders are compared against checked-in golden PNGs, so any change
+	/// to the render path has to declare itself.
 	/// </summary>
 	/// <remarks>
 	/// <b>Tolerance defaults to zero on purpose.</b> The port's stated goal is 1:1 pixel identity; a suite
@@ -52,9 +52,9 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 	/// later parity check inherits that noise.
 	/// </para>
 	/// <para>
-	/// <b>Goldens are GPU specific.</b> They are captured from real D3D11 hardware, and rasterization and
-	/// filtering differ between vendors and driver versions. A mismatch on a different machine is expected
-	/// and is not by itself a regression - see the failure artifacts before concluding anything.
+	/// <b>Goldens are GPU specific.</b> They are captured from real hardware through wgpu, and rasterization
+	/// and filtering differ between vendors and driver versions. A mismatch on a different machine is
+	/// expected and is not by itself a regression - see the failure artifacts before concluding anything.
 	/// </para>
 	/// </remarks>
 	public static class GoldenImage

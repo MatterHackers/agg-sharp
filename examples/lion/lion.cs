@@ -164,16 +164,9 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			var useD3D11 = args.Contains("--d3d11");
-			useD3D11 = true;
-            if (useD3D11)
-			{
-				AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.D3D11WinformsWindowProvider, agg_platform_win32";
-			}
-			else
-			{
-				AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.OpenGLWinformsWindowProvider, agg_platform_win32";
-			}
+			// The default already resolves to this; naming it keeps the demo running on the wgpu host even
+			// if an out-of-tree config file has a stale provider in it.
+			AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.WebGpuWinformsWindowProvider, agg_platform_win32";
 
 			var demoWidget = new Lion();
 

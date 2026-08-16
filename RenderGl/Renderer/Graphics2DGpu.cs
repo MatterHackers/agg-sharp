@@ -47,9 +47,9 @@ using filling_rule_e = MatterHackers.Agg.Util.filling_rule_e;
 
 namespace MatterHackers.RenderGl
 {
-	// This is the live GPU 2D render path - D3D11SystemWindow.NewGraphics2D hands out one of these.
-	// All drawing goes through the IGpuContext abstraction, which in production is implemented by
-	// VorticeD3DGl on top of D3D11. The OpenGL-flavored vocabulary in GL/IGpuContext is a historical
+	// This is the live GPU 2D render path - WebGpuSystemWindow.NewGraphics2D hands out one of these.
+	// All drawing goes through the IGpuContext abstraction, which in production is the compat layer over
+	// WebGpuRenderDevice (wgpu-native). The OpenGL-flavored vocabulary in GL/IGpuContext is a historical
 	// API shape kept from the since-removed OpenGL backend, not a live OpenGL dependency.
 	public class Graphics2DGpu : Graphics2D
 	{
@@ -74,6 +74,12 @@ namespace MatterHackers.RenderGl
             public readonly List<AARenderTesselator> AvailableTriangleEdgeInfos = new List<AARenderTesselator>();
             public readonly Dictionary<ulong, int> DisplayListCache = new Dictionary<ulong, int>();
             public RenderTesselator RenderNowTesselator;
+
+            /// <summary>
+            /// The CPU raster layer for this context, kept here rather than on the Graphics2DGpu because
+            /// the window host builds a fresh one of those every paint and this buffer is megabytes.
+            /// </summary>
+            public ImageBuffer CpuLayer;
 
             /// <summary>
             /// The value of <see cref="cacheGeneration"/> these caches were last reset at. Only ever
@@ -175,10 +181,10 @@ namespace MatterHackers.RenderGl
         {
             this.gl = gl;
 
-            // D3D11SystemWindow builds a Graphics2DGpu before the device is initialized and again
-            // after teardown. Such an instance can not draw anything, so give it throwaway caches
-            // instead of keying the context table on null (which throws) or minting a thousand
-            // tesselators bound to nothing.
+            // A Graphics2DGpu can be built with no GL behind it at all - a destination for a window
+            // whose device does not exist yet or is already torn down. Such an instance can not draw
+            // anything, so give it throwaway caches instead of keying the context table on null
+            // (which throws) or minting a thousand tesselators bound to nothing.
             this.caches = gl == null ? new GlContextCaches() : GetCachesForContext(gl);
 
             if (gl != null)
@@ -208,6 +214,91 @@ namespace MatterHackers.RenderGl
             this.width = width;
             this.height = height;
             cachedClipRect = new RectangleDouble(0, 0, width, height);
+        }
+
+        /// <summary>
+        /// A CPU-rasterized layer the size of this surface, cleared to transparent, that is drawn over the
+        /// GPU frame at the end of the frame.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Graphics2D.DestImage"/> is the agg CPU rasterizer's back buffer, and a GPU surface has
+        /// no such thing - the base class field stays null and every widget that reaches for it (the agg
+        /// demos that rasterize by hand: aa_demo, FontHinting, gouraud, blur, image_resample and friends)
+        /// used to die on an NRE the moment they were hosted on a GPU window.
+        /// <para>
+        /// So they get a real one. The buffer is plain system memory that agg rasterizes into exactly as it
+        /// would on a bitmap window; the difference is only that it reaches the screen as a texture upload
+        /// in <see cref="CompositeCpuLayer"/> rather than as a GDI blit. It is allocated on first ask and
+        /// then reused, because these demos ask every frame.
+        /// </para>
+        /// <para>
+        /// Deliberately <b>not</b> a read-back of the GPU frame. A demo that draws into it is compositing
+        /// its own picture over whatever the GPU drew, and making it start as a copy of the frame would
+        /// cost a full stall-and-map every frame to give a picture nothing here reads.
+        /// </para>
+        /// </remarks>
+        public override IImageByte DestImage => this.EnsureCpuLayer();
+
+        /// <summary>True when something has actually asked for <see cref="DestImage"/> on this context, so
+        /// the composite is worth doing.</summary>
+        public bool HasCpuLayer => this.caches.CpuLayer != null;
+
+        private ImageBuffer EnsureCpuLayer()
+        {
+            if (this.width <= 0 || this.height <= 0)
+            {
+                // A Graphics2DGpu built by the deviceless constructor has no size to allocate against.
+                // Returning null puts the caller back where it was, which is the honest answer.
+                return null;
+            }
+
+            var layer = this.caches.CpuLayer;
+            if (layer == null || layer.Width != this.width || layer.Height != this.height)
+            {
+                layer = new ImageBuffer(this.width, this.height, 32, new BlenderBGRA());
+                this.caches.CpuLayer = layer;
+            }
+
+            return layer;
+        }
+
+        /// <summary>
+        /// Uploads the CPU raster layer, if there is one, and draws it over the GPU frame; then clears it
+        /// so the next frame starts empty. A no-op when nothing asked for <see cref="DestImage"/>.
+        /// </summary>
+        /// <remarks>
+        /// Called by the window host after widget paint and before present. It has to be the host rather
+        /// than this class, because a <see cref="Graphics2D"/> has no idea when a frame ends - and drawing
+        /// the layer lazily on the next GPU call would put it under, not over, whatever came after it.
+        /// </remarks>
+        public void CompositeCpuLayer()
+        {
+            var layer = this.caches.CpuLayer;
+            if (layer == null || this.gl == null)
+            {
+                return;
+            }
+
+            // The texture cache is keyed on the ImageBuffer's change count, so this is what makes the
+            // upload happen at all - the buffer object is reused across frames on purpose.
+            layer.MarkImageChanged();
+
+            var savedTransform = this.GetTransform();
+            this.PushTransform();
+            try
+            {
+                this.SetTransform(Affine.NewIdentity());
+                this.Render(layer, 0, 0);
+            }
+            finally
+            {
+                this.PopTransform();
+                this.SetTransform(savedTransform);
+            }
+
+            // Cleared rather than freed: these demos redraw the whole layer every frame anyway, and a
+            // stale frame showing through would be a far more confusing bug than an extra memset.
+            Array.Clear(layer.GetBuffer(), 0, layer.GetBuffer().Length);
         }
 
         public override RectangleDouble GetClippingRect() => cachedClipRect;
@@ -838,8 +929,8 @@ namespace MatterHackers.RenderGl
         /// widget choose an LCD coverage backbuffer at all.
         /// </summary>
         /// <remarks>
-        /// False without a context - <c>D3D11SystemWindow</c> builds a Graphics2DGpu before the device
-        /// exists and again after teardown, and such an instance cannot draw anything - and false on a
+        /// False without a context - a Graphics2DGpu can be built with no <see cref="GL"/> behind it, and
+        /// such an instance cannot draw anything - and false on a
         /// transparent compositing layer, where the base class's rule applies: subpixel geometry computed
         /// against pixels that get blended again later is geometry against unknown content.
         /// </remarks>
@@ -968,9 +1059,9 @@ namespace MatterHackers.RenderGl
                 // Restored rather than left set, and restored on the way out of a throw as well: every other
                 // draw on this context expects to be able to write all four channels, and a mask stuck at one
                 // channel would silently turn the rest of the frame - every frame - monochrome. A pass can
-                // throw (the texture uploader allocates, and the D3D backing of gl raises on a lost device),
-                // and D3D11SystemWindow.OnPaint swallows that, so without the finally one bad frame would
-                // leave the context permanently miscolored.
+                // throw (the texture uploader allocates, and the wgpu backing of gl raises on a lost device),
+                // and WebGpuControl recovers from a lost device by skipping the frame, so without the finally
+                // one bad frame would leave the context permanently miscolored.
                 gl.ColorMask(true, true, true, true);
             }
 

@@ -66,7 +66,7 @@ namespace MatterHackers.RenderGl
 		public IReadOnlyList<SceneEdgeShaderSubMeshData> SubMeshes => subMeshes;
 
 		// A plugin is bound to one context: NativeSceneEffects fills each submesh's
-		// SceneEdgeShaderSubMeshData.CachedGpuBuffer with an ID3D11Buffer minted by one specific device.
+		// SceneEdgeShaderSubMeshData.CachedGpuBuffer with a GPU buffer minted by one specific device.
 		// MatterCAD renders thumbnails on background worker threads that each own their own GL context,
 		// so caching by mesh alone would bind the ui window device's buffer on the thumbnail device.
 		// Key by mesh, then by context, then by render type.

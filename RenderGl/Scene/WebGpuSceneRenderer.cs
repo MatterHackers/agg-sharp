@@ -41,9 +41,10 @@ namespace MatterHackers.RenderGl.Scene
 {
 	/// <summary>
 	/// <see cref="INativeSceneRenderer"/> on the retained seam: the 3D scene compositor the WebGPU
-	/// backend renders through. Ported from the scene half of <c>VorticeD3DGl</c> (which stays untouched
-	/// on disk as the parity oracle) and from <c>NodeDesignerScene.hlsl</c>, whose WGSL twin lives beside
-	/// the backend in <c>WebGpuRender/Shaders</c>.
+	/// backend renders through. Ported from the scene half of the classic D3D11 backend
+	/// (<c>VorticeD3DGl</c> and <c>NodeDesignerScene.hlsl</c>, both deleted in Phase 4.5 once the goldens
+	/// re-baselined onto this renderer); the WGSL shaders live beside the backend in
+	/// <c>WebGpuRender/Shaders</c>.
 	/// <para>
 	/// <b>Why this file is in RenderGl and not in WebGpuRender.</b> The interface it implements speaks
 	/// <see cref="Mesh"/>, <see cref="Color"/>, <see cref="WorldView"/> and <see cref="Matrix4X4"/>, none
@@ -538,6 +539,12 @@ namespace MatterHackers.RenderGl.Scene
 			foreach (var slot in this.retainedMeshBuffers)
 			{
 				slot.RetireInto(this.retiredMeshBuffers);
+
+				// The slot table is keyed weakly, so a live mesh's slot outlives this renderer. Clearing the
+				// retained flag (as the sweep and release paths do) is what lets that slot be retained again
+				// by another renderer - leave it set and its next buffers are never tracked, so never freed.
+				slot.Owner = null;
+				slot.IsRetained = false;
 			}
 
 			this.DisposeRetiredMeshBuffers();
@@ -637,6 +644,10 @@ namespace MatterHackers.RenderGl.Scene
 			this.CompositeSceneTargets();
 			this.BlitResolvedSceneToTarget(destination);
 			this.RenderSelectionOutlines(destination);
+
+			// Meshes the session has finished with give their buffers back here, one frame boundary after
+			// the collector took them.
+			this.SweepCollectedMeshBuffers();
 
 			// Everything the frame recorded reaches the queue here, which is what makes the per-draw
 			// uniform buffers safe to rewrite on the next frame.
@@ -1771,7 +1782,7 @@ namespace MatterHackers.RenderGl.Scene
 			Buffer.BlockCopy(sceneSubMesh.InterleavedData, 0, bytes, 0, bytes.Length);
 			var buffer = this.device.CreateBuffer(BufferUsage.Vertex, (ulong)bytes.Length, bytes);
 			sceneSubMesh.CachedGpuBuffer = buffer;
-			slot.Buffers.Add(buffer);
+			slot.Add(buffer, () => sceneSubMesh.CachedGpuBuffer = null);
 			return buffer;
 		}
 
@@ -1804,7 +1815,7 @@ namespace MatterHackers.RenderGl.Scene
 
 			var buffer = this.device.CreateBuffer(BufferUsage.Vertex, (ulong)bytes.Length, bytes);
 			subMesh.CachedSelectionGpuBuffer = buffer;
-			slot.Buffers.Add(buffer);
+			slot.Add(buffer, () => subMesh.CachedSelectionGpuBuffer = null);
 			return buffer;
 		}
 
@@ -1821,17 +1832,84 @@ namespace MatterHackers.RenderGl.Scene
 			var slotsForMesh = this.meshBufferSlots.GetValue(mesh, _ => new Dictionary<int, MeshBufferSlot>());
 			if (!slotsForMesh.TryGetValue(slotKey, out var slot))
 			{
-				slot = new MeshBufferSlot { Owner = owner };
+				slot = new MeshBufferSlot(mesh) { Owner = owner };
 				slotsForMesh[slotKey] = slot;
-				this.retainedMeshBuffers.Add(slot);
+				this.Retain(slot);
 			}
-			else if (!ReferenceEquals(slot.Owner, owner))
+			else
 			{
-				slot.RetireInto(this.retiredMeshBuffers);
-				slot.Owner = owner;
+				if (!ReferenceEquals(slot.Owner, owner))
+				{
+					slot.RetireInto(this.retiredMeshBuffers);
+					slot.Owner = owner;
+				}
+
+				// A release (or, for a mesh that came back from the dead between the sweep and now, a sweep)
+				// took the slot off the retention list. It is about to mint buffers again, so it goes back.
+				if (!slot.IsRetained)
+				{
+					this.Retain(slot);
+				}
 			}
 
 			return slot;
+		}
+
+		/// <summary>Puts a slot on the strong list that owns its buffers.</summary>
+		private void Retain(MeshBufferSlot slot)
+		{
+			this.retainedMeshBuffers.Add(slot);
+			slot.IsRetained = true;
+		}
+
+		/// <summary>
+		/// Retires the buffers of every slot whose mesh has been collected. Called just before the frame's
+		/// submit, so the retirement list is drained by the same submit that makes it safe to.
+		/// </summary>
+		/// <remarks>
+		/// The slot table is keyed weakly, but the strong list is not: without this sweep a session's every
+		/// mesh keeps its GPU buffers and - through the slot's Owner - its plugin's interleaved vertex data
+		/// alive for the life of the renderer, which for the viewport is the life of the process.
+		/// </remarks>
+		private void SweepCollectedMeshBuffers()
+		{
+			for (int index = this.retainedMeshBuffers.Count - 1; index >= 0; index--)
+			{
+				var slot = this.retainedMeshBuffers[index];
+				if (slot.Mesh.TryGetTarget(out _))
+				{
+					continue;
+				}
+
+				slot.RetireInto(this.retiredMeshBuffers);
+				slot.Owner = null;
+				slot.IsRetained = false;
+				this.retainedMeshBuffers.RemoveAt(index);
+			}
+		}
+
+		/// <summary>
+		/// Releases every mesh vertex buffer this renderer is holding, along with the plugin generations
+		/// they came from. For one-shot rendering - a thumbnail draws a mesh once and will never draw it
+		/// again, so caching its buffers only pins the mesh's render data until something else evicts it.
+		/// </summary>
+		/// <remarks>
+		/// Submits first: a buffer may only be released once no unsubmitted draw can still reference it,
+		/// which is the same retire-then-drain order the per-frame path uses.
+		/// </remarks>
+		public void ReleaseAllMeshBuffers()
+		{
+			foreach (var slot in this.retainedMeshBuffers)
+			{
+				slot.RetireInto(this.retiredMeshBuffers);
+				slot.Owner = null;
+				slot.IsRetained = false;
+			}
+
+			this.retainedMeshBuffers.Clear();
+
+			this.compat.Submit();
+			this.DisposeRetiredMeshBuffers();
 		}
 
 		/// <summary>Releases the buffers retired since the last submit. Called after one.</summary>
@@ -2512,15 +2590,62 @@ namespace MatterHackers.RenderGl.Scene
 			/// <summary>The plugin instance these buffers belong to. Compared by reference only.</summary>
 			public object Owner;
 
+			/// <summary>
+			/// Whether <see cref="retainedMeshBuffers"/> is currently holding this slot. A swept or released
+			/// slot comes off that list but stays reachable from the weak key table, so the next draw through
+			/// it has to put it back before it mints buffers nothing would own.
+			/// </summary>
+			public bool IsRetained;
+
+			/// <param name="mesh">The mesh this slot's buffers were built from.</param>
+			public MeshBufferSlot(Mesh mesh)
+			{
+				this.Mesh = new WeakReference<Mesh>(mesh);
+			}
+
+			/// <summary>
+			/// The mesh the slot is keyed on, weakly - the slot is what keeps the plugin generation (and its
+			/// multi-megabyte interleaved vertex data) alive, so it must never be what keeps the mesh alive.
+			/// A dead target is how the sweep recognises a slot nothing can ever draw through again.
+			/// </summary>
+			public WeakReference<Mesh> Mesh { get; }
+
 			/// <summary>The buffers minted for that instance, one per submesh drawn so far.</summary>
 			public List<IGpuBuffer> Buffers { get; } = new List<IGpuBuffer>();
 
+			/// <summary>
+			/// Nulls the per-submesh caches that point at <see cref="Buffers"/>. One per buffer, because the
+			/// two kinds of submesh cache the buffer on unrelated fields of unrelated types.
+			/// </summary>
+			private List<Action> CacheClears { get; } = new List<Action>();
+
+			/// <summary>Records a buffer this slot owns.</summary>
+			/// <param name="buffer">The buffer just minted.</param>
+			/// <param name="clearSubMeshCache">Nulls the submesh field that now caches it.</param>
+			public void Add(IGpuBuffer buffer, Action clearSubMeshCache)
+			{
+				this.Buffers.Add(buffer);
+				this.CacheClears.Add(clearSubMeshCache);
+			}
+
 			/// <summary>Hands the buffers to the caller's retirement list and empties the slot.</summary>
+			/// <remarks>
+			/// The submesh caches are cleared here as well. On the mesh-edit path that is redundant (the
+			/// edit replaced the submeshes wholesale), but on the release path the submeshes outlive their
+			/// buffers, and a cache still pointing at a disposed buffer would be handed to the next draw.
+			/// </remarks>
 			/// <param name="retired">The list that owns them until the next submit has happened.</param>
 			public void RetireInto(List<IGpuBuffer> retired)
 			{
 				retired.AddRange(this.Buffers);
 				this.Buffers.Clear();
+
+				foreach (var clearSubMeshCache in this.CacheClears)
+				{
+					clearSubMeshCache();
+				}
+
+				this.CacheClears.Clear();
 			}
 		}
 

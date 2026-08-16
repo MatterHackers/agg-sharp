@@ -15,8 +15,8 @@ regenerating this one stays mechanical.
 
 `git clone` + `dotnet build WebGpu/MatterHackers.WebGpu.csproj` is the whole setup: no NuGet feed, no
 credentials, no script, no PowerShell (the mac and Linux have none). Note that it is *this project*
-that builds on any OS - `agg-sharp.sln` still contains Windows-only projects (the D3D11 backend,
-`PlatformWin32`, the WinForms example), so a whole-solution build is Windows-only until later phases
+that builds on any OS - `agg-sharp.sln` still contains Windows-only projects (`PlatformWin32` and its
+WinForms window host, the WinForms examples), so a whole-solution build is Windows-only until later phases
 of the port. `native/WgpuNative.targets`, imported by this project,
 uses MSBuild's own cross-platform `DownloadFile` / `VerifyFileHash` / `Unzip` tasks to, on the first
 build only:

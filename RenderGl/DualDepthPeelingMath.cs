@@ -42,8 +42,7 @@ namespace MatterHackers.RenderGl
 	/// Lived in VorticeD3D until Phase 3 leg B. It was always backend-agnostic (its namespace was already
 	/// <c>MatterHackers.RenderGl</c>), and leaving it in the backend that is scheduled for deletion would
 	/// have made the WebGPU renderer reference the classic path just to peel - so it moved here, exactly
-	/// as SceneEdgeShaderDataPlugin did. VorticeD3DGl still compiles unchanged: RenderGl is already one
-	/// of its project references and the namespace did not move.
+	/// as SceneEdgeShaderDataPlugin did. That backend was deleted outright in Phase 4.5.
 	/// </remarks>
 	public static class DualDepthPeelingMath
 	{

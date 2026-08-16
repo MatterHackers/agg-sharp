@@ -29,33 +29,25 @@ using MatterHackers.Agg.Font;
 using MatterHackers.Agg.LcdCoverage;
 using MatterHackers.RenderGl;
 using MatterHackers.RenderGl.OpenGl;
+using TUnit.Assertions;
+using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
 namespace MatterHackers.Agg.Tests.GoldenImages
 {
 	/// <summary>
-	/// Goldens for the 2D widget path (<see cref="Graphics2DGpu"/>) on the classic D3D11 backend: the
-	/// anti-aliased line and fill tessellation, rounded rects, per-vertex-colour immediate mode, image
-	/// blitting and the transform stack.
+	/// The 2D suite: the scenes in <see cref="Golden2DScenes"/> rendered through
+	/// <see cref="GlCompatContext"/> on <c>WebGpuRenderDevice</c> and compared against the checked-in PNGs.
 	/// </summary>
 	/// <remarks>
-	/// The scenes themselves live in <see cref="Golden2DScenes"/> because the wgpu suite
-	/// (<see cref="Golden2DPrimitiveOnWebGpuTests"/>) renders exactly the same drawing and compares against
-	/// exactly the same PNGs.
-	/// <para>
-	/// Serialised (<see cref="NotInParallelAttribute"/>) for two reasons that both bite at tolerance zero:
-	/// each test owns a D3D11 device and <see cref="Graphics2DGpu"/>'s caches are invalidated process-wide
-	/// when one is torn down, and the LCD switch these tests pin is a static.
-	/// </para>
+	/// Tolerance is zero, per O4: the stated goal is 1:1 pixel identity, and a suite that starts permissive
+	/// can never be tightened because nobody knows afterwards which differences were real. Where a
+	/// difference turns out to be a genuine artifact rather than a bug, the tolerance is raised
+	/// <i>at the individual call site</i> with the evidence written next to it.
 	/// </remarks>
 	[NotInParallel]
 	public class Golden2DPrimitiveTests
 	{
-		/// <summary>
-		/// Runs <paramref name="draw"/> against a fresh off-screen device and compares the result to
-		/// <paramref name="goldenName"/>, with the process-wide text switches pinned so a suite that runs in
-		/// any order still renders the same pixels.
-		/// </summary>
 		private static async Task Check(string goldenName, Action<Graphics2DGpu, GL> draw)
 		{
 			bool wasLcdEnabled = LcdRenderSettings.Enabled;
@@ -65,12 +57,18 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 				LcdRenderSettings.Enabled = false;
 				TypeFacePrinter.SnapBaselinesToWholePixels = true;
 
-				using var capture = D3D11OffscreenCapture.Create();
+				using var capture = WebGpuOffscreenCapture.Create();
 				var graphics = capture.BeginWidgetFrame(new ColorF(1, 1, 1, 1));
 
 				draw(graphics, capture.Gl);
 
-				await GoldenImage.Check(capture.Capture(), goldenName);
+				var rendered = await capture.CaptureAsync();
+
+				// Checked before the image compare: a validation error explains a diff far better than the
+				// diff does, and wgpu reports it out of band rather than failing the call that caused it.
+				await Assert.That(capture.Device.LastUncapturedError).IsNull();
+
+				await GoldenImage.Check(rendered, goldenName);
 			}
 			finally
 			{

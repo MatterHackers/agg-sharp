@@ -27,26 +27,17 @@ using System;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.LcdCoverage;
+using TUnit.Assertions;
+using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
 namespace MatterHackers.Agg.Tests.GoldenImages
 {
 	/// <summary>
-	/// Goldens for text on the classic D3D11 path, both the ordinary anti-aliased fill and the three-pass
-	/// colour-masked LCD subpixel composite.
+	/// The text suite: <see cref="GoldenTextScenes"/> rendered on wgpu. The LCD cases matter most - colour
+	/// write masks are immutable pipeline state in WebGPU, so the three-pass composite becomes three cached
+	/// pipeline permutations, and these goldens are what says whether the permutation is right.
 	/// </summary>
-	/// <remarks>
-	/// This is the port's highest-visibility risk, so the coverage here is deliberately wider than the other
-	/// suites: sizes from 7 to 40 point, sub-pixel placements at every quarter pixel, light-on-dark as well
-	/// as dark-on-light, and text over an existing fill. The LCD path in particular becomes three cached
-	/// pipeline permutations under WebGPU (colour write masks stop being dynamic state), and it deliberately
-	/// never writes destination alpha - a difference these goldens will catch as a whole-image mismatch if
-	/// the new surface composites alpha differently.
-	/// <para>
-	/// The drawing lives in <see cref="GoldenTextScenes"/>; the wgpu suite
-	/// (<see cref="GoldenTextOnWebGpuTests"/>) renders the same scenes against the same PNGs.
-	/// </para>
-	/// </remarks>
 	[NotInParallel]
 	public class GoldenTextTests
 	{
@@ -59,12 +50,16 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 				LcdRenderSettings.Enabled = lcd;
 				TypeFacePrinter.SnapBaselinesToWholePixels = true;
 
-				using var capture = D3D11OffscreenCapture.Create();
+				using var capture = WebGpuOffscreenCapture.Create();
 				var graphics = capture.BeginWidgetFrame(background);
 
 				draw(graphics);
 
-				await GoldenImage.Check(capture.Capture(), goldenName);
+				var rendered = await capture.CaptureAsync();
+
+				await Assert.That(capture.Device.LastUncapturedError).IsNull();
+
+				await GoldenImage.Check(rendered, goldenName);
 			}
 			finally
 			{

@@ -33,16 +33,21 @@ using MatterHackers.RenderGl.OpenGl;
 namespace MatterHackers.Agg.UI
 {
 	/// <summary>
-	/// The WebGPU flavour of the WinForms host: structurally a copy of <see cref="D3D11SystemWindow"/>
-	/// (same viewport setup, same <see cref="Graphics2DGpu"/> over a GL facade, same present per frame),
-	/// with a <see cref="WebGpuControl"/> where the D3D11 one has its swapchain control.
-	/// <para>
-	/// Selected with <c>AGG_WINDOW_PROVIDER=webgpu</c>; nothing picks it by default, so the classic path
-	/// stays the daily driver until the Phase 4.5 cutover.
-	/// </para>
+	/// The WinForms window host: a <see cref="WebGpuControl"/> for the swapchain, a
+	/// <see cref="Graphics2DGpu"/> over a GL facade for widget paint, and one present per frame. Since the
+	/// Phase 4.5 cutover this is the only window backend; <c>AGG_WINDOW_PROVIDER=webgpu</c> still names it
+	/// explicitly, but nothing else is selectable.
 	/// </summary>
 	public class WebGpuSystemWindow : WinformsSystemWindow
 	{
+		/// <summary>
+		/// The single consumption point of <see cref="SystemWindow.UseGpu"/>, which is seeded from
+		/// RootSystemWindow.DefaultUseGpu by the FORCE_SOFTWARE_RENDERING command-line flag. Returns true
+		/// when the window asked for no GPU, so wgpu is made to pick its software (fallback) adapter.
+		/// Defaults to hardware when there is no window to ask.
+		/// </summary>
+		public static bool ShouldUseSoftwareAdapter(SystemWindow systemWindow) => systemWindow?.UseGpu == false;
+
 		/// <summary>
 		/// How many times <see cref="CaptureScreenshot"/> pumps the message queue waiting for a capture
 		/// whose read-back suspended. Bounded so a window that never repaints cannot hang the caller; the
@@ -105,6 +110,7 @@ namespace MatterHackers.Agg.UI
 		{
 			base.OnLoad(e);
 
+			this.webGpuControl.UseSoftwareAdapter = ShouldUseSoftwareAdapter(AggSystemWindow);
 			this.webGpuControl.InitializeWebGpu();
 
 			this.doneLoading = true;

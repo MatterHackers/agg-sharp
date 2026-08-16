@@ -35,7 +35,6 @@
 		     wgpu-native shared library into the output of every app that hosts a window. -->
 		<ProjectReference Include="..\WebGpuRender\WebGpuRender.csproj" />
 		<ProjectReference Include="..\VectorMath\VectorMath.csproj" />
-		<ProjectReference Include="..\VorticeD3D\MatterHackers.VorticeD3D.csproj" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Update="StyleCop.Analyzers" Version="1.1.118" />

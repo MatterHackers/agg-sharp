@@ -362,8 +362,8 @@ namespace MatterHackers.Agg.Tests
 				await Assert.That(widget.ResolveBackbufferMode(graphics)).IsEqualTo(BackbufferMode.LcdCoverage)
 					.Because("a whole pixel translation is exactly what the composite places by");
 
-				// And a Graphics2DGpu with no device behind it - D3D11SystemWindow builds one before the
-				// device exists - cannot composite anything at all.
+				// And a Graphics2DGpu with no device behind it - what a window destination amounts to before
+				// its wgpu device exists or after teardown - cannot composite anything at all.
 				var deviceless = new Graphics2DGpu(null, 1);
 				await Assert.That(deviceless.CanCompositeLcdBuffer).IsFalse();
 				await Assert.That(widget.ResolveBackbufferMode(deviceless)).IsEqualTo(BackbufferMode.Rgba);

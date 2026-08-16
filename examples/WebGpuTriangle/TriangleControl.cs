@@ -31,8 +31,8 @@ namespace MatterHackers.WebGpu.Example
 {
 	/// <summary>
 	/// The WinForms half of the HWND spike: a Control that hands its window handle to wgpu and paints
-	/// through the swapchain instead of GDI. The sibling of VorticeD3D's D3D11Control, and the shape
-	/// Phase 4's WebGpuControl will take.
+	/// through the swapchain instead of GDI. The minimal form of what
+	/// <c>PlatformWin32.win32.WebGpuControl</c> grew into for the real window host.
 	/// </summary>
 	public class TriangleControl : Control
 	{
