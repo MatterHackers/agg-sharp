@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Threading.Tasks;
 using MatterHackers.RenderGl;
+using MatterHackers.VectorMath;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -46,11 +47,37 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 	[NotInParallel]
 	public class GoldenSceneTests
 	{
-		private static async Task Check(
+		private static Task Check(
 			string goldenName,
 			Action<WebGpuOffscreenCapture> drawScene,
 			double maxPercentDifferingPixels = 0,
 			bool supersample = false,
+			int depthPeelingLayers = 6,
+			ulong? maxMeshVertexBufferBytes = null)
+		{
+			return Render(
+				goldenName,
+				(capture, world, lighting) => capture.RenderScene(world, lighting, () => drawScene(capture), supersample),
+				maxPercentDifferingPixels,
+				depthPeelingLayers,
+				maxMeshVertexBufferBytes);
+		}
+
+		/// <summary>
+		/// Captures a golden with the frame opened through <see cref="ISceneDrawContext"/>, for the scenes
+		/// that exist to prove the Phase 5 seam is visually transparent.
+		/// </summary>
+		private static Task CheckThroughDrawContext(string goldenName, Action<ISceneDrawContext> drawScene)
+		{
+			return Render(
+				goldenName,
+				(capture, world, lighting) => capture.RenderSceneThroughDrawContext(world, lighting, drawScene));
+		}
+
+		private static async Task Render(
+			string goldenName,
+			Action<WebGpuOffscreenCapture, WorldView, LightingData> renderFrame,
+			double maxPercentDifferingPixels = 0,
 			int depthPeelingLayers = 6,
 			ulong? maxMeshVertexBufferBytes = null)
 		{
@@ -68,7 +95,7 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 			var lighting = new LightingData();
 
 			RenderHelper.ResetLegacyMeshFallbackCount();
-			capture.RenderScene(world, lighting, () => drawScene(capture), supersample);
+			renderFrame(capture, world, lighting);
 
 			var rendered = await capture.CaptureAsync();
 
@@ -209,6 +236,25 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 				Golden3DScenes.DrawGizmoOverlayScene(
 					capture.Gl,
 					Golden3DScenes.CreateCamera(capture.Width, capture.Height)));
+		}
+
+		/// <summary>
+		/// The same overlay, drawn entirely through <see cref="ISceneDrawContext"/> and compared against
+		/// the same PNG at tolerance zero.
+		/// </summary>
+		/// <remarks>
+		/// The proof that the Phase 5 seam is a pure renaming of what the application already does: the
+		/// frame is opened by the context rather than by <c>SetGlContext</c>, every mesh, line, box, ring
+		/// and axis goes through a context member instead of a <c>GL</c>-taking helper, and not one pixel
+		/// may move. It is this scene because the gizmo overlay is the one that uses the widest slice of
+		/// the vocabulary - the rest of the suite queues meshes straight on the renderer.
+		/// </remarks>
+		[Test]
+		public async Task GizmoOverlayThroughDrawContext()
+		{
+			await CheckThroughDrawContext(
+				"Scene.GizmoOverlay",
+				Golden3DScenes.DrawGizmoOverlaySceneThroughDrawContext);
 		}
 
 		/// <summary>The overhang render type, drawn natively by the scene renderer.</summary>

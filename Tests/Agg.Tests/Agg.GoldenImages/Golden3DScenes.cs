@@ -403,6 +403,57 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		}
 
 		/// <summary>
+		/// The same picture as <see cref="DrawGizmoOverlayScene(GL, WorldView)"/>, said entirely through
+		/// <see cref="ISceneDrawContext"/>.
+		/// </summary>
+		/// <remarks>
+		/// The duplication is the test. This is the one scene where two independent expressions of the same
+		/// drawing - the old <c>GL</c>-and-<c>WorldView</c> vocabulary and the new context vocabulary - are
+		/// compared against a single checked-in PNG at tolerance zero, which is what makes the Phase 5 seam
+		/// safe to sweep the application onto. Keep the two bodies in step; if a line is added here it must
+		/// be added above.
+		/// </remarks>
+		/// <param name="context">The seam to draw through. Its frame is already open.</param>
+		public static void DrawGizmoOverlaySceneThroughDrawContext(ISceneDrawContext context)
+		{
+			var body = PlatonicSolids.CreateCube(70, 70, 70);
+			context.DrawMesh(
+				body,
+				new Color(150, 155, 165),
+				Matrix4X4.CreateTranslation(-30, 0, 0),
+				RenderTypes.Shaded);
+
+			var glyphCube = PlatonicSolids.CreateCube(34, 34, 34);
+			var glyphTexture = CreateGlyphTexture(256);
+
+			foreach (int face in new[] { 0, 2, 4, 6, 8, 10 })
+			{
+				glyphCube.PlaceTextureOnFaces(face, glyphTexture);
+			}
+
+			context.DrawMesh(
+				glyphCube,
+				Color.White,
+				Matrix4X4.CreateTranslation(56, -12, 42),
+				RenderTypes.Shaded);
+
+			var frustum = context.ClippingFrustum;
+
+			context.RenderAabb(
+				new AxisAlignedBoundingBox(new Vector3(-65, -35, -35), new Vector3(5, 35, 35)),
+				Matrix4X4.Identity,
+				new Color(80, 80, 85),
+				lineWidth: 1);
+
+			context.Render3DLine(frustum, new Vector3(-30, 0, -40), new Vector3(-30, 0, 74), Color.Blue, doDepthTest: true, width: 2, endArrow: true);
+			context.Render3DLine(frustum, new Vector3(-30, 0, 0), new Vector3(64, 0, 0), Color.Red, doDepthTest: false, width: 1.6, startArrow: true, endArrow: true);
+
+			context.RenderRing(Matrix4X4.Identity, new Vector3(-30, 0, 0), 96, 40, new Color(220, 200, 70), lineWidth: 1.4);
+
+			context.RenderAxis(new Vector3(40, 24, -34), Matrix4X4.Identity, size: 26, lineWidth: 1);
+		}
+
+		/// <summary>
 		/// A deliberately high frequency glyph sheet: a fine checker with a filled disc over it. Fine detail
 		/// is the point - a flat image would look the same at every mip level and prove nothing about how the
 		/// levels are filtered.

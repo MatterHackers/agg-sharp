@@ -93,7 +93,7 @@ namespace MatterHackers.RenderGl
 			end += direction * length;
 		}
 
-		public static void PrepareFor3DLineRender(GL gl, bool doDepthTest)
+		internal static void PrepareFor3DLineRender(GL gl, bool doDepthTest)
 		{
 			gl.Disable(EnableCap.Texture2D);
 
@@ -182,7 +182,7 @@ namespace MatterHackers.RenderGl
 			return new DisposableScope(() => suppressBedShadowCastingDepth--);
 		}
 
-		public static void Render(GL gl,
+		internal static void Render(GL gl,
 			Mesh meshToRender,
 			Color partColor,
 			RenderTypes renderType = RenderTypes.Shaded,
@@ -199,7 +199,7 @@ namespace MatterHackers.RenderGl
 			Render(gl, meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture, forceCullBackFaces: forceCullBackFaces, castsBedShadow: castsBedShadow, isSelected: isSelected, overrideFaceColors: overrideFaceColors, alphaMultiplier: alphaMultiplier);
 		}
 
-		public static void Render(GL gl,
+		internal static void Render(GL gl,
 			Mesh meshToRender,
 			Color color,
             Matrix4X4 transform,
@@ -508,7 +508,7 @@ namespace MatterHackers.RenderGl
             gl.Enable(EnableCap.Lighting);
         }
 
-        public static void SetGlContext(GL gl, WorldView worldView, RectangleDouble screenRect, LightingData lighting)
+        internal static void SetGlContext(GL gl, WorldView worldView, RectangleDouble screenRect, LightingData lighting)
 		{
 			gl.ClearDepth(1.0);
 			gl.Clear(ClearBufferMask.DepthBufferBit);   // Clear the Depth Buffer
@@ -562,7 +562,7 @@ namespace MatterHackers.RenderGl
 			gl.LoadMatrix(worldView.ModelviewMatrix.GetAsDoubleArray());
 		}
 
-		public static void UnsetGlContext(GL gl)
+		internal static void UnsetGlContext(GL gl)
 		{
 			gl.MatrixMode(MatrixMode.Projection);
 			gl.PopMatrix();

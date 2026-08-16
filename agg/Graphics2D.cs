@@ -914,6 +914,27 @@ namespace MatterHackers.Agg
             double scaleX,
             double scaleY);
 
+        /// <summary>
+        /// Draws a run of individually coloured vertices in this surface's own coordinate space.
+        /// </summary>
+        /// <remarks>
+        /// The 2D escape hatch for the handful of widgets that need a gradient across a primitive - a
+        /// hue ring, a saturation/value triangle - which no vertex source plus single colour can express.
+        /// Before this existed those widgets downcast to the GPU <c>Graphics2D</c> and emitted raw
+        /// immediate mode, which is exactly the coupling the wgpu port is removing.
+        /// <para>
+        /// The base implementation draws nothing. That is not an oversight: it preserves what those
+        /// widgets already do on a non-GPU surface (they tested for the GPU type and skipped otherwise),
+        /// and a software fallback for per-vertex-interpolated primitives is real work nobody has asked
+        /// for. Surfaces that can do it override this.
+        /// </para>
+        /// </remarks>
+        /// <param name="topology">How the vertices assemble into primitives.</param>
+        /// <param name="vertices">The vertices, in surface coordinates.</param>
+        public virtual void DrawColoredPrimitives(DrawTopology topology, ReadOnlySpan<PosColorVertex> vertices)
+        {
+        }
+
         public void Render(IVertexSource vertexSource, double x, double y, IColorType color)
         {
             Render(new VertexSourceApplyTransform(vertexSource, Affine.NewTranslation(x, y)), color);

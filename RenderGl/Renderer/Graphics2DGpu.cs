@@ -325,6 +325,36 @@ namespace MatterHackers.RenderGl
 
         public override int Height => height;
 
+        /// <summary>
+        /// Draws per-vertex-coloured primitives in widget coordinates.
+        /// </summary>
+        /// <remarks>
+        /// The GPU half of the 2D escape hatch. The vertices are already in widget space, so the ortho
+        /// projection is pushed around the draw exactly as the colour-picker widgets used to push it
+        /// themselves. Depth is left alone: a widget frame has already settled it, and these primitives
+        /// are painted in draw order like every other 2D thing on this surface.
+        /// </remarks>
+        /// <param name="topology">How the vertices assemble into primitives.</param>
+        /// <param name="vertices">The vertices, in widget coordinates. Z is ignored.</param>
+        public override void DrawColoredPrimitives(DrawTopology topology, ReadOnlySpan<PosColorVertex> vertices)
+        {
+            if (vertices.Length == 0)
+            {
+                return;
+            }
+
+            PushOrthoProjection();
+
+            try
+            {
+                GlPrimitiveEmitter.Emit(gl, topology, vertices, Matrix4X4.Identity, depthTest: null);
+            }
+            finally
+            {
+                PopOrthoProjection();
+            }
+        }
+
         public void PushOrthoProjection()
         {
             gl.Disable(EnableCap.CullFace);

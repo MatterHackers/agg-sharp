@@ -233,6 +233,45 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		}
 
 		/// <summary>
+		/// The same frame as <see cref="RenderScene"/>, opened and closed through an
+		/// <see cref="ISceneDrawContext"/> instead of the <c>SetGlContext</c>/<c>BeginSceneRendering</c>
+		/// pair - so a golden captured this way proves the Phase 5 seam changes no pixels.
+		/// </summary>
+		/// <param name="world">The camera.</param>
+		/// <param name="lighting">The frame's lights.</param>
+		/// <param name="drawScene">Draws the scene through the context.</param>
+		/// <param name="supersample">Routes the frame through the 3x full-frame capture.</param>
+		public void RenderSceneThroughDrawContext(
+			WorldView world,
+			LightingData lighting,
+			Action<ISceneDrawContext> drawScene,
+			bool supersample = false)
+		{
+			var drawContext = new SceneDrawContext(Gl);
+
+			if (supersample)
+			{
+				drawContext.BeginFullFrameCapture(Viewport);
+			}
+
+			drawContext.BeginFrame(world, Viewport, lighting);
+
+			try
+			{
+				drawScene(drawContext);
+			}
+			finally
+			{
+				drawContext.EndFrame();
+
+				if (supersample)
+				{
+					drawContext.EndFullFrameCaptureAndBlit();
+				}
+			}
+		}
+
+		/// <summary>
 		/// Ends the frame and copies the colour target into an <see cref="ImageBuffer"/> (BGRA, bottom-up).
 		/// </summary>
 		/// <remarks>

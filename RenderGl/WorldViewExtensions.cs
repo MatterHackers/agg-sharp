@@ -54,12 +54,12 @@ namespace MatterHackers.RenderGl
 			return frustum2;
 		}
 
-		public static void RenderPlane(this WorldView world, GL gl, Plane plane, Color color, bool doDepthTest, double rectSize, double lineWidth)
+		internal static void RenderPlane(this WorldView world, GL gl, Plane plane, Color color, bool doDepthTest, double rectSize, double lineWidth)
 		{
 			world.RenderPlane(gl, plane.Normal * plane.DistanceFromOrigin, plane.Normal, color, doDepthTest, rectSize, lineWidth);
 		}
 
-		public static void RenderPlane(this WorldView world, GL gl, Vector3 position, Vector3 normal, Color color, bool doDepthTest, double rectSize, double lineWidth)
+		internal static void RenderPlane(this WorldView world, GL gl, Vector3 position, Vector3 normal, Color color, bool doDepthTest, double rectSize, double lineWidth)
 		{
 			var clipping = world.GetClippingFrustum();
 			// get any perpendicular to the normal (we call it x to make it clear where to apply it)
@@ -87,7 +87,7 @@ namespace MatterHackers.RenderGl
 		/// <param name="color"></param>
 		/// <param name="doDepthTest"></param>
 		/// <param name="width"></param>
-		public static void Render3DLine(this WorldView world, GL gl, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1, bool startArrow = false, bool endArrow = false)
+		internal static void Render3DLine(this WorldView world, GL gl, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1, bool startArrow = false, bool endArrow = false)
 		{
 			world.Render3DLine(gl, world.GetClippingFrustum(), start, end, color, doDepthTest, width, startArrow, endArrow);
 		}
@@ -104,7 +104,7 @@ namespace MatterHackers.RenderGl
 		/// <param name="color"></param>
 		/// <param name="doDepthTest"></param>
 		/// <param name="width"></param>
-		public static void Render3DLine(this WorldView world, GL gl, Frustum clippingFrustum, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1, bool startArrow = false, bool endArrow = false)
+		internal static void Render3DLine(this WorldView world, GL gl, Frustum clippingFrustum, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1, bool startArrow = false, bool endArrow = false)
 		{
 			gl.PushAttrib(AttribMask.EnableBit);
 			RenderHelper.PrepareFor3DLineRender(gl, doDepthTest);
@@ -112,7 +112,7 @@ namespace MatterHackers.RenderGl
 			gl.PopAttrib();
 		}
 
-		public static void Render3DLineNoPrep(this WorldView world,
+		internal static void Render3DLineNoPrep(this WorldView world,
 			GL gl,
 			Frustum clippingFrustum,
 			Vector3Float start,
@@ -125,7 +125,7 @@ namespace MatterHackers.RenderGl
 			world.Render3DLineNoPrep(gl, clippingFrustum, new Vector3(start), new Vector3(end), new Color(color), width, startArrow, endArrow);
 		}
 
-		public static void Render3DLineNoPrep(this WorldView world,
+		internal static void Render3DLineNoPrep(this WorldView world,
 			GL gl,
 			Frustum clippingFrustum,
 			Vector3 start,
@@ -336,12 +336,12 @@ namespace MatterHackers.RenderGl
 			gl.End();
 		}
 
-		public static void RenderCylinderOutline(this WorldView world, GL gl, Matrix4X4 worldMatrix, Vector3 center, double diameter, double height, int sides, Color color, double lineWidth = 1, double extendLineLength = 0)
+		internal static void RenderCylinderOutline(this WorldView world, GL gl, Matrix4X4 worldMatrix, Vector3 center, double diameter, double height, int sides, Color color, double lineWidth = 1, double extendLineLength = 0)
 		{
 			world.RenderCylinderOutline(gl, worldMatrix, center, diameter, height, sides, color, color, lineWidth, extendLineLength);
 		}
 
-		public static void RenderCylinderOutline(this WorldView world, GL gl, Matrix4X4 worldMatrix, Vector3 center, double diameter, double height, int sides, Color topBottomRingColor, Color sideLinesColor, double lineWidth = 1, double extendLineLength = 0, double phase = 0)
+		internal static void RenderCylinderOutline(this WorldView world, GL gl, Matrix4X4 worldMatrix, Vector3 center, double diameter, double height, int sides, Color topBottomRingColor, Color sideLinesColor, double lineWidth = 1, double extendLineLength = 0, double phase = 0)
 		{
 			RenderHelper.PrepareFor3DLineRender(gl, true);
 			Frustum frustum = world.GetClippingFrustum();
@@ -377,7 +377,7 @@ namespace MatterHackers.RenderGl
 			}
 		}
 
-		public static void RenderRing(this WorldView world,
+		internal static void RenderRing(this WorldView world,
 			GL gl,
 			Matrix4X4 worldMatrix,
 			Vector3 center,
@@ -412,7 +412,7 @@ namespace MatterHackers.RenderGl
 			gl.Enable(EnableCap.Lighting);
 		}
 
-		public static void RenderPathOutline(this WorldView world, GL gl, Matrix4X4 worldMatrix, IVertexSource path, Color color, double lineWidth = 1)
+		internal static void RenderPathOutline(this WorldView world, GL gl, Matrix4X4 worldMatrix, IVertexSource path, Color color, double lineWidth = 1)
 		{
 			RenderHelper.PrepareFor3DLineRender(gl, true);
 			Frustum frustum = world.GetClippingFrustum();
@@ -464,7 +464,7 @@ namespace MatterHackers.RenderGl
 			return box;
 		}
 
-		public static void DrawOctree(this WorldView world, GL gl, OctreeNode rootNode, int colorIndex)
+		internal static void DrawOctree(this WorldView world, GL gl, OctreeNode rootNode, int colorIndex)
 		{
 			if (rootNode != null && rootNode.Children.Length > 0)
 			{
@@ -477,13 +477,13 @@ namespace MatterHackers.RenderGl
 			}
 		}
 
-		public static void DrawOctreeNode(this WorldView world, GL gl, OctreeNode node, Color color)
+		internal static void DrawOctreeNode(this WorldView world, GL gl, OctreeNode node, Color color)
 		{
 			var aabb = new AxisAlignedBoundingBox(node.Min, node.Min + node.Size);
 			world.RenderAabb(gl, aabb, Matrix4X4.Identity, color);
 		}
 
-		public static void RenderAabb(this WorldView world, GL gl, AxisAlignedBoundingBox bounds, Matrix4X4 matrix, Color color, double lineWidth = 1, double extendLineLength = 0)
+		internal static void RenderAabb(this WorldView world, GL gl, AxisAlignedBoundingBox bounds, Matrix4X4 matrix, Color color, double lineWidth = 1, double extendLineLength = 0)
 		{
 			RenderHelper.PrepareFor3DLineRender(gl, true);
 
@@ -522,7 +522,7 @@ namespace MatterHackers.RenderGl
 			return bounds;
 		}
 
-		public static void RenderAxis(this WorldView world, GL gl, Vector3 position, Matrix4X4 matrix, double size, double lineWidth)
+		internal static void RenderAxis(this WorldView world, GL gl, Vector3 position, Matrix4X4 matrix, double size, double lineWidth)
 		{
 			RenderHelper.PrepareFor3DLineRender(gl, true);
 
@@ -580,7 +580,7 @@ namespace MatterHackers.RenderGl
 		// tesselator to render with is the one that owns its context.
 		private static readonly object tesselatorsLock = new object();
 
-		public static void RenderPath(this WorldView world, GL gl, IVertexSource vertexSource, Color color, bool doDepthTest)
+		internal static void RenderPath(this WorldView world, GL gl, IVertexSource vertexSource, Color color, bool doDepthTest)
 		{
 			var tesselatorsForWorld = TesselatorsByWorld.GetValue(
 				world,
