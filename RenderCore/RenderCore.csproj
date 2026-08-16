@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>MatterHackers.RenderCore</RootNamespace>
+    <Company>MatterHackers Inc.</Company>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <!-- This is a foundational public API; missing documentation on a public member is a defect. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- Deliberately no ProjectReferences. RenderCore is the abstraction the render backends and the
+       compat layer are written against: it must not depend on the webgpu binding (that would leak
+       WGPU* types through the seam) nor on RenderGl (RenderGl references RenderCore, never the
+       reverse). Keeping it dependency-free is what lets headless tests link it on any platform. -->
+
+</Project>

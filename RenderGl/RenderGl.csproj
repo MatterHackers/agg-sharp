@@ -30,6 +30,9 @@
     <ProjectReference Include="..\Csg\Csg.csproj" />
     <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj" />
     <ProjectReference Include="..\PolygonMesh\PolygonMesh.csproj" />
+    <!-- The compat layer draws through the retained seam. This direction is deliberate and one way:
+         RenderGl references RenderCore, never the reverse. -->
+    <ProjectReference Include="..\RenderCore\RenderCore.csproj" />
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
 

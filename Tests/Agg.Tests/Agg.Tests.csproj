@@ -42,11 +42,15 @@
     <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj" />
     <ProjectReference Include="..\..\PolygonMesh\PolygonMesh.csproj" />
     <ProjectReference Include="..\..\QuadTree\QuadTree.csproj" />
+    <ProjectReference Include="..\..\RenderCore\RenderCore.csproj" />
     <ProjectReference Include="..\..\RenderGl\RenderGl.csproj" />
     <ProjectReference Include="..\..\Tesselate\Tesselate.csproj" />
     <ProjectReference Include="..\..\Triangle\Triangle.csproj" />
     <ProjectReference Include="..\..\Typography\Typography.One\Typography.One.csproj" />
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj" />
+    <!-- The golden-image harness drives the classic D3D11 backend off-screen (device creation and render
+         target readback), so it needs the Vortice types directly rather than transitively. -->
+    <ProjectReference Include="..\..\VorticeD3D\MatterHackers.VorticeD3D.csproj" />
     <ProjectReference Include="..\..\WebGpu\MatterHackers.WebGpu.csproj" />
   </ItemGroup>
 
@@ -70,6 +74,15 @@
   <ItemGroup>
     <Content Include="..\..\TestData\ControlImages\*.tga">
       <Link>ControlImages\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- Golden images for the wgpu-port parity suites, captured from the classic D3D11 path. Same
+       tree-preferred arrangement as the control images directly above, and for the same reason. -->
+  <ItemGroup>
+    <Content Include="..\..\TestData\GoldenImages\*.png">
+      <Link>GoldenImages\%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

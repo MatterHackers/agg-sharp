@@ -131,6 +131,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebGpuBindingGenerator", "W
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebGpuTriangle", "examples\WebGpuTriangle\WebGpuTriangle.csproj", "{D3724C6B-5A41-458F-AABB-E2E2952D34E6}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RenderCore", "RenderCore\RenderCore.csproj", "{2D117F4E-6BFB-480A-86BE-CC1357C510E3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -587,6 +589,14 @@ Global
 		{D3724C6B-5A41-458F-AABB-E2E2952D34E6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D3724C6B-5A41-458F-AABB-E2E2952D34E6}.Release|x64.ActiveCfg = Release|Any CPU
 		{D3724C6B-5A41-458F-AABB-E2E2952D34E6}.Release|x64.Build.0 = Release|Any CPU
+		{2D117F4E-6BFB-480A-86BE-CC1357C510E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D117F4E-6BFB-480A-86BE-CC1357C510E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D117F4E-6BFB-480A-86BE-CC1357C510E3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2D117F4E-6BFB-480A-86BE-CC1357C510E3}.Debug|x64.Build.0 = Debug|Any CPU
+		{2D117F4E-6BFB-480A-86BE-CC1357C510E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D117F4E-6BFB-480A-86BE-CC1357C510E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D117F4E-6BFB-480A-86BE-CC1357C510E3}.Release|x64.ActiveCfg = Release|Any CPU
+		{2D117F4E-6BFB-480A-86BE-CC1357C510E3}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
