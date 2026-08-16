@@ -1,0 +1,6 @@
+# Everything the bootstrap in WgpuNative.targets produces is derived from the
+# pinned wgpu-native release, so none of it belongs in the tree - the release
+# zips are ~15 MB each and the shared libraries 7-9 MB each. The manifest, the
+# targets file and this .gitignore are the checked-in part.
+downloads/
+staging/

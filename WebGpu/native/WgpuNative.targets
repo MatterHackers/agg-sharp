@@ -1,0 +1,215 @@
+<Project>
+
+  <!--
+    Repo-self-sufficient bootstrap for the wgpu-native shared library.
+
+    `git clone` + `dotnet build` is the whole story: on the first build this
+    downloads the pinned gfx-rs/wgpu-native release zip for the machine's own
+    runtime identifier straight from GitHub, verifies it against the checked-in
+    SHA-256 manifest, and stages the shared library into a gitignored folder
+    next to this file. No NuGet feed, no credentials, nothing to publish, and no
+    PowerShell - only MSBuild's built-in DownloadFile / VerifyFileHash / Unzip
+    tasks, which behave the same on Windows, macOS and Linux.
+
+    Once staged, every later build short-circuits on Exists() and touches the
+    network zero times, so incremental and offline builds are unaffected.
+
+    Bumping the version: change WgpuNativeVersion below, add a
+    checksums-v<version>.txt beside it (sha256sum format - `sha256sum *.zip` or
+    `Get-FileHash -Algorithm SHA256`), and regenerate the binding, because
+    webgpu.h moves with the release.
+
+    Priming the cache offline: drop the release zips into
+    native/downloads/v<version>/ by hand. They are verified either way, so a
+    hand-placed file gets exactly the same treatment as a downloaded one.
+  -->
+
+  <PropertyGroup>
+    <!-- The pinned release. Mirrors the tag exactly: v29.0.1.1 -> 29.0.1.1. -->
+    <WgpuNativeVersion Condition="'$(WgpuNativeVersion)' == ''">29.0.1.1</WgpuNativeVersion>
+    <WgpuNativeReleaseUrl Condition="'$(WgpuNativeReleaseUrl)' == ''">https://github.com/gfx-rs/wgpu-native/releases/download/v$(WgpuNativeVersion)</WgpuNativeReleaseUrl>
+
+    <WgpuNativeRoot>$(MSBuildThisFileDirectory)</WgpuNativeRoot>
+    <WgpuNativeChecksumFile>$(WgpuNativeRoot)checksums-v$(WgpuNativeVersion).txt</WgpuNativeChecksumFile>
+    <WgpuNativeDownloadDir>$(WgpuNativeRoot)downloads/v$(WgpuNativeVersion)/</WgpuNativeDownloadDir>
+    <WgpuNativeStagingDir>$(WgpuNativeRoot)staging/v$(WgpuNativeVersion)/</WgpuNativeStagingDir>
+  </PropertyGroup>
+
+  <!--
+    Runtime identifier detection. The library file name differs per platform
+    because wgpu-native ships whatever its toolchain produces; DllImport
+    ("wgpu_native") resolves all three spellings. All six supported platforms
+    are mapped even though a build only ever fetches its own.
+  -->
+  <Target Name="_WgpuNativeResolvePlatform">
+    <PropertyGroup>
+      <_WgpuOSArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_WgpuOSArchitecture>
+
+      <WgpuNativeRid Condition="$([MSBuild]::IsOSPlatform('Windows')) AND '$(_WgpuOSArchitecture)' == 'X64'">win-x64</WgpuNativeRid>
+      <WgpuNativeRid Condition="$([MSBuild]::IsOSPlatform('Windows')) AND '$(_WgpuOSArchitecture)' == 'Arm64'">win-arm64</WgpuNativeRid>
+      <WgpuNativeRid Condition="$([MSBuild]::IsOSPlatform('OSX')) AND '$(_WgpuOSArchitecture)' == 'Arm64'">osx-arm64</WgpuNativeRid>
+      <WgpuNativeRid Condition="$([MSBuild]::IsOSPlatform('OSX')) AND '$(_WgpuOSArchitecture)' == 'X64'">osx-x64</WgpuNativeRid>
+      <WgpuNativeRid Condition="$([MSBuild]::IsOSPlatform('Linux')) AND '$(_WgpuOSArchitecture)' == 'X64'">linux-x64</WgpuNativeRid>
+      <WgpuNativeRid Condition="$([MSBuild]::IsOSPlatform('Linux')) AND '$(_WgpuOSArchitecture)' == 'Arm64'">linux-arm64</WgpuNativeRid>
+
+      <WgpuNativeAsset Condition="'$(WgpuNativeRid)' == 'win-x64'">wgpu-windows-x86_64-msvc-release.zip</WgpuNativeAsset>
+      <WgpuNativeAsset Condition="'$(WgpuNativeRid)' == 'win-arm64'">wgpu-windows-aarch64-msvc-release.zip</WgpuNativeAsset>
+      <WgpuNativeAsset Condition="'$(WgpuNativeRid)' == 'osx-arm64'">wgpu-macos-aarch64-release.zip</WgpuNativeAsset>
+      <WgpuNativeAsset Condition="'$(WgpuNativeRid)' == 'osx-x64'">wgpu-macos-x86_64-release.zip</WgpuNativeAsset>
+      <WgpuNativeAsset Condition="'$(WgpuNativeRid)' == 'linux-x64'">wgpu-linux-x86_64-release.zip</WgpuNativeAsset>
+      <WgpuNativeAsset Condition="'$(WgpuNativeRid)' == 'linux-arm64'">wgpu-linux-aarch64-release.zip</WgpuNativeAsset>
+
+      <WgpuNativeLibraryName Condition="$([MSBuild]::IsOSPlatform('Windows'))">wgpu_native.dll</WgpuNativeLibraryName>
+      <WgpuNativeLibraryName Condition="$([MSBuild]::IsOSPlatform('OSX'))">libwgpu_native.dylib</WgpuNativeLibraryName>
+      <WgpuNativeLibraryName Condition="$([MSBuild]::IsOSPlatform('Linux'))">libwgpu_native.so</WgpuNativeLibraryName>
+
+      <WgpuNativeStagedLibrary>$(WgpuNativeStagingDir)$(WgpuNativeRid)/$(WgpuNativeLibraryName)</WgpuNativeStagedLibrary>
+    </PropertyGroup>
+
+    <Error Condition="'$(WgpuNativeRid)' == ''"
+           Text="wgpu-native has no prebuilt release for this platform (OS architecture '$(_WgpuOSArchitecture)'). Supported: win-x64, win-arm64, osx-arm64, osx-x64, linux-x64, linux-arm64. Add the platform to $(MSBuildThisFileFullPath) if gfx-rs/wgpu-native now ships it." />
+  </Target>
+
+  <!--
+    Download / verify / unzip / stage. Skipped whole once the library is staged,
+    which is what keeps rebuilds offline-safe.
+
+    Also skipped during design-time builds: an IDE loading the project (possibly
+    offline, possibly many projects at once) must never pull 15 MB off GitHub or
+    hard-error on a network failure. The None-item target below still runs, so a
+    solution that has been built once shows the staged library in the IDE.
+  -->
+  <Target Name="_WgpuNativeStage"
+          DependsOnTargets="_WgpuNativeResolvePlatform"
+          Condition="!Exists('$(WgpuNativeStagedLibrary)') AND '$(DesignTimeBuild)' != 'true'">
+
+    <PropertyGroup>
+      <_WgpuZip>$(WgpuNativeDownloadDir)$(WgpuNativeAsset)</_WgpuZip>
+      <!-- Every scratch path this build writes carries a fresh GUID, because two
+           builds of this project can run at once (a parallel solution build, or
+           two dotnet processes) and neither may see the other's half-written
+           files. The final staged path is reached only by an atomic rename. -->
+      <_WgpuBuildId>$([System.Guid]::NewGuid().ToString('N'))</_WgpuBuildId>
+      <_WgpuExtractDir>$(WgpuNativeDownloadDir)extracted/$(WgpuNativeRid)-$(_WgpuBuildId)/</_WgpuExtractDir>
+      <_WgpuStagedTemp>$(WgpuNativeStagingDir)$(WgpuNativeRid)/$(WgpuNativeLibraryName).$(_WgpuBuildId).tmp</_WgpuStagedTemp>
+    </PropertyGroup>
+
+    <Error Condition="!Exists('$(WgpuNativeChecksumFile)')"
+           Text="No SHA-256 manifest at '$(WgpuNativeChecksumFile)'. Add one for wgpu-native v$(WgpuNativeVersion) before building (sha256sum format: '&lt;hash&gt;  &lt;asset&gt;')." />
+
+    <!-- The manifest is plain sha256sum output so it stays usable by `sha256sum -c`
+         and by hand; parsing it here is two regexes rather than a second copy of
+         the hashes in MSBuild syntax. -->
+    <ReadLinesFromFile File="$(WgpuNativeChecksumFile)">
+      <Output TaskParameter="Lines" ItemName="_WgpuManifestLine" />
+    </ReadLinesFromFile>
+
+    <ItemGroup>
+      <_WgpuManifestEntry Include="@(_WgpuManifestLine)"
+                          Condition="'%(Identity)' != '' AND !$([System.String]::Copy('%(Identity)').TrimStart().StartsWith('#'))">
+        <Sha>$([System.Text.RegularExpressions.Regex]::Match('%(Identity)', '[0-9a-fA-F]{64}').Value)</Sha>
+        <Asset>$([System.Text.RegularExpressions.Regex]::Match('%(Identity)', '\S+$').Value)</Asset>
+      </_WgpuManifestEntry>
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_WgpuExpectedHash>@(_WgpuManifestEntry->WithMetadataValue('Asset', '$(WgpuNativeAsset)')->'%(Sha)')</_WgpuExpectedHash>
+    </PropertyGroup>
+
+    <Error Condition="'$(_WgpuExpectedHash)' == ''"
+           Text="'$(WgpuNativeChecksumFile)' has no SHA-256 line for '$(WgpuNativeAsset)'. Every supported platform needs one; add it before building on $(WgpuNativeRid)." />
+
+    <Message Condition="!Exists('$(_WgpuZip)')" Importance="high"
+             Text="wgpu-native: downloading $(WgpuNativeAsset) ($(WgpuNativeRid)) from $(WgpuNativeReleaseUrl) - first build only." />
+
+    <!-- Retries cover a flaky network; a hard failure below says what to do. -->
+    <DownloadFile Condition="!Exists('$(_WgpuZip)')"
+                  SourceUrl="$(WgpuNativeReleaseUrl)/$(WgpuNativeAsset)"
+                  DestinationFolder="$(WgpuNativeDownloadDir)"
+                  DestinationFileName="$(WgpuNativeAsset)"
+                  Retries="3"
+                  RetryDelayMilliseconds="2000"
+                  ContinueOnError="true" />
+
+    <Error Condition="!Exists('$(_WgpuZip)')"
+           Text="Failed to download $(WgpuNativeReleaseUrl)/$(WgpuNativeAsset). Check network access to github.com, or prime the cache by hand: drop the file into '$(WgpuNativeDownloadDir)' and build again." />
+
+    <!-- Cached zips are verified too, not just freshly downloaded ones: the cache
+         is writable scratch and is exactly where a bad copy would linger.
+         ContinueOnError downgrades VerifyFileHash's own terse failure to a
+         warning so the actionable error below is the one that stops the build. -->
+    <VerifyFileHash File="$(_WgpuZip)"
+                    Hash="$(_WgpuExpectedHash)"
+                    Algorithm="SHA256"
+                    HashEncoding="hex"
+                    ContinueOnError="true" />
+
+    <PropertyGroup>
+      <_WgpuHashOk>$(MSBuildLastTaskResult)</_WgpuHashOk>
+    </PropertyGroup>
+
+    <!-- Delete the bad file so the next build re-downloads instead of failing
+         forever on the same corrupt cache entry. -->
+    <Delete Condition="'$(_WgpuHashOk)' == 'false'" Files="$(_WgpuZip)" ContinueOnError="true" />
+
+    <Error Condition="'$(_WgpuHashOk)' == 'false'"
+           Text="SHA-256 mismatch for '$(_WgpuZip)': it does not match $(_WgpuExpectedHash) from '$(WgpuNativeChecksumFile)'. The file has been deleted; build again to re-download. If gfx-rs/wgpu-native legitimately re-cut v$(WgpuNativeVersion), update the manifest deliberately." />
+
+    <Message Importance="normal" Text="wgpu-native: staging $(WgpuNativeLibraryName) for $(WgpuNativeRid)." />
+
+    <Unzip SourceFiles="$(_WgpuZip)"
+           DestinationFolder="$(_WgpuExtractDir)"
+           OverwriteReadOnlyFiles="true" />
+
+    <Error Condition="!Exists('$(_WgpuExtractDir)lib/$(WgpuNativeLibraryName)')"
+           Text="$(WgpuNativeAsset) does not contain lib/$(WgpuNativeLibraryName). The wgpu-native release layout changed; update $(MSBuildThisFileFullPath)." />
+
+    <!-- Stage in two steps so the skip-guard above can never see a partial file:
+         copy to a per-build .tmp name in the destination folder, then rename it
+         into place. Same-volume rename is atomic, so the staged path either does
+         not exist or is the complete library. Both halves tolerate a build that
+         lost the race - the Move is skipped (and the temp deleted) if the other
+         build got there first, and the identical, verified bytes make which one
+         won irrelevant. -->
+    <Copy SourceFiles="$(_WgpuExtractDir)lib/$(WgpuNativeLibraryName)"
+          DestinationFiles="$(_WgpuStagedTemp)" />
+
+    <Move Condition="!Exists('$(WgpuNativeStagedLibrary)')"
+          SourceFiles="$(_WgpuStagedTemp)"
+          DestinationFiles="$(WgpuNativeStagedLibrary)"
+          ContinueOnError="true" />
+
+    <!-- Only ever this build's own temp: sweeping every *.tmp here would delete a
+         concurrent build's staging file out from under it. -->
+    <Delete Files="$(_WgpuStagedTemp)" ContinueOnError="true" />
+
+    <Error Condition="!Exists('$(WgpuNativeStagedLibrary)')"
+           Text="Failed to stage $(WgpuNativeLibraryName) to '$(WgpuNativeStagedLibrary)'. Check that '$(WgpuNativeStagingDir)' is writable, then build again." />
+
+    <!-- The extracted tree is ~100 MB of headers, import libs and pdbs we do not
+         ship; the zip stays as the cache. -->
+    <RemoveDir Directories="$(_WgpuExtractDir)" ContinueOnError="true" />
+  </Target>
+
+  <!--
+    BeforeTargets="AssignTargetPaths" is what makes the staged library flow
+    transitively: GetCopyToOutputDirectoryItems (how a referencing project picks
+    up a reference's content) depends on AssignTargetPaths, so an item added
+    here is visible to consumers as well as to this project's own output.
+    TargetPath is set explicitly so the library lands beside the assembly rather
+    than under native/staging/....
+  -->
+  <Target Name="_WgpuNativeIncludeStagedLibrary"
+          DependsOnTargets="_WgpuNativeResolvePlatform;_WgpuNativeStage"
+          BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <None Include="$(WgpuNativeStagedLibrary)">
+        <Link>$(WgpuNativeLibraryName)</Link>
+        <TargetPath>$(WgpuNativeLibraryName)</TargetPath>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <Visible>false</Visible>
+      </None>
+    </ItemGroup>
+  </Target>
+
+</Project>

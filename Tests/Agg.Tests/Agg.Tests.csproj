@@ -14,6 +14,9 @@
     <VSTestCollectCodeCoverage>false</VSTestCollectCodeCoverage>
     <VSTestLogger>trx</VSTestLogger>
     
+	<!-- The generated wgpu-native binding is raw pointers; its layout tests have to speak that language. -->
+	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
 	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
@@ -44,6 +47,7 @@
     <ProjectReference Include="..\..\Triangle\Triangle.csproj" />
     <ProjectReference Include="..\..\Typography\Typography.One\Typography.One.csproj" />
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj" />
+    <ProjectReference Include="..\..\WebGpu\MatterHackers.WebGpu.csproj" />
   </ItemGroup>
 
   <!-- LCD byte-exactness fixture: raw mask/composite dumps from the agg-gui Rust reference, read by

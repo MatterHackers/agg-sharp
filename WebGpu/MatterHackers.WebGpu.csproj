@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>MatterHackers.WebGpu</RootNamespace>
+    <Company>MatterHackers Inc.</Company>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <!-- Generated 1:1 bindings keep the C names (camelCase fields, wgpu* methods) on purpose. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <!-- This folder also holds the hand-run binding generator; compile only the generated
+         binding rather than sweeping the generator's sources (and build output) in. -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Generated\*.cs" />
+
+    <!-- The bootstrap's cache and staging output are ~75 MB of release zips and shared
+         libraries. Keep the default None glob out of them; the one file that matters is
+         added with copy metadata by native/WgpuNative.targets. -->
+    <None Remove="native\downloads\**" />
+    <None Remove="native\staging\**" />
+  </ItemGroup>
+
+  <!-- Downloads, verifies and stages the pinned wgpu-native shared library for this
+       machine's platform on first build, then copies it next to the output (and to
+       anything that references this project). No feed, no credentials, no script. -->
+  <Import Project="native/WgpuNative.targets" />
+
+</Project>

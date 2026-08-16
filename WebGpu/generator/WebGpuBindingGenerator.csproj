@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- A hand run tool, not part of any build: it reads the pinned headers in ..\headers and rewrites
+       ..\Generated. The generated sources are checked in so consumers never need this project. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>MatterHackers.WebGpu.Generator</RootNamespace>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Company>MatterHackers Inc.</Company>
+  </PropertyGroup>
+
+</Project>
