@@ -51,11 +51,13 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 			Action<WebGpuOffscreenCapture> drawScene,
 			double maxPercentDifferingPixels = 0,
 			bool supersample = false,
-			int depthPeelingLayers = 6)
+			int depthPeelingLayers = 6,
+			ulong? maxMeshVertexBufferBytes = null)
 		{
 			using var capture = WebGpuOffscreenCapture.Create();
 
 			capture.DepthPeelingLayers = depthPeelingLayers;
+			capture.MaxMeshVertexBufferBytes = maxMeshVertexBufferBytes;
 
 			capture.ClearTo(Golden3DScenes.Background);
 
@@ -214,6 +216,37 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		public async Task OverhangRenderType()
 		{
 			await Check("Scene.Overhang", capture => Golden3DScenes.DrawOverhangScene(capture.Gl));
+		}
+
+		/// <summary>
+		/// The same opaque scene, with the mesh vertex buffers capped so small that every mesh in it has to
+		/// be uploaded as many chunks and drawn as many draws - compared against the very same golden.
+		/// </summary>
+		/// <remarks>
+		/// This is what makes the oversized-mesh fix safe to apply to every mesh rather than only to the
+		/// ones that need it: chunking is a pure split on triangle boundaries, so it must be invisible. A cap
+		/// of 1024 bytes is five 180 byte triangles, which turns the scene's spheres into well over a hundred
+		/// draws each. The cap is on the scene renderer rather than on the device because only mesh vertex
+		/// data is chunked - a device-wide limit this small would also refuse the compat layer's uniform and
+		/// immediate-mode buffers, which is a different failure and not the one under test.
+		/// </remarks>
+		[Test]
+		public async Task OversizedMeshesSplitIntoChunksInvisibly()
+		{
+			await Check(
+				"Scene.Opaque",
+				capture => Golden3DScenes.DrawStandardScene(capture.Gl, RenderTypes.Shaded, 255),
+				maxMeshVertexBufferBytes: 1024);
+		}
+
+		/// <summary>The selection mask's position-only buffers chunk on the same rule, and are equally invisible.</summary>
+		[Test]
+		public async Task OversizedSelectionMasksSplitIntoChunksInvisibly()
+		{
+			await Check(
+				"Scene.SelectionOutline",
+				capture => Golden3DScenes.DrawSelectionOutlineScene(capture.Gl, capture.SceneRenderer),
+				maxMeshVertexBufferBytes: 1024);
 		}
 
 		/// <summary>

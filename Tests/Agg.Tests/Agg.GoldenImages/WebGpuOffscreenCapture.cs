@@ -148,6 +148,16 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 			set => sceneRenderer.DepthPeelingLayers = value;
 		}
 
+		/// <summary>
+		/// Caps the vertex buffers mesh geometry is uploaded in, forcing the chunked upload path a mesh
+		/// bigger than the device's own maxBufferSize would take. Null leaves the device's limit in charge.
+		/// </summary>
+		public ulong? MaxMeshVertexBufferBytes
+		{
+			get => sceneRenderer.MaxMeshVertexBufferBytes;
+			set => sceneRenderer.MaxMeshVertexBufferBytes = value;
+		}
+
 		public static WebGpuOffscreenCapture Create(int width = DefaultWidth, int height = DefaultHeight)
 			=> new WebGpuOffscreenCapture(width, height);
 

@@ -90,9 +90,9 @@ namespace MatterHackers.WebGpuRender
 		private WGPUDevice device;
 		private WGPUQueue queue;
 
-		// The device's own maxBufferSize, read once at creation. Nothing else about limits is needed yet,
-		// so only the one that is actually reachable by app data is kept.
-		private ulong maxBufferSize;
+		// The device's own limits, read once at creation. Only maxBufferSize is carried: it is the one
+		// limit application data (a large mesh's vertex buffer) actually reaches.
+		private DeviceLimits limits = new DeviceLimits(DeviceLimits.DefaultMaxBufferSize);
 		private WGPUCommandEncoder commandEncoder;
 		private WebGpuRenderEncoder openEncoder;
 
@@ -266,6 +266,9 @@ namespace MatterHackers.WebGpuRender
 		}
 
 		/// <inheritdoc/>
+		public DeviceLimits Limits => this.limits;
+
+		/// <inheritdoc/>
 		public IGpuBuffer CreateBuffer(BufferUsage usage, ulong sizeInBytes, ReadOnlySpan<byte> initialData = default)
 		{
 			this.ThrowIfDisposed();
@@ -296,10 +299,10 @@ namespace MatterHackers.WebGpuRender
 			// validation inside Rust, which panics non-unwinding and takes the whole process down with no
 			// managed stack. A caller can survive an exception; nobody survives that. Found by a
 			// half-gigabyte outline-geometry buffer from a thumbnail of a large mesh.
-			if (size > this.maxBufferSize)
+			if (size > this.limits.MaxBufferSize)
 			{
 				throw new InvalidOperationException(
-					$"A {size:N0} byte buffer exceeds this device's maxBufferSize of {this.maxBufferSize:N0}"
+					$"A {size:N0} byte buffer exceeds this device's maxBufferSize of {this.limits.MaxBufferSize:N0}"
 					+ $" bytes ('{this.label}').");
 			}
 
@@ -1417,12 +1420,11 @@ namespace MatterHackers.WebGpuRender
 		/// </remarks>
 		private void ReadDeviceLimits()
 		{
-			const ulong DefaultMaxBufferSize = 268435456;
-
-			var limits = default(WGPULimits);
-			this.maxBufferSize = wgpuDeviceGetLimits(this.device, &limits) == WGPUStatus.Success && limits.maxBufferSize > 0
-				? limits.maxBufferSize
-				: DefaultMaxBufferSize;
+			var deviceLimits = default(WGPULimits);
+			this.limits = new DeviceLimits(
+				wgpuDeviceGetLimits(this.device, &deviceLimits) == WGPUStatus.Success && deviceLimits.maxBufferSize > 0
+					? deviceLimits.maxBufferSize
+					: DeviceLimits.DefaultMaxBufferSize);
 		}
 
 		private void ReadAdapterInfo()

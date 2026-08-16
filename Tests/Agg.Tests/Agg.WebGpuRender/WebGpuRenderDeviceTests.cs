@@ -231,6 +231,30 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		/// <summary>
+		/// The device reports the buffer limit it was created with, and refuses anything past it in managed
+		/// code rather than letting wgpu's validation panic take the process down.
+		/// </summary>
+		/// <remarks>
+		/// The limit is what the mesh path sizes its vertex chunks against, so a device that reported a
+		/// nonsense limit would silently turn the chunking into either "never split" (and the process abort
+		/// comes back on a large mesh) or "split every triangle". The expected value is WebGPU's default:
+		/// nothing here requests raised limits, and wgpu grants the defaults unless asked.
+		/// </remarks>
+		[Test]
+		public async Task TheDeviceReportsAndEnforcesItsBufferSizeLimit()
+		{
+			using (var harness = WebGpuRenderTestHarness.Create(16, 16))
+			{
+				await Assert.That(harness.Device.Limits.MaxBufferSize).IsEqualTo(DeviceLimits.DefaultMaxBufferSize);
+
+				await Assert.That(() => harness.Device.CreateBuffer(
+						BufferUsage.Vertex,
+						harness.Device.Limits.MaxBufferSize + 4))
+					.Throws<InvalidOperationException>();
+			}
+		}
+
+		/// <summary>
 		/// Three clip-space vertices in the canned colored layout: position (float3) then color (float4),
 		/// 28 bytes apart. Built by hand rather than through the compat layer so a layout mistake shows up
 		/// here and not only in the integration suite.

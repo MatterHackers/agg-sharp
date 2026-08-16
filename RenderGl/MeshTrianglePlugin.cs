@@ -105,7 +105,11 @@ namespace MatterHackers.RenderGl
 		public object CachedGpuBuffer;
 
 		/// <summary>
-		/// Renderer-specific cached GPU buffer for position-only passes such as selection masks.
+		/// Renderer-specific cached GPU buffers for position-only passes such as selection masks: an
+		/// <c>IGpuBuffer[]</c> of one or more chunks, each holding whole faces. More than one when the
+		/// positions of this submesh exceed the device's maxBufferSize. Left as <see cref="object"/>
+		/// (unlike the scene plugin's typed chunk list) because it is long-standing public API of a type
+		/// that predates the render seam.
 		/// </summary>
 		public object CachedSelectionGpuBuffer;
 

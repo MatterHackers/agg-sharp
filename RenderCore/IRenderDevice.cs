@@ -52,6 +52,12 @@ namespace MatterHackers.RenderCore
 	public interface IRenderDevice : IDisposable
 	{
 		/// <summary>
+		/// The limits this device was created with (<c>wgpuDeviceGetLimits</c>). Read once at creation, so
+		/// this is a property rather than a call.
+		/// </summary>
+		DeviceLimits Limits { get; }
+
+		/// <summary>
 		/// Creates a buffer (<c>wgpuDeviceCreateBuffer</c>). Passing
 		/// <paramref name="initialData"/> is the mapped-at-creation path and is the only way to fill a
 		/// buffer that does not declare <see cref="BufferUsage.CopyDst"/>.

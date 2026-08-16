@@ -68,6 +68,16 @@ namespace MatterHackers.RenderGl.Scene
 
 		private const int SceneVertexStride = SceneVertexFloatStride * sizeof(float);
 
+		/// <summary>Bytes per vertex of the position-only selection/shadow mask format.</summary>
+		private const int SelectionVertexStride = 3 * sizeof(float);
+
+		/// <summary>
+		/// Vertices per primitive. Every mesh buffer here is an unindexed triangle list, so this is the
+		/// granularity a vertex buffer may be split on - a chunk boundary anywhere else would drop the
+		/// triangle that straddles it.
+		/// </summary>
+		private const int VerticesPerPrimitive = 3;
+
 		private const int TransformUniformSize = 128;
 
 		private const int LightUniformSize = 112;
@@ -251,6 +261,20 @@ namespace MatterHackers.RenderGl.Scene
 			get => this.depthPeelingLayers;
 			set => this.depthPeelingLayers = SceneTransparencyModeUtilities.NormalizeDepthPeelingLayers(value);
 		}
+
+		/// <summary>
+		/// Caps the size of the vertex buffers mesh geometry is uploaded in, in bytes. Null - the default -
+		/// uses the device's own <see cref="DeviceLimits.MaxBufferSize"/>.
+		/// </summary>
+		/// <remarks>
+		/// A test hook, and deliberately narrower than the device limit it stands in for. Only mesh vertex
+		/// data is chunked, so lowering the device's own limit far enough to split the couple of kilobytes a
+		/// golden scene's cube occupies would also refuse the compat layer's uniform and immediate-mode
+		/// buffers, which have no chunking and are never within orders of magnitude of the real limit.
+		/// Splitting a scene the goldens already pin, at a limit only this path sees, is what proves the
+		/// chunking is invisible.
+		/// </remarks>
+		public ulong? MaxMeshVertexBufferBytes { get; set; }
 
 		/// <summary>
 		/// The facade the mesh render-data plugins are keyed on. Set by the host right after it creates
@@ -1617,12 +1641,19 @@ namespace MatterHackers.RenderGl.Scene
 					this.BuildMeshBindings(drawState, transformBuffer, effectBuffer, texture ?? this.whiteTexture),
 					"SceneMesh"));
 
-				var vertexBuffer = this.EnsureMeshBuffer(command.Mesh, command.RenderType, sceneShaderData, sceneSubMesh);
+				var vertexBuffers = this.EnsureMeshBuffers(command.Mesh, command.RenderType, sceneShaderData, sceneSubMesh);
 
 				encoder.SetPipeline(pipeline);
 				encoder.SetBindGroup(0, bindGroup);
-				encoder.SetVertexBuffer(0, vertexBuffer);
-				encoder.Draw(sceneSubMesh.InterleavedData.Length / SceneVertexFloatStride);
+
+				// One draw per chunk. A submesh whose interleaved data is larger than the device will create
+				// in one buffer lives in several, split on triangle boundaries - so drawing all of them in
+				// order is the same triangle list, in the same order, as the single draw it used to be.
+				foreach (var vertexBuffer in vertexBuffers)
+				{
+					encoder.SetVertexBuffer(0, vertexBuffer);
+					encoder.Draw((int)(vertexBuffer.SizeInBytes / SceneVertexStride));
+				}
 			}
 		}
 
@@ -1720,11 +1751,16 @@ namespace MatterHackers.RenderGl.Scene
 					continue;
 				}
 
-				var buffer = this.EnsureSelectionBuffer(mesh, meshPlugin, subMesh);
+				var buffers = this.EnsureSelectionBuffers(mesh, meshPlugin, subMesh);
 				encoder.SetPipeline(pipeline);
 				encoder.SetBindGroup(0, bindGroup);
-				encoder.SetVertexBuffer(0, buffer);
-				encoder.Draw(subMesh.positionData.Count);
+
+				// One draw per chunk, for the reason DrawMeshCommand gives.
+				foreach (var buffer in buffers)
+				{
+					encoder.SetVertexBuffer(0, buffer);
+					encoder.Draw((int)(buffer.SizeInBytes / SelectionVertexStride));
+				}
 			}
 		}
 
@@ -1758,65 +1794,134 @@ namespace MatterHackers.RenderGl.Scene
 		}
 
 		/// <summary>
-		/// The vertex buffer for one submesh of a mesh's scene render data, minted on first use and
-		/// retained on the submesh itself afterwards.
+		/// The vertex buffers for one submesh of a mesh's scene render data, minted on first use and
+		/// retained on the submesh itself afterwards. Normally one; more when the submesh is larger than
+		/// the device will create in a single buffer.
 		/// </summary>
 		/// <param name="mesh">The mesh being drawn, which is what retention is keyed on.</param>
-		/// <param name="renderType">The render type whose plugin generation owns this buffer.</param>
+		/// <param name="renderType">The render type whose plugin generation owns these buffers.</param>
 		/// <param name="owner">The plugin instance the submesh came from. A different instance than the
 		/// slot last saw means the mesh was edited, and the previous generation's buffers are retired.</param>
-		/// <param name="sceneSubMesh">The submesh whose interleaved data the buffer holds.</param>
-		private IGpuBuffer EnsureMeshBuffer(
+		/// <param name="sceneSubMesh">The submesh whose interleaved data the buffers hold.</param>
+		private IReadOnlyList<IGpuBuffer> EnsureMeshBuffers(
 			Mesh mesh,
 			RenderTypes renderType,
 			SceneEdgeShaderDataPlugin owner,
 			SceneEdgeShaderSubMeshData sceneSubMesh)
 		{
 			var slot = this.GetMeshBufferSlot(mesh, (int)renderType, owner);
-			if (sceneSubMesh.CachedGpuBuffer is IGpuBuffer cached)
+			if (sceneSubMesh.CachedGpuBufferChunks is IReadOnlyList<IGpuBuffer> cached)
 			{
 				return cached;
 			}
 
-			var bytes = new byte[sceneSubMesh.InterleavedData.Length * sizeof(float)];
-			Buffer.BlockCopy(sceneSubMesh.InterleavedData, 0, bytes, 0, bytes.Length);
-			var buffer = this.device.CreateBuffer(BufferUsage.Vertex, (ulong)bytes.Length, bytes);
-			sceneSubMesh.CachedGpuBuffer = buffer;
-			slot.Add(buffer, () => sceneSubMesh.CachedGpuBuffer = null);
-			return buffer;
+			var interleavedData = sceneSubMesh.InterleavedData;
+			var chunks = this.CreateVertexChunks(
+				interleavedData.Length / SceneVertexFloatStride,
+				SceneVertexStride,
+				(destination, firstVertex, byteCount) =>
+					Buffer.BlockCopy(interleavedData, firstVertex * SceneVertexStride, destination, 0, byteCount));
+
+			sceneSubMesh.CachedGpuBufferChunks = chunks;
+			slot.Add(chunks, () => sceneSubMesh.CachedGpuBufferChunks = null);
+			return chunks;
 		}
 
 		/// <summary>
-		/// The position-only vertex buffer the selection mask draws, minted on first use and retained on
-		/// the submesh afterwards.
+		/// The position-only vertex buffers the selection mask draws, minted on first use and retained on
+		/// the submesh afterwards. Chunked on the same rule as the scene data.
 		/// </summary>
 		/// <param name="mesh">The mesh being masked.</param>
 		/// <param name="owner">The triangle plugin the submesh came from; a new instance retires the old
 		/// generation's buffers exactly as it does for the scene data.</param>
-		/// <param name="subMesh">The submesh whose positions the buffer holds.</param>
-		private IGpuBuffer EnsureSelectionBuffer(Mesh mesh, MeshTrianglePlugin owner, SubTriangleMesh subMesh)
+		/// <param name="subMesh">The submesh whose positions the buffers hold.</param>
+		private IReadOnlyList<IGpuBuffer> EnsureSelectionBuffers(Mesh mesh, MeshTrianglePlugin owner, SubTriangleMesh subMesh)
 		{
 			var slot = this.GetMeshBufferSlot(mesh, SelectionBufferSlot, owner);
-			if (subMesh.CachedSelectionGpuBuffer is IGpuBuffer cached)
+			if (subMesh.CachedSelectionGpuBuffer is IReadOnlyList<IGpuBuffer> cached)
 			{
 				return cached;
 			}
 
-			int count = subMesh.positionData.Count;
-			var bytes = new byte[count * 3 * sizeof(float)];
-			var span = bytes.AsSpan();
-			for (int index = 0; index < count; index++)
+			var positions = subMesh.positionData;
+			var chunks = this.CreateVertexChunks(
+				positions.Count,
+				SelectionVertexStride,
+				(destination, firstVertex, byteCount) =>
+				{
+					var span = destination.AsSpan();
+					int chunkVertexCount = byteCount / SelectionVertexStride;
+					for (int index = 0; index < chunkVertexCount; index++)
+					{
+						var position = positions.Array[firstVertex + index];
+						int offset = index * SelectionVertexStride;
+						WriteFloat(span, offset + 0, position.positionX);
+						WriteFloat(span, offset + 4, position.positionY);
+						WriteFloat(span, offset + 8, position.positionZ);
+					}
+				});
+
+			subMesh.CachedSelectionGpuBuffer = chunks;
+			slot.Add(chunks, () => subMesh.CachedSelectionGpuBuffer = null);
+			return chunks;
+		}
+
+		/// <summary>
+		/// Uploads vertex data as one buffer per chunk, each within the device's
+		/// <see cref="DeviceLimits.MaxBufferSize"/> and each holding whole triangles.
+		/// </summary>
+		/// <remarks>
+		/// The scratch buffer is one chunk rather than the whole submesh: a mesh big enough to need
+		/// splitting is exactly the mesh whose full byte copy the process cannot afford twice.
+		/// </remarks>
+		/// <param name="vertexCount">Total vertices to upload.</param>
+		/// <param name="vertexStride">Bytes per vertex.</param>
+		/// <param name="fillChunk">Fills one chunk: the destination, the chunk's first vertex, and how many
+		/// bytes of the destination it covers.</param>
+		private IReadOnlyList<IGpuBuffer> CreateVertexChunks(
+			int vertexCount,
+			int vertexStride,
+			Action<byte[], int, int> fillChunk)
+		{
+			int verticesPerChunk = this.MaxVerticesPerChunk(vertexStride);
+			var chunks = new List<IGpuBuffer>();
+			byte[] scratch = null;
+
+			for (int firstVertex = 0; firstVertex < vertexCount; firstVertex += verticesPerChunk)
 			{
-				var position = subMesh.positionData.Array[index];
-				WriteFloat(span, (index * 3 * sizeof(float)) + 0, position.positionX);
-				WriteFloat(span, (index * 3 * sizeof(float)) + 4, position.positionY);
-				WriteFloat(span, (index * 3 * sizeof(float)) + 8, position.positionZ);
+				int chunkVertexCount = Math.Min(verticesPerChunk, vertexCount - firstVertex);
+				int chunkByteCount = chunkVertexCount * vertexStride;
+				if (scratch == null || scratch.Length != chunkByteCount)
+				{
+					scratch = new byte[chunkByteCount];
+				}
+
+				fillChunk(scratch, firstVertex, chunkByteCount);
+				chunks.Add(this.device.CreateBuffer(BufferUsage.Vertex, (ulong)chunkByteCount, scratch));
 			}
 
-			var buffer = this.device.CreateBuffer(BufferUsage.Vertex, (ulong)bytes.Length, bytes);
-			subMesh.CachedSelectionGpuBuffer = buffer;
-			slot.Add(buffer, () => subMesh.CachedSelectionGpuBuffer = null);
-			return buffer;
+			return chunks;
+		}
+
+		/// <summary>
+		/// How many vertices of the given stride go in one buffer: as many as the device's buffer limit
+		/// allows, rounded down to whole triangles.
+		/// </summary>
+		/// <param name="vertexStride">Bytes per vertex.</param>
+		/// <exception cref="InvalidOperationException">The limit cannot hold even one triangle.</exception>
+		private int MaxVerticesPerChunk(int vertexStride)
+		{
+			ulong limit = this.MaxMeshVertexBufferBytes ?? this.device.Limits.MaxBufferSize;
+			ulong primitiveByteCount = (ulong)(vertexStride * VerticesPerPrimitive);
+			ulong primitivesPerChunk = limit / primitiveByteCount;
+			if (primitivesPerChunk == 0)
+			{
+				throw new InvalidOperationException(
+					$"This device's maxBufferSize of {limit:N0} bytes cannot hold a single {primitiveByteCount}"
+					+ " byte triangle, so mesh geometry cannot be uploaded at all.");
+			}
+
+			return (int)Math.Min(primitivesPerChunk * VerticesPerPrimitive, int.MaxValue);
 		}
 
 		/// <summary>
@@ -2610,21 +2715,24 @@ namespace MatterHackers.RenderGl.Scene
 			/// </summary>
 			public WeakReference<Mesh> Mesh { get; }
 
-			/// <summary>The buffers minted for that instance, one per submesh drawn so far.</summary>
+			/// <summary>
+			/// The buffers minted for that instance: one per chunk, of every submesh drawn so far.
+			/// </summary>
 			public List<IGpuBuffer> Buffers { get; } = new List<IGpuBuffer>();
 
 			/// <summary>
-			/// Nulls the per-submesh caches that point at <see cref="Buffers"/>. One per buffer, because the
-			/// two kinds of submesh cache the buffer on unrelated fields of unrelated types.
+			/// Nulls the per-submesh caches that point at <see cref="Buffers"/>. One per submesh rather than
+			/// one per buffer - a submesh caches its whole chunk list on one field - because the two kinds of
+			/// submesh cache it on unrelated fields of unrelated types.
 			/// </summary>
 			private List<Action> CacheClears { get; } = new List<Action>();
 
-			/// <summary>Records a buffer this slot owns.</summary>
-			/// <param name="buffer">The buffer just minted.</param>
-			/// <param name="clearSubMeshCache">Nulls the submesh field that now caches it.</param>
-			public void Add(IGpuBuffer buffer, Action clearSubMeshCache)
+			/// <summary>Records the buffers of one submesh this slot owns.</summary>
+			/// <param name="buffers">The chunks just minted for that submesh.</param>
+			/// <param name="clearSubMeshCache">Nulls the submesh field that now caches them.</param>
+			public void Add(IReadOnlyList<IGpuBuffer> buffers, Action clearSubMeshCache)
 			{
-				this.Buffers.Add(buffer);
+				this.Buffers.AddRange(buffers);
 				this.CacheClears.Add(clearSubMeshCache);
 			}
 

@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using MatterHackers.PolygonMesh;
+using MatterHackers.RenderCore;
 using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
 
@@ -43,7 +44,15 @@ namespace MatterHackers.RenderGl
 
 		public bool HasVertexColors { get; init; }
 
-		public object CachedGpuBuffer { get; set; }
+		/// <summary>
+		/// The vertex buffers a renderer minted for this submesh, or null until one has. Several rather
+		/// than one because <see cref="InterleavedData"/> can be larger than the device's
+		/// <see cref="RenderCore.DeviceLimits.MaxBufferSize"/> - an untextured mesh is a single submesh
+		/// holding every face, and at 60 bytes a vertex a 5M face mesh wants nearly a gigabyte. The
+		/// renderer then uploads it as consecutive chunks of whole faces and draws one per chunk; see
+		/// <c>WebGpuSceneRenderer.EnsureMeshBuffers</c>.
+		/// </summary>
+		public IReadOnlyList<IGpuBuffer> CachedGpuBufferChunks { get; set; }
 	}
 
 	public sealed class SceneEdgeShaderDataPlugin

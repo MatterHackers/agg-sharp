@@ -244,4 +244,31 @@ namespace MatterHackers.RenderCore
 			=> $"Sampler {this.AddressModeU}/{this.AddressModeV} mag {this.MagFilter} min {this.MinFilter} mip {this.MipmapFilter}"
 			+ (string.IsNullOrEmpty(this.Label) ? string.Empty : $" '{this.Label}'");
 	}
+
+	/// <summary>
+	/// The limits a device was created with (<c>wgpuDeviceGetLimits</c>). Only the ones application data
+	/// can actually reach are carried: a limit nothing sizes against is a limit nobody can honor.
+	/// </summary>
+	public readonly struct DeviceLimits
+	{
+		/// <summary>The WebGPU default, 256 MiB. What a device reports when it grants no more.</summary>
+		public const ulong DefaultMaxBufferSize = 268435456;
+
+		/// <summary>Creates a limit set.</summary>
+		/// <param name="maxBufferSize">The largest buffer the device will create, in bytes.</param>
+		public DeviceLimits(ulong maxBufferSize)
+		{
+			this.MaxBufferSize = maxBufferSize;
+		}
+
+		/// <summary>
+		/// The largest buffer <see cref="IRenderDevice.CreateBuffer"/> will create
+		/// (<c>WGPULimits.maxBufferSize</c>). Callers whose data can exceed it - mesh vertex data is the
+		/// only one that does - split it into several buffers rather than asking for one that is refused.
+		/// </summary>
+		public ulong MaxBufferSize { get; }
+
+		/// <inheritdoc/>
+		public override string ToString() => $"DeviceLimits maxBufferSize {this.MaxBufferSize:N0}";
+	}
 }

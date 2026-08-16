@@ -64,7 +64,13 @@ namespace MatterHackers.Agg.UI
 
 		public IEnumerable<VertexData> Vertices()
 		{
-			throw new NotImplementedException();
+			Rewind(0);
+			FlagsAndCommand command;
+			do
+			{
+				command = Vertex(out double x, out double y);
+				yield return new VertexData(command, new Vector2(x, y));
+			} while (command != FlagsAndCommand.Stop);
 		}
 
 		public void Rewind(int idx)
@@ -239,9 +245,18 @@ namespace MatterHackers.Agg.UI
 		}
 
 		// Vertex source interface
+		// This control generates its geometry on the fly (stroked outline followed by one
+		// ellipse per control point), so the enumeration is an adapter over the legacy
+		// Rewind/Vertex pair, the same shape VertexSourceAdapter uses.
 		public override IEnumerable<VertexData> Vertices()
 		{
-			throw new NotImplementedException();
+			Rewind(0);
+			FlagsAndCommand command;
+			do
+			{
+				command = Vertex(out double x, out double y);
+				yield return new VertexData(command, new Vector2(x, y));
+			} while (command != FlagsAndCommand.Stop);
 		}
 
 		public override int num_paths()
@@ -294,7 +309,7 @@ namespace MatterHackers.Agg.UI
 					return cmd;
 				}
 				if (m_node >= 0 && m_node == (int)(m_status)) r *= 1.2;
-				m_ellipse.init(GetXN(m_status), GetYN(m_status), r, r, 32);
+				InitControlPointEllipse(m_status, r);
 				++m_status;
 			}
 			cmd = m_ellipse.Vertex(out x, out y);
@@ -305,7 +320,7 @@ namespace MatterHackers.Agg.UI
 			}
 			if (m_status >= m_num_points) return FlagsAndCommand.Stop;
 			if (m_node >= 0 && m_node == (int)(m_status)) r *= 1.2;
-			m_ellipse.init(GetXN(m_status), GetYN(m_status), r, r, 32);
+			InitControlPointEllipse(m_status, r);
 			++m_status;
 			cmd = m_ellipse.Vertex(out x, out y);
 			if (!ShapePath.IsStop(cmd))
@@ -313,6 +328,18 @@ namespace MatterHackers.Agg.UI
 				ParentToChildTransform.Transform(ref x, ref y);
 			}
 			return cmd;
+		}
+
+		/// <summary>
+		/// Points the shared ellipse at control point <paramref name="pointIndex"/> and restarts its
+		/// enumeration. Ellipse is a VertexSourceLegacySupport, so its Vertex() reads a cached
+		/// enumerator that init() does not reset - without the Rewind every control point after the
+		/// first would read an exhausted enumerator and report Stop.
+		/// </summary>
+		private void InitControlPointEllipse(int pointIndex, double radius)
+		{
+			m_ellipse.init(GetXN(pointIndex), GetYN(pointIndex), radius, radius, 32);
+			m_ellipse.Rewind(0);
 		}
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)

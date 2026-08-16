@@ -51,6 +51,13 @@ namespace MatterHackers.RenderCore.Testing
 		/// <summary>Every call received, oldest first.</summary>
 		public IReadOnlyList<RenderCommand> Commands => this.commands;
 
+		/// <summary>
+		/// The limits this double reports and enforces. Settable so a test can pin a small
+		/// <see cref="DeviceLimits.MaxBufferSize"/> and prove the callers that split their data actually
+		/// split it - a real device's 256 MiB would need a several hundred megabyte mesh to reach.
+		/// </summary>
+		public DeviceLimits Limits { get; set; } = new DeviceLimits(DeviceLimits.DefaultMaxBufferSize);
+
 		/// <summary>True once <see cref="Dispose"/> has been called.</summary>
 		public bool IsDisposed { get; private set; }
 
@@ -79,6 +86,15 @@ namespace MatterHackers.RenderCore.Testing
 			if (initialData.Length > (int)Math.Min(sizeInBytes, int.MaxValue))
 			{
 				throw new ArgumentException("Initial data is larger than the buffer.", nameof(initialData));
+			}
+
+			// Refused exactly as the native device refuses it: a test that never sees the limit enforced
+			// would not prove that what a caller split really fits.
+			if (sizeInBytes > this.Limits.MaxBufferSize)
+			{
+				throw new InvalidOperationException(
+					$"A {sizeInBytes:N0} byte buffer exceeds this device's maxBufferSize of"
+					+ $" {this.Limits.MaxBufferSize:N0} bytes.");
 			}
 
 			var buffer = new StubBuffer(this.NextLabel("buffer"), usage, sizeInBytes);
