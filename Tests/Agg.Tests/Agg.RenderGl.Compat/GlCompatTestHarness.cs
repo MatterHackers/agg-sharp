@@ -145,15 +145,55 @@ namespace MatterHackers.Agg.Tests
 				.Where(command => (command.Buffer.Usage & BufferUsage.Uniform) != 0)
 				.ToList();
 
-		/// <summary>The buffer writes that filled pooled vertex buffers, in order.</summary>
+		/// <summary>
+		/// The buffer writes that filled staged vertex buffers, in order. Like the uniform blocks, a write
+		/// covers every batch staged since the previous submit, so nothing is readable until a submit.
+		/// </summary>
 		public IReadOnlyList<WriteBufferCommand> VertexWrites()
 			=> this.Device.CommandsOf<WriteBufferCommand>()
 				.Where(command => (command.Buffer.Usage & BufferUsage.Vertex) != 0)
 				.ToList();
 
-		/// <summary>The raw bytes of one uniform write.</summary>
-		/// <param name="drawIndex">Which uniform write to read, zero based.</param>
-		public byte[] UniformWrite(int drawIndex) => this.UniformWrites()[drawIndex].Data;
+		/// <summary>
+		/// The vertex bytes one draw binds, sliced back out of the batched write they were staged into.
+		/// </summary>
+		/// <param name="drawIndex">Which draw to read, zero based, counting across submits.</param>
+		/// <param name="byteCount">How many bytes the batch occupies - vertex count times the layout stride.</param>
+		public byte[] VertexBytesForDraw(int drawIndex, int byteCount)
+		{
+			var binding = this.Device.CommandsOf<SetVertexBufferCommand>()[drawIndex];
+			var write = this.VertexWrites().First(command
+				=> ReferenceEquals(command.Buffer, binding.Buffer)
+					&& command.Offset <= binding.Offset
+					&& binding.Offset + (ulong)byteCount <= command.Offset + (ulong)command.Data.Length);
+
+			return write.Data.AsSpan((int)(binding.Offset - write.Offset), byteCount).ToArray();
+		}
+
+		/// <summary>
+		/// The bytes of one draw's uniform block. Per-draw blocks are batched: a write covers every draw
+		/// staged since the previous submit, one block per <see cref="GlDrawSubmitter.UniformStride"/>
+		/// bytes, so a draw's block has to be sliced back out of it.
+		/// </summary>
+		/// <param name="drawIndex">Which draw to read, zero based, counting across submits.</param>
+		public byte[] UniformWrite(int drawIndex) => this.UniformBlocks()[drawIndex];
+
+		/// <summary>Every draw's uniform block, in draw order, unpacked from the batched writes.</summary>
+		public IReadOnlyList<byte[]> UniformBlocks()
+		{
+			var blocks = new List<byte[]>();
+			foreach (var write in this.UniformWrites())
+			{
+				for (int offset = 0;
+					offset + GlUniformBlock.SizeInBytes <= write.Data.Length;
+					offset += GlDrawSubmitter.UniformStride)
+				{
+					blocks.Add(write.Data.AsSpan(offset, GlUniformBlock.SizeInBytes).ToArray());
+				}
+			}
+
+			return blocks;
+		}
 
 		/// <summary>Reads the red channel of one vertex out of a colored vertex buffer's bytes.</summary>
 		/// <param name="vertices">Bytes built by <see cref="GlImmediateModeBuffer.BuildColoredVertices"/>.</param>

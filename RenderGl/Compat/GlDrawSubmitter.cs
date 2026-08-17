@@ -42,23 +42,44 @@ namespace MatterHackers.RenderGl.Compat
 	/// </summary>
 	public class GlDrawSubmitter : IDisposable
 	{
-		private readonly IRenderDevice device;
 		private readonly GlStateShadow state;
 		private readonly GlMatrixStacks matrices;
 		private readonly GlPipelineCache pipelines;
 		private readonly GlTextureStore textures;
 		private readonly GlRenderPassScope passes;
 
-		// One uniform buffer per draw, recycled between submits. A single shared buffer would be wrong:
-		// queue writes are ordered against submits, not against the draws recorded into an open pass, so
-		// every draw in a pass would end up reading whichever write landed last.
-		private readonly List<IGpuBuffer> uniformPool = new List<IGpuBuffer>();
-		private int uniformPoolInUse;
+		/// <summary>
+		/// Bytes between one draw's uniform block and the next. A bound range's offset must be a multiple
+		/// of WebGPU's guaranteed minUniformBufferOffsetAlignment (256), and a block is
+		/// <see cref="GlUniformBlock.SizeInBytes"/> = 304 bytes, so the next multiple up is 512.
+		/// </summary>
+		public const int UniformStride = 512;
 
-		// The same pool, and the same rule, for the immediate mode vertex data. A slot is handed out at
-		// most once per submit window, so no two draws in one pass ever share a buffer.
-		private readonly List<IGpuBuffer> vertexPool = new List<IGpuBuffer>();
-		private int vertexPoolInUse;
+		/// <summary>
+		/// A compile time cross-check, not a value anything reads: growing
+		/// <see cref="GlUniformBlock.SizeInBytes"/> past the stride would make each draw's block overwrite
+		/// the start of the next draw's slot, and unsigned is what turns the resulting negative constant
+		/// into a build error instead of a rendering mystery.
+		/// </summary>
+		private const uint UniformStrideHeadroom = UniformStride - GlUniformBlock.SizeInBytes;
+
+		/// <summary>Draw slots per uniform buffer. A busy 2D frame records a few hundred draws.</summary>
+		private const int UniformSlotsPerBuffer = 512;
+
+		// One uniform slot per draw, staged in a CPU array and pushed to the GPU in one write per submit
+		// rather than one per draw - see StagedUniformBuffers for why that is both safe and worth doing.
+		private readonly StagedUniformBuffers uniforms;
+		private int uniformSlotsInUse;
+
+		/// <summary>
+		/// Bytes per immediate mode vertex buffer. A busy 2D frame stages a few hundred KB across a few
+		/// hundred batches, so one buffer normally holds the whole frame and the flush is one write.
+		/// </summary>
+		private const int VertexBytesPerBuffer = 1 << 20;
+
+		// The same batching, and the same rule, for the immediate mode vertex data: every batch gets its
+		// own range within a submit window, but all the ranges reach the GPU in one write per buffer.
+		private readonly StagedVertexBuffers vertices;
 
 		/// <summary>Creates a submitter over the pieces of context state a draw reads.</summary>
 		/// <param name="device">The device draws are recorded on.</param>
@@ -75,12 +96,18 @@ namespace MatterHackers.RenderGl.Compat
 			GlTextureStore textures,
 			GlRenderPassScope passes)
 		{
-			this.device = device ?? throw new ArgumentNullException(nameof(device));
+			// The device is not held: the two stagers own every call this makes on it, and they null check it.
 			this.state = state ?? throw new ArgumentNullException(nameof(state));
 			this.matrices = matrices ?? throw new ArgumentNullException(nameof(matrices));
 			this.pipelines = pipelines ?? throw new ArgumentNullException(nameof(pipelines));
 			this.textures = textures ?? throw new ArgumentNullException(nameof(textures));
 			this.passes = passes ?? throw new ArgumentNullException(nameof(passes));
+			this.uniforms = new StagedUniformBuffers(
+				device,
+				UniformStride,
+				UniformSlotsPerBuffer,
+				"UniformBufferCreate");
+			this.vertices = new StagedVertexBuffers(device, VertexBytesPerBuffer, "VertexBufferCreate");
 		}
 
 		/// <summary>
@@ -92,7 +119,11 @@ namespace MatterHackers.RenderGl.Compat
 		/// <param name="vertexCount">How many vertices to draw.</param>
 		/// <param name="mode">The GL primitive mode, already fan-converted.</param>
 		/// <param name="textured">Whether the draw samples the bound texture.</param>
-		public void Draw(IGpuBuffer vertexBuffer, int vertexCount, BeginMode mode, bool textured)
+		/// <param name="vertexOffset">
+		/// Byte offset of the first vertex. Non-zero for immediate mode, whose batches share a staged
+		/// buffer; zero for a display list, whose baked buffer holds one batch.
+		/// </param>
+		public void Draw(IGpuBuffer vertexBuffer, int vertexCount, BeginMode mode, bool textured, ulong vertexOffset = 0)
 		{
 			FrameProfiler.Count("Draws");
 
@@ -110,11 +141,11 @@ namespace MatterHackers.RenderGl.Compat
 				pipeline = this.pipelines.GetPipeline(descriptor);
 			}
 
-			IGpuBuffer uniformBuffer;
+			int uniformSlot;
 			using (FrameProfiler.Time("Draw.Uniform"))
 			{
-				uniformBuffer = this.AcquireUniformBuffer();
-				this.device.WriteBuffer(uniformBuffer, 0, this.BuildUniformBlock());
+				uniformSlot = this.uniformSlotsInUse++;
+				this.BuildUniformBlock(this.uniforms.Stage(uniformSlot, 0, GlUniformBlock.SizeInBytes));
 			}
 
 			IBindGroup bindGroup;
@@ -122,7 +153,11 @@ namespace MatterHackers.RenderGl.Compat
 			{
 				var entries = new List<BindGroupEntry>
 				{
-					BindGroupEntry.ForBuffer(GlShaderKeys.UniformBinding, uniformBuffer, 0, GlUniformBlock.SizeInBytes),
+					BindGroupEntry.ForBuffer(
+						GlShaderKeys.UniformBinding,
+						this.uniforms.BufferFor(uniformSlot),
+						this.uniforms.OffsetFor(uniformSlot),
+						GlUniformBlock.SizeInBytes),
 				};
 
 				if (textured)
@@ -141,55 +176,64 @@ namespace MatterHackers.RenderGl.Compat
 				var encoder = this.passes.EnsurePassOpen();
 				encoder.SetPipeline(pipeline);
 				encoder.SetBindGroup((int)GlShaderKeys.BindGroupIndex, bindGroup);
-				encoder.SetVertexBuffer(0, vertexBuffer);
+				encoder.SetVertexBuffer(0, vertexBuffer, vertexOffset);
 				encoder.Draw(vertexCount);
 			}
 		}
 
 		/// <summary>
-		/// Takes a pooled vertex buffer big enough for <paramref name="vertices"/> and fills it. The
-		/// buffer belongs to the pool, not the caller, and stays alive until the next
-		/// <see cref="ResetPerDrawPools"/> makes it available again - which is the whole point: creating
-		/// one buffer per flush leaked a GPU allocation for every batch of every frame.
+		/// Stages a batch's vertex bytes and reports where they will live: the shared buffer they were
+		/// appended to and their offset within it. Nothing is uploaded here - the whole submit window's
+		/// vertices go up in one write per buffer at <see cref="FlushPendingWrites"/>.
 		/// <para>
-		/// The write happens while a pass may be open, which is only safe because a slot is handed out at
-		/// most once between submits: queue writes are ordered against the submit rather than against the
-		/// draws around them, so reusing a buffer inside one submit window would let the later batch's
-		/// vertices appear in the earlier batch's draw.
+		/// Every batch still gets a range of its own, which is what makes deferring the write correct:
+		/// queue writes are ordered against the submit rather than against the draws around them, so
+		/// reusing a range inside one submit window would let the later batch's vertices appear in the
+		/// earlier batch's draw.
 		/// </para>
 		/// </summary>
 		/// <param name="vertices">The interleaved vertex bytes to upload.</param>
-		public IGpuBuffer AcquireVertexBuffer(byte[] vertices)
+		/// <param name="offset">The byte offset the batch will occupy in the returned buffer.</param>
+		public IGpuBuffer AcquireVertexBuffer(byte[] vertices, out ulong offset)
 		{
 			if (vertices == null)
 			{
 				throw new ArgumentNullException(nameof(vertices));
 			}
 
-			var buffer = this.AcquireVertexBufferOfAtLeast(vertices.Length);
-			this.device.WriteBuffer(buffer, 0, vertices);
+			var span = this.vertices.Stage(vertices.Length, out var buffer, out offset);
+			vertices.AsSpan().CopyTo(span);
 			return buffer;
 		}
 
 		/// <summary>
-		/// Makes the per-draw uniform and vertex buffers reusable again. Safe only immediately after a
+		/// Makes the per-draw uniform and vertex ranges reusable again. Safe only immediately after a
 		/// submit, because queue writes issued after a submit are ordered after it.
 		/// </summary>
 		public void ResetPerDrawPools()
 		{
-			this.uniformPoolInUse = 0;
-			this.vertexPoolInUse = 0;
+			this.uniformSlotsInUse = 0;
+			this.uniforms.Reset();
+			this.vertices.Reset();
+		}
+
+		/// <summary>
+		/// Pushes every uniform block and vertex range staged since the last flush to the GPU. Must be
+		/// called before the submit that consumes the draws they belong to.
+		/// </summary>
+		public void FlushPendingWrites()
+		{
+			this.uniforms.Flush(this.uniformSlotsInUse);
+			this.vertices.Flush();
 		}
 
 		/// <summary>
 		/// Fills the uniform block from the current matrices and lights, in the layout
 		/// <see cref="GlUniformBlock"/> declares.
 		/// </summary>
-		public byte[] BuildUniformBlock()
+		/// <param name="span">Exactly <see cref="GlUniformBlock.SizeInBytes"/> bytes to fill.</param>
+		public void BuildUniformBlock(Span<byte> span)
 		{
-			var bytes = new byte[GlUniformBlock.SizeInBytes];
-			var span = bytes.AsSpan();
-
 			GlUniformBlock.WriteMatrix(span, GlUniformBlock.ModelViewMatrixOffset, this.matrices.ModelView);
 			GlUniformBlock.WriteMatrix(
 				span,
@@ -211,88 +255,14 @@ namespace MatterHackers.RenderGl.Compat
 				this.state.IsEnabled(EnableCap.Light1) ? 1f : 0f,
 				this.state.LightingEnabled ? 1f : 0f,
 				this.state.TextureEnvironmentReplace ? 1f : 0f);
-
-			return bytes;
 		}
 
-		/// <summary>Releases the pooled uniform and vertex buffers.</summary>
+		/// <summary>Releases the staged uniform and vertex buffers.</summary>
 		public void Dispose()
 		{
-			foreach (var buffer in this.uniformPool)
-			{
-				buffer.Dispose();
-			}
-
-			foreach (var buffer in this.vertexPool)
-			{
-				buffer.Dispose();
-			}
-
-			this.uniformPool.Clear();
-			this.vertexPool.Clear();
-			this.uniformPoolInUse = 0;
-			this.vertexPoolInUse = 0;
-		}
-
-		private IGpuBuffer AcquireUniformBuffer()
-		{
-			if (this.uniformPoolInUse < this.uniformPool.Count)
-			{
-				return this.uniformPool[this.uniformPoolInUse++];
-			}
-
-			FrameProfiler.Count("UniformBufferCreate");
-			var buffer = this.device.CreateBuffer(
-				BufferUsage.Uniform | BufferUsage.CopyDst,
-				GlUniformBlock.SizeInBytes);
-			this.uniformPool.Add(buffer);
-			this.uniformPoolInUse++;
-			return buffer;
-		}
-
-		/// <summary>
-		/// The vertex half of the pool. Slots grow but never shrink, and capacities are rounded up to a
-		/// power of two so a slot that sees steadily larger batches settles instead of being recreated on
-		/// every flush - unlike the uniform block, immediate mode batch sizes vary from draw to draw.
-		/// </summary>
-		/// <param name="sizeInBytes">How many bytes the batch needs.</param>
-		private IGpuBuffer AcquireVertexBufferOfAtLeast(int sizeInBytes)
-		{
-			int slot = this.vertexPoolInUse++;
-			if (slot < this.vertexPool.Count)
-			{
-				var pooled = this.vertexPool[slot];
-				if (pooled.SizeInBytes >= (ulong)sizeInBytes)
-				{
-					return pooled;
-				}
-
-				pooled.Dispose();
-				this.vertexPool[slot] = this.CreateVertexBuffer(sizeInBytes);
-				return this.vertexPool[slot];
-			}
-
-			var buffer = this.CreateVertexBuffer(sizeInBytes);
-			this.vertexPool.Add(buffer);
-			return buffer;
-		}
-
-		private IGpuBuffer CreateVertexBuffer(int sizeInBytes)
-		{
-			FrameProfiler.Count("VertexBufferCreate");
-			return this.device.CreateBuffer(BufferUsage.Vertex | BufferUsage.CopyDst, RoundUpCapacity(sizeInBytes));
-		}
-
-		private static ulong RoundUpCapacity(int sizeInBytes)
-		{
-			// 256 is the floor because a buffer that small costs nothing and most 2D batches are quads.
-			ulong capacity = 256;
-			while (capacity < (ulong)sizeInBytes)
-			{
-				capacity *= 2;
-			}
-
-			return capacity;
+			this.uniforms.Dispose();
+			this.vertices.Dispose();
+			this.uniformSlotsInUse = 0;
 		}
 	}
 }

@@ -89,6 +89,29 @@ namespace MatterHackers.RenderGl.Scene
 		/// </summary>
 		private const int EffectUniformSize = 192;
 
+		/// <summary>
+		/// Bytes between one draw's uniform slot and the next. A bound range's offset must be a multiple of
+		/// WebGPU's guaranteed minUniformBufferOffsetAlignment (256), so a slot is two of those: the
+		/// transform block at the slot's start and the effect block 256 bytes in.
+		/// </summary>
+		private const int UniformSlotStride = 512;
+
+		/// <summary>Byte offset of the effect block within a draw's slot.</summary>
+		private const int EffectBlockOffset = 256;
+
+		/// <summary>
+		/// Compile time cross-checks, not values anything reads: growing either block past the room its
+		/// slot leaves would make a draw overwrite the block after it - the effect block for the transform
+		/// block, the next draw's slot for the effect block. Unsigned is what turns the resulting negative
+		/// constant into a build error instead of a rendering mystery.
+		/// </summary>
+		private const uint TransformBlockHeadroom = EffectBlockOffset - TransformUniformSize;
+
+		private const uint EffectBlockHeadroom = UniformSlotStride - (EffectBlockOffset + EffectUniformSize);
+
+		/// <summary>Draw slots per uniform buffer; 1024 covers a depth-peeled frame outright.</summary>
+		private const int UniformSlotsPerBuffer = 1024;
+
 		private const int BedShadowUniformSize = 32;
 
 		/// <summary>Both bed intermediates are capped here, as the classic path caps them: the bed texture
@@ -155,12 +178,11 @@ namespace MatterHackers.RenderGl.Scene
 		private readonly List<SelectionOutlineCommand> queuedSelectionOutlines = new List<SelectionOutlineCommand>();
 		private readonly NativeSceneRenderPlanner renderPlanner = new NativeSceneRenderPlanner();
 
-		// One uniform buffer per draw, indexed by a counter that resets each frame and reused frame after
-		// frame. Queue writes are ordered against submits, not against the draws recorded into a pass, so
-		// a buffer may only be rewritten once the submit that consumed its previous contents has happened
-		// - which is exactly the frame boundary this renderer submits on.
-		private readonly List<IGpuBuffer> transformUniforms = new List<IGpuBuffer>();
-		private readonly List<IGpuBuffer> effectUniforms = new List<IGpuBuffer>();
+		// One uniform slot per draw, indexed by a counter that resets each frame, staged in a CPU array and
+		// pushed to the GPU in one write per submit rather than the two per draw it used to take - a
+		// depth-peeled frame has ~740 draw slots, and at ~13 us a queue write that was ~19 ms of a frame.
+		// See StagedUniformBuffers for why one slot per draw is still required.
+		private readonly StagedUniformBuffers uniforms;
 
 		// Vertex buffers built from a mesh's render-data plugins, keyed the way those plugins are keyed:
 		// per mesh, then per slot (one per RenderTypes for the scene data, one for the selection
@@ -180,8 +202,6 @@ namespace MatterHackers.RenderGl.Scene
 		// still reference, so they are released only after the submit that consumes those draws.
 		private readonly List<IGpuBuffer> retiredMeshBuffers = new List<IGpuBuffer>();
 
-		private readonly byte[] transformScratch = new byte[TransformUniformSize];
-		private readonly byte[] effectScratch = new byte[EffectUniformSize];
 		private readonly byte[] lightScratch = new byte[LightUniformSize];
 		private readonly byte[] outlineScratch = new byte[OutlineUniformSize];
 		private readonly byte[] downsampleScratch = new byte[DownsampleUniformSize];
@@ -283,6 +303,16 @@ namespace MatterHackers.RenderGl.Scene
 			this.compat = compat ?? throw new ArgumentNullException(nameof(compat));
 			this.device = compat.Device;
 			this.cache = compat.Pipelines;
+			this.uniforms = new StagedUniformBuffers(
+				this.device,
+				UniformSlotStride,
+				UniformSlotsPerBuffer,
+				"Scene.UniformSlotCreate");
+
+			// Every submit - this renderer's own end-of-frame one, the mid-frame ones its bed shadow and
+			// downsample passes make, and any the 2D layer makes while the scene has draws staged - has to
+			// carry the staged uniforms with it.
+			this.compat.BeforeSubmit += this.FlushUniformWrites;
 		}
 
 		/// <inheritdoc/>
@@ -591,15 +621,8 @@ namespace MatterHackers.RenderGl.Scene
 		/// <summary>Releases every device object this renderer owns, including the retained mesh buffers.</summary>
 		public void Dispose()
 		{
-			foreach (var buffer in this.transformUniforms)
-			{
-				buffer.Dispose();
-			}
-
-			foreach (var buffer in this.effectUniforms)
-			{
-				buffer.Dispose();
-			}
+			this.compat.BeforeSubmit -= this.FlushUniformWrites;
+			this.uniforms.Dispose();
 
 			foreach (var slot in this.retainedMeshBuffers)
 			{
@@ -614,8 +637,6 @@ namespace MatterHackers.RenderGl.Scene
 
 			this.DisposeRetiredMeshBuffers();
 
-			this.transformUniforms.Clear();
-			this.effectUniforms.Clear();
 			this.retainedMeshBuffers.Clear();
 
 			this.lightUniform?.Dispose();
@@ -693,7 +714,9 @@ namespace MatterHackers.RenderGl.Scene
 			int height = Math.Max(1, (int)Math.Ceiling(this.activeSceneRenderContext.Viewport.Height)) * this.supersampleScale;
 			this.EnsureFrameResources(width, height);
 
+			// Safe together: the previous frame ended in a submit, which flushed every slot it staged.
 			this.drawSlot = 0;
+			this.uniforms.Reset();
 			this.WriteLightUniform();
 
 			// Before the plan is built, because the shadow mask rasterizes the queued scene commands from
@@ -704,6 +727,8 @@ namespace MatterHackers.RenderGl.Scene
 			}
 
 			var renderPlan = this.renderPlanner.Build(this.queuedSceneCommands);
+			FrameProfiler.Count("Scene.OpaqueCmds", renderPlan.OpaqueCommands.Count);
+			FrameProfiler.Count("Scene.TransparentCmds", renderPlan.TransparentCommands.Count);
 
 			using (FrameProfiler.Time("Scene.Opaque"))
 			{
@@ -737,7 +762,7 @@ namespace MatterHackers.RenderGl.Scene
 			}
 
 			FrameProfiler.Count("Scene.DrawSlots", this.drawSlot);
-			FrameProfiler.Count("Scene.UniformPoolSize", this.transformUniforms.Count);
+			FrameProfiler.Count("Scene.UniformPoolSize", this.uniforms.SlotCapacity);
 
 			// Meshes the session has finished with give their buffers back here, one frame boundary after
 			// the collector took them.
@@ -861,16 +886,27 @@ namespace MatterHackers.RenderGl.Scene
 				return;
 			}
 
-			this.InitializeDualDepthPeel(transparentCommands);
+			using (FrameProfiler.Time("Peel.Init"))
+			{
+				this.InitializeDualDepthPeel(transparentCommands);
+			}
 
 			var source = this.peelRangeA;
 			var destination = this.peelRangeB;
 			int iterationCount = DualDepthPeelingMath.GetIterationCount(this.DepthPeelingLayers);
+			FrameProfiler.Count("Scene.PeelIterations", iterationCount);
 			for (int iteration = 0; iteration < iterationCount; iteration++)
 			{
-				this.PeelDepthRangePass(transparentCommands, source, destination.Near, CompareFunction.Less, DepthAttachment.FarClear, "PeelNear");
-				this.PeelDepthRangePass(transparentCommands, source, destination.Far, CompareFunction.Greater, 0, "PeelFar");
-				this.PeelColorPass(transparentCommands, source);
+				using (FrameProfiler.Time("Peel.Depth"))
+				{
+					this.PeelDepthRangePass(transparentCommands, source, destination.Near, CompareFunction.Less, DepthAttachment.FarClear, "PeelNear");
+					this.PeelDepthRangePass(transparentCommands, source, destination.Far, CompareFunction.Greater, 0, "PeelFar");
+				}
+
+				using (FrameProfiler.Time("Peel.Color"))
+				{
+					this.PeelColorPass(transparentCommands, source);
+				}
 
 				(source, destination) = (destination, source);
 			}
@@ -1663,30 +1699,33 @@ namespace MatterHackers.RenderGl.Scene
 		private void DrawMeshCommand(IRenderEncoder encoder, MeshRenderCommand command, MeshDrawState drawState)
 		{
 			var world = this.activeSceneRenderContext.WorldView;
-			this.WriteTransformUniform(command.Transform * world.ModelviewMatrix, world.ProjectionMatrix);
+			MeshTrianglePlugin meshPlugin;
+			SceneEdgeShaderDataPlugin sceneShaderData;
+			using (FrameProfiler.Time("Scene.DrawSetup"))
+			{
+				this.WriteTransformUniform(command.Transform * world.ModelviewMatrix, world.ProjectionMatrix);
 
-			var meshPlugin = MeshTrianglePlugin.Get(this.OwnerGl, command.Mesh);
-			var sceneShaderData = SceneEdgeShaderDataPlugin.Get(this.OwnerGl, command.Mesh, command.RenderType);
+				meshPlugin = MeshTrianglePlugin.Get(this.OwnerGl, command.Mesh);
+				sceneShaderData = SceneEdgeShaderDataPlugin.Get(this.OwnerGl, command.Mesh, command.RenderType);
 
-			// Asked of the interleaved data rather than of Mesh.FaceColors, which is what the classic path
-			// asks. The two agree for face-coloured meshes, and only this form also catches the colours
-			// RenderTypes.Overhang bakes into the same channel from a normal-driven colour function - there
-			// is no FaceColors array behind those.
-			bool useVertexColor = !command.OverrideFaceColors && HasVertexColors(sceneShaderData);
+				// Asked of the interleaved data rather than of Mesh.FaceColors, which is what the classic path
+				// asks. The two agree for face-coloured meshes, and only this form also catches the colours
+				// RenderTypes.Overhang bakes into the same channel from a normal-driven colour function - there
+				// is no FaceColors array behind those.
+				bool useVertexColor = !command.OverrideFaceColors && HasVertexColors(sceneShaderData);
 
-			this.WriteEffectUniform(
-				command.Color,
-				command.WireFrameColor,
-				drawState.EnableWireframe,
-				drawState.WireframeOnly,
-				command.Unlit || drawState.Unlit,
-				useVertexColor,
-				command.AlphaMultiplier,
-				drawState.BedGrid);
+				this.WriteEffectUniform(
+					command.Color,
+					command.WireFrameColor,
+					drawState.EnableWireframe,
+					drawState.WireframeOnly,
+					command.Unlit || drawState.Unlit,
+					useVertexColor,
+					command.AlphaMultiplier,
+					drawState.BedGrid);
+			}
 
-			var transformBuffer = this.transformUniforms[this.drawSlot];
-			var effectBuffer = this.effectUniforms[this.drawSlot];
-			this.drawSlot++;
+			int uniformSlot = this.drawSlot++;
 
 			var cullMode = drawState.CullOverride ?? (command.ForceCullBackFaces ? CullMode.Back : CullMode.None);
 
@@ -1705,11 +1744,15 @@ namespace MatterHackers.RenderGl.Scene
 				bool useTexture = texture != null;
 
 				var pipeline = this.GetMeshPipeline(drawState, cullMode, useTexture);
-				var bindGroup = this.cache.GetBindGroup(new BindGroupDescriptor(
-					pipeline,
-					0,
-					this.BuildMeshBindings(drawState, transformBuffer, effectBuffer, texture ?? this.whiteTexture),
-					"SceneMesh"));
+				IBindGroup bindGroup;
+				using (FrameProfiler.Time("Scene.BindGroupGet"))
+				{
+					bindGroup = this.cache.GetBindGroup(new BindGroupDescriptor(
+						pipeline,
+						0,
+						this.BuildMeshBindings(drawState, uniformSlot, texture ?? this.whiteTexture),
+						"SceneMesh"));
+				}
 
 				var vertexBuffers = this.EnsureMeshBuffers(command.Mesh, command.RenderType, sceneShaderData, sceneSubMesh);
 
@@ -1781,9 +1824,9 @@ namespace MatterHackers.RenderGl.Scene
 			this.WriteTransformUniform(modelView, projection);
 			this.WriteEffectUniform(color, Color.Transparent, false, false, false, false, 1.0f);
 
-			var transformBuffer = this.transformUniforms[this.drawSlot];
-			var effectBuffer = this.effectUniforms[this.drawSlot];
-			this.drawSlot++;
+			int uniformSlot = this.drawSlot++;
+			var slotBuffer = this.uniforms.BufferFor(uniformSlot);
+			ulong slotOffset = this.uniforms.OffsetFor(uniformSlot);
 
 			var pipeline = this.cache.GetPipeline(new RenderPipelineDescriptor(
 				this.cache.GetShaderModule(SceneShaderKeys.SceneModule),
@@ -1805,9 +1848,9 @@ namespace MatterHackers.RenderGl.Scene
 				0,
 				new[]
 				{
-					BindGroupEntry.ForBuffer(0, transformBuffer),
+					BindGroupEntry.ForBuffer(0, slotBuffer, slotOffset, TransformUniformSize),
 					BindGroupEntry.ForBuffer(1, this.lightUniform),
-					BindGroupEntry.ForBuffer(2, effectBuffer),
+					BindGroupEntry.ForBuffer(2, slotBuffer, slotOffset + EffectBlockOffset, EffectUniformSize),
 					BindGroupEntry.ForSampler(3, this.meshTextureSampler),
 					BindGroupEntry.ForTexture(4, this.whiteTexture),
 				},
@@ -2195,15 +2238,17 @@ namespace MatterHackers.RenderGl.Scene
 		/// <param name="texture">The submesh's texture, or the white 1x1 stand-in.</param>
 		private BindGroupEntry[] BuildMeshBindings(
 			in MeshDrawState drawState,
-			IGpuBuffer transformBuffer,
-			IGpuBuffer effectBuffer,
+			int uniformSlot,
 			IGpuTexture texture)
 		{
+			var slotBuffer = this.uniforms.BufferFor(uniformSlot);
+			ulong slotOffset = this.uniforms.OffsetFor(uniformSlot);
+
 			var bindings = new List<BindGroupEntry>(8)
 			{
-				BindGroupEntry.ForBuffer(0, transformBuffer),
+				BindGroupEntry.ForBuffer(0, slotBuffer, slotOffset, TransformUniformSize),
 				BindGroupEntry.ForBuffer(1, this.lightUniform),
-				BindGroupEntry.ForBuffer(2, effectBuffer),
+				BindGroupEntry.ForBuffer(2, slotBuffer, slotOffset + EffectBlockOffset, EffectUniformSize),
 				BindGroupEntry.ForSampler(3, this.meshTextureSampler),
 				BindGroupEntry.ForTexture(4, texture),
 			};
@@ -2342,15 +2387,12 @@ namespace MatterHackers.RenderGl.Scene
 
 		private void WriteTransformUniform(Matrix4X4 modelView, Matrix4X4 projection)
 		{
-			var span = this.transformScratch.AsSpan();
+			var span = this.StageSlot(0, TransformUniformSize);
 			GlUniformBlock.WriteMatrix(span, 0, modelView);
 
 			// The same 0..w clip depth remap the classic path's UpdateTransformBuffer applies; the WGSL
 			// therefore has no z fixup of its own.
 			GlUniformBlock.WriteMatrix(span, 64, GlUniformBlock.ToClipSpaceProjection(projection));
-
-			var buffer = this.EnsureUniformSlot(this.transformUniforms, TransformUniformSize);
-			this.device.WriteBuffer(buffer, 0, this.transformScratch);
 		}
 
 		private void WriteEffectUniform(
@@ -2366,7 +2408,7 @@ namespace MatterHackers.RenderGl.Scene
 			// The classic path's default when a command carries no wireframe color.
 			var effectiveWireframeColor = wireframeColor.Alpha0To1 > 0 ? wireframeColor : new Color(25, 25, 25);
 
-			var span = this.effectScratch.AsSpan();
+			var span = this.StageSlot(EffectBlockOffset, EffectUniformSize);
 			WriteColor(span, 0, meshColor);
 			WriteColor(span, 16, effectiveWireframeColor);
 
@@ -2393,9 +2435,6 @@ namespace MatterHackers.RenderGl.Scene
 				bedGrid != null ? BedShadowStrength : 0);
 
 			this.WriteBedGridConstants(span, bedGrid);
-
-			var buffer = this.EnsureUniformSlot(this.effectUniforms, EffectUniformSize);
-			this.device.WriteBuffer(buffer, 0, this.effectScratch);
 		}
 
 		/// <summary>
@@ -2494,22 +2533,32 @@ namespace MatterHackers.RenderGl.Scene
 		}
 
 		/// <summary>
-		/// Returns this draw's slot in a uniform pool, growing the pool on demand. The slot index is the
-		/// draw counter, so the same draw ordinal gets the same buffer every frame - which is what makes
-		/// the bind groups built around them hit the cache instead of being minted per draw per frame.
+		/// The staging bytes of one block of the current draw's slot. Nothing reaches the GPU here:
+		/// <see cref="FlushUniformWrites"/> pushes the whole staged range before the submit that consumes
+		/// these draws.
+		/// <para>
+		/// The slot index is the draw counter, so the same draw ordinal gets the same buffer range every
+		/// frame - which is what makes the bind groups built around it hit the cache instead of being
+		/// minted per draw per frame.
+		/// </para>
+		/// <para>
+		/// The span must be consumed before the next <see cref="StageSlot"/> call: growing the pool
+		/// resizes the staging array, and a span handed out earlier would then point into the orphaned
+		/// copy and swallow the writes made through it.
+		/// </para>
 		/// </summary>
-		/// <param name="pool">The pool to index.</param>
-		/// <param name="sizeInBytes">Size of a buffer in this pool.</param>
-		private IGpuBuffer EnsureUniformSlot(List<IGpuBuffer> pool, int sizeInBytes)
-		{
-			while (pool.Count <= this.drawSlot)
-			{
-				FrameProfiler.Count("Scene.UniformSlotCreate");
-				pool.Add(this.device.CreateBuffer(BufferUsage.Uniform | BufferUsage.CopyDst, (ulong)sizeInBytes));
-			}
+		/// <param name="blockOffset">Byte offset of the block within the slot.</param>
+		/// <param name="sizeInBytes">Size of the block.</param>
+		private Span<byte> StageSlot(int blockOffset, int sizeInBytes)
+			=> this.uniforms.Stage(this.drawSlot, blockOffset, sizeInBytes);
 
-			return pool[this.drawSlot];
-		}
+		/// <summary>
+		/// Pushes every slot staged since the last flush to the GPU. Called from the compat context
+		/// immediately before each device submit, which is the only ordering that matters: queue writes are
+		/// ordered against the submit, not against the draws recorded before it, so this is exactly
+		/// equivalent to the per-draw writes it replaces.
+		/// </summary>
+		private void FlushUniformWrites() => this.uniforms.Flush(this.drawSlot);
 
 		private static void WriteColor(Span<byte> destination, int offset, Color color)
 			=> GlUniformBlock.WriteVector4(

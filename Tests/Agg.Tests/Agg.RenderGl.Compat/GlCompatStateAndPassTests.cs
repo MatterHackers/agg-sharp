@@ -54,7 +54,10 @@ namespace MatterHackers.Agg.Tests
 			harness.DrawTriangle();
 			harness.Context.PopMatrix();
 			harness.DrawTriangle();
-			harness.Context.FlushPass();
+
+			// Submit rather than FlushPass: per-draw uniform blocks are staged and pushed in one write
+			// just before the device submit, so nothing is readable until then.
+			harness.Context.Submit();
 
 			var translated = harness.UniformModelView(0);
 			await Assert.That(translated.Row3.X).IsEqualTo(5.0).Within(1e-5);
@@ -66,29 +69,37 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		[Test]
-		public async Task EachDrawGetsItsOwnUniformBufferSoOneWriteCannotOverwriteAnother()
+		public async Task EachDrawGetsItsOwnUniformRangeSoOneWriteCannotOverwriteAnother()
 		{
-			// If every draw shared a uniform buffer, both draws in a pass would read whichever write
-			// landed last - queue writes are ordered against submits, not against draws.
+			// If every draw shared a uniform range, both draws in a pass would read whichever write landed
+			// last - queue writes are ordered against submits, not against draws.
 			var harness = GlCompatTestHarness.Create();
 
 			harness.Context.Translate(1, 0, 0);
 			harness.DrawTriangle();
 			harness.Context.Translate(1, 0, 0);
 			harness.DrawTriangle();
-			harness.Context.FlushPass();
-
-			var uniformBuffers = harness.UniformWrites().Select(write => write.Buffer).ToList();
-			await Assert.That(uniformBuffers.Count).IsEqualTo(2);
-			await Assert.That(ReferenceEquals(uniformBuffers[0], uniformBuffers[1])).IsFalse();
-
-			// After a submit the pool is safe to reuse, so a third draw takes the first buffer back.
 			harness.Context.Submit();
-			harness.DrawTriangle();
-			harness.Context.FlushPass();
 
-			var afterSubmit = harness.UniformWrites().Select(write => write.Buffer).ToList();
-			await Assert.That(ReferenceEquals(afterSubmit[2], afterSubmit[0])).IsTrue();
+			// One write for both draws, holding both draws' blocks.
+			await Assert.That(harness.UniformWrites().Count).IsEqualTo(1);
+			await Assert.That(harness.UniformModelView(0).Row3.X).IsEqualTo(1.0).Within(1e-5);
+			await Assert.That(harness.UniformModelView(1).Row3.X).IsEqualTo(2.0).Within(1e-5);
+
+			// Each draw's range is its own, and they are the ranges the draws were bound to.
+			var boundOffsets = harness.Device.CommandsOf<CreateBindGroupCommand>()
+				.SelectMany(command => command.Descriptor.Entries)
+				.Where(entry => entry.Buffer != null && (entry.Buffer.Usage & BufferUsage.Uniform) != 0)
+				.Select(entry => entry.Offset)
+				.ToList();
+			await Assert.That(boundOffsets).IsEquivalentTo(new ulong[] { 0, GlDrawSubmitter.UniformStride });
+
+			// After a submit the slots are safe to reuse, so a third draw goes back to the first range.
+			harness.DrawTriangle();
+			harness.Context.Submit();
+
+			await Assert.That(harness.UniformWrites().Count).IsEqualTo(2);
+			await Assert.That(harness.UniformWrites()[1].Offset).IsEqualTo(0UL);
 		}
 
 		[Test]
@@ -101,7 +112,7 @@ namespace MatterHackers.Agg.Tests
 			harness.Context.Ortho(0, 100, 0, 50, -1, 1);
 			harness.Context.MatrixMode(MatterHackers.RenderGl.OpenGl.MatrixMode.Modelview);
 			harness.DrawTriangle();
-			harness.Context.FlushPass();
+			harness.Context.Submit();
 
 			var projection = harness.UniformProjection(0);
 

@@ -608,12 +608,18 @@ namespace MatterHackers.WebGpuRender
 				return;
 			}
 
+			FrameProfiler.Count("dev.WriteBuffer");
+			FrameProfiler.Count("dev.WriteBufferBytes", data.Length);
+
 			// Legal while a pass is open, and the compat layer relies on that for its per-draw pooled
 			// buffers - but only because a pooled slot is handed out once per submit window. Queue writes
 			// are ordered against submits, not against the draws in a pass.
-			fixed (byte* source = data)
+			using (FrameProfiler.Time("dev.WriteBuffer"))
 			{
-				wgpuQueueWriteBuffer(this.queue, target.Handle, offset, source, (nuint)data.Length);
+				fixed (byte* source = data)
+				{
+					wgpuQueueWriteBuffer(this.queue, target.Handle, offset, source, (nuint)data.Length);
+				}
 			}
 		}
 

@@ -58,14 +58,17 @@ namespace MatterHackers.Agg.Tests
 			harness.Context.Vertex2(0, 10);
 			harness.Context.Vertex2(10, 10);
 			harness.Context.End();
-			harness.Context.FlushPass();
+
+			// Submit rather than FlushPass: vertex bytes are staged and pushed in one write just before the
+			// device submit, so nothing is readable until then.
+			harness.Context.Submit();
 
 			var vertexBuffers = harness.VertexBufferCreations();
 			await Assert.That(vertexBuffers.Count).IsEqualTo(1);
 
-			// The buffer comes from the pool, so it is written rather than created with its contents and
-			// its capacity is rounded up - what has to be exact is the 4 vertices at the position+color
-			// stride the canned layout declares.
+			// The buffer is shared by every batch of the frame, so it is written rather than created with
+			// its contents and it is far bigger than this batch - what has to be exact is the 4 vertices at
+			// the position+color stride the canned layout declares.
 			int expectedBytes = 4 * (int)GlShaderKeys.ColoredVertexLayout.ArrayStride;
 			await Assert.That(vertexBuffers[0].InitialDataLength).IsEqualTo(0);
 			await Assert.That(vertexBuffers[0].SizeInBytes >= (ulong)expectedBytes).IsTrue();
@@ -108,7 +111,7 @@ namespace MatterHackers.Agg.Tests
 			}
 
 			harness.Context.End();
-			harness.Context.FlushPass();
+			harness.Context.Submit();
 
 			var pipeline = harness.BoundPipelines().Single();
 			await Assert.That(pipeline.Descriptor.VertexShader.SourceKey).IsEqualTo(GlShaderKeys.PositionTexture);
@@ -180,35 +183,41 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		[Test]
-		public async Task ImmediateModeVertexBuffersAreRecycledPerSubmitNotLeakedPerFlush()
+		public async Task ImmediateModeVertexBuffersAreReusedPerSubmitNotCreatedPerFlush()
 		{
-			// Every glEnd used to create a vertex buffer that nothing owned and nothing disposed. Pooling
-			// them has one hard constraint: within a submit window each flush must still get a distinct
-			// buffer, because a queue write is ordered against the submit rather than against the draws in
-			// an open pass - reusing a buffer between two draws of one pass would show the second batch's
-			// vertices in the first batch's draw.
+			// Every glEnd used to create a vertex buffer that nothing owned and nothing disposed, and then
+			// - once they were pooled - to write one. Both are now one shared buffer written once per
+			// submit, under one hard constraint: within a submit window each flush must still get a
+			// distinct range, because a queue write is ordered against the submit rather than against the
+			// draws in an open pass, so a reused range would show the second batch's vertices in the first
+			// batch's draw.
 			var harness = GlCompatTestHarness.Create();
 
 			harness.DrawTriangle();
 			harness.DrawTriangle();
-			harness.Context.FlushPass();
-
-			var withinFrame = harness.VertexWrites().Select(write => write.Buffer).ToList();
-			await Assert.That(withinFrame.Count).IsEqualTo(2);
-			await Assert.That(ReferenceEquals(withinFrame[0], withinFrame[1])).IsFalse();
-			await Assert.That(harness.VertexBufferCreations().Count).IsEqualTo(2);
-
-			// After the submit the pool hands the same two buffers back rather than creating more.
 			harness.Context.Submit();
-			harness.DrawTriangle();
-			harness.DrawTriangle();
-			harness.Context.FlushPass();
 
-			var afterSubmit = harness.VertexWrites().Select(write => write.Buffer).ToList();
-			await Assert.That(afterSubmit.Count).IsEqualTo(4);
-			await Assert.That(ReferenceEquals(afterSubmit[2], afterSubmit[0])).IsTrue();
-			await Assert.That(ReferenceEquals(afterSubmit[3], afterSubmit[1])).IsTrue();
-			await Assert.That(harness.VertexBufferCreations().Count).IsEqualTo(2);
+			var withinFrame = harness.VertexWrites();
+			await Assert.That(withinFrame.Count).IsEqualTo(1);
+			await Assert.That(harness.VertexBufferCreations().Count).IsEqualTo(1);
+
+			var bindings = harness.Device.CommandsOf<SetVertexBufferCommand>();
+			await Assert.That(ReferenceEquals(bindings[0].Buffer, bindings[1].Buffer)).IsTrue();
+			await Assert.That(bindings[1].Offset)
+				.IsEqualTo((ulong)(3 * (int)GlShaderKeys.ColoredVertexLayout.ArrayStride))
+				.Because("the second batch must be appended after the first, not written over it");
+
+			// After the submit the ranges are handed out again from the top of the same buffer.
+			harness.DrawTriangle();
+			harness.DrawTriangle();
+			harness.Context.Submit();
+
+			await Assert.That(harness.VertexWrites().Count).IsEqualTo(2);
+			await Assert.That(harness.VertexBufferCreations().Count).IsEqualTo(1);
+
+			var afterSubmit = harness.Device.CommandsOf<SetVertexBufferCommand>();
+			await Assert.That(afterSubmit[2].Offset).IsEqualTo(bindings[0].Offset);
+			await Assert.That(afterSubmit[3].Offset).IsEqualTo(bindings[1].Offset);
 		}
 
 		[Test]

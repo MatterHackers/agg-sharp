@@ -81,6 +81,13 @@ namespace MatterHackers.RenderGl.Compat
 			this.submitter = new GlDrawSubmitter(device, this.state, this.matrices, this.pipelines, this.textures, this.passes);
 		}
 
+		/// <summary>
+		/// Raised after the open pass is ended and before the device submit. Every submit path funnels
+		/// through <see cref="Submit"/>, so this is where anything that stages GPU writes across a submit
+		/// window - the scene renderer's batched per-draw uniforms - gets its one chance to flush them.
+		/// </summary>
+		public event Action BeforeSubmit;
+
 		/// <summary>The device this context records onto.</summary>
 		public IRenderDevice Device => this.device;
 
@@ -182,6 +189,13 @@ namespace MatterHackers.RenderGl.Compat
 		public void Submit()
 		{
 			this.passes.FlushPass();
+
+			// Everything staged for this submit window reaches the queue here, in as few writes as the
+			// stagers can manage: the 2D submitter's directly, and anything else that batches per-draw
+			// uniforms (the scene renderer) through the hook.
+			this.submitter.FlushPendingWrites();
+			this.BeforeSubmit?.Invoke();
+
 			FrameProfiler.Count("Submit");
 			using (FrameProfiler.Time("Submit"))
 			{
@@ -796,12 +810,12 @@ namespace MatterHackers.RenderGl.Compat
 					this.immediate.Colors,
 					this.state.FlatShading);
 
-			// Pooled rather than created per flush: a batch-sized allocation every glEnd leaked one GPU
-			// buffer per batch per frame with nothing owning it. Each batch still gets a buffer of its
-			// own within a submit window - a queue write into a shared buffer is not ordered against the
-			// draws in an open pass - which is exactly the guarantee the pool makes.
-			var vertexBuffer = this.submitter.AcquireVertexBuffer(bytes);
-			this.submitter.Draw(vertexBuffer, vertexCount, this.immediate.Mode, textured);
+			// Staged rather than uploaded per flush: a queue write costs ~13 us in wgpu-native and a busy
+			// frame flushed a few hundred batches. Each batch still gets a range of its own within a submit
+			// window - a queue write into a shared range is not ordered against the draws in an open pass -
+			// which is why the range's offset has to be threaded into the draw.
+			var vertexBuffer = this.submitter.AcquireVertexBuffer(bytes, out ulong vertexOffset);
+			this.submitter.Draw(vertexBuffer, vertexCount, this.immediate.Mode, textured, vertexOffset);
 		}
 
 		/// <summary>

@@ -93,7 +93,10 @@ namespace MatterHackers.Agg.Tests
 			harness.Context.CallList(list);
 			harness.Context.Translate(-20, -30, 0);
 			harness.Context.CallList(list);
-			harness.Context.FlushPass();
+
+			// Submit rather than FlushPass: per-draw uniform blocks are staged and pushed in one write
+			// just before the device submit, so nothing is readable until then.
+			harness.Context.Submit();
 
 			await Assert.That(harness.UniformModelView(0).Row3.X).IsEqualTo(20.0).Within(1e-5);
 			await Assert.That(harness.UniformModelView(1).Row3.X).IsEqualTo(0.0).Within(1e-5);
