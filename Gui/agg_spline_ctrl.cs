@@ -8,7 +8,7 @@ using MatterHackers.VectorMath;
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -292,22 +292,8 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			int index = 0;
-			Rewind(index);
-			graphics2D.Render(this, m_background_color);
-			Rewind(++index);
-			graphics2D.Render(this, m_border_color);
-			Rewind(++index);
-			graphics2D.Render(this, m_curve_color);
-			Rewind(++index);
-			graphics2D.Render(this, m_inactive_pnt_color);
-			Rewind(++index);
-			graphics2D.Render(this, m_active_pnt_color);
-
-			base.OnDraw(graphics2D);
-		}
+		// There is deliberately no OnDraw override: SimpleVertexSourceWidget.OnDraw already draws all five
+		// paths in the colors color(i) hands back, and it is the only place that can select a path.
 
 		// Vertex source interface
 		public override int num_paths()
@@ -372,7 +358,8 @@ namespace MatterHackers.Agg.UI
 							m_curve_pnt.ConcatPath(m_ellipse);
 						}
 					}
-					m_curve_poly.Rewind(0);
+					// The point paths are read straight off m_curve_pnt (see Vertex), not through the stroke
+					m_curve_pnt.Rewind(0);
 					break;
 
 				case 4:                 // Active point
@@ -384,7 +371,7 @@ namespace MatterHackers.Agg.UI
 
 						m_curve_pnt.ConcatPath(m_ellipse);
 					}
-					m_curve_poly.Rewind(0);
+					m_curve_pnt.Rewind(0);
 					break;
 			}
 		}

@@ -7,7 +7,7 @@ using MatterHackers.VectorMath;
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -131,6 +131,17 @@ namespace MatterHackers.Agg.UI
             return hash;
         }
 
+        /// <summary>
+        /// Draws every path this control is made of, one Render per path, in the colors
+        /// <see cref="color"/> hands back.
+        /// </summary>
+        /// <remarks>
+        /// This is the only place a path can be selected, so an override must not draw the paths itself:
+        /// <see cref="Graphics2D.Render(IVertexSource, IColorType)"/> pulls <see cref="Vertices"/>, which
+        /// rewinds to <see cref="CurrentPathIndex"/>, so a <c>Rewind(i)</c> made before the Render call is
+        /// thrown away and the pass draws path 0 again. Overrides that need to paint under or over the
+        /// paths (a background, a border) should do that and then call base.
+        /// </remarks>
         public override void OnDraw(Graphics2D graphics2D)
 		{
 			for (int i = 0; i < num_paths(); i++)

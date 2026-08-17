@@ -5,6 +5,10 @@ using MatterHackers.VectorMath;
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
+// C# port by: Lars Brubaker
+//                  larsbrubaker@gmail.com
+// Copyright (C) 2007-2026
+//
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
 // This software is provided "as is" without express or implied
@@ -73,7 +77,6 @@ namespace MatterHackers.Agg.UI
 		private Color m_inactive_pnt_color;
 		private Color m_active_pnt_color;
 		private Color m_text_color;
-		private Color[] m_colors = new Color[7];
 
 		// Set colors
 		public void background_color(Color c)
@@ -111,9 +114,35 @@ namespace MatterHackers.Agg.UI
 			m_text_color = c;
 		}
 
+		/// <summary>
+		/// The color of path <paramref name="i"/>, in the order OnDraw walks the paths.
+		/// </summary>
+		/// <remarks>
+		/// Reads the live fields rather than a copy taken in the constructor, because this is what the
+		/// drawing loop asks - a snapshot would make every color setter above silently do nothing.
+		/// </remarks>
 		public override IColorType color(int i)
 		{
-			return m_colors[i];
+			switch (i)
+			{
+				case 0:
+					return m_curve_color;
+
+				case 1:
+					return m_grid_color;
+
+				case 2:
+					return m_inactive_pnt_color;
+
+				case 3:
+					return m_active_pnt_color;
+
+				case 4:
+					return m_text_color;
+
+				default:
+					throw new System.IndexOutOfRangeException("You asked for a color out of range.");
+			}
 		}
 
 		public gamma_ctrl(Vector2 position, Vector2 size)
@@ -166,12 +195,6 @@ namespace MatterHackers.Agg.UI
 			m_inactive_pnt_color = new Color(0.0, 0.0, 0.0);
 			m_active_pnt_color = new Color(1.0, 0.0, 0.0);
 			m_text_color = new Color(0.0, 0.0, 0.0);
-
-			m_colors[0] = m_curve_color;
-			m_colors[1] = m_grid_color;
-			m_colors[2] = m_inactive_pnt_color;
-			m_colors[3] = m_active_pnt_color;
-			m_colors[4] = m_text_color;
 		}
 
 		// Set other parameters
@@ -359,18 +382,12 @@ namespace MatterHackers.Agg.UI
 
 			graphics2D.Render(border, m_border_color);
 
-			Rewind(0);
-			graphics2D.Render(this, m_curve_color);
-			Rewind(1);
-			graphics2D.Render(this, m_grid_color);
-			Rewind(2);
-			graphics2D.Render(this, m_inactive_pnt_color);
-			Rewind(3);
-			graphics2D.Render(this, m_active_pnt_color);
-
 			// Ideally this should move to the setter of the gamma data
 			UpdateGammaText();
 
+			// The curve, grid and handles are drawn by base.OnDraw - it is the only place that can pick a
+			// path, so drawing them here as well would just paint path 0 over and over (see
+			// SimpleVertexSourceWidget.OnDraw).
 			base.OnDraw(graphics2D);
 
 		}
