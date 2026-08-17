@@ -249,7 +249,13 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
+			// The clipboard implementation lives in the platform assembly, and the two do not share a type
+			// name, so this is one of the few spots a demo has to know which OS it was built for.
+#if WINDOWS
 			Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
+#else
+			Clipboard.SetSystemClipboard(new MacClipboard());
+#endif
 
 			var demoWidget = new RenderTriangles();
 

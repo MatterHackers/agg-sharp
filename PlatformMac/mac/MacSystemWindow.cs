@@ -1,0 +1,1865 @@
+/*
+Copyright (c) 2026, Lars Brubaker
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Threading;
+using MatterHackers.Agg.Platform.Mac;
+using MatterHackers.RenderGl;
+using MatterHackers.RenderGl.OpenGl;
+using MatterHackers.VectorMath;
+
+using static MatterHackers.Agg.Platform.Mac.AppKitConstants;
+using static MatterHackers.Agg.Platform.Mac.ObjC;
+
+namespace MatterHackers.Agg.UI
+{
+	/// <summary>
+	/// The macOS window host: an <c>NSWindow</c> whose content view is layer-<em>hosting</em> over a
+	/// <c>CAMetalLayer</c>, a <see cref="MacWebGpuLayer"/> for the swapchain, a
+	/// <see cref="Graphics2DGpu"/> over its GL facade for widget paint, and one present per frame. The
+	/// structural counterpart of <c>WinformsSystemWindow</c> + <c>WebGpuSystemWindow</c> on Windows, with
+	/// AppKit reached through raw <c>objc_msgSend</c> - no MonoMac, no SDL, no GLFW.
+	///
+	/// <para>
+	/// <b>Coordinates and DPI.</b> agg has no logical/physical split: every coordinate it deals in is a
+	/// device pixel. AppKit deals in points. The whole conversion therefore lives on this seam, and the
+	/// rule is one line long - <em>agg pixels = AppKit points x backingScaleFactor</em>. Concretely:
+	/// <list type="bullet">
+	/// <item>the NSWindow's content rect is the requested agg size <em>divided</em> by the scale, so that
+	/// <c>SystemWindow.Width/Height</c> are honored exactly (which is also what a DPI-aware WinForms host
+	/// does: <c>ClientSize = 640x480</c> is 640x480 real pixels there too);</item>
+	/// <item>the swapchain, the layer's <c>drawableSize</c>, the viewport, the scissor, the
+	/// <see cref="Graphics2DGpu"/> and <see cref="SystemWindow.LocalBounds"/> all come from
+	/// <c>convertRectToBacking:</c>, i.e. real pixels;</item>
+	/// <item>mouse coordinates from NSEvent are points and are multiplied by the scale on the way in.</item>
+	/// </list>
+	/// <c>GuiWidget.DeviceScale</c> is deliberately <em>not</em> touched: it is a user text-size
+	/// preference, not a DPI factor.
+	/// </para>
+	///
+	/// <para>
+	/// <b>No Y flip.</b> The Windows event sink flips mouse Y because Win32 is top-left origin. A
+	/// non-flipped NSView already has a bottom-left, y-up coordinate system, which is exactly agg's, so
+	/// flipping here would be a double flip. Nothing calls <c>setFlipped:</c>.
+	/// </para>
+	///
+	/// <para>
+	/// <b>The loop is ours.</b> Rather than <c>[NSApp run]</c>, the first window drives a pumped loop:
+	/// drain <c>nextEventMatchingMask:</c> to nil, dispatch, then paint any window that asked to be
+	/// repainted. That is what lets a frame be scheduled by <see cref="Invalidate"/> the way WM_PAINT does
+	/// on Windows. RunOnIdle is pumped by a real 10ms <c>NSTimer</c> rather than by this loop, because a
+	/// timer keeps firing inside AppKit's nested tracking loops (window drag, live resize, menu tracking)
+	/// where the pump below is frozen.
+	/// </para>
+	///
+	/// <para>
+	/// <b>The main thread, always.</b> AppKit permits window creation - and in practice every UI call -
+	/// only on the process main thread; creating an NSWindow anywhere else raises
+	/// <c>NSInternalInconsistencyException</c>, which as an uncaught Objective-C exception aborts the
+	/// process rather than failing a call. An application satisfies that for free, because <c>Main</c> is
+	/// the thread that shows the window. A test process does not: the test engine owns <c>Main</c> and runs
+	/// test bodies on thread pool workers. So every AppKit call below goes through
+	/// <see cref="MainThreadDispatcher"/>, which runs the work inline when the caller is already on the
+	/// main thread (the application case, and every call from inside the pump) and marshals it when it is
+	/// not (the test case). Windows needs none of this - a WinForms Form is legal on any thread that pumps
+	/// messages - which is why <c>WinformsSystemWindow</c> has no equivalent.
+	/// </para>
+	/// </summary>
+	public class MacSystemWindow : IPlatformWindow
+	{
+		/// <summary>
+		/// How many pump iterations <see cref="CaptureScreenshot"/> spins waiting for a capture whose
+		/// read-back suspended. Bounded so a window that never repaints cannot hang the caller; the native
+		/// read-back path completes inline and never reaches the loop.
+		/// </summary>
+		private const int ScreenshotPumpSpins = 200;
+
+		private static readonly object StaticInitLock = new object();
+
+		/// <summary>Every constructed window that has not closed yet, in creation order.</summary>
+		private static readonly List<MacSystemWindow> LiveWindows = new List<MacSystemWindow>();
+
+		/// <summary>Maps a runtime-created delegate instance back to the window that owns it.</summary>
+		private static readonly Dictionary<IntPtr, MacSystemWindow> DelegateOwners = new Dictionary<IntPtr, MacSystemWindow>();
+
+		// --- Unattended smoke runs -------------------------------------------------------------------
+		// Read once, from the environment, because the point is to drive an *unmodified* demo: no demo has
+		// to know it is being smoke tested, and with the variables unset none of this does anything. Kept
+		// byte for byte compatible with WinformsSystemWindow's version so one AGG_SMOKE_* invocation drives
+		// either platform.
+		private static readonly int SmokeFrameTarget = ParseSmokeFrames();
+		private static readonly string SmokeScreenshotPath = Environment.GetEnvironmentVariable("AGG_SMOKE_SCREENSHOT");
+
+		private static System.Threading.Timer smokeExitWatchdog;
+
+		private static IntPtr nsApp;
+		private static IntPtr distantPast;
+		private static IntPtr defaultRunLoopMode;
+		private static IntPtr delegateClass;
+		private static bool appBootstrapped;
+
+		/// <summary>
+		/// Whether a window is currently running <see cref="RunEventLoop"/>. This, rather than a
+		/// "first window" latch, is what decides whether a window being shown owns the loop: a latch has to
+		/// be reset between runs (which is what <c>WinformsSystemWindow.ResetFirstWindowFlag</c> exists for)
+		/// and gets the answer wrong for any window shown before the application's main one.
+		/// </summary>
+		private static volatile bool runLoopActive;
+
+		private static bool processingOnIdle;
+
+		private IntPtr window;
+		private IntPtr view;
+		private IntPtr metalLayer;
+		private IntPtr windowDelegate;
+		private IntPtr idleTimer;
+
+		private MacWebGpuLayer webGpuLayer;
+		private SystemWindow aggSystemWindow;
+
+		private double backingScale = 1;
+		private uint pixelWidth = 1;
+		private uint pixelHeight = 1;
+
+		private string caption = string.Empty;
+		private Vector2 minimumSize;
+
+		private bool needsRedraw = true;
+		private bool viewPortHasBeenSet;
+		private bool isInsidePaint;
+		private bool hasClosed;
+
+		/// <summary>Set while an AppKit-initiated close is running, so the agg close does not re-enter it.</summary>
+		private bool platformAlreadyClosing;
+
+		/// <summary>What <see cref="SetModifierKeys"/> was last told; see <see cref="ModifierKeys"/>.</summary>
+		private Keys overrideModifierKeys = Keys.None;
+
+		private bool modifiersOverridden;
+
+		private int drawCount;
+		private bool smokeRunFinished;
+
+		/// <summary>
+		/// A screenshot asked for but not taken yet. The read-back has to happen at the end of a frame,
+		/// so a request made at any other time waits here for one.
+		/// </summary>
+		private string pendingScreenshotPath;
+
+		/// <summary>Signalled by the paint that performs a queued capture, so the requester can return only
+		/// once the file is on disk.</summary>
+		private ManualResetEventSlim screenshotComplete;
+
+		public MacSystemWindow()
+		{
+			BootstrapApplication();
+
+			lock (StaticInitLock)
+			{
+				LiveWindows.Add(this);
+			}
+		}
+
+		/// <summary>
+		/// How many frames a smoke run draws before it screenshots and closes itself
+		/// (<c>AGG_SMOKE_FRAMES</c>), or 0 when the window should behave normally.
+		/// </summary>
+		public static int SmokeFrames => SmokeFrameTarget;
+
+		/// <summary>
+		/// Whether every agg window in the process shares this one native window, dialogs included.
+		/// </summary>
+		/// <remarks>
+		/// What an application shell like MatterCAD runs on. <see cref="SingleWindowProvider"/> wraps
+		/// everything shown after the first window in a <c>WindowWidget</c>, draws it inside the window
+		/// already on screen, and then hands that wrapper to this same <see cref="IPlatformWindow"/>.
+		/// Without this flag the second call reads as "the window you are already showing asked to be
+		/// raised" and the dialog is never drawn. <c>WinformsSystemWindow</c> carries the identical flag
+		/// for the identical reason; a provider that gives every window its own native window (agg's own
+		/// <see cref="WebGpuMacWindowProvider"/>) leaves it alone.
+		/// </remarks>
+		public static bool SingleWindowMode { get; set; }
+
+		/// <summary>
+		/// The single consumption point of <see cref="SystemWindow.UseGpu"/>, which is seeded from
+		/// RootSystemWindow.DefaultUseGpu by the FORCE_SOFTWARE_RENDERING command-line flag.
+		/// </summary>
+		public static bool ShouldUseSoftwareAdapter(SystemWindow systemWindow) => systemWindow?.UseGpu == false;
+
+		/// <summary>The SystemWindow this platform window is currently showing.</summary>
+		public SystemWindow AggSystemWindow => this.aggSystemWindow;
+
+		/// <summary>The wgpu host that owns the device and swapchain.</summary>
+		public MacWebGpuLayer WebGpuLayer => this.webGpuLayer;
+
+		/// <summary>The provider that created this window, set by the provider itself.</summary>
+		public ISystemWindowProvider WindowProvider { get; set; }
+
+		/// <summary>The <c>CAMetalLayer*</c> the swapchain is built over. Diagnostics and tests.</summary>
+		public IntPtr MetalLayerHandle => this.metalLayer;
+
+		/// <summary>The <c>NSWindow*</c>. Diagnostics and tests.</summary>
+		public IntPtr WindowHandle => this.window;
+
+		/// <summary>What the renderer has to complain about, or null when it is happy.</summary>
+		public string RenderErrorReport => this.webGpuLayer?.LastError;
+
+		/// <summary>Which backend, and how many frames actually reached the screen.</summary>
+		public string RenderStatusReport
+		{
+			get
+			{
+				var layer = this.webGpuLayer;
+				if (layer?.Device == null)
+				{
+					return "webgpu not initialized";
+				}
+
+				return $"{layer.BackendType} {layer.Device.AdapterName}, presented {layer.Surface?.PresentedFrameCount ?? 0}";
+			}
+		}
+
+		public string Caption
+		{
+			get => this.caption;
+
+			set
+			{
+				this.caption = value ?? string.Empty;
+				if (this.window != IntPtr.Zero)
+				{
+					MainThreadDispatcher.Invoke(() => Send_v_r(this.window, Sel("setTitle:"), NSString(this.caption)));
+				}
+			}
+		}
+
+		/// <summary>
+		/// The height of the native title bar, in agg pixels. Zero until the window exists.
+		/// </summary>
+		public int TitleBarHeight
+		{
+			get
+			{
+				if (this.window == IntPtr.Zero)
+				{
+					return 0;
+				}
+
+				// Read on the main thread: the automation runner asks for this from its test thread on every
+				// screen-to-window coordinate conversion, and -[NSWindow frame] is AppKit like everything else.
+				return MainThreadDispatcher.Invoke(() =>
+				{
+					CGRect frame = Send_R(this.window, Sel("frame"));
+					CGRect content = Send_R(this.view, Sel("frame"));
+					return (int)Math.Round((frame.Size.Height - content.Size.Height) * this.backingScale);
+				});
+			}
+		}
+
+		/// <summary>
+		/// The window's top-left corner in desktop space. Desktop space here is device pixels with the
+		/// origin at the top-left of the primary screen - Windows' convention, and the one agg's callers
+		/// assume - so it is flipped and scaled out of AppKit's bottom-left, point-based screen space.
+		/// </summary>
+		public Point2D DesktopPosition
+		{
+			get
+			{
+				if (this.window == IntPtr.Zero)
+				{
+					return new Point2D(0, 0);
+				}
+
+				return MainThreadDispatcher.Invoke(() =>
+				{
+					CGRect frame = Send_R(this.window, Sel("frame"));
+					double scale = DesktopScale();
+					double topLeftY = PrimaryScreenHeightInPoints() - (frame.Origin.Y + frame.Size.Height);
+
+					return new Point2D((int)Math.Round(frame.Origin.X * scale), (int)Math.Round(topLeftY * scale));
+				});
+			}
+
+			set
+			{
+				if (this.window == IntPtr.Zero)
+				{
+					return;
+				}
+
+				MainThreadDispatcher.Invoke(() =>
+				{
+					double scale = DesktopScale();
+					CGRect frame = Send_R(this.window, Sel("frame"));
+					double left = value.x / scale;
+					double top = value.y / scale;
+					double bottom = PrimaryScreenHeightInPoints() - top - frame.Size.Height;
+
+					Send_v_P(this.window, Sel("setFrameOrigin:"), new CGPoint(left, bottom));
+				});
+			}
+		}
+
+		public Vector2 MinimumSize
+		{
+			get => this.minimumSize;
+
+			set
+			{
+				this.minimumSize = value;
+				if (this.window != IntPtr.Zero)
+				{
+					double scale = this.backingScale;
+					MainThreadDispatcher.Invoke(
+						() => Send_v_S(this.window, Sel("setContentMinSize:"), new CGSize(value.X / scale, value.Y / scale)));
+				}
+			}
+		}
+
+		/// <summary>The modifier keys held right now, translated from AppKit's flags to agg's.</summary>
+		/// <remarks>
+		/// Reports whatever <see cref="SetModifierKeys"/> was last told, once it has been told anything.
+		/// A simulated Ctrl-click has no real key held, so reading AppKit here would report None and every
+		/// modifier-sensitive interaction in an automated run would behave as an unmodified one.
+		/// </remarks>
+		public Keys ModifierKeys
+			=> this.modifiersOverridden
+				? this.overrideModifierKeys
+				: MainThreadDispatcher.Invoke(() => TranslateModifiers(Send_Q(Class("NSEvent"), Sel("modifierFlags"))));
+
+		/// <summary>
+		/// Declares which modifier keys a synthetic input event is holding, so <see cref="ModifierKeys"/>
+		/// reports them instead of the (empty) real keyboard state.
+		/// </summary>
+		/// <remarks>
+		/// Found by name and by reflection from <c>AggInputMethods.TrySetModifierKeys</c>, which is why it
+		/// is internal and not on <see cref="IPlatformWindow"/>. <c>WinformsSystemWindow</c> has the same
+		/// method for the same caller. Once called, the real keyboard is never read again - an automated
+		/// run has no user at the keyboard, so there is nothing to fall back to.
+		/// </remarks>
+		internal void SetModifierKeys(Keys modifiers)
+		{
+			this.overrideModifierKeys = modifiers;
+			this.modifiersOverridden = true;
+		}
+
+		public void BringToFront()
+		{
+			if (this.window != IntPtr.Zero)
+			{
+				MainThreadDispatcher.Invoke(() => Send_v_r(this.window, Sel("orderFront:"), IntPtr.Zero));
+			}
+		}
+
+		public void Activate()
+		{
+			if (this.window != IntPtr.Zero)
+			{
+				MainThreadDispatcher.Invoke(() =>
+				{
+					Send_v_r(this.window, Sel("makeKeyAndOrderFront:"), IntPtr.Zero);
+					Send_v_B(nsApp, Sel("activateIgnoringOtherApps:"), YES);
+				});
+			}
+		}
+
+		/// <summary>
+		/// Schedules a repaint. There is no WM_PAINT here, so this is a flag the pumped loop reads rather
+		/// than a message; the rectangle is ignored because the whole frame is redrawn either way.
+		/// </summary>
+		public void Invalidate(RectangleDouble rectToInvalidate)
+		{
+			this.needsRedraw = true;
+		}
+
+		/// <summary>Closes the platform window, tearing the NSWindow down.</summary>
+		public void Close()
+		{
+			MainThreadDispatcher.Invoke(this.CloseNativeWindow);
+		}
+
+		public void SetCursor(Cursors cursorToSet)
+		{
+			string selectorName = cursorToSet switch
+			{
+				Cursors.Hand => "pointingHandCursor",
+				Cursors.IBeam => "IBeamCursor",
+				Cursors.Cross => "crosshairCursor",
+				Cursors.No => "operationNotAllowedCursor",
+				Cursors.SizeNS => "resizeUpDownCursor",
+				Cursors.SizeWE => "resizeLeftRightCursor",
+				Cursors.HSplit => "resizeUpDownCursor",
+				Cursors.VSplit => "resizeLeftRightCursor",
+				Cursors.UpArrow => "resizeUpCursor",
+
+				// macOS has no distinct cursor for the rest of agg's set (the diagonal resize and the
+				// eight pan directions are private API on this platform), so they fall back to the arrow
+				// rather than being faked with something misleading.
+				_ => "arrowCursor",
+			};
+
+			MainThreadDispatcher.Invoke(() =>
+			{
+				IntPtr cursor = Send_r(Class("NSCursor"), Sel(selectorName));
+				if (cursor != IntPtr.Zero)
+				{
+					Send_v(cursor, Sel("set"));
+				}
+			});
+		}
+
+		public Graphics2D NewGraphics2D()
+		{
+			if (this.webGpuLayer?.Gl == null)
+			{
+				// Without this the caller gets a bare NullReferenceException out of Graphics2DGpu and no
+				// hint at all that the real problem is a window painting before its wgpu device exists.
+				throw new InvalidOperationException(
+					"The WebGPU device is not initialized, so this window cannot make a Graphics2D. "
+					+ "InitializeWebGpu runs from ShowSystemWindow; reaching a paint before that happened "
+					+ "means the window was never shown or its initialization threw.");
+			}
+
+			if (!this.viewPortHasBeenSet)
+			{
+				this.SetAndClearViewPort();
+			}
+
+			Graphics2D graphics2D = new Graphics2DGpu(
+				this.webGpuLayer.Gl,
+				(int)this.pixelWidth,
+				(int)this.pixelHeight,
+				GuiWidget.DeviceScale);
+			graphics2D.PushTransform();
+
+			return graphics2D;
+		}
+
+		/// <summary>
+		/// Connects a <see cref="SystemWindow"/> to this platform window, creates the NSWindow and its
+		/// wgpu device, shows it, and - unless a window is already running the loop - runs the event loop
+		/// until that window closes. The blocking shape is deliberate: it is what <c>Application.Run</c>
+		/// does on Windows, and every agg demo's <c>Main</c> depends on <c>ShowAsSystemWindow</c> not
+		/// returning until the app is done.
+		/// </summary>
+		/// <remarks>
+		/// The whole body runs on the main thread (see the class remarks), so a caller on a thread pool
+		/// worker - which is what a test is - blocks here for exactly as long as it would have on Windows.
+		/// </remarks>
+		public void ShowSystemWindow(SystemWindow systemWindow)
+		{
+			MainThreadDispatcher.Invoke(() => this.ShowSystemWindowOnMainThread(systemWindow));
+		}
+
+		private void ShowSystemWindowOnMainThread(SystemWindow systemWindow)
+		{
+			if (systemWindow.PlatformWindow == this)
+			{
+				// In single window mode the provider points a window at this one before showing it, so
+				// "already mine" means "start drawing this instead", not "raise what is already up".
+				if (SingleWindowMode && this.window != IntPtr.Zero)
+				{
+					this.SetActiveAggWindow(systemWindow);
+					return;
+				}
+
+				this.BringToFront();
+				return;
+			}
+
+			this.aggSystemWindow = systemWindow;
+			systemWindow.PlatformWindow = this;
+			systemWindow.AnchorAll();
+
+			this.CreateNativeWindow(systemWindow);
+
+			this.webGpuLayer.UseSoftwareAdapter = ShouldUseSoftwareAdapter(systemWindow);
+			this.webGpuLayer.InitializeWebGpu();
+
+			this.SyncSizeFromBacking();
+
+			Send_v_r(this.window, Sel("makeKeyAndOrderFront:"), IntPtr.Zero);
+			Send_v_B(nsApp, Sel("activateIgnoringOtherApps:"), YES);
+
+			// Activation and window ordering are asynchronous: isKeyWindow and, more importantly for the
+			// renderer, occlusionState are still stale immediately after the calls above. wgpu's Metal
+			// backend refuses to vend a drawable for a window it believes is occluded, so painting before
+			// this settles throws the whole first second of frames away. A few pumps is all it takes.
+			for (int settle = 0; settle < 10; settle++)
+			{
+				PumpEvents();
+				Thread.Sleep(10);
+			}
+
+			this.needsRedraw = true;
+
+			// Whoever finds no loop running owns it. A window shown from inside the loop (a dialog, a second
+			// window) finds one and returns, which is the non-blocking Show every platform gives it.
+			if (!runLoopActive)
+			{
+				RunEventLoop();
+			}
+		}
+
+		/// <summary>
+		/// Tears this platform window down in response to the agg window closing. Called by the provider
+		/// from <see cref="SystemWindow.OnClosed"/>.
+		/// </summary>
+		public void CloseSystemWindow(SystemWindow systemWindow)
+		{
+			// AppKit is already closing us (the user hit the red button); letting the agg close drive a
+			// second close would re-enter windowWillClose:.
+			if (this.platformAlreadyClosing)
+			{
+				return;
+			}
+
+			// In single window mode a dialog lives inside this window, so closing one is only a matter of
+			// going back to drawing whatever the provider now has on top. Only the shell - the window the
+			// provider is left holding - takes the native window down with it.
+			if (SingleWindowMode
+				&& this.window != IntPtr.Zero
+				&& this.WindowProvider?.TopWindow != null
+				&& this.WindowProvider.TopWindow != systemWindow)
+			{
+				MainThreadDispatcher.Invoke(() => this.SetActiveAggWindow(this.WindowProvider.TopWindow));
+				return;
+			}
+
+			MainThreadDispatcher.Invoke(this.CloseNativeWindow);
+		}
+
+		/// <summary>
+		/// Makes <paramref name="systemWindow"/> the window this native window draws and routes input to.
+		/// Creates nothing native - only single window mode reaches it, see <see cref="SingleWindowMode"/>.
+		/// </summary>
+		private void SetActiveAggWindow(SystemWindow systemWindow)
+		{
+			if (systemWindow == null || this.hasClosed)
+			{
+				return;
+			}
+
+			if (this.aggSystemWindow != systemWindow)
+			{
+				this.aggSystemWindow = systemWindow;
+				systemWindow.PlatformWindow = this;
+				systemWindow.AnchorAll();
+
+				// Backing pixels, matching SyncSizeFromBacking: this window's agg coordinate space is the
+				// drawable, and a swapped-in window that kept its own size would be drawn at the wrong one.
+				systemWindow.LocalBounds = new RectangleDouble(0, 0, this.pixelWidth, this.pixelHeight);
+			}
+
+			systemWindow.Invalidate();
+			this.needsRedraw = true;
+		}
+
+		/// <summary>
+		/// Reads the frame back through wgpu. No <c>System.Drawing</c> anywhere on the path: the pixels go
+		/// through agg's own <c>ImageBuffer</c>/<c>ImageIO</c>.
+		/// </summary>
+		/// <remarks>
+		/// The read-back can only happen at the end of a frame - that is the only moment a swapchain
+		/// texture exists and is still readable - so the request is queued and a paint forced, and this
+		/// call does not return until that paint has written the file. Callers (failure diagnostics, the
+		/// automation harness) treat <c>CaptureScreenshot</c> as "the PNG exists when I get control back",
+		/// which is the contract every other <c>IPlatformWindow</c> gives them.
+		/// </remarks>
+		/// <param name="path">Where to write the PNG.</param>
+		public void CaptureScreenshot(string path)
+		{
+			if (this.webGpuLayer == null || this.webGpuLayer.IsDisposed)
+			{
+				return;
+			}
+
+			if (!UiThread.IsUiThread)
+			{
+				// There is no Control.Invoke here, so the request is marshalled the only way this host has:
+				// through the idle queue the 10ms NSTimer drains on the UI thread.
+				using (var done = new ManualResetEventSlim(false))
+				{
+					UiThread.RunOnIdle(() =>
+					{
+						try
+						{
+							this.CaptureScreenshot(path);
+						}
+						finally
+						{
+							done.Set();
+						}
+					});
+
+					done.Wait(TimeSpan.FromSeconds(10));
+				}
+
+				return;
+			}
+
+			if (this.isInsidePaint)
+			{
+				// The smoke-run path asks from inside the paint, just before the present that would consume
+				// the request. Forcing another paint from here would re-enter the frame; queuing is enough,
+				// because this frame is about to reach PresentOrCapture anyway.
+				this.pendingScreenshotPath = path;
+				return;
+			}
+
+			this.pendingScreenshotPath = path;
+			this.screenshotComplete = new ManualResetEventSlim(false);
+
+			try
+			{
+				this.PaintFrame();
+
+				// The native read-back completes inside the paint (wgpu's buffer map is polled to
+				// completion there), so this is normally already set. It is only not set if the await in
+				// CaptureThenPresent genuinely suspended, in which case its continuation is queued to the
+				// idle pump - hence pumping rather than blocking, which would deadlock.
+				for (int spin = 0; spin < ScreenshotPumpSpins && !this.screenshotComplete.IsSet; spin++)
+				{
+					PumpEvents();
+					InvokeIdleActions();
+				}
+			}
+			finally
+			{
+				this.pendingScreenshotPath = null;
+				this.screenshotComplete.Dispose();
+				this.screenshotComplete = null;
+			}
+		}
+
+		// -----------------------------------------------------------------------------------------
+		// Application bootstrap
+		// -----------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// Brings NSApplication up from a plain console process (no .app bundle, no Info.plist). Idempotent.
+		/// </summary>
+		/// <remarks>
+		/// On the main thread, always: <c>+[NSApplication sharedApplication]</c> installs the application
+		/// object and its event machinery, and AppKit is explicit that this must happen on the main thread.
+		/// The window constructor calls this, and a test constructs its window from a worker.
+		/// </remarks>
+		private static void BootstrapApplication()
+		{
+			MainThreadDispatcher.Invoke(BootstrapApplicationOnMainThread);
+		}
+
+		private static void BootstrapApplicationOnMainThread()
+		{
+			lock (StaticInitLock)
+			{
+				if (appBootstrapped)
+				{
+					return;
+				}
+
+				EnsureFrameworksLoaded();
+
+				nsApp = Send_r(Class("NSApplication"), Sel("sharedApplication"));
+				if (nsApp == IntPtr.Zero)
+				{
+					throw new InvalidOperationException("+[NSApplication sharedApplication] returned nil.");
+				}
+
+				// Regular, not Accessory: a Prohibited/Accessory app cannot become frontmost, and a
+				// non-bundled process defaults to Prohibited.
+				Send_B_q(nsApp, Sel("setActivationPolicy:"), NSApplicationActivationPolicyRegular);
+
+				// finishLaunching does the work [NSApp run] would normally do on entry (posts
+				// NSApplicationWillFinishLaunching, unstalls the launch). Skip it and a pumped app can end
+				// up unable to become frontmost.
+				Send_v(nsApp, Sel("finishLaunching"));
+
+				distantPast = Retain(Send_r(Class("NSDate"), Sel("distantPast")));
+				defaultRunLoopMode = Retain(NSString("kCFRunLoopDefaultMode"));
+
+				RegisterWindowDelegateClass();
+
+				appBootstrapped = true;
+			}
+		}
+
+		/// <summary>
+		/// Defines <c>AggMacWindowDelegate</c> at runtime. AppKit only reports a window close through the
+		/// <c>NSWindowDelegate</c> protocol, and a protocol cannot be implemented from managed code without
+		/// a real Objective-C class - so one is built with <c>objc_allocateClassPair</c> and given
+		/// <c>[UnmanagedCallersOnly]</c> statics as its method implementations.
+		/// <para>
+		/// The instance carries no state; it is mapped back to its owning window through
+		/// <see cref="DelegateOwners"/>. An ivar would work too, but a dictionary keyed on the instance
+		/// pointer needs no <c>class_addIvar</c> layout arithmetic and there are never more than a handful
+		/// of windows.
+		/// </para>
+		/// </summary>
+		private static unsafe void RegisterWindowDelegateClass()
+		{
+			IntPtr cls = objc_allocateClassPair(Class("NSObject"), "AggMacWindowDelegate", 0);
+			if (cls == IntPtr.Zero)
+			{
+				throw new InvalidOperationException(
+					"objc_allocateClassPair(\"AggMacWindowDelegate\") returned nil - the name is already registered.");
+			}
+
+			// Type encodings: 'c' is BOOL (a signed char), 'v' is void, '@' is id, ':' is SEL.
+			AddMethod(cls, "windowShouldClose:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, byte>)&OnWindowShouldClose, "c@:@");
+			AddMethod(cls, "windowWillClose:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&OnWindowWillClose, "v@:@");
+			AddMethod(cls, "windowDidResize:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&OnWindowDidResize, "v@:@");
+			AddMethod(cls, "windowDidChangeBackingProperties:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&OnWindowDidResize, "v@:@");
+			AddMethod(cls, "windowDidChangeScreen:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&OnWindowDidResize, "v@:@");
+			AddMethod(cls, "aggIdleTimer:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&OnIdleTimer, "v@:@");
+
+			objc_registerClassPair(cls);
+			delegateClass = cls;
+		}
+
+		private static void AddMethod(IntPtr cls, string selectorName, IntPtr implementation, string typeEncoding)
+		{
+			if (class_addMethod(cls, Sel(selectorName), implementation, typeEncoding) == NO)
+			{
+				throw new InvalidOperationException($"class_addMethod failed for -[AggMacWindowDelegate {selectorName}].");
+			}
+		}
+
+		private static MacSystemWindow OwnerOf(IntPtr delegateInstance)
+		{
+			lock (StaticInitLock)
+			{
+				return DelegateOwners.TryGetValue(delegateInstance, out var owner) ? owner : null;
+			}
+		}
+
+		[UnmanagedCallersOnly]
+		private static byte OnWindowShouldClose(IntPtr self, IntPtr cmd, IntPtr sender)
+		{
+			// An exception must never cross back into Objective-C: there is no managed frame above this to
+			// catch it and the runtime tears the process down.
+			try
+			{
+				return OwnerOf(self)?.HandleShouldClose() ?? YES;
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"MacSystemWindow windowShouldClose: threw {ex}");
+				return YES;
+			}
+		}
+
+		[UnmanagedCallersOnly]
+		private static void OnWindowWillClose(IntPtr self, IntPtr cmd, IntPtr notification)
+		{
+			try
+			{
+				OwnerOf(self)?.HandleWillClose();
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"MacSystemWindow windowWillClose: threw {ex}");
+			}
+		}
+
+		[UnmanagedCallersOnly]
+		private static void OnWindowDidResize(IntPtr self, IntPtr cmd, IntPtr notification)
+		{
+			try
+			{
+				OwnerOf(self)?.SyncSizeFromBacking();
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"MacSystemWindow windowDidResize: threw {ex}");
+			}
+		}
+
+		[UnmanagedCallersOnly]
+		private static void OnIdleTimer(IntPtr self, IntPtr cmd, IntPtr timer)
+		{
+			try
+			{
+				InvokeIdleActions();
+			}
+			catch (Exception ex)
+			{
+				UiThread.ReportUnhandledException(ex);
+				Console.Error.WriteLine($"MacSystemWindow idle tick threw {ex}");
+			}
+		}
+
+		/// <summary>
+		/// Drains the RunOnIdle queue. Guarded because an idle action can run a nested loop (a modal
+		/// dialog, or <see cref="CaptureScreenshot"/>'s pump) and re-enter this.
+		/// </summary>
+		private static void InvokeIdleActions()
+		{
+			lock (StaticInitLock)
+			{
+				if (processingOnIdle)
+				{
+					return;
+				}
+
+				processingOnIdle = true;
+			}
+
+			try
+			{
+				UiThread.InvokePendingActions();
+			}
+			finally
+			{
+				lock (StaticInitLock)
+				{
+					processingOnIdle = false;
+				}
+			}
+		}
+
+		// -----------------------------------------------------------------------------------------
+		// Native window construction
+		// -----------------------------------------------------------------------------------------
+
+		private void CreateNativeWindow(SystemWindow systemWindow)
+		{
+			// The screen's scale, because there is no window yet to ask. Once the window is on screen its
+			// own backingScaleFactor is authoritative and SyncSizeFromBacking picks that up.
+			this.backingScale = PrimaryScreenScale();
+
+			// agg asked for a size in device pixels; AppKit wants points.
+			double contentWidth = Math.Max(1, systemWindow.Width / this.backingScale);
+			double contentHeight = Math.Max(1, systemWindow.Height / this.backingScale);
+
+			ulong styleMask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable;
+			if (systemWindow.Resizable)
+			{
+				styleMask |= NSWindowStyleMaskResizable;
+			}
+
+			var contentRect = new CGRect(0, 0, contentWidth, contentHeight);
+
+			this.window = Send_r_R_Q_Q_B(
+				Alloc(Class("NSWindow")),
+				Sel("initWithContentRect:styleMask:backing:defer:"),
+				contentRect,
+				styleMask,
+				NSBackingStoreBuffered,
+				NO);
+
+			if (this.window == IntPtr.Zero)
+			{
+				throw new InvalidOperationException("-[NSWindow initWithContentRect:styleMask:backing:defer:] returned nil.");
+			}
+
+			// Otherwise AppKit releases the NSWindow the moment it closes and every pointer held here
+			// becomes a use-after-free during teardown.
+			Send_v_B(this.window, Sel("setReleasedWhenClosed:"), NO);
+			Send_v_r(this.window, Sel("setTitle:"), NSString(this.caption.Length > 0 ? this.caption : systemWindow.Title ?? string.Empty));
+
+			// Without this the window never delivers NSEventTypeMouseMoved, so agg sees no hover at all.
+			Send_v_B(this.window, Sel("setAcceptsMouseMovedEvents:"), YES);
+
+			if (this.minimumSize != Vector2.Zero)
+			{
+				Send_v_S(this.window, Sel("setContentMinSize:"), new CGSize(this.minimumSize.X / this.backingScale, this.minimumSize.Y / this.backingScale));
+			}
+
+			this.view = Send_r_R(Alloc(Class("NSView")), Sel("initWithFrame:"), contentRect);
+
+			this.metalLayer = Retain(Send_r(Class("CAMetalLayer"), Sel("layer")));
+			if (this.metalLayer == IntPtr.Zero)
+			{
+				throw new InvalidOperationException("+[CAMetalLayer layer] returned nil.");
+			}
+
+			IntPtr mtlDevice = MTLCreateSystemDefaultDevice();
+			if (mtlDevice == IntPtr.Zero)
+			{
+				throw new InvalidOperationException("MTLCreateSystemDefaultDevice returned nil - no Metal device on this machine.");
+			}
+
+			Send_v_r(this.metalLayer, Sel("setDevice:"), mtlDevice);
+			Send_v_R(this.metalLayer, Sel("setFrame:"), contentRect);
+
+			// ORDER MATTERS: setLayer: then setWantsLayer:YES makes this a layer-HOSTING view (we own the
+			// layer). The reverse order makes it layer-BACKED - AppKit allocates its own CALayer and this
+			// CAMetalLayer is silently discarded, which shows up as a window that never draws anything.
+			Send_v_r(this.view, Sel("setLayer:"), this.metalLayer);
+			Send_v_B(this.view, Sel("setWantsLayer:"), YES);
+
+			if (Send_r(this.view, Sel("layer")) != this.metalLayer)
+			{
+				throw new InvalidOperationException(
+					"[view layer] is not the CAMetalLayer that was set - the view became layer-backed rather than layer-hosting.");
+			}
+
+			Send_v_r(this.window, Sel("setContentView:"), this.view);
+
+			this.windowDelegate = New("AggMacWindowDelegate");
+			lock (StaticInitLock)
+			{
+				DelegateOwners[this.windowDelegate] = this;
+			}
+
+			// NSWindow does not retain its delegate; this instance is kept alive by our own +1 from init.
+			Send_v_r(this.window, Sel("setDelegate:"), this.windowDelegate);
+
+			this.MeasureBacking();
+
+			this.webGpuLayer = new MacWebGpuLayer(this.metalLayer, this.pixelWidth, this.pixelHeight);
+
+			this.StartIdleTimer();
+
+			if (systemWindow.Maximized)
+			{
+				Send_v_r(this.window, Sel("zoom:"), IntPtr.Zero);
+			}
+			else if (systemWindow.InitialDesktopPosition == new Point2D(-1, -1))
+			{
+				Send_v(this.window, Sel("center"));
+			}
+			else
+			{
+				this.DesktopPosition = systemWindow.InitialDesktopPosition;
+			}
+		}
+
+		/// <summary>
+		/// Starts the 10ms RunOnIdle pump. A real <c>NSTimer</c> rather than a tick in the event loop
+		/// because AppKit runs nested tracking loops for window drags, live resizes and menus, and this
+		/// class's own loop is frozen for their duration - a timer in the common run loop modes keeps
+		/// firing throughout. Without this pump nothing queued by <c>RunOnIdle</c> ever runs, which shows
+		/// up as a window that comes up completely blank (widget layout is queued work).
+		/// </summary>
+		private void StartIdleTimer()
+		{
+			this.idleTimer = Retain(Send_r_d_r_r_r_B(
+				Class("NSTimer"),
+				Sel("scheduledTimerWithTimeInterval:target:selector:userInfo:repeats:"),
+				0.01,
+				this.windowDelegate,
+				Sel("aggIdleTimer:"),
+				IntPtr.Zero,
+				YES));
+
+			// scheduledTimer... adds the timer in the default mode only; adding it again in the common
+			// modes is what makes it survive a modal tracking loop.
+			IntPtr runLoop = Send_r(Class("NSRunLoop"), Sel("currentRunLoop"));
+			Send_v_r_r(runLoop, Sel("addTimer:forMode:"), this.idleTimer, NSString("kCFRunLoopCommonModes"));
+		}
+
+		/// <summary>
+		/// Reads the view's size in real pixels out of AppKit. <c>convertRectToBacking:</c> is the only
+		/// correct source: it is the view's bounds multiplied by whatever the scale of the screen the
+		/// window is currently on happens to be.
+		/// </summary>
+		private void MeasureBacking()
+		{
+			this.backingScale = Send_d(this.window, Sel("backingScaleFactor"));
+			if (this.backingScale <= 0)
+			{
+				this.backingScale = 1;
+			}
+
+			CGRect bounds = Send_R(this.view, Sel("bounds"));
+			CGRect backing = Send_R_R(this.view, Sel("convertRectToBacking:"), bounds);
+
+			this.pixelWidth = (uint)Math.Max(1, Math.Round(backing.Size.Width));
+			this.pixelHeight = (uint)Math.Max(1, Math.Round(backing.Size.Height));
+		}
+
+		/// <summary>
+		/// Re-reads the backing size and pushes it everywhere it has to go: the layer (whose
+		/// <c>contentsScale</c> and <c>drawableSize</c> do <em>not</em> follow the window's scale on their
+		/// own), the swapchain, and the agg window's bounds.
+		/// </summary>
+		private void SyncSizeFromBacking()
+		{
+			if (this.window == IntPtr.Zero || this.hasClosed)
+			{
+				return;
+			}
+
+			uint previousWidth = this.pixelWidth;
+			uint previousHeight = this.pixelHeight;
+
+			this.MeasureBacking();
+
+			CGRect bounds = Send_R(this.view, Sel("bounds"));
+			Send_v_R(this.metalLayer, Sel("setFrame:"), bounds);
+			Send_v_d(this.metalLayer, Sel("setContentsScale:"), this.backingScale);
+			Send_v_S(this.metalLayer, Sel("setDrawableSize:"), new CGSize(this.pixelWidth, this.pixelHeight));
+
+			if (this.webGpuLayer != null
+				&& this.webGpuLayer.IsWebGpuInitialized
+				&& (previousWidth != this.pixelWidth || previousHeight != this.pixelHeight))
+			{
+				this.webGpuLayer.Resize(this.pixelWidth, this.pixelHeight);
+			}
+
+			this.viewPortHasBeenSet = false;
+
+			if (this.aggSystemWindow != null)
+			{
+				this.aggSystemWindow.LocalBounds = new RectangleDouble(0, 0, this.pixelWidth, this.pixelHeight);
+				this.aggSystemWindow.Invalidate();
+			}
+
+			this.needsRedraw = true;
+		}
+
+		// -----------------------------------------------------------------------------------------
+		// The event loop
+		// -----------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// Drives AppKit ourselves, the way a toolkit with its own frame scheduler must:
+		/// <c>distantPast</c> makes <c>nextEventMatchingMask:</c> return immediately when the queue is
+		/// empty, so this never blocks inside AppKit and can paint between batches of events.
+		/// </summary>
+		private static void RunEventLoop()
+		{
+			runLoopActive = true;
+
+			try
+			{
+				while (runLoopActive)
+				{
+					PumpEvents();
+
+					// This loop owns the main thread for as long as a window is up, so anything another
+					// thread asked the main thread to do has to come through here or it never runs at all.
+					MainThreadDispatcher.DrainPending();
+
+					// The NSTimer normally drives this, but the timer only fires while the run loop is being
+					// serviced; calling it here as well means a frame is never held up waiting for a tick.
+					InvokeIdleActions();
+
+					bool paintedSomething = false;
+
+					MacSystemWindow[] windows;
+					lock (StaticInitLock)
+					{
+						windows = LiveWindows.ToArray();
+					}
+
+					foreach (var macWindow in windows)
+					{
+						if (macWindow.needsRedraw && !macWindow.hasClosed)
+						{
+							macWindow.PaintFrame();
+							paintedSomething = true;
+						}
+					}
+
+					lock (StaticInitLock)
+					{
+						if (LiveWindows.Count == 0)
+						{
+							runLoopActive = false;
+						}
+					}
+
+					if (!paintedSomething && runLoopActive)
+					{
+						// Nothing to draw and nothing queued. Without this the loop is a 100% CPU spin; 4ms
+						// is short enough that input latency stays under a frame - and waiting on the
+						// dispatcher rather than sleeping means a marshalled call is picked up immediately
+						// instead of after the rest of the interval.
+						MainThreadDispatcher.WaitForWork(4);
+					}
+				}
+			}
+			finally
+			{
+				// A paint that throws must not leave the process believing a loop is still running, or the
+				// next window shown would return immediately and never be pumped.
+				runLoopActive = false;
+			}
+		}
+
+		/// <summary>Drains the AppKit event queue to nil, dispatching each event to agg and to AppKit.</summary>
+		private static void PumpEvents()
+		{
+			// Without a pool per pass, every autoreleased AppKit temporary leaks for the life of the process.
+			IntPtr pool = New("NSAutoreleasePool");
+
+			try
+			{
+				IntPtr nsEvent;
+				while ((nsEvent = Send_r_Q_r_r_B(
+					nsApp,
+					Sel("nextEventMatchingMask:untilDate:inMode:dequeue:"),
+					NSEventMaskAny,
+					distantPast,
+					defaultRunLoopMode,
+					YES)) != IntPtr.Zero)
+				{
+					bool consumed = DispatchEvent(nsEvent);
+
+					if (!consumed)
+					{
+						Send_v_r(nsApp, Sel("sendEvent:"), nsEvent);
+					}
+				}
+
+				Send_v(nsApp, Sel("updateWindows"));
+			}
+			finally
+			{
+				Send_v(pool, Sel("drain"));
+			}
+		}
+
+		/// <summary>
+		/// Hands an event to the agg window it belongs to.
+		/// </summary>
+		/// <returns>
+		/// True when AppKit must <em>not</em> also see the event. Only unmodified key events are swallowed:
+		/// the content view is a plain NSView with no key handling, so letting a keystroke walk the
+		/// responder chain ends at NSBeep. Command-modified keys are passed on so menu equivalents and
+		/// Cmd-Q keep working, and every mouse event is passed on because title-bar dragging, live resize
+		/// and the close button are all AppKit's to handle.
+		/// </returns>
+		private static bool DispatchEvent(IntPtr nsEvent)
+		{
+			long type = Send_q(nsEvent, Sel("type"));
+			IntPtr eventWindow = Send_r(nsEvent, Sel("window"));
+
+			MacSystemWindow target = null;
+			lock (StaticInitLock)
+			{
+				foreach (var macWindow in LiveWindows)
+				{
+					if (macWindow.window == eventWindow)
+					{
+						target = macWindow;
+						break;
+					}
+				}
+			}
+
+			if (target == null || target.hasClosed || target.aggSystemWindow == null)
+			{
+				return false;
+			}
+
+			// Parallel automation tests turn this off so a real mouse or keyboard cannot perturb a run.
+			if (!IPlatformWindow.EnablePlatformWindowInput)
+			{
+				return false;
+			}
+
+			try
+			{
+				return target.HandleEvent(nsEvent, type);
+			}
+			catch (Exception ex)
+			{
+				UiThread.ReportUnhandledException(ex);
+				Console.Error.WriteLine($"MacSystemWindow input handler threw {ex}");
+				return false;
+			}
+		}
+
+		private bool HandleEvent(IntPtr nsEvent, long type)
+		{
+			switch (type)
+			{
+				case NSEventTypeLeftMouseDown:
+				case NSEventTypeRightMouseDown:
+				case NSEventTypeOtherMouseDown:
+					if (this.TryMakeMouseArgs(nsEvent, type, out var downArgs))
+					{
+						this.aggSystemWindow.OnMouseDown(downArgs);
+					}
+
+					return false;
+
+				case NSEventTypeLeftMouseUp:
+				case NSEventTypeRightMouseUp:
+				case NSEventTypeOtherMouseUp:
+					if (this.TryMakeMouseArgs(nsEvent, type, out var upArgs))
+					{
+						this.aggSystemWindow.OnMouseUp(upArgs);
+					}
+
+					return false;
+
+				case NSEventTypeMouseMoved:
+				case NSEventTypeLeftMouseDragged:
+				case NSEventTypeRightMouseDragged:
+				case NSEventTypeOtherMouseDragged:
+					if (this.TryMakeMouseArgs(nsEvent, type, out var moveArgs))
+					{
+						this.aggSystemWindow.OnMouseMove(moveArgs);
+					}
+
+					return false;
+
+				case NSEventTypeMouseExited:
+					// Same sentinel the Windows sink uses for "the pointer is nowhere near me".
+					this.aggSystemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, -10, -10, 0));
+					return false;
+
+				case NSEventTypeScrollWheel:
+					if (this.TryMakeMouseArgs(nsEvent, type, out var wheelArgs))
+					{
+						this.aggSystemWindow.OnMouseWheel(wheelArgs);
+					}
+
+					return false;
+
+				case NSEventTypeKeyDown:
+					return this.HandleKeyDown(nsEvent);
+
+				case NSEventTypeKeyUp:
+					return this.HandleKeyUp(nsEvent);
+
+				default:
+					return false;
+			}
+		}
+
+		private bool HandleKeyDown(IntPtr nsEvent)
+		{
+			ulong flags = Send_Q(nsEvent, Sel("modifierFlags"));
+			Keys modifiers = TranslateModifiers(flags);
+			Keys keyCode = TranslateKeyCode(Send_u(nsEvent, Sel("keyCode")));
+
+			var keyEvent = new KeyEventArgs(keyCode | modifiers);
+			this.aggSystemWindow.OnKeyDown(keyEvent);
+			Keyboard.SetKeyDownState(keyEvent.KeyCode, true);
+
+			// Command-modified keys are menu equivalents; agg gets a look but AppKit must still see them.
+			bool commandHeld = (flags & NSEventModifierFlagCommand) != 0;
+			if (commandHeld)
+			{
+				return false;
+			}
+
+			if (!keyEvent.SuppressKeyPress)
+			{
+				// -[NSEvent characters] is the layout-, dead-key- and modifier-resolved text, which is
+				// exactly what OnKeyPress wants; keyCode above is a raw hardware position and is not.
+				string typed = FromNSString(Send_r(nsEvent, Sel("characters")));
+				if (!string.IsNullOrEmpty(typed))
+				{
+					foreach (char character in typed)
+					{
+						// Function keys and arrows arrive as private-use-area characters; they were already
+						// delivered as a key down and are not text.
+						if (character >= 0xF700 && character <= 0xF8FF)
+						{
+							continue;
+						}
+
+						this.aggSystemWindow.OnKeyPress(new KeyPressEventArgs(character));
+					}
+				}
+			}
+
+			// Swallowed so the responder chain cannot end at NSBeep.
+			return true;
+		}
+
+		private bool HandleKeyUp(IntPtr nsEvent)
+		{
+			Keys modifiers = TranslateModifiers(Send_Q(nsEvent, Sel("modifierFlags")));
+			Keys keyCode = TranslateKeyCode(Send_u(nsEvent, Sel("keyCode")));
+			var keyEvent = new KeyEventArgs(keyCode | modifiers);
+
+			// Only process the key up if we saw the key down, matching the Windows sink.
+			if (Keyboard.IsKeyDown(keyEvent.KeyCode))
+			{
+				this.aggSystemWindow.OnKeyUp(keyEvent);
+				Keyboard.SetKeyDownState(keyEvent.KeyCode, false);
+			}
+
+			return (Send_Q(nsEvent, Sel("modifierFlags")) & NSEventModifierFlagCommand) == 0;
+		}
+
+		/// <summary>
+		/// Converts an NSEvent's location into agg's coordinate space.
+		/// </summary>
+		/// <remarks>
+		/// Two things happen here and one deliberately does not. <c>locationInWindow</c> is in window
+		/// points, so it is converted into the view and then multiplied by <c>backingScaleFactor</c> to
+		/// reach agg's device pixels. What does <em>not</em> happen is a Y flip: a non-flipped NSView is
+		/// already bottom-left origin with Y increasing upwards, which is agg's convention. The Windows
+		/// sink flips only because Win32 is top-left.
+		/// </remarks>
+		/// <returns>False when the event happened outside the content view (the title bar, say), in which
+		/// case agg must not see it at all.</returns>
+		private bool TryMakeMouseArgs(IntPtr nsEvent, long type, out MouseEventArgs args)
+		{
+			args = null;
+
+			CGPoint inWindow = Send_P(nsEvent, Sel("locationInWindow"));
+			CGPoint inView = Send_P_P_r(this.view, Sel("convertPoint:fromView:"), inWindow, IntPtr.Zero);
+			CGRect bounds = Send_R(this.view, Sel("bounds"));
+
+			if (inView.X < 0 || inView.Y < 0 || inView.X > bounds.Size.Width || inView.Y > bounds.Size.Height)
+			{
+				return false;
+			}
+
+			double x = inView.X * this.backingScale;
+			double y = inView.Y * this.backingScale;
+
+			MouseButtons button = type switch
+			{
+				NSEventTypeLeftMouseDown or NSEventTypeLeftMouseUp or NSEventTypeLeftMouseDragged => MouseButtons.Left,
+				NSEventTypeRightMouseDown or NSEventTypeRightMouseUp or NSEventTypeRightMouseDragged => MouseButtons.Right,
+				NSEventTypeOtherMouseDown or NSEventTypeOtherMouseUp or NSEventTypeOtherMouseDragged => MouseButtons.Middle,
+				_ => MouseButtons.None,
+			};
+
+			int clicks = 0;
+			if (type == NSEventTypeLeftMouseDown || type == NSEventTypeLeftMouseUp
+				|| type == NSEventTypeRightMouseDown || type == NSEventTypeRightMouseUp
+				|| type == NSEventTypeOtherMouseDown || type == NSEventTypeOtherMouseUp)
+			{
+				clicks = (int)Send_q(nsEvent, Sel("clickCount"));
+			}
+
+			int wheelDelta = 0;
+			if (type == NSEventTypeScrollWheel)
+			{
+				double deltaY = Send_d(nsEvent, Sel("scrollingDeltaY"));
+				bool precise = Send_B(nsEvent, Sel("hasPreciseScrollingDeltas")) != NO;
+
+				// agg's consumers were written against Win32's 120-per-detent wheel. A line-based scroll
+				// (a real wheel) reports whole lines, so it scales by 120. A trackpad reports points of
+				// travel, and ScrollableWidget divides WheelDelta by 5 to get pixels - so scaling by
+				// 5 x backingScale makes a trackpad drag move the content the same distance as the fingers.
+				wheelDelta = precise
+					? (int)Math.Round(deltaY * this.backingScale * 5)
+					: (int)Math.Round(deltaY * 120);
+			}
+
+			args = new MouseEventArgs(button, clicks, x, y, wheelDelta);
+			return true;
+		}
+
+		// -----------------------------------------------------------------------------------------
+		// Painting
+		// -----------------------------------------------------------------------------------------
+
+		private void PaintFrame()
+		{
+			this.needsRedraw = false;
+
+			if (this.aggSystemWindow == null
+				|| this.aggSystemWindow.HasBeenClosed
+				|| this.webGpuLayer == null
+				|| this.webGpuLayer.IsDisposed)
+			{
+				return;
+			}
+
+			// An unattended run must fail loudly rather than sitting there: a paint that throws takes the
+			// repaint pump with it, so the run would otherwise just hang.
+			if (SmokeFrameTarget > 0)
+			{
+				try
+				{
+					this.DrawAndPresent();
+				}
+				catch (Exception ex)
+				{
+					Console.Error.WriteLine($"AGG_SMOKE paint failed on frame {this.drawCount}: {ex}");
+					Environment.ExitCode = 1;
+					this.smokeRunFinished = true;
+					UiThread.RunOnIdle(this.FinishSmokeRun);
+				}
+
+				return;
+			}
+
+			this.DrawAndPresent();
+		}
+
+		private void DrawAndPresent()
+		{
+			MatterHackers.RenderCore.FrameProfiler.BeginFrame();
+
+			if (this.pixelWidth > 0 && this.pixelHeight > 0)
+			{
+				this.drawCount++;
+				this.isInsidePaint = true;
+
+				try
+				{
+					Graphics2D graphics2D;
+					using (MatterHackers.RenderCore.FrameProfiler.Time("NewGraphics2D+Acquire"))
+					{
+						graphics2D = this.NewGraphics2D();
+					}
+
+					using (MatterHackers.RenderCore.FrameProfiler.Time("WidgetTreeDraw"))
+					{
+						if (SingleWindowMode && this.WindowProvider != null)
+						{
+							// Every window this provider hosts is drawn into this one frame: the shell first,
+							// then - for each dialog stacked on it - a scrim over the whole frame and the
+							// dialog on top of that. Drawing only the active window would leave a dialog
+							// floating on an empty background. Kept identical to WinformsSystemWindow.
+							var openWindows = this.WindowProvider.OpenWindows;
+							for (int i = 0; i < openWindows.Count; i++)
+							{
+								graphics2D.FillRectangle(openWindows[0].LocalBounds, new Color(Color.Black, 160));
+								openWindows[i].OnDraw(graphics2D);
+							}
+						}
+						else
+						{
+							// OnDrawBackground before OnDraw, the way a parent calls into a child in GuiWidget.
+							this.aggSystemWindow.OnDrawBackground(graphics2D);
+							this.aggSystemWindow.OnDraw(graphics2D);
+						}
+					}
+
+					// A widget that rasterized into Graphics2D.DestImage drew into a CPU buffer, not into
+					// the frame. On a GPU surface that buffer is a layer this uploads and draws over the
+					// frame now, after every widget has had its turn.
+					if (graphics2D is Graphics2DGpu gpuGraphics && gpuGraphics.HasCpuLayer)
+					{
+						MatterHackers.RenderCore.FrameProfiler.Count("CompositeCpuLayer");
+						using (MatterHackers.RenderCore.FrameProfiler.Time("CompositeCpuLayer"))
+						{
+							gpuGraphics.CompositeCpuLayer();
+						}
+					}
+
+					// Before the present, because a GPU window can only read a frame back while the frame's
+					// texture is still the one being drawn into.
+					this.CheckSmokeRunProgress();
+				}
+				finally
+				{
+					this.isInsidePaint = false;
+				}
+
+				using (MatterHackers.RenderCore.FrameProfiler.Time("Present"))
+				{
+					this.PresentOrCapture();
+				}
+			}
+
+			MatterHackers.RenderCore.FrameProfiler.EndFrame();
+
+			// A demo that has nothing to animate would paint once and wait forever for input that a smoke
+			// run never sends, so the run pumps its own frames.
+			if (SmokeFrameTarget > 0 && !this.smokeRunFinished)
+			{
+				this.needsRedraw = true;
+			}
+		}
+
+		/// <summary>
+		/// Presents the frame. Any screenshot requested for this frame is read back first: after the
+		/// present the texture is the swapchain's again.
+		/// </summary>
+		private void PresentOrCapture()
+		{
+			this.viewPortHasBeenSet = false;
+
+			string screenshotPath = this.pendingScreenshotPath;
+			if (screenshotPath == null)
+			{
+				this.webGpuLayer.Present();
+				return;
+			}
+
+			this.pendingScreenshotPath = null;
+			this.CaptureThenPresent(screenshotPath, this.screenshotComplete);
+		}
+
+		/// <summary>
+		/// Saves the frame and then presents it. <c>async void</c> on purpose: this is the end of a frame
+		/// and there is nobody to hand a Task to. The native read-back completes before its ValueTask is
+		/// returned, so the present still happens inline, while the frame is alive.
+		/// </summary>
+		private async void CaptureThenPresent(string path, ManualResetEventSlim completed)
+		{
+			try
+			{
+				await this.webGpuLayer.SaveCurrentFrameAsync(path);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"MacSystemWindow screenshot failed: {ex.Message}");
+			}
+			finally
+			{
+				completed?.Set();
+			}
+
+			this.webGpuLayer.Present();
+		}
+
+		private void SetAndClearViewPort()
+		{
+			this.webGpuLayer.BeginFrame();
+
+			var gl = this.webGpuLayer.Gl?.GpuContext;
+			if (gl == null)
+			{
+				return;
+			}
+
+			gl.Viewport(0, 0, (int)this.pixelWidth, (int)this.pixelHeight);
+			this.viewPortHasBeenSet = true;
+
+			gl.MatrixMode(MatrixMode.Projection);
+			gl.LoadIdentity();
+
+			gl.MatrixMode(MatrixMode.Modelview);
+			gl.LoadIdentity();
+			gl.Scissor(0, 0, (int)this.pixelWidth, (int)this.pixelHeight);
+
+			this.NewGraphics2D().Clear(new ColorF(1, 1, 1, 1));
+		}
+
+		// -----------------------------------------------------------------------------------------
+		// Closing
+		// -----------------------------------------------------------------------------------------
+
+		/// <summary>Answers AppKit's "may I close?" by asking the agg window, and starts the agg close.</summary>
+		private byte HandleShouldClose()
+		{
+			if (this.aggSystemWindow != null && !this.aggSystemWindow.HasBeenClosed)
+			{
+				var shouldClose = new ShouldCloseEventArgs();
+				this.aggSystemWindow.OnShouldClose(shouldClose);
+
+				if (shouldClose.Cancel)
+				{
+					return NO;
+				}
+
+				// The agg close runs first so widgets get their Closed events while the window is still
+				// alive. It calls back through the provider into CloseSystemWindow, which this flag makes a
+				// no-op - AppKit is already in the middle of closing us.
+				this.platformAlreadyClosing = true;
+				this.aggSystemWindow.Close();
+			}
+
+			return YES;
+		}
+
+		/// <summary>Tears everything down once AppKit has committed to closing the window.</summary>
+		private void HandleWillClose()
+		{
+			if (this.hasClosed)
+			{
+				return;
+			}
+
+			this.hasClosed = true;
+
+			if (this.idleTimer != IntPtr.Zero)
+			{
+				Send_v(this.idleTimer, Sel("invalidate"));
+				Release(this.idleTimer);
+				this.idleTimer = IntPtr.Zero;
+			}
+
+			this.webGpuLayer?.Dispose();
+			this.webGpuLayer = null;
+
+			// Break the delegate link before the objects go away, or a late notification would find a
+			// half-dead window.
+			Send_v_r(this.window, Sel("setDelegate:"), IntPtr.Zero);
+
+			bool wasLast;
+			lock (StaticInitLock)
+			{
+				DelegateOwners.Remove(this.windowDelegate);
+				LiveWindows.Remove(this);
+				wasLast = LiveWindows.Count == 0;
+			}
+
+			Release(this.windowDelegate);
+			this.windowDelegate = IntPtr.Zero;
+
+			Release(this.metalLayer);
+			this.metalLayer = IntPtr.Zero;
+
+			// The NSWindow and its content view are deliberately NOT released here. This runs from inside
+			// -[NSWindow close], so the window is still executing on the stack above us; dropping its last
+			// reference would dealloc it mid-call. setReleasedWhenClosed:NO means AppKit will not free it
+			// either, so a closed window costs one leaked NSWindow + NSView. Bounded and small (windows are
+			// not opened in a loop), and the alternative - an autorelease with no pool guaranteed to be in
+			// scope - leaks the same memory and prints a Cocoa warning while doing it.
+			this.aggSystemWindow = null;
+
+			if (wasLast)
+			{
+				runLoopActive = false;
+			}
+		}
+
+		private void CloseNativeWindow()
+		{
+			if (this.hasClosed || this.window == IntPtr.Zero)
+			{
+				return;
+			}
+
+			// setReleasedWhenClosed:NO was set at construction, so -close only orders the window out and
+			// fires windowWillClose:; the NSWindow itself stays valid for the teardown below.
+			Send_v_r(this.window, Sel("orderOut:"), IntPtr.Zero);
+			Send_v(this.window, Sel("close"));
+
+			// -close is documented to send windowWillClose:, but a window that was never ordered in does
+			// not always, and a half-torn-down window would keep the run loop alive forever.
+			this.HandleWillClose();
+		}
+
+		// -----------------------------------------------------------------------------------------
+		// Smoke runs
+		// -----------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// Counts frames for an <c>AGG_SMOKE_FRAMES</c> run and, on the target frame, asks for the
+		/// screenshot and schedules the close. Called from inside the paint, after the widgets have drawn
+		/// and before the present, which is the only moment both a finished frame and its pixels exist.
+		/// </summary>
+		private void CheckSmokeRunProgress()
+		{
+			if (SmokeFrameTarget <= 0 || this.smokeRunFinished || this.drawCount < SmokeFrameTarget)
+			{
+				return;
+			}
+
+			this.smokeRunFinished = true;
+
+			if (!string.IsNullOrEmpty(SmokeScreenshotPath))
+			{
+				try
+				{
+					this.CaptureScreenshot(SmokeScreenshotPath);
+				}
+				catch (Exception ex)
+				{
+					Console.Error.WriteLine($"AGG_SMOKE screenshot failed: {ex}");
+					Environment.ExitCode = 1;
+				}
+			}
+
+			// Closing from inside a paint would tear the window down mid-frame (and before the
+			// screenshot's present has run), so the close waits for this frame to finish.
+			UiThread.RunOnIdle(this.FinishSmokeRun);
+		}
+
+		private void FinishSmokeRun()
+		{
+			string report = this.RenderErrorReport;
+			if (!string.IsNullOrEmpty(report))
+			{
+				Console.Error.WriteLine($"AGG_SMOKE render error: {report}");
+				Environment.ExitCode = 1;
+			}
+
+			string status = this.RenderStatusReport;
+			string detail = $"{this.drawCount} frames on {this.GetType().Name}"
+				+ (string.IsNullOrEmpty(status) ? string.Empty : $" [{status}]");
+
+			if (Environment.ExitCode != 0)
+			{
+				Console.WriteLine($"AGG_SMOKE FAILED: {detail}");
+			}
+			else
+			{
+				Console.WriteLine($"AGG_SMOKE ok: {detail}");
+			}
+
+			// Armed before the close, not after: a close that throws or blocks is exactly the case the
+			// watchdog exists for.
+			StartSmokeExitWatchdog();
+
+			try
+			{
+				// Closing the agg window is what tears the platform window down with it; the platform's own
+				// close is only the fallback for a window that was never attached to one.
+				if (this.aggSystemWindow != null)
+				{
+					this.aggSystemWindow.Close();
+				}
+				else
+				{
+					this.Close();
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"AGG_SMOKE: close threw {ex.GetType().Name}: {ex}");
+			}
+		}
+
+		/// <summary>
+		/// Guarantees a smoke run terminates. Closing the window ends the event loop, but a teardown that
+		/// throws part way or a demo that left a foreground thread running would keep the process alive
+		/// forever, and an unattended run that never returns is indistinguishable from a hang in the
+		/// renderer. Firing is itself a failure and is reported as one.
+		/// </summary>
+		private static void StartSmokeExitWatchdog()
+		{
+			var watchdog = new System.Threading.Timer(
+				_ =>
+				{
+					Console.Error.WriteLine("AGG_SMOKE: the process did not exit on its own after closing; forcing exit.");
+					Console.WriteLine("AGG_SMOKE FAILED: the exit watchdog had to force the process down.");
+					Environment.Exit(Environment.ExitCode != 0 ? Environment.ExitCode : 1);
+				},
+				null,
+				TimeSpan.FromSeconds(5),
+				System.Threading.Timeout.InfiniteTimeSpan);
+
+			// Nothing else holds this; keeping the reference alive is the only thing standing between the
+			// timer and the collector.
+			smokeExitWatchdog = watchdog;
+		}
+
+		private static int ParseSmokeFrames()
+		{
+			return int.TryParse(Environment.GetEnvironmentVariable("AGG_SMOKE_FRAMES"), out int frames) && frames > 0
+				? frames
+				: 0;
+		}
+
+		// -----------------------------------------------------------------------------------------
+		// Small AppKit helpers
+		// -----------------------------------------------------------------------------------------
+
+		/// <summary>The primary screen's height in points - the origin AppKit measures window frames from.</summary>
+		private static double PrimaryScreenHeightInPoints()
+		{
+			IntPtr screens = Send_r(Class("NSScreen"), Sel("screens"));
+			IntPtr primary = screens == IntPtr.Zero || Send_Q(screens, Sel("count")) == 0
+				? IntPtr.Zero
+				: Send_r_Q(screens, Sel("objectAtIndex:"), 0);
+			if (primary == IntPtr.Zero)
+			{
+				primary = Send_r(Class("NSScreen"), Sel("mainScreen"));
+			}
+
+			return primary == IntPtr.Zero ? 0 : Send_R(primary, Sel("frame")).Size.Height;
+		}
+
+		private static double PrimaryScreenScale()
+		{
+			IntPtr screen = Send_r(Class("NSScreen"), Sel("mainScreen"));
+			double scale = screen == IntPtr.Zero ? 1 : Send_d(screen, Sel("backingScaleFactor"));
+			return scale > 0 ? scale : 1;
+		}
+
+		/// <summary>
+		/// The scale desktop coordinates are expressed in. agg's desktop space is device pixels, and the
+		/// primary screen's scale is the only one that can be used for a space shared by every window -
+		/// which does mean a second display running at a different scale reports positions that are off by
+		/// the ratio. Nothing in agg positions windows precisely enough for that to matter yet.
+		/// </summary>
+		private static double DesktopScale() => PrimaryScreenScale();
+
+		private static Keys TranslateModifiers(ulong flags)
+		{
+			Keys modifiers = Keys.None;
+
+			if ((flags & NSEventModifierFlagShift) != 0)
+			{
+				modifiers |= Keys.Shift;
+			}
+
+			// Command, not Control, maps to agg's Control: every agg shortcut is spelled "Control+X" and on
+			// this platform the key a user presses for it is Command. The Windows sink does the same
+			// remapping in reverse for Mac keyboards.
+			if ((flags & NSEventModifierFlagCommand) != 0)
+			{
+				modifiers |= Keys.Control;
+			}
+
+			if ((flags & NSEventModifierFlagOption) != 0)
+			{
+				modifiers |= Keys.Alt;
+			}
+
+			return modifiers;
+		}
+
+		/// <summary>
+		/// Maps a Carbon virtual key code to agg's <see cref="Keys"/>. Only the keys agg actually reacts to
+		/// are listed; everything else resolves through <c>-[NSEvent characters]</c> as a key press, which
+		/// is layout correct in a way a key code table can never be.
+		/// </summary>
+		private static Keys TranslateKeyCode(ushort virtualKey)
+		{
+			switch (virtualKey)
+			{
+				case VkReturn: return Keys.Enter;
+				case VkTab: return Keys.Tab;
+				case VkSpace: return Keys.Space;
+				case VkDelete: return Keys.Back;
+				case VkForwardDelete: return Keys.Delete;
+				case VkEscape: return Keys.Escape;
+				case VkCommand: return Keys.ControlKey;
+				case VkShift:
+				case VkRightShift: return Keys.ShiftKey;
+				case VkCapsLock: return Keys.CapsLock;
+				case VkOption:
+				case VkRightOption: return Keys.Menu;
+				case VkControl:
+				case VkRightControl: return Keys.ControlKey;
+				case VkHome: return Keys.Home;
+				case VkEnd: return Keys.End;
+				case VkPageUp: return Keys.PageUp;
+				case VkPageDown: return Keys.PageDown;
+				case VkLeftArrow: return Keys.Left;
+				case VkRightArrow: return Keys.Right;
+				case VkUpArrow: return Keys.Up;
+				case VkDownArrow: return Keys.Down;
+				case VkF1: return Keys.F1;
+				case VkF2: return Keys.F2;
+				case VkF3: return Keys.F3;
+				case VkF4: return Keys.F4;
+				case VkF5: return Keys.F5;
+				case VkF6: return Keys.F6;
+				case VkF7: return Keys.F7;
+				case VkF8: return Keys.F8;
+				case VkF9: return Keys.F9;
+				case VkF10: return Keys.F10;
+				case VkF11: return Keys.F11;
+				case VkF12: return Keys.F12;
+				default: return Keys.None;
+			}
+		}
+	}
+}

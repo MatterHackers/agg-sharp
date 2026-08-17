@@ -25,6 +25,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Threading.Tasks;
+using MatterHackers.Agg.Tests.TestingInfrastructure;
 using MatterHackers.RenderCore;
 using MatterHackers.RenderGl.Compat;
 using MatterHackers.VectorMath;
@@ -119,7 +120,7 @@ namespace MatterHackers.Agg.Tests
 				// wgpu reports validation failures out of band, so a clean-looking render can still have
 				// been built from a rejected descriptor. Asserting this is how that shows up as a failure.
 				await Assert.That(device.LastUncapturedError).IsNull();
-				await Assert.That(device.AdapterBackend).IsEqualTo(WGPUBackendType.D3D12);
+				await Assert.That(device.AdapterBackend).IsEqualTo(TestRenderBackend.Native);
 				await Assert.That(device.IsDeviceLost).IsFalse();
 
 				bindGroup.Dispose();

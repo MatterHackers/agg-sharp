@@ -25,6 +25,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Threading.Tasks;
+using MatterHackers.Agg.Tests.TestingInfrastructure;
 using MatterHackers.RenderCore;
 using MatterHackers.WebGpu;
 using MatterHackers.WebGpuRender;
@@ -66,11 +67,11 @@ namespace MatterHackers.Agg.Tests
 		public uint Height => this.Target.Descriptor.Height;
 
 		/// <summary>
-		/// Creates a device on D3D12 and an offscreen target.
+		/// Creates a device on this OS's native backend and an offscreen target.
 		/// <para>
-		/// D3D12 is requested explicitly rather than left to wgpu's choice, exactly as the Phase 0 spike
-		/// does: a machine that silently landed on another backend would turn a hard failure into a
-		/// mysterious pixel diff.
+		/// The backend is named explicitly (<see cref="TestRenderBackend.Native"/>) rather than left to
+		/// wgpu's choice, exactly as the Phase 0 spike does: a machine that silently landed on another
+		/// backend would turn a hard failure into a mysterious pixel diff.
 		/// </para>
 		/// </summary>
 		/// <param name="width">Target width in pixels.</param>
@@ -78,7 +79,7 @@ namespace MatterHackers.Agg.Tests
 		/// <param name="withDepth">Whether to attach a depth buffer.</param>
 		public static WebGpuRenderTestHarness Create(uint width = 64, uint height = 64, bool withDepth = false)
 		{
-			var device = new WebGpuRenderDevice(false, WGPUBackendType.D3D12, "WebGpuRenderTests");
+			var device = new WebGpuRenderDevice(false, TestRenderBackend.Native, "WebGpuRenderTests");
 			try
 			{
 				var target = device.CreateTexture(new TextureDescriptor(

@@ -141,11 +141,6 @@ namespace MatterHackers.Agg.UI
 			//BoundsRelativeToParent = new rect_d(x1, y1, x2, y2);
 		}
 
-		public override IEnumerable<VertexData> Vertices()
-		{
-			throw new NotImplementedException();
-		}
-
 		public override void Rewind(int idx)
 		{
 			m_cur_x = 0.0;

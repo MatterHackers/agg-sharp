@@ -384,11 +384,6 @@ namespace MatterHackers.Agg.UI
 			gammaText.Text = string.Format("{0:F3} {1:F3} {2:F3} {3:F3}", kx1, ky1, kx2, ky2);
 		}
 
-		public override IEnumerable<VertexData> Vertices()
-		{
-			throw new NotImplementedException();
-		}
-
 		public override void Rewind(int idx)
 		{
 			m_idx = idx;

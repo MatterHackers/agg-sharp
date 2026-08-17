@@ -207,9 +207,8 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			// AggContext.Init(embeddedResourceName: "lion_outline.config.json");
-			// AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.OpenGLWinformsWindowProvider, agg_platform_win32";
-
+			// No provider is named here on purpose: AggContext already picks the right host per OS
+			// (agg_platform_win32 on Windows, agg_platform_mac on macOS).
 			var demoWidget = new lion_outline();
 
 			var systemWindow = new SystemWindow(512, 512)

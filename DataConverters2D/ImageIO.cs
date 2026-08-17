@@ -38,53 +38,6 @@ namespace MatterHackers.Agg.Image
 	{
 		public static bool LoadImageData(Stream stream, ImageSequence sequence)
 		{
-			// if (AggContext.OperatingSystem == OSType.Mac)
-#if OSX
-			SixLabors.ImageSharp.Image image;
-			try
-			{
-				image = SixLabors.ImageSharp.Image.Load(stream);
-			}
-			catch
-			{
-				return false;
-			}
-
-			sequence.Frames.Clear();
-			sequence.FrameTimesMs.Clear();
-
-			if (image.Frames.Count > 1)
-			{
-				var minFrameTimeMs = int.MaxValue;
-				for (var i = 0; i < image.Frames.Count; i++)
-				{
-					// Return an Image at a certain index
-					var imageBuffer = new ImageBuffer();
-					ConvertImageToImageBuffer(imageBuffer, image.Frames.CloneFrame(i));
-
-					var frameData = image.Frames[i].Metadata.GetGifMetadata();
-
-					var frameDelay = frameData.FrameDelay * 10;
-
-					sequence.AddImage(imageBuffer, frameDelay);
-					minFrameTimeMs = Math.Max(10, Math.Min(frameDelay, minFrameTimeMs));
-				}
-
-				sequence.SecondsPerFrame = minFrameTimeMs / 1000.0;
-			}
-			else
-			{
-				var imageBuffer = new ImageBuffer();
-				if (ImageIO.ConvertImageToImageBuffer(imageBuffer, image))
-				{
-					sequence.AddImage(imageBuffer);
-				}
-			}
-
-			Configuration.Default.MemoryAllocator.ReleaseRetainedResources();
-
-			return true;
-#else
 			Image<Rgba32> image;
 			try
 			{
@@ -127,8 +80,6 @@ namespace MatterHackers.Agg.Image
 			}
 
 			return true;
-
-#endif
 		}
 
 		public static bool LoadImageData(Stream stream, ImageBuffer destImage)
@@ -152,23 +103,6 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-#if OSX
-		private static bool ConvertImageToImageBuffer(ImageBuffer destImage, SixLabors.ImageSharp.Image imageIn)
-		{
-			var tgaSave = new MemoryStream();
-			var encoder = new SixLabors.ImageSharp.Formats.Tga.TgaEncoder();
-			encoder.BitsPerPixel = SixLabors.ImageSharp.Formats.Tga.TgaBitsPerPixel.Pixel32;
-			encoder.Compression = SixLabors.ImageSharp.Formats.Tga.TgaCompression.None;
-			imageIn.SaveAsTga(tgaSave, encoder);
-			tgaSave.Seek(0, SeekOrigin.Begin);
-			if (ImageTgaIO.LoadImageData(destImage, tgaSave, 32))
-			{
-				return true;
-			}
-
-			return false;
-		}
-#else
 		private static bool ConvertImageToImageBuffer(ImageBuffer imageBuffer, ImageFrame<Rgba32> imageFrame)
 		{
 			Rgba32[] pixelArray = new Rgba32[imageFrame.Width * imageFrame.Height];
@@ -213,7 +147,6 @@ namespace MatterHackers.Agg.Image
 
 			return false;
 		}
-#endif
 
 		public static bool SaveImageData(string filename, IImageByte sourceImage)
 		{

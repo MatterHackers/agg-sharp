@@ -28,31 +28,71 @@ using System;
 namespace MatterHackers.WebGpuRender
 {
 	/// <summary>
-	/// The native window a device should build its swapchain over. Passed to
+	/// The native drawable a device should build its swapchain over. Passed to
 	/// <see cref="WebGpuRenderDevice"/>'s constructor so the surface can exist before the adapter request
 	/// and be handed to it as <c>compatibleSurface</c>.
+	/// <para>
+	/// What "native drawable" means is per platform, and the platforms do not agree on its shape: Windows
+	/// wants an HWND plus (optionally) its HINSTANCE, while macOS wants neither a window nor a view but a
+	/// <c>CAMetalLayer*</c> - the layer is the thing Metal can actually hand back drawables from. Rather
+	/// than one field per platform, this carries a single <see cref="NativeSurfaceHandle"/> whose meaning
+	/// is decided by the OS the process is running on, plus the Windows-only
+	/// <see cref="ModuleHandle"/>. Use the <see cref="ForWindowsHwnd"/> / <see cref="ForMetalLayer"/>
+	/// factories so the call site says which handle it is holding.
+	/// </para>
 	/// </summary>
 	public sealed class WindowSurfaceRequest
 	{
-		/// <summary>Describes a window to make a surface over.</summary>
-		/// <param name="windowHandle">The native window handle (HWND on Windows).</param>
-		/// <param name="moduleHandle">The module instance (HINSTANCE), or zero.</param>
+		/// <summary>Describes a native drawable to make a surface over.</summary>
+		/// <param name="nativeSurfaceHandle">
+		/// The platform's native surface handle: an HWND on Windows, a <c>CAMetalLayer*</c> on macOS.
+		/// </param>
+		/// <param name="moduleHandle">The module instance (HINSTANCE), or zero. Windows only; ignored elsewhere.</param>
 		/// <param name="width">Initial swapchain width in pixels.</param>
 		/// <param name="height">Initial swapchain height in pixels.</param>
 		/// <param name="label">Optional debug label.</param>
-		public WindowSurfaceRequest(IntPtr windowHandle, IntPtr moduleHandle, uint width, uint height, string label = null)
+		public WindowSurfaceRequest(IntPtr nativeSurfaceHandle, IntPtr moduleHandle, uint width, uint height, string label = null)
 		{
-			this.WindowHandle = windowHandle;
+			this.NativeSurfaceHandle = nativeSurfaceHandle;
 			this.ModuleHandle = moduleHandle;
 			this.Width = width;
 			this.Height = height;
 			this.Label = label;
 		}
 
-		/// <summary>The native window handle (HWND on Windows).</summary>
-		public IntPtr WindowHandle { get; }
+		/// <summary>Describes a Windows window (HWND) to make a surface over.</summary>
+		/// <param name="hwnd">The window handle.</param>
+		/// <param name="hinstance">The module instance, or zero - wgpu only uses it as a hint.</param>
+		/// <param name="width">Initial swapchain width in pixels.</param>
+		/// <param name="height">Initial swapchain height in pixels.</param>
+		/// <param name="label">Optional debug label.</param>
+		public static WindowSurfaceRequest ForWindowsHwnd(IntPtr hwnd, IntPtr hinstance, uint width, uint height, string label = null)
+		{
+			return new WindowSurfaceRequest(hwnd, hinstance, width, height, label);
+		}
 
-		/// <summary>The module instance (HINSTANCE), or zero.</summary>
+		/// <summary>
+		/// Describes a macOS <c>CAMetalLayer</c> to make a surface over. The host is responsible for the
+		/// layer itself: making the view layer-backed, giving it a <c>CAMetalLayer</c>, and keeping the
+		/// layer's <c>drawableSize</c> in step with the <paramref name="width"/> and
+		/// <paramref name="height"/> this surface is configured at (Metal will scale a mismatched drawable
+		/// rather than complain, which shows up as a soft image on a Retina display and nothing else).
+		/// </summary>
+		/// <param name="metalLayer">A pointer to the <c>CAMetalLayer</c>, not to the NSView or NSWindow.</param>
+		/// <param name="width">Initial swapchain width in pixels.</param>
+		/// <param name="height">Initial swapchain height in pixels.</param>
+		/// <param name="label">Optional debug label.</param>
+		public static WindowSurfaceRequest ForMetalLayer(IntPtr metalLayer, uint width, uint height, string label = null)
+		{
+			return new WindowSurfaceRequest(metalLayer, IntPtr.Zero, width, height, label);
+		}
+
+		/// <summary>
+		/// The platform's native surface handle: an HWND on Windows, a <c>CAMetalLayer*</c> on macOS.
+		/// </summary>
+		public IntPtr NativeSurfaceHandle { get; }
+
+		/// <summary>The module instance (HINSTANCE), or zero. Windows only; ignored elsewhere.</summary>
 		public IntPtr ModuleHandle { get; }
 
 		/// <summary>Initial swapchain width in pixels.</summary>

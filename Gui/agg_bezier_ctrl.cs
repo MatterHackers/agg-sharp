@@ -232,11 +232,6 @@ namespace MatterHackers.Agg.UI
 			return 7;
 		}
 
-		public override IEnumerable<VertexData> Vertices()
-		{
-			throw new NotImplementedException();
-		}
-
 		public override void Rewind(int idx)
 		{
 			m_poly.Rewind(0);
@@ -519,11 +514,6 @@ namespace MatterHackers.Agg.UI
 		public override int num_paths()
 		{
 			return 6;
-		}
-
-		public override IEnumerable<VertexData> Vertices()
-		{
-			throw new NotImplementedException();
 		}
 
 		public override void Rewind(int idx)

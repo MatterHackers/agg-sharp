@@ -351,24 +351,22 @@ namespace MatterHackers.RayTracer
 			Stopwatch bvhTime = new Stopwatch();
 			bvhTime.Start();
 			
-			// Convert mesh to BVH using MinimalTriangle objects
+			// Convert the mesh to a BVH of shaded triangles.
+			//
+			// TriangleShape rather than the leaner MinimalTriangle: MinimalTriangle carries no material at
+			// all (its Material property and GetColor both throw NotImplementedException), so the moment a
+			// ray actually hit one the trace died. Until MinimalTriangle can be shaded, a demo that wants
+			// to see the mesh has to use the shape that can.
+			SolidMaterial meshMaterial = new SolidMaterial(new ColorF(.9, .2, .1), .01, 0.0, 2.0);
 			var tracePrimitives = new List<ITraceable>();
 			for (int faceIndex = 0; faceIndex < simpleMesh.Faces.Count; faceIndex++)
 			{
-				ITraceable triangle = new MinimalTriangle((fi, vi) =>
-				{
-					switch (vi)
-					{
-						case 0:
-							return simpleMesh.Vertices[simpleMesh.Faces[fi].v0];
-						case 1:
-							return simpleMesh.Vertices[simpleMesh.Faces[fi].v1];
-						default:
-							return simpleMesh.Vertices[simpleMesh.Faces[fi].v2];
-					}
-				}, faceIndex);
-
-				tracePrimitives.Add(triangle);
+				var face = simpleMesh.Faces[faceIndex];
+				tracePrimitives.Add(new TriangleShape(
+					new Vector3(simpleMesh.Vertices[face.v0]),
+					new Vector3(simpleMesh.Vertices[face.v1]),
+					new Vector3(simpleMesh.Vertices[face.v2]),
+					meshMaterial));
 			}
 
 			var bvhCollection = BoundingVolumeHierarchy.CreateNewHierarchy(tracePrimitives);

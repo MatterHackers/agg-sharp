@@ -47,8 +47,11 @@ namespace MatterHackers.Agg
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			GammaLookUpTable gamma = new GammaLookUpTable(gammaSlider.Value);
-			IRecieveBlenderByte NormalBlender = new BlenderBGR();
-			IRecieveBlenderByte GammaBlender = new BlenderGammaBGR(gamma);
+
+			// 32 bit blenders, not the 24 bit BGR pair this used to use: DestImage is the GPU surface's
+			// CPU layer now and that is always BGRA, so a 24 bit blender fails Attach outright.
+			IRecieveBlenderByte NormalBlender = new BlenderBGRA();
+			IRecieveBlenderByte GammaBlender = new BlenderGammaBGRA(gamma);
 			ImageBuffer rasterNormal = new ImageBuffer();
 			rasterNormal.Attach(graphics2D.DestImage, NormalBlender);
 			ImageBuffer rasterGamma = new ImageBuffer();

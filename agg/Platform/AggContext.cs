@@ -148,13 +148,26 @@ namespace MatterHackers.Agg.Platform
 			public AggGraphicsMode GraphicsMode { get; set; } = new AggGraphicsMode();
 		}
 
+		/// <summary>
+		/// Which platform assembly the lazily-created providers come from. Defaulted per OS rather than
+		/// hard-coded to Windows so that a demo (or an application) needs no source change to run on macOS:
+		/// the win32 assembly is built for <c>net10.0-windows</c> and would not even load there.
+		/// </summary>
 		public class ProviderSettings
 		{
-			public string OsInformationProvider { get; set; } = "MatterHackers.Agg.Platform.WinformsInformationProvider, agg_platform_win32";
+			private static readonly bool IsMac = System.OperatingSystem.IsMacOS();
 
-			public string DialogProvider { get; set; } = "MatterHackers.Agg.Platform.WinformsFileDialogProvider, agg_platform_win32";
+			public string OsInformationProvider { get; set; } = IsMac
+				? "MatterHackers.Agg.Platform.MacInformationProvider, agg_platform_mac"
+				: "MatterHackers.Agg.Platform.WinformsInformationProvider, agg_platform_win32";
 
-			public string SystemWindowProvider { get; set; } = "MatterHackers.Agg.UI.WebGpuWinformsWindowProvider, agg_platform_win32";
+			public string DialogProvider { get; set; } = IsMac
+				? "MatterHackers.Agg.Platform.MacFileDialogProvider, agg_platform_mac"
+				: "MatterHackers.Agg.Platform.WinformsFileDialogProvider, agg_platform_win32";
+
+			public string SystemWindowProvider { get; set; } = IsMac
+				? "MatterHackers.Agg.UI.WebGpuMacWindowProvider, agg_platform_mac"
+				: "MatterHackers.Agg.UI.WebGpuWinformsWindowProvider, agg_platform_win32";
 		}
 
 		public class AggGraphicsMode

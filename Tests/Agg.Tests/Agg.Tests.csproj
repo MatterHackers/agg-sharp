@@ -1,12 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- Everything Windows-only in this project hangs off this one property, so a Windows build can be
+         checked from another host with -p:WindowsBuild=true -p:EnableWindowsTargeting=true. -->
+    <WindowsBuild Condition="'$(WindowsBuild)' == ''">$([MSBuild]::IsOSPlatform('Windows'))</WindowsBuild>
+
+    <!-- Windows keeps the net10.0-windows framework so the WinForms platform layer (PlatformWin32) is
+         available exactly as before. On any other host that framework cannot be referenced at all, so the
+         project drops to plain net10.0, swaps PlatformWin32 for PlatformMac, and drops the subset of tests
+         whose subject is WinForms - see the conditional items below. -->
+    <TargetFramework Condition="'$(WindowsBuild)' == 'true'">net10.0-windows</TargetFramework>
+    <TargetFramework Condition="'$(WindowsBuild)' != 'true'">net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <IsTestProject>true</IsTestProject>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(WindowsBuild)' == 'true'">win-x64</RuntimeIdentifier>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\..\..\</SolutionDir>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     
@@ -19,6 +28,12 @@
 
 	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+
+	<!-- Program.cs is our own copy of the entry point Microsoft.Testing.Platform would generate, so that
+	     the process main thread can be reserved for UI before the test engine starts. See Program.cs and
+	     MainThreadDispatcher. The self-registered extensions are still generated, which is what
+	     builder.AddSelfRegisteredExtensions in Program.cs calls. -->
+	<GenerateTestingPlatformEntryPoint>false</GenerateTestingPlatformEntryPoint>
   </PropertyGroup>
 	<ItemGroup>
 		<Service Include="{63A7B48D-3B50-4B1E-B85E-2ADB8510F352}" />
@@ -39,7 +54,10 @@
     <ProjectReference Include="..\..\ImageProcessing\ImageProcessing.csproj" />
     <ProjectReference Include="..\..\Localizations\Localizations.csproj" />
     <ProjectReference Include="..\..\MarkdigAgg\MarkdigAgg.csproj" />
-    <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj" />
+    <!-- The platform host: whichever IPlatformWindow provider this OS actually has. Both assemblies
+         expose the same AggContext providers, so tests that only need "a window" work either way. -->
+    <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj" Condition="'$(WindowsBuild)' == 'true'" />
+    <ProjectReference Include="..\..\PlatformMac\PlatformMac.csproj" Condition="'$(WindowsBuild)' != 'true'" />
     <ProjectReference Include="..\..\PolygonMesh\PolygonMesh.csproj" />
     <ProjectReference Include="..\..\QuadTree\QuadTree.csproj" />
     <ProjectReference Include="..\..\RenderCore\RenderCore.csproj" />
@@ -52,6 +70,23 @@
     <!-- The wgpu backend itself, plus its embedded WGSL. The integration suite drives GlCompatContext
          over a real WebGpuRenderDevice, so the tests need the backend and not just the seam. -->
     <ProjectReference Include="..\..\WebGpuRender\WebGpuRender.csproj" />
+  </ItemGroup>
+
+  <!-- Tests whose subject is WinForms itself: off Windows there is nothing for them to be about. -->
+  <ItemGroup Condition="'$(WindowsBuild)' != 'true'">
+    <!-- Subject is WinformsSystemWindow: its idle timer and its CenterInParent handle creation. -->
+    <Compile Remove="Agg.UI\WinformsIdleTimerDisposeRaceTests.cs" />
+    <Compile Remove="Agg.UI\WinformsShowCenteringTests.cs" />
+    <!-- Subject is WinformsEventSink's unhook; the rest of ConstructorHygieneTests still compiles. -->
+    <Compile Remove="Agg.UI\ConstructorHygieneTests.Winforms.cs" />
+    <!-- Subject is WinformsSystemWindow's shared idle timer and its first-window latch; the rest of
+         AutomationRunnerTests is platform neutral and runs everywhere. -->
+    <Compile Remove="Agg Automation Tests\AutomationRunnerTests.Winforms.cs" />
+    <!-- Subject is WebGpuControl, the WinForms control that owns the swapchain. -->
+    <Compile Remove="Agg.WebGpuRender\WebGpuControlDeviceLossTests.cs" />
+    <!-- Needs an HWND, which it gets by constructing a hidden WinForms Form. The mac equivalent would be
+         a CAMetalLayer-backed NSView, which is a different surface path and a different test. -->
+    <Compile Remove="Agg.WebGpuRender\WebGpuSurfaceTargetTests.cs" />
   </ItemGroup>
 
   <!-- LCD byte-exactness fixture: raw mask/composite dumps from the agg-gui Rust reference, read by
@@ -79,10 +114,13 @@
   </ItemGroup>
 
   <!-- Golden images for the render suites. Same tree-preferred arrangement as the control images
-       directly above, and for the same reason. -->
+       directly above, and for the same reason. One subfolder per wgpu backend (d3d12, metal, vulkan) -
+       rasterization tie-breaking differs between them, and separate sets are what keeps the comparison
+       tolerance at zero. All sets are copied, not just this OS's: the copy is a build-time item and the
+       backend is a run-time choice, and a few megabytes beats a build that only works on one host. -->
   <ItemGroup>
-    <Content Include="..\..\TestData\GoldenImages\*.png">
-      <Link>GoldenImages\%(Filename)%(Extension)</Link>
+    <Content Include="..\..\TestData\GoldenImages\**\*.png">
+      <Link>GoldenImages\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

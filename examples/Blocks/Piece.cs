@@ -106,17 +106,35 @@ namespace MatterHackers.Agg
             return null;
         }
         
-        public static int GetOffset(int rotation, int x, int y)
+        /// <summary>
+        /// The column within a shape row that holds cell <paramref name="x"/> of the given rotation.
+        /// Each rotation is a five wide block followed by a space, laid out left to right.
+        /// </summary>
+        public static int GetOffset(int rotation, int x)
         {
-            var offsetY = (4 - y) * (6 * 4 + 2) + 2;
-            var offsetR = rotation * 6;
-            return offsetY + offsetR + x;
+            return rotation * 6 + x;
+        }
+
+        /// <summary>
+        /// Splits a shape literal into its five rows.
+        /// <para>
+        /// This used to index the literal with one flat offset that included the newline width, which
+        /// silently assumed the source file was checked out with CRLF endings - true on Windows with
+        /// core.autocrlf, false everywhere else, and the demo drew garbage or threw on the space
+        /// separators when it was wrong. Splitting on the line break makes the layout say what it means.
+        /// </para>
+        /// </summary>
+        private static string[] GetRows(int currentPiece)
+        {
+            return GetPiece(currentPiece).Split('\n');
         }
 
         public static int GetValue(int currentPiece, int rotation, int x, int y)
         {
-            var piece = GetPiece(currentPiece);
-            return int.Parse(piece[GetOffset(rotation, x, y)].ToString());
+            // The literals start with a line break and are written bottom row last, so row 0 of the
+            // shape is the final line.
+            string row = GetRows(currentPiece)[5 - y];
+            return row[GetOffset(rotation, x)] == '0' ? 0 : 1;
         }
 
         public static void Draw(Graphics2D graphics2D, int currentPiece, int rotation, int pixelX, int pixelY, int pieceSize)

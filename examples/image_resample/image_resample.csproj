@@ -1,8 +1,16 @@
 <?xml version='1.0' encoding='utf-8'?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
-    <OutputType>Library</OutputType>
+    <!-- The window host is a different assembly on each OS and they do not share a TFM: the WinForms
+         host needs net10.0-windows, the AppKit host is plain net10.0 (raw objc P/Invoke, no macOS
+         workload). Selecting per build host rather than multi-targeting keeps `dotnet run` working with
+         no extra arguments on either platform. -->
+    <TargetFramework Condition="$([MSBuild]::IsOSPlatform('OSX'))">net10.0</TargetFramework>
+    <TargetFramework Condition="!$([MSBuild]::IsOSPlatform('OSX'))">net10.0-windows</TargetFramework>
+    <!-- WinExe means "no console window" on Windows; on macOS that would only hide the smoke-run output.
+         This was OutputType Library, which left a demo with a Main that could not actually be launched. -->
+    <OutputType Condition="$([MSBuild]::IsOSPlatform('OSX'))">Exe</OutputType>
+    <OutputType Condition="!$([MSBuild]::IsOSPlatform('OSX'))">WinExe</OutputType>
     <NoStdLib>False</NoStdLib>
     <RegisterForComInterop>False</RegisterForComInterop>
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
@@ -12,11 +20,9 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <OutputPath>bin\x64\Debug\</OutputPath>
@@ -32,7 +38,8 @@
     <ProjectReference Include="..\..\agg\Agg.csproj" />
     <ProjectReference Include="..\..\DataConverters2D\DataConverters2D.csproj" />
     <ProjectReference Include="..\..\Gui\Gui.csproj" />
-    <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj" />
+    <ProjectReference Include="..\..\PlatformMac\PlatformMac.csproj" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
+    <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj" Condition="!$([MSBuild]::IsOSPlatform('OSX'))" />
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
   <ItemGroup>

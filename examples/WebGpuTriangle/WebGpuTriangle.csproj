@@ -2,6 +2,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- Deliberately still Windows only, unlike the other demos. This spike exists to prove the raw HWND
+         swapchain path with nothing from agg in the way, so it hosts itself in a WinForms Form and pumps
+         messages through user32 PeekMessage. The macOS equivalent - a CAMetalLayer surface on an AppKit
+         window - is already proven by PlatformMac and HelloWorld, so porting this would only duplicate
+         PlatformMac inside a demo whose whole point is to depend on nothing. Building it on macOS needs
+         -p:EnableWindowsTargeting=true and produces something that cannot run here. -->
     <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
     <UseWindowsForms>true</UseWindowsForms>

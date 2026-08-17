@@ -80,7 +80,6 @@ namespace SmartSweeper
 		private Color m_GreenPen;
 
 		//handle to the application window
-		private IImageByte m_hwndMain;
 
 		//toggles the speed at which the simulation runs
 		private bool m_bFastRender;
@@ -169,7 +168,7 @@ namespace SmartSweeper
 			}
 		}
 
-		public CController(IImageByte hwndMain, int iNumSweepers, int iNumMines, double _dMutationRate, double _dCrossoverRate, double dMaxPerturbation,
+		public CController(int clientWidth, int clientHeight, int iNumSweepers, int iNumMines, double _dMutationRate, double _dCrossoverRate, double dMaxPerturbation,
 			int NumElite, int NumCopiesElite, int NumTicksPerGeneration)
 		{
 			Random Rand = new Random();
@@ -181,16 +180,15 @@ namespace SmartSweeper
 			m_bFastRender = (false);
 			m_TicksThisGeneration = 0;
 			m_NumTicksPerGeneration = NumTicksPerGeneration;
-			m_hwndMain = hwndMain;
 			m_iGenerations = (0);
-			cxClient = (int)hwndMain.Width;
-			cyClient = (int)hwndMain.Height;
+			cxClient = clientWidth;
+			cyClient = clientHeight;
 			dMutationRate = _dMutationRate;
 			dCrossoverRate = _dCrossoverRate;
 			//let's create the mine sweepers
 			for (int i = 0; i < iNumSweepers; ++i)
 			{
-				Sweepers.Add(new CMinesweeper((int)hwndMain.Width, (int)hwndMain.Height, m_SweeperScale, .3));
+				Sweepers.Add(new CMinesweeper(cxClient, cyClient, m_SweeperScale, .3));
 			}
 
 			//get the total number of weights used in the sweepers
@@ -360,7 +358,6 @@ namespace SmartSweeper
 					if (!Sweepers[i].Update(m_vecMines))
 					{
 						//error in processing the neural net
-						//MessageBox(m_hwndMain, "Wrong amount of NN inputs!", "Error", MB_OK);
 
 						return false;
 					}

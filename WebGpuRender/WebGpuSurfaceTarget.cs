@@ -51,6 +51,14 @@ namespace MatterHackers.WebGpuRender
 	/// </summary>
 	public sealed unsafe class WebGpuSurfaceTarget : ISurfaceTarget
 	{
+		/// <summary>
+		/// <c>WGPUSurfaceGetCurrentTextureStatus_Occluded</c>, from wgpu-native's own <c>wgpu.h</c> rather
+		/// than the standard <c>webgpu.h</c> - which is why it is a constant here instead of an enum member:
+		/// the generated binding only covers the standard header. Metal-only, and only when the NSWindow
+		/// reports itself occluded.
+		/// </summary>
+		private const WGPUSurfaceGetCurrentTextureStatus OccludedStatus = (WGPUSurfaceGetCurrentTextureStatus)0x00030001;
+
 		private readonly WebGpuRenderDevice owner;
 		private readonly WGPUPresentMode[] supportedPresentModes;
 		private WGPUSurface surface;
@@ -287,6 +295,19 @@ namespace MatterHackers.WebGpuRender
 					}
 
 					retryWorthwhile = true;
+					return null;
+
+				case OccludedStatus:
+					// wgpu-native's Metal-only extension status: the NSWindow reports itself occluded
+					// (minimized, or fully covered), and asking Metal for a drawable would block for up to a
+					// vsync second. Nothing is wrong and nothing needs reconfiguring - unlike Outdated, a
+					// retry here would just hit the same answer - so the frame is simply skipped. The host
+					// draws it into its scratch target and never presents it.
+					if (!surfaceTexture.texture.IsNull)
+					{
+						wgpuTextureRelease(surfaceTexture.texture);
+					}
+
 					return null;
 
 				default:

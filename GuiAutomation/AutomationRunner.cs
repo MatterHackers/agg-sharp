@@ -89,13 +89,53 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		/// <summary>
-		/// The number of seconds to move the mouse when going to a new position.
+		/// The longest a single mouse move may take, in seconds.
 		/// </summary>
+		/// <remarks>
+		/// This is a ceiling, not a target. A mouse move is paced by the UI thread - each intermediate
+		/// position waits only until the UI has actually taken the move event that was just sent - so on a
+		/// responsive UI a move finishes well inside this budget. It only comes into play when the UI thread
+		/// is busy doing real work, where it stops the runner waiting indefinitely; the queued moves are
+		/// still delivered in order once the UI gets back to its idle pump.
+		/// </remarks>
 		public static double TimeToMoveMouse { get; set; } = .1;
+
+		/// <summary>
+		/// How many intermediate positions a mouse move is broken into.
+		/// </summary>
+		/// <remarks>
+		/// The intermediate <c>OnMouseMove</c> events are load bearing - hover highlighting, drag tracking
+		/// and tooltips all key off seeing the pointer travel rather than teleport - so the count is fixed
+		/// here rather than derived from <see cref="TimeToMoveMouse"/>. It used to be derived, which meant
+		/// that asking for a slower mouse silently asked for a differently shaped gesture as well.
+		/// </remarks>
+		public static int MouseMoveSteps { get; set; } = 5;
 
 		private string imageDirectory;
 
+		/// <summary>
+		/// The longest a simulated mouse button may be held down before it is released, in seconds.
+		/// </summary>
+		/// <remarks>
+		/// Like <see cref="TimeToMoveMouse"/> this is a ceiling rather than a target. What the release
+		/// actually needs is for the press to have reached the widgets, so the hold lasts until the UI thread
+		/// has taken the press and no longer; the ceiling only bounds how long that is waited for.
+		/// </remarks>
 		public static double UpDelaySeconds { get; set; } = .1;
+
+		/// <summary>
+		/// The default ceiling for a single <see cref="WaitForPendingUiWork(int)"/>. The RunOnIdle pump
+		/// ticks every 10ms, so this is 25 pump intervals: long past the point where the UI thread is merely
+		/// idle and into "it is inside real work". Queued input is delivered in order whenever it does come
+		/// back, so waiting longer than this only costs test time.
+		/// </summary>
+		private const int DefaultUiWorkWaitMilliseconds = 250;
+
+		/// <summary>
+		/// The ceiling for the pump wait between polls of the widget tree. Never longer than the fixed 50ms
+		/// sleep this replaced, so a dead pump degrades to exactly the old polling rate rather than stalling.
+		/// </summary>
+		private const int WidgetPollWaitMilliseconds = 50;
 
 		public enum InputType
 		{
@@ -193,7 +233,7 @@ namespace MatterHackers.GuiAutomation
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
 
 				inputSystem.CreateMouseEvent(GetMouseDown(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
-				Delay(UpDelaySeconds);
+				HoldButton();
 				inputSystem.CreateMouseEvent(GetMouseUp(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
 
 				return true;
@@ -252,6 +292,36 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		/// <summary>
+		/// Blocks until the UI thread has run everything that was queued before this call.
+		/// </summary>
+		/// <remarks>
+		/// This is the signal that replaces the fixed sleeps that used to pad simulated input. Simulated
+		/// mouse events are handed to the widgets through <see cref="UiThread.RunOnIdle(Action)"/>, and the
+		/// pump drains that queue in the order it was filled, so a sentinel queued now having run means every
+		/// event queued before it has already been delivered. Waiting on that is both faster than a fixed
+		/// sleep (the pump ticks every 10ms) and more honest than one, which could expire while the UI thread
+		/// was still busy.
+		/// </remarks>
+		/// <param name="maxMilliseconds">How long to wait before giving up and letting the test carry on.</param>
+		/// <returns>True if the UI thread reached the sentinel within the time allowed.</returns>
+		public bool WaitForPendingUiWork(int maxMilliseconds = DefaultUiWorkWaitMilliseconds)
+		{
+			if (maxMilliseconds <= 0)
+			{
+				return false;
+			}
+
+			// Deliberately never disposed. The UI thread can reach the sentinel after this method has given
+			// up on it, and setting a disposed event throws - on the UI thread, where it would surface as a
+			// test failure caused by the waiting rather than by the test. Let the GC collect it instead.
+			var pumped = new ManualResetEventSlim(false);
+
+			UiThread.RunOnIdle(() => pumped.Set());
+
+			return pumped.Wait(maxMilliseconds);
+		}
+
+		/// <summary>
 		/// Wait for the given condition to be satisfied. The check Interval should be nice and short to allow test to
 		/// complete quickly.
 		/// </summary>
@@ -282,16 +352,20 @@ namespace MatterHackers.GuiAutomation
 		/// </summary>
 		/// <param name="checkConditionSatisfied">The condition to wait for</param>
 		/// <param name="maxSeconds">The maximum amount of time to wait</param>
-		/// <param name="checkInterval">The frequency to recheck the condition in milliseconds</param>
+		/// <param name="checkInterval">
+		/// The frequency to recheck the condition in milliseconds. Matches <see cref="StaticDelay"/>'s own
+		/// default: it used to be 200 here, which meant a condition that became true in 5ms still cost the
+		/// test a fifth of a second, multiplied by every wait in every test.
+		/// </param>
 		/// <returns>Returns if the condition was satisfied within maxSeconds</returns>
-		public AutomationRunner WaitFor(Func<bool> checkConditionSatisfied, double maxSeconds = 5, int checkInterval = 200)
+		public AutomationRunner WaitFor(Func<bool> checkConditionSatisfied, double maxSeconds = 5, int checkInterval = 10)
 		{
 			StaticDelay(checkConditionSatisfied, maxSeconds, checkInterval);
 
 			return this;
 		}
 
-		public AutomationRunner Assert(Func<bool> checkConditionSatisfied, string errorResponse, double maxSeconds = 5, int checkInterval = 200)
+		public AutomationRunner Assert(Func<bool> checkConditionSatisfied, string errorResponse, double maxSeconds = 5, int checkInterval = 10)
 		{
 			var satisfied = StaticDelay(checkConditionSatisfied, maxSeconds, checkInterval);
 
@@ -891,7 +965,7 @@ namespace MatterHackers.GuiAutomation
 				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 2, 0);
 			}
 
-			Delay(UpDelaySeconds);
+			HoldButton();
 
 			inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 
@@ -947,7 +1021,7 @@ namespace MatterHackers.GuiAutomation
 			{
 				// Same authentic double-click shape as ClickWidget: two full press/release pairs,
 				// the second down carrying the click count of 2.
-				Delay(UpDelaySeconds);
+				HoldButton();
 				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
 				WaitforDraw(containingWindow);
 
@@ -955,7 +1029,7 @@ namespace MatterHackers.GuiAutomation
 				WaitforDraw(containingWindow);
 			}
 
-			Delay(UpDelaySeconds);
+			HoldButton();
 
 			inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
 
@@ -1186,14 +1260,15 @@ namespace MatterHackers.GuiAutomation
 			RectangleDouble childBounds = widget.TransformToParentSpace(containingWindow, widget.LocalBounds);
 			screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
 
-			int steps = (int)(TimeToMoveMouse * 1000 / 20);
 			var start = new Vector2(CurrentMousePosition().x, CurrentMousePosition().y);
 			if (origin == ClickOrigin.Center)
 			{
 				offset += offsetHint;
 			}
 
-			for (int i = 0; i < steps; i++)
+			var moveTimer = Stopwatch.StartNew();
+
+			for (int i = 0; i < MouseMoveSteps; i++)
 			{
 				childBounds = widget.TransformToParentSpace(containingWindow, widget.LocalBounds);
 
@@ -1202,14 +1277,49 @@ namespace MatterHackers.GuiAutomation
 				var end = new Vector2(screenPosition.x, screenPosition.y);
 				Vector2 delta = end - start;
 
-				double ratio = i / (double)steps;
+				double ratio = i / (double)MouseMoveSteps;
 				ratio = Cubic.Out(ratio);
 				Vector2 current = start + delta * ratio;
 				inputSystem.SetCursorPosition((int)current.X, (int)current.Y);
-				Thread.Sleep(20);
+				PaceMouseMove(moveTimer);
 			}
 
 			inputSystem.SetCursorPosition(screenPosition.x, screenPosition.y);
+		}
+
+		/// <summary>
+		/// Waits between the steps of an interpolated mouse move.
+		/// </summary>
+		/// <remarks>
+		/// The position that was just sent is queued for the UI thread, so what the next step actually needs
+		/// is for the UI to have taken it - not for a fixed slice of the clock to pass. This used to be a
+		/// flat 20ms sleep per step, which made every mouse move cost the same 100ms whether the UI was idle
+		/// or hadn't finished the previous move yet. <see cref="TimeToMoveMouse"/> caps the whole move so a
+		/// UI that is busy inside real work cannot stall the test; the moves queued behind it still arrive
+		/// in order once its pump runs again.
+		/// </remarks>
+		/// <param name="moveTimer">Running since the first step of this move, so the cap covers the move as a whole.</param>
+		private void PaceMouseMove(Stopwatch moveTimer)
+		{
+			int remainingMilliseconds = (int)((TimeToMoveMouse * 1000) - moveTimer.Elapsed.TotalMilliseconds);
+
+			WaitForPendingUiWork(remainingMilliseconds);
+		}
+
+		/// <summary>
+		/// Holds a simulated mouse button down between the press and the release.
+		/// </summary>
+		/// <remarks>
+		/// The press is queued for the UI thread, and the only thing the release actually depends on is the
+		/// press having got there - a widget that sees them in one batch has no press to match the release
+		/// against. So the hold waits for the UI thread rather than sleeping <see cref="UpDelaySeconds"/>
+		/// flat, which cost every click a tenth of a second whether the UI was ready in 2ms or not ready at
+		/// all. Where the caller has already waited for a draw the press is long since delivered and this
+		/// returns immediately.
+		/// </remarks>
+		private void HoldButton()
+		{
+			WaitForPendingUiWork((int)(UpDelaySeconds * 1000));
 		}
 
 		public void SetMouseCursorPosition(SystemWindow systemWindow, int x, int y)
@@ -1224,14 +1334,15 @@ namespace MatterHackers.GuiAutomation
 			var end = new Vector2(x, y);
 			Vector2 delta = end - start;
 
-			int steps = (int)(TimeToMoveMouse * 1000 / 20);
-			for (int i = 0; i < steps; i++)
+			var moveTimer = Stopwatch.StartNew();
+
+			for (int i = 0; i < MouseMoveSteps; i++)
 			{
-				double ratio = i / (double)steps;
+				double ratio = i / (double)MouseMoveSteps;
 				ratio = Cubic.Out(ratio);
 				Vector2 current = start + delta * ratio;
 				inputSystem.SetCursorPosition((int)current.X, (int)current.Y);
-				Thread.Sleep(20);
+				PaceMouseMove(moveTimer);
 			}
 
 			inputSystem.SetCursorPosition((int)end.X, (int)end.Y);
@@ -1375,7 +1486,10 @@ namespace MatterHackers.GuiAutomation
 				while (!NamedWidgetExists(widgetName, null, onlyVisible, predicate)
 					&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 				{
-					Delay(.05);
+					// The widget tree only changes on the UI thread, so asking again before it has run again
+					// can only give the same answer. Waiting on its pump rechecks the moment there is
+					// something new to see, instead of on a fixed 50ms tick.
+					WaitForPendingUiWork(WidgetPollWaitMilliseconds);
 				}
 
 				if (timeWaited.Elapsed.TotalSeconds > secondsToWait)
@@ -1401,7 +1515,9 @@ namespace MatterHackers.GuiAutomation
 			while (NamedWidgetExists(widgetName)
 				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 			{
-				Delay(.05);
+				// Waiting on the UI thread's queue rather than the clock - the widget can only go away as a
+				// result of UI thread work, so that is the only thing worth waiting for.
+				WaitForPendingUiWork(WidgetPollWaitMilliseconds);
 			}
 
 			if (timeWaited.Elapsed.TotalSeconds > secondsToWait)
@@ -1423,7 +1539,8 @@ namespace MatterHackers.GuiAutomation
 			while (!NamedWidgetExists(widgetName)
 				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 			{
-				Delay(.05);
+				// Same reasoning as WaitForName - the tree only moves when the UI thread does.
+				WaitForPendingUiWork(WidgetPollWaitMilliseconds);
 			}
 
 			widget = this.GetWidgetByName(widgetName, out SystemWindow _);

@@ -29,6 +29,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Tests.TestingInfrastructure;
 using MatterHackers.WebGpu;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
@@ -102,7 +103,7 @@ fn fs_main() -> @location(0) vec4<f32>
 			Console.WriteLine($"wgpu triangle written to {pngPath}");
 
 			await Assert.That(uncapturedError).IsNull();
-			await Assert.That(backend).IsEqualTo(WGPUBackendType.D3D12);
+			await Assert.That(backend).IsEqualTo(TestRenderBackend.Native);
 			await Assert.That(File.Exists(pngPath)).IsTrue();
 
 			// The corner is well outside the triangle and the centre is well inside it, so neither
@@ -135,7 +136,7 @@ fn fs_main() -> @location(0) vec4<f32>
 
 			try
 			{
-				WGPUAdapter adapter = RequestAdapter(instance, WGPUBackendType.D3D12);
+				WGPUAdapter adapter = RequestAdapter(instance, TestRenderBackend.Native);
 				try
 				{
 					var info = default(WGPUAdapterInfo);

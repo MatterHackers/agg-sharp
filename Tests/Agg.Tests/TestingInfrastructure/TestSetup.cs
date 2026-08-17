@@ -54,8 +54,15 @@ namespace MatterHackers.Agg.Tests.TestingInfrastructure
                 try
                 {
                     // Initialize the input method for automation testing
+#if WINDOWS
                     AutomationRunner.InputMethod = new WindowsInputMethods();
-                    
+#else
+                    // No native input method exists off Windows. Harmless: AutomationRunner's constructor
+                    // only honours OverrideInputSystem and otherwise always builds an AggInputMethods, so
+                    // this value never reaches the input path - see AutomationRunner(IInputMethod, ...).
+                    AutomationRunner.InputMethod = null;
+#endif
+
                     // Set up automation runner defaults
                     AutomationRunner.DrawSimulatedMouse = true;
                     

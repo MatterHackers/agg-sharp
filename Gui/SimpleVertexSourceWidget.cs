@@ -82,7 +82,35 @@ namespace MatterHackers.Agg.UI
 
 		public abstract int num_paths();
 
-		public abstract IEnumerable<VertexData> Vertices();
+		/// <summary>
+		/// The path <see cref="Vertices"/> walks. These controls are multi-path vertex sources
+		/// (background, border, curve, handles, ...) and every renderer asks for one path at a time,
+		/// so <see cref="OnDraw"/> records which one is being drawn before it hands itself over.
+		/// </summary>
+		protected int CurrentPathIndex { get; private set; }
+
+		/// <summary>
+		/// Adapts the legacy Rewind/Vertex pull pair into the enumeration the renderers actually use.
+		/// <para>
+		/// This is not optional plumbing: the GPU renderer walks <c>Vertices()</c> twice per shape, once
+		/// to hash the geometry for its display list cache and once to feed the tesselator, so a control
+		/// that leaves this unimplemented cannot draw at all. Subclasses that build their geometry
+		/// procedurally through Rewind/Vertex get a working implementation for free; ones that already
+		/// hold a real vertex source should override with something cheaper.
+		/// </para>
+		/// </summary>
+		public virtual IEnumerable<VertexData> Vertices()
+		{
+			Rewind(CurrentPathIndex);
+
+			FlagsAndCommand command;
+			do
+			{
+				command = Vertex(out double x, out double y);
+				yield return new VertexData(command, new Vector2(x, y));
+			}
+			while (!ShapePath.IsStop(command));
+		}
 
 		public abstract void Rewind(int path_id);
 
@@ -107,6 +135,9 @@ namespace MatterHackers.Agg.UI
 		{
 			for (int i = 0; i < num_paths(); i++)
 			{
+				// Render pulls Vertices() rather than taking a path id, so the index has to be handed
+				// over out of band or every path would come back as path 0.
+				CurrentPathIndex = i;
 				graphics2D.Render(this, color(i).ToColor());
 			}
 			base.OnDraw(graphics2D);

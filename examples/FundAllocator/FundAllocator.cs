@@ -252,7 +252,7 @@ Green,11.63,Boat
             var demoWidget = new FundAllocator();
 
             var systemWindow = new SystemWindow(1600, 900);
-            AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.OpenGLWinformsWindowProvider, agg_platform_win32";
+            // No provider is named here on purpose: AggContext already picks the right host per OS.
             systemWindow.Title = demoWidget.Title;
             systemWindow.AddChild(demoWidget);
             systemWindow.ShowAsSystemWindow();

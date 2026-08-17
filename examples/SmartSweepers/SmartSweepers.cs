@@ -26,20 +26,22 @@ namespace SmartSweeper
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			ImageBuffer widgetsSubImage = ImageBuffer.NewSubImageReference(graphics2D.DestImage, graphics2D.GetClippingRect());
-
-			IImageByte backBuffer = widgetsSubImage;
-
 			if (firstTime)
 			{
 				firstTime = false;
 				m_SuperFast = new MatterHackers.Agg.UI.CheckBox(10, 10, "Run Super Fast");
 				AddChild(m_SuperFast);
-				m_Controller = new CController(backBuffer, 30, 40, .1, .7, .3, 4, 1, 2000);
+
+				// The controller only ever wanted the play field size. It used to be handed a sub image of
+				// Graphics2D.DestImage and read Width/Height off that, which on a GPU surface forced a
+				// full screen CPU layer to be allocated and composited every frame for no picture at all.
+				m_Controller = new CController((int)Width, (int)Height, 30, 40, .1, .7, .3, 4, 1, 2000);
 			}
 
 			graphics2D.Clear(new ColorF(1, 1, 1, 1));
-			graphics2D.Rasterizer.SetVectorClipBox(0, 0, (int)Width, (int)Height);
+
+			// No SetVectorClipBox here: a GPU Graphics2D has no ScanlineRasterizer, and the widget's own
+			// clipping rectangle already bounds what this draws.
 			m_Controller.FastRender(m_SuperFast.Checked);
 			m_Controller.Render(graphics2D);
 			//m_SuperFast.Render(graphics2D);

@@ -28,6 +28,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Tests.TestingInfrastructure;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -45,16 +46,23 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 	/// when there is evidence a difference is unavoidable, and say why at the call site.
 	/// <para>
 	/// <b>Regenerating.</b> Set <c>AGG_REGEN_GOLDENS=1</c> and run the suite: every check writes its render
-	/// to <c>TestData\GoldenImages</c> instead of comparing, and reports what it wrote. Every check also
-	/// <i>fails</i>, deliberately: nothing was verified, and a leaked environment variable must not be
-	/// able to turn the suite into a green no-op. Then run again <i>without</i> the variable - a suite
-	/// whose goldens do not reproduce on the machine that captured them is measuring noise, and every
-	/// later parity check inherits that noise.
+	/// to this run's backend folder under <c>TestData\GoldenImages</c> instead of comparing, and reports
+	/// what it wrote. Every check also <i>fails</i>, deliberately: nothing was verified, and a leaked
+	/// environment variable must not be able to turn the suite into a green no-op. Then run again
+	/// <i>without</i> the variable - a suite whose goldens do not reproduce on the machine that captured
+	/// them is measuring noise, and every later parity check inherits that noise.
 	/// </para>
 	/// <para>
-	/// <b>Goldens are GPU specific.</b> They are captured from real hardware through wgpu, and rasterization
-	/// and filtering differ between vendors and driver versions. A mismatch on a different machine is
-	/// expected and is not by itself a regression - see the failure artifacts before concluding anything.
+	/// <b>Goldens are GPU specific, so there is a set per backend</b> -
+	/// <c>TestData\GoldenImages\d3d12</c>, <c>...\metal</c>, <c>...\vulkan</c>, named by
+	/// <see cref="TestRenderBackend.NativeGoldenFolderName"/> and chosen by the OS this run is on.
+	/// Rasterization tie-breaking differs between backends, vendors and driver versions: the Metal set
+	/// differs from the D3D12 set on 26 of 28 images, and every one of those differences is a
+	/// one-or-two-level antialiasing edge, not a difference in geometry, layout or colour. Keeping the
+	/// sets apart is what lets the tolerance stay at zero, which is the only setting under which a real
+	/// one-pixel regression is still visible. A mismatch inside a set is therefore a regression to
+	/// investigate, not cross-machine noise to wave through - though the same caveat still applies within
+	/// a backend across GPU vendors and drivers, so see the failure artifacts before concluding anything.
 	/// </para>
 	/// </remarks>
 	public static class GoldenImage
@@ -112,12 +120,18 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 
 			if (!File.Exists(goldenPath))
 			{
+				// A missing golden fails rather than being captured on the spot: an auto-created golden is a
+				// test that agrees with whatever it just rendered, and on a backend nobody has baselined yet
+				// that is exactly when the render is least trustworthy.
 				string capturedPath = WriteFailureArtifact(rendered, goldenName, "actual");
 				bool goldenExists = File.Exists(goldenPath);
 				await Assert.That(goldenExists).IsTrue().Because(
-					$"there is no golden for '{goldenName}'. Expected '{goldenPath}'. What this run rendered is at"
-					+ $" '{capturedPath}' - check it, then re-run with {RegenerateEnvironmentVariable}=1 to capture"
-					+ " the suite and commit the PNGs.");
+					$"there is no '{TestRenderBackend.NativeGoldenFolderName}' golden for '{goldenName}'."
+					+ $" Expected '{goldenPath}'. What this run rendered is at '{capturedPath}' - check it against"
+					+ $" the same golden in another backend's folder under '{GoldenRootDirectory()}', confirm the"
+					+ " difference is rasterization and not a rendering bug, then re-run with"
+					+ $" {RegenerateEnvironmentVariable}=1 to capture the"
+					+ $" '{TestRenderBackend.NativeGoldenFolderName}' set and commit the PNGs.");
 				return;
 			}
 
@@ -344,8 +358,16 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		private static string FailureDirectory() => Path.Combine(AppContext.BaseDirectory, FailureFolderName);
 
 		/// <summary>
-		/// Finds <c>TestData\GoldenImages</c> in the source tree, falling back to a folder beside the test
-		/// binary only when there is no tree to find.
+		/// The golden set this run is judged against: the
+		/// <see cref="TestRenderBackend.NativeGoldenFolderName"/> folder inside
+		/// <see cref="GoldenRootDirectory"/>.
+		/// </summary>
+		public static string GoldenDirectory()
+			=> Path.Combine(GoldenRootDirectory(), TestRenderBackend.NativeGoldenFolderName);
+
+		/// <summary>
+		/// Finds <c>TestData\GoldenImages</c> in the source tree - the folder holding one subfolder per
+		/// backend - falling back to a folder beside the test binary only when there is no tree to find.
 		/// </summary>
 		/// <remarks>
 		/// Preferring the tree is <c>AggDrawingTests.ControlImageDirectory</c>'s choice for its reason: the
@@ -353,8 +375,13 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		/// <c>PreserveNewest</c> copy that did not happen would leave that stale copy shadowing the
 		/// checked-in ones - tests passing against images nobody can see in a diff. The extra probe for the
 		/// solution file exists because regenerating has to be able to create the folder the first time.
+		/// <para>
+		/// The probe looks for the shared root rather than for this run's backend folder on purpose: on a
+		/// backend nobody has baselined yet that folder does not exist, and falling through to <c>bin\</c>
+		/// would hide the checked-in tree from the one run that is meant to populate it.
+		/// </para>
 		/// </remarks>
-		public static string GoldenDirectory()
+		public static string GoldenRootDirectory()
 		{
 			lock (locateLock)
 			{

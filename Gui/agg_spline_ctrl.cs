@@ -315,11 +315,6 @@ namespace MatterHackers.Agg.UI
 			return 5;
 		}
 
-		public override IEnumerable<VertexData> Vertices()
-		{
-			throw new NotImplementedException();
-		}
-
 		public override void Rewind(int idx)
 		{
 			m_idx = idx;

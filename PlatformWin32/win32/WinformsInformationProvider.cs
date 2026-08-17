@@ -75,10 +75,22 @@ namespace MatterHackers.Agg.Platform
 
 			var size = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Size;
 			this.DesktopSize = new Point2D(size.Width, size.Height);
+			this.DisplayScale = ReadSystemDisplayScale();
 		}
 
 		public OSType OperatingSystem { get; }
 		public Point2D DesktopSize { get; }
+
+		/// <summary>
+		/// The system display scaling factor: 1 at 100%, 1.25 at 125%, 1.5 at 150%, 2 at 200%.
+		/// </summary>
+		/// <remarks>
+		/// <c>GetDpiForSystem</c> reports the primary monitor's DPI, but only to a process that has declared
+		/// itself DPI aware - an unaware process is told 96 and shown a bitmap-scaled window instead. So a
+		/// host that wants this to be true must set its DPI awareness before <c>AggContext.OsInformation</c>
+		/// is first read. Read once at construction, matching <see cref="DesktopSize"/>.
+		/// </remarks>
+		public double DisplayScale { get; }
 
 		public long PhysicalMemory
 		{
@@ -88,6 +100,26 @@ namespace MatterHackers.Agg.Platform
 				return (long)computerInfo.TotalPhysicalMemory;
 			}
 		}
+
+		private static double ReadSystemDisplayScale()
+		{
+			try
+			{
+				uint dpi = GetDpiForSystem();
+
+				// 96 is the "one device pixel per point" baseline every Windows DPI is expressed against.
+				return dpi > 0 ? dpi / 96.0 : 1;
+			}
+			catch (EntryPointNotFoundException)
+			{
+				// Pre-1607 Windows has no GetDpiForSystem. Nothing is lost - that is also a Windows with no
+				// per-monitor scaling worth reporting.
+				return 1;
+			}
+		}
+
+		[DllImport("user32.dll")]
+		private static extern uint GetDpiForSystem();
 
 		private OSType GetOSType()
 		{

@@ -684,9 +684,11 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 				SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
 				await Assert.That(textEdit.Selection == $"{second}{sep}").IsTrue();
 
-				// if this fails add
-				// GuiHalWidget.SetClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
-				// before you call the unit tests
+				// Copy and paste go through whatever clipboard the process installed, and this test must not
+				// leave the real one holding its scratch text - so it swaps in a simulated one and puts back
+				// exactly what was there. Restoring by name (WindowsFormsClipboard) instead only worked on
+				// the one platform that has that type.
+				var installedClipboard = Clipboard.Instance;
 				Clipboard.SetSystemClipboard(new SimulatedClipboard());
 
 				SendKey(Keys.Control | Keys.C, 'c', container);
@@ -695,8 +697,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 				SendKeyDown(Keys.Right, container); // move to the right
 				SendKey(Keys.Control | Keys.V, 'v', container);
 				await Assert.That(textEdit.Text == $"{second}{sep}{second}{sep}{third}").IsTrue();
-            
-				Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
+
+				Clipboard.SetSystemClipboard(installedClipboard);
             }
 
             async Task CheckChar(string sep)

@@ -33,8 +33,8 @@ When a bug is reported, always follow this workflow:
 
 ## Project Context
 
-- **Language:** C# (.NET 8.0)
-- **Test Framework:** TUnit (v0.57.24)
+- **Language:** C# (.NET 10.0)
+- **Test Framework:** TUnit (v1.56.35)
 - **Build:** `dotnet build`
 - **Test:** `dotnet test` or run the test executable directly
 - **Solution:** `agg-sharp.sln`

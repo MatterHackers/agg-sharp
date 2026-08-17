@@ -179,7 +179,10 @@ namespace MatterHackers.VectorMath.Tests
 			await Assert.That(world.GetScreenPosition(new Vector3(0, 0, 0)).Equals(new Vector2((567 - 200) / 2.0, 123 / 2.0), 1e-3)).IsTrue();
 			await Assert.That(world.NearZ).IsEqualTo(5);
 			await Assert.That(world.FarZ).IsEqualTo(55);
-			await Assert.That(world.NearPlaneHeightInViewspace).IsEqualTo(4.14213562373095);
+			// 10 * (sqrt(2) - 1), reached through Math.Tan. The last bit of that is the C runtime's, not
+			// ours: x64 answers the double nearest 4.14213562373095 and arm64 the one nearest
+			// 4.142135623730951, one ulp apart. The value is what is being tested, not the rounding.
+			await Assert.That(world.NearPlaneHeightInViewspace).IsEqualTo(4.14213562373095).Within(1e-9);
 			var ray = world.GetRayForLocalBounds(new Vector2((567 - 200) / 2.0, 123)); // top center
 			await Assert.That(MathHelper.RadiansToDegrees(Math.Atan2(ray.directionNormal.Y, -ray.directionNormal.Z))).IsEqualTo(WorldView.DefaultPerspectiveVFOVDegrees / 2);
 			await Assert.That((Vector3.UnitZ * 7).Equals(ray.origin, 1e-3)).IsTrue();

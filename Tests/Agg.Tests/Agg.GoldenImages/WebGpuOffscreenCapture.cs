@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Tests.TestingInfrastructure;
 using MatterHackers.RenderCore;
 using MatterHackers.RenderGl;
 using MatterHackers.RenderGl.Compat;
@@ -52,8 +53,9 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 	/// that could hide a channel bug.
 	/// </para>
 	/// <para>
-	/// D3D12 is requested explicitly, exactly as the wgpu unit-test harness does: a machine that silently
-	/// picked Vulkan would turn "wrong backend" into an unexplained pixel diff.
+	/// The backend is named explicitly (<see cref="TestRenderBackend.Native"/>), exactly as the wgpu
+	/// unit-test harness does: a machine that silently picked a different backend would turn "wrong
+	/// backend" into an unexplained pixel diff.
 	/// </para>
 	/// </remarks>
 	public sealed class WebGpuOffscreenCapture : IDisposable
@@ -79,7 +81,7 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 			// capture makes its own), and the readers only notice through this generation bump.
 			Graphics2DGpu.InvalidateGlCaches();
 
-			device = new WebGpuRenderDevice(false, WGPUBackendType.D3D12, "WebGpuOffscreenCapture");
+			device = new WebGpuRenderDevice(false, TestRenderBackend.Native, "WebGpuOffscreenCapture");
 
 			try
 			{

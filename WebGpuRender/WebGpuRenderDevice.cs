@@ -47,8 +47,10 @@ namespace MatterHackers.WebGpuRender
 	/// recycles on submit; the device's job is to stay out of the way of that.
 	/// </para>
 	/// <para>
-	/// <b>Windows too.</b> <see cref="CreateSurfaceTarget"/> makes a swapchain from an HWND and
-	/// <see cref="Present"/> presents it. What is still Phase 4's is <em>recovery</em>: a lost device is
+	/// <b>On-screen too.</b> <see cref="CreateSurfaceTarget(WindowSurfaceRequest)"/> makes a swapchain from
+	/// a native drawable - an HWND on Windows, a <c>CAMetalLayer</c> on macOS - and <see cref="Present"/>
+	/// presents it. Which of those is used is a runtime decision, not a build-time one: this assembly is
+	/// built once for all platforms. What is still Phase 4's is <em>recovery</em>: a lost device is
 	/// recorded (<see cref="DeviceLostMessage"/>) and then reported as a clear failure, not repaired.
 	/// </para>
 	/// <para>
@@ -115,8 +117,8 @@ namespace MatterHackers.WebGpuRender
 		/// <param name="label">Optional debug label carried into wgpu's validation messages.</param>
 		/// <exception cref="InvalidOperationException">The instance, adapter or device could not be created.</exception>
 		/// <param name="windowSurface">
-		/// The window this device will present to, or null for an offscreen device. Supplied here rather
-		/// than through <see cref="CreateSurfaceTarget"/> so the surface exists <i>before</i> the adapter is
+		/// The native drawable this device will present to, or null for an offscreen device. Supplied here
+		/// rather than through <see cref="CreateSurfaceTarget(WindowSurfaceRequest)"/> so the surface exists <i>before</i> the adapter is
 		/// requested and can be passed as <c>compatibleSurface</c>: without it wgpu may hand back an adapter
 		/// that cannot present to the window at all (a hybrid laptop's discrete GPU with the display wired
 		/// to the integrated one), which surfaces much later as a swapchain that will not configure.
@@ -749,7 +751,7 @@ namespace MatterHackers.WebGpuRender
 		}
 
 		/// <summary>
-		/// Creates a swapchain for a native window. The surface is configured immediately, so the caller
+		/// Creates a swapchain for a native drawable. The surface is configured immediately, so the caller
 		/// can acquire a texture from it on the very next frame.
 		/// <para>
 		/// The colour format is the swapchain's preferred one unless the window can have
@@ -758,22 +760,44 @@ namespace MatterHackers.WebGpuRender
 		/// golden images the same pixels rather than nearly the same.
 		/// </para>
 		/// </summary>
-		/// <param name="windowHandle">The native window handle (HWND on Windows).</param>
-		/// <param name="moduleHandle">The module instance (HINSTANCE), or zero.</param>
+		/// <param name="nativeSurfaceHandle">
+		/// The platform's native surface handle: an HWND on Windows, a <c>CAMetalLayer*</c> on macOS. See
+		/// <see cref="WindowSurfaceRequest"/>.
+		/// </param>
+		/// <param name="moduleHandle">The module instance (HINSTANCE), or zero. Windows only.</param>
 		/// <param name="width">Initial swapchain width in pixels.</param>
 		/// <param name="height">Initial swapchain height in pixels.</param>
 		/// <param name="label">Optional debug label.</param>
 		/// <exception cref="InvalidOperationException">The surface could not be created or reports no usable format.</exception>
+		/// <exception cref="PlatformNotSupportedException">This OS has no surface source implemented yet.</exception>
 		public WebGpuSurfaceTarget CreateSurfaceTarget(
-			IntPtr windowHandle,
+			IntPtr nativeSurfaceHandle,
 			IntPtr moduleHandle,
 			uint width,
 			uint height,
 			string label = null)
 		{
+			return this.CreateSurfaceTarget(new WindowSurfaceRequest(nativeSurfaceHandle, moduleHandle, width, height, label));
+		}
+
+		/// <summary>
+		/// Creates a swapchain for an already-described native drawable. This is the overload window hosts
+		/// should prefer: built through <see cref="WindowSurfaceRequest.ForMetalLayer"/> or
+		/// <see cref="WindowSurfaceRequest.ForWindowsHwnd"/>, the call site says which kind of handle it is
+		/// holding instead of leaving two bare <see cref="IntPtr"/>s to be read the wrong way.
+		/// </summary>
+		/// <param name="request">The native drawable to make a surface over.</param>
+		/// <exception cref="InvalidOperationException">The surface could not be created or reports no usable format.</exception>
+		/// <exception cref="PlatformNotSupportedException">This OS has no surface source implemented yet.</exception>
+		public WebGpuSurfaceTarget CreateSurfaceTarget(WindowSurfaceRequest request)
+		{
+			if (request == null)
+			{
+				throw new ArgumentNullException(nameof(request));
+			}
+
 			this.ThrowIfDisposed();
 
-			var request = new WindowSurfaceRequest(windowHandle, moduleHandle, width, height, label);
 			WGPUSurface surface = CreateRawSurface(this.instance, request);
 
 			try
@@ -788,37 +812,81 @@ namespace MatterHackers.WebGpuRender
 		}
 
 		/// <summary>
-		/// Makes the raw <c>WGPUSurface</c> for a window. Static and instance-free because it has to run
+		/// Makes the raw <c>WGPUSurface</c> for a native drawable. Static and instance-free because it has to run
 		/// before the adapter exists (the surface is the adapter request's <c>compatibleSurface</c>).
 		/// </summary>
 		/// <param name="instance">The wgpu instance.</param>
-		/// <param name="request">The window to make a surface over.</param>
+		/// <param name="request">The native drawable to make a surface over.</param>
+		/// <exception cref="PlatformNotSupportedException">
+		/// The OS has no surface source wired up here yet (Linux/X11/Wayland is Phase 8).
+		/// </exception>
 		private static WGPUSurface CreateRawSurface(WGPUInstance instance, WindowSurfaceRequest request)
 		{
-			if (request.WindowHandle == IntPtr.Zero)
+			if (request.NativeSurfaceHandle == IntPtr.Zero)
 			{
-				throw new ArgumentException("A surface needs a native window handle.", nameof(request));
+				throw new ArgumentException("A surface needs a native surface handle.", nameof(request));
 			}
 
-			var windowsSource = new WGPUSurfaceSourceWindowsHWND
+			// The chained source struct is the one genuinely per-OS thing left in this backend, and the
+			// branch is deliberately a runtime check: these assemblies are built once as cross-platform
+			// net10.0 and shipped to every OS, so a #if would bake in whichever machine did the build.
+			// Both branches take the address of a local, so both stack-allocate the source in this frame
+			// and pass it while it is still alive - wgpu copies out of the descriptor during the call.
+			if (OperatingSystem.IsWindows())
 			{
-				chain = new WGPUChainedStruct { sType = WGPUSType.SurfaceSourceWindowsHWND },
-				hinstance = (void*)request.ModuleHandle,
-				hwnd = (void*)request.WindowHandle,
-			};
+				var windowsSource = new WGPUSurfaceSourceWindowsHWND
+				{
+					chain = new WGPUChainedStruct { sType = WGPUSType.SurfaceSourceWindowsHWND },
+					hinstance = (void*)request.ModuleHandle,
+					hwnd = (void*)request.NativeSurfaceHandle,
+				};
 
-			using (var labelText = new Utf8Buffer(request.Label))
+				return CreateSurfaceFromSource(instance, (WGPUChainedStruct*)&windowsSource, request.Label);
+			}
+
+			if (OperatingSystem.IsMacOS())
+			{
+				// wgpu wants the CAMetalLayer itself, not the NSWindow or NSView that owns it: it calls
+				// nextDrawable on this pointer directly and does no unwrapping, so handing it a view here
+				// is not a validation error, it is a crash inside Metal.
+				var metalSource = new WGPUSurfaceSourceMetalLayer
+				{
+					chain = new WGPUChainedStruct { sType = WGPUSType.SurfaceSourceMetalLayer },
+					layer = (void*)request.NativeSurfaceHandle,
+				};
+
+				return CreateSurfaceFromSource(instance, (WGPUChainedStruct*)&metalSource, request.Label);
+			}
+
+			throw new PlatformNotSupportedException(
+				$"No wgpu surface source is implemented for {RuntimeInformation.OSDescription}. "
+				+ "Windows (HWND) and macOS (CAMetalLayer) can present; X11/Wayland is not wired up yet.");
+		}
+
+		/// <summary>
+		/// Shared tail of <see cref="CreateRawSurface"/>: wraps a platform surface source in a descriptor
+		/// and creates the surface.
+		/// </summary>
+		/// <param name="instance">The wgpu instance.</param>
+		/// <param name="source">
+		/// The platform surface source (a <c>WGPUSurfaceSource*</c> cast to its chain head). Must stay alive
+		/// for the duration of the call, which is why the caller keeps it on its own stack frame.
+		/// </param>
+		/// <param name="label">Optional debug label.</param>
+		private static WGPUSurface CreateSurfaceFromSource(WGPUInstance instance, WGPUChainedStruct* source, string label)
+		{
+			using (var labelText = new Utf8Buffer(label))
 			{
 				var descriptor = new WGPUSurfaceDescriptor
 				{
-					nextInChain = (WGPUChainedStruct*)&windowsSource,
+					nextInChain = source,
 					label = labelText.View,
 				};
 
 				WGPUSurface surface = wgpuInstanceCreateSurface(instance, &descriptor);
 				if (surface.IsNull)
 				{
-					throw new InvalidOperationException("wgpuInstanceCreateSurface returned null for the window handle.");
+					throw new InvalidOperationException("wgpuInstanceCreateSurface returned null for the native surface handle.");
 				}
 
 				return surface;
@@ -841,7 +909,7 @@ namespace MatterHackers.WebGpuRender
 		/// Submits anything still recorded and presents the surface's acquired frame
 		/// (<c>wgpuSurfacePresent</c>), releasing that frame's texture.
 		/// </summary>
-		/// <param name="target">A surface created by <see cref="CreateSurfaceTarget"/> on this device.</param>
+		/// <param name="target">A surface created by <see cref="CreateSurfaceTarget(WindowSurfaceRequest)"/> on this device.</param>
 		/// <exception cref="InvalidOperationException">A render pass is open - end it first.</exception>
 		/// <exception cref="ArgumentException">The surface came from another device.</exception>
 		public void Present(ISurfaceTarget target)
@@ -1261,7 +1329,7 @@ namespace MatterHackers.WebGpuRender
 
 		/// <summary>
 		/// Reads the surface's capabilities and picks the format and usage to configure it with. Bgra8 is
-		/// preferred when supported (see <see cref="CreateSurfaceTarget"/>); CopySrc is requested when the
+		/// preferred when supported (see <see cref="CreateSurfaceTarget(WindowSurfaceRequest)"/>); CopySrc is requested when the
 		/// surface allows it, which is what makes a screenshot of the live window possible at all.
 		/// </summary>
 		/// <param name="surface">The surface to query.</param>

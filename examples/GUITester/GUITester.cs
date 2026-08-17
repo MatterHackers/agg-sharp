@@ -50,6 +50,8 @@ namespace MatterHackers.Agg
 			mainNavigationTabControl.AddTab(new SliderControlsPage(), "SliderControlsPage");
 			mainNavigationTabControl.AddTab(new TabPage(new FontInfoWidget(), "Fonts"), "Fonts");
 			mainNavigationTabControl.AddTab(new TabPage(new FontHintWidget(), "Font Hinting"), "Font Hinting");
+#if WINDOWS
+			// AForge captures through DirectShow, so this page only exists in the Windows build.
 			try
 			{
 				mainNavigationTabControl.AddTab(new TabPage(new WebCamWidget(), "Web Cam"), "WebCam");
@@ -61,6 +63,7 @@ namespace MatterHackers.Agg
 				// a window ever opens. One unavailable page is not worth the other twenty.
 				Console.WriteLine($"GUITester: skipping the Web Cam page ({ex.Message})");
 			}
+#endif
 #endif
 			this.AddChild(mainNavigationTabControl);
 
@@ -96,7 +99,13 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
+			// The clipboard implementation lives in the platform assembly, and the two do not share a type
+			// name, so this is one of the few spots a demo has to know which OS it was built for.
+#if WINDOWS
 			Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
+#else
+			Clipboard.SetSystemClipboard(new MacClipboard());
+#endif
 
 			var demoWidget = new GuiTester();
 

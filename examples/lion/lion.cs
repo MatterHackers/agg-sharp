@@ -164,10 +164,9 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			// The default already resolves to this; naming it keeps the demo running on the wgpu host even
-			// if an out-of-tree config file has a stale provider in it.
-			AggContext.Config.ProviderTypes.SystemWindowProvider = "MatterHackers.Agg.UI.WebGpuWinformsWindowProvider, agg_platform_win32";
-
+			// No provider is named here on purpose: AggContext already picks the right host per OS
+			// (agg_platform_win32 on Windows, agg_platform_mac on macOS), and hardcoding one here would
+			// pin the demo to a single platform.
 			var demoWidget = new Lion();
 
 			var systemWindow = new SystemWindow(512, 400);

@@ -242,8 +242,10 @@ namespace MatterHackers.Agg.UI
 		/// <para>
 		/// The override deliberately beats code that assigned the config value (several demos hard-code
 		/// theirs), because its whole purpose is running an unmodified demo on a chosen host. It
-		/// understands the short name <c>webgpu</c>, and passes anything else through as a fully qualified
-		/// type name so an out-of-tree provider can be named too.
+		/// understands the short names <c>webgpu</c> (the WinForms host) and <c>mac</c> (the AppKit host),
+		/// and passes anything else through as a fully qualified type name so an out-of-tree provider can be
+		/// named too. Neither short name is normally needed - the per-OS default in
+		/// <c>AggContext.Config.ProviderTypes</c> already resolves to the right one.
 		/// </para>
 		/// <para>
 		/// <c>bitmap</c> and <c>d3d11</c> were the other two short names. Both backends are deleted -
@@ -266,6 +268,9 @@ namespace MatterHackers.Agg.UI
 				case "webgpu":
 					return "MatterHackers.Agg.UI.WebGpuWinformsWindowProvider, agg_platform_win32";
 
+				case "mac":
+					return "MatterHackers.Agg.UI.WebGpuMacWindowProvider, agg_platform_mac";
+
 				case "bitmap":
 				case "d3d11":
 					throw new InvalidOperationException(
@@ -281,7 +286,7 @@ namespace MatterHackers.Agg.UI
 					}
 
 					throw new InvalidOperationException(
-						$"AGG_WINDOW_PROVIDER='{requested}' is not 'webgpu' and is not a 'Type, Assembly' name.");
+						$"AGG_WINDOW_PROVIDER='{requested}' is not 'webgpu' or 'mac' and is not a 'Type, Assembly' name.");
 			}
 		}
 

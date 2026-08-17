@@ -43,7 +43,9 @@ namespace MatterHackers.Agg.UI.Tests
 	// Verifies the medium-severity constructor hygiene fixes: widgets must not do disk I/O,
 	// icon processing, or rasterization in their constructors - that work is deferred to
 	// OnLoad (or first use for OutputScroll's TypeFacePrinter).
-	public class ConstructorHygieneTests
+	// Partial because one member of this suite - the WinformsEventSink unhook test - can only
+	// exist where WinForms does; it lives in ConstructorHygieneTests.Winforms.cs.
+	public partial class ConstructorHygieneTests
 	{
 		private static object GetPrivateField(object instance, string fieldName)
 		{
@@ -194,39 +196,5 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(GetPrivateField(outputScroll, "printer")).IsNotNull();
 		}
 
-		private class RaisableControl : System.Windows.Forms.Control
-		{
-			public void RaiseKeyDown(System.Windows.Forms.Keys keys)
-			{
-				this.OnKeyDown(new System.Windows.Forms.KeyEventArgs(keys));
-			}
-		}
-
-		[Test]
-		[NotInParallel]
-		public async Task WinformsEventSinkUnhookRemovesControlHandlers()
-		{
-			var control = new RaisableControl();
-			var systemWindow = new SystemWindow(100, 100);
-
-			int keyDownCount = 0;
-			systemWindow.KeyDown += (s, e) => keyDownCount++;
-
-			var eventSink = new WinformsEventSink(control, systemWindow);
-
-			control.RaiseKeyDown(System.Windows.Forms.Keys.A);
-			await Assert.That(keyDownCount).IsEqualTo(1);
-
-			eventSink.Unhook();
-
-			// After Unhook no handler wired by the constructor may still be attached.
-			control.RaiseKeyDown(System.Windows.Forms.Keys.A);
-			await Assert.That(keyDownCount).IsEqualTo(1);
-
-			// Safe to call again.
-			eventSink.Unhook();
-
-			Keyboard.Clear();
-		}
 	}
 }
