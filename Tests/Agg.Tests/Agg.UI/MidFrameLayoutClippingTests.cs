@@ -45,11 +45,11 @@ namespace MatterHackers.Agg.UI.Tests
 	/// that grows or moves from inside some descendant's OnDraw) therefore leaves the parent painting under a
 	/// clip taken at the old layout while its later siblings get clips taken at the new one.
 	///
-	/// That would be harmless if <see cref="GuiWidget"/>.DrawChild ever intersected the child's clip with the
-	/// clip already in force on the surface (the parent's, held in oldClippingRect). It does not - it
-	/// *replaces* it - so a child can be handed a clip that reaches outside everything its ancestors were
-	/// confined to and paint over unrelated chrome. Tree rows painting across the application tool bar were
-	/// this.
+	/// That is harmless as long as <see cref="GuiWidget"/>.DrawChild intersects the child's clip with the
+	/// clip already in force on the surface (the parent's, held in oldClippingRect). It used to *replace* it
+	/// instead, so a child could be handed a clip that reached outside everything its ancestors were confined
+	/// to and paint over unrelated chrome. Tree rows painting across the application tool bar were this. The
+	/// test pins the intersection that ended it.
 	/// </summary>
 	[NotInParallel]
 	public class MidFrameLayoutClippingTests
@@ -177,8 +177,9 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(afterMutation.Count).IsGreaterThanOrEqualTo(3)
 				.Because("the assertions below are only meaningful if several widgets painted after the layout changed");
 
-			// One pixel of slack for the outward rounding DrawChild does on the clip rectangle.
-			const double tolerance = 1;
+			// No slack: DrawChild intersects with the parent's clip, so containment is exact even though it
+			// rounds the child's rectangle outward first.
+			const double tolerance = 0;
 			RectangleDouble allowed = dialogPaint.Clip;
 
 			var escapes = new StringBuilder();

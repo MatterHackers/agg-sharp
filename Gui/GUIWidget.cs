@@ -2405,6 +2405,10 @@ namespace MatterHackers.Agg.UI
 						// parent is painting under. The parent's clip is the outer bound no child may escape,
 						// so bound the child by it here rather than replacing it below. An empty result means
 						// the child lies entirely outside the visible region and has nothing to paint.
+						// Note the skip suppresses more than the child's ink: its OnDraw side effects (lazy
+						// content building, backbuffer rasterization) do not run either. A dirty child that
+						// is fully clipped out defers those to the next frame, which the mutation's own
+						// Invalidate has already scheduled.
 						childHasSomethingToPaint = currentScreenClipping.IntersectWithRectangle(oldClippingRect);
 					}
 
