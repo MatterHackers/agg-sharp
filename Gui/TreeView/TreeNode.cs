@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -521,6 +521,26 @@ namespace MatterHackers.Agg.UI
             parentNames.Reverse();
 
             return string.Join("/", parentNames);
+        }
+
+        /// <summary>
+        /// Parent this node's child rows into the widget tree now, instead of waiting for the next paint.
+        /// </summary>
+        /// <remarks>
+        /// Rows are normally materialized lazily in <see cref="OnDraw"/>, which is fine for a tree that is
+        /// already on screen but wrong for one that is still being built. A node handed to a live container
+        /// while it is still dirty grows in the middle of a frame, and everything that was already painted
+        /// that frame - the rows above it, and the container itself - was drawn against the smaller size, so
+        /// the tree paints stacked and spilling out over its own top edge until some later layout happens to
+        /// cascade through. Building while the node is still detached costs nothing and makes the first frame
+        /// the right frame.
+        /// </remarks>
+        public void EnsureContentBuilt()
+        {
+            if (isDirty)
+            {
+                RebuildContentSection();
+            }
         }
 
         public override void OnClosed(EventArgs e)
