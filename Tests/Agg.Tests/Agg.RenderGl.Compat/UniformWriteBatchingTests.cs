@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MatterHackers.Agg.Image;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RenderCore;
 using MatterHackers.RenderCore.Testing;
@@ -150,6 +151,83 @@ namespace MatterHackers.Agg.Tests
 				.Because("uniform queue writes are per submit, so six times the draws must cost the same");
 		}
 
+		/// <summary>
+		/// Depth peeling draws the same commands again in every one of its passes - the depth prepass, the
+		/// two peel inits, and a depth and colour pass per iteration - and the transform and effect blocks
+		/// those draws want are identical each time. A slot per draw would therefore cost roughly one slot
+		/// per pass per command, all holding the same bytes; the renderer memoizes the setup instead, so the
+		/// number of distinct uniform ranges a frame binds is a function of the commands, not of the passes.
+		/// <para>
+		/// The bed is in the frame because it is the one thing that legitimately needs more than one slot:
+		/// it is drawn unlit in the peel and lit in the depth prepass, and its analytic grid is switched off
+		/// in the peel's init pass and on in the others, so its effect block really does differ. Three
+		/// variants is the right answer for it - and the bed is also where a per-draw rebuild of the command
+		/// object would silently defeat the whole cache.
+		/// </para>
+		/// </summary>
+		[Test]
+		public async Task PeeledPassesOfOneCommandShareOneUniformSlot()
+		{
+			var device = new RecordingRenderDevice();
+			var target = device.CreateTexture(new TextureDescriptor(
+				Width,
+				Height,
+				TextureFormat.Bgra8Unorm,
+				TextureUsage.RenderAttachment | TextureUsage.CopySrc,
+				1,
+				1,
+				"colorTarget"));
+
+			using var context = new GlCompatContext(device);
+			context.SetRenderTarget(target, null);
+
+			var gl = new GL(context);
+			using var renderer = new WebGpuSceneRenderer(context) { OwnerGl = gl, DepthPeelingLayers = 6 };
+			context.SceneRenderer = renderer;
+
+			var meshes = Enumerable.Range(0, 3)
+				.Select(index => PlatonicSolids.CreateCube(10 + index, 10, 10))
+				.ToList();
+
+			// Half-transparent, which is what sends these down the peeled path rather than the opaque one.
+			var transparent = new Color(Color.Blue, 120);
+
+			var bedBounds = new RectangleDouble(-50, -50, 50, 50);
+			var bedMesh = MeshHelper.CreatePlane(bedBounds.Width, bedBounds.Height);
+			var bed = new BedRenderCommand
+			{
+				Mesh = bedMesh,
+				Color = Color.White,
+				ShadowColor = new Color(20, 15, 10),
+				Transform = Matrix4X4.Identity,
+				TopBaseTexture = new ImageBuffer(16, 16, 32, new BlenderBGRA()),
+				BedBounds = bedBounds,
+				GridSpacing = 25,
+				GridLineColor = new Color(120, 120, 130),
+			};
+
+			// A warm frame first: the first one mints targets and pipelines, and what is under test is the
+			// steady state slot count.
+			RenderFrame(gl, renderer, meshes, transparent, bed);
+			device.ClearRecording();
+			RenderFrame(gl, renderer, meshes, transparent, bed);
+
+			var meshSlots = device.CommandsOf<SetBindGroupCommand>()
+				.Select(command => command.BindGroup as StubBindGroup)
+				.Where(group => group?.Descriptor.Label == "SceneMesh")
+				.Select(group => group.Descriptor.Entries.First(entry => entry.Binding == 0))
+				.Select(entry => (entry.Buffer, entry.Offset))
+				.ToList();
+
+			// The peel really ran: three commands drawn in a dozen-odd passes, not three draws.
+			await Assert.That(meshSlots.Count).IsGreaterThan(meshes.Count * 5)
+				.Because("the peel has to be drawing these commands once per pass for the test to mean anything");
+
+			// One slot per mesh command, plus the bed's three genuinely different effect blocks.
+			await Assert.That(meshSlots.Distinct().Count()).IsEqualTo(meshes.Count + 3)
+				.Because("every pass's draw of one command wants the same uniform bytes, so it must reuse the slot");
+		}
+
 		private static int UniformWrites(RecordingRenderDevice device)
 			=> device.CommandsOf<WriteBufferCommand>()
 				.Count(command => (command.Buffer.Usage & BufferUsage.Uniform) != 0);
@@ -158,7 +236,15 @@ namespace MatterHackers.Agg.Tests
 		/// <param name="gl">The facade the scene renderer is keyed on.</param>
 		/// <param name="renderer">The renderer under test.</param>
 		/// <param name="meshes">The meshes to draw, one command each.</param>
-		private static void RenderFrame(GL gl, WebGpuSceneRenderer renderer, IReadOnlyList<Mesh> meshes)
+		/// <param name="color">The colour to draw them in; an alpha below opaque puts them on the
+		/// transparency path.</param>
+		/// <param name="bed">A bed to queue in the same frame, or null for no bed.</param>
+		private static void RenderFrame(
+			GL gl,
+			WebGpuSceneRenderer renderer,
+			IReadOnlyList<Mesh> meshes,
+			Color? color = null,
+			BedRenderCommand bed = null)
 		{
 			var viewport = new RectangleDouble(0, 0, Width, Height);
 			var world = new WorldView(Width, Height);
@@ -173,7 +259,12 @@ namespace MatterHackers.Agg.Tests
 			{
 				foreach (var mesh in meshes)
 				{
-					RenderHelper.Render(gl, mesh, Color.Red, Matrix4X4.Identity, RenderTypes.Shaded);
+					RenderHelper.Render(gl, mesh, color ?? Color.Red, Matrix4X4.Identity, RenderTypes.Shaded);
+				}
+
+				if (bed != null)
+				{
+					renderer.TryRender(bed);
 				}
 			}
 			finally

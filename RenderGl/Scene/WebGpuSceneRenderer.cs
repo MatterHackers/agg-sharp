@@ -202,6 +202,14 @@ namespace MatterHackers.RenderGl.Scene
 		// still reference, so they are released only after the submit that consumes those draws.
 		private readonly List<IGpuBuffer> retiredMeshBuffers = new List<IGpuBuffer>();
 
+		// This frame's mesh draw setup, memoized. A depth-peeled frame draws every command a dozen times -
+		// the depth prepass, the two peel inits, and a depth plus a colour pass per iteration - and each of
+		// those draws wants the same transform and effect bytes, so a slot per draw meant ~940 slots and
+		// ~940 plugin lookups where ~100 of each would do. Emptied with the frame's queued commands, which
+		// is both when the slots it names are reused and the only time it stops rooting their meshes.
+		private readonly Dictionary<MeshDrawSetupKey, MeshDrawSetup> meshDrawSetups
+			= new Dictionary<MeshDrawSetupKey, MeshDrawSetup>();
+
 		private readonly byte[] lightScratch = new byte[LightUniformSize];
 		private readonly byte[] outlineScratch = new byte[OutlineUniformSize];
 		private readonly byte[] downsampleScratch = new byte[DownsampleUniformSize];
@@ -281,6 +289,12 @@ namespace MatterHackers.RenderGl.Scene
 		private int depthPeelingLayers = 6;
 
 		private BedRenderCommand queuedBedCommand;
+
+		// The bed's mesh command, minted once per frame. BedRenderCommand.CreateSceneCommand builds a fresh
+		// object every call, and the bed is drawn from four sites (the depth prepass, both transparency
+		// modes, and each peel pass) - so calling it per site handed the draw-setup cache a new key every
+		// time and the bed alone burned a slot and a pair of plugin lookups per pass.
+		private MeshRenderCommand bedSceneCommand;
 		private readonly List<IGpuBuffer> bedShadowUniforms = new List<IGpuBuffer>();
 		private IGpuTexture bedBaseTexture;
 		private MatterHackers.Agg.Image.ImageBuffer bedBaseSource;
@@ -438,6 +452,7 @@ namespace MatterHackers.RenderGl.Scene
 			}
 
 			this.queuedBedCommand = command;
+			this.bedSceneCommand = null;
 			return true;
 		}
 
@@ -831,7 +846,7 @@ namespace MatterHackers.RenderGl.Scene
 				{
 					this.DrawMeshCommand(
 						encoder,
-						this.queuedBedCommand.CreateSceneCommand(),
+						this.BedSceneCommand,
 						new MeshDrawState
 						{
 							DepthOnly = true,
@@ -844,6 +859,13 @@ namespace MatterHackers.RenderGl.Scene
 
 		/// <summary>True when a bed is queued and its composited texture exists to draw it with.</summary>
 		private bool IsBedDrawable => this.queuedBedCommand != null && this.bedCompositeTarget != null;
+
+		/// <summary>
+		/// The queued bed as a mesh command, minted on first use and reused for the rest of the frame so
+		/// every pass that draws the bed presents the draw-setup cache the same command instance.
+		/// </summary>
+		private MeshRenderCommand BedSceneCommand
+			=> this.bedSceneCommand ??= this.queuedBedCommand.CreateSceneCommand();
 
 		/// <summary>
 		/// Clears the transparency accumulation targets to the values that make the resolve an identity:
@@ -938,7 +960,7 @@ namespace MatterHackers.RenderGl.Scene
 
 			bool bedAfterObjects = this.IsBedDrawable
 				&& SceneTransparencyModeUtilities.ShouldRenderBedAfterTransparentObjects(
-					this.queuedBedCommand.CreateSceneCommand().Transform,
+					this.BedSceneCommand.Transform,
 					this.activeSceneRenderContext.WorldView.EyePosition);
 
 			// LoadOp.Load on both attachments: the opaque pass already filled this target and its depth, and
@@ -1002,7 +1024,7 @@ namespace MatterHackers.RenderGl.Scene
 			state.Unlit = true;
 			state.BedGrid = this.queuedBedCommand;
 
-			this.DrawMeshCommand(encoder, this.queuedBedCommand.CreateSceneCommand(), state);
+			this.DrawMeshCommand(encoder, this.BedSceneCommand, state);
 		}
 
 		/// <summary>
@@ -1117,7 +1139,7 @@ namespace MatterHackers.RenderGl.Scene
 					bedState.Unlit = true;
 					bedState.BedGrid = drawState.Peel == PeelStage.Init ? null : this.queuedBedCommand;
 
-					this.DrawMeshCommand(encoder, this.queuedBedCommand.CreateSceneCommand(), bedState);
+					this.DrawMeshCommand(encoder, this.BedSceneCommand, bedState);
 				}
 			}
 		}
@@ -1698,34 +1720,48 @@ namespace MatterHackers.RenderGl.Scene
 		/// </summary>
 		private void DrawMeshCommand(IRenderEncoder encoder, MeshRenderCommand command, MeshDrawState drawState)
 		{
-			var world = this.activeSceneRenderContext.WorldView;
-			MeshTrianglePlugin meshPlugin;
-			SceneEdgeShaderDataPlugin sceneShaderData;
-			using (FrameProfiler.Time("Scene.DrawSetup"))
+			var setupKey = new MeshDrawSetupKey(command, drawState);
+			if (!this.meshDrawSetups.TryGetValue(setupKey, out var setup))
 			{
-				this.WriteTransformUniform(command.Transform * world.ModelviewMatrix, world.ProjectionMatrix);
+				using (FrameProfiler.Time("Scene.DrawSetup"))
+				{
+					var world = this.activeSceneRenderContext.WorldView;
+					this.WriteTransformUniform(command.Transform * world.ModelviewMatrix, world.ProjectionMatrix);
 
-				meshPlugin = MeshTrianglePlugin.Get(this.OwnerGl, command.Mesh);
-				sceneShaderData = SceneEdgeShaderDataPlugin.Get(this.OwnerGl, command.Mesh, command.RenderType);
+					var resolvedMeshPlugin = MeshTrianglePlugin.Get(this.OwnerGl, command.Mesh);
+					var resolvedShaderData = SceneEdgeShaderDataPlugin.Get(this.OwnerGl, command.Mesh, command.RenderType);
 
-				// Asked of the interleaved data rather than of Mesh.FaceColors, which is what the classic path
-				// asks. The two agree for face-coloured meshes, and only this form also catches the colours
-				// RenderTypes.Overhang bakes into the same channel from a normal-driven colour function - there
-				// is no FaceColors array behind those.
-				bool useVertexColor = !command.OverrideFaceColors && HasVertexColors(sceneShaderData);
+					// Asked of the interleaved data rather than of Mesh.FaceColors, which is what the classic path
+					// asks. The two agree for face-coloured meshes, and only this form also catches the colours
+					// RenderTypes.Overhang bakes into the same channel from a normal-driven colour function - there
+					// is no FaceColors array behind those.
+					bool useVertexColor = !command.OverrideFaceColors && HasVertexColors(resolvedShaderData);
 
-				this.WriteEffectUniform(
-					command.Color,
-					command.WireFrameColor,
-					drawState.EnableWireframe,
-					drawState.WireframeOnly,
-					command.Unlit || drawState.Unlit,
-					useVertexColor,
-					command.AlphaMultiplier,
-					drawState.BedGrid);
+					this.WriteEffectUniform(
+						command.Color,
+						command.WireFrameColor,
+						drawState.EnableWireframe,
+						drawState.WireframeOnly,
+						command.Unlit || drawState.Unlit,
+						useVertexColor,
+						command.AlphaMultiplier,
+						drawState.BedGrid);
+
+					// StageSlot writes into the slot drawSlot currently names, so the counter only moves once
+					// both blocks are staged - and only on a miss, which is what keeps the peel's repeat draws
+					// pointing at the one slot this setup owns.
+					setup = new MeshDrawSetup(this.drawSlot++, resolvedMeshPlugin, resolvedShaderData);
+					this.meshDrawSetups.Add(setupKey, setup);
+				}
 			}
 
-			int uniformSlot = this.drawSlot++;
+			// Held for the whole frame, including across the mesh plugins' own rebuild-on-change check. That
+			// is the assumption this renderer already makes everywhere: the queued commands are a snapshot,
+			// and a mesh edited between the depth prepass and the peel passes that draw it would desync the
+			// two regardless of what is cached here.
+			var meshPlugin = setup.MeshPlugin;
+			var sceneShaderData = setup.SceneShaderData;
+			int uniformSlot = setup.UniformSlot;
 
 			var cullMode = drawState.CullOverride ?? (command.ForceCullBackFaces ? CullMode.Back : CullMode.None);
 
@@ -2898,6 +2934,14 @@ namespace MatterHackers.RenderGl.Scene
 			// The plan holds the same commands, and with them the meshes; a renderer that outlives the
 			// frame would keep the last frame's geometry rooted until some later frame rebuilt the plan.
 			this.renderPlanner.ReleasePlan();
+
+			// And the draw setup cache is keyed on those commands and holds their render-data plugins, so it
+			// roots the same geometry and has to be dropped with them rather than at the next frame's reset.
+			this.meshDrawSetups.Clear();
+
+			// Minted from the bed command this frame queued, and keyed on by the cache above, so it belongs
+			// to the frame exactly as the entries do.
+			this.bedSceneCommand = null;
 		}
 
 		private sealed class SelectionOutlineCommand
@@ -3062,6 +3106,83 @@ namespace MatterHackers.RenderGl.Scene
 			/// not a value any pass here wants, so it doubles as "unset".</summary>
 			public CompareFunction EffectiveDepthCompare
 				=> this.DepthCompare == CompareFunction.Never ? CompareFunction.LessEqual : this.DepthCompare;
+		}
+
+		/// <summary>
+		/// What identifies one command's uniform blocks within a frame.
+		/// <para>
+		/// The transform block reads only the command's transform and the frame's camera, which no
+		/// <see cref="DrawMeshCommand"/> call varies - the one draw that uses another camera is the bed
+		/// shadow, and it goes through <see cref="DrawFlatMask"/>, which is deliberately not memoized. The
+		/// effect block reads the command plus exactly the four pass-level flags below: the wireframe pair
+		/// (the alpha-blend mode draws one command back faces then front faces), unlit (the bed's peel
+		/// draw), and whether the analytic bed grid is on (it is off in the bed's peel init pass and on in
+		/// its others). Everything else <see cref="MeshDrawState"/> carries picks a pipeline or a binding,
+		/// not a uniform byte.
+		/// </para>
+		/// <para>
+		/// The bed grid is keyed by presence and not by its styling, which is sufficient only because a
+		/// frame holds exactly one <see cref="queuedBedCommand"/>: two differently styled
+		/// <see cref="BedRenderCommand"/>s in one frame would share a slot and the second would draw with
+		/// the first one's grid colours.
+		/// </para>
+		/// </summary>
+		private readonly struct MeshDrawSetupKey : IEquatable<MeshDrawSetupKey>
+		{
+			private readonly MeshRenderCommand command;
+			private readonly bool enableWireframe;
+			private readonly bool wireframeOnly;
+			private readonly bool unlit;
+			private readonly bool bedGrid;
+
+			public MeshDrawSetupKey(MeshRenderCommand command, in MeshDrawState drawState)
+			{
+				this.command = command;
+				this.enableWireframe = drawState.EnableWireframe;
+				this.wireframeOnly = drawState.WireframeOnly;
+				this.unlit = drawState.Unlit;
+				this.bedGrid = drawState.BedGrid != null;
+			}
+
+			/// <inheritdoc/>
+			public bool Equals(MeshDrawSetupKey other)
+				// Reference equality, because a frame's render plan holds the very command objects the
+				// passes re-draw; two commands that merely compare equal would still want their own slot.
+				=> ReferenceEquals(this.command, other.command)
+				&& this.enableWireframe == other.enableWireframe
+				&& this.wireframeOnly == other.wireframeOnly
+				&& this.unlit == other.unlit
+				&& this.bedGrid == other.bedGrid;
+
+			/// <inheritdoc/>
+			public override bool Equals(object obj) => obj is MeshDrawSetupKey other && this.Equals(other);
+
+			/// <inheritdoc/>
+			public override int GetHashCode()
+				=> HashCode.Combine(
+					RuntimeHelpers.GetHashCode(this.command),
+					this.enableWireframe,
+					this.wireframeOnly,
+					this.unlit,
+					this.bedGrid);
+		}
+
+		/// <summary>The per-frame draw setup a <see cref="MeshDrawSetupKey"/> buys back: the uniform slot the
+		/// blocks were staged into, and the mesh's two resolved render-data plugins.</summary>
+		private readonly struct MeshDrawSetup
+		{
+			public MeshDrawSetup(int uniformSlot, MeshTrianglePlugin meshPlugin, SceneEdgeShaderDataPlugin sceneShaderData)
+			{
+				this.UniformSlot = uniformSlot;
+				this.MeshPlugin = meshPlugin;
+				this.SceneShaderData = sceneShaderData;
+			}
+
+			public int UniformSlot { get; }
+
+			public MeshTrianglePlugin MeshPlugin { get; }
+
+			public SceneEdgeShaderDataPlugin SceneShaderData { get; }
 		}
 
 		/// <summary>
