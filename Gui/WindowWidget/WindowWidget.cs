@@ -6,7 +6,7 @@ using System;
 
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
-// Copyright (C) 2007 Lars Brubaker
+// Copyright (C) 2026 Lars Brubaker
 //                  larsbrubaker@gmail.com
 //
 // Permission to copy, use, modify, sell and distribute this software
@@ -26,6 +26,14 @@ namespace MatterHackers.Agg.UI
 
         private readonly ThemeConfig theme;
         private readonly GuiWidget windowBackground;
+
+        /// <summary>
+        /// The right hand end of the title bar, holding the close button and anything
+        /// <see cref="AddTitleBarButton"/> has put beside it. Null until <see cref="AddTitleBar"/> runs.
+        /// </summary>
+        private FlowLayoutWidget titleBarButtons;
+
+        private GuiWidget closeButton;
 
 		public WindowWidget(ThemeConfig theme, RectangleDouble inBounds)
 			: this(theme, new GuiWidget(inBounds.Width, inBounds.Height, SizeLimitsToSet.None)
@@ -47,7 +55,15 @@ namespace MatterHackers.Agg.UI
 				var parent = Parent;
 				// move this window to the first position in the children list
 				if (ContainsFocus
-					&& parent != null)
+					&& parent != null
+					// Already frontmost, so there is nothing to raise - and doing it anyway is not free. This
+					// runs on the idle between the press that gave the window focus and the release that
+					// completes the click, and pulling the window out of its parent and putting it back loses
+					// the widget the press landed on: the very first click on a freshly opened window (its
+					// close button, its title bar buttons) would be swallowed and the user would have to click
+					// twice.
+					&& parent.Children.Count > 0
+					&& parent.Children[parent.Children.Count - 1] != this)
 				{
                     parent.RemoveChild(this);
 					this.ClearRemovedFlag();
@@ -103,20 +119,34 @@ namespace MatterHackers.Agg.UI
 
         public void AddTitleBar(string title, Action closeAction)
 		{
-			GuiWidget closeButton = null;
+			// The buttons live in their own flow rather than the close button being the toolbar's right anchor
+			// item directly: Toolbar.AddChild redirects into its stretched ActionArea, so with the button
+			// anchored on its own there is no way to get anything to sit beside it. See AddTitleBarButton.
+			titleBarButtons = new FlowLayoutWidget(FlowDirection.LeftToRight)
+			{
+				// Fit as well as Right: without it the flow keeps a width of zero and its buttons lay themselves
+				// out to the right of that empty rectangle - past the end of the title bar, where the drawing
+				// clip cuts them off entirely and nothing can be clicked
+				HAnchor = HAnchor.Right | HAnchor.Fit,
+				VAnchor = VAnchor.Fit | VAnchor.Center,
+			};
+
 			if (closeAction != null)
 			{
 				closeButton = theme.CreateSmallResetButton();
 
-				closeButton.HAnchor = HAnchor.Right;
+				// No HAnchor.Right on the button itself any more - the flow it now sits in carries that, and a
+				// left to right flow rejects a Right anchored child outright (LayoutEngineFlow).
 				closeButton.ToolTipText = "Close".Localize();
 				closeButton.Click += (s, e) =>
 				{
 					closeAction?.Invoke();
 				};
+
+				titleBarButtons.AddChild(closeButton);
 			}
 
-            var titleBarRow = new Toolbar(theme.TabbarPadding, closeButton)
+            var titleBarRow = new Toolbar(theme.TabbarPadding, titleBarButtons)
             {
                 HAnchor = HAnchor.Stretch,
                 VAnchor = VAnchor.Fit | VAnchor.Center,
@@ -135,6 +165,29 @@ namespace MatterHackers.Agg.UI
 
             TitleBar.AddChild(titleBarRow);
         }
+
+		/// <summary>
+		/// Puts a widget in the title bar immediately to the left of the close button, or at the right hand end
+		/// of the bar when the window has no close button.
+		/// </summary>
+		/// <remarks>
+		/// Callable at any point after <see cref="AddTitleBar"/>, so a window can gain a button as its content
+		/// decides it needs one. Calling it before there is a title bar does nothing, because there is nowhere
+		/// for the button to go.
+		/// </remarks>
+		public void AddTitleBarButton(GuiWidget button)
+		{
+			if (titleBarButtons == null
+				|| button == null)
+			{
+				return;
+			}
+
+			// Index rather than append: the close button is the last thing in the row and has to stay there -
+			// a close button that moves when a window adds a feature is a misclick waiting to happen.
+			int insertIndex = closeButton == null ? -1 : titleBarButtons.Children.IndexOf(closeButton);
+			titleBarButtons.AddChild(button, insertIndex);
+		}
 
         public override void OnDrawBackground(Graphics2D graphics2D)
 		{

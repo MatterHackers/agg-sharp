@@ -61,6 +61,24 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		private LcdBuffer lcdBackBuffer;
 
+		/// <summary>
+		/// <see cref="backBuffer"/> with <see cref="GuiWidget.BackbufferOpacity"/> baked in, kept from frame to
+		/// frame so a faded widget that is not repainting costs one blit like every other widget rather than a
+		/// whole-buffer pixel pass. Null while the widget is fully opaque, which is nearly all of them.
+		/// </summary>
+		private ImageBuffer fadedBackBuffer;
+
+		/// <summary>
+		/// What <see cref="fadedBackBuffer"/> was built from: the source buffer's
+		/// <see cref="ImageBuffer.ChangedCount"/>, the opacity, and the alpha convention the destination wanted.
+		/// Any of the three differing is what makes the copy stale.
+		/// </summary>
+		private int fadedSourceChangedCount = -1;
+
+		private double fadedOpacity = -1;
+
+		private bool fadedIsPremultiplied;
+
 		internal WidgetBackbuffer(GuiWidget widget)
 		{
 			this.widget = widget;
@@ -188,6 +206,7 @@ namespace MatterHackers.Agg.UI
 			{
 				this.AllocateLcdBuffer(extraWidth, extraHeight);
 				this.backBuffer = null;
+				this.DropFadedBuffer();
 
 				// Cleared to fully transparent in both planes, exactly as the RGBA arm is: the widget's own
 				// opaque background is the first thing painted over it, and anywhere it does not reach carries
@@ -243,22 +262,187 @@ namespace MatterHackers.Agg.UI
 		/// <param name="scaleX">Horizontal scale for the RGBA blit; ignored by the LCD arm, which only runs at
 		/// exact unit scale (see <see cref="ResolveMode"/>).</param>
 		/// <param name="scaleY">The vertical twin of <paramref name="scaleX"/>.</param>
-		internal void CompositeOnto(Graphics2D graphics2D, Vector2 offsetToRenderSurface, double scaleX, double scaleY)
+		/// <param name="opacity">The widget's <see cref="GuiWidget.BackbufferOpacity"/>. 1 composites the buffer
+		/// itself, exactly as this always has; anything less composites a faded copy of it.</param>
+		internal void CompositeOnto(Graphics2D graphics2D, Vector2 offsetToRenderSurface, double scaleX, double scaleY, double opacity = 1)
 		{
 			// Keyed on what is in the buffer rather than on what this paint resolved: the two agree, because a
 			// mode flip forces the re-raster above, and keying on the pixels cannot composite a buffer that was
 			// never painted.
 			if (this.Mode == BackbufferMode.LcdCoverage)
 			{
+				// The opacity is not applied here and does not need to be: a widget that is not fully opaque
+				// never resolves this mode (see GuiWidget.ResolveBackbufferMode).
+				//
 				// Whole destination pixels, not a transformed blit: the planes are finished pixels, and
 				// resampling them would smear each channel's phase into its neighbours. Nothing is lost by
 				// dropping the scale, because this arm only runs at exact unit scale.
 				graphics2D.CompositeLcdBuffer(this.lcdBackBuffer, (int)offsetToRenderSurface.X, (int)offsetToRenderSurface.Y);
 			}
-			else
+			else if (opacity >= 1)
 			{
+				// A whole extra widget sized image is not worth holding on the chance the widget fades again -
+				// the next fade rebuilds it from pixels that will have moved on anyway.
+				this.DropFadedBuffer();
+
 				graphics2D.Render(this.backBuffer, 0, 0, 0, scaleX, scaleY);
 			}
+			else
+			{
+				graphics2D.Render(this.GetFadedBuffer(opacity, DestinationBlendsPremultiplied(graphics2D)), 0, 0, 0, scaleX, scaleY);
+			}
+		}
+
+		/// <summary>
+		/// Whether <paramref name="graphics2D"/>'s <see cref="Graphics2D.Render(IImageByte, double, double,
+		/// double, double, double)"/> reads an image source's colour channels as already multiplied by its
+		/// alpha, which decides how <see cref="BuildFadedBuffer"/> has to encode the fade.
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// The destinations genuinely disagree, and the disagreement is not reachable through a shared
+		/// capability today, so it is a type test.
+		/// </para>
+		/// <para>
+		/// True for the two that consume the source's alpha convention as premultiplied. A CPU blit hands raw
+		/// source pixels to the <i>destination</i> image's blender, so a destination carrying
+		/// <see cref="BlenderPreMultBGRA"/> - which every widget backbuffer and every image snapshot does -
+		/// wants premultiplied colour. <see cref="LcdBufferGraphics2D"/> instead reads the convention off the
+		/// <i>source's</i> blender and handles premultiplied bytes exactly, so it is served by the same
+		/// encoding and the stamp <see cref="BuildFadedBuffer"/> puts on the copy tells it so.
+		/// </para>
+		/// <para>
+		/// False is everything else, and in practice means the GL path, where the fade is applied by the
+		/// SrcAlpha / OneMinusSrcAlpha blend Graphics2DGpu.Render documents - which needs straight colour, or
+		/// it multiplies by the opacity a second time and the widget composites visibly dark.
+		/// </para>
+		/// </remarks>
+		private static bool DestinationBlendsPremultiplied(Graphics2D graphics2D)
+		{
+			if (graphics2D is LcdBufferGraphics2D)
+			{
+				return true;
+			}
+
+			// Asked through IImageByte rather than by casting to ImageBuffer: a graphics' DestImage is normally
+			// an ImageClippingProxy wrapping the buffer, and it forwards the blender.
+			// Gated on ImageGraphics2D first because Graphics2DGpu.DestImage builds a CPU buffer on demand, and
+			// nothing here is worth allocating a screen sized image for.
+			return graphics2D is ImageGraphics2D imageGraphics
+				&& imageGraphics.DestImage?.GetRecieveBlender() is BlenderPreMultBGRA;
+		}
+
+		/// <summary>
+		/// <see cref="backBuffer"/> faded by <paramref name="opacity"/>, rebuilt only when the pixels behind it,
+		/// the opacity, or the destination's alpha convention have changed.
+		/// </summary>
+		private ImageBuffer GetFadedBuffer(double opacity, bool premultiplied)
+		{
+			if (this.fadedBackBuffer == null
+				|| this.fadedBackBuffer.Width != this.backBuffer.Width
+				|| this.fadedBackBuffer.Height != this.backBuffer.Height
+				|| this.fadedOpacity != opacity
+				|| this.fadedIsPremultiplied != premultiplied
+				|| this.fadedSourceChangedCount != this.backBuffer.ChangedCount)
+			{
+				this.BuildFadedBuffer(opacity, premultiplied);
+
+				this.fadedOpacity = opacity;
+				this.fadedIsPremultiplied = premultiplied;
+				this.fadedSourceChangedCount = this.backBuffer.ChangedCount;
+			}
+
+			return this.fadedBackBuffer;
+		}
+
+		/// <summary>
+		/// Releases the faded copy and the stamps that say what it was built from.
+		/// </summary>
+		/// <remarks>
+		/// The sentinels go with the image rather than being left to the null check alone:
+		/// <see cref="GetFadedBuffer"/> tells a stale copy from a current one by the source buffer's
+		/// <see cref="ImageBuffer.ChangedCount"/>, and a <i>fresh</i> backbuffer starts that count over from
+		/// zero, so a count left behind from the previous buffer's life reads as current against the new one.
+		/// That is a frame of superseded pixels for a widget that went transparent, opaque (which can
+		/// reallocate the buffer, and the LCD arm nulls it outright) and transparent again. Everything that
+		/// drops or reallocates <see cref="backBuffer"/> comes through here.
+		/// </remarks>
+		private void DropFadedBuffer()
+		{
+			this.fadedBackBuffer = null;
+			this.fadedSourceChangedCount = -1;
+			this.fadedOpacity = -1;
+		}
+
+		/// <summary>
+		/// Writes <see cref="backBuffer"/> into <see cref="fadedBackBuffer"/> with <paramref name="opacity"/>
+		/// baked into its alpha, in the encoding <paramref name="premultiplied"/> asks for.
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// The premultiplied encoding scales colour and alpha together, which is exact for every pixel. The
+		/// straight encoding scales alpha alone, which is exact only for pixels that started out opaque - an
+		/// already translucent pixel would have to be un-premultiplied first, and it is not worth a divide per
+		/// pixel for content that is, in the case this exists for, an opaque window pane.
+		/// </para>
+		/// <para>
+		/// <b>The copy is stamped <see cref="BlenderPreMultBGRA"/> either way, including when its pixels are
+		/// straight</b>, and that is deliberate. The stamp is not a description anybody reads in the straight
+		/// case - the destination that asked for straight colour is the GL one, which applies the fade in its
+		/// own SrcAlpha blend - but the uploader on the way there does read it: RenderGl's
+		/// <c>ImageTexturePlugin.CreateGlDataForImage</c> copies the image into a fresh (possibly power of two)
+		/// buffer carrying the <i>source's</i> blender before handing the bytes to the driver. Stamped
+		/// premultiplied that copy is an identity pass over a transparent destination and the pixels reach the
+		/// texture as written; stamped <see cref="BlenderBGRA"/> the same copy multiplies colour by alpha, and
+		/// the GL blend then multiplies by it again - the whole widget lands visibly dark. A CPU destination
+		/// that wanted straight colour is unaffected either way, because it blends through its own blender and
+		/// never looks at the source's.
+		/// </para>
+		/// </remarks>
+		private void BuildFadedBuffer(double opacity, bool premultiplied)
+		{
+			if (this.fadedBackBuffer == null
+				|| this.fadedBackBuffer.Width != this.backBuffer.Width
+				|| this.fadedBackBuffer.Height != this.backBuffer.Height)
+			{
+				this.fadedBackBuffer = new ImageBuffer(this.backBuffer.Width, this.backBuffer.Height, 32, new BlenderPreMultBGRA());
+			}
+
+			byte[] source = this.backBuffer.GetBuffer();
+			byte[] destination = this.fadedBackBuffer.GetBuffer();
+			int height = this.backBuffer.Height;
+			int width = this.backBuffer.Width;
+
+			for (int y = 0; y < height; y++)
+			{
+				int sourceOffset = this.backBuffer.GetBufferOffsetY(y);
+				int destinationOffset = this.fadedBackBuffer.GetBufferOffsetY(y);
+
+				for (int x = 0; x < width; x++)
+				{
+					if (premultiplied)
+					{
+						// Rounded rather than truncated: a whole-widget fade is a flat multiply over a large
+						// area, and truncation there shows up as a visible shift of the whole pane, not noise.
+						destination[destinationOffset + 0] = (byte)((source[sourceOffset + 0] * opacity) + 0.5);
+						destination[destinationOffset + 1] = (byte)((source[sourceOffset + 1] * opacity) + 0.5);
+						destination[destinationOffset + 2] = (byte)((source[sourceOffset + 2] * opacity) + 0.5);
+					}
+					else
+					{
+						destination[destinationOffset + 0] = source[sourceOffset + 0];
+						destination[destinationOffset + 1] = source[sourceOffset + 1];
+						destination[destinationOffset + 2] = source[sourceOffset + 2];
+					}
+
+					destination[destinationOffset + 3] = (byte)((source[sourceOffset + 3] * opacity) + 0.5);
+
+					sourceOffset += 4;
+					destinationOffset += 4;
+				}
+			}
+
+			this.fadedBackBuffer.MarkImageChanged();
 		}
 
 		internal void AllocateRgbaBuffer()
@@ -272,6 +456,10 @@ namespace MatterHackers.Agg.UI
 			if (this.backBuffer == null || this.backBuffer.Width != intWidth || this.backBuffer.Height != intHeight)
 			{
 				this.backBuffer = new ImageBuffer(intWidth, intHeight, 32, new BlenderPreMultBGRA());
+
+				// The new buffer's change count starts over, so the faded copy's record of what it was built
+				// from is meaningless now - see DropFadedBuffer.
+				this.DropFadedBuffer();
 			}
 		}
 

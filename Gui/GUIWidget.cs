@@ -277,6 +277,34 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		private double backbufferOpacity = 1;
+
+		/// <summary>
+		/// How opaque this whole widget - itself and everything under it - is when its cached pixels are
+		/// composited onto its parent. 1 (the default) is today's behaviour, byte for byte; 0 is invisible.
+		/// </summary>
+		/// <remarks>
+		/// Only takes effect while <see cref="DoubleBuffer"/> is true, because the whole point is that the
+		/// widget paints itself normally into its back buffer and then that <i>one</i> finished image is faded
+		/// onto the parent. That is what makes an overlay window read as a single translucent pane rather than
+		/// as a stack of individually see-through children, and it is why this is not the same thing as giving
+		/// every child a transparent colour.
+		/// </remarks>
+		public double BackbufferOpacity
+		{
+			get => backbufferOpacity;
+
+			set
+			{
+				double clamped = Max(0, Min(1, value));
+				if (backbufferOpacity != clamped)
+				{
+					backbufferOpacity = clamped;
+					Invalidate();
+				}
+			}
+		}
+
 		/// <summary>
 		/// Which backbuffer representation this widget should be painted into, given the surface it will be
 		/// composited onto. See <see cref="WidgetBackbuffer.ResolveMode"/> for the gates and why each one is
@@ -286,6 +314,15 @@ namespace MatterHackers.Agg.UI
 		/// the composite will happen under already set.</param>
 		public BackbufferMode ResolveBackbufferMode(Graphics2D destination)
 		{
+			// A faded widget has to be RGBA: LcdCoverage keeps its pixels as three per-channel coverages that
+			// composite straight into the destination's own planes, and there is no single alpha in that
+			// representation for a whole-widget opacity to scale. Subpixel coverage and alpha compositing are
+			// alternatives, not layers.
+			if (this.BackbufferOpacity < 1)
+			{
+				return BackbufferMode.Rgba;
+			}
+
 			return WidgetBackbuffer.ResolveMode(destination);
 		}
 
@@ -2297,6 +2334,19 @@ namespace MatterHackers.Agg.UI
 
 					if (child.CurrentScreenClipping(out RectangleDouble currentScreenClipping))
 					{
+						// The clipping is worked out in screen coordinates, and the surface being painted is not
+						// always the screen: while this widget is double buffered its children are painted into a
+						// buffer whose bottom left pixel is this widget's own origin, not the screen's. Shifting
+						// the rectangle by the difference between where that origin sits on the destination and
+						// where it sits on the screen puts the clip in the destination's own coordinates.
+						//
+						// The shift is zero whenever the two are the same surface, so painting straight to the
+						// screen is byte for byte what it always was. Without it a double buffered widget away
+						// from the screen origin clips its children off the far side of its own buffer and
+						// composites as an empty pane - which is exactly what a popped out editor window, sat in
+						// the middle of the 3D view, did.
+						currentScreenClipping.Offset(currentGraphics2DTransform.Transform(Vector2.Zero) - this.ScreenSpaceOrigin());
+
 						currentScreenClipping.Left = Floor(currentScreenClipping.Left);
 						currentScreenClipping.Right = Ceiling(currentScreenClipping.Right);
 						currentScreenClipping.Bottom = Floor(currentScreenClipping.Bottom);
@@ -2369,7 +2419,8 @@ namespace MatterHackers.Agg.UI
 								graphics2D,
 								offsetToRenderSurface,
 								currentGraphics2DTransform.sx,
-								currentGraphics2DTransform.sy);
+								currentGraphics2DTransform.sy,
+								child.BackbufferOpacity);
 						}
 						else
 						{
@@ -2618,6 +2669,13 @@ namespace MatterHackers.Agg.UI
 			internal bool VisibleAfterClipping = true;
 			internal RectangleDouble ScreenClippingRect;
 
+			/// <summary>
+			/// Where the widget's own local origin lands in screen coordinates, rebuilt beside
+			/// <see cref="ScreenClippingRect"/> because it is worked out from the same walk up the parents and
+			/// goes stale at exactly the same moments. See <see cref="GuiWidget.ScreenSpaceOrigin"/>.
+			/// </summary>
+			internal Vector2 ScreenOrigin;
+
 			internal ScreenClipping(GuiWidget attachedTo)
 			{
 				this.attachedTo = attachedTo;
@@ -2630,6 +2688,7 @@ namespace MatterHackers.Agg.UI
 			{
 				DrawCount++;
 				screenClipping.ScreenClippingRect = TransformToScreenSpace(LocalBounds);
+				screenClipping.ScreenOrigin = TransformToScreenSpace(Vector2.Zero);
 
 				if (Parent != null)
 				{
@@ -2659,6 +2718,22 @@ namespace MatterHackers.Agg.UI
 
 			screenClippingRect = screenClipping.ScreenClippingRect;
 			return screenClipping.VisibleAfterClipping;
+		}
+
+		/// <summary>
+		/// This widget's local origin in screen coordinates, which is what turns a screen space clipping
+		/// rectangle into one the surface being painted can use. See <see cref="DrawChild"/>.
+		/// </summary>
+		/// <remarks>
+		/// Answered from the screen clipping cache rather than by walking the parents on every call: this is
+		/// asked once per child per paint, and the walk it replaces is the reason that cache exists.
+		/// </remarks>
+		private Vector2 ScreenSpaceOrigin()
+		{
+			// Purely to bring the cache up to date - the rectangle it hands back is not wanted here.
+			this.CurrentScreenClipping(out _);
+
+			return screenClipping.ScreenOrigin;
 		}
 
 		public void CloseOnIdle()
