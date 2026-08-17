@@ -80,6 +80,26 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Marks the cached screen clipping stale on the way past, because when the bounds come from the
+		/// points there is nothing else that can.
+		/// </summary>
+		/// <remarks>
+		/// Screen clipping is invalidated by writes to LocalBounds, and these controls never write theirs -
+		/// they compute it from whatever their vertex source currently holds, and their geometry is moved by
+		/// dozens of little setters that report nothing. Asking to be repainted is the one thing they all do
+		/// when their points move, so that is where the stamp goes. It costs one interlocked increment.
+		/// </remarks>
+		public override void Invalidate(RectangleDouble rectToInvalidate)
+		{
+			if (localBoundsComeFromPoints)
+			{
+				InvalidateScreenClipping();
+			}
+
+			base.Invalidate(rectToInvalidate);
+		}
+
 		public abstract int num_paths();
 
 		/// <summary>

@@ -195,6 +195,10 @@ namespace MatterHackers.Agg.UI
 			set
 			{
 				position0To1 = Math.Max(0, Math.Min(value, 1));
+
+				// LocalBounds here is derived (track, thumb and value text), so moving the thumb changes the
+				// bounds without anything writing them. Nothing else will mark the clipping stale.
+				InvalidateScreenClipping();
 			}
 		}
 
@@ -229,6 +233,10 @@ namespace MatterHackers.Agg.UI
 			{
 				sliderTextWidget.Text = value;
 				base.Text = value;
+
+				// The value readout joins the derived bounds only once it has text in it, so going from no
+				// text to text grows this widget without writing its bounds.
+				InvalidateScreenClipping();
 			}
 		}
 
@@ -260,7 +268,20 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public double TotalWidthInPixels { get; set; }
+		public double TotalWidthInPixels
+		{
+			get => totalWidthInPixels;
+
+			set
+			{
+				totalWidthInPixels = value;
+
+				// The track is as long as this, and the track is most of the derived LocalBounds.
+				InvalidateScreenClipping();
+			}
+		}
+
+		private double totalWidthInPixels;
 
 		public double TrackWidth
 		{

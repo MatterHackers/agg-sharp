@@ -21,6 +21,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.LcdCoverage;
 using MatterHackers.Agg.Transform;
@@ -977,7 +978,17 @@ namespace MatterHackers.Agg.UI
 			get => parentToChildTransform;
 			set
 			{
-				// if (parentToChildTransform != value)
+				// Compared component by component because Affine is a struct with no equality operators (the
+				// ones in agg's original are commented out), which is why this guard used to be commented out
+				// too. Exact comparison, not the epsilon one agg proposed: a write of the same transform is
+				// common during layout and costs a clipping invalidation, but a genuinely tiny move must not
+				// be swallowed.
+				if (parentToChildTransform.sx != value.sx
+					|| parentToChildTransform.shy != value.shy
+					|| parentToChildTransform.shx != value.shx
+					|| parentToChildTransform.sy != value.sy
+					|| parentToChildTransform.tx != value.tx
+					|| parentToChildTransform.ty != value.ty)
 				{
 					parentToChildTransform = value;
 					screenClipping.MarkRecalculate();
@@ -1559,6 +1570,10 @@ namespace MatterHackers.Agg.UI
 				}
 
 				_parent = value;
+
+				// A move to a new parent replaces this widget's whole ancestor chain, so its cached screen
+				// clipping (and every descendant's, which is validated through this one) is worthless.
+				screenClipping.MarkRecalculate();
 			}
 		}
 
@@ -2655,42 +2670,81 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// A widget's clipping rectangle in screen space, cached and invalidated lazily.
+		/// </summary>
+		/// <remarks>
+		/// The cached rectangle depends on this widget's bounds and transform and on every ancestor's bounds
+		/// and transform - never on its children. Invalidation used to be pushed down: writing LocalBounds or
+		/// ParentToChildTransform walked the widget's whole subtree setting a dirty flag. On a large tree that
+		/// is ruinous (moving the 100 sibling rows of a flow container re-walked 18,000 widgets per row).
+		/// <para>
+		/// So the push is gone and validity is decided on read instead. Every change stamps only the changed
+		/// widget with a value from a process wide counter (<see cref="NextVersion"/>), which is O(1). A read
+		/// walks UP to the root - depth, not subtree - and the cache is good only if the largest stamp on that
+		/// chain is the one it was built against. Because the counter only ever increases, any change to any
+		/// widget on the chain (including a re-parent, which stamps the moved widget) raises that maximum past
+		/// anything a cache could have recorded, so a stale cache can never look current.
+		/// </para>
+		/// <para>
+		/// The up-walk is skipped entirely while nothing anywhere has changed - the common case inside a single
+		/// paint - by remembering the counter value the cache was last validated at.
+		/// </para>
+		/// <para>
+		/// One thing the stamps cannot see is a widget whose LocalBounds is *derived* rather than stored (a
+		/// Slider sizes itself to its track, thumb and value text). Nothing writes those bounds, so nothing
+		/// stamps the widget; such widgets must call <see cref="GuiWidget.InvalidateScreenClipping"/> when
+		/// whatever they derive from changes.
+		/// </para>
+		/// <para>
+		/// Reads happen on the paint thread and writes during layout, as they always have here, so this is a
+		/// single threaded design just like the dirty flag it replaces. The stamps are still written and read
+		/// through <see cref="Volatile"/>, so a reader that sees the raised global counter cannot go on to read
+		/// a stale (or, on a 32 bit runtime, torn) local stamp and latch a rectangle nothing will ever rebuild.
+		/// That is hardening, not a guarantee: nothing here orders a change made on one thread against a paint
+		/// already under way on another.
+		/// </para>
+		/// </remarks>
 		internal class ScreenClipping
 		{
 			private readonly GuiWidget attachedTo;
 
-			internal bool NeedRebuild { get; set; } = true;
+			/// <summary>
+			/// Counts every change to any widget that can move a clipping rectangle. Only its ordering
+			/// matters: a fresh value is larger than every value handed out before it.
+			/// </summary>
+			private static long globalVersion;
+
+			private static long NextVersion() => Interlocked.Increment(ref globalVersion);
+
+			/// <summary>
+			/// How many widgets have had their cached clipping stamped stale (plus one per widget ever
+			/// constructed, which starts life stamped). Exposed for tests and diagnostics through
+			/// <see cref="GuiWidget.ScreenClippingInvalidationCount"/>.
+			/// </summary>
+			internal static long InvalidationCount => Volatile.Read(ref globalVersion);
+
+			/// <summary>
+			/// Stamped afresh whenever this widget alone changes. Never 0, so a zeroed
+			/// <see cref="chainVersion"/> reliably means "never built".
+			/// </summary>
+			private long localVersion = NextVersion();
+
+			/// <summary>
+			/// The largest <see cref="localVersion"/> on the chain from this widget to the root at the moment
+			/// the cached rectangle was worked out.
+			/// </summary>
+			private long chainVersion;
+
+			/// <summary>
+			/// The <see cref="globalVersion"/> at which this cache was last confirmed current, so that repeated
+			/// reads with no intervening change cost one comparison rather than a walk to the root.
+			/// </summary>
+			private long validatedAtGlobalVersion;
 
 			internal void MarkRecalculate()
 			{
-				GuiWidget nextParent = attachedTo.Parent;
-				while (nextParent != null)
-				{
-					nextParent.screenClipping.NeedRebuild = true;
-					nextParent = nextParent.Parent;
-				}
-
-				MarkChildrenRecalculate();
-			}
-
-			private void MarkChildrenRecalculate()
-			{
-				if (attachedTo.HasBeenClosed)
-				{
-					return;
-				}
-
-				NeedRebuild = true;
-
-				foreach (GuiWidget child in attachedTo.Children)
-				{
-					child.screenClipping.MarkChildrenRecalculate();
-
-					if (attachedTo.HasBeenClosed)
-					{
-						return;
-					}
-				}
+				Volatile.Write(ref localVersion, NextVersion());
 			}
 
 			internal bool VisibleAfterClipping = true;
@@ -2707,41 +2761,101 @@ namespace MatterHackers.Agg.UI
 			{
 				this.attachedTo = attachedTo;
 			}
-		}
 
-		protected bool CurrentScreenClipping(out RectangleDouble screenClippingRect)
-		{
-			if (screenClipping.NeedRebuild)
+			/// <summary>
+			/// Brings <see cref="ScreenClippingRect"/>, <see cref="ScreenOrigin"/> and
+			/// <see cref="VisibleAfterClipping"/> up to date, and answers the version of the chain they now
+			/// stand for (which is what this widget's children compare themselves against).
+			/// </summary>
+			internal long Validate()
+			{
+				// Read the global first: anything stamped after this point raises it again, so the worst a
+				// concurrent change can do is leave this validation standing for a version it no longer
+				// describes, which the next read corrects.
+				long globalNow = Volatile.Read(ref globalVersion);
+				if (validatedAtGlobalVersion == globalNow)
+				{
+					return chainVersion;
+				}
+
+				GuiWidget parent = attachedTo.Parent;
+				long parentChainVersion = parent?.screenClipping.Validate() ?? 0;
+
+				long currentChainVersion = Max(parentChainVersion, Volatile.Read(ref localVersion));
+				if (currentChainVersion != chainVersion)
+				{
+					Rebuild(parent);
+					chainVersion = currentChainVersion;
+				}
+
+				validatedAtGlobalVersion = globalNow;
+				return currentChainVersion;
+			}
+
+			/// <summary>
+			/// Works out the screen rectangle from scratch. The parent's cache is up to date by the time this
+			/// runs - <see cref="Validate"/> sees to that - so it can be read directly.
+			/// </summary>
+			private void Rebuild(GuiWidget parent)
 			{
 				DrawCount++;
-				screenClipping.ScreenClippingRect = TransformToScreenSpace(LocalBounds);
-				screenClipping.ScreenOrigin = TransformToScreenSpace(Vector2.Zero);
 
-				if (Parent != null)
+				ScreenClippingRect = attachedTo.TransformToScreenSpace(attachedTo.LocalBounds);
+				ScreenOrigin = attachedTo.TransformToScreenSpace(Vector2.Zero);
+				VisibleAfterClipping = true;
+
+				if (parent != null)
 				{
-					if (Parent.CurrentScreenClipping(out RectangleDouble screenParentClipping))
+					ScreenClipping parentClipping = parent.screenClipping;
+					if (parentClipping.VisibleAfterClipping)
 					{
 						var intersectionRect = new RectangleDouble();
-						if (intersectionRect.IntersectRectangles(screenClipping.ScreenClippingRect, screenParentClipping))
+						if (intersectionRect.IntersectRectangles(ScreenClippingRect, parentClipping.ScreenClippingRect))
 						{
-							screenClipping.ScreenClippingRect = intersectionRect;
-							screenClipping.VisibleAfterClipping = true;
+							ScreenClippingRect = intersectionRect;
 						}
 						else
 						{
-							// this rect is clipped away by the parent rect so return false.
-							screenClipping.VisibleAfterClipping = false;
+							// this rect is clipped away by the parent rect
+							VisibleAfterClipping = false;
 						}
 					}
 					else
 					{
 						// the parent is completely clipped away, so this is too.
-						screenClipping.VisibleAfterClipping = false;
+						VisibleAfterClipping = false;
 					}
 				}
-
-				screenClipping.NeedRebuild = false;
 			}
+		}
+
+		/// <summary>
+		/// How many times any widget's cached screen clipping has been stamped stale since the process
+		/// started. Counted the way <see cref="DrawCount"/> and <see cref="LayoutCount"/> are, for tests and
+		/// diagnostics: invalidation is O(1) per changed widget, so this must track the widgets that actually
+		/// moved and not the size of the tree they sit in.
+		/// </summary>
+		public static long ScreenClippingInvalidationCount => ScreenClipping.InvalidationCount;
+
+		/// <summary>
+		/// Drops this widget's cached screen clipping rectangle (and, because clipping is validated against
+		/// the chain up to the root, every descendant's with it).
+		/// </summary>
+		/// <remarks>
+		/// Writing LocalBounds or ParentToChildTransform does this for you. This exists for the widgets that
+		/// never write their bounds because they *derive* them - Slider returns the union of its track, thumb
+		/// and value text - since nothing can tell that a derived rectangle has grown. Such a widget must call
+		/// this itself whenever one of the things it derives from changes, or it will go on being clipped to
+		/// the size it used to be until some ancestor happens to change.
+		/// </remarks>
+		protected void InvalidateScreenClipping()
+		{
+			screenClipping.MarkRecalculate();
+		}
+
+		protected bool CurrentScreenClipping(out RectangleDouble screenClippingRect)
+		{
+			screenClipping.Validate();
 
 			screenClippingRect = screenClipping.ScreenClippingRect;
 			return screenClipping.VisibleAfterClipping;
