@@ -1698,15 +1698,42 @@ namespace MatterHackers.Agg.UI
 			});
 		}
 
+		/// <summary>
+		/// Moves this widget to the end of its parent's children, so it draws over - and is hit tested before -
+		/// its siblings.
+		/// </summary>
+		/// <remarks>
+		/// Deliberately a reorder of the parent's list rather than a <see cref="RemoveChild(GuiWidget)"/> and
+		/// <see cref="AddChild"/> pair, which is how callers used to raise a widget themselves (WindowWidget did,
+		/// to come to the front when it took focus). RemoveChild calls ClearCapturedState, which drops the mouse
+		/// capture the current press has set all the way up the parent chain, so raising a widget from inside a
+		/// click (a floating window coming to the front as the user presses a control on it) would swallow the
+		/// release and the click with it. Nothing about the widget's parentage, focus or capture changes here -
+		/// only where it sits in the list.
+		/// </remarks>
 		public virtual void BringToFront()
 		{
-			if (Parent == null)
+			var parent = Parent;
+			if (parent == null
+				|| parent.Children.Count == 0
+				|| parent.Children[parent.Children.Count - 1] == this)
 			{
 				return;
 			}
 
-			Parent.Children.Remove(this);
-			Parent.Children.Add(this);
+			// one Modify, so the widget is never missing from the published list - anything enumerating the
+			// children while this runs sees either the old order or the new one, never a gap
+			parent.Children.Modify(list =>
+			{
+				if (list.Remove(this))
+				{
+					list.Add(this);
+				}
+			});
+
+			// only this widget's own area changes when it moves to the front of the list, and invalidating the
+			// whole parent is a full screen repaint per raise when that parent is the root window
+			this.Invalidate();
 		}
 
 		public virtual void OnChildAdded(EventArgs e)

@@ -46,29 +46,27 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
+        /// <summary>
+        /// Raises the window as soon as anything inside it takes focus, so clicking a control on a window that
+        /// is behind another one brings it forward.
+        /// </summary>
+        /// <remarks>
+        /// Deferred to the next idle because focus changes arrive part way through the parent's own walk of its
+        /// children, and this reorders that list. That idle lands between the press that gave the window focus
+        /// and the release that completes the click, which is why the raise has to be a
+        /// <see cref="GuiWidget.BringToFront"/> reorder rather than a remove and re-add - a remove clears the
+        /// mouse capture the press just set, and the click would be swallowed. See BringToFront's remarks.
+        /// </remarks>
         public override void OnContainsFocusChanged(FocusChangedArgs e)
         {
             base.OnContainsFocusChanged(e);
 
 			UiThread.RunOnIdle(() =>
 			{
-				var parent = Parent;
-				// move this window to the first position in the children list
-				if (ContainsFocus
-					&& parent != null
-					// Already frontmost, so there is nothing to raise - and doing it anyway is not free. This
-					// runs on the idle between the press that gave the window focus and the release that
-					// completes the click, and pulling the window out of its parent and putting it back loses
-					// the widget the press landed on: the very first click on a freshly opened window (its
-					// close button, its title bar buttons) would be swallowed and the user would have to click
-					// twice.
-					&& parent.Children.Count > 0
-					&& parent.Children[parent.Children.Count - 1] != this)
+				if (ContainsFocus)
 				{
-                    parent.RemoveChild(this);
-					this.ClearRemovedFlag();
-                    parent.AddChild(this);
-                }
+					this.BringToFront();
+				}
 			});
         }
 
