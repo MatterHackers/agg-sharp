@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2018, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -357,6 +357,69 @@ namespace MatterHackers.Agg.UI
 		public int VisibleCount { get; }
 
 		#endregion Properties
+
+		/// <summary>
+		/// Materializes any rows the nodes below this view are still holding, then paints.
+		/// </summary>
+		/// <remarks>
+		/// A TreeNode does not parent its child rows when they are added; it waits, so that a tree nobody
+		/// has opened costs nothing. What it used to wait for was its own <c>OnDraw</c>, which is far too
+		/// late: by then this view's scrolling area and row container have already put their transforms on
+		/// the graphics stack for this frame, and the rows that appear underneath them make those containers
+		/// grow and move. The rows then paint against the layout of a frame that no longer exists - and the
+		/// clipping rectangle, worked out from the new layout and shifted into the old frame's coordinates,
+		/// moves with them instead of confining them. That is what put the first rows of a library tree over
+		/// the application's toolbar, outside the dialog, on the single frame the tree filled in.
+		/// <para>
+		/// Doing it here instead puts the growth before anything below this view has been painted, so every
+		/// transform and clip in the frame is worked out from the finished layout. This is sound only while
+		/// the view's own bounds cannot change during the pre-pass: every consumer in this repository is
+		/// Stretch-anchored, so the rows appearing underneath cannot resize it. A Fit-anchored TreeView would
+		/// grow with its content in the middle of the pre-pass and hand the same glitch to whatever contains
+		/// it, one level up.
+		/// </para>
+		/// <para>
+		/// <see cref="TreeNode.AnyNodeAwaitingContent"/> skips the walk when nothing is waiting, but it is a
+		/// best-effort gate rather than a promise: in an application that builds a large tree up front and
+		/// leaves most of it collapsed, the nodes inside those collapsed branches stay dirty and hold the
+		/// gate open for good. What it guards is one traversal of the visible widgets under this view, which
+		/// is small next to painting them.
+		/// </para>
+		/// </remarks>
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			if (TreeNode.AnyNodeAwaitingContent)
+			{
+				BuildPendingRows(this);
+			}
+
+			base.OnDraw(graphics2D);
+		}
+
+		/// <summary>
+		/// Walk the widgets that are about to be painted, giving every node among them the chance to parent
+		/// its rows. Hidden branches are skipped, which is what keeps a collapsed tree lazy: a node's rows
+		/// are built when the node itself is on its way to the screen, not when it is merely in the tree.
+		/// </summary>
+		/// <remarks>
+		/// The rows this parents in make the containers under the TreeView grow, which is the point - but it
+		/// assumes the TreeView itself does not grow with them (see <see cref="OnDraw"/>).
+		/// </remarks>
+		private static void BuildPendingRows(GuiWidget widget)
+		{
+			if (widget is TreeNode node)
+			{
+				node.EnsureContentBuilt();
+			}
+
+			foreach (var child in widget.Children)
+			{
+				if (child.Visible)
+				{
+					BuildPendingRows(child);
+				}
+			}
+		}
 
 		// Summary:
 		//     Disables any redrawing of the tree view.

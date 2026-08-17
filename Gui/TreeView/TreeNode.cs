@@ -36,6 +36,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 
 namespace MatterHackers.Agg.UI
 {
@@ -47,8 +48,83 @@ namespace MatterHackers.Agg.UI
         private readonly TextWidget textWidget;
         private bool _expanded;
         private TreeView _treeView;
-        private bool isDirty;
         private ThemeConfig theme;
+
+        /// <summary>
+        /// How many nodes anywhere are holding rows that have not been parented into the widget tree yet.
+        /// </summary>
+        /// <remarks>
+        /// A whole-process count rather than one per TreeView because a node does not reliably know which
+        /// TreeView it belongs to until it is parented (<see cref="TreeView"/> walks up through NodeParent).
+        /// It only gates a walk that is otherwise skipped, so the cost of the coarseness is that one tree
+        /// filling in makes the other trees on screen check themselves once, which is nothing.
+        /// </remarks>
+        private static int nodesAwaitingContent;
+
+        // The dirty flag and whether this node is counted in nodesAwaitingContent live in one field, so
+        // that the two can only ever move together (see IsDirty).
+        private const int Clean = 0;
+        private const int DirtyCounted = 1;
+        private const int DirtyOrphaned = 2;
+
+        private int dirtyState;
+
+        /// <summary>
+        /// Whether any node that can still be drawn is waiting to have its rows materialized, so a TreeView
+        /// can skip the walk in <see cref="UI.TreeView.OnDraw"/> on the frames where none is.
+        /// </summary>
+        /// <remarks>
+        /// Best effort, and deliberately biased towards saying yes: an overcount only costs the walk it
+        /// gates, while an undercount brings the mid-frame glitch back. So it stays hot for as long as any
+        /// node is dirty, including nodes sitting inside a collapsed parent that will not be drawn until
+        /// someone opens it - a tree built up front and mostly collapsed (a help index, say) can hold it
+        /// true for the life of the window. Nodes dropped from the tree stop counting where that is visible
+        /// (see <see cref="RebuildContentSection"/>), but a node pulled out of the widget tree by other
+        /// means keeps its count until it is closed.
+        /// </remarks>
+        internal static bool AnyNodeAwaitingContent => Volatile.Read(ref nodesAwaitingContent) > 0;
+
+        /// <summary>
+        /// True while this node's <see cref="Nodes"/> have changed but the rows for them are not in the
+        /// widget tree yet. Kept behind a property so the process-wide count stays in step with it.
+        /// </summary>
+        private bool IsDirty
+        {
+            get => Volatile.Read(ref dirtyState) != Clean;
+
+            set
+            {
+                // Nodes.Add runs off the UI thread while a library panel fills in, and can land while the UI
+                // thread is clearing the flag in RebuildContentSection. So the flag and the count have to
+                // change as one step: a read-compare-write of the flag with a separate Interlocked on the
+                // count can interleave into "dirty, but nothing counted", which switches the pre-pass off in
+                // exactly the case it exists for. One Exchange hands this thread the state it really
+                // replaced, which is the only thing that says what this thread owes the count.
+                int previous = Interlocked.Exchange(ref dirtyState, value ? DirtyCounted : Clean);
+
+                int delta = (value ? 1 : 0) - (previous == DirtyCounted ? 1 : 0);
+                if (delta != 0)
+                {
+                    Interlocked.Add(ref nodesAwaitingContent, delta);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Stop counting towards <see cref="AnyNodeAwaitingContent"/> while staying dirty, for a node that
+        /// has left the widget tree and so cannot be reached by the pre-pass to be built.
+        /// </summary>
+        /// <remarks>
+        /// The flag itself must survive: the rows really are unbuilt, and if the node is parented again it
+        /// still has to build them. <see cref="OnParentChanged"/> is what puts it back on the count.
+        /// </remarks>
+        private void StopAwaitingContent()
+        {
+            if (Interlocked.CompareExchange(ref dirtyState, DirtyOrphaned, DirtyCounted) == DirtyCounted)
+            {
+                Interlocked.Decrement(ref nodesAwaitingContent);
+            }
+        }
 
         public TreeNode(ThemeConfig theme, bool useIcon = true, TreeNode nodeParent = null)
             : base(FlowDirection.TopToBottom)
@@ -537,7 +613,7 @@ namespace MatterHackers.Agg.UI
         /// </remarks>
         public void EnsureContentBuilt()
         {
-            if (isDirty)
+            if (IsDirty)
             {
                 RebuildContentSection();
             }
@@ -548,18 +624,36 @@ namespace MatterHackers.Agg.UI
             // Unregister listeners
             this.Nodes.CollectionChanged -= this.Nodes_CollectionChanged;
 
+            // A closed node will never build its rows, so it must stop counting towards the work every
+            // TreeView checks for before it paints.
+            this.IsDirty = false;
+
             base.OnClosed(e);
         }
 
         public override void OnDraw(Graphics2D graphics2D)
         {
-            if (isDirty)
-            {
-                // doing this during draw will often result in a enumeration changed
-                RebuildContentSection();
-            }
+            // A last resort for a node that is not under a TreeView, which therefore gets no chance to
+            // build its rows before the frame starts (see TreeView.OnDraw). Building here is what produced
+            // the one-frame glitch this guards against: the containers above have already baked their
+            // transforms into the graphics stack for this frame, so rows parented now paint - and are
+            // clipped - against a layout that no longer exists.
+            EnsureContentBuilt();
 
             base.OnDraw(graphics2D);
+        }
+
+        public override void OnParentChanged(EventArgs e)
+        {
+            // Back in the widget tree, so the pre-pass can reach this node again and it owes the gate its
+            // count back (see StopAwaitingContent).
+            if (Parent != null
+                && Interlocked.CompareExchange(ref dirtyState, DirtyCounted, DirtyOrphaned) == DirtyOrphaned)
+            {
+                Interlocked.Increment(ref nodesAwaitingContent);
+            }
+
+            base.OnParentChanged(e);
         }
 
         public override void OnKeyDown(KeyEventArgs keyEvent)
@@ -652,7 +746,7 @@ namespace MatterHackers.Agg.UI
                 }
             }
 
-            isDirty = true;
+            IsDirty = true;
         }
 
         // Summary:
@@ -670,6 +764,7 @@ namespace MatterHackers.Agg.UI
         private void RebuildContentSection()
         {
             // Remove but don't close all the current nodes
+            var previousRows = content.Children.OfType<TreeNode>().ToList();
             content.RemoveChildren();
 
             using (content.LayoutLock())
@@ -688,7 +783,28 @@ namespace MatterHackers.Agg.UI
             // If the node count is ending at 0 we removed content and need to rebuild the title bar so it will net have a + in it
             expandWidget.Expandable = GetNodeCount(false) != 0;
 
-            isDirty = false;
+            // Rows that were not added back are gone from the tree - dropped by a Nodes.Remove or a
+            // Nodes.Clear - and are never closed, so without this they would hold their claim on the
+            // pre-pass gate for the rest of the session. Their descendants go with them: the whole subtree
+            // is unreachable from any TreeView now.
+            foreach (var previousRow in previousRows)
+            {
+                if (previousRow.Parent == null)
+                {
+                    foreach (var orphan in previousRow.DescendantsAndSelf())
+                    {
+                        // Only the ones that are out of the widget tree themselves. A descendant whose row
+                        // was already built is still parented to its own parent's content, and would never
+                        // see the OnParentChanged that puts it back on the count if the subtree came back.
+                        if (orphan.Parent == null)
+                        {
+                            orphan.StopAwaitingContent();
+                        }
+                    }
+                }
+            }
+
+            IsDirty = false;
         }
 
         private class TreeExpandWidget : FlowLayoutWidget
