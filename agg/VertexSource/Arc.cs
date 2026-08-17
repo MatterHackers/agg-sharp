@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026 Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -42,9 +42,22 @@ namespace MatterHackers.Agg.VertexSource
 
 		private Vector2 radius;
 
-		public double ResolutionScale { get; set; } = 1;
+		private double resolutionScale = 1;
+
+		private int numSegments = 0;
 
 		private double startAngle;
+
+		public double ResolutionScale
+		{
+			get => resolutionScale;
+
+			set
+			{
+				resolutionScale = value;
+				InvalidateVertices();
+			}
+		}
 
 		public Arc()
 		{
@@ -104,12 +117,24 @@ namespace MatterHackers.Agg.VertexSource
 			this.startAngle = startAngle;
 			this.endAngle = endAngle;
 			this.direction = direction;
+
+			// The (originX, originY, ...) overload funnels through here, so this covers both.
+			InvalidateVertices();
 		}
 
         /// <summary>
 		/// This is the number of segments that will be used in each turn. Set to 0 to use the default of an angle approximation.
 		/// </summary>
-        public int NumSegments { get; set; } = 0;
+        public int NumSegments
+        {
+            get => numSegments;
+
+            set
+            {
+                numSegments = value;
+                InvalidateVertices();
+            }
+        }
 
         public override IEnumerable<VertexData> Vertices()
 		{

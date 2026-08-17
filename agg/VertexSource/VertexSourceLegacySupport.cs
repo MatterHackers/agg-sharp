@@ -37,6 +37,11 @@ namespace MatterHackers.Agg.VertexSource
                 Rewind(0);
             }
 
+            // There is no end check here: MoveNext() returning false is not what stops the caller.
+            // A Roslyn iterator keeps handing back the last value it yielded once it is exhausted, so
+            // ending the caller's while-not-Stop loop is a contract on Vertices() - every implementation
+            // must yield an explicit Stop as its final element. A Vertices() that merely yield breaks
+            // would leave this repeating whatever came before forever.
             x = currentEnumerator.Current.Position.X;
             y = currentEnumerator.Current.Position.Y;
             FlagsAndCommand command = currentEnumerator.Current.Command;
@@ -44,6 +49,22 @@ namespace MatterHackers.Agg.VertexSource
             currentEnumerator.MoveNext();
 
             return command;
+        }
+
+        /// <summary>
+        /// Throws away the cached enumerator so the next Vertex() call re-reads Vertices().
+        /// </summary>
+        /// <remarks>
+        /// Derived types must call this from every mutator that changes vertex-defining state. Vertex()
+        /// only builds an enumerator when it does not already have one, so a source that has already been
+        /// drained to Stop keeps handing back its exhausted enumerator: the caller reads Stop on the very
+        /// first call and the reshaped geometry silently draws nothing. Before this existed the hazard was
+        /// worked around one call site at a time by re-Rewinding by hand (see
+        /// Gui/PolygonWidget.cs InitControlPointEllipse), which only helped the callers that remembered.
+        /// </remarks>
+        protected void InvalidateVertices()
+        {
+            currentEnumerator = null;
         }
 
         public ulong GetLongHashCode(ulong hash = 14695981039346656037)

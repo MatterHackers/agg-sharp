@@ -6,7 +6,7 @@ using MatterHackers.VectorMath;
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026 Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -44,6 +44,7 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				_resolutionScale = value;
 				calc_num_steps();
+				InvalidateVertices();
 			}
 		}
 		#endregion
@@ -112,6 +113,11 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				calc_num_steps();
 			}
+
+			// The other init overloads funnel through here, so this one call covers them all. Note that
+			// assigning the public originX/originY/radiusX/radiusY/IsCw fields directly cannot invalidate;
+			// callers that reshape that way still have to Rewind by hand.
+			InvalidateVertices();
 		}
 
 		public override IEnumerable<VertexData> Vertices()

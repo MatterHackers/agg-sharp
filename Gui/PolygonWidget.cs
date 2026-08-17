@@ -332,9 +332,10 @@ namespace MatterHackers.Agg.UI
 
 		/// <summary>
 		/// Points the shared ellipse at control point <paramref name="pointIndex"/> and restarts its
-		/// enumeration. Ellipse is a VertexSourceLegacySupport, so its Vertex() reads a cached
-		/// enumerator that init() does not reset - without the Rewind every control point after the
-		/// first would read an exhausted enumerator and report Stop.
+		/// enumeration. The Rewind is redundant now that Ellipse.init() invalidates the cached
+		/// enumerator itself (see VertexSourceLegacySupport.InvalidateVertices) and Vertex() rewinds
+		/// lazily; it is kept as belt and braces, and to say out loud that each control point is meant
+		/// to be drawn from the start of the ellipse.
 		/// </summary>
 		private void InitControlPointEllipse(int pointIndex, double radius)
 		{

@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026 Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -55,10 +55,17 @@ namespace MatterHackers.Agg.VertexSource
 		private Curve3 m_curve3;
 		private Curve4 m_curve4;
 
+		private IVertexSource vertexSource;
+
 		public IVertexSource VertexSource
 		{
-			get;
-			set;
+			get => vertexSource;
+
+			set
+			{
+				vertexSource = value;
+				InvalidateVertices();
+			}
 		}
 
 		public FlattenCurves(IVertexSource vertexSource)
@@ -81,6 +88,7 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				m_curve3.approximation_scale(value);
 				m_curve4.approximation_scale(value);
+				InvalidateVertices();
 			}
 		}
 
@@ -95,6 +103,7 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				m_curve3.approximation_method(value);
 				m_curve4.approximation_method(value);
+				InvalidateVertices();
 			}
 
 			get
@@ -109,6 +118,7 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				m_curve3.angle_tolerance(value);
 				m_curve4.angle_tolerance(value);
+				InvalidateVertices();
 			}
 
 			get
@@ -123,6 +133,7 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				m_curve3.cusp_limit(value);
 				m_curve4.cusp_limit(value);
+				InvalidateVertices();
 			}
 
 			get

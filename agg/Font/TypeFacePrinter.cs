@@ -57,10 +57,33 @@ namespace MatterHackers.Agg.Font
 
 		private Vector2 totalSizeCache;
 
-		public Justification Justification { get; set; }
+		private Justification justification;
 
-		public Baseline Baseline { get; set; }
+		public Justification Justification
+		{
+			get => justification;
 
+			set
+			{
+				justification = value;
+				InvalidateVertices();
+			}
+		}
+
+		private Baseline baseline;
+
+		public Baseline Baseline
+		{
+			get => baseline;
+
+			set
+			{
+				baseline = value;
+				InvalidateVertices();
+			}
+		}
+
+		// DrawFromHintedCache picks the render path rather than changing Vertices(), so it does not invalidate.
 		public bool DrawFromHintedCache { get; set; }
 
 		private StyledTypeFace typeFaceStyle;
@@ -78,6 +101,7 @@ namespace MatterHackers.Agg.Font
 				{
 					typeFaceStyle = value;
 					totalSizeCache = default(Vector2);
+					InvalidateVertices();
 				}
 			}
 		}
@@ -95,13 +119,36 @@ namespace MatterHackers.Agg.Font
 				{
 					totalSizeCache.X = 0;
 					text = value;
+					InvalidateVertices();
 				}
 			}
 		}
 
-		public Vector2 Origin { get; set; }
+		private Vector2 origin;
 
-		public double ResolutionScale { get; set; } = 1;
+		public Vector2 Origin
+		{
+			get => origin;
+
+			set
+			{
+				origin = value;
+				InvalidateVertices();
+			}
+		}
+
+		private double resolutionScale = 1;
+
+		public double ResolutionScale
+		{
+			get => resolutionScale;
+
+			set
+			{
+				resolutionScale = value;
+				InvalidateVertices();
+			}
+		}
 
 		/// <summary>
 		/// Everything that decides which vertices <see cref="Vertices"/> emits, as one comparable value - see

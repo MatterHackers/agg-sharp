@@ -6,7 +6,7 @@ using MatterHackers.VectorMath;
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007-2025 Lars Brubaker
+// Copyright (C) 2007-2026 Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -39,7 +39,19 @@ namespace MatterHackers.Agg.VertexSource
 		private Vector2 rightTopRadius;
 		private Vector2 leftTopRadius;
 
-		public double ResolutionScale { get; set; } = 1;
+		private double resolutionScale = 1;
+		private int numSegments = 0;
+
+		public double ResolutionScale
+		{
+			get => resolutionScale;
+
+			set
+			{
+				resolutionScale = value;
+				InvalidateVertices();
+			}
+		}
 
 		public RoundedRect(double left, double bottom, double right, double top, double radius = 0)
 		{
@@ -81,17 +93,20 @@ namespace MatterHackers.Agg.VertexSource
 			bounds = new RectangleDouble(left, bottom, right, top);
 			if (left > right) { bounds.Left = right; bounds.Right = left; }
 			if (bottom > top) { bounds.Bottom = top; bounds.Top = bottom; }
+			InvalidateVertices();
 		}
 
 		public void radius(double r)
 		{
 			leftBottomRadius.X = leftBottomRadius.Y = rightBottomRadius.X = rightBottomRadius.Y = rightTopRadius.X = rightTopRadius.Y = leftTopRadius.X = leftTopRadius.Y = r;
+			InvalidateVertices();
 		}
 
 		public void radius(double rx, double ry)
 		{
 			leftBottomRadius.X = rightBottomRadius.X = rightTopRadius.X = leftTopRadius.X = rx;
 			leftBottomRadius.Y = rightBottomRadius.Y = rightTopRadius.Y = leftTopRadius.Y = ry;
+			InvalidateVertices();
 		}
 
 		public void radius(double leftBottomRadius, double rightBottomRadius, double rightTopRadius, double leftTopRadius)
@@ -100,6 +115,7 @@ namespace MatterHackers.Agg.VertexSource
 			this.rightBottomRadius = new Vector2(rightBottomRadius, rightBottomRadius);
 			this.rightTopRadius = new Vector2(rightTopRadius, rightTopRadius);
 			this.leftTopRadius = new Vector2(leftTopRadius, leftTopRadius);
+			InvalidateVertices();
 		}
 
 		public void radius(double rx1, double ry1, double rx2, double ry2,
@@ -107,6 +123,7 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			leftBottomRadius.X = rx1; leftBottomRadius.Y = ry1; rightBottomRadius.X = rx2; rightBottomRadius.Y = ry2;
 			rightTopRadius.X = rx3; rightTopRadius.Y = ry3; leftTopRadius.X = rx4; leftTopRadius.Y = ry4;
+			InvalidateVertices();
 		}
 
 		public void normalize_radius()
@@ -126,13 +143,24 @@ namespace MatterHackers.Agg.VertexSource
 				leftBottomRadius.X *= k; leftBottomRadius.Y *= k; rightBottomRadius.X *= k; rightBottomRadius.Y *= k;
 				rightTopRadius.X *= k; rightTopRadius.Y *= k; leftTopRadius.X *= k; leftTopRadius.Y *= k;
 			}
+
+			InvalidateVertices();
 		}
 
         /// <summary>
 		/// This is the number of segments that will be used in each turn. Set to 0 to use the default of an angle approximation.
 		/// </summary>
-        public int NumSegments { get; set; } = 0;
-        
+        public int NumSegments
+        {
+            get => numSegments;
+
+            set
+            {
+                numSegments = value;
+                InvalidateVertices();
+            }
+        }
+
 		public override IEnumerable<VertexData> Vertices()
 		{
 			var allPaths = new JoinPaths();
