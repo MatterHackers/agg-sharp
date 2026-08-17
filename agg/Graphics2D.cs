@@ -707,7 +707,10 @@ namespace MatterHackers.Agg
         /// <see cref="Image.ImageBuffer.NewGraphics2D"/>, which sets the box to the buffer bounds. It is
         /// called out here because this is the universal fill chokepoint - a hand-built
         /// <see cref="Graphics2D"/> that skips the clip box now silently loses identified fills rather than
-        /// only the explicit <see cref="RenderLcd"/> calls it never made.
+        /// only the explicit <see cref="RenderLcd"/> calls it never made. Since <c>GuiWidget.DrawChild</c>
+        /// intersects every child's clip with the clip already in force on the surface, the cost is worse
+        /// than lost fills: an empty surface clip makes every child intersect to nothing, so a whole widget
+        /// tree painted onto such a surface skips every child and renders nothing at all.
         /// </para>
         /// </remarks>
         private bool TryRenderThroughLcd(IVertexSource vertexSource, IColorType colorType)

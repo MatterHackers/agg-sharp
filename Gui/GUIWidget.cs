@@ -2374,7 +2374,8 @@ namespace MatterHackers.Agg.UI
 					Affine accumulatedTransform = child.ParentToChildTransform * currentGraphics2DTransform;
 					graphics2D.SetTransform(accumulatedTransform);
 
-					if (child.CurrentScreenClipping(out RectangleDouble currentScreenClipping))
+					bool childHasSomethingToPaint = child.CurrentScreenClipping(out RectangleDouble currentScreenClipping);
+					if (childHasSomethingToPaint)
 					{
 						// The clipping is worked out in screen coordinates, and the surface being painted is not
 						// always the screen: while this widget is double buffered its children are painted into a
@@ -2398,6 +2399,21 @@ namespace MatterHackers.Agg.UI
 							BreakInDebugger("Right is less than Left or Top is less than Bottom");
 						}
 
+						// The offset above reconciles surfaces, but it describes where the child sat when the
+						// clip was computed and cannot be trusted once layout has mutated mid-frame: a widget
+						// that grows during a paint pass shifts or widens this rectangle past the clip its
+						// parent is painting under. The parent's clip is the outer bound no child may escape,
+						// so bound the child by it here rather than replacing it below. An empty result means
+						// the child lies entirely outside the visible region and has nothing to paint.
+						// Note the skip suppresses more than the child's ink: its OnDraw side effects (lazy
+						// content building, backbuffer rasterization) do not run either. A dirty child that
+						// is fully clipped out defers those to the next frame, which the mutation's own
+						// Invalidate has already scheduled.
+						childHasSomethingToPaint = currentScreenClipping.IntersectWithRectangle(oldClippingRect);
+					}
+
+					if (childHasSomethingToPaint)
+					{
 						graphics2D.SetClippingRect(currentScreenClipping);
 
 						if (child.DoubleBuffer
