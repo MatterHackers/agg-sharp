@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2016, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -307,6 +307,16 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// True when the content is wider than the view, so there is something off the sides to scroll to. A
+		/// panel with nothing hidden sideways must leave <see cref="MouseEventArgs.WheelDeltaX"/> alone.
+		/// </summary>
+		/// <remarks>
+		/// Measured exactly the way <see cref="ScrollingArea.ValidateScrollPosition"/> decides whether to clamp,
+		/// so "we can scroll" and "the scroll will be allowed to stand" can never disagree.
+		/// </remarks>
+		private bool HasHorizontalOverflow => ScrollArea.LocalBounds.Width + ScrollArea.Margin.Width > LocalBounds.Width;
+
 		public override void OnMouseWheel(MouseEventArgs mouseEvent)
 		{
 			// let children have at the data first. They may use up the scroll
@@ -314,11 +324,32 @@ namespace MatterHackers.Agg.UI
 
 			if (AutoScroll)
 			{
+				// NOTE: both axes multiply by DeviceScale, which double counts DPI on a display where the platform
+				// has already baked its backing scale into the wheel units. That is a known, separately tracked
+				// bug - the axes are kept identical here so the fix lands on both at once.
 				Vector2 oldScrollPosition = ScrollPosition;
 				ScrollPosition += new Vector2(0, -mouseEvent.WheelDelta / 5 * GuiWidget.DeviceScale);
 				if (oldScrollPosition != ScrollPosition)
 				{
 					mouseEvent.WheelDelta = 0;
+				}
+
+				// A trackpad's sideways component scrolls the container the pointer is over, the way it does
+				// natively. ScrollPosition is where the content sits, so adding moves the content right - which is
+				// what a positive WheelDeltaX (fingers moving right) asks for, and it is why this does not negate
+				// the way the wheel above does: agg's Y grows upwards but its X grows the same way the gesture does.
+				if (mouseEvent.WheelDeltaX != 0
+					&& HasHorizontalOverflow)
+				{
+					oldScrollPosition = ScrollPosition;
+					ScrollPosition += new Vector2(mouseEvent.WheelDeltaX / 5 * GuiWidget.DeviceScale, 0);
+
+					// only taken if it actually moved - at either end of the travel the gesture is left for an
+					// ancestor that may still have somewhere to go
+					if (oldScrollPosition != ScrollPosition)
+					{
+						mouseEvent.WheelDeltaX = 0;
+					}
 				}
 
 				Invalidate();

@@ -37,8 +37,9 @@ namespace MatterHackers.Agg.UI.Tests
 	/// <summary>
 	/// A two finger trackpad scroll carries a horizontal component as well as a vertical one, and agg
 	/// delivers it as <see cref="MouseEventArgs.WheelDeltaX"/> alongside the wheel. These cover the two
-	/// things that have to be true for a widget deep in the tree to ever see it: the per-child clone has
-	/// to carry it down, and consuming it has to carry back up.
+	/// things that have to be true for a widget deep in the tree to ever see it - the per-child clone has
+	/// to carry it down, and consuming it has to carry back up - and then what
+	/// <see cref="ScrollableWidget"/>, which is where the gesture normally lands, does with it.
 	/// </summary>
 	public class HorizontalWheelRoutingTests
 	{
@@ -85,22 +86,123 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
-		public async Task AScrollPanelLeavesTheHorizontalWheelAlone()
+		public async Task AScrollPanelWiderThanItsViewScrollsSidewaysAndTakesTheDelta()
 		{
-			// ScrollableWidget only scrolls vertically, so a sideways gesture has to pass through it untouched
-			// for anything inside it to be able to use it.
-			var scrollable = new ScrollableWidget(200, 200, autoScroll: true);
-			scrollable.AddChild(new GuiWidget(400, 400));
-			scrollable.PerformLayout();
+			var scrollable = WideScrollable();
 
-			var wheelEvent = new MouseEventArgs(MouseButtons.None, 0, 100, 100, 0)
-			{
-				WheelDeltaX = -30,
-			};
-
+			var wheelEvent = SidewaysScroll(-30);
 			scrollable.OnMouseWheel(wheelEvent);
 
+			// -30 wheel units is 6 pixels of finger travel (the same 5-per-pixel packing the wheel is read with),
+			// and negative means the content moves left.
+			await Assert.That(scrollable.ScrollPosition.X).IsEqualTo(-6 * GuiWidget.DeviceScale).Within(0.001);
+
+			// it scrolled, so nothing above may scroll on the same gesture
+			await Assert.That(wheelEvent.WheelDeltaX).IsEqualTo(0);
+		}
+
+		[Test]
+		public async Task TheContentFollowsTheFingers()
+		{
+			// The sign is the whole feature: ScrollPosition.X is where the content sits, so a bigger X is content
+			// further right. AppKit's positive scrollingDeltaX is fingers moving right, and the content goes with
+			// them - which is why negative (fingers left) has to reveal what was off the right hand edge.
+			var scrollable = WideScrollable();
+
+			scrollable.OnMouseWheel(SidewaysScroll(-50));
+			var afterFingersLeft = scrollable.ScrollPosition.X;
+			await Assert.That(afterFingersLeft).IsLessThan(0);
+
+			scrollable.OnMouseWheel(SidewaysScroll(20));
+			await Assert.That(scrollable.ScrollPosition.X).IsGreaterThan(afterFingersLeft);
+		}
+
+		[Test]
+		public async Task TheContentStopsAtEitherEnd()
+		{
+			var scrollable = WideScrollable();
+
+			// far past the right hand end
+			scrollable.OnMouseWheel(SidewaysScroll(-100000));
+			var atTheEnd = scrollable.ScrollPosition.X;
+
+			// the content's right edge has come in to the view's, and no further
+			await Assert.That(atTheEnd).IsLessThan(0);
+			await Assert.That(scrollable.ScrollArea.BoundsRelativeToParent.Right)
+				.IsGreaterThanOrEqualTo(scrollable.LocalBounds.Right - scrollable.ScrollArea.Margin.Right - 0.001);
+
+			// and having run out, the gesture is left for an ancestor rather than swallowed
+			var pastTheEnd = SidewaysScroll(-100000);
+			scrollable.OnMouseWheel(pastTheEnd);
+			await Assert.That(scrollable.ScrollPosition.X).IsEqualTo(atTheEnd).Within(0.001);
+			await Assert.That(pastTheEnd.WheelDeltaX).IsEqualTo(-100000);
+
+			// back the other way stops at the start
+			scrollable.OnMouseWheel(SidewaysScroll(100000));
+			await Assert.That(scrollable.ScrollPosition.X).IsEqualTo(0).Within(0.001);
+		}
+
+		[Test]
+		public async Task APanelWithNothingHiddenSidewaysLeavesTheDeltaAlone()
+		{
+			// Nothing is clipped off the sides, so this panel cannot use the gesture - and must not eat it, or a
+			// scroll panel outside it that could would never see it.
+			var scrollable = new ScrollableWidget(200, 200, autoScroll: true);
+			scrollable.AddChild(new GuiWidget(100, 400));
+			scrollable.PerformLayout();
+
+			var startingScroll = scrollable.ScrollPosition;
+
+			var wheelEvent = SidewaysScroll(-30);
+			scrollable.OnMouseWheel(wheelEvent);
+
+			await Assert.That(scrollable.ScrollPosition.X).IsEqualTo(startingScroll.X).Within(0.001);
 			await Assert.That(wheelEvent.WheelDeltaX).IsEqualTo(-30);
+		}
+
+		[Test]
+		public async Task AnInnerPanelThatOnlyScrollsUpAndDownHandsTheGestureOut()
+		{
+			// This is the shape the path editor sits in: a tall inner panel inside a wide outer one. The wheel is
+			// over the inner panel, which has plenty to scroll vertically and nothing sideways, so the sideways
+			// component has to survive it and reach the panel that can act on it.
+			var outer = new ScrollableWidget(200, 200, autoScroll: true);
+			var inner = new ScrollableWidget(400, 200, autoScroll: true);
+
+			// Stretch rather than the default Fit, which is how a properties panel is built: the content is held
+			// to the width left over once the vertical bar has its gutter, so nothing of it is ever off the sides.
+			inner.ScrollArea.HAnchor = HAnchor.Stretch;
+			inner.AddChild(new GuiWidget(400, 800) { HAnchor = HAnchor.Stretch });
+			outer.AddChild(inner);
+			outer.PerformLayout();
+
+			var wheelEvent = SidewaysScroll(-30);
+			outer.OnMouseWheel(wheelEvent);
+
+			await Assert.That(inner.ScrollPosition.X).IsEqualTo(0).Within(0.001);
+			await Assert.That(outer.ScrollPosition.X).IsEqualTo(-6 * GuiWidget.DeviceScale).Within(0.001);
+			await Assert.That(wheelEvent.WheelDeltaX).IsEqualTo(0);
+		}
+
+		/// <summary>
+		/// A panel whose content is twice as wide as the view, so there is always something off the right to
+		/// scroll to.
+		/// </summary>
+		private static ScrollableWidget WideScrollable()
+		{
+			var scrollable = new ScrollableWidget(200, 200, autoScroll: true);
+			scrollable.AddChild(new GuiWidget(400, 100));
+			scrollable.PerformLayout();
+
+			return scrollable;
+		}
+
+		private static MouseEventArgs SidewaysScroll(int wheelDeltaX)
+		{
+			return new MouseEventArgs(MouseButtons.None, 0, 100, 100, 0)
+			{
+				WheelDeltaX = wheelDeltaX,
+			};
 		}
 
 		private class HorizontalWheelEater : GuiWidget
