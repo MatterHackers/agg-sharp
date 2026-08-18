@@ -89,6 +89,13 @@
     <Compile Remove="Agg.WebGpuRender\WebGpuSurfaceTargetTests.cs" />
   </ItemGroup>
 
+  <!-- Tests whose subject is the mac platform layer: on Windows PlatformMac is not referenced at all,
+       so MacSystemWindow does not exist to be tested. -->
+  <ItemGroup Condition="'$(WindowsBuild)' == 'true'">
+    <Compile Remove="Agg.UI\MacModifierFlagsTests.cs" />
+    <Compile Remove="Agg.UI\MacMagnifyGestureTests.cs" />
+  </ItemGroup>
+
   <!-- LCD byte-exactness fixture: raw mask/composite dumps from the agg-gui Rust reference, read by
        LcdRustFixtureTests. Copied next to the test binary so the fixture travels with the build and the
        exe runs from a bare bin\. Note this copy is only the fallback: the reader prefers the repo-tree

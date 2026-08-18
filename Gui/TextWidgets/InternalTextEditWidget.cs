@@ -65,6 +65,27 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Gets or sets whether caret motion and delete use Mac conventions (Option for word-wise, Command
+		/// for line- and document-wise) instead of the Windows ones (Control for word-wise, Control+Home/End
+		/// for document-wise).
+		/// </summary>
+		/// <remarks>
+		/// Defaults to the running OS. It is settable only so tests can exercise both branches from either
+		/// host - a hard-coded <c>IsMacOS()</c> would leave one of the two paths untestable on any given CI
+		/// leg. <see cref="System.OperatingSystem.IsMacOS"/> rather than <c>AggContext.OperatingSystem</c>
+		/// because the latter reflection-loads a platform assembly, which a bare widget unit test has no
+		/// reason to have initialized.
+		/// <para/>
+		/// Being settable makes it process-wide mutable state, which is why every test class that flips it
+		/// (MacTextEditKeyBindingTests, and TextEditTests, KeyboardTests and MacModifierFlagsTests, which
+		/// share the same down-state keyboard) carries
+		/// <c>[NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))]</c>. That attribute is
+		/// load bearing: it is the only thing serializing these flips, and dropping it lets one class run
+		/// with the other's key bindings and fail in a way that looks like a caret bug.
+		/// </remarks>
+		public static bool UseMacKeyBindings { get; set; } = System.OperatingSystem.IsMacOS();
+
 		public static Action<InternalTextEditWidget, MouseEventArgs> DefaultRightClick;
 
 		// Guards the one-time wiring of the default right-click menu so concurrent constructors
@@ -858,6 +879,42 @@ namespace MatterHackers.Agg.UI
 				|| (keyEvent != null && keyEvent.Shift);
 		}
 
+		/// <summary>
+		/// Whether this key event is asking to move (or delete) a whole word at a time.
+		/// </summary>
+		/// <remarks>
+		/// The mac platform layer folds Command <em>and</em> physical Control both onto
+		/// <see cref="Keys.Control"/> (see <c>MacSystemWindow.TranslateModifiers</c>), which is exactly what
+		/// makes Command-A/X/C/V/Z arrive here correct with no Mac-specific code. The price is that Control
+		/// is already spoken for on Mac, so word-wise motion moves to Option - and Control (that is,
+		/// Command) has to mean start/end of line, because that is what a Mac user pressing Command-Left is
+		/// actually asking for.
+		/// </remarks>
+		private static bool WordJumpRequested(KeyEventArgs keyEvent)
+		{
+			return UseMacKeyBindings ? keyEvent.Alt : keyEvent.Control;
+		}
+
+		/// <summary>
+		/// Whether this key event is a Mac Command chord, which on the arrow keys means line-wise
+		/// (left/right) or document-wise (up/down) motion. Always false off Mac - Windows spells those
+		/// Home/End and Control+Home/End, and those cases are untouched.
+		/// </summary>
+		private static bool MacCommandRequested(KeyEventArgs keyEvent)
+		{
+			return UseMacKeyBindings && keyEvent.Control;
+		}
+
+		/// <summary>The four keys that move the caret, and so the four a Mac Command chord turns into
+		/// line-wise or document-wise motion.</summary>
+		private static bool IsArrowKey(Keys keyCode)
+		{
+			return keyCode == Keys.Left
+				|| keyCode == Keys.Right
+				|| keyCode == Keys.Up
+				|| keyCode == Keys.Down;
+		}
+
 		public override void OnKeyDown(KeyEventArgs keyEvent)
 		{
 			// this must be called first to ensure we get the correct Handled state
@@ -876,6 +933,17 @@ namespace MatterHackers.Agg.UI
 					{
 						// don't let control keys get into the stream
 						keyEvent.Handled = true;
+
+						// A Mac Command-arrow is a plain caret motion, so unshifted it ends the selection
+						// exactly as an unmodified arrow does. Only the arrows: every other Control chord
+						// (copy, select all) deliberately keeps the selection. Windows never reaches this,
+						// and must not - Control+Left there is a word jump, which does not end a selection.
+						if (Selecting
+							&& MacCommandRequested(keyEvent)
+							&& IsArrowKey(keyEvent.KeyCode))
+						{
+							turnOffSelection = true;
+						}
 					}
 					else if (Selecting)
 					{
@@ -897,9 +965,13 @@ namespace MatterHackers.Agg.UI
 
 					case Keys.Left:
 						StartSelectionIfRequired(keyEvent);
-						if (keyEvent.Control)
+						if (WordJumpRequested(keyEvent))
 						{
 							CharIndexToInsertBefore = IndexOfPreviousToken(internalTextWidget.Text, CharIndexToInsertBefore);
+						}
+						else if (MacCommandRequested(keyEvent))
+						{
+							CharIndexToInsertBefore = GotoStartOfCurrentLine(internalTextWidget.Text, CharIndexToInsertBefore);
 						}
 						else if (CharIndexToInsertBefore > 0)
 						{
@@ -919,9 +991,17 @@ namespace MatterHackers.Agg.UI
 
 					case Keys.Right:
 						StartSelectionIfRequired(keyEvent);
-						if (keyEvent.Control)
+						if (WordJumpRequested(keyEvent))
 						{
 							CharIndexToInsertBefore = IndexOfNextToken(internalTextWidget.Text, CharIndexToInsertBefore);
+						}
+						else if (MacCommandRequested(keyEvent))
+						{
+							// Note GotoEndOfCurrentLine works from actualText while the Left/Home side works
+							// from internalTextWidget.Text, which is the masked text. Those two agree today
+							// for everything that ships, but a masked *multiline* field would disagree about
+							// where a line ends. Left as found rather than unified here.
+							GotoEndOfCurrentLine();
 						}
 						else if (CharIndexToInsertBefore < internalTextWidget.Text.Length)
 						{
@@ -941,26 +1021,44 @@ namespace MatterHackers.Agg.UI
 
 					case Keys.Up:
 						StartSelectionIfRequired(keyEvent);
-						if (turnOffSelection)
+						if (MacCommandRequested(keyEvent))
 						{
-							CharIndexToInsertBefore = Math.Min(CharIndexToInsertBefore, SelectionIndexToStartBefore);
+							// Command-Up is the Mac spelling of Control+Home
+							CharIndexToInsertBefore = 0;
+						}
+						else
+						{
+							if (turnOffSelection)
+							{
+								CharIndexToInsertBefore = Math.Min(CharIndexToInsertBefore, SelectionIndexToStartBefore);
+							}
+
+							GotoLineAbove();
+							setDesiredBarPosition = false;
 						}
 
-						GotoLineAbove();
-						setDesiredBarPosition = false;
 						keyEvent.SuppressKeyPress = true;
 						keyEvent.Handled = true;
 						break;
 
 					case Keys.Down:
 						StartSelectionIfRequired(keyEvent);
-						if (turnOffSelection)
+						if (MacCommandRequested(keyEvent))
 						{
-							CharIndexToInsertBefore = Math.Max(CharIndexToInsertBefore, SelectionIndexToStartBefore);
+							// Command-Down is the Mac spelling of Control+End
+							CharIndexToInsertBefore = internalTextWidget.Text.Length;
+						}
+						else
+						{
+							if (turnOffSelection)
+							{
+								CharIndexToInsertBefore = Math.Max(CharIndexToInsertBefore, SelectionIndexToStartBefore);
+							}
+
+							GotoLineBelow();
+							setDesiredBarPosition = false;
 						}
 
-						GotoLineBelow();
-						setDesiredBarPosition = false;
 						keyEvent.SuppressKeyPress = true;
 						keyEvent.Handled = true;
 						break;
@@ -1041,7 +1139,22 @@ namespace MatterHackers.Agg.UI
 						if (!Selecting
 							&& CharIndexToInsertBefore > 0)
 						{
-							SelectionIndexToStartBefore = CharIndexToInsertBefore - 1;
+							// Deleting is always "select back to here, then delete the selection", so the
+							// Mac word/line variants only have to choose a different anchor. Windows has no
+							// Control+Backspace binding here today and does not gain one.
+							if (UseMacKeyBindings && keyEvent.Alt)
+							{
+								SelectionIndexToStartBefore = IndexOfPreviousToken(internalTextWidget.Text, CharIndexToInsertBefore);
+							}
+							else if (MacCommandRequested(keyEvent))
+							{
+								SelectionIndexToStartBefore = GotoStartOfCurrentLine(internalTextWidget.Text, CharIndexToInsertBefore);
+							}
+							else
+							{
+								SelectionIndexToStartBefore = CharIndexToInsertBefore - 1;
+							}
+
 							Selecting = true;
 						}
 

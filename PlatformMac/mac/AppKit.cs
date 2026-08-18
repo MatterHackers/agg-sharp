@@ -65,6 +65,20 @@ namespace MatterHackers.Agg.Platform.Mac
 		public const long NSEventTypeOtherMouseDown = 25;
 		public const long NSEventTypeOtherMouseUp = 26;
 		public const long NSEventTypeOtherMouseDragged = 27;
+		public const long NSEventTypeMagnify = 30;
+
+		// NSEventPhase. A continuous gesture - a trackpad scroll, a pinch - reports where in its life each
+		// event falls, and it is a bitmask rather than an enum because a single event can carry more than one
+		// (an Ended that is also Cancelled). Two streams use it: -[NSEvent phase] is the fingers-on-glass part
+		// of the gesture, and -[NSEvent momentumPhase] is the inertia AppKit keeps sending after they lift.
+		// Both read as zero (None) for a device that has no phases at all, such as a real mouse wheel.
+		public const ulong NSEventPhaseNone = 0;
+		public const ulong NSEventPhaseBegan = 1 << 0;
+		public const ulong NSEventPhaseStationary = 1 << 1;
+		public const ulong NSEventPhaseChanged = 1 << 2;
+		public const ulong NSEventPhaseEnded = 1 << 3;
+		public const ulong NSEventPhaseCancelled = 1 << 4;
+		public const ulong NSEventPhaseMayBegin = 1 << 5;
 
 		// NSEventModifierFlags
 		public const ulong NSEventModifierFlagCapsLock = 1 << 16;

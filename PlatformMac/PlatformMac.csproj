@@ -18,6 +18,11 @@
 		<DefineConstants>TRACE;RELEASE</DefineConstants>
 	</PropertyGroup>
 	<ItemGroup>
+		<!-- The modifier-flag translation is pure and worth testing without a window, and the AppKit
+		     constants it is driven by are internal ABI values the tests need to name. -->
+		<InternalsVisibleTo Include="Agg.Tests" />
+	</ItemGroup>
+	<ItemGroup>
 		<!-- The same set PlatformWin32 pulls in, minus anything WinForms. No PackageReferences at
 		     all: this assembly must be buildable with zero NuGet dependencies of its own. -->
 		<ProjectReference Include="..\agg\Agg.csproj" />

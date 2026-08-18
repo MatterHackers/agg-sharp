@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using MatterHackers.Agg.Image;
 using MatterHackers.GuiAutomation;
 using System.IO;
@@ -43,6 +44,30 @@ namespace MatterHackers.Agg.UI.Tests
    	public class TextEditTests
 	{
 		public static bool SaveImagesForDebug = false;
+
+		/// <summary>
+		/// Pins the Windows caret bindings for the life of the scope, restoring whatever the host had.
+		/// </summary>
+		/// <remarks>
+		/// The tests below spell "move a word" as Control+Arrow, which is the Windows binding. On a Mac host
+		/// the platform layer folds Command onto Keys.Control, so that same chord means "go to the start of
+		/// the line" and these assertions would be measuring the wrong feature. The Mac bindings have their
+		/// own coverage in MacTextEditKeyBindingTests.
+		/// </remarks>
+		private sealed class WindowsKeyBindings : IDisposable
+		{
+			private readonly bool wasMac = InternalTextEditWidget.UseMacKeyBindings;
+
+			public WindowsKeyBindings()
+			{
+				InternalTextEditWidget.UseMacKeyBindings = false;
+			}
+
+			public void Dispose()
+			{
+				InternalTextEditWidget.UseMacKeyBindings = wasMac;
+			}
+		}
 
 		private void OutputImage(ImageBuffer imageToOutput, string fileName)
 		{
@@ -173,6 +198,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
         [Test]
         public async Task TextSelectionWithShiftClick()
 		{
+			using var windowsKeyBindings = new WindowsKeyBindings();
+
 			const string fullText = "This is a text";
 
 			var container = new GuiWidget(200, 200);
@@ -619,6 +646,8 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 #endif
         public async Task TextEditingSpecialKeysWork()
 		{
+			using var windowsKeyBindings = new WindowsKeyBindings();
+
 			var container = new GuiWidget
 			{
 				DoubleBuffer = true,

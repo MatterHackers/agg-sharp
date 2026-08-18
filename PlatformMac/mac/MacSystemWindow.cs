@@ -116,6 +116,29 @@ namespace MatterHackers.Agg.UI
 
 		private static System.Threading.Timer smokeExitWatchdog;
 
+		/// <summary>
+		/// Set <c>AGG_LOG_GESTURE=1</c> to print every scroll and magnify event as it arrives - its type,
+		/// phase, momentum phase, scrolling delta, whether the deltas are precise, and the magnification.
+		/// No test can synthesise a trackpad gesture, so when a gesture misbehaves this log is the only way
+		/// to see what AppKit actually sent rather than what we assume it sent.
+		/// </summary>
+		private static readonly bool LogGestureEvents = Environment.GetEnvironmentVariable("AGG_LOG_GESTURE") == "1";
+
+		/// <summary>
+		/// Wheel units per unit of pinch magnification.
+		/// </summary>
+		/// <remarks>
+		/// <c>-[NSEvent magnification]</c> is the <em>incremental</em> change in scale for one event, in the
+		/// same units Apple's own sample code accumulates into a zoom factor: magnification 1.0 in total means
+		/// "twice the size". Consumers of agg's wheel treat one 120-unit detent as one zoom step, and the 3D
+		/// view's step closes 20% of the distance to what is under the pointer. Closing a fraction f of that
+		/// distance scales the view by about 1/(1-f), so matching a magnification of m needs f = m, which is
+		/// m / 0.2 = 5m detents, i.e. 600m wheel units. A comfortable pinch runs to roughly m = 1, so it
+		/// travels about five detents - the same order as a comfortable two-finger scroll, which the precise
+		/// scroll conversion below turns into several hundred units.
+		/// </remarks>
+		private const double MagnifyWheelDeltaPerUnit = 600;
+
 		private static IntPtr nsApp;
 		private static IntPtr distantPast;
 		private static IntPtr defaultRunLoopMode;
@@ -159,7 +182,29 @@ namespace MatterHackers.Agg.UI
 		/// <summary>What <see cref="SetModifierKeys"/> was last told; see <see cref="ModifierKeys"/>.</summary>
 		private Keys overrideModifierKeys = Keys.None;
 
+		/// <summary>
+		/// The modifier flags word carried by the last NSEventTypeFlagsChanged, so the next one can tell
+		/// which flags moved rather than only what they now are. Zero - nothing held - is the correct
+		/// starting value for a window that has not seen a flags change yet.
+		/// </summary>
+		private ulong lastModifierFlags;
+
+		/// <summary>
+		/// The modifier down-state keys this window last wrote into <see cref="Keyboard"/>, so losing focus
+		/// can release exactly those and leave whatever anyone else put there alone. See
+		/// <see cref="ReleaseAppliedModifierKeys"/> for why that narrowing matters.
+		/// </summary>
+		private IReadOnlySet<Keys> appliedModifierKeys = NoModifierKeys;
+
 		private bool modifiersOverridden;
+
+		/// <summary>
+		/// True between the Began and the Ended of a pinch. macOS decides a two-finger movement is a scroll
+		/// before it decides it is a magnification, so the start of a pinch can arrive as a scroll or two;
+		/// once the pinch is running, any scroll that overlaps it is the same two fingers reported twice and
+		/// zooming on both would double-count them.
+		/// </summary>
+		private bool magnifyGestureInFlight;
 
 		private int drawCount;
 		private bool smokeRunFinished;
@@ -735,6 +780,8 @@ namespace MatterHackers.Agg.UI
 			AddMethod(cls, "windowDidResize:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&OnWindowDidResize, "v@:@");
 			AddMethod(cls, "windowDidChangeBackingProperties:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&OnWindowDidResize, "v@:@");
 			AddMethod(cls, "windowDidChangeScreen:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&OnWindowDidResize, "v@:@");
+			AddMethod(cls, "windowDidResignKey:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&OnWindowDidResignKey, "v@:@");
+			AddMethod(cls, "windowDidBecomeKey:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&OnWindowDidBecomeKey, "v@:@");
 			AddMethod(cls, "aggIdleTimer:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&OnIdleTimer, "v@:@");
 
 			objc_registerClassPair(cls);
@@ -796,6 +843,32 @@ namespace MatterHackers.Agg.UI
 			catch (Exception ex)
 			{
 				Console.Error.WriteLine($"MacSystemWindow windowDidResize: threw {ex}");
+			}
+		}
+
+		[UnmanagedCallersOnly]
+		private static void OnWindowDidResignKey(IntPtr self, IntPtr cmd, IntPtr notification)
+		{
+			try
+			{
+				OwnerOf(self)?.HandleDidResignKey();
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"MacSystemWindow windowDidResignKey: threw {ex}");
+			}
+		}
+
+		[UnmanagedCallersOnly]
+		private static void OnWindowDidBecomeKey(IntPtr self, IntPtr cmd, IntPtr notification)
+		{
+			try
+			{
+				OwnerOf(self)?.HandleDidBecomeKey();
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"MacSystemWindow windowDidBecomeKey: threw {ex}");
 			}
 		}
 
@@ -1229,9 +1302,30 @@ namespace MatterHackers.Agg.UI
 					return false;
 
 				case NSEventTypeScrollWheel:
-					if (this.TryMakeMouseArgs(nsEvent, type, out var wheelArgs))
+					this.LogGestureEvent(nsEvent, type);
+					this.TrackScrollGesturePhase(nsEvent);
+
+					if (!this.magnifyGestureInFlight
+						&& this.TryMakeMouseArgs(nsEvent, type, out var wheelArgs))
 					{
 						this.aggSystemWindow.OnMouseWheel(wheelArgs);
+					}
+
+					return false;
+
+				case NSEventTypeMagnify:
+					this.LogGestureEvent(nsEvent, type);
+
+					// A pinch is its own event type, not a modified scroll, so without this case it reaches
+					// nothing at all - which is what made pinch to zoom do nothing on a trackpad. It goes out
+					// through the wheel path because a wheel is what every agg consumer already reads as zoom,
+					// and fingers moving apart (a positive magnification) means zoom in, which is the same
+					// direction a wheel pushed forward means.
+					this.TrackMagnifyGesturePhase(nsEvent);
+
+					if (this.TryMakeMouseArgs(nsEvent, type, out var magnifyArgs))
+					{
+						this.aggSystemWindow.OnMouseWheel(magnifyArgs);
 					}
 
 					return false;
@@ -1242,9 +1336,157 @@ namespace MatterHackers.Agg.UI
 				case NSEventTypeKeyUp:
 					return this.HandleKeyUp(nsEvent);
 
+				case NSEventTypeFlagsChanged:
+					return this.HandleFlagsChanged(nsEvent);
+
 				default:
 					return false;
 			}
+		}
+
+		/// <summary>
+		/// Turns a modifier-only press or release into agg's <see cref="Keyboard"/> down state.
+		/// </summary>
+		/// <remarks>
+		/// macOS delivers a bare modifier <em>only</em> as flagsChanged - there is no keyDown for holding
+		/// Command or Control on its own - so without this agg never learns a modifier is held and every
+		/// chorded drag gesture (the 3D view's rotate, pan and zoom) is dead on this platform.
+		/// <para/>
+		/// The down/up bookkeeping is derived from the whole flags word rather than tracked per physical
+		/// key, and that is load bearing. Command and physical Control both map onto agg's Control, as do
+		/// left and right Shift onto Shift; if each physical key were tracked on its own then releasing
+		/// Command while Control was still held would clear the Control state even though the user is
+		/// still holding a Control. The flags word is the truth, so it is what the state is computed from.
+		/// </remarks>
+		/// <returns>Always false: AppKit needs to see modifier changes for menu key equivalents and
+		/// cursor tracking, so this one is never swallowed.</returns>
+		private bool HandleFlagsChanged(IntPtr nsEvent)
+		{
+			ulong flags = Send_Q(nsEvent, Sel("modifierFlags"));
+
+			this.appliedModifierKeys = ApplyModifierFlagsToKeyboard(flags);
+
+			// AppKit suppresses keyUp: while Command is held, so every ordinary key pressed during a
+			// Command chord is still latched down in Keyboard. Command going away is the moment those ups
+			// are known never to arrive, so that is when the latched keys are released.
+			bool commandWasHeld = (this.lastModifierFlags & NSEventModifierFlagCommand) != 0;
+			bool commandIsHeld = (flags & NSEventModifierFlagCommand) != 0;
+			if (commandWasHeld && !commandIsHeld)
+			{
+				Keyboard.ClearNonModifierKeys();
+			}
+
+			this.lastModifierFlags = flags;
+
+			return false;
+		}
+
+		/// <summary>
+		/// Releases the modifiers this window put down, because it is no longer the key window and can no
+		/// longer be told they were let go of.
+		/// </summary>
+		/// <remarks>
+		/// macOS delivers flagsChanged only to the key window, so a modifier released while another
+		/// application is frontmost is never reported to us and stays latched down forever. Cmd-Tab is the
+		/// everyday case - it *begins* with Command held - and the symptom is that coming back to the
+		/// application leaves the 3D view convinced Control is held, so a plain left drag rotates the
+		/// camera instead of selecting.
+		/// <para/>
+		/// Deliberately unguarded, unlike <see cref="HandleDidBecomeKey"/>. This is the exact inverse of
+		/// <see cref="HandleFlagsChanged"/> - it undoes what that put down and can touch nothing else - so
+		/// there is no synthetic state for it to damage and nothing to guard against. Guarding it while
+		/// leaving its counterpart unguarded is what latched Control forever in the first place: the window
+		/// went on writing real modifier state into <see cref="Keyboard"/> while permanently losing the
+		/// focus-loss release that compensates for it.
+		/// </remarks>
+		private void HandleDidResignKey()
+		{
+			this.lastModifierFlags = ReleaseAppliedModifierKeys(this.appliedModifierKeys);
+			this.appliedModifierKeys = NoModifierKeys;
+		}
+
+		/// <summary>
+		/// Re-derives the held modifiers from the live flags word now that the window is key again.
+		/// </summary>
+		/// <remarks>
+		/// The counterpart to <see cref="HandleDidResignKey"/>, and just as necessary: a user genuinely can
+		/// be holding a modifier at the moment focus returns - releasing Cmd-Tab commonly leaves Command
+		/// down for a beat over the newly frontmost window - and every flags change that happened while we
+		/// were unfocused was delivered somewhere else. Without this the first drag back would be wrong in
+		/// the opposite direction, with a held modifier the window never heard about.
+		/// <para/>
+		/// The one guarded handler of the three, because it is the only one that <em>polls</em> the real
+		/// keyboard rather than reacting to an event about it. Both conditions say the same thing from
+		/// different directions: EnablePlatformWindowInput off means a run has asked that the real machine
+		/// not perturb it, and <see cref="SetModifierKeys"/>' contract is that once a synthetic event has
+		/// declared what it is holding the real keyboard is never read again. Answering "nothing is held"
+		/// from a machine with no user at it would overwrite the synthetic state with a lie.
+		/// </remarks>
+		private void HandleDidBecomeKey()
+		{
+			if (!IPlatformWindow.EnablePlatformWindowInput || this.modifiersOverridden)
+			{
+				return;
+			}
+
+			// +[NSEvent modifierFlags] is the global "what is held right now", not a property of any event,
+			// which is exactly what is wanted when no event told us. Same call ModifierKeys makes.
+			ulong flags = Send_Q(Class("NSEvent"), Sel("modifierFlags"));
+
+			this.appliedModifierKeys = ApplyModifierFlagsToKeyboard(flags);
+
+			this.lastModifierFlags = flags;
+		}
+
+		/// <summary>
+		/// Puts the modifier down state a flags word implies into <see cref="Keyboard"/>, and reports the
+		/// keys it left held so <see cref="ReleaseAppliedModifierKeys"/> can undo exactly those.
+		/// </summary>
+		/// <remarks>
+		/// Shared by <see cref="HandleFlagsChanged"/> and <see cref="HandleDidBecomeKey"/>, which have to
+		/// agree exactly on what a flags word means; two copies would drift.
+		/// <para/>
+		/// Every modifier is written on every call, including the ones being released. There is no "has
+		/// this changed?" test here on purpose: <c>Keyboard.SetKeyDownState</c> is idempotent and raises
+		/// StateChanged only on a real change, so the redundant writes cost nothing, and a test here could
+		/// only compare the physical spelling (ControlKey) while automation latches the fanned-out one
+		/// (Control) - it would conclude "no change" and leave the very latch this call exists to correct.
+		/// </remarks>
+		internal static IReadOnlySet<Keys> ApplyModifierFlagsToKeyboard(ulong flags)
+		{
+			IReadOnlySet<Keys> shouldBeDown = ModifierDownStateKeys(flags);
+			foreach (Keys modifierKey in ModifierStateKeys)
+			{
+				Keyboard.SetKeyDownState(modifierKey, shouldBeDown.Contains(modifierKey));
+			}
+
+			return shouldBeDown;
+		}
+
+		/// <summary>
+		/// Releases the modifier keys this window put into the down state, and reports the modifier-flags
+		/// word that now describes what it is holding - nothing.
+		/// </summary>
+		/// <remarks>
+		/// Narrow on purpose, where a <c>Keyboard.Clear()</c> would not be. <see cref="Keyboard"/> is
+		/// process-wide and other callers write to it directly - an automation test sets Shift down and
+		/// then shift-clicks - so a blunt clear turns any incidental focus change into a dropped
+		/// selection with no visible cause. Releasing only what this window applied cannot reach anything
+		/// it did not put there, which is what lets the focus handlers run unguarded.
+		/// <para/>
+		/// The return exists so that releasing the keys and forgetting the remembered flags word cannot be
+		/// done separately. <see cref="lastModifierFlags"/> is what the next flags change computes its
+		/// transitions against; leaving a stale word there would make the Command-dropped detection in
+		/// <see cref="HandleFlagsChanged"/> fire (or fail to fire) on nothing the user did.
+		/// </remarks>
+		internal static ulong ReleaseAppliedModifierKeys(IReadOnlySet<Keys> appliedModifierKeys)
+		{
+			foreach (Keys modifierKey in appliedModifierKeys)
+			{
+				Keyboard.SetKeyDownState(modifierKey, false);
+			}
+
+			return 0;
 		}
 
 		private bool HandleKeyDown(IntPtr nsEvent)
@@ -1363,9 +1605,97 @@ namespace MatterHackers.Agg.UI
 					? (int)Math.Round(deltaY * this.backingScale * 5)
 					: (int)Math.Round(deltaY * 120);
 			}
+			else if (type == NSEventTypeMagnify)
+			{
+				wheelDelta = MagnificationToWheelDelta(Send_d(nsEvent, Sel("magnification")));
+			}
 
 			args = new MouseEventArgs(button, clicks, x, y, wheelDelta);
 			return true;
+		}
+
+		/// <summary>
+		/// Converts one magnify event's incremental magnification into agg's wheel units. See
+		/// <see cref="MagnifyWheelDeltaPerUnit"/> for where the scale comes from; the sign is carried
+		/// straight through, so fingers apart (positive) is a forward wheel, which is zoom in.
+		/// </summary>
+		internal static int MagnificationToWheelDelta(double magnification)
+		{
+			if (double.IsNaN(magnification) || double.IsInfinity(magnification))
+			{
+				return 0;
+			}
+
+			return (int)Math.Round(magnification * MagnifyWheelDeltaPerUnit);
+		}
+
+		/// <summary>
+		/// Remembers whether a pinch is running, from the phase on each magnify event. See
+		/// <see cref="magnifyGestureInFlight"/> for what the answer is used for.
+		/// </summary>
+		private void TrackMagnifyGesturePhase(IntPtr nsEvent)
+		{
+			ulong phase = Send_Q(nsEvent, Sel("phase"));
+
+			if ((phase & (NSEventPhaseEnded | NSEventPhaseCancelled)) != 0)
+			{
+				this.magnifyGestureInFlight = false;
+			}
+			else
+			{
+				// Began, Changed, or - on a device that reports no phase at all - anything else that still
+				// carries a magnification. Treating the phaseless case as "in flight" is the safe way round:
+				// the worst it costs is a scroll dropped while pinching.
+				this.magnifyGestureInFlight = true;
+			}
+		}
+
+		/// <summary>
+		/// Clears <see cref="magnifyGestureInFlight"/> when a scroll event proves no pinch can be running.
+		/// </summary>
+		/// <remarks>
+		/// A scroll that is beginning a gesture of its own, or one from a device that has no gestures at all
+		/// (a real mouse wheel reports no phase), cannot be part of a pinch. Without this the latch is only
+		/// ever cleared by the pinch's own Ended, and a pinch that never delivers one - the window loses focus
+		/// mid-gesture, say - would leave this window unable to scroll for the rest of its life.
+		/// </remarks>
+		private void TrackScrollGesturePhase(IntPtr nsEvent)
+		{
+			ulong phase = Send_Q(nsEvent, Sel("phase"));
+
+			if (phase == NSEventPhaseNone || (phase & NSEventPhaseBegan) != 0)
+			{
+				this.magnifyGestureInFlight = false;
+			}
+		}
+
+		/// <summary>
+		/// Prints one scroll or magnify event when <c>AGG_LOG_GESTURE=1</c>; see
+		/// <see cref="LogGestureEvents"/>. Each property is only asked of the event types that document it -
+		/// an unanswered selector would raise an Objective-C exception, which aborts the process rather than
+		/// failing a call.
+		/// </summary>
+		private void LogGestureEvent(IntPtr nsEvent, long type)
+		{
+			if (!LogGestureEvents)
+			{
+				return;
+			}
+
+			ulong phase = Send_Q(nsEvent, Sel("phase"));
+
+			if (type == NSEventTypeMagnify)
+			{
+				Console.WriteLine($"AGG_LOG_GESTURE magnify phase=0x{phase:x} magnification={Send_d(nsEvent, Sel("magnification")):0.#####}");
+			}
+			else
+			{
+				ulong momentumPhase = Send_Q(nsEvent, Sel("momentumPhase"));
+				double scrollingDeltaY = Send_d(nsEvent, Sel("scrollingDeltaY"));
+				bool precise = Send_B(nsEvent, Sel("hasPreciseScrollingDeltas")) != NO;
+
+				Console.WriteLine($"AGG_LOG_GESTURE scroll phase=0x{phase:x} momentumPhase=0x{momentumPhase:x} scrollingDeltaY={scrollingDeltaY:0.#####} precise={precise} magnifyInFlight={this.magnifyGestureInFlight}");
+			}
 		}
 
 		// -----------------------------------------------------------------------------------------
@@ -1790,26 +2120,75 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		private static double DesktopScale() => PrimaryScreenScale();
 
-		private static Keys TranslateModifiers(ulong flags)
+		/// <summary>The complete set of down-state keys <see cref="ModifierDownStateKeys"/> can report, so
+		/// a flags change can set and clear all of them from one loop.</summary>
+		private static readonly Keys[] ModifierStateKeys = { Keys.ShiftKey, Keys.ControlKey, Keys.Menu };
+
+		/// <summary>Holding nothing - the starting value for <see cref="appliedModifierKeys"/>.</summary>
+		private static readonly IReadOnlySet<Keys> NoModifierKeys = new HashSet<Keys>();
+
+		/// <summary>
+		/// Maps a raw AppKit modifier-flags word onto the agg down-state keys it implies.
+		/// </summary>
+		/// <remarks>
+		/// Deliberately pure - no ObjC calls, no state - because it is the whole of the modifier
+		/// translation and is worth testing without a window.
+		/// <para/>
+		/// Note the two-to-one mapping: Command <em>and</em> physical Control both produce
+		/// <see cref="Keys.ControlKey"/>. Every agg shortcut and every 3D view gesture is spelled
+		/// "Control+X"; on a Mac the key a user reaches for is usually Command, but Control is right there
+		/// as well and users press it, so both are honoured.
+		/// <para/>
+		/// The answer is a set and not an OR'd <see cref="Keys"/> value because ShiftKey (16), ControlKey
+		/// (17) and Menu (18) are consecutive integers rather than disjoint bits - OR-ing them would
+		/// produce unrelated key codes. The modifier <em>flags</em> Shift/Control/Alt that
+		/// <see cref="TranslateModifiers"/> returns are disjoint bits and do combine.
+		/// </remarks>
+		internal static IReadOnlySet<Keys> ModifierDownStateKeys(ulong flags)
 		{
-			Keys modifiers = Keys.None;
+			var downKeys = new HashSet<Keys>();
 
 			if ((flags & NSEventModifierFlagShift) != 0)
 			{
-				modifiers |= Keys.Shift;
+				downKeys.Add(Keys.ShiftKey);
 			}
 
-			// Command, not Control, maps to agg's Control: every agg shortcut is spelled "Control+X" and on
-			// this platform the key a user presses for it is Command. The Windows sink does the same
-			// remapping in reverse for Mac keyboards.
-			if ((flags & NSEventModifierFlagCommand) != 0)
+			if ((flags & (NSEventModifierFlagCommand | NSEventModifierFlagControl)) != 0)
 			{
-				modifiers |= Keys.Control;
+				downKeys.Add(Keys.ControlKey);
 			}
 
 			if ((flags & NSEventModifierFlagOption) != 0)
 			{
-				modifiers |= Keys.Alt;
+				downKeys.Add(Keys.Menu);
+			}
+
+			return downKeys;
+		}
+
+		/// <summary>
+		/// The modifier bits agg carries on a <see cref="KeyEventArgs"/> and reports from
+		/// <see cref="ModifierKeys"/>.
+		/// </summary>
+		/// <remarks>
+		/// Expressed in terms of <see cref="ModifierDownStateKeys"/> so the two cannot drift apart: what
+		/// <c>Keyboard.IsKeyDown(Keys.Control)</c> says and what <c>ModifierKeys</c> says have to agree, or
+		/// a gesture that checks one and a shortcut that checks the other disagree about the same keyboard.
+		/// </remarks>
+		internal static Keys TranslateModifiers(ulong flags)
+		{
+			Keys modifiers = Keys.None;
+
+			foreach (Keys downKey in ModifierDownStateKeys(flags))
+			{
+				// Unlike the down-state keys these are disjoint bits, so they OR cleanly.
+				modifiers |= downKey switch
+				{
+					Keys.ShiftKey => Keys.Shift,
+					Keys.ControlKey => Keys.Control,
+					Keys.Menu => Keys.Alt,
+					_ => Keys.None,
+				};
 			}
 
 			return modifiers;
