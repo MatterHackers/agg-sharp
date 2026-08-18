@@ -317,6 +317,27 @@ namespace MatterHackers.Agg.UI
 		/// </remarks>
 		private bool HasHorizontalOverflow => ScrollArea.LocalBounds.Width + ScrollArea.Margin.Width > LocalBounds.Width;
 
+		/// <summary>
+		/// What one pixel of <c>WheelDelta / 5</c> is worth, for both axes of <paramref name="mouseEvent"/>.
+		/// </summary>
+		/// <remarks>
+		/// DPI has exactly one owner per kind of scroll, and this is where that is decided.
+		/// <list type="bullet">
+		/// <item>A <see cref="MouseEventArgs.WheelDeltaIsPreciseScroll"/> delta (a trackpad) is a physical
+		/// distance the platform already converted into device pixels using the scale of the display the
+		/// window is on. It is passed through untouched: scaling it again is scaling DPI twice, which is what
+		/// made a Retina trackpad scroll roughly twice the finger travel.</item>
+		/// <item>A wheel detent carries no distance - Win32's 120 means "one click" - so the size comes from
+		/// here. <see cref="GuiWidget.DeviceScale"/> is how much bigger than its design size this UI is being
+		/// drawn, so a click stays worth the same number of the lines it is scrolling past.</item>
+		/// </list>
+		/// Both axes get the same answer, so a diagonal gesture keeps its angle.
+		/// </remarks>
+		private static double WheelScale(MouseEventArgs mouseEvent)
+		{
+			return mouseEvent.WheelDeltaIsPreciseScroll ? 1 : GuiWidget.DeviceScale;
+		}
+
 		public override void OnMouseWheel(MouseEventArgs mouseEvent)
 		{
 			// let children have at the data first. They may use up the scroll
@@ -324,11 +345,10 @@ namespace MatterHackers.Agg.UI
 
 			if (AutoScroll)
 			{
-				// NOTE: both axes multiply by DeviceScale, which double counts DPI on a display where the platform
-				// has already baked its backing scale into the wheel units. That is a known, separately tracked
-				// bug - the axes are kept identical here so the fix lands on both at once.
+				double scrollScale = WheelScale(mouseEvent);
+
 				Vector2 oldScrollPosition = ScrollPosition;
-				ScrollPosition += new Vector2(0, -mouseEvent.WheelDelta / 5 * GuiWidget.DeviceScale);
+				ScrollPosition += new Vector2(0, -mouseEvent.WheelDelta / 5 * scrollScale);
 				if (oldScrollPosition != ScrollPosition)
 				{
 					mouseEvent.WheelDelta = 0;
@@ -342,7 +362,7 @@ namespace MatterHackers.Agg.UI
 					&& HasHorizontalOverflow)
 				{
 					oldScrollPosition = ScrollPosition;
-					ScrollPosition += new Vector2(mouseEvent.WheelDeltaX / 5 * GuiWidget.DeviceScale, 0);
+					ScrollPosition += new Vector2(mouseEvent.WheelDeltaX / 5 * scrollScale, 0);
 
 					// only taken if it actually moved - at either end of the travel the gesture is left for an
 					// ancestor that may still have somewhere to go

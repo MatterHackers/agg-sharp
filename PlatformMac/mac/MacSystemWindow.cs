@@ -1625,6 +1625,10 @@ namespace MatterHackers.Agg.UI
 		{
 			args.WheelDelta = ScrollingDeltaToWheelDelta(scrollingDeltaY, precise, backingScale);
 			args.WheelDeltaX = ScrollingDeltaToWheelDelta(scrollingDeltaX, precise, backingScale);
+
+			// Both axes come from one event and so are the same kind of scroll. The flag is what stops a
+			// consumer scaling a precise delta a second time - see ScrollingDeltaToWheelDelta for who owns DPI.
+			args.WheelDeltaIsPreciseScroll = precise;
 		}
 
 		/// <summary>
@@ -1635,6 +1639,17 @@ namespace MatterHackers.Agg.UI
 		/// wheel) reports whole lines, so it scales by 120. A trackpad reports points of travel, and
 		/// ScrollableWidget divides WheelDelta by 5 to get pixels - so scaling by 5 x backingScale makes a
 		/// trackpad drag move the content the same distance as the fingers.
+		/// <para>
+		/// <b>This is where DPI is applied to a precise scroll, and the only place.</b> backingScale is the
+		/// per-window scale of the display the window is actually on, which is the only correct answer for a
+		/// physical distance and the only one that stays correct when a window is dragged between a Retina
+		/// screen and an external 1x one. <c>GuiWidget.DeviceScale</c> is not a substitute: it is a user
+		/// text-size preference (see this class's Coordinates and DPI note), process-wide rather than
+		/// per-window, and on a Retina mac MatterCAD sets it to 1.6 rather than 2. A consumer that scaled by
+		/// it again would move the content 1.6x too far, which is the bug
+		/// <see cref="MouseEventArgs.WheelDeltaIsPreciseScroll"/> exists to prevent - and why it is set
+		/// alongside these numbers rather than inferred from them.
+		/// </para>
 		/// </remarks>
 		internal static int ScrollingDeltaToWheelDelta(double scrollingDelta, bool precise, double backingScale)
 		{

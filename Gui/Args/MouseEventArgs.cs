@@ -47,6 +47,7 @@ namespace MatterHackers.Agg.UI
             : this(original.Button, original.Clicks, newX, newY, original.WheelDelta, original.DragFiles)
         {
             this.WheelDeltaX = original.WheelDeltaX;
+            this.WheelDeltaIsPreciseScroll = original.WheelDeltaIsPreciseScroll;
             positions[0] = new Vector2(newX, newY);
             for (int i = 1; i < original.NumPositions; i++)
             {
@@ -115,6 +116,21 @@ namespace MatterHackers.Agg.UI
         /// does not scroll on the same gesture.
         /// </remarks>
         public int WheelDeltaX { get; set; }
+
+        /// <summary>
+        /// True when both wheel axes are a pixel-precise scroll - a trackpad or other touch surface reporting
+        /// travel - rather than a wheel reporting detents. False for every wheel event that does not say
+        /// otherwise, which is every one on Windows.
+        /// </summary>
+        /// <remarks>
+        /// This exists to settle who owns DPI. A precise delta is packed by the platform from a physical
+        /// distance and already carries the display's scale, so a consumer must move the content by exactly
+        /// what it says. A detent carries no distance at all - Win32's 120 means "one click" - so a consumer
+        /// picks its own, and scales it by <see cref="GuiWidget.DeviceScale"/> so a click stays worth the same
+        /// number of the lines it is drawing. The wheel numbers cannot be told apart on their own, hence the
+        /// flag; see <see cref="ScrollableWidget.OnMouseWheel"/> for the consumer this was added for.
+        /// </remarks>
+        public bool WheelDeltaIsPreciseScroll { get; set; }
 
         // public Point Location { get; }
         public double X

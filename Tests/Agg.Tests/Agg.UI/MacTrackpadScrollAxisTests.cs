@@ -96,5 +96,63 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(args.WheelDelta).IsEqualTo(50);
 			await Assert.That(args.WheelDeltaX).IsEqualTo(0);
 		}
+
+		[Test]
+		public async Task ATrackpadScrollTellsTheWidgetItAlreadyCarriesTheDisplayScale()
+		{
+			// backingScale is baked in above, so the consumer has to know not to scale again. Nothing in the
+			// wheel numbers themselves says which kind of scroll they came from, which is why this rides along.
+			var trackpad = new MouseEventArgs(MouseButtons.None, 0, 5, 5, 0);
+			MacSystemWindow.ApplyScrollingDeltas(trackpad, scrollingDeltaX: -4, scrollingDeltaY: 10, precise: true, backingScale: 2);
+			await Assert.That(trackpad.WheelDeltaIsPreciseScroll).IsTrue();
+
+			// A real wheel's detents carry no size at all, so the widget supplies one.
+			var wheel = new MouseEventArgs(MouseButtons.None, 0, 5, 5, 0);
+			MacSystemWindow.ApplyScrollingDeltas(wheel, scrollingDeltaX: 0, scrollingDeltaY: 1, precise: false, backingScale: 2);
+			await Assert.That(wheel.WheelDeltaIsPreciseScroll).IsFalse();
+		}
+
+		[Test]
+		[NotInParallel]
+		public async Task AFingerDragMovesTheContentTheSameDistanceOnEveryDisplay()
+		{
+			// The whole point, end to end: 10 points of finger travel is 10 points of content travel, which is
+			// 10 pixels on a 1x display and 20 on a 2x one - and the user's text size, which on a Retina mac is
+			// 1.6 rather than either of those, may not enter into it. Before the flag existed this came out at
+			// backingScale x DeviceScale and a Retina trackpad scrolled at roughly twice the fingers.
+			await Assert.That(ContentTravelForTenPointsOfFinger(backingScale: 1, deviceScale: 1.6)).IsEqualTo(10).Within(0.001);
+			await Assert.That(ContentTravelForTenPointsOfFinger(backingScale: 2, deviceScale: 1.6)).IsEqualTo(20).Within(0.001);
+		}
+
+		/// <summary>
+		/// Device pixels of content movement for a 10 point downward finger drag, run through the real
+		/// packing and the real <see cref="ScrollableWidget"/> unpacking.
+		/// </summary>
+		private static double ContentTravelForTenPointsOfFinger(double backingScale, double deviceScale)
+		{
+			double savedDeviceScale = GuiWidget.DeviceScale;
+			try
+			{
+				GuiWidget.DeviceScale = deviceScale;
+
+				var scrollable = new ScrollableWidget(200, 200, autoScroll: true);
+				scrollable.AddChild(new GuiWidget(200, 4000));
+				scrollable.PerformLayout();
+
+				// The content is far taller than the view, so it starts scrolled to one end - the movement is
+				// the difference, not the position.
+				double before = scrollable.ScrollPosition.Y;
+
+				var args = new MouseEventArgs(MouseButtons.None, 0, 100, 100, 0);
+				MacSystemWindow.ApplyScrollingDeltas(args, scrollingDeltaX: 0, scrollingDeltaY: -10, precise: true, backingScale);
+				scrollable.OnMouseWheel(args);
+
+				return scrollable.ScrollPosition.Y - before;
+			}
+			finally
+			{
+				GuiWidget.DeviceScale = savedDeviceScale;
+			}
+		}
 	}
 }
