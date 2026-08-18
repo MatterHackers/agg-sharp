@@ -11,14 +11,24 @@ using TUnit.Core;
 
 namespace Agg.Tests.Agg
 {
+    /// <summary>
+    /// Covers the bound on <see cref="StyledTypeFaceImageCache"/>: repeat lookups below the cap share the
+    /// cached instance, inserts past the cap evict and stay bounded, and neither path throws under
+    /// concurrent lookups.
+    /// </summary>
+    /// <remarks>
+    /// The cache and its cap are process-wide, so every test here is a keyless <c>[NotInParallel]</c> - it
+    /// has to run exclusively, not merely serialized against its siblings. A constraint key was not enough:
+    /// <c>FontThreadSafetyTests.ConcurrentGetImageForCharacterAcrossTypeFacesDoesNotThrow</c> renders the
+    /// same (LiberationSans, 12pt, Black) glyphs from eight threads with no parallel constraint of its own,
+    /// and a store that began before ours landed overwrites the entry last-write-wins - so the second lookup
+    /// in <see cref="RepeatLookupsBelowCapReturnSameImageInstance"/> came back a different instance. Any
+    /// other test in the assembly that renders text can do the same, hence exclusive rather than keyed.
+    /// </remarks>
     public class FontCacheEvictionTests
     {
-        // These tests mutate the static cap and clear the shared static cache, so they
-        // must not run concurrently with each other.
-        private const string ParallelKey = nameof(FontCacheEvictionTests);
-
         [Test]
-        [NotInParallel(ParallelKey)]
+        [NotInParallel]
         public async Task RepeatLookupsBelowCapReturnSameImageInstance()
         {
             int originalCap = StyledTypeFaceImageCache.MaxCachedImages;
@@ -43,7 +53,7 @@ namespace Agg.Tests.Agg
         }
 
         [Test]
-        [NotInParallel(ParallelKey)]
+        [NotInParallel]
         public async Task ExceedingCapEvictsAndKeepsCacheBoundedWithValidImages()
         {
             int originalCap = StyledTypeFaceImageCache.MaxCachedImages;
@@ -79,7 +89,7 @@ namespace Agg.Tests.Agg
         }
 
         [Test]
-        [NotInParallel(ParallelKey)]
+        [NotInParallel]
         public async Task ConcurrentLookupsUnderEvictionPressureDoNotThrow()
         {
             int originalCap = StyledTypeFaceImageCache.MaxCachedImages;
