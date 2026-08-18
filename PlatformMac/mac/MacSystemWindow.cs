@@ -1592,26 +1592,61 @@ namespace MatterHackers.Agg.UI
 			}
 
 			int wheelDelta = 0;
-			if (type == NSEventTypeScrollWheel)
-			{
-				double deltaY = Send_d(nsEvent, Sel("scrollingDeltaY"));
-				bool precise = Send_B(nsEvent, Sel("hasPreciseScrollingDeltas")) != NO;
-
-				// agg's consumers were written against Win32's 120-per-detent wheel. A line-based scroll
-				// (a real wheel) reports whole lines, so it scales by 120. A trackpad reports points of
-				// travel, and ScrollableWidget divides WheelDelta by 5 to get pixels - so scaling by
-				// 5 x backingScale makes a trackpad drag move the content the same distance as the fingers.
-				wheelDelta = precise
-					? (int)Math.Round(deltaY * this.backingScale * 5)
-					: (int)Math.Round(deltaY * 120);
-			}
-			else if (type == NSEventTypeMagnify)
+			if (type == NSEventTypeMagnify)
 			{
 				wheelDelta = MagnificationToWheelDelta(Send_d(nsEvent, Sel("magnification")));
 			}
 
 			args = new MouseEventArgs(button, clicks, x, y, wheelDelta);
+
+			if (type == NSEventTypeScrollWheel)
+			{
+				ApplyScrollingDeltas(
+					args,
+					Send_d(nsEvent, Sel("scrollingDeltaX")),
+					Send_d(nsEvent, Sel("scrollingDeltaY")),
+					Send_B(nsEvent, Sel("hasPreciseScrollingDeltas")) != NO,
+					this.backingScale);
+			}
+
 			return true;
+		}
+
+		/// <summary>
+		/// Fills both of a mouse event's wheel axes from one scroll event's scrolling deltas.
+		/// </summary>
+		/// <remarks>
+		/// A two finger trackpad scroll carries travel on both axes at once, so both have to come across, and
+		/// through the same scale, or a diagonal gesture would come out at the wrong angle. The signs are
+		/// carried straight through from AppKit: positive Y is the forward wheel agg already reads, and
+		/// positive X is a gesture whose content should move right.
+		/// </remarks>
+		internal static void ApplyScrollingDeltas(MouseEventArgs args, double scrollingDeltaX, double scrollingDeltaY, bool precise, double backingScale)
+		{
+			args.WheelDelta = ScrollingDeltaToWheelDelta(scrollingDeltaY, precise, backingScale);
+			args.WheelDeltaX = ScrollingDeltaToWheelDelta(scrollingDeltaX, precise, backingScale);
+		}
+
+		/// <summary>
+		/// Converts one axis of a scroll event's travel into agg's wheel units.
+		/// </summary>
+		/// <remarks>
+		/// agg's consumers were written against Win32's 120-per-detent wheel. A line-based scroll (a real
+		/// wheel) reports whole lines, so it scales by 120. A trackpad reports points of travel, and
+		/// ScrollableWidget divides WheelDelta by 5 to get pixels - so scaling by 5 x backingScale makes a
+		/// trackpad drag move the content the same distance as the fingers.
+		/// </remarks>
+		internal static int ScrollingDeltaToWheelDelta(double scrollingDelta, bool precise, double backingScale)
+		{
+			if (double.IsNaN(scrollingDelta) || double.IsInfinity(scrollingDelta))
+			{
+				// (int) of a NaN is a huge negative number rather than nothing, which would fling the content.
+				return 0;
+			}
+
+			return precise
+				? (int)Math.Round(scrollingDelta * backingScale * 5)
+				: (int)Math.Round(scrollingDelta * 120);
 		}
 
 		/// <summary>
@@ -1691,10 +1726,11 @@ namespace MatterHackers.Agg.UI
 			else
 			{
 				ulong momentumPhase = Send_Q(nsEvent, Sel("momentumPhase"));
+				double scrollingDeltaX = Send_d(nsEvent, Sel("scrollingDeltaX"));
 				double scrollingDeltaY = Send_d(nsEvent, Sel("scrollingDeltaY"));
 				bool precise = Send_B(nsEvent, Sel("hasPreciseScrollingDeltas")) != NO;
 
-				Console.WriteLine($"AGG_LOG_GESTURE scroll phase=0x{phase:x} momentumPhase=0x{momentumPhase:x} scrollingDeltaY={scrollingDeltaY:0.#####} precise={precise} magnifyInFlight={this.magnifyGestureInFlight}");
+				Console.WriteLine($"AGG_LOG_GESTURE scroll phase=0x{phase:x} momentumPhase=0x{momentumPhase:x} scrollingDeltaX={scrollingDeltaX:0.#####} scrollingDeltaY={scrollingDeltaY:0.#####} precise={precise} magnifyInFlight={this.magnifyGestureInFlight}");
 			}
 		}
 

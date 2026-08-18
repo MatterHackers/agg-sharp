@@ -46,6 +46,7 @@ namespace MatterHackers.Agg.UI
         public MouseEventArgs(MouseEventArgs original, double newX, double newY)
             : this(original.Button, original.Clicks, newX, newY, original.WheelDelta, original.DragFiles)
         {
+            this.WheelDeltaX = original.WheelDeltaX;
             positions[0] = new Vector2(newX, newY);
             for (int i = 1; i < original.NumPositions; i++)
             {
@@ -101,6 +102,19 @@ namespace MatterHackers.Agg.UI
         { get { return positions[0]; } }
 
         public int WheelDelta { get; set; }
+
+        /// <summary>
+        /// The sideways component of a scroll, in the same units as <see cref="WheelDelta"/>. Zero unless the
+        /// device has a second scroll axis (a trackpad or a tilt wheel), which is why nothing that only reads
+        /// <see cref="WheelDelta"/> had to change.
+        /// </summary>
+        /// <remarks>
+        /// The sign follows AppKit's scrollingDeltaX: positive is a gesture whose content should move to the
+        /// right (revealing what is off the left edge), negative moves content left. A widget that acts on it
+        /// should zero it, the same way <see cref="WheelDelta"/> is zeroed once consumed, so that an ancestor
+        /// does not scroll on the same gesture.
+        /// </remarks>
+        public int WheelDeltaX { get; set; }
 
         // public Point Location { get; }
         public double X

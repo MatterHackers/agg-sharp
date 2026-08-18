@@ -3973,6 +3973,10 @@ namespace MatterHackers.Agg.UI
 							// recurse in
 							child.OnMouseWheel(childMouseEvent);
 							mouseEvent.WheelDelta = childMouseEvent.WheelDelta;
+							// Both axes are consumed by zeroing, so both have to come back out of the child's
+							// copy of the event or a widget that ate the sideways scroll would see it acted on
+							// again by an ancestor.
+							mouseEvent.WheelDeltaX = childMouseEvent.WheelDeltaX;
 						}
 					}
 				}

@@ -94,6 +94,7 @@
   <ItemGroup Condition="'$(WindowsBuild)' == 'true'">
     <Compile Remove="Agg.UI\MacModifierFlagsTests.cs" />
     <Compile Remove="Agg.UI\MacMagnifyGestureTests.cs" />
+    <Compile Remove="Agg.UI\MacTrackpadScrollAxisTests.cs" />
   </ItemGroup>
 
   <!-- LCD byte-exactness fixture: raw mask/composite dumps from the agg-gui Rust reference, read by
