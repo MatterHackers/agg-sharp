@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -37,6 +37,19 @@ using TUnit.Core;
 namespace MatterHackers.Agg.UI.Tests
 {
 
+	/// <summary>
+	/// Covers the anchor layout rules by building the same picture twice - once positioned by hand and
+	/// once by anchors - and comparing the two rendered back buffers pixel for pixel.
+	/// </summary>
+	/// <remarks>
+	/// The comparison is only meaningful if both trees are built under the same layout rules, and one of
+	/// those rules lives in a process-wide static: <see cref="GuiWidget.DefaultEnforceIntegerBounds"/>,
+	/// which every <see cref="GuiWidget"/> copies into its own <c>EnforceIntegerBounds</c> at construction
+	/// and which rounds local bounds and device padding/margin/border. A button sized from text metrics has
+	/// fractional bounds, so flipping that static between building the control tree and the test tree moves
+	/// pixels even when the padding and margin are whole numbers - which is why any test that flips it must
+	/// hold it exclusively while it does (see <see cref="GroupBoxResizeThenLayoutBeforeMatchChildren"/>).
+	/// </remarks>
 	public class AnchorTests
 	{
 		public static bool saveImagesForDebug = true;
@@ -947,36 +960,56 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.").IsTrue();
 		}
 
+		/// <summary>
+		/// The GroupBox client area must shrink with its contents, with whole-pixel bounds so the
+		/// expected heights are exact integers.
+		/// </summary>
+		/// <remarks>
+		/// The whole-pixel part needs <see cref="GuiWidget.DefaultEnforceIntegerBounds"/>, which is
+		/// process-wide and is read by every <see cref="GuiWidget"/> constructor - a GroupBox builds its
+		/// label and client area for itself, so there is no per-widget way to ask for it here. Turning it on
+		/// therefore turns it on for every widget any concurrently running test happens to construct, and
+		/// the pixel comparisons in this class fail when their two trees are not built under the same
+		/// setting. Hence the keyless <c>[NotInParallel]</c>: exclusive, not merely serialized against a
+		/// group, because the widgets at risk are built all over the assembly. The restore is in a
+		/// <c>finally</c> so a failed assertion cannot leave the flag on for the rest of the run.
+		/// </remarks>
 		[Test]
+		[NotInParallel]
 		public async Task GroupBoxResizeThenLayoutBeforeMatchChildren()
 		{
 			bool integerBounds = GuiWidget.DefaultEnforceIntegerBounds;
 			GuiWidget.DefaultEnforceIntegerBounds = true;
-			GroupBox groupBox = new GroupBox("group box");
-			groupBox.Name = "groupBox";
-			GuiWidget contents = new GuiWidget(30, 20);
-			contents.Name = "contents";
-			contents.MinimumSize = new Vector2(0, 0);
+			try
+			{
+				GroupBox groupBox = new GroupBox("group box");
+				groupBox.Name = "groupBox";
+				GuiWidget contents = new GuiWidget(30, 20);
+				contents.Name = "contents";
+				contents.MinimumSize = new Vector2(0, 0);
 
-			// make sure the client area will get smaller when the contents get smaller
-			groupBox.ClientArea.VAnchor = Agg.UI.VAnchor.Fit;
-			groupBox.ClientArea.Name = "groupBox.ClientArea";
+				// make sure the client area will get smaller when the contents get smaller
+				groupBox.ClientArea.VAnchor = Agg.UI.VAnchor.Fit;
+				groupBox.ClientArea.Name = "groupBox.ClientArea";
 
-			groupBox.AddChild(contents);
+				groupBox.AddChild(contents);
 
-			await Assert.That(contents.Height == 20).IsTrue();
-			await Assert.That(groupBox.ClientArea.Height == 20).IsTrue();
-			await Assert.That(groupBox.Height == 50).IsTrue();
-			TextWidget groupBoxLabel = groupBox.Children.FirstOrDefault() as TextWidget;
-			groupBoxLabel.Name = "groupBoxLabel";
-			await Assert.That(groupBoxLabel.BoundsRelativeToParent.Top == groupBox.LocalBounds.Top).IsTrue();
-			contents.Height = 10;
-			await Assert.That(groupBoxLabel.BoundsRelativeToParent.Top == groupBox.LocalBounds.Top).IsTrue();
-			await Assert.That(contents.Height == 10).IsTrue();
-			await Assert.That(groupBox.ClientArea.Height == 10).IsTrue();
-			await Assert.That(groupBox.Height == 40).IsTrue();
-
-			GuiWidget.DefaultEnforceIntegerBounds = integerBounds;
+				await Assert.That(contents.Height == 20).IsTrue();
+				await Assert.That(groupBox.ClientArea.Height == 20).IsTrue();
+				await Assert.That(groupBox.Height == 50).IsTrue();
+				TextWidget groupBoxLabel = groupBox.Children.FirstOrDefault() as TextWidget;
+				groupBoxLabel.Name = "groupBoxLabel";
+				await Assert.That(groupBoxLabel.BoundsRelativeToParent.Top == groupBox.LocalBounds.Top).IsTrue();
+				contents.Height = 10;
+				await Assert.That(groupBoxLabel.BoundsRelativeToParent.Top == groupBox.LocalBounds.Top).IsTrue();
+				await Assert.That(contents.Height == 10).IsTrue();
+				await Assert.That(groupBox.ClientArea.Height == 10).IsTrue();
+				await Assert.That(groupBox.Height == 40).IsTrue();
+			}
+			finally
+			{
+				GuiWidget.DefaultEnforceIntegerBounds = integerBounds;
+			}
 		}
 	}
 }

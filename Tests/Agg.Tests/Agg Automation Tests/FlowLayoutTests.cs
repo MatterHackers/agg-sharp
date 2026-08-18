@@ -1924,7 +1924,21 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(item3.Width == 30).IsTrue();
 		}
 
+		/// <summary>
+		/// Hiding and showing children must resize the columns that hold them, both singly and nested.
+		/// </summary>
+		/// <remarks>
+		/// The nested block below turns on <see cref="GuiWidget.DefaultEnforceIntegerBounds"/> so its
+		/// expected heights are exact integers. That static is process-wide and every
+		/// <see cref="GuiWidget"/> constructor copies it, so while it is on it also rounds the bounds of
+		/// widgets built by any test running alongside this one - which silently breaks tests that compare
+		/// two renderings of the same picture (AnchorTests builds its two trees moments apart). The class
+		/// constraint key is not enough for that: it only serializes this class against the tests that share
+		/// the key, so this one test takes a keyless <c>[NotInParallel]</c> and runs exclusively. The class
+		/// <c>[After(HookType.Test)]</c> hook puts the flag back even if an assertion above the reset throws.
+		/// </remarks>
 		[Test]
+		[NotInParallel]
 		public async Task EnsureCorrectSizeOnChildrenVisibleChange()
 		{
 			// just one column changes correctly
