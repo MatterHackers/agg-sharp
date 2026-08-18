@@ -101,26 +101,47 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		internal static void StoreImage(TypeFace typeFace, Color color, double emSizeInPoints, char character, ImageBuffer image)
+		/// <summary>
+		/// Caches <paramref name="image"/> for the character, or keeps the image already cached for it.
+		/// </summary>
+		/// <returns>
+		/// The instance the cache retains, which is <paramref name="image"/> only when this call was the one
+		/// that inserted it. Callers must use the returned instance rather than the one they passed in.
+		/// </returns>
+		/// <remarks>
+		/// Rendering happens outside the lock, so two threads can both miss on the same character, both render
+		/// it, and both arrive here. First store wins: replacing the entry would give identical pixels under a
+		/// new instance, and consumers key on the instance - a texture or mask cache keyed on the glyph image
+		/// would double its entries, and every reference handed out before the swap would point at an image the
+		/// cache no longer knows about. Returning the retained instance is what lets the losing thread join the
+		/// winner instead of walking away with an orphan.
+		/// </remarks>
+		internal static ImageBuffer StoreImage(TypeFace typeFace, Color color, double emSizeInPoints, char character, ImageBuffer image)
 		{
 			lock (SyncRoot)
 			{
 				var characterImageCache = GetCorrectCache(typeFace, color, emSizeInPoints);
-				if (!characterImageCache.ContainsKey(character))
+				if (characterImageCache.TryGetValue(character, out ImageBuffer alreadyCached))
 				{
-					if (Instance.cachedImageCount + 1 > MaxCachedImages)
-					{
-						// Simplest provably-correct eviction: drop everything and let renders
-						// repopulate on demand. The leaf dictionary must be re-fetched because
-						// Clear() orphaned the one we navigated to above.
-						Clear();
-						characterImageCache = GetCorrectCache(typeFace, color, emSizeInPoints);
-					}
-
-					Instance.cachedImageCount++;
+					// Keeping first only ever keeps an entry that is present in the live cache under this
+					// lock, so it cannot resurrect anything the cap evicted: an eviction empties the
+					// dictionaries, and a store arriving afterwards misses here and inserts normally.
+					return alreadyCached;
 				}
 
+				if (Instance.cachedImageCount + 1 > MaxCachedImages)
+				{
+					// Simplest provably-correct eviction: drop everything and let renders
+					// repopulate on demand. The leaf dictionary must be re-fetched because
+					// Clear() orphaned the one we navigated to above.
+					Clear();
+					characterImageCache = GetCorrectCache(typeFace, color, emSizeInPoints);
+				}
+
+				Instance.cachedImageCount++;
 				characterImageCache[character] = image;
+
+				return image;
 			}
 		}
 
@@ -277,11 +298,11 @@ namespace MatterHackers.Agg.Font
 
 			var graphics = charImage.NewGraphics2D();
 			graphics.Render(glyphForCharacter, xFraction, yFraction + (-DescentInPixels) + 1, color);
-			// Rendering happens outside the lock; if two threads race on the same character
-			// the last write wins and both return a valid image.
-			StyledTypeFaceImageCache.StoreImage(this.TypeFace, color, emSizeInPixels, character, charImage);
 
-			return charImage;
+			// Rendering happens outside the lock, so another thread may have cached this character while we
+			// were drawing it. Return whatever the cache kept, not necessarily what we just drew, so that
+			// every caller of this character holds the same instance.
+			return StyledTypeFaceImageCache.StoreImage(this.TypeFace, color, emSizeInPixels, character, charImage);
 		}
 
 		public IVertexSource GetGlyphForCharacter(char character, double resolutionScale = 1)
