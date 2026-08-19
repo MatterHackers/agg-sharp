@@ -838,7 +838,7 @@ namespace MatterHackers.Agg.UI
 		{
 			try
 			{
-				OwnerOf(self)?.SyncSizeFromBacking();
+				OwnerOf(self)?.HandleDidResize();
 			}
 			catch (Exception ex)
 			{
@@ -1065,6 +1065,74 @@ namespace MatterHackers.Agg.UI
 
 			this.pixelWidth = (uint)Math.Max(1, Math.Round(backing.Size.Width));
 			this.pixelHeight = (uint)Math.Max(1, Math.Round(backing.Size.Height));
+		}
+
+		/// <summary>
+		/// Handles <c>windowDidResize:</c> - and, through the same registration,
+		/// <c>windowDidChangeBackingProperties:</c> and <c>windowDidChangeScreen:</c>. Re-sizes everything
+		/// that follows the backing store, then, <em>while the user is dragging an edge</em>, paints the
+		/// frame right here rather than leaving it to the pump.
+		/// <para>
+		/// That synchronous paint is the whole point of this method. A live resize runs inside one of
+		/// AppKit's nested tracking loops, and for its duration <see cref="RunEventLoop"/> - the only caller
+		/// that paints on its own schedule - is frozen (see the class remarks). So <see cref="SyncSizeFromBacking"/>
+		/// would resize the swapchain and set <see cref="needsRedraw"/>, and then nobody would draw until the
+		/// mouse came up; the CAMetalLayer meanwhile stretches its last drawable, which is exactly the smeared
+		/// content the user sees. Painting from the notification is the Mac equivalent of servicing WM_PAINT
+		/// from inside Win32's modal resize loop, which is what makes the Windows host live-update.
+		/// </para>
+		/// <para>
+		/// Only during a live resize, though: outside one the pump is running and will pick up
+		/// <see cref="needsRedraw"/> on its next pass, and painting eagerly there would draw during
+		/// <see cref="ShowSystemWindowOnMainThread"/>'s show/settle sequence, which sizes the window before
+		/// the first pump.
+		/// </para>
+		/// </summary>
+		private void HandleDidResize()
+		{
+			this.SyncSizeFromBacking();
+
+			// -[NSView inLiveResize] is only YES inside AppKit's resize tracking loop, so this is also the
+			// test for "the pump cannot get to it".
+			bool inLiveResize = this.view != IntPtr.Zero && Send_B(this.view, Sel("inLiveResize")) != NO;
+
+			if (ShouldPaintSynchronouslyForResize(
+				inLiveResize,
+				this.isInsidePaint,
+				this.hasClosed,
+				this.webGpuLayer?.IsWebGpuInitialized ?? false))
+			{
+				// OnWindowDidResize's catch exists to keep an exception from unwinding through ObjC, but it
+				// only logs. Without this, a paint that throws during a live resize - which outside a resize
+				// would have propagated out of the run loop - would vanish. Report it the way the idle tick does.
+				try
+				{
+					this.PaintFrame();
+				}
+				catch (Exception ex)
+				{
+					UiThread.ReportUnhandledException(ex);
+					Console.Error.WriteLine($"MacSystemWindow live-resize paint threw {ex}");
+				}
+			}
+		}
+
+		/// <summary>
+		/// Decides whether a resize notification has to paint the frame itself. Factored out of
+		/// <see cref="HandleDidResize"/> because a live resize cannot be synthesised in a test - AppKit only
+		/// raises <c>inLiveResize</c> for a real drag - but this decision can be.
+		/// </summary>
+		/// <param name="inLiveResize">The view's <c>inLiveResize</c>: the pump is frozen exactly when this is true.</param>
+		/// <param name="isInsidePaint">True when a paint is already on the stack; painting again would re-enter the frame.</param>
+		/// <param name="hasClosed">True once the window is gone, which resize notifications can still outlive.</param>
+		/// <param name="webGpuInitialized">False before there is a swapchain to draw into - the first resizes land there.</param>
+		internal static bool ShouldPaintSynchronouslyForResize(
+			bool inLiveResize,
+			bool isInsidePaint,
+			bool hasClosed,
+			bool webGpuInitialized)
+		{
+			return inLiveResize && webGpuInitialized && !isInsidePaint && !hasClosed;
 		}
 
 		/// <summary>
