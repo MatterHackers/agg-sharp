@@ -351,6 +351,22 @@ namespace MatterHackers.WebGpuRender
 			FrameProfiler.Count("dev.CreateTexture");
 			FrameProfiler.Count("tex:" + ProfileLabel(descriptor.Label));
 			this.ThrowIfDisposed();
+
+			// Checked here for the same reason CreateBuffer checks its size, only worse: an over-limit
+			// texture does not come back null. wgpuDeviceCreateTexture hands back a non-null *error*
+			// texture, the null check below passes, wgpuTextureCreateView yields an invalid view, and the
+			// next wgpuQueueSubmit fails validation inside Rust - where the panic cannot unwind across the
+			// FFI boundary, so wgpu-native aborts the process with no managed stack. Found by the 3x
+			// full-frame supersample of a fullscreen retina window: 3024x1898 x3 is 9072, past the 8192
+			// WebGPU grants by default.
+			if (descriptor.Width > this.limits.MaxTextureDimension2D
+				|| descriptor.Height > this.limits.MaxTextureDimension2D)
+			{
+				throw new InvalidOperationException(
+					$"A {descriptor.Width}x{descriptor.Height} texture exceeds this device's maxTextureDimension2D"
+					+ $" of {this.limits.MaxTextureDimension2D} ('{descriptor.Label}' on '{this.label}').");
+			}
+
 			using (var labelText = new Utf8Buffer(descriptor.Label))
 			{
 				var textureDescriptor = new WGPUTextureDescriptor
@@ -1519,10 +1535,14 @@ namespace MatterHackers.WebGpuRender
 		private void ReadDeviceLimits()
 		{
 			var deviceLimits = default(WGPULimits);
+			bool read = wgpuDeviceGetLimits(this.device, &deviceLimits) == WGPUStatus.Success;
 			this.limits = new DeviceLimits(
-				wgpuDeviceGetLimits(this.device, &deviceLimits) == WGPUStatus.Success && deviceLimits.maxBufferSize > 0
+				read && deviceLimits.maxBufferSize > 0
 					? deviceLimits.maxBufferSize
-					: DeviceLimits.DefaultMaxBufferSize);
+					: DeviceLimits.DefaultMaxBufferSize,
+				read && deviceLimits.maxTextureDimension2D > 0
+					? deviceLimits.maxTextureDimension2D
+					: DeviceLimits.DefaultMaxTextureDimension2D);
 		}
 
 		private void ReadAdapterInfo()
@@ -1564,6 +1584,7 @@ namespace MatterHackers.WebGpuRender
 		private WGPUDevice RequestDevice()
 		{
 			void* self = (void*)GCHandle.ToIntPtr(this.selfHandle);
+			WGPULimits requiredLimits = this.RequiredLimits();
 
 			// Pinned heap cell, not a stack local - see PinnedCallbackCell.
 			using (var cell = new PinnedCallbackCell<DeviceResult>())
@@ -1574,6 +1595,7 @@ namespace MatterHackers.WebGpuRender
 					label = labelText.View,
 					requiredFeatureCount = 0,
 					requiredFeatures = null,
+					requiredLimits = &requiredLimits,
 					defaultQueue = new WGPUQueueDescriptor { label = WgpuStrings.Null },
 					deviceLostCallbackInfo = new WGPUDeviceLostCallbackInfo
 					{
@@ -1617,6 +1639,76 @@ namespace MatterHackers.WebGpuRender
 				return cell.Value.Device;
 			}
 		}
+
+		/// <summary>
+		/// The limits the device is opened with: every one left at its WebGPU default except
+		/// <c>maxTextureDimension2D</c>, which is raised to whatever the adapter actually supports.
+		/// </summary>
+		/// <remarks>
+		/// wgpu grants the defaults - 8192 pixels - unless a device asks for more, and every desktop adapter
+		/// supports 16384. 8192 is not enough for the 3x full-frame supersample of a fullscreen retina
+		/// window, so this is what keeps the capture at full quality instead of clamping it down. Only values
+		/// read back <i>from the adapter</i> are requested: asking for a limit the adapter cannot grant fails
+		/// device creation outright, and nothing else here wants a raised limit anyway (a raised
+		/// <c>maxBufferSize</c>, for instance, would silently change the size the mesh path chunks at).
+		/// A failed adapter query leaves the field undefined, which is "use the default".
+		/// </remarks>
+		private WGPULimits RequiredLimits()
+		{
+			var adapterLimits = default(WGPULimits);
+			bool read = wgpuAdapterGetLimits(this.adapter, &adapterLimits) == WGPUStatus.Success;
+
+			var required = UndefinedLimits();
+			if (read && adapterLimits.maxTextureDimension2D > 0)
+			{
+				required.maxTextureDimension2D = adapterLimits.maxTextureDimension2D;
+			}
+
+			return required;
+		}
+
+		/// <summary>
+		/// A limit set with every member at the specification's "undefined" sentinel, which asks the
+		/// implementation for its default. <c>default(WGPULimits)</c> would instead ask for zero of
+		/// everything and fail device creation.
+		/// </summary>
+		private static WGPULimits UndefinedLimits()
+			=> new WGPULimits
+			{
+				nextInChain = null,
+				maxTextureDimension1D = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxTextureDimension2D = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxTextureDimension3D = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxTextureArrayLayers = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxBindGroups = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxBindGroupsPlusVertexBuffers = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxBindingsPerBindGroup = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxDynamicUniformBuffersPerPipelineLayout = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxDynamicStorageBuffersPerPipelineLayout = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxSampledTexturesPerShaderStage = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxSamplersPerShaderStage = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxStorageBuffersPerShaderStage = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxStorageTexturesPerShaderStage = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxUniformBuffersPerShaderStage = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxUniformBufferBindingSize = WGPUConstants.WGPU_LIMIT_U64_UNDEFINED,
+				maxStorageBufferBindingSize = WGPUConstants.WGPU_LIMIT_U64_UNDEFINED,
+				minUniformBufferOffsetAlignment = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				minStorageBufferOffsetAlignment = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxVertexBuffers = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxBufferSize = WGPUConstants.WGPU_LIMIT_U64_UNDEFINED,
+				maxVertexAttributes = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxVertexBufferArrayStride = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxInterStageShaderVariables = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxColorAttachments = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxColorAttachmentBytesPerSample = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxComputeWorkgroupStorageSize = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxComputeInvocationsPerWorkgroup = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxComputeWorkgroupSizeX = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxComputeWorkgroupSizeY = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxComputeWorkgroupSizeZ = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxComputeWorkgroupsPerDimension = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+				maxImmediateSize = WGPUConstants.WGPU_LIMIT_U32_UNDEFINED,
+			};
 
 		private void ThrowIfDisposed()
 		{

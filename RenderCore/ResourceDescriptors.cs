@@ -254,11 +254,19 @@ namespace MatterHackers.RenderCore
 		/// <summary>The WebGPU default, 256 MiB. What a device reports when it grants no more.</summary>
 		public const ulong DefaultMaxBufferSize = 268435456;
 
+		/// <summary>
+		/// The WebGPU default, 8192 pixels. Desktop adapters support 16384, but a device only gets that by
+		/// asking for it - see <c>WebGpuRenderDevice.RequestDevice</c>.
+		/// </summary>
+		public const uint DefaultMaxTextureDimension2D = 8192;
+
 		/// <summary>Creates a limit set.</summary>
 		/// <param name="maxBufferSize">The largest buffer the device will create, in bytes.</param>
-		public DeviceLimits(ulong maxBufferSize)
+		/// <param name="maxTextureDimension2D">The largest 2D texture edge the device will create, in pixels.</param>
+		public DeviceLimits(ulong maxBufferSize, uint maxTextureDimension2D = DefaultMaxTextureDimension2D)
 		{
 			this.MaxBufferSize = maxBufferSize;
+			this.MaxTextureDimension2D = maxTextureDimension2D;
 		}
 
 		/// <summary>
@@ -268,7 +276,15 @@ namespace MatterHackers.RenderCore
 		/// </summary>
 		public ulong MaxBufferSize { get; }
 
+		/// <summary>
+		/// The largest width or height <see cref="IRenderDevice.CreateTexture"/> will create
+		/// (<c>WGPULimits.maxTextureDimension2D</c>). The full-frame supersample capture is what reaches it:
+		/// a 3x capture of a fullscreen retina window asks for 9072 pixels against a default of 8192.
+		/// </summary>
+		public uint MaxTextureDimension2D { get; }
+
 		/// <inheritdoc/>
-		public override string ToString() => $"DeviceLimits maxBufferSize {this.MaxBufferSize:N0}";
+		public override string ToString()
+			=> $"DeviceLimits maxBufferSize {this.MaxBufferSize:N0} maxTextureDimension2D {this.MaxTextureDimension2D:N0}";
 	}
 }

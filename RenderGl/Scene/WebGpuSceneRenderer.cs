@@ -129,11 +129,12 @@ namespace MatterHackers.RenderGl.Scene
 		private const int DownsampleUniformSize = 16;
 
 		/// <summary>
-		/// Linear supersample factor for <see cref="BeginFullFrameCapture"/>: the capture target is this
-		/// many times the caller's target in each dimension, so every output pixel averages a 3x3 block.
-		/// Matches the classic path's <c>VorticeD3DGl.SupersampleScale</c>; the goldens are captured at it.
+		/// The linear supersample factor <see cref="BeginFullFrameCapture"/> uses when the device will size a
+		/// target that large: the capture target is this many times the caller's target in each dimension, so
+		/// every output pixel averages a 3x3 block. Matches the classic path's
+		/// <c>VorticeD3DGl.SupersampleScale</c>; the goldens are captured at it.
 		/// </summary>
-		public const int SupersampleScale = 3;
+		public const int MaxSupersampleScale = 3;
 
 		/// <summary>The intermediate targets' format. The classic path's are R8G8B8A8_UNorm.</summary>
 		private const TextureFormat SceneColorFormat = TextureFormat.Rgba8Unorm;
@@ -225,10 +226,19 @@ namespace MatterHackers.RenderGl.Scene
 		/// </summary>
 		public int VertexBufferCreateCount { get; private set; }
 
-		/// <summary>Device pixels per logical pixel: 1 normally, <see cref="SupersampleScale"/> while a
-		/// full-frame capture is in progress. Applied to the scene's target sizes and to every width the
-		/// shaders measure in pixels, exactly as the classic path applies its supersampleScale.</summary>
+		/// <summary>Device pixels per logical pixel: 1 normally, the frame's capture scale (at most
+		/// <see cref="MaxSupersampleScale"/>) while a full-frame capture is in progress. Applied to the
+		/// scene's target sizes and to every width the shaders measure in pixels, exactly as the classic path
+		/// applies its supersampleScale.</summary>
 		private int supersampleScale = 1;
+
+		/// <summary>
+		/// The scale the capture target that currently exists was built at. Unlike
+		/// <see cref="supersampleScale"/> this survives <see cref="EndFullFrameCapture"/>, because
+		/// <see cref="DownsampleAndBlitFullFrame"/> runs after it and has to filter over the block size the
+		/// target was actually rendered at.
+		/// </summary>
+		private int captureSupersampleScale = MaxSupersampleScale;
 
 		private IGpuTexture capturedColorTarget;
 		private IGpuTexture capturedDepthTarget;
@@ -490,8 +500,40 @@ namespace MatterHackers.RenderGl.Scene
 		}
 
 		/// <summary>
+		/// The largest supersample factor a <paramref name="width"/> x <paramref name="height"/> target can be
+		/// captured at without asking the device for a texture larger than it will make: the biggest scale in
+		/// <see cref="MaxSupersampleScale"/>..1 whose product fits <paramref name="maxTextureDimension"/> in
+		/// both axes.
+		/// <para>
+		/// Never returns less than 1. At 1 supersampling is effectively off and the frame is softer, which is
+		/// the price of the alternative: an over-limit texture is not refused by wgpu-native but handed back
+		/// as a non-null error texture, and the invalid view it yields fails validation at the next queue
+		/// submit inside Rust, where the panic cannot unwind across the FFI boundary and aborts the process.
+		/// A fullscreen retina window - 3024x1898 device pixels - is already past 8192/3.
+		/// </para>
+		/// </summary>
+		/// <param name="width">Target width in device pixels. Non-positive sizes are answered, not thrown at:
+		/// a collapsed widget reaches here and the caller clamps the target size afterwards.</param>
+		/// <param name="height">Target height in device pixels.</param>
+		/// <param name="maxTextureDimension">The device's <c>maxTextureDimension2D</c>.</param>
+		internal static int SupersampleScaleFor(int width, int height, uint maxTextureDimension)
+		{
+			long longestEdge = Math.Max(width, height);
+			for (int scale = MaxSupersampleScale; scale > 1; scale--)
+			{
+				if (longestEdge * scale <= maxTextureDimension)
+				{
+					return scale;
+				}
+			}
+
+			return 1;
+		}
+
+		/// <summary>
 		/// Points every subsequent draw - this renderer's and the compat layer's GL immediate mode alike -
-		/// at an off-screen target <see cref="SupersampleScale"/> times the caller's in each dimension.
+		/// at an off-screen target up to <see cref="MaxSupersampleScale"/> times the caller's in each
+		/// dimension.
 		/// </summary>
 		/// <remarks>
 		/// The classic path does this by swapping its renderTargetView/depthStencilView fields, which have
@@ -525,16 +567,28 @@ namespace MatterHackers.RenderGl.Scene
 			this.compat.Passes.EnsurePassOpen();
 			this.compat.FlushPass();
 
-			int width = (int)destination.Descriptor.Width * SupersampleScale;
-			int height = (int)destination.Descriptor.Height * SupersampleScale;
+			// Re-evaluated every capture, not once: the window the frame is going to is resized and made
+			// fullscreen under the renderer, and the scale that fit the old size would ask for an
+			// over-limit texture at the new one. Everything that has to agree on it for this frame - the
+			// capture target here, the scene pipeline's own targets in EnsureFrameResources, the compat
+			// layer's viewport and scissor scaling, and every pixel width the shaders are handed - reads it
+			// back off supersampleScale rather than recomputing it.
+			int scale = SupersampleScaleFor(
+				(int)destination.Descriptor.Width,
+				(int)destination.Descriptor.Height,
+				this.device.Limits.MaxTextureDimension2D);
+
+			int width = (int)destination.Descriptor.Width * scale;
+			int height = (int)destination.Descriptor.Height * scale;
 			this.EnsureSampleFrameTargets(width, height, destination.Descriptor.Format);
 
 			this.capturedColorTarget = destination;
 			this.capturedDepthTarget = this.compat.Passes.DepthTarget;
 
 			this.compat.SetRenderTarget(this.sampleFrameColor, this.sampleFrameDepth);
-			this.compat.CoordinateScale = SupersampleScale;
-			this.supersampleScale = SupersampleScale;
+			this.compat.CoordinateScale = scale;
+			this.supersampleScale = scale;
+			this.captureSupersampleScale = scale;
 
 			// Cleared to transparent so only the region the 3D frame actually covers contributes when the
 			// downsampled result is alpha-blended back over the caller's target.
@@ -2555,14 +2609,26 @@ namespace MatterHackers.RenderGl.Scene
 			this.device.WriteBuffer(this.outlineUniform, 0, this.outlineScratch);
 		}
 
+		/// <summary>
+		/// The 9-tap downsample's tap spacing, in capture-target texture coordinates.
+		/// </summary>
+		/// <remarks>
+		/// One texel apart at the 3x the goldens are captured at, which puts the nine taps on the nine texels
+		/// of the source block exactly - the value this used to write unconditionally. At a scale the device
+		/// limit forced down it has to shrink with the block: half a texel at 2x (the four corner taps land on
+		/// the 2x2 block's texel centres) and zero at 1x, where all nine taps collapse onto the one source
+		/// texel and the pass becomes the plain blit it should be. Leaving it at one texel would blur a frame
+		/// that was never supersampled in the first place.
+		/// </remarks>
 		private void WriteDownsampleUniform()
 		{
+			float tapSpacingInTexels = (this.captureSupersampleScale - 1) * 0.5f;
 			var span = this.downsampleScratch.AsSpan();
 			GlUniformBlock.WriteVector4(
 				span,
 				0,
-				1.0f / this.sampleFrameColor.Descriptor.Width,
-				1.0f / this.sampleFrameColor.Descriptor.Height,
+				tapSpacingInTexels / this.sampleFrameColor.Descriptor.Width,
+				tapSpacingInTexels / this.sampleFrameColor.Descriptor.Height,
 				0,
 				0);
 			this.device.WriteBuffer(this.downsampleUniform, 0, this.downsampleScratch);

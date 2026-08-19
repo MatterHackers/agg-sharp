@@ -239,7 +239,8 @@ namespace MatterHackers.Agg.Tests
 		/// The limit is what the mesh path sizes its vertex chunks against, so a device that reported a
 		/// nonsense limit would silently turn the chunking into either "never split" (and the process abort
 		/// comes back on a large mesh) or "split every triangle". The expected value is WebGPU's default:
-		/// nothing here requests raised limits, and wgpu grants the defaults unless asked.
+		/// <c>maxTextureDimension2D</c> is the only limit this backend asks to have raised, so wgpu grants
+		/// the default for everything else.
 		/// </remarks>
 		[Test]
 		public async Task TheDeviceReportsAndEnforcesItsBufferSizeLimit()
@@ -251,6 +252,35 @@ namespace MatterHackers.Agg.Tests
 				await Assert.That(() => harness.Device.CreateBuffer(
 						BufferUsage.Vertex,
 						harness.Device.Limits.MaxBufferSize + 4))
+					.Throws<InvalidOperationException>();
+			}
+		}
+
+		/// <summary>
+		/// The texture side of the same contract. An over-limit texture is worse than an over-limit buffer:
+		/// <c>wgpuDeviceCreateTexture</c> returns a non-null <i>error</i> texture, so the null check passes
+		/// and the invalid view it yields only fails at the next queue submit - inside Rust, where the panic
+		/// cannot unwind across the FFI boundary and aborts the process instead of raising anything catchable.
+		/// </summary>
+		[Test]
+		public async Task TheDeviceReportsAndEnforcesItsTextureSizeLimit()
+		{
+			using (var harness = WebGpuRenderTestHarness.Create(16, 16))
+			{
+				// At least the WebGPU default: the device asks for the adapter's own maxTextureDimension2D,
+				// which every desktop adapter reports as 16384, and falls back to the default if the query
+				// fails. Anything below it would mean the request went out malformed.
+				await Assert.That(harness.Device.Limits.MaxTextureDimension2D)
+					.IsGreaterThanOrEqualTo(DeviceLimits.DefaultMaxTextureDimension2D);
+
+				await Assert.That(() => harness.Device.CreateTexture(new TextureDescriptor(
+						harness.Device.Limits.MaxTextureDimension2D + 1,
+						16,
+						TextureFormat.Rgba8Unorm,
+						TextureUsage.TextureBinding,
+						1,
+						1,
+						"overLimit")))
 					.Throws<InvalidOperationException>();
 			}
 		}

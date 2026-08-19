@@ -30,8 +30,11 @@ struct OutlineSettings
 
 struct DownsampleSettings
 {
-	// xy = one source texel in uv, so the 9 taps land on the 3x3 block behind each destination pixel.
-	texelSize : vec4<f32>,
+	// xy = the distance between neighbouring taps in uv: (supersampleScale - 1) / 2 source texels. At the
+	// 3x capture that is one whole texel, so the 9 taps land on the 3x3 block behind each destination
+	// pixel. The device's maxTextureDimension2D can force the capture down to 2x or 1x on a large display,
+	// and then the taps have to close up with the block - at 1x to zero, which turns this into a copy.
+	tapOffset : vec4<f32>,
 };
 
 @group(0) @binding(8) var<uniform> downsample : DownsampleSettings;
@@ -99,9 +102,11 @@ fn resolveDualPeelMain(input : FullScreenOutput) -> @location(0) vec4<f32>
 		resolvedColor.a + (1.0 - resolvedColor.a) * overlayWeight);
 }
 
-// The 9-tap box filter behind the 3x full-frame supersample. The destination pixel centre maps to the
-// centre texel of its 3x3 source block, so taps at +/- one texel cover the block exactly - which is why
-// this is a plain unweighted average rather than a reconstruction filter.
+// The 9-tap box filter behind the full-frame supersample. At the usual 3x the destination pixel centre
+// maps to the centre texel of its 3x3 source block, so taps at +/- one texel cover the block exactly -
+// which is why this is a plain unweighted average rather than a reconstruction filter. The tap spacing is
+// a uniform rather than a constant so a capture the device limit forced below 3x still averages its own
+// block and no more; see DownsampleSettings.
 @fragment
 fn downsample3x3Main(input : FullScreenOutput) -> @location(0) vec4<f32>
 {
@@ -110,7 +115,7 @@ fn downsample3x3Main(input : FullScreenOutput) -> @location(0) vec4<f32>
 	{
 		for (var dx = -1; dx <= 1; dx = dx + 1)
 		{
-			let offset = vec2<f32>(f32(dx), f32(dy)) * downsample.texelSize.xy;
+			let offset = vec2<f32>(f32(dx), f32(dy)) * downsample.tapOffset.xy;
 			sum = sum + textureSample(texture0, pointSampler, input.texCoord + offset);
 		}
 	}
