@@ -1052,22 +1052,35 @@ namespace MatterHackers.Agg.UI
 					maximumSize.X = Max(minimumSize.X, maximumSize.X);
 					maximumSize.Y = Max(minimumSize.Y, maximumSize.Y);
 
-					RectangleDouble localBounds = LocalBounds;
-					if (localBounds.Width < MinimumSize.X)
-					{
-						localBounds.Right = localBounds.Left + MinimumSize.X;
-					}
-
-					if (localBounds.Height < MinimumSize.Y)
-					{
-						localBounds.Top = localBounds.Bottom + MinimumSize.Y;
-					}
-
-					LocalBounds = localBounds;
+					GrowBoundsToMinimumSize();
 
 					OnMinimumSizeChanged(null);
 				}
 			}
+		}
+
+		/// <summary>
+		/// Pushes <see cref="LocalBounds"/> up to a <see cref="MinimumSize"/> that has just been raised past it,
+		/// so a widget is never left smaller than the minimum it was given.
+		/// </summary>
+		/// <remarks>
+		/// Its own seam only because <see cref="SystemWindow"/> has to opt out: its bounds are the size of a real
+		/// drawing surface, and growing past that draws off the surface rather than making the window bigger.
+		/// </remarks>
+		protected virtual void GrowBoundsToMinimumSize()
+		{
+			RectangleDouble grownBounds = LocalBounds;
+			if (grownBounds.Width < MinimumSize.X)
+			{
+				grownBounds.Right = grownBounds.Left + MinimumSize.X;
+			}
+
+			if (grownBounds.Height < MinimumSize.Y)
+			{
+				grownBounds.Top = grownBounds.Bottom + MinimumSize.Y;
+			}
+
+			LocalBounds = grownBounds;
 		}
 
 		public virtual void OnMinimumSizeChanged(EventArgs e)
@@ -1218,28 +1231,44 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Holds bounds about to be assigned to <see cref="LocalBounds"/> inside <see cref="MinimumSize"/> and
+		/// <see cref="MaximumSize"/>, anchoring the rectangle at its left and bottom edges.
+		/// </summary>
+		/// <remarks>
+		/// Its own seam only because <see cref="SystemWindow"/> has to opt out for sizes a platform host reports:
+		/// those are the measured size of a real drawing surface, and a widget tree laid out larger than the
+		/// surface does not enlarge it, it draws off the edge of it.
+		/// </remarks>
+		protected virtual RectangleDouble ClampToSizeLimits(RectangleDouble value)
+		{
+			if (value.Width < MinimumSize.X)
+			{
+				value.Right = value.Left + MinimumSize.X;
+			}
+			else if (value.Width > MaximumSize.X)
+			{
+				value.Right = value.Left + MaximumSize.X;
+			}
+
+			if (value.Height < MinimumSize.Y)
+			{
+				value.Top = value.Bottom + MinimumSize.Y;
+			}
+			else if (value.Height > MaximumSize.Y)
+			{
+				value.Top = value.Bottom + MaximumSize.Y;
+			}
+
+			return value;
+		}
+
 		public virtual RectangleDouble LocalBounds
 		{
 			get => localBounds;
 			set
 			{
-				if (value.Width < MinimumSize.X)
-				{
-					value.Right = value.Left + MinimumSize.X;
-				}
-				else if (value.Width > MaximumSize.X)
-				{
-					value.Right = value.Left + MaximumSize.X;
-				}
-
-				if (value.Height < MinimumSize.Y)
-				{
-					value.Top = value.Bottom + MinimumSize.Y;
-				}
-				else if (value.Height > MaximumSize.Y)
-				{
-					value.Top = value.Bottom + MaximumSize.Y;
-				}
+				value = ClampToSizeLimits(value);
 
 				if (EnforceIntegerBounds)
 				{

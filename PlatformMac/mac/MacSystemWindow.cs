@@ -545,6 +545,11 @@ namespace MatterHackers.Agg.UI
 			this.webGpuLayer.UseSoftwareAdapter = ShouldUseSoftwareAdapter(systemWindow);
 			this.webGpuLayer.InitializeWebGpu();
 
+			// Also seeds SystemWindow.DisplayScale, since aggSystemWindow is already attached. On a 1x
+			// display that matches the default and says nothing; on a Retina one it queues a single
+			// DisplayScaleChanged for the first idle tick. Suppressing that one raise would mean giving the
+			// application a window whose scale it was never told about, so the startup rebuild is the
+			// cheaper of the two - and it happens before anything is on screen.
 			this.SyncSizeFromBacking();
 
 			Send_v_r(this.window, Sel("makeKeyAndOrderFront:"), IntPtr.Zero);
@@ -617,7 +622,15 @@ namespace MatterHackers.Agg.UI
 
 				// Backing pixels, matching SyncSizeFromBacking: this window's agg coordinate space is the
 				// drawable, and a swapped-in window that kept its own size would be drawn at the wrong one.
-				systemWindow.LocalBounds = new RectangleDouble(0, 0, this.pixelWidth, this.pixelHeight);
+				// SetBoundsFromPlatform rather than LocalBounds so a minimum sized for another display cannot
+				// lay the window out larger than the drawable it is about to be drawn into.
+				systemWindow.SetBoundsFromPlatform(this.pixelWidth, this.pixelHeight);
+
+				// Same reason: a window built while the shell was on a 1x display is about to be drawn on
+				// whatever display the shell is on now, and nothing else will ever tell it so - SyncSizeFromBacking
+				// only ever pushes the scale into whichever window was active at the time.
+				systemWindow.SetDisplayScale(this.backingScale);
+				systemWindow.SetDisplayUsableSize(this.MeasureUsableScreenSize());
 			}
 
 			systemWindow.Invalidate();
@@ -1068,6 +1081,33 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
+		/// How much room the screen this window is on has for a window, in device pixels.
+		/// </summary>
+		/// <remarks>
+		/// <c>visibleFrame</c> rather than <c>frame</c>: it already has the menu bar and the Dock taken out
+		/// of it, which is the honest answer to "how big can this window be". It is in points, so it is
+		/// multiplied by <see cref="backingScale"/> to reach agg's device pixels - the window's own backing
+		/// scale is the scale of the screen <c>-[NSWindow screen]</c> just returned, since AppKit derives
+		/// both from the display the window mostly covers.
+		/// <para>
+		/// Zero when the window has no screen at all (dragged off the desktop, minimised), which
+		/// <see cref="SystemWindow.SetDisplayUsableSize"/> reads as "nothing measured" and discards.
+		/// </para>
+		/// </remarks>
+		private Vector2 MeasureUsableScreenSize()
+		{
+			IntPtr screen = this.window == IntPtr.Zero ? IntPtr.Zero : Send_r(this.window, Sel("screen"));
+			if (screen == IntPtr.Zero)
+			{
+				return Vector2.Zero;
+			}
+
+			CGRect visible = Send_R(screen, Sel("visibleFrame"));
+
+			return new Vector2(visible.Size.Width * this.backingScale, visible.Size.Height * this.backingScale);
+		}
+
+		/// <summary>
 		/// Handles <c>windowDidResize:</c> - and, through the same registration,
 		/// <c>windowDidChangeBackingProperties:</c> and <c>windowDidChangeScreen:</c>. Re-sizes everything
 		/// that follows the backing store, then, <em>while the user is dragging an edge</em>, paints the
@@ -1168,7 +1208,23 @@ namespace MatterHackers.Agg.UI
 
 			if (this.aggSystemWindow != null)
 			{
-				this.aggSystemWindow.LocalBounds = new RectangleDouble(0, 0, this.pixelWidth, this.pixelHeight);
+				// The drawable is this big whatever the application's minimum says. Assigning LocalBounds would
+				// let a minimum computed for the display we just left inflate the layout past the drawable, and
+				// agg being y-up that clips off the top - the toolbars vanish under the title bar.
+				this.aggSystemWindow.SetBoundsFromPlatform(this.pixelWidth, this.pixelHeight);
+
+				// windowDidChangeScreen: and windowDidChangeBackingProperties: both land here, so this is
+				// where a drag from a Retina display to a standard one becomes visible to the application.
+				// SetDisplayScale only stores the value here - it raises its event from the idle queue -
+				// which is what makes this safe to call from inside AppKit's drag tracking loop, where this
+				// window's own pump is frozen and a subscriber that rebuilt the UI would stall the drag.
+				this.aggSystemWindow.SetDisplayScale(this.backingScale);
+
+				// The other half of "which display am I on": how much room it has. A second display is often
+				// a different size rather than a different scale, and an application that sized itself
+				// against the primary monitor would hold a minimum the display it is on cannot satisfy.
+				this.aggSystemWindow.SetDisplayUsableSize(this.MeasureUsableScreenSize());
+
 				this.aggSystemWindow.Invalidate();
 			}
 
