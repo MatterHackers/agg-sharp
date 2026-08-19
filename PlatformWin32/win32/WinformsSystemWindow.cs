@@ -147,9 +147,83 @@ namespace MatterHackers.Agg.UI
 					{
 						this.MinimumSize = _systemWindow.MinimumSize;
 					}
+
+					// Seed the display scale, and re-seed it in single window mode where the same Form draws
+					// a succession of SystemWindows: a dialog constructed while the shell sat on a 1x monitor
+					// is about to be drawn on whatever monitor the shell is on now, and OnDpiChanged only ever
+					// reaches whichever window was attached when the monitor changed.
+					_systemWindow.SetDisplayScale(this.DeviceDpi / 96.0);
+					this.PushDisplayUsableSize();
 				}
 			}
 		}
+
+		/// <summary>
+		/// Tells the attached agg window how much room the monitor this Form is on has for it, in device
+		/// pixels - the companion to <see cref="SystemWindow.SetDisplayScale"/>, pushed from the same places.
+		/// </summary>
+		/// <remarks>
+		/// <c>WorkingArea</c> rather than <c>Bounds</c>: it already has the taskbar taken out of it, matching
+		/// what the mac host reports from <c>visibleFrame</c>.
+		/// <para>
+		/// The rectangle is taken as physical pixels. WinForms' <see cref="Screen"/> hands back the monitor
+		/// rectangle Win32 reports for the virtual desktop, which it does not rescale, and in a per-monitor
+		/// v2 process that desktop is in physical pixels - the same space <c>ClientSize</c> is in when this
+		/// Form's own bounds are pushed to <see cref="SystemWindow.SetBoundsFromPlatform"/>. A
+		/// system-DPI-aware process is the one case where Windows virtualises those coordinates for the
+		/// non-primary monitor; the resulting size is off by the DPI ratio there, but such a process is
+		/// bitmap-scaled throughout and never sees a scale change either.
+		/// </para>
+		/// <para>
+		/// Skipped before the handle exists: <see cref="Screen.FromControl"/> reads <c>Control.Handle</c> and
+		/// would force the premature handle creation the rest of this class is careful to avoid.
+		/// OnHandleCreated pushes it as soon as there is one.
+		/// </para>
+		/// </remarks>
+		private void PushDisplayUsableSize()
+		{
+			var systemWindow = AggSystemWindow;
+			if (systemWindow == null || !this.IsHandleCreated)
+			{
+				return;
+			}
+
+			var workingArea = Screen.FromControl(this).WorkingArea;
+
+			systemWindow.SetDisplayUsableSize(new Vector2(workingArea.Width, workingArea.Height));
+		}
+
+		/// <summary>
+		/// Handles the window being dragged onto a monitor with a different DPI, publishing the new scale on
+		/// the attached <see cref="SystemWindow"/> so the application can rebuild its UI for it.
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// The base implementation does the window's own half of the work - it accepts the rectangle Windows
+		/// suggests for the new monitor and rescales the Form - so this only has to publish the factor. 96 is
+		/// the reference DPI Windows scales everything against, so <c>DeviceDpi / 96</c> is 1 at 100%, 1.5 at
+		/// 150% and 2 at 200%, matching what the mac host reports as its backing scale factor.
+		/// </para>
+		/// <para>
+		/// WM_DPICHANGED is only ever sent to a process that declared itself per-monitor DPI aware, which is
+		/// the application's call to make (its manifest or its startup), not this library's. In a
+		/// system-DPI-aware process this override simply never runs, which is the correct behaviour there:
+		/// Windows bitmap-scales the window instead and its scale genuinely does not change.
+		/// </para>
+		/// <para>
+		/// The raise is deferred by <see cref="SystemWindow.SetDisplayScale"/> onto the idle queue rather than
+		/// running here. A subscriber rebuilds the whole UI, and doing that inside the WM_DPICHANGED handler
+		/// would run it while Windows is still repositioning the window across the monitor boundary.
+		/// </para>
+		/// </remarks>
+		protected override void OnDpiChanged(DpiChangedEventArgs e)
+		{
+			base.OnDpiChanged(e);
+
+			AggSystemWindow?.SetDisplayScale(e.DeviceDpiNew / 96.0);
+			this.PushDisplayUsableSize();
+		}
+
 
 		public bool IsMainWindow { get; } = false;
 
@@ -205,6 +279,15 @@ namespace MatterHackers.Agg.UI
 			{
 				EnsureIdleTimerDriving(this);
 			}
+
+			// Re-seed the display scale now that there is a handle. The seed in AggSystemWindow's setter runs
+			// before there is one, and a handle-less Form's DeviceDpi is the PROCESS DPI, not the DPI of the
+			// monitor the window is about to appear on. Nothing else corrects it: WM_DPICHANGED is only sent
+			// when a window MOVES between monitors, never for its initial placement, so a window restored onto
+			// a secondary display of a different scale would report the wrong one for its whole life. In the
+			// single-monitor case the value is already right and SetDisplayScale coalesces the repeat away.
+			AggSystemWindow?.SetDisplayScale(this.DeviceDpi / 96.0);
+			this.PushDisplayUsableSize();
 		}
 
 		/// <summary>
@@ -692,7 +775,15 @@ namespace MatterHackers.Agg.UI
 			var systemWindow = AggSystemWindow;
 			if (systemWindow != null)
 			{
-				systemWindow.LocalBounds = new RectangleDouble(0, 0, ClientSize.Width, ClientSize.Height);
+				// The client area is this big whatever the application's minimum says - a per-monitor-DPI change
+				// can shrink it below a minimum the application computed in pixels for the previous display, and
+				// agg being y-up, laying out larger than the client area clips off the top of the window rather
+				// than the bottom. The Form's own MinimumSize is what stops the user dragging it smaller.
+				systemWindow.SetBoundsFromPlatform(ClientSize.Width, ClientSize.Height);
+
+				// A resize is also how a maximize, a restore, and a docked taskbar appearing reach us, all of
+				// which change how much room the monitor has left for this window.
+				this.PushDisplayUsableSize();
 
 				// Wait until the control is initialized (and thus WindowState has been set) to ensure we don't wipe out
 				// the persisted data before its loaded
