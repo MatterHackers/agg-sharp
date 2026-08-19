@@ -53,8 +53,8 @@ namespace MatterHackers.Agg.SvgTools
         public static ImageBuffer ParseAndRender(string filePath, int targetWidth, int targetHeight)
         {
             using var stream = File.OpenRead(filePath);
-            var (elements, viewBoxWidth, viewBoxHeight) = ParseFull(stream, flipY: false);
-            return RenderToImageBuffer(elements, viewBoxWidth, viewBoxHeight, targetWidth, targetHeight);
+            var (elements, viewBoxMinX, viewBoxMinY, viewBoxWidth, viewBoxHeight) = ParseFull(stream, flipY: false);
+            return RenderToImageBuffer(elements, viewBoxWidth, viewBoxHeight, targetWidth, targetHeight, viewBoxMinX, viewBoxMinY);
         }
 
         /// <summary>
@@ -67,7 +67,9 @@ namespace MatterHackers.Agg.SvgTools
             double viewBoxWidth,
             double viewBoxHeight,
             int targetWidth,
-            int targetHeight)
+            int targetHeight,
+            double viewBoxMinX = 0,
+            double viewBoxMinY = 0)
         {
             var image = new ImageBuffer(targetWidth, targetHeight, 32, new BlenderBGRA());
             var graphics = image.NewGraphics2D();
@@ -75,13 +77,21 @@ namespace MatterHackers.Agg.SvgTools
 
             double scaleX = targetWidth / viewBoxWidth;
             double scaleY = targetHeight / viewBoxHeight;
-            graphics.SetTransform(Affine.NewScaling(scaleX, scaleY));
+            // The viewBox origin is not always 0 0; shift it to the origin before scaling to the target.
+            graphics.SetTransform(Affine.NewTranslation(-viewBoxMinX, -viewBoxMinY) * Affine.NewScaling(scaleX, scaleY));
 
             foreach (var element in elements)
             {
                 if (element.FillEvenOdd)
                     graphics.Rasterizer.filling_rule(Util.filling_rule_e.fill_even_odd);
-                graphics.Render(element.VertexSource, element.Color);
+                // The rasterizer treats curve control points as line_to, so curves must be flattened
+                // first or a Bezier renders as the polygon through its control points. Unlike Graphics2D,
+                // which flattens after transforming and so works in pixel units, we flatten in viewBox units
+                // before the graphics transform scales them up. ResolutionScale tightens the chord tolerance
+                // by the output scale so the faceting stays sub-pixel in the rendered image.
+                graphics.Render(
+                    new FlattenCurves(element.VertexSource) { ResolutionScale = Math.Max(scaleX, scaleY) },
+                    element.Color);
                 if (element.FillEvenOdd)
                     graphics.Rasterizer.filling_rule(Util.filling_rule_e.fill_non_zero);
             }
@@ -93,12 +103,14 @@ namespace MatterHackers.Agg.SvgTools
             return image;
         }
 
-        private static (List<ColoredVertexSource> elements, double viewBoxWidth, double viewBoxHeight) ParseFull(Stream stream, bool flipY)
+        private static (List<ColoredVertexSource> elements, double viewBoxMinX, double viewBoxMinY, double viewBoxWidth, double viewBoxHeight) ParseFull(Stream stream, bool flipY)
         {
             var svgDocument = new HtmlDocument();
             svgDocument.Load(stream);
 
             // Parse viewBox to get the coordinate space dimensions
+            double viewBoxMinX = 0;
+            double viewBoxMinY = 0;
             double viewBoxWidth = 16;
             double viewBoxHeight = 16;
             var svgNode = svgDocument.DocumentNode.SelectSingleNode("//svg");
@@ -108,6 +120,8 @@ namespace MatterHackers.Agg.SvgTools
                 var segments = viewBoxAttr.Value.Split(' ');
                 if (segments.Length >= 4)
                 {
+                    double.TryParse(segments[0], out viewBoxMinX);
+                    double.TryParse(segments[1], out viewBoxMinY);
                     double.TryParse(segments[2], out viewBoxWidth);
                     double.TryParse(segments[3], out viewBoxHeight);
                 }
@@ -223,7 +237,7 @@ namespace MatterHackers.Agg.SvgTools
                 }
             }
 
-            return (items, viewBoxWidth, viewBoxHeight);
+            return (items, viewBoxMinX, viewBoxMinY, viewBoxWidth, viewBoxHeight);
         }
 
         private static double ParseAttrDouble(HtmlNode node, string attrName, double defaultValue)

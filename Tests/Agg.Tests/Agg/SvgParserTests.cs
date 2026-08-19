@@ -121,6 +121,115 @@ namespace MatterHackers.Agg.Tests
 			await Assert.That(eGlyph.Left).IsEqualTo(581.29).Within(0.01);
 		}
 
+		/// <summary>
+		/// The rasterizer treats Curve4 control point vertices as line_to, so a path has to be flattened
+		/// before it is rendered. Without flattening a circle drawn as four cubics rasterizes as the
+		/// polygon through its control points, which bulges roughly 4 units past the true radius at 45 degrees.
+		/// </summary>
+		[Test]
+		public async Task CurvesAreFlattenedWhenRasterizing()
+		{
+			// Kappa form circle: center (50,50), radius 40, control offset 0.5523 * 40 = 22.09.
+			var svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\">"
+				+ "<path fill=\"#000000\" d=\"M50 10 C72.09 10 90 27.91 90 50 C90 72.09 72.09 90 50 90 "
+				+ "C27.91 90 10 72.09 10 50 C10 27.91 27.91 10 50 10 Z\" /></svg>";
+
+			var path = WriteTempSvg(svg);
+			try
+			{
+				var image = SvgParser.ParseAndRender(path, 100, 100);
+
+				// (79.5, 20.5) is 41.7 from the center - outside the radius 40 circle, but well inside the
+				// control point polygon, whose corner edge there is 43.9 from the center.
+				await Assert.That((int)image.GetPixel(79, 20).alpha).IsLessThan(20)
+					.Because("a point outside the circle but inside the control point polygon must not be filled");
+
+				await Assert.That((int)image.GetPixel(50, 50).alpha).IsGreaterThan(200)
+					.Because("the center of the circle must be filled");
+
+				await Assert.That((int)image.GetPixel(2, 2).alpha).IsEqualTo(0)
+					.Because("the image corner is outside the circle");
+			}
+			finally
+			{
+				File.Delete(path);
+			}
+		}
+
+		/// <summary>
+		/// A viewBox does not have to start at 0 0. Ignoring its min-x/min-y shifts every element by that
+		/// origin, so content that should fill the target lands partly outside it.
+		/// </summary>
+		[Test]
+		public async Task ViewBoxOriginOffsetIsApplied()
+		{
+			var svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"50 50 100 100\">"
+				+ "<path fill=\"#000000\" d=\"M50 50 L150 50 L150 150 L50 150 Z\" /></svg>";
+
+			var path = WriteTempSvg(svg);
+			try
+			{
+				var image = SvgParser.ParseAndRender(path, 40, 40);
+
+				foreach (var (x, y) in new[] { (20, 20), (2, 2), (37, 2), (2, 37), (37, 37) })
+				{
+					await Assert.That((int)image.GetPixel(x, y).alpha).IsGreaterThan(200)
+						.Because($"the path covers the whole viewBox, so ({x},{y}) must be filled");
+				}
+			}
+			finally
+			{
+				File.Delete(path);
+			}
+		}
+
+		/// <summary>
+		/// Curves are flattened in viewBox units, before the transform that scales the viewBox up to the
+		/// target pixel size, so the flattening tolerance has to be scaled to the output. Left at the default
+		/// the chord error is magnified by the scale factor: a 16 unit viewBox drawn at 1024 pixels pulls the
+		/// rendered edge of a radius 7 circle in to about 6.90 units (6 pixels of faceting), worst around
+		/// 22 degrees, where a flattened segment cuts furthest inside the true arc.
+		/// </summary>
+		[Test]
+		public async Task CurveFlatteningResolutionMatchesOutputScale()
+		{
+			// Kappa form circle: center (8,8), radius 7, control offset 0.5523 * 7 = 3.866.
+			var svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\">"
+				+ "<path fill=\"#000000\" d=\"M8 1 C11.87 1 15 4.13 15 8 C15 11.87 11.87 15 8 15 "
+				+ "C4.13 15 1 11.87 1 8 C1 4.13 4.13 1 8 1 Z\" /></svg>";
+
+			var path = WriteTempSvg(svg);
+			try
+			{
+				var image = SvgParser.ParseAndRender(path, 1024, 1024);
+
+				// 6.95 of the radius 7 circle: inside the true arc, but outside the coarsely flattened one.
+				foreach (var degrees in new[] { 22.0, 67.0 })
+				{
+					var radians = degrees * Math.PI / 180.0;
+					int x = (int)((8 + 6.95 * Math.Cos(radians)) * 64);
+					int y = (int)((8 + 6.95 * Math.Sin(radians)) * 64);
+
+					await Assert.That((int)image.GetPixel(x, y).alpha).IsGreaterThan(200)
+						.Because($"{degrees} degrees out at 6.95 of radius 7 is inside the circle, so it must be filled");
+				}
+
+				await Assert.That((int)image.GetPixel(512, 512).alpha).IsGreaterThan(200)
+					.Because("the center of the circle must be filled");
+			}
+			finally
+			{
+				File.Delete(path);
+			}
+		}
+
+		private static string WriteTempSvg(string content)
+		{
+			var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".svg");
+			File.WriteAllText(path, content);
+			return path;
+		}
+
 		private static List<Vector2> LastCurve4Triple(VertexStorage storage)
 		{
 			var curve4Points = storage.Vertices()
