@@ -225,8 +225,11 @@ namespace MatterHackers.Agg.Platform
 
 					cachedIcon.SetRecieveBlender(new BlenderPreMultBGRA());
 
-					// Scale if required
-					if (cachedIcon.Width != width || cachedIcon.Height != height)
+					// Scale if required. Both sides of this comparison are device pixels: the loader above
+					// already applied DeviceScale, and the caller's width/height are design pixels. Comparing
+					// against the design size instead let an icon through unscaled whenever its source size
+					// times DeviceScale happened to equal the requested design size - half of what was asked for.
+					if (cachedIcon.Width != deviceWidth || cachedIcon.Height != deviceHeight)
 					{
 						cachedIcon = cachedIcon.CreateScaledImage(deviceWidth, deviceHeight);
 					}

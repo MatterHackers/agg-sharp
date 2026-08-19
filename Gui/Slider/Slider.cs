@@ -125,7 +125,7 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
-				textPosition = new Vector2(0, -24);
+				textPosition = new Vector2(0, -24 * GuiWidget.DeviceScale);
 			}
 
 			return textPosition;
@@ -160,7 +160,9 @@ namespace MatterHackers.Agg.UI
 			RectangleDouble thumbBounds = sliderAttachedTo.GetThumbHitBounds();
 			var thumbOutside = new RoundedRect(thumbBounds, sliderAttachedTo.ThumbWidth / 2);
 			graphics2D.Render(thumbOutside, ColorF.GetTweenColor(ThumbColor.ToColorF(), ColorF.Black.ToColorF(), .2).ToColor());
-			thumbBounds.Inflate(-1);
+			// The darker outside is a border a fixed number of design pixels wide, not a fixed fraction of
+			// the thumb, so it scales on its own rather than falling out of the inflated bounds.
+			thumbBounds.Inflate(-1 * GuiWidget.DeviceScale);
 			var thumbInside = new RoundedRect(thumbBounds, sliderAttachedTo.ThumbWidth / 2);
 			graphics2D.Render(thumbInside, ThumbColor);
 		}
@@ -333,8 +335,11 @@ namespace MatterHackers.Agg.UI
 			Orientation = orientation;
 			Minimum = minimum;
 			Maximum = maximum;
-			ThumbWidth = 10;
-			ThumbHeight = 20;
+			// The caller sizes the track (TotalWidthInPixels is device pixels and theirs to scale), but the
+			// thumb is ours, so its defaults have to carry the device scale themselves or a Retina slider ends
+			// up a hairline thumb beside doubled text.
+			ThumbWidth = 10 * GuiWidget.DeviceScale;
+			ThumbHeight = 20 * GuiWidget.DeviceScale;
 
 			MinimumSize = new Vector2(Width, Height);
 		}

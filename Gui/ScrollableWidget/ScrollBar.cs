@@ -88,12 +88,35 @@ namespace MatterHackers.Agg.UI
 
 		public static BorderDouble DefaultMargin { get; set; } = 0;
 
-		/// <summary>
-		/// Gets or sets the amount to grow each side of the thumb in Y on Hover
-		/// </summary>
-		public static double GrowThumbBy { get; set; } = 3 * GuiWidget.DeviceScale;
+		private static double? explicitGrowThumbBy;
 
-		public static double ScrollBarWidth { get; set; } = 15 * GuiWidget.DeviceScale;
+		private static double? explicitScrollBarWidth;
+
+		/// <summary>
+		/// Gets or sets the amount to grow each side of the thumb in Y on Hover, in device pixels.
+		/// </summary>
+		/// <remarks>
+		/// The default is read live rather than baked into a static initializer: a static initializer runs
+		/// once when the type first loads and would hold whatever <see cref="GuiWidget.DeviceScale"/> was in
+		/// force at that moment for the rest of the process. A value assigned here is taken verbatim - the
+		/// caller owns the device pixels and is responsible for re-setting it if the scale changes.
+		/// </remarks>
+		public static double GrowThumbBy
+		{
+			get => explicitGrowThumbBy ?? 3 * GuiWidget.DeviceScale;
+			set => explicitGrowThumbBy = value;
+		}
+
+		/// <summary>
+		/// Gets or sets the width of a scroll bar, in device pixels. Defaults live off
+		/// <see cref="GuiWidget.DeviceScale"/>; see <see cref="GrowThumbBy"/> for why and for what an
+		/// explicit assignment means.
+		/// </summary>
+		public static double ScrollBarWidth
+		{
+			get => explicitScrollBarWidth ?? 15 * GuiWidget.DeviceScale;
+			set => explicitScrollBarWidth = value;
+		}
 
 		public ShowState Show
 		{

@@ -307,20 +307,26 @@ namespace MatterHackers.Agg.UI
 
 					RectangleDouble toolTipBounds = toolTipWidget.LocalBounds;
 
-					toolTipWidget.OriginRelativeParent = toolTipWidget.OriginRelativeParent + new Vector2(0, -toolTipBounds.Bottom - toolTipBounds.Height - 23);
+					// Lift the tooltip clear of the cursor. The cursor is drawn by the OS at the display's
+					// scale, so this clearance and the screen edge insets below are design pixels and have to
+					// be scaled - a raw 23 put the tooltip under a Retina cursor's tip.
+					double cursorClearance = 23 * GuiWidget.DeviceScale;
+					double edgeInset = 3 * GuiWidget.DeviceScale;
+
+					toolTipWidget.OriginRelativeParent = toolTipWidget.OriginRelativeParent + new Vector2(0, -toolTipBounds.Bottom - toolTipBounds.Height - cursorClearance);
 
 					Vector2 offset = Vector2.Zero;
 					RectangleDouble systemWindowBounds = systemWindow.LocalBounds;
 					RectangleDouble toolTipBoundsRelativeToParent = toolTipWidget.BoundsRelativeToParent;
 
-					if (toolTipBoundsRelativeToParent.Right > systemWindowBounds.Right - 3)
+					if (toolTipBoundsRelativeToParent.Right > systemWindowBounds.Right - edgeInset)
 					{
-						offset.X = systemWindowBounds.Right - toolTipBoundsRelativeToParent.Right - 3;
+						offset.X = systemWindowBounds.Right - toolTipBoundsRelativeToParent.Right - edgeInset;
 					}
 
-					if (toolTipBoundsRelativeToParent.Bottom < systemWindowBounds.Bottom + 3)
+					if (toolTipBoundsRelativeToParent.Bottom < systemWindowBounds.Bottom + edgeInset)
 					{
-						offset.Y = screenBoundsShowingTT.Top - toolTipBoundsRelativeToParent.Bottom + 3;
+						offset.Y = screenBoundsShowingTT.Top - toolTipBoundsRelativeToParent.Bottom + edgeInset;
 					}
 
 					toolTipWidget.OriginRelativeParent = toolTipWidget.OriginRelativeParent + offset;
