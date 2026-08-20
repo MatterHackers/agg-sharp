@@ -238,103 +238,100 @@ namespace MatterHackers.GuiAutomation
 			return MouseButtons.Left;
 		}
 
-		private static readonly Dictionary<char, Keys> CharToKeys = new Dictionary<char, Keys>()
-		{
-			['.'] = Keys.OemPeriod
-		};
-
+		/// <summary>
+		/// Puts a type string through the widget tree, one stroke at a time.
+		/// <para>
+		/// See <see cref="TypedKeyParser"/> for the spelling. Everything that decides *what* the string
+		/// means lives there so it can be tested without a window; this method only decides how a stroke
+		/// is delivered.
+		/// </para>
+		/// </summary>
+		/// <param name="textToType">The keys to send, e.g. "^z", "{Enter}", "some text".</param>
 		public void Type(string textToType)
 		{
 			var systemWindow = FindRootSystemWindow();
+
+			// Not a key at all - the platform's close chord, which the agg input method answers by closing
+			// the window rather than by finding something to route Alt+F4 to. Parsed up front so a bad
+			// type string throws on the caller's thread, where the test can see it, rather than inside an
+			// idle callback.
+			bool isCloseChord = textToType == "%{F4}";
+			var strokes = isCloseChord ? null : TypedKeyParser.Parse(textToType);
 
 			// Setup reset event to block until input received
 			var resetEvent = new AutoResetEvent(false);
 
 			UiThread.RunOnIdle(() =>
 			{
-				switch (textToType)
+				if (isCloseChord)
 				{
-					case "{Enter}":
-						systemWindow.OnKeyDown(new KeyEventArgs(Keys.Enter));
-						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Enter));
-						break;
-
-					case "{Tab}":
-						systemWindow.OnKeyDown(new KeyEventArgs(Keys.Tab));
-						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Tab));
-						break;
-
-					case "%{F4}":
-						systemWindow.Close();
-						break;
-
-					case "^a":
-						Keyboard.SetKeyDownState(Keys.Control, true);
-						SendKey(Keys.Control | Keys.A, 'A', systemWindow);
-						Keyboard.SetKeyDownState(Keys.Control, false);
-						break;
-
-					case "{BACKSPACE}":
-						systemWindow.OnKeyDown(new KeyEventArgs(Keys.Back));
-						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Back));
-						break;
-
-					// The arrow keys carry no character, so they can not go through the default path below.
-					// The token spelling matches what SendKeys takes for the Windows input method.
-					case "{LEFT}":
-						systemWindow.OnKeyDown(new KeyEventArgs(Keys.Left));
-						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Left));
-						break;
-
-					case "{RIGHT}":
-						systemWindow.OnKeyDown(new KeyEventArgs(Keys.Right));
-						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Right));
-						break;
-
-					case "{UP}":
-						systemWindow.OnKeyDown(new KeyEventArgs(Keys.Up));
-						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Up));
-						break;
-
-					case "{DOWN}":
-						systemWindow.OnKeyDown(new KeyEventArgs(Keys.Down));
-						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Down));
-						break;
-
-					default:
-						foreach (char character in textToType)
-						{
-							var k = (Keys)char.ToUpper(character);
-							if (CharToKeys.ContainsKey(character))
-							{
-								k = CharToKeys[character];
-							}
-
-							var keyDownEvent = new KeyEventArgs(k);
-							systemWindow.OnKeyDown(keyDownEvent);
-							if (!keyDownEvent.SuppressKeyPress)
-							{
-								var keyUpEvent = new KeyEventArgs(k);
-								systemWindow.OnKeyUp(keyUpEvent);
-								if (!keyUpEvent.SuppressKeyPress)
-								{
-									systemWindow.OnKeyPress(new KeyPressEventArgs(character));
-								}
-							}
-							else
-							{
-								// If you end up here unexpectedly you may need to add
-								// a mapping to charToKeys for the inputed character.
-							}
-						}
-
-						break;
+					((SystemWindow)systemWindow).Close();
+				}
+				else
+				{
+					foreach (var stroke in strokes)
+					{
+						SendStroke(stroke, systemWindow);
+					}
 				}
 
 				resetEvent.Set();
 			});
 
 			resetEvent.WaitOne();
+		}
+
+		/// <summary>
+		/// Sends one stroke's down, up and (when it types a character) press.
+		/// <para>
+		/// The modifier state is set around the stroke as well as carried in the event, because widgets
+		/// read modifiers both ways - the event's <c>Control</c> flag on the way down, and
+		/// <c>Keyboard.IsKeyDown</c> from code that runs later in the same gesture.
+		/// </para>
+		/// </summary>
+		private static void SendStroke(TypedKey stroke, GuiWidget receiver)
+		{
+			SetModifierState(stroke.Key, true);
+
+			try
+			{
+				var keyDownEvent = new KeyEventArgs(stroke.Key);
+				receiver.OnKeyDown(keyDownEvent);
+
+				var keyUpEvent = new KeyEventArgs(stroke.Key);
+				receiver.OnKeyUp(keyUpEvent);
+
+				// A widget that suppressed the key press wants the character swallowed - that is how a text
+				// field keeps a shortcut it just acted on from also being typed into it.
+				if (stroke.HasCharacter
+					&& !keyDownEvent.SuppressKeyPress
+					&& !keyUpEvent.SuppressKeyPress)
+				{
+					receiver.OnKeyPress(new KeyPressEventArgs(stroke.Character));
+				}
+			}
+			finally
+			{
+				SetModifierState(stroke.Key, false);
+			}
+		}
+
+		private static void SetModifierState(Keys key, bool down)
+		{
+			if ((key & Keys.Control) == Keys.Control)
+			{
+				Keyboard.SetKeyDownState(Keys.Control, down);
+			}
+
+			if ((key & Keys.Shift) == Keys.Shift)
+			{
+				Keyboard.SetKeyDownState(Keys.Shift, down);
+			}
+
+			if ((key & Keys.Alt) == Keys.Alt)
+			{
+				Keyboard.SetKeyDownState(Keys.Alt, down);
+			}
 		}
 
 		private GuiWidget FindRootSystemWindow()
