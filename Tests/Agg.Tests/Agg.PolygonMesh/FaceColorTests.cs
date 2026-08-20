@@ -99,6 +99,12 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		[Test]
+		public async Task ShortMeshColorsLeavesTheExtraOperandUnattributed()
+		{
+			await FaceColorBooleanScenarios.ShortMeshColorsLeavesTheExtraOperandUnattributed();
+		}
+
+		[Test]
 		public async Task BooleanWithoutColorsReturnsNullFaceColors()
 		{
 			await FaceColorBooleanScenarios.BooleanWithoutColorsReturnsNullFaceColors();

@@ -64,8 +64,6 @@ namespace MatterHackers.PolygonMesh.Csg
 	/// </remarks>
 	internal static class ManifoldKernel
 	{
-		private static readonly Color DefaultFaceColor = new Color(200, 200, 200, 255);
-
 		/// <summary>
 		/// Selects the kernel's boolean engine, once, before the first boolean runs.
 		/// </summary>
@@ -217,6 +215,7 @@ namespace MatterHackers.PolygonMesh.Csg
 					trackColors,
 					originalIdToColor,
 					originalIdToSpatialColors,
+					meshColors,
 					windingRule,
 					reporter,
 					amountPerOperation,
@@ -279,16 +278,25 @@ namespace MatterHackers.PolygonMesh.Csg
 			// data is never read, so the extra native copy would be pure waste.
 			var manifold = ImportAsOriginal(meshCopy, repairOrientation);
 
-			if (meshCopy.FaceColors != null)
+			// -1 is what OriginalId reports when the re-tag did not take, which is what happens to a
+			// soup handle. It is not an ID: every such operand would register under the same key and
+			// the last one would silently answer for all of them. Registering nothing instead leaves
+			// this operand's triangles unattributed, which is what they honestly are.
+			if (manifold.OriginalId >= 0)
 			{
-				originalIdToSpatialColors[manifold.OriginalId] = meshCopy.SaveFaceCentroidColors();
-			}
-			else
-			{
-				var color = meshIndex < meshColors.Length
-					? meshColors[meshIndex]
-					: DefaultFaceColor;
-				originalIdToColor[manifold.OriginalId] = color;
+				if (meshCopy.FaceColors != null)
+				{
+					originalIdToSpatialColors[manifold.OriginalId] = meshCopy.SaveFaceCentroidColors();
+				}
+				// Nothing registered past the end of meshColors: the caller supplied no colour for
+				// this operand, and inventing one would make its triangles count as attributed and
+				// come back wearing a colour from nowhere. Unreachable from this repository - every
+				// caller builds the array in lockstep with the operand list - but BooleanProcessing
+				// is public API, so a short array has to mean "no colour known" rather than "grey".
+				else if (meshIndex < meshColors.Length)
+				{
+					originalIdToColor[manifold.OriginalId] = meshColors[meshIndex];
+				}
 			}
 
 			return manifold;
@@ -322,6 +330,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			bool trackColors,
 			Dictionary<int, Color> originalIdToColor,
 			Dictionary<int, List<(Vector3, Color)>> originalIdToSpatialColors,
+			Color[] meshColors,
 			RustWindingRule windingRule,
 			Action<double, string> reporter,
 			double amountPerOperation,
@@ -414,7 +423,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				if (trackColors && resultMesh.Faces.Count > 0)
 				{
 					var faceColors = ExtractFaceColorsFromRuns(
-						result, resultMesh, originalIdToColor, originalIdToSpatialColors);
+						result, resultMesh, originalIdToColor, originalIdToSpatialColors, meshColors);
 					if (faceColors != null)
 					{
 						resultMesh.FaceColors = faceColors;
@@ -760,7 +769,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				{
 					var faceColor = faceIdx < meshCopy.FaceColors.Length
 						? meshCopy.FaceColors[faceIdx]
-						: DefaultFaceColor;
+						: Mesh.UnknownFaceColor;
 					if (!colorGroups.TryGetValue(faceColor, out var faceList))
 					{
 						faceList = new List<int>();
@@ -808,7 +817,15 @@ namespace MatterHackers.PolygonMesh.Csg
 					}
 
 					var subManifold = ImportAsOriginal(subMesh, repairOrientation);
-					originalIdToColor[subManifold.OriginalId] = color;
+
+					// Same -1 guard as ImportOperand: a colour group the re-tag would not take has no
+					// ID to be keyed on, and letting every such group share the key -1 would hand one
+					// group's colour to all of them.
+					if (subManifold.OriginalId >= 0)
+					{
+						originalIdToColor[subManifold.OriginalId] = color;
+					}
+
 					subManifolds.Add(subManifold);
 				}
 
@@ -866,12 +883,34 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// The C++ engine needed raw P/Invoke and reflection into a private handle to
 		/// reach these two arrays; here they are plain managed arrays on
 		/// <see cref="RustMeshGL64"/>.
+		/// <para>
+		/// Not every run can be traced back to an operand, and that is not a corner case.
+		/// The robust engine - which <see cref="RustBooleanEngine.Auto"/> picks whenever an
+		/// operand is non-manifold or self-intersecting, so for most scanned or downloaded
+		/// parts - does not carry the operands' mesh relations through. What it produces
+		/// arrives under a mesh ID that belongs to none of the operands.
+		/// </para>
+		/// <para>
+		/// Such a run must never be painted <see cref="Mesh.UnknownFaceColor"/>. That grey is a
+		/// colour nothing in the scene is wearing, so it does not read as "unknown" to the
+		/// user - it reads as the part having turned grey. Instead: when nothing at all
+		/// could be attributed the method returns null, leaving the mesh unpainted so the
+		/// object's own colour shows, which is what a boolean looked like before per-face
+		/// colours existed. When only some runs are unattributed the array still has to be
+		/// filled, so those runs take the first operand's colour - the base being cut or
+		/// unioned into, and the colour most of the body already has.
+		/// </para>
 		/// </remarks>
+		/// <param name="meshColors">
+		/// The per-operand colours the caller supplied, used only for the first-operand
+		/// fallback above; null or empty when the caller had none.
+		/// </param>
 		private static Color[] ExtractFaceColorsFromRuns(
 			RustMeshGL64 resultMeshGl,
 			Mesh resultMesh,
 			Dictionary<int, Color> originalIdToColor,
-			Dictionary<int, List<(Vector3 centroid, Color color)>> originalIdToSpatialColors)
+			Dictionary<int, List<(Vector3 centroid, Color color)>> originalIdToSpatialColors,
+			Color[] meshColors)
 		{
 			var faceCount = resultMesh.Faces.Count;
 			var runIndex = resultMeshGl.RunIndex;
@@ -885,6 +924,19 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 
 			var faceColors = new Color[faceCount];
+
+			// A result none of whose runs name an operand carries no colour information at
+			// all, and must not be painted as if it did - see the remarks above.
+			bool anyRunAttributed = false;
+
+			// What an unattributed run is painted when other runs did attribute. The first
+			// operand rather than the kernel's grey: it is the base of the operation, so it
+			// is both a colour the scene actually contains and the likeliest right answer.
+			// The grey is only left for a caller that asked for colour tracking and then
+			// supplied no colours at all - a contradiction no caller here can produce.
+			var unattributedColor = meshColors?.Length > 0
+				? meshColors[0]
+				: Mesh.UnknownFaceColor;
 
 			for (int runIdx = 0; runIdx < runOriginalId.Length; runIdx++)
 			{
@@ -901,6 +953,8 @@ namespace MatterHackers.PolygonMesh.Csg
 
 				if (spatialColors != null)
 				{
+					anyRunAttributed = true;
+
 					// Match each result face to the nearest source face by centroid
 					for (int tri = startTri; tri < endTri && tri < faceCount; tri++)
 					{
@@ -915,7 +969,14 @@ namespace MatterHackers.PolygonMesh.Csg
 				else
 				{
 					// Single color for this OriginalID
-					var color = originalIdToColor.TryGetValue(origId, out var c) ? c : DefaultFaceColor;
+					bool known = originalIdToColor.TryGetValue(origId, out var color);
+					anyRunAttributed |= known;
+
+					if (!known)
+					{
+						color = unattributedColor;
+					}
+
 					for (int tri = startTri; tri < endTri && tri < faceCount; tri++)
 					{
 						faceColors[tri] = color;
@@ -923,7 +984,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				}
 			}
 
-			return faceColors;
+			return anyRunAttributed ? faceColors : null;
 		}
 	}
 }

@@ -419,6 +419,24 @@ namespace MatterHackers.PolygonMesh
 		public static readonly Color UncoloredFace = Color.White;
 
 		/// <summary>
+		/// The placeholder a face gets when its colour is asked for and the data that should have
+		/// held it is malformed.
+		/// </summary>
+		/// <remarks>
+		/// Legitimate in exactly one situation: a FaceColors array (or a saved centroid list) that is
+		/// shorter than the face list it is supposed to describe. That is a structural defect in the
+		/// caller's data with no better answer available, and the grey at least keeps the face visible.
+		/// <para>
+		/// It is not the answer to "this face's colour could not be worked out". A boolean result whose
+		/// triangles cannot be traced back to an operand comes back with no FaceColors at all - see
+		/// ManifoldKernel.ExtractFaceColorsFromRuns - so the object's own colour shows. Painting this
+		/// grey there does not read as "unknown" to a user, it reads as the part having turned grey,
+		/// because it is a colour nothing in their scene is wearing.
+		/// </para>
+		/// </remarks>
+		public static readonly Color UnknownFaceColor = new Color(200, 200, 200, 255);
+
+		/// <summary>
 		/// Appends every face of <paramref name="mesh"/>, transformed by <paramref name="matrix"/>, to this mesh.
 		/// </summary>
 		/// <remarks>
@@ -997,7 +1015,7 @@ namespace MatterHackers.PolygonMesh
 					(Vertices[face.v0] + Vertices[face.v1] + Vertices[face.v2]) / 3f);
 				var color = i < FaceColors.Length
 					? FaceColors[i]
-					: new Color(200, 200, 200, 255);
+					: UnknownFaceColor;
 				result.Add((centroid, color));
 			}
 
@@ -1010,7 +1028,10 @@ namespace MatterHackers.PolygonMesh
 		public static Color FindNearestCentroidColor(Vector3 point, List<(Vector3 centroid, Color color)> savedColors)
 		{
 			double bestDistSq = double.MaxValue;
-			var bestColor = new Color(200, 200, 200, 255);
+
+			// Only survives an empty savedColors, which is the same malformed-data case
+			// SaveFaceCentroidColors falls back on - see UnknownFaceColor.
+			var bestColor = UnknownFaceColor;
 			for (int i = 0; i < savedColors.Count; i++)
 			{
 				var diff = point - savedColors[i].centroid;

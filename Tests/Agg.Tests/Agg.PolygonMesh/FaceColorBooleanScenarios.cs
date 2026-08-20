@@ -140,6 +140,41 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			await Assert.That(HasBlue(result)).IsTrue();
 		}
 
+		public static async Task ShortMeshColorsLeavesTheExtraOperandUnattributed()
+		{
+			// Three disjoint cubes but only two colours. The operand the array does not reach has no
+			// colour of its own, and registering the kernel's placeholder grey for it made it count as
+			// attributed - so the result came back wearing a grey nothing in the scene is wearing.
+			// With nothing registered it falls into the unattributed path instead and takes the first
+			// operand's colour, which is at least a colour the caller actually supplied.
+			var result = BooleanProcessing.DoArray(
+				new[]
+				{
+					(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(-30, 0, 0)),
+					(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.Identity),
+					(PlatonicSolids.CreateCube(10, 10, 10), Matrix4X4.CreateTranslation(30, 0, 0)),
+				},
+				CsgModes.Union,
+				ProcessingModes.Polygons,
+				ProcessingResolution._64,
+				ProcessingResolution._64,
+				null,
+				CancellationToken.None,
+				meshColors: new[] { Color.Red, Color.Blue });
+
+			await Assert.That(result).IsNotNull();
+			await Assert.That(result.FaceColors).IsNotNull();
+			await Assert.That(result.FaceColors.Length).IsEqualTo(result.Faces.Count);
+
+			await Assert.That(result.FaceColors.Any(c => c == Mesh.UnknownFaceColor)).IsFalse()
+				.Because("no face may be painted a colour the caller never supplied");
+
+			// A cube is 12 triangles: the first operand's own 12, plus the 12 of the operand the
+			// short array left unattributed.
+			await Assert.That(result.FaceColors.Count(IsRed)).IsEqualTo(24);
+			await Assert.That(result.FaceColors.Count(IsBlue)).IsEqualTo(12);
+		}
+
 		public static async Task BooleanWithoutColorsReturnsNullFaceColors()
 		{
 			var meshA = PlatonicSolids.CreateCube(10, 10, 10);
