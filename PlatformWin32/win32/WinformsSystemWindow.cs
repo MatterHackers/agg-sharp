@@ -57,6 +57,10 @@ namespace MatterHackers.Agg.UI
 
 		private static bool processingOnIdle = false;
 
+		// Set by Invalidate(RectangleDouble) and consumed by the idle pump's FlushPendingAggInvalidates.
+		// Volatile: set from any thread, cleared on the UI thread.
+		private volatile bool aggInvalidatePending;
+
 		private static readonly object SingleInvokeLock = new object();
 
 		// Guards one-time static initialization done from instance constructors
@@ -485,12 +489,14 @@ namespace MatterHackers.Agg.UI
 						{
 							reachedUiThread = true;
 							UiThread.InvokePendingActions();
+							FlushPendingAggInvalidates();
 						}));
 					}
 					else
 					{
 						reachedUiThread = true;
 						UiThread.InvokePendingActions();
+						FlushPendingAggInvalidates();
 					}
 				}
 				catch (ObjectDisposedException) when (!reachedUiThread)
@@ -1087,10 +1093,52 @@ namespace MatterHackers.Agg.UI
 			try
 			{
 				this.Invalidate();
+
+				// Marking the region is not enough on the GPU hosts: the form's whole client area sits
+				// under an opaque docked child (the WebGPU surface control), so Windows never turns the
+				// form's own invalid region into a spontaneous WM_PAINT - a window with nothing to animate
+				// simply stopped repainting, which left every Animation (the tumble cube's orbit, the logo
+				// spinner) waiting forever for the AfterDraw it is gated on. The idle pump answers the flag
+				// with an explicit Update(), which does deliver the paint. One flag per window coalesces a
+				// burst of invalidates into at most one paint per pump tick (~100/s ceiling).
+				this.aggInvalidatePending = true;
 			}
 			catch (Exception e)
 			{
 				Console.WriteLine("WinForms Exception: " + e.Message);
+			}
+		}
+
+		/// <summary>
+		/// Runs on the UI thread from the idle pump: forces the paint for every live window whose agg
+		/// content invalidated since the last tick. Update() is a no-op for a window whose region turned
+		/// out empty, so a stale flag costs nothing.
+		/// </summary>
+		private static void FlushPendingAggInvalidates()
+		{
+			WinformsSystemWindow[] windows;
+			lock (StaticInitLock)
+			{
+				windows = LiveWindows.ToArray();
+			}
+
+			foreach (var window in windows)
+			{
+				if (window.aggInvalidatePending
+					&& !window.IsDisposed
+					&& !window.Disposing
+					&& window.IsHandleCreated)
+				{
+					window.aggInvalidatePending = false;
+					try
+					{
+						window.Update();
+					}
+					catch (ObjectDisposedException)
+					{
+						// The window went away between the checks and the call - teardown race, benign.
+					}
+				}
 			}
 		}
 
