@@ -2060,24 +2060,75 @@ namespace MatterHackers.Agg.UI
 		/// <summary>Answers AppKit's "may I close?" by asking the agg window, and starts the agg close.</summary>
 		private byte HandleShouldClose()
 		{
-			if (this.aggSystemWindow != null && !this.aggSystemWindow.HasBeenClosed)
+			bool mayClose = HandlePlatformCloseRequest(
+				SingleWindowMode,
+				this.WindowProvider,
+				this.aggSystemWindow,
+				closing => this.platformAlreadyClosing = closing);
+
+			return mayClose ? YES : NO;
+		}
+
+		/// <summary>
+		/// Runs a native close request - the red button, Cmd-Q, the window manager - against the application
+		/// rather than against whatever window happens to be on top, and reports whether the platform may go
+		/// ahead and tear its window down.
+		/// </summary>
+		/// <param name="singleWindowMode">See <see cref="SingleWindowMode"/>.</param>
+		/// <param name="provider">The provider holding the open windows, if there is one.</param>
+		/// <param name="activeWindow">The window currently being drawn and given events.</param>
+		/// <param name="setPlatformClosing">
+		/// Sets (and, if the close does not take, clears) the host's "the platform is already closing" flag.
+		/// </param>
+		/// <remarks>
+		/// Static and parameterised because the decision it makes - which window is asked, and whether the
+		/// native window may go away - is the whole bug, and none of it needs AppKit to exercise.
+		/// </remarks>
+		internal static bool HandlePlatformCloseRequest(
+			bool singleWindowMode,
+			ISystemWindowProvider provider,
+			SystemWindow activeWindow,
+			Action<bool> setPlatformClosing)
+		{
+			// The user closed the application, not the dialog drawn inside it. Asking the dialog runs none of
+			// the shell's ShouldClose/Closed handlers - window bounds persistence, save on exit - and the
+			// native window is torn down immediately afterwards regardless, so that work is simply lost.
+			var shellWindow = ShellWindowForClose(singleWindowMode, provider, activeWindow);
+
+			if (shellWindow == null || shellWindow.HasBeenClosed)
 			{
-				var shouldClose = new ShouldCloseEventArgs();
-				this.aggSystemWindow.OnShouldClose(shouldClose);
-
-				if (shouldClose.Cancel)
-				{
-					return NO;
-				}
-
-				// The agg close runs first so widgets get their Closed events while the window is still
-				// alive. It calls back through the provider into CloseSystemWindow, which this flag makes a
-				// no-op - AppKit is already in the middle of closing us.
-				this.platformAlreadyClosing = true;
-				this.aggSystemWindow.Close();
+				return true;
 			}
 
-			return YES;
+			// Only the shell decides whether the application may close: an open dialog does not veto here.
+			// In single window mode a dialog is a widget drawn inside this window, so its titlebar button is
+			// the only close that belongs to it - the red button and Cmd-Q have always meant "close the
+			// application", and applications that want to refuse mid-dialog do it in their own ShouldClose.
+			var shouldClose = new ShouldCloseEventArgs();
+			shellWindow.OnShouldClose(shouldClose);
+
+			if (shouldClose.Cancel)
+			{
+				return false;
+			}
+
+			// The agg close runs first so widgets get their Closed events while the window is still alive. It
+			// calls back through the provider into CloseSystemWindow, which the flag makes a no-op - the
+			// platform is already in the middle of closing us.
+			setPlatformClosing?.Invoke(true);
+			shellWindow.Close();
+
+			if (!shellWindow.HasBeenClosed)
+			{
+				// Close asks OnShouldClose a second time and an application may cancel on that one (having
+				// just put up its "save first?" dialog on the first ask). Letting the platform destroy the
+				// window anyway is exactly the "closed with no Closed events" bug, so the shell that is still
+				// open keeps its native window.
+				setPlatformClosing?.Invoke(false);
+				return false;
+			}
+
+			return true;
 		}
 
 		/// <summary>Tears everything down once AppKit has committed to closing the window.</summary>
@@ -2244,9 +2295,20 @@ namespace MatterHackers.Agg.UI
 		/// </remarks>
 		private SystemWindow ShellAggWindow()
 		{
-			if (SingleWindowMode && this.WindowProvider != null)
+			return ShellWindowForClose(SingleWindowMode, this.WindowProvider, this.aggSystemWindow);
+		}
+
+		/// <summary>
+		/// The instance-free half of <see cref="ShellAggWindow"/>, so the choice can be tested without AppKit.
+		/// </summary>
+		internal static SystemWindow ShellWindowForClose(
+			bool singleWindowMode,
+			ISystemWindowProvider provider,
+			SystemWindow activeWindow)
+		{
+			if (singleWindowMode && provider != null)
 			{
-				var openWindows = this.WindowProvider.OpenWindows;
+				var openWindows = provider.OpenWindows;
 
 				if (openWindows.Count > 0)
 				{
@@ -2254,7 +2316,7 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 
-			return this.aggSystemWindow;
+			return activeWindow;
 		}
 
 		/// <summary>
