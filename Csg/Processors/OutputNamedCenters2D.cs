@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,7 @@ using MatterHackers.Csg.Solids;
 using MatterHackers.Csg.Transform;
 using MatterHackers.VectorMath;
 using System;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -61,6 +62,16 @@ namespace MatterHackers.Csg.Processors
 			this.nameWeAreLookingFor = nameWeAreLookingFor;
 		}
 
+		private static string Invariant(double value)
+		{
+			return value.ToString(CultureInfo.InvariantCulture);
+		}
+
+		private static string Invariant(double value, string format)
+		{
+			return value.ToString(format, CultureInfo.InvariantCulture);
+		}
+
 		#region Visitor Pattern Functions
 
 		public string LookForNamedPartRecursive(CsgObject objectToProcess, Matrix4X4 accumulatedMatrix)
@@ -84,16 +95,18 @@ namespace MatterHackers.Csg.Processors
 			if (objectToProcess.Name == nameWeAreLookingFor)
 			{
 				Vector3 position = Vector3Ex.TransformPosition(objectToProcess.GetCenter(), accumulatedMatrix);
+				// Both outputs are machine readable ('.' decimal separator, ',' argument separator),
+				// so they must never pick up a comma-decimal thread culture. See agg-sharp issue #327.
 				if (outputAsScad)
 				{
-					string output = "translate([" + position.X.ToString() + ", " + position.Y.ToString() + ", " + position.Z.ToString() + "])\n";
+					string output = "translate([" + Invariant(position.X) + ", " + Invariant(position.Y) + ", " + Invariant(position.Z) + "])\n";
 					output += "sphere(1, $fn=10);\n";
 					return output;
 				}
 				else
 				{
 					Vector2 position2D = new Vector2(position.X, position.Y);
-					return position2D.X.ToString("0.000") + ", " + position2D.Y.ToString("0.000") + "\n";
+					return Invariant(position2D.X, "0.000") + ", " + Invariant(position2D.Y, "0.000") + "\n";
 				}
 			}
 

@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,7 @@ using MatterHackers.Csg.Solids;
 using MatterHackers.Csg.Transform;
 using MatterHackers.VectorMath;
 using System;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -67,6 +68,34 @@ namespace MatterHackers.Csg.Processors
 		{
 		}
 
+		#region Invariant Number Formatting
+
+		// OpenSCAD only accepts '.' as the decimal separator. Formatting with the thread culture
+		// emits "r1=2,5" on comma-decimal cultures (de-DE and friends), which OpenSCAD reads as
+		// two arguments and rejects. Every number we write goes through these helpers.
+
+		private static string Invariant(double value)
+		{
+			return value.ToString(CultureInfo.InvariantCulture);
+		}
+
+		private static string Invariant(int value)
+		{
+			return value.ToString(CultureInfo.InvariantCulture);
+		}
+
+		private static string Invariant(double value, string format)
+		{
+			return value.ToString(format, CultureInfo.InvariantCulture);
+		}
+
+		private static string Invariant(Vector4 value, string format)
+		{
+			return Invariant(value.X, format) + ", " + Invariant(value.Y, format) + ", " + Invariant(value.Z, format) + ", " + Invariant(value.W, format);
+		}
+
+		#endregion Invariant Number Formatting
+
 		#region Visitor Paten Functions
 
 		public string GetScadOutputRecursive(CsgObject objectToProcess, int level = 0)
@@ -98,11 +127,11 @@ namespace MatterHackers.Csg.Processors
 
 			if (objectToProcess.CreateCentered)
 			{
-				info += "cube([" + objectToProcess.Size.X.ToString() + ", " + objectToProcess.Size.Y.ToString() + ", " + objectToProcess.Size.Z.ToString() + "], center=true);" + AddNameAsComment(objectToProcess);
+				info += "cube([" + Invariant(objectToProcess.Size.X) + ", " + Invariant(objectToProcess.Size.Y) + ", " + Invariant(objectToProcess.Size.Z) + "], center=true);" + AddNameAsComment(objectToProcess);
 			}
 			else
 			{
-				info += "cube([" + objectToProcess.Size.X.ToString() + ", " + objectToProcess.Size.Y.ToString() + ", " + objectToProcess.Size.Z.ToString() + "]);" + AddNameAsComment(objectToProcess);
+				info += "cube([" + Invariant(objectToProcess.Size.X) + ", " + Invariant(objectToProcess.Size.Y) + ", " + Invariant(objectToProcess.Size.Z) + "]);" + AddNameAsComment(objectToProcess);
 			}
 			return ApplyIndent(info, level);
 		}
@@ -126,7 +155,7 @@ namespace MatterHackers.Csg.Processors
 		{
 			string info = AddRenderInfoIfReqired(objectToProcess);
 
-			info += "cylinder(r1=" + objectToProcess.Radius1.ToString() + ", r2=" + objectToProcess.Radius2.ToString() + ", h=" + objectToProcess.Height.ToString() + ", center=true, $fn={0});".FormatWith(NumberOfCylinderSegments) + AddNameAsComment(objectToProcess);
+			info += "cylinder(r1=" + Invariant(objectToProcess.Radius1) + ", r2=" + Invariant(objectToProcess.Radius2) + ", h=" + Invariant(objectToProcess.Height) + ", center=true, $fn=" + Invariant(NumberOfCylinderSegments) + ");" + AddNameAsComment(objectToProcess);
 
 			return ApplyIndent(info, level);
 		}
@@ -139,12 +168,12 @@ namespace MatterHackers.Csg.Processors
 		{
 			string info = AddRenderInfoIfReqired(objectToProcess);
 
-			string rotate_extrude = "rotate_extrude(convexity = 10, $fn = {0})".FormatWith(NumberOfCylinderSegments);
-			string translate = "translate([" + objectToProcess.AxisOffset.ToString() + ", 0, 0])";
+			string rotate_extrude = "rotate_extrude(convexity = 10, $fn = " + Invariant(NumberOfCylinderSegments) + ")";
+			string translate = "translate([" + Invariant(objectToProcess.AxisOffset) + ", 0, 0])";
 			string thingToRotate = "polygon( points=[";
 			foreach (Vector2 point in objectToProcess.Points)
 			{
-				thingToRotate += "[" + point.X.ToString() + ", " + point.Y.ToString() + "], ";
+				thingToRotate += "[" + Invariant(point.X) + ", " + Invariant(point.Y) + "], ";
 			}
 			thingToRotate += "] );";
 
@@ -167,11 +196,11 @@ namespace MatterHackers.Csg.Processors
 		{
 			string info = AddRenderInfoIfReqired(objectToProcess);
 
-			string linear_extrude = String.Format("linear_extrude(height = {0}, center = true, convexity = 10, twist = {1})", objectToProcess.height, MathHelper.RadiansToDegrees(objectToProcess.twistRadians));
+			string linear_extrude = String.Format(CultureInfo.InvariantCulture, "linear_extrude(height = {0}, center = true, convexity = 10, twist = {1})", objectToProcess.height, MathHelper.RadiansToDegrees(objectToProcess.twistRadians));
 			string thingToRotate = "polygon( points=[";
 			foreach (Vector2 point in objectToProcess.Points)
 			{
-				thingToRotate += "[" + point.X.ToString() + ", " + point.Y.ToString() + "], ";
+				thingToRotate += "[" + Invariant(point.X) + ", " + Invariant(point.Y) + "], ";
 			}
 			thingToRotate += "] );";
 
@@ -209,7 +238,7 @@ namespace MatterHackers.Csg.Processors
 		{
 			string info = AddRenderInfoIfReqired(objectToProcess);
 
-			info += "cylinder(r1=" + objectToProcess.Radius1.ToString() + ", r2=" + objectToProcess.Radius1.ToString() + ", h=" + objectToProcess.Height.ToString() + ", center=true, $fn=" + objectToProcess.NumSides.ToString() + ");" + AddNameAsComment(objectToProcess);
+			info += "cylinder(r1=" + Invariant(objectToProcess.Radius1) + ", r2=" + Invariant(objectToProcess.Radius1) + ", h=" + Invariant(objectToProcess.Height) + ", center=true, $fn=" + Invariant(objectToProcess.NumSides) + ");" + AddNameAsComment(objectToProcess);
 
 			return ApplyIndent(info, level);
 		}
@@ -222,7 +251,7 @@ namespace MatterHackers.Csg.Processors
 		{
 			string info = AddRenderInfoIfReqired(objectToProcess);
 
-			info += "sphere(" + objectToProcess.Radius.ToString() + ", $fn={0});".FormatWith(NumberOfCylinderSegments) + AddNameAsComment(objectToProcess);
+			info += "sphere(" + Invariant(objectToProcess.Radius) + ", $fn=" + Invariant(NumberOfCylinderSegments) + ");" + AddNameAsComment(objectToProcess);
 			return ApplyIndent(info, level);
 		}
 
@@ -233,10 +262,10 @@ namespace MatterHackers.Csg.Processors
 		public string GetScadOutputRecursive(TransformBase objectToProcess, int level = 0)
 		{
 			return ApplyIndent(AddRenderInfoIfReqired(objectToProcess) + "multmatrix(m = [ ["
-				+ objectToProcess.transform.Column0.ToString("0.#######") + "],["
-				+ objectToProcess.transform.Column1.ToString("0.#######") + "],["
-				+ objectToProcess.transform.Column2.ToString("0.#######") + "],["
-				+ objectToProcess.transform.Column3.ToString("0.#######") + "] ])" + AddNameAsComment(objectToProcess) + "\n{\n" + GetScadOutputRecursive((dynamic)objectToProcess.objectToTransform, level + 1) + "\n}", level);
+				+ Invariant(objectToProcess.transform.Column0, "0.#######") + "],["
+				+ Invariant(objectToProcess.transform.Column1, "0.#######") + "],["
+				+ Invariant(objectToProcess.transform.Column2, "0.#######") + "],["
+				+ Invariant(objectToProcess.transform.Column3, "0.#######") + "] ])" + AddNameAsComment(objectToProcess) + "\n{\n" + GetScadOutputRecursive((dynamic)objectToProcess.objectToTransform, level + 1) + "\n}", level);
 		}
 
 		#endregion Transform
