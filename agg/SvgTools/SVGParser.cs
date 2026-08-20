@@ -582,21 +582,39 @@ namespace MatterHackers.Agg.SvgTools
                     case 'm': // move to relative
                     case 'M': // move to absolute
                         parseIndex++;
-                        do
                         {
-                            // svg fonts are stored cw and agg expects its shapes to be ccw.  cw shapes are holes.
-                            // so we store the position of the start of this polygon so we can flip it when we close it.
-                            curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            if (command == 'm')
+                            // SVG 1.1 section 8.3.2: only the first coordinate pair is a moveto. Every pair
+                            // after it is an implicit lineto, taking its case from the moveto ('m' relative,
+                            // 'M' absolute). Emitting a moveto per pair instead leaves the path with no edges
+                            // at all, so it fills nothing.
+                            var isFirstPair = true;
+                            do
                             {
-                                curXY += lastXY;
-                            }
+                                curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                                if (command == 'm')
+                                {
+                                    curXY += lastXY;
+                                }
 
-                            vertexStorage.MoveTo(curXY.X, curXY.Y);
-                            polygonStart = curXY;
-                            lastXY = curXY;
-                        } while (NextElementIsANumber(dString, parseIndex));
+                                if (isFirstPair)
+                                {
+                                    vertexStorage.MoveTo(curXY.X, curXY.Y);
+
+                                    // svg fonts are stored cw and agg expects its shapes to be ccw.  cw shapes are holes.
+                                    // so we store the position of the start of this polygon so we can flip it when we close it.
+                                    polygonStart = curXY;
+                                    isFirstPair = false;
+                                }
+                                else
+                                {
+                                    vertexStorage.LineTo(curXY.X, curXY.Y);
+                                }
+
+                                lastXY = curXY;
+                            } while (NextElementIsANumber(dString, parseIndex));
+                        }
+
                         break;
 
                     case 'q': // quadratic B�zier curveto relative

@@ -223,6 +223,76 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
+		/// <summary>
+		/// SVG 1.1 section 8.3.2: coordinate pairs after a moveto's first pair are implicit linetos.
+		/// Treating them as further movetos (the parser's original behavior) leaves a path with no edges,
+		/// so it fills nothing - an icon written this way rendered as blank space.
+		/// </summary>
+		[Test]
+		public async Task ExtraPairsAfterRelativeMoveToAreLineTos()
+		{
+			var storage = new VertexStorage("m10 10 20 0 0 20z");
+
+			await Assert.That(MoveToPoints(storage)).IsEquivalentTo(new[] { new Vector2(10, 10) });
+			await Assert.That(LineToPoints(storage)).IsEquivalentTo(new[] { new Vector2(30, 10), new Vector2(30, 30) });
+		}
+
+		/// <summary>
+		/// The absolute companion to <see cref="ExtraPairsAfterRelativeMoveToAreLineTos"/>. The implicit
+		/// linetos inherit the moveto's case: 'M' makes them absolute, 'm' relative.
+		/// </summary>
+		[Test]
+		public async Task ExtraPairsAfterAbsoluteMoveToAreLineTos()
+		{
+			var storage = new VertexStorage("M10 10 30 10 30 30z");
+
+			await Assert.That(MoveToPoints(storage)).IsEquivalentTo(new[] { new Vector2(10, 10) });
+			await Assert.That(LineToPoints(storage)).IsEquivalentTo(new[] { new Vector2(30, 10), new Vector2(30, 30) });
+		}
+
+		/// <summary>
+		/// The implicit linetos have to close back to the first pair of the moveto, not to the last one,
+		/// so a shape written this way actually encloses area when it is filled.
+		/// </summary>
+		[Test]
+		public async Task ImplicitLineTosAfterMoveToFillTheirShape()
+		{
+			var svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\">"
+				+ "<path fill=\"#000000\" d=\"m10 10 80 0 0 80 -80 0z\" /></svg>";
+
+			var path = WriteTempSvg(svg);
+			try
+			{
+				var image = SvgParser.ParseAndRender(path, 100, 100);
+
+				await Assert.That((int)image.GetPixel(50, 50).alpha).IsGreaterThan(200)
+					.Because("the square covers the middle of the image");
+
+				await Assert.That((int)image.GetPixel(2, 2).alpha).IsEqualTo(0)
+					.Because("the image corner is outside the square");
+			}
+			finally
+			{
+				File.Delete(path);
+			}
+		}
+
+		private static List<Vector2> MoveToPoints(VertexStorage storage)
+		{
+			return storage.Vertices()
+				.Where(v => v.Command == FlagsAndCommand.MoveTo)
+				.Select(v => v.Position)
+				.ToList();
+		}
+
+		private static List<Vector2> LineToPoints(VertexStorage storage)
+		{
+			return storage.Vertices()
+				.Where(v => v.Command == FlagsAndCommand.LineTo)
+				.Select(v => v.Position)
+				.ToList();
+		}
+
 		private static string WriteTempSvg(string content)
 		{
 			var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".svg");
