@@ -36,3 +36,18 @@ jobs:
           name: test-results
           path: TestResults/
           retention-days: 30
+
+      # The runners have no GPU, so the golden suites render on D3D12's software rasterizer
+      # (WARP) and look for the d3d12-warp golden set. This artifact is where that set comes
+      # from: a missing or mismatched golden writes the render it actually produced into
+      # GoldenImageFailures, so the warp set is baselined - and later re-baselined - by
+      # downloading these PNGs. It has to be CI's own renders, because WARP ships with Windows
+      # and a local AGG_FORCE_WARP=1 run rasterizes like the local OS, not like the runner.
+      - name: Upload Golden Image Failures
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: golden-image-failures
+          path: Tests/Agg.Tests/bin/Release/GoldenImageFailures/
+          retention-days: 30
+          if-no-files-found: ignore

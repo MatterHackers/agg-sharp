@@ -56,6 +56,12 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 	/// <b>Goldens are GPU specific, so there is a set per backend</b> -
 	/// <c>TestData\GoldenImages\d3d12</c>, <c>...\metal</c>, <c>...\vulkan</c>, named by
 	/// <see cref="TestRenderBackend.NativeGoldenFolderName"/> and chosen by the OS this run is on.
+	/// A software fallback adapter counts as its own backend and gets its own set, suffixed
+	/// <c>-warp</c> - today only <c>...\d3d12-warp</c>, what GPU-less CI runners (GitHub's Windows
+	/// images) render with. Baseline and re-baseline that set from CI's own renders, downloaded from the
+	/// <c>golden-image-failures</c> artifact - WARP's rasterization tracks the Windows version, so a
+	/// local <c>AGG_FORCE_WARP=1</c> run does not reproduce the runner's (see
+	/// <see cref="TestRenderBackend.ForceFallbackAdapter"/>).
 	/// Rasterization tie-breaking differs between backends, vendors and driver versions: the Metal set
 	/// differs from the D3D12 set on 26 of 28 images, and every one of those differences is a
 	/// one-or-two-level antialiasing edge, not a difference in geometry, layout or colour. Keeping the

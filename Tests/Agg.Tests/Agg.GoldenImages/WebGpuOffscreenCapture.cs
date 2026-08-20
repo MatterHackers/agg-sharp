@@ -81,7 +81,13 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 			// capture makes its own), and the readers only notice through this generation bump.
 			Graphics2DGpu.InvalidateGlCaches();
 
-			device = new WebGpuRenderDevice(false, TestRenderBackend.Native, "WebGpuOffscreenCapture");
+			// Normally the machine's GPU; AGG_FORCE_WARP=1 demands the software adapter instead, so the
+			// software golden set can be regenerated and verified on hardware (see TestRenderBackend).
+			device = new WebGpuRenderDevice(TestRenderBackend.ForceFallbackAdapter, TestRenderBackend.Native, "WebGpuOffscreenCapture");
+
+			// This device's adapter is the one whose pixels get compared, so it - not a throwaway probe -
+			// decides which golden set the comparison reads.
+			TestRenderBackend.PublishAdapterKind(device.IsFallbackAdapter);
 
 			try
 			{
