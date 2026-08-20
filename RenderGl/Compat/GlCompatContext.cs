@@ -558,6 +558,13 @@ namespace MatterHackers.RenderGl.Compat
 		/// <inheritdoc/>
 		public void CallList(int displayListId)
 		{
+			if (this.passes.TargetReleased)
+			{
+				// Nothing to replay into - see GlRenderPassScope.TargetReleased. Checked here as well as
+				// in the submitter so a list's geometry is not baked into buffers no one will draw.
+				return;
+			}
+
 			foreach (var entry in this.displayLists.Entries(displayListId))
 			{
 				if (entry.VertexCount == 0)
@@ -792,6 +799,13 @@ namespace MatterHackers.RenderGl.Compat
 			int vertexCount = this.immediate.VertexCount;
 			if (vertexCount == 0)
 			{
+				return;
+			}
+
+			if (this.passes.TargetReleased)
+			{
+				// Nothing to draw into - see GlRenderPassScope.TargetReleased. Early enough to skip
+				// building and staging the vertices as well as the draw itself.
 				return;
 			}
 

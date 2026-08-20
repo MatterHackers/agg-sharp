@@ -44,6 +44,7 @@ namespace MatterHackers.RenderGl.Compat
 		private readonly IRenderDevice device;
 		private readonly Action<IRenderEncoder> applyDynamicState;
 		private IRenderEncoder encoder;
+		private bool hasEverHadTarget;
 		private bool clearColorPending;
 		private bool clearDepthPending;
 		private MatterHackers.RenderCore.ClearColor pendingClearValue;
@@ -69,6 +70,21 @@ namespace MatterHackers.RenderGl.Compat
 
 		/// <summary>True while a pass is open.</summary>
 		public bool IsPassOpen => this.encoder != null;
+
+		/// <summary>
+		/// True when a target was set once and has since been taken away - by the present that ended the
+		/// frame, by a resize freeing the swapchain textures, by a device loss rebuilding everything, or
+		/// by this scope being disposed.
+		/// <para>
+		/// It is the difference between the two ways there can be no target, and the widget tree is why
+		/// it has to be told apart. A paint that is half way through the widget tree cannot be stopped
+		/// when the frame's destination disappears underneath it, so the draws it goes on issuing are
+		/// dropped here and the next frame - which sets a target again - renders normally. A context that
+		/// has *never* had a target is the other thing entirely: a host that never wired itself up, which
+		/// still throws out of <see cref="EnsurePassOpen"/>.
+		/// </para>
+		/// </summary>
+		public bool TargetReleased => this.ColorTarget == null && this.hasEverHadTarget;
 
 		/// <summary>
 		/// How many times a pass has been opened. A test reads this to prove that an interruption
@@ -98,6 +114,7 @@ namespace MatterHackers.RenderGl.Compat
 			this.FlushPass();
 			this.ColorTarget = colorTarget;
 			this.DepthTarget = depthTarget;
+			this.hasEverHadTarget |= colorTarget != null;
 		}
 
 		/// <summary>
@@ -125,7 +142,14 @@ namespace MatterHackers.RenderGl.Compat
 		/// Returns the open pass, opening one if needed. Any queued clear is consumed as the load op of
 		/// the pass this opens.
 		/// </summary>
-		/// <exception cref="InvalidOperationException">No render target has been set.</exception>
+		/// <returns>
+		/// The open pass, or null when the frame's target has been released (see
+		/// <see cref="TargetReleased"/>) and there is therefore nothing left to draw into. Callers that
+		/// record work must treat null as "drop this draw".
+		/// </returns>
+		/// <exception cref="InvalidOperationException">
+		/// No render target has ever been set, so the host never said where its frames go.
+		/// </exception>
 		public IRenderEncoder EnsurePassOpen()
 		{
 			if (this.encoder != null)
@@ -135,6 +159,12 @@ namespace MatterHackers.RenderGl.Compat
 
 			if (this.ColorTarget == null)
 			{
+				if (this.hasEverHadTarget)
+				{
+					FrameProfiler.Count("DrawAfterTargetReleased");
+					return null;
+				}
+
 				throw new InvalidOperationException(
 					"No render target is set on the compat context. Call SetRenderTarget before drawing.");
 			}

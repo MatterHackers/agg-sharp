@@ -125,6 +125,14 @@ namespace MatterHackers.RenderGl.Compat
 		/// </param>
 		public void Draw(IGpuBuffer vertexBuffer, int vertexCount, BeginMode mode, bool textured, ulong vertexOffset = 0)
 		{
+			if (this.passes.TargetReleased)
+			{
+				// The frame this draw belongs to no longer has anywhere to go. Bail before resolving a
+				// pipeline: its color format would come from the target that just went away.
+				FrameProfiler.Count("DrawAfterTargetReleased");
+				return;
+			}
+
 			FrameProfiler.Count("Draws");
 
 			IRenderPipeline pipeline;
@@ -174,6 +182,12 @@ namespace MatterHackers.RenderGl.Compat
 			using (FrameProfiler.Time("Draw.Encode"))
 			{
 				var encoder = this.passes.EnsurePassOpen();
+				if (encoder == null)
+				{
+					// The target went away while this draw was being built.
+					return;
+				}
+
 				encoder.SetPipeline(pipeline);
 				encoder.SetBindGroup((int)GlShaderKeys.BindGroupIndex, bindGroup);
 				encoder.SetVertexBuffer(0, vertexBuffer, vertexOffset);

@@ -556,6 +556,14 @@ namespace MatterHackers.RenderGl.Scene
 			var destination = this.compat.Passes.ColorTarget;
 			if (destination == null)
 			{
+				if (this.compat.Passes.TargetReleased)
+				{
+					// The frame's target went away mid-paint (see GlRenderPassScope.TargetReleased). Skipping
+					// the capture leaves capturedColorTarget null, so EndFullFrameCapture and the downsample
+					// blit no-op too and the 3D content this frame is simply dropped.
+					return;
+				}
+
 				throw new InvalidOperationException(
 					"No render target is set on the compat context, so there is nothing to capture on behalf of.");
 			}
@@ -763,6 +771,14 @@ namespace MatterHackers.RenderGl.Scene
 			var destination = this.compat.Passes.ColorTarget;
 			if (destination == null)
 			{
+				if (this.compat.Passes.TargetReleased)
+				{
+					// Same as in BeginFullFrameCapture: the destination disappeared while the frame was being
+					// built, so this frame's scene is dropped rather than thrown over. EndSceneRendering
+					// clears the queue either way.
+					return;
+				}
+
 				throw new InvalidOperationException(
 					"No render target is set on the compat context, so the scene has nowhere to composite into.");
 			}
