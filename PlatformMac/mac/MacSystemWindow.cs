@@ -1744,6 +1744,13 @@ namespace MatterHackers.Agg.UI
 		/// through the same scale, or a diagonal gesture would come out at the wrong angle. The signs are
 		/// carried straight through from AppKit: positive Y is the forward wheel agg already reads, and
 		/// positive X is a gesture whose content should move right.
+		/// <para>
+		/// That angle is preserved only for a precise scroll. A non-precise event is a detent device on both
+		/// axes - a tilt wheel clicks sideways the same way the wheel clicks forward - so each axis quantizes
+		/// to its own signed detent and a mixed tilt-and-wheel event deliberately comes out square rather
+		/// than at the ratio AppKit reported. See <see cref="ScrollingDeltaToWheelDelta"/> for why an
+		/// accelerated line count is not a magnitude worth preserving.
+		/// </para>
 		/// </remarks>
 		internal static void ApplyScrollingDeltas(MouseEventArgs args, double scrollingDeltaX, double scrollingDeltaY, bool precise, double backingScale)
 		{
@@ -1760,9 +1767,14 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		/// <remarks>
 		/// agg's consumers were written against Win32's 120-per-detent wheel. A line-based scroll (a real
-		/// wheel) reports whole lines, so it scales by 120. A trackpad reports points of travel, and
-		/// ScrollableWidget divides WheelDelta by 5 to get pixels - so scaling by 5 x backingScale makes a
-		/// trackpad drag move the content the same distance as the fingers.
+		/// wheel) becomes one signed detent per event - the v120 convention. macOS accelerates line-based
+		/// deltas and exposes no notch count, so the same physical notch reports about 0.1 lines turned
+		/// slowly and many lines turned fast, while Win32 reports an unaccelerated 120 per detent no matter
+		/// how fast the wheel spins. Consumers scale proportionally to that 120 (MatterCAD's TrackballZoom
+		/// zooms by WheelDelta / 120 steps), so passing the acceleration through turned one fast notch into
+		/// several detents of zoom. A trackpad instead reports points of travel, and ScrollableWidget
+		/// divides WheelDelta by 5 to get pixels - so scaling by 5 x backingScale makes a trackpad drag move
+		/// the content the same distance as the fingers.
 		/// <para>
 		/// <b>This is where DPI is applied to a precise scroll, and the only place.</b> backingScale is the
 		/// per-window scale of the display the window is actually on, which is the only correct answer for a
@@ -1779,13 +1791,15 @@ namespace MatterHackers.Agg.UI
 		{
 			if (double.IsNaN(scrollingDelta) || double.IsInfinity(scrollingDelta))
 			{
-				// (int) of a NaN is a huge negative number rather than nothing, which would fling the content.
+				// Neither branch survives a nonsense delta: (int) of a NaN is a huge negative number rather
+				// than nothing, which would fling the content, and Math.Sign throws on a NaN - out of an
+				// AppKit event callback, so a crash rather than a fling.
 				return 0;
 			}
 
 			return precise
 				? (int)Math.Round(scrollingDelta * backingScale * 5)
-				: (int)Math.Round(scrollingDelta * 120);
+				: Math.Sign(scrollingDelta) * 120;
 		}
 
 		/// <summary>

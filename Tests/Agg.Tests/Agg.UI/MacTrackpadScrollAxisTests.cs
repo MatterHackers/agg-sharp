@@ -53,10 +53,24 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public async Task ARealWheelStillClicksInDetents()
 		{
-			// A line based scroll (a mouse wheel) reports whole lines, and every agg consumer was written
+			// A line based scroll (a mouse wheel) is one notch per event, and every agg consumer was written
 			// against Win32's 120 units per detent.
 			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(1, precise: false, backingScale: 2)).IsEqualTo(120);
-			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(-3, precise: false, backingScale: 1)).IsEqualTo(-360);
+			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(-3, precise: false, backingScale: 1)).IsEqualTo(-120);
+		}
+
+		[Test]
+		public async Task EveryWheelNotchIsOneDetentNoMatterHowFastItIsTurned()
+		{
+			// macOS accelerates line based deltas - the same physical notch reports about 0.1 lines turned
+			// slowly and many lines turned fast - and offers no notch count. Win32 reports an unaccelerated
+			// 120 per detent, and consumers like MatterCAD's TrackballZoom scale proportionally to that, so
+			// letting the acceleration through turned one fast notch into a huge zoom jump. One event is one
+			// signed detent, which is the v120 convention.
+			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(6.0, precise: false, backingScale: 1)).IsEqualTo(120);
+			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(0.1, precise: false, backingScale: 1)).IsEqualTo(120);
+			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(-0.1, precise: false, backingScale: 1)).IsEqualTo(-120);
+			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(0, precise: false, backingScale: 1)).IsEqualTo(0);
 		}
 
 		[Test]
@@ -69,7 +83,9 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public async Task ANonsenseDeltaIsNoScroll()
 		{
-			// (int) of a NaN is a huge negative number rather than nothing, and that would fling the content.
+			// Neither branch survives a nonsense delta: (int) of a NaN is a huge negative number rather than
+			// nothing, and that would fling the content, while Math.Sign throws on a NaN - out of an AppKit
+			// event callback, so a crash rather than a fling.
 			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(double.NaN, precise: true, backingScale: 1)).IsEqualTo(0);
 			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(double.PositiveInfinity, precise: false, backingScale: 1)).IsEqualTo(0);
 		}
