@@ -2215,9 +2215,11 @@ namespace MatterHackers.Agg.UI
 			{
 				// Closing the agg window is what tears the platform window down with it; the platform's own
 				// close is only the fallback for a window that was never attached to one.
-				if (this.aggSystemWindow != null)
+				var windowToClose = this.ShellAggWindow();
+
+				if (windowToClose != null)
 				{
-					this.aggSystemWindow.Close();
+					windowToClose.Close();
 				}
 				else
 				{
@@ -2228,6 +2230,31 @@ namespace MatterHackers.Agg.UI
 			{
 				Console.Error.WriteLine($"AGG_SMOKE: close threw {ex.GetType().Name}: {ex}");
 			}
+		}
+
+		/// <summary>
+		/// The agg window whose close ends the application: the shell, not whatever is currently on top.
+		/// </summary>
+		/// <remarks>
+		/// In single window mode <see cref="aggSystemWindow"/> is the window being drawn and given the
+		/// events, which the provider re-points at every dialog that opens. Closing that only dismisses the
+		/// dialog - the shell stays up, the event loop keeps running, and the process never exits. The provider keeps
+		/// the shell first in <see cref="ISystemWindowProvider.OpenWindows"/> and takes the dialogs above it
+		/// down with it, so closing that one window is the whole application closing.
+		/// </remarks>
+		private SystemWindow ShellAggWindow()
+		{
+			if (SingleWindowMode && this.WindowProvider != null)
+			{
+				var openWindows = this.WindowProvider.OpenWindows;
+
+				if (openWindows.Count > 0)
+				{
+					return openWindows[0];
+				}
+			}
+
+			return this.aggSystemWindow;
 		}
 
 		/// <summary>
