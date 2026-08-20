@@ -32,7 +32,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace MatterHackers.Localizations
 {
@@ -61,27 +60,22 @@ namespace MatterHackers.Localizations
 		private const string translatedTag = "Translated:";
 
 		private Dictionary<string, string> machineTranslation = new Dictionary<string, string>();
-		private Dictionary<string, string> humanTranslation = new Dictionary<string, string>();
 
 		public static TranslationMap ActiveTranslationMap { get; set; }
 
 		private string twoLetterIsoLanguageName;
 
-		public TranslationMap(string twoLetterIsoLanguageName, string savePath, string sourcePath)
+		public TranslationMap(string twoLetterIsoLanguageName, string savePath)
 		{
 			this.twoLetterIsoLanguageName = twoLetterIsoLanguageName;
-            this.SavePath = savePath;
-            this.SourceFilesPath = sourcePath;
-        }
-
-		public TranslationMap(StreamReader machineTranslation, StreamReader humanTranslation, string twoLetterIsoLanguageName, string savePath, string sourcePath)
-			: this(twoLetterIsoLanguageName, savePath, sourcePath)
-        {
-			this.machineTranslation = ReadIntoDictionary(machineTranslation);
-			this.humanTranslation = ReadIntoDictionary(humanTranslation);
+			this.SavePath = savePath;
 		}
 
-		private static Regex findLocalizedText = new Regex(@"\""(?:[^\""\\]|\\.)*\"".Localize\(\)", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+		public TranslationMap(StreamReader machineTranslation, string twoLetterIsoLanguageName, string savePath)
+			: this(twoLetterIsoLanguageName, savePath)
+		{
+			this.machineTranslation = ReadIntoDictionary(machineTranslation);
+		}
 
 		public virtual string Translate(string englishString)
         {
@@ -98,17 +92,6 @@ namespace MatterHackers.Localizations
 				return englishString;
 			}
 #endif
-
-            string humanTranslatedString = null;
-            if (humanTranslation?.TryGetValue(englishString, out humanTranslatedString) == true)
-            {
-                if (englishString != humanTranslatedString)
-                {
-                    return humanTranslatedString;
-                }
-            }
-
-            SearchCodeForTranslations();
 
             // Perform the lookup to the translation table
             if (!machineTranslation.TryGetValue(englishString, out string machineTranslatedString))
@@ -163,46 +146,6 @@ namespace MatterHackers.Localizations
             return machineTranslatedString;
         }
 
-        private void SearchCodeForTranslations()
-        {
-			return;
-			// make sure we have not run already and that we have a translation file loaded
-            if (!haveParsedSourceCode
-                && this.machineTranslation != null)
-            {
-                var masterTranslationFile = Path.Combine(SavePath, "Master.txt");
-				var fileInfo = new FileInfo(masterTranslationFile);
-
-				// only build if we are more than 10 days out of date
-                if (fileInfo.LastWriteTime.AddDays(10) < DateTime.UtcNow
-					&& Directory.Exists(SourceFilesPath))
-                {
-                    // get a list of every .cs file
-                    var sourceFilesDirectory = new DirectoryInfo(SourceFilesPath);
-
-                    foreach (FileInfo file in sourceFilesDirectory.GetFiles("*.cs", SearchOption.AllDirectories))
-                    {
-                        var fileContent = File.ReadAllText(file.FullName);
-                        var matches = findLocalizedText.Matches(fileContent);
-                        for (int i = 0; i < matches.Count; i++)
-                        {
-                            var value = matches[i].Value;
-                            var withoutQuotes = value.Substring(1, value.Length - 2 - ".Localize()".Length);
-                            if (!withoutQuotes.Contains('\n'))
-                            {
-                                AddNewString(withoutQuotes);
-                            }
-                        }
-                    }
-
-					// Just in case we did not add any new strings set the last write time to now
-					File.SetLastWriteTimeUtc(masterTranslationFile, DateTime.UtcNow);
-				}
-
-                haveParsedSourceCode = true;
-            }
-        }
-
         /// <summary>
         /// Encodes for saving, escaping newlines
         /// </summary>
@@ -212,10 +155,8 @@ namespace MatterHackers.Localizations
 		}
 
 		private object locker = new object();
-        private static bool haveParsedSourceCode;
 
 		private string SavePath;
-		private string SourceFilesPath;
 
 		private void AddNewString(string englishString)
 		{
