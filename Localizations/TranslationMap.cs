@@ -79,15 +79,16 @@ namespace MatterHackers.Localizations
 
 		public virtual string Translate(string englishString)
         {
-            // Skip dictionary lookups for English
+            // Skip dictionary lookups for English. Empty leaves early too: there is nothing to translate,
+            // and the trailing-space check below indexes the last character.
 #if DEBUG
-            if (englishString == null)
+            if (string.IsNullOrEmpty(englishString))
             {
                 return englishString;
             }
 #else
 			if (twoLetterIsoLanguageName == "en"
-				|| englishString == null)
+				|| string.IsNullOrEmpty(englishString))
 			{
 				return englishString;
 			}
@@ -158,8 +159,25 @@ namespace MatterHackers.Localizations
 
 		private string SavePath;
 
+		/// <summary>
+		/// True when a string has something a translator could act on. A string with no letters at all -
+		/// a screw size ("1/4-20"), a bare number, "%", "°" - is the same text in every language, so
+		/// recording it would only add noise to Master.txt and to every translation run that follows.
+		/// </summary>
+		public static bool IsTranslatable(string englishString)
+		{
+			return !string.IsNullOrEmpty(englishString)
+				&& englishString.Any(char.IsLetter);
+		}
+
 		private void AddNewString(string englishString)
 		{
+			// Translate still hands these back unchanged; they simply never enter the master list.
+			if (!IsTranslatable(englishString))
+			{
+				return;
+			}
+
 			lock (locker)
 			{
 				if (!machineTranslation.ContainsKey(englishString))
