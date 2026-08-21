@@ -242,8 +242,17 @@ namespace MatterHackers.RenderGl
 				return;
 			}
 
-			nativeRenderer.EndFullFrameCapture();
-			nativeRenderer.DownsampleAndBlitFullFrame();
+			// The blit is the step that puts this frame's 3D content on screen, and the renderer decides
+			// for itself whether there is anything to composite. Running it from a finally means a throw
+			// out of End - a target released mid frame - costs the exception, not the frame as well.
+			try
+			{
+				nativeRenderer.EndFullFrameCapture();
+			}
+			finally
+			{
+				nativeRenderer.DownsampleAndBlitFullFrame();
+			}
 		}
 
 		/// <inheritdoc/>

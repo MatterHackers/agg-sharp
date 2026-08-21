@@ -242,6 +242,33 @@ namespace MatterHackers.RenderGl.Scene
 
 		private IGpuTexture capturedColorTarget;
 		private IGpuTexture capturedDepthTarget;
+
+		/// <summary>
+		/// Where the capture that is currently open was started from, in DEBUG builds only; null in
+		/// release. Carried purely so the "already in progress" throw can name the frame that left the
+		/// capture open - the reports of it are top level paints, so telling a genuinely nested paint
+		/// apart from a capture stranded by an earlier frame is otherwise guesswork.
+		/// </summary>
+		private string captureOpenedAt;
+
+		/// <summary>
+		/// True between a capture that opened successfully and the downsample that spends it. Callers pair
+		/// Begin and End in a finally, so a Begin that threw is still followed by an End *and a blit* -
+		/// and the capture target from an earlier frame is still lying there for that blit to composite.
+		/// This is what keeps the failed frame from being painted over with the previous one's 3D content.
+		/// </summary>
+		private bool blitPending;
+
+#if DEBUG
+		/// <summary>
+		/// Whether <see cref="BeginFullFrameCapture"/> records where it was called from, for the
+		/// "already in progress" message. Off unless <c>AGG_CAPTURE_TRACE</c> is set, because capturing it
+		/// is a full stack walk and captures run several times a frame; DEBUG only, and settable so a test
+		/// can exercise the diagnostic without the environment.
+		/// </summary>
+		internal static bool CaptureTraceEnabled { get; set; }
+			= Environment.GetEnvironmentVariable("AGG_CAPTURE_TRACE") != null;
+#endif
 		private IGpuTexture sampleFrameColor;
 		private IGpuTexture sampleFrameDepth;
 
@@ -548,9 +575,16 @@ namespace MatterHackers.RenderGl.Scene
 		/// backbuffer.</param>
 		public void BeginFullFrameCapture(RectangleDouble viewport)
 		{
+			// Before anything else, including the checks that return or throw: a pending blit belongs to
+			// the frame that armed it, and every path out of here leaves this frame with nothing to
+			// composite unless it gets all the way through.
+			this.blitPending = false;
+
 			if (this.capturedColorTarget != null)
 			{
-				throw new InvalidOperationException("A full-frame capture is already in progress.");
+				throw new InvalidOperationException(
+					"A full-frame capture is already in progress."
+					+ (this.captureOpenedAt == null ? string.Empty : "\nOpened at:\n" + this.captureOpenedAt));
 			}
 
 			var destination = this.compat.Passes.ColorTarget;
@@ -590,21 +624,59 @@ namespace MatterHackers.RenderGl.Scene
 			int height = (int)destination.Descriptor.Height * scale;
 			this.EnsureSampleFrameTargets(width, height, destination.Descriptor.Format);
 
-			this.capturedColorTarget = destination;
-			this.capturedDepthTarget = this.compat.Passes.DepthTarget;
+			var previousDepth = this.compat.Passes.DepthTarget;
+			int previousCoordinateScale = this.compat.CoordinateScale;
+			int previousCaptureScale = this.captureSupersampleScale;
 
-			this.compat.SetRenderTarget(this.sampleFrameColor, this.sampleFrameDepth);
-			this.compat.CoordinateScale = scale;
-			this.supersampleScale = scale;
-			this.captureSupersampleScale = scale;
-
-			// Cleared to transparent so only the region the 3D frame actually covers contributes when the
-			// downsampled result is alpha-blended back over the caller's target.
-			using (this.device.BeginRenderPass(new RenderPassDescriptor(
-				new[] { new ColorAttachment(this.sampleFrameColor, LoadOp.Clear, ClearColor.Transparent) },
-				new DepthAttachment(this.sampleFrameDepth, LoadOp.Clear, DepthAttachment.FarClear),
-				"SupersampleClear")))
+			// All or nothing from here: the moment capturedColorTarget is non-null the capture counts as
+			// open, and every call site calls Begin outside its try. A throw part way through - a target
+			// released under the frame, a pass that will not open - would otherwise leave the capture
+			// flagged open forever and turn one bad frame into an exception on every frame after it.
+			try
 			{
+				this.capturedColorTarget = destination;
+				this.capturedDepthTarget = previousDepth;
+#if DEBUG
+				this.captureOpenedAt = CaptureTraceEnabled ? Environment.StackTrace : null;
+#endif
+
+				this.compat.SetRenderTarget(this.sampleFrameColor, this.sampleFrameDepth);
+				this.compat.CoordinateScale = scale;
+				this.supersampleScale = scale;
+				this.captureSupersampleScale = scale;
+
+				// Cleared to transparent so only the region the 3D frame actually covers contributes when the
+				// downsampled result is alpha-blended back over the caller's target.
+				using (this.device.BeginRenderPass(new RenderPassDescriptor(
+					new[] { new ColorAttachment(this.sampleFrameColor, LoadOp.Clear, ClearColor.Transparent) },
+					new DepthAttachment(this.sampleFrameDepth, LoadOp.Clear, DepthAttachment.FarClear),
+					"SupersampleClear")))
+				{
+				}
+
+				this.blitPending = true;
+			}
+			catch
+			{
+				this.blitPending = false;
+				this.capturedColorTarget = null;
+				this.capturedDepthTarget = null;
+				this.captureOpenedAt = null;
+				this.supersampleScale = 1;
+				this.captureSupersampleScale = previousCaptureScale;
+				this.compat.CoordinateScale = previousCoordinateScale;
+
+				try
+				{
+					this.compat.SetRenderTarget(destination, previousDepth);
+				}
+				catch (Exception)
+				{
+					// Pointing the compat layer back is best effort; the original failure is the one worth
+					// reporting, and the state above is already unwound either way.
+				}
+
+				throw;
 			}
 		}
 
@@ -616,11 +688,40 @@ namespace MatterHackers.RenderGl.Scene
 				return;
 			}
 
-			this.compat.SetRenderTarget(this.capturedColorTarget, this.capturedDepthTarget);
-			this.compat.CoordinateScale = 1;
-			this.supersampleScale = 1;
-			this.capturedColorTarget = null;
-			this.capturedDepthTarget = null;
+			var restoreColor = this.capturedColorTarget;
+			var restoreDepth = this.capturedDepthTarget;
+
+			// Cleared in a finally, not after the restore: SetRenderTarget ends the open pass, and if that
+			// throws (a target released mid frame) the capture would otherwise stay flagged open and every
+			// later frame would throw out of BeginFullFrameCapture instead.
+			try
+			{
+				this.compat.SetRenderTarget(restoreColor, restoreDepth);
+			}
+			finally
+			{
+				this.compat.CoordinateScale = 1;
+				this.supersampleScale = 1;
+				this.capturedColorTarget = null;
+				this.capturedDepthTarget = null;
+				this.captureOpenedAt = null;
+
+				// SetTargets ends the open pass before it reassigns, so a throw from the pass end above left
+				// the compat layer still pointing at the capture target - the rest of this frame would draw
+				// into a texture nothing presents. The retry cannot fail the same way (the pass has been
+				// forgotten either way), and if it fails for some other reason the frame is lost regardless.
+				if (!ReferenceEquals(this.compat.Passes.ColorTarget, restoreColor))
+				{
+					try
+					{
+						this.compat.SetRenderTarget(restoreColor, restoreDepth);
+					}
+					catch (Exception)
+					{
+						// Best effort: the original failure is the one worth reporting.
+					}
+				}
+			}
 		}
 
 		/// <summary>
@@ -629,6 +730,16 @@ namespace MatterHackers.RenderGl.Scene
 		/// </summary>
 		public void DownsampleAndBlitFullFrame()
 		{
+			// Not just "is there a capture target": the targets are kept between frames, so without this a
+			// frame whose BeginFullFrameCapture threw would composite the previous frame's 3D content over
+			// itself from the finally that pairs with the failed Begin.
+			if (!this.blitPending)
+			{
+				return;
+			}
+
+			this.blitPending = false;
+
 			if (this.sampleFrameColor == null)
 			{
 				return;
