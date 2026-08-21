@@ -2242,6 +2242,43 @@ namespace MatterHackers.Agg.UI
 			ParentChanged?.Invoke(this, e);
 		}
 
+        /// <summary>
+        /// Builds a rounded rect inset from <paramref name="bounds"/> on every side, with the corner
+        /// radii pulled in by the same amount so the arcs still fit the box they are drawn in.
+        /// </summary>
+        /// <remarks>
+        /// Keeping the full radius on an inset rect is what makes a "stadium" (corner radius exactly half
+        /// the height) render as a malformed blob. Inset a 24 tall stadium by 1 and its 12 radius corners
+        /// have only 11 of half-height left, so the top and bottom arcs sweep past each other.
+        /// <see cref="RoundedRect.Vertices"/> emits the arcs as given - it never normalizes them - so the
+        /// result is a self-intersecting path that fills and strokes as garbage at both end caps.
+        /// </remarks>
+        internal static RoundedRect InsetRoundedRect(RectangleDouble bounds, RadiusCorners cornerRadius, double inset)
+        {
+            var rect = new RoundedRect(bounds.Left + inset, bounds.Bottom + inset, bounds.Right - inset, bounds.Top - inset);
+            rect.radius(Max(cornerRadius.SW - inset, 0),
+                Max(cornerRadius.SE - inset, 0),
+                Max(cornerRadius.NE - inset, 0),
+                Max(cornerRadius.NW - inset, 0));
+
+            return rect;
+        }
+
+        /// <summary>
+        /// True when insetting <paramref name="bounds"/> by <paramref name="inset"/> would turn it inside
+        /// out - the inset eats more than half the width or more than half the height.
+        /// </summary>
+        /// <remarks>
+        /// Such a piece cannot simply be drawn and left to disappear: <see cref="RoundedRect"/> puts
+        /// inverted bounds back in order, so an over-inset rect comes back as a thin normal one and paints a
+        /// band across the middle of the widget. A stroke width wider than the widget it outlines is the
+        /// usual way to get here. Skip the piece instead.
+        /// </remarks>
+        private static bool InsetInvertsBounds(RectangleDouble bounds, double inset)
+        {
+            return inset * 2 > bounds.Width || inset * 2 > bounds.Height;
+        }
+
         public static void RenderBackground(Graphics2D graphics2D,
 			RectangleDouble bounds,
 			Color backgroundColor,
@@ -2249,37 +2286,29 @@ namespace MatterHackers.Agg.UI
 			double outlineWidth,
 			Color outlineColor)
 		{
-            var rect = new RoundedRect(bounds.Left, bounds.Bottom, bounds.Right, bounds.Top);
-            rect.radius(cornerRadius.SW, cornerRadius.SE, cornerRadius.NE, cornerRadius.NW);
-
             if (outlineColor.Alpha0To255 > 0 && outlineWidth > 0)
             {
                 var stroke = outlineWidth * GuiWidget.DeviceScale;
 
-                if (backgroundColor.Alpha0To255 > 0)
+                if (backgroundColor.Alpha0To255 > 0 && !InsetInvertsBounds(bounds, stroke))
                 {
-                    // inset the bounds and draw the background
-                    var insetBounds = bounds;
-                    insetBounds.Inflate(-stroke);
-                    var insetRect = new RoundedRect(insetBounds.Left, insetBounds.Bottom, insetBounds.Right, insetBounds.Top);
-                    insetRect.radius(cornerRadius.SW, cornerRadius.SE, cornerRadius.NE, cornerRadius.NW);
-
-                    graphics2D.Render(insetRect, backgroundColor);
+                    // the background sits entirely inside the border, so it insets by the full stroke width
+                    graphics2D.Render(InsetRoundedRect(bounds, cornerRadius, stroke), backgroundColor);
                 }
 
-                // and draw the border
-                var expand = stroke / 2;
-                rect = new RoundedRect(bounds.Left + expand, bounds.Bottom + expand, bounds.Right - expand, bounds.Top - expand);
-                rect.radius(cornerRadius.SW, cornerRadius.SE, cornerRadius.NE, cornerRadius.NW);
+                // and draw the border, on a centerline half a stroke in from the bounds so the stroke's
+                // outer edge lands on them
+                if (!InsetInvertsBounds(bounds, stroke / 2))
+                {
+                    var rectOutline = new Stroke(InsetRoundedRect(bounds, cornerRadius, stroke / 2), stroke);
 
-                var rectOutline = new Stroke(rect, stroke);
-
-                graphics2D.Render(rectOutline, outlineColor);
+                    graphics2D.Render(rectOutline, outlineColor);
+                }
             }
             else if (backgroundColor.Alpha0To255 > 0)
             {
                 // only draw the background color
-                graphics2D.Render(rect, backgroundColor);
+                graphics2D.Render(InsetRoundedRect(bounds, cornerRadius, 0), backgroundColor);
             }
         }
 

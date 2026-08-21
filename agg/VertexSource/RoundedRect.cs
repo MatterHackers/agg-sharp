@@ -126,17 +126,30 @@ namespace MatterHackers.Agg.VertexSource
 			InvalidateVertices();
 		}
 
+		/// <summary>
+		/// Scales every corner radius by the single largest factor (at most 1) that lets all four corner
+		/// arcs fit inside the rect.
+		/// </summary>
+		/// <remarks>
+		/// Each pair of radii has to fit the edge the two corners share: the X radii of the bottom (and of
+		/// the top) corners lie end to end along the width, the Y radii of the left (and of the right)
+		/// corners lie end to end along the height. Measuring an X sum against the height - or grouping
+		/// the Y radii by top and bottom rather than by left and right - happens to give the right answer
+		/// for a uniform radius on a squarish rect and the wrong one for anything non-uniform or
+		/// elongated, which is how a 200 x 10 rect with 20 tall corners kept arcs that bulged 10 past
+		/// both edges.
+		/// </remarks>
 		public void normalize_radius()
 		{
-			double dx = Math.Abs(bounds.Top - bounds.Bottom);
-			double dy = Math.Abs(bounds.Right - bounds.Left);
+			double width = Math.Abs(bounds.Right - bounds.Left);
+			double height = Math.Abs(bounds.Top - bounds.Bottom);
 
 			double k = 1.0;
 			double t;
-			t = dx / (leftBottomRadius.X + rightBottomRadius.X); if (t < k) k = t;
-			t = dx / (rightTopRadius.X + leftTopRadius.X); if (t < k) k = t;
-			t = dy / (leftBottomRadius.Y + rightBottomRadius.Y); if (t < k) k = t;
-			t = dy / (rightTopRadius.Y + leftTopRadius.Y); if (t < k) k = t;
+			t = width / (leftBottomRadius.X + rightBottomRadius.X); if (t < k) k = t;
+			t = width / (leftTopRadius.X + rightTopRadius.X); if (t < k) k = t;
+			t = height / (leftBottomRadius.Y + leftTopRadius.Y); if (t < k) k = t;
+			t = height / (rightBottomRadius.Y + rightTopRadius.Y); if (t < k) k = t;
 
 			if (k < 1.0)
 			{

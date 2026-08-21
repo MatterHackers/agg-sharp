@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -54,15 +54,10 @@ namespace MatterHackers.Agg.UI
 		{
 			get => (int)(ratioComplete * 100 + .5);
 
-			set
-			{
-				if (value != (int)(ratioComplete * ratioComplete + .5))
-				{
-					ProgressChanged?.Invoke(this, null);
-					ratioComplete = value / 100.0;
-					Invalidate();
-				}
-			}
+			// RatioComplete already does the changed-check and the event, and it is the only place the
+			// ratio should be written. Guarding on the percent here instead compared the incoming value
+			// against the square of the current ratio and fired ProgressChanged for changes that were not.
+			set => RatioComplete = value / 100.0;
 		}
 
 		public double RatioComplete
@@ -73,60 +68,67 @@ namespace MatterHackers.Agg.UI
 			{
 				if (value != ratioComplete)
 				{
-					ProgressChanged?.Invoke(this, null);
+					// assign before announcing, or a handler that reads RatioComplete (or PercentComplete)
+					// sees the value the bar just moved off of
 					ratioComplete = value;
+					ProgressChanged?.Invoke(this, null);
 					Invalidate();
 				}
 			}
 		}
 
+		/// <summary>
+		/// Draws only the progress fill. The background and the outline come from BackgroundColor,
+		/// BackgroundRadius, BackgroundOutlineWidth and BorderColor exactly as they do for any other
+		/// GuiWidget, and the framework has already painted them through OnDrawBackground by the time
+		/// this runs - drawing them again here painted both of them twice.
+		/// </summary>
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			base.OnDraw(graphics2D);
 
-			var bounds = this.LocalBounds;
-			var rect = new RoundedRect(bounds.Left, bounds.Bottom, bounds.Right, bounds.Top);
-			rect.radius(BackgroundRadius.SW, BackgroundRadius.SE, BackgroundRadius.NE, BackgroundRadius.NW);
+			// the fill goes down after the outline, so it has to stop where the background does - inset by
+			// the full stroke width - or a bar near 100% paints straight over its own outline ring
+			var inset = (BorderColor.Alpha0To255 > 0 && BackgroundOutlineWidth > 0)
+				? BackgroundOutlineWidth * DeviceScale
+				: 0;
 
-			// fill the background
-			if (BackgroundColor.Alpha0To255 > 0)
-			{
-				graphics2D.Render(rect, BackgroundColor);
-			}
+			var bounds = LocalBounds;
+			var left = bounds.Left + inset;
+			var bottom = bounds.Bottom + inset;
+			var top = bounds.Top - inset;
 
-			// Restrict fill to valid values
-			var fillWidth = Math.Max(0, Math.Min(Width, Width * RatioComplete));
-			if (fillWidth > 0)
+			// Restrict fill to valid values, measured across the room left inside the outline
+			var room = Math.Max(0, bounds.Width - inset * 2);
+			var fillWidth = Math.Max(0, Math.Min(room, room * RatioComplete));
+
+			if (fillWidth > 0 && top > bottom)
 			{
 				if (BackgroundRadius == 0)
 				{
-					graphics2D.FillRectangle(0, 0, fillWidth, Height, FillColor);
+					graphics2D.FillRectangle(left, bottom, left + fillWidth, top, FillColor);
 				}
 				else
 				{
-					var fill = new RoundedRect(0, 0, fillWidth, Height, BackgroundRadius.NW);
+					// the corners lose the inset the same way GuiWidget.InsetRoundedRect takes it off the
+					// background's, so the arcs still fit the box that has to hold them
+					var fill = new RoundedRect(left, bottom, left + fillWidth, top, Math.Max(BackgroundRadius.NW - inset, 0));
+
+					// once the fill is narrower than the corner diameter the two bottom arcs (and the two
+					// top arcs) sweep past each other and paint a blob well to the right of the progress.
+					// RoundedRect leaves radii alone unless asked, so ask.
+					fill.normalize_radius();
+
 					graphics2D.Render(fill, FillColor);
 				}
 			}
 
-			// draw the outline if needed
-			if (BorderColor.Alpha0To255 > 0)
+			// the legacy sharp rect border for zero-outline bars. RenderBackground draws a border only when
+			// the outline width is greater than zero, so nothing else paints this one - and it goes down
+			// after the fill (as it always has) so a bar near 100% cannot cover it
+			if (BorderColor.Alpha0To255 > 0 && BackgroundOutlineWidth <= 0)
 			{
-				if (BackgroundOutlineWidth > 0)
-				{
-					var stroke = BackgroundOutlineWidth * GuiWidget.DeviceScale;
-					var expand = stroke / 2;
-					rect = new RoundedRect(bounds.Left + expand, bounds.Bottom + expand, bounds.Right - expand, bounds.Top - expand);
-					rect.radius(BackgroundRadius.SW, BackgroundRadius.SE, BackgroundRadius.NE, BackgroundRadius.NW);
-
-					var rectOutline = new Stroke(rect, stroke);
-
-					graphics2D.Render(rectOutline, BorderColor);
-				}
-				else
-				{
-					graphics2D.Rectangle(LocalBounds, BorderColor);
-				}
+				graphics2D.Rectangle(LocalBounds, BorderColor);
 			}
 		}
 	}
