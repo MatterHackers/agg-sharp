@@ -5002,7 +5002,12 @@ namespace ClipperLib
     //------------------------------------------------------------------------------
   }
 
-  class ClipperException : Exception
+  /// <summary>
+  /// Public because it crosses the assembly boundary in practice: clipper throws it out through every
+  /// polygon operation, and a caller that wants to survive a bad polygon (rather than take the process
+  /// down with it) has to be able to name the type it is catching.
+  /// </summary>
+  public class ClipperException : Exception
   {
       public ClipperException(string description) : base(description){}
   }

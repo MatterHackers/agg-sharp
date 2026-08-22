@@ -141,10 +141,34 @@ namespace MatterHackers.PolygonMesh.Processors
 			// convert to clipper polygons and scale so we can ensure good shapes
 			Polygons polygons = source.CreatePolygons();
 
-			if (polygons.Select(poly => poly.Where(pos => pos.X < 0)).Any())
+			// A profile enclosing no area - flat, or with no points at all - is what a primitive's editor
+			// holds for the keystroke between the old value and the new one (an empty height field, a zero
+			// diameter). It cannot make a solid, and every path to one from here ends in
+			// ClipperException("Coordinate outside allowed range"): the empty polygon set answers GetBounds
+			// with the +/- double extremes, and clipper range tests those. A rebuild usually runs on the UI
+			// thread with nothing above it to catch, so nothing to revolve has to be an empty solid rather
+			// than a crash.
+			var profileBounds = polygons.GetBounds();
+			if (profileBounds.Width <= 0
+				|| profileBounds.Height <= 0)
 			{
-				// ensure good winding and consistent shapes
-				polygons = polygons.GetCorrectedWinding();
+				return new Mesh();
+			}
+
+			// Every profile needs its winding normalized, whichever side of the axis it is on - callers hand
+			// over paths in whatever order they authored them, and a clockwise one revolves inside out.
+			polygons = polygons.GetCorrectedWinding();
+			if (polygons.Count == 0)
+			{
+				// winding correction drops what encloses no area, which lands back on the empty bounds above
+				return new Mesh();
+			}
+
+			// Only the profiles with material left of the axis need clipping and mirroring. This asked
+			// whether the outer Select had produced any element - true for every non-empty polygon list, no
+			// matter where its points are - so every profile took the clip branch.
+			if (polygons.Any(poly => poly.Any(pos => pos.X < 0)))
+			{
 				var bounds = polygons.GetBounds();
 				bounds.Inflate(10);
                 // clip against x=0 left and right
