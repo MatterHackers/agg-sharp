@@ -53,6 +53,14 @@ namespace MatterHackers.RenderGl
 
 		public ImageBuffer TopBaseTexture { get; set; }
 
+		/// <summary>
+		/// Edge length in pixels of the shadow mask, blur and composite intermediates the renderer
+		/// allocates for the bed. Deliberately independent of <see cref="TopBaseTexture"/>'s size:
+		/// the base texture only supplies the bed's flat fill colour (the grid is analytic), so it
+		/// can be a handful of texels while the shadow still needs real resolution.
+		/// </summary>
+		public int ShadowMapSize { get; set; } = 2048;
+
 		public Matrix4X4 Transform { get; set; } = Matrix4X4.Identity;
 
 		/// <summary>

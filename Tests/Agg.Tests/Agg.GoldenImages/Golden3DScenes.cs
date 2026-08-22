@@ -276,6 +276,10 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 				ShadowColor = new Color(20, 15, 10),
 				Transform = Matrix4X4.CreateTranslation(0, 0, -.05),
 				TopBaseTexture = CreateBedTexture(256),
+
+				// The shadow intermediates used to be sized from the base texture; pinned here so this
+				// golden keeps measuring the same blur radius now that the two sizes are independent.
+				ShadowMapSize = 256,
 				BedBounds = bedBounds,
 				GridSpacing = 50,
 				GridLineColor = new Color(120, 120, 130),

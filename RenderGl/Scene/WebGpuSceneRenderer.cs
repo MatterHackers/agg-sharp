@@ -1611,7 +1611,7 @@ namespace MatterHackers.RenderGl.Scene
 				return;
 			}
 
-			this.EnsureBedTargets(bedCommand.TopBaseTexture.Width, bedCommand.TopBaseTexture.Height);
+			this.EnsureBedTargets(bedCommand.ShadowMapSize);
 			this.EnsureBedBaseTexture(bedCommand.TopBaseTexture);
 
 			int signature = this.ComputeBedShadowSignature(bedCommand);
@@ -1807,27 +1807,32 @@ namespace MatterHackers.RenderGl.Scene
 			return buffer;
 		}
 
-		/// <summary>Creates the bed intermediates, sized from the bed texture and capped.</summary>
-		/// <param name="width">The bed texture's width.</param>
-		/// <param name="height">The bed texture's height.</param>
-		private void EnsureBedTargets(int width, int height)
+		/// <summary>
+		/// Creates the square bed intermediates at the requested shadow resolution, capped.
+		/// </summary>
+		/// <remarks>
+		/// Sized from <see cref="BedRenderCommand.ShadowMapSize"/> rather than from the base texture:
+		/// the base texture carries only the bed's flat fill colour, so it is typically a few texels
+		/// and would starve the shadow if it drove this.
+		/// </remarks>
+		/// <param name="shadowMapSize">Requested edge length in pixels.</param>
+		private void EnsureBedTargets(int shadowMapSize)
 		{
-			int shadowWidth = Math.Min(width, BedTextureSizeLimit);
-			int shadowHeight = Math.Min(height, BedTextureSizeLimit);
+			int shadowSize = Math.Clamp(shadowMapSize, 1, BedTextureSizeLimit);
 
 			if (this.bedShadowMaskTarget != null
-				&& this.bedShadowMaskTarget.Descriptor.Width == (uint)shadowWidth
-				&& this.bedShadowMaskTarget.Descriptor.Height == (uint)shadowHeight)
+				&& this.bedShadowMaskTarget.Descriptor.Width == (uint)shadowSize
+				&& this.bedShadowMaskTarget.Descriptor.Height == (uint)shadowSize)
 			{
 				return;
 			}
 
 			this.DisposeBedTargets();
 
-			this.bedShadowMaskTarget = this.CreateColorTarget(shadowWidth, shadowHeight, "bedShadowMask");
-			this.bedShadowBlurTargetA = this.CreateColorTarget(shadowWidth, shadowHeight, "bedShadowBlurA");
-			this.bedShadowBlurTargetB = this.CreateColorTarget(shadowWidth, shadowHeight, "bedShadowBlurB");
-			this.bedCompositeTarget = this.CreateColorTarget(shadowWidth, shadowHeight, "bedComposite");
+			this.bedShadowMaskTarget = this.CreateColorTarget(shadowSize, shadowSize, "bedShadowMask");
+			this.bedShadowBlurTargetA = this.CreateColorTarget(shadowSize, shadowSize, "bedShadowBlurA");
+			this.bedShadowBlurTargetB = this.CreateColorTarget(shadowSize, shadowSize, "bedShadowBlurB");
+			this.bedCompositeTarget = this.CreateColorTarget(shadowSize, shadowSize, "bedComposite");
 
 			// New targets hold nothing, so whatever the last signature said about their contents is void.
 			this.lastBedShadowSignature = 0;
