@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2022, John Lewin, Lars Brubaker
+Copyright (c) 2026, John Lewin, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,8 +27,9 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.VertexSource;
+using MatterHackers.ImageProcessing;
 
 namespace MatterHackers.Agg.UI
 {
@@ -36,7 +37,28 @@ namespace MatterHackers.Agg.UI
     {
         private TextWidget textWidget;
 
-        public bool DrawIconOverlayOnDisabled { get; set; } = false;
+        private ImageBuffer icon;
+
+        private bool drawIconOverlayOnDisabled;
+
+        /// <summary>
+        /// When true, the icon is shown alpha-dimmed while the button is disabled and restored to
+        /// the original artwork when it is enabled again. This used to paint a translucent rect of
+        /// theme.BackgroundColor over the icon instead, which only blended on buttons that actually
+        /// sat on the theme background - on theme.MinimalShade in the light theme it was a white
+        /// box over a dark glyph.
+        /// </summary>
+        public bool DrawIconOverlayOnDisabled
+        {
+            get => drawIconOverlayOnDisabled;
+            set
+            {
+                drawIconOverlayOnDisabled = value;
+                // Callers set this from an object initializer, so Enabled may already have been
+                // changed (and OnEnabledChanged already fired) before we were turned on.
+                ApplyEnabledStateToIcon();
+            }
+        }
 
         public ThemedTextIconButton(string text, ImageBuffer icon, ThemeConfig theme)
             : base(theme)
@@ -47,6 +69,8 @@ namespace MatterHackers.Agg.UI
             Padding = theme.TextButtonPadding;
 
             BackgroundRadius = theme.ButtonRadius * DeviceScale;
+
+            this.icon = icon;
 
             AddChild(ImageWidget = new ImageWidget(icon)
             {
@@ -67,23 +91,51 @@ namespace MatterHackers.Agg.UI
             textContainer.AddChild(textWidget = new TextWidget(text, pointSize: theme.DefaultFontSize, textColor: theme.TextColor));
         }
 
-        public override void OnDraw(Graphics2D graphics2D)
+        public override void OnEnabledChanged(EventArgs e)
         {
-            base.OnDraw(graphics2D);
+            ApplyEnabledStateToIcon();
 
-            // now draw an overlay on the image if it is disabled
-            if (DrawIconOverlayOnDisabled && !ImageWidget.Enabled)
-            {
-                graphics2D.Render(new RoundedRect(ImageWidget.TransformToParentSpace(this, ImageWidget.LocalBounds), 0),
-                    theme.BackgroundColor.WithAlpha(200));
-            }
+            base.OnEnabledChanged(e);
         }
 
+        /// <summary>
+        /// Replaces the icon the button draws with a dimmed copy while it is disabled.
+        /// </summary>
+        private void ApplyEnabledStateToIcon()
+        {
+            if (ImageWidget == null)
+            {
+                // OnEnabledChanged can reach us from the base constructor, before there is an icon
+                return;
+            }
+
+            if (Enabled || !DrawIconOverlayOnDisabled)
+            {
+                ImageWidget.Image = icon;
+            }
+            else
+            {
+                // Lazy construct on first access, as ThemedIconButton does
+                disabledIcon ??= icon.AjustAlpha(0.2);
+                ImageWidget.Image = disabledIcon;
+            }
+
+            Invalidate();
+        }
+
+        private ImageBuffer disabledIcon;
+
+        /// <summary>
+        /// Changes the icon the button draws, keeping the disabled presentation in step.
+        /// </summary>
         public void SetIcon(ImageBuffer imageBuffer)
         {
-            ImageWidget.Image = imageBuffer;
+            icon = imageBuffer;
+            disabledIcon = null;
+            ApplyEnabledStateToIcon();
         }
 
+        /// <summary>The widget drawing the icon; its Image is swapped when the button is disabled.</summary>
         public ImageWidget ImageWidget { get; }
 
         /// <summary>
