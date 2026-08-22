@@ -106,6 +106,12 @@ namespace MatterHackers.Agg.UI
 		/// <summary>Maps a runtime-created delegate instance back to the window that owns it.</summary>
 		private static readonly Dictionary<IntPtr, MacSystemWindow> DelegateOwners = new Dictionary<IntPtr, MacSystemWindow>();
 
+		/// <summary>Maps a content view back to the window that owns it, for the cursor-rect callback.</summary>
+		private static readonly Dictionary<IntPtr, MacSystemWindow> ViewOwners = new Dictionary<IntPtr, MacSystemWindow>();
+
+		/// <summary>NSCursor class-method selector name to the retained shared cursor it vends.</summary>
+		private static readonly Dictionary<string, IntPtr> ResolvedCursors = new Dictionary<string, IntPtr>();
+
 		// --- Unattended smoke runs -------------------------------------------------------------------
 		// Read once, from the environment, because the point is to drive an *unmodified* demo: no demo has
 		// to know it is being smoke tested, and with the variables unset none of this does anything. Kept
@@ -143,6 +149,7 @@ namespace MatterHackers.Agg.UI
 		private static IntPtr distantPast;
 		private static IntPtr defaultRunLoopMode;
 		private static IntPtr delegateClass;
+		private static IntPtr contentViewClass;
 		private static bool appBootstrapped;
 
 		/// <summary>
@@ -158,6 +165,10 @@ namespace MatterHackers.Agg.UI
 		private IntPtr window;
 		private IntPtr view;
 		private IntPtr metalLayer;
+
+		/// <summary>The cursor agg last asked for, re-asserted from -resetCursorRects. Not owned.</summary>
+		private IntPtr currentCursor;
+
 		private IntPtr windowDelegate;
 		private IntPtr idleTimer;
 
@@ -178,6 +189,9 @@ namespace MatterHackers.Agg.UI
 
 		/// <summary>Set while an AppKit-initiated close is running, so the agg close does not re-enter it.</summary>
 		private bool platformAlreadyClosing;
+
+		/// <summary>Which buttons this view owns for the duration of a drag; see <see cref="OutOfViewMouseCapture"/>.</summary>
+		private readonly OutOfViewMouseCapture mouseCapture = new OutOfViewMouseCapture();
 
 		/// <summary>What <see cref="SetModifierKeys"/> was last told; see <see cref="ModifierKeys"/>.</summary>
 		private Keys overrideModifierKeys = Keys.None;
@@ -461,20 +475,88 @@ namespace MatterHackers.Agg.UI
 				Cursors.VSplit => "resizeLeftRightCursor",
 				Cursors.UpArrow => "resizeUpCursor",
 
-				// macOS has no distinct cursor for the rest of agg's set (the diagonal resize and the
-				// eight pan directions are private API on this platform), so they fall back to the arrow
-				// rather than being faked with something misleading.
+				// The diagonal resize cursors macOS draws at its own window corners exist, but only as
+				// private class methods on NSCursor - so they are probed for rather than assumed (see
+				// ResolveCursor). Without them a window-widget corner grip, which is the one place agg
+				// asks for them, would hover as a plain arrow.
+				Cursors.SizeNWSE => "_windowResizeNorthWestSouthEastCursor",
+				Cursors.SizeNESW => "_windowResizeNorthEastSouthWestCursor",
+
+				// No move-in-any-direction cursor exists here; the open hand is what macOS itself shows
+				// for "this can be dragged around", which is what SizeAll means to agg.
+				Cursors.SizeAll => "openHandCursor",
+
+				// The eight pan directions have no macOS equivalent, private or otherwise, so they fall
+				// back to the arrow rather than being faked with something misleading.
 				_ => "arrowCursor",
 			};
 
 			MainThreadDispatcher.Invoke(() =>
 			{
-				IntPtr cursor = Send_r(Class("NSCursor"), Sel(selectorName));
-				if (cursor != IntPtr.Zero)
+				IntPtr cursor = ResolveCursor(selectorName);
+				if (cursor == IntPtr.Zero || cursor == this.currentCursor)
 				{
-					Send_v(cursor, Sel("set"));
+					// Nothing to do for a cursor that is already showing, and doing it anyway is not free:
+					// rebuilding the cursor rect posts a mouseExited/mouseEntered pair. agg calls this from
+					// every OnMouseEnter, so re-asserting the same arrow would keep the pointer looking to
+					// AppKit like it was leaving and re-entering the view. See PointerReallyLeftContentView.
+					return;
+				}
+
+				// Set it now so the change is immediate, and remember it so -resetCursorRects can keep
+				// re-asserting it: [NSCursor set] alone lasts only until the pointer next crosses one of
+				// the window frame's cursor rects, which puts the arrow back.
+				this.currentCursor = cursor;
+				Send_v(cursor, Sel("set"));
+
+				if (this.window != IntPtr.Zero && this.view != IntPtr.Zero)
+				{
+					Send_v_r(this.window, Sel("invalidateCursorRectsForView:"), this.view);
 				}
 			});
+		}
+
+		/// <summary>
+		/// The shared NSCursor for a class-method selector name, or the arrow when that selector does not
+		/// exist on this macOS. Private selectors have to be probed with <c>respondsToSelector:</c> before
+		/// being sent - Apple can withdraw one in any release, and an unrecognized selector is a crash, not
+		/// a nil. Results are cached because the probe is per-selector and never changes within a process.
+		/// </summary>
+		private static IntPtr ResolveCursor(string selectorName)
+		{
+			lock (ResolvedCursors)
+			{
+				if (ResolvedCursors.TryGetValue(selectorName, out IntPtr cached))
+				{
+					return cached;
+				}
+
+				IntPtr cursorClass = Class("NSCursor");
+				IntPtr selector = Sel(selectorName);
+
+				IntPtr cursor = RespondsToSelector(cursorClass, selector)
+					? Send_r(cursorClass, selector)
+					: IntPtr.Zero;
+
+				if (cursor == IntPtr.Zero)
+				{
+					cursor = Send_r(cursorClass, Sel("arrowCursor"));
+				}
+
+				if (cursor == IntPtr.Zero)
+				{
+					// NSCursor vends nil to a process with no window server connection, so this is not a
+					// permanent answer and must not be cached - it comes right once the app is up.
+					return IntPtr.Zero;
+				}
+
+				// NSCursor's class methods vend process-lifetime singletons, but some of them hand back an
+				// autoreleased object and this pointer outlives the pump's autorelease pool.
+				cursor = Retain(cursor);
+
+				ResolvedCursors[selectorName] = cursor;
+				return cursor;
+			}
 		}
 
 		public Graphics2D NewGraphics2D()
@@ -761,6 +843,7 @@ namespace MatterHackers.Agg.UI
 				defaultRunLoopMode = Retain(NSString("kCFRunLoopDefaultMode"));
 
 				RegisterWindowDelegateClass();
+				RegisterContentViewClass();
 
 				appBootstrapped = true;
 			}
@@ -801,11 +884,62 @@ namespace MatterHackers.Agg.UI
 			delegateClass = cls;
 		}
 
+		/// <summary>
+		/// Defines <c>AggMacContentView</c>, an NSView subclass whose only addition is a cursor rect over
+		/// its whole bounds.
+		/// <para>
+		/// A plain <c>[NSCursor set]</c> is not durable: the window frame installs its own cursor rects, so
+		/// the moment the pointer crosses one of them - the title bar, a resize edge - AppKit puts the
+		/// arrow back and whatever agg had chosen is lost. Cursor rects are the mechanism AppKit actually
+		/// consults, so owning one over the content view is what makes agg's choice stick while hovering.
+		/// </para>
+		/// </summary>
+		private static unsafe void RegisterContentViewClass()
+		{
+			IntPtr cls = objc_allocateClassPair(Class("NSView"), "AggMacContentView", 0);
+			if (cls == IntPtr.Zero)
+			{
+				throw new InvalidOperationException(
+					"objc_allocateClassPair(\"AggMacContentView\") returned nil - the name is already registered.");
+			}
+
+			AddMethod(cls, "resetCursorRects", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, void>)&OnResetCursorRects, "v@:");
+
+			objc_registerClassPair(cls);
+			contentViewClass = cls;
+		}
+
+		[UnmanagedCallersOnly]
+		private static void OnResetCursorRects(IntPtr self, IntPtr cmd)
+		{
+			// An exception must never cross back into Objective-C: there is no managed frame above this to
+			// catch it and the runtime tears the process down.
+			try
+			{
+				MacSystemWindow owner;
+				lock (StaticInitLock)
+				{
+					ViewOwners.TryGetValue(self, out owner);
+				}
+
+				IntPtr cursor = owner?.currentCursor ?? IntPtr.Zero;
+				if (cursor != IntPtr.Zero)
+				{
+					Send_v_R_r(self, Sel("addCursorRect:cursor:"), Send_R(self, Sel("bounds")), cursor);
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"MacSystemWindow.OnResetCursorRects threw {ex}");
+			}
+		}
+
 		private static void AddMethod(IntPtr cls, string selectorName, IntPtr implementation, string typeEncoding)
 		{
 			if (class_addMethod(cls, Sel(selectorName), implementation, typeEncoding) == NO)
 			{
-				throw new InvalidOperationException($"class_addMethod failed for -[AggMacWindowDelegate {selectorName}].");
+				string className = Marshal.PtrToStringUTF8(class_getName(cls)) ?? "(?)";
+				throw new InvalidOperationException($"class_addMethod failed for -[{className} {selectorName}].");
 			}
 		}
 
@@ -976,7 +1110,13 @@ namespace MatterHackers.Agg.UI
 				Send_v_S(this.window, Sel("setContentMinSize:"), new CGSize(this.minimumSize.X / this.backingScale, this.minimumSize.Y / this.backingScale));
 			}
 
-			this.view = Send_r_R(Alloc(Class("NSView")), Sel("initWithFrame:"), contentRect);
+			// AggMacContentView rather than a bare NSView, purely so the cursor agg picks survives the
+			// window frame's own cursor rects - see RegisterContentViewClass.
+			this.view = Send_r_R(Alloc(contentViewClass), Sel("initWithFrame:"), contentRect);
+			lock (StaticInitLock)
+			{
+				ViewOwners[this.view] = this;
+			}
 
 			this.metalLayer = Retain(Send_r(Class("CAMetalLayer"), Sel("layer")));
 			if (this.metalLayer == IntPtr.Zero)
@@ -1421,8 +1561,12 @@ namespace MatterHackers.Agg.UI
 					return false;
 
 				case NSEventTypeMouseExited:
-					// Same sentinel the Windows sink uses for "the pointer is nowhere near me".
-					this.aggSystemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, -10, -10, 0));
+					if (this.PointerReallyLeftContentView(nsEvent))
+					{
+						// Same sentinel the Windows sink uses for "the pointer is nowhere near me".
+						this.aggSystemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, -10, -10, 0));
+					}
+
 					return false;
 
 				case NSEventTypeScrollWheel:
@@ -1672,6 +1816,113 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
+		/// Remembers which buttons went down inside the content view, so a drag that wanders outside it
+		/// still delivers its moves and, critically, its mouse up.
+		/// </summary>
+		/// <remarks>
+		/// AppKit keeps routing dragged and up events to the window that saw the mouse down however far the
+		/// pointer has travelled, so the events do arrive here; it was
+		/// <see cref="TryMakeMouseArgs"/>'s bounds test that threw them away. Losing the up is what left a
+		/// widget convinced its button was still held after a drag ended past the window edge - a stuck
+		/// capture that nothing else would ever clear. WinForms gets this right for free because it captures
+		/// the mouse on mouse down and so keeps receiving until the up; this is that same contract written
+		/// out by hand.
+		/// <para/>
+		/// A button only becomes ours through a down <em>inside</em> the view, which is what keeps a title
+		/// bar drag (whose down agg never saw) from delivering a phantom up. Plain hover moves outside the
+		/// view are still dropped: with no button held they really are nobody's business but AppKit's.
+		/// </remarks>
+		internal sealed class OutOfViewMouseCapture
+		{
+			// Not a bit set: MouseButtons is not [Flags], and more than one button can be held at once.
+			private readonly HashSet<MouseButtons> capturedButtons = new HashSet<MouseButtons>();
+
+			/// <summary>
+			/// Whether a drag this view owns is in flight, and so the pointer is its business wherever it is.
+			/// </summary>
+			internal bool HasCapturedButtons => this.capturedButtons.Count > 0;
+
+			/// <summary>
+			/// Decides whether an event should reach agg, and updates the captured-button set.
+			/// </summary>
+			/// <param name="type">The NSEvent type.</param>
+			/// <param name="button">The agg button the event carries, or None for a hover, scroll or pinch.</param>
+			/// <param name="insideView">Whether the event's point lies within the content view's bounds.</param>
+			internal bool ShouldDeliver(long type, MouseButtons button, bool insideView)
+			{
+				switch (type)
+				{
+					case NSEventTypeLeftMouseDown:
+					case NSEventTypeRightMouseDown:
+					case NSEventTypeOtherMouseDown:
+						if (!insideView)
+						{
+							return false;
+						}
+
+						this.capturedButtons.Add(button);
+						return true;
+
+					case NSEventTypeLeftMouseUp:
+					case NSEventTypeRightMouseUp:
+					case NSEventTypeOtherMouseUp:
+						// Removed whether or not it is delivered, so a button can never stay captured.
+						bool wasCaptured = this.capturedButtons.Remove(button);
+						return insideView || wasCaptured;
+
+					case NSEventTypeLeftMouseDragged:
+					case NSEventTypeRightMouseDragged:
+					case NSEventTypeOtherMouseDragged:
+						return insideView || this.capturedButtons.Contains(button);
+
+					default:
+						return insideView;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Whether a point already converted into the content view's coordinates lies within its bounds.
+		/// The edges count as inside, so a click on the last row of pixels still belongs to the view.
+		/// </summary>
+		internal static bool IsInsideBounds(CGPoint inView, CGRect bounds)
+			=> inView.X >= 0
+				&& inView.Y >= 0
+				&& inView.X <= bounds.Size.Width
+				&& inView.Y <= bounds.Size.Height;
+
+		/// <summary>
+		/// Whether a mouseExited event means the pointer actually left the content view.
+		/// </summary>
+		/// <remarks>
+		/// The event type on its own does not mean that, which is the trap. A mouseExited is a tracking
+		/// notification, and cursor rects are tracked: every
+		/// <c>invalidateCursorRectsForView:</c> - which <see cref="SetCursor"/> issues on each cursor change,
+		/// and agg changes the cursor on every <c>OnMouseEnter</c> - tears the content view's cursor rect
+		/// down and rebuilds it, and AppKit posts a mouseExited (immediately followed by a mouseEntered)
+		/// for the teardown even though the pointer never moved. Taking those at face value fired the
+		/// "pointer is nowhere near me" sentinel repeatedly while the mouse sat still inside the window,
+		/// which reads to any widget mid-drag as the pointer having left - MatterCAD's 3D view responds by
+		/// snapping the dragged part back to where the drag started.
+		/// <para/>
+		/// So the geometry is what is believed rather than the event type: a genuine exit reports a location
+		/// outside the bounds (measured, including exits over the title bar), an artifact reports one inside.
+		/// A drag holding a captured button is exempt as well - it owns the pointer wherever it has gone,
+		/// and its mouse up is what ends it. See <see cref="OutOfViewMouseCapture"/>.
+		/// </remarks>
+		private bool PointerReallyLeftContentView(IntPtr nsEvent)
+		{
+			CGPoint inWindow = Send_P(nsEvent, Sel("locationInWindow"));
+			CGPoint inView = Send_P_P_r(this.view, Sel("convertPoint:fromView:"), inWindow, IntPtr.Zero);
+
+			return IsRealPointerExit(inView, Send_R(this.view, Sel("bounds")), this.mouseCapture.HasCapturedButtons);
+		}
+
+		/// <summary>The decision <see cref="PointerReallyLeftContentView"/> makes, with the AppKit calls lifted out.</summary>
+		internal static bool IsRealPointerExit(CGPoint inView, CGRect bounds, bool dragInFlight)
+			=> !dragInFlight && !IsInsideBounds(inView, bounds);
+
+		/// <summary>
 		/// Converts an NSEvent's location into agg's coordinate space.
 		/// </summary>
 		/// <remarks>
@@ -1681,8 +1932,9 @@ namespace MatterHackers.Agg.UI
 		/// already bottom-left origin with Y increasing upwards, which is agg's convention. The Windows
 		/// sink flips only because Win32 is top-left.
 		/// </remarks>
-		/// <returns>False when the event happened outside the content view (the title bar, say), in which
-		/// case agg must not see it at all.</returns>
+		/// <returns>False when agg must not see the event at all: it happened outside the content view (the
+		/// title bar, say) and no button held by this view makes it ours. See
+		/// <see cref="OutOfViewMouseCapture"/> for why a drag is the exception.</returns>
 		private bool TryMakeMouseArgs(IntPtr nsEvent, long type, out MouseEventArgs args)
 		{
 			args = null;
@@ -1691,13 +1943,7 @@ namespace MatterHackers.Agg.UI
 			CGPoint inView = Send_P_P_r(this.view, Sel("convertPoint:fromView:"), inWindow, IntPtr.Zero);
 			CGRect bounds = Send_R(this.view, Sel("bounds"));
 
-			if (inView.X < 0 || inView.Y < 0 || inView.X > bounds.Size.Width || inView.Y > bounds.Size.Height)
-			{
-				return false;
-			}
-
-			double x = inView.X * this.backingScale;
-			double y = inView.Y * this.backingScale;
+			bool insideView = IsInsideBounds(inView, bounds);
 
 			MouseButtons button = type switch
 			{
@@ -1706,6 +1952,17 @@ namespace MatterHackers.Agg.UI
 				NSEventTypeOtherMouseDown or NSEventTypeOtherMouseUp or NSEventTypeOtherMouseDragged => MouseButtons.Middle,
 				_ => MouseButtons.None,
 			};
+
+			if (!this.mouseCapture.ShouldDeliver(type, button, insideView))
+			{
+				return false;
+			}
+
+			// Deliberately not clamped to the bounds: a drag that ran past the window edge should reach the
+			// widget with where the pointer really is, the same coordinates WinForms reports while it holds
+			// the capture, so that dragging out and back does not look like a jump to the edge and stop.
+			double x = inView.X * this.backingScale;
+			double y = inView.Y * this.backingScale;
 
 			int clicks = 0;
 			if (type == NSEventTypeLeftMouseDown || type == NSEventTypeLeftMouseUp
@@ -2173,6 +2430,11 @@ namespace MatterHackers.Agg.UI
 			lock (StaticInitLock)
 			{
 				DelegateOwners.Remove(this.windowDelegate);
+
+				// The view itself outlives this (see the note below), so drop the back-pointer or a late
+				// -resetCursorRects would find a closed window.
+				ViewOwners.Remove(this.view);
+
 				LiveWindows.Remove(this);
 				wasLast = LiveWindows.Count == 0;
 			}

@@ -229,6 +229,10 @@ namespace MatterHackers.Agg.Platform.Mac
 		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
 		public static extern byte Send_B_q(IntPtr receiver, IntPtr selector, long arg0);
 
+		/// <summary>-(BOOL)selector:(id) - also the shape of respondsToSelector:, since a SEL is a pointer.</summary>
+		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
+		public static extern byte Send_B_r(IntPtr receiver, IntPtr selector, IntPtr arg0);
+
 		/// <summary>-(void)selector:(CGFloat)</summary>
 		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
 		public static extern void Send_v_d(IntPtr receiver, IntPtr selector, double arg0);
@@ -252,6 +256,10 @@ namespace MatterHackers.Agg.Platform.Mac
 		/// <summary>-(void)selector:(NSRect)</summary>
 		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
 		public static extern void Send_v_R(IntPtr receiver, IntPtr selector, CGRect arg0);
+
+		/// <summary>-(void)selector:(NSRect) with:(id) - notably -[NSView addCursorRect:cursor:].</summary>
+		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
+		public static extern void Send_v_R_r(IntPtr receiver, IntPtr selector, CGRect arg0, IntPtr arg1);
 
 		/// <summary>-(NSRect)selector:(NSRect) - convertRectToBacking: and friends.</summary>
 		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
@@ -298,6 +306,18 @@ namespace MatterHackers.Agg.Platform.Mac
 		// ---------------------------------------------------------------------
 
 		public static IntPtr Sel(string name) => sel_registerName(name);
+
+		private static readonly IntPtr SelRespondsToSelector = Sel("respondsToSelector:");
+
+		/// <summary>
+		/// Whether <paramref name="target"/> - an instance or a class object - implements
+		/// <paramref name="selector"/>. The guard for any private or version-gated API: probe first, fall
+		/// back second, never send a selector that might not be there.
+		/// </summary>
+		public static bool RespondsToSelector(IntPtr target, IntPtr selector)
+			=> target != IntPtr.Zero
+				&& selector != IntPtr.Zero
+				&& Send_B_r(target, SelRespondsToSelector, selector) != NO;
 
 		/// <summary>
 		/// Looks a class up by name, having first made sure the frameworks that own the classes this

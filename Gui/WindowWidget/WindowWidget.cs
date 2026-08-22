@@ -227,6 +227,17 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Adds the eight edge and corner handles that resize the window.
+		/// </summary>
+		/// <remarks>
+		/// Every handler places the window absolutely - the size and position the window had when the drag
+		/// started, plus how far the mouse has moved since, in screen space. Nothing is accumulated from the
+		/// previous move, because the handle is anchored to the edge it drags: it slides out from under the
+		/// mouse on every resize, so a delta measured in its own coordinates is measured against a moving
+		/// reference frame. Position is always derived from the size the window actually took, so the minimum
+		/// size clamp stops the moving edge instead of sliding the whole window.
+		/// </remarks>
 		private void AddGrabControls()
 		{
 			// this is for debugging
@@ -241,13 +252,13 @@ namespace MatterHackers.Agg.UI
 				VAnchor = VAnchor.Stretch,
                 Margin = new BorderDouble(0, deviceGrabWidth, 0, deviceGrabWidth),
                 Size = new Vector2(deviceGrabWidth, 0),
-				AdjustParent = (s, e) =>
+				AdjustParent = (s) =>
 				{
-					var delta = e.Position - s.downPosition;
-					delta.Y = 0;
-					var startSize = Size;
-					Size = new Vector2(Size.X - delta.X, Size.Y);
-					Position += startSize - Size;
+					var startSize = s.ParentSizeAtMouseDown;
+					Size = new Vector2(startSize.X - s.DragDelta.X, startSize.Y);
+					// from the size that was actually taken, not the one asked for, so a drag past the minimum
+					// width stops the left edge rather than walking the whole window across the screen
+					Position = new Vector2(s.ParentPositionAtMouseDown.X + (startSize.X - Size.X), s.ParentPositionAtMouseDown.Y);
 				}
 			});
 
@@ -259,13 +270,11 @@ namespace MatterHackers.Agg.UI
 				VAnchor = VAnchor.Bottom,
                 Margin = new BorderDouble(deviceGrabWidth, 0, deviceGrabWidth, 0),
                 Size = new Vector2(0, deviceGrabWidth),
-				AdjustParent = (s, e) =>
+				AdjustParent = (s) =>
 				{
-					var delta = e.Position - s.downPosition;
-					delta.X = 0;
-					var startSize = Size;
-					Size = new Vector2(Size.X, Size.Y - delta.Y);
-					Position = Position + startSize - Size;
+					var startSize = s.ParentSizeAtMouseDown;
+					Size = new Vector2(startSize.X, startSize.Y - s.DragDelta.Y);
+					Position = new Vector2(s.ParentPositionAtMouseDown.X, s.ParentPositionAtMouseDown.Y + (startSize.Y - Size.Y));
 				}
 			});
 
@@ -276,12 +285,11 @@ namespace MatterHackers.Agg.UI
 				HAnchor = HAnchor.Left,
 				VAnchor = VAnchor.Bottom,
 				Size = new Vector2(deviceGrabWidth, deviceGrabWidth),
-				AdjustParent = (s, e) =>
+				AdjustParent = (s) =>
 				{
-					var delta = e.Position - s.downPosition;
-					var startSize = Size;
-					Size -= delta;
-					Position = Position + startSize - Size;
+					var startSize = s.ParentSizeAtMouseDown;
+					Size = startSize - s.DragDelta;
+					Position = s.ParentPositionAtMouseDown + startSize - Size;
 				}
 			});
 
@@ -292,12 +300,11 @@ namespace MatterHackers.Agg.UI
 				HAnchor = HAnchor.Left,
 				VAnchor = VAnchor.Top,
 				Size = new Vector2(deviceGrabWidth, deviceGrabWidth),
-				AdjustParent = (s, e) =>
+				AdjustParent = (s) =>
 				{
-					var delta = e.Position - s.downPosition;
-					var startSize = Size;
-					Size = new Vector2(Size.X - delta.X, Size.Y + delta.Y);
-                    Position += new Vector2(startSize.X - Size.X, 0);
+					var startSize = s.ParentSizeAtMouseDown;
+					Size = new Vector2(startSize.X - s.DragDelta.X, startSize.Y + s.DragDelta.Y);
+					Position = new Vector2(s.ParentPositionAtMouseDown.X + (startSize.X - Size.X), s.ParentPositionAtMouseDown.Y);
                 }
 			});
 
@@ -309,10 +316,10 @@ namespace MatterHackers.Agg.UI
 				HAnchor = HAnchor.Right,
                 Margin = new BorderDouble(0, deviceGrabWidth, 0, deviceGrabWidth),
                 Size = new Vector2(deviceGrabWidth, 0),
-				AdjustParent = (s, e) =>
+				AdjustParent = (s) =>
 				{
-					var delta = e.Position - s.downPosition;
-					Size = new Vector2(Size.X + delta.X, Size.Y);
+					var startSize = s.ParentSizeAtMouseDown;
+					Size = new Vector2(startSize.X + s.DragDelta.X, startSize.Y);
 				}
 			});
 
@@ -323,10 +330,9 @@ namespace MatterHackers.Agg.UI
                 HAnchor = HAnchor.Right,
                 VAnchor = VAnchor.Top,
                 Size = new Vector2(deviceGrabWidth, deviceGrabWidth),
-                AdjustParent = (s, e) =>
+                AdjustParent = (s) =>
                 {
-                    var delta = e.Position - s.downPosition;
-                    Size = new Vector2(Size.X + delta.X, Size.Y + delta.Y);
+                    Size = s.ParentSizeAtMouseDown + s.DragDelta;
                 }
             });
             
@@ -338,10 +344,10 @@ namespace MatterHackers.Agg.UI
 				VAnchor = VAnchor.Top,
                 Margin = new BorderDouble(deviceGrabWidth, 0, deviceGrabWidth, 0),
                 Size = new Vector2(0, deviceGrabWidth),
-				AdjustParent = (s, e) =>
+				AdjustParent = (s) =>
 				{
-					var delta = e.Position - s.downPosition;
-					Size = new Vector2(Size.X, Size.Y + delta.Y);
+					var startSize = s.ParentSizeAtMouseDown;
+					Size = new Vector2(startSize.X, startSize.Y + s.DragDelta.Y);
 				}
 			});
 
@@ -352,12 +358,11 @@ namespace MatterHackers.Agg.UI
 				HAnchor = HAnchor.Right,
 				VAnchor = VAnchor.Bottom,
 				Size = new Vector2(deviceGrabWidth, deviceGrabWidth),
-				AdjustParent = (s, e) =>
+				AdjustParent = (s) =>
 				{
-					var delta = e.Position - s.downPosition;
-					var startSize = Size;
-					Size = new Vector2(Size.X + delta.X, Size.Y - delta.Y);
-					Position = new Vector2(Position.X, Position.Y + (startSize.Y - Size.Y));
+					var startSize = s.ParentSizeAtMouseDown;
+					Size = new Vector2(startSize.X + s.DragDelta.X, startSize.Y - s.DragDelta.Y);
+					Position = new Vector2(s.ParentPositionAtMouseDown.X, s.ParentPositionAtMouseDown.Y + (startSize.Y - Size.Y));
 				}
 			});
 		}

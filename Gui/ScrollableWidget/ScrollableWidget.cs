@@ -177,7 +177,10 @@ namespace MatterHackers.Agg.UI
 				SetScrollAreaMargin();
 			};
 
-			scrollArea.Margin = scrollArea.Margin.Clone(right: VerticalScrollBar.Width);
+			// through the same helper the VisibleChanged and SizeChanged handlers use - Margin is in design units
+			// and layout multiplies it by DeviceScale, so assigning the bar's already scaled Width here made the
+			// gap twice as wide as the bar on any display with a scale above 1
+			SetScrollAreaMargin();
 
 			base.AddChild(scrollArea);
 			base.AddChild(VerticalScrollBar);
