@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -57,6 +57,12 @@ namespace MatterHackers.Agg.UI
 
 				LocalBounds = boundsOfChildren;
 			}
+			else
+			{
+				// with nothing in it there is nothing to scroll to - keeping the bounds of content that has been
+				// removed left the scroll bar showing over an empty area
+				LocalBounds = new RectangleDouble(0, 0, 0, 0);
+			}
 		}
 
 		public override void OnMarginChanged()
@@ -87,6 +93,52 @@ namespace MatterHackers.Agg.UI
 			parentScrollableWidget.TopLeftOffset = topLeftOffset;
 
 			return child;
+		}
+
+		public override void RemoveChild(GuiWidget childToRemove)
+		{
+			if (Children.Contains(childToRemove))
+			{
+				StopWatchingChild(childToRemove);
+
+				// remember the offset, the way AddChild does
+				Vector2 topLeftOffset = parentScrollableWidget.TopLeftOffset;
+
+				base.RemoveChild(childToRemove);
+				CalculateChildrenBounds();
+
+				// and restore it
+				parentScrollableWidget.TopLeftOffset = topLeftOffset;
+			}
+			else
+			{
+				base.RemoveChild(childToRemove);
+			}
+		}
+
+		public override GuiWidget RemoveChild(int index)
+		{
+			// remember the offset, the way AddChild does
+			Vector2 topLeftOffset = parentScrollableWidget.TopLeftOffset;
+
+			GuiWidget removed = base.RemoveChild(index);
+
+			if (removed != null)
+			{
+				StopWatchingChild(removed);
+				CalculateChildrenBounds();
+
+				// and restore it
+				parentScrollableWidget.TopLeftOffset = topLeftOffset;
+			}
+
+			return removed;
+		}
+
+		private void StopWatchingChild(GuiWidget child)
+		{
+			child.BoundsChanged -= RecalculateChildrenBounds;
+			child.PositionChanged -= RecalculateChildrenBounds;
 		}
 
 		private int debugRecursionCount = 0;

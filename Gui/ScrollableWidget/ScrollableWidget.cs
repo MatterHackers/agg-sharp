@@ -321,6 +321,15 @@ namespace MatterHackers.Agg.UI
 		private bool HasHorizontalOverflow => ScrollArea.LocalBounds.Width + ScrollArea.Margin.Width > LocalBounds.Width;
 
 		/// <summary>
+		/// True when the content is taller than the view, so a vertical scroll bar has somewhere to scroll to.
+		/// </summary>
+		/// <remarks>
+		/// Measured the way <see cref="HasHorizontalOverflow"/> is - the margin is part of how far the content is
+		/// allowed to move, so it counts as content the same way <see cref="RatioOfViewToContents0To1"/> counts it.
+		/// </remarks>
+		internal bool HasVerticalOverflow => ScrollArea.LocalBounds.Height + ScrollArea.Margin.Height > LocalBounds.Height;
+
+		/// <summary>
 		/// What one pixel of <c>WheelDelta / 5</c> is worth, for both axes of <paramref name="mouseEvent"/>.
 		/// </summary>
 		/// <remarks>

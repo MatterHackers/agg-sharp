@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -129,22 +129,19 @@ namespace MatterHackers.Agg.UI
 			{
 				if (value != showState)
 				{
-					showState = value;
-					switch (showState)
+					if (value != ShowState.Never
+						&& value != ShowState.WhenRequired
+						&& value != ShowState.Always)
 					{
-						case ShowState.Never:
-							Visible = false;
-							break;
-
-						case ShowState.WhenRequired:
-							break;
-
-						case ShowState.Always:
-							break;
-
-						default:
-							throw new NotImplementedException();
+						throw new NotImplementedException();
 					}
+
+					showState = value;
+
+					// The new state decides visibility right now. Waiting for the next bounds change left a bar
+					// that was switched on after its content had already settled (a host pinning its height and
+					// then asking for WhenRequired) hidden over content that did not fit.
+					UpdateScrollBar();
 				}
 			}
 		}
@@ -204,12 +201,18 @@ namespace MatterHackers.Agg.UI
 			UpdateScrollBar();
 		}
 
-		private void UpdateScrollBar()
+		/// <summary>
+		/// Re-decides whether this bar should be showing and, if it is, where its thumb sits.
+		/// </summary>
+		/// <remarks>
+		/// Driven by the events subscribed to in the constructor.
+		/// </remarks>
+		internal void UpdateScrollBar()
 		{
 			switch (Show)
 			{
 				case ShowState.WhenRequired:
-					if (parentScrollWidget.ScrollArea.Height > parentScrollWidget.Height)
+					if (parentScrollWidget.HasVerticalOverflow)
 					{
 						goto case ShowState.Always;
 					}

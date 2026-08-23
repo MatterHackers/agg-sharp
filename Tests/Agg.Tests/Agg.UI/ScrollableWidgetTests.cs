@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,7 @@ using Agg.Tests.Agg;
 using TUnit.Assertions;
 using TUnit.Core;
 using MatterHackers.Agg.Image;
+using MatterHackers.VectorMath;
 using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
@@ -66,6 +67,95 @@ namespace MatterHackers.Agg.UI.Tests
 
 			await Assert.That(containerControl.BackBuffer != null).IsTrue();
 			await Assert.That(containerControl.BackBuffer == containerTest.BackBuffer).IsTrue();
+		}
+
+		/// <summary>
+		/// Turning the bar back on has to re-decide whether it is needed right then. It used to wait for the next
+		/// bounds change, so a host that sized its content before flipping the mode (the popped out sheet editor)
+		/// got a permanently hidden bar over content that did not fit.
+		/// </summary>
+		[Test]
+		public async Task ShowStateChangeReevaluatesVisibilityWithNoLayout()
+		{
+			var scrollable = MakeScrollable(out var container);
+			scrollable.AddChild(new GuiWidget(100, 500));
+			container.PerformLayout();
+
+			scrollable.VerticalScrollBar.Show = ScrollBar.ShowState.Never;
+
+			await Assert.That(scrollable.VerticalScrollBar.Visible).IsFalse()
+				.Because("Never means never, however tall the content is");
+
+			scrollable.VerticalScrollBar.Show = ScrollBar.ShowState.WhenRequired;
+
+			await Assert.That(scrollable.VerticalScrollBar.Visible).IsTrue()
+				.Because($"{scrollable.ScrollArea.Height} of content does not fit {scrollable.Height},"
+					+ " so the bar is required the moment the mode allows it - without waiting for a layout");
+		}
+
+		/// <summary>
+		/// The view shrinking under content that used to fit is the other way a bar becomes required.
+		/// </summary>
+		[Test]
+		public async Task ShrinkingTheViewShowsTheBarAndGrowingItBackHidesIt()
+		{
+			var scrollable = MakeScrollable(out var container);
+			scrollable.AddChild(new GuiWidget(100, 150));
+			container.PerformLayout();
+
+			await Assert.That(scrollable.VerticalScrollBar.Visible).IsFalse()
+				.Because("150 of content fits the 200 tall view");
+
+			scrollable.Height = 100;
+			container.PerformLayout();
+
+			await Assert.That(scrollable.VerticalScrollBar.Visible).IsTrue()
+				.Because("the same content no longer fits the 100 the view is now");
+
+			scrollable.Height = 200;
+			container.PerformLayout();
+
+			await Assert.That(scrollable.VerticalScrollBar.Visible).IsFalse()
+				.Because("and it fits again, so the bar has nothing to scroll to");
+		}
+
+		/// <summary>
+		/// Content going away has to hide the bar. The scrolling area only recalculated its bounds when a child was
+		/// added, so a removed child left the area as tall as the content that was no longer there.
+		/// </summary>
+		[Test]
+		public async Task RemovingTheTallContentHidesTheBar()
+		{
+			var scrollable = MakeScrollable(out var container);
+			var tallContent = new GuiWidget(100, 500);
+			scrollable.AddChild(tallContent);
+			container.PerformLayout();
+
+			await Assert.That(scrollable.VerticalScrollBar.Visible).IsTrue()
+				.Because("500 of content in a 200 tall view needs a bar");
+
+			scrollable.ScrollArea.RemoveChild(tallContent);
+			container.PerformLayout();
+
+			await Assert.That(scrollable.ScrollArea.Height).IsLessThanOrEqualTo(scrollable.Height)
+				.Because("the scrolling area cannot stay as tall as content that has been taken out of it");
+
+			await Assert.That(scrollable.VerticalScrollBar.Visible).IsFalse()
+				.Because("there is nothing left to scroll to");
+		}
+
+		private static ScrollableWidget MakeScrollable(out GuiWidget container)
+		{
+			container = new GuiWidget(400, 400);
+
+			var scrollable = new ScrollableWidget(200, 200, autoScroll: true);
+
+			// the size passed to the constructor is also a minimum, and these tests resize the view
+			scrollable.MinimumSize = Vector2.Zero;
+
+			container.AddChild(scrollable);
+
+			return scrollable;
 		}
 	}
 }
