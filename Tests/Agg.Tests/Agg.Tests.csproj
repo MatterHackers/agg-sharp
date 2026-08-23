@@ -98,6 +98,7 @@
     <Compile Remove="Agg.UI\MacLiveResizePaintTests.cs" />
     <Compile Remove="Agg.UI\MacDragOutsideViewTests.cs" />
     <Compile Remove="Agg.UI\MacPlatformCloseRoutingTests.cs" />
+    <Compile Remove="Agg.UI\MacKeyTranslationTests.cs" />
   </ItemGroup>
 
   <!-- LCD byte-exactness fixture: raw mask/composite dumps from the agg-gui Rust reference, read by
