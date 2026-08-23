@@ -213,6 +213,83 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		/// <summary>
+		/// A mesh with no faces at all is vacuously manifold - it has no edges to fail the two-faces-per-edge
+		/// test - but it is exactly the case that still needs the weld, because dropping every face is what
+		/// orphans the vertices. CameraFittingUtil's orthographic path clips a cube away to nothing and then
+		/// reads Vertices.Any() to decide whether it has geometry left, so stale corners surviving the clip
+		/// make it compute depths from a solid that is no longer in the view volume.
+		/// </summary>
+		[Test]
+		public async Task CleanAndMergeDropsVerticesLeftOverWhenEveryFaceIsClipped()
+		{
+			var mesh = PlatonicSolids.CreateCube(10, 10, 10);
+
+			// Clip against a plane the whole cube is behind, the way CameraFittingUtil clips to the
+			// view volume - every face is discarded and the corners are left behind.
+			mesh.Split(new Plane(Vector3.UnitX, 100), cleanAndMerge: false, discardFacesOnNegativeSide: true);
+
+			await Assert.That(mesh.Faces.Count).IsEqualTo(0)
+				.Because("the clip plane leaves nothing of the cube");
+
+			mesh.CleanAndMerge();
+
+			await Assert.That(mesh.Vertices.Count).IsEqualTo(0)
+				.Because("a mesh with no faces has no vertices worth keeping");
+		}
+
+		/// <summary>
+		/// Split rebuilds Faces and appends to Vertices, so it has to invalidate the caches keyed off them
+		/// (cachedAABB, the transformed AABB cache) itself rather than relying on the MarkAsChanged inside
+		/// CleanAndMerge - which callers can switch off, and which no longer runs for an already manifold
+		/// result. CameraFittingUtil is the caller that passes cleanAndMerge: false.
+		/// </summary>
+		[Test]
+		public async Task SplitMarksTheMeshAsChangedEvenWhenNotMerging()
+		{
+			var mesh = PlatonicSolids.CreateIcosahedron(10);
+
+			// Prime the AABB cache so a missed invalidation is a stale bounds, not only an unbumped counter.
+			_ = mesh.GetAxisAlignedBoundingBox();
+			var changedCountBeforeSplit = mesh.ChangedCount;
+			var faceCountBeforeSplit = mesh.Faces.Count;
+
+			mesh.Split(new Plane(Vector3.UnitX, 2.5), cleanAndMerge: false);
+
+			await Assert.That(mesh.Faces.Count).IsNotEqualTo(faceCountBeforeSplit)
+				.Because("the plane has to actually cut the solid for this to test anything");
+
+			await Assert.That(mesh.ChangedCount).IsGreaterThan(changedCountBeforeSplit)
+				.Because("Split rebuilt Faces and appended Vertices, so anything caching them is stale");
+		}
+
+		/// <summary>
+		/// The same cache invalidation contract for the single face entry point.
+		/// </summary>
+		[Test]
+		public async Task SplitFaceMarksTheMeshAsChanged()
+		{
+			var mesh = PlatonicSolids.CreateIcosahedron(10);
+
+			_ = mesh.GetAxisAlignedBoundingBox();
+			var changedCountBeforeSplit = mesh.ChangedCount;
+
+			// Which face the plane happens to cross is an accident of how the solid is built, so take
+			// the first one it does cross rather than hard coding an index.
+			var plane = new Plane(Vector3.UnitX, 2.5);
+			var didSplit = false;
+			for (int i = 0; i < mesh.Faces.Count && !didSplit; i++)
+			{
+				didSplit = mesh.SplitFace(i, plane);
+			}
+
+			await Assert.That(didSplit).IsTrue()
+				.Because("the plane has to actually cross a face for this to test anything");
+
+			await Assert.That(mesh.ChangedCount).IsGreaterThan(changedCountBeforeSplit)
+				.Because("SplitFace rebuilt Faces and appended Vertices");
+		}
+
+		/// <summary>
 		/// A closed solid stretched along x and tipped, so the x cut planes meet its faces at
 		/// arbitrary angles and no crossing lands on a tidy fraction of an edge.
 		/// </summary>

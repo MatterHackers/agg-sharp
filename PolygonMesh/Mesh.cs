@@ -250,10 +250,33 @@ namespace MatterHackers.PolygonMesh
 		}
 
 		/// <summary>
-		/// Merge vertices that share the exact same coordinates
+		/// Merge vertices that share the exact same coordinates.
 		/// </summary>
+		/// <remarks>
+		/// This is a repair pass for meshes that do not have topology yet - generated triangle soup, or
+		/// unwelded seams coming back from a kernel readback. A mesh that is already a closed 2-manifold
+		/// has nothing to gain from it: every positional merge either changes nothing or fuses two
+		/// vertices the topology deliberately kept apart, which is what turns a valid solid into one with
+		/// 4-faces-per-edge junctions. The ManifoldRust boolean kernel returns exactly such a mesh - its
+		/// coincident-but-distinct vertices are intentional epsilon-valid self-touching geometry (two
+		/// solids meeting at a seam plane), not an error. So an already-manifold mesh is left alone.
+		/// <para>
+		/// Note that this only bypasses the weld, it does not repair it: on a mesh that is both
+		/// non-manifold AND self-touching (a damaged import coming through RepairObject3D_2, say) the
+		/// weld below still runs and is still non-idempotent, and can still drop faces.
+		/// </para>
+		/// </remarks>
 		public void CleanAndMerge()
 		{
+			// A mesh with no faces has no edges, so it passes the manifold test vacuously - but it is
+			// precisely the case that still needs this pass, because dropping every face is what leaves
+			// vertices orphaned. Let it fall through and compact them away.
+			if (Faces.Count > 0
+				&& this.IsManifold())
+			{
+				return;
+			}
+
 			var newVertices = new List<Vector3Float>();
 			var newFaces = new FaceList();
 			var sourceFaceIndex = new List<int>(Faces.Count);
@@ -739,6 +762,10 @@ namespace MatterHackers.PolygonMesh
 				// the pieces are cut out of the face that was split, so their UVs get interpolated
 				RemapFaceData(sourceFaceIndex, sourceFaces, Vertices);
 
+				// Faces and Vertices both changed, so invalidate here rather than leaning on the
+				// MarkAsChanged inside CleanAndMerge - which returns early for an already manifold result.
+				MarkAsChanged();
+
 				CleanAndMerge();
 
 				return true;
@@ -817,6 +844,11 @@ namespace MatterHackers.PolygonMesh
 
 			// the added faces are pieces cut out of the faces they replaced, so their UVs get interpolated
 			RemapFaceData(sourceFaceIndex, sourceFaces, Vertices);
+
+			// Faces and Vertices both changed. CleanAndMerge is the only other thing here that would
+			// invalidate, and callers can switch it off (or it can return early for an already manifold
+			// result), so do it unconditionally rather than as a side effect of the weld.
+			MarkAsChanged();
 
 			if (cleanAndMerge)
 			{
