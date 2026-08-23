@@ -199,6 +199,33 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// What HAnchor/VAnchor Fit sizes us to: the content we scroll, measured from our own origin.
+		/// </summary>
+		/// <remarks>
+		/// Our children are not a fair measure of us. The scrolling area is deliberately displaced by the scroll
+		/// position, so a view showing the top of taller content encloses its rows below its own origin and the
+		/// fitted rect came out with a negative bottom (B:-300 T:200 for 500 of content in a 200 tall view). A
+		/// later Height assignment only moves Top, so that bottom stayed negative for good, and the scroll bar -
+		/// which is laid out at the local origin - was drawn a whole scroll offset clear of the view it scrolls.
+		/// The area's margin counts as content because that is how far the content is allowed to move. It is taken
+		/// from DeviceMarginAndBorder (device pixels) because bounds are in device pixels, while
+		/// <see cref="ScrollingArea.ValidateScrollPosition"/> and <see cref="RatioOfViewToContents0To1"/> work from
+		/// the design-unit Margin.
+		/// Background children (AddChildToBackground) are deliberately excluded from Fit sizing - they decorate the
+		/// view, they are not content to be enclosed.
+		/// </remarks>
+		public override RectangleDouble GetMinimumBoundsToEncloseChildren(bool considerChildAnchor = false)
+		{
+			RectangleDouble contentBounds = ScrollArea.LocalBounds;
+			contentBounds.Inflate(ScrollArea.DeviceMarginAndBorder);
+
+			return new RectangleDouble(0,
+				0,
+				contentBounds.Width + DevicePadding.Width,
+				contentBounds.Height + DevicePadding.Height);
+		}
+
 		public override void OnBoundsChanged(EventArgs e)
 		{
 			if (AutoScroll)

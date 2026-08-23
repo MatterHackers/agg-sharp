@@ -1434,7 +1434,12 @@ namespace MatterHackers.Agg.UI
 			return boundsOfAllChildrenIncludingMargin;
 		}
 
-		public RectangleDouble GetMinimumBoundsToEncloseChildren(bool considerChildAnchor = false)
+		/// <summary>
+		/// The smallest rect that covers every visible child (plus their margins and our padding). This is what
+		/// HAnchor/VAnchor Fit sizes to, so a widget whose children are not a fair measure of its content (a
+		/// <see cref="ScrollableWidget"/>, whose scrolling area is displaced by the scroll position) overrides it.
+		/// </summary>
+		public virtual RectangleDouble GetMinimumBoundsToEncloseChildren(bool considerChildAnchor = false)
 		{
 			RectangleDouble minimumSizeToEncloseChildren = GetChildrenBoundsIncludingMargins(considerChildAnchor);
 			minimumSizeToEncloseChildren.Inflate(DevicePadding);
