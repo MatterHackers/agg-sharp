@@ -1478,11 +1478,15 @@ namespace MatterHackers.Agg.UI
 		/// Hands an event to the agg window it belongs to.
 		/// </summary>
 		/// <returns>
-		/// True when AppKit must <em>not</em> also see the event. Only unmodified key events are swallowed:
-		/// the content view is a plain NSView with no key handling, so letting a keystroke walk the
-		/// responder chain ends at NSBeep. Command-modified keys are passed on so menu equivalents and
-		/// Cmd-Q keep working, and every mouse event is passed on because title-bar dragging, live resize
-		/// and the close button are all AppKit's to handle.
+		/// True when AppKit must <em>not</em> also see the event. Every key event is swallowed: the content
+		/// view is a plain NSView with no key handling, so letting a keystroke walk the responder chain
+		/// ends at NSBeep. That includes Command chords, which used to be passed on for menu key
+		/// equivalents - the application installs no NSMenu, so there were no equivalents to reach and
+		/// every Cmd-shortcut the application itself handled beeped on top of doing its work. If a main
+		/// menu is ever installed, unhandled Command chords will need forwarding again.
+		/// <para/>
+		/// Every mouse event is passed on because title-bar dragging, live resize and the close button are
+		/// all AppKit's to handle.
 		/// </returns>
 		private static bool DispatchEvent(IntPtr nsEvent)
 		{
@@ -1760,18 +1764,17 @@ namespace MatterHackers.Agg.UI
 		private bool HandleKeyDown(IntPtr nsEvent)
 		{
 			ulong flags = Send_Q(nsEvent, Sel("modifierFlags"));
-			Keys modifiers = TranslateModifiers(flags);
-			Keys keyCode = TranslateKeyCode(Send_u(nsEvent, Sel("keyCode")));
+			var keyEvent = MakeKeyEventArgs(nsEvent, flags);
 
-			var keyEvent = new KeyEventArgs(keyCode | modifiers);
 			this.aggSystemWindow.OnKeyDown(keyEvent);
 			Keyboard.SetKeyDownState(keyEvent.KeyCode, true);
 
-			// Command-modified keys are menu equivalents; agg gets a look but AppKit must still see them.
+			// A Command chord is a shortcut, never text, so it stops at the key down - typing Cmd-S must
+			// not also insert an "s" into whatever has focus.
 			bool commandHeld = (flags & NSEventModifierFlagCommand) != 0;
 			if (commandHeld)
 			{
-				return false;
+				return true;
 			}
 
 			if (!keyEvent.SuppressKeyPress)
@@ -1801,9 +1804,7 @@ namespace MatterHackers.Agg.UI
 
 		private bool HandleKeyUp(IntPtr nsEvent)
 		{
-			Keys modifiers = TranslateModifiers(Send_Q(nsEvent, Sel("modifierFlags")));
-			Keys keyCode = TranslateKeyCode(Send_u(nsEvent, Sel("keyCode")));
-			var keyEvent = new KeyEventArgs(keyCode | modifiers);
+			var keyEvent = MakeKeyEventArgs(nsEvent, Send_Q(nsEvent, Sel("modifierFlags")));
 
 			// Only process the key up if we saw the key down, matching the Windows sink.
 			if (Keyboard.IsKeyDown(keyEvent.KeyCode))
@@ -1812,7 +1813,90 @@ namespace MatterHackers.Agg.UI
 				Keyboard.SetKeyDownState(keyEvent.KeyCode, false);
 			}
 
-			return (Send_Q(nsEvent, Sel("modifierFlags")) & NSEventModifierFlagCommand) == 0;
+			// Swallowed for the same reason a key down is, Command chords included.
+			return true;
+		}
+
+		/// <summary>
+		/// Reads the parts of a key NSEvent that decide which agg key it is, and composes the event args.
+		/// </summary>
+		private KeyEventArgs MakeKeyEventArgs(IntPtr nsEvent, ulong flags)
+		{
+			return MakeKeyEventArgs(
+				Send_u(nsEvent, Sel("keyCode")),
+				FromNSString(Send_r(nsEvent, Sel("charactersIgnoringModifiers"))),
+				flags);
+		}
+
+		/// <summary>
+		/// Composes the agg key event a keyDown or keyUp carries, from the three parts of the NSEvent that
+		/// determine it.
+		/// </summary>
+		/// <remarks>
+		/// Pure - no ObjC calls, no state - so the whole key translation can be exercised without a window,
+		/// in the same spirit as <see cref="ModifierDownStateKeys"/>.
+		/// </remarks>
+		internal static KeyEventArgs MakeKeyEventArgs(ushort virtualKey, string charactersIgnoringModifiers, ulong flags)
+		{
+			Keys keyCode = TranslateKeyCode(virtualKey);
+
+			if (keyCode == Keys.None)
+			{
+				keyCode = TranslateCharacterKey(charactersIgnoringModifiers);
+			}
+
+			return new KeyEventArgs(keyCode | TranslateModifiers(flags));
+		}
+
+		/// <summary>
+		/// Maps the layout-resolved text of a key onto agg's <see cref="Keys"/>, for the letters and digits
+		/// <see cref="TranslateKeyCode"/> deliberately does not name.
+		/// </summary>
+		/// <remarks>
+		/// A virtual key code is a hardware position - 0x01 is "where S sits on a US layout" and is a
+		/// different letter on an AZERTY one - so the key code table cannot answer "which letter is this".
+		/// Shortcuts are all spelled as key codes (Ctrl+S, Ctrl+Z, Ctrl+A), so without this every one of
+		/// them arrived as a bare Control modifier with <see cref="Keys.None"/> attached and matched
+		/// nothing: Cmd-S did not save, it only beeped.
+		/// <para/>
+		/// <c>-[NSEvent charactersIgnoringModifiers]</c> is the source because it resolves the layout while
+		/// factoring Command and Option back out - Option-S is "s" here and the dead-key text only in
+		/// <c>characters</c>. Shift is <em>not</em> factored out, so each shifted spelling has to be mapped
+		/// onto the same key its unshifted spelling gives, which is what WinForms reports either way.
+		/// </remarks>
+		internal static Keys TranslateCharacterKey(string charactersIgnoringModifiers)
+		{
+			if (string.IsNullOrEmpty(charactersIgnoringModifiers))
+			{
+				return Keys.None;
+			}
+
+			char character = char.ToUpperInvariant(charactersIgnoringModifiers[0]);
+
+			if (character >= 'A' && character <= 'Z')
+			{
+				return Keys.A + (character - 'A');
+			}
+
+			if (character >= '0' && character <= '9')
+			{
+				return Keys.D0 + (character - '0');
+			}
+
+			switch (character)
+			{
+				// The zoom shortcuts, with the shifted spelling of each key alongside the unshifted one.
+				case '=':
+				case '+':
+					return Keys.Oemplus;
+
+				case '-':
+				case '_':
+					return Keys.OemMinus;
+
+				default:
+					return Keys.None;
+			}
 		}
 
 		/// <summary>
