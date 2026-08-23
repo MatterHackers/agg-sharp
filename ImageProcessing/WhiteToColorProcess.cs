@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2015, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -67,13 +67,16 @@ namespace MatterHackers.ImageProcessing
                                 byte sourceAlpha = sourceBuffer[sourceOffsetY + 3];
 
                                 // Check if the pixel is close to white and mostly non-transparent
-                                if (sourceRed > 240 && sourceGreen > 240 && sourceBlue > 240 && sourceAlpha > 200)
+                                if (sourceAlpha == 0
+                                    || (sourceRed > 240 && sourceGreen > 240 && sourceBlue > 240 && sourceAlpha > 200))
                                 {
-                                    // Set alpha to 0 (transparent)
-                                    destBuffer[destOffsetY++] = 255; // R
-                                    destBuffer[destOffsetY++] = 255; // G
-                                    destBuffer[destOffsetY++] = 255; // B
-                                    destBuffer[destOffsetY++] = 0;   // A (transparent)
+                                    // Clear it completely. Leaving the white behind at alpha 0 is invisible on a
+                                    // straight alpha surface but paints solid white on a premultiplied one, which
+                                    // adds the source color outright rather than scaling it by alpha.
+                                    destBuffer[destOffsetY++] = 0; // R
+                                    destBuffer[destOffsetY++] = 0; // G
+                                    destBuffer[destOffsetY++] = 0; // B
+                                    destBuffer[destOffsetY++] = 0; // A (transparent)
                                 }
                                 else
                                 {

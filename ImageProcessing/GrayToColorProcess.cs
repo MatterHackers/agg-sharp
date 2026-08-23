@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2015, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,11 @@ namespace MatterHackers.ImageProcessing
                 throw new Exception("All images must be the same size.");
             }
 
+            // A premultiplied destination expects the color already scaled by alpha, and a fully
+            // transparent pixel must be completely clear either way - its blender adds the source
+            // color outright, so any ink left in an invisible pixel paints at full strength.
+            bool destIsPreMultiplied = destImage.GetRecieveBlender() is BlenderPreMultBGRA;
+
             switch (sourceImage.BitDepth)
             {
                 case 32:
@@ -72,31 +77,54 @@ namespace MatterHackers.ImageProcessing
                             {
                                 sourceImage.GetPixel(x, y).ToColorF().GetHSL(out double _, out double s, out double _);
 
+                                byte blue;
+                                byte green;
+                                byte red;
+                                byte alpha = sourceBuffer[sourceOffsetY + 3];
+
                                 if (s < .01)
                                 {
                                     if (destIntensity == DestIntensity.FromColor)
                                     {
-                                        destBuffer[destOffsetY++] = (byte)(color.blue); sourceOffsetY++;
-                                        destBuffer[destOffsetY++] = (byte)(color.green); sourceOffsetY++;
-                                        destBuffer[destOffsetY++] = (byte)(color.red); sourceOffsetY++;
-                                        destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
+                                        blue = color.blue;
+                                        green = color.green;
+                                        red = color.red;
                                     }
                                     else
                                     {
                                         byte intensity = sourceBuffer[sourceOffsetY];
-                                        destBuffer[destOffsetY++] = (byte)(color.blue * intensity / 255); sourceOffsetY++;
-                                        destBuffer[destOffsetY++] = (byte)(color.green * intensity / 255); sourceOffsetY++;
-                                        destBuffer[destOffsetY++] = (byte)(color.red * intensity / 255); sourceOffsetY++;
-                                        destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
+                                        blue = (byte)(color.blue * intensity / 255);
+                                        green = (byte)(color.green * intensity / 255);
+                                        red = (byte)(color.red * intensity / 255);
                                     }
                                 }
                                 else
                                 {
-                                    destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
-                                    destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
-                                    destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
-                                    destBuffer[destOffsetY++] = sourceBuffer[sourceOffsetY++];
+                                    blue = sourceBuffer[sourceOffsetY + 0];
+                                    green = sourceBuffer[sourceOffsetY + 1];
+                                    red = sourceBuffer[sourceOffsetY + 2];
                                 }
+
+                                if (alpha == 0)
+                                {
+                                    blue = 0;
+                                    green = 0;
+                                    red = 0;
+                                }
+                                else if (destIsPreMultiplied && alpha < 255)
+                                {
+                                    blue = (byte)(blue * alpha / 255);
+                                    green = (byte)(green * alpha / 255);
+                                    red = (byte)(red * alpha / 255);
+                                }
+
+                                destBuffer[destOffsetY + 0] = blue;
+                                destBuffer[destOffsetY + 1] = green;
+                                destBuffer[destOffsetY + 2] = red;
+                                destBuffer[destOffsetY + 3] = alpha;
+
+                                sourceOffsetY += 4;
+                                destOffsetY += 4;
                             }
                         }
                     }

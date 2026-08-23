@@ -458,23 +458,43 @@ namespace MatterHackers.Agg.UI
 		private double barOnTime = .6;
 		private double barOffTime = .6;
 
-		private bool BarIsShowing { get { return timeSinceTurnOn.ElapsedMilliseconds < barOnTime * 1000; } }
+		/// <summary>
+		/// Which chain of idle callbacks is the live one. Every focus starts its own chain, and a field can be
+		/// focused again while an earlier chain is still queued - a reparented editor (one popped out into a
+		/// window of its own) loses and retakes the keyboard, and so does anything else that calls Focus twice.
+		/// The stale chain would otherwise go on firing against the clock the new one restarted.
+		/// </summary>
+		private int barFlashGeneration;
 
+		/// <summary>
+		/// Whether the caret is in the showing half of its blink. Read from where the clock has got to within
+		/// the on-then-off cycle rather than from how many callbacks have arrived, so a callback that lands
+		/// early or late moves nothing but when the field is repainted.
+		/// </summary>
+		private bool BarIsShowing => timeSinceTurnOn.ElapsedMilliseconds % ((barOnTime + barOffTime) * 1000) < barOnTime * 1000;
+
+		/// <summary>
+		/// Asks for the field to be repainted. The blink drives itself and has done since it was made to run
+		/// one chain of callbacks at a time; calling this cannot start a second one.
+		/// </summary>
+		[Obsolete("The caret blinks on its own while the field is focused. Call Invalidate if you want a repaint.")]
 		public void OnIdle()
 		{
+			Invalidate();
+		}
+
+		/// <summary>
+		/// One step of the blink: the cycle has moved on since the repaint that asked for this, so ask for
+		/// another one and book the next step. Only ever reached through <see cref="ScheduleBarFlash"/>, which
+		/// is what keeps there being exactly one chain of these in flight.
+		/// </summary>
+		private void BlinkTick()
+		{
 			if (this.Focused
-				&& timeSinceTurnOn.ElapsedMilliseconds >= barOnTime * 950
 				&& !HasBeenClosed)
 			{
-				if (timeSinceTurnOn.ElapsedMilliseconds >= (barOnTime + barOffTime) * 950)
-				{
-					RestartBarFlash();
-				}
-				else
-				{
-					UiThread.RunOnIdle(OnIdle, barOffTime);
-					Invalidate();
-				}
+				Invalidate();
+				ScheduleBarFlash(barFlashGeneration);
 			}
 			else
 			{
@@ -482,11 +502,39 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Puts the caret back to the start of its cycle - showing - and takes over the blink from any chain of
+		/// callbacks an earlier focus left behind.
+		/// </summary>
 		private void RestartBarFlash()
 		{
 			timeSinceTurnOn.Restart();
-			UiThread.RunOnIdle(OnIdle, barOnTime);
+			ScheduleBarFlash(++barFlashGeneration);
 			Invalidate();
+		}
+
+		/// <summary>
+		/// Asks to be woken at the next edge of the blink - the moment the caret has to be painted the other
+		/// way - and no more often than that.
+		/// </summary>
+		private void ScheduleBarFlash(int generation)
+		{
+			double cycleMs = (barOnTime + barOffTime) * 1000;
+			double positionInCycleMs = timeSinceTurnOn.ElapsedMilliseconds % cycleMs;
+			double untilNextEdgeMs = positionInCycleMs < barOnTime * 1000
+				? (barOnTime * 1000) - positionInCycleMs
+				: cycleMs - positionInCycleMs;
+
+			UiThread.RunOnIdle(
+				() =>
+				{
+					// a later focus has its own chain running; this one is finished
+					if (generation == barFlashGeneration)
+					{
+						BlinkTick();
+					}
+				},
+				Math.Max(untilNextEdgeMs, 1) / 1000);
 		}
 
 		public bool SelectAllOnFocus { get; set; }
@@ -507,7 +555,6 @@ namespace MatterHackers.Agg.UI
 
 				showingRightClickMenu = false;
 				RestartBarFlash();
-				timeSinceTurnOn.Restart();
 				if (SelectAllOnFocus)
 				{
 					selectAllOnMouseUpIfNoSelection = true;
@@ -543,11 +590,27 @@ namespace MatterHackers.Agg.UI
 			return textWhenGotFocus != Text;
 		}
 
-		public Color CursorColor { get; set; }
+		/// <summary>
+		/// The colour of the insert caret. <see cref="TextColor"/> derives it whenever it is set, and this
+		/// initializer is that same derivation for the default text colour - the default of a Color is
+		/// transparent, so a field nobody had given a colour to used to draw no caret at all.
+		/// </summary>
+		public Color CursorColor { get; set; } = DefaultTextColor.WithAlpha(CursorAlpha);
 
-		public Color HighlightColor { get; set; }
+		/// <summary>
+		/// The colour of the band behind selected text. Derived from <see cref="TextColor"/> the same way
+		/// <see cref="CursorColor"/> is, and defaulted here for the same reason - an unthemed field used to
+		/// paint its selection in transparent, so selecting text in one showed nothing at all.
+		/// </summary>
+		public Color HighlightColor { get; set; } = DefaultTextColor.WithAlpha(HighlightAlpha);
 
-		private Color _textColor = Color.Black;
+		private const int CursorAlpha = 175;
+
+		private const int HighlightAlpha = 100;
+
+		private static readonly Color DefaultTextColor = Color.Black;
+
+		private Color _textColor = DefaultTextColor;
 
 		private int _borderWidth = 0;
 		private bool selectedAllDueToFocus;
@@ -579,8 +642,8 @@ namespace MatterHackers.Agg.UI
 			{
 				this._textColor = value;
 				internalTextWidget.TextColor = this._textColor;
-				CursorColor = value.WithAlpha(175);
-				HighlightColor = value.WithAlpha(100);
+				CursorColor = value.WithAlpha(CursorAlpha);
+				HighlightColor = value.WithAlpha(HighlightAlpha);
             }
 		}
 
@@ -672,9 +735,15 @@ namespace MatterHackers.Agg.UI
             {
                 double xFraction = graphics2D.GetTransform().tx;
                 xFraction = xFraction - (int)xFraction;
+
+                // the caret is the only piece of the field nothing else sizes, so it carries the display scale
+                // itself - a fixed hardware pixel is half the weight of the thinnest stroke of the text it sits
+                // in on a Retina panel, which reads as a flicker rather than as a caret
+                double barWidth = Math.Max(1, Math.Round(DeviceScale, MidpointRounding.AwayFromZero));
+
                 var bar2 = new RectangleDouble(Math.Ceiling(InsertBarPosition.X) - xFraction,
                                         Math.Ceiling(internalTextWidget.Height + InsertBarPosition.Y - fontHeight),
-                                        Math.Ceiling(InsertBarPosition.X + 1) - xFraction,
+                                        Math.Ceiling(InsertBarPosition.X) + barWidth - xFraction,
                                         Math.Ceiling(internalTextWidget.Height + InsertBarPosition.Y));
                 var cursorRect = new RoundedRect(bar2, 0);
                 graphics2D.Render(cursorRect, this.CursorColor);

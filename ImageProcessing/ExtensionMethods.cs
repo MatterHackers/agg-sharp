@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2017, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,54 @@ namespace MatterHackers.ImageProcessing
 {
 	public static class ExtensionMethods
 	{
+		/// <summary>
+		/// Zero the color of every fully transparent pixel, in place.
+		/// </summary>
+		/// <remarks>
+		/// A premultiplied blender adds the source color outright (dst * (1 - srcA) + srcColor), so a pixel
+		/// with alpha 0 that still carries color is not invisible on such a surface - it paints at full
+		/// strength, which is how an icon's transparent surround drew as a solid square. Anything that hands
+		/// out an image stamped <see cref="BlenderPreMultBGRA"/> has to make that stamp true at least this
+		/// far. Harmless for straight alpha, where those pixels contribute nothing either way.
+		/// </remarks>
+		public static ImageBuffer ClearFullyTransparentPixels(this ImageBuffer image)
+		{
+			if (image == null
+				|| image.BitDepth != 32)
+			{
+				return image;
+			}
+
+			byte[] buffer = image.GetBuffer();
+			bool cleared = false;
+
+			for (int y = 0; y < image.Height; y++)
+			{
+				int offset = image.GetBufferOffsetY(y);
+
+				for (int x = 0; x < image.Width; x++)
+				{
+					if (buffer[offset + 3] == 0
+						&& (buffer[offset + 0] != 0 || buffer[offset + 1] != 0 || buffer[offset + 2] != 0))
+					{
+						buffer[offset + 0] = 0;
+						buffer[offset + 1] = 0;
+						buffer[offset + 2] = 0;
+						cleared = true;
+					}
+
+					offset += 4;
+				}
+			}
+
+			if (cleared)
+			{
+				image.MarkImageChanged();
+			}
+
+			return image;
+		}
+
 		/// <summary>
 		/// Multiply all colors by the given color
 		/// </summary>
@@ -96,6 +144,17 @@ namespace MatterHackers.ImageProcessing
 								if (alpha > 0)
 								{
 									imageABuffer[offsetA + 3] = (byte) (alpha * factor);
+								}
+
+								// The result is stamped premultiplied, and that blender adds the source color
+								// outright - so an invisible pixel that still carries color paints at full
+								// strength. Clear anything that ends up fully transparent, including the faint
+								// pixels this just faded the rest of the way out.
+								if (imageABuffer[offsetA + 3] == 0)
+								{
+									imageABuffer[offsetA + 0] = 0;
+									imageABuffer[offsetA + 1] = 0;
+									imageABuffer[offsetA + 2] = 0;
 								}
 
 								offsetA += 4;

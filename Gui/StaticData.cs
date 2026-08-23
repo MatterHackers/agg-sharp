@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2018, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.ImageProcessing;
 using MatterHackers.Agg.SvgTools;
 using MatterHackers.Agg.UI;
+using MatterHackers.ImageProcessing;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
 
@@ -234,6 +235,12 @@ namespace MatterHackers.Agg.Platform
 						cachedIcon = cachedIcon.CreateScaledImage(deviceWidth, deviceHeight);
 					}
 
+					// Make the premultiplied stamp above true where it matters most: nothing that is fully
+					// transparent may still carry color. Scaling is the last thing that can reintroduce it -
+					// it averages color and alpha separately, so an edge pixel can land on alpha 0 with the
+					// color of its neighbours - and a premultiplied blender adds that color outright.
+					cachedIcon.ClearFullyTransparentPixels();
+
 					// only cache relatively small images
 					if (cachedIcon.Width < 200 && cachedIcon.Height < 200)
 					{
@@ -249,6 +256,7 @@ namespace MatterHackers.Agg.Platform
 			{
 				cacheCopy = cacheCopy.InvertLightness();
 				cacheCopy.SetRecieveBlender(new BlenderPreMultBGRA());
+				cacheCopy.ClearFullyTransparentPixels();
 			}
 
 			return cacheCopy;
