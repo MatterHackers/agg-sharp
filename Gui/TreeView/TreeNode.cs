@@ -231,7 +231,12 @@ namespace MatterHackers.Agg.UI
             // add a check box
             if (useIcon)
             {
-                var image = new ImageBuffer(16, 16);
+                // Device pixels: icons loaded into this slot are scaled for the display, so a raw 16 would
+                // reserve a half-size slot at 2x for any node that never gets an image of its own.
+                // Truncating rather than rounding matches StaticData.LoadIcon and SceneHierarchyBuilder, so
+                // the reserved slot is the size of the icon that lands in it at fractional scales too.
+                var iconSize = (int)(16 * DeviceScale);
+                var image = new ImageBuffer(iconSize, iconSize);
 
                 this.HighlightRegion.AddChild(imageWidget = new ImageWidget(image, listenForImageChanged: false)
                 {

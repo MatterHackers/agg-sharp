@@ -162,18 +162,48 @@ namespace MatterHackers.Agg.UI
 
 			private ImageBuffer faChecked;
 
+			private double faCheckedScale;
+
 			public CheckboxMenuItem(GuiWidget widget, ThemeConfig theme)
 				: base(widget, theme)
 			{
 			}
 
+			/// <summary>
+			/// Loads the check mark, or leaves it alone if it is already the size the current display wants.
+			/// </summary>
+			/// <remarks>
+			/// <see cref="StaticData.LoadIcon(string, int, int, bool, Func{ImageBuffer, ValueTuple{ImageBuffer, string}})"/>
+			/// bakes <see cref="GuiWidget.DeviceScale"/> into the pixels, and the scale can change under a live
+			/// widget, so the check has to be reloaded when it does. LoadIcon caches by device size, so this
+			/// costs a dictionary lookup and a recolor rather than a decode.
+			/// </remarks>
+			private void EnsureCheckIcon()
+			{
+				if (faChecked != null
+					&& faCheckedScale == GuiWidget.DeviceScale)
+				{
+					return;
+				}
+
+				faChecked = StaticData.Instance.LoadIcon("fa-check_16.png", 16, 16).GrayToColor(theme.TextColor);
+				faCheckedScale = GuiWidget.DeviceScale;
+
+				this.Image = _checked ? faChecked : null;
+			}
+
+			public override void OnDraw(Graphics2D graphics2D)
+			{
+				// OnLoad fires once per widget, but the display scale can move after that
+				EnsureCheckIcon();
+
+				base.OnDraw(graphics2D);
+			}
+
 			public override void OnLoad(EventArgs args)
 			{
 				// Icon load is deferred to OnLoad (disk I/O + recolor), matching RadioMenuItem
-				if (faChecked == null)
-				{
-					faChecked = StaticData.Instance.LoadIcon("fa-check_16.png", 16, 16).GrayToColor(theme.TextColor);
-				}
+				EnsureCheckIcon();
 
 				this.Image = _checked ? faChecked : null;
 				base.OnLoad(args);
@@ -208,6 +238,8 @@ namespace MatterHackers.Agg.UI
 
 			private ImageBuffer radioIconUnchecked;
 
+			private double radioIconScale;
+
 			public RadioMenuItem(GuiWidget widget, ThemeConfig theme)
 				: base(widget, theme)
 			{
@@ -220,31 +252,61 @@ namespace MatterHackers.Agg.UI
 				return sourceImage;
 			}
 
+			/// <summary>
+			/// Rasterizes the two radio circles, or leaves them alone if they are already the size the
+			/// current display wants.
+			/// </summary>
+			/// <remarks>
+			/// The icons are rasterized at <see cref="GuiWidget.DeviceScale"/>, and that can change under a
+			/// live widget (the window moved to a display of another scale), so building them once and only
+			/// checking for null would leave the circle at half or double the size of the text beside it.
+			/// </remarks>
+			private void EnsureRadioIcons()
+			{
+				if (radioIconChecked != null
+					&& radioIconScale == GuiWidget.DeviceScale)
+				{
+					return;
+				}
+
+				var size = (int)Math.Round(16 * GuiWidget.DeviceScale);
+				radioIconChecked = SetPreMultiply(new ImageBuffer(size, size));
+				radioIconUnchecked = SetPreMultiply(new ImageBuffer(size, size));
+				radioIconScale = GuiWidget.DeviceScale;
+
+				var rect = new RectangleDouble(0, 0, size, size);
+
+				RadioImage.DrawCircle(
+					radioIconChecked.NewGraphics2D(),
+					rect.Center,
+					theme.TextColor,
+					isChecked: true,
+					isActive: false);
+
+				RadioImage.DrawCircle(
+					radioIconUnchecked.NewGraphics2D(),
+					rect.Center,
+					theme.TextColor,
+					isChecked: false,
+					isActive: false);
+
+				this.Image = _checked ? radioIconChecked : radioIconUnchecked;
+			}
+
+			public override void OnDraw(Graphics2D graphics2D)
+			{
+				// Rebuild here rather than only in OnLoad - OnLoad fires once per widget, and the display
+				// scale can move after that (a comparison of two doubles per draw, and nothing else when
+				// the scale has not changed)
+				EnsureRadioIcons();
+
+				base.OnDraw(graphics2D);
+			}
+
 			public override void OnLoad(EventArgs args)
 			{
-				// Init static radio icons if null
-				if (radioIconChecked == null)
-				{
-					var size = (int)Math.Round(16 * GuiWidget.DeviceScale);
-					radioIconChecked = SetPreMultiply(new ImageBuffer(size, size));
-					radioIconUnchecked = SetPreMultiply(new ImageBuffer(size, size));
-
-					var rect = new RectangleDouble(0, 0, size, size);
-
-					RadioImage.DrawCircle(
-						radioIconChecked.NewGraphics2D(),
-						rect.Center,
-						theme.TextColor,
-						isChecked: true,
-						isActive: false);
-
-					RadioImage.DrawCircle(
-						radioIconUnchecked.NewGraphics2D(),
-						rect.Center,
-						theme.TextColor,
-						isChecked: false,
-						isActive: false);
-				}
+				// Icon rasterization is deferred to OnLoad, matching CheckboxMenuItem
+				EnsureRadioIcons();
 
 				this.Image = _checked ? radioIconChecked : radioIconUnchecked;
 
@@ -563,7 +625,21 @@ namespace MatterHackers.Agg.UI
 
 			public double GutterWidth { get; set; }
 
-			public ImageBuffer Image { get; set; }
+			private ImageBuffer _image;
+
+			public ImageBuffer Image
+			{
+				get => _image;
+				set
+				{
+					_image = value;
+
+					// The faded copy is derived from this image, so it is stale the moment the image changes -
+					// which happens both when the icon is rebuilt for a new DeviceScale and when a checked
+					// state swaps one icon for another.
+					_disabledImage = null;
+				}
+			}
 
 			private ImageBuffer _disabledImage;
 
