@@ -380,29 +380,35 @@ namespace MatterHackers.Agg.UI
 				// we only check for the scroll bar one time (the first time we open)
 				if (checkIfNeedScrollBar)
 				{
-					var minimumOpenHeight = 50 * GuiWidget.DeviceScale;
+					// Opening Down puts the popup between the bottom of the anchor and the bottom of the window,
+					// opening Up puts it between the top of the anchor and the top of the window. Measure both,
+					// then prefer the requested direction, fall back to the other one, and only squeeze in a
+					// scroll bar when the popup fits in neither. windowToAddTo is the window the popup was
+					// actually added to (the outermost SystemWindow), which is the space these screen space
+					// coordinates are expressed in - a nearer SystemWindow ancestor would give the wrong height.
+					var spaceBelow = bottomLeftScreenSpace.Y;
+					var spaceAbove = windowToAddTo.Height - (bottomLeftScreenSpace.Y + widgetRelativeTo.Height);
+					var neededHeight = popupWidget.LocalBounds.Height;
 
-					// If the bottom of the popup is below the bottom of the screen
-					if (direction == Direction.Down)
+					var preferredSpace = direction == Direction.Down ? spaceBelow : spaceAbove;
+					var oppositeSpace = direction == Direction.Down ? spaceAbove : spaceBelow;
+
+					if (neededHeight > preferredSpace)
 					{
-						if (bottomLeftScreenSpace.Y - popupWidget.LocalBounds.Height < 0)
+						if (neededHeight <= oppositeSpace)
 						{
-							if (bottomLeftScreenSpace.Y <= minimumOpenHeight)
-							{
-								direction = Direction.Up;
-							}
-							else
-							{
-								popupWidget.MakeMenuHaveScroll(bottomLeftScreenSpace.Y - 5);
-							}
+							direction = direction == Direction.Down ? Direction.Up : Direction.Down;
 						}
-					}
-					else
-					{
-						SystemWindow windowToAddTo = widgetRelativeTo.Parents<SystemWindow>().FirstOrDefault();
-						if (bottomLeftScreenSpace.Y + popupWidget.LocalBounds.Height > windowToAddTo.Height)
+						else
 						{
-							popupWidget.MakeMenuHaveScroll(bottomLeftScreenSpace.Y - 5);
+							// It fits nowhere, so open toward whichever side has more room (keeping the
+							// preferred direction on a tie) and scroll within that space
+							if (oppositeSpace > preferredSpace)
+							{
+								direction = direction == Direction.Down ? Direction.Up : Direction.Down;
+							}
+
+							popupWidget.MakeMenuHaveScroll(Math.Max(preferredSpace, oppositeSpace) - 5);
 						}
 					}
 
