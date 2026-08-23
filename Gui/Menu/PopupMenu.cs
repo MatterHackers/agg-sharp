@@ -128,14 +128,16 @@ namespace MatterHackers.Agg.UI
 			{
 				base.OnDraw(graphics2D);
 
-				// draw the right arrow
+				// Draw the right arrow. Its offsets are the shape we want at 1:1, so they are device pixels
+				// only at that scale - without DeviceScale the arrow stays a 6x10 speck on a Retina panel
+				// beside a row that has doubled.
 				var x = this.LocalBounds.Right - this.LocalBounds.Height / 2;
-				var y = this.Size.Y / 2 + 2;
+				var y = this.Size.Y / 2 + 2 * DeviceScale;
 
 				var arrow = new VertexStorage();
-				arrow.MoveTo(x + 3, y);
-				arrow.LineTo(x - 3, y + 5);
-				arrow.LineTo(x - 3, y - 5);
+				arrow.MoveTo(x + 3 * DeviceScale, y);
+				arrow.LineTo(x - 3 * DeviceScale, y + 5 * DeviceScale);
+				arrow.LineTo(x - 3 * DeviceScale, y - 5 * DeviceScale);
 
 				graphics2D.Render(arrow, theme.TextColor);
 			}
