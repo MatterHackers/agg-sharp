@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2023, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -39,6 +39,13 @@ namespace Gui.Charting
 {
     public class SimpleChartWidget : GuiWidget
     {
+        /// <summary>
+        /// The unscaled size of every piece of text the chart draws. Multiply by
+        /// <see cref="GuiWidget.DeviceScale"/> before handing it to a printer - point sizes are
+        /// device pixels here, so they do not grow on their own.
+        /// </summary>
+        private const double DefaultPointSize = 12;
+
         private ChartData chartData;
         private ChartOptions options;
         private ThemeConfig theme;
@@ -76,7 +83,7 @@ namespace Gui.Charting
 
             if (!string.IsNullOrEmpty(HoverValue.value))
             {
-                graphics2D.DrawString(HoverValue.value, HoverValue.x, HoverValue.y);
+                graphics2D.DrawString(HoverValue.value, HoverValue.x, HoverValue.y, pointSize: DefaultPointSize * DeviceScale);
             }
 
             base.OnDraw(graphics2D);
@@ -104,8 +111,8 @@ namespace Gui.Charting
                             newHoverText = chartData.Datasets[0].Data[index].ToString();
                         }
                     }
-                    var positionX = regionBounds.Right + 5;
-                    positionX = positionX > Width / 2 ? regionBounds.Left - 100 : positionX;
+                    var positionX = regionBounds.Right + 5 * DeviceScale;
+                    positionX = positionX > Width / 2 ? regionBounds.Left - 100 * DeviceScale : positionX;
                     hoverValue = (positionX, regionBounds.Top, newHoverText);
                     break;
                 }
@@ -133,7 +140,7 @@ namespace Gui.Charting
             }
 
             // draw the left widgets
-            var pointSize = 12;
+            var pointSize = DefaultPointSize * DeviceScale;
 
             // print the 0 at the bottom
             var stringPrinter = new TypeFacePrinter($"{0}", pointSize);
@@ -155,7 +162,7 @@ namespace Gui.Charting
             var bounds = this.LocalBounds;
             bounds.Left += offset.X;
             bounds.Bottom += offset.Y;
-            RenderBackground(graphics2D, bounds, theme.TextColor.WithAlpha(20), 5, 1, Color.Transparent);
+            RenderBackground(graphics2D, bounds, theme.TextColor.WithAlpha(20), 5 * DeviceScale, 1, Color.Transparent);
 
             var barWidth = bounds.Width / (maxSize.X * 2 + 1 + 2);
             var barOffset = barWidth * 2;
@@ -184,7 +191,7 @@ namespace Gui.Charting
                 }
             }
 
-            RenderBackground(graphics2D, bounds, Color.Transparent, 5, 1, theme.TextColor);
+            RenderBackground(graphics2D, bounds, Color.Transparent, 5 * DeviceScale, 1, theme.TextColor);
 
             this.hoverAreas = hoverAreas;
         }

@@ -428,7 +428,7 @@ namespace MatterHackers.Agg.UI
             {
                 BackgroundColor = backgroundColor,
                 HoverColor = hoverColor,
-                MinimumSize = new Vector2(75, 0),
+                MinimumSize = new Vector2(75 * GuiWidget.DeviceScale, 0),
                 Margin = ButtonSpacing
             };
         }

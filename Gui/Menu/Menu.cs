@@ -89,11 +89,9 @@ namespace MatterHackers.Agg.UI
 
 		public MenuItem AddHorizontalLine()
 		{
-			var menuItem = new MenuItem(new GuiWidget()
+			// HorizontalLine already stretches and scales its own thickness with DeviceScale
+			var menuItem = new MenuItem(new HorizontalLine(Color.LightGray)
 			{
-				HAnchor = HAnchor.Stretch,
-				Height = 1,
-				BackgroundColor = Color.LightGray,
 				Margin = new BorderDouble(10, 1),
 				VAnchor = VAnchor.Center,
 			}, "HorizontalLine");

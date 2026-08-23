@@ -82,21 +82,24 @@ namespace MatterHackers.Agg.UI
 			{
 				double bottom = LocalBounds.Bottom + (Height / 2 - CheckBoxWidth / 2);
 
+				// the gap between the left edge and the box, in points rather than device pixels
+				double inset = 1 * DeviceScale;
+
 				// the check
 				if (checkBox.Checked)
 				{
-					graphics2D.Line(new Vector2(1, CheckBoxWidth + bottom), new Vector2(1 + CheckBoxWidth, 0 + bottom), this.TextColor);
-					graphics2D.Line(new Vector2(1, 0 + bottom), new Vector2(1 + CheckBoxWidth, CheckBoxWidth + bottom), this.TextColor);
+					graphics2D.Line(new Vector2(inset, CheckBoxWidth + bottom), new Vector2(inset + CheckBoxWidth, 0 + bottom), this.TextColor);
+					graphics2D.Line(new Vector2(inset, 0 + bottom), new Vector2(inset + CheckBoxWidth, CheckBoxWidth + bottom), this.TextColor);
 				}
 
 				// the frame
-				RectangleDouble clampedRect = new RectangleDouble(1, Math.Floor(0 + bottom), 1 + Math.Ceiling(CheckBoxWidth), Math.Ceiling(CheckBoxWidth + bottom));
+				RectangleDouble clampedRect = new RectangleDouble(inset, Math.Floor(0 + bottom), inset + Math.Ceiling(CheckBoxWidth), Math.Ceiling(CheckBoxWidth + bottom));
 				graphics2D.Rectangle(clampedRect, this.TextColor);
 
 				// extra frame
 				if (checkBox.MouseDownOnWidget && checkBox.FirstWidgetUnderMouse)
 				{
-					clampedRect.Inflate(1);
+					clampedRect.Inflate(1 * DeviceScale);
 					graphics2D.Rectangle(clampedRect, this.TextColor);
 				}
 			}

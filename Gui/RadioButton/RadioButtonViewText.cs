@@ -12,7 +12,7 @@ namespace MatterHackers.Agg.UI
 		{
 			var boxWidth = RadioImage.BoxWidth;
 
-			this.MinimumSize = new Vector2(boxWidth + 1, boxWidth + 1);
+			this.MinimumSize = new Vector2(boxWidth + 1 * DeviceScale, boxWidth + 1 * DeviceScale);
 			this.DoubleBuffer = true;
 			this.Margin = new BorderDouble(right: 10);
 

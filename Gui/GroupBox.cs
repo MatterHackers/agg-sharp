@@ -34,7 +34,7 @@ namespace MatterHackers.Agg.UI
 	public class GroupBox : GuiWidget
 	{
 		private GuiWidget groupBoxLabel;
-		private double lineInset = 8.5;
+		private double lineInset => 8.5 * DeviceScale;
 		private GuiWidget clientArea;
 
 		public Color TextColor
@@ -119,8 +119,8 @@ namespace MatterHackers.Agg.UI
 			// right
 			graphics2D.Line(localBounds.Left + Width - lineInset, localBounds.Bottom + lineInset, localBounds.Left + Width - lineInset, localBounds.Bottom + Height - lineInset, this.BorderColor);
 			// top
-			graphics2D.Line(localBounds.Left + lineInset, localBounds.Bottom + Height - lineInset, groupBoxLabel.BoundsRelativeToParent.Left - 2, localBounds.Bottom + Height - lineInset, this.BorderColor);
-			graphics2D.Line(groupBoxLabel.BoundsRelativeToParent.Right + 2, localBounds.Bottom + Height - lineInset, localBounds.Left + Width - lineInset, localBounds.Bottom + Height - lineInset, this.BorderColor);
+			graphics2D.Line(localBounds.Left + lineInset, localBounds.Bottom + Height - lineInset, groupBoxLabel.BoundsRelativeToParent.Left - 2 * DeviceScale, localBounds.Bottom + Height - lineInset, this.BorderColor);
+			graphics2D.Line(groupBoxLabel.BoundsRelativeToParent.Right + 2 * DeviceScale, localBounds.Bottom + Height - lineInset, localBounds.Left + Width - lineInset, localBounds.Bottom + Height - lineInset, this.BorderColor);
 
 			base.OnDraw(graphics2D);
 		}

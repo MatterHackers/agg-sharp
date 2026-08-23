@@ -125,7 +125,7 @@ namespace MatterHackers.Agg.UI
 			base.OnDraw(graphics2D);
 
 			var outline = new RoundedRect(LocalBounds, 0);
-			graphics2D.Render(new Stroke(outline, BorderWidth * 2), BorderColor);
+			graphics2D.Render(new Stroke(outline, BorderWidth * 2 * DeviceScale), BorderColor);
 		}
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
@@ -247,7 +247,8 @@ namespace MatterHackers.Agg.UI
 
 			scrollingWindow.VAnchor = VAnchor.Absolute;
 			scrollingWindow.Height = maxHeight;
-			scrollingWindow.MinimumSize = new Vector2(Width + 15, 0);
+			// leave room for the scroll bar the caller is about to get
+			scrollingWindow.MinimumSize = new Vector2(Width + ScrollBar.ScrollBarWidth, 0);
 			Width = scrollingWindow.Width;
 			Height = maxHeight;
 			scrollingWindow.ScrollArea.VAnchor = VAnchor.Fit;

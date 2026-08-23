@@ -264,8 +264,8 @@ namespace MatterHackers.Agg.UI
 
 			MenuItems.Add(menuItem);
 
-            menuItem.MinimumSize = new Vector2(0, 3);
-			menuItem.Height = 3;
+            menuItem.MinimumSize = new Vector2(0, 3 * DeviceScale);
+			menuItem.Height = 3 * DeviceScale;
 
 			return menuItem;
 		}

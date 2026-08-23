@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, MatterHackers, Inc.
+Copyright (c) 2026, Lars Brubaker, MatterHackers, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,8 +27,18 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+
 namespace MatterHackers.Agg.UI
 {
+	/// <summary>
+	/// A checkbox drawn as a sliding switch. Every distance in here - the width and height handed in, the
+	/// thumb, the insets - is in the caller's units, so a caller that wants the switch to keep its physical
+	/// size on a high density panel passes a width and height already multiplied by
+	/// <see cref="GuiWidget.DeviceScale"/>. Nothing inside scales itself, which is what keeps the parts in
+	/// proportion to each other whatever size the caller asks for. The one exception is the border stroke
+	/// below, which Graphics2D measures in device pixels no matter what the geometry is in.
+	/// </summary>
 	public class ToggleSwitchView : CheckBoxViewStates
 	{
 		public ToggleSwitchView(string onText, string offText, double width, double height, Color backgroundColor, Color interiorColor, Color thumbColor, Color textColor, Color borderColor)
@@ -131,12 +141,15 @@ namespace MatterHackers.Agg.UI
 					graphics2D.FillRectangle(innerRect, this.InteriorColor);
 				}
 
-				// Draw border
-				graphics2D.Rectangle(borderRect, (this.Enabled) ? borderColor : disabledBorderColor, 1);
+				// Draw border - a stroke width is device pixels, so a fixed 1 would be a hairline on a high
+				// density panel. This is the only place the view looks at DeviceScale; the geometry above does not.
+				var strokeWidth = Math.Max(1, Math.Round(DeviceScale));
+
+				graphics2D.Rectangle(borderRect, (this.Enabled) ? borderColor : disabledBorderColor, strokeWidth);
 
 				var thumbBounds = (this.Checked) ? checkedThumbBounds : uncheckedThumbBounds;
 				graphics2D.FillRectangle(thumbBounds, this.ThumbColor);
-				graphics2D.Rectangle(thumbBounds, new Color(255, 255, 255, 90), 1);
+				graphics2D.Rectangle(thumbBounds, new Color(255, 255, 255, 90), strokeWidth);
 			}
 		}
 	}

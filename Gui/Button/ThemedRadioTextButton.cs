@@ -150,7 +150,9 @@ namespace MatterHackers.Agg.UI
         {
             if (Checked && DrawUnderline)
             {
-                graphics2D.Rectangle(LocalBounds.Left, 0, LocalBounds.Right, 2, theme.PrimaryAccentColor);
+                // Filled, not stroked - Rectangle() would outline the band with its default stroke and
+                // leave it hollow as soon as the band is more than a pixel tall, which it is above scale one.
+                graphics2D.FillRectangle(LocalBounds.Left, 0, LocalBounds.Right, 2 * DeviceScale, theme.PrimaryAccentColor);
             }
 
             base.OnDraw(graphics2D);

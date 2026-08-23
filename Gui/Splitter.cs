@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2017, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -43,10 +43,12 @@ namespace MatterHackers.Agg.UI
 			splitterBar = new SplitterBar(this)
 			{
 				BackgroundColor = Color.Transparent,
-				Width = 6,
+				// the same 6 points ThemeConfig.SplitterWidth uses, but that is an instance
+				// property and a Splitter is built without a theme
+				Width = 6 * DeviceScale,
 			};
 
-			SplitterDistance = 120;
+			SplitterDistance = 120 * DeviceScale;
 
 			AddChild(Panel1);
 			AddChild(splitterBar);

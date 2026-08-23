@@ -63,7 +63,7 @@ namespace MatterHackers.Agg.UI
                 widget.Padding = new BorderDouble(10, 7, 10, 7);
                 widget.BackgroundOutlineWidth = 1;
 				widget.BorderColor = selectedTextColor;
-                widget.BackgroundRadius = new RadiusCorners(8, 8, 0, 0);
+                widget.BackgroundRadius = new RadiusCorners(8 * DeviceScale, 8 * DeviceScale, 0, 0);
             }
 
             SetValues(normalWidget);
@@ -81,7 +81,7 @@ namespace MatterHackers.Agg.UI
                 
 				var bounds = selectedWidget.LocalBounds;
 
-				e.Graphics2D.FillRectangle(bounds.Left + 1, bounds.Bottom, bounds.Right - 1, bounds.Bottom + 3, hideLineColor);
+				e.Graphics2D.FillRectangle(bounds.Left + 1 * DeviceScale, bounds.Bottom, bounds.Right - 1 * DeviceScale, bounds.Bottom + 3 * DeviceScale, hideLineColor);
 			};
 
             AddText(tabPage.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize, false, fixedSize, useUnderlineStyling);

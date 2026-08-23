@@ -79,7 +79,7 @@ namespace MatterHackers.Agg.UI
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Stretch,
 				Margin = new BorderDouble(grabWidth),
-				BackgroundRadius = 3,
+				BackgroundRadius = 3 * GuiWidget.DeviceScale,
 			};
 
 			AddChild(windowBackground);

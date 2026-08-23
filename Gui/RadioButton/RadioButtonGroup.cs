@@ -85,10 +85,10 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			RoundedRect backgroundRect = new RoundedRect(LocalBounds, 4);
+			RoundedRect backgroundRect = new RoundedRect(LocalBounds, 4 * DeviceScale);
 			graphics2D.Render(backgroundRect, backgroundColor.ToColor());
 
-			graphics2D.Render(new Stroke(backgroundRect), borderColor.ToColor());
+			graphics2D.Render(new Stroke(backgroundRect, Math.Max(1, Math.Round(DeviceScale))), borderColor.ToColor());
 
 			base.OnDraw(graphics2D);
 		}

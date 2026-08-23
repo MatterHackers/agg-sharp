@@ -205,8 +205,8 @@ namespace MatterHackers.Agg.UI
             {
                 Expandable = GetNodeCount(false) != 0,
                 VAnchor = VAnchor.Fit | VAnchor.Center,
-                Height = 16,
-                Width = 16,
+                Height = 16 * DeviceScale,
+                Width = 16 * DeviceScale,
                 Name = "Expand Widget"
             };
 
