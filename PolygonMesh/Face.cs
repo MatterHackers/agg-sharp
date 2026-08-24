@@ -60,6 +60,17 @@ namespace MatterHackers.PolygonMesh
 			this.normal = normal;
 		}
 
+		/// <summary>
+		/// Recomputes this face's normal from its three vertex positions.
+		/// </summary>
+		/// <remarks>
+		/// A face with no area gets the zero vector rather than a normalized one. Zero area faces are
+		/// topologically valid - they occur at the seams where a solid touches itself, carrying real edges
+		/// that hold the mesh manifold - so they cannot simply be dropped. But their cross product is zero
+		/// length, and normalizing that divides by zero: nothing downstream in PolygonMesh guards against a
+		/// NaN normal, so one such face poisons every normal-tolerance vertex merge and coplanar-face walk
+		/// it takes part in (NaN compares false against every tolerance).
+		/// </remarks>
 		public void CalculateNormal(List<Vector3Float> vertices)
 		{
 			var position0 = vertices[this.v0];
@@ -67,7 +78,14 @@ namespace MatterHackers.PolygonMesh
 			var position2 = vertices[this.v2];
 			var v11MinusV0 = position1 - position0;
 			var v2MinusV0 = position2 - position0;
-			normal = v11MinusV0.Cross(v2MinusV0).GetNormal();
+			var cross = v11MinusV0.Cross(v2MinusV0);
+			var lengthSquared = cross.LengthSquared;
+
+			// The NaN test catches a non-finite input position as well as an overflowed cross product -
+			// both would otherwise pass a plain "> 0" check.
+			normal = (lengthSquared > 0 && !float.IsNaN(lengthSquared) && !float.IsInfinity(lengthSquared))
+				? cross.GetNormal()
+				: Vector3Float.Zero;
 		}
 
         public Face Flipped()
