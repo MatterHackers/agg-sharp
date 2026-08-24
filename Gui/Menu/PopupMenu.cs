@@ -441,7 +441,15 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public void CreateSubMenu(string menuTitle, ThemeConfig menuTheme, Action<PopupMenu> populateSubMenu, ImageBuffer icon = null)
+		/// <summary>
+		/// Adds an item that opens a sub menu, populated by <paramref name="populateSubMenu"/> the first time
+		/// (and every time) it is opened.
+		/// </summary>
+		/// <returns>
+		/// The button that was added, so a caller can adjust it (name, enabled state) the way the
+		/// <see cref="MenuItem"/> returning creators allow. Most callers ignore it.
+		/// </returns>
+		public SubMenuItemButton CreateSubMenu(string menuTitle, ThemeConfig menuTheme, Action<PopupMenu> populateSubMenu, ImageBuffer icon = null)
 		{
 			var content = new TextWidget(menuTitle, pointSize: Theme.DefaultFontSize, textColor: Theme.TextColor)
 			{
@@ -505,6 +513,8 @@ namespace MatterHackers.Agg.UI
 					}
 				};
 			};
+
+			return subMenuItemButton;
 		}
 
 		public MenuItem CreateBoolMenuItem(string name, Func<bool> getter, Action<bool> setter, bool useRadioStyle = false, IList<GuiWidget> siblingRadioButtonList = null)

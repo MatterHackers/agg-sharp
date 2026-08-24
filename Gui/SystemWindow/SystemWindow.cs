@@ -81,6 +81,13 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Gets or sets the menu bar this window would like the platform to show. Platform layers that have a
+		/// native menu bar (the mac) materialize it when the window is shown; the others ignore it entirely,
+		/// so an application can set it unconditionally.
+		/// </summary>
+		public MenuBarModel MenuBar { get; set; }
+
 		public enum PixelTypes
 		{
 			Depth24 = 24,
