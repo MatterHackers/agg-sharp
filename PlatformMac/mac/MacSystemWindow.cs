@@ -634,6 +634,17 @@ namespace MatterHackers.Agg.UI
 			// cheaper of the two - and it happens before anything is on screen.
 			this.SyncSizeFromBacking();
 
+			// Before the window is shown, so the bar is already up when the app becomes frontmost. An agg
+			// application that describes no menu bar gets none, which is every application but MatterCAD.
+			// Note this fires for whichever window is being shown, and the menu bar is per application, not
+			// per window: a second window with a MenuBar of its own would replace the bar for good - closing
+			// it restores nothing. MatterCAD sets the property on the root window only, which is the one
+			// arrangement that needs no restore.
+			if (systemWindow.MenuBar != null)
+			{
+				MacMenuBar.Install(systemWindow.MenuBar);
+			}
+
 			Send_v_r(this.window, Sel("makeKeyAndOrderFront:"), IntPtr.Zero);
 			Send_v_B(nsApp, Sel("activateIgnoringOtherApps:"), YES);
 
