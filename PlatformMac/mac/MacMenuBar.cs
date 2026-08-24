@@ -48,6 +48,25 @@ namespace MatterHackers.Agg.Platform.Mac
 	/// serves every item and every menu.
 	/// </para>
 	/// <para>
+	/// <b>Rebuilt on every open.</b> <see cref="Install"/> materializes the whole bar once, and after that
+	/// each menu refills itself from its model in <c>menuNeedsUpdate:</c> as AppKit is about to show it. So
+	/// the contents that move - the recent files, the gates that answer differently as the application runs -
+	/// are read at the moment they are about to be looked at, which is the same "gathered when the menu
+	/// opens" promise the in-app popup makes. There is no change notification to subscribe to and these menus
+	/// are small, so rebuilding is both simpler and cheap. What refreshes is a menu's <em>contents</em>: the
+	/// set of top-level menus, and each top-level entry's own <see cref="MenuItemModel.IsVisible"/> and
+	/// <see cref="MenuItemModel.IsEnabled"/>, are read once by <see cref="Install"/> and then frozen - the
+	/// menu-bar items themselves are not in <see cref="MenuOwners"/>, so nothing ever revisits them. A gate
+	/// that has to be able to change its answer therefore belongs on an item inside a menu, not on the menu.
+	/// </para>
+	/// <para>
+	/// A submenu whose provider returns nothing comes out empty, and an empty menu is a mac usability
+	/// problem, not a mac feature. Filling it with a disabled "nothing here" row is the <em>model's</em> job
+	/// and not this file's - MatterCAD's recent files provider already returns exactly that one placeholder
+	/// item when the list is empty, and it is the same row the in-app submenu shows. Doing it here as well
+	/// would be a second, differently worded answer to a question the model has already answered.
+	/// </para>
+	/// <para>
 	/// <b>Ownership.</b> AppKit's collections retain: <c>-[NSMenu addItem:]</c> retains the item and
 	/// <c>-[NSMenuItem setSubmenu:]</c> retains the menu, so everything built here is created at +1,
 	/// handed to its parent, and released back down to the one reference the parent holds. The two
@@ -235,14 +254,24 @@ namespace MatterHackers.Agg.Platform.Mac
 		}
 
 		/// <summary>
+		/// The children <paramref name="container"/> currently has: its provider run now, filtered by the
+		/// visibility gates as they answer now.
+		/// </summary>
+		/// <remarks>
+		/// Every word of that is deliberate. The provider is called on each build rather than once, which is
+		/// what makes a menu whose contents move - the recent files list - show what it should each time it is
+		/// opened rather than what it held when the menu bar was installed.
+		/// </remarks>
+		internal static IReadOnlyList<MenuItemModel> ChildrenOf(MenuItemModel container)
+			=> VisibleItems(container?.SubMenuItems?.Invoke());
+
+		/// <summary>
 		/// Fills an already created NSMenu with one native item per visible child of
 		/// <paramref name="container"/>. Recurses into submenus.
 		/// </summary>
 		private static void PopulateMenu(IntPtr menu, MenuItemModel container)
 		{
-			IReadOnlyList<MenuItemModel> children = container.SubMenuItems?.Invoke();
-
-			foreach (MenuItemModel child in VisibleItems(children))
+			foreach (MenuItemModel child in ChildrenOf(container))
 			{
 				IntPtr menuItem;
 
@@ -395,17 +424,84 @@ namespace MatterHackers.Agg.Platform.Mac
 			}
 		}
 
+		/// <summary>
+		/// AppKit is about to show <paramref name="menu"/>: throw its contents away and build them again from
+		/// the model, so that what opens is what the application would answer right now.
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// Always on the main thread - AppKit sends this from the menu tracking that is running inside
+		/// <c>sendEvent:</c>, which is the pump's own thread - so nothing here marshals. It does take
+		/// <see cref="InstallLock"/>, which is the same lock <see cref="Install"/> holds while it clears both
+		/// dictionaries and rebuilds the whole bar; the two therefore cannot interleave. Their orders both
+		/// end well: a rebuild that lands first has its entries thrown away by the following Install, and a
+		/// rebuild that arrives after an Install is either for a menu the new bar still owns (found, rebuilt)
+		/// or for one from the bar that was replaced (absent from <see cref="MenuOwners"/>, left alone).
+		/// </para>
+		/// <para>
+		/// It also means <see cref="PopulateMenu"/> and every model provider it runs - <c>SubMenuItems</c>,
+		/// <c>IsVisible</c>, <c>IsEnabled</c> - execute holding <see cref="InstallLock"/> inside an
+		/// Objective-C callback AppKit is blocked on, so none of them may wait on another thread: they have to
+		/// answer from what is already in hand.
+		/// </para>
+		/// <para>
+		/// A menu that describes no children - the main menu, and any menu belonging to a replaced bar - is
+		/// not in <see cref="MenuOwners"/> and is deliberately left exactly as it is. Emptying it because
+		/// nothing was found would take the menu bar down.
+		/// </para>
+		/// </remarks>
 		[UnmanagedCallersOnly]
 		private static void OnMenuNeedsUpdate(IntPtr self, IntPtr cmd, IntPtr menu)
 		{
 			try
 			{
-				// Rebuilding a menu from its model each time it opens is a later step; the delegate is wired up
-				// now so that the menus are already talking to it when it lands.
+				lock (InstallLock)
+				{
+					if (!MenuOwners.TryGetValue(menu, out MenuItemModel container))
+					{
+						return;
+					}
+
+					// Before removeAllItems, not after: that call releases the items, which is the last
+					// reference each of them has, so afterwards there is nothing left to read a submenu off.
+					ForgetContents(menu);
+
+					Send_v(menu, Sel("removeAllItems"));
+
+					PopulateMenu(menu, container);
+				}
 			}
 			catch (Exception ex)
 			{
 				Console.Error.WriteLine($"MacMenuBar menuNeedsUpdate: threw {ex}");
+			}
+		}
+
+		/// <summary>
+		/// Drops the dictionary entries for everything currently inside <paramref name="menu"/>, submenus and
+		/// their contents included. The menu itself stays: it is being refilled, not thrown away.
+		/// </summary>
+		/// <remarks>
+		/// Stale pointers are not merely untidy. An NSMenuItem left in <see cref="ItemModels"/> after it has
+		/// been deallocated is a dangling key, and the allocator is free to hand that same address to a later
+		/// NSMenuItem - which would then find, and run, the previous occupant's action.
+		/// </remarks>
+		private static void ForgetContents(IntPtr menu)
+		{
+			long count = Send_q(menu, Sel("numberOfItems"));
+
+			for (long index = 0; index < count; index++)
+			{
+				IntPtr item = Send_r_q(menu, Sel("itemAtIndex:"), index);
+
+				ItemModels.Remove(item);
+
+				IntPtr subMenu = Send_r(item, Sel("submenu"));
+				if (subMenu != IntPtr.Zero)
+				{
+					ForgetContents(subMenu);
+					MenuOwners.Remove(subMenu);
+				}
 			}
 		}
 	}

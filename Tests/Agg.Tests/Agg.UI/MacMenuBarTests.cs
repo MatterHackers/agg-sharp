@@ -121,6 +121,45 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(MacMenuBar.IsEnabled(topLevel[1])).IsFalse();
 		}
 
+		/// <summary>
+		/// What makes a native menu live: its children are asked for again every time it is about to open, so
+		/// a list that grew while the application ran - the recent files - opens showing what it grew into.
+		/// </summary>
+		[Test]
+		public async Task AskingForChildrenRunsTheProviderEachTime()
+		{
+			var recents = new List<MenuItemModel> { new MenuItemModel { Text = "First" } };
+			int timesAsked = 0;
+
+			var container = new MenuItemModel
+			{
+				Text = "Open Recent",
+				SubMenuItems = () =>
+				{
+					timesAsked++;
+					return recents;
+				}
+			};
+
+			await Assert.That(MacMenuBar.ChildrenOf(container).Count).IsEqualTo(1);
+
+			recents.Add(new MenuItemModel { Text = "Second" });
+
+			IReadOnlyList<MenuItemModel> reopened = MacMenuBar.ChildrenOf(container);
+			await Assert.That(reopened.Count).IsEqualTo(2);
+			await Assert.That(reopened[1].Text).IsEqualTo("Second");
+			await Assert.That(timesAsked).IsEqualTo(2);
+		}
+
+		[Test]
+		public async Task AnItemThatDescribesNoChildrenHasNone()
+		{
+			// A leaf, and a submenu whose provider came back empty. Neither is a native menu's problem to
+			// paper over: the model owns any "nothing here" placeholder it wants shown.
+			await Assert.That(MacMenuBar.ChildrenOf(new MenuItemModel { Text = "Leaf" }).Count).IsEqualTo(0);
+			await Assert.That(MacMenuBar.ChildrenOf(new MenuItemModel { SubMenuItems = () => new List<MenuItemModel>() }).Count).IsEqualTo(0);
+		}
+
 		[Test]
 		public async Task AnUngatedItemIsEnabled()
 		{
