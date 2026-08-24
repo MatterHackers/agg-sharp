@@ -461,8 +461,10 @@ namespace MatterHackers.Agg.UI
 			{
 				var selectedMenuItem = MenuItems[selectedIndex];
 
-				// Scroll the selected item into view
-				DropDownContainer.ScrollIntoView(selectedMenuItem);
+				// Scroll the selected item into view. Centering is deliberate here and only here: this runs
+				// once as the list opens, and showing the entries on either side of the current one is worth
+				// the jump. The keyboard stepping below wants the default minimum scroll instead.
+				DropDownContainer.ScrollIntoView(selectedMenuItem, ScrollableWidget.ScrollAmount.Center);
 
 				// Highlight the selected item
 				highlightedItem = selectedMenuItem;

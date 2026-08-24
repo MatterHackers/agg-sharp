@@ -67,7 +67,9 @@ namespace MatterHackers.Agg.UI
 
 			if (makeScrollable)
 			{
-				scrollingWindow = new ScrollableWidget(true);
+				// A hosted PopupMenu owns the arrow keys - see PopupMenu.MenuScrollWindow. Everything else
+				// (drop down lists, arbitrary popup content) keeps the plain widget's arrow-to-scroll.
+				scrollingWindow = contentWidget is PopupMenu ? new PopupMenu.MenuScrollWindow() : new ScrollableWidget(true);
 				{
 					contentWidget.ClearRemovedFlag();
 					scrollingWindow.AddChild(contentWidget);
@@ -126,6 +128,27 @@ namespace MatterHackers.Agg.UI
 
 			var outline = new RoundedRect(LocalBounds, 0);
 			graphics2D.Render(new Stroke(outline, BorderWidth * 2 * DeviceScale), BorderColor);
+		}
+
+		/// <summary>
+		/// Hands unclaimed keys to a hosted <see cref="PopupMenu"/>.
+		/// </summary>
+		/// <remarks>
+		/// A popup opened by a button (MatterCAD's PopupButton) focuses this widget, not the menu inside it,
+		/// so <see cref="GuiWidget.OnKeyDown"/> finds no focused child and the menu never sees a key. The
+		/// <c>ContainsFocus</c> guard is what keeps this from delivering twice: once a menu row has focus the
+		/// base implementation already routes the key through the menu.
+		/// </remarks>
+		public override void OnKeyDown(KeyEventArgs keyEvent)
+		{
+			base.OnKeyDown(keyEvent);
+
+			if (!keyEvent.Handled
+				&& contentWidget is PopupMenu popupMenu
+				&& !contentWidget.ContainsFocus)
+			{
+				popupMenu.OnKeyDown(keyEvent);
+			}
 		}
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
@@ -221,12 +244,27 @@ namespace MatterHackers.Agg.UI
 		}
 
 
-		public void ScrollIntoView(GuiWidget widget)
+		/// <summary>
+		/// Brings <paramref name="widget"/> into the popup's viewport, moving it as little as possible and
+		/// not at all when the widget is already fully visible.
+		/// </summary>
+		/// <remarks>
+		/// This defers to <see cref="ScrollableWidget.ScrollIntoView"/> rather than computing an offset of its
+		/// own. The hand rolled version this replaced re-centered the list unconditionally, which is wrong for
+		/// anything that calls this per keystroke: arrowing down a long menu snapped the whole list on every
+		/// press, and a row that was already on screen was recentered for no reason. It also left the two
+		/// scrollers a menu can end up in disagreeing, since the one <c>MakeMenuHaveScroll</c> builds has
+		/// always done the minimum scroll.
+		/// </remarks>
+		/// <param name="widget">The descendant to reveal.</param>
+		/// <param name="scrollAmount">
+		/// How far to move. <see cref="ScrollableWidget.ScrollAmount.Center"/> is for the one-off case of
+		/// revealing a selection as a list opens, where landing in the middle shows what is on either side of
+		/// it; repeated navigation wants the default minimum.
+		/// </param>
+		public void ScrollIntoView(GuiWidget widget, ScrollableWidget.ScrollAmount scrollAmount = ScrollableWidget.ScrollAmount.Minimum)
 		{
-			if (scrollingWindow?.VerticalScrollBar.Visible == true)
-			{
-				scrollingWindow.ScrollPosition = new Vector2(0, -widget.BoundsRelativeToParent.Bottom + this.Height / 2);
-			}
+			scrollingWindow?.ScrollIntoView(widget, scrollAmount);
 		}
 
 		/// <summary>
