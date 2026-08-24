@@ -29,6 +29,16 @@
     <WgpuNativeVersion Condition="'$(WgpuNativeVersion)' == ''">29.0.1.1</WgpuNativeVersion>
     <WgpuNativeReleaseUrl Condition="'$(WgpuNativeReleaseUrl)' == ''">https://github.com/gfx-rs/wgpu-native/releases/download/v$(WgpuNativeVersion)</WgpuNativeReleaseUrl>
 
+    <!--
+      Browser/wasm builds have no wgpu-native release to fetch: there the
+      DllImports are satisfied by Dawn's emdawnwebgpu, statically linked at
+      publish time. Skip the whole bootstrap rather than hard-erroring on an
+      unmapped RID. WasmSkipWgpuNative is the manual escape hatch for anyone
+      building the binding purely to compile against it.
+    -->
+    <WgpuNativeSkipBootstrap Condition="'$(WgpuNativeSkipBootstrap)' == '' AND ('$(RuntimeIdentifier)' == 'browser-wasm' OR '$(WasmSkipWgpuNative)' == 'true')">true</WgpuNativeSkipBootstrap>
+    <WgpuNativeSkipBootstrap Condition="'$(WgpuNativeSkipBootstrap)' == ''">false</WgpuNativeSkipBootstrap>
+
     <WgpuNativeRoot>$(MSBuildThisFileDirectory)</WgpuNativeRoot>
     <WgpuNativeChecksumFile>$(WgpuNativeRoot)checksums-v$(WgpuNativeVersion).txt</WgpuNativeChecksumFile>
     <WgpuNativeDownloadDir>$(WgpuNativeRoot)downloads/v$(WgpuNativeVersion)/</WgpuNativeDownloadDir>
@@ -41,7 +51,7 @@
     ("wgpu_native") resolves all three spellings. All six supported platforms
     are mapped even though a build only ever fetches its own.
   -->
-  <Target Name="_WgpuNativeResolvePlatform">
+  <Target Name="_WgpuNativeResolvePlatform" Condition="'$(WgpuNativeSkipBootstrap)' != 'true'">
     <PropertyGroup>
       <_WgpuOSArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_WgpuOSArchitecture>
 
@@ -81,7 +91,7 @@
   -->
   <Target Name="_WgpuNativeStage"
           DependsOnTargets="_WgpuNativeResolvePlatform"
-          Condition="!Exists('$(WgpuNativeStagedLibrary)') AND '$(DesignTimeBuild)' != 'true'">
+          Condition="'$(WgpuNativeSkipBootstrap)' != 'true' AND !Exists('$(WgpuNativeStagedLibrary)') AND '$(DesignTimeBuild)' != 'true'">
 
     <PropertyGroup>
       <_WgpuZip>$(WgpuNativeDownloadDir)$(WgpuNativeAsset)</_WgpuZip>
@@ -201,7 +211,8 @@
   -->
   <Target Name="_WgpuNativeIncludeStagedLibrary"
           DependsOnTargets="_WgpuNativeResolvePlatform;_WgpuNativeStage"
-          BeforeTargets="AssignTargetPaths">
+          BeforeTargets="AssignTargetPaths"
+          Condition="'$(WgpuNativeSkipBootstrap)' != 'true'">
     <ItemGroup>
       <None Include="$(WgpuNativeStagedLibrary)">
         <Link>$(WgpuNativeLibraryName)</Link>
