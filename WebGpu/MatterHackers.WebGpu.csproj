@@ -18,6 +18,11 @@
   <ItemGroup>
     <Compile Include="Generated\*.cs" />
 
+    <!-- Hand written types for webgpu.h flavours the generator does not see, currently the
+         browser's emdawnwebgpu extensions. Kept out of Generated\ so re-generating cannot
+         clobber them. -->
+    <Compile Include="Browser\**\*.cs" />
+
     <!-- The bootstrap's cache and staging output are ~75 MB of release zips and shared
          libraries. Keep the default None glob out of them; the one file that matters is
          added with copy metadata by native/WgpuNative.targets. -->
