@@ -488,6 +488,16 @@ namespace MatterHackers.Agg.UI
 
 		private static ISystemWindowProvider systemWindowProvider = null;
 
+		/// <summary>
+		/// The provider that shows windows for this process, or null before the first window is shown.
+		/// </summary>
+		/// <remarks>
+		/// Read only, and deliberately untyped beyond the interface: it exists so an application can ask the
+		/// provider it happens to have (a single window provider, say) to do something provider specific, by
+		/// testing the type itself. Assignment stays with the platform layer and <see cref="ShowAsSystemWindow"/>.
+		/// </remarks>
+		public static ISystemWindowProvider Provider => systemWindowProvider;
+
 		// Guards lazy creation of systemWindowProvider so concurrent first-show calls
 		// cannot create two providers.
 		private static readonly object systemWindowProviderLock = new object();

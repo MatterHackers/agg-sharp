@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2022, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -140,21 +140,28 @@ namespace MatterHackers.Agg.UI
             return theme;
         }
 
+        /// <summary>
+        /// The small X used to close a dialog or clear a field.
+        /// </summary>
+        /// <remarks>
+        /// The glyphs are drawn here rather than handed out from <see cref="RestoreNormal"/> because an
+        /// ImageWidget is exactly as big as the bitmap it is given, and a ThemeConfig outlives the display it
+        /// was built on - a window dragged to a monitor of another scale rebuilds its widgets against the
+        /// same theme instance. Reusing the constructor's bitmaps left this button, alone among the chrome,
+        /// at the size of whichever display the theme happened to be created on.
+        /// </remarks>
         public GuiWidget CreateSmallResetButton()
         {
-            return new HoverImageWidget(RestoreNormal, RestoreHover)
+            var (normal, hover) = RestoreImages();
+
+            return new HoverImageWidget(normal, hover)
             {
                 VAnchor = VAnchor.Center,
+
+                // Design units - GuiWidget.Margin multiplies by DeviceScale on the way in. Only the bitmap
+                // below is in device pixels, because an ImageWidget's bounds are its pixels.
                 Margin = new BorderDouble(0, 0, 5, 0)
             };
-
-            //if (getCloseButton == null)
-            //{
-            //    getCloseButton = () =>
-            //    {
-            //        return new Button("X", 0, 0);
-            //    };
-            //}
         }
 
 
@@ -290,6 +297,11 @@ namespace MatterHackers.Agg.UI
 
         public BorderDouble SeparatorMargin { get; }
 
+        /// <summary>
+        /// The placeholder shown while a real thumbnail is rendered. Supplied by the application - agg has no
+        /// icon of its own for this - and, being rasterized at a fixed device size, re-supplied when
+        /// <see cref="GuiWidget.DeviceScale"/> changes.
+        /// </summary>
         public ImageBuffer GeneratingThumbnailIcon { get; set; }
 
         public class StateColor
@@ -376,13 +388,29 @@ namespace MatterHackers.Agg.UI
             SplashAccentColor = new Color(PrimaryAccentColor, 185).OverlayOn(Color.White).ToColor();
         }
 
-        public void RebuildTheme()
+        /// <summary>
+        /// Rasterizes the two states of the small X glyph for the current <see cref="GuiWidget.DeviceScale"/>.
+        /// </summary>
+        private static (ImageBuffer normal, ImageBuffer hover) RestoreImages()
         {
             int size = (int)(16 * GuiWidget.DeviceScale);
 
             // On Android, use red icon as no hover events, otherwise transparent and red on hover
-            RestoreNormal = ColorCircle(size, AggContext.OperatingSystem == OSType.Android ? new Color(200, 0, 0) : Color.Transparent);
-            RestoreHover = ColorCircle(size, new Color("#DB4437"));
+            return (ColorCircle(size, AggContext.OperatingSystem == OSType.Android ? new Color(200, 0, 0) : Color.Transparent),
+                ColorCircle(size, new Color("#DB4437")));
+        }
+
+        /// <summary>
+        /// Re-derives everything the theme rasterizes up front, so that a change to
+        /// <see cref="GuiWidget.DeviceScale"/> reaches the bitmaps as well as the widgets.
+        /// </summary>
+        /// <remarks>
+        /// New ImageBuffer instances every time - anything already holding one keeps the old bitmap, which is
+        /// why the caller has to be a point where the UI is about to be built again.
+        /// </remarks>
+        public void RebuildTheme()
+        {
+            (RestoreNormal, RestoreHover) = RestoreImages();
 
             //this.GeneratingThumbnailIcon = StaticData.Instance.LoadIcon("building_thumbnail_40x40.png", 40, 40).SetToColor(TextColor);
 
