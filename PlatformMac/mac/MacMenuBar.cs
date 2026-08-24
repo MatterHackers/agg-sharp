@@ -77,12 +77,14 @@ namespace MatterHackers.Agg.Platform.Mac
 	/// it captured - alive for as long as the NSMenuItem that can fire it.
 	/// </para>
 	/// <para>
-	/// <b>Key equivalents do not fire yet.</b> The chords registered from
-	/// <see cref="MenuItemRole"/> are display only for now. Every key event is swallowed in
+	/// <b>Key equivalents are reached by hand.</b> Every key event is swallowed in
 	/// <c>MacSystemWindow.DispatchEvent</c> before <c>-[NSApplication sendEvent:]</c> ever sees it, so
-	/// AppKit's own menu key-equivalent dispatch is never reached; the shortcut draws next to the item and
-	/// the item still works when picked with the mouse. Explicit forwarding to
-	/// <c>performKeyEquivalent:</c> is a later step.
+	/// AppKit's own key-equivalent dispatch is never reached on its own. Instead a Command chord the managed
+	/// window left unhandled is offered to <see cref="PerformKeyEquivalent"/>, which sends
+	/// <c>performKeyEquivalent:</c> straight to the main menu. Which item a chord belongs to is answered
+	/// from the model, in <c>menuHasKeyEquivalent:forEvent:target:action:</c>, rather than by letting AppKit
+	/// look through the menus - see the remarks on <see cref="OnMenuHasKeyEquivalent"/> for why that
+	/// distinction is the whole point.
 	/// </para>
 	/// <para>
 	/// <b>Three known caveats.</b> First, this process has no .app bundle, so the application menu - the
@@ -124,11 +126,37 @@ namespace MatterHackers.Agg.Platform.Mac
 		/// </summary>
 		private static readonly Dictionary<IntPtr, MenuItemModel> MenuOwners = new Dictionary<IntPtr, MenuItemModel>();
 
+		/// <summary>
+		/// The NSMenus hanging directly off the menu bar - File, Help and the rest - and nothing deeper. This
+		/// is the one depth at which an item is given a key equivalent, because it is the one depth
+		/// <see cref="MatchKeyEquivalent"/> searches; drawing "⌘O" beside an item nested any deeper would be
+		/// advertising a shortcut that could never fire. Written only by <see cref="Install"/>, which is also
+		/// the only thing that can invalidate it: a top level menu is never a submenu of another menu, so the
+		/// rebuild in <see cref="OnMenuNeedsUpdate"/> can neither add to nor retire an entry here.
+		/// </summary>
+		private static readonly HashSet<IntPtr> MenuBarMenus = new HashSet<IntPtr>();
+
 		/// <summary>The action every leaf item is given; <see cref="OnMenuItemSelected"/> is its receiver.</summary>
 		private static readonly IntPtr SelMenuItemSelected = Sel("menuItemSelected:");
 
+		/// <summary>
+		/// The action a matched key equivalent is dispatched through; <see cref="OnMenuKeyEquivalentFired"/> is
+		/// its receiver. Separate from <see cref="SelMenuItemSelected"/> because a chord is matched against the
+		/// model and never against an NSMenuItem, so there is no item pointer to look the model up by.
+		/// </summary>
+		private static readonly IntPtr SelMenuKeyEquivalentFired = Sel("menuKeyEquivalentFired:");
+
 		private static IntPtr controller;
 		private static IntPtr mainMenu;
+
+		/// <summary>The model the current bar was built from, which is also what a chord is matched against.</summary>
+		private static MenuBarModel installedModel;
+
+		/// <summary>
+		/// The item <see cref="OnMenuHasKeyEquivalent"/> matched, waiting for the action AppKit sends straight
+		/// afterwards to run it. See that method's remarks for why a field is enough.
+		/// </summary>
+		private static MenuItemModel pendingKeyEquivalent;
 
 		/// <summary>Gets a value indicating whether a menu bar built here is currently the main menu.</summary>
 		internal static bool IsInstalled => mainMenu != IntPtr.Zero;
@@ -152,6 +180,9 @@ namespace MatterHackers.Agg.Platform.Mac
 				IntPtr previousMainMenu = mainMenu;
 				ItemModels.Clear();
 				MenuOwners.Clear();
+				MenuBarMenus.Clear();
+				installedModel = model;
+				pendingKeyEquivalent = null;
 
 				IntPtr newMainMenu = CreateMenu("MainMenu");
 
@@ -163,6 +194,7 @@ namespace MatterHackers.Agg.Platform.Mac
 					IntPtr subMenu = CreateMenu(topLevel.Text);
 
 					MenuOwners[subMenu] = topLevel;
+					MenuBarMenus.Add(subMenu);
 					PopulateMenu(subMenu, topLevel);
 
 					Send_v_r(menuItem, Sel("setSubmenu:"), subMenu);
@@ -180,6 +212,162 @@ namespace MatterHackers.Agg.Platform.Mac
 				// Only now that AppKit has retained the replacement, in case the two were somehow the same.
 				Release(previousMainMenu);
 			}
+		}
+
+		/// <summary>
+		/// Offers a key event to the installed menu bar's key equivalents, and reports whether one took it.
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// The window pump swallows the key events belonging to its own windows before AppKit sees them, so
+		/// for those this is the only way a menu shortcut can fire; <c>MacSystemWindow.HandleKeyDown</c>
+		/// calls it for the Command chords the managed window did not handle itself. (An event for a window
+		/// this assembly does not own - a native open panel - is passed on to <c>sendEvent:</c> as it always
+		/// was, and AppKit searches the menu bar for it without being asked to.)
+		/// </para>
+		/// <para>
+		/// "Did not handle" is decided the instant the key down returns, so a handler that finishes
+		/// asynchronously has not said no - it has not answered yet, and its chord arrives here anyway. A
+		/// role's chord must therefore not be one the application also handles; see the comment at the call
+		/// site for what that costs if it ever is.
+		/// </para>
+		/// <para>
+		/// False the moment no bar built here is installed, before any message is sent. That is what keeps
+		/// every other agg application on the mac behaving exactly as it did before menus existed: no menu, no
+		/// forwarding, and in particular no chance of waking a main menu somebody else set up.
+		/// </para>
+		/// <para>
+		/// The lock is held across the message on purpose. <c>performKeyEquivalent:</c> calls back into
+		/// <see cref="OnMenuHasKeyEquivalent"/> synchronously on this same thread, where a monitor is
+		/// reentrant; what it buys is that a concurrent <see cref="Install"/> cannot release
+		/// <see cref="mainMenu"/> out from under the send.
+		/// </para>
+		/// </remarks>
+		internal static bool PerformKeyEquivalent(IntPtr nsEvent)
+		{
+			if (nsEvent == IntPtr.Zero)
+			{
+				return false;
+			}
+
+			lock (InstallLock)
+			{
+				if (mainMenu == IntPtr.Zero)
+				{
+					return false;
+				}
+
+				return Send_B_r(mainMenu, Sel("performKeyEquivalent:"), nsEvent) != NO;
+			}
+		}
+
+		/// <summary>
+		/// The item of <paramref name="model"/> whose role gives it the chord a key event carries, or null for
+		/// a chord no item claims. Pure - it is the whole of the shortcut matching, and answers without an
+		/// NSMenu in sight.
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// Only a plain Command chord can match, because a plain Command chord is the only thing
+		/// <see cref="KeyEquivalentFor"/> ever registers: Command with Shift, Option or Control also held is a
+		/// different shortcut and belongs to nobody here. <c>charactersIgnoringModifiers</c> is the text to
+		/// compare - it resolves the keyboard layout while factoring Command back out - and the comparison
+		/// ignores case so that a chord typed with caps lock down still finds its item.
+		/// </para>
+		/// <para>
+		/// The gates apply exactly as they do when the menu is drawn: an item hidden by
+		/// <see cref="MenuItemModel.IsVisible"/> is not there to be matched, and one greyed out by
+		/// <see cref="MenuItemModel.IsEnabled"/> cannot be run by its shortcut any more than it could be
+		/// clicked.
+		/// </para>
+		/// <para>
+		/// <b>A chord no role carries is rejected before a single provider runs.</b> That test is not an
+		/// optimization, it is what makes forwarding affordable at all: every Command chord the application
+		/// leaves unhandled arrives here, and merely enumerating the top level menus means running each of
+		/// their <c>SubMenuItems</c> providers - in MatterCAD those recolor icons and rasterize the About
+		/// text. Since <see cref="KeyEquivalentFor"/> hands out a closed, tiny set of chords,
+		/// <see cref="RoleKeyEquivalents"/> answers "could anything here possibly want this?" from the event
+		/// alone, and the overwhelmingly common miss costs one hash lookup.
+		/// </para>
+		/// <para>
+		/// The walk then stops at the children of the top level menus, and that bound is deliberate too.
+		/// Going deeper would mean running the nested submenu providers - the recent files list among them,
+		/// which reads the disk. No role that carries a chord is ever nested that deep: About, Settings,
+		/// Quit, Open System File all sit directly in a menu, which is what a standard mac shortcut means.
+		/// <see cref="PopulateMenu"/> draws a key equivalent at exactly this depth and no other, so what is
+		/// shown and what can fire are the same set of items.
+		/// </para>
+		/// </remarks>
+		internal static MenuItemModel MatchKeyEquivalent(MenuBarModel model, string charactersIgnoringModifiers, ulong modifierFlags)
+		{
+			if (model?.Menus == null
+				|| string.IsNullOrEmpty(charactersIgnoringModifiers)
+				|| !IsPlainCommandChord(modifierFlags)
+				|| !RoleKeyEquivalents.Contains(charactersIgnoringModifiers))
+			{
+				return null;
+			}
+
+			foreach (MenuItemModel menu in TopLevelMenus(model.Menus))
+			{
+				foreach (MenuItemModel item in ChildrenOf(menu))
+				{
+					// A separator has no shortcut and a submenu is opened, never run.
+					if (item.IsSeparator || item.SubMenuItems != null)
+					{
+						continue;
+					}
+
+					string chord = KeyEquivalentFor(item.Role);
+
+					if (chord.Length > 0
+						&& string.Equals(chord, charactersIgnoringModifiers, StringComparison.OrdinalIgnoreCase)
+						&& IsEnabled(item))
+					{
+						return item;
+					}
+				}
+			}
+
+			return null;
+		}
+
+		/// <summary>
+		/// Whether a modifier-flags word is Command and nothing else. Caps lock, Fn and the numeric-pad bit are
+		/// not part of a chord's identity and are ignored.
+		/// </summary>
+		private static bool IsPlainCommandChord(ulong modifierFlags)
+		{
+			const ulong ChordModifiers = NSEventModifierFlagCommand
+				| NSEventModifierFlagShift
+				| NSEventModifierFlagControl
+				| NSEventModifierFlagOption;
+
+			return (modifierFlags & ChordModifiers) == NSEventModifierFlagCommand;
+		}
+
+		/// <summary>
+		/// Every chord any role carries, which is <see cref="KeyEquivalentFor"/> read backwards. Derived from
+		/// that method rather than written out a second time, so a role gaining a shortcut cannot leave this
+		/// set behind. Case-insensitive, matching how a chord is compared.
+		/// </summary>
+		private static readonly HashSet<string> RoleKeyEquivalents = BuildRoleKeyEquivalents();
+
+		private static HashSet<string> BuildRoleKeyEquivalents()
+		{
+			var chords = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+			foreach (MenuItemRole role in Enum.GetValues<MenuItemRole>())
+			{
+				string chord = KeyEquivalentFor(role);
+
+				if (chord.Length > 0)
+				{
+					chords.Add(chord);
+				}
+			}
+
+			return chords;
 		}
 
 		/// <summary>
@@ -269,8 +457,16 @@ namespace MatterHackers.Agg.Platform.Mac
 		/// Fills an already created NSMenu with one native item per visible child of
 		/// <paramref name="container"/>. Recurses into submenus.
 		/// </summary>
+		/// <remarks>
+		/// Only a menu hanging directly off the menu bar hands its children key equivalents, because that is
+		/// the only depth <see cref="MatchKeyEquivalent"/> looks at - see <see cref="MenuBarMenus"/>. A role
+		/// carried by an item nested deeper still works when it is picked; it simply does not claim a chord it
+		/// could not answer to.
+		/// </remarks>
 		private static void PopulateMenu(IntPtr menu, MenuItemModel container)
 		{
+			bool shortcutsFireFromHere = MenuBarMenus.Contains(menu);
+
 			foreach (MenuItemModel child in ChildrenOf(container))
 			{
 				IntPtr menuItem;
@@ -299,7 +495,10 @@ namespace MatterHackers.Agg.Platform.Mac
 				}
 				else
 				{
-					menuItem = CreateMenuItem(child.Text, SelMenuItemSelected, KeyEquivalentFor(child.Role));
+					menuItem = CreateMenuItem(
+						child.Text,
+						SelMenuItemSelected,
+						shortcutsFireFromHere ? KeyEquivalentFor(child.Role) : string.Empty);
 					Send_v_r(menuItem, Sel("setTarget:"), controller);
 					ItemModels[menuItem] = child;
 				}
@@ -373,9 +572,19 @@ namespace MatterHackers.Agg.Platform.Mac
 					"objc_allocateClassPair(\"AggMacMenuController\") returned nil - the name is already registered.");
 			}
 
-			// Type encodings: 'v' is void, '@' is id, ':' is SEL.
+			// Type encodings: 'v' is void, '@' is id, ':' is SEL, 'B' is BOOL, and '^' prefixes a pointer to
+			// what follows - so "^@" is id* and "^:" is SEL*, the two out-parameters of the key equivalent
+			// hook. ('B' is BOOL as arm64 spells it, where the type is C's bool; the 64 bit Intel spelling is
+			// the one byte 'c'. Both pass identically, and an encoding is only read by the forwarding
+			// machinery, which none of these go through.)
 			AddMethod(cls, "menuItemSelected:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&OnMenuItemSelected, "v@:@");
 			AddMethod(cls, "menuNeedsUpdate:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&OnMenuNeedsUpdate, "v@:@");
+			AddMethod(
+				cls,
+				"menuHasKeyEquivalent:forEvent:target:action:",
+				(IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, IntPtr, IntPtr, byte>)&OnMenuHasKeyEquivalent,
+				"B@:@@^@^:");
+			AddMethod(cls, "menuKeyEquivalentFired:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&OnMenuKeyEquivalentFired, "v@:@");
 
 			objc_registerClassPair(cls);
 
@@ -421,6 +630,125 @@ namespace MatterHackers.Agg.Platform.Mac
 			catch (Exception ex)
 			{
 				Console.Error.WriteLine($"MacMenuBar menuItemSelected: threw {ex}");
+			}
+		}
+
+		/// <summary>
+		/// AppKit is looking for the item a key equivalent belongs to: answer from the model, and if one
+		/// claims the chord, name the target and action to run it with.
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// <b>This exists to stop a rebuild storm, not to be clever.</b> Without it, AppKit answers "does any
+		/// item here match this event?" the only other way it can - by updating each menu (which is
+		/// <see cref="OnMenuNeedsUpdate"/>, which re-runs every provider, recent files and their disk reads
+		/// included) and then reading the items it just built. That would happen on every Command chord
+		/// forwarded here, most of which match nothing at all. Implementing this hook takes that path out
+		/// entirely: a delegate that answers the question is asked instead of the menu being built to answer
+		/// it, for a match and for a miss alike. NO means this menu has no equivalent for the event and AppKit
+		/// moves on without updating or searching it, which is exactly the silence a nonsense chord should
+		/// make.
+		/// </para>
+		/// <para>
+		/// <b>The whole model, whichever menu is asking.</b> AppKit asks per menu, and this answers from the
+		/// entire installed bar every time rather than from the menu named in <paramref name="menu"/>. That is
+		/// on purpose: it means the first menu asked already gives the final answer, so the chord fires no
+		/// matter how AppKit chooses to walk (or not walk) from the main menu into its submenus. Observed on
+		/// macOS 26: a match is answered by the main menu itself and the search stops there, while a miss
+		/// walks on and asks every menu and submenu in turn. A YES stops the search, so no second menu can
+		/// claim the same chord.
+		/// </para>
+		/// <para>
+		/// Answering the same question once per menu is only affordable because the answer is cheap, which is
+		/// <see cref="MatchKeyEquivalent"/>'s job and not this one's: a chord no role carries - which is
+		/// nearly all of them - costs a hash lookup, and only one of the handful of chords a role does carry
+		/// gets as far as enumerating the top level menus. Even that is per menu asked, so a role chord that
+		/// no currently visible, enabled item claims runs the top level providers a few times over. Cheap
+		/// providers up there are therefore part of the bargain - and still nothing beside the alternative,
+		/// which is rebuilding every menu from every provider on every unhandled Command keystroke.
+		/// </para>
+		/// <para>
+		/// <b>Why the match is handed over in a field.</b> The item was found in the model, so there is no
+		/// NSMenuItem for <see cref="OnMenuItemSelected"/> to look up - hence its own selector, and hence
+		/// <see cref="pendingKeyEquivalent"/> carrying the match to it. The handoff is as short as a handoff
+		/// gets: AppKit sends the action from inside the same <c>performKeyEquivalent:</c> call that this
+		/// returned YES to, on this thread, before anything else can run. A match that AppKit somehow never
+		/// dispatched would simply be overwritten by the next one - it cannot fire late or fire twice.
+		/// </para>
+		/// </remarks>
+		/// <param name="self">The controller instance, which is also the target a match is dispatched to.</param>
+		/// <param name="cmd">The selector being sent. Unused.</param>
+		/// <param name="menu">The menu AppKit is asking about. Deliberately unused; see the remarks.</param>
+		/// <param name="nsEvent">The key event being matched.</param>
+		/// <param name="target">Out-parameter, an <c>id *</c>: where to write the object to send the action to.</param>
+		/// <param name="action">Out-parameter, a <c>SEL *</c>: where to write the action to send.</param>
+		/// <returns>YES when an item claims the chord and target and action have been written; NO otherwise.</returns>
+		[UnmanagedCallersOnly]
+		private static unsafe byte OnMenuHasKeyEquivalent(IntPtr self, IntPtr cmd, IntPtr menu, IntPtr nsEvent, IntPtr target, IntPtr action)
+		{
+			try
+			{
+				// Both are documented as nullable. With nowhere to report the dispatch there is no honest way
+				// to claim the chord, so decline it rather than leave a match stranded in the field.
+				if (target == IntPtr.Zero || action == IntPtr.Zero)
+				{
+					return NO;
+				}
+
+				lock (InstallLock)
+				{
+					MenuItemModel matched = MatchKeyEquivalent(
+						installedModel,
+						FromNSString(Send_r(nsEvent, Sel("charactersIgnoringModifiers"))),
+						Send_Q(nsEvent, Sel("modifierFlags")));
+
+					if (matched == null)
+					{
+						return NO;
+					}
+
+					pendingKeyEquivalent = matched;
+				}
+
+				*(IntPtr*)target = controller;
+				*(IntPtr*)action = SelMenuKeyEquivalentFired;
+
+				return YES;
+			}
+			catch (Exception ex)
+			{
+				// An exception must never cross back into Objective-C, and a chord that could not be matched
+				// is one nobody claims.
+				Console.Error.WriteLine($"MacMenuBar menuHasKeyEquivalent:forEvent:target:action: threw {ex}");
+				return NO;
+			}
+		}
+
+		/// <summary>
+		/// Runs the item <see cref="OnMenuHasKeyEquivalent"/> matched. The key equivalent half of
+		/// <see cref="OnMenuItemSelected"/>, and deferred to idle for the same reason.
+		/// </summary>
+		[UnmanagedCallersOnly]
+		private static void OnMenuKeyEquivalentFired(IntPtr self, IntPtr cmd, IntPtr sender)
+		{
+			try
+			{
+				MenuItemModel model;
+				lock (InstallLock)
+				{
+					model = pendingKeyEquivalent;
+					pendingKeyEquivalent = null;
+				}
+
+				Action action = model?.Action;
+				if (action != null)
+				{
+					UiThread.RunOnIdle(action);
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"MacMenuBar menuKeyEquivalentFired: threw {ex}");
 			}
 		}
 

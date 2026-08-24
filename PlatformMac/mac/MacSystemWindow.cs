@@ -1489,12 +1489,17 @@ namespace MatterHackers.Agg.UI
 		/// Hands an event to the agg window it belongs to.
 		/// </summary>
 		/// <returns>
-		/// True when AppKit must <em>not</em> also see the event. Every key event is swallowed: the content
-		/// view is a plain NSView with no key handling, so letting a keystroke walk the responder chain
-		/// ends at NSBeep. That includes Command chords, which used to be passed on for menu key
-		/// equivalents - the application installs no NSMenu, so there were no equivalents to reach and
-		/// every Cmd-shortcut the application itself handled beeped on top of doing its work. If a main
-		/// menu is ever installed, unhandled Command chords will need forwarding again.
+		/// True when AppKit must <em>not</em> also see the event. Every key event is swallowed, Command
+		/// chords included: the content view is a plain NSView with no key handling, so letting a keystroke
+		/// walk the responder chain ends at NSBeep - which is what used to make every Cmd-shortcut the
+		/// application itself handled beep on top of doing its work.
+		/// <para/>
+		/// Keys are therefore dispatched managed first and only managed. A menu bar's shortcuts are not lost
+		/// to that: a Command chord the managed window left unhandled is offered to the installed main menu
+		/// by <see cref="MacMenuBar.PerformKeyEquivalent"/> from <see cref="HandleKeyDown"/>, which is a
+		/// deliberate call and not the responder chain. Nothing is handed back to AppKit either way, so
+		/// AppKit itself can never act on a chord a second time - but see <see cref="HandleKeyDown"/> for
+		/// the invariant the menu bar's own shortcuts have to keep to for the same to be true of them.
 		/// <para/>
 		/// Every mouse event is passed on because title-bar dragging, live resize and the close button are
 		/// all AppKit's to handle.
@@ -1785,6 +1790,30 @@ namespace MatterHackers.Agg.UI
 			bool commandHeld = (flags & NSEventModifierFlagCommand) != 0;
 			if (commandHeld)
 			{
+				if (!keyEvent.Handled)
+				{
+					// Nothing in the application claimed it, so the menu bar gets its turn. For an event that
+					// reaches one of our windows this is the only way a menu shortcut can fire, since the
+					// event is never given to AppKit; one that belongs to a window we do not own - a native
+					// open panel - is passed on and AppKit searches the menus itself, which ends in the same
+					// place.
+					//
+					// The Handled test is not by itself a guarantee against acting on a chord twice, and must
+					// not be read as one. It is read here, synchronously, the moment OnKeyDown returns - but a
+					// KeyDown handler is free to be async, and MatterCAD's is: its Cmd-C, Cmd-X and Cmd-S arms
+					// await real work and only then set Handled, so when the await yields this sees Handled
+					// false for a chord the application is in the middle of servicing. What actually keeps
+					// those chords safe is that no MenuItemRole maps to c, x or s, so the forward matches
+					// nothing. That is the invariant to keep: a role's chord may not overlap a chord the
+					// managed side handles asynchronously, or the two will both fire. Cmd-Q is the shape that
+					// is fine either way - handled synchronously, and the Quit item's action goes through the
+					// same root window Close() regardless.
+					//
+					// The result is deliberately unused: the event is swallowed whether or not a menu item
+					// took it, so there is nothing to decide.
+					_ = MacMenuBar.PerformKeyEquivalent(nsEvent);
+				}
+
 				return true;
 			}
 
