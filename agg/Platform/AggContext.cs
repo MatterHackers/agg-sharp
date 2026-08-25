@@ -150,24 +150,37 @@ namespace MatterHackers.Agg.Platform
 
 		/// <summary>
 		/// Which platform assembly the lazily-created providers come from. Defaulted per OS rather than
-		/// hard-coded to Windows so that a demo (or an application) needs no source change to run on macOS:
-		/// the win32 assembly is built for <c>net10.0-windows</c> and would not even load there.
+		/// hard-coded to Windows so that a demo (or an application) needs no source change to run on macOS
+		/// or Linux: the win32 assembly is built for <c>net10.0-windows</c> and would not even load there.
 		/// </summary>
 		public class ProviderSettings
 		{
 			private static readonly bool IsMac = System.OperatingSystem.IsMacOS();
 
+			private static readonly bool IsLinux = System.OperatingSystem.IsLinux();
+
 			public string OsInformationProvider { get; set; } = IsMac
 				? "MatterHackers.Agg.Platform.MacInformationProvider, agg_platform_mac"
-				: "MatterHackers.Agg.Platform.WinformsInformationProvider, agg_platform_win32";
+				: IsLinux
+					? "MatterHackers.Agg.Platform.LinuxInformationProvider, agg_platform_linux"
+					: "MatterHackers.Agg.Platform.WinformsInformationProvider, agg_platform_win32";
 
+			/// <summary>
+			/// The file dialog host. Each OS names its own: mac drives NSOpenPanel, Windows the WinForms
+			/// common dialogs, and Linux the zenity or kdialog helper - see <c>LinuxFileDialogProvider</c>,
+			/// whose callback (unlike the other two) arrives after the call has already returned.
+			/// </summary>
 			public string DialogProvider { get; set; } = IsMac
 				? "MatterHackers.Agg.Platform.MacFileDialogProvider, agg_platform_mac"
-				: "MatterHackers.Agg.Platform.WinformsFileDialogProvider, agg_platform_win32";
+				: IsLinux
+					? "MatterHackers.Agg.Platform.LinuxFileDialogProvider, agg_platform_linux"
+					: "MatterHackers.Agg.Platform.WinformsFileDialogProvider, agg_platform_win32";
 
 			public string SystemWindowProvider { get; set; } = IsMac
 				? "MatterHackers.Agg.UI.WebGpuMacWindowProvider, agg_platform_mac"
-				: "MatterHackers.Agg.UI.WebGpuWinformsWindowProvider, agg_platform_win32";
+				: IsLinux
+					? "MatterHackers.Agg.UI.WebGpuX11WindowProvider, agg_platform_linux"
+					: "MatterHackers.Agg.UI.WebGpuWinformsWindowProvider, agg_platform_win32";
 		}
 
 		public class AggGraphicsMode

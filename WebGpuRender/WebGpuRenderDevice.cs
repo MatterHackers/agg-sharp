@@ -48,7 +48,7 @@ namespace MatterHackers.WebGpuRender
 	/// </para>
 	/// <para>
 	/// <b>On-screen too.</b> <see cref="CreateSurfaceTarget(WindowSurfaceRequest)"/> makes a swapchain from
-	/// a native drawable - an HWND on Windows, a <c>CAMetalLayer</c> on macOS - and <see cref="Present"/>
+	/// a native drawable - an HWND on Windows, a <c>CAMetalLayer</c> on macOS, an X11 window on Linux - and <see cref="Present"/>
 	/// presents it. Which of those is used is a runtime decision, not a build-time one: this assembly is
 	/// built once for all platforms. What is still Phase 4's is <em>recovery</em>: a lost device is
 	/// recorded (<see cref="DeviceLostMessage"/>) and then reported as a clear failure, not repaired.
@@ -783,8 +783,11 @@ namespace MatterHackers.WebGpuRender
 		/// </para>
 		/// </summary>
 		/// <param name="nativeSurfaceHandle">
-		/// The platform's native surface handle: an HWND on Windows, a <c>CAMetalLayer*</c> on macOS. See
-		/// <see cref="WindowSurfaceRequest"/>.
+		/// The platform's native surface handle: an HWND on Windows, a <c>CAMetalLayer*</c> on macOS, the
+		/// X11 <c>Display*</c> on Linux. See <see cref="WindowSurfaceRequest"/>. On Linux this overload
+		/// cannot describe a whole drawable - X11 also needs the window XID, which has no parameter here -
+		/// so a Linux host must use <see cref="WindowSurfaceRequest.ForXlibWindow"/> and the request
+		/// overload instead.
 		/// </param>
 		/// <param name="moduleHandle">The module instance (HINSTANCE), or zero. Windows only.</param>
 		/// <param name="width">Initial swapchain width in pixels.</param>
@@ -804,9 +807,12 @@ namespace MatterHackers.WebGpuRender
 
 		/// <summary>
 		/// Creates a swapchain for an already-described native drawable. This is the overload window hosts
-		/// should prefer: built through <see cref="WindowSurfaceRequest.ForMetalLayer"/> or
-		/// <see cref="WindowSurfaceRequest.ForWindowsHwnd"/>, the call site says which kind of handle it is
-		/// holding instead of leaving two bare <see cref="IntPtr"/>s to be read the wrong way.
+		/// should prefer: built through <see cref="WindowSurfaceRequest.ForMetalLayer"/>,
+		/// <see cref="WindowSurfaceRequest.ForWindowsHwnd"/> or
+		/// <see cref="WindowSurfaceRequest.ForXlibWindow"/>, the call site says which kind of handle it is
+		/// holding instead of leaving bare <see cref="IntPtr"/>s to be read the wrong way. It is also the
+		/// only overload that can describe an X11 drawable, which needs a display and a window rather than
+		/// one handle.
 		/// </summary>
 		/// <param name="request">The native drawable to make a surface over.</param>
 		/// <exception cref="InvalidOperationException">The surface could not be created or reports no usable format.</exception>
@@ -839,8 +845,13 @@ namespace MatterHackers.WebGpuRender
 		/// </summary>
 		/// <param name="instance">The wgpu instance.</param>
 		/// <param name="request">The native drawable to make a surface over.</param>
+		/// <exception cref="ArgumentException">
+		/// The request does not name a whole drawable for this OS: no native handle at all, or on Linux a
+		/// display without a window XID.
+		/// </exception>
 		/// <exception cref="PlatformNotSupportedException">
-		/// The OS has no surface source wired up here yet (Linux/X11/Wayland is Phase 8).
+		/// The OS has no surface source wired up here. Windows, macOS and Linux/X11 present; Wayland does
+		/// not, so a Linux host has to run under X11 or XWayland.
 		/// </exception>
 		private static WGPUSurface CreateRawSurface(WGPUInstance instance, WindowSurfaceRequest request)
 		{
@@ -852,8 +863,8 @@ namespace MatterHackers.WebGpuRender
 			// The chained source struct is the one genuinely per-OS thing left in this backend, and the
 			// branch is deliberately a runtime check: these assemblies are built once as cross-platform
 			// net10.0 and shipped to every OS, so a #if would bake in whichever machine did the build.
-			// Both branches take the address of a local, so both stack-allocate the source in this frame
-			// and pass it while it is still alive - wgpu copies out of the descriptor during the call.
+			// Every branch takes the address of a local, so each stack-allocates the source in this frame
+			// and passes it while it is still alive - wgpu copies out of the descriptor during the call.
 			if (OperatingSystem.IsWindows())
 			{
 				var windowsSource = new WGPUSurfaceSourceWindowsHWND
@@ -880,9 +891,42 @@ namespace MatterHackers.WebGpuRender
 				return CreateSurfaceFromSource(instance, (WGPUChainedStruct*)&metalSource, request.Label);
 			}
 
+			if (OperatingSystem.IsLinux())
+			{
+				// The XID is checked here and not only in ForXlibWindow because the plain constructor and
+				// the two-IntPtr CreateSurfaceTarget overload can both reach this branch, and neither has
+				// anywhere to put a window: they leave XlibWindow at zero. The overwhelmingly likely cause
+				// is a host that passed its window as the single native handle, so say that rather than
+				// letting wgpu take None and fail somewhere inside Vulkan.
+				if (request.XlibWindow == 0)
+				{
+					throw new ArgumentException(
+						"An X11 surface needs both a Display* and a window XID, and the XID is zero (None). "
+						+ "NativeSurfaceHandle is the display on Linux, not the window - build the request "
+						+ "with WindowSurfaceRequest.ForXlibWindow.",
+						nameof(request));
+				}
+
+				// X11 is the only source here that needs two values, so the request splits them: the
+				// Display* rides in NativeSurfaceHandle (checked above) and the XID has its own field.
+				// This is the Xlib source, not the XCB one - wgpu treats them as different sTypes and
+				// will not accept an xcb_connection_t* here, so the host must hand us XOpenDisplay's
+				// pointer. Wayland has its own sType we do not build, so a Wayland session reaches this
+				// through XWayland or not at all.
+				var xlibSource = new WGPUSurfaceSourceXlibWindow
+				{
+					chain = new WGPUChainedStruct { sType = WGPUSType.SurfaceSourceXlibWindow },
+					display = (void*)request.NativeSurfaceHandle,
+					window = request.XlibWindow,
+				};
+
+				return CreateSurfaceFromSource(instance, (WGPUChainedStruct*)&xlibSource, request.Label);
+			}
+
 			throw new PlatformNotSupportedException(
 				$"No wgpu surface source is implemented for {RuntimeInformation.OSDescription}. "
-				+ "Windows (HWND) and macOS (CAMetalLayer) can present; X11/Wayland is not wired up yet.");
+				+ "Windows (HWND), macOS (CAMetalLayer) and Linux/X11 (Display* plus window) can present; "
+				+ "native Wayland is not wired up.");
 		}
 
 		/// <summary>

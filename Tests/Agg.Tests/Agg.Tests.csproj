@@ -5,10 +5,21 @@
          checked from another host with -p:WindowsBuild=true -p:EnableWindowsTargeting=true. -->
     <WindowsBuild Condition="'$(WindowsBuild)' == ''">$([MSBuild]::IsOSPlatform('Windows'))</WindowsBuild>
 
+    <!-- The other two hosts. Each platform layer is referenced only on the OS it is the host for - its
+         tests P/Invoke into that OS's libraries - so "not Windows" no longer picks one. Same shape as
+         MatterCAD.csproj, and for the same reasons - see the long comment there: Windows and mac are named
+         explicitly, the Linux leg is the fallback so an unrecognized Unix still has a platform layer, and
+         an explicit -p:LinuxBuild=... (a global property) overrides the lot. -->
+    <MacBuild Condition="'$(MacBuild)' == ''">$([MSBuild]::IsOSPlatform('OSX'))</MacBuild>
+    <MacBuild Condition="'$(WindowsBuild)' == 'true'">false</MacBuild>
+    <LinuxBuild Condition="'$(LinuxBuild)' == ''">$([MSBuild]::IsOSPlatform('Linux'))</LinuxBuild>
+    <LinuxBuild Condition="'$(WindowsBuild)' == 'true' or '$(MacBuild)' == 'true'">false</LinuxBuild>
+    <LinuxBuild Condition="'$(WindowsBuild)' != 'true' and '$(MacBuild)' != 'true'">true</LinuxBuild>
+
     <!-- Windows keeps the net10.0-windows framework so the WinForms platform layer (PlatformWin32) is
          available exactly as before. On any other host that framework cannot be referenced at all, so the
-         project drops to plain net10.0, swaps PlatformWin32 for PlatformMac, and drops the subset of tests
-         whose subject is WinForms - see the conditional items below. -->
+         project drops to plain net10.0, swaps PlatformWin32 for this OS's platform layer, and drops the
+         subset of tests whose subject is WinForms - see the conditional items below. -->
     <TargetFramework Condition="'$(WindowsBuild)' == 'true'">net10.0-windows</TargetFramework>
     <TargetFramework Condition="'$(WindowsBuild)' != 'true'">net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
@@ -43,7 +54,7 @@
     <PackageReference Include="TUnit.Engine" Version="1.56.35" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\agg\agg.csproj" />
+    <ProjectReference Include="..\..\agg\Agg.csproj" />
     <ProjectReference Include="..\..\clipper_library\clipper_library.csproj" />
     <ProjectReference Include="..\..\Csg\Csg.csproj" />
     <ProjectReference Include="..\..\DataConverters2D\DataConverters2D.csproj" />
@@ -57,7 +68,8 @@
     <!-- The platform host: whichever IPlatformWindow provider this OS actually has. Both assemblies
          expose the same AggContext providers, so tests that only need "a window" work either way. -->
     <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj" Condition="'$(WindowsBuild)' == 'true'" />
-    <ProjectReference Include="..\..\PlatformMac\PlatformMac.csproj" Condition="'$(WindowsBuild)' != 'true'" />
+    <ProjectReference Include="..\..\PlatformMac\PlatformMac.csproj" Condition="'$(MacBuild)' == 'true'" />
+    <ProjectReference Include="..\..\PlatformLinux\PlatformLinux.csproj" Condition="'$(LinuxBuild)' == 'true'" />
     <ProjectReference Include="..\..\PolygonMesh\PolygonMesh.csproj" />
     <ProjectReference Include="..\..\QuadTree\QuadTree.csproj" />
     <ProjectReference Include="..\..\RenderCore\RenderCore.csproj" />
@@ -89,9 +101,9 @@
     <Compile Remove="Agg.WebGpuRender\WebGpuSurfaceTargetTests.cs" />
   </ItemGroup>
 
-  <!-- Tests whose subject is the mac platform layer: on Windows PlatformMac is not referenced at all,
-       so MacSystemWindow does not exist to be tested. -->
-  <ItemGroup Condition="'$(WindowsBuild)' == 'true'">
+  <!-- Tests whose subject is the mac platform layer. Removed wherever PlatformMac is not referenced -
+       which is Windows and Linux both, so the condition is the reference's and not just "Windows". -->
+  <ItemGroup Condition="'$(MacBuild)' != 'true'">
     <Compile Remove="Agg.UI\MacModifierFlagsTests.cs" />
     <Compile Remove="Agg.UI\MacMagnifyGestureTests.cs" />
     <Compile Remove="Agg.UI\MacTrackpadScrollAxisTests.cs" />
@@ -100,6 +112,20 @@
     <Compile Remove="Agg.UI\MacPlatformCloseRoutingTests.cs" />
     <Compile Remove="Agg.UI\MacKeyTranslationTests.cs" />
     <Compile Remove="Agg.UI\MacMenuBarTests.cs" />
+  </ItemGroup>
+
+  <!-- Tests whose subject is the Linux platform layer. Removed wherever PlatformLinux is not referenced -
+       which is Windows and macOS both, so the condition is the reference's and not just "not Windows". -->
+  <ItemGroup Condition="'$(LinuxBuild)' != 'true'">
+    <Compile Remove="Agg.UI\X11EventLayoutTests.cs" />
+    <Compile Remove="Agg.UI\X11SystemWindowCloseRoutingTests.cs" />
+    <Compile Remove="Agg.UI\X11ResizePaintTests.cs" />
+    <Compile Remove="Agg.UI\X11KeyTranslationTests.cs" />
+    <Compile Remove="Agg.UI\X11ModifierStateTests.cs" />
+    <Compile Remove="Agg.UI\X11DragOutsideViewTests.cs" />
+    <Compile Remove="Agg.UI\X11WheelTests.cs" />
+    <Compile Remove="Agg.UI\LinuxFileDialogProviderTests.cs" />
+    <Compile Remove="Agg.UI\LinuxClipboardTests.cs" />
   </ItemGroup>
 
   <!-- LCD byte-exactness fixture: raw mask/composite dumps from the agg-gui Rust reference, read by

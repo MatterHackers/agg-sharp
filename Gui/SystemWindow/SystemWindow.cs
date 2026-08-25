@@ -532,9 +532,11 @@ namespace MatterHackers.Agg.UI
 		/// <para>
 		/// The override deliberately beats code that assigned the config value (several demos hard-code
 		/// theirs), because its whole purpose is running an unmodified demo on a chosen host. It
-		/// understands the short names <c>webgpu</c> (the WinForms host) and <c>mac</c> (the AppKit host),
-		/// and passes anything else through as a fully qualified type name so an out-of-tree provider can be
-		/// named too. Neither short name is normally needed - the per-OS default in
+		/// understands the short names <c>webgpu</c> (the WinForms host), <c>mac</c> (the AppKit host) and
+		/// <c>x11</c> (the Linux host), and passes anything else through as a fully qualified type name so
+		/// an out-of-tree provider can be named too. Note that <c>webgpu</c> names the WinForms host
+		/// specifically rather than "whichever host this OS has" - every host is a WebGPU host now, so the
+		/// name is historical. None of the three is normally needed: the per-OS default in
 		/// <c>AggContext.Config.ProviderTypes</c> already resolves to the right one.
 		/// </para>
 		/// <para>
@@ -561,6 +563,9 @@ namespace MatterHackers.Agg.UI
 				case "mac":
 					return "MatterHackers.Agg.UI.WebGpuMacWindowProvider, agg_platform_mac";
 
+				case "x11":
+					return "MatterHackers.Agg.UI.WebGpuX11WindowProvider, agg_platform_linux";
+
 				case "bitmap":
 				case "d3d11":
 					throw new InvalidOperationException(
@@ -576,7 +581,7 @@ namespace MatterHackers.Agg.UI
 					}
 
 					throw new InvalidOperationException(
-						$"AGG_WINDOW_PROVIDER='{requested}' is not 'webgpu' or 'mac' and is not a 'Type, Assembly' name.");
+						$"AGG_WINDOW_PROVIDER='{requested}' is not 'webgpu', 'mac' or 'x11' and is not a 'Type, Assembly' name.");
 			}
 		}
 

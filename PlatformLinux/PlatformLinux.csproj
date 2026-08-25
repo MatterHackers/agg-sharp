@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<!-- Plain net10.0 for the same reason PlatformMac is: everything X11 here is raw P/Invoke into
+		     libX11.so.6, so there is no SDK-specific TFM to ask for, and a plain one keeps this assembly
+		     restorable (and compile-checkable) on a machine that is not Linux at all. -->
+		<TargetFramework>net10.0</TargetFramework>
+		<Company>MatterHackers Inc.</Company>
+		<AssemblyName>agg_platform_linux</AssemblyName>
+		<RootNamespace>agg_platform_linux</RootNamespace>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<DefineConstants>TRACE;DEBUG</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<DefineConstants>TRACE;RELEASE</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup>
+		<!-- The Xlib struct layouts are an ABI contract with a C header, and the only way to check them is
+		     to name the internal types and take their size. Same reasoning as PlatformMac's. -->
+		<InternalsVisibleTo Include="Agg.Tests" />
+	</ItemGroup>
+	<ItemGroup>
+		<!-- The same set PlatformMac pulls in. No PackageReferences at all: this assembly must be buildable
+		     with zero NuGet dependencies of its own. -->
+		<ProjectReference Include="..\agg\Agg.csproj" />
+		<ProjectReference Include="..\GuiAutomation\GuiAutomation.csproj" />
+		<ProjectReference Include="..\Gui\Gui.csproj" />
+		<ProjectReference Include="..\ImageProcessing\ImageProcessing.csproj" />
+		<ProjectReference Include="..\RenderCore\RenderCore.csproj" />
+		<ProjectReference Include="..\RenderGl\RenderGl.csproj" />
+		<!-- Also what carries libwgpu_native.so into the output of every app that hosts a window. -->
+		<ProjectReference Include="..\WebGpuRender\WebGpuRender.csproj" />
+		<ProjectReference Include="..\VectorMath\VectorMath.csproj" />
+	</ItemGroup>
+</Project>
