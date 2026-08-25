@@ -64,7 +64,7 @@ namespace MatterHackers.Agg.Tests
 				StaticData.RootPath = null;
 
 				const int threadCount = 8;
-				var results = new ConcurrentBag<StaticData>();
+				var results = new ConcurrentBag<IStaticData>();
 				using (var barrier = new Barrier(threadCount))
 				{
 					var threads = Enumerable.Range(0, threadCount)

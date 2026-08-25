@@ -42,7 +42,11 @@ using Newtonsoft.Json;
 
 namespace MatterHackers.Agg.Platform
 {
-	public class StaticData
+	/// <summary>
+	/// The disk-backed <see cref="IStaticData"/>: every path is resolved against <see cref="RootPath"/>
+	/// and read straight from the filesystem.
+	/// </summary>
+	public class StaticData : IStaticData
 	{
 		private static Dictionary<string, ImageBuffer> cachedImages = new Dictionary<string, ImageBuffer>();
 		private static Dictionary<(string, int, int, string), ImageBuffer> cachedIcons = new Dictionary<(string, int, int, string), ImageBuffer>();
@@ -62,13 +66,19 @@ namespace MatterHackers.Agg.Platform
 		// cannot race another thread's read or write of RootPath.
 		private static readonly object instanceLocker = new object();
 
-		private static StaticData _instance = null;
+		private static IStaticData _instance = null;
 
 		private static string rootPath;
 
 		public static double DeviceScale => GuiWidget.DeviceScale;
 
-		public static StaticData Instance
+		/// <summary>
+		/// Gets or sets the process-wide asset provider. Defaults to the disk-backed implementation;
+		/// a host with no filesystem (WASM, for one) assigns its own provider during startup, before
+		/// anything reads an asset. Assigning after the default has been created is allowed but the
+		/// icons already handed out will have come from disk.
+		/// </summary>
+		public static IStaticData Instance
 		{
 			get
 			{
@@ -80,6 +90,22 @@ namespace MatterHackers.Agg.Platform
 					}
 
 					return _instance;
+				}
+			}
+
+			set
+			{
+				// Refuse null loudly. Clearing the instance would silently fall back to lazily building
+				// the disk-backed provider, so a host with no filesystem would not fail here - it would
+				// fail much later with "Bad icon load", nowhere near the assignment that caused it.
+				if (value == null)
+				{
+					throw new ArgumentNullException(nameof(value), "StaticData.Instance cannot be set to null.");
+				}
+
+				lock (instanceLocker)
+				{
+					_instance = value;
 				}
 			}
 		}
@@ -129,9 +155,21 @@ namespace MatterHackers.Agg.Platform
 			return Directory.GetDirectories(MapPath(path));
 		}
 
+		/// <summary>
+		/// Gets the files of the given directory as paths relative to <see cref="RootPath"/>, so that
+		/// they can be passed straight back to the other members (which all map through RootPath).
+		/// </summary>
+		/// <remarks>
+		/// This used to chop the string at the first literal "StaticData" it found, which produced
+		/// garbage whenever "StaticData" appeared earlier in the root (a user named StaticData, a
+		/// build folder, a temp root) and whenever the root folder was not called "StaticData" at all.
+		/// </remarks>
 		public IEnumerable<string> GetFiles(string path)
 		{
-			return Directory.GetFiles(MapPath(path)).Select(p => p.Substring(p.IndexOf("StaticData") + 11));
+			// Map "" rather than using RootPath directly - RootPath may be relative, and the paths
+			// coming back from Directory.GetFiles are always full.
+			var fullRoot = MapPath("");
+			return Directory.GetFiles(MapPath(path)).Select(p => Path.GetRelativePath(fullRoot, p));
 		}
 
 		/// <summary>
