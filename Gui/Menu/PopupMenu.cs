@@ -55,6 +55,294 @@ namespace MatterHackers.Agg.UI
 			this.BackgroundColor = theme.BackgroundColor;
 		}
 
+		/// <summary>
+		/// The row this menu was opened from, when it is a sub menu. Null for a top level menu.
+		/// </summary>
+		/// <remarks>
+		/// This is agg-gui's <c>open_path</c> read backwards - it is what the Left arrow backs out to.
+		/// </remarks>
+		internal SubMenuItemButton ParentMenuItem { get; set; }
+
+		/// <summary>
+		/// The widget the menu rows are actually parented to. Normally that is the menu itself, but
+		/// <see cref="MakeMenuHaveScroll(double)"/> moves every row into a column inside a
+		/// <see cref="ScrollableWidget"/>, so anything that walks the rows has to ask rather than assume.
+		/// </summary>
+		private GuiWidget ItemContainer
+		{
+			get
+			{
+				var scrollingWindow = this.Children.OfType<ScrollableWidget>().FirstOrDefault();
+
+				return scrollingWindow?.ScrollArea.Children.FirstOrDefault() ?? this;
+			}
+		}
+
+		/// <summary>
+		/// The rows the keyboard can land on, in the order they are drawn. Separators are
+		/// <see cref="HorizontalLine"/>s rather than <see cref="MenuItem"/>s so they fall out for free;
+		/// disabled and hidden rows are filtered the way agg-gui's <c>step_hover</c> filters its entries.
+		/// </summary>
+		private List<MenuItem> NavigableItems()
+		{
+			return ItemContainer.Children.OfType<MenuItem>()
+				.Where(item => item.Enabled && item.Visible)
+				.ToList();
+		}
+
+		/// <summary>
+		/// Moves the highlight <paramref name="delta"/> rows, wrapping at both ends.
+		/// </summary>
+		/// <remarks>
+		/// agg-sharp has no separate hover index - the highlight *is* keyboard focus, so the current row is
+		/// whichever row is <see cref="GuiWidget.Focused"/>. The base index of -1 for a downward step and 0
+		/// for an upward one is what makes Down-from-nothing land on the first row and Up-from-nothing land
+		/// on the last, exactly as agg-gui's <c>step_hover</c> does.
+		/// </remarks>
+		internal void MoveHighlight(int delta)
+		{
+			var items = NavigableItems();
+			if (items.Count == 0)
+			{
+				return;
+			}
+
+			int current = items.FindIndex(item => item.Focused);
+			int baseIndex = current >= 0 ? current : (delta > 0 ? -1 : 0);
+
+			// rem_euclid: C#'s % keeps the sign of the dividend, so a negative step needs the extra add
+			int next = ((baseIndex + delta) % items.Count + items.Count) % items.Count;
+
+			// Scroll first: GuiWidget.CanSelect is false for a widget whose bounds clip away to nothing
+			// against a parent, so Focus() is silently a no-op on a row that is currently scrolled out of
+			// the menu's scroll window
+			ScrollHighlightIntoView(items[next]);
+
+			items[next].Focus();
+		}
+
+		/// <summary>
+		/// Keeps the highlighted row visible in whichever scroller is clamping this menu - the one
+		/// <see cref="PopupWidget"/> owns when the menu is popup hosted, or the one
+		/// <see cref="MakeMenuHaveScroll(double)"/> built when it is not.
+		/// </summary>
+		private void ScrollHighlightIntoView(GuiWidget item)
+		{
+			var hostingPopup = this.Parents<PopupWidget>().FirstOrDefault();
+			if (hostingPopup != null)
+			{
+				hostingPopup.ScrollIntoView(item);
+
+				return;
+			}
+
+			this.Children.OfType<ScrollableWidget>().FirstOrDefault()?.ScrollIntoView(item);
+		}
+
+		/// <summary>
+		/// The row of this menu whose sub menu is currently up, or null when none is.
+		/// </summary>
+		/// <remarks>Only one can be open at a time - this is agg-gui's <c>open_path</c>, one level deep.</remarks>
+		private SubMenuItemButton OpenSubMenuRow()
+		{
+			return ItemContainer.Children.OfType<SubMenuItemButton>().FirstOrDefault(row => row.SubMenu != null);
+		}
+
+		/// <summary>
+		/// The mouse has entered <paramref name="row"/>. Moves the highlight there, closes the sub menu a
+		/// different row had open, and opens this row's own sub menu if it has one.
+		/// </summary>
+		/// <remarks>
+		/// This is agg-gui's <c>update_hover</c>: a hovered row with a sub menu sets <c>open_path</c> to it,
+		/// and a hovered row without one truncates <c>open_path</c> back to this level. There is no dwell
+		/// timer in either implementation - the sub menu opens on the enter itself.
+		/// <para>
+		/// agg-sharp keeps a single highlight, and that highlight is keyboard focus, so hovering an enabled
+		/// row focuses it. That is the Windows convention (Enter activates the row the mouse is pointing at)
+		/// and it is what closes the sibling's sub menu for us: taking focus out of a sub menu is what every
+		/// other close path in this file does, and it runs the sub menu's full teardown on idle rather than
+		/// leaving a half removed popup behind.
+		/// </para>
+		/// <para>
+		/// Disabled rows never arrive here at all - <see cref="GuiWidget.OnMouseMove"/> only routes to
+		/// children that are Visible, Enabled and CanSelect - which is agg-gui's
+		/// <c>disabled_rows_do_not_become_hovered</c> for free.
+		/// </para>
+		/// </remarks>
+		internal void OnRowHover(MenuItem row)
+		{
+			if (!row.Enabled)
+			{
+				return;
+			}
+
+			var openRow = OpenSubMenuRow();
+
+			if (openRow == row)
+			{
+				// The mouse came back onto the row whose sub menu is up, which is what happens on the way out
+				// of that sub menu. Leave focus alone: pulling it back here would close the sub menu the user
+				// is aiming at, and re-opening it is not possible - it never closed.
+				return;
+			}
+
+			row.Focus();
+
+			if (openRow != null)
+			{
+				// Focusing this row took focus off the sibling's sub menu, so that sub menu is closing on
+				// idle - but SystemWindowExtension's CloseMenu restores focus to the row it was anchored to
+				// on its way out, which would drag the highlight back to the row the mouse just left. Put it
+				// back where the mouse is once that close has run.
+				UiThread.RunOnIdle(() =>
+				{
+					if (!row.HasBeenClosed
+						&& row.ContainsFirstUnderMouseRecursive())
+					{
+						row.Focus();
+					}
+				});
+			}
+
+			if (row is SubMenuItemButton subMenuRow)
+			{
+				subMenuRow.OpenSubMenu();
+			}
+		}
+
+		/// <summary>
+		/// Takes this menu down, along with the popup hosting it and any menu it was opened from.
+		/// </summary>
+		/// <remarks>
+		/// Every way a menu closes in agg-sharp is driven by losing focus - <c>SystemWindowExtension.ShowPopup</c>
+		/// and <see cref="PopupWidget.OnContainsFocusChanged"/> both watch for it and close on idle - so this
+		/// unfocuses rather than closing anything directly. What it unfocuses is the nearest
+		/// <see cref="PopupWidget"/> ancestor, or this menu itself when there is none (the <c>ShowMenu</c>
+		/// path parents a menu straight into the window). Either way that is the widget whose close-on-focus-
+		/// lost handler owns this level, and dropping it is what takes the whole chain down: each level's
+		/// Closed handler closes its parent when the parent does not contain focus, and after this nothing in
+		/// the chain does.
+		/// </remarks>
+		public void DismissAll()
+		{
+			((GuiWidget)this.Parents<PopupWidget>().FirstOrDefault() ?? this).Unfocus();
+		}
+
+		/// <summary>
+		/// A press of anything but the left button over an open menu dismisses it, and the row under the
+		/// press never sees that press.
+		/// </summary>
+		/// <remarks>
+		/// This is agg-gui's catch-all <c>Event::MouseDown</c> arm: the desktop convention is that a right
+		/// (or middle) press closes the menu instead of leaving it hanging over the context menu that press
+		/// is about to raise, and it is Consumed so the press only dismisses - it must not also activate the
+		/// item underneath it. Skipping the base call is how agg-sharp consumes it: base is what routes the
+		/// press to the row, and mouse dispatch hands a press to the topmost child containing the point and
+		/// to nobody else, so nothing drawn under the menu sees it either.
+		/// <para>
+		/// DIVERGES from agg-gui: a press *outside* the menu is left to pass through to whatever is under it
+		/// (it dismisses the menu too, by taking focus off it, but it is not swallowed). agg-sharp menus are
+		/// dismissed by pressing the button that opened them - MatterCAD's PopupButton only toggles closed
+		/// because the press reaches the button - and a right click elsewhere is expected to raise that
+		/// widget's own menu in one gesture. There is no menu owned event stream here to consume from in any
+		/// case: an outside press is never routed to this widget at all.
+		/// </para>
+		/// <para>
+		/// The dismissal is queued rather than done here because it works by unfocusing, and the press is
+		/// still unwinding: every widget between the window and this one finishes its own OnMouseDown by
+		/// focusing itself when no child took focus (<see cref="GuiWidget.OnMouseDown"/>), so an unfocus
+		/// done inline is undone on the way back out and the idle close then finds the menu focused after
+		/// all. That bites the <c>PopupButton</c> shape, where a <see cref="PopupWidget"/> and its scroll
+		/// window sit between the window and the menu.
+		/// </para>
+		/// </remarks>
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
+		{
+			if (mouseEvent.Button != MouseButtons.Left)
+			{
+				UiThread.RunOnIdle(DismissAll);
+
+				return;
+			}
+
+			base.OnMouseDown(mouseEvent);
+		}
+
+		/// <summary>
+		/// Arrow key navigation over the menu rows.
+		/// </summary>
+		/// <remarks>
+		/// base is called first so the focused row (and <see cref="GuiWidget"/>'s own Tab handling) gets the
+		/// first say and sets <see cref="KeyEventArgs.Handled"/> for us to respect.
+		/// <para>
+		/// The four arrows and Escape are consumed, matching agg-gui's <c>EventResult::Consumed</c>. That is
+		/// not cosmetic here: an agg-sharp menu is drawn inside an application whose root window listens for
+		/// unhandled keys (MatterCAD rotates the scene on arrows and cancels the current operation on
+		/// Escape), so those five leaking past an open menu would be a user visible bug.
+		/// </para>
+		/// <para>
+		/// Only those five, though. agg-gui consumes *every* key an open menu sees; agg-sharp does not, so a
+		/// key the menu has no use for - Delete and Backspace among them - still reaches the application's own
+		/// shortcuts with a menu up. Widening this would need a survey of which of those are worth
+		/// suppressing, so the narrower behavior is what is claimed here.
+		/// </para>
+		/// <para>
+		/// Enter and Space are deliberately absent - <see cref="ThemedButton.OnKeyUp"/> activates the focused
+		/// row on key *up*, and consuming them here would gain nothing.
+		/// </para>
+		/// </remarks>
+		public override void OnKeyDown(KeyEventArgs keyEvent)
+		{
+			base.OnKeyDown(keyEvent);
+
+			if (keyEvent.Handled)
+			{
+				return;
+			}
+
+			switch (keyEvent.KeyCode)
+			{
+				case Keys.Down:
+					MoveHighlight(1);
+					keyEvent.Handled = true;
+					keyEvent.SuppressKeyPress = true;
+					break;
+
+				case Keys.Up:
+					MoveHighlight(-1);
+					keyEvent.Handled = true;
+					keyEvent.SuppressKeyPress = true;
+					break;
+
+				case Keys.Right:
+					if (NavigableItems().FirstOrDefault(item => item.Focused) is SubMenuItemButton subMenuItem)
+					{
+						subMenuItem.OpenSubMenu();
+					}
+
+					keyEvent.Handled = true;
+					keyEvent.SuppressKeyPress = true;
+					break;
+
+				case Keys.Left:
+					// Focus the opener before this menu loses focus. CreateSubMenu's Closed handler closes the
+					// parent menu as well when the parent does not contain focus, and that close runs on idle
+					// after this returns - so the order here is what decides whether one level closes or all
+					// of them do. Nothing to back out to in a top level menu, but the key is still consumed:
+					// an arrow that escapes an open menu reaches the application behind it.
+					ParentMenuItem?.Focus();
+					keyEvent.Handled = true;
+					keyEvent.SuppressKeyPress = true;
+					break;
+
+				case Keys.Escape:
+					DismissAll();
+					keyEvent.Handled = true;
+					keyEvent.SuppressKeyPress = true;
+					break;
+			}
+		}
+
 		public HorizontalLine CreateSeparator(double height = 1)
 		{
 			var line = new HorizontalLine(Theme.BorderColor20)
@@ -122,6 +410,101 @@ namespace MatterHackers.Agg.UI
 
 			public SubMenuItemButton(GuiWidget content, ThemeConfig theme) : base(content, theme)
 			{
+			}
+
+			/// <summary>The menu this row lives in, and that the sub menu is anchored beside.</summary>
+			internal PopupMenu OwningMenu { get; set; }
+
+			/// <summary>The theme <see cref="CreateSubMenu"/> was asked to build the sub menu with.</summary>
+			internal ThemeConfig SubMenuTheme { get; set; }
+
+			/// <summary>Fills in the sub menu's rows, the callback <see cref="CreateSubMenu"/> was given.</summary>
+			internal Action<PopupMenu> PopulateSubMenu { get; set; }
+
+			/// <summary>
+			/// Builds, populates and shows this row's sub menu beside it. Does nothing when the sub menu is
+			/// already up, so clicking (or arrowing into) an open sub menu twice cannot stack two of them.
+			/// </summary>
+			internal void OpenSubMenu()
+			{
+				if (SubMenu != null
+					|| OwningMenu == null)
+				{
+					return;
+				}
+
+				var systemWindow = OwningMenu.Parents<SystemWindow>().FirstOrDefault();
+				if (systemWindow == null)
+				{
+					return;
+				}
+
+				// Same as ShowMenu - a tooltip armed by whatever the mouse crossed on the way here must
+				// not float over the menu we are about to open
+				ClearToolTipsAbove(OwningMenu);
+
+				var owningMenu = OwningMenu;
+				var populateSubMenu = PopulateSubMenu;
+
+				// Whether the chain was live when the sub menu was asked for. Every path that opens one -
+				// hover, click, the Right arrow - leaves the opening row focused first, so this is normally
+				// true; it is false only for a menu parented straight into a window rather than shown as a
+				// popup, which has no focus to lose and so nothing for the check below to detect.
+				bool openedFromAFocusedMenu = owningMenu.ContainsFocus;
+
+				var subMenu = new PopupMenu(SubMenuTheme)
+				{
+					// Left arrow in the sub menu needs to know the row to back out to
+					ParentMenuItem = this,
+				};
+				this.SubMenu = subMenu;
+
+				UiThread.RunOnIdle(() =>
+				{
+					// The chain can be dismissed between this being queued and it running. Escape queues its
+					// own close *behind* this, so nothing has been closed yet at this point and only focus
+					// tells the truth. Showing the sub menu anyway would focus it, and KeepMenuOpen would then
+					// hold the dismissed parent open on the strength of a sub menu the user had cancelled.
+					if (this.HasBeenClosed
+						|| owningMenu.HasBeenClosed
+						|| (openedFromAFocusedMenu && !owningMenu.ContainsFocus))
+					{
+						// Let the row go of the sub menu it never opened, or it can never open another. The
+						// menu itself was never populated, parented or drawn, so there is nothing to tear down.
+						this.SubMenu = null;
+
+						return;
+					}
+
+					populateSubMenu(subMenu);
+
+					// Measure after populating - a sub menu taller than the window must be made to scroll
+					// before it is positioned, or it lands (and stays) off the top of the screen
+					subMenu.MakeMenuHaveScroll(systemWindow.Height - WindowEdgeInset);
+
+					systemWindow.ShowPopup(
+						owningMenu.Theme,
+						new MatePoint(this)
+						{
+							Mate = new MateOptions(MateEdge.Right, MateEdge.Top),
+							AltMate = new MateOptions(MateEdge.Left, MateEdge.Bottom)
+						},
+						new MatePoint(subMenu)
+						{
+							Mate = new MateOptions(MateEdge.Left, MateEdge.Top),
+							AltMate = new MateOptions(MateEdge.Right, MateEdge.Bottom)
+						});
+				});
+
+				subMenu.Closed += (s1, e1) =>
+				{
+					subMenu.ClearRemovedFlag();
+					this.SubMenu = null;
+					if (!owningMenu.ContainsFocus)
+					{
+						owningMenu.Close();
+					}
+				};
 			}
 
 			public override void OnDraw(Graphics2D graphics2D)
@@ -357,6 +740,49 @@ namespace MatterHackers.Agg.UI
 		internal const double WindowEdgeInset = 5;
 
 		/// <summary>
+		/// The scroll window a clamped menu keeps its rows in.
+		/// </summary>
+		/// <remarks>
+		/// This exists only so that <see cref="ScrollableWidget.OnKeyDown"/> does not claim Up and Down to
+		/// nudge the viewport 16 pixels. Once a row has keyboard focus the scroll window is on the routing
+		/// path between the menu and that row, so the plain widget would swallow every arrow key before the
+		/// menu could move its highlight. Inside a menu the arrows belong to the highlight, and
+		/// <see cref="PopupMenu.MoveHighlight(int)"/> does the scrolling that keeps it visible.
+		/// </remarks>
+		internal class MenuScrollWindow : ScrollableWidget
+		{
+			public MenuScrollWindow()
+				: base(true)
+			{
+			}
+
+			public override void OnKeyDown(KeyEventArgs keyEvent)
+			{
+				if (keyEvent.KeyCode == Keys.Up
+					|| keyEvent.KeyCode == Keys.Down)
+				{
+					// The focused row still gets its turn; only the base class's scroll nudge is skipped, so
+					// the key arrives at the menu unclaimed.
+					// Returning early also skips GuiWidget's Tab handling and its public KeyDown event for
+					// these two keys. Neither matters to a menu - Tab is not Up or Down, and nothing
+					// subscribes to a menu scroller's KeyDown - but a subscriber added later would silently
+					// not hear the arrows.
+					var childWithFocus = GetChildContainingFocus();
+					if (childWithFocus != null
+						&& childWithFocus.Visible
+						&& childWithFocus.Enabled)
+					{
+						childWithFocus.OnKeyDown(keyEvent);
+					}
+
+					return;
+				}
+
+				base.OnKeyDown(keyEvent);
+			}
+		}
+
+		/// <summary>
 		/// Constrain this menu to <paramref name="maxHeight"/>, moving its items into a scrolling area when
 		/// they do not fit. This is not the same operation as the same named
 		/// <see cref="PopupWidget.MakeMenuHaveScroll(double)"/>: that one resizes a scroll window the popup
@@ -398,7 +824,7 @@ namespace MatterHackers.Agg.UI
 				contentColumn.AddChild(item);
 			}
 
-			var scrollingWindow = new ScrollableWidget(true)
+			var scrollingWindow = new MenuScrollWindow
 			{
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Absolute,
@@ -441,7 +867,15 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public void CreateSubMenu(string menuTitle, ThemeConfig menuTheme, Action<PopupMenu> populateSubMenu, ImageBuffer icon = null)
+		/// <summary>
+		/// Adds an item that opens a sub menu, populated by <paramref name="populateSubMenu"/> the first time
+		/// (and every time) it is opened.
+		/// </summary>
+		/// <returns>
+		/// The button that was added, so a caller can adjust it (name, enabled state) the way the
+		/// <see cref="MenuItem"/> returning creators allow. Most callers ignore it.
+		/// </returns>
+		public SubMenuItemButton CreateSubMenu(string menuTitle, ThemeConfig menuTheme, Action<PopupMenu> populateSubMenu, ImageBuffer icon = null)
 		{
 			var content = new TextWidget(menuTitle, pointSize: Theme.DefaultFontSize, textColor: Theme.TextColor)
 			{
@@ -453,58 +887,18 @@ namespace MatterHackers.Agg.UI
 			var subMenuItemButton = new SubMenuItemButton(content, Theme)
 			{
 				Name = menuTitle + " Menu Item",
-				Image = icon
+				Image = icon,
+				OwningMenu = this,
+				SubMenuTheme = menuTheme,
+				PopulateSubMenu = populateSubMenu,
 			};
 
 			this.AddChild(subMenuItemButton);
 
-			subMenuItemButton.Click += (s, e) =>
-			{
-				var systemWindow = this.Parents<SystemWindow>().FirstOrDefault();
-				if (systemWindow == null)
-				{
-					return;
-				}
+			// The work lives on the row so the Right arrow can open the sub menu the same way a click does
+			subMenuItemButton.Click += (s, e) => subMenuItemButton.OpenSubMenu();
 
-				// Same as ShowMenu - a tooltip armed by whatever the mouse crossed on the way here must
-				// not float over the menu we are about to open
-				ClearToolTipsAbove(this);
-
-				var subMenu = new PopupMenu(menuTheme);
-				subMenuItemButton.SubMenu = subMenu;
-
-				UiThread.RunOnIdle(() =>
-				{
-					populateSubMenu(subMenu);
-
-					// Measure after populating - a sub menu taller than the window must be made to scroll
-					// before it is positioned, or it lands (and stays) off the top of the screen
-					subMenu.MakeMenuHaveScroll(systemWindow.Height - WindowEdgeInset);
-
-					systemWindow.ShowPopup(
-                        Theme,
-						new MatePoint(subMenuItemButton)
-						{
-							Mate = new MateOptions(MateEdge.Right, MateEdge.Top),
-							AltMate = new MateOptions(MateEdge.Left, MateEdge.Bottom)
-						},
-						new MatePoint(subMenu)
-						{
-							Mate = new MateOptions(MateEdge.Left, MateEdge.Top),
-							AltMate = new MateOptions(MateEdge.Right, MateEdge.Bottom)
-						});
-				});
-
-				subMenu.Closed += (s1, e1) =>
-				{
-					subMenu.ClearRemovedFlag();
-					subMenuItemButton.SubMenu = null;
-					if (!this.ContainsFocus)
-					{
-						this.Close();
-					}
-				};
-			};
+			return subMenuItemButton;
 		}
 
 		public MenuItem CreateBoolMenuItem(string name, Func<bool> getter, Action<bool> setter, bool useRadioStyle = false, IList<GuiWidget> siblingRadioButtonList = null)
@@ -674,6 +1068,48 @@ namespace MatterHackers.Agg.UI
 
 			public bool KeepMenuOpen => false;
 
+			/// <summary>
+			/// Tells the owning menu the mouse arrived, so it can move the highlight and open or close sub
+			/// menus. The menu decides rather than the row, because only the menu knows about the sibling
+			/// whose sub menu may have to close.
+			/// </summary>
+			/// <remarks>
+			/// The owner is looked up rather than stored: <see cref="MakeMenuHaveScroll(double)"/> reparents
+			/// every row into a column inside a scroll window, so the menu is not always the row's Parent, and
+			/// only <see cref="SubMenuItemButton"/> is built with an OwningMenu to ask.
+			/// </remarks>
+			public override void OnMouseEnterBounds(MouseEventArgs mouseEvent)
+			{
+				base.OnMouseEnterBounds(mouseEvent);
+
+				this.Parents<PopupMenu>().FirstOrDefault()?.OnRowHover(this);
+			}
+
+			/// <summary>
+			/// Reads the same as a mouse hover while this row holds keyboard focus.
+			/// </summary>
+			/// <remarks>
+			/// Arrow key navigation moves focus from row to row, and <see cref="ThemedButton"/>'s thin focus
+			/// outline is too quiet to be a menu highlight. The mouse still wins when it is over this row -
+			/// otherwise the pressed shade would be lost on the row the keyboard last left behind.
+			/// </remarks>
+			public override Color BackgroundColor
+			{
+				get
+				{
+					if (this.Focused
+						&& this.Enabled
+						&& !this.ContainsFirstUnderMouseRecursive())
+					{
+						return this.HoverColor;
+					}
+
+					return base.BackgroundColor;
+				}
+
+				set => base.BackgroundColor = value;
+			}
+
 			public override void OnDraw(Graphics2D graphics2D)
 			{
 				if (this.Image != null)
@@ -755,251 +1191,6 @@ namespace MatterHackers.Agg.UI
 					AltMate = new MateOptions(MateEdge.Right, MateEdge.Bottom)
 				},
 				altBounds: new RectangleDouble(menuPosition.X + 1, menuPosition.Y + 1, menuPosition.X + 1, menuPosition.Y + 1));
-		}
-	}
-
-	[Flags]
-	public enum MateEdge
-	{
-		Top = 1,
-		Bottom = 2,
-		Left = 4,
-		Right = 8
-	}
-
-	public class MateOptions
-	{
-		public MateOptions(MateEdge horizontalEdge = MateEdge.Left, MateEdge verticalEdge = MateEdge.Bottom)
-		{
-			this.HorizontalEdge = horizontalEdge;
-			this.VerticalEdge = verticalEdge;
-		}
-
-		public MateEdge HorizontalEdge { get; set; }
-
-		public MateEdge VerticalEdge { get; set; }
-
-		public bool Top => this.VerticalEdge.HasFlag(MateEdge.Top);
-
-		public bool Bottom => this.VerticalEdge.HasFlag(MateEdge.Bottom);
-
-		public bool Left => this.HorizontalEdge.HasFlag(MateEdge.Left);
-
-		public bool Right => this.HorizontalEdge.HasFlag(MateEdge.Right);
-	}
-
-	public class MatePoint
-	{
-		public MateOptions Mate { get; set; } = new MateOptions();
-
-		public MateOptions AltMate { get; set; } = new MateOptions();
-
-		public GuiWidget Widget { get; set; }
-
-		public MatePoint()
-		{
-		}
-
-		public MatePoint(GuiWidget widget)
-		{
-			this.Widget = widget;
-		}
-
-		public RectangleDouble Offset { get; set; }
-	}
-
-	public interface IOverrideAutoClose
-	{
-		bool AllowAutoClose { get; }
-	}
-
-	public static class SystemWindowExtension
-	{
-		private static void RightHorizontalSplitPopup(SystemWindow systemWindow, MatePoint anchor, MatePoint popup, RectangleDouble altBounds)
-		{
-			// Calculate left for right aligned split
-			Vector2 popupPosition = new Vector2(systemWindow.Width - popup.Widget.Width, 0);
-
-			Vector2 anchorLeft = anchor.Widget.Parent.TransformToScreenSpace(anchor.Widget.Position);
-
-			popup.Widget.Height = anchorLeft.Y;
-
-			popup.Widget.Position = popupPosition;
-		}
-
-		public static void ShowPopup(this SystemWindow systemWindow, ThemeConfig theme, MatePoint anchor, MatePoint popup, RectangleDouble altBounds = default(RectangleDouble), int borderWidth = 1)
-		{
-			ShowPopup(systemWindow, theme, anchor, popup, altBounds, borderWidth, BestPopupPosition);
-		}
-
-		public static void ShowRightSplitPopup(this SystemWindow systemWindow, ThemeConfig theme, MatePoint anchor, MatePoint popup, RectangleDouble altBounds = default(RectangleDouble), int borderWidth = 1)
-		{
-			ShowPopup(systemWindow, theme, anchor, popup, altBounds, borderWidth, RightHorizontalSplitPopup);
-		}
-
-		public static void ShowPopup(this SystemWindow systemWindow, ThemeConfig theme, MatePoint anchor, MatePoint popup, RectangleDouble altBounds, int borderWidth, Action<SystemWindow, MatePoint, MatePoint, RectangleDouble> layoutHelper)
-		{
-			var hookedParents = new HashSet<GuiWidget>();
-
-			List<IIgnoredPopupChild> ignoredWidgets = popup.Widget.Children.OfType<IIgnoredPopupChild>().ToList();
-
-			void Widget_Draw(object sender, DrawEventArgs e)
-			{
-				if (borderWidth > 0)
-				{
-					e.Graphics2D.Render(
-						new Stroke(
-							new RoundedRect(popup.Widget.LocalBounds, 0),
-							borderWidth * 2),
-						theme.PopupBorderColor);
-				}
-			}
-
-			void WidgetRelativeTo_PositionChanged(object sender, EventArgs e)
-			{
-				if (anchor.Widget?.Parent != null)
-				{
-					layoutHelper.Invoke(systemWindow, anchor, popup, altBounds);
-				}
-			}
-
-			void CloseMenu()
-			{
-				popup.Widget.AfterDraw -= Widget_Draw;
-
-				popup.Widget.Close();
-
-				anchor.Widget.Closed -= Anchor_Closed;
-
-				// Unbind callbacks on parents for position_changed if we're closing
-				foreach (GuiWidget widget in hookedParents)
-				{
-					widget.PositionChanged -= WidgetRelativeTo_PositionChanged;
-					widget.BoundsChanged -= WidgetRelativeTo_PositionChanged;
-				}
-
-				// Long lived originating item must be unregistered
-				anchor.Widget.Closed -= Anchor_Closed;
-
-				// Restore focus to originating widget on close
-				if (anchor.Widget?.HasBeenClosed == false)
-				{
-					anchor.Widget.Focus();
-				}
-			}
-
-			void FocusChanged(object s, EventArgs e)
-			{
-				UiThread.RunOnIdle(() =>
-				{
-					// Fired any time focus changes. Traditionally we closed the menu if we weren't focused.
-					// To accommodate children (or external widgets) having focus we also query for and consider special cases
-					bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused || w.KeepMenuOpen);
-					bool descendantIsHoldingOpen = popup.Widget.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
-						&& ignoredPopupChild.KeepMenuOpen);
-
-					// If the focused changed and we've lost focus and no special cases permit, close the menu
-					if (!popup.Widget.ContainsFocus
-						&& !specialChildHasFocus
-						&& !descendantIsHoldingOpen
-						&& !PopupWidget.DebugKeepOpen)
-					{
-						CloseMenu();
-					}
-				});
-			}
-
-			void Anchor_Closed(object sender, EventArgs e)
-			{
-				// If the owning widget closed, so should we
-				CloseMenu();
-			}
-
-			foreach (var ancestor in anchor.Widget.Parents<GuiWidget>().Where(p => p != systemWindow))
-			{
-				if (hookedParents.Add(ancestor))
-				{
-					ancestor.PositionChanged += WidgetRelativeTo_PositionChanged;
-					ancestor.BoundsChanged += WidgetRelativeTo_PositionChanged;
-				}
-			}
-
-			popup.Widget.ContainsFocusChanged += FocusChanged;
-			popup.Widget.AfterDraw += Widget_Draw;
-
-			WidgetRelativeTo_PositionChanged(anchor.Widget, null);
-			anchor.Widget.Closed += Anchor_Closed;
-
-			// When the widgets position changes, sync the popup position
-			systemWindow?.AddChild(popup.Widget);
-
-			popup.Widget.Closed += (s, e) =>
-			{
-				Console.WriteLine();
-			};
-
-			popup.Widget.Focus();
-
-			popup.Widget.Invalidate();
-		}
-
-		private static void BestPopupPosition(this SystemWindow systemWindow, MatePoint anchor, MatePoint popup, RectangleDouble altBounds)
-		{
-			// Calculate left aligned screen space position (using widgetRelativeTo.parent)
-			Vector2 anchorLeft = anchor.Widget.Parent.TransformToParentSpace(systemWindow, anchor.Widget.Position);
-			anchorLeft += new Vector2(altBounds.Left, altBounds.Bottom);
-
-			Vector2 popupPosition = anchorLeft;
-
-			var bounds = altBounds == default(RectangleDouble) ? anchor.Widget.LocalBounds : altBounds;
-
-			Vector2 xPosition = PopupMenu.GetXAnchor(anchor.Mate, popup.Mate, popup.Widget, bounds);
-
-			Vector2 screenPosition;
-
-			screenPosition = anchorLeft + xPosition;
-
-			// Constrain
-			if (screenPosition.X + popup.Widget.Width > systemWindow.Width
-				|| screenPosition.X < 0)
-			{
-				xPosition = PopupMenu.GetXAnchor(anchor.AltMate, popup.AltMate, popup.Widget, bounds);
-			}
-
-			popupPosition += xPosition;
-
-			Vector2 yPosition = PopupMenu.GetYAnchor(anchor.Mate, popup.Mate, popup.Widget, bounds);
-
-			screenPosition = anchorLeft + yPosition;
-
-			// Constrain
-			if (anchor.AltMate != null
-				&& (screenPosition.Y + popup.Widget.Height > systemWindow.Height
-					|| screenPosition.Y < 0))
-			{
-				yPosition = PopupMenu.GetYAnchor(anchor.AltMate, popup.AltMate, popup.Widget, bounds);
-			}
-
-			popupPosition += yPosition;
-
-			// Flipping to the alt mate does not guarantee an on screen result - several mate combinations
-			// (anchor bottom to popup bottom, for one) resolve to no offset at all, leaving the popup exactly
-			// where it did not fit. Clamp vertically so the content stays reachable. Horizontal placement is
-			// left as the mate flip above decided it, as callers rely on that alignment.
-			double topAlignedY = systemWindow.Height - popup.Widget.Height;
-			if (popup.Widget.Height > systemWindow.Height)
-			{
-				// Nothing can show all of a popup that is taller than the window (menus avoid this by
-				// scrolling first, see PopupMenu.MakeMenuHaveScroll). Show its top - that is where the items
-				// a user is looking for are; bottom aligning it would push them above the top of the window.
-				popupPosition.Y = topAlignedY;
-			}
-			else
-			{
-				popupPosition.Y = Math.Max(0, Math.Min(popupPosition.Y, topAlignedY));
-			}
-
-			popup.Widget.Position = popupPosition;
 		}
 	}
 }

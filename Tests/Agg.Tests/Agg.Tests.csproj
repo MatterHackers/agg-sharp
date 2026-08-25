@@ -111,6 +111,7 @@
     <Compile Remove="Agg.UI\MacDragOutsideViewTests.cs" />
     <Compile Remove="Agg.UI\MacPlatformCloseRoutingTests.cs" />
     <Compile Remove="Agg.UI\MacKeyTranslationTests.cs" />
+    <Compile Remove="Agg.UI\MacMenuBarTests.cs" />
   </ItemGroup>
 
   <!-- Tests whose subject is the Linux platform layer. Removed wherever PlatformLinux is not referenced -

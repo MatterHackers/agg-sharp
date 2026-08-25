@@ -213,9 +213,30 @@ namespace MatterHackers.Agg.Platform.Mac
 		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
 		public static extern void Send_v_r_r(IntPtr receiver, IntPtr selector, IntPtr arg0, IntPtr arg1);
 
+		/// <summary>
+		/// -(id)selector:(id) with:(id) and:(id) - notably
+		/// -[NSMenuItem initWithTitle:action:keyEquivalent:], where the middle argument is a SEL and the
+		/// other two are NSStrings. All three are pointer sized, so they share one declaration.
+		/// </summary>
+		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
+		public static extern IntPtr Send_r_r_r_r(IntPtr receiver, IntPtr selector, IntPtr arg0, IntPtr arg1, IntPtr arg2);
+
+		/// <summary>-(void)selector:(NSUInteger) - notably -[NSMenuItem setKeyEquivalentModifierMask:].</summary>
+		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
+		public static extern void Send_v_Q(IntPtr receiver, IntPtr selector, ulong arg0);
+
 		/// <summary>-(id)selector:(NSUInteger) - notably -[NSArray objectAtIndex:].</summary>
 		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
 		public static extern IntPtr Send_r_Q(IntPtr receiver, IntPtr selector, ulong arg0);
+
+		/// <summary>
+		/// -(id)selector:(NSInteger) - notably -[NSMenu itemAtIndex:], whose index is signed. Both halves of
+		/// an NSInteger/NSUInteger pair occupy the same 64-bit register, so this and <see cref="Send_r_Q"/>
+		/// pass identical bits; they are kept apart so each call site is declared with the signature the
+		/// selector really has, per this class's central arm64 rule.
+		/// </summary>
+		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
+		public static extern IntPtr Send_r_q(IntPtr receiver, IntPtr selector, long arg0);
 
 		/// <summary>-(id)selector:(const char *)</summary>
 		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
