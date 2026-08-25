@@ -69,7 +69,7 @@ namespace MatterHackers.Rectification
         private void CreateInverseImageMappingCache(LensDistortionMapping correctionForLens)
         {
 #if MULTI_THREAD
-            System.Threading.Tasks.Parallel.For(0, height, y => //  
+            MatterHackers.Agg.Parallel.For(0, height, y => //  
 #else
             for (int y = 0; y < height; y++)
 #endif

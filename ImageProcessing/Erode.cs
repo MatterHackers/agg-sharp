@@ -59,7 +59,7 @@ namespace MatterHackers.Agg.ImageProcessing
 						byte[] sourceBuffer = source.GetBuffer();
 						byte[] destBuffer = dest.GetBuffer();
 
-						System.Threading.Tasks.Parallel.For(1, height, y =>
+						MatterHackers.Agg.Parallel.For(1, height, y =>
 						//for (int y = 1; y < height - 1; y++)
 						{
 							int rowOffset = source.GetBufferOffsetY(y);

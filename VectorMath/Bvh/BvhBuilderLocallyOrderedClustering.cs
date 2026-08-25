@@ -23,6 +23,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Parallel = MatterHackers.Agg.Parallel;
 
 namespace MatterHackers.VectorMath.Bvh
 {

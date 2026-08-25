@@ -34,6 +34,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.Concurrent;
+using Parallel = MatterHackers.Agg.Parallel;
 
 namespace MatterHackers.RayTracer
 {

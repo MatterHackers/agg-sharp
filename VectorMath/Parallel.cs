@@ -33,6 +33,13 @@ using System.Threading.Tasks;
 
 namespace MatterHackers.Agg
 {
+    /// <summary>
+    /// Thin wrapper over <see cref="System.Threading.Tasks.Parallel"/> that can be globally
+    /// forced onto a plain sequential path. Hosts with no thread pool (single threaded wasm)
+    /// set <see cref="Sequential"/> once at startup; everything routed through here then runs
+    /// in-line. Lives in VectorMath rather than Agg so the lowest-level projects
+    /// (VectorMath, geometry3Sharp) can share the one flag.
+    /// </summary>
     public static class Parallel
     {
         public static bool Sequential { get; set; }
@@ -67,6 +74,29 @@ namespace MatterHackers.Agg
             }
         }
 
+        /// <summary>
+        /// Runs the actions, in parallel unless <see cref="Sequential"/> is set. Exception shape differs
+        /// under Sequential: the first throwing action propagates raw and later actions never run, whereas
+        /// the parallel path runs all actions and aggregates failures into an AggregateException.
+        /// </summary>
+        public static void Invoke(params Action[] actions)
+        {
+            if (Sequential)
+            {
+                foreach (var action in actions)
+                {
+                    action();
+                }
+            }
+            else
+            {
+                System.Threading.Tasks.Parallel.Invoke(actions);
+            }
+        }
+
+        // No Sequential path: ParallelLoopState has no public constructor, so there is nothing
+        // faithful to hand the body. Convert call sites to a plain accumulating loop if this
+        // ever needs to run on a single threaded host.
         public static void For<T>(int startInclusive, int endExclusive, Func<T> action, Func<int, ParallelLoopState, T, T> p2, Action<T> p3)
         {
             System.Threading.Tasks.Parallel.For(startInclusive, endExclusive, action, p2, p3);

@@ -8,6 +8,10 @@ using System.Threading;
 using System.Threading.Tasks;
 #endif
 
+// Every gParallel.ForEach in geometry3Sharp funnels through this one alias, so the global
+// Sequential flag covers the whole library (SDF grids, remeshers, smoothers, solvers, ...).
+using Parallel = MatterHackers.Agg.Parallel;
+
 namespace g3
 {
 	public class gParallel

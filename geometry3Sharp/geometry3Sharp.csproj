@@ -23,4 +23,10 @@
     <Product>geometry3Sharp</Product>
     <PackageId>geometry3Sharp</PackageId>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Only for MatterHackers.Agg.Parallel: geometry3Sharp's parallelism has to honor the
+         same global Sequential flag as the rest of the stack on single threaded hosts. -->
+    <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
+  </ItemGroup>
 </Project>

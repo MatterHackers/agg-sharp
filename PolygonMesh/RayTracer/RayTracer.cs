@@ -41,6 +41,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.RayTracer.Light;
 using MatterHackers.VectorMath;
+using Parallel = MatterHackers.Agg.Parallel;
 
 namespace MatterHackers.RayTracer
 {
@@ -85,7 +86,7 @@ namespace MatterHackers.RayTracer
 		{
 			if (MultiThreaded)
 			{
-				System.Threading.Tasks.Parallel.For(1, viewport.Height - 1, y =>
+				Parallel.For(1, viewport.Height - 1, y =>
 				{
 					AntiAliasXSpan(viewport, scene, imageBufferAsDoubles, maxSamples, y);
 				});
@@ -113,7 +114,7 @@ namespace MatterHackers.RayTracer
 
 			if (MultiThreaded)
 			{
-				System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y =>
+				Parallel.For(viewport.Bottom, viewport.Height, y =>
 				{
 					CopyColorXSpan(destImage, viewport, y, destBuffer);
 				});
@@ -160,7 +161,7 @@ namespace MatterHackers.RayTracer
 
 			if (MultiThreaded)
 			{
-				System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y =>
+				Parallel.For(viewport.Bottom, viewport.Height, y =>
 				{
 					CopyDepthXSpan(destImage, viewport, y, destBuffer, minZ, divisor);
 				});
@@ -435,7 +436,7 @@ namespace MatterHackers.RayTracer
 			{
 				if (MultiThreaded)
 				{
-					System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y =>
+					Parallel.For(viewport.Bottom, viewport.Height, y =>
 					{
 						TraceXSpan(viewport, scene, y);
 					});

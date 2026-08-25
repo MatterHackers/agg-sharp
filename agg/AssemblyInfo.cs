@@ -30,3 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Agg.Tests")]
+
+// MatterHackers.Agg.Parallel moved to VectorMath.dll (2026-08-25) so leaf projects like geometry3Sharp
+// can reach the Sequential switch; this forwarder keeps binaries compiled against Agg.dll working.
+[assembly: TypeForwardedTo(typeof(MatterHackers.Agg.Parallel))]
