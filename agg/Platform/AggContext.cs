@@ -40,7 +40,13 @@ namespace MatterHackers.Agg.Platform
 		Mac,
 		X11,
 		Other,
-		Android
+		Android,
+
+		/// <summary>
+		/// WebAssembly running in a browser. Appended rather than inserted so the existing values keep
+		/// their numbers - they are persisted and compared by ordinal in places outside this repo.
+		/// </summary>
+		Browser
 	}
 
 	public static class AggContext
@@ -118,7 +124,19 @@ namespace MatterHackers.Agg.Platform
 
 		public static long PhysicalMemory => OsInformation.PhysicalMemory;
 
-		public static OSType OperatingSystem => OsInformation.OperatingSystem;
+		/// <summary>
+		/// The OS this process is running on.
+		/// </summary>
+		/// <remarks>
+		/// The browser is answered before <see cref="OsInformation"/> is touched: neither platform provider
+		/// assembly (win32 or mac) loads under wasm, so resolving the provider there yields null and this
+		/// property - which plenty of callers use just to branch on the platform - would throw.
+		/// The sibling properties (<see cref="PhysicalMemory"/>, <see cref="DesktopSize"/>) still go through
+		/// the provider and are NOT browser-safe; a browser host must set <see cref="OsInformation"/> first.
+		/// </remarks>
+		public static OSType OperatingSystem => System.OperatingSystem.IsBrowser()
+			? OSType.Browser
+			: OsInformation.OperatingSystem;
 
 		public static Point2D DesktopSize => OsInformation.DesktopSize;
 
