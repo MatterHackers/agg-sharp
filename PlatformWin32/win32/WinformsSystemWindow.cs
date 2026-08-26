@@ -488,6 +488,7 @@ namespace MatterHackers.Agg.UI
 						Invoke(new Action(() =>
 						{
 							reachedUiThread = true;
+							MainLoopSynchronizationContext.InstallOnPumpThread();
 							UiThread.InvokePendingActions();
 							FlushPendingAggInvalidates();
 						}));
@@ -495,6 +496,7 @@ namespace MatterHackers.Agg.UI
 					else
 					{
 						reachedUiThread = true;
+						MainLoopSynchronizationContext.InstallOnPumpThread();
 						UiThread.InvokePendingActions();
 						FlushPendingAggInvalidates();
 					}

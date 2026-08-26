@@ -1919,7 +1919,15 @@ namespace MatterHackers.GuiAutomation
 			try
 			{
 				DebugLogger.LogMessage("AutomationRunner", "CALLING ShowAsSystemWindow");
-				initialSystemWindow.ShowAsSystemWindow();
+
+				// This thread is about to become the message loop, so it is the thread await has to come back
+				// to. Installing here rather than relying on the platform host means the context is in place
+				// before the window's first idle tick, and covers hosts that never reach an idle timer. Scoped
+				// because this thread belongs to the test harness, which reuses it once the loop has exited.
+				using (MainLoopSynchronizationContext.InstallForScope())
+				{
+					initialSystemWindow.ShowAsSystemWindow();
+				}
 			}
 			catch (Exception ex)
 			{
@@ -1981,8 +1989,12 @@ namespace MatterHackers.GuiAutomation
 			// IMPORTANT: Reset UiThread LAST after window is fully closed to avoid clearing CloseOnIdle actions
 			try
 			{
-				// Let any remaining RunOnIdle actions complete first
-				UiThread.InvokePendingActions();
+				// Let any remaining RunOnIdle actions complete first, still under the main loop context so a
+				// continuation queued by this final drain lands in the same queue we are draining.
+				using (MainLoopSynchronizationContext.InstallForScope())
+				{
+					UiThread.InvokePendingActions();
+				}
 
 				// Now reset UiThread static state for the next test
 				UiThread.ResetForTests();

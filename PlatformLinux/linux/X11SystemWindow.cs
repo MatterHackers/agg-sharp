@@ -1016,6 +1016,7 @@ namespace MatterHackers.Agg.UI
 
 			try
 			{
+				MainLoopSynchronizationContext.InstallOnPumpThread();
 				UiThread.InvokePendingActions();
 			}
 			finally
