@@ -77,6 +77,11 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// Where a frame goes when the swapchain has none to give. Drawing has to land somewhere legal or
 		/// every widget draw in that frame throws; this is that somewhere.
+		/// <para>
+		/// agg-gui-wgpu has no equivalent yet - its shell can tell the paint "not this time", ours cannot -
+		/// so this is the reference implementation of the idea, which the Rust side plans to adopt
+		/// (agg-gui's <c>porting_update.md</c>). Do not delete it to "match" that port.
+		/// </para>
 		/// </summary>
 		private IGpuTexture scratchTarget;
 
@@ -255,17 +260,26 @@ namespace MatterHackers.Agg.UI
 			}
 
 			IGpuTexture frame;
+			bool redrawRequested;
 			try
 			{
 				using (FrameProfiler.Time("AcquireTexture"))
 				{
-					frame = this.surface.AcquireCurrentTexture();
+					frame = this.surface.AcquireCurrentTexture(out redrawRequested);
 				}
 			}
 			catch (Exception) when (this.TryRecoverIfDeviceLost())
 			{
 				// Recovered; this frame is skipped and the next one draws on the new device.
 				return;
+			}
+
+			if (redrawRequested)
+			{
+				// The swapchain dropped this frame for something that clears itself (a Timeout, or a
+				// reconfigure that has not taken yet). Without asking for a paint, the window would sit on
+				// the last presented frame until some unrelated event happened to invalidate it.
+				this.Invalidate();
 			}
 
 			this.frameIsPresentable = frame != null;
@@ -330,6 +344,14 @@ namespace MatterHackers.Agg.UI
 				this.DisposeDeviceResources();
 				this.InitializeWebGpu();
 				this.deviceRecoveryCount++;
+
+				if (this.isInitialized)
+				{
+					// The frame that hit the loss was abandoned and the new swapchain has never presented,
+					// so the window is showing whatever the compositor kept. Ask for a paint on the new
+					// device rather than waiting for the next thing to invalidate.
+					this.Invalidate();
+				}
 
 				return this.isInitialized;
 			}

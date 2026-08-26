@@ -48,6 +48,12 @@ namespace MatterHackers.WebGpuRender
 	/// device-lost callback and a clear exception from the next acquire); recreating the device and the
 	/// caches hanging off it is the window host's job, and Phase 4's.
 	/// </para>
+	/// <para>
+	/// <b>Sibling port.</b> This is the same object as <c>Gpu</c> in agg-gui-wgpu's <c>gpu.rs</c>, and the
+	/// acquire/clamp/present-mode policies are deliberately kept in step with it - see
+	/// <see cref="ActionFor"/>, <see cref="ClampSurfaceSize"/> and <see cref="ResolvePresentMode"/>. The
+	/// alpha mode is the one intentional divergence (see <see cref="Configure"/>).
+	/// </para>
 	/// </summary>
 	public sealed unsafe class WebGpuSurfaceTarget : ISurfaceTarget
 	{
@@ -55,9 +61,10 @@ namespace MatterHackers.WebGpuRender
 		/// <c>WGPUSurfaceGetCurrentTextureStatus_Occluded</c>, from wgpu-native's own <c>wgpu.h</c> rather
 		/// than the standard <c>webgpu.h</c> - which is why it is a constant here instead of an enum member:
 		/// the generated binding only covers the standard header. Metal-only, and only when the NSWindow
-		/// reports itself occluded.
+		/// reports itself occluded. Same policy row as agg-gui-wgpu's <c>Occluded</c> (<c>gpu.rs</c>): a
+		/// plain skip with no redraw request.
 		/// </summary>
-		private const WGPUSurfaceGetCurrentTextureStatus OccludedStatus = (WGPUSurfaceGetCurrentTextureStatus)0x00030001;
+		public const WGPUSurfaceGetCurrentTextureStatus OccludedStatus = (WGPUSurfaceGetCurrentTextureStatus)0x00030001;
 
 		private readonly WebGpuRenderDevice owner;
 		private readonly WGPUPresentMode[] supportedPresentModes;
@@ -147,6 +154,12 @@ namespace MatterHackers.WebGpuRender
 		/// <summary>
 		/// (Re)configures the swapchain for a new size. WebGPU has no implicit resize: once the window no
 		/// longer matches the configured size, every acquire answers Outdated until this is called.
+		/// <para>
+		/// The size is clamped by <see cref="ClampSurfaceSize"/> and the clamped values are what
+		/// <see cref="Width"/> and <see cref="Height"/> report, so the depth and scratch targets the host
+		/// sizes from them stay the same size as the swapchain. Mirrors
+		/// <c>clamp_surface_size</c> in agg-gui-wgpu's <c>gpu.rs</c>.
+		/// </para>
 		/// </summary>
 		/// <param name="width">Width in pixels; zero (a minimized window) is ignored.</param>
 		/// <param name="height">Height in pixels; zero is ignored.</param>
@@ -157,6 +170,8 @@ namespace MatterHackers.WebGpuRender
 			{
 				return;
 			}
+
+			(width, height) = ClampSurfaceSize(width, height, this.owner.Limits.MaxTextureDimension2D);
 
 			// A configure while a frame is acquired would leave that texture pointing at a swapchain that
 			// no longer exists, so the frame is dropped first.
@@ -171,7 +186,9 @@ namespace MatterHackers.WebGpuRender
 				height = height,
 
 				// Opaque, not Auto: the LCD text passes deliberately never write alpha, so any
-				// alpha-respecting composition would render text as see-through.
+				// alpha-respecting composition would render text as see-through. This is an intentional
+				// divergence from agg-gui-wgpu's pick_alpha_mode (which takes the surface's first
+				// preference) - do not "align" it, it would break text on this stack.
 				alphaMode = WGPUCompositeAlphaMode.Opaque,
 				presentMode = this.presentMode,
 			};
@@ -186,8 +203,23 @@ namespace MatterHackers.WebGpuRender
 		/// window is mid-resize or minimized) - the caller should skip the frame in that case.
 		/// </summary>
 		/// <exception cref="InvalidOperationException">The swapchain failed for a reason a retry cannot fix.</exception>
-		public IGpuTexture AcquireCurrentTexture()
+		public IGpuTexture AcquireCurrentTexture() => this.AcquireCurrentTexture(out _);
+
+		/// <summary>
+		/// The texture this frame draws into, or null when the swapchain could not produce one.
+		/// The C# side of <c>Gpu::acquire_frame</c> in agg-gui-wgpu's <c>gpu.rs</c>.
+		/// </summary>
+		/// <param name="redrawRequested">
+		/// True when the frame was dropped for a reason that can still clear itself (a Timeout, or a
+		/// swapchain that is still not ready after being reconfigured). A host that only paints on demand
+		/// has to ask for another frame, or it waits for an unrelated event to wake it up and the window
+		/// sits stale. False for the skips that would only repeat - an occluded window, a validation
+		/// error - where a self-requested redraw is a busy loop.
+		/// </param>
+		/// <exception cref="InvalidOperationException">The swapchain failed for a reason a retry cannot fix.</exception>
+		public IGpuTexture AcquireCurrentTexture(out bool redrawRequested)
 		{
+			redrawRequested = false;
 			this.ThrowIfDisposed();
 			if (this.frameTexture != null)
 			{
@@ -199,17 +231,79 @@ namespace MatterHackers.WebGpuRender
 				return null;
 			}
 
-			var acquired = this.TryAcquire(out bool retryWorthwhile);
-			if (acquired == null && retryWorthwhile)
+			var acquired = this.TryAcquire(out SurfaceAcquireAction action);
+			if (action == SurfaceAcquireAction.Reconfigure)
 			{
 				// Outdated/Lost is what a resize looks like from here; reconfiguring at the size we already
 				// know rebuilds the swapchain against the window's current state.
 				this.Configure(this.Width, this.Height);
 				acquired = this.TryAcquire(out _);
+				redrawRequested = acquired == null;
+			}
+			else if (action == SurfaceAcquireAction.SkipAndRetry)
+			{
+				redrawRequested = true;
 			}
 
 			this.frameTexture = acquired;
 			return this.frameTexture;
+		}
+
+		/// <summary>
+		/// Clamps a swapchain size to <c>[1, maxTextureDimension2D]</c> on both axes, so an over-large
+		/// window - or a restored window size that arrived corrupted - degrades to what the GPU can do
+		/// instead of failing wgpu's validation. Pure, so the policy is testable without a live surface.
+		/// Mirrors <c>clamp_surface_size</c> in agg-gui-wgpu's <c>gpu.rs</c>.
+		/// </summary>
+		/// <param name="width">Requested width in pixels.</param>
+		/// <param name="height">Requested height in pixels.</param>
+		/// <param name="maxDimension">The device's max 2D texture dimension; zero is treated as one.</param>
+		/// <returns>The size to configure the swapchain with.</returns>
+		public static (uint Width, uint Height) ClampSurfaceSize(uint width, uint height, uint maxDimension)
+		{
+			maxDimension = Math.Max(1u, maxDimension);
+			return (Math.Clamp(width, 1u, maxDimension), Math.Clamp(height, 1u, maxDimension));
+		}
+
+		/// <summary>
+		/// How to handle one <c>wgpuSurfaceGetCurrentTexture</c> status. Pure, so the recovery policy is
+		/// testable without a live GPU surface. The C# side of <c>surface_acquire_action</c> in
+		/// agg-gui-wgpu's <c>gpu.rs</c>, and it answers the same way for every status both APIs share.
+		/// <para>
+		/// Outdated/Lost fire right after a resize, and after a driver reset (TDR), a display-mode change
+		/// or an RDP reconnect: wgpu documents both as "reconfigure and try again", and treating them as a
+		/// plain skip is what leaves a window black after a resize. Timeout is deliberately <em>not</em>
+		/// one of them - the swapchain is still valid, so tearing it down and rebuilding it is both
+		/// wasteful and a way to provoke the next Timeout.
+		/// </para>
+		/// </summary>
+		/// <param name="status">The status the acquire reported.</param>
+		public static SurfaceAcquireAction ActionFor(WGPUSurfaceGetCurrentTextureStatus status)
+		{
+			switch (status)
+			{
+				case WGPUSurfaceGetCurrentTextureStatus.SuccessOptimal:
+				case WGPUSurfaceGetCurrentTextureStatus.SuccessSuboptimal:
+					return SurfaceAcquireAction.Present;
+
+				case WGPUSurfaceGetCurrentTextureStatus.Outdated:
+				case WGPUSurfaceGetCurrentTextureStatus.Lost:
+					return SurfaceAcquireAction.Reconfigure;
+
+				case WGPUSurfaceGetCurrentTextureStatus.Timeout:
+					return SurfaceAcquireAction.SkipAndRetry;
+
+				// Occluded: the NSWindow is minimized or fully covered and asking Metal for a drawable
+				// would block for up to a vsync. Error: the C API's validation status, which a retry
+				// answers identically - the app has a bug to fix, and taking the window down over it (the
+				// way an unknown status does) helps nobody.
+				case OccludedStatus:
+				case WGPUSurfaceGetCurrentTextureStatus.Error:
+					return SurfaceAcquireAction.Skip;
+
+				default:
+					return SurfaceAcquireAction.Fail;
+			}
 		}
 
 		/// <summary>
@@ -253,7 +347,8 @@ namespace MatterHackers.WebGpuRender
 		}
 
 		/// <summary>The requested mode if this surface supports it, Fifo otherwise (the one mode WebGPU
-		/// guarantees every surface has).</summary>
+		/// guarantees every surface has). Mirrors <c>pick_present_mode</c> in agg-gui-wgpu's <c>gpu.rs</c>,
+		/// minus the <c>Auto*</c> modes - wgpu resolves those itself and the C API has no equivalent.</summary>
 		/// <param name="requested">The mode asked for.</param>
 		private WGPUPresentMode ResolvePresentMode(WGPUPresentMode requested)
 		{
@@ -273,47 +368,32 @@ namespace MatterHackers.WebGpuRender
 			return WGPUPresentMode.Fifo;
 		}
 
-		private WebGpuTexture TryAcquire(out bool retryWorthwhile)
+		/// <summary>One acquire attempt. The status is turned into an <see cref="SurfaceAcquireAction"/> by
+		/// <see cref="ActionFor"/>; everything but Present drops whatever texture came back and returns
+		/// null, leaving the caller to act on <paramref name="action"/>.</summary>
+		private WebGpuTexture TryAcquire(out SurfaceAcquireAction action)
 		{
-			retryWorthwhile = false;
-
 			var surfaceTexture = default(WGPUSurfaceTexture);
 			wgpuSurfaceGetCurrentTexture(this.surface, &surfaceTexture);
 
-			switch (surfaceTexture.status)
+			action = ActionFor(surfaceTexture.status);
+			if (action != SurfaceAcquireAction.Present)
 			{
-				case WGPUSurfaceGetCurrentTextureStatus.SuccessOptimal:
-				case WGPUSurfaceGetCurrentTextureStatus.SuccessSuboptimal:
-					break;
+				// Even a failed acquire can hand back a texture (wgpu-native does for Suboptimal-adjacent
+				// statuses); it is ours to release either way, and the frame is skipped.
+				if (!surfaceTexture.texture.IsNull)
+				{
+					wgpuTextureRelease(surfaceTexture.texture);
+				}
 
-				case WGPUSurfaceGetCurrentTextureStatus.Timeout:
-				case WGPUSurfaceGetCurrentTextureStatus.Outdated:
-				case WGPUSurfaceGetCurrentTextureStatus.Lost:
-					if (!surfaceTexture.texture.IsNull)
-					{
-						wgpuTextureRelease(surfaceTexture.texture);
-					}
-
-					retryWorthwhile = true;
-					return null;
-
-				case OccludedStatus:
-					// wgpu-native's Metal-only extension status: the NSWindow reports itself occluded
-					// (minimized, or fully covered), and asking Metal for a drawable would block for up to a
-					// vsync second. Nothing is wrong and nothing needs reconfiguring - unlike Outdated, a
-					// retry here would just hit the same answer - so the frame is simply skipped. The host
-					// draws it into its scratch target and never presents it.
-					if (!surfaceTexture.texture.IsNull)
-					{
-						wgpuTextureRelease(surfaceTexture.texture);
-					}
-
-					return null;
-
-				default:
+				if (action == SurfaceAcquireAction.Fail)
+				{
 					throw new InvalidOperationException(
 						$"wgpuSurfaceGetCurrentTexture on '{this.Label}' returned {surfaceTexture.status}. "
 						+ (this.owner.DeviceLostMessage ?? this.owner.LastUncapturedError ?? "No wgpu error was reported."));
+				}
+
+				return null;
 			}
 
 			WGPUTextureView view = wgpuTextureCreateView(surfaceTexture.texture, null);

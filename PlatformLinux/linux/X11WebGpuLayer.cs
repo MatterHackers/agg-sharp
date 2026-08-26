@@ -117,6 +117,14 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		public bool UseSoftwareAdapter { get; set; }
 
+		/// <summary>
+		/// Gets or sets what to call when a frame was dropped for a reason that can still clear itself, or
+		/// when the device was rebuilt after a loss - the host's "paint again soon". The Windows control
+		/// calls <c>Control.Invalidate</c> here; the host sets this to whatever schedules its next paint.
+		/// Unset means the host paints continuously and does not need waking.
+		/// </summary>
+		public Action RequestRedraw { get; set; }
+
 		/// <summary>The facade the 2D stack draws through, or null before initialization.</summary>
 		public MatterHackers.RenderGl.OpenGl.GL Gl { get; private set; }
 
@@ -248,17 +256,26 @@ namespace MatterHackers.Agg.UI
 			}
 
 			IGpuTexture frame;
+			bool redrawRequested;
 			try
 			{
 				using (FrameProfiler.Time("AcquireTexture"))
 				{
-					frame = this.surface.AcquireCurrentTexture();
+					frame = this.surface.AcquireCurrentTexture(out redrawRequested);
 				}
 			}
 			catch (Exception) when (this.TryRecoverIfDeviceLost())
 			{
 				// Recovered; this frame is skipped and the next one draws on the new device.
 				return;
+			}
+
+			if (redrawRequested)
+			{
+				// The swapchain dropped this frame for something that clears itself (a Timeout, or a
+				// reconfigure that has not taken yet). Without asking for a paint, the window would sit on
+				// the last presented frame until some unrelated event happened to invalidate it.
+				this.RequestRedraw?.Invoke();
 			}
 
 			this.frameIsPresentable = frame != null;
@@ -358,6 +375,13 @@ namespace MatterHackers.Agg.UI
 				this.DisposeDeviceResources();
 				this.InitializeWebGpu();
 				this.deviceRecoveryCount++;
+
+				if (this.isInitialized)
+				{
+					// The frame that hit the loss was abandoned and the new swapchain has never presented,
+					// so ask for a paint on the new device rather than waiting to be invalidated.
+					this.RequestRedraw?.Invoke();
+				}
 
 				return this.isInitialized;
 			}

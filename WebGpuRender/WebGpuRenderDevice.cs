@@ -1394,8 +1394,8 @@ namespace MatterHackers.WebGpuRender
 		}
 
 		/// <summary>
-		/// Reads the surface's capabilities and picks the format and usage to configure it with. Bgra8 is
-		/// preferred when supported (see <see cref="CreateSurfaceTarget(WindowSurfaceRequest)"/>); CopySrc is requested when the
+		/// Reads the surface's capabilities and picks the format and usage to configure it with. The format
+		/// choice itself is <see cref="PickSurfaceFormat"/>; CopySrc is requested when the
 		/// surface allows it, which is what makes a screenshot of the live window possible at all.
 		/// </summary>
 		/// <param name="surface">The surface to query.</param>
@@ -1417,16 +1417,13 @@ namespace MatterHackers.WebGpuRender
 
 			try
 			{
-				// wgpu lists the surface's preferred format first.
-				WGPUTextureFormat chosen = capabilities.formats[0];
+				var offered = new WGPUTextureFormat[(int)capabilities.formatCount];
 				for (nuint index = 0; index < capabilities.formatCount; index++)
 				{
-					if (capabilities.formats[index] == WGPUTextureFormat.BGRA8Unorm)
-					{
-						chosen = WGPUTextureFormat.BGRA8Unorm;
-						break;
-					}
+					offered[(int)index] = capabilities.formats[index];
 				}
+
+				WGPUTextureFormat chosen = PickSurfaceFormat(offered);
 
 				usage = TextureUsage.RenderAttachment;
 				if ((capabilities.usages & WGPUTextureUsage.CopySrc) != 0)
@@ -1447,6 +1444,55 @@ namespace MatterHackers.WebGpuRender
 				wgpuSurfaceCapabilitiesFreeMembers(capabilities);
 			}
 		}
+
+		/// <summary>
+		/// Picks the format to configure a swapchain with, from the formats the surface offers (wgpu lists
+		/// the surface's own preference first). Pure, so the choice is testable without a live surface;
+		/// mirrors <c>pick_surface_format</c> in agg-gui-wgpu's <c>gpu.rs</c>, with the Bgra8Unorm
+		/// preference added on top as a tie-break.
+		/// <para>
+		/// Bgra8Unorm first: it is what the golden images were captured in and what every Windows swapchain
+		/// offers, so window pixels and golden pixels stay the same pixels. Failing that, any non-sRGB
+		/// format beats the surface's first preference - this stack writes bytes that are already
+		/// gamma-encoded, and an sRGB surface view would encode them a second time (visibly washed out).
+		/// Only when everything on offer is sRGB does the surface's own preference win.
+		/// </para>
+		/// </summary>
+		/// <param name="offered">The formats the surface reports, in the surface's preference order.</param>
+		public static WGPUTextureFormat PickSurfaceFormat(IReadOnlyList<WGPUTextureFormat> offered)
+		{
+			if (offered == null || offered.Count == 0)
+			{
+				throw new InvalidOperationException(
+					"wgpuSurfaceGetCapabilities reported no supported formats - the adapter cannot present to this window.");
+			}
+
+			foreach (var format in offered)
+			{
+				if (format == WGPUTextureFormat.BGRA8Unorm)
+				{
+					return format;
+				}
+			}
+
+			foreach (var format in offered)
+			{
+				if (!IsSrgb(format))
+				{
+					return format;
+				}
+			}
+
+			return offered[0];
+		}
+
+		/// <summary>
+		/// Whether a texture format applies the sRGB transfer function on read/write. Decided by name
+		/// rather than a list: the binding is generated from <c>webgpu.h</c>, where every such format is
+		/// spelled <c>...UnormSrgb</c>, so a name test cannot go stale when the header gains formats.
+		/// </summary>
+		private static bool IsSrgb(WGPUTextureFormat format)
+			=> format.ToString().EndsWith("Srgb", StringComparison.Ordinal);
 
 		private WGPUCommandEncoder EnsureCommandEncoder()
 		{

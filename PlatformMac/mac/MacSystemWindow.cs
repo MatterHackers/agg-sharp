@@ -639,6 +639,10 @@ namespace MatterHackers.Agg.UI
 			this.CreateNativeWindow(systemWindow);
 
 			this.webGpuLayer.UseSoftwareAdapter = ShouldUseSoftwareAdapter(systemWindow);
+
+			// The swapchain can drop a frame for something that clears itself; this is how it asks the
+			// pumped loop for another paint instead of leaving the window on its last presented frame.
+			this.webGpuLayer.RequestRedraw = () => this.needsRedraw = true;
 			this.webGpuLayer.InitializeWebGpu();
 
 			// Also seeds SystemWindow.DisplayScale, since aggSystemWindow is already attached. On a 1x
