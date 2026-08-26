@@ -82,12 +82,24 @@ namespace MatterHackers.Agg.UI
 		public static event Action<string> BlockingSendObserved;
 
 		/// <summary>
-		/// Installs this context on the calling thread if it is not already installed. Called by each
-		/// platform host from the thread that pumps the idle queue; cheap and idempotent, so it can sit
-		/// directly on the pump path rather than needing a separate one-time startup hook.
+		/// Installs this context on the calling thread if it is not already installed, and declares that
+		/// thread to be <see cref="UiThread"/>'s UI thread. Called by each platform host from the thread that
+		/// pumps the idle queue; cheap and idempotent, so it can sit directly on the pump path rather than
+		/// needing a separate one-time startup hook.
 		/// </summary>
+		/// <remarks>
+		/// The two go together on purpose: "continuations resume here" and "this is the UI thread" are the
+		/// same fact about the same thread, and a host that installed the context without saying so would
+		/// still be marshalling work to itself (see
+		/// <see cref="UiThread.MarkCurrentThreadAsUiThread"/> for what that cost). The claim is made before
+		/// the early return, so a pump re-asserts its identity on every drain rather than only on the first -
+		/// which is what makes it survive <see cref="UiThread.ResetForTests"/> and any other thread pumping
+		/// the queue.
+		/// </remarks>
 		public static void InstallOnPumpThread()
 		{
+			UiThread.MarkCurrentThreadAsUiThread();
+
 			if (Current is MainLoopSynchronizationContext)
 			{
 				return;

@@ -837,7 +837,11 @@ namespace MatterHackers.Agg.UI
 				{
 					try
 					{
-						await this.CaptureScreenshotAsync(path);
+						// CaptureOnPumpThreadAsync, not the public entry point: this delegate is running on
+						// the pump because the pump is what runs it, and re-asking UiThread.IsUiThread here
+						// would let a wrong answer send the request round the queue again instead of
+						// capturing. See CaptureOnPumpThreadAsync.
+						await this.CaptureOnPumpThreadAsync(path);
 					}
 					catch (Exception ex)
 					{
@@ -960,7 +964,7 @@ namespace MatterHackers.Agg.UI
 				{
 					try
 					{
-						await this.CaptureScreenshotAsync(path);
+						await this.CaptureOnPumpThreadAsync(path);
 						marshalled.TrySetResult();
 					}
 					catch (Exception ex)
@@ -982,6 +986,31 @@ namespace MatterHackers.Agg.UI
 					// failed faults instead of landing here.
 				}
 
+				return;
+			}
+
+			await this.CaptureOnPumpThreadAsync(path);
+		}
+
+		/// <summary>
+		/// The capture itself, from the thread that pumps the idle queue: queue the request, force a frame,
+		/// and wait for the frame that consumes it.
+		/// </summary>
+		/// <remarks>
+		/// Split out from <see cref="CaptureScreenshotAsync"/> so that the work queued by the marshalling
+		/// branches above - which run on the pump BECAUSE the pump is what runs them - can capture directly
+		/// instead of asking <see cref="UiThread.IsUiThread"/> a second time. That second question used to be
+		/// answerable "no" while running on the pump (the id can be latched onto another thread; see
+		/// <see cref="UiThread.MarkCurrentThreadAsUiThread"/>), and the queued work then marshalled the
+		/// request onto the queue it was already being run from - forever, until the caller's timeout expired
+		/// with no file written and no error raised. Nothing on this path asks that question, so no answer to
+		/// it can turn a capture into a loop.
+		/// </remarks>
+		/// <param name="path">Where to write the PNG.</param>
+		private async Task CaptureOnPumpThreadAsync(string path)
+		{
+			if (this.webGpuLayer == null || this.webGpuLayer.IsDisposed)
+			{
 				return;
 			}
 
@@ -1658,7 +1687,20 @@ namespace MatterHackers.Agg.UI
 					{
 						if (x11Window.needsRedraw && !x11Window.hasClosed)
 						{
-							x11Window.PaintFrame();
+							// A throw from a widget's draw costs this frame and nothing more - see the
+							// same guard in MacSystemWindow.RunEventLoop for what letting it unwind the
+							// loop cost. Reported rather than swallowed, so the automation harness still
+							// fails the test whose draw threw.
+							try
+							{
+								x11Window.PaintFrame();
+							}
+							catch (Exception paintException)
+							{
+								Console.Error.WriteLine($"X11SystemWindow paint threw, frame abandoned: {paintException}");
+								UiThread.ReportUnhandledException(paintException);
+							}
+
 							paintedSomething = true;
 						}
 					}

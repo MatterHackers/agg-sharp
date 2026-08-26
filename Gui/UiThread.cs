@@ -162,6 +162,37 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
+		/// Declares the calling thread to be the UI thread - the thread that drains this queue and that
+		/// <see cref="IsUiThread"/> answers for. Called by every platform host from its pump (through
+		/// <see cref="MainLoopSynchronizationContext.InstallOnPumpThread"/>); idempotent and cheap enough to
+		/// sit on the pump path.
+		/// </summary>
+		/// <remarks>
+		/// <para><see cref="InvokePendingActions"/> also latches the id, but only as a fallback for a process
+		/// with no host at all (a headless test that pumps the queue itself), and only while nothing has
+		/// claimed it. That fallback cannot be the whole story, because anything may drain the queue: the
+		/// automation harness unlatches the id between tests (<see cref="ResetForTests"/>) and test helpers
+		/// pump from worker threads, so the first drain after a reset is a race the host's own pump can
+		/// lose - and did, intermittently, under a parallel test run.</para>
+		/// <para>What that costs is not a cosmetic wrong answer. Every "am I already there, or must I
+		/// marshal?" decision reads <see cref="IsUiThread"/>, so a host told it is not the UI thread marshals
+		/// work to itself: the mac screenshot capture re-queued its own request onto the pump it was already
+		/// running on, frame after frame, until the caller's timeout expired having written no file. Letting
+		/// the pump say so directly makes that self-correcting - the identity is restored on the next pump,
+		/// whatever else touched the queue.</para>
+		/// </remarks>
+		public static void MarkCurrentThreadAsUiThread()
+		{
+			int callingThreadId = Thread.CurrentThread.ManagedThreadId;
+
+			// Compared before writing so the pump is not dirtying a shared field on every idle tick.
+			if (uiThreadId != callingThreadId)
+			{
+				uiThreadId = callingThreadId;
+			}
+		}
+
+		/// <summary>
 		/// Awaitable switch to the UI thread: everything after <c>await UiThread.SwitchToUiThreadAsync()</c>
 		/// runs on the thread that pumps <see cref="InvokePendingActions"/>.
 		/// </summary>
@@ -212,6 +243,9 @@ namespace MatterHackers.Agg.UI
 
 		public static void InvokePendingActions()
 		{
+			// A fallback only, for a process with no platform host to declare a pump - a headless test that
+			// drains the queue on its own thread. A host claims the identity outright; see
+			// MarkCurrentThreadAsUiThread for why first-drain-wins cannot be the whole rule.
 			if (uiThreadId == -1)
 			{
 				uiThreadId = Thread.CurrentThread.ManagedThreadId;
