@@ -822,15 +822,18 @@ namespace MatterHackers.Agg.UI
 
 				// The native read-back completes inside the paint (wgpu's buffer map is polled to
 				// completion there), so this is normally already set. It is only not set if the await in
-				// CaptureThenPresent genuinely suspended. This host installs no SynchronizationContext, so
-				// that continuation resumes on a thread-pool thread rather than back here - but the work it
-				// is waiting on is driven by this window's frames and idle queue, so pumping (rather than
-				// blocking the UI thread, which would stop the very frames it needs) is still what lets it
-				// finish.
+				// CaptureThenPresent genuinely suspended, in which case its continuation is queued to the
+				// idle pump by MainLoopSynchronizationContext - hence pumping rather than blocking the UI
+				// thread, which would stop the very frames and continuations it is waiting on.
+				//
+				// DrainForNestedPump, not InvokeIdleActions: this loop very often runs underneath an idle
+				// action already (the off-thread branch above marshals through RunOnIdle), and the guarded
+				// drain is a no-op while that is true - which would leave this spinning for a continuation
+				// only a drain can run.
 				for (int spin = 0; spin < ScreenshotPumpSpins && !completed.IsSet; spin++)
 				{
 					PumpEvents();
-					InvokeIdleActions();
+					UiThread.DrainForNestedPump();
 				}
 			}
 			finally
@@ -944,9 +947,10 @@ namespace MatterHackers.Agg.UI
 			}
 			finally
 			{
-				// Only clear what still belongs to this request. There is no SynchronizationContext in this
-				// host, so this cleanup can run on a thread-pool thread well after the request was given up
-				// on, by which point the fields may already have been claimed by the next request.
+				// Only clear what still belongs to this request. The continuation that gets here resumes on
+				// the main loop (MainLoopSynchronizationContext), but on a LATER pump - so this cleanup can
+				// still run well after the request was given up on, by which point the fields may already
+				// have been claimed by the next request.
 				if (ReferenceEquals(this.screenshotCompletion, completion))
 				{
 					this.pendingScreenshotPath = null;
@@ -1194,7 +1198,9 @@ namespace MatterHackers.Agg.UI
 
 		/// <summary>
 		/// Drains the RunOnIdle queue. Guarded because an idle action can run a nested loop (a modal
-		/// dialog, or <see cref="CaptureScreenshot"/>'s pump) and re-enter this.
+		/// dialog) and re-enter this. A nested loop that must instead let awaited continuations run -
+		/// <see cref="CaptureScreenshot"/>'s spin - calls <see cref="UiThread.DrainForNestedPump"/>, which
+		/// deliberately skips this guard.
 		/// </summary>
 		private static void InvokeIdleActions()
 		{

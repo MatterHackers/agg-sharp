@@ -77,7 +77,8 @@ namespace MatterHackers.Agg
 		/// <remarks>
 		/// The modifier only owns its list for the duration of the call. Publishing that same instance let
 		/// anything still holding it - most importantly an `async` lambda bound to this Action, which returns
-		/// at its first await and resumes on a thread pool thread long after Modify returned - keep calling
+		/// at its first await and resumes on a later pump (or, off the main loop, on a thread pool thread)
+		/// long after Modify returned - keep calling
 		/// Add on the LIVE list from outside Modify. That is not merely a lost update: List&lt;T&gt;.Add
 		/// publishes the incremented Count before it stores the element, so a concurrent reader (the next
 		/// Modify's `new List&lt;T&gt;(items)`, which copies via ICollection.CopyTo and therefore skips the

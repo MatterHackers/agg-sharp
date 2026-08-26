@@ -248,6 +248,25 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Drains the queue from inside a nested pump - a loop that is itself running underneath a queued
+		/// action and cannot finish until an awaited continuation makes progress.
+		/// </summary>
+		/// <remarks>
+		/// The platform hosts guard their ordinary idle drain with a re-entrancy flag, which is the right
+		/// protection for an idle action that runs a message loop of its own and the wrong one for a loop
+		/// that is spinning precisely because it is waiting on work this queue now owns: a suspended await
+		/// resumes by posting through <see cref="MainLoopSynchronizationContext"/> into this very queue, so
+		/// a guarded (no-op) drain would leave such a loop waiting forever for the one thing that could
+		/// release it. Those loops call this instead. Nesting is safe because
+		/// <see cref="InvokePendingActions"/> runs from a private copy of the queue rather than the live
+		/// list.
+		/// </remarks>
+		public static void DrainForNestedPump()
+		{
+			InvokePendingActions();
+		}
+
 		public class DeferredAction
 		{
 			protected Action action;

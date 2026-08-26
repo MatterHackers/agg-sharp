@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using TUnit.Assertions;
@@ -118,11 +119,20 @@ namespace MatterHackers.Agg.UI.Tests
 			public void Dispose()
 			{
 				stopRequested = true;
-				thread.Join();
+
+				// Bounded: a pump thread that will not come back is a real failure, and an unbounded Join
+				// would report it as a hung test run rather than as itself.
+				bool stopped = thread.Join(TimeSpan.FromSeconds(10));
 
 				// The pump thread is gone; leave no latched ui thread id or queued work behind.
 				UiThread.ResetForTests();
 				ready.Dispose();
+
+				if (!stopped)
+				{
+					throw new TimeoutException(
+						"The test pump thread did not stop within 10s - queued work is still blocking it.");
+				}
 			}
 		}
 
@@ -319,6 +329,201 @@ namespace MatterHackers.Agg.UI.Tests
 				"idle 2",
 				"post 2"
 			});
+		}
+
+		/// <summary>
+		/// The shape <see cref="UiThread.DrainForNestedPump"/> exists for: a loop that is itself running
+		/// inside a pumped action and cannot finish until a suspended await resumes - which, with this
+		/// context installed, can only happen when something drains the queue. That is exactly the Mac and
+		/// X11 CaptureScreenshot spin, whose ordinary guarded drain is a no-op while an idle action is on
+		/// the stack.
+		/// </summary>
+		[Test]
+		[Timeout(30_000)]
+		public async Task NestedDrainAdvancesAnAwaitThatOnlyTheQueueCanComplete(CancellationToken cancellationToken)
+		{
+			using var pump = new TestPump();
+
+			bool captureFinished = false;
+			int continuationThread = 0;
+			bool finishedInsideTheNestedLoop = false;
+
+			await pump.RunOnPump(() =>
+			{
+				// Stands in for CaptureThenPresent: suspends on work only a later pump can complete.
+				var frameReadback = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+				async Task CaptureAsync()
+				{
+					await frameReadback.Task;
+					continuationThread = Environment.CurrentManagedThreadId;
+					captureFinished = true;
+				}
+
+				_ = CaptureAsync();
+
+				// The readback signal arrives through the queue, the way an idle driven frame delivers it.
+				UiThread.RunOnIdle(() => frameReadback.TrySetResult());
+
+				// The capture spin. Nothing else can drain the queue while this runs: the pump thread is
+				// inside this very delegate.
+				for (int spin = 0; spin < 200 && !captureFinished; spin++)
+				{
+					UiThread.DrainForNestedPump();
+					Thread.Sleep(1);
+				}
+
+				finishedInsideTheNestedLoop = captureFinished;
+
+				return Task.CompletedTask;
+			});
+
+			await Assert.That(finishedInsideTheNestedLoop).IsTrue()
+				.Because("a nested drain is the only thing that can run the continuation the loop is waiting for");
+
+			await Assert.That(continuationThread).IsEqualTo(pump.ThreadId)
+				.Because("draining from the pump thread must still resume the continuation on the main loop");
+		}
+
+		[Test]
+		[Timeout(30_000)]
+		public async Task InstallForScopeInstallsAndRestores(CancellationToken cancellationToken)
+		{
+			// No awaits inside the scope, deliberately: with the context installed and no pump on this
+			// thread, an await in here would post its continuation to a queue nobody drains.
+			var before = SynchronizationContext.Current;
+			SynchronizationContext insideScope;
+			SynchronizationContext insideNestedScope;
+			SynchronizationContext afterNestedScope;
+
+			using (MainLoopSynchronizationContext.InstallForScope())
+			{
+				insideScope = SynchronizationContext.Current;
+
+				using (MainLoopSynchronizationContext.InstallForScope())
+				{
+					insideNestedScope = SynchronizationContext.Current;
+				}
+
+				afterNestedScope = SynchronizationContext.Current;
+			}
+
+			var afterScope = SynchronizationContext.Current;
+
+			await Assert.That(insideScope).IsSameReferenceAs(MainLoopSynchronizationContext.Instance);
+			await Assert.That(insideNestedScope).IsSameReferenceAs(MainLoopSynchronizationContext.Instance);
+
+			await Assert.That(afterNestedScope).IsSameReferenceAs(MainLoopSynchronizationContext.Instance)
+				.Because("a nested scope restores what IT found, which is the outer scope's context");
+
+			await Assert.That(afterScope).IsSameReferenceAs(before)
+				.Because("a borrowed thread must be handed back exactly as it was found");
+		}
+
+		[Test]
+		[Timeout(30_000)]
+		public async Task InstallForScopeRestoresWhenTheScopeBodyThrows(CancellationToken cancellationToken)
+		{
+			var before = SynchronizationContext.Current;
+
+			try
+			{
+				using (MainLoopSynchronizationContext.InstallForScope())
+				{
+					throw new InvalidOperationException("the scope body failed");
+				}
+			}
+			catch (InvalidOperationException)
+			{
+			}
+
+			await Assert.That(SynchronizationContext.Current).IsSameReferenceAs(before)
+				.Because("a test that fails must not leave the context latched on the harness thread");
+		}
+
+		[Test]
+		[Timeout(30_000)]
+		public async Task CreateCopyReturnsTheOneInstance(CancellationToken cancellationToken)
+		{
+			// The framework copies the current context freely (every ExecutionContext capture may). There is
+			// one main loop, so a copy that was a different object would just be a second name for it.
+			await Assert.That(MainLoopSynchronizationContext.Instance.CreateCopy())
+				.IsSameReferenceAs(MainLoopSynchronizationContext.Instance);
+		}
+
+		[Test]
+		[Timeout(30_000)]
+		public async Task PostRejectsANullCallback(CancellationToken cancellationToken)
+		{
+			// The BCL contract, and the useful one: failing here names the caller, where failing on the pump
+			// a tick later would name nobody.
+			await Assert.That(() => MainLoopSynchronizationContext.Instance.Post(null, null))
+				.Throws<ArgumentNullException>();
+		}
+
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		private static void ThrowFromSentWork()
+		{
+			throw new InvalidOperationException("the sent work failed");
+		}
+
+		[Test]
+		[Timeout(30_000)]
+		public async Task SendFromBackgroundThreadRethrowsWithTheOriginalStack(CancellationToken cancellationToken)
+		{
+			using var pump = new TestPump();
+
+			Exception caught = null;
+
+			await Task.Run(() =>
+			{
+				try
+				{
+					MainLoopSynchronizationContext.Instance.Send(_ => ThrowFromSentWork(), null);
+				}
+				catch (Exception sendException)
+				{
+					caught = sendException;
+				}
+			});
+
+			await Assert.That(caught).IsTypeOf<InvalidOperationException>()
+				.Because("work that failed on the loop has to fail the Send that asked for it");
+
+			await Assert.That(caught.StackTrace).Contains(nameof(ThrowFromSentWork))
+				.Because("the rethrow must preserve the frame that actually threw, not start a new stack here");
+		}
+
+		[Test]
+		[Timeout(30_000)]
+		public async Task SendThatTimedOutDoesNotRunItsWorkLater(CancellationToken cancellationToken)
+		{
+			// Nothing pumps, so the Send gives up; then the queue is drained by hand to stand in for a loop
+			// that recovers afterwards. The abandoned work must not run: the caller has already thrown and
+			// may well have retried, and a late second application would be silent corruption.
+			UiThread.ResetForTests();
+
+			var previousTimeout = MainLoopSynchronizationContext.SendFromOtherThreadTimeout;
+			MainLoopSynchronizationContext.SendFromOtherThreadTimeout = TimeSpan.FromMilliseconds(250);
+
+			try
+			{
+				bool ran = false;
+
+				await Assert.That(
+					() => MainLoopSynchronizationContext.Instance.Send(_ => ran = true, null))
+					.Throws<TimeoutException>();
+
+				UiThread.InvokePendingActions();
+
+				await Assert.That(ran).IsFalse()
+					.Because("a timed out Send's work is abandoned, not merely late");
+			}
+			finally
+			{
+				MainLoopSynchronizationContext.SendFromOtherThreadTimeout = previousTimeout;
+				UiThread.ResetForTests();
+			}
 		}
 	}
 }

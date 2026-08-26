@@ -44,6 +44,10 @@ namespace MatterHackers.Agg.UI
 	/// <see cref="UiThread.RunOnIdle(Action)"/>, so posted continuations and hand written RunOnIdle work
 	/// share a single FIFO. A continuation posted while the pump is running the current batch executes on
 	/// the NEXT pump, never re-entrantly inside the current one.</para>
+	/// <para>That costs latency: a resumption waits for the next pump - up to one idle tick, about 10ms on
+	/// Windows Forms - so an N deep chain of genuinely suspending awaits can take up to N ticks to unwind.
+	/// Predictable ordering is worth that, but work that cannot afford it should not be hopping the loop
+	/// once per await.</para>
 	/// <para>On WebAssembly nothing installs this - Blazor supplies its own single threaded dispatcher and
 	/// that is already the model this context imitates.</para>
 	/// <para><see cref="SynchronizationContext.OperationStarted"/> and
@@ -128,6 +132,14 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		public override void Post(SendOrPostCallback d, object state)
 		{
+			// Checked here rather than left to blow up on the pump: the BCL contract is an
+			// ArgumentNullException, and a NullReferenceException raised one tick later on the main loop
+			// names neither the caller nor the mistake.
+			if (d == null)
+			{
+				throw new ArgumentNullException(nameof(d));
+			}
+
 			UiThread.RunOnIdle(() => d(state));
 		}
 
@@ -135,8 +147,21 @@ namespace MatterHackers.Agg.UI
 		/// Runs work on the main loop and waits for it. Inline when already on the main loop; from any
 		/// other thread this queues and blocks, bounded by <see cref="SendFromOtherThreadTimeout"/>.
 		/// </summary>
+		/// <remarks>
+		/// A Send that times out does NOT run its work afterwards. The queued item stays in the queue - it
+		/// cannot be pulled back out - but it checks on the way in whether the caller has already given up,
+		/// and if so does nothing. Otherwise a caller that timed out and retried, or fell back to another
+		/// path, would have the abandoned work applied a second time whenever the loop recovered. Work that
+		/// had already passed that check when the wait gave up still runs to completion - the check closes
+		/// the window that lasts as long as the timeout, not the instant at the end of it.
+		/// </remarks>
 		public override void Send(SendOrPostCallback d, object state)
 		{
+			if (d == null)
+			{
+				throw new ArgumentNullException(nameof(d));
+			}
+
 			if (UiThread.IsUiThread)
 			{
 				d(state);
@@ -148,15 +173,34 @@ namespace MatterHackers.Agg.UI
 			ExceptionDispatchInfo failure = null;
 			var completed = new ManualResetEventSlim(false);
 
+			// Volatile because it is written by this thread and read by the pump thread. Set before the
+			// TimeoutException below is thrown, so the throw and the abandonment are one decision.
+			bool abandoned = false;
+
 			UiThread.RunOnIdle(() =>
 			{
 				try
 				{
+					if (Volatile.Read(ref abandoned))
+					{
+						return;
+					}
+
 					d(state);
 				}
 				catch (Exception sentWorkException)
 				{
-					failure = ExceptionDispatchInfo.Capture(sentWorkException);
+					if (Volatile.Read(ref abandoned))
+					{
+						// The caller is long gone and its `failure` will never be read, so reporting it
+						// through the field would swallow the exception entirely. This is the same channel
+						// any other throw out of a queued action takes.
+						UiThread.ReportUnhandledException(sentWorkException);
+					}
+					else
+					{
+						failure = ExceptionDispatchInfo.Capture(sentWorkException);
+					}
 				}
 				finally
 				{
@@ -166,6 +210,8 @@ namespace MatterHackers.Agg.UI
 
 			if (!completed.Wait(SendFromOtherThreadTimeout))
 			{
+				Volatile.Write(ref abandoned, true);
+
 				// Deliberately not disposed: the work is still queued and will call Set on the pump thread
 				// if the loop ever recovers. Disposing here would turn that into an ObjectDisposedException
 				// on the UI thread, which is a far worse failure than leaking one event.

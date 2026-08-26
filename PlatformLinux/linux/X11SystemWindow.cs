@@ -842,11 +842,17 @@ namespace MatterHackers.Agg.UI
 				// The native read-back completes inside the paint (wgpu's buffer map is polled to
 				// completion there), so this is normally already set. It is only not set if the await in
 				// CaptureThenPresent genuinely suspended, in which case its continuation is queued to the
-				// idle pump - hence pumping rather than blocking, which would deadlock.
+				// idle pump by MainLoopSynchronizationContext - hence pumping rather than blocking, which
+				// would deadlock.
+				//
+				// DrainForNestedPump, not InvokeIdleActions: this loop very often runs underneath an idle
+				// action already (the off-thread branch above marshals through RunOnIdle), and the guarded
+				// drain is a no-op while that is true - which would leave this spinning for a continuation
+				// only a drain can run.
 				for (int spin = 0; spin < ScreenshotPumpSpins && !this.screenshotComplete.IsSet; spin++)
 				{
 					PumpEvents();
-					InvokeIdleActions();
+					UiThread.DrainForNestedPump();
 				}
 			}
 			finally
@@ -1000,7 +1006,9 @@ namespace MatterHackers.Agg.UI
 
 		/// <summary>
 		/// Drains the RunOnIdle queue. Guarded because an idle action can run a nested loop (a modal
-		/// dialog, or <see cref="CaptureScreenshot"/>'s pump) and re-enter this.
+		/// dialog) and re-enter this. A nested loop that must instead let awaited continuations run -
+		/// <see cref="CaptureScreenshot"/>'s spin - calls <see cref="UiThread.DrainForNestedPump"/>, which
+		/// deliberately skips this guard.
 		/// </summary>
 		private static void InvokeIdleActions()
 		{
