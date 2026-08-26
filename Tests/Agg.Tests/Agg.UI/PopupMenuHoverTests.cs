@@ -144,6 +144,55 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// A sub menu opens beside the row it belongs to and drops down from there, so any row of it below the
+		/// first is reached by moving down and to the right - a path that crosses the rows underneath the
+		/// opening row on the way. Those crossings are transit, not a choice of row, and taking the sub menu
+		/// down on them makes every row of it but the top one unreachable with the mouse.
+		/// </summary>
+		[Test]
+		public async Task MovingDiagonallyIntoAnOpenSubMenuDoesNotCloseItOnTheRowsCrossedOnTheWay()
+		{
+			var harness = HoverMenuHarness.Show(menu =>
+			{
+				menu.CreateSubMenu(
+					"More",
+					menu.Theme,
+					subMenu =>
+					{
+						for (int i = 1; i <= 5; i++)
+						{
+							subMenu.CreateMenuItem($"Leaf {i}");
+						}
+					});
+
+				menu.CreateMenuItem("Second");
+				menu.CreateMenuItem("Third");
+				menu.CreateMenuItem("Fourth");
+			});
+
+			var subMenuButton = harness.Menu.Children.OfType<PopupMenu.SubMenuItemButton>().First();
+
+			harness.MoveTo(harness.CenterOf("More Menu Item"));
+			harness.PumpIdle();
+
+			var subMenu = subMenuButton.SubMenu;
+			await Assert.That(subMenu).IsNotNull();
+
+			// Straight line from the opening row to a row well down the sub menu, the way a hand moves and the
+			// way AutomationRunner interpolates a mouse move. It passes over Second and Third en route.
+			harness.MoveAlong(harness.CenterOf("More Menu Item"), harness.CenterOf("Leaf 4 Menu Item"));
+
+			await Assert.That(subMenuButton.SubMenu).IsNotNull()
+				.Because("the pointer was inside the wedge between the opening row and the sub menu the whole way");
+			await Assert.That(subMenu.HasBeenClosed).IsFalse();
+			await Assert.That(harness.Find("Leaf 4 Menu Item")).IsNotNull();
+
+			// The rows crossed on the way are transit, so the highlight never chases them - it goes straight
+			// from the opening row to the sub menu row the pointer set out for
+			await Assert.That(harness.HighlightedName).IsEqualTo("Leaf 4 Menu Item");
+		}
+
+		/// <summary>
 		/// Crossing from one sub menu parent to another swaps which sub menu is up, rather than stacking them.
 		/// </summary>
 		[Test]
@@ -428,6 +477,20 @@ namespace MatterHackers.Agg.UI.Tests
 			public void MoveTo(Vector2 point)
 			{
 				Window.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, point.X, point.Y, 0));
+			}
+
+			/// <summary>
+			/// Slides the mouse from one point to another in a straight line, pumping the idle queue between
+			/// steps, the way a real move arrives - as a run of positions along the path rather than a jump to
+			/// the end. What a menu does with the rows in between is the whole point of the moves that use this.
+			/// </summary>
+			public void MoveAlong(Vector2 from, Vector2 to, int steps = 10)
+			{
+				for (int i = 1; i <= steps; i++)
+				{
+					MoveTo(from + (to - from) * (i / (double)steps));
+					PumpIdle();
+				}
 			}
 
 			public void Click(Vector2 point, MouseButtons button = MouseButtons.Left)

@@ -149,6 +149,95 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
+		/// Where the pointer was the last time it crossed onto a row of this menu, in screen space. The apex
+		/// of the wedge <see cref="PointerIsAimingAtOpenSubMenu"/> tests against.
+		/// </summary>
+		private Vector2? lastRowHoverPosition;
+
+		/// <summary>
+		/// Drops the wedge apex, so the next hover on a row of this menu is judged on its own.
+		/// </summary>
+		private void ForgetRowHoverPosition()
+		{
+			lastRowHoverPosition = null;
+		}
+
+		/// <summary>
+		/// True when the pointer is between where it last was and the near edge of <paramref name="subMenu"/> -
+		/// on its way into the open sub menu rather than choosing the row it happens to be over.
+		/// </summary>
+		/// <remarks>
+		/// This is the "safe triangle" every desktop menu needs and for the same reason: a sub menu hangs down
+		/// from the row that opened it, so every row of it below the first is reached by moving down and to the
+		/// right, and that path crosses the rows underneath the opening row. Windows buys the same forgiveness
+		/// with a dwell timer before the crossed row takes over; a wedge does it on geometry alone, which means
+		/// it is decided by where the pointer is rather than by how fast it got there - no timer to tune, and
+		/// nothing that behaves differently on a loaded machine.
+		/// <para>
+		/// The apex is where the pointer last entered a row of this menu, so the wedge covers the paths that
+		/// start on the opening row. A pointer moving along the menu instead (same x, different row) is never
+		/// inside it - the wedge has no width at the apex - so hovering a sibling still closes the sub menu.
+		/// </para>
+		/// </remarks>
+		private bool PointerIsAimingAtOpenSubMenu(Vector2 pointer, PopupMenu subMenu)
+		{
+			if (lastRowHoverPosition == null
+				|| subMenu == null)
+			{
+				return false;
+			}
+
+			var subMenuBounds = subMenu.TransformToScreenSpace(subMenu.LocalBounds);
+			if (subMenuBounds.Width <= 0
+				|| subMenuBounds.Height <= 0)
+			{
+				// Queued to be shown but not laid out yet - there is nothing to aim at
+				return false;
+			}
+
+			var apex = lastRowHoverPosition.Value;
+
+			// The edge the pointer has to cross to get in. A sub menu that had to open to the left (AltMate,
+			// near the right of the screen) is entered through its right edge instead.
+			double edgeX = subMenuBounds.Left >= apex.X ? subMenuBounds.Left : subMenuBounds.Right;
+
+			double toEdge = edgeX - apex.X;
+			double travelled = pointer.X - apex.X;
+
+			if (toEdge * travelled <= 0
+				|| Math.Abs(travelled) > Math.Abs(toEdge))
+			{
+				// Not headed for the edge at all, or already past it - either way the pointer is not in transit
+				return false;
+			}
+
+			return PointIsInTriangle(
+				pointer,
+				apex,
+				new Vector2(edgeX, subMenuBounds.Bottom),
+				new Vector2(edgeX, subMenuBounds.Top));
+		}
+
+		/// <summary>
+		/// Standard half-plane test: the point is inside when it is on the same side of all three edges.
+		/// Points on an edge count as inside, so a pointer skimming the wedge boundary is not rejected.
+		/// </summary>
+		private static bool PointIsInTriangle(Vector2 point, Vector2 a, Vector2 b, Vector2 c)
+		{
+			double Side(Vector2 from, Vector2 to)
+			{
+				return (to.X - from.X) * (point.Y - from.Y) - (to.Y - from.Y) * (point.X - from.X);
+			}
+
+			double ab = Side(a, b);
+			double bc = Side(b, c);
+			double ca = Side(c, a);
+
+			return (ab >= 0 && bc >= 0 && ca >= 0)
+				|| (ab <= 0 && bc <= 0 && ca <= 0);
+		}
+
+		/// <summary>
 		/// The mouse has entered <paramref name="row"/>. Moves the highlight there, closes the sub menu a
 		/// different row had open, and opens this row's own sub menu if it has one.
 		/// </summary>
@@ -169,12 +258,16 @@ namespace MatterHackers.Agg.UI
 		/// <c>disabled_rows_do_not_become_hovered</c> for free.
 		/// </para>
 		/// </remarks>
-		internal void OnRowHover(MenuItem row)
+		internal void OnRowHover(MenuItem row, Vector2 pointerInScreenSpace)
 		{
 			if (!row.Enabled)
 			{
 				return;
 			}
+
+			// The pointer has arrived somewhere in this menu, so whatever wedge the menu above was holding
+			// open for it is spent - a hover back out onto one of that menu's rows is a choice now, not transit.
+			this.ParentMenuItem?.OwningMenu?.ForgetRowHoverPosition();
 
 			var openRow = OpenSubMenuRow();
 
@@ -183,8 +276,20 @@ namespace MatterHackers.Agg.UI
 				// The mouse came back onto the row whose sub menu is up, which is what happens on the way out
 				// of that sub menu. Leave focus alone: pulling it back here would close the sub menu the user
 				// is aiming at, and re-opening it is not possible - it never closed.
+				lastRowHoverPosition = pointerInScreenSpace;
+
 				return;
 			}
+
+			if (openRow != null
+				&& PointerIsAimingAtOpenSubMenu(pointerInScreenSpace, openRow.SubMenu))
+			{
+				// Crossed on the way into the open sub menu. Leaving the highlight (and so the focus that
+				// holds the sub menu up) alone is what keeps the sub menu reachable.
+				return;
+			}
+
+			lastRowHoverPosition = pointerInScreenSpace;
 
 			row.Focus();
 
@@ -1082,7 +1187,9 @@ namespace MatterHackers.Agg.UI
 			{
 				base.OnMouseEnterBounds(mouseEvent);
 
-				this.Parents<PopupMenu>().FirstOrDefault()?.OnRowHover(this);
+				this.Parents<PopupMenu>().FirstOrDefault()?.OnRowHover(
+					this,
+					this.TransformToScreenSpace(new Vector2(mouseEvent.X, mouseEvent.Y)));
 			}
 
 			/// <summary>
