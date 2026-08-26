@@ -28,6 +28,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using MatterHackers.Agg.Platform.Linux;
 using MatterHackers.RenderGl;
 using MatterHackers.RenderGl.OpenGl;
@@ -91,6 +92,24 @@ namespace MatterHackers.Agg.UI
 		/// read-back path completes inline and never reaches the loop.
 		/// </summary>
 		private const int ScreenshotPumpSpins = 200;
+
+		/// <summary>
+		/// How long a capture waits for work it handed to another thread: the queued capture
+		/// <see cref="CaptureScreenshotAsync"/> awaits. Bounded for the same reason
+		/// <see cref="ScreenshotPumpSpins"/> is: a window that never repaints must not hang the caller.
+		/// Either entry point's marshalling hop waits on <see cref="ScreenshotMarshalTimeout"/> instead, so
+		/// this bound stays the governing one.
+		/// </summary>
+		private static readonly TimeSpan ScreenshotAsyncTimeout = TimeSpan.FromSeconds(10);
+
+		/// <summary>
+		/// How long either entry point waits on the marshalling hop. Deliberately looser than
+		/// <see cref="ScreenshotAsyncTimeout"/>: the queued capture's own bound is the governing one, and if
+		/// this outer wait expired first the caller would return while the inner capture still owned
+		/// <c>pendingScreenshotPath</c> - the give-up and its cleanup would never be observed here. The slack
+		/// gives the inner wait time to expire, clean up and Set() before this one stops looking.
+		/// </summary>
+		private static readonly TimeSpan ScreenshotMarshalTimeout = ScreenshotAsyncTimeout + TimeSpan.FromSeconds(2);
 
 		/// <summary>
 		/// How long <see cref="RunEventLoop"/> is willing to sleep with nothing to do. Doubles as the idle
@@ -287,6 +306,11 @@ namespace MatterHackers.Agg.UI
 		/// <summary>Signalled by the paint that performs a queued capture, so the requester can return only
 		/// once the file is on disk.</summary>
 		private ManualResetEventSlim screenshotComplete;
+
+		/// <summary>The same signal as <see cref="screenshotComplete"/> for an awaiting requester. Only one of
+		/// the two is ever non-null: <see cref="ThrowIfCapturePending"/> holds both entry points to one
+		/// in-flight request.</summary>
+		private TaskCompletionSource screenshotCompletion;
 
 		public X11SystemWindow()
 		{
@@ -801,23 +825,39 @@ namespace MatterHackers.Agg.UI
 
 			if (!UiThread.IsUiThread)
 			{
-				// Every Xlib call has to come from the thread that owns the display, so the request is
-				// marshalled the only way this host has: through the idle queue the event loop drains.
-				using (var done = new ManualResetEventSlim(false))
-				{
-					UiThread.RunOnIdle(() =>
-					{
-						try
-						{
-							this.CaptureScreenshot(path);
-						}
-						finally
-						{
-							done.Set();
-						}
-					});
+				// A thin blocking boundary over the async form, kept for callers whose whole chain is
+				// synchronous (failure diagnostics). Every Xlib call has to come from the thread that owns
+				// the display, so the request is marshalled the only way this host has: through the idle
+				// queue the event loop drains - and the queued work is the awaitable capture, which waits on
+				// the completion the capturing frame posts. Its continuation comes back to the idle pump via
+				// MainLoopSynchronizationContext, so nothing here has to spin the nested pump.
+				var done = new ManualResetEventSlim(false);
 
-					done.Wait(TimeSpan.FromSeconds(10));
+				UiThread.RunOnIdle(async () =>
+				{
+					try
+					{
+						await this.CaptureScreenshotAsync(path);
+					}
+					catch (Exception ex)
+					{
+						// A capture that ran and failed faults the task. This lambda is async void to the
+						// pump, so letting that escape would take the process down over a diagnostics
+						// screenshot - the synchronous path this replaced never did that.
+						Console.Error.WriteLine($"X11SystemWindow screenshot failed on the marshalled path: {ex.Message}");
+					}
+					finally
+					{
+						done.Set();
+					}
+				});
+
+				// Disposed only when the queued work is known to be finished with it: after a give-up the
+				// idle queue still holds a delegate that will Set() this, and Set on a disposed event throws
+				// on the UI thread. An abandoned event is collectable; a crashed UI thread is not.
+				if (done.Wait(ScreenshotMarshalTimeout))
+				{
+					done.Dispose();
 				}
 
 				return;
@@ -832,8 +872,16 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
+			// The pump below runs arbitrary queued work, which is free to ask for a screenshot of its own.
+			// One pending path and one completion signal is all the frame machinery has, so a second
+			// request would steal this one's frame and leave this caller pumping for a capture that will
+			// never happen.
+			this.ThrowIfCapturePending(path);
+
+			var completed = new ManualResetEventSlim(false);
+
 			this.pendingScreenshotPath = path;
-			this.screenshotComplete = new ManualResetEventSlim(false);
+			this.screenshotComplete = completed;
 
 			try
 			{
@@ -845,11 +893,11 @@ namespace MatterHackers.Agg.UI
 				// idle pump by MainLoopSynchronizationContext - hence pumping rather than blocking, which
 				// would deadlock.
 				//
-				// DrainForNestedPump, not InvokeIdleActions: this loop very often runs underneath an idle
-				// action already (the off-thread branch above marshals through RunOnIdle), and the guarded
-				// drain is a no-op while that is true - which would leave this spinning for a continuation
-				// only a drain can run.
-				for (int spin = 0; spin < ScreenshotPumpSpins && !this.screenshotComplete.IsSet; spin++)
+				// DrainForNestedPump, not InvokeIdleActions: this loop can run underneath an idle action
+				// already (a synchronous UI-thread caller reached from queued work), and the guarded drain
+				// is a no-op while that is true - which would leave this spinning for a continuation only a
+				// drain can run.
+				for (int spin = 0; spin < ScreenshotPumpSpins && !completed.IsSet; spin++)
 				{
 					PumpEvents();
 					UiThread.DrainForNestedPump();
@@ -858,8 +906,125 @@ namespace MatterHackers.Agg.UI
 			finally
 			{
 				this.pendingScreenshotPath = null;
-				this.screenshotComplete.Dispose();
 				this.screenshotComplete = null;
+
+				// Only dispose once the capturing frame is done with it. If the pump gave up while the
+				// capture was still in flight, CaptureThenPresent still holds this same instance and will
+				// Set() it - and that Set would throw ObjectDisposedException inside an async void, which
+				// is a process kill. Leaving it to the GC costs nothing: this event is only ever polled
+				// through IsSet, so it never allocates a wait handle to leak.
+				if (completed.IsSet)
+				{
+					completed.Dispose();
+				}
+			}
+		}
+
+		/// <summary>
+		/// Refuses a capture while another one is still in flight. The frame machinery holds exactly one
+		/// pending path and one completion signal, so overlapping requests cannot both be served, and
+		/// failing loudly beats one caller silently receiving the other's frame - or no frame at all.
+		/// </summary>
+		private void ThrowIfCapturePending(string path)
+		{
+			if (this.pendingScreenshotPath != null
+				|| this.screenshotComplete != null
+				|| this.screenshotCompletion != null)
+			{
+				throw new InvalidOperationException(
+					$"A screenshot capture is already pending (to '{this.pendingScreenshotPath}'); only one capture can be in flight at a time. Requested '{path}'.");
+			}
+		}
+
+		/// <summary>
+		/// The awaitable form of <see cref="CaptureScreenshot"/>. Queues the same request onto the same
+		/// frame machinery, but waits on the completion the capturing frame posts instead of pumping, so
+		/// the caller's thread is free while the frame runs.
+		/// </summary>
+		/// <param name="path">Where to write the PNG.</param>
+		public async Task CaptureScreenshotAsync(string path)
+		{
+			if (this.webGpuLayer == null || this.webGpuLayer.IsDisposed)
+			{
+				return;
+			}
+
+			if (!UiThread.IsUiThread)
+			{
+				// Same marshalling as the synchronous path - the idle queue is this host's only channel to
+				// the thread that owns the display - except the result comes back as a task rather than a
+				// blocking wait.
+				var marshalled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+				UiThread.RunOnIdle(async () =>
+				{
+					try
+					{
+						await this.CaptureScreenshotAsync(path);
+						marshalled.TrySetResult();
+					}
+					catch (Exception ex)
+					{
+						marshalled.TrySetException(ex);
+					}
+				});
+
+				try
+				{
+					// Bounded like the synchronous twin's done.Wait: an idle queue that never runs (a window
+					// with no frames) must not hang the caller forever. On the looser marshal bound, so the
+					// inner capture's own timeout governs and gets to clean up before this one gives up.
+					await marshalled.Task.WaitAsync(ScreenshotMarshalTimeout);
+				}
+				catch (TimeoutException)
+				{
+					// The same quiet give-up the synchronous path makes. A capture that actually ran and
+					// failed faults instead of landing here.
+				}
+
+				return;
+			}
+
+			if (this.isInsidePaint)
+			{
+				// Same as the synchronous path: this frame is about to consume the request, and forcing
+				// another paint from here would re-enter the frame.
+				this.pendingScreenshotPath = path;
+				return;
+			}
+
+			this.ThrowIfCapturePending(path);
+
+			var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+			this.pendingScreenshotPath = path;
+			this.screenshotCompletion = completion;
+
+			try
+			{
+				// The read-back usually finishes inside this synchronous frame, leaving nothing to await.
+				this.PaintFrame();
+
+				// A capture that ran and failed faults here, on purpose: the contract is that the file
+				// exists once this completes, so a swallowed failure would be a lie.
+				await completion.Task.WaitAsync(ScreenshotAsyncTimeout);
+			}
+			catch (TimeoutException)
+			{
+				// Matches the synchronous path's bounded pump, which also gives up quietly rather than
+				// hanging a caller whose window never painted.
+			}
+			finally
+			{
+				// Only clear what still belongs to this request. The continuation that gets here resumes on
+				// the event loop (MainLoopSynchronizationContext), but on a LATER pump - so this cleanup can
+				// still run well after the request was given up on, by which point the fields may already
+				// have been claimed by the next request.
+				if (ReferenceEquals(this.screenshotCompletion, completion))
+				{
+					this.pendingScreenshotPath = null;
+					this.screenshotCompletion = null;
+				}
 			}
 		}
 
@@ -3210,7 +3375,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			this.pendingScreenshotPath = null;
-			this.CaptureThenPresent(screenshotPath, this.screenshotComplete);
+			this.CaptureThenPresent(screenshotPath, this.screenshotComplete, this.screenshotCompletion);
 		}
 
 		/// <summary>
@@ -3218,19 +3383,40 @@ namespace MatterHackers.Agg.UI
 		/// and there is nobody to hand a Task to. The native read-back completes before its ValueTask is
 		/// returned, so the present still happens inline, while the frame is alive.
 		/// </summary>
-		private async void CaptureThenPresent(string path, ManualResetEventSlim completed)
+		/// <param name="path">Where to write the PNG.</param>
+		/// <param name="completed">Signalled once the file is written, for a synchronous requester. Null when
+		/// the capture was requested by the smoke-run path, which does not wait.</param>
+		/// <param name="completion">The same signal for an awaiting <see cref="CaptureScreenshotAsync"/>
+		/// caller. Null unless the request came from there. A failed capture faults it rather than
+		/// completing it, so the async contract's "the file exists once the task completes" holds.</param>
+		private async void CaptureThenPresent(string path, ManualResetEventSlim completed, TaskCompletionSource completion)
 		{
+			Exception failure = null;
+
 			try
 			{
 				await this.webGpuLayer.SaveCurrentFrameAsync(path);
 			}
 			catch (Exception ex)
 			{
+				// The synchronous caller has no channel for this - releasing its pump is all that can be
+				// done for it - so it keeps the long-standing behaviour of a stderr note and a quiet give up.
+				failure = ex;
 				Console.Error.WriteLine($"X11SystemWindow screenshot failed: {ex.Message}");
 			}
 			finally
 			{
 				completed?.Set();
+
+				// TrySet, not Set: the awaiting caller may already have timed out and moved on.
+				if (failure != null)
+				{
+					completion?.TrySetException(failure);
+				}
+				else
+				{
+					completion?.TrySetResult();
+				}
 			}
 
 			this.webGpuLayer.Present();

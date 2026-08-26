@@ -101,11 +101,21 @@ namespace MatterHackers.Agg.UI
 
 		/// <summary>
 		/// How long a capture waits for work it handed to another thread: the queued capture
-		/// <see cref="CaptureScreenshotAsync"/> awaits, and the marshalling hop both entry points make from
-		/// a worker thread. Bounded for the same reason <see cref="ScreenshotPumpSpins"/> is: a window that
-		/// never repaints must not hang the caller.
+		/// <see cref="CaptureScreenshotAsync"/> awaits. Bounded for the same reason
+		/// <see cref="ScreenshotPumpSpins"/> is: a window that never repaints must not hang the caller.
+		/// Either entry point's marshalling hop waits on <see cref="ScreenshotMarshalTimeout"/> instead, so
+		/// this bound stays the governing one.
 		/// </summary>
 		private static readonly TimeSpan ScreenshotAsyncTimeout = TimeSpan.FromSeconds(10);
+
+		/// <summary>
+		/// How long either entry point waits on the marshalling hop. Deliberately looser than
+		/// <see cref="ScreenshotAsyncTimeout"/>: the queued capture's own bound is the governing one, and if
+		/// this outer wait expired first the caller would return while the inner capture still owned
+		/// <c>pendingScreenshotPath</c> - the give-up and its cleanup would never be observed here. The slack
+		/// gives the inner wait time to expire, clean up and Set() before this one stops looking.
+		/// </summary>
+		private static readonly TimeSpan ScreenshotMarshalTimeout = ScreenshotAsyncTimeout + TimeSpan.FromSeconds(2);
 
 		private static readonly object StaticInitLock = new object();
 
@@ -769,15 +779,26 @@ namespace MatterHackers.Agg.UI
 
 			if (!UiThread.IsUiThread)
 			{
-				// There is no Control.Invoke here, so the request is marshalled the only way this host has:
-				// through the idle queue the 10ms NSTimer drains on the UI thread.
+				// A thin blocking boundary over the async form, kept for callers whose whole chain is
+				// synchronous (failure diagnostics). There is no Control.Invoke here, so the request is
+				// marshalled the only way this host has: through the idle queue the 10ms NSTimer drains on
+				// the UI thread - and the queued work is the awaitable capture, which waits on the
+				// completion the capturing frame posts. Its continuation comes back to the idle pump via
+				// MainLoopSynchronizationContext, so nothing here has to spin the nested pump.
 				var done = new ManualResetEventSlim(false);
 
-				UiThread.RunOnIdle(() =>
+				UiThread.RunOnIdle(async () =>
 				{
 					try
 					{
-						this.CaptureScreenshot(path);
+						await this.CaptureScreenshotAsync(path);
+					}
+					catch (Exception ex)
+					{
+						// A capture that ran and failed faults the task. This lambda is async void to the
+						// pump, so letting that escape would take the process down over a diagnostics
+						// screenshot - the synchronous path this replaced never did that.
+						Console.Error.WriteLine($"MacSystemWindow screenshot failed on the marshalled path: {ex.Message}");
 					}
 					finally
 					{
@@ -788,7 +809,7 @@ namespace MatterHackers.Agg.UI
 				// Disposed only when the queued work is known to be finished with it: after a give-up the
 				// idle queue still holds a delegate that will Set() this, and Set on a disposed event throws
 				// on the UI thread. An abandoned event is collectable; a crashed UI thread is not.
-				if (done.Wait(ScreenshotAsyncTimeout))
+				if (done.Wait(ScreenshotMarshalTimeout))
 				{
 					done.Dispose();
 				}
@@ -826,10 +847,10 @@ namespace MatterHackers.Agg.UI
 				// idle pump by MainLoopSynchronizationContext - hence pumping rather than blocking the UI
 				// thread, which would stop the very frames and continuations it is waiting on.
 				//
-				// DrainForNestedPump, not InvokeIdleActions: this loop very often runs underneath an idle
-				// action already (the off-thread branch above marshals through RunOnIdle), and the guarded
-				// drain is a no-op while that is true - which would leave this spinning for a continuation
-				// only a drain can run.
+				// DrainForNestedPump, not InvokeIdleActions: this loop can run underneath an idle action
+				// already (a synchronous UI-thread caller reached from queued work), and the guarded drain
+				// is a no-op while that is true - which would leave this spinning for a continuation only a
+				// drain can run.
 				for (int spin = 0; spin < ScreenshotPumpSpins && !completed.IsSet; spin++)
 				{
 					PumpEvents();
@@ -904,8 +925,9 @@ namespace MatterHackers.Agg.UI
 				try
 				{
 					// Bounded like the synchronous twin's done.Wait: an idle queue that never runs (a window
-					// with no frames) must not hang the caller forever.
-					await marshalled.Task.WaitAsync(ScreenshotAsyncTimeout);
+					// with no frames) must not hang the caller forever. On the looser marshal bound, so the
+					// inner capture's own timeout governs and gets to clean up before this one gives up.
+					await marshalled.Task.WaitAsync(ScreenshotMarshalTimeout);
 				}
 				catch (TimeoutException)
 				{
