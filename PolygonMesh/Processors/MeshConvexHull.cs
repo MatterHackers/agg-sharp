@@ -27,8 +27,8 @@ using MatterHackers.VectorMath;
 using MIConvexHull;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace MatterHackers.PolygonMesh
@@ -39,66 +39,80 @@ namespace MatterHackers.PolygonMesh
 
 		public static string CreatingConvexHullMesh => nameof(CreatingConvexHullMesh);
 
+		/// <summary>
+		/// Mesh.PropertyBag is a plain Dictionary, and the two hull keys are read and written by
+		/// background hull tasks as well as by calling threads, so all access goes through this lock.
+		/// </summary>
+		private static readonly object hullCacheLock = new object();
+
+		/// <summary>
+		/// Gets the convex hull of a mesh, caching it on the mesh (and dropping the cache when the
+		/// mesh changes).
+		/// </summary>
+		/// <param name="mesh">The mesh to build the hull of. Not recursed into children.</param>
+		/// <param name="generateAsync">When true, the caller accepts a null return while the hull is
+		/// built on a background thread. When false, the hull is built on the calling thread.</param>
+		/// <returns>The hull mesh, or null if there is no hull yet (or the mesh is degenerate).</returns>
+		/// <remarks>
+		/// This call never blocks. A sync caller wants a hull now, so if a background task is already
+		/// building one it builds its own instead of waiting: the hull is a pure function of the mesh
+		/// vertices and the cache write is last wins, so the duplicated work is harmless - and far
+		/// cheaper than parking a thread (fatal on a single threaded host such as the browser).
+		/// </remarks>
 		public static Mesh GetConvexHull(this Mesh mesh, bool generateAsync)
 		{
-			// currently disabling async as it has some threading issues
+			// Async generation stays off: a background task walking a mesh the owning thread may still
+			// be editing is the original "threading issue" and re-enabling it is a separate decision.
+			// The async path below is maintained (it cleans up after itself even when the build throws)
+			// but it is unexercised, so treat it as a starting point rather than as proven.
 			generateAsync = false;
+
 			if (mesh.Faces.Count < 4)
 			{
 				return null;
 			}
 
-			// build the convex hull for faster bounding calculations
-			// we have a mesh so don't recurse into children
-			object meshData;
-			mesh.PropertyBag.TryGetValue(ConvexHullMesh, out meshData);
-			if (meshData is Mesh convexHullMesh)
+			lock (hullCacheLock)
 			{
-				return convexHullMesh;
-			}
-			else
-			{
-				object creatingHullData;
-				mesh.PropertyBag.TryGetValue(CreatingConvexHullMesh, out creatingHullData);
-				bool currentlyCreatingHull = creatingHullData is CreatingHullFlag;
-				if (!currentlyCreatingHull)
+				if (mesh.PropertyBag.TryGetValue(ConvexHullMesh, out var meshData)
+					&& meshData is Mesh convexHullMesh)
 				{
-					// set the marker that we are creating the data
-					if (generateAsync)
-					{
-						mesh.PropertyBag.Add(CreatingConvexHullMesh, new CreatingHullFlag());
+					return convexHullMesh;
+				}
 
-						Task.Run(() =>
+				if (generateAsync)
+				{
+					// Store the in flight task rather than a bare marker so a future async caller can
+					// join it instead of starting a second identical hull.
+					if (!mesh.PropertyBag.ContainsKey(CreatingConvexHullMesh))
+					{
+						mesh.PropertyBag[CreatingConvexHullMesh] = Task.Run(() =>
 						{
-							CreateHullMesh(mesh);
-							if (mesh.PropertyBag.ContainsKey(CreatingConvexHullMesh))
+							try
 							{
-								mesh.PropertyBag.Remove(CreatingConvexHullMesh);
+								return CreateHullMesh(mesh);
+							}
+							catch (Exception ex)
+							{
+								// Building from a mesh the owning thread mutates can throw out of the vertex
+								// walk. Nobody awaits this task, so swallow it here (an unobserved fault is
+								// worse) and let the finally retire the marker - otherwise the failed build
+								// stays "in flight" forever and no later caller can ever hull this mesh.
+								Debug.WriteLine($"Convex hull generation failed: {ex}");
+								return null;
+							}
+							finally
+							{
+								ClearInFlightMarker(mesh);
 							}
 						});
 					}
-					else
-					{
-						return CreateHullMesh(mesh);
-					}
-				}
-				else if (!generateAsync)
-				{
-					var count = 0;
-					// we need to wait for the data to be ready and return it
-					while (currentlyCreatingHull && count < 1000)
-					{
-						Thread.Sleep(1);
-						mesh.PropertyBag.TryGetValue(CreatingConvexHullMesh, out creatingHullData);
-						currentlyCreatingHull = creatingHullData is CreatingHullFlag;
-						count++;
-					}
 
-					return CreateHullMesh(mesh);
+					return null;
 				}
 			}
 
-			return null;
+			return CreateHullMesh(mesh);
 		}
 
 		private static Mesh CreateHullMesh(Mesh mesh)
@@ -120,6 +134,8 @@ namespace MatterHackers.PolygonMesh
 				|| bounds.ZSize <= tollerance
 				|| double.IsNaN(cHVertexList.First().Position[0]))
 			{
+				// degenerate (flat or empty) - the mesh is its own best hull, but don't cache it
+				ClearInFlightMarker(mesh);
 				return mesh;
 			}
 
@@ -140,34 +156,33 @@ namespace MatterHackers.PolygonMesh
 					hullMesh.Faces.Add(vertexCount, vertexCount + 1, vertexCount + 2, hullMesh.Vertices);
 				}
 
-				try
+				lock (hullCacheLock)
 				{
-					// make sure there is not currently a convex hull on this object
-					if (mesh.PropertyBag.ContainsKey(ConvexHullMesh))
-					{
-						mesh.PropertyBag.Remove(ConvexHullMesh);
-					}
+					// last wins - two threads hulling the same (unchanged) mesh produce equivalent hulls
+					mesh.PropertyBag[ConvexHullMesh] = hullMesh;
 
-					// add the new hull
-					mesh.PropertyBag.Add(ConvexHullMesh, hullMesh);
-					// make sure we remove this hull if the mesh changes
-					mesh.Changed += MeshChanged_RemoveConvexHull;
-
-					// remove the marker that says we are building the hull
-					if (mesh.PropertyBag.ContainsKey(CreatingConvexHullMesh))
-					{
-						mesh.PropertyBag.Remove(CreatingConvexHullMesh);
-					}
-
-					return hullMesh;
-				}
-				catch
-				{
+					// we are done building, whether or not anyone was tracking us
 					mesh.PropertyBag.Remove(CreatingConvexHullMesh);
+
+					// subscribed under the same lock the hull was published under, so a change cannot slip
+					// between the two and leave this now stale hull cached until the change after it
+					mesh.Changed += MeshChanged_RemoveConvexHull;
 				}
+
+				return hullMesh;
 			}
 
+			ClearInFlightMarker(mesh);
 			return null;
+		}
+
+		private static void ClearInFlightMarker(Mesh mesh)
+		{
+			lock (hullCacheLock)
+			{
+				// cleared even when no hull was produced so a later request is free to try again
+				mesh.PropertyBag.Remove(CreatingConvexHullMesh);
+			}
 		}
 
 		private static void MeshChanged_RemoveConvexHull(object sender, EventArgs e)
@@ -176,15 +191,12 @@ namespace MatterHackers.PolygonMesh
 			{
 				mesh.Changed -= MeshChanged_RemoveConvexHull;
 
-				// remove any cached hull as it is no longer valid (the mesh changed)
-				if (mesh.PropertyBag.ContainsKey(ConvexHullMesh))
+				lock (hullCacheLock)
 				{
+					// remove any cached hull as it is no longer valid (the mesh changed)
 					mesh.PropertyBag.Remove(ConvexHullMesh);
-				}
 
-				// remove the marker that says we are building the hull
-				if (mesh.PropertyBag.ContainsKey(CreatingConvexHullMesh))
-				{
+					// and any in flight hull, which is building from the old vertices
 					mesh.PropertyBag.Remove(CreatingConvexHullMesh);
 				}
 			}
@@ -209,10 +221,6 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			public double[] Position => position;
-		}
-
-		internal class CreatingHullFlag
-		{
 		}
 	}
 }

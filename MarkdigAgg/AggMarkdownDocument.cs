@@ -33,6 +33,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 using HtmlAgilityPack;
 using Markdig.Renderers;
 using Markdig.Renderers.Agg;
@@ -65,6 +66,33 @@ namespace Markdig.Agg
 
         public List<MarkdownDocumentLink> Children { get; private set; } = new List<MarkdownDocumentLink>();
 
+        /// <summary>
+        /// Downloads the markdown at the given uri and wraps it in a document.
+        /// </summary>
+        public static async Task<AggMarkdownDocument> LoadAsync(string uri)
+        {
+            using (var httpClient = new HttpClient())
+            {
+                string rawText = await httpClient.GetStringAsync(uri);
+
+                return new AggMarkdownDocument(uri)
+                {
+                    Markdown = rawText,
+                };
+            }
+        }
+
+        /// <summary>
+        /// Downloads the markdown at the given uri, blocking the calling thread until it arrives.
+        /// </summary>
+        /// <remarks>
+        /// The signature has to hand back a finished document, so there is no non blocking way to
+        /// keep it. Blocking on a network round trip deadlocks a single threaded host (the browser),
+        /// where the request can only complete on the very thread this parks. Use
+        /// <see cref="LoadAsync"/> instead; this overload is kept only because agg-sharp's public
+        /// API is consumed outside this repo.
+        /// </remarks>
+        [Obsolete("Blocks the calling thread and deadlocks on single threaded hosts such as the browser. Use LoadAsync instead.")]
         public static AggMarkdownDocument Load(string uri)
         {
             using (var httpClient = new HttpClient())
