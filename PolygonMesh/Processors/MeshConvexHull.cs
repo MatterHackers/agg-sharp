@@ -65,6 +65,9 @@ namespace MatterHackers.PolygonMesh
 			// be editing is the original "threading issue" and re-enabling it is a separate decision.
 			// The async path below is maintained (it cleans up after itself even when the build throws)
 			// but it is unexercised, so treat it as a starting point rather than as proven.
+			// Decision recorded 2026-08-26: it stays off. The race with the owning thread's edits is real,
+			// so re-enabling means hulling a snapshot of the vertices taken under the caller's control -
+			// and until a caller actually needs a background hull, that snapshot work is YAGNI.
 			generateAsync = false;
 
 			if (mesh.Faces.Count < 4)
