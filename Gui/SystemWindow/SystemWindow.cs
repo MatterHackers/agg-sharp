@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Agg;
 using MatterHackers.Agg.Platform;
 using MatterHackers.VectorMath;
@@ -697,6 +698,20 @@ namespace MatterHackers.Agg.UI
 		public void CaptureScreenshot(string path)
 		{
 			PlatformWindow?.CaptureScreenshot(path);
+		}
+
+		/// <summary>
+		/// Captures a screenshot of this window and saves it to the given file path. Prefer this over
+		/// <see cref="CaptureScreenshot"/> on hosts that cannot block while waiting for a frame (the browser).
+		/// </summary>
+		/// <remarks>
+		/// On success the file exists once the returned task completes. A window that cannot paint, or a
+		/// capture that times out, completes the task with no file written - the same quiet give-up
+		/// <see cref="CaptureScreenshot"/> makes - while a capture that ran and failed faults the task.
+		/// </remarks>
+		public Task CaptureScreenshotAsync(string path)
+		{
+			return PlatformWindow?.CaptureScreenshotAsync(path) ?? Task.CompletedTask;
 		}
 	}
 }

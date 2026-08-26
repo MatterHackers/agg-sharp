@@ -89,6 +89,9 @@
     <!-- Subject is WinformsSystemWindow: its idle timer and its CenterInParent handle creation. -->
     <Compile Remove="Agg.UI\WinformsIdleTimerDisposeRaceTests.cs" />
     <Compile Remove="Agg.UI\WinformsShowCenteringTests.cs" />
+    <!-- Subject is WinformsSystemWindow's interface map for the async screenshot; the platform-neutral
+         half of that contract lives in ScreenshotContractTests and runs everywhere. -->
+    <Compile Remove="Agg.UI\WinformsScreenshotContractTests.cs" />
     <!-- Subject is WinformsEventSink's unhook; the rest of ConstructorHygieneTests still compiles. -->
     <Compile Remove="Agg.UI\ConstructorHygieneTests.Winforms.cs" />
     <!-- Subject is WinformsSystemWindow's shared idle timer and its first-window latch; the rest of

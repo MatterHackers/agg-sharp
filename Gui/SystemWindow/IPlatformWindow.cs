@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System.Threading.Tasks;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
@@ -69,8 +70,31 @@ namespace MatterHackers.Agg.UI
 		void CloseSystemWindow(SystemWindow systemWindow);
 
 		/// <summary>
-		/// Captures a screenshot of the current window contents and saves it to the given path.
+		/// Captures a screenshot of the current window contents and saves it to the given path. On success
+		/// the file exists once this returns; a host that cannot produce a frame gives up (quietly) rather
+		/// than blocking its caller forever, so callers that must have the file still have to check.
 		/// </summary>
 		void CaptureScreenshot(string path);
+
+		/// <summary>
+		/// Captures a screenshot of the current window contents and saves it to the given path.
+		/// </summary>
+		/// <remarks>
+		/// On success the file exists once the returned task completes. A host that cannot produce a frame -
+		/// a window that never paints, or one whose capture times out - completes the task with no file
+		/// written, the same quiet give-up the synchronous overload makes; a capture that ran and failed
+		/// faults the task.
+		///
+		/// Hosts that can only observe the end of a frame from a callback - the browser, where blocking the
+		/// single thread would stop the frames the capture is waiting for - implement this and leave the
+		/// synchronous overload to whatever it can manage. The default here keeps every existing host
+		/// (and test stub) working by running the synchronous capture inline, which is correct for any host
+		/// that can wait for a frame without deadlocking.
+		/// </remarks>
+		Task CaptureScreenshotAsync(string path)
+		{
+			this.CaptureScreenshot(path);
+			return Task.CompletedTask;
+		}
 	}
 }

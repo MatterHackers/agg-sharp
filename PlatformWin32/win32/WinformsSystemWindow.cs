@@ -1437,6 +1437,21 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Captures a screenshot of the current window contents, completing once the file is written.
+		/// </summary>
+		/// <remarks>
+		/// Declared here rather than left to the interface's default so that <see cref="WebGpuSystemWindow"/>
+		/// can override it: interface mapping is fixed at this class, so a method introduced further down the
+		/// hierarchy would never be reached through <see cref="IPlatformWindow"/>.
+		/// This base capture is a synchronous GDI blit with nothing to await, so it runs inline.
+		/// </remarks>
+		public virtual Task CaptureScreenshotAsync(string path)
+		{
+			this.CaptureScreenshot(path);
+			return Task.CompletedTask;
+		}
+
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
 			// Prevent our call to SystemWindow.Close from recursing
