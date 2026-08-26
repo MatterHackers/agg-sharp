@@ -149,6 +149,29 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
+		/// True when the keyboard focus - which is what holds a menu chain open - is on this menu or on any
+		/// sub menu opened below it.
+		/// </summary>
+		/// <remarks>
+		/// Asking <c>ContainsFocus</c> alone is not enough for anything that decides whether a chain is still
+		/// alive: a sub menu is a popup parented to the <see cref="SystemWindow"/>, not a child of the menu it
+		/// hangs off, so the moment a sub menu takes the focus its parent stops containing it. The chain has
+		/// moved deeper, not gone.
+		/// </remarks>
+		internal bool ChainContainsFocus()
+		{
+			if (this.ContainsFocus)
+			{
+				return true;
+			}
+
+			return ItemContainer.Children.OfType<SubMenuItemButton>()
+				.Any(row => row.SubMenu != null
+					&& !row.SubMenu.HasBeenClosed
+					&& row.SubMenu.ChainContainsFocus());
+		}
+
+		/// <summary>
 		/// Where the pointer was the last time it crossed onto a row of this menu, in screen space. The apex
 		/// of the wedge <see cref="PointerIsAimingAtOpenSubMenu"/> tests against.
 		/// </summary>
@@ -295,10 +318,11 @@ namespace MatterHackers.Agg.UI
 
 			if (openRow != null)
 			{
-				// Focusing this row took focus off the sibling's sub menu, so that sub menu is closing on
-				// idle - but SystemWindowExtension's CloseMenu restores focus to the row it was anchored to
-				// on its way out, which would drag the highlight back to the row the mouse just left. Put it
-				// back where the mouse is once that close has run.
+				// A sibling had a sub menu going, and a sub menu is *shown* from the idle queue - so one that
+				// was asked for before the mouse got here is still queued, and showing it focuses it, taking
+				// the highlight off this row. Claim it back once that has run (only while the mouse is still
+				// here), or this row is left unhighlighted and, if it opens a sub menu of its own, that sub
+				// menu's own show sees an unfocused menu and cancels itself as stale.
 				UiThread.RunOnIdle(() =>
 				{
 					if (!row.HasBeenClosed
@@ -605,7 +629,13 @@ namespace MatterHackers.Agg.UI
 				{
 					subMenu.ClearRemovedFlag();
 					this.SubMenu = null;
-					if (!owningMenu.ContainsFocus)
+
+					// This sub menu going away normally means the whole chain was dismissed, and the parent has
+					// to follow it down. Not, though, when the focus simply moved deeper: sweeping down a column
+					// of sub menu parents opens each row's sub menu in turn, and because both opening and closing
+					// run from the idle queue an older sibling's sub menu can close after the newest one is up
+					// and focused. Reading that as a dismissal took the entire chain down mid-sweep.
+					if (!owningMenu.ChainContainsFocus())
 					{
 						owningMenu.Close();
 					}
@@ -630,13 +660,22 @@ namespace MatterHackers.Agg.UI
 				graphics2D.Render(arrow, theme.TextColor);
 			}
 
+			/// <summary>
+			/// Whether this row's sub menu is holding the menu it lives in open.
+			/// </summary>
+			/// <remarks>
+			/// The whole chain below the sub menu counts, not just the sub menu itself: with three levels up,
+			/// the focus sits in the deepest one, and asking only about the middle level would let the root
+			/// close out from under an open chain the moment a deferred ContainsFocusChanged ran.
+			/// </remarks>
 			public new bool KeepMenuOpen
 			{
 				get
 				{
-					if (SubMenu != null)
+					if (SubMenu != null
+						&& !SubMenu.HasBeenClosed)
 					{
-						return SubMenu.ContainsFocus;
+						return SubMenu.ChainContainsFocus();
 					}
 
 					return false;

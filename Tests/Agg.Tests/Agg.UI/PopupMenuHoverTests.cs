@@ -138,8 +138,8 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(harness.Menu.HasBeenClosed).IsFalse()
 				.Because("only the sub menu went away, the menu the mouse is still in did not");
 
-			// The closing sub menu restores focus to the row it was anchored to on its way out, so this also
-			// pins that the highlight ends up where the mouse is rather than on the row it left
+			// The highlight is the focus OnRowHover moved onto the hovered row, and the sub menu closing
+			// behind it must not take it back - this pins that it ends up where the mouse is
 			await Assert.That(harness.HighlightedName).IsEqualTo("Open Menu Item");
 		}
 
@@ -220,6 +220,79 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(moreButton.SubMenu).IsNull();
 			await Assert.That(otherButton.SubMenu).IsNotNull();
 			await Assert.That(harness.Menu.HasBeenClosed).IsFalse();
+		}
+
+		/// <summary>
+		/// Sweeping down a sub menu whose rows are themselves sub menu parents opens each one in turn, and the
+		/// one the pointer stops on has to still be open when the dust settles - along with everything above it.
+		/// </summary>
+		/// <remarks>
+		/// Opening and closing are both deferred to idle, so a sweep that crosses rows faster than the queue
+		/// drains leaves several rows holding a sub menu at once, and an older sibling's sub menu can close
+		/// <em>after</em> the newest one has taken focus. The close must not read "the menu I belong to has no
+		/// focus" as "the chain is gone" - the focus is simply deeper in that same chain now. This is the real
+		/// MatterCAD path: right click, Modify, then down the sub menu past Duplication and Mesh to Constraints.
+		/// </remarks>
+		[Test]
+		public async Task SweepingPastSiblingSubMenuParentsLeavesTheChainOpen()
+		{
+			var harness = HoverMenuHarness.Show(menu =>
+			{
+				menu.CreateMenuItem("Open");
+				menu.CreateSubMenu(
+					"More",
+					menu.Theme,
+					subMenu =>
+					{
+						subMenu.CreateMenuItem("Plain");
+						subMenu.CreateSubMenu("Group A", subMenu.Theme, leaf => leaf.CreateMenuItem("A Leaf"));
+						subMenu.CreateSubMenu("Group B", subMenu.Theme, leaf => leaf.CreateMenuItem("B Leaf"));
+						subMenu.CreateSubMenu("Group C", subMenu.Theme, leaf => leaf.CreateMenuItem("C Leaf"));
+					});
+			});
+
+			var moreButton = harness.Menu.Children.OfType<PopupMenu.SubMenuItemButton>().First();
+
+			harness.MoveTo(harness.CenterOf("More Menu Item"));
+			harness.PumpIdle();
+
+			var moreMenu = moreButton.SubMenu;
+			await Assert.That(moreMenu).IsNotNull();
+
+			var groupC = moreMenu.Descendants<PopupMenu.SubMenuItemButton>()
+				.First(row => row.Name == "Group C Menu Item");
+
+			harness.MoveTo(harness.CenterOf("Group A Menu Item"));
+			harness.PumpIdle();
+
+			// Deliberately not pumped between these two: a sweep crosses rows faster than the idle queue
+			// drains, which is what leaves more than one row holding a sub menu at the same time
+			harness.MoveTo(harness.CenterOf("Group B Menu Item"));
+			harness.MoveTo(harness.CenterOf("Group C Menu Item"));
+
+			var groupA = moreMenu.Descendants<PopupMenu.SubMenuItemButton>()
+				.First(row => row.Name == "Group A Menu Item");
+			var groupB = moreMenu.Descendants<PopupMenu.SubMenuItemButton>()
+				.First(row => row.Name == "Group B Menu Item");
+
+			// The overlap is the whole point of this test - without it the sweep is just three tidy opens
+			// and closes, and the bug it guards cannot happen. Assert it rather than assume it, so making
+			// hover-open synchronous some day fails here instead of passing vacuously.
+			await Assert.That(groupA.SubMenu).IsNotNull()
+				.Because("the row left behind still holds its sub menu, which has not been closed yet");
+			await Assert.That(groupB.SubMenu).IsNotNull();
+			await Assert.That(groupC.SubMenu).IsNotNull();
+
+			harness.PumpIdle();
+
+			await Assert.That(harness.Menu.HasBeenClosed).IsFalse()
+				.Because("nothing was chosen or dismissed, so the root menu is still up");
+			await Assert.That(moreMenu.HasBeenClosed).IsFalse()
+				.Because("the pointer is still on one of this sub menu's rows");
+			await Assert.That(moreButton.SubMenu).IsEqualTo(moreMenu);
+			await Assert.That(groupC.SubMenu).IsNotNull();
+			await Assert.That(harness.Find("C Leaf Menu Item")).IsNotNull()
+				.Because("the row the sweep stopped on is the one whose sub menu is reachable");
 		}
 
 		/// <summary>

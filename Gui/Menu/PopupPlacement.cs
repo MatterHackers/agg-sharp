@@ -143,8 +143,34 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 
+			// The widget that currently owns the keyboard focus, or null when nothing in the window does.
+			// Walked from the window down because Focused is only true on the leaf of the focus chain.
+			GuiWidget FocusedWidget()
+			{
+				if (systemWindow?.ContainsFocus != true)
+				{
+					return null;
+				}
+
+				var focused = (GuiWidget)systemWindow;
+				while (focused.Children.FirstOrDefault(child => child.ContainsFocus) is GuiWidget focusedChild)
+				{
+					focused = focusedChild;
+				}
+
+				return focused;
+			}
+
 			void CloseMenu()
 			{
+				// Where the focus is *before* Close() drops this popup's own claim on it. Something outside
+				// this popup holding it means the focus has moved on rather than been given up.
+				var focused = FocusedWidget();
+				bool focusHasMovedOn = focused != null
+					&& focused != systemWindow
+					&& focused != popup.Widget
+					&& !focused.Parents<GuiWidget>().Any(parent => parent == popup.Widget);
+
 				popup.Widget.AfterDraw -= Widget_Draw;
 
 				popup.Widget.Close();
@@ -161,8 +187,14 @@ namespace MatterHackers.Agg.UI
 				// Long lived originating item must be unregistered
 				anchor.Widget.Closed -= Anchor_Closed;
 
-				// Restore focus to originating widget on close
-				if (anchor.Widget?.HasBeenClosed == false)
+				// Restore focus to the widget this popup was opened from - choosing an item or pressing Escape
+				// gives the focus up, and it must not be left stranded on a widget that no longer exists.
+				// Not when something else has already taken it, though: a popup that is closing *because* the
+				// focus moved on must leave it where it went. Sweeping down a column of sub menu parents is
+				// where that bites - the sibling sub menu being left behind would otherwise drag the highlight
+				// back onto its own row and close the sub menu the pointer had already moved on to.
+				if (!focusHasMovedOn
+					&& anchor.Widget?.HasBeenClosed == false)
 				{
 					anchor.Widget.Focus();
 				}

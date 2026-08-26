@@ -574,6 +574,12 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(harness.Menu.HasBeenClosed).IsTrue();
 			await Assert.That(harness.Beneath.MouseDowns).IsEqualTo(1);
 			await Assert.That(harness.Beneath.LeftClicks).IsEqualTo(1);
+
+			// The press that dismissed the menu also took the focus, and the closing popup leaves it there.
+			// Snapping it back to the anchor would undo half of the pass-through this test exists to pin -
+			// the widget beneath would get the click but not the caret.
+			await Assert.That(harness.Beneath.ContainsFocus).IsTrue();
+			await Assert.That(harness.Anchor.Focused).IsFalse();
 		}
 
 		/// <summary>
