@@ -47,100 +47,11 @@ namespace MatterHackers.Agg.UI.Tests
 	[NotInParallel(nameof(MatterHackers.GuiAutomation.AutomationRunner.ShowWindowAndExecuteTests))]
 	public class MainLoopSynchronizationContextTests
 	{
-		/// <summary>
-		/// A stand in for a platform host's idle pump: one thread that installs the context and then calls
-		/// InvokePendingActions in a loop, exactly the way WinformsSystemWindow and AutomationRunner do.
-		/// </summary>
-		private sealed class TestPump : IDisposable
-		{
-			private readonly Thread thread;
-			private readonly ManualResetEventSlim ready = new ManualResetEventSlim(false);
-			private volatile bool stopRequested;
-
-			public TestPump()
-			{
-				// Hand ourselves a clean queue and an unlatched ui thread id so the pump thread below becomes
-				// UiThread's ui thread.
-				UiThread.ResetForTests();
-
-				thread = new Thread(() =>
-				{
-					MainLoopSynchronizationContext.InstallOnPumpThread();
-
-					// Latches UiThread.IsUiThread onto this thread before anyone can observe it.
-					UiThread.InvokePendingActions();
-
-					ThreadId = Environment.CurrentManagedThreadId;
-					ready.Set();
-
-					while (!stopRequested)
-					{
-						UiThread.InvokePendingActions();
-						Thread.Sleep(1);
-					}
-
-					UiThread.InvokePendingActions();
-				})
-				{
-					IsBackground = true,
-					Name = "MainLoopSynchronizationContext test pump"
-				};
-
-				thread.Start();
-				ready.Wait();
-			}
-
-			public int ThreadId { get; private set; }
-
-			/// <summary>
-			/// Runs <paramref name="work"/> on the pump thread under the installed context and completes when
-			/// the whole async chain - including every continuation - has finished.
-			/// </summary>
-			public Task RunOnPump(Func<Task> work)
-			{
-				var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-				UiThread.RunOnIdle(async () =>
-				{
-					try
-					{
-						await work();
-						completion.TrySetResult(true);
-					}
-					catch (Exception workException)
-					{
-						completion.TrySetException(workException);
-					}
-				});
-
-				return completion.Task;
-			}
-
-			public void Dispose()
-			{
-				stopRequested = true;
-
-				// Bounded: a pump thread that will not come back is a real failure, and an unbounded Join
-				// would report it as a hung test run rather than as itself.
-				bool stopped = thread.Join(TimeSpan.FromSeconds(10));
-
-				// The pump thread is gone; leave no latched ui thread id or queued work behind.
-				UiThread.ResetForTests();
-				ready.Dispose();
-
-				if (!stopped)
-				{
-					throw new TimeoutException(
-						"The test pump thread did not stop within 10s - queued work is still blocking it.");
-				}
-			}
-		}
-
 		[Test]
 		[Timeout(30_000)]
 		public async Task AwaitResumesOnThePumpThread(CancellationToken cancellationToken)
 		{
-			using var pump = new TestPump();
+			using var pump = new UiThreadTestPump();
 
 			int resumedOnThread = 0;
 			int startedOnThread = 0;
@@ -163,7 +74,7 @@ namespace MatterHackers.Agg.UI.Tests
 		[Timeout(30_000)]
 		public async Task PostFromBackgroundThreadRunsOnThePump(CancellationToken cancellationToken)
 		{
-			using var pump = new TestPump();
+			using var pump = new UiThreadTestPump();
 
 			int ranOnThread = 0;
 			object observedState = null;
@@ -193,7 +104,7 @@ namespace MatterHackers.Agg.UI.Tests
 		[Timeout(30_000)]
 		public async Task SendFromThePumpThreadRunsInline(CancellationToken cancellationToken)
 		{
-			using var pump = new TestPump();
+			using var pump = new UiThreadTestPump();
 
 			bool ranBeforeSendReturned = false;
 			int ranOnThread = 0;
@@ -225,7 +136,7 @@ namespace MatterHackers.Agg.UI.Tests
 		[Timeout(30_000)]
 		public async Task SendFromBackgroundThreadCompletesOnThePumpAndReportsTheLegacyShape(CancellationToken cancellationToken)
 		{
-			using var pump = new TestPump();
+			using var pump = new UiThreadTestPump();
 
 			var diagnostics = new List<string>();
 			void CollectDiagnostic(string message)
@@ -293,7 +204,7 @@ namespace MatterHackers.Agg.UI.Tests
 		[Timeout(30_000)]
 		public async Task PostAndRunOnIdleShareOneFifoQueue(CancellationToken cancellationToken)
 		{
-			using var pump = new TestPump();
+			using var pump = new UiThreadTestPump();
 
 			var order = new List<string>();
 			var done = new ManualResetEventSlim(false);
@@ -342,7 +253,7 @@ namespace MatterHackers.Agg.UI.Tests
 		[Timeout(30_000)]
 		public async Task NestedDrainAdvancesAnAwaitThatOnlyTheQueueCanComplete(CancellationToken cancellationToken)
 		{
-			using var pump = new TestPump();
+			using var pump = new UiThreadTestPump();
 
 			bool captureFinished = false;
 			int continuationThread = 0;
@@ -471,7 +382,7 @@ namespace MatterHackers.Agg.UI.Tests
 		[Timeout(30_000)]
 		public async Task SendFromBackgroundThreadRethrowsWithTheOriginalStack(CancellationToken cancellationToken)
 		{
-			using var pump = new TestPump();
+			using var pump = new UiThreadTestPump();
 
 			Exception caught = null;
 

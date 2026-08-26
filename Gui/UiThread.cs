@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace MatterHackers.Agg.UI
@@ -158,6 +159,36 @@ namespace MatterHackers.Agg.UI
 			{
 				return Thread.CurrentThread.ManagedThreadId == uiThreadId;
 			}
+		}
+
+		/// <summary>
+		/// Awaitable switch to the UI thread: everything after <c>await UiThread.SwitchToUiThreadAsync()</c>
+		/// runs on the thread that pumps <see cref="InvokePendingActions"/>.
+		/// </summary>
+		/// <remarks>
+		/// <para>This is the awaitable marshal the RunOnIdle-plus-TaskCompletionSource shapes existed to work
+		/// around. Work that starts on a thread pool task (this app runs every long operation through
+		/// Tasks.Execute, which is a Task.Run, deliberately keeping heavy sync work off the UI thread) captures
+		/// no synchronization context, so its awaits resume on the pool. A UI-touching tail therefore had to be
+		/// handed to <see cref="RunOnIdle(Action)"/> - and, when the caller needed to know it had finished or
+		/// whether it threw, hand-plumbed back through a TaskCompletionSource, because RunOnIdle takes an
+		/// Action and an async lambda passed to it is an async void. Awaiting this instead keeps the whole
+		/// method one straight line: the continuation is still part of the caller's task, so a failure after
+		/// the switch faults that task rather than escaping onto the idle pump.</para>
+		/// <para>Once the switch lands, <see cref="MainLoopSynchronizationContext"/> is the current context (the
+		/// hosts install it on the pump thread), so ORDINARY awaits later in the same method also resume on the
+		/// UI thread without switching again.</para>
+		/// <para>Awaiting from the UI thread continues inline - <see cref="SwitchToUiThreadAwaiter.IsCompleted"/>
+		/// is <see cref="IsUiThread"/> - so it is free to call on a path that is sometimes already there, and it
+		/// costs no extra pump.</para>
+		/// <para>HAZARD: the continuation is queued through <see cref="RunOnIdle(Action)"/>, so it only runs if
+		/// something drains the queue. On a host with no pump - a headless test with no window - the await never
+		/// resumes and the caller is parked forever. Callers whose code can run headless must keep their
+		/// existing "no window, do it here" guards rather than rely on this.</para>
+		/// </remarks>
+		public static SwitchToUiThreadAwaitable SwitchToUiThreadAsync()
+		{
+			return default(SwitchToUiThreadAwaitable);
 		}
 
 		private static int uiThreadId = -1;
@@ -405,6 +436,57 @@ namespace MatterHackers.Agg.UI
 				// Reset UI thread ID
 				uiThreadId = -1;
 			}
+		}
+	}
+
+	/// <summary>
+	/// What <see cref="UiThread.SwitchToUiThreadAsync"/> hands back - see there for what it is for and its one
+	/// hazard. A struct with no state: the switch's only inputs are the current thread and the one idle queue.
+	/// </summary>
+	public readonly struct SwitchToUiThreadAwaitable
+	{
+		public SwitchToUiThreadAwaiter GetAwaiter() => default(SwitchToUiThreadAwaiter);
+	}
+
+	/// <summary>
+	/// The awaiter for <see cref="UiThread.SwitchToUiThreadAsync"/>.
+	/// </summary>
+	public readonly struct SwitchToUiThreadAwaiter : ICriticalNotifyCompletion
+	{
+		/// <summary>
+		/// True when there is nothing to do - the caller is already on the UI thread - which makes the await
+		/// continue inline with no pump hop at all.
+		/// </summary>
+		public bool IsCompleted => UiThread.IsUiThread;
+
+		/// <summary>
+		/// Queues the continuation with the caller's <see cref="ExecutionContext"/> flowed, as
+		/// <see cref="INotifyCompletion"/> requires. A compiled <c>await</c> never comes through here - the
+		/// state machine builder calls <see cref="UnsafeOnCompleted"/> and restores the captured context
+		/// around its own MoveNext - but agg-sharp is a library, and a hand-written awaiter user calling
+		/// <c>OnCompleted</c> directly is entitled to have its context (AsyncLocals, impersonation) reach
+		/// the continuation.
+		/// </summary>
+		public void OnCompleted(Action continuation)
+		{
+			var context = ExecutionContext.Capture();
+
+			if (context == null)
+			{
+				// Flow was suppressed; there is nothing to restore and running it directly is the contract.
+				UiThread.RunOnIdle(continuation);
+				return;
+			}
+
+			UiThread.RunOnIdle(() => ExecutionContext.Run(context, state => ((Action)state)(), continuation));
+		}
+
+		// The bare queue: the state machine restores the captured ExecutionContext around its own MoveNext,
+		// so flowing it here too would be redundant work on the path every compiled await takes.
+		public void UnsafeOnCompleted(Action continuation) => UiThread.RunOnIdle(continuation);
+
+		public void GetResult()
+		{
 		}
 	}
 
