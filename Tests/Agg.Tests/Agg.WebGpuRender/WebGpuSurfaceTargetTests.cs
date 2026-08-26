@@ -27,6 +27,7 @@ using System;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using MatterHackers.RenderCore;
+using MatterHackers.RenderCore.Testing;
 using MatterHackers.WebGpu;
 using MatterHackers.WebGpuRender;
 using TUnit.Core;
@@ -52,6 +53,8 @@ namespace MatterHackers.Agg.Tests
 				form.CreateControl();
 				_ = form.Handle;
 
+				// One process on the GPU at a time - see GpuTestGate.
+				using (GpuTestGate.Acquire(nameof(WebGpuSurfaceTargetTests)))
 				using (var device = new WebGpuRenderDevice(false, WGPUBackendType.D3D12, "surfaceTests"))
 				using (var surface = device.CreateSurfaceTarget(form.Handle, IntPtr.Zero, 320, 240, "testWindow"))
 				{
@@ -109,6 +112,7 @@ namespace MatterHackers.Agg.Tests
 			{
 				form.CreateControl();
 
+				using (GpuTestGate.Acquire(nameof(WebGpuSurfaceTargetTests)))
 				using (var device = new WebGpuRenderDevice(false, WGPUBackendType.D3D12, "surfaceTests"))
 				using (var surface = device.CreateSurfaceTarget(form.Handle, IntPtr.Zero, 64, 64, "testWindow"))
 				{

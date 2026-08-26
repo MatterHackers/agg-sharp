@@ -27,6 +27,7 @@ using System;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Tests.TestingInfrastructure;
 using MatterHackers.RenderCore;
+using MatterHackers.RenderCore.Testing;
 using MatterHackers.WebGpu;
 using MatterHackers.WebGpuRender;
 
@@ -44,8 +45,11 @@ namespace MatterHackers.Agg.Tests
 	/// </summary>
 	public sealed class WebGpuRenderTestHarness : IDisposable
 	{
-		private WebGpuRenderTestHarness(WebGpuRenderDevice device, IGpuTexture target, IGpuTexture depth)
+		private readonly IDisposable gpuGate;
+
+		private WebGpuRenderTestHarness(IDisposable gpuGate, WebGpuRenderDevice device, IGpuTexture target, IGpuTexture depth)
 		{
+			this.gpuGate = gpuGate;
 			this.Device = device;
 			this.Target = target;
 			this.Depth = depth;
@@ -79,7 +83,21 @@ namespace MatterHackers.Agg.Tests
 		/// <param name="withDepth">Whether to attach a depth buffer.</param>
 		public static WebGpuRenderTestHarness Create(uint width = 64, uint height = 64, bool withDepth = false)
 		{
-			var device = new WebGpuRenderDevice(false, TestRenderBackend.Native, "WebGpuRenderTests");
+			// The harness's lifetime is exactly the span that owns a device and submits to it, so the
+			// cross-process GPU gate is taken here and let go in Dispose - see GpuTestGate for why two test
+			// processes must never drive the GPU at once.
+			var gate = GpuTestGate.Acquire(nameof(WebGpuRenderTestHarness));
+			WebGpuRenderDevice device;
+			try
+			{
+				device = new WebGpuRenderDevice(false, TestRenderBackend.Native, "WebGpuRenderTests");
+			}
+			catch
+			{
+				gate.Dispose();
+				throw;
+			}
+
 			try
 			{
 				var target = device.CreateTexture(new TextureDescriptor(
@@ -104,11 +122,12 @@ namespace MatterHackers.Agg.Tests
 						"depthTarget"));
 				}
 
-				return new WebGpuRenderTestHarness(device, target, depth);
+				return new WebGpuRenderTestHarness(gate, device, target, depth);
 			}
 			catch
 			{
 				device.Dispose();
+				gate.Dispose();
 				throw;
 			}
 		}
@@ -128,6 +147,9 @@ namespace MatterHackers.Agg.Tests
 			this.Depth?.Dispose();
 			this.Target?.Dispose();
 			this.Device?.Dispose();
+
+			// Released last: nothing may still be in flight on this device when another process is let in.
+			this.gpuGate?.Dispose();
 		}
 	}
 

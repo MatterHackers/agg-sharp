@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Runtime.InteropServices;
+using MatterHackers.RenderCore.Testing;
 using MatterHackers.WebGpu;
 using MatterHackers.WebGpuRender;
 
@@ -135,6 +136,9 @@ namespace MatterHackers.Agg.Tests.TestingInfrastructure
 				{
 					if (publishedAdapterKind == null)
 					{
+						// Short-lived, but still a real device on the real adapter, so it takes the same
+						// cross-process gate every other GPU span in the suites does.
+						using (GpuTestGate.Acquire("TestRenderBackend adapter probe"))
 						using (var probe = new WebGpuRenderDevice(false, Native, "TestRenderBackend adapter probe"))
 						{
 							publishedAdapterKind = probe.IsFallbackAdapter;

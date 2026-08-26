@@ -28,6 +28,7 @@ using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Tests.TestingInfrastructure;
 using MatterHackers.RenderCore;
+using MatterHackers.RenderCore.Testing;
 using MatterHackers.RenderGl;
 using MatterHackers.RenderGl.Compat;
 using MatterHackers.RenderGl.OpenGl;
@@ -66,6 +67,7 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 
 		public const int DefaultHeight = 384;
 
+		private IDisposable gpuGate;
 		private WebGpuRenderDevice device;
 		private GlCompatContext context;
 		private WebGpuSceneRenderer sceneRenderer;
@@ -81,16 +83,20 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 			// capture makes its own), and the readers only notice through this generation bump.
 			Graphics2DGpu.InvalidateGlCaches();
 
-			// Normally the machine's GPU; AGG_FORCE_WARP=1 demands the software adapter instead, so the
-			// software golden set can be regenerated and verified on hardware (see TestRenderBackend).
-			device = new WebGpuRenderDevice(TestRenderBackend.ForceFallbackAdapter, TestRenderBackend.Native, "WebGpuOffscreenCapture");
-
-			// This device's adapter is the one whose pixels get compared, so it - not a throwaway probe -
-			// decides which golden set the comparison reads.
-			TestRenderBackend.PublishAdapterKind(device.IsFallbackAdapter);
+			// A capture owns a device and submits to it for its whole lifetime, so the cross-process GPU
+			// gate is taken before the device exists and released in Dispose - see GpuTestGate.
+			gpuGate = GpuTestGate.Acquire(nameof(WebGpuOffscreenCapture));
 
 			try
 			{
+				// Normally the machine's GPU; AGG_FORCE_WARP=1 demands the software adapter instead, so the
+				// software golden set can be regenerated and verified on hardware (see TestRenderBackend).
+				device = new WebGpuRenderDevice(TestRenderBackend.ForceFallbackAdapter, TestRenderBackend.Native, "WebGpuOffscreenCapture");
+
+				// This device's adapter is the one whose pixels get compared, so it - not a throwaway probe -
+				// decides which golden set the comparison reads.
+				TestRenderBackend.PublishAdapterKind(device.IsFallbackAdapter);
+
 				colorTarget = device.CreateTexture(new TextureDescriptor(
 					(uint)width,
 					(uint)height,
@@ -328,6 +334,11 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 			// The caches this capture filled are keyed on a GL whose device is now gone; leaving them live
 			// would hand the next capture display list ids minted by a dead device.
 			Graphics2DGpu.InvalidateGlCaches();
+
+			// Released last: no submit from this capture may still be in flight when another process is
+			// let onto the GPU.
+			gpuGate?.Dispose();
+			gpuGate = null;
 		}
 	}
 }
