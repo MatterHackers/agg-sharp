@@ -745,33 +745,14 @@ namespace MatterHackers.Agg.UI
 		/// dialog - the shell stays up, the message loop keeps running, and the process never exits. The
 		/// provider keeps the shell first in <see cref="ISystemWindowProvider.OpenWindows"/> and takes the
 		/// dialogs above it down with it, so closing that one window is the whole application closing.
-		/// Kept identical to MacSystemWindow.
+		/// See <see cref="PlatformCloseArbitration.ShellWindowForClose"/>, which every host shares.
 		/// </remarks>
 		private SystemWindow ShellAggWindow()
 		{
-			return ShellWindowForClose(SingleWindowMode, this.WindowProvider, this.AggSystemWindow);
-		}
-
-		/// <summary>
-		/// The instance-free half of <see cref="ShellAggWindow"/>. Kept identical to MacSystemWindow, where
-		/// the unit tests for this decision live (PlatformWin32 does not build on the mac they run on).
-		/// </summary>
-		internal static SystemWindow ShellWindowForClose(
-			bool singleWindowMode,
-			ISystemWindowProvider provider,
-			SystemWindow activeWindow)
-		{
-			if (singleWindowMode && provider != null)
-			{
-				var openWindows = provider.OpenWindows;
-
-				if (openWindows.Count > 0)
-				{
-					return openWindows[0];
-				}
-			}
-
-			return activeWindow;
+			return PlatformCloseArbitration.ShellWindowForClose(
+				SingleWindowMode,
+				this.WindowProvider,
+				this.AggSystemWindow);
 		}
 
 		/// <summary>
@@ -863,7 +844,9 @@ namespace MatterHackers.Agg.UI
 
 		protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
 		{
-			if (!HandlePlatformCloseRequest(
+			// The X button, Alt-F4, the shell asking the app to exit: all of them close the application rather
+			// than whatever window happens to be on top, which is what PlatformCloseArbitration decides.
+			if (!PlatformCloseArbitration.HandlePlatformCloseRequest(
 				SingleWindowMode,
 				this.WindowProvider,
 				this.AggSystemWindow,
@@ -873,62 +856,6 @@ namespace MatterHackers.Agg.UI
 			}
 
 			base.OnClosing(e);
-		}
-
-		/// <summary>
-		/// Runs a native close request - the X button, Alt-F4, the shell asking the app to exit - against the
-		/// application rather than against whatever window happens to be on top, and reports whether the form
-		/// may go ahead and close. Kept identical to MacSystemWindow, where the unit tests for it live.
-		/// </summary>
-		/// <param name="singleWindowMode">See <see cref="SingleWindowMode"/>.</param>
-		/// <param name="provider">The provider holding the open windows, if there is one.</param>
-		/// <param name="activeWindow">The window currently being drawn and given events.</param>
-		/// <param name="setPlatformClosing">
-		/// Sets (and, if the close does not take, clears) the host's "the platform is already closing" flag.
-		/// </param>
-		internal static bool HandlePlatformCloseRequest(
-			bool singleWindowMode,
-			ISystemWindowProvider provider,
-			SystemWindow activeWindow,
-			Action<bool> setPlatformClosing)
-		{
-			// The user closed the application, not the dialog drawn inside it. Asking the dialog runs none of
-			// the shell's ShouldClose/Closed handlers - window bounds persistence, save on exit - and the
-			// form is destroyed immediately afterwards regardless, so that work is simply lost.
-			var shellWindow = ShellWindowForClose(singleWindowMode, provider, activeWindow);
-
-			if (shellWindow == null || shellWindow.HasBeenClosed)
-			{
-				return true;
-			}
-
-			// Only the shell decides whether the application may close: an open dialog does not veto here.
-			// In single window mode a dialog is a widget drawn inside this window, so its titlebar button is
-			// the only close that belongs to it - the X and Alt-F4 have always meant "close the application",
-			// and applications that want to refuse mid-dialog do it in their own ShouldClose ("do you want
-			// to save?" and friends).
-			var shouldClose = new ShouldCloseEventArgs();
-			shellWindow.OnShouldClose(shouldClose);
-
-			if (shouldClose.Cancel)
-			{
-				return false;
-			}
-
-			setPlatformClosing?.Invoke(true);
-			shellWindow.Close();
-
-			if (!shellWindow.HasBeenClosed)
-			{
-				// Close asks OnShouldClose a second time and an application may cancel on that one (having
-				// just put up its "save first?" dialog on the first ask). Letting the platform destroy the
-				// window anyway is exactly the "closed with no Closed events" bug, so the shell that is still
-				// open keeps its form.
-				setPlatformClosing?.Invoke(false);
-				return false;
-			}
-
-			return true;
 		}
 
 		/// <summary>

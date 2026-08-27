@@ -154,6 +154,23 @@ namespace MatterHackers.Agg.UI.Tests
 				setPlatformClosing: null)).IsTrue();
 		}
 
+		[Test]
+		public async Task TheShellIsTheFirstOpenWindowOnlyInSingleWindowMode()
+		{
+			// A provider that gives every window its own platform window (WebGpuX11WindowProvider and friends)
+			// leaves SingleWindowMode alone, and there the window that was asked to close really is the one to
+			// close - looking past it would take the whole application down with a dialog.
+			var shell = new SystemWindow(400, 300) { IsApplicationShell = true };
+			var dialog = new SystemWindow(200, 100);
+			var provider = new StackedWindowProvider(shell, dialog);
+
+			await Assert.That(PlatformCloseArbitration.ShellWindowForClose(
+				singleWindowMode: true, provider: provider, activeWindow: dialog)).IsEqualTo(shell);
+
+			await Assert.That(PlatformCloseArbitration.ShellWindowForClose(
+				singleWindowMode: false, provider: provider, activeWindow: dialog)).IsEqualTo(dialog);
+		}
+
 		/// <summary>
 		/// A stand-in for <see cref="SingleWindowProvider"/> with the one property the routing depends on: the
 		/// shell first and the dialogs stacked above it. The real one needs a platform window to show anything.

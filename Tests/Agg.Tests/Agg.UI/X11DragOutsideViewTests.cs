@@ -36,125 +36,71 @@ using TUnit.Core;
 namespace MatterHackers.Agg.UI.Tests
 {
 	/// <summary>
-	/// A drag that ends past the window edge must still deliver its button release. On X11 that takes two
-	/// mechanisms: an <c>XGrabPointer</c> so the events exist at all outside the window, and this filter to
-	/// decide which of them are agg's. Only the filter can be tested without a server, and it is also the
-	/// half that decides whether a title-bar press turns into a phantom release.
+	/// The X11 half of the out-of-view drag fix: X11's event numbering and its pixel grid, translated into the
+	/// terms the shared filter is written in. The filter's own behaviour is
+	/// <see cref="OutOfViewMouseCaptureTests"/>, which runs on every OS; what is left here is everything X11
+	/// does differently - the mapping onto <see cref="PointerEventKind"/>, the exclusive-edge bounds test, the
+	/// crossings a grab manufactures, and the button-state reconcile that recovers a release the server never
+	/// delivered.
 	///
 	/// <para>
-	/// The Y flip and the pointer-gone sentinel live here too, because all three are the same question -
-	/// "where is this event, and is it ours" - asked of the same geometry.
+	/// The Y flip and the button numbering live here too, because they are the same question - "where is this
+	/// event, and is it ours" - asked of the same geometry.
 	/// </para>
 	/// </summary>
 	public class X11DragOutsideViewTests
 	{
+		/// <summary>
+		/// X11 has one motion event for hover and drag both - the button the state word names is what tells
+		/// them apart, where AppKit has separate event types. Mapping a hover onto Drag would hand it to a
+		/// widget that never saw a button go down; mapping a drag onto Other would drop the moves that keep a
+		/// gesture alive once the pointer has left the window.
+		/// </summary>
 		[Test]
-		public async Task ADragThatLeavesTheWindowStillDeliversItsMoveAndUp()
+		[Arguments(X11.ButtonPress, MouseButtons.Left, PointerEventKind.Down)]
+		[Arguments(X11.ButtonRelease, MouseButtons.Left, PointerEventKind.Up)]
+		[Arguments(X11.MotionNotify, MouseButtons.Left, PointerEventKind.Drag)]
+		[Arguments(X11.MotionNotify, MouseButtons.None, PointerEventKind.Other)]
+		[Arguments(X11.EnterNotify, MouseButtons.None, PointerEventKind.Other)]
+		public async Task XEventTypesMapToTheSharedKinds(int eventType, MouseButtons button, PointerEventKind expected)
 		{
-			var capture = new X11SystemWindow.OutOfViewMouseCapture();
-
-			await Assert.That(capture.ShouldDeliver(X11.ButtonPress, MouseButtons.Left, insideWindow: true)).IsTrue();
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.Left, insideWindow: false)).IsTrue();
-
-			// The one that matters: dropping this is what leaves the widget believing the button is still down.
-			await Assert.That(capture.ShouldDeliver(X11.ButtonRelease, MouseButtons.Left, insideWindow: false)).IsTrue();
+			await Assert.That(X11SystemWindow.PointerEventKindFor(eventType, button)).IsEqualTo(expected);
 		}
 
 		/// <summary>
-		/// X11 has one motion event for hover and drag both - the button state is what tells them apart,
-		/// where AppKit has separate event types. A hover outside the window is nobody's business.
+		/// The arbitration hook seen through the X11 numbering: a drag whose press landed inside still delivers
+		/// its moves and, critically, its release. Dropping that release is what leaves a widget believing its
+		/// button is still down. The rule is <see cref="OutOfViewMouseCapture"/>'s and is tested there; what is
+		/// checked here is that the X11 event types reach it as the right kinds.
 		/// </summary>
 		[Test]
-		public async Task AHoverOutsideTheWindowIsStillDropped()
+		public async Task ADragThatLeavesTheWindowStillDeliversItsMoveAndUp()
 		{
-			var capture = new X11SystemWindow.OutOfViewMouseCapture();
+			var capture = new OutOfViewMouseCapture();
 
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.None, insideWindow: false)).IsFalse();
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.None, insideWindow: true)).IsTrue();
-		}
+			await Assert.That(Deliver(capture, X11.ButtonPress, MouseButtons.Left, insideWindow: true)).IsTrue();
+			await Assert.That(Deliver(capture, X11.MotionNotify, MouseButtons.Left, insideWindow: false)).IsTrue();
+			await Assert.That(Deliver(capture, X11.ButtonRelease, MouseButtons.Left, insideWindow: false)).IsTrue();
 
-		[Test]
-		public async Task ADragEndedOutsideDoesNotCaptureTheNextOne()
-		{
-			var capture = new X11SystemWindow.OutOfViewMouseCapture();
-
-			capture.ShouldDeliver(X11.ButtonPress, MouseButtons.Left, insideWindow: true);
-			capture.ShouldDeliver(X11.ButtonRelease, MouseButtons.Left, insideWindow: false);
-
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.Left, insideWindow: false)).IsFalse();
-			await Assert.That(capture.ShouldDeliver(X11.ButtonRelease, MouseButtons.Left, insideWindow: false)).IsFalse();
+			// And with the button up nothing is captured, so the same MotionNotify - now carrying no button -
+			// is a plain hover and nobody's business.
+			await Assert.That(capture.HasCapturedButtons).IsFalse();
+			await Assert.That(Deliver(capture, X11.MotionNotify, MouseButtons.None, insideWindow: false)).IsFalse();
 		}
 
 		/// <summary>
 		/// With the grab held, X11 delivers this window every press the pointer makes anywhere on the screen.
 		/// None of them is agg's, and a phantom release out of one would be as bad as the missing release
-		/// this class exists to fix.
+		/// this filter exists to fix.
 		/// </summary>
 		[Test]
 		public async Task APressOutsideTheWindowNeverBecomesAnAggDragOrUp()
 		{
-			var capture = new X11SystemWindow.OutOfViewMouseCapture();
+			var capture = new OutOfViewMouseCapture();
 
-			await Assert.That(capture.ShouldDeliver(X11.ButtonPress, MouseButtons.Left, insideWindow: false)).IsFalse();
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.Left, insideWindow: false)).IsFalse();
-			await Assert.That(capture.ShouldDeliver(X11.ButtonRelease, MouseButtons.Left, insideWindow: false)).IsFalse();
-		}
-
-		[Test]
-		public async Task AnOrdinaryInWindowDragDeliversEveryEvent()
-		{
-			var capture = new X11SystemWindow.OutOfViewMouseCapture();
-
-			await Assert.That(capture.ShouldDeliver(X11.ButtonPress, MouseButtons.Left, insideWindow: true)).IsTrue();
-
-			for (int move = 0; move < 5; move++)
-			{
-				await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.Left, insideWindow: true)).IsTrue();
-			}
-
-			await Assert.That(capture.ShouldDeliver(X11.ButtonRelease, MouseButtons.Left, insideWindow: true)).IsTrue();
-		}
-
-		[Test]
-		public async Task ADragThatLeavesAndComesBackKeepsDelivering()
-		{
-			var capture = new X11SystemWindow.OutOfViewMouseCapture();
-
-			capture.ShouldDeliver(X11.ButtonPress, MouseButtons.Left, insideWindow: true);
-
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.Left, insideWindow: true)).IsTrue();
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.Left, insideWindow: false)).IsTrue();
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.Left, insideWindow: true)).IsTrue();
-			await Assert.That(capture.ShouldDeliver(X11.ButtonRelease, MouseButtons.Left, insideWindow: true)).IsTrue();
-		}
-
-		/// <summary>
-		/// What the pointer grab is taken and dropped on: the grab is held for exactly as long as a button
-		/// this window owns is down, so this is also the answer to "is the desktop's pointer still ours".
-		/// </summary>
-		[Test]
-		public async Task ACapturedDragOwnsThePointerUntilItsButtonComesUp()
-		{
-			var capture = new X11SystemWindow.OutOfViewMouseCapture();
-
-			await Assert.That(capture.HasCapturedButtons).IsFalse();
-
-			capture.ShouldDeliver(X11.ButtonPress, MouseButtons.Left, insideWindow: true);
-			await Assert.That(capture.HasCapturedButtons).IsTrue();
-
-			capture.ShouldDeliver(X11.ButtonRelease, MouseButtons.Left, insideWindow: false);
-			await Assert.That(capture.HasCapturedButtons).IsFalse();
-		}
-
-		[Test]
-		public async Task EachButtonIsCapturedOnItsOwn()
-		{
-			var capture = new X11SystemWindow.OutOfViewMouseCapture();
-
-			capture.ShouldDeliver(X11.ButtonPress, MouseButtons.Right, insideWindow: true);
-
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.Right, insideWindow: false)).IsTrue();
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.Middle, insideWindow: false)).IsFalse();
+			await Assert.That(Deliver(capture, X11.ButtonPress, MouseButtons.Left, insideWindow: false)).IsFalse();
+			await Assert.That(Deliver(capture, X11.MotionNotify, MouseButtons.Left, insideWindow: false)).IsFalse();
+			await Assert.That(Deliver(capture, X11.ButtonRelease, MouseButtons.Left, insideWindow: false)).IsFalse();
 		}
 
 		/// <summary>
@@ -291,45 +237,49 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
-		/// The recovery path. A captured button is normally cleared by the release that ends the drag, but
-		/// that release can genuinely never arrive - the grab was refused because another client held the
-		/// pointer, or was broken by a window manager taking one of its own mid-drag. Left alone the window
-		/// claims every move on the desktop belongs to a drag that ended minutes ago, and nothing else would
-		/// ever clear it.
+		/// The recovery path, wired to X11's state-word masks. A captured button is normally cleared by the
+		/// release that ends the drag, but that release can genuinely never arrive - the grab was refused
+		/// because another client held the pointer, or was broken by a window manager taking one of its own
+		/// mid-drag. Left alone the window claims every move on the desktop belongs to a drag that ended
+		/// minutes ago, and nothing else would ever clear it.
 		/// </summary>
 		[Test]
 		public async Task ACaptureSurvivingItsLostReleaseIsReconciledAway()
 		{
-			var capture = new X11SystemWindow.OutOfViewMouseCapture();
+			var capture = new OutOfViewMouseCapture();
 
-			capture.ShouldDeliver(X11.ButtonPress, MouseButtons.Left, insideWindow: true);
+			Deliver(capture, X11.ButtonPress, MouseButtons.Left, insideWindow: true);
 			await Assert.That(capture.HasCapturedButtons).IsTrue();
 
 			// A move whose state says nothing is held: the release happened somewhere we never heard about.
-			capture.ReconcileWithButtonState(0);
+			X11SystemWindow.ReconcileCaptureWithButtonState(capture, 0);
 
 			await Assert.That(capture.HasCapturedButtons).IsFalse();
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.Left, insideWindow: false)).IsFalse();
+			await Assert.That(Deliver(capture, X11.MotionNotify, MouseButtons.Left, insideWindow: false)).IsFalse();
 		}
 
+		/// <summary>
+		/// Which bit means which button, which is the whole content of the X11 side of the reconcile: reading
+		/// the wrong bit would drop a drag that is still running, or keep one that ended.
+		/// </summary>
 		[Test]
 		public async Task AButtonStillHeldIsNotReconciledAway()
 		{
-			var capture = new X11SystemWindow.OutOfViewMouseCapture();
+			var capture = new OutOfViewMouseCapture();
 
-			capture.ShouldDeliver(X11.ButtonPress, MouseButtons.Left, insideWindow: true);
-			capture.ShouldDeliver(X11.ButtonPress, MouseButtons.Right, insideWindow: true);
+			Deliver(capture, X11.ButtonPress, MouseButtons.Left, insideWindow: true);
+			Deliver(capture, X11.ButtonPress, MouseButtons.Right, insideWindow: true);
 
-			capture.ReconcileWithButtonState(X11.Button1Mask | X11.Button3Mask);
+			X11SystemWindow.ReconcileCaptureWithButtonState(capture, X11.Button1Mask | X11.Button3Mask);
 
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.Left, insideWindow: false)).IsTrue();
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.Right, insideWindow: false)).IsTrue();
+			await Assert.That(Deliver(capture, X11.MotionNotify, MouseButtons.Left, insideWindow: false)).IsTrue();
+			await Assert.That(Deliver(capture, X11.MotionNotify, MouseButtons.Right, insideWindow: false)).IsTrue();
 
 			// And only the one that is really gone gets dropped.
-			capture.ReconcileWithButtonState(X11.Button1Mask);
+			X11SystemWindow.ReconcileCaptureWithButtonState(capture, X11.Button1Mask);
 
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.Left, insideWindow: false)).IsTrue();
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.Right, insideWindow: false)).IsFalse();
+			await Assert.That(Deliver(capture, X11.MotionNotify, MouseButtons.Left, insideWindow: false)).IsTrue();
+			await Assert.That(Deliver(capture, X11.MotionNotify, MouseButtons.Right, insideWindow: false)).IsFalse();
 		}
 
 		/// <summary>
@@ -340,33 +290,16 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public async Task APressIsNotReconciledAwayByItsOwnPrePressState()
 		{
-			var capture = new X11SystemWindow.OutOfViewMouseCapture();
+			var capture = new OutOfViewMouseCapture();
 
 			// What HandleButton computes: the pre-press state (nothing held) plus this press's own bit.
 			uint heldDuringPress = 0u | X11SystemWindow.ButtonStateMaskForButtonNumber(X11.Button1);
 
-			capture.ReconcileWithButtonState(heldDuringPress);
-			capture.ShouldDeliver(X11.ButtonPress, MouseButtons.Left, insideWindow: true);
+			X11SystemWindow.ReconcileCaptureWithButtonState(capture, heldDuringPress);
+			Deliver(capture, X11.ButtonPress, MouseButtons.Left, insideWindow: true);
 
 			await Assert.That(capture.HasCapturedButtons).IsTrue();
-			await Assert.That(capture.ShouldDeliver(X11.MotionNotify, MouseButtons.Left, insideWindow: false)).IsTrue();
-		}
-
-		/// <summary>
-		/// Losing the keyboard means no release is coming at all, so the set is emptied outright rather than
-		/// waiting for one - see <c>HandleFocusLost</c>, which drops the pointer grab in the same breath.
-		/// </summary>
-		[Test]
-		public async Task LosingTheFocusForgetsEveryCapture()
-		{
-			var capture = new X11SystemWindow.OutOfViewMouseCapture();
-
-			capture.ShouldDeliver(X11.ButtonPress, MouseButtons.Left, insideWindow: true);
-			capture.ShouldDeliver(X11.ButtonPress, MouseButtons.Right, insideWindow: true);
-
-			capture.ClearCapturedButtons();
-
-			await Assert.That(capture.HasCapturedButtons).IsFalse();
+			await Assert.That(Deliver(capture, X11.MotionNotify, MouseButtons.Left, insideWindow: false)).IsTrue();
 		}
 
 		/// <summary>
@@ -419,5 +352,9 @@ namespace MatterHackers.Agg.UI.Tests
 
 			await Assert.That(counter.CountPress(X11.Button1, 5, 100, 100)).IsEqualTo(1);
 		}
+
+		/// <summary>The shared filter asked the way <c>HandleButton</c> and <c>HandleMotion</c> ask it.</summary>
+		private static bool Deliver(OutOfViewMouseCapture capture, int eventType, MouseButtons button, bool insideWindow)
+			=> capture.ShouldDeliver(X11SystemWindow.PointerEventKindFor(eventType, button), button, insideWindow);
 	}
 }

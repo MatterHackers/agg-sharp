@@ -181,5 +181,43 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(capture.ShouldDeliver(PointerEventKind.Drag, MouseButtons.Right, insideView: false)).IsTrue();
 			await Assert.That(capture.ShouldDeliver(PointerEventKind.Drag, MouseButtons.Middle, insideView: false)).IsFalse();
 		}
+
+		/// <summary>
+		/// The recovery path, without which a lost release is a window that claims every move on the desktop
+		/// belongs to a drag that ended minutes ago. Only what the host says is no longer held goes, so a
+		/// second button still down keeps its drag. Each host's own idea of "still held" is tested beside it.
+		/// </summary>
+		[Test]
+		public async Task ACaptureTheHostSaysIsNoLongerHeldIsReleased()
+		{
+			var capture = new OutOfViewMouseCapture();
+
+			capture.ShouldDeliver(PointerEventKind.Down, MouseButtons.Left, insideView: true);
+			capture.ShouldDeliver(PointerEventKind.Down, MouseButtons.Right, insideView: true);
+
+			capture.ReleaseCapturedButtonsWhere(button => button == MouseButtons.Left);
+
+			await Assert.That(capture.HasCapturedButtons).IsTrue();
+			await Assert.That(capture.ShouldDeliver(PointerEventKind.Drag, MouseButtons.Left, insideView: false)).IsFalse();
+			await Assert.That(capture.ShouldDeliver(PointerEventKind.Drag, MouseButtons.Right, insideView: false)).IsTrue();
+		}
+
+		/// <summary>
+		/// Losing the input entirely means no release is coming for anything, so the set is emptied outright
+		/// rather than waiting for ups that will never arrive.
+		/// </summary>
+		[Test]
+		public async Task ClearingForgetsEveryCapture()
+		{
+			var capture = new OutOfViewMouseCapture();
+
+			capture.ShouldDeliver(PointerEventKind.Down, MouseButtons.Left, insideView: true);
+			capture.ShouldDeliver(PointerEventKind.Down, MouseButtons.Right, insideView: true);
+
+			capture.ClearCapturedButtons();
+
+			await Assert.That(capture.HasCapturedButtons).IsFalse();
+			await Assert.That(capture.ShouldDeliver(PointerEventKind.Drag, MouseButtons.Left, insideView: false)).IsFalse();
+		}
 	}
 }

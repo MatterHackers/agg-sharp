@@ -127,7 +127,6 @@
        which is Windows and macOS both, so the condition is the reference's and not just "not Windows". -->
   <ItemGroup Condition="'$(LinuxBuild)' != 'true'">
     <Compile Remove="Agg.UI\X11EventLayoutTests.cs" />
-    <Compile Remove="Agg.UI\X11SystemWindowCloseRoutingTests.cs" />
     <Compile Remove="Agg.UI\X11ResizePaintTests.cs" />
     <Compile Remove="Agg.UI\X11KeyTranslationTests.cs" />
     <Compile Remove="Agg.UI\X11ModifierStateTests.cs" />

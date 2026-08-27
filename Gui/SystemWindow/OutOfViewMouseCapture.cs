@@ -23,6 +23,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+using System;
 using System.Collections.Generic;
 using MatterHackers.VectorMath;
 
@@ -78,9 +79,46 @@ namespace MatterHackers.Agg.UI
 		public bool HasCapturedButtons => this.capturedButtons.Count > 0;
 
 		/// <summary>
+		/// Drops every captured button a host's own view of the hardware says is no longer held.
+		/// </summary>
+		/// <remarks>
+		/// The recovery path. The captured set is normally emptied by the release that ends the drag, and on
+		/// some hosts that release can genuinely never arrive - X11's pointer grab can be refused or broken
+		/// mid-drag, a browser can hand the pointer to another gesture. A button stuck in this set is a window
+		/// that keeps claiming every move on the desktop belongs to a drag that ended minutes ago, and nothing
+		/// else would ever clear it.
+		/// <para/>
+		/// The predicate belongs to the host because only the host knows what the platform says is down right
+		/// now, and how to correct for it - a press that reports the button state <em>before</em> itself would
+		/// otherwise drop the button being captured on the very event that captures it.
+		/// </remarks>
+		/// <param name="noLongerHeld">Whether a captured button is no longer physically down.</param>
+		public void ReleaseCapturedButtonsWhere(Predicate<MouseButtons> noLongerHeld)
+		{
+			if (this.capturedButtons.Count == 0)
+			{
+				return;
+			}
+
+			this.capturedButtons.RemoveWhere(noLongerHeld);
+		}
+
+		/// <summary>
+		/// Forgets every captured button, for the case where no release is coming at all - a window that has
+		/// lost the input entirely has no up left to wait for.
+		/// </summary>
+		public void ClearCapturedButtons() => this.capturedButtons.Clear();
+
+		/// <summary>
 		/// Whether a point already converted into the content view's coordinates lies within its bounds.
 		/// The edges count as inside, so a click on the last row of pixels still belongs to the view.
 		/// </summary>
+		/// <remarks>
+		/// Inclusive because these are continuous coordinates, where the bounds width <em>is</em> the right
+		/// edge. A host whose coordinates are integer pixel indices instead - X11, where a window of width W
+		/// has columns 0 through W-1 and a pointer leaving to the right reports exactly W - needs an exclusive
+		/// test and keeps its own; see <c>X11SystemWindow.IsInsideBounds</c>.
+		/// </remarks>
 		public static bool IsInsideBounds(Vector2 inView, RectangleDouble bounds)
 			=> inView.X >= bounds.Left
 				&& inView.Y >= bounds.Bottom
