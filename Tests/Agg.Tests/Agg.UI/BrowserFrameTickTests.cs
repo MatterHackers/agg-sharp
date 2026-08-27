@@ -315,15 +315,23 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
+		/// <remarks>
+		/// The output stream is part of what is asserted, and it is not a detail: a Blazor host wires the
+		/// runtime's stderr straight to its "An unhandled error has occurred" strip, so this diagnostic
+		/// written to stderr tells every user of a slow boot that their session has broken. It has not.
+		/// </remarks>
 		[Test]
 		[Timeout(30_000)]
-		public async Task APhaseThatBlocksTheOnlyThreadIsCalledOutOnce()
+		public async Task APhaseThatBlocksTheOnlyThreadIsCalledOutOnceOnStandardOutput()
 		{
 			UiThread.ResetForTests();
 
-			var console = new StringWriter();
+			var output = new StringWriter();
+			var errors = new StringWriter();
+			TextWriter previousOut = Console.Out;
 			TextWriter previousError = Console.Error;
-			Console.SetError(console);
+			Console.SetOut(output);
+			Console.SetError(errors);
 
 			try
 			{
@@ -338,7 +346,7 @@ namespace MatterHackers.Agg.UI.Tests
 				tick.Tick();
 				tick.Tick();
 
-				string reported = console.ToString();
+				string reported = output.ToString();
 
 				await Assert.That(reported).Contains("browser events")
 					.Because("the line has to name the phase, or it says only that something was slow");
@@ -346,9 +354,13 @@ namespace MatterHackers.Agg.UI.Tests
 
 				await Assert.That(reported.Split("held the only thread").Length - 1).IsEqualTo(1)
 					.Because("a phase that is slow every frame would otherwise bury everything else in the console");
+
+				await Assert.That(errors.ToString()).DoesNotContain("held the only thread")
+					.Because("stderr is how a Blazor host is told the session failed, and a slow phase has not");
 			}
 			finally
 			{
+				Console.SetOut(previousOut);
 				Console.SetError(previousError);
 				UiThread.ResetForTests();
 			}

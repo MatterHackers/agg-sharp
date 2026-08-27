@@ -216,7 +216,11 @@ namespace MatterHackers.Agg.Platform.Browser
 				if (elapsedMilliseconds >= LongPhaseMilliseconds
 					&& reportedLongPhases.Add(phase))
 				{
-					Console.Error.WriteLine(
+					// Stdout, not stderr, and the difference is user visible: a Blazor host wires the
+					// runtime's stderr to its own "An unhandled error has occurred" strip, so a line written
+					// there tells the user their session is broken. This one is a diagnostic about a slow
+					// phase - the remarks above say boot is expected to trip it - and nothing is wrong.
+					Console.WriteLine(
 						$"BrowserSystemWindow tick phase '{phase}' held the only thread for {elapsedMilliseconds} ms."
 						+ " The page was frozen for that long. Reported once per phase.");
 				}
