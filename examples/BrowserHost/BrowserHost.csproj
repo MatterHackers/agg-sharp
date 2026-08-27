@@ -2,13 +2,14 @@
 
 	<!-- The graduated shell of spikes/WebGpuWasmSpike: the smallest possible consumer of
 	     PlatformBrowser, here to prove that the browser host packages, resolves its providers, boots,
-	     ticks and translates input in a real browser. It is not a product, and it deliberately knows
-	     nothing about MatterCAD.
+	     ticks, translates input and PAINTS in a real browser. It is not a product, and it deliberately
+	     knows nothing about MatterCAD.
 
-	     Nothing native links, which is the whole point of the shape below: a plain `dotnet build` and
-	     `dotnet run` work with no wasm-tools workload installed (the spike is the existence proof).
-	     Anything that adds a NativeFileReference - or turns on WasmBuildNative/AOT - would drag in the
-	     workload and an emcc relink, so this project has none of it. -->
+	     A plain `dotnet build` and `dotnet run` still work with no wasm-tools workload installed:
+	     WebGpuBrowser.targets only turns on the native link when -p:LinkEmdawnWebGpu=true is passed, and
+	     without it the WebGPU DllImports are unbacked and the first device call throws - the right
+	     failure for a build that never asked for the link. Nothing else here may add a
+	     NativeFileReference or turn on WasmBuildNative/AOT unconditionally. -->
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
@@ -32,5 +33,12 @@
 	</ItemGroup>
 
 	<Import Project="..\..\PlatformBrowser\build\PlatformBrowser.targets" />
+
+	<!-- The browser leg of the wgpu bootstrap. Two jobs, and this project needs both: it links
+	     emdawnwebgpu when asked to (-p:LinkEmdawnWebGpu=true, which is how this example is published for
+	     a real paint), and it always filters this machine's desktop wgpu-native shared library back out
+	     of the build and publish output - PlatformBrowser reaches MatterHackers.WebGpu now, whose own
+	     bootstrap stages that library and flows it here. See the file. -->
+	<Import Project="..\..\WebGpu\build\WebGpuBrowser.targets" />
 
 </Project>

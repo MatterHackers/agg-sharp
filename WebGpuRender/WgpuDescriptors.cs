@@ -23,6 +23,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+using System;
 using MatterHackers.RenderCore;
 using MatterHackers.WebGpu;
 
@@ -49,7 +50,9 @@ namespace MatterHackers.WebGpuRender
 	/// <item><description><c>WGPUBindGroupEntry.size</c> must be <c>WGPU_WHOLE_SIZE</c> for "to the end
 	/// of the buffer", not 0.</description></item>
 	/// <item><description><c>WGPURenderPassDepthStencilAttachment.depthClearValue</c> must be
-	/// <c>WGPU_DEPTH_CLEAR_VALUE_UNDEFINED</c> (NaN) when the depth is loaded rather than cleared.</description></item>
+	/// <c>WGPU_DEPTH_CLEAR_VALUE_UNDEFINED</c> (NaN) when the depth is loaded rather than cleared - on
+	/// wgpu-native. The browser rejects a NaN outright; see <see cref="WgpuDescriptors.DepthClearValue"/>,
+	/// the one place in this file where the two implementations need different bytes.</description></item>
 	/// </list>
 	/// </summary>
 	public static unsafe class WgpuDescriptors
@@ -101,10 +104,36 @@ namespace MatterHackers.WebGpuRender
 				view = view,
 				depthLoadOp = loadOp,
 				depthStoreOp = storeOp,
-				depthClearValue = loadOp == WGPULoadOp.Clear
-					? clearValue
-					: WGPUConstants.WGPU_DEPTH_CLEAR_VALUE_UNDEFINED,
+				depthClearValue = DepthClearValue(loadOp, clearValue, OperatingSystem.IsBrowser()),
 			};
+
+		/// <summary>
+		/// What to put in <c>depthClearValue</c>, which is not the same answer on both implementations when
+		/// the depth is loaded rather than cleared.
+		/// <para>
+		/// webgpu.h's INIT macro says NaN there - "undefined" - and wgpu-native takes it, ignoring the field
+		/// exactly as the specification says it may. The browser cannot: emdawnwebgpu reads the float out of
+		/// the struct and hands it straight to <c>beginRenderPass</c>, whose WebIDL parameter is a restricted
+		/// <c>float</c>, so a NaN throws a TypeError out of the render pass that begins the frame - before
+		/// any validation rule about whether the value is used at all. Zero is a legal, ignored value there.
+		/// </para>
+		/// <para>
+		/// Pure and public so both legs can be asserted from a desktop test; the desktop answer is the one
+		/// every golden image was captured through and must not move.
+		/// </para>
+		/// </summary>
+		/// <param name="loadOp">What happens to existing depth.</param>
+		/// <param name="clearValue">The depth cleared to when <paramref name="loadOp"/> clears.</param>
+		/// <param name="forBrowser">Whether the descriptor is bound for emdawnwebgpu.</param>
+		public static float DepthClearValue(WGPULoadOp loadOp, float clearValue, bool forBrowser)
+		{
+			if (loadOp == WGPULoadOp.Clear)
+			{
+				return clearValue;
+			}
+
+			return forBrowser ? 0.0f : WGPUConstants.WGPU_DEPTH_CLEAR_VALUE_UNDEFINED;
+		}
 
 		/// <summary>Multisample state with the non-zero defaults filled in.</summary>
 		/// <param name="sampleCount">Samples per pixel; 1 for no multisampling.</param>

@@ -28,12 +28,21 @@
 		     assembly host helper (see WheelDeltaMath). The mac and Linux layers need it only because their
 		     tests have to name raw AppKit/Xlib constants and struct layouts. -->
 
-		<!-- Only the subset the translation tables need. The rest of PlatformMac's set (GuiAutomation,
-		     ImageProcessing, RenderCore, RenderGl, WebGpuRender) arrives with the window host, which is
-		     what will need them. No PackageReferences at all, same rule as the other platform layers. -->
+		<!-- The render trio arrived with BrowserWebGpuLayer: RenderCore for the texture descriptors,
+		     RenderGl for the GlCompatContext/GL facade the 2D stack draws through (and the scene
+		     compositor), WebGpuRender for the device and the canvas swapchain. Still no GuiAutomation or
+		     ImageProcessing - the browser host has no automation runner and no image codecs yet - and no
+		     PackageReferences at all, same rule as the other platform layers.
+
+		     A consumer of this project therefore also pulls MatterHackers.WebGpu, whose bootstrap stages
+		     this machine's DESKTOP wgpu-native next to the output. A browser head must import
+		     WebGpu/build/WebGpuBrowser.targets to filter that back out; see examples/BrowserHost. -->
 		<ProjectReference Include="..\agg\Agg.csproj" />
 		<ProjectReference Include="..\Gui\Gui.csproj" />
 		<ProjectReference Include="..\VectorMath\VectorMath.csproj" />
+		<ProjectReference Include="..\RenderCore\RenderCore.csproj" />
+		<ProjectReference Include="..\RenderGl\RenderGl.csproj" />
+		<ProjectReference Include="..\WebGpuRender\WebGpuRender.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

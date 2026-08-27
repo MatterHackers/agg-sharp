@@ -69,7 +69,7 @@ namespace MatterHackers.WebGpu.Generator.Spec
 			{
 				Name = "wgpuGetProcAddress",
 				Group = ApiGroup.Portable,
-				Returns = TypeRef.Primitive("nint", 8),
+				Returns = TypeRef.PointerWidth("nint"),
 			};
 			getProcAddress.Parameters.Add(new ParamDef { Name = "procName", Type = TypeRef.ByValueStruct("WGPUStringView") });
 			this.model.Functions.Add(getProcAddress);
@@ -83,7 +83,7 @@ namespace MatterHackers.WebGpu.Generator.Spec
 		{
 			var stringView = new StructDef { Name = "WGPUStringView", Group = ApiGroup.Portable, Emit = false };
 			stringView.Fields.Add(new FieldDef { Name = "data", Type = TypeRef.Pointer("byte") });
-			stringView.Fields.Add(new FieldDef { Name = "length", Type = TypeRef.Primitive("nuint", 8) });
+			stringView.Fields.Add(new FieldDef { Name = "length", Type = TypeRef.PointerWidth("nuint") });
 			this.model.Structs.Add(stringView);
 
 			var chained = new StructDef { Name = "WGPUChainedStruct", Group = ApiGroup.Portable, Emit = false };
@@ -235,7 +235,7 @@ namespace MatterHackers.WebGpu.Generator.Spec
 			if (type.StartsWith("array<", StringComparison.Ordinal))
 			{
 				string element = type.Substring("array<".Length, type.Length - "array<".Length - 1);
-				fields.Add(new FieldDef { Name = Naming.ArrayCountMember(snakeName), Type = TypeRef.Primitive("nuint", 8) });
+				fields.Add(new FieldDef { Name = Naming.ArrayCountMember(snakeName), Type = TypeRef.PointerWidth("nuint") });
 				fields.Add(new FieldDef { Name = Naming.Camel(snakeName), Type = this.ResolveType(element, "immutable") });
 				return;
 			}
@@ -273,7 +273,7 @@ namespace MatterHackers.WebGpu.Generator.Spec
 					info.Fields.Add(new FieldDef { Name = "mode", Type = TypeRef.Primitive("WGPUCallbackMode", 4) });
 				}
 
-				info.Fields.Add(new FieldDef { Name = "callback", Type = TypeRef.Primitive(FunctionPointerType(callback), 8) });
+				info.Fields.Add(new FieldDef { Name = "callback", Type = TypeRef.PointerWidth(FunctionPointerType(callback)) });
 				info.Fields.Add(new FieldDef { Name = "userdata1", Type = TypeRef.Pointer("void") });
 				info.Fields.Add(new FieldDef { Name = "userdata2", Type = TypeRef.Pointer("void") });
 				this.model.Structs.Add(info);
@@ -363,7 +363,7 @@ namespace MatterHackers.WebGpu.Generator.Spec
 			if (type.StartsWith("array<", StringComparison.Ordinal))
 			{
 				string element = type.Substring("array<".Length, type.Length - "array<".Length - 1);
-				parameters.Add(new ParamDef { Name = Naming.ArrayCountMember(snakeName), Type = TypeRef.Primitive("nuint", 8) });
+				parameters.Add(new ParamDef { Name = Naming.ArrayCountMember(snakeName), Type = TypeRef.PointerWidth("nuint") });
 				parameters.Add(new ParamDef { Name = Naming.Camel(snakeName), Type = this.ResolveType(element, "immutable") });
 				return;
 			}
@@ -423,6 +423,13 @@ namespace MatterHackers.WebGpu.Generator.Spec
 					return TypeRef.Pointer(csType);
 				}
 
+				// usize is size_t: as wide as a pointer, not fixed at 8. Everything else in the table above
+				// is a fixed-width integer or float and is the same on every target.
+				if (type == "usize")
+				{
+					return TypeRef.PointerWidth(csType);
+				}
+
 				return size > 0 ? TypeRef.Primitive(csType, size) : TypeRef.ByValueStruct(csType);
 			}
 
@@ -447,8 +454,11 @@ namespace MatterHackers.WebGpu.Generator.Spec
 			return kind switch
 			{
 				"enum" => TypeRef.Primitive(name, 4),
+
+				// A bitflag typedef is uint64_t, so it is eight bytes on every target - unlike an object,
+				// which is an opaque pointer and follows the target's pointer width.
 				"bitflag" => TypeRef.Primitive(name, 8),
-				"object" => TypeRef.Primitive(name, 8),
+				"object" => TypeRef.PointerWidth(name),
 				_ => TypeRef.ByValueStruct(name),
 			};
 		}

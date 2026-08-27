@@ -50,7 +50,7 @@ namespace MatterHackers.WebGpu.Generator.Spec
 
 			// webgpu.h's bare function pointer, only ever returned by wgpuGetProcAddress. The binding hands
 			// it back as an nint because a C# delegate type could not be cast to the real signature anyway.
-			this.aliases["WGPUProc"] = TypeRef.Primitive("nint", 8);
+			this.aliases["WGPUProc"] = TypeRef.PointerWidth("nint");
 		}
 
 		public void Read(string headerPath)
@@ -266,7 +266,7 @@ namespace MatterHackers.WebGpu.Generator.Spec
 				"int16_t" => TypeRef.Primitive("short", 2),
 				"int32_t" or "int" => TypeRef.Primitive("int", 4),
 				"int64_t" => TypeRef.Primitive("long", 8),
-				"size_t" => TypeRef.Primitive("nuint", 8),
+				"size_t" => TypeRef.PointerWidth("nuint"),
 				"float" => TypeRef.Primitive("float", 4),
 				"double" => TypeRef.Primitive("double", 8),
 				"char" => TypeRef.Primitive("byte", 1),
@@ -299,7 +299,7 @@ namespace MatterHackers.WebGpu.Generator.Spec
 
 			if (this.model.Handles.Exists(h => string.Equals(h.Name, name, StringComparison.Ordinal)))
 			{
-				return TypeRef.Primitive(name, 8);
+				return TypeRef.PointerWidth(name);
 			}
 
 			if (this.model.Structs.Exists(s => string.Equals(s.Name, name, StringComparison.Ordinal)))
@@ -313,7 +313,7 @@ namespace MatterHackers.WebGpu.Generator.Spec
 				// A callback passed straight to an entry point (rather than inside a CallbackInfo struct)
 				// gets the same unmanaged function pointer spelling the struct member uses, so there is
 				// exactly one way to hand wgpu a callback and no managed delegate to keep alive.
-				return TypeRef.Primitive(SpecReader.FunctionPointerType(callback), 8);
+				return TypeRef.PointerWidth(SpecReader.FunctionPointerType(callback));
 			}
 
 			throw new InvalidOperationException($"Unknown wgpu.h type '{name}'");

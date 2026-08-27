@@ -66,6 +66,7 @@ namespace MatterHackers.WebGpu.Generator.Emit
 			this.EmitStructs();
 			this.EmitFunctions();
 			this.EmitStructLayouts();
+			this.EmitWasm32StructLayouts();
 		}
 
 		private string FileHeader(string summary)
@@ -461,6 +462,93 @@ namespace MatterHackers.WebGpu.Generator.Emit
 					}
 
 					builder.AppendLine("\t\t};");
+					builder.AppendLine("\t}");
+				});
+		}
+
+		/// <summary>
+		/// Emits the same table computed for wasm32 - pointers and <c>size_t</c> four bytes wide instead of
+		/// eight - plus a self-check that measures the running binding against it.
+		/// <para>
+		/// This exists because the browser cannot be told it got a struct layout wrong. wgpu-native
+		/// validates the descriptors it is handed; emdawnwebgpu reads fields straight out of wasm memory at
+		/// hard-coded offsets and passes whatever it finds to the WebGPU IDL, so a size mistake shows up as
+		/// a nonsense value in an unrelated field, several calls later. The check is generated with the
+		/// table rather than written by hand for the obvious reason: 130-odd numbers nobody could keep
+		/// current is worse than no table at all.
+		/// </para>
+		/// </summary>
+		private void EmitWasm32StructLayouts()
+		{
+			var structs = this.model.Structs.OrderBy(s => s.Name, StringComparer.Ordinal).ToList();
+
+			// The desktop table has already been emitted, so the model is free to be re-measured; put it
+			// back afterwards so nothing downstream inherits a wasm32 model.
+			this.model.SetPointerWidth(4);
+			var layouts = structs.Select(s => (s.Name, Layout: this.model.LayoutOf(s))).ToList();
+			this.model.SetPointerWidth(8);
+
+			this.Write(
+				"StructLayouts.Wasm32.cs",
+				"Expected C sizes and alignments for every generated struct on wasm32, and the boot self-check.",
+				new[] { "System", "System.Collections.Generic", "System.Runtime.CompilerServices" },
+				builder =>
+				{
+					builder.AppendLine("\t/// <summary>");
+					builder.AppendLine("\t/// The layout every generated struct has when the binding is compiled for wasm32, where a");
+					builder.AppendLine("\t/// pointer and a size_t are four bytes rather than eight. Nothing else about C layout differs");
+					builder.AppendLine("\t/// from the 64 bit targets, so this table and <see cref=\"WGPUStructLayouts\"/> are the same");
+					builder.AppendLine("\t/// computation run at two pointer widths.");
+					builder.AppendLine("\t/// </summary>");
+					builder.AppendLine("\tpublic static class WGPUStructLayoutsWasm32");
+					builder.AppendLine("\t{");
+					builder.AppendLine("\t\tpublic static readonly WGPUStructLayout[] All = new WGPUStructLayout[]");
+					builder.AppendLine("\t\t{");
+					foreach (var (name, layout) in layouts)
+					{
+						builder.AppendLine($"\t\t\tnew WGPUStructLayout(\"{name}\", typeof({name}), {layout.Size}, {layout.Align}),");
+					}
+
+					builder.AppendLine("\t\t};");
+					builder.AppendLine();
+					builder.AppendLine("\t\t/// <summary>");
+					builder.AppendLine("\t\t/// Measures every generated struct against the wasm32 C layout and describes whatever");
+					builder.AppendLine("\t\t/// disagrees, or returns null when everything matches. A browser host calls this once at");
+					builder.AppendLine("\t\t/// device bring-up: a wrong layout there is silent memory misreading, not a validation error.");
+					builder.AppendLine("\t\t/// </summary>");
+					builder.AppendLine("\t\t/// <remarks>");
+					builder.AppendLine("\t\t/// Every size below is a compile-time <c>Unsafe.SizeOf&lt;T&gt;</c> rather than a reflected");
+					builder.AppendLine("\t\t/// <c>Marshal.SizeOf</c>, so this survives trimming and names every struct in a way a rename");
+					builder.AppendLine("\t\t/// would break at build time. Alignment is not checked: it is not observable without");
+					builder.AppendLine("\t\t/// constructing a probe type per struct, and a wrong alignment moves a size with it.");
+					builder.AppendLine("\t\t/// </remarks>");
+					builder.AppendLine("\t\t/// <returns>A description of the mismatches, or null when the layout is correct.</returns>");
+					builder.AppendLine("\t\tpublic static string DescribeSizeMismatches()");
+					builder.AppendLine("\t\t{");
+					builder.AppendLine("\t\t\tif (IntPtr.Size != 4)");
+					builder.AppendLine("\t\t\t{");
+					builder.AppendLine("\t\t\t\t// This table describes wasm32 only. On a 64 bit target WGPUStructLayouts is the one");
+					builder.AppendLine("\t\t\t\t// that applies, and the binding tests assert it.");
+					builder.AppendLine("\t\t\t\treturn null;");
+					builder.AppendLine("\t\t\t}");
+					builder.AppendLine();
+					builder.AppendLine("\t\t\tvar mismatches = new List<string>();");
+					foreach (var (name, layout) in layouts)
+					{
+						builder.AppendLine($"\t\t\tCheck(mismatches, \"{name}\", Unsafe.SizeOf<{name}>(), {layout.Size});");
+					}
+
+					builder.AppendLine();
+					builder.AppendLine("\t\t\treturn mismatches.Count == 0 ? null : string.Join(\"; \", mismatches);");
+					builder.AppendLine("\t\t}");
+					builder.AppendLine();
+					builder.AppendLine("\t\tprivate static void Check(List<string> mismatches, string name, int actual, int expected)");
+					builder.AppendLine("\t\t{");
+					builder.AppendLine("\t\t\tif (actual != expected)");
+					builder.AppendLine("\t\t\t{");
+					builder.AppendLine("\t\t\t\tmismatches.Add($\"{name}: this build says {actual} bytes, wasm32 C says {expected}\");");
+					builder.AppendLine("\t\t\t}");
+					builder.AppendLine("\t\t}");
 					builder.AppendLine("\t}");
 				});
 		}

@@ -40,9 +40,11 @@ namespace MatterHackers.WebGpu.Generator.Model
 	}
 
 	/// <summary>
-	/// A resolved C type: how it is spelled in C#, and the size and alignment the C compiler gives it
-	/// on our 64 bit targets. <see cref="StructName"/> is set only for by value struct fields, whose
-	/// size has to be resolved after every struct is known.
+	/// A resolved C type: how it is spelled in C#, and the size and alignment the C compiler gives it.
+	/// <see cref="StructName"/> is set only for by value struct fields, whose size has to be resolved
+	/// after every struct is known; <see cref="IsPointerWidth"/> is set for everything whose size is the
+	/// target's pointer width rather than a fixed number of bytes, which is the only difference between
+	/// the 64 bit desktop layout and the wasm32 one (see <see cref="ApiModel.PointerWidth"/>).
 	/// </summary>
 	public sealed class TypeRef
 	{
@@ -56,9 +58,23 @@ namespace MatterHackers.WebGpu.Generator.Model
 
 		public bool IsPointer { get; init; }
 
+		/// <summary>
+		/// Whether this type is as wide as a pointer on the target: a pointer, a handle (which is one), a
+		/// function pointer, or <c>size_t</c>. <see cref="Size"/> and <see cref="Align"/> are ignored for
+		/// these - the model's pointer width answers instead.
+		/// </summary>
+		public bool IsPointerWidth { get; init; }
+
 		public static TypeRef Primitive(string csType, int size) => new TypeRef { CsType = csType, Size = size, Align = size };
 
-		public static TypeRef Pointer(string csType) => new TypeRef { CsType = csType + "*", Size = 8, Align = 8, IsPointer = true };
+		/// <summary>
+		/// A type that is exactly as wide as a pointer without being spelled as one: a handle, an
+		/// unmanaged function pointer, <c>size_t</c>/<c>nuint</c> or <c>nint</c>.
+		/// </summary>
+		public static TypeRef PointerWidth(string csType) => new TypeRef { CsType = csType, IsPointerWidth = true };
+
+		public static TypeRef Pointer(string csType)
+			=> new TypeRef { CsType = csType + "*", IsPointer = true, IsPointerWidth = true };
 
 		public static TypeRef ByValueStruct(string csType) => new TypeRef { CsType = csType, StructName = csType };
 	}
@@ -159,6 +175,27 @@ namespace MatterHackers.WebGpu.Generator.Model
 
 		private readonly Dictionary<string, (int Size, int Align)> layoutCache = new Dictionary<string, (int, int)>(StringComparer.Ordinal);
 
+		private int pointerWidth = 8;
+
+		/// <summary>
+		/// How many bytes a pointer takes on the target the layouts are being computed for: 8 on every
+		/// desktop target, 4 on wasm32. Nothing else about C layout differs between the two - the integer
+		/// and float widths are the same, and both round a struct up to its widest member's alignment - so
+		/// this one number is the whole of the wasm32 table.
+		/// </summary>
+		public int PointerWidth => this.pointerWidth;
+
+		/// <summary>
+		/// Recomputes every layout for a different pointer width. The cache has to go with it: it is keyed
+		/// on the struct name alone, and every entry in it was computed for the old width.
+		/// </summary>
+		/// <param name="width">Bytes per pointer; 8 for the desktop targets, 4 for wasm32.</param>
+		public void SetPointerWidth(int width)
+		{
+			this.pointerWidth = width;
+			this.layoutCache.Clear();
+		}
+
 		public StructDef FindStruct(string name) => this.Structs.Find(s => string.Equals(s.Name, name, StringComparison.Ordinal));
 
 		/// <summary>
@@ -199,6 +236,11 @@ namespace MatterHackers.WebGpu.Generator.Model
 		/// <summary>Resolves a member's size and alignment, recursing into by value struct members.</summary>
 		public (int Size, int Align) SizeAndAlign(TypeRef type)
 		{
+			if (type.IsPointerWidth)
+			{
+				return (this.pointerWidth, this.pointerWidth);
+			}
+
 			if (type.StructName == null)
 			{
 				return (type.Size, type.Align);

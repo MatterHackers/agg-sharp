@@ -29,7 +29,6 @@ using System.Threading.Tasks;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.Platform.Browser;
 using MatterHackers.Agg.UI;
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
@@ -47,11 +46,15 @@ namespace MatterHackers.Agg.Examples
 	/// <c>RunAsync</c> - never returning, which is what keeps the runtime resident after
 	/// <c>ShowAsSystemWindow</c> has returned (see <see cref="BrowserSystemWindow"/>'s class remarks for
 	/// why it returns at all).</para>
-	/// <para>Nothing paints until W4 brings up the WebGPU device, so the page is expected to stay dark.
-	/// What this host proves is everything underneath the paint: the JS modules load, the provider strings
-	/// resolve to real types, the tick advances, input translates, and the idle queue drains. It says so
-	/// through the page's status line and the browser console, because those are the only output channels
-	/// a host with no renderer has.</para>
+	/// <para>The page is dark for the first few frames and then paints: the WebGPU device is created
+	/// asynchronously and the window ticks throughout - draining input, laying out, running idle work -
+	/// until it exists. What this host proves is the whole browser platform: the JS modules load, the
+	/// provider strings resolve to real types, the tick advances, input translates, the idle queue drains,
+	/// and the widget tree reaches the canvas. It narrates itself through the page's status line and the
+	/// browser console, which is also where a browser with no WebGPU is told it cannot run this.</para>
+	/// <para>Painting needs the emdawnwebgpu link: publish with <c>-p:LinkEmdawnWebGpu=true</c> (see the
+	/// README). A plain build still boots, ticks and reports - the device creation simply fails, with the
+	/// same message a browser that has no WebGPU gets.</para>
 	/// </remarks>
 	public static class BrowserHostProgram
 	{
@@ -92,7 +95,7 @@ namespace MatterHackers.Agg.Examples
 				// modules that have to be imported first, and an import is a promise only a head can await.
 				await BrowserHostBootstrap.InitializeAsync();
 
-				StartDemo(ForcePaintRequested(host));
+				StartDemo();
 			}
 			catch (Exception startupException)
 			{
@@ -126,9 +129,7 @@ namespace MatterHackers.Agg.Examples
 		/// <summary>
 		/// Configures agg for the browser and shows the demo window.
 		/// </summary>
-		/// <param name="forcePaint">Whether to claim a render layer that does not exist yet; see
-		/// <see cref="ForcePaintRequested"/>.</param>
-		private static void StartDemo(bool forcePaint)
+		private static void StartDemo()
 		{
 			// Set explicitly even though AggContext's per-OS defaults already resolve to these under wasm: a
 			// head is the one place the provider choice is meant to be readable, and a browser head that
@@ -137,24 +138,23 @@ namespace MatterHackers.Agg.Examples
 			AggContext.Config.ProviderTypes.DialogProvider = AggContext.ProviderSettings.BrowserDialogProvider;
 			AggContext.Config.ProviderTypes.SystemWindowProvider = AggContext.ProviderSettings.BrowserSystemWindowProvider;
 
+			// The window has one thing to say that a user must actually see, and it says it before there is
+			// any canvas to draw it on: "this browser cannot run WebGPU". The status line is this host's only
+			// place to put it.
+			BrowserSystemWindow.ReportStatus = Report;
+
 			// Exactly what a desktop demo's Main does - and here it returns instead of blocking.
 			var demoWindow = new BrowserHostDemoWindow();
 			demoWindow.ShowAsSystemWindow();
 
-			if (forcePaint)
-			{
-				BrowserSystemWindow.Current.RenderLayerReady = true;
-			}
-
 			Report(
 				$"agg is up on {AggContext.OperatingSystem}"
 				+ $", window provider {SystemWindow.Provider.GetType().Name}"
-				+ $", canvas {BrowserSystemWindow.Current.Backing}"
-				+ (forcePaint ? ", forcepaint on (expect one contained NewGraphics2D throw per repaint)" : string.Empty));
+				+ $", canvas {BrowserSystemWindow.Current.Backing}");
 
-			// Where the button ended up, because nothing paints yet: without this the only way to find a
-			// widget on a blank page is to click around. Screen space is agg's, so y counts up from the
-			// bottom of the canvas - a script driving the page has to flip it.
+			// Where the button ended up. It is visible now, so this is no longer the only way to find it -
+			// but it is still what a script driving the page clicks. Screen space is agg's, so y counts up
+			// from the bottom of the canvas; a script has to flip it.
 			Console.WriteLine($"button at (agg screen space) {demoWindow.ButtonScreenBounds}");
 
 			Heartbeat();
@@ -173,25 +173,12 @@ namespace MatterHackers.Agg.Examples
 				return;
 			}
 
-			Report($"ticks {window.FrameTick.TickCount}, paints {window.FrameTick.PaintCount}, last input: {lastInput}");
+			Report(
+				$"ticks {window.FrameTick.TickCount}, paints {window.FrameTick.PaintCount}"
+				+ $", renderer {(window.RenderLayerReady ? "ready" : "not ready")}, last input: {lastInput}");
 
 			UiThread.RunOnIdle(Heartbeat, HeartbeatSeconds);
 		}
-
-		/// <summary>
-		/// Whether the URL asked for <c>?forcepaint</c>, which turns
-		/// <see cref="BrowserSystemWindow.RenderLayerReady"/> on before there is a render layer.
-		/// </summary>
-		/// <remarks>
-		/// A deliberate way to watch <c>BrowserSystemWindow.NewGraphics2D</c>'s "no device yet" throw be
-		/// contained by the tick: the frame is abandoned, the message is descriptive, and the loop keeps
-		/// running. Off by default, because the normal bring-up path is <c>RenderLayerReady</c> staying false
-		/// and no frame being attempted at all. W4 makes the flag follow the real device's lifetime and this
-		/// switch goes away with it.
-		/// </remarks>
-		private static bool ForcePaintRequested(WebAssemblyHost host)
-			=> host.Services.GetRequiredService<NavigationManager>().Uri
-				.Contains("forcepaint", StringComparison.OrdinalIgnoreCase);
 	}
 
 	/// <summary>

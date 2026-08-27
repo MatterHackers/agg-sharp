@@ -61,6 +61,38 @@ namespace MatterHackers.Agg.Tests
 			await Assert.That(WGPUStructLayouts.All.Length).IsGreaterThan(100);
 		}
 
+		/// <summary>
+		/// The wasm32 table is the same computation at a four byte pointer width, so it has to describe
+		/// exactly the same structs - and every one of them has to be at most as large, since the only
+		/// thing that changed is that pointers got narrower.
+		/// </summary>
+		/// <remarks>
+		/// Its own <c>DescribeSizeMismatches</c> cannot be asserted here (it is a deliberate no-op off
+		/// wasm32; the browser layer runs it at bring-up, where a mismatch is otherwise invisible), so what
+		/// a desktop suite can guard is that the table stays generated alongside the desktop one rather
+		/// than drifting into something hand-kept.
+		/// </remarks>
+		[Test]
+		public async Task TheWasm32TableDescribesTheSameStructsAsTheDesktopOne()
+		{
+			await Assert.That(WGPUStructLayoutsWasm32.All.Length).IsEqualTo(WGPUStructLayouts.All.Length);
+
+			for (int i = 0; i < WGPUStructLayouts.All.Length; i++)
+			{
+				WGPUStructLayout desktop = WGPUStructLayouts.All[i];
+				WGPUStructLayout wasm32 = WGPUStructLayoutsWasm32.All[i];
+
+				await Assert.That(wasm32.Name).IsEqualTo(desktop.Name);
+				await Assert.That(wasm32.Type).IsEqualTo(desktop.Type);
+				await Assert.That(wasm32.Size).IsLessThanOrEqualTo(desktop.Size);
+				await Assert.That(wasm32.Alignment).IsLessThanOrEqualTo(desktop.Alignment);
+			}
+
+			// The no-op leg, stated so it is not mistaken for a check that ran: on a 64 bit host there is
+			// nothing for the wasm32 table to measure.
+			await Assert.That(WGPUStructLayoutsWasm32.DescribeSizeMismatches()).IsNull();
+		}
+
 		[Test]
 		public async Task ChainedStructAndStringViewHaveTheirSpecifiedLayout()
 		{

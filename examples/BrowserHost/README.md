@@ -14,36 +14,45 @@ It exists to prove the platform, not to be a product. It knows nothing about Mat
 dotnet run --project examples/BrowserHost/BrowserHost.csproj
 ```
 
-Open the printed `http://localhost:<port>` URL. Nothing paints - the WebGPU render layer arrives
-in W4 - so the page stays dark and reports itself in the status line at the bottom left and in the
-devtools console:
+This runs, ticks and translates input, but it does **not paint**: `dotnet run` builds without the
+emdawnwebgpu link, so the WebGPU entry points are unbacked and the device cannot be created. The
+page reports that in the status line at the bottom left and in the devtools console. To see it
+paint, publish with the link (below).
+
+What the status line and console say either way:
 
 - `agg is up on Browser, window provider WebGpuBrowserWindowProvider, canvas 900x557 @ 1x`
-- `button at (agg screen space) L:351.5, B:262.8, R:422.8, T:288.8` - where to click, since you
-  cannot see it. Screen space is agg's, so **y counts up from the bottom of the canvas**: a click
-  at CSS y is agg y `canvasHeight - y`.
-- `ticks N, paints 0, last input: ...` once a second, from an idle action that re-queues itself.
-  A rising tick count is the frame loop; the line arriving at all is the idle queue draining.
+- `button at (agg screen space) L:351.5, B:262.8, R:422.8, T:288.8` - where a script driving the
+  page clicks. Screen space is agg's, so **y counts up from the bottom of the canvas**: a click at
+  CSS y is agg y `canvasHeight - y`.
+- `ticks N, paints M, renderer ready|not ready, last input: ...` once a second, from an idle action
+  that re-queues itself. A rising tick count is the frame loop; the line arriving at all is the idle
+  queue draining.
 
-Clicking the button logs `button click N`, typing logs `key down X`, and the cursor becomes an
-I-beam over the text box (agg `Cursors.IBeam` -> CSS `text`).
+Clicking the button logs `button click N` and updates its label, typing logs `key down X`, and the
+cursor becomes an I-beam over the text box (agg `Cursors.IBeam` -> CSS `text`).
 
-`dotnet build`, `dotnet run` and `dotnet publish` all work with **no `wasm-tools` workload**,
-because nothing native links. Publish prints a recommendation to install it; that is about AOT and
-relinking, not correctness. A Release publish (which runs the trimmer) boots too - the providers
-are resolved by type name through `AggContext.CreateInstanceFrom`, and ILLink kept them.
+## Making it paint
 
-### Watching the paint throw be contained
+```
+dotnet publish examples/BrowserHost/BrowserHost.csproj -c Debug -p:LinkEmdawnWebGpu=true
+```
 
-`http://localhost:<port>/?forcepaint` sets `BrowserSystemWindow.RenderLayerReady` before there is a
-render layer, so the tick tries to paint and `NewGraphics2D` throws its "no device yet" message.
-The console shows the contained report - `tick phase 'paint' threw; this frame is abandoned and the
-loop continues` - and the loop keeps running.
+then serve `bin/Debug/net10.0/publish/wwwroot` with any static file server. `LinkEmdawnWebGpu`
+belongs to `WebGpu/build/WebGpuBrowser.targets`, which this project imports; it statically links
+Dawn's Emscripten WebGPU implementation into the wasm module, which is a full `emcc` relink and
+needs the `wasm-tools` workload. The first link seeds a ~215 MB Emscripten cache under
+`WebGpu/Browser/` and takes ~25 s; later ones are a few seconds.
 
-It is not a per-frame flood: `BrowserFrameTick` clears its redraw flag *before* painting, so a
-failing frame costs one message per invalidation. Measured: 1 paint (and 1 message) in the first
-~1500 ticks, and 3 after two button clicks. W4 replaces the switch by making `RenderLayerReady`
-follow the real device's lifetime.
+Chrome needs WebGPU available - headless runs want `--enable-unsafe-webgpu`. A browser with no
+WebGPU gets `This browser does not support WebGPU, which MatterCAD requires.` in the status line and
+the underlying exception in the console. There is no fallback renderer anywhere in agg, by design.
+
+`dotnet build`, `dotnet run` and a plain `dotnet publish` still work with **no `wasm-tools`
+workload**, because nothing native links without that switch. Publish prints a recommendation to
+install it; that is about AOT and relinking, not correctness. A Release publish (which runs the
+trimmer) boots too - the providers are resolved by type name through `AggContext.CreateInstanceFrom`,
+and ILLink kept them.
 
 ## How the JS modules reach the page
 

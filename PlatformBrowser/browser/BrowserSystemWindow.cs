@@ -27,6 +27,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MatterHackers.Agg.UI;
+using MatterHackers.RenderCore;
+using MatterHackers.RenderGl;
+using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.Platform.Browser
@@ -97,6 +100,25 @@ namespace MatterHackers.Agg.Platform.Browser
 		private bool isInsidePaint;
 
 		/// <summary>
+		/// The WebGPU device, swapchain and compat context for this canvas, or null until the asynchronous
+		/// bring-up has finished (or after a device loss). See <see cref="RenderLayerReady"/>.
+		/// </summary>
+		private BrowserWebGpuLayer renderLayer;
+
+		/// <summary>
+		/// Whether a render layer bring-up is in flight or has finished, so the fire-and-forget start is not
+		/// begun twice - a second device would take the canvas's WebGPU context away from the first.
+		/// </summary>
+		private bool renderLayerInitializationStarted;
+
+		/// <summary>
+		/// Whether this frame has had its viewport and projection set. Same field, and the same one-shot
+		/// lifetime, as the mac host's: it is set by the first <see cref="NewGraphics2D"/> of a frame and
+		/// cleared when the frame ends.
+		/// </summary>
+		private bool viewPortHasBeenSet;
+
+		/// <summary>
 		/// The button the last pointerdown carried. Only <c>pointercancel</c> reads it; see
 		/// <see cref="EnqueuePointerEvent"/>.
 		/// </summary>
@@ -147,6 +169,17 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// </summary>
 		public static TimeSpan CaptureTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
+		/// <summary>
+		/// Where this window says things the user has to be told, since a page has no message box and - when
+		/// this is called - no canvas that can paint one. A head points it at whatever it shows status in;
+		/// unset means the console is the only channel, which every message also uses.
+		/// </summary>
+		/// <remarks>
+		/// The one message this carries today is "this browser has no WebGPU", which is fatal: there is no
+		/// software fallback below WebGPU anywhere in agg, so a page without it shows nothing at all.
+		/// </remarks>
+		public static Action<string> ReportStatus { get; set; }
+
 		/// <summary>The SystemWindow this platform window is currently drawing.</summary>
 		public SystemWindow AggSystemWindow => this.aggSystemWindow;
 
@@ -163,12 +196,18 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// Whether the browser render device exists, so a frame can actually be drawn.
 		/// </summary>
 		/// <remarks>
-		/// False until W4 brings the WebGPU layer up, and that is load bearing rather than a placeholder: the
-		/// tick paints nothing while it is false, which is what keeps <see cref="NewGraphics2D"/>'s descriptive
-		/// throw from being reported sixty times a second during bring-up. The window still ticks, so idle
-		/// work, input and layout all run - only the drawing waits.
+		/// Computed from the layer rather than set, because the answer is the device's own lifetime and
+		/// nothing else: false while the adapter and device promises are in flight at start-up, true once
+		/// they have settled, and false again from the moment a lost device is noticed until its replacement
+		/// is up. It is load bearing, not a diagnostic - the tick paints nothing while it is false, which is
+		/// what keeps <see cref="NewGraphics2D"/>'s descriptive throw from being reported sixty times a
+		/// second during bring-up. The window still ticks throughout, so idle work, input and layout all run;
+		/// only the drawing waits.
 		/// </remarks>
-		public bool RenderLayerReady { get; set; }
+		public bool RenderLayerReady => this.renderLayer?.IsWebGpuInitialized == true;
+
+		/// <summary>The render layer for this canvas, or null before bring-up finishes. Diagnostics.</summary>
+		public BrowserWebGpuLayer RenderLayer => this.renderLayer;
 
 		/// <summary>The page's title. There is no window frame in a page, so a caption is <c>document.title</c>.</summary>
 		public string Caption
@@ -276,17 +315,47 @@ namespace MatterHackers.Agg.Platform.Browser
 		}
 
 		/// <summary>
-		/// The 2D surface for a frame. Throws until the browser render device exists - W4 brings it up.
+		/// The 2D surface for a frame, over the canvas's swapchain texture. Acquires that texture if this is
+		/// the frame's first call. Throws while there is no device; see <see cref="RenderLayerReady"/>.
 		/// </summary>
 		public Graphics2D NewGraphics2D()
 		{
+			BrowserWebGpuLayer layer = this.renderLayer;
+
 			// Descriptive on purpose, and the same shape the mac and X11 hosts use: without it the caller gets
 			// a bare NullReferenceException out of Graphics2DGpu and no hint that the real problem is a window
 			// painting before its device exists.
-			throw new InvalidOperationException(
-				"The browser WebGPU device is not initialized, so this window cannot make a Graphics2D. "
-				+ "The browser render backend arrives in W4; until then BrowserSystemWindow ticks, drains input "
-				+ "and runs idle work, but paints nothing (see RenderLayerReady).");
+			if (layer?.Gl == null)
+			{
+				throw new InvalidOperationException(
+					"The browser WebGPU device is not initialized, so this window cannot make a Graphics2D. "
+					+ "It is created asynchronously from ShowSystemWindow (the adapter and device are Promises), "
+					+ "so a paint can legitimately arrive before it exists - which is what RenderLayerReady "
+					+ "gates. Reaching here means that gate was bypassed, or the device was lost.");
+			}
+
+			if (!this.viewPortHasBeenSet)
+			{
+				this.SetAndClearViewPort();
+			}
+
+			// Re-read rather than reusing the local: SetAndClearViewPort begins the frame, and a frame that
+			// begins on a lost device tears the layer down instead of acquiring anything.
+			if (layer.Gl == null)
+			{
+				throw new InvalidOperationException(
+					"The browser WebGPU device was lost while this frame was starting, so this window cannot "
+					+ "make a Graphics2D. A new device is being created; painting resumes when it is ready.");
+			}
+
+			Graphics2D graphics2D = new Graphics2DGpu(
+				layer.Gl,
+				(int)this.backing.PixelWidth,
+				(int)this.backing.PixelHeight,
+				GuiWidget.DeviceScale);
+			graphics2D.PushTransform();
+
+			return graphics2D;
 		}
 
 		/// <summary>
@@ -329,9 +398,121 @@ namespace MatterHackers.Agg.Platform.Browser
 			this.interop.SetDocumentTitle(this.caption.Length > 0 ? this.caption : systemWindow.Title ?? string.Empty);
 			this.interop.Focus(CanvasSelector);
 
+			// Started here and not awaited: this method is synchronous by contract (see the class remarks)
+			// and the device is a pair of Promises that cannot settle while it is on the stack. The loop below
+			// runs from the first frame regardless - draining input, laying out and running idle work - and
+			// RenderLayerReady is what keeps it from trying to paint before the device arrives.
+			this.StartRenderLayerInitialization();
+
 			this.frameTick.Invalidate();
 
 			this.frameLoop.Start(this.frameTick.Tick);
+		}
+
+		/// <summary>
+		/// Begins (or, after a device loss, begins again) the asynchronous bring-up of the render layer.
+		/// Returns immediately; <see cref="RenderLayerReady"/> turns true when it has finished.
+		/// </summary>
+		private void StartRenderLayerInitialization()
+		{
+			if (this.hasClosed || this.renderLayerInitializationStarted)
+			{
+				return;
+			}
+
+			this.renderLayerInitializationStarted = true;
+
+			// Fire and forget, and contained: InitializeRenderLayerAsync catches everything it can fail on,
+			// so there is no faulted task for anyone to observe. There is nobody to hand a Task to - the
+			// caller is a synchronous IPlatformWindow method or an idle action - and awaiting it here would
+			// only move the problem.
+			_ = this.InitializeRenderLayerAsync();
+		}
+
+		/// <summary>
+		/// Creates the WebGPU device and swapchain for the canvas and, once they exist, hands them to this
+		/// window and asks for the first real frame.
+		/// </summary>
+		private async Task InitializeRenderLayerAsync()
+		{
+			var layer = new BrowserWebGpuLayer(CanvasSelector, this.backing.PixelWidth, this.backing.PixelHeight)
+			{
+				// A frame the swapchain could not hand a texture out for is not a frame anyone asked to
+				// repeat, so the layer needs a way to ask for the next one.
+				RequestRedraw = this.frameTick.Invalidate,
+
+				DeviceLost = this.HandleRenderLayerDeviceLost,
+			};
+
+			try
+			{
+				await layer.InitializeWebGpuAsync();
+			}
+			catch (Exception initializationFailure)
+			{
+				layer.Dispose();
+
+				// renderLayerInitializationStarted is deliberately left true, so nothing tries again: a
+				// browser that has no WebGPU will not grow one, and a retry loop would be an error message a
+				// second. A device *loss* is the case that does re-arm it; see HandleRenderLayerDeviceLost.
+				ReportRenderLayerFailure(initializationFailure);
+				return;
+			}
+
+			if (this.hasClosed)
+			{
+				layer.Dispose();
+				return;
+			}
+
+			this.renderLayer = layer;
+
+			// The canvas may have been resized while the promises were in flight - the resize events are
+			// drained by ticks that ran throughout - and the layer was created at the size measured before.
+			layer.Resize(this.backing.PixelWidth, this.backing.PixelHeight);
+
+			// Nothing has been drawn yet and the tick's redraw flag may well have been consumed by a frame
+			// that could not paint, so the first real frame has to be asked for explicitly.
+			this.aggSystemWindow?.Invalidate();
+			this.frameTick.Invalidate();
+		}
+
+		/// <summary>
+		/// Puts a failed bring-up in front of the user and in the console. There is no fallback renderer to
+		/// drop to - WebGPU is the only path to screen - so this is the whole of the application on this
+		/// browser.
+		/// </summary>
+		private static void ReportRenderLayerFailure(Exception initializationFailure)
+		{
+			// Wording is deliberately plain and product-owned; the exception carries the detail a developer
+			// needs and the console keeps it.
+			const string userMessage = "This browser does not support WebGPU, which MatterCAD requires.";
+
+			Console.Error.WriteLine($"{userMessage} The render layer could not be created: {initializationFailure}");
+
+			ReportStatus?.Invoke(userMessage);
+		}
+
+		/// <summary>
+		/// Drops the lost layer and starts a new one down the same path as start-up.
+		/// </summary>
+		/// <remarks>
+		/// Queued rather than run here: this is called from inside the dying layer's own BeginFrame, and
+		/// disposing it from its own call stack is a trap that is easy to fall into and hard to see. The
+		/// frame in flight is abandoned by NewGraphics2D's throw, and the not-ready gate keeps every frame
+		/// after it from trying, so all the queued work has to do is build the replacement.
+		/// </remarks>
+		private void HandleRenderLayerDeviceLost()
+		{
+			UiThread.RunOnIdle(() =>
+			{
+				BrowserWebGpuLayer lost = this.renderLayer;
+				this.renderLayer = null;
+				lost?.Dispose();
+
+				this.renderLayerInitializationStarted = false;
+				this.StartRenderLayerInitialization();
+			});
 		}
 
 		/// <summary>
@@ -366,6 +547,12 @@ namespace MatterHackers.Agg.Platform.Browser
 
 			this.inputQueue.Clear();
 			this.mouseCapture.ClearCapturedButtons();
+
+			// After the loop has stopped, so nothing is mid-frame: the layer owns the device, the swapchain
+			// and every texture cached against them, and the canvas's WebGPU context stays claimed until it
+			// goes. A bring-up still in flight sees hasClosed and disposes its own device.
+			this.renderLayer?.Dispose();
+			this.renderLayer = null;
 
 			if (Current == this)
 			{
@@ -798,7 +985,10 @@ namespace MatterHackers.Agg.Platform.Browser
 
 			this.backing = newBacking;
 
-			// W4: this is where the swapchain is resized, once there is one.
+			// Before the widget tree is told, for the same reason the mac host reconfigures before laying
+			// out: the swapchain is what the next frame draws into, and a layout pass can paint.
+			this.renderLayer?.Resize(newBacking.PixelWidth, newBacking.PixelHeight);
+
 			if (this.aggSystemWindow != null)
 			{
 				// The canvas is this big whatever the application's minimum says. Assigning LocalBounds would
@@ -831,45 +1021,118 @@ namespace MatterHackers.Agg.Platform.Browser
 				&& this.backing.PixelHeight > 0;
 
 		/// <summary>
-		/// Draws one frame. <see cref="BrowserFrameTick"/> has already cleared the redraw flag and will
-		/// contain and report whatever this throws - one bad frame, not a dead loop.
+		/// Draws and ends one frame - <c>MacSystemWindow.DrawAndPresent</c>, minus its smoke-run pumping.
+		/// <see cref="BrowserFrameTick"/> has already cleared the redraw flag and will contain and report
+		/// whatever this throws - one bad frame, not a dead loop.
 		/// </summary>
+		/// <remarks>
+		/// <para><b>Synchronous all the way through <see cref="BrowserWebGpuLayer.EndFrame"/>, deliberately.</b>
+		/// The frame is presented by the page when the animation frame callback returns, so anything awaited in
+		/// here would resume <i>after</i> that implicit present - drawing into a texture that is no longer the
+		/// canvas's. The one thing that legitimately outlives the frame is a read-back, and its copy is
+		/// recorded in-frame for exactly this reason (see <c>WebGpuRenderDevice.ReadTextureAsync</c>).</para>
+		/// <para><b>The finally is the load-bearing part.</b> An acquired swapchain texture must not survive
+		/// this method however it ends; see <see cref="BrowserWebGpuLayer"/>'s class remarks.</para>
+		/// </remarks>
 		private void PaintFrame()
 		{
+			FrameProfiler.BeginFrame();
+
 			this.isInsidePaint = true;
 
 			try
 			{
-				Graphics2D graphics2D = this.NewGraphics2D();
-
-				if (SingleWindowMode && this.WindowProvider != null)
+				Graphics2D graphics2D;
+				using (FrameProfiler.Time("NewGraphics2D+Acquire"))
 				{
-					// Every window this provider hosts is drawn into this one frame: the shell first, then -
-					// for each dialog stacked on it - a scrim over the whole frame and the dialog on top of
-					// that. Drawing only the active window would leave a dialog floating on an empty
-					// background. Kept identical to the mac and Windows hosts.
-					IReadOnlyList<SystemWindow> openWindows = this.WindowProvider.OpenWindows;
-					for (int i = 0; i < openWindows.Count; i++)
+					graphics2D = this.NewGraphics2D();
+				}
+
+				using (FrameProfiler.Time("WidgetTreeDraw"))
+				{
+					if (SingleWindowMode && this.WindowProvider != null)
 					{
-						graphics2D.FillRectangle(openWindows[0].LocalBounds, new Color(Color.Black, 160));
-						openWindows[i].OnDraw(graphics2D);
+						// Every window this provider hosts is drawn into this one frame: the shell first, then -
+						// for each dialog stacked on it - a scrim over the whole frame and the dialog on top of
+						// that. Drawing only the active window would leave a dialog floating on an empty
+						// background. Kept identical to the mac and Windows hosts.
+						IReadOnlyList<SystemWindow> openWindows = this.WindowProvider.OpenWindows;
+						for (int i = 0; i < openWindows.Count; i++)
+						{
+							graphics2D.FillRectangle(openWindows[0].LocalBounds, new Color(Color.Black, 160));
+							openWindows[i].OnDraw(graphics2D);
+						}
+					}
+					else
+					{
+						// OnDrawBackground before OnDraw, the way a parent calls into a child in GuiWidget.
+						this.aggSystemWindow.OnDrawBackground(graphics2D);
+						this.aggSystemWindow.OnDraw(graphics2D);
 					}
 				}
-				else
+
+				// A widget that rasterized into Graphics2D.DestImage drew into a CPU buffer, not into the
+				// frame. On a GPU surface that buffer is a layer this uploads and draws over the frame now,
+				// after every widget has had its turn.
+				if (graphics2D is Graphics2DGpu gpuGraphics && gpuGraphics.HasCpuLayer)
 				{
-					// OnDrawBackground before OnDraw, the way a parent calls into a child in GuiWidget.
-					this.aggSystemWindow.OnDrawBackground(graphics2D);
-					this.aggSystemWindow.OnDraw(graphics2D);
+					FrameProfiler.Count("CompositeCpuLayer");
+					using (FrameProfiler.Time("CompositeCpuLayer"))
+					{
+						gpuGraphics.CompositeCpuLayer();
+					}
 				}
+
+				// W4 S5: any pendingScreenshotPath is read back here - after every widget has drawn and
+				// before EndFrame, the only window in which the frame's texture exists and is still
+				// readable. Until then a capture request reaches its timeout; see CaptureScreenshotAsync.
 			}
 			finally
 			{
 				this.isInsidePaint = false;
+				this.viewPortHasBeenSet = false;
+
+				// Unconditional, and the reason this method has a finally at all: the swapchain texture this
+				// frame acquired is only valid inside this animation frame task, and one that escapes is
+				// handed back to every later frame by WebGpuSurfaceTarget's cache. So the frame is presented
+				// if it can be and abandoned if it cannot, but it always ends here.
+				this.renderLayer?.EndFrame();
+
+				FrameProfiler.EndFrame();
+			}
+		}
+
+		/// <summary>
+		/// Begins the frame and puts the compat context into the state a frame starts in: full-canvas
+		/// viewport and scissor, identity transforms, and a cleared frame. The mac host's, unchanged apart
+		/// from taking its size from the canvas backing store.
+		/// </summary>
+		/// <remarks>
+		/// The recursion through <see cref="NewGraphics2D"/> at the end is not accidental: clearing is a draw
+		/// like any other, and <see cref="viewPortHasBeenSet"/> is set before it so that call does not come
+		/// straight back here.
+		/// </remarks>
+		private void SetAndClearViewPort()
+		{
+			this.renderLayer.BeginFrame();
+
+			IGpuContext gl = this.renderLayer.Gl?.GpuContext;
+			if (gl == null)
+			{
+				return;
 			}
 
-			// W4: the frame is presented implicitly when this animation frame callback returns, and any
-			// pendingScreenshotPath is read back here - the only moment the frame's texture exists and is
-			// still readable. Until then a capture request reaches its timeout; see CaptureScreenshotAsync.
+			gl.Viewport(0, 0, (int)this.backing.PixelWidth, (int)this.backing.PixelHeight);
+			this.viewPortHasBeenSet = true;
+
+			gl.MatrixMode(MatrixMode.Projection);
+			gl.LoadIdentity();
+
+			gl.MatrixMode(MatrixMode.Modelview);
+			gl.LoadIdentity();
+			gl.Scissor(0, 0, (int)this.backing.PixelWidth, (int)this.backing.PixelHeight);
+
+			this.NewGraphics2D().Clear(new ColorF(1, 1, 1, 1));
 		}
 
 		// -----------------------------------------------------------------------------------------
@@ -899,11 +1162,11 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// <remarks>
 		/// The machinery is <c>MacSystemWindow</c>'s, minus its marshalling: there is one thread here, so there
 		/// is no "am I on the UI thread?" question to get wrong. What is not here yet is the read-back itself -
-		/// W4 brings the render backend, and with it the frame that completes the request - so today every
-		/// capture reaches the timeout and gives up quietly, which is exactly what
+		/// the frames are real now, but nothing in <see cref="PaintFrame"/> serves the pending path (W4 S5) -
+		/// so today every capture reaches the timeout and gives up quietly, which is exactly what
 		/// <see cref="IPlatformWindow.CaptureScreenshotAsync"/>'s remarks promise a host that cannot produce a
-		/// frame. That path is the real one, not a placeholder: a browser tab that is hidden stops receiving
-		/// animation frames, so a capture that never gets one is a case this will still have after W4.
+		/// frame. That path stays the real one afterwards, not a placeholder: a browser tab that is hidden
+		/// stops receiving animation frames, so a capture that never gets one is a permanent case.
 		/// </remarks>
 		/// <param name="path">Where to write the PNG.</param>
 		public async Task CaptureScreenshotAsync(string path)

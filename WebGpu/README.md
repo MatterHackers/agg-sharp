@@ -57,7 +57,12 @@ deleted so the next build re-downloads it.
   - `Handles.cs` - opaque objects as `readonly struct` wrappers around a pointer
   - `Structs.*.cs` - blittable `LayoutKind.Sequential` structs in C member order
   - `Functions.cs` / `Functions.Native.cs` - `Wgpu` and `WgpuNative`, plain `DllImport("wgpu_native")`
-  - `StructLayouts.cs` - the C size and alignment of every struct, asserted by the tests
+  - `StructLayouts.cs` - the C size and alignment of every struct on the 64 bit targets, asserted by
+    the tests
+  - `StructLayouts.Wasm32.cs` - the same table at a four byte pointer width, plus
+    `DescribeSizeMismatches()`, which the browser render layer runs at device bring-up. The browser
+    needs its own because emdawnwebgpu reads struct fields at fixed offsets and validates nothing, so
+    a layout mistake there is a nonsense value several calls later rather than an error
 - `generator/` - the hand run generator (not referenced by anything, not part of any build graph)
 - `headers/` - the pinned `webgpu.h`, `wgpu.h` and `webgpu.yml`
 - `native/` - the build-time native bootstrap: `WgpuNative.targets` and the `checksums-v*.txt`
