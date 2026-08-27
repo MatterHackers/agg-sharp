@@ -72,8 +72,9 @@ namespace MatterHackers.Agg.UI
 
 			// Only the shell decides whether the application may close: an open dialog does not veto here.
 			// In single window mode a dialog is a widget drawn inside this window, so its titlebar button is
-			// the only close that belongs to it - the red button and Cmd-Q have always meant "close the
-			// application", and applications that want to refuse mid-dialog do it in their own ShouldClose.
+			// the only close that belongs to it - the red button, Cmd-Q, the X, Alt-F4 and the frame's close
+			// button have always meant "close the application", and applications that want to refuse
+			// mid-dialog do it in their own ShouldClose ("do you want to save?" and friends).
 			var shouldClose = new ShouldCloseEventArgs();
 			shellWindow.OnShouldClose(shouldClose);
 

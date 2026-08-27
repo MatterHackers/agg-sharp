@@ -587,9 +587,9 @@ namespace MatterHackers.Agg.UI
 		/// <remarks>
 		/// Routing through the protocol rather than calling the teardown directly is what keeps one close
 		/// path: whether the user pressed the frame's X or the application called this, the same
-		/// <see cref="HandlePlatformCloseRequest"/> runs and the same <c>OnShouldClose</c> is asked. The
-		/// message is only delivered by the pump, though, so a close with no loop running would otherwise
-		/// never happen - hence the inline fallback.
+		/// <see cref="PlatformCloseArbitration.HandlePlatformCloseRequest"/> runs and the same
+		/// <c>OnShouldClose</c> is asked. The message is only delivered by the pump, though, so a close with
+		/// no loop running would otherwise never happen - hence the inline fallback.
 		/// </remarks>
 		public void Close()
 		{
@@ -2038,7 +2038,7 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		private void HandleCloseRequest()
 		{
-			bool mayClose = HandlePlatformCloseRequest(
+			bool mayClose = PlatformCloseArbitration.HandlePlatformCloseRequest(
 				SingleWindowMode,
 				this.WindowProvider,
 				this.aggSystemWindow,
@@ -2219,7 +2219,7 @@ namespace MatterHackers.Agg.UI
 				heldButtons |= ButtonStateMaskForButtonNumber(buttonEvent.Button);
 			}
 
-			this.mouseCapture.ReconcileWithButtonState(heldButtons);
+			ReconcileCaptureWithButtonState(this.mouseCapture, heldButtons);
 
 			try
 			{
@@ -2256,7 +2256,7 @@ namespace MatterHackers.Agg.UI
 				}
 
 				if (!this.mouseCapture.ShouldDeliver(
-					pressed ? X11.ButtonPress : X11.ButtonRelease,
+					PointerEventKindFor(pressed ? X11.ButtonPress : X11.ButtonRelease, button),
 					button,
 					insideWindow))
 				{
@@ -2308,14 +2308,17 @@ namespace MatterHackers.Agg.UI
 
 			// A motion event's state is current, so this is the cheapest and most frequent chance to notice a
 			// button release that never reached us.
-			this.mouseCapture.ReconcileWithButtonState(motionEvent.State);
+			ReconcileCaptureWithButtonState(this.mouseCapture, motionEvent.State);
 
 			try
 			{
 				bool insideWindow = IsInsideBounds(motionEvent.X, motionEvent.Y, this.pixelWidth, this.pixelHeight);
 				MouseButtons button = TranslateButtonState(motionEvent.State);
 
-				if (!this.mouseCapture.ShouldDeliver(X11.MotionNotify, button, insideWindow))
+				if (!this.mouseCapture.ShouldDeliver(
+					PointerEventKindFor(X11.MotionNotify, button),
+					button,
+					insideWindow))
 				{
 					return;
 				}
@@ -2341,7 +2344,7 @@ namespace MatterHackers.Agg.UI
 		{
 			this.lastModifierState = crossingEvent.State & X11.AllModifierMask;
 
-			this.mouseCapture.ReconcileWithButtonState(crossingEvent.State);
+			ReconcileCaptureWithButtonState(this.mouseCapture, crossingEvent.State);
 
 			try
 			{
@@ -2366,7 +2369,10 @@ namespace MatterHackers.Agg.UI
 					// Through the same filter as a move, because that is what it becomes. An enter carrying a
 					// button whose press this window never saw is somebody else's drag arriving here, and it is
 					// no more ours than the motion events behind it.
-					if (!this.mouseCapture.ShouldDeliver(X11.MotionNotify, button, insideWindow))
+					if (!this.mouseCapture.ShouldDeliver(
+						PointerEventKindFor(X11.MotionNotify, button),
+						button,
+						insideWindow))
 					{
 						return;
 					}
@@ -2763,11 +2769,63 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
+		/// Which of <see cref="PointerEventKind"/>'s four kinds an X11 event type is, so the shared capture
+		/// rule in <see cref="OutOfViewMouseCapture"/> never has to know X11's event numbering.
+		/// </summary>
+		/// <remarks>
+		/// X11 has one motion event for both hover and drag - the button the state word names is what tells
+		/// them apart, as the DOM's <c>buttons</c> mask does and unlike AppKit's separate dragged event types.
+		/// A hover is nobody's business outside the window, which is exactly what Other means to the filter.
+		/// </remarks>
+		/// <param name="button">The agg button the event carries, or None for a hover.</param>
+		internal static PointerEventKind PointerEventKindFor(int eventType, MouseButtons button)
+		{
+			switch (eventType)
+			{
+				case X11.ButtonPress:
+					return PointerEventKind.Down;
+
+				case X11.ButtonRelease:
+					return PointerEventKind.Up;
+
+				case X11.MotionNotify:
+					return button == MouseButtons.None ? PointerEventKind.Other : PointerEventKind.Drag;
+
+				default:
+					return PointerEventKind.Other;
+			}
+		}
+
+		/// <summary>
+		/// Drops any captured button the server no longer reports as held.
+		/// </summary>
+		/// <remarks>
+		/// X11 is the platform that needs <see cref="OutOfViewMouseCapture.ReleaseCapturedButtonsWhere"/>
+		/// most. The captured set is only ever emptied by the button release that ends the drag, and there
+		/// are ways for that release never to arrive: the grab was refused because another client already
+		/// held the pointer, or was broken by a window manager taking one of its own mid-drag, or the button
+		/// came up over another screen. A button stuck in that set is a window that keeps claiming every move
+		/// on the desktop is part of a drag that ended minutes ago.
+		/// <para/>
+		/// Every mouse event carries the truth alongside the question, which is what makes this cheap: the
+		/// state word says which buttons are physically down right now, so the set can simply be intersected
+		/// with it on the way past. Note the caller has to correct for a press reporting the state
+		/// <em>before</em> itself, or this would drop the button being captured on the very event that
+		/// captures it.
+		/// </remarks>
+		/// <param name="heldButtonMask">The button half of a state word, corrected for the event carrying it.</param>
+		internal static void ReconcileCaptureWithButtonState(OutOfViewMouseCapture capture, uint heldButtonMask)
+			=> capture.ReleaseCapturedButtonsWhere(
+				captured => (heldButtonMask & ButtonStateMaskFor(captured)) == 0);
+
+		/// <summary>
 		/// Whether a point in window coordinates lies within the window.
 		/// </summary>
 		/// <remarks>
-		/// Exclusive on the far edges, unlike the mac host's inclusive version. That is not a change of mind
-		/// but a change of units: AppKit reports a point in a continuous coordinate space where the bounds
+		/// The one piece of this file's out-of-view handling that is <em>not</em>
+		/// <see cref="OutOfViewMouseCapture"/>'s, because the rule genuinely differs: this is exclusive on the
+		/// far edges where the shared version is inclusive. That is not a change of mind but a change of
+		/// units: AppKit and the DOM report a point in a continuous coordinate space where the bounds
 		/// width <em>is</em> the right edge, while an X11 coordinate is an integer pixel index and a window
 		/// of width W has columns 0 through W-1. A pointer leaving to the right reports exactly W, so an
 		/// inclusive test would call a real exit "inside" and the pointer-gone sentinel would never fire.
@@ -3133,102 +3191,6 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// Remembers which buttons went down inside the window, so a drag that wanders outside it still
-		/// delivers its moves and, critically, its button release.
-		/// </summary>
-		/// <remarks>
-		/// A straight port of <c>MacSystemWindow.OutOfViewMouseCapture</c>, which is itself WinForms' implicit
-		/// capture written out by hand: a button is "ours" only if its press landed inside, and drags and the
-		/// matching release are then delivered wherever the pointer has gone. On X11 it works alongside
-		/// <see cref="SyncPointerGrab"/> rather than instead of it - see that method for which half does what.
-		/// <para/>
-		/// A press that landed outside is never captured, which is what keeps a title-bar drag (whose press
-		/// agg never saw) from delivering a phantom release. Plain hover moves outside the window are still
-		/// dropped: with no button held they really are nobody's business.
-		/// </remarks>
-		internal sealed class OutOfViewMouseCapture
-		{
-			// Not a bit set: MouseButtons is not [Flags], and more than one button can be held at once.
-			private readonly HashSet<MouseButtons> capturedButtons = new HashSet<MouseButtons>();
-
-			/// <summary>
-			/// Whether a drag this window owns is in flight, and so the pointer is its business wherever it is.
-			/// </summary>
-			internal bool HasCapturedButtons => this.capturedButtons.Count > 0;
-
-			/// <summary>
-			/// Drops any captured button the server no longer reports as held.
-			/// </summary>
-			/// <remarks>
-			/// The recovery path, and X11 is the platform that needs one. The captured set is only ever
-			/// emptied by the button release that ends the drag, and there are ways for that release never to
-			/// arrive: the grab was refused because another client already held the pointer, or was broken by
-			/// a window manager taking one of its own mid-drag, or the button came up over another screen. A
-			/// button stuck in this set is a window that keeps claiming every move on the desktop is part of a
-			/// drag that ended minutes ago, and nothing else would ever clear it.
-			/// <para/>
-			/// Every mouse event carries the truth alongside the question, which is what makes this cheap:
-			/// the state word says which buttons are physically down right now, so the set can simply be
-			/// intersected with it on the way past. Note the caller has to correct for a press reporting the
-			/// state <em>before</em> itself, or this would drop the button being captured on the very event
-			/// that captures it.
-			/// </remarks>
-			/// <param name="heldButtonMask">The button half of a state word, corrected for the event carrying it.</param>
-			internal void ReconcileWithButtonState(uint heldButtonMask)
-			{
-				if (this.capturedButtons.Count == 0)
-				{
-					return;
-				}
-
-				this.capturedButtons.RemoveWhere(
-					captured => (heldButtonMask & ButtonStateMaskFor(captured)) == 0);
-			}
-
-			/// <summary>
-			/// Forgets every captured button, for the case where no release is coming at all - see
-			/// <see cref="HandleFocusLost"/>.
-			/// </summary>
-			internal void ClearCapturedButtons() => this.capturedButtons.Clear();
-
-			/// <summary>
-			/// Decides whether an event should reach agg, and updates the captured-button set.
-			/// </summary>
-			/// <param name="eventType">The X11 event type - ButtonPress, ButtonRelease or MotionNotify.</param>
-			/// <param name="button">The agg button the event carries, or None for a hover.</param>
-			/// <param name="insideWindow">Whether the event's point lies within the window.</param>
-			internal bool ShouldDeliver(int eventType, MouseButtons button, bool insideWindow)
-			{
-				switch (eventType)
-				{
-					case X11.ButtonPress:
-						if (!insideWindow)
-						{
-							return false;
-						}
-
-						this.capturedButtons.Add(button);
-						return true;
-
-					case X11.ButtonRelease:
-						// Removed whether or not it is delivered, so a button can never stay captured.
-						bool wasCaptured = this.capturedButtons.Remove(button);
-						return insideWindow || wasCaptured;
-
-					case X11.MotionNotify:
-						// X11 has one motion event for both hover and drag - the button is what tells them
-						// apart, where AppKit has a separate event type. A hover outside is nobody's business;
-						// a drag outside is ours if its press was.
-						return insideWindow
-							|| (button != MouseButtons.None && this.capturedButtons.Contains(button));
-
-					default:
-						return insideWindow;
-				}
-			}
-		}
-
-		/// <summary>
 		/// Turns a stream of button presses into single, double and triple clicks.
 		/// </summary>
 		/// <remarks>
@@ -3492,98 +3454,6 @@ namespace MatterHackers.Agg.UI
 		// -----------------------------------------------------------------------------------------
 
 		/// <summary>
-		/// Runs a native close request - the window manager's close button, the session ending - against the
-		/// application rather than against whatever window happens to be on top, and reports whether the
-		/// platform may go ahead and tear its window down.
-		/// </summary>
-		/// <param name="singleWindowMode">See <see cref="SingleWindowMode"/>.</param>
-		/// <param name="provider">The provider holding the open windows, if there is one.</param>
-		/// <param name="activeWindow">The window currently being drawn and given events.</param>
-		/// <param name="setPlatformClosing">
-		/// Sets (and, if the close does not take, clears) the host's "the platform is already closing" flag.
-		/// </param>
-		/// <remarks>
-		/// Static and parameterised because the decision it makes - which window is asked, and whether the
-		/// native window may go away - is the whole bug, and none of it needs X11 to exercise. Identical to
-		/// <c>MacSystemWindow</c>'s and <c>WinformsSystemWindow</c>'s: the three hosts have to agree here or
-		/// closing the application means something different per platform.
-		/// </remarks>
-		internal static bool HandlePlatformCloseRequest(
-			bool singleWindowMode,
-			ISystemWindowProvider provider,
-			SystemWindow activeWindow,
-			Action<bool> setPlatformClosing)
-		{
-			// The user closed the application, not the dialog drawn inside it. Asking the dialog runs none of
-			// the shell's ShouldClose/Closed handlers - window bounds persistence, save on exit - and the
-			// native window is torn down immediately afterwards regardless, so that work is simply lost.
-			var shellWindow = ShellWindowForClose(singleWindowMode, provider, activeWindow);
-
-			if (shellWindow == null || shellWindow.HasBeenClosed)
-			{
-				return true;
-			}
-
-			// Only the shell decides whether the application may close: an open dialog does not veto here.
-			// In single window mode a dialog is a widget drawn inside this window, so its titlebar button is
-			// the only close that belongs to it - the frame's close button has always meant "close the
-			// application", and applications that want to refuse mid-dialog do it in their own ShouldClose.
-			var shouldClose = new ShouldCloseEventArgs();
-			shellWindow.OnShouldClose(shouldClose);
-
-			if (shouldClose.Cancel)
-			{
-				return false;
-			}
-
-			// The agg close runs first so widgets get their Closed events while the window is still alive. It
-			// calls back through the provider into CloseSystemWindow, which the flag makes a no-op - the
-			// platform is already in the middle of closing us.
-			setPlatformClosing?.Invoke(true);
-			shellWindow.Close();
-
-			if (!shellWindow.HasBeenClosed)
-			{
-				// Close asks OnShouldClose a second time and an application may cancel on that one (having
-				// just put up its "save first?" dialog on the first ask). Letting the platform destroy the
-				// window anyway is exactly the "closed with no Closed events" bug, so the shell that is still
-				// open keeps its native window.
-				setPlatformClosing?.Invoke(false);
-				return false;
-			}
-
-			return true;
-		}
-
-		/// <summary>
-		/// The agg window whose close ends the application: the shell, not whatever is currently on top.
-		/// </summary>
-		/// <remarks>
-		/// In single window mode the active window is the one being drawn and given the events, which the
-		/// provider re-points at every dialog that opens. Closing that only dismisses the dialog - the shell
-		/// stays up, the event loop keeps running, and the process never exits. The provider keeps the shell
-		/// first in <see cref="ISystemWindowProvider.OpenWindows"/> and takes the dialogs above it down with
-		/// it, so closing that one window is the whole application closing.
-		/// </remarks>
-		internal static SystemWindow ShellWindowForClose(
-			bool singleWindowMode,
-			ISystemWindowProvider provider,
-			SystemWindow activeWindow)
-		{
-			if (singleWindowMode && provider != null)
-			{
-				var openWindows = provider.OpenWindows;
-
-				if (openWindows.Count > 0)
-				{
-					return openWindows[0];
-				}
-			}
-
-			return activeWindow;
-		}
-
-		/// <summary>
 		/// Asks the server to destroy the window. The teardown itself waits for the resulting
 		/// <c>DestroyNotify</c>, so that a window destroyed by anyone - us, the window manager, the server
 		/// shutting down - unwinds through exactly one path.
@@ -3726,7 +3596,10 @@ namespace MatterHackers.Agg.UI
 			{
 				// Closing the agg window is what tears the platform window down with it; the platform's own
 				// close is only the fallback for a window that was never attached to one.
-				var windowToClose = ShellWindowForClose(SingleWindowMode, this.WindowProvider, this.aggSystemWindow);
+				var windowToClose = PlatformCloseArbitration.ShellWindowForClose(
+					SingleWindowMode,
+					this.WindowProvider,
+					this.aggSystemWindow);
 
 				if (windowToClose != null)
 				{
