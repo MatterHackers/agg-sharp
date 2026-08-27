@@ -74,6 +74,11 @@ and is the only part meant to be permanent. Verified against a CDP `Page.capture
 same moment: identical over the canvas, which is everything the page draws except its own DOM status
 line.
 
+`scripts/run-browser-goldens.py` is what actually drives this - it publishes this project, runs it in
+headless Chrome, takes the capture through those two exports and holds it to
+`TestData/GoldenImages/browser/browser-host-demo.png` at tolerance zero. **So the demo window is a
+golden image**: changing what it shows changes that PNG, and the runner will say so.
+
 ## How the JS modules reach the page
 
 The one thing this example had to settle. `PlatformBrowser` is a plain `Microsoft.NET.Sdk` library,
