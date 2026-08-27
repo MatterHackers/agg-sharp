@@ -318,6 +318,14 @@ namespace MatterHackers.GuiAutomation
 
 			UiThread.RunOnIdle(() => pumped.Set());
 
+			// wasm has one thread and cannot block it, so the sentinel could never be reached from here -
+			// this reports the same "gave up waiting" the timeout path does. UI automation is a desktop
+			// feature; nothing in the browser head drives an AutomationRunner.
+			if (OperatingSystem.IsBrowser())
+			{
+				return false;
+			}
+
 			return pumped.Wait(maxMilliseconds);
 		}
 

@@ -210,6 +210,14 @@ namespace g3
 
 		public void Run(IEnumerable<V> sourceIn)
 		{
+			// wasm has no threads to start, so the producer/consumer split cannot exist there.
+			// The non-threaded variant computes exactly the same result, just in one pass.
+			if (OperatingSystem.IsBrowser())
+			{
+				Run_NoThreads(sourceIn);
+				return;
+			}
+
 			source = sourceIn;
 			producer_done = false;
 			consumer_done_event = new AutoResetEvent(false);

@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -52,7 +53,14 @@ namespace MatterHackers.RenderCore.Testing
 	/// the property a semaphore could not: if the holding process is killed mid-frame the OS marks the mutex
 	/// abandoned and the next waiter is let straight in.
 	/// </para>
+	/// <para>
+	/// Desktop-only, and marked so for the browser compile gate: every mechanism it is built from - a
+	/// machine-wide named mutex, a dedicated holder thread, blocking waits, the process list - is a
+	/// multi-process operating system concept that wasm does not have. A browser tab is the only "test
+	/// process" there is, so there is nothing to serialize against.
+	/// </para>
 	/// </remarks>
+	[UnsupportedOSPlatform("browser")]
 	public static class GpuTestGate
 	{
 		/// <summary>

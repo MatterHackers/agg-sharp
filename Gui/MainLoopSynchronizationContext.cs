@@ -174,7 +174,11 @@ namespace MatterHackers.Agg.UI
 				throw new ArgumentNullException(nameof(d));
 			}
 
-			if (UiThread.IsUiThread)
+			// IsBrowser is part of the condition rather than a separate guard because it is the same
+			// case: wasm has one thread, so a Send can only ever come from the UI thread. Saying so
+			// explicitly is also what lets the platform analyzer see that the Wait below - which would
+			// deadlock the page - is unreachable there.
+			if (OperatingSystem.IsBrowser() || UiThread.IsUiThread)
 			{
 				d(state);
 				return;

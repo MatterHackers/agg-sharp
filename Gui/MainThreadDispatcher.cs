@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -119,6 +120,11 @@ namespace MatterHackers.Agg.UI
 		/// </remarks>
 		/// <param name="body">The real program: a test engine run, or an application's startup.</param>
 		/// <returns><paramref name="body"/>'s result, once it has finished.</returns>
+		/// <remarks>
+		/// Not available in the browser: this method exists to block the calling thread, and blocking the
+		/// one wasm thread deadlocks the page. A browser head's entry point is the rAF loop instead.
+		/// </remarks>
+		[UnsupportedOSPlatform("browser")]
 		public static int RunHosted(Func<Task<int>> body)
 		{
 			if (body == null)
@@ -213,7 +219,11 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			if (!hosted || IsMainThread)
+			// IsBrowser is part of the condition rather than a separate guard because it is the same
+			// case: wasm has one thread, so the caller always *is* the main thread and there is nothing
+			// to marshal to. Saying so explicitly is also what lets the platform analyzer see that the
+			// blocking Wait below is unreachable there.
+			if (OperatingSystem.IsBrowser() || !hosted || IsMainThread)
 			{
 				work();
 				return;
@@ -306,6 +316,13 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		public static bool WaitForWork(int milliseconds)
 		{
+			// Nothing hosts the main thread in the browser and nothing may block it, so there is no
+			// waiting to do - the caller's next tick is the rAF callback.
+			if (OperatingSystem.IsBrowser())
+			{
+				return false;
+			}
+
 			if (!hosted)
 			{
 				Thread.Sleep(milliseconds);
