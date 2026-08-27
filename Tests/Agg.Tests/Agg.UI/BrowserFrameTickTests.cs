@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Platform.Browser;
@@ -310,6 +311,45 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 			finally
 			{
+				UiThread.ResetForTests();
+			}
+		}
+
+		[Test]
+		[Timeout(30_000)]
+		public async Task APhaseThatBlocksTheOnlyThreadIsCalledOutOnce()
+		{
+			UiThread.ResetForTests();
+
+			var console = new StringWriter();
+			TextWriter previousError = Console.Error;
+			Console.SetError(console);
+
+			try
+			{
+				// The R3 mitigation: a browser has one thread, so a phase that blocks is not slow - it is the
+				// whole application stopped. Half a second is well past any honest frame and short enough that
+				// a blocking wait cannot hide under it.
+				var tick = new BrowserFrameTick(
+					drainBrowserEvents: () => Thread.Sleep(600),
+					canPaint: () => false,
+					paintFrame: () => { });
+
+				tick.Tick();
+				tick.Tick();
+
+				string reported = console.ToString();
+
+				await Assert.That(reported).Contains("browser events")
+					.Because("the line has to name the phase, or it says only that something was slow");
+				await Assert.That(reported).Contains("held the only thread");
+
+				await Assert.That(reported.Split("held the only thread").Length - 1).IsEqualTo(1)
+					.Because("a phase that is slow every frame would otherwise bury everything else in the console");
+			}
+			finally
+			{
+				Console.SetError(previousError);
 				UiThread.ResetForTests();
 			}
 		}

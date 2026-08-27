@@ -24,6 +24,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using MatterHackers.Agg.UI;
 
 namespace MatterHackers.Agg.Platform.Browser
@@ -168,11 +170,34 @@ namespace MatterHackers.Agg.Platform.Browser
 		}
 
 		/// <summary>
-		/// Runs one phase of the tick, containing and reporting whatever it throws. See the class remarks for
+		/// How long one phase may run before it is called out, in milliseconds. Well past any honest frame
+		/// (a 60 Hz budget is 16 ms) and short enough to catch a blocking wait: the failure mode this is
+		/// looking for is code that sleeps or spins for a synchronous answer, which on this platform freezes
+		/// the whole application because the frame loop and the application share the one thread.
+		/// </summary>
+		private const long LongPhaseMilliseconds = 500;
+
+		/// <summary>
+		/// Phases already called out, so a phase that is slow every frame says so once.
+		/// </summary>
+		private readonly HashSet<string> reportedLongPhases = new HashSet<string>();
+
+		/// <summary>
+		/// Runs one phase of the tick, containing and reporting whatever it throws, and calling out a phase
+		/// that blocked the page for longer than a user would call responsive. See the class remarks for
 		/// why nothing may unwind out of a tick.
 		/// </summary>
-		private static void RunPhase(string phase, Action work)
+		/// <remarks>
+		/// Compiled into release as well as debug (the plan's R3 mitigation asked only for debug): the cost
+		/// is two timestamp reads per phase against work measured in milliseconds, and the hidden blocking
+		/// waits it is hunting are exactly as harmful in the build a user runs. Boot legitimately trips it -
+		/// the first paint builds the whole UI - so the first line of a session is expected; a later one is
+		/// the interesting one.
+		/// </remarks>
+		private void RunPhase(string phase, Action work)
 		{
+			long startedAt = Stopwatch.GetTimestamp();
+
 			try
 			{
 				work();
@@ -183,6 +208,18 @@ namespace MatterHackers.Agg.Platform.Browser
 					$"BrowserSystemWindow tick phase '{phase}' threw; this frame is abandoned and the loop continues: {phaseException}");
 
 				UiThread.ReportUnhandledException(phaseException);
+			}
+			finally
+			{
+				long elapsedMilliseconds = (Stopwatch.GetTimestamp() - startedAt) * 1000 / Stopwatch.Frequency;
+
+				if (elapsedMilliseconds >= LongPhaseMilliseconds
+					&& reportedLongPhases.Add(phase))
+				{
+					Console.Error.WriteLine(
+						$"BrowserSystemWindow tick phase '{phase}' held the only thread for {elapsedMilliseconds} ms."
+						+ " The page was frozen for that long. Reported once per phase.");
+				}
 			}
 		}
 	}
