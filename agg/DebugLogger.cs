@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -52,6 +52,17 @@ namespace Agg
     {
         private static readonly HashSet<string> debugFilters = new HashSet<string>();
         private static readonly string debugLogPath = Path.Combine("C:", "Development", "MatterCAD", "debug_log.txt");
+
+        /// <summary>
+        /// Whether the log file is written at all. The path above is a DEVELOPMENT machine's checkout, which does
+        /// not exist on a customer's machine - and since error logging now survives Release (see <see cref="Log"/>),
+        /// this code runs there too. Creating the directory would litter an unrelated drive with a folder that
+        /// looks like a source checkout, so the file leg is simply skipped when it is not already there; the
+        /// Debug.WriteLine leg still runs everywhere, and a host that wants durable logs has its own crash reporting.
+        /// Evaluated once: the answer cannot change usefully mid-session and the check is per-call otherwise.
+        /// </summary>
+        private static readonly bool logToFile = LogDirectoryExists();
+
         private static readonly object debugLogLock = new object();
         private static DebugLevel minimumLevel = DebugLevel.Error; // Default to Error level and above
 
@@ -109,6 +120,21 @@ namespace Agg
             return new HashSet<string>(debugFilters);
         }
 
+        private static bool LogDirectoryExists()
+        {
+            try
+            {
+                var directory = Path.GetDirectoryName(debugLogPath);
+
+                return !string.IsNullOrEmpty(directory) && Directory.Exists(directory);
+            }
+            catch
+            {
+                // A path this class cannot even inspect is one it must not try to write.
+                return false;
+            }
+        }
+
         /// <summary>
         /// Clears the debug log file
         /// </summary>
@@ -142,7 +168,13 @@ namespace Agg
         /// <param name="filter">Debug filter category</param>
         /// <param name="message">Debug message</param>
         /// <param name="level">Debug level (defaults to Message)</param>
-        [Conditional("DEBUG")]
+        /// <remarks>
+        /// NOT [Conditional("DEBUG")]. It used to be, which compiled the release filter below out along with every
+        /// call site, so an error logged from the field was recorded nowhere - a failure whose cause was written
+        /// only into a build nobody ships. Errors and failures now survive Release; the tracing levels do not
+        /// (see <see cref="LogMessage"/> and <see cref="LogWarning"/>), and a direct Log call below Error level
+        /// returns here at runtime instead.
+        /// </remarks>
         public static void Log(string filter, string message, DebugLevel level = DebugLevel.Message)
         {
 #if !DEBUG
@@ -172,17 +204,22 @@ namespace Agg
                 var logMessage = $"[{levelString}] [{filter}] {message}";
                 Debug.WriteLine(logMessage);
 
-                // Also write to file with thread synchronization
-                lock (debugLogLock)
+                // Also write to file with thread synchronization. Guarded and swallowed: logging is never the
+                // reason a caller fails, and this now runs on machines where the log directory is missing,
+                // read only, or held by another process.
+                if (logToFile)
                 {
-                    try
+                    lock (debugLogLock)
                     {
-                        var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-                        File.AppendAllText(debugLogPath, $"{timestamp} {logMessage}\n");
-                    }
-                    catch
-                    {
-                        // Ignore file access errors
+                        try
+                        {
+                            var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+                            File.AppendAllText(debugLogPath, $"{timestamp} {logMessage}\n");
+                        }
+                        catch
+                        {
+                            // Ignore file access errors
+                        }
                     }
                 }
             }
@@ -192,6 +229,10 @@ namespace Agg
         /// Logs a message-level debug entry
         /// This is typically used for tracing execution flow
         /// </summary>
+        /// <remarks>
+        /// Compiled out of Release along with its arguments: tracing is a development tool, and Log would discard
+        /// it at runtime anyway, so the call sites' string building is not worth paying for in a shipped build.
+        /// </remarks>
         /// <param name="filter">Debug filter category</param>
         /// <param name="message">Debug message</param>
         [Conditional("DEBUG")]
@@ -204,6 +245,10 @@ namespace Agg
         /// Logs a warning-level debug entry
         /// This is typically used for recoverable errors
         /// </summary>
+        /// <remarks>
+        /// Compiled out of Release, matching the level filter in <see cref="Log"/>: a release build records
+        /// Error and above. Anything that must survive a shipped build belongs at <see cref="LogError"/>.
+        /// </remarks>
         /// <param name="filter">Debug filter category</param>
         /// <param name="message">Debug message</param>
         [Conditional("DEBUG")]
@@ -216,9 +261,12 @@ namespace Agg
         /// Logs an error-level debug entry
         /// This is typically used for recoverable errors
         /// </summary>
+        /// <remarks>
+        /// Survives Release on purpose. Errors are the one level worth recording on a user's machine - a field
+        /// failure with no logged cause is the reason this stopped being [Conditional("DEBUG")].
+        /// </remarks>
         /// <param name="filter">Debug filter category</param>
         /// <param name="message">Debug message</param>
-        [Conditional("DEBUG")]
         public static void LogError(string filter, string message)
         {
             Log(filter, message, DebugLevel.Error);
@@ -230,7 +278,10 @@ namespace Agg
         /// </summary>
         /// <param name="filter">Debug filter category</param>
         /// <param name="message">Debug message</param>
-        [Conditional("DEBUG")]
+        /// <remarks>
+        /// Survives Release for the same reason as <see cref="LogError"/>, and more so: this level names the
+        /// failure the application is about to die of.
+        /// </remarks>
         public static void LogFatal(string filter, string message)
         {
             Log(filter, message, DebugLevel.Fatal);
