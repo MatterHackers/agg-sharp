@@ -41,6 +41,12 @@ namespace MatterHackers.WebGpuRender
 	/// <see cref="XlibWindow"/>. Use the <see cref="ForWindowsHwnd"/> / <see cref="ForMetalLayer"/> /
 	/// <see cref="ForXlibWindow"/> factories so the call site says which handle it is holding.
 	/// </para>
+	/// <para>
+	/// The browser is the one target with no handle at all: a canvas is named by a CSS selector, which
+	/// emdawnwebgpu resolves on the JS side. That is <see cref="ForBrowserCanvas"/> and
+	/// <see cref="CanvasSelector"/>, and it is why the surface path has to check for a canvas request
+	/// <i>before</i> the "no native handle means no drawable" guard the three desktop sources share.
+	/// </para>
 	/// </summary>
 	public sealed class WindowSurfaceRequest
 	{
@@ -71,6 +77,19 @@ namespace MatterHackers.WebGpuRender
 			this.NativeSurfaceHandle = nativeSurfaceHandle;
 			this.ModuleHandle = moduleHandle;
 			this.XlibWindow = xlibWindow;
+			this.Width = width;
+			this.Height = height;
+			this.Label = label;
+		}
+
+		/// <summary>
+		/// The browser form: a canvas has no handle, only a name. Private for the same reason as the full
+		/// form above - nothing but <see cref="ForBrowserCanvas"/> has a selector to pass, and every other
+		/// call site would have to pass a null it does not mean.
+		/// </summary>
+		private WindowSurfaceRequest(string canvasSelector, uint width, uint height, string label)
+		{
+			this.CanvasSelector = canvasSelector;
 			this.Width = width;
 			this.Height = height;
 			this.Label = label;
@@ -137,8 +156,33 @@ namespace MatterHackers.WebGpuRender
 		}
 
 		/// <summary>
+		/// Describes a browser canvas to make a surface over, naming it with a CSS selector such as
+		/// <c>"#agg-canvas"</c>. The canvas's backing store (its <c>width</c>/<c>height</c> attributes, not
+		/// its CSS size) must match <paramref name="width"/> and <paramref name="height"/>, the same
+		/// obligation <see cref="ForMetalLayer"/> puts on the layer's <c>drawableSize</c>: WebGPU scales a
+		/// mismatched canvas rather than complaining, which reads as a soft image and nothing else.
+		/// </summary>
+		/// <param name="canvasSelector">A CSS selector naming exactly one canvas element.</param>
+		/// <param name="width">Initial swapchain width in pixels.</param>
+		/// <param name="height">Initial swapchain height in pixels.</param>
+		/// <param name="label">Optional debug label.</param>
+		/// <exception cref="ArgumentException">The selector is null, empty or whitespace.</exception>
+		public static WindowSurfaceRequest ForBrowserCanvas(string canvasSelector, uint width, uint height, string label = null)
+		{
+			// Checked here rather than left to emdawnwebgpu: an empty selector matches nothing, and the
+			// failure surfaces as a null surface with no hint that the name was the problem.
+			if (string.IsNullOrWhiteSpace(canvasSelector))
+			{
+				throw new ArgumentException("A browser surface needs a CSS selector naming the canvas.", nameof(canvasSelector));
+			}
+
+			return new WindowSurfaceRequest(canvasSelector, width, height, label);
+		}
+
+		/// <summary>
 		/// The platform's native surface handle: an HWND on Windows, a <c>CAMetalLayer*</c> on macOS, the
-		/// X11 <c>Display*</c> on Linux (the window itself is <see cref="XlibWindow"/>).
+		/// X11 <c>Display*</c> on Linux (the window itself is <see cref="XlibWindow"/>). Always zero for a
+		/// browser canvas, which is named rather than handed over - see <see cref="CanvasSelector"/>.
 		/// </summary>
 		public IntPtr NativeSurfaceHandle { get; }
 
@@ -151,6 +195,12 @@ namespace MatterHackers.WebGpuRender
 		/// <see cref="ForXlibWindow"/>.
 		/// </summary>
 		public ulong XlibWindow { get; }
+
+		/// <summary>
+		/// The CSS selector of the browser canvas, or null. Browser only; ignored elsewhere - see
+		/// <see cref="ForBrowserCanvas"/>.
+		/// </summary>
+		public string CanvasSelector { get; }
 
 		/// <summary>Initial swapchain width in pixels.</summary>
 		public uint Width { get; }

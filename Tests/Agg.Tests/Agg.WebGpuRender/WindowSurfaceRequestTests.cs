@@ -43,6 +43,11 @@ namespace MatterHackers.Agg.Tests
 	/// field to decide there is no drawable at all, so if the XID were put there instead, an X11 request
 	/// with a null display would sail past the guard.
 	/// </para>
+	/// <para>
+	/// The browser canvas factory is here for the same reason and runs on every desktop OS: its request
+	/// shape - a selector and deliberately no handle - is what the surface path branches on, and getting it
+	/// wrong is only visible in a browser, where nothing in this suite can look.
+	/// </para>
 	/// </summary>
 	public class WindowSurfaceRequestTests
 	{
@@ -89,6 +94,44 @@ namespace MatterHackers.Agg.Tests
 
 			var metalLayer = WindowSurfaceRequest.ForMetalLayer(new IntPtr(0x1234), 320, 240);
 			await Assert.That(metalLayer.XlibWindow).IsEqualTo(0ul);
+		}
+
+		[Test]
+		public async Task ABrowserCanvasRequestCarriesItsSelectorAndNoHandleAtAll()
+		{
+			var request = WindowSurfaceRequest.ForBrowserCanvas("#agg-canvas", 800, 600, "browserCanvas");
+
+			await Assert.That(request.CanvasSelector).IsEqualTo("#agg-canvas");
+			await Assert.That(request.Width).IsEqualTo(800u);
+			await Assert.That(request.Height).IsEqualTo(600u);
+			await Assert.That(request.Label).IsEqualTo("browserCanvas");
+
+			// The zero handle is the point, not an accident: a canvas is named rather than handed over, and
+			// the surface path has to answer the browser branch before it reaches the "no handle means no
+			// drawable" guard the three native sources share. If this ever became non-zero, that ordering
+			// would stop being load bearing and the next reader would reasonably re-order it.
+			await Assert.That(request.NativeSurfaceHandle).IsEqualTo(IntPtr.Zero);
+			await Assert.That(request.ModuleHandle).IsEqualTo(IntPtr.Zero);
+			await Assert.That(request.XlibWindow).IsEqualTo(0ul);
+		}
+
+		[Test]
+		public async Task ABrowserCanvasRequestRejectsASelectorThatNamesNothing()
+		{
+			// An empty selector matches no element, and emdawnwebgpu reports that as a null surface with no
+			// hint that the name was the problem.
+			await Assert.That(() => WindowSurfaceRequest.ForBrowserCanvas(null, 800, 600)).Throws<ArgumentException>();
+			await Assert.That(() => WindowSurfaceRequest.ForBrowserCanvas("   ", 800, 600)).Throws<ArgumentException>();
+		}
+
+		[Test]
+		public async Task TheNativeFactoriesLeaveTheCanvasSelectorUnset()
+		{
+			// The mirror of the assertion above: the surface path decides it is looking at a canvas request
+			// by the selector alone, so a native request must never carry one.
+			await Assert.That(WindowSurfaceRequest.ForWindowsHwnd(new IntPtr(0x1234), IntPtr.Zero, 320, 240).CanvasSelector).IsNull();
+			await Assert.That(WindowSurfaceRequest.ForMetalLayer(new IntPtr(0x1234), 320, 240).CanvasSelector).IsNull();
+			await Assert.That(WindowSurfaceRequest.ForXlibWindow(new IntPtr(0x1234), 42, 320, 240).CanvasSelector).IsNull();
 		}
 	}
 }

@@ -23,6 +23,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+using System;
 using System.Threading.Tasks;
 using MatterHackers.WebGpu;
 using MatterHackers.WebGpuRender;
@@ -36,6 +37,11 @@ namespace MatterHackers.Agg.Tests
 	/// are pinned without a live GPU. The same three policies live in agg-gui-wgpu's <c>gpu.rs</c>
 	/// (<c>surface_acquire_action</c>, <c>clamp_surface_size</c>, <c>pick_surface_format</c>) and the two
 	/// implementations are kept in step deliberately.
+	/// <para>
+	/// The browser-shaped cases here are the only part of the browser render path a desktop suite can
+	/// judge: a canvas reports its own capability list and its own (empty) set of present modes, and those
+	/// two answers decide whether a browser build configures a swapchain at all.
+	/// </para>
 	/// </summary>
 	public class WebGpuSurfaceAcquireTests
 	{
@@ -130,6 +136,65 @@ namespace MatterHackers.Agg.Tests
 					WGPUTextureFormat.RGBA8UnormSrgb,
 				}))
 				.IsEqualTo(WGPUTextureFormat.BGRA8UnormSrgb);
+		}
+
+		[Test]
+		public async Task ABrowserShapedCapabilityListStillLandsOnBgra8()
+		{
+			// What a canvas offers: emdawnwebgpu answers getCapabilities with the two 8-bit RGBA orders,
+			// preferred format first, and which one is first depends on the platform the browser is running
+			// on. Both orders must still choose Bgra8Unorm, or a browser capture and a desktop golden stop
+			// being the same pixels for a reason nobody would look for.
+			await Assert.That(WebGpuRenderDevice.PickSurfaceFormat(new[]
+				{
+					WGPUTextureFormat.BGRA8Unorm,
+					WGPUTextureFormat.RGBA8Unorm,
+				}))
+				.IsEqualTo(WGPUTextureFormat.BGRA8Unorm);
+
+			await Assert.That(WebGpuRenderDevice.PickSurfaceFormat(new[]
+				{
+					WGPUTextureFormat.RGBA8Unorm,
+					WGPUTextureFormat.BGRA8Unorm,
+					WGPUTextureFormat.RGBA16Float,
+				}))
+				.IsEqualTo(WGPUTextureFormat.BGRA8Unorm);
+		}
+
+		[Test]
+		public async Task ASurfaceThatOffersNothingIsAFailureRatherThanAGuess()
+		{
+			// Deliberately not a fallback. An empty capability list means this adapter cannot present to
+			// this surface at all; configuring an invented format would move the failure into wgpu's
+			// validation - out of band, several calls later, with nothing pointing back here. The same
+			// answer for null, which is what a binding that skipped the query hands over.
+			await Assert.That(() => WebGpuRenderDevice.PickSurfaceFormat(Array.Empty<WGPUTextureFormat>()))
+				.Throws<InvalidOperationException>();
+			await Assert.That(() => WebGpuRenderDevice.PickSurfaceFormat(null))
+				.Throws<InvalidOperationException>();
+		}
+
+		[Test]
+		public async Task AnUnsupportedPresentModeDegradesToFifo()
+		{
+			// Fifo is the one mode WebGPU guarantees, so it is granted without being looked for - which is
+			// what makes a surface that reports no modes at all (a canvas: the page paces presents through
+			// requestAnimationFrame and there is nothing to choose) configurable rather than fatal.
+			await Assert.That(WebGpuSurfaceTarget.ResolvePresentMode(WGPUPresentMode.Fifo, Array.Empty<WGPUPresentMode>()))
+				.IsEqualTo(WGPUPresentMode.Fifo);
+
+			// AGG_PRESENT_MODE=immediate reaches a wasm build's environment as easily as a desktop one, and
+			// must not take the window down where it cannot be honoured.
+			await Assert.That(WebGpuSurfaceTarget.ResolvePresentMode(WGPUPresentMode.Immediate, Array.Empty<WGPUPresentMode>()))
+				.IsEqualTo(WGPUPresentMode.Fifo);
+			await Assert.That(WebGpuSurfaceTarget.ResolvePresentMode(WGPUPresentMode.Mailbox, null))
+				.IsEqualTo(WGPUPresentMode.Fifo);
+
+			// And a mode the surface really does offer is taken.
+			await Assert.That(WebGpuSurfaceTarget.ResolvePresentMode(
+					WGPUPresentMode.Immediate,
+					new[] { WGPUPresentMode.Fifo, WGPUPresentMode.Immediate }))
+				.IsEqualTo(WGPUPresentMode.Immediate);
 		}
 	}
 }

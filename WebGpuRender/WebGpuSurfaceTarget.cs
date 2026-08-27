@@ -24,6 +24,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 using System;
+using System.Collections.Generic;
 using MatterHackers.RenderCore;
 using MatterHackers.WebGpu;
 using static MatterHackers.WebGpu.Wgpu;
@@ -51,7 +52,8 @@ namespace MatterHackers.WebGpuRender
 	/// <para>
 	/// <b>Sibling port.</b> This is the same object as <c>Gpu</c> in agg-gui-wgpu's <c>gpu.rs</c>, and the
 	/// acquire/clamp/present-mode policies are deliberately kept in step with it - see
-	/// <see cref="ActionFor"/>, <see cref="ClampSurfaceSize"/> and <see cref="ResolvePresentMode"/>. The
+	/// <see cref="ActionFor"/>, <see cref="ClampSurfaceSize"/> and
+	/// <see cref="ResolvePresentMode(WGPUPresentMode, IReadOnlyList{WGPUPresentMode})"/>. The
 	/// alpha mode is the one intentional divergence (see <see cref="Configure"/>).
 	/// </para>
 	/// </summary>
@@ -320,7 +322,18 @@ namespace MatterHackers.WebGpuRender
 				return;
 			}
 
-			wgpuSurfacePresent(this.surface);
+			// Everything but the browser presents explicitly. In the browser the canvas is presented by the
+			// page: whatever was drawn into the current texture appears when the animation-frame task that
+			// acquired it ends, and there is no call to make it happen sooner. emdawnwebgpu still exports
+			// wgpuSurfacePresent, but its body is an abort() - calling it does not fail the frame, it kills
+			// the wasm module. The rest of this method is deliberately shared: a browser frame is just as
+			// finished as a desktop one, its texture is released here, and hosts that pace themselves off
+			// PresentedFrameCount must see it move on every platform.
+			if (!OperatingSystem.IsBrowser())
+			{
+				wgpuSurfacePresent(this.surface);
+			}
+
 			this.ReleaseFrameTexture();
 			this.PresentedFrameCount++;
 		}
@@ -346,22 +359,41 @@ namespace MatterHackers.WebGpuRender
 			}
 		}
 
-		/// <summary>The requested mode if this surface supports it, Fifo otherwise (the one mode WebGPU
-		/// guarantees every surface has). Mirrors <c>pick_present_mode</c> in agg-gui-wgpu's <c>gpu.rs</c>,
-		/// minus the <c>Auto*</c> modes - wgpu resolves those itself and the C API has no equivalent.</summary>
+		/// <summary>The requested mode if this surface supports it, Fifo otherwise.</summary>
 		/// <param name="requested">The mode asked for.</param>
 		private WGPUPresentMode ResolvePresentMode(WGPUPresentMode requested)
+			=> ResolvePresentMode(requested, this.supportedPresentModes);
+
+		/// <summary>
+		/// The requested mode if the surface supports it, Fifo otherwise - Fifo being the one mode WebGPU
+		/// guarantees every surface has, which is why it is returned without being looked for. Pure, so the
+		/// policy is testable without a live surface. Mirrors <c>pick_present_mode</c> in agg-gui-wgpu's
+		/// <c>gpu.rs</c>, minus the <c>Auto*</c> modes - wgpu resolves those itself and the C API has no
+		/// equivalent.
+		/// <para>
+		/// An empty or null <paramref name="supported"/> list therefore answers Fifo for everything rather
+		/// than failing, which is what a browser surface needs: <c>AGG_PRESENT_MODE=immediate</c> travels
+		/// into a wasm build's environment as easily as a desktop one, and a canvas paces itself off
+		/// requestAnimationFrame no matter what is asked for.
+		/// </para>
+		/// </summary>
+		/// <param name="requested">The mode asked for.</param>
+		/// <param name="supported">Every mode the surface reports, or an empty list if it reports none.</param>
+		public static WGPUPresentMode ResolvePresentMode(WGPUPresentMode requested, IReadOnlyList<WGPUPresentMode> supported)
 		{
 			if (requested == WGPUPresentMode.Fifo)
 			{
 				return requested;
 			}
 
-			foreach (var supported in this.supportedPresentModes)
+			if (supported != null)
 			{
-				if (supported == requested)
+				foreach (var mode in supported)
 				{
-					return requested;
+					if (mode == requested)
+					{
+						return requested;
+					}
 				}
 			}
 

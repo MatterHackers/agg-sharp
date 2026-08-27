@@ -27,6 +27,7 @@ using System;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Tests.TestingInfrastructure;
 using MatterHackers.RenderCore;
+using MatterHackers.RenderCore.Testing;
 using MatterHackers.RenderGl.Compat;
 using MatterHackers.VectorMath;
 using MatterHackers.WebGpu;
@@ -128,6 +129,35 @@ namespace MatterHackers.Agg.Tests
 				module.Dispose();
 				vertexBuffer.Dispose();
 				uniformBuffer.Dispose();
+			}
+		}
+
+		[Test]
+		public async Task CreateAsyncBuildsAReadyDeviceWithoutEverYieldingOnTheDesktop()
+		{
+			// CreateAsync exists for the browser, where the adapter and the device are Promises - but every
+			// cross-platform host will call it, so the desktop leg has to stay exactly the constructor it
+			// always was. This drives the shared halves of that refactor (the adapter options and the device
+			// descriptor, now built once for both wait strategies) against a real GPU; the browser's own
+			// legs cannot run here and are proven by W4 S4's bring-up.
+			using (GpuTestGate.Acquire(nameof(WebGpuRenderDeviceTests)))
+			{
+				Task<WebGpuRenderDevice> creating = WebGpuRenderDevice.CreateAsync(null, "createAsyncDesktop");
+
+				// Already finished before it was awaited: the desktop path spins in place rather than
+				// yielding, so no host pays a thread hop and none can observe a half-built device.
+				await Assert.That(creating.IsCompleted).IsTrue();
+
+				using (var device = await creating)
+				{
+					// A device that opened but was refused its raised limit would still land here, which is
+					// the point of the refusal fallback: the default is a floor, never a failure.
+					await Assert.That(device.Limits.MaxTextureDimension2D)
+						.IsGreaterThanOrEqualTo(DeviceLimits.DefaultMaxTextureDimension2D);
+					await Assert.That(device.IsDeviceLost).IsFalse();
+					await Assert.That(device.LastUncapturedError).IsNull();
+					await Assert.That(device.WindowSurface).IsNull();
+				}
 			}
 		}
 

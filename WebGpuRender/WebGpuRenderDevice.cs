@@ -58,8 +58,16 @@ namespace MatterHackers.WebGpuRender
 	/// The pass and command-encoder bookkeeping in this class is not thread safe, which matches how the
 	/// renderer uses it: one device, one thread recording a frame.
 	/// </para>
+	/// <para>
+	/// <b>In the browser.</b> Everything wgpu answers by callback - the adapter, the device, a buffer map -
+	/// is a JS Promise there, and there is no pump to spin: the browser resolves it only once managed code
+	/// has returned to the event loop. So the browser legs are genuinely asynchronous
+	/// (<see cref="CreateAsync"/>, and the pending half of <see cref="ReadTextureAsync"/>), while the
+	/// desktop keeps its synchronous spin unchanged. Those legs live in
+	/// <c>WebGpuRenderDevice.BrowserAsync.cs</c> - see that file for why they cannot live here.
+	/// </para>
 	/// </summary>
-	public sealed unsafe class WebGpuRenderDevice : IRenderDevice
+	public sealed unsafe partial class WebGpuRenderDevice : IRenderDevice
 	{
 		/// <summary>
 		/// How many times a callback loop pumps before giving up. Every callback this backend waits on
@@ -99,7 +107,9 @@ namespace MatterHackers.WebGpuRender
 		private WebGpuRenderEncoder openEncoder;
 
 		/// <summary>
-		/// Creates an instance, picks an adapter and opens a device, synchronously.
+		/// Creates an instance, picks an adapter and opens a device, synchronously. Desktop only:
+		/// the browser cannot answer any of those requests without returning to its event loop first, so
+		/// there it throws and <see cref="CreateAsync"/> is the only way in.
 		/// <para>
 		/// The adapter request is the one place the backend has a preference: hardware first
 		/// (<c>HighPerformance</c>), with the software adapter reachable only by explicitly asking, which
@@ -129,6 +139,20 @@ namespace MatterHackers.WebGpuRender
 			string label = null,
 			WindowSurfaceRequest windowSurface = null)
 		{
+			// The loud fence for the browser. Nothing below would fail fast there: the adapter request
+			// would spin MaxCallbackSpins times against a promise that cannot resolve while this frame is
+			// on the stack, and report "the driver is not answering" for what is really the wrong entry
+			// point. This is also the fence a device-loss recovery hits - every host's TryRecoverDevice
+			// rebuilds its device by calling this constructor, so the browser's twin has to be an async
+			// path built on CreateAsync, which is W4 S4's layer work and not this type's.
+			if (OperatingSystem.IsBrowser())
+			{
+				throw new PlatformNotSupportedException(
+					"A WebGpuRenderDevice cannot be created synchronously in the browser: the adapter, device "
+					+ "and buffer-map callbacks are Promises that only resolve once managed code returns to the "
+					+ "JS event loop. Use WebGpuRenderDevice.CreateAsync.");
+			}
+
 			this.label = label ?? "WebGpuRenderDevice";
 
 			// Allocated before the device request because the uncaptured-error and device-lost callbacks
@@ -177,6 +201,20 @@ namespace MatterHackers.WebGpuRender
 				this.Dispose();
 				throw;
 			}
+		}
+
+		/// <summary>
+		/// The empty shell the browser leg fills in over several turns of the JS event loop. Everything the
+		/// unmanaged callbacks need to find their way back to this instance - the label and the self handle -
+		/// exists immediately; the instance, adapter, device and queue arrive from
+		/// <c>InitializeBrowserAsync</c>. Private because a half-built device must never escape:
+		/// <see cref="CreateAsync"/> is the only caller, and it disposes this on any failure.
+		/// </summary>
+		/// <param name="label">Optional debug label carried into wgpu's validation messages.</param>
+		private WebGpuRenderDevice(string label)
+		{
+			this.label = label ?? "WebGpuRenderDevice";
+			this.selfHandle = GCHandle.Alloc(this, GCHandleType.Normal);
 		}
 
 		/// <summary>
@@ -247,6 +285,18 @@ namespace MatterHackers.WebGpuRender
 		public void DestroyDeviceToSimulateLoss()
 		{
 			this.ThrowIfDisposed();
+
+			// Both halves of the pump below are dead ends in the browser: emdawnwebgpu has no
+			// wgpuDevicePoll at all (the browser build links a stub that reports "idle" and returns), and
+			// the lost callback can only fire once this call has returned to the JS event loop. The loop
+			// would therefore spin MaxCallbackSpins times doing nothing and then report a loss that had
+			// not happened yet. An async twin belongs with the browser layer that would use it (W4 S4).
+			if (OperatingSystem.IsBrowser())
+			{
+				throw new PlatformNotSupportedException(
+					"DestroyDeviceToSimulateLoss cannot wait for the device-lost callback in the browser: it is "
+					+ "delivered on the JS event loop, which cannot run while this call is on the stack.");
+			}
 
 			wgpuDeviceDestroy(this.device);
 
@@ -678,13 +728,28 @@ namespace MatterHackers.WebGpuRender
 		}
 
 		/// <summary>
-		/// Reads a texture back. Completes before the <see cref="ValueTask"/> is returned - the native
-		/// recipe is <c>wgpuDevicePoll(device, wait: true)</c>, which <c>wgpuInstanceProcessEvents</c>
-		/// alone cannot substitute for - so a desktop caller pays no allocation and no thread hop.
+		/// Reads a texture back. On the desktop it completes before the <see cref="ValueTask"/> is returned -
+		/// the native recipe is <c>wgpuDevicePoll(device, wait: true)</c>, which
+		/// <c>wgpuInstanceProcessEvents</c> alone cannot substitute for - so a desktop caller pays no
+		/// allocation and no thread hop.
 		/// <para>
 		/// <b>This submits.</b> A readback that did not flush the recorded commands would return the
 		/// texture as it was before this frame's draws, which is never what a caller means. Everything
 		/// recorded since the last submit therefore goes to the queue along with the copy.
+		/// </para>
+		/// <para>
+		/// <b>Record now, wait later.</b> The half that touches <paramref name="source"/> - creating the
+		/// readback buffer, recording the copy, submitting - always runs synchronously, before this method
+		/// returns. Only the map is allowed to be pending. That split is what makes the browser leg legal at
+		/// all: there a buffer map resolves on the JS event loop, so the returned ValueTask genuinely has not
+		/// completed yet, and by the time it does the animation-frame task that owned the surface texture has
+		/// ended and the canvas has already been presented.
+		/// </para>
+		/// <para>
+		/// <b>The seam this creates.</b> A caller that touches a <em>surface</em> texture after awaiting this
+		/// - drawing into it, presenting it, acquiring from it and expecting the old frame - is a browser-only
+		/// bug, and an invisible one on the desktop where the await never actually yields. Read the surface
+		/// texture, then await; never await, then use the surface.
 		/// </para>
 		/// </summary>
 		/// <param name="source">Texture to read; must declare <see cref="TextureUsage.CopySrc"/>.</param>
@@ -742,11 +807,26 @@ namespace MatterHackers.WebGpuRender
 				wgpuCommandEncoderCopyTextureToBuffer(this.EnsureCommandEncoder(), &copySource, &copyDestination, &copySize);
 				this.Submit();
 
+				if (OperatingSystem.IsBrowser())
+				{
+					// The map cannot resolve until this call returns, so the buffer has to outlive it:
+					// ownership moves to the continuation, which unmaps and releases it whatever happens.
+					// Clearing the local is what keeps the finally below from freeing a buffer wgpu is
+					// still writing into.
+					var pending = this.MapAndCopyBrowserAsync(readback, result, destination);
+					readback = default;
+					return new ValueTask<TextureReadResult>(pending);
+				}
+
 				this.MapAndCopy(readback, result, destination.Span);
 			}
 			finally
 			{
-				wgpuBufferRelease(readback);
+				// Never null on the desktop; null only on the browser leg, which took the buffer with it.
+				if (!readback.IsNull)
+				{
+					wgpuBufferRelease(readback);
+				}
 			}
 
 			return new ValueTask<TextureReadResult>(result);
@@ -855,6 +935,32 @@ namespace MatterHackers.WebGpuRender
 		/// </exception>
 		private static WGPUSurface CreateRawSurface(WGPUInstance instance, WindowSurfaceRequest request)
 		{
+			// Ahead of the native-handle guard, not after it: a browser canvas is named, never handed over,
+			// so its NativeSurfaceHandle is legitimately zero and the guard below would reject every one.
+			if (OperatingSystem.IsBrowser())
+			{
+				if (string.IsNullOrWhiteSpace(request.CanvasSelector))
+				{
+					throw new ArgumentException(
+						"A browser surface needs the CSS selector of its canvas; this request carries none. "
+						+ "Build it with WindowSurfaceRequest.ForBrowserCanvas.",
+						nameof(request));
+				}
+
+				using (var selector = new Utf8Buffer(request.CanvasSelector))
+				{
+					// emdawnwebgpu's stand-in for the three native window sources: the selector is resolved
+					// by document.querySelector on the JS side, so nothing here is a pointer to a drawable.
+					var canvasSource = new WGPUEmscriptenSurfaceSourceCanvasHTMLSelector
+					{
+						chain = new WGPUChainedStruct { sType = WGPUEmscriptenSType.EmscriptenSurfaceSourceCanvasHTMLSelector },
+						selector = selector.View,
+					};
+
+					return CreateSurfaceFromSource(instance, (WGPUChainedStruct*)&canvasSource, request.Label);
+				}
+			}
+
 			if (request.NativeSurfaceHandle == IntPtr.Zero)
 			{
 				throw new ArgumentException("A surface needs a native surface handle.", nameof(request));
@@ -925,8 +1031,8 @@ namespace MatterHackers.WebGpuRender
 
 			throw new PlatformNotSupportedException(
 				$"No wgpu surface source is implemented for {RuntimeInformation.OSDescription}. "
-				+ "Windows (HWND), macOS (CAMetalLayer) and Linux/X11 (Display* plus window) can present; "
-				+ "native Wayland is not wired up.");
+				+ "Windows (HWND), macOS (CAMetalLayer), Linux/X11 (Display* plus window) and the browser "
+				+ "(a canvas selector) can present; native Wayland is not wired up.");
 		}
 
 		/// <summary>
@@ -1509,6 +1615,14 @@ namespace MatterHackers.WebGpuRender
 			return this.commandEncoder;
 		}
 
+		/// <summary>
+		/// The desktop wait strategy for a buffer map, followed by the copy every platform shares. Blocks
+		/// until wgpu answers, which is what lets <see cref="ReadTextureAsync"/> hand back an already
+		/// completed ValueTask off the browser.
+		/// </summary>
+		/// <param name="readback">The mappable buffer the copy was recorded into.</param>
+		/// <param name="result">The geometry of the read; its TotalBytes is the mapped range.</param>
+		/// <param name="destination">Where the mapped bytes are copied to.</param>
 		private void MapAndCopy(WGPUBuffer readback, in TextureReadResult result, Span<byte> destination)
 		{
 			// Pinned heap cell rather than a stack local: the loop below can give up while the callback is
@@ -1527,7 +1641,11 @@ namespace MatterHackers.WebGpuRender
 
 				// The Phase 0 finding: ProcessEvents alone never resolves a map. DevicePoll with wait: true is
 				// what actually drives it, and it blocks until the GPU is done, which is exactly what makes
-				// this "async" method able to complete before it returns on the desktop.
+				// this "async" method able to complete before it returns on the desktop. Unreachable in the
+				// browser by construction (ReadTextureAsync branches before here) and it has to stay that
+				// way: emdawnwebgpu has no wgpuDevicePoll, so the browser build links a stub that returns
+				// "idle" immediately and this loop would burn its whole spin budget and then report a
+				// perfectly healthy device as not answering.
 				for (int spin = 0; spin < MaxCallbackSpins && mapCell.Value.Status == 0; spin++)
 				{
 					WgpuNative.wgpuDevicePoll(this.device, true, null);
@@ -1547,6 +1665,19 @@ namespace MatterHackers.WebGpuRender
 				}
 			}
 
+			CopyMappedRange(readback, result, destination);
+		}
+
+		/// <summary>
+		/// Copies an already-mapped readback buffer out and unmaps it. Shared by both wait strategies: the
+		/// desktop reaches it straight after its spin, the browser from the continuation of its map promise,
+		/// and neither leg gets its own copy of the unmap rule.
+		/// </summary>
+		/// <param name="readback">A buffer that is currently mapped for read.</param>
+		/// <param name="result">The geometry of the read; its TotalBytes is the mapped range.</param>
+		/// <param name="destination">Where the mapped bytes are copied to.</param>
+		private static void CopyMappedRange(WGPUBuffer readback, in TextureReadResult result, Span<byte> destination)
+		{
 			try
 			{
 				var mapped = wgpuBufferGetConstMappedRange(readback, 0, (nuint)result.TotalBytes);
@@ -1564,12 +1695,18 @@ namespace MatterHackers.WebGpuRender
 			}
 		}
 
-		private WGPUAdapter RequestAdapter(
+		/// <summary>
+		/// The adapter request's options, with no callback and no waiting: the half both wait strategies
+		/// share, so the desktop's preferences cannot drift from the browser's by editing one of them.
+		/// </summary>
+		/// <param name="forceFallbackAdapter">True to demand the software adapter.</param>
+		/// <param name="preferredBackend">The backend to ask for; Undefined lets wgpu choose.</param>
+		/// <param name="compatibleSurface">The surface the adapter must be able to present to, or null.</param>
+		private static WGPURequestAdapterOptions BuildAdapterOptions(
 			bool forceFallbackAdapter,
 			WGPUBackendType preferredBackend,
 			WGPUSurface compatibleSurface)
-		{
-			var options = new WGPURequestAdapterOptions
+			=> new WGPURequestAdapterOptions
 			{
 				featureLevel = WGPUFeatureLevel.Core,
 				powerPreference = WGPUPowerPreference.HighPerformance,
@@ -1577,6 +1714,13 @@ namespace MatterHackers.WebGpuRender
 				backendType = preferredBackend,
 				compatibleSurface = compatibleSurface,
 			};
+
+		private WGPUAdapter RequestAdapter(
+			bool forceFallbackAdapter,
+			WGPUBackendType preferredBackend,
+			WGPUSurface compatibleSurface)
+		{
+			WGPURequestAdapterOptions options = BuildAdapterOptions(forceFallbackAdapter, preferredBackend, compatibleSurface);
 
 			// Pinned heap cell, not a stack local - see PinnedCallbackCell for why the timeout path below
 			// cannot leave wgpu holding a pointer into this frame.
@@ -1612,6 +1756,96 @@ namespace MatterHackers.WebGpuRender
 
 				return cell.Value.Adapter;
 			}
+		}
+
+		/// <summary>
+		/// The instance, with wgpu's default descriptor. Wrapped because webgpu.h spells "default" as a null
+		/// pointer, which the browser leg's non-unsafe half cannot write at a call site.
+		/// </summary>
+		private static WGPUInstance CreateInstance() => wgpuCreateInstance(null);
+
+		/// <summary>
+		/// The browser wait strategy for the adapter request: hand wgpu a spontaneous callback and a task to
+		/// complete, then get out of the way so the JS event loop can resolve the promise. The returned task
+		/// is genuinely pending when it is handed back.
+		/// </summary>
+		/// <param name="compatibleSurface">The canvas surface the adapter must be able to present to.</param>
+		/// <remarks>
+		/// There is no spin budget here and there cannot be one: a promise that never settles simply never
+		/// settles, and the only honest report of that is a boot that never finishes. The desktop's
+		/// <see cref="MaxCallbackSpins"/> has no browser equivalent.
+		/// </remarks>
+		private Task<AdapterResult> RequestAdapterBrowserAsync(WGPUSurface compatibleSurface)
+		{
+			// forceFallbackAdapter false and backendType Undefined, unconditionally: both are
+			// wgpu-native-isms. The browser has exactly one WebGPU implementation and no software adapter to
+			// fall back to, so asking for either can only turn a working adapter into no adapter.
+			WGPURequestAdapterOptions options = BuildAdapterOptions(false, WGPUBackendType.Undefined, compatibleSurface);
+
+			var completion = new TaskCompletionSource<AdapterResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+			var callbackInfo = new WGPURequestAdapterCallbackInfo
+			{
+				// Spontaneous, not AllowProcessEvents: in the browser the promise resolves on the JS event
+				// loop while no managed code is on the stack, and there is nothing to pump it from.
+				mode = WGPUCallbackMode.AllowSpontaneous,
+				callback = &OnAdapterRequestedSpontaneous,
+				userdata1 = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(completion)),
+			};
+
+			wgpuInstanceRequestAdapter(this.instance, &options, callbackInfo);
+
+			return completion.Task;
+		}
+
+		/// <summary>
+		/// The browser wait strategy for the device request. Completes with whatever wgpu answered rather
+		/// than throwing, so the caller can apply the same success-and-retry policy the desktop applies.
+		/// </summary>
+		/// <param name="requiredLimits">The limits to ask for. Taken by value so the address handed to wgpu
+		/// belongs to this frame, which outlives the call.</param>
+		private Task<DeviceResult> RequestDeviceBrowserAsync(WGPULimits requiredLimits)
+		{
+			var completion = new TaskCompletionSource<DeviceResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+			using (var labelText = new Utf8Buffer(this.label))
+			{
+				WGPUDeviceDescriptor descriptor = this.BuildDeviceDescriptor(
+					labelText.View,
+					&requiredLimits,
+					WGPUCallbackMode.AllowSpontaneous);
+
+				var callbackInfo = new WGPURequestDeviceCallbackInfo
+				{
+					mode = WGPUCallbackMode.AllowSpontaneous,
+					callback = &OnDeviceRequestedSpontaneous,
+					userdata1 = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(completion)),
+				};
+
+				wgpuAdapterRequestDevice(this.adapter, &descriptor, callbackInfo);
+			}
+
+			return completion.Task;
+		}
+
+		/// <summary>
+		/// The browser wait strategy for a buffer map. The copy itself is
+		/// <see cref="CopyMappedRange"/>, shared with the desktop.
+		/// </summary>
+		/// <param name="readback">The mappable buffer the texture copy was recorded into.</param>
+		/// <param name="totalBytes">The range to map, which is the whole padded read.</param>
+		private static Task<CallbackResult> MapForReadBrowserAsync(WGPUBuffer readback, ulong totalBytes)
+		{
+			var completion = new TaskCompletionSource<CallbackResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+			var callbackInfo = new WGPUBufferMapCallbackInfo
+			{
+				mode = WGPUCallbackMode.AllowSpontaneous,
+				callback = &OnBufferMappedSpontaneous,
+				userdata1 = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(completion)),
+			};
+
+			wgpuBufferMapAsync(readback, WGPUMapMode.Read, 0, (nuint)totalBytes, callbackInfo);
+
+			return completion.Task;
 		}
 
 		/// <summary>
@@ -1673,32 +1907,94 @@ namespace MatterHackers.WebGpuRender
 		/// </summary>
 		private WGPUDevice RequestDevice()
 		{
-			void* self = (void*)GCHandle.ToIntPtr(this.selfHandle);
 			WGPULimits requiredLimits = this.RequiredLimits();
+			DeviceResult result = this.RequestDeviceOnce(requiredLimits);
 
+			if (!Succeeded(result) && RaisesALimit(requiredLimits))
+			{
+				// A raised maxTextureDimension2D is a want, never a need: without it a very large capture
+				// is clamped, but with a refused limit there is no device at all and the window cannot
+				// paint. wgpu-native grants whatever the adapter reported, so this is dead code on the
+				// desktop; the browser is where an implementation may legitimately refuse a limit it just
+				// told us it supports, and losing the whole canvas over it would be the wrong trade.
+				result = this.RequestDeviceOnce(UndefinedLimits());
+			}
+
+			if (!Succeeded(result))
+			{
+				throw new InvalidOperationException($"wgpuAdapterRequestDevice failed (status {result.Status}).");
+			}
+
+			return result.Device;
+		}
+
+		/// <summary>Whether a device request answered with a usable device.</summary>
+		/// <param name="result">What the request callback wrote.</param>
+		private static bool Succeeded(in DeviceResult result)
+			=> result.Status == (int)WGPURequestDeviceStatus.Success && !result.Device.IsNull;
+
+		/// <summary>
+		/// Whether a limit set asks for anything above the implementation's defaults - today only
+		/// <c>maxTextureDimension2D</c>, which <see cref="RequiredLimits"/> raises. Anything left at the
+		/// undefined sentinel is a default request and cannot be what a refusal is about.
+		/// </summary>
+		/// <param name="limits">The limits a device request carried.</param>
+		private static bool RaisesALimit(in WGPULimits limits)
+			=> limits.maxTextureDimension2D != WGPUConstants.WGPU_LIMIT_U32_UNDEFINED;
+
+		/// <summary>
+		/// The device descriptor both wait strategies share. Only the callback mode differs between them:
+		/// the desktop's callbacks are drained by <c>wgpuInstanceProcessEvents</c>, the browser's arrive
+		/// spontaneously off the JS event loop with nothing to drain them from.
+		/// </summary>
+		/// <param name="label">The device label, already UTF-8 and alive for the call.</param>
+		/// <param name="requiredLimits">The limits to ask for; must outlive the request call.</param>
+		/// <param name="callbackMode">How wgpu is allowed to deliver the device-lost callback.</param>
+		private WGPUDeviceDescriptor BuildDeviceDescriptor(
+			WGPUStringView label,
+			WGPULimits* requiredLimits,
+			WGPUCallbackMode callbackMode)
+		{
+			void* self = (void*)GCHandle.ToIntPtr(this.selfHandle);
+
+			return new WGPUDeviceDescriptor
+			{
+				label = label,
+				requiredFeatureCount = 0,
+				requiredFeatures = null,
+				requiredLimits = requiredLimits,
+				defaultQueue = new WGPUQueueDescriptor { label = WgpuStrings.Null },
+				deviceLostCallbackInfo = new WGPUDeviceLostCallbackInfo
+				{
+					mode = callbackMode,
+					callback = &OnDeviceLost,
+					userdata1 = self,
+				},
+				uncapturedErrorCallbackInfo = new WGPUUncapturedErrorCallbackInfo
+				{
+					callback = &OnUncapturedError,
+					userdata1 = self,
+				},
+			};
+		}
+
+		/// <summary>
+		/// One desktop device request: issue it and spin until wgpu answers. Whether the answer is a
+		/// success is the caller's to judge - a refused limit is retried rather than thrown.
+		/// </summary>
+		/// <param name="requiredLimits">The limits to ask for. Taken by value so the address handed to
+		/// wgpu is this frame's and cannot be a caller's field that moves.</param>
+		/// <exception cref="InvalidOperationException">The adapter never called back at all.</exception>
+		private DeviceResult RequestDeviceOnce(WGPULimits requiredLimits)
+		{
 			// Pinned heap cell, not a stack local - see PinnedCallbackCell.
 			using (var cell = new PinnedCallbackCell<DeviceResult>())
 			using (var labelText = new Utf8Buffer(this.label))
 			{
-				var descriptor = new WGPUDeviceDescriptor
-				{
-					label = labelText.View,
-					requiredFeatureCount = 0,
-					requiredFeatures = null,
-					requiredLimits = &requiredLimits,
-					defaultQueue = new WGPUQueueDescriptor { label = WgpuStrings.Null },
-					deviceLostCallbackInfo = new WGPUDeviceLostCallbackInfo
-					{
-						mode = WGPUCallbackMode.AllowProcessEvents,
-						callback = &OnDeviceLost,
-						userdata1 = self,
-					},
-					uncapturedErrorCallbackInfo = new WGPUUncapturedErrorCallbackInfo
-					{
-						callback = &OnUncapturedError,
-						userdata1 = self,
-					},
-				};
+				WGPUDeviceDescriptor descriptor = this.BuildDeviceDescriptor(
+					labelText.View,
+					&requiredLimits,
+					WGPUCallbackMode.AllowProcessEvents);
 
 				var callbackInfo = new WGPURequestDeviceCallbackInfo
 				{
@@ -1721,12 +2017,7 @@ namespace MatterHackers.WebGpuRender
 						$"wgpuAdapterRequestDevice never called back after {MaxCallbackSpins} polls; the adapter is not answering.");
 				}
 
-				if (cell.Value.Status != (int)WGPURequestDeviceStatus.Success || cell.Value.Device.IsNull)
-				{
-					throw new InvalidOperationException($"wgpuAdapterRequestDevice failed (status {cell.Value.Status}).");
-				}
-
-				return cell.Value.Device;
+				return cell.Value;
 			}
 		}
 
@@ -1927,6 +2218,79 @@ namespace MatterHackers.WebGpuRender
 		{
 			var result = (CallbackResult*)userdata1;
 			result->Status = (int)status;
+		}
+
+		// The browser twins of the three callbacks above. Same results, different delivery: there is no
+		// pinned result cell to poll, so the pinned thing is the TaskCompletionSource itself and the
+		// callback is what hands the answer back to managed code. See TakeCompletion for the handle's
+		// lifetime.
+		[UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+		private static void OnAdapterRequestedSpontaneous(WGPURequestAdapterStatus status, WGPUAdapter adapter, WGPUStringView message, void* userdata1, void* userdata2)
+		{
+			// An exception must not unwind into the C caller, so everything here is inside a catch-all.
+			try
+			{
+				TakeCompletion<AdapterResult>(userdata1)?.TrySetResult(
+					new AdapterResult { Status = (int)status, Adapter = adapter });
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		[UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+		private static void OnDeviceRequestedSpontaneous(WGPURequestDeviceStatus status, WGPUDevice device, WGPUStringView message, void* userdata1, void* userdata2)
+		{
+			try
+			{
+				TakeCompletion<DeviceResult>(userdata1)?.TrySetResult(
+					new DeviceResult { Status = (int)status, Device = device });
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		[UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+		private static void OnBufferMappedSpontaneous(WGPUMapAsyncStatus status, WGPUStringView message, void* userdata1, void* userdata2)
+		{
+			try
+			{
+				TakeCompletion<CallbackResult>(userdata1)?.TrySetResult(new CallbackResult { Status = (int)status });
+			}
+			catch (Exception)
+			{
+			}
+		}
+
+		/// <summary>
+		/// Recovers the completion source a spontaneous callback was registered with and frees its handle,
+		/// which is what makes each of these a one-shot: a second call for the same request finds nothing
+		/// and does nothing.
+		/// </summary>
+		/// <param name="userdata">The GCHandle the request put in wgpu's userdata slot.</param>
+		/// <remarks>
+		/// A promise that never settles leaks exactly one handle, which is the same bounded trade
+		/// <see cref="PinnedCallbackCell{T}"/> makes on the desktop and for the same reason: a registered
+		/// wgpu callback cannot be cancelled, so the memory it may still write to must stay ours.
+		/// </remarks>
+		private static TaskCompletionSource<T> TakeCompletion<T>(void* userdata)
+		{
+			if (userdata == null)
+			{
+				return null;
+			}
+
+			GCHandle handle = GCHandle.FromIntPtr((nint)userdata);
+			if (!handle.IsAllocated)
+			{
+				return null;
+			}
+
+			var completion = handle.Target as TaskCompletionSource<T>;
+			handle.Free();
+
+			return completion;
 		}
 
 		[UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
