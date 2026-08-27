@@ -208,8 +208,8 @@ namespace MatterHackers.Agg.UI.Tests
 
 			try
 			{
-				// No render device, so no frame ever consumes the request - which is the state the host is in
-				// until W4, and the state a hidden tab (which receives no animation frames) is in for good.
+				// No render device, so no frame ever consumes the request - the state a hidden tab (which
+				// receives no animation frames) is in for good, now that a visible one really does capture.
 				// IPlatformWindow.CaptureScreenshotAsync's remarks allow exactly this: complete, write nothing,
 				// and leave the caller to check.
 				await platformWindow.CaptureScreenshotAsync(path);

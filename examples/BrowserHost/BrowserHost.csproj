@@ -17,6 +17,10 @@
 		<ImplicitUsings>disable</ImplicitUsings>
 		<RootNamespace>MatterHackers.Agg.Examples</RootNamespace>
 		<Company>MatterHackers Inc.</Company>
+		<!-- The [JSExport] on the demo's screenshot hook: the interop generator emits unsafe marshalling
+		     code, so the switch is required for a single attribute (SYSLIB1075). Same reason
+		     PlatformBrowser has it. -->
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<ItemGroup>

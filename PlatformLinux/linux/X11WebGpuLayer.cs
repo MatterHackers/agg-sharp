@@ -25,7 +25,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Threading.Tasks;
-using MatterHackers.Agg.Image;
 using MatterHackers.RenderCore;
 using MatterHackers.RenderGl;
 using MatterHackers.RenderGl.Compat;
@@ -401,49 +400,16 @@ namespace MatterHackers.Agg.UI
 		/// texture is gone.
 		/// </summary>
 		/// <param name="path">File to write; an existing file is replaced.</param>
-		public async Task SaveCurrentFrameAsync(string path)
+		public Task SaveCurrentFrameAsync(string path)
 		{
-			if (!this.isInitialized || this.compat.Passes.ColorTarget == null)
+			if (!this.isInitialized)
 			{
-				return;
+				return Task.CompletedTask;
 			}
 
-			var target = this.compat.Passes.ColorTarget;
-			if ((target.Descriptor.Usage & TextureUsage.CopySrc) == 0)
-			{
-				throw new InvalidOperationException(
-					"This swapchain's textures were not created with CopySrc, so the window cannot be read back.");
-			}
-
-			// The pass has to be closed before a copy can be recorded; ReadTextureAsync submits the rest.
-			this.compat.Submit();
-
-			int width = (int)target.Descriptor.Width;
-			int height = (int)target.Descriptor.Height;
-			uint rowStride = TextureFormatInfo.AlignedRowStride(target.Descriptor.Format, (uint)width);
-			var bytes = new byte[rowStride * (long)height];
-			var read = await this.device.ReadTextureAsync(target, bytes);
-
-			var image = new ImageBuffer(width, height, 32, new BlenderBGRA());
-			var buffer = image.GetBuffer();
-
-			// wgpu rows run top down and agg's run bottom up.
-			for (int y = 0; y < height; y++)
-			{
-				long sourceOffset = (height - 1 - y) * (long)read.RowStride;
-				Array.Copy(bytes, sourceOffset, buffer, image.GetBufferOffsetY(y), width * 4);
-			}
-
-			image.MarkImageChanged();
-
-			// ImageIO.SaveImageData will not overwrite, and a stale screenshot that looks fresh is worse
-			// than no screenshot.
-			if (System.IO.File.Exists(path))
-			{
-				System.IO.File.Delete(path);
-			}
-
-			ImageIO.SaveImageData(path, image);
+			// The flip and the encode are shared with every other host (see GpuFrameCapture): a capture that
+			// differed per platform would fail goldens for a reason nobody would look for in a window host.
+			return GpuFrameCapture.SaveColorTargetAsync(this.compat, path);
 		}
 
 		public void Dispose()

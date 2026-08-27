@@ -130,7 +130,10 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// </summary>
 		private string pendingScreenshotPath;
 
-		/// <summary>Signalled by the frame that performs a queued capture. See <see cref="CaptureScreenshotAsync"/>.</summary>
+		/// <summary>
+		/// Signalled once a queued capture's file has been written - which is <em>after</em> the frame that
+		/// recorded it, not at the end of it. See <see cref="ServePendingCapture"/>.
+		/// </summary>
 		private TaskCompletionSource screenshotCompletion;
 
 		/// <param name="interop">The DOM seam. <see cref="CreateForBrowser"/> supplies the real one.</param>
@@ -1083,9 +1086,9 @@ namespace MatterHackers.Agg.Platform.Browser
 					}
 				}
 
-				// W4 S5: any pendingScreenshotPath is read back here - after every widget has drawn and
-				// before EndFrame, the only window in which the frame's texture exists and is still
-				// readable. Until then a capture request reaches its timeout; see CaptureScreenshotAsync.
+				// After every widget has drawn and before EndFrame: the only window in which the frame's
+				// texture exists and is still readable.
+				this.ServePendingCapture();
 			}
 			finally
 			{
@@ -1140,6 +1143,78 @@ namespace MatterHackers.Agg.Platform.Browser
 		// -----------------------------------------------------------------------------------------
 
 		/// <summary>
+		/// Starts the read-back for a queued capture, if there is one. Called from inside the frame, with the
+		/// frame's texture still bound.
+		/// </summary>
+		/// <remarks>
+		/// <para><b>The ordering the mac host has is inverted here, and it is the design.</b>
+		/// <c>MacSystemWindow.CaptureThenPresent</c> saves the frame and then presents it, in that order and
+		/// inline, because its read-back is finished before the task it returns is. In the browser the copy is
+		/// recorded synchronously by this call and the buffer map resolves on a later microtask, so
+		/// <see cref="PaintFrame"/>'s <c>finally</c> ends the frame - the page presents the canvas the moment
+		/// the animation frame task returns - <i>while the capture is still in flight</i>. Nothing is lost by
+		/// that: the pixels were copied out of the frame texture while it was the current one. What must never
+		/// be done is the reverse, awaiting the capture and then touching the surface; see
+		/// <see cref="BrowserWebGpuLayer.SaveCurrentFrameAsync"/> and <c>ReadTextureAsync</c>'s seam warning.</para>
+		/// <para>The pending path is taken before the layer is called so a capture that throws cannot be
+		/// retried by the next frame - one request, one frame, one answer.</para>
+		/// </remarks>
+		private void ServePendingCapture()
+		{
+			string screenshotPath = this.pendingScreenshotPath;
+			if (screenshotPath == null)
+			{
+				return;
+			}
+
+			this.pendingScreenshotPath = null;
+
+			TaskCompletionSource completion = this.screenshotCompletion;
+
+			try
+			{
+				this.CompleteCaptureAsync(this.renderLayer.SaveCurrentFrameAsync(screenshotPath), completion);
+			}
+			catch (Exception captureException)
+			{
+				// Thrown by the synchronous half - the frame could not be copied at all. The requester hears
+				// about it rather than waiting out the timeout for a file that is never coming.
+				Console.Error.WriteLine($"BrowserSystemWindow could not record a capture of '{screenshotPath}': {captureException}");
+				completion?.TrySetException(captureException);
+			}
+		}
+
+		/// <summary>
+		/// Waits out the half of a capture that outlives its frame and answers the requester.
+		/// </summary>
+		/// <remarks>
+		/// <c>async void</c> for <c>MacSystemWindow.CaptureThenPresent</c>'s reason: this is the tail of a
+		/// frame and there is nobody to hand a task to. It therefore may not throw - an exception out of an
+		/// <c>async void</c> reaches the runtime, not the requester - so every outcome goes into
+		/// <paramref name="completion"/> instead.
+		/// </remarks>
+		/// <param name="capture">The layer's in-flight capture.</param>
+		/// <param name="completion">
+		/// The awaiting <see cref="CaptureScreenshotAsync"/> caller's signal, or null when the request was
+		/// already given up on. TrySet rather than Set for exactly that case.
+		/// </param>
+		private async void CompleteCaptureAsync(Task capture, TaskCompletionSource completion)
+		{
+			try
+			{
+				await capture;
+
+				completion?.TrySetResult();
+			}
+			catch (Exception captureException)
+			{
+				Console.Error.WriteLine($"BrowserSystemWindow screenshot failed: {captureException}");
+
+				completion?.TrySetException(captureException);
+			}
+		}
+
+		/// <summary>
 		/// Gives up, quietly, and says so on stderr.
 		/// </summary>
 		/// <remarks>
@@ -1160,13 +1235,16 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// Queues a screenshot request for the end of a frame and waits for the frame that serves it.
 		/// </summary>
 		/// <remarks>
-		/// The machinery is <c>MacSystemWindow</c>'s, minus its marshalling: there is one thread here, so there
-		/// is no "am I on the UI thread?" question to get wrong. What is not here yet is the read-back itself -
-		/// the frames are real now, but nothing in <see cref="PaintFrame"/> serves the pending path (W4 S5) -
-		/// so today every capture reaches the timeout and gives up quietly, which is exactly what
+		/// <para>The machinery is <c>MacSystemWindow</c>'s, minus its marshalling: there is one thread here, so
+		/// there is no "am I on the UI thread?" question to get wrong. The next frame reads the request back
+		/// (<see cref="ServePendingCapture"/>) and completes the task once the file is written - or faults it,
+		/// because the contract is that the file exists once this returns normally.</para>
+		/// <para>The timeout is not a placeholder for the missing read-back it used to be; it is the permanent
+		/// answer to a frame that never comes. A hidden browser tab stops receiving animation frames
+		/// altogether, so a capture requested by a page in the background waits out
+		/// <see cref="CaptureTimeout"/> and gives up quietly - which is exactly what
 		/// <see cref="IPlatformWindow.CaptureScreenshotAsync"/>'s remarks promise a host that cannot produce a
-		/// frame. That path stays the real one afterwards, not a placeholder: a browser tab that is hidden
-		/// stops receiving animation frames, so a capture that never gets one is a permanent case.
+		/// frame.</para>
 		/// </remarks>
 		/// <param name="path">Where to write the PNG.</param>
 		public async Task CaptureScreenshotAsync(string path)

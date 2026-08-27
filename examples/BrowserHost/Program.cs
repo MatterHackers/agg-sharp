@@ -24,6 +24,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 using System;
+using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Platform;
@@ -56,7 +57,7 @@ namespace MatterHackers.Agg.Examples
 	/// README). A plain build still boots, ticks and reports - the device creation simply fails, with the
 	/// same message a browser that has no WebGPU gets.</para>
 	/// </remarks>
-	public static class BrowserHostProgram
+	public static partial class BrowserHostProgram
 	{
 		/// <summary>How often the status line reports tick counts. Slow on purpose: it is a heartbeat, not a
 		/// frame counter, and every update is a JS call and a DOM write.</summary>
@@ -124,6 +125,39 @@ namespace MatterHackers.Agg.Examples
 			lastInput = message;
 
 			Console.WriteLine(message);
+		}
+
+		/// <summary>
+		/// Demo plumbing: takes a screenshot of the canvas on the next frame, for a script driving this page.
+		/// </summary>
+		/// <remarks>
+		/// <para>Not part of the browser platform and not what a golden image runner will use - it is here so
+		/// that a headless-Chrome session can prove the capture path end to end today. The runner's half of
+		/// this is <c>BrowserCaptureInterop.ReadCaptureAsBase64</c> in <c>PlatformBrowser</c>, which reads the
+		/// PNG back out of the wasm filesystem; this only asks for it.</para>
+		/// <para>From devtools or CDP:</para>
+		/// <code>
+		/// const host = await getDotnetRuntime(0).getAssemblyExports('BrowserHost.dll');
+		/// await host.MatterHackers.Agg.Examples.BrowserHostProgram.CaptureAsync('/capture.png');
+		/// const agg = await getDotnetRuntime(0).getAssemblyExports('agg_platform_browser.dll');
+		/// const base64 = agg.MatterHackers.Agg.Platform.Browser.BrowserCaptureInterop.ReadCaptureAsBase64('/capture.png');
+		/// </code>
+		/// </remarks>
+		/// <param name="path">Where in the in-memory filesystem to write the PNG.</param>
+		[SupportedOSPlatform("browser")]
+		[JSExport]
+		internal static async Task CaptureAsync(string path)
+		{
+			BrowserSystemWindow window = BrowserSystemWindow.Current;
+			if (window == null)
+			{
+				Report($"capture to '{path}' asked for before there was a window");
+				return;
+			}
+
+			await window.CaptureScreenshotAsync(path);
+
+			Report($"capture written to '{path}'");
 		}
 
 		/// <summary>

@@ -1532,7 +1532,15 @@ namespace MatterHackers.WebGpuRender
 				WGPUTextureFormat chosen = PickSurfaceFormat(offered);
 
 				usage = TextureUsage.RenderAttachment;
-				if ((capabilities.usages & WGPUTextureUsage.CopySrc) != 0)
+
+				// The browser is asked unconditionally, and it has to be: emdawnwebgpu's
+				// wgpuSurfaceGetCapabilities never writes the usages field at all (see webgpu.cpp - it fills
+				// formats, present modes and alpha modes and returns), so the zeroed struct that goes in comes
+				// back reading "this surface supports nothing", and a canvas configured from it cannot be read
+				// back. WebGPU itself allows any usage in a canvas configuration, and CopySrc on the swapchain
+				// is the whole mechanism behind a browser screenshot, so the missing capability is taken as
+				// present rather than absent.
+				if (OperatingSystem.IsBrowser() || (capabilities.usages & WGPUTextureUsage.CopySrc) != 0)
 				{
 					usage |= TextureUsage.CopySrc;
 				}

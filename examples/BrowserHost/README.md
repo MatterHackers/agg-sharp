@@ -54,6 +54,26 @@ install it; that is about AOT and relinking, not correctness. A Release publish 
 trimmer) boots too - the providers are resolved by type name through `AggContext.CreateInstanceFrom`,
 and ILLink kept them.
 
+## Taking a screenshot from outside the browser
+
+`CaptureScreenshotAsync` writes a real PNG - of the WebGPU frame, not of the page - but it writes it
+into Emscripten's in-memory filesystem, which nothing outside the wasm module can see. Two exports
+make that reachable from a script driving the page (this is what a golden image runner will use):
+
+```js
+const rt = await getDotnetRuntime(0);
+const host = await rt.getAssemblyExports('BrowserHost.dll');
+await host.MatterHackers.Agg.Examples.BrowserHostProgram.CaptureAsync('/capture.png');
+
+const agg = await rt.getAssemblyExports('agg_platform_browser.dll');
+const base64 = agg.MatterHackers.Agg.Platform.Browser.BrowserCaptureInterop.ReadCaptureAsBase64('/capture.png');
+```
+
+`CaptureAsync` is demo plumbing and belongs to this example; `ReadCaptureAsBase64` is the platform's,
+and is the only part meant to be permanent. Verified against a CDP `Page.captureScreenshot` of the
+same moment: identical over the canvas, which is everything the page draws except its own DOM status
+line.
+
 ## How the JS modules reach the page
 
 The one thing this example had to settle. `PlatformBrowser` is a plain `Microsoft.NET.Sdk` library,

@@ -84,6 +84,16 @@ namespace MatterHackers.Agg.Platform.Browser
 		private bool isDisposed;
 		private bool frameIsPresentable;
 
+		/// <summary>
+		/// How many captures have recorded their copy but not yet had their buffer map resolve. Zero or one in
+		/// practice - the host allows one capture at a time - but counted rather than flagged so that a second
+		/// caller could not make the teardown below fire early. See <see cref="DisposeDeviceResourcesWhenIdle"/>.
+		/// </summary>
+		private int capturesInFlight;
+
+		/// <summary>The device teardown a capture is holding up, or null when nothing is deferred.</summary>
+		private Action teardownWhenCapturesSettle;
+
 		/// <summary>Set once a loss has been reported, so the host is asked to rebuild exactly once.</summary>
 		private bool deviceLossReported;
 
@@ -292,6 +302,47 @@ namespace MatterHackers.Agg.Platform.Browser
 		}
 
 		/// <summary>
+		/// Reads the frame being drawn back into a PNG at <paramref name="path"/>. Call it after the widget
+		/// draw and before <see cref="EndFrame"/>, from inside the animation frame task - <b>and do not await
+		/// it there</b>.
+		/// </summary>
+		/// <remarks>
+		/// <para><b>This is where the desktop's ordering inverts.</b> On the mac the readback completes before
+		/// its task is returned, so that host saves the frame and <i>then</i> presents it, inline, with the
+		/// frame still alive. Here only the first half runs inline: the copy from the frame texture is recorded
+		/// and submitted before this returns (see <c>GpuFrameCapture.SaveColorTargetAsync</c> and
+		/// <c>ReadTextureAsync</c>'s "record now, wait later"), and the buffer map resolves on a later
+		/// microtask - after <see cref="EndFrame"/> has run and the page has already presented the canvas.
+		/// The pixels are the frame's either way, because they were copied out while it was current; what
+		/// cannot happen is a caller awaiting this and then touching the surface.</para>
+		/// <para>The returned task therefore completes <em>after</em> the frame it captured, and a caller that
+		/// blocked the animation frame task waiting for it would deadlock the page: the map can only resolve
+		/// by returning to the event loop.</para>
+		/// </remarks>
+		/// <param name="path">File to write in the Emscripten in-memory filesystem; an existing file is replaced.</param>
+		public Task SaveCurrentFrameAsync(string path)
+		{
+			if (!this.isInitialized || this.isDisposed)
+			{
+				return Task.CompletedTask;
+			}
+
+			// Throws synchronously if the frame cannot be read at all (no CopySrc), which is the caller's
+			// frame to fail in - nothing has been handed to the event loop yet at that point.
+			Task capture = GpuFrameCapture.SaveColorTargetAsync(this.compat, path);
+
+			if (capture.IsCompleted)
+			{
+				// Nothing outlives the frame, so nothing has to be tracked. Not reachable in a browser (the
+				// map is always pending there) and true by construction anywhere else.
+				return capture;
+			}
+
+			this.capturesInFlight++;
+			return this.TrackCaptureAsync(capture);
+		}
+
+		/// <summary>
 		/// Reconfigures the swapchain and the sized targets for a new canvas backing store.
 		/// </summary>
 		/// <param name="newPixelWidth">The new width in device pixels.</param>
@@ -345,10 +396,11 @@ namespace MatterHackers.Agg.Platform.Browser
 			}
 
 			this.isDisposed = true;
-			this.DisposeDeviceResources();
+			this.DisposeDeviceResourcesWhenIdle();
 
 			// Same reason as on creation: everything cached against this device is about to be a handle to
-			// freed memory.
+			// freed memory. Immediate even when the teardown below is deferred - the caches must not outlive
+			// the decision to close, and nothing a capture still needs is in them.
 			Graphics2DGpu.InvalidateGlCaches();
 		}
 
@@ -399,9 +451,69 @@ namespace MatterHackers.Agg.Platform.Browser
 				$"BrowserWebGpuLayer: the WebGPU device was lost ({this.device?.DeviceLostMessage ?? "no message"}). "
 				+ "The canvas stops painting until a new device has been created.");
 
-			this.DisposeDeviceResources();
+			this.DisposeDeviceResourcesWhenIdle();
 
 			this.DeviceLost?.Invoke();
+		}
+
+		/// <summary>
+		/// Frees the device now, or as soon as the last in-flight capture has finished with it.
+		/// </summary>
+		/// <remarks>
+		/// <para><b>Why a capture can hold the device open.</b> A browser readback owns a WebGPU buffer between
+		/// the frame that recorded the copy and the microtask the map resolves on, and it releases that buffer
+		/// in a <c>finally</c> the caller does not control (<c>WebGpuRenderDevice.MapAndCopyBrowserAsync</c>).
+		/// Freeing the device underneath it would make that release a call against a dead device - the one
+		/// lifetime hazard the browser's asynchronous readback introduces, and one no desktop host can hit
+		/// because there the readback is over before the frame is.</para>
+		/// <para><b>Why deferring rather than awaiting or cancelling.</b> Dispose is synchronous and this is
+		/// the single-threaded browser, so awaiting is a deadlock; and there is no cancellation for a map that
+		/// has already been issued, so "abandon it" would be exactly the unsafe release. Deferring is the only
+		/// deterministic option, and it is small: the layer stops painting immediately (<c>isInitialized</c>
+		/// goes false here, so <see cref="BeginFrame"/> and <see cref="EndFrame"/> become no-ops), and the
+		/// resources go when the capture settles.</para>
+		/// <para><b>What it costs.</b> A map that never resolves - a tab torn down mid-capture - leaves the
+		/// device alive until the wasm module dies with the page, which reclaims it anyway. That is the trade:
+		/// leak a device in a case that ends the process regardless, rather than free one a pending callback
+		/// still points at.</para>
+		/// </remarks>
+		private void DisposeDeviceResourcesWhenIdle()
+		{
+			if (this.capturesInFlight == 0)
+			{
+				this.DisposeDeviceResources();
+				return;
+			}
+
+			// Stop the frame path now even though the resources stay: a disposed (or lost) layer must not
+			// acquire another swapchain texture just because its device is still standing.
+			this.isInitialized = false;
+			this.frameIsPresentable = false;
+
+			this.teardownWhenCapturesSettle = this.DisposeDeviceResources;
+		}
+
+		/// <summary>
+		/// Follows a capture past the end of its frame so the layer knows when its device is free again. The
+		/// capture's own result - including its exception - passes straight through to the caller.
+		/// </summary>
+		private async Task TrackCaptureAsync(Task capture)
+		{
+			try
+			{
+				await capture;
+			}
+			finally
+			{
+				this.capturesInFlight--;
+
+				if (this.capturesInFlight == 0)
+				{
+					Action deferred = this.teardownWhenCapturesSettle;
+					this.teardownWhenCapturesSettle = null;
+					deferred?.Invoke();
+				}
+			}
 		}
 
 		/// <summary>
