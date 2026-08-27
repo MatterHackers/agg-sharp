@@ -11,16 +11,16 @@
     content) depends on AssignTargetPaths, so an item added there is visible to
     consumers as well as to this project's own output.
 
-    STATUS: best effort, and S5 is what validates it. The consumer that matters is a
-    Blazor WebAssembly head, whose static assets are served out of the Razor SDK's
-    StaticWebAssets manifest rather than straight out of the output folder - and a
-    plain-SDK library feeding that pipeline is the known watch item on the W3 plan.
-    Content items with a wwwroot/ target path are the least surprising thing to try
-    first (they are what the Blazor SDK discovers for a project's own wwwroot), and
-    they cost nothing if the head ends up copying the two files itself. If the
-    pipeline fights back, S5's example host is where the answer gets written down:
-    either explicit StaticWebAsset items here, or a Razor-SDK flavour of this
-    project. Nothing else in agg-sharp depends on which way that goes.
+    A Blazor WebAssembly head needs one more thing, settled by examples/BrowserHost
+    (W3 S5): it serves only what is in the static web assets manifest, and files that
+    merely land in bin/.../wwwroot are not in it. So the head IMPORTS this file itself
+    (see BrowserHost.csproj) - a ProjectReference delivers a reference's content to the
+    consumer's output folder, not into its item lists, and DefineStaticWebAssets reads
+    @(Content) from the consuming project's own evaluation. That is why the target below
+    also runs before ResolveProjectStaticWebAssets, and why each item carries ContentRoot:
+    without it the assets are attributed to the head's own wwwroot, where these files do
+    not exist, and the page gets a 200 with an empty body. No Razor-SDK flavour of this
+    project and no hand-written StaticWebAsset items were needed.
 
     Opt out entirely with -p:PlatformBrowserSkipJsDelivery=true (a consumer that
     vendors its own copies of the modules).
@@ -28,7 +28,10 @@
 
   <PropertyGroup>
     <PlatformBrowserRoot>$(MSBuildThisFileDirectory)../</PlatformBrowserRoot>
-    <PlatformBrowserWwwRoot>$(PlatformBrowserRoot)wwwroot/</PlatformBrowserWwwRoot>
+    <!-- Normalized because it is handed to the static web assets pipeline as a content root, and that is
+         compared against other roots as a string: "PlatformBrowser/build/../wwwroot/" would be a second,
+         different root for the same folder. -->
+    <PlatformBrowserWwwRoot>$([MSBuild]::NormalizeDirectory('$(PlatformBrowserRoot)wwwroot'))</PlatformBrowserWwwRoot>
 
     <!-- Where the files land relative to the consuming app's web root. The host page
          awaits BrowserHostBootstrap.InitializeAsync, which imports them from the app
@@ -39,12 +42,13 @@
   </PropertyGroup>
 
   <Target Name="_PlatformBrowserIncludeJsModules"
-          BeforeTargets="AssignTargetPaths"
+          BeforeTargets="AssignTargetPaths;ResolveProjectStaticWebAssets"
           Condition="'$(PlatformBrowserSkipJsDelivery)' != 'true'">
     <ItemGroup>
       <PlatformBrowserJsModule Include="$(PlatformBrowserWwwRoot)*.js" />
 
       <Content Include="@(PlatformBrowserJsModule)">
+        <ContentRoot>$(PlatformBrowserWwwRoot)</ContentRoot>
         <Link>$(PlatformBrowserJsTargetFolder)/%(Filename)%(Extension)</Link>
         <TargetPath>$(PlatformBrowserJsTargetFolder)/%(Filename)%(Extension)</TargetPath>
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

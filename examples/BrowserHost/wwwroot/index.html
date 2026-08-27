@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<title>agg browser host</title>
+	<base href="/" />
+	<style>
+		html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #1e1e1e; color: #ddd; font-family: Consolas, monospace; }
+		/* The canvas fills the page and is sized in CSS only: input.js multiplies the client size by
+		   devicePixelRatio and sets the backing store itself, so a width/height attribute here would just
+		   be overwritten on the first bind. */
+		#agg-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
+		#status { position: absolute; left: 12px; bottom: 12px; margin: 0; font-size: 13px; text-shadow: 0 0 4px #000; pointer-events: none; }
+		#blazor-error-ui { display: none; position: fixed; bottom: 0; width: 100%; padding: 8px; background: #ffe0b2; color: #000; }
+	</style>
+</head>
+
+<body>
+	<!-- The canvas agg binds, named by BrowserSystemWindow.CanvasSelector's default. tabindex makes it
+	     focusable, which is what lets keyboard events reach it at all. -->
+	<canvas id="agg-canvas" tabindex="0"></canvas>
+
+	<pre id="status">loading the runtime...</pre>
+
+	<div id="blazor-error-ui">
+		An unhandled error has occurred.
+		<a href="" class="reload">Reload</a>
+	</div>
+
+	<!-- The status line's only writer. A global function rather than a module, so managed code can call it
+	     with Blazor's own in-process JS runtime and needs no import of its own. -->
+	<script>
+		window.aggHostStatus = message => {
+			document.getElementById('status').textContent = message;
+		};
+	</script>
+
+	<!-- There is no Blazor component tree here: agg owns the canvas and its own frame loop, and Blazor is
+	     only the loader that boots the .NET runtime and keeps it alive. Program.cs does the rest.
+
+	     Note what is NOT here: a <script> tag for frameLoop.js, input.js or peripherals.js. They are ES
+	     modules imported by BrowserHostBootstrap through JSHost.ImportAsync, and they reach this app's web
+	     root as static assets of the PlatformBrowser project reference. -->
+	<script src="_framework/blazor.webassembly.js"></script>
+</body>
+
+</html>

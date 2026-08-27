@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+	<!-- The graduated shell of spikes/WebGpuWasmSpike: the smallest possible consumer of
+	     PlatformBrowser, here to prove that the browser host packages, resolves its providers, boots,
+	     ticks and translates input in a real browser. It is not a product, and it deliberately knows
+	     nothing about MatterCAD.
+
+	     Nothing native links, which is the whole point of the shape below: a plain `dotnet build` and
+	     `dotnet run` work with no wasm-tools workload installed (the spike is the existence proof).
+	     Anything that adds a NativeFileReference - or turns on WasmBuildNative/AOT - would drag in the
+	     workload and an emcc relink, so this project has none of it. -->
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>disable</Nullable>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<RootNamespace>MatterHackers.Agg.Examples</RootNamespace>
+		<Company>MatterHackers Inc.</Company>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.11" />
+		<!-- Only so `dotnet run` has a static file server to serve the app out of; never published. -->
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.11" PrivateAssets="all" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- The one reference the host needs. Agg, Gui and VectorMath arrive transitively, and so do the
+		     three JS modules - build/PlatformBrowser.targets hands them over as Content, which is exactly
+		     what this project exists to validate. -->
+		<ProjectReference Include="..\..\PlatformBrowser\PlatformBrowser.csproj" />
+	</ItemGroup>
+
+	<Import Project="..\..\PlatformBrowser\build\PlatformBrowser.targets" />
+
+</Project>
