@@ -36,12 +36,13 @@ using System.Linq;
 namespace MatterHackers.Agg.Platform
 {
 	/// <summary>
-	/// An <see cref="IStaticData"/> served out of a zip archive held in memory: the asset tree of a host
-	/// that has no asset folder to read. The browser host fetches one zip at boot and installs this as
-	/// <see cref="StaticData.Instance"/>; nothing else about the app changes.
+	/// An <see cref="IStaticData"/> served out of one or more zip archives held in memory: the asset tree
+	/// of a host that has no asset folder to read. The browser host fetches a boot archive, installs this
+	/// as <see cref="StaticData.Instance"/>, and layers a second archive in with <see cref="AddArchive(byte[])"/>
+	/// once it arrives; nothing else about the app changes.
 	/// </summary>
 	/// <remarks>
-	/// The archive is opened once in read mode and kept open, so the central directory - not a scan -
+	/// Each archive is opened once in read mode and kept open, so the central directory - not a scan -
 	/// answers the existence and enumeration calls that the synchronous <see cref="IStaticData"/> contract
 	/// demands (see its remarks on why the API is not async).
 	///
@@ -50,24 +51,41 @@ namespace MatterHackers.Agg.Platform
 	/// disk and nobody ever noticed. A zip's central directory - like MEMFS, like Linux - is case-exact, so
 	/// serving these assets case-sensitively would detonate every one of those latent mismatches at once,
 	/// in the browser, as blank icons. Fold the case here instead.
+	///
+	/// Layering rather than a composite <see cref="IStaticData"/>: the case folding, the directory index
+	/// and the <see cref="MapPath"/> staging directory are all one instance's business, and a composite
+	/// would have to re-implement all three to merge two providers' answers. One index over several
+	/// archives is the smaller thing.
 	/// </remarks>
 	public class ZipStaticData : StaticDataBase, IDisposable
 	{
-		private readonly ZipArchive archive;
+		// In layering order: earlier archives win a path collision, so a boot archive's copy of an asset is
+		// authoritative even if a later archive carries one too.
+		private readonly List<ZipArchive> archives = new List<ZipArchive>();
 
-		// Set when this instance created the stream (the byte[] constructor) and therefore must close it.
-		private readonly Stream ownedStream;
+		// The streams this instance created (the byte[] constructors) and therefore must close.
+		private readonly List<Stream> ownedStreams = new List<Stream>();
 
-		// Case-insensitive because the assets are; see the class remarks.
-		private readonly Dictionary<string, ZipArchiveEntry> filesByPath = new Dictionary<string, ZipArchiveEntry>(StringComparer.OrdinalIgnoreCase);
+		// Case-insensitive because the assets are; see the class remarks. Rebuilt and swapped whole by
+		// AddArchive rather than mutated in place, so a reader that is part way through an enumeration
+		// during a layering keeps seeing a coherent index instead of a half-merged one.
+		private Dictionary<string, ZipArchiveEntry> filesByPath = new Dictionary<string, ZipArchiveEntry>(StringComparer.OrdinalIgnoreCase);
 
-		private readonly Dictionary<string, DirectoryContents> directories = new Dictionary<string, DirectoryContents>(StringComparer.OrdinalIgnoreCase);
+		private Dictionary<string, DirectoryContents> directories = new Dictionary<string, DirectoryContents>(StringComparer.OrdinalIgnoreCase);
 
 		// ZipArchive is not thread safe and neither is entry decompression; the base class's icon pipeline
 		// is already called from more than one thread.
 		private readonly object archiveLocker = new object();
 
 		private readonly string stagingPath;
+
+		// Paths already reported as missed while a deferred archive was outstanding, so a widget that asks
+		// for the same absent icon on every layout pass produces one warning rather than sixty a second.
+		private readonly HashSet<string> reportedMisses = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+		// What the outstanding deferred archive holds, when the host was able to say. Null means "unknown",
+		// which is treated as "it could hold anything".
+		private HashSet<string> deferredPaths;
 
 		private bool disposed;
 
@@ -90,26 +108,11 @@ namespace MatterHackers.Agg.Platform
 
 		private ZipStaticData(Stream zipStream, bool ownsStream)
 		{
-			if (zipStream == null)
-			{
-				throw new ArgumentNullException(nameof(zipStream));
-			}
-
-			if (!zipStream.CanSeek)
-			{
-				// ZipArchive needs to seek to the central directory. Failing here names the real problem;
-				// letting ZipArchive fail later reports a corrupt archive instead.
-				throw new ArgumentException("The zip stream must be seekable.", nameof(zipStream));
-			}
-
-			this.ownedStream = ownsStream ? zipStream : null;
-			this.archive = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: !ownsStream);
-
 			// One staging directory per instance, so two providers (or two processes) cannot collide on a
 			// half-extracted file, and so dispose can delete the whole thing.
 			this.stagingPath = Path.Combine(Path.GetTempPath(), "ZipStaticData_" + Guid.NewGuid().ToString("N"));
 
-			this.BuildIndex();
+			this.OpenAndIndex(zipStream, ownsStream);
 		}
 
 		/// <summary>
@@ -117,16 +120,102 @@ namespace MatterHackers.Agg.Platform
 		/// </summary>
 		public string StagingPath => stagingPath;
 
+		/// <summary>
+		/// Gets whether another archive is still on its way in - the window in which a path this instance
+		/// cannot answer for may be an asset that has not arrived yet rather than one that does not exist.
+		/// </summary>
+		public bool ExpectingDeferredArchive { get; private set; }
+
+		/// <summary>
+		/// Says that another archive is coming, and - if the host knows - exactly what is in it.
+		/// </summary>
+		/// <param name="deferredPaths">
+		/// The archive-relative paths the deferred archive holds, or null if the host cannot say. Given the
+		/// list, only a miss on one of those paths is reported, which is the only kind that means anything;
+		/// without it every miss is reported, because a false alarm beats a silent one.
+		/// </param>
+		/// <remarks>
+		/// A host that splits its assets calls this before it starts the deferred download;
+		/// <see cref="AddArchive(byte[])"/> ends the window. While it is open, a matching miss is reported
+		/// once through <see cref="DeferredAssetMissed"/>. That report is the whole safety net for the split:
+		/// the synchronous <see cref="IStaticData"/> contract cannot await a download, so a too-eager split
+		/// degrades silently (a blank icon, an untranslated string) unless something says so out loud.
+		/// Nothing here waits or retries - the answer is the same "not found" a genuinely absent asset gets,
+		/// and the host is expected to have put everything the boot path reads in the first archive.
+		/// </remarks>
+		public void ExpectDeferredArchive(IEnumerable<string> deferredPaths = null)
+		{
+			lock (archiveLocker)
+			{
+				this.deferredPaths = deferredPaths == null
+					? null
+					: new HashSet<string>(deferredPaths.Select(NormalizePath), StringComparer.OrdinalIgnoreCase);
+
+				this.ExpectingDeferredArchive = true;
+			}
+		}
+
+		/// <summary>
+		/// Gets or sets where a miss during the <see cref="ExpectingDeferredArchive"/> window is reported.
+		/// Defaults to standard error.
+		/// </summary>
+		public Action<string> DeferredAssetMissed { get; set; } = message => Console.Error.WriteLine(message);
+
+		/// <summary>
+		/// Layers another archive in behind the ones already loaded, and stops treating misses as possible
+		/// late arrivals. A path already served by an earlier archive keeps its earlier entry.
+		/// </summary>
+		/// <remarks>
+		/// The whole index is rebuilt rather than merged into, because merging would have to reconcile the
+		/// per-directory file and sub-directory lists entry by entry, and rebuilding a few thousand
+		/// dictionary entries costs less than the code to do that correctly. The new index is swapped in
+		/// under the archive lock, and readers pick it up whole.
+		/// </remarks>
+		public void AddArchive(byte[] zipBytes)
+		{
+			if (zipBytes == null)
+			{
+				throw new ArgumentNullException(nameof(zipBytes));
+			}
+
+			this.OpenAndIndex(new MemoryStream(zipBytes, writable: false), ownsStream: true);
+		}
+
+		/// <summary>
+		/// Layers another archive in from a seekable stream. The stream is left open on dispose; the caller
+		/// owns it. See <see cref="AddArchive(byte[])"/>.
+		/// </summary>
+		public void AddArchive(Stream seekableZipStream)
+		{
+			this.OpenAndIndex(seekableZipStream, ownsStream: false);
+		}
+
 		/// <inheritdoc/>
 		public override bool DirectoryExists(string path)
 		{
-			return directories.ContainsKey(NormalizePath(path));
+			var normalized = NormalizePath(path);
+			var found = directories.ContainsKey(normalized);
+
+			if (!found)
+			{
+				ReportIfDeferredMayHold("directory", normalized);
+			}
+
+			return found;
 		}
 
 		/// <inheritdoc/>
 		public override bool FileExists(string path)
 		{
-			return filesByPath.ContainsKey(NormalizePath(path));
+			var normalized = NormalizePath(path);
+			var found = filesByPath.ContainsKey(normalized);
+
+			if (!found)
+			{
+				ReportIfDeferredMayHold("file", normalized);
+			}
+
+			return found;
 		}
 
 		/// <summary>
@@ -224,6 +313,13 @@ namespace MatterHackers.Agg.Platform
 				{
 					Directory.CreateDirectory(mapped);
 				}
+				else
+				{
+					// A path back for something that is not here is the documented behaviour (see the
+					// remarks), but during the deferred window it is also the shape a too-short boot asset
+					// list takes: the caller gets a path it will find nothing at.
+					ReportIfDeferredMayHold("entry", normalized);
+				}
 			}
 
 			return mapped;
@@ -238,8 +334,15 @@ namespace MatterHackers.Agg.Platform
 
 			disposed = true;
 
-			archive.Dispose();
-			ownedStream?.Dispose();
+			foreach (var openArchive in archives)
+			{
+				openArchive.Dispose();
+			}
+
+			foreach (var stream in ownedStreams)
+			{
+				stream.Dispose();
+			}
 
 			// Best effort: the staging copies are disposable by definition, and failing to clean up scratch
 			// files is not worth throwing out of Dispose.
@@ -260,57 +363,109 @@ namespace MatterHackers.Agg.Platform
 			GC.SuppressFinalize(this);
 		}
 
-		private void BuildIndex()
+		/// <summary>
+		/// Opens a zip over the stream, adds it to the layering and rebuilds the index over every archive.
+		/// </summary>
+		private void OpenAndIndex(Stream zipStream, bool ownsStream)
 		{
-			// The root has to exist even for an empty archive: DirectoryExists("") and GetFiles("") are how
-			// the asset root itself gets walked.
-			directories[string.Empty] = new DirectoryContents();
-
-			foreach (var entry in archive.Entries)
+			if (zipStream == null)
 			{
-				var fullName = NormalizePath(entry.FullName);
-
-				if (fullName.Length == 0)
-				{
-					continue;
-				}
-
-				// A zip marks a directory entry with a trailing separator (and an empty Name). Everything
-				// else is a file, whether or not its directories were given entries of their own.
-				if (entry.FullName.EndsWith("/", StringComparison.Ordinal)
-					|| entry.FullName.EndsWith("\\", StringComparison.Ordinal))
-				{
-					EnsureDirectory(fullName);
-					continue;
-				}
-
-				var parent = ParentOf(fullName);
-				EnsureDirectory(parent);
-
-				// First entry wins on a case-only duplicate. An archive can hold "Icons/A.png" and
-				// "Icons/a.png" - a case-folding filesystem cannot, so the assets never do - and silently
-				// serving one of them beats throwing at construction, which would be a boot failure.
-				if (!filesByPath.ContainsKey(fullName))
-				{
-					filesByPath.Add(fullName, entry);
-					directories[parent].Files.Add(fullName);
-				}
+				throw new ArgumentNullException(nameof(zipStream));
 			}
 
-			foreach (var contents in directories.Values)
+			if (!zipStream.CanSeek)
 			{
-				contents.Sort();
+				// ZipArchive needs to seek to the central directory. Failing here names the real problem;
+				// letting ZipArchive fail later reports a corrupt archive instead.
+				throw new ArgumentException("The zip stream must be seekable.", nameof(zipStream));
+			}
+
+			var opened = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: !ownsStream);
+
+			lock (archiveLocker)
+			{
+				archives.Add(opened);
+
+				if (ownsStream)
+				{
+					ownedStreams.Add(zipStream);
+				}
+
+				this.BuildIndex();
+
+				// Whatever the host was waiting for has landed. Cleared after the index so a read racing the
+				// swap either misses and is reported, or hits - never misses silently.
+				this.ExpectingDeferredArchive = false;
+				this.deferredPaths = null;
+				this.reportedMisses.Clear();
 			}
 		}
 
-		private void EnsureDirectory(string path)
+		/// <summary>
+		/// Rebuilds the whole index from every loaded archive and swaps it in. Call under the archive lock.
+		/// </summary>
+		private void BuildIndex()
 		{
-			if (directories.ContainsKey(path))
+			var rebuiltFiles = new Dictionary<string, ZipArchiveEntry>(StringComparer.OrdinalIgnoreCase);
+			var rebuiltDirectories = new Dictionary<string, DirectoryContents>(StringComparer.OrdinalIgnoreCase);
+
+			// The root has to exist even for an empty archive: DirectoryExists("") and GetFiles("") are how
+			// the asset root itself gets walked.
+			rebuiltDirectories[string.Empty] = new DirectoryContents();
+
+			foreach (var openArchive in archives)
+			{
+				foreach (var entry in openArchive.Entries)
+				{
+					var fullName = NormalizePath(entry.FullName);
+
+					if (fullName.Length == 0)
+					{
+						continue;
+					}
+
+					// A zip marks a directory entry with a trailing separator (and an empty Name). Everything
+					// else is a file, whether or not its directories were given entries of their own.
+					if (entry.FullName.EndsWith("/", StringComparison.Ordinal)
+						|| entry.FullName.EndsWith("\\", StringComparison.Ordinal))
+					{
+						EnsureDirectory(rebuiltDirectories, fullName);
+						continue;
+					}
+
+					var parent = ParentOf(fullName);
+					EnsureDirectory(rebuiltDirectories, parent);
+
+					// First entry wins on a case-only duplicate, and - because the archives are walked in
+					// layering order - on a duplicate between archives too. An archive can hold "Icons/A.png"
+					// and "Icons/a.png" - a case-folding filesystem cannot, so the assets never do - and
+					// silently serving one of them beats throwing at construction, which would be a boot
+					// failure. The same rule keeps a boot archive authoritative over a deferred one.
+					if (!rebuiltFiles.ContainsKey(fullName))
+					{
+						rebuiltFiles.Add(fullName, entry);
+						rebuiltDirectories[parent].Files.Add(fullName);
+					}
+				}
+			}
+
+			foreach (var contents in rebuiltDirectories.Values)
+			{
+				contents.Sort();
+			}
+
+			this.filesByPath = rebuiltFiles;
+			this.directories = rebuiltDirectories;
+		}
+
+		private static void EnsureDirectory(Dictionary<string, DirectoryContents> into, string path)
+		{
+			if (into.ContainsKey(path))
 			{
 				return;
 			}
 
-			directories[path] = new DirectoryContents();
+			into[path] = new DirectoryContents();
 
 			if (path.Length == 0)
 			{
@@ -318,8 +473,40 @@ namespace MatterHackers.Agg.Platform
 			}
 
 			var parent = ParentOf(path);
-			EnsureDirectory(parent);
-			directories[parent].SubDirectories.Add(path);
+			EnsureDirectory(into, parent);
+			into[parent].SubDirectories.Add(path);
+		}
+
+		/// <summary>
+		/// Says out loud that an asset was asked for, and answered "no", while a deferred archive was still
+		/// outstanding - the one signal that a host's boot asset list is short. Once per path.
+		/// </summary>
+		private void ReportIfDeferredMayHold(string kind, string normalizedPath)
+		{
+			if (!this.ExpectingDeferredArchive)
+			{
+				return;
+			}
+
+			bool known;
+
+			lock (archiveLocker)
+			{
+				if (!this.ExpectingDeferredArchive
+					|| (deferredPaths != null && !deferredPaths.Contains(normalizedPath))
+					|| !reportedMisses.Add(normalizedPath))
+				{
+					return;
+				}
+
+				known = deferredPaths != null;
+			}
+
+			this.DeferredAssetMissed?.Invoke(
+				$"ZipStaticData: no {kind} '{normalizedPath}' in the loaded archives"
+				+ (known
+					? ", and the deferred archive that holds it has not arrived - it belongs in the boot archive."
+					: ", and a deferred archive has not arrived yet - if it holds this asset, this belongs in the boot archive."));
 		}
 
 		private DirectoryContents GetContents(string path)
@@ -330,6 +517,8 @@ namespace MatterHackers.Agg.Platform
 			{
 				return contents;
 			}
+
+			ReportIfDeferredMayHold("directory", normalized);
 
 			// The disk provider throws DirectoryNotFoundException here; match it so a caller that guards
 			// with DirectoryExists behaves the same either side of the seam.
@@ -383,6 +572,8 @@ namespace MatterHackers.Agg.Platform
 			{
 				if (!filesByPath.TryGetValue(normalized, out var entry))
 				{
+					ReportIfDeferredMayHold("file", normalized);
+
 					// Same exception the disk provider raises, so callers that catch it still catch it.
 					throw new FileNotFoundException("No such file in the asset archive: " + path, path);
 				}
