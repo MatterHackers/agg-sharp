@@ -173,32 +173,73 @@ namespace MatterHackers.Agg.Platform
 		/// </summary>
 		public class ProviderSettings
 		{
+			/// <summary>
+			/// The browser <see cref="IOsInformationProvider"/>, by name.
+			/// </summary>
+			/// <remarks>
+			/// The browser's three are named constants where the desktop OSes' are inline literals, for two
+			/// reasons that only apply here. A wasm head sets these explicitly rather than relying on the
+			/// defaults (it configures agg before anything has touched <see cref="Config"/>), and - unlike
+			/// every other platform's - these strings cannot be checked by running on the platform they
+			/// name, because no desktop test process reports <c>IsBrowser</c>. Naming them is what lets the
+			/// test suite resolve them against the real types in <c>agg_platform_browser</c>, which is a
+			/// plain net10.0 assembly and so loads anywhere.
+			/// </remarks>
+			public const string BrowserOsInformationProvider
+				= "MatterHackers.Agg.Platform.BrowserInformationProvider, agg_platform_browser";
+
+			/// <summary>The browser <see cref="IFileDialogProvider"/>, by name. See
+			/// <see cref="BrowserOsInformationProvider"/>.</summary>
+			public const string BrowserDialogProvider
+				= "MatterHackers.Agg.Platform.BrowserFileDialogProvider, agg_platform_browser";
+
+			/// <summary>The browser system window provider, by name. See
+			/// <see cref="BrowserOsInformationProvider"/>.</summary>
+			public const string BrowserSystemWindowProvider
+				= "MatterHackers.Agg.UI.WebGpuBrowserWindowProvider, agg_platform_browser";
+
+			/// <summary>
+			/// Checked ahead of the desktop OSes in every ternary below, because it is the one platform whose
+			/// answer they could get wrong: wasm reports none of IsMacOS/IsLinux/IsWindows, so without this
+			/// arm a browser would fall through to the Windows default and try to load an assembly built for
+			/// <c>net10.0-windows</c>.
+			/// </summary>
+			private static readonly bool IsBrowser = System.OperatingSystem.IsBrowser();
+
 			private static readonly bool IsMac = System.OperatingSystem.IsMacOS();
 
 			private static readonly bool IsLinux = System.OperatingSystem.IsLinux();
 
-			public string OsInformationProvider { get; set; } = IsMac
-				? "MatterHackers.Agg.Platform.MacInformationProvider, agg_platform_mac"
-				: IsLinux
-					? "MatterHackers.Agg.Platform.LinuxInformationProvider, agg_platform_linux"
-					: "MatterHackers.Agg.Platform.WinformsInformationProvider, agg_platform_win32";
+			public string OsInformationProvider { get; set; } = IsBrowser
+				? BrowserOsInformationProvider
+				: IsMac
+					? "MatterHackers.Agg.Platform.MacInformationProvider, agg_platform_mac"
+					: IsLinux
+						? "MatterHackers.Agg.Platform.LinuxInformationProvider, agg_platform_linux"
+						: "MatterHackers.Agg.Platform.WinformsInformationProvider, agg_platform_win32";
 
 			/// <summary>
 			/// The file dialog host. Each OS names its own: mac drives NSOpenPanel, Windows the WinForms
 			/// common dialogs, and Linux the zenity or kdialog helper - see <c>LinuxFileDialogProvider</c>,
-			/// whose callback (unlike the other two) arrives after the call has already returned.
+			/// whose callback (unlike the other two) arrives after the call has already returned. The browser
+			/// shares that late-callback contract, and adds one of its own: its paths are inside the wasm
+			/// virtual file system, not on the user's disk.
 			/// </summary>
-			public string DialogProvider { get; set; } = IsMac
-				? "MatterHackers.Agg.Platform.MacFileDialogProvider, agg_platform_mac"
-				: IsLinux
-					? "MatterHackers.Agg.Platform.LinuxFileDialogProvider, agg_platform_linux"
-					: "MatterHackers.Agg.Platform.WinformsFileDialogProvider, agg_platform_win32";
+			public string DialogProvider { get; set; } = IsBrowser
+				? BrowserDialogProvider
+				: IsMac
+					? "MatterHackers.Agg.Platform.MacFileDialogProvider, agg_platform_mac"
+					: IsLinux
+						? "MatterHackers.Agg.Platform.LinuxFileDialogProvider, agg_platform_linux"
+						: "MatterHackers.Agg.Platform.WinformsFileDialogProvider, agg_platform_win32";
 
-			public string SystemWindowProvider { get; set; } = IsMac
-				? "MatterHackers.Agg.UI.WebGpuMacWindowProvider, agg_platform_mac"
-				: IsLinux
-					? "MatterHackers.Agg.UI.WebGpuX11WindowProvider, agg_platform_linux"
-					: "MatterHackers.Agg.UI.WebGpuWinformsWindowProvider, agg_platform_win32";
+			public string SystemWindowProvider { get; set; } = IsBrowser
+				? BrowserSystemWindowProvider
+				: IsMac
+					? "MatterHackers.Agg.UI.WebGpuMacWindowProvider, agg_platform_mac"
+					: IsLinux
+						? "MatterHackers.Agg.UI.WebGpuX11WindowProvider, agg_platform_linux"
+						: "MatterHackers.Agg.UI.WebGpuWinformsWindowProvider, agg_platform_win32";
 		}
 
 		public class AggGraphicsMode

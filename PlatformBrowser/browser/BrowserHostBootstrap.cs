@@ -56,7 +56,8 @@ namespace MatterHackers.Agg.Platform.Browser
 		private static Task initialization;
 
 		/// <summary>
-		/// Imports <c>frameLoop.js</c> and <c>input.js</c>. Await this before showing an agg window.
+		/// Imports <c>frameLoop.js</c>, <c>input.js</c> and <c>peripherals.js</c>. Await this before showing
+		/// an agg window or installing any of the browser providers.
 		/// </summary>
 		public static Task InitializeAsync()
 		{
@@ -69,6 +70,11 @@ namespace MatterHackers.Agg.Platform.Browser
 		{
 			await JSHost.ImportAsync(BrowserFrameLoop.ModuleName, ModuleBasePath + "frameLoop.js");
 			await JSHost.ImportAsync(BrowserWindowInterop.ModuleName, ModuleBasePath + "input.js");
+			await JSHost.ImportAsync(BrowserPeripherals.ModuleName, ModuleBasePath + "peripherals.js");
+
+			// Immediately after its own import, and before any provider can call into it: the module has no
+			// other way to report a failure that happens inside one of its promises.
+			BrowserPeripherals.InstallFaultReporter();
 		}
 	}
 }

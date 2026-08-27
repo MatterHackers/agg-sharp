@@ -70,6 +70,19 @@ namespace MatterHackers.Agg.Platform.Browser
 		private readonly BrowserModifierState modifierState = new BrowserModifierState();
 
 		/// <summary>
+		/// Which buttons this canvas owns for the duration of a drag; see <see cref="OutOfViewMouseCapture"/>.
+		/// </summary>
+		/// <remarks>
+		/// On top of, not instead of, <c>setPointerCapture</c> - <c>input.js</c> takes the native capture on
+		/// every pointerdown, and that is what keeps the events arriving at all once the pointer has left the
+		/// canvas. This decides which of them agg is told about, and it is the hedge for the case the native
+		/// capture cannot cover: Safari drops a capture on some gestures without warning, and a stray up
+		/// arriving from a press agg never saw (a press that started on the page's chrome) must not reach a
+		/// widget as the end of a drag it never began.
+		/// </remarks>
+		private readonly OutOfViewMouseCapture mouseCapture = new OutOfViewMouseCapture();
+
+		/// <summary>
 		/// Events that arrived since the last tick, in arrival order. Not synchronized, deliberately - see the
 		/// class remarks.
 		/// </summary>
@@ -82,6 +95,12 @@ namespace MatterHackers.Agg.Platform.Browser
 		private string currentCssCursor;
 		private bool hasClosed;
 		private bool isInsidePaint;
+
+		/// <summary>
+		/// The button the last pointerdown carried. Only <c>pointercancel</c> reads it; see
+		/// <see cref="EnqueuePointerEvent"/>.
+		/// </summary>
+		private MouseButtons lastPressedButton = MouseButtons.None;
 
 		/// <summary>
 		/// A screenshot asked for but not taken yet. The read-back can only happen at the end of a frame, so
@@ -346,6 +365,7 @@ namespace MatterHackers.Agg.Platform.Browser
 			this.interop.DetachInput(CanvasSelector);
 
 			this.inputQueue.Clear();
+			this.mouseCapture.ClearCapturedButtons();
 
 			if (Current == this)
 			{
@@ -388,6 +408,17 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// </summary>
 		private Vector2 UsableSize => new Vector2(this.backing.PixelWidth, this.backing.PixelHeight);
 
+		/// <summary>
+		/// The canvas in agg's coordinate space, which is what "inside the view" is measured against.
+		/// </summary>
+		/// <remarks>
+		/// A closed interval, matching <see cref="BrowserPointer.ToAggPosition"/>'s <c>height - y</c>: a click
+		/// on the last row of pixels reports exactly the height and still belongs to the canvas. X11 needs the
+		/// exclusive version and keeps its own; see <see cref="OutOfViewMouseCapture.IsInsideBounds"/>.
+		/// </remarks>
+		private RectangleDouble SurfaceBounds
+			=> new RectangleDouble(0, 0, this.backing.PixelWidth, this.backing.PixelHeight);
+
 		// -----------------------------------------------------------------------------------------
 		// Input, queued by the JS listeners and delivered at the start of a tick
 		// -----------------------------------------------------------------------------------------
@@ -425,21 +456,21 @@ namespace MatterHackers.Agg.Platform.Browser
 
 			this.modifierState.Update(ctrlKey, shiftKey, altKey, metaKey);
 
-			if (type == "pointerleave" || type == "pointerout")
-			{
-				// The same sentinel the Windows sink and the mac host use for "the pointer is nowhere near me".
-				this.Enqueue(BrowserInputEvent.Mouse(
-					BrowserInputEventKind.MouseMove,
-					new MouseEventArgs(MouseButtons.None, 0, -10, -10, 0),
-					this.modifierState.DownStateKeys));
-				return;
-			}
-
 			// A move carries button -1 because nothing changed on it, so its button has to come from the mask -
 			// whose bits are not the index's numbering. See BrowserPointer.HeldButton.
 			MouseButtons aggButton = button < 0
 				? BrowserPointer.HeldButton(buttons)
 				: BrowserPointer.TranslateButton(button);
+
+			if (type == "pointercancel")
+			{
+				// A cancel carries button -1 and buttons 0 by specification: the browser is taking the pointer
+				// away without saying which button it is taking, and no pointerup is coming afterwards. So the
+				// drag is ended with the button that started it - which is the one agg's MouseEventArgs can
+				// carry anyway - and that is what lets the arbiter release its capture rather than holding it
+				// for a release that will never arrive.
+				aggButton = this.lastPressedButton;
+			}
 
 			MouseEventArgs mouseEvent = BrowserPointer.MakeMouseEventArgs(
 				aggButton,
@@ -448,6 +479,40 @@ namespace MatterHackers.Agg.Platform.Browser
 				offsetY,
 				this.backing.DevicePixelRatio,
 				this.backing.PixelHeight);
+
+			bool insideView = OutOfViewMouseCapture.IsInsideBounds(
+				new Vector2(mouseEvent.X, mouseEvent.Y), this.SurfaceBounds);
+
+			if (type == "pointerleave" || type == "pointerout")
+			{
+				// A drag owns the pointer wherever it has gone, and its own mouse up is what ends it - telling
+				// agg the pointer is nowhere near mid-drag reads to a widget as the drag being abandoned. Same
+				// rule, and the same helper, as the mac host applies to a mouseExited.
+				if (!OutOfViewMouseCapture.IsRealPointerExit(
+					new Vector2(mouseEvent.X, mouseEvent.Y), this.SurfaceBounds, this.mouseCapture.HasCapturedButtons))
+				{
+					return;
+				}
+
+				// The same sentinel the Windows sink and the mac host use for "the pointer is nowhere near me".
+				this.Enqueue(BrowserInputEvent.Mouse(
+					BrowserInputEventKind.MouseMove,
+					new MouseEventArgs(MouseButtons.None, 0, -10, -10, 0),
+					this.modifierState.DownStateKeys));
+				return;
+			}
+
+			// The arbiter updates the captured set as a side effect, so this runs exactly once per event and
+			// before anything else can decide the event is uninteresting.
+			if (!BrowserPointer.ShouldDeliver(this.mouseCapture, type, buttons, aggButton, insideView))
+			{
+				return;
+			}
+
+			if (type == "pointerdown")
+			{
+				this.lastPressedButton = aggButton;
+			}
 
 			BrowserInputEventKind kind;
 			switch (BrowserPointer.PointerEventKindFor(type, buttons))
@@ -558,6 +623,12 @@ namespace MatterHackers.Agg.Platform.Browser
 			// what releases agg's process-wide Keyboard state, in order with the rest of the input.
 			IReadOnlySet<Keys> heldWhenFocusLeft = this.modifierState.DownStateKeys;
 			this.modifierState.Clear();
+
+			// And the same for the buttons. A window that has lost the input entirely has no release left to
+			// wait for - the pointer capture went with the focus - so a button left captured here would make
+			// every later move on the page look like the continuation of a drag that is over.
+			this.mouseCapture.ClearCapturedButtons();
+			this.lastPressedButton = MouseButtons.None;
 
 			this.Enqueue(BrowserInputEvent.FocusLost(heldWhenFocusLeft));
 		}

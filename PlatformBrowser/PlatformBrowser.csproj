@@ -43,7 +43,7 @@
 		<None Remove="wwwroot\**" />
 	</ItemGroup>
 
-	<!-- Copies wwwroot/frameLoop.js and wwwroot/input.js next to the output, and to anything that
-	     references this project - the Blazor head is the consumer that matters. See the file. -->
+	<!-- Copies every wwwroot/*.js module (frameLoop, input, peripherals) next to the output, and to
+	     anything that references this project - the Blazor head is the consumer that matters. See the file. -->
 	<Import Project="build/PlatformBrowser.targets" />
 </Project>

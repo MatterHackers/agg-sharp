@@ -260,9 +260,10 @@ export function attachInput(selector, onInputEvent, onResize) {
 
 	on(canvas, 'pointerdown', (e) => {
 		// The native capture, so a drag that leaves the canvas keeps delivering - most importantly its
-		// pointerup, without which a widget stays convinced its button is still held. (W3 S4 adds agg's own
-		// arbiter on top as the Safari hedge; the two agree because a button only becomes agg's through a
-		// down inside the canvas.)
+		// pointerup, without which a widget stays convinced its button is still held. agg's own arbiter sits
+		// on top of it as the Safari hedge (BrowserSystemWindow's mouseCapture); the two agree, because a
+		// button only becomes agg's through a down inside the canvas, which is also the only place this
+		// takes a capture.
 		if (canvas.setPointerCapture) {
 			try {
 				canvas.setPointerCapture(e.pointerId);

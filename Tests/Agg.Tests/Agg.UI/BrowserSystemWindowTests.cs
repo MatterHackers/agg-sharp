@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Platform.Browser;
@@ -246,6 +247,227 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(BrowserBacking.FromDeviceMetrics(3840, 2160, 2))
 				.IsEqualTo(new BrowserBackingSize(3840, 2160, 2));
 		}
+
+		/// <summary>
+		/// The pointer capture arbiter, wired into the window's own delivery path.
+		/// </summary>
+		/// <remarks>
+		/// <c>input.js</c> takes the native <c>setPointerCapture</c> on every pointerdown, and that is what
+		/// keeps the events arriving once the pointer has left the canvas. This is the half that decides which
+		/// of them agg is told about, and it is the hedge for what the native capture cannot cover - Safari
+		/// dropping a capture mid-gesture, and a press that started on the page's chrome. The rule itself is
+		/// <see cref="OutOfViewMouseCapture"/>'s and is tested there; what is checked here is that the window
+		/// consults it at all, and with the right coordinates.
+		/// </remarks>
+		[Test]
+		[Timeout(30_000)]
+		public async Task ADragThatLeavesTheCanvasKeepsBeingDelivered()
+		{
+			var interop = new FakeWindowInterop { BindResult = new BrowserBackingSize(800, 600, 2) };
+			var frameLoop = new FakeFrameLoop();
+
+			var platformWindow = new BrowserSystemWindow(interop, frameLoop);
+			var systemWindow = new SystemWindow(100, 100);
+
+			var delivered = new List<MouseEventArgs>();
+			systemWindow.MouseDown += (s, e) => delivered.Add(e);
+			systemWindow.MouseMove += (s, e) => delivered.Add(e);
+			systemWindow.MouseUp += (s, e) => delivered.Add(e);
+
+			try
+			{
+				platformWindow.ShowSystemWindow(systemWindow);
+
+				// Down inside the canvas: the left button becomes this window's for the duration of the drag.
+				Pointer(platformWindow, "pointerdown", cssX: 100, cssY: 50, button: 0, buttons: 1);
+
+				// Dragged well off the left edge. The native capture is why this event arrives at all; the
+				// arbiter is why it is not thrown away for being outside.
+				Pointer(platformWindow, "pointermove", cssX: -80, cssY: 50, button: -1, buttons: 1);
+
+				// And the up that ends it, also outside - losing this is what leaves a widget convinced its
+				// button is still held.
+				Pointer(platformWindow, "pointerup", cssX: -80, cssY: 50, button: 0, buttons: 0);
+
+				await Assert.That(platformWindow.PendingInputCount).IsEqualTo(3);
+
+				frameLoop.Tick();
+
+				await Assert.That(delivered.Count).IsEqualTo(3);
+				await Assert.That(delivered[2].Button).IsEqualTo(MouseButtons.Left);
+
+				// Once the up has come nothing is captured, so a plain hover outside is nobody's business.
+				Pointer(platformWindow, "pointermove", cssX: -80, cssY: 50, button: -1, buttons: 0);
+
+				await Assert.That(platformWindow.PendingInputCount).IsEqualTo(0);
+			}
+			finally
+			{
+				platformWindow.CloseSystemWindow(systemWindow);
+				UiThread.ResetForTests();
+			}
+		}
+
+		/// <summary>
+		/// A button only becomes this window's through a down inside it, which is what stops a press that
+		/// began on the page's own chrome delivering a phantom up to a widget that never saw its down.
+		/// </summary>
+		[Test]
+		[Timeout(30_000)]
+		public async Task APressThatStartedOutsideTheCanvasIsNeverDelivered()
+		{
+			var interop = new FakeWindowInterop { BindResult = new BrowserBackingSize(800, 600, 2) };
+			var frameLoop = new FakeFrameLoop();
+
+			var platformWindow = new BrowserSystemWindow(interop, frameLoop);
+			var systemWindow = new SystemWindow(100, 100);
+
+			try
+			{
+				platformWindow.ShowSystemWindow(systemWindow);
+
+				Pointer(platformWindow, "pointerdown", cssX: -20, cssY: 50, button: 0, buttons: 1);
+				Pointer(platformWindow, "pointermove", cssX: -20, cssY: 60, button: -1, buttons: 1);
+				Pointer(platformWindow, "pointerup", cssX: -20, cssY: 60, button: 0, buttons: 0);
+
+				await Assert.That(platformWindow.PendingInputCount).IsEqualTo(0);
+			}
+			finally
+			{
+				platformWindow.CloseSystemWindow(systemWindow);
+				UiThread.ResetForTests();
+			}
+		}
+
+		/// <summary>
+		/// Losing focus takes the pointer capture with it, so there is no release left to wait for. A button
+		/// left captured here would make every later move on the page look like a drag that is long over.
+		/// </summary>
+		[Test]
+		[Timeout(30_000)]
+		public async Task LosingFocusReleasesTheCapturedButtons()
+		{
+			var interop = new FakeWindowInterop { BindResult = new BrowserBackingSize(800, 600, 2) };
+			var frameLoop = new FakeFrameLoop();
+
+			var platformWindow = new BrowserSystemWindow(interop, frameLoop);
+			var systemWindow = new SystemWindow(100, 100);
+
+			try
+			{
+				platformWindow.ShowSystemWindow(systemWindow);
+
+				Pointer(platformWindow, "pointerdown", cssX: 100, cssY: 50, button: 0, buttons: 1);
+				platformWindow.EnqueueFocusLost();
+
+				frameLoop.Tick();
+
+				// The drag is over as far as this window is concerned, so a move outside it is not delivered.
+				Pointer(platformWindow, "pointermove", cssX: -80, cssY: 50, button: -1, buttons: 1);
+
+				await Assert.That(platformWindow.PendingInputCount).IsEqualTo(0);
+			}
+			finally
+			{
+				platformWindow.CloseSystemWindow(systemWindow);
+				UiThread.ResetForTests();
+			}
+		}
+
+		/// <summary>
+		/// A pointercancel is the browser taking the pointer away, and no pointerup is coming after it. It
+		/// carries button -1 and buttons 0 by specification - the browser will not say which button it is
+		/// taking - so the drag is ended with the button that started it. Without that the capture would be
+		/// held for a release that never arrives.
+		/// </summary>
+		[Test]
+		[Timeout(30_000)]
+		public async Task APointerCancelEndsTheDragItInterrupted()
+		{
+			var interop = new FakeWindowInterop { BindResult = new BrowserBackingSize(800, 600, 2) };
+			var frameLoop = new FakeFrameLoop();
+
+			var platformWindow = new BrowserSystemWindow(interop, frameLoop);
+			var systemWindow = new SystemWindow(100, 100);
+
+			MouseEventArgs released = null;
+			systemWindow.MouseUp += (s, e) => released = e;
+
+			try
+			{
+				platformWindow.ShowSystemWindow(systemWindow);
+
+				Pointer(platformWindow, "pointerdown", cssX: 100, cssY: 50, button: 0, buttons: 1);
+				Pointer(platformWindow, "pointercancel", cssX: -80, cssY: 50, button: -1, buttons: 0);
+
+				frameLoop.Tick();
+
+				await Assert.That(released).IsNotNull();
+				await Assert.That(released.Button).IsEqualTo(MouseButtons.Left);
+
+				// And the capture went with it.
+				Pointer(platformWindow, "pointermove", cssX: -80, cssY: 50, button: -1, buttons: 1);
+
+				await Assert.That(platformWindow.PendingInputCount).IsEqualTo(0);
+			}
+			finally
+			{
+				platformWindow.CloseSystemWindow(systemWindow);
+				UiThread.ResetForTests();
+			}
+		}
+
+		/// <summary>
+		/// The pointer leaving mid-drag is not the pointer leaving: the drag owns it wherever it has gone, and
+		/// its own up is what ends it. Reporting the "nowhere near me" sentinel there reads to a widget as the
+		/// drag being abandoned - which on MatterCAD's 3D view snaps a dragged part back to where it started.
+		/// </summary>
+		[Test]
+		[Timeout(30_000)]
+		public async Task APointerLeaveDuringADragIsNotAnExit()
+		{
+			var interop = new FakeWindowInterop { BindResult = new BrowserBackingSize(800, 600, 2) };
+			var frameLoop = new FakeFrameLoop();
+
+			var platformWindow = new BrowserSystemWindow(interop, frameLoop);
+			var systemWindow = new SystemWindow(100, 100);
+
+			try
+			{
+				platformWindow.ShowSystemWindow(systemWindow);
+
+				Pointer(platformWindow, "pointerdown", cssX: 100, cssY: 50, button: 0, buttons: 1);
+				Pointer(platformWindow, "pointerleave", cssX: -80, cssY: 50, button: -1, buttons: 1);
+
+				// Only the down is queued; the leave was swallowed.
+				await Assert.That(platformWindow.PendingInputCount).IsEqualTo(1);
+
+				frameLoop.Tick();
+
+				// With no drag in flight the same leave is a real exit, and the sentinel is queued.
+				Pointer(platformWindow, "pointerup", cssX: -80, cssY: 50, button: 0, buttons: 0);
+				frameLoop.Tick();
+
+				Pointer(platformWindow, "pointerleave", cssX: -80, cssY: 50, button: -1, buttons: 0);
+
+				await Assert.That(platformWindow.PendingInputCount).IsEqualTo(1);
+			}
+			finally
+			{
+				platformWindow.CloseSystemWindow(systemWindow);
+				UiThread.ResetForTests();
+			}
+		}
+
+		/// <summary>
+		/// Queues one pointer event the way <c>input.js</c> would, with no modifiers held. Positions are CSS
+		/// pixels from the canvas's top left, which is what the DOM reports.
+		/// </summary>
+		private static void Pointer(
+			BrowserSystemWindow platformWindow, string type, double cssX, double cssY, int button, int buttons)
+			=> platformWindow.EnqueuePointerEvent(
+				type, cssX, cssY, button, buttons, detail: button < 0 ? 0 : 1,
+				ctrlKey: false, shiftKey: false, altKey: false, metaKey: false);
 
 		/// <summary>The DOM, replaced by a recorder.</summary>
 		private sealed class FakeWindowInterop : IBrowserWindowInterop
