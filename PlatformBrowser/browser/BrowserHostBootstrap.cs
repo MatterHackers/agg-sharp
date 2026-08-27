@@ -56,9 +56,16 @@ namespace MatterHackers.Agg.Platform.Browser
 		private static Task initialization;
 
 		/// <summary>
-		/// Imports <c>frameLoop.js</c>, <c>input.js</c> and <c>peripherals.js</c>. Await this before showing
-		/// an agg window or installing any of the browser providers.
+		/// Imports <c>frameLoop.js</c>, <c>input.js</c>, <c>peripherals.js</c> and <c>storageMirror.js</c>.
+		/// Await this before showing an agg window, installing any of the browser providers, or constructing a
+		/// <see cref="BrowserStorageMirrorInterop"/>.
 		/// </summary>
+		/// <remarks>
+		/// All four unconditionally, including for a head that persists nothing: an ES module import is a
+		/// fetch of a few hundred bytes from a URL the page has already opened a connection to, and a
+		/// conditional import would mean a second boot-order contract for a head to get wrong. The mirror
+		/// module does nothing at all until someone calls <c>openStore</c>.
+		/// </remarks>
 		public static Task InitializeAsync()
 		{
 			// No lock: wasm has one thread, so there is no race to protect against here (see
@@ -71,6 +78,7 @@ namespace MatterHackers.Agg.Platform.Browser
 			await JSHost.ImportAsync(BrowserFrameLoop.ModuleName, ModuleBasePath + "frameLoop.js");
 			await JSHost.ImportAsync(BrowserWindowInterop.ModuleName, ModuleBasePath + "input.js");
 			await JSHost.ImportAsync(BrowserPeripherals.ModuleName, ModuleBasePath + "peripherals.js");
+			await JSHost.ImportAsync(BrowserStorageMirrorInterop.ModuleName, ModuleBasePath + "storageMirror.js");
 
 			// Immediately after its own import, and before any provider can call into it: the module has no
 			// other way to report a failure that happens inside one of its promises.
