@@ -35,28 +35,29 @@ using TUnit.Core;
 namespace MatterHackers.Agg.UI.Tests
 {
 	/// <summary>
-	/// A pinch on a trackpad arrives as its own NSEvent type carrying an incremental magnification, and agg
+	/// A pinch on a trackpad arrives as its own kind of event carrying an incremental magnification, and agg
 	/// only understands wheel units, so the whole gesture turns on that one conversion. The gesture itself
 	/// cannot be synthesised - it needs real fingers on real glass - but the conversion can, and it is where
-	/// a sign error or a lost magnitude would hide.
+	/// a sign error or a lost magnitude would hide. The conversion is <see cref="WheelDeltaMath"/>'s, shared
+	/// by every host, so this runs everywhere.
 	/// </summary>
-	public class MacMagnifyGestureTests
+	public class MagnificationWheelDeltaTests
 	{
 		[Test]
 		public async Task FingersApartZoomInAndTogetherZoomOut()
 		{
 			// Positive magnification is fingers moving apart, which has to come out as a forward wheel,
 			// because forward is what the 3D view reads as zoom in.
-			await Assert.That(MacSystemWindow.MagnificationToWheelDelta(0.05)).IsGreaterThan(0);
-			await Assert.That(MacSystemWindow.MagnificationToWheelDelta(-0.05)).IsLessThan(0);
-			await Assert.That(MacSystemWindow.MagnificationToWheelDelta(0)).IsEqualTo(0);
+			await Assert.That(WheelDeltaMath.MagnificationToWheelDelta(0.05)).IsGreaterThan(0);
+			await Assert.That(WheelDeltaMath.MagnificationToWheelDelta(-0.05)).IsLessThan(0);
+			await Assert.That(WheelDeltaMath.MagnificationToWheelDelta(0)).IsEqualTo(0);
 		}
 
 		[Test]
 		public async Task TheZoomFollowsHowFarTheFingersMoved()
 		{
-			int small = MacSystemWindow.MagnificationToWheelDelta(0.02);
-			int twiceAsFar = MacSystemWindow.MagnificationToWheelDelta(0.04);
+			int small = WheelDeltaMath.MagnificationToWheelDelta(0.02);
+			int twiceAsFar = WheelDeltaMath.MagnificationToWheelDelta(0.04);
 
 			// A single event's magnification is a hundredth or so, so it has to survive the trip to integer
 			// wheel units - rounding it away would make a slow pinch do nothing at all.
@@ -64,15 +65,15 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(twiceAsFar).IsEqualTo(small * 2);
 
 			// and a whole-gesture magnification of 1 (Apple's "twice the size") is several wheel detents
-			await Assert.That(MacSystemWindow.MagnificationToWheelDelta(1)).IsEqualTo(small * 50);
+			await Assert.That(WheelDeltaMath.MagnificationToWheelDelta(1)).IsEqualTo(small * 50);
 		}
 
 		[Test]
 		public async Task ANonsenseMagnificationIsNoZoom()
 		{
 			// (int) of a NaN is a huge negative number rather than nothing, and that would fling the camera.
-			await Assert.That(MacSystemWindow.MagnificationToWheelDelta(double.NaN)).IsEqualTo(0);
-			await Assert.That(MacSystemWindow.MagnificationToWheelDelta(double.PositiveInfinity)).IsEqualTo(0);
+			await Assert.That(WheelDeltaMath.MagnificationToWheelDelta(double.NaN)).IsEqualTo(0);
+			await Assert.That(WheelDeltaMath.MagnificationToWheelDelta(double.PositiveInfinity)).IsEqualTo(0);
 		}
 	}
 }

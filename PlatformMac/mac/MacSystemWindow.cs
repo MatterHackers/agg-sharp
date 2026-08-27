@@ -149,21 +149,6 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		private static readonly bool LogGestureEvents = Environment.GetEnvironmentVariable("AGG_LOG_GESTURE") == "1";
 
-		/// <summary>
-		/// Wheel units per unit of pinch magnification.
-		/// </summary>
-		/// <remarks>
-		/// <c>-[NSEvent magnification]</c> is the <em>incremental</em> change in scale for one event, in the
-		/// same units Apple's own sample code accumulates into a zoom factor: magnification 1.0 in total means
-		/// "twice the size". Consumers of agg's wheel treat one 120-unit detent as one zoom step, and the 3D
-		/// view's step closes 20% of the distance to what is under the pointer. Closing a fraction f of that
-		/// distance scales the view by about 1/(1-f), so matching a magnification of m needs f = m, which is
-		/// m / 0.2 = 5m detents, i.e. 600m wheel units. A comfortable pinch runs to roughly m = 1, so it
-		/// travels about five detents - the same order as a comfortable two-finger scroll, which the precise
-		/// scroll conversion below turns into several hundred units.
-		/// </remarks>
-		private const double MagnifyWheelDeltaPerUnit = 600;
-
 		private static IntPtr nsApp;
 		private static IntPtr distantPast;
 		private static IntPtr defaultRunLoopMode;
@@ -2166,99 +2151,54 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// Remembers which buttons went down inside the content view, so a drag that wanders outside it
-		/// still delivers its moves and, critically, its mouse up.
+		/// Which of <see cref="PointerEventKind"/>'s four kinds an NSEvent type is, so the shared capture
+		/// rule in <see cref="OutOfViewMouseCapture"/> never has to know AppKit's numbering.
 		/// </summary>
-		/// <remarks>
-		/// AppKit keeps routing dragged and up events to the window that saw the mouse down however far the
-		/// pointer has travelled, so the events do arrive here; it was
-		/// <see cref="TryMakeMouseArgs"/>'s bounds test that threw them away. Losing the up is what left a
-		/// widget convinced its button was still held after a drag ended past the window edge - a stuck
-		/// capture that nothing else would ever clear. WinForms gets this right for free because it captures
-		/// the mouse on mouse down and so keeps receiving until the up; this is that same contract written
-		/// out by hand.
-		/// <para/>
-		/// A button only becomes ours through a down <em>inside</em> the view, which is what keeps a title
-		/// bar drag (whose down agg never saw) from delivering a phantom up. Plain hover moves outside the
-		/// view are still dropped: with no button held they really are nobody's business but AppKit's.
-		/// </remarks>
-		internal sealed class OutOfViewMouseCapture
+		internal static PointerEventKind PointerEventKindFor(long type)
 		{
-			// Not a bit set: MouseButtons is not [Flags], and more than one button can be held at once.
-			private readonly HashSet<MouseButtons> capturedButtons = new HashSet<MouseButtons>();
-
-			/// <summary>
-			/// Whether a drag this view owns is in flight, and so the pointer is its business wherever it is.
-			/// </summary>
-			internal bool HasCapturedButtons => this.capturedButtons.Count > 0;
-
-			/// <summary>
-			/// Decides whether an event should reach agg, and updates the captured-button set.
-			/// </summary>
-			/// <param name="type">The NSEvent type.</param>
-			/// <param name="button">The agg button the event carries, or None for a hover, scroll or pinch.</param>
-			/// <param name="insideView">Whether the event's point lies within the content view's bounds.</param>
-			internal bool ShouldDeliver(long type, MouseButtons button, bool insideView)
+			switch (type)
 			{
-				switch (type)
-				{
-					case NSEventTypeLeftMouseDown:
-					case NSEventTypeRightMouseDown:
-					case NSEventTypeOtherMouseDown:
-						if (!insideView)
-						{
-							return false;
-						}
+				case NSEventTypeLeftMouseDown:
+				case NSEventTypeRightMouseDown:
+				case NSEventTypeOtherMouseDown:
+					return PointerEventKind.Down;
 
-						this.capturedButtons.Add(button);
-						return true;
+				case NSEventTypeLeftMouseUp:
+				case NSEventTypeRightMouseUp:
+				case NSEventTypeOtherMouseUp:
+					return PointerEventKind.Up;
 
-					case NSEventTypeLeftMouseUp:
-					case NSEventTypeRightMouseUp:
-					case NSEventTypeOtherMouseUp:
-						// Removed whether or not it is delivered, so a button can never stay captured.
-						bool wasCaptured = this.capturedButtons.Remove(button);
-						return insideView || wasCaptured;
+				case NSEventTypeLeftMouseDragged:
+				case NSEventTypeRightMouseDragged:
+				case NSEventTypeOtherMouseDragged:
+					return PointerEventKind.Drag;
 
-					case NSEventTypeLeftMouseDragged:
-					case NSEventTypeRightMouseDragged:
-					case NSEventTypeOtherMouseDragged:
-						return insideView || this.capturedButtons.Contains(button);
-
-					default:
-						return insideView;
-				}
+				default:
+					return PointerEventKind.Other;
 			}
 		}
 
 		/// <summary>
-		/// Whether a point already converted into the content view's coordinates lies within its bounds.
-		/// The edges count as inside, so a click on the last row of pixels still belongs to the view.
+		/// The content view's bounds as agg sees them. The origin is dropped rather than carried across: an
+		/// NSView's bounds origin is zero unless something shifts it, and this test has always been against
+		/// the size alone.
 		/// </summary>
+		private static RectangleDouble ToAggBounds(CGRect bounds)
+			=> new RectangleDouble(0, 0, bounds.Size.Width, bounds.Size.Height);
+
+		/// <summary>See <see cref="OutOfViewMouseCapture.IsInsideBounds"/>; this is the AppKit-typed adapter.</summary>
 		internal static bool IsInsideBounds(CGPoint inView, CGRect bounds)
-			=> inView.X >= 0
-				&& inView.Y >= 0
-				&& inView.X <= bounds.Size.Width
-				&& inView.Y <= bounds.Size.Height;
+			=> OutOfViewMouseCapture.IsInsideBounds(new Vector2(inView.X, inView.Y), ToAggBounds(bounds));
 
 		/// <summary>
 		/// Whether a mouseExited event means the pointer actually left the content view.
 		/// </summary>
 		/// <remarks>
-		/// The event type on its own does not mean that, which is the trap. A mouseExited is a tracking
-		/// notification, and cursor rects are tracked: every
-		/// <c>invalidateCursorRectsForView:</c> - which <see cref="SetCursor"/> issues on each cursor change,
-		/// and agg changes the cursor on every <c>OnMouseEnter</c> - tears the content view's cursor rect
-		/// down and rebuilds it, and AppKit posts a mouseExited (immediately followed by a mouseEntered)
-		/// for the teardown even though the pointer never moved. Taking those at face value fired the
-		/// "pointer is nowhere near me" sentinel repeatedly while the mouse sat still inside the window,
-		/// which reads to any widget mid-drag as the pointer having left - MatterCAD's 3D view responds by
-		/// snapping the dragged part back to where the drag started.
-		/// <para/>
-		/// So the geometry is what is believed rather than the event type: a genuine exit reports a location
-		/// outside the bounds (measured, including exits over the title bar), an artifact reports one inside.
-		/// A drag holding a captured button is exempt as well - it owns the pointer wherever it has gone,
-		/// and its mouse up is what ends it. See <see cref="OutOfViewMouseCapture"/>.
+		/// The event type on its own does not mean that, which is the trap: a mouseExited is a tracking
+		/// notification, and every <c>invalidateCursorRectsForView:</c> that <see cref="SetCursor"/> issues
+		/// posts one for a pointer that never moved. See
+		/// <see cref="OutOfViewMouseCapture.IsRealPointerExit"/>, which holds the whole story and the rule
+		/// this reads the AppKit numbers for.
 		/// </remarks>
 		private bool PointerReallyLeftContentView(IntPtr nsEvent)
 		{
@@ -2268,9 +2208,9 @@ namespace MatterHackers.Agg.UI
 			return IsRealPointerExit(inView, Send_R(this.view, Sel("bounds")), this.mouseCapture.HasCapturedButtons);
 		}
 
-		/// <summary>The decision <see cref="PointerReallyLeftContentView"/> makes, with the AppKit calls lifted out.</summary>
+		/// <summary>See <see cref="OutOfViewMouseCapture.IsRealPointerExit"/>; this is the AppKit-typed adapter.</summary>
 		internal static bool IsRealPointerExit(CGPoint inView, CGRect bounds, bool dragInFlight)
-			=> !dragInFlight && !IsInsideBounds(inView, bounds);
+			=> OutOfViewMouseCapture.IsRealPointerExit(new Vector2(inView.X, inView.Y), ToAggBounds(bounds), dragInFlight);
 
 		/// <summary>
 		/// Converts an NSEvent's location into agg's coordinate space.
@@ -2303,7 +2243,7 @@ namespace MatterHackers.Agg.UI
 				_ => MouseButtons.None,
 			};
 
-			if (!this.mouseCapture.ShouldDeliver(type, button, insideView))
+			if (!this.mouseCapture.ShouldDeliver(PointerEventKindFor(type), button, insideView))
 			{
 				return false;
 			}
@@ -2325,14 +2265,14 @@ namespace MatterHackers.Agg.UI
 			int wheelDelta = 0;
 			if (type == NSEventTypeMagnify)
 			{
-				wheelDelta = MagnificationToWheelDelta(Send_d(nsEvent, Sel("magnification")));
+				wheelDelta = WheelDeltaMath.MagnificationToWheelDelta(Send_d(nsEvent, Sel("magnification")));
 			}
 
 			args = new MouseEventArgs(button, clicks, x, y, wheelDelta);
 
 			if (type == NSEventTypeScrollWheel)
 			{
-				ApplyScrollingDeltas(
+				WheelDeltaMath.ApplyScrollingDeltas(
 					args,
 					Send_d(nsEvent, Sel("scrollingDeltaX")),
 					Send_d(nsEvent, Sel("scrollingDeltaY")),
@@ -2341,87 +2281,6 @@ namespace MatterHackers.Agg.UI
 			}
 
 			return true;
-		}
-
-		/// <summary>
-		/// Fills both of a mouse event's wheel axes from one scroll event's scrolling deltas.
-		/// </summary>
-		/// <remarks>
-		/// A two finger trackpad scroll carries travel on both axes at once, so both have to come across, and
-		/// through the same scale, or a diagonal gesture would come out at the wrong angle. The signs are
-		/// carried straight through from AppKit: positive Y is the forward wheel agg already reads, and
-		/// positive X is a gesture whose content should move right.
-		/// <para>
-		/// That angle is preserved only for a precise scroll. A non-precise event is a detent device on both
-		/// axes - a tilt wheel clicks sideways the same way the wheel clicks forward - so each axis quantizes
-		/// to its own signed detent and a mixed tilt-and-wheel event deliberately comes out square rather
-		/// than at the ratio AppKit reported. See <see cref="ScrollingDeltaToWheelDelta"/> for why an
-		/// accelerated line count is not a magnitude worth preserving.
-		/// </para>
-		/// </remarks>
-		internal static void ApplyScrollingDeltas(MouseEventArgs args, double scrollingDeltaX, double scrollingDeltaY, bool precise, double backingScale)
-		{
-			args.WheelDelta = ScrollingDeltaToWheelDelta(scrollingDeltaY, precise, backingScale);
-			args.WheelDeltaX = ScrollingDeltaToWheelDelta(scrollingDeltaX, precise, backingScale);
-
-			// Both axes come from one event and so are the same kind of scroll. The flag is what stops a
-			// consumer scaling a precise delta a second time - see ScrollingDeltaToWheelDelta for who owns DPI.
-			args.WheelDeltaIsPreciseScroll = precise;
-		}
-
-		/// <summary>
-		/// Converts one axis of a scroll event's travel into agg's wheel units.
-		/// </summary>
-		/// <remarks>
-		/// agg's consumers were written against Win32's 120-per-detent wheel. A line-based scroll (a real
-		/// wheel) becomes one signed detent per event - the v120 convention. macOS accelerates line-based
-		/// deltas and exposes no notch count, so the same physical notch reports about 0.1 lines turned
-		/// slowly and many lines turned fast, while Win32 reports an unaccelerated 120 per detent no matter
-		/// how fast the wheel spins. Consumers scale proportionally to that 120 (MatterCAD's TrackballZoom
-		/// zooms by WheelDelta / 120 steps), so passing the acceleration through turned one fast notch into
-		/// several detents of zoom. A trackpad instead reports points of travel, and ScrollableWidget
-		/// divides WheelDelta by 5 to get pixels - so scaling by 5 x backingScale makes a trackpad drag move
-		/// the content the same distance as the fingers.
-		/// <para>
-		/// <b>This is where DPI is applied to a precise scroll, and the only place.</b> backingScale is the
-		/// per-window scale of the display the window is actually on, which is the only correct answer for a
-		/// physical distance and the only one that stays correct when a window is dragged between a Retina
-		/// screen and an external 1x one. <c>GuiWidget.DeviceScale</c> is not a substitute: it is a user
-		/// text-size preference (see this class's Coordinates and DPI note), process-wide rather than
-		/// per-window, and on a Retina mac MatterCAD sets it to 1.6 rather than 2. A consumer that scaled by
-		/// it again would move the content 1.6x too far, which is the bug
-		/// <see cref="MouseEventArgs.WheelDeltaIsPreciseScroll"/> exists to prevent - and why it is set
-		/// alongside these numbers rather than inferred from them.
-		/// </para>
-		/// </remarks>
-		internal static int ScrollingDeltaToWheelDelta(double scrollingDelta, bool precise, double backingScale)
-		{
-			if (double.IsNaN(scrollingDelta) || double.IsInfinity(scrollingDelta))
-			{
-				// Neither branch survives a nonsense delta: (int) of a NaN is a huge negative number rather
-				// than nothing, which would fling the content, and Math.Sign throws on a NaN - out of an
-				// AppKit event callback, so a crash rather than a fling.
-				return 0;
-			}
-
-			return precise
-				? (int)Math.Round(scrollingDelta * backingScale * 5)
-				: Math.Sign(scrollingDelta) * 120;
-		}
-
-		/// <summary>
-		/// Converts one magnify event's incremental magnification into agg's wheel units. See
-		/// <see cref="MagnifyWheelDeltaPerUnit"/> for where the scale comes from; the sign is carried
-		/// straight through, so fingers apart (positive) is a forward wheel, which is zoom in.
-		/// </summary>
-		internal static int MagnificationToWheelDelta(double magnification)
-		{
-			if (double.IsNaN(magnification) || double.IsInfinity(magnification))
-			{
-				return 0;
-			}
-
-			return (int)Math.Round(magnification * MagnifyWheelDeltaPerUnit);
 		}
 
 		/// <summary>
@@ -2702,75 +2561,13 @@ namespace MatterHackers.Agg.UI
 		/// <summary>Answers AppKit's "may I close?" by asking the agg window, and starts the agg close.</summary>
 		private byte HandleShouldClose()
 		{
-			bool mayClose = HandlePlatformCloseRequest(
+			bool mayClose = PlatformCloseArbitration.HandlePlatformCloseRequest(
 				SingleWindowMode,
 				this.WindowProvider,
 				this.aggSystemWindow,
 				closing => this.platformAlreadyClosing = closing);
 
 			return mayClose ? YES : NO;
-		}
-
-		/// <summary>
-		/// Runs a native close request - the red button, Cmd-Q, the window manager - against the application
-		/// rather than against whatever window happens to be on top, and reports whether the platform may go
-		/// ahead and tear its window down.
-		/// </summary>
-		/// <param name="singleWindowMode">See <see cref="SingleWindowMode"/>.</param>
-		/// <param name="provider">The provider holding the open windows, if there is one.</param>
-		/// <param name="activeWindow">The window currently being drawn and given events.</param>
-		/// <param name="setPlatformClosing">
-		/// Sets (and, if the close does not take, clears) the host's "the platform is already closing" flag.
-		/// </param>
-		/// <remarks>
-		/// Static and parameterised because the decision it makes - which window is asked, and whether the
-		/// native window may go away - is the whole bug, and none of it needs AppKit to exercise.
-		/// </remarks>
-		internal static bool HandlePlatformCloseRequest(
-			bool singleWindowMode,
-			ISystemWindowProvider provider,
-			SystemWindow activeWindow,
-			Action<bool> setPlatformClosing)
-		{
-			// The user closed the application, not the dialog drawn inside it. Asking the dialog runs none of
-			// the shell's ShouldClose/Closed handlers - window bounds persistence, save on exit - and the
-			// native window is torn down immediately afterwards regardless, so that work is simply lost.
-			var shellWindow = ShellWindowForClose(singleWindowMode, provider, activeWindow);
-
-			if (shellWindow == null || shellWindow.HasBeenClosed)
-			{
-				return true;
-			}
-
-			// Only the shell decides whether the application may close: an open dialog does not veto here.
-			// In single window mode a dialog is a widget drawn inside this window, so its titlebar button is
-			// the only close that belongs to it - the red button and Cmd-Q have always meant "close the
-			// application", and applications that want to refuse mid-dialog do it in their own ShouldClose.
-			var shouldClose = new ShouldCloseEventArgs();
-			shellWindow.OnShouldClose(shouldClose);
-
-			if (shouldClose.Cancel)
-			{
-				return false;
-			}
-
-			// The agg close runs first so widgets get their Closed events while the window is still alive. It
-			// calls back through the provider into CloseSystemWindow, which the flag makes a no-op - the
-			// platform is already in the middle of closing us.
-			setPlatformClosing?.Invoke(true);
-			shellWindow.Close();
-
-			if (!shellWindow.HasBeenClosed)
-			{
-				// Close asks OnShouldClose a second time and an application may cancel on that one (having
-				// just put up its "save first?" dialog on the first ask). Letting the platform destroy the
-				// window anyway is exactly the "closed with no Closed events" bug, so the shell that is still
-				// open keeps its native window.
-				setPlatformClosing?.Invoke(false);
-				return false;
-			}
-
-			return true;
 		}
 
 		/// <summary>Tears everything down once AppKit has committed to closing the window.</summary>
@@ -2932,38 +2729,12 @@ namespace MatterHackers.Agg.UI
 
 		/// <summary>
 		/// The agg window whose close ends the application: the shell, not whatever is currently on top.
+		/// See <see cref="PlatformCloseArbitration.ShellWindowForClose"/> for why
+		/// <see cref="aggSystemWindow"/> is not that window in single window mode.
 		/// </summary>
-		/// <remarks>
-		/// In single window mode <see cref="aggSystemWindow"/> is the window being drawn and given the
-		/// events, which the provider re-points at every dialog that opens. Closing that only dismisses the
-		/// dialog - the shell stays up, the event loop keeps running, and the process never exits. The provider keeps
-		/// the shell first in <see cref="ISystemWindowProvider.OpenWindows"/> and takes the dialogs above it
-		/// down with it, so closing that one window is the whole application closing.
-		/// </remarks>
 		private SystemWindow ShellAggWindow()
 		{
-			return ShellWindowForClose(SingleWindowMode, this.WindowProvider, this.aggSystemWindow);
-		}
-
-		/// <summary>
-		/// The instance-free half of <see cref="ShellAggWindow"/>, so the choice can be tested without AppKit.
-		/// </summary>
-		internal static SystemWindow ShellWindowForClose(
-			bool singleWindowMode,
-			ISystemWindowProvider provider,
-			SystemWindow activeWindow)
-		{
-			if (singleWindowMode && provider != null)
-			{
-				var openWindows = provider.OpenWindows;
-
-				if (openWindows.Count > 0)
-				{
-					return openWindows[0];
-				}
-			}
-
-			return activeWindow;
+			return PlatformCloseArbitration.ShellWindowForClose(SingleWindowMode, this.WindowProvider, this.aggSystemWindow);
 		}
 
 		/// <summary>

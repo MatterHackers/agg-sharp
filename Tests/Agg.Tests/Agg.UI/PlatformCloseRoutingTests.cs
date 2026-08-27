@@ -36,13 +36,15 @@ using TUnit.Core;
 namespace MatterHackers.Agg.UI.Tests
 {
 	/// <summary>
-	/// The red button and Cmd-Q close the application. In single window mode the provider keeps re-pointing
-	/// the host at whatever dialog is on top, so the window the host is drawing is usually not the window the
-	/// close is about - and running the close against the dialog skips every ShouldClose/Closed handler the
-	/// shell has (window bounds persistence, save on exit) while the platform destroys the window anyway.
-	/// The native half cannot be synthesised without AppKit; the decision it makes can.
+	/// A native close request - macOS's red button and Cmd-Q, WM_CLOSE, WM_DELETE_WINDOW - closes the
+	/// application. In single window mode the provider keeps re-pointing the host at whatever dialog is on
+	/// top, so the window the host is drawing is usually not the window the close is about - and running the
+	/// close against the dialog skips every ShouldClose/Closed handler the shell has (window bounds
+	/// persistence, save on exit) while the platform destroys the window anyway. The native half cannot be
+	/// synthesised without a platform; the decision it makes is <see cref="PlatformCloseArbitration"/>'s and
+	/// runs everywhere.
 	/// </summary>
-	public class MacPlatformCloseRoutingTests
+	public class PlatformCloseRoutingTests
 	{
 		[Test]
 		public async Task TheShellClosesEvenWhileADialogIsOnTop()
@@ -57,7 +59,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			var provider = new StackedWindowProvider(shell, dialog);
 
-			bool mayClose = MacSystemWindow.HandlePlatformCloseRequest(
+			bool mayClose = PlatformCloseArbitration.HandlePlatformCloseRequest(
 				singleWindowMode: true,
 				provider: provider,
 				activeWindow: dialog,
@@ -81,7 +83,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			var platformClosing = new List<bool>();
 
-			bool mayClose = MacSystemWindow.HandlePlatformCloseRequest(
+			bool mayClose = PlatformCloseArbitration.HandlePlatformCloseRequest(
 				singleWindowMode: true,
 				provider: provider,
 				activeWindow: dialog,
@@ -106,7 +108,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			var platformClosing = new List<bool>();
 
-			bool mayClose = MacSystemWindow.HandlePlatformCloseRequest(
+			bool mayClose = PlatformCloseArbitration.HandlePlatformCloseRequest(
 				singleWindowMode: true,
 				provider: new StackedWindowProvider(shell),
 				activeWindow: shell,
@@ -123,7 +125,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// Every demo and every test host: one window, no provider, and it is its own shell.
 			var window = new SystemWindow(400, 300);
 
-			bool mayClose = MacSystemWindow.HandlePlatformCloseRequest(
+			bool mayClose = PlatformCloseArbitration.HandlePlatformCloseRequest(
 				singleWindowMode: false,
 				provider: null,
 				activeWindow: window,
@@ -139,13 +141,13 @@ namespace MatterHackers.Agg.UI.Tests
 			var window = new SystemWindow(400, 300);
 			window.Close();
 
-			await Assert.That(MacSystemWindow.HandlePlatformCloseRequest(
+			await Assert.That(PlatformCloseArbitration.HandlePlatformCloseRequest(
 				singleWindowMode: false,
 				provider: null,
 				activeWindow: window,
 				setPlatformClosing: null)).IsTrue();
 
-			await Assert.That(MacSystemWindow.HandlePlatformCloseRequest(
+			await Assert.That(PlatformCloseArbitration.HandlePlatformCloseRequest(
 				singleWindowMode: false,
 				provider: null,
 				activeWindow: null,

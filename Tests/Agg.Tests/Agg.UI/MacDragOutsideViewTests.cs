@@ -37,149 +37,58 @@ using static MatterHackers.Agg.Platform.Mac.AppKitConstants;
 namespace MatterHackers.Agg.UI.Tests
 {
 	/// <summary>
-	/// A drag that ends past the window edge must still deliver its mouse up. AppKit routes dragged and up
-	/// events to the window that saw the down no matter where the pointer went, so the events arrive; the
-	/// only question - and the only thing that can be tested without a real NSEvent - is whether the
-	/// out-of-view filter lets them through.
+	/// The mac half of the out-of-view drag fix: AppKit's numbering, translated into the terms the shared
+	/// filter is written in. The filter's own behaviour is <see cref="OutOfViewMouseCaptureTests"/>; what is
+	/// left here is the translation, which is where a mis-mapped NSEvent type would silently turn a drag into
+	/// a hover and drop the up that ends it.
 	/// </summary>
 	public class MacDragOutsideViewTests
 	{
 		[Test]
-		public async Task ADragThatLeavesTheViewStillDeliversItsMoveAndUp()
+		public async Task EveryMouseNSEventTypeIsMappedToItsKind()
 		{
-			var capture = new MacSystemWindow.OutOfViewMouseCapture();
+			// All three buttons, because a right or middle drag is captured on its own and each has its own
+			// pair of NSEvent types.
+			await Assert.That(MacSystemWindow.PointerEventKindFor(NSEventTypeLeftMouseDown)).IsEqualTo(PointerEventKind.Down);
+			await Assert.That(MacSystemWindow.PointerEventKindFor(NSEventTypeRightMouseDown)).IsEqualTo(PointerEventKind.Down);
+			await Assert.That(MacSystemWindow.PointerEventKindFor(NSEventTypeOtherMouseDown)).IsEqualTo(PointerEventKind.Down);
 
-			await Assert.That(capture.ShouldDeliver(NSEventTypeLeftMouseDown, MouseButtons.Left, insideView: true)).IsTrue();
-			await Assert.That(capture.ShouldDeliver(NSEventTypeLeftMouseDragged, MouseButtons.Left, insideView: false)).IsTrue();
+			await Assert.That(MacSystemWindow.PointerEventKindFor(NSEventTypeLeftMouseUp)).IsEqualTo(PointerEventKind.Up);
+			await Assert.That(MacSystemWindow.PointerEventKindFor(NSEventTypeRightMouseUp)).IsEqualTo(PointerEventKind.Up);
+			await Assert.That(MacSystemWindow.PointerEventKindFor(NSEventTypeOtherMouseUp)).IsEqualTo(PointerEventKind.Up);
 
-			// The one that matters: dropping this is what left the widget believing the button was still down.
-			await Assert.That(capture.ShouldDeliver(NSEventTypeLeftMouseUp, MouseButtons.Left, insideView: false)).IsTrue();
+			await Assert.That(MacSystemWindow.PointerEventKindFor(NSEventTypeLeftMouseDragged)).IsEqualTo(PointerEventKind.Drag);
+			await Assert.That(MacSystemWindow.PointerEventKindFor(NSEventTypeRightMouseDragged)).IsEqualTo(PointerEventKind.Drag);
+			await Assert.That(MacSystemWindow.PointerEventKindFor(NSEventTypeOtherMouseDragged)).IsEqualTo(PointerEventKind.Drag);
 		}
 
 		[Test]
-		public async Task AHoverOutsideTheViewIsStillDropped()
+		public async Task AHoverOrAScrollIsNeitherAPressNorADrag()
 		{
-			var capture = new MacSystemWindow.OutOfViewMouseCapture();
-
-			await Assert.That(capture.ShouldDeliver(NSEventTypeMouseMoved, MouseButtons.None, insideView: false)).IsFalse();
-			await Assert.That(capture.ShouldDeliver(NSEventTypeMouseMoved, MouseButtons.None, insideView: true)).IsTrue();
-		}
-
-		[Test]
-		public async Task ADragEndedOutsideDoesNotCaptureTheNextOne()
-		{
-			var capture = new MacSystemWindow.OutOfViewMouseCapture();
-
-			capture.ShouldDeliver(NSEventTypeLeftMouseDown, MouseButtons.Left, insideView: true);
-			capture.ShouldDeliver(NSEventTypeLeftMouseUp, MouseButtons.Left, insideView: false);
-
-			// With the button released, a drag whose down agg never saw is not this view's to deliver.
-			await Assert.That(capture.ShouldDeliver(NSEventTypeLeftMouseDragged, MouseButtons.Left, insideView: false)).IsFalse();
-			await Assert.That(capture.ShouldDeliver(NSEventTypeLeftMouseUp, MouseButtons.Left, insideView: false)).IsFalse();
-		}
-
-		[Test]
-		public async Task ATitleBarPressNeverBecomesAnAggDragOrUp()
-		{
-			var capture = new MacSystemWindow.OutOfViewMouseCapture();
-
-			// The title bar is part of the same NSWindow, so its events reach this code; none of them are
-			// agg's, and a phantom up out of one would be as bad as the missing up this class exists to fix.
-			await Assert.That(capture.ShouldDeliver(NSEventTypeLeftMouseDown, MouseButtons.Left, insideView: false)).IsFalse();
-			await Assert.That(capture.ShouldDeliver(NSEventTypeLeftMouseDragged, MouseButtons.Left, insideView: false)).IsFalse();
-			await Assert.That(capture.ShouldDeliver(NSEventTypeLeftMouseUp, MouseButtons.Left, insideView: false)).IsFalse();
-		}
-
-		[Test]
-		public async Task AnOrdinaryInViewDragDeliversEveryEventItsButtonAndPoints()
-		{
-			var capture = new MacSystemWindow.OutOfViewMouseCapture();
-
-			// The overwhelmingly common case, and the one a regression is most likely to break: press,
-			// drag, release, all of it well inside the view. Nothing here may be filtered.
-			await Assert.That(capture.ShouldDeliver(NSEventTypeLeftMouseDown, MouseButtons.Left, insideView: true)).IsTrue();
-
-			for (int move = 0; move < 5; move++)
-			{
-				await Assert.That(capture.ShouldDeliver(NSEventTypeLeftMouseDragged, MouseButtons.Left, insideView: true)).IsTrue();
-			}
-
-			await Assert.That(capture.ShouldDeliver(NSEventTypeLeftMouseUp, MouseButtons.Left, insideView: true)).IsTrue();
-		}
-
-		[Test]
-		public async Task ADragThatLeavesAndComesBackKeepsDelivering()
-		{
-			var capture = new MacSystemWindow.OutOfViewMouseCapture();
-
-			capture.ShouldDeliver(NSEventTypeLeftMouseDown, MouseButtons.Left, insideView: true);
-
-			await Assert.That(capture.ShouldDeliver(NSEventTypeLeftMouseDragged, MouseButtons.Left, insideView: true)).IsTrue();
-			await Assert.That(capture.ShouldDeliver(NSEventTypeLeftMouseDragged, MouseButtons.Left, insideView: false)).IsTrue();
-			await Assert.That(capture.ShouldDeliver(NSEventTypeLeftMouseDragged, MouseButtons.Left, insideView: true)).IsTrue();
-			await Assert.That(capture.ShouldDeliver(NSEventTypeLeftMouseUp, MouseButtons.Left, insideView: true)).IsTrue();
-		}
-
-		[Test]
-		public async Task ACapturedDragOwnsThePointerUntilItsButtonComesUp()
-		{
-			var capture = new MacSystemWindow.OutOfViewMouseCapture();
-
-			await Assert.That(capture.HasCapturedButtons).IsFalse();
-
-			capture.ShouldDeliver(NSEventTypeLeftMouseDown, MouseButtons.Left, insideView: true);
-			await Assert.That(capture.HasCapturedButtons).IsTrue();
-
-			capture.ShouldDeliver(NSEventTypeLeftMouseUp, MouseButtons.Left, insideView: false);
-			await Assert.That(capture.HasCapturedButtons).IsFalse();
+			// Other is what the filter delivers on geometry alone, so a hover outside the view is dropped -
+			// mapping one of these to Drag would deliver it to a widget that never saw a button go down.
+			await Assert.That(MacSystemWindow.PointerEventKindFor(NSEventTypeMouseMoved)).IsEqualTo(PointerEventKind.Other);
+			await Assert.That(MacSystemWindow.PointerEventKindFor(NSEventTypeScrollWheel)).IsEqualTo(PointerEventKind.Other);
+			await Assert.That(MacSystemWindow.PointerEventKindFor(NSEventTypeMagnify)).IsEqualTo(PointerEventKind.Other);
 		}
 
 		/// <summary>
-		/// A mouseExited is a tracking notification, not a statement that the pointer left: the content
-		/// view's cursor rect posts one on every rebuild while the mouse sits still. Only the geometry can
-		/// tell the two apart, and believing the event type instead is what snapped a dragged 3D part back
-		/// to where its drag started. The coordinates below are the ones measured from AppKit.
+		/// The view's bounds and a point inside it come from AppKit as CGRect/CGPoint; the shared filter
+		/// speaks agg's RectangleDouble/Vector2. The edges belong to the view, and a point up over the title
+		/// bar does not - the same measured coordinates the shared test uses, through the mac adapters.
 		/// </summary>
 		[Test]
-		public async Task ACursorRectRebuildIsNotThePointerLeaving()
+		public async Task TheAppKitAdapterAgreesWithTheSharedGeometry()
 		{
 			var bounds = new CGRect(0, 0, 400, 400);
 
-			// What -invalidateCursorRectsForView: posts, measured: the pointer has not moved off the centre,
-			// so this mouseExited is the cursor rect being rebuilt and nothing more.
+			await Assert.That(MacSystemWindow.IsInsideBounds(new CGPoint(200, 216), bounds)).IsTrue();
+			await Assert.That(MacSystemWindow.IsInsideBounds(new CGPoint(400, 400), bounds)).IsTrue();
+			await Assert.That(MacSystemWindow.IsInsideBounds(new CGPoint(-180, 216), bounds)).IsFalse();
+
 			await Assert.That(MacSystemWindow.IsRealPointerExit(new CGPoint(200, 216), bounds, dragInFlight: false)).IsFalse();
-
-			// What a real exit posts, also measured - out to the left, and up over the title bar.
-			await Assert.That(MacSystemWindow.IsRealPointerExit(new CGPoint(-180, 216), bounds, dragInFlight: false)).IsTrue();
 			await Assert.That(MacSystemWindow.IsRealPointerExit(new CGPoint(200, 437), bounds, dragInFlight: false)).IsTrue();
-
-			// The edges belong to the view, so the last row of pixels is still the view's.
-			await Assert.That(MacSystemWindow.IsRealPointerExit(new CGPoint(0, 0), bounds, dragInFlight: false)).IsFalse();
-			await Assert.That(MacSystemWindow.IsRealPointerExit(new CGPoint(400, 400), bounds, dragInFlight: false)).IsFalse();
-		}
-
-		/// <summary>
-		/// A drag owns the pointer until its button comes up, so even a genuine exit must not tell the widget
-		/// the mouse vanished - that is the same "pointer is gone" that ends the drag by another route.
-		/// </summary>
-		[Test]
-		public async Task ADragInFlightIsNeverToldThePointerLeft()
-		{
-			var bounds = new CGRect(0, 0, 400, 400);
-
-			await Assert.That(MacSystemWindow.IsRealPointerExit(new CGPoint(-180, 216), bounds, dragInFlight: true)).IsFalse();
-			await Assert.That(MacSystemWindow.IsRealPointerExit(new CGPoint(200, 216), bounds, dragInFlight: true)).IsFalse();
-		}
-
-		[Test]
-		public async Task EachButtonIsCapturedOnItsOwn()
-		{
-			var capture = new MacSystemWindow.OutOfViewMouseCapture();
-
-			capture.ShouldDeliver(NSEventTypeRightMouseDown, MouseButtons.Right, insideView: true);
-
-			await Assert.That(capture.ShouldDeliver(NSEventTypeRightMouseDragged, MouseButtons.Right, insideView: false)).IsTrue();
-			await Assert.That(capture.ShouldDeliver(NSEventTypeOtherMouseDragged, MouseButtons.Middle, insideView: false)).IsFalse();
+			await Assert.That(MacSystemWindow.IsRealPointerExit(new CGPoint(200, 437), bounds, dragInFlight: true)).IsFalse();
 		}
 	}
 }

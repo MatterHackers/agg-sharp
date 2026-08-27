@@ -35,19 +35,20 @@ using TUnit.Core;
 namespace MatterHackers.Agg.UI.Tests
 {
 	/// <summary>
-	/// A two finger scroll on a trackpad arrives as one NSEvent carrying travel on both axes, and agg only
+	/// A two finger scroll on a trackpad arrives as one event carrying travel on both axes, and agg only
 	/// understands wheel units. The event itself needs real fingers on real glass, but the conversion can be
 	/// tested, and it is where a lost axis, a flipped sign, or a mismatched scale between the axes would hide.
+	/// The conversion belongs to no one host - it is <see cref="WheelDeltaMath"/> - so this runs everywhere.
 	/// </summary>
-	public class MacTrackpadScrollAxisTests
+	public class TrackpadScrollAxisTests
 	{
 		[Test]
 		public async Task ATrackpadScrollTracksTheFingersOneToOne()
 		{
 			// Precise deltas are points of travel. ScrollableWidget turns WheelDelta back into pixels by
 			// dividing by 5, so 5 x backingScale is what makes the content move exactly as far as the fingers.
-			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(10, precise: true, backingScale: 2)).IsEqualTo(100);
-			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(10, precise: true, backingScale: 1)).IsEqualTo(50);
+			await Assert.That(WheelDeltaMath.ScrollingDeltaToWheelDelta(10, precise: true, backingScale: 2)).IsEqualTo(100);
+			await Assert.That(WheelDeltaMath.ScrollingDeltaToWheelDelta(10, precise: true, backingScale: 1)).IsEqualTo(50);
 		}
 
 		[Test]
@@ -55,8 +56,8 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			// A line based scroll (a mouse wheel) is one notch per event, and every agg consumer was written
 			// against Win32's 120 units per detent.
-			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(1, precise: false, backingScale: 2)).IsEqualTo(120);
-			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(-3, precise: false, backingScale: 1)).IsEqualTo(-120);
+			await Assert.That(WheelDeltaMath.ScrollingDeltaToWheelDelta(1, precise: false, backingScale: 2)).IsEqualTo(120);
+			await Assert.That(WheelDeltaMath.ScrollingDeltaToWheelDelta(-3, precise: false, backingScale: 1)).IsEqualTo(-120);
 		}
 
 		[Test]
@@ -67,27 +68,27 @@ namespace MatterHackers.Agg.UI.Tests
 			// 120 per detent, and consumers like MatterCAD's TrackballZoom scale proportionally to that, so
 			// letting the acceleration through turned one fast notch into a huge zoom jump. One event is one
 			// signed detent, which is the v120 convention.
-			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(6.0, precise: false, backingScale: 1)).IsEqualTo(120);
-			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(0.1, precise: false, backingScale: 1)).IsEqualTo(120);
-			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(-0.1, precise: false, backingScale: 1)).IsEqualTo(-120);
-			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(0, precise: false, backingScale: 1)).IsEqualTo(0);
+			await Assert.That(WheelDeltaMath.ScrollingDeltaToWheelDelta(6.0, precise: false, backingScale: 1)).IsEqualTo(120);
+			await Assert.That(WheelDeltaMath.ScrollingDeltaToWheelDelta(0.1, precise: false, backingScale: 1)).IsEqualTo(120);
+			await Assert.That(WheelDeltaMath.ScrollingDeltaToWheelDelta(-0.1, precise: false, backingScale: 1)).IsEqualTo(-120);
+			await Assert.That(WheelDeltaMath.ScrollingDeltaToWheelDelta(0, precise: false, backingScale: 1)).IsEqualTo(0);
 		}
 
 		[Test]
 		public async Task TheSignIsCarriedStraightThrough()
 		{
-			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(-10, precise: true, backingScale: 1)).IsLessThan(0);
-			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(0, precise: true, backingScale: 1)).IsEqualTo(0);
+			await Assert.That(WheelDeltaMath.ScrollingDeltaToWheelDelta(-10, precise: true, backingScale: 1)).IsLessThan(0);
+			await Assert.That(WheelDeltaMath.ScrollingDeltaToWheelDelta(0, precise: true, backingScale: 1)).IsEqualTo(0);
 		}
 
 		[Test]
 		public async Task ANonsenseDeltaIsNoScroll()
 		{
 			// Neither branch survives a nonsense delta: (int) of a NaN is a huge negative number rather than
-			// nothing, and that would fling the content, while Math.Sign throws on a NaN - out of an AppKit
+			// nothing, and that would fling the content, while Math.Sign throws on a NaN - out of a platform
 			// event callback, so a crash rather than a fling.
-			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(double.NaN, precise: true, backingScale: 1)).IsEqualTo(0);
-			await Assert.That(MacSystemWindow.ScrollingDeltaToWheelDelta(double.PositiveInfinity, precise: false, backingScale: 1)).IsEqualTo(0);
+			await Assert.That(WheelDeltaMath.ScrollingDeltaToWheelDelta(double.NaN, precise: true, backingScale: 1)).IsEqualTo(0);
+			await Assert.That(WheelDeltaMath.ScrollingDeltaToWheelDelta(double.PositiveInfinity, precise: false, backingScale: 1)).IsEqualTo(0);
 		}
 
 		[Test]
@@ -95,7 +96,7 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			var args = new MouseEventArgs(MouseButtons.None, 0, 5, 5, 0);
 
-			MacSystemWindow.ApplyScrollingDeltas(args, scrollingDeltaX: -4, scrollingDeltaY: 10, precise: true, backingScale: 1);
+			WheelDeltaMath.ApplyScrollingDeltas(args, scrollingDeltaX: -4, scrollingDeltaY: 10, precise: true, backingScale: 1);
 
 			// Both axes go through the same scale, so a diagonal gesture keeps its angle.
 			await Assert.That(args.WheelDelta).IsEqualTo(50);
@@ -107,7 +108,7 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			var args = new MouseEventArgs(MouseButtons.None, 0, 5, 5, 0);
 
-			MacSystemWindow.ApplyScrollingDeltas(args, scrollingDeltaX: 0, scrollingDeltaY: 10, precise: true, backingScale: 1);
+			WheelDeltaMath.ApplyScrollingDeltas(args, scrollingDeltaX: 0, scrollingDeltaY: 10, precise: true, backingScale: 1);
 
 			await Assert.That(args.WheelDelta).IsEqualTo(50);
 			await Assert.That(args.WheelDeltaX).IsEqualTo(0);
@@ -119,12 +120,12 @@ namespace MatterHackers.Agg.UI.Tests
 			// backingScale is baked in above, so the consumer has to know not to scale again. Nothing in the
 			// wheel numbers themselves says which kind of scroll they came from, which is why this rides along.
 			var trackpad = new MouseEventArgs(MouseButtons.None, 0, 5, 5, 0);
-			MacSystemWindow.ApplyScrollingDeltas(trackpad, scrollingDeltaX: -4, scrollingDeltaY: 10, precise: true, backingScale: 2);
+			WheelDeltaMath.ApplyScrollingDeltas(trackpad, scrollingDeltaX: -4, scrollingDeltaY: 10, precise: true, backingScale: 2);
 			await Assert.That(trackpad.WheelDeltaIsPreciseScroll).IsTrue();
 
 			// A real wheel's detents carry no size at all, so the widget supplies one.
 			var wheel = new MouseEventArgs(MouseButtons.None, 0, 5, 5, 0);
-			MacSystemWindow.ApplyScrollingDeltas(wheel, scrollingDeltaX: 0, scrollingDeltaY: 1, precise: false, backingScale: 2);
+			WheelDeltaMath.ApplyScrollingDeltas(wheel, scrollingDeltaX: 0, scrollingDeltaY: 1, precise: false, backingScale: 2);
 			await Assert.That(wheel.WheelDeltaIsPreciseScroll).IsFalse();
 		}
 
@@ -160,7 +161,7 @@ namespace MatterHackers.Agg.UI.Tests
 				double before = scrollable.ScrollPosition.Y;
 
 				var args = new MouseEventArgs(MouseButtons.None, 0, 100, 100, 0);
-				MacSystemWindow.ApplyScrollingDeltas(args, scrollingDeltaX: 0, scrollingDeltaY: -10, precise: true, backingScale);
+				WheelDeltaMath.ApplyScrollingDeltas(args, scrollingDeltaX: 0, scrollingDeltaY: -10, precise: true, backingScale);
 				scrollable.OnMouseWheel(args);
 
 				return scrollable.ScrollPosition.Y - before;

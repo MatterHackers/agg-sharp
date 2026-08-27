@@ -105,14 +105,15 @@
   </ItemGroup>
 
   <!-- Tests whose subject is the mac platform layer. Removed wherever PlatformMac is not referenced -
-       which is Windows and Linux both, so the condition is the reference's and not just "Windows". -->
+       which is Windows and Linux both, so the condition is the reference's and not just "Windows".
+       Note what is *not* here: the wheel math, the close arbitration and the out-of-view capture rule now
+       live in Gui and are tested by TrackpadScrollAxisTests, MagnificationWheelDeltaTests,
+       PlatformCloseRoutingTests and OutOfViewMouseCaptureTests, which run on every OS. Only the AppKit
+       translation in front of them is still mac-only, and that is what MacDragOutsideViewTests is now. -->
   <ItemGroup Condition="'$(MacBuild)' != 'true'">
     <Compile Remove="Agg.UI\MacModifierFlagsTests.cs" />
-    <Compile Remove="Agg.UI\MacMagnifyGestureTests.cs" />
-    <Compile Remove="Agg.UI\MacTrackpadScrollAxisTests.cs" />
     <Compile Remove="Agg.UI\MacLiveResizePaintTests.cs" />
     <Compile Remove="Agg.UI\MacDragOutsideViewTests.cs" />
-    <Compile Remove="Agg.UI\MacPlatformCloseRoutingTests.cs" />
     <Compile Remove="Agg.UI\MacKeyTranslationTests.cs" />
     <Compile Remove="Agg.UI\MacMenuBarTests.cs" />
   </ItemGroup>
