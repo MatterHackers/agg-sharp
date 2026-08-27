@@ -60,12 +60,19 @@ namespace MatterHackers.Agg.Platform
 		/// <summary>
 		/// Gets the sub-directories of the given asset directory, as paths that may be passed back in.
 		/// </summary>
+		/// <remarks>
+		/// No order is promised - the disk implementation returns whatever the filesystem hands back, which
+		/// differs between NTFS and APFS. A caller that displays these must sort them itself.
+		/// </remarks>
 		IEnumerable<string> GetDirectories(string path);
 
 		/// <summary>
 		/// Gets the files of the given asset directory as paths relative to the asset root, suitable
 		/// for handing straight back to <see cref="LoadImage"/>, <see cref="OpenStream"/> and friends.
 		/// </summary>
+		/// <remarks>
+		/// Unordered, for the same reason as <see cref="GetDirectories"/>.
+		/// </remarks>
 		IEnumerable<string> GetFiles(string path);
 
 		/// <summary>

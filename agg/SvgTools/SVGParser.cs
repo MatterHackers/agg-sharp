@@ -53,6 +53,15 @@ namespace MatterHackers.Agg.SvgTools
         public static ImageBuffer ParseAndRender(string filePath, int targetWidth, int targetHeight)
         {
             using var stream = File.OpenRead(filePath);
+            return ParseAndRender(stream, targetWidth, targetHeight);
+        }
+
+        /// <summary>
+        /// Renders SVG content read from a stream, for asset providers that have no file to point at -
+        /// a zip-backed <c>IStaticData</c> hands over a MemoryStream rather than extracting to disk.
+        /// </summary>
+        public static ImageBuffer ParseAndRender(Stream stream, int targetWidth, int targetHeight)
+        {
             var (elements, viewBoxMinX, viewBoxMinY, viewBoxWidth, viewBoxHeight) = ParseFull(stream, flipY: false);
             return RenderToImageBuffer(elements, viewBoxWidth, viewBoxHeight, targetWidth, targetHeight, viewBoxMinX, viewBoxMinY);
         }
