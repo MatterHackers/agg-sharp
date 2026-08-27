@@ -35,4 +35,15 @@
 		<ProjectReference Include="..\Gui\Gui.csproj" />
 		<ProjectReference Include="..\VectorMath\VectorMath.csproj" />
 	</ItemGroup>
+
+	<ItemGroup>
+		<!-- The JS modules are delivered as Content by build/PlatformBrowser.targets below; without this
+		     they would also be swept up by the SDK's default None glob, which does nothing with them and
+		     only makes the item lists confusing to read. -->
+		<None Remove="wwwroot\**" />
+	</ItemGroup>
+
+	<!-- Copies wwwroot/frameLoop.js and wwwroot/input.js next to the output, and to anything that
+	     references this project - the Blazor head is the consumer that matters. See the file. -->
+	<Import Project="build/PlatformBrowser.targets" />
 </Project>

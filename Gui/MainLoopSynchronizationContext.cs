@@ -48,8 +48,14 @@ namespace MatterHackers.Agg.UI
 	/// Windows Forms - so an N deep chain of genuinely suspending awaits can take up to N ticks to unwind.
 	/// Predictable ordering is worth that, but work that cannot afford it should not be hopping the loop
 	/// once per await.</para>
-	/// <para>On WebAssembly nothing installs this - Blazor supplies its own single threaded dispatcher and
-	/// that is already the model this context imitates.</para>
+	/// <para>On WebAssembly nothing installs this, and the browser host
+	/// (<c>MatterHackers.Agg.Platform.Browser.BrowserFrameTick</c>) deliberately does not: the runtime there
+	/// already resumes every continuation on the one thread it has, which is the model this context imitates,
+	/// so installing it would buy nothing and cost the latency above - each await hop would be posted through
+	/// the idle queue and wait for the next animation frame, so a chain of N genuinely suspending awaits would
+	/// take N frames to unwind. The tick still claims that thread as
+	/// <see cref="UiThread.MarkCurrentThreadAsUiThread">the UI thread</see>, which is the half of
+	/// <see cref="InstallOnPumpThread"/> that does matter there.</para>
 	/// <para><see cref="SynchronizationContext.OperationStarted"/> and
 	/// <see cref="SynchronizationContext.OperationCompleted"/> are deliberately not overridden. They exist
 	/// so a context can keep an async void operation alive against a loop that would otherwise exit; the

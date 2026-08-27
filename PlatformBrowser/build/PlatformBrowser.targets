@@ -1,0 +1,57 @@
+<Project>
+
+  <!--
+    Delivers the browser host's JS modules (wwwroot/frameLoop.js, wwwroot/input.js)
+    to whatever builds against this project.
+
+    Modeled on WebGpu/native/WgpuNative.targets, which is this repo's precedent for a
+    library shipping a build asset: the project imports its own .targets, and the
+    items are added BeforeTargets="AssignTargetPaths" so they flow transitively -
+    GetCopyToOutputDirectoryItems (how a referencing project picks up a reference's
+    content) depends on AssignTargetPaths, so an item added there is visible to
+    consumers as well as to this project's own output.
+
+    STATUS: best effort, and S5 is what validates it. The consumer that matters is a
+    Blazor WebAssembly head, whose static assets are served out of the Razor SDK's
+    StaticWebAssets manifest rather than straight out of the output folder - and a
+    plain-SDK library feeding that pipeline is the known watch item on the W3 plan.
+    Content items with a wwwroot/ target path are the least surprising thing to try
+    first (they are what the Blazor SDK discovers for a project's own wwwroot), and
+    they cost nothing if the head ends up copying the two files itself. If the
+    pipeline fights back, S5's example host is where the answer gets written down:
+    either explicit StaticWebAsset items here, or a Razor-SDK flavour of this
+    project. Nothing else in agg-sharp depends on which way that goes.
+
+    Opt out entirely with -p:PlatformBrowserSkipJsDelivery=true (a consumer that
+    vendors its own copies of the modules).
+  -->
+
+  <PropertyGroup>
+    <PlatformBrowserRoot>$(MSBuildThisFileDirectory)../</PlatformBrowserRoot>
+    <PlatformBrowserWwwRoot>$(PlatformBrowserRoot)wwwroot/</PlatformBrowserWwwRoot>
+
+    <!-- Where the files land relative to the consuming app's web root. The host page
+         awaits BrowserHostBootstrap.InitializeAsync, which imports them from the app
+         root (its ModuleBasePath is "../", relative to _framework/), so app-root is
+         the default. A head that serves them from somewhere else sets both this and
+         ModuleBasePath. -->
+    <PlatformBrowserJsTargetFolder Condition="'$(PlatformBrowserJsTargetFolder)' == ''">wwwroot</PlatformBrowserJsTargetFolder>
+  </PropertyGroup>
+
+  <Target Name="_PlatformBrowserIncludeJsModules"
+          BeforeTargets="AssignTargetPaths"
+          Condition="'$(PlatformBrowserSkipJsDelivery)' != 'true'">
+    <ItemGroup>
+      <PlatformBrowserJsModule Include="$(PlatformBrowserWwwRoot)*.js" />
+
+      <Content Include="@(PlatformBrowserJsModule)">
+        <Link>$(PlatformBrowserJsTargetFolder)/%(Filename)%(Extension)</Link>
+        <TargetPath>$(PlatformBrowserJsTargetFolder)/%(Filename)%(Extension)</TargetPath>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <Visible>false</Visible>
+      </Content>
+    </ItemGroup>
+  </Target>
+
+</Project>
