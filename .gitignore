@@ -120,3 +120,9 @@ Test42.txt
 
 # Font measurement cache the demos write beside themselves the first time they draw text.
 examples/TestData/
+
+# The writable Emscripten cache WebGpu/build/WebGpuBrowser.targets seeds on the first browser link:
+# a ~215 MB copy of the wasm-tools workload's own cache plus emdawnwebgpu's compiled port library.
+# It lives outside obj/ on purpose (one copy for every consumer, and `dotnet clean` must not throw
+# away a 215 MB seed), which is exactly why it needs an entry here.
+WebGpu/Browser/emscripten-cache/

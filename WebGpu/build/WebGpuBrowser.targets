@@ -1,0 +1,222 @@
+<Project>
+
+  <!--
+    Copyright (c) 2026 Lars Brubaker, MatterHackers Inc.
+
+    The browser leg of the wgpu-native bootstrap: what a Blazor WebAssembly head imports so that
+    MatterHackers.WebGpu's 200-odd DllImport("wgpu_native") entry points resolve in a browser.
+
+    Two jobs, and a head that only wants the second one pays nothing for the first:
+
+    1. -p:LinkEmdawnWebGpu=true statically links Dawn's emdawnwebgpu - the Emscripten implementation
+       of webgpu.h - into the wasm module. That is a full emcc relink and a ~215 MB cache seed, so it
+       is opt-in: a plain `dotnet build` of a head must not pay for it. The DllImports are unbacked
+       without it and the first wgpu call throws, which is the right failure for a build that never
+       asked for the native link.
+
+    2. Unconditionally, the desktop wgpu-native shared library is filtered back out of the build and
+       publish output (see the drop targets at the bottom). Every browser head needs that, whether or
+       not it links emdawnwebgpu.
+
+    Import it from the head's csproj, the same way PlatformBrowser/build/PlatformBrowser.targets is
+    imported: an .targets file that a ProjectReference brings along cannot set properties in the
+    consuming project's evaluation, and both jobs here are the consumer's own build.
+
+    Modeled on native/WgpuNative.targets, this repo's precedent for a library shipping a build asset -
+    property functions and built-in tasks doing real work, no scripts. The machinery graduated here
+    from spikes/WebGpuWasmSpike, where it was PowerShell; it is MSBuild now because this repo builds
+    on macOS too, where there is no PowerShell.
+  -->
+
+  <PropertyGroup>
+    <!-- Browser-side inputs live beside the hand-written browser C# (WebGpu/Browser): the vendored
+         emdawnwebgpu package, the wgpu_native stub, and the gitignored Emscripten cache. -->
+    <WebGpuBrowserDir Condition="'$(WebGpuBrowserDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', 'Browser'))</WebGpuBrowserDir>
+
+    <!-- The pristine vendored package. Never built from directly - see the patch target. -->
+    <EmdawnWebGpuPackageDir Condition="'$(EmdawnWebGpuPackageDir)' == ''">$([MSBuild]::NormalizeDirectory('$(WebGpuBrowserDir)emdawnwebgpu_pkg'))</EmdawnWebGpuPackageDir>
+
+    <!--
+      One writable Emscripten cache, shared by every consumer of this file rather than one per
+      project. Three reasons: it is a ~215 MB copy of the workload's own cache, nothing in it is
+      project-specific (it is the sysroot plus emdawnwebgpu's compiled port library, keyed by a
+      content hash of the port's sources), and living outside any obj/ means `dotnet clean` does not
+      throw it away and make the next publish pay for it again (measured on an M-series mac: a cold
+      link is ~25 s, a warm one ~3 s).
+    -->
+    <EmdawnWebGpuCacheDir Condition="'$(EmdawnWebGpuCacheDir)' == ''">$([MSBuild]::NormalizeDirectory('$(WebGpuBrowserDir)emscripten-cache'))</EmdawnWebGpuCacheDir>
+
+    <!--
+      The patched build copy of the package, per consumer under its own obj/ because it is derived
+      output. BaseIntermediateOutputPath rather than IntermediateOutputPath: this file is imported
+      from the project body, and IntermediateOutputPath is not computed until the SDK's targets,
+      which are imported after it.
+    -->
+    <_EmdawnWebGpuObjDir Condition="'$(BaseIntermediateOutputPath)' != ''">$(BaseIntermediateOutputPath)</_EmdawnWebGpuObjDir>
+    <_EmdawnWebGpuObjDir Condition="'$(_EmdawnWebGpuObjDir)' == ''">obj/</_EmdawnWebGpuObjDir>
+    <EmdawnWebGpuPatchedDir Condition="'$(EmdawnWebGpuPatchedDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(_EmdawnWebGpuObjDir)', 'emdawnwebgpu_pkg_patched'))</EmdawnWebGpuPatchedDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(LinkEmdawnWebGpu)' == 'true'">
+    <!-- Compile and link the NativeFileReference below, which is what makes this a real emcc link. -->
+    <WasmBuildNative>true</WasmBuildNative>
+
+    <!-- The Emscripten cache shipped by the wasm-tools workload is used with EM_FROZEN_CACHE=1 (see
+         BrowserWasmApp.targets: it freezes the cache exactly when WasmCachePath is the workload's
+         own), so a port cannot build its static library into it. Pointing WasmCachePath at our own
+         copy flips that to EM_FROZEN_CACHE=0 and gives the port somewhere to write. -->
+    <WasmCachePath>$(EmdawnWebGpuCacheDir)</WasmCachePath>
+
+    <!-- emdawnwebgpu ships as an Emscripten "port": it compiles webgpu.cpp into a cached static lib
+         and appends its four JS library files (order matters) to the link. cpp_bindings=false skips
+         the <webgpu/webgpu_cpp.h> include path; the managed binding only uses the C API.
+         Forward slashes: emcc's response file swallows lone backslashes, so a Windows-style path
+         arrives at the port loader as "C:DevelopmentMatterCAD...". Appended rather than assigned so
+         a head can still pass extra link flags of its own. -->
+    <EmccExtraLDFlags>$(EmccExtraLDFlags) --use-port=$(EmdawnWebGpuPatchedDir.Replace('\','/'))emdawnwebgpu.port.py:cpp_bindings=false</EmccExtraLDFlags>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(LinkEmdawnWebGpu)' == 'true'">
+    <!-- Claims the "wgpu_native" P/Invoke module name and stubs the wgpu-native-only entry points.
+         The file NAME is load bearing: mono-wasm builds its pinvoke table from the file names of the
+         native inputs (_WasmPInvokeModules in WasmApp.Common.targets). See the file's own header. -->
+    <NativeFileReference Include="$(WebGpuBrowserDir)wgpu_native.c" />
+
+    <!-- Inputs to the patch target below. Globbed at evaluation (18 files) because Inputs= needs
+         them then; conditioned so a build that is not linking never looks at the folder. -->
+    <EmdawnWebGpuPackageFile Include="$(EmdawnWebGpuPackageDir)**/*" />
+  </ItemGroup>
+
+  <!--
+    The vendored package is built against emsdk 5.0.x, and the wasm-tools workload ships Emscripten
+    3.1.56, so a handful of JS-library facilities it uses do not exist yet. Rather than editing the
+    vendored copy - which would hide the delta the next time either side moves - it is copied to obj/
+    and patched there, and every edit is listed below.
+
+    Each patch is conditional on its target text still being present, and only WARNS when it is not:
+    a newer package (or a newer workload Emscripten that no longer needs the edit) should not brick
+    the build, it should say so and let the link speak for itself.
+
+    Re-runs whenever the package or this file changes; the port hashes its own sources to name its
+    cached library, so a changed copy transparently produces a new libemdawnwebgpu-*.a.
+  -->
+  <Target Name="_PatchEmdawnWebGpuPackage"
+          Condition="'$(LinkEmdawnWebGpu)' == 'true'"
+          BeforeTargets="_WasmCompileNativeSourceFiles;_WasmWriteRspForLinking"
+          Inputs="@(EmdawnWebGpuPackageFile);$(MSBuildThisFileFullPath)"
+          Outputs="$(EmdawnWebGpuPatchedDir)emdawnwebgpu-patched.stamp">
+
+    <Error Condition="!Exists('$(EmdawnWebGpuPackageDir)emdawnwebgpu.port.py')"
+           Text="The vendored emdawnwebgpu package is missing from '$(EmdawnWebGpuPackageDir)'. It is checked in; restore it, or publish without -p:LinkEmdawnWebGpu=true." />
+
+    <Copy SourceFiles="@(EmdawnWebGpuPackageFile)"
+          DestinationFiles="@(EmdawnWebGpuPackageFile->'$(EmdawnWebGpuPatchedDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <!--
+      Patch 1: Emscripten 3.1.56 implements stackSave/stackRestore as wasm exports, not as JS library
+      functions, so '$stackSave'/'$stackRestore' cannot be declared as JS library dependencies. They
+      are still in scope as plain globals in the generated glue, so dropping the deps is sufficient.
+      Declaring them also makes Emscripten synthesize a '$stackSave' library stub, which then collides
+      with mono's EXPORTED_RUNTIME_METHODS entry ("runtimeElements contains library symbol:
+      $stackSave").
+
+      Read/replace/write with property functions and WriteLinesToFile because System.IO.File's
+      WriteAllText is not on MSBuild's allowed property-function list. It is safe to hand a whole
+      file through Lines= even though it is full of semicolons: MSBuild escapes the result of a
+      property function before storing it, so the value never re-splits into items on the way to the
+      task, and the task writes the unescaped text back.
+    -->
+    <PropertyGroup>
+      <_LibraryWebGpuJs>$(EmdawnWebGpuPatchedDir)webgpu/src/library_webgpu.js</_LibraryWebGpuJs>
+      <_LibraryWebGpuText>$([System.IO.File]::ReadAllText('$(_LibraryWebGpuJs)'))</_LibraryWebGpuText>
+      <_StackDepsBefore>errorCallback__deps: ['$stackSave', '$stackRestore', '$stringToUTF8OnStack'],</_StackDepsBefore>
+      <_StackDepsAfter>errorCallback__deps: ['$stringToUTF8OnStack'],</_StackDepsAfter>
+      <_StackDepsPatchApplies>$(_LibraryWebGpuText.Contains('$(_StackDepsBefore)'))</_StackDepsPatchApplies>
+    </PropertyGroup>
+
+    <Warning Condition="'$(_StackDepsPatchApplies)' != 'true'"
+             Text="emdawnwebgpu patch 1 (drop the $stackSave/$stackRestore JS-library deps) found nothing to change in '$(_LibraryWebGpuJs)'. It was written for the package vendored at $(EmdawnWebGpuPackageDir)VERSION.txt against the wasm-tools workload's Emscripten 3.1.56; if either has moved, re-check whether the edit is still needed. Linking anyway." />
+
+    <WriteLinesToFile Condition="'$(_StackDepsPatchApplies)' == 'true'"
+                      File="$(_LibraryWebGpuJs)"
+                      Lines="$(_LibraryWebGpuText.Replace('$(_StackDepsBefore)', '$(_StackDepsAfter)'))"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+
+    <!-- Stamped rather than keyed off a copied file: Copy preserves the source timestamps, so no
+         output of this target is reliably newer than its inputs. -->
+    <Touch Files="$(EmdawnWebGpuPatchedDir)emdawnwebgpu-patched.stamp" AlwaysCreate="true" />
+  </Target>
+
+  <!--
+    One-time ~215 MB copy of the read-only workload cache into the shared writable one. Without a
+    seeded sysroot Emscripten would have to install the whole wasm32 header tree and rebuild
+    libc/libc++ from source on the first link. Guarded on the seeded sysroot rather than on the
+    folder, so an interrupted seed re-runs.
+
+    Measured, and worth knowing before anyone tries to trim this: the copy lands 1690 files, and the
+    first link leaves ~1500 of them. Emscripten drops the prebuilt system-library variants under
+    sysroot/lib/wasm32-emscripten that do not match the flags this link actually uses (the .NET SDK
+    links -fwasm-exceptions/sjlj variants the workload's cache does not carry prebuilt) and rebuilds
+    the dozen or so it needs, ~20 s. What the seed really buys is the sysroot header tree, which
+    every compile needs and nothing regenerates cheaply.
+
+    Keyed on WasmCachePath rather than on LinkEmdawnWebGpu: whoever points a build at the shared
+    cache wants it seeded, including a head that sets it for a native link of its own.
+  -->
+  <Target Name="_SeedWritableEmscriptenCache"
+          Condition="'$(WasmCachePath)' == '$(EmdawnWebGpuCacheDir)' and !Exists('$(EmdawnWebGpuCacheDir)sysroot')"
+          BeforeTargets="_WasmCompileNativeSourceFiles;_WasmWriteRspForLinking">
+
+    <Error Condition="'$(EmscriptenCacheSdkCacheDir)' == ''"
+           Text="No Emscripten cache to seed from: EmscriptenCacheSdkCacheDir is empty, which means the wasm-tools workload's Emscripten packs are not part of this build. Run `dotnet workload install wasm-tools`, and link from a project that targets browser-wasm." />
+
+    <Message Importance="high" Text="emdawnwebgpu: seeding the writable Emscripten cache at $(EmdawnWebGpuCacheDir) from $(EmscriptenCacheSdkCacheDir) - first link only, ~215 MB." />
+
+    <ItemGroup>
+      <!-- Globbed inside the target: at ~1700 files this must not be enumerated by every evaluation
+           of every project that imports this file. -->
+      <_EmscriptenCacheSeedFile Include="$(EmscriptenCacheSdkCacheDir)**/*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_EmscriptenCacheSeedFile)"
+          DestinationFiles="@(_EmscriptenCacheSeedFile->'$(EmdawnWebGpuCacheDir)%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+
+    <Error Condition="!Exists('$(EmdawnWebGpuCacheDir)sysroot')"
+           Text="Failed to seed the Emscripten cache at '$(EmdawnWebGpuCacheDir)'. Check that the folder is writable, then build again." />
+  </Target>
+
+  <!--
+    Keeps the desktop wgpu-native shared library out of a browser build.
+
+    A head that reaches MatterHackers.WebGpu gets this machine's wgpu-native staged and flowed to it
+    as a copy-to-output item by native/WgpuNative.targets. In the browser those DllImports are
+    satisfied by Dawn at link time instead, so the desktop binary (libwgpu_native.dylib here,
+    wgpu_native.dll on Windows, .so on Linux) is 7 MB of dead weight in the output and a misleading
+    artifact in the publish.
+
+    WgpuNative.targets has a switch for exactly this - WasmSkipWgpuNative - but a head cannot reach
+    WebGpu with it. Measured: AdditionalProperties="WasmSkipWgpuNative=true" on a ProjectReference
+    applies only to that one edge and does NOT propagate on to that project's own references, so
+    WebGpu still builds with the bootstrap on and still stages the library. Only a real global
+    property does (`dotnet build -p:WasmSkipWgpuNative=true`), and a project cannot make one of
+    itself. So the head filters instead, here, once, for every browser head.
+  -->
+  <!-- Before the copy target itself, not before CopyFilesToOutputDirectory: the copy is done by a
+       target CopyFilesToOutputDirectory depends on, so a hook on the parent would run too late. -->
+  <Target Name="_DropDesktopWgpuNativeFromBuild"
+          BeforeTargets="_CopyOutOfDateSourceItemsToOutputDirectory;_CopyOutOfDateSourceItemsToOutputDirectoryAlways">
+    <ItemGroup>
+      <_SourceItemsToCopyToOutputDirectory Remove="@(_SourceItemsToCopyToOutputDirectory)" Condition="'%(Filename)' == 'wgpu_native' OR '%(Filename)' == 'libwgpu_native'" />
+      <_SourceItemsToCopyToOutputDirectoryAlways Remove="@(_SourceItemsToCopyToOutputDirectoryAlways)" Condition="'%(Filename)' == 'wgpu_native' OR '%(Filename)' == 'libwgpu_native'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_DropDesktopWgpuNativeFromPublish" AfterTargets="ComputeFilesToPublish">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(Filename)' == 'wgpu_native' OR '%(Filename)' == 'libwgpu_native'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

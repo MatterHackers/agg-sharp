@@ -13,6 +13,10 @@
     <!-- This folder also holds the hand-run binding generator; compile only the generated
          binding rather than sweeping the generator's sources (and build output) in. -->
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- The shared Emscripten cache that build/WebGpuBrowser.targets seeds is ~1700 files and 215 MB
+         of derived output living inside this project's folder. Excluded from the default item globs
+         rather than Removed afterwards, so a desktop build never even enumerates it. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);Browser/emscripten-cache/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
