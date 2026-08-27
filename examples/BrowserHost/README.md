@@ -1,10 +1,10 @@
 # BrowserHost
 
 The first browser-runnable artifact of the wasm port: a Blazor WebAssembly page that boots
-`PlatformBrowser` and shows a plain agg `SystemWindow` in it. It is the graduated shell of
-`spikes/WebGpuWasmSpike` with all the interesting parts moved out - `frameLoop.js`, `input.js`,
-`peripherals.js`, `BrowserHostBootstrap`, `BrowserSystemWindow` and `WebGpuBrowserWindowProvider`
-all live in `PlatformBrowser` now, so what is left here is a `Program.cs` and a page.
+`PlatformBrowser` and shows a plain agg `SystemWindow` in it. All the interesting parts -
+`frameLoop.js`, `input.js`, `peripherals.js`, `BrowserHostBootstrap`, `BrowserSystemWindow` and
+`WebGpuBrowserWindowProvider` - live in `PlatformBrowser`, so what is left here is a `Program.cs`
+and a page.
 
 It exists to prove the platform, not to be a product. It knows nothing about MatterCAD.
 

@@ -31,15 +31,14 @@ using MatterHackers.Agg.UI;
 namespace MatterHackers.Agg.Platform.Browser
 {
 	/// <summary>
-	/// Drives the host from the browser's <c>requestAnimationFrame</c>. Graduated from
-	/// <c>spikes/WebGpuWasmSpike/BrowserFrameLoop.cs</c>.
+	/// Drives the host from the browser's <c>requestAnimationFrame</c>.
 	/// </summary>
 	/// <remarks>
 	/// <para>The browser owns the frame clock, so the loop has to be owned by JS: WebGPU in the browser has no
 	/// present call, and a frame is whatever was recorded and submitted before the animation frame callback
 	/// returned.</para>
 	/// <para>The tick is handed over as a marshalled <see cref="Action"/> rather than being looked up from JS
-	/// through <c>getAssemblyExports</c>, which is the spike's finding and the fragile half of that pattern -
+	/// through <c>getAssemblyExports</c>, which is the fragile half of that pattern -
 	/// the JS side would have to know an assembly name and a namespace path, and would fail at runtime rather
 	/// than at build time when either moved. It is also a <c>[JSExport]</c> so a stuck frame can be single
 	/// stepped from devtools.</para>

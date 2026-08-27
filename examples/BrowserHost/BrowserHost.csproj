@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
-	<!-- The graduated shell of spikes/WebGpuWasmSpike: the smallest possible consumer of
-	     PlatformBrowser, here to prove that the browser host packages, resolves its providers, boots,
-	     ticks, translates input and PAINTS in a real browser. It is not a product, and it deliberately
-	     knows nothing about MatterCAD.
+	<!-- The smallest possible consumer of PlatformBrowser, here to prove that the browser host
+	     packages, resolves its providers, boots, ticks, translates input and PAINTS in a real
+	     browser. It is not a product, and it deliberately knows nothing about MatterCAD.
 
 	     A plain `dotnet build` and `dotnet run` still work with no wasm-tools workload installed:
 	     WebGpuBrowser.targets only turns on the native link when -p:LinkEmdawnWebGpu=true is passed, and

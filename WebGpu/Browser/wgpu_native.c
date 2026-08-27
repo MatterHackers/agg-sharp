@@ -3,8 +3,7 @@
 // Claims the "wgpu_native" DllImport module name for the Emscripten link, and stubs the
 // wgpu-native-only entry points that emdawnwebgpu does not implement.
 //
-// Graduated from spikes/WebGpuWasmSpike/native/wgpu_native.c; linked by
-// build/WebGpuBrowser.targets under -p:LinkEmdawnWebGpu=true.
+// Linked by build/WebGpuBrowser.targets under -p:LinkEmdawnWebGpu=true.
 //
 // Two things are going on here:
 //

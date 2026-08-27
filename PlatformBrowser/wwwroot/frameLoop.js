@@ -3,8 +3,6 @@
 // The browser owns the frame clock: there is no wgpuSurfacePresent, the canvas is composited when the
 // requestAnimationFrame callback returns. The managed side hands us the tick method and we call it once
 // per animation frame until it is stopped.
-//
-// Graduated from spikes/WebGpuWasmSpike/wwwroot/frameLoop.js.
 
 let frameHandle = 0;
 

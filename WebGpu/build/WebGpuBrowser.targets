@@ -23,9 +23,8 @@
     consuming project's evaluation, and both jobs here are the consumer's own build.
 
     Modeled on native/WgpuNative.targets, this repo's precedent for a library shipping a build asset -
-    property functions and built-in tasks doing real work, no scripts. The machinery graduated here
-    from spikes/WebGpuWasmSpike, where it was PowerShell; it is MSBuild now because this repo builds
-    on macOS too, where there is no PowerShell.
+    property functions and built-in tasks doing real work, no scripts. MSBuild rather than a script
+    because this repo builds on macOS too, where there is no PowerShell.
   -->
 
   <PropertyGroup>
