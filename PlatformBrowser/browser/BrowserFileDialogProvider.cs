@@ -51,10 +51,12 @@ namespace MatterHackers.Agg.Platform
 	/// <see cref="ResolveFilePath"/> is the identity because those paths are already this platform's own.</para>
 	/// <para><b>Save has no dialog at all.</b> The browser's own "where do you want this?" is the download
 	/// it puts up when the bytes arrive, and it happens at the end rather than the beginning. So the save
-	/// path handed to the caller is a staging path, and the provider watches it: once the application has
-	/// written the file and stopped changing it, the bytes are handed to the browser as a download and the
-	/// staging directory is deleted. The watching is polling from <see cref="UiThread"/>'s idle queue -
-	/// a v1 mechanism with a known hole in it, argued out in <see cref="BrowserSaveWatch"/>.</para>
+	/// path handed to the caller is a staging path, and the provider watches the directory it is in: once a
+	/// file is there and has stopped changing, the bytes are handed to the browser as a download and the
+	/// staging directory is deleted. The directory rather than the path, because callers finish the path
+	/// themselves - see <see cref="ResolveStagedFile"/>. The watching is polling from
+	/// <see cref="UiThread"/>'s idle queue - a v1 mechanism with a known hole in it, argued out in
+	/// <see cref="BrowserSaveWatch"/>.</para>
 	/// <para><b>There is no folder picker.</b> <see cref="SelectFolderDialog"/> returns false. The File
 	/// System Access API can grant a directory handle, but only on Chromium and only as a handle - not as a
 	/// path any agg caller could use - so answering "no" is the honest form of not having one.</para>
@@ -135,7 +137,7 @@ namespace MatterHackers.Agg.Platform
 			saveParams.FileNames = new[] { stagingPath };
 			this.LastDirectoryUsed = directory;
 
-			this.WatchForCompletedSave(stagingPath, downloadName);
+			this.WatchForCompletedSave(stagingPath);
 
 			// Through the idle queue like every other answer this provider gives, so a caller cannot be
 			// re-entered from inside its own SaveFileDialog call on one host and not on the others.
@@ -273,18 +275,19 @@ namespace MatterHackers.Agg.Platform
 		}
 
 		/// <summary>
-		/// Polls <paramref name="stagingPath"/> from the idle queue until the file the application is
-		/// writing there is finished, then downloads it. See <see cref="BrowserSaveWatch"/> for why polling.
+		/// Polls the directory <paramref name="stagingPath"/> is in from the idle queue until the file the
+		/// application is writing there is finished, then downloads it. See <see cref="BrowserSaveWatch"/> for
+		/// why polling and <see cref="ResolveStagedFile"/> for why the directory rather than the path.
 		/// </summary>
-		private void WatchForCompletedSave(string stagingPath, string downloadName)
+		private void WatchForCompletedSave(string stagingPath)
 		{
 			var watch = new BrowserSaveWatch();
 			long startedAtMs = UiThread.CurrentTimerMs;
 
 			void Poll()
 			{
-				var stagedFile = new FileInfo(stagingPath);
-				bool exists = stagedFile.Exists;
+				FileInfo stagedFile = ResolveStagedFile(stagingPath);
+				bool exists = stagedFile != null;
 
 				switch (watch.Observe(
 					exists,
@@ -292,7 +295,9 @@ namespace MatterHackers.Agg.Platform
 					(UiThread.CurrentTimerMs - startedAtMs) / 1000.0))
 				{
 					case SaveWatchDecision.Download:
-						this.DeliverSavedFile(stagingPath, downloadName);
+						// Under the name it was written with rather than the one that was offered - see
+						// ResolveStagedFile - so a caller that added its own extension downloads with it.
+						this.DeliverSavedFile(stagedFile.FullName, stagedFile.Name);
 						break;
 
 					case SaveWatchDecision.GiveUp:
@@ -314,6 +319,44 @@ namespace MatterHackers.Agg.Platform
 			}
 
 			UiThread.RunOnIdle(Poll, BrowserSaveWatch.PollIntervalSeconds);
+		}
+
+		/// <summary>
+		/// The file a save actually produced, or null if there is not yet exactly one to point at.
+		/// </summary>
+		/// <remarks>
+		/// <para>Not simply <paramref name="stagingPath"/>, because applications routinely finish the path a
+		/// save dialog hands them: MatterCAD's export page appends the export's extension when the chosen name
+		/// does not already carry it, which every desktop host is happy with - the file lands beside the one
+		/// the dialog named, on a disk where nothing more has to happen. Here something more does have to
+		/// happen, and watching only the offered path means watching a file that is never written while the
+		/// real one sits next to it, so nothing ever downloads.</para>
+		/// <para>The staging directory is what makes the wider answer safe: it is made fresh for this one
+		/// dialog and holds nothing else (see <see cref="BrowserFileStaging.CreateRequestDirectory"/>). More
+		/// than one file in it is not a case with an answer - there is one download to give - so this waits
+		/// rather than guessing, which for a caller writing a temporary file alongside its output means
+		/// waiting until the temporary is gone.</para>
+		/// </remarks>
+		private static FileInfo ResolveStagedFile(string stagingPath)
+		{
+			var atOfferedPath = new FileInfo(stagingPath);
+
+			if (atOfferedPath.Exists)
+			{
+				return atOfferedPath;
+			}
+
+			string directory = Path.GetDirectoryName(stagingPath);
+
+			if (string.IsNullOrEmpty(directory)
+				|| !Directory.Exists(directory))
+			{
+				return null;
+			}
+
+			string[] written = Directory.GetFiles(directory);
+
+			return written.Length == 1 ? new FileInfo(written[0]) : null;
 		}
 
 		/// <summary>Hands a finished staged file to the browser as a download and sweeps the staging up.</summary>

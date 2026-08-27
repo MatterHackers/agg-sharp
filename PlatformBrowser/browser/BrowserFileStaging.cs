@@ -43,7 +43,12 @@ namespace MatterHackers.Agg.Platform.Browser
 	/// <c>System.IO</c> every other platform layer uses, the naming rules below are testable on a desktop,
 	/// and nothing depends on how the runtime happens to expose its Emscripten module today.</para>
 	/// <para>The consequence to know: an opened file is resident in the wasm heap in its entirety, twice for
-	/// a moment (the browser's copy and this one). W5's memory work is where that gets revisited.</para>
+	/// a moment (the browser's copy and this one). Lars accepted that for v1 (2026-08-26): the browser's
+	/// <c>File</c> bytes are released as soon as the promise continuation that staged them returns, so the
+	/// double residency lasts one turn of the event loop rather than the life of the file, and removing it
+	/// would mean streaming a <c>File</c> into MEMFS from JS - giving up the managed-only staging above for
+	/// a peak-memory saving on files that are megabytes, in a heap sized for a ~16 MB asset archive. Revisit
+	/// only if opening a large mesh is what runs the heap out.</para>
 	/// </remarks>
 	public static class BrowserFileStaging
 	{

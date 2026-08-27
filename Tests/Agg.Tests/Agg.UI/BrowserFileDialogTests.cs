@@ -379,6 +379,74 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// The save the caller finished off itself. Applications routinely add the export's extension to
+		/// whatever path a dialog handed back - MatterCAD's own export page does - so the file that appears is
+		/// not at the path the provider gave out. The staging directory holds one save and nothing else, so
+		/// what is in it is what gets downloaded, under the name it was actually written with.
+		/// </summary>
+		[Test]
+		[Timeout(30_000)]
+		public async Task ASaveWrittenBesideTheOfferedPathIsStillTheFileThatDownloads()
+		{
+			var picker = new RecordingFileDialogInterop();
+			var provider = new BrowserFileDialogProvider(picker);
+
+			// No extension in the suggestion, which is what a caller that means to append its own passes.
+			var saveParams = new SaveFileDialogParams("Save as MCX|*.mcx", initialDirectory: "not used")
+			{
+				FileName = "Default",
+			};
+
+			SaveFileDialogParams answered = null;
+
+			try
+			{
+				provider.SaveFileDialog(saveParams, chosen => answered = chosen);
+				UiThread.InvokePendingActions();
+
+				await Assert.That(Path.GetFileName(answered.FileName)).IsEqualTo("Default");
+
+				// The application adds the extension and writes there instead.
+				File.WriteAllBytes(answered.FileName + ".mcx", new byte[] { 7, 7, 7, 7 });
+
+				await PumpUntilDownloaded(picker);
+
+				await Assert.That(picker.DownloadedAs).IsEqualTo("Default.mcx");
+				await Assert.That(picker.DownloadedBytes).IsEquivalentTo(new byte[] { 7, 7, 7, 7 });
+
+				// And the staging is swept up behind it, exactly as it is for a save at the offered path.
+				await Assert.That(Directory.Exists(Path.GetDirectoryName(answered.FileName))).IsFalse();
+			}
+			finally
+			{
+				if (answered?.FileName != null
+					&& Directory.Exists(Path.GetDirectoryName(answered.FileName)))
+				{
+					Directory.Delete(Path.GetDirectoryName(answered.FileName), recursive: true);
+				}
+
+				UiThread.ResetForTests();
+			}
+		}
+
+		/// <summary>
+		/// Drains the idle queue until the watch has decided the staged file is finished and handed it over.
+		/// The watch re-arms itself on a real delay, so this is a condition with a deadline rather than a
+		/// fixed wait.
+		/// </summary>
+		private static async Task PumpUntilDownloaded(RecordingFileDialogInterop picker)
+		{
+			long startedAt = UiThread.CurrentTimerMs;
+
+			while (picker.DownloadedAs == null
+				&& UiThread.CurrentTimerMs - startedAt < 20_000)
+			{
+				UiThread.InvokePendingActions();
+				await Task.Delay(10);
+			}
+		}
+
+		/// <summary>
 		/// The two the browser simply does not have. A folder picker would need the File System Access API,
 		/// which yields a handle rather than a path; there is no file manager to reveal anything in.
 		/// </summary>
