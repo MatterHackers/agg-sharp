@@ -321,9 +321,12 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			UiThread.ResetForTests();
 
-			var console = new StringWriter();
+			var output = new StringWriter();
+			var errors = new StringWriter();
+			TextWriter previousOut = Console.Out;
 			TextWriter previousError = Console.Error;
-			Console.SetError(console);
+			Console.SetOut(output);
+			Console.SetError(errors);
 
 			try
 			{
@@ -338,7 +341,7 @@ namespace MatterHackers.Agg.UI.Tests
 				tick.Tick();
 				tick.Tick();
 
-				string reported = console.ToString();
+				string reported = output.ToString();
 
 				await Assert.That(reported).Contains("browser events")
 					.Because("the line has to name the phase, or it says only that something was slow");
@@ -346,9 +349,18 @@ namespace MatterHackers.Agg.UI.Tests
 
 				await Assert.That(reported.Split("held the only thread").Length - 1).IsEqualTo(1)
 					.Because("a phase that is slow every frame would otherwise bury everything else in the console");
+
+				// The bug this pins: Blazor wires the runtime's stderr straight to its
+				// "An unhandled error has occurred" strip, so a slow-frame notice written to Console.Error
+				// tells a browser user the application broke - while nothing threw and the work completed.
+				// Dropping a Text primitive onto the bed takes about a second of glyph work on the one
+				// browser thread, which is exactly how a user met that strip.
+				await Assert.That(errors.ToString()).IsEmpty()
+					.Because("a slow phase is a diagnostic, not a failure, and stderr is the browser host's fatal channel");
 			}
 			finally
 			{
+				Console.SetOut(previousOut);
 				Console.SetError(previousError);
 				UiThread.ResetForTests();
 			}

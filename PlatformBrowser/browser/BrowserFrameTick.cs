@@ -216,7 +216,12 @@ namespace MatterHackers.Agg.Platform.Browser
 				if (elapsedMilliseconds >= LongPhaseMilliseconds
 					&& reportedLongPhases.Add(phase))
 				{
-					Console.Error.WriteLine(
+					// stdout, not stderr: Blazor hands the runtime's stderr to its own printErr, which shows the
+					// page's "An unhandled error has occurred" strip. A slow phase is a diagnostic about work
+					// that finished, so writing it to stderr told users the application had broken - dropping a
+					// Text primitive costs about a second of glyph work on the one browser thread, and that is
+					// how they met the strip. The catch above keeps stderr, because there something really failed.
+					Console.WriteLine(
 						$"BrowserSystemWindow tick phase '{phase}' held the only thread for {elapsedMilliseconds} ms."
 						+ " The page was frozen for that long. Reported once per phase.");
 				}
