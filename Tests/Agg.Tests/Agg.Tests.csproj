@@ -70,6 +70,11 @@
     <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj" Condition="'$(WindowsBuild)' == 'true'" />
     <ProjectReference Include="..\..\PlatformMac\PlatformMac.csproj" Condition="'$(MacBuild)' == 'true'" />
     <ProjectReference Include="..\..\PlatformLinux\PlatformLinux.csproj" Condition="'$(LinuxBuild)' == 'true'" />
+    <!-- Deliberately NOT behind a build leg, unlike the three above. The browser host's input translation
+         is OS-neutral managed code - no P/Invoke into anything this machine has to have - so its tests are
+         worth running on every desktop OS rather than on none of them, which is what a "browser leg" would
+         amount to. The assembly is plain net10.0 for exactly this reason. -->
+    <ProjectReference Include="..\..\PlatformBrowser\PlatformBrowser.csproj" />
     <ProjectReference Include="..\..\PolygonMesh\PolygonMesh.csproj" />
     <ProjectReference Include="..\..\QuadTree\QuadTree.csproj" />
     <ProjectReference Include="..\..\RenderCore\RenderCore.csproj" />

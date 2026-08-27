@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<!-- Deliberately net10.0 and NOT net10.0-browser: JSImport/JSExport compile against a plain TFM
+		     (System.Runtime.InteropServices.JavaScript ships in the shared framework), so this assembly
+		     stays restorable and compile-checkable on a machine with no wasm-tools workload installed -
+		     and, more importantly, Agg.Tests (net10.0) can reference it so the pure translation tables
+		     below are exercised on every desktop OS. Browser-only API safety is the compatibility
+		     analyzer's job via -p:BrowserCompatGate=true, not a TFM's. -->
+		<TargetFramework>net10.0</TargetFramework>
+		<Company>MatterHackers Inc.</Company>
+		<AssemblyName>agg_platform_browser</AssemblyName>
+		<RootNamespace>agg_platform_browser</RootNamespace>
+		<!-- The JSImport source generator emits unsafe marshalling code, so this has to be on before the
+		     first [JSImport] arrives with the window host. -->
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<DefineConstants>TRACE;DEBUG</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<DefineConstants>TRACE;RELEASE</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup>
+		<!-- Note what is absent next to PlatformMac and PlatformLinux: no InternalsVisibleTo. The input
+		     translation here is public because it is worth testing from Agg.Tests and nothing in it is an
+		     ABI detail that has to stay hidden - the same call agg-sharp makes for every other cross
+		     assembly host helper (see WheelDeltaMath). The mac and Linux layers need it only because their
+		     tests have to name raw AppKit/Xlib constants and struct layouts. -->
+
+		<!-- Only the subset the translation tables need. The rest of PlatformMac's set (GuiAutomation,
+		     ImageProcessing, RenderCore, RenderGl, WebGpuRender) arrives with the window host, which is
+		     what will need them. No PackageReferences at all, same rule as the other platform layers. -->
+		<ProjectReference Include="..\agg\Agg.csproj" />
+		<ProjectReference Include="..\Gui\Gui.csproj" />
+		<ProjectReference Include="..\VectorMath\VectorMath.csproj" />
+	</ItemGroup>
+</Project>
