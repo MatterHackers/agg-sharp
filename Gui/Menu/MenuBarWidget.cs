@@ -425,19 +425,23 @@ namespace MatterHackers.Agg.UI
 				}
 			};
 
-			// Hang the panel off the bottom of its title, falling back to right aligned when a menu near the
-			// right edge would otherwise run off the window.
+			// Hang the panel off the bottom of its title. The alt mate is the fallback on both axes, and
+			// BestPopupPosition picks it per axis, so this one pair covers two independent flips: right
+			// aligned when a menu near the right edge would run off the window, and hung *above* the title
+			// when there is no room below it. The bar is not always at the top of the window - MatterCAD
+			// docks one at the bottom of the Variable Sheet editor - and without the vertical flip that menu
+			// was only clamped back on screen, landing over the bar rather than above it.
 			systemWindow.ShowPopup(
 				theme,
 				new MatePoint(titles[index])
 				{
 					Mate = new MateOptions(MateEdge.Left, MateEdge.Bottom),
-					AltMate = new MateOptions(MateEdge.Right, MateEdge.Bottom)
+					AltMate = new MateOptions(MateEdge.Right, MateEdge.Top)
 				},
 				new MatePoint(popupMenu)
 				{
 					Mate = new MateOptions(MateEdge.Left, MateEdge.Top),
-					AltMate = new MateOptions(MateEdge.Right, MateEdge.Top)
+					AltMate = new MateOptions(MateEdge.Right, MateEdge.Bottom)
 				});
 
 			UpdateTitleColors();

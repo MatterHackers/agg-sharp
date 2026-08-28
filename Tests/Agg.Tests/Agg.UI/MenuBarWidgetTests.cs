@@ -625,6 +625,57 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// The bar is not always at the top of the window - MatterCAD docks one at the bottom of the Variable
+		/// Sheet editor - and a menu with no room below its title has to open upward instead of being clamped
+		/// down over the bar. Same rule <see cref="PopupDirectionFlipTests"/> pins for drop downs.
+		/// </summary>
+		[Test]
+		public async Task AMenuWithNoRoomBelowItsTitleOpensUpward()
+		{
+			var harness = MenuBarHarness.Show(barAnchor: VAnchor.Bottom);
+
+			// A press rather than a click, so the drag half of the gesture below is still armed
+			harness.Press(harness.CenterOfTitle("File"));
+			harness.PumpIdle();
+
+			var popup = harness.PopupBounds();
+			var title = harness.TitleBounds("File");
+
+			await Assert.That(popup.Bottom).IsGreaterThanOrEqualTo(title.Top - 0.001)
+				.Because("with nothing below the title the panel has to hang above it, not cover the bar");
+			await Assert.That(popup.Top).IsLessThanOrEqualTo(harness.Window.Height + 0.001)
+				.Because("the flipped panel still has to be fully on screen");
+
+			// The drag-release gesture reads positions in screen space, so it must work just as well when the
+			// panel is above the press as below it
+			var row = harness.CenterOfRow("New Menu Item");
+			harness.DragTo(row);
+
+			await Assert.That(harness.Find("New Menu Item").Focused).IsTrue()
+				.Because("a drag up into the flipped panel has to highlight the row it reaches");
+		}
+
+		/// <summary>
+		/// The other half of the flip: the preferred direction is still below, and a bar with room under it
+		/// keeps opening that way.
+		/// </summary>
+		[Test]
+		public async Task AMenuWithRoomBelowItsTitleOpensDownward()
+		{
+			var harness = MenuBarHarness.Show();
+
+			harness.Click(harness.CenterOfTitle("File"));
+			harness.PumpIdle();
+
+			var popup = harness.PopupBounds();
+			var title = harness.TitleBounds("File");
+
+			await Assert.That(popup.Top).IsLessThanOrEqualTo(title.Bottom + 0.001)
+				.Because("a title with room under it opens its menu downward");
+			await Assert.That(popup.Bottom).IsGreaterThanOrEqualTo(-0.001);
+		}
+
+		/// <summary>
 		/// A window hosting a <see cref="MenuBarWidget"/> built from a two menu model, with mouse events
 		/// pushed through the window the way the platform would deliver them.
 		/// </summary>
@@ -652,7 +703,12 @@ namespace MatterHackers.Agg.UI.Tests
 			/// extra menu goes last so the tests that reach for "the title beside the others" and the arrow
 			/// key wrap keep describing the same two menu bar.
 			/// </summary>
-			public static MenuBarHarness Show(MenuItemModel extraMenu = null)
+			/// <param name="extraMenu">An optional third menu, added after File and Edit.</param>
+			/// <param name="barAnchor">
+			/// Where in the window the bar is docked. <see cref="VAnchor.Bottom"/> is the case with no room
+			/// under the titles - MatterCAD's Variable Sheet editor docks its bar there.
+			/// </param>
+			public static MenuBarHarness Show(MenuItemModel extraMenu = null, VAnchor barAnchor = VAnchor.Top)
 			{
 				var window = new SystemWindow(600, 400);
 				var theme = new ThemeConfig();
@@ -704,9 +760,24 @@ namespace MatterHackers.Agg.UI.Tests
 
 				var bar = new MenuBarWidget(menus, theme)
 				{
-					VAnchor = VAnchor.Top,
+					VAnchor = barAnchor,
 				};
-				window.AddChild(bar);
+
+				// One container deep rather than parented straight to the window, and that one container is
+				// what makes this harness model a real host. A widget with no parent has CanSelect false
+				// (GuiWidget.CanSelect), and a top level SystemWindow has no parent, so the focus grab
+				// GuiWidget.OnMouseDown performs as the press unwinds - "no child of mine came out of that
+				// with the focus, so I will take it" - is a no-op for the window and used to be invisible
+				// here. Every real host does perform it, and it is what took the focus back off a menu the
+				// press had just opened. The host fills the window so every click point is unchanged.
+				var host = new GuiWidget
+				{
+					HAnchor = HAnchor.Stretch,
+					VAnchor = VAnchor.Stretch,
+					Name = "Bar Host",
+				};
+				window.AddChild(host);
+				host.AddChild(bar);
 
 				return new MenuBarHarness(window, bar, actions);
 			}
@@ -780,6 +851,14 @@ namespace MatterHackers.Agg.UI.Tests
 			public Vector2 PointOffTheBarAndAnyMenu()
 			{
 				return new Vector2(Window.Width - 10, 10);
+			}
+
+			/// <summary>The laid out rectangle of the one open menu panel, in window space.</summary>
+			public RectangleDouble PopupBounds()
+			{
+				var popup = OpenMenus.Single();
+
+				return popup.TransformToScreenSpace(popup.LocalBounds);
 			}
 
 			public bool AnyOpenMenuCovers(Vector2 point)

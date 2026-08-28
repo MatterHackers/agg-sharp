@@ -143,29 +143,14 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 
-			// The widget that currently owns the keyboard focus, or null when nothing in the window does.
-			// Walked from the window down because Focused is only true on the leaf of the focus chain.
-			GuiWidget FocusedWidget()
-			{
-				if (systemWindow?.ContainsFocus != true)
-				{
-					return null;
-				}
-
-				var focused = (GuiWidget)systemWindow;
-				while (focused.Children.FirstOrDefault(child => child.ContainsFocus) is GuiWidget focusedChild)
-				{
-					focused = focusedChild;
-				}
-
-				return focused;
-			}
-
 			void CloseMenu()
 			{
 				// Where the focus is *before* Close() drops this popup's own claim on it. Something outside
 				// this popup holding it means the focus has moved on rather than been given up.
-				var focused = FocusedWidget();
+				// FocusedLeafOfWindow roots at the topmost parent rather than at systemWindow, which for a
+				// real top level window is the same widget; the systemWindow comparison below keeps the
+				// window itself from counting as "moved on" either way.
+				var focused = systemWindow?.FocusedLeafOfWindow();
 				bool focusHasMovedOn = focused != null
 					&& focused != systemWindow
 					&& focused != popup.Widget
