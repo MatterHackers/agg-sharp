@@ -33,6 +33,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI
 {
@@ -220,6 +221,46 @@ namespace MatterHackers.Agg.UI
 		public static SwitchToUiThreadAwaitable SwitchToUiThreadAsync()
 		{
 			return default(SwitchToUiThreadAwaitable);
+		}
+
+		/// <summary>
+		/// Hands the browser's one thread back long enough for it to paint a frame. A no-op everywhere else.
+		/// </summary>
+		/// <remarks>
+		/// <para>Every host but the browser runs a long job's body on a thread pool thread while the UI thread
+		/// carries on painting, so nothing a job does has to be interleaved with the frame loop by hand. A page
+		/// has one thread for both, and <c>Task.Run</c> there does not buy a second one - it only defers the
+		/// work to a later turn of the JS event loop. Without a hop like this one, a job and the UI updates it
+		/// triggers can land in the same frame, with the job first: the user looks at a frozen tab for the whole
+		/// job and then sees its progress row appear and vanish in the single frame that follows.</para>
+		/// <para>TWO idle turns, not one, and that is the whole subtlety. The first turn only guarantees that
+		/// the queued UI work has run - it lays out and invalidates - and a <see cref="TaskCompletionSource"/>
+		/// completed inside that same drain would resume the caller inline, still ahead of the frame's paint.
+		/// The second turn cannot run before the tick that ran the first one has finished, and that tick paints.
+		/// Measured on mono-wasm, an idle hop is a real return to the event loop (nine animation frames ran
+		/// during a 500 ms job broken into ten such hops), unlike <c>Task.Delay(0)</c>, which completes
+		/// synchronously and yields nothing.</para>
+		/// <para>This is the pump behind <c>ProgressReporter.UiYield</c>, which the browser boot path installs
+		/// so a job can also yield from its own progress points and keep a bar moving DURING the work. agg's
+		/// ProgressReporter cannot call this directly - PolygonMesh and agg do not reference Gui - so the host
+		/// injects it.</para>
+		/// <para>HAZARD: like every RunOnIdle-based wait, this only completes if something drains the queue.
+		/// Off the browser it returns immediately and so is safe headless; in the browser the frame loop is
+		/// always pumping.</para>
+		/// </remarks>
+		public static async Task YieldToFrame()
+		{
+			if (!OperatingSystem.IsBrowser())
+			{
+				return;
+			}
+
+			for (int turn = 0; turn < 2; turn++)
+			{
+				var arrived = new TaskCompletionSource();
+				RunOnIdle(() => arrived.SetResult());
+				await arrived.Task;
+			}
 		}
 
 		private static int uiThreadId = -1;
