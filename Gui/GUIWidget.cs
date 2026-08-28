@@ -3218,6 +3218,96 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// The widget holding the keyboard focus anywhere in the window this one belongs to, or null when
+		/// nothing does.
+		/// </summary>
+		/// <remarks>
+		/// Walked from the root down because <see cref="Focused"/> is only true on the leaf of the focus chain -
+		/// every widget above it merely contains the focus.
+		/// <para>
+		/// The root is the topmost parent rather than the enclosing <see cref="SystemWindow"/>: the focus chain
+		/// runs the whole way to the top of the tree, and a real top level window is the topmost parent anyway
+		/// (its Parent is null). Rooting at the topmost parent is also the only answer available to a widget
+		/// that is not under a SystemWindow at all, which is most of the widget tests.
+		/// </para>
+		/// </remarks>
+		internal GuiWidget FocusedLeafOfWindow()
+		{
+			var root = this;
+			while (root.Parent != null)
+			{
+				root = root.Parent;
+			}
+
+			if (!root.containsFocus)
+			{
+				return null;
+			}
+
+			var leaf = root;
+			while (true)
+			{
+				GuiWidget focusedChild = null;
+				foreach (var child in leaf.Children)
+				{
+					if (child.containsFocus)
+					{
+						focusedChild = child;
+						break;
+					}
+				}
+
+				if (focusedChild == null)
+				{
+					return leaf;
+				}
+
+				leaf = focusedChild;
+			}
+		}
+
+		/// <summary>
+		/// Whether the focus has moved to something outside this widget since <paramref name="focusedLeafBefore"/>
+		/// held it - the test the mouse down focus grab is skipped on.
+		/// </summary>
+		/// <remarks>
+		/// A leaf inside this widget is not "outside" it, and neither is a leaf *above* it: <see cref="Unfocus"/>
+		/// clears a widget and its descendants and never its ancestors, so unfocusing something in another part
+		/// of the tree does not put the focus anywhere new - it collapses the leaf onto a shared ancestor. That
+		/// is the stale focus chain the grab exists to clear, not a destination to defer to.
+		/// </remarks>
+		private bool FocusMovedOutsideThisWidget(GuiWidget focusedLeafBefore)
+		{
+			var focusedLeaf = FocusedLeafOfWindow();
+
+			if (focusedLeaf == null
+				|| focusedLeaf == focusedLeafBefore)
+			{
+				return false;
+			}
+
+			// the leaf is inside this widget (or is it)
+			for (var widget = focusedLeaf; widget != null; widget = widget.Parent)
+			{
+				if (widget == this)
+				{
+					return false;
+				}
+			}
+
+			// the leaf is one of this widget's own ancestors, so nothing took the focus - it fell back up
+			for (var widget = Parent; widget != null; widget = widget.Parent)
+			{
+				if (widget == focusedLeaf)
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+
 		public virtual void OnMouseDown(MouseEventArgs mouseEvent)
 		{
 			bool focusStateBeforeProcessing = containsFocus;
@@ -3274,6 +3364,11 @@ namespace MatterHackers.Agg.UI
 
 				bool childHasAcceptedThisEvent = false;
 				bool childHasTakenFocus = false;
+
+				// Who held the focus before this press was handed to the children - see the grab below. Only
+				// worth the walk when the grab could fire at all; CanFocus gates it there.
+				GuiWidget focusedLeafBeforeChildren = CanFocus ? FocusedLeafOfWindow() : null;
+
 				foreach (var child in Children.Reverse())
 				{
 					double childX = mouseEvent.X;
@@ -3324,7 +3419,22 @@ namespace MatterHackers.Agg.UI
 
 				if (!childHasTakenFocus)
 				{
-					if (CanFocus)
+					// The grab: no child of ours came out of this press holding the focus, so we take it -
+					// that is what moves the focus off whatever had it when the user presses somewhere that
+					// cannot be focused itself.
+					//
+					// Unless handling the press deliberately put the focus somewhere else in the window. A
+					// child that opens a popup does exactly that (SystemWindowExtension.ShowPopup focuses the
+					// popup, and a popup is parented to the SystemWindow, not to us), and grabbing it back
+					// here took the focus off a menu the same press had just opened - close-on-focus-lost then
+					// ran it straight back out, so the menu flashed open and vanished.
+					//
+					// "Somewhere else" is narrow: the focus has to have landed on a widget that is neither
+					// under us nor above us. A leaf that was already elsewhere before the press, or that only
+					// fell back up onto one of our ancestors because a handler unfocused something, is the
+					// stale chain the grab exists to clear. See FocusMovedOutsideThisWidget.
+					if (CanFocus
+						&& !FocusMovedOutsideThisWidget(focusedLeafBeforeChildren))
 					{
 						Focus();
 					}
