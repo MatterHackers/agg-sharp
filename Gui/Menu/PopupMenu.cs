@@ -42,7 +42,19 @@ namespace MatterHackers.Agg.UI
 	{
 		public ThemeConfig Theme { get; private set; }
 
-		public static BorderDouble MenuPadding => new BorderDouble(40, 8, 20, 8);
+		/// <summary>
+		/// Vertical padding inside a menu row's label, in design units.
+		/// </summary>
+		/// <remarks>
+		/// Tightened from 8 for the Windows 11 style density. It is the label padding rather than the row
+		/// height that has to come down first: a row is VAnchor.Fit, so with the old 8 the padded label was
+		/// taller than <see cref="ThemeConfig.MenuRowHeight"/> and the row's MinimumSize would never bind.
+		/// The left and right numbers are untouched - the left one clears the icon gutter
+		/// (<see cref="ThemeConfig.MenuGutterWidth"/>) and things line up on it.
+		/// </remarks>
+		public const double MenuLabelVerticalPadding = 5;
+
+		public static BorderDouble MenuPadding => new BorderDouble(40, MenuLabelVerticalPadding, 20, MenuLabelVerticalPadding);
 
 		public static Color DisabledTextColor { get; set; } = Color.Gray;
 
@@ -53,6 +65,11 @@ namespace MatterHackers.Agg.UI
 			this.VAnchor = VAnchor.Fit;
 			this.HAnchor = HAnchor.Fit;
 			this.BackgroundColor = theme.BackgroundColor;
+
+			// The panel's rounded corners. The border SystemWindowExtension.ShowPopup draws around a popup,
+			// and PopupWidget's own outline when the menu is popup hosted, both read this back off the widget
+			// so all three - fill, border and outline - trace the same shape.
+			this.BackgroundRadius = theme.MenuPopupRadius;
 		}
 
 		/// <summary>
@@ -1117,8 +1134,10 @@ namespace MatterHackers.Agg.UI
 			this.HAnchor = HAnchor.Absolute;
 			this.VAnchor = VAnchor.Absolute;
 
-			// Widen for the scroll bar so it does not cover the item text (matches PopupWidget)
-			this.Width = contentWidth + 15 * DeviceScale;
+			// Widen for the scroll bar so it does not cover the item text. Ask ScrollBar for the width rather
+			// than repeating its default of 15 * DeviceScale - a host that sets ScrollBar.ScrollBarWidth would
+			// otherwise get a menu reserving the wrong amount, and PopupWidget reserves the real width.
+			this.Width = contentWidth + ScrollBar.ScrollBarWidth;
 			this.Height = maxHeight;
 
 			this.AddChild(scrollingWindow);
@@ -1285,10 +1304,18 @@ namespace MatterHackers.Agg.UI
 				this.Padding = new BorderDouble(left: Math.Ceiling(theme.MenuGutterWidth / DeviceScale), right: 15);
 				this.HAnchor = HAnchor.MaxFitOrStretch;
 				this.VAnchor = VAnchor.Fit;
-				this.MinimumSize = new Vector2(150 * GuiWidget.DeviceScale, theme.ButtonHeight);
+				this.MinimumSize = new Vector2(150 * GuiWidget.DeviceScale, theme.MenuRowHeight);
 				this.content = content;
 				this.GutterWidth = theme.MenuGutterWidth;
 				this.HoverColor = theme.AccentMimimalOverlay;
+
+				// Windows 11's inset highlight: the row - and so the hover/focus fill, which is the row's own
+				// background - is held clear of the panel edge on all four sides and rounded itself, rather
+				// than run edge to edge and clipped. That is what stops the first and last rows from putting
+				// square corners back on a panel that is rounded (ThemeConfig.MenuPopupRadius). This replaces
+				// ThemedButton's (3, 0) margin, keeping its horizontal inset and adding the vertical one.
+				this.Margin = theme.MenuRowInset;
+				this.BackgroundRadius = theme.MenuRowRadius;
 
 				content.VAnchor = VAnchor.Center;
 				content.HAnchor |= HAnchor.Left;

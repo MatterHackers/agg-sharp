@@ -1,4 +1,33 @@
-﻿using System;
+﻿/*
+Copyright (c) 2026, Lars Brubaker, John Lewin
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied, of the FreeBSD Project.
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using MatterHackers.Agg.VertexSource;
@@ -58,6 +87,12 @@ namespace MatterHackers.Agg.UI
 		public PopupWidget(GuiWidget contentWidget, IPopupLayoutEngine layoutEngine, bool makeScrollable)
 		{
 			this.contentWidget = contentWidget;
+
+			// Wear the content's corners. A hosted PopupMenu rounds itself (ThemeConfig.MenuPopupRadius) and
+			// this widget's outline is drawn around it, so taking the radius from the content is what keeps
+			// the outline on the panel rather than square around a rounded menu. Content that rounds nothing
+			// leaves this at zero, which is what drop down lists have always drawn.
+			this.BackgroundRadius = contentWidget.BackgroundRadius;
 
 			this.layoutEngine = layoutEngine;
 
@@ -127,6 +162,8 @@ namespace MatterHackers.Agg.UI
 			base.OnDraw(graphics2D);
 
 			var outline = new RoundedRect(LocalBounds, 0);
+			outline.radius(BackgroundRadius.SW, BackgroundRadius.SE, BackgroundRadius.NE, BackgroundRadius.NW);
+
 			graphics2D.Render(new Stroke(outline, BorderWidth * 2 * DeviceScale), BorderColor);
 		}
 
@@ -290,6 +327,33 @@ namespace MatterHackers.Agg.UI
 			Width = scrollingWindow.Width;
 			Height = maxHeight;
 			scrollingWindow.ScrollArea.VAnchor = VAnchor.Fit;
+
+			TakeOverContentFill();
+		}
+
+		/// <summary>
+		/// Moves the content's background fill onto this widget, once scrolling has widened us past it.
+		/// </summary>
+		/// <remarks>
+		/// A hosted <see cref="PopupMenu"/> paints the panel itself and stays <c>HAnchor.Left | Fit</c>, so it
+		/// keeps its pre-scroll width while we grow by a scroll bar. <see cref="OnDraw"/> traces the rounded
+		/// border on *our* bounds, so leaving the fill where it is draws two rounded edges a scroll bar apart.
+		/// The content is also inside the scroll area, so its fill would slide away from the border as the menu
+		/// is scrolled. Only one widget can carry the fill and it has to be the one the border is traced on.
+		/// Content that paints no fill (a drop down list's item column - the container fills for it) is left
+		/// alone.
+		/// </remarks>
+		private void TakeOverContentFill()
+		{
+			if (contentWidget.BackgroundColor.Alpha0To255 == 0)
+			{
+				return;
+			}
+
+			this.BackgroundColor = contentWidget.BackgroundColor;
+			this.BackgroundRadius = contentWidget.BackgroundRadius;
+
+			contentWidget.BackgroundColor = Color.Transparent;
 		}
 	}
 

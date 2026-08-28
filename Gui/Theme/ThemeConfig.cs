@@ -191,6 +191,58 @@ namespace MatterHackers.Agg.UI
 
         public double MenuGutterWidth => 35 * GuiWidget.DeviceScale;
 
+        /// <summary>
+        /// The height of one popup menu row, not counting <see cref="MenuRowInset"/>.
+        /// </summary>
+        /// <remarks>
+        /// Deliberately shorter than <see cref="ButtonHeight"/>: a menu is a dense list to read down, not a
+        /// row of click targets, and Windows 11 - the styling reference here - lands near this once the
+        /// inset above and below each row is added back on.
+        /// </remarks>
+        public double MenuRowHeight => 24 * GuiWidget.DeviceScale;
+
+        /// <summary>
+        /// Corner radius of the menu panel itself, in device units. Windows 11 rounds menu popups at 8.
+        /// </summary>
+        public double MenuPopupRadius => DefaultMenuPopupRadius;
+
+        /// <summary>
+        /// Corner radius of a row's hover and keyboard highlight, in device units.
+        /// </summary>
+        /// <remarks>
+        /// Rounding the highlight is half of what keeps the first and last rows from poking square corners
+        /// out of the rounded panel; <see cref="MenuRowInset"/> is the other half.
+        /// </remarks>
+        public double MenuRowRadius => DefaultMenuRowRadius;
+
+        /// <summary>
+        /// <see cref="MenuPopupRadius"/> for widgets that have no theme to ask.
+        /// </summary>
+        /// <remarks>
+        /// The legacy menu family - Menu, MenuItem and the states views, which drop down lists are built
+        /// from - predates ThemeConfig and is coloured by per widget properties instead. It still has to
+        /// round the same way a PopupMenu does or drop downs and menus stop matching, so the menu chrome
+        /// radii are readable without an instance. They are the same numbers, not a second set.
+        /// </remarks>
+        public static double DefaultMenuPopupRadius => 8 * GuiWidget.DeviceScale;
+
+        /// <summary>
+        /// <see cref="MenuRowRadius"/> for widgets that have no theme to ask. See
+        /// <see cref="DefaultMenuPopupRadius"/> for why this exists.
+        /// </summary>
+        public static double DefaultMenuRowRadius => 4 * GuiWidget.DeviceScale;
+
+        /// <summary>
+        /// The gap between a row's highlight and the edge of the menu panel, in design units (a widget's
+        /// Margin is multiplied by DeviceScale on the way in, so this must not be pre-scaled).
+        /// </summary>
+        /// <remarks>
+        /// Windows 11 insets the highlight rather than clipping it: with the highlight held clear of the
+        /// panel's rounded corners there is nothing for those corners to cut off, so the top and bottom rows
+        /// look the same as every row between them.
+        /// </remarks>
+        public BorderDouble MenuRowInset { get; } = new BorderDouble(3, 2);
+
         public double MicroButtonHeight => 20 * GuiWidget.DeviceScale;
 
         private double MicroButtonWidth => 30 * GuiWidget.DeviceScale;

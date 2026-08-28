@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2019, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -8,8 +8,6 @@ modification, are permitted provided that the following conditions are met:
 1. Redistributions of source code must retain the above copyright notice, this
    list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
 
@@ -44,6 +42,14 @@ namespace MatterHackers.Agg.UI
 		{
 			overState.HAnchor |= HAnchor.Stretch;
 			normalState.HAnchor |= HAnchor.Stretch;
+
+			// Round the row the same way a PopupMenu row is rounded (ThemeConfig.MenuRowRadius), so a drop
+			// down list looks like a menu. Here the row fill is one of these two swapped widgets rather than
+			// this view's own background - only one is ever visible - so both have to carry the radius. The
+			// enclosing MenuItem's margin is what holds them clear of the panel's rounded corners.
+			overState.BackgroundRadius = ThemeConfig.DefaultMenuRowRadius;
+			normalState.BackgroundRadius = ThemeConfig.DefaultMenuRowRadius;
+
 			HAnchor = HAnchor.Stretch | HAnchor.Fit;
 			VAnchor = VAnchor.Fit;
 			Selectable = false;
@@ -133,6 +139,11 @@ namespace MatterHackers.Agg.UI
 			HAnchor = HAnchor.Stretch | HAnchor.Fit;
 			VAnchor = VAnchor.Fit;
 			Selectable = false;
+
+			// This view's own background is the row fill (see the Highlighted setter), so rounding the view
+			// is what rounds the highlight - matching a PopupMenu row (ThemeConfig.MenuRowRadius). The
+			// enclosing MenuItem's margin holds it clear of the panel's rounded corners.
+			BackgroundRadius = ThemeConfig.DefaultMenuRowRadius;
 
 			textWidget = new TextWidget(name, textColor: textColor, typeFace: typeFace)
 			{

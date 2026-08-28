@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2017, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -159,7 +159,13 @@ namespace MatterHackers.Agg.UI
 			{
 				BorderWidth = MenuItemsBorderWidth,
 				BorderColor = this.PopupBorderColor,
-				BackgroundColor = MenuItemsBackgroundColor
+				BackgroundColor = MenuItemsBackgroundColor,
+
+				// The panel is filled by the container rather than by the content (topToBottom paints
+				// nothing), so unlike a hosted PopupMenu - which PopupWidget takes its corners from - the
+				// rounding has to be set here. PopupWidget.OnDraw traces this same radius with the border,
+				// so fill and border keep the same shape.
+				BackgroundRadius = ThemeConfig.DefaultMenuPopupRadius,
 			};
 
 			DropDownContainer.Closed += DropListItems_Closed;

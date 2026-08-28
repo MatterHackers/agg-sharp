@@ -127,10 +127,15 @@ namespace MatterHackers.Agg.UI
 			{
 				if (borderWidth > 0)
 				{
+					// Trace whatever corner rounding the popup fills itself with (a PopupMenu sets
+					// ThemeConfig.MenuPopupRadius), or the square corners of one that sets none. Drawing this
+					// at radius 0 unconditionally put a square border back around a rounded panel.
+					var radius = popup.Widget.BackgroundRadius;
+					var outline = new RoundedRect(popup.Widget.LocalBounds, 0);
+					outline.radius(radius.SW, radius.SE, radius.NE, radius.NW);
+
 					e.Graphics2D.Render(
-						new Stroke(
-							new RoundedRect(popup.Widget.LocalBounds, 0),
-							borderWidth * 2),
+						new Stroke(outline, borderWidth * 2),
 						theme.PopupBorderColor);
 				}
 			}
