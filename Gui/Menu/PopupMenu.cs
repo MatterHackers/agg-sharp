@@ -64,6 +64,21 @@ namespace MatterHackers.Agg.UI
 		internal SubMenuItemButton ParentMenuItem { get; set; }
 
 		/// <summary>
+		/// Called when a Left or Right arrow reaches this menu and the menu has nothing of its own to do with
+		/// it - Left with no sub menu to back out of, or Right on a row that opens no sub menu. The argument
+		/// is -1 for Left and +1 for Right.
+		/// </summary>
+		/// <remarks>
+		/// This is agg-gui's <c>should_switch_top_menu</c> guard read from the menu's side: there the menu bar
+		/// sees the key first and asks the popup whether it wants it, here the popup has the focus and so gets
+		/// the key first and hands on only what it cannot use. <see cref="MenuBarWidget"/> sets this on the
+		/// popups it opens so those two keys walk the open menu along the bar. Left null - which is every other
+		/// menu, sub menus included - the two keys behave exactly as they did before, and either way the key is
+		/// still consumed (see <see cref="OnKeyDown"/>).
+		/// </remarks>
+		internal Action<int> TopLevelArrowKey { get; set; }
+
+		/// <summary>
 		/// The widget the menu rows are actually parented to. Normally that is the menu itself, but
 		/// <see cref="MakeMenuHaveScroll(double)"/> moves every row into a column inside a
 		/// <see cref="ScrollableWidget"/>, so anything that walks the rows has to ask rather than assume.
@@ -340,6 +355,111 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
+		/// This menu and every sub menu still standing below it, outermost first.
+		/// </summary>
+		/// <remarks>
+		/// agg-gui's <c>layouts()</c> - the panels that are on screen right now. Only one sub menu per level
+		/// can be open (see <see cref="OpenSubMenuRow"/>), so this is a chain rather than a tree.
+		/// </remarks>
+		private IEnumerable<PopupMenu> OpenChain()
+		{
+			yield return this;
+
+			var subMenu = OpenSubMenuRow()?.SubMenu;
+
+			if (subMenu != null
+				&& !subMenu.HasBeenClosed)
+			{
+				foreach (var deeper in subMenu.OpenChain())
+				{
+					yield return deeper;
+				}
+			}
+		}
+
+		/// <summary>
+		/// True when <paramref name="screenPosition"/> falls inside this menu's panel or any sub menu panel
+		/// open below it.
+		/// </summary>
+		/// <remarks>
+		/// agg-gui's <c>PopupMenu::body_contains</c>. It exists for the benefit of whatever opened the menu:
+		/// <see cref="MenuBarWidget"/> asks so it can tell a release in genuinely neutral space - off the bar
+		/// *and* off the menu - from one that landed somewhere the menu itself will deal with.
+		/// </remarks>
+		public bool BodyContains(Vector2 screenPosition)
+		{
+			return OpenChain().Any(menu => menu.TransformToScreenSpace(menu.LocalBounds).Contains(screenPosition));
+		}
+
+		/// <summary>
+		/// Moves the highlight to the row under <paramref name="screenPosition"/>, as if the pointer had
+		/// crossed onto it.
+		/// </summary>
+		/// <remarks>
+		/// For a drag whose press landed somewhere else: agg-sharp routes every move after a press to the
+		/// widget that took the press, so a menu opened by that press never sees the pointer at all. The
+		/// opener forwards instead - see <see cref="MenuBarWidget.OnMouseMove"/> - and this puts the position
+		/// back through <see cref="OnRowHover"/>, so a forwarded drag and a real hover do the same thing,
+		/// sub menus included.
+		/// </remarks>
+		internal void DragOver(Vector2 screenPosition)
+		{
+			var (menu, row) = RowAt(screenPosition);
+
+			menu?.OnRowHover(row, screenPosition);
+		}
+
+		/// <summary>
+		/// Chooses the row under <paramref name="screenPosition"/>, the same as clicking it. Returns false
+		/// when there is no row there.
+		/// </summary>
+		/// <remarks>
+		/// The release half of the forwarded drag <see cref="DragOver"/> handles the moves of. agg-gui's
+		/// mouse-up activation.
+		/// </remarks>
+		internal bool ActivateRowAt(Vector2 screenPosition)
+		{
+			var (_, row) = RowAt(screenPosition);
+
+			if (row == null)
+			{
+				return false;
+			}
+
+			row.InvokeClick();
+
+			return true;
+		}
+
+		/// <summary>
+		/// The row at <paramref name="screenPosition"/> and the menu of this chain it belongs to, or nulls
+		/// when the position is not over a row.
+		/// </summary>
+		/// <remarks>
+		/// The owning menu comes back with the row because <see cref="OnRowHover"/> has to be called on the
+		/// menu the row lives in - a sub menu is its own <see cref="PopupMenu"/>, not part of this one.
+		/// The test is <see cref="GuiWidget.CanSelect"/>, which is what normal mouse routing uses, so a
+		/// disabled row is skipped and so is one a scroll clamped menu has moved out of its panel - that row
+		/// still has screen bounds, and a drag through the bar could otherwise reach it.
+		/// </remarks>
+		private (PopupMenu menu, MenuItem row) RowAt(Vector2 screenPosition)
+		{
+			foreach (var menu in OpenChain())
+			{
+				var row = menu.ItemContainer.Children.OfType<MenuItem>()
+					.FirstOrDefault(item => item.CanSelect
+						&& item.TransformToScreenSpace(item.LocalBounds).Contains(screenPosition));
+
+				if (row != null)
+				{
+					return (menu, row);
+				}
+			}
+
+			return (null, null);
+		}
+
+		/// <summary>
 		/// Takes this menu down, along with the popup hosting it and any menu it was opened from.
 		/// </summary>
 		/// <remarks>
@@ -446,7 +566,13 @@ namespace MatterHackers.Agg.UI
 				case Keys.Right:
 					if (NavigableItems().FirstOrDefault(item => item.Focused) is SubMenuItemButton subMenuItem)
 					{
+						// The highlighted row's own sub menu comes first - only a Right this menu has no use
+						// for is offered on to whatever opened it
 						subMenuItem.OpenSubMenu();
+					}
+					else
+					{
+						TopLevelArrowKey?.Invoke(1);
 					}
 
 					keyEvent.Handled = true;
@@ -454,12 +580,21 @@ namespace MatterHackers.Agg.UI
 					break;
 
 				case Keys.Left:
-					// Focus the opener before this menu loses focus. CreateSubMenu's Closed handler closes the
-					// parent menu as well when the parent does not contain focus, and that close runs on idle
-					// after this returns - so the order here is what decides whether one level closes or all
-					// of them do. Nothing to back out to in a top level menu, but the key is still consumed:
-					// an arrow that escapes an open menu reaches the application behind it.
-					ParentMenuItem?.Focus();
+					if (ParentMenuItem != null)
+					{
+						// Focus the opener before this menu loses focus. CreateSubMenu's Closed handler closes
+						// the parent menu as well when the parent does not contain focus, and that close runs on
+						// idle after this returns - so the order here is what decides whether one level closes
+						// or all of them do.
+						ParentMenuItem.Focus();
+					}
+					else
+					{
+						// Nothing to back out to, so this is the opener's key. Consumed either way: an arrow
+						// that escapes an open menu reaches the application behind it.
+						TopLevelArrowKey?.Invoke(-1);
+					}
+
 					keyEvent.Handled = true;
 					keyEvent.SuppressKeyPress = true;
 					break;
