@@ -293,5 +293,76 @@ namespace MatterHackers.Agg.Tests
 			// given.
 			await Assert.That(asAction).IsNull();
 		}
+
+		[Test]
+		public async Task AScaledReporterMapsItsRangeIntoTheParentsWindow()
+		{
+			var reports = new List<(double ratio, string message)>();
+			var parent = new ProgressReporter((ratio, message) => reports.Add((ratio, message)));
+
+			var secondHalf = parent.Scaled(0.5, 0.5);
+
+			secondHalf.Report(0, "start");
+			secondHalf.Report(0.5, "middle");
+			secondHalf.Report(1, "end");
+
+			await Assert.That(reports.ConvertAll(report => report.ratio)).IsEquivalentTo(new[] { 0.5, 0.75, 1.0 });
+
+			// The message is the child's, untouched: the parent supplies where in the job this is, the child
+			// supplies what it is doing.
+			await Assert.That(reports.ConvertAll(report => report.message)).IsEquivalentTo(new[] { "start", "middle", "end" });
+		}
+
+		[Test]
+		[NotInParallel]
+		public async Task ScaledChildrenShareOneThrottleWindowWithTheirParent()
+		{
+			// The bug this pins: a hand written wrapper per phase starts with its last yield at zero, so its
+			// first YieldToUi always hops. A job that makes one per item - a load with hundreds of cached
+			// mesh links - then pays a hop per item for work that takes no time at all, and the throttle
+			// stops meaning anything.
+			var previousHook = ProgressReporter.UiYield;
+			int yieldCount = 0;
+			ProgressReporter.UiYield = () =>
+			{
+				yieldCount++;
+				return Task.CompletedTask;
+			};
+
+			try
+			{
+				var parent = new ProgressReporter((ratio, message) => { });
+
+				await parent.Scaled(0.5, 0).YieldToUi();
+				await parent.Scaled(0.5, 0.5).YieldToUi();
+				await parent.YieldToUi();
+
+				await Assert.That(yieldCount).IsEqualTo(1)
+					.Because("the throttle is one budget for the job, however many slices the job carves it into");
+			}
+			finally
+			{
+				ProgressReporter.UiYield = previousHook;
+			}
+		}
+
+		[Test]
+		public async Task ScalingAReporterNobodyIsWatchingGivesBackTheSameReporter()
+		{
+			// Nothing to report to and nothing to paint, so a wrapper would be pure cost - and, worse, a
+			// live-looking object that a caller testing for "is anyone watching" cannot see through.
+			await Assert.That(ReferenceEquals(ProgressReporter.Null.Scaled(0.5), ProgressReporter.Null)).IsTrue();
+		}
+
+		[Test]
+		public async Task HasTargetSeesEveryShapeOfNobodyWatching()
+		{
+			// Not just the Null singleton: a reporter built around a null action is exactly as unwatched, and
+			// a caller comparing against Null by reference would take it for a live one.
+			await Assert.That(ProgressReporter.Null.HasTarget).IsFalse();
+			await Assert.That(new ProgressReporter(null).HasTarget).IsFalse();
+			await Assert.That(new ProgressReporter((ratio, message) => { }).HasTarget).IsTrue();
+			await Assert.That(new ProgressReporter((ratio, message) => { }).Scaled(0.5).HasTarget).IsTrue();
+		}
 	}
 }

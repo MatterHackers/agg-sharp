@@ -33,6 +33,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
+using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Processors
@@ -224,15 +226,116 @@ namespace MatterHackers.PolygonMesh.Processors
 			return line.Substring(currentPosition - numberLength, numberLength);
 		}
 
+		/// <summary>
+		/// <see cref="Load(Stream, CancellationToken, Action{double, string})"/> for a caller that can hand the
+		/// UI its thread back - the browser, where the parse and the paint share one thread and a large STL
+		/// otherwise holds the frame for its whole duration.
+		/// </summary>
+		public static async Task<Mesh> LoadAsync(Stream fileStream, CancellationToken cancellationToken, ProgressReporter reporter = null)
+		{
+			try
+			{
+				return await ParseFileContentsAsync(fileStream, cancellationToken, reporter);
+			}
+#if DEBUG
+			catch (IOException e)
+			{
+				Debug.Print(e.Message);
+				BreakInDebugger();
+				return null;
+			}
+#else
+            // TODO: Consider not suppressing exceptions like this or at least logging them. Troubleshooting when this
+            // scenario occurs is impossible and likely results in an undiagnosable null reference error
+            catch (Exception)
+            {
+                return null;
+            }
+#endif
+		}
+
+		/// <summary>
+		/// How many faces the parse reads before it offers the UI its thread back.
+		/// </summary>
+		/// <remarks>
+		/// The parse's own progress reports are throttled to one every 200 ms, which on a desktop is a few
+		/// hundred thousand triangles - far too long to hold a browser frame. This is sized instead at roughly
+		/// what one frame of wasm parsing gets through, so the bar moves while a large STL comes in. It costs
+		/// the synchronous path nothing: with no reporter to yield to, a chunk boundary is one extra loop
+		/// iteration.
+		/// </remarks>
+		public const int FacesPerYield = 5000;
+
+		/// <summary>
+		/// Where <see cref="ParseChunks"/> leaves the mesh it built. An iterator method cannot have an out
+		/// parameter, and the two entry points below need the result rather than the chunk boundaries.
+		/// </summary>
+		private sealed class StlParseResult
+		{
+			public Mesh Mesh;
+		}
+
 		public static Mesh ParseFileContents(Stream stlStream, CancellationToken cancellationToken, Action<double, string> reportProgress)
+		{
+			var result = new StlParseResult();
+
+			foreach (var facesRead in ParseChunks(stlStream, cancellationToken, reportProgress, result))
+			{
+				// Nothing is waiting for this thread, so a chunk boundary is just the next iteration.
+			}
+
+			return result.Mesh;
+		}
+
+		/// <summary>
+		/// <see cref="ParseFileContents"/> as an awaitable walk: identical parse, identical mesh, with a
+		/// <see cref="ProgressReporter.YieldToUi"/> every <see cref="FacesPerYield"/> faces.
+		/// </summary>
+		/// <param name="reporter">
+		/// The job's progress channel, or null when nobody is watching. The object rather than the
+		/// <c>Action&lt;double, string&gt;</c> it converts to, because that is what carries the yield.
+		/// </param>
+		public static async Task<Mesh> ParseFileContentsAsync(Stream stlStream, CancellationToken cancellationToken, ProgressReporter reporter)
+		{
+			// A reporter with nothing behind it is what a null Action becomes crossing the implicit
+			// conversion, and the parse reads a non-null reporter as "somebody wants progress" - which is
+			// also where it checks the cancellation token. Put it back to null so a caller who meant "nobody
+			// is watching" gets the behaviour it has always had.
+			reporter = reporter?.HasTarget == true ? reporter : null;
+
+			var result = new StlParseResult();
+
+			foreach (var facesRead in ParseChunks(stlStream, cancellationToken, reporter, result))
+			{
+				await (reporter?.YieldToUi() ?? default);
+			}
+
+			return result.Mesh;
+		}
+
+		/// <summary>
+		/// The parse itself, written as a walk that pauses at every chunk boundary so the two entry points
+		/// above can share one copy of it - the synchronous one runs the boundaries out, the awaitable one
+		/// yields at each.
+		/// </summary>
+		/// <returns>The number of faces read so far, at each chunk boundary.</returns>
+		private static IEnumerable<int> ParseChunks(Stream stlStream, CancellationToken cancellationToken, Action<double, string> reportProgress, StlParseResult result)
 		{
 			var time = new Stopwatch();
 			time.Start();
+
+			// This runs on whichever thread first advances the walk, and does NOT hold across the async
+			// path's chunk boundaries: after a yield the continuation can resume on another thread, carrying
+			// that thread's culture. The parse is safe from that because it never relies on the ambient
+			// culture - Convert parses through the explicit Culture field and every text comparison here is
+			// ordinal. Do not add culture-dependent parsing below on the strength of this line. It stays
+			// because it is a side effect on the caller's thread that predates the split and something may
+			// lean on it.
 			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
 			if (stlStream == null)
 			{
-				return null;
+				yield break;
 			}
 
 			var maxProgressReport = new Stopwatch();
@@ -241,8 +344,12 @@ namespace MatterHackers.PolygonMesh.Processors
 			long bytesInFile = stlStream.Length;
 			if (bytesInFile <= 80)
 			{
-				return null;
+				yield break;
 			}
+
+			// Face count at the last chunk boundary, so a boundary lands every FacesPerYield faces however
+			// many lines or triangles it took to read them.
+			int facesAtLastChunk = 0;
 
 			byte[] first160Bytes = new byte[160];
 			stlStream.Read(first160Bytes, 0, 160);
@@ -320,10 +427,16 @@ namespace MatterHackers.PolygonMesh.Processors
 						if (cancellationToken.IsCancellationRequested)
 						{
 							stlStream.Close();
-							return null;
+							yield break;
 						}
 
 						maxProgressReport.Restart();
+					}
+
+					if (mesh.Faces.Count - facesAtLastChunk >= FacesPerYield)
+					{
+						facesAtLastChunk = mesh.Faces.Count;
+						yield return facesAtLastChunk;
 					}
 				}
 			}
@@ -345,7 +458,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				if (fileContents.Length < numBytesRequiredForVertexData || numTriangles < 1)
 				{
 					stlStream.Close();
-					return null;
+					yield break;
 				}
 
 				var vector = new Vector3[3];
@@ -370,7 +483,7 @@ namespace MatterHackers.PolygonMesh.Processors
 						if (cancellationToken.IsCancellationRequested)
 						{
 							stlStream.Close();
-							return null;
+							yield break;
 						}
 
 						maxProgressReport.Restart();
@@ -383,6 +496,12 @@ namespace MatterHackers.PolygonMesh.Processors
 						int iv2 = GetIndex(vector[2]);
 						mesh.Faces.Add(iv0, iv1, iv2, mesh.Vertices);
 					}
+
+					if (mesh.Faces.Count - facesAtLastChunk >= FacesPerYield)
+					{
+						facesAtLastChunk = mesh.Faces.Count;
+						yield return facesAtLastChunk;
+					}
 				}
 			}
 
@@ -390,7 +509,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			if (cancellationToken.IsCancellationRequested)
 			{
-				return null;
+				yield break;
 			}
 
 			time.Stop();
@@ -400,7 +519,7 @@ namespace MatterHackers.PolygonMesh.Processors
             }
 
 			stlStream.Close();
-			return mesh;
+			result.Mesh = mesh;
 		}
 
 		public static string FormatForStl(Vector3 value)

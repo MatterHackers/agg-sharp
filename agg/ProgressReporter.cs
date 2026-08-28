@@ -96,15 +96,64 @@ namespace MatterHackers.Agg
 		private readonly Action<double, string> asAction;
 
 		/// <summary>
+		/// The reporter this one yields through, for a child made by <see cref="Scaled"/>; null for a
+		/// reporter that owns its own throttle.
+		/// </summary>
+		private readonly ProgressReporter yieldParent;
+
+		/// <summary>
 		/// Milliseconds (<see cref="Environment.TickCount64"/>) at the last real yield. Zero to start, so
 		/// the first yield of a job always goes through and the bar paints before the work begins.
 		/// </summary>
 		private long lastYieldMs;
 
 		public ProgressReporter(Action<double, string> target)
+			: this(target, null)
+		{
+		}
+
+		private ProgressReporter(Action<double, string> target, ProgressReporter yieldParent)
 		{
 			this.target = target;
+			this.yieldParent = yieldParent;
 			this.asAction = this.Report;
+		}
+
+		/// <summary>
+		/// Whether anything is actually listening. False for <see cref="Null"/> and for any reporter built
+		/// around a null action - the two shapes "nobody is watching" arrives in.
+		/// </summary>
+		/// <remarks>
+		/// Callers that have to tell a watched job from an unwatched one test this rather than comparing
+		/// against the <see cref="Null"/> singleton: <c>new ProgressReporter(null)</c> is just as unwatched
+		/// and would slip past a reference comparison.
+		/// </remarks>
+		public bool HasTarget => target != null;
+
+		/// <summary>
+		/// A reporter that maps a 0..1 ratio into a slice of this one's progress budget - what a phase of a
+		/// job is handed so it can report 0..1 of its own work without knowing where in the whole it sits.
+		/// </summary>
+		/// <param name="amount">How much of this reporter's budget the child's full range covers.</param>
+		/// <param name="offset">Where in this reporter's budget the child's range starts.</param>
+		/// <remarks>
+		/// The child yields through its parent rather than keeping a throttle of its own, and that is the
+		/// point of this method existing instead of a hand written wrapper. A wrapper starts life with its
+		/// last yield at zero, so its first <see cref="YieldToUi"/> always hops the event loop; a job that
+		/// makes one per item - a load with four hundred cached mesh links, say - then pays four hundred
+		/// unthrottled hops for work that takes no time at all. Sharing the parent's state keeps the throttle
+		/// a budget per job however many children the job carves it into.
+		/// <para>A reporter nobody is watching hands back itself: it reports nowhere and never yields, so
+		/// there is nothing for a child to do differently.</para>
+		/// </remarks>
+		public ProgressReporter Scaled(double amount, double offset = 0)
+		{
+			if (target == null)
+			{
+				return this;
+			}
+
+			return new ProgressReporter((ratio, message) => Report(offset + (ratio * amount), message), this);
 		}
 
 		/// <summary>
@@ -130,6 +179,13 @@ namespace MatterHackers.Agg
 		/// </remarks>
 		public ValueTask YieldToUi()
 		{
+			// A scaled child has no throttle of its own - the whole job shares the one at the top, so a job
+			// that carves its budget into many slices cannot buy itself extra hops by making more of them.
+			if (yieldParent != null)
+			{
+				return yieldParent.YieldToUi();
+			}
+
 			var uiYield = UiYield;
 
 			// The desktop path (no hook installed) costs no allocation and no state machine. A reporter
