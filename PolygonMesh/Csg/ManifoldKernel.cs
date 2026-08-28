@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 
@@ -132,108 +133,234 @@ namespace MatterHackers.PolygonMesh.Csg
 			RustWindingRule windingRule = RustWindingRule.Positive,
 			bool repairOrientation = false)
 		{
-			bool trackColors = meshColors != null;
+			using (var batch = new OperandBatch(operation, meshColors, repairOrientation))
+			{
+				foreach (var (mesh, matrix) in items)
+				{
+					if (!batch.TryAdd(mesh, matrix, cancellationToken))
+					{
+						return new Mesh();
+					}
+				}
 
-			var manifolds = new List<RustManifold>();
-			var originalIdToColor = new Dictionary<int, Color>();
-			var originalIdToSpatialColors = new Dictionary<int, List<(Vector3, Color)>>();
+				batch.ThrowIfNothingImported();
+
+				var result = CombineAndRead(
+					batch, operation, cancellationToken, windingRule, reporter, amountPerOperation, ratioCompleted);
+
+				batch.ThrowIfAnySkipped(result);
+
+				return result;
+			}
+		}
+
+		/// <summary>
+		/// <see cref="RunBoolean"/> for a caller that can hand the UI its thread back: the same
+		/// boolean, with a yield after every operand's import and between every pair of the n-ary
+		/// fold.
+		/// </summary>
+		/// <remarks>
+		/// The yields are what make a boolean's progress bar move at all on a host where the job and
+		/// the UI share one thread. They are only ever between operations: a single pairwise boolean
+		/// is one native call that cannot be interrupted, so the frame it holds is still frozen for
+		/// however long that call takes.
+		/// <para>
+		/// A null <paramref name="reporter"/> never yields and keeps the kernel's n-ary batch path,
+		/// exactly as in the synchronous entry point - see <see cref="CombineAndRead"/>.
+		/// </para>
+		/// </remarks>
+		/// <inheritdoc cref="RunBoolean"/>
+		internal static async Task<Mesh> RunBooleanAsync(
+			IEnumerable<(Mesh mesh, Matrix4X4 matrix)> items,
+			CsgModes operation,
+			CancellationToken cancellationToken,
+			ProgressReporter reporter,
+			double amountPerOperation,
+			double ratioCompleted,
+			Color[] meshColors,
+			RustWindingRule windingRule = RustWindingRule.Positive,
+			bool repairOrientation = false)
+		{
+			using (var batch = new OperandBatch(operation, meshColors, repairOrientation))
+			{
+				foreach (var (mesh, matrix) in items)
+				{
+					if (!batch.TryAdd(mesh, matrix, cancellationToken))
+					{
+						return new Mesh();
+					}
+
+					// A mesh copy, a transform and a native upload each - seconds apiece on a large
+					// set, and all of it before the boolean itself starts. The token is read with the
+					// yield because the yield is what lets the user press Stop at all, so reading it
+					// here is what makes the press land on this operand rather than after the import.
+					cancellationToken.ThrowIfCancellationRequested();
+					await (reporter?.YieldToUi() ?? default);
+				}
+
+				batch.ThrowIfNothingImported();
+
+				var result = await CombineAndReadAsync(
+					batch, operation, cancellationToken, windingRule, reporter, amountPerOperation, ratioCompleted);
+
+				batch.ThrowIfAnySkipped(result);
+
+				return result;
+			}
+		}
+
+		/// <summary>
+		/// The operands of one boolean as the kernel holds them: the imported handles, the colour
+		/// bookkeeping their result is painted from, and the ones the kernel would not take.
+		/// </summary>
+		/// <remarks>
+		/// Its own type because <see cref="RunBoolean"/> and <see cref="RunBooleanAsync"/> both walk
+		/// the same operand list, and what a refused or an empty operand means is subtle enough that
+		/// two copies of it would drift. The loop is the only thing that differs between them - one
+		/// of them can hand the UI its thread back between operands - so the loop is all either of
+		/// them writes.
+		/// </remarks>
+		private sealed class OperandBatch : IDisposable
+		{
+			private readonly CsgModes operation;
+			private readonly Color[] meshColors;
+			private readonly bool repairOrientation;
 
 			// A union is the one operation where leaving an operand out still has an answer:
 			// the other operands' union. Subtract and Intersect are defined by every operand,
 			// so dropping one of those would silently change what the operation means.
-			bool skipRefusedOperands = operation == CsgModes.Union;
-			var skipped = new List<SkippedBooleanOperand>();
+			private readonly bool skipRefusedOperands;
 
-			try
+			internal OperandBatch(CsgModes operation, Color[] meshColors, bool repairOrientation)
 			{
-				int meshIndex = 0;
-				foreach (var (mesh, matrix) in items)
-				{
-					// Before the copy and the upload, not just before the boolean: importing a
-					// large set is itself seconds of work, and an already-cancelled caller should
-					// not pay for N mesh copies and N native imports it is going to throw away.
-					cancellationToken.ThrowIfCancellationRequested();
-
-					if (mesh.Vertices.Count == 0 || mesh.Faces.Count == 0)
-					{
-						if (operation == CsgModes.Intersect)
-						{
-							return new Mesh();
-						}
-
-						if (meshIndex == 0 && operation == CsgModes.Subtract)
-						{
-							return new Mesh();
-						}
-
-						meshIndex++;
-						continue;
-					}
-
-					var meshCopy = mesh.Copy(CancellationToken.None);
-					meshCopy.Transform(matrix);
-
-					RustManifold manifold;
-
-					try
-					{
-						manifold = ImportOperand(
-							meshCopy, meshIndex, trackColors, meshColors, originalIdToColor, originalIdToSpatialColors, cancellationToken, repairOrientation);
-					}
-					catch (MeshImportRejectedException refused) when (skipRefusedOperands)
-					{
-						// Only the kernel's verdict on this operand's geometry is skippable. A
-						// failure from anywhere else in the import - the native library, a handle -
-						// propagates, because degrading on it would tell the user to Repair a part
-						// that has nothing wrong with it.
-						// Not swallowed: the throw below - or the exception the partial result is
-						// carried out on - names every operand that landed here.
-						skipped.Add(new SkippedBooleanOperand(meshIndex, refused.Message));
-						meshIndex++;
-						continue;
-					}
-
-					manifolds.Add(manifold);
-					meshIndex++;
-				}
-
-				if (skipped.Count > 0 && manifolds.Count == 0)
-				{
-					// Every operand refused. The union of nothing is not geometry, but it is still
-					// the partial answer rather than a different kind of failure: a caller combining
-					// several touching sets has to be able to keep the sets that worked and keep
-					// these parts visible, and a plain InvalidOperationException here would take the
-					// whole build down with them. Callers that do not handle the partial case see
-					// the same InvalidOperationException they always did, naming every operand.
-					throw new PartialBooleanException(DescribeSkipped(skipped, meshIndex), new Mesh(), skipped);
-				}
-
-				var result = CombineAndRead(
-					manifolds,
-					operation,
-					cancellationToken,
-					trackColors,
-					originalIdToColor,
-					originalIdToSpatialColors,
-					meshColors,
-					windingRule,
-					reporter,
-					amountPerOperation,
-					ratioCompleted);
-
-				if (skipped.Count > 0)
-				{
-					throw new PartialBooleanException(DescribeSkipped(skipped, meshIndex), result, skipped);
-				}
-
-				return result;
+				this.operation = operation;
+				this.meshColors = meshColors;
+				this.repairOrientation = repairOrientation;
+				this.skipRefusedOperands = operation == CsgModes.Union;
 			}
-			finally
+
+			internal List<RustManifold> Manifolds { get; } = new List<RustManifold>();
+
+			internal List<SkippedBooleanOperand> Skipped { get; } = new List<SkippedBooleanOperand>();
+
+			internal Dictionary<int, Color> OriginalIdToColor { get; } = new Dictionary<int, Color>();
+
+			internal Dictionary<int, List<(Vector3, Color)>> OriginalIdToSpatialColors { get; } = new Dictionary<int, List<(Vector3, Color)>>();
+
+			/// <summary>
+			/// The per-operand colours the caller supplied, or null when it asked for no colour
+			/// tracking at all.
+			/// </summary>
+			internal Color[] MeshColors => this.meshColors;
+
+			internal bool TrackColors => this.meshColors != null;
+
+			/// <summary>
+			/// How many operands have been offered, the refused and the empty ones included - the
+			/// count a partial result's message is read against.
+			/// </summary>
+			internal int OperandCount { get; private set; }
+
+			/// <summary>
+			/// Uploads one operand, recording a refusal rather than throwing when a union may go on
+			/// without it.
+			/// </summary>
+			/// <returns>
+			/// False when this operand makes the whole boolean empty - an empty mesh in an Intersect,
+			/// or as the first operand of a Subtract - which the caller answers with an empty result.
+			/// </returns>
+			internal bool TryAdd(Mesh mesh, Matrix4X4 matrix, CancellationToken cancellationToken)
+			{
+				// Before the copy and the upload, not just before the boolean: importing a
+				// large set is itself seconds of work, and an already-cancelled caller should
+				// not pay for N mesh copies and N native imports it is going to throw away.
+				cancellationToken.ThrowIfCancellationRequested();
+
+				int meshIndex = this.OperandCount;
+
+				if (mesh.Vertices.Count == 0 || mesh.Faces.Count == 0)
+				{
+					if (this.operation == CsgModes.Intersect)
+					{
+						return false;
+					}
+
+					if (meshIndex == 0 && this.operation == CsgModes.Subtract)
+					{
+						return false;
+					}
+
+					this.OperandCount++;
+					return true;
+				}
+
+				var meshCopy = mesh.Copy(CancellationToken.None);
+				meshCopy.Transform(matrix);
+
+				try
+				{
+					this.Manifolds.Add(ImportOperand(
+						meshCopy,
+						meshIndex,
+						this.TrackColors,
+						this.meshColors,
+						this.OriginalIdToColor,
+						this.OriginalIdToSpatialColors,
+						cancellationToken,
+						this.repairOrientation));
+				}
+				catch (MeshImportRejectedException refused) when (this.skipRefusedOperands)
+				{
+					// Only the kernel's verdict on this operand's geometry is skippable. A
+					// failure from anywhere else in the import - the native library, a handle -
+					// propagates, because degrading on it would tell the user to Repair a part
+					// that has nothing wrong with it.
+					// Not swallowed: the throw from ThrowIfNothingImported or ThrowIfAnySkipped
+					// names every operand that landed here.
+					this.Skipped.Add(new SkippedBooleanOperand(meshIndex, refused.Message));
+				}
+
+				this.OperandCount++;
+				return true;
+			}
+
+			/// <summary>
+			/// Refuses to run a boolean the kernel took no operand for.
+			/// </summary>
+			/// <remarks>
+			/// The union of nothing is not geometry, but it is still the partial answer rather than a
+			/// different kind of failure: a caller combining several touching sets has to be able to
+			/// keep the sets that worked and keep these parts visible, and a plain
+			/// InvalidOperationException here would take the whole build down with them. Callers that
+			/// do not handle the partial case see the same InvalidOperationException they always did,
+			/// naming every operand.
+			/// </remarks>
+			internal void ThrowIfNothingImported()
+			{
+				if (this.Skipped.Count > 0 && this.Manifolds.Count == 0)
+				{
+					throw new PartialBooleanException(DescribeSkipped(this.Skipped, this.OperandCount), new Mesh(), this.Skipped);
+				}
+			}
+
+			/// <summary>
+			/// Carries a finished result out as a partial one when the kernel refused any operand, so
+			/// no caller loses a part quietly.
+			/// </summary>
+			internal void ThrowIfAnySkipped(Mesh result)
+			{
+				if (this.Skipped.Count > 0)
+				{
+					throw new PartialBooleanException(DescribeSkipped(this.Skipped, this.OperandCount), result, this.Skipped);
+				}
+			}
+
+			public void Dispose()
 			{
 				// Deterministic rather than left to the finalizer: a boolean over large
 				// geometry can hold a lot of native memory, and the next one may start
 				// before a collection would have run.
-				foreach (var manifold in manifolds)
+				foreach (var manifold in this.Manifolds)
 				{
 					manifold.Dispose();
 				}
@@ -324,113 +451,44 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// back into a <see cref="Mesh"/>.
 		/// </summary>
 		private static Mesh CombineAndRead(
-			List<RustManifold> manifolds,
+			OperandBatch batch,
 			CsgModes operation,
 			CancellationToken cancellationToken,
-			bool trackColors,
-			Dictionary<int, Color> originalIdToColor,
-			Dictionary<int, List<(Vector3, Color)>> originalIdToSpatialColors,
-			Color[] meshColors,
 			RustWindingRule windingRule,
 			Action<double, string> reporter,
 			double amountPerOperation,
 			double ratioCompleted)
 		{
-			var resultMesh = new Mesh();
-
-			if (manifolds.Count == 0)
+			if (batch.Manifolds.Count == 0)
 			{
-				return resultMesh;
+				return new Mesh();
 			}
 
-			var operationType = RustOpType.Add;
-
-			if (operation == CsgModes.Subtract)
-			{
-				operationType = RustOpType.Subtract;
-			}
-			else if (operation == CsgModes.Intersect)
-			{
-				operationType = RustOpType.Intersect;
-			}
+			var operationType = OperationTypeOf(operation);
 
 			// A single operand is its own answer; running a one-operand boolean would
 			// only cost a copy. It is also the one case where the result is borrowed from
 			// the operand list, so it must not be disposed here.
-			bool ownsResult = manifolds.Count > 1;
-
-			// BatchBoolean runs the kernel's CSG tree, which is what makes a large n-ary
-			// union tractable, but it reports no progress and takes no winding rule -
-			// it reads the process-global engine and the default rule. So it stays the
-			// path whenever neither is asked for, and asking for either drops to a
-			// pairwise left fold over the explicit binary entry point.
-			bool needsExplicitBoolean = reporter != null || windingRule != RustWindingRule.Positive;
+			bool ownsResult = batch.Manifolds.Count > 1;
 
 			RustManifold boolResult;
 			if (!ownsResult)
 			{
-				boolResult = manifolds[0];
+				boolResult = batch.Manifolds[0];
 			}
-			else if (needsExplicitBoolean)
+			else if (NeedsExplicitBoolean(reporter, windingRule))
 			{
 				boolResult = CombinePairwise(
-					manifolds, operationType, windingRule, cancellationToken, reporter, amountPerOperation, ratioCompleted);
+					batch.Manifolds, operationType, windingRule, cancellationToken, reporter, amountPerOperation, ratioCompleted);
 			}
 			else
 			{
-				boolResult = RustManifold.BatchBoolean(manifolds, operationType, cancellationToken);
+				boolResult = RustManifold.BatchBoolean(batch.Manifolds, operationType, cancellationToken);
 			}
 
 			try
 			{
-				if (boolResult.Status != RustStatus.NoError)
-				{
-					// Exporting an error manifold is safe here - unlike the C++ engine, which
-					// could fault the CLR doing it - but an error status still means the kernel
-					// could not build the solid, and a half-built one is worse than a failure.
-					throw new InvalidOperationException($"Manifold boolean result has error status: {boolResult.Status}");
-				}
-
-				var result = boolResult.GetMeshGL64();
-				var resultNumProp = (int)result.NumProp;
-				var vertices = result.VertProperties;
-				var indices = result.TriVerts;
-
-				// The ABI promises at least x, y, z per vertex. Checked rather than assumed
-				// because resultNumProp is the loop stride below, and a zero would spin.
-				if (resultNumProp < 3)
-				{
-					throw new InvalidOperationException($"Manifold boolean result has {resultNumProp} properties per vertex, expected at least 3");
-				}
-
-				for (int i = 0; i + 2 < vertices.Length; i += resultNumProp)
-				{
-					resultMesh.Vertices.Add(new Vector3(
-						vertices[i],
-						vertices[i + 1],
-						vertices[i + 2]));
-				}
-
-				for (int i = 0; i + 2 < indices.Length; i += 3)
-				{
-					resultMesh.Faces.Add(new Face(
-						(int)indices[i],
-						(int)indices[i + 1],
-						(int)indices[i + 2],
-						resultMesh.Vertices));
-				}
-
-				if (trackColors && resultMesh.Faces.Count > 0)
-				{
-					var faceColors = ExtractFaceColorsFromRuns(
-						result, resultMesh, originalIdToColor, originalIdToSpatialColors, meshColors);
-					if (faceColors != null)
-					{
-						resultMesh.FaceColors = faceColors;
-					}
-				}
-
-				return resultMesh;
+				return ReadResult(boolResult, batch);
 			}
 			finally
 			{
@@ -439,6 +497,158 @@ namespace MatterHackers.PolygonMesh.Csg
 					boolResult.Dispose();
 				}
 			}
+		}
+
+		/// <summary>
+		/// <see cref="CombineAndRead"/> with a yield between each pair of the n-ary fold.
+		/// </summary>
+		/// <remarks>
+		/// Only the fold differs: reading the result back is one native export and a walk over
+		/// managed arrays, with no point inside it where handing the frame away would leave the
+		/// kernel's data in a state anything else may look at.
+		/// </remarks>
+		private static async Task<Mesh> CombineAndReadAsync(
+			OperandBatch batch,
+			CsgModes operation,
+			CancellationToken cancellationToken,
+			RustWindingRule windingRule,
+			ProgressReporter reporter,
+			double amountPerOperation,
+			double ratioCompleted)
+		{
+			if (batch.Manifolds.Count == 0)
+			{
+				return new Mesh();
+			}
+
+			var operationType = OperationTypeOf(operation);
+
+			bool ownsResult = batch.Manifolds.Count > 1;
+
+			RustManifold boolResult;
+			if (!ownsResult)
+			{
+				boolResult = batch.Manifolds[0];
+			}
+			else if (NeedsExplicitBoolean(reporter, windingRule))
+			{
+				boolResult = await CombinePairwiseAsync(
+					batch.Manifolds, operationType, windingRule, cancellationToken, reporter, amountPerOperation, ratioCompleted);
+			}
+			else
+			{
+				boolResult = RustManifold.BatchBoolean(batch.Manifolds, operationType, cancellationToken);
+			}
+
+			try
+			{
+				return ReadResult(boolResult, batch);
+			}
+			finally
+			{
+				if (ownsResult)
+				{
+					boolResult.Dispose();
+				}
+			}
+		}
+
+		/// <summary>
+		/// The kernel's name for one of our operations.
+		/// </summary>
+		private static RustOpType OperationTypeOf(CsgModes operation)
+		{
+			if (operation == CsgModes.Subtract)
+			{
+				return RustOpType.Subtract;
+			}
+
+			if (operation == CsgModes.Intersect)
+			{
+				return RustOpType.Intersect;
+			}
+
+			return RustOpType.Add;
+		}
+
+		/// <summary>
+		/// Whether the n-ary combine has to be spelled out as a pairwise fold rather than handed to
+		/// the kernel whole.
+		/// </summary>
+		/// <remarks>
+		/// BatchBoolean runs the kernel's CSG tree, which is what makes a large n-ary union
+		/// tractable, but it reports no progress and takes no winding rule - it reads the
+		/// process-global engine and the default rule. So it stays the path whenever neither is
+		/// asked for, and asking for either drops to a pairwise left fold over the explicit binary
+		/// entry point.
+		/// </remarks>
+		/// <param name="reporter">
+		/// Whatever the caller's progress sink is - an <c>Action</c> or a
+		/// <see cref="ProgressReporter"/>. Only whether it exists is read here, and it costs the
+		/// batch path either way, which is why callers with nobody watching pass null rather than a
+		/// do-nothing reporter.
+		/// </param>
+		private static bool NeedsExplicitBoolean(object reporter, RustWindingRule windingRule)
+		{
+			return reporter != null || windingRule != RustWindingRule.Positive;
+		}
+
+		/// <summary>
+		/// Reads a finished boolean back out of the kernel as a <see cref="Mesh"/>, painting its
+		/// faces from the run data when the caller asked for colour tracking.
+		/// </summary>
+		private static Mesh ReadResult(RustManifold boolResult, OperandBatch batch)
+		{
+			var resultMesh = new Mesh();
+
+			if (boolResult.Status != RustStatus.NoError)
+			{
+				// Exporting an error manifold is safe here - unlike the C++ engine, which
+				// could fault the CLR doing it - but an error status still means the kernel
+				// could not build the solid, and a half-built one is worse than a failure.
+				throw new InvalidOperationException($"Manifold boolean result has error status: {boolResult.Status}");
+			}
+
+			var result = boolResult.GetMeshGL64();
+			var resultNumProp = (int)result.NumProp;
+			var vertices = result.VertProperties;
+			var indices = result.TriVerts;
+
+			// The ABI promises at least x, y, z per vertex. Checked rather than assumed
+			// because resultNumProp is the loop stride below, and a zero would spin.
+			if (resultNumProp < 3)
+			{
+				throw new InvalidOperationException($"Manifold boolean result has {resultNumProp} properties per vertex, expected at least 3");
+			}
+
+			for (int i = 0; i + 2 < vertices.Length; i += resultNumProp)
+			{
+				resultMesh.Vertices.Add(new Vector3(
+					vertices[i],
+					vertices[i + 1],
+					vertices[i + 2]));
+			}
+
+			for (int i = 0; i + 2 < indices.Length; i += 3)
+			{
+				resultMesh.Faces.Add(new Face(
+					(int)indices[i],
+					(int)indices[i + 1],
+					(int)indices[i + 2],
+					resultMesh.Vertices));
+			}
+
+			if (batch.TrackColors && resultMesh.Faces.Count > 0)
+			{
+				var faceColors = ExtractFaceColorsFromRuns(
+					result, resultMesh, batch.OriginalIdToColor, batch.OriginalIdToSpatialColors, batch.MeshColors);
+				if (faceColors != null)
+				{
+					resultMesh.FaceColors = faceColors;
+				}
+			}
+
+			return resultMesh;
 		}
 
 		/// <summary>
@@ -488,6 +698,64 @@ namespace MatterHackers.PolygonMesh.Csg
 					accumulated = next;
 
 					progress?.CompleteOperation(CombineCompletePhase);
+				}
+
+				return accumulated;
+			}
+			catch
+			{
+				accumulated?.Dispose();
+				throw;
+			}
+		}
+
+		/// <summary>
+		/// <see cref="CombinePairwise"/> with the UI given its thread back between two operands.
+		/// </summary>
+		/// <remarks>
+		/// Between, and only between: a single <c>RustManifold.Boolean</c> is one native call that
+		/// cannot hand anything back part way through, so this is the whole of what an n-ary union
+		/// can offer a host where the job and the UI share a thread. The yield is placed after the
+		/// step's own completion report so the bar has somewhere new to move to before it paints.
+		/// </remarks>
+		private static async Task<RustManifold> CombinePairwiseAsync(
+			List<RustManifold> manifolds,
+			RustOpType operationType,
+			RustWindingRule windingRule,
+			CancellationToken cancellationToken,
+			ProgressReporter reporter,
+			double amountPerOperation,
+			double ratioCompleted)
+		{
+			var progress = reporter == null
+				? null
+				: new BooleanProgressAdapter(reporter, ratioCompleted, amountPerOperation, manifolds.Count - 1);
+
+			RustManifold accumulated = null;
+
+			try
+			{
+				for (int i = 1; i < manifolds.Count; i++)
+				{
+					var next = RustManifold.Boolean(
+						accumulated ?? manifolds[0],
+						manifolds[i],
+						operationType,
+						RustBooleanEngine.Auto,
+						windingRule,
+						progress,
+						cancellationToken);
+
+					accumulated?.Dispose();
+					accumulated = next;
+
+					progress?.CompleteOperation(CombineCompletePhase);
+
+					// The token is read with the yield: the yield is what lets the user press Stop at
+					// all, so reading it here is what makes the press land on this pair rather than
+					// after the whole fold.
+					cancellationToken.ThrowIfCancellationRequested();
+					await (reporter?.YieldToUi() ?? default);
 				}
 
 				return accumulated;

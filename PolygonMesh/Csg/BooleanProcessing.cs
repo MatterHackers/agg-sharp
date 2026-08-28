@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using ClipperLib;
 using DualContouring;
 using g3;
@@ -134,6 +135,48 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				return AsImplicitMeshes(items, operation, processingMode, inputResolution, outputResolution);
 			}
+		}
+
+		/// <summary>
+		/// <see cref="DoArray"/> for a job that can hand the UI its thread back: the same boolean,
+		/// yielding after each operand's import and between each pair of the n-ary fold.
+		/// </summary>
+		/// <remarks>
+		/// The reporter travels as the object rather than as the <c>Action&lt;double, string&gt;</c>
+		/// it converts to because the yields go through it - see
+		/// <see cref="ProgressReporter.YieldToUi"/>. A null one still means "nobody is watching",
+		/// which is what buys the kernel's n-ary batch path, so a caller with no progress to show
+		/// passes null rather than <see cref="ProgressReporter.Null"/>.
+		/// <para>
+		/// Only worth calling from a job's top level async flow. Everything else - including the
+		/// native progress callback, which physically cannot await - keeps using
+		/// <see cref="DoArray"/>.
+		/// </para>
+		/// </remarks>
+		/// <inheritdoc cref="DoArray"/>
+		public static async Task<Mesh> DoArrayAsync(IEnumerable<(Mesh mesh, Matrix4X4 matrix)> items,
+			CsgModes operation,
+			ProcessingModes processingMode,
+			ProcessingResolution inputResolution,
+			ProcessingResolution outputResolution,
+			ProgressReporter reporter,
+			CancellationToken cancellationToken,
+			double amountPerOperation = 1,
+			double ratioCompleted = 0,
+			Color[] meshColors = null,
+			RustWindingRule windingRule = RustWindingRule.Positive,
+			bool repairOrientation = false)
+		{
+			if (processingMode == ProcessingModes.Polygons)
+			{
+				return await ManifoldKernel.RunBooleanAsync(
+					items, operation, cancellationToken, reporter, amountPerOperation, ratioCompleted, meshColors, windingRule, repairOrientation);
+			}
+
+			// The implicit-surface modes resample every operand into one grid and march it; they
+			// report nothing and have no per-operand boundary to hand a frame back at, so the async
+			// entry point is the synchronous one for them.
+			return AsImplicitMeshes(items, operation, processingMode, inputResolution, outputResolution);
 		}
 
 		/// <summary>

@@ -52,6 +52,18 @@ namespace MatterHackers.PolygonMesh.Csg
 	/// so the high-water mark is guarded. The reporter is invoked under that same
 	/// lock to keep the ratios the caller sees in the order they were computed.
 	/// </para>
+	/// <para>
+	/// This adapter stays synchronous forever, and must never call
+	/// <see cref="MatterHackers.Agg.ProgressReporter.YieldToUi"/>. <see cref="Report"/> is called from inside a
+	/// native frame: the kernel is part way through a boolean, holding its own state, and there is
+	/// no way to suspend that frame and resume it later - which is what awaiting means. On
+	/// mono-wasm an async callback would also have to return to the native caller before its
+	/// continuation ran, so the "yield" would hand the frame back to a boolean that had already
+	/// gone on without it. And the call can arrive on a native worker thread, which on any host is
+	/// not the thread that paints. A boolean's yields therefore live in the managed loop around the
+	/// kernel - see <see cref="ManifoldKernel"/>'s async pairwise fold - between native calls,
+	/// never inside one.
+	/// </para>
 	/// </remarks>
 	internal sealed class BooleanProgressAdapter : IProgress<(string Phase, double? Fraction)>
 	{
