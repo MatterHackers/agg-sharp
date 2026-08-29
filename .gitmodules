@@ -1,0 +1,3 @@
+[submodule "Submodules/manifold-sharp"]
+	path = Submodules/manifold-sharp
+	url = https://github.com/larsbrubaker/manifold-sharp.git
