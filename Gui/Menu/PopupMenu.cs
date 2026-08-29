@@ -786,6 +786,11 @@ namespace MatterHackers.Agg.UI
 					subMenu.ClearRemovedFlag();
 					this.SubMenu = null;
 
+					// This row was drawing the open-sub-menu fill, and nothing else is going to repaint it -
+					// the mouse and the focus left it (that is usually what closed the sub menu) before the
+					// close ran off the idle queue, so their own invalidates have already been and gone.
+					this.Invalidate();
+
 					// This sub menu going away normally means the whole chain was dismissed, and the parent has
 					// to follow it down. Not, though, when the focus simply moved deeper: sweeping down a column
 					// of sub menu parents opens each row's sub menu in turn, and because both opening and closing
@@ -797,6 +802,16 @@ namespace MatterHackers.Agg.UI
 					}
 				};
 			}
+
+			/// <summary>
+			/// The row an open sub menu came out of keeps its fill, which is the standard desktop menu
+			/// convention: hovering into the sub menu takes both the mouse and the focus off this row, and
+			/// without this it went back to drawing as an ordinary row - nothing on screen then said which
+			/// item the sub menu the user is reading belongs to.
+			/// </summary>
+			protected override bool HighlightedWithoutTheHighlight
+				=> SubMenu != null
+					&& !SubMenu.HasBeenClosed;
 
 			public override void OnDraw(Graphics2D graphics2D)
 			{
@@ -1398,7 +1413,15 @@ namespace MatterHackers.Agg.UI
 			}
 
 			/// <summary>
-			/// Reads the same as a mouse hover while this row holds keyboard focus.
+			/// Whether this row should read as highlighted with neither the mouse nor the focus on it.
+			/// </summary>
+			/// <remarks>
+			/// Only <see cref="SubMenuItemButton"/> has such a state: the row a sub menu came out of.
+			/// </remarks>
+			protected virtual bool HighlightedWithoutTheHighlight => false;
+
+			/// <summary>
+			/// Reads the same as a mouse hover while this row holds keyboard focus, or while its sub menu is up.
 			/// </summary>
 			/// <remarks>
 			/// Arrow key navigation moves focus from row to row, and <see cref="ThemedButton"/>'s thin focus
@@ -1409,9 +1432,9 @@ namespace MatterHackers.Agg.UI
 			{
 				get
 				{
-					if (this.Focused
-						&& this.Enabled
-						&& !this.ContainsFirstUnderMouseRecursive())
+					if (this.Enabled
+						&& !this.ContainsFirstUnderMouseRecursive()
+						&& (this.Focused || this.HighlightedWithoutTheHighlight))
 					{
 						return this.HoverColor;
 					}

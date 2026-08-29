@@ -417,6 +417,78 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// The row a sub menu belongs to keeps its fill while that sub menu is up. Once the pointer is inside
+		/// the sub menu the parent is neither hovered nor focused, and without this it drew as an ordinary
+		/// unhighlighted row - so nothing on screen said which item the open sub menu had come out of.
+		/// </summary>
+		[Test]
+		public async Task AnOpenSubMenuKeepsItsParentRowFilled()
+		{
+			var harness = HoverMenuHarness.Show(menu =>
+			{
+				menu.CreateMenuItem("Open");
+				menu.CreateSubMenu("More", menu.Theme, subMenu => subMenu.CreateMenuItem("Leaf"));
+			});
+
+			var subMenuButton = harness.Menu.Children.OfType<PopupMenu.SubMenuItemButton>().First();
+			var plainRow = (PopupMenu.MenuItem)harness.Find("Open Menu Item");
+
+			// The harness theme leaves AccentMimimalOverlay unset, so a row's hover fill is transparent and
+			// reads the same as no fill at all. Give the rows one there is something to see.
+			subMenuButton.HoverColor = Color.Blue;
+			plainRow.HoverColor = Color.Blue;
+
+			// Untouched, the row draws no highlight - so the assert further down cannot pass vacuously
+			await Assert.That(subMenuButton.BackgroundColor).IsNotEqualTo(subMenuButton.HoverColor);
+
+			harness.MoveTo(harness.CenterOf("More Menu Item"));
+			harness.PumpIdle();
+
+			await Assert.That(subMenuButton.SubMenu).IsNotNull();
+
+			harness.MoveTo(harness.CenterOf("Leaf Menu Item"));
+			harness.PumpIdle();
+
+			await Assert.That(harness.HighlightedName).IsEqualTo("Leaf Menu Item")
+				.Because("the highlight moved into the sub menu, which is what takes it off the parent row");
+			await Assert.That(subMenuButton.BackgroundColor).IsEqualTo(subMenuButton.HoverColor)
+				.Because("the row the open sub menu came out of stays filled, as every desktop menu does it");
+			await Assert.That(plainRow.BackgroundColor).IsNotEqualTo(plainRow.HoverColor)
+				.Because("a row with no sub menu open is untouched by this - only one row is drilled into");
+		}
+
+		/// <summary>
+		/// The parent row's fill belongs to its sub menu, so it goes when the sub menu does - crossing onto a
+		/// sibling must not leave two rows looking highlighted.
+		/// </summary>
+		[Test]
+		public async Task TheParentRowFillGoesWhenItsSubMenuCloses()
+		{
+			var harness = HoverMenuHarness.Show(menu =>
+			{
+				menu.CreateMenuItem("Open");
+				menu.CreateSubMenu("More", menu.Theme, subMenu => subMenu.CreateMenuItem("Leaf"));
+			});
+
+			var subMenuButton = harness.Menu.Children.OfType<PopupMenu.SubMenuItemButton>().First();
+
+			// See AnOpenSubMenuKeepsItsParentRowFilled - the harness theme's hover fill is transparent
+			subMenuButton.HoverColor = Color.Blue;
+
+			harness.MoveTo(harness.CenterOf("More Menu Item"));
+			harness.PumpIdle();
+
+			await Assert.That(subMenuButton.SubMenu).IsNotNull();
+
+			harness.MoveTo(harness.CenterOf("Open Menu Item"));
+			harness.PumpIdle();
+
+			await Assert.That(subMenuButton.SubMenu).IsNull();
+			await Assert.That(subMenuButton.BackgroundColor).IsNotEqualTo(subMenuButton.HoverColor)
+				.Because("nothing is drilled into any more, so the parent row is an ordinary row again");
+		}
+
+		/// <summary>
 		/// agg-sharp has one highlight, not two: hovering an enabled row moves keyboard focus onto it, which
 		/// is what Windows menus (and agg-gui's single <c>hover_path</c>) do. That is what makes Enter activate
 		/// the row the mouse is pointing at.
