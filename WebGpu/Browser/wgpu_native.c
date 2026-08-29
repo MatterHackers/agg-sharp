@@ -29,8 +29,7 @@
 // sides disagree about the signature: Dawn's takes the draw-count buffer and offset that
 // wgpu-native's ...IndirectCount entry point carries, so the managed binding's declaration and the
 // JS implementation can silently differ in arity. Leave them to emdawnwebgpu, and never add a stub
-// for a symbol the port already provides. (docs/wasm_blazor.html D-W1: "two MultiDraw*Indirect
-// signature collisions to guard".)
+// for a symbol the port already provides.
 
 #include <stdint.h>
 #include <emscripten/console.h>

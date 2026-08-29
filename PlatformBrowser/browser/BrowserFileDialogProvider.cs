@@ -57,6 +57,14 @@ namespace MatterHackers.Agg.Platform
 	/// themselves - see <see cref="ResolveStagedFile"/>. The watching is polling from
 	/// <see cref="UiThread"/>'s idle queue - a v1 mechanism with a known hole in it, argued out in
 	/// <see cref="BrowserSaveWatch"/>.</para>
+	/// <para><b>Open relies on sticky user activation.</b> A browser only lets a file input open off a user
+	/// gesture, and this is not called from one directly: input is queued off the DOM listener and delivered
+	/// later on the frame loop, so what reaches <see cref="OpenFileDialog"/> is an agg event rather than the
+	/// DOM event. What carries it is the document's <i>sticky</i> activation, which never expires once the
+	/// user has interacted at all, and which Chromium and Firefox both accept for
+	/// <c>&lt;input type="file"&gt;</c> today. If an engine ever tightens that to require transient
+	/// activation, the picker has to be opened from the DOM listener itself rather than from the delivered
+	/// agg event - the queue-then-deliver path cannot be made synchronous.</para>
 	/// <para><b>There is no folder picker.</b> <see cref="SelectFolderDialog"/> returns false. The File
 	/// System Access API can grant a directory handle, but only on Chromium and only as a handle - not as a
 	/// path any agg caller could use - so answering "no" is the honest form of not having one.</para>

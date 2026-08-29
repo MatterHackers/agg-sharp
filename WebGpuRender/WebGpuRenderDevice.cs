@@ -144,7 +144,7 @@ namespace MatterHackers.WebGpuRender
 			// on the stack, and report "the driver is not answering" for what is really the wrong entry
 			// point. This is also the fence a device-loss recovery hits - every host's TryRecoverDevice
 			// rebuilds its device by calling this constructor, so the browser's twin has to be an async
-			// path built on CreateAsync, which is W4 S4's layer work and not this type's.
+			// path built on CreateAsync, which is BrowserWebGpuLayer's work and not this type's.
 			if (OperatingSystem.IsBrowser())
 			{
 				throw new PlatformNotSupportedException(
@@ -290,7 +290,7 @@ namespace MatterHackers.WebGpuRender
 			// wgpuDevicePoll at all (the browser build links a stub that reports "idle" and returns), and
 			// the lost callback can only fire once this call has returned to the JS event loop. The loop
 			// would therefore spin MaxCallbackSpins times doing nothing and then report a loss that had
-			// not happened yet. An async twin belongs with the browser layer that would use it (W4 S4).
+			// not happened yet. An async twin belongs with BrowserWebGpuLayer, which is what would use it.
 			if (OperatingSystem.IsBrowser())
 			{
 				throw new PlatformNotSupportedException(

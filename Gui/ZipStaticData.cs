@@ -580,8 +580,8 @@ namespace MatterHackers.Agg.Platform
 
 				// Deliberately not cached. Decompressed asset bytes would live in the wasm heap alongside
 				// the zip itself, and the big assets (sample parts, fonts) are exactly the ones that would
-				// blow the budget. W5's risk list names per-entry caching as the lever to pull if first
-				// paint drags - pull it here, bounded, once a real boot says it is needed.
+				// blow the budget. Per-entry caching is the lever to pull if first paint ever drags - pull
+				// it here, bounded, once a real boot says it is needed.
 				var bytes = new byte[entry.Length];
 				using (var entryStream = entry.Open())
 				{

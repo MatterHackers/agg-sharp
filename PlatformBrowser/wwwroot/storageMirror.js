@@ -11,8 +11,8 @@
 //
 // Whole files by key, and nothing else: no records, no indexes, no versioned schema. The managed side
 // mirrors a directory tree, so a key is a relative path and a value is that file's bytes. That also keeps
-// the backend swappable - when W7's workers unlock synchronous OPFS access handles, the replacement has
-// to implement these four operations and nothing more.
+// the backend swappable - if web workers ever unlock synchronous OPFS access handles here, the
+// replacement has to implement these four operations and nothing more.
 //
 // Everything here is a promise, which is exactly why the mirror exists in the first place: a page's only
 // storage is asynchronous on the main thread, and the ISQLite/IStaticData contracts above it are

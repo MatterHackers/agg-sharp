@@ -139,7 +139,7 @@ namespace MatterHackers.Agg.Tests
 			// cross-platform host will call it, so the desktop leg has to stay exactly the constructor it
 			// always was. This drives the shared halves of that refactor (the adapter options and the device
 			// descriptor, now built once for both wait strategies) against a real GPU; the browser's own
-			// legs cannot run here and are proven by W4 S4's bring-up.
+			// legs cannot run here and are proven by BrowserWebGpuLayer's own bring-up.
 			using (GpuTestGate.Acquire(nameof(WebGpuRenderDeviceTests)))
 			{
 				Task<WebGpuRenderDevice> creating = WebGpuRenderDevice.CreateAsync(null, "createAsyncDesktop");

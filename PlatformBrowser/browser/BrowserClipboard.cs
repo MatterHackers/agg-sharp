@@ -58,7 +58,7 @@ namespace MatterHackers.Agg.UI
 	/// is the one this loses that Linux and Windows have: the async clipboard API can carry
 	/// <c>text/html</c> through <c>ClipboardItem</c>, but reading it has the same synchronous-contract
 	/// problem as text and writing it is refused outright by some browsers for a non-user-gesture write. It
-	/// is a W5 question, not a v1 one - nothing in agg's own widgets pastes HTML.</para>
+	/// is a later question, not a v1 one - nothing in agg's own widgets pastes HTML.</para>
 	/// </remarks>
 	public class BrowserClipboard : ISystemClipboard
 	{

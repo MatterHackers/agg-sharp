@@ -30,7 +30,7 @@ namespace MatterHackers.Agg.Platform.Browser
 	public partial class BrowserSystemWindow
 	{
 		/// <summary>
-		/// A window wired to the real DOM. What a provider (W3 S4) calls; the constructor stays open for a
+		/// A window wired to the real DOM. What a window provider calls; the constructor stays open for a
 		/// test's own seams.
 		/// </summary>
 		/// <remarks>

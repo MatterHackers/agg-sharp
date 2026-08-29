@@ -17,7 +17,7 @@ What it compares are the *wasm module's own* pixels, not Chrome's screenshot of 
 `BrowserSystemWindow.CaptureScreenshotAsync` reads the WebGPU frame back into an agg `ImageBuffer` and
 writes a PNG - the same code path, the same BGRA bytes and the same encoder the desktop goldens use -
 and `BrowserCaptureInterop.ReadCaptureAsBase64` hands it out of the wasm filesystem. A CDP
-`Page.captureScreenshot` was measured against it (W4 S5) as identical over the canvas, but it is the
+`Page.captureScreenshot` was measured against it as identical over the canvas, but it is the
 wrong source anyway: it is composited, scaled by the page zoom and re-encoded by Chrome, none of which
 belongs in a pixel-identity oracle.
 

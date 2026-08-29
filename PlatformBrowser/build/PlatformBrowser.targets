@@ -11,8 +11,8 @@
     content) depends on AssignTargetPaths, so an item added there is visible to
     consumers as well as to this project's own output.
 
-    A Blazor WebAssembly head needs one more thing, settled by examples/BrowserHost
-    (W3 S5): it serves only what is in the static web assets manifest, and files that
+    A Blazor WebAssembly head needs one more thing, settled by examples/BrowserHost:
+    it serves only what is in the static web assets manifest, and files that
     merely land in bin/.../wwwroot are not in it. So the head IMPORTS this file itself
     (see BrowserHost.csproj) - a ProjectReference delivers a reference's content to the
     consumer's output folder, not into its item lists, and DefineStaticWebAssets reads

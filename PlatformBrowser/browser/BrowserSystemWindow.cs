@@ -977,7 +977,7 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// The canvas's own <c>width</c>/<c>height</c> attributes are set by JS, in the same place the size is
 		/// measured, so there is exactly one rounding of a fractional CSS layout into whole device pixels and
 		/// the backing store cannot disagree with what agg was told. What is here is what a swapchain resize
-		/// (W4) and the widget tree need.
+		/// (<see cref="BrowserWebGpuLayer.Resize"/>) and the widget tree need.
 		/// </remarks>
 		public void ApplyBackingSize(BrowserBackingSize newBacking)
 		{

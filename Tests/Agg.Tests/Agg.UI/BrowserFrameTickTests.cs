@@ -163,8 +163,8 @@ namespace MatterHackers.Agg.UI.Tests
 				tick.Tick();
 				await Assert.That(paints).IsEqualTo(1);
 
-				// Asked for, but there is no render device yet (bring-up, and W4 is what ends it). The request
-				// is still owed rather than dropped.
+				// Asked for while nothing can paint - the state a host is in before its render device has
+				// finished coming up. The request is still owed rather than dropped.
 				canPaint = false;
 				tick.Invalidate();
 				tick.Tick();
