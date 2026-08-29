@@ -49,10 +49,13 @@ WebGPU gets `This browser does not support WebGPU, which MatterCAD requires.` in
 the underlying exception in the console. There is no fallback renderer anywhere in agg, by design.
 
 `dotnet build`, `dotnet run` and a plain `dotnet publish` still work with **no `wasm-tools`
-workload**, because nothing native links without that switch. Publish prints a recommendation to
-install it; that is about AOT and relinking, not correctness. A Release publish (which runs the
-trimmer) boots too - the providers are resolved by type name through `AggContext.CreateInstanceFrom`,
-and ILLink kept them.
+workload**, because nothing native links without a switch that asks for it. There are two:
+`LinkEmdawnWebGpu` above, and `LinkManifoldRust`, which links the CSG kernel and is off through
+`PolygonMesh/build/PolygonMeshBrowser.targets` — this project reaches `PolygonMesh` transitively, so
+the ManifoldRust package would otherwise link its archive here by default. Publish prints a
+recommendation to install the workload; that is about AOT and relinking, not correctness. A Release
+publish (which runs the trimmer) boots too - the providers are resolved by type name through
+`AggContext.CreateInstanceFrom`, and ILLink kept them.
 
 ## Taking a screenshot from outside the browser
 

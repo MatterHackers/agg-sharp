@@ -44,4 +44,13 @@
 	     bootstrap stages that library and flows it here. See the file. -->
 	<Import Project="..\..\WebGpu\build\WebGpuBrowser.targets" />
 
+	<!-- Keeps the wasm build of manifold_rs OUT of this example's link. PlatformBrowser reaches
+	     PolygonMesh through RenderGl, so this project is a consumer of the ManifoldRust package, whose
+	     own props would otherwise link its 5.3 MB archive into every browser-wasm consumer by default -
+	     an emcc relink this example never asked for and the "no wasm-tools workload" promise in the
+	     README could not survive. No agg example does CSG; one that wants to (the CSG golden scene in
+	     the MatterCAD tree's docs/browser-golden-runner.md) turns it on with -p:LinkManifoldRust=true.
+	     See the file. -->
+	<Import Project="..\..\PolygonMesh\build\PolygonMeshBrowser.targets" />
+
 </Project>

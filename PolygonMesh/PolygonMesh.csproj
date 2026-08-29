@@ -13,79 +13,17 @@
     <None Remove="ObjParser\**" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <!--
-      Build against a local manifold-rust working tree instead of the published package.
-      Off by default and it must stay that way: CI and every other machine have no such
-      checkout, and a build that silently depended on one would be unreproducible.
-
-      It exists because the browser needs binding fixes no published package carries yet
-      (the boolean progress parameter has to be an IntPtr - mono-wasm's interpreter aborts
-      on a P/Invoke declaring a C# function pointer - and the module-load DllImportResolver
-      has to stand down under OperatingSystem.IsBrowser, where there is nothing to resolve).
-      When a package ships those, delete this switch and bump the version below.
-
-      manifold-rust is a sibling checkout, not a submodule, so its path is per machine.
-      These are the two conventions in use; anything else overrides the property.
-
-      MatterCAD.Wasm/build/ManifoldRustBrowser.targets names the same checkout under a
-      different property, ManifoldRustRepoDir, for the wasm archive. So that a browser
-      publish needs only one knob, a global -p:ManifoldRustRepoDir= steers this too - it is
-      the default here whenever it is set. (Only a global one: that file's own assignment
-      is local to the head's evaluation and never reaches this project.)
-    -->
-    <ManifoldRustCheckoutDir Condition="'$(UseLocalManifoldRust)' == 'true' and '$(ManifoldRustCheckoutDir)' == '' and '$(ManifoldRustRepoDir)' != ''">$([MSBuild]::NormalizeDirectory('$(ManifoldRustRepoDir)'))</ManifoldRustCheckoutDir>
-    <ManifoldRustCheckoutDir Condition="'$(UseLocalManifoldRust)' == 'true' and '$(ManifoldRustCheckoutDir)' == '' and '$(OS)' == 'Windows_NT'">C:\Development\rust-apps\manifold-rust\</ManifoldRustCheckoutDir>
-    <ManifoldRustCheckoutDir Condition="'$(UseLocalManifoldRust)' == 'true' and '$(ManifoldRustCheckoutDir)' == ''">$([MSBuild]::NormalizeDirectory('$(HOME)', 'Development', 'rust-apps', 'manifold-rust'))</ManifoldRustCheckoutDir>
-
-    <!--
-      This machine's shared library, which cargo leaves in the checkout's release output. It is a
-      property rather than three conditioned items because a Condition cannot nest quotes: an
-      Exists('$([MSBuild]::NormalizePath(...'...'...))') does not parse.
-    -->
-    <_ManifoldRustLocalNativeName Condition="'$(OS)' == 'Windows_NT'">manifold_rs.dll</_ManifoldRustLocalNativeName>
-    <_ManifoldRustLocalNativeName Condition="'$(_ManifoldRustLocalNativeName)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">libmanifold_rs.dylib</_ManifoldRustLocalNativeName>
-    <_ManifoldRustLocalNativeName Condition="'$(_ManifoldRustLocalNativeName)' == ''">libmanifold_rs.so</_ManifoldRustLocalNativeName>
-    <ManifoldRustLocalNative Condition="'$(UseLocalManifoldRust)' == 'true' and '$(ManifoldRustLocalNative)' == ''">$([MSBuild]::NormalizePath('$(ManifoldRustCheckoutDir)', 'target', 'release', '$(_ManifoldRustLocalNativeName)'))</ManifoldRustLocalNative>
-  </PropertyGroup>
-
   <ItemGroup>
     <!-- The one and only boolean backend (see ManifoldKernel.cs). The C++ ManifoldNET
-         engine it replaced is gone, and so is the managed CsgBySlicing fallback. -->
-    <PackageReference Include="ManifoldRust" Version="0.4.2" Condition="'$(UseLocalManifoldRust)' != 'true'" />
+         engine it replaced is gone, and so is the managed CsgBySlicing fallback.
+
+         The package carries every platform: runtimes/<rid>/native shared libraries the
+         runtime probes for on desktop, and - for a browser-wasm consumer, where there is
+         no dynamic loading - runtimes/browser-wasm/native/manifold_rs.a plus the
+         build/ManifoldRust.props that puts it on mono-wasm's emcc link line. So a browser
+         head needs no manifold machinery of its own beyond deciding whether to link it. -->
+    <PackageReference Include="ManifoldRust" Version="0.5.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(UseLocalManifoldRust)' == 'true'">
-    <!-- net8.0, consumed from net10.0 - compatible down, and the binding is pure
-         LibraryImport with no framework-version-sensitive surface. -->
-    <ProjectReference Include="$([MSBuild]::NormalizePath('$(ManifoldRustCheckoutDir)', 'dotnet', 'ManifoldRust', 'ManifoldRust.csproj'))" />
-
-    <!--
-      A ProjectReference carries the managed assembly and nothing else: the natives only
-      reach a consumer through the package's runtimes/<rid>/native folders, which pack
-      builds. So the desktop library has to be copied by hand, and cargo's own output is
-      the only place it exists, so a release cargo build of the manifold-ffi package has to
-      have run. ManifoldRust's resolver probes AppContext.BaseDirectory last, which is
-      exactly where this lands.
-
-      Conditioned on Exists rather than fatal when missing, because a browser publish has
-      no use for a desktop native (there the archive is linked into the wasm module by
-      MatterCAD.Wasm/build/ManifoldRustBrowser.targets) and PolygonMesh builds the same way
-      for both. Without it a desktop run fails at the first CSG call with a
-      DllNotFoundException naming manifold_rs.
-
-      Host-native builds only, which is all this dev switch is for. Which library it names
-      is decided by the machine doing the building and not by RuntimeIdentifier, so a
-      cross-RID publish (-r win-x64 from a mac, say) stages this host's dylib into an output
-      that will look for a DLL. Cross-RID needs the package, whose runtimes/<rid>/native
-      folders are what get that right.
-    -->
-    <None Include="$(ManifoldRustLocalNative)"
-          Condition="Exists('$(ManifoldRustLocalNative)')"
-          Link="$(_ManifoldRustLocalNativeName)"
-          CopyToOutputDirectory="PreserveNewest"
-          Visible="false" />
   </ItemGroup>
 
   <ItemGroup>
