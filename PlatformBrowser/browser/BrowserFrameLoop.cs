@@ -44,6 +44,11 @@ namespace MatterHackers.Agg.Platform.Browser
 	/// stepped from devtools.</para>
 	/// <para>The class is <c>partial</c> because the <c>[JSImport]</c>/<c>[JSExport]</c> source generator
 	/// requires it - a compiler contract, not a code organization choice.</para>
+	/// <para>"Once per animation frame" is not the whole story while the page is hidden, where the browser
+	/// serves no animation frames at all. The tick is not only what paints - it is what drains
+	/// <see cref="UiThread"/>'s idle queue and advances its intervals - so <c>frameLoop.js</c> keeps calling
+	/// it from a timer for as long as the page stays hidden. Nothing here has to know that, but a tick can
+	/// therefore arrive from somewhere other than <c>requestAnimationFrame</c>, at a much coarser rate.</para>
 	/// <para><b>One deviation from the spike:</b> a frame that throws does not stop the loop. The spike stopped
 	/// it because a repeating exception buries its own cause in a demo; an application cannot afford it, since
 	/// a dead loop leaves a window on screen with nothing pumping it - no input, no idle queue, no way to
