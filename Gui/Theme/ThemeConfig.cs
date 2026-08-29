@@ -189,7 +189,12 @@ namespace MatterHackers.Agg.UI
 
         public double TabButtonHeight => 30 * GuiWidget.DeviceScale;
 
-        public double MenuGutterWidth => 35 * GuiWidget.DeviceScale;
+        /// <summary>
+        /// The left gutter a menu row reserves for its icon, in device pixels. Rows without an icon show it as
+        /// empty space, so it is sized to the 16 unit icons menus actually use (5 either side) rather than to
+        /// the much wider band it used to be.
+        /// </summary>
+        public double MenuGutterWidth => 26 * GuiWidget.DeviceScale;
 
         /// <summary>
         /// The height of one popup menu row, not counting <see cref="MenuRowInset"/>.

@@ -49,8 +49,12 @@ namespace MatterHackers.Agg.UI
 		/// Tightened from 8 for the Windows 11 style density. It is the label padding rather than the row
 		/// height that has to come down first: a row is VAnchor.Fit, so with the old 8 the padded label was
 		/// taller than <see cref="ThemeConfig.MenuRowHeight"/> and the row's MinimumSize would never bind.
-		/// The left and right numbers are untouched - the left one clears the icon gutter
-		/// (<see cref="ThemeConfig.MenuGutterWidth"/>) and things line up on it.
+		/// The left and right numbers in <see cref="MenuPadding"/> are untouched because changing them changes
+		/// nothing: every use of it here puts it on a <see cref="TextWidget"/>, and a TextWidget only grows its
+		/// bounds for its Padding while AutoExpandBoundsToText is set - which it is not for these labels, whose
+		/// bounds measure the same as an unpadded one's. What actually holds a label clear of the icon gutter is
+		/// the row's own left padding, taken from <see cref="ThemeConfig.MenuGutterWidth"/>; the label is drawn
+		/// at its own left edge, so it is the gutter alone that the rows line up on.
 		/// </remarks>
 		public const double MenuLabelVerticalPadding = 5;
 
