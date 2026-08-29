@@ -221,18 +221,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			if (hasStartAndEndFaces)
 			{
 				// make a face for the start
-				Mesh extrudedVertexSource = cleanedPath.TriangulateFaces();
-				if (revolveAroundZ)
-				{
-					extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
-					extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(angleStart));
-				}
-				else
-				{
-					extrudedVertexSource.Transform(Matrix4X4.CreateRotationY(angleStart));
-				}
-
-				mesh.CopyFaces(extrudedVertexSource);
+				AddRevolveCap(cleanedPath, mesh, angleStart, revolveAroundZ, reverseWinding: false);
 			}
 
 			// make the outside shell
@@ -261,20 +250,9 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
 			else // add the end face
 			{
-				// make a face for the end
-				Mesh extrudedVertexSource = cleanedPath.TriangulateFaces();
-				if (revolveAroundZ)
-				{
-					extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
-					extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(currentAngle));
-				}
-				else
-				{
-					extrudedVertexSource.Transform(Matrix4X4.CreateRotationY(angleEnd));
-				}
-
-				extrudedVertexSource.ReverseFaces();
-				mesh.CopyFaces(extrudedVertexSource);
+				// The end cap closes against the last strip, so it has to sit on the angle that strip
+				// actually ended on - the accumulated currentAngle, which is only approximately angleEnd.
+				AddRevolveCap(cleanedPath, mesh, currentAngle, revolveAroundZ, reverseWinding: true);
 			}
 
 			mesh.CleanAndMerge();
@@ -283,10 +261,67 @@ namespace MatterHackers.PolygonMesh.Processors
 			return mesh;
 		}
 
+		/// <summary>
+		/// The single place a 2D profile point becomes a point on the revolved solid, at
+		/// <paramref name="angle"/> around the axis.
+		/// </summary>
+		/// <remarks>
+		/// Every part of the solid has to come through here. Mesh.CleanAndMerge welds vertices on EXACT
+		/// float equality, so any second way of computing a point that should be shared leaves the seam
+		/// open. The end caps used to be one: they were triangulated flat and then rotated a quarter turn
+		/// about X onto the revolve plane, and CreateRotationX(Tau / 4) does not have an exactly zero
+		/// cosine. That leaked profileHeight * cos(90) - about 4.4e-7 at float precision - into the cap
+		/// corners, which then failed to weld to the wall ring they sat a fraction of a micron away from
+		/// and left a partial revolve non-manifold along both end seams.
+		/// </remarks>
+		private static Vector3 RevolvedPosition(Vector2 profilePoint, double angle, bool revolveAroundZ)
+		{
+			if (revolveAroundZ)
+			{
+				return Vector3Ex.Transform(new Vector3(profilePoint.X, 0, profilePoint.Y), Matrix4X4.CreateRotationZ(angle));
+			}
+
+			return Vector3Ex.Transform(new Vector3(profilePoint.X, profilePoint.Y, 0), Matrix4X4.CreateRotationY(angle));
+		}
+
+		/// <summary>
+		/// Adds the flat face that closes a partial revolve at <paramref name="angle"/>, wound outward
+		/// (<paramref name="reverseWinding"/> flips it for the end of the sweep, which faces the other way).
+		/// </summary>
+		private static void AddRevolveCap(IVertexSource profile, Mesh mesh, double angle, bool revolveAroundZ, bool reverseWinding)
+		{
+			// This tessellates rather than calling TriangulateFaces because the cap corners must be placed
+			// by RevolvedPosition - see its remarks. TriangulateFaces can only give back a mesh already
+			// rounded to float in profile space, which no later transform can put back onto the wall.
+			var tesselator = new CachedTesselator();
+			VertexSourceToTesselator.SendShapeToTesselator(tesselator, profile);
+
+			for (int i = 0; i < tesselator.IndicesCache.Count; i += 3)
+			{
+				Vector2 v0 = tesselator.VerticesCache[tesselator.IndicesCache[i + 0].Index].Position;
+				Vector2 v1 = tesselator.VerticesCache[tesselator.IndicesCache[i + 1].Index].Position;
+				Vector2 v2 = tesselator.VerticesCache[tesselator.IndicesCache[i + 2].Index].Position;
+				if (v0 == v1 || v1 == v2 || v2 == v0)
+				{
+					continue;
+				}
+
+				if (reverseWinding)
+				{
+					(v0, v2) = (v2, v0);
+				}
+
+				mesh.CreateFace(
+					RevolvedPosition(v0, angle, revolveAroundZ),
+					RevolvedPosition(v1, angle, revolveAroundZ),
+					RevolvedPosition(v2, angle, revolveAroundZ));
+			}
+		}
+
 		private static void AddRevolveStrip(IVertexSource vertexSource, Mesh mesh, double startAngle, double endAngle, bool revolveAroundZ)
 		{
-			Vector3 lastPosition = Vector3.Zero;
-			Vector3 firstPosition = Vector3.Zero;
+			Vector2 lastPoint = Vector2.Zero;
+			Vector2 firstPoint = Vector2.Zero;
 
 			foreach (var vertexData in vertexSource.Vertices())
 			{
@@ -297,50 +332,25 @@ namespace MatterHackers.PolygonMesh.Processors
 
 				if (vertexData.IsMoveTo)
 				{
-					firstPosition = new Vector3(vertexData.Position.X, 0, vertexData.Position.Y);
-					if (!revolveAroundZ)
-					{
-						firstPosition = new Vector3(vertexData.Position.X, vertexData.Position.Y, 0);
-					}
-
-					lastPosition = firstPosition;
+					firstPoint = vertexData.Position;
+					lastPoint = firstPoint;
 				}
 
 				if (vertexData.IsLineTo || vertexData.IsClose)
 				{
+					var currentPoint = vertexData.IsClose ? firstPoint : vertexData.Position;
 
-					var currentPosition = new Vector3(vertexData.Position.X, 0, vertexData.Position.Y);
-					if (!revolveAroundZ)
+					// a segment lying on the axis sweeps no area
+					if (currentPoint.X != 0 || lastPoint.X != 0)
 					{
-						currentPosition = new Vector3(vertexData.Position.X, vertexData.Position.Y, 0);
+						mesh.CreateFace(
+							RevolvedPosition(currentPoint, endAngle, revolveAroundZ),
+							RevolvedPosition(currentPoint, startAngle, revolveAroundZ),
+							RevolvedPosition(lastPoint, startAngle, revolveAroundZ),
+							RevolvedPosition(lastPoint, endAngle, revolveAroundZ));
 					}
 
-					if (vertexData.IsClose)
-					{
-						currentPosition = firstPosition;
-					}
-
-					if (currentPosition.X != 0 || lastPosition.X != 0)
-					{
-						if (revolveAroundZ)
-						{
-							mesh.CreateFace(
-								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(endAngle)),
-								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationZ(startAngle)),
-								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationZ(startAngle)),
-								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationZ(endAngle)));
-						}
-						else
-						{
-							mesh.CreateFace(
-								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationY(endAngle)),
-								Vector3Ex.Transform(currentPosition, Matrix4X4.CreateRotationY(startAngle)),
-								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationY(startAngle)),
-								Vector3Ex.Transform(lastPosition, Matrix4X4.CreateRotationY(endAngle)));
-						}
-					}
-
-					lastPosition = currentPosition;
+					lastPoint = currentPoint;
 				}
 			}
 		}

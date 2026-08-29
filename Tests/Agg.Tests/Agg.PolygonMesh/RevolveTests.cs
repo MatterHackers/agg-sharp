@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Threading.Tasks;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
@@ -143,6 +144,43 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			}
 
 			return total;
+		}
+
+		[Test]
+		public async Task APartialRevolveWeldsItsEndCapsToTheWall()
+		{
+			// The end caps used to be placed by chaining a quarter turn about X onto the Z rotation, while
+			// the wall strips built the same points by hand and rotated them once. The two arithmetic paths
+			// land about 1e-7 apart, and CleanAndMerge welds on exact float equality, so every cap corner
+			// stayed its own vertex and the solid came back open along both end seams.
+			const int angleSteps = 8;
+			var mesh = RectangleProfile(5, 15, 10).Revolve(angleSteps, 0, MathHelper.Tau / 4);
+
+			// four profile corners at each of the nine ring angles and nothing else - the cap corners are
+			// corners of the first and last ring, not points of their own
+			await Assert.That(mesh.Vertices.Count).IsEqualTo(4 * (angleSteps + 1));
+			await Assert.That(mesh.IsManifold()).IsTrue()
+				.Because("a partial revolve is a closed solid, so every edge has exactly two faces");
+
+			// The faceted quarter wedge is eight prisms of chord width: 8 * height * sin(step) * (R^2 - r^2) / 2.
+			// Welding alone would not notice a cap placed at the wrong angle or wound inward, but volume does.
+			var stepAngle = MathHelper.Tau / 4 / angleSteps;
+			var expectedVolume = angleSteps * 10 * Math.Sin(stepAngle) * ((15 * 15) - (5 * 5)) / 2;
+			await Assert.That(SignedVolume(mesh)).IsEqualTo(expectedVolume).Within(.001)
+				.Because("both caps close the wedge, facing outward");
+		}
+
+		[Test]
+		public async Task AFullRevolveWeldsItsWrapAroundSeam()
+		{
+			// A full turn has no end caps, and the closing strip ends on the exact angle the first strip
+			// started from, so its seam has always welded. Pinned so the cap fix cannot regress it.
+			const int angleSteps = 8;
+			var mesh = RectangleProfile(5, 15, 10).Revolve(angleSteps);
+
+			await Assert.That(mesh.Vertices.Count).IsEqualTo(4 * angleSteps);
+			await Assert.That(mesh.IsManifold()).IsTrue()
+				.Because("a full revolve closes on itself");
 		}
 
 		[Test]
