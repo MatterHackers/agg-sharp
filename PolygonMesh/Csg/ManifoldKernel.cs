@@ -634,28 +634,88 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// </summary>
 		private static Mesh ReadResult(RustManifold boolResult, OperandBatch batch)
 		{
-			var resultMesh = new Mesh();
+			ThrowIfErrored(boolResult, "boolean");
 
-			if (boolResult.Status() != RustStatus.NoError)
+			var result = Export(boolResult);
+			var resultMesh = BuildMesh(result, "boolean");
+
+			if (batch.TrackColors && resultMesh.Faces.Count > 0)
 			{
-				// Exporting an error manifold is safe here - unlike the C++ engine, which
-				// could fault the CLR doing it - but an error status still means the kernel
-				// could not build the solid, and a half-built one is worse than a failure.
-				throw new InvalidOperationException($"Manifold boolean result has error status: {boolResult.Status()}");
+				var faceColors = ExtractFaceColorsFromRuns(
+					result, resultMesh, batch.OriginalIdToColor, batch.OriginalIdToSpatialColors, batch.MeshColors);
+				if (faceColors != null)
+				{
+					resultMesh.FaceColors = faceColors;
+				}
 			}
 
+			return resultMesh;
+		}
+
+		/// <summary>
+		/// Reads a finished kernel result back out as a <see cref="Mesh"/>, refusing one the
+		/// kernel could not build.
+		/// </summary>
+		/// <remarks>
+		/// The colourless half of <see cref="ReadResult"/>, shared with the operations that
+		/// have no run data to paint from - see <see cref="MinkowskiProcessing"/>. Face
+		/// colours only mean something when the caller supplied per-operand colours, which
+		/// only the boolean path does.
+		/// </remarks>
+		/// <param name="operationName">
+		/// What to call the operation in a failure message, so a caller reading the log knows
+		/// which kernel call refused rather than only that one did.
+		/// </param>
+		internal static Mesh ToMesh(RustManifold result, string operationName)
+		{
+			ThrowIfErrored(result, operationName);
+
+			return BuildMesh(Export(result), operationName);
+		}
+
+		/// <summary>
+		/// Refuses a result the kernel finished in an error state.
+		/// </summary>
+		/// <remarks>
+		/// Exporting an error manifold is safe here - unlike the C++ engine, which could fault
+		/// the CLR doing it - but an error status still means the kernel could not build the
+		/// solid, and a half-built one is worse than a failure.
+		/// </remarks>
+		private static void ThrowIfErrored(RustManifold result, string operationName)
+		{
+			if (result.Status() != RustStatus.NoError)
+			{
+				throw new InvalidOperationException($"Manifold {operationName} result has error status: {result.Status()}");
+			}
+		}
+
+		/// <summary>
+		/// The kernel's export of a finished manifold: positions, indices and the run data a
+		/// caller may want to attribute triangles with.
+		/// </summary>
+		private static RustMeshGL64 Export(RustManifold result)
+		{
 			// -1 is the export's "no property slot holds normals", which is the normal index
 			// the retired binding's parameterless GetMeshGL64 passed on every call.
-			var result = boolResult.GetMeshGL64(-1);
-			var resultNumProp = (int)result.NumProp;
-			var vertices = result.VertProperties;
-			var indices = result.TriVerts;
+			return result.GetMeshGL64(-1);
+		}
+
+		/// <summary>
+		/// Rebuilds a <see cref="Mesh"/> from the kernel's flat vertex and index lists.
+		/// </summary>
+		private static Mesh BuildMesh(RustMeshGL64 exported, string operationName)
+		{
+			var resultMesh = new Mesh();
+
+			var resultNumProp = (int)exported.NumProp;
+			var vertices = exported.VertProperties;
+			var indices = exported.TriVerts;
 
 			// The export promises at least x, y, z per vertex. Checked rather than assumed
 			// because resultNumProp is the loop stride below, and a zero would spin.
 			if (resultNumProp < 3)
 			{
-				throw new InvalidOperationException($"Manifold boolean result has {resultNumProp} properties per vertex, expected at least 3");
+				throw new InvalidOperationException($"Manifold {operationName} result has {resultNumProp} properties per vertex, expected at least 3");
 			}
 
 			for (int i = 0; i + 2 < vertices.Count; i += resultNumProp)
@@ -673,16 +733,6 @@ namespace MatterHackers.PolygonMesh.Csg
 					(int)indices[i + 1],
 					(int)indices[i + 2],
 					resultMesh.Vertices));
-			}
-
-			if (batch.TrackColors && resultMesh.Faces.Count > 0)
-			{
-				var faceColors = ExtractFaceColorsFromRuns(
-					result, resultMesh, batch.OriginalIdToColor, batch.OriginalIdToSpatialColors, batch.MeshColors);
-				if (faceColors != null)
-				{
-					resultMesh.FaceColors = faceColors;
-				}
 			}
 
 			return resultMesh;

@@ -1,0 +1,238 @@
+/*
+Copyright (c) 2026, Lars Brubaker
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied, of the FreeBSD Project.
+*/
+
+using System;
+
+// Same aliasing convention as the kernel itself (ManifoldKernel.cs): types that come from
+// the boolean kernel are spelled with a Rust prefix - ManifoldSharp is the C# port of
+// manifold-rust - so a use site says which library it means. Here it also keeps the kernel's
+// own Minkowski class from being confused with this wrapper.
+using RustManifold = ManifoldSharp.Manifold;
+
+namespace MatterHackers.PolygonMesh.Csg
+{
+	/// <summary>
+	/// The kernel's morphological operations over <see cref="Mesh"/>: dilation
+	/// (<see cref="MinkowskiSum"/>) and erosion (<see cref="MinkowskiDifference"/>).
+	/// </summary>
+	/// <remarks>
+	/// The public face of <see cref="ManifoldKernel"/> for Minkowski work, exactly as
+	/// <see cref="BooleanProcessing"/> is for booleans: operands are validated by being offered
+	/// to the kernel, and an operand it will not take is an exception the caller sees rather
+	/// than geometry built by other rules.
+	/// <para>
+	/// <b>Cost model.</b> The kernel picks one of three algorithms, and they are orders of
+	/// magnitude apart:
+	/// </para>
+	/// <list type="bullet">
+	/// <item>convex &#8853; convex - one convex hull over the pairwise vertex sums. Milliseconds.</item>
+	/// <item>nonconvex &#8853; convex (and <em>every</em> erosion, convex or not) - one convex hull
+	/// per triangle of the nonconvex operand, batch-unioned 1000 at a time. Linear in that
+	/// operand's triangle count, with a boolean's worth of work per triangle: seconds for a few
+	/// hundred triangles, minutes for a few thousand.</item>
+	/// <item>nonconvex &#8853; nonconvex - a hull per <em>pair</em> of faces. Quadratic, and only
+	/// worth starting on toy meshes.</item>
+	/// </list>
+	/// <para>
+	/// So a caller controls its own running time by keeping the structuring element small and
+	/// coarse: <see cref="SphereMesh"/> at 12 segments is 72 triangles and is what the rounding
+	/// radius actually needs, while the same ball at 64 segments costs the same shape many times
+	/// over.
+	/// </para>
+	/// <para>
+	/// <b>Intended uses.</b> Morphological opening (<c>erode</c> then <c>dilate</c>) rounds every
+	/// convex edge of a solid by the ball's radius and closing (<c>dilate</c> then <c>erode</c>)
+	/// rounds every concave one, which is the uniform all-edges fillet, exactly; and because
+	/// that answer is exact, it is also the oracle a selective bevel/fillet implementation is
+	/// measured against on the edges it does round.
+	/// </para>
+	/// <para>
+	/// Synchronous, like <see cref="BooleanProcessing.DoArray"/>: the kernel's Minkowski entry
+	/// point takes no progress sink and no cancellation token, so there is nothing an async
+	/// overload could yield between. A caller that needs the UI back runs the whole call on a
+	/// worker thread.
+	/// </para>
+	/// </remarks>
+	public static class MinkowskiProcessing
+	{
+		/// <summary>
+		/// Dilation: every point of <paramref name="solid"/> swept by <paramref name="tool"/>,
+		/// which grows the solid by the tool's extent in every direction.
+		/// </summary>
+		/// <remarks>
+		/// The tool's own origin is the sweep centre, so a ball built by
+		/// <see cref="SphereMesh"/> - centred - grows the solid symmetrically, and one that is not
+		/// centred also translates it.
+		/// </remarks>
+		/// <param name="solid">The shape being grown.</param>
+		/// <param name="tool">The structuring element swept over it.</param>
+		/// <returns>The dilated solid.</returns>
+		/// <exception cref="ArgumentNullException">Either operand is null.</exception>
+		/// <exception cref="ArgumentException">
+		/// Either operand has no geometry, or encloses no volume - a zero-thickness shell imports
+		/// cleanly and holds nothing, and the kernel would answer it with the other operand.
+		/// </exception>
+		/// <exception cref="InvalidOperationException">
+		/// The kernel refused an operand - as a <c>MeshImportRejectedException</c> naming the
+		/// status it objected to - or could not build the result. Same failure and same message
+		/// shape a boolean produces for the same input.
+		/// </exception>
+		public static Mesh MinkowskiSum(Mesh solid, Mesh tool)
+		{
+			return Run(solid, tool, inset: false);
+		}
+
+		/// <summary>
+		/// Erosion: the points of <paramref name="solid"/> that <paramref name="tool"/> still fits
+		/// inside when centred on them, which shrinks the solid by the tool's extent.
+		/// </summary>
+		/// <remarks>
+		/// Always the per-triangle path, even for two convex operands - the kernel has no closed
+		/// form for an inset - so this is the expensive half of an opening or a closing. See the
+		/// cost model on <see cref="MinkowskiProcessing"/>.
+		/// <para>
+		/// A tool too large for the solid erodes it away entirely, which comes back as an empty
+		/// mesh rather than as a failure: nothing fits is a real answer.
+		/// </para>
+		/// </remarks>
+		/// <param name="solid">The shape being shrunk.</param>
+		/// <param name="tool">The structuring element that has to fit inside it.</param>
+		/// <returns>The eroded solid.</returns>
+		/// <inheritdoc cref="MinkowskiSum"/>
+		public static Mesh MinkowskiDifference(Mesh solid, Mesh tool)
+		{
+			return Run(solid, tool, inset: true);
+		}
+
+		/// <summary>
+		/// A sphere of <paramref name="radius"/> centred on the origin - the structuring element
+		/// morphological rounding is done with.
+		/// </summary>
+		/// <remarks>
+		/// The kernel's own sphere rather than one built here, for two reasons: it is a subdivided
+		/// octahedron, so it is convex and its poles sit exactly on the axes at
+		/// <paramref name="radius"/> (which is what makes a dilated bounding box grow by exactly
+		/// twice the radius), and it comes back through the same import the operands do.
+		/// <para>
+		/// Note it is <em>inscribed</em>: every vertex is exactly on the sphere and every face is
+		/// inside it, so a rounding done with it is a little tighter than the analytic radius, by
+		/// the chord error of the tessellation. Segments buy back that error at a price the cost
+		/// model above spells out.
+		/// </para>
+		/// </remarks>
+		/// <param name="radius">The sphere's radius; must be positive.</param>
+		/// <param name="segments">
+		/// Sides around the full circle. The kernel rounds up to a multiple of four (it subdivides
+		/// each octahedron edge into <c>(segments + 3) / 4</c> parts), and 0 asks it to pick a
+		/// count from the radius. Negative is refused rather than read as that request.
+		/// </param>
+		/// <returns>The sphere as a mesh.</returns>
+		public static Mesh SphereMesh(double radius, int segments)
+		{
+			if (!(radius > 0))
+			{
+				// The kernel answers a non-positive radius with an empty InvalidConstruction
+				// manifold, which would surface here as an unexplained empty mesh.
+				throw new ArgumentOutOfRangeException(nameof(radius), radius, "A sphere needs a positive radius.");
+			}
+
+			if (segments < 0)
+			{
+				// The kernel reads any non-positive count as "pick one from the radius", so a
+				// segment count that came out of a calculation negative would silently produce a
+				// ball at some other tessellation than the caller believes it asked for. Zero is
+				// left alone because zero is how a caller spells that request on purpose.
+				throw new ArgumentOutOfRangeException(nameof(segments), segments, "A sphere needs a non-negative segment count; 0 asks the kernel to choose.");
+			}
+
+			return ManifoldKernel.ToMesh(RustManifold.Sphere(radius, segments), "sphere");
+		}
+
+		/// <summary>
+		/// Imports both operands, runs the kernel's Minkowski and reads the result back.
+		/// </summary>
+		/// <remarks>
+		/// The import is <see cref="ManifoldKernel.Import"/> - the same one a boolean operand goes
+		/// through, weld retry included - so a mesh usable as a boolean operand is usable here and
+		/// one that is not fails the same way, with the same message. No orientation repair: a
+		/// caller that wants it can hand in a repaired mesh, and doing it silently here would make
+		/// the two entry points disagree about what an inside-out shell means.
+		/// </remarks>
+		private static Mesh Run(Mesh solid, Mesh tool, bool inset)
+		{
+			ArgumentNullException.ThrowIfNull(solid);
+			ArgumentNullException.ThrowIfNull(tool);
+
+			// Empty is not a degenerate case the kernel answers usefully: Minkowski with an empty
+			// operand is empty, but the kernel hands back the *other* operand unchanged. That is a
+			// silent no-op on a fillet, so it is refused here instead.
+			ThrowIfEmpty(solid, nameof(solid));
+			ThrowIfEmpty(tool, nameof(tool));
+
+			var solidManifold = ManifoldKernel.Import(solid, repairOrientation: false);
+			var toolManifold = ManifoldKernel.Import(tool, repairOrientation: false);
+
+			// The check above is not the same check. A mesh can carry triangles and still import
+			// to nothing: a zero-thickness shell - PlatonicSolids.CreateCube(2, 2, 0), or any
+			// flattened solid - is closed, passes every mesh check, and imports with no error at
+			// all, because the kernel welds its two coincident sides together and is left with an
+			// empty manifold. That is the input the kernel's own early exit answers with the other
+			// operand's clone, so it has to be caught after the import or not at all.
+			ThrowIfNoVolume(solidManifold, nameof(solid));
+			ThrowIfNoVolume(toolManifold, nameof(tool));
+
+			var result = inset
+				? solidManifold.MinkowskiDifference(toolManifold)
+				: solidManifold.MinkowskiSum(toolManifold);
+
+			return ManifoldKernel.ToMesh(result, inset ? "minkowski difference" : "minkowski sum");
+		}
+
+		private static void ThrowIfEmpty(Mesh mesh, string parameterName)
+		{
+			if (mesh.Vertices.Count == 0 || mesh.Faces.Count == 0)
+			{
+				throw new ArgumentException("A Minkowski operand needs geometry; this mesh has none.", parameterName);
+			}
+		}
+
+		/// <summary>
+		/// Refuses an operand that imported cleanly and holds nothing.
+		/// </summary>
+		private static void ThrowIfNoVolume(RustManifold manifold, string parameterName)
+		{
+			if (manifold.IsEmpty())
+			{
+				throw new ArgumentException(
+					"A Minkowski operand needs volume; this mesh is closed but encloses nothing, so the kernel holds it as empty.",
+					parameterName);
+			}
+		}
+	}
+}
