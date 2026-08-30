@@ -9,8 +9,16 @@ on:
 jobs:
   test:
     runs-on: windows-latest
+    # The last green run took ~3 minutes. A cap here means a future hang fails in
+    # half an hour instead of riding GitHub's 6-hour default to a cancel.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          # PolygonMesh project-references Submodules/manifold-sharp; without this the
+          # build fails with "the referenced project does not exist". Recursive, not
+          # true, so a submodule of manifold-sharp would come along too.
+          submodules: recursive
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -26,8 +34,12 @@ jobs:
       # (--logger). Note MTP's --timeout is a whole-session cap, not per-test.
       # --maximum-parallel-tests 1: the UI automation tests share window/input state and
       # fail intermittently when run in parallel; serializing costs no wall-clock time.
+      # Two nested timeouts on purpose: this inner --timeout cancels inside MTP, so the
+      # run still writes results.trx and the always() upload below makes a hang
+      # diagnosable; the job's 30m timeout-minutes is only the backstop for a wedge
+      # that MTP cannot cancel itself out of (restore, build, upload).
       - name: Run tests
-        run: dotnet test Tests/Agg.Tests/Agg.Tests.csproj --configuration Release --no-build --report-trx --report-trx-filename results.trx --results-directory TestResults --maximum-parallel-tests 1
+        run: dotnet test Tests/Agg.Tests/Agg.Tests.csproj --configuration Release --no-build --report-trx --report-trx-filename results.trx --results-directory TestResults --maximum-parallel-tests 1 --timeout 1500s
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
