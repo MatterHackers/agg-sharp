@@ -34,15 +34,27 @@ jobs:
       # (--logger). Note MTP's --timeout is a whole-session cap, not per-test.
       # --maximum-parallel-tests 1: the UI automation tests share window/input state and
       # fail intermittently when run in parallel; serializing costs no wall-clock time.
-      # Two nested timeouts on purpose: this inner --timeout cancels inside MTP, so the
-      # run still writes results.trx and the always() upload below makes a hang
-      # diagnosable; the job's 30m timeout-minutes is only the backstop for a wedge
-      # that MTP cannot cancel itself out of (restore, build, upload).
-      # The two clocks start at different moments - timeout-minutes from job start,
-      # --timeout from test-session start - and checkout+setup+build measured ~5 min,
-      # so the gap has to cover that skew plus the drain. At 1500s they fired 5 seconds
-      # apart and the runner died mid-drain with no TRX; 1200s buys a real ~5 min window.
+      # Three nested timeouts on purpose, innermost first, each one salvaging less than
+      # the one before:
+      #   --timeout 1200s   cancels inside MTP, so the run still writes results.trx and
+      #                     the always() uploads below make a hang diagnosable. A TRX
+      #                     names the test; nothing else here can.
+      #   timeout-minutes:25 (this step) is for a wedge MTP cannot cancel itself out of -
+      #                     a UI thread that never returns takes the session with it. A
+      #                     STEP timeout FAILS the step, so its log is archived and both
+      #                     always() uploads still run. That is the whole point of having
+      #                     it: a job-level cancel black-holes everything, and one did -
+      #                     run 33338695092 was cancelled at the job cap with no log, no
+      #                     artifacts and no way to tell which test was in flight.
+      #   timeout-minutes:30 (the job) stays the last resort for a wedge outside this step
+      #                     entirely (restore, build, upload).
+      # The clocks start at different moments - the job's from job start, the step's from
+      # step start, --timeout from test-session start - and checkout+setup+build measured
+      # ~5 min, so the gaps have to cover that skew plus the drain. At 1500s the inner two
+      # fired 5 seconds apart and the runner died mid-drain with no TRX; 1200s buys a real
+      # ~5 min window, and 25m leaves the job cap a margin of its own.
       - name: Run tests
+        timeout-minutes: 25
         run: dotnet test Tests/Agg.Tests/Agg.Tests.csproj --configuration Release --no-build --report-trx --report-trx-filename results.trx --results-directory TestResults --maximum-parallel-tests 1 --timeout 1200s
 
       - name: Upload Test Results

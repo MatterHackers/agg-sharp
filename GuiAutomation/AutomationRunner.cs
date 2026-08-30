@@ -1945,8 +1945,24 @@ namespace MatterHackers.GuiAutomation
 						return "render status: no platform window";
 					}
 
-					var property = platformWindow.GetType().GetProperty("RenderStatusReport");
-					return $"render status: {property?.GetValue(platformWindow) ?? "(not reported by this host)"}";
+					// Bounded for the same reason DescribeIdleDriver's TryEnter is: this only ever runs when
+					// something has already gone wrong, possibly on a UI thread that is wedged, and a host's
+					// status property is free to touch state that thread owns. Every implementation today
+					// reads cached fields and cannot block - but a diagnostic that can outlive the failure it
+					// came to explain is not one worth having, and the next host need not know that rule.
+					string status = null;
+					var read = Task.Run(() =>
+					{
+						var property = platformWindow.GetType().GetProperty("RenderStatusReport");
+						status = property?.GetValue(platformWindow)?.ToString() ?? "(not reported by this host)";
+					});
+
+					if (!read.Wait(TimeSpan.FromMilliseconds(500)))
+					{
+						return "render status: could not be read (the host's status property did not return)";
+					}
+
+					return $"render status: {status}";
 				}
 				catch (Exception ex)
 				{
