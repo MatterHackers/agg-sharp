@@ -1622,6 +1622,21 @@ namespace MatterHackers.Agg.UI
 			}
 			else if (!SingleWindowMode)
 			{
+				// This branch defers the Show onto the idle pump, and a window that has not been shown
+				// cannot drive that pump (CanDriveIdlePump reads enableIdleProcessing, which the firstWindow
+				// branch above is the only thing that sets). So if the pump has no driver when we get here,
+				// the Show is queued behind a turn that will never come: the window never appears, never
+				// paints, never raises Load, and an automation test waiting on its first draw times out with
+				// exactly the shape CI reported - no draws, no device, no driver, timer stopped. Said out
+				// loud because the two ways of arriving here look identical afterwards, and only this line
+				// can tell them apart.
+				if (idleTimerWindow == null)
+				{
+					Console.Error.WriteLine(
+						"Idle pump: a window is being shown through the idle queue while nothing is driving that"
+						+ " queue. Its Show cannot run until some other window claims the pump.");
+				}
+
 				DebugLogger.LogMessage("WinformsSystemWindow", "Subsequent window - calling Show via RunOnIdle");
 				UiThread.RunOnIdle(() =>
 				{
