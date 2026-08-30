@@ -257,7 +257,7 @@ namespace MatterHackers.PolygonMesh
 		/// unwelded seams coming back from a kernel readback. A mesh that is already a closed 2-manifold
 		/// has nothing to gain from it: every positional merge either changes nothing or fuses two
 		/// vertices the topology deliberately kept apart, which is what turns a valid solid into one with
-		/// 4-faces-per-edge junctions. The ManifoldRust boolean kernel returns exactly such a mesh - its
+		/// 4-faces-per-edge junctions. The ManifoldSharp boolean kernel returns exactly such a mesh - its
 		/// coincident-but-distinct vertices are intentional epsilon-valid self-touching geometry (two
 		/// solids meeting at a seam plane), not an error. So an already-manifold mesh is left alone.
 		/// <para>

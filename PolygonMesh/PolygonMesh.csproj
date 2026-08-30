@@ -14,16 +14,37 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- The one and only boolean backend (see ManifoldKernel.cs). The C++ ManifoldNET
          engine it replaced is gone, and so is the managed CsgBySlicing fallback.
 
-         The package carries every platform: runtimes/<rid>/native shared libraries the
-         runtime probes for on desktop, and - for a browser-wasm consumer, where there is
-         no dynamic loading - runtimes/browser-wasm/native/manifold_rs.a plus the
-         build/ManifoldRust.props that puts it on mono-wasm's emcc link line. So a browser
-         head needs no manifold machinery of its own beyond deciding whether to link it. -->
-    <PackageReference Include="ManifoldRust" Version="0.5.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
+         Pure managed, so it carries no platform of its own: no runtimes/<rid>/native to
+         probe on desktop, and nothing for a browser-wasm consumer to put on mono-wasm's
+         emcc link line. That is what retired PolygonMesh/build/PolygonMeshBrowser.targets
+         and the ManifoldRust NuGet package (0.5.0) it existed to tame - the C# port of
+         manifold-rust replaces the P/Invoke binding over that project's Rust cdylib, and
+         a browser head now needs no manifold machinery at all.
+
+         WHAT THE SWAP CHANGED ON THIS ASSEMBLY'S SURFACE. Three members name a kernel type
+         and so changed with it; the enum member SPELLINGS are identical on both sides, so a
+         caller that reaches them through its own alias needs no edit, and one that wrote
+         ManifoldRust.* by hand needs a one-line namespace change:
+
+           - BooleanProcessing.DoArray and DoArrayAsync, whose optional `windingRule`
+             parameter is ManifoldSharp.WindingRule rather than ManifoldRust.WindingRule
+             (public);
+           - MeshImportRejectedException.Status, now ManifoldSharp.Error rather than
+             ManifoldRust.ManifoldStatus (internal, so not a break outside this assembly -
+             recorded here because it is the same rename and would otherwise look like an
+             unrelated change). Error's members carry the same names as ManifoldStatus's, so
+             the text of every message built from one is unchanged.
+
+         Nothing else in the public surface names a kernel type: MeshRepair, PartialBooleanException
+         and SkippedBooleanOperand all speak in Mesh, string and int. -->
+    <ProjectReference Include="..\Submodules\manifold-sharp\ManifoldSharp\ManifoldSharp.csproj" />
   </ItemGroup>
 
   <ItemGroup>

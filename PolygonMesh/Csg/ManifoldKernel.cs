@@ -34,67 +34,140 @@ using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 
-// Every type from the package is aliased rather than reached through its namespace:
-// ManifoldRust.Manifold and MatterHackers.PolygonMesh.Mesh are both "the mesh type"
-// at a glance, and the Rust prefix says which one a use site means.
-using RustBooleanEngine = ManifoldRust.BooleanEngine;
-using RustManifold = ManifoldRust.Manifold;
-using RustMeshGL64 = ManifoldRust.MeshGL64;
-using RustOpType = ManifoldRust.ManifoldOpType;
-using RustStatus = ManifoldRust.ManifoldStatus;
-using RustWindingRule = ManifoldRust.WindingRule;
+// Every type from the kernel is aliased rather than reached through its namespace, and
+// the namespace is deliberately NOT imported: ManifoldSharp.Manifold and
+// MatterHackers.PolygonMesh.Mesh are both "the mesh type" at a glance, and
+// ManifoldSharp.ProgressReporter and MatterHackers.Agg.ProgressReporter are both
+// "the progress sink". The Rust prefix names the kernel's lineage - ManifoldSharp is
+// the exact-match C# port of manifold-rust, which the retired ManifoldRust NuGet
+// package reached through P/Invoke - so a use site still says which library it means.
+using RustBooleanConfig = ManifoldSharp.BooleanConfig;
+using RustBooleanEngine = ManifoldSharp.BooleanEngine;
+using RustCancelToken = ManifoldSharp.CancelToken;
+using RustCsgLeaf = ManifoldSharp.CsgLeaf;
+using RustCsgNode = ManifoldSharp.CsgNode;
+using RustCsgOp = ManifoldSharp.CsgOp;
+using RustManifold = ManifoldSharp.Manifold;
+using RustMeshGL64 = ManifoldSharp.MeshGL64;
+using RustOpType = ManifoldSharp.OpType;
+using RustParallel = ManifoldSharp.ManifoldParallel;
+using RustPhases = ManifoldSharp.Phases;
+using RustProgressReporter = ManifoldSharp.ProgressReporter;
+using RustStatus = ManifoldSharp.Error;
+using RustWindingRule = ManifoldSharp.WindingRule;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
 	/// <summary>
-	/// The ManifoldRust boolean backend: the native kernel
+	/// The ManifoldSharp boolean backend: the kernel
 	/// <see cref="BooleanProcessing.DoArray"/> runs every polygon-mode boolean through.
 	/// </summary>
 	/// <remarks>
 	/// Internal, and everything a caller outside this assembly needs is re-exposed on
 	/// <see cref="BooleanProcessing"/>: which kernel does the arithmetic is not part of
-	/// the CSG contract, and there is no second native engine to sit beside this one.
+	/// the CSG contract, and there is no second engine to sit beside this one.
 	/// <para>
 	/// Three things it does that the C++ ManifoldNET engine it replaced could not, and
 	/// which are why the migration happened: coordinates upload as <c>double</c> rather
 	/// than being narrowed to <c>float</c> at the boundary, the run data needed for face
-	/// colours comes back as ordinary managed arrays (no raw P/Invoke and no reflection
-	/// into a private handle field), and the caller's <see cref="CancellationToken"/>
-	/// actually reaches the kernel.
+	/// colours comes back as ordinary managed collections (no raw P/Invoke and no
+	/// reflection into a private handle field), and the caller's
+	/// <see cref="CancellationToken"/> actually reaches the kernel.
+	/// </para>
+	/// <para>
+	/// The kernel used to be a Rust cdylib behind the ManifoldRust P/Invoke binding and is
+	/// now ManifoldSharp, the exact-match C# port of the same Rust source. What that swap
+	/// changed here is bookkeeping, not arithmetic: a manifold is an ordinary managed
+	/// object, so nothing needs disposing and no import can fail because a library would
+	/// not load. What it did not change is the shape of the calls - the entry points below
+	/// reproduce the FFI's own definitions of the two composites the binding exposed (the
+	/// n-ary <c>BatchBoolean</c> as a CSG tree, and cancellation as a thrown
+	/// <see cref="OperationCanceledException"/>), so the geometry and the failure modes
+	/// are the ones this code was written against.
 	/// </para>
 	/// </remarks>
 	internal static class ManifoldKernel
 	{
 		/// <summary>
-		/// Selects the kernel's boolean engine, once, before the first boolean runs.
+		/// Selects the kernel's boolean engine and its parallelism, once, before the first
+		/// boolean runs.
 		/// </summary>
 		/// <remarks>
-		/// The setting is process-global on the native side, so it is done in a static
-		/// constructor rather than per call. <see cref="RustBooleanEngine.Auto"/> keeps the
-		/// fast exact pipeline for strictly manifold operands and only pays for the slower
+		/// Both settings are process-global, so they are made in a static constructor
+		/// rather than per call. <see cref="RustBooleanEngine.Auto"/> keeps the fast exact
+		/// pipeline for strictly manifold operands and only pays for the slower
 		/// rational-arithmetic engine when an operand came in through the robust import as
 		/// non-manifold soup.
+		/// <para>
+		/// Parallelism is on for the same reason: it is what this code has always run on.
+		/// The Rust <c>parallel</c> Cargo feature was in manifold-ffi's default feature set,
+		/// so every desktop native the ManifoldRust package shipped had rayon compiled in;
+		/// the browser-wasm archive alone was built <c>--no-default-features</c>, because
+		/// emscripten without <c>-pthread</c> has no worker threads to schedule on. The
+		/// switch below is the C# stand-in for that Cargo feature and reproduces exactly
+		/// that split, so the swap is performance-neutral rather than a silent
+		/// single-threading of every boolean. It is safe to flip either way at any time:
+		/// only sites whose output is provably identical to the sequential build are
+		/// parallelized, so the geometry is bit-identical with it on or off (see Par.cs).
+		/// </para>
+		/// <para>
+		/// Neither call can throw. <see cref="RustBooleanConfig.SetDefaultEngine"/> rejects
+		/// only an undeclared enum value, and reading the parallel switch touches no
+		/// environment of its own - <see cref="RustParallel"/> read that at its own class
+		/// init, which is where a hostile environment would have been felt and where it
+		/// would be that type's problem rather than a poisoned
+		/// <c>TypeInitializationException</c> on this one. The kernel is managed now, so
+		/// the library-load and version-handshake failures the old guard here existed for
+		/// cannot happen at all; there is nothing left worth catching.
+		/// </para>
 		/// </remarks>
 		static ManifoldKernel()
 		{
-			try
+			RustBooleanConfig.SetDefaultEngine(RustBooleanEngine.Auto);
+
+			// An explicit MANIFOLD_PARALLEL wins, whichever way it points. Overwriting it
+			// would make MANIFOLD_PARALLEL=0 mean nothing and quietly turn the port's
+			// two-configuration determinism net into the same configuration run twice -
+			// see ManifoldParallel.ConfiguredByEnvironment, which exists for this.
+			if (!RustParallel.ConfiguredByEnvironment)
 			{
-				RustManifold.DefaultBooleanEngine = RustBooleanEngine.Auto;
-			}
-			catch
-			{
-				// A static constructor that throws poisons the whole type: every later member
-				// access - including a classify call that only wants to know whether an operand
-				// imports - would get a cached TypeInitializationException naming the wrong
-				// problem rather than the failure it actually hit. If the
-				// native library cannot load or the version handshake fails, the per-call Import
-				// throws instead, which says what actually went wrong. A failed engine selection
-				// simply leaves the kernel's default Exact behaviour in place.
+				// Not OperatingSystem.IsBrowser() inverted for its own sake: the question is
+				// whether this host has threads to run the maps on, and the browser is the one
+				// agg platform that does not.
+				RustParallel.Enabled = !OperatingSystem.IsBrowser();
 			}
 		}
 
 		/// <summary>
-		/// Perform a boolean operation via the ManifoldRust native library. Every failure
+		/// Runs the kernel's one-time process-global configuration if it has not run yet.
+		/// </summary>
+		/// <remarks>
+		/// The static constructor above is the configuration; this only guarantees it has
+		/// happened. A type initializer fires on first use of the type, so every path that
+		/// reaches the kernel <em>through this class</em> is configured by construction -
+		/// but <see cref="MeshRepair"/> holds the kernel's types directly and never touches
+		/// <see cref="ManifoldKernel"/>, so a session that repaired a mesh before it ever
+		/// ran a boolean got the kernel's own defaults (Exact, sequential) instead of this
+		/// one's. That is not a wrong answer - the repair is engine-independent and Par.cs
+		/// guarantees bit-identity either way - but it is a different amount of work than
+		/// the same call makes after a boolean has run, which is exactly the kind of
+		/// set-once ordering Par.cs asks hosts to pin rather than leave to whichever
+		/// operation happened to be first.
+		/// <para>
+		/// Idempotent and cheap: after the first call it is a no-op the JIT can elide
+		/// entirely, because the CLR guarantees a type initializer runs at most once.
+		/// </para>
+		/// </remarks>
+		internal static void EnsureConfigured()
+		{
+			// Referencing any member of the type is enough to force the initializer; this
+			// spelling says so out loud rather than relying on a side effect of the call
+			// the caller was going to make anyway.
+			System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(ManifoldKernel).TypeHandle);
+		}
+
+		/// <summary>
+		/// Perform a boolean operation via the ManifoldSharp kernel. Every failure
 		/// surfaces as a managed exception - including cancellation, as
 		/// <see cref="OperationCanceledException"/> - and
 		/// <see cref="BooleanProcessing.DoArray"/> passes them all straight to the caller.
@@ -133,25 +206,24 @@ namespace MatterHackers.PolygonMesh.Csg
 			RustWindingRule windingRule = RustWindingRule.Positive,
 			bool repairOrientation = false)
 		{
-			using (var batch = new OperandBatch(operation, meshColors, repairOrientation))
+			var batch = new OperandBatch(operation, meshColors, repairOrientation);
+
+			foreach (var (mesh, matrix) in items)
 			{
-				foreach (var (mesh, matrix) in items)
+				if (!batch.TryAdd(mesh, matrix, cancellationToken))
 				{
-					if (!batch.TryAdd(mesh, matrix, cancellationToken))
-					{
-						return new Mesh();
-					}
+					return new Mesh();
 				}
-
-				batch.ThrowIfNothingImported();
-
-				var result = CombineAndRead(
-					batch, operation, cancellationToken, windingRule, reporter, amountPerOperation, ratioCompleted);
-
-				batch.ThrowIfAnySkipped(result);
-
-				return result;
 			}
+
+			batch.ThrowIfNothingImported();
+
+			var result = CombineAndRead(
+				batch, operation, cancellationToken, windingRule, reporter, amountPerOperation, ratioCompleted);
+
+			batch.ThrowIfAnySkipped(result);
+
+			return result;
 		}
 
 		/// <summary>
@@ -162,8 +234,8 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <remarks>
 		/// The yields are what make a boolean's progress bar move at all on a host where the job and
 		/// the UI share one thread. They are only ever between operations: a single pairwise boolean
-		/// is one native call that cannot be interrupted, so the frame it holds is still frozen for
-		/// however long that call takes.
+		/// is one uninterruptible call, so the frame it holds is still frozen for however long
+		/// that call takes.
 		/// <para>
 		/// A null <paramref name="reporter"/> never yields and keeps the kernel's n-ary batch path,
 		/// exactly as in the synchronous entry point - see <see cref="CombineAndRead"/>.
@@ -181,37 +253,37 @@ namespace MatterHackers.PolygonMesh.Csg
 			RustWindingRule windingRule = RustWindingRule.Positive,
 			bool repairOrientation = false)
 		{
-			using (var batch = new OperandBatch(operation, meshColors, repairOrientation))
-			{
-				foreach (var (mesh, matrix) in items)
-				{
-					if (!batch.TryAdd(mesh, matrix, cancellationToken))
-					{
-						return new Mesh();
-					}
+			var batch = new OperandBatch(operation, meshColors, repairOrientation);
 
-					// A mesh copy, a transform and a native upload each - seconds apiece on a large
-					// set, and all of it before the boolean itself starts. The token is read with the
-					// yield because the yield is what lets the user press Stop at all, so reading it
-					// here is what makes the press land on this operand rather than after the import.
-					cancellationToken.ThrowIfCancellationRequested();
-					await (reporter?.YieldToUi() ?? default);
+			foreach (var (mesh, matrix) in items)
+			{
+				if (!batch.TryAdd(mesh, matrix, cancellationToken))
+				{
+					return new Mesh();
 				}
 
-				batch.ThrowIfNothingImported();
-
-				var result = await CombineAndReadAsync(
-					batch, operation, cancellationToken, windingRule, reporter, amountPerOperation, ratioCompleted);
-
-				batch.ThrowIfAnySkipped(result);
-
-				return result;
+				// A mesh copy, a transform and an import each - seconds apiece on a large set,
+				// and all of it before the boolean itself starts. The token is read with the
+				// yield because the yield is what lets the user press Stop at all, so reading it
+				// here is what makes the press land on this operand rather than after the import.
+				cancellationToken.ThrowIfCancellationRequested();
+				await (reporter?.YieldToUi() ?? default);
 			}
+
+			batch.ThrowIfNothingImported();
+
+			var result = await CombineAndReadAsync(
+				batch, operation, cancellationToken, windingRule, reporter, amountPerOperation, ratioCompleted);
+
+			batch.ThrowIfAnySkipped(result);
+
+			return result;
 		}
 
 		/// <summary>
-		/// The operands of one boolean as the kernel holds them: the imported handles, the colour
-		/// bookkeeping their result is painted from, and the ones the kernel would not take.
+		/// The operands of one boolean as the kernel holds them: the imported manifolds, the
+		/// colour bookkeeping their result is painted from, and the ones the kernel would not
+		/// take.
 		/// </summary>
 		/// <remarks>
 		/// Its own type because <see cref="RunBoolean"/> and <see cref="RunBooleanAsync"/> both walk
@@ -220,7 +292,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// of them can hand the UI its thread back between operands - so the loop is all either of
 		/// them writes.
 		/// </remarks>
-		private sealed class OperandBatch : IDisposable
+		private sealed class OperandBatch
 		{
 			private readonly CsgModes operation;
 			private readonly Color[] meshColors;
@@ -273,7 +345,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				// Before the copy and the upload, not just before the boolean: importing a
 				// large set is itself seconds of work, and an already-cancelled caller should
-				// not pay for N mesh copies and N native imports it is going to throw away.
+				// not pay for N mesh copies and N imports it is going to throw away.
 				cancellationToken.ThrowIfCancellationRequested();
 
 				int meshIndex = this.OperandCount;
@@ -312,9 +384,8 @@ namespace MatterHackers.PolygonMesh.Csg
 				catch (MeshImportRejectedException refused) when (this.skipRefusedOperands)
 				{
 					// Only the kernel's verdict on this operand's geometry is skippable. A
-					// failure from anywhere else in the import - the native library, a handle -
-					// propagates, because degrading on it would tell the user to Repair a part
-					// that has nothing wrong with it.
+					// failure from anywhere else in the import propagates, because degrading on it
+					// would tell the user to Repair a part that has nothing wrong with it.
 					// Not swallowed: the throw from ThrowIfNothingImported or ThrowIfAnySkipped
 					// names every operand that landed here.
 					this.Skipped.Add(new SkippedBooleanOperand(meshIndex, refused.Message));
@@ -354,17 +425,6 @@ namespace MatterHackers.PolygonMesh.Csg
 					throw new PartialBooleanException(DescribeSkipped(this.Skipped, this.OperandCount), result, this.Skipped);
 				}
 			}
-
-			public void Dispose()
-			{
-				// Deterministic rather than left to the finalizer: a boolean over large
-				// geometry can hold a lot of native memory, and the next one may start
-				// before a collection would have run.
-				foreach (var manifold in this.Manifolds)
-				{
-					manifold.Dispose();
-				}
-			}
 		}
 
 		/// <summary>
@@ -402,18 +462,18 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			// AsOriginal is what gives the input an OriginalId, and the run data
 			// that carries colours back is keyed on that. Without colours the run
-			// data is never read, so the extra native copy would be pure waste.
+			// data is never read, so the extra copy would be pure waste.
 			var manifold = ImportAsOriginal(meshCopy, repairOrientation);
 
 			// -1 is what OriginalId reports when the re-tag did not take, which is what happens to a
-			// soup handle. It is not an ID: every such operand would register under the same key and
+			// soup manifold. It is not an ID: every such operand would register under the same key and
 			// the last one would silently answer for all of them. Registering nothing instead leaves
 			// this operand's triangles unattributed, which is what they honestly are.
-			if (manifold.OriginalId >= 0)
+			if (manifold.OriginalId() >= 0)
 			{
 				if (meshCopy.FaceColors != null)
 				{
-					originalIdToSpatialColors[manifold.OriginalId] = meshCopy.SaveFaceCentroidColors();
+					originalIdToSpatialColors[manifold.OriginalId()] = meshCopy.SaveFaceCentroidColors();
 				}
 				// Nothing registered past the end of meshColors: the caller supplied no colour for
 				// this operand, and inventing one would make its triangles count as attributed and
@@ -422,7 +482,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				// is public API, so a short array has to mean "no colour known" rather than "grey".
 				else if (meshIndex < meshColors.Length)
 				{
-					originalIdToColor[manifold.OriginalId] = meshColors[meshIndex];
+					originalIdToColor[manifold.OriginalId()] = meshColors[meshIndex];
 				}
 			}
 
@@ -466,14 +526,11 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			var operationType = OperationTypeOf(operation);
 
-			// A single operand is its own answer; running a one-operand boolean would
-			// only cost a copy. It is also the one case where the result is borrowed from
-			// the operand list, so it must not be disposed here.
-			bool ownsResult = batch.Manifolds.Count > 1;
-
 			RustManifold boolResult;
-			if (!ownsResult)
+			if (batch.Manifolds.Count == 1)
 			{
+				// A single operand is its own answer; running a one-operand boolean would
+				// only cost a copy.
 				boolResult = batch.Manifolds[0];
 			}
 			else if (NeedsExplicitBoolean(reporter, windingRule))
@@ -483,28 +540,18 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 			else
 			{
-				boolResult = RustManifold.BatchBoolean(batch.Manifolds, operationType, cancellationToken);
+				boolResult = BatchBoolean(batch.Manifolds, operationType, cancellationToken);
 			}
 
-			try
-			{
-				return ReadResult(boolResult, batch);
-			}
-			finally
-			{
-				if (ownsResult)
-				{
-					boolResult.Dispose();
-				}
-			}
+			return ReadResult(boolResult, batch);
 		}
 
 		/// <summary>
 		/// <see cref="CombineAndRead"/> with a yield between each pair of the n-ary fold.
 		/// </summary>
 		/// <remarks>
-		/// Only the fold differs: reading the result back is one native export and a walk over
-		/// managed arrays, with no point inside it where handing the frame away would leave the
+		/// Only the fold differs: reading the result back is one export and a walk over managed
+		/// collections, with no point inside it where handing the frame away would leave the
 		/// kernel's data in a state anything else may look at.
 		/// </remarks>
 		private static async Task<Mesh> CombineAndReadAsync(
@@ -523,10 +570,8 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			var operationType = OperationTypeOf(operation);
 
-			bool ownsResult = batch.Manifolds.Count > 1;
-
 			RustManifold boolResult;
-			if (!ownsResult)
+			if (batch.Manifolds.Count == 1)
 			{
 				boolResult = batch.Manifolds[0];
 			}
@@ -537,20 +582,10 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 			else
 			{
-				boolResult = RustManifold.BatchBoolean(batch.Manifolds, operationType, cancellationToken);
+				boolResult = BatchBoolean(batch.Manifolds, operationType, cancellationToken);
 			}
 
-			try
-			{
-				return ReadResult(boolResult, batch);
-			}
-			finally
-			{
-				if (ownsResult)
-				{
-					boolResult.Dispose();
-				}
-			}
+			return ReadResult(boolResult, batch);
 		}
 
 		/// <summary>
@@ -601,27 +636,29 @@ namespace MatterHackers.PolygonMesh.Csg
 		{
 			var resultMesh = new Mesh();
 
-			if (boolResult.Status != RustStatus.NoError)
+			if (boolResult.Status() != RustStatus.NoError)
 			{
 				// Exporting an error manifold is safe here - unlike the C++ engine, which
 				// could fault the CLR doing it - but an error status still means the kernel
 				// could not build the solid, and a half-built one is worse than a failure.
-				throw new InvalidOperationException($"Manifold boolean result has error status: {boolResult.Status}");
+				throw new InvalidOperationException($"Manifold boolean result has error status: {boolResult.Status()}");
 			}
 
-			var result = boolResult.GetMeshGL64();
+			// -1 is the export's "no property slot holds normals", which is the normal index
+			// the retired binding's parameterless GetMeshGL64 passed on every call.
+			var result = boolResult.GetMeshGL64(-1);
 			var resultNumProp = (int)result.NumProp;
 			var vertices = result.VertProperties;
 			var indices = result.TriVerts;
 
-			// The ABI promises at least x, y, z per vertex. Checked rather than assumed
+			// The export promises at least x, y, z per vertex. Checked rather than assumed
 			// because resultNumProp is the loop stride below, and a zero would spin.
 			if (resultNumProp < 3)
 			{
 				throw new InvalidOperationException($"Manifold boolean result has {resultNumProp} properties per vertex, expected at least 3");
 			}
 
-			for (int i = 0; i + 2 < vertices.Length; i += resultNumProp)
+			for (int i = 0; i + 2 < vertices.Count; i += resultNumProp)
 			{
 				resultMesh.Vertices.Add(new Vector3(
 					vertices[i],
@@ -629,7 +666,7 @@ namespace MatterHackers.PolygonMesh.Csg
 					vertices[i + 2]));
 			}
 
-			for (int i = 0; i + 2 < indices.Length; i += 3)
+			for (int i = 0; i + 2 < indices.Count; i += 3)
 			{
 				resultMesh.Faces.Add(new Face(
 					(int)indices[i],
@@ -663,6 +700,19 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <see cref="RustBooleanEngine.Auto"/> the static constructor installs; note
 		/// that Auto resolves to the robust engine for
 		/// <see cref="RustWindingRule.Nonzero"/>, which is the point of asking for it.
+		/// <para>
+		/// The fold builds one <see cref="RustCancelToken"/> per pair, and each of those
+		/// registers a callback on <paramref name="cancellationToken"/>'s source that is
+		/// never unregistered (see <see cref="Boolean"/> for why the registration is not
+		/// disposed). The accumulation is bounded, and by two things: the count is
+		/// <c>manifolds.Count - 1</c> per boolean, and every caller in this tree drives a
+		/// per-task <c>CancellationTokenSource</c> that is disposed when the operation
+		/// finishes - so the callback list dies with the operation that owns it. What would
+		/// break that is a long-lived, app-lifetime source threaded into repeated booleans:
+		/// its list would grow by n-1 entries per call and never shrink. No caller does
+		/// that today, and one that wants to should give each operation its own linked
+		/// source rather than teaching this loop to reuse a token.
+		/// </para>
 		/// </remarks>
 		private static RustManifold CombinePairwise(
 			List<RustManifold> manifolds,
@@ -676,44 +726,34 @@ namespace MatterHackers.PolygonMesh.Csg
 			var progress = reporter == null
 				? null
 				: new BooleanProgressAdapter(reporter, ratioCompleted, amountPerOperation, manifolds.Count - 1);
+			var progressSink = ProgressSinkFor(progress);
 
 			// Only ever holds an intermediate this method created; manifolds[0] is the
-			// caller's and is never assigned here, so the catch below cannot free it.
+			// caller's and is never assigned here.
 			RustManifold accumulated = null;
 
-			try
+			for (int i = 1; i < manifolds.Count; i++)
 			{
-				for (int i = 1; i < manifolds.Count; i++)
-				{
-					var next = RustManifold.Boolean(
-						accumulated ?? manifolds[0],
-						manifolds[i],
-						operationType,
-						RustBooleanEngine.Auto,
-						windingRule,
-						progress,
-						cancellationToken);
+				accumulated = Boolean(
+					accumulated ?? manifolds[0],
+					manifolds[i],
+					operationType,
+					RustBooleanEngine.Auto,
+					windingRule,
+					progressSink,
+					cancellationToken);
 
-					accumulated?.Dispose();
-					accumulated = next;
-
-					progress?.CompleteOperation(CombineCompletePhase);
-				}
-
-				return accumulated;
+				progress?.CompleteOperation(CombineCompletePhase);
 			}
-			catch
-			{
-				accumulated?.Dispose();
-				throw;
-			}
+
+			return accumulated;
 		}
 
 		/// <summary>
 		/// <see cref="CombinePairwise"/> with the UI given its thread back between two operands.
 		/// </summary>
 		/// <remarks>
-		/// Between, and only between: a single <c>RustManifold.Boolean</c> is one native call that
+		/// Between, and only between: a single pairwise <see cref="Boolean"/> is one call that
 		/// cannot hand anything back part way through, so this is the whole of what an n-ary union
 		/// can offer a host where the job and the UI share a thread. The yield is placed after the
 		/// step's own completion report so the bar has somewhere new to move to before it paints.
@@ -730,41 +770,31 @@ namespace MatterHackers.PolygonMesh.Csg
 			var progress = reporter == null
 				? null
 				: new BooleanProgressAdapter(reporter, ratioCompleted, amountPerOperation, manifolds.Count - 1);
+			var progressSink = ProgressSinkFor(progress);
 
 			RustManifold accumulated = null;
 
-			try
+			for (int i = 1; i < manifolds.Count; i++)
 			{
-				for (int i = 1; i < manifolds.Count; i++)
-				{
-					var next = RustManifold.Boolean(
-						accumulated ?? manifolds[0],
-						manifolds[i],
-						operationType,
-						RustBooleanEngine.Auto,
-						windingRule,
-						progress,
-						cancellationToken);
+				accumulated = Boolean(
+					accumulated ?? manifolds[0],
+					manifolds[i],
+					operationType,
+					RustBooleanEngine.Auto,
+					windingRule,
+					progressSink,
+					cancellationToken);
 
-					accumulated?.Dispose();
-					accumulated = next;
+				progress?.CompleteOperation(CombineCompletePhase);
 
-					progress?.CompleteOperation(CombineCompletePhase);
-
-					// The token is read with the yield: the yield is what lets the user press Stop at
-					// all, so reading it here is what makes the press land on this pair rather than
-					// after the whole fold.
-					cancellationToken.ThrowIfCancellationRequested();
-					await (reporter?.YieldToUi() ?? default);
-				}
-
-				return accumulated;
+				// The token is read with the yield: the yield is what lets the user press Stop at
+				// all, so reading it here is what makes the press land on this pair rather than
+				// after the whole fold.
+				cancellationToken.ThrowIfCancellationRequested();
+				await (reporter?.YieldToUi() ?? default);
 			}
-			catch
-			{
-				accumulated?.Dispose();
-				throw;
-			}
+
+			return accumulated;
 		}
 
 		/// <summary>
@@ -774,13 +804,143 @@ namespace MatterHackers.PolygonMesh.Csg
 		private const string CombineCompletePhase = "combining";
 
 		/// <summary>
+		/// The kernel's progress sink for one of ours, or null when nobody is watching.
+		/// </summary>
+		/// <remarks>
+		/// The kernel reports a <see cref="ManifoldSharp.Phase"/> and a fraction; the rest of
+		/// the pipeline wants a name and a fraction. The name is the kernel's own
+		/// <see cref="RustPhases.Name"/>, which is the same table the retired P/Invoke binding
+		/// read out of the native library, so the strings a user sees are unchanged.
+		/// <para>
+		/// The callback may run on a worker thread - the boolean pipeline parallelizes - which
+		/// is exactly the contract <see cref="BooleanProgressAdapter"/> is written against.
+		/// </para>
+		/// </remarks>
+		private static RustProgressReporter ProgressSinkFor(BooleanProgressAdapter adapter)
+		{
+			return adapter == null
+				? null
+				: new RustProgressReporter((phase, fraction) => adapter.Report((RustPhases.Name(phase), fraction)));
+		}
+
+		/// <summary>
+		/// One binary boolean, with the caller's <see cref="CancellationToken"/> bridged into
+		/// the kernel's own cancellation flag.
+		/// </summary>
+		/// <remarks>
+		/// The kernel reports cancellation as <see cref="RustStatus.Cancelled"/> on an empty
+		/// result; the rest of this file - and every caller above it - is written against a
+		/// thrown <see cref="OperationCanceledException"/>, which is what the P/Invoke binding
+		/// translated it into. This is that translation, unchanged, including its two
+		/// deliberate properties: a token that can never be signalled allocates nothing and
+		/// takes the uncancellable path, and <b>completion wins</b> - a kernel that finished
+		/// before it observed the flag returns its result rather than throwing, even if the
+		/// token is signalled by the time this returns.
+		/// </remarks>
+		private static RustManifold Boolean(
+			RustManifold a,
+			RustManifold b,
+			RustOpType operationType,
+			RustBooleanEngine engine,
+			RustWindingRule windingRule,
+			RustProgressReporter progress,
+			CancellationToken cancellationToken)
+		{
+			if (!cancellationToken.CanBeCanceled)
+			{
+				return a.BooleanWithEngineRuleAndProgress(b, operationType, engine, windingRule, null, progress);
+			}
+
+			// One token per operation, as CancelToken's own remarks require: it registers on
+			// the caller's source and is never unregistered, so a token that outlived the call
+			// would stay rooted in that source's callback list.
+			var token = new RustCancelToken(cancellationToken);
+
+			var result = a.BooleanWithEngineRuleAndProgress(b, operationType, engine, windingRule, token, progress);
+
+			if (result.Status() == RustStatus.Cancelled)
+			{
+				throw new OperationCanceledException(cancellationToken);
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// The n-ary boolean over already-imported operands: the kernel's CSG tree, which is
+		/// what makes a large union tractable, with the same cancellation translation
+		/// <see cref="Boolean"/> performs.
+		/// </summary>
+		/// <remarks>
+		/// Spelled out here rather than called, because <c>Manifold.BatchBoolean</c> is not the
+		/// same operation: that one is a pairwise left fold, while the batch entry point this
+		/// code was written against - manifold-ffi's <c>manifold_rs_batch_boolean_ct</c>, the
+		/// one the P/Invoke binding exposed as <c>BatchBoolean</c> - builds an n-ary CSG node
+		/// and evaluates it. The tree is the whole point of the batch path (see
+		/// <see cref="NeedsExplicitBoolean"/>), so this reproduces the FFI's definition line for
+		/// line: leaves over cloned implementations, one <c>CsgOp</c>, evaluate with the token.
+		/// </remarks>
+		private static RustManifold BatchBoolean(
+			List<RustManifold> manifolds,
+			RustOpType operationType,
+			CancellationToken cancellationToken)
+		{
+			if (!cancellationToken.CanBeCanceled)
+			{
+				return BatchBooleanCore(manifolds, operationType, null);
+			}
+
+			var token = new RustCancelToken(cancellationToken);
+
+			var result = BatchBooleanCore(manifolds, operationType, token);
+
+			if (result.Status() == RustStatus.Cancelled)
+			{
+				throw new OperationCanceledException(cancellationToken);
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// <see cref="BatchBoolean"/> against the kernel's own cancellation flag, which reports
+		/// a cancelled run as a status rather than by throwing.
+		/// </summary>
+		private static RustManifold BatchBooleanCore(
+			List<RustManifold> manifolds,
+			RustOpType operationType,
+			RustCancelToken token)
+		{
+			// A single operand has nothing to combine with and every operation is identity on
+			// it - but an already-cancelled token still wins, so a caller that only polls the
+			// status never sees a one-operand call report success after a cancel.
+			if (manifolds.Count == 1)
+			{
+				return token != null && token.IsCancelled
+					? RustManifold.MakeEmpty(RustStatus.Cancelled)
+					: manifolds[0].Clone();
+			}
+
+			var leaves = new List<RustCsgNode>(manifolds.Count);
+
+			foreach (var manifold in manifolds)
+			{
+				// Cloned, not aliased: the tree takes ownership of what it evaluates, and the
+				// operands stay the caller's to use again afterwards.
+				leaves.Add(new RustCsgLeaf(manifold.AsImpl().Clone()));
+			}
+
+			return RustManifold.FromImpl(new RustCsgOp(operationType, leaves).EvaluateWithToken(token));
+		}
+
+		/// <summary>
 		/// Uploads a mesh, rejecting one the kernel could not accept.
 		/// </summary>
 		/// <remarks>
 		/// Always the robust import. For strictly manifold input it is the plain import -
-		/// same result, and the handle is not marked soup, so the Auto engine still picks
+		/// same result, and the manifold is not marked soup, so the Auto engine still picks
 		/// the fast exact pipeline. Closed but non-manifold input is welded into a soup
-		/// handle instead of being rejected. Only geometry that is not even closed still
+		/// manifold instead of being rejected. Only geometry that is not even closed still
 		/// fails, as <see cref="RustStatus.NotClosed"/> - and that one gets a second chance
 		/// through <see cref="WeldSeams"/> before it is refused.
 		/// </remarks>
@@ -827,59 +987,38 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <param name="failureMessage">The message to throw with, or null on success.</param>
 		private static RustManifold TryImport(Mesh mesh, bool repairOrientation, out RustStatus status, out string failureMessage)
 		{
-			var (vertProperties, triVerts) = ToRustMeshData(mesh);
+			var imported = RustManifold.FromMeshGL64Robust(ToRustMeshData(mesh));
 
-			var imported = RustManifold.FromMesh64Robust(vertProperties, triVerts);
-			try
+			if (imported.Status() != RustStatus.NoError)
 			{
-				if (imported.Status != RustStatus.NoError)
-				{
-					status = imported.Status;
-					failureMessage = $"Manifold input has error status: {status} ({mesh.Vertices.Count} vertices, {mesh.Faces.Count} faces)";
-					imported.Dispose();
-					return null;
-				}
+				status = imported.Status();
+				failureMessage = $"Manifold input has error status: {status} ({mesh.Vertices.Count} vertices, {mesh.Faces.Count} faces)";
+				return null;
+			}
 
-				if (!repairOrientation)
-				{
-					status = RustStatus.NoError;
-					failureMessage = null;
-					return imported;
-				}
-
-				// On the handle rather than the mesh: the repair is a kernel operation over
-				// the imported shells, and doing it here means every caller - colour split
-				// included - gets it without repeating the check. A mesh that needs no
-				// repair comes back as a plain copy, so this is safe unconditionally.
-				var repaired = imported.RepairOrientation();
-
-				try
-				{
-					if (repaired.Status != RustStatus.NoError)
-					{
-						status = repaired.Status;
-						failureMessage = $"Manifold orientation repair has error status: {status} ({mesh.Vertices.Count} vertices, {mesh.Faces.Count} faces)";
-						repaired.Dispose();
-						imported.Dispose();
-						return null;
-					}
-				}
-				catch
-				{
-					repaired.Dispose();
-					throw;
-				}
-
-				imported.Dispose();
+			if (!repairOrientation)
+			{
 				status = RustStatus.NoError;
 				failureMessage = null;
-				return repaired;
+				return imported;
 			}
-			catch
+
+			// On the imported manifold rather than the mesh: the repair is a kernel operation
+			// over the imported shells, and doing it here means every caller - colour split
+			// included - gets it without repeating the check. A mesh that needs no repair
+			// comes back as a plain copy, so this is safe unconditionally.
+			var repaired = imported.RepairOrientation();
+
+			if (repaired.Status() != RustStatus.NoError)
 			{
-				imported.Dispose();
-				throw;
+				status = repaired.Status();
+				failureMessage = $"Manifold orientation repair has error status: {status} ({mesh.Vertices.Count} vertices, {mesh.Faces.Count} faces)";
+				return null;
 			}
+
+			status = RustStatus.NoError;
+			failureMessage = null;
+			return repaired;
 		}
 
 		/// <summary>
@@ -941,78 +1080,66 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		/// <summary>
 		/// <see cref="Import"/>, re-tagged as an original so results derived from it report
-		/// its <see cref="RustManifold.OriginalId"/> in the run data.
+		/// its <see cref="RustManifold.OriginalId()"/> in the run data.
 		/// </summary>
 		/// <inheritdoc cref="Import"/>
 		private static RustManifold ImportAsOriginal(Mesh mesh, bool repairOrientation)
 		{
 			var imported = Import(mesh, repairOrientation);
 
-			try
-			{
-				var asOriginal = imported.AsOriginal();
+			var asOriginal = imported.AsOriginal();
 
-				try
-				{
-					// Status itself can throw, so the new handle needs its own guard - without it
-					// asOriginal would be left to the finalizer on that path.
-					if (asOriginal.Status != RustStatus.NoError)
-					{
-						// A soup handle - closed but non-manifold input - cannot be re-tagged as an
-						// original; AsOriginal hands back an empty NotManifold manifold. Keep the
-						// import instead. Its triangles then arrive in the result under whatever run
-						// they inherit rather than one this operand owns, so it loses its face
-						// colours - much better than losing the boolean.
-						asOriginal.Dispose();
-						return imported;
-					}
-				}
-				catch
-				{
-					asOriginal.Dispose();
-					throw;
-				}
-
-				// AsOriginal returns a new manifold, so the import it was called on is a
-				// separate handle that still has to be released.
-				imported.Dispose();
-				return asOriginal;
-			}
-			catch
+			if (asOriginal.Status() != RustStatus.NoError)
 			{
-				imported.Dispose();
-				throw;
+				// A soup manifold - closed but non-manifold input - cannot be re-tagged as an
+				// original; AsOriginal hands back an empty NotManifold manifold. Keep the
+				// import instead. Its triangles then arrive in the result under whatever run
+				// they inherit rather than one this operand owns, so it loses its face
+				// colours - much better than losing the boolean.
+				return imported;
 			}
+
+			return asOriginal;
 		}
 
 		/// <summary>
-		/// Flattens a mesh into the interleaved position array and triangle index array
+		/// Flattens a mesh into the interleaved position list and triangle index list
 		/// the kernel takes. Positions widen to <c>double</c>, with none of the <c>float</c>
 		/// narrowing the old C++ boundary imposed.
 		/// </summary>
-		private static (double[] vertProperties, ulong[] triVerts) ToRustMeshData(Mesh mesh)
+		/// <remarks>
+		/// Three properties per vertex and nothing else set, which is what the retired
+		/// binding's <c>FromMesh64Robust(vertProperties, triVerts)</c> built on the far side
+		/// of the ABI: position only, no merge vectors, no runs, no tangents.
+		/// </remarks>
+		private static RustMeshGL64 ToRustMeshData(Mesh mesh)
 		{
-			var vertProperties = new double[mesh.Vertices.Count * 3];
+			var vertProperties = new List<double>(mesh.Vertices.Count * 3);
 			for (int i = 0; i < mesh.Vertices.Count; i++)
 			{
 				var vertex = mesh.Vertices[i];
-				vertProperties[(i * 3) + 0] = vertex.X;
-				vertProperties[(i * 3) + 1] = vertex.Y;
-				vertProperties[(i * 3) + 2] = vertex.Z;
+				vertProperties.Add(vertex.X);
+				vertProperties.Add(vertex.Y);
+				vertProperties.Add(vertex.Z);
 			}
 
 			// 64-bit indices because that is the width the robust import takes; the values
 			// themselves are ordinary mesh vertex indices.
-			var triVerts = new ulong[mesh.Faces.Count * 3];
+			var triVerts = new List<ulong>(mesh.Faces.Count * 3);
 			for (int i = 0; i < mesh.Faces.Count; i++)
 			{
 				var face = mesh.Faces[i];
-				triVerts[(i * 3) + 0] = (ulong)face.v0;
-				triVerts[(i * 3) + 1] = (ulong)face.v1;
-				triVerts[(i * 3) + 2] = (ulong)face.v2;
+				triVerts.Add((ulong)face.v0);
+				triVerts.Add((ulong)face.v1);
+				triVerts.Add((ulong)face.v2);
 			}
 
-			return (vertProperties, triVerts);
+			return new RustMeshGL64
+			{
+				NumProp = 3,
+				VertProperties = vertProperties,
+				TriVerts = triVerts,
+			};
 		}
 
 		/// <summary>
@@ -1028,7 +1155,6 @@ namespace MatterHackers.PolygonMesh.Csg
 			bool repairOrientation)
 		{
 			var subManifolds = new List<RustManifold>();
-			bool keepSubManifolds = false;
 
 			try
 			{
@@ -1049,7 +1175,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 				foreach (var (color, faceIndices) in colorGroups)
 				{
-					// One sub-mesh build and one native import per colour group, so this loop is
+					// One sub-mesh build and one import per colour group, so this loop is
 					// worth interrupting on its own rather than only at the union below.
 					cancellationToken.ThrowIfCancellationRequested();
 
@@ -1089,9 +1215,9 @@ namespace MatterHackers.PolygonMesh.Csg
 					// Same -1 guard as ImportOperand: a colour group the re-tag would not take has no
 					// ID to be keyed on, and letting every such group share the key -1 would hand one
 					// group's colour to all of them.
-					if (subManifold.OriginalId >= 0)
+					if (subManifold.OriginalId() >= 0)
 					{
-						originalIdToColor[subManifold.OriginalId] = color;
+						originalIdToColor[subManifold.OriginalId()] = color;
 					}
 
 					subManifolds.Add(subManifold);
@@ -1104,7 +1230,6 @@ namespace MatterHackers.PolygonMesh.Csg
 
 				if (subManifolds.Count == 1)
 				{
-					keepSubManifolds = true;
 					return subManifolds[0];
 				}
 
@@ -1114,7 +1239,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				//
 				// Cancellable, and on a heavily coloured model this union is most of the wall
 				// time - one boolean per colour group before the real operation even starts.
-				return RustManifold.BatchBoolean(subManifolds, RustOpType.Add, cancellationToken);
+				return BatchBoolean(subManifolds, RustOpType.Add, cancellationToken);
 			}
 			catch (OperationCanceledException)
 			{
@@ -1128,16 +1253,6 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				return null;
 			}
-			finally
-			{
-				if (!keepSubManifolds)
-				{
-					foreach (var subManifold in subManifolds)
-					{
-						subManifold.Dispose();
-					}
-				}
-			}
 		}
 
 		/// <summary>
@@ -1149,7 +1264,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// </summary>
 		/// <remarks>
 		/// The C++ engine needed raw P/Invoke and reflection into a private handle to
-		/// reach these two arrays; here they are plain managed arrays on
+		/// reach these two arrays; here they are plain managed lists on
 		/// <see cref="RustMeshGL64"/>.
 		/// <para>
 		/// Not every run can be traced back to an operand, and that is not a corner case.
@@ -1186,7 +1301,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			// RunIndex carries a trailing end sentinel, so a usable one is at least a
 			// start and an end for a single run.
-			if (runIndex.Length < 2 || runOriginalId.Length < 1)
+			if (runIndex.Count < 2 || runOriginalId.Count < 1)
 			{
 				return null;
 			}
@@ -1206,10 +1321,10 @@ namespace MatterHackers.PolygonMesh.Csg
 				? meshColors[0]
 				: Mesh.UnknownFaceColor;
 
-			for (int runIdx = 0; runIdx < runOriginalId.Length; runIdx++)
+			for (int runIdx = 0; runIdx < runOriginalId.Count; runIdx++)
 			{
 				int startTri = (int)(runIndex[runIdx] / 3);
-				int endTri = (runIdx + 1 < runIndex.Length) ? (int)(runIndex[runIdx + 1] / 3) : faceCount;
+				int endTri = (runIdx + 1 < runIndex.Count) ? (int)(runIndex[runIdx + 1] / 3) : faceCount;
 
 				// OriginalId is signed on the manifold and unsigned in the run data; the
 				// values are the same small non-negative IDs either way.

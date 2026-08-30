@@ -29,7 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 
-using RustStatus = ManifoldRust.ManifoldStatus;
+using RustStatus = ManifoldSharp.Error;
 
 namespace MatterHackers.PolygonMesh.Csg
 {

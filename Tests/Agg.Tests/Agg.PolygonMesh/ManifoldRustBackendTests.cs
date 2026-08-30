@@ -29,10 +29,14 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ManifoldRust;
+// The kernel's own types, aliased rather than reached through a namespace import:
+// ManifoldSharp.Manifold would sit beside MatterHackers.PolygonMesh.Mesh in this file.
+using ManifoldStatus = ManifoldSharp.Error;
+using WindingRule = ManifoldSharp.WindingRule;
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.VectorMath;
@@ -43,7 +47,7 @@ using TUnit.Core;
 namespace MatterHackers.PolygonMesh.UnitTests
 {
 	/// <summary>
-	/// The ManifoldRust boolean backend - the only boolean engine there is - exercised
+	/// The ManifoldSharp boolean backend - the only boolean engine there is - exercised
 	/// through the same public <see cref="BooleanProcessing"/> entry points the
 	/// application uses.
 	/// </summary>
@@ -488,6 +492,231 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				ProcessingResolution._64,
 				null,
 				cancelled.Token)).Throws<OperationCanceledException>();
+		}
+
+		/// <summary>
+		/// A cancel the KERNEL observes - not the import loop in front of it - has to come out
+		/// as an <see cref="OperationCanceledException"/> and not as the
+		/// <see cref="InvalidOperationException"/> a boolean that genuinely failed throws. The
+		/// kernel reports an interrupted run as a status on an empty result, so this is the
+		/// seam's own status-to-exception translation being exercised, and it is the only thing
+		/// standing between "the user pressed Stop" and "your part is broken, run Repair".
+		/// </summary>
+		/// <remarks>
+		/// This one covers the batch path - no reporter, so the combine is the kernel's CSG
+		/// tree - and it pins the phase by construction rather than by timing. The operands are
+		/// yielded from an iterator that cancels once the last one has been handed over, which
+		/// lands the cancel in the window between the final import and the boolean: every
+		/// per-operand token check has already run and passed, so the next code to see the flag
+		/// is the kernel. A wall-clock delay cannot make that guarantee - measured on this
+		/// input, importing the two operands is ~85% of the call, so a delay tuned as a fraction
+		/// of the total lands in the import loop and the test passes without the kernel ever
+		/// having been asked to cancel anything.
+		/// </remarks>
+		[Test]
+		public async Task CancelObservedByTheKernelSurfacesAsCancellation()
+		{
+			var meshA = UvSphere(10, 64);
+			var meshB = UvSphere(10, 64);
+			var matrixB = Matrix4X4.CreateTranslation(5, 0, 0);
+
+			Mesh Union(IEnumerable<(Mesh mesh, Matrix4X4 matrix)> operands, CancellationToken cancellationToken)
+				=> BooleanProcessing.DoArray(
+					operands,
+					CsgModes.Union,
+					ProcessingModes.Polygons,
+					ProcessingResolution._64,
+					ProcessingResolution._64,
+					null,
+					cancellationToken);
+
+			var baseline = Union(new[] { (meshA, Matrix4X4.Identity), (meshB, matrixB) }, CancellationToken.None);
+			await Assert.That(baseline.Faces.Count).IsGreaterThan(0);
+
+			using var cancelling = new CancellationTokenSource();
+
+			// DoArray enumerates its operands exactly once and imports each as it arrives, so
+			// the moment after the last yield is the moment after the last import - and the
+			// kernel is what runs next.
+			IEnumerable<(Mesh mesh, Matrix4X4 matrix)> CancelAfterTheLastImport()
+			{
+				yield return (meshA, Matrix4X4.Identity);
+				yield return (meshB, matrixB);
+				cancelling.Cancel();
+			}
+
+			var thrown = Assert.Throws<Exception>(() => Union(CancelAfterTheLastImport(), cancelling.Token));
+
+			await Assert.That(thrown is OperationCanceledException)
+				.IsTrue()
+				.Because($"a cancel must surface as a cancellation, not as {thrown?.GetType().Name}: {thrown?.Message}");
+
+			// The kernel's configuration is process-global and its cancel flag is sticky, so a
+			// cancelled operation could plausibly poison the next one. It must not.
+			var afterCancel = Union(new[] { (meshA, Matrix4X4.Identity), (meshB, matrixB) }, CancellationToken.None);
+
+			await Assert.That(afterCancel.Faces.Count).IsEqualTo(baseline.Faces.Count);
+			await Assert.That(SignedVolume(afterCancel)).IsEqualTo(SignedVolume(baseline)).Within(1e-9);
+		}
+
+		/// <summary>
+		/// The same contract for the pairwise path - a reporter drops the combine out of the
+		/// CSG tree onto the explicit binary entry point, which has its own token bridging -
+		/// and this time with a cancel that arrives from another thread while the boolean is
+		/// genuinely running, and a bound on how long it takes to be honoured.
+		/// </summary>
+		/// <remarks>
+		/// The progress reporter is the phase witness: the kernel only calls it from inside the
+		/// boolean, so its first callback proves the imports are done and the work has started.
+		/// The main thread waits for that callback before cancelling, which makes "mid-flight"
+		/// a fact rather than a hope.
+		/// <para>
+		/// A RELATIVE-TIMING assertion, in the shape manifold-sharp's CancelTests uses and for
+		/// the reason its header gives: an absolute millisecond threshold is a machine-speed
+		/// lottery, while a ratio survives a loaded CI box because both numbers inflate
+		/// together. The 2x ceiling is theirs and is deliberately loose - it fails when a cancel
+		/// is being ignored until the operation finishes on its own, not when the machine is
+		/// busy. Both numbers are measured from the FIRST REPORTER CALLBACK to the return, not
+		/// from the start of the call: importing dominates this input, and including it would
+		/// compare two runs that both paid the same large fixed cost and hide whatever the
+		/// boolean phase did.
+		/// </para>
+		/// </remarks>
+		[Test]
+		public async Task CancelFromAnotherThreadDuringTheBooleanReturnsPromptly()
+		{
+			var meshA = UvSphere(10, 64);
+			var meshB = UvSphere(10, 64);
+			var operands = new[] { (meshA, Matrix4X4.Identity), (meshB, Matrix4X4.CreateTranslation(5, 0, 0)) };
+
+			// Time from the first callback to the return: the boolean phase alone.
+			TimeSpan BooleanPhase(CancellationToken cancellationToken, Action onFirstReport, out Exception failure)
+			{
+				var phase = new Stopwatch();
+				Action<double, string> reporter = (ratio, message) =>
+				{
+					if (!phase.IsRunning)
+					{
+						phase.Start();
+						onFirstReport?.Invoke();
+					}
+				};
+
+				failure = null;
+				try
+				{
+					BooleanProcessing.DoArray(
+						operands,
+						CsgModes.Union,
+						ProcessingModes.Polygons,
+						ProcessingResolution._64,
+						ProcessingResolution._64,
+						reporter,
+						cancellationToken);
+				}
+				catch (Exception exception)
+				{
+					failure = exception;
+				}
+
+				return phase.Elapsed;
+			}
+
+			var uncancelled = BooleanPhase(CancellationToken.None, null, out var baselineFailure);
+
+			await Assert.That(baselineFailure).IsNull();
+			await Assert.That(uncancelled > TimeSpan.Zero)
+				.IsTrue()
+				.Because("the reporter never fired, so there is no boolean phase to measure and no proof the kernel was ever entered");
+
+			using var cancelling = new CancellationTokenSource();
+			using var insideTheKernel = new SemaphoreSlim(0, 1);
+
+			Exception thrown = null;
+			var cancelledPhase = TimeSpan.Zero;
+
+			var worker = new Thread(() =>
+			{
+				cancelledPhase = BooleanPhase(cancelling.Token, () => insideTheKernel.Release(), out thrown);
+			});
+
+			worker.Start();
+
+			// Not a delay: the boolean has reported its first phase, so it is running now.
+			insideTheKernel.Wait();
+			cancelling.Cancel();
+			worker.Join();
+
+			await Assert.That(thrown).IsNotNull()
+				.Because("a cancelled boolean must not report success");
+			await Assert.That(thrown is OperationCanceledException)
+				.IsTrue()
+				.Because($"a cancel must surface as a cancellation, not as {thrown?.GetType().Name}: {thrown?.Message}");
+
+			await Assert.That(cancelledPhase * 2 < uncancelled)
+				.IsTrue()
+				.Because(
+					$"the cancelled boolean phase took {cancelledPhase}, which is not well under the "
+					+ $"uncancelled {uncancelled} - the cancel is being ignored until the work finishes");
+		}
+
+
+		/// <summary>
+		/// A closed, manifold UV sphere: one vertex at each pole with a triangle fan, quads
+		/// between the interior rings. Built here rather than taken from a fixture because the
+		/// only thing wanted from it is bulk - a boolean slow enough to still be running a few
+		/// milliseconds after it starts.
+		/// </summary>
+		/// <param name="radius">The sphere's radius.</param>
+		/// <param name="segments">Divisions around the equator; half as many rings pole to pole.</param>
+		private static Mesh UvSphere(double radius, int segments)
+		{
+			var mesh = new Mesh();
+			int rings = segments / 2;
+
+			mesh.Vertices.Add(new Vector3(0, 0, radius));
+
+			for (int ring = 1; ring < rings; ring++)
+			{
+				double phi = Math.PI * ring / rings;
+				double z = radius * Math.Cos(phi);
+				double ringRadius = radius * Math.Sin(phi);
+
+				for (int segment = 0; segment < segments; segment++)
+				{
+					double theta = 2 * Math.PI * segment / segments;
+					mesh.Vertices.Add(new Vector3(
+						ringRadius * Math.Cos(theta),
+						ringRadius * Math.Sin(theta),
+						z));
+				}
+			}
+
+			int south = mesh.Vertices.Count;
+			mesh.Vertices.Add(new Vector3(0, 0, -radius));
+
+			// Ring r's segment s, as an index into the vertex list; ring 0 is the first
+			// interior ring, which starts one past the north pole.
+			int Vertex(int ring, int segment) => 1 + (ring * segments) + (segment % segments);
+
+			void AddFace(int v0, int v1, int v2) => mesh.Faces.Add(new Face(v0, v1, v2, mesh.Vertices));
+
+			for (int segment = 0; segment < segments; segment++)
+			{
+				AddFace(0, Vertex(0, segment), Vertex(0, segment + 1));
+				AddFace(south, Vertex(rings - 2, segment + 1), Vertex(rings - 2, segment));
+			}
+
+			for (int ring = 0; ring < rings - 2; ring++)
+			{
+				for (int segment = 0; segment < segments; segment++)
+				{
+					AddFace(Vertex(ring, segment), Vertex(ring + 1, segment), Vertex(ring, segment + 1));
+					AddFace(Vertex(ring, segment + 1), Vertex(ring + 1, segment), Vertex(ring + 1, segment + 1));
+				}
+			}
+
+			return mesh;
 		}
 
 		/// <summary>

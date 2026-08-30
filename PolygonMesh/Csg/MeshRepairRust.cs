@@ -28,25 +28,27 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 
-// Aliased the same way ManifoldKernel.cs aliases them: ManifoldRust.Manifold and
+// Aliased the same way ManifoldKernel.cs aliases them: ManifoldSharp.Manifold and
 // MatterHackers.PolygonMesh.Mesh are both "the mesh type" at a glance, and the Rust
-// prefix says which one a use site means.
-using RustManifold = ManifoldRust.Manifold;
-using RustMeshGL64 = ManifoldRust.MeshGL64;
-using RustStatus = ManifoldRust.ManifoldStatus;
+// prefix - ManifoldSharp is the C# port of manifold-rust - says which one a use site
+// means.
+using RustManifold = ManifoldSharp.Manifold;
+using RustMeshGL64 = ManifoldSharp.MeshGL64;
+using RustStatus = ManifoldSharp.Error;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
 	/// <summary>
-	/// Mesh repairs performed by the ManifoldRust kernel, exposed to callers outside this
+	/// Mesh repairs performed by the ManifoldSharp kernel, exposed to callers outside this
 	/// assembly (the Repair design tool) that only want a repair and not a boolean.
 	/// </summary>
 	public static class MeshRepair
 	{
 		/// <summary>
 		/// Rewinds inside-out shells so every body reads as solid material, using the
-		/// ManifoldRust kernel's exact shell-level orientation repair.
+		/// ManifoldSharp kernel's exact shell-level orientation repair.
 		/// </summary>
 		/// <remarks>
 		/// <para>
@@ -75,7 +77,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <param name="repairedMesh">The repaired copy, or null when this returns false.</param>
 		/// <returns>
 		/// True when the kernel accepted the mesh and produced a repaired copy; false when
-		/// it could not (empty input, an import or repair error status, or a native failure),
+		/// it could not (empty input, an import or repair error status, or a kernel failure),
 		/// in which case the caller should use its own fallback.
 		/// </returns>
 		public static bool TryRepairOrientation(Mesh sourceMesh, out Mesh repairedMesh)
@@ -89,62 +91,76 @@ namespace MatterHackers.PolygonMesh.Csg
 				return false;
 			}
 
+			// This is the one entry point into the kernel that does not go through
+			// ManifoldKernel, so it is the one that has to ask for the kernel's process-global
+			// configuration rather than getting it from a type initializer that has already
+			// fired. Without it a Repair performed before any boolean in the session would run
+			// on different settings than the same Repair performed after one - see
+			// ManifoldKernel.EnsureConfigured for why that ordering is worth pinning.
+			ManifoldKernel.EnsureConfigured();
+
 			try
 			{
-				var vertProperties = new double[sourceMesh.Vertices.Count * 3];
+				var vertProperties = new List<double>(sourceMesh.Vertices.Count * 3);
 				for (int i = 0; i < sourceMesh.Vertices.Count; i++)
 				{
 					var vertex = sourceMesh.Vertices[i];
-					vertProperties[(i * 3) + 0] = vertex.X;
-					vertProperties[(i * 3) + 1] = vertex.Y;
-					vertProperties[(i * 3) + 2] = vertex.Z;
+					vertProperties.Add(vertex.X);
+					vertProperties.Add(vertex.Y);
+					vertProperties.Add(vertex.Z);
 				}
 
 				// 64-bit indices because that is the width the robust import takes; the values
 				// themselves are ordinary mesh vertex indices.
-				var triVerts = new ulong[sourceMesh.Faces.Count * 3];
+				var triVerts = new List<ulong>(sourceMesh.Faces.Count * 3);
 				for (int i = 0; i < sourceMesh.Faces.Count; i++)
 				{
 					var face = sourceMesh.Faces[i];
-					triVerts[(i * 3) + 0] = (ulong)face.v0;
-					triVerts[(i * 3) + 1] = (ulong)face.v1;
-					triVerts[(i * 3) + 2] = (ulong)face.v2;
+					triVerts.Add((ulong)face.v0);
+					triVerts.Add((ulong)face.v1);
+					triVerts.Add((ulong)face.v2);
 				}
 
-				using (var imported = RustManifold.FromMesh64Robust(vertProperties, triVerts))
+				var imported = RustManifold.FromMeshGL64Robust(new RustMeshGL64
 				{
-					if (imported.Status != RustStatus.NoError)
-					{
-						return false;
-					}
+					NumProp = 3,
+					VertProperties = vertProperties,
+					TriVerts = triVerts,
+				});
 
-					using (var repaired = imported.RepairOrientation())
-					{
-						if (repaired.Status != RustStatus.NoError)
-						{
-							return false;
-						}
-
-						var result = ToMesh(repaired.GetMeshGL64());
-
-						// An empty result from a non-empty input means the kernel lost the solid.
-						// Handing that back would silently delete the user's model, so it counts as
-						// a failure and the caller falls back instead.
-						if (result == null || result.Faces.Count == 0)
-						{
-							return false;
-						}
-
-						repairedMesh = result;
-						return true;
-					}
+				if (imported.Status() != RustStatus.NoError)
+				{
+					return false;
 				}
+
+				var repaired = imported.RepairOrientation();
+
+				if (repaired.Status() != RustStatus.NoError)
+				{
+					return false;
+				}
+
+				// -1 is the export's "no property slot holds normals", which is what the retired
+				// P/Invoke binding's parameterless GetMeshGL64 passed on every call.
+				var result = ToMesh(repaired.GetMeshGL64(-1));
+
+				// An empty result from a non-empty input means the kernel lost the solid.
+				// Handing that back would silently delete the user's model, so it counts as
+				// a failure and the caller falls back instead.
+				if (result == null || result.Faces.Count == 0)
+				{
+					return false;
+				}
+
+				repairedMesh = result;
+				return true;
 			}
 			catch (Exception)
 			{
-				// Every kernel failure mode - a rejected mesh, a version handshake failure, a
-				// missing native library - is a reason to use the caller's fallback, not a reason
-				// to fail the repair the user asked for.
+				// Every kernel failure mode is a reason to use the caller's fallback, not a
+				// reason to fail the repair the user asked for. Narrower than it once was - the
+				// kernel is managed now, so there is no library to be missing and no version
+				// handshake to fail - but a rejected mesh still lands here.
 				return false;
 			}
 		}
@@ -158,7 +174,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			var vertices = exported.VertProperties;
 			var indices = exported.TriVerts;
 
-			// The ABI promises at least x, y, z per vertex. Checked rather than assumed because
+			// The export promises at least x, y, z per vertex. Checked rather than assumed because
 			// numProp is the loop stride below, and a zero would spin.
 			if (numProp < 3)
 			{
@@ -167,7 +183,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			var mesh = new Mesh();
 
-			for (int i = 0; i + 2 < vertices.Length; i += numProp)
+			for (int i = 0; i + 2 < vertices.Count; i += numProp)
 			{
 				mesh.Vertices.Add(new VectorMath.Vector3(
 					vertices[i],
@@ -175,7 +191,7 @@ namespace MatterHackers.PolygonMesh.Csg
 					vertices[i + 2]));
 			}
 
-			for (int i = 0; i + 2 < indices.Length; i += 3)
+			for (int i = 0; i + 2 < indices.Count; i += 3)
 			{
 				mesh.Faces.Add(new Face(
 					(int)indices[i],

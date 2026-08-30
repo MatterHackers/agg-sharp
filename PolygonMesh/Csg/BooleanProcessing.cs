@@ -42,9 +42,9 @@ using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 
 // Same aliasing convention as the kernel itself (ManifoldKernel.cs): types that come
-// from the native kernel are spelled with a Rust prefix so a use site says which
-// library it means.
-using RustWindingRule = ManifoldRust.WindingRule;
+// from the boolean kernel are spelled with a Rust prefix - ManifoldSharp is the C#
+// port of manifold-rust - so a use site says which library it means.
+using RustWindingRule = ManifoldSharp.WindingRule;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
@@ -87,7 +87,7 @@ namespace MatterHackers.PolygonMesh.Csg
 	/// Entry points for constructive solid geometry over <see cref="Mesh"/>.
 	/// </summary>
 	/// <remarks>
-	/// Polygon mode runs on ManifoldRust, the one and only boolean kernel
+	/// Polygon mode runs on ManifoldSharp, the one and only boolean kernel
 	/// (see <see cref="ManifoldKernel"/>, which this type is the public face of). There is
 	/// no second engine behind it: an input the kernel cannot take is an exception the caller
 	/// sees, not geometry built by different rules. The other processing modes do not use a
@@ -242,16 +242,15 @@ namespace MatterHackers.PolygonMesh.Csg
 				var meshCopy = mesh.Copy(CancellationToken.None);
 				meshCopy.Transform(matrix);
 
-				using (var imported = ManifoldKernel.Import(meshCopy, repairOrientation))
-				{
-					return imported.HasSelfIntersections
-						? BooleanOperandVerdict.SelfIntersecting
-						: BooleanOperandVerdict.Clean;
-				}
+				var imported = ManifoldKernel.Import(meshCopy, repairOrientation);
+
+				return imported.HasSelfIntersections()
+					? BooleanOperandVerdict.SelfIntersecting
+					: BooleanOperandVerdict.Clean;
 			}
 			catch (Exception)
 			{
-				// Including the native failures: a mesh the kernel cannot be made to hold is one it
+				// Including the kernel's own failures: a mesh it cannot be made to hold is one it
 				// would refuse as an operand too, and that is the only thing the caller is asking.
 				return BooleanOperandVerdict.Refused;
 			}
