@@ -67,6 +67,12 @@ namespace MatterHackers.Agg.UI
 		/// <summary>Guards against re-entering recovery from a failure raised by recovery itself.</summary>
 		private bool isRecoveringDevice;
 
+		/// <summary>
+		/// Why this control has no device, when initialization gave up rather than throwing. Reported
+		/// through <see cref="LastError"/>, which is the only channel a smoke run or an automation run has.
+		/// </summary>
+		private string deviceStartupError;
+
 		/// <summary>How many times this control has rebuilt its device after a loss. Diagnostics and tests.</summary>
 		private int deviceRecoveryCount;
 
@@ -137,7 +143,9 @@ namespace MatterHackers.Agg.UI
 		/// The first thing wgpu complained about - a validation error or a lost device - or null while
 		/// everything is well. A smoke run turns this into a non-zero exit code.
 		/// </summary>
-		public string LastError => this.device?.DeviceLostMessage ?? this.device?.LastUncapturedError;
+		public string LastError => this.deviceStartupError
+			?? this.device?.DeviceLostMessage
+			?? this.device?.LastUncapturedError;
 
 		/// <summary>How many times this control has rebuilt its device after a loss; zero on a healthy run.</summary>
 		public int DeviceRecoveryCount => this.deviceRecoveryCount;
@@ -188,19 +196,43 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
+			// A retry - device-loss recovery calls straight back in here - starts from a clean slate rather
+			// than reporting the previous attempt's failure forever.
+			this.deviceStartupError = null;
+
 			// The surface is described to the constructor rather than made afterwards so that it exists
 			// before the adapter is requested and can be passed as compatibleSurface - without that, wgpu
 			// may pick an adapter that cannot present to this window at all.
-			this.device = new WebGpuRenderDevice(
-				this.UseSoftwareAdapter,
-				WGPUBackendType.D3D12,
-				"WebGpuControl",
-				new WindowSurfaceRequest(
-					this.Handle,
-					IntPtr.Zero,
-					(uint)Math.Max(1, this.ClientSize.Width),
-					(uint)Math.Max(1, this.ClientSize.Height),
-					"window"));
+			// Budgeted, because this runs from the form's Load - inside Show(), on the UI thread - and
+			// acquiring an adapter and opening a device are synchronous native calls that have been seen not
+			// to return on a loaded software rasterizer. A Show() that never returns is a window that never
+			// appears and never paints, with nothing to report; see GpuStartup for the trade. The handle and
+			// client size are read here, on the UI thread, rather than from the build thread.
+			var surfaceRequest = new WindowSurfaceRequest(
+				this.Handle,
+				IntPtr.Zero,
+				(uint)Math.Max(1, this.ClientSize.Width),
+				(uint)Math.Max(1, this.ClientSize.Height),
+				"window");
+
+			this.device = GpuStartup.CreateWithinBudget(
+				() => new WebGpuRenderDevice(
+					this.UseSoftwareAdapter,
+					WGPUBackendType.D3D12,
+					"WebGpuControl",
+					surfaceRequest),
+				"WebGpuControl device");
+
+			if (this.device == null)
+			{
+				// No device: leave this control uninitialized so every paint skips rather than throwing per
+				// frame. LastError is what the host reports - a smoke run turns it into an exit code, and an
+				// automation run prints it - so the failure is loud where silence used to be.
+				this.deviceStartupError = "The GPU device could not be created: the adapter or device request "
+					+ $"did not return within {GpuStartup.DefaultBudget.TotalSeconds:0.#}s.";
+				Console.Error.WriteLine($"WebGpuControl: {this.deviceStartupError}");
+				return;
+			}
 
 			this.surface = this.device.WindowSurface;
 
