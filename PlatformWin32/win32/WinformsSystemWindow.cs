@@ -53,6 +53,37 @@ namespace MatterHackers.Agg.UI
 		private int handleThreadId;
 
 		/// <summary>
+		/// Whether this window could actually run an idle drain if it were handed the pump.
+		/// </summary>
+		/// <remarks>
+		/// The three conditions are exactly the ones <see cref="InvokePendingOnIdleActions"/> checks before
+		/// it does any work, and they have to be asked here too: a driver that declines every tick never
+		/// stamps the heartbeat, so it looks permanently stale - and it cannot claim from itself, while a
+		/// sibling on its own thread is refused for being on the driver's thread already. The pump would
+		/// stop for good, on a window that looked alive the whole time. <c>enableIdleProcessing</c> is the
+		/// interesting one: it goes true when this window's thread enters its message loop, so a window that
+		/// never started one can never be the driver.
+		/// </remarks>
+		private bool CanDriveIdlePump => !this.IsDisposed
+			&& !this.Disposing
+			&& this.IsHandleCreated
+			&& this.enableIdleProcessing;
+
+		/// <summary>
+		/// Ticks on this window's own thread, asking whether the shared idle pump has stopped delivering and
+		/// claiming it if so. Null until the handle exists; see <see cref="ConsiderClaimingIdlePump"/>.
+		/// </summary>
+		private System.Windows.Forms.Timer claimIdlePumpTimer;
+
+		/// <summary>
+		/// How often a live window checks whether the idle pump has gone quiet. Frequent enough that a
+		/// stale driver loses the pump inside a second (the check itself is a read and a compare, and takes
+		/// no lock unless it is actually going to claim), and far below the automation harness's 15 second
+		/// close watchdog.
+		/// </summary>
+		private const int ClaimIdlePumpIntervalMilliseconds = 250;
+
+		/// <summary>
 		/// When an idle drain last actually reached a UI thread (<see cref="Environment.TickCount64"/>).
 		/// The driver's proof of life: <see cref="EnsureIdleTimerDriving"/> will not take the pump away from
 		/// another thread that is still delivering. Static because there is one driver at a time.
@@ -296,6 +327,8 @@ namespace MatterHackers.Agg.UI
 				EnsureIdleTimerDriving(this);
 			}
 
+			this.StartClaimingIdlePumpWhenStale();
+
 			// Re-seed the display scale now that there is a handle. The seed in AggSystemWindow's setter runs
 			// before there is one, and a handle-less Form's DeviceDpi is the PROCESS DPI, not the DPI of the
 			// monitor the window is about to appear on. Nothing else corrects it: WM_DPICHANGED is only sent
@@ -322,13 +355,11 @@ namespace MatterHackers.Agg.UI
 			WinformsSystemWindow driver = null;
 
 			bool haveUsableDriver = idleTimerWindow != null
-				&& !idleTimerWindow.IsDisposed
-				&& idleTimerWindow.IsHandleCreated
+				&& idleTimerWindow.CanDriveIdlePump
 				&& LiveWindows.Contains(idleTimerWindow);
 
 			bool preferredIsUsable = preferredWindow != null
-				&& !preferredWindow.IsDisposed
-				&& preferredWindow.IsHandleCreated
+				&& preferredWindow.CanDriveIdlePump
 				&& LiveWindows.Contains(preferredWindow);
 
 			// InvokeRequired is asked from the thread that is setting up its own pump, so it answers exactly
@@ -385,8 +416,9 @@ namespace MatterHackers.Agg.UI
 			{
 				foreach (var window in LiveWindows)
 				{
-					if (!window.IsDisposed
-						&& window.IsHandleCreated)
+					// Same eligibility as everywhere else: this fallback could otherwise park the pump on a
+					// window that declines every drain, which nothing afterwards is able to undo.
+					if (window.CanDriveIdlePump)
 					{
 						driver = window;
 						break;
@@ -511,6 +543,11 @@ namespace MatterHackers.Agg.UI
 
 		protected override void OnClosed(EventArgs e)
 		{
+			// On this window's own thread, which is the only one that may touch a WinForms Timer it created.
+			// Before ReleaseIdleTimer, so a tick cannot land between the two and re-claim a pump this window
+			// is on its way out of.
+			this.StopClaimingIdlePump();
+
 			ReleaseIdleTimer();
 
 			if (IsMainWindow)
@@ -528,11 +565,109 @@ namespace MatterHackers.Agg.UI
 			base.OnClosed(e);
 		}
 
+		protected override void Dispose(bool disposing)
+		{
+			if (disposing)
+			{
+				// OnClosed is the ordinary path, but a Form can be disposed without ever being closed. The
+				// claim timer is a bare field rather than a component, so nothing else would stop it: it
+				// would go on ticking four times a second, holding this window alive through its handler.
+				this.StopClaimingIdlePump();
+			}
+
+			base.Dispose(disposing);
+		}
+
 		public void ReleaseOnIdleGuard()
 		{
 			lock (SingleInvokeLock)
 			{
 				processingOnIdle = false;
+			}
+		}
+
+		/// <summary>
+		/// Starts this window watching for an idle pump that has stopped delivering, so it can take it over.
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// A <see cref="System.Windows.Forms.Timer"/> specifically, and this is the whole design: it is
+		/// delivered as a WM_TIMER to the queue of the thread that created it, so it only ever runs while
+		/// that thread is really pumping. A thread that has stopped can therefore never claim the pump, and
+		/// a live one always can - which is the property the alternatives (a pool timer, a shared static
+		/// check) cannot offer, since they run regardless of whether the window's thread is alive.
+		/// </para>
+		/// <para>
+		/// It is also what wakes a pump that is asleep in WaitMessage with an empty queue - the state the CI
+		/// dumps caught it in.
+		/// </para>
+		/// </remarks>
+		private void StartClaimingIdlePumpWhenStale()
+		{
+			if (this.claimIdlePumpTimer != null)
+			{
+				return;
+			}
+
+			this.claimIdlePumpTimer = new System.Windows.Forms.Timer
+			{
+				Interval = ClaimIdlePumpIntervalMilliseconds,
+			};
+
+			this.claimIdlePumpTimer.Tick += (sender, e) => this.ConsiderClaimingIdlePump();
+			this.claimIdlePumpTimer.Start();
+		}
+
+		/// <summary>
+		/// Stops and releases this window's claim timer. Must run on the thread that created it - a WinForms
+		/// Timer belongs to its creating thread the same way a control does.
+		/// </summary>
+		private void StopClaimingIdlePump()
+		{
+			var timer = this.claimIdlePumpTimer;
+			this.claimIdlePumpTimer = null;
+
+			if (timer == null)
+			{
+				return;
+			}
+
+			try
+			{
+				timer.Stop();
+				timer.Dispose();
+			}
+			catch (Exception ex)
+			{
+				// Teardown only. A timer that cannot be stopped is not worth failing a close over, and the
+				// tick it might still deliver is guarded by the disposed checks in ConsiderClaimingIdlePump.
+				Console.Error.WriteLine($"Idle pump: claim timer would not stop ({ex.GetType().Name}).");
+			}
+		}
+
+		/// <summary>
+		/// Takes the idle pump over when the current driver has stopped delivering. Runs on this window's
+		/// own thread (see <see cref="StartClaimingIdlePumpWhenStale"/>), which is what makes the claim
+		/// meaningful: the thread making it is demonstrably pumping.
+		/// </summary>
+		private void ConsiderClaimingIdlePump()
+		{
+			// Deliberately unlocked: a reference read and an integer compare, four times a second per window.
+			// Taking StaticInitLock to answer "nothing to do" would put every live window in line behind the
+			// pump bookkeeping several times a second, for an answer that is almost always no.
+			if (!IdlePumpPolicy.ShouldClaimIdlePump(
+				isAlreadyDriver: ReferenceEquals(idleTimerWindow, this),
+				canDrain: this.CanDriveIdlePump,
+				millisecondsSinceLastDrain: MillisecondsSinceIdleDrain()))
+			{
+				return;
+			}
+
+			lock (StaticInitLock)
+			{
+				// Re-checked under the lock: another window on another thread may have claimed it in the
+				// meantime, and EnsureIdleTimerDriving applies the same staleness rule before it hands over.
+				EnsureIdleTimerDriving(this);
 			}
 		}
 
@@ -1458,7 +1593,17 @@ namespace MatterHackers.Agg.UI
 				{
 					enableIdleProcessing = true;
 				}
-				
+
+				// Only now is this window eligible to drive (CanDriveIdlePump reads the flag above), and the
+				// offer it made from OnHandleCreated - which runs inside Show(), a few lines up - was refused
+				// for exactly that reason. Ask again rather than leaving the pump unowned until the claim
+				// timer's first tick a quarter of a second later.
+				lock (StaticInitLock)
+				{
+					EnsureIdleTimerDriving(this);
+				}
+
+
 				DebugLogger.LogMessage("WinformsSystemWindow", "ShowSystemWindow STEP 7 - About to call Application.Run()");
 
 				// This thread is the message loop from here on, and Application.ThreadException is registered

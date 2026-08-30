@@ -122,6 +122,70 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// The gap CI found after the first fix: election ran only when a window was created, and at that
+		/// moment the outgoing driver still looked fresh - its thread had only just stopped. The staleness
+		/// arrived afterwards (drains 20, 66 and 92 seconds old in the run's watchdog lines) with nothing
+		/// left to ask the question. So the same window has to be able to answer differently over time.
+		/// </summary>
+		[Test]
+		public async Task ALiveWindowClaimsThePumpOnlyOnceTheDriverGoesQuiet()
+		{
+			// The instant the driver's thread stopped: nothing looks wrong yet.
+			await Assert.That(IdlePumpPolicy.ShouldClaimIdlePump(
+				isAlreadyDriver: false, canDrain: true, millisecondsSinceLastDrain: 0)).IsFalse();
+
+			// Still inside one staleness window - ordinary jitter, not a stall.
+			await Assert.That(IdlePumpPolicy.ShouldClaimIdlePump(
+				isAlreadyDriver: false,
+				canDrain: true,
+				millisecondsSinceLastDrain: IdlePumpPolicy.StaleDriverMilliseconds)).IsFalse();
+
+			// And now the same live window, asking the same question later, claims it.
+			await Assert.That(IdlePumpPolicy.ShouldClaimIdlePump(
+				isAlreadyDriver: false,
+				canDrain: true,
+				millisecondsSinceLastDrain: IdlePumpPolicy.StaleDriverMilliseconds + 1)).IsTrue()
+				.Because("re-election has to happen while windows are alive, not only when one is created");
+
+			// The 20 seconds CI actually recorded.
+			await Assert.That(IdlePumpPolicy.ShouldClaimIdlePump(
+				isAlreadyDriver: false, canDrain: true, millisecondsSinceLastDrain: 20172)).IsTrue();
+		}
+
+		/// <summary>
+		/// The trap this closes: a window that cannot run a drain must never take the pump. It would never
+		/// stamp the heartbeat, so it would look stale forever - and nothing could take the pump back, since
+		/// it cannot claim from itself and a sibling on its own thread is refused for being on the driver's
+		/// thread already. The pump would stop for good, on a window that looked alive throughout.
+		/// </summary>
+		[Test]
+		public async Task AWindowThatCannotDrainNeverClaimsThePump()
+		{
+			await Assert.That(IdlePumpPolicy.ShouldClaimIdlePump(
+				isAlreadyDriver: false,
+				canDrain: false,
+				millisecondsSinceLastDrain: 92094)).IsFalse()
+				.Because("taking the pump without being able to drain it is worse than leaving it where it is");
+
+			// However stale things get, an ineligible window is never the answer.
+			await Assert.That(IdlePumpPolicy.ShouldClaimIdlePump(
+				isAlreadyDriver: false,
+				canDrain: false,
+				millisecondsSinceLastDrain: long.MaxValue)).IsFalse();
+		}
+
+		/// <summary>
+		/// The driver asking about itself must never claim: it would churn the subscription several times a
+		/// second on the one window whose own drain is what the heartbeat is waiting for.
+		/// </summary>
+		[Test]
+		public async Task TheDriverDoesNotClaimFromItself()
+		{
+			await Assert.That(IdlePumpPolicy.ShouldClaimIdlePump(isAlreadyDriver: true, canDrain: true, millisecondsSinceLastDrain: 92094)).IsFalse();
+			await Assert.That(IdlePumpPolicy.ShouldClaimIdlePump(isAlreadyDriver: true, canDrain: true, millisecondsSinceLastDrain: 0)).IsFalse();
+		}
+
+		/// <summary>
 		/// The threshold has to sit well clear of both neighbours: ordinary pump jitter must not trip it, and
 		/// it must fire long before the automation harness gives up on a window at 15 seconds.
 		/// </summary>

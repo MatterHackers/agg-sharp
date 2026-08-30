@@ -95,9 +95,44 @@ namespace MatterHackers.Agg.UI
 			=> millisecondsSinceLastDrain > StaleDriverMilliseconds;
 
 		/// <summary>
+		/// Whether a live window should try to claim the idle pump, checked repeatedly from its own pump
+		/// rather than once when it was created.
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// Election at creation time is not enough, and CI proved it: a driver's thread stops pumping
+		/// <em>after</em> the last window was made, so at every moment anyone asked, the driver still looked
+		/// fresh. The staleness that would have answered the question developed later, with nothing left to
+		/// ask it - drains 20, 66 and 92 seconds old while the timer went on ticking.
+		/// </para>
+		/// <para>
+		/// So the question is asked again, from the one place that cannot lie about being alive: a window's
+		/// own message loop. A thread that has stopped pumping never runs this, which is exactly the
+		/// property wanted - a dead driver cannot re-elect itself, and a live window can take over from it
+		/// within a tick or two.
+		/// </para>
+		/// </remarks>
+		/// <param name="isAlreadyDriver">True if the asking window is the current driver; then there is nothing to claim.</param>
+		/// <param name="canDrain">
+		/// True if this window is actually able to run an idle drain. A window that would take the pump and
+		/// then decline every tick is worse than no change at all: it is not the driver, so it cannot claim
+		/// from itself, and a sibling on its own thread will not displace it either - the pump would be
+		/// stuck on it for good. Whatever a host uses to decide it is ready to process idle work belongs
+		/// here, and in the same host's answer for whether any window may drive.
+		/// </param>
+		/// <param name="millisecondsSinceLastDrain">Elapsed time since an idle drain last reached a UI thread.</param>
+		/// <returns>True if the asking window should try to take the pump.</returns>
+		public static bool ShouldClaimIdlePump(bool isAlreadyDriver, bool canDrain, long millisecondsSinceLastDrain)
+			=> canDrain && !isAlreadyDriver && HeartbeatIsStale(millisecondsSinceLastDrain);
+
+		/// <summary>
 		/// Whether a window on the calling thread should take the idle pump over from the current driver.
 		/// </summary>
-		/// <param name="haveDriver">True if a driver is currently set and still usable (alive, with a handle).</param>
+		/// <param name="haveDriver">
+		/// True if a driver is currently set and still usable. "Usable" has to include being able to run a
+		/// drain at all, not just being alive with a handle - see <c>canDrain</c> on
+		/// <see cref="ShouldClaimIdlePump"/> for why a driver that always declines is a trap with no way out.
+		/// </param>
 		/// <param name="driverIsOnThisThread">
 		/// True if the current driver's window belongs to the thread asking. False means its ticks are being
 		/// marshaled to a thread this one cannot benefit from - fine while that thread is really pumping,
