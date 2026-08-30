@@ -49,6 +49,16 @@ namespace MatterHackers.Agg.UI
 		// window drives the pump at a time; UiThread actions are marshaled through whichever window that is.
 		private static WinformsSystemWindow idleTimerWindow = null;
 
+		/// <summary>The thread that created this window's handle, and so the only one it can marshal to.</summary>
+		private int handleThreadId;
+
+		/// <summary>
+		/// When an idle drain last actually reached a UI thread (<see cref="Environment.TickCount64"/>).
+		/// The driver's proof of life: <see cref="EnsureIdleTimerDriving"/> will not take the pump away from
+		/// another thread that is still delivering. Static because there is one driver at a time.
+		/// </summary>
+		private static long lastIdleDrainTicks;
+
 		// Every constructed window that has not closed yet. More than one can be alive at a time (automation
 		// tests run windows back to back and in parallel), and the shared idle timer must keep being driven by
 		// one of them - stopping it while a window was still up left that window's RunOnIdle pump dead, so its
@@ -268,6 +278,11 @@ namespace MatterHackers.Agg.UI
 		{
 			base.OnHandleCreated(e);
 
+			// The thread that creates a Form's handle is the thread that will pump for it, and it is the only
+			// thread anything marshaled to this window can run on. Recorded because InvokeRequired can only
+			// answer "is it me?" - a watchdog on some other thread needs to be able to name it.
+			this.handleThreadId = Environment.CurrentManagedThreadId;
+
 			// Compute the title bar height now that the native handle exists. Doing this in
 			// the constructor forced premature handle creation via RectangleToScreen.
 			titleBarHeight = RectangleToScreen(ClientRectangle).Top - this.Top;
@@ -306,11 +321,56 @@ namespace MatterHackers.Agg.UI
 		{
 			WinformsSystemWindow driver = null;
 
-			if (idleTimerWindow != null
+			bool haveUsableDriver = idleTimerWindow != null
 				&& !idleTimerWindow.IsDisposed
 				&& idleTimerWindow.IsHandleCreated
-				&& LiveWindows.Contains(idleTimerWindow))
+				&& LiveWindows.Contains(idleTimerWindow);
+
+			bool preferredIsUsable = preferredWindow != null
+				&& !preferredWindow.IsDisposed
+				&& preferredWindow.IsHandleCreated
+				&& LiveWindows.Contains(preferredWindow);
+
+			// InvokeRequired is asked from the thread that is setting up its own pump, so it answers exactly
+			// the question the policy needs: does this window belong to me? A driver that does not is one
+			// whose ticks land in another thread's queue - see IdlePumpPolicy for what that costs.
+			bool driverIsOnThisThread = haveUsableDriver && !idleTimerWindow.InvokeRequired;
+			long millisecondsSinceDrain = MillisecondsSinceIdleDrain();
+
+			if (IdlePumpPolicy.ShouldTakeOverDriving(
+				haveUsableDriver,
+				driverIsOnThisThread,
+				candidateIsOnThisThread: preferredIsUsable && !preferredWindow.InvokeRequired,
+				driverHeartbeatIsStale: IdlePumpPolicy.HeartbeatIsStale(millisecondsSinceDrain)))
 			{
+				if (haveUsableDriver)
+				{
+					// Console, not DebugLogger: LogMessage is [Conditional("DEBUG")] and CI builds Release,
+					// where it would compile away and take the evidence with it. This path runs on window
+					// show/close, not per frame, so a line here costs nothing. The staleness is the whole
+					// justification for the takeover, so it is the number that has to be in the log.
+					Console.Error.WriteLine(
+						$"Idle pump: thread {Environment.CurrentManagedThreadId} is taking the pump from a driver"
+						+ $" owned by thread {idleTimerWindow.handleThreadId}, whose last idle drain was"
+						+ $" {millisecondsSinceDrain} ms ago (stale past {IdlePumpPolicy.StaleDriverMilliseconds} ms).");
+				}
+
+				driver = preferredWindow;
+			}
+			else if (haveUsableDriver)
+			{
+				if (!driverIsOnThisThread)
+				{
+					// Adjacent to the shape that cost seven CI tests: the driver belongs to another thread, so
+					// this one's idle turns - queued work, deferred invalidates, a posted close - are being
+					// marshaled away from it. Kept anyway, because the heartbeat says that thread is still
+					// delivering (or this thread has no window to offer). Said out loud with the number,
+					// because the symptom - a pump asleep in WaitMessage - never names the cause.
+					Console.Error.WriteLine(
+						$"Idle pump: thread {Environment.CurrentManagedThreadId} is keeping a driver owned by"
+						+ $" thread {idleTimerWindow.handleThreadId}, last idle drain {millisecondsSinceDrain} ms ago.");
+				}
+
 				// Keep the current driver - swapping it needlessly would drop timer ticks.
 				driver = idleTimerWindow;
 			}
@@ -356,6 +416,9 @@ namespace MatterHackers.Agg.UI
 			{
 				// call up to 100 times a second
 				idleCallBackTimer = new System.Timers.Timer { Interval = 10 };
+
+				// Published once, so a watchdog on any thread can say who was supposed to be waking the UI.
+				IdlePumpPolicy.DescribeDriver = DescribeIdleDriver;
 			}
 
 			if (idleTimerWindow != driver)
@@ -367,11 +430,64 @@ namespace MatterHackers.Agg.UI
 
 				idleCallBackTimer.Elapsed += driver.InvokePendingOnIdleActions;
 				idleTimerWindow = driver;
+
+				// A fresh driver inherits the outgoing one's heartbeat otherwise, and would be judged stale
+				// before it had a chance to tick even once. This gives it one full staleness window.
+				StampIdleHeartbeat();
 			}
 
 			if (!idleCallBackTimer.Enabled)
 			{
 				idleCallBackTimer.Start();
+			}
+		}
+
+		/// <summary>
+		/// Who is driving the idle pump, for a diagnostic written from some other thread.
+		/// </summary>
+		/// <remarks>
+		/// Never throws and never blocks. It only ever runs on a failure path - a window that will not close
+		/// - and the thread it is describing may be the one holding this lock; a watchdog that parked on the
+		/// very lock it came to report about would replace the diagnosis with a second hang.
+		/// </remarks>
+		private static string DescribeIdleDriver()
+		{
+			bool locked = false;
+			try
+			{
+				Monitor.TryEnter(StaticInitLock, TimeSpan.FromMilliseconds(250), ref locked);
+				if (!locked)
+				{
+					return "idle pump: could not be described (lock held - somebody is inside the pump bookkeeping)";
+				}
+
+				string heartbeat = $", lastIdleDrain={MillisecondsSinceIdleDrain()} ms ago";
+
+				if (idleTimerWindow == null)
+				{
+					return "idle pump: no driver window"
+						+ $", timerEnabled={idleCallBackTimer?.Enabled.ToString() ?? "(none)"}"
+						+ heartbeat;
+				}
+
+				return $"idle pump: driver owned by thread {idleTimerWindow.handleThreadId}"
+					+ $", disposed={idleTimerWindow.IsDisposed}"
+					+ $", handleCreated={idleTimerWindow.IsHandleCreated}"
+					+ $", live={LiveWindows.Contains(idleTimerWindow)}"
+					+ $", timerEnabled={idleCallBackTimer?.Enabled.ToString() ?? "(none)"}"
+					+ $", liveWindows={LiveWindows.Count}"
+					+ heartbeat;
+			}
+			catch (Exception ex)
+			{
+				return $"idle pump: could not be described ({ex.GetType().Name})";
+			}
+			finally
+			{
+				if (locked)
+				{
+					Monitor.Exit(StaticInitLock);
+				}
 			}
 		}
 
@@ -418,6 +534,22 @@ namespace MatterHackers.Agg.UI
 			{
 				processingOnIdle = false;
 			}
+		}
+
+		/// <summary>
+		/// Records that the idle pump just delivered. Called from the UI thread, at the moment the drain
+		/// arrives there rather than when the tick was raised - a tick that never crossed the marshal is
+		/// exactly the failure the heartbeat exists to notice.
+		/// </summary>
+		private static void StampIdleHeartbeat()
+		{
+			Volatile.Write(ref lastIdleDrainTicks, Environment.TickCount64);
+		}
+
+		/// <summary>How long since an idle drain last reached a UI thread.</summary>
+		private static long MillisecondsSinceIdleDrain()
+		{
+			return Environment.TickCount64 - Volatile.Read(ref lastIdleDrainTicks);
 		}
 
 		private void InvokePendingOnIdleActions(object sender, ElapsedEventArgs e)
@@ -485,6 +617,7 @@ namespace MatterHackers.Agg.UI
 						Invoke(new Action(() =>
 						{
 							reachedUiThread = true;
+							StampIdleHeartbeat();
 							MainLoopSynchronizationContext.InstallOnPumpThread();
 							UiThread.InvokePendingActions();
 							FlushPendingAggInvalidates();
@@ -493,6 +626,7 @@ namespace MatterHackers.Agg.UI
 					else
 					{
 						reachedUiThread = true;
+						StampIdleHeartbeat();
 						MainLoopSynchronizationContext.InstallOnPumpThread();
 						UiThread.InvokePendingActions();
 						FlushPendingAggInvalidates();

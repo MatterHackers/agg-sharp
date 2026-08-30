@@ -1751,7 +1751,11 @@ namespace MatterHackers.GuiAutomation
 							return;
 						}
 
-						DebugLogger.LogError("AutomationRunner", "WINDOW FAILED TO CLOSE - forcing close; a dialog or a dead idle pump is blocking shutdown");
+						DebugLogger.LogError(
+							"AutomationRunner",
+							"WINDOW FAILED TO CLOSE - forcing close. Either the UI thread never returned to its pump, or the "
+							+ "pump is idle and nothing is waking it. "
+							+ (IdlePumpPolicy.DescribeDriver?.Invoke() ?? "idle pump: no host published a driver."));
 						Interlocked.Exchange(ref closePhaseTimedOut, 1);
 
 						// Only on this path, and only once the run is already failing: the capture costs a
@@ -2103,15 +2107,21 @@ namespace MatterHackers.GuiAutomation
 			// RequireTestCompletion, because a blocked shutdown is the more useful diagnosis.
 			if (Volatile.Read(ref closePhaseTimedOut) == 1)
 			{
-				// Says what the evidence supports and no more. The old wording blamed a modal dialog, which
-				// this failure specifically rules out: a dialog runs its own message pump, so the posted force
-				// close would have been processed. A pump that ignores a posted message is a UI thread that is
-				// not in the pump at all - it is blocked inside shutdown work (device teardown, an
-				// uncancellable render, a lock) and never returns to dispatch.
+				// Two different failures reach here and the dump tells them apart, so the message must not
+				// pick one. A UI thread stopped *inside* shutdown work (device teardown, an uncancellable
+				// render, a lock) never returns to dispatch. A UI thread asleep in WaitMessage is the
+				// opposite: the pump is healthy and simply has nothing to process, because whatever should
+				// have been waking it - the idle pump's driver, on this window's own thread - is not.
+				// An earlier version of this message asserted the first shape; it sent an investigation of
+				// the second one down the wrong path for a day. It says what it knows now, and names the
+				// idle driver, which is the fact that separates the two.
 				throw new TimeoutException(
 					$"Test window failed to close within {CloseWindowTimeoutSeconds} seconds after the test completed. "
-					+ "The posted force-close was never processed, so the UI thread was blocked inside shutdown work rather than pumping messages. "
-					+ "See the ALL MANAGED THREAD STACKS dump printed above for the frame it was blocked in.");
+					+ "The posted force-close was never processed. Read the UI thread's frame in the ALL MANAGED THREAD "
+					+ "STACKS dump above: inside shutdown work means it never got back to dispatching, while WaitMessage "
+					+ "(or any idle pump frame) means the loop is alive and nothing is waking it - idle turns and posted "
+					+ "messages are not arriving, so suspect the idle-pump driver. "
+					+ (IdlePumpPolicy.DescribeDriver?.Invoke() ?? "idle pump: no host published a driver."));
 			}
 
 			// When RequireTestCompletion is set, verify the test signaled
