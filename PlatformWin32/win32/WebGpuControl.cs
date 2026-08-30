@@ -374,11 +374,30 @@ namespace MatterHackers.Agg.UI
 			return this.device != null && this.device.IsDeviceLost && this.TryRecoverDevice();
 		}
 
-		private void DisposeDeviceResources()
+		/// <summary>
+		/// Releases the device and everything built on it.
+		/// </summary>
+		/// <param name="budgetTheGpuDrain">
+		/// True on the window-close path. The wait for the GPU to finish what it was given is then paid on
+		/// another thread with a time budget (see <see cref="GpuTeardown"/>) - on a software rasterizer it
+		/// is minutes, and this runs on the UI thread inside <c>WM_CLOSE</c>. If the budget expires nothing
+		/// is released at all: this control's window handle is destroyed moments later by
+		/// <c>base.Dispose</c>, and a swapchain release racing that is a native crash where a leak is only
+		/// a leak.
+		/// <para>
+		/// False for device-loss recovery, which is not on a deadline, has no window being destroyed, and
+		/// wants the old device really gone before it builds the next one.
+		/// </para>
+		/// </param>
+		private void DisposeDeviceResources(bool budgetTheGpuDrain = false)
 		{
 			this.isInitialized = false;
 			this.frameIsPresentable = false;
 
+			// Before the drain below. None of these submits - they end passes and release resources - but a
+			// wgpu release only marks an object for destruction, which a poll is what actually performs.
+			// Letting go of them first is therefore what gives the drain something to clean up, instead of
+			// leaving every buffer and texture pending behind a device that is never polled again.
 			this.sceneRenderer?.Dispose();
 			this.compat?.Dispose();
 			this.depthTarget?.Dispose();
@@ -386,7 +405,7 @@ namespace MatterHackers.Agg.UI
 
 			// The surface belongs to the device now (it was made before the adapter), so the device's
 			// Dispose releases it - releasing it here as well would be a double free.
-			this.device?.Dispose();
+			var closingDevice = this.device;
 
 			this.sceneRenderer = null;
 			this.compat = null;
@@ -395,6 +414,20 @@ namespace MatterHackers.Agg.UI
 			this.surface = null;
 			this.device = null;
 			this.Gl = null;
+
+			if (closingDevice == null)
+			{
+				return;
+			}
+
+			// The drain is the only part that may be abandoned, and the only part that does not touch this
+			// control's window handle. Once it has returned the release below finds an idle queue and
+			// nothing to wait for, so it finishes here, on this thread, before the handle goes away.
+			if (!budgetTheGpuDrain
+				|| GpuTeardown.DrainWithinBudget(closingDevice.WaitForGpuIdle, "WebGpuControl device"))
+			{
+				closingDevice.Dispose();
+			}
 		}
 
 		/// <summary>
@@ -468,7 +501,11 @@ namespace MatterHackers.Agg.UI
 		{
 			if (disposing)
 			{
-				this.DisposeDeviceResources();
+				// Budgeted: this runs from the form's OnClosed, on the UI thread, inside WM_CLOSE. A wait
+				// that outlasts the budget there is a window that never finishes closing. base.Dispose below
+				// destroys this control's window handle, which is exactly why an over-budget drain releases
+				// nothing rather than releasing on another thread.
+				this.DisposeDeviceResources(budgetTheGpuDrain: true);
 
 				// Same reason as on creation: everything cached against this device is about to be a
 				// handle to freed memory.

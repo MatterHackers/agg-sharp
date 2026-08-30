@@ -76,9 +76,20 @@ namespace MatterHackers.Agg.UI
 			platformWindow.ShowSystemWindow(systemWindow);
 		}
 
+		/// <summary>
+		/// Closes <paramref name="systemWindow"/>'s platform window, if it has one, and forgets the window.
+		/// </summary>
+		/// <remarks>
+		/// A window with no platform window is one that was never shown (or has already been closed -
+		/// <c>SystemWindow.OnClosed</c> nulls the reference right after calling this). It is already gone as
+		/// far as the platform is concerned, so there is nothing to close and the bookkeeping below is the
+		/// whole job. Dereferencing it unconditionally threw a NullReferenceException out of every
+		/// <c>Close()</c> on an unshown window, which is what the mac and X11 providers have always guarded
+		/// against - this is the same guard, not a new policy.
+		/// </remarks>
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
-			systemWindow.PlatformWindow.CloseSystemWindow(systemWindow);
+			systemWindow.PlatformWindow?.CloseSystemWindow(systemWindow);
 			_openWindows.Remove(systemWindow);
 		}
 	}

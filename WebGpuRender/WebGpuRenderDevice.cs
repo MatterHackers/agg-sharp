@@ -1109,7 +1109,54 @@ namespace MatterHackers.WebGpuRender
 			surface.PresentFrame();
 		}
 
-		/// <summary>Ends any open pass and releases every wgpu object this device owns.</summary>
+		/// <summary>
+		/// Blocks until everything already submitted to this device's queue has finished on the GPU.
+		/// <para>
+		/// <b>Unbounded, and the point of having it.</b> The same wait happens inside <see cref="Dispose"/>
+		/// (a swapchain cannot be unconfigured while the GPU may still be reading its images), but there it
+		/// is welded to native calls that talk to the window. Here it is on its own, so a window host can
+		/// pay it with a time budget on a thread it is willing to abandon - see
+		/// <see cref="RenderCore.GpuTeardown"/> - and reach <see cref="Dispose"/> with an idle queue, where
+		/// it costs nothing.
+		/// </para>
+		/// <para>
+		/// <b>It touches no window.</b> This is a queue fence wait: no surface, no swapchain, no HWND, no X
+		/// drawable, no CAMetalLayer. That is what makes it the half of the teardown that is safe to leave
+		/// running while the host destroys its native window.
+		/// </para>
+		/// <para>
+		/// A no-op in the browser, where the wasm build links a stub that reports the device idle and
+		/// returns - the same reason <see cref="ReadTextureAsync"/> never polls there.
+		/// </para>
+		/// </summary>
+		public void WaitForGpuIdle()
+		{
+			if (this.IsDisposed || this.device.IsNull)
+			{
+				return;
+			}
+
+			WgpuNative.wgpuDevicePoll(this.device, true, null);
+		}
+
+		/// <summary>
+		/// Ends any open pass and releases every wgpu object this device owns.
+		/// <para>
+		/// <b>How long this takes is up to the GPU.</b> Both the swapchain release below (see
+		/// <see cref="WebGpuSurfaceTarget.Dispose"/>) and dropping the device itself wait for the work
+		/// already submitted to finish, unbounded. That is milliseconds on hardware and minutes on a
+		/// software rasterizer. <see cref="WaitForGpuIdle"/> beforehand is what makes it prompt: with the
+		/// queue already idle these waits have nothing left to wait for.
+		/// </para>
+		/// <para>
+		/// <b>This must not be abandoned, and must not outlive the window.</b> Unconfiguring and releasing
+		/// the swapchain are real calls against the native window the surface was made over - X requests on
+		/// a shared display, a DXGI swapchain over an HWND, a CAMetalLayer. Every host destroys that window
+		/// immediately after its close path returns, so this has to have finished by then. A host that
+		/// cannot afford to wait must leave this uncalled and leak the device instead (see
+		/// <see cref="RenderCore.GpuTeardown"/>), never call it and walk away.
+		/// </para>
+		/// </summary>
 		public void Dispose()
 		{
 			if (this.IsDisposed)

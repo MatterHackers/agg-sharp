@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MatterHackers.Agg.Platform;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -152,6 +153,46 @@ namespace MatterHackers.Agg.UI.Tests
 				provider: null,
 				activeWindow: null,
 				setPlatformClosing: null)).IsTrue();
+		}
+
+		/// <summary>
+		/// The other half of "already gone": closing a window that never got a platform window must not throw
+		/// out of the provider either.
+		/// </summary>
+		/// <remarks>
+		/// <see cref="AWindowThatIsAlreadyGoneLetsThePlatformClose"/> above looks like it covers this and does
+		/// not - it hands <see cref="PlatformCloseArbitration"/> a null provider, so no provider code runs. The
+		/// window's own <c>Close()</c> in its first line is what reaches one: <c>SystemWindow.OnClosed</c> calls
+		/// the ambient provider's <see cref="ISystemWindowProvider.CloseSystemWindow"/> for every window,
+		/// including one that was never shown and so has a null <c>PlatformWindow</c>. That is why it failed on
+		/// Windows and passed everywhere else - the mac and X11 providers guard, the WinForms one did not - and
+		/// why it only failed once some earlier test in the process had created the provider.
+		/// <para>
+		/// So the real provider for this OS is built the way <c>ShowAsSystemWindow</c> builds it, from the
+		/// configured type name, and asked to close a window it never showed. Every leg then pins its own
+		/// platform's provider: the contract is one contract, and the platform that breaks it is the platform
+		/// whose CI turns red.
+		/// </para>
+		/// </remarks>
+		[Test]
+		public async Task ThisPlatformsProviderClosesAWindowThatWasNeverShown()
+		{
+			var provider = AggContext.CreateInstanceFrom<ISystemWindowProvider>(
+				AggContext.Config.ProviderTypes.SystemWindowProvider);
+
+			await Assert.That(provider).IsNotNull()
+				.Because("the configured provider type has to resolve, or this test is asserting nothing");
+
+			var neverShown = new SystemWindow(400, 300);
+
+			await Assert.That(neverShown.PlatformWindow).IsNull()
+				.Because("a window that was never shown is exactly the case under test");
+
+			// The bug this pins was an unconditional systemWindow.PlatformWindow.CloseSystemWindow(...).
+			provider.CloseSystemWindow(neverShown);
+
+			await Assert.That(provider.OpenWindows).DoesNotContain(neverShown)
+				.Because("a close has to finish its bookkeeping, not stop at the missing platform window");
 		}
 
 		[Test]

@@ -340,7 +340,23 @@ namespace MatterHackers.WebGpuRender
 
 		internal bool BelongsTo(WebGpuRenderDevice device) => ReferenceEquals(this.owner, device);
 
-		/// <summary>Drops any frame in flight, unconfigures the swapchain and releases the surface.</summary>
+		/// <summary>
+		/// Drops any frame in flight, unconfigures the swapchain and releases the surface.
+		/// <para>
+		/// <b>This blocks, and there is no bound on how long.</b> A swapchain cannot be taken apart while
+		/// the GPU is still reading from its images, so wgpu waits on the device fence for everything
+		/// already submitted before it unconfigures, with an effectively infinite timeout. With a real GPU
+		/// that is over before it is measurable; with a software rasterizer (WARP, lavapipe) a single frame
+		/// can be tens of seconds and a backlog of them is minutes. Draining the queue first
+		/// (<see cref="WebGpuRenderDevice.WaitForGpuIdle"/>) is what makes this prompt.
+		/// </para>
+		/// <para>
+		/// <b>It needs the native window.</b> Unconfigure and release are real calls against the drawable
+		/// this surface was made over, so they have to happen before the host destroys it - and they cannot
+		/// be moved to a thread the host is willing to walk away from, because the window would then be
+		/// destroyed underneath them. See <see cref="RenderCore.GpuTeardown"/> for the split this forces.
+		/// </para>
+		/// </summary>
 		public void Dispose()
 		{
 			if (this.IsDisposed)
