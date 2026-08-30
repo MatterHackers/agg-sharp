@@ -207,6 +207,12 @@ namespace MatterHackers.Agg.UI
 			}
 			catch (ObjectDisposedException)
 			{
+				// Kept, though the paint no longer needs it: WinformsSystemWindow.OnPaint now absorbs the
+				// close race at the paint boundary itself, so base.OnPaint above cannot reach here. What
+				// still can is this.Focused - Control.Focused reads Handle, and a form mid-close answers
+				// IsHandleCreated true while already disposed (the finding recorded at
+				// WinformsSystemWindow.OnIdle's ObjectDisposedException filter), which makes that read throw.
+				// Deleting this would send that one back to WinForms' modal ThreadExceptionDialog.
 			}
 		}
 

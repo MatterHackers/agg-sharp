@@ -110,6 +110,18 @@ namespace MatterHackers.Agg.UI.Tests
 
 				UiThread.UnhandledException -= CollectReport;
 
+				if (!ReferenceEquals(closed, shown))
+				{
+					// This test runs its own window rather than going through AutomationRunner, so none of the
+					// harness's watchdogs are watching it: when the close hangs, the assert below is the only
+					// thing that ever gets said, and the run then goes silent for as long as the shard is
+					// allowed to live - the loop that will not close is still holding the thread every later
+					// test needs. Naming the frame it is stuck in is the difference between a diagnosable CI
+					// run and another timeout with nothing in it.
+					ThreadStackDump.WriteToConsole(
+						"PaintExceptionContainmentTests: the window did not close 20s after CloseOnIdle");
+				}
+
 				await Assert.That(ReferenceEquals(closed, shown)).IsTrue()
 					.Because("the window has to close after a throwing paint; a dead loop leaves it on screen forever");
 			}

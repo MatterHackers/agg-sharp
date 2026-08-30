@@ -563,7 +563,39 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			this.PaintFrame(paintEventArgs);
+			// A throw from a widget's draw costs this frame and nothing more - the same containment the mac
+			// and X11 hosts give it (see the paint pumps in MacSystemWindow and X11SystemWindow), and the
+			// reason this host needs it spelled out is that WinForms has an opinion of its own about an
+			// exception that reaches WndProc: it hands it to Application's unhandled-exception machinery,
+			// which - outside AutomationRunner, the only thing here that ever installs a ThreadException
+			// handler - puts up the modal ThreadExceptionDialog. That is a nested message loop nobody is
+			// there to dismiss on an unattended run, so the window can never finish closing, the
+			// Application.Run that owns it never returns, and every later test sharing that thread waits on
+			// a window that is never coming down.
+			//
+			// Reported, not swallowed: this is the channel the automation harness listens on (see
+			// UiThread.ReportUnhandledException), so the test whose draw threw still fails, and loudly - it
+			// just fails alone. WinForms validates the update region before OnPaint runs, so a repeatedly
+			// throwing draw does not spin the loop; it repeats only when something asks for a repaint.
+			try
+			{
+				this.PaintFrame(paintEventArgs);
+			}
+			catch (ObjectDisposedException disposedDuringPaint)
+			{
+				// The close race, not a bug: a frame already in flight when the window went away finds a
+				// disposed control or a destroyed handle under it. WebGpuSystemWindow.OnPaint has always
+				// absorbed exactly this, in an outer catch that this guard now sits inside - so this has to
+				// keep absorbing it. Reporting it would turn every ordinary close into a failure of whatever
+				// test happened to be running, which is the same flake this whole path is being fixed for.
+				Console.Error.WriteLine(
+					$"WinformsSystemWindow paint hit the close race, frame abandoned: {disposedDuringPaint.Message}");
+			}
+			catch (Exception paintException)
+			{
+				Console.Error.WriteLine($"WinformsSystemWindow paint threw, frame abandoned: {paintException}");
+				UiThread.ReportUnhandledException(paintException);
+			}
 		}
 
 		private void PaintFrame(PaintEventArgs paintEventArgs)
