@@ -76,6 +76,18 @@ namespace Agg
         }
 
         /// <summary>
+        /// Gets or sets whether every logged line is also written to the console.
+        /// </summary>
+        /// <remarks>
+        /// Opt in, and off by default: an interactive application must not spray its trace over stdout. The
+        /// automation runner turns it on for the duration of a test run because a test host's stdout is what
+        /// ends up in the TRX, and Debug.WriteLine - the only sink otherwise - reaches a debugger that a build
+        /// server does not have. Turning this on also lifts the Release level filter in <see cref="Log"/>:
+        /// asking for the console echo is asking for the whole timeline, not just the errors.
+        /// </remarks>
+        public static bool EchoToConsole { get; set; }
+
+        /// <summary>
         /// Enables debug logging for the specified filter category
         /// </summary>
         /// <param name="filter">Debug filter category to enable</param>
@@ -178,8 +190,10 @@ namespace Agg
         public static void Log(string filter, string message, DebugLevel level = DebugLevel.Message)
         {
 #if !DEBUG
-            // In release builds, only log errors and failures
-            if (level < DebugLevel.Error)
+            // In release builds, only log errors and failures - unless a caller has explicitly asked for the
+            // console echo, which is a request for the full trace and is the only way a Release CI run can see
+            // one at all.
+            if (level < DebugLevel.Error && !EchoToConsole)
             {
                 return;
             }
@@ -203,6 +217,13 @@ namespace Agg
 
                 var logMessage = $"[{levelString}] [{filter}] {message}";
                 Debug.WriteLine(logMessage);
+
+                if (EchoToConsole)
+                {
+                    // Timestamped, unlike the Debug.WriteLine above: the reason this sink exists is to show a
+                    // log reader how long a run sat between two lines, and a hang is only visible as a gap.
+                    Console.WriteLine($"{DateTime.Now:HH:mm:ss.fff} {logMessage}");
+                }
 
                 // Also write to file with thread synchronization. Guarded and swallowed: logging is never the
                 // reason a caller fails, and this now runs on machines where the log directory is missing,

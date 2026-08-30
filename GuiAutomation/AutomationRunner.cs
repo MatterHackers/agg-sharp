@@ -1644,12 +1644,35 @@ namespace MatterHackers.GuiAutomation
 			}
 		}
 
+		/// <summary>
+		/// Traces one milestone of the run's close timeline.
+		/// </summary>
+		/// <remarks>
+		/// Deliberately not <see cref="DebugLogger.LogMessage"/>, which is [Conditional("DEBUG")] and so
+		/// compiles the whole timeline out of the Release build that CI runs - which is exactly how a hung
+		/// shutdown came to print nothing at all between the watchdog latching and the process finally
+		/// draining minutes later. Calling Log directly keeps these lines in Release, where
+		/// <see cref="DebugLogger.EchoToConsole"/> (set at test start) puts them on stdout for the TRX.
+		/// </remarks>
+		private static void LogClosePhase(string message)
+		{
+			DebugLogger.Log("AutomationRunner", message, DebugLevel.Message);
+		}
+
 		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action<AutomationRunner> closeWindow = null)
 		{
 			// Enable debug logging for AutomationRunner
 			DebugLogger.EnableFilter("AutomationRunner");
 
-			DebugLogger.LogMessage("AutomationRunner", $"=== TEST START === WindowTitle: {initialSystemWindow.Title}");
+			// A test host's console is what the TRX records, so this is the only sink a build server can read
+			// back. Without it the close timeline below exists only in a debugger nobody is attached to.
+			DebugLogger.EchoToConsole = true;
+
+			// The thread that gets here is the thread that will call ShowAsSystemWindow below and become the
+			// message loop, so name it now: after it is stuck there is no way to ask it who it is.
+			ThreadStackDump.RegisterCurrentThread("<<< UI THREAD (message pump)");
+
+			LogClosePhase($"=== TEST START === WindowTitle: {initialSystemWindow.Title}");
 
 			var testRunner = new AutomationRunner(InputMethod, DrawSimulatedMouse, imagesDirectory);
 
@@ -1673,7 +1696,7 @@ namespace MatterHackers.GuiAutomation
 					return;
 				}
 
-				DebugLogger.LogMessage("AutomationRunner", "REQUESTING WINDOW CLOSE");
+				LogClosePhase("REQUESTING WINDOW CLOSE");
 
 				// The close budget must not be spent by the application's own shutdown work: MatterCAD's
 				// closeWindow callback can legitimately take ~10 seconds before it even asks the window to
@@ -1725,6 +1748,12 @@ namespace MatterHackers.GuiAutomation
 
 						DebugLogger.LogError("AutomationRunner", "WINDOW FAILED TO CLOSE - forcing close; a dialog or a dead idle pump is blocking shutdown");
 						Interlocked.Exchange(ref closePhaseTimedOut, 1);
+
+						// Only on this path, and only once the run is already failing: the capture costs a
+						// minidump of the whole process, which no healthy close should ever pay for. Taken
+						// before the force close so the stacks show what the UI thread was stuck in while it
+						// was ignoring the close, rather than whatever it moved on to afterwards.
+						ThreadStackDump.WriteToConsole($"close watchdog latched - window still open {closeWatch.Elapsed.TotalSeconds:0.0} s after close was requested");
 
 						void ForceCloseNow()
 						{
@@ -1779,6 +1808,10 @@ namespace MatterHackers.GuiAutomation
 						string stillBlocked = $"FORCED CLOSE DID NOT RELEASE THE MESSAGE LOOP after {CloseWindowTimeoutSeconds} seconds - the test process is hung in the platform window pump.";
 						DebugLogger.LogError("AutomationRunner", stillBlocked);
 						Console.WriteLine(stillBlocked);
+
+						// Second capture, and worth its cost: the first one showed the UI thread ignoring the
+						// close request, this one shows whether the posted force close moved it at all.
+						ThreadStackDump.WriteToConsole("forced close did not release the message loop");
 					}
 					catch (Exception ex)
 					{
@@ -1916,7 +1949,7 @@ namespace MatterHackers.GuiAutomation
 			// Once either the timeout or the test method has completed, store if a timeout occurred and shutdown the SystemWindow
 			task.ContinueWith(innerTask =>
 			{
-				DebugLogger.LogMessage("AutomationRunner", "CLEANUP - Task completed, calling CloseOnIdle");
+				LogClosePhase("CLEANUP - Task completed, calling CloseOnIdle");
 				RequestWindowClose();
 			});
 
@@ -1926,7 +1959,7 @@ namespace MatterHackers.GuiAutomation
 
 			try
 			{
-				DebugLogger.LogMessage("AutomationRunner", "CALLING ShowAsSystemWindow");
+				LogClosePhase("CALLING ShowAsSystemWindow");
 
 				// This thread is about to become the message loop, so it is the thread await has to come back
 				// to. Installing here rather than relying on the platform host means the context is in place
@@ -1955,11 +1988,11 @@ namespace MatterHackers.GuiAutomation
 			var completedTask = task.Result;
 			bool timedOut = completedTask == delayTask;
 			bool uiThreadFaulted = completedTask == uiExceptionTask;
-			DebugLogger.LogMessage("AutomationRunner", $"SHOW COMPLETED - TimedOut: {timedOut}");
+			LogClosePhase($"SHOW COMPLETED - message loop exited - TimedOut: {timedOut}");
 
 			// Wait for CloseOnIdle to complete
 			testRunner.WaitFor(() => initialSystemWindow.HasBeenClosed);
-			DebugLogger.LogMessage("AutomationRunner", $"WINDOW CLOSED - HasBeenClosed: {initialSystemWindow.HasBeenClosed}");
+			LogClosePhase($"WINDOW CLOSED - HasBeenClosed: {initialSystemWindow.HasBeenClosed}");
 
 			// Restore the original EnableAllowDrop state
 			SystemWindow.EnableAllowDrop = originalAllowDropState;
@@ -2047,7 +2080,15 @@ namespace MatterHackers.GuiAutomation
 			// RequireTestCompletion, because a blocked shutdown is the more useful diagnosis.
 			if (Volatile.Read(ref closePhaseTimedOut) == 1)
 			{
-				throw new TimeoutException($"Test window failed to close within {CloseWindowTimeoutSeconds} seconds after the test completed - a blocking dialog (e.g. save-changes prompt) likely prevented shutdown.");
+				// Says what the evidence supports and no more. The old wording blamed a modal dialog, which
+				// this failure specifically rules out: a dialog runs its own message pump, so the posted force
+				// close would have been processed. A pump that ignores a posted message is a UI thread that is
+				// not in the pump at all - it is blocked inside shutdown work (device teardown, an
+				// uncancellable render, a lock) and never returns to dispatch.
+				throw new TimeoutException(
+					$"Test window failed to close within {CloseWindowTimeoutSeconds} seconds after the test completed. "
+					+ "The posted force-close was never processed, so the UI thread was blocked inside shutdown work rather than pumping messages. "
+					+ "See the ALL MANAGED THREAD STACKS dump printed above for the frame it was blocked in.");
 			}
 
 			// When RequireTestCompletion is set, verify the test signaled
@@ -2059,7 +2100,7 @@ namespace MatterHackers.GuiAutomation
 				throw new Exception("Test did not call MarkTestComplete(). The test may have exited before reaching its last statement.");
 			}
 
-			DebugLogger.LogMessage("AutomationRunner", "=== TEST COMPLETE ===");
+			LogClosePhase("=== TEST COMPLETE ===");
 			// After the system window is closed return the task and any exception to the calling context
 			return completedTask ?? Task.CompletedTask;
 		}
