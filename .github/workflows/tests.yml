@@ -38,8 +38,12 @@ jobs:
       # run still writes results.trx and the always() upload below makes a hang
       # diagnosable; the job's 30m timeout-minutes is only the backstop for a wedge
       # that MTP cannot cancel itself out of (restore, build, upload).
+      # The two clocks start at different moments - timeout-minutes from job start,
+      # --timeout from test-session start - and checkout+setup+build measured ~5 min,
+      # so the gap has to cover that skew plus the drain. At 1500s they fired 5 seconds
+      # apart and the runner died mid-drain with no TRX; 1200s buys a real ~5 min window.
       - name: Run tests
-        run: dotnet test Tests/Agg.Tests/Agg.Tests.csproj --configuration Release --no-build --report-trx --report-trx-filename results.trx --results-directory TestResults --maximum-parallel-tests 1 --timeout 1500s
+        run: dotnet test Tests/Agg.Tests/Agg.Tests.csproj --configuration Release --no-build --report-trx --report-trx-filename results.trx --results-directory TestResults --maximum-parallel-tests 1 --timeout 1200s
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
