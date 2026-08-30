@@ -31,6 +31,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform;
@@ -78,68 +79,77 @@ namespace Markdig.Renderers.Agg.Inlines
 
 		private void StartFetch()
 		{
+			// Deliberately not awaited: OnLoad cannot await, and the widget is fully usable showing its
+			// placeholder icon until the image arrives. FetchAsync handles its own failures, so nothing
+			// is left as an unobserved task exception.
+			_ = this.FetchAsync();
+		}
+
+		private async Task FetchAsync()
+		{
 			try
 			{
-				if (Url.StartsWith("http"))
+				if (!Url.StartsWith("http"))
 				{
-					client.GetAsync(Url, HttpCompletionOption.ResponseHeadersRead).ContinueWith(task =>
-					{
-						var response = task.Result;
-
-						if (response.IsSuccessStatusCode)
-						{
-							response.Content.ReadAsStreamAsync().ContinueWith(streamTask =>
-							{
-								var stream = streamTask.Result;
-
-								// The continuation runs on a thread-pool thread; all widget-tree and
-								// image-buffer mutation must be marshaled to the UI thread.
-								UiThread.RunOnIdle(() =>
-								{
-									if (this.HasBeenClosed)
-									{
-										// the widget went away before the response arrived
-										return;
-									}
-
-									// response.Headers.TryGetValues("", s[""] == "" ||
-									if (string.Equals(Path.GetExtension(Url), ".svg", StringComparison.OrdinalIgnoreCase))
-									{
-										// Load svg into SvgWidget, swap for ImageWidget
-										try
-										{
-											var svgWidget = new SvgWidget()
-											{
-												Border = 1,
-												BorderColor = Color.YellowGreen
-											};
-
-											svgWidget.LoadSvg(stream, 1);
-
-											this.ReplaceChild(imageWidget, svgWidget);
-										}
-										catch (Exception svgEx)
-										{
-											Debug.WriteLine("Error loading svg: {0} :: {1}", Url, svgEx.Message);
-										}
-									}
-									else
-									{
-										// Load img
-										if (!ImageIO.LoadImageData(stream, imageBuffer))
-										{
-											Debug.WriteLine("Error loading image: " + Url);
-										}
-									}
-								});
-							});
-						}
-					});
+					return;
 				}
+
+				var response = await client.GetAsync(Url, HttpCompletionOption.ResponseHeadersRead);
+
+				if (!response.IsSuccessStatusCode)
+				{
+					return;
+				}
+
+				var stream = await response.Content.ReadAsStreamAsync();
+
+				// Where this resumes depends on whether a synchronization context was installed on the
+				// thread that called OnLoad, so it may well be a thread-pool thread. All widget-tree and
+				// image-buffer mutation is marshaled to the UI thread rather than betting on it.
+				UiThread.RunOnIdle(() =>
+				{
+					if (this.HasBeenClosed)
+					{
+						// the widget went away before the response arrived
+						return;
+					}
+
+					// response.Headers.TryGetValues("", s[""] == "" ||
+					if (string.Equals(Path.GetExtension(Url), ".svg", StringComparison.OrdinalIgnoreCase))
+					{
+						// Load svg into SvgWidget, swap for ImageWidget
+						try
+						{
+							var svgWidget = new SvgWidget()
+							{
+								Border = 1,
+								BorderColor = Color.YellowGreen
+							};
+
+							svgWidget.LoadSvg(stream, 1);
+
+							this.ReplaceChild(imageWidget, svgWidget);
+						}
+						catch (Exception svgEx)
+						{
+							Debug.WriteLine("Error loading svg: {0} :: {1}", Url, svgEx.Message);
+						}
+					}
+					else
+					{
+						// Load img
+						if (!ImageIO.LoadImageData(stream, imageBuffer))
+						{
+							Debug.WriteLine("Error loading image: " + Url);
+						}
+					}
+				});
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine(ex.Message);
+				// Full ToString, not just Message: this catch now covers the whole fetch - the request, the
+				// response read, and the RunOnIdle scheduling - so the stack is what says which one failed.
+				Console.WriteLine(ex.ToString());
 			}
 		}
 	}

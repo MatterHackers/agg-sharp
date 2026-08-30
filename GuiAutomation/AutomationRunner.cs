@@ -1659,7 +1659,12 @@ namespace MatterHackers.GuiAutomation
 			DebugLogger.Log("AutomationRunner", message, DebugLevel.Message);
 		}
 
-		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action<AutomationRunner> closeWindow = null)
+		/// <remarks>
+		/// Everything up to and including <c>ShowAsSystemWindow</c> runs synchronously on the calling
+		/// thread - that thread has to become the platform message loop, so this method cannot yield
+		/// before then. The first await is only reached once the loop has exited.
+		/// </remarks>
+		public static async Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action<AutomationRunner> closeWindow = null)
 		{
 			// Enable debug logging for AutomationRunner
 			DebugLogger.EnableFilter("AutomationRunner");
@@ -1985,7 +1990,25 @@ namespace MatterHackers.GuiAutomation
 				threadExceptionEvent?.RemoveEventHandler(null, threadExceptionDelegate);
 			}
 
-			var completedTask = task.Result;
+			// On the nominal, timeout and test-threw paths this task is already complete, because the only
+			// thing that asks the window to close is its own ContinueWith above - the close cannot even
+			// have been requested until it finished. The await is then a synchronous pass-through and the
+			// cleanup below stays on the thread that ran the message loop.
+			//
+			// The UI-exception path can genuinely race. uiThreadExceptionSignal is created with
+			// RunContinuationsAsynchronously, so CaptureUiThreadException's TrySetResult only *queues* the
+			// WhenAny completion to the pool while it goes on to drive the close on this thread. Under pool
+			// starvation the close can win, and then this await really does suspend and the cleanup resumes
+			// on a pool thread. That is safe: the cleanup is thread-agnostic, and UiThread.InvokePendingActions
+			// sees IsUiThread false, so it will not re-latch the UI thread id onto a pool thread - it just
+			// skips a last-gasp drain in a run that is already failing on a UI thread exception. It also
+			// cannot deadlock, because SynchronizationContext.Current is null here: the InstallForScope
+			// around ShowAsSystemWindow has been disposed.
+			//
+			// That last point is the standing requirement. If a caller ever has MainLoopSynchronizationContext
+			// current at this await, its Post enqueues to RunOnIdle - and nothing pumps RunOnIdle once
+			// ShowAsSystemWindow has returned, so the continuation would never run.
+			Task completedTask = await task;
 			bool timedOut = completedTask == delayTask;
 			bool uiThreadFaulted = completedTask == uiExceptionTask;
 			LogClosePhase($"SHOW COMPLETED - message loop exited - TimedOut: {timedOut}");
@@ -2073,7 +2096,7 @@ namespace MatterHackers.GuiAutomation
 			if (completedTask != null && completedTask.IsFaulted)
 			{
 				DebugLogger.LogError("AutomationRunner", $"TEST FAULTED: {completedTask.Exception?.InnerException?.Message}");
-				completedTask.GetAwaiter().GetResult(); // throws the original exception
+				await completedTask; // throws the original exception
 			}
 
 			// Checked after the test body results so a real test failure still wins - but before
@@ -2101,8 +2124,13 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			LogClosePhase("=== TEST COMPLETE ===");
-			// After the system window is closed return the task and any exception to the calling context
-			return completedTask ?? Task.CompletedTask;
+
+			// The winning task is already complete; awaiting it hands its outcome - a cancellation, say -
+			// to the calling context exactly as returning it used to.
+			if (completedTask != null)
+			{
+				await completedTask;
+			}
 		}
 	}
 }

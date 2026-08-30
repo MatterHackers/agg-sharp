@@ -300,17 +300,20 @@ namespace MatterHackers.Agg.Platform
 					Task<string> standardOutput = process.StandardOutput.ReadToEndAsync();
 					Task<string> standardError = process.StandardError.ReadToEndAsync();
 
-					await Task.WhenAll(standardOutput, standardError).ConfigureAwait(false);
+					string[] pipeText = await Task.WhenAll(standardOutput, standardError).ConfigureAwait(false);
 					await process.WaitForExitAsync().ConfigureAwait(false);
 
-					string failure = DescribeFailure(executable, process.ExitCode, standardError.Result);
+					string standardOutputText = pipeText[0];
+					string standardErrorText = pipeText[1];
+
+					string failure = DescribeFailure(executable, process.ExitCode, standardErrorText);
 					if (failure != null)
 					{
 						Report(failure);
 						return Array.Empty<string>();
 					}
 
-					return ParseDialogOutput(process.ExitCode, standardOutput.Result, multipleSelection);
+					return ParseDialogOutput(process.ExitCode, standardOutputText, multipleSelection);
 				}
 			}
 			catch (Exception exception)
