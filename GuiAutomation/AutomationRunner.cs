@@ -1929,9 +1929,40 @@ namespace MatterHackers.GuiAutomation
 				resetEvent.Set();
 			};
 
+			// What the render backend says about itself, for a diagnostic that has to work off any host.
+			// RenderStatusReport is declared per platform window rather than on IPlatformWindow, so it is
+			// read by name - the same way this class already reaches WinForms' Application. A window that
+			// never painted answers "webgpu not initialized"; one whose device came up answers with the
+			// backend, the adapter and how many frames it has presented, which is the difference between
+			// "the GPU never started" and "the GPU is fine and nobody asked it to draw".
+			static string DescribeRenderStatus(SystemWindow window)
+			{
+				try
+				{
+					object platformWindow = window?.PlatformWindow;
+					if (platformWindow == null)
+					{
+						return "render status: no platform window";
+					}
+
+					var property = platformWindow.GetType().GetProperty("RenderStatusReport");
+					return $"render status: {property?.GetValue(platformWindow) ?? "(not reported by this host)"}";
+				}
+				catch (Exception ex)
+				{
+					return $"render status: could not be read ({ex.GetType().Name})";
+				}
+			}
+
 			int testTimeout = (int)(1000 * secondsToTestFailure);
 			Task delayTask = Task.Delay(testTimeout);
 			Task uiExceptionTask = uiThreadExceptionSignal.Task;
+
+			// Baseline for the timeout diagnostic below. GuiWidget.DrawCount is process-wide, so only the
+			// change across this window's life means anything: zero says nothing painted at all (no frames -
+			// look at the device and the pump), non-zero says painting happened but this window's tree was
+			// not what got drawn (look at its size and its platform window).
+			int drawCountAtShow = GuiWidget.DrawCount;
 
 			// Start two tasks, the timeout and the test method. Block in the test method until the first draw
 			var task = Task.WhenAny(delayTask, Task.Run(() =>
@@ -1950,7 +1981,20 @@ namespace MatterHackers.GuiAutomation
 				}
 				else
 				{
-					DebugLogger.LogError("AutomationRunner", "TIMEOUT - Reset event never set");
+					// The reset event is set from the window's Load, and GuiWidget raises Load from its first
+					// OnDraw - so this timeout does not mean "the window never got focus" or "the test never
+					// started"; it means the window never painted. Everything below separates the ways that
+					// can happen, because the message alone has sent an investigation the wrong way before.
+					DebugLogger.LogError(
+						"AutomationRunner",
+						$"TIMEOUT - Reset event never set. The window's Load never fired, and Load is raised by the"
+						+ $" first draw, so nothing painted. window={initialSystemWindow.Width}x{initialSystemWindow.Height}"
+						+ $", hasBeenClosed={initialSystemWindow.HasBeenClosed}"
+						+ $", platformWindow={(initialSystemWindow.PlatformWindow == null ? "null" : "present")}"
+						+ $", widgetDrawsDuringThisWindow={GuiWidget.DrawCount - drawCountAtShow}"
+						+ $", {DescribeRenderStatus(initialSystemWindow)}"
+						+ $", {IdlePumpPolicy.DescribeDriver?.Invoke() ?? "idle pump: no host published a driver."}");
+
 					throw new TimeoutException("Reset event timed out");
 				}
 			}), uiExceptionTask);
