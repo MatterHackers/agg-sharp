@@ -253,10 +253,7 @@ namespace MatterHackers.Agg.UI
 
 			// TitleBarHeight is intentionally NOT computed here: RectangleToScreen would force
 			// premature Win32 handle creation in the constructor. See OnHandleCreated.
-			if (SystemWindow.EnableAllowDrop)
-			{
-				this.AllowDrop = true;
-			}
+			WinformsDragDrop.TryEnable(this, "this window");
 
 			if (ApplicationIcon.Value != null)
 			{
@@ -1329,7 +1326,19 @@ namespace MatterHackers.Agg.UI
 				}
 				
 				DebugLogger.LogMessage("WinformsSystemWindow", "ShowSystemWindow STEP 7 - About to call Application.Run()");
+
+				// This thread is the message loop from here on, and Application.ThreadException is registered
+				// per thread - so this is the one place that can promise no exception reaching this pump ever
+				// becomes a modal dialog nobody can dismiss.
+				WinformsThreadExceptionGuard.InstallForCurrentPump();
+
 				Application.Run(this);
+
+				// The loop is over, and WinForms took the thread's ThreadContext - and the subscription
+				// above with it - down when it ended. Forget it here so a thread that pumps again installs
+				// a fresh one rather than trusting a handler that no longer exists.
+				WinformsThreadExceptionGuard.ForgetCurrentPump();
+
 				DebugLogger.LogMessage("WinformsSystemWindow", "Application.Run completed - message loop exited");
 			}
 			else if (!SingleWindowMode)

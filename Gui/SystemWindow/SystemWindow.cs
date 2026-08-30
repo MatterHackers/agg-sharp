@@ -41,6 +41,37 @@ namespace MatterHackers.Agg.UI
 	{
 		public static bool EnableAllowDrop = true;
 
+		/// <summary>
+		/// Whether a window may actually turn drag-drop on, given what the application asked for and what
+		/// apartment the thread showing it is in.
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// Drag-drop is OLE, and OLE needs an STA thread. On Windows this is not advice: WinForms'
+		/// <c>Control.SetAcceptDrops</c> begins with <c>if (Application.OleRequired() != ApartmentState.STA)
+		/// throw new ThreadStateException(...)</c>, and a thread that is already MTA - every thread-pool
+		/// thread is - cannot be switched, so that throw is unconditional there. Worse, it is raised from
+		/// <c>OnHandleCreated</c> rather than from the assignment, so it escapes into WinForms'
+		/// unhandled-exception path; with no handler installed that is the modal ThreadExceptionDialog,
+		/// which on an unattended run holds the window's thread forever.
+		/// </para>
+		/// <para>
+		/// A real application never meets this (<c>[STAThread]</c> on Main). A host that shows a window from
+		/// a pool thread does, and would rather lose drag-drop than lose the window - so the question is
+		/// asked here, before anything is set, instead of being caught after.
+		/// </para>
+		/// <para>
+		/// The apartment is a parameter rather than read from <c>Thread.CurrentThread</c> so this policy can
+		/// be tested on any platform: <c>GetApartmentState</c> answers Unknown off Windows, which would
+		/// leave the STA leg - the one every real user is on - untestable anywhere but Windows.
+		/// </para>
+		/// </remarks>
+		/// <param name="enableAllowDrop">What the application asked for; see <see cref="EnableAllowDrop"/>.</param>
+		/// <param name="apartment">The apartment of the thread that is showing the window.</param>
+		/// <returns>True if drag-drop may be turned on.</returns>
+		public static bool ShouldEnableAllowDrop(bool enableAllowDrop, System.Threading.ApartmentState apartment)
+			=> enableAllowDrop && apartment == System.Threading.ApartmentState.STA;
+
 		private string _title = "";
 
 		public bool AlwaysOnTopOfMain { get; set; }
