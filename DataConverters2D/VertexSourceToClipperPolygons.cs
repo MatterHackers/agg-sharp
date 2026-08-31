@@ -123,9 +123,10 @@ namespace MatterHackers.DataConverters2D
 		/// micron: a coordinate arrives at the nearest 0.001 of whatever unit the path was drawn in, and the
 		/// residue is lost for good. That is invisible in the 2D drawing this conversion was written for, but it
 		/// is not invisible to geometry measured against an analytic answer afterwards - a profile extruded
-		/// through here carries the snap into the solid's faces (see <c>BevelEdgeToolBuilder.TryCreate</c>, where
-		/// it moves a chamfer's cut plane by 2.13e-4 mm). Callers that need the path back unrounded should pass a
-		/// finer scaling or stay off this conversion entirely.
+		/// through here carries the snap into the solid's faces. MatterCAD's bevel reached this way once, through
+		/// a per-edge chamfer prism since retired, and the snap moved that chamfer's cut plane by 2.13e-4 mm; its
+		/// BevelToolPlaneAccuracyTests keep the control measurements. Callers that need the path back unrounded
+		/// should pass a finer scaling or stay off this conversion entirely.
 		/// </remarks>
 		public static Polygons CreatePolygons(this IVertexSource sourcePath, double scaling = 1000)
 		{
