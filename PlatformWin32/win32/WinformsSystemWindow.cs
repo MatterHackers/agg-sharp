@@ -1579,7 +1579,15 @@ namespace MatterHackers.Agg.UI
 			// If this isn't true, prepare for deadlocks.
 			//System.Diagnostics.Debug.Assert(SynchronizationContext.Current == null || SynchronizationContext.Current is WindowsFormsSynchronizationContext);
             
-			if (firstWindow)
+			// firstWindow is a latch, and a latch can be wrong. The branch below is really "does this thread
+			// need a message loop?", and WinForms can answer that directly, per thread. The two disagree
+			// exactly when a previous window's Application.Run never returned: the latch says "not first",
+			// this thread has no loop of its own, and the window is sent down the deferred-show path where it
+			// waits for an idle turn from a pump that belongs to another thread and has no driver. That is a
+			// window that never shows, never fires Form.Load, never initializes its device and never paints -
+			// the failure CI kept reporting as a first draw that never happened. Asking the question of the
+			// thread rather than the latch cannot get that wrong.
+			if (firstWindow || !Application.MessageLoop)
 			{
 				DebugLogger.LogMessage("WinformsSystemWindow", "First window - starting Application.Run message loop");
 				firstWindow = false;
