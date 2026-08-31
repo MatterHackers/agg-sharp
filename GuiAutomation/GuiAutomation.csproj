@@ -22,6 +22,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- ThreadStackDumpTests drives ThreadStackDump.CaptureWithRetries directly: the retry policy is only
+         exercised for real by losing a dump race, which cannot be arranged on demand. -->
+    <InternalsVisibleTo Include="Agg.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\agg\Agg.csproj" />
     <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj" />
     <ProjectReference Include="..\Gui\Gui.csproj" />

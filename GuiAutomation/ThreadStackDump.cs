@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -59,6 +60,10 @@ namespace MatterHackers.GuiAutomation
 	/// by default in every runtime this ships against - so it works unchanged in Release on a CI runner. The
 	/// single code path is also deliberate: the mac/Linux developer machine runs exactly what Windows CI runs,
 	/// which is the only way <c>ThreadStackDumpTests</c> can vouch for the CI behaviour.
+	/// <para>
+	/// Capturing is retried, because a dump of a *live* process is a race that sometimes loses - see
+	/// <see cref="CaptureAttempts"/>.
+	/// </para>
 	/// </remarks>
 	public static class ThreadStackDump
 	{
@@ -67,6 +72,38 @@ namespace MatterHackers.GuiAutomation
 		/// reader came for under tens of thousands of identical lines.
 		/// </summary>
 		private const int MaxFramesPerThread = 80;
+
+		/// <summary>
+		/// How many complete captures to try before giving up. A dump is taken of a process that is still
+		/// running, so the thread list it describes can change underneath the capture, and both halves of the
+		/// capture can lose that race:
+		/// <list type="bullet">
+		/// <item>the runtime's <c>createdump</c> reads each thread's register state after enumerating threads,
+		/// so a thread that exits in between fails the read outright - on macOS that reads as
+		/// "thread_get_state(0) FAILED (ipc/send) invalid destination port".</item>
+		/// <item>ClrMD's mac core reader keys thread contexts by looking each context's stack pointer up in a
+		/// stack-pointer-to-thread-id map (<c>MachOCoreDump</c>'s constructor, unchanged from 3.0 through
+		/// <c>main</c>, so 4.x is no escape). Two contexts whose stack pointers collapse to one id - which is
+		/// what a dump of a mutating thread list can contain - make its <c>Dictionary.Add</c> throw
+		/// "An item with the same key has already been added".</item>
+		/// </list>
+		/// Both are properties of the *captured file*, not of the parse, so a retry has to write a whole new dump
+		/// rather than re-read the one that failed.
+		/// <para>
+		/// Five rather than two because the losses come in bursts, so attempts are nowhere near independent.
+		/// Measured over 250 captures taken against 24 threads each creating and joining a thread in a tight
+		/// loop, on a 10 core mac also running 16 spinners: unretried, 35 captures failed; retried, 52 first
+		/// attempts failed but only 7 survived three attempts and none survived five.
+		/// </para>
+		/// </summary>
+		internal const int CaptureAttempts = 5;
+
+		/// <summary>
+		/// Pause between capture attempts. The race is lost in bursts, so an immediate retry is likelier to
+		/// land in the same burst; this is short enough to be free next to the minutes a watchdog waited to
+		/// get here.
+		/// </summary>
+		private static readonly TimeSpan DelayBetweenAttempts = TimeSpan.FromMilliseconds(250);
 
 		/// <summary>
 		/// What each registered thread is *for*, keyed by managed thread id. A dump can read a thread's ids and
@@ -89,14 +126,62 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		/// <summary>
-		/// Builds the all-thread stack report. Throws if the capture fails; callers on a failure path should
-		/// use <see cref="WriteToConsole"/>, which cannot throw.
+		/// Builds the all-thread stack report. Throws if every capture attempt fails; callers on a failure path
+		/// should use <see cref="WriteToConsole"/>, which cannot throw.
 		/// </summary>
 		/// <param name="reason">Why the dump was taken - printed at the top so a log reader knows what latched it.</param>
 		/// <returns>The report text, one section per managed thread.</returns>
 		public static string Capture(string reason)
 		{
-			// A distinct file per capture: two watchdogs latching at once must not fight over one path.
+			return CaptureWithRetries(reason, () => CaptureOnce(reason), () => Thread.Sleep(DelayBetweenAttempts));
+		}
+
+		/// <summary>
+		/// Runs <paramref name="captureAttempt"/> until it produces a report or <see cref="CaptureAttempts"/> is
+		/// exhausted, waiting via <paramref name="waitBetweenAttempts"/> in between.
+		/// </summary>
+		/// <remarks>
+		/// Split out from <see cref="Capture"/> so the retry policy itself is testable without having to lose a
+		/// real dump race on purpose. The delegate must take a *fresh* dump every time - see
+		/// <see cref="CaptureAttempts"/> for why re-parsing the same file would fix nothing.
+		/// </remarks>
+		/// <param name="reason">Why the dump was taken - repeated in the give-up exception.</param>
+		/// <param name="captureAttempt">Takes one complete dump and returns its report; may throw.</param>
+		/// <param name="waitBetweenAttempts">Called after a failed attempt, before the next one.</param>
+		/// <returns>The report text from the first attempt that succeeded.</returns>
+		internal static string CaptureWithRetries(string reason, Func<string> captureAttempt, Action waitBetweenAttempts)
+		{
+			List<Exception> failures = null;
+
+			for (int attempt = 1; attempt <= CaptureAttempts; attempt++)
+			{
+				try
+				{
+					string report = captureAttempt();
+
+					// Say so when an earlier attempt lost the race, otherwise a report that took several tries
+					// looks exactly like one that took none, and the next person to debug this starts over.
+					return failures == null ? report : DescribeFailedAttempts(failures) + report;
+				}
+				catch (Exception ex)
+				{
+					failures ??= new List<Exception>();
+					failures.Add(ex);
+
+					if (attempt < CaptureAttempts)
+					{
+						waitBetweenAttempts();
+					}
+				}
+			}
+
+			throw new AggregateException($"Thread stack capture failed on all {CaptureAttempts} attempts ({reason}).", failures);
+		}
+
+		private static string CaptureOnce(string reason)
+		{
+			// A distinct file per capture: two watchdogs latching at once must not fight over one path, and a
+			// retry must not read back the file whose contents just failed to parse.
 			string dumpPath = Path.Combine(Path.GetTempPath(), $"agg-threadstacks-{Environment.ProcessId}-{Guid.NewGuid():N}.dmp");
 			var timer = Stopwatch.StartNew();
 
@@ -166,6 +251,21 @@ namespace MatterHackers.GuiAutomation
 			{
 				Console.WriteLine($"THREAD STACK DUMP FAILED ({reason}): {ex.GetType().Name}: {ex.Message}");
 			}
+		}
+
+		/// <summary>
+		/// One line per lost race, printed above the report that finally worked.
+		/// </summary>
+		private static string DescribeFailedAttempts(List<Exception> failures)
+		{
+			var note = new StringBuilder();
+
+			for (int i = 0; i < failures.Count; i++)
+			{
+				note.AppendLine($"(thread stack capture attempt {i + 1} of {CaptureAttempts} failed and was re-taken: {failures[i].GetType().Name}: {failures[i].Message})");
+			}
+
+			return note.ToString();
 		}
 
 		private static void AppendRuntimeThreads(StringBuilder report, ClrRuntime runtime)

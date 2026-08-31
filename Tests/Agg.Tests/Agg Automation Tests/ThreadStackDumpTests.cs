@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -100,6 +101,73 @@ namespace MatterHackers.Agg.UI.Tests
 				blocked.Set();
 				thread.Join();
 			}
+		}
+
+		/// <summary>
+		/// The dump is taken of a process that is still running, so the thread list can change underneath it -
+		/// on macOS that surfaces as createdump failing to read an exited thread's registers, or as ClrMD's mac
+		/// core reader throwing "An item with the same key has already been added" on two thread contexts that
+		/// resolve to one thread id. Both live in the captured file, so a re-capture is the only thing that can
+		/// clear them, and this test is what says the second capture actually happens.
+		/// </summary>
+		[Test]
+		public async Task ACaptureThatLosesTheDumpRaceIsRetakenNotReparsed()
+		{
+			int attempts = 0;
+			int waits = 0;
+
+			string report = ThreadStackDump.CaptureWithRetries(
+				"proving a lost dump race is retried",
+				() =>
+				{
+					if (++attempts == 1)
+					{
+						// The real shape of the failure this guards against.
+						throw new ArgumentException("An item with the same key has already been added. Key: 624794");
+					}
+
+					return "second capture\n";
+				},
+				() => waits++);
+
+			await Assert.That(attempts).IsEqualTo(2);
+			await Assert.That(waits).IsEqualTo(1);
+			await Assert.That(report).Contains("second capture");
+
+			// The report has to admit the retry, or a run that took two tries reads as one that took none.
+			await Assert.That(report).Contains($"attempt 1 of {ThreadStackDump.CaptureAttempts} failed and was re-taken");
+			await Assert.That(report).Contains("Key: 624794");
+		}
+
+		/// <summary>
+		/// The retry is bounded, and running out of attempts still throws - <see cref="ThreadStackDump.Capture"/>
+		/// promises that, and <see cref="ThreadStackDump.WriteToConsole"/> is the layer that turns it into a note
+		/// instead of replacing the failure it was called to explain.
+		/// </summary>
+		[Test]
+		public async Task ACaptureThatNeverSucceedsGivesUpAndReportsEveryAttempt()
+		{
+			int attempts = 0;
+
+			AggregateException thrown = null;
+
+			try
+			{
+				ThreadStackDump.CaptureWithRetries(
+					"proving the retry is bounded",
+					() => throw new InvalidOperationException($"capture {++attempts} failed"),
+					() => { });
+			}
+			catch (AggregateException ex)
+			{
+				thrown = ex;
+			}
+
+			await Assert.That(thrown).IsNotNull();
+			await Assert.That(attempts).IsEqualTo(ThreadStackDump.CaptureAttempts);
+			await Assert.That(thrown.InnerExceptions.Count).IsEqualTo(ThreadStackDump.CaptureAttempts);
+			await Assert.That(thrown.Message).Contains("proving the retry is bounded");
+			await Assert.That(thrown.Message).Contains($"capture {ThreadStackDump.CaptureAttempts} failed");
 		}
 
 		/// <summary>
