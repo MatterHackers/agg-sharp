@@ -95,12 +95,22 @@ namespace MatterHackers.WebGpuRender
 		/// </summary>
 		/// <remarks>
 		/// Its own value rather than the acquisition budget's, because nothing bounds it from outside and its
-		/// ceiling is a different question: how slow can a legitimate full-window copy be? Measured on Metal a
-		/// 512x384 read-back resolves in 5 to 9 ms, so ten seconds leaves three orders of magnitude for a
-		/// software rasterizer copying a far larger window on a loaded machine - while still being a fraction
-		/// of the time a wedged read-back used to cost, which was the rest of the test run.
+		/// ceiling is a different question: how slow can a LEGITIMATE read-back be? The honest answer is much
+		/// slower than it looks from a machine with a GPU. Measured on Metal, a 512x384 read-back resolves in
+		/// 5 to 9 ms; measured on a GPU-less CI runner painting through WARP, the big-mesh thumbnail in
+		/// <c>ThumbnailRendererTests</c> took <b>42.8 seconds</b>. A ten second budget - which looked like
+		/// three orders of magnitude of headroom against the Metal number - failed that test twice with "the
+		/// device is not answering" while the device was answering perfectly well, just slowly. Ninety
+		/// seconds is a little over twice the measured worst case, which is the margin a software rasterizer
+		/// on a shared runner deserves.
+		/// <para>
+		/// Being generous costs almost nothing on the case this bound actually exists for. A genuinely wedged
+		/// read-back used to hang until something killed the process - six hours of CI in the worst observed
+		/// case - so even at ninety seconds a wedge still turns into a loud, named failure roughly 240 times
+		/// faster than it did, and the message says which kind of failure it was.
+		/// </para>
 		/// </remarks>
-		private static readonly TimeSpan ReadbackBudget = TimeSpan.FromSeconds(10);
+		private static readonly TimeSpan ReadbackBudget = TimeSpan.FromSeconds(90);
 
 		/// <summary>
 		/// The budget for the device-lost callback after a deliberate destroy, which is a probe rather than a
@@ -1752,11 +1762,23 @@ namespace MatterHackers.WebGpuRender
 				// has to stay that way: emdawnwebgpu has no wgpuDevicePoll, so the browser build links a stub
 				// that returns "idle" immediately and this loop would burn its whole budget and then report a
 				// perfectly healthy device as not answering.
+				// The poll's own answer, kept because it is free and it is the difference between the two very
+				// different failures this budget can end in. wgpuDevicePoll returns whether the queue has
+				// drained: still busy means the GPU is working and this read-back is merely slower than the
+				// budget allows (a software rasterizer on a loaded machine - the honest case, and the one
+				// that should send a reader to ReadbackBudget rather than to a bug hunt); drained means the
+				// copy finished and the map callback never came, which is a driver that stopped answering.
+				// Reporting "the device is not answering" for the first of those sent one CI investigation
+				// looking for a wedge that was really a 43 second thumbnail.
+				bool queueDrainedAtLastPoll = false;
+				int polls = 0;
+
 				bool mapped = GpuCallbackPump.UntilAnswered(
 					() => mapCell.Value.Status != 0,
 					() =>
 					{
-						WgpuNative.wgpuDevicePoll(this.device, false, null);
+						polls++;
+						queueDrainedAtLastPoll = WgpuNative.wgpuDevicePoll(this.device, false, null);
 						wgpuInstanceProcessEvents(this.instance);
 					},
 					ReadbackBudget);
@@ -1765,7 +1787,10 @@ namespace MatterHackers.WebGpuRender
 				{
 					mapCell.Abandon();
 					throw new InvalidOperationException(
-						$"wgpuBufferMapAsync never called back within {ReadbackBudget.TotalSeconds:0.#}s of polling; the device is not answering.");
+						$"wgpuBufferMapAsync never called back within {ReadbackBudget.TotalSeconds:0.#}s ({polls} polls). "
+						+ (queueDrainedAtLastPoll
+							? "The queue had drained, so the copy finished and the map callback itself never arrived - the driver has stopped answering."
+							: "The queue still had work in flight, so the device is answering and this read-back is simply slower than the budget allows."));
 				}
 
 				if (mapCell.Value.Status != (int)WGPUMapAsyncStatus.Success)
