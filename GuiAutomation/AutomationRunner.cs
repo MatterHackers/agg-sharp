@@ -1046,6 +1046,26 @@ namespace MatterHackers.GuiAutomation
 			Delay(0.2);
 		}
 
+		/// <summary>
+		/// Blocks the test thread until the window has drawn one more frame, or until
+		/// <paramref name="maxSeconds"/> has passed.
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// This is how a gesture is made synchronous. Input is delivered by queueing it on the ui thread
+		/// (see <see cref="AggInputMethods.CreateMouseEvent"/>), so a click or a press has only been
+		/// <em>posted</em> when the call that staged it returns. The handler below is attached from an idle
+		/// action queued after that input, so it cannot be attached until the input has run - which means a
+		/// frame arriving here is proof that the ui thread has finished with the event.
+		/// </para>
+		/// <para>
+		/// The timeout is a TimeSpan on purpose: <c>WaitOne(maxSeconds)</c> binds to the
+		/// <c>WaitOne(int millisecondsTimeout)</c> overload, so the 30 <em>seconds</em> this parameter reads
+		/// as was really 30 <em>milliseconds</em>. That is long enough for a frame on an idle machine and not
+		/// on a busy one, so under load the wait gave up early and handed the test back a gesture the ui
+		/// thread had not processed yet - every assertion made straight after a click or a drag was a race.
+		/// </para>
+		/// </remarks>
 		public AutomationRunner WaitforDraw(SystemWindow containingWindow, int maxSeconds = 30)
 		{
 			var resetEvent = new AutoResetEvent(false);
@@ -1066,7 +1086,7 @@ namespace MatterHackers.GuiAutomation
 				}
 			});
 
-			resetEvent.WaitOne(maxSeconds);
+			resetEvent.WaitOne(TimeSpan.FromSeconds(maxSeconds));
 
 			containingWindow.AfterDraw -= afterDraw;
 			containingWindow.Closed -= closed;
