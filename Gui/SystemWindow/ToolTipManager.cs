@@ -313,7 +313,23 @@ namespace MatterHackers.Agg.UI
 					double cursorClearance = 23 * GuiWidget.DeviceScale;
 					double edgeInset = 3 * GuiWidget.DeviceScale;
 
-					toolTipWidget.OriginRelativeParent = toolTipWidget.OriginRelativeParent + new Vector2(0, -toolTipBounds.Bottom - toolTipBounds.Height - cursorClearance);
+					// Center on the widget, not on the mouse. A tooltip anchored at the cursor sits beside the
+					// thing it describes - on a toolbar that lands it under the next icon over and reads as if
+					// it belonged to that one. Vertically it still hangs off the mouse, clear of the cursor.
+					double centeredLeft = Math.Round(screenBoundsShowingTT.XCenter - toolTipBounds.Width / 2);
+
+					// Then keep the cursor inside the tooltip. Two cases meet here: for a widget narrower than
+					// its tooltip (a toolbar icon) the mouse is already well inside the centered tooltip and this
+					// does nothing, but for a wide widget (a full width row) centering would fling the tooltip to
+					// the middle of the window, far from the thing the user is pointing at - so it slides back to
+					// the cursor. The margin keeps the cursor off the tooltip's own edge.
+					double cursorOverlapMargin = Math.Min(10 * GuiWidget.DeviceScale, toolTipBounds.Width / 2);
+					centeredLeft = Math.Min(centeredLeft, Math.Round(mousePosition.X - cursorOverlapMargin));
+					centeredLeft = Math.Max(centeredLeft, Math.Round(mousePosition.X - toolTipBounds.Width + cursorOverlapMargin));
+
+					toolTipWidget.OriginRelativeParent = new Vector2(
+						centeredLeft - toolTipBounds.Left,
+						toolTipWidget.OriginRelativeParent.Y - toolTipBounds.Bottom - toolTipBounds.Height - cursorClearance);
 
 					Vector2 offset = Vector2.Zero;
 					RectangleDouble systemWindowBounds = systemWindow.LocalBounds;
@@ -322,6 +338,13 @@ namespace MatterHackers.Agg.UI
 					if (toolTipBoundsRelativeToParent.Right > systemWindowBounds.Right - edgeInset)
 					{
 						offset.X = systemWindowBounds.Right - toolTipBoundsRelativeToParent.Right - edgeInset;
+					}
+
+					// Left after right, so a tooltip too wide for the window ends up flush with the left edge
+					// rather than the right - text is read from the left
+					if (toolTipBoundsRelativeToParent.Left + offset.X < systemWindowBounds.Left + edgeInset)
+					{
+						offset.X = systemWindowBounds.Left + edgeInset - toolTipBoundsRelativeToParent.Left;
 					}
 
 					if (toolTipBoundsRelativeToParent.Bottom < systemWindowBounds.Bottom + edgeInset)
