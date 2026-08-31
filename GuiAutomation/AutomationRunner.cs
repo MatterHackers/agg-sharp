@@ -1664,7 +1664,14 @@ namespace MatterHackers.GuiAutomation
 		/// thread - that thread has to become the platform message loop, so this method cannot yield
 		/// before then. The first await is only reached once the loop has exited.
 		/// </remarks>
-		public static async Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action<AutomationRunner> closeWindow = null)
+		/// <param name="timeoutIsTheExpectedOutcome">
+		/// True for a test that is <em>about</em> the timeout - one asserting that a run which overstays is
+		/// cut off - rather than one that would only time out if something were wrong. The load watchdog is
+		/// then not armed: its thread dump is diagnostic evidence for a window that unexpectedly never
+		/// painted, and a test whose whole point is the deadline would produce that evidence on every run,
+		/// costing a capture and an artifact each time and burying the one dump somebody actually needs.
+		/// </param>
+		public static async Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action<AutomationRunner> closeWindow = null, bool timeoutIsTheExpectedOutcome = false)
 		{
 			// Enable debug logging for AutomationRunner
 			DebugLogger.EnableFilter("AutomationRunner");
@@ -1922,12 +1929,42 @@ namespace MatterHackers.GuiAutomation
 				DebugLogger.LogWarning("AutomationRunner", $"Failed to register UI thread exception handler: {ex.Message}");
 			}
 
+			// Cancelled the moment the window loads, which is what makes the load watchdog below free on a
+			// healthy run: it never wakes up at all.
+			var windowLoaded = new CancellationTokenSource();
+
 			// On load, release the reset event
 			initialSystemWindow.Load += (s, e) =>
 			{
 				DebugLogger.LogMessage("AutomationRunner", $"LOAD EVENT FIRED - Setting resetEvent");
 				resetEvent.Set();
+				windowLoaded.Cancel();
 			};
+
+			// Puts a thread dump where the CI artifact upload will find it, and answers with the path. Never
+			// throws: it decorates a failure that has to be reported whether or not this works.
+			static string WriteDumpBeside(string dump, string reason)
+			{
+				try
+				{
+					// TestResults is what the workflow uploads on always(); a dump anywhere else is only
+					// readable by someone sitting at the machine, which on CI is nobody.
+					string directory = System.IO.Path.Combine(Environment.CurrentDirectory, "TestResults");
+					System.IO.Directory.CreateDirectory(directory);
+
+					string path = System.IO.Path.Combine(
+						directory,
+						$"threadstacks-{reason}-{DateTime.Now:HHmmss}-{Environment.ProcessId}.txt");
+
+					System.IO.File.WriteAllText(path, dump ?? "(the dump was empty)");
+
+					return path;
+				}
+				catch (Exception ex)
+				{
+					return $"(could not be written: {ex.GetType().Name}: {ex.Message})";
+				}
+			}
 
 			// What the render backend says about itself, for a diagnostic that has to work off any host.
 			// RenderStatusReport is declared per platform window rather than on IPlatformWindow, so it is
@@ -1981,6 +2018,60 @@ namespace MatterHackers.GuiAutomation
 			int drawCountAtShow = GuiWidget.DrawCount;
 
 			// Start two tasks, the timeout and the test method. Block in the test method until the first draw
+			// The load watchdog. It exists because the diagnostics in the timeout branch below cannot be
+			// trusted to run: that branch begins at the same instant delayTask completes, so the WhenAny it
+			// belongs to has already returned and the runner is on its way to teardown - measured, with a
+			// capture that started, wrote nothing and left no file. This fires two seconds earlier, on a task
+			// the runner awaits, so the window is still standing and nothing is racing it.
+			//
+			// What it is for: a window whose Show() has not returned. Load is raised by the first draw, so a
+			// reset event that never fires means nothing painted, and the UI thread's own frames are the only
+			// thing that says why. If the next reader is looking at that dump, the three unbounded calls on
+			// the UI thread inside Show()/OnLoad are the shortlist to check first - the form's own handle
+			// creation, Screen.FromControl(this).WorkingArea in PushDisplayUsableSize, and the first touch of
+			// ApplicationIcon.Value - none of which is bounded the way device creation now is.
+			int loadWatchdogDelay = Math.Max(10, testTimeout - 2000);
+			var loadWatchdog = Task.Run(async () =>
+			{
+				if (timeoutIsTheExpectedOutcome)
+				{
+					// This run is supposed to end in a timeout, so a window that never painted is the result
+					// being asserted rather than a symptom. Capturing it would spend the time and leave the
+					// artifact on every single run, for a dump nobody will ever read.
+					return;
+				}
+
+				try
+				{
+					await Task.Delay(loadWatchdogDelay, windowLoaded.Token);
+				}
+				catch (OperationCanceledException)
+				{
+					// The window loaded. Nothing to report, and nothing was spent.
+					return;
+				}
+
+				DebugLogger.LogError(
+					"AutomationRunner",
+					$"LOAD WATCHDOG - the window has not painted {loadWatchdogDelay} ms after being shown;"
+					+ " capturing the UI thread's stack while it is still up.");
+
+				try
+				{
+					string dumpPath = WriteDumpBeside(
+						ThreadStackDump.Capture("the window had not painted when the load watchdog fired"),
+						"load-watchdog");
+
+					DebugLogger.LogError("AutomationRunner", $"LOAD WATCHDOG - stacks written to {dumpPath}");
+				}
+				catch (Exception ex)
+				{
+					DebugLogger.LogError(
+						"AutomationRunner",
+						$"LOAD WATCHDOG - stack capture failed: {ex.GetType().Name}: {ex.Message}");
+				}
+			});
+
 			var task = Task.WhenAny(delayTask, Task.Run(() =>
 			{
 				DebugLogger.LogMessage("AutomationRunner", "TASK STARTED - Waiting for resetEvent");
@@ -2010,6 +2101,46 @@ namespace MatterHackers.GuiAutomation
 						+ $", widgetDrawsDuringThisWindow={GuiWidget.DrawCount - drawCountAtShow}"
 						+ $", {DescribeRenderStatus(initialSystemWindow)}"
 						+ $", {IdlePumpPolicy.DescribeDriver?.Invoke() ?? "idle pump: no host published a driver."}");
+
+					// The fields above say what state the window is in; they cannot say what the UI thread is
+					// doing, and that has been the missing half for several rounds of this. If Show() has not
+					// returned, this dump names the frame it is stuck in - which is the difference between
+					// guessing at the init path and reading it. The close watchdog has always dumped; this
+					// path never did, and a window that never opened is at least as worth a dump as one that
+					// never closed.
+					// Through DebugLogger rather than ThreadStackDump.WriteToConsole: this runs inside the
+					// test's own console capture, where a lone Console.WriteLine of a report this size was
+					// observed to vanish while the LogError above - same thread, same instant - came through.
+					// LogError is not [Conditional] and echoes to the console, so it is the sink with a track
+					// record of reaching a CI log. Capture can throw; this must not, because it is decorating
+					// a failure that has to be reported either way.
+					// Skipped for a run whose timeout is the expected outcome, same reasoning as the load
+					// watchdog above: there the timeout is a result being asserted, not evidence of anything.
+					if (!timeoutIsTheExpectedOutcome)
+					{
+						try
+						{
+							// Inline, like the close watchdog's capture, which is the one that demonstrably reaches a
+							// CI log. Written to a file rather than logged: a report this size did not survive the log
+							// from here under either reporter, and TestResults is what the workflow uploads on always().
+							//
+							// Known limit, measured and not yet solved: everything after this point races the test's own
+							// teardown. The outer Task.WhenAny returns the instant delayTask completes - the same instant
+							// this branch starts - so on a short run the process can exit before a capture finishes. The
+							// short log line above always lands; this may not. It costs nothing when it fails.
+							string dumpPath = WriteDumpBeside(
+								ThreadStackDump.Capture("the window's first draw never happened (reset event timed out)"),
+								"load-timeout");
+
+							DebugLogger.LogError("AutomationRunner", $"UI thread stacks written to {dumpPath}");
+					}
+					catch (Exception dumpException)
+					{
+						DebugLogger.LogError(
+							"AutomationRunner",
+							$"Thread stack dump failed: {dumpException.GetType().Name}: {dumpException.Message}");
+					}
+					}
 
 					throw new TimeoutException("Reset event timed out");
 				}
@@ -2073,6 +2204,14 @@ namespace MatterHackers.GuiAutomation
 			// current at this await, its Post enqueues to RunOnIdle - and nothing pumps RunOnIdle once
 			// ShowAsSystemWindow has returned, so the continuation would never run.
 			Task completedTask = await task;
+
+			// Awaited here, before any teardown, which is the whole point of it being a task of its own: a
+			// capture the runner waits for cannot be cut off by the close. On a healthy run it was cancelled
+			// at Load and completed long ago, so this costs nothing.
+			windowLoaded.Cancel();
+			await loadWatchdog;
+			windowLoaded.Dispose();
+
 			bool timedOut = completedTask == delayTask;
 			bool uiThreadFaulted = completedTask == uiExceptionTask;
 			LogClosePhase($"SHOW COMPLETED - message loop exited - TimedOut: {timedOut}");

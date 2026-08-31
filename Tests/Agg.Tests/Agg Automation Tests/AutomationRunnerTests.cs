@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -76,6 +77,53 @@ namespace MatterHackers.Agg.UI.Tests
 			});
 		}
 
+		/// <summary>
+		/// A run whose timeout is the expected outcome must not leave a thread dump behind.
+		/// </summary>
+		/// <remarks>
+		/// The load watchdog photographs a window that never painted, because that normally means a UI
+		/// thread stuck somewhere worth naming. A test that asserts the deadline itself produces the same
+		/// symptom on purpose, every single run - so without the opt-out the suite pays a capture and drops
+		/// an artifact into TestResults each time, and the one dump somebody actually needs is buried among
+		/// the ones nobody does. This asserts the suppression by its observable effect: no new dump file.
+		/// </remarks>
+		[Test]
+		public async Task AnExpectedTimeoutLeavesNoThreadDump()
+		{
+			string dumpDirectory = System.IO.Path.Combine(Environment.CurrentDirectory, "TestResults");
+			var before = new HashSet<string>(
+				System.IO.Directory.Exists(dumpDirectory)
+					? System.IO.Directory.GetFiles(dumpDirectory, "threadstacks-*.txt")
+					: Array.Empty<string>());
+
+			var systemWindow = new SystemWindow(300, 200);
+
+			try
+			{
+				await AutomationRunner.ShowWindowAndExecuteTests(
+					systemWindow,
+					(testRunner) =>
+					{
+						Thread.Sleep(3 * 1000);
+						testRunner.MarkTestComplete();
+						return Task.CompletedTask;
+					},
+					secondsToTestFailure: 1,
+					timeoutIsTheExpectedOutcome: true);
+			}
+			catch (TimeoutException)
+			{
+				// The point of the run; the assertion is about what it did not leave behind.
+			}
+
+			var after = System.IO.Directory.Exists(dumpDirectory)
+				? System.IO.Directory.GetFiles(dumpDirectory, "threadstacks-*.txt")
+				: Array.Empty<string>();
+
+			await Assert.That(after.Where(file => !before.Contains(file))).IsEmpty()
+				.Because("a timeout the test is asserting is a result, not a hang to photograph");
+		}
+
         [Test]
         public async Task AutomationRunnerTimeoutTest()
 		{
@@ -101,7 +149,12 @@ namespace MatterHackers.Agg.UI.Tests
                         return Task.CompletedTask;
                     },
                     // Timeout after 1 second
-                    secondsToTestFailure: 1);
+                    secondsToTestFailure: 1,
+
+                    // The timeout is what this test asserts, so the runner must not treat the window that
+                    // never painted as a hang worth photographing: without this it captures a thread dump and
+                    // leaves an artifact on every run of the suite, for evidence nobody will ever read.
+                    timeoutIsTheExpectedOutcome: true);
                     
                 // Should have thrown TimeoutException
                 await Assert.That(false).IsTrue(); // Fail if we reach here
