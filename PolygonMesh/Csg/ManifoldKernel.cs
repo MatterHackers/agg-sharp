@@ -237,8 +237,9 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// is one uninterruptible call, so the frame it holds is still frozen for however long
 		/// that call takes.
 		/// <para>
-		/// A null <paramref name="reporter"/> never yields and keeps the kernel's n-ary batch path,
-		/// exactly as in the synchronous entry point - see <see cref="CombineAndRead"/>.
+		/// A <paramref name="reporter"/> nobody is watching - null, or one with no target - never
+		/// yields and keeps the kernel's n-ary batch path, exactly as in the synchronous entry
+		/// point - see <see cref="CombineAndRead"/> and <see cref="AnyoneWatching"/>.
 		/// </para>
 		/// </remarks>
 		/// <inheritdoc cref="RunBoolean"/>
@@ -619,13 +620,41 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// </remarks>
 		/// <param name="reporter">
 		/// Whatever the caller's progress sink is - an <c>Action</c> or a
-		/// <see cref="ProgressReporter"/>. Only whether it exists is read here, and it costs the
-		/// batch path either way, which is why callers with nobody watching pass null rather than a
-		/// do-nothing reporter.
+		/// <see cref="ProgressReporter"/>, which the former converts to. Only whether anyone is
+		/// watching it is read here, and being watched costs the batch path, so a caller with no
+		/// progress to show may pass null or a do-nothing reporter interchangeably.
 		/// </param>
-		private static bool NeedsExplicitBoolean(object reporter, RustWindingRule windingRule)
+		private static bool NeedsExplicitBoolean(ProgressReporter reporter, RustWindingRule windingRule)
 		{
-			return reporter != null || windingRule != RustWindingRule.Positive;
+			return AnyoneWatching(reporter) || windingRule != RustWindingRule.Positive;
+		}
+
+		/// <summary>
+		/// Whether anything is actually listening to a progress sink.
+		/// </summary>
+		/// <remarks>
+		/// The question is never "is there a reporter object" but "is anyone watching", and the two
+		/// differ: <see cref="ProgressReporter.Null"/> and <c>new ProgressReporter(null)</c> report
+		/// nowhere, yet both convert to a NON-null <c>Action</c> - the conversion hands back the
+		/// reporter's own <c>Report</c> method group - so a null check on either shape answers yes
+		/// when the truth is no.
+		/// <para>
+		/// Getting that wrong here was worse than a wasted allocation. <see cref="NeedsExplicitBoolean"/>
+		/// picks between the kernel's CSG tree and the pairwise left fold, which are two evaluation
+		/// orders over the same operands: a caller passing a do-nothing reporter got a different mesh
+		/// than one passing null. Same test <see cref="MinkowskiProcessing"/>'s morph makes, for the
+		/// same reason.
+		/// </para>
+		/// <para>
+		/// Takes a <see cref="ProgressReporter"/> so both entry points can share it: an
+		/// <c>Action</c> converts implicitly, a null one becoming <see cref="ProgressReporter.Null"/>,
+		/// and the conversion unwraps a reporter's own <c>Report</c> rather than wrapping it again -
+		/// so a sync caller's action arrives here as the reporter it came from.
+		/// </para>
+		/// </remarks>
+		private static bool AnyoneWatching(ProgressReporter reporter)
+		{
+			return reporter != null && reporter.HasTarget;
 		}
 
 		/// <summary>
@@ -773,9 +802,13 @@ namespace MatterHackers.PolygonMesh.Csg
 			double amountPerOperation,
 			double ratioCompleted)
 		{
-			var progress = reporter == null
-				? null
-				: new BooleanProgressAdapter(reporter, ratioCompleted, amountPerOperation, manifolds.Count - 1);
+			// AnyoneWatching rather than a null check: this fold is also reached for a winding rule
+			// the batch path cannot express, so a targetless reporter does get here - and building
+			// an adapter around its never-null no-op action would pay for a progress bar nobody can
+			// see, once per pair.
+			var progress = AnyoneWatching(reporter)
+				? new BooleanProgressAdapter(reporter, ratioCompleted, amountPerOperation, manifolds.Count - 1)
+				: null;
 			var progressSink = ProgressSinkFor(progress);
 
 			// Only ever holds an intermediate this method created; manifolds[0] is the
@@ -817,9 +850,15 @@ namespace MatterHackers.PolygonMesh.Csg
 			double amountPerOperation,
 			double ratioCompleted)
 		{
-			var progress = reporter == null
-				? null
-				: new BooleanProgressAdapter(reporter, ratioCompleted, amountPerOperation, manifolds.Count - 1);
+			// The same AnyoneWatching test the synchronous fold makes, and it has to be the same one.
+			// The null check this replaces was answering a different question than the routing above
+			// did: it was here because the adapter's constructor refuses a null Action outright, so
+			// null was excluded while a targetless reporter - which converts to a never-null no-op
+			// action - sailed through and built an adapter reporting into the void. One test for both
+			// makes that constructor's guard unreachable from here by construction.
+			var progress = AnyoneWatching(reporter)
+				? new BooleanProgressAdapter(reporter, ratioCompleted, amountPerOperation, manifolds.Count - 1)
+				: null;
 			var progressSink = ProgressSinkFor(progress);
 
 			RustManifold accumulated = null;

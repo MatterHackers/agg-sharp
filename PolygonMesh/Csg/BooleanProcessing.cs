@@ -144,9 +144,9 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <remarks>
 		/// The reporter travels as the object rather than as the <c>Action&lt;double, string&gt;</c>
 		/// it converts to because the yields go through it - see
-		/// <see cref="ProgressReporter.YieldToUi"/>. A null one still means "nobody is watching",
-		/// which is what buys the kernel's n-ary batch path, so a caller with no progress to show
-		/// passes null rather than <see cref="ProgressReporter.Null"/>.
+		/// <see cref="ProgressReporter.YieldToUi"/>. Nobody watching - null, or a reporter with no
+		/// target such as <see cref="ProgressReporter.Null"/> - is what buys the kernel's n-ary
+		/// batch path, and the two spellings are interchangeable: they yield alike and route alike.
 		/// <para>
 		/// Only worth calling from a job's top level async flow. Everything else - including the
 		/// native progress callback, which physically cannot await - keeps using
