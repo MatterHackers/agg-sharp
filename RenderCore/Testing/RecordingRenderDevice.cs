@@ -243,8 +243,8 @@ namespace MatterHackers.RenderCore.Testing
 			destination.Span.Slice(0, (int)result.TotalBytes).Clear();
 			this.Record(new ReadTextureCommand(source, result));
 
-			// Completed synchronously, matching the native desktop fast path (wgpuDevicePoll with
-			// wait: true resolves the map before this method returns), so awaiting costs nothing.
+			// Completed synchronously, matching the native desktop fast path (wgpuDevicePoll is pumped
+			// until the map lands, before this method returns), so awaiting costs nothing.
 			return new ValueTask<TextureReadResult>(result);
 		}
 

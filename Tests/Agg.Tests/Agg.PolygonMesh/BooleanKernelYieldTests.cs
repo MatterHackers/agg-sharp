@@ -33,6 +33,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg;
+using MatterHackers.Agg.Tests;
 using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
@@ -81,11 +82,11 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			public ProgressReporter Reporter { get; }
 
 			/// <summary>
-			/// The hook a browser host would install, plus enough of a wait to clear
+			/// The hook a browser host would install, plus a wait that clears
 			/// <see cref="ProgressReporter.YieldThrottleMs"/>.
 			/// </summary>
 			/// <remarks>
-			/// The delay is what makes the count deterministic. Without it a fixture this small finishes
+			/// The wait is what makes the count deterministic. Without it a fixture this small finishes
 			/// inside one throttle window, so only the first yield of the run would get through and
 			/// "between two operands" could not be observed at all. A real browser frame costs about
 			/// this much anyway.
@@ -97,7 +98,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 					this.ReportsBeforeEachYield.Add(this.Reports.Count);
 				}
 
-				await Task.Delay((int)ProgressReporter.YieldThrottleMs + 10);
+				await ProgressThrottleWait.WaitOutTheWindowAsync();
 			}
 		}
 

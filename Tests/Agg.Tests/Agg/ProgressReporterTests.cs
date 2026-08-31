@@ -117,9 +117,9 @@ namespace MatterHackers.Agg.Tests
 				await reporter.YieldToUi();
 
 				// The throttle reads a real clock (Environment.TickCount64 - agg has no injectable one), so
-				// proving it reopens costs one delay of the window itself. TickCount64 advances in ~15 ms
-				// steps on some hosts, hence the margin.
-				await Task.Delay((int)ProgressReporter.YieldThrottleMs + 30);
+				// proving it reopens costs one wait of the window itself, on that same coarse clock rather
+				// than on a guessed margin over it - see ProgressThrottleWait.
+				await ProgressThrottleWait.WaitOutTheWindowAsync();
 
 				await reporter.YieldToUi();
 

@@ -151,8 +151,10 @@ namespace MatterHackers.RenderCore
 		/// Async by design, for two reasons: in the browser buffer mapping is only available
 		/// asynchronously, and this repo bans sync-over-async. On the desktop backend the read
 		/// completes before the <see cref="ValueTask"/> is returned - the confirmed native recipe is
-		/// <c>wgpuDevicePoll(device, wait: true)</c>, which <c>wgpuInstanceProcessEvents</c> alone is
-		/// not enough to substitute for - so desktop callers pay no allocation and no thread hop.
+		/// <c>wgpuDevicePoll</c> pumped until the map lands, which <c>wgpuInstanceProcessEvents</c> alone
+		/// is not enough to substitute for - so desktop callers pay no allocation and no thread hop. That
+		/// pumping is bounded (<see cref="GpuCallbackPump"/>): a driver that stops answering throws here
+		/// rather than keeping the calling thread forever.
 		/// </para>
 		/// <para>
 		/// The returned <see cref="TextureReadResult.RowStride"/> is authoritative and is normally

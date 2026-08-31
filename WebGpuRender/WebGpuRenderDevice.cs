@@ -70,11 +70,45 @@ namespace MatterHackers.WebGpuRender
 	public sealed unsafe partial class WebGpuRenderDevice : IRenderDevice
 	{
 		/// <summary>
-		/// How many times a callback loop pumps before giving up. Every callback this backend waits on
-		/// resolves in the first iteration or two; the bound only exists so a driver that never answers
-		/// produces an exception rather than a hung UI thread.
+		/// How long a callback loop pumps before giving up, so a driver that never answers produces an
+		/// exception rather than a hung UI thread.
 		/// </summary>
-		private const int MaxCallbackSpins = 1000;
+		/// <remarks>
+		/// This used to be a count of spins, which bounded nothing. A pump that returns immediately makes a
+		/// thousand iterations less than a millisecond, so a merely slow driver was called dead; a pump that
+		/// blocks makes one iteration unbounded, so the count was never reached at all. The second case cost
+		/// a whole CI run: a screenshot readback on a GPU-less Windows runner sat in the first
+		/// <c>wgpuDevicePoll(wait: true)</c> for over six minutes with the spin budget beside it never
+		/// getting a turn, and the UI thread it was on could not even close its window afterwards. Every
+		/// pump below is now non-blocking and time is the bound - see <see cref="GpuCallbackPump"/>.
+		/// <para>
+		/// Deliberately <see cref="GpuCallbackPump.DefaultBudget"/> and not a local number: the two requests
+		/// it covers run one after the other inside <see cref="GpuStartup.DefaultBudget"/>, and it is sized so
+		/// both fit inside that with room left. Whichever half stops answering, the message that names it wins
+		/// the race against the outer budget's generic one.
+		/// </para>
+		/// </remarks>
+		private static readonly TimeSpan AcquisitionBudget = GpuCallbackPump.DefaultBudget;
+
+		/// <summary>
+		/// How long a texture read-back pumps for its buffer map before calling the device unresponsive.
+		/// </summary>
+		/// <remarks>
+		/// Its own value rather than the acquisition budget's, because nothing bounds it from outside and its
+		/// ceiling is a different question: how slow can a legitimate full-window copy be? Measured on Metal a
+		/// 512x384 read-back resolves in 5 to 9 ms, so ten seconds leaves three orders of magnitude for a
+		/// software rasterizer copying a far larger window on a loaded machine - while still being a fraction
+		/// of the time a wedged read-back used to cost, which was the rest of the test run.
+		/// </remarks>
+		private static readonly TimeSpan ReadbackBudget = TimeSpan.FromSeconds(10);
+
+		/// <summary>
+		/// The budget for the device-lost callback after a deliberate destroy, which is a probe rather than a
+		/// wait: wgpu-native 29 often does not deliver it at all (see
+		/// <see cref="DestroyDeviceToSimulateLoss"/>), and the caller has a correct answer either way. Short,
+		/// because the common outcome is the one that costs the whole budget.
+		/// </summary>
+		private static readonly TimeSpan DeviceLostProbeBudget = TimeSpan.FromMilliseconds(250);
 
 		/// <summary>
 		/// How many callback result cells have been leaked because their callback never arrived. See
@@ -140,7 +174,7 @@ namespace MatterHackers.WebGpuRender
 			WindowSurfaceRequest windowSurface = null)
 		{
 			// The loud fence for the browser. Nothing below would fail fast there: the adapter request
-			// would spin MaxCallbackSpins times against a promise that cannot resolve while this frame is
+			// would pump its whole budget against a promise that cannot resolve while this frame is
 			// on the stack, and report "the driver is not answering" for what is really the wrong entry
 			// point. This is also the fence a device-loss recovery hits - every host's TryRecoverDevice
 			// rebuilds its device by calling this constructor, so the browser's twin has to be an async
@@ -227,7 +261,8 @@ namespace MatterHackers.WebGpuRender
 
 		/// <summary>
 		/// Process-wide count of callback result cells that had to be leaked because wgpu never called
-		/// back within <see cref="MaxCallbackSpins"/>. Zero on any healthy run; anything else means a
+		/// back within its budget (<see cref="AcquisitionBudget"/>, <see cref="ReadbackBudget"/>). Zero on any
+		/// healthy run; anything else means a
 		/// driver stopped answering. See <see cref="PinnedCallbackCell{T}"/>.
 		/// </summary>
 		public static int AbandonedCallbackCellCount => Volatile.Read(ref abandonedCallbackCells);
@@ -289,8 +324,8 @@ namespace MatterHackers.WebGpuRender
 			// Both halves of the pump below are dead ends in the browser: emdawnwebgpu has no
 			// wgpuDevicePoll at all (the browser build links a stub that reports "idle" and returns), and
 			// the lost callback can only fire once this call has returned to the JS event loop. The loop
-			// would therefore spin MaxCallbackSpins times doing nothing and then report a loss that had
-			// not happened yet. An async twin belongs with BrowserWebGpuLayer, which is what would use it.
+			// would therefore pump its whole budget doing nothing and then report a loss that had not
+			// happened yet. An async twin belongs with BrowserWebGpuLayer, which is what would use it.
 			if (OperatingSystem.IsBrowser())
 			{
 				throw new PlatformNotSupportedException(
@@ -300,13 +335,16 @@ namespace MatterHackers.WebGpuRender
 
 			wgpuDeviceDestroy(this.device);
 
-			for (int spin = 0; spin < MaxCallbackSpins && !this.IsDeviceLost; spin++)
-			{
-				// Both, for the reason ReadTextureAsync gives: wgpu-native resolves some callbacks only
-				// under DevicePoll and others only under ProcessEvents.
-				WgpuNative.wgpuDevicePoll(this.device, true, null);
-				wgpuInstanceProcessEvents(this.instance);
-			}
+			GpuCallbackPump.UntilAnswered(
+				() => this.IsDeviceLost,
+				() =>
+				{
+					// Both, for the reason ReadTextureAsync gives: wgpu-native resolves some callbacks only
+					// under DevicePoll and others only under ProcessEvents.
+					WgpuNative.wgpuDevicePoll(this.device, false, null);
+					wgpuInstanceProcessEvents(this.instance);
+				},
+				DeviceLostProbeBudget);
 
 			if (!this.IsDeviceLost)
 			{
@@ -729,9 +767,11 @@ namespace MatterHackers.WebGpuRender
 
 		/// <summary>
 		/// Reads a texture back. On the desktop it completes before the <see cref="ValueTask"/> is returned -
-		/// the native recipe is <c>wgpuDevicePoll(device, wait: true)</c>, which
+		/// the native recipe is <c>wgpuDevicePoll</c>, pumped to completion, which
 		/// <c>wgpuInstanceProcessEvents</c> alone cannot substitute for - so a desktop caller pays no
-		/// allocation and no thread hop.
+		/// allocation and no thread hop. The poll is non-blocking and the loop around it carries the
+		/// deadline; see <see cref="GpuCallbackPump"/> for why the blocking form of that wait is not usable
+		/// on a thread anything else is waiting on.
 		/// <para>
 		/// <b>This submits.</b> A readback that did not flush the recorded commands would return the
 		/// texture as it was before this frame's draws, which is never what a caller means. Everything
@@ -1694,24 +1734,38 @@ namespace MatterHackers.WebGpuRender
 
 				wgpuBufferMapAsync(readback, WGPUMapMode.Read, 0, (nuint)result.TotalBytes, callbackInfo);
 
-				// The Phase 0 finding: ProcessEvents alone never resolves a map. DevicePoll with wait: true is
-				// what actually drives it, and it blocks until the GPU is done, which is exactly what makes
-				// this "async" method able to complete before it returns on the desktop. Unreachable in the
-				// browser by construction (ReadTextureAsync branches before here) and it has to stay that
-				// way: emdawnwebgpu has no wgpuDevicePoll, so the browser build links a stub that returns
-				// "idle" immediately and this loop would burn its whole spin budget and then report a
+				// The Phase 0 finding stands: ProcessEvents alone never resolves a map, DevicePoll is what
+				// drives it. What changed is which of the two waits - the CALL or the LOOP.
+				//
+				// It used to be the call: wgpuDevicePoll(wait: true) blocks until the GPU is done, so the map
+				// was resolved by the time the first iteration ended. That made the spin budget beside it
+				// decorative, and on a GPU-less Windows runner the blocking poll never came back at all - it
+				// took the UI thread of a whole test process with it, mid-paint, with no way left to close
+				// the window. A bound that a single call can step over is not a bound.
+				//
+				// So the loop waits instead. wgpuDevicePoll(wait: false) is wgpu's Maintain::Poll: it
+				// collects whatever the GPU has finished and returns, firing the map callback on the pass
+				// after the copy completes. The copy was already submitted by ReadTextureAsync, so pumping
+				// to completion is the same wait, split into pieces the deadline can be read between.
+				//
+				// Unreachable in the browser by construction (ReadTextureAsync branches before here) and it
+				// has to stay that way: emdawnwebgpu has no wgpuDevicePoll, so the browser build links a stub
+				// that returns "idle" immediately and this loop would burn its whole budget and then report a
 				// perfectly healthy device as not answering.
-				for (int spin = 0; spin < MaxCallbackSpins && mapCell.Value.Status == 0; spin++)
-				{
-					WgpuNative.wgpuDevicePoll(this.device, true, null);
-					wgpuInstanceProcessEvents(this.instance);
-				}
+				bool mapped = GpuCallbackPump.UntilAnswered(
+					() => mapCell.Value.Status != 0,
+					() =>
+					{
+						WgpuNative.wgpuDevicePoll(this.device, false, null);
+						wgpuInstanceProcessEvents(this.instance);
+					},
+					ReadbackBudget);
 
-				if (mapCell.Value.Status == 0)
+				if (!mapped)
 				{
 					mapCell.Abandon();
 					throw new InvalidOperationException(
-						$"wgpuBufferMapAsync never called back after {MaxCallbackSpins} polls; the device is not answering.");
+						$"wgpuBufferMapAsync never called back within {ReadbackBudget.TotalSeconds:0.#}s of polling; the device is not answering.");
 				}
 
 				if (mapCell.Value.Status != (int)WGPUMapAsyncStatus.Success)
@@ -1790,16 +1844,16 @@ namespace MatterHackers.WebGpuRender
 
 				wgpuInstanceRequestAdapter(this.instance, &options, callbackInfo);
 
-				for (int spin = 0; spin < MaxCallbackSpins && cell.Value.Status == 0; spin++)
-				{
-					wgpuInstanceProcessEvents(this.instance);
-				}
+				bool answered = GpuCallbackPump.UntilAnswered(
+					() => cell.Value.Status != 0,
+					() => wgpuInstanceProcessEvents(this.instance),
+					AcquisitionBudget);
 
-				if (cell.Value.Status == 0)
+				if (!answered)
 				{
 					cell.Abandon();
 					throw new InvalidOperationException(
-						$"wgpuInstanceRequestAdapter never called back after {MaxCallbackSpins} polls "
+						$"wgpuInstanceRequestAdapter never called back within {AcquisitionBudget.TotalSeconds:0.#}s "
 						+ $"(backend {preferredBackend}, fallback {forceFallbackAdapter}).");
 				}
 
@@ -1826,9 +1880,9 @@ namespace MatterHackers.WebGpuRender
 		/// </summary>
 		/// <param name="compatibleSurface">The canvas surface the adapter must be able to present to.</param>
 		/// <remarks>
-		/// There is no spin budget here and there cannot be one: a promise that never settles simply never
+		/// There is no budget here and there cannot be one: a promise that never settles simply never
 		/// settles, and the only honest report of that is a boot that never finishes. The desktop's
-		/// <see cref="MaxCallbackSpins"/> has no browser equivalent.
+		/// <see cref="AcquisitionBudget"/> has no browser equivalent.
 		/// </remarks>
 		private Task<AdapterResult> RequestAdapterBrowserAsync(WGPUSurface compatibleSurface)
 		{
@@ -2060,16 +2114,16 @@ namespace MatterHackers.WebGpuRender
 
 				wgpuAdapterRequestDevice(this.adapter, &descriptor, callbackInfo);
 
-				for (int spin = 0; spin < MaxCallbackSpins && cell.Value.Status == 0; spin++)
-				{
-					wgpuInstanceProcessEvents(this.instance);
-				}
+				bool answered = GpuCallbackPump.UntilAnswered(
+					() => cell.Value.Status != 0,
+					() => wgpuInstanceProcessEvents(this.instance),
+					AcquisitionBudget);
 
-				if (cell.Value.Status == 0)
+				if (!answered)
 				{
 					cell.Abandon();
 					throw new InvalidOperationException(
-						$"wgpuAdapterRequestDevice never called back after {MaxCallbackSpins} polls; the adapter is not answering.");
+						$"wgpuAdapterRequestDevice never called back within {AcquisitionBudget.TotalSeconds:0.#}s; the adapter is not answering.");
 				}
 
 				return cell.Value;
@@ -2178,7 +2232,8 @@ namespace MatterHackers.WebGpuRender
 		/// <para>
 		/// The result used to be a local, handed to wgpu as a pointer into this frame's stack. That is
 		/// correct only while the waiting loop is still on the stack - and every one of those loops can
-		/// give up (<see cref="MaxCallbackSpins"/>) and throw with the callback still registered, at
+		/// give up (<see cref="AcquisitionBudget"/>, <see cref="ReadbackBudget"/>) and throw with the callback
+		/// still registered, at
 		/// which point the next <c>wgpuInstanceProcessEvents</c> anywhere in the process writes a status
 		/// through a pointer to a dead stack slot and corrupts whatever now lives there.
 		/// </para>

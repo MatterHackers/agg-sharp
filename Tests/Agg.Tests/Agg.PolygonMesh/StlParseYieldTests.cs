@@ -34,6 +34,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg;
+using MatterHackers.Agg.Tests;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
@@ -61,9 +62,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		private const int FaceCount = StlProcessing.FacesPerYield * 3;
 
 		/// <summary>
-		/// Counts the points the UI was handed the thread, and waits long enough at each to clear
-		/// <see cref="ProgressReporter.YieldThrottleMs"/> - otherwise a parse this fast finishes inside one
-		/// throttle window and only its first chunk boundary would yield.
+		/// Counts the points the UI was handed the thread, and waits out
+		/// <see cref="ProgressReporter.YieldThrottleMs"/> at each - otherwise a parse this fast finishes
+		/// inside one throttle window and only its first chunk boundary would yield.
 		/// </summary>
 		private sealed class YieldLog
 		{
@@ -73,7 +74,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			{
 				this.Yields++;
 
-				await Task.Delay((int)ProgressReporter.YieldThrottleMs + 10);
+				await ProgressThrottleWait.WaitOutTheWindowAsync();
 			}
 		}
 
