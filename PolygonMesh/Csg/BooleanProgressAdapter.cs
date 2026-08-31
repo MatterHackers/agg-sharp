@@ -71,6 +71,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		private readonly double windowStart;
 		private readonly double windowSize;
 		private readonly int operationCount;
+		private readonly string operationLabel;
 		private readonly object sync = new object();
 
 		private int completedOperations;
@@ -84,16 +85,24 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// evenly between them, which is the only estimate available before the
 		/// intermediate results exist.
 		/// </param>
+		/// <param name="operationLabel">
+		/// What to call the operation in the message, ahead of the kernel's phase name.
+		/// Defaults to the boolean this was written for; the morphological entry points
+		/// (<see cref="MinkowskiProcessing"/>) run the same kernel phases under a different
+		/// name, and telling a user their fillet is a "Boolean" is worse than saying nothing.
+		/// </param>
 		internal BooleanProgressAdapter(
 			Action<double, string> reporter,
 			double ratioCompleted,
 			double amountPerOperation,
-			int operationCount)
+			int operationCount,
+			string operationLabel = "Boolean")
 		{
 			this.reporter = reporter ?? throw new ArgumentNullException(nameof(reporter));
 			this.windowStart = ratioCompleted;
 			this.windowSize = amountPerOperation;
 			this.operationCount = Math.Max(1, operationCount);
+			this.operationLabel = operationLabel;
 			this.highWaterRatio = ratioCompleted;
 		}
 
@@ -138,7 +147,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				this.highWaterRatio = candidate;
 			}
 
-			var message = string.IsNullOrEmpty(phase) ? "Boolean" : $"Boolean: {phase}";
+			var message = string.IsNullOrEmpty(phase) ? this.operationLabel : $"{this.operationLabel}: {phase}";
 
 			try
 			{

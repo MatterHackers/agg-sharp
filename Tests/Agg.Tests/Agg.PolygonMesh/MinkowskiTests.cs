@@ -28,10 +28,13 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 // The kernel's own status enum, aliased rather than reached through a namespace import:
 // ManifoldSharp.Manifold would sit beside MatterHackers.PolygonMesh.Mesh in this file.
 using ManifoldStatus = ManifoldSharp.Error;
+using MatterHackers.Agg;
 using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
@@ -242,6 +245,209 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Assert.Throws<ArgumentOutOfRangeException>(() => MinkowskiProcessing.SphereMesh(0, 16));
 			Assert.Throws<ArgumentOutOfRangeException>(() => MinkowskiProcessing.SphereMesh(-1, 16));
 			Assert.Throws<ArgumentOutOfRangeException>(() => MinkowskiProcessing.SphereMesh(1, -8));
+		}
+
+		/// <summary>
+		/// The async dilation drives the caller's bar from 0 to 1 and never backwards, and the
+		/// message names the operation rather than calling a fillet a boolean.
+		/// </summary>
+		/// <remarks>
+		/// Two convex operands, so the kernel takes its pairwise-hull fast path and has only
+		/// the two endpoints to report - which is the point: even the branch with nothing to
+		/// subdivide has to open the bar and close it.
+		/// </remarks>
+		[Test]
+		public async Task AnAsyncSumReportsABarThatOnlyRisesAndReachesOne()
+		{
+			var ball = MinkowskiProcessing.SphereMesh(1.0, 8);
+			var cube = PlatonicSolids.CreateCube(CubeSide, CubeSide, CubeSide);
+
+			var reports = new List<(double Ratio, string Message)>();
+			var gate = new object();
+
+			// Locked because the kernel's callback may arrive on a worker thread, which is the
+			// documented contract of its reporter.
+			var reporter = new ProgressReporter((ratio, message) =>
+			{
+				lock (gate)
+				{
+					reports.Add((ratio, message));
+				}
+			});
+
+			var dilated = await MinkowskiProcessing.MinkowskiSumAsync(cube, ball, reporter, CancellationToken.None);
+
+			await Assert.That(dilated.Faces.Count).IsGreaterThan(0);
+			await Assert.That(reports.Count).IsGreaterThan(1)
+				.Because("opening the bar is not progress on its own");
+
+			double previous = -1;
+			foreach (var (ratio, message) in reports)
+			{
+				await Assert.That(ratio).IsGreaterThanOrEqualTo(previous)
+					.Because($"the bar went backwards, {previous} then {ratio}");
+				await Assert.That(ratio).IsLessThanOrEqualTo(1.0);
+				await Assert.That(message).IsEqualTo("Dilate: minkowski");
+				previous = ratio;
+			}
+
+			await Assert.That(reports[0].Ratio).IsEqualTo(0.0).Within(1e-9);
+			await Assert.That(reports[reports.Count - 1].Ratio).IsEqualTo(1.0).Within(1e-9)
+				.Because("a finished operation has to leave the bar full");
+		}
+
+		/// <summary>
+		/// A cancel lands within a hull or two of being asked for, rather than at the end of
+		/// the operation, and surfaces as the <see cref="OperationCanceledException"/> every
+		/// caller above this layer is written against.
+		/// </summary>
+		/// <remarks>
+		/// The erosion is the slow half - one convex hull and one boolean per triangle of the
+		/// solid - so a 128 triangle ball reports about 131 times when it runs to completion.
+		/// The bound is that report count and not a stopwatch: work units are what
+		/// cancellation latency is actually made of, and a wall-clock ratio would have to
+		/// measure a baseline run whose first-call JIT cost inflates it, on a machine whose
+		/// load nobody controls. The token is tripped from the first progress report, which is
+		/// the earliest in-kernel moment a test can reach.
+		/// </remarks>
+		[Test]
+		public async Task ACancelledErosionStopsWithinAHullOrTwoOfBeingAsked()
+		{
+			var solid = MinkowskiProcessing.SphereMesh(5, 16);
+			var tool = MinkowskiProcessing.SphereMesh(0.5, 8);
+
+			await Assert.That(solid.Faces.Count).IsGreaterThan(100)
+				.Because("the fixture has to have enough work in it that stopping early is visible");
+
+			using var source = new CancellationTokenSource();
+			int reports = 0;
+			var reporter = new ProgressReporter((ratio, message) =>
+			{
+				// Not the first: that one is the kernel opening the phase, before any hull has
+				// run, so cancelling on it would only re-test the entry gate.
+				if (Interlocked.Increment(ref reports) >= 2)
+				{
+					source.Cancel();
+				}
+			});
+
+			OperationCanceledException caught = null;
+			try
+			{
+				await MinkowskiProcessing.MinkowskiDifferenceAsync(solid, tool, reporter, source.Token);
+			}
+			catch (OperationCanceledException cancelled)
+			{
+				caught = cancelled;
+			}
+
+			await Assert.That(caught).IsNotNull()
+				.Because("the kernel reports a cancelled run as a status; this layer owes the caller an exception");
+
+			// Loose because the parallel map cannot recall iterations already in flight, so a
+			// few extra hulls per core may finish after the flag is set - but still far under
+			// the ~131 a completed run emits, which is what "prompt" means here.
+			await Assert.That(Volatile.Read(ref reports)).IsLessThan(40)
+				.Because($"cancel was ignored for {Volatile.Read(ref reports)} of the operation's ~131 reports");
+		}
+
+		/// <summary>
+		/// The bar reaches 1.0 through the whole async stack on an operation big enough for the
+		/// kernel's progress throttle to start skipping reports.
+		/// </summary>
+		/// <remarks>
+		/// The regression this pins was found here rather than in the kernel: the throttle
+		/// emits every <c>total / 100</c> units, so a 290 unit erosion used to stop reporting
+		/// at 288/290 and the caller's bar stopped just short of full. Everything smaller lands
+		/// on 1.0 by luck, because a total under 100 makes the step 1.
+		/// </remarks>
+		[Test]
+		public async Task AnAsyncErosionLargeEnoughToBeThrottledStillFillsTheBar()
+		{
+			var solid = MinkowskiProcessing.SphereMesh(5, 24);
+			var tool = MinkowskiProcessing.SphereMesh(0.5, 8);
+
+			await Assert.That(solid.Faces.Count).IsEqualTo(288)
+				.Because("288 hulls plus a batch reduction plus the closing merge is 290 units, so the throttle's step is 2");
+
+			var ratios = new List<double>();
+			var gate = new object();
+			var reporter = new ProgressReporter((ratio, message) =>
+			{
+				lock (gate)
+				{
+					ratios.Add(ratio);
+				}
+			});
+
+			var eroded = await MinkowskiProcessing.MinkowskiDifferenceAsync(solid, tool, reporter, CancellationToken.None);
+
+			await Assert.That(eroded.Faces.Count).IsGreaterThan(0);
+			await Assert.That(ratios.Count).IsLessThan(290)
+				.Because("fewer reports than units is what makes this the throttled regime the bug lived in");
+			await Assert.That(ratios[ratios.Count - 1]).IsEqualTo(1.0).Within(1e-9)
+				.Because("a finished erosion has to leave the bar full, not at 288/290");
+		}
+
+		/// <summary>
+		/// Watching an operation cannot change its answer: the synchronous call and an
+		/// instrumented, cancellable one produce the same mesh, vertex for vertex and index for
+		/// index.
+		/// </summary>
+		/// <remarks>
+		/// The load-bearing half is the live token. It routes the kernel's per-face hull map
+		/// through a different collect than the untokened path takes, so "a token that is never
+		/// cancelled changes nothing" is measured here rather than assumed - and the
+		/// synchronous entry points, which pass neither, are pinned to the same output.
+		/// </remarks>
+		[Test]
+		public async Task InstrumentingAnOperationDoesNotChangeItsGeometry()
+		{
+			var ball = MinkowskiProcessing.SphereMesh(1.0, 8);
+			var cube = PlatonicSolids.CreateCube(CubeSide, CubeSide, CubeSide);
+
+			var plain = MinkowskiProcessing.MinkowskiSum(cube, ball);
+
+			using var source = new CancellationTokenSource();
+			var reporter = new ProgressReporter((ratio, message) => { });
+			var watched = await MinkowskiProcessing.MinkowskiSumAsync(cube, ball, reporter, source.Token);
+
+			await Assert.That(watched.Vertices.Count).IsEqualTo(plain.Vertices.Count);
+			await Assert.That(watched.Faces.Count).IsEqualTo(plain.Faces.Count);
+
+			for (int i = 0; i < plain.Vertices.Count; i++)
+			{
+				// Exact, not Within: the claim is that no bit moved.
+				await Assert.That(watched.Vertices[i].X).IsEqualTo(plain.Vertices[i].X);
+				await Assert.That(watched.Vertices[i].Y).IsEqualTo(plain.Vertices[i].Y);
+				await Assert.That(watched.Vertices[i].Z).IsEqualTo(plain.Vertices[i].Z);
+			}
+
+			for (int i = 0; i < plain.Faces.Count; i++)
+			{
+				await Assert.That(watched.Faces[i].v0).IsEqualTo(plain.Faces[i].v0);
+				await Assert.That(watched.Faces[i].v1).IsEqualTo(plain.Faces[i].v1);
+				await Assert.That(watched.Faces[i].v2).IsEqualTo(plain.Faces[i].v2);
+			}
+		}
+
+		/// <summary>
+		/// The async path refuses exactly what the synchronous one refuses. Same validation,
+		/// reached the same way - worth pinning because an overload that skipped it would make
+		/// a fillet silently return its input.
+		/// </summary>
+		[Test]
+		public async Task TheAsyncPathRefusesTheSameOperandsTheSyncPathDoes()
+		{
+			var cube = PlatonicSolids.CreateCube(CubeSide, CubeSide, CubeSide);
+			var flat = PlatonicSolids.CreateCube(2, 2, 0);
+
+			await Assert.That(async () =>
+					await MinkowskiProcessing.MinkowskiSumAsync(cube, new Mesh(), null, CancellationToken.None))
+				.Throws<ArgumentException>();
+			await Assert.That(async () =>
+					await MinkowskiProcessing.MinkowskiDifferenceAsync(cube, flat, null, CancellationToken.None))
+				.Throws<ArgumentException>();
 		}
 
 		/// <summary>

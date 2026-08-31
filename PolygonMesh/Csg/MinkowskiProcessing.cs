@@ -28,12 +28,19 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
+using MatterHackers.Agg;
 
 // Same aliasing convention as the kernel itself (ManifoldKernel.cs): types that come from
 // the boolean kernel are spelled with a Rust prefix - ManifoldSharp is the C# port of
 // manifold-rust - so a use site says which library it means. Here it also keeps the kernel's
 // own Minkowski class from being confused with this wrapper.
+using RustCancelToken = ManifoldSharp.CancelToken;
 using RustManifold = ManifoldSharp.Manifold;
+using RustPhases = ManifoldSharp.Phases;
+using RustProgressReporter = ManifoldSharp.ProgressReporter;
+using RustStatus = ManifoldSharp.Error;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
@@ -73,10 +80,27 @@ namespace MatterHackers.PolygonMesh.Csg
 	/// measured against on the edges it does round.
 	/// </para>
 	/// <para>
-	/// Synchronous, like <see cref="BooleanProcessing.DoArray"/>: the kernel's Minkowski entry
-	/// point takes no progress sink and no cancellation token, so there is nothing an async
-	/// overload could yield between. A caller that needs the UI back runs the whole call on a
-	/// worker thread.
+	/// <b>Progress and cancellation.</b> The kernel's Minkowski now takes both - a
+	/// <c>ManifoldSharp.ProgressReporter</c> and a <c>CancelToken</c>, reporting one unit per
+	/// per-face hull, per batch reduction and for the closing merge, and polling the flag
+	/// between them. <see cref="MinkowskiSumAsync"/> and
+	/// <see cref="MinkowskiDifferenceAsync"/> are the entry points that use them: the kernel
+	/// call goes to a worker, the caller's <see cref="MatterHackers.Agg.ProgressReporter"/>
+	/// sees a bar that only rises and ends at 1.0, and a cancel comes back as an
+	/// <see cref="OperationCanceledException"/> within one hull rather than at the end of the
+	/// operation. That is the same translation <see cref="BooleanProcessing"/> performs, and
+	/// it matters more here: an erosion of a few thousand triangles is minutes of work that
+	/// used to be uninterruptible.
+	/// </para>
+	/// <para>
+	/// The synchronous entry points are unchanged and stay the right call for a job with
+	/// nobody watching - they pass no reporter and no token, which is byte-for-byte the path
+	/// that ran before either existed.
+	/// </para>
+	/// <para>
+	/// What this unblocks is the uniform-fillet fast path: an opening or a closing is two of
+	/// these calls, and until they could report and be stopped, offering one from the UI meant
+	/// offering a frozen window with no way out of it.
 	/// </para>
 	/// </remarks>
 	public static class MinkowskiProcessing
@@ -105,7 +129,43 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// </exception>
 		public static Mesh MinkowskiSum(Mesh solid, Mesh tool)
 		{
-			return Run(solid, tool, inset: false);
+			return Run(solid, tool, inset: false, reporter: null, cancellationToken: CancellationToken.None);
+		}
+
+		/// <summary>
+		/// <see cref="MinkowskiSum"/> for a caller that can hand the UI its thread back and
+		/// wants to be able to stop.
+		/// </summary>
+		/// <remarks>
+		/// The whole operation runs on a worker; the yields are before and after it, not
+		/// inside, because the kernel's progress callback arrives part way through a hull loop
+		/// on whichever thread got there - the same rule
+		/// <see cref="BooleanProgressAdapter"/> is written under, and the reason a boolean's
+		/// yields live in the managed loop around the kernel rather than in the callback.
+		/// <para>
+		/// Both meshes are read from that worker, so a caller must not mutate them until the
+		/// task completes.
+		/// </para>
+		/// </remarks>
+		/// <param name="solid">The shape being grown.</param>
+		/// <param name="tool">The structuring element swept over it.</param>
+		/// <param name="reporter">Where to report progress, or null for nobody watching.</param>
+		/// <param name="cancellationToken">Stops the operation between hulls.</param>
+		/// <returns>The dilated solid.</returns>
+		/// <exception cref="OperationCanceledException">
+		/// <paramref name="cancellationToken"/> was signalled and the kernel observed it. The
+		/// kernel reports a cancelled run as an empty result with a status; this is the same
+		/// translation <c>ManifoldKernel</c> performs for a boolean, completion included -
+		/// a run that finished before it saw the flag returns its result.
+		/// </exception>
+		/// <inheritdoc cref="MinkowskiSum"/>
+		public static Task<Mesh> MinkowskiSumAsync(
+			Mesh solid,
+			Mesh tool,
+			ProgressReporter reporter,
+			CancellationToken cancellationToken)
+		{
+			return RunAsync(solid, tool, inset: false, reporter, cancellationToken);
 		}
 
 		/// <summary>
@@ -127,7 +187,27 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <inheritdoc cref="MinkowskiSum"/>
 		public static Mesh MinkowskiDifference(Mesh solid, Mesh tool)
 		{
-			return Run(solid, tool, inset: true);
+			return Run(solid, tool, inset: true, reporter: null, cancellationToken: CancellationToken.None);
+		}
+
+		/// <summary>
+		/// <see cref="MinkowskiDifference"/> for a caller that can hand the UI its thread back
+		/// and wants to be able to stop. This is the half worth cancelling: an erosion is one
+		/// hull and one boolean per triangle of the solid.
+		/// </summary>
+		/// <param name="solid">The shape being shrunk.</param>
+		/// <param name="tool">The structuring element that has to fit inside it.</param>
+		/// <param name="reporter">Where to report progress, or null for nobody watching.</param>
+		/// <param name="cancellationToken">Stops the operation between hulls.</param>
+		/// <returns>The eroded solid.</returns>
+		/// <inheritdoc cref="MinkowskiSumAsync"/>
+		public static Task<Mesh> MinkowskiDifferenceAsync(
+			Mesh solid,
+			Mesh tool,
+			ProgressReporter reporter,
+			CancellationToken cancellationToken)
+		{
+			return RunAsync(solid, tool, inset: true, reporter, cancellationToken);
 		}
 
 		/// <summary>
@@ -184,7 +264,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// caller that wants it can hand in a repaired mesh, and doing it silently here would make
 		/// the two entry points disagree about what an inside-out shell means.
 		/// </remarks>
-		private static Mesh Run(Mesh solid, Mesh tool, bool inset)
+		private static Mesh Run(Mesh solid, Mesh tool, bool inset, ProgressReporter reporter, CancellationToken cancellationToken)
 		{
 			ArgumentNullException.ThrowIfNull(solid);
 			ArgumentNullException.ThrowIfNull(tool);
@@ -207,11 +287,99 @@ namespace MatterHackers.PolygonMesh.Csg
 			ThrowIfNoVolume(solidManifold, nameof(solid));
 			ThrowIfNoVolume(toolManifold, nameof(tool));
 
-			var result = inset
-				? solidManifold.MinkowskiDifference(toolManifold)
-				: solidManifold.MinkowskiSum(toolManifold);
+			var result = Morph(solidManifold, toolManifold, inset, reporter, cancellationToken);
 
 			return ManifoldKernel.ToMesh(result, inset ? "minkowski difference" : "minkowski sum");
+		}
+
+		/// <summary>
+		/// <see cref="Run"/> on a worker, with a yield to the UI on either side of it.
+		/// </summary>
+		/// <remarks>
+		/// Everything is inside the worker, the import included: uploading a large mesh is
+		/// seconds of work on its own, so leaving it on the caller's thread would freeze the
+		/// frame before the bar had moved once.
+		/// </remarks>
+		private static async Task<Mesh> RunAsync(
+			Mesh solid,
+			Mesh tool,
+			bool inset,
+			ProgressReporter reporter,
+			CancellationToken cancellationToken)
+		{
+			ArgumentNullException.ThrowIfNull(solid);
+			ArgumentNullException.ThrowIfNull(tool);
+
+			// Before the work, so a host that shares one thread between the job and the UI
+			// paints the bar at zero rather than showing it for the first time once the
+			// operation has already finished.
+			await (reporter?.YieldToUi() ?? default);
+
+			var result = await Task.Run(
+				() => Run(solid, tool, inset, reporter, cancellationToken),
+				cancellationToken);
+
+			await (reporter?.YieldToUi() ?? default);
+
+			return result;
+		}
+
+		/// <summary>
+		/// The kernel call itself, with the caller's <see cref="CancellationToken"/> bridged
+		/// into the kernel's own cancellation flag and its phase callback adapted to the
+		/// pipeline's reporter.
+		/// </summary>
+		/// <remarks>
+		/// Line for line the shape of <c>ManifoldKernel.Boolean</c>, and for the same reasons:
+		/// a token that can never be signalled allocates nothing and takes the uncancellable
+		/// path, and <b>completion wins</b> - a kernel that finished before it observed the
+		/// flag returns its result rather than throwing. The kernel reports cancellation as
+		/// <see cref="RustStatus.Cancelled"/> on an empty result; every caller above here is
+		/// written against a thrown <see cref="OperationCanceledException"/>.
+		/// </remarks>
+		private static RustManifold Morph(
+			RustManifold solid,
+			RustManifold tool,
+			bool inset,
+			ProgressReporter reporter,
+			CancellationToken cancellationToken)
+		{
+			// HasTarget rather than a null check: ProgressReporter.Null and any reporter built
+			// around a null action are both "nobody is watching", and the second would slip
+			// past a reference comparison and then hand the adapter a null action.
+			var adapter = reporter == null || !reporter.HasTarget
+				? null
+				: new BooleanProgressAdapter(reporter, 0, 1, 1, inset ? "Erode" : "Dilate");
+
+			// The adapter, not the raw reporter: it swallows a throwing sink, which matters
+			// because this callback is invoked from inside the kernel's hull loop, where an
+			// escaping exception would lose geometry that had otherwise been computed.
+			var progress = adapter == null
+				? null
+				: new RustProgressReporter((phase, fraction) => adapter.Report((RustPhases.Name(phase), fraction)));
+
+			if (!cancellationToken.CanBeCanceled)
+			{
+				return inset
+					? solid.MinkowskiDifference(tool, null, progress)
+					: solid.MinkowskiSum(tool, null, progress);
+			}
+
+			// One token per operation, as CancelToken's own remarks require: it registers on
+			// the caller's source and is never unregistered, so a token that outlived the call
+			// would stay rooted in that source's callback list.
+			var token = new RustCancelToken(cancellationToken);
+
+			var result = inset
+				? solid.MinkowskiDifference(tool, token, progress)
+				: solid.MinkowskiSum(tool, token, progress);
+
+			if (result.Status() == RustStatus.Cancelled)
+			{
+				throw new OperationCanceledException(cancellationToken);
+			}
+
+			return result;
 		}
 
 		private static void ThrowIfEmpty(Mesh mesh, string parameterName)
