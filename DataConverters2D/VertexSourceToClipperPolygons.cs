@@ -114,6 +114,19 @@ namespace MatterHackers.DataConverters2D
 			return outputPolygons;
 		}
 
+		/// <summary>
+		/// A path as Clipper polygons, with curves flattened and every coordinate snapped to Clipper's integer
+		/// grid.
+		/// </summary>
+		/// <remarks>
+		/// <paramref name="scaling"/> is what sets the size of that grid, and the default of 1000 makes it one
+		/// micron: a coordinate arrives at the nearest 0.001 of whatever unit the path was drawn in, and the
+		/// residue is lost for good. That is invisible in the 2D drawing this conversion was written for, but it
+		/// is not invisible to geometry measured against an analytic answer afterwards - a profile extruded
+		/// through here carries the snap into the solid's faces (see <c>BevelEdgeToolBuilder.TryCreate</c>, where
+		/// it moves a chamfer's cut plane by 2.13e-4 mm). Callers that need the path back unrounded should pass a
+		/// finer scaling or stay off this conversion entirely.
+		/// </remarks>
 		public static Polygons CreatePolygons(this IVertexSource sourcePath, double scaling = 1000)
 		{
             return CreatePolygons(new FlattenCurves(sourcePath)
