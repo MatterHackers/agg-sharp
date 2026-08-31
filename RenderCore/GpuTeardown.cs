@@ -135,7 +135,11 @@ namespace MatterHackers.RenderCore
 
 			var reportTo = report ?? Console.WriteLine;
 
-			if (!backgroundThreadAvailable)
+			// Two spellings of one fact, and both earn their place. The parameter is the seam a desktop
+			// test drives to exercise this leg; OperatingSystem.IsBrowser() is what the platform
+			// compatibility analyzer reads to prove the Thread.Start() below is unreachable on wasm - it
+			// tracks platform checks, not a bool that arrived through a parameter.
+			if (!backgroundThreadAvailable || OperatingSystem.IsBrowser())
 			{
 				drain();
 				return true;

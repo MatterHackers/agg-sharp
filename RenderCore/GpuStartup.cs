@@ -88,8 +88,10 @@ namespace MatterHackers.RenderCore
 		/// <param name="backgroundThreadAvailable">
 		/// False where the platform has no second thread to build on - the browser, which is single
 		/// threaded and where <c>new Thread(...)</c> throws. The device is then built inline and this cannot
-		/// time out. Passed in rather than sniffed with <c>OperatingSystem.IsBrowser()</c> so a desktop test
-		/// can exercise that leg.
+		/// time out, which costs nothing there: the stall this budget exists for is a native adapter or
+		/// device request wedging on a software rasterizer, and the browser has no such request to wedge.
+		/// Passed in rather than sniffed with <c>OperatingSystem.IsBrowser()</c> so a desktop test can
+		/// exercise that leg.
 		/// </param>
 		/// <param name="report">
 		/// Where the timeout diagnostics go; the console when null. Called from whichever thread notices, so
@@ -112,7 +114,11 @@ namespace MatterHackers.RenderCore
 
 			var reportTo = report ?? Console.WriteLine;
 
-			if (!backgroundThreadAvailable)
+			// Two spellings of one fact, and both earn their place. The parameter is the seam a desktop
+			// test drives to exercise this leg; OperatingSystem.IsBrowser() is what the platform
+			// compatibility analyzer reads to prove the Thread.Start() below is unreachable on wasm - it
+			// tracks platform checks, not a bool that arrived through a parameter.
+			if (!backgroundThreadAvailable || OperatingSystem.IsBrowser())
 			{
 				return create();
 			}
