@@ -95,17 +95,25 @@ namespace MatterHackers.PolygonMesh
 			Vertices.Clear();
 			Vertices.AddRange(v);
 
-			Faces.Clear();
-			Faces.AddRange(f);
+			Faces = new FaceList(f);
 		}
 
+		/// <summary>
+		/// Initializes a new mesh holding its own copies of the given vertices and faces.
+		/// </summary>
+		/// <remarks>
+		/// The faces are deep copied. Face is a reference type and several mesh operations edit one in
+		/// place (<see cref="ReverseFace"/>, <see cref="CalculateNormals"/>), so a mesh built by handing
+		/// over the source's own Face objects is not independent of it: reversing the "copy" turns the
+		/// source inside out too. Vertices are copied for the same reason - the list is new, and
+		/// Vector3Float is a value type, so the elements come along.
+		/// </remarks>
 		public Mesh(List<Vector3Float> v, FaceList f)
 		{
 			Vertices.Clear();
 			Vertices.AddRange(v);
 
-			Faces.Clear();
-			Faces.AddRange(f);
+			Faces = new FaceList(f);
 		}
 
 		/// <summary>
@@ -1411,10 +1419,16 @@ namespace MatterHackers.PolygonMesh
 
 	public static class MeshExtensionMethods
 	{
+		/// <summary>
+		/// Makes an independent copy of a mesh - its own vertices, its own Face objects and its own per
+		/// face data - so that editing the copy can never reach back into the source.
+		/// </summary>
 		public static Mesh Copy(this Mesh meshToCopyIn, CancellationToken cancellationToken, Action<double, string> progress = null, bool allowFastCopy = true)
 		{
 			if (meshToCopyIn != null)
 			{
+				// The constructor deep copies the faces, which is what keeps in place face edits on the
+				// copy (ReverseFaces, CalculateNormals) off the source.
 				var copy = new Mesh(meshToCopyIn.Vertices, meshToCopyIn.Faces);
 				if (meshToCopyIn.FaceColors != null)
 				{
