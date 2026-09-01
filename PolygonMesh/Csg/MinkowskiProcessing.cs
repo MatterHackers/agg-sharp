@@ -121,6 +121,38 @@ namespace MatterHackers.PolygonMesh.Csg
 	/// offering a frozen window with no way out of it.
 	/// </para>
 	/// </remarks>
+	/// <summary>
+	/// Which algorithm an erosion actually ran - the closed form or the sweep it falls back to.
+	/// </summary>
+	/// <remarks>
+	/// <b>This is a cost signal, not a correctness one.</b> Both paths compute the same erosion,
+	/// and the closed form stands down wherever it cannot prove that, so no caller should ever
+	/// branch its <em>geometry</em> on this. It exists because the two paths are three orders of
+	/// magnitude apart in cost, and a progress bar or a cost estimate that cannot tell them apart
+	/// is wrong about one of them - see the cost model on <see cref="MinkowskiProcessing"/>.
+	/// <para>
+	/// It is reported <em>after</em> the erosion, because there is no way to know in advance: the
+	/// closed form declines from inside its own algorithm as well as at the gate, so anything
+	/// claiming to predict the routing would have to run it. A caller that wants to weight a bar
+	/// it has already started therefore cannot use this to do it; what it can do is tell the user
+	/// which regime they just paid for, and remember the answer for the next run on the same part.
+	/// </para>
+	/// </remarks>
+	public enum ErosionPath
+	{
+		/// <summary>
+		/// The halfspace-intersection closed form. Two convex hulls, whatever the triangle
+		/// count - milliseconds.
+		/// </summary>
+		ClosedForm,
+
+		/// <summary>
+		/// The per-triangle sweep: one convex hull and one boolean per triangle of the solid.
+		/// Seconds for a few hundred triangles, minutes for a few thousand.
+		/// </summary>
+		Sweep,
+	}
+
 	public static class MinkowskiProcessing
 	{
 		/// <summary>
@@ -147,7 +179,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// </exception>
 		public static Mesh MinkowskiSum(Mesh solid, Mesh tool)
 		{
-			return Run(solid, tool, inset: false, reporter: null, cancellationToken: CancellationToken.None);
+			return Run(solid, tool, inset: false, reporter: null, cancellationToken: CancellationToken.None).Mesh;
 		}
 
 		/// <summary>
@@ -177,13 +209,13 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// a run that finished before it saw the flag returns its result.
 		/// </exception>
 		/// <inheritdoc cref="MinkowskiSum"/>
-		public static Task<Mesh> MinkowskiSumAsync(
+		public static async Task<Mesh> MinkowskiSumAsync(
 			Mesh solid,
 			Mesh tool,
 			ProgressReporter reporter,
 			CancellationToken cancellationToken)
 		{
-			return RunAsync(solid, tool, inset: false, reporter, cancellationToken);
+			return (await RunAsync(solid, tool, inset: false, reporter, cancellationToken)).Mesh;
 		}
 
 		/// <summary>
@@ -192,9 +224,11 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// </summary>
 		/// <remarks>
 		/// The expensive half of an opening or a closing, unless the solid is convex - then it
-		/// takes the closed form instead and costs about as little as the dilation does. Which
-		/// path ran is not observable beyond the clock: both compute the same erosion, and the
-		/// closed form stands down wherever it cannot prove that. See the cost model on
+		/// takes the closed form instead and costs about as little as the dilation does. Both
+		/// compute the same erosion, and the closed form stands down wherever it cannot prove
+		/// that, so the routing never changes the answer - only the clock. A caller that needs to
+		/// know which one it paid for, to size a progress bar or an estimate, takes the
+		/// <see cref="ErosionPath"/> overload. See the cost model on
 		/// <see cref="MinkowskiProcessing"/>.
 		/// <para>
 		/// A tool too large for the solid erodes it away entirely, which comes back as an empty
@@ -207,7 +241,29 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <inheritdoc cref="MinkowskiSum"/>
 		public static Mesh MinkowskiDifference(Mesh solid, Mesh tool)
 		{
-			return Run(solid, tool, inset: true, reporter: null, cancellationToken: CancellationToken.None);
+			return Run(solid, tool, inset: true, reporter: null, cancellationToken: CancellationToken.None).Mesh;
+		}
+
+		/// <summary>
+		/// <see cref="MinkowskiDifference(Mesh, Mesh)"/>, also reporting which of the two
+		/// algorithms ran.
+		/// </summary>
+		/// <remarks>
+		/// The same erosion and the same answer as the overload without the out parameter; see
+		/// <see cref="ErosionPath"/> for what the signal is and is not good for.
+		/// </remarks>
+		/// <param name="solid">The shape being shrunk.</param>
+		/// <param name="tool">The structuring element that has to fit inside it.</param>
+		/// <param name="erosionPath">Which algorithm computed the result.</param>
+		/// <returns>The eroded solid.</returns>
+		/// <inheritdoc cref="MinkowskiSum"/>
+		public static Mesh MinkowskiDifference(Mesh solid, Mesh tool, out ErosionPath erosionPath)
+		{
+			var run = Run(solid, tool, inset: true, reporter: null, cancellationToken: CancellationToken.None);
+
+			erosionPath = run.Path;
+
+			return run.Mesh;
 		}
 
 		/// <summary>
@@ -221,7 +277,31 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <param name="cancellationToken">Stops the operation between hulls.</param>
 		/// <returns>The eroded solid.</returns>
 		/// <inheritdoc cref="MinkowskiSumAsync"/>
-		public static Task<Mesh> MinkowskiDifferenceAsync(
+		public static async Task<Mesh> MinkowskiDifferenceAsync(
+			Mesh solid,
+			Mesh tool,
+			ProgressReporter reporter,
+			CancellationToken cancellationToken)
+		{
+			return (await RunAsync(solid, tool, inset: true, reporter, cancellationToken)).Mesh;
+		}
+
+		/// <summary>
+		/// <see cref="MinkowskiDifferenceAsync"/>, also reporting which of the two algorithms ran.
+		/// </summary>
+		/// <remarks>
+		/// The same erosion and the same answer as <see cref="MinkowskiDifferenceAsync"/>; see
+		/// <see cref="ErosionPath"/> for what the signal is and is not good for. In particular the
+		/// path arrives with the result, which is after the bar this call drove has already been
+		/// spent - it can size the <em>next</em> estimate, not this one.
+		/// </remarks>
+		/// <param name="solid">The shape being shrunk.</param>
+		/// <param name="tool">The structuring element that has to fit inside it.</param>
+		/// <param name="reporter">Where to report progress, or null for nobody watching.</param>
+		/// <param name="cancellationToken">Stops the operation between hulls.</param>
+		/// <returns>The eroded solid and the algorithm that produced it.</returns>
+		/// <inheritdoc cref="MinkowskiSumAsync"/>
+		public static Task<(Mesh Eroded, ErosionPath Path)> MinkowskiDifferenceWithPathAsync(
 			Mesh solid,
 			Mesh tool,
 			ProgressReporter reporter,
@@ -284,7 +364,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// caller that wants it can hand in a repaired mesh, and doing it silently here would make
 		/// the two entry points disagree about what an inside-out shell means.
 		/// </remarks>
-		private static Mesh Run(Mesh solid, Mesh tool, bool inset, ProgressReporter reporter, CancellationToken cancellationToken)
+		private static (Mesh Mesh, ErosionPath Path) Run(Mesh solid, Mesh tool, bool inset, ProgressReporter reporter, CancellationToken cancellationToken)
 		{
 			ArgumentNullException.ThrowIfNull(solid);
 			ArgumentNullException.ThrowIfNull(tool);
@@ -307,9 +387,9 @@ namespace MatterHackers.PolygonMesh.Csg
 			ThrowIfNoVolume(solidManifold, nameof(solid));
 			ThrowIfNoVolume(toolManifold, nameof(tool));
 
-			var result = Morph(solidManifold, toolManifold, inset, reporter, cancellationToken);
+			var result = Morph(solidManifold, toolManifold, inset, reporter, cancellationToken, out ErosionPath erosionPath);
 
-			return ManifoldKernel.ToMesh(result, inset ? "minkowski difference" : "minkowski sum");
+			return (ManifoldKernel.ToMesh(result, inset ? "minkowski difference" : "minkowski sum"), erosionPath);
 		}
 
 		/// <summary>
@@ -320,7 +400,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// seconds of work on its own, so leaving it on the caller's thread would freeze the
 		/// frame before the bar had moved once.
 		/// </remarks>
-		private static async Task<Mesh> RunAsync(
+		private static async Task<(Mesh Mesh, ErosionPath Path)> RunAsync(
 			Mesh solid,
 			Mesh tool,
 			bool inset,
@@ -362,8 +442,14 @@ namespace MatterHackers.PolygonMesh.Csg
 			RustManifold tool,
 			bool inset,
 			ProgressReporter reporter,
-			CancellationToken cancellationToken)
+			CancellationToken cancellationToken,
+			out ErosionPath erosionPath)
 		{
+			// A dilation has no closed form to decline, so it is always the sweep. Nothing public
+			// surfaces the path for a sum - MinkowskiSum has no such overload - so this is only
+			// here to give the out parameter a defined value on that leg.
+			erosionPath = ErosionPath.Sweep;
+
 			// HasTarget rather than a null check: ProgressReporter.Null and any reporter built
 			// around a null action are both "nobody is watching", and the second would slip
 			// past a reference comparison and then hand the adapter a null action.
@@ -399,6 +485,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			if (inset && solid.TryConvexErosion(tool, token, progress, out RustManifold closedForm))
 			{
 				result = closedForm;
+				erosionPath = ErosionPath.ClosedForm;
 			}
 			else
 			{

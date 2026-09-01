@@ -174,8 +174,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		/// <summary>
-		/// A convex erosion is routed to the kernel's closed form, and the mesh it leaves behind
-		/// says so.
+		/// A convex erosion is routed to the kernel's closed form - it says so, and the mesh it
+		/// leaves behind says so too.
 		/// </summary>
 		/// <remarks>
 		/// The two paths compute the same solid and are meant to be interchangeable, so the
@@ -184,6 +184,12 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		/// the box and ends with 36; the closed form solves the eight corners and hulls them,
 		/// and ends with 12. A box rather than a cube because a cube's sweep happens to reduce
 		/// to 12 as well, which would have made this test pass either way.
+		/// <para>
+		/// The reported <see cref="ErosionPath"/> is the direct statement of the same fact, and
+		/// the triangle count is kept alongside it rather than replaced by it: the count is what
+		/// proves the signal is wired to the branch that actually ran, instead of to a constant
+		/// that happens to read correctly.
+		/// </para>
 		/// </remarks>
 		[Test]
 		public async Task AConvexErosionTakesTheClosedFormAndLeavesItsOwnMesh()
@@ -191,7 +197,10 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			var ball = MinkowskiProcessing.SphereMesh(1.0, 12);
 			var box = PlatonicSolids.CreateCube(40, 20, 10);
 
-			var eroded = Cleaned(MinkowskiProcessing.MinkowskiDifference(box, ball));
+			var eroded = Cleaned(MinkowskiProcessing.MinkowskiDifference(box, ball, out ErosionPath path));
+
+			await Assert.That(path).IsEqualTo(ErosionPath.ClosedForm)
+				.Because("a convex solid is exactly what the closed form is for");
 
 			await Assert.That(eroded.Faces.Count).IsEqualTo(12)
 				.Because("the closed form hulls eight corners; the sweep this replaces leaves 36 triangles");
@@ -207,6 +216,32 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		/// <summary>
+		/// The async entry point reports the path too, and reports the same one.
+		/// </summary>
+		/// <remarks>
+		/// The async and sync legs share every decision below the entry point, so this is not a
+		/// second routing test - it is the tuple wiring, which is the one thing that is genuinely
+		/// separate and the one thing a caller consuming <c>MinkowskiDifferenceWithPathAsync</c>
+		/// depends on. Same box as the sync case so the expected mesh is already established.
+		/// </remarks>
+		[Test]
+		public async Task TheAsyncErosionReportsItsPath()
+		{
+			var ball = MinkowskiProcessing.SphereMesh(1.0, 12);
+			var box = PlatonicSolids.CreateCube(40, 20, 10);
+
+			var (eroded, path) = await MinkowskiProcessing.MinkowskiDifferenceWithPathAsync(
+				box,
+				ball,
+				null,
+				CancellationToken.None);
+
+			await Assert.That(path).IsEqualTo(ErosionPath.ClosedForm);
+			await Assert.That(Cleaned(eroded).Faces.Count).IsEqualTo(12)
+				.Because("the result travels with the path, and it is the closed form's mesh");
+		}
+
+		/// <summary>
 		/// A non-convex erosion still goes through the sweep, and its answer is what it always
 		/// was.
 		/// </summary>
@@ -215,6 +250,10 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		/// only thing it could ever have returned for this L is the erosion of the cube the L
 		/// was cut from - volume 5832. Getting 5710.55 back is the routing gate working, not
 		/// just the arithmetic agreeing.
+		/// <para>
+		/// The reported <see cref="ErosionPath"/> states the same thing directly; the volume
+		/// stays as the independent witness, for the reason its convex counterpart spells out.
+		/// </para>
 		/// </remarks>
 		[Test]
 		public async Task ANonConvexErosionStillTakesTheSweep()
@@ -227,7 +266,10 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Matrix4X4.CreateTranslation(10, 10, 10),
 				CsgModes.Subtract));
 
-			var eroded = Cleaned(MinkowskiProcessing.MinkowskiDifference(lShape, ball));
+			var eroded = Cleaned(MinkowskiProcessing.MinkowskiDifference(lShape, ball, out ErosionPath path));
+
+			await Assert.That(path).IsEqualTo(ErosionPath.Sweep)
+				.Because("the closed form declines a non-convex solid, and the sweep is what answers it");
 
 			await Assert.That(SignedVolume(eroded)).IsLessThan(5800)
 				.Because("18^3 is 5832 - anything at or above it is the convex hull of this solid, which is what a wrongly-routed closed form would have answered");
