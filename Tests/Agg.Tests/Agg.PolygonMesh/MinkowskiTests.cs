@@ -174,6 +174,113 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		/// <summary>
+		/// A convex erosion is routed to the kernel's closed form, and the mesh it leaves behind
+		/// says so.
+		/// </summary>
+		/// <remarks>
+		/// The two paths compute the same solid and are meant to be interchangeable, so the
+		/// routing has to be pinned on something other than the answer: they reach it
+		/// differently and leave different triangles. The sweep unions one hull per triangle of
+		/// the box and ends with 36; the closed form solves the eight corners and hulls them,
+		/// and ends with 12. A box rather than a cube because a cube's sweep happens to reduce
+		/// to 12 as well, which would have made this test pass either way.
+		/// </remarks>
+		[Test]
+		public async Task AConvexErosionTakesTheClosedFormAndLeavesItsOwnMesh()
+		{
+			var ball = MinkowskiProcessing.SphereMesh(1.0, 12);
+			var box = PlatonicSolids.CreateCube(40, 20, 10);
+
+			var eroded = Cleaned(MinkowskiProcessing.MinkowskiDifference(box, ball));
+
+			await Assert.That(eroded.Faces.Count).IsEqualTo(12)
+				.Because("the closed form hulls eight corners; the sweep this replaces leaves 36 triangles");
+
+			// 38 x 18 x 8, and exactly - the ball's poles sit on the axes at the radius, so
+			// every plane offset and every corner solve here is whole-number arithmetic.
+			await Assert.That(SignedVolume(eroded)).IsEqualTo(38.0 * 18 * 8).Within(0.0001);
+
+			var bounds = eroded.GetAxisAlignedBoundingBox();
+			await Assert.That(bounds.XSize).IsEqualTo(38).Within(0.0001);
+			await Assert.That(bounds.YSize).IsEqualTo(18).Within(0.0001);
+			await Assert.That(bounds.ZSize).IsEqualTo(8).Within(0.0001);
+		}
+
+		/// <summary>
+		/// A non-convex erosion still goes through the sweep, and its answer is what it always
+		/// was.
+		/// </summary>
+		/// <remarks>
+		/// The proof is the notch. The closed form builds its answer as a convex hull, so the
+		/// only thing it could ever have returned for this L is the erosion of the cube the L
+		/// was cut from - volume 5832. Getting 5710.55 back is the routing gate working, not
+		/// just the arithmetic agreeing.
+		/// </remarks>
+		[Test]
+		public async Task ANonConvexErosionStillTakesTheSweep()
+		{
+			var ball = MinkowskiProcessing.SphereMesh(1.0, 12);
+			var lShape = Cleaned(BooleanProcessing.Do(
+				PlatonicSolids.CreateCube(20, 20, 20),
+				Matrix4X4.Identity,
+				PlatonicSolids.CreateCube(10, 10, 10),
+				Matrix4X4.CreateTranslation(10, 10, 10),
+				CsgModes.Subtract));
+
+			var eroded = Cleaned(MinkowskiProcessing.MinkowskiDifference(lShape, ball));
+
+			await Assert.That(SignedVolume(eroded)).IsLessThan(5800)
+				.Because("18^3 is 5832 - anything at or above it is the convex hull of this solid, which is what a wrongly-routed closed form would have answered");
+			await Assert.That(SignedVolume(eroded)).IsEqualTo(5710.55).Within(0.5)
+				.Because("the sweep's answer for this L, unchanged by the fast path existing");
+		}
+
+		/// <summary>
+		/// The closed form is the point of the exercise: on one and the same mesh, the convex
+		/// erosion beats the sweep by more than an order of magnitude.
+		/// </summary>
+		/// <remarks>
+		/// The A/B is a single vertex. Both solids have the same triangle count, the same tool
+		/// and the same amount of work for the sweep - the dented one is simply not convex any
+		/// more, so it cannot take the fast path. That isolates the routing from every other
+		/// thing that makes one mesh slower than another.
+		/// <para>
+		/// A timing assertion, with the margin set for it: measured at about 100x on this shape,
+		/// asserted at 5x, and both paths are warmed first so the comparison is not one JIT
+		/// against another. It is here because "same answer, much faster" is the entire claim
+		/// and a correctness test cannot make it.
+		/// </para>
+		/// </remarks>
+		[Test]
+		public async Task TheClosedFormBeatsTheSweepOnTheSameMesh()
+		{
+			var ball = MinkowskiProcessing.SphereMesh(0.5, 8);
+			var convex = MinkowskiProcessing.SphereMesh(10, 16);
+			var dented = Dented(MinkowskiProcessing.SphereMesh(10, 16));
+
+			// Warm both paths on the small fixtures, so neither timing below pays for a JIT the
+			// other one has already done.
+			var smallBall = MinkowskiProcessing.SphereMesh(0.5, 4);
+			MinkowskiProcessing.MinkowskiDifference(PlatonicSolids.CreateCube(8, 8, 8), smallBall);
+			MinkowskiProcessing.MinkowskiDifference(Dented(MinkowskiProcessing.SphereMesh(4, 8)), smallBall);
+
+			var sweptWatch = System.Diagnostics.Stopwatch.StartNew();
+			var swept = MinkowskiProcessing.MinkowskiDifference(dented, ball);
+			sweptWatch.Stop();
+
+			var closedWatch = System.Diagnostics.Stopwatch.StartNew();
+			var closed = MinkowskiProcessing.MinkowskiDifference(convex, ball);
+			closedWatch.Stop();
+
+			await Assert.That(swept.Faces.Count).IsGreaterThan(0);
+			await Assert.That(closed.Faces.Count).IsGreaterThan(0);
+
+			await Assert.That(closedWatch.Elapsed.TotalMilliseconds * 5)
+				.IsLessThan(sweptWatch.Elapsed.TotalMilliseconds)
+				.Because($"closed form {closedWatch.Elapsed.TotalMilliseconds:0.00} ms against the sweep's {sweptWatch.Elapsed.TotalMilliseconds:0.00} ms on the same mesh");
+		}
+
+		/// <summary>
 		/// An operand the kernel will not take fails the same way it fails a boolean - the
 		/// import's own complaint, naming the status - rather than crashing or quietly answering
 		/// with the other operand.
@@ -309,11 +416,18 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		/// measure a baseline run whose first-call JIT cost inflates it, on a machine whose
 		/// load nobody controls. The token is tripped from the first progress report, which is
 		/// the earliest in-kernel moment a test can reach.
+		/// <para>
+		/// The ball is DENTED, and has to be. The sweep is what this test is about, and a
+		/// convex solid is now routed past it into the closed form, which finishes the whole
+		/// erosion between the two reports it makes - so the undented fixture measured nothing
+		/// but a race the fast path always wins. The closed form's own cancellation is a
+		/// different contract, pinned below and in the kernel's ConvexErosionTests.
+		/// </para>
 		/// </remarks>
 		[Test]
 		public async Task ACancelledErosionStopsWithinAHullOrTwoOfBeingAsked()
 		{
-			var solid = MinkowskiProcessing.SphereMesh(5, 16);
+			var solid = Dented(MinkowskiProcessing.SphereMesh(5, 16));
 			var tool = MinkowskiProcessing.SphereMesh(0.5, 8);
 
 			await Assert.That(solid.Faces.Count).IsGreaterThan(100)
@@ -352,6 +466,30 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		/// <summary>
+		/// A convex erosion honours a token too, even though it has no hulls to stop between:
+		/// the closed form is milliseconds, so the only cancel it can observe is one that was
+		/// already set, and it has to answer that rather than race past it.
+		/// </summary>
+		/// <remarks>
+		/// The other half of the test above, and the half the fast path introduced. A closed
+		/// form that answered "not applicable" on a cancelled token would send the caller
+		/// straight into the sweep it was cancelled out of, which is the worst of both.
+		/// </remarks>
+		[Test]
+		public async Task ACancelledConvexErosionStillThrowsRatherThanFallingIntoTheSweep()
+		{
+			var solid = MinkowskiProcessing.SphereMesh(5, 16);
+			var tool = MinkowskiProcessing.SphereMesh(0.5, 8);
+
+			using var source = new CancellationTokenSource();
+			source.Cancel();
+
+			await Assert.That(async () =>
+					await MinkowskiProcessing.MinkowskiDifferenceAsync(solid, tool, null, source.Token))
+				.Throws<OperationCanceledException>();
+		}
+
+		/// <summary>
 		/// The bar reaches 1.0 through the whole async stack on an operation big enough for the
 		/// kernel's progress throttle to start skipping reports.
 		/// </summary>
@@ -360,11 +498,17 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		/// emits every <c>total / 100</c> units, so a 290 unit erosion used to stop reporting
 		/// at 288/290 and the caller's bar stopped just short of full. Everything smaller lands
 		/// on 1.0 by luck, because a total under 100 makes the step 1.
+		/// <para>
+		/// Dented for the same reason the cancellation test is: the throttled regime only
+		/// exists inside the sweep, and a convex solid no longer goes there. Undented this
+		/// still passed, on two reports - which is exactly the kind of test that stops proving
+		/// its own subject without failing.
+		/// </para>
 		/// </remarks>
 		[Test]
 		public async Task AnAsyncErosionLargeEnoughToBeThrottledStillFillsTheBar()
 		{
-			var solid = MinkowskiProcessing.SphereMesh(5, 24);
+			var solid = Dented(MinkowskiProcessing.SphereMesh(5, 24));
 			var tool = MinkowskiProcessing.SphereMesh(0.5, 8);
 
 			await Assert.That(solid.Faces.Count).IsEqualTo(288)
@@ -385,6 +529,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			await Assert.That(eroded.Faces.Count).IsGreaterThan(0);
 			await Assert.That(ratios.Count).IsLessThan(290)
 				.Because("fewer reports than units is what makes this the throttled regime the bug lived in");
+			await Assert.That(ratios.Count).IsGreaterThan(50)
+				.Because("and more than a handful is what says the sweep ran at all - two reports would be the closed form, which has no throttle to test");
 			await Assert.That(ratios[ratios.Count - 1]).IsEqualTo(1.0).Within(1e-9)
 				.Because("a finished erosion has to leave the bar full, not at 288/290");
 		}
@@ -527,6 +673,22 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				+ (6 * side * side * radius)
 				+ (12 * side * Math.PI * radius * radius / 4)
 				+ (4.0 / 3.0 * Math.PI * radius * radius * radius);
+		}
+
+		/// <summary>
+		/// The same ball with one vertex pulled halfway in - still closed, still the same
+		/// triangle count, no longer convex.
+		/// </summary>
+		/// <remarks>
+		/// The A/B partner for the routing timing test. A dent rather than a different shape:
+		/// the sweep's cost is one hull and one boolean per triangle, so keeping the triangle
+		/// count identical is what makes the two timings comparable at all.
+		/// </remarks>
+		private static Mesh Dented(Mesh ball)
+		{
+			ball.Vertices[0] = ball.Vertices[0] * 0.5f;
+
+			return ball;
 		}
 
 		/// <summary>

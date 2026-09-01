@@ -59,13 +59,31 @@ namespace MatterHackers.PolygonMesh.Csg
 	/// </para>
 	/// <list type="bullet">
 	/// <item>convex &#8853; convex - one convex hull over the pairwise vertex sums. Milliseconds.</item>
-	/// <item>nonconvex &#8853; convex (and <em>every</em> erosion, convex or not) - one convex hull
-	/// per triangle of the nonconvex operand, batch-unioned 1000 at a time. Linear in that
-	/// operand's triangle count, with a boolean's worth of work per triangle: seconds for a few
-	/// hundred triangles, minutes for a few thousand.</item>
+	/// <item>nonconvex &#8853; convex (and every erosion the closed form below declines) - one
+	/// convex hull per triangle of the nonconvex operand, batch-unioned 1000 at a time. Linear
+	/// in that operand's triangle count, with a boolean's worth of work per triangle: seconds
+	/// for a few hundred triangles, minutes for a few thousand.</item>
 	/// <item>nonconvex &#8853; nonconvex - a hull per <em>pair</em> of faces. Quadratic, and only
 	/// worth starting on toy meshes.</item>
 	/// </list>
+	/// <para>
+	/// And a fourth this class routes to itself, ahead of all three: an erosion of a
+	/// <em>convex</em> solid has a closed form - the intersection of the solid's face
+	/// halfspaces with every plane pushed inward by the tool's reach in that direction - which
+	/// the kernel offers as <c>Manifold.TryConvexErosion</c>. Two convex hulls, whatever the
+	/// triangle count. Measured against the sweep it replaces: a 12-triangle box 0.01 ms
+	/// against 16, a 436-triangle cylinder 0.07 ms against 184, a 2048-triangle sphere 29 ms
+	/// against 2700. It declines for anything it cannot prove itself on - a non-convex operand
+	/// first among them - and the sweep runs unchanged, so this is a routing decision and not
+	/// a second answer.
+	/// </para>
+	/// <para>
+	/// The two answers agree exactly on anything up to about a thousand faces - a box comes out
+	/// whole-number identical either way - and to about 5e-7 relative above that, where the
+	/// kernel's hull starts discarding near-coplanar points. Far inside the error the
+	/// tessellated ball itself introduces, and documented at the kernel in
+	/// <c>docs/RUST_DIVERGENCES.md</c> entry 5.
+	/// </para>
 	/// <para>
 	/// So a caller controls its own running time by keeping the structuring element small and
 	/// coarse: <see cref="SphereMesh"/> at 12 segments is 72 triangles and is what the rounding
@@ -173,9 +191,11 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// inside when centred on them, which shrinks the solid by the tool's extent.
 		/// </summary>
 		/// <remarks>
-		/// Always the per-triangle path, even for two convex operands - the kernel has no closed
-		/// form for an inset - so this is the expensive half of an opening or a closing. See the
-		/// cost model on <see cref="MinkowskiProcessing"/>.
+		/// The expensive half of an opening or a closing, unless the solid is convex - then it
+		/// takes the closed form instead and costs about as little as the dilation does. Which
+		/// path ran is not observable beyond the clock: both compute the same erosion, and the
+		/// closed form stands down wherever it cannot prove that. See the cost model on
+		/// <see cref="MinkowskiProcessing"/>.
 		/// <para>
 		/// A tool too large for the solid erodes it away entirely, which comes back as an empty
 		/// mesh rather than as a failure: nothing fits is a real answer.
@@ -358,23 +378,36 @@ namespace MatterHackers.PolygonMesh.Csg
 				? null
 				: new RustProgressReporter((phase, fraction) => adapter.Report((RustPhases.Name(phase), fraction)));
 
-			if (!cancellationToken.CanBeCanceled)
-			{
-				return inset
-					? solid.MinkowskiDifference(tool, null, progress)
-					: solid.MinkowskiSum(tool, null, progress);
-			}
-
 			// One token per operation, as CancelToken's own remarks require: it registers on
 			// the caller's source and is never unregistered, so a token that outlived the call
-			// would stay rooted in that source's callback list.
-			var token = new RustCancelToken(cancellationToken);
+			// would stay rooted in that source's callback list. A token that can never be
+			// signalled allocates nothing and leaves the kernel on its uncancellable path,
+			// which is byte-for-byte what ran before cancellation existed.
+			var token = cancellationToken.CanBeCanceled
+				? new RustCancelToken(cancellationToken)
+				: null;
 
-			var result = inset
-				? solid.MinkowskiDifference(tool, token, progress)
-				: solid.MinkowskiSum(tool, token, progress);
+			RustManifold result;
 
-			if (result.Status() == RustStatus.Cancelled)
+			// The closed form first, and only for an erosion: it is the same answer two
+			// convex hulls instead of one hull and one boolean per triangle. It declines -
+			// answers false, having reported nothing - for anything it cannot prove itself
+			// on, a non-convex operand first among them, and the line below is then exactly
+			// the call that ran before it existed. A cancelled run comes back as *applied*
+			// with a Cancelled status, so a cancel cannot fall through into the slow path it
+			// was cancelled out of.
+			if (inset && solid.TryConvexErosion(tool, token, progress, out RustManifold closedForm))
+			{
+				result = closedForm;
+			}
+			else
+			{
+				result = inset
+					? solid.MinkowskiDifference(tool, token, progress)
+					: solid.MinkowskiSum(tool, token, progress);
+			}
+
+			if (token != null && result.Status() == RustStatus.Cancelled)
 			{
 				throw new OperationCanceledException(cancellationToken);
 			}
