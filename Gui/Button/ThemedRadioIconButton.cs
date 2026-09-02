@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2022, John Lewin, Lars Brubaker
+Copyright (c) 2026, John Lewin, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -46,6 +46,7 @@ namespace MatterHackers.Agg.UI
         public ThemedRadioIconButton(ImageBuffer icon, ThemeConfig theme)
             : base(icon, theme)
         {
+            SelectedBackgroundColor = theme.MinimalShade;
         }
 
         protected override void OnClick(MouseEventArgs mouseEvent)
@@ -67,6 +68,14 @@ namespace MatterHackers.Agg.UI
 
         private bool _checked;
 
+        /// <summary>
+        /// The fill drawn behind the icon while this button is checked. Defaults to the theme's
+        /// faintest shade, which barely reads - a caller whose only cue for 'this one is selected' is
+        /// the fill (an icon tab row, say, where there is no label to recolor) should raise it, but not
+        /// as far as a solid accent fill: icons carry their own color and would be lost in it.
+        /// </summary>
+        public Color SelectedBackgroundColor { get; set; }
+
         public bool Checked
         {
             get => _checked;
@@ -80,7 +89,7 @@ namespace MatterHackers.Agg.UI
                         this.UncheckSiblings();
                     }
 
-                    BackgroundColor = _checked ? theme.MinimalShade : Color.Transparent;
+                    BackgroundColor = _checked ? SelectedBackgroundColor : Color.Transparent;
 
                     Invalidate();
                 }
