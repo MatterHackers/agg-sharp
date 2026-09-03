@@ -16,6 +16,11 @@
 		<DefineConstants>TRACE;RELEASE</DefineConstants>
 	</PropertyGroup>
 	<ItemGroup>
+		<!-- Same as PlatformMac and PlatformLinux: the host's pure decision helpers (message loop
+		     start rule, input translation) are testable without standing up a real window. -->
+		<InternalsVisibleTo Include="Agg.Tests" />
+	</ItemGroup>
+	<ItemGroup>
 		<Compile Remove="win32\WindowsFormsDXBackedGui.cs" />
 	</ItemGroup>
 	<ItemGroup>

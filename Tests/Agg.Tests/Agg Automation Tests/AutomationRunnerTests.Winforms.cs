@@ -27,6 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.GuiAutomation;
 using TUnit.Assertions;
@@ -74,6 +76,76 @@ namespace MatterHackers.Agg.UI.Tests
                     secondsToTestFailure: 30);
 
                 await Assert.That(idleActionRan).IsTrue().Because("a live window's RunOnIdle pump must survive another window's teardown");
+            }
+            finally
+            {
+                AutomationRunner.CloseWindowTimeoutSeconds = originalCloseTimeout;
+            }
+        }
+
+        // A window shown from a thread that is not the message pump must be deferred onto the pump, not
+        // answered with an Application.Run of its own: the second loop never returns, so the caller's thread
+        // is swallowed and whatever it was doing - an automation step, a worker finishing a job - never
+        // continues. ShowWindowAndExecuteTests gives exactly that arrangement for free, since the window's
+        // Application.Run owns the calling thread while this lambda runs on another.
+        [Test]
+        public async Task ShowFromNonPumpThreadReturnsToItsCaller()
+        {
+            var systemWindow = new SystemWindow(300, 200);
+
+            double originalCloseTimeout = AutomationRunner.CloseWindowTimeoutSeconds;
+            AutomationRunner.CloseWindowTimeoutSeconds = 5;
+
+            var showReturned = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            // Sampled at the moment the bounded wait ends, because the answer changes afterwards: under the
+            // old rule the call did eventually return - when the dialog closed and its stolen message loop
+            // finally unwound - so a check made after the run would pass on the very bug this pins.
+            bool returnedWhileThePumpWasStillRunning = false;
+            Exception showException = null;
+
+            try
+            {
+                await AutomationRunner.ShowWindowAndExecuteTests(
+                    systemWindow,
+                    (testRunner) =>
+                    {
+                        var dialog = new SystemWindow(200, 100) { Title = "OffThreadShow" };
+
+                        // A background thread of its own, so that a regression parks that thread rather than
+                        // this one - the window still closes and the run still reports a failure.
+                        var showThread = new Thread(() =>
+                        {
+                            try
+                            {
+                                dialog.ShowAsSystemWindow();
+                                showReturned.TrySetResult(true);
+                            }
+                            catch (Exception exception)
+                            {
+                                showException = exception;
+                                showReturned.TrySetResult(false);
+                            }
+                        });
+
+                        showThread.IsBackground = true;
+                        showThread.Start();
+
+                        // maxSeconds is a failure bound only; the wait ends as soon as the call returns.
+                        testRunner.WaitFor(() => showReturned.Task.IsCompleted, maxSeconds: 5);
+                        returnedWhileThePumpWasStillRunning = showReturned.Task.IsCompleted;
+
+                        // Queued behind the deferred Show, so the pump runs them in that order.
+                        UiThread.RunOnIdle(() => dialog.Close());
+                        testRunner.WaitFor(() => dialog.HasBeenClosed, maxSeconds: 5);
+
+                        testRunner.MarkTestComplete();
+                        return Task.CompletedTask;
+                    },
+                    secondsToTestFailure: 30);
+
+                await Assert.That(showException).IsNull();
+                await Assert.That(returnedWhileThePumpWasStillRunning).IsTrue().Because("a show from a non-pump thread must defer to the running pump rather than starting a second message loop");
             }
             finally
             {

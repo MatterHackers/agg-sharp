@@ -94,6 +94,8 @@
     <!-- Subject is WinformsSystemWindow: its idle timer and its CenterInParent handle creation. -->
     <Compile Remove="Agg.UI\WinformsIdleTimerDisposeRaceTests.cs" />
     <Compile Remove="Agg.UI\WinformsShowCenteringTests.cs" />
+    <!-- Subject is WinformsSystemWindow.ShouldStartMessageLoop, which only exists on the WinForms host. -->
+    <Compile Remove="Agg.UI\WinformsMessageLoopDecisionTests.cs" />
     <!-- Subject is WinformsSystemWindow's interface map for the async screenshot; the platform-neutral
          half of that contract lives in ScreenshotContractTests and runs everywhere. -->
     <Compile Remove="Agg.UI\WinformsScreenshotContractTests.cs" />

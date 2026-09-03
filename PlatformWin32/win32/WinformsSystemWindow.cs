@@ -1516,6 +1516,41 @@ namespace MatterHackers.Agg.UI
 		private static bool firstWindow = true;
 
 		/// <summary>
+		/// The managed thread id of the most recent thread to enter Application.Run, or 0 when the thread
+		/// that last claimed it has unwound. Best-effort and deliberately not a registry of every pumping
+		/// thread: the decision below only needs "is somebody other than me pumping right now", because
+		/// Application.MessageLoop already answers for the calling thread and for no other.
+		/// </summary>
+		private static int messageLoopThreadId;
+
+		/// <summary>
+		/// Decides whether the calling thread should become the message loop for the window being shown.
+		/// Pure so it can be tested without standing up a window or a second pumping thread.
+		/// </summary>
+		/// <param name="firstWindow">
+		/// The static first-window latch, and an explicit override. Case A, a normal sequential start, needs
+		/// it; so does case D, where AutomationRunner calls ResetFirstWindowFlag between tests while another
+		/// test's window may still be live - ShowWindowAndExecuteTests reads ShowAsSystemWindow returning as
+		/// "the message loop exited", so the next root window must run a loop of its own regardless.
+		/// </param>
+		/// <param name="thisThreadHasLoop">
+		/// Application.MessageLoop, which answers only for this thread. True means this thread already pumps
+		/// and a second Application.Run on it would only nest.
+		/// </param>
+		/// <param name="anotherThreadIsPumping">
+		/// True when some other thread is inside Application.Run. Separates cases B and C, which
+		/// Application.MessageLoop reports identically (false) from this thread.
+		/// </param>
+		/// <param name="deferredShowCanRun">
+		/// True when a live idle-pump driver exists, so a deferred show would actually get its turn. False is
+		/// case B: the pump has no driver, and deferring would queue the Show behind a turn that never comes.
+		/// </param>
+		internal static bool ShouldStartMessageLoop(bool firstWindow, bool thisThreadHasLoop, bool anotherThreadIsPumping, bool deferredShowCanRun)
+		{
+			return firstWindow || (!thisThreadHasLoop && !(anotherThreadIsPumping && deferredShowCanRun));
+		}
+
+		/// <summary>
 		/// Resets the static firstWindow flag to allow fresh message loop initialization for tests
 		/// </summary>
 		public static void ResetFirstWindowFlag()
@@ -1523,7 +1558,11 @@ namespace MatterHackers.Agg.UI
 			DebugLogger.EnableFilter("WinformsSystemWindow");
 			DebugLogger.LogMessage("WinformsSystemWindow", $"ResetFirstWindowFlag called - Current firstWindow: {firstWindow}");
 			firstWindow = true;
-			
+
+			// messageLoopThreadId is deliberately left alone: this runs while another window's loop may
+			// still be live, and zeroing it would claim nobody is pumping while a thread sits in
+			// Application.Run. The finally that owns the id clears it; firstWindow is the override here.
+
 			// Reset all other static state for clean test isolation
 			DebugLogger.LogMessage("WinformsSystemWindow", "Resetting WinForms static state");
 			
@@ -1579,47 +1618,82 @@ namespace MatterHackers.Agg.UI
 			// If this isn't true, prepare for deadlocks.
 			//System.Diagnostics.Debug.Assert(SynchronizationContext.Current == null || SynchronizationContext.Current is WindowsFormsSynchronizationContext);
             
-			// firstWindow is a latch, and a latch can be wrong. The branch below is really "does this thread
-			// need a message loop?", and WinForms can answer that directly, per thread. The two disagree
-			// exactly when a previous window's Application.Run never returned: the latch says "not first",
-			// this thread has no loop of its own, and the window is sent down the deferred-show path where it
-			// waits for an idle turn from a pump that belongs to another thread and has no driver. That is a
-			// window that never shows, never fires Form.Load, never initializes its device and never paints -
-			// the failure CI kept reporting as a first draw that never happened. Asking the question of the
-			// thread rather than the latch cannot get that wrong.
-			if (firstWindow || !Application.MessageLoop)
+			// firstWindow is a latch, and a latch can be wrong; Application.MessageLoop is exact but only
+			// answers for the calling thread. Two arrivals here look identical to both of them, and want
+			// opposite answers:
+			//
+			//  - Case B, stale latch with no pump to defer to: a previous window's Application.Run never
+			//    returned, so ResetFirstWindowFlag was never reached and the latch says "not first", while
+			//    this thread has no loop of its own. Deferring queues the Show behind an idle turn that never
+			//    comes - a window that never shows, never fires Form.Load, never initializes its device and
+			//    never paints, which is the shape CI reported for commit 95ac9254. Start a loop.
+			//  - Case C, an off-thread show while the UI thread pumps: a worker or automation thread asks for
+			//    a dialog while another thread is inside Application.Run with a live idle pump. Starting a
+			//    loop here makes this thread pump a second one that never returns, silently swallowing the
+			//    caller. Defer.
+			//
+			// Application.MessageLoop is false on this thread in both, so it cannot separate them. What
+			// differs is whether the deferred path would actually run: case C has a driver turning the idle
+			// pump, case B has none. That driver check is the discriminator, and it is asked exactly the way
+			// EnsureIdleTimerDriving asks it, under the same lock.
+			int pumpingThreadId = Volatile.Read(ref messageLoopThreadId);
+			bool anotherThreadIsPumping = pumpingThreadId != 0
+				&& pumpingThreadId != Environment.CurrentManagedThreadId;
+
+			bool deferredShowCanRun;
+			lock (StaticInitLock)
+			{
+				deferredShowCanRun = idleTimerWindow != null
+					&& idleTimerWindow.CanDriveIdlePump
+					&& LiveWindows.Contains(idleTimerWindow);
+			}
+
+			if (ShouldStartMessageLoop(firstWindow, Application.MessageLoop, anotherThreadIsPumping, deferredShowCanRun))
 			{
 				DebugLogger.LogMessage("WinformsSystemWindow", "First window - starting Application.Run message loop");
 				firstWindow = false;
 
-				DebugLogger.LogMessage("WinformsSystemWindow", "ShowSystemWindow STEP 5 - About to call Show()");
-				this.Show();
-				DebugLogger.LogMessage("WinformsSystemWindow", "ShowSystemWindow STEP 6 - Show() completed");
-
-				// Enable idle processing now that the window is ready to handle events.
-				lock (SingleInvokeLock)
+				// Claim the pump record before Show(). Show, Form.Load and device init can take a long time,
+				// and an off-thread show landing in that window would otherwise see "the latch says not first,
+				// nobody is pumping" and start a second Application.Run of its own.
+				Volatile.Write(ref messageLoopThreadId, Environment.CurrentManagedThreadId);
+				try
 				{
-					enableIdleProcessing = true;
-				}
+					DebugLogger.LogMessage("WinformsSystemWindow", "ShowSystemWindow STEP 5 - About to call Show()");
+					this.Show();
+					DebugLogger.LogMessage("WinformsSystemWindow", "ShowSystemWindow STEP 6 - Show() completed");
 
-				// Only now is this window eligible to drive (CanDriveIdlePump reads the flag above), and the
-				// offer it made from OnHandleCreated - which runs inside Show(), a few lines up - was refused
-				// for exactly that reason. Ask again rather than leaving the pump unowned until the claim
-				// timer's first tick a quarter of a second later.
-				lock (StaticInitLock)
+					// Enable idle processing now that the window is ready to handle events.
+					lock (SingleInvokeLock)
+					{
+						enableIdleProcessing = true;
+					}
+
+					// Only now is this window eligible to drive (CanDriveIdlePump reads the flag above), and the
+					// offer it made from OnHandleCreated - which runs inside Show(), a few lines up - was refused
+					// for exactly that reason. Ask again rather than leaving the pump unowned until the claim
+					// timer's first tick a quarter of a second later.
+					lock (StaticInitLock)
+					{
+						EnsureIdleTimerDriving(this);
+					}
+
+
+					DebugLogger.LogMessage("WinformsSystemWindow", "ShowSystemWindow STEP 7 - About to call Application.Run()");
+
+					// This thread is the message loop from here on, and Application.ThreadException is registered
+					// per thread - so this is the one place that can promise no exception reaching this pump ever
+					// becomes a modal dialog nobody can dismiss.
+					WinformsThreadExceptionGuard.InstallForCurrentPump();
+
+					Application.Run(this);
+				}
+				finally
 				{
-					EnsureIdleTimerDriving(this);
+					// Only clear the record if it is still ours - a later Run on another thread (or one racing
+					// this unwind) may already have taken the slot, and this thread's exit must not erase it.
+					Interlocked.CompareExchange(ref messageLoopThreadId, 0, Environment.CurrentManagedThreadId);
 				}
-
-
-				DebugLogger.LogMessage("WinformsSystemWindow", "ShowSystemWindow STEP 7 - About to call Application.Run()");
-
-				// This thread is the message loop from here on, and Application.ThreadException is registered
-				// per thread - so this is the one place that can promise no exception reaching this pump ever
-				// becomes a modal dialog nobody can dismiss.
-				WinformsThreadExceptionGuard.InstallForCurrentPump();
-
-				Application.Run(this);
 
 				// The loop is over, and WinForms took the thread's ThreadContext - and the subscription
 				// above with it - down when it ended. Forget it here so a thread that pumps again installs
@@ -1630,6 +1704,16 @@ namespace MatterHackers.Agg.UI
 			}
 			else if (!SingleWindowMode)
 			{
+				if (anotherThreadIsPumping && !Application.MessageLoop)
+				{
+					// Worth saying out loud: this is the off-thread show, and it is the one arrival here that
+					// used to start a second Application.Run and swallow the caller's thread.
+					DebugLogger.LogMessage(
+						"WinformsSystemWindow",
+						$"Thread {Environment.CurrentManagedThreadId} has no message loop but thread {pumpingThreadId}"
+						+ " is pumping - deferring the show rather than starting a second loop");
+				}
+
 				// This branch defers the Show onto the idle pump, and a window that has not been shown
 				// cannot drive that pump (CanDriveIdlePump reads enableIdleProcessing, which the firstWindow
 				// branch above is the only thing that sets). So if the pump has no driver when we get here,
