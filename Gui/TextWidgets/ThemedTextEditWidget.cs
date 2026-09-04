@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2022, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -38,6 +38,41 @@ namespace MatterHackers.Agg.UI
 		public readonly TextWidget NoContentFieldDescription = null;
 		private ThemeConfig theme;
 		private bool mouseInBounds = false;
+		private TextWidget leadingLabel;
+		private double leadingLabelWidth;
+		private double undecoratedMinimumWidth;
+
+		/// <summary>An accent label inside the field, like the axis label in ThemedNumberEdit.</summary>
+		public string LeadingLabel
+		{
+			get => leadingLabel?.Text ?? "";
+			set
+			{
+				using (LayoutLock())
+				{
+					if (leadingLabel == null)
+					{
+						undecoratedMinimumWidth = ActualTextEditWidget.MinimumSize.X;
+						leadingLabel = new TextWidget("", pointSize: theme.DefaultFontSize - 2, textColor: theme.PrimaryAccentColor)
+						{
+							Margin = new BorderDouble(left: 2), HAnchor = HAnchor.Left, VAnchor = VAnchor.Center,
+							Selectable = false, AutoExpandBoundsToText = true
+						};
+						AddChild(leadingLabel);
+					}
+					leadingLabel.Text = value ?? "";
+					leadingLabel.Visible = !string.IsNullOrEmpty(value);
+					var reserve = leadingLabel.Visible ? leadingLabel.Width + 4 * DeviceScale : 0;
+					// Reserve space INSIDE the existing width so decorated and plain fields align.
+					var width = ActualTextEditWidget.Width + leadingLabelWidth - reserve;
+					ActualTextEditWidget.MinimumSize = new Vector2(Math.Max(0, undecoratedMinimumWidth - reserve), ActualTextEditWidget.MinimumSize.Y);
+					ActualTextEditWidget.Margin = ActualTextEditWidget.Margin.Clone(left: reserve / DeviceScale);
+					ActualTextEditWidget.Width = Math.Max(0, width);
+					leadingLabelWidth = reserve;
+				}
+				Invalidate();
+			}
+		}
 
 		public ThemedTextEditWidget(string text, ThemeConfig theme, double pixelWidth = 0, double pixelHeight = 0, bool multiLine = false, int tabIndex = 0, string messageWhenEmptyAndNotSelected = "", TypeFace typeFace = null)
 		{
@@ -65,6 +100,9 @@ namespace MatterHackers.Agg.UI
 			{
 				internalWidget.TextColor = internalWidget.Focused ? theme.EditFieldColors.Focused.TextColor : theme.EditFieldColors.Inactive.TextColor;
 				NoContentFieldDescription.TextColor = internalWidget.Focused ? theme.EditFieldColors.Focused.LightTextColor : theme.EditFieldColors.Inactive.LightTextColor;
+				if (leadingLabel != null) leadingLabel.TextColor = internalWidget.Focused
+					? theme.PrimaryAccentColor.WithContrast(theme.EditFieldColors.Focused.BackgroundColor, 3).ToColor()
+					: theme.PrimaryAccentColor;
 			};
 
 			this.ActualTextEditWidget.InternalTextEditWidget.BackgroundColor = Color.Transparent;

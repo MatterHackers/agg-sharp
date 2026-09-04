@@ -1,5 +1,5 @@
-﻿/*
-Copyright (c) 2017, Lars Brubaker, John Lewin
+/*
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@ namespace MatterHackers.VectorMath
 		public const double DefaultFarZ = 100.0;
 		// Force this minimum on near Z.
 		// As the dynamic near plane will take this value inside an AABB, it'll be the same as the default for now.
-		public const double PerspectiveProjectionMinimumNearZ = DefaultNearZ;
+		public const double PerspectiveProjectionMinimumNearZ = 0.001;
 		// far / near >= this
 		private const double PerspectiveProjectionMinimumFarNearRatio = 1.001;
 		// Force this minimum distance between the near and far planes for the orthographic projection.

@@ -87,6 +87,8 @@ namespace MatterHackers.Agg.UI
 		public static bool UseMacKeyBindings { get; set; } = System.OperatingSystem.IsMacOS();
 
 		public static Action<InternalTextEditWidget, MouseEventArgs> DefaultRightClick;
+		/// <summary>Add field-specific commands to the standard text menu.</summary>
+		public Action<PopupMenu> ExtendContextMenu { get; set; }
 
 		// Guards the one-time wiring of the default right-click menu so concurrent constructors
 		// cannot both see null and double-subscribe. A consumer that pre-seeds DefaultRightClick
@@ -132,6 +134,7 @@ namespace MatterHackers.Agg.UI
 				};
 
 				textEditWidget.KeepMenuOpen = true;
+				textEditWidget.ExtendContextMenu?.Invoke(popupMenu);
 				popupMenu.Closed += (s3, e3) =>
 				{
 					textEditWidget.KeepMenuOpen = false;
