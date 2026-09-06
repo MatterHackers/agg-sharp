@@ -462,10 +462,16 @@ namespace MatterHackers.Agg.UI
 		/// The test is <see cref="GuiWidget.CanSelect"/>, which is what normal mouse routing uses, so a
 		/// disabled row is skipped and so is one a scroll clamped menu has moved out of its panel - that row
 		/// still has screen bounds, and a drag through the bar could otherwise reach it.
+		/// <para>
+		/// The chain is searched innermost first because that is painting order: each level is shown over the
+		/// one it opened from, so where two menus overlap - a sub menu with no room to its right opens leftward
+		/// across the menu that owns it - the innermost is the one the pointer is actually on. Searching
+		/// outermost first answered with the root row hidden behind it.
+		/// </para>
 		/// </remarks>
 		private (PopupMenu menu, MenuItem row) RowAt(Vector2 screenPosition)
 		{
-			foreach (var menu in OpenChain())
+			foreach (var menu in OpenChain().Reverse())
 			{
 				var row = menu.ItemContainer.Children.OfType<MenuItem>()
 					.FirstOrDefault(item => item.CanSelect
@@ -1406,6 +1412,15 @@ namespace MatterHackers.Agg.UI
 			public override void OnMouseEnterBounds(MouseEventArgs mouseEvent)
 			{
 				base.OnMouseEnterBounds(mouseEvent);
+
+				// A sub menu that could not fit to the right opens leftward instead, and there it lies over the
+				// menu it came out of. The rows underneath it are still inside the move's path, so they are told
+				// the mouse entered them - but the pointer is on the popup in front, not on them. Taking the
+				// highlight here pulled focus out of the sub menu chain, whose focus-lost close then tore it down.
+				if (mouseMoveEventHasBeenAcceptedByOther)
+				{
+					return;
+				}
 
 				this.Parents<PopupMenu>().FirstOrDefault()?.OnRowHover(
 					this,

@@ -551,6 +551,87 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// A third level sub menu that cannot fit to the right of its row opens leftward instead, and there it
+		/// lands on top of the root menu. The rows of the root menu underneath it are obscured, not pointed at -
+		/// if one of them takes the hover it pulls the highlight out of the sub menu chain, and the focus-lost
+		/// close then tears the whole chain down as the pointer moves into the menu it is aiming for.
+		/// </summary>
+		[Test]
+		public async Task MovingLeftIntoASubMenuThatOverlapsTheRootMenuKeepsTheChainOpen()
+		{
+			var harness = HoverMenuHarness.Show(
+				menu =>
+				{
+					menu.CreateMenuItem("Rename");
+					menu.CreateMenuItem("Hide");
+					menu.CreateSubMenu(
+						"Modify",
+						menu.Theme,
+						subMenu =>
+						{
+							subMenu.CreateMenuItem("Plain");
+							subMenu.CreateSubMenu(
+								"Transform",
+								subMenu.Theme,
+								leaf =>
+								{
+									leaf.CreateMenuItem("Translate the selection far along the axis");
+									leaf.CreateMenuItem("Rotate the selection far about the axis");
+									leaf.CreateMenuItem("Scale the selection far along the axis");
+								});
+						});
+					menu.CreateMenuItem("Cut");
+					menu.CreateMenuItem("Copy");
+					menu.CreateMenuItem("Paste");
+				},
+				anchorPosition: new Vector2(250, 370));
+
+			var modifyButton = harness.Menu.Children.OfType<PopupMenu.SubMenuItemButton>().First();
+
+			harness.MoveTo(harness.CenterOf("Modify Menu Item"));
+			harness.PumpIdle();
+
+			var modifyMenu = modifyButton.SubMenu;
+			await Assert.That(modifyMenu).IsNotNull();
+
+			var transformButton = modifyMenu.Descendants<PopupMenu.SubMenuItemButton>()
+				.First(row => row.Name == "Transform Menu Item");
+
+			harness.MoveTo(harness.CenterOf("Transform Menu Item"));
+			harness.PumpIdle();
+
+			var transformMenu = transformButton.SubMenu;
+			await Assert.That(transformMenu).IsNotNull();
+
+			// The overlap is the whole scenario - without it this is an ordinary rightward open and the bug
+			// cannot happen, so pin the layout rather than assume it
+			var transformRowBounds = harness.BoundsOf("Transform Menu Item");
+			var transformMenuBounds = transformMenu.TransformToScreenSpace(transformMenu.LocalBounds);
+			var rootBounds = harness.Menu.TransformToScreenSpace(harness.Menu.LocalBounds);
+
+			await Assert.That(transformMenuBounds.Right).IsLessThanOrEqualTo(transformRowBounds.Left + 1)
+				.Because($"the sub menu did not fit to the right, so it opened leftward ({transformMenuBounds} vs row {transformRowBounds})");
+			// IntersectWithRectangle clips the receiver, so ask a copy - otherwise the failure message would
+			// print the clipped overlap in place of the sub menu bounds it claims to be showing
+			var overlapWithRoot = transformMenuBounds;
+
+			await Assert.That(overlapWithRoot.IntersectWithRectangle(rootBounds)).IsTrue()
+				.Because($"opening leftward puts it over the root menu ({transformMenuBounds} vs root {rootBounds})");
+
+			var target = harness.CenterOf("Rotate the selection far about the axis Menu Item");
+			await Assert.That(rootBounds.Contains(target)).IsTrue()
+				.Because($"the row moved onto has to be one lying over the root menu ({target} in {rootBounds})");
+
+			harness.MoveAlong(harness.CenterOf("Transform Menu Item"), target);
+
+			await Assert.That(harness.Menu.HasBeenClosed).IsFalse();
+			await Assert.That(modifyMenu.HasBeenClosed).IsFalse();
+			await Assert.That(transformMenu.HasBeenClosed).IsFalse();
+			await Assert.That(harness.HighlightedName).IsEqualTo("Rotate the selection far about the axis Menu Item")
+				.Because("the obscured root row under the sub menu is not what the pointer is on");
+		}
+
+		/// <summary>
 		/// A window with an anchor and a <see cref="PopupMenu"/> opened over it through the same
 		/// <c>ShowMenu</c> path every right click menu takes, plus the mouse pushing helpers.
 		/// </summary>

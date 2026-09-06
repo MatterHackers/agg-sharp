@@ -676,6 +676,116 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// A drag through a third level sub menu that had to open leftward, so it lies over the root menu.
+		/// The row the pointer is on is the sub menu's, not the root row hidden behind it.
+		/// </summary>
+		/// <remarks>
+		/// The drag half of <see cref="PopupMenuHoverTests"/>'s overlap case. It has to be driven through a
+		/// <see cref="MenuBarWidget"/> because that is the only public way into the forwarded drag: agg-sharp
+		/// routes moves after a press to the widget that took the press, so the bar forwards them into the
+		/// chain, and both the move and the release resolve the row from a screen position rather than from
+		/// mouse routing. That resolution walked the chain outermost first, so where two menus overlapped it
+		/// answered with the one drawn behind.
+		/// </remarks>
+		[Test]
+		public async Task DraggingIntoASubMenuThatOverlapsTheRootMenuUsesTheSubMenuRow()
+		{
+			var clicks = new List<string>();
+
+			MenuItemModel Item(string text)
+			{
+				return new MenuItemModel { Text = text, Action = () => clicks.Add(text) };
+			}
+
+			const string TargetText = "Rotate the selection about X";
+
+			var harness = MenuBarHarness.Show(extraMenu: new MenuItemModel
+			{
+				Text = "Object",
+				SubMenuItems = () => new List<MenuItemModel>
+				{
+					Item("Rename"),
+					Item("Hide"),
+					new MenuItemModel
+					{
+						Text = "Modify",
+						SubMenuItems = () => new List<MenuItemModel>
+						{
+							Item("Plain"),
+							new MenuItemModel
+							{
+								Text = "Transform",
+								SubMenuItems = () => new List<MenuItemModel>
+								{
+									Item("Translate the selection along X"),
+									Item(TargetText),
+									Item("Scale the selection along X"),
+								},
+							},
+						},
+					},
+					Item("Cut"),
+					Item("Copy"),
+					Item("Paste"),
+				},
+			});
+
+			harness.Press(harness.CenterOfTitle("Object"));
+			harness.PumpIdle();
+
+			var rootMenu = harness.OpenMenus.Single();
+
+			harness.DragTo(harness.CenterOfRow("Modify Menu Item"));
+			harness.PumpIdle();
+
+			var modifyMenu = harness.SubMenuOf("Modify Menu Item");
+			await Assert.That(modifyMenu).IsNotNull();
+
+			harness.DragTo(harness.CenterOfRow("Transform Menu Item"));
+			harness.PumpIdle();
+
+			var transformMenu = harness.SubMenuOf("Transform Menu Item");
+			await Assert.That(transformMenu).IsNotNull();
+
+			// The overlap is the whole scenario - pin the layout rather than assume it
+			var transformRowBounds = harness.BoundsOfRow("Transform Menu Item");
+			var transformMenuBounds = transformMenu.TransformToScreenSpace(transformMenu.LocalBounds);
+			var rootBounds = rootMenu.TransformToScreenSpace(rootMenu.LocalBounds);
+
+			await Assert.That(transformMenuBounds.Right).IsLessThanOrEqualTo(transformRowBounds.Left + 1)
+				.Because($"the sub menu did not fit to the right, so it opened leftward ({transformMenuBounds} vs row {transformRowBounds})");
+
+			// IntersectWithRectangle clips the receiver, so ask a copy
+			var overlapWithRoot = transformMenuBounds;
+
+			await Assert.That(overlapWithRoot.IntersectWithRectangle(rootBounds)).IsTrue()
+				.Because($"opening leftward puts it over the root menu ({transformMenuBounds} vs root {rootBounds})");
+
+			var targetName = $"{TargetText} Menu Item";
+			var targetPoint = harness.CenterOfRow(targetName);
+
+			await Assert.That(rootBounds.Contains(targetPoint)).IsTrue()
+				.Because($"the row dragged onto has to be one lying over the root menu ({targetPoint} in {rootBounds})");
+
+			harness.DragTo(targetPoint);
+			harness.PumpIdle();
+
+			await Assert.That(rootMenu.HasBeenClosed).IsFalse();
+			await Assert.That(modifyMenu.HasBeenClosed).IsFalse();
+			await Assert.That(transformMenu.HasBeenClosed).IsFalse();
+			await Assert.That(harness.HighlightedName()).IsEqualTo(targetName)
+				.Because("the obscured root row under the sub menu is not what the drag is on");
+
+			harness.Release(targetPoint);
+			harness.PumpIdle();
+
+			await Assert.That(clicks.Count(text => text == TargetText)).IsEqualTo(1)
+				.Because("the release chooses the sub menu row the pointer is over");
+			await Assert.That(clicks.Count(text => text == "Cut")).IsEqualTo(0)
+				.Because("the root row hidden behind the sub menu must not be the one activated");
+		}
+
+		/// <summary>
 		/// A window hosting a <see cref="MenuBarWidget"/> built from a two menu model, with mouse events
 		/// pushed through the window the way the platform would deliver them.
 		/// </summary>
@@ -810,6 +920,20 @@ namespace MatterHackers.Agg.UI.Tests
 				var row = Find(rowName);
 
 				return row.TransformToScreenSpace(row.LocalBounds).Center;
+			}
+
+			/// <summary>The laid out rectangle of a popup row, in window space.</summary>
+			public RectangleDouble BoundsOfRow(string rowName)
+			{
+				var row = Find(rowName);
+
+				return row.TransformToScreenSpace(row.LocalBounds);
+			}
+
+			/// <summary>The name of the row currently highlighted anywhere in the open chain, or null.</summary>
+			public string HighlightedName()
+			{
+				return Window.Descendants<PopupMenu.MenuItem>().FirstOrDefault(item => item.Focused)?.Name;
 			}
 
 			/// <summary>The sub menu the named row currently has up, or null when it has none.</summary>
