@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
@@ -635,6 +635,61 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			await Assert.That(numberEdit.Value == 0).IsTrue();
 			SendKey(Keys.A, 'A', container);
 			await Assert.That(numberEdit.Value == 0).IsTrue();
+
+			container.Close();
+		}
+
+		/// <summary>
+		/// A number edit given a <see cref="InternalNumberEdit.TextValueParser"/> is letting its owner spell
+		/// values as something other than a plain number - a unit written on the number, say - so the letters
+		/// that spelling needs have to be typeable, and the parser's reading is the value the field commits.
+		/// </summary>
+		[Test]
+		public async Task NumEditWithTextParserAcceptsLettersAndCommitsTheParsedValue()
+		{
+			var container = new GuiWidget
+			{
+				DoubleBuffer = true,
+				LocalBounds = new RectangleDouble(0, 0, 200, 200)
+			};
+			var numberEdit = new NumberEdit(0, 0, 0, 12, 200, 16, true, true);
+			container.AddChild(numberEdit);
+
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
+
+			SendKey(Keys.Back, ' ', container);
+			SendKey(Keys.Delete, ' ', container);
+
+			// with no parser set there is nothing that can read a letter, so the field holds no value
+			SendKey(Keys.D2, '2', container);
+			SendKey(Keys.I, 'i', container);
+			await Assert.That(numberEdit.Text).IsEqualTo("2i");
+			await Assert.That(numberEdit.Value).IsEqualTo(0);
+			await Assert.That(numberEdit.InternalNumberEdit.LastParsedText).IsNull();
+
+			// agg knows nothing about units - to this field "in" simply means "times ten"
+			numberEdit.InternalNumberEdit.TextValueParser = text => text.EndsWith("in")
+				&& double.TryParse(text.Substring(0, text.Length - 2), out var number) ? number * 10 : (double?)null;
+
+			SendKey(Keys.N, 'n', container);
+			await Assert.That(numberEdit.Text).IsEqualTo("2in");
+			await Assert.That(numberEdit.Value).IsEqualTo(20);
+			await Assert.That(numberEdit.InternalNumberEdit.LastParsedText).IsEqualTo("2in");
+
+			// a digit typed beside the letters is kept too - with a parser in play it is the judge of
+			// what reads, and "12in" is only unreadable to a plain numeric parse
+			numberEdit.CharIndexToInsertBefore = 0;
+			SendKey(Keys.D1, '1', container);
+			await Assert.That(numberEdit.Text).IsEqualTo("12in");
+			await Assert.That(numberEdit.Value).IsEqualTo(120);
+
+			// Committing writes the parsed value back as a plain number, and the entry it came from stays
+			// readable - that text is the only exact record of what the user asked for once the box has
+			// rounded the number it shows.
+			numberEdit.InternalNumberEdit.OnEditComplete(EventArgs.Empty);
+			await Assert.That(numberEdit.Text).IsEqualTo("120");
+			await Assert.That(numberEdit.InternalNumberEdit.LastParsedText).IsEqualTo("12in");
 
 			container.Close();
 		}

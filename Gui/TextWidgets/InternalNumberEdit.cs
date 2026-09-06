@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -96,6 +97,34 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Reads the text as a number when a plain numeric parse will not do - text carrying a unit, say.
+		/// Returning null means "not mine", and the field falls back to its ordinary numeric parse.
+		/// </summary>
+		/// <remarks>
+		/// Setting a parser also lets letters and spaces be typed into the field, because whatever spelling
+		/// the parser understands has to be typeable before it can ever be parsed. Nothing here knows what
+		/// the letters mean - that is entirely the parser's business.
+		/// </remarks>
+		public Func<string, double?> TextValueParser { get; set; }
+
+		/// <summary>
+		/// The text <see cref="TextValueParser"/> last read a value out of, or null when the value last came
+		/// from a plain number. Committing rewrites the text as the number it parsed to, rounded to
+		/// <see cref="MaxDecimalsPlaces"/>, so for a caller that needs the user's exact entry back - "10mm"
+		/// shown as 0.394 inches - this is the only record of it that survives.
+		/// </summary>
+		public string LastParsedText { get; private set; }
+
+		/// <summary>
+		/// Forgets <see cref="LastParsedText"/>. An owner that writes a value into the field itself calls
+		/// this, so the user's earlier entry is never read back as a description of the new value.
+		/// </summary>
+		public void ClearLastParsedText()
+		{
+			LastParsedText = null;
+		}
+
 		public double MinValue
 		{
 			get
@@ -161,6 +190,18 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
+				// every read re-decides where the value came from, so LastParsedText can never go stale
+				LastParsedText = null;
+				if (TextValueParser != null)
+				{
+					var parsed = TextValueParser(Text);
+					if (parsed != null)
+					{
+						LastParsedText = Text;
+						return parsed.Value;
+					}
+				}
+
 				double errorReturn = Math.Max(minValue, Math.Min(0, maxValue));
 				if (Text == "" || Text == "." || Text == "-" || Text == "-.")
 				{
@@ -260,7 +301,8 @@ namespace MatterHackers.Agg.UI
 
 			if (!keyPressEvent.Handled)
 			{
-				if (allowedChars.Contains(keyPressEvent.KeyChar))
+				if (allowedChars.Contains(keyPressEvent.KeyChar)
+					|| (TextValueParser != null && (char.IsLetter(keyPressEvent.KeyChar) || keyPressEvent.KeyChar == ' ')))
 				{
 					bool hadSelection = Selecting;
 
@@ -282,7 +324,11 @@ namespace MatterHackers.Agg.UI
 						return;
 					}
 
-					if (!double.TryParse(Text, out number))
+					// Text on its way to something only the parser can read - "2i" before "2in" - is not a
+					// number and is not parsable yet either, so there is nothing to check per keystroke.
+					// With a parser in play the commit is where an unreadable entry gets sorted out.
+					if (!double.TryParse(Text, out number)
+						&& !(TextValueParser != null && Text.Any(char.IsLetter)))
 					{
 						if (hadSelection)
 						{
