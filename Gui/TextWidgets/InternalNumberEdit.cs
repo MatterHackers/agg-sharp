@@ -290,58 +290,93 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnEditComplete(EventArgs e)
 		{
-			Value = Value;
+			// Reading the value decides where it came from, and writing it back rewrites the text - which
+			// sends any TextChanged listener through the getter again, clearing LastParsedText out from
+			// under the commit. Hold it across the write so the entry the user actually typed is still
+			// readable to whoever handles EditComplete.
+			var committedValue = Value;
+			var committedParsedText = LastParsedText;
+			Value = committedValue;
+			LastParsedText = committedParsedText;
+
 			base.OnEditComplete(e);
 		}
 
 		public override void OnKeyPress(KeyPressEventArgs keyPressEvent)
 		{
-			// this must be called first to ensure we get the correct Handled state
-			base.OnKeyPress(keyPressEvent);
-
-			if (!keyPressEvent.Handled)
+			// A keystroke has to be judged before the base class types it. Letting it land and then undoing
+			// cannot work: the undo buffer records the state *after* each edit, so undoing the character
+			// that just landed simply restores the text that character wrote.
+			if (!keyPressEvent.Handled
+				&& !ReadOnly
+				&& keyPressEvent.KeyChar >= 32
+				&& !CanType(keyPressEvent.KeyChar))
 			{
-				if (allowedChars.Contains(keyPressEvent.KeyChar)
-					|| (TextValueParser != null && (char.IsLetter(keyPressEvent.KeyChar) || keyPressEvent.KeyChar == ' ')))
-				{
-					bool hadSelection = Selecting;
-
-					int prevCharIndexToInsertBefore = CharIndexToInsertBefore;
-					// let's check and see if the new string is a valid number
-					double number;
-					if (Text == "." && allowDecimals)
-					{
-						return;
-					}
-
-					if (Text == "-" && allowNegatives)
-					{
-						return;
-					}
-
-					if (Text == "-." && allowDecimals && allowNegatives)
-					{
-						return;
-					}
-
-					// Text on its way to something only the parser can read - "2i" before "2in" - is not a
-					// number and is not parsable yet either, so there is nothing to check per keystroke.
-					// With a parser in play the commit is where an unreadable entry gets sorted out.
-					if (!double.TryParse(Text, out number)
-						&& !(TextValueParser != null && Text.Any(char.IsLetter)))
-					{
-						if (hadSelection)
-						{
-							// we have to undo twice, once for the delete selection and once for the bad character.
-							Undo();
-						}
-
-						Undo();
-						CharIndexToInsertBefore = prevCharIndexToInsertBefore;
-						FixBarPosition(DesiredXPositionOnLine.Set);
-					}
-				}
+				// the field considered this key and refused it - nothing above should act on it either
+				keyPressEvent.Handled = true;
+				return;
 			}
+
+			base.OnKeyPress(keyPressEvent);
+		}
+
+		/// <summary>Whether typing <paramref name="keyChar"/> would leave the field holding something it can read.</summary>
+		private bool CanType(char keyChar)
+		{
+			// letters and spaces are only typeable because a parser is there to read them
+			if (!allowedChars.Contains(keyChar)
+				&& !(TextValueParser != null && (char.IsLetter(keyChar) || keyChar == ' ')))
+			{
+				return false;
+			}
+
+			var typed = TextAfterTyping(keyChar);
+
+			// the starts of a number, on their way to being one
+			if (typed == "." && allowDecimals)
+			{
+				return true;
+			}
+
+			if (typed == "-" && allowNegatives)
+			{
+				return true;
+			}
+
+			if (typed == "-." && allowDecimals && allowNegatives)
+			{
+				return true;
+			}
+
+			// Text on its way to something only the parser can read - "2i" before "2in" - is not a number
+			// and is not parsable yet either, so there is nothing to check per keystroke. With a parser in
+			// play the commit is where an unreadable entry gets sorted out.
+			if (TextValueParser != null && typed.Any(char.IsLetter))
+			{
+				return true;
+			}
+
+			return double.TryParse(typed, out _);
+		}
+
+		/// <summary>
+		/// The text this keystroke would leave behind, mirroring the insert the base class is about to do:
+		/// a selection is replaced, otherwise the character lands at the cursor.
+		/// </summary>
+		private string TextAfterTyping(char keyChar)
+		{
+			var text = GetActualText() ?? "";
+			var insertAt = Math.Max(0, Math.Min(CharIndexToInsertBefore, text.Length));
+
+			if (Selecting)
+			{
+				var first = Math.Max(0, Math.Min(Math.Min(CharIndexToInsertBefore, SelectionIndexToStartBefore), text.Length));
+				var last = Math.Max(first, Math.Min(Math.Max(CharIndexToInsertBefore, SelectionIndexToStartBefore), text.Length));
+				text = text.Remove(first, last - first);
+				insertAt = first;
+			}
+
+			return text.Insert(insertAt, keyChar.ToString());
 		}
 	}
 }

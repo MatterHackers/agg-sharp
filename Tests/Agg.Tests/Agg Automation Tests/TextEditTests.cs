@@ -661,17 +661,18 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			SendKey(Keys.Back, ' ', container);
 			SendKey(Keys.Delete, ' ', container);
 
-			// with no parser set there is nothing that can read a letter, so the field holds no value
+			// with no parser set there is nothing that can read a letter, so the field refuses to take one
 			SendKey(Keys.D2, '2', container);
 			SendKey(Keys.I, 'i', container);
-			await Assert.That(numberEdit.Text).IsEqualTo("2i");
-			await Assert.That(numberEdit.Value).IsEqualTo(0);
+			await Assert.That(numberEdit.Text).IsEqualTo("2");
+			await Assert.That(numberEdit.Value).IsEqualTo(2);
 			await Assert.That(numberEdit.InternalNumberEdit.LastParsedText).IsNull();
 
 			// agg knows nothing about units - to this field "in" simply means "times ten"
 			numberEdit.InternalNumberEdit.TextValueParser = text => text.EndsWith("in")
 				&& double.TryParse(text.Substring(0, text.Length - 2), out var number) ? number * 10 : (double?)null;
 
+			SendKey(Keys.I, 'i', container);
 			SendKey(Keys.N, 'n', container);
 			await Assert.That(numberEdit.Text).IsEqualTo("2in");
 			await Assert.That(numberEdit.Value).IsEqualTo(20);
@@ -690,6 +691,55 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			numberEdit.InternalNumberEdit.OnEditComplete(EventArgs.Empty);
 			await Assert.That(numberEdit.Text).IsEqualTo("120");
 			await Assert.That(numberEdit.InternalNumberEdit.LastParsedText).IsEqualTo("12in");
+
+			container.Close();
+		}
+
+		/// <summary>
+		/// A keystroke that would leave the field holding something it cannot read is refused outright, and
+		/// the text is left exactly as it was.
+		/// </summary>
+		/// <remarks>
+		/// The refusal used to be spelled as an Undo after the fact, which could not work: the undo buffer
+		/// records the state *after* each edit, so undoing the keystroke that had just landed restored the
+		/// very text that keystroke wrote. Every rejected character stayed in the box.
+		/// </remarks>
+		[Test]
+		public async Task NumEditRefusesKeysItCannotRead()
+		{
+			var container = new GuiWidget
+			{
+				DoubleBuffer = true,
+				LocalBounds = new RectangleDouble(0, 0, 200, 200)
+			};
+			var numberEdit = new NumberEdit(0, 0, 0, 12, 200, 16, true, true);
+			container.AddChild(numberEdit);
+
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
+
+			SendKey(Keys.Back, ' ', container);
+			SendKey(Keys.Delete, ' ', container);
+
+			// a minus part way through a number is not a number, so it never lands
+			SendKey(Keys.D1, '1', container);
+			SendKey(Keys.OemMinus, '-', container);
+			SendKey(Keys.D2, '2', container);
+			await Assert.That(numberEdit.Text).IsEqualTo("12");
+			await Assert.That(numberEdit.Value).IsEqualTo(12);
+
+			// nor is a second decimal point
+			SendKey(Keys.OemPeriod, '.', container);
+			SendKey(Keys.D2, '2', container);
+			SendKey(Keys.OemPeriod, '.', container);
+			SendKey(Keys.D3, '3', container);
+			await Assert.That(numberEdit.Text).IsEqualTo("12.23");
+			await Assert.That(numberEdit.Value).IsEqualTo(12.23);
+
+			// and with no parser to read them, letters are not typeable at all
+			SendKey(Keys.A, 'a', container);
+			await Assert.That(numberEdit.Text).IsEqualTo("12.23");
+			await Assert.That(numberEdit.Value).IsEqualTo(12.23);
 
 			container.Close();
 		}
