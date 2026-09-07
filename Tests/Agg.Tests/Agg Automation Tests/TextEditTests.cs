@@ -744,6 +744,56 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			container.Close();
 		}
 
+		/// <summary>
+		/// A number edit whose owner also takes expressions lets text that begins with '=' be typed, so the
+		/// owner's TextChanged handler gets a chance to take the entry over. A plain number field still
+		/// refuses '=' outright - it is not a number and nothing there could ever read it.
+		/// </summary>
+		[Test]
+		public async Task NumEditTakesLeadingEqualsOnlyWhenExpressionEntryIsAllowed()
+		{
+			var container = new GuiWidget
+			{
+				DoubleBuffer = true,
+				LocalBounds = new RectangleDouble(0, 0, 200, 200)
+			};
+			var numberEdit = new NumberEdit(0, 0, 0, 12, 200, 16, true, true);
+			container.AddChild(numberEdit);
+
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
+
+			SendKey(Keys.Back, ' ', container);
+			SendKey(Keys.Delete, ' ', container);
+			await Assert.That(numberEdit.Text).IsEqualTo("");
+
+			// by default the field considers '=' and refuses it, and says so, so nothing above acts on it
+			var refused = new KeyPressEventArgs('=');
+			numberEdit.InternalNumberEdit.OnKeyPress(refused);
+			await Assert.That(numberEdit.Text).IsEqualTo("");
+			await Assert.That(refused.Handled).IsTrue();
+
+			numberEdit.InternalNumberEdit.AllowExpressionEntry = true;
+
+			SendKey(Keys.Oemplus, '=', container);
+			await Assert.That(numberEdit.Text).IsEqualTo("=");
+
+			// and the rest of the expression follows, unreadable as a number though it is
+			SendKey(Keys.D1, '1', container);
+			SendKey(Keys.D0, '0', container);
+			SendKey(Keys.Multiply, '*', container);
+			SendKey(Keys.D2, '2', container);
+			await Assert.That(numberEdit.Text).IsEqualTo("=10*2");
+
+			// only a leading '=' hands the entry to the owner - part way through a number it is still refused
+			numberEdit.Text = "12";
+			numberEdit.CharIndexToInsertBefore = 2;
+			SendKey(Keys.Oemplus, '=', container);
+			await Assert.That(numberEdit.Text).IsEqualTo("12");
+
+			container.Close();
+		}
+
 #if __ANDROID__
 		[Test]
 #else

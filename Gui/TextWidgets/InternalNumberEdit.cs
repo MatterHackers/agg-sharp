@@ -117,6 +117,14 @@ namespace MatterHackers.Agg.UI
 		public string LastParsedText { get; private set; }
 
 		/// <summary>
+		/// When true, text beginning with "=" may be typed into the field even though no part of it is a
+		/// number. This is for an owner that also accepts expressions: it is expected to watch TextChanged,
+		/// see the leading "=" and take the entry over. The number edit itself never parses an expression -
+		/// left here, "=10*2" reads as the field's error value like any other unreadable text.
+		/// </summary>
+		public bool AllowExpressionEntry { get; set; }
+
+		/// <summary>
 		/// Forgets <see cref="LastParsedText"/>. An owner that writes a value into the field itself calls
 		/// this, so the user's earlier entry is never read back as a description of the new value.
 		/// </summary>
@@ -323,6 +331,13 @@ namespace MatterHackers.Agg.UI
 		/// <summary>Whether typing <paramref name="keyChar"/> would leave the field holding something it can read.</summary>
 		private bool CanType(char keyChar)
 		{
+			// An entry the owner will take over as an expression is judged whole rather than character by
+			// character - nothing in "=10*2" is a number, and it is not this field's to read anyway.
+			if (AllowExpressionEntry && TextAfterTyping(keyChar).StartsWith("="))
+			{
+				return true;
+			}
+
 			// letters and spaces are only typeable because a parser is there to read them
 			if (!allowedChars.Contains(keyChar)
 				&& !(TextValueParser != null && (char.IsLetter(keyChar) || keyChar == ' ')))
