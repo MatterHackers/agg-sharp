@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TUnit.Assertions;
@@ -58,6 +59,86 @@ namespace MatterHackers.Agg.UI.Tests
 			public void Do() => DoCount++;
 
 			public void Undo() => UndoCount++;
+		}
+
+		private sealed class CallbackCommand : IUndoRedoCommand
+		{
+			public string Name => "retry";
+			internal Action Apply = () => { };
+			public void Do() => Apply();
+			public void Undo() => Apply();
+		}
+
+		[Test]
+		[Arguments(false)]
+		[Arguments(true)]
+		public async Task RejectedReplayPreservesHistoryAndCanBeRetried(bool redo)
+		{
+			var buffer = new UndoBuffer();
+			var command = new CallbackCommand();
+			buffer.Add(new NamedCommand("older"));
+			buffer.Add(command);
+			if (redo) buffer.Undo();
+			var undo = buffer.UndoCount; var redoCount = buffer.RedoCount;
+			var hash = buffer.GetLongHashCode(); var notifications = 0;
+			buffer.Changed += (_, _) => notifications++;
+			command.Apply = () => throw new InvalidOperationException("Not ready");
+			var rejected = false;
+			try { if (redo) buffer.Redo(); else buffer.Undo(); }
+			catch (InvalidOperationException) { rejected = true; }
+			await Assert.That(rejected).IsTrue();
+			await Assert.That(buffer.UndoCount).IsEqualTo(undo);
+			await Assert.That(buffer.RedoCount).IsEqualTo(redoCount);
+			await Assert.That(buffer.GetLongHashCode()).IsEqualTo(hash);
+			await Assert.That(notifications).IsEqualTo(0);
+			var applied = 0;
+			command.Apply = () => applied++;
+			if (redo) buffer.Redo(); else buffer.Undo();
+			await Assert.That(applied).IsEqualTo(1);
+			await Assert.That(buffer.UndoCount).IsEqualTo(undo + (redo ? 1 : -1));
+			await Assert.That(buffer.RedoCount).IsEqualTo(redoCount + (redo ? -1 : 1));
+			await Assert.That(notifications).IsEqualTo(1);
+			await Assert.That(DrainUndoNames(buffer)).IsEqualTo(redo ? "retry,older" : "older");
+		}
+
+		[Test]
+		[Arguments(false)]
+		[Arguments(true)]
+		public async Task ReplayRejectsReentrantHistoryMutationWithoutLosingEitherStack(bool nestedUndo)
+		{
+			var buffer = new UndoBuffer();
+			var command = new CallbackCommand();
+			buffer.Add(new NamedCommand("older")); buffer.Add(command);
+			var state = buffer.CaptureState();
+			command.Apply = () => { if (nestedUndo) buffer.Undo(); else buffer.Add(new NamedCommand("intruder")); };
+			var rejected = false;
+			try { buffer.Undo(); } catch (InvalidOperationException) { rejected = true; }
+			await Assert.That(rejected).IsTrue();
+			await Assert.That(buffer.UndoCount).IsEqualTo(2);
+			await Assert.That(buffer.RedoCount).IsEqualTo(0);
+			await Assert.That(buffer.UndoName).IsEqualTo("retry");
+			command.Apply = () => { };
+			buffer.Undo();
+			await Assert.That(buffer.UndoName).IsEqualTo("older");
+			await Assert.That(buffer.RedoName).IsEqualTo("retry");
+		}
+
+		[Test]
+		public async Task PartialReplayNotifiesCompletedTransfersBeforeLaterRejection()
+		{
+			var buffer = new UndoBuffer();
+			var failing = new CallbackCommand { Apply = () => throw new InvalidOperationException("Not ready") };
+			buffer.Add(failing); buffer.Add(new NamedCommand("first"));
+			var notifications = 0;
+			buffer.Changed += (_, _) => { notifications++; buffer.MaxUndos = 10; };
+			try { buffer.Undo(2); } catch (InvalidOperationException) { }
+			await Assert.That(buffer.UndoName).IsEqualTo("retry");
+			await Assert.That(buffer.RedoName).IsEqualTo("first");
+			await Assert.That(notifications).IsEqualTo(1);
+			failing.Apply = () => { };
+			buffer.Undo();
+			await Assert.That(buffer.RedoName).IsEqualTo("retry");
+			await Assert.That(notifications).IsEqualTo(2);
 		}
 
 		// Returned as a single top-to-bottom string so the assertion is unambiguously order sensitive.

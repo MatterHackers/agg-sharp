@@ -52,6 +52,13 @@ namespace MatterHackers.Agg.UI
 
 		private object locker = new object();
 
+		private bool replaying;
+
+		private void EnsureHistoryCanChange()
+		{
+			if (replaying) throw new InvalidOperationException("History cannot change while an undo or redo command is executing.");
+		}
+
 		public UndoBuffer()
 		{
 		}
@@ -107,7 +114,14 @@ namespace MatterHackers.Agg.UI
 		public int MaxUndos
 		{
 			get => undoBuffer.Limit;
-			set => undoBuffer.Limit = value;
+			set
+			{
+				lock (locker)
+				{
+					EnsureHistoryCanChange();
+					undoBuffer.Limit = value;
+				}
+			}
 		}
         public string UndoName => undoBuffer.Count > 0 ? undoBuffer.Peek()?.Name : "None";
 
@@ -117,6 +131,7 @@ namespace MatterHackers.Agg.UI
 		{
 			lock (locker)
 			{
+				EnsureHistoryCanChange();
 				undoBuffer.Push(command);
 				redoBuffer.Clear();
 				Changed?.Invoke(this, null);
@@ -127,6 +142,7 @@ namespace MatterHackers.Agg.UI
 		{
 			lock (locker)
 			{
+				EnsureHistoryCanChange();
 				undoBuffer.Push(command);
 				redoBuffer.Clear();
 				Changed?.Invoke(this, null);
@@ -135,37 +151,42 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public void Redo(int redoCount = 1)
-		{
-			lock (locker)
-			{
-				for (int i = 1; i <= redoCount; i++)
-				{
-					if (redoBuffer.Count != 0)
-					{
-						IUndoRedoCommand command = redoBuffer.Pop();
-						command.Do();
-						undoBuffer.Push(command);
-					}
-				}
-				Changed?.Invoke(this, null);
-			}
-		}
+		/// <summary>Replays commands which stay on the redo stack if they reject execution.</summary>
+		public void Redo(int redoCount = 1) => Replay(redoCount, true);
 
-		public void Undo(int undoCount = 1)
+		/// <summary>Undoes commands which stay on the undo stack if they reject execution.</summary>
+		public void Undo(int undoCount = 1) => Replay(undoCount, false);
+
+		private void Replay(int count, bool redo)
 		{
 			lock (locker)
 			{
-				for (int i = 1; i <= undoCount; i++)
+				EnsureHistoryCanChange();
+				replaying = true;
+				var moved = false;
+				var completed = false;
+				try
 				{
-					if (undoBuffer.Count != 0)
+					for (var i = 0; i < count; i++)
 					{
-						IUndoRedoCommand command = undoBuffer.Pop();
-						command.Undo();
-						redoBuffer.Push(command);
+						if ((redo ? redoBuffer.Count : undoBuffer.Count) == 0) break;
+						var command = redo ? redoBuffer.Peek() : undoBuffer.Peek();
+						// Commands may reject stale or temporarily busy input. Their history remains
+						// retryable; reentrant mutations cannot move a different command in its place.
+						if (redo) command.Do(); else command.Undo();
+						if (redo) { redoBuffer.Pop(); undoBuffer.Push(command); }
+						else { undoBuffer.Pop(); redoBuffer.Push(command); }
+						moved = true;
 					}
+					completed = true;
 				}
-				Changed?.Invoke(this, null);
+				finally
+				{
+					replaying = false;
+					// A later command can fail after earlier transfers succeeded. Report those,
+					// with normal subscriber behavior restored, even as the exception propagates.
+					if (moved || completed) Changed?.Invoke(this, null);
+				}
 			}
 		}
 
@@ -198,6 +219,7 @@ namespace MatterHackers.Agg.UI
 
 			lock (locker)
 			{
+				EnsureHistoryCanChange();
 				undoBuffer.Clear();
 				foreach (var command in state.UndoOldestFirst)
 				{
@@ -220,6 +242,7 @@ namespace MatterHackers.Agg.UI
 		{
 			lock (locker)
 			{
+				EnsureHistoryCanChange();
 				undoBuffer.Clear();
 				redoBuffer.Clear();
 				Changed?.Invoke(this, null);
