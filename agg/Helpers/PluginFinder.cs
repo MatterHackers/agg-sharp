@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2018, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -70,7 +70,14 @@ namespace MatterHackers.Agg
 			{
 				try
 				{
-					if (type == null || !type.IsClass || !type.IsPublic)
+					// IsVisible rather than IsPublic, which is false for every NESTED type however public it
+					// is declared - and a nested public class is an ordinary way to write a type that belongs
+					// to its owner (MatterCAD's TextObject3D_2.LetterObject is one). Skipping those left the
+					// IObject3D type map without an entry for them, so every letter in a saved design came
+					// back from the file as a plain Object3D carrying an unresolved type name. IsVisible is
+					// the whole-chain question - public, and nested only inside public types - which is
+					// exactly what "another assembly can name this type" means.
+					if (type == null || !type.IsClass || !type.IsVisible)
 					{
 						continue;
 					}
