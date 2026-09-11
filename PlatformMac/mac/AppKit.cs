@@ -87,6 +87,19 @@ namespace MatterHackers.Agg.Platform.Mac
 		public const ulong NSEventModifierFlagOption = 1 << 19;
 		public const ulong NSEventModifierFlagCommand = 1 << 20;
 
+		// NSDragOperation. What a dragging destination answers to say what it would do with the drop; None
+		// is what makes the cursor show the "no drop" badge.
+		public const ulong NSDragOperationNone = 0;
+		public const ulong NSDragOperationCopy = 1;
+
+		/// <summary>
+		/// The pasteboard type a Finder drag carries, and its pre-10.6 spelling. The modern one is a UTI whose
+		/// value is read per item as a "file:///..." URL string; the legacy one carries a plain array of POSIX
+		/// paths and is still what some applications put on the pasteboard, so both are registered.
+		/// </summary>
+		public const string NSPasteboardTypeFileURL = "public.file-url";
+		public const string NSFilenamesPboardType = "NSFilenamesPboardType";
+
 		// NSBitmapImageFileType
 		public const ulong NSBitmapImageFileTypePNG = 4;
 

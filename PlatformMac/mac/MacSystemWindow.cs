@@ -191,6 +191,13 @@ namespace MatterHackers.Agg.UI
 		private bool isInsidePaint;
 		private bool hasClosed;
 
+		/// <summary>
+		/// Whether the widget under the last drag hover said it would take the files. AppKit asks again in
+		/// -prepareForDragOperation:, by which point the answer cannot be recomputed without re-sending the
+		/// hover, so it is remembered from -draggingUpdated:.
+		/// </summary>
+		private bool dragHoverAccepted;
+
 		/// <summary>Set while an AppKit-initiated close is running, so the agg close does not re-enter it.</summary>
 		private bool platformAlreadyClosing;
 
@@ -1104,6 +1111,15 @@ namespace MatterHackers.Agg.UI
 
 			AddMethod(cls, "resetCursorRects", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, void>)&OnResetCursorRects, "v@:");
 
+			// NSDraggingDestination. A drop is the one input that does not arrive as an NSEvent: AppKit calls
+			// these on the view under the pointer, so without them a file dragged from Finder reached nothing.
+			// 'Q' is NSUInteger (the NSDragOperation answered back), 'c' is BOOL, '@' the id<NSDraggingInfo>.
+			AddMethod(cls, "draggingEntered:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, ulong>)&OnDraggingEntered, "Q@:@");
+			AddMethod(cls, "draggingUpdated:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, ulong>)&OnDraggingUpdated, "Q@:@");
+			AddMethod(cls, "draggingExited:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void>)&OnDraggingExited, "v@:@");
+			AddMethod(cls, "prepareForDragOperation:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, byte>)&OnPrepareForDragOperation, "c@:@");
+			AddMethod(cls, "performDragOperation:", (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr, byte>)&OnPerformDragOperation, "c@:@");
+
 			objc_registerClassPair(cls);
 			contentViewClass = cls;
 		}
@@ -1131,6 +1147,192 @@ namespace MatterHackers.Agg.UI
 			{
 				Console.Error.WriteLine($"MacSystemWindow.OnResetCursorRects threw {ex}");
 			}
+		}
+
+		[UnmanagedCallersOnly]
+		private static ulong OnDraggingEntered(IntPtr self, IntPtr cmd, IntPtr draggingInfo)
+			=> HoverDrag(self, draggingInfo);
+
+		[UnmanagedCallersOnly]
+		private static ulong OnDraggingUpdated(IntPtr self, IntPtr cmd, IntPtr draggingInfo)
+			=> HoverDrag(self, draggingInfo);
+
+		[UnmanagedCallersOnly]
+		private static void OnDraggingExited(IntPtr self, IntPtr cmd, IntPtr draggingInfo)
+		{
+			try
+			{
+				MacSystemWindow owner = DragTargetFor(self);
+				if (owner == null)
+				{
+					return;
+				}
+
+				owner.dragHoverAccepted = false;
+				FileDropDispatcher.Exit(owner.aggSystemWindow);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"MacSystemWindow.OnDraggingExited threw {ex}");
+			}
+		}
+
+		/// <summary>
+		/// Answers whether the drop may go ahead. AppKit only asks after an operation other than None was
+		/// returned from the hover, so this simply repeats what the hover decided.
+		/// </summary>
+		[UnmanagedCallersOnly]
+		private static byte OnPrepareForDragOperation(IntPtr self, IntPtr cmd, IntPtr draggingInfo)
+		{
+			try
+			{
+				return DragTargetFor(self)?.dragHoverAccepted == true ? YES : NO;
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"MacSystemWindow.OnPrepareForDragOperation threw {ex}");
+				return NO;
+			}
+		}
+
+		[UnmanagedCallersOnly]
+		private static byte OnPerformDragOperation(IntPtr self, IntPtr cmd, IntPtr draggingInfo)
+		{
+			try
+			{
+				MacSystemWindow owner = DragTargetFor(self);
+				if (owner == null)
+				{
+					return NO;
+				}
+
+				owner.dragHoverAccepted = false;
+
+				var paths = ReadDroppedPaths(Send_r(draggingInfo, Sel("draggingPasteboard")));
+				Vector2 position = owner.DragPositionInAggPixels(draggingInfo);
+
+				return FileDropDispatcher.Drop(owner.aggSystemWindow, paths, position.X, position.Y) ? YES : NO;
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"MacSystemWindow.OnPerformDragOperation threw {ex}");
+				return NO;
+			}
+		}
+
+		/// <summary>
+		/// The body behind both draggingEntered: and draggingUpdated: - AppKit distinguishes them only by
+		/// when they arrive, and agg has one answer for both: a move carrying the files, and Copy if anything
+		/// under the pointer said it would take them.
+		/// </summary>
+		private static ulong HoverDrag(IntPtr self, IntPtr draggingInfo)
+		{
+			try
+			{
+				MacSystemWindow owner = DragTargetFor(self);
+				if (owner == null)
+				{
+					return NSDragOperationNone;
+				}
+
+				var paths = ReadDroppedPaths(Send_r(draggingInfo, Sel("draggingPasteboard")));
+				Vector2 position = owner.DragPositionInAggPixels(draggingInfo);
+
+				owner.dragHoverAccepted = FileDropDispatcher.Hover(owner.aggSystemWindow, paths, position.X, position.Y);
+
+				return owner.dragHoverAccepted ? NSDragOperationCopy : NSDragOperationNone;
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"MacSystemWindow.HoverDrag threw {ex}");
+				return NSDragOperationNone;
+			}
+		}
+
+		/// <summary>
+		/// The window a dragging callback belongs to, or null when there is nothing that can take a drop -
+		/// a closed window, or a run with platform input turned off (parallel automation).
+		/// </summary>
+		private static MacSystemWindow DragTargetFor(IntPtr view)
+		{
+			MacSystemWindow owner;
+			lock (StaticInitLock)
+			{
+				ViewOwners.TryGetValue(view, out owner);
+			}
+
+			if (owner == null
+				|| owner.hasClosed
+				|| owner.aggSystemWindow == null
+				|| !IPlatformWindow.EnablePlatformWindowInput)
+			{
+				return null;
+			}
+
+			return owner;
+		}
+
+		/// <summary>
+		/// Reads the dropped files off a dragging pasteboard as POSIX paths.
+		/// </summary>
+		/// <remarks>
+		/// Each pasteboard item carries the modern type as a "file:///..." URL string, which is read rather
+		/// than -readObjectsForClasses:options: because that needs an options dictionary keyed on an AppKit
+		/// constant, and a string per item needs nothing but a selector. The legacy type is a plain array of
+		/// paths and is the fallback for anything that still writes only that.
+		/// </remarks>
+		private static List<string> ReadDroppedPaths(IntPtr pasteboard)
+		{
+			var urls = new List<string>();
+
+			if (pasteboard == IntPtr.Zero)
+			{
+				return urls;
+			}
+
+			IntPtr items = Send_r(pasteboard, Sel("pasteboardItems"));
+			if (items != IntPtr.Zero)
+			{
+				IntPtr fileUrlType = NSString(NSPasteboardTypeFileURL);
+				ulong count = Send_Q(items, Sel("count"));
+				for (ulong i = 0; i < count; i++)
+				{
+					IntPtr item = Send_r_Q(items, Sel("objectAtIndex:"), i);
+					IntPtr urlString = Send_r_r(item, Sel("stringForType:"), fileUrlType);
+					if (urlString != IntPtr.Zero)
+					{
+						urls.Add(FromNSString(urlString));
+					}
+				}
+			}
+
+			if (urls.Count == 0)
+			{
+				IntPtr legacyPaths = Send_r_r(pasteboard, Sel("propertyListForType:"), NSString(NSFilenamesPboardType));
+				if (legacyPaths != IntPtr.Zero)
+				{
+					ulong count = Send_Q(legacyPaths, Sel("count"));
+					for (ulong i = 0; i < count; i++)
+					{
+						urls.Add(FromNSString(Send_r_Q(legacyPaths, Sel("objectAtIndex:"), i)));
+					}
+				}
+			}
+
+			return FileDropDispatcher.PathsFromFileUrls(urls);
+		}
+
+		/// <summary>
+		/// Where a drag is, in agg's device pixels. Same conversion as <see cref="TryMakeMouseArgs"/> - into
+		/// the view, then times the backing scale, and no Y flip because the view is not flipped - but
+		/// -draggingLocation rather than an NSEvent, because a drag delivers no events.
+		/// </summary>
+		private Vector2 DragPositionInAggPixels(IntPtr draggingInfo)
+		{
+			CGPoint inWindow = Send_P(draggingInfo, Sel("draggingLocation"));
+			CGPoint inView = Send_P_P_r(this.view, Sel("convertPoint:fromView:"), inWindow, IntPtr.Zero);
+
+			return new Vector2(inView.X * this.backingScale, inView.Y * this.backingScale);
 		}
 
 		private static void AddMethod(IntPtr cls, string selectorName, IntPtr implementation, string typeEncoding)
@@ -1319,6 +1521,16 @@ namespace MatterHackers.Agg.UI
 			{
 				ViewOwners[this.view] = this;
 			}
+
+			// Without this AppKit never calls the NSDraggingDestination methods at all, however many of them
+			// the class implements - registering the types is what makes the view a drop target.
+			Send_v_r(
+				this.view,
+				Sel("registerForDraggedTypes:"),
+				Send_r_r(
+					Send_r_r(Class("NSArray"), Sel("arrayWithObject:"), NSString(NSPasteboardTypeFileURL)),
+					Sel("arrayByAddingObject:"),
+					NSString(NSFilenamesPboardType)));
 
 			this.metalLayer = Retain(Send_r(Class("CAMetalLayer"), Sel("layer")));
 			if (this.metalLayer == IntPtr.Zero)
