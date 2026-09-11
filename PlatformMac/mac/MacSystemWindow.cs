@@ -1168,6 +1168,7 @@ namespace MatterHackers.Agg.UI
 					return;
 				}
 
+				DragLog("exited");
 				owner.dragHoverAccepted = false;
 				FileDropDispatcher.Exit(owner.aggSystemWindow);
 			}
@@ -1186,7 +1187,9 @@ namespace MatterHackers.Agg.UI
 		{
 			try
 			{
-				return DragTargetFor(self)?.dragHoverAccepted == true ? YES : NO;
+				bool accepted = DragTargetFor(self)?.dragHoverAccepted == true;
+				DragLog($"prepare accepted={accepted}");
+				return accepted ? YES : NO;
 			}
 			catch (Exception ex)
 			{
@@ -1210,6 +1213,7 @@ namespace MatterHackers.Agg.UI
 
 				var paths = ReadDroppedPaths(Send_r(draggingInfo, Sel("draggingPasteboard")));
 				Vector2 position = owner.DragPositionInAggPixels(draggingInfo);
+				DragLog($"perform paths={paths.Count} first={(paths.Count > 0 ? paths[0] : "(none)")} at {position.X},{position.Y}");
 
 				return FileDropDispatcher.Drop(owner.aggSystemWindow, paths, position.X, position.Y) ? YES : NO;
 			}
@@ -1239,6 +1243,7 @@ namespace MatterHackers.Agg.UI
 				Vector2 position = owner.DragPositionInAggPixels(draggingInfo);
 
 				owner.dragHoverAccepted = FileDropDispatcher.Hover(owner.aggSystemWindow, paths, position.X, position.Y);
+				DragLog($"hover paths={paths.Count} first={(paths.Count > 0 ? paths[0] : "(none)")} at {position.X},{position.Y} accepted={owner.dragHoverAccepted}");
 
 				return owner.dragHoverAccepted ? NSDragOperationCopy : NSDragOperationNone;
 			}
@@ -1247,6 +1252,81 @@ namespace MatterHackers.Agg.UI
 				Console.Error.WriteLine($"MacSystemWindow.HoverDrag threw {ex}");
 				return NSDragOperationNone;
 			}
+		}
+
+		/// <summary>
+		/// Whether to trace the drag-and-drop callbacks to stderr (<c>AGG_DRAG_LOG=1</c>). A drop that goes
+		/// wrong looks identical from outside whether AppKit never called back at all or the answer was
+		/// NSDragOperationNone - in both the pointer simply carries no badge - so this says which happened,
+		/// and with what paths the pasteboard actually yielded.
+		/// </summary>
+		private static readonly bool DragLogEnabled = Environment.GetEnvironmentVariable("AGG_DRAG_LOG") == "1";
+
+		private static void DragLog(string message)
+		{
+			if (DragLogEnabled)
+			{
+				Console.Error.WriteLine("AGG_DRAG " + message);
+			}
+		}
+
+		/// <summary>
+		/// Writes what the window's view tree is, and which of those views accept a drop, to stderr under
+		/// <c>AGG_DRAG_LOG=1</c>. AppKit delivers a drag to the deepest <em>registered</em> view under the
+		/// pointer, so a drop that does nothing is either a view registered for the wrong types or an
+		/// unregistered view covering the one that is registered - both visible here.
+		/// </summary>
+		private static void LogDragRegistration(IntPtr window, IntPtr view)
+		{
+			if (!DragLogEnabled)
+			{
+				return;
+			}
+
+			IntPtr contentView = Send_r(window, Sel("contentView"));
+			DragLog($"window contentView is {ClassNameOf(contentView)} ({contentView:x}); agg view is {ClassNameOf(view)} ({view:x}); same={contentView == view}");
+			LogViewTree(contentView, 0);
+		}
+
+		private static void LogViewTree(IntPtr view, int depth)
+		{
+			if (view == IntPtr.Zero)
+			{
+				return;
+			}
+
+			string indent = new string(' ', depth * 2);
+			DragLog($"{indent}{ClassNameOf(view)} ({view:x}) types={DescribeStringArray(Send_r(view, Sel("registeredDraggedTypes")))}");
+
+			IntPtr subviews = Send_r(view, Sel("subviews"));
+			if (subviews == IntPtr.Zero)
+			{
+				return;
+			}
+
+			ulong count = Send_Q(subviews, Sel("count"));
+			for (ulong i = 0; i < count; i++)
+			{
+				LogViewTree(Send_r_Q(subviews, Sel("objectAtIndex:"), i), depth + 1);
+			}
+		}
+
+		/// <summary>An NSArray of NSStrings as "[a, b]", for the drag log.</summary>
+		private static string DescribeStringArray(IntPtr array)
+		{
+			if (array == IntPtr.Zero)
+			{
+				return "(nil)";
+			}
+
+			var values = new List<string>();
+			ulong count = Send_Q(array, Sel("count"));
+			for (ulong i = 0; i < count; i++)
+			{
+				values.Add(FromNSString(Send_r_Q(array, Sel("objectAtIndex:"), i)));
+			}
+
+			return "[" + string.Join(", ", values) + "]";
 		}
 
 		/// <summary>
@@ -1301,7 +1381,7 @@ namespace MatterHackers.Agg.UI
 					IntPtr urlString = Send_r_r(item, Sel("stringForType:"), fileUrlType);
 					if (urlString != IntPtr.Zero)
 					{
-						urls.Add(FromNSString(urlString));
+						urls.Add(PathFromDraggedUrlString(urlString));
 					}
 				}
 			}
@@ -1320,6 +1400,27 @@ namespace MatterHackers.Agg.UI
 			}
 
 			return FileDropDispatcher.PathsFromFileUrls(urls);
+		}
+
+		/// <summary>
+		/// The POSIX path a dragged file URL names.
+		/// </summary>
+		/// <remarks>
+		/// Finder does not put a path on the pasteboard. It puts a file <em>reference</em> URL -
+		/// "file:///.file/id=6571367.43648738" - which names the file by its inode and becomes a path only
+		/// by asking the file system. Parsing that URL as text, which is all a URL parser can do, yields
+		/// "/.file/id=6571367.43648738": a name with no extension, which every widget refused, so a drag
+		/// from Finder showed no drop badge anywhere over the window and a drop did nothing. -[NSURL path]
+		/// does the resolution. Other applications write a plain path URL, which it returns unchanged.
+		/// </remarks>
+		private static string PathFromDraggedUrlString(IntPtr urlString)
+		{
+			IntPtr url = Send_r_r(Class("NSURL"), Sel("URLWithString:"), urlString);
+			IntPtr path = url == IntPtr.Zero ? IntPtr.Zero : Send_r(url, Sel("path"));
+
+			// Nil when the file has been deleted since the drag began; the unresolved URL is no use, but it
+			// is better in a log than an empty string.
+			return path == IntPtr.Zero ? FromNSString(urlString) : FromNSString(path);
 		}
 
 		/// <summary>
@@ -1560,6 +1661,8 @@ namespace MatterHackers.Agg.UI
 			}
 
 			Send_v_r(this.window, Sel("setContentView:"), this.view);
+
+			LogDragRegistration(this.window, this.view);
 
 			this.windowDelegate = New("AggMacWindowDelegate");
 			lock (StaticInitLock)
