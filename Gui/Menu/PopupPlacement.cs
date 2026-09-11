@@ -107,8 +107,34 @@ namespace MatterHackers.Agg.UI
 			popup.Widget.Position = popupPosition;
 		}
 
+		/// <summary>
+		/// The window a popup anchored to <paramref name="widget"/> belongs in: the outermost
+		/// <see cref="SystemWindow"/> above it.
+		/// </summary>
+		/// <remarks>
+		/// SystemWindows nest in single window mode, and only the outermost one is the whole screen a popup
+		/// has to fit inside - an inner one is a panel and reports a height a menu would be clamped to for no
+		/// reason. Every menu path asks through here so the window a popup is added to, measured against and
+		/// positioned in is always the same one; the sub menu path used to take the innermost and so
+		/// disagreed with the one that showed it.
+		/// </remarks>
+		public static SystemWindow PopupHostWindow(this GuiWidget widget)
+		{
+			return widget.Parents<SystemWindow>().LastOrDefault();
+		}
+
 		public static void ShowPopup(this SystemWindow systemWindow, ThemeConfig theme, MatePoint anchor, MatePoint popup, RectangleDouble altBounds = default(RectangleDouble), int borderWidth = 1)
 		{
+			// Any menu shown this way is fully populated by now, so this is the point at which we can tell
+			// whether it fits. Doing it here rather than at each call site is what makes scrolling the
+			// default for every popup menu - the three callers that remembered to ask for it themselves were
+			// the only menus that ever got it, and the rest were drawn off the edge of the window with their
+			// items unreachable.
+			if (popup.Widget is PopupMenu popupMenu)
+			{
+				popupMenu.MakeMenuHaveScroll(systemWindow.Height - PopupMenu.WindowEdgeInset);
+			}
+
 			ShowPopup(systemWindow, theme, anchor, popup, altBounds, borderWidth, BestPopupPosition);
 		}
 

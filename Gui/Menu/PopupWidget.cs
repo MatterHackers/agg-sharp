@@ -82,6 +82,12 @@ namespace MatterHackers.Agg.UI
 		private Vector2 scrollPositionAtMouseUp;
 		private bool holdingOpenForChild;
 
+		// The width the content laid out at, before any clamp widened us by a scroll bar. Measuring the
+		// widening from here rather than from our current width is what lets MakeMenuHaveScroll be called
+		// again (a menu that grew, or a window that shrank) without stacking a second scroll bar's worth
+		// of width on each call.
+		private double unscrolledWidth;
+
 		public static bool DebugKeepOpen { get; set; } = false;
 
 		public PopupWidget(GuiWidget contentWidget, IPopupLayoutEngine layoutEngine, bool makeScrollable)
@@ -113,6 +119,7 @@ namespace MatterHackers.Agg.UI
 					contentWidget.VAnchor |= UI.VAnchor.Bottom; // we may have fit or absolute so or it in
 					Width = contentWidget.Width;
 					Height = contentWidget.Height;
+					unscrolledWidth = Width;
 				}
 
 				scrollingWindow.HAnchor = HAnchor.Stretch;
@@ -313,9 +320,20 @@ namespace MatterHackers.Agg.UI
 			return (scrollPositionAtMouseDown - scrollPositionAtMouseUp).Length <= 5;
 		}
 
+		/// <summary>
+		/// How tall this popup wants to be, ignoring any clamp already applied to it.
+		/// </summary>
+		/// <remarks>
+		/// Once <see cref="MakeMenuHaveScroll"/> has run our own height is the clamp, not the content, so
+		/// asking again whether we fit has to measure the content. A scrolling popup's content keeps its Fit
+		/// height inside the scroll area, which also means this follows a menu that is filled after it opens.
+		/// </remarks>
+		internal double UnscrolledHeight => scrollingWindow == null ? Height : contentWidget.Height;
+
 		internal void MakeMenuHaveScroll(double maxHeight)
 		{
-			if (scrollingWindow == null)
+			if (scrollingWindow == null
+				|| maxHeight <= 0)
 			{
 				return;
 			}
@@ -323,7 +341,7 @@ namespace MatterHackers.Agg.UI
 			scrollingWindow.VAnchor = VAnchor.Absolute;
 			scrollingWindow.Height = maxHeight;
 			// leave room for the scroll bar the caller is about to get
-			scrollingWindow.MinimumSize = new Vector2(Width + ScrollBar.ScrollBarWidth, 0);
+			scrollingWindow.MinimumSize = new Vector2(unscrolledWidth + ScrollBar.ScrollBarWidth, 0);
 			Width = scrollingWindow.Width;
 			Height = maxHeight;
 			scrollingWindow.ScrollArea.VAnchor = VAnchor.Fit;
@@ -362,8 +380,12 @@ namespace MatterHackers.Agg.UI
 		protected GuiWidget widgetRelativeTo;
 		private bool alignToRightEdge;
 		private GuiWidget contentWidget;
+
+		// The direction the caller asked for. Every positioning pass starts from this rather than from the
+		// direction the last pass settled on, so a flip forced by a popup that did not fit is reconsidered -
+		// and given back - when it fits again.
+		private readonly Direction requestedDirection;
 		private Direction direction;
-		private bool checkIfNeedScrollBar = true;
 		private HashSet<GuiWidget> monitoredWidgets = new HashSet<GuiWidget>();
 		private PopupWidget popupWidget;
 		private SystemWindow windowToAddTo;
@@ -373,6 +395,7 @@ namespace MatterHackers.Agg.UI
 			this.MaxHeight = maxHeight;
 			this.contentWidget = contentWidget;
 			this.alignToRightEdge = alignToRightEdge;
+			this.requestedDirection = direction;
 			this.direction = direction;
 			this.widgetRelativeTo = widgetRelativeTo;
 		}
@@ -409,7 +432,7 @@ namespace MatterHackers.Agg.UI
 		public void ShowPopup(PopupWidget popupWidget)
 		{
 			this.popupWidget = popupWidget;
-			windowToAddTo = widgetRelativeTo.Parents<SystemWindow>().LastOrDefault();
+			windowToAddTo = widgetRelativeTo.PopupHostWindow();
 			windowToAddTo?.AddChild(popupWidget);
 
 			monitoredWidgets.Clear();
@@ -417,6 +440,15 @@ namespace MatterHackers.Agg.UI
 			monitoredWidgets.Add(popupWidget);
 			popupWidget.PositionChanged += RecalculatePosition;
 			popupWidget.BoundsChanged += RecalculatePosition;
+
+			if (windowToAddTo != null)
+			{
+				// The window itself is not on the parent chain walked below (that walk stops at it), but the
+				// space a popup is fitted into is the window's, so a resize under an open popup has to
+				// re-run the fit or the popup keeps a height the window no longer has room for.
+				monitoredWidgets.Add(windowToAddTo);
+				windowToAddTo.BoundsChanged += RecalculatePosition;
+			}
 
 			// Iterate until the first SystemWindow is found
 			GuiWidget topParent = widgetRelativeTo.Parent;
@@ -480,43 +512,47 @@ namespace MatterHackers.Agg.UI
 					bottomLeftScreenSpace = alignLeftPosition;
 				}
 
-				// we only check for the scroll bar one time (the first time we open)
-				if (checkIfNeedScrollBar)
+				// Opening Down puts the popup between the bottom of the anchor and the bottom of the window,
+				// opening Up puts it between the top of the anchor and the top of the window. Measure both,
+				// then prefer the requested direction, fall back to the other one, and only squeeze in a
+				// scroll bar when the popup fits in neither. windowToAddTo is the window the popup was
+				// actually added to (the outermost SystemWindow), which is the space these screen space
+				// coordinates are expressed in - a nearer SystemWindow ancestor would give the wrong height.
+				//
+				// This runs on every pass, not just the first. A layout engine outlives the popup it was
+				// built for (MatterCAD's PopupButton makes one per button and reuses it for every open), so
+				// a one-shot check meant only the first open of a menu ever got a scroll bar and every later
+				// one ran off the window. Re-checking also catches a menu filled after it was shown and a
+				// window resized under an open one.
+				var spaceBelow = bottomLeftScreenSpace.Y;
+				var spaceAbove = windowToAddTo.Height - (bottomLeftScreenSpace.Y + widgetRelativeTo.Height);
+
+				// What the popup would be if it were not already clamped - our own height is the last
+				// clamp, and measuring that would say we fit no matter how little room is left
+				var neededHeight = popupWidget.UnscrolledHeight;
+
+				direction = requestedDirection;
+
+				var preferredSpace = direction == Direction.Down ? spaceBelow : spaceAbove;
+				var oppositeSpace = direction == Direction.Down ? spaceAbove : spaceBelow;
+
+				if (neededHeight > preferredSpace)
 				{
-					// Opening Down puts the popup between the bottom of the anchor and the bottom of the window,
-					// opening Up puts it between the top of the anchor and the top of the window. Measure both,
-					// then prefer the requested direction, fall back to the other one, and only squeeze in a
-					// scroll bar when the popup fits in neither. windowToAddTo is the window the popup was
-					// actually added to (the outermost SystemWindow), which is the space these screen space
-					// coordinates are expressed in - a nearer SystemWindow ancestor would give the wrong height.
-					var spaceBelow = bottomLeftScreenSpace.Y;
-					var spaceAbove = windowToAddTo.Height - (bottomLeftScreenSpace.Y + widgetRelativeTo.Height);
-					var neededHeight = popupWidget.LocalBounds.Height;
-
-					var preferredSpace = direction == Direction.Down ? spaceBelow : spaceAbove;
-					var oppositeSpace = direction == Direction.Down ? spaceAbove : spaceBelow;
-
-					if (neededHeight > preferredSpace)
+					if (neededHeight <= oppositeSpace)
 					{
-						if (neededHeight <= oppositeSpace)
+						direction = direction == Direction.Down ? Direction.Up : Direction.Down;
+					}
+					else
+					{
+						// It fits nowhere, so open toward whichever side has more room (keeping the
+						// preferred direction on a tie) and scroll within that space
+						if (oppositeSpace > preferredSpace)
 						{
 							direction = direction == Direction.Down ? Direction.Up : Direction.Down;
 						}
-						else
-						{
-							// It fits nowhere, so open toward whichever side has more room (keeping the
-							// preferred direction on a tie) and scroll within that space
-							if (oppositeSpace > preferredSpace)
-							{
-								direction = direction == Direction.Down ? Direction.Up : Direction.Down;
-							}
 
-							popupWidget.MakeMenuHaveScroll(Math.Max(preferredSpace, oppositeSpace) - 5);
-						}
+						popupWidget.MakeMenuHaveScroll(Math.Max(preferredSpace, oppositeSpace) - 5);
 					}
-
-					// We only check the first time we position the popup
-					checkIfNeedScrollBar = false;
 				}
 
 				switch (direction)

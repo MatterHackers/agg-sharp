@@ -724,7 +724,7 @@ namespace MatterHackers.Agg.UI
 					return;
 				}
 
-				var systemWindow = OwningMenu.Parents<SystemWindow>().FirstOrDefault();
+				var systemWindow = OwningMenu.PopupHostWindow();
 				if (systemWindow == null)
 				{
 					return;
@@ -769,10 +769,8 @@ namespace MatterHackers.Agg.UI
 
 					populateSubMenu(subMenu);
 
-					// Measure after populating - a sub menu taller than the window must be made to scroll
-					// before it is positioned, or it lands (and stays) off the top of the screen
-					subMenu.MakeMenuHaveScroll(systemWindow.Height - WindowEdgeInset);
-
+					// ShowPopup measures the populated menu and makes it scroll if it is taller than the
+					// window, which is what keeps a long sub menu from landing off the top of the screen
 					systemWindow.ShowPopup(
 						owningMenu.Theme,
 						new MatePoint(this)
@@ -1120,8 +1118,26 @@ namespace MatterHackers.Agg.UI
 		/// </remarks>
 		internal void MakeMenuHaveScroll(double maxHeight)
 		{
-			if (maxHeight <= 0
-				|| this.Height <= maxHeight)
+			if (maxHeight <= 0)
+			{
+				return;
+			}
+
+			// Already scrolling from an earlier call (ShowPopup clamps every menu it is handed, and some
+			// callers clamp before handing one over). Re-clamp the scroll window we built rather than
+			// reparenting it into a second one, which would nest scroll bar inside scroll bar.
+			if (this.Children.Count == 1
+				&& this.Children[0] is MenuScrollWindow alreadyScrolling)
+			{
+				var contentHeight = alreadyScrolling.ScrollArea.Children.FirstOrDefault()?.Height ?? maxHeight;
+
+				alreadyScrolling.Height = Math.Min(maxHeight, contentHeight);
+				this.Height = alreadyScrolling.Height;
+
+				return;
+			}
+
+			if (this.Height <= maxHeight)
 			{
 				return;
 			}
@@ -1520,13 +1536,8 @@ namespace MatterHackers.Agg.UI
 
 		public static void ShowMenu(this PopupMenu popupMenu, GuiWidget anchorWidget, Vector2 menuPosition)
 		{
-			var systemWindow = anchorWidget.Parents<SystemWindow>().LastOrDefault();
+			var systemWindow = anchorWidget.PopupHostWindow();
 			PopupMenu.ClearToolTipsAbove(anchorWidget);
-
-			// The menu is fully populated by the time it is shown, so this is the point at which we can tell
-			// whether it fits. A tall right click menu (MatterCAD's scene menu) would otherwise be positioned
-			// off the top of the window with no way to scroll to the items that ran off.
-			popupMenu.MakeMenuHaveScroll(systemWindow.Height - PopupMenu.WindowEdgeInset);
 
 			systemWindow.ShowPopup(
 				popupMenu.Theme,

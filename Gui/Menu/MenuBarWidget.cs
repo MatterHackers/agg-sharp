@@ -375,7 +375,7 @@ namespace MatterHackers.Agg.UI
 		/// <param name="index">Which top level menu to open.</param>
 		private void OpenMenu(int index)
 		{
-			var systemWindow = this.Parents<SystemWindow>().LastOrDefault();
+			var systemWindow = this.PopupHostWindow();
 			if (systemWindow == null)
 			{
 				return;
@@ -399,9 +399,6 @@ namespace MatterHackers.Agg.UI
 			}
 
 			PopupMenu.ClearToolTipsAbove(this);
-
-			// The menu is fully populated by now, so this is the point at which we can tell whether it fits
-			popupMenu.MakeMenuHaveScroll(systemWindow.Height - PopupMenu.WindowEdgeInset);
 
 			openPopup = popupMenu;
 			openIndex = index;
