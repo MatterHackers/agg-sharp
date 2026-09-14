@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -828,23 +828,33 @@ namespace MatterHackers.Agg
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            // Use raw value if string and starts with #
-            if (reader.Value is string itemValue
-                && itemValue.StartsWith("#"))
+            // Branch on the token, not on reader.Value - JObject.Load() may only be called when the
+            // reader is actually parked on an object. Customer files carry "Color": "" and "Color": null,
+            // both of which used to fall through to JObject.Load() and throw.
+            switch (reader.TokenType)
             {
-                return new Color(itemValue);
-            }
+                case JsonToken.String:
+                    // The Html setter reads named colors ("red") as well as "#RRGGBB", and leaves the
+                    // color at its default (transparent) for anything it does not recognize.
+                    return reader.Value is string itemValue && !string.IsNullOrWhiteSpace(itemValue)
+                        ? new Color(itemValue)
+                        : Color.Transparent;
 
-            // Use .html if applicable
-            if (reader.Value != null
-                && JObject.Load(reader)?["Html"] is JToken jtoken
-                && jtoken != null
-                && jtoken.Value<string>() is string html)
-            {
-                return new Color(html);
-            }
+                case JsonToken.StartObject:
+                    if (JObject.Load(reader)?["Html"] is JToken jtoken
+                        && jtoken.Value<string>() is string html)
+                    {
+                        return new Color(html);
+                    }
 
-            return Color.Transparent;
+                    return Color.Transparent;
+
+                default:
+                    // Skip() consumes any container (an array, say) so the serializer resumes on the
+                    // token after this value rather than partway inside it.
+                    reader.Skip();
+                    return Color.Transparent;
+            }
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
