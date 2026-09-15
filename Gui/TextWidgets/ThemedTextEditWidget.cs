@@ -40,8 +40,24 @@ namespace MatterHackers.Agg.UI
 		private bool mouseInBounds = false;
 		private TextWidget leadingLabel;
 		private TextWidget trailingLabel;
-		private double decoratorWidth;
 		private double? undecoratedMinimumWidth;
+
+		/// <summary>
+		/// The width the constructor gave the text field, before any label took room out of it. Every width the field
+		/// is given outright is worked out from this rather than from the width it currently has, because the width it
+		/// currently has may have come from a stretch, and a width layout gave it must never be recorded as reserved.
+		/// A field constructed with pixelWidth 0 is sized by its text, so what gets reserved is the width its first text
+		/// happened to need; a consumer that later took such a field off Stretch would get that initial width back rather
+		/// than a width that suits the text it holds by then. Nothing does that today.
+		/// </summary>
+		private readonly double reservedUndecoratedWidth;
+
+		/// <summary>
+		/// The width the text field was last given outright: its undecorated width less the room its labels take out
+		/// of it. Layout only ever sizes the field while the field itself stretches (or is MinFitOrStretch), so this is
+		/// what the field has to go back to when it stops being sized by layout.
+		/// </summary>
+		private double reservedFieldWidth;
 
 		/// <summary>An accent prefix inside the field, such as an axis label.</summary>
 		public string LeadingLabel
@@ -79,12 +95,11 @@ namespace MatterHackers.Agg.UI
 				var reserve = left + right;
 				if ((ActualTextEditWidget.HAnchor & (HAnchor.Left | HAnchor.Center | HAnchor.Right)) == 0)
 					ActualTextEditWidget.HAnchor |= HAnchor.Left;
-				// Reserve both labels INSIDE the existing width so decorated and plain fields align.
-				var width = ActualTextEditWidget.Width + decoratorWidth - reserve;
+				// Reserve both labels INSIDE the width the field was built with, so decorated and plain fields align.
+				reservedFieldWidth = Math.Max(0, reservedUndecoratedWidth - reserve);
 				ActualTextEditWidget.MinimumSize = new Vector2(Math.Max(0, undecoratedMinimumWidth.Value - reserve), ActualTextEditWidget.MinimumSize.Y);
 				ActualTextEditWidget.Margin = ActualTextEditWidget.Margin.Clone(left: left / DeviceScale, right: right / DeviceScale);
-				ActualTextEditWidget.Width = Math.Max(0, width);
-				decoratorWidth = reserve;
+				ActualTextEditWidget.Width = reservedFieldWidth;
 			}
 			PerformLayout();
 			Invalidate();
@@ -127,6 +142,7 @@ namespace MatterHackers.Agg.UI
 			this.ActualTextEditWidget.InternalTextEditWidget.BackgroundColor = Color.Transparent;
 
 			this.ActualTextEditWidget.MinimumSize = new Vector2(Math.Max(ActualTextEditWidget.MinimumSize.X, pixelWidth), Math.Max(ActualTextEditWidget.MinimumSize.Y, pixelHeight));
+			this.reservedUndecoratedWidth = this.reservedFieldWidth = this.ActualTextEditWidget.Width;
 			this.AddChild(this.ActualTextEditWidget);
 
 			this.AddChild(NoContentFieldDescription = new TextWidget(messageWhenEmptyAndNotSelected, pointSize: theme.DefaultFontSize, textColor: theme.EditFieldColors.Focused.LightTextColor)
@@ -204,6 +220,18 @@ namespace MatterHackers.Agg.UI
 			this.Invalidate();
 		}
 
+		/// <summary>
+		/// The frame's anchoring, which is passed on to the text field inside it so that stretching the frame
+		/// stretches the field with it rather than leaving it at its pixel width.
+		/// </summary>
+		/// <remarks>
+		/// Fit is deliberately not passed on. The field scrolls its text; a field that fitted its text would
+		/// grow instead of scrolling, and the growth lands outside the frame, which is the thing that clips -
+		/// anchored Right it hangs off the frame's left edge, so the head of a long value is cut off and no
+		/// caret move can bring it back. The frame fits the field; the field scrolls its text. That does mean
+		/// MaxFitOrStretch degrades to plain Stretch for the field inside, which is a visible change for any
+		/// consumer that set it on a themed field expecting a field that grew with its text.
+		/// </remarks>
 		public override HAnchor HAnchor
 		{
 			get => base.HAnchor;
@@ -212,7 +240,19 @@ namespace MatterHackers.Agg.UI
 				base.HAnchor = value;
 				if (ActualTextEditWidget != null)
 				{
-					ActualTextEditWidget.HAnchor = value;
+					var fieldAnchor = value & ~HAnchor.Fit;
+					ActualTextEditWidget.HAnchor = fieldAnchor;
+
+					// A field anchor that does not stretch holds the field in place without ever measuring it again,
+					// so a width an earlier stretch gave it would live on - wider than the frame, and hanging out of
+					// whichever edge it is not held to. Give that width back the moment layout stops owning it. Fit
+					// need not be tested: the mask above cleared it. MinFitOrStretch does survive that mask and is
+					// still a size layout works out, so it counts as layout owning the field just as Stretch does.
+					if ((fieldAnchor & HAnchor.Stretch) != HAnchor.Stretch
+						&& (fieldAnchor & HAnchor.MinFitOrStretch) != HAnchor.MinFitOrStretch)
+					{
+						ActualTextEditWidget.Width = reservedFieldWidth;
+					}
 				}
 			}
 		}
