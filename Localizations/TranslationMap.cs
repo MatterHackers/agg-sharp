@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2018, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -170,6 +170,15 @@ namespace MatterHackers.Localizations
 				&& englishString.Any(char.IsLetter);
 		}
 
+		/// <summary>
+		/// Records a string the master list has never seen, in memory first and on disk second.
+		/// The in-memory add is unconditional and comes before any file work so that a save path
+		/// which cannot be written - a read-only application bundle, or a path that only exists on
+		/// the developer's machine - never takes the application down over a translation: the
+		/// string translates to itself for the rest of the run, and because it is now in the map
+		/// the doomed write is attempted once per new string rather than on every draw that
+		/// displays it.
+		/// </summary>
 		private void AddNewString(string englishString)
 		{
 			// Translate still hands these back unchanged; they simply never enter the master list.
@@ -180,10 +189,15 @@ namespace MatterHackers.Localizations
 
 			lock (locker)
 			{
-				if (!machineTranslation.ContainsKey(englishString))
+				if (machineTranslation.ContainsKey(englishString))
 				{
-					machineTranslation.Add(englishString, englishString);
+					return;
+				}
 
+				machineTranslation.Add(englishString, englishString);
+
+				try
+				{
 					if (!Directory.Exists(SavePath))
 					{
 						Directory.CreateDirectory(SavePath);
@@ -207,6 +221,13 @@ namespace MatterHackers.Localizations
 
 					// rename the new file
 					File.Move(newFile, oldFile);
+				}
+				catch (Exception ex) when (ex is IOException
+					|| ex is UnauthorizedAccessException
+					|| ex is NotSupportedException
+					|| ex is ArgumentException)
+				{
+					Debug.WriteLine($"TranslationMap could not record new strings to '{SavePath}': {ex.Message}");
 				}
 			}
 		}
