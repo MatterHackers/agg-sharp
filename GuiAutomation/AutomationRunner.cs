@@ -917,7 +917,24 @@ namespace MatterHackers.GuiAutomation
 			}
 
             // If we see "Queue... Menu" we should be changing the test to look for a different source. There is no longer a queue menu.
-            throw new Exception($"ClickByName Failed: Named GuiWidget not found [{widgetName}]");
+            throw new Exception(WidgetNotFoundMessage("ClickByName", widgetName));
+		}
+
+		/// <summary>
+		/// The message a named-widget failure is reported with, carrying the application's last startup
+		/// failure when there is one.
+		/// </summary>
+		/// <param name="operation">The automation call that could not find the widget.</param>
+		/// <param name="widgetName">The name that was looked for.</param>
+		/// <remarks>
+		/// A window whose application died during startup has none of its widgets, so every name a test asks
+		/// for is missing and the first one it asks for is what gets reported. On its own that message names a
+		/// symptom several steps downstream of the cause, and sends the reader after the wrong test - see
+		/// <see cref="StartupFailureLog"/> for why the cause cannot simply be printed where it happens.
+		/// </remarks>
+		public static string WidgetNotFoundMessage(string operation, string widgetName)
+		{
+			return StartupFailureLog.AppendTo($"{operation} Failed: Named GuiWidget not found [{widgetName}]");
 		}
 
 		/// <summary>
@@ -1002,7 +1019,7 @@ namespace MatterHackers.GuiAutomation
 				return this;
 			}
 
-			throw new Exception($"ClickByName Failed: Named GuiWidget not found [{widgetName}]");
+			throw new Exception(WidgetNotFoundMessage("ClickByName", widgetName));
 		}
 
 		public AutomationRunner RightClickWidget(GuiWidget widget)
@@ -1576,7 +1593,7 @@ namespace MatterHackers.GuiAutomation
 				|| this.WaitFor(() => widget.ActuallyVisibleOnScreen() && widget.Enabled,
 				secondsToWait - timeWaited.Elapsed.TotalSeconds) == null)
 			{
-				throw new Exception($"WaitForWidgetEnabled Failed: Named GuiWidget not found [{widgetName}]");
+				throw new Exception(WidgetNotFoundMessage("WaitForWidgetEnabled", widgetName));
 			}
 
 			if (timeWaited.Elapsed.TotalSeconds > secondsToWait)
