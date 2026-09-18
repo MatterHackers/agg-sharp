@@ -1896,6 +1896,8 @@ namespace MatterHackers.WebGpuRender
 		/// The instance, with wgpu's default descriptor. Wrapped because webgpu.h spells "default" as a null
 		/// pointer, which the browser leg's non-unsafe half cannot write at a call site.
 		/// </summary>
+		// Never call wgpuGetInstanceFeatures before or after this: on wgpu-native 29 it aborts the process instead of
+		// answering, so the instance is created with no descriptor and its features are never queried.
 		private static WGPUInstance CreateInstance() => wgpuCreateInstance(null);
 
 		/// <summary>
