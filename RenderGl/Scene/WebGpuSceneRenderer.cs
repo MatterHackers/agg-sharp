@@ -121,9 +121,6 @@ namespace MatterHackers.RenderGl.Scene
 		/// <summary>How opaque an object's shadow on the bed gets. The classic BedShadowStrength.</summary>
 		private const float BedShadowStrength = .70f;
 
-		/// <summary>How far above the bed the orthographic shadow camera sits, in mm.</summary>
-		private const double BedShadowViewDistance = 1000;
-
 		private const int OutlineUniformSize = 32;
 
 		private const int DownsampleUniformSize = 16;
@@ -1659,23 +1656,12 @@ namespace MatterHackers.RenderGl.Scene
 		/// <param name="bedCommand">The queued bed, whose bounds are the orthographic frustum.</param>
 		private void RenderBedShadowMask(BedRenderCommand bedCommand)
 		{
-			var bedCenter = new Vector3(
-				(bedCommand.BedBounds.Left + bedCommand.BedBounds.Right) * .5,
-				(bedCommand.BedBounds.Bottom + bedCommand.BedBounds.Top) * .5,
-				0);
-
-			var shadowView = Matrix4X4.LookAt(
-				bedCenter + new Vector3(0, 0, BedShadowViewDistance),
-				bedCenter,
-				Vector3.UnitY);
-
-			var shadowProjection = Matrix4X4.CreateOrthographicOffCenter(
-				bedCommand.BedBounds.Left,
-				bedCommand.BedBounds.Right,
-				bedCommand.BedBounds.Bottom,
-				bedCommand.BedBounds.Top,
-				1,
-				BedShadowViewDistance * 2);
+			// One rectangle: the camera below covers exactly BedBounds, which is also the floor quad the
+			// shader samples the map back through and what ShouldRenderInBedShadow culls against. See
+			// BedShadowProjection for what a second rectangle did to a room-sized floor.
+			var viewDistance = BedShadowProjection.ViewDistance(this.TallestBedShadowCaster(bedCommand.BedBounds));
+			var shadowView = BedShadowProjection.CreateView(bedCommand.BedBounds, viewDistance);
+			var shadowProjection = BedShadowProjection.CreateProjection(bedCommand.BedBounds, viewDistance);
 
 			using (var encoder = this.device.BeginRenderPass(new RenderPassDescriptor(
 				new[] { new ColorAttachment(this.bedShadowMaskTarget, LoadOp.Clear, ClearColor.Transparent) },
@@ -1702,6 +1688,29 @@ namespace MatterHackers.RenderGl.Scene
 						"BedShadowMask");
 				}
 			}
+		}
+
+		/// <summary>
+		/// The top of the tallest thing that will cast on the bed, in world mm, or 0 when nothing does.
+		/// The shadow camera has to be above it or the caster is behind the near plane and casts nothing -
+		/// which is what a fixed 1000mm camera did to every wall in a room-scale scene.
+		/// </summary>
+		/// <param name="bedBounds">The floor rectangle, which is what decides who casts.</param>
+		private double TallestBedShadowCaster(RectangleDouble bedBounds)
+		{
+			double tallest = 0;
+			foreach (var command in this.queuedSceneCommands)
+			{
+				if (!RenderHelper.ShouldRenderInBedShadow(command, bedBounds))
+				{
+					continue;
+				}
+
+				// Already cached on the mesh by the cull above, so this costs a dictionary hit, not a walk.
+				tallest = Math.Max(tallest, command.Mesh.GetAxisAlignedBoundingBox(command.Transform).MaxXYZ.Z);
+			}
+
+			return tallest;
 		}
 
 		/// <summary>One axis of the separable blur over the shadow mask.</summary>
