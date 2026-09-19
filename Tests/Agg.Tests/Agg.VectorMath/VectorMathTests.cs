@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -209,6 +209,48 @@ namespace MatterHackers.VectorMath.Tests
 			await Assert.That(world.GetViewspaceHeightAtPosition(new Vector3(1, 1, -10))).IsEqualTo(world.NearPlaneHeightInViewspace);
 			world.Scale = 3;
 			await Assert.That(world.GetWorldUnitsPerScreenPixelAtPosition(new Vector3(1, 1, (7 - 10) / 3.0)) * 240).IsEqualTo(world.NearPlaneHeightInViewspace / 3);
+		}
+
+		/// <summary>
+		/// A 3D handle sizes itself as "so many pixels times the world units per pixel here", so it only holds its
+		/// pixel size while that ratio is the honest one. It used to be capped at 5 world units per pixel, which
+		/// nothing smaller than a few metres could reach - but someone modelling a room is looking at tens of
+		/// metres across a thousand pixels, where the true ratio is 30 or more, and every handle in the view
+		/// silently shrank to a sixth of its size or less. The cap is now off by default; what remains is the
+		/// guard it was standing in for, which is that a degenerate camera must still return a usable number.
+		/// </summary>
+		[Test]
+		public async Task WorldUnitsPerPixelIsUnclampedAtRoomScale()
+		{
+			const double ViewSize = 1000;
+			const double EyeDistance = 40000;
+
+			var world = new WorldView(ViewSize, ViewSize);
+			world.CalculatePerspectiveMatrixOffCenter(ViewSize, ViewSize, 0);
+			world.EyePosition = new Vector3(0, 0, EyeDistance);
+
+			// The view is EyeDistance away from the origin down -Z, so the visible height there is the perspective
+			// height at that distance - about 33.1 metres of scene over 1000 pixels, or ~33 units per pixel.
+			double trueRatio = WorldView.CalcPerspectiveHeight(EyeDistance, WorldView.DefaultPerspectiveVFOVDegrees) / ViewSize;
+			await Assert.That(trueRatio).IsGreaterThan(30);
+			await Assert.That(world.GetWorldUnitsPerScreenPixelAtPosition(Vector3.Zero)).IsEqualTo(trueRatio).Within(1e-6);
+
+			// A caller that asks for a ceiling still gets one - and a nonsense ceiling is caught by the same
+			// guard as a nonsense camera, rather than passed straight back out.
+			await Assert.That(world.GetWorldUnitsPerScreenPixelAtPosition(Vector3.Zero, maxRatio: 5)).IsEqualTo(5);
+			await Assert.That(world.GetWorldUnitsPerScreenPixelAtPosition(Vector3.Zero, maxRatio: double.NaN))
+				.IsEqualTo(WorldView.DegenerateWorldUnitsPerPixel);
+			await Assert.That(world.GetWorldUnitsPerScreenPixelAtPosition(Vector3.Zero, maxRatio: 0))
+				.IsEqualTo(WorldView.DegenerateWorldUnitsPerPixel);
+
+			// The degenerate cases the old cap doubled as a catch-all for: callers divide by this and size
+			// geometry with it, so it must stay finite and positive however nonsensical the input.
+			foreach (var broken in new[] { new Vector3(double.NaN, 0, 0), new Vector3(double.PositiveInfinity, 0, 0) })
+			{
+				double ratio = world.GetWorldUnitsPerScreenPixelAtPosition(broken);
+				await Assert.That(double.IsFinite(ratio)).IsTrue();
+				await Assert.That(ratio).IsGreaterThan(0);
+			}
 		}
 
 		[Test]

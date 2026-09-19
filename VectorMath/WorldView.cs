@@ -49,6 +49,13 @@ namespace MatterHackers.VectorMath
 
 		private const double CameraZTranslationFudge = -7;
 
+		/// <summary>
+		/// What <see cref="GetWorldUnitsPerScreenPixelAtPosition"/> answers when the camera or the position gives
+		/// no usable number. It is the value that call used to clamp everything to, so a degenerate camera behaves
+		/// exactly as it always has.
+		/// </summary>
+		public const double DegenerateWorldUnitsPerPixel = 5;
+
 		public double Height { get; set; } = 0;
 		public double Width { get; set; } = 0;
 		public Vector2 ViewportSize { get { return new Vector2(Width, Height); } }
@@ -438,21 +445,50 @@ namespace MatterHackers.VectorMath
 				return NearPlaneHeightInViewspace * viewspacePosition.Z / -NearZ;
 		}
 
+		/// <summary>
+		/// The ratio a caller multiplies a pixel count by to get a worldspace size at <paramref name="worldPosition"/>.
+		/// This is how every 3D handle, gizmo and pick tolerance stays the same size on screen at any zoom.
+		/// </summary>
 		/// <param name="worldPosition">Position in worldspace.</param>
+		/// <param name="maxRatio">
+		/// An optional ceiling on the result, off by default. A ceiling is only ever right for a caller that has
+		/// its own reason to stop growing - it makes a handle shrink on screen past that zoom, because the handle
+		/// is still drawn at the same number of world units while the view keeps covering more of them.
+		/// </param>
 		/// <returns>
-		/// Units per screenspace X in worldspace at the given position.
-		/// Always positive unless underflow or NaN occurs.
-		/// The absolute value is taken and clamped to a minimum derived from the minimum allowed near plane.
+		/// Units per screenspace X in worldspace at the given position. Always finite and positive: the absolute
+		/// value is taken, it is floored at a minimum derived from the minimum allowed near plane, and a camera
+		/// or a position that produces no usable number at all falls back to <see cref="DegenerateWorldUnitsPerPixel"/>.
 		/// </returns>
-		// NOTE: Original implementation always returns non-negative and callers depend on non-zero.
-		public double GetWorldUnitsPerScreenPixelAtPosition(Vector3 worldPosition, double maxRatio = 5)
+		/// <remarks>
+		/// This used to default <paramref name="maxRatio"/> to 5, which was two things at once: a catch-all for a
+		/// degenerate camera (the original implementation traced a ray through a neighbouring pixel, which says
+		/// nothing useful for a position behind the eye), and - unintentionally - a hard ceiling on how far out a
+		/// scene could be viewed with handles still the right size. Nothing smaller than a few metres ever reached
+		/// 5 units per pixel, so it went unnoticed until someone modelled a room: at 30 m across a 1000 px view
+		/// the true ratio is over 30, and every handle drew at a sixth of its intended size or less. The
+		/// degenerate-camera guard is kept explicitly below; the ceiling is gone.
+		/// </remarks>
+		public double GetWorldUnitsPerScreenPixelAtPosition(Vector3 worldPosition, double maxRatio = double.PositiveInfinity)
 		{
 			Vector3 viewspace = WorldspaceToViewspace(worldPosition);
 			double viewspaceUnitsPerPixel = GetViewspaceHeightAtPosition(viewspace) / Height;
 			double minMagnitude = GetViewspaceHeightAtPosition(new Vector3(0, 0, -PerspectiveProjectionMinimumNearZ)) / Height;
 			viewspaceUnitsPerPixel = Math.Max(Math.Abs(viewspaceUnitsPerPixel), minMagnitude);
 			double worldspaceXUnitsPerPixel = new Vector3(viewspaceUnitsPerPixel, 0, 0).TransformVector(InverseModelviewMatrix).Length;
-			return Math.Min(worldspaceXUnitsPerPixel, maxRatio);
+
+			double ratio = Math.Min(worldspaceXUnitsPerPixel, maxRatio);
+
+			// Callers size geometry with this and several divide by it, so a NaN or an infinity here would spread
+			// through the scene rather than show up as one bad handle. A NaN loses every comparison, so test for
+			// what is wanted rather than for what is wrong - and test it last, after the caller's own ceiling has
+			// been applied, since a nonsense ceiling is no better than a nonsense camera.
+			if (!(ratio > 0) || double.IsInfinity(ratio))
+			{
+				return DegenerateWorldUnitsPerPixel;
+			}
+
+			return ratio;
 		}
 
 		public void OnTransformChanged(EventArgs e)
