@@ -131,7 +131,7 @@ namespace Gaming.Game
 			FileStream stream;
 			try
 			{
-				stream = File.Open(pathName + ".xml", FileMode.Open);
+				stream = File.Open(pathName + ".xml", FileMode.Open, FileAccess.Read, FileShare.Read);
 			}
 			catch (FileNotFoundException)
 			{

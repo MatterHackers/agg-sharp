@@ -87,7 +87,7 @@ namespace Gaming.Graphics
 			foreach (String tgaFile in sortedTgaFiles)
 			{
 				sequenceLoaded.m_Images[imageIndex] = new ImageBuffer(new BlenderPreMultBGRA());
-				Stream imageStream = File.Open(tgaFile, FileMode.Open);
+				Stream imageStream = File.Open(tgaFile, FileMode.Open, FileAccess.Read, FileShare.Read);
 				ImageTgaIO.LoadImageData(sequenceLoaded.m_Images[imageIndex], imageStream, 32);
 				imageIndex++;
 			}

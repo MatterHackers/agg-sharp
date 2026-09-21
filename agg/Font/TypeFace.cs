@@ -202,7 +202,8 @@ namespace MatterHackers.Agg.Font
 
 		public void LoadTTF(string filename)
 		{
-			using (var fs = new FileStream(filename, FileMode.Open))
+			// open read only so fonts can load from a read only location (like Program Files)
+			using (var fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read))
 			{
 				LoadTTF(fs);
 			}
