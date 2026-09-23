@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2019, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -91,9 +91,22 @@ namespace MatterHackers.DataConverters2D
 			return output;
 		}
 
+		/// <summary>
+		/// <paramref name="polygonsToFix"/> cleaned and intersected with their own bounds, which leaves every
+		/// outer contour and hole wound the way clipper expects.
+		/// </summary>
+		/// <remarks>
+		/// The clean merges points closer than clipper's 1.415 units - an absolute distance, so at desk size it
+		/// thins a finely flattened curve a great deal and at room size hardly at all, and a 20 ft letter came out
+		/// 3x the points of a 300 mm one. It grows with the polygons' size by <see cref="CurveTolerance"/>, which
+		/// is exactly 1.415 at or under a 300 mm bed (assuming the default 1000 clipper units per mm).
+		/// </remarks>
 		public static Polygons GetCorrectedWinding(this Polygons polygonsToFix)
 		{
-			polygonsToFix = Clipper.CleanPolygons(polygonsToFix);
+			var fixBounds = polygonsToFix.GetBounds();
+			var cleanDistance = CurveTolerance.ForSize(1.415,
+				System.Math.Max(fixBounds.Width, fixBounds.Height) / PolygonsExtensions.DefaultClipperUnitsPerUnit);
+			polygonsToFix = Clipper.CleanPolygons(polygonsToFix, cleanDistance);
 			var boundsPolygon = new Polygon();
 			IntRect bounds = Clipper.GetBounds(polygonsToFix);
 			bounds.left -= 10;
