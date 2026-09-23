@@ -130,9 +130,16 @@ namespace MatterHackers.DataConverters2D
 		/// </remarks>
 		public static Polygons CreatePolygons(this IVertexSource sourcePath, double scaling = 1000)
 		{
+			// Curves flatten to 0.5 / ResolutionScale, an absolute distance, so a room-scale path would be cut
+			// sqrt(size) finer than the same shape at desk size. Coarsen by the path's own size above a printer
+			// bed; at or under it the scale is exactly 1 and the flattening is bit-identical to what it always
+			// was. The bounds include bezier control points, which only ever overstate the size.
+			var bounds = sourcePath.GetBounds();
+			var size = System.Math.Max(bounds.Width, bounds.Height);
+
             return CreatePolygons(new FlattenCurves(sourcePath)
             {
-                ResolutionScale = scaling
+                ResolutionScale = scaling / CurveTolerance.ScaleFor(size)
             }.Vertices(), scaling);
         }
 
