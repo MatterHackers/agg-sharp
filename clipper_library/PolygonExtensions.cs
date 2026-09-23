@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
+using MatterHackers.Agg.VertexSource;
 using System;
 using System.Collections.Generic;
 
@@ -156,9 +157,20 @@ namespace ClipperLib
             return length;
         }
 
+        /// <summary>
+        /// Offsets <paramref name="polygon"/> by <paramref name="distance"/> clipper units with round joins cut by
+        /// the polygon's own size (<see cref="PolygonsExtensions.ArcToleranceFor"/>) - exactly as it always was at
+        /// desk size, no finer than a desk-size shape above it.
+        /// </summary>
         public static Polygons Offset(this Polygon polygon, double distance)
         {
-            var offseter = new ClipperOffset();
+            return polygon.Offset(distance, new Polygons { polygon }.ArcToleranceFor());
+        }
+
+        /// <summary>Offsets <paramref name="polygon"/> at a fixed <paramref name="arcTolerance"/>.</summary>
+        public static Polygons Offset(this Polygon polygon, double distance, double arcTolerance)
+        {
+            var offseter = new ClipperOffset(arcTolerance: arcTolerance);
             offseter.AddPath(polygon, JoinType.jtRound, EndType.etClosedPolygon);
 
             var solution = new Polygons();

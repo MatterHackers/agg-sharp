@@ -66,13 +66,18 @@ namespace MatterHackers.DataConverters2D
 			return output;
 		}
 
-		public static VertexStorage Offset(this IVertexSource a, double distance, JoinType joinType = JoinType.jtMiter, double scale = 1000)
+		/// <summary>
+		/// Offsets <paramref name="a"/> by <paramref name="distance"/> of its own units. Round joins are cut by the
+		/// path's size (<see cref="PolygonsExtensions.ArcToleranceFor"/>) unless <paramref name="arcTolerance"/>
+		/// (clipper units) fixes them - exactly as always at desk size, no finer than a desk-size shape above it.
+		/// </summary>
+		public static VertexStorage Offset(this IVertexSource a, double distance, JoinType joinType = JoinType.jtMiter, double scale = 1000, double? arcTolerance = null)
 		{
 			var aPolys = a.CreatePolygons(scale);
 
 			aPolys = aPolys.GetCorrectedWinding();
 
-			var offseter = new ClipperOffset();
+			var offseter = new ClipperOffset(arcTolerance: arcTolerance ?? aPolys.ArcToleranceFor(scale));
 			offseter.AddPaths(aPolys, joinType, EndType.etClosedPolygon);
 			var solution = new Polygons();
 			offseter.Execute(ref solution, distance * scale);

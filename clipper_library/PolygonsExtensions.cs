@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
+using MatterHackers.Agg.VertexSource;
 using System.Collections.Generic;
 
 namespace ClipperLib
@@ -111,9 +112,42 @@ namespace ClipperLib
             return length;
         }
 
+        /// <summary>Clipper's own default arc tolerance, in clipper units - what these helpers always used.</summary>
+        public const double DefaultArcTolerance = 0.25;
+
+        /// <summary>The clipper units in one unit of the shape: agg converts paths at 1000 (a micron in mm).</summary>
+        public const double DefaultClipperUnitsPerUnit = 1000;
+
+        /// <summary>
+        /// The arc tolerance an offset of <paramref name="polygons"/> earns by its size: clipper's default at or
+        /// under <see cref="CurveTolerance.DeskSize"/>, grown in proportion above it (see <see cref="CurveTolerance"/>).
+        /// </summary>
+        /// <param name="clipperUnitsPerUnit">How the polygons were scaled from the shape's units.</param>
+        public static double ArcToleranceFor(this Polygons polygons, double clipperUnitsPerUnit = DefaultClipperUnitsPerUnit)
+        {
+            var bounds = polygons.GetBounds();
+
+            // no points leaves the bounds inverted, a negative size, which reads as desk size
+            return CurveTolerance.ForSize(DefaultArcTolerance, System.Math.Max(bounds.Width, bounds.Height) / clipperUnitsPerUnit);
+        }
+
+        /// <summary>
+        /// Offsets <paramref name="polygons"/> by <paramref name="distance"/> clipper units, cutting round joins by
+        /// the polygons' own size (<see cref="ArcToleranceFor"/>), so a room-size shape is not cut finer than a
+        /// desk-size one. At desk size this is exactly the offset it always was.
+        /// </summary>
         public static Polygons Offset(this Polygons polygons, double distance, JoinType joinType)
         {
-            var offseter = new ClipperOffset();
+            return polygons.Offset(distance, joinType, polygons.ArcToleranceFor());
+        }
+
+        /// <summary>
+        /// Offsets <paramref name="polygons"/> at a fixed <paramref name="arcTolerance"/>, for a caller that
+        /// measured it once for several offsets or needs an absolute value.
+        /// </summary>
+        public static Polygons Offset(this Polygons polygons, double distance, JoinType joinType, double arcTolerance)
+        {
+            var offseter = new ClipperOffset(arcTolerance: arcTolerance);
             offseter.AddPaths(polygons, joinType, EndType.etClosedPolygon);
             var solution = new Polygons();
             offseter.Execute(ref solution, distance);

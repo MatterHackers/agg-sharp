@@ -547,13 +547,17 @@ namespace MatterHackers.PolygonMesh.Processors
 		{
 			var rings = new List<(Polygons loops, double height)>();
 
+			// every ring insets the same profile, so they share the one tolerance its size earns - one bevel
+			// cut at one quality, and no finer on a room-size part than on a printer-bed one
+			var arcTolerance = profile.ArcToleranceFor();
+
 			if (bottomBevel != null && bottomBevel.Count > 0)
 			{
 				// the list runs downward, so its last entry is the narrowest ring - that is the z = 0 profile
-				rings.Add((profile.Offset(bottomBevel[bottomBevel.Count - 1].insetAmount * 1000, bottomJoinType), 0));
+				rings.Add((profile.Offset(bottomBevel[bottomBevel.Count - 1].insetAmount * 1000, bottomJoinType, arcTolerance), 0));
 				for (int i = bottomBevel.Count - 1; i > 0; i--)
 				{
-					rings.Add((profile.Offset(bottomBevel[i - 1].insetAmount * 1000, bottomJoinType), bottomBevel[i].height));
+					rings.Add((profile.Offset(bottomBevel[i - 1].insetAmount * 1000, bottomJoinType, arcTolerance), bottomBevel[i].height));
 				}
 
 				// where the bevel gives way to the straight wall the profile is back to full size
@@ -569,10 +573,10 @@ namespace MatterHackers.PolygonMesh.Processors
 				rings.Add((profile, topBevel[0].height));
 				for (int i = 0; i < topBevel.Count - 1; i++)
 				{
-					rings.Add((profile.Offset(topBevel[i].insetAmount * 1000, topJoinType), topBevel[i + 1].height));
+					rings.Add((profile.Offset(topBevel[i].insetAmount * 1000, topJoinType, arcTolerance), topBevel[i + 1].height));
 				}
 
-				rings.Add((profile.Offset(topBevel[topBevel.Count - 1].insetAmount * 1000, topJoinType), zHeightTop));
+				rings.Add((profile.Offset(topBevel[topBevel.Count - 1].insetAmount * 1000, topJoinType, arcTolerance), zHeightTop));
 			}
 			else
 			{
