@@ -242,11 +242,18 @@ namespace MatterHackers.RenderGl.Scene
 
 		/// <summary>
 		/// Where the capture that is currently open was started from, in DEBUG builds only; null in
-		/// release. Carried purely so the "already in progress" throw can name the frame that left the
-		/// capture open - the reports of it are top level paints, so telling a genuinely nested paint
-		/// apart from a capture stranded by an earlier frame is otherwise guesswork.
+		/// release. Carried purely so the nested-capture diagnostic can name the frame that opened the
+		/// outer capture.
 		/// </summary>
 		private string captureOpenedAt;
+
+		/// <summary>
+		/// How many Begins arrived while a capture was already open and have not been ended yet. A paint
+		/// can re-enter while the outer paint's capture is open (see <see cref="BeginFullFrameCapture"/>);
+		/// the nested Begin/End pair is absorbed here so the nested frame costs its own 3D content and
+		/// nothing else - no exception out of paint, and its End does not close the outer capture.
+		/// </summary>
+		private int nestedCaptureDepth;
 
 		/// <summary>
 		/// True between a capture that opened successfully and the downsample that spends it. Callers pair
@@ -259,7 +266,7 @@ namespace MatterHackers.RenderGl.Scene
 #if DEBUG
 		/// <summary>
 		/// Whether <see cref="BeginFullFrameCapture"/> records where it was called from, for the
-		/// "already in progress" message. Off unless <c>AGG_CAPTURE_TRACE</c> is set, because capturing it
+		/// nested-capture diagnostic. Off unless <c>AGG_CAPTURE_TRACE</c> is set, because capturing it
 		/// is a full stack walk and captures run several times a frame; DEBUG only, and settable so a test
 		/// can exercise the diagnostic without the environment.
 		/// </summary>
@@ -572,17 +579,27 @@ namespace MatterHackers.RenderGl.Scene
 		/// backbuffer.</param>
 		public void BeginFullFrameCapture(RectangleDouble viewport)
 		{
+			if (this.capturedColorTarget != null)
+			{
+				// A paint re-entered while the outer paint's capture is open. The UI thread is STA, so a
+				// pumping wait inside the 3D draw (lock contention, a COM wait) can dispatch the idle pump's
+				// Invoke, whose FlushPendingAggInvalidates calls Update() and paints synchronously. Throwing
+				// here reached the user as a crash, and the nested call site's finally then ended the OUTER
+				// capture. Absorb the pair instead: the nested frame draws into the open capture and gets no
+				// blit of its own, the outer one finishes exactly as it would have. Checked before blitPending
+				// is touched, because that flag belongs to the outer frame here.
+				this.nestedCaptureDepth++;
+				Console.Error.WriteLine(
+					"WebGpuSceneRenderer: full-frame capture begun while one was open (re-entered paint); "
+					+ "the nested frame gets no capture of its own."
+					+ (this.captureOpenedAt == null ? string.Empty : "\nOuter capture opened at:\n" + this.captureOpenedAt));
+				return;
+			}
+
 			// Before anything else, including the checks that return or throw: a pending blit belongs to
 			// the frame that armed it, and every path out of here leaves this frame with nothing to
 			// composite unless it gets all the way through.
 			this.blitPending = false;
-
-			if (this.capturedColorTarget != null)
-			{
-				throw new InvalidOperationException(
-					"A full-frame capture is already in progress."
-					+ (this.captureOpenedAt == null ? string.Empty : "\nOpened at:\n" + this.captureOpenedAt));
-			}
 
 			var destination = this.compat.Passes.ColorTarget;
 			if (destination == null)
@@ -685,6 +702,13 @@ namespace MatterHackers.RenderGl.Scene
 				return;
 			}
 
+			// The End that pairs with an absorbed nested Begin: the capture still belongs to the outer frame.
+			if (this.nestedCaptureDepth > 0)
+			{
+				this.nestedCaptureDepth--;
+				return;
+			}
+
 			var restoreColor = this.capturedColorTarget;
 			var restoreDepth = this.capturedDepthTarget;
 
@@ -731,6 +755,13 @@ namespace MatterHackers.RenderGl.Scene
 			// frame whose BeginFullFrameCapture threw would composite the previous frame's 3D content over
 			// itself from the finally that pairs with the failed Begin.
 			if (!this.blitPending)
+			{
+				return;
+			}
+
+			// A capture still open means this is the blit that pairs with a nested frame's End (see
+			// BeginFullFrameCapture); the pending blit is the outer frame's, to spend after its own End.
+			if (this.capturedColorTarget != null)
 			{
 				return;
 			}

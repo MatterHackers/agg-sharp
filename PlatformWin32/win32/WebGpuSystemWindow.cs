@@ -195,6 +195,10 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
+				// Restored rather than cleared: a paint re-entered from inside this one returns early (the
+				// base class's PaintReentrancyGuard), and clearing here would tell a screenshot request the
+				// outer paint had already finished.
+				bool wasInsidePaint = this.isInsidePaint;
 				this.isInsidePaint = true;
 				try
 				{
@@ -202,7 +206,7 @@ namespace MatterHackers.Agg.UI
 				}
 				finally
 				{
-					this.isInsidePaint = false;
+					this.isInsidePaint = wasInsidePaint;
 				}
 			}
 			catch (ObjectDisposedException)

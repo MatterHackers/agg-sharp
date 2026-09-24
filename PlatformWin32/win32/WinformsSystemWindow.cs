@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -101,6 +101,9 @@ namespace MatterHackers.Agg.UI
 		// Set by Invalidate(RectangleDouble) and consumed by the idle pump's FlushPendingAggInvalidates.
 		// Volatile: set from any thread, cleared on the UI thread.
 		private volatile bool aggInvalidatePending;
+
+		// Refuses a paint that arrives while this window is already painting (see PaintReentrancyGuard).
+		private readonly PaintReentrancyGuard paintGuard = new PaintReentrancyGuard();
 
 		private static readonly object SingleInvokeLock = new object();
 
@@ -809,6 +812,33 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
+			// A paint dispatched from inside this window's own paint (a pumping STA wait in a draw can run
+			// the idle pump's Update()) would draw over half-built frame state - it surfaced as the scene
+			// renderer's "A full-frame capture is already in progress." crash. Skip it here; the guard hands
+			// the request back when the outer paint ends, and it is re-requested then.
+			if (!this.paintGuard.TryBeginPaint())
+			{
+				return;
+			}
+
+			try
+			{
+				this.PaintGuarded(paintEventArgs);
+			}
+			finally
+			{
+				if (this.paintGuard.EndPaint())
+				{
+					// WinForms validated the skipped paint's region before OnPaint ran, so that frame only
+					// happens if it is asked for again. The rect overload also sets aggInvalidatePending,
+					// which is what gets a GPU window its Update() from the idle pump.
+					this.Invalidate(default(RectangleDouble));
+				}
+			}
+		}
+
+		private void PaintGuarded(PaintEventArgs paintEventArgs)
+		{
 			// An unattended run must fail loudly rather than stopping at WinForms' modal
 			// unhandled-exception dialog, which nobody is there to dismiss - and a paint that throws
 			// takes the repaint pump with it, so the run would otherwise just sit there.
@@ -1351,7 +1381,10 @@ namespace MatterHackers.Agg.UI
 
 			foreach (var window in windows)
 			{
+				// A window mid-paint is skipped, flag and all: this can run from a message pump nested inside
+				// that paint, and Update() would re-enter it. The next tick delivers the paint instead.
 				if (window.aggInvalidatePending
+					&& !window.paintGuard.IsPainting
 					&& !window.IsDisposed
 					&& !window.Disposing
 					&& window.IsHandleCreated)

@@ -168,35 +168,60 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		[Test]
-		public async Task AGenuinelyNestedCaptureStillThrowsAndSaysWhereTheFirstOneOpened()
+		public async Task ANestedCaptureDoesNotThrowOrCloseTheOuterCapture()
 		{
 			using var fixture = CaptureFixture.Create();
 
-#if DEBUG
-			// Off by default - the stack walk is only worth paying for when someone is chasing this - so
-			// the diagnostic has to be switched on to be asserted on.
-			bool traceWasEnabled = WebGpuSceneRenderer.CaptureTraceEnabled;
-			WebGpuSceneRenderer.CaptureTraceEnabled = true;
+			// The field crash: a paint re-entered while the outer paint's capture was open (the UI thread
+			// is STA, so any pumping wait inside the 3D draw can dispatch the idle pump's Invoke, whose
+			// FlushPendingAggInvalidates calls Update() and paints synchronously). The nested frame's Begin
+			// threw "already in progress" out of paint, and its finally then ended the OUTER capture.
+			fixture.Renderer.BeginFullFrameCapture(Viewport);
+			var captureTarget = fixture.Context.Passes.ColorTarget;
+
+			// The nested frame, exactly as a call site runs it: Begin, then End and blit in a finally.
+			fixture.Renderer.BeginFullFrameCapture(Viewport);
+			fixture.Renderer.EndFullFrameCapture();
+			fixture.Renderer.DownsampleAndBlitFullFrame();
+
+			// The outer frame is still drawing into its capture target at its scale ...
+			await Assert.That(fixture.Context.Passes.ColorTarget).IsEqualTo(captureTarget);
+			await Assert.That(fixture.Context.CoordinateScale).IsNotEqualTo(1);
+
+			// ... and still gets its own blit when it ends.
+			fixture.Device.ClearRecording();
+			fixture.Renderer.EndFullFrameCapture();
+			fixture.Renderer.DownsampleAndBlitFullFrame();
+			await Assert.That(fixture.Context.Passes.ColorTarget).IsEqualTo(fixture.Target);
+			await Assert.That(fixture.Device.PassLabels()).Contains("SupersampleDownsample");
+
+			// Nothing is left open for the next frame.
+			fixture.Renderer.BeginFullFrameCapture(Viewport);
+			fixture.Renderer.EndFullFrameCapture();
+			await Assert.That(fixture.Context.Passes.ColorTarget).IsEqualTo(fixture.Target);
+		}
+
+		[Test]
+		public async Task ANestedCaptureThroughTheDrawContextDoesNotThrow()
+		{
+			using var fixture = CaptureFixture.Create();
+			var drawContext = new SceneDrawContext(fixture.Renderer.OwnerGl);
+
+			// The same nesting through the path the call sites use (SceneDrawContext pairs End with the blit).
+			drawContext.BeginFullFrameCapture(Viewport);
 			try
 			{
-#endif
-				fixture.Renderer.BeginFullFrameCapture(Viewport);
+				drawContext.BeginFullFrameCapture(Viewport);
+				drawContext.EndFullFrameCaptureAndBlit();
 
-				var exception = await Assert.That(() => fixture.Renderer.BeginFullFrameCapture(Viewport))
-					.Throws<InvalidOperationException>();
-
-				await Assert.That(exception.Message).Contains("A full-frame capture is already in progress.");
-#if DEBUG
-				// The diagnostic that tells a nested paint apart from a capture stranded by an earlier frame.
-				await Assert.That(exception.Message).Contains("Opened at:");
+				await Assert.That(fixture.Context.Passes.ColorTarget).IsNotEqualTo(fixture.Target);
 			}
 			finally
 			{
-				WebGpuSceneRenderer.CaptureTraceEnabled = traceWasEnabled;
+				drawContext.EndFullFrameCaptureAndBlit();
 			}
-#endif
 
-			fixture.Renderer.EndFullFrameCapture();
+			await Assert.That(fixture.Context.Passes.ColorTarget).IsEqualTo(fixture.Target);
 		}
 
 		/// <summary>A scene renderer over a compat context on a failure-injecting recording device.</summary>
