@@ -50,7 +50,9 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 	/// what it wrote. Every check also <i>fails</i>, deliberately: nothing was verified, and a leaked
 	/// environment variable must not be able to turn the suite into a green no-op. Then run again
 	/// <i>without</i> the variable - a suite whose goldens do not reproduce on the machine that captured
-	/// them is measuring noise, and every later parity check inherits that noise.
+	/// them is measuring noise, and every later parity check inherits that noise. Baselining a
+	/// <i>new</i> backend adds one step between the two runs: diff every new image against an existing
+	/// backend's set and confirm each difference is rasterization, not a rendering bug.
 	/// </para>
 	/// <para>
 	/// <b>Goldens are GPU specific, so there is a set per backend</b> -
