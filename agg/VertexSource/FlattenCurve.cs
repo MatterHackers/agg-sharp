@@ -77,6 +77,25 @@ namespace MatterHackers.Agg.VertexSource
 			//lastY = (0.0);
 		}
 
+		/// <summary>
+		/// A flattener for <paramref name="source"/> at <paramref name="resolutionScale"/>, coarsened by the
+		/// source's size above a printer bed (<see cref="CurveTolerance"/>) so a room-size curve is cut into no
+		/// more points than a bed-size one. At or under the bed the scale is exactly the one passed in.
+		/// </summary>
+		/// <remarks>
+		/// The size is measured once, here, from the source's bounds (control points included, which only ever
+		/// overstate it); a source swapped in later through <see cref="VertexSource"/> keeps this scale.
+		/// </remarks>
+		public static FlattenCurves ForSize(IVertexSource source, double resolutionScale = 1)
+		{
+			var bounds = source.GetBounds();
+
+			return new FlattenCurves(source)
+			{
+				ResolutionScale = resolutionScale / CurveTolerance.ScaleFor(System.Math.Max(bounds.Width, bounds.Height)),
+			};
+		}
+
 		public double ResolutionScale
 		{
 			get
