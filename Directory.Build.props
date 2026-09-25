@@ -1,0 +1,37 @@
+<Project>
+
+  <!--
+    agg-sharp's own build settings. MSBuild walks up from a project directory and stops at the
+    first Directory.Build.props, so inside a MatterCAD checkout this file is found before
+    MatterCAD's root one and that file no longer reaches agg-sharp. Anything agg-sharp needs
+    from it is repeated here, and agg-sharp also builds standalone, where there is no outer
+    file to import. Third-party code under Submodules/ (manifold-sharp) has its own
+    Directory.Build.props, which stops the walk before this file.
+  -->
+
+  <!--
+    The browser (wasm) compile gate, a copy of the one in MatterCAD's root Directory.Build.props.
+    Build with -p:BrowserCompatGate=true to have CA1416 fail on any API annotated
+    [UnsupportedOSPlatform("browser")] reached without a guard. SupportedPlatform is an item,
+    and items do not flow through -p: the way properties do, so it has to be declared here.
+    Everything is conditioned on the property, so a normal build is unchanged by it.
+  -->
+  <PropertyGroup Condition="'$(BrowserCompatGate)' == 'true'">
+    <WarningsAsErrors>$(WarningsAsErrors);CA1416</WarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(BrowserCompatGate)' == 'true'">
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <!--
+    Finds every async void: VSTHRD100 (async void method) and VSTHRD101 (async lambda passed
+    to a void-returning delegate). An async void's exception tears down the process and its
+    caller cannot await it, so nothing can know when its work is done. Which rules run and at
+    what severity is set in the root .editorconfig; every other VSTHRD rule is off there.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.7.23" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

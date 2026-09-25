@@ -1173,7 +1173,7 @@ namespace MatterHackers.Agg.Platform.Browser
 
 			try
 			{
-				this.CompleteCaptureAsync(this.renderLayer.SaveCurrentFrameAsync(screenshotPath), completion);
+				UiThread.ObserveFaults(this.CompleteCaptureAsync(this.renderLayer.SaveCurrentFrameAsync(screenshotPath), completion));
 			}
 			catch (Exception captureException)
 			{
@@ -1188,17 +1188,17 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// Waits out the half of a capture that outlives its frame and answers the requester.
 		/// </summary>
 		/// <remarks>
-		/// <c>async void</c> for <c>MacSystemWindow.CaptureThenPresent</c>'s reason: this is the tail of a
-		/// frame and there is nobody to hand a task to. It therefore may not throw - an exception out of an
-		/// <c>async void</c> reaches the runtime, not the requester - so every outcome goes into
-		/// <paramref name="completion"/> instead.
+		/// This is the tail of a frame and there is nobody to await it, so the caller hands it to
+		/// <see cref="UiThread.ObserveFaults"/>, as <c>MacSystemWindow.CaptureThenPresent</c>'s does. It
+		/// still catches everything itself: a fault would reach the crash sink, not the requester, so every
+		/// outcome goes into <paramref name="completion"/> instead.
 		/// </remarks>
 		/// <param name="capture">The layer's in-flight capture.</param>
 		/// <param name="completion">
 		/// The awaiting <see cref="CaptureScreenshotAsync"/> caller's signal, or null when the request was
 		/// already given up on. TrySet rather than Set for exactly that case.
 		/// </param>
-		private async void CompleteCaptureAsync(Task capture, TaskCompletionSource completion)
+		private async Task CompleteCaptureAsync(Task capture, TaskCompletionSource completion)
 		{
 			try
 			{

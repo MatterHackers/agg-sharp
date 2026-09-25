@@ -304,8 +304,8 @@ namespace MatterHackers.Agg.UI
 
 				// Only dispose once the capturing frame is done with it. If the pump gave up while the
 				// capture was still in flight, CaptureThenPresent still holds this same instance and will
-				// Set() it - and that Set would throw ObjectDisposedException inside an async void, which
-				// is a process kill. Leaving it to the GC costs nothing: this event is only ever polled
+				// Set() it - and that Set would throw ObjectDisposedException out of the capture, a fault
+				// reported as unhandled over a screenshot. Leaving it to the GC costs nothing: this event is only ever polled
 				// through IsSet, so it never allocates a wait handle to leak.
 				if (completed.IsSet)
 				{
@@ -417,7 +417,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			this.pendingScreenshotPath = null;
-			this.CaptureThenPresent(screenshotPath, this.screenshotComplete, this.screenshotCompletion);
+			UiThread.ObserveFaults(this.CaptureThenPresent(screenshotPath, this.screenshotComplete, this.screenshotCompletion));
 		}
 
 		public override Graphics2D NewGraphics2D()
@@ -449,9 +449,10 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// Saves the frame and then presents it. <c>async void</c> on purpose: this is the end of a paint
-		/// message and there is nobody to hand a Task to. The native read-back completes before its
-		/// ValueTask is returned, so the present still happens inline, while the frame is alive.
+		/// Saves the frame and then presents it. This is the end of a paint message and there is nobody to
+		/// await the Task, so the caller hands it to <see cref="UiThread.ObserveFaults"/>. The native
+		/// read-back completes before its ValueTask is returned, so the present still happens inline, while
+		/// the frame is alive.
 		/// </summary>
 		/// <param name="path">Where to write the PNG.</param>
 		/// <param name="completed">Signalled once the file is written (or the attempt has failed), so a
@@ -460,7 +461,7 @@ namespace MatterHackers.Agg.UI
 		/// <param name="completion">The same signal for an awaiting <see cref="CaptureScreenshotAsync"/>
 		/// caller. Null unless the request came from there. A failed capture faults it rather than
 		/// completing it, so the async contract's "the file exists once the task completes" holds.</param>
-		private async void CaptureThenPresent(string path, ManualResetEventSlim completed, TaskCompletionSource completion)
+		private async Task CaptureThenPresent(string path, ManualResetEventSlim completed, TaskCompletionSource completion)
 		{
 			Exception failure = null;
 

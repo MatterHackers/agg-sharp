@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2018, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -250,40 +250,40 @@ namespace MatterHackers.Agg.UI
 		/// <param name="duration">The total seconds to complete the update count</param>
 		/// <param name="updateCount">The number of updates to run (exactly)</param>
 		/// <param name="update">The function to call each update. Passes the current count (1 - updateCount).</param>
-		public static async void Run(GuiWidget widget, double duration, int updateCount, Action<int> update, Action after = null)
+		/// <param name="after">Called once the last update has run, from inside that update, or at once when
+		/// there are no updates. Callers pass this as an Action, so this stays synchronous rather than
+		/// returning a Task nobody would await.</param>
+		public static void Run(GuiWidget widget, double duration, int updateCount, Action<int> update, Action after = null)
 		{
-			if (updateCount > 0)
+			if (updateCount <= 0)
 			{
-				var animation = new Animation()
-				{
-					DrawTarget = widget,
-					SecondsPerUpdate = duration / updateCount
-				};
-
-				var future = new TaskCompletionSource<object>();
-
-				int updates = 0;
-
-				animation.Update += (s, time) =>
-				{
-					if (updates++ < updateCount)
-					{
-						update(updates);
-
-						if (updates == updateCount)
-						{
-							animation.Stop();
-							future.SetResult(null);
-						}
-					}
-				};
-
-				animation.Start();
-
-				await future.Task;
+				after?.Invoke();
+				return;
 			}
 
-			after?.Invoke();
+			var animation = new Animation()
+			{
+				DrawTarget = widget,
+				SecondsPerUpdate = duration / updateCount
+			};
+
+			int updates = 0;
+
+			animation.Update += (s, time) =>
+			{
+				if (updates++ < updateCount)
+				{
+					update(updates);
+
+					if (updates == updateCount)
+					{
+						animation.Stop();
+						after?.Invoke();
+					}
+				}
+			};
+
+			animation.Start();
 		}
 	}
 }

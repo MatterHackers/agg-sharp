@@ -1,0 +1,40 @@
+# agg-sharp's analyzer settings. root = true stops the search here, so MatterCAD's
+# .editorconfig (when agg-sharp is its submodule) does not apply.
+root = true
+
+[*.cs]
+# Microsoft.VisualStudio.Threading.Analyzers (added in Directory.Build.props) runs only its two
+# async-void rules: VSTHRD100 (async void method) and VSTHRD101 (async lambda passed to a
+# void-returning delegate).
+# An async void method (or an async lambda handed to a void-returning delegate such as Action or
+# EventHandler) rethrows any escaping exception on whatever thread it resumed on, which kills the
+# process, and nothing can wait for it. So both are errors. Work that must outlive its caller returns
+# a Task and goes through UiThread.RunOnIdle(Func<Task>) (and its delayed overload) or
+# UiThread.ObserveFaults(Task), which report a fault to UiThread.UnhandledException instead of
+# crashing on it. Every other VSTHRD rule is off.
+dotnet_diagnostic.VSTHRD100.severity = error
+dotnet_diagnostic.VSTHRD101.severity = error
+
+dotnet_diagnostic.VSTHRD001.severity = none
+dotnet_diagnostic.VSTHRD002.severity = none
+dotnet_diagnostic.VSTHRD003.severity = none
+dotnet_diagnostic.VSTHRD004.severity = none
+dotnet_diagnostic.VSTHRD010.severity = none
+dotnet_diagnostic.VSTHRD011.severity = none
+dotnet_diagnostic.VSTHRD012.severity = none
+dotnet_diagnostic.VSTHRD102.severity = none
+dotnet_diagnostic.VSTHRD103.severity = none
+dotnet_diagnostic.VSTHRD104.severity = none
+dotnet_diagnostic.VSTHRD105.severity = none
+dotnet_diagnostic.VSTHRD106.severity = none
+dotnet_diagnostic.VSTHRD107.severity = none
+dotnet_diagnostic.VSTHRD108.severity = none
+dotnet_diagnostic.VSTHRD109.severity = none
+dotnet_diagnostic.VSTHRD110.severity = none
+dotnet_diagnostic.VSTHRD111.severity = none
+dotnet_diagnostic.VSTHRD112.severity = none
+dotnet_diagnostic.VSTHRD113.severity = none
+dotnet_diagnostic.VSTHRD114.severity = none
+dotnet_diagnostic.VSTHRD115.severity = none
+dotnet_diagnostic.VSTHRD200.severity = none
+dotnet_diagnostic.VSTHRD201.severity = none

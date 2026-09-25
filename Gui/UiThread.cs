@@ -142,6 +142,86 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
+		/// Queue async work to run on the uithread, observing its faults. This is agg's one sanctioned
+		/// fire-and-forget.
+		/// </summary>
+		/// <remarks>
+		/// It exists because an <c>async () =&gt;</c> lambda handed to <see cref="RunOnIdle(Action)"/> is an
+		/// async void: an exception thrown after its first await is rethrown into whatever pump resumes it,
+		/// which crashes a Debug build and escapes every caller. Here the work's Task is kept and any fault
+		/// goes to <see cref="ReportUnhandledException"/>, the same sink a throwing idle action reaches.
+		/// Overload resolution sends every <c>async () =&gt;</c> lambda here and leaves plain statement
+		/// lambdas on the Action overload.
+		/// </remarks>
+		/// <param name="work">The async work to start on the uithread.</param>
+		public static void RunOnIdle(Func<Task> work)
+		{
+			RunOnIdle(() => StartObserved(work));
+		}
+
+		/// <summary>
+		/// Queue async work to run on the uithread after delayInSeconds has passed, observing its faults.
+		/// The delayed twin of <see cref="RunOnIdle(Func{Task})"/>; see there for why it exists.
+		/// </summary>
+		/// <param name="work">The async work to start on the uithread.</param>
+		/// <param name="delayInSeconds">The time to wait</param>
+		public static void RunOnIdle(Func<Task> work, double delayInSeconds)
+		{
+			RunOnIdle(() => StartObserved(work), delayInSeconds);
+		}
+
+		private static void StartObserved(Func<Task> work)
+		{
+			Task task;
+			try
+			{
+				task = work();
+			}
+			catch (Exception startException)
+			{
+				// A Func that is not itself async can throw before it has a Task to fault.
+				ReportUnhandledException(startException);
+				return;
+			}
+
+			ObserveFaults(task);
+		}
+
+		/// <summary>
+		/// Reports <paramref name="task"/>'s fault, whenever it comes, to <see cref="ReportUnhandledException"/>.
+		/// For async work that has to start now rather than on the next idle - the tail of a frame, say -
+		/// and so cannot go through <see cref="RunOnIdle(Func{Task})"/>, which uses this itself.
+		/// </summary>
+		/// <param name="task">The started work. Null, completed and cancelled tasks are ignored.</param>
+		public static void ObserveFaults(Task task)
+		{
+			if (task == null
+				|| task.IsCompletedSuccessfully
+				|| task.IsCanceled)
+			{
+				return;
+			}
+
+			// ExecuteSynchronously: the report is made on whichever thread faulted the work - normally the
+			// pump the work was resumed on - rather than waiting on a thread pool turn.
+			task.ContinueWith(
+				faulted => ReportFaults(faulted.Exception),
+				CancellationToken.None,
+				TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+				TaskScheduler.Default);
+		}
+
+		// A faulted Task wraps its exceptions in an AggregateException; a crash report wants the ones that were
+		// thrown, so each is reported on its own - a Task.WhenAll that lost two pieces of work reports both.
+		private static void ReportFaults(AggregateException aggregate)
+		{
+			foreach (var inner in aggregate.Flatten().InnerExceptions)
+			{
+				ReportUnhandledException(inner);
+			}
+		}
+
+		/// <summary>
 		/// Queue this action to run on the uithread after delayInSeconds has passed.
 		/// </summary>
 		/// <param name="action">The action to run</param>
