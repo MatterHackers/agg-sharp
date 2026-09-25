@@ -316,8 +316,6 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public PresetColors PresetColors { get; set; } = new PresetColors();
-
         public bool IsDarkTheme { get; set; }
 
         public Color Shade { get; set; }
@@ -419,8 +417,6 @@ namespace MatterHackers.Agg.UI
         public Color BedColor { get; set; }
 
         public Color UnderBedColor { get; set; }
-
-        public Color PrinterBedTextColor { get; set; }
 
         public GridColors BedGridColors { get; set; } = new GridColors();
         public Color ButtonBackgroundColor { get; set; }
@@ -584,17 +580,6 @@ namespace MatterHackers.Agg.UI
             widget.BorderColor = shadedBorder ? MinimalShade : BorderColor20;
             widget.Border = border;
         }
-    }
-
-    public class PresetColors
-    {
-        public Color MaterialPreset { get; set; } = Color.Orange;
-
-        public Color ScenePreset { get; set; } = Color.Green;
-
-        public Color QualityPreset { get; set; } = Color.Yellow;
-
-        public Color UserOverride { get; set; } = new Color(68, 95, 220, 150);
     }
 
     public class GridColors
