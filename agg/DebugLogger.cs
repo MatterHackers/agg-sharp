@@ -59,6 +59,14 @@ namespace Agg
         /// </summary>
         public static string LogFilePath { get; set; }
 
+        /// <summary>
+        /// The size the log file may reach before it is moved to the single previous file (see
+        /// <see cref="PreviousLogFilePath"/>) and a fresh one started. Release never clears the log, so without
+        /// this a repeating error would grow it without limit; with it the two files hold at most about twice
+        /// this. Settable so a test can roll it with a few lines.
+        /// </summary>
+        internal static long MaxLogFileBytes { get; set; } = 1024 * 1024;
+
         private static readonly object debugLogLock = new object();
         private static DebugLevel minimumLevel = DebugLevel.Error; // Default to Error level and above
 
@@ -217,7 +225,9 @@ namespace Agg
                         try
                         {
                             var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-                            File.AppendAllText(logFilePath, $"{timestamp} {logMessage}\n");
+                            var line = $"{timestamp} {logMessage}\n";
+                            RollLogFileIfFull(logFilePath, line.Length);
+                            File.AppendAllText(logFilePath, line);
                         }
                         catch
                         {
@@ -225,6 +235,39 @@ namespace Agg
                         }
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// The one older log kept beside <paramref name="logFilePath"/>: debug_log.txt -> debug_log.previous.txt.
+        /// </summary>
+        internal static string PreviousLogFilePath(string logFilePath)
+        {
+            return Path.Combine(Path.GetDirectoryName(logFilePath) ?? "",
+                Path.GetFileNameWithoutExtension(logFilePath) + ".previous" + Path.GetExtension(logFilePath));
+        }
+
+        /// <summary>
+        /// Moves the log to the previous file, replacing any older one, when appending
+        /// <paramref name="appendLength"/> more characters would take it past <see cref="MaxLogFileBytes"/>.
+        /// Called under debugLogLock. Never throws: a roll that fails (the previous file held open, say) still
+        /// lets the line be appended, and the next line tries again.
+        /// </summary>
+        private static void RollLogFileIfFull(string logFilePath, int appendLength)
+        {
+            try
+            {
+                // One stat per logged line: cheap, and Release only writes errors. Characters stand in for
+                // bytes - the log is almost all ASCII, and the cap is a disk-space guard, not an exact size.
+                var info = new FileInfo(logFilePath);
+                if (info.Exists && info.Length > 0 && info.Length + appendLength > MaxLogFileBytes)
+                {
+                    File.Move(logFilePath, PreviousLogFilePath(logFilePath), overwrite: true);
+                }
+            }
+            catch
+            {
+                // Ignore file access errors
             }
         }
 
