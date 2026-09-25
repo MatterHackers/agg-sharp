@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -120,6 +120,30 @@ namespace MatterHackers.Agg.Tests
 			var point3 = new Vector3(3, -4, 5);
 			point3.Normalize();
 			await Assert.That(point3.Length > 0.99 && point3.Length < 1.01).IsTrue();
+		}
+
+		[Test]
+		public async Task DistanceToSegmentIsTrue3DDistance()
+		{
+			var start = new Vector3(0, 0, 0);
+			var end = new Vector3(10, 0, 0);
+
+			// Off the segment along Z - the offset the old +Z perpendicular ignored.
+			await Assert.That(new Vector3(5, 0, 3).DistanceToSegment(start, end)).IsEqualTo(3).Within(1e-9);
+			// Off in Y, and off in both Y and Z.
+			await Assert.That(new Vector3(5, 4, 0).DistanceToSegment(start, end)).IsEqualTo(4).Within(1e-9);
+			await Assert.That(new Vector3(5, 3, 4).DistanceToSegment(start, end)).IsEqualTo(5).Within(1e-9);
+			// Beyond each end measures to that end point.
+			await Assert.That(new Vector3(-3, 0, 4).DistanceToSegment(start, end)).IsEqualTo(5).Within(1e-9);
+			await Assert.That(new Vector3(13, 4, 0).DistanceToSegment(start, end)).IsEqualTo(5).Within(1e-9);
+			// Exactly on the segment, including at its end.
+			await Assert.That(new Vector3(7, 0, 0).DistanceToSegment(start, end)).IsEqualTo(0).Within(1e-9);
+			await Assert.That(new Vector3(10, 0, 0).DistanceToSegment(start, end)).IsEqualTo(0).Within(1e-9);
+			// A segment in general position.
+			var slanted = new Vector3(0, 10, 10);
+			await Assert.That(new Vector3(3, 5, 5).DistanceToSegment(start, slanted)).IsEqualTo(3).Within(1e-9);
+			// A zero-length segment is the distance to its point.
+			await Assert.That(new Vector3(1, 2, 2).DistanceToSegment(start, start)).IsEqualTo(3).Within(1e-9);
 		}
 	}
 }

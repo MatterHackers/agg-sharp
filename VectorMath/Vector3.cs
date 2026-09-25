@@ -198,29 +198,24 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
+		/// <summary>
+		/// The true 3D Euclidean distance from this point to the segment from start to end:
+		/// the distance to the nearest point on the segment, which is an end point when the
+		/// projection falls outside it. A zero-length segment gives the distance to start.
+		/// </summary>
 		public double DistanceToSegment(Vector3 start, Vector3 end)
 		{
 			var segmentDelta = end - start;
 			var segmentLength = segmentDelta.Length;
-			var segmentNormal = segmentDelta.GetNormal();
-			var deltaToStart = this - start;
-			var distanceFromStart = segmentNormal.Dot(deltaToStart);
-			if (distanceFromStart >= 0 && distanceFromStart < segmentLength)
+			if (segmentLength == 0)
 			{
-				var perpendicular = segmentNormal.GetPerpendicular(new Vector3(0, 0, 1));
-				var distanceFromLine = Math.Abs(deltaToStart.Dot(perpendicular));
-				return distanceFromLine;
-			}
-			
-			if (distanceFromStart < 0)
-			{
-				return deltaToStart.Length;
+				return (this - start).Length;
 			}
 
-			var deltaToEnd = this - end;
-			return deltaToEnd.Length;
+			var direction = segmentDelta / segmentLength;
+			var alongSegment = Math.Clamp((this - start).Dot(direction), 0, segmentLength);
+			return (this - (start + direction * alongSegment)).Length;
 		}
-
 
 		#endregion public double Length
 
