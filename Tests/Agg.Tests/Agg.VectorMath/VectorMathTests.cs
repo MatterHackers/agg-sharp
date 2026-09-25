@@ -261,6 +261,37 @@ namespace MatterHackers.VectorMath.Tests
 			await Assert.That(new Vector3(1, 2, 3).Equals(world.EyePosition, 1e-3)).IsTrue();
 		}
 
+		/// <summary>
+		/// Scale is the camera's uniform scale alone. It once read the transformed unit X as a POSITION, so the
+		/// camera's translation leaked in: a moved camera reported roughly scale times its distance to the origin,
+		/// and one that had world X = 1 at the view pivot reported 0, which made every zoom a no-op.
+		/// </summary>
+		[Test]
+		public async Task WorldViewScaleIgnoresTranslationTests()
+		{
+			var world = new WorldView(100, 100);
+			world.Reset();
+			world.Scale = .05;
+			world.Translate(new Vector3(-12, 7, 3));
+			world.Rotate(Quaternion.FromEulerAngles(new Vector3(.4, -.2, 1.1)));
+			await Assert.That(world.Scale).IsEqualTo(.05).Within(1e-12);
+
+			// Setting it scales about the view pivot (the world point at the view-space origin): the pivot stays
+			// put and the eye moves along its line to it, closer by the factor.
+			var pivot = Vector3.Zero.Transform(Matrix4X4.Invert(world.GetTransform4X4()));
+			var eyeFromPivot = world.EyePosition - pivot;
+			world.Scale = .1;
+			await Assert.That(world.Scale).IsEqualTo(.1).Within(1e-12);
+			await Assert.That(pivot.Equals(Vector3.Zero.Transform(Matrix4X4.Invert(world.GetTransform4X4())), 1e-9)).IsTrue();
+			await Assert.That((eyeFromPivot / 2).Equals(world.EyePosition - pivot, 1e-9)).IsTrue();
+
+			// World X = 1 at the view pivot.
+			world.Reset();
+			world.Translate(-Vector3.UnitX);
+			world.Scale *= 1.2;
+			await Assert.That(world.Scale).IsEqualTo(1.2).Within(1e-12);
+		}
+
 		[Test]
 		public async Task FrustumExtractionTests()
 		{

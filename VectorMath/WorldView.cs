@@ -108,11 +108,17 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
+		/// <summary>
+		/// The uniform scale the camera applies to the world. Setting it scales about the view pivot (the world point
+		/// at the view-space origin), so the eye moves along its line to that point.
+		/// </summary>
 		public double Scale
 		{
 			get
 			{
-				var scaledUnitVector = Vector3.UnitX.TransformPosition(this.GetTransform4X4());
+				// The unit X as a VECTOR: as a position the translation leaks in and a moved camera reads its
+				// distance to the origin times the scale (or 0 when world X = 1 sits at the view pivot).
+				var scaledUnitVector = Vector3.UnitX.TransformVector(this.GetTransform4X4());
 				return scaledUnitVector.Length;
 			}
 
