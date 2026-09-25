@@ -51,17 +51,13 @@ namespace Agg
     public static class DebugLogger
     {
         private static readonly HashSet<string> debugFilters = new HashSet<string>();
-        private static readonly string debugLogPath = Path.Combine("C:", "Development", "MatterCAD", "debug_log.txt");
-
         /// <summary>
-        /// Whether the log file is written at all. The path above is a DEVELOPMENT machine's checkout, which does
-        /// not exist on a customer's machine - and since error logging now survives Release (see <see cref="Log"/>),
-        /// this code runs there too. Creating the directory would litter an unrelated drive with a folder that
-        /// looks like a source checkout, so the file leg is simply skipped when it is not already there; the
-        /// Debug.WriteLine leg still runs everywhere, and a host that wants durable logs has its own crash reporting.
-        /// Evaluated once: the answer cannot change usefully mid-session and the check is per-call otherwise.
+        /// The file every logged line is also appended to, or null for no file at all - the default, because a
+        /// library cannot know where its host keeps its data. The application sets it once at startup to a
+        /// folder it owns (and has created); agg hosts and tests that never set it log to Debug.WriteLine (and
+        /// the console, when asked) only.
         /// </summary>
-        private static readonly bool logToFile = LogDirectoryExists();
+        public static string LogFilePath { get; set; }
 
         private static readonly object debugLogLock = new object();
         private static DebugLevel minimumLevel = DebugLevel.Error; // Default to Error level and above
@@ -132,21 +128,6 @@ namespace Agg
             return new HashSet<string>(debugFilters);
         }
 
-        private static bool LogDirectoryExists()
-        {
-            try
-            {
-                var directory = Path.GetDirectoryName(debugLogPath);
-
-                return !string.IsNullOrEmpty(directory) && Directory.Exists(directory);
-            }
-            catch
-            {
-                // A path this class cannot even inspect is one it must not try to write.
-                return false;
-            }
-        }
-
         /// <summary>
         /// Clears the debug log file
         /// </summary>
@@ -154,9 +135,10 @@ namespace Agg
         {
             try
             {
-                if (File.Exists(debugLogPath))
+                var path = LogFilePath;
+                if (path != null && File.Exists(path))
                 {
-                    File.Delete(debugLogPath);
+                    File.Delete(path);
                 }
             }
             catch
@@ -168,10 +150,10 @@ namespace Agg
         /// <summary>
         /// Gets the current debug log file path
         /// </summary>
-        /// <returns>The debug log file path</returns>
+        /// <returns>The debug log file path, or null when no file is being written</returns>
         public static string GetLogPath()
         {
-            return debugLogPath;
+            return LogFilePath;
         }
 
         /// <summary>
@@ -226,16 +208,16 @@ namespace Agg
                 }
 
                 // Also write to file with thread synchronization. Guarded and swallowed: logging is never the
-                // reason a caller fails, and this now runs on machines where the log directory is missing,
-                // read only, or held by another process.
-                if (logToFile)
+                // reason a caller fails, and the file may be read only or held by another process.
+                var logFilePath = LogFilePath;
+                if (logFilePath != null)
                 {
                     lock (debugLogLock)
                     {
                         try
                         {
                             var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-                            File.AppendAllText(debugLogPath, $"{timestamp} {logMessage}\n");
+                            File.AppendAllText(logFilePath, $"{timestamp} {logMessage}\n");
                         }
                         catch
                         {
