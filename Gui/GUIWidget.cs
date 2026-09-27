@@ -1700,8 +1700,13 @@ namespace MatterHackers.Agg.UI
 			}
 #endif
 
-			// first thing we do is make sure the child has been initialized
-			childToAdd.Initialize();
+			// First make sure the child has been initialized. A child its owner already
+			// initialized (Initialize() and then AddChild) is left alone: running Initialize
+			// again would make an override that builds children build a second copy.
+			if (!childToAdd.Initialized)
+			{
+				childToAdd.Initialize();
+			}
 
 
 			if (indexInChildrenList == -1)
@@ -1748,6 +1753,12 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// Override this to create child controls and other
 		/// </summary>
+		/// <remarks>
+		/// AddChild calls this only for a widget that is not yet initialized, so it runs once
+		/// whether the owner calls it before AddChild or leaves it to AddChild. Overrides must
+		/// call base.Initialize() to be marked initialized; one that does not runs again on
+		/// every AddChild.
+		/// </remarks>
 		public virtual void Initialize()
 		{
 			Initialized = true;
