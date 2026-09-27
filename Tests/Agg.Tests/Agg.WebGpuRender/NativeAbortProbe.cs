@@ -56,6 +56,7 @@ namespace MatterHackers.Agg.Tests
 		{
 			[nameof(DisposeRenderPipelineWithNoBindings)] = DisposeRenderPipelineWithNoBindings,
 			[nameof(ComputeCallsOnDisposedResourcesThrow)] = ComputeCallsOnDisposedResourcesThrow,
+			[nameof(OversizedStorageBindingIsRefused)] = OversizedStorageBindingIsRefused,
 		};
 
 		/// <summary>
@@ -170,6 +171,47 @@ namespace MatterHackers.Agg.Tests
 				}
 
 				ExpectObjectDisposed("ReadBufferAsync", () => device.ReadBufferAsync(buffer, 0, new byte[16]));
+			}
+		}
+
+		private static void OversizedStorageBindingIsRefused()
+		{
+			// A device at the default limits (no raiseComputeLimits), so a whole-buffer binding of 160 MiB is
+			// over the 128 MiB maxStorageBufferBindingSize. Handed to wgpu-native it aborts the process.
+			const ulong BufferBytes = 160UL * 1024 * 1024;
+			using (GpuTestGate.Acquire(nameof(OversizedStorageBindingIsRefused)))
+			using (var device = new WebGpuRenderDevice(false, TestRenderBackend.Native, nameof(NativeAbortProbe)))
+			{
+				if (device.Limits.MaxStorageBufferBindingSize >= BufferBytes)
+				{
+					throw new InvalidOperationException(
+						$"The default device already grants a {device.Limits.MaxStorageBufferBindingSize:N0} byte storage binding; the probe needs one smaller than {BufferBytes:N0}.");
+				}
+
+				device.RegisterShaderSources(new ProbeShaders());
+				using var module = device.CreateShaderModule(ProbeShaders.ComputeKey);
+				using var pipeline = device.CreateComputePipeline(new ComputePipelineDescriptor(
+					module,
+					"main",
+					new[] { new BindGroupLayoutEntry(0, 0, ShaderStage.Compute, BindingType.StorageBuffer) },
+					"oversized"));
+				using var buffer = device.CreateBuffer(BufferUsage.Storage | BufferUsage.CopySrc, BufferBytes);
+
+				try
+				{
+					using var bindGroup = device.CreateBindGroup(new BindGroupDescriptor(pipeline, 0, new[] { BindGroupEntry.ForBuffer(0, buffer) }));
+				}
+				catch (ArgumentException)
+				{
+					if (device.LastUncapturedError != null)
+					{
+						throw new InvalidOperationException(device.LastUncapturedError);
+					}
+
+					return;
+				}
+
+				throw new InvalidOperationException("A storage binding over maxStorageBufferBindingSize did not throw ArgumentException.");
 			}
 		}
 

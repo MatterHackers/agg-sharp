@@ -204,5 +204,92 @@ namespace MatterHackers.Agg.Tests
 			// Once sources are registered an unknown key is an error, exactly as it would be natively.
 			await Assert.That(() => device.CreateShaderModule("NotAShader")).Throws<ArgumentException>();
 		}
+
+		[Test]
+		public async Task BindGroupsRefuseStorageRangesOverTheBindingLimit()
+		{
+			// The native device shares this validator (BindGroupValidation); left to wgpu-native, an
+			// oversized storage binding aborts the process at submit.
+			var device = new RecordingRenderDevice { Limits = new DeviceLimits(DeviceLimits.DefaultMaxBufferSize, maxStorageBufferBindingSize: 1024) };
+			var pipeline = ComputePipelineWith(device, BindingType.StorageBuffer, BindingType.ReadOnlyStorageBuffer);
+			var big = device.CreateBuffer(BufferUsage.Storage, 2048);
+
+			// Whole buffer (size 0) and an explicit size, on both storage binding types.
+			await Assert.That(() => device.CreateBindGroup(new BindGroupDescriptor(pipeline, 0, new[] { BindGroupEntry.ForBuffer(0, big) })))
+				.Throws<ArgumentOutOfRangeException>();
+			await Assert.That(() => device.CreateBindGroup(new BindGroupDescriptor(pipeline, 0, new[] { BindGroupEntry.ForBuffer(1, big, 0, 1028) })))
+				.Throws<ArgumentOutOfRangeException>();
+
+			// At the limit is fine, including "the rest of the buffer" from an offset that leaves exactly the limit.
+			device.CreateBindGroup(new BindGroupDescriptor(pipeline, 0, new[] { BindGroupEntry.ForBuffer(0, big, 0, 1024) }));
+			device.CreateBindGroup(new BindGroupDescriptor(pipeline, 0, new[] { BindGroupEntry.ForBuffer(1, big, 1024) }));
+			await Assert.That(device.CommandsOf<CreateBindGroupCommand>().Count).IsEqualTo(2);
+		}
+
+		[Test]
+		public async Task BindGroupsRefuseUniformRangesOverTheBindingLimit()
+		{
+			var device = new RecordingRenderDevice();
+			var pipeline = RenderPipelineWith(device, BindingType.UniformBuffer);
+			var big = device.CreateBuffer(BufferUsage.Uniform, DeviceLimits.DefaultMaxUniformBufferBindingSize + 256);
+
+			await Assert.That(() => device.CreateBindGroup(new BindGroupDescriptor(pipeline, 0, new[] { BindGroupEntry.ForBuffer(0, big) })))
+				.Throws<ArgumentOutOfRangeException>();
+			device.CreateBindGroup(new BindGroupDescriptor(pipeline, 0, new[] { BindGroupEntry.ForBuffer(0, big, 256) }));
+		}
+
+		[Test]
+		public async Task BindGroupsRefuseMisalignedBufferOffsets()
+		{
+			var device = new RecordingRenderDevice
+			{
+				Limits = new DeviceLimits(DeviceLimits.DefaultMaxBufferSize, minStorageBufferOffsetAlignment: 64, minUniformBufferOffsetAlignment: 128),
+			};
+			var compute = ComputePipelineWith(device, BindingType.StorageBuffer);
+			var render = RenderPipelineWith(device, BindingType.UniformBuffer);
+			var buffer = device.CreateBuffer(BufferUsage.Storage | BufferUsage.Uniform, 1024);
+
+			await Assert.That(() => device.CreateBindGroup(new BindGroupDescriptor(compute, 0, new[] { BindGroupEntry.ForBuffer(0, buffer, 32, 64) })))
+				.Throws<ArgumentException>();
+			await Assert.That(() => device.CreateBindGroup(new BindGroupDescriptor(render, 0, new[] { BindGroupEntry.ForBuffer(0, buffer, 64, 64) })))
+				.Throws<ArgumentException>();
+
+			// Each type is held to its own alignment.
+			device.CreateBindGroup(new BindGroupDescriptor(compute, 0, new[] { BindGroupEntry.ForBuffer(0, buffer, 64, 64) }));
+			device.CreateBindGroup(new BindGroupDescriptor(render, 0, new[] { BindGroupEntry.ForBuffer(0, buffer, 128, 64) }));
+		}
+
+		[Test]
+		public async Task BindGroupsRefuseRangesPastTheEndOfTheBuffer()
+		{
+			var device = new RecordingRenderDevice();
+			var pipeline = ComputePipelineWith(device, BindingType.StorageBuffer);
+			var buffer = device.CreateBuffer(BufferUsage.Storage, 512);
+
+			await Assert.That(() => device.CreateBindGroup(new BindGroupDescriptor(pipeline, 0, new[] { BindGroupEntry.ForBuffer(0, buffer, 768) })))
+				.Throws<ArgumentException>();
+			await Assert.That(() => device.CreateBindGroup(new BindGroupDescriptor(pipeline, 0, new[] { BindGroupEntry.ForBuffer(0, buffer, 256, 512) })))
+				.Throws<ArgumentException>();
+		}
+
+		private static IComputePipeline ComputePipelineWith(RecordingRenderDevice device, params BindingType[] types)
+			=> device.CreateComputePipeline(new ComputePipelineDescriptor(
+				null,
+				"main",
+				types.Select((type, binding) => new BindGroupLayoutEntry(0, (uint)binding, ShaderStage.Compute, type)).ToArray(),
+				"bindingLimits"));
+
+		private static IRenderPipeline RenderPipelineWith(RecordingRenderDevice device, BindingType type)
+		{
+			var shader = device.CreateShaderModule("PositionColor");
+			return device.CreateRenderPipeline(new RenderPipelineDescriptor(
+				shader,
+				"VertexMain",
+				shader,
+				"FragmentMain",
+				Array.Empty<VertexBufferLayout>(),
+				new[] { new ColorTargetState(TextureFormat.Bgra8Unorm) },
+				new[] { new BindGroupLayoutEntry(0, 0, ShaderStage.Vertex, type) }));
+		}
 	}
 }

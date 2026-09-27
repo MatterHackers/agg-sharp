@@ -194,6 +194,7 @@ namespace MatterHackers.RenderCore.Testing
 		/// <inheritdoc/>
 		public IBindGroup CreateBindGroup(in BindGroupDescriptor descriptor)
 		{
+			BindGroupValidation.Validate(descriptor, this.Limits);
 			var bindGroup = new StubBindGroup(this.NextLabel("bindGroup"), descriptor);
 			this.Record(new CreateBindGroupCommand(bindGroup, descriptor));
 			return bindGroup;

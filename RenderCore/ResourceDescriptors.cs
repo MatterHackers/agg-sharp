@@ -269,24 +269,48 @@ namespace MatterHackers.RenderCore
 		/// <summary>The WebGPU default, 65535: workgroups along any one dimension of a dispatch.</summary>
 		public const uint DefaultMaxComputeWorkgroupsPerDimension = 65535;
 
+		/// <summary>The WebGPU default, 8: storage buffer bindings one shader stage may declare.</summary>
+		public const uint DefaultMaxStorageBuffersPerShaderStage = 8;
+
+		/// <summary>The WebGPU default, 64 KiB: the largest uniform buffer range one binding can see.</summary>
+		public const ulong DefaultMaxUniformBufferBindingSize = 65536;
+
+		/// <summary>The WebGPU default, 256 bytes: what a storage binding's offset must be a multiple of.</summary>
+		public const uint DefaultMinStorageBufferOffsetAlignment = 256;
+
+		/// <summary>The WebGPU default, 256 bytes: what a uniform binding's offset must be a multiple of.</summary>
+		public const uint DefaultMinUniformBufferOffsetAlignment = 256;
+
 		/// <summary>Creates a limit set.</summary>
 		/// <param name="maxBufferSize">The largest buffer the device will create, in bytes.</param>
 		/// <param name="maxTextureDimension2D">The largest 2D texture edge the device will create, in pixels.</param>
 		/// <param name="maxStorageBufferBindingSize">The largest storage buffer range one binding can see, in bytes.</param>
 		/// <param name="maxComputeInvocationsPerWorkgroup">The most invocations one workgroup may have.</param>
 		/// <param name="maxComputeWorkgroupsPerDimension">The most workgroups along one dispatch dimension.</param>
+		/// <param name="maxStorageBuffersPerShaderStage">The most storage buffer bindings one shader stage may declare.</param>
+		/// <param name="maxUniformBufferBindingSize">The largest uniform buffer range one binding can see, in bytes.</param>
+		/// <param name="minStorageBufferOffsetAlignment">What a storage binding's byte offset must be a multiple of.</param>
+		/// <param name="minUniformBufferOffsetAlignment">What a uniform binding's byte offset must be a multiple of.</param>
 		public DeviceLimits(
 			ulong maxBufferSize,
 			uint maxTextureDimension2D = DefaultMaxTextureDimension2D,
 			ulong maxStorageBufferBindingSize = DefaultMaxStorageBufferBindingSize,
 			uint maxComputeInvocationsPerWorkgroup = DefaultMaxComputeInvocationsPerWorkgroup,
-			uint maxComputeWorkgroupsPerDimension = DefaultMaxComputeWorkgroupsPerDimension)
+			uint maxComputeWorkgroupsPerDimension = DefaultMaxComputeWorkgroupsPerDimension,
+			uint maxStorageBuffersPerShaderStage = DefaultMaxStorageBuffersPerShaderStage,
+			ulong maxUniformBufferBindingSize = DefaultMaxUniformBufferBindingSize,
+			uint minStorageBufferOffsetAlignment = DefaultMinStorageBufferOffsetAlignment,
+			uint minUniformBufferOffsetAlignment = DefaultMinUniformBufferOffsetAlignment)
 		{
 			this.MaxBufferSize = maxBufferSize;
 			this.MaxTextureDimension2D = maxTextureDimension2D;
 			this.MaxStorageBufferBindingSize = maxStorageBufferBindingSize;
 			this.MaxComputeInvocationsPerWorkgroup = maxComputeInvocationsPerWorkgroup;
 			this.MaxComputeWorkgroupsPerDimension = maxComputeWorkgroupsPerDimension;
+			this.MaxStorageBuffersPerShaderStage = maxStorageBuffersPerShaderStage;
+			this.MaxUniformBufferBindingSize = maxUniformBufferBindingSize;
+			this.MinStorageBufferOffsetAlignment = minStorageBufferOffsetAlignment;
+			this.MinUniformBufferOffsetAlignment = minUniformBufferOffsetAlignment;
 		}
 
 		/// <summary>
@@ -322,11 +346,41 @@ namespace MatterHackers.RenderCore
 		/// </summary>
 		public uint MaxComputeWorkgroupsPerDimension { get; }
 
+		/// <summary>
+		/// The most storage buffer bindings one shader stage may declare
+		/// (<c>WGPULimits.maxStorageBuffersPerShaderStage</c>). A compute pipeline whose layout declares more
+		/// is refused by wgpu.
+		/// </summary>
+		public uint MaxStorageBuffersPerShaderStage { get; }
+
+		/// <summary>
+		/// The largest byte range of a uniform buffer one bind group entry can expose
+		/// (<c>WGPULimits.maxUniformBufferBindingSize</c>).
+		/// </summary>
+		public ulong MaxUniformBufferBindingSize { get; }
+
+		/// <summary>
+		/// What the byte offset of a storage buffer binding must be a multiple of
+		/// (<c>WGPULimits.minStorageBufferOffsetAlignment</c>) - the granularity at which a large buffer can
+		/// be split across several bindings.
+		/// </summary>
+		public uint MinStorageBufferOffsetAlignment { get; }
+
+		/// <summary>
+		/// What the byte offset of a uniform buffer binding must be a multiple of
+		/// (<c>WGPULimits.minUniformBufferOffsetAlignment</c>).
+		/// </summary>
+		public uint MinUniformBufferOffsetAlignment { get; }
+
 		/// <inheritdoc/>
 		public override string ToString()
 			=> $"DeviceLimits maxBufferSize {this.MaxBufferSize:N0} maxTextureDimension2D {this.MaxTextureDimension2D:N0}"
 			+ $" maxStorageBufferBindingSize {this.MaxStorageBufferBindingSize:N0}"
 			+ $" maxComputeInvocationsPerWorkgroup {this.MaxComputeInvocationsPerWorkgroup:N0}"
-			+ $" maxComputeWorkgroupsPerDimension {this.MaxComputeWorkgroupsPerDimension:N0}";
+			+ $" maxComputeWorkgroupsPerDimension {this.MaxComputeWorkgroupsPerDimension:N0}"
+			+ $" maxStorageBuffersPerShaderStage {this.MaxStorageBuffersPerShaderStage:N0}"
+			+ $" maxUniformBufferBindingSize {this.MaxUniformBufferBindingSize:N0}"
+			+ $" minStorageBufferOffsetAlignment {this.MinStorageBufferOffsetAlignment:N0}"
+			+ $" minUniformBufferOffsetAlignment {this.MinUniformBufferOffsetAlignment:N0}";
 	}
 }

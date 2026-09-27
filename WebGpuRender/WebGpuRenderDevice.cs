@@ -145,8 +145,11 @@ namespace MatterHackers.WebGpuRender
 		private WGPUDevice device;
 		private WGPUQueue queue;
 
-		// The device's own limits, read once at creation. Only maxBufferSize is carried: it is the one
-		// limit application data (a large mesh's vertex buffer) actually reaches.
+		// Whether the device asks the adapter for its maximum buffer and storage limits - see RequiredLimits.
+		private readonly bool raiseComputeLimits;
+
+		// The device's own limits, read once at creation, so oversized resources are refused in managed
+		// code rather than by wgpu's validation.
 		private DeviceLimits limits = new DeviceLimits(DeviceLimits.DefaultMaxBufferSize);
 		private WGPUCommandEncoder commandEncoder;
 		private WebGpuRenderEncoder openEncoder;
@@ -179,11 +182,18 @@ namespace MatterHackers.WebGpuRender
 		/// that cannot present to the window at all (a hybrid laptop's discrete GPU with the display wired
 		/// to the integrated one), which surfaces much later as a swapchain that will not configure.
 		/// </param>
+		/// <param name="raiseComputeLimits">
+		/// True to ask for the adapter's maxima of <c>maxBufferSize</c>, <c>maxStorageBufferBindingSize</c>,
+		/// <c>maxStorageBuffersPerShaderStage</c> and <c>maxComputeInvocationsPerWorkgroup</c> instead of the
+		/// WebGPU defaults - what a compute consumer with large working sets (PatchMatch stereo) needs. Off by default so a render-only host keeps the
+		/// defaults its mesh chunking is sized against. What was granted is in <see cref="Limits"/>.
+		/// </param>
 		public WebGpuRenderDevice(
 			bool forceFallbackAdapter = false,
 			WGPUBackendType preferredBackend = WGPUBackendType.Undefined,
 			string label = null,
-			WindowSurfaceRequest windowSurface = null)
+			WindowSurfaceRequest windowSurface = null,
+			bool raiseComputeLimits = false)
 		{
 			// The loud fence for the browser. Nothing below would fail fast there: the adapter request
 			// would pump its whole budget against a promise that cannot resolve while this frame is
@@ -200,6 +210,7 @@ namespace MatterHackers.WebGpuRender
 			}
 
 			this.label = label ?? "WebGpuRenderDevice";
+			this.raiseComputeLimits = raiseComputeLimits;
 
 			// Allocated before the device request because the uncaptured-error and device-lost callbacks
 			// are unmanaged entry points: they cannot close over anything, so the only way back to this
@@ -224,6 +235,7 @@ namespace MatterHackers.WebGpuRender
 				{
 					this.adapter = this.RequestAdapter(forceFallbackAdapter, preferredBackend, pendingSurface);
 					this.ReadAdapterInfo();
+					this.ReadAdapterLimits();
 					this.device = this.RequestDevice();
 					this.queue = wgpuDeviceGetQueue(this.device);
 					this.ReadDeviceLimits();
@@ -257,9 +269,11 @@ namespace MatterHackers.WebGpuRender
 		/// <see cref="CreateAsync"/> is the only caller, and it disposes this on any failure.
 		/// </summary>
 		/// <param name="label">Optional debug label carried into wgpu's validation messages.</param>
-		private WebGpuRenderDevice(string label)
+		/// <param name="raiseComputeLimits">Whether to ask for the adapter's maximum buffer and storage limits.</param>
+		private WebGpuRenderDevice(string label, bool raiseComputeLimits)
 		{
 			this.label = label ?? "WebGpuRenderDevice";
+			this.raiseComputeLimits = raiseComputeLimits;
 			this.selfHandle = GCHandle.Alloc(this, GCHandleType.Normal);
 		}
 
@@ -369,6 +383,13 @@ namespace MatterHackers.WebGpuRender
 
 		/// <inheritdoc/>
 		public DeviceLimits Limits => this.limits;
+
+		/// <summary>
+		/// What the adapter reports it supports (<c>wgpuAdapterGetLimits</c>), read before the device was
+		/// requested. <see cref="Limits"/> is what the device was actually granted, which stays at the WebGPU
+		/// defaults for anything it did not ask to raise.
+		/// </summary>
+		public DeviceLimits AdapterLimits { get; private set; } = new DeviceLimits(DeviceLimits.DefaultMaxBufferSize);
 
 		/// <inheritdoc/>
 		public IGpuBuffer CreateBuffer(BufferUsage usage, ulong sizeInBytes, ReadOnlySpan<byte> initialData = default)
@@ -629,6 +650,9 @@ namespace MatterHackers.WebGpuRender
 			{
 				throw new ArgumentException("A bind group needs a pipeline created by this device.", nameof(descriptor));
 			}
+
+			// Before any handle is touched: an oversized storage binding aborts inside wgpu-native at submit.
+			BindGroupValidation.Validate(descriptor, this.limits);
 
 			var entries = descriptor.Entries;
 			var wgpuEntries = new WGPUBindGroupEntry[entries.Length];
@@ -2010,23 +2034,56 @@ namespace MatterHackers.WebGpuRender
 		{
 			var deviceLimits = default(WGPULimits);
 			bool read = wgpuDeviceGetLimits(this.device, &deviceLimits) == WGPUStatus.Success;
-			this.limits = new DeviceLimits(
-				read && deviceLimits.maxBufferSize > 0
-					? deviceLimits.maxBufferSize
-					: DeviceLimits.DefaultMaxBufferSize,
-				read && deviceLimits.maxTextureDimension2D > 0
-					? deviceLimits.maxTextureDimension2D
-					: DeviceLimits.DefaultMaxTextureDimension2D,
-				read && deviceLimits.maxStorageBufferBindingSize > 0
-					? deviceLimits.maxStorageBufferBindingSize
-					: DeviceLimits.DefaultMaxStorageBufferBindingSize,
-				read && deviceLimits.maxComputeInvocationsPerWorkgroup > 0
-					? deviceLimits.maxComputeInvocationsPerWorkgroup
-					: DeviceLimits.DefaultMaxComputeInvocationsPerWorkgroup,
-				read && deviceLimits.maxComputeWorkgroupsPerDimension > 0
-					? deviceLimits.maxComputeWorkgroupsPerDimension
-					: DeviceLimits.DefaultMaxComputeWorkgroupsPerDimension);
+			this.limits = ToDeviceLimits(deviceLimits, read);
 		}
+
+		/// <summary>
+		/// Reads what the adapter says it supports, before the device is requested. Carried separately from
+		/// <see cref="Limits"/> because a device only gets more than the defaults by asking for it.
+		/// </summary>
+		private void ReadAdapterLimits()
+		{
+			var adapterLimits = default(WGPULimits);
+			bool read = wgpuAdapterGetLimits(this.adapter, &adapterLimits) == WGPUStatus.Success;
+			this.AdapterLimits = ToDeviceLimits(adapterLimits, read);
+		}
+
+		/// <summary>
+		/// The carried subset of a native limit set. A failed query, or a zero a buggy implementation
+		/// reports, falls back to the WebGPU default rather than disabling a check: guessing high would put
+		/// the process abort back.
+		/// </summary>
+		/// <param name="native">The limits wgpu wrote.</param>
+		/// <param name="read">Whether the query that wrote them succeeded.</param>
+		private static DeviceLimits ToDeviceLimits(in WGPULimits native, bool read)
+			=> new DeviceLimits(
+				read && native.maxBufferSize > 0
+					? native.maxBufferSize
+					: DeviceLimits.DefaultMaxBufferSize,
+				read && native.maxTextureDimension2D > 0
+					? native.maxTextureDimension2D
+					: DeviceLimits.DefaultMaxTextureDimension2D,
+				read && native.maxStorageBufferBindingSize > 0
+					? native.maxStorageBufferBindingSize
+					: DeviceLimits.DefaultMaxStorageBufferBindingSize,
+				read && native.maxComputeInvocationsPerWorkgroup > 0
+					? native.maxComputeInvocationsPerWorkgroup
+					: DeviceLimits.DefaultMaxComputeInvocationsPerWorkgroup,
+				read && native.maxComputeWorkgroupsPerDimension > 0
+					? native.maxComputeWorkgroupsPerDimension
+					: DeviceLimits.DefaultMaxComputeWorkgroupsPerDimension,
+				read && native.maxStorageBuffersPerShaderStage > 0
+					? native.maxStorageBuffersPerShaderStage
+					: DeviceLimits.DefaultMaxStorageBuffersPerShaderStage,
+				read && native.maxUniformBufferBindingSize > 0
+					? native.maxUniformBufferBindingSize
+					: DeviceLimits.DefaultMaxUniformBufferBindingSize,
+				read && native.minStorageBufferOffsetAlignment > 0
+					? native.minStorageBufferOffsetAlignment
+					: DeviceLimits.DefaultMinStorageBufferOffsetAlignment,
+				read && native.minUniformBufferOffsetAlignment > 0
+					? native.minUniformBufferOffsetAlignment
+					: DeviceLimits.DefaultMinUniformBufferOffsetAlignment);
 
 		private void ReadAdapterInfo()
 		{
@@ -2071,9 +2128,10 @@ namespace MatterHackers.WebGpuRender
 
 			if (!Succeeded(result) && RaisesALimit(requiredLimits))
 			{
-				// A raised maxTextureDimension2D is a want, never a need: without it a very large capture
-				// is clamped, but with a refused limit there is no device at all and the window cannot
-				// paint. wgpu-native grants whatever the adapter reported, so this is dead code on the
+				// A raised limit is a want, never a need: without a raised maxTextureDimension2D a very
+				// large capture is clamped, and without the raised compute limits a compute consumer sees
+				// the defaults in Limits and sizes its work to them; with a refused limit there is no
+				// device at all and the window cannot paint. wgpu-native grants whatever the adapter reported, so this is dead code on the
 				// desktop; the browser is where an implementation may legitimately refuse a limit it just
 				// told us it supports, and losing the whole canvas over it would be the wrong trade.
 				result = this.RequestDeviceOnce(UndefinedLimits());
@@ -2093,13 +2151,17 @@ namespace MatterHackers.WebGpuRender
 			=> result.Status == (int)WGPURequestDeviceStatus.Success && !result.Device.IsNull;
 
 		/// <summary>
-		/// Whether a limit set asks for anything above the implementation's defaults - today only
-		/// <c>maxTextureDimension2D</c>, which <see cref="RequiredLimits"/> raises. Anything left at the
-		/// undefined sentinel is a default request and cannot be what a refusal is about.
+		/// Whether a limit set asks for anything above the implementation's defaults - any of the limits
+		/// <see cref="RequiredLimits"/> raises. Anything left at the undefined sentinel is a default request
+		/// and cannot be what a refusal is about.
 		/// </summary>
 		/// <param name="limits">The limits a device request carried.</param>
 		private static bool RaisesALimit(in WGPULimits limits)
-			=> limits.maxTextureDimension2D != WGPUConstants.WGPU_LIMIT_U32_UNDEFINED;
+			=> limits.maxTextureDimension2D != WGPUConstants.WGPU_LIMIT_U32_UNDEFINED
+			|| limits.maxBufferSize != WGPUConstants.WGPU_LIMIT_U64_UNDEFINED
+			|| limits.maxStorageBufferBindingSize != WGPUConstants.WGPU_LIMIT_U64_UNDEFINED
+			|| limits.maxStorageBuffersPerShaderStage != WGPUConstants.WGPU_LIMIT_U32_UNDEFINED
+			|| limits.maxComputeInvocationsPerWorkgroup != WGPUConstants.WGPU_LIMIT_U32_UNDEFINED;
 
 		/// <summary>
 		/// The device descriptor both wait strategies share. Only the callback mode differs between them:
@@ -2189,9 +2251,12 @@ namespace MatterHackers.WebGpuRender
 		/// supports 16384. 8192 is not enough for the 3x full-frame supersample of a fullscreen retina
 		/// window, so this is what keeps the capture at full quality instead of clamping it down. Only values
 		/// read back <i>from the adapter</i> are requested: asking for a limit the adapter cannot grant fails
-		/// device creation outright, and nothing else here wants a raised limit anyway (a raised
-		/// <c>maxBufferSize</c>, for instance, would silently change the size the mesh path chunks at).
-		/// A failed adapter query leaves the field undefined, which is "use the default".
+		/// device creation outright. A render-only device wants nothing else raised (a raised
+		/// <c>maxBufferSize</c>, for instance, would silently change the size the mesh path chunks at), so
+		/// the compute limits - <c>maxBufferSize</c>, <c>maxStorageBufferBindingSize</c>,
+		/// <c>maxStorageBuffersPerShaderStage</c>, <c>maxComputeInvocationsPerWorkgroup</c> - are raised to
+		/// the adapter's maxima only when the device was created with <c>raiseComputeLimits</c>. A failed adapter query leaves the field undefined,
+		/// which is "use the default".
 		/// </remarks>
 		private WGPULimits RequiredLimits()
 		{
@@ -2202,6 +2267,29 @@ namespace MatterHackers.WebGpuRender
 			if (read && adapterLimits.maxTextureDimension2D > 0)
 			{
 				required.maxTextureDimension2D = adapterLimits.maxTextureDimension2D;
+			}
+
+			if (this.raiseComputeLimits && read)
+			{
+				if (adapterLimits.maxBufferSize > 0)
+				{
+					required.maxBufferSize = adapterLimits.maxBufferSize;
+				}
+
+				if (adapterLimits.maxStorageBufferBindingSize > 0)
+				{
+					required.maxStorageBufferBindingSize = adapterLimits.maxStorageBufferBindingSize;
+				}
+
+				if (adapterLimits.maxStorageBuffersPerShaderStage > 0)
+				{
+					required.maxStorageBuffersPerShaderStage = adapterLimits.maxStorageBuffersPerShaderStage;
+				}
+
+				if (adapterLimits.maxComputeInvocationsPerWorkgroup > 0)
+				{
+					required.maxComputeInvocationsPerWorkgroup = adapterLimits.maxComputeInvocationsPerWorkgroup;
+				}
 			}
 
 			return required;

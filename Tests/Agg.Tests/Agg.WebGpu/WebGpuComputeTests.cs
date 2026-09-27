@@ -52,6 +52,10 @@ namespace MatterHackers.Agg.Tests
 		private const string AddKey = "test.compute.add";
 		private const string ReverseKey = "test.compute.reverse";
 		private const string ScaleKey = "test.compute.scale";
+		private const string TailKey = "test.compute.tail";
+
+		// Elements the tail shader touches at the very end of its binding.
+		private const uint TailCount = 1024;
 		private const uint WorkgroupSize = 64;
 
 		private const string AddWgsl = @"
@@ -112,6 +116,139 @@ fn main(@builtin(global_invocation_id) id : vec3<u32>)
 	}
 }
 ";
+
+		// data[n - TailCount + i] = data[n - TailCount + i] * 3 + 1 for the last TailCount elements of the
+		// binding: those elements are only reachable if the binding really spans the whole buffer.
+		private const string TailWgsl = @"
+@group(0) @binding(0) var<storage, read_write> data : array<u32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id : vec3<u32>)
+{
+	let n = arrayLength(&data);
+	if (id.x < 1024u)
+	{
+		let i = n - 1024u + id.x;
+		data[i] = data[i] * 3u + 1u;
+	}
+}
+";
+
+		[Test]
+		public async Task WithoutTheComputeOptInTheDeviceKeepsTheWebGpuDefaults()
+		{
+			// Render-only hosts must be unchanged: a raised maxBufferSize would move the mesh chunk size.
+			using (GpuTestGate.Acquire(nameof(WebGpuComputeTests)))
+			using (var device = CreateDevice())
+			{
+				DeviceLimits limits = device.Limits;
+				await Assert.That(limits.MaxBufferSize).IsEqualTo(DeviceLimits.DefaultMaxBufferSize);
+				await Assert.That(limits.MaxStorageBufferBindingSize).IsEqualTo(DeviceLimits.DefaultMaxStorageBufferBindingSize);
+				await Assert.That(limits.MaxStorageBuffersPerShaderStage).IsEqualTo(DeviceLimits.DefaultMaxStorageBuffersPerShaderStage);
+				await Assert.That(limits.MaxUniformBufferBindingSize).IsEqualTo(DeviceLimits.DefaultMaxUniformBufferBindingSize);
+				await Assert.That(limits.MinStorageBufferOffsetAlignment).IsEqualTo(DeviceLimits.DefaultMinStorageBufferOffsetAlignment);
+				await Assert.That(limits.MinUniformBufferOffsetAlignment).IsEqualTo(DeviceLimits.DefaultMinUniformBufferOffsetAlignment);
+				await Assert.That(limits.MaxComputeInvocationsPerWorkgroup).IsEqualTo(DeviceLimits.DefaultMaxComputeInvocationsPerWorkgroup);
+				await Assert.That(limits.MaxComputeWorkgroupsPerDimension).IsEqualTo(DeviceLimits.DefaultMaxComputeWorkgroupsPerDimension);
+			}
+		}
+
+		[Test]
+		public async Task TheComputeOptInGrantsTheAdaptersMaxima()
+		{
+			using (GpuTestGate.Acquire(nameof(WebGpuComputeTests)))
+			using (var device = CreateDevice(raiseComputeLimits: true))
+			{
+				DeviceLimits granted = device.Limits;
+				DeviceLimits adapter = device.AdapterLimits;
+				Console.WriteLine($"Adapter '{device.AdapterName}' ({device.AdapterBackend}): {adapter}");
+				Console.WriteLine($"Granted: {granted}");
+
+				await Assert.That(granted.MaxBufferSize).IsEqualTo(adapter.MaxBufferSize);
+				await Assert.That(granted.MaxStorageBufferBindingSize).IsEqualTo(adapter.MaxStorageBufferBindingSize);
+				await Assert.That(granted.MaxStorageBuffersPerShaderStage).IsEqualTo(adapter.MaxStorageBuffersPerShaderStage);
+				await Assert.That(granted.MaxComputeInvocationsPerWorkgroup).IsEqualTo(adapter.MaxComputeInvocationsPerWorkgroup);
+
+				await Assert.That(granted.MaxBufferSize).IsGreaterThanOrEqualTo(DeviceLimits.DefaultMaxBufferSize);
+				await Assert.That(granted.MaxStorageBufferBindingSize).IsGreaterThanOrEqualTo(DeviceLimits.DefaultMaxStorageBufferBindingSize);
+				await Assert.That(granted.MaxStorageBuffersPerShaderStage).IsGreaterThanOrEqualTo(DeviceLimits.DefaultMaxStorageBuffersPerShaderStage);
+				await Assert.That(granted.MaxComputeInvocationsPerWorkgroup).IsGreaterThanOrEqualTo(DeviceLimits.DefaultMaxComputeInvocationsPerWorkgroup);
+
+				// The texture limit the device always raises is still raised alongside.
+				await Assert.That(granted.MaxTextureDimension2D).IsEqualTo(adapter.MaxTextureDimension2D);
+			}
+		}
+
+		[Test]
+		public async Task AStorageBindingLargerThanTheDefaultReachesItsTail()
+		{
+			// 160 MiB: past the 128 MiB default binding limit, under the 256 MiB default buffer limit, so the
+			// binding size is the only limit this exercises.
+			const ulong BufferBytes = 160UL * 1024 * 1024;
+			const ulong TailOffset = BufferBytes - (TailCount * sizeof(uint));
+
+			using (GpuTestGate.Acquire(nameof(WebGpuComputeTests)))
+			using (var device = CreateDevice(raiseComputeLimits: true))
+			{
+				if (device.Limits.MaxStorageBufferBindingSize < BufferBytes)
+				{
+					Skip.Test(
+						$"Adapter '{device.AdapterName}' grants a storage binding of only "
+						+ $"{device.Limits.MaxStorageBufferBindingSize:N0} bytes; this needs {BufferBytes:N0}.");
+				}
+
+				using var module = device.CreateShaderModule(TailKey);
+				using var pipeline = device.CreateComputePipeline(new ComputePipelineDescriptor(
+					module,
+					"main",
+					new[] { new BindGroupLayoutEntry(0, 0, ShaderStage.Compute, BindingType.StorageBuffer) },
+					"tail"));
+
+				var pattern = new uint[TailCount];
+				for (uint i = 0; i < TailCount; i++)
+				{
+					pattern[i] = (i * 2654435761u) >> 8;
+				}
+
+				using var buffer = device.CreateBuffer(BufferUsage.Storage | BufferUsage.CopyDst | BufferUsage.CopySrc, BufferBytes);
+				device.WriteBuffer(buffer, TailOffset, MemoryMarshal.AsBytes(pattern.AsSpan()));
+
+				// The whole buffer in one binding (size 0 = to the end).
+				using var bindGroup = device.CreateBindGroup(new BindGroupDescriptor(
+					pipeline,
+					0,
+					new[] { BindGroupEntry.ForBuffer(0, buffer) }));
+
+				using (var pass = device.BeginComputePass("tailPass"))
+				{
+					pass.SetPipeline(pipeline);
+					pass.SetBindGroup(0, bindGroup);
+					pass.Dispatch(WorkgroupsFor((int)TailCount));
+				}
+
+				var bytes = new byte[TailCount * sizeof(uint)];
+				await device.ReadBufferAsync(buffer, TailOffset, bytes);
+				uint[] result = MemoryMarshal.Cast<byte, uint>(bytes).ToArray();
+
+				await Assert.That(device.LastUncapturedError).IsNull();
+				for (int i = 0; i < TailCount; i++)
+				{
+					uint expected = unchecked((pattern[i] * 3u) + 1u);
+					if (result[i] != expected)
+					{
+						await Assert.That(result[i]).IsEqualTo(expected);
+					}
+				}
+			}
+		}
+
+		[Test]
+		public async Task AStorageBindingOverTheGrantedLimitIsRefusedNotAborted()
+		{
+			// In a child process: before the check, wgpu-native aborted the whole process on this binding.
+			var (exitCode, output) = await NativeAbortProbe.RunInChildAsync("OversizedStorageBindingIsRefused");
+			await Assert.That(exitCode).IsEqualTo(0).Because(output);
+		}
 
 		[Test]
 		public async Task AComputeShaderAddsTwoStorageArraysIntoAThird()
@@ -474,9 +611,13 @@ fn main(@builtin(global_invocation_id) id : vec3<u32>)
 			return MemoryMarshal.Cast<byte, float>(bytes).ToArray();
 		}
 
-		private static WebGpuRenderDevice CreateDevice()
+		private static WebGpuRenderDevice CreateDevice(bool raiseComputeLimits = false)
 		{
-			var device = new WebGpuRenderDevice(false, TestRenderBackend.Native, nameof(WebGpuComputeTests));
+			var device = new WebGpuRenderDevice(
+				false,
+				TestRenderBackend.Native,
+				nameof(WebGpuComputeTests),
+				raiseComputeLimits: raiseComputeLimits);
 			device.RegisterShaderSources(new ComputeTestShaders());
 			return device;
 		}
@@ -493,6 +634,7 @@ fn main(@builtin(global_invocation_id) id : vec3<u32>)
 					AddKey => AddWgsl,
 					ReverseKey => ReverseWgsl,
 					ScaleKey => ScaleWgsl,
+					TailKey => TailWgsl,
 					_ => null,
 				};
 		}

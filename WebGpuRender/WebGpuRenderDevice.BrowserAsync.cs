@@ -73,8 +73,15 @@ namespace MatterHackers.WebGpuRender
 		/// one of the native factories on the desktop - or null for an offscreen device.
 		/// </param>
 		/// <param name="label">Optional debug label carried into wgpu's validation messages.</param>
+		/// <param name="raiseComputeLimits">
+		/// True to ask for the adapter's maximum buffer and storage limits - see the constructor's parameter
+		/// of the same name. A browser that refuses them yields a device at the defaults, not no device.
+		/// </param>
 		/// <exception cref="InvalidOperationException">The instance, adapter or device could not be created.</exception>
-		public static async Task<WebGpuRenderDevice> CreateAsync(WindowSurfaceRequest windowSurface, string label = null)
+		public static async Task<WebGpuRenderDevice> CreateAsync(
+			WindowSurfaceRequest windowSurface,
+			string label = null,
+			bool raiseComputeLimits = false)
 		{
 			if (!OperatingSystem.IsBrowser())
 			{
@@ -82,10 +89,10 @@ namespace MatterHackers.WebGpuRender
 				// path is the one every golden image is captured through, and it must not acquire a second
 				// spelling. forceFallbackAdapter and preferredBackend keep their defaults - a caller that
 				// needs either is asking a wgpu-native question and should say so through the constructor.
-				return new WebGpuRenderDevice(false, WGPUBackendType.Undefined, label, windowSurface);
+				return new WebGpuRenderDevice(false, WGPUBackendType.Undefined, label, windowSurface, raiseComputeLimits);
 			}
 
-			var device = new WebGpuRenderDevice(label);
+			var device = new WebGpuRenderDevice(label, raiseComputeLimits);
 
 			try
 			{
@@ -130,6 +137,7 @@ namespace MatterHackers.WebGpuRender
 
 				this.adapter = adapterResult.Adapter;
 				this.ReadAdapterInfo();
+				this.ReadAdapterLimits();
 				this.device = await this.RequestBrowserDeviceWithLimitsFallbackAsync();
 				this.queue = wgpuDeviceGetQueue(this.device);
 				this.ReadDeviceLimits();
@@ -151,7 +159,7 @@ namespace MatterHackers.WebGpuRender
 
 		/// <summary>
 		/// The browser device request, with the same refusal policy the desktop applies: ask for the raised
-		/// <c>maxTextureDimension2D</c>, and if the implementation will not grant it, take the defaults
+		/// <c>maxTextureDimension2D</c> (and the compute limits, if opted in), and if the implementation will not grant it, take the defaults
 		/// rather than leaving the page with no device.
 		/// </summary>
 		private async Task<WGPUDevice> RequestBrowserDeviceWithLimitsFallbackAsync()
