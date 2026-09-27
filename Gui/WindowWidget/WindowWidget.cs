@@ -1,4 +1,5 @@
 using MatterHackers.Agg.Platform;
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.ImageProcessing;
 using MatterHackers.Localizations;
 using MatterHackers.VectorMath;
@@ -109,6 +110,57 @@ namespace MatterHackers.Agg.UI
 
 		public double WindowBorder { get => windowBackground.BackgroundOutlineWidth; set => windowBackground.BackgroundOutlineWidth = value; }
 
+		private double cornerRadius;
+
+		/// <summary>
+		/// Rounds the corners of the visible window (background, border and title bar colour) by this many design
+		/// units. 0, the default, keeps the classic square window.
+		/// </summary>
+		/// <remarks>
+		/// agg can only clip to rectangles, so the rounding cannot cut the corners off whatever the title bar and
+		/// client area paint. Instead the panel is padded on the sides and bottom by radius * (1 - 1/sqrt 2), which
+		/// puts the client area's square corners exactly on the arc: nothing it paints can square the corners off.
+		/// The top is not padded because the title bar paints no background of its own - its colour
+		/// (<see cref="TitleBarColor"/>) is drawn here, with its top corners rounded.
+		/// </remarks>
+		public double CornerRadius
+		{
+			get => cornerRadius;
+			set
+			{
+				cornerRadius = value;
+				windowBackground.BackgroundRadius = value > 0 ? value * DeviceScale : 3 * DeviceScale;
+				var inset = value * (1 - 1 / Math.Sqrt(2));
+				windowBackground.Padding = new BorderDouble(inset, inset, inset, 0);
+			}
+		}
+
+		/// <summary>
+		/// The colour of the soft drop shadow drawn around the window; its alpha is how dark the shadow is at its
+		/// darkest. Transparent, the default, draws the classic thin edge shade instead.
+		/// </summary>
+		/// <remarks>
+		/// The shadow is drawn in the resize grab border that surrounds the visible window, so it never changes
+		/// where the window can be grabbed. That border is only a few design units wide, so
+		/// <see cref="ShadowBlur"/> plus the length of <see cref="ShadowOffset"/> should stay within it; anything
+		/// past it is clipped at the window's bounds.
+		/// </remarks>
+		public Color ShadowColor { get; set; } = Color.Transparent;
+
+		/// <summary>How far the shadow is shifted from the window, in design units (negative Y is down).</summary>
+		public Vector2 ShadowOffset { get; set; }
+
+		/// <summary>How far the shadow fades out past the window's edge, in design units.</summary>
+		public double ShadowBlur { get; set; }
+
+		/// <summary>
+		/// A colour painted behind the title bar, following the window's rounded top corners. Transparent, the
+		/// default, lets the window's background show through as before.
+		/// </summary>
+		public Color TitleBarColor { get; set; } = Color.Transparent;
+
+		private bool IsStyled => cornerRadius > 0 || ShadowColor.Alpha0To255 > 0 || TitleBarColor.Alpha0To255 > 0;
+
 		public Color WindowBorderColor { get => windowBackground.BorderColor; set => windowBackground.BorderColor = value; }
 
 		public GuiWidget ClientArea { get; }
@@ -189,6 +241,12 @@ namespace MatterHackers.Agg.UI
 
         public override void OnDrawBackground(Graphics2D graphics2D)
 		{
+			if (IsStyled)
+			{
+				DrawStyledBackground(graphics2D);
+				return;
+			}
+
             var bounds = this.LocalBounds;
 			bounds.Deflate(new BorderDouble(deviceGrabWidth));
             graphics2D.FillRectangle(bounds, BackgroundColor);
@@ -224,6 +282,54 @@ namespace MatterHackers.Agg.UI
 					Width - i - .5,
 					Height - i - .5,
 					color);
+			}
+		}
+
+		/// <summary>
+		/// Draws the soft shadow, the rounded background and the title bar colour of a window with any of the
+		/// style options set. The border is the panel's own (<see cref="WindowBorder"/>), which follows the same
+		/// radius.
+		/// </summary>
+		private void DrawStyledBackground(Graphics2D graphics2D)
+		{
+			// the visible window is the panel inside the grab border, wherever layout has put it
+			var panel = windowBackground.BoundsRelativeToParent;
+			var radius = cornerRadius * DeviceScale;
+
+			if (ShadowColor.Alpha0To255 > 0)
+			{
+				// A blur is stacked translucent rounded rectangles, widest first: each ring past the window's edge
+				// is covered by fewer layers, so the shadow fades out over ShadowBlur. One layer per device pixel
+				// of blur (capped) keeps the steps under a pixel apart at any display scale.
+				var shadow = panel;
+				shadow.Offset(ShadowOffset * DeviceScale);
+				var blur = Math.Max(0, ShadowBlur * DeviceScale);
+				int layers = Math.Max(1, Math.Min(12, (int)Math.Ceiling(blur)));
+				// per layer alpha such that all of them together reach the requested alpha
+				var layerAlpha = 1 - Math.Pow(1 - ShadowColor.Alpha0To1, 1.0 / layers);
+				var layerColor = new Color(ShadowColor, (int)Math.Round(layerAlpha * 255));
+				for (int i = layers; i >= 1; i--)
+				{
+					var grow = blur * i / layers;
+					var layer = shadow;
+					layer.Inflate(grow);
+					var rect = new RoundedRect(layer, radius + grow);
+					graphics2D.Render(rect, layerColor);
+				}
+			}
+
+			if (BackgroundColor.Alpha0To255 > 0)
+			{
+				graphics2D.Render(new RoundedRect(panel, radius), BackgroundColor);
+			}
+
+			if (TitleBarColor.Alpha0To255 > 0
+				&& TitleBar != null)
+			{
+				var titleBarBounds = new RectangleDouble(panel.Left, panel.Top - TitleBar.Height, panel.Right, panel.Top);
+				var titleBarShape = new RoundedRect(titleBarBounds, 0);
+				titleBarShape.radius(0, 0, radius, radius);
+				graphics2D.Render(titleBarShape, TitleBarColor);
 			}
 		}
 
