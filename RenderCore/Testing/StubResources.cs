@@ -148,6 +148,22 @@ namespace MatterHackers.RenderCore.Testing
 		public RenderPipelineDescriptor Descriptor { get; }
 	}
 
+	/// <summary>A recorded stand-in for a compute pipeline.</summary>
+	public sealed class StubComputePipeline : StubResource, IComputePipeline
+	{
+		/// <summary>Creates a stub compute pipeline.</summary>
+		/// <param name="label">Readable name.</param>
+		/// <param name="descriptor">The descriptor it stands in for.</param>
+		public StubComputePipeline(string label, in ComputePipelineDescriptor descriptor)
+			: base(label)
+		{
+			this.Descriptor = descriptor;
+		}
+
+		/// <inheritdoc/>
+		public ComputePipelineDescriptor Descriptor { get; }
+	}
+
 	/// <summary>A recorded stand-in for a bind group.</summary>
 	public sealed class StubBindGroup : StubResource, IBindGroup
 	{

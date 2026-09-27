@@ -43,7 +43,8 @@ namespace MatterHackers.RenderCore
 	/// A GPU buffer (<c>WGPUBuffer</c>). Contents are written with
 	/// <see cref="IRenderDevice.WriteBuffer"/> or at creation; there is deliberately no mapping API on
 	/// this seam, because mapping is asynchronous in the browser and the only thing we need it for is
-	/// readback, which <see cref="IRenderDevice.ReadTextureAsync"/> owns.
+	/// readback, which <see cref="IRenderDevice.ReadTextureAsync"/> and
+	/// <see cref="IRenderDevice.ReadBufferAsync"/> own.
 	/// </summary>
 	public interface IGpuBuffer : IGpuResource
 	{
@@ -88,6 +89,16 @@ namespace MatterHackers.RenderCore
 	{
 		/// <summary>The descriptor this pipeline was created from - also its cache key.</summary>
 		RenderPipelineDescriptor Descriptor { get; }
+	}
+
+	/// <summary>
+	/// An immutable compute pipeline (<c>WGPUComputePipeline</c>): one compute entry point and its bind
+	/// group layout, created from a <see cref="ComputePipelineDescriptor"/>.
+	/// </summary>
+	public interface IComputePipeline : IGpuResource
+	{
+		/// <summary>The descriptor this pipeline was created from - also its cache key.</summary>
+		ComputePipelineDescriptor Descriptor { get; }
 	}
 
 	/// <summary>

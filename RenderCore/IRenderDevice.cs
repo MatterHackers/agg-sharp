@@ -109,6 +109,26 @@ namespace MatterHackers.RenderCore
 		IBindGroup CreateBindGroup(in BindGroupDescriptor descriptor);
 
 		/// <summary>
+		/// Creates an immutable compute pipeline (<c>wgpuDeviceCreateComputePipeline</c>). Its bind
+		/// group layout is authored in the descriptor, exactly as a render pipeline's is; bind groups for
+		/// it are created with the <see cref="IComputePipeline"/> overload of
+		/// <see cref="BindGroupDescriptor"/>.
+		/// </summary>
+		/// <param name="descriptor">The shader entry point and bind group layout, also usable as a cache key.</param>
+		IComputePipeline CreateComputePipeline(in ComputePipelineDescriptor descriptor);
+
+		/// <summary>
+		/// Opens a compute pass (<c>wgpuCommandEncoderBeginComputePass</c>) and returns the encoder that
+		/// records dispatches into it. Disposing the encoder ends the pass; recorded work reaches the GPU
+		/// at the next <see cref="Submit"/>. A compute pass counts as a pass for every rule a render pass
+		/// is under: it does not nest with either kind, and readback, submit and present throw while it
+		/// is open. See <see cref="IComputeEncoder"/> for how dispatches are ordered.
+		/// </summary>
+		/// <param name="label">Optional debug name.</param>
+		/// <exception cref="InvalidOperationException">A pass is already open - passes do not nest.</exception>
+		IComputeEncoder BeginComputePass(string label = null);
+
+		/// <summary>
 		/// Opens a render pass (<c>wgpuCommandEncoderBeginRenderPass</c>) and returns the encoder that
 		/// records draws into it. Disposing the encoder ends the pass; recorded work reaches the GPU at
 		/// the next <see cref="Submit"/>.
@@ -168,6 +188,22 @@ namespace MatterHackers.RenderCore
 		/// <exception cref="InvalidOperationException">A render pass is open - end it first.</exception>
 		/// <exception cref="ArgumentException">The destination is too small for the padded rows.</exception>
 		ValueTask<TextureReadResult> ReadTextureAsync(IGpuTexture source, Memory<byte> destination);
+
+		/// <summary>
+		/// Reads <c>destination.Length</c> bytes of a buffer back, starting at <paramref name="offset"/>
+		/// (<c>wgpuCommandEncoderCopyBufferToBuffer</c> into a mappable staging buffer, then a map). The
+		/// buffer-shaped twin of <see cref="ReadTextureAsync"/>, under the same rules: it submits
+		/// everything recorded so far along with the copy (a zero-length read still submits, with no copy),
+		/// it completes before returning on the desktop, and in the browser it genuinely waits for the JS
+		/// event loop.
+		/// </summary>
+		/// <param name="source">Buffer to read; must declare <see cref="BufferUsage.CopySrc"/>.</param>
+		/// <param name="offset">Byte offset into <paramref name="source"/>; a multiple of 4.</param>
+		/// <param name="destination">Where the bytes go; its length, a multiple of 4, is how many are read.</param>
+		/// <exception cref="InvalidOperationException">A pass is open - end it first.</exception>
+		/// <exception cref="ArgumentException">The range is misaligned, outside the buffer, or the buffer lacks CopySrc.</exception>
+		/// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
+		ValueTask ReadBufferAsync(IGpuBuffer source, ulong offset, Memory<byte> destination);
 
 		/// <summary>
 		/// Submits everything recorded since the last submit to the queue

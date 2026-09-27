@@ -33,7 +33,7 @@ namespace MatterHackers.WebGpuRender
 {
 	/// <summary>
 	/// The waiting halves of <see cref="WebGpuRenderDevice"/> that have to be able to <c>await</c>: device
-	/// creation and the pending half of a texture readback.
+	/// creation and the pending half of a texture or buffer readback.
 	/// <para>
 	/// <b>Why this is a separate file.</b> C# forbids <c>await</c> anywhere inside an <c>unsafe</c> context
 	/// (CS4004), and the other half of this class is <c>unsafe</c> from its declaration outward because it
@@ -186,16 +186,30 @@ namespace MatterHackers.WebGpuRender
 			TextureReadResult result,
 			Memory<byte> destination)
 		{
+			await this.MapAndCopyBrowserAsync(readback, result.TotalBytes, destination);
+			return result;
+		}
+
+		/// <summary>
+		/// The pending half of any browser readback, texture or buffer: wait for the map promise, copy
+		/// <paramref name="totalBytes"/> out, unmap, and release the staging buffer. Ownership of
+		/// <paramref name="readback"/> transfers here from the caller, which is why the release lives in
+		/// this method's finally.
+		/// </summary>
+		/// <param name="readback">The staging buffer the copy was recorded into, already submitted.</param>
+		/// <param name="totalBytes">The range to map and copy, from offset 0.</param>
+		/// <param name="destination">Where the bytes are copied to.</param>
+		private async Task MapAndCopyBrowserAsync(WGPUBuffer readback, ulong totalBytes, Memory<byte> destination)
+		{
 			try
 			{
-				CallbackResult map = await MapForReadBrowserAsync(readback, result.TotalBytes);
+				CallbackResult map = await MapForReadBrowserAsync(readback, totalBytes);
 				if (map.Status != (int)WGPUMapAsyncStatus.Success)
 				{
 					throw new InvalidOperationException($"wgpuBufferMapAsync did not succeed (status {map.Status}).");
 				}
 
-				CopyMappedRange(readback, result, destination.Span);
-				return result;
+				CopyMappedRange(readback, totalBytes, destination.Span);
 			}
 			finally
 			{

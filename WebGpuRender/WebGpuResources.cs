@@ -262,7 +262,89 @@ namespace MatterHackers.WebGpuRender
 
 			this.bindGroupLayouts.Clear();
 
-			wgpuPipelineLayoutRelease(this.pipelineLayout);
+			// A pipeline that declares no bindings was built with a null layout (wgpu derives one), and
+			// wgpu-native panics - aborting the process - if handed that null to release.
+			if (!this.pipelineLayout.IsNull)
+			{
+				wgpuPipelineLayoutRelease(this.pipelineLayout);
+			}
+
+			this.pipelineLayout = default;
+		}
+	}
+
+	/// <summary>
+	/// A compute pipeline, its pipeline layout, and the bind group layouts that layout was built from -
+	/// held for the same reason <see cref="WebGpuRenderPipeline"/> holds them.
+	/// </summary>
+	public sealed class WebGpuComputePipeline : IComputePipeline
+	{
+		private readonly Dictionary<uint, WGPUBindGroupLayout> bindGroupLayouts;
+		private WGPUPipelineLayout pipelineLayout;
+
+		internal WebGpuComputePipeline(
+			WGPUComputePipeline handle,
+			WGPUPipelineLayout pipelineLayout,
+			Dictionary<uint, WGPUBindGroupLayout> bindGroupLayouts,
+			in ComputePipelineDescriptor descriptor)
+		{
+			this.Handle = handle;
+			this.pipelineLayout = pipelineLayout;
+			this.bindGroupLayouts = bindGroupLayouts;
+			this.Descriptor = descriptor;
+		}
+
+		/// <inheritdoc/>
+		public string Label => this.Descriptor.Label;
+
+		/// <inheritdoc/>
+		public ComputePipelineDescriptor Descriptor { get; }
+
+		/// <summary>True once the pipeline has been released.</summary>
+		public bool IsDisposed { get; private set; }
+
+		internal WGPUComputePipeline Handle { get; private set; }
+
+		/// <summary>The layout declared for one group index.</summary>
+		/// <param name="group">The shader's <c>@group</c> index.</param>
+		/// <exception cref="ArgumentException">The pipeline declares no bindings in that group.</exception>
+		internal WGPUBindGroupLayout LayoutForGroup(uint group)
+		{
+			if (!this.bindGroupLayouts.TryGetValue(group, out var layout))
+			{
+				throw new ArgumentException(
+					$"Compute pipeline '{this.Label}' declares no bindings in group {group}, so no bind group can be created for it.",
+					nameof(group));
+			}
+
+			return layout;
+		}
+
+		/// <summary>Releases the pipeline, its layout and every bind group layout behind it.</summary>
+		public void Dispose()
+		{
+			if (this.IsDisposed)
+			{
+				return;
+			}
+
+			this.IsDisposed = true;
+			wgpuComputePipelineRelease(this.Handle);
+			this.Handle = default;
+
+			foreach (var layout in this.bindGroupLayouts.Values)
+			{
+				wgpuBindGroupLayoutRelease(layout);
+			}
+
+			this.bindGroupLayouts.Clear();
+
+			// Null when the pipeline declared no bindings (wgpu derived the layout); releasing null is not legal.
+			if (!this.pipelineLayout.IsNull)
+			{
+				wgpuPipelineLayoutRelease(this.pipelineLayout);
+			}
+
 			this.pipelineLayout = default;
 		}
 	}

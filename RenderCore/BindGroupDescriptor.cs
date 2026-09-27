@@ -117,9 +117,10 @@ namespace MatterHackers.RenderCore
 
 	/// <summary>
 	/// Everything needed to create a bind group (<c>WGPUBindGroupDescriptor</c>). The layout is not
-	/// passed as its own object - it is taken from <see cref="Pipeline"/>'s declared layout at
-	/// <see cref="Group"/>, which is <c>wgpuRenderPipelineGetBindGroupLayout</c> and keeps the layout
-	/// authored in exactly one place (the pipeline descriptor).
+	/// passed as its own object - it is taken from the pipeline's declared layout at
+	/// <see cref="Group"/>, which is <c>wgpuRenderPipelineGetBindGroupLayout</c> (or its compute twin)
+	/// and keeps the layout authored in exactly one place (the pipeline descriptor). Exactly one of
+	/// <see cref="Pipeline"/> and <see cref="ComputePipeline"/> is set, chosen by the constructor.
 	/// <para>Bind groups are cached like pipelines, so this compares by value with resources by reference.</para>
 	/// </summary>
 	public readonly struct BindGroupDescriptor : IEquatable<BindGroupDescriptor>
@@ -134,13 +135,31 @@ namespace MatterHackers.RenderCore
 		public BindGroupDescriptor(IRenderPipeline pipeline, uint group, BindGroupEntry[] entries, string label = null)
 		{
 			this.Pipeline = pipeline;
+			this.ComputePipeline = null;
 			this.Group = group;
 			this.entries = entries ?? Array.Empty<BindGroupEntry>();
 			this.Label = label ?? string.Empty;
 		}
 
-		/// <summary>The pipeline whose layout this group satisfies.</summary>
+		/// <summary>Creates a bind group descriptor for a compute pipeline.</summary>
+		/// <param name="pipeline">The compute pipeline whose layout this group must satisfy.</param>
+		/// <param name="group">The shader's <c>@group</c> index.</param>
+		/// <param name="entries">The resources bound, one per binding in the layout.</param>
+		/// <param name="label">Optional debug name. Not part of equality.</param>
+		public BindGroupDescriptor(IComputePipeline pipeline, uint group, BindGroupEntry[] entries, string label = null)
+		{
+			this.Pipeline = null;
+			this.ComputePipeline = pipeline;
+			this.Group = group;
+			this.entries = entries ?? Array.Empty<BindGroupEntry>();
+			this.Label = label ?? string.Empty;
+		}
+
+		/// <summary>The render pipeline whose layout this group satisfies, or null for a compute group.</summary>
 		public IRenderPipeline Pipeline { get; }
+
+		/// <summary>The compute pipeline whose layout this group satisfies, or null for a render group.</summary>
+		public IComputePipeline ComputePipeline { get; }
 
 		/// <summary>The shader's <c>@group</c> index.</summary>
 		public uint Group { get; }
@@ -154,6 +173,7 @@ namespace MatterHackers.RenderCore
 		/// <inheritdoc/>
 		public bool Equals(BindGroupDescriptor other)
 			=> ReferenceEquals(this.Pipeline, other.Pipeline)
+			&& ReferenceEquals(this.ComputePipeline, other.ComputePipeline)
 			&& this.Group == other.Group
 			&& DescriptorEquality.ArrayEquals(this.Entries, other.Entries);
 
@@ -162,7 +182,7 @@ namespace MatterHackers.RenderCore
 
 		/// <inheritdoc/>
 		public override int GetHashCode()
-			=> HashCode.Combine(this.Pipeline, this.Group, DescriptorEquality.ArrayHash(this.Entries));
+			=> HashCode.Combine(this.Pipeline, this.ComputePipeline, this.Group, DescriptorEquality.ArrayHash(this.Entries));
 
 		/// <inheritdoc/>
 		public override string ToString()

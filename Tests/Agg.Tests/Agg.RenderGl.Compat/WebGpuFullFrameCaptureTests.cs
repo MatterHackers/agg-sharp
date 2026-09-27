@@ -331,6 +331,14 @@ namespace MatterHackers.Agg.Tests
 
 			public IBindGroup CreateBindGroup(in BindGroupDescriptor descriptor) => this.inner.CreateBindGroup(descriptor);
 
+			public IComputePipeline CreateComputePipeline(in ComputePipelineDescriptor descriptor)
+				=> this.inner.CreateComputePipeline(descriptor);
+
+			public IComputeEncoder BeginComputePass(string label = null) => this.inner.BeginComputePass(label);
+
+			public ValueTask ReadBufferAsync(IGpuBuffer source, ulong offset, Memory<byte> destination)
+				=> this.inner.ReadBufferAsync(source, offset, destination);
+
 			public IRenderEncoder BeginRenderPass(in RenderPassDescriptor descriptor)
 			{
 				if (this.FailPassLabel != null && this.FailPassLabel == descriptor.Label)

@@ -47,6 +47,7 @@ namespace MatterHackers.RenderCore.Testing
 		private readonly List<IShaderSourceProvider> shaderSources = new List<IShaderSourceProvider>();
 		private readonly Dictionary<string, int> handleCounts = new Dictionary<string, int>();
 		private RecordingRenderEncoder openEncoder;
+		private RecordingComputeEncoder openComputeEncoder;
 
 		/// <summary>Every call received, oldest first.</summary>
 		public IReadOnlyList<RenderCommand> Commands => this.commands;
@@ -63,6 +64,9 @@ namespace MatterHackers.RenderCore.Testing
 
 		/// <summary>The pass currently open, or null. Tests read this to prove a pass was flushed.</summary>
 		public RecordingRenderEncoder OpenPass => this.openEncoder;
+
+		/// <summary>The compute pass currently open, or null.</summary>
+		public RecordingComputeEncoder OpenComputePass => this.openComputeEncoder;
 
 		/// <summary>Drops the recorded commands so a test can measure only what follows.</summary>
 		public void ClearRecording() => this.commands.Clear();
@@ -169,6 +173,25 @@ namespace MatterHackers.RenderCore.Testing
 		}
 
 		/// <inheritdoc/>
+		public IComputePipeline CreateComputePipeline(in ComputePipelineDescriptor descriptor)
+		{
+			var pipeline = new StubComputePipeline(this.NextLabel("computePipeline"), descriptor);
+			this.Record(new CreateComputePipelineCommand(pipeline, descriptor));
+			return pipeline;
+		}
+
+		/// <inheritdoc/>
+		public IComputeEncoder BeginComputePass(string label = null)
+		{
+			this.ThrowIfPassOpen("begin a compute pass");
+
+			var encoder = new RecordingComputeEncoder(this, string.IsNullOrEmpty(label) ? this.NextLabel("computePass") : label);
+			this.openComputeEncoder = encoder;
+			this.Record(new BeginComputePassCommand(encoder));
+			return encoder;
+		}
+
+		/// <inheritdoc/>
 		public IBindGroup CreateBindGroup(in BindGroupDescriptor descriptor)
 		{
 			var bindGroup = new StubBindGroup(this.NextLabel("bindGroup"), descriptor);
@@ -249,6 +272,19 @@ namespace MatterHackers.RenderCore.Testing
 		}
 
 		/// <inheritdoc/>
+		public ValueTask ReadBufferAsync(IGpuBuffer source, ulong offset, Memory<byte> destination)
+		{
+			RecordingComputeEncoder.ThrowIfDisposed(source);
+			BufferReadback.Validate(source, offset, destination.Length);
+			this.ThrowIfPassOpen("read a buffer back");
+
+			// Zeroed for the same reason ReadTextureAsync zeroes: deterministic bytes, not leftovers.
+			destination.Span.Clear();
+			this.Record(new ReadBufferCommand(source, offset, destination.Length));
+			return default;
+		}
+
+		/// <inheritdoc/>
 		public void Submit()
 		{
 			this.ThrowIfPassOpen("submit");
@@ -268,8 +304,14 @@ namespace MatterHackers.RenderCore.Testing
 		}
 
 		/// <inheritdoc/>
+		/// <summary>
+		/// Marks the device disposed and ends any pass left open, as the native device does, so a test sees
+		/// the same encoder state after disposal on either device.
+		/// </summary>
 		public void Dispose()
 		{
+			this.openEncoder?.Dispose();
+			this.openComputeEncoder?.Dispose();
 			this.IsDisposed = true;
 		}
 
@@ -289,6 +331,18 @@ namespace MatterHackers.RenderCore.Testing
 			this.Record(new EndRenderPassCommand(encoder));
 		}
 
+		/// <summary>Called by the compute encoder when it is disposed, so the device knows the pass closed.</summary>
+		/// <param name="encoder">The encoder that ended.</param>
+		internal void EndComputePass(RecordingComputeEncoder encoder)
+		{
+			if (ReferenceEquals(this.openComputeEncoder, encoder))
+			{
+				this.openComputeEncoder = null;
+			}
+
+			this.Record(new EndComputePassCommand(encoder));
+		}
+
 		private void ThrowIfPassOpen(string action)
 		{
 			if (this.openEncoder != null)
@@ -296,6 +350,12 @@ namespace MatterHackers.RenderCore.Testing
 				throw new InvalidOperationException(
 					$"Cannot {action} while render pass '{this.openEncoder.Label}' is open. "
 					+ "End the pass first and re-open it with LoadOp.Load.");
+			}
+
+			if (this.openComputeEncoder != null)
+			{
+				throw new InvalidOperationException(
+					$"Cannot {action} while compute pass '{this.openComputeEncoder.Label}' is open. End the pass first.");
 			}
 		}
 

@@ -83,6 +83,15 @@ namespace MatterHackers.RenderCore.Testing
 		public override string ToString() => $"CreateRenderPipeline {this.Pipeline.Label} {this.Descriptor}";
 	}
 
+	/// <summary>A compute pipeline was created.</summary>
+	/// <param name="Pipeline">The stub pipeline handed back.</param>
+	/// <param name="Descriptor">The descriptor it was created from.</param>
+	public sealed record CreateComputePipelineCommand(IComputePipeline Pipeline, ComputePipelineDescriptor Descriptor) : RenderCommand
+	{
+		/// <inheritdoc/>
+		public override string ToString() => $"CreateComputePipeline {this.Pipeline.Label} {this.Descriptor}";
+	}
+
 	/// <summary>A bind group was created.</summary>
 	/// <param name="BindGroup">The stub bind group handed back.</param>
 	/// <param name="Descriptor">The descriptor it was created from.</param>
@@ -139,6 +148,62 @@ namespace MatterHackers.RenderCore.Testing
 	{
 		/// <inheritdoc/>
 		public override string ToString() => $"ReadTexture {this.Texture.Label} {this.Result}";
+	}
+
+	/// <summary>A buffer range was read back.</summary>
+	/// <param name="Buffer">Buffer that was read.</param>
+	/// <param name="Offset">Byte offset of the read.</param>
+	/// <param name="Length">Bytes read.</param>
+	public sealed record ReadBufferCommand(IGpuBuffer Buffer, ulong Offset, int Length) : RenderCommand
+	{
+		/// <inheritdoc/>
+		public override string ToString() => $"ReadBuffer {this.Buffer.Label}+{this.Offset} {this.Length} bytes";
+	}
+
+	/// <summary>A compute pass was opened.</summary>
+	/// <param name="Encoder">The encoder handed back.</param>
+	public sealed record BeginComputePassCommand(RecordingComputeEncoder Encoder) : RenderCommand
+	{
+		/// <inheritdoc/>
+		public override string ToString() => $"BeginComputePass {this.Encoder.Label}";
+	}
+
+	/// <summary>A compute pass was ended by disposing its encoder.</summary>
+	/// <param name="Encoder">The encoder that ended.</param>
+	public sealed record EndComputePassCommand(RecordingComputeEncoder Encoder) : RenderCommand
+	{
+		/// <inheritdoc/>
+		public override string ToString() => $"EndComputePass {this.Encoder.Label}";
+	}
+
+	/// <summary>A compute pipeline was bound inside a compute pass.</summary>
+	/// <param name="Encoder">The pass it happened in.</param>
+	/// <param name="Pipeline">The pipeline bound.</param>
+	public sealed record SetComputePipelineCommand(RecordingComputeEncoder Encoder, IComputePipeline Pipeline) : RenderCommand
+	{
+		/// <inheritdoc/>
+		public override string ToString() => $"  SetComputePipeline {this.Pipeline.Label}";
+	}
+
+	/// <summary>A bind group was bound inside a compute pass.</summary>
+	/// <param name="Encoder">The pass it happened in.</param>
+	/// <param name="Index">The group index.</param>
+	/// <param name="BindGroup">The group bound.</param>
+	public sealed record SetComputeBindGroupCommand(RecordingComputeEncoder Encoder, int Index, IBindGroup BindGroup) : RenderCommand
+	{
+		/// <inheritdoc/>
+		public override string ToString() => $"  SetComputeBindGroup {this.Index} {this.BindGroup.Label}";
+	}
+
+	/// <summary>A compute dispatch.</summary>
+	/// <param name="Encoder">The pass it happened in.</param>
+	/// <param name="X">Workgroups along X.</param>
+	/// <param name="Y">Workgroups along Y.</param>
+	/// <param name="Z">Workgroups along Z.</param>
+	public sealed record DispatchCommand(RecordingComputeEncoder Encoder, uint X, uint Y, uint Z) : RenderCommand
+	{
+		/// <inheritdoc/>
+		public override string ToString() => $"  Dispatch {this.X}x{this.Y}x{this.Z}";
 	}
 
 	/// <summary>Recorded work was submitted to the queue.</summary>

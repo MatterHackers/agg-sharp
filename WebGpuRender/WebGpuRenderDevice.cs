@@ -62,7 +62,8 @@ namespace MatterHackers.WebGpuRender
 	/// <b>In the browser.</b> Everything wgpu answers by callback - the adapter, the device, a buffer map -
 	/// is a JS Promise there, and there is no pump to spin: the browser resolves it only once managed code
 	/// has returned to the event loop. So the browser legs are genuinely asynchronous
-	/// (<see cref="CreateAsync"/>, and the pending half of <see cref="ReadTextureAsync"/>), while the
+	/// (<see cref="CreateAsync"/>, and the pending halves of <see cref="ReadTextureAsync"/> and
+	/// <see cref="ReadBufferAsync"/>), while the
 	/// desktop keeps its synchronous spin unchanged. Those legs live in
 	/// <c>WebGpuRenderDevice.BrowserAsync.cs</c> - see that file for why they cannot live here.
 	/// </para>
@@ -149,6 +150,7 @@ namespace MatterHackers.WebGpuRender
 		private DeviceLimits limits = new DeviceLimits(DeviceLimits.DefaultMaxBufferSize);
 		private WGPUCommandEncoder commandEncoder;
 		private WebGpuRenderEncoder openEncoder;
+		private WebGpuComputeEncoder openComputeEncoder;
 
 		/// <summary>
 		/// Creates an instance, picks an adapter and opens a device, synchronously. Desktop only:
@@ -613,7 +615,17 @@ namespace MatterHackers.WebGpuRender
 		{
 			FrameProfiler.Count("dev.CreateBindGroup");
 			this.ThrowIfDisposed();
-			if (!(descriptor.Pipeline is WebGpuRenderPipeline pipeline))
+			// A bind group takes its layout from whichever kind of pipeline the descriptor names.
+			WGPUBindGroupLayout groupLayout;
+			if (descriptor.Pipeline is WebGpuRenderPipeline pipeline)
+			{
+				groupLayout = pipeline.LayoutForGroup(descriptor.Group);
+			}
+			else if (descriptor.ComputePipeline is WebGpuComputePipeline computePipeline)
+			{
+				groupLayout = computePipeline.LayoutForGroup(descriptor.Group);
+			}
+			else
 			{
 				throw new ArgumentException("A bind group needs a pipeline created by this device.", nameof(descriptor));
 			}
@@ -643,7 +655,7 @@ namespace MatterHackers.WebGpuRender
 				var bindGroupDescriptor = new WGPUBindGroupDescriptor
 				{
 					label = labelText.View,
-					layout = pipeline.LayoutForGroup(descriptor.Group),
+					layout = groupLayout,
 					entryCount = (nuint)wgpuEntries.Length,
 					entries = entriesPointer,
 				};
@@ -868,7 +880,7 @@ namespace MatterHackers.WebGpuRender
 					return new ValueTask<TextureReadResult>(pending);
 				}
 
-				this.MapAndCopy(readback, result, destination.Span);
+				this.MapAndCopy(readback, result.TotalBytes, destination.Span);
 			}
 			finally
 			{
@@ -1218,6 +1230,8 @@ namespace MatterHackers.WebGpuRender
 
 			this.openEncoder?.Dispose();
 			this.openEncoder = null;
+			this.openComputeEncoder?.Dispose();
+			this.openComputeEncoder = null;
 
 			// Before the device: unconfiguring a swapchain needs the device that configured it alive.
 			this.WindowSurface?.Dispose();
@@ -1726,9 +1740,9 @@ namespace MatterHackers.WebGpuRender
 		/// completed ValueTask off the browser.
 		/// </summary>
 		/// <param name="readback">The mappable buffer the copy was recorded into.</param>
-		/// <param name="result">The geometry of the read; its TotalBytes is the mapped range.</param>
+		/// <param name="totalBytes">The mapped range, from offset 0: the whole of what was copied.</param>
 		/// <param name="destination">Where the mapped bytes are copied to.</param>
-		private void MapAndCopy(WGPUBuffer readback, in TextureReadResult result, Span<byte> destination)
+		private void MapAndCopy(WGPUBuffer readback, ulong totalBytes, Span<byte> destination)
 		{
 			// Pinned heap cell rather than a stack local: the loop below can give up while the callback is
 			// still registered, and wgpu would then write the status through the pointer. See
@@ -1742,7 +1756,7 @@ namespace MatterHackers.WebGpuRender
 					userdata1 = mapCell.Pointer,
 				};
 
-				wgpuBufferMapAsync(readback, WGPUMapMode.Read, 0, (nuint)result.TotalBytes, callbackInfo);
+				wgpuBufferMapAsync(readback, WGPUMapMode.Read, 0, (nuint)totalBytes, callbackInfo);
 
 				// The Phase 0 finding stands: ProcessEvents alone never resolves a map, DevicePoll is what
 				// drives it. What changed is which of the two waits - the CALL or the LOOP.
@@ -1799,7 +1813,7 @@ namespace MatterHackers.WebGpuRender
 				}
 			}
 
-			CopyMappedRange(readback, result, destination);
+			CopyMappedRange(readback, totalBytes, destination);
 		}
 
 		/// <summary>
@@ -1808,19 +1822,19 @@ namespace MatterHackers.WebGpuRender
 		/// and neither leg gets its own copy of the unmap rule.
 		/// </summary>
 		/// <param name="readback">A buffer that is currently mapped for read.</param>
-		/// <param name="result">The geometry of the read; its TotalBytes is the mapped range.</param>
+		/// <param name="totalBytes">The mapped range, from offset 0.</param>
 		/// <param name="destination">Where the mapped bytes are copied to.</param>
-		private static void CopyMappedRange(WGPUBuffer readback, in TextureReadResult result, Span<byte> destination)
+		private static void CopyMappedRange(WGPUBuffer readback, ulong totalBytes, Span<byte> destination)
 		{
 			try
 			{
-				var mapped = wgpuBufferGetConstMappedRange(readback, 0, (nuint)result.TotalBytes);
+				var mapped = wgpuBufferGetConstMappedRange(readback, 0, (nuint)totalBytes);
 				if (mapped == null)
 				{
 					throw new InvalidOperationException("wgpuBufferGetConstMappedRange returned null.");
 				}
 
-				new ReadOnlySpan<byte>(mapped, (int)result.TotalBytes).CopyTo(destination);
+				new ReadOnlySpan<byte>(mapped, (int)totalBytes).CopyTo(destination);
 			}
 			finally
 			{
@@ -2002,7 +2016,16 @@ namespace MatterHackers.WebGpuRender
 					: DeviceLimits.DefaultMaxBufferSize,
 				read && deviceLimits.maxTextureDimension2D > 0
 					? deviceLimits.maxTextureDimension2D
-					: DeviceLimits.DefaultMaxTextureDimension2D);
+					: DeviceLimits.DefaultMaxTextureDimension2D,
+				read && deviceLimits.maxStorageBufferBindingSize > 0
+					? deviceLimits.maxStorageBufferBindingSize
+					: DeviceLimits.DefaultMaxStorageBufferBindingSize,
+				read && deviceLimits.maxComputeInvocationsPerWorkgroup > 0
+					? deviceLimits.maxComputeInvocationsPerWorkgroup
+					: DeviceLimits.DefaultMaxComputeInvocationsPerWorkgroup,
+				read && deviceLimits.maxComputeWorkgroupsPerDimension > 0
+					? deviceLimits.maxComputeWorkgroupsPerDimension
+					: DeviceLimits.DefaultMaxComputeWorkgroupsPerDimension);
 		}
 
 		private void ReadAdapterInfo()
@@ -2242,6 +2265,14 @@ namespace MatterHackers.WebGpuRender
 				throw new InvalidOperationException(
 					$"Cannot {action} while render pass '{this.openEncoder.Label}' is open. "
 					+ "End the pass first and re-open it with LoadOp.Load.");
+			}
+
+			// A compute pass lives on the same command encoder, and webgpu allows one open pass per
+			// encoder whichever kind it is, so it is under exactly the same rules.
+			if (this.openComputeEncoder != null)
+			{
+				throw new InvalidOperationException(
+					$"Cannot {action} while compute pass '{this.openComputeEncoder.Label}' is open. End the pass first.");
 			}
 		}
 

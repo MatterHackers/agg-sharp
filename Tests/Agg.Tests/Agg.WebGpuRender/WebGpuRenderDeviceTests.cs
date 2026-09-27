@@ -316,6 +316,20 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		/// <summary>
+		/// A render pipeline that declares no bindings is built with a null pipeline layout, and disposing it
+		/// used to hand that null to <c>wgpuPipelineLayoutRelease</c> - a Rust panic that aborts the process.
+		/// Run in a child process (<see cref="NativeAbortProbe"/>) so the unfixed bug fails this test rather
+		/// than killing the whole test host.
+		/// </summary>
+		[Test]
+		public async Task DisposingARenderPipelineWithNoBindingsDoesNotAbort()
+		{
+			var (exitCode, output) = await NativeAbortProbe.RunInChildAsync("DisposeRenderPipelineWithNoBindings");
+
+			await Assert.That(exitCode).IsEqualTo(0).Because(output);
+		}
+
+		/// <summary>
 		/// Three clip-space vertices in the canned colored layout: position (float3) then color (float4),
 		/// 28 bytes apart. Built by hand rather than through the compat layer so a layout mistake shows up
 		/// here and not only in the integration suite.

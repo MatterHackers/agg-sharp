@@ -260,13 +260,33 @@ namespace MatterHackers.RenderCore
 		/// </summary>
 		public const uint DefaultMaxTextureDimension2D = 8192;
 
+		/// <summary>The WebGPU default, 128 MiB: the largest storage buffer range one binding can see.</summary>
+		public const ulong DefaultMaxStorageBufferBindingSize = 134217728;
+
+		/// <summary>The WebGPU default, 256: invocations in one workgroup (x * y * z of <c>@workgroup_size</c>).</summary>
+		public const uint DefaultMaxComputeInvocationsPerWorkgroup = 256;
+
+		/// <summary>The WebGPU default, 65535: workgroups along any one dimension of a dispatch.</summary>
+		public const uint DefaultMaxComputeWorkgroupsPerDimension = 65535;
+
 		/// <summary>Creates a limit set.</summary>
 		/// <param name="maxBufferSize">The largest buffer the device will create, in bytes.</param>
 		/// <param name="maxTextureDimension2D">The largest 2D texture edge the device will create, in pixels.</param>
-		public DeviceLimits(ulong maxBufferSize, uint maxTextureDimension2D = DefaultMaxTextureDimension2D)
+		/// <param name="maxStorageBufferBindingSize">The largest storage buffer range one binding can see, in bytes.</param>
+		/// <param name="maxComputeInvocationsPerWorkgroup">The most invocations one workgroup may have.</param>
+		/// <param name="maxComputeWorkgroupsPerDimension">The most workgroups along one dispatch dimension.</param>
+		public DeviceLimits(
+			ulong maxBufferSize,
+			uint maxTextureDimension2D = DefaultMaxTextureDimension2D,
+			ulong maxStorageBufferBindingSize = DefaultMaxStorageBufferBindingSize,
+			uint maxComputeInvocationsPerWorkgroup = DefaultMaxComputeInvocationsPerWorkgroup,
+			uint maxComputeWorkgroupsPerDimension = DefaultMaxComputeWorkgroupsPerDimension)
 		{
 			this.MaxBufferSize = maxBufferSize;
 			this.MaxTextureDimension2D = maxTextureDimension2D;
+			this.MaxStorageBufferBindingSize = maxStorageBufferBindingSize;
+			this.MaxComputeInvocationsPerWorkgroup = maxComputeInvocationsPerWorkgroup;
+			this.MaxComputeWorkgroupsPerDimension = maxComputeWorkgroupsPerDimension;
 		}
 
 		/// <summary>
@@ -283,8 +303,30 @@ namespace MatterHackers.RenderCore
 		/// </summary>
 		public uint MaxTextureDimension2D { get; }
 
+		/// <summary>
+		/// The largest byte range of a storage buffer one bind group entry can expose
+		/// (<c>WGPULimits.maxStorageBufferBindingSize</c>). Smaller than <see cref="MaxBufferSize"/> by
+		/// default, so compute data larger than this has to be split across bindings.
+		/// </summary>
+		public ulong MaxStorageBufferBindingSize { get; }
+
+		/// <summary>
+		/// The most invocations one workgroup may have (<c>WGPULimits.maxComputeInvocationsPerWorkgroup</c>) -
+		/// the product of a compute shader's <c>@workgroup_size</c> dimensions must not exceed it.
+		/// </summary>
+		public uint MaxComputeInvocationsPerWorkgroup { get; }
+
+		/// <summary>
+		/// The most workgroups along any one dimension of <see cref="IComputeEncoder.Dispatch"/>
+		/// (<c>WGPULimits.maxComputeWorkgroupsPerDimension</c>).
+		/// </summary>
+		public uint MaxComputeWorkgroupsPerDimension { get; }
+
 		/// <inheritdoc/>
 		public override string ToString()
-			=> $"DeviceLimits maxBufferSize {this.MaxBufferSize:N0} maxTextureDimension2D {this.MaxTextureDimension2D:N0}";
+			=> $"DeviceLimits maxBufferSize {this.MaxBufferSize:N0} maxTextureDimension2D {this.MaxTextureDimension2D:N0}"
+			+ $" maxStorageBufferBindingSize {this.MaxStorageBufferBindingSize:N0}"
+			+ $" maxComputeInvocationsPerWorkgroup {this.MaxComputeInvocationsPerWorkgroup:N0}"
+			+ $" maxComputeWorkgroupsPerDimension {this.MaxComputeWorkgroupsPerDimension:N0}";
 	}
 }
