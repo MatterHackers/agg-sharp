@@ -68,6 +68,35 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
+		public async Task ASimulatedMonitorHoldsAgainstTheHostsLaterReports()
+		{
+			// A test that simulates a monitor change is contradicted by the real host, which re-reports the
+			// real monitor whenever AppKit delivers a resize - on a loaded machine, mid-test. While a monitor
+			// is simulated, that report must describe the simulated one.
+			var systemWindow = new SystemWindow(100, 100);
+
+			try
+			{
+				SystemWindow.SimulatedDisplayScale = 1.25;
+				systemWindow.SetDisplayScale(1.25);
+
+				// The real Retina host, reporting from a late windowDidResize:.
+				systemWindow.SetDisplayScale(2);
+
+				await Assert.That(systemWindow.DisplayScale).IsEqualTo(1.25);
+			}
+			finally
+			{
+				SystemWindow.SimulatedDisplayScale = null;
+			}
+
+			systemWindow.SetDisplayScale(2);
+
+			await Assert.That(systemWindow.DisplayScale).IsEqualTo(2)
+				.Because("with no simulation the host's report is the truth again");
+		}
+
+		[Test]
 		public async Task AnUnusableScaleFallsBackToOne()
 		{
 			// A zero or NaN scale would silently divide the whole UI to nothing. The hosts read theirs from

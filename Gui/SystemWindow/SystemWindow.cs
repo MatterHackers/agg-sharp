@@ -155,6 +155,19 @@ namespace MatterHackers.Agg.UI
 		/// </remarks>
 		public event EventHandler DisplayScaleChanged;
 
+		/// <summary>
+		/// When set, the display scale every window is on as far as <see cref="SetDisplayScale"/> is concerned:
+		/// any report, whoever makes it, is taken as this value. Null (the default) passes reports through.
+		/// </summary>
+		/// <remarks>
+		/// For tests that simulate a monitor change. Calling <see cref="SetDisplayScale"/> alone only stands in
+		/// for the host's one report; the real host keeps reporting the real monitor - the mac host from every
+		/// <c>windowDidResize:</c>, which AppKit can deliver at any point while a busy machine settles a new
+		/// window - and one such report arriving mid-test is, correctly, a move back to the real display. The
+		/// simulated monitor has to hold for the host too, so it lives here, where every host report arrives.
+		/// </remarks>
+		public static double? SimulatedDisplayScale { get; set; }
+
 		/// <summary>Guards the coalescing state below, which any thread's SetDisplayScale can touch.</summary>
 		private readonly object displayScaleLock = new object();
 
@@ -210,6 +223,11 @@ namespace MatterHackers.Agg.UI
 		/// <param name="displayScale">Device pixels per point; anything not finite and positive becomes 1.</param>
 		public void SetDisplayScale(double displayScale)
 		{
+			if (SimulatedDisplayScale is double simulated)
+			{
+				displayScale = simulated;
+			}
+
 			if (double.IsNaN(displayScale) || double.IsInfinity(displayScale) || displayScale <= 0)
 			{
 				displayScale = 1;
