@@ -48,6 +48,8 @@ ipch/
 *.ncb
 *.opensdf
 *.sdf
+# ...but mol_view's molecule file is an MDL structure-data file, not a VC++ cache.
+!examples/AggSharpDemo/AggSharpDemo/Art/1.sdf
 
 # Visual Studio profiler
 *.psess
