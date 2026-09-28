@@ -53,8 +53,21 @@ namespace MatterHackers.WebGpuRender
 		/// because wgpu uses both: adapter info is null terminated, error messages are counted.
 		/// </summary>
 		/// <param name="view">The view to read.</param>
-		public static string ToManaged(WGPUStringView view)
+		public static string ToManaged(WGPUStringView view) => ToManaged(&view);
+
+		/// <summary>
+		/// The pointer form of <see cref="ToManaged(WGPUStringView)"/>, for callbacks that receive the view
+		/// indirectly (the browser's wasm32 ABI). A null pointer reads as no string.
+		/// </summary>
+		/// <param name="viewPointer">The view to read, or null.</param>
+		public static string ToManaged(WGPUStringView* viewPointer)
 		{
+			if (viewPointer == null)
+			{
+				return string.Empty;
+			}
+
+			WGPUStringView view = *viewPointer;
 			if (view.data == null)
 			{
 				return string.Empty;

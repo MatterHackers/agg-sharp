@@ -116,7 +116,7 @@ namespace MatterHackers.Agg.Tests
 			["VectorMath/Vector3.cs"] = 1304,
 			["VectorMath/Vector3Float.cs"] = 1157,
 			["VectorMath/Vector4.cs"] = 863,
-			["WebGpuRender/WebGpuRenderDevice.cs"] = 2288
+			["WebGpuRender/WebGpuRenderDevice.cs"] = 2258
 		};
 
 		/// <summary>

@@ -1959,7 +1959,7 @@ namespace MatterHackers.WebGpuRender
 				// Spontaneous, not AllowProcessEvents: in the browser the promise resolves on the JS event
 				// loop while no managed code is on the stack, and there is nothing to pump it from.
 				mode = WGPUCallbackMode.AllowSpontaneous,
-				callback = &OnAdapterRequestedSpontaneous,
+				callback = (delegate* unmanaged[Cdecl]<WGPURequestAdapterStatus, WGPUAdapter, WGPUStringView, void*, void*, void>)(delegate* unmanaged[Cdecl]<WGPURequestAdapterStatus, WGPUAdapter, WGPUStringView*, void*, void*, void>)&OnAdapterRequestedSpontaneous,
 				userdata1 = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(completion)),
 			};
 
@@ -1988,7 +1988,7 @@ namespace MatterHackers.WebGpuRender
 				var callbackInfo = new WGPURequestDeviceCallbackInfo
 				{
 					mode = WGPUCallbackMode.AllowSpontaneous,
-					callback = &OnDeviceRequestedSpontaneous,
+					callback = (delegate* unmanaged[Cdecl]<WGPURequestDeviceStatus, WGPUDevice, WGPUStringView, void*, void*, void>)(delegate* unmanaged[Cdecl]<WGPURequestDeviceStatus, WGPUDevice, WGPUStringView*, void*, void*, void>)&OnDeviceRequestedSpontaneous,
 					userdata1 = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(completion)),
 				};
 
@@ -2010,7 +2010,7 @@ namespace MatterHackers.WebGpuRender
 			var callbackInfo = new WGPUBufferMapCallbackInfo
 			{
 				mode = WGPUCallbackMode.AllowSpontaneous,
-				callback = &OnBufferMappedSpontaneous,
+				callback = (delegate* unmanaged[Cdecl]<WGPUMapAsyncStatus, WGPUStringView, void*, void*, void>)(delegate* unmanaged[Cdecl]<WGPUMapAsyncStatus, WGPUStringView*, void*, void*, void>)&OnBufferMappedSpontaneous,
 				userdata1 = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(completion)),
 			};
 
@@ -2185,12 +2185,12 @@ namespace MatterHackers.WebGpuRender
 				deviceLostCallbackInfo = new WGPUDeviceLostCallbackInfo
 				{
 					mode = callbackMode,
-					callback = &OnDeviceLost,
+					callback = WgpuDeviceCallbacks.DeviceLost(OperatingSystem.IsBrowser()),
 					userdata1 = self,
 				},
 				uncapturedErrorCallbackInfo = new WGPUUncapturedErrorCallbackInfo
 				{
-					callback = &OnUncapturedError,
+					callback = WgpuDeviceCallbacks.UncapturedError(OperatingSystem.IsBrowser()),
 					userdata1 = self,
 				},
 			};
@@ -2361,14 +2361,14 @@ namespace MatterHackers.WebGpuRender
 			}
 		}
 
-		private void ReportUncapturedError(string message)
+		internal void ReportUncapturedError(string message)
 		{
 			this.LastUncapturedError = message;
 			this.uncapturedErrorCount++;
 			this.UncapturedError?.Invoke(this, message);
 		}
 
-		private void ReportDeviceLost(string message) => this.DeviceLostMessage = message;
+		internal void ReportDeviceLost(string message) => this.DeviceLostMessage = message;
 
 		/// <summary>
 		/// A one-element pinned heap cell that a native callback writes its result into, and which can
@@ -2477,9 +2477,10 @@ namespace MatterHackers.WebGpuRender
 		// The browser twins of the three callbacks above. Same results, different delivery: there is no
 		// pinned result cell to poll, so the pinned thing is the TaskCompletionSource itself and the
 		// callback is what hands the answer back to managed code. See TakeCompletion for the handle's
-		// lifetime.
+		// lifetime. The message arrives as a pointer here, not by value: see WgpuDeviceCallbacks for the
+		// wasm32 ABI reason.
 		[UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
-		private static void OnAdapterRequestedSpontaneous(WGPURequestAdapterStatus status, WGPUAdapter adapter, WGPUStringView message, void* userdata1, void* userdata2)
+		private static void OnAdapterRequestedSpontaneous(WGPURequestAdapterStatus status, WGPUAdapter adapter, WGPUStringView* message, void* userdata1, void* userdata2)
 		{
 			// An exception must not unwind into the C caller, so everything here is inside a catch-all.
 			try
@@ -2493,7 +2494,7 @@ namespace MatterHackers.WebGpuRender
 		}
 
 		[UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
-		private static void OnDeviceRequestedSpontaneous(WGPURequestDeviceStatus status, WGPUDevice device, WGPUStringView message, void* userdata1, void* userdata2)
+		private static void OnDeviceRequestedSpontaneous(WGPURequestDeviceStatus status, WGPUDevice device, WGPUStringView* message, void* userdata1, void* userdata2)
 		{
 			try
 			{
@@ -2506,7 +2507,7 @@ namespace MatterHackers.WebGpuRender
 		}
 
 		[UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
-		private static void OnBufferMappedSpontaneous(WGPUMapAsyncStatus status, WGPUStringView message, void* userdata1, void* userdata2)
+		private static void OnBufferMappedSpontaneous(WGPUMapAsyncStatus status, WGPUStringView* message, void* userdata1, void* userdata2)
 		{
 			try
 			{
@@ -2546,35 +2547,5 @@ namespace MatterHackers.WebGpuRender
 
 			return completion;
 		}
-
-		[UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
-		private static void OnUncapturedError(WGPUDevice* device, WGPUErrorType type, WGPUStringView message, void* userdata1, void* userdata2)
-		{
-			// An exception must not unwind into Rust, so everything here is inside a catch-all.
-			try
-			{
-				var target = FromUserdata(userdata1);
-				target?.ReportUncapturedError($"{type}: {WgpuStrings.ToManaged(message)}");
-			}
-			catch (Exception)
-			{
-			}
-		}
-
-		[UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
-		private static void OnDeviceLost(WGPUDevice* device, WGPUDeviceLostReason reason, WGPUStringView message, void* userdata1, void* userdata2)
-		{
-			try
-			{
-				var target = FromUserdata(userdata1);
-				target?.ReportDeviceLost($"{reason}: {WgpuStrings.ToManaged(message)}");
-			}
-			catch (Exception)
-			{
-			}
-		}
-
-		private static WebGpuRenderDevice FromUserdata(void* userdata)
-			=> userdata == null ? null : GCHandle.FromIntPtr((nint)userdata).Target as WebGpuRenderDevice;
 	}
 }
