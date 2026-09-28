@@ -262,9 +262,15 @@ namespace MatterHackers.RenderGl
 		}
 
 		/// <summary>Releases the texture and its GL name, first ending a draw still in progress so the frame
-		/// it interrupted gets its target back.</summary>
+		/// it interrupted gets its target back. Safe from any thread: off the render thread the release waits
+		/// for the render thread's next submit (see <see cref="GlCompatContext.ReleaseOnRenderThread"/>).</summary>
 		public void Dispose()
 		{
+			if (this.compat.ReleaseOnRenderThread(this))
+			{
+				return;
+			}
+
 			if (this.IsDrawing)
 			{
 				this.EndDraw();

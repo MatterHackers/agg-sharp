@@ -71,6 +71,8 @@ namespace MatterHackers.RenderGl.Compat
 		// released with this context - see Own.
 		private readonly List<IDisposable> ownedResources = new List<IDisposable>();
 
+		private readonly GlRenderThreadReleases releases = new GlRenderThreadReleases();
+
 		private int coordinateScale = 1;
 
 		/// <summary>Creates a compat context over a retained device.</summary>
@@ -194,6 +196,7 @@ namespace MatterHackers.RenderGl.Compat
 		/// </summary>
 		public void Submit()
 		{
+			this.releases.MarkRenderThread();
 			this.passes.FlushPass();
 
 			// Everything staged for this submit window reaches the queue here, in as few writes as the
@@ -209,6 +212,9 @@ namespace MatterHackers.RenderGl.Compat
 			}
 
 			this.submitter.ResetPerDrawPools();
+
+			// After the submit, so nothing recorded before it loses a texture it draws from.
+			this.releases.Drain();
 		}
 
 		/// <summary>Submits and presents a surface.</summary>
@@ -668,27 +674,49 @@ namespace MatterHackers.RenderGl.Compat
 		internal T Own<T>(T resource)
 			where T : IDisposable
 		{
-			this.ownedResources.Add(resource);
+			lock (this.ownedResources)
+			{
+				this.ownedResources.Add(resource);
+			}
+
 			return resource;
 		}
+
+		/// <summary>
+		/// Called first by an owned resource's Dispose: true when the call is off the render thread and the
+		/// release has been queued for it (see <see cref="GlRenderThreadReleases"/>), and the caller must return.
+		/// </summary>
+		internal bool ReleaseOnRenderThread(IDisposable resource) => this.releases.TryDefer(resource);
 
 		/// <summary>Takes back a resource handed to <see cref="Own"/> that its owner released first, so a
 		/// context that outlives many of them (a window's retained layers) does not keep every one.</summary>
 		internal void Disown(IDisposable resource)
 		{
-			this.ownedResources.Remove(resource);
+			lock (this.ownedResources)
+			{
+				this.ownedResources.Remove(resource);
+			}
 		}
 
 		/// <summary>Releases the caches, stores, any open pass and everything handed to <see cref="Own"/>.</summary>
 		public void Dispose()
 		{
+			// Released now rather than queued, whatever thread this is: nothing will draw again.
+			this.releases.Close();
+
 			// A snapshot: an owned resource's Dispose may Disown itself.
-			foreach (var resource in this.ownedResources.ToArray())
+			IDisposable[] owned;
+			lock (this.ownedResources)
+			{
+				owned = this.ownedResources.ToArray();
+				this.ownedResources.Clear();
+			}
+
+			foreach (var resource in owned)
 			{
 				resource.Dispose();
 			}
 
-			this.ownedResources.Clear();
 			this.passes.Dispose();
 			this.displayLists.Dispose();
 			this.textures.Dispose();

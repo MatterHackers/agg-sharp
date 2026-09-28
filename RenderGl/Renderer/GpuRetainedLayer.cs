@@ -193,8 +193,15 @@ namespace MatterHackers.RenderGl
 			return !this.Target.LinearLight && destination is Graphics2DGpu gpu && this.CompositeOnto(gpu, x, y, opacity, (roundedClip, cornerRadius));
 		}
 
+		/// <summary>Ends a paint still in progress and releases the texture. Safe from any thread (a widget
+		/// closed by a worker): off the render thread the whole release waits for it, paint included.</summary>
 		public void Dispose()
 		{
+			if (((GlCompatContext)this.gl.GpuContext).ReleaseOnRenderThread(this))
+			{
+				return;
+			}
+
 			this.currentPaint?.Dispose();
 			this.Target.Dispose();
 		}

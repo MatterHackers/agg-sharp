@@ -337,10 +337,13 @@ namespace MatterHackers.Agg.UI
 		private bool LayerFits(Graphics2D destination, int extraWidth, int extraHeight)
 		{
 			this.GetSize(extraWidth, extraHeight, out int intWidth, out int intHeight);
-			return this.layer != null
-				&& !this.layer.NeedsRepaintFor(destination)
-				&& this.layer.Width == intWidth
-				&& this.layer.Height == intHeight;
+
+			// Read once: a close on another thread may release it at any moment (see ReleaseLayer).
+			var layer = this.layer;
+			return layer != null
+				&& !layer.NeedsRepaintFor(destination)
+				&& layer.Width == intWidth
+				&& layer.Height == intHeight;
 		}
 
 		/// <summary>
@@ -352,11 +355,15 @@ namespace MatterHackers.Agg.UI
 		/// paint picks another mode. A widget removed from its parent without being closed keeps its texture,
 		/// and since the GPU texture has no finalizer, collecting the widget does not free it either - close
 		/// widgets you are done with.
+		/// <para>
+		/// Safe from any thread, as closing a widget always has been: the layer queues a release asked for off
+		/// the render thread until that thread can run it, and the exchange keeps a close racing a paint's own
+		/// release from disposing the same layer twice.
+		/// </para>
 		/// </remarks>
 		internal void ReleaseLayer()
 		{
-			this.layer?.Dispose();
-			this.layer = null;
+			System.Threading.Interlocked.Exchange(ref this.layer, null)?.Dispose();
 		}
 
 		/// <summary>
@@ -463,14 +470,38 @@ namespace MatterHackers.Agg.UI
 			this.lcdBackBuffer = null;
 			this.DropFadedBuffer();
 
-			if (this.layer == null || !this.layer.BelongsTo(destination))
+			// The layer is read once and painted through that copy: a close on another thread may release the
+			// field at any moment (see ReleaseLayer), and the release it queues waits for this thread anyway.
+			var layer = this.layer;
+			if (layer == null || !layer.BelongsTo(destination))
 			{
 				this.ReleaseLayer();
-				this.layer = destination.CreateRetainedLayer();
+
+				// A widget closed while its parent was drawing (by a worker, mid-frame) is still reached by
+				// that frame. A layer made for it now would never be released: the close has already run.
+				if (this.widget.HasBeenClosed)
+				{
+					return;
+				}
+
+				layer = destination.CreateRetainedLayer();
+				System.Threading.Interlocked.Exchange(ref this.layer, layer);
+
+				// Close sets HasBeenClosed before it releases the layer, and both sides exchange the field, so
+				// a close racing the line above either releases this layer or is seen here.
+				if (this.widget.HasBeenClosed)
+				{
+					this.ReleaseLayer();
+					return;
+				}
+			}
+			else if (this.widget.HasBeenClosed)
+			{
+				return;
 			}
 
 			this.GetSize(extraWidth, extraHeight, out int intWidth, out int intHeight);
-			using var paint = this.layer.Begin(intWidth, intHeight);
+			using var paint = layer.Begin(intWidth, intHeight);
 			var layerGraphics = paint.Graphics;
 
 			// Same validity gate as the RGBA arm: these pixels are blended onto the parent later, so no
@@ -502,12 +533,19 @@ namespace MatterHackers.Agg.UI
 			{
 				// Scaled like the RGBA blit is, about the whole-pixel placement the caller already set.
 				graphics2D.SetTransform(Affine.NewScaling(scaleX, scaleY) * graphics2D.GetTransform());
+				// Read once, as in RasterizeLayer; a layer a close has released draws nothing.
+				var layer = this.layer;
+				if (layer == null)
+				{
+					return;
+				}
+
 				// A layer that cannot clip itself still composites, unclipped, rather than vanishing.
 				if (this.roundedClipRadius <= 0
-					|| this.layer is not IRoundedLayerCompositor rounded
+					|| layer is not IRoundedLayerCompositor rounded
 					|| !rounded.CompositeRounded(graphics2D, 0, 0, opacity, this.roundedClipInBuffer, this.roundedClipRadius))
 				{
-					graphics2D.RenderRetainedLayer(this.layer, 0, 0, opacity);
+					graphics2D.RenderRetainedLayer(layer, 0, 0, opacity);
 				}
 			}
 			else if (this.Mode == BackbufferMode.LcdCoverage)

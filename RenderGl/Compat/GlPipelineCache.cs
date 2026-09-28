@@ -63,6 +63,12 @@ namespace MatterHackers.RenderGl.Compat
 		/// <summary>How many distinct bind groups have been created.</summary>
 		public int BindGroupCount => this.bindGroups.Count;
 
+		/// <summary>
+		/// Test hook run at each step of <see cref="InvalidateBindGroupsUsing"/>'s scan of the bind groups, so a
+		/// test can make another thread touch the cache mid-scan and prove no scan runs off the render thread.
+		/// </summary>
+		internal Action BindGroupScanStep { get; set; }
+
 		/// <summary>How many shader modules have been compiled.</summary>
 		public int ShaderModuleCount => this.modules.Count;
 
@@ -167,6 +173,7 @@ namespace MatterHackers.RenderGl.Compat
 			List<BindGroupDescriptor> doomed = null;
 			foreach (var entry in this.bindGroups)
 			{
+				this.BindGroupScanStep?.Invoke();
 				if (!BindsAny(entry.Key, textures))
 				{
 					continue;
