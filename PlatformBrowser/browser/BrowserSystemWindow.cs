@@ -939,6 +939,16 @@ namespace MatterHackers.Agg.Platform.Browser
 
 				case BrowserInputEventKind.FocusLost:
 					this.modifierTracker.Release(inputEvent.ModifierDownKeys);
+
+					// The canvas blurs when the tab or the browser loses focus too, so this is the page's app
+					// switch. Agg's focus is left alone (as on the mac): the caret is still there on return.
+					// Guarded where releasing modifiers is not, because closing a popup is not undoing what
+					// real input put down - a parallel automation run must keep its menus open.
+					if (IPlatformWindow.ForwardPlatformDeactivation)
+					{
+						window.OnDeactivated(EventArgs.Empty);
+					}
+
 					break;
 			}
 		}

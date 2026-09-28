@@ -156,6 +156,29 @@ namespace MatterHackers.Agg.UI
 		public event EventHandler DisplayScaleChanged;
 
 		/// <summary>
+		/// Raised when the platform window stops being the one the user is using: they switched to another
+		/// application, another window took over, or (in a browser) the page lost focus. Popups and menus close
+		/// here, the way native ones do.
+		/// </summary>
+		/// <remarks>
+		/// A separate signal from focus because the hosts disagree about focus and are right to: the Windows
+		/// host clears agg's focus on deactivation, while the mac host must not - a mac app keeps its text
+		/// field focused across an app switch, so the caret is still there when the user comes back. Closing a
+		/// popup has to work on both, so it hangs off this instead of off the focus change.
+		/// </remarks>
+		public event EventHandler Deactivated;
+
+		/// <summary>
+		/// Raises <see cref="Deactivated"/>. Called by the platform hosts on the UI thread (the Windows host
+		/// from the control losing focus, the mac host from <c>windowDidResignKey:</c>, the X11 host from a
+		/// real FocusOut, the browser host from the canvas blurring), and by tests standing in for them.
+		/// </summary>
+		public virtual void OnDeactivated(EventArgs e)
+		{
+			Deactivated?.Invoke(this, e);
+		}
+
+		/// <summary>
 		/// When set, the display scale every window is on as far as <see cref="SetDisplayScale"/> is concerned:
 		/// any report, whoever makes it, is taken as this value. Null (the default) passes reports through.
 		/// </summary>

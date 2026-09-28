@@ -243,6 +243,32 @@ namespace MatterHackers.Agg.UI
 				CloseMenu();
 			}
 
+			// The user switching to another application closes the menu, as a native one does. Not left to
+			// FocusChanged: the mac and browser hosts keep agg's focus across an app switch (see
+			// SystemWindow.Deactivated), so the popup would still hold it and stay open.
+			void Window_Deactivated(object sender, EventArgs e)
+			{
+				bool descendantIsHoldingOpen = popup.Widget.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
+					&& ignoredPopupChild.KeepMenuOpen);
+
+				if (!popup.Widget.HasBeenClosed
+					&& !descendantIsHoldingOpen
+					&& !PopupWidget.DebugKeepOpen)
+				{
+					CloseMenu();
+				}
+			}
+
+			void Popup_Closed(object sender, EventArgs e)
+			{
+				// However the popup went (a pick, Escape, focus), the window must stop holding it.
+				popup.Widget.Closed -= Popup_Closed;
+				if (systemWindow != null)
+				{
+					systemWindow.Deactivated -= Window_Deactivated;
+				}
+			}
+
 			foreach (var ancestor in anchor.Widget.Parents<GuiWidget>().Where(p => p != systemWindow))
 			{
 				if (hookedParents.Add(ancestor))
@@ -253,6 +279,12 @@ namespace MatterHackers.Agg.UI
 			}
 
 			popup.Widget.ContainsFocusChanged += FocusChanged;
+			popup.Widget.Closed += Popup_Closed;
+			if (systemWindow != null)
+			{
+				systemWindow.Deactivated += Window_Deactivated;
+			}
+
 			popup.Widget.AfterDraw += Widget_Draw;
 
 			WidgetRelativeTo_PositionChanged(anchor.Widget, null);

@@ -2118,6 +2118,13 @@ namespace MatterHackers.Agg.UI
 			// broken. Both go here rather than waiting for an up that is not coming.
 			this.ReleasePointerGrab();
 			this.mouseCapture.ClearCapturedButtons();
+
+			// Popups close as they do on the other hosts; agg's focus is left alone, as on the mac. Guarded so a
+			// parallel automation run keeps its menus open whatever the real desktop does.
+			if (IPlatformWindow.ForwardPlatformDeactivation)
+			{
+				this.aggSystemWindow?.OnDeactivated(EventArgs.Empty);
+			}
 		}
 
 		/// <summary>

@@ -82,6 +82,9 @@ namespace MatterHackers.Agg.UI
 		private Vector2 scrollPositionAtMouseUp;
 		private bool holdingOpenForChild;
 
+		/// <summary>The window whose <see cref="SystemWindow.Deactivated"/> closes this menu.</summary>
+		private SystemWindow deactivationSource;
+
 		// The width the content laid out at, before any clamp widened us by a scroll bar. Measuring the
 		// widening from here rather than from our current width is what lets MakeMenuHaveScroll be called
 		// again (a menu that grew, or a window that shrank) without stacking a second scroll bar's worth
@@ -160,8 +163,56 @@ namespace MatterHackers.Agg.UI
 		public override void OnClosed(EventArgs e)
 		{
 			layoutEngine.Closed();
+			this.WatchForDeactivation(null);
 
 			base.OnClosed(e);
+		}
+
+		public override void OnParentChanged(EventArgs e)
+		{
+			// The topmost window, because that is the one the platform host reports on.
+			this.WatchForDeactivation(this.HasBeenClosed ? null : this.Parents<SystemWindow>().LastOrDefault());
+			base.OnParentChanged(e);
+		}
+
+		private void WatchForDeactivation(SystemWindow window)
+		{
+			if (this.deactivationSource != null)
+			{
+				this.deactivationSource.Deactivated -= this.Window_Deactivated;
+			}
+
+			this.deactivationSource = window;
+
+			if (window != null)
+			{
+				window.Deactivated += this.Window_Deactivated;
+			}
+		}
+
+		/// <summary>
+		/// Closes the menu when the user switches to another application, as a native menu does.
+		/// </summary>
+		/// <remarks>
+		/// The Windows host also clears focus there, which closes the menu through
+		/// <see cref="OnContainsFocusChanged"/>; the mac and browser hosts keep focus (a text field stays
+		/// focused across an app switch), so without this the menu would sit open over whatever the user
+		/// comes back to. Focus is not consulted - the menu may well still hold it - but a menu that is
+		/// deliberately held open still is.
+		/// </remarks>
+		private void Window_Deactivated(object sender, EventArgs e)
+		{
+			bool keepMeOpen = layoutEngine.Anchor is IMenuCreator menuCreator && menuCreator.AlwaysKeepOpen;
+			bool descendantIsHoldingOpen = this.Descendants<GuiWidget>().Any(w => w is IIgnoredPopupChild ignoredPopupChild
+				&& ignoredPopupChild.KeepMenuOpen);
+
+			if (!this.HasBeenClosed
+				&& !keepMeOpen
+				&& !descendantIsHoldingOpen
+				&& !DebugKeepOpen)
+			{
+				this.CloseMenu();
+			}
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)

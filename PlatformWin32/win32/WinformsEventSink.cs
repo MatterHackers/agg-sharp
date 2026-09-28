@@ -312,6 +312,13 @@ namespace MatterHackers.Agg.UI
 
 				widgetToSendTo.Unfocus();
 				widgetToSendTo.OnFocusChanged(e);
+
+				// Guarded where the unfocus is not: an automation run drives its window with simulated input,
+				// so the desktop moving on mid-test is not the user leaving.
+				if (IPlatformWindow.ForwardPlatformDeactivation)
+				{
+					widgetToSendTo.OnDeactivated(e);
+				}
 			}
 		}
 

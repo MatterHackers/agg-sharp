@@ -403,6 +403,42 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// The canvas blurring is the page's app switch: it deactivates the window (open popups close) and
+		/// leaves agg's focus alone, as the mac host does.
+		/// </summary>
+		[Test]
+		[Timeout(30_000)]
+		public async Task LosingFocusDeactivatesTheWindowAndKeepsAggFocus()
+		{
+			var interop = new FakeWindowInterop { BindResult = new BrowserBackingSize(800, 600, 2) };
+			var frameLoop = new FakeFrameLoop();
+
+			var platformWindow = new BrowserSystemWindow(interop, frameLoop);
+			var systemWindow = new SystemWindow(100, 100);
+			var textField = new TextEditWidget("typing", pixelWidth: 50);
+			systemWindow.AddChild(textField);
+			int deactivations = 0;
+			systemWindow.Deactivated += (s, e) => deactivations++;
+
+			try
+			{
+				platformWindow.ShowSystemWindow(systemWindow);
+				textField.Focus();
+
+				platformWindow.EnqueueFocusLost();
+				frameLoop.Tick();
+
+				await Assert.That(deactivations).IsEqualTo(1);
+				await Assert.That(textField.ContainsFocus).IsTrue();
+			}
+			finally
+			{
+				platformWindow.CloseSystemWindow(systemWindow);
+				UiThread.ResetForTests();
+			}
+		}
+
+		/// <summary>
 		/// A closed window detaches its input, so the release of a modifier it reported held can never arrive.
 		/// Keyboard is process-wide: a Shift left down there made every later click anywhere a shift-click.
 		/// </summary>

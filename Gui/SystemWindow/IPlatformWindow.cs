@@ -37,6 +37,20 @@ namespace MatterHackers.Agg.UI
 		// This must be set to false when doing parallel UI testing.
 		public static bool EnablePlatformWindowInput { get; set; } = true;
 
+		/// <summary>
+		/// Whether the hosts pass the OS taking the window away from the user (another app or window becoming
+		/// key, a FocusOut, the canvas blurring) on as <see cref="SystemWindow.OnDeactivated"/>. The automation
+		/// runner turns it off while it drives a window: its input is simulated, so the real desktop changing
+		/// hands mid-test (another test's window, another process on the machine) is not the user leaving, and
+		/// must not close the menu the test just opened.
+		/// </summary>
+		public static bool EnablePlatformWindowDeactivation { get; set; } = true;
+
+		/// <summary>
+		/// True when a host should raise <see cref="SystemWindow.OnDeactivated"/> for a real OS deactivation.
+		/// </summary>
+		public static bool ForwardPlatformDeactivation => EnablePlatformWindowInput && EnablePlatformWindowDeactivation;
+
 		string Caption { get; set; }
 
 		int TitleBarHeight { get; }

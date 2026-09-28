@@ -2189,6 +2189,14 @@ namespace MatterHackers.Agg.UI
 		{
 			this.lastModifierFlags = ReleaseAppliedModifierKeys(this.appliedModifierKeys);
 			this.appliedModifierKeys = NoModifierKeys;
+
+			// Popups close as a native menu would. Focus is deliberately not cleared (unlike the Windows host):
+			// a mac app keeps its text field focused across an app switch. Guarded, unlike the release above,
+			// because a parallel automation run must not have its menus closed by the user clicking elsewhere.
+			if (IPlatformWindow.ForwardPlatformDeactivation)
+			{
+				this.aggSystemWindow?.OnDeactivated(EventArgs.Empty);
+			}
 		}
 
 		/// <summary>

@@ -2193,6 +2193,7 @@ namespace MatterHackers.GuiAutomation
 			// Main thread blocks here until released via CloseOnIdle above
 			bool originalAllowDropState = SystemWindow.EnableAllowDrop;
 			SystemWindow.EnableAllowDrop = false;
+			using var desktopDeactivationIgnored = new DesktopDeactivationIgnored();
 
 			try
 			{
@@ -2275,20 +2276,7 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			// Reset EnablePlatformWindowInput for the next test - this is critical for tests to receive input events
-			try
-			{
-				// Use reflection to access the static property
-				var platformWindowType = System.Type.GetType("MatterHackers.Agg.UI.IPlatformWindow, agg");
-				var enableInputProperty = platformWindowType?.GetProperty("EnablePlatformWindowInput");
-				if (enableInputProperty != null)
-				{
-					enableInputProperty.SetValue(null, true);
-				}
-			}
-			catch (Exception ex)
-			{
-				DebugLogger.LogWarning("AutomationRunner", $"Failed to reset EnablePlatformWindowInput: {ex.Message}");
-			}
+			IPlatformWindow.EnablePlatformWindowInput = true;
 
 			// IMPORTANT: Reset UiThread LAST after window is fully closed to avoid clearing CloseOnIdle actions
 			try
