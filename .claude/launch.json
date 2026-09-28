@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "demo-site",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "/private/tmp/claude-501/-Users-larsbrubaker-Development-MatterCAD-Submodules-agg-sharp/ab1cd99e-933f-4852-acb8-6f9e7627f291/scratchpad/site"],
+      "port": 8765
+    }
+  ]
+}
