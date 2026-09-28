@@ -30,6 +30,7 @@ When a bug is reported, always follow this workflow:
 - Avoid redundant tests that verify the same behavior
 - All tests must pass before merging
 - When test failures occur, use the fix-test-failures agent (`.claude/agents/fix-test-failures.md`) — it treats all failures as real bugs and resolves them through instrumentation and root cause analysis, never by weakening tests
+- **File size limit: 800 non-empty lines per `.cs` file.** `FileComplianceTests` (`Tests/Agg.Tests/Other/FileComplianceTests.cs`) enforces it. Files already over the limit are frozen at their current size in its `ExplicitFileLimits`; those limits only ever go down, and an entry is removed once its file is back under 800. When a file hits its limit, decompose it — use the `file-size-refactoring` skill (never partial classes, never compressing code to squeeze under).
 
 ## Project Context
 
@@ -71,3 +72,18 @@ When a bug is reported, always follow this workflow:
 **Copyright** - When updating files with copyright notices, update the year to 2026 if not already current. Include Lars Brubaker in the copyright notice.
 
 **Async/Await** - Never use `.GetAwaiter().GetResult()` or `.Result`. Always propagate async properly with `await`.
+
+## Plans and Progress Docs
+
+Plan and progress documents (in `docs/` or the repo root) describe open work only; history lives in git.
+
+- Delete the doc in the change that completes its work.
+- Prune as you go: remove finished steps, stale findings and superseded decisions; never append status updates, changelogs or "how we got here" narrative.
+- A decision that must outlive the doc goes in a code comment where it applies (or this file).
+- A doc's own status line can be stale — check the code before trusting it.
+
+## Orchestration pattern
+
+The main session acts as planner and orchestrator only — it should not write or edit code directly. All implementation is delegated to the `implementer` subagent (`.claude/agents/implementer.md`), one scoped step at a time. All post-change review is delegated to the `reviewer` subagent (`.claude/agents/reviewer.md`). The main session handles only planning, architecture decisions, and synthesizing subagent results.
+
+Brief each implementer with one deliverable and a 25-minute budget; a run over 30 minutes is an error. Implementers that may run concurrently get `isolation: "worktree"`; a new worktree needs `git reset --hard main` and `git submodule update --init --recursive` before its first build.
