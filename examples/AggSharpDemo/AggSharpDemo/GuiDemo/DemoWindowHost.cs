@@ -46,6 +46,10 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 	/// </remarks>
 	public class DemoWindowHost
 	{
+		// The sizes and rectangles below, and each DemoSpec's default size, are design units (agg-gui's logical
+		// pixels); they are multiplied by GuiWidget.DeviceScale where a window is placed, so at 2x the windows
+		// open twice as many device pixels big, the size their doubled text needs.
+
 		/// <summary>app_builder.rs tiles for this canvas height until the canvas has been laid out.</summary>
 		public const double DefaultCanvasHeight = 720;
 
@@ -77,6 +81,10 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 		/// <summary>Windows placed before the canvas had a height; they are tiled again once it has one.</summary>
 		private readonly HashSet<DemoSpec> placedBeforeLayout = new HashSet<DemoSpec>();
+
+		/// <summary>Windows still where the host put them (their tile or restored rectangle); they are placed
+		/// again whenever the canvas changes size. A user's drag takes a window out.</summary>
+		private readonly HashSet<DemoSpec> followsCanvas = new HashSet<DemoSpec>();
 
 		/// <summary>Rectangles restored from a previous run; they replace the tile until Organize.</summary>
 		private readonly Dictionary<DemoSpec, RectangleDouble> restoredRects = new Dictionary<DemoSpec, RectangleDouble>();
@@ -276,20 +284,25 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// </remarks>
 		public static RectangleDouble TileRect(int index, double canvasWidth, double canvasHeight, double width, double height)
 		{
+			// The arguments are device pixels; specs.rs's cell, gap, origin and stagger are design units.
+			double scale = GuiWidget.DeviceScale;
+			double gap = TileGap * scale;
+			double origin = TileOrigin * scale;
+			double edge = 4 * scale;
 			width = Math.Min(width, canvasWidth);
 			height = Math.Min(height, canvasHeight);
-			double pitch = GuiDemoSpecs.DefaultWindowWidth + TileGap;
-			int columns = Math.Clamp((int)((canvasWidth - TileOrigin + TileGap) / pitch), 1, TileColumns);
+			double pitch = GuiDemoSpecs.DefaultWindowWidth * scale + gap;
+			int columns = Math.Clamp((int)((canvasWidth - origin + gap) / pitch), 1, TileColumns);
 			int column = index % columns;
 			int row = index / columns;
-			double x = Math.Max(0, Math.Min(TileOrigin + column * pitch, canvasWidth - width));
-			double yDown = TileOrigin + row * (GuiDemoSpecs.DefaultWindowHeight + TileGap);
+			double x = Math.Max(0, Math.Min(origin + column * pitch, canvasWidth - width));
+			double yDown = origin + row * (GuiDemoSpecs.DefaultWindowHeight * scale + gap);
 			double y = canvasHeight - yDown - height;
-			if (y < 4)
+			if (y < edge)
 			{
-				double topY = Math.Max(canvasHeight - height - TileOrigin, 4);
-				double stagger = index * 24.0 % 200.0;
-				y = Math.Max(topY - stagger, 4);
+				double topY = Math.Max(canvasHeight - height - origin, edge);
+				double stagger = index * 24.0 % 200.0 * scale;
+				y = Math.Max(topY - stagger, edge);
 			}
 
 			return new RectangleDouble(x, y, x + width, y + height);
@@ -297,7 +310,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 		private WindowWidget CreateWindow(DemoSpec spec)
 		{
-			var window = new WindowWidget(this.demoTheme.Theme, new RectangleDouble(0, 0, spec.DefaultWidth, spec.DefaultHeight))
+			var window = new WindowWidget(this.demoTheme.Theme, new RectangleDouble(0, 0, spec.DefaultWidth * GuiWidget.DeviceScale, spec.DefaultHeight * GuiWidget.DeviceScale))
 			{
 				Name = spec.Title + " Window",
 				CornerRadius = 8,
@@ -323,6 +336,12 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			// does not). MouseDown fires even when a child handles the press; BringToFront keeps the capture.
 			window.MouseDown += (s, e) => this.Raise(spec);
 			this.Snap.Attach(window);
+			window.TitleBar.DragMoved += (s, e) => this.StopFollowingCanvas(spec);
+			foreach (GrabControl grab in window.Children.OfType<GrabControl>())
+			{
+				grab.DragMoved += (s, e) => this.StopFollowingCanvas(spec);
+			}
+
 			window.PositionChanged += (s, e) => this.LayoutChanged?.Invoke(this, EventArgs.Empty);
 			window.SizeChanged += (s, e) => this.LayoutChanged?.Invoke(this, EventArgs.Empty);
 			window.MaximizedChanged += (s, e) => this.LayoutChanged?.Invoke(this, EventArgs.Empty);
@@ -339,6 +358,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 				this.placedBeforeLayout.Add(spec);
 			}
 
+			this.followsCanvas.Add(spec);
+
+			double scale = GuiWidget.DeviceScale;
 			RectangleDouble visible;
 			if (this.restoredRects.TryGetValue(spec, out RectangleDouble restored))
 			{
@@ -347,13 +369,18 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			else
 			{
 				visible = spec == GuiDemoSpecs.About
-					? AboutRect
+					? Scaled(AboutRect, scale)
 					: spec == GuiDemoSpecs.Inspector
-					? (laidOut ? ClampToCanvas(InspectorRect, this.canvas.Width, this.canvas.Height) : InspectorRect)
-					: TileRect(IndexOf(spec), laidOut ? this.canvas.Width : DefaultCanvasWidth, laidOut ? this.canvas.Height : DefaultCanvasHeight, spec.DefaultWidth, spec.DefaultHeight);
+					? (laidOut ? ClampToCanvas(Scaled(InspectorRect, scale), this.canvas.Width, this.canvas.Height) : Scaled(InspectorRect, scale))
+					: TileRect(
+						IndexOf(spec),
+						laidOut ? this.canvas.Width : DefaultCanvasWidth * scale,
+						laidOut ? this.canvas.Height : DefaultCanvasHeight * scale,
+						spec.DefaultWidth * scale,
+						spec.DefaultHeight * scale);
 			}
 
-			double grab = GrabBorder * GuiWidget.DeviceScale;
+			double grab = GrabBorder * scale;
 			window.Position = new Vector2(visible.Left - grab, visible.Bottom - grab);
 			window.Size = new Vector2(visible.Width + grab * 2, visible.Height + grab * 2);
 			if (spec.AutoSize || spec.FitHeightToContent)
@@ -477,6 +504,10 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			return (content as IScrollFittedDemoContent)?.FittedContent ?? content;
 		}
 
+		/// <summary><paramref name="rect"/> (design units) in device pixels.</summary>
+		private static RectangleDouble Scaled(RectangleDouble rect, double scale)
+			=> new RectangleDouble(rect.Left * scale, rect.Bottom * scale, rect.Right * scale, rect.Top * scale);
+
 		private static int IndexOf(DemoSpec spec)
 		{
 			for (int i = 0; i < GuiDemoSpecs.All.Count; i++)
@@ -554,23 +585,37 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			}
 		}
 
-		/// <summary>The windows opened before the canvas was laid out were tiled for
-		/// <see cref="DefaultCanvasHeight"/>; tile them for the real height the first time there is one, so they
-		/// hang from the top of the canvas as agg-gui's do.</summary>
+		/// <summary>
+		/// The canvas changed size: every window the user has not moved or resized is placed again for the new
+		/// size, so it hangs from the top of the canvas as agg-gui's do.
+		/// </summary>
+		/// <remarks>
+		/// A head's first layout is not necessarily at its final size: the browser builds the app in a
+		/// SystemWindow of its constructor size and only then learns the canvas's backing size (at
+		/// devicePixelRatio 2 the page is first laid out at 1200 x 800 device pixels, then about 2800 x 1800).
+		/// Placing only on the first layout left the windows tiled, and shrunk, for the small canvas, and agg
+		/// being y-up they then sat at the bottom of the big one.
+		/// </remarks>
 		private void Canvas_BoundsChanged(object sender, EventArgs e)
 		{
-			if (this.canvas.Height <= 0
-				|| this.placedBeforeLayout.Count == 0)
+			if (this.canvas.Height <= 0)
 			{
 				return;
 			}
 
-			var pending = this.placedBeforeLayout.ToList();
 			this.placedBeforeLayout.Clear();
-			foreach (DemoSpec spec in pending)
+			foreach (DemoSpec spec in this.followsCanvas.ToList())
 			{
-				this.Place(spec, this.windows[spec]);
+				WindowWidget window = this.windows[spec];
+				if (!window.Maximized)
+				{
+					this.Place(spec, window);
+				}
 			}
 		}
+
+		/// <summary>The user dragged <paramref name="spec"/>'s window (moved or resized it): it stays where they
+		/// put it from now on, whatever the canvas does.</summary>
+		private void StopFollowingCanvas(DemoSpec spec) => this.followsCanvas.Remove(spec);
 	}
 }

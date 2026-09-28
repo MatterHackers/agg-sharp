@@ -73,7 +73,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Layout
 			TextWidget titleLabel = this.kit.Label("title:", 13);
 			titleLabel.Margin = new BorderDouble(right: 8);
 			titleRow.AddChild(titleLabel);
-			this.TitleField = new ThemedTextEditWidget("Window Options", demoTheme.Theme, pixelWidth: 120)
+			this.TitleField = new ThemedTextEditWidget("Window Options", demoTheme.Theme, pixelWidth: 120 * GuiWidget.DeviceScale)
 			{
 				Name = "Window Options Title",
 				HAnchor = HAnchor.Stretch,

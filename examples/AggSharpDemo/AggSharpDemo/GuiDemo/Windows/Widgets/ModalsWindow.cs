@@ -123,7 +123,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			GuiWidget dialog = this.Dialog("Modals User Dialog", 250, 142);
 			dialog.AddChild(this.Label("Edit User"));
 
-			var nameField = new ThemedTextEditWidget(this.UserName, this.theme, pixelWidth: 170)
+			var nameField = new ThemedTextEditWidget(this.UserName, this.theme, pixelWidth: 170 * GuiWidget.DeviceScale)
 			{
 				Name = "Modals Name",
 				VAnchor = VAnchor.Center,

@@ -825,12 +825,19 @@ namespace MatterHackers.Agg.Platform.Browser
 		}
 
 		/// <summary>
-		/// Queues a canvas resize. JS hands over exact integer device pixels (it reads
-		/// <c>devicePixelContentBoxSize</c> and owns the one rounding); see <see cref="BrowserBacking"/>.
+		/// Queues a canvas resize of <paramref name="devicePixelWidth"/> by <paramref name="devicePixelHeight"/>
+		/// device pixels, clamped as <see cref="BrowserBacking"/> clamps.
 		/// </summary>
 		public void EnqueueBackingSize(double devicePixelWidth, double devicePixelHeight, double devicePixelRatio)
-			=> this.Enqueue(BrowserInputEvent.BackingSizeChanged(
-				BrowserBacking.FromDeviceMetrics(devicePixelWidth, devicePixelHeight, devicePixelRatio)));
+			=> this.EnqueueBackingSize(
+				BrowserBacking.FromDeviceMetrics(devicePixelWidth, devicePixelHeight, devicePixelRatio));
+
+		/// <summary>
+		/// Queues a canvas resize the canvas's backing store has already been sized to; see
+		/// <see cref="BrowserBacking.FromDeviceMetrics(double, double, double, double, double)"/>.
+		/// </summary>
+		public void EnqueueBackingSize(BrowserBackingSize newBacking)
+			=> this.Enqueue(BrowserInputEvent.BackingSizeChanged(newBacking));
 
 		/// <summary>
 		/// Whether real input should reach agg at all. Parallel automation runs turn
@@ -945,9 +952,10 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// how much room it has. The browser host's <c>SyncSizeFromBacking</c>.
 		/// </summary>
 		/// <remarks>
-		/// The canvas's own <c>width</c>/<c>height</c> attributes are set by JS, in the same place the size is
-		/// measured, so there is exactly one rounding of a fractional CSS layout into whole device pixels and
-		/// the backing store cannot disagree with what agg was told. What is here is what a swapchain resize
+		/// The canvas's own <c>width</c>/<c>height</c> attributes are set from the same
+		/// <see cref="BrowserBackingSize"/> when it is measured (<c>BrowserWindowInterop.SizeCanvas</c>), so
+		/// there is exactly one rounding of a fractional CSS layout into whole device pixels and the backing
+		/// store cannot disagree with what agg was told. What is here is what a swapchain resize
 		/// (<see cref="BrowserWebGpuLayer.Resize"/>) and the widget tree need.
 		/// </remarks>
 		public void ApplyBackingSize(BrowserBackingSize newBacking)

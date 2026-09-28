@@ -114,7 +114,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			this.AddRow("Label", "label", this.Text("Welcome to the widget gallery!"));
 			this.AddRow("Hyperlink", "Hyperlink", new Hyperlink("agg-sharp on GitHub", this.theme, RepoUrl));
 
-			this.TextField = new ThemedTextEditWidget("", this.theme, pixelWidth: 180, messageWhenEmptyAndNotSelected: "Write something here")
+			this.TextField = new ThemedTextEditWidget("", this.theme, pixelWidth: 180 * GuiWidget.DeviceScale, messageWhenEmptyAndNotSelected: "Write something here")
 			{
 				Name = "Gallery TextEdit",
 				HAnchor = HAnchor.Stretch,

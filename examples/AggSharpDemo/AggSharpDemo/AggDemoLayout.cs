@@ -38,8 +38,9 @@ namespace MatterHackers.AggSharpDemo
 	/// <remarks>
 	/// Whole-number scale and whole-pixel offset because every demo pixel then covers an exact square of view
 	/// pixels: that is what keeps the software reference image unblurred when it is shown, and what keeps the
-	/// GPU path's pixel grid aligned with the demo's. A view smaller than the demo shows it at scale 1,
-	/// centered, with the overflow clipped - there is no whole-number scale below 1.
+	/// GPU path's pixel grid aligned with the demo's. A view smaller than the demo shows it at the minimum
+	/// scale (1, or the whole part of the device scale for <see cref="AggDemoView"/>), centered, with the
+	/// overflow clipped - there is no whole-number scale below 1.
 	/// <para>Whole pixels on the screen, not in the view: at a display scale like 1.25 a view can sit at a
 	/// fractional screen position, and an offset whole in view coordinates would then land the frame between
 	/// screen pixels. The view passes that fraction in, and the offset absorbs it.</para>
@@ -48,14 +49,15 @@ namespace MatterHackers.AggSharpDemo
 	{
 		/// <param name="viewOriginOnScreen">Where the view's origin is on the screen. Only its fractional
 		/// part matters; default zero means the view already sits on whole pixels.</param>
-		public AggDemoLayout(double viewWidth, double viewHeight, int demoWidth, int demoHeight, Vector2 viewOriginOnScreen = default)
+		/// <param name="minimumScale">The smallest scale used, even when the demo then overflows the view.</param>
+		public AggDemoLayout(double viewWidth, double viewHeight, int demoWidth, int demoHeight, Vector2 viewOriginOnScreen = default, int minimumScale = 1)
 		{
 			this.DemoWidth = demoWidth;
 			this.DemoHeight = demoHeight;
 
 			int fitX = (int)Math.Floor(viewWidth / demoWidth);
 			int fitY = (int)Math.Floor(viewHeight / demoHeight);
-			this.Scale = Math.Max(1, Math.Min(fitX, fitY));
+			this.Scale = Math.Max(Math.Max(1, minimumScale), Math.Min(fitX, fitY));
 
 			double fractionX = viewOriginOnScreen.X - Math.Floor(viewOriginOnScreen.X);
 			double fractionY = viewOriginOnScreen.Y - Math.Floor(viewOriginOnScreen.Y);
@@ -68,7 +70,7 @@ namespace MatterHackers.AggSharpDemo
 
 		public int DemoHeight { get; }
 
-		/// <summary>View pixels per demo pixel, always at least 1.</summary>
+		/// <summary>View pixels per demo pixel, always at least 1 (and the minimum scale asked for).</summary>
 		public int Scale { get; }
 
 		/// <summary>Where the demo's bottom-left corner lands in the view; the view's screen origin plus this is

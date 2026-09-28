@@ -25,6 +25,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
@@ -43,9 +44,14 @@ namespace MatterHackers.AggSharpDemo
 	/// </remarks>
 	public class AggSharpDemoApp : FlowLayoutWidget
 	{
-		private readonly ScrollableWidget sidebarScroll;
+		private readonly IDemoStateStore guiDemoStateStore;
 
-		private readonly GuiWidget content;
+		/// <summary>True when this app owns <see cref="GuiWidget.DeviceScale"/> - see the constructor.</summary>
+		private readonly bool followDisplayScale;
+
+		private ScrollableWidget sidebarScroll;
+
+		private GuiWidget content;
 
 		private readonly List<TextWidget> sectionHeaders = new List<TextWidget>();
 
@@ -53,6 +59,9 @@ namespace MatterHackers.AggSharpDemo
 		private readonly Dictionary<string, ThemedTextButton> entries = new Dictionary<string, ThemedTextButton>();
 
 		private string selectedEntry;
+
+		/// <summary>The window whose <see cref="SystemWindow.DisplayScaleChanged"/> this app follows, once loaded.</summary>
+		private SystemWindow displayScaleWindow;
 
 		/// <summary>Recolours the open AGG demo page's header; null while the GUI demo page is open (it
 		/// recolours itself).</summary>
@@ -65,10 +74,26 @@ namespace MatterHackers.AggSharpDemo
 		/// <see cref="GuiDemoName"/>; null or an unknown name opens on the first AGG demo.</param>
 		/// <param name="guiDemoStateStore">Where the GUI demo keeps its windows and settings between runs; null
 		/// starts it fresh every time.</param>
-		public AggSharpDemoApp(string initialDemo = null, IDemoStateStore guiDemoStateStore = null)
+		/// <param name="followDisplayScale">
+		/// True for a head: the app sets <see cref="GuiWidget.DeviceScale"/> to the display's scale (the Retina
+		/// factor, or the browser's devicePixelRatio) before it builds anything, and rebuilds itself at the new
+		/// scale when its window reports a different one. The platform hosts only report
+		/// <see cref="SystemWindow.DisplayScale"/>; turning it into DeviceScale is the application's call
+		/// (MatterCAD folds a user text size into it), so without this the UI is laid out one device pixel per
+		/// design unit - half size on a 2x display. False (tests) leaves the process-wide DeviceScale alone.
+		/// </param>
+		public AggSharpDemoApp(string initialDemo = null, IDemoStateStore guiDemoStateStore = null, bool followDisplayScale = false)
 			: base(FlowDirection.LeftToRight)
 		{
 			this.AnchorAll();
+			this.guiDemoStateStore = guiDemoStateStore;
+			this.followDisplayScale = followDisplayScale;
+
+			if (followDisplayScale)
+			{
+				// The display the app starts on, until its window says which one it is really on.
+				GuiWidget.DeviceScale = UsableScale(AggContext.OsInformation?.DisplayScale ?? 1);
+			}
 
 			// agg-gui's demo chains Noto Emoji behind its main font; the site's text is drawn in the default
 			// faces, so they get the same fallback (the Misc Demos label shows it off).
@@ -82,11 +107,26 @@ namespace MatterHackers.AggSharpDemo
 				DemoStatePersistence.ApplyTheme(DemoState.Parse(guiDemoStateStore.Load()), this.DemoTheme);
 			}
 
+			this.BuildUi(initialDemo);
+			this.DemoTheme.ThemeChanged += this.DemoTheme_ThemeChanged;
+		}
+
+		/// <summary>A display scale that can size a UI: anything not finite and positive is 1.</summary>
+		private static double UsableScale(double scale)
+			=> double.IsNaN(scale) || double.IsInfinity(scale) || scale <= 0 ? 1 : scale;
+
+		/// <summary>Builds the sidebar and opens <paramref name="openName"/> (an AGG demo's name or
+		/// <see cref="GuiDemoName"/>), all at the current <see cref="GuiWidget.DeviceScale"/>.</summary>
+		private void BuildUi(string openName)
+		{
+			this.sectionHeaders.Clear();
+			this.entries.Clear();
+
 			// The demo list is taller than a typical window, so the sidebar scrolls to keep every demo reachable.
 			this.sidebarScroll = new ScrollableWidget(autoScroll: true)
 			{
 				HAnchor = HAnchor.Absolute,
-				Width = 200,
+				Width = 200 * GuiWidget.DeviceScale,
 				VAnchor = VAnchor.Stretch,
 			};
 			sidebarScroll.ScrollArea.HAnchor = HAnchor.Stretch;
@@ -110,7 +150,7 @@ namespace MatterHackers.AggSharpDemo
 			AggDemo openDemo = null;
 			foreach (AggDemo demo in DemoRegistry.CreateAggDemos())
 			{
-				if (openDemo == null || demo.Name == initialDemo)
+				if (openDemo == null || demo.Name == openName)
 				{
 					openDemo = demo;
 				}
@@ -119,20 +159,39 @@ namespace MatterHackers.AggSharpDemo
 			}
 
 			sidebar.AddChild(this.SectionHeader("GUI Demo"));
-			sidebar.AddChild(this.SidebarEntry(GuiDemoName, () => this.ShowPage(GuiDemoName, new GuiDemoShell(this.DemoTheme, guiDemoStateStore))));
+			sidebar.AddChild(this.SidebarEntry(GuiDemoName, () => this.ShowPage(GuiDemoName, new GuiDemoShell(this.DemoTheme, this.guiDemoStateStore))));
 
 			this.ApplyTheme();
-			this.DemoTheme.ThemeChanged += this.DemoTheme_ThemeChanged;
 
 			// Open on a demo rather than an empty page: the first thing a visitor sees should be AGG drawing.
-			if (openDemo == null || initialDemo == GuiDemoName)
+			if (openDemo == null || openName == GuiDemoName)
 			{
-				this.ShowPage(GuiDemoName, new GuiDemoShell(this.DemoTheme, guiDemoStateStore));
+				this.ShowPage(GuiDemoName, new GuiDemoShell(this.DemoTheme, this.guiDemoStateStore));
 			}
 			else
 			{
 				this.ShowAggDemoPage(openDemo);
 			}
+		}
+
+		/// <summary>
+		/// The window moved to a display with another scale (or the browser zoomed): rebuild everything at it.
+		/// Closing the GUI demo page saves its state to the store and the new page restores it, and the open
+		/// page is reopened by name, so a visitor sees the same page and windows, sized for the new display.
+		/// </summary>
+		private void DisplayScaleWindow_DisplayScaleChanged(object sender, EventArgs e)
+		{
+			double scale = UsableScale(this.displayScaleWindow.DisplayScale);
+			if (scale == GuiWidget.DeviceScale)
+			{
+				// The first report always raises (see SetDisplayScale); a UI already at that scale is right.
+				return;
+			}
+
+			string openName = this.selectedEntry;
+			this.CloseChildren();
+			GuiWidget.DeviceScale = scale;
+			this.BuildUi(openName);
 		}
 
 		/// <summary>The light/dark preference and accent of the whole site: this chrome and the GUI demo page.</summary>
@@ -143,11 +202,26 @@ namespace MatterHackers.AggSharpDemo
 		public override void OnLoad(EventArgs args)
 		{
 			this.DemoTheme.RefreshSystemPreference();
+			if (this.followDisplayScale && this.displayScaleWindow == null)
+			{
+				this.displayScaleWindow = this.Parents<SystemWindow>().FirstOrDefault();
+				if (this.displayScaleWindow != null)
+				{
+					this.displayScaleWindow.DisplayScaleChanged += this.DisplayScaleWindow_DisplayScaleChanged;
+				}
+			}
+
 			base.OnLoad(args);
 		}
 
 		public override void OnClosed(EventArgs e)
 		{
+			if (this.displayScaleWindow != null)
+			{
+				this.displayScaleWindow.DisplayScaleChanged -= this.DisplayScaleWindow_DisplayScaleChanged;
+				this.displayScaleWindow = null;
+			}
+
 			this.DemoTheme.ThemeChanged -= this.DemoTheme_ThemeChanged;
 			base.OnClosed(e);
 		}
@@ -206,7 +280,7 @@ namespace MatterHackers.AggSharpDemo
 				Name = EntryName(text),
 				HAnchor = HAnchor.Stretch,
 				TextHAnchor = HAnchor.Left,
-				Height = 20,
+				Height = 20 * GuiWidget.DeviceScale,
 				Margin = new BorderDouble(0, 1),
 				Padding = new BorderDouble(5, 0),
 			};

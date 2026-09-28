@@ -248,6 +248,34 @@ namespace MatterHackers.Agg.UI.Tests
 				.IsEqualTo(new BrowserBackingSize(3840, 2160, 2));
 		}
 
+		[Test]
+		public async Task TheDevicePixelBoxIsTrustedOnlyWhenItAgreesWithTheCssBoxTimesTheRatio()
+		{
+			// Chrome's device-scale emulation (and check-demo-site.py --device-scale-factor 2) reports a
+			// devicePixelContentBoxSize equal to the CSS size while devicePixelRatio is 2: a 1x backing that
+			// the compositor then upscales. The CSS box times the ratio is the size that is actually sharp.
+			await Assert.That(BrowserBacking.FromDeviceMetrics(1200, 800, 1200, 800, 2))
+				.IsEqualTo(new BrowserBackingSize(2400, 1600, 2));
+
+			// A real Retina display: the browser's exact box agrees to within its own rounding, and wins.
+			await Assert.That(BrowserBacking.FromDeviceMetrics(2401, 1600, 1200.4, 800, 2))
+				.IsEqualTo(new BrowserBackingSize(2401, 1600, 2));
+			await Assert.That(BrowserBacking.FromDeviceMetrics(1501, 900, 1000.4, 600, 1.5))
+				.IsEqualTo(new BrowserBackingSize(1501, 900, 1.5));
+
+			// One axis off is enough to distrust the box: both come from the same measurement.
+			await Assert.That(BrowserBacking.FromDeviceMetrics(2400, 800, 1200, 800, 2))
+				.IsEqualTo(new BrowserBackingSize(2400, 1600, 2));
+
+			// No device box at all (Safari, the bind, a dpr change): the CSS box times the ratio, rounded.
+			await Assert.That(BrowserBacking.FromDeviceMetrics(double.NaN, double.NaN, 1000.3, 600, 1.5))
+				.IsEqualTo(new BrowserBackingSize(1500, 900, 1.5));
+
+			// No CSS box to check against: the device box is all there is.
+			await Assert.That(BrowserBacking.FromDeviceMetrics(1024, 768, double.NaN, double.NaN, 2))
+				.IsEqualTo(new BrowserBackingSize(1024, 768, 2));
+		}
+
 		/// <summary>
 		/// The pointer capture arbiter, wired into the window's own delivery path.
 		/// </summary>

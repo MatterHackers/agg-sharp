@@ -21,36 +21,42 @@ function resolveCanvas(selector) {
 	return canvas;
 }
 
-// The one place a fractional CSS layout becomes a whole number of device pixels. devicePixelContentBoxSize
-// is the browser's own exact integer answer and is preferred wherever it exists; clientWidth * dpr is the
-// fallback for engines that do not report it yet (Safari, historically), and is rounded here so that the
-// canvas backing store this sets and the size managed code is told can never disagree.
-function measureDevicePixels(canvas, entry) {
-	const dpr = window.devicePixelRatio || 1;
-
+// What the browser says about the canvas's size, both ways it can say it: devicePixelContentBoxSize (NaN
+// where the engine has none, or there is no observer entry) and the CSS content box, with the ratio between
+// them. Which one to believe, and the rounding of a fractional layout into whole pixels, is decided by
+// BrowserBacking.FromDeviceMetrics on the managed side - Chrome's device-scale emulation reports a device box
+// at the CSS size while devicePixelRatio is 2, so the device box cannot simply be trusted. The managed side
+// then sizes the backing store through setCanvasBackingSize, so what agg is told and the canvas agree.
+function measureCanvas(canvas, entry) {
+	let devicePixelWidth = NaN;
+	let devicePixelHeight = NaN;
 	if (entry && entry.devicePixelContentBoxSize && entry.devicePixelContentBoxSize.length > 0) {
 		const box = entry.devicePixelContentBoxSize[0];
-		return [box.inlineSize, box.blockSize, dpr];
+		devicePixelWidth = box.inlineSize;
+		devicePixelHeight = box.blockSize;
 	}
 
-	return [Math.round(canvas.clientWidth * dpr), Math.round(canvas.clientHeight * dpr), dpr];
+	// The observer's content box is fractional, which is what lets the device box be checked against it to
+	// within the browser's own rounding; clientWidth is the integer fallback.
+	let cssWidth = canvas.clientWidth;
+	let cssHeight = canvas.clientHeight;
+	if (entry && entry.contentBoxSize && entry.contentBoxSize.length > 0) {
+		cssWidth = entry.contentBoxSize[0].inlineSize;
+		cssHeight = entry.contentBoxSize[0].blockSize;
+	}
+
+	return {
+		devicePixelWidth: devicePixelWidth,
+		devicePixelHeight: devicePixelHeight,
+		cssWidth: cssWidth,
+		cssHeight: cssHeight,
+		devicePixelRatio: window.devicePixelRatio || 1,
+	};
 }
 
-// The backing store has to be sized here, next to the measurement, for the same reason the rounding is:
-// managed code is told these exact numbers and lays the whole UI out against them.
 function applyBackingSize(state, entry) {
-	const [width, height, dpr] = measureDevicePixels(state.canvas, entry);
-
-	const pixelWidth = Math.max(1, width);
-	const pixelHeight = Math.max(1, height);
-
-	if (state.canvas.width !== pixelWidth || state.canvas.height !== pixelHeight) {
-		state.canvas.width = pixelWidth;
-		state.canvas.height = pixelHeight;
-	}
-
 	if (state.onResize) {
-		state.onResize(pixelWidth, pixelHeight, dpr);
+		state.onResize(measureCanvas(state.canvas, entry));
 	}
 }
 
@@ -214,7 +220,9 @@ function packBlurEvent() {
 }
 
 /**
- * Prepares the canvas to be an agg window and reports [width, height, devicePixelRatio] in device pixels.
+ * Prepares the canvas to be an agg window and reports what measureCanvas does, as
+ * [devicePixelWidth, devicePixelHeight, cssWidth, cssHeight, devicePixelRatio]. The managed side decides the
+ * backing size from that and sets it with setCanvasBackingSize.
  *
  * tabIndex is what makes a canvas able to hold keyboard focus at all; touch-action none stops a touch drag
  * scrolling the page out from under a gesture agg is tracking; user-select none stops a double click
@@ -231,17 +239,27 @@ export function bindCanvas(selector) {
 	canvas.style.userSelect = 'none';
 	canvas.style.outline = 'none';
 
-	const [width, height, dpr] = measureDevicePixels(canvas, null);
-
-	canvas.width = Math.max(1, width);
-	canvas.height = Math.max(1, height);
-
-	return [canvas.width, canvas.height, dpr];
+	const m = measureCanvas(canvas, null);
+	return [m.devicePixelWidth, m.devicePixelHeight, m.cssWidth, m.cssHeight, m.devicePixelRatio];
 }
 
 /**
- * Subscribes every listener the host needs. onInputEvent takes one packed object; onResize takes the
- * canvas's device-pixel width, height and devicePixelRatio.
+ * Sizes the canvas's backing store to the device pixels the managed side decided on. Only when it changes:
+ * assigning width or height clears the canvas even to the same value.
+ */
+export function setCanvasBackingSize(selector, pixelWidth, pixelHeight) {
+	const state = canvasStates.get(selector);
+	const canvas = state ? state.canvas : resolveCanvas(selector);
+
+	if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+		canvas.width = pixelWidth;
+		canvas.height = pixelHeight;
+	}
+}
+
+/**
+ * Subscribes every listener the host needs. onInputEvent takes one packed object; onResize takes
+ * measureCanvas's object.
  */
 export function attachInput(selector, onInputEvent, onResize) {
 	detachInput(selector);

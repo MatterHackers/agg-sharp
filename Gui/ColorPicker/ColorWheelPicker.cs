@@ -107,7 +107,7 @@ namespace MatterHackers.Agg.UI
 			};
 			AddChild(alphaPercent);
 
-			HexField = new ThemedTextEditWidget(HsvColor.ToHex(color), theme, pixelWidth: WheelSize - 20)
+			HexField = new ThemedTextEditWidget(HsvColor.ToHex(color), theme, pixelWidth: (WheelSize - 20) * scale)
 			{
 				Name = "Color Wheel Hex",
 				HAnchor = HAnchor.Absolute,

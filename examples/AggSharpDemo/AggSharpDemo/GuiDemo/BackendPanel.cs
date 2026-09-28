@@ -89,7 +89,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 			this.Name = "GuiDemo Backend Panel";
 			this.HAnchor = HAnchor.Absolute;
-			this.Width = PanelWidth;
+			this.Width = PanelWidth * DeviceScale;
 			this.VAnchor = VAnchor.Stretch;
 
 			this.AddLabel("Backend", 12, new BorderDouble(12, 4, 12, 8), "Backend Heading");

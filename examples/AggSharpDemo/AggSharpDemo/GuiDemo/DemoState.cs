@@ -69,8 +69,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// <summary>The System window's typography settings and tab; null keeps the current ones.</summary>
 		public SystemSettingsState SystemSettings { get; set; }
 
-		/// <summary>The OS window's size in agg pixels when last saved (state.rs window_w / window_h); 0 when the
-		/// page was not in a desktop window. The mac head opens its window at this size.</summary>
+		/// <summary>The OS window's size in design units (agg pixels / DeviceScale) when last saved (state.rs
+		/// window_w / window_h); 0 when the page was not in a desktop window. The mac head opens its window at
+		/// this size, times the scale it starts at.</summary>
 		public double OsWindowWidth { get; set; }
 
 		public double OsWindowHeight { get; set; }
@@ -120,6 +121,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 		public bool Open { get; set; }
 
+		// The rectangle is in design units - agg pixels divided by GuiWidget.DeviceScale - so a state saved on a
+		// 2x display puts its windows in the same places at 1x, and a rebuild at a new scale keeps them.
 		public double X { get; set; }
 
 		public double Y { get; set; }

@@ -102,7 +102,20 @@ namespace MatterHackers.AggSharpDemo
 		}
 
 		/// <summary>Where the demo sits in this view, as of the last draw.</summary>
-		public AggDemoLayout Layout => new AggDemoLayout(this.Width, this.Height, this.Demo.Width, this.Demo.Height, this.viewOriginOnScreen);
+		/// <remarks>
+		/// A demo pixel is a design unit: at <see cref="GuiWidget.DeviceScale"/> 2 the demo is drawn at least 2
+		/// device pixels per demo pixel, so it looks the size of the C++ example beside text that doubled too,
+		/// and the GPU path draws its vectors at the full device resolution. Only the whole part of the device
+		/// scale is used, keeping the software reference's pixel replication exact; at 1.25 or 1.5 the demo
+		/// stays at 1 (the largest whole scale not bigger than its design size) unless the view has room for more.
+		/// </remarks>
+		public AggDemoLayout Layout => new AggDemoLayout(
+			this.Width,
+			this.Height,
+			this.Demo.Width,
+			this.Demo.Height,
+			this.viewOriginOnScreen,
+			Math.Max(1, (int)Math.Floor(GuiWidget.DeviceScale)));
 
 		public override void OnClosed(EventArgs e)
 		{

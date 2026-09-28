@@ -73,7 +73,7 @@ namespace MatterHackers.AggSharpDemo
 				{
 					Title = "agg-sharp demo",
 				};
-				systemWindow.AddChild(new AggSharpDemoApp(InitialDemoFromUrl(), new BrowserDemoStateStore()));
+				systemWindow.AddChild(new AggSharpDemoApp(InitialDemoFromUrl(), new BrowserDemoStateStore(), followDisplayScale: true));
 				systemWindow.ShowAsSystemWindow();
 
 				Report(string.Empty);

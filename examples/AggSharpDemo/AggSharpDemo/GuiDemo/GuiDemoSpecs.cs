@@ -57,6 +57,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 		public bool OpenByDefault { get; }
 
+		/// <summary>The size the window opens at, in design units (specs.rs's logical pixels); the host
+		/// multiplies it by <see cref="GuiWidget.DeviceScale"/>.</summary>
 		public double DefaultWidth { get; }
 
 		public double DefaultHeight { get; }

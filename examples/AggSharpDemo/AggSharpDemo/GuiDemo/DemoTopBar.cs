@@ -59,7 +59,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			this.Name = "GuiDemo Top Bar";
 			this.HAnchor = HAnchor.Stretch;
 			this.VAnchor = VAnchor.Absolute;
-			this.Height = GuiDemoShell.TopBarHeight;
+			this.Height = GuiDemoShell.TopBarHeight * DeviceScale;
 
 			this.Menus = this.CreateMenus();
 			this.MenuBar = new MenuBarWidget(this.Menus, demoTheme.Theme)

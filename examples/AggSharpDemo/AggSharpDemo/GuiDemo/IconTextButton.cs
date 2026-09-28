@@ -59,11 +59,14 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		public string IconGlyph { get; }
 
 		/// <summary>Sets the padding as for a plain button; with a glyph, its width and gap are added on the left.</summary>
+		/// <remarks>The glyph's room is in device pixels (times DeviceScale), as <see cref="IconBounds"/> and the
+		/// rendered glyph are; Padding itself is not scaled, so unscaled room left the 2x glyph hanging off the
+		/// row's left edge, clipped.</remarks>
 		public BorderDouble TextPadding
 		{
 			set => this.Padding = this.IconGlyph == null
 				? value
-				: new BorderDouble(value.Left + IconGlyphWidget.IconSize + IconGap, value.Bottom, value.Right, value.Top);
+				: new BorderDouble(value.Left + (IconGlyphWidget.IconSize + IconGap) * DeviceScale, value.Bottom, value.Right, value.Top);
 		}
 
 		/// <summary>Where the glyph is drawn, in the button's own coordinates: at the start of the left padding,

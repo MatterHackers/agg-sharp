@@ -41,7 +41,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tests
 	{
 		public const string InitialText = "Example text you can copy-and-paste";
 
-		/// <summary>The side of the square gradient image, as agg-gui's IMG_W / IMG_H.</summary>
+		/// <summary>The side of the square gradient image in design units, as agg-gui's IMG_W / IMG_H; the image
+		/// itself is this times <see cref="GuiWidget.DeviceScale"/> pixels.</summary>
 		public const int ImageSize = 48;
 
 		private readonly DemoTheme demoTheme;
@@ -66,7 +67,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tests
 			var textRow = this.kit.Row();
 			textRow.HAnchor = HAnchor.Stretch;
 			textRow.Margin = new BorderDouble(0, gap / 2);
-			this.TextField = new ThemedTextEditWidget(InitialText, demoTheme.Theme, pixelWidth: 200)
+			this.TextField = new ThemedTextEditWidget(InitialText, demoTheme.Theme, pixelWidth: 200 * GuiWidget.DeviceScale)
 			{
 				Name = "Clipboard Text",
 				HAnchor = HAnchor.Stretch,
@@ -81,7 +82,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tests
 			this.AddChild(this.kit.Wrapped("You can also copy images:"));
 
 			// What is shown is exactly what is copied.
-			this.Image = GradientImage(ImageSize, ImageSize);
+			int imageSide = (int)Math.Round(ImageSize * DeviceScale);
+			this.Image = GradientImage(imageSide, imageSide);
 			var imageRow = this.kit.Row();
 			imageRow.Margin = new BorderDouble(0, gap / 2);
 			this.imageFrame = new ImageWidget(this.Image)

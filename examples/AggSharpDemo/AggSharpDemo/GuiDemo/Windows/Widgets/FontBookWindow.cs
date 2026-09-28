@@ -99,7 +99,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 			FlowLayoutWidget filterRow = this.kit.Row(Gap);
 			filterRow.AddChild(this.kit.Label("Filter:", 13));
-			this.FilterField = new ThemedTextEditWidget(string.Empty, this.kit.Theme, pixelWidth: 160, messageWhenEmptyAndNotSelected: "char or hex, e.g. 20AC")
+			this.FilterField = new ThemedTextEditWidget(string.Empty, this.kit.Theme, pixelWidth: 160 * GuiWidget.DeviceScale, messageWhenEmptyAndNotSelected: "char or hex, e.g. 20AC")
 			{
 				Name = "Font Book Filter",
 				Margin = new BorderDouble(left: Gap, right: Gap),

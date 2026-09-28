@@ -74,7 +74,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Interaction
 			this.CheckBox = kit.CheckBox("Undo Redo Checkbox", "Checkbox with undo/redo", false, 13);
 			this.AddChild(Spaced(this.CheckBox));
 
-			this.TextField = new ThemedTextEditWidget(InitialText, kit.Theme, pixelWidth: 180)
+			this.TextField = new ThemedTextEditWidget(InitialText, kit.Theme, pixelWidth: 180 * GuiWidget.DeviceScale)
 			{
 				Name = "Undo Redo Text",
 				HAnchor = HAnchor.Stretch,

@@ -31,6 +31,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using MatterHackers.Agg.Image;
 using MatterHackers.Agg.UI;
 using MatterHackers.AggSharpDemo;
 using MatterHackers.AggSharpDemo.GuiDemo;
@@ -157,6 +158,57 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(ThemeChangedSubscriberCount(app.DemoTheme)).IsEqualTo(subscribers);
 		}
 
+		[Test]
+		[NotInParallel] // sets the process-wide GuiWidget.DeviceScale, which every layout reads
+		public async Task FollowingANewDisplayScaleRebuildsOnTheSamePageWithTheSameWindows()
+		{
+			double savedDeviceScale = GuiWidget.DeviceScale;
+			try
+			{
+				var store = new MemoryStore();
+				var window = new SystemWindow(1800, 1000);
+				var app = new AggSharpDemoApp(AggSharpDemoApp.GuiDemoName, store, followDisplayScale: true);
+				window.AddChild(app);
+				window.PerformLayout();
+
+				// The app finds the window it follows when it loads, which is its first draw.
+				window.OnDraw(new ImageBuffer(1800, 1000).NewGraphics2D());
+
+				// Start from 1x whatever display the test process is on, so the step to 2x is a real rebuild.
+				window.SetDisplayScale(1);
+				UiThread.InvokePendingActions();
+				await Assert.That(GuiWidget.DeviceScale).IsEqualTo(1.0);
+
+				GuiDemoShell before = app.Descendants<GuiDemoShell>().Single();
+				DemoSpec opened = GuiDemoSpecs.All.First(s => !s.OpenByDefault);
+				DemoSpec closed = GuiDemoSpecs.All.First(s => s.OpenByDefault);
+				before.Windows.SetOpen(opened, true);
+				before.Windows.SetOpen(closed, false);
+
+				window.SetDisplayScale(2);
+				UiThread.InvokePendingActions();
+
+				await Assert.That(GuiWidget.DeviceScale).IsEqualTo(2.0);
+
+				GuiDemoShell after = app.Descendants<GuiDemoShell>().Single();
+				await Assert.That(after).IsNotSameReferenceAs(before).Because("the page should be rebuilt at the new scale");
+
+				var guiDemoEntry = (ThemedTextButton)app.FindDescendant(AggSharpDemoApp.EntryName(AggSharpDemoApp.GuiDemoName));
+				await Assert.That(guiDemoEntry.BackgroundColor).IsEqualTo(DemoTheme.ColorOf(app.DemoTheme.Accent))
+					.Because("the GUI demo should still be the selected page");
+
+				await Assert.That(after.Windows.IsOpen(opened)).IsTrue().Because($"'{opened.Title}' was open before the rebuild");
+				await Assert.That(after.Windows.IsOpen(closed)).IsFalse().Because($"'{closed.Title}' was closed before the rebuild");
+
+				window.Close();
+			}
+			finally
+			{
+				GuiWidget.DeviceScale = savedDeviceScale;
+				UiThread.ResetForTests();
+			}
+		}
+
 		/// <summary>Builds every demo window and leaves all but one of them kept by the host but not shown.</summary>
 		private static void ExerciseWindows(AggSharpDemoApp app)
 		{
@@ -176,6 +228,17 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		{
 			var field = typeof(DemoTheme).GetField(nameof(DemoTheme.ThemeChanged), BindingFlags.Instance | BindingFlags.NonPublic);
 			return (field.GetValue(demoTheme) as Delegate)?.GetInvocationList().Length ?? 0;
+		}
+
+		private class MemoryStore : IDemoStateStore
+		{
+			private string json;
+
+			public string Load() => this.json;
+
+			public void Save(string json) => this.json = json;
+
+			public void Clear() => this.json = null;
 		}
 	}
 }

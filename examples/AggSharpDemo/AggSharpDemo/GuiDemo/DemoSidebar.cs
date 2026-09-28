@@ -44,7 +44,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 	/// </remarks>
 	public class DemoSidebar : FlowLayoutWidget
 	{
-		/// <summary>sidebar.rs's TB_HEIGHT: the height of one toggle row.</summary>
+		/// <summary>sidebar.rs's TB_HEIGHT: the height of one toggle row, in design units (times DeviceScale).</summary>
 		private const double RowHeight = 22;
 
 		private readonly DemoTheme demoTheme;
@@ -70,7 +70,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 			this.Name = "GuiDemo Sidebar";
 			this.HAnchor = HAnchor.Absolute;
-			this.Width = GuiDemoShell.SidebarWidth;
+			this.Width = GuiDemoShell.SidebarWidth * DeviceScale;
 			this.VAnchor = VAnchor.Stretch;
 
 			// HAnchor.Left, not the default Absolute: an Absolute child keeps its own X and ignores its Margin.
@@ -116,7 +116,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 					Name = "Sidebar Group " + group,
 					HAnchor = HAnchor.Stretch,
 					TextHAnchor = HAnchor.Left,
-					Height = RowHeight,
+					Height = RowHeight * DeviceScale,
 					Margin = new BorderDouble(4, 1, 5, 1),
 					Padding = new BorderDouble(4, 0),
 				};
@@ -293,7 +293,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			{
 				this.HAnchor = HAnchor.Stretch;
 				this.TextHAnchor = HAnchor.Left;
-				this.Height = RowHeight - 2;
+				this.Height = (RowHeight - 2) * DeviceScale;
 
 				// TB_INDENT (22) less the fill's own left padding (5), so the label nests under the group
 				// triangle; the About row uses the same indent, as agg-gui's does. The icon goes in the padding.

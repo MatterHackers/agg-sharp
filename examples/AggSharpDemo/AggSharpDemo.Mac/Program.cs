@@ -40,15 +40,18 @@ namespace MatterHackers.AggSharpDemo
 			string statePath = System.Environment.GetEnvironmentVariable("AGG_DEMO_STATE");
 			var store = new FileDemoStateStore(string.IsNullOrEmpty(statePath) ? null : statePath);
 
-			// The window opens at the size it had when the demo last closed (agg-gui state.rs window_w / window_h).
+			// AGG_DEMO=<name> opens on that demo ("GUI Demo" for the GUI demo page), so a smoke screenshot (AGG_SMOKE_FRAMES/AGG_SMOKE_SCREENSHOT)
+			// can show any of them. Built first: it sets GuiWidget.DeviceScale to the display's scale.
+			var app = new AggSharpDemoApp(System.Environment.GetEnvironmentVariable("AGG_DEMO"), store, followDisplayScale: true);
+
+			// The window opens at the size it had when the demo last closed (agg-gui state.rs window_w / window_h),
+			// saved in design units; agg sizes a window in device pixels.
 			(double width, double height) = DemoState.InitialOsWindowSize(DemoState.Parse(store.Load()), 1200, 800);
-			var systemWindow = new SystemWindow(width, height)
+			var systemWindow = new SystemWindow(width * GuiWidget.DeviceScale, height * GuiWidget.DeviceScale)
 			{
 				Title = "agg-sharp demo",
 			};
-			// AGG_DEMO=<name> opens on that demo ("GUI Demo" for the GUI demo page), so a smoke screenshot (AGG_SMOKE_FRAMES/AGG_SMOKE_SCREENSHOT)
-			// can show any of them.
-			systemWindow.AddChild(new AggSharpDemoApp(System.Environment.GetEnvironmentVariable("AGG_DEMO"), store));
+			systemWindow.AddChild(app);
 			systemWindow.ShowAsSystemWindow();
 		}
 	}

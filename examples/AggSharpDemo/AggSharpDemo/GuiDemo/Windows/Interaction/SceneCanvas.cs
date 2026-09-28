@@ -72,7 +72,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Interaction
 			this.clicksLabel.Name = "Scene Clicks";
 			this.Place(this.clicksLabel, 20, ContentHeight - 120);
 
-			this.TextField = new ThemedTextEditWidget("", kit.Theme, pixelWidth: 200, messageWhenEmptyAndNotSelected: "Type here (focus works!)")
+			this.TextField = new ThemedTextEditWidget("", kit.Theme, pixelWidth: 200 * GuiWidget.DeviceScale, messageWhenEmptyAndNotSelected: "Type here (focus works!)")
 			{
 				Name = "Scene Text Field",
 			};

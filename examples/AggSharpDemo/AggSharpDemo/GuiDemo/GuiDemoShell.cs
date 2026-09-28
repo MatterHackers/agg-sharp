@@ -36,6 +36,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 	/// </summary>
 	public class GuiDemoShell : FlowLayoutWidget
 	{
+		// The sizes below are design units, as agg-gui's are logical pixels: each is multiplied by
+		// GuiWidget.DeviceScale where it becomes a Width or Height, so at 2x the frame grows with its text.
+
 		/// <summary>agg-gui's menu BAR_H (menu/geometry.rs); its MenuBarStrip takes the bar's natural height.</summary>
 		public const double TopBarHeight = 26;
 
@@ -226,7 +229,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// <summary>The page is built before its window is shown, which is when the platform installs the
 		/// appearance provider, so System is asked again once the page is actually on screen.</summary>
 		/// <summary>Whether the page is narrower than <see cref="MobileBreakpoint"/>, so the sidebar is a drawer.</summary>
-		public bool IsNarrow => this.Width < MobileBreakpoint;
+		public bool IsNarrow => this.Width < MobileBreakpoint * DeviceScale;
 
 		public override void OnBoundsChanged(EventArgs e)
 		{
@@ -242,7 +245,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			bool narrow = this.IsNarrow;
 			this.TopBar.SidebarDrawerButtonVisible = narrow;
 			bool visible = !narrow || this.TopBar.SidebarDrawerOpen;
-			double width = narrow ? Math.Min(MobileSidebarWidth, this.Width) : SidebarWidth;
+			double width = narrow ? Math.Min(MobileSidebarWidth * DeviceScale, this.Width) : SidebarWidth * DeviceScale;
 
 			// Only on a change: setting a width lays the body out again, which moves these bounds no further.
 			if (this.Sidebar.Visible != visible)

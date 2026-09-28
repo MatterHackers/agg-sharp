@@ -97,8 +97,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 				&& osWindow.Width > 0
 				&& osWindow.Height > 0)
 			{
-				state.OsWindowWidth = osWindow.Width;
-				state.OsWindowHeight = osWindow.Height;
+				state.OsWindowWidth = osWindow.Width / GuiWidget.DeviceScale;
+				state.OsWindowHeight = osWindow.Height / GuiWidget.DeviceScale;
 			}
 
 			foreach (DemoSpec spec in AllSpecs)
@@ -115,10 +115,12 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 				var windowState = new DemoWindowState { Title = spec.Title, Open = open, Maximized = open && windows.IsMaximized(spec) };
 				if (rect is RectangleDouble r)
 				{
-					windowState.X = r.Left;
-					windowState.Y = r.Bottom;
-					windowState.Width = r.Width;
-					windowState.Height = r.Height;
+					// Design units; see DemoWindowState.
+					double scale = GuiWidget.DeviceScale;
+					windowState.X = r.Left / scale;
+					windowState.Y = r.Bottom / scale;
+					windowState.Width = r.Width / scale;
+					windowState.Height = r.Height / scale;
 				}
 
 				state.Windows.Add(windowState);
@@ -180,7 +182,12 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 				// The rectangle first, so a window built by opening it is placed there rather than on its tile.
 				if (windowState.HasBounds)
 				{
-					windows.RestoreRect(spec, new RectangleDouble(windowState.X, windowState.Y, windowState.X + windowState.Width, windowState.Y + windowState.Height));
+					double scale = GuiWidget.DeviceScale;
+					windows.RestoreRect(spec, new RectangleDouble(
+						windowState.X * scale,
+						windowState.Y * scale,
+						(windowState.X + windowState.Width) * scale,
+						(windowState.Y + windowState.Height) * scale));
 				}
 
 				windows.SetOpen(spec, windowState.Open);

@@ -123,7 +123,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			else if (!string.IsNullOrEmpty(this.SoftwarePlaceholder))
 			{
 				var color = this.demoTheme?.Palette.TextDim ?? Color.Gray;
-				graphics2D.DrawString(this.SoftwarePlaceholder, this.Width / 2, this.Height / 2, 11, Justification.Center, Baseline.BoundsCenter, color);
+				graphics2D.DrawString(this.SoftwarePlaceholder, this.Width / 2, this.Height / 2, 11 * DeviceScale, Justification.Center, Baseline.BoundsCenter, color);
 			}
 
 			base.OnDraw(graphics2D);

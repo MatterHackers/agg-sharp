@@ -73,12 +73,11 @@ namespace MatterHackers.Agg.Platform.Browser
 	/// from.
 	/// </summary>
 	/// <remarks>
-	/// The rounding lives in JS, not here: a <c>ResizeObserver</c> reading
-	/// <c>devicePixelContentBoxSize</c> is handed exact integer device pixels by the browser itself, and the
-	/// one fallback path (CSS pixels times <c>devicePixelRatio</c>) is rounded there so that one place decides
-	/// what integer a fractional layout means - the canvas's own <c>width</c>/<c>height</c> attributes are set
-	/// from that same number, and a second rounding here could disagree with the backing store JS just sized.
-	/// What is left for this side is refusing the values that would break something downstream: a zero-sized
+	/// The one decision about which measurement to believe, and the one rounding of a fractional CSS layout
+	/// into whole device pixels, both live here: JS reports what the browser measured (see
+	/// <see cref="FromDeviceMetrics(double, double, double, double, double)"/>) and then sizes the canvas's
+	/// own <c>width</c>/<c>height</c> attributes from the answer, so the backing store and what agg is told
+	/// cannot disagree. This side also refuses the values that would break something downstream: a zero-sized
 	/// canvas (display:none, or a pane collapsed to nothing) cannot be a swapchain, and a ratio of zero would
 	/// divide through every coordinate conversion.
 	/// <para/>
@@ -105,6 +104,53 @@ namespace MatterHackers.Agg.Platform.Browser
 				ClampPixelExtent(devicePixelWidth),
 				ClampPixelExtent(devicePixelHeight),
 				ClampDevicePixelRatio(devicePixelRatio));
+
+		/// <summary>
+		/// How far, in device pixels, the browser's device-pixel box may sit from the CSS box times the ratio
+		/// and still be believed. One pixel is the browser's own rounding of a fractional layout; anything
+		/// further is a box measured at a different scale.
+		/// </summary>
+		public const double DevicePixelBoxTolerance = 1;
+
+		/// <summary>
+		/// The backing size for a canvas the browser measured two ways: <c>devicePixelContentBoxSize</c>
+		/// (<paramref name="devicePixelWidth"/> by <paramref name="devicePixelHeight"/>, NaN when the engine
+		/// or the caller has none) and its CSS content box (<paramref name="cssWidth"/> by
+		/// <paramref name="cssHeight"/>) at <paramref name="devicePixelRatio"/>.
+		/// </summary>
+		/// <remarks>
+		/// The device-pixel box is the browser's exact integer answer and is preferred - but only when it
+		/// agrees with the CSS box times the ratio to within <see cref="DevicePixelBoxTolerance"/> on both
+		/// axes. Chrome's device-scale emulation (DevTools' device mode, CDP
+		/// <c>Emulation.setDeviceMetricsOverride</c>) reports the device box at the CSS size while
+		/// <c>devicePixelRatio</c> is 2, so trusting it gives a 1x backing the compositor upscales - blurry
+		/// on exactly the display being checked. Both axes are decided together because they are one
+		/// measurement: one axis off means the box is at the wrong scale. With no CSS box to check against
+		/// the device box is all there is.
+		/// </remarks>
+		public static BrowserBackingSize FromDeviceMetrics(
+			double devicePixelWidth,
+			double devicePixelHeight,
+			double cssWidth,
+			double cssHeight,
+			double devicePixelRatio)
+		{
+			double ratio = ClampDevicePixelRatio(devicePixelRatio);
+			double scaledWidth = cssWidth * ratio;
+			double scaledHeight = cssHeight * ratio;
+
+			bool haveDeviceBox = double.IsFinite(devicePixelWidth) && double.IsFinite(devicePixelHeight);
+			bool haveCssBox = double.IsFinite(scaledWidth) && double.IsFinite(scaledHeight);
+
+			bool trustDeviceBox = haveDeviceBox
+				&& (!haveCssBox
+					|| (Math.Abs(devicePixelWidth - scaledWidth) <= DevicePixelBoxTolerance
+						&& Math.Abs(devicePixelHeight - scaledHeight) <= DevicePixelBoxTolerance));
+
+			return trustDeviceBox
+				? FromDeviceMetrics(devicePixelWidth, devicePixelHeight, ratio)
+				: FromDeviceMetrics(scaledWidth, scaledHeight, ratio);
+		}
 
 		/// <summary>
 		/// One axis of a backing size: at least <see cref="MinimumPixelExtent"/>, and a whole number of pixels.

@@ -151,7 +151,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			this.demoTheme = demoTheme;
 			this.HAnchor = HAnchor.Stretch;
 			this.TextHAnchor = HAnchor.Left;
-			this.Height = PillHeight;
+			this.Height = PillHeight * DeviceScale;
 
 			// widgets.rs's SIDE_GUTTER (12) either side, 2 above and below
 			this.Margin = new BorderDouble(12, 2);

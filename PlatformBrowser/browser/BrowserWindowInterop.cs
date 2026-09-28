@@ -55,19 +55,22 @@ namespace MatterHackers.Agg.Platform.Browser
 		{
 			double[] metrics = BindCanvasCore(canvasSelector);
 
-			if (metrics == null || metrics.Length < 3)
+			if (metrics == null || metrics.Length < 5)
 			{
 				throw new InvalidOperationException(
-					$"input.js bindCanvas('{canvasSelector}') did not report a width, height and devicePixelRatio. "
-					+ "The module and this binding are out of step.");
+					$"input.js bindCanvas('{canvasSelector}') did not report a device-pixel box, a CSS box and a "
+					+ "devicePixelRatio. The module and this binding are out of step.");
 			}
 
-			return BrowserBacking.FromDeviceMetrics(metrics[0], metrics[1], metrics[2]);
+			return SizeCanvas(canvasSelector, metrics[0], metrics[1], metrics[2], metrics[3], metrics[4]);
 		}
 
 		/// <inheritdoc/>
 		public void AttachInput(string canvasSelector)
-			=> AttachInputCore(canvasSelector, BrowserInputEvents.DispatchInputEvent, BrowserInputEvents.DispatchResize);
+			=> AttachInputCore(
+				canvasSelector,
+				BrowserInputEvents.DispatchInputEvent,
+				canvasMetrics => BrowserInputEvents.DispatchResize(canvasSelector, canvasMetrics));
 
 		/// <inheritdoc/>
 		public void DetachInput(string canvasSelector) => DetachInputCore(canvasSelector);
@@ -82,7 +85,27 @@ namespace MatterHackers.Agg.Platform.Browser
 		public void Focus(string canvasSelector) => FocusCanvas(canvasSelector);
 
 		/// <summary>
-		/// Prepares the canvas and reports <c>[widthInDevicePixels, heightInDevicePixels, devicePixelRatio]</c>.
+		/// Decides the canvas's backing size from what the browser measured (see
+		/// <see cref="BrowserBacking.FromDeviceMetrics(double, double, double, double, double)"/>) and sizes the
+		/// canvas's backing store to it, so the canvas and what agg is told are the same number.
+		/// </summary>
+		internal static BrowserBackingSize SizeCanvas(
+			string canvasSelector,
+			double devicePixelWidth,
+			double devicePixelHeight,
+			double cssWidth,
+			double cssHeight,
+			double devicePixelRatio)
+		{
+			BrowserBackingSize backing = BrowserBacking.FromDeviceMetrics(
+				devicePixelWidth, devicePixelHeight, cssWidth, cssHeight, devicePixelRatio);
+			SetCanvasBackingSize(canvasSelector, backing.PixelWidth, backing.PixelHeight);
+			return backing;
+		}
+
+		/// <summary>
+		/// Prepares the canvas and reports <c>[devicePixelWidth, devicePixelHeight, cssWidth, cssHeight,
+		/// devicePixelRatio]</c> - the device-pixel box is NaN, since only a resize observer entry carries one.
 		/// An array rather than three calls because it is one measurement of one element at one moment - three
 		/// round trips could straddle a resize.
 		/// </summary>
@@ -95,15 +118,20 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// </summary>
 		/// <remarks>
 		/// One callback for every input event, carrying a plain JS object of the fields agg needs, because a
-		/// marshalled delegate takes at most three arguments and a pointer event has ten. Resize gets its own
-		/// because it fits in three and is not an input event at all. Both are <c>[JSExport]</c>s as well; see
+		/// marshalled delegate takes at most three arguments and a pointer event has ten. Resize gets its own,
+		/// also a plain object (two boxes and a ratio are five numbers), because it is not an input event at
+		/// all; it is wrapped to carry the selector the canvas is resized through. See
 		/// <see cref="BrowserFrameLoop.RunFrame"/> for why the callbacks are handed over rather than looked up.
 		/// </remarks>
 		[JSImport("attachInput", ModuleName)]
 		private static partial void AttachInputCore(
 			string canvasSelector,
 			[JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> onInputEvent,
-			[JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>] Action<double, double, double> onResize);
+			[JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> onResize);
+
+		/// <summary>Sets the canvas's <c>width</c>/<c>height</c> attributes - its backing store.</summary>
+		[JSImport("setCanvasBackingSize", ModuleName)]
+		private static partial void SetCanvasBackingSize(string canvasSelector, double pixelWidth, double pixelHeight);
 
 		[JSImport("detachInput", ModuleName)]
 		private static partial void DetachInputCore(string canvasSelector);

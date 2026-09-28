@@ -135,21 +135,27 @@ namespace MatterHackers.Agg.Platform.Browser
 		}
 
 		/// <summary>
-		/// Queues a canvas resize, in exact device pixels. JS owns the rounding and has already sized the
-		/// canvas's backing store to match; see <see cref="BrowserBacking"/>.
+		/// Sizes the canvas's backing store from what <c>input.js</c>'s <c>measureCanvas</c> reported and queues
+		/// the resize; see <see cref="BrowserBacking"/> for which measurement is believed.
 		/// </summary>
 		[JSExport]
-		internal static void DispatchResize(double devicePixelWidth, double devicePixelHeight, double devicePixelRatio)
+		internal static void DispatchResize(string canvasSelector, JSObject canvasMetrics)
 		{
 			BrowserSystemWindow window = BrowserSystemWindow.Current;
-			if (window == null)
+			if (window == null || canvasMetrics == null)
 			{
 				return;
 			}
 
 			try
 			{
-				window.EnqueueBackingSize(devicePixelWidth, devicePixelHeight, devicePixelRatio);
+				window.EnqueueBackingSize(BrowserWindowInterop.SizeCanvas(
+					canvasSelector,
+					canvasMetrics.GetPropertyAsDouble("devicePixelWidth"),
+					canvasMetrics.GetPropertyAsDouble("devicePixelHeight"),
+					canvasMetrics.GetPropertyAsDouble("cssWidth"),
+					canvasMetrics.GetPropertyAsDouble("cssHeight"),
+					canvasMetrics.GetPropertyAsDouble("devicePixelRatio")));
 			}
 			catch (Exception resizeException)
 			{

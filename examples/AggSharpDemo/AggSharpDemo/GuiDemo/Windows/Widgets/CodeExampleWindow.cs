@@ -92,7 +92,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			nameLabel.HAnchor = HAnchor.Absolute;
 			nameLabel.VAnchor = VAnchor.Center;
 			nameRow.AddChild(nameLabel);
-			this.NameField = new ThemedTextEditWidget("Arthur", this.theme, pixelWidth: 80)
+			this.NameField = new ThemedTextEditWidget("Arthur", this.theme, pixelWidth: 80 * GuiWidget.DeviceScale)
 			{
 				Name = "Code Example Name",
 				HAnchor = HAnchor.Stretch,

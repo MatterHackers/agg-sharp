@@ -11,6 +11,7 @@
   scripts/check-demo-site.py --out /tmp/site.png     # serve it at /agg-sharp/ and screenshot it
   scripts/check-demo-site.py --out /tmp/gui.png --demo "GUI Demo"   # the same, opened on the GUI demo
   scripts/check-demo-site.py --out /tmp/gui.png --persistence       # the GUI demo remembers its state across a reload
+  scripts/check-demo-site.py --out /tmp/hidpi.png --device-scale-factor 2  # as a Retina display sees it
 
 The subpath is the point: GitHub Pages serves this repo's site from https://<user>.github.io/agg-sharp/,
 not a domain root, so a site that only boots at "/" would deploy and then show nothing. Serving from
@@ -230,7 +231,8 @@ def run(arguments):
     try:
         page = chrome.open_page()
         page.call("Emulation.setDeviceMetricsOverride", {
-            "width": PAGE_WIDTH, "height": PAGE_HEIGHT, "deviceScaleFactor": 1, "mobile": False})
+            "width": PAGE_WIDTH, "height": PAGE_HEIGHT, "deviceScaleFactor": arguments.device_scale_factor,
+            "mobile": False})
         page.call("Page.navigate", {"url": url}, timeout=60)
 
         persistence = ""
@@ -285,6 +287,9 @@ def main():
     parser.add_argument("--subpath", default="agg-sharp",
                         help="serve the site under this path, as GitHub Pages does (default agg-sharp; '' for the root)")
     parser.add_argument("--demo", help="open the site on this demo (the URL fragment), e.g. 'GUI Demo'")
+    parser.add_argument("--device-scale-factor", type=float, default=1,
+                        help="the page's devicePixelRatio, e.g. 2 for a Retina display (default 1); the"
+                             " screenshot is then PAGE_WIDTH x PAGE_HEIGHT times this")
     parser.add_argument("--persistence", action="store_true",
                         help="open the GUI demo, plant a saved state, reload, and require the app to restore it")
     return run(parser.parse_args())
