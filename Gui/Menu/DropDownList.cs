@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2015, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -71,8 +71,6 @@ namespace MatterHackers.Agg.UI
 
 		private VertexStorage directionArrow = null;
 
-		private Color disabledBorderColor;
-
 		private RectangleDouble dropArrowBounds;
 
 		private int gradientDistance = 8;
@@ -125,30 +123,43 @@ namespace MatterHackers.Agg.UI
 			NormalColor = whiteTransparent;
 			var borderColor = new Color(textColor, 40);
 
+			// The popup rows follow the process theme, as agg-gui's combo popup follows its visuals: the
+			// panel in the theme background, a hovered row in the theme's slight shade. Rows bake these in
+			// as they are added, so a caller that sets them afterwards (MatterCAD's MHDropDownList) wins.
+			var theme = ThemeConfig.Current;
 			this.MenuItemsBorderWidth = 1;
-			this.MenuItemsBackgroundColor = Color.White;
+			this.MenuItemsBackgroundColor = theme.BackgroundColor;
 			this.MenuItemsBorderColor = borderColor;
 			this.MenuItemsPadding = new BorderDouble(10, 3, 7, 3);
-			this.MenuItemsBackgroundHoverColor = new Color("#EC6788FF");
-			this.MenuItemsTextHoverColor = Color.Black;
-			this.MenuItemsTextColor = Color.Black;
+			this.MenuItemsBackgroundHoverColor = theme.SlightShade;
+			this.MenuItemsTextHoverColor = theme.TextColor;
+			this.MenuItemsTextColor = theme.TextColor;
 			this.HoverColor = whiteSemiTransparent;
 			this.BackgroundColor = new Color(255, 255, 255, 0);
 			this.Border = 1;
-			this.BorderColor = borderColor;
 		}
 
 		public event EventHandler SelectionChanged;
 
 		public bool AutoScaleIcons { get; set; } = true;
 
+		private bool borderColorSet;
+
+		/// <summary>
+		/// The field's outline. Unless a caller sets it, agg-gui's widget_stroke for
+		/// <see cref="ThemeConfig.Current"/>, read at draw time; faded when disabled.
+		/// </summary>
 		public override Color BorderColor
 		{
-			get => this.Enabled ? base.BorderColor : disabledBorderColor;
+			get
+			{
+				Color color = borderColorSet ? base.BorderColor : SelectionControlStyle.WidgetStroke(ThemeConfig.Current);
+				return this.Enabled ? color : new Color(color, 30);
+			}
 			set
 			{
 				base.BorderColor = value;
-				disabledBorderColor = new Color(value, 30);
+				borderColorSet = true;
 			}
 		}
 
@@ -341,6 +352,12 @@ namespace MatterHackers.Agg.UI
 			return menuItem;
 		}
 
+		private static Color ContrastingText(Color background)
+		{
+			double luma = .299 * background.red + .587 * background.green + .114 * background.blue;
+			return luma > 150 ? Color.Black : Color.White;
+		}
+
 		public string GetValue(int itemIndex)
 		{
 			if (itemIndex < 0 || itemIndex >= MenuItems.Count)
@@ -369,10 +386,13 @@ namespace MatterHackers.Agg.UI
 		{
 			base.OnDraw(graphics2D);
 
-			var background = this.BackgroundColor;
+			// The occluder blends into whatever the field was filled with, theme fill included.
+			var background = FieldColor;
 
-			// Retrieve or create per color clipping images used to occlude text under drop arrow
-			if (background != Color.Transparent)
+			// Retrieve or create per color clipping images used to occlude text under drop arrow. The default
+			// background is white at alpha 0, which is not Color.Transparent but still invisible; comparing
+			// against Transparent drew an opaque white gradient box behind the arrow on a dark theme.
+			if (background.Alpha0To255 > 0)
 			{
 				if (!clippingBackgrounds.TryGetValue(background, out ImageBuffer gradientBackground))
 				{
@@ -387,17 +407,95 @@ namespace MatterHackers.Agg.UI
 					clippingBackgrounds[background] = gradientBackground;
 				}
 
-				graphics2D.Render(gradientBackground, this.LocalBounds.Right - gradientBackground.Width, 0);
+				// The gradient is square; stop it short of the rounded right edge and finish that edge with a
+				// rounded fill of the same (solid, at that end) colour, so no square corner pokes out.
+				double radius = FieldInnerRadius;
+				graphics2D.Render(gradientBackground, this.LocalBounds.Right - gradientBackground.Width - radius, 0);
+				var edge = new RectangleDouble(LocalBounds.Right - 3 * radius, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top);
+				graphics2D.Render(new RoundedRect(edge, radius), background);
 			}
 
-			// Draw directional arrow
+			// agg-gui draws the open affordance as a chevron rather than a filled triangle. It sits where the
+			// triangle did (same center, same half width), so the text beside it keeps all of its room.
 			if (directionArrow != null)
 			{
 				var center = dropArrowBounds.Center;
 				center.Y += 1;
 
-				graphics2D.Render(directionArrow, center, this.TextColor);
+				double halfWidth = DropArrow.ArrowHeight;
+				double halfHeight = DropArrow.ArrowHeight / 2;
+				double tipDirection = this.MenuDirection == Direction.Up ? 1 : -1;
+
+				var chevron = new VertexStorage();
+				chevron.MoveTo(center.X - halfWidth, center.Y - tipDirection * halfHeight);
+				chevron.LineTo(center.X, center.Y + tipDirection * halfHeight);
+				chevron.LineTo(center.X + halfWidth, center.Y - tipDirection * halfHeight);
+
+				graphics2D.Render(new Stroke(chevron, 1.5 * DeviceScale), this.TextColor);
 			}
+		}
+
+		/// <summary>
+		/// The corner radius of agg-gui's combo field, measured on the outside of its outline.
+		/// </summary>
+		private static double FieldRadius => 4 * DeviceScale;
+
+		/// <summary>
+		/// The fill sits inside the Border band, so its corners are the outline's radius less that band.
+		/// </summary>
+		private double FieldInnerRadius => Math.Max(0, FieldRadius - DeviceBorder.Left);
+
+		/// <summary>
+		/// What the field is filled with: the caller's BackgroundColor when it is visible, otherwise
+		/// <see cref="ThemeConfig.Current"/>'s button fill (shaded while hovered or open), read at draw time
+		/// so a theme swap reaches it.
+		/// </summary>
+		private Color FieldColor
+		{
+			get
+			{
+				var background = this.BackgroundColor;
+				if (background.Alpha0To255 > 0)
+				{
+					return background;
+				}
+
+				// The same neutrals the check box, radio and switch use, so the widgets agree.
+				var theme = ThemeConfig.Current;
+				if (menuVisible || this.UnderMouseState != UnderMouseState.NotUnderMouse)
+				{
+					return SelectionControlStyle.WidgetBackgroundHovered(theme);
+				}
+
+				return SelectionControlStyle.WidgetBackground(theme);
+			}
+		}
+
+		public override void OnDrawBackground(Graphics2D graphics2D)
+		{
+			// agg-gui's rounded field. Its outline is drawn in the Border band by DrawBorderRing, so the
+			// field fills the same LocalBounds the square look did and nothing moves.
+			graphics2D.Render(new RoundedRect(LocalBounds, FieldInnerRadius), FieldColor);
+		}
+
+		/// <summary>
+		/// Strokes the field's rounded outline in the same Border band the parent's square ring used.
+		/// </summary>
+		protected internal override bool DrawBorderRing(Graphics2D graphics2D, RectangleDouble boundsInParent, BorderDouble deviceBorder, Color borderColor)
+		{
+			double width = deviceBorder.Left;
+			if (width <= 0)
+			{
+				return false;
+			}
+
+			var centerline = new RectangleDouble(
+				boundsInParent.Left - width / 2,
+				boundsInParent.Bottom - width / 2,
+				boundsInParent.Right + width / 2,
+				boundsInParent.Top + width / 2);
+			graphics2D.Render(new Stroke(new RoundedRect(centerline, FieldRadius - width / 2), width), borderColor);
+			return true;
 		}
 
 		public override void OnFocusChanged(EventArgs e)
@@ -448,6 +546,19 @@ namespace MatterHackers.Agg.UI
 		protected override void ShowMenu()
 		{
 			menuVisible = true;
+
+			// agg-gui marks the current choice with an accent row and contrasting text, apart from the hover
+			// highlight. The accent is read as the list opens, so it follows ThemeConfig.Current.
+			Color accent = ThemeConfig.Current.PrimaryAccentColor;
+			for (int i = 0; i < MenuItems.Count; i++)
+			{
+				if (MenuItems[i].Children.FirstOrDefault() is MenuItemColorStatesView row)
+				{
+					row.SelectedBackgroundColor = accent;
+					row.SelectedTextColor = ContrastingText(accent);
+					row.Selected = i == selectedIndex;
+				}
+			}
 
 			base.ShowMenu();
 

@@ -104,5 +104,58 @@ namespace MatterHackers.Agg.UI.Tests
 				GuiWidget.DeviceScale = savedDeviceScale;
 			}
 		}
+
+		[Test]
+		[NotInParallel]
+		[Arguments(1.0, true)]
+		[Arguments(1.0, false)]
+		[Arguments(2.0, true)]
+		[Arguments(2.0, false)]
+		public async Task ATopToBottomFlowDrawsUnalignedChildrenOnePaddingInWhicheverOfPaddingAndStretchComesFirst(double scale, bool paddingFirst)
+		{
+			// The cross axis of a vertical flow does not place Absolute or Fit children: they keep x = 0. They were
+			// one padding in only when Padding was set while the flow still fit its children (bounds grew one
+			// padding left of the origin); setting Stretch first left the bounds at 0, so they touched the edge.
+			double savedDeviceScale = GuiWidget.DeviceScale;
+			try
+			{
+				GuiWidget.DeviceScale = scale;
+				var flow = new FlowLayoutWidget(FlowDirection.TopToBottom);
+				if (paddingFirst)
+				{
+					flow.Padding = new BorderDouble(10);
+					flow.HAnchor = HAnchor.Stretch;
+				}
+				else
+				{
+					flow.HAnchor = HAnchor.Stretch;
+					flow.Padding = new BorderDouble(10);
+				}
+
+				var parent = new GuiWidget(200 * scale, 100 * scale);
+				parent.AddChild(flow);
+				var item = new GuiWidget(20 * scale, 20 * scale);
+				flow.AddChild(item);
+				var text = new TextWidget("label") { AutoExpandBoundsToText = true };
+				flow.AddChild(text);
+				var stretched = new GuiWidget(20 * scale, 20 * scale) { HAnchor = HAnchor.Stretch };
+				flow.AddChild(stretched);
+				parent.PerformLayout();
+
+				double flowLeftInParent = flow.OriginRelativeParent.X + flow.LocalBounds.Left;
+				await Assert.That(flowLeftInParent).IsEqualTo(0).Within(0.001).Because("the flow still fills its parent");
+				await Assert.That(flow.Width).IsEqualTo(200 * scale).Within(0.001);
+				foreach (GuiWidget child in new[] { item, text, stretched })
+				{
+					double childLeft = child.OriginRelativeParent.X + child.LocalBounds.Left;
+					await Assert.That(childLeft - flow.LocalBounds.Left).IsEqualTo(10 * scale).Within(0.001)
+						.Because($"a {child.HAnchor} child sits one 10 unit padding in, padding first: {paddingFirst}, at {scale}x");
+				}
+			}
+			finally
+			{
+				GuiWidget.DeviceScale = savedDeviceScale;
+			}
+		}
 	}
 }

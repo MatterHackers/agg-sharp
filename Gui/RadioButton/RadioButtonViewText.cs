@@ -13,7 +13,9 @@ namespace MatterHackers.Agg.UI
 			var boxWidth = RadioImage.BoxWidth;
 
 			this.MinimumSize = new Vector2(boxWidth + 1 * DeviceScale, boxWidth + 1 * DeviceScale);
-			this.DoubleBuffer = true;
+
+			// Not double buffered: the circle's colours come from ThemeConfig.Current when it draws, and a
+			// cached copy would keep showing the old theme (and the old hover state) after either changed.
 			this.Margin = new BorderDouble(right: 10);
 
 			center = this.LocalBounds.Center;
@@ -28,12 +30,16 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			RadioImage.DrawCircle(
+			bool hovered = this.RadioButton.FirstWidgetUnderMouse;
+			SelectionControlStyle.DrawRadio(
 				graphics2D,
 				center,
-				this.RadioButton.TextColor,
+				RadioImage.BorderRadius,
 				this.RadioButton.Checked,
-				isActive: this.RadioButton.MouseDownOnWidget && this.RadioButton.FirstWidgetUnderMouse);
+				hovered,
+				pressed: hovered && this.RadioButton.MouseDownOnWidget,
+				this.RadioButton.Enabled,
+				ThemeConfig.Current);
 
 			base.OnDraw(graphics2D);
 		}
@@ -118,6 +124,11 @@ namespace MatterHackers.Agg.UI
 		}
 	}
 
+	/// <summary>
+	/// The radio circle's metrics, and its original look: a stroked circle with a dot in one colour.
+	/// RadioCircleWidget now draws agg-gui's themed circle through SelectionControlStyle; DrawCircle is kept
+	/// for callers that draw the old mark themselves.
+	/// </summary>
 	public static class RadioImage
 	{
 		public static double BoxWidth => 10 * GuiWidget.DeviceScale;

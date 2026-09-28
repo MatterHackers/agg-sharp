@@ -141,9 +141,10 @@ namespace MatterHackers.Agg.UI
                     if (Orientation == Orientation.Vertical
                         && Width > 0)
                     {
-                        SplitterDistance = 1 - Width * _panel1Ratio;
+                        SplitterDistance = Width * _panel1Ratio;
                     }
-                    else if (Height > 0)
+                    else if (Orientation == Orientation.Horizontal
+						&& Height > 0)
                     {
                         SplitterDistance = Height * _panel1Ratio;
                     }
@@ -187,11 +188,13 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnBoundsChanged(EventArgs e)
 		{
-			if(Panel1Ratio != 0
-				&& Height > 0)
+			// The ratio is a share of the axis the bar splits: the width when Panel1 sits left of a vertical bar.
+			double splitLength = Orientation == Orientation.Vertical ? Width : Height;
+			if (Panel1Ratio != 0
+				&& splitLength > 0)
 			{
 				ajustingRatio = true;
-				this.SplitterDistance = Height * this.Panel1Ratio;
+				this.SplitterDistance = splitLength * this.Panel1Ratio;
 				ajustingRatio = false;
 			}
 

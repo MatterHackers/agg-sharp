@@ -135,6 +135,34 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		[Test]
+		public async Task PunctuationNeverLandsOnANavigationKey()
+		{
+			// (Keys)'!' is PageUp, (Keys)'$' is Home, (Keys)'(' is Down: every ASCII character from 33 to
+			// 47 shares its value with a key a text field acts on, and acting on it swallows the character.
+			const string punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]_`|~";
+			var strokes = TypedKeyParser.Parse(punctuation);
+
+			await Assert.That(new string(strokes.Select(stroke => stroke.Character).ToArray()))
+				.IsEqualTo(punctuation);
+			foreach (var stroke in strokes)
+			{
+				var key = stroke.Key & Keys.KeyCode;
+				await Assert.That(key >= Keys.Oem1 || (key >= Keys.D0 && key <= Keys.D9)).IsTrue()
+					.Because($"'{stroke.Character}' must be typed on its own key, not on {key}");
+			}
+		}
+
+		[Test]
+		public async Task AModifierInsideBracesPointsAtTheCaretSpelling()
+		{
+			// SendKeys has no {Ctrl+a}; the Windows input method would type it literally, so the agg one
+			// refuses it too and says what to write instead.
+			await Assert.That(() => TypedKeyParser.Parse("{Ctrl+a}"))
+				.Throws<ArgumentException>()
+				.WithMessageContaining("^a");
+		}
+
+		[Test]
 		public async Task ModifiersCanPrefixANamedKey()
 		{
 			var strokes = TypedKeyParser.Parse("^{Home}");

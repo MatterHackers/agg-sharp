@@ -1476,7 +1476,7 @@ namespace MatterHackers.GuiAutomation
 
 		/// <summary>
 		/// Send the string to the system window
-		/// ^ will add the control key
+		/// ^ will add the control key to the key after it ("^a" is select all, "^+z" is Ctrl+Shift+Z)
 		/// {Enter} will type the enter key
 		/// {BACKSPACE} will type the backspace key
 		/// </summary>

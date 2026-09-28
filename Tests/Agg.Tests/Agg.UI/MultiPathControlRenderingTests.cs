@@ -98,8 +98,9 @@ namespace MatterHackers.Agg.UI.Tests
 			var curve = BoundsOf(passes[0]);
 			await Assert.That(curve.Width).IsGreaterThan(50.0);
 
-			// num_paths() still claims five, but Vertex has no case 4 - it stops immediately, so the pass
-			// draws nothing. The text that path used to carry is a child TextWidget now.
+			// num_paths() still claims five, but the adapter maps only widget paths 0-3 onto GammaCtrl's paths
+			// 2-5 (curve, grid, points); path 4 stops immediately, so the pass draws nothing. The values GammaCtrl
+			// strokes as its text path are shown by a child TextWidget instead.
 			await Assert.That(passes[4].Count).IsEqualTo(1);
 			await Assert.That(passes[4][0].Command).IsEqualTo(FlagsAndCommand.Stop);
 		}

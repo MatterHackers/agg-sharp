@@ -53,6 +53,9 @@ namespace MatterHackers.Agg.UI
 		/// Creates or connects a PlatformWindow to the given SystemWindow
 		public void ShowSystemWindow(SystemWindow systemWindow)
 		{
+			// The window provider is the one piece of the platform layer every Windows app brings up
+			WinformsSystemServices.InstallDefaults();
+
 			IPlatformWindow platformWindow;
 
 			if (systemWindow.PlatformWindow == null)

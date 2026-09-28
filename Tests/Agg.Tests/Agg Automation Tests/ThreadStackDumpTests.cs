@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -66,6 +67,37 @@ namespace MatterHackers.Agg.UI.Tests
 
 			await Assert.That(report).Contains("ALL MANAGED THREAD STACKS");
 			await Assert.That(report).Contains("proving the dump helper works");
+		}
+
+		/// <summary>
+		/// On macOS the runtime's dump writer, <c>createdump</c>, prints five "[createdump] ..." status lines
+		/// per capture. Launched by the runtime's diagnostic server it inherits the host's stdout, so every
+		/// capture - three from this class and one from the vetoed-close watchdog test - landed in the
+		/// suite's console output, where they read like a crash. The writer has to hand its log back to
+		/// the caller instead of printing it.
+		/// </summary>
+		[Test]
+		public async Task WritingADumpCapturesTheDumpWritersLogInsteadOfPrintingIt()
+		{
+			if (!OperatingSystem.IsMacOS())
+			{
+				// Only the mac leg runs createdump itself; elsewhere the runtime's own path is kept.
+				return;
+			}
+
+			string dumpPath = Path.Combine(Path.GetTempPath(), $"agg-threadstacks-test-{Guid.NewGuid():N}.dmp");
+
+			try
+			{
+				string log = ThreadStackDump.WriteDumpOfThisProcess(dumpPath);
+
+				await Assert.That(log).Contains("[createdump]");
+				await Assert.That(new FileInfo(dumpPath).Length).IsGreaterThan(0);
+			}
+			finally
+			{
+				File.Delete(dumpPath);
+			}
 		}
 
 		[Test]
@@ -223,24 +255,47 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				ThreadStackDump.WriteDumpOfThisProcess(dumpPath);
 
+				// A live capture can already hold repeats of its own: createdump writes an all-zero register
+				// context for a thread whose state it could not read, and two of those share stack pointer 0.
+				// Seen in full serial suite runs (and ClrMD rejects such a dump untouched), so the report is
+				// expected to drop those plus the one this test adds - an exact count of 1 was only true of
+				// a quiet process.
+				int naturalRepeats;
 				using (var stream = new FileStream(dumpPath, FileMode.Open, FileAccess.ReadWrite))
 				{
 					var threads = ThreadStackDump.ReadThreadStackPointers(stream);
-					await Assert.That(threads.Count).IsGreaterThan(1);
+					await Assert.That(threads.Count).IsGreaterThan(3);
 
-					// Give the second thread command the first one's stack pointer, in place.
+					// Make that capture state certain rather than luck: zero the last two threads' register
+					// contexts the way createdump does, so every run has repeats before this test adds its own.
 					var writer = new BinaryWriter(stream);
-					foreach (long position in StackPointerValuePositions(stream, threads[1].CommandOffset, threads[1].StackPointer))
+					ZeroRegisterState(stream, writer, threads[^1].CommandOffset);
+					ZeroRegisterState(stream, writer, threads[^2].CommandOffset);
+					writer.Flush();
+					threads = ThreadStackDump.ReadThreadStackPointers(stream);
+
+					naturalRepeats = threads.Count - threads.Select(t => t.StackPointer).Distinct().Count();
+					await Assert.That(naturalRepeats).IsGreaterThanOrEqualTo(1);
+
+					// Give a thread command the first one's stack pointer, in place. The target has to own a real
+					// stack pointer no other context shares, so the rewrite adds exactly one repeat.
+					var source = threads[0];
+					var target = threads.Skip(1).First(t => t.StackPointer != 0
+						&& threads.Count(other => other.StackPointer == t.StackPointer) == 1
+						&& t.StackPointer != source.StackPointer);
+					int targetIndex = threads.IndexOf(target);
+
+					foreach (long position in StackPointerValuePositions(stream, target.CommandOffset, target.StackPointer))
 					{
 						stream.Position = position;
-						writer.Write(threads[0].StackPointer);
+						writer.Write(source.StackPointer);
 					}
 
 					writer.Flush();
 
 					// The production reader must now see the repeat, or the rest of this test proves nothing.
 					var rewritten = ThreadStackDump.ReadThreadStackPointers(stream);
-					await Assert.That(rewritten[1].StackPointer).IsEqualTo(threads[0].StackPointer);
+					await Assert.That(rewritten[targetIndex].StackPointer).IsEqualTo(source.StackPointer);
 				}
 
 				// The reproduction: unrepaired, ClrMD cannot open this dump at all.
@@ -260,13 +315,27 @@ namespace MatterHackers.Agg.UI.Tests
 				string report = ThreadStackDump.ReportFromDump("proving a repeated stack pointer is survivable", dumpPath, 0, Stopwatch.StartNew());
 
 				await Assert.That(report).Contains("END THREAD STACKS");
-				await Assert.That(report).Contains("1 thread register context(s) repeated an earlier thread's stack pointer");
+				await Assert.That(report).Contains($"({naturalRepeats + 1} thread register context(s) repeated an earlier thread's stack pointer");
 				await Assert.That(report).Contains("--- thread os=");
 			}
 			finally
 			{
 				File.Delete(dumpPath);
 			}
+		}
+
+		/// <summary>
+		/// Overwrites the first register state of the thread command at <paramref name="commandOffset"/> with
+		/// zeros, keeping its flavor and count - what createdump writes for a thread whose state it could not read.
+		/// </summary>
+		private static void ZeroRegisterState(FileStream stream, BinaryWriter writer, long commandOffset)
+		{
+			var reader = new BinaryReader(stream, System.Text.Encoding.UTF8, leaveOpen: true);
+			stream.Position = commandOffset + 12;
+			uint countInWords = reader.ReadUInt32();
+
+			stream.Position = commandOffset + 16;
+			writer.Write(new byte[countInWords * 4]);
 		}
 
 		/// <summary>

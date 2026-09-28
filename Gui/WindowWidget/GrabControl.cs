@@ -63,6 +63,45 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		public Vector2 ParentPositionAtMouseDown { get; private set; }
 
+		/// <summary>
+		/// Raised on every move of a drag, after <see cref="AdjustParent"/> has resized the window. A handler may
+		/// place the window again - <see cref="SnapCoordinator"/> snaps it here - because every move is placed
+		/// from the press (see <see cref="DragDelta"/>), not from where the previous one left the window.
+		/// </summary>
+		public event EventHandler DragMoved;
+
+		/// <summary>
+		/// Raised once when a drag is over: the button came up, or a move arrived without it.
+		/// </summary>
+		public event EventHandler DragEnded;
+
+		/// <summary>
+		/// The edge or corner of the window this handle drags, read from how it is anchored: a handle anchored
+		/// Left and stretched vertically is the west edge, one anchored Right and Top the north-east corner.
+		/// </summary>
+		public ResizeEdge Edge
+		{
+			get
+			{
+				bool left = HAnchor.HasFlag(HAnchor.Left) && !HAnchor.HasFlag(HAnchor.Right);
+				bool right = HAnchor.HasFlag(HAnchor.Right) && !HAnchor.HasFlag(HAnchor.Left);
+				bool bottom = VAnchor.HasFlag(VAnchor.Bottom) && !VAnchor.HasFlag(VAnchor.Top);
+				bool top = VAnchor.HasFlag(VAnchor.Top) && !VAnchor.HasFlag(VAnchor.Bottom);
+
+				if (top)
+				{
+					return left ? ResizeEdge.NorthWest : right ? ResizeEdge.NorthEast : ResizeEdge.North;
+				}
+
+				if (bottom)
+				{
+					return left ? ResizeEdge.SouthWest : right ? ResizeEdge.SouthEast : ResizeEdge.South;
+				}
+
+				return left ? ResizeEdge.West : ResizeEdge.East;
+			}
+		}
+
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
 			// Which button started the drag is remembered so OnMouseMove can tell a real drag from a move with
@@ -92,11 +131,13 @@ namespace MatterHackers.Agg.UI
 					// window can be dropped before it ever gets here - taking either for a drag snapped the window
 					// to its minimum size and then had it chase the pointer around with no button held.
 					mouseIsDown = false;
+					DragEnded?.Invoke(this, EventArgs.Empty);
 				}
 				else if (Parent?.Resizable == true)
 				{
 					DragDelta = MouseInWindowParent(mouseEvent) - downPosition;
 					AdjustParent?.Invoke(this);
+					DragMoved?.Invoke(this, EventArgs.Empty);
 				}
 			}
 
@@ -117,7 +158,11 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
-			mouseIsDown = false;
+			if (mouseIsDown)
+			{
+				mouseIsDown = false;
+				DragEnded?.Invoke(this, EventArgs.Empty);
+			}
 
 			base.OnMouseUp(mouseEvent);
 		}

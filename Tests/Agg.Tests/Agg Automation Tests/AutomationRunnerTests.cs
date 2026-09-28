@@ -289,6 +289,34 @@ namespace MatterHackers.Agg.UI.Tests
 			});
 		}
 
+		// Type used to send every non-alphanumeric character with its ASCII value as the key code, and
+		// ASCII 33-47 are the navigation keys: '!' went down as PageUp, '$' as Home, '(' as Down. A
+		// multi-line field acts on those keys and suppresses the KeyPress, so the character never landed.
+		[Test]
+		public async Task TypeDeliversPunctuationIntoAMultiLineField()
+		{
+			var systemWindow = new SystemWindow(300, 200);
+			var field = new TextEditWidget("", 10, 10, pixelWidth: 200, pixelHeight: 100, multiLine: true)
+			{
+				Name = "field"
+			};
+			systemWindow.AddChild(field);
+
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, async (testRunner) =>
+			{
+				testRunner.ClickByName("field");
+				testRunner.Type("q!\"#$%&'()*+,-./ok");
+				await Assert.That(field.Text).IsEqualTo("q!\"#$%&'()*+,-./ok");
+
+				// Select-all is "^a" - the same spelling Windows' SendKeys reads.
+				testRunner.Type("^a");
+				testRunner.Type("z");
+				await Assert.That(field.Text).IsEqualTo("z");
+
+				testRunner.MarkTestComplete();
+			});
+		}
+
 		// StaticDelay used to compare against TimeSpan.Seconds - the 0-59 second component - rather than
 		// TotalSeconds. A wait was therefore never shorter than a whole second, and, far worse, any wait of
 		// a minute or more could never expire at all: it became an infinite loop that outlived the test.

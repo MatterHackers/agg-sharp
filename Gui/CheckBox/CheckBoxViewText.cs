@@ -6,7 +6,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -80,28 +80,16 @@ namespace MatterHackers.Agg.UI
 		{
 			if (Parent is CheckBox checkBox)
 			{
-				double bottom = LocalBounds.Bottom + (Height / 2 - CheckBoxWidth / 2);
+				// agg-gui's box is 16 with a 2 focus pad in a slot as wide as the label gap; here the slot is
+				// CheckBoxWidth * 2 (the label's position, which layouts depend on), so the box is 12 with the
+				// same 2 pad, leaving a 6 gap before the label.
+				double boxSize = 1.2 * CheckBoxWidth;
+				double left = LocalBounds.Left + 2 * DeviceScale;
+				double bottom = Math.Round(LocalBounds.Bottom + (Height - boxSize) / 2);
+				var box = new RectangleDouble(left, bottom, left + boxSize, bottom + boxSize);
 
-				// the gap between the left edge and the box, in points rather than device pixels
-				double inset = 1 * DeviceScale;
-
-				// the check
-				if (checkBox.Checked)
-				{
-					graphics2D.Line(new Vector2(inset, CheckBoxWidth + bottom), new Vector2(inset + CheckBoxWidth, 0 + bottom), this.TextColor);
-					graphics2D.Line(new Vector2(inset, 0 + bottom), new Vector2(inset + CheckBoxWidth, CheckBoxWidth + bottom), this.TextColor);
-				}
-
-				// the frame
-				RectangleDouble clampedRect = new RectangleDouble(inset, Math.Floor(0 + bottom), inset + Math.Ceiling(CheckBoxWidth), Math.Ceiling(CheckBoxWidth + bottom));
-				graphics2D.Rectangle(clampedRect, this.TextColor);
-
-				// extra frame
-				if (checkBox.MouseDownOnWidget && checkBox.FirstWidgetUnderMouse)
-				{
-					clampedRect.Inflate(1 * DeviceScale);
-					graphics2D.Rectangle(clampedRect, this.TextColor);
-				}
+				bool hovered = checkBox.FirstWidgetUnderMouse;
+				SelectionControlStyle.DrawCheckBox(graphics2D, box, checkBox.Checked, hovered, hovered && checkBox.MouseDownOnWidget, checkBox.Enabled, ThemeConfig.Current, checkBox.Indeterminate);
 			}
 
 			base.OnDraw(graphics2D);

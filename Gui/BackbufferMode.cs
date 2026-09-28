@@ -60,6 +60,19 @@ namespace MatterHackers.Agg.UI
 		/// subpixel geometry meaningful, and only when the destination can take the two planes without
 		/// flattening them.
 		/// </remarks>
-		LcdCoverage
+		LcdCoverage,
+
+		/// <summary>
+		/// A retained layer owned by the destination surface (<see cref="Graphics2D.CreateRetainedLayer()"/>) -
+		/// on the GPU path an offscreen texture the widget paints into through the GPU and that is composited
+		/// back as one textured quad, premultiplied, with the widget's opacity. agg-gui's
+		/// <c>BackbufferKind::GlFbo</c>.
+		/// </summary>
+		/// <remarks>
+		/// Chosen whenever the destination supports retained layers and the widget is not taking
+		/// <see cref="LcdCoverage"/>. While the pixels are here <see cref="GuiWidget.BackBuffer"/> is null, as it
+		/// is for <see cref="LcdCoverage"/>: there is no CPU copy of them.
+		/// </remarks>
+		GpuTexture
 	}
 }

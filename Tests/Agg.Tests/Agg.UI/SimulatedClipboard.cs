@@ -55,7 +55,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 		public ImageBuffer GetImage()
 		{
-			throw new NotImplementedException();
+			return Image;
 		}
 
 		public string GetHtml()

@@ -186,7 +186,7 @@ namespace MatterHackers.Agg.UI
 			{
 				if (base.BorderColor != Color.Transparent)
 				{
-					return base.BackgroundColor;
+					return base.BorderColor;
 				}
 				else if (this.ContainsFocus)
 				{

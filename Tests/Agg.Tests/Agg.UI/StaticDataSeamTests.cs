@@ -50,6 +50,49 @@ namespace MatterHackers.Agg.UI.Tests
 	/// </remarks>
 	public class StaticDataSeamTests
 	{
+		/// <summary>
+		/// On WASM (and in single-file apps) an assembly's Location is empty. The default provider used to take
+		/// its directory - null - and throw from Path.Combine, so a browser app that touched StaticData.Instance
+		/// without assigning a provider died. It now falls back to the app's base directory.
+		/// </summary>
+		[Test]
+		public async Task TheDefaultRootPathSurvivesAnAssemblyWithNoLocation()
+		{
+			await Assert.That(StaticData.DefaultRootPath("", "/app")).IsEqualTo(Path.Combine("/app", "StaticData"));
+			await Assert.That(StaticData.DefaultRootPath("", null)).IsEqualTo("StaticData");
+			// A real assembly Location is a native full path. GetFullPath gives one ("C:\app" on Windows) so the
+			// expected value is not tripped by Path.GetDirectoryName turning "/app" into "\app" on Windows.
+			string appDirectory = Path.GetFullPath("/app");
+			await Assert.That(StaticData.DefaultRootPath(Path.Combine(appDirectory, "bin", "Gui.dll"), "/other"))
+				.IsEqualTo(Path.Combine(appDirectory, "bin", "StaticData"));
+		}
+
+		/// <summary>
+		/// The root used to be defaulted only by the provider's constructor. A test that saved RootPath before
+		/// the provider existed saved null, the provider got built while its temp root was set, and restoring
+		/// null left a live provider with no root: every later MapPath threw ArgumentNullException (seen as
+		/// WindowWidgetStyleTests.AddTitleBarWorksWithoutMatterCadsIcon failing only after the StaticData tests).
+		/// </summary>
+		[Test]
+		[NotInParallel]
+		public async Task ClearingRootPathFallsBackToTheDefaultRoot()
+		{
+			string savedRootPath = StaticData.RootPath;
+			try
+			{
+				// Make sure the provider already exists, as it does once anything has loaded an icon
+				_ = StaticData.Instance;
+				StaticData.RootPath = null;
+
+				await Assert.That(StaticData.RootPath).IsNotNull();
+				await Assert.That(StaticData.Instance.FileExists(Path.Combine("Icons", "no-such-icon.png"))).IsFalse();
+			}
+			finally
+			{
+				StaticData.RootPath = savedRootPath;
+			}
+		}
+
 		[Test]
 		[NotInParallel]
 		public async Task AHostCanSubstituteItsOwnProvider()

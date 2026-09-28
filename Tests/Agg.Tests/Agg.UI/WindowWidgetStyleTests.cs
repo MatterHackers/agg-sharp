@@ -3,6 +3,7 @@ Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 */
 
+using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
@@ -25,6 +26,22 @@ namespace MatterHackers.Agg.UI.Tests
 	{
 		private static readonly Color Background = new Color(200, 220, 240);
 		private static readonly Color Parent = Color.White;
+
+		/// <summary>
+		/// AddTitleBar puts MatterCAD's mh.png icon in front of the title, but that icon ships with MatterCAD,
+		/// not agg-sharp: any other app (the agg-sharp demo, these tests) threw "Bad icon load" in a debug build.
+		/// Without the icon the title bar is built without it.
+		/// </summary>
+		[Test]
+		public async Task AddTitleBarWorksWithoutMatterCadsIcon()
+		{
+			var closed = false;
+			var window = new WindowWidget(new ThemeConfig(), new RectangleDouble(0, 0, 200, 100));
+			window.AddTitleBar("Title", () => closed = true);
+
+			window.TitleBar.Descendants().First(w => w.ToolTipText == "Close").InvokeClick();
+			await Assert.That(closed).IsTrue();
+		}
 
 		[Test]
 		[Arguments(1.0)]

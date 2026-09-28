@@ -206,13 +206,82 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		/// <summary>
-		/// Asks the runtime's diagnostic server to write a minidump of this process to <paramref name="dumpPath"/>.
+		/// Writes a minidump of this process to <paramref name="dumpPath"/>.
 		/// </summary>
-		internal static void WriteDumpOfThisProcess(string dumpPath)
+		/// <returns>The dump writer's own log where it has one (macOS), otherwise an empty string.</returns>
+		internal static string WriteDumpOfThisProcess(string dumpPath)
 		{
 			// DumpType.Normal is thread stacks plus the minimum the stack walker needs. WithHeap or Full
 			// would answer questions nobody is asking here and cost orders of magnitude more time and disk.
+			if (OperatingSystem.IsMacOS())
+			{
+				return RunCreateDump(dumpPath);
+			}
+
 			new DiagnosticsClient(Environment.ProcessId).WriteDump(DumpType.Normal, dumpPath, logDumpGeneration: false);
+			return string.Empty;
+		}
+
+		/// <summary>
+		/// Runs the runtime's <c>createdump</c> against this process with its output redirected, which is what
+		/// <see cref="DiagnosticsClient.WriteDump(DumpType, string, bool)"/> does on this OS minus the noise.
+		/// </summary>
+		/// <remarks>
+		/// Launched by the runtime's diagnostic server, createdump inherits the host's stdout and prints five
+		/// "[createdump] ..." status lines per capture whatever <c>logDumpGeneration</c> says - the runtime
+		/// passes no log file on that path and ignores <c>DOTNET_CreateDumpLogToFile</c> there. In a test run
+		/// those lines landed in the suite's output and read as a crash. Same tool, same arguments, so the
+		/// dump is identical. macOS only: on Linux, Yama's ptrace scope stops a process we start from
+		/// attaching to us unless the runtime's PR_SET_PTRACER dance is repeated, and Windows is untested.
+		/// </remarks>
+		private static string RunCreateDump(string dumpPath)
+		{
+			string createDump = Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "createdump");
+			var startInfo = new ProcessStartInfo(createDump)
+			{
+				RedirectStandardOutput = true,
+				RedirectStandardError = true,
+				UseShellExecute = false,
+			};
+			startInfo.ArgumentList.Add("--normal");
+			startInfo.ArgumentList.Add("--name");
+			startInfo.ArgumentList.Add(dumpPath);
+			startInfo.ArgumentList.Add(Environment.ProcessId.ToString());
+
+			using (var process = new Process { StartInfo = startInfo })
+			{
+				// Drain stderr on its own callback while stdout is read here, so neither pipe can fill and
+				// stall the writer. WaitForExit() (no timeout) also waits for the callback's end of stream.
+				var error = new StringBuilder();
+				process.ErrorDataReceived += (s, e) =>
+				{
+					if (e.Data != null)
+					{
+						lock (error)
+						{
+							error.AppendLine(e.Data);
+						}
+					}
+				};
+
+				process.Start();
+				process.BeginErrorReadLine();
+				string output = process.StandardOutput.ReadToEnd();
+				process.WaitForExit();
+
+				string log;
+				lock (error)
+				{
+					log = output + error;
+				}
+
+				if (process.ExitCode != 0)
+				{
+					throw new InvalidOperationException($"createdump exited with {process.ExitCode}: {log.Trim()}");
+				}
+
+				return log;
+			}
 		}
 
 		/// <summary>
@@ -371,7 +440,10 @@ namespace MatterHackers.GuiAutomation
 		/// contexts with one stack pointer throw "An item with the same key has already been added" and the
 		/// dump cannot be opened at all. That state is not always a passing race: one full agg suite run lost
 		/// all five attempts with the same key, so whatever left two contexts on one stack pointer outlived
-		/// every re-capture. At most one of the two contexts can be that thread's real registers, and one
+		/// every re-capture. The common source, caught in full serial agg suite runs: createdump writes an
+		/// all-zero general register context (only cpsr set) for a thread whose state it could not read, and
+		/// two such threads share stack pointer 0 - ClrMD rejects that dump untouched. At most one of the two
+		/// contexts can be that thread's real registers, and one
 		/// thread with no frames beats a report with no threads. Keeping the first is what a non-throwing
 		/// add in ClrMD would have done.
 		/// </remarks>

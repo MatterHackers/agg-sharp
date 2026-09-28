@@ -321,22 +321,25 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			UiThread.ResetForTests();
 
+			// The tick's own writers, not Console.SetOut/SetError: those are process wide, so while redirected they
+			// also caught whatever any test running in parallel wrote to stderr - which failed this test in full runs.
 			var output = new StringWriter();
 			var errors = new StringWriter();
-			TextWriter previousOut = Console.Out;
-			TextWriter previousError = Console.Error;
-			Console.SetOut(output);
-			Console.SetError(errors);
 
 			try
 			{
 				// The R3 mitigation: a browser has one thread, so a phase that blocks is not slow - it is the
 				// whole application stopped. Half a second is well past any honest frame and short enough that
-				// a blocking wait cannot hide under it.
+				// a blocking wait cannot hide under it. The clock is ours, so the "block" costs no real time.
+				long now = 0;
+
 				var tick = new BrowserFrameTick(
-					drainBrowserEvents: () => Thread.Sleep(600),
+					drainBrowserEvents: () => now += 600,
 					canPaint: () => false,
-					paintFrame: () => { });
+					paintFrame: () => { },
+					clockMilliseconds: () => now,
+					diagnosticOutput: output,
+					errorOutput: errors);
 
 				tick.Tick();
 				tick.Tick();
@@ -360,8 +363,6 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 			finally
 			{
-				Console.SetOut(previousOut);
-				Console.SetError(previousError);
 				UiThread.ResetForTests();
 			}
 		}

@@ -48,10 +48,16 @@ namespace MatterHackers.Agg.UI
         {
             this.WheelDeltaX = original.WheelDeltaX;
             this.WheelDeltaIsPreciseScroll = original.WheelDeltaIsPreciseScroll;
+            this.FromTrackpadPinch = original.FromTrackpadPinch;
             positions[0] = new Vector2(newX, newY);
+
+            // Routing into a child moves the first position to (newX, newY); the other fingers take the same
+            // step so they land in the child's space too. A translation - which is what almost every child
+            // transform is; a scaled or rotated child would need the transform itself, which this is not given.
+            Vector2 offset = positions[0] - original.Position;
             for (int i = 1; i < original.NumPositions; i++)
             {
-                positions.Add(original.GetPosition(i));
+                positions.Add(original.GetPosition(i) + offset);
             }
         }
 
@@ -131,6 +137,15 @@ namespace MatterHackers.Agg.UI
         /// flag; see <see cref="ScrollableWidget.OnMouseWheel"/> for the consumer this was added for.
         /// </remarks>
         public bool WheelDeltaIsPreciseScroll { get; set; }
+
+        /// <summary>
+        /// True on a wheel that is really a trackpad pinch. The host sends a pinch both ways: as this wheel, which is
+        /// what every widget that zooms on the wheel already understands, and as two-finger moves
+        /// (<see cref="TrackpadPinchFingers"/>) for widgets that follow fingers. A widget that zooms from the
+        /// fingers (a <see cref="MultiTouchGesture"/> or two-position moves) skips a wheel carrying this, or it
+        /// would zoom twice.
+        /// </summary>
+        public bool FromTrackpadPinch { get; set; }
 
         // public Point Location { get; }
         public double X

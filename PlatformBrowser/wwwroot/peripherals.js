@@ -80,6 +80,22 @@ export function writeClipboardText(text) {
 	navigator.clipboard.writeText(text).catch((error) => fault('clipboard write', error));
 }
 
+/**
+ * Asks the browser to put a PNG on the system clipboard. Fire and forget, like writeClipboardText: managed
+ * code keeps its own copy, so a refusal costs an in-app paste nothing. The bytes are copied into the Blob
+ * because the array managed code handed over is a view the runtime may reuse once this returns.
+ */
+export function writeClipboardImage(png) {
+	if (!navigator.clipboard || !navigator.clipboard.write || typeof ClipboardItem === 'undefined') {
+		fault('clipboard image write', new Error('navigator.clipboard.write / ClipboardItem is not available in this browser.'));
+		return;
+	}
+
+	const blob = new Blob([new Uint8Array(png)], { type: 'image/png' });
+	navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+		.catch((error) => fault('clipboard image write', error));
+}
+
 // ---------------------------------------------------------------------------------------------------
 // File dialogs
 // ---------------------------------------------------------------------------------------------------

@@ -52,6 +52,10 @@
   <ItemGroup>
     <PackageReference Include="TUnit" Version="1.56.35" />
     <PackageReference Include="TUnit.Engine" Version="1.56.35" />
+    <!-- CI turns on hangdump (see tests.yml): a test that stops the run is named in the log and dumped,
+         where the whole-session timeout names nothing. Its version tracks the Microsoft.Testing.Platform
+         TUnit brings. -->
+    <PackageReference Include="Microsoft.Testing.Extensions.HangDump" Version="2.2.3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\agg\Agg.csproj" />
@@ -59,6 +63,8 @@
     <ProjectReference Include="..\..\Csg\Csg.csproj" />
     <ProjectReference Include="..\..\DataConverters2D\DataConverters2D.csproj" />
     <ProjectReference Include="..\..\DataConverters3D\DataConverters3D.csproj" />
+    <!-- The lion shape and its demo draw, shared with examples/lion so AggReferenceTests renders it through the same code. -->
+    <ProjectReference Include="..\..\examples\LionShape\LionShape.csproj" />
     <ProjectReference Include="..\..\geometry3Sharp\geometry3Sharp.csproj" />
     <ProjectReference Include="..\..\Gui\Gui.csproj" />
     <ProjectReference Include="..\..\GuiAutomation\GuiAutomation.csproj" />
@@ -87,6 +93,8 @@
     <!-- The wgpu backend itself, plus its embedded WGSL. The integration suite drives GlCompatContext
          over a real WebGpuRenderDevice, so the tests need the backend and not just the seam. -->
     <ProjectReference Include="..\..\WebGpuRender\WebGpuRender.csproj" />
+    <!-- The demo site's shared library: its demo view's layout, mouse mapping and software presentation. -->
+    <ProjectReference Include="..\..\examples\AggSharpDemo\AggSharpDemo\AggSharpDemo.csproj" />
   </ItemGroup>
 
   <!-- Tests whose subject is WinForms itself: off Windows there is nothing for them to be about. -->
@@ -123,6 +131,7 @@
     <Compile Remove="Agg.UI\MacDragOutsideViewTests.cs" />
     <Compile Remove="Agg.UI\MacKeyTranslationTests.cs" />
     <Compile Remove="Agg.UI\MacMenuBarTests.cs" />
+    <Compile Remove="Agg.UI\MacCursorMapTests.cs" />
   </ItemGroup>
 
   <!-- Tests whose subject is the Linux platform layer. Removed wherever PlatformLinux is not referenced -
@@ -136,6 +145,7 @@
     <Compile Remove="Agg.UI\X11WheelTests.cs" />
     <Compile Remove="Agg.UI\LinuxFileDialogProviderTests.cs" />
     <Compile Remove="Agg.UI\LinuxClipboardTests.cs" />
+    <Compile Remove="Agg.UI\X11CursorMapTests.cs" />
   </ItemGroup>
 
   <!-- LCD byte-exactness fixture: raw mask/composite dumps from the agg-gui Rust reference, read by
@@ -158,6 +168,15 @@
   <ItemGroup>
     <Content Include="..\..\TestData\ControlImages\*.tga">
       <Link>ControlImages\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- C++ AGG reference renders (scripts/regen-agg-reference.sh) for AggReferenceTests. Same tree-preferred
+       arrangement as the control images below: AggReference.ReferenceDirectory reads the tree first. -->
+  <ItemGroup>
+    <Content Include="..\..\TestData\AggReference\*.raw">
+      <Link>AggReference\%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

@@ -330,14 +330,20 @@ namespace MatterHackers.Agg.Platform.Linux
 		public const uint XC_arrow = 2;
 		public const uint XC_bottom_left_corner = 12;
 		public const uint XC_bottom_right_corner = 14;
+		public const uint XC_bottom_side = 16;
 		public const uint XC_crosshair = 34;
 		public const uint XC_fleur = 52;
+		public const uint XC_hand1 = 58;
 		public const uint XC_hand2 = 60;
+		public const uint XC_left_side = 70;
+		public const uint XC_plus = 90;
 		public const uint XC_question_arrow = 92;
+		public const uint XC_right_side = 96;
 		public const uint XC_sb_h_double_arrow = 108;
 		public const uint XC_sb_v_double_arrow = 116;
 		public const uint XC_top_left_corner = 134;
 		public const uint XC_top_right_corner = 136;
+		public const uint XC_top_side = 138;
 		public const uint XC_watch = 150;
 		public const uint XC_xterm = 152;
 

@@ -41,7 +41,83 @@ namespace MatterHackers.Agg.UI
 
 		public bool SuppressScroll { get; set; }
 
+		/// <summary>
+		/// Opt-in (off by default): while the view shows the end of its content, content growth and resizes keep it
+		/// at the end - a log or chat that follows new rows. Scrolling up detaches it; scrolling back to the bottom
+		/// re-attaches it. Content that fits counts as at the bottom, so it attaches the moment it starts to overflow.
+		/// </summary>
+		public bool StickToBottom { get; set; }
+
+		/// <summary>True when <see cref="StickToBottom"/> is on and the view is at the end of the content (within half
+		/// a pixel), so whatever is about to change the content or the view should leave it at the end.</summary>
+		internal bool FollowingBottom => StickToBottom && this.ScrollOffsetFromTop() >= this.MaxScrollFromTop() - .5;
+
+		/// <summary>Puts the view back at the end of the content if <paramref name="wasFollowing"/> (a
+		/// <see cref="FollowingBottom"/> read before the change).</summary>
+		internal void KeepAtBottomIf(bool wasFollowing)
+		{
+			if (wasFollowing)
+			{
+				this.SetScrollOffsetFromTop(this.MaxScrollFromTop());
+			}
+		}
+
 		public ScrollBar VerticalScrollBar { get; private set; }
+
+		private ScrollEdgeFade edgeFade;
+
+		/// <summary>
+		/// The fade that dissolves the content towards edges with more beyond them. Created on first read (none by
+		/// default) with <see cref="ScrollEdgeFade.Strength"/> 0; set the strength above 0 to see it.
+		/// </summary>
+		public ScrollEdgeFade EdgeFade
+		{
+			get
+			{
+				if (edgeFade == null)
+				{
+					edgeFade = new ScrollEdgeFade(this);
+					// above the content, below the bars
+					base.AddChild(edgeFade, Children.IndexOf(scrollArea) + 1);
+				}
+
+				return edgeFade;
+			}
+		}
+
+		/// <summary>The bar along the bottom, or null until <see cref="HorizontalScroll"/> is turned on.</summary>
+		public ScrollBar HorizontalScrollBar { get; private set; }
+
+		/// <summary>
+		/// Opt-in (off by default): a horizontal scroll bar along the bottom, shown when the content is wider than the
+		/// view, and shift+wheel scrolling sideways. A trackpad's sideways swipe scrolls sideways either way.
+		/// </summary>
+		/// <remarks>The bar is only created when this is first turned on, so a view that never asks has the same
+		/// children it always had.</remarks>
+		public bool HorizontalScroll
+		{
+			get => HorizontalScrollBar?.Show == ScrollBar.ShowState.WhenRequired || HorizontalScrollBar?.Show == ScrollBar.ShowState.Always;
+			set
+			{
+				if (value == HorizontalScroll)
+				{
+					return;
+				}
+
+				if (HorizontalScrollBar == null)
+				{
+					HorizontalScrollBar = new ScrollBar(this, Orientation.Horizontal) { Show = ScrollBar.ShowState.Never };
+					HorizontalScrollBar.VisibleChanged += (s, e) => SetScrollAreaMargin();
+					HorizontalScrollBar.SizeChanged += (s, e) => SetScrollAreaMargin();
+					HorizontalScrollBar.HAnchor = UI.HAnchor.Left;
+					HorizontalScrollBar.VAnchor = UI.VAnchor.Bottom;
+					base.AddChild(HorizontalScrollBar);
+				}
+
+				HorizontalScrollBar.Show = value ? ScrollBar.ShowState.WhenRequired : ScrollBar.ShowState.Never;
+				SetScrollAreaMargin();
+			}
+		}
 
 		public Vector2 TopLeftOffset
 		{
@@ -57,6 +133,7 @@ namespace MatterHackers.Agg.UI
 			{
 				if (value != TopLeftOffset)
 				{
+					NoteRequestedScroll(TopLeftOffset, value);
 					Vector2 deltaNeeded = TopLeftOffset - value;
 					scrollArea.OriginRelativeParent -= deltaNeeded;
 					scrollArea.ValidateScrollPosition();
@@ -77,6 +154,7 @@ namespace MatterHackers.Agg.UI
 			{
 				if (value != scrollArea.OriginRelativeParent)
 				{
+					NoteRequestedScroll(scrollArea.OriginRelativeParent, value);
 					scrollArea.OriginRelativeParent = value;
 					scrollArea.ValidateScrollPosition();
 
@@ -137,6 +215,52 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>Count scrolls asked for from outside the internal keep-the-offset restores, per axis; a resize
+		/// compares them before and after to tell whether something scrolled that axis on purpose while the bounds
+		/// were changing. Per axis because MatterCAD's ThemedHorizontalScrollBar resets only X from BoundsChanged
+		/// (ScrollPosition = (left, ScrollPosition.Y)) and that must not cost the view its vertical position.</summary>
+		private int requestedScrollsX;
+
+		private int requestedScrollsY;
+
+		private bool restoringOffset;
+
+		/// <summary>Puts the offset back after the content or view changed under it - bookkeeping, not a scroll
+		/// request, so it does not count as one for <see cref="LocalBounds"/>.</summary>
+		internal void RestoreTopLeftOffset(Vector2 topLeftOffset)
+		{
+			bool wasRestoring = restoringOffset;
+			restoringOffset = true;
+			try
+			{
+				TopLeftOffset = topLeftOffset;
+			}
+			finally
+			{
+				restoringOffset = wasRestoring;
+			}
+		}
+
+		/// <summary>Counts a scroll from <paramref name="from"/> to <paramref name="to"/> (either both
+		/// TopLeftOffsets or both ScrollPositions - only which axes differ matters) against the axes it moves.</summary>
+		private void NoteRequestedScroll(Vector2 from, Vector2 to)
+		{
+			if (restoringOffset)
+			{
+				return;
+			}
+
+			if (from.X != to.X)
+			{
+				requestedScrollsX++;
+			}
+
+			if (from.Y != to.Y)
+			{
+				requestedScrollsY++;
+			}
+		}
+
 		private void OnScrollPositionChanged()
 		{
 			ScrollPositionChanged?.Invoke(this, null);
@@ -187,15 +311,21 @@ namespace MatterHackers.Agg.UI
 			VerticalScrollBar.HAnchor = UI.HAnchor.Right;
 		}
 
-		private void SetScrollAreaMargin()
+		/// <summary>Steps the scroll area in from each bar that takes room beside it (a floating bar takes none).</summary>
+		internal void SetScrollAreaMargin()
 		{
-			if (VerticalScrollBar.Visible)
+			if (VerticalScrollBar.ReservesSpace)
 			{
 				scrollArea.Margin = scrollArea.Margin.Clone(right: VerticalScrollBar.Width / DeviceScale);
 			}
 			else
 			{
 				scrollArea.Margin = scrollArea.Margin.Clone(right: 0);
+			}
+
+			if (HorizontalScrollBar != null)
+			{
+				scrollArea.Margin = scrollArea.Margin.Clone(bottom: HorizontalScrollBar.ReservesSpace ? HorizontalScrollBar.Height / DeviceScale : 0);
 			}
 		}
 
@@ -345,7 +475,14 @@ namespace MatterHackers.Agg.UI
 		/// Measured exactly the way <see cref="ScrollingArea.ValidateScrollPosition"/> decides whether to clamp,
 		/// so "we can scroll" and "the scroll will be allowed to stand" can never disagree.
 		/// </remarks>
-		private bool HasHorizontalOverflow => ScrollArea.LocalBounds.Width + ScrollArea.DeviceMargin.Width > LocalBounds.Width;
+		/// <summary>
+		/// How much more than the view the content has to be before it counts as overflowing. Content sized to
+		/// exactly fit - a window fitted to it - lands a rounding error either side of the view (1e-13 on the
+		/// GUI demo's Mobile Keyboard), which is not something to show a scroll bar for.
+		/// </summary>
+		private const double OverflowTolerance = 1e-6;
+
+		private bool HasHorizontalOverflow => ScrollArea.LocalBounds.Width + ScrollArea.DeviceMargin.Width > LocalBounds.Width + OverflowTolerance;
 
 		/// <summary>
 		/// True when the content is taller than the view, so a vertical scroll bar has somewhere to scroll to.
@@ -354,7 +491,7 @@ namespace MatterHackers.Agg.UI
 		/// Measured the way <see cref="HasHorizontalOverflow"/> is - the margin is part of how far the content is
 		/// allowed to move, so it counts as content the same way <see cref="RatioOfViewToContents0To1"/> counts it.
 		/// </remarks>
-		internal bool HasVerticalOverflow => ScrollArea.LocalBounds.Height + ScrollArea.DeviceMargin.Height > LocalBounds.Height;
+		internal bool HasVerticalOverflow => ScrollArea.LocalBounds.Height + ScrollArea.DeviceMargin.Height > LocalBounds.Height + OverflowTolerance;
 
 		/// <summary>
 		/// What one pixel of <c>WheelDelta / 5</c> is worth, for both axes of <paramref name="mouseEvent"/>.
@@ -385,6 +522,18 @@ namespace MatterHackers.Agg.UI
 			if (AutoScroll)
 			{
 				double scrollScale = WheelScale(mouseEvent);
+
+				// Shift turns a wheel sideways, where the view has opted in to horizontal scrolling and there is
+				// something off the sides (otherwise the wheel is left to scroll as it always did). The wheel
+				// turning down (a negative delta) moves the view right, as it moves the view down.
+				if (HorizontalScroll
+					&& mouseEvent.WheelDeltaX == 0
+					&& HasHorizontalOverflow
+					&& Keyboard.IsKeyDown(Keys.Shift))
+				{
+					mouseEvent.WheelDeltaX = mouseEvent.WheelDelta;
+					mouseEvent.WheelDelta = 0;
+				}
 
 				Vector2 oldScrollPosition = ScrollPosition;
 				ScrollPosition += new Vector2(0, -mouseEvent.WheelDelta / 5 * scrollScale);
@@ -440,16 +589,26 @@ namespace MatterHackers.Agg.UI
 				if (value != LocalBounds)
 				{
 					Vector2 currentTopLeftOffset = new Vector2();
+					bool wasFollowing = false;
 					if (Parent != null)
 					{
 						currentTopLeftOffset = TopLeftOffset;
+						wasFollowing = FollowingBottom;
 					}
 
+					int xScrollsBefore = requestedScrollsX;
+					int yScrollsBefore = requestedScrollsY;
 					base.LocalBounds = value;
 
+					// Keep the offset the view had - except on an axis something (a BoundsChanged handler, say)
+					// scrolled on purpose while the bounds changed; restoring over that silently undid it.
 					if (Parent != null)
 					{
-						TopLeftOffset = currentTopLeftOffset;
+						bool keepX = requestedScrollsX == xScrollsBefore;
+						bool keepY = requestedScrollsY == yScrollsBefore;
+						Vector2 now = TopLeftOffset;
+						RestoreTopLeftOffset(new Vector2(keepX ? currentTopLeftOffset.X : now.X, keepY ? currentTopLeftOffset.Y : now.Y));
+						KeepAtBottomIf(wasFollowing && keepY);
 					}
 				}
 			}

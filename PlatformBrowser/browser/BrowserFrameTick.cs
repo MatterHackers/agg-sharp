@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using MatterHackers.Agg.UI;
 
 namespace MatterHackers.Agg.Platform.Browser
@@ -63,6 +64,9 @@ namespace MatterHackers.Agg.Platform.Browser
 		private readonly Action drainBrowserEvents;
 		private readonly Func<bool> canPaint;
 		private readonly Action paintFrame;
+		private readonly Func<long> clockMilliseconds;
+		private readonly TextWriter diagnosticOutput;
+		private readonly TextWriter errorOutput;
 
 		private bool insideIdleDrain;
 
@@ -76,12 +80,32 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// render layer that exists. False during bring-up, which is what keeps
 		/// <c>BrowserSystemWindow.NewGraphics2D</c>'s descriptive throw out of every frame.</param>
 		/// <param name="paintFrame">Draws (and, once there is a device, presents) one frame.</param>
-		public BrowserFrameTick(Action drainBrowserEvents, Func<bool> canPaint, Action paintFrame)
+		/// <param name="clockMilliseconds">A monotonic millisecond clock used to time each phase. Defaults to
+		/// <see cref="Stopwatch"/>; a test passes its own so a "slow" phase costs no wall-clock time.</param>
+		/// <param name="diagnosticOutput">Where slow-phase notices go. Defaults to <see cref="Console.Out"/>,
+		/// read at write time.</param>
+		/// <param name="errorOutput">Where a phase that threw is described. Defaults to
+		/// <see cref="Console.Error"/>, read at write time.</param>
+		/// <remarks>The writers are injectable because <see cref="Console.SetOut"/> is process wide: a test
+		/// that redirected the console to read these lines would also capture (and could be failed by)
+		/// whatever every other test running in parallel in the same process wrote meanwhile.</remarks>
+		public BrowserFrameTick(
+			Action drainBrowserEvents,
+			Func<bool> canPaint,
+			Action paintFrame,
+			Func<long> clockMilliseconds = null,
+			TextWriter diagnosticOutput = null,
+			TextWriter errorOutput = null)
 		{
 			this.drainBrowserEvents = drainBrowserEvents ?? throw new ArgumentNullException(nameof(drainBrowserEvents));
 			this.canPaint = canPaint ?? throw new ArgumentNullException(nameof(canPaint));
 			this.paintFrame = paintFrame ?? throw new ArgumentNullException(nameof(paintFrame));
+			this.clockMilliseconds = clockMilliseconds ?? StopwatchMilliseconds;
+			this.diagnosticOutput = diagnosticOutput;
+			this.errorOutput = errorOutput;
 		}
+
+		private static long StopwatchMilliseconds() => Stopwatch.GetTimestamp() * 1000 / Stopwatch.Frequency;
 
 		/// <summary>How many ticks have run. Diagnostics, and what a smoke run counts.</summary>
 		public long TickCount { get; private set; }
@@ -196,7 +220,7 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// </remarks>
 		private void RunPhase(string phase, Action work)
 		{
-			long startedAt = Stopwatch.GetTimestamp();
+			long startedAt = this.clockMilliseconds();
 
 			try
 			{
@@ -204,14 +228,14 @@ namespace MatterHackers.Agg.Platform.Browser
 			}
 			catch (Exception phaseException)
 			{
-				Console.Error.WriteLine(
+				(this.errorOutput ?? Console.Error).WriteLine(
 					$"BrowserSystemWindow tick phase '{phase}' threw; this frame is abandoned and the loop continues: {phaseException}");
 
 				UiThread.ReportUnhandledException(phaseException);
 			}
 			finally
 			{
-				long elapsedMilliseconds = (Stopwatch.GetTimestamp() - startedAt) * 1000 / Stopwatch.Frequency;
+				long elapsedMilliseconds = this.clockMilliseconds() - startedAt;
 
 				if (elapsedMilliseconds >= LongPhaseMilliseconds
 					&& reportedLongPhases.Add(phase))
@@ -221,7 +245,7 @@ namespace MatterHackers.Agg.Platform.Browser
 					// that finished, so writing it to stderr told users the application had broken - dropping a
 					// Text primitive costs about a second of glyph work on the one browser thread, and that is
 					// how they met the strip. The catch above keeps stderr, because there something really failed.
-					Console.WriteLine(
+					(this.diagnosticOutput ?? Console.Out).WriteLine(
 						$"BrowserSystemWindow tick phase '{phase}' held the only thread for {elapsedMilliseconds} ms."
 						+ " The page was frozen for that long. Reported once per phase.");
 				}

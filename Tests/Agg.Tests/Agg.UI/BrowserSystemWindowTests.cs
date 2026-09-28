@@ -375,6 +375,42 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// A closed window detaches its input, so the release of a modifier it reported held can never arrive.
+		/// Keyboard is process-wide: a Shift left down there made every later click anywhere a shift-click.
+		/// </summary>
+		[Test]
+		[Timeout(30_000)]
+		public async Task ClosingTheWindowReleasesTheModifiersItPutDown()
+		{
+			var interop = new FakeWindowInterop();
+			var frameLoop = new FakeFrameLoop();
+
+			var platformWindow = new BrowserSystemWindow(interop, frameLoop);
+			var systemWindow = new SystemWindow(100, 100);
+
+			try
+			{
+				platformWindow.ShowSystemWindow(systemWindow);
+				platformWindow.EnqueuePointerEvent(
+					"pointerdown", 100, 50, button: 0, buttons: 1, detail: 1,
+					ctrlKey: false, shiftKey: true, altKey: false, metaKey: false);
+				frameLoop.Tick();
+				await Assert.That(Keyboard.IsKeyDown(Keys.Shift)).IsTrue();
+
+				platformWindow.CloseSystemWindow(systemWindow);
+
+				await Assert.That(Keyboard.IsKeyDown(Keys.Shift)).IsFalse();
+				await Assert.That(Keyboard.IsKeyDown(Keys.ShiftKey)).IsFalse();
+			}
+			finally
+			{
+				platformWindow.CloseSystemWindow(systemWindow);
+				Keyboard.SetKeyDownState(Keys.ShiftKey, false);
+				UiThread.ResetForTests();
+			}
+		}
+
+		/// <summary>
 		/// A pointercancel is the browser taking the pointer away, and no pointerup is coming after it. It
 		/// carries button -1 and buttons 0 by specification - the browser will not say which button it is
 		/// taking - so the drag is ended with the button that started it. Without that the capture would be

@@ -103,6 +103,11 @@ namespace MatterHackers.Agg.Platform.Browser
 						break;
 
 					default:
+						if (DispatchTouch(window, type, inputEvent))
+						{
+							break;
+						}
+
 						// Everything else is a pointer event; the window decides what each type means.
 						window.EnqueuePointerEvent(
 							type,
@@ -151,6 +156,35 @@ namespace MatterHackers.Agg.Platform.Browser
 				Console.Error.WriteLine($"BrowserInputEvents could not queue a resize: {resizeException}");
 				UiThread.ReportUnhandledException(resizeException);
 			}
+		}
+
+		/// <summary>Every finger on the canvas; one page shows one agg window.</summary>
+		private static readonly BrowserTouchPoints TouchPoints = new BrowserTouchPoints();
+
+		/// <summary>
+		/// Folds a touch pointer into <see cref="TouchPoints"/>, queueing the multi-finger move it calls for.
+		/// </summary>
+		/// <returns>True when the event was handled here and must not also reach
+		/// <see cref="BrowserSystemWindow.EnqueuePointerEvent"/>.</returns>
+		private static bool DispatchTouch(BrowserSystemWindow window, string type, JSObject inputEvent)
+		{
+			BrowserBackingSize backing = window.Backing;
+			BrowserTouchAction action = TouchPoints.Update(
+				type,
+				inputEvent.GetPropertyAsInt32("pointerId"),
+				inputEvent.GetPropertyAsString("pointerType"),
+				BrowserPointer.ToAggPosition(
+					inputEvent.GetPropertyAsDouble("offsetX"),
+					inputEvent.GetPropertyAsDouble("offsetY"),
+					backing.DevicePixelRatio,
+					backing.PixelHeight));
+
+			if (action == BrowserTouchAction.MoveWithAllTouches)
+			{
+				TouchPoints.EnqueueMove(window);
+			}
+
+			return action != BrowserTouchAction.Forward;
 		}
 	}
 }

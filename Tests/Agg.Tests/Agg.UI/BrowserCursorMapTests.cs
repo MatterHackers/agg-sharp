@@ -53,6 +53,22 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// Only the arrow itself may land on the default fallback: any other member that does was left out of
+		/// the table, which is what a newly appended cursor would otherwise silently do.
+		/// </summary>
+		[Test]
+		public async Task OnlyTheArrowMapsToDefault()
+		{
+			foreach (Cursors cursor in Enum.GetValues<Cursors>())
+			{
+				if (cursor != Cursors.Arrow && cursor != Cursors.Default)
+				{
+					await Assert.That(BrowserCursorMap.ToCssCursor(cursor)).IsNotEqualTo("default");
+				}
+			}
+		}
+
+		/// <summary>
 		/// The ones with an exact CSS equivalent, which is most of them - including the two diagonal resize
 		/// cursors the mac host has to go looking for private AppKit selectors to find.
 		/// </summary>
@@ -70,6 +86,26 @@ namespace MatterHackers.Agg.UI.Tests
 		[Arguments(Cursors.WaitCursor, "wait")]
 		[Arguments(Cursors.Help, "help")]
 		[Arguments(Cursors.No, "not-allowed")]
+		[Arguments(Cursors.None, "none")]
+		[Arguments(Cursors.ContextMenu, "context-menu")]
+		[Arguments(Cursors.Progress, "progress")]
+		[Arguments(Cursors.Cell, "cell")]
+		[Arguments(Cursors.VerticalText, "vertical-text")]
+		[Arguments(Cursors.Alias, "alias")]
+		[Arguments(Cursors.Copy, "copy")]
+		[Arguments(Cursors.NoDrop, "no-drop")]
+		[Arguments(Cursors.Grab, "grab")]
+		[Arguments(Cursors.Grabbing, "grabbing")]
+		[Arguments(Cursors.ZoomIn, "zoom-in")]
+		[Arguments(Cursors.ZoomOut, "zoom-out")]
+		[Arguments(Cursors.ResizeNorth, "n-resize")]
+		[Arguments(Cursors.ResizeEast, "e-resize")]
+		[Arguments(Cursors.ResizeSouth, "s-resize")]
+		[Arguments(Cursors.ResizeWest, "w-resize")]
+		[Arguments(Cursors.ResizeNorthEast, "ne-resize")]
+		[Arguments(Cursors.ResizeNorthWest, "nw-resize")]
+		[Arguments(Cursors.ResizeSouthEast, "se-resize")]
+		[Arguments(Cursors.ResizeSouthWest, "sw-resize")]
 		public async Task TheExactEquivalentsMap(Cursors cursor, string expected)
 		{
 			await Assert.That(BrowserCursorMap.ToCssCursor(cursor)).IsEqualTo(expected);

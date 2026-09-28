@@ -4,6 +4,7 @@ using MatterHackers.ImageProcessing;
 using MatterHackers.Localizations;
 using MatterHackers.VectorMath;
 using System;
+using System.Collections.Generic;
 
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
@@ -26,7 +27,7 @@ namespace MatterHackers.Agg.UI
 		private double deviceGrabWidth => grabWidth * DeviceScale;
 
         private readonly ThemeConfig theme;
-        private readonly GuiWidget windowBackground;
+        private readonly RoundedPanel windowBackground;
 
         /// <summary>
         /// The right hand end of the title bar, holding the close button and anything
@@ -35,6 +36,36 @@ namespace MatterHackers.Agg.UI
         private FlowLayoutWidget titleBarButtons;
 
         private GuiWidget closeButton;
+
+		private readonly List<GrabControl> grabControls = new List<GrabControl>();
+
+		private GuiWidget titleLine;
+
+		private TextWidget titleText;
+
+		private CollapseChevron collapseButton;
+
+		private string title = "";
+
+		private bool resizable = true;
+
+		private bool collapsible;
+
+		private bool collapsed;
+
+		private bool autoSize;
+
+		private bool applyingAutoSize;
+
+		private double expandedHeight;
+
+		private Vector2 expandedMinimumSize;
+
+		private bool maximizable;
+
+		private readonly WindowMaximizer maximizer;
+
+		private MaximizeButton maximizeButton;
 
 		public WindowWidget(ThemeConfig theme, RectangleDouble inBounds)
 			: this(theme, new GuiWidget(inBounds.Width, inBounds.Height, SizeLimitsToSet.None)
@@ -74,8 +105,9 @@ namespace MatterHackers.Agg.UI
         public WindowWidget(ThemeConfig theme, GuiWidget clientArea)
 		{
 			this.theme = theme;
+			maximizer = new WindowMaximizer(this, () => deviceGrabWidth);
             
-			windowBackground = new FlowLayoutWidget(FlowDirection.TopToBottom)
+			windowBackground = new RoundedPanel()
 			{
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Stretch,
@@ -92,7 +124,8 @@ namespace MatterHackers.Agg.UI
 			};
 			windowBackground.AddChild(TitleBar);
 
-            windowBackground.AddChild(new HorizontalLine(theme.PrimaryAccentColor));
+            titleLine = new HorizontalLine(theme.PrimaryAccentColor);
+            windowBackground.AddChild(titleLine);
 
             MinimumSize = new Vector2(deviceGrabWidth * 8, deviceGrabWidth * 4 + TitleBar.Height * 2);
 			WindowBorder = 1;
@@ -106,6 +139,7 @@ namespace MatterHackers.Agg.UI
 			ClientArea = clientArea;
 
 			windowBackground.AddChild(ClientArea);
+			ClientArea.Layout += (s, e) => ApplyAutoSize();
 		}
 
 		public double WindowBorder { get => windowBackground.BackgroundOutlineWidth; set => windowBackground.BackgroundOutlineWidth = value; }
@@ -117,11 +151,10 @@ namespace MatterHackers.Agg.UI
 		/// units. 0, the default, keeps the classic square window.
 		/// </summary>
 		/// <remarks>
-		/// agg can only clip to rectangles, so the rounding cannot cut the corners off whatever the title bar and
-		/// client area paint. Instead the panel is padded on the sides and bottom by radius * (1 - 1/sqrt 2), which
-		/// puts the client area's square corners exactly on the arc: nothing it paints can square the corners off.
-		/// The top is not padded because the title bar paints no background of its own - its colour
-		/// (<see cref="TitleBarColor"/>) is drawn here, with its top corners rounded.
+		/// Like agg-gui's rounded layer clip, whatever the title bar and client area paint is cut to the rounded
+		/// corners: a rounded window double-buffers its panel (the part inside the grab border) and composites
+		/// that buffer through a rounded, anti-aliased mask (<see cref="RoundedClipCoverage"/>). The shadow is
+		/// drawn by the window itself, outside the panel's buffer, so the mask never cuts it.
 		/// </remarks>
 		public double CornerRadius
 		{
@@ -130,9 +163,34 @@ namespace MatterHackers.Agg.UI
 			{
 				cornerRadius = value;
 				windowBackground.BackgroundRadius = value > 0 ? value * DeviceScale : 3 * DeviceScale;
-				var inset = value * (1 - 1 / Math.Sqrt(2));
+				windowBackground.BackbufferCornerRadius = Math.Max(0, value) * DeviceScale;
+
+				// The clip only applies when the panel is drawn through its buffer, and a panel under a zoom
+				// outside 0.95..1.05 (GuiWidget.DrawChild) is drawn straight onto its parent instead. So the
+				// sides and bottom stay padded by radius * (1 - 1/sqrt 2), which puts the client area's square
+				// corners on the arc either way. Always padded, not only when unbuffered, so zooming never
+				// changes the layout. The title bar is not padded; the clip rounds whatever it paints.
+				var inset = Math.Max(0, value) * (1 - 1 / Math.Sqrt(2));
 				windowBackground.Padding = new BorderDouble(inset, inset, inset, 0);
+
+				// A square window keeps drawing straight onto its parent, exactly as it always has.
+				windowBackground.DoubleBuffer = value > 0;
+				windowBackground.Invalidate();
 			}
+		}
+
+		/// <summary>
+		/// The visible window inside the grab border, which carries the rounded clip its backbuffer is
+		/// composited through (see <see cref="CornerRadius"/>).
+		/// </summary>
+		private class RoundedPanel : FlowLayoutWidget, IRoundedBackbuffer
+		{
+			public RoundedPanel()
+				: base(FlowDirection.TopToBottom)
+			{
+			}
+
+			public double BackbufferCornerRadius { get; set; }
 		}
 
 		/// <summary>
@@ -196,25 +254,318 @@ namespace MatterHackers.Agg.UI
 				titleBarButtons.AddChild(closeButton);
 			}
 
+			// Left of the close button, as agg-gui draws it; built always so turning Maximizable on later shows it.
+			maximizeButton = new MaximizeButton(this, () => titleText.TextColor)
+			{
+				Name = "Window Maximize Button",
+				VAnchor = VAnchor.Center,
+				Visible = maximizable,
+			};
+			titleBarButtons.AddChild(maximizeButton, 0);
+
             var titleBarRow = new Toolbar(theme.TabbarPadding, titleBarButtons)
             {
                 HAnchor = HAnchor.Stretch,
                 VAnchor = VAnchor.Fit | VAnchor.Center,
             };
 
-            titleBarRow.AddChild(new ImageWidget(StaticData.Instance.LoadIcon("mh.png", 16, 16).GrayToColor(theme.TextColor))
+            // mh.png is MatterCAD's icon and ships in its StaticData, not agg-sharp's; any other app has none, and
+            // loading a missing icon throws in a debug build. Such an app gets a title bar without the icon.
+            if (StaticData.Instance.FileExists(System.IO.Path.Combine("Icons", "mh.png")))
             {
-                Margin = new BorderDouble(4, 0, 6, 0),
-                VAnchor = VAnchor.Center
-            });
+                titleBarRow.AddChild(new ImageWidget(StaticData.Instance.LoadIcon("mh.png", 16, 16).GrayToColor(theme.TextColor))
+                {
+                    Margin = new BorderDouble(4, 0, 6, 0),
+                    VAnchor = VAnchor.Center
+                });
+            }
+            else
+            {
+                titleBarRow.AddChild(new GuiWidget(8, 1));
+            }
 
-            titleBarRow.ActionArea.AddChild(new TextWidget(title ?? "", pointSize: theme.DefaultFontSize, textColor: theme.TextColor)
+            // Drawn in the title's colour, so a host that recolours the title recolours the chevron with it.
+            collapseButton = new CollapseChevron(this, () => titleText.TextColor)
+            {
+                Name = "Window Collapse Button",
+                VAnchor = VAnchor.Center,
+                Visible = collapsible,
+            };
+            titleBarRow.ActionArea.AddChild(collapseButton);
+
+            this.title = title ?? "";
+            titleText = new TextWidget(this.title, pointSize: theme.DefaultFontSize, textColor: theme.TextColor)
             {
                 VAnchor = VAnchor.Center,
-            });
+            };
+            titleBarRow.ActionArea.AddChild(titleText);
 
             TitleBar.AddChild(titleBarRow);
         }
+
+		/// <summary>
+		/// The text shown in the title bar. Setting it before <see cref="AddTitleBar"/> is overwritten by the
+		/// title given there.
+		/// </summary>
+		public string Title
+		{
+			get => title;
+			set
+			{
+				title = value ?? "";
+				if (titleText != null)
+				{
+					titleText.Text = title;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Whether the edges and corners can be dragged to resize the window. True, the default. The handles
+		/// are also off while the window is <see cref="Collapsed"/> or <see cref="AutoSize"/>d, as in egui.
+		/// </summary>
+		public bool Resizable
+		{
+			get => resizable;
+			set
+			{
+				resizable = value;
+				UpdateGrabControls();
+			}
+		}
+
+		/// <summary>
+		/// Whether the title bar offers a chevron that folds the window up to its title bar. False, the default.
+		/// Turning it off unfolds a folded window, since nothing would be left to unfold it with.
+		/// </summary>
+		public bool Collapsible
+		{
+			get => collapsible;
+			set
+			{
+				collapsible = value;
+				if (collapseButton != null)
+				{
+					collapseButton.Visible = value;
+				}
+
+				if (!value)
+				{
+					Collapsed = false;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Folds the window up to its title bar (true) or back out to the height it had (false). The top edge
+		/// stays where it is either way, so the title bar does not jump.
+		/// </summary>
+		public bool Collapsed
+		{
+			get => collapsed;
+			set
+			{
+				if (value == collapsed)
+				{
+					return;
+				}
+
+				collapsed = value;
+				double top = Position.Y + Height;
+				ClientArea.Visible = !collapsed;
+				titleLine.Visible = !collapsed;
+				if (collapsed)
+				{
+					expandedHeight = Height;
+					expandedMinimumSize = MinimumSize;
+
+					// MinimumSize is first: it would hold the window at two title bars' height.
+					double folded = deviceGrabWidth * 2 + TitleBar.Height + windowBackground.Padding.Height;
+					MinimumSize = new Vector2(MinimumSize.X, folded);
+					Size = new Vector2(Width, folded);
+				}
+				else
+				{
+					MinimumSize = expandedMinimumSize;
+					Size = new Vector2(Width, expandedHeight);
+				}
+
+				Position = new Vector2(Position.X, top - Height);
+				UpdateGrabControls();
+				ApplyAutoSize();
+				collapseButton?.Invalidate();
+			}
+		}
+
+		/// <summary>
+		/// Keeps the window's height fitted to its content, the top edge staying put, while the width stays as
+		/// set; resizing is off meanwhile. False, the default. agg-gui's auto_size, which also pins the width.
+		/// </summary>
+		/// <remarks>
+		/// The content is <see cref="ClientArea"/>'s children, so it has to size itself (VAnchor Fit): a child
+		/// that stretches to the client area has no height of its own and leaves the window as it is.
+		/// </remarks>
+		public bool AutoSize
+		{
+			get => autoSize;
+			set
+			{
+				autoSize = value;
+				UpdateGrabControls();
+				ApplyAutoSize();
+			}
+		}
+
+		/// <summary>
+		/// Whether the window can be maximized to fill its parent - a maximize button beside the close button and
+		/// a double-click on the title bar, which both restore it again, as agg-gui's Window does. False, the
+		/// default. Turning it off restores a maximized window.
+		/// </summary>
+		public bool Maximizable
+		{
+			get => maximizable;
+			set
+			{
+				maximizable = value;
+				if (maximizeButton != null)
+				{
+					maximizeButton.Visible = value;
+				}
+
+				if (!value)
+				{
+					Maximized = false;
+				}
+			}
+		}
+
+		/// <summary>Raised when <see cref="Maximized"/> changes.</summary>
+		public event EventHandler MaximizedChanged;
+
+		/// <summary>
+		/// Fills the parent with the visible window (true) and keeps it filled as the parent resizes, or puts the
+		/// window back where and how big it was (false). Settable whether or not <see cref="Maximizable"/> is on,
+		/// so a host can restore a saved state. A maximized window cannot be dragged or resized.
+		/// </summary>
+		public bool Maximized
+		{
+			get => maximizer.IsMaximized;
+			set
+			{
+				if (value)
+				{
+					Collapsed = false;
+				}
+
+				if (maximizer.Set(value))
+				{
+					UpdateGrabControls();
+					maximizeButton?.Invalidate();
+					MaximizedChanged?.Invoke(this, EventArgs.Empty);
+				}
+			}
+		}
+
+		/// <summary>
+		/// The window's own position and size - what it goes back to when restored - whether or not it is
+		/// maximized. The rectangle is the whole widget, grab border included, in the parent's coordinates.
+		/// </summary>
+		public RectangleDouble RestoreBounds => maximizer.RestoreBounds;
+
+		/// <summary>
+		/// A double-click on the title bar of a <see cref="Maximizable"/> window, anywhere but its buttons,
+		/// toggles <see cref="Maximized"/>. Returns true when it did, so the bar does not start a drag.
+		/// </summary>
+		internal bool TitleBarDoubleClicked(TitleBarWidget bar, MouseEventArgs mouseEvent)
+		{
+			if (!maximizable
+				|| mouseEvent.Clicks != 2
+				|| mouseEvent.Button != MouseButtons.Left)
+			{
+				return false;
+			}
+
+			// The buttons take their own clicks: a double-click on the maximize button is two toggles, as in agg-gui.
+			Vector2 screen = bar.TransformToScreenSpace(new Vector2(mouseEvent.X, mouseEvent.Y));
+			foreach (GuiWidget control in new GuiWidget[] { titleBarButtons, collapseButton })
+			{
+				if (control != null
+					&& control.Visible
+					&& control.PositionWithinLocalBounds(control.TransformFromScreenSpace(screen)))
+				{
+					return false;
+				}
+			}
+
+			Maximized = !Maximized;
+			return true;
+		}
+
+		public override void OnParentChanged(EventArgs e)
+		{
+			base.OnParentChanged(e);
+			maximizer.FollowParent();
+		}
+
+		public override void OnClosed(EventArgs e)
+		{
+			maximizer.Release();
+			base.OnClosed(e);
+		}
+
+		private void AddGrabControl(GrabControl grabControl)
+		{
+			grabControls.Add(grabControl);
+			AddChild(grabControl);
+		}
+
+		private void UpdateGrabControls()
+		{
+			bool on = resizable && !autoSize && !collapsed && !Maximized;
+			foreach (var grabControl in grabControls)
+			{
+				grabControl.Visible = on;
+			}
+		}
+
+		/// <summary>Sizes the window to its content's height when <see cref="AutoSize"/> is on.</summary>
+		private void ApplyAutoSize()
+		{
+			if (!autoSize
+				|| collapsed
+				|| applyingAutoSize)
+			{
+				return;
+			}
+
+			double content = 0;
+			foreach (var child in ClientArea.Children)
+			{
+				if (child.Visible)
+				{
+					content = Math.Max(content, child.Height + child.Margin.Height);
+				}
+			}
+
+			double wanted = Height - ClientArea.Height + content + ClientArea.Padding.Height;
+			if (Math.Abs(wanted - Height) < .5)
+			{
+				return;
+			}
+
+			// Resizing lays the client area out again, which lands back here before the window has its new size.
+			applyingAutoSize = true;
+			try
+			{
+				double top = Position.Y + Height;
+				Size = new Vector2(Width, wanted);
+				Position = new Vector2(Position.X, top - Height);
+			}
+			finally
+			{
+				applyingAutoSize = false;
+			}
+		}
 
 		/// <summary>
 		/// Puts a widget in the title bar immediately to the left of the close button, or at the right hand end
@@ -351,7 +702,7 @@ namespace MatterHackers.Agg.UI
 			var grabEdgeColor = Color.Transparent;
 
 			// left grab control
-			AddChild(new GrabControl(Cursors.SizeWE)
+			AddGrabControl(new GrabControl(Cursors.SizeWE)
 			{
 				BackgroundColor = grabEdgeColor,
 				HAnchor = HAnchor.Left,
@@ -369,7 +720,7 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// bottom grab control
-			this.AddChild(new GrabControl(Cursors.SizeNS)
+			AddGrabControl(new GrabControl(Cursors.SizeNS)
 			{
 				BackgroundColor = grabEdgeColor,
 				HAnchor = HAnchor.Stretch,
@@ -385,7 +736,7 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// left bottom grab control
-			this.AddChild(new GrabControl(Cursors.SizeNESW)
+			AddGrabControl(new GrabControl(Cursors.SizeNESW)
 			{
 				BackgroundColor = grabCornnerColor,
 				HAnchor = HAnchor.Left,
@@ -400,7 +751,7 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// left top grab control
-			this.AddChild(new GrabControl(Cursors.SizeNWSE)
+			AddGrabControl(new GrabControl(Cursors.SizeNWSE)
 			{
 				BackgroundColor = grabCornnerColor,
 				HAnchor = HAnchor.Left,
@@ -415,7 +766,7 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// right grab control
-			this.AddChild(new GrabControl(Cursors.SizeWE)
+			AddGrabControl(new GrabControl(Cursors.SizeWE)
 			{
 				BackgroundColor = grabEdgeColor,
 				VAnchor = VAnchor.Stretch,
@@ -430,7 +781,7 @@ namespace MatterHackers.Agg.UI
 			});
 
             // right top grab control
-            this.AddChild(new GrabControl(Cursors.SizeNESW)
+            AddGrabControl(new GrabControl(Cursors.SizeNESW)
             {
                 BackgroundColor = grabCornnerColor,
                 HAnchor = HAnchor.Right,
@@ -443,7 +794,7 @@ namespace MatterHackers.Agg.UI
             });
             
             // top grab control
-            this.AddChild(new GrabControl(Cursors.SizeNS)
+            AddGrabControl(new GrabControl(Cursors.SizeNS)
 			{
 				BackgroundColor = grabEdgeColor,
 				HAnchor = HAnchor.Stretch,
@@ -458,7 +809,7 @@ namespace MatterHackers.Agg.UI
 			});
 
 			// right bottom
-			this.AddChild(new GrabControl(Cursors.SizeNWSE)
+			AddGrabControl(new GrabControl(Cursors.SizeNWSE)
 			{
 				BackgroundColor = grabCornnerColor,
 				HAnchor = HAnchor.Right,

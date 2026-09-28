@@ -6,6 +6,7 @@ All rights reserved.
 using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Tests;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.UI.Tests;
 using TUnit.Assertions;
@@ -13,7 +14,9 @@ using TUnit.Core;
 
 namespace Markdig.Agg.Tests
 {
-	[NotInParallel(nameof(MarkdownClipboardSelectionTests))]
+	// Every MarkdownWidget constructor writes the static MarkdownWidget.Theme the selection colour is read from,
+	// and these swap Clipboard.Instance.
+	[NotInParallel(new[] { SharedStateKeys.MarkdownWidget, SharedStateKeys.Clipboard })]
 	public class MarkdownClipboardSelectionTests
 	{
 		[Test]

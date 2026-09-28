@@ -70,6 +70,9 @@ namespace MatterHackers.Agg.Platform.Browser
 		public void WriteText(string text) => WriteClipboardTextCore(text ?? string.Empty);
 
 		/// <inheritdoc/>
+		public void WriteImagePng(byte[] png) => WriteClipboardImageCore(png ?? Array.Empty<byte>());
+
+		/// <inheritdoc/>
 		public void PickFiles(string accept, bool multiple, Action<BrowserPickedFile> onFile, Action onComplete)
 		{
 			if (onFile == null)
@@ -127,6 +130,9 @@ namespace MatterHackers.Agg.Platform.Browser
 
 		[JSImport("writeClipboardText", ModuleName)]
 		private static partial void WriteClipboardTextCore(string text);
+
+		[JSImport("writeClipboardImage", ModuleName)]
+		private static partial void WriteClipboardImageCore(byte[] png);
 
 		[JSImport("pickFiles", ModuleName)]
 		private static partial void PickFilesCore(

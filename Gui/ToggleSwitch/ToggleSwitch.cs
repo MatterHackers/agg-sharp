@@ -36,18 +36,20 @@ namespace MatterHackers.Agg.UI
 	/// thumb, the insets - is in the caller's units, so a caller that wants the switch to keep its physical
 	/// size on a high density panel passes a width and height already multiplied by
 	/// <see cref="GuiWidget.DeviceScale"/>. Nothing inside scales itself, which is what keeps the parts in
-	/// proportion to each other whatever size the caller asks for. The one exception is the border stroke
-	/// below, which Graphics2D measures in device pixels no matter what the geometry is in.
+	/// proportion to each other whatever size the caller asks for.
+	/// It is drawn as agg-gui's toggle switch: a pill track in interiorColor when on (the theme's neutral
+	/// stroke from ThemeConfig.Current when off) with a round thumbColor knob. backgroundColor, textColor
+	/// (for the switch itself) and borderColor are accepted for compatibility; agg-gui's switch has no border.
 	/// </summary>
 	public class ToggleSwitchView : CheckBoxViewStates
 	{
 		public ToggleSwitchView(string onText, string offText, double width, double height, Color backgroundColor, Color interiorColor, Color thumbColor, Color textColor, Color borderColor)
 		{
 			GuiWidget normal = createState(offText, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
-			GuiWidget normalHover = createState(offText, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
+			GuiWidget normalHover = createState(offText, false, hovered: true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
 			GuiWidget switchNormalToPressed = createState(onText, true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
 			GuiWidget pressed = createState(onText, true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
-			GuiWidget pressedHover = createState(onText, true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
+			GuiWidget pressedHover = createState(onText, true, hovered: true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
 			GuiWidget switchPressedToNormal = createState(offText, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
 			GuiWidget disabled = new TextWidget("disabled");
 
@@ -57,6 +59,9 @@ namespace MatterHackers.Agg.UI
 		}
 
 		private GuiWidget createState(string word, bool isChecked, double width, double height, ref Color backgroundColor, ref Color interiorColor, ref Color thumbColor, ref Color textColor, Color borderColor)
+			=> createState(word, isChecked, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
+
+		private GuiWidget createState(string word, bool isChecked, bool hovered, double width, double height, ref Color backgroundColor, ref Color interiorColor, ref Color thumbColor, ref Color textColor, Color borderColor)
 		{
 			GuiWidget switchNormalToPressed = new FlowLayoutWidget(FlowDirection.LeftToRight);
 
@@ -70,9 +75,10 @@ namespace MatterHackers.Agg.UI
 			}
 
 			switchNormalToPressed.AddChild(
-				new SwitchView(width, height, isChecked, backgroundColor, interiorColor, isChecked ? thumbColor : Color.Gray, textColor, borderColor)
+				new SwitchView(width, height, isChecked, backgroundColor, interiorColor, thumbColor, textColor, borderColor)
 				{
-					VAnchor = VAnchor.Center
+					VAnchor = VAnchor.Center,
+					Hovered = hovered,
 				});
 
 			return switchNormalToPressed;
@@ -82,47 +88,18 @@ namespace MatterHackers.Agg.UI
 		{
 			private bool Checked { get; }
 
-			private RectangleDouble borderRect;
-
-			private RectangleDouble innerRect;
-
-			private RectangleDouble checkedThumbBounds;
-
-			private RectangleDouble uncheckedThumbBounds;
-
 			private RectangleDouble switchBounds { get; }
-
-			private Color borderColor;
-
-			private Color disabledBorderColor;
 
 			internal SwitchView(double width, double height, bool startValue, Color backgroundColor, Color interiorColor, Color thumbColor, Color exteriorColor, Color borderColor)
 			{
 				this.Checked = startValue;
 
-				var thumbHeight = height;
-				var thumbWidth = 14;
-
 				InteriorColor = interiorColor;
 				ExteriorColor = exteriorColor;
-
-				this.borderColor = borderColor;
-
-				disabledBorderColor = new Color(borderColor, 50);
-
 				ThumbColor = thumbColor;
 				LocalBounds = new RectangleDouble(0, 0, width, height);
 
 				this.switchBounds = new RectangleDouble(0, 0, width, height);
-
-				innerRect = this.switchBounds;
-				innerRect.Inflate(new BorderDouble(-3, -6));
-
-				borderRect = this.switchBounds;
-				borderRect.Inflate(new BorderDouble(0, -3));
-
-				checkedThumbBounds = new RectangleDouble(width - thumbWidth, 0, width, thumbHeight);
-				uncheckedThumbBounds = new RectangleDouble(0, 0, thumbWidth, thumbHeight);
 			}
 
 			public Color ExteriorColor { get; set; }
@@ -131,25 +108,20 @@ namespace MatterHackers.Agg.UI
 
 			public Color ThumbColor { get; set; }
 
+			/// <summary>Whether this is the hover state's copy, drawn with agg-gui's hovered track colour.</summary>
+			public bool Hovered { get; set; }
+
+			/// <summary>
+			/// agg-gui's pill: the track fills the switch, InteriorColor when on and the theme's neutral stroke
+			/// when off, with a round ThumbColor knob at the matching end. ExteriorColor and the border colour
+			/// are no longer drawn; agg-gui's switch has no border.
+			/// </summary>
 			public override void OnDraw(Graphics2D graphics2D)
 			{
 				graphics2D.FillRectangle(switchBounds, this.BackgroundColor);
 				base.OnDraw(graphics2D);
 
-				if (this.Checked)
-				{
-					graphics2D.FillRectangle(innerRect, this.InteriorColor);
-				}
-
-				// Draw border - a stroke width is device pixels, so a fixed 1 would be a hairline on a high
-				// density panel. This is the only place the view looks at DeviceScale; the geometry above does not.
-				var strokeWidth = Math.Max(1, Math.Round(DeviceScale));
-
-				graphics2D.Rectangle(borderRect, (this.Enabled) ? borderColor : disabledBorderColor, strokeWidth);
-
-				var thumbBounds = (this.Checked) ? checkedThumbBounds : uncheckedThumbBounds;
-				graphics2D.FillRectangle(thumbBounds, this.ThumbColor);
-				graphics2D.Rectangle(thumbBounds, new Color(255, 255, 255, 90), strokeWidth);
+				SelectionControlStyle.DrawSwitch(graphics2D, switchBounds, this.Checked, this.Hovered, this.Enabled, this.InteriorColor, this.ThumbColor, ThemeConfig.Current);
 			}
 		}
 	}

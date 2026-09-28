@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.LcdCoverage;
 using MatterHackers.Agg.Transform;
@@ -62,6 +63,13 @@ namespace MatterHackers.Agg.UI
 		private LcdBuffer lcdBackBuffer;
 
 		/// <summary>
+		/// The <see cref="BackbufferMode.GpuTexture"/> alternative: a retained layer made by the destination
+		/// surface. Created on the first paint that chooses that mode and released by any paint that does not,
+		/// so like the two buffers above only one representation ever holds live pixels.
+		/// </summary>
+		private IRetainedLayer layer;
+
+		/// <summary>
 		/// <see cref="backBuffer"/> with <see cref="GuiWidget.BackbufferOpacity"/> baked in, kept from frame to
 		/// frame so a faded widget that is not repainting costs one blit like every other widget rather than a
 		/// whole-buffer pixel pass. Null while the widget is fully opaque, which is nearly all of them.
@@ -78,6 +86,27 @@ namespace MatterHackers.Agg.UI
 		private double fadedOpacity = -1;
 
 		private bool fadedIsPremultiplied;
+
+		/// <summary>
+		/// The rounded clip the pixels were last rastered under (see <see cref="IRoundedBackbuffer"/>): the
+		/// widget's bounds in buffer pixels, and the corner radius, 0 for none. The RGBA arm bakes it into the
+		/// buffer's alpha; the retained layer applies it as it composites.
+		/// </summary>
+		private RectangleDouble roundedClipInBuffer;
+
+		private double roundedClipRadius;
+
+		/// <summary>The owning widget's rounded clip radius right now, 0 when it has none.</summary>
+		private double CornerRadius => ClipRadius(this.widget);
+
+		/// <summary>
+		/// The rounded clip radius <paramref name="widget"/> asks for (<see cref="IRoundedBackbuffer"/>), 0 for
+		/// none. <see cref="GuiWidget.ResolveBackbufferMode"/> treats a clipped widget like a faded one: the
+		/// clip scales whole pixels by the corner coverage, and LCD planes composited straight into the
+		/// destination's channels have no single alpha to scale. So text inside a rounded window's panel is
+		/// greyscale-antialiased, never subpixel - accepted, as agg-gui's rounded layers are too.
+		/// </summary>
+		internal static double ClipRadius(GuiWidget widget) => (widget as IRoundedBackbuffer)?.BackbufferCornerRadius ?? 0;
 
 		internal WidgetBackbuffer(GuiWidget widget)
 		{
@@ -98,6 +127,12 @@ namespace MatterHackers.Agg.UI
 		/// reason.
 		/// </summary>
 		internal long LcdEpoch { get; set; }
+
+		/// <summary>
+		/// <see cref="TextStyleSettings.Epoch"/> as of the last raster: those settings reshape every glyph, in
+		/// whichever mode the pixels were rastered.
+		/// </summary>
+		internal long TextStyleEpoch { get; set; } = TextStyleSettings.Epoch;
 
 		/// <summary>
 		/// The cached pixels as an <see cref="ImageBuffer"/>, or null while they are in
@@ -165,7 +200,7 @@ namespace MatterHackers.Agg.UI
 		/// and the global setting, which is what lets a widget answer it with no backbuffer allocated yet.
 		/// </para>
 		/// </remarks>
-		internal static BackbufferMode ResolveMode(Graphics2D destination)
+		private static BackbufferMode ResolveLcdMode(Graphics2D destination)
 		{
 			if (!LcdRenderSettings.Enabled
 				|| destination == null
@@ -187,6 +222,144 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
+		/// Which backbuffer representation a widget should be painted into: <see cref="BackbufferMode.LcdCoverage"/>
+		/// when every LCD gate opens (see <see cref="ResolveLcdMode"/>), otherwise
+		/// <see cref="BackbufferMode.GpuTexture"/> when the destination keeps retained layers, otherwise
+		/// <see cref="BackbufferMode.Rgba"/> - today's behaviour, byte for byte, on every CPU surface.
+		/// </summary>
+		/// <param name="destination">The graphics the backbuffer will be composited onto, with the transform
+		/// the composite will happen under already set. Null answers <see cref="BackbufferMode.Rgba"/>.</param>
+		/// <param name="faded">True when the widget's <see cref="GuiWidget.BackbufferOpacity"/> is below 1.</param>
+		/// <remarks>
+		/// <para>
+		/// A faded widget cannot be <see cref="BackbufferMode.LcdCoverage"/>: that keeps its pixels as three
+		/// per-channel coverages that composite straight into the destination's own planes, and there is no
+		/// single alpha in that representation for a whole-widget opacity to scale. Subpixel coverage and
+		/// alpha compositing are alternatives, not layers. A retained layer has that alpha, so a faded widget
+		/// on the GPU still gets one.
+		/// </para>
+		/// <para>
+		/// LCD wins over the retained layer because it is the user's explicit setting and the retained
+		/// layer, being a transparent compositing layer, would refuse the subpixel pipeline outright.
+		/// </para>
+		/// </remarks>
+		internal static BackbufferMode ResolveMode(Graphics2D destination, bool faded)
+		{
+			if (!faded && ResolveLcdMode(destination) == BackbufferMode.LcdCoverage)
+			{
+				return BackbufferMode.LcdCoverage;
+			}
+
+			return destination?.SupportsRetainedLayers == true ? BackbufferMode.GpuTexture : BackbufferMode.Rgba;
+		}
+
+		/// <summary>
+		/// The double-buffered half of <see cref="GuiWidget.DrawChild"/> for the owning widget: resolves the
+		/// mode for this paint, re-rasters the buffer if the widget is dirty (or the mode, LCD settings or
+		/// retained layer changed), and composites it onto <paramref name="graphics2D"/> on whole pixels.
+		/// </summary>
+		/// <param name="graphics2D">The parent's surface, clipped to the child, with the child's accumulated
+		/// transform set.</param>
+		/// <param name="currentGraphics2DTransform">The parent's transform, before the child's own was added.</param>
+		internal void PaintAndComposite(Graphics2D graphics2D, Affine currentGraphics2DTransform)
+		{
+			var child = this.widget;
+			var offsetToRenderSurface = new Vector2(currentGraphics2DTransform.tx, currentGraphics2DTransform.ty);
+			offsetToRenderSurface += new Vector2(child.OriginRelativeParent.X * currentGraphics2DTransform.sx, child.OriginRelativeParent.Y * currentGraphics2DTransform.sy);
+
+			double yFraction = offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y;
+			double xFraction = offsetToRenderSurface.X - (int)offsetToRenderSurface.X;
+			int xOffset = (int)Floor(child.LocalBounds.Left);
+			int yOffset = (int)Floor(child.LocalBounds.Bottom);
+			int extraW = xFraction > 0 ? 1 : 0;
+			int extraH = yFraction > 0 ? 1 : 0;
+
+			// Re-decided every paint, so the LCD setting takes effect on the next frame. Both a mode flip and a
+			// change to the filter's style parameters force a re-raster: the pixels already in the buffer are in
+			// the wrong representation in the first case and rastered under superseded settings in the second.
+			BackbufferMode mode = child.ResolveBackbufferMode(graphics2D);
+
+			// Read once, before the raster, and used for both the compare and the store: read again afterwards
+			// it would stamp pixels rastered under the old settings with an epoch that says they are current,
+			// and a settings change that landed mid-raster would never be re-rastered.
+			long lcdEpoch = LcdRenderSettings.Epoch;
+			long textStyleEpoch = TextStyleSettings.Epoch;
+			if (mode != this.Mode
+				|| this.TextStyleEpoch != textStyleEpoch
+				|| (mode == BackbufferMode.LcdCoverage && this.LcdEpoch != lcdEpoch)
+				|| (mode == BackbufferMode.GpuTexture && !this.LayerFits(graphics2D, extraW, extraH)))
+			{
+				child.isCurrentlyInvalid = true;
+			}
+
+			if (child.isCurrentlyInvalid)
+			{
+				this.Rasterize(
+					mode,
+					extraW,
+					extraH,
+					Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction),
+					graphics2D);
+
+				this.Mode = mode;
+				this.LcdEpoch = lcdEpoch;
+				this.TextStyleEpoch = textStyleEpoch;
+				child.isCurrentlyInvalid = false;
+			}
+
+			offsetToRenderSurface.X = (int)offsetToRenderSurface.X + xOffset;
+			offsetToRenderSurface.Y = (int)offsetToRenderSurface.Y + yOffset;
+			// The transform to draw the back-buffer to the graphics2D must not have a factional amount
+			// or we will get aliasing in the image and we want our back buffer pixels to map 1:1 to the next buffer
+			if (offsetToRenderSurface.X - (int)offsetToRenderSurface.X != 0
+				|| offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y != 0)
+			{
+				GuiWidget.BreakInDebugger("The transform for a back buffer must be integer to avoid aliasing.");
+			}
+
+			graphics2D.SetTransform(Affine.NewTranslation(offsetToRenderSurface));
+
+			this.CompositeOnto(
+				graphics2D,
+				offsetToRenderSurface,
+				currentGraphics2DTransform.sx,
+				currentGraphics2DTransform.sy,
+				child.BackbufferOpacity);
+		}
+
+		/// <summary>
+		/// True when the retained layer can be composited onto <paramref name="destination"/> as it stands: it
+		/// exists, was painted for that surface's device and resolution
+		/// (<see cref="IRetainedLayer.NeedsRepaintFor"/>), and at the size this paint needs. Anything else is a
+		/// repaint - a new layer is empty, a resized widget must not stretch its old picture, and one painted at
+		/// another coordinate scale would be blurry or oversized.
+		/// </summary>
+		private bool LayerFits(Graphics2D destination, int extraWidth, int extraHeight)
+		{
+			this.GetSize(extraWidth, extraHeight, out int intWidth, out int intHeight);
+			return this.layer != null
+				&& !this.layer.NeedsRepaintFor(destination)
+				&& this.layer.Width == intWidth
+				&& this.layer.Height == intHeight;
+		}
+
+		/// <summary>
+		/// Disposes the retained layer, if there is one. Its texture is device memory the garbage collector
+		/// knows nothing about, so every path that stops using it comes through here.
+		/// </summary>
+		/// <remarks>
+		/// Called when the widget closes, when <see cref="GuiWidget.DoubleBuffer"/> is turned off and when a
+		/// paint picks another mode. A widget removed from its parent without being closed keeps its texture,
+		/// and since the GPU texture has no finalizer, collecting the widget does not free it either - close
+		/// widgets you are done with.
+		/// </remarks>
+		internal void ReleaseLayer()
+		{
+			this.layer?.Dispose();
+			this.layer = null;
+		}
+
+		/// <summary>
 		/// Paints the owning widget into this backbuffer in <paramref name="mode"/>, allocating whichever of
 		/// the two representations that takes and releasing the other.
 		/// </summary>
@@ -200,8 +373,30 @@ namespace MatterHackers.Agg.UI
 		/// so a widget never holds two buffers' worth of pixels and can never composite a representation it
 		/// stopped painting into.
 		/// </remarks>
-		internal void Rasterize(BackbufferMode mode, int extraWidth, int extraHeight, Affine transformToBuffer)
+		internal void Rasterize(BackbufferMode mode, int extraWidth, int extraHeight, Affine transformToBuffer, Graphics2D destination)
 		{
+			// Kept with the pixels, so a composite between repaints cuts them exactly where this paint put them.
+			this.roundedClipInBuffer = this.widget.LocalBounds;
+			this.roundedClipInBuffer.Offset(transformToBuffer.tx, transformToBuffer.ty);
+
+			// Grown by half a pixel (radius too, so the arc keeps its centre): the widget's own rounded
+			// background and border are already anti-aliased on that arc, and a clip centred on it would fade
+			// their edge pixels a second time - the corners came out visibly lighter than the straight sides.
+			// Straight edges are unaffected; the buffer ends at the widget's bounds anyway.
+			this.roundedClipRadius = this.CornerRadius > 0 ? this.CornerRadius + 0.5 : 0;
+			if (this.roundedClipRadius > 0)
+			{
+				this.roundedClipInBuffer.Inflate(0.5);
+			}
+
+			if (mode == BackbufferMode.GpuTexture)
+			{
+				this.RasterizeLayer(extraWidth, extraHeight, transformToBuffer, destination);
+				return;
+			}
+
+			this.ReleaseLayer();
+
 			if (mode == BackbufferMode.LcdCoverage)
 			{
 				this.AllocateLcdBuffer(extraWidth, extraHeight);
@@ -249,7 +444,41 @@ namespace MatterHackers.Agg.UI
 			this.widget.OnDrawBackground(backBufferGraphics2D);
 			this.widget.OnDraw(backBufferGraphics2D);
 
+			if (this.roundedClipRadius > 0)
+			{
+				RoundedClipCoverage.Apply(this.backBuffer, this.roundedClipInBuffer, this.roundedClipRadius);
+			}
+
 			this.backBuffer.MarkImageChanged();
+		}
+
+		/// <summary>
+		/// The <see cref="BackbufferMode.GpuTexture"/> arm of <see cref="Rasterize"/>: paints the widget into a
+		/// retained layer made by <paramref name="destination"/> (a new one if the old one belongs to another
+		/// device), dropping the CPU buffers, which hold nothing current once the pixels live in the layer.
+		/// </summary>
+		private void RasterizeLayer(int extraWidth, int extraHeight, Affine transformToBuffer, Graphics2D destination)
+		{
+			this.backBuffer = null;
+			this.lcdBackBuffer = null;
+			this.DropFadedBuffer();
+
+			if (this.layer == null || !this.layer.BelongsTo(destination))
+			{
+				this.ReleaseLayer();
+				this.layer = destination.CreateRetainedLayer();
+			}
+
+			this.GetSize(extraWidth, extraHeight, out int intWidth, out int intHeight);
+			using var paint = this.layer.Begin(intWidth, intHeight);
+			var layerGraphics = paint.Graphics;
+
+			// Same validity gate as the RGBA arm: these pixels are blended onto the parent later, so no
+			// subpixel geometry. The layer starts every paint cleared to transparent.
+			layerGraphics.IsTransparentCompositingLayer = true;
+			layerGraphics.SetTransform(transformToBuffer);
+			this.widget.OnDrawBackground(layerGraphics);
+			this.widget.OnDraw(layerGraphics);
 		}
 
 		/// <summary>
@@ -269,7 +498,19 @@ namespace MatterHackers.Agg.UI
 			// Keyed on what is in the buffer rather than on what this paint resolved: the two agree, because a
 			// mode flip forces the re-raster above, and keying on the pixels cannot composite a buffer that was
 			// never painted.
-			if (this.Mode == BackbufferMode.LcdCoverage)
+			if (this.Mode == BackbufferMode.GpuTexture)
+			{
+				// Scaled like the RGBA blit is, about the whole-pixel placement the caller already set.
+				graphics2D.SetTransform(Affine.NewScaling(scaleX, scaleY) * graphics2D.GetTransform());
+				// A layer that cannot clip itself still composites, unclipped, rather than vanishing.
+				if (this.roundedClipRadius <= 0
+					|| this.layer is not IRoundedLayerCompositor rounded
+					|| !rounded.CompositeRounded(graphics2D, 0, 0, opacity, this.roundedClipInBuffer, this.roundedClipRadius))
+				{
+					graphics2D.RenderRetainedLayer(this.layer, 0, 0, opacity);
+				}
+			}
+			else if (this.Mode == BackbufferMode.LcdCoverage)
 			{
 				// The opacity is not applied here and does not need to be: a widget that is not fully opaque
 				// never resolves this mode (see GuiWidget.ResolveBackbufferMode).
@@ -447,6 +688,13 @@ namespace MatterHackers.Agg.UI
 
 		internal void AllocateRgbaBuffer()
 		{
+			// A widget whose pixels live in a retained layer has no use for a CPU buffer; the layer is resized
+			// by the repaint the bounds change already asked for.
+			if (this.Mode == BackbufferMode.GpuTexture)
+			{
+				return;
+			}
+
 			this.AllocateRgbaBuffer(0, 0);
 		}
 

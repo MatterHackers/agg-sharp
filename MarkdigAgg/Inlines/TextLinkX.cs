@@ -57,13 +57,17 @@ namespace Markdig.Renderers.Agg.Inlines
 		{
 			if (linkInline.Url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
 			{
-#if DEBUG
-                if (MarkdownWidget.LaunchBrowser == null)
+				// An app's own LaunchBrowser wins; otherwise the platform's UrlLauncher opens it
+				if (MarkdownWidget.LaunchBrowser != null)
 				{
-                    throw new Exception("You must set the LaunchBrowser action to open a browser.");
-                }
+					MarkdownWidget.LaunchBrowser(linkInline.Url);
+				}
+				else if (!UrlLauncher.Open(linkInline.Url))
+				{
+#if DEBUG
+					throw new Exception("Set MarkdownWidget.LaunchBrowser or UrlLauncher.Provider to open a browser.");
 #endif
-                MarkdownWidget.LaunchBrowser?.Invoke(linkInline.Url);
+				}
 			}
 			else
 			{

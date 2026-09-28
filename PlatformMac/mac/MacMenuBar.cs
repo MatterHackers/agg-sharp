@@ -501,6 +501,13 @@ namespace MatterHackers.Agg.Platform.Mac
 						shortcutsFireFromHere ? KeyEquivalentFor(child.Role) : string.Empty);
 					Send_v_r(menuItem, Sel("setTarget:"), controller);
 					ItemModels[menuItem] = child;
+
+					// NSControlStateValueOn is 1. AppKit draws its check for radio items too, which is the
+					// native convention, so IsRadio needs nothing here.
+					if (child.IsChecked != null)
+					{
+						Send_v_Q(menuItem, Sel("setState:"), child.IsChecked() ? 1UL : 0UL);
+					}
 				}
 
 				Send_v_B(menuItem, Sel("setEnabled:"), IsEnabled(child) ? YES : NO);

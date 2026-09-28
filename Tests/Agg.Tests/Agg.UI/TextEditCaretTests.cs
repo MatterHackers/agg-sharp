@@ -79,7 +79,12 @@ namespace MatterHackers.Agg.UI.Tests
 		/// into the new cycle read the elapsed time as "too early to be my own callback" and stopped the clock
 		/// the caret is drawn from, freezing the caret on for as long as the field held the keyboard.
 		/// </param>
+		// Keyed on UiThread: the blink is a chain of idle callbacks this test drains itself, from its own thread.
+		// Unkeyed it ran beside the tests that reset UiThread or assert nothing drains it - it ran
+		// SwitchToUiThreadTests' parked continuation out from under it, and their ResetForTests can clear its
+		// blink chain mid-cycle.
 		[Test]
+		[NotInParallel(MatterHackers.Agg.Tests.SharedStateKeys.UiThreadAndKeyboard)]
 		[Arguments(MidCycleEvent.Nothing)]
 		[Arguments(MidCycleEvent.ReFocus)]
 		[Arguments(MidCycleEvent.KeyDown)]

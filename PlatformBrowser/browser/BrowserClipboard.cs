@@ -53,8 +53,14 @@ namespace MatterHackers.Agg.UI
 	/// in the same breath. Without the local record an in-app copy followed by an in-app paste would find
 	/// nothing - the write may not have settled, and nothing would re-read until the page next took focus,
 	/// which copying and pasting inside the app never causes.</para>
-	/// <para><b>What this does not carry.</b> HTML, images and file-drop lists all report "not present" and
-	/// return nothing, matching <c>MacClipboard</c> and <c>LinuxClipboard</c> on images and file drops. HTML
+	/// <para><b>Images are write-through and read locally.</b> <see cref="SetImage"/> hands the browser a PNG
+	/// <c>ClipboardItem</c> and keeps its own copy, which is what <see cref="GetImage"/> answers with - so an
+	/// in-app copy and paste of an image works, and other applications can paste it. An image copied
+	/// <em>elsewhere</em> is not read: that needs <c>navigator.clipboard.read()</c> on every focus, which
+	/// some browsers answer with a paste-permission prompt, and a prompt each time the user returns to the
+	/// tab is a worse outcome than not offering another application's image.</para>
+	/// <para><b>What this does not carry.</b> HTML and file-drop lists report "not present" and return
+	/// nothing, matching <c>MacClipboard</c> and <c>LinuxClipboard</c> on file drops. HTML
 	/// is the one this loses that Linux and Windows have: the async clipboard API can carry
 	/// <c>text/html</c> through <c>ClipboardItem</c>, but reading it has the same synchronous-contract
 	/// problem as text and writing it is refused outright by some browsers for a non-user-gesture write. It
@@ -65,6 +71,9 @@ namespace MatterHackers.Agg.UI
 		private readonly BrowserClipboardCache cache = new BrowserClipboardCache();
 
 		private readonly IBrowserClipboardInterop interop;
+
+		/// <summary>This page's own last copied image; see the class remarks.</summary>
+		private ImageBuffer image;
 
 		/// <summary>
 		/// The clipboard a head installs. Reaches <c>navigator.clipboard</c> in a browser and nowhere at
@@ -83,7 +92,14 @@ namespace MatterHackers.Agg.UI
 
 			// Started here rather than lazily on the first read, because the first read is exactly the
 			// moment it is too late: readText() is a promise, and a paste cannot wait for one.
-			this.interop?.StartWatchingSystemText(text => this.cache.ApplySystemRead(text));
+			this.interop?.StartWatchingSystemText(text =>
+			{
+				// New text from elsewhere replaced whatever this page last copied - image included.
+				if (this.cache.ApplySystemRead(text))
+				{
+					this.image = null;
+				}
+			});
 		}
 
 		/// <summary>
@@ -112,8 +128,8 @@ namespace MatterHackers.Agg.UI
 		/// <summary>Always false; see the class remarks.</summary>
 		public bool ContainsHtml => false;
 
-		/// <summary>Always false; see the class remarks.</summary>
-		public bool ContainsImage => false;
+		/// <summary>Whether this page itself copied an image last; see the class remarks.</summary>
+		public bool ContainsImage => this.image != null;
 
 		/// <summary>Always false. A page receives dropped files as a DOM drop event, not as a clipboard flavor.</summary>
 		public bool ContainsFileDropList => false;
@@ -124,8 +140,11 @@ namespace MatterHackers.Agg.UI
 		/// <summary>Always empty; see the class remarks.</summary>
 		public string GetHtml() => string.Empty;
 
-		/// <summary>Always null; see the class remarks.</summary>
-		public ImageBuffer GetImage() => null;
+		/// <summary>
+		/// A copy of the image this page last copied, or null. A copy so a paste target that draws on it
+		/// cannot change what the next paste gets.
+		/// </summary>
+		public ImageBuffer GetImage() => this.image == null ? null : new ImageBuffer(this.image);
 
 		/// <summary>Always empty; see the class remarks.</summary>
 		public StringCollection GetFileDropList() => new StringCollection();
@@ -136,6 +155,7 @@ namespace MatterHackers.Agg.UI
 			// The cache first: it is the half that cannot fail, and the half an immediate in-app paste
 			// reads. The browser's own copy is a request that may be refused long after this returns.
 			this.cache.SetLocalCopy(text);
+			this.image = null;
 
 			this.interop?.WriteText(text ?? string.Empty);
 		}
@@ -146,9 +166,21 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		public void SetTextAndHtml(string text, string html) => this.SetText(text);
 
-		/// <summary>Does nothing; see the class remarks.</summary>
+		/// <summary>
+		/// Copies an image: kept locally for in-app pastes and handed to the browser as PNG. Clears the text,
+		/// as copying an image does on every desktop clipboard.
+		/// </summary>
 		public void SetImage(ImageBuffer imageBuffer)
 		{
+			byte[] png = ClipboardImageCodec.EncodePng(imageBuffer);
+
+			this.cache.SetLocalCopy(string.Empty);
+			this.image = png == null ? null : new ImageBuffer(imageBuffer);
+
+			if (png != null)
+			{
+				this.interop?.WriteImagePng(png);
+			}
 		}
 	}
 }

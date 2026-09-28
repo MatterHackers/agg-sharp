@@ -61,6 +61,7 @@ namespace MatterHackers.Agg.Platform.Mac
 		public const long NSEventTypeKeyDown = 10;
 		public const long NSEventTypeKeyUp = 11;
 		public const long NSEventTypeFlagsChanged = 12;
+		public const long NSEventTypeRotate = 18;
 		public const long NSEventTypeScrollWheel = 22;
 		public const long NSEventTypeOtherMouseDown = 25;
 		public const long NSEventTypeOtherMouseUp = 26;

@@ -613,32 +613,11 @@ namespace MatterHackers.Agg.UI
 		/// <remarks>
 		/// X11 needs nothing like AppKit's cursor rects: <c>XDefineCursor</c> is a property of the window
 		/// itself, so the server shows this cursor for as long as the pointer is over it and nothing else
-		/// can put it back. The eight pan directions and the "no move" cursors have no cursorfont
-		/// equivalent, so they fall back to the arrow rather than being faked with something misleading.
+		/// can put it back. Which shape each agg cursor gets is <see cref="X11CursorMap"/>.
 		/// </remarks>
 		public void SetCursor(Cursors cursorToSet)
 		{
-			uint shape = cursorToSet switch
-			{
-				Cursors.IBeam => X11.XC_xterm,
-				Cursors.Hand => X11.XC_hand2,
-				Cursors.Cross => X11.XC_crosshair,
-				Cursors.Help => X11.XC_question_arrow,
-				Cursors.WaitCursor => X11.XC_watch,
-				Cursors.SizeAll => X11.XC_fleur,
-
-				// A split bar is dragged along one axis, which is the same gesture - and in every toolkit
-				// the same cursor - as a window edge on that axis.
-				Cursors.SizeWE or Cursors.VSplit => X11.XC_sb_h_double_arrow,
-				Cursors.SizeNS or Cursors.HSplit => X11.XC_sb_v_double_arrow,
-
-				// cursorfont has no free-floating diagonal arrows, only the four named window corners. The
-				// bottom pair point the right way for the one place agg asks: a window-widget corner grip.
-				Cursors.SizeNWSE => X11.XC_bottom_right_corner,
-				Cursors.SizeNESW => X11.XC_bottom_left_corner,
-
-				_ => X11.XC_arrow,
-			};
+			uint shape = X11CursorMap.ToFontShape(cursorToSet);
 
 			if (this.window == X11.None || display == IntPtr.Zero)
 			{
@@ -3325,6 +3304,10 @@ namespace MatterHackers.Agg.UI
 							this.aggSystemWindow.OnDraw(graphics2D);
 						}
 					}
+
+					// Draws a widget batched and never issued (Graphics2DSpanImage's pixel runs) belong
+					// to this frame, under the CPU layer, rather than being lost.
+					graphics2D.FlushDeferredDraws();
 
 					// A widget that rasterized into Graphics2D.DestImage drew into a CPU buffer, not into
 					// the frame. On a GPU surface that buffer is a layer this uploads and draws over the

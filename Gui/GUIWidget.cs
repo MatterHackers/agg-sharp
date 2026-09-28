@@ -123,37 +123,6 @@ namespace MatterHackers.Agg.UI
 		MinFitOrStretch = 16,
 	}
 
-	public enum Cursors
-	{
-		Arrow,
-		Cross,
-		Default,
-		Hand,
-		Help,
-		HSplit,
-		IBeam,
-		No,
-		NoMove2D,
-		NoMoveHoriz,
-		NoMoveVert,
-		PanEast,
-		PanNE,
-		PanNorth,
-		PanNW,
-		PanSE,
-		PanSouth,
-		PanSW,
-		PanWest,
-		SizeAll,
-		SizeNESW,
-		SizeNS,
-		SizeNWSE,
-		SizeWE,
-		UpArrow,
-		VSplit,
-		WaitCursor
-	}
-
 	public enum UnderMouseState
 	{
 		NotUnderMouse,
@@ -176,7 +145,7 @@ namespace MatterHackers.Agg.UI
 		private readonly ScreenClipping screenClipping;
 
 		// this should probably some type of dirty rects with the current invalid set stored.
-		private bool isCurrentlyInvalid = true;
+		internal bool isCurrentlyInvalid = true;
 
 		public static bool DebugBoundsUnderMouse = false;
 
@@ -270,6 +239,7 @@ namespace MatterHackers.Agg.UI
 						// Dropping the whole cache also drops the recorded mode with the pixels it describes:
 						// keeping LcdCoverage would let a later paint that resolves the same mode skip the
 						// re-raster and composite a buffer that is no longer there.
+						backbuffer.ReleaseLayer();
 						backbuffer = null;
 					}
 
@@ -315,16 +285,7 @@ namespace MatterHackers.Agg.UI
 		/// the composite will happen under already set.</param>
 		public BackbufferMode ResolveBackbufferMode(Graphics2D destination)
 		{
-			// A faded widget has to be RGBA: LcdCoverage keeps its pixels as three per-channel coverages that
-			// composite straight into the destination's own planes, and there is no single alpha in that
-			// representation for a whole-widget opacity to scale. Subpixel coverage and alpha compositing are
-			// alternatives, not layers.
-			if (this.BackbufferOpacity < 1)
-			{
-				return BackbufferMode.Rgba;
-			}
-
-			return WidgetBackbuffer.ResolveMode(destination);
+			return WidgetBackbuffer.ResolveMode(destination, faded: this.BackbufferOpacity < 1 || WidgetBackbuffer.ClipRadius(this) > 0);
 		}
 
 		public LayoutEngine LayoutEngine { get; protected set; }
@@ -2588,65 +2549,7 @@ namespace MatterHackers.Agg.UI
 							&& accumulatedTransform.sx < 1.05
 							&& accumulatedTransform.sx > .95)
 						{
-							var offsetToRenderSurface = new Vector2(currentGraphics2DTransform.tx, currentGraphics2DTransform.ty);
-							offsetToRenderSurface += new Vector2(child.OriginRelativeParent.X * currentGraphics2DTransform.sx, child.OriginRelativeParent.Y * currentGraphics2DTransform.sy);
-
-							double yFraction = offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y;
-							double xFraction = offsetToRenderSurface.X - (int)offsetToRenderSurface.X;
-							int xOffset = (int)Floor(child.LocalBounds.Left);
-							int yOffset = (int)Floor(child.LocalBounds.Bottom);
-
-							// Re-decided every paint, so the LCD setting takes effect on the next frame. Both a
-							// mode flip and a change to the filter's style parameters force a re-raster: the
-							// pixels already in the buffer are in the wrong representation in the first case and
-							// rastered under superseded settings in the second.
-							BackbufferMode mode = child.ResolveBackbufferMode(graphics2D);
-
-							// Read once, before the raster, and used for both the compare and the store: read
-							// again afterwards it would stamp pixels rastered under the old settings with an
-							// epoch that says they are current, and a settings change that landed mid-raster
-							// would never be re-rastered.
-							long lcdEpoch = LcdRenderSettings.Epoch;
-							if (mode != child.backbuffer.Mode
-								|| (mode == BackbufferMode.LcdCoverage && child.backbuffer.LcdEpoch != lcdEpoch))
-							{
-								child.isCurrentlyInvalid = true;
-							}
-
-							if (child.isCurrentlyInvalid)
-							{
-								int extraW = xFraction > 0 ? 1 : 0;
-								int extraH = yFraction > 0 ? 1 : 0;
-
-								child.backbuffer.Rasterize(
-									mode,
-									extraW,
-									extraH,
-									Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction));
-
-								child.backbuffer.Mode = mode;
-								child.backbuffer.LcdEpoch = lcdEpoch;
-								child.isCurrentlyInvalid = false;
-							}
-
-							offsetToRenderSurface.X = (int)offsetToRenderSurface.X + xOffset;
-							offsetToRenderSurface.Y = (int)offsetToRenderSurface.Y + yOffset;
-							// The transform to draw the back-buffer to the graphics2D must not have a factional amount
-							// or we will get aliasing in the image and we want our back buffer pixels to map 1:1 to the next buffer
-							if (offsetToRenderSurface.X - (int)offsetToRenderSurface.X != 0
-								|| offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y != 0)
-							{
-								BreakInDebugger("The transform for a back buffer must be integer to avoid aliasing.");
-							}
-
-							graphics2D.SetTransform(Affine.NewTranslation(offsetToRenderSurface));
-
-							child.backbuffer.CompositeOnto(
-								graphics2D,
-								offsetToRenderSurface,
-								currentGraphics2DTransform.sx,
-								currentGraphics2DTransform.sy,
-								child.BackbufferOpacity);
+							child.backbuffer.PaintAndComposite(graphics2D, currentGraphics2DTransform);
 						}
 						else
 						{
@@ -2792,6 +2695,14 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Lets a widget paint its own border ring - the Border band just outside its LocalBounds, which its
+		/// parent paints because the widget's own drawing is clipped to its bounds. Return true when drawn;
+		/// the default draws nothing and leaves the parent's square ring. (A rounded field, for example,
+		/// strokes a rounded outline here, in exactly the pixels the square ring would have used.)
+		/// </summary>
+		protected internal virtual bool DrawBorderRing(Graphics2D graphics2D, RectangleDouble boundsInParent, BorderDouble deviceBorder, Color borderColor) => false;
+
 		protected void DrawBorder(Graphics2D graphics2D, GuiWidget child)
 		{
 			var childDeviceBorder = child.deviceBorder;
@@ -2807,6 +2718,11 @@ namespace MatterHackers.Agg.UI
 			}
 
 			var childBounds = child.TransformToParentSpace(this, child.localBounds);
+			if (child.DrawBorderRing(graphics2D, childBounds, childDeviceBorder, childBorderColor))
+			{
+				return;
+			}
+
 			// bounds = this.localBounds;
 			// graphics2D.FillRectangle(bounds, new Color(Color.Cyan, 100));
 			// var expand = bounds;
@@ -3125,6 +3041,7 @@ namespace MatterHackers.Agg.UI
 
 			// close all the children
 			this.CloseChildren();
+			backbuffer?.ReleaseLayer();
 
 			// let listeners know we are done closing
 			OnClosed(null);

@@ -106,6 +106,30 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
+		public async Task ShortcutTextIsShownBesideTheItem()
+		{
+			var theme = new ThemeConfig();
+			var popupMenu = new PopupMenu(theme);
+
+			MenuModelPopupBuilder.AddItems(
+				popupMenu,
+				new List<MenuItemModel>
+				{
+					new MenuItemModel() { Text = "Undo", ShortcutText = "Ctrl+Z" },
+					new MenuItemModel() { Text = "Plain" },
+				},
+				theme);
+
+			var items = popupMenu.Children.OfType<PopupMenu.MenuItem>().ToList();
+
+			await Assert.That(items[0].Descendants<TextWidget>().Select(t => t.Text).ToList()).Contains("Ctrl+Z");
+			await Assert.That(items[0].Name).IsEqualTo("Undo Menu Item");
+
+			// No shortcut adds no second label
+			await Assert.That(items[1].Descendants<TextWidget>().Count()).IsEqualTo(1);
+		}
+
+		[Test]
 		public async Task ToolTipTextReachesTheWidget()
 		{
 			var theme = new ThemeConfig();
@@ -281,6 +305,135 @@ namespace MatterHackers.Agg.UI.Tests
 			items[1].InvokeClick();
 
 			await Assert.That(clickCount).IsEqualTo(1);
+		}
+
+		[Test]
+		public async Task CheckedItemsBuildCheckAndRadioWidgets()
+		{
+			var theme = new ThemeConfig();
+			var popupMenu = new PopupMenu(theme);
+
+			bool snap = true;
+			string choice = "B";
+			int snapClicks = 0;
+
+			MenuModelPopupBuilder.AddItems(
+				popupMenu,
+				new List<MenuItemModel>
+				{
+					new MenuItemModel() { Text = "Plain" },
+					new MenuItemModel() { Text = "Snap", IsChecked = () => snap, Action = () => { snap = !snap; snapClicks++; } },
+					new MenuItemModel() { Text = "A", IsRadio = true, IsChecked = () => choice == "A", Action = () => choice = "A" },
+					new MenuItemModel() { Text = "B", IsRadio = true, IsChecked = () => choice == "B", Action = () => choice = "B" },
+					new MenuItemModel() { IsSeparator = true },
+					new MenuItemModel() { Text = "C", IsRadio = true, AutomationName = "pick.c", IsChecked = () => false, Action = () => choice = "C" },
+				},
+				theme);
+
+			// Unset IsChecked keeps the plain widget every existing menu gets
+			var plain = popupMenu.Children.OfType<PopupMenu.MenuItem>().First();
+			await Assert.That(plain is PopupMenu.CheckboxMenuItem || plain is PopupMenu.RadioMenuItem).IsFalse();
+
+			var check = popupMenu.Children.OfType<PopupMenu.CheckboxMenuItem>().Single();
+			await Assert.That(check.Name).IsEqualTo("Snap Menu Item");
+			await Assert.That(check.Checked).IsTrue();
+
+			var radios = popupMenu.Children.OfType<PopupMenu.RadioMenuItem>().ToList();
+			await Assert.That(string.Join("|", radios.Select(r => r.Name))).IsEqualTo("A Menu Item|B Menu Item|pick.c");
+			await Assert.That(string.Join("|", radios.Select(r => r.Checked))).IsEqualTo("False|True|False");
+
+			// A and B share a group; the separator starts a new one for C
+			await Assert.That(radios[0].SiblingRadioButtonList).IsSameReferenceAs(radios[1].SiblingRadioButtonList);
+			await Assert.That(radios[2].SiblingRadioButtonList).IsNotSameReferenceAs(radios[0].SiblingRadioButtonList);
+
+			// Picking runs the model's action, which owns the state
+			check.InvokeClick();
+			await Assert.That(snap).IsFalse();
+			await Assert.That(snapClicks).IsEqualTo(1);
+
+			radios[0].InvokeClick();
+			await Assert.That(choice).IsEqualTo("A");
+		}
+
+		[Test]
+		public async Task IconGlyphIsDrawnIntoTheIconSlot()
+		{
+			var theme = new ThemeConfig();
+			var popupMenu = new PopupMenu(theme);
+			var image = new MatterHackers.Agg.Image.ImageBuffer(3, 3);
+
+			MenuModelPopupBuilder.AddItems(
+				popupMenu,
+				new List<MenuItemModel>
+				{
+					new MenuItemModel() { Text = "Glyph", IconGlyph = "A" },
+					new MenuItemModel() { Text = "Both", IconGlyph = "A", Icon = image },
+					new MenuItemModel() { Text = "Missing", IconGlyph = " " },
+				},
+				theme);
+
+			var rows = popupMenu.Children.OfType<PopupMenu.MenuItem>().ToList();
+			var glyphIcon = rows[0].Image;
+			int size = (int)System.Math.Round(16 * GuiWidget.DeviceScale);
+
+			// The glyph becomes a square image at the check/radio icon size, with ink in it
+			await Assert.That(glyphIcon).IsNotNull();
+			await Assert.That(glyphIcon.Width).IsEqualTo(size);
+			await Assert.That(glyphIcon.Height).IsEqualTo(size);
+			int inked = 0;
+			for (int y = 0; y < size; y++)
+			{
+				for (int x = 0; x < size; x++)
+				{
+					inked += glyphIcon.GetPixel(x, y).alpha > 0 ? 1 : 0;
+				}
+			}
+
+			await Assert.That(inked).IsGreaterThan(0);
+
+			// An explicit Icon wins, and a character with no outline leaves the slot empty
+			await Assert.That(rows[1].Image).IsSameReferenceAs(image);
+			await Assert.That(rows[2].Image).IsNull();
+		}
+
+		[Test]
+		public async Task CheckRowClosesTheMenuOnlyWhenAskedTo()
+		{
+			var window = new SystemWindow(600, 400);
+			var anchor = new GuiWidget(50, 20) { Position = new VectorMath.Vector2(10, 370) };
+			window.AddChild(anchor);
+
+			var popupMenu = new PopupMenu(new ThemeConfig());
+			int picks = 0;
+			MenuModelPopupBuilder.AddItems(
+				popupMenu,
+				new List<MenuItemModel>
+				{
+					new MenuItemModel() { Text = "Stays", IsChecked = () => false, Action = () => picks++ },
+					new MenuItemModel() { Text = "Closes", IsChecked = () => false, Action = () => picks++, CloseMenuOnPick = true },
+				});
+			popupMenu.ShowMenu(anchor, VectorMath.Vector2.Zero);
+
+			var rows = popupMenu.Children.OfType<PopupMenu.CheckboxMenuItem>().ToList();
+
+			// The default is agg-sharp's usual check row: the menu stays up for the next pick
+			rows[0].InvokeClick();
+			PumpIdle();
+			await Assert.That(popupMenu.HasBeenClosed).IsFalse();
+
+			rows[1].InvokeClick();
+			PumpIdle();
+			await Assert.That(popupMenu.HasBeenClosed).IsTrue();
+			await Assert.That(picks).IsEqualTo(2);
+		}
+
+		/// <summary>Menus close from RunOnIdle, and those handlers queue more work, so one pass is not enough.</summary>
+		private static void PumpIdle()
+		{
+			for (int i = 0; i < 4; i++)
+			{
+				UiThread.InvokePendingActions();
+			}
 		}
 
 		/// <summary>

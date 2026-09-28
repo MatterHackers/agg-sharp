@@ -27,7 +27,9 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Collections.Generic;
+using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.UI
 {
@@ -62,12 +64,25 @@ namespace MatterHackers.Agg.UI
 
 			theme ??= popupMenu.Theme;
 
+			// The run of radio items being built; anything else ends it, so a separator splits two groups
+			List<GuiWidget> radioGroup = null;
+
 			foreach (var item in items)
 			{
 				if (item == null
 					|| item.IsVisible?.Invoke() == false)
 				{
 					continue;
+				}
+
+				bool isRadioItem = item.IsChecked != null
+					&& item.IsRadio
+					&& !item.IsSeparator
+					&& item.SubMenuItems == null
+					&& item.PopupSubMenuOverride == null;
+				if (!isRadioItem)
+				{
+					radioGroup = null;
 				}
 
 				if (item.IsSeparator)
@@ -83,11 +98,47 @@ namespace MatterHackers.Agg.UI
 					continue;
 				}
 
-				var menuItem = popupMenu.CreateMenuItem(item.Text, item.Icon);
+				if (item.IsChecked != null)
+				{
+					if (isRadioItem)
+					{
+						radioGroup ??= new List<GuiWidget>();
+					}
+
+					AddCheckItem(popupMenu, item, radioGroup, IconFor(item, theme));
+					continue;
+				}
+
+				var menuItem = popupMenu.CreateMenuItem(item.Text, IconFor(item, theme), item.ShortcutText);
 
 				ApplyItemProperties(menuItem, item);
 
 				menuItem.Click += (s, e) => item.Action?.Invoke();
+			}
+		}
+
+		/// <summary>
+		/// Builds a checkable leaf through <see cref="PopupMenu.CreateBoolMenuItem(string, Func{bool}, Action{bool}, bool, IList{GuiWidget})"/>,
+		/// the same widgets the hand written check and radio menus use. The flag the setter is handed is
+		/// ignored: the model's <see cref="MenuItemModel.Action"/> owns the state change, and the next build
+		/// reads the result back through <see cref="MenuItemModel.IsChecked"/>.
+		/// </summary>
+		private static void AddCheckItem(PopupMenu popupMenu, MenuItemModel item, List<GuiWidget> radioGroup, ImageBuffer icon)
+		{
+			bool useRadioStyle = radioGroup != null;
+			Action<bool> setter = _ => item.Action?.Invoke();
+
+			var menuItem = icon == null
+				? popupMenu.CreateBoolMenuItem(item.Text, item.IsChecked, setter, useRadioStyle, radioGroup)
+				: popupMenu.CreateBoolMenuItem(item.Text, icon, item.IsChecked, setter, useRadioStyle, radioGroup);
+
+			ApplyItemProperties(menuItem, item);
+
+			if (item.CloseMenuOnPick)
+			{
+				// What a command row does (PopupMenu.CreateMenuItem): losing focus closes the menu chain. Added
+				// after CreateBoolMenuItem's own Click, so the mark and the action land first.
+				menuItem.Click += (s, e) => popupMenu.Unfocus();
 			}
 		}
 
@@ -98,10 +149,20 @@ namespace MatterHackers.Agg.UI
 			var populate = item.PopupSubMenuOverride
 				?? (subMenu => AddItems(subMenu, item.SubMenuItems?.Invoke(), theme));
 
-			var subMenuItemButton = popupMenu.CreateSubMenu(item.Text, theme, populate, item.Icon);
+			var subMenuItemButton = popupMenu.CreateSubMenu(item.Text, theme, populate, IconFor(item, theme));
 
 			// A sub menu gets the same name and gate handling the leaves get
 			ApplyItemProperties(subMenuItemButton, item);
+		}
+
+		/// <summary>
+		/// The item's <see cref="MenuItemModel.Icon"/>, or else its <see cref="MenuItemModel.IconGlyph"/> drawn in
+		/// the theme's text colour at the size of the menu's own check and radio icons.
+		/// </summary>
+		private static ImageBuffer IconFor(MenuItemModel item, ThemeConfig theme)
+		{
+			return item.Icon
+				?? GlyphIcon.Render(item.IconGlyph, item.IconTypeFace, theme.TextColor, (int)Math.Round(16 * GuiWidget.DeviceScale));
 		}
 
 		private static void ApplyItemProperties(PopupMenu.MenuItem menuItem, MenuItemModel item)

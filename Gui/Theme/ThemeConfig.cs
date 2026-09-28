@@ -39,6 +39,33 @@ namespace MatterHackers.Agg.UI
 {
     public class ThemeConfig
     {
+        private static ThemeConfig current;
+
+        /// <summary>
+        /// The process-wide theme that library widgets built without an explicit theme (CheckBox, RadioButton
+        /// and the like) read when they draw, so changing a colour on it - or pointing it at another theme -
+        /// shows on the next frame without rebuilding them. Starts as <see cref="DefaultTheme"/>; setting null
+        /// goes back to a fresh default rather than throwing. Volatile so a theme set on one thread is fully
+        /// published before another thread draws with it.
+        /// </summary>
+        public static ThemeConfig Current
+        {
+            get
+            {
+                var theme = System.Threading.Volatile.Read(ref current);
+                if (theme == null)
+                {
+                    theme = DefaultTheme();
+                    System.Threading.Interlocked.CompareExchange(ref current, theme, null);
+                    theme = System.Threading.Volatile.Read(ref current);
+                }
+
+                return theme;
+            }
+
+            set => System.Threading.Volatile.Write(ref current, value);
+        }
+
         public ImageBuffer RestoreNormal { get; private set; }
         public ImageBuffer RestoreHover { get; private set; }
 

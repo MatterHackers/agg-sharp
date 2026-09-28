@@ -63,14 +63,13 @@ namespace MatterHackers.Agg.Platform.Browser
 	/// </remarks>
 	public partial class BrowserSystemWindow : IPlatformWindow
 	{
-		/// <summary>The three keys <c>Keyboard</c> tracks a modifier's down state under.</summary>
-		private static readonly Keys[] ModifierStateKeys = { Keys.ShiftKey, Keys.ControlKey, Keys.Menu };
-
 		private readonly IBrowserWindowInterop interop;
 		private readonly IBrowserFrameLoop frameLoop;
 		private readonly BrowserFrameTick frameTick;
 
-		private readonly BrowserModifierState modifierState = new BrowserModifierState();
+		internal readonly BrowserModifierState modifierState = new BrowserModifierState();
+
+		private readonly BrowserModifierTracker modifierTracker = new BrowserModifierTracker();
 
 		/// <summary>
 		/// Which buttons this canvas owns for the duration of a drag; see <see cref="OutOfViewMouseCapture"/>.
@@ -551,6 +550,8 @@ namespace MatterHackers.Agg.Platform.Browser
 			this.inputQueue.Clear();
 			this.mouseCapture.ClearCapturedButtons();
 
+			this.modifierTracker.ReleaseAll();
+
 			// After the loop has stopped, so nothing is mid-frame: the layer owns the device, the swapchain
 			// and every texture cached against them, and the canvas's WebGPU context stays claimed until it
 			// goes. A bring-up still in flight sees hasClosed and disposes its own device.
@@ -836,10 +837,10 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// <see cref="IPlatformWindow.EnablePlatformWindowInput"/> off so a real mouse or keyboard cannot
 		/// perturb them; every host makes the same check at its event seam.
 		/// </summary>
-		private bool ShouldAcceptInput()
+		internal bool ShouldAcceptInput()
 			=> IPlatformWindow.EnablePlatformWindowInput && !this.hasClosed && this.aggSystemWindow != null;
 
-		private void Enqueue(BrowserInputEvent inputEvent) => this.inputQueue.Add(inputEvent);
+		internal void Enqueue(BrowserInputEvent inputEvent) => this.inputQueue.Add(inputEvent);
 
 		/// <summary>
 		/// Delivers everything that arrived since the last tick, in arrival order.
@@ -883,7 +884,7 @@ namespace MatterHackers.Agg.Platform.Browser
 				return;
 			}
 
-			ApplyModifierDownState(inputEvent.ModifierDownKeys);
+			this.modifierTracker.Apply(inputEvent.ModifierDownKeys);
 
 			switch (inputEvent.Kind)
 			{
@@ -930,38 +931,8 @@ namespace MatterHackers.Agg.Platform.Browser
 					break;
 
 				case BrowserInputEventKind.FocusLost:
-					// Narrow on purpose, where a Keyboard.Clear() would not be: Keyboard is process-wide and
-					// other callers write to it directly (an automation test sets Shift down and then
-					// shift-clicks), so releasing only what this window applied cannot reach anything it did
-					// not put there. Same rule as MacSystemWindow.ReleaseAppliedModifierKeys.
-					foreach (Keys modifierKey in inputEvent.ModifierDownKeys)
-					{
-						Keyboard.SetKeyDownState(modifierKey, false);
-					}
-
+					this.modifierTracker.Release(inputEvent.ModifierDownKeys);
 					break;
-			}
-		}
-
-		/// <summary>
-		/// Puts the modifier down state an event reported into <see cref="Keyboard"/>.
-		/// </summary>
-		/// <remarks>
-		/// Every modifier is written on every call, including the ones being released: SetKeyDownState is
-		/// idempotent and only raises StateChanged on a real change, and the browser tells us what is held on
-		/// every input event rather than only on key events - which is how a modifier pressed while the pointer
-		/// is moving is noticed at all.
-		/// </remarks>
-		private static void ApplyModifierDownState(IReadOnlySet<Keys> modifierDownKeys)
-		{
-			if (modifierDownKeys == null)
-			{
-				return;
-			}
-
-			foreach (Keys modifierKey in ModifierStateKeys)
-			{
-				Keyboard.SetKeyDownState(modifierKey, modifierDownKeys.Contains(modifierKey));
 			}
 		}
 
@@ -1073,6 +1044,10 @@ namespace MatterHackers.Agg.Platform.Browser
 						this.aggSystemWindow.OnDraw(graphics2D);
 					}
 				}
+
+				// Draws a widget batched and never issued (Graphics2DSpanImage's pixel runs) belong
+				// to this frame, under the CPU layer, rather than being lost.
+				graphics2D.FlushDeferredDraws();
 
 				// A widget that rasterized into Graphics2D.DestImage drew into a CPU buffer, not into the
 				// frame. On a GPU surface that buffer is a layer this uploads and draws over the frame now,

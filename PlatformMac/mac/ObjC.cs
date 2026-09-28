@@ -238,6 +238,10 @@ namespace MatterHackers.Agg.Platform.Mac
 		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
 		public static extern IntPtr Send_r_q(IntPtr receiver, IntPtr selector, long arg0);
 
+		/// <summary>-(id)selector:(const void *) length:(NSUInteger) - notably +[NSData dataWithBytes:length:].</summary>
+		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
+		public static extern IntPtr Send_r_r_Q(IntPtr receiver, IntPtr selector, IntPtr arg0, ulong arg1);
+
 		/// <summary>-(id)selector:(const char *)</summary>
 		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
 		public static extern IntPtr Send_r_str(IntPtr receiver, IntPtr selector, [MarshalAs(UnmanagedType.LPUTF8Str)] string arg0);

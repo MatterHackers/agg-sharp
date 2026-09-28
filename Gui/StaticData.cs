@@ -43,13 +43,24 @@ namespace MatterHackers.Agg.Platform
 	{
 		private StaticData()
 		{
-			string appPathAndFile = Assembly.GetExecutingAssembly().Location;
-			string pathToAppFolder = Path.GetDirectoryName(appPathAndFile);
+		}
 
-			if (string.IsNullOrEmpty(RootPath))
-			{
-				RootPath = Path.Combine(pathToAppFolder, "StaticData");
-			}
+		/// <summary>
+		/// The StaticData folder beside the assembly at <paramref name="assemblyLocation"/>, or beside
+		/// <paramref name="baseDirectory"/> when the assembly has no location.
+		/// </summary>
+		/// <remarks>
+		/// An assembly loaded from memory has an empty Location - always on WASM, and in single-file apps.
+		/// Taking its directory gave null and Path.Combine threw, so the first use of StaticData.Instance in a
+		/// browser app that had not assigned its own provider took the app down.
+		/// </remarks>
+		internal static string DefaultRootPath(string assemblyLocation, string baseDirectory)
+		{
+			string pathToAppFolder = string.IsNullOrEmpty(assemblyLocation)
+				? baseDirectory ?? ""
+				: Path.GetDirectoryName(assemblyLocation);
+
+			return Path.Combine(pathToAppFolder, "StaticData");
 		}
 
 		// Guards singleton creation and RootPath so the constructor's default RootPath write
@@ -98,12 +109,22 @@ namespace MatterHackers.Agg.Platform
 			}
 		}
 
+		/// <summary>
+		/// Gets or sets the folder asset paths are resolved against. Never null: an unset (or cleared) root
+		/// reads as <see cref="DefaultRootPath"/>. It used to be defaulted only when the provider was built, so
+		/// clearing it afterwards - a test restoring a root it had saved as null - left every MapPath throwing.
+		/// </summary>
 		public static string RootPath
 		{
 			get
 			{
 				lock (instanceLocker)
 				{
+					if (string.IsNullOrEmpty(rootPath))
+					{
+						rootPath = DefaultRootPath(Assembly.GetExecutingAssembly().Location, AppContext.BaseDirectory);
+					}
+
 					return rootPath;
 				}
 			}

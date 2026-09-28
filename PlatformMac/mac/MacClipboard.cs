@@ -25,6 +25,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Specialized;
+using System.Runtime.InteropServices;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform.Mac;
 
@@ -35,10 +36,10 @@ namespace MatterHackers.Agg.UI
 	/// The peer of PlatformWin32's <c>WindowsFormsClipboard</c>; an app installs it with
 	/// <c>Clipboard.SetSystemClipboard(new MacClipboard())</c>.
 	/// <para>
-	/// Text and HTML round trip. Images and file drop lists report "not present" rather than pretending:
-	/// nothing on macOS asks for them yet, and faking a capability is worse than declining it. When a
-	/// caller does need them, NSPasteboard's <c>NSPasteboardTypePNG</c> and <c>NSFilenamesPboardType</c>
-	/// are the hooks to fill in here.
+	/// Text, HTML and images round trip. Images go out as <c>public.png</c> and come back from PNG or,
+	/// failing that, <c>public.tiff</c> - which is what Preview and the screenshot tool put there alongside
+	/// or instead of PNG. File drop lists report "not present" rather than pretending: nothing on macOS
+	/// asks for them yet, and faking a capability is worse than declining it.
 	/// </para>
 	/// <para>
 	/// Every pasteboard call goes through <see cref="MainThreadDispatcher"/>: NSPasteboard is not thread
@@ -52,26 +53,37 @@ namespace MatterHackers.Agg.UI
 		// strings are stable API and need no lookup.
 		private const string TypeUtf8PlainText = "public.utf8-plain-text";
 		private const string TypeHtml = "public.html";
+		private const string TypePng = "public.png";
+		private const string TypeTiff = "public.tiff";
 
 		private static readonly IntPtr SelGeneralPasteboard = ObjC.Sel("generalPasteboard");
 		private static readonly IntPtr SelStringForType = ObjC.Sel("stringForType:");
 		private static readonly IntPtr SelSetStringForType = ObjC.Sel("setString:forType:");
 		private static readonly IntPtr SelClearContents = ObjC.Sel("clearContents");
+		private static readonly IntPtr SelDataForType = ObjC.Sel("dataForType:");
+		private static readonly IntPtr SelSetDataForType = ObjC.Sel("setData:forType:");
+		private static readonly IntPtr SelTypes = ObjC.Sel("types");
+		private static readonly IntPtr SelContainsObject = ObjC.Sel("containsObject:");
+		private static readonly IntPtr SelDataWithBytesLength = ObjC.Sel("dataWithBytes:length:");
+		private static readonly IntPtr SelBytes = ObjC.Sel("bytes");
+		private static readonly IntPtr SelLength = ObjC.Sel("length");
 
 		public bool ContainsText => this.GetString(TypeUtf8PlainText) != null;
 
 		public bool ContainsHtml => this.GetString(TypeHtml) != null;
 
-		// See the class remarks: declined rather than faked.
-		public bool ContainsImage => false;
+		public bool ContainsImage => MainThreadDispatcher.Invoke(() => HasType(TypePng) || HasType(TypeTiff));
 
+		// See the class remarks: declined rather than faked.
 		public bool ContainsFileDropList => false;
 
 		public string GetText() => this.GetString(TypeUtf8PlainText) ?? string.Empty;
 
 		public string GetHtml() => this.GetString(TypeHtml) ?? string.Empty;
 
-		public ImageBuffer GetImage() => null;
+		/// <summary>The pasteboard's image, or null when it holds none this can decode.</summary>
+		public ImageBuffer GetImage()
+			=> ClipboardImageCodec.Decode(MainThreadDispatcher.Invoke(() => GetData(TypePng) ?? GetData(TypeTiff)));
 
 		public StringCollection GetFileDropList() => new StringCollection();
 
@@ -99,8 +111,59 @@ namespace MatterHackers.Agg.UI
 			ObjC.Send_B_r_r(pasteboard, SelSetStringForType, ObjC.NSString(html ?? string.Empty), ObjC.NSString(TypeHtml));
 		}
 
+		/// <summary>Replaces the pasteboard's contents with the image as PNG. A null or empty image clears it.</summary>
 		public void SetImage(ImageBuffer imageBuffer)
 		{
+			// Encoded off the main thread: it is the slow half, and it touches nothing AppKit owns.
+			byte[] png = ClipboardImageCodec.EncodePng(imageBuffer);
+
+			MainThreadDispatcher.Invoke(() =>
+			{
+				IntPtr pasteboard = GeneralPasteboard();
+				ObjC.Send_q(pasteboard, SelClearContents);
+
+				if (png != null)
+				{
+					ObjC.Send_B_r_r(pasteboard, SelSetDataForType, NSData(png), ObjC.NSString(TypePng));
+				}
+			});
+		}
+
+		/// <summary>An autoreleased NSData holding a copy of <paramref name="bytes"/>.</summary>
+		private static unsafe IntPtr NSData(byte[] bytes)
+		{
+			fixed (byte* pointer = bytes)
+			{
+				return ObjC.Send_r_r_Q(ObjC.Class("NSData"), SelDataWithBytesLength, (IntPtr)pointer, (ulong)bytes.Length);
+			}
+		}
+
+		/// <summary>Whether the general pasteboard advertises <paramref name="type"/>. Main thread only.</summary>
+		private static bool HasType(string type)
+		{
+			IntPtr types = ObjC.Send_r(GeneralPasteboard(), SelTypes);
+			return types != IntPtr.Zero && ObjC.Send_B_r(types, SelContainsObject, ObjC.NSString(type)) != 0;
+		}
+
+		/// <summary>One flavor's bytes off the general pasteboard, or null when absent. Main thread only.</summary>
+		private static byte[] GetData(string type)
+		{
+			IntPtr data = ObjC.Send_r_r(GeneralPasteboard(), SelDataForType, ObjC.NSString(type));
+			if (data == IntPtr.Zero)
+			{
+				return null;
+			}
+
+			ulong length = ObjC.Send_Q(data, SelLength);
+			IntPtr bytes = ObjC.Send_r(data, SelBytes);
+			if (length == 0 || bytes == IntPtr.Zero)
+			{
+				return null;
+			}
+
+			var copy = new byte[length];
+			Marshal.Copy(bytes, copy, 0, (int)length);
+			return copy;
 		}
 
 		private static IntPtr GeneralPasteboard() => ObjC.Send_r(ObjC.Class("NSPasteboard"), SelGeneralPasteboard);

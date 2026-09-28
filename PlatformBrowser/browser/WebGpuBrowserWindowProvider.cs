@@ -63,6 +63,12 @@ namespace MatterHackers.Agg.UI
 		/// </remarks>
 		public void ShowSystemWindow(SystemWindow systemWindow)
 		{
+			// The window provider is the one piece of the platform layer every browser app brings up
+			if (OperatingSystem.IsBrowser())
+			{
+				BrowserSystemServices.InstallDefaults();
+			}
+
 			IPlatformWindow platformWindow;
 
 			if (systemWindow.PlatformWindow == null)

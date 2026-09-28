@@ -70,12 +70,51 @@ namespace MatterHackers.GuiAutomation
 	public static class TypedKeyParser
 	{
 		/// <summary>
-		/// Characters whose key code is not just their upper-case value. Everything not listed here is
-		/// typed as <c>(Keys)char.ToUpper(c)</c>, which is right for letters and digits.
+		/// Characters whose key code is not just their upper-case value - the key each one sits on in a US
+		/// layout. Everything not listed here is typed as <c>(Keys)char.ToUpper(c)</c>, which is right for
+		/// letters, digits and space.
+		/// <para>
+		/// This table is not cosmetic. ASCII 33-47 share their values with navigation keys - <c>(Keys)'!'</c>
+		/// is PageUp, <c>'$'</c> is Home, <c>'('</c> is Down, <c>'.'</c> is Delete - so typing them by value
+		/// sent a key a text field acts on, and the field then suppressed the KeyPress that carried the
+		/// character. A shifted character stays on its base key without a Shift modifier: the character is
+		/// what a field types, and a Shift bit would make Shift+key handlers see a chord.
+		/// </para>
 		/// </summary>
 		private static readonly Dictionary<char, Keys> CharToKeys = new Dictionary<char, Keys>()
 		{
+			['!'] = Keys.D1,
+			['@'] = Keys.D2,
+			['#'] = Keys.D3,
+			['$'] = Keys.D4,
+			['%'] = Keys.D5,
+			['^'] = Keys.D6,
+			['&'] = Keys.D7,
+			['*'] = Keys.D8,
+			['('] = Keys.D9,
+			[')'] = Keys.D0,
+			['-'] = Keys.OemMinus,
+			['_'] = Keys.OemMinus,
+			['='] = Keys.Oemplus,
+			['+'] = Keys.Oemplus,
+			['['] = Keys.OemOpenBrackets,
+			['{'] = Keys.OemOpenBrackets,
+			[']'] = Keys.OemCloseBrackets,
+			['}'] = Keys.OemCloseBrackets,
+			['\\'] = Keys.OemPipe,
+			['|'] = Keys.OemPipe,
+			[';'] = Keys.OemSemicolon,
+			[':'] = Keys.OemSemicolon,
+			['\''] = Keys.OemQuotes,
+			['"'] = Keys.OemQuotes,
+			[','] = Keys.Oemcomma,
+			['<'] = Keys.Oemcomma,
 			['.'] = Keys.OemPeriod,
+			['>'] = Keys.OemPeriod,
+			['/'] = Keys.OemQuestion,
+			['?'] = Keys.OemQuestion,
+			['`'] = Keys.Oemtilde,
+			['~'] = Keys.Oemtilde,
 		};
 
 		/// <summary>Brace-token spellings that are not the <see cref="Keys"/> member's own name.</summary>
@@ -163,6 +202,18 @@ namespace MatterHackers.GuiAutomation
 			if (Enum.TryParse<Keys>(token, ignoreCase: true, out var parsed))
 			{
 				return parsed;
+			}
+
+			// "{Ctrl+a}" reads naturally but is not a spelling SendKeys knows - the Windows input method
+			// would type it out literally - so point at the one both input methods share.
+			int plus = token.IndexOf('+');
+			if (plus > 0 && plus < token.Length - 1)
+			{
+				throw new ArgumentException(
+					$"'{{{token}}}' in '{textToType}' puts a modifier inside braces. Write control as ^ before "
+					+ "the key instead: \"^a\" for Ctrl+A (select all), \"^+z\" for Ctrl+Shift+Z, \"^{Home}\" "
+					+ "for Ctrl+Home.",
+					nameof(textToType));
 			}
 
 			throw new ArgumentException(

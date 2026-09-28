@@ -49,6 +49,15 @@ namespace MatterHackers.Agg.UI
 
 		public static event EventHandler KeyboardCollapsed;
 
+		private KeyboardInputMode? keyboardInputMode;
+
+		/// <summary>The layer an on-screen keyboard opens on for this field. Number edits default to Numeric.</summary>
+		public KeyboardInputMode KeyboardInputMode
+		{
+			get => keyboardInputMode ?? (InternalTextEditWidget is InternalNumberEdit ? KeyboardInputMode.Numeric : KeyboardInputMode.Text);
+			set => keyboardInputMode = value;
+		}
+
 		public Color TextColor
 		{
 			get

@@ -888,7 +888,7 @@ namespace MatterHackers.Agg.UI
 					return;
 				}
 
-				faChecked = StaticData.Instance.LoadIcon("fa-check_16.png", 16, 16).GrayToColor(theme.TextColor);
+				faChecked = MenuCheckMark.Create(theme.TextColor);
 				faCheckedScale = GuiWidget.DeviceScale;
 
 				this.Image = _checked ? faChecked : null;

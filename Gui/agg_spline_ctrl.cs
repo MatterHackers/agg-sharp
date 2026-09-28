@@ -1,4 +1,4 @@
-using MatterHackers.Agg.Transform;
+using System.Collections.Generic;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
@@ -24,137 +24,49 @@ using MatterHackers.VectorMath;
 // classes spline_ctrl_impl, spline_ctrl
 //
 //----------------------------------------------------------------------------
-using System;
-using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI
 {
-	//------------------------------------------------------------------------
-	// Class that can be used to create an interactive control to set up
-	// gamma arrays.
-	//------------------------------------------------------------------------
+	/// <summary>
+	/// The GuiWidget face of C++ AGG's <c>spline_ctrl</c>: a thin adapter over <see cref="SplineCtrl"/>, laid out
+	/// in the widget's local coordinates. It hands itself to the renderer once per path (background, border,
+	/// curve, inactive points, active point) through <see cref="SimpleVertexSourceWidget"/>.
+	/// </summary>
 	public class spline_ctrl : SimpleVertexSourceWidget
 	{
-		private Color m_background_color;
-		private Color m_border_color;
-		private Color m_curve_color;
-		private Color m_inactive_pnt_color;
-		private Color m_active_pnt_color;
-
-		private int m_num_pnt;
-		private double[] m_xp = new double[32];
-		private double[] m_yp = new double[32];
-		private bspline m_spline = new bspline();
-		private double[] m_spline_values = new double[256];
-		private byte[] m_spline_values8 = new byte[256];
-		private double m_border_width;
-		private double m_border_extra;
-		private double m_curve_width;
-		private double m_point_size;
-		private double m_xs1;
-		private double m_ys1;
-		private double m_xs2;
-		private double m_ys2;
-		private VertexSource.VertexStorage m_curve_pnt;
-		private Stroke m_curve_poly;
-		private VertexSource.Ellipse m_ellipse;
-		private int m_idx;
-		private int m_vertex;
-		private double[] m_vx = new double[32];
-		private double[] m_vy = new double[32];
-		private int m_active_pnt;
-		private int m_move_pnt;
-		private double m_pdx;
-		private double m_pdy;
-		private Transform.Affine m_mtx = Affine.NewIdentity();
+		private readonly SplineCtrl ctrl;
+		private IEnumerator<VertexData> currentPath;
 
 		public spline_ctrl(Vector2 location, Vector2 size, int num_pnt)
 			: base(location, false)
 		{
 			LocalBounds = new RectangleDouble(0, 0, size.X, size.Y);
-			m_curve_pnt = new VertexStorage();
-			m_curve_poly = new Stroke(m_curve_pnt);
-			m_ellipse = new Ellipse();
-
-			m_background_color = new Color(1.0, 1.0, 0.9);
-			m_border_color = new Color(0.0, 0.0, 0.0);
-			m_curve_color = new Color(0.0, 0.0, 0.0);
-			m_inactive_pnt_color = new Color(0.0, 0.0, 0.0);
-			m_active_pnt_color = new Color(1.0, 0.0, 0.0);
-
-			m_num_pnt = (num_pnt);
-			m_border_width = (1.0);
-			m_border_extra = (0.0);
-			m_curve_width = (1.0);
-			m_point_size = (3.0);
-			m_curve_poly = new Stroke(m_curve_pnt);
-			m_idx = (0);
-			m_vertex = (0);
-			m_active_pnt = (-1);
-			m_move_pnt = (-1);
-			m_pdx = (0.0);
-			m_pdy = (0.0);
-			if (m_num_pnt < 4) m_num_pnt = 4;
-			if (m_num_pnt > 32) m_num_pnt = 32;
-
-			for (int i = 0; i < m_num_pnt; i++)
-			{
-				m_xp[i] = (double)(i) / (double)(m_num_pnt - 1);
-				m_yp[i] = 0.5;
-			}
-			calc_spline_box();
-			update_spline();
-			{
-				m_spline.init((int)m_num_pnt, m_xp, m_yp);
-				for (int i = 0; i < 256; i++)
-				{
-					m_spline_values[i] = m_spline.get((double)(i) / 255.0);
-					if (m_spline_values[i] < 0.0) m_spline_values[i] = 0.0;
-					if (m_spline_values[i] > 1.0) m_spline_values[i] = 1.0;
-					m_spline_values8[i] = (byte)(m_spline_values[i] * 255.0);
-				}
-			}
+			this.ctrl = new SplineCtrl(0, 0, size.X, size.Y, num_pnt);
 		}
+
+		/// <summary>The control this widget adapts.</summary>
+		public SplineCtrl Ctrl => this.ctrl;
 
 		// Set other parameters
-		public void border_width(double t)
-		{
-			border_width(t, 0);
-		}
+		public void border_width(double t) => border_width(t, 0);
 
 		public void border_width(double t, double extra)
 		{
-			m_border_width = t;
-			m_border_extra = extra;
-			calc_spline_box();
-			LocalBounds = new RectangleDouble(-m_border_extra, -m_border_extra, Width + m_border_extra, Height + m_border_extra);
+			this.ctrl.SetBorderWidth(t, extra);
+
+			// The background reaches extra past the control's box; grow the widget so it is not clipped.
+			LocalBounds = new RectangleDouble(-extra, -extra, this.ctrl.X2 + extra, this.ctrl.Y2 + extra);
 		}
 
-		public void curve_width(double t)
-		{
-			m_curve_width = t;
-		}
+		public void curve_width(double t) => this.ctrl.CurveWidth = t;
 
-		public void point_size(double s)
-		{
-			m_point_size = s;
-		}
+		public void point_size(double s) => this.ctrl.PointSize = s;
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
-			double x = mouseEvent.X;
-			double y = mouseEvent.Y;
-			int i;
-			for (i = 0; i < m_num_pnt; i++)
+			if (this.ctrl.OnMouseButtonDown(mouseEvent.X, mouseEvent.Y))
 			{
-				double xp = calc_xp(i);
-				double yp = calc_yp(i);
-				if (agg_math.CalcDistance(x, y, xp, yp) <= m_point_size + 1)
-				{
-					m_pdx = xp - x;
-					m_pdy = yp - y;
-					m_active_pnt = m_move_pnt = (int)(i);
-				}
+				Invalidate();
 			}
 
 			base.OnMouseDown(mouseEvent);
@@ -162,28 +74,16 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
-			if (m_move_pnt >= 0)
-			{
-				m_move_pnt = -1;
-			}
-
+			this.ctrl.OnMouseButtonUp(mouseEvent.X, mouseEvent.Y);
 			base.OnMouseUp(mouseEvent);
 		}
 
 		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
-			double x = mouseEvent.X;
-			double y = mouseEvent.Y;
-
-			if (m_move_pnt >= 0)
+			// Only a point grabbed by OnMouseDown moves, and the grab ends on mouse up, so the button state
+			// C++ checks here is already implied.
+			if (this.ctrl.OnMouseMove(mouseEvent.X, mouseEvent.Y, true))
 			{
-				double xp = x + m_pdx;
-				double yp = y + m_pdy;
-
-				set_xp((int)m_move_pnt, (xp - m_xs1) / (m_xs2 - m_xs1));
-				set_yp((int)m_move_pnt, (yp - m_ys1) / (m_ys2 - m_ys1));
-
-				update_spline();
 				Invalidate();
 			}
 
@@ -195,338 +95,86 @@ namespace MatterHackers.Agg.UI
 			// this must be called first to ensure we get the correct Handled state
 			base.OnKeyDown(keyEvent);
 
-			if (!keyEvent.Handled)
+			if (!keyEvent.Handled
+				&& this.ctrl.OnArrowKeys(keyEvent.KeyCode == Keys.Left, keyEvent.KeyCode == Keys.Right, keyEvent.KeyCode == Keys.Down, keyEvent.KeyCode == Keys.Up))
 			{
-				double kx = 0.0;
-				double ky = 0.0;
-				bool ret = false;
-				if (m_active_pnt >= 0)
-				{
-					kx = m_xp[m_active_pnt];
-					ky = m_yp[m_active_pnt];
-					if (keyEvent.KeyCode == Keys.Left) { kx -= 0.001; ret = true; }
-					if (keyEvent.KeyCode == Keys.Right) { kx += 0.001; ret = true; }
-					if (keyEvent.KeyCode == Keys.Down) { ky -= 0.001; ret = true; }
-					if (keyEvent.KeyCode == Keys.Up) { ky += 0.001; ret = true; }
-				}
-				if (ret)
-				{
-					set_xp((int)m_active_pnt, kx);
-					set_yp((int)m_active_pnt, ky);
-					update_spline();
-					keyEvent.Handled = true;
-					Invalidate();
-				}
+				keyEvent.Handled = true;
+				Invalidate();
 			}
 		}
 
-		public void active_point(int i)
-		{
-			m_active_pnt = i;
-		}
+		public void active_point(int i) => this.ctrl.ActivePoint = i;
 
-		public double[] spline()
-		{
-			return m_spline_values;
-		}
+		public double[] spline() => this.ctrl.Spline;
 
-		public byte[] spline8()
-		{
-			return m_spline_values8;
-		}
+		public byte[] spline8() => this.ctrl.Spline8;
 
-		public double value(double x)
-		{
-			x = m_spline.get(x);
-			if (x < 0.0) x = 0.0;
-			if (x > 1.0) x = 1.0;
-			return x;
-		}
+		public double value(double x) => this.ctrl.Value(x);
 
-		public void value(int idx, double y)
-		{
-			if (idx < m_num_pnt)
-			{
-				set_yp(idx, y);
-			}
-		}
+		public void value(int idx, double y) => this.ctrl.SetValue(idx, y);
 
-		public void point(int idx, double x, double y)
-		{
-			if (idx < m_num_pnt)
-			{
-				set_xp(idx, x);
-				set_yp(idx, y);
-			}
-		}
+		public void point(int idx, double x, double y) => this.ctrl.SetPoint(idx, x, y);
 
-		public void x(int idx, double x)
-		{
-			m_xp[idx] = x;
-		}
+		public void x(int idx, double x) => this.ctrl.SetX(idx, x);
 
-		public void y(int idx, double y)
-		{
-			m_yp[idx] = y;
-		}
+		public void y(int idx, double y) => this.ctrl.SetY(idx, y);
 
-		public double x(int idx)
-		{
-			return m_xp[idx];
-		}
+		public double x(int idx) => this.ctrl.GetX(idx);
 
-		public double y(int idx)
-		{
-			return m_yp[idx];
-		}
+		public double y(int idx) => this.ctrl.GetY(idx);
 
-		public void update_spline()
-		{
-			m_spline.init((int)m_num_pnt, m_xp, m_yp);
-			for (int i = 0; i < 256; i++)
-			{
-				m_spline_values[i] = m_spline.get((double)(i) / 255.0);
-				if (m_spline_values[i] < 0.0) m_spline_values[i] = 0.0;
-				if (m_spline_values[i] > 1.0) m_spline_values[i] = 1.0;
-				m_spline_values8[i] = (byte)(m_spline_values[i] * 255.0);
-			}
-		}
+		public void update_spline() => this.ctrl.UpdateSpline();
 
 		// There is deliberately no OnDraw override: SimpleVertexSourceWidget.OnDraw already draws all five
 		// paths in the colors color(i) hands back, and it is the only place that can select a path.
 
 		// Vertex source interface
-		public override int num_paths()
-		{
-			return 5;
-		}
+		public override int num_paths() => 5;
 
 		public override void Rewind(int idx)
 		{
-			m_idx = idx;
-
-			switch (idx)
+			// C++ rewind's switch falls through its default into the background.
+			if (idx < 0 || idx > 4)
 			{
-				default:
-
-				case 0:                 // Background
-					m_vertex = 0;
-					m_vx[0] = -m_border_extra;
-					m_vy[0] = -m_border_extra;
-					m_vx[1] = Width + m_border_extra;
-					m_vy[1] = -m_border_extra;
-					m_vx[2] = Width + m_border_extra;
-					m_vy[2] = Height + m_border_extra;
-					m_vx[3] = -m_border_extra;
-					m_vy[3] = Height + m_border_extra;
-					break;
-
-				case 1:                 // Border
-					m_vertex = 0;
-					m_vx[0] = 0;
-					m_vy[0] = 0;
-					m_vx[1] = Width - m_border_extra * 2;
-					m_vy[1] = 0;
-					m_vx[2] = Width - m_border_extra * 2;
-					m_vy[2] = Height - m_border_extra * 2;
-					m_vx[3] = 0;
-					m_vy[3] = Height - m_border_extra * 2;
-					m_vx[4] = +m_border_width;
-					m_vy[4] = +m_border_width;
-					m_vx[5] = +m_border_width;
-					m_vy[5] = Height - m_border_width - m_border_extra * 2;
-					m_vx[6] = Width - m_border_width - m_border_extra * 2;
-					m_vy[6] = Height - m_border_width - m_border_extra * 2;
-					m_vx[7] = Width - m_border_width - m_border_extra * 2;
-					m_vy[7] = +m_border_width;
-					break;
-
-				case 2:                 // Curve
-					calc_curve();
-					m_curve_poly.Width = m_curve_width;
-					m_curve_poly.Rewind(0);
-					break;
-
-				case 3:                 // Inactive points
-					m_curve_pnt.Clear();
-					for (int i = 0; i < m_num_pnt; i++)
-					{
-						if (i != m_active_pnt)
-						{
-							m_ellipse.init(calc_xp(i), calc_yp(i),
-										   m_point_size, m_point_size, 32);
-							m_curve_pnt.ConcatPath(m_ellipse);
-						}
-					}
-					// The point paths are read straight off m_curve_pnt (see Vertex), not through the stroke
-					m_curve_pnt.Rewind(0);
-					break;
-
-				case 4:                 // Active point
-					m_curve_pnt.Clear();
-					if (m_active_pnt >= 0)
-					{
-						m_ellipse.init(calc_xp(m_active_pnt), calc_yp(m_active_pnt),
-									   m_point_size, m_point_size, 32);
-
-						m_curve_pnt.ConcatPath(m_ellipse);
-					}
-					m_curve_pnt.Rewind(0);
-					break;
+				idx = 0;
 			}
+
+			this.currentPath = this.ctrl.PathSource(idx).Vertices().GetEnumerator();
 		}
 
 		public override FlagsAndCommand Vertex(out double x, out double y)
 		{
 			x = 0;
 			y = 0;
-			FlagsAndCommand cmd = FlagsAndCommand.LineTo;
-			switch (m_idx)
+			if (this.currentPath == null || !this.currentPath.MoveNext() || this.currentPath.Current.IsStop)
 			{
-				case 0:
-					if (m_vertex == 0) cmd = FlagsAndCommand.MoveTo;
-					if (m_vertex >= 4) cmd = FlagsAndCommand.Stop;
-					x = m_vx[m_vertex];
-					y = m_vy[m_vertex];
-					m_vertex++;
-					break;
-
-				case 1:
-					if (m_vertex == 0 || m_vertex == 4) cmd = FlagsAndCommand.MoveTo;
-					if (m_vertex >= 8) cmd = FlagsAndCommand.Stop;
-					x = m_vx[m_vertex];
-					y = m_vy[m_vertex];
-					m_vertex++;
-					break;
-
-				case 2:
-					cmd = m_curve_poly.Vertex(out x, out y);
-					break;
-
-				case 3:
-				case 4:
-					cmd = m_curve_pnt.Vertex(out x, out y);
-					break;
-
-				default:
-					cmd = FlagsAndCommand.Stop;
-					break;
+				return FlagsAndCommand.Stop;
 			}
 
-			if (!ShapePath.IsStop(cmd))
-			{
-				//OriginRelativeParentTransform.transform(ref x, ref y);
-			}
-
-			return cmd;
-		}
-
-		private void calc_spline_box()
-		{
-			m_xs1 = LocalBounds.Left + m_border_width;
-			m_ys1 = LocalBounds.Bottom + m_border_width;
-			m_xs2 = LocalBounds.Right - m_border_width;
-			m_ys2 = LocalBounds.Top - m_border_width;
-		}
-
-		private void calc_curve()
-		{
-			int i;
-			m_curve_pnt.Clear();
-			m_curve_pnt.MoveTo(m_xs1, m_ys1 + (m_ys2 - m_ys1) * m_spline_values[0]);
-			for (i = 1; i < 256; i++)
-			{
-				m_curve_pnt.LineTo(m_xs1 + (m_xs2 - m_xs1) * (double)(i) / 255.0,
-									m_ys1 + (m_ys2 - m_ys1) * m_spline_values[i]);
-			}
-		}
-
-		private double calc_xp(int idx)
-		{
-			return m_xs1 + (m_xs2 - m_xs1) * m_xp[idx];
-		}
-
-		private double calc_yp(int idx)
-		{
-			return m_ys1 + (m_ys2 - m_ys1) * m_yp[idx];
-		}
-
-		private void set_xp(int idx, double val)
-		{
-			if (val < 0.0) val = 0.0;
-			if (val > 1.0) val = 1.0;
-
-			if (idx == 0)
-			{
-				val = 0.0;
-			}
-			else if (idx == m_num_pnt - 1)
-			{
-				val = 1.0;
-			}
-			else
-			{
-				if (val < m_xp[idx - 1] + 0.001) val = m_xp[idx - 1] + 0.001;
-				if (val > m_xp[idx + 1] - 0.001) val = m_xp[idx + 1] - 0.001;
-			}
-			m_xp[idx] = val;
-		}
-
-		private void set_yp(int idx, double val)
-		{
-			if (val < 0.0) val = 0.0;
-			if (val > 1.0) val = 1.0;
-			m_yp[idx] = val;
+			x = this.currentPath.Current.Position.X;
+			y = this.currentPath.Current.Position.Y;
+			return this.currentPath.Current.Command;
 		}
 
 		// Set colors
-		public void background_color(Color c)
-		{
-			m_background_color = c;
-		}
+		public void background_color(Color c) => this.ctrl.BackgroundColor = c;
 
-		public void border_color(Color c)
-		{
-			m_border_color = c;
-		}
+		public void border_color(Color c) => this.ctrl.BorderColor = c;
 
-		public void curve_color(Color c)
-		{
-			m_curve_color = c;
-		}
+		public void curve_color(Color c) => this.ctrl.CurveColor = c;
 
-		public void inactive_pnt_color(Color c)
-		{
-			m_inactive_pnt_color = c;
-		}
+		public void inactive_pnt_color(Color c) => this.ctrl.InactivePointColor = c;
 
-		public void active_pnt_color(Color c)
-		{
-			m_active_pnt_color = c;
-		}
+		public void active_pnt_color(Color c) => this.ctrl.ActivePointColor = c;
 
 		public override IColorType color(int i)
 		{
-			switch (i)
+			if (i < 0 || i > 4)
 			{
-				case 0:
-					return m_background_color;
-
-				case 1:
-					return m_border_color;
-
-				case 2:
-					return m_curve_color;
-
-				case 3:
-					return m_inactive_pnt_color;
-
-				case 4:
-					return m_active_pnt_color;
-
-				default:
-					throw new System.IndexOutOfRangeException("You asked for a color out of range.");
+				throw new System.IndexOutOfRangeException("You asked for a color out of range.");
 			}
+
+			return this.ctrl.PathColor(i);
 		}
 	}
 }

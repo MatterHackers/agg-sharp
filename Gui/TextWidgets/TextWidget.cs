@@ -50,12 +50,16 @@ namespace MatterHackers.Agg.UI
 			set => base.ToolTipText = value;
 		}
 
+		/// <summary>
+		/// The requested size, before <see cref="GuiWidget.DeviceScale"/> and <see cref="TextStyleSettings.SizeScale"/>
+		/// multiply it into the size the text is drawn at.
+		/// </summary>
 		public double PointSize
 		{
-			get => Printer.TypeFaceStyle.EmSizeInPoints / GuiWidget.DeviceScale;
+			get => Printer.TypeFaceStyle.EmSizeInPoints / (GuiWidget.DeviceScale * TextStyleSettings.SizeScale);
 			set
 			{
-				Printer.TypeFaceStyle = new StyledTypeFace(Printer.TypeFaceStyle.TypeFace, value * GuiWidget.DeviceScale, Printer.TypeFaceStyle.DoUnderline, Printer.TypeFaceStyle.FlattenCurves);
+				Printer.TypeFaceStyle = UiFace(new StyledTypeFace(Printer.TypeFaceStyle.TypeFace, value * GuiWidget.DeviceScale * TextStyleSettings.SizeScale, Printer.TypeFaceStyle.DoUnderline, Printer.TypeFaceStyle.FlattenCurves));
 
 				if (AutoExpandBoundsToText)
 				{
@@ -67,6 +71,13 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public TypeFacePrinter Printer { get; private set; }
+
+		/// <summary>A text widget is UI text, so its face follows the System window's <see cref="TextStyleSettings"/>.</summary>
+		private static StyledTypeFace UiFace(StyledTypeFace face)
+		{
+			face.ApplyTextStyleSettings = true;
+			return face;
+		}
 
 		/// <summary>
 		/// Gets or sets a value indicating whether to show the text in bold.
@@ -88,7 +99,7 @@ namespace MatterHackers.Agg.UI
 			{
 				if (!value && Printer.TypeFaceStyle.TypeFace == AggContext.DefaultFontBold)
 				{
-					var typeFaceStyle = new StyledTypeFace(AggContext.DefaultFont, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline);
+					var typeFaceStyle = UiFace(new StyledTypeFace(AggContext.DefaultFont, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline));
 					Printer = new TypeFacePrinter(Text, typeFaceStyle, justification: Printer.Justification);
 					if (AutoExpandBoundsToText)
 					{
@@ -97,7 +108,7 @@ namespace MatterHackers.Agg.UI
 				}
 				else if (value && Printer.TypeFaceStyle.TypeFace == AggContext.DefaultFont)
 				{
-					var typeFaceStyle = new StyledTypeFace(AggContext.DefaultFontBold, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline);
+					var typeFaceStyle = UiFace(new StyledTypeFace(AggContext.DefaultFontBold, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline));
 					Printer = new TypeFacePrinter(Text, typeFaceStyle, justification: Printer.Justification);
 					if (AutoExpandBoundsToText)
 					{
@@ -135,7 +146,7 @@ namespace MatterHackers.Agg.UI
 				typeFace = bold ? AggContext.DefaultFontBold : AggContext.DefaultFont;
 			}
 
-			var typeFaceStyle = new StyledTypeFace(typeFace, pointSize * GuiWidget.DeviceScale, underline);
+			var typeFaceStyle = UiFace(new StyledTypeFace(typeFace, pointSize * GuiWidget.DeviceScale * TextStyleSettings.SizeScale, underline));
 			Printer = new TypeFacePrinter(text, typeFaceStyle, justification: justification);
 
 			if (text != null)

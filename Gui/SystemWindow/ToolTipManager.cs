@@ -31,6 +31,7 @@ using MatterHackers.VectorMath;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace MatterHackers.Agg.UI
 {
@@ -56,6 +57,31 @@ namespace MatterHackers.Agg.UI
 		/// Gets or sets the length of time that must transpire before subsequent ToolTip windows appear as the pointer moves from one control to another.
 		/// </summary>
 		public const double ReshowDelay = .2;
+
+		/// <summary>
+		/// How long, in seconds, a content tooltip stays open after the mouse has left both its widget and the
+		/// tooltip, so crossing the gap between them (or a momentary jump) does not flicker it closed.
+		/// </summary>
+		public const double ContentCloseGrace = .25;
+
+		/// <summary>The gap, in design units, between a content tooltip and the widget it hangs under.</summary>
+		private const double ContentGap = 4;
+
+		// Per-widget tooltip options, kept here rather than on GuiWidget so a widget carries no extra fields
+		// unless it asks for one. Weak keys, so a registration never keeps a closed widget alive.
+		private static readonly ConditionalWeakTable<GuiWidget, ToolTipOptions> widgetOptions = new ConditionalWeakTable<GuiWidget, ToolTipOptions>();
+
+		private class ToolTipOptions
+		{
+			public Func<GuiWidget> CreateContent;
+			public bool AtPointer;
+		}
+
+		// The open content tooltip, if any. It lives beside the text tooltip rather than in its place - the
+		// text tooltip machinery keeps running for widgets inside it, which is what shows a nested tooltip.
+		private GuiWidget contentToolTip;
+		private GuiWidget contentToolTipOwner;
+		private readonly Stopwatch timeSinceMouseLeftContentToolTip = new Stopwatch();
 
 		private double CurrentAutoPopDelay = 5;
 		private Vector2 mousePosition;
@@ -109,7 +135,55 @@ namespace MatterHackers.Agg.UI
 		{
 			mousePosition = e.Position;
 			timeSinceLastMouseMove.Restart();
+
+			if (toolTipWidget != null
+				&& widgetThatIsShowingToolTip != null
+				&& GetAtPointer(widgetThatIsShowingToolTip))
+			{
+				PlaceAtPointer();
+			}
 		}
+
+		/// <summary>
+		/// Gives <paramref name="owner"/> a widget as its tooltip in place of its ToolTipText. The tooltip hangs
+		/// under the owner and is interactive: the mouse can move into it without closing it, its controls take
+		/// clicks, and a control inside it with its own tooltip shows that one on top. It closes once the mouse
+		/// has been off both the owner and the tooltip for <see cref="ContentCloseGrace"/>.
+		/// </summary>
+		/// <param name="owner">The widget that shows the tooltip when hovered.</param>
+		/// <param name="createContent">Builds the tooltip each time it opens, so it picks up the current theme.
+		/// The widget draws its own panel (background and border). Null removes the content tooltip.</param>
+		public static void SetToolTipContent(GuiWidget owner, Func<GuiWidget> createContent)
+		{
+			widgetOptions.GetOrCreateValue(owner).CreateContent = createContent;
+		}
+
+		/// <summary>
+		/// Makes <paramref name="owner"/>'s text tooltip open beside the mouse and follow it while it moves over
+		/// the owner, rather than centre on the owner (the default).
+		/// </summary>
+		public static void SetToolTipAtPointer(GuiWidget owner, bool atPointer)
+		{
+			widgetOptions.GetOrCreateValue(owner).AtPointer = atPointer;
+		}
+
+		private static Func<GuiWidget> GetContent(GuiWidget widget)
+		{
+			return widget != null && widgetOptions.TryGetValue(widget, out ToolTipOptions options) ? options.CreateContent : null;
+		}
+
+		private static bool GetAtPointer(GuiWidget widget)
+		{
+			return widget != null && widgetOptions.TryGetValue(widget, out ToolTipOptions options) && options.AtPointer;
+		}
+
+		private static bool HasToolTip(GuiWidget widget)
+		{
+			return !string.IsNullOrWhiteSpace(widget?.ToolTipText) || GetContent(widget) != null;
+		}
+
+		/// <summary>The open content tooltip (see <see cref="SetToolTipContent"/>), or null when none is open.</summary>
+		public GuiWidget ContentToolTip => contentToolTip;
 
 		public event EventHandler ToolTipPop;
 
@@ -138,7 +212,7 @@ namespace MatterHackers.Agg.UI
 			// Hovering something with no tooltip must cancel anything pending or showing. The show/remove
 			// checks below are pure containment tests, so a tooltip whose widget is covered by the newly
 			// hovered widget would otherwise still "contain" the mouse and stay up over the new widget.
-			if (string.IsNullOrWhiteSpace(widgetToShowToolTipFor?.ToolTipText))
+			if (!HasToolTip(widgetToShowToolTipFor))
 			{
 				widgetThatWantsToShowToolTip = null;
 				lastTextShown = "";
@@ -175,6 +249,8 @@ namespace MatterHackers.Agg.UI
 		private void CheckIfNeedToDisplayToolTip(bool forceRemove = false)
 		{
 			//DebugStopTimers();
+
+			UpdateContentToolTip(forceRemove);
 
 			double showDelayTime = InitialDelay;
 			if ((timeSinceLastToolTipClose.IsRunning || timeSinceLastToolTipCloseWasRunning)
@@ -276,14 +352,26 @@ namespace MatterHackers.Agg.UI
 					// Check for text before tearing down the current tooltip - a widget with nothing to
 					// say must not close a tooltip that is legitimately showing for another widget
 					var textToShow = widgetThatWantsToShowToolTip.ToolTipText ?? "";
-					if (textToShow.Length == 0)
+					Func<GuiWidget> createContent = GetContent(widgetThatWantsToShowToolTip);
+					if ((textToShow.Length == 0 && createContent == null)
+						|| widgetThatWantsToShowToolTip == contentToolTipOwner)
 					{
+						// Nothing to say, or its content tooltip is already open (the mouse came back to the
+						// owner from the tooltip)
 						widgetThatWantsToShowToolTip = null;
 						return false;
 					}
 
 					RemoveToolTip();
 					widgetThatIsShowingToolTip = null;
+
+					if (createContent != null)
+					{
+						ShowContentToolTip(widgetThatWantsToShowToolTip, createContent, screenBoundsShowingTT);
+						widgetThatWantsToShowToolTip = null;
+						widgetThatWasShowingToolTip = null;
+						return true;
+					}
 
 					toolTipText = textToShow;
 					toolTipWidget = new FlowLayoutWidget()
@@ -310,6 +398,15 @@ namespace MatterHackers.Agg.UI
 					// timeCurrentToolTipHasBeenShowing.Reset();
 					// timeCurrentToolTipHasBeenShowingWasRunning = true;
 					timeCurrentToolTipHasBeenShowing.Restart();
+
+					if (GetAtPointer(widgetThatWantsToShowToolTip))
+					{
+						PlaceAtPointer();
+						widgetThatIsShowingToolTip = widgetThatWantsToShowToolTip;
+						widgetThatWantsToShowToolTip = null;
+						widgetThatWasShowingToolTip = null;
+						return true;
+					}
 
 					RectangleDouble toolTipBounds = toolTipWidget.LocalBounds;
 
@@ -371,6 +468,137 @@ namespace MatterHackers.Agg.UI
 			return false;
 		}
 
+		/// <summary>
+		/// Puts the text tooltip below and to the right of the mouse, clear of the cursor that hangs down and
+		/// right from it (agg-gui's at_pointer placement), flipping above the mouse when there is no room below.
+		/// </summary>
+		private void PlaceAtPointer()
+		{
+			RectangleDouble bounds = toolTipWidget.LocalBounds;
+			RectangleDouble windowBounds = systemWindow.LocalBounds;
+			double edgeInset = 3 * GuiWidget.DeviceScale;
+
+			double bottom = Math.Round(mousePosition.Y - CursorClearance * GuiWidget.DeviceScale - bounds.Height);
+			if (bottom < windowBounds.Bottom + edgeInset)
+			{
+				bottom = Math.Round(mousePosition.Y + edgeInset);
+			}
+
+			double left = Math.Round(mousePosition.X);
+			left = Math.Min(left, windowBounds.Right - edgeInset - bounds.Width);
+			left = Math.Max(left, windowBounds.Left + edgeInset);
+
+			toolTipWidget.OriginRelativeParent = new Vector2(left - bounds.Left, bottom - bounds.Bottom);
+		}
+
+		private void ShowContentToolTip(GuiWidget owner, Func<GuiWidget> createContent, RectangleDouble ownerScreenBounds)
+		{
+			CloseContentToolTip();
+
+			contentToolTip = new GuiWidget()
+			{
+				HAnchor = HAnchor.Fit,
+				VAnchor = VAnchor.Fit,
+				Name = "ContentToolTip",
+			};
+			contentToolTip.AddChild(createContent());
+			systemWindow.AddChild(contentToolTip);
+			contentToolTipOwner = owner;
+			timeSinceMouseLeftContentToolTip.Reset();
+
+			// Under the owner, left edges aligned, as agg-gui hangs an interactive tooltip - the mouse leaves the
+			// owner downward straight into it. Above the owner when there is no room below.
+			RectangleDouble bounds = contentToolTip.LocalBounds;
+			RectangleDouble windowBounds = systemWindow.LocalBounds;
+			double gap = ContentGap * GuiWidget.DeviceScale;
+			double edgeInset = 3 * GuiWidget.DeviceScale;
+
+			double bottom = Math.Round(ownerScreenBounds.Bottom - gap - bounds.Height);
+			if (bottom < windowBounds.Bottom + edgeInset)
+			{
+				bottom = Math.Round(ownerScreenBounds.Top + gap);
+			}
+
+			double left = Math.Round(ownerScreenBounds.Left);
+			left = Math.Min(left, windowBounds.Right - edgeInset - bounds.Width);
+			left = Math.Max(left, windowBounds.Left + edgeInset);
+
+			contentToolTip.OriginRelativeParent = new Vector2(left - bounds.Left, bottom - bounds.Bottom);
+		}
+
+		/// <summary>
+		/// Keeps the content tooltip open while the mouse is over its owner or over the tooltip itself, and
+		/// closes it once the mouse has been off both for <see cref="ContentCloseGrace"/>.
+		/// </summary>
+		private void UpdateContentToolTip(bool forceRemove)
+		{
+			if (contentToolTip == null)
+			{
+				return;
+			}
+
+			if (forceRemove
+				|| contentToolTip.Parent == null
+				|| contentToolTipOwner.Parent == null)
+			{
+				CloseContentToolTip();
+				return;
+			}
+
+			bool overOwner = contentToolTipOwner.TransformToScreenSpace(contentToolTipOwner.LocalBounds).Contains(mousePosition);
+			bool overToolTip = contentToolTip.BoundsRelativeToParent.Contains(mousePosition);
+			if (overOwner || overToolTip)
+			{
+				timeSinceMouseLeftContentToolTip.Reset();
+			}
+			else if (!timeSinceMouseLeftContentToolTip.IsRunning)
+			{
+				timeSinceMouseLeftContentToolTip.Start();
+			}
+			else if (timeSinceMouseLeftContentToolTip.Elapsed.TotalSeconds > ContentCloseGrace)
+			{
+				CloseContentToolTip();
+			}
+		}
+
+		private void CloseContentToolTip()
+		{
+			if (contentToolTip == null)
+			{
+				return;
+			}
+
+			// A tooltip showing (or armed) for a control inside the content tooltip goes with it
+			if (widgetThatIsShowingToolTip != null && IsInside(widgetThatIsShowingToolTip, contentToolTip))
+			{
+				RemoveToolTip();
+				widgetThatIsShowingToolTip = null;
+			}
+
+			if (widgetThatWantsToShowToolTip != null && IsInside(widgetThatWantsToShowToolTip, contentToolTip))
+			{
+				widgetThatWantsToShowToolTip = null;
+			}
+
+			contentToolTip.Close();
+			contentToolTip = null;
+			contentToolTipOwner = null;
+			timeSinceMouseLeftContentToolTip.Reset();
+		}
+
+		private static bool IsInside(GuiWidget widget, GuiWidget container)
+		{
+			for (GuiWidget parent = widget; parent != null; parent = parent.Parent)
+			{
+				if (parent == container)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		private static (GuiWidget widgetToShow, Action<GuiWidget, string> changeWidgetText) DefaultToolTipWidget(string toolTipText)
 		{
 			var content = new WrappedTextWidget(toolTipText)
@@ -416,6 +644,7 @@ namespace MatterHackers.Agg.UI
 		/// </remarks>
 		public void Clear()
 		{
+			CloseContentToolTip();
 			widgetThatWasShowingToolTip = widgetThatIsShowingToolTip;
 			RemoveToolTip();
 			widgetThatIsShowingToolTip = null;

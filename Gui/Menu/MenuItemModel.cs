@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.UI
@@ -78,15 +79,35 @@ namespace MatterHackers.Agg.UI
 		public string Text { get; set; }
 
 		/// <summary>
-		/// Gets or sets the icon drawn in the popup rendering. Native menu bars ignore it.
+		/// Gets or sets the icon drawn in the popup rendering and, on a top level menu, ahead of its
+		/// <see cref="MenuBarWidget"/> title. Native menu bars ignore it.
 		/// </summary>
 		public ImageBuffer Icon { get; set; }
+
+		/// <summary>
+		/// Gets or sets a font glyph drawn as the icon when <see cref="Icon"/> is null - typically one private
+		/// use character of an icon font, e.g. Font Awesome's "\uF0C5" copy. The popup rendering rasterizes it
+		/// in the theme's text colour each time the menu is built. Native menu bars ignore it.
+		/// </summary>
+		public string IconGlyph { get; set; }
+
+		/// <summary>
+		/// Gets or sets the font <see cref="IconGlyph"/> comes from. Null means the default UI font.
+		/// </summary>
+		public TypeFace IconTypeFace { get; set; }
 
 		/// <summary>
 		/// Gets or sets the hover text shown in the popup rendering. Native menu bars ignore it, as they do
 		/// <see cref="Icon"/>.
 		/// </summary>
 		public string ToolTipText { get; set; }
+
+		/// <summary>
+		/// Gets or sets the keyboard shortcut shown right aligned on the row in the popup rendering, e.g.
+		/// "Ctrl+Z". Display only - nothing binds the key; the application owns its own key handling. Only
+		/// plain command rows show it. Native menu bars ignore it, as they do <see cref="Icon"/>.
+		/// </summary>
+		public string ShortcutText { get; set; }
 
 		/// <summary>
 		/// Gets or sets what running the item does. Ignored when the item is a separator or a submenu.
@@ -111,6 +132,35 @@ namespace MatterHackers.Agg.UI
 		/// Evaluated each time the menu is built.
 		/// </summary>
 		public Func<bool> IsEnabled { get; set; }
+
+		/// <summary>
+		/// Gets or sets the test for whether this item shows as checked. Null (the default) makes a plain
+		/// command with no mark; non-null makes a check item (or a radio item, see <see cref="IsRadio"/>)
+		/// that draws its mark whenever this returns true. Evaluated each time the menu is built, so the
+		/// mark follows state that changed while the menu was closed.
+		/// </summary>
+		/// <remarks>
+		/// The mark is only a reflection of the state: picking the item runs <see cref="Action"/>, which is
+		/// what has to change whatever this reads. Ignored on separators and submenus.
+		/// </remarks>
+		public Func<bool> IsChecked { get; set; }
+
+		/// <summary>
+		/// Gets or sets a value indicating whether a checked item draws a radio dot rather than a check mark:
+		/// one choice out of several, like a theme. Adjacent radio items (not interrupted by a separator or
+		/// any other item) form one group. Only read when <see cref="IsChecked"/> is set; picking the radio
+		/// item that is already on does nothing, the usual radio behavior. Native menu bars draw a check
+		/// mark either way.
+		/// </summary>
+		public bool IsRadio { get; set; }
+
+		/// <summary>
+		/// Gets or sets a value indicating whether picking a check or radio item closes the menu. False (the
+		/// default) leaves the menu open so several marks can be flipped in one visit; command rows always
+		/// close it and ignore this. agg-gui has the opposite default and a keep_open() to opt out, so a port
+		/// of one of its plain check rows sets this.
+		/// </summary>
+		public bool CloseMenuOnPick { get; set; }
 
 		/// <summary>Gets or sets the standard menu-bar role this item fills, if any.</summary>
 		public MenuItemRole Role { get; set; }

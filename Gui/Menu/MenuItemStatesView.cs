@@ -132,6 +132,32 @@ namespace MatterHackers.Agg.UI
 
 		public Color DisabledTextColor { get; set; }
 
+		/// <summary>
+		/// The fill of the row holding the list's current choice (agg-gui paints it in the accent). While
+		/// transparent - the default - a selected row looks like any other.
+		/// </summary>
+		public Color SelectedBackgroundColor { get; set; }
+
+		public Color SelectedTextColor { get; set; }
+
+		private bool highlighted;
+
+		private bool selected;
+
+		/// <summary>
+		/// Marks the row as the list's current choice. It wins over the hover highlight, as in agg-gui, so
+		/// the choice stays visible while the mouse passes over it.
+		/// </summary>
+		public bool Selected
+		{
+			get => selected;
+			set
+			{
+				selected = value;
+				ApplyColors();
+			}
+		}
+
 		public double PointSize { get { return textWidget.PointSize; } set { textWidget.PointSize = value; } }
 
 		public MenuItemColorStatesView(string name, Color textColor, TypeFace typeFace = null)
@@ -192,37 +218,27 @@ namespace MatterHackers.Agg.UI
 
 		public bool Highlighted
 		{
-			get
-			{
-				return BackgroundColor == OverBackgroundColor;
-			}
+			get => highlighted;
 
 			set
 			{
-				if (value)
-				{
-					BackgroundColor = OverBackgroundColor;
-					if (Parent.Enabled)
-					{
-						textWidget.TextColor = OverTextColor;
-					}
-					else
-					{
-						textWidget.TextColor = DisabledTextColor;
-					}
-				}
-				else
-				{
-					BackgroundColor = NormalBackgroundColor;
-					if (Parent.Enabled)
-					{
-						textWidget.TextColor = NormalTextColor;
-					}
-					else
-					{
-						textWidget.TextColor = DisabledTextColor;
-					}
-				}
+				highlighted = value;
+				ApplyColors();
+			}
+		}
+
+		private void ApplyColors()
+		{
+			bool showSelected = selected && SelectedBackgroundColor.Alpha0To255 > 0;
+			BackgroundColor = showSelected ? SelectedBackgroundColor : highlighted ? OverBackgroundColor : NormalBackgroundColor;
+
+			if (Parent != null && !Parent.Enabled)
+			{
+				textWidget.TextColor = DisabledTextColor;
+			}
+			else
+			{
+				textWidget.TextColor = showSelected ? SelectedTextColor : highlighted ? OverTextColor : NormalTextColor;
 			}
 		}
 

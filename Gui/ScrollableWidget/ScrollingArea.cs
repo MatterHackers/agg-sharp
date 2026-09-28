@@ -74,8 +74,10 @@ namespace MatterHackers.Agg.UI
 		private void RecalculateChildrenBounds(Object sender, EventArgs e)
 		{
 			Vector2 topLeftOffset = parentScrollableWidget.TopLeftOffset;
+			bool wasFollowing = parentScrollableWidget.FollowingBottom;
 			CalculateChildrenBounds();
-			parentScrollableWidget.TopLeftOffset = topLeftOffset;
+			parentScrollableWidget.RestoreTopLeftOffset(topLeftOffset);
+			parentScrollableWidget.KeepAtBottomIf(wasFollowing);
 		}
 
 		public override GuiWidget AddChild(GuiWidget child, int indexInChildrenList = -1)
@@ -85,12 +87,14 @@ namespace MatterHackers.Agg.UI
 
 			// remember the offset
 			Vector2 topLeftOffset = parentScrollableWidget.TopLeftOffset;
+			bool wasFollowing = parentScrollableWidget.FollowingBottom;
 
 			base.AddChild(child, indexInChildrenList);
 			CalculateChildrenBounds();
 
 			// and restore it
-			parentScrollableWidget.TopLeftOffset = topLeftOffset;
+			parentScrollableWidget.RestoreTopLeftOffset(topLeftOffset);
+			parentScrollableWidget.KeepAtBottomIf(wasFollowing);
 
 			return child;
 		}
@@ -103,12 +107,14 @@ namespace MatterHackers.Agg.UI
 
 				// remember the offset, the way AddChild does
 				Vector2 topLeftOffset = parentScrollableWidget.TopLeftOffset;
+				bool wasFollowing = parentScrollableWidget.FollowingBottom;
 
 				base.RemoveChild(childToRemove);
 				CalculateChildrenBounds();
 
 				// and restore it
-				parentScrollableWidget.TopLeftOffset = topLeftOffset;
+				parentScrollableWidget.RestoreTopLeftOffset(topLeftOffset);
+				parentScrollableWidget.KeepAtBottomIf(wasFollowing);
 			}
 			else
 			{
@@ -120,6 +126,7 @@ namespace MatterHackers.Agg.UI
 		{
 			// remember the offset, the way AddChild does
 			Vector2 topLeftOffset = parentScrollableWidget.TopLeftOffset;
+			bool wasFollowing = parentScrollableWidget.FollowingBottom;
 
 			GuiWidget removed = base.RemoveChild(index);
 
@@ -129,7 +136,8 @@ namespace MatterHackers.Agg.UI
 				CalculateChildrenBounds();
 
 				// and restore it
-				parentScrollableWidget.TopLeftOffset = topLeftOffset;
+				parentScrollableWidget.RestoreTopLeftOffset(topLeftOffset);
+				parentScrollableWidget.KeepAtBottomIf(wasFollowing);
 			}
 
 			return removed;
@@ -169,7 +177,7 @@ namespace MatterHackers.Agg.UI
 				debugRecursionCount++;
 				if (debugRecursionCount < 20)
 				{
-					parentScrollableWidget.TopLeftOffset = new Vector2(parentScrollableWidget.TopLeftOffset.X, 0);
+					parentScrollableWidget.RestoreTopLeftOffset(new Vector2(parentScrollableWidget.TopLeftOffset.X, 0));
 				}
 
 				debugRecursionCount--;
@@ -200,6 +208,12 @@ namespace MatterHackers.Agg.UI
 				{
 					newOrigin.X = parent.LocalBounds.Right - LocalBounds.Right - DeviceMargin.Right;
 				}
+			}
+			else
+			{
+				// The content fits sideways, so there is nowhere to be scrolled to: flush left. Without this a view
+				// scrolled right whose content then shrank kept it off the left edge.
+				newOrigin.X = parent.LocalBounds.Left - LocalBounds.Left + DeviceMargin.Left;
 			}
 
 			if (newOrigin != OriginRelativeParent)

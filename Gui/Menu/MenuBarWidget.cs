@@ -107,7 +107,7 @@ namespace MatterHackers.Agg.UI
 					continue;
 				}
 
-				var title = new ThemedTextButton(menu.Text, theme)
+				var title = new MenuBarTitle(menu, theme)
 				{
 					// This exact name is what automation and product tours already search for
 					Name = $"{menu.Text} Menu",

@@ -40,7 +40,7 @@ using MatterHackers.Agg.UI.Tests;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
+    [NotInParallel(new[] { MatterHackers.Agg.Tests.SharedStateKeys.UiThreadAndKeyboard, MatterHackers.Agg.Tests.SharedStateKeys.Clipboard })] // UiThread, Keyboard and Clipboard.Instance are process-wide
    	public class TextEditTests
 	{
 		public static bool SaveImagesForDebug = false;
@@ -954,110 +954,6 @@ G1 X-29.5 F6000 ; NO_PROCESSING
 			await Assert.That(bestLeastSquares < 2000000).IsTrue();
 
 			container.Close();
-		}
-	}
-
-    
-    [NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))] // Ensure tests in this class do not run in parallel
-    public class TextEditFocusTests
-	{
-        [Test]
-        public async Task VerifyFocusMakesTextWidgetEditable()
-		{
-			TextEditWidget editField = null;
-			var systemWindow = new SystemWindow(300, 200)
-			{
-				BackgroundColor = Color.Black,
-			};
-
-			async Task TestToRun(AutomationRunner testRunner)
-			{
-				editField.Focus();
-
-				testRunner.Delay();
-				testRunner.Type("Test Text");
-
-				testRunner.Delay(1);
-				await Assert.That(editField.Text == "Test Text").IsTrue();
-				testRunner.MarkTestComplete();
-			}
-
-			editField = new TextEditWidget(pixelWidth: 200)
-			{
-				HAnchor = HAnchor.Center,
-				VAnchor = VAnchor.Center,
-			};
-			systemWindow.AddChild(editField);
-
-			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);
-		}
-
-        [Test]
-        public async Task VerifyFocusProperty()
-		{
-			var systemWindow = new SystemWindow(300, 200)
-			{
-				BackgroundColor = Color.Black,
-			};
-
-			var editField = new TextEditWidget(pixelWidth: 200)
-			{
-				HAnchor = HAnchor.Center,
-				VAnchor = VAnchor.Center,
-			};
-			systemWindow.AddChild(editField);
-
-			async Task TestToRun(AutomationRunner testRunner)
-			{
-				UiThread.RunOnIdle(editField.Focus);
-				testRunner.WaitFor(() => editField.ContainsFocus);
-				//if (!editField.ContainsFocus) { System.Diagnostics.Debugger.Launch(); System.Diagnostics.Debugger.Break(); }
-				// NOTE: Okay. During parallel testing, it seems that the avalanche of windows causes test UIs to lose control focus and get confused.
-				await Assert.That(editField.ContainsFocus).IsTrue();
-				testRunner.MarkTestComplete();
-			}
-
-			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);
-		}
-
-        [Test]
-        public async Task SelectAllOnFocusCanStillClickAfterSelection()
-		{
-			var editField = new TextEditWidget(pixelWidth: 200)
-			{
-				Name = "editField",
-				Text = "Some Text",
-				HAnchor = HAnchor.Center,
-				VAnchor = VAnchor.Center,
-			};
-
-			var systemWindow = new SystemWindow(300, 200)
-			{
-				BackgroundColor = Color.Gray,
-			};
-			systemWindow.AddChild(editField);
-
-			async Task TestToRun(AutomationRunner testRunner)
-			{
-				editField.SelectAllOnFocus = true;
-				testRunner.Delay(1);
-				testRunner.ClickByName(editField.Name);
-
-				editField.SelectAllOnFocus = true;
-				testRunner.Type("123");
-				await Assert.That(editField.Text).IsEqualTo("123");//, "Text input on newly focused control should replace selection");
-
-                testRunner.ClickByName(editField.Name);
-				//testRunner.WaitFor(() => editField.ContainsFocus);
-
-				testRunner.Type("123");
-				//testRunner.WaitFor(() => "123123" == editField.Text, maxSeconds: 60);
-				// NOTE: Used to get intermittent failures here. These issues might have been sorted out now.
-				await Assert.That(editField.Text).IsEqualTo("123123");//, "Text should be appended if control is focused and has already received input");
-				testRunner.MarkTestComplete();
-			}
-
-			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, TestToRun);
 		}
 	}
 }

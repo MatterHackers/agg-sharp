@@ -25,6 +25,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform.Browser;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
@@ -158,7 +159,7 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
-		/// Images and file drops are absent here as they are on mac and Linux, and a caller that asks anyway
+		/// Before anything is copied there is no image, and file drops are absent as on mac and Linux; a caller that asks anyway
 		/// gets something it can use rather than a null it will dereference.
 		/// </summary>
 		[Test]
@@ -172,6 +173,46 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(clipboard.ContainsFileDropList).IsFalse();
 			await Assert.That(clipboard.GetFileDropList()).IsNotNull();
 			await Assert.That(clipboard.GetFileDropList().Count).IsEqualTo(0);
+		}
+
+		/// <summary>
+		/// An in-app image copy is pasteable straight back, and the browser is handed PNG bytes so other
+		/// applications can paste it too. The copy also replaces the text, as on every desktop clipboard.
+		/// </summary>
+		[Test]
+		public async Task AnInAppImageCopyIsPasteableAndReachesThePageAsPng()
+		{
+			var page = new RecordingClipboardInterop();
+			var clipboard = new BrowserClipboard(page);
+			clipboard.SetText("old text");
+
+			var source = new ImageBuffer(2, 2);
+			source.SetPixel(1, 0, new Color(200, 100, 50, 255));
+			clipboard.SetImage(source);
+
+			await Assert.That(clipboard.ContainsImage).IsTrue();
+			await Assert.That(clipboard.GetImage().GetPixel(1, 0)).IsEqualTo(new Color(200, 100, 50, 255));
+			await Assert.That(clipboard.ContainsText).IsFalse();
+
+			await Assert.That(page.WrittenPng).IsNotNull();
+			await Assert.That(ClipboardImageCodec.Decode(page.WrittenPng).GetPixel(1, 0)).IsEqualTo(new Color(200, 100, 50, 255));
+		}
+
+		/// <summary>Whatever replaces the image - a local text copy or text from another application - drops it.</summary>
+		[Test]
+		public async Task NewTextReplacesACopiedImage()
+		{
+			var page = new RecordingClipboardInterop();
+			var clipboard = new BrowserClipboard(page);
+
+			clipboard.SetImage(new ImageBuffer(1, 1));
+			clipboard.SetText("local");
+			await Assert.That(clipboard.ContainsImage).IsFalse();
+
+			clipboard.SetImage(new ImageBuffer(1, 1));
+			page.RaiseSystemText("from another app");
+			await Assert.That(clipboard.ContainsImage).IsFalse();
+			await Assert.That(clipboard.GetText()).IsEqualTo("from another app");
 		}
 
 		/// <summary>navigator.clipboard, replaced by a recorder the test can also push reads through.</summary>
@@ -190,6 +231,11 @@ namespace MatterHackers.Agg.UI.Tests
 			public void StartWatchingSystemText(System.Action<string> onText) => this.onText = onText;
 
 			public void WriteText(string text) => this.writes.Add(text);
+
+			/// <summary>The last PNG handed to the page's ClipboardItem write.</summary>
+			public byte[] WrittenPng { get; private set; }
+
+			public void WriteImagePng(byte[] png) => this.WrittenPng = png;
 
 			/// <summary>Delivers what a readText() promise resolved to, the way the focus listener would.</summary>
 			public void RaiseSystemText(string text) => this.onText?.Invoke(text);

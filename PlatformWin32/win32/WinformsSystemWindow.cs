@@ -938,6 +938,10 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
+				// Draws a widget batched and never issued (Graphics2DSpanImage's pixel runs) belong
+				// to this frame, under the CPU layer, rather than being lost.
+				graphics2D.FlushDeferredDraws();
+
 				// A widget that rasterized into Graphics2D.DestImage drew into a CPU buffer, not into the
 				// frame. On a GPU surface that buffer is a layer this uploads and draws over the frame now,
 				// after every widget has had its turn - the agg demos that rasterize by hand (aa_demo,
@@ -1406,92 +1410,7 @@ namespace MatterHackers.Agg.UI
 		{
 			void DoSetCursor(Cursors cursorToSet)
 			{
-				switch (cursorToSet)
-				{
-					case Cursors.Arrow:
-						this.Cursor = System.Windows.Forms.Cursors.Arrow;
-						break;
-
-					case Cursors.Hand:
-						this.Cursor = System.Windows.Forms.Cursors.Hand;
-						break;
-
-					case Cursors.IBeam:
-						this.Cursor = System.Windows.Forms.Cursors.IBeam;
-						break;
-					case Cursors.Cross:
-						this.Cursor = System.Windows.Forms.Cursors.Cross;
-						break;
-					case Cursors.Default:
-						this.Cursor = System.Windows.Forms.Cursors.Default;
-						break;
-					case Cursors.Help:
-						this.Cursor = System.Windows.Forms.Cursors.Help;
-						break;
-					case Cursors.HSplit:
-						this.Cursor = System.Windows.Forms.Cursors.HSplit;
-						break;
-					case Cursors.No:
-						this.Cursor = System.Windows.Forms.Cursors.No;
-						break;
-					case Cursors.NoMove2D:
-						this.Cursor = System.Windows.Forms.Cursors.NoMove2D;
-						break;
-					case Cursors.NoMoveHoriz:
-						this.Cursor = System.Windows.Forms.Cursors.NoMoveHoriz;
-						break;
-					case Cursors.NoMoveVert:
-						this.Cursor = System.Windows.Forms.Cursors.NoMoveVert;
-						break;
-					case Cursors.PanEast:
-						this.Cursor = System.Windows.Forms.Cursors.PanEast;
-						break;
-					case Cursors.PanNE:
-						this.Cursor = System.Windows.Forms.Cursors.PanNE;
-						break;
-					case Cursors.PanNorth:
-						this.Cursor = System.Windows.Forms.Cursors.PanNorth;
-						break;
-					case Cursors.PanNW:
-						this.Cursor = System.Windows.Forms.Cursors.PanNW;
-						break;
-					case Cursors.PanSE:
-						this.Cursor = System.Windows.Forms.Cursors.PanSE;
-						break;
-					case Cursors.PanSouth:
-						this.Cursor = System.Windows.Forms.Cursors.PanSouth;
-						break;
-					case Cursors.PanSW:
-						this.Cursor = System.Windows.Forms.Cursors.PanSW;
-						break;
-					case Cursors.PanWest:
-						this.Cursor = System.Windows.Forms.Cursors.PanWest;
-						break;
-					case Cursors.SizeAll:
-						this.Cursor = System.Windows.Forms.Cursors.SizeAll;
-						break;
-					case Cursors.SizeNESW:
-						this.Cursor = System.Windows.Forms.Cursors.SizeNESW;
-						break;
-					case Cursors.SizeNS:
-						this.Cursor = System.Windows.Forms.Cursors.SizeNS;
-						break;
-					case Cursors.SizeNWSE:
-						this.Cursor = System.Windows.Forms.Cursors.SizeNWSE;
-						break;
-					case Cursors.SizeWE:
-						this.Cursor = System.Windows.Forms.Cursors.SizeWE;
-						break;
-					case Cursors.UpArrow:
-						this.Cursor = System.Windows.Forms.Cursors.UpArrow;
-						break;
-					case Cursors.VSplit:
-						this.Cursor = System.Windows.Forms.Cursors.VSplit;
-						break;
-					case Cursors.WaitCursor:
-						this.Cursor = System.Windows.Forms.Cursors.WaitCursor;
-						break;
-				}
+				this.Cursor = WindowsCursorMap.ToWinFormsCursor(cursorToSet);
 			}
 
 			if (this.InvokeRequired)

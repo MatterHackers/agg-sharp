@@ -34,6 +34,7 @@ namespace MatterHackers.Agg.UI
 		public event EventHandler CheckedStateChanged;
 
 		private bool isChecked = false;
+		private bool indeterminate;
 
 		public CheckBox(GuiWidget buttonView)
 			: this(0, 0, buttonView)
@@ -129,6 +130,24 @@ namespace MatterHackers.Agg.UI
 				{
 					isChecked = value;
 					OnCheckStateChanged(null);
+					Invalidate();
+				}
+			}
+		}
+
+		/// <summary>
+		/// Draws the box as neither checked nor unchecked (egui's tri-state look: accent fill with a dash),
+		/// whatever <see cref="Checked"/> is - for a "check all" box over a partly checked list. Only the
+		/// look changes; the owner decides when it applies. Defaults to false.
+		/// </summary>
+		public bool Indeterminate
+		{
+			get => indeterminate;
+			set
+			{
+				if (indeterminate != value)
+				{
+					indeterminate = value;
 					Invalidate();
 				}
 			}

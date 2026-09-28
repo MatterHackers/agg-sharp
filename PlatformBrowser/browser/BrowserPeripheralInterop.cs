@@ -78,6 +78,16 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// write may fail later and silently, which is why the cache is updated separately.
 		/// </summary>
 		void WriteText(string text);
+
+		/// <summary>
+		/// Asks the browser to put PNG bytes on the system clipboard as one <c>image/png</c>
+		/// <c>ClipboardItem</c>. Fire and forget like <see cref="WriteText"/>; the clipboard keeps its own
+		/// copy for in-app pastes.
+		/// </summary>
+		/// <remarks>A default no-op so an implementation written before images existed still compiles.</remarks>
+		void WriteImagePng(byte[] png)
+		{
+		}
 	}
 
 	/// <summary>

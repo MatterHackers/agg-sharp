@@ -344,9 +344,11 @@ namespace MatterHackers.Agg.UI.Tests
 			return item.TransformToParentSpace(flow, new Vector2(item.LocalBounds.Left, item.LocalBounds.Bottom)).X;
 		}
 
+		/// <summary>How far <paramref name="item"/>'s right edge is drawn from <paramref name="flow"/>'s drawn left edge.</summary>
 		private static double DrawnRight(GuiWidget item, GuiWidget flow)
 		{
-			return item.TransformToParentSpace(flow, new Vector2(item.LocalBounds.Right, item.LocalBounds.Bottom)).X;
+			// From the drawn edge, not the origin: a padded flow's left edge sits one padding left of its origin.
+			return item.TransformToParentSpace(flow, new Vector2(item.LocalBounds.Right, item.LocalBounds.Bottom)).X - flow.LocalBounds.Left;
 		}
 
 		private static int FilledRows(FlowLeftRightWithWrapping flow)

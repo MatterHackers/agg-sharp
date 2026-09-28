@@ -77,6 +77,28 @@ namespace MatterHackers.Agg.Platform.Browser
 			Cursors.PanEast or Cursors.PanNE or Cursors.PanNorth or Cursors.PanNW
 				or Cursors.PanSE or Cursors.PanSouth or Cursors.PanSW or Cursors.PanWest => "all-scroll",
 
+			// agg-gui's Cursor Test set, every one a CSS keyword of its own.
+			Cursors.None => "none",
+			Cursors.ContextMenu => "context-menu",
+			Cursors.Progress => "progress",
+			Cursors.Cell => "cell",
+			Cursors.VerticalText => "vertical-text",
+			Cursors.Alias => "alias",
+			Cursors.Copy => "copy",
+			Cursors.NoDrop => "no-drop",
+			Cursors.Grab => "grab",
+			Cursors.Grabbing => "grabbing",
+			Cursors.ZoomIn => "zoom-in",
+			Cursors.ZoomOut => "zoom-out",
+			Cursors.ResizeNorth => "n-resize",
+			Cursors.ResizeEast => "e-resize",
+			Cursors.ResizeSouth => "s-resize",
+			Cursors.ResizeWest => "w-resize",
+			Cursors.ResizeNorthEast => "ne-resize",
+			Cursors.ResizeNorthWest => "nw-resize",
+			Cursors.ResizeSouthEast => "se-resize",
+			Cursors.ResizeSouthWest => "sw-resize",
+
 			_ => "default",
 		};
 	}

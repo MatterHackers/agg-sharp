@@ -45,6 +45,9 @@ namespace MatterHackers.Agg.UI
 		/// <summary>Creates or reconnects a platform window for the given <see cref="SystemWindow"/>.</summary>
 		public void ShowSystemWindow(SystemWindow systemWindow)
 		{
+			// The window provider is the one piece of the platform layer every mac app brings up
+			Platform.Mac.MacSystemServices.InstallDefaults();
+
 			IPlatformWindow platformWindow;
 
 			if (systemWindow.PlatformWindow == null)

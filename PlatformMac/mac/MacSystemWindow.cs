@@ -231,6 +231,8 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		private bool magnifyGestureInFlight;
 
+		private readonly MacTrackpadGestures trackpadGestures = new MacTrackpadGestures();
+
 		private int drawCount;
 		private bool smokeRunFinished;
 
@@ -479,33 +481,7 @@ namespace MatterHackers.Agg.UI
 
 		public void SetCursor(Cursors cursorToSet)
 		{
-			string selectorName = cursorToSet switch
-			{
-				Cursors.Hand => "pointingHandCursor",
-				Cursors.IBeam => "IBeamCursor",
-				Cursors.Cross => "crosshairCursor",
-				Cursors.No => "operationNotAllowedCursor",
-				Cursors.SizeNS => "resizeUpDownCursor",
-				Cursors.SizeWE => "resizeLeftRightCursor",
-				Cursors.HSplit => "resizeUpDownCursor",
-				Cursors.VSplit => "resizeLeftRightCursor",
-				Cursors.UpArrow => "resizeUpCursor",
-
-				// The diagonal resize cursors macOS draws at its own window corners exist, but only as
-				// private class methods on NSCursor - so they are probed for rather than assumed (see
-				// ResolveCursor). Without them a window-widget corner grip, which is the one place agg
-				// asks for them, would hover as a plain arrow.
-				Cursors.SizeNWSE => "_windowResizeNorthWestSouthEastCursor",
-				Cursors.SizeNESW => "_windowResizeNorthEastSouthWestCursor",
-
-				// No move-in-any-direction cursor exists here; the open hand is what macOS itself shows
-				// for "this can be dragged around", which is what SizeAll means to agg.
-				Cursors.SizeAll => "openHandCursor",
-
-				// The eight pan directions have no macOS equivalent, private or otherwise, so they fall
-				// back to the arrow rather than being faked with something misleading.
-				_ => "arrowCursor",
-			};
+			string selectorName = MacCursorMap.ToSelectorName(cursorToSet);
 
 			MainThreadDispatcher.Invoke(() =>
 			{
@@ -2128,18 +2104,14 @@ namespace MatterHackers.Agg.UI
 					return false;
 
 				case NSEventTypeMagnify:
+				case NSEventTypeRotate:
+					// Pinch and rotate are their own event types, so without this case they reach nothing at all;
+					// MacTrackpadGestures says how they go out (a pinch as a marked wheel and as two fingers).
 					this.LogGestureEvent(nsEvent, type);
-
-					// A pinch is its own event type, not a modified scroll, so without this case it reaches
-					// nothing at all - which is what made pinch to zoom do nothing on a trackpad. It goes out
-					// through the wheel path because a wheel is what every agg consumer already reads as zoom,
-					// and fingers moving apart (a positive magnification) means zoom in, which is the same
-					// direction a wheel pushed forward means.
 					this.TrackMagnifyGesturePhase(nsEvent);
-
-					if (this.TryMakeMouseArgs(nsEvent, type, out var magnifyArgs))
+					if (this.TryMakeMouseArgs(nsEvent, type, out var gestureArgs))
 					{
-						this.aggSystemWindow.OnMouseWheel(magnifyArgs);
+						this.trackpadGestures.Deliver(nsEvent, type, gestureArgs, this.aggSystemWindow);
 					}
 
 					return false;
@@ -2657,7 +2629,7 @@ namespace MatterHackers.Agg.UI
 			{
 				Console.WriteLine($"AGG_LOG_GESTURE magnify phase=0x{phase:x} magnification={Send_d(nsEvent, Sel("magnification")):0.#####}");
 			}
-			else
+			else if (type == NSEventTypeScrollWheel)
 			{
 				ulong momentumPhase = Send_Q(nsEvent, Sel("momentumPhase"));
 				double scrollingDeltaX = Send_d(nsEvent, Sel("scrollingDeltaX"));
@@ -2745,6 +2717,10 @@ namespace MatterHackers.Agg.UI
 							this.aggSystemWindow.OnDraw(graphics2D);
 						}
 					}
+
+					// Draws a widget batched and never issued (Graphics2DSpanImage's pixel runs) belong
+					// to this frame, under the CPU layer, rather than being lost.
+					graphics2D.FlushDeferredDraws();
 
 					// A widget that rasterized into Graphics2D.DestImage drew into a CPU buffer, not into
 					// the frame. On a GPU surface that buffer is a layer this uploads and draws over the

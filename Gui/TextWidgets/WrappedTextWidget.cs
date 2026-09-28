@@ -109,7 +109,8 @@ namespace MatterHackers.Agg.UI
 			{
 				if (Width > 0)
 				{
-					var wrapper = new EnglishTextWrapping(TextWidget.Printer.TypeFaceStyle.EmSizeInPoints);
+					// Measured in the face the lines are drawn in, so its style (and a bold face) wraps where it draws.
+					var wrapper = new EnglishTextWrapping(TextWidget.Printer.TypeFaceStyle);
 					var wrappedMessage = wrapper.InsertCRs(unwrappedText, Width);
 					wrappedWidth = Width;
 					TextWidget.Text = wrappedMessage;
