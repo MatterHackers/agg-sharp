@@ -27,8 +27,6 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
-
 namespace MatterHackers.Agg.UI
 {
     public class FlowLayoutWidget : GuiWidget
@@ -46,40 +44,6 @@ namespace MatterHackers.Agg.UI
         {
             get => layoutEngine.FlowDirection;
             set => layoutEngine.FlowDirection = value;
-        }
-
-        /// <summary>
-        /// Gets or sets the padding. A vertical flow does not place children without a horizontal alignment
-        /// (Absolute or Fit) across its width; they keep x = 0, so they sit one padding in only while the flow's
-        /// left edge is one padding left of its origin. A flow that fits its width gets that edge from the fit when
-        /// padding is set; a stretched or fixed-width one would keep its old edge and draw those children against
-        /// it. So a change of left padding on a vertical flow that does not fit its width moves the left edge by
-        /// the change and the origin the other way: the flow stays where it is, and its unaligned children sit one
-        /// padding in whichever of Padding and HAnchor was set first.
-        /// </summary>
-        public override BorderDouble Padding
-        {
-            get => base.Padding;
-            set
-            {
-                double oldLeft = DevicePadding.Left;
-                base.Padding = value;
-                double shift = DevicePadding.Left - oldLeft;
-                if (shift != 0
-                    && (FlowDirection == FlowDirection.TopToBottom || FlowDirection == FlowDirection.BottomToTop)
-                    && !HAnchorIsSet(HAnchor.Fit))
-                {
-                    RectangleDouble oldBounds = LocalBounds;
-                    var bounds = new RectangleDouble(oldBounds.Left - shift, oldBounds.Bottom, oldBounds.Right - shift, oldBounds.Top);
-                    using (LayoutLock())
-                    {
-                        OriginRelativeParent = new Vector2(OriginRelativeParent.X + shift, OriginRelativeParent.Y);
-                        LocalBounds = bounds;
-                    }
-
-                    PerformLayout();
-                }
-            }
         }
     }
 }

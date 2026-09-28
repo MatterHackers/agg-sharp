@@ -157,5 +157,68 @@ namespace MatterHackers.Agg.UI.Tests
 				GuiWidget.DeviceScale = savedDeviceScale;
 			}
 		}
+
+		[Test]
+		[NotInParallel]
+		[Arguments(1.0, true)]
+		[Arguments(1.0, false)]
+		[Arguments(2.0, true)]
+		[Arguments(2.0, false)]
+		public async Task AFixedWidthTopToBottomFlowGivenLeftPaddingKeepsItsBoundsAndOriginAndInsetsItsChildren(double scale, bool paddingFirst)
+		{
+			// MatterCAD's VerticalResizeContainer: an Absolute vertical flow narrower than its content, given a left
+			// padding the width of its splitter. Insetting its children must not come from moving its own left edge
+			// below 0 and its origin right, which it did while unaligned children were left at x = 0.
+			double savedDeviceScale = GuiWidget.DeviceScale;
+			try
+			{
+				GuiWidget.DeviceScale = scale;
+				var parent = new GuiWidget(800 * scale, 400 * scale);
+				var flow = new FlowLayoutWidget(FlowDirection.TopToBottom);
+				if (paddingFirst)
+				{
+					flow.Padding = new BorderDouble(6, 0, 0, 0);
+					flow.HAnchor = HAnchor.Absolute;
+				}
+				else
+				{
+					flow.HAnchor = HAnchor.Absolute;
+					flow.Padding = new BorderDouble(6, 0, 0, 0);
+				}
+
+				flow.Width = 375 * scale;
+				parent.AddChild(flow);
+				var originBefore = flow.OriginRelativeParent;
+
+				var stretched = new GuiWidget(20 * scale, 20 * scale) { HAnchor = HAnchor.Stretch };
+				flow.AddChild(stretched);
+				var wide = new GuiWidget(500 * scale, 20 * scale);
+				flow.AddChild(wide);
+				parent.PerformLayout();
+
+				if (!paddingFirst)
+				{
+					// set while the flow fit its width, padding gives it a left edge one padding left of its origin
+					// (see the class remarks); set after Absolute, it must not move the edge or the origin
+					await Assert.That(flow.LocalBounds.Left).IsEqualTo(0).Within(0.001)
+						.Because($"padding insets the children, not the flow's own bounds, at {scale}x");
+					await Assert.That(flow.OriginRelativeParent.X).IsEqualTo(originBefore.X).Within(0.001)
+						.Because("the flow does not move when given padding");
+				}
+
+				await Assert.That(flow.Width).IsEqualTo(375 * scale).Within(0.001);
+				await Assert.That(stretched.Width).IsEqualTo(369 * scale).Within(0.001);
+				foreach (GuiWidget child in new[] { stretched, wide })
+				{
+					double childLeft = child.OriginRelativeParent.X + child.LocalBounds.Left;
+					await Assert.That(childLeft - flow.LocalBounds.Left).IsEqualTo(6 * scale).Within(0.001)
+						.Because($"a {child.HAnchor} child sits one 6 unit padding in, padding first: {paddingFirst}, at {scale}x");
+				}
+			}
+			finally
+			{
+				GuiWidget.DeviceScale = savedDeviceScale;
+			}
+		}
 	}
 }

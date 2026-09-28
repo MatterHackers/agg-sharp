@@ -208,6 +208,7 @@ namespace MatterHackers.Agg.UI
 			if (FlowDirection == FlowDirection.BottomToTop || FlowDirection == FlowDirection.TopToBottom)
 			{
 				base.ApplyHAnchorToChild(parent, child);
+				HoldUnalignedChildOnePaddingIn(parent, child);
 			}
 			else
 			{
@@ -231,6 +232,31 @@ namespace MatterHackers.Agg.UI
 				{
 					throw new Exception("HAnchor for a left right flow widget needs to be Absolute or Stretch.");
 				}
+			}
+		}
+
+		/// <summary>
+		/// Places a child of a vertical flow that has no horizontal alignment (Absolute or Fit) one padding and its
+		/// margin in from the flow's drawn left edge, as a Left child would be, without changing its width.
+		/// </summary>
+		/// <remarks>
+		/// Without this such a child kept x = 0 and sat one padding in only when the flow's left edge happened to be
+		/// one padding left of its origin - true after Padding was set while the flow fit its width, not when HAnchor
+		/// was set to Stretch or Absolute first. A flow that fits its width takes its left edge from its children, so
+		/// there the child keeps the x it has and the fit puts the edge one padding left of it.
+		/// </remarks>
+		private static void HoldUnalignedChildOnePaddingIn(GuiWidget parent, GuiWidget child)
+		{
+			if ((child.HAnchor & (HAnchor.Left | HAnchor.Center | HAnchor.Right)) != 0
+				|| parent.HAnchorIsSet(HAnchor.Fit))
+			{
+				return;
+			}
+
+			double x = parent.LocalBounds.Left + parent.DevicePadding.Left + child.DeviceMarginAndBorder.Left - child.LocalBounds.Left;
+			if (child.OriginRelativeParent.X != x)
+			{
+				child.OriginRelativeParent = new Vector2(x, child.OriginRelativeParent.Y);
 			}
 		}
 
