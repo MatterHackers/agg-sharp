@@ -443,6 +443,8 @@ namespace MatterHackers.Agg.SvgTools
             while (parseIndex < dString.Length)
             {
                 var command = dString[parseIndex];
+                // SVG 1.1 section 8.3.3: drawing on after a closepath starts a new subpath at the closed one's start.
+                if ((lastCommand == 'z' || lastCommand == 'Z') && "aAcChHlLqQsStTvV".IndexOf(command) >= 0) vertexStorage.MoveTo(polygonStart.X, polygonStart.Y);
                 switch (command)
                 {
                     case 'a': // relative arc
@@ -504,8 +506,6 @@ namespace MatterHackers.Agg.SvgTools
                                 vertexStorage.Curve4(controlPoint1.X, controlPoint1.Y, secondControlPoint.X, secondControlPoint.Y, curXY.X, curXY.Y);
 
                                 lastXY = curXY;
-
-                                // if the next element is another coordinate than we just continue to add more curves.
                             } while (NextElementIsANumber(dString, parseIndex));
                         }
                         break;
@@ -547,25 +547,30 @@ namespace MatterHackers.Agg.SvgTools
                                 // repeated coordinate sets are further smooth cubics, so from here on the
                                 // previous command really is a cubic and reflection is correct
                                 lastCommand = command;
-
-                                // if the next element is another coordinate than we just continue to add more curves.
                             } while (NextElementIsANumber(dString, parseIndex));
                         }
                         break;
 
                     case 'h': // horizontal line to relative
                     case 'H': // horizontal line to absolute
+                    case 'v': // vertical line to relative
+                    case 'V': // vertical line to absolute
                         parseIndex++;
+                        // Both take a list of numbers, as every command does ("v-.012-4.827" is two lines).
                         do
                         {
-                            curXY.Y = lastXY.Y;
-                            curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            if (command == 'h')
+                            curXY = lastXY;
+                            var value = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+                            if (command == 'h' || command == 'H')
                             {
-                                curXY.X += lastXY.X;
+                                curXY.X = command == 'h' ? lastXY.X + value : value;
+                                vertexStorage.HorizontalLineTo(curXY.X);
                             }
-
-                            vertexStorage.HorizontalLineTo(curXY.X);
+                            else
+                            {
+                                curXY.Y = command == 'v' ? lastXY.Y + value : value;
+                                vertexStorage.VerticalLineTo(curXY.Y);
+                            }
 
                             lastXY = curXY;
                         } while (NextElementIsANumber(dString, parseIndex));
@@ -661,20 +666,6 @@ namespace MatterHackers.Agg.SvgTools
 
                             vertexStorage.Curve3(curXY.X, curXY.Y);
                         } while (NextElementIsANumber(dString, parseIndex));
-                        lastXY = curXY;
-                        break;
-
-                    case 'v': // vertical line to relative
-                    case 'V': // vertical line to absolute
-                        parseIndex++;
-                        curXY.X = lastXY.X;
-                        curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                        if (command == 'v')
-                        {
-                            curXY.Y += lastXY.Y;
-                        }
-
-                        vertexStorage.VerticalLineTo(curXY.Y);
                         lastXY = curXY;
                         break;
 

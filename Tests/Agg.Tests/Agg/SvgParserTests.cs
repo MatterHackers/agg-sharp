@@ -107,6 +107,42 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		/// <summary>
+		/// SVG 1.1 section 8.3.3: a command after closepath without its own moveto starts a new subpath at the
+		/// closed one's start. The close vertex sits at (0, 0), so with no moveto emitted the curve flattener,
+		/// which takes a curve's start from the previous vertex, drew the curve out of the origin.
+		/// </summary>
+		[Test]
+		public async Task CurveAfterClosePathStartsAtTheClosedSubpathsStart()
+		{
+			var storage = new VertexStorage("M10,10 L20,10 L20,20 Z Q30,10 40,20");
+
+			var bounds = new FlattenCurves(storage).GetBounds();
+
+			await Assert.That(bounds.Left).IsEqualTo(10).Within(.001);
+			await Assert.That(bounds.Bottom).IsEqualTo(10).Within(.001);
+		}
+
+		/// <summary>
+		/// The "G" of resvg's structure/image/embedded-svg sample. Like every command, v takes a list: its tail
+		/// "v-.012-4.827" is two vertical lines, which the parser read as one, then threw on the second number.
+		/// </summary>
+		[Test]
+		public async Task VerticalLineToTakesAListOfNumbers()
+		{
+			var storage = new VertexStorage("m73.255 69.513h11.683v11.664c0 6.452-5.226 11.678-11.669 11.678-6.441 0-11.666-5.226-11.666-11.678v-16.501h-.017c0-6.447 5.241-11.676 11.667-11.676 6.459 0 11.683 5.225 11.683 11.676h-6.849c0-2.674-2.152-4.837-4.834-4.837-2.647 0-4.82 2.163-4.82 4.837v16.501c0 2.675 2.173 4.837 4.82 4.837 2.682 0 4.834-2.162 4.834-4.827v-.012-4.827h-4.834z");
+
+			var lines = storage.Vertices().Where(v => v.Command == FlagsAndCommand.LineTo).Select(v => v.Position).ToList();
+			var curveEnd = storage.Vertices().Last(v => v.Command == FlagsAndCommand.Curve4).Position;
+			var tail = lines.Skip(lines.Count - 3).ToList();
+
+			await Assert.That(tail[0].X).IsEqualTo(curveEnd.X).Within(1e-9);
+			await Assert.That(tail[0].Y).IsEqualTo(curveEnd.Y - .012).Within(1e-9);
+			await Assert.That(tail[1].Y).IsEqualTo(curveEnd.Y - .012 - 4.827).Within(1e-9);
+			await Assert.That(tail[2].X).IsEqualTo(curveEnd.X - 4.834).Within(1e-9);
+			await Assert.That(tail[2].Y).IsEqualTo(tail[1].Y).Within(1e-9);
+		}
+
+		/// <summary>
 		/// End to end check against the real file so the regression is caught at the SVG level, not just
 		/// for a hand extracted d string.
 		/// </summary>
