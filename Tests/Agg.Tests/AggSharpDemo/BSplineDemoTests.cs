@@ -32,6 +32,7 @@ using MatterHackers.AggSharpDemo;
 using MatterHackers.AggSharpDemo.Demos;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -82,7 +83,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 				moved.Polygon.SetPoint(i, point.X + 10, point.Y - 10);
 			}
 
-			await Assert.That(Render(demo).GetBuffer()).IsEquivalentTo(Render(moved).GetBuffer());
+			await Assert.That(Render(demo).GetBuffer()).IsEquivalentTo(Render(moved).GetBuffer(), CollectionOrdering.Matching);
 		}
 
 		/// <summary>

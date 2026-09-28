@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System.Threading.Tasks;
 using MatterHackers.Agg.VertexSource;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -57,7 +58,7 @@ namespace MatterHackers.Agg.Tests
 
 			swept.generate(afterOthers, 0, 0, row, length);
 
-			await Assert.That(direct).IsEquivalentTo(afterOthers);
+			await Assert.That(direct).IsEquivalentTo(afterOthers, CollectionOrdering.Matching);
 
 			// The row starts on the red-to-green edge: red fading, green rising, no black from a zeroed edge.
 			await Assert.That((int)direct[1].red).IsGreaterThan(100);

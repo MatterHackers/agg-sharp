@@ -35,6 +35,7 @@ using MatterHackers.AggSharpDemo;
 using MatterHackers.AggSharpDemo.Demos;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -107,7 +108,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			var moved = new TransCurve1Demo();
 			moved.SetPoint(3, 398, 302);
 
-			await Assert.That(Render(demo).GetBuffer()).IsEquivalentTo(Render(moved).GetBuffer());
+			await Assert.That(Render(demo).GetBuffer()).IsEquivalentTo(Render(moved).GetBuffer(), CollectionOrdering.Matching);
 		}
 
 		[Test]
@@ -122,7 +123,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(demo.WaitMode).IsFalse();
 
 			demo.OnIdle();
-			await Assert.That(Render(demo).GetBuffer()).IsNotEquivalentTo(before);
+			await Assert.That(Render(demo).GetBuffer()).IsNotEquivalentTo(before, CollectionOrdering.Matching);
 		}
 
 		/// <summary>

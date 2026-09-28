@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -132,7 +133,7 @@ namespace MatterHackers.Agg.Tests
 			ImageBuffer folded = NewImage(NewBlender(blenderName), BitsFor(blenderName));
 			folded.blend_solid_hspan(0, 0, 1, new Color(0, 60, 255, 39), new byte[] { 255 }, 0);
 
-			await Assert.That(covered.GetBuffer()).IsEquivalentTo(folded.GetBuffer());
+			await Assert.That(covered.GetBuffer()).IsEquivalentTo(folded.GetBuffer(), CollectionOrdering.Matching);
 		}
 
 		/// <summary>

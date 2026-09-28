@@ -31,6 +31,7 @@ using MatterHackers.Agg.UI;
 using MatterHackers.AggSharpDemo;
 using MatterHackers.AggSharpDemo.Demos;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -58,7 +59,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			var moved = new ConvDashMarkerDemo();
 			moved.SetVertex(1, 449, 190);
 
-			await Assert.That(Render(demo).GetBuffer()).IsEquivalentTo(Render(moved).GetBuffer());
+			await Assert.That(Render(demo).GetBuffer()).IsEquivalentTo(Render(moved).GetBuffer(), CollectionOrdering.Matching);
 		}
 
 		/// <summary>A press inside the triangle away from its vertices drags all three.</summary>
@@ -75,7 +76,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			moved.SetVertex(1, 479, 160);
 			moved.SetVertex(2, 253, 300);
 
-			await Assert.That(Render(demo).GetBuffer()).IsEquivalentTo(Render(moved).GetBuffer());
+			await Assert.That(Render(demo).GetBuffer()).IsEquivalentTo(Render(moved).GetBuffer(), CollectionOrdering.Matching);
 		}
 
 		/// <summary>

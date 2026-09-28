@@ -28,6 +28,7 @@ using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Svg;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -222,7 +223,7 @@ namespace MatterHackers.Agg.Tests.Agg
 			const string Noise = "<feTurbulence baseFrequency=\".05\" numOctaves=\"2\"/>";
 			ImageBuffer boxNoise = Filtered(Noise, Box, BoxUnits);
 			ImageBuffer userNoise = Filtered(Noise, Box);
-			await Assert.That(boxNoise.GetBuffer()).IsEquivalentTo(userNoise.GetBuffer());
+			await Assert.That(boxNoise.GetBuffer()).IsEquivalentTo(userNoise.GetBuffer(), CollectionOrdering.Matching);
 		}
 
 		[Test]

@@ -30,6 +30,7 @@ using MatterHackers.Agg.UI;
 using MatterHackers.AggSharpDemo;
 using MatterHackers.AggSharpDemo.Demos;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -71,7 +72,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			moved.SetVertex(1, 379, 175);
 			moved.SetVertex(2, 153, 315);
 
-			await Assert.That(Render(demo).GetBuffer()).IsEquivalentTo(Render(moved).GetBuffer());
+			await Assert.That(Render(demo).GetBuffer()).IsEquivalentTo(Render(moved).GetBuffer(), CollectionOrdering.Matching);
 		}
 
 		private static ImageBuffer Render(AaDemo demo)

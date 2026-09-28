@@ -35,6 +35,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Platform;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -171,7 +172,7 @@ namespace MatterHackers.Agg.UI.Tests
 					var all = new byte[stream.Length];
 					stream.ReadExactly(all);
 
-					await Assert.That(all).IsEquivalentTo(File.ReadAllBytes(Path.Combine(fixture.RootPath, "Text", "hello.txt")));
+					await Assert.That(all).IsEquivalentTo(File.ReadAllBytes(Path.Combine(fixture.RootPath, "Text", "hello.txt")), CollectionOrdering.Matching);
 					await Assert.That(first).IsEquivalentTo(all.Take(4).ToArray());
 				}
 
@@ -313,7 +314,7 @@ namespace MatterHackers.Agg.UI.Tests
 					await Assert.That(fromZip.Width).IsEqualTo(fromDisk.Width);
 					await Assert.That(fromZip.Height).IsEqualTo(fromDisk.Height);
 					await Assert.That(fromZip.Width).IsEqualTo(32).Because("16 design pixels at a device scale of 2");
-					await Assert.That(fromZip.GetBuffer()).IsEquivalentTo(fromDisk.GetBuffer());
+					await Assert.That(fromZip.GetBuffer()).IsEquivalentTo(fromDisk.GetBuffer(), CollectionOrdering.Matching);
 				}
 				finally
 				{
