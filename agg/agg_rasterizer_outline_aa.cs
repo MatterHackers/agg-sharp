@@ -217,7 +217,7 @@ namespace MatterHackers.Agg
 		public rasterizer_outline_aa(LineRenderer ren)
 		{
 			m_ren = ren;
-			m_line_join = (OutlineRenderer.accurate_join_only() ?
+			m_line_join = (ren.AccurateJoinOnly ?
 							outline_aa_join_e.outline_miter_accurate_join :
 							outline_aa_join_e.outline_round_join);
 			m_round_cap = (false);
@@ -232,7 +232,7 @@ namespace MatterHackers.Agg
 
 		public void line_join(outline_aa_join_e join)
 		{
-			m_line_join = OutlineRenderer.accurate_join_only() ?
+			m_line_join = m_ren.AccurateJoinOnly ?
 				outline_aa_join_e.outline_miter_accurate_join :
 				join;
 		}

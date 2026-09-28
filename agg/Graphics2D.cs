@@ -50,6 +50,7 @@ namespace MatterHackers.Agg
         protected ScanlineRasterizer rasterizer;
         protected Stroke StrockedText;
         private const int cover_full = 255;
+        private Action deferredDraws;
 
         public Graphics2D()
         {
@@ -80,8 +81,10 @@ namespace MatterHackers.Agg
         /// </summary>
         /// <remarks>
         /// Virtual because a GPU surface has no CPU back buffer of its own and has to make one on demand -
-        /// see <c>Graphics2DGpu.DestImage</c>, which is what lets the agg demos that rasterize by hand
-        /// (aa_demo, gouraud, blur, image_resample) run on a GPU window at all.
+        /// see <c>Graphics2DGpu.DestImage</c>, which is what lets the old stand-alone agg examples that
+        /// rasterize by hand (examples/aa_demo, gouraud, blur, image_resample) run on a GPU window at all.
+        /// The AggSharpDemo ports do not use it on the GPU: GouraudDemo draws per-vertex-coloured
+        /// primitives there until the GPU path grows span-generator support.
         /// </remarks>
         public virtual IImageByte DestImage
         {
@@ -186,7 +189,7 @@ namespace MatterHackers.Agg
             double pointSize = 12,
             Justification justification = Justification.Left,
             Baseline baseline = Baseline.Text,
-            Color color = default,
+            Color? color = null,
             bool drawFromHintedCach = false,
             Color backgroundColor = default,
             bool bold = false)
@@ -203,7 +206,7 @@ namespace MatterHackers.Agg
         /// <param name="pointSize">The size of the point in pixels. Default is 12.</param>
         /// <param name="justification">Defines the justification of the string, i.e., the alignment of the text. It can be left, right, or center. Default is 'Left'.</param>
         /// <param name="baseline">Defines the baseline alignment of the text, i.e., the vertical alignment of the text. It can be 'Text', 'Ideographic', etc. Default is 'Text'.</param>
-        /// <param name="color">Defines the color of the text. Default is 'Black' if not specified.</param>
+        /// <param name="color">Defines the color of the text. Default is 'Black' if not specified (null).</param>
         /// <param name="drawFromHintedCach">A boolean flag to indicate if the rendered string should be drawn from hinted cache. Default is 'false'.</param>
         /// <param name="backgroundColor">Defines the background color of the text. No background color is applied if not specified.</param>
         /// <param name="bold">A boolean flag to indicate if the text should be bold. Default is 'false'.</param>
@@ -212,7 +215,7 @@ namespace MatterHackers.Agg
         /// TypeFacePrinter printer = DrawString("Hello World", 50, 50, 14, Justification.Center, Baseline.Text, Color.Red, true, Color.White, true);
         /// </example>
         /// <remarks>
-        /// If the 'color' parameter's alpha value is zero, the function will interpret it as the color black.
+        /// An omitted 'color' draws black. A colour given with zero alpha draws nothing: it is not read as omitted.
         /// If the 'backgroundColor' parameter's alpha value is not zero, a rectangle of that color will be drawn as a background behind the string.
         /// </remarks>
         public TypeFacePrinter DrawString(string text,
@@ -221,24 +224,19 @@ namespace MatterHackers.Agg
             double pointSize = 12,
             Justification justification = Justification.Left,
             Baseline baseline = Baseline.Text,
-            Color color = default,
+            Color? color = null,
             bool drawFromHintedCach = false,
             Color backgroundColor = default,
             bool bold = false)
         {
             TypeFacePrinter stringPrinter = new TypeFacePrinter(text, pointSize, new Vector2(x, y), justification, baseline, bold);
-            if (color.Alpha0To255 == 0)
-            {
-                color = Color.Black;
-            }
-
             if (backgroundColor.Alpha0To255 != 0)
             {
                 FillRectangle(stringPrinter.LocalBounds, backgroundColor);
             }
 
             stringPrinter.DrawFromHintedCache = drawFromHintedCach;
-            stringPrinter.Render(this, color);
+            stringPrinter.Render(this, color ?? Color.Black);
 
             return stringPrinter;
         }
@@ -327,8 +325,37 @@ namespace MatterHackers.Agg
             this.Render(GetLine(x1, y1, x2, y2, strokeWidth), color);
         }
 
+        /// <summary>
+        /// Holds draws a caller has batched but not issued yet - <see cref="Image.Graphics2DSpanImage"/>'s merged
+        /// pixel runs - until the next other draw, transform or clip change on this graphics, which issues them
+        /// first so everything still lands in call order.
+        /// </summary>
+        public void DeferDraws(Action issue)
+        {
+            if (!ReferenceEquals(this.deferredDraws, issue))
+            {
+                this.FlushDeferredDraws();
+                this.deferredDraws = issue;
+            }
+        }
+
+        /// <summary>
+        /// Issues the draws <see cref="DeferDraws"/> holds. Every draw entry point calls it first; a caller
+        /// that ends its frame with deferred draws calls it (or the deferrer's own flush) itself.
+        /// </summary>
+        public void FlushDeferredDraws()
+        {
+            Action issue = this.deferredDraws;
+            if (issue != null)
+            {
+                this.deferredDraws = null;
+                issue();
+            }
+        }
+
         public Affine PopTransform()
         {
+            this.FlushDeferredDraws();
             if (affineTransformStack.Count == 1)
             {
                 throw new System.Exception("You cannot remove the last transform from the stack.");
@@ -339,6 +366,7 @@ namespace MatterHackers.Agg
 
         public void PushTransform()
         {
+            this.FlushDeferredDraws();
             if (affineTransformStack.Count > 1000)
             {
                 throw new System.Exception("You seem to be leaking transforms.  You should be popping some of them at some point.");
@@ -376,6 +404,7 @@ namespace MatterHackers.Agg
         /// </remarks>
         public void Render(IVertexSource vertexSource, IColorType colorType)
         {
+            this.FlushDeferredDraws();
             if (!TryRenderThroughLcd(vertexSource, colorType))
             {
                 RenderVertexSource(vertexSource, colorType);
@@ -594,6 +623,7 @@ namespace MatterHackers.Agg
         /// </remarks>
         public void RenderLcd(IVertexSource vertexSource, IColorType colorType, object pathCacheKey = null)
         {
+            this.FlushDeferredDraws();
             if (vertexSource == null)
             {
                 throw new ArgumentNullException(nameof(vertexSource));
@@ -698,24 +728,14 @@ namespace MatterHackers.Agg
         /// to the ordinary path.
         /// </para>
         /// <para>
-        /// <b>Known limitation, inherited from <see cref="RenderLcd"/>.</b> The clip comes from
-        /// <see cref="GetClippingRect"/>, which for image destinations reports the rasterizer's vector clip
-        /// box - and that box reads as empty when nobody ever called <c>SetVectorClipBox</c> on it, because
-        /// the rasterizer keeps "clipping is off" in a flag it does not expose. Such a destination
-        /// would paint nothing here where <see cref="RenderVertexSource"/> would paint unclipped. Nothing
-        /// in-tree can reach it: every <see cref="ImageGraphics2D"/> comes from
-        /// <see cref="Image.ImageBuffer.NewGraphics2D"/>, which sets the box to the buffer bounds. It is
-        /// called out here because this is the universal fill chokepoint - a hand-built
-        /// <see cref="Graphics2D"/> that skips the clip box now silently loses identified fills rather than
-        /// only the explicit <see cref="RenderLcd"/> calls it never made. Since <c>GuiWidget.DrawChild</c>
-        /// intersects every child's clip with the clip already in force on the surface, the cost is worse
-        /// than lost fills: an empty surface clip makes every child intersect to nothing, so a whole widget
-        /// tree painted onto such a surface skips every child and renders nothing at all.
+        /// The clip comes from <see cref="GetClippingRect"/>. For image destinations that is the rasterizer's
+        /// vector clip box, or the whole canvas when the rasterizer has none (<see cref="ScanlineRasterizer.HasVectorClipBox"/>),
+        /// so an unclipped destination - the AGG demo reference frame, as C++ AGG draws - still composites here.
         /// </para>
         /// </remarks>
         private bool TryRenderThroughLcd(IVertexSource vertexSource, IColorType colorType)
         {
-            if (!TryUnwrapIdentifiableSource(vertexSource, out IVertexSourceRenderIdentity identifiedSource, out Affine transform))
+            if (!IdentifiedFillPlacement.TryUnwrap(vertexSource, GetTransform(), out IVertexSourceRenderIdentity identifiedSource, out Affine transform))
             {
                 return false;
             }
@@ -747,8 +767,8 @@ namespace MatterHackers.Agg
             // tx and ty are the transform's final translation, so replacing them with their own fraction is
             // exactly "the same transform, with the whole-pixel placement taken out".
             Affine maskTransform = transform;
-            maskTransform.tx = NormalizeZeroPhase(transform.tx - compositeOffsetX);
-            maskTransform.ty = NormalizeZeroPhase(transform.ty - compositeOffsetY);
+            maskTransform.tx = IdentifiedFillPlacement.NormalizeZeroPhase(transform.tx - compositeOffsetX);
+            maskTransform.ty = IdentifiedFillPlacement.NormalizeZeroPhase(transform.ty - compositeOffsetY);
 
             switch (LcdMaskCache.GetUnclippedMask(
                 identity,
@@ -781,78 +801,6 @@ namespace MatterHackers.Agg
         }
 
         /// <summary>
-        /// Collapses a sub-pixel phase of -0.0 onto +0.0, leaving every other value exactly as it is.
-        /// </summary>
-        /// <remarks>
-        /// The two are the same placement, but <see cref="LcdMaskKey"/> compares its doubles by bit pattern,
-        /// so an unnormalized -0.0 files a second entry holding bytes identical to the first one's. It takes a
-        /// transform whose translation is already -0.0 to get here - subtracting the whole part from any other
-        /// value yields +0.0 - and the affine multiply in <see cref="TryUnwrapIdentifiableSource"/> turns most
-        /// of those into +0.0 on the way past, so this is a guard rather than a fix for an observed duplicate.
-        /// It is one comparison on a path that is about to rasterize, which is a fair price for not having to
-        /// reason about which mirrored or sheared transform survives that multiply with its sign intact.
-        /// <para>
-        /// Written as a comparison rather than <c>+ 0.0</c> because that trick is only a no-op for every value
-        /// <i>other</i> than -0.0, and relying on a compiler not to fold away an addition it is entitled to
-        /// consider redundant is the kind of thing that stops being true silently.
-        /// </para>
-        /// </remarks>
-        private static double NormalizeZeroPhase(double phase)
-        {
-            // -0.0 == 0 is true, so this catches both zeros and hands back the positive one.
-            return phase == 0 ? 0.0 : phase;
-        }
-
-        /// <summary>
-        /// Finds the source that names its own geometry inside <paramref name="vertexSource"/> and the full
-        /// path-space-to-device transform that applies to it, or answers false when there is no such source.
-        /// </summary>
-        /// <param name="vertexSource">The source handed to <see cref="Render"/>, possibly wrapped.</param>
-        /// <param name="identifiedSource">The source that names itself.</param>
-        /// <param name="transform">Everything between that source's own vertices and device pixels: the
-        /// wrappers' transforms followed by the current transform.</param>
-        /// <remarks>
-        /// <b>How identity and wrappers compose.</b> A <see cref="VertexSourceApplyTransform"/> holding an
-        /// <see cref="Affine"/> contributes placement, not shape - it moves vertices without changing which
-        /// vertices they are - so it joins the transform and leaves the identity underneath it intact. That
-        /// is what makes the split work for text: <see cref="Font.TypeFacePrinter"/> hands
-        /// <see cref="Render"/> either itself or itself wrapped in the whole-device-pixel baseline nudge, and
-        /// the two are the same run at two placements rather than two runs.
-        /// <para>
-        /// Every other proxy - a <see cref="Stroke"/>, a curve flattener - produces different vertices than
-        /// the source it wraps, and cannot claim that source's identity. The walk stops at the first one, and
-        /// the fill is rendered the ordinary way. So does a non-affine <see cref="ITransform"/>, whose effect
-        /// is not a matrix that can be folded into the current one.
-        /// </para>
-        /// </remarks>
-        private bool TryUnwrapIdentifiableSource(IVertexSource vertexSource, out IVertexSourceRenderIdentity identifiedSource, out Affine transform)
-        {
-            identifiedSource = null;
-            transform = default;
-
-            IVertexSource source = vertexSource;
-            Affine wrappers = Affine.NewIdentity();
-            while (source is VertexSourceApplyTransform applyTransform
-                && applyTransform.TransformToApply is Affine affine
-                && applyTransform.VertexSource != null)
-            {
-                // agg-sharp's operator * is a post-multiply ("a then b"), and a wrapper found further in is
-                // applied before every wrapper already collected outside it.
-                wrappers = affine * wrappers;
-                source = applyTransform.VertexSource;
-            }
-
-            if (!(source is IVertexSourceRenderIdentity identifiable))
-            {
-                return false;
-            }
-
-            identifiedSource = identifiable;
-            transform = wrappers * GetTransform();
-            return true;
-        }
-
-        /// <summary>
         /// Composites a finished coverage mask onto this destination, applying <paramref name="color"/> per
         /// channel, with the mask's bottom-left pixel at (<paramref name="originX"/>,
         /// <paramref name="originY"/>) - both whole pixels, always.
@@ -877,6 +825,43 @@ namespace MatterHackers.Agg
             throw new NotSupportedException(
                 $"{this.GetType().Name} reports CanCompositeLcd but does not implement CompositeLcdMask.");
         }
+
+        /// <summary>True when <see cref="CreateRetainedLayer()"/> answers a layer. Asking costs nothing, where
+        /// creating a layer to find out would allocate.</summary>
+        public virtual bool SupportsRetainedLayers => false;
+
+        /// <summary>
+        /// A new, empty retained layer (<see cref="IRetainedLayer"/>) this surface can draw with
+        /// <see cref="RenderRetainedLayer"/>, or null when the surface has none - every CPU surface, where a
+        /// widget backbuffer is an <see cref="ImageBuffer"/> instead.
+        /// </summary>
+        public virtual IRetainedLayer CreateRetainedLayer() => null;
+
+        /// <summary>
+        /// <see cref="CreateRetainedLayer()"/>, or with <paramref name="linearLight"/> a layer that holds linear light
+        /// in floats (rgba16float on the GPU) in place of sRGB bytes: what is drawn into it is converted from sRGB,
+        /// blends and compositing operators (<see cref="ICompOpGraphics"/>) mix linear premultiplied light, and it
+        /// mixes onto its destination in linear light and is encoded back to sRGB as C++ AGG's srgba8 does - what a
+        /// C++ example built with AGG_BGRA128 shows. It is drawn texel for texel only, without scaling or a rounded
+        /// clip (<see cref="IRoundedLayerCompositor.CompositeRounded"/> answers false). Null where the surface has no
+        /// such layer.
+        /// <para>
+        /// Converted on the way in: fills, strokes and text (LCD included), images, gradients, pattern fills, alpha
+        /// masks, compositing operators, and sRGB retained layers and SSAA targets painted inside it and composited
+        /// into it. Throwing <see cref="NotSupportedException"/> into it, having no linear-light variant: blurs
+        /// (DrawBlurred, BlurUnder, BlurBox), DrawWithCoverageGamma, MapChannels, Gouraud fills and filtered-image
+        /// fills; nor can a linear-light layer be the source of a filtered-image fill.
+        /// </para>
+        /// </summary>
+        public virtual IRetainedLayer CreateRetainedLayer(bool linearLight) => linearLight ? null : this.CreateRetainedLayer();
+
+        /// <summary>
+        /// Draws <paramref name="layer"/>'s retained picture with its bottom-left corner at
+        /// (<paramref name="x"/>, <paramref name="y"/>), through this surface's transform and clip, faded by
+        /// <paramref name="opacity"/> (0 invisible, 1 as painted). False, having drawn nothing, when this
+        /// surface cannot draw that layer (see <see cref="IRetainedLayer.BelongsTo"/>).
+        /// </summary>
+        public virtual bool RenderRetainedLayer(IRetainedLayer layer, double x, double y, double opacity = 1) => false;
 
         public void Render(IImageByte imageSource, Point2D position)
         {
@@ -937,6 +922,9 @@ namespace MatterHackers.Agg
         public virtual void DrawColoredPrimitives(DrawTopology topology, ReadOnlySpan<PosColorVertex> vertices)
         {
         }
+
+        /// <summary>Whether <see cref="DrawColoredPrimitives"/> draws anything here (the base draws nothing).</summary>
+        public virtual bool CanDrawColoredPrimitives => false;
 
         public void Render(IVertexSource vertexSource, double x, double y, IColorType color)
         {
@@ -1064,10 +1052,10 @@ namespace MatterHackers.Agg
                 renderedBounds.ExpandToInclude(flattened.GetBounds());
 
                 if (colorVertices.FillEvenOdd)
-                    this.Rasterizer.filling_rule(Util.filling_rule_e.fill_even_odd);
+                    this.SetFillingRule(Util.filling_rule_e.fill_even_odd);
                 this.Render(flattened, colorVertices.Color);
                 if (colorVertices.FillEvenOdd)
-                    this.Rasterizer.filling_rule(Util.filling_rule_e.fill_non_zero);
+                    this.SetFillingRule(Util.filling_rule_e.fill_non_zero);
             }
 
             if (debugBoundsWidth > 0)
@@ -1087,6 +1075,7 @@ namespace MatterHackers.Agg
 
         public void SetTransform(Affine value)
         {
+            this.FlushDeferredDraws();
             affineTransformStack.Pop();
             affineTransformStack.Push(value);
         }

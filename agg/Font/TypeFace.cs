@@ -3,7 +3,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007-2011
+// Copyright (C) 2007-2026, Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -139,6 +139,10 @@ namespace MatterHackers.Agg.Font
 
 		private Dictionary<int, Glyph> glyphs = new Dictionary<int, Glyph>(); // a glyph is indexed by the string it represents, usually one character, but sometimes multiple
 		private Dictionary<char, Dictionary<char, int>> HKerns = new Dictionary<char, Dictionary<char, int>>();
+
+		/// <summary>The TrueType face's pair kerning, laid out on first use (see <see cref="GetKerningForCodePoints"/>).</summary>
+		private Typography.TextLayout.GlyphLayout kerningLayout;
+		private readonly Dictionary<(int, int), int> kerningPairs = new Dictionary<(int, int), int>();
 
 		public int UnitsPerEm
 		{
@@ -350,7 +354,112 @@ namespace MatterHackers.Agg.Font
 			return GetGlyph(character)?.glyphData;
 		}
 
-		private Glyph GetGlyph(char character)
+		/// <summary>
+		/// Gets or sets the face asked for any code point this face has no glyph for, as agg-gui's
+		/// <c>Font::with_fallback</c>. The fallback's own <see cref="Fallback"/> is tried next, so faces chain.
+		/// Null (the default) keeps a missing glyph missing, exactly as before fallbacks existed.
+		/// </summary>
+		/// <remarks>
+		/// A single reference rather than a list so that setting it is one atomic write: text renders off the UI
+		/// thread, and a reader walking the chain can never see a half-updated collection.
+		/// Cached glyph images (<see cref="StyledTypeFaceImageCache"/>) are keyed on the primary face, so
+		/// changing the fallback after text has been drawn from that cache calls for
+		/// <see cref="StyledTypeFaceImageCache.Clear"/>.
+		/// </remarks>
+		public TypeFace Fallback { get; set; }
+
+		private const int MaxFallbackHops = 16;
+
+		/// <summary>
+		/// Whether this face itself (ignoring <see cref="Fallback"/>) has a glyph for <paramref name="codePoint"/>.
+		/// A TrueType face answers from its cmap, where glyph 0 is .notdef; an SVG face from its glyph table.
+		/// </summary>
+		public bool HasGlyph(int codePoint)
+		{
+			// Under the glyph lock for the TrueType face too: Typography's cmap memoises lookups in a plain
+			// Dictionary, and GetGlyph already serializes its own cmap calls on this lock
+			lock (glyphs)
+			{
+				if (_ofTypeface != null)
+				{
+					return _ofTypeface.GetGlyphIndex(codePoint) != 0;
+				}
+
+				return glyphs.ContainsKey(codePoint);
+			}
+		}
+
+		/// <summary>
+		/// Every code point this face itself (ignoring <see cref="Fallback"/>) has a glyph for, in ascending order:
+		/// a TrueType face's cmap, an SVG face's glyph table. For browsing a font, as a font book does.
+		/// </summary>
+		public IReadOnlyList<int> CodePoints()
+		{
+			var codePoints = new SortedSet<int>();
+			lock (glyphs)
+			{
+				if (_ofTypeface != null)
+				{
+					var unicodes = new List<uint>();
+					_ofTypeface.CollectUnicode(unicodes);
+					foreach (uint unicode in unicodes)
+					{
+						// A cmap range can map some of its code points to .notdef (glyph 0), and format 4 ends in a
+						// 0xFFFF sentinel; neither is a glyph the face has.
+						if (unicode <= 0x10FFFF && _ofTypeface.GetGlyphIndex((int)unicode) != 0)
+						{
+							codePoints.Add((int)unicode);
+						}
+					}
+				}
+				else
+				{
+					codePoints.UnionWith(glyphs.Keys);
+				}
+			}
+
+			return codePoints.ToList();
+		}
+
+		/// <summary>
+		/// The face that draws <paramref name="codePoint"/>: this one when it has the glyph or there is no
+		/// <see cref="Fallback"/>, otherwise the first face down the chain that has it, and this one again when
+		/// none does (so a glyph missing everywhere behaves as it would with no fallback).
+		/// </summary>
+		internal TypeFace ResolveFace(int codePoint)
+		{
+			if (Fallback == null || HasGlyph(codePoint))
+			{
+				return this;
+			}
+
+			// The hop limit ends a chain that loops back on itself somewhere past this face
+			int hops = 0;
+			for (TypeFace face = Fallback; face != null && face != this && hops < MaxFallbackHops; face = face.Fallback, hops++)
+			{
+				if (face.HasGlyph(codePoint))
+				{
+					return face;
+				}
+			}
+
+			return this;
+		}
+
+		/// <summary>This face's own outline for a code point, including one outside the BMP; ignores <see cref="Fallback"/>.</summary>
+		internal IVertexSource GetGlyphForCodePoint(int codePoint)
+		{
+			return GetGlyph(codePoint)?.glyphData;
+		}
+
+		/// <summary>This face's own advance for a code point, in font units; ignores <see cref="Fallback"/>.</summary>
+		internal int GetAdvanceForCodePoint(int codePoint)
+		{
+			return GetGlyph(codePoint)?.horiz_adv_x ?? 0;
+		}
+
+		// Takes an int so a code point outside the BMP can be looked up; a char widens to the key it always had.
+		private Glyph GetGlyph(int character)
 		{
 			Glyph glyph;
 
@@ -445,6 +554,35 @@ namespace MatterHackers.Agg.Font
 			public IEnumerable<VertexData> Vertices()
 			{
 				return storage.Vertices();
+			}
+		}
+
+		/// <summary>
+		/// How far this face's kerning moves <paramref name="right"/> when it follows <paramref name="left"/>, in font
+		/// units (negative pulls the pair together): the GPOS "kern" feature's change to the left glyph's advance, as
+		/// a shaper (resvg's rustybuzz) applies it. Zero for a face without GPOS (SVG fonts) and for unkerned pairs.
+		/// </summary>
+		internal int GetKerningForCodePoints(int left, int right)
+		{
+			if (_ofTypeface?.GPOSTable == null)
+			{
+				return 0;
+			}
+
+			// Under the glyph lock: the layout reuses its buffers and Typography's lookups memoise, neither thread-safe.
+			lock (glyphs)
+			{
+				if (!kerningPairs.TryGetValue((left, right), out int kerning))
+				{
+					// Ligatures off, so the pair stays two glyphs whatever GSUB would make of it.
+					kerningLayout ??= new Typography.TextLayout.GlyphLayout { Typeface = _ofTypeface, EnableLigature = false, EnableComposition = false };
+					kerningLayout.Layout(new[] { left, right });
+					var plans = kerningLayout.GetUnscaledGlyphPlanIter().ToList();
+					kerning = plans.Count == 2 ? plans[0].AdvanceX - _ofTypeface.GetHAdvanceWidthFromGlyphIndex(plans[0].glyphIndex) : 0;
+					kerningPairs.Add((left, right), kerning);
+				}
+
+				return kerning;
 			}
 		}
 

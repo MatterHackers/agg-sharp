@@ -31,6 +31,9 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Agg.Tests")]
 
+// Graphics2DGpu places its cached text coverage masks with IdentifiedFillPlacement, as the LCD path does.
+[assembly: InternalsVisibleTo("RenderGl")]
+
 // MatterHackers.Agg.Parallel moved to VectorMath.dll (2026-08-25) so leaf projects like geometry3Sharp
 // can reach the Sequential switch; this forwarder keeps binaries compiled against Agg.dll working.
 [assembly: TypeForwardedTo(typeof(MatterHackers.Agg.Parallel))]

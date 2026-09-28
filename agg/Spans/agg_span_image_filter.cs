@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007, 2026 Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -128,7 +128,7 @@ namespace MatterHackers.Agg
 			return m_interpolator;
 		}
 
-		public void prepare()
+		public virtual void prepare()
 		{
 		}
 	}
@@ -226,79 +226,16 @@ namespace MatterHackers.Agg
 		}
 	}
 
-	/*
-
 	//==============================================span_image_resample_affine
-	//template<class Source>
-	public class span_image_resample_affine :
-		span_image_filter//<Source, span_interpolator_linear<trans_affine> >
+	/// <summary>
+	/// C++ span_image_resample_affine: the base of the resampling span generators over an affine transform. The
+	/// filter's footprint is sized once per render, in <see cref="prepare"/>, from the transform's scale (so a
+	/// shrunk image averages every source pixel it covers instead of skipping some), times the blur. The
+	/// interpolator's transformer must be an <see cref="Transform.Affine"/>, as C++'s
+	/// span_interpolator_linear&lt;trans_affine&gt; is.
+	/// </summary>
+	public abstract class span_image_resample_affine : span_image_filter
 	{
-		//typedef Source IImageAccessor;
-		//typedef span_interpolator_linear<trans_affine> ISpanInterpolator;
-		//typedef span_image_filter<source_type, ISpanInterpolator> base_type;
-
-		//--------------------------------------------------------------------
-		public span_image_resample_affine()
-		{
-			m_scale_limit=(200.0);
-			m_blur_x=(1.0);
-			m_blur_y=(1.0);
-		}
-
-		//--------------------------------------------------------------------
-		public span_image_resample_affine(IImageAccessor src,
-								   ISpanInterpolator inter,
-								   ImageFilterLookUpTable filter) : base(src, inter, filter)
-		{
-			m_scale_limit(200.0);
-			m_blur_x(1.0);
-			m_blur_y(1.0);
-		}
-
-		//--------------------------------------------------------------------
-		public int  scale_limit() { return uround(m_scale_limit); }
-		public void scale_limit(int v)  { m_scale_limit = v; }
-
-		//--------------------------------------------------------------------
-		public double blur_x() { return m_blur_x; }
-		public double blur_y() { return m_blur_y; }
-		public void blur_x(double v) { m_blur_x = v; }
-		public void blur_y(double v) { m_blur_y = v; }
-		public void blur(double v) { m_blur_x = m_blur_y = v; }
-
-		//--------------------------------------------------------------------
-		public void prepare()
-		{
-			double scale_x;
-			double scale_y;
-
-			base_type::interpolator().transformer().scaling_abs(&scale_x, &scale_y);
-
-			if(scale_x * scale_y > m_scale_limit)
-			{
-				scale_x = scale_x * m_scale_limit / (scale_x * scale_y);
-				scale_y = scale_y * m_scale_limit / (scale_x * scale_y);
-			}
-
-			if(scale_x < 1) scale_x = 1;
-			if(scale_y < 1) scale_y = 1;
-
-			if(scale_x > m_scale_limit) scale_x = m_scale_limit;
-			if(scale_y > m_scale_limit) scale_y = m_scale_limit;
-
-			scale_x *= m_blur_x;
-			scale_y *= m_blur_y;
-
-			if(scale_x < 1) scale_x = 1;
-			if(scale_y < 1) scale_y = 1;
-
-			m_rx     = uround(    scale_x * (double)(image_subpixel_scale));
-			m_rx_inv = uround(1.0/scale_x * (double)(image_subpixel_scale));
-
-			m_ry     = uround(    scale_y * (double)(image_subpixel_scale));
-			m_ry_inv = uround(1.0/scale_y * (double)(image_subpixel_scale));
-		}
-
 		protected int m_rx;
 		protected int m_ry;
 		protected int m_rx_inv;
@@ -307,9 +244,71 @@ namespace MatterHackers.Agg
 		private double m_scale_limit;
 		private double m_blur_x;
 		private double m_blur_y;
-	};
 
-	 */
+		public span_image_resample_affine(IImageBufferAccessor src, ISpanInterpolator inter, ImageFilterLookUpTable filter)
+			: base(src, inter, filter)
+		{
+			m_scale_limit = 200.0;
+			m_blur_x = 1.0;
+			m_blur_y = 1.0;
+		}
+
+		/// <summary>C++ <c>m_rx</c>: the filter's horizontal footprint, in subpixels per source pixel (256 at scale 1).</summary>
+		public int ScaleX => m_rx;
+
+		/// <summary>C++ <c>m_ry</c>: the filter's vertical footprint, in subpixels per source pixel.</summary>
+		public int ScaleY => m_ry;
+
+		public int scale_limit() => Util.uround(m_scale_limit);
+
+		public void scale_limit(int v) => m_scale_limit = v;
+
+		public double blur_x() => m_blur_x;
+
+		public double blur_y() => m_blur_y;
+
+		public void blur_x(double v) => m_blur_x = v;
+
+		public void blur_y(double v) => m_blur_y = v;
+
+		public void blur(double v) => m_blur_x = m_blur_y = v;
+
+		public override void prepare()
+		{
+			if (!(interpolator().transformer() is Transform.Affine affine))
+			{
+				throw new System.InvalidOperationException("span_image_resample_affine needs an interpolator over an Affine transform.");
+			}
+
+			affine.scaling_abs(out double scale_x, out double scale_y);
+
+			double scale_xy = scale_x * scale_y;
+			if (scale_xy > m_scale_limit)
+			{
+				scale_x = scale_x * m_scale_limit / scale_xy;
+				scale_y = scale_y * m_scale_limit / scale_xy;
+			}
+
+			if (scale_x < 1) scale_x = 1;
+			if (scale_y < 1) scale_y = 1;
+
+			if (scale_x > m_scale_limit) scale_x = m_scale_limit;
+			if (scale_y > m_scale_limit) scale_y = m_scale_limit;
+
+			scale_x *= m_blur_x;
+			scale_y *= m_blur_y;
+
+			if (scale_x < 1) scale_x = 1;
+			if (scale_y < 1) scale_y = 1;
+
+			const double subpixelScale = (int)image_subpixel_scale_e.image_subpixel_scale;
+			m_rx = Util.uround(scale_x * subpixelScale);
+			m_rx_inv = Util.uround(1.0 / scale_x * subpixelScale);
+
+			m_ry = Util.uround(scale_y * subpixelScale);
+			m_ry_inv = Util.uround(1.0 / scale_y * subpixelScale);
+		}
+	}
 
 	//=====================================================span_image_resample
 	public abstract class span_image_resample
@@ -329,33 +328,33 @@ namespace MatterHackers.Agg
 		//public abstract unsafe void generate(rgba8* span, int x, int y, int len);
 
 		//--------------------------------------------------------------------
-		private int scale_limit()
+		public int scale_limit()
 		{
 			return m_scale_limit;
 		}
 
-		private void scale_limit(int v)
+		public void scale_limit(int v)
 		{
 			m_scale_limit = v;
 		}
 
 		//--------------------------------------------------------------------
-		private double blur_x()
+		public double blur_x()
 		{
 			return (double)(m_blur_x) / (double)((int)image_subpixel_scale_e.image_subpixel_scale);
 		}
 
-		private double blur_y()
+		public double blur_y()
 		{
 			return (double)(m_blur_y) / (double)((int)image_subpixel_scale_e.image_subpixel_scale);
 		}
 
-		private void blur_x(double v)
+		public void blur_x(double v)
 		{
 			m_blur_x = (int)Util.uround(v * (double)((int)image_subpixel_scale_e.image_subpixel_scale));
 		}
 
-		private void blur_y(double v)
+		public void blur_y(double v)
 		{
 			m_blur_y = (int)Util.uround(v * (double)((int)image_subpixel_scale_e.image_subpixel_scale));
 		}

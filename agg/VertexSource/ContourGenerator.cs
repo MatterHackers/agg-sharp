@@ -104,10 +104,12 @@ namespace MatterHackers.Agg.VertexSource
 			set => m_shorten = value;
 		}
 
+		// C++ width(w) keeps w as well as setting the stroker: rewind re-sets the stroker to +w or -w by each
+		// polygon's orientation, and width() reads it back as given.
 		public double Width
 		{
-			get => m_stroker.width();
-			set => m_stroker.width(value);
+			get => m_width;
+			set => m_stroker.width(m_width = value);
 		}
 
 		public void MiterLimitTheta(double t)
@@ -120,6 +122,10 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			m_src_vertices.Clear();
 			m_closed = false;
+
+			// Forgotten per polygon (the adaptor calls this at each move_to), so each polygon's close flag or
+			// autodetected area sets its own orientation.
+			m_orientation = FlagsAndCommand.FlagNone;
 			m_status = StrokeMath.status_e.initial;
 		}
 

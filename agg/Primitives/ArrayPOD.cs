@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007, 2026
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -69,11 +69,17 @@ namespace MatterHackers.Agg
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// C++ pod_array::resize: a different size allocates a fresh, zeroed array (contents are
+        /// not kept) and records the new size; the same size is a no-op. Callers only grow, guarded
+        /// by Size(), so recording the size is what stops them reallocating on every call.
+        /// </summary>
         public void Resize(int size)
         {
             if (size != m_size)
             {
                 m_array = new T[size];
+                m_size = size;
             }
         }
 

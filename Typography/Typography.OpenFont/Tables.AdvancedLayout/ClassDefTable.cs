@@ -163,6 +163,10 @@ namespace Typography.OpenFont.Tables
         }
 
 
+        /// <summary>
+        /// The class the table gives <paramref name="glyphIndex"/>. A glyph the table does not list is class 0, as
+        /// the OpenType spec defines it - a pair-kerning table's class-0 row and column hold real adjustments.
+        /// </summary>
         public int GetClassValue(ushort glyphIndex)
         {
             switch (Format)
@@ -171,11 +175,11 @@ namespace Typography.OpenFont.Tables
                 case 1:
                     {
                         if (glyphIndex >= startGlyph &&
-                            glyphIndex < classValueArray.Length)
+                            glyphIndex - startGlyph < classValueArray.Length)
                         {
                             return classValueArray[glyphIndex - startGlyph];
                         }
-                        return -1;
+                        return 0;
                     }
                 case 2:
                     {
@@ -194,10 +198,10 @@ namespace Typography.OpenFont.Tables
                             }
                             else
                             {
-                                return -1;//no need to go further
+                                return 0;//no need to go further
                             }
                         }
-                        return -1;
+                        return 0;
                     }
             }
         }

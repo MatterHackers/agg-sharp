@@ -79,24 +79,8 @@ namespace MatterHackers.Agg
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			byte alpha = (byte)(alphaSlider.Value * 255);
-			foreach(var shape in lionShape.Shapes)
-			{
-				shape.Color = new Color(shape.Color, alpha);
-			}
-
-			Affine transform = Affine.NewIdentity();
-			transform *= Affine.NewTranslation(-lionShape.Center.X, -lionShape.Center.Y);
-			transform *= Affine.NewScaling(lionScale, lionScale);
-			transform *= Affine.NewRotation(angle + Math.PI);
-			transform *= Affine.NewSkewing(skewX / 1000.0, skewY / 1000.0);
-			transform *= Affine.NewTranslation(Width / 2, Height / 2);
-
-			// This code renders the lion:
-			foreach (var shape in lionShape.Shapes)
-			{
-				VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(shape.VertexStorage, transform);
-				graphics2D.Render(transformedPathStorage, shape.Color);
-			}
+			Affine transform = lionShape.GetDemoTransform((int)Width, (int)Height, angle, lionScale, skewX, skewY);
+			lionShape.Render(graphics2D, transform, alpha);
 
 			graphics2D.DrawString("test", 40, 40, 50);
 

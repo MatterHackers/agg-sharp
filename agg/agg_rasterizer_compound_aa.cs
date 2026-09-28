@@ -59,8 +59,8 @@ namespace MatterHackers.Agg
 
 		private int m_min_style;
 		private int m_max_style;
-		private int m_start_x;
-		private int m_start_y;
+		private double m_start_x;
+		private double m_start_y;
 		private int m_scan_y;
 		private int m_sl_start;
 		private int m_sl_len;
@@ -81,9 +81,16 @@ namespace MatterHackers.Agg
 		private const int poly_subpixel_shift = (int)Util.poly_subpixel_scale_e.poly_subpixel_shift;
 
 		public rasterizer_compound_aa()
+			: this(new VectorClipper())
+		{
+		}
+
+		/// <summary>A compound rasterizer clipping through <paramref name="clipper"/>: a
+		/// <see cref="VectorClipperDouble"/> for C++'s <c>rasterizer_compound_aa&lt;rasterizer_sl_clip_dbl&gt;</c>.</summary>
+		public rasterizer_compound_aa(VectorClipper clipper)
 		{
 			rasterizerCellsAa = new RasterizerCellsAa();
-			vectorClipper = new VectorClipper();
+			vectorClipper = clipper;
 			fillingRule = Util.filling_rule_e.fill_non_zero;
 			layerOrder = LayerOrder.Direct;
 			activeStyles = new VectorPOD<style_info>();  // Active Styles
@@ -116,25 +123,25 @@ namespace MatterHackers.Agg
 			m_sl_len = 0;
 		}
 
-		private void filling_rule(Util.filling_rule_e filling_rule)
+		public void filling_rule(Util.filling_rule_e filling_rule)
 		{
 			fillingRule = filling_rule;
 		}
 
-		private void layer_order(LayerOrder order)
+		public void layer_order(LayerOrder order)
 		{
 			layerOrder = order;
 		}
 
-		private void clip_box(double x1, double y1,
+		public void clip_box(double x1, double y1,
 													double x2, double y2)
 		{
 			reset();
-			vectorClipper.clip_box(vectorClipper.upscale(x1), vectorClipper.upscale(y1),
-							   vectorClipper.upscale(x2), vectorClipper.upscale(y2));
+			vectorClipper.ClipBoxD(vectorClipper.UpscaleD(x1), vectorClipper.UpscaleD(y1),
+							   vectorClipper.UpscaleD(x2), vectorClipper.UpscaleD(y2));
 		}
 
-		private void reset_clipping()
+		public void reset_clipping()
 		{
 			reset();
 			vectorClipper.reset_clipping();
@@ -156,32 +163,32 @@ namespace MatterHackers.Agg
 		public void move_to(int x, int y)
 		{
 			if (rasterizerCellsAa.sorted()) reset();
-			vectorClipper.move_to(m_start_x = vectorClipper.downscale(x),
-							  m_start_y = vectorClipper.downscale(y));
+			vectorClipper.MoveToD(m_start_x = vectorClipper.DownscaleD(x),
+							  m_start_y = vectorClipper.DownscaleD(y));
 		}
 
 		public void line_to(int x, int y)
 		{
-			vectorClipper.line_to(rasterizerCellsAa,
-							  vectorClipper.downscale(x),
-							  vectorClipper.downscale(y));
+			vectorClipper.LineToD(rasterizerCellsAa,
+							  vectorClipper.DownscaleD(x),
+							  vectorClipper.DownscaleD(y));
 		}
 
 		public void move_to_d(double x, double y)
 		{
 			if (rasterizerCellsAa.sorted()) reset();
-			vectorClipper.move_to(m_start_x = vectorClipper.upscale(x),
-							  m_start_y = vectorClipper.upscale(y));
+			vectorClipper.MoveToD(m_start_x = vectorClipper.UpscaleD(x),
+							  m_start_y = vectorClipper.UpscaleD(y));
 		}
 
 		public void line_to_d(double x, double y)
 		{
-			vectorClipper.line_to(rasterizerCellsAa,
-							  vectorClipper.upscale(x),
-							  vectorClipper.upscale(y));
+			vectorClipper.LineToD(rasterizerCellsAa,
+							  vectorClipper.UpscaleD(x),
+							  vectorClipper.UpscaleD(y));
 		}
 
-		private void add_vertex(double x, double y, FlagsAndCommand cmd)
+		public void add_vertex(double x, double y, FlagsAndCommand cmd)
 		{
 			if (ShapePath.IsMoveTo(cmd))
 			{
@@ -195,30 +202,30 @@ namespace MatterHackers.Agg
 				else
 					if (ShapePath.IsClose(cmd))
 					{
-						vectorClipper.line_to(rasterizerCellsAa, m_start_x, m_start_y);
+						vectorClipper.LineToD(rasterizerCellsAa, m_start_x, m_start_y);
 					}
 		}
 
-		private void edge(int x1, int y1, int x2, int y2)
+		public void edge(int x1, int y1, int x2, int y2)
 		{
 			if (rasterizerCellsAa.sorted()) reset();
-			vectorClipper.move_to(vectorClipper.downscale(x1), vectorClipper.downscale(y1));
-			vectorClipper.line_to(rasterizerCellsAa,
-							  vectorClipper.downscale(x2),
-							  vectorClipper.downscale(y2));
+			vectorClipper.MoveToD(vectorClipper.DownscaleD(x1), vectorClipper.DownscaleD(y1));
+			vectorClipper.LineToD(rasterizerCellsAa,
+							  vectorClipper.DownscaleD(x2),
+							  vectorClipper.DownscaleD(y2));
 		}
 
-		private void edge_d(double x1, double y1,
+		public void edge_d(double x1, double y1,
 												  double x2, double y2)
 		{
 			if (rasterizerCellsAa.sorted()) reset();
-			vectorClipper.move_to(vectorClipper.upscale(x1), vectorClipper.upscale(y1));
-			vectorClipper.line_to(rasterizerCellsAa,
-							  vectorClipper.upscale(x2),
-							  vectorClipper.upscale(y2));
+			vectorClipper.MoveToD(vectorClipper.UpscaleD(x1), vectorClipper.UpscaleD(y1));
+			vectorClipper.LineToD(rasterizerCellsAa,
+							  vectorClipper.UpscaleD(x2),
+							  vectorClipper.UpscaleD(y2));
 		}
 
-		private void sort()
+		public void sort()
 		{
 			rasterizerCellsAa.sort_cells();
 		}
@@ -252,7 +259,6 @@ namespace MatterHackers.Agg
 				int curCellOffset;
 				rasterizerCellsAa.scanline_cells(m_scan_y, out cells, out cellOffset);
 				int num_styles = (int)(m_max_style - m_min_style + 2);
-				int style_id;
 				int styleOffset = 0;
 
 				m_cells.Allocate((int)num_cells * 2, 256); // Each cell can have two styles
@@ -270,8 +276,9 @@ namespace MatterHackers.Agg
 					activeStyles.Array[styleOffset].num_cells = 0;
 					activeStyles.Array[styleOffset].last_x = -0x7FFFFFFF;
 
-					m_sl_start = cells[0].x;
-					m_sl_len = (int)(cells[num_cells - 1].x - m_sl_start + 1);
+					// The scanline's cells start at cellOffset in the outline's sorted array, not at 0.
+					m_sl_start = cells[cellOffset].x;
+					m_sl_len = (int)(cells[cellOffset + num_cells - 1].x - m_sl_start + 1);
 					while (num_cells-- != 0)
 					{
 						curCellOffset = (int)cellOffset++;
@@ -294,54 +301,14 @@ namespace MatterHackers.Agg
 					num_cells = (int)rasterizerCellsAa.scanline_num_cells(m_scan_y);
 					rasterizerCellsAa.scanline_cells(m_scan_y, out cells, out cellOffset);
 
+					// Each cell adds its area and cover to its left style and takes them from its right style,
+					// gathered per style into m_cells (C++ cell_info) at the start indexes worked out above.
+					PixelCellAa[] styleCells = m_cells.Array;
 					while (num_cells-- > 0)
 					{
 						curCellOffset = (int)cellOffset++;
-						style_id = (int)((cells[curCellOffset].left < 0) ? 0 :
-									cells[curCellOffset].left - m_min_style + 1);
-
-						styleOffset = (int)style_id;
-						if (cells[curCellOffset].x == stylesArray[styleOffset].last_x)
-						{
-							cellOffset = stylesArray[styleOffset].start_cell + stylesArray[styleOffset].num_cells - 1;
-							unchecked
-							{
-								cells[cellOffset].area += cells[curCellOffset].area;
-								cells[cellOffset].cover += cells[curCellOffset].cover;
-							}
-						}
-						else
-						{
-							cellOffset = stylesArray[styleOffset].start_cell + stylesArray[styleOffset].num_cells;
-							cells[cellOffset].x = cells[curCellOffset].x;
-							cells[cellOffset].area = cells[curCellOffset].area;
-							cells[cellOffset].cover = cells[curCellOffset].cover;
-							stylesArray[styleOffset].last_x = cells[curCellOffset].x;
-							stylesArray[styleOffset].num_cells++;
-						}
-
-						style_id = (int)((cells[curCellOffset].right < 0) ? 0 :
-									cells[curCellOffset].right - m_min_style + 1);
-
-						styleOffset = (int)style_id;
-						if (cells[curCellOffset].x == stylesArray[styleOffset].last_x)
-						{
-							cellOffset = stylesArray[styleOffset].start_cell + stylesArray[styleOffset].num_cells - 1;
-							unchecked
-							{
-								cells[cellOffset].area -= cells[curCellOffset].area;
-								cells[cellOffset].cover -= cells[curCellOffset].cover;
-							}
-						}
-						else
-						{
-							cellOffset = stylesArray[styleOffset].start_cell + stylesArray[styleOffset].num_cells;
-							cells[cellOffset].x = cells[curCellOffset].x;
-							cells[cellOffset].area = -cells[curCellOffset].area;
-							cells[cellOffset].cover = -cells[curCellOffset].cover;
-							stylesArray[styleOffset].last_x = cells[curCellOffset].x;
-							stylesArray[styleOffset].num_cells++;
-						}
+						AddToStyleCells(stylesArray, styleCells, cells[curCellOffset].left, cells[curCellOffset].x, cells[curCellOffset].area, cells[curCellOffset].cover);
+						AddToStyleCells(stylesArray, styleCells, cells[curCellOffset].right, cells[curCellOffset].x, -cells[curCellOffset].area, -cells[curCellOffset].cover);
 					}
 				}
 				if (activeStyleTable.Count > 1) break;
@@ -352,18 +319,21 @@ namespace MatterHackers.Agg
 			if (layerOrder != LayerOrder.Unsorted)
 			{
 				VectorPodRangeAdaptor ra = new VectorPodRangeAdaptor(activeStyleTable, 1, activeStyleTable.Count - 1);
-				if (layerOrder == LayerOrder.Direct)
+				// C++ quick_sorts with unsigned_greater (direct: the highest style first, so it is on top in the
+				// layered renderer) or unsigned_less (inverse). The table holds distinct values, so any sort gives
+				// C++'s order; an insertion sort is plenty for a handful of styles.
+				bool descending = layerOrder == LayerOrder.Direct;
+				for (int i = 1; i < ra.Size(); i++)
 				{
-					QuickSortRangeAdaptorUint m_QSorter = new QuickSortRangeAdaptorUint();
-					m_QSorter.Sort(ra);
-					//quick_sort(ra, uint_greater);
-				}
-				else
-				{
-					throw new System.NotImplementedException();
-					//QuickSort_range_adaptor_uint m_QSorter = new QuickSort_range_adaptor_uint();
-					//m_QSorter.Sort(ra);
-					//quick_sort(ra, uint_less);
+					int value = ra[i];
+					int j = i - 1;
+					while (j >= 0 && (descending ? ra[j] < value : ra[j] > value))
+					{
+						ra[j + 1] = ra[j];
+						j--;
+					}
+
+					ra[j + 1] = value;
 				}
 			}
 
@@ -397,7 +367,7 @@ namespace MatterHackers.Agg
 			return true;
 		}
 
-		private bool hit_test(int tx, int ty)
+		public bool hit_test(int tx, int ty)
 		{
 			if (!navigate_scanline(ty))
 			{
@@ -574,6 +544,33 @@ namespace MatterHackers.Agg
 			if (sl.num_spans() == 0) return false;
 			sl.finalize(scan_y);
 			return true;
+		}
+
+		/// <summary>
+		/// One cell's area and cover added to <paramref name="style_id"/>'s cells in m_cells: merged into that
+		/// style's last cell when it is at the same x, else appended as a new cell.
+		/// </summary>
+		private void AddToStyleCells(style_info[] stylesArray, PixelCellAa[] styleCells, int style_id, int x, int area, int cover)
+		{
+			int styleOffset = (style_id < 0) ? 0 : style_id - m_min_style + 1;
+			if (x == stylesArray[styleOffset].last_x)
+			{
+				int cellIndex = stylesArray[styleOffset].start_cell + stylesArray[styleOffset].num_cells - 1;
+				unchecked
+				{
+					styleCells[cellIndex].area += area;
+					styleCells[cellIndex].cover += cover;
+				}
+			}
+			else
+			{
+				int cellIndex = stylesArray[styleOffset].start_cell + stylesArray[styleOffset].num_cells;
+				styleCells[cellIndex].x = x;
+				styleCells[cellIndex].area = area;
+				styleCells[cellIndex].cover = cover;
+				stylesArray[styleOffset].last_x = x;
+				stylesArray[styleOffset].num_cells++;
+			}
 		}
 
 		private void add_style(int style_id)

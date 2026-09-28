@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007, 2026 Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -63,7 +63,12 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		private byte[] pixel(out int bufferByteOffset)
+		/// <summary>
+		/// The pixel at (m_x, m_y) for a read <see cref="span"/> could not serve straight from the row: this one
+		/// clamps to the nearest edge pixel. Each accessor overrides it with its own edge rule (C++ gives every
+		/// accessor its own pixel()); it must be virtual, or span/next_x/next_y here would clamp for all of them.
+		/// </summary>
+		protected virtual byte[] pixel(out int bufferByteOffset)
 		{
 			int x = m_x;
 			int y = m_y;
@@ -158,14 +163,16 @@ namespace MatterHackers.Agg
 		public ImageBufferAccessorClip(IImageByte sourceImage, Color bk)
 			: base(sourceImage)
 		{
+			// Laid out as the image's pixels are, since the filters read it at OrderR/OrderG/OrderB/OrderA; a
+			// 24-bit image uses the same R, G and B offsets and never reads the alpha byte.
 			m_OutsideBufferColor = new byte[4];
-			m_OutsideBufferColor[0] = bk.red;
-			m_OutsideBufferColor[1] = bk.green;
-			m_OutsideBufferColor[2] = bk.blue;
-			m_OutsideBufferColor[3] = bk.alpha;
+			m_OutsideBufferColor[ImageBuffer.OrderR] = bk.red;
+			m_OutsideBufferColor[ImageBuffer.OrderG] = bk.green;
+			m_OutsideBufferColor[ImageBuffer.OrderB] = bk.blue;
+			m_OutsideBufferColor[ImageBuffer.OrderA] = bk.alpha;
 		}
 
-		private byte[] pixel(out int bufferByteOffset)
+		protected override byte[] pixel(out int bufferByteOffset)
 		{
 			unchecked
 			{
@@ -235,7 +242,7 @@ namespace MatterHackers.Agg
 		{
 		}
 
-		private byte[] pixel(out int bufferByteOffset)
+		protected override byte[] pixel(out int bufferByteOffset)
 		{
 			int x = m_x;
 			int y = m_y;
@@ -270,246 +277,6 @@ namespace MatterHackers.Agg
 			return m_SourceImage.GetBuffer();
 		}
 	};
-
-	/*
-
-		//-----------------------------------------------------image_accessor_wrap
-		template<class PixFmt, class WrapX, class WrapY> class image_accessor_wrap
-		{
-		public:
-			typedef PixFmt   pixfmt_type;
-			typedef typename pixfmt_type::color_type color_type;
-			typedef typename pixfmt_type::order_type order_type;
-			typedef typename pixfmt_type::value_type value_type;
-			enum pix_width_e { pix_width = pixfmt_type::pix_width };
-
-			image_accessor_wrap() {}
-			explicit image_accessor_wrap(pixfmt_type& pixf) :
-				m_pixf(&pixf),
-				m_wrap_x(pixf.Width),
-				m_wrap_y(pixf.Height)
-			{}
-
-			void attach(pixfmt_type& pixf)
-			{
-				m_pixf = &pixf;
-			}
-
-			byte* span(int x, int y, int)
-			{
-				m_x = x;
-				m_row_ptr = m_pixf->row_ptr(m_wrap_y(y));
-				return m_row_ptr + m_wrap_x(x) * pix_width;
-			}
-
-			byte* next_x()
-			{
-				int x = ++m_wrap_x;
-				return m_row_ptr + x * pix_width;
-			}
-
-			byte* next_y()
-			{
-				m_row_ptr = m_pixf->row_ptr(++m_wrap_y);
-				return m_row_ptr + m_wrap_x(m_x) * pix_width;
-			}
-
-		private:
-			pixfmt_type* m_pixf;
-			byte*       m_row_ptr;
-			int                m_x;
-			WrapX              m_wrap_x;
-			WrapY              m_wrap_y;
-		};
-
-		//--------------------------------------------------------wrap_mode_repeat
-		class wrap_mode_repeat
-		{
-		public:
-			wrap_mode_repeat() {}
-			wrap_mode_repeat(int size) :
-				m_size(size),
-				m_add(size * (0x3FFFFFFF / size)),
-				m_value(0)
-			{}
-
-			int operator() (int v)
-			{
-				return m_value = (int(v) + m_add) % m_size;
-			}
-
-			int operator++ ()
-			{
-				++m_value;
-				if(m_value >= m_size) m_value = 0;
-				return m_value;
-			}
-		private:
-			int m_size;
-			int m_add;
-			int m_value;
-		};
-
-		//---------------------------------------------------wrap_mode_repeat_pow2
-		class wrap_mode_repeat_pow2
-		{
-		public:
-			wrap_mode_repeat_pow2() {}
-			wrap_mode_repeat_pow2(int size) : m_value(0)
-			{
-				m_mask = 1;
-				while(m_mask < size) m_mask = (m_mask << 1) | 1;
-				m_mask >>= 1;
-			}
-			int operator() (int v)
-			{
-				return m_value = int(v) & m_mask;
-			}
-			int operator++ ()
-			{
-				++m_value;
-				if(m_value > m_mask) m_value = 0;
-				return m_value;
-			}
-		private:
-			int m_mask;
-			int m_value;
-		};
-
-		//----------------------------------------------wrap_mode_repeat_auto_pow2
-		class wrap_mode_repeat_auto_pow2
-		{
-		public:
-			wrap_mode_repeat_auto_pow2() {}
-			wrap_mode_repeat_auto_pow2(int size) :
-				m_size(size),
-				m_add(size * (0x3FFFFFFF / size)),
-				m_mask((m_size & (m_size-1)) ? 0 : m_size-1),
-				m_value(0)
-			{}
-
-			int operator() (int v)
-			{
-				if(m_mask) return m_value = int(v) & m_mask;
-				return m_value = (int(v) + m_add) % m_size;
-			}
-			int operator++ ()
-			{
-				++m_value;
-				if(m_value >= m_size) m_value = 0;
-				return m_value;
-			}
-
-		private:
-			int m_size;
-			int m_add;
-			int m_mask;
-			int m_value;
-		};
-
-		//-------------------------------------------------------wrap_mode_reflect
-		class wrap_mode_reflect
-		{
-		public:
-			wrap_mode_reflect() {}
-			wrap_mode_reflect(int size) :
-				m_size(size),
-				m_size2(size * 2),
-				m_add(m_size2 * (0x3FFFFFFF / m_size2)),
-				m_value(0)
-			{}
-
-			int operator() (int v)
-			{
-				m_value = (int(v) + m_add) % m_size2;
-				if(m_value >= m_size) return m_size2 - m_value - 1;
-				return m_value;
-			}
-
-			int operator++ ()
-			{
-				++m_value;
-				if(m_value >= m_size2) m_value = 0;
-				if(m_value >= m_size) return m_size2 - m_value - 1;
-				return m_value;
-			}
-		private:
-			int m_size;
-			int m_size2;
-			int m_add;
-			int m_value;
-		};
-
-		//--------------------------------------------------wrap_mode_reflect_pow2
-		class wrap_mode_reflect_pow2
-		{
-		public:
-			wrap_mode_reflect_pow2() {}
-			wrap_mode_reflect_pow2(int size) : m_value(0)
-			{
-				m_mask = 1;
-				m_size = 1;
-				while(m_mask < size)
-				{
-					m_mask = (m_mask << 1) | 1;
-					m_size <<= 1;
-				}
-			}
-			int operator() (int v)
-			{
-				m_value = int(v) & m_mask;
-				if(m_value >= m_size) return m_mask - m_value;
-				return m_value;
-			}
-			int operator++ ()
-			{
-				++m_value;
-				m_value &= m_mask;
-				if(m_value >= m_size) return m_mask - m_value;
-				return m_value;
-			}
-		private:
-			int m_size;
-			int m_mask;
-			int m_value;
-		};
-
-		//---------------------------------------------wrap_mode_reflect_auto_pow2
-		class wrap_mode_reflect_auto_pow2
-		{
-		public:
-			wrap_mode_reflect_auto_pow2() {}
-			wrap_mode_reflect_auto_pow2(int size) :
-				m_size(size),
-				m_size2(size * 2),
-				m_add(m_size2 * (0x3FFFFFFF / m_size2)),
-				m_mask((m_size2 & (m_size2-1)) ? 0 : m_size2-1),
-				m_value(0)
-			{}
-
-			int operator() (int v)
-			{
-				m_value = m_mask ? int(v) & m_mask :
-								  (int(v) + m_add) % m_size2;
-				if(m_value >= m_size) return m_size2 - m_value - 1;
-				return m_value;
-			}
-			int operator++ ()
-			{
-				++m_value;
-				if(m_value >= m_size2) m_value = 0;
-				if(m_value >= m_size) return m_size2 - m_value - 1;
-				return m_value;
-			}
-
-		private:
-			int m_size;
-			int m_size2;
-			int m_add;
-			int m_mask;
-			int m_value;
-		};
-	 */
 
 	public interface IImageBufferAccessorFloat
 	{
@@ -554,7 +321,12 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		private float[] pixel(out int bufferFloatOffset)
+		/// <summary>
+		/// The pixel at (m_x, m_y) for a read <see cref="span"/> could not serve straight from the row: this one
+		/// clamps to the nearest edge pixel. Virtual so <see cref="ImageBufferAccessorClipFloat"/>'s rule is the
+		/// one span/next_x/next_y use, as with the byte accessors.
+		/// </summary>
+		protected virtual float[] pixel(out int bufferFloatOffset)
 		{
 			int x = m_x;
 			int y = m_y;
@@ -648,14 +420,15 @@ namespace MatterHackers.Agg
 		public ImageBufferAccessorClipFloat(IImageFloat sourceImage, ColorF bk)
 			: base(sourceImage)
 		{
+			// Laid out as the image's pixels are, since the filters read it at the Order* offsets.
 			m_OutsideBufferColor = new float[4];
-			m_OutsideBufferColor[0] = bk.red;
-			m_OutsideBufferColor[1] = bk.green;
-			m_OutsideBufferColor[2] = bk.blue;
-			m_OutsideBufferColor[3] = bk.alpha;
+			m_OutsideBufferColor[ImageBufferFloat.OrderR] = bk.red;
+			m_OutsideBufferColor[ImageBufferFloat.OrderG] = bk.green;
+			m_OutsideBufferColor[ImageBufferFloat.OrderB] = bk.blue;
+			m_OutsideBufferColor[ImageBufferFloat.OrderA] = bk.alpha;
 		}
 
-		private float[] pixel(out int bufferFloatOffset)
+		protected override float[] pixel(out int bufferFloatOffset)
 		{
 			unchecked
 			{

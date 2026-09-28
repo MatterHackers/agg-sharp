@@ -57,7 +57,7 @@ namespace MatterHackers.Agg.Image
 			return false;
 		}
 
-		public void reset_clipping(bool visibility)
+		public virtual void reset_clipping(bool visibility)
 		{
 			if (visibility)
 			{
@@ -114,29 +114,30 @@ namespace MatterHackers.Agg.Image
 			return m_ClippingRect.Top;
 		}
 
-		public RectangleInt bounding_clip_box()
+		/// <summary>The box everything drawn falls in: the clip box here, the union of the boxes for <see cref="ImageMultiClipProxy"/>.</summary>
+		public virtual RectangleInt bounding_clip_box()
 		{
 			return m_ClippingRect;
 		}
 
 		public int bounding_xmin()
 		{
-			return m_ClippingRect.Left;
+			return bounding_clip_box().Left;
 		}
 
 		public int bounding_ymin()
 		{
-			return m_ClippingRect.Bottom;
+			return bounding_clip_box().Bottom;
 		}
 
 		public int bounding_xmax()
 		{
-			return m_ClippingRect.Right;
+			return bounding_clip_box().Right;
 		}
 
 		public int bounding_ymax()
 		{
-			return m_ClippingRect.Top;
+			return bounding_clip_box().Top;
 		}
 
 		public void clear(IColorType in_c)
@@ -165,9 +166,25 @@ namespace MatterHackers.Agg.Image
 			return inbox(x, y) ? base.GetPixel(x, y) : new Color();
 		}
 
-		public override void copy_hline(int x1, int y, int x2, Color c)
+		/// <summary>C++ renderer_base::blend_pixel: blends inside the clip box, drops anything outside it.</summary>
+		public override void BlendPixel(int x, int y, Color sourceColor, byte cover)
 		{
-			if (x1 > x2) { int t = (int)x2; x2 = (int)x1; x1 = t; }
+			if (inbox(x, y))
+			{
+				base.BlendPixel(x, y, sourceColor, cover);
+			}
+		}
+
+		/// <summary>
+		/// Copies <paramref name="len"/> pixels from <paramref name="x"/> rightwards, clipped to the box. The third
+		/// argument is a length, as <see cref="IImageByte"/> declares it - not C++ renderer_base's end x - so a proxy
+		/// over a proxy passes the same meaning down.
+		/// </summary>
+		public override void copy_hline(int x, int y, int len, Color c)
+		{
+			if (len <= 0) return;
+			int x1 = x;
+			int x2 = x + len - 1;
 			if (y > ymax()) return;
 			if (y < ymin()) return;
 			if (x1 > xmax()) return;
@@ -179,9 +196,12 @@ namespace MatterHackers.Agg.Image
 			base.copy_hline(x1, y, (int)(x2 - x1 + 1), c);
 		}
 
-		public override void copy_vline(int x, int y1, int y2, Color c)
+		/// <summary>Copies <paramref name="len"/> pixels from <paramref name="y"/> upwards, clipped to the box; as copy_hline, a length.</summary>
+		public override void copy_vline(int x, int y, int len, Color c)
 		{
-			if (y1 > y2) { int t = (int)y2; y2 = (int)y1; y1 = t; }
+			if (len <= 0) return;
+			int y1 = y;
+			int y2 = y + len - 1;
 			if (x > xmax()) return;
 			if (x < xmin()) return;
 			if (y1 > ymax()) return;
@@ -343,7 +363,8 @@ namespace MatterHackers.Agg.Image
 				int d = xmin() - x;
 				len -= d;
 				if (len <= 0) return;
-				if (covers != null) coversIndex += d;
+				// One cover for all (C++ covers == 0) stays put; only a cover per pixel skips the clipped ones.
+				if (covers != null && !firstCoverForAll) coversIndex += d;
 				colorsIndex += d;
 				x = xmin();
 			}
@@ -440,7 +461,8 @@ namespace MatterHackers.Agg.Image
 				int d = ymin() - y;
 				len -= d;
 				if (len <= 0) return;
-				if (covers != null) coversIndex += d;
+				// One cover for all (C++ covers == 0) stays put; only a cover per pixel skips the clipped ones.
+				if (covers != null && !firstCoverForAll) coversIndex += d;
 				colorsIndex += d;
 				y = ymin();
 			}
@@ -595,9 +617,16 @@ namespace MatterHackers.Agg.Image
 			return inbox(x, y) ? base.GetPixel(x, y) : new ColorF();
 		}
 
-		public override void copy_hline(int x1, int y, int x2, ColorF c)
+		/// <summary>
+		/// Copies <paramref name="len"/> pixels from <paramref name="x"/> rightwards, clipped to the box. The third
+		/// argument is a length, as <see cref="IImageByte"/> declares it - not C++ renderer_base's end x - so a proxy
+		/// over a proxy passes the same meaning down.
+		/// </summary>
+		public override void copy_hline(int x, int y, int len, ColorF c)
 		{
-			if (x1 > x2) { int t = (int)x2; x2 = (int)x1; x1 = t; }
+			if (len <= 0) return;
+			int x1 = x;
+			int x2 = x + len - 1;
 			if (y > ymax()) return;
 			if (y < ymin()) return;
 			if (x1 > xmax()) return;
@@ -609,9 +638,12 @@ namespace MatterHackers.Agg.Image
 			base.copy_hline(x1, y, (int)(x2 - x1 + 1), c);
 		}
 
-		public override void copy_vline(int x, int y1, int y2, ColorF c)
+		/// <summary>Copies <paramref name="len"/> pixels from <paramref name="y"/> upwards, clipped to the box; as copy_hline, a length.</summary>
+		public override void copy_vline(int x, int y, int len, ColorF c)
 		{
-			if (y1 > y2) { int t = (int)y2; y2 = (int)y1; y1 = t; }
+			if (len <= 0) return;
+			int y1 = y;
+			int y2 = y + len - 1;
 			if (x > xmax()) return;
 			if (x < xmin()) return;
 			if (y1 > ymax()) return;
@@ -758,7 +790,8 @@ namespace MatterHackers.Agg.Image
 				int d = xmin() - x;
 				len -= d;
 				if (len <= 0) return;
-				if (covers != null) coversIndex += d;
+				// One cover for all (C++ covers == 0) stays put; only a cover per pixel skips the clipped ones.
+				if (covers != null && !firstCoverForAll) coversIndex += d;
 				colorsIndex += d;
 				x = xmin();
 			}
@@ -855,7 +888,8 @@ namespace MatterHackers.Agg.Image
 				int d = ymin() - y;
 				len -= d;
 				if (len <= 0) return;
-				if (covers != null) coversIndex += d;
+				// One cover for all (C++ covers == 0) stays put; only a cover per pixel skips the clipped ones.
+				if (covers != null && !firstCoverForAll) coversIndex += d;
 				colorsIndex += d;
 				y = ymin();
 			}

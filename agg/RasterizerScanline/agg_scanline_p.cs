@@ -100,7 +100,7 @@ namespace MatterHackers.Agg.RasterizerScanline
 		{
 			for (int i = 0; i < len; i++)
 			{
-				m_covers[m_cover_index + i] = covers[i];
+				m_covers[m_cover_index + i] = covers[coversIndex + i];
 			}
 
 			if (x == m_last_x + 1 && m_spans[m_span_index].len > 0)
@@ -124,7 +124,7 @@ namespace MatterHackers.Agg.RasterizerScanline
 		{
 			if (x == m_last_x + 1
 				&& m_spans[m_span_index].len < 0
-				&& cover == m_spans[m_span_index].cover_index)
+				&& cover == m_covers[m_spans[m_span_index].cover_index])
 			{
 				m_spans[m_span_index].len -= (short)len;
 			}

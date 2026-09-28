@@ -135,13 +135,16 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			m_rgba1.calc(y);//(m_rgba1.m_1dy > 2) ? m_rgba1.m_y1 : y);
 			rgba_calc pc1 = m_rgba1;
-			rgba_calc pc2 = m_rgba2;
+			rgba_calc pc2;
 
+			// rgba_calc is a struct, so pc1/pc2 are copies where C++ holds pointers: each is taken after its
+			// calc, or it would carry the previous scanline's edge.
 			if (y <= m_y2)
 			{
 				// Bottom part of the triangle (first subtriangle)
 				//-------------------------
 				m_rgba2.calc(y + m_rgba2.m_1dy);
+				pc2 = m_rgba2;
 			}
 			else
 			{

@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2020, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
 using System.Collections.Generic;
 using Tesselate;
@@ -61,14 +62,16 @@ namespace MatterHackers.DataConverters2D
 						break;
 					}
 
+					// Any end_poly ends the contour, closed or not (a fill closes it either way). Only vertex
+					// commands carry a point: an end_poly's position is (0, 0), not part of the outline.
 					if (haveBegunContour
-						&& (vertexData.IsClose || vertexData.IsMoveTo))
+						&& (ShapePath.is_end_poly(vertexData.Command) || vertexData.IsMoveTo))
 					{
 						tesselator.EndContour();
 						haveBegunContour = false;
 					}
 
-					if (!vertexData.IsClose)
+					if (vertexData.IsVertex)
 					{
 						if (!haveBegunContour)
 						{

@@ -26,13 +26,21 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg
 {
-	public class ImageGraphics2D : Graphics2D
+	public class ImageGraphics2D : Graphics2D, IPatternFillGraphics, IGradientFillGraphics, IImageFilterGraphics
 	{
 		private IScanlineCache scanlineCache;
 		private readonly VertexStorage drawImageRectPath = new VertexStorage();
 		private readonly span_allocator destImageSpanAllocatorCache = new span_allocator();
 		private readonly ScanlineCachePacked8 drawImageScanlineCache = new ScanlineCachePacked8();
 		private readonly ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
+
+		/// <summary>
+		/// Whether a Best-quality image draw reads past the source edge as the edge pixel (clamp) rather than as
+		/// transparent (clip). Clip is right for placing an image on a canvas; resizing an image into its own
+		/// bounds (<see cref="ImageBufferExtensionMethods.CreateScaledImage(ImageBuffer, int, int)"/>) needs clamp,
+		/// or an opaque image comes out with a see-through frame.
+		/// </summary>
+		internal bool ExtendImageEdges { get; set; }
 
 		public ImageGraphics2D()
 		{
@@ -56,12 +64,14 @@ namespace MatterHackers.Agg
 
 		public override void SetClippingRect(RectangleDouble clippingRect)
 		{
+			this.FlushDeferredDraws();
 			Rasterizer.SetVectorClipBox(clippingRect);
 		}
 
+		/// <summary>The rasterizer's clip box, or the whole canvas when it has none (it clips to the canvas anyway).</summary>
 		public override RectangleDouble GetClippingRect()
 		{
-			return Rasterizer.GetVectorClipBox();
+			return Rasterizer.HasVectorClipBox ? Rasterizer.GetVectorClipBox() : new RectangleDouble(0, 0, Width, Height);
 		}
 
 		/// <inheritdoc/>
@@ -197,6 +207,7 @@ namespace MatterHackers.Agg
 		/// </remarks>
 		public override void CompositeLcdBuffer(LcdBuffer buffer, int destX, int destY)
 		{
+			this.FlushDeferredDraws();
 			if (buffer == null)
 			{
 				throw new ArgumentNullException(nameof(buffer));
@@ -295,6 +306,7 @@ namespace MatterHackers.Agg
 			double inScaleX,
 			double inScaleY)
 		{
+			this.FlushDeferredDraws();
 			Affine graphicsTransform = GetTransform();
 
 			// exit early if the dest and source bounds don't touch.
@@ -406,7 +418,9 @@ namespace MatterHackers.Agg
 							sourceRectTransform.invert();
 
 							var interpolator = new span_interpolator_linear(sourceRectTransform);
-							var sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).ToColor());
+							IImageBufferAccessor sourceAccessor = this.ExtendImageEdges
+								? new ImageBufferAccessorClamp(source)
+								: new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).ToColor());
 
 							// spanImageFilter = new span_image_filter_rgba_bilinear_clip(sourceAccessor, RGBA_Floats.rgba_pre(0, 0, 0, 0), interpolator);
 
@@ -467,6 +481,27 @@ namespace MatterHackers.Agg
 			DestImage.MarkImageChanged();
 		}
 
+		/// <inheritdoc/>
+		public void FillPathWithImage(IVertexSource path, IImageByte image, Affine imageToScreen, ImageWrapMode wrapX, ImageWrapMode wrapY)
+		{
+			this.FlushDeferredDraws();
+			ImagePatternFill.Fill(this, path, image, imageToScreen, wrapX, wrapY);
+		}
+
+		/// <inheritdoc/>
+		public void FillPathWithGradient(IVertexSource path, GradientFill gradient, GradientFill alphaGradient = null)
+		{
+			this.FlushDeferredDraws();
+			ImageGradientFill.Fill(this, path, gradient, alphaGradient);
+		}
+
+		/// <inheritdoc/>
+		public void FillPathWithFilteredImage(IVertexSource path, IImageByte image, ImageFilterFill fill)
+		{
+			this.FlushDeferredDraws();
+			ImageFilteredFill.Fill(this, path, image, fill);
+		}
+
 		public override void Rectangle(double left, double bottom, double right, double top, Color color, double strokeWidth)
 		{
 			var rect = new RoundedRect(left + .5, bottom + .5, right - .5, top - .5, 0);
@@ -488,11 +523,13 @@ namespace MatterHackers.Agg
 			double inScaleX,
 			double inScaleY)
 		{
+			this.FlushDeferredDraws();
 			throw new NotImplementedException();
 		}
 
 		public override void Clear(RectangleDouble bounds, IColorType iColor)
 		{
+			this.FlushDeferredDraws();
 			var intBounds = new RectangleInt(bounds);
 			var clippingRect = GetClippingRect();
 			var clippingRectInt = new RectangleInt(clippingRect);
@@ -522,6 +559,15 @@ namespace MatterHackers.Agg
                                     bufferOffset += bytesBetweenPixels;
                                 }
                             }
+                        }
+
+                        break;
+
+                    case 16:
+                        // A packed 16-bit pixel's layout is its blender's, so clear through it (C++ renderer_base::clear).
+                        for (int y = clippingRectInt.Bottom; y < clippingRectInt.Top; y++)
+                        {
+                            DestImage.copy_hline(clippingRectInt.Left, y, clippingRectInt.Width, color);
                         }
 
                         break;

@@ -144,7 +144,10 @@ namespace MatterHackers.Agg
 			{
 				double d;
 				int n = (int)(vs.Count - 2);
-				while (n != 0)
+				// C++ loops while (n), so the first segment is never tested: a shorten longer than it moved the
+				// end point back past the start and reversed the path. Testing it too drops the last point, and
+				// the path empties below (ShortenPathTests).
+				while (n >= 0)
 				{
 					d = vs[n].dist;
 					if (d > s) break;
@@ -159,8 +162,10 @@ namespace MatterHackers.Agg
 				else
 				{
 					n = (int)vs.Count - 1;
-					VertexDistance prev = vs[n - 1];
-					VertexDistance last = vs[n];
+					// By ref, as C++'s vertex_type&: the moved end point has to land in the sequence
+					// (a copy left Shorten doing nothing).
+					ref VertexDistance prev = ref vs.Array[n - 1];
+					ref VertexDistance last = ref vs.Array[n];
 					d = (prev.dist - s) / prev.dist;
 					double x = prev.x + (last.x - prev.x) * d;
 					double y = prev.y + (last.y - prev.y) * d;

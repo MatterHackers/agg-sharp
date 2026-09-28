@@ -57,6 +57,9 @@ namespace MatterHackers.Agg.Font
 
 		private Vector2 totalSizeCache;
 
+		/// <summary>The <see cref="TextStyleSettings.Epoch"/> the measurement caches were filled under.</summary>
+		private long measuredStyleEpoch = TextStyleSettings.Epoch;
+
 		private Justification justification;
 
 		public Justification Justification
@@ -101,6 +104,8 @@ namespace MatterHackers.Agg.Font
 				{
 					typeFaceStyle = value;
 					totalSizeCache = default(Vector2);
+					// The memoised advances were measured in the old face.
+					fastAdvance.Clear();
 					InvalidateVertices();
 				}
 			}
@@ -162,11 +167,12 @@ namespace MatterHackers.Agg.Font
 		/// <see cref="SnapBaselinesToWholePixels"/>, which rounds each line's baseline), and everything that
 		/// changes an outline's own vertices (<see cref="StyledTypeFace.DoUnderline"/> adds geometry,
 		/// <see cref="StyledTypeFace.FlattenCurves"/> and <see cref="ResolutionScale"/> change how curves are
-		/// flattened).
+		/// flattened), plus the <see cref="TextStyleSettings.Epoch"/> when the face follows those settings, since they
+		/// reshape every glyph.
 		/// <para>
 		/// <b><see cref="Origin"/> is in it because <see cref="Vertices"/> bakes it into the positions</b>
 		/// rather than leaving it to the caller's transform - that is the path
-		/// <see cref="Graphics2D.DrawString(string, double, double, double, Justification, Baseline, Color, bool, Color, bool)"/>
+		/// <see cref="Graphics2D.DrawString(string, double, double, double, Justification, Baseline, System.Nullable{Color}, bool, Color, bool)"/>
 		/// uses. A printer moved by the graphics transform instead keeps one identity, which is how a widget
 		/// that draws the same label at a new screen position every frame stays recognisable.
 		/// </para>
@@ -197,7 +203,8 @@ namespace MatterHackers.Agg.Font
 					Justification,
 					Baseline,
 					Origin,
-					SnapBaselinesToWholePixels);
+					SnapBaselinesToWholePixels,
+					TypeFaceStyle.ApplyTextStyleSettings ? TextStyleSettings.Epoch : 0);
 			}
 		}
 
@@ -373,7 +380,8 @@ namespace MatterHackers.Agg.Font
 
 					for (int currentChar = 0; currentChar < line.Length; currentChar++)
 					{
-						ImageBuffer currentGlyphImage = TypeFaceStyle.GetImageForCharacter(line[currentChar], 0, 0, color);
+						int codePoint = StyledTypeFace.GetCodePointAt(line, currentChar);
+						ImageBuffer currentGlyphImage = codePoint < 0 ? null : TypeFaceStyle.GetImageForCodePoint(codePoint, 0, 0, color);
 
 						if (currentGlyphImage != null)
 						{
@@ -423,7 +431,9 @@ namespace MatterHackers.Agg.Font
 
 					for (int currentChar = 0; currentChar < line.Length; currentChar++)
 					{
-						IVertexSource currentGlyph = TypeFaceStyle.GetGlyphForCharacter(line[currentChar], ResolutionScale);
+						// A surrogate pair draws once, from its leading half; its trailing half has no glyph
+						int codePoint = StyledTypeFace.GetCodePointAt(line, currentChar);
+						IVertexSource currentGlyph = codePoint < 0 ? null : TypeFaceStyle.GetGlyphForCodePoint(codePoint, ResolutionScale);
 
 						if (currentGlyph != null)
 						{
@@ -515,6 +525,7 @@ namespace MatterHackers.Agg.Font
 				return calculatedSize;
 			}
 
+			DropMeasurementsFromAnotherStyle();
 			if (totalSizeCache.X == 0
 				&& text != null)
 			{
@@ -602,6 +613,7 @@ namespace MatterHackers.Agg.Font
 		public void GetOffset(int characterToMeasureStartIndexInclusive, int characterToMeasureEndIndexInclusive, out Vector2 offset)
 		{
 			offset = Vector2.Zero;
+			DropMeasurementsFromAnotherStyle();
 
 			characterToMeasureEndIndexInclusive = Math.Min(text.Length - 1, characterToMeasureEndIndexInclusive);
 
@@ -624,6 +636,12 @@ namespace MatterHackers.Agg.Font
 					offset.X = 0;
 					offset.Y -= TypeFaceStyle.EmSizeInPixels;
 				}
+				else if (char.IsSurrogate(text[index]))
+				{
+					// Half a pair does not name its glyph (every emoji shares a handful of high surrogates), so
+					// it cannot be memoised by char
+					offset.X += TypeFaceStyle.GetAdvanceForCharacter(text, index);
+				}
 				else
 				{
 					if (!fastAdvance.ContainsKey(text[index]))
@@ -633,6 +651,21 @@ namespace MatterHackers.Agg.Font
 
 					offset.X += fastAdvance[text[index]];
 				}
+			}
+		}
+
+		/// <summary>
+		/// Empties the size and advance caches when <see cref="TextStyleSettings"/> changed since they were filled:
+		/// Interval changes every advance of a face that follows them.
+		/// </summary>
+		private void DropMeasurementsFromAnotherStyle()
+		{
+			long styleEpoch = TextStyleSettings.Epoch;
+			if (styleEpoch != measuredStyleEpoch)
+			{
+				measuredStyleEpoch = styleEpoch;
+				totalSizeCache = default(Vector2);
+				fastAdvance.Clear();
 			}
 		}
 
@@ -737,6 +770,7 @@ namespace MatterHackers.Agg.Font
 			private readonly Baseline baseline;
 			private readonly Vector2 origin;
 			private readonly bool snapBaselines;
+			private readonly long styleEpoch;
 
 			internal TextRunIdentity(
 				string text,
@@ -748,7 +782,8 @@ namespace MatterHackers.Agg.Font
 				Justification justification,
 				Baseline baseline,
 				Vector2 origin,
-				bool snapBaselines)
+				bool snapBaselines,
+				long styleEpoch)
 			{
 				this.text = text;
 				this.typeFace = typeFace;
@@ -760,6 +795,7 @@ namespace MatterHackers.Agg.Font
 				this.baseline = baseline;
 				this.origin = origin;
 				this.snapBaselines = snapBaselines;
+				this.styleEpoch = styleEpoch;
 			}
 
 			public bool Equals(TextRunIdentity other)
@@ -775,7 +811,8 @@ namespace MatterHackers.Agg.Font
 					&& this.baseline == other.baseline
 					&& BitConverter.DoubleToInt64Bits(this.origin.X) == BitConverter.DoubleToInt64Bits(other.origin.X)
 					&& BitConverter.DoubleToInt64Bits(this.origin.Y) == BitConverter.DoubleToInt64Bits(other.origin.Y)
-					&& this.snapBaselines == other.snapBaselines;
+					&& this.snapBaselines == other.snapBaselines
+					&& this.styleEpoch == other.styleEpoch;
 			}
 
 			public override bool Equals(object obj)
@@ -797,6 +834,7 @@ namespace MatterHackers.Agg.Font
 				hash.Add(BitConverter.DoubleToInt64Bits(this.origin.X));
 				hash.Add(BitConverter.DoubleToInt64Bits(this.origin.Y));
 				hash.Add(this.snapBaselines);
+				hash.Add(this.styleEpoch);
 
 				return hash.ToHashCode();
 			}

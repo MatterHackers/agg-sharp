@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026, Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -90,6 +90,14 @@ namespace MatterHackers.Agg.Image
 		private int DistanceInBytesBetweenPixelsInclusive;
 
 		private IRecieveBlenderByte recieveBlender;
+
+		// BlendSolid's one-pixel color and cover, reused so a solid span allocates nothing; per thread, so images
+		// drawn on different threads never share them.
+		[ThreadStatic]
+		private static Color[] solidColor;
+
+		[ThreadStatic]
+		private static byte[] solidCover;
 
 		private const int base_mask = 255;
 
@@ -228,6 +236,15 @@ namespace MatterHackers.Agg.Image
 			Attach(sourceImage, recieveBlender, sourceImage.GetBytesBetweenPixelsInclusive(), 0, sourceImage.BitDepth);
 		}
 
+		/// <summary>
+		/// Makes this image a view of the box (x1, y1)-(x2, y2) of <paramref name="sourceImage"/>, sharing its bytes.
+		/// The box is exclusive of x2 and y2 - it is <c>x2 - x1</c> by <c>y2 - y1</c> pixels - and is first clipped to
+		/// (0, 0)-(Width - 1, Height - 1), so the source's last column and row can never be included. Unlike C++
+		/// <c>pixfmt::attach</c>, whose box is inclusive (one pixel wider and taller); to match C++ attach
+		/// the inclusive box with <see cref="AttachBuffer"/> instead, as the blur demo does.
+		/// </summary>
+		/// <returns>False, leaving this image detached, when the box lies wholly outside the source.</returns>
+		/// <exception cref="Exception">x1 &gt; x2 or y1 &gt; y2.</exception>
 		public bool Attach(IImageByte sourceImage, int x1, int y1, int x2, int y2)
 		{
 			m_ByteBuffer = null;
@@ -277,7 +294,7 @@ namespace MatterHackers.Agg.Image
 
 		public void Allocate(int inWidth, int inHeight, int inScanWidthInBytes, int bitsPerPixel)
 		{
-			if (bitsPerPixel != 32 && bitsPerPixel != 24 && bitsPerPixel != 8)
+			if (bitsPerPixel != 32 && bitsPerPixel != 24 && bitsPerPixel != 16 && bitsPerPixel != 8)
 			{
 				throw new Exception("Unsupported bits per pixel.");
 			}
@@ -679,14 +696,40 @@ namespace MatterHackers.Agg.Image
 			// p[OrderA] = c.a;
 		}
 
+		/// <summary>C++ pixfmt blend_pixel (copy_or_blend_pix): one pixel of <see cref="blend_solid_hspan"/>.</summary>
 		public void BlendPixel(int x, int y, Color c, byte cover)
 		{
-			throw new System.NotImplementedException();
-			/*
-			cob_type::copy_or_blend_pix(
-				(value_type*)m_rbuf->row_ptr(x, y, 1)  + x + x + x,
-				c.r, c.g, c.b, c.a,
-				cover);*/
+			BlendSolid(GetBufferOffsetXY(x, y), c, cover);
+		}
+
+		/// <summary>
+		/// C++ pixfmt <c>copy_or_blend_pix(p, c, cover)</c>: copies an opaque color at full cover, skips a transparent
+		/// one, and otherwise hands the blender the cover with the color (through BlendPixels) instead of folding it
+		/// into the alpha, so a premultiplied blender can scale the color by it as C++ does. A blender that
+		/// <see cref="IBlendsEveryPixel"/> (C++ pixfmt_custom_blend_rgba, whose blend_pix runs for every pixel) gets
+		/// every pixel, opaque or transparent (ImageBufferSolidBlendTests).
+		/// </summary>
+		private void BlendSolid(int bufferOffset, Color c, int cover)
+		{
+			if (!(recieveBlender is IBlendsEveryPixel))
+			{
+				if (c.alpha == 0)
+				{
+					return;
+				}
+
+				if (c.alpha == base_mask && cover == base_mask)
+				{
+					recieveBlender.CopyPixels(m_ByteBuffer, bufferOffset, c, 1);
+					return;
+				}
+			}
+
+			solidColor ??= new Color[1];
+			solidCover ??= new byte[1];
+			solidColor[0] = c;
+			solidCover[0] = (byte)cover;
+			recieveBlender.BlendPixels(m_ByteBuffer, bufferOffset, solidColor, 0, solidCover, 0, true, 1);
 		}
 
 		public void SetPixel(int x, int y, Color color)
@@ -705,150 +748,61 @@ namespace MatterHackers.Agg.Image
 
 		public void copy_vline(int x, int y, int len, Color sourceColor)
 		{
-			throw new NotImplementedException();
-#if false
-            int scanWidth = StrideInBytes();
-            byte* pDestBuffer = GetPixelPointerXY(x, y);
-            do
-            {
-                m_Blender.CopyPixel(pDestBuffer, sourceColor);
-                pDestBuffer = &pDestBuffer[scanWidth];
-            }
-            while (--len != 0);
-#endif
+			for (int i = 0; i < len; i++)
+			{
+				byte[] buffer = GetPixelPointerXY(x, y + i, out int bufferOffset);
+				recieveBlender.CopyPixels(buffer, bufferOffset, sourceColor, 1);
+			}
 		}
 
 		public void blend_hline(int x1, int y, int x2, Color sourceColor, byte cover)
 		{
-			if (sourceColor.alpha != 0)
+			int bufferOffset = GetBufferOffsetXY(x1, y);
+
+			// An opaque run at full cover is one copy, as it was before BlendSolid.
+			if (x2 >= x1 && sourceColor.alpha == base_mask && cover == base_mask && !(recieveBlender is IBlendsEveryPixel))
 			{
-				int len = x2 - x1 + 1;
+				recieveBlender.CopyPixels(m_ByteBuffer, bufferOffset, sourceColor, x2 - x1 + 1);
+				return;
+			}
 
-				byte[] buffer = GetPixelPointerXY(x1, y, out int bufferOffset);
-
-				int alpha = ((int)sourceColor.alpha * (cover + 1)) >> 8;
-				if (alpha == base_mask)
-				{
-					recieveBlender.CopyPixels(buffer, bufferOffset, sourceColor, len);
-				}
-				else
-				{
-					do
-					{
-						recieveBlender.BlendPixel(buffer, bufferOffset, new Color(sourceColor.red, sourceColor.green, sourceColor.blue, alpha));
-						bufferOffset += DistanceInBytesBetweenPixelsInclusive;
-					}
-					while (--len != 0);
-				}
+			for (int x = x1; x <= x2; x++)
+			{
+				BlendSolid(bufferOffset, sourceColor, cover);
+				bufferOffset += DistanceInBytesBetweenPixelsInclusive;
 			}
 		}
 
 		public void blend_vline(int x, int y1, int y2, Color sourceColor, byte cover)
 		{
-			throw new NotImplementedException();
-#if false
-            int ScanWidth = StrideInBytes();
-            if (sourceColor.m_A != 0)
-            {
-                unsafe
-                {
-                    int len = y2 - y1 + 1;
-                    byte* p = GetPixelPointerXY(x, y1);
-                    sourceColor.m_A = (byte)(((int)(sourceColor.m_A) * (cover + 1)) >> 8);
-                    if (sourceColor.m_A == base_mask)
-                    {
-                        byte cr = sourceColor.m_R;
-                        byte cg = sourceColor.m_G;
-                        byte cb = sourceColor.m_B;
-                        do
-                        {
-                            m_Blender.CopyPixel(p, sourceColor);
-                            p = &p[ScanWidth];
-                        }
-                        while (--len != 0);
-                    }
-                    else
-                    {
-                        if (cover == 255)
-                        {
-                            do
-                            {
-                                m_Blender.BlendPixel(p, sourceColor);
-                                p = &p[ScanWidth];
-                            }
-                            while (--len != 0);
-                        }
-                        else
-                        {
-                            do
-                            {
-                                m_Blender.BlendPixel(p, sourceColor);
-                                p = &p[ScanWidth];
-                            }
-                            while (--len != 0);
-                        }
-                    }
-                }
-            }
-#endif
+			int bufferOffset = GetBufferOffsetXY(x, y1);
+			for (int y = y1; y <= y2; y++)
+			{
+				BlendSolid(bufferOffset, sourceColor, cover);
+				bufferOffset += StrideInBytes();
+			}
 		}
 
 		public void blend_solid_hspan(int x, int y, int len, Color sourceColor, byte[] covers, int coversIndex)
 		{
-			int colorAlpha = sourceColor.alpha;
-			if (colorAlpha != 0)
+			int bufferOffset = GetBufferOffsetXY(x, y);
+			do
 			{
-				unchecked
-				{
-					byte[] buffer = GetPixelPointerXY(x, y, out int bufferOffset);
-
-					do
-					{
-						int alpha = (colorAlpha * (covers[coversIndex] + 1)) >> 8;
-						if (alpha == base_mask)
-						{
-							recieveBlender.CopyPixels(buffer, bufferOffset, sourceColor, 1);
-						}
-						else
-						{
-							recieveBlender.BlendPixel(buffer, bufferOffset, new Color(sourceColor.red, sourceColor.green, sourceColor.blue, alpha));
-						}
-
-						bufferOffset += DistanceInBytesBetweenPixelsInclusive;
-						coversIndex++;
-					}
-					while (--len != 0);
-				}
+				BlendSolid(bufferOffset, sourceColor, covers[coversIndex++]);
+				bufferOffset += DistanceInBytesBetweenPixelsInclusive;
 			}
+			while (--len != 0);
 		}
 
 		public void blend_solid_vspan(int x, int y, int len, Color sourceColor, byte[] covers, int coversIndex)
 		{
-			if (sourceColor.alpha != 0)
+			int bufferOffset = GetBufferOffsetXY(x, y);
+			do
 			{
-				int scanWidthInBytes = StrideInBytes();
-				unchecked
-				{
-					int bufferOffset = GetBufferOffsetXY(x, y);
-					do
-					{
-						byte oldAlpha = sourceColor.alpha;
-						sourceColor.alpha = (byte)(((int)sourceColor.alpha * ((int)covers[coversIndex++] + 1)) >> 8);
-						if (sourceColor.alpha == base_mask)
-						{
-							recieveBlender.CopyPixels(m_ByteBuffer, bufferOffset, sourceColor, 1);
-						}
-						else
-						{
-							recieveBlender.BlendPixel(m_ByteBuffer, bufferOffset, sourceColor);
-						}
-
-						bufferOffset += scanWidthInBytes;
-						sourceColor.alpha = oldAlpha;
-					}
-					while (--len != 0);
-				}
+				BlendSolid(bufferOffset, sourceColor, covers[coversIndex++]);
+				bufferOffset += StrideInBytes();
 			}
+			while (--len != 0);
 		}
 
 		public void copy_color_hspan(int x, int y, int len, Color[] colors, int colorsIndex)
@@ -885,51 +839,29 @@ namespace MatterHackers.Agg.Image
 			recieveBlender.BlendPixels(m_ByteBuffer, bufferOffset, colors, colorsIndex, covers, coversIndex, firstCoverForAll, len);
 		}
 
+		/// <summary>
+		/// C++ <c>blend_color_vspan</c>: each pixel goes through the blender's own <c>BlendPixels</c>, so a
+		/// vertical span skips, copies and scales by cover exactly as a horizontal one does.
+		/// </summary>
 		public void blend_color_vspan(int x, int y, int len, Color[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
 		{
 			int bufferOffset = GetBufferOffsetXY(x, y);
-
 			int scanWidth = StrideInBytesAbs();
-			if (!firstCoverForAll)
+			do
 			{
-				do
+				recieveBlender.BlendPixels(m_ByteBuffer, bufferOffset, colors, colorsIndex++, covers, coversIndex, firstCoverForAll, 1);
+				if (!firstCoverForAll)
 				{
-					DoCopyOrBlend.BasedOnAlphaAndCover(recieveBlender, m_ByteBuffer, bufferOffset, colors[colorsIndex], covers[coversIndex++]);
-					bufferOffset += scanWidth;
-					++colorsIndex;
+					coversIndex++;
 				}
-				while (--len != 0);
+
+				bufferOffset += scanWidth;
 			}
-			else
-			{
-				if (covers[coversIndex] == 255)
-				{
-					do
-					{
-						DoCopyOrBlend.BasedOnAlpha(recieveBlender, m_ByteBuffer, bufferOffset, colors[colorsIndex]);
-						bufferOffset += scanWidth;
-						++colorsIndex;
-					}
-					while (--len != 0);
-				}
-				else
-				{
-					do
-					{
-						DoCopyOrBlend.BasedOnAlphaAndCover(recieveBlender, m_ByteBuffer, bufferOffset, colors[colorsIndex], covers[coversIndex]);
-						bufferOffset += scanWidth;
-						++colorsIndex;
-					}
-					while (--len != 0);
-				}
-			}
+			while (--len != 0);
 		}
 
-		public void ApplyGammaInv(GammaLookUpTable g)
-		{
-			throw new System.NotImplementedException();
-			// for_each_pixel(apply_gamma_inv_rgba<color_type, order_type, GammaLut>(g));
-		}
+		/// <summary>C++ pixfmt <c>apply_gamma_inv</c>; see <see cref="ImageGammaInverse.Apply"/>.</summary>
+		public void ApplyGammaInv(GammaLookUpTable g) => ImageGammaInverse.Apply(this, g);
 
 		private bool IsPixelVisible(int x, int y, Func<Color, bool> isVisible)
 		{
@@ -1408,8 +1340,12 @@ namespace MatterHackers.Agg.Image
 				}
 			}
 
-			Graphics2D renderGraphics = destImage.NewGraphics2D();
+			var renderGraphics = (ImageGraphics2D)destImage.NewGraphics2D();
 			renderGraphics.ImageRenderQuality = Graphics2D.TransformQuality.Best;
+
+			// The result is the source resized into its own bounds, so the filter extends the edge pixels past
+			// the source edge instead of fading them into the transparent background.
+			renderGraphics.ExtendImageEdges = true;
 
 			renderGraphics.Render(sourceImage, 0, 0, 0, destImage.Width / (double)sourceImage.Width, destImage.Height / (double)sourceImage.Height);
 
@@ -1438,47 +1374,33 @@ namespace MatterHackers.Agg.Image
 
 	public static class DoCopyOrBlend
 	{
-		private const byte base_mask = 255;
-
+		/// <summary>
+		/// C++ <c>copy_or_blend_pix</c> at full cover: a transparent color leaves the pixel alone, anything else goes
+		/// to the blender (which copies an opaque one).
+		/// </summary>
+		/// <remarks>
+		/// ImageBuffer no longer calls this: its vertical spans go through each blender's own BlendPixels, whose
+		/// policy (BlenderBGRAExactCopy copies even a transparent color, for instance) this cannot know.
+		/// </remarks>
 		public static void BasedOnAlpha(IRecieveBlenderByte recieveBlender, byte[] destBuffer, int bufferOffset, Color sourceColor)
 		{
-			// if (sourceColor.m_A != 0)
+			if (sourceColor.alpha != 0)
 			{
-#if false // we blend regardless of the alpha so that we can get Light Opacity working (used this way we have additive and faster blending in one blender) LBB
-                if (sourceColor.m_A == base_mask)
-                {
-                    Blender.CopyPixel(pDestBuffer, sourceColor);
-                }
-                else
-#endif
-				{
-					recieveBlender.BlendPixel(destBuffer, bufferOffset, sourceColor);
-				}
+				recieveBlender.BlendPixel(destBuffer, bufferOffset, sourceColor);
 			}
 		}
 
+		/// <summary>C++ <c>copy_or_blend_pix</c> with a cover: see <see cref="BasedOnAlpha"/>.</summary>
 		public static void BasedOnAlphaAndCover(IRecieveBlenderByte recieveBlender, byte[] destBuffer, int bufferOffset, Color sourceColor, int cover)
 		{
 			if (cover == 255)
 			{
 				BasedOnAlpha(recieveBlender, destBuffer, bufferOffset, sourceColor);
 			}
-			else
+			else if (sourceColor.alpha != 0)
 			{
-				// if (sourceColor.m_A != 0)
-				{
-					sourceColor.alpha = (byte)((sourceColor.alpha * (cover + 1)) >> 8);
-#if false // we blend regardless of the alpha so that we can get Light Opacity working (used this way we have additive and faster blending in one blender) LBB
-                    if (sourceColor.m_A == base_mask)
-                    {
-                        Blender.CopyPixel(pDestBuffer, sourceColor);
-                    }
-                    else
-#endif
-					{
-						recieveBlender.BlendPixel(destBuffer, bufferOffset, sourceColor);
-					}
-				}
+				sourceColor.alpha = (byte)Rgba8Math.Multiply(sourceColor.alpha, cover);
+				recieveBlender.BlendPixel(destBuffer, bufferOffset, sourceColor);
 			}
 		}
 	}

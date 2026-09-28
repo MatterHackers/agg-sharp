@@ -120,31 +120,25 @@ namespace MatterHackers.Agg.VertexSource
 			InvalidateVertices();
 		}
 
+		/// <summary>
+		/// C++ agg_ellipse.h <c>vertex</c>: step i sits at angle i / NumSteps * 2pi (2pi minus that when
+		/// <see cref="IsCw"/>), each computed on its own. Summing a per-step angle drifts in the last bits and
+		/// moves pixels against every C++ golden that draws a circle.
+		/// </summary>
 		public override IEnumerable<VertexData> Vertices()
 		{
 			VertexData vertexData = new VertexData();
-			vertexData.Command = FlagsAndCommand.MoveTo;
-			vertexData.Position = new Vector2(originX + radiusX, originY);
-			yield return vertexData;
-
-			double anglePerStep = MathHelper.Tau / (double)NumSteps;
-			double angle = 0;
-			vertexData.Command = FlagsAndCommand.LineTo;
-			for (int i = 1; i < NumSteps; i++)
+			for (int step = 0; step < NumSteps; step++)
 			{
-				angle += anglePerStep;
-
+				double angle = (double)step / (double)NumSteps * 2.0 * Math.PI;
 				if (IsCw)
 				{
-					vertexData.Position = new Vector2(originX + Math.Cos(MathHelper.Tau - angle) * radiusX,
-						originY + Math.Sin(MathHelper.Tau - angle) * radiusY);
-					yield return vertexData;
+					angle = 2.0 * Math.PI - angle;
 				}
-				else
-				{
-					vertexData.Position = new Vector2(originX + Math.Cos(angle) * radiusX, originY + Math.Sin(angle) * radiusY);
-					yield return vertexData;
-				}
+
+				vertexData.Command = step == 0 ? FlagsAndCommand.MoveTo : FlagsAndCommand.LineTo;
+				vertexData.Position = new Vector2(originX + Math.Cos(angle) * radiusX, originY + Math.Sin(angle) * radiusY);
+				yield return vertexData;
 			}
 
 			vertexData.Position = new Vector2();
@@ -158,7 +152,8 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			double ra = (Math.Abs(radiusX) + Math.Abs(radiusY)) / 2;
 			double da = Math.Acos(ra / (ra + 0.125 / ResolutionScale)) * 2;
-			NumSteps = (int)Math.Round(2 * Math.PI / da);
+			// C++ uround (half up), not Math.Round's half to even.
+			NumSteps = Util.uround(2 * Math.PI / da);
 		}
 	};
 }

@@ -76,12 +76,11 @@ namespace MatterHackers.Agg.Image
 
 		public void BlendPixel(byte[] pDestBuffer, int bufferOffset, Color sourceColor)
 		{
-			int OneOverAlpha = base_mask - sourceColor.alpha;
 			unchecked
 			{
 				int y = (sourceColor.red * 77) + (sourceColor.green * 151) + (sourceColor.blue * 28);
 				int gray = (y >> 8);
-				gray = (byte)((((gray - (int)(pDestBuffer[bufferOffset])) * sourceColor.alpha) + ((int)(pDestBuffer[bufferOffset]) << base_shift)) >> base_shift);
+				gray = Rgba8Math.Lerp(pDestBuffer[bufferOffset], gray, sourceColor.alpha);
 				pDestBuffer[bufferOffset] = (byte)gray;
 			}
 		}
@@ -106,8 +105,10 @@ namespace MatterHackers.Agg.Image
 				{
 					do
 					{
-						sourceColors[sourceColorsOffset].alpha = (byte)((sourceColors[sourceColorsOffset].alpha * cover + 255) >> 8);
-						BlendPixel(destBuffer, bufferOffset, sourceColors[sourceColorsOffset]);
+						// A copy: the cover must not be written into the caller's colors.
+						Color color = sourceColors[sourceColorsOffset];
+						color.alpha = (byte)Rgba8Math.Multiply(color.alpha, cover);
+						BlendPixel(destBuffer, bufferOffset, color);
 						bufferOffset += bytesBetweenPixelsInclusive;
 						++sourceColorsOffset;
 					}
@@ -126,7 +127,7 @@ namespace MatterHackers.Agg.Image
 					else
 					{
 						Color color = sourceColors[sourceColorsOffset];
-						color.alpha = (byte)((color.alpha * (cover) + 255) >> 8);
+						color.alpha = (byte)Rgba8Math.Multiply(color.alpha, cover);
 						BlendPixel(destBuffer, bufferOffset, color);
 					}
 					bufferOffset += bytesBetweenPixelsInclusive;
@@ -211,8 +212,10 @@ namespace MatterHackers.Agg.Image
 				{
 					do
 					{
-						sourceColors[sourceColorsOffset].alpha = (byte)((sourceColors[sourceColorsOffset].alpha * cover + 255) >> 8);
-						BlendPixel(destBuffer, bufferOffset, sourceColors[sourceColorsOffset]);
+						// A copy: the cover must not be written into the caller's colors.
+						Color color = sourceColors[sourceColorsOffset];
+						color.alpha = (byte)Rgba8Math.Multiply(color.alpha, cover);
+						BlendPixel(destBuffer, bufferOffset, color);
 						bufferOffset += bytesBetweenPixelsInclusive;
 						++sourceColorsOffset;
 					}
@@ -231,7 +234,7 @@ namespace MatterHackers.Agg.Image
 					else
 					{
 						Color color = sourceColors[sourceColorsOffset];
-						color.alpha = (byte)((color.alpha * (cover) + 255) >> 8);
+						color.alpha = (byte)Rgba8Math.Multiply(color.alpha, cover);
 						BlendPixel(destBuffer, bufferOffset, color);
 					}
 					bufferOffset += bytesBetweenPixelsInclusive;
@@ -318,8 +321,10 @@ namespace MatterHackers.Agg.Image
 				{
 					do
 					{
-						sourceColors[sourceColorsOffset].alpha = (byte)((sourceColors[sourceColorsOffset].alpha * cover + 255) >> 8);
-						BlendPixel(destBuffer, bufferOffset, sourceColors[sourceColorsOffset]);
+						// A copy: the cover must not be written into the caller's colors.
+						Color color = sourceColors[sourceColorsOffset];
+						color.alpha = (byte)Rgba8Math.Multiply(color.alpha, cover);
+						BlendPixel(destBuffer, bufferOffset, color);
 						bufferOffset += bytesBetweenPixelsInclusive;
 						++sourceColorsOffset;
 					}
@@ -338,7 +343,7 @@ namespace MatterHackers.Agg.Image
 					else
 					{
 						Color color = sourceColors[sourceColorsOffset];
-						color.alpha = (byte)((color.alpha * (cover) + 255) >> 8);
+						color.alpha = (byte)Rgba8Math.Multiply(color.alpha, cover);
 						BlendPixel(destBuffer, bufferOffset, color);
 					}
 					bufferOffset += bytesBetweenPixelsInclusive;

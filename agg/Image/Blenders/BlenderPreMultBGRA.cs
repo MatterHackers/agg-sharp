@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007, 2026 Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -30,20 +30,6 @@ namespace MatterHackers.Agg.Image
 {
     public sealed class BlenderPreMultBGRA : BlenderBase8888, IRecieveBlenderByte
 	{
-		// Filled eagerly by the type initializer so concurrent first-use never observes a partially built table.
-		private static readonly int[] m_Saturate9BitToByte = BuildSaturate9BitToByteTable();
-
-		private static int[] BuildSaturate9BitToByteTable()
-		{
-			int[] table = new int[1 << 9];
-			for (int i = 0; i < table.Length; i++)
-			{
-				table[i] = Math.Min(i, 255);
-			}
-
-			return table;
-		}
-
 		public BlenderPreMultBGRA()
 		{
 		}
@@ -65,20 +51,14 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
+		/// <summary>
+		/// Full-cover source-over of a premultiplied color: the same prelerp as a partial cover. The port used to add
+		/// the color to a truncated (p * (255 - a) + 255) &gt;&gt; 8, which could land a level high (gray 9 under
+		/// half-transparent black gave 5, not 4).
+		/// </summary>
 		public void BlendPixel(byte[] pDestBuffer, int bufferOffset, Color sourceColor)
 		{
-			int oneOverAlpha = base_mask - sourceColor.alpha;
-			unchecked
-			{
-				int r = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderR] * oneOverAlpha + 255) >> 8) + sourceColor.red];
-				int g = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderG] * oneOverAlpha + 255) >> 8) + sourceColor.green];
-				int b = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderB] * oneOverAlpha + 255) >> 8) + sourceColor.blue];
-				int a = pDestBuffer[bufferOffset + ImageBuffer.OrderA];
-				pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)r;
-				pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)g;
-				pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)b;
-				pDestBuffer[bufferOffset + ImageBuffer.OrderA] = (byte)(base_mask - m_Saturate9BitToByte[(oneOverAlpha * (base_mask - a) + 255) >> 8]);
-			}
+			BlendPixelWithCover(pDestBuffer, bufferOffset, sourceColor, 255);
 		}
 
 		public void BlendPixels(byte[] pDestBuffer, int bufferOffset,
@@ -109,19 +89,10 @@ namespace MatterHackers.Agg.Image
 				{
 					for (int i = 0; i < count; i++)
 					{
-						Color sourceColor = sourceColors[sourceColorsOffset];
-						int alpha = (sourceColor.alpha * sourceCovers[sourceCoversOffset] + 255) / 256;
 						// A fully transparent pixel writes nothing, but the offsets must still
 						// advance or the loop re-reads the same source pixel and the rest of
 						// the span is never drawn.
-						if (alpha == 255)
-						{
-							CopyOpaquePixel(pDestBuffer, bufferOffset, sourceColor);
-						}
-						else if (alpha != 0)
-						{
-							BlendPixel(pDestBuffer, bufferOffset, sourceColor);
-						}
+						BlendPixelWithCover(pDestBuffer, bufferOffset, sourceColors[sourceColorsOffset], sourceCovers[sourceCoversOffset]);
 						sourceColorsOffset++;
 						bufferOffset += 4;
 					}
@@ -131,21 +102,56 @@ namespace MatterHackers.Agg.Image
 			{
 				for (int i = 0; i < count; i++)
 				{
+					int cover = sourceCovers[sourceCoversOffset];
 					Color sourceColor = sourceColors[sourceColorsOffset];
-					int alpha = (sourceColor.alpha * sourceCovers[sourceCoversOffset] + 255) / 256;
-					if (alpha == 255)
+					if (cover == 255)
 					{
-						CopyOpaquePixel(pDestBuffer, bufferOffset, sourceColor);
+						if (sourceColor.alpha == 255)
+						{
+							CopyOpaquePixel(pDestBuffer, bufferOffset, sourceColor);
+						}
+						else if (sourceColor.alpha != 0)
+						{
+							BlendPixel(pDestBuffer, bufferOffset, sourceColor);
+						}
 					}
-					else if (alpha > 0)
+					else
 					{
-						BlendPixel(pDestBuffer, bufferOffset, sourceColor);
+						BlendPixelWithCover(pDestBuffer, bufferOffset, sourceColor, cover);
 					}
+
 					sourceColorsOffset++;
 					sourceCoversOffset++;
 					bufferOffset += 4;
 				}
 			}
+		}
+
+		/// <summary>
+		/// C++ blender_rgba_pre::blend_pix with a cover below full: color and alpha are scaled by the cover
+		/// (mult_cover), then each channel is prelerp(p, q, a) = p + q - multiply(p, a). The port used to test the
+		/// covered alpha and then blend (or copy) the uncovered color, so a partial cover of an opaque color
+		/// drew it at full strength and anti-aliased image edges came out hard.
+		/// </summary>
+		private static void BlendPixelWithCover(byte[] pDestBuffer, int bufferOffset, Color sourceColor, int cover)
+		{
+			if (sourceColor.alpha == 0)
+			{
+				return;
+			}
+
+			int alpha = Rgba8Math.Multiply(sourceColor.alpha, cover);
+			pDestBuffer[bufferOffset + ImageBuffer.OrderR] = Prelerp(pDestBuffer[bufferOffset + ImageBuffer.OrderR], Rgba8Math.Multiply(sourceColor.red, cover), alpha);
+			pDestBuffer[bufferOffset + ImageBuffer.OrderG] = Prelerp(pDestBuffer[bufferOffset + ImageBuffer.OrderG], Rgba8Math.Multiply(sourceColor.green, cover), alpha);
+			pDestBuffer[bufferOffset + ImageBuffer.OrderB] = Prelerp(pDestBuffer[bufferOffset + ImageBuffer.OrderB], Rgba8Math.Multiply(sourceColor.blue, cover), alpha);
+			pDestBuffer[bufferOffset + ImageBuffer.OrderA] = Prelerp(pDestBuffer[bufferOffset + ImageBuffer.OrderA], alpha, alpha);
+		}
+
+		// C++ rgba8::prelerp. Valid premultiplied input (q <= a) never exceeds 255, but a straight-alpha color can;
+		// C++'s value_type cast wraps it to a dark speck, so saturate instead.
+		private static byte Prelerp(int p, int q, int a)
+		{
+			return (byte)Math.Min(Rgba8Math.Prelerp(p, q, a), 255);
 		}
 
 		private static void CopyOpaquePixel(byte[] pDestBuffer, int bufferOffset, Color sourceColor)

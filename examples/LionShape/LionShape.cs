@@ -1,3 +1,4 @@
+using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
@@ -161,6 +162,15 @@ namespace MatterHackers.Agg
 		"M 157,342 L 156,349 L 150,356 L 157,353 L 163,346 L 162,342 L 157,342 L 157,342 L 157,342\n" +
 		"M 99,265 L 96,284 L 92,299 L 73,339 L 73,333 L 87,300 L 99,265 L 99,265 L 99,265\n";
 
+		/// <summary>
+		/// C++ AGG's parse_lion stores each rgb8_packed (linear rgba8) color into an srgba8 array - an implicit
+		/// linear-to-sRGB conversion - and render_all_paths hands it to an rgba8 renderer, converting back.
+		/// Both steps go through 8-bit lookup tables (sRGB_lut&lt;int8u&gt;, each entry uround(255 * f(i / 255))),
+		/// so the round trip is lossy for dark channels. Every C++ lion demo draws those shifted colors, so the
+		/// lion carries them too, to match C++ AGG byte for byte.
+		/// </summary>
+		private static Color SrgbRoundTrip(Color linear) => SrgbLut.RoundTripThroughSrgba8(linear);
+
 		static public List<ColoredVertexStorage> parse_lion()
 		{
 			// Parse the lion and then detect its bounding
@@ -189,7 +199,7 @@ namespace MatterHackers.Agg
 
 					currentPath = new ColoredVertexStorage()
 					{
-						Color = Color.rgb8_packed((int)c),
+						Color = SrgbRoundTrip(Color.rgb8_packed((int)c)),
 						VertexStorage = new VertexStorage()
 					};
 
@@ -214,6 +224,10 @@ namespace MatterHackers.Agg
 							if (!startedPoly)
 							{
 								startedPoly = true;
+
+								// C++ parse_lion closes the previous polygon at every 'M'. Fills never notice, but
+								// the outline rasterizer draws a closed polygon's last edge and not an open one's.
+								currentPath.VertexStorage.ClosePolygon();
 								currentPath.VertexStorage.MoveTo(x, y);
 							}
 							else
@@ -225,7 +239,8 @@ namespace MatterHackers.Agg
 				}
 			}
 
-			currentPath.VertexStorage.ClosePolygon();
+			// No close here: C++ parse_lion only closes on the next 'M' or color, so the lion's last polygon
+			// stays open, and the outline and stroke demos leave its last edge undrawn.
 			currentPath.VertexStorage.ArrangeOrientationsAllPaths(FlagsAndCommand.FlagCW);
 
 			return paths;
@@ -259,6 +274,35 @@ namespace MatterHackers.Agg
 
 			Center.X = (Bounds.Right - Bounds.Left) / 2.0;
 			Center.Y = (Bounds.Top - Bounds.Bottom) / 2.0;
+		}
+
+		/// <summary>
+		/// The lion demo's transform (C++ lion.cpp on_draw): center on the lion's half-extent, scale, rotate by
+		/// <paramref name="angle"/> plus pi (the lion data is upside down), skew, then move to the middle of a
+		/// <paramref name="width"/> x <paramref name="height"/> view. C++ passes width/2 and height/2 as ints, so
+		/// they are integer-divided here too.
+		/// </summary>
+		public Affine GetDemoTransform(int width, int height, double angle = 0, double scale = 1, double skewX = 0, double skewY = 0)
+		{
+			Affine transform = Affine.NewIdentity();
+			transform *= Affine.NewTranslation(-Center.X, -Center.Y);
+			transform *= Affine.NewScaling(scale, scale);
+			transform *= Affine.NewRotation(angle + Math.PI);
+			transform *= Affine.NewSkewing(skewX / 1000.0, skewY / 1000.0);
+			transform *= Affine.NewTranslation(width / 2, height / 2);
+			return transform;
+		}
+
+		/// <summary>
+		/// Draws every lion shape through <paramref name="transform"/>, each in its own color with its alpha
+		/// replaced by <paramref name="alpha"/> - the filled lion of C++ lion.cpp's render_all_paths.
+		/// </summary>
+		public void Render(Graphics2D graphics2D, Affine transform, byte alpha)
+		{
+			foreach (var shape in Shapes)
+			{
+				graphics2D.Render(new VertexSourceApplyTransform(shape.VertexStorage, transform), new Color(shape.Color, alpha));
+			}
 		}
 	}
 }

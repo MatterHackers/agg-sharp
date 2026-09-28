@@ -97,8 +97,10 @@ namespace MatterHackers.Agg.Image
 				{
 					do
 					{
-						sourceColors[sourceColorsOffset].alpha = (byte)((sourceColors[sourceColorsOffset].alpha * cover + 255) >> 8);
-						BlendPixel(destBuffer, bufferOffset, sourceColors[sourceColorsOffset]);
+						// A copy: the cover must not be written into the caller's colors.
+						Color color = sourceColors[sourceColorsOffset];
+						color.alpha = (byte)Rgba8Math.Multiply(color.alpha, cover);
+						BlendPixel(destBuffer, bufferOffset, color);
 						bufferOffset += 4;
 						++sourceColorsOffset;
 					}
@@ -117,7 +119,7 @@ namespace MatterHackers.Agg.Image
 					else
 					{
 						Color color = sourceColors[sourceColorsOffset];
-						color.alpha = (byte)((color.alpha * (cover) + 255) >> 8);
+						color.alpha = (byte)Rgba8Math.Multiply(color.alpha, cover);
 						BlendPixel(destBuffer, bufferOffset, color);
 					}
 					bufferOffset += 4;

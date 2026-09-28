@@ -72,8 +72,15 @@ namespace MatterHackers.Agg.Image
 		void BlendPixel(int x, int y, Color sourceColor, byte cover);
 
 		// line stuff
+
+		/// <summary>
+		/// Copies <paramref name="sourceColor"/> into <paramref name="len"/> pixels from x to x + len - 1. The third
+		/// argument is a length, as C++ pixfmt copy_hline takes it - not an end x like C++ renderer_base's, and unlike
+		/// <see cref="blend_hline"/> here - on every implementation, clipping proxies included, so proxies stack.
+		/// </summary>
 		void copy_hline(int x, int y, int len, Color sourceColor);
 
+		/// <summary>Copies <paramref name="sourceColor"/> into <paramref name="len"/> pixels from y to y + len - 1; a length, as copy_hline.</summary>
 		void copy_vline(int x, int y, int len, Color sourceColor);
 
 		void blend_hline(int x, int y, int x2, Color sourceColor, byte cover);
@@ -121,8 +128,11 @@ namespace MatterHackers.Agg.Image
 		void BlendPixel(int x, int y, ColorF sourceColor, byte cover);
 
 		// line stuff
+
+		/// <summary>Copies <paramref name="sourceColor"/> into <paramref name="len"/> pixels from x; a length, as IImageByte.copy_hline.</summary>
 		void copy_hline(int x, int y, int len, ColorF sourceColor);
 
+		/// <summary>Copies <paramref name="sourceColor"/> into <paramref name="len"/> pixels from y; a length, as IImageByte.copy_vline.</summary>
 		void copy_vline(int x, int y, int len, ColorF sourceColor);
 
 		void blend_hline(int x, int y, int x2, ColorF sourceColor, byte cover);

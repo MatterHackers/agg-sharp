@@ -65,10 +65,10 @@ namespace MatterHackers.Agg.Image
 						int g = buffer[bufferOffset + ImageBuffer.OrderG];
 						int b = buffer[bufferOffset + ImageBuffer.OrderR];
 						int a = buffer[bufferOffset + ImageBuffer.OrderA];
-						buffer[bufferOffset + ImageBuffer.OrderB] = (byte)(((sourceColor.red - r) * sourceColor.alpha + (r << (int)Color.base_shift)) >> (int)Color.base_shift);
-						buffer[bufferOffset + ImageBuffer.OrderG] = (byte)(((sourceColor.green - g) * sourceColor.alpha + (g << (int)Color.base_shift)) >> (int)Color.base_shift);
-						buffer[bufferOffset + ImageBuffer.OrderR] = (byte)(((sourceColor.blue - b) * sourceColor.alpha + (b << (int)Color.base_shift)) >> (int)Color.base_shift);
-						buffer[bufferOffset + ImageBuffer.OrderA] = (byte)((sourceColor.alpha + a) - ((sourceColor.alpha * a + base_mask) >> (int)Color.base_shift));
+						buffer[bufferOffset + ImageBuffer.OrderB] = (byte)Rgba8Math.Lerp(r, sourceColor.red, sourceColor.alpha);
+						buffer[bufferOffset + ImageBuffer.OrderG] = (byte)Rgba8Math.Lerp(g, sourceColor.green, sourceColor.alpha);
+						buffer[bufferOffset + ImageBuffer.OrderR] = (byte)Rgba8Math.Lerp(b, sourceColor.blue, sourceColor.alpha);
+						buffer[bufferOffset + ImageBuffer.OrderA] = (byte)Rgba8Math.Prelerp(a, sourceColor.alpha, sourceColor.alpha);
 					}
 				}
 			}
@@ -94,8 +94,10 @@ namespace MatterHackers.Agg.Image
 				{
 					do
 					{
-						sourceColors[sourceColorsOffset].alpha = (byte)((sourceColors[sourceColorsOffset].alpha * cover + 255) >> 8);
-						BlendPixel(destBuffer, bufferOffset, sourceColors[sourceColorsOffset]);
+						// A copy: the cover must not be written into the caller's colors.
+						Color color = sourceColors[sourceColorsOffset];
+						color.alpha = (byte)Rgba8Math.Multiply(color.alpha, cover);
+						BlendPixel(destBuffer, bufferOffset, color);
 						bufferOffset += 4;
 						++sourceColorsOffset;
 					}
@@ -114,7 +116,7 @@ namespace MatterHackers.Agg.Image
 					else
 					{
 						Color color = sourceColors[sourceColorsOffset];
-						color.alpha = (byte)((color.alpha * (cover) + 255) >> 8);
+						color.alpha = (byte)Rgba8Math.Multiply(color.alpha, cover);
 						BlendPixel(destBuffer, bufferOffset, color);
 					}
 					bufferOffset += 4;

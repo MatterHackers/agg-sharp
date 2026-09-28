@@ -68,25 +68,13 @@ namespace MatterHackers.Agg
 	//
 	// filling_rule() and gamma() can be called anytime before "sweeping".
 	//------------------------------------------------------------------------
-	public interface IRasterizer
+	public interface IRasterizer : IScanlineGenerator
 	{
-		int min_x();
-
-		int min_y();
-
-		int max_x();
-
-		int max_y();
-
 		void gamma(IGammaFunction gamma_function);
-
-		bool sweep_scanline(IScanlineCache sl);
 
 		void reset();
 
 		void add_path(IVertexSource vs);
-
-		bool rewind_scanlines();
 	}
 
 	public sealed class ScanlineRasterizer : IRasterizer
@@ -96,8 +84,8 @@ namespace MatterHackers.Agg
 		private int[] m_gamma = new int[(int)aa_scale_e.aa_scale];
 		private Util.filling_rule_e m_filling_rule;
 		private bool m_auto_close;
-		private int m_start_x;
-		private int m_start_y;
+		private double m_start_x;
+		private double m_start_y;
 		private status m_status;
 		private int m_scan_y;
 
@@ -168,13 +156,16 @@ namespace MatterHackers.Agg
 			m_VectorClipper.reset_clipping();
 		}
 
+		/// <summary>
+		/// Whether a vector clip box is set. Without one (C++ AGG's default, and after <see cref="reset_clipping"/>)
+		/// paths reach the cells unclipped and only the renderer's pixel clipping applies, and
+		/// <see cref="GetVectorClipBox"/> reads as an empty box.
+		/// </summary>
+		public bool HasVectorClipBox => m_VectorClipper.IsClipping;
+
 		public RectangleDouble GetVectorClipBox()
 		{
-			return new RectangleDouble(
-				m_VectorClipper.downscale(m_VectorClipper.clipBox.Left),
-				m_VectorClipper.downscale(m_VectorClipper.clipBox.Bottom),
-				m_VectorClipper.downscale(m_VectorClipper.clipBox.Right),
-				m_VectorClipper.downscale(m_VectorClipper.clipBox.Top));
+			return m_VectorClipper.ClipBoxPixels;
 		}
 
 		public void SetVectorClipBox(RectangleDouble clippingRect)
@@ -185,8 +176,8 @@ namespace MatterHackers.Agg
 		public void SetVectorClipBox(double x1, double y1, double x2, double y2)
 		{
 			reset();
-			m_VectorClipper.clip_box(m_VectorClipper.upscale(x1), m_VectorClipper.upscale(y1),
-							   m_VectorClipper.upscale(x2), m_VectorClipper.upscale(y2));
+			m_VectorClipper.ClipBoxD(m_VectorClipper.UpscaleD(x1), m_VectorClipper.UpscaleD(y1),
+							   m_VectorClipper.UpscaleD(x2), m_VectorClipper.UpscaleD(y2));
 		}
 
 		public void filling_rule(Util.filling_rule_e filling_rule)
@@ -233,17 +224,17 @@ namespace MatterHackers.Agg
 		{
 			if (m_outline.sorted()) reset();
 			if (m_auto_close) close_polygon();
-			m_VectorClipper.move_to(m_start_x = m_VectorClipper.downscale(x),
-							  m_start_y = m_VectorClipper.downscale(y));
+			m_VectorClipper.MoveToD(m_start_x = m_VectorClipper.DownscaleD(x),
+							  m_start_y = m_VectorClipper.DownscaleD(y));
 			m_status = status.status_move_to;
 		}
 
 		//------------------------------------------------------------------------
 		private void line_to(int x, int y)
 		{
-			m_VectorClipper.line_to(m_outline,
-							  m_VectorClipper.downscale(x),
-							  m_VectorClipper.downscale(y));
+			m_VectorClipper.LineToD(m_outline,
+							  m_VectorClipper.DownscaleD(x),
+							  m_VectorClipper.DownscaleD(y));
 			m_status = status.status_line_to;
 		}
 
@@ -252,17 +243,17 @@ namespace MatterHackers.Agg
 		{
 			if (m_outline.sorted()) reset();
 			if (m_auto_close) close_polygon();
-			m_VectorClipper.move_to(m_start_x = m_VectorClipper.upscale(x),
-							  m_start_y = m_VectorClipper.upscale(y));
+			m_VectorClipper.MoveToD(m_start_x = m_VectorClipper.UpscaleD(x),
+							  m_start_y = m_VectorClipper.UpscaleD(y));
 			m_status = status.status_move_to;
 		}
 
 		//------------------------------------------------------------------------
 		public void line_to_d(double x, double y)
 		{
-			m_VectorClipper.line_to(m_outline,
-							  m_VectorClipper.upscale(x),
-							  m_VectorClipper.upscale(y));
+			m_VectorClipper.LineToD(m_outline,
+							  m_VectorClipper.UpscaleD(x),
+							  m_VectorClipper.UpscaleD(y));
 			m_status = status.status_line_to;
 		}
 
@@ -270,7 +261,7 @@ namespace MatterHackers.Agg
 		{
 			if (m_status == status.status_line_to)
 			{
-				m_VectorClipper.line_to(m_outline, m_start_x, m_start_y);
+				m_VectorClipper.LineToD(m_outline, m_start_x, m_start_y);
 				m_status = status.status_closed;
 			}
 		}
@@ -301,10 +292,10 @@ namespace MatterHackers.Agg
 		private void edge(int x1, int y1, int x2, int y2)
 		{
 			if (m_outline.sorted()) reset();
-			m_VectorClipper.move_to(m_VectorClipper.downscale(x1), m_VectorClipper.downscale(y1));
-			m_VectorClipper.line_to(m_outline,
-							  m_VectorClipper.downscale(x2),
-							  m_VectorClipper.downscale(y2));
+			m_VectorClipper.MoveToD(m_VectorClipper.DownscaleD(x1), m_VectorClipper.DownscaleD(y1));
+			m_VectorClipper.LineToD(m_outline,
+							  m_VectorClipper.DownscaleD(x2),
+							  m_VectorClipper.DownscaleD(y2));
 			m_status = status.status_move_to;
 		}
 
@@ -312,10 +303,10 @@ namespace MatterHackers.Agg
 		private void edge_d(double x1, double y1, double x2, double y2)
 		{
 			if (m_outline.sorted()) reset();
-			m_VectorClipper.move_to(m_VectorClipper.upscale(x1), m_VectorClipper.upscale(y1));
-			m_VectorClipper.line_to(m_outline,
-							  m_VectorClipper.upscale(x2),
-							  m_VectorClipper.upscale(y2));
+			m_VectorClipper.MoveToD(m_VectorClipper.UpscaleD(x1), m_VectorClipper.UpscaleD(y1));
+			m_VectorClipper.LineToD(m_outline,
+							  m_VectorClipper.UpscaleD(x2),
+							  m_VectorClipper.UpscaleD(y2));
 			m_status = status.status_move_to;
 		}
 

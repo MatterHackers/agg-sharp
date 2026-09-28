@@ -4,6 +4,10 @@ using MatterHackers.Agg.Image;
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
+// C# port by: Lars Brubaker
+//                  larsbrubaker@gmail.com
+// Copyright (C) 2007-2026
+//
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
 // This software is provided "as is" without express or implied
@@ -1643,6 +1647,12 @@ namespace MatterHackers.Agg
 			m_color = c.ToColor();
 		}
 
+		/// <summary>
+		/// C++ <c>accurate_join_only</c>: a renderer that can only draw miter-accurate joins (the image pattern
+		/// renderer draws no pies or dots) makes <see cref="rasterizer_outline_aa"/> use them whatever join is asked.
+		/// </summary>
+		public virtual bool AccurateJoinOnly => false;
+
 		public abstract void semidot(CompareFunction cmp, int xc1, int yc1, int xc2, int yc2);
 
 		public abstract void semidot_hline(CompareFunction cmp, int xc1, int yc1, int xc2, int yc2, int x1, int y1, int x2);
@@ -1666,16 +1676,6 @@ namespace MatterHackers.Agg
 		private RectangleInt clippingRectangle;
 		private bool doClipping;
 		protected const int max_half_width = 64;
-
-#if false
-        public int min_x() { throw new System.NotImplementedException(); }
-        public int min_y() { throw new System.NotImplementedException(); }
-        public int max_x() { throw new System.NotImplementedException(); }
-        public int max_y() { throw new System.NotImplementedException(); }
-        public void gamma(IGammaFunction gamma_function) { throw new System.NotImplementedException(); }
-        public bool sweep_scanline(IScanlineCache sl) { throw new System.NotImplementedException(); }
-        public void reset() { throw new System.NotImplementedException(); }
-#endif
 
 		//---------------------------------------------------------------------
 		public OutlineRenderer(IImageByte destImage, LineProfileAnitAlias profile)
@@ -1763,7 +1763,7 @@ namespace MatterHackers.Agg
 			int dy = y - yc1;
 			do
 			{
-				int d = (int)(agg_math.fast_sqrt(dx * dx + dy * dy));
+				int d = agg_math.fast_sqrt(unchecked((uint)(dx * dx + dy * dy)));
 				covers[Offset1] = 0;
 				if (cmp(di.dist()) && d <= w)
 				{
@@ -1833,7 +1833,7 @@ namespace MatterHackers.Agg
 			int dy = y - yc;
 			do
 			{
-				int d = (int)(agg_math.fast_sqrt(dx * dx + dy * dy));
+				int d = agg_math.fast_sqrt(unchecked((uint)(dx * dx + dy * dy)));
 				covers[index1] = 0;
 				if (di.dist1() <= 0 && di.dist2() > 0 && d <= w)
 				{

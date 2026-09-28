@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007, 2026 Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -30,20 +30,7 @@ namespace MatterHackers.Agg.Image
 {
     public sealed class BlenderPolyColorPreMultBGRA : BlenderBase8888, IRecieveBlenderByte
 	{
-		// Filled eagerly by the type initializer so concurrent first-use never observes a partially built table.
-		private static readonly int[] m_Saturate9BitToByte = BuildSaturate9BitToByteTable();
 		private Color polyColor;
-
-		private static int[] BuildSaturate9BitToByteTable()
-		{
-			int[] table = new int[1 << 9];
-			for (int i = 0; i < table.Length; i++)
-			{
-				table[i] = Math.Min(i, 255);
-			}
-
-			return table;
-		}
 
 		public BlenderPolyColorPreMultBGRA(Color polyColor)
 		{
@@ -67,126 +54,51 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
+		/// <summary>
+		/// Scales the premultiplied color by the poly color's alpha, then blends it source-over by C++ rgba8's
+		/// prelerp (p + q - multiply(p, a)), as BlenderPreMultBGRA does. Destination alpha is left as it was.
+		/// The port used to add the color to a truncated (p * (255 - a) + 255) &gt;&gt; 8, which could land a level high.
+		/// </summary>
 		public void BlendPixel(byte[] pDestBuffer, int bufferOffset, Color sourceColor)
 		{
-			//unsafe
-			{
-				int sourceA = (byte)(m_Saturate9BitToByte[(polyColor.Alpha0To255 * sourceColor.alpha + 255) >> 8]);
-				int oneOverAlpha = base_mask - sourceA;
-				unchecked
-				{
-					int sourceR = (byte)(m_Saturate9BitToByte[(polyColor.Alpha0To255 * sourceColor.red + 255) >> 8]);
-					int sourceG = (byte)(m_Saturate9BitToByte[(polyColor.Alpha0To255 * sourceColor.green + 255) >> 8]);
-					int sourceB = (byte)(m_Saturate9BitToByte[(polyColor.Alpha0To255 * sourceColor.blue + 255) >> 8]);
-
-					int destR = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderR] * oneOverAlpha + 255) >> 8) + sourceR];
-					int destG = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderG] * oneOverAlpha + 255) >> 8) + sourceG];
-					int destB = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderB] * oneOverAlpha + 255) >> 8) + sourceB];
-					// TODO: calculated the correct dest alpha
-					//int destA = pDestBuffer[bufferOffset + ImageBuffer.OrderA];
-
-					pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)destR;
-					pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)destG;
-					pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)destB;
-					//pDestBuffer[bufferOffset + ImageBuffer.OrderA] = (byte)(base_mask - m_Saturate9BitToByte[(oneOverAlpha * (base_mask - a) + 255) >> 8]);
-				}
-			}
+			int polyAlpha = polyColor.Alpha0To255;
+			int sourceA = Rgba8Math.Multiply(polyAlpha, sourceColor.alpha);
+			pDestBuffer[bufferOffset + ImageBuffer.OrderR] = Prelerp(pDestBuffer[bufferOffset + ImageBuffer.OrderR], Rgba8Math.Multiply(polyAlpha, sourceColor.red), sourceA);
+			pDestBuffer[bufferOffset + ImageBuffer.OrderG] = Prelerp(pDestBuffer[bufferOffset + ImageBuffer.OrderG], Rgba8Math.Multiply(polyAlpha, sourceColor.green), sourceA);
+			pDestBuffer[bufferOffset + ImageBuffer.OrderB] = Prelerp(pDestBuffer[bufferOffset + ImageBuffer.OrderB], Rgba8Math.Multiply(polyAlpha, sourceColor.blue), sourceA);
 		}
 
+		// A straight-alpha color (a channel above its alpha) can sum past 255; saturate rather than wrap to a dark speck.
+		private static byte Prelerp(int p, int q, int a)
+		{
+			return (byte)Math.Min(Rgba8Math.Prelerp(p, q, a), 255);
+		}
+
+		/// <summary>
+		/// Blends each premultiplied color through <see cref="BlendPixel"/>; a partial cover scales all four
+		/// channels, as a cover does to a premultiplied color. (This used to throw for any cover below 255.)
+		/// </summary>
 		public void BlendPixels(byte[] pDestBuffer, int bufferOffset,
 			Color[] sourceColors, int sourceColorsOffset,
 			byte[] sourceCovers, int sourceCoversOffset, bool firstCoverForAll, int count)
 		{
-			if (firstCoverForAll)
+			do
 			{
-				//unsafe
+				Color color = sourceColors[sourceColorsOffset++];
+				int cover = firstCoverForAll ? sourceCovers[sourceCoversOffset] : sourceCovers[sourceCoversOffset++];
+				if (cover != 255)
 				{
-					if (sourceCovers[sourceCoversOffset] == 255)
-					{
-						for (int i = 0; i < count; i++)
-						{
-							BlendPixel(pDestBuffer, bufferOffset, sourceColors[sourceColorsOffset]);
-							sourceColorsOffset++;
-							bufferOffset += 4;
-						}
-					}
-					else
-					{
-						throw new NotImplementedException("need to consider the polyColor");
-#if false
-                        for (int i = 0; i < count; i++)
-                        {
-                            RGBA_Bytes sourceColor = sourceColors[sourceColorsOffset];
-                            int alpha = (sourceColor.alpha * sourceCovers[sourceCoversOffset] + 255) / 256;
-                            if (alpha == 0)
-                            {
-                                continue;
-                            }
-                            else if (alpha == 255)
-                            {
-                                pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)sourceColor.red;
-                                pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)sourceColor.green;
-                                pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)sourceColor.blue;
-                                pDestBuffer[bufferOffset + ImageBuffer.OrderA] = (byte)alpha;
-                            }
-                            else
-                            {
-                                int OneOverAlpha = base_mask - alpha;
-                                unchecked
-                                {
-                                    int r = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderR] * OneOverAlpha + 255) >> 8) + sourceColor.red];
-                                    int g = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderG] * OneOverAlpha + 255) >> 8) + sourceColor.green];
-                                    int b = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderB] * OneOverAlpha + 255) >> 8) + sourceColor.blue];
-                                    int a = pDestBuffer[bufferOffset + ImageBuffer.OrderA];
-                                    pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)r;
-                                    pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)g;
-                                    pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)b;
-                                    pDestBuffer[bufferOffset + ImageBuffer.OrderA] = (byte)(base_mask - m_Saturate9BitToByte[(OneOverAlpha * (base_mask - a) + 255) >> 8]);
-                                }
-                            }
-                            sourceColorsOffset++;
-                            bufferOffset += 4;
-                        }
-#endif
-					}
+					color = new Color(
+						Rgba8Math.Multiply(color.red, cover),
+						Rgba8Math.Multiply(color.green, cover),
+						Rgba8Math.Multiply(color.blue, cover),
+						Rgba8Math.Multiply(color.alpha, cover));
 				}
+
+				BlendPixel(pDestBuffer, bufferOffset, color);
+				bufferOffset += 4;
 			}
-			else
-			{
-				throw new NotImplementedException("need to consider the polyColor");
-#if false
-                for (int i = 0; i < count; i++)
-                {
-                    RGBA_Bytes sourceColor = sourceColors[sourceColorsOffset];
-                    int alpha = (sourceColor.alpha * sourceCovers[sourceCoversOffset] + 255) / 256;
-                    if (alpha == 255)
-                    {
-                        pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)sourceColor.red;
-                        pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)sourceColor.green;
-                        pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)sourceColor.blue;
-                        pDestBuffer[bufferOffset + ImageBuffer.OrderA] = (byte)alpha;
-                    }
-                    else if (alpha > 0)
-                    {
-                        int OneOverAlpha = base_mask - alpha;
-                        unchecked
-                        {
-                            int r = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderR] * OneOverAlpha + 255) >> 8) + sourceColor.red];
-                            int g = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderG] * OneOverAlpha + 255) >> 8) + sourceColor.green];
-                            int b = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderB] * OneOverAlpha + 255) >> 8) + sourceColor.blue];
-                            int a = pDestBuffer[bufferOffset + ImageBuffer.OrderA];
-                            pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)r;
-                            pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)g;
-                            pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)b;
-                            pDestBuffer[bufferOffset + ImageBuffer.OrderA] = (byte)(base_mask - m_Saturate9BitToByte[(OneOverAlpha * (base_mask - a) + 255) >> 8]);
-                        }
-                    }
-                    sourceColorsOffset++;
-                    sourceCoversOffset++;
-                    bufferOffset += 4;
-                }
-#endif
-			}
+			while (--count != 0);
 		}
 	}
 }

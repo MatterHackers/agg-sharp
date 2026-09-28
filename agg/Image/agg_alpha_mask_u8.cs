@@ -86,16 +86,13 @@ namespace MatterHackers.Agg
 
 		public void fill_hspan(int x, int y, byte[] dst, int dstIndex, int num_pix)
 		{
-			throw new NotImplementedException();
-#if false
-            byte[] mask = m_rbuf.GetPixelPointerY(y) + x * m_Step + m_Offset;
-            do
-            {
-                *dst++ = *mask;
-                mask += m_Step;
-            }
-            while (--num_pix != 0);
-#endif
+			int maskIndex = m_rbuf.GetBufferOffsetXY(x, y);
+			byte[] mask = m_rbuf.GetBuffer();
+			do
+			{
+				dst[dstIndex++] = mask[maskIndex++];
+			}
+			while (--num_pix != 0);
 		}
 
 		public void combine_hspanFullCover(int x, int y, byte[] covers, int coversIndex, int count)
@@ -124,31 +121,23 @@ namespace MatterHackers.Agg
 
 		public void fill_vspan(int x, int y, byte[] buffer, int bufferIndex, int num_pix)
 		{
-			throw new NotImplementedException();
-#if false
-            byte[] mask = m_rbuf.GetPixelPointerY(y) + x * m_Step + m_Offset;
-            do
-            {
-                *dst++ = *mask;
-                mask += m_rbuf.StrideInBytes();
-            }
-            while (--num_pix != 0);
-#endif
+			byte[] mask = m_rbuf.GetBuffer();
+			do
+			{
+				buffer[bufferIndex++] = mask[m_rbuf.GetBufferOffsetXY(x, y++)];
+			}
+			while (--num_pix != 0);
 		}
 
 		public void combine_vspan(int x, int y, byte[] dst, int dstIndex, int num_pix)
 		{
-			throw new NotImplementedException();
-#if false
-            byte[] mask = m_rbuf.GetPixelPointerY(y) + x * m_Step + m_Offset;
-            do
-            {
-                *dst = (byte)((cover_full + (*dst) * (*mask)) >> cover_shift);
-                ++dst;
-                mask += m_rbuf.StrideInBytes();
-            }
-            while (--num_pix != 0);
-#endif
+			byte[] mask = m_rbuf.GetBuffer();
+			do
+			{
+				dst[dstIndex] = (byte)((cover_full + (dst[dstIndex] * mask[m_rbuf.GetBufferOffsetXY(x, y++)])) >> cover_shift);
+				dstIndex++;
+			}
+			while (--num_pix != 0);
 		}
 	};
 

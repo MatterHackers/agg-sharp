@@ -124,6 +124,15 @@ namespace MatterHackers.Agg.Font
 						}
 					}
 
+					// A surrogate pair wider than the whole line would otherwise be cut between its halves;
+					// keep it together on this line instead
+					if (countBeforeWrap > 0
+						&& countBeforeWrap < textToWrap.Length
+						&& StyledTypeFace.GetCodePointAt(textToWrap, countBeforeWrap) < 0)
+					{
+						countBeforeWrap++;
+					}
+
 					if (countBeforeWrap >= 0)
 					{
 						lines.Add(textToWrap.Substring(0, countBeforeWrap));

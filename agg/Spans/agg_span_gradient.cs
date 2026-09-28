@@ -2,6 +2,10 @@
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
+// C# port by: Lars Brubaker
+//                  larsbrubaker@gmail.com
+// Copyright (C) 2007-2026
+//
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
 // This software is provided "as is" without express or implied
@@ -175,7 +179,9 @@ namespace MatterHackers.Agg
 		{
 			get
 			{
-				return m_c1.gradient(m_c2, (double)(v) / (double)(m_size - 1));
+				// C++ multiplies by a precomputed 1 / (size - 1), then rgba8::gradient rounds the step to 0..255 and
+				// lerps each channel in integers; Color.gradient's float lerp lands some steps a level off.
+				return Rgba8.Gradient(m_c1, m_c2, (double)v * (1.0 / (m_size - 1.0)));
 			}
 		}
 
@@ -198,7 +204,7 @@ namespace MatterHackers.Agg
 		// Actually the same as radial. Just for compatibility
 		public int calculate(int x, int y, int d)
 		{
-			return (int)(agg_math.fast_sqrt((int)(x * x + y * y)));
+			return agg_math.fast_sqrt(unchecked((uint)(x * x + y * y)));
 		}
 	};
 
@@ -207,8 +213,8 @@ namespace MatterHackers.Agg
 	{
 		public int calculate(int x, int y, int d)
 		{
-			return (int)(System.Math.Sqrt(x * x + y * y));
-			//return (int)(agg_math.fast_sqrt((int)(x * x + y * y)));
+			// C++ uses the fast_sqrt table approximation, not an exact root; gradient_radial_d is the exact one.
+			return agg_math.fast_sqrt(unchecked((uint)(x * x + y * y)));
 		}
 	}
 
@@ -362,7 +368,7 @@ namespace MatterHackers.Agg
 		public int calculate(int x, int y, int d)
 		{
 			//return (int)System.Math.Sqrt((int)(System.Math.Abs(x) * System.Math.Abs(y)));
-			return (int)agg_math.fast_sqrt((int)(System.Math.Abs(x) * System.Math.Abs(y)));
+			return agg_math.fast_sqrt(unchecked((uint)(System.Math.Abs(x) * System.Math.Abs(y))));
 		}
 	};
 

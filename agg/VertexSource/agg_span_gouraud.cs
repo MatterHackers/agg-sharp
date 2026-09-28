@@ -139,6 +139,12 @@ namespace MatterHackers.Agg.VertexSource
 			return m_cmd[m_vertex++];
 		}
 
+		/// <summary>
+		/// Corner <paramref name="index"/> (0 to 2) and its colour, as the span generator interpolates them: after
+		/// a dilation these are the grown triangle's corners, not the ones given to <see cref="triangle"/>.
+		/// </summary>
+		public coord_type Corner(int index) => m_coord[index];
+
 		protected void arrange_vertices(coord_type[] coord)
 		{
 			coord[0] = m_coord[0];

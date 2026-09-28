@@ -78,20 +78,16 @@ namespace MatterHackers.Agg.Image
 			linkedImage.BlendPixel(x, y, c, m_mask.pixel(x, y));
 		}
 
+		public override void BlendPixel(int x, int y, Color sourceColor, byte cover)
+		{
+			linkedImage.BlendPixel(x, y, sourceColor, m_mask.combine_pixel(x, y, cover));
+		}
+
 		public override void copy_hline(int x, int y, int len, Color c)
 		{
-			throw new NotImplementedException();
-			/*
-						realloc_span((int)len);
-						unsafe
-						{
-							fixed (byte* pBuffer = m_span.Array)
-							{
-								m_mask.fill_hspan(x, y, pBuffer, (int)len);
-								m_LinkedImage.blend_solid_hspan(x, y, len, c, pBuffer);
-							}
-						}
-			 */
+			realloc_span(len);
+			m_mask.fill_hspan(x, y, m_span.Array, 0, len);
+			linkedImage.blend_solid_hspan(x, y, len, c, m_span.Array, 0);
 		}
 
 		public override void blend_hline(int x1, int y, int x2, Color c, byte cover)
@@ -113,57 +109,34 @@ namespace MatterHackers.Agg.Image
 
 		public override void copy_vline(int x, int y, int len, Color c)
 		{
-			throw new NotImplementedException(); /*
-            realloc_span((int)len);
-            unsafe
-            {
-                fixed (byte* pBuffer = m_span.Array)
-                {
-                    m_mask.fill_vspan(x, y, pBuffer, (int)len);
-                    m_LinkedImage.blend_solid_vspan(x, y, len, c, pBuffer);
-                }
-            }
-                                                  */
+			realloc_span(len);
+			m_mask.fill_vspan(x, y, m_span.Array, 0, len);
+			linkedImage.blend_solid_vspan(x, y, len, c, m_span.Array, 0);
 		}
 
 		public override void blend_vline(int x, int y1, int y2, Color c, byte cover)
 		{
-			throw new NotImplementedException(); /*
-            int len = y2 - y1 + 1;
-            init_span(len, cover);
-            unsafe
-            {
-                fixed (byte* pBuffer = m_span.Array)
-                {
-                    m_mask.combine_vspan(x, y1, pBuffer, len);
-                    throw new System.NotImplementedException("blend_solid_vspan does not take a y2 yet");
-                    //m_pixf.blend_solid_vspan(x, y1, y2, c, pBuffer);
-                }
-            }
-                                                  */
+			// ImageProxy's vline runs y1 to y2 inclusive, where C++ passes a length.
+			int len = y2 - y1 + 1;
+			init_span(len, cover);
+			m_mask.combine_vspan(x, y1, m_span.Array, 0, len);
+			linkedImage.blend_solid_vspan(x, y1, len, c, m_span.Array, 0);
 		}
 
 		public override void blend_solid_hspan(int x, int y, int len, Color color, byte[] covers, int coversIndex)
 		{
-			byte[] buffer = m_span.Array;
-			m_mask.combine_hspan(x, y, covers, coversIndex, len);
-			linkedImage.blend_solid_hspan(x, y, len, color, covers, coversIndex);
+			// Masked in a copy, as C++ does: the caller's covers may be reused (a scanline rendered to two
+			// targets) and must keep their unmasked values.
+			init_span(len, covers, coversIndex);
+			m_mask.combine_hspan(x, y, m_span.Array, 0, len);
+			linkedImage.blend_solid_hspan(x, y, len, color, m_span.Array, 0);
 		}
 
 		public override void blend_solid_vspan(int x, int y, int len, Color c, byte[] covers, int coversIndex)
 		{
-			throw new System.NotImplementedException();
-#if false
-            init_span((int)len, covers);
-            unsafe
-            {
-                fixed (byte* pBuffer = m_span.Array)
-                {
-                    m_mask.combine_vspan(x, y, pBuffer, (int)len);
-                    m_LinkedImage.blend_solid_vspan(x, y, len, c, pBuffer);
-                }
-            }
-#endif
+			init_span(len, covers, coversIndex);
+			m_mask.combine_vspan(x, y, m_span.Array, 0, len);
+			linkedImage.blend_solid_vspan(x, y, len, c, m_span.Array, 0);
 		}
 
 		public override void copy_color_hspan(int x, int y, int len, Color[] colors, int colorsIndex)
@@ -200,26 +173,18 @@ namespace MatterHackers.Agg.Image
 
 		public override void blend_color_hspan(int x, int y, int len, Color[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
 		{
-			throw new System.NotImplementedException();
-#if false
-            unsafe
-            {
-                fixed (byte* pBuffer = m_span.GetArray())
-                {
-                    if (covers != null)
-                    {
-                        init_span((int)len, covers);
-                        m_mask.combine_hspan(x, y, pBuffer, (int)len);
-                    }
-                    else
-                    {
-                        realloc_span((int)len);
-                        m_mask.fill_hspan(x, y, pBuffer, (int)len);
-                    }
-                    m_pixf.blend_color_hspan(x, y, len, colors, pBuffer, cover);
-                }
-            }
-#endif
+			// C++ takes either per-pixel covers or one cover for the span; the mask always ends up per pixel.
+			if (firstCoverForAll)
+			{
+				init_span(len, covers[coversIndex]);
+			}
+			else
+			{
+				init_span(len, covers, coversIndex);
+			}
+
+			m_mask.combine_hspan(x, y, m_span.Array, 0, len);
+			linkedImage.blend_color_hspan(x, y, len, colors, colorsIndex, m_span.Array, 0, false);
 		}
 
 		public override void blend_color_vspan(int x, int y, int len, Color[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)

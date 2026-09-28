@@ -28,5 +28,21 @@ namespace Agg.Tests.Agg
             await Assert.That(wrappedLines[1]).IsEqualTo("s or");
             await Assert.That(wrappedLines[2]).IsEqualTo("MM");
         }
+
+        /// <summary>
+        /// GetOffset memoises each character's advance; a new TypeFaceStyle (TextWidget.PointSize does this) must not
+        /// keep answering with the advances of the old size.
+        /// </summary>
+        [Test]
+        public async Task GetOffsetRemeasuresAfterTheTypeFaceStyleChanges()
+        {
+            var printer = new TypeFacePrinter("Hello", new StyledTypeFace(LiberationSansFont.Instance, 12));
+            printer.GetOffset(0, 4, out var small);
+
+            printer.TypeFaceStyle = new StyledTypeFace(LiberationSansFont.Instance, 24);
+            printer.GetOffset(0, 4, out var large);
+
+            await Assert.That(large.X).IsEqualTo(small.X * 2).Within(1e-9);
+        }
     }
 }

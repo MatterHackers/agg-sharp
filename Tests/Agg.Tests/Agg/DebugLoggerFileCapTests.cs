@@ -39,7 +39,13 @@ namespace MatterHackers.Agg.Tests
 {
 	// Release never clears the log file, so a repeating error would grow it without limit. The logger
 	// caps it: past the limit the file becomes the single ".previous" file and a fresh one starts.
-	[NotInParallel(nameof(DebugLogger))]
+	//
+	// Keyless [NotInParallel], not a constraint key: LogFilePath is process-wide, and while this test points
+	// it at its temp folder every other logger in the process writes there too. The automation tests
+	// (AutomationRunner and SystemWindow trace every step in Debug) never carry a DebugLogger key, so a keyed
+	// attribute let their lines land in this file - one arriving after "repeating error 059" rolled it into
+	// the previous file and occasionally failed a full run.
+	[NotInParallel]
 	public class DebugLoggerFileCapTests
 	{
 		[Test]

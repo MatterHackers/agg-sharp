@@ -7,7 +7,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -348,11 +348,18 @@ namespace MatterHackers.Agg
 
 		//---------------------------------------------------------------fast_sqrt
 		//Fast integer Sqrt - really fast: no cycles, divisions or multiplications
-		public static int fast_sqrt(int val)
+
+		/// <summary>
+		/// C++ <c>fast_sqrt(unsigned)</c>: the table square root, truncated and a unit or so low for large values.
+		/// The argument is unsigned as in C++ - as an int, a sum of squares of 2^31 or more sign-extended into a
+		/// negative table index. Callers convert their int arithmetic with <c>unchecked((uint)...)</c>, which is
+		/// C++'s implicit conversion.
+		/// </summary>
+		public static int fast_sqrt(uint val)
 		{
 			//This code is actually pure C and portable to most
 			//architectures including 64bit ones.
-			int t = val;
+			uint t = val;
 			int bit = 0;
 			int shift = 11;
 
@@ -361,21 +368,21 @@ namespace MatterHackers.Agg
 			//Intels (like Intel MMX 233MHz) this code is about twice
 			//as fast as just one "bsr". On PIII and PIV the
 			//bsr is optimized quite well.
-			bit = (int)t >> 24;
+			bit = (int)(t >> 24);
 			if (bit != 0)
 			{
 				bit = g_elder_bit_table[bit] + 24;
 			}
 			else
 			{
-				bit = ((int)t >> 16) & 0xFF;
+				bit = (int)(t >> 16) & 0xFF;
 				if (bit != 0)
 				{
 					bit = g_elder_bit_table[bit] + 16;
 				}
 				else
 				{
-					bit = ((int)t >> 8) & 0xFF;
+					bit = (int)(t >> 8) & 0xFF;
 					if (bit != 0)
 					{
 						bit = g_elder_bit_table[bit] + 8;
@@ -395,7 +402,7 @@ namespace MatterHackers.Agg
 				shift -= (int)bit;
 				val >>= (bit << 1);
 			}
-			return (int)((int)g_sqrt_table[val] >> (int)shift);
+			return g_sqrt_table[val] >> shift;
 		}
 
 		//--------------------------------------------------------------------besj

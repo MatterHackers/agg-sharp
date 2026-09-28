@@ -160,189 +160,253 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public void RenderCompound(rasterizer_compound_aa ras, IScanlineCache sl_aa, IScanlineCache sl_bin, IImageByte imageFormat, span_allocator alloc, IStyleHandler sh)
+		private static readonly byte[] FullCover = { 255 };
+
+		/// <summary>
+		/// C++ <c>render_scanlines_compound_layered</c>: every style of <paramref name="ras"/> drawn into
+		/// <paramref name="destination"/> as layers, in the rasterizer's layer order. Where styles overlap on a
+		/// scanline, each pixel's coverage is handed out top layer first until it is full (255), the colors are
+		/// summed at those covers into a mix buffer, and the mix is blended into the destination once, so
+		/// shared edges do not leak the background. The style colors should be premultiplied and the
+		/// destination blend premultiplied colors (C++ renders it into a <c>pixfmt_*_pre</c>).
+		/// </summary>
+		/// <param name="ras">The compound rasterizer holding the styled paths.</param>
+		/// <param name="sl_aa">An unpacked scanline (C++ <c>scanline_u8</c>): one cover per pixel.</param>
+		/// <param name="destination">Where to blend; C++'s renderer_base clips, so pass a clipping proxy if
+		/// the paths may leave the image.</param>
+		/// <param name="sh">The color, or span generator, of each style.</param>
+		public void RenderCompoundLayered(rasterizer_compound_aa ras, IScanlineCache sl_aa, IImageByte destination, IStyleHandler sh)
 		{
-#if false
-            unsafe
-            {
-                if (ras.rewind_scanlines())
-                {
-                    int min_x = ras.min_x();
-                    int len = ras.max_x() - min_x + 2;
-                    sl_aa.reset(min_x, ras.max_x());
-                    sl_bin.reset(min_x, ras.max_x());
+			if (!ras.rewind_scanlines())
+			{
+				return;
+			}
 
-                    //typedef typename BaseRenderer::color_type color_type;
-                    ArrayPOD<RGBA_Bytes> color_span = alloc.allocate((int)len * 2);
-                    byte[] ManagedCoversArray = sl_aa.GetCovers();
-                    fixed (byte* pCovers = ManagedCoversArray)
-                    {
-                        fixed (RGBA_Bytes* pColorSpan = color_span.Array)
-                        {
-                            int mix_bufferOffset = len;
-                            int num_spans;
+			int min_x = ras.min_x();
+			int len = ras.max_x() - min_x + 2;
+			sl_aa.reset(min_x, ras.max_x());
 
-                            int num_styles;
-                            int style;
-                            bool solid;
-                            while ((num_styles = ras.sweep_styles()) > 0)
-                            {
-                                if (num_styles == 1)
-                                {
-                                    // Optimization for a single style. Happens often
-                                    //-------------------------
-                                    if (ras.sweep_scanline(sl_aa, 0))
-                                    {
-                                        style = ras.style(0);
-                                        if (sh.is_solid(style))
-                                        {
-                                            // Just solid fill
-                                            //-----------------------
-                                            RenderSolidSingleScanLine(imageFormat, sl_aa, sh.color(style));
-                                        }
-                                        else
-                                        {
-                                            // Arbitrary span generator
-                                            //-----------------------
-                                            ScanlineSpan span_aa = sl_aa.Begin();
-                                            num_spans = sl_aa.num_spans();
-                                            for (; ; )
-                                            {
-                                                len = span_aa.len;
-                                                sh.generate_span(pColorSpan,
-                                                                 span_aa.x,
-                                                                 sl_aa.y(),
-                                                                 (int)len,
-                                                                 style);
+			var colorSpan = new Color[len];
+			var mixBuffer = new Color[len];
+			var coverBuffer = new byte[len];
 
-                                                imageFormat.blend_color_hspan(span_aa.x,
-                                                                      sl_aa.y(),
-                                                                      (int)span_aa.len,
-                                                                      pColorSpan,
-                                                                      &pCovers[span_aa.cover_index], 0);
-                                                if (--num_spans == 0) break;
-                                                span_aa = sl_aa.GetNextScanlineSpan();
-                                            }
-                                        }
-                                    }
-                                }
-                                else // there are multiple styles
-                                {
-                                    if (ras.sweep_scanline(sl_bin, -1))
-                                    {
-                                        // Clear the spans of the mix_buffer
-                                        //--------------------
-                                        ScanlineSpan span_bin = sl_bin.Begin();
-                                        num_spans = sl_bin.num_spans();
-                                        for (; ; )
-                                        {
-                                            agg_basics.MemClear((byte*)&pColorSpan[mix_bufferOffset + span_bin.x - min_x],
-                                                   span_bin.len * sizeof(RGBA_Bytes));
+			int num_styles;
+			while ((num_styles = ras.sweep_styles()) > 0)
+			{
+				if (num_styles == 1)
+				{
+					RenderSingleStyle(ras, sl_aa, destination, sh, colorSpan);
+				}
+				else
+				{
+					int sl_start = ras.scanline_start();
+					int sl_len = ras.scanline_length();
+					if (sl_len != 0)
+					{
+						System.Array.Clear(mixBuffer, sl_start - min_x, sl_len);
+						System.Array.Clear(coverBuffer, sl_start - min_x, sl_len);
+						int sl_y = int.MaxValue;
+						for (int i = 0; i < num_styles; i++)
+						{
+							int style = ras.style(i);
+							bool solid = sh.IsSolid(style);
+							if (ras.sweep_scanline(sl_aa, i))
+							{
+								byte[] srcCovers = sl_aa.GetCovers();
+								ScanlineSpan span_aa = sl_aa.begin();
+								int num_spans = sl_aa.num_spans();
+								sl_y = sl_aa.y();
+								for (; ; )
+								{
+									int spanLen = span_aa.len;
+									Color solidColor = default;
+									if (solid)
+									{
+										solidColor = sh.color(style);
+									}
+									else
+									{
+										sh.GenerateSpan(colorSpan, 0, span_aa.x, sl_aa.y(), spanLen, style);
+									}
 
-                                            if (--num_spans == 0) break;
-                                            span_bin = sl_bin.GetNextScanlineSpan();
-                                        }
+									int mixIndex = span_aa.x - min_x;
+									int srcCoverIndex = span_aa.cover_index;
+									for (int k = 0; k < spanLen; k++)
+									{
+										int cover = srcCovers[srcCoverIndex + k];
+										int dstCover = coverBuffer[mixIndex + k];
+										if (dstCover + cover > 255)
+										{
+											cover = 255 - dstCover;
+										}
 
-                                        for (int i = 0; i < num_styles; i++)
-                                        {
-                                            style = ras.style(i);
-                                            solid = sh.is_solid(style);
+										if (cover != 0)
+										{
+											AddColor(ref mixBuffer[mixIndex + k], solid ? solidColor : colorSpan[k], cover);
+											coverBuffer[mixIndex + k] = (byte)(dstCover + cover);
+										}
+									}
 
-                                            if (ras.sweep_scanline(sl_aa, (int)i))
-                                            {
-                                                //IColorType* colors;
-                                                //IColorType* cspan;
-                                                //typename ScanlineAA::cover_type* covers;
-                                                ScanlineSpan span_aa = sl_aa.Begin();
-                                                num_spans = sl_aa.num_spans();
-                                                if (solid)
-                                                {
-                                                    // Just solid fill
-                                                    //-----------------------
-                                                    for (; ; )
-                                                    {
-                                                        RGBA_Bytes c = sh.color(style);
-                                                        len = span_aa.len;
-                                                        RGBA_Bytes* colors = &pColorSpan[mix_bufferOffset + span_aa.x - min_x];
-                                                        byte* covers = &pCovers[span_aa.cover_index];
-                                                        do
-                                                        {
-                                                            if (*covers == cover_full)
-                                                            {
-                                                                *colors = c;
-                                                            }
-                                                            else
-                                                            {
-                                                                colors->add(c, *covers);
-                                                            }
-                                                            ++colors;
-                                                            ++covers;
-                                                        }
-                                                        while (--len != 0);
-                                                        if (--num_spans == 0) break;
-                                                        span_aa = sl_aa.GetNextScanlineSpan();
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    // Arbitrary span generator
-                                                    //-----------------------
-                                                    for (; ; )
-                                                    {
-                                                        len = span_aa.len;
-                                                        RGBA_Bytes* colors = &pColorSpan[mix_bufferOffset + span_aa.x - min_x];
-                                                        RGBA_Bytes* cspan = pColorSpan;
-                                                        sh.generate_span(cspan,
-                                                                         span_aa.x,
-                                                                         sl_aa.y(),
-                                                                         (int)len,
-                                                                         style);
-                                                        byte* covers = &pCovers[span_aa.cover_index];
-                                                        do
-                                                        {
-                                                            if (*covers == cover_full)
-                                                            {
-                                                                *colors = *cspan;
-                                                            }
-                                                            else
-                                                            {
-                                                                colors->add(*cspan, *covers);
-                                                            }
-                                                            ++cspan;
-                                                            ++colors;
-                                                            ++covers;
-                                                        }
-                                                        while (--len != 0);
-                                                        if (--num_spans == 0) break;
-                                                        span_aa = sl_aa.GetNextScanlineSpan();
-                                                    }
-                                                }
-                                            }
-                                        }
+									if (--num_spans == 0) break;
+									span_aa = sl_aa.GetNextScanlineSpan();
+								}
+							}
+						}
 
-                                        // Emit the blended result as a color hspan
-                                        //-------------------------
-                                        span_bin = sl_bin.Begin();
-                                        num_spans = sl_bin.num_spans();
-                                        for (; ; )
-                                        {
-                                            imageFormat.blend_color_hspan(span_bin.x,
-                                                                  sl_bin.y(),
-                                                                  (int)span_bin.len,
-                                                                  &pColorSpan[mix_bufferOffset + span_bin.x - min_x],
-                                                                  null,
-                                                                  cover_full);
-                                            if (--num_spans == 0) break;
-                                            span_bin = sl_bin.GetNextScanlineSpan();
-                                        }
-                                    } // if(ras.sweep_scanline(sl_bin, -1))
-                                } // if(num_styles == 1) ... else
-                            } // while((num_styles = ras.sweep_styles()) > 0)
-                        }
-                    }
-                } // if(ras.rewind_scanlines())
-            }
-#endif
+						destination.blend_color_hspan(sl_start, sl_y, sl_len, mixBuffer, sl_start - min_x, FullCover, 0, true);
+					}
+				}
+			}
+		}
+
+		/// <summary>
+		/// C++ <c>render_scanlines_compound</c>: every style of <paramref name="ras"/> drawn into
+		/// <paramref name="destination"/>. Where styles meet on a scanline, each style's covered colors are
+		/// summed into a mix buffer (a full cover replaces what is there) and the mix is blended once over the
+		/// pixels <paramref name="sl_bin"/> marks, so edges two styles share do not show the background. The
+		/// style colors should be premultiplied.
+		/// </summary>
+		public void RenderCompound(rasterizer_compound_aa ras, IScanlineCache sl_aa, IScanlineCache sl_bin, IImageByte destination, span_allocator alloc, IStyleHandler sh)
+		{
+			if (!ras.rewind_scanlines())
+			{
+				return;
+			}
+
+			int min_x = ras.min_x();
+			int len = ras.max_x() - min_x + 2;
+			sl_aa.reset(min_x, ras.max_x());
+			sl_bin.reset(min_x, ras.max_x());
+
+			var colorSpan = new Color[len];
+			var mixBuffer = new Color[len];
+
+			int num_styles;
+			while ((num_styles = ras.sweep_styles()) > 0)
+			{
+				if (num_styles == 1)
+				{
+					RenderSingleStyle(ras, sl_aa, destination, sh, colorSpan);
+				}
+				else if (ras.sweep_scanline(sl_bin, -1))
+				{
+					ScanlineSpan span_bin = sl_bin.begin();
+					int num_spans = sl_bin.num_spans();
+					for (; ; )
+					{
+						System.Array.Clear(mixBuffer, span_bin.x - min_x, span_bin.len);
+						if (--num_spans == 0) break;
+						span_bin = sl_bin.GetNextScanlineSpan();
+					}
+
+					for (int i = 0; i < num_styles; i++)
+					{
+						int style = ras.style(i);
+						bool solid = sh.IsSolid(style);
+						if (ras.sweep_scanline(sl_aa, i))
+						{
+							byte[] covers = sl_aa.GetCovers();
+							ScanlineSpan span_aa = sl_aa.begin();
+							num_spans = sl_aa.num_spans();
+							for (; ; )
+							{
+								int spanLen = span_aa.len;
+								Color solidColor = default;
+								if (solid)
+								{
+									solidColor = sh.color(style);
+								}
+								else
+								{
+									sh.GenerateSpan(colorSpan, 0, span_aa.x, sl_aa.y(), spanLen, style);
+								}
+
+								int mixIndex = span_aa.x - min_x;
+								for (int k = 0; k < spanLen; k++)
+								{
+									int cover = covers[span_aa.cover_index + k];
+									Color c = solid ? solidColor : colorSpan[k];
+									if (cover == 255)
+									{
+										mixBuffer[mixIndex + k] = c;
+									}
+									else
+									{
+										AddColor(ref mixBuffer[mixIndex + k], c, cover);
+									}
+								}
+
+								if (--num_spans == 0) break;
+								span_aa = sl_aa.GetNextScanlineSpan();
+							}
+						}
+					}
+
+					// Emit the blended result as a color hspan
+					span_bin = sl_bin.begin();
+					num_spans = sl_bin.num_spans();
+					for (; ; )
+					{
+						destination.blend_color_hspan(span_bin.x, sl_bin.y(), span_bin.len, mixBuffer, span_bin.x - min_x, FullCover, 0, true);
+						if (--num_spans == 0) break;
+						span_bin = sl_bin.GetNextScanlineSpan();
+					}
+				}
+			}
+		}
+
+		/// <summary>The compound renderers' scanline with one style: a plain solid fill or span-generated blend.</summary>
+		private void RenderSingleStyle(rasterizer_compound_aa ras, IScanlineCache sl_aa, IImageByte destination, IStyleHandler sh, Color[] colorSpan)
+		{
+			if (!ras.sweep_scanline(sl_aa, 0))
+			{
+				return;
+			}
+
+			int style = ras.style(0);
+			if (sh.IsSolid(style))
+			{
+				RenderSolidSingleScanLine(destination, sl_aa, sh.color(style));
+				return;
+			}
+
+			byte[] covers = sl_aa.GetCovers();
+			ScanlineSpan span_aa = sl_aa.begin();
+			int num_spans = sl_aa.num_spans();
+			for (; ; )
+			{
+				sh.GenerateSpan(colorSpan, 0, span_aa.x, sl_aa.y(), span_aa.len, style);
+				destination.blend_color_hspan(span_aa.x, sl_aa.y(), span_aa.len, colorSpan, 0, covers, span_aa.cover_index, false);
+				if (--num_spans == 0) break;
+				span_aa = sl_aa.GetNextScanlineSpan();
+			}
+		}
+
+		/// <summary>C++ <c>rgba8::add(c, cover)</c>: <paramref name="c"/> at <paramref name="cover"/> added to
+		/// <paramref name="sum"/>, each channel saturating at 255; a full cover of an opaque color replaces it.</summary>
+		private static void AddColor(ref Color sum, Color c, int cover)
+		{
+			if (cover == 255)
+			{
+				if (c.alpha == 255)
+				{
+					sum = c;
+					return;
+				}
+
+				sum = new Color(
+					System.Math.Min(sum.red + c.red, 255),
+					System.Math.Min(sum.green + c.green, 255),
+					System.Math.Min(sum.blue + c.blue, 255),
+					System.Math.Min(sum.alpha + c.alpha, 255));
+				return;
+			}
+
+			sum = new Color(
+				System.Math.Min(sum.red + Rgba8Math.Multiply(c.red, cover), 255),
+				System.Math.Min(sum.green + Rgba8Math.Multiply(c.green, cover), 255),
+				System.Math.Min(sum.blue + Rgba8Math.Multiply(c.blue, cover), 255),
+				System.Math.Min(sum.alpha + Rgba8Math.Multiply(c.alpha, cover), 255));
 		}
 	}
 }

@@ -230,122 +230,110 @@ namespace MatterHackers.Agg
 		}
 	};
 
-	/*
-		//=====================================span_interpolator_linear_subdiv
-		template<class Transformer = ITransformer, int SubpixelShift = 8>
-		class span_interpolator_linear_subdiv
+	//=====================================span_interpolator_linear_subdiv
+	/// <summary>
+	/// C++ span_interpolator_linear_subdiv (SubpixelShift 8): span_interpolator_linear, but it transforms the exact
+	/// point again every 2^subdiv_shift pixels (16 by default) and steps a dda line only between those, so a
+	/// perspective transform stays close to exact along a long span at a fraction of the cost.
+	/// </summary>
+	public sealed class span_interpolator_linear_subdiv : ISpanInterpolator
+	{
+		private const int subpixel_shift = 8;
+		private const int subpixel_scale = 1 << subpixel_shift;
+
+		private Transform.ITransform m_trans;
+		private int m_subdiv_shift;
+		private int m_subdiv_size;
+		private dda2_line_interpolator m_li_x;
+		private dda2_line_interpolator m_li_y;
+		private int m_src_x;
+		private double m_src_y;
+		private int m_pos;
+		private int m_len;
+
+		public span_interpolator_linear_subdiv(Transform.ITransform trans, int subdiv_shift = 4)
 		{
-		public:
-			typedef Transformer trans_type;
+			m_trans = trans;
+			this.subdiv_shift(subdiv_shift);
+		}
 
-			enum subpixel_scale_e
+		public Transform.ITransform transformer() => m_trans;
+
+		public void transformer(Transform.ITransform trans) => m_trans = trans;
+
+		public int subdiv_shift() => m_subdiv_shift;
+
+		public void subdiv_shift(int shift)
+		{
+			m_subdiv_shift = shift;
+			m_subdiv_size = 1 << m_subdiv_shift;
+		}
+
+		public void local_scale(out int x, out int y)
+		{
+			throw new System.NotImplementedException();
+		}
+
+		public void resynchronize(double xe, double ye, int len)
+		{
+			throw new System.NotImplementedException();
+		}
+
+		public void begin(double x, double y, int len)
+		{
+			m_pos = 1;
+			m_src_x = Util.iround(x * subpixel_scale) + subpixel_scale;
+			m_src_y = y;
+			m_len = len;
+
+			if (len > m_subdiv_size)
 			{
-				subpixel_shift = SubpixelShift,
-				subpixel_scale = 1 << subpixel_shift
-			};
-
-			//----------------------------------------------------------------
-			span_interpolator_linear_subdiv() :
-				m_subdiv_shift(4),
-				m_subdiv_size(1 << m_subdiv_shift),
-				m_subdiv_mask(m_subdiv_size - 1) {}
-
-			span_interpolator_linear_subdiv(const trans_type& trans,
-											int subdiv_shift = 4) :
-				m_subdiv_shift(subdiv_shift),
-				m_subdiv_size(1 << m_subdiv_shift),
-				m_subdiv_mask(m_subdiv_size - 1),
-				m_trans(&trans) {}
-
-			span_interpolator_linear_subdiv(const trans_type& trans,
-											double x, double y, int len,
-											int subdiv_shift = 4) :
-				m_subdiv_shift(subdiv_shift),
-				m_subdiv_size(1 << m_subdiv_shift),
-				m_subdiv_mask(m_subdiv_size - 1),
-				m_trans(&trans)
-			{
-				begin(x, y, len);
+				len = m_subdiv_size;
 			}
 
-			//----------------------------------------------------------------
-			const trans_type& transformer() const { return *m_trans; }
-			void transformer(const trans_type& trans) { m_trans = &trans; }
+			double tx = x;
+			double ty = y;
+			m_trans.Transform(ref tx, ref ty);
+			int x1 = Util.iround(tx * subpixel_scale);
+			int y1 = Util.iround(ty * subpixel_scale);
 
-			//----------------------------------------------------------------
-			int subdiv_shift() const { return m_subdiv_shift; }
-			void subdiv_shift(int shift)
+			tx = x + len;
+			ty = y;
+			m_trans.Transform(ref tx, ref ty);
+
+			m_li_x = new dda2_line_interpolator(x1, Util.iround(tx * subpixel_scale), len);
+			m_li_y = new dda2_line_interpolator(y1, Util.iround(ty * subpixel_scale), len);
+		}
+
+		public void Next()
+		{
+			m_li_x.Next();
+			m_li_y.Next();
+			if (m_pos >= m_subdiv_size)
 			{
-				m_subdiv_shift = shift;
-				m_subdiv_size = 1 << m_subdiv_shift;
-				m_subdiv_mask = m_subdiv_size - 1;
-			}
-
-			//----------------------------------------------------------------
-			void begin(double x, double y, int len)
-			{
-				double tx;
-				double ty;
-				m_pos   = 1;
-				m_src_x = iround(x * subpixel_scale) + subpixel_scale;
-				m_src_y = y;
-				m_len   = len;
-
-				if(len > m_subdiv_size) len = m_subdiv_size;
-				tx = x;
-				ty = y;
-				m_trans->transform(&tx, &ty);
-				int x1 = iround(tx * subpixel_scale);
-				int y1 = iround(ty * subpixel_scale);
-
-				tx = x + len;
-				ty = y;
-				m_trans->transform(&tx, &ty);
-
-				m_li_x = dda2_line_interpolator(x1, iround(tx * subpixel_scale), len);
-				m_li_y = dda2_line_interpolator(y1, iround(ty * subpixel_scale), len);
-			}
-
-			//----------------------------------------------------------------
-			void operator++()
-			{
-				++m_li_x;
-				++m_li_y;
-				if(m_pos >= m_subdiv_size)
+				int len = m_len;
+				if (len > m_subdiv_size)
 				{
-					int len = m_len;
-					if(len > m_subdiv_size) len = m_subdiv_size;
-					double tx = double(m_src_x) / double(subpixel_scale) + len;
-					double ty = m_src_y;
-					m_trans->transform(&tx, &ty);
-					m_li_x = dda2_line_interpolator(m_li_x.y(), iround(tx * subpixel_scale), len);
-					m_li_y = dda2_line_interpolator(m_li_y.y(), iround(ty * subpixel_scale), len);
-					m_pos = 0;
+					len = m_subdiv_size;
 				}
-				m_src_x += subpixel_scale;
-				++m_pos;
-				--m_len;
+
+				double tx = (double)m_src_x / subpixel_scale + len;
+				double ty = m_src_y;
+				m_trans.Transform(ref tx, ref ty);
+				m_li_x = new dda2_line_interpolator(m_li_x.y(), Util.iround(tx * subpixel_scale), len);
+				m_li_y = new dda2_line_interpolator(m_li_y.y(), Util.iround(ty * subpixel_scale), len);
+				m_pos = 0;
 			}
 
-			//----------------------------------------------------------------
-			void coordinates(int* x, int* y) const
-			{
-				*x = m_li_x.y();
-				*y = m_li_y.y();
-			}
+			m_src_x += subpixel_scale;
+			++m_pos;
+			--m_len;
+		}
 
-		private:
-			int m_subdiv_shift;
-			int m_subdiv_size;
-			int m_subdiv_mask;
-			const trans_type* m_trans;
-			dda2_line_interpolator m_li_x;
-			dda2_line_interpolator m_li_y;
-			int      m_src_x;
-			double   m_src_y;
-			int m_pos;
-			int m_len;
-		};
-
-	 */
+		public void coordinates(out int x, out int y)
+		{
+			x = m_li_x.y();
+			y = m_li_y.y();
+		}
+	}
 }

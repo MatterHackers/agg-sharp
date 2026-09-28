@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007, 2026
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -26,6 +26,17 @@ namespace MatterHackers.Agg.VertexSource
 	{
 		public Stroke(IVertexSource vertexSource, double inWidth = 1)
 			: base(vertexSource, new StrokeGenerator())
+		{
+			this.Width = inWidth;
+		}
+
+		/// <summary>
+		/// conv_stroke with a markers type: <paramref name="markers"/> (a <see cref="TerminalMarkers"/>) collects
+		/// where each source sub-path starts and ends as the stroke is read, for arrowheads drawn with
+		/// <see cref="MarkerPlacer"/>.
+		/// </summary>
+		public Stroke(IVertexSource vertexSource, IMarkers markers, double inWidth = 1)
+			: base(vertexSource, new StrokeGenerator(), markers)
 		{
 			this.Width = inWidth;
 		}

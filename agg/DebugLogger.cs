@@ -29,8 +29,10 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 
 namespace Agg
 {
@@ -50,7 +52,11 @@ namespace Agg
     /// </summary>
     public static class DebugLogger
     {
-        private static readonly HashSet<string> debugFilters = new HashSet<string>();
+        // Immutable and swapped atomically: SystemWindow and WinformsSystemWindow enable their filters from
+        // whichever thread shows a window while every Log call on every thread reads the set, and a plain
+        // HashSet mutated concurrently silently loses entries (DebugLoggerFilterConcurrencyTests). Readers
+        // take the current snapshot with no lock; writers retry their swap until it lands.
+        private static ImmutableHashSet<string> debugFilters = ImmutableHashSet<string>.Empty;
         /// <summary>
         /// The file every logged line is also appended to, or null for no file at all - the default, because a
         /// library cannot know where its host keeps its data. The application sets it once at startup to a
@@ -97,7 +103,7 @@ namespace Agg
         /// <param name="filter">Debug filter category to enable</param>
         public static void EnableFilter(string filter)
         {
-            debugFilters.Add(filter);
+            ImmutableInterlocked.Update(ref debugFilters, (set, name) => set.Add(name), filter);
         }
 
         /// <summary>
@@ -106,7 +112,7 @@ namespace Agg
         /// <param name="filter">Debug filter category to disable</param>
         public static void DisableFilter(string filter)
         {
-            debugFilters.Remove(filter);
+            ImmutableInterlocked.Update(ref debugFilters, (set, name) => set.Remove(name), filter);
         }
 
         /// <summary>
@@ -116,7 +122,7 @@ namespace Agg
         /// <returns>True if the filter is enabled</returns>
         public static bool IsFilterEnabled(string filter)
         {
-            return debugFilters.Contains(filter);
+            return Volatile.Read(ref debugFilters).Contains(filter);
         }
 
         /// <summary>
@@ -124,7 +130,7 @@ namespace Agg
         /// </summary>
         public static void ClearFilters()
         {
-            debugFilters.Clear();
+            Interlocked.Exchange(ref debugFilters, ImmutableHashSet<string>.Empty);
         }
 
         /// <summary>
@@ -133,7 +139,7 @@ namespace Agg
         /// <returns>A copy of the enabled filters</returns>
         public static HashSet<string> GetEnabledFilters()
         {
-            return new HashSet<string>(debugFilters);
+            return new HashSet<string>(Volatile.Read(ref debugFilters));
         }
 
         /// <summary>
@@ -192,7 +198,7 @@ namespace Agg
             // Log if either:
             // 1. The filter is specifically enabled, OR
             // 2. The level meets or exceeds the minimum level threshold
-            bool shouldLog = debugFilters.Contains(filter) || level >= minimumLevel;
+            bool shouldLog = Volatile.Read(ref debugFilters).Contains(filter) || level >= minimumLevel;
 
             if (shouldLog)
             {

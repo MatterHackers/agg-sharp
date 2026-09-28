@@ -37,7 +37,7 @@ namespace MatterHackers.Agg
 		private int m_x1;
 		private int m_y1;
 		private int m_f1;
-		private bool m_clipping;
+		protected bool m_clipping;
 
 		private int mul_div(double a, double b, double c)
 		{
@@ -73,6 +73,32 @@ namespace MatterHackers.Agg
 			m_f1 = (0);
 			m_clipping = (false);
 		}
+
+		/// <summary>Whether a clip box is set; C++ AGG keeps the same flag and starts without one.</summary>
+		public bool IsClipping => m_clipping;
+
+		// The rasterizers talk to their clipper through the members below, in the clipper's own coordinates
+		// held as doubles: C++ templates the rasterizers on the clipper (rasterizer_sl_clip_int, whose
+		// coordinates are 24.8 subpixel ints, or rasterizer_sl_clip_dbl, whose are pixel doubles), and
+		// VectorClipperDouble overrides them. An int coordinate round-trips through a double exactly.
+
+		/// <summary>C++ <c>Conv::upscale</c>: the clipper coordinate of a pixel coordinate.</summary>
+		public virtual double UpscaleD(double v) => upscale(v);
+
+		/// <summary>C++ <c>Conv::downscale</c>: the clipper coordinate of a 24.8 subpixel coordinate.</summary>
+		public virtual double DownscaleD(int v) => downscale(v);
+
+		/// <summary>C++ <c>clip_box</c>, in clipper coordinates.</summary>
+		public virtual void ClipBoxD(double x1, double y1, double x2, double y2) => clip_box((int)x1, (int)y1, (int)x2, (int)y2);
+
+		/// <summary>The clip box in pixels.</summary>
+		public virtual RectangleDouble ClipBoxPixels => new RectangleDouble(downscale(clipBox.Left), downscale(clipBox.Bottom), downscale(clipBox.Right), downscale(clipBox.Top));
+
+		/// <summary>C++ <c>move_to</c>, in clipper coordinates.</summary>
+		public virtual void MoveToD(double x, double y) => move_to((int)x, (int)y);
+
+		/// <summary>C++ <c>line_to</c>, in clipper coordinates.</summary>
+		public virtual void LineToD(RasterizerCellsAa ras, double x, double y) => line_to(ras, (int)x, (int)y);
 
 		//--------------------------------------------------------------------
 		public void reset_clipping()

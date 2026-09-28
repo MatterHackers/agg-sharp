@@ -34,6 +34,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- C++ AGG's embedded raster fonts, packed by scripts/gen-embedded-raster-fonts.py; read by EmbeddedRasterFonts. -->
+    <EmbeddedResource Include="Font\EmbeddedRasterFonts.bin" LogicalName="MatterHackers.Agg.Font.EmbeddedRasterFonts.bin" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Agg.Tests" />
   </ItemGroup>
 

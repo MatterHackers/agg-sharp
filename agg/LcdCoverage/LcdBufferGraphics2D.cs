@@ -158,6 +158,7 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// </remarks>
 		public override void CompositeLcdBuffer(LcdBuffer buffer, int destX, int destY)
 		{
+			this.FlushDeferredDraws();
 			if (buffer == null)
 			{
 				throw new ArgumentNullException(nameof(buffer));
@@ -178,12 +179,14 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// <inheritdoc/>
 		public override RectangleDouble GetClippingRect()
 		{
-			return this.rasterizer.GetVectorClipBox();
+			// With no clip box the buffer still clips to itself, so the canvas is the clip.
+			return this.rasterizer.HasVectorClipBox ? this.rasterizer.GetVectorClipBox() : new RectangleDouble(0, 0, this.Width, this.Height);
 		}
 
 		/// <inheritdoc/>
 		public override void SetClippingRect(RectangleDouble clippingRect)
 		{
+			this.FlushDeferredDraws();
 			this.rasterizer.SetVectorClipBox(clippingRect);
 		}
 
@@ -209,6 +212,7 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// </remarks>
 		public override void Clear(RectangleDouble bounds, IColorType color)
 		{
+			this.FlushDeferredDraws();
 			var pixelBounds = new RectangleInt(
 				Math.Max(SaturatingMath.Floor(bounds.Left), 0),
 				Math.Max(SaturatingMath.Floor(bounds.Bottom), 0),
@@ -265,12 +269,14 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// <inheritdoc/>
 		public override void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor)
 		{
+			this.FlushDeferredDraws();
 			Render(new RoundedRect(left, bottom, right, top, 0), fillColor.ToColor());
 		}
 
 		/// <inheritdoc/>
 		public override void Rectangle(double left, double bottom, double right, double top, Color color, double strokeWidth = -1)
 		{
+			this.FlushDeferredDraws();
 			// The half-pixel inset and the stroke are ImageGraphics2D's, so an outline drawn into an LCD
 			// backbuffer covers the same pixels it would have on a normal one.
 			var rect = new RoundedRect(left + .5, bottom + .5, right - .5, top - .5, 0);
@@ -383,6 +389,7 @@ namespace MatterHackers.Agg.LcdCoverage
 			double scaleX,
 			double scaleY)
 		{
+			this.FlushDeferredDraws();
 			if (imageSource == null)
 			{
 				throw new ArgumentNullException(nameof(imageSource));
@@ -509,6 +516,7 @@ namespace MatterHackers.Agg.LcdCoverage
 			double scaleX,
 			double scaleY)
 		{
+			this.FlushDeferredDraws();
 			throw new NotImplementedException();
 		}
 
