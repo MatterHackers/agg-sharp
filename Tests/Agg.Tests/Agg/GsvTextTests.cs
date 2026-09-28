@@ -27,6 +27,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg.VertexSource;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -42,7 +43,7 @@ namespace MatterHackers.Agg.Tests
 			var text = new gsv_text();
 			text.size(10, 0);
 
-			await Assert.That(text.Vertices().Select(v => v.Command).ToArray()).IsEquivalentTo(new[] { FlagsAndCommand.Stop });
+			await Assert.That(text.Vertices().Select(v => v.Command).ToArray()).IsEquivalentTo(new[] { FlagsAndCommand.Stop }, CollectionOrdering.Matching);
 
 			text.text(null);
 			await Assert.That(text.Vertices().Count()).IsEqualTo(1);

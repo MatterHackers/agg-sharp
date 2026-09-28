@@ -30,6 +30,7 @@ using MatterHackers.Agg.UI;
 using MatterHackers.AggSharpDemo.GuiDemo;
 using MatterHackers.GuiAutomation;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -49,13 +50,16 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		{
 			var bar = new DemoTopBar(new DemoTheme());
 
-			await Assert.That(bar.Menus.Select(m => m.Text)).IsEquivalentTo(new[] { "Demos", "View", "Help" });
+			await Assert.That(bar.Menus.Select(m => m.Text)).IsEquivalentTo(new[] { "Demos", "View", "Help" }, CollectionOrdering.Matching);
 
 			var demos = bar.Menus[0].SubMenuItems();
-			await Assert.That(demos.Select(g => g.Text)).IsEquivalentTo(GuiDemoSpecs.Groups);
+			await Assert.That(demos.Select(g => g.Text)).IsEquivalentTo(GuiDemoSpecs.Groups, CollectionOrdering.Matching);
+			// A group's rows are the sidebar's: sorted by title, case-insensitively, not in GuiDemoSpecs order
 			var widgets = Child(demos, "demos.Widgets").SubMenuItems();
 			await Assert.That(widgets.Select(d => d.AutomationName))
-				.IsEquivalentTo(GuiDemoSpecs.All.Where(s => s.Group == "Widgets").Select(s => "demo." + s.Title));
+				.IsEquivalentTo(GuiDemoSpecs.All.Where(s => s.Group == "Widgets")
+					.OrderBy(s => s.Title.ToLowerInvariant(), System.StringComparer.Ordinal)
+					.Select(s => "demo." + s.Title), CollectionOrdering.Matching);
 
 			// app_builder.rs builds the menu from the sidebar's groups: sorted, and the Inspector under Tools
 			var tools = Child(demos, "demos.Tools").SubMenuItems().Select(d => d.Text).ToList();
@@ -64,17 +68,17 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 
 			var view = bar.Menus[1].SubMenuItems();
 			await Assert.That(view.Where(i => !i.IsSeparator).Select(i => i.AutomationName))
-				.IsEquivalentTo(new[] { "view.backend", "view.snap", "view.theme", "view.accent" });
+				.IsEquivalentTo(new[] { "view.backend", "view.snap", "view.theme", "view.accent" }, CollectionOrdering.Matching);
 			await Assert.That(Child(view, "view.theme").SubMenuItems().Select(i => i.AutomationName))
-				.IsEquivalentTo(new[] { "view.theme.light", "view.theme.dark", "view.theme.system" });
+				.IsEquivalentTo(new[] { "view.theme.light", "view.theme.dark", "view.theme.system" }, CollectionOrdering.Matching);
 			await Assert.That(Child(view, "view.accent").SubMenuItems().Select(i => i.AutomationName))
 				.IsEquivalentTo(new[]
 				{
 					"view.accent.blue", "view.accent.purple", "view.accent.pink", "view.accent.red",
 					"view.accent.orange", "view.accent.yellow", "view.accent.green", "view.accent.teal",
-				});
+				}, CollectionOrdering.Matching);
 
-			await Assert.That(bar.Menus[2].SubMenuItems().Select(i => i.AutomationName)).IsEquivalentTo(new[] { "help.github" });
+			await Assert.That(bar.Menus[2].SubMenuItems().Select(i => i.AutomationName)).IsEquivalentTo(new[] { "help.github" }, CollectionOrdering.Matching);
 		}
 
 		[Test]

@@ -35,6 +35,7 @@ using System.Threading.Tasks;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -237,7 +238,7 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(radioB.Checked).IsTrue();
 			await Assert.That(radioA.Checked).IsFalse()
 				.Because("checking one radio item unchecks its SiblingRadioButtonList");
-			await Assert.That(setterCalls).IsEquivalentTo(new[] { "B" });
+			await Assert.That(setterCalls).IsEquivalentTo(new[] { "B" }, CollectionOrdering.Matching);
 			await Assert.That(harness.Menu.HasBeenClosed).IsFalse();
 
 			// Re-clicking the already checked row does nothing at all - no setter, no state change
@@ -246,7 +247,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			await Assert.That(radioB.Checked).IsTrue();
 			await Assert.That(radioA.Checked).IsFalse();
-			await Assert.That(setterCalls).IsEquivalentTo(new[] { "B" });
+			await Assert.That(setterCalls).IsEquivalentTo(new[] { "B" }, CollectionOrdering.Matching);
 			await Assert.That(harness.Menu.HasBeenClosed).IsFalse();
 		}
 

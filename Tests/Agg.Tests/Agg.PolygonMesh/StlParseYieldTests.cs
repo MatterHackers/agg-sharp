@@ -38,6 +38,7 @@ using MatterHackers.Agg.Tests;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -238,7 +239,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			var yieldingPositions = new List<Vector3Float>(yielding.Vertices);
 			var plainPositions = new List<Vector3Float>(plain.Vertices);
 
-			await Assert.That(yieldingPositions).IsEquivalentTo(plainPositions)
+			await Assert.That(yieldingPositions).IsEquivalentTo(plainPositions, CollectionOrdering.Matching)
 				.Because("the chunk boundaries must not reorder the vertices either");
 		}
 	}

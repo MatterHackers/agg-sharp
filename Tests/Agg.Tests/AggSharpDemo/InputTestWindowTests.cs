@@ -32,6 +32,7 @@ using MatterHackers.AggSharpDemo.GuiDemo.Windows.Tests;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -91,7 +92,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			{
 				new Interaction(InteractionType.DragStarted, MouseButtons.Left),
 				new Interaction(InteractionType.Dragged, MouseButtons.Left, Dx: 7, Dy: 0),
-			});
+			}, CollectionOrdering.Matching);
 			await Assert.That(c.OnMove(P(15, 4), true, 15).Single()).IsEqualTo(new Interaction(InteractionType.Dragged, MouseButtons.Left, Dx: 5, Dy: 4));
 			await Assert.That(c.OnUp(MouseButtons.Left, P(15, 4), 20).Single()).IsEqualTo(new Interaction(InteractionType.DragStopped, MouseButtons.Left));
 
@@ -148,7 +149,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			host.PerformLayout();
 
 			await Assert.That(window.Name).IsEqualTo("Input Test Content");
-			await Assert.That(window.Probes.Select(p => p.Kind).ToArray()).IsEquivalentTo(new[] { ProbeKind.Hover, ProbeKind.Click, ProbeKind.Drag, ProbeKind.ClickAndDrag });
+			await Assert.That(window.Probes.Select(p => p.Kind).ToArray()).IsEquivalentTo(new[] { ProbeKind.Hover, ProbeKind.Click, ProbeKind.Drag, ProbeKind.ClickAndDrag }, CollectionOrdering.Matching);
 			await Assert.That(window.FindDescendant("Input Test Probe Click + Drag")).IsSameReferenceAs(window.Probes[3]);
 
 			// The probes share the row's width equally and fill the height left under the controls.

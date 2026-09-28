@@ -31,6 +31,7 @@ using MatterHackers.RenderCore.Testing;
 using MatterHackers.RenderGl.Compat;
 using MatterHackers.RenderGl.OpenGl;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -92,7 +93,7 @@ namespace MatterHackers.Agg.Tests
 				.Where(entry => entry.Buffer != null && (entry.Buffer.Usage & BufferUsage.Uniform) != 0)
 				.Select(entry => entry.Offset)
 				.ToList();
-			await Assert.That(boundOffsets).IsEquivalentTo(new ulong[] { 0, GlDrawSubmitter.UniformStride });
+			await Assert.That(boundOffsets).IsEquivalentTo(new ulong[] { 0, GlDrawSubmitter.UniformStride }, CollectionOrdering.Matching);
 
 			// After a submit the slots are safe to reuse, so a third draw goes back to the first range.
 			harness.DrawTriangle();

@@ -30,6 +30,7 @@ using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Svg;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -127,7 +128,7 @@ namespace MatterHackers.Agg.Tests.Agg
 				asked.Add(href);
 				return new byte[] { 1 };
 			});
-			await Assert.That(asked).IsEquivalentTo(new[] { "../images/pic.png" });
+			await Assert.That(asked).IsEquivalentTo(new[] { "../images/pic.png" }, CollectionOrdering.Matching);
 			await Assert.That(Is(At(image, 5, 5), 255, 0, 0)).IsTrue();
 		}
 

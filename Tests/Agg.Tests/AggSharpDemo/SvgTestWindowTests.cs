@@ -32,6 +32,7 @@ using MatterHackers.AggSharpDemo.GuiDemo.Windows.Tests;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -83,7 +84,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			var image = new ImageBuffer(1, 2);
 			image.SetPixel(0, 1, new Color(10, 20, 30, 255)); // the top row: ImageBuffer rows run bottom-up
 			byte[] rgba = SvgCompare.ToRgba(image);
-			await Assert.That(rgba.Take(4).ToArray()).IsEquivalentTo(new byte[] { 10, 20, 30, 255 });
+			await Assert.That(rgba.Take(4).ToArray()).IsEquivalentTo(new byte[] { 10, 20, 30, 255 }, CollectionOrdering.Matching);
 		}
 
 		[Test]

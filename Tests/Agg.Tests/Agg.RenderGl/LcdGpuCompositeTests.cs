@@ -39,6 +39,7 @@ using MatterHackers.Agg.VertexSource;
 using MatterHackers.RenderGl;
 using MatterHackers.RenderGl.OpenGl;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -219,7 +220,7 @@ namespace MatterHackers.Agg.Tests
 				(false, true, false, false),
 				(false, false, true, false),
 				(true, true, true, true),
-			}).Because("one pass per subpixel channel, none of them writing destination alpha, then a restore");
+			}, CollectionOrdering.Matching).Because("one pass per subpixel channel, none of them writing destination alpha, then a restore");
 
 			await Assert.That(fake.BlendFuncs.Count).IsEqualTo(1);
 			await Assert.That(fake.BlendFuncs[0])
@@ -232,7 +233,7 @@ namespace MatterHackers.Agg.Tests
 			// Where the pixels land. The quad ImageTexturePlugin emits is at the origin, so the composite's
 			// only statement of position is this translate - a dropped or transposed one would put a widget's
 			// backbuffer somewhere else entirely while every other assertion here still passed.
-			await Assert.That(fake.Translates).IsEquivalentTo(new[] { (10.0, 4.0, 0.0, 0) })
+			await Assert.That(fake.Translates).IsEquivalentTo(new[] { (10.0, 4.0, 0.0, 0) }, CollectionOrdering.Matching)
 				.Because("the buffer is placed at (destX, destY) once, before any of the three passes is drawn");
 
 			// Each pass samples its own image, so each has to be a texture of its own.
@@ -416,7 +417,7 @@ namespace MatterHackers.Agg.Tests
 				// handed is what makes that safe rather than a way to paint outside the caller's clip.
 				await Assert.That(graphics.GetClippingRect()).IsEqualTo(clip)
 					.Because("this is the rect TryRenderThroughLcd passes to CompositeLcdMask");
-				await Assert.That(fake.Scissors).IsEquivalentTo(new[] { (2, 1, 19, 10) })
+				await Assert.That(fake.Scissors).IsEquivalentTo(new[] { (2, 1, 19, 10) }, CollectionOrdering.Matching)
 					.Because("the same rect is live as the GL scissor for all three passes, in GL's x, y, w, h form");
 
 				await Assert.That(fake.ColorMasks).IsEquivalentTo(new[]
@@ -425,7 +426,7 @@ namespace MatterHackers.Agg.Tests
 					(false, true, false, false),
 					(false, false, true, false),
 					(true, true, true, true),
-				}).Because("the mask composite is three single channel passes and a restore, as the buffer one is");
+				}, CollectionOrdering.Matching).Because("the mask composite is three single channel passes and a restore, as the buffer one is");
 
 				await Assert.That(fake.TextureUploads.Count).IsEqualTo(3)
 					.Because("each pass samples its own channel's coverage, so each needs a texture of its own");
@@ -516,7 +517,7 @@ namespace MatterHackers.Agg.Tests
 				LcdComposite.Composite(expected, mask, color, originX, originY);
 
 				await Assert.That(fake.TextureUploads.Count).IsEqualTo(3);
-				await Assert.That(fake.Translates).IsEquivalentTo(new[] { ((double)originX, (double)originY, 0.0, 0) })
+				await Assert.That(fake.Translates).IsEquivalentTo(new[] { ((double)originX, (double)originY, 0.0, 0) }, CollectionOrdering.Matching)
 					.Because("the mask is placed at the builder's whole pixel origin, before any pass is drawn");
 
 				Color modulate = fake.Color4s.Single();

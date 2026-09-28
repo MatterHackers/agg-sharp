@@ -29,6 +29,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.VertexSource;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -41,13 +42,13 @@ namespace Agg.Tests.Agg
 		public async Task OperationsOnFullRectanglesKeepTheRightPixels()
 		{
 			// A covers 0..9, B covers 5..14, every pixel full.
-			await Assert.That(Combine(SboolOp.Or, 0, 10, 5, 15)).IsEquivalentTo(Full(0, 15));
-			await Assert.That(Combine(SboolOp.And, 0, 10, 5, 15)).IsEquivalentTo(Full(5, 10));
-			await Assert.That(Combine(SboolOp.Xor, 0, 10, 5, 15)).IsEquivalentTo(Full(0, 5, 10, 15));
-			await Assert.That(Combine(SboolOp.XorSaddle, 0, 10, 5, 15)).IsEquivalentTo(Full(0, 5, 10, 15));
-			await Assert.That(Combine(SboolOp.XorAbsDiff, 0, 10, 5, 15)).IsEquivalentTo(Full(0, 5, 10, 15));
-			await Assert.That(Combine(SboolOp.AMinusB, 0, 10, 5, 15)).IsEquivalentTo(Full(0, 5));
-			await Assert.That(Combine(SboolOp.BMinusA, 0, 10, 5, 15)).IsEquivalentTo(Full(10, 15));
+			await Assert.That(Combine(SboolOp.Or, 0, 10, 5, 15)).IsEquivalentTo(Full(0, 15), CollectionOrdering.Matching);
+			await Assert.That(Combine(SboolOp.And, 0, 10, 5, 15)).IsEquivalentTo(Full(5, 10), CollectionOrdering.Matching);
+			await Assert.That(Combine(SboolOp.Xor, 0, 10, 5, 15)).IsEquivalentTo(Full(0, 5, 10, 15), CollectionOrdering.Matching);
+			await Assert.That(Combine(SboolOp.XorSaddle, 0, 10, 5, 15)).IsEquivalentTo(Full(0, 5, 10, 15), CollectionOrdering.Matching);
+			await Assert.That(Combine(SboolOp.XorAbsDiff, 0, 10, 5, 15)).IsEquivalentTo(Full(0, 5, 10, 15), CollectionOrdering.Matching);
+			await Assert.That(Combine(SboolOp.AMinusB, 0, 10, 5, 15)).IsEquivalentTo(Full(0, 5), CollectionOrdering.Matching);
+			await Assert.That(Combine(SboolOp.BMinusA, 0, 10, 5, 15)).IsEquivalentTo(Full(10, 15), CollectionOrdering.Matching);
 		}
 
 		[Test]

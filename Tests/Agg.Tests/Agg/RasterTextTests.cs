@@ -27,6 +27,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -52,8 +53,8 @@ namespace MatterHackers.Agg.Tests
 			await Assert.That(EmbeddedRasterFonts.Names.Count).IsEqualTo(34);
 			await Assert.That(EmbeddedRasterFonts.Names.First()).IsEqualTo("gse4x6");
 			await Assert.That(EmbeddedRasterFonts.Names.Last()).IsEqualTo("verdana18_bold");
-			await Assert.That(EmbeddedRasterFonts.Get("verdana12").Take(4).ToArray()).IsEquivalentTo(new byte[] { 12, 3, 32, 128 - 32 });
-			await Assert.That(EmbeddedRasterFonts.Get("gse4x6").Take(4).ToArray()).IsEquivalentTo(new byte[] { 6, 0, 32, 128 - 32 });
+			await Assert.That(EmbeddedRasterFonts.Get("verdana12").Take(4).ToArray()).IsEquivalentTo(new byte[] { 12, 3, 32, 128 - 32 }, CollectionOrdering.Matching);
+			await Assert.That(EmbeddedRasterFonts.Get("gse4x6").Take(4).ToArray()).IsEquivalentTo(new byte[] { 6, 0, 32, 128 - 32 }, CollectionOrdering.Matching);
 		}
 
 		/// <summary>Height, base line, string width and a glyph's box and advance, as C++ glyph_raster_bin gives them.</summary>

@@ -33,6 +33,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -239,7 +240,7 @@ namespace MatterHackers.Agg.UI.Tests
 				"post 1",
 				"idle 2",
 				"post 2"
-			});
+			}, CollectionOrdering.Matching);
 		}
 
 		/// <summary>

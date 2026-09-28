@@ -31,6 +31,7 @@ using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.UI;
 using MatterHackers.AggSharpDemo.GuiDemo;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -58,7 +59,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 
 			var expected = GuiDemoSpecs.All.Where(s => s.OpenByDefault).ToList();
 			await Assert.That(expected.Count).IsGreaterThan(0);
-			await Assert.That(host.ZOrder).IsEquivalentTo(expected);
+			await Assert.That(host.ZOrder).IsEquivalentTo(expected, CollectionOrdering.Matching);
 			await Assert.That(canvas.Children.OfType<WindowWidget>().Count()).IsEqualTo(expected.Count);
 
 			foreach (DemoSpec spec in GuiDemoSpecs.All)
@@ -84,8 +85,8 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			WindowWidget slidersWindow = host.GetWindow(sliders);
 			await Assert.That(slidersWindow.DoubleBuffer).IsTrue();
 			await Assert.That(slidersWindow.Descendants().Any(w => w.Name == sliders.ContentName)).IsTrue();
-			await Assert.That(host.ZOrder.TakeLast(2)).IsEquivalentTo(new[] { sliders, textEdit });
-			await Assert.That(changes).IsEquivalentTo(new[] { sliders, textEdit });
+			await Assert.That(host.ZOrder.TakeLast(2)).IsEquivalentTo(new[] { sliders, textEdit }, CollectionOrdering.Matching);
+			await Assert.That(changes).IsEquivalentTo(new[] { sliders, textEdit }, CollectionOrdering.Matching);
 
 			// Opening an open window changes nothing and says nothing.
 			host.SetOpen(textEdit, true);
@@ -141,7 +142,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			closeButton.InvokeClick();
 
 			await Assert.That(host.IsOpen(gallery)).IsFalse();
-			await Assert.That(changes).IsEquivalentTo(new[] { gallery });
+			await Assert.That(changes).IsEquivalentTo(new[] { gallery }, CollectionOrdering.Matching);
 		}
 
 		[Test]

@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -40,14 +41,14 @@ namespace MatterHackers.Agg.Tests
 		public async Task RepeatAndReflectFoldEveryCoordinateIntoTheImage()
 		{
 			// Each mode's call operator at -4, then its increment stepping on from there.
-			await Assert.That(Walk(new WrapModeRepeat(3), -4, 6)).IsEquivalentTo(new[] { 2, 0, 1, 2, 0, 1 });
-			await Assert.That(Walk(new WrapModeRepeatPow2(4), -4, 6)).IsEquivalentTo(new[] { 0, 1, 2, 3, 0, 1 });
-			await Assert.That(Walk(new WrapModeRepeatAutoPow2(3), -4, 6)).IsEquivalentTo(new[] { 2, 0, 1, 2, 0, 1 });
-			await Assert.That(Walk(new WrapModeRepeatAutoPow2(4), -4, 6)).IsEquivalentTo(new[] { 0, 1, 2, 3, 0, 1 });
-			await Assert.That(Walk(new WrapModeReflect(3), -4, 8)).IsEquivalentTo(new[] { 2, 2, 1, 0, 0, 1, 2, 2 });
-			await Assert.That(Walk(new WrapModeReflectPow2(4), -4, 10)).IsEquivalentTo(new[] { 3, 2, 1, 0, 0, 1, 2, 3, 3, 2 });
-			await Assert.That(Walk(new WrapModeReflectAutoPow2(3), -4, 8)).IsEquivalentTo(new[] { 2, 2, 1, 0, 0, 1, 2, 2 });
-			await Assert.That(Walk(new WrapModeReflectAutoPow2(4), -4, 10)).IsEquivalentTo(new[] { 3, 2, 1, 0, 0, 1, 2, 3, 3, 2 });
+			await Assert.That(Walk(new WrapModeRepeat(3), -4, 6)).IsEquivalentTo(new[] { 2, 0, 1, 2, 0, 1 }, CollectionOrdering.Matching);
+			await Assert.That(Walk(new WrapModeRepeatPow2(4), -4, 6)).IsEquivalentTo(new[] { 0, 1, 2, 3, 0, 1 }, CollectionOrdering.Matching);
+			await Assert.That(Walk(new WrapModeRepeatAutoPow2(3), -4, 6)).IsEquivalentTo(new[] { 2, 0, 1, 2, 0, 1 }, CollectionOrdering.Matching);
+			await Assert.That(Walk(new WrapModeRepeatAutoPow2(4), -4, 6)).IsEquivalentTo(new[] { 0, 1, 2, 3, 0, 1 }, CollectionOrdering.Matching);
+			await Assert.That(Walk(new WrapModeReflect(3), -4, 8)).IsEquivalentTo(new[] { 2, 2, 1, 0, 0, 1, 2, 2 }, CollectionOrdering.Matching);
+			await Assert.That(Walk(new WrapModeReflectPow2(4), -4, 10)).IsEquivalentTo(new[] { 3, 2, 1, 0, 0, 1, 2, 3, 3, 2 }, CollectionOrdering.Matching);
+			await Assert.That(Walk(new WrapModeReflectAutoPow2(3), -4, 8)).IsEquivalentTo(new[] { 2, 2, 1, 0, 0, 1, 2, 2 }, CollectionOrdering.Matching);
+			await Assert.That(Walk(new WrapModeReflectAutoPow2(4), -4, 10)).IsEquivalentTo(new[] { 3, 2, 1, 0, 0, 1, 2, 3, 3, 2 }, CollectionOrdering.Matching);
 		}
 
 		[Test]

@@ -32,6 +32,7 @@ using MatterHackers.AggSharpDemo.GuiDemo.Windows.Interaction;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -79,7 +80,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		{
 			var board = Build().Board;
 			board.Move((0, 1), (0, 3));
-			await Assert.That(board.Columns[0]).IsEquivalentTo(new[] { "Item A", "Item C", "Item B", "Item D" });
+			await Assert.That(board.Columns[0]).IsEquivalentTo(new[] { "Item A", "Item C", "Item B", "Item D" }, CollectionOrdering.Matching);
 		}
 
 		[Test]
@@ -87,8 +88,8 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		{
 			var board = Build().Board;
 			board.Move((0, 1), (1, 1));
-			await Assert.That(board.Columns[0]).IsEquivalentTo(new[] { "Item A", "Item C", "Item D" });
-			await Assert.That(board.Columns[1]).IsEquivalentTo(new[] { "Item E", "Item B", "Item F", "Item G" });
+			await Assert.That(board.Columns[0]).IsEquivalentTo(new[] { "Item A", "Item C", "Item D" }, CollectionOrdering.Matching);
+			await Assert.That(board.Columns[1]).IsEquivalentTo(new[] { "Item E", "Item B", "Item F", "Item G" }, CollectionOrdering.Matching);
 		}
 
 		[Test]

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -78,7 +79,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Feed(gesture, fingers.Magnify(Pointer, .1, TrackpadGesturePhase.Began));
 
 			IReadOnlyList<Vector2[]> end = fingers.Magnify(Pointer, 0, TrackpadGesturePhase.Ended);
-			await Assert.That(end[end.Count - 1]).IsEquivalentTo(new[] { Pointer });
+			await Assert.That(end[end.Count - 1]).IsEquivalentTo(new[] { Pointer }, CollectionOrdering.Matching);
 			await Assert.That(fingers.Active).IsFalse();
 			await Assert.That(Feed(gesture, end)).IsNull();
 

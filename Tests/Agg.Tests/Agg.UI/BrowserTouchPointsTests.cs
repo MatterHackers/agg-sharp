@@ -27,6 +27,7 @@ using System.Threading.Tasks;
 using MatterHackers.Agg.Platform.Browser;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -53,11 +54,11 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// The second finger's press is no mouse press - agg has one button - just a move with two positions.
 			await Assert.That(touches.Update("pointerdown", 9, "touch", new Vector2(50, 50))).IsEqualTo(BrowserTouchAction.MoveWithAllTouches);
-			await Assert.That(touches.Positions).IsEquivalentTo(new[] { new Vector2(12, 10), new Vector2(50, 50) });
+			await Assert.That(touches.Positions).IsEquivalentTo(new[] { new Vector2(12, 10), new Vector2(50, 50) }, CollectionOrdering.Matching);
 
 			await Assert.That(touches.Update("pointermove", 9, "touch", new Vector2(60, 50))).IsEqualTo(BrowserTouchAction.MoveWithAllTouches);
 			await Assert.That(touches.Update("pointermove", 7, "touch", new Vector2(0, 10))).IsEqualTo(BrowserTouchAction.MoveWithAllTouches);
-			await Assert.That(touches.Positions).IsEquivalentTo(new[] { new Vector2(0, 10), new Vector2(60, 50) });
+			await Assert.That(touches.Positions).IsEquivalentTo(new[] { new Vector2(0, 10), new Vector2(60, 50) }, CollectionOrdering.Matching);
 
 			// The second lifting drops back to one position, told as a move.
 			await Assert.That(touches.Update("pointerup", 9, "touch", new Vector2(60, 50))).IsEqualTo(BrowserTouchAction.MoveWithAllTouches);

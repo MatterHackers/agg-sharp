@@ -32,6 +32,7 @@ using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -85,7 +86,7 @@ namespace MatterHackers.Agg.Tests.Agg
 			await Assert.That(SvgLength.Parse("50%", 0, 200)).IsEqualTo(100);
 			await Assert.That(SvgLength.Parse("1e1", 0)).IsEqualTo(10);
 			await Assert.That(SvgLength.Parse("bogus", 7)).IsEqualTo(7);
-			await Assert.That(SvgLength.ParseList("1,2 3-4.5.5").ToArray()).IsEquivalentTo(new[] { 1, 2, 3, -4.5, .5 });
+			await Assert.That(SvgLength.ParseList("1,2 3-4.5.5").ToArray()).IsEquivalentTo(new[] { 1, 2, 3, -4.5, .5 }, CollectionOrdering.Matching);
 		}
 
 		private static Vector2 Apply(Affine transform, double x, double y)

@@ -28,6 +28,7 @@ using System.Threading.Tasks;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -197,7 +198,7 @@ namespace MatterHackers.Agg.Tests
 					(FlagsAndCommand.LineTo, 0, 0), (closedFlags, 0, 0),
 					(FlagsAndCommand.MoveTo, 20, 20), (FlagsAndCommand.LineTo, 30, 20), (FlagsAndCommand.LineTo, 30, 30),
 					(FlagsAndCommand.LineTo, 20, 20), (closedFlags, 0, 0),
-				});
+				}, CollectionOrdering.Matching);
 		}
 
 		[Test]
@@ -215,7 +216,7 @@ namespace MatterHackers.Agg.Tests
 				{
 					(FlagsAndCommand.MoveTo, 0, 0), (FlagsAndCommand.LineTo, 10, 0), (FlagsAndCommand.LineTo, 10, 10),
 					(FlagsAndCommand.LineTo, 0, 0),
-				});
+				}, CollectionOrdering.Matching);
 		}
 
 		[Test]
@@ -292,7 +293,7 @@ namespace MatterHackers.Agg.Tests
 				(FlagsAndCommand.LineTo, 21, 24),
 			};
 
-			await Assert.That(Read(segmentator)).IsEquivalentTo(expected);
+			await Assert.That(Read(segmentator)).IsEquivalentTo(expected, CollectionOrdering.Matching);
 		}
 
 		private static VertexStorage Path1()
@@ -340,7 +341,7 @@ namespace MatterHackers.Agg.Tests
 				actual[i] = (x, y);
 			}
 
-			await Assert.That(actual).IsEquivalentTo(expected);
+			await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 		}
 	
 		// A vpgen that emits each vertex it is fed unchanged, with the auto-close flags under test.

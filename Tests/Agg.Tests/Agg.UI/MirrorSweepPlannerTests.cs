@@ -28,6 +28,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Platform.Browser;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -79,7 +80,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			var plan = planner.Plan(created, nowMilliseconds: 3000);
 
-			await Assert.That(plan.Puts.Select(put => put.Key)).IsEquivalentTo(new[] { "Library/design.mcx" });
+			await Assert.That(plan.Puts.Select(put => put.Key)).IsEquivalentTo(new[] { "Library/design.mcx" }, CollectionOrdering.Matching);
 		}
 
 		[Test]
@@ -132,7 +133,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			var plan = planner.Plan(Array.Empty<MirrorFileState>(), nowMilliseconds: 0);
 
-			await Assert.That(plan.Deletes).IsEquivalentTo(new[] { "Library/design.mcx" });
+			await Assert.That(plan.Deletes).IsEquivalentTo(new[] { "Library/design.mcx" }, CollectionOrdering.Matching);
 		}
 
 		[Test]
@@ -156,7 +157,7 @@ namespace MatterHackers.Agg.UI.Tests
 				},
 				nowMilliseconds: 0);
 
-			await Assert.That(plan.Puts.Select(put => put.Key)).IsEquivalentTo(new[] { "data/temporary-notes.json" });
+			await Assert.That(plan.Puts.Select(put => put.Key)).IsEquivalentTo(new[] { "data/temporary-notes.json" }, CollectionOrdering.Matching);
 			await Assert.That(plan.Deletes.Count).IsEqualTo(0);
 		}
 
@@ -179,7 +180,7 @@ namespace MatterHackers.Agg.UI.Tests
 				},
 				nowMilliseconds: 0);
 
-			await Assert.That(plan.Puts.Select(put => put.Key)).IsEquivalentTo(new[] { "db/UserSetting.json" });
+			await Assert.That(plan.Puts.Select(put => put.Key)).IsEquivalentTo(new[] { "db/UserSetting.json" }, CollectionOrdering.Matching);
 		}
 
 		[Test]

@@ -33,6 +33,7 @@ using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.UI.RichText;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -130,7 +131,7 @@ namespace MatterHackers.Agg.UI.Tests
 			SendKey(root, Keys.Enter, '\r');
 			SendKey(root, Keys.None, 'd');
 			await Assert.That(editor.Core.PlainText).IsEqualTo("abc\nd");
-			await Assert.That(editor.Core.Doc.Blocks[0].Runs.Select(r => r.Style.Bold).ToArray()).IsEquivalentTo(new[] { false, true });
+			await Assert.That(editor.Core.Doc.Blocks[0].Runs.Select(r => r.Style.Bold).ToArray()).IsEquivalentTo(new[] { false, true }, CollectionOrdering.Matching);
 
 			SendKey(root, Keys.Z | Keys.Control, 'z');
 			await Assert.That(editor.Core.PlainText).IsEqualTo("abc\n");

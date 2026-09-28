@@ -35,6 +35,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -268,7 +269,7 @@ namespace MatterHackers.Agg.Tests
 
 				var files = GetAllProjectFiles(root);
 
-				await Assert.That(files.Select(f => Path.GetFileName(f)).ToList()).IsEquivalentTo(new List<string> { "Kept.cs", "KeptToo.cs" });
+				await Assert.That(files.Select(f => Path.GetFileName(f)).ToList()).IsEquivalentTo(new List<string> { "Kept.cs", "KeptToo.cs" }, CollectionOrdering.Any);
 			}
 			finally
 			{

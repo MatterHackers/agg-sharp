@@ -35,6 +35,7 @@ using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -108,7 +109,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				// Calls through the singleton have to land on the substitute, not on disk.
 				await Assert.That(StaticData.Instance.ReadAllText("Anything.txt")).IsEqualTo("from the substitute");
-				await Assert.That(substitute.RequestedPaths).IsEquivalentTo(new[] { "Anything.txt" });
+				await Assert.That(substitute.RequestedPaths).IsEquivalentTo(new[] { "Anything.txt" }, CollectionOrdering.Matching);
 			}
 			finally
 			{
@@ -173,7 +174,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				var files = StaticData.Instance.GetFiles(Path.Combine("Animations", "spinner")).ToList();
 
-				await Assert.That(files).IsEquivalentTo(new[] { Path.Combine("Animations", "spinner", "frame.png") });
+				await Assert.That(files).IsEquivalentTo(new[] { Path.Combine("Animations", "spinner", "frame.png") }, CollectionOrdering.Matching);
 
 				// The whole point of the relative path is that it can be handed straight back in.
 				await Assert.That(StaticData.Instance.FileExists(files[0])).IsTrue();
@@ -214,7 +215,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				var files = StaticData.Instance.GetFiles(absoluteDirectory).ToList();
 
-				await Assert.That(files).IsEquivalentTo(new[] { Path.Combine("Themes", "Modern", "Blue.json") });
+				await Assert.That(files).IsEquivalentTo(new[] { Path.Combine("Themes", "Modern", "Blue.json") }, CollectionOrdering.Matching);
 
 				// Root-relative means it maps back to the same file.
 				await Assert.That(StaticData.Instance.FileExists(files[0])).IsTrue();

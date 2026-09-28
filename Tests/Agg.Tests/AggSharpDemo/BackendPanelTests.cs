@@ -30,6 +30,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.UI;
 using MatterHackers.AggSharpDemo.GuiDemo;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -130,7 +131,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 
 			await Assert.That(store.Json).IsNull();
 			await Assert.That(shell.Persistence.SavePending).IsFalse();
-			await Assert.That(shell.Windows.ZOrder).IsEquivalentTo(defaultOrder);
+			await Assert.That(shell.Windows.ZOrder).IsEquivalentTo(defaultOrder, CollectionOrdering.Matching);
 			await Assert.That(shell.Windows.IsOpen(Spec("Sliders"))).IsFalse();
 			await Assert.That(shell.DemoTheme.Preference).IsEqualTo(ThemePreference.System);
 			await Assert.That(shell.DemoTheme.Accent).IsEqualTo(AccentColor.Blue);
@@ -138,7 +139,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(shell.BackendPanel.RunMode).IsEqualTo(DemoRunMode.Reactive);
 			await Assert.That(shell.BackendPanel.SsaaFactor).IsEqualTo(BackendPanel.DefaultSsaaFactor);
 			await Assert.That(shell.BackendPanel.InspectorEnabled).IsFalse();
-			await Assert.That(shell.BackendPanel.OpenWindowTitles).IsEquivalentTo(defaultOrder.AsEnumerable().Reverse().Select(s => s.Title).ToList());
+			await Assert.That(shell.BackendPanel.OpenWindowTitles).IsEquivalentTo(defaultOrder.AsEnumerable().Reverse().Select(s => s.Title).ToList(), CollectionOrdering.Matching);
 		}
 
 		[Test]
@@ -172,7 +173,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			shell.BackendPanel.SetSsaaFactor(3);
 			shell.BackendPanel.SetSsaaFactor(5);
 
-			await Assert.That(raised).IsEquivalentTo(new[] { 3 });
+			await Assert.That(raised).IsEquivalentTo(new[] { 3 }, CollectionOrdering.Matching);
 			await Assert.That(shell.BackendPanel.SsaaFactor).IsEqualTo(3);
 		}
 

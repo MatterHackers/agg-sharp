@@ -30,6 +30,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Tests;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -72,12 +73,12 @@ namespace MatterHackers.Agg.UI.Tests
 
 			var nodes = InspectorModel.Collect(page);
 
-			await Assert.That(nodes.Select(n => n.Name).ToArray()).IsEquivalentTo(new[] { "Page", "Box", "Leaf", "Hidden", "Disabled" });
-			await Assert.That(nodes.Select(n => n.Depth).ToArray()).IsEquivalentTo(new[] { 0, 1, 2, 1, 1 });
+			await Assert.That(nodes.Select(n => n.Name).ToArray()).IsEquivalentTo(new[] { "Page", "Box", "Leaf", "Hidden", "Disabled" }, CollectionOrdering.Matching);
+			await Assert.That(nodes.Select(n => n.Depth).ToArray()).IsEquivalentTo(new[] { 0, 1, 2, 1, 1 }, CollectionOrdering.Matching);
 			InspectorNode leafNode = nodes[2];
 			await Assert.That(leafNode.Widget).IsEqualTo(leaf);
 			await Assert.That(leafNode.TypeName).IsEqualTo("GuiWidget");
-			await Assert.That(leafNode.Path).IsEquivalentTo(new[] { 0, 0 });
+			await Assert.That(leafNode.Path).IsEquivalentTo(new[] { 0, 0 }, CollectionOrdering.Matching);
 			await Assert.That(leafNode.ScreenBounds).IsEqualTo(new RectangleDouble(30, 35, 90, 55));
 			await Assert.That(nodes[1].ChildCount).IsEqualTo(1);
 			await Assert.That(nodes[1].Padding).IsEqualTo(new BorderDouble(6));
@@ -93,10 +94,10 @@ namespace MatterHackers.Agg.UI.Tests
 			var model = new InspectorModel(page);
 
 			// agg-gui opens every node it has not seen before.
-			await Assert.That(model.VisibleRows().Select(n => n.Name).ToArray()).IsEquivalentTo(new[] { "Page", "Box", "Leaf", "Hidden", "Disabled" });
+			await Assert.That(model.VisibleRows().Select(n => n.Name).ToArray()).IsEquivalentTo(new[] { "Page", "Box", "Leaf", "Hidden", "Disabled" }, CollectionOrdering.Matching);
 
 			model.SetExpanded(model.NodeOf(box), false);
-			await Assert.That(model.VisibleRows().Select(n => n.Name).ToArray()).IsEquivalentTo(new[] { "Page", "Box", "Hidden", "Disabled" });
+			await Assert.That(model.VisibleRows().Select(n => n.Name).ToArray()).IsEquivalentTo(new[] { "Page", "Box", "Hidden", "Disabled" }, CollectionOrdering.Matching);
 
 			// A widget added later starts open too.
 			var added = new GuiWidget(5, 5) { Name = "Added" };
@@ -106,7 +107,7 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(model.VisibleRows().Select(n => n.Name).ToArray()).Contains("Inner");
 
 			model.SetExpanded(model.NodeOf(page), false);
-			await Assert.That(model.VisibleRows().Select(n => n.Name).ToArray()).IsEquivalentTo(new[] { "Page" });
+			await Assert.That(model.VisibleRows().Select(n => n.Name).ToArray()).IsEquivalentTo(new[] { "Page" }, CollectionOrdering.Matching);
 			model.SetExpanded(model.NodeOf(box), true);
 			model.SetExpanded(model.NodeOf(page), true);
 			await Assert.That(model.VisibleRows().Select(n => n.Name).ToArray()).Contains("Leaf");
@@ -373,7 +374,7 @@ namespace MatterHackers.Agg.UI.Tests
 				"margin.left", "margin.right", "margin.top", "margin.bottom",
 				"pad.left", "pad.right", "pad.top", "pad.bottom",
 				"h_anchor", "v_anchor", "visible", "enabled", "children",
-			});
+			}, CollectionOrdering.Matching);
 
 			// agg-gui's tints by kind; padding is read-only.
 			InspectorValueKind KindOf(string name) => rows.First(r => r.Name == name).Kind;
@@ -452,7 +453,7 @@ namespace MatterHackers.Agg.UI.Tests
 			panel.PropertiesHeight = 150;
 			InspectorSavedState saved = panel.SavedState;
 			// the panel itself is in the page, after the sample's five widgets; everything else starts open
-			await Assert.That(saved.Expanded.Take(5).ToArray()).IsEquivalentTo(new[] { false, true, true, true, true });
+			await Assert.That(saved.Expanded.Take(5).ToArray()).IsEquivalentTo(new[] { false, true, true, true, true }, CollectionOrdering.Matching);
 			await Assert.That(saved.Selected).IsEqualTo(2);
 			page.Close();
 

@@ -30,6 +30,7 @@ using System.Threading.Tasks;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.Platform.Browser;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -276,8 +277,8 @@ namespace MatterHackers.Agg.UI.Tests
 				await Assert.That(answered.FileName).IsEqualTo(answered.FileNames[0]);
 
 				// Real files, at the paths handed back - which is the entire point of staging.
-				await Assert.That(File.ReadAllBytes(answered.FileNames[0])).IsEquivalentTo(new byte[] { 1, 2, 3 });
-				await Assert.That(File.ReadAllBytes(answered.FileNames[1])).IsEquivalentTo(new byte[] { 4, 5 });
+				await Assert.That(File.ReadAllBytes(answered.FileNames[0])).IsEquivalentTo(new byte[] { 1, 2, 3 }, CollectionOrdering.Matching);
+				await Assert.That(File.ReadAllBytes(answered.FileNames[1])).IsEquivalentTo(new byte[] { 4, 5 }, CollectionOrdering.Matching);
 
 				// The second file kept its own bytes rather than overwriting the first's.
 				await Assert.That(Path.GetFileName(answered.FileNames[1])).IsEqualTo("part (2).stl");
@@ -412,7 +413,7 @@ namespace MatterHackers.Agg.UI.Tests
 				await PumpUntilDownloaded(picker);
 
 				await Assert.That(picker.DownloadedAs).IsEqualTo("Default.mcx");
-				await Assert.That(picker.DownloadedBytes).IsEquivalentTo(new byte[] { 7, 7, 7, 7 });
+				await Assert.That(picker.DownloadedBytes).IsEquivalentTo(new byte[] { 7, 7, 7, 7 }, CollectionOrdering.Matching);
 
 				// And the staging is swept up behind it, exactly as it is for a save at the offered path.
 				await Assert.That(Directory.Exists(Path.GetDirectoryName(answered.FileName))).IsFalse();

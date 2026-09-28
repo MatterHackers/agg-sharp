@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -306,11 +307,11 @@ namespace MatterHackers.Agg.Tests
 			secondHalf.Report(0.5, "middle");
 			secondHalf.Report(1, "end");
 
-			await Assert.That(reports.ConvertAll(report => report.ratio)).IsEquivalentTo(new[] { 0.5, 0.75, 1.0 });
+			await Assert.That(reports.ConvertAll(report => report.ratio)).IsEquivalentTo(new[] { 0.5, 0.75, 1.0 }, CollectionOrdering.Matching);
 
 			// The message is the child's, untouched: the parent supplies where in the job this is, the child
 			// supplies what it is doing.
-			await Assert.That(reports.ConvertAll(report => report.message)).IsEquivalentTo(new[] { "start", "middle", "end" });
+			await Assert.That(reports.ConvertAll(report => report.message)).IsEquivalentTo(new[] { "start", "middle", "end" }, CollectionOrdering.Matching);
 		}
 
 		[Test]

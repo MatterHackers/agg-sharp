@@ -35,6 +35,7 @@ using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.RenderGl.Scene;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -269,7 +270,7 @@ namespace MatterHackers.Agg.Tests
 			harness.DrawOneMesh(suppressDepthTest: true);
 
 			await Assert.That(harness.MeshDrawPassLabels().Distinct().ToList())
-				.IsEquivalentTo(new[] { "SceneOverlay" });
+				.IsEquivalentTo(new[] { "SceneOverlay" }, CollectionOrdering.Matching);
 		}
 
 		[Test]

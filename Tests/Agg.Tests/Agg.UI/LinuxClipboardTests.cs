@@ -33,6 +33,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Platform.Linux;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -126,7 +127,7 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				byte[] encoded = X11Selection.EncodeForTarget(target, Copied, null, atoms, out ulong type);
 
-				await Assert.That(encoded).IsEquivalentTo(expected);
+				await Assert.That(encoded).IsEquivalentTo(expected, CollectionOrdering.Matching);
 				await Assert.That(type).IsEqualTo(atoms.Utf8String);
 			}
 		}
@@ -224,7 +225,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			byte[] assembled = X11Selection.AssembleChunks(chunks);
 
-			await Assert.That(assembled).IsEquivalentTo(whole);
+			await Assert.That(assembled).IsEquivalentTo(whole, CollectionOrdering.Matching);
 			await Assert.That(X11Selection.DecodeText(assembled, atoms.Utf8String, atoms)).IsEqualTo("café");
 		}
 

@@ -31,6 +31,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Platform.Browser;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -105,7 +106,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				await mirror.SweepAsync();
 
-				await Assert.That(backend.Entries.Keys).IsEquivalentTo(new[] { "db/UserSetting.json" });
+				await Assert.That(backend.Entries.Keys).IsEquivalentTo(new[] { "db/UserSetting.json" }, CollectionOrdering.Any);
 				await Assert.That(Text(backend.Entries["db/UserSetting.json"])).Contains("SoftwareLicenseAccepted");
 				await Assert.That(mirror.PutCount).IsEqualTo(1);
 			}
@@ -148,11 +149,11 @@ namespace MatterHackers.Agg.UI.Tests
 
 				await mirror.SweepAsync();
 
-				await Assert.That(backend.Entries.Keys).IsEquivalentTo(new[] { "db/UserSetting.json" });
+				await Assert.That(backend.Entries.Keys).IsEquivalentTo(new[] { "db/UserSetting.json" }, CollectionOrdering.Any);
 
 				// And the walk never even looked: an excluded folder is not descended into, which is what
 				// keeps a gcode cache from being statted once a second.
-				await Assert.That(mirror.Walk().Select(file => file.Key)).IsEquivalentTo(new[] { "db/UserSetting.json" });
+				await Assert.That(mirror.Walk().Select(file => file.Key)).IsEquivalentTo(new[] { "db/UserSetting.json" }, CollectionOrdering.Matching);
 			}
 		}
 
@@ -180,7 +181,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				await mirror.FlushNowAsync();
 
-				await Assert.That(backend.Entries.Keys).IsEquivalentTo(new[] { "Library/design.mcx" });
+				await Assert.That(backend.Entries.Keys).IsEquivalentTo(new[] { "Library/design.mcx" }, CollectionOrdering.Any);
 			}
 		}
 
@@ -214,7 +215,7 @@ namespace MatterHackers.Agg.UI.Tests
 				await mirror.FlushNowAsync();
 
 				await Assert.That(backend.Entries.Keys)
-					.IsEquivalentTo(new[] { "db/UserSetting.json", "db/SystemSetting.json" });
+					.IsEquivalentTo(new[] { "db/UserSetting.json", "db/SystemSetting.json" }, CollectionOrdering.Any);
 
 				held.SetResult(true);
 
@@ -243,7 +244,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				await mirror.SweepAsync();
 
-				await Assert.That(backend.Entries.Keys).IsEquivalentTo(new[] { "db/UserSetting.json" });
+				await Assert.That(backend.Entries.Keys).IsEquivalentTo(new[] { "db/UserSetting.json" }, CollectionOrdering.Any);
 			}
 		}
 

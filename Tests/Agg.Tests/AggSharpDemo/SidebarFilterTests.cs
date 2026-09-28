@@ -27,6 +27,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.AggSharpDemo.GuiDemo;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -50,7 +51,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		public async Task EntriesAreTheGroupsSpecsSortedCaseInsensitively()
 		{
 			var tools = SidebarFilter.EntriesOf("Tools");
-			await Assert.That(tools.Select(s => s.Title)).IsEquivalentTo(new[] { "Inspector", "System" }).Because("app_builder.rs lists its Inspector tool entry with the Tools windows");
+			await Assert.That(tools.Select(s => s.Title)).IsEquivalentTo(new[] { "Inspector", "System" }, CollectionOrdering.Matching).Because("app_builder.rs lists its Inspector tool entry with the Tools windows");
 
 			var widgets = SidebarFilter.EntriesOf("Widgets").Select(s => s.Title).ToList();
 			await Assert.That(widgets.Count).IsEqualTo(GuiDemoSpecs.All.Count(s => s.Group == "Widgets"));
@@ -77,7 +78,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(changes).IsEqualTo(1);
 			await Assert.That(filter.IsEntryVisible(Spec("Lion"))).IsTrue();
 			await Assert.That(filter.IsEntryVisible(Spec("Painting"))).IsFalse();
-			await Assert.That(GuiDemoSpecs.Groups.Where(filter.IsGroupVisible)).IsEquivalentTo(new[] { "Graphics" });
+			await Assert.That(GuiDemoSpecs.Groups.Where(filter.IsGroupVisible)).IsEquivalentTo(new[] { "Graphics" }, CollectionOrdering.Matching);
 
 			// Setting the same text again is not a change.
 			filter.SetQuery("LION");

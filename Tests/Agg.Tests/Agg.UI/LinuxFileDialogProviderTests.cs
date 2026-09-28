@@ -31,6 +31,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Platform;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -49,7 +50,7 @@ namespace MatterHackers.Agg.UI.Tests
 		public async Task ASingleFilterGroupBecomesOneFilterArgumentPerHelper()
 		{
 			await Assert.That(LinuxFileDialogProvider.ZenityFilters("Meshes|*.stl;*.amf").ToArray())
-				.IsEquivalentTo(new[] { "--file-filter=Meshes | *.stl *.amf" });
+				.IsEquivalentTo(new[] { "--file-filter=Meshes | *.stl *.amf" }, CollectionOrdering.Matching);
 
 			// kdialog inverts the pair: patterns first, then the description.
 			await Assert.That(LinuxFileDialogProvider.KdialogFilter("Meshes|*.stl;*.amf"))
@@ -60,7 +61,7 @@ namespace MatterHackers.Agg.UI.Tests
 		public async Task EveryGroupInTheFilterSurvivesTheTranslation()
 		{
 			await Assert.That(LinuxFileDialogProvider.ZenityFilters("Meshes|*.stl;*.amf|All Files|*.*").ToArray())
-				.IsEquivalentTo(new[] { "--file-filter=Meshes | *.stl *.amf", "--file-filter=All Files | *.*" });
+				.IsEquivalentTo(new[] { "--file-filter=Meshes | *.stl *.amf", "--file-filter=All Files | *.*" }, CollectionOrdering.Matching);
 
 			// One argument, one line per group - kdialog takes the whole set as a single positional.
 			await Assert.That(LinuxFileDialogProvider.KdialogFilter("Meshes|*.stl;*.amf|All Files|*.*"))
@@ -89,7 +90,7 @@ namespace MatterHackers.Agg.UI.Tests
 		public async Task AnUnpairedTailIsDroppedRatherThanThrowing()
 		{
 			await Assert.That(LinuxFileDialogProvider.ZenityFilters("Meshes|*.stl|All Files").ToArray())
-				.IsEquivalentTo(new[] { "--file-filter=Meshes | *.stl" });
+				.IsEquivalentTo(new[] { "--file-filter=Meshes | *.stl" }, CollectionOrdering.Matching);
 
 			await Assert.That(LinuxFileDialogProvider.KdialogFilter("Meshes|*.stl|All Files"))
 				.IsEqualTo("*.stl|Meshes");
@@ -113,7 +114,7 @@ namespace MatterHackers.Agg.UI.Tests
 					// the parent directory instead.
 					"--filename=/home/user/parts/",
 					"--file-filter=Meshes | *.stl",
-				});
+				}, CollectionOrdering.Matching);
 		}
 
 		/// <summary>
@@ -134,7 +135,7 @@ namespace MatterHackers.Agg.UI.Tests
 					"--multiple",
 					"--separator=\n",
 					"--file-filter=Meshes | *.stl",
-				});
+				}, CollectionOrdering.Matching);
 
 			await Assert.That(LinuxFileDialogProvider.BuildKdialogArguments(openParams))
 				.IsEquivalentTo(new[]
@@ -145,7 +146,7 @@ namespace MatterHackers.Agg.UI.Tests
 					"--",
 					".",
 					"*.stl|Meshes",
-				});
+				}, CollectionOrdering.Matching);
 		}
 
 		[Test]
@@ -165,7 +166,7 @@ namespace MatterHackers.Agg.UI.Tests
 					"--title=Save part",
 					"--filename=/home/user/parts/bracket.stl",
 					"--file-filter=Meshes | *.stl",
-				});
+				}, CollectionOrdering.Matching);
 
 			await Assert.That(LinuxFileDialogProvider.BuildKdialogArguments(saveParams))
 				.IsEquivalentTo(new[]
@@ -176,7 +177,7 @@ namespace MatterHackers.Agg.UI.Tests
 					"--",
 					"/home/user/parts/bracket.stl",
 					"*.stl|Meshes",
-				});
+				}, CollectionOrdering.Matching);
 		}
 
 		/// <summary>
@@ -214,7 +215,7 @@ namespace MatterHackers.Agg.UI.Tests
 					"--directory",
 					"--title=Choose an output folder",
 					"--filename=/home/user/exports/",
-				});
+				}, CollectionOrdering.Matching);
 
 			await Assert.That(LinuxFileDialogProvider.BuildKdialogArguments(folderParams))
 				.IsEquivalentTo(new[]
@@ -224,7 +225,7 @@ namespace MatterHackers.Agg.UI.Tests
 					"--getexistingdirectory",
 					"--",
 					"/home/user/exports",
-				});
+				}, CollectionOrdering.Matching);
 
 			// An explicit Title wins over the Description when the caller set one.
 			folderParams.Title = "Export to";
@@ -248,7 +249,7 @@ namespace MatterHackers.Agg.UI.Tests
 					"--title",
 					"Choose an output folder",
 					"--getexistingdirectory",
-				});
+				}, CollectionOrdering.Matching);
 
 			await Assert.That(LinuxFileDialogProvider.BuildKdialogArguments(folderParams).Any(argument => argument == null))
 				.IsFalse();
@@ -259,7 +260,7 @@ namespace MatterHackers.Agg.UI.Tests
 					"--file-selection",
 					"--directory",
 					"--title=Choose an output folder",
-				});
+				}, CollectionOrdering.Matching);
 		}
 
 		/// <summary>
@@ -281,11 +282,11 @@ namespace MatterHackers.Agg.UI.Tests
 					"--",
 					"/home/user/parts",
 					"*.stl|Meshes",
-				});
+				}, CollectionOrdering.Matching);
 
 			// No filter and no directory: the command stands alone rather than gaining a bare "--" and ".".
 			await Assert.That(LinuxFileDialogProvider.BuildKdialogArguments(new OpenFileDialogParams(null)))
-				.IsEquivalentTo(new[] { "--getopenfilename" });
+				.IsEquivalentTo(new[] { "--getopenfilename" }, CollectionOrdering.Matching);
 
 			// A directory that looks like an option is exactly what the "--" is for.
 			var hyphenated = new OpenFileDialogParams(null, initialDirectory: "/home/user/-scratch");
@@ -315,7 +316,7 @@ namespace MatterHackers.Agg.UI.Tests
 		public async Task AcceptedMultiSelectPathsComeBackOnePerLine()
 		{
 			await Assert.That(LinuxFileDialogProvider.ParseDialogOutput(0, "/a/one.stl\n/a/two.stl\n", multipleSelection: true))
-				.IsEquivalentTo(new[] { "/a/one.stl", "/a/two.stl" });
+				.IsEquivalentTo(new[] { "/a/one.stl", "/a/two.stl" }, CollectionOrdering.Matching);
 		}
 
 		/// <summary>
@@ -327,14 +328,14 @@ namespace MatterHackers.Agg.UI.Tests
 		public async Task ASingleSelectionIsTakenWholeAndOnlyLosesItsTrailingNewline()
 		{
 			await Assert.That(LinuxFileDialogProvider.ParseDialogOutput(0, "/etc/hostname\n", multipleSelection: false))
-				.IsEquivalentTo(new[] { "/etc/hostname" });
+				.IsEquivalentTo(new[] { "/etc/hostname" }, CollectionOrdering.Matching);
 
 			await Assert.That(LinuxFileDialogProvider.ParseDialogOutput(0, "/a/two\nline.stl\n", multipleSelection: false))
-				.IsEquivalentTo(new[] { "/a/two\nline.stl" });
+				.IsEquivalentTo(new[] { "/a/two\nline.stl" }, CollectionOrdering.Matching);
 
 			// Exactly one terminator comes off, so a name ending in a blank line keeps it.
 			await Assert.That(LinuxFileDialogProvider.ParseDialogOutput(0, "/a/trailing\n\n", multipleSelection: false))
-				.IsEquivalentTo(new[] { "/a/trailing\n" });
+				.IsEquivalentTo(new[] { "/a/trailing\n" }, CollectionOrdering.Matching);
 		}
 
 		/// <summary>
@@ -345,17 +346,17 @@ namespace MatterHackers.Agg.UI.Tests
 		public async Task SpacesAreNeverTrimmedOffAPath()
 		{
 			await Assert.That(LinuxFileDialogProvider.ParseDialogOutput(0, "/a/trailing space \n", multipleSelection: false))
-				.IsEquivalentTo(new[] { "/a/trailing space " });
+				.IsEquivalentTo(new[] { "/a/trailing space " }, CollectionOrdering.Matching);
 
 			await Assert.That(LinuxFileDialogProvider.ParseDialogOutput(0, "/a/trailing space \n/a/ leading.stl\n", multipleSelection: true))
-				.IsEquivalentTo(new[] { "/a/trailing space ", "/a/ leading.stl" });
+				.IsEquivalentTo(new[] { "/a/trailing space ", "/a/ leading.stl" }, CollectionOrdering.Matching);
 
 			// A CRLF helper still gets its carriage return removed - that is not part of the name.
 			await Assert.That(LinuxFileDialogProvider.ParseDialogOutput(0, "/a/one.stl\r\n/a/two.stl\r\n", multipleSelection: true))
-				.IsEquivalentTo(new[] { "/a/one.stl", "/a/two.stl" });
+				.IsEquivalentTo(new[] { "/a/one.stl", "/a/two.stl" }, CollectionOrdering.Matching);
 
 			await Assert.That(LinuxFileDialogProvider.ParseDialogOutput(0, "/a/one.stl\r\n", multipleSelection: false))
-				.IsEquivalentTo(new[] { "/a/one.stl" });
+				.IsEquivalentTo(new[] { "/a/one.stl" }, CollectionOrdering.Matching);
 		}
 
 		/// <summary>

@@ -34,6 +34,7 @@ using MatterHackers.RenderGl.Scene;
 using MatterHackers.WebGpu;
 using MatterHackers.WebGpuRender;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -206,7 +207,7 @@ namespace MatterHackers.Agg.Tests
 				.ToList();
 
 			await Assert.That(WgslShaderSources.AllModuleKeys.OrderBy(key => key, StringComparer.Ordinal).ToList())
-				.IsEquivalentTo(expectedKeys);
+				.IsEquivalentTo(expectedKeys, CollectionOrdering.Matching);
 
 			var provider = new WgslShaderSources();
 			foreach (string key in GlShaderKeys.AllModuleKeys)

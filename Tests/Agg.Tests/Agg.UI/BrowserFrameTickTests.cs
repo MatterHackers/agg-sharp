@@ -34,6 +34,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Platform.Browser;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -73,7 +74,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				tick.Tick();
 
-				await Assert.That(order).IsEquivalentTo(new[] { "browser events", "idle action" });
+				await Assert.That(order).IsEquivalentTo(new[] { "browser events", "idle action" }, CollectionOrdering.Matching);
 			}
 			finally
 			{
@@ -301,7 +302,7 @@ namespace MatterHackers.Agg.UI.Tests
 					"browser events",
 					"outer action",
 					"browser events",
-				})
+				}, CollectionOrdering.Matching)
 					.Because("the nested tick still delivers browser events - the dialog has to stay responsive - "
 						+ "but its idle drain is guarded, exactly as MacSystemWindow.InvokeIdleActions is");
 

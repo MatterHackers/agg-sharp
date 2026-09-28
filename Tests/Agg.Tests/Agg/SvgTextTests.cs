@@ -32,6 +32,7 @@ using MatterHackers.Agg.Svg;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.AggSharpDemo.GuiDemo.Windows.Tests;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -121,7 +122,7 @@ namespace MatterHackers.Agg.Tests.Agg
 			};
 
 			ImageBuffer resolved = SvgRenderer.RenderToImage(document, 100, 100);
-			await Assert.That(offered).IsEquivalentTo(new[] { ("Missing", false), ("Custom", false) });
+			await Assert.That(offered).IsEquivalentTo(new[] { ("Missing", false), ("Custom", false) }, CollectionOrdering.Matching);
 
 			// The resolved (bold) face covers more than the default regular one.
 			int Covered(ImageBuffer image) => Enumerable.Range(0, 100).SelectMany(x => Enumerable.Range(0, 100).Select(y => image.GetPixel(x, y).alpha)).Count(a => a > 128);

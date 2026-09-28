@@ -67,14 +67,14 @@ namespace MatterHackers.Agg.UI.Tests
 					await Assert.That(zip.DirectoryExists(directory)).IsEqualTo(disk.DirectoryExists(directory))
 						.Because("DirectoryExists disagreed for '" + directory + "'");
 
-					await Assert.That(AsPortablePaths(zip.GetFiles(directory))).IsEquivalentTo(AsPortablePaths(disk.GetFiles(directory)))
+					await Assert.That(AsPortablePaths(zip.GetFiles(directory))).IsEquivalentTo(AsPortablePaths(disk.GetFiles(directory)), CollectionOrdering.Matching)
 						.Because("GetFiles disagreed for '" + directory + "'");
 
 					// The disk provider returns full paths and the zip provider archive-relative ones; what
 					// has to agree is the set of directories found, which is what callers project out of it
 					// with Path.GetFileName.
 					await Assert.That(zip.GetDirectories(directory).Select(Path.GetFileName).OrderBy(n => n, StringComparer.Ordinal))
-						.IsEquivalentTo(disk.GetDirectories(directory).Select(Path.GetFileName).OrderBy(n => n, StringComparer.Ordinal))
+						.IsEquivalentTo(disk.GetDirectories(directory).Select(Path.GetFileName).OrderBy(n => n, StringComparer.Ordinal), CollectionOrdering.Matching)
 						.Because("GetDirectories disagreed for '" + directory + "'");
 				}
 
@@ -158,7 +158,7 @@ namespace MatterHackers.Agg.UI.Tests
 				var zip = fixture.ZipProvider;
 
 				await Assert.That(zip.ReadAllText(AssetTreeFixture.TextAsset)).IsEqualTo(disk.ReadAllText(AssetTreeFixture.TextAsset));
-				await Assert.That(zip.ReadAllLines(AssetTreeFixture.TextAsset)).IsEquivalentTo(disk.ReadAllLines(AssetTreeFixture.TextAsset));
+				await Assert.That(zip.ReadAllLines(AssetTreeFixture.TextAsset)).IsEquivalentTo(disk.ReadAllLines(AssetTreeFixture.TextAsset), CollectionOrdering.Matching);
 
 				using (var stream = zip.OpenStream(AssetTreeFixture.TextAsset))
 				{
@@ -173,7 +173,7 @@ namespace MatterHackers.Agg.UI.Tests
 					stream.ReadExactly(all);
 
 					await Assert.That(all).IsEquivalentTo(File.ReadAllBytes(Path.Combine(fixture.RootPath, "Text", "hello.txt")), CollectionOrdering.Matching);
-					await Assert.That(first).IsEquivalentTo(all.Take(4).ToArray());
+					await Assert.That(first).IsEquivalentTo(all.Take(4).ToArray(), CollectionOrdering.Matching);
 				}
 
 				// Missing assets fail the same way either side of the seam.
@@ -197,17 +197,17 @@ namespace MatterHackers.Agg.UI.Tests
 				await Assert.That(fixture.ZipProvider.DirectoryExists(themesPath)).IsTrue();
 
 				await Assert.That(ThemeNames(fixture.ZipProvider, themesPath))
-					.IsEquivalentTo(ThemeNames(fixture.DiskProvider, themesPath));
+					.IsEquivalentTo(ThemeNames(fixture.DiskProvider, themesPath), CollectionOrdering.Matching);
 
 				// "menu" comes along because AppContext's themes dictionary walks every sub-directory -
 				// only the ThemeProviders loop below skips Menus.
 				await Assert.That(ThemeNames(fixture.ZipProvider, themesPath))
-					.IsEquivalentTo(new[] { "Blue", "Red", "menu" });
+					.IsEquivalentTo(new[] { "Blue", "Red", "menu" }, CollectionOrdering.Matching);
 
 				// That loop skips the Menus directory by name, so GetFileName has to work on whatever
 				// shape of directory path the provider hands back.
 				await Assert.That(fixture.ZipProvider.GetDirectories(themesPath).Select(Path.GetFileName))
-					.IsEquivalentTo(new[] { "Classic", "Menus", "Modern" });
+					.IsEquivalentTo(new[] { "Classic", "Menus", "Modern" }, CollectionOrdering.Matching);
 			}
 		}
 
@@ -222,10 +222,10 @@ namespace MatterHackers.Agg.UI.Tests
 			using (var fixture = new AssetTreeFixture())
 			{
 				var files = fixture.ZipProvider.GetFiles("Themes/System/Modern").ToList();
-				await Assert.That(files).IsEquivalentTo(files.OrderBy(f => f, StringComparer.Ordinal).ToList());
+				await Assert.That(files).IsEquivalentTo(files.OrderBy(f => f, StringComparer.Ordinal).ToList(), CollectionOrdering.Matching);
 
 				var directories = fixture.ZipProvider.GetDirectories("Themes/System").ToList();
-				await Assert.That(directories).IsEquivalentTo(directories.OrderBy(d => d, StringComparer.Ordinal).ToList());
+				await Assert.That(directories).IsEquivalentTo(directories.OrderBy(d => d, StringComparer.Ordinal).ToList(), CollectionOrdering.Matching);
 			}
 		}
 

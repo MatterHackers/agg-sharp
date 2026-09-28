@@ -31,6 +31,7 @@ using MatterHackers.AggSharpDemo.GuiDemo;
 using MatterHackers.AggSharpDemo.GuiDemo.Windows.Tests;
 using MatterHackers.GuiAutomation;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -52,7 +53,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			history.Add("MouseDown Left", "MouseDown Left (5, 6)");
 
 			await Assert.That(history.Entries.Select(e => (e.Summary, e.Count)).ToArray())
-				.IsEquivalentTo(new[] { ("MouseDown Left", 1), ("MouseUp Left", 2), ("MouseDown Left", 1) });
+				.IsEquivalentTo(new[] { ("MouseDown Left", 1), ("MouseUp Left", 2), ("MouseDown Left", 1) }, CollectionOrdering.Matching);
 			await Assert.That(history.Entries[2].Full).IsEqualTo("MouseDown Left (1, 2)");
 		}
 
@@ -95,7 +96,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 				testRunner.ClickByName("Input Event History Recorder");
 				testRunner.WaitFor(() => window.Recorder.History.Entries.Any(e => e.Summary == "MouseUp Left"));
 				await Assert.That(window.Recorder.History.Entries.Select(e => e.Summary).ToArray())
-					.IsEquivalentTo(new[] { "MouseUp Left", "MouseDown Left" });
+					.IsEquivalentTo(new[] { "MouseUp Left", "MouseDown Left" }, CollectionOrdering.Matching);
 
 				// Movements are off by default; the click left the box focused, so it records keys.
 				testRunner.Type("a");

@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -48,7 +49,7 @@ namespace MatterHackers.Agg.Tests.Agg
 			byte[] covers = { 7, 255, 255, 255, 9 };
 			adaptor.blend_solid_hspan(0, 0, 4, Color.Black, covers, 1);
 
-			await Assert.That(covers).IsEquivalentTo(new byte[] { 7, 255, 255, 255, 9 });
+			await Assert.That(covers).IsEquivalentTo(new byte[] { 7, 255, 255, 255, 9 }, CollectionOrdering.Matching);
 
 			// The mask still reaches the pixels: 0 blocks, 128 lets half through.
 			await Assert.That(destination.GetPixel(0, 0).alpha).IsEqualTo((byte)0);
@@ -86,7 +87,7 @@ namespace MatterHackers.Agg.Tests.Agg
 			byte[] covers = { 255, 255, 255 };
 			target.blend_color_hspan(0, 1, 3, colors, 0, covers, 0, false);
 			await Assert.That(destination.GetPixel(0, 1).alpha).IsEqualTo((byte)0);
-			await Assert.That(covers).IsEquivalentTo(new byte[] { 255, 255, 255 });
+			await Assert.That(covers).IsEquivalentTo(new byte[] { 255, 255, 255 }, CollectionOrdering.Matching);
 		}
 	}
 }

@@ -311,7 +311,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			await Assert.That(partial.SkippedOperands.Count).IsEqualTo(2)
 				.Because("every operand was refused, so every one of them has to be named");
 
-			await Assert.That(partial.SkippedOperands.Select(i => i.Index)).IsEquivalentTo(new[] { 0, 1 });
+			await Assert.That(partial.SkippedOperands.Select(i => i.Index)).IsEquivalentTo(new[] { 0, 1 }, TUnit.Assertions.Enums.CollectionOrdering.Matching);
 
 			await Assert.That(partial.Message).Contains(ManifoldStatus.NotClosed.ToString());
 

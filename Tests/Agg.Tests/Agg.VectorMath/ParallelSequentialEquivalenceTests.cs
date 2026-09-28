@@ -39,6 +39,7 @@ using MatterHackers.RayTracer.Light;
 using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Core;
 using AggParallel = MatterHackers.Agg.Parallel;
 using RayTracerEngine = MatterHackers.RayTracer.RayTracer;
@@ -149,11 +150,11 @@ namespace MatterHackers.VectorMath.Tests
 
 				var visited = new List<int>();
 				AggParallel.For(3, 9, i => visited.Add(i));
-				await Assert.That(visited).IsEquivalentTo(new List<int> { 3, 4, 5, 6, 7, 8 });
+				await Assert.That(visited).IsEquivalentTo(new List<int> { 3, 4, 5, 6, 7, 8 }, CollectionOrdering.Matching);
 
 				var seen = new List<string>();
 				AggParallel.ForEach(new[] { "a", "b", "c" }, s => seen.Add(s));
-				await Assert.That(seen).IsEquivalentTo(new List<string> { "a", "b", "c" });
+				await Assert.That(seen).IsEquivalentTo(new List<string> { "a", "b", "c" }, CollectionOrdering.Matching);
 			}
 			finally
 			{

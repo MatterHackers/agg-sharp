@@ -32,6 +32,7 @@ using MatterHackers.Agg.UI;
 using MatterHackers.AggSharpDemo.GuiDemo;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -78,7 +79,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(back.Accent).IsEqualTo("Teal");
 			await Assert.That(back.SnapEnabled).IsFalse();
 			await Assert.That(back.BackendPanelOpen).IsTrue();
-			await Assert.That(back.ZOrder).IsEquivalentTo(new[] { "Sliders", "TextEdit" });
+			await Assert.That(back.ZOrder).IsEquivalentTo(new[] { "Sliders", "TextEdit" }, CollectionOrdering.Matching);
 			await Assert.That(back.Windows.Count).IsEqualTo(1);
 			DemoWindowState window = back.Windows[0];
 			await Assert.That(window.Title).IsEqualTo("Sliders");
@@ -106,7 +107,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 
 			// A shell given garbage starts as if nothing had been saved.
 			GuiDemoShell shell = LaidOutShell(new MemoryStore("{garbage"));
-			await Assert.That(shell.Windows.ZOrder).IsEquivalentTo(GuiDemoSpecs.All.Where(s => s.OpenByDefault).ToList());
+			await Assert.That(shell.Windows.ZOrder).IsEquivalentTo(GuiDemoSpecs.All.Where(s => s.OpenByDefault).ToList(), CollectionOrdering.Matching);
 			await Assert.That(shell.DemoTheme.Preference).IsEqualTo(ThemePreference.System);
 		}
 
@@ -143,7 +144,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(second.Windows.IsOpen(closedDefault)).IsFalse();
 			await Assert.That(second.Windows.GetVisibleRect(sliders).Value).IsEqualTo(slidersRect);
 			await Assert.That(second.Windows.GetVisibleRect(textEdit).Value).IsEqualTo(textEditRect);
-			await Assert.That(second.Windows.ZOrder).IsEquivalentTo(zOrder);
+			await Assert.That(second.Windows.ZOrder).IsEquivalentTo(zOrder, CollectionOrdering.Matching);
 			await Assert.That(second.Windows.ZOrder.Last()).IsEqualTo(sliders);
 			await Assert.That(second.DemoTheme.Preference).IsEqualTo(ThemePreference.Light);
 			await Assert.That(second.DemoTheme.Accent).IsEqualTo(AccentColor.Green);

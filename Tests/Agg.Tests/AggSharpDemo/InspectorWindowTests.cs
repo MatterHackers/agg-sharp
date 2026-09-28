@@ -30,6 +30,7 @@ using MatterHackers.AggSharpDemo.GuiDemo;
 using MatterHackers.AggSharpDemo.GuiDemo.Windows.Tools;
 using MatterHackers.GuiAutomation;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -100,7 +101,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			nextPanel.RefreshNow();
 			await Assert.That(nextPanel.Model.SelectedPosition).IsEqualTo(5);
 			await Assert.That(nextPanel.Model.Selected.TypeName).IsEqualTo(chosen.TypeName);
-			await Assert.That(nextPanel.Model.ExpansionByPosition().Take(expanded.Length).ToArray()).IsEquivalentTo(expanded);
+			await Assert.That(nextPanel.Model.ExpansionByPosition().Take(expanded.Length).ToArray()).IsEquivalentTo(expanded, CollectionOrdering.Matching);
 			shell.Persistence.Stop();
 		}
 

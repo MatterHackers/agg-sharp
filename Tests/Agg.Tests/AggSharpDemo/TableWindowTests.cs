@@ -30,6 +30,7 @@ using MatterHackers.AggSharpDemo.GuiDemo;
 using MatterHackers.AggSharpDemo.GuiDemo.Windows.Layout;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -84,7 +85,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			var firstRow = new Vector2(100 * s, grid.Height - (grid.HeaderHeight + 10) * s);
 			grid.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, firstRow.X, firstRow.Y, 0));
 			grid.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, firstRow.X, firstRow.Y, 0));
-			await Assert.That(window.Selection).IsEquivalentTo(new[] { 0 });
+			await Assert.That(window.Selection).IsEquivalentTo(new[] { 0 }, CollectionOrdering.Matching);
 
 			// The "Row" header flips the order: the first slot now shows row 19, and row 0's selection follows it.
 			var header = new Vector2(10 * s, grid.Height - 10 * s);

@@ -35,6 +35,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Platform;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -78,19 +79,19 @@ namespace MatterHackers.Agg.UI.Tests
 			using (var assets = new ZipStaticData(LayeringFixture.BootArchive()))
 			{
 				await Assert.That(assets.GetFiles("Icons").Select(Path.GetFileName))
-					.IsEquivalentTo(new[] { "boot.svg" });
+					.IsEquivalentTo(new[] { "boot.svg" }, CollectionOrdering.Matching);
 
 				assets.AddArchive(LayeringFixture.DeferredArchive());
 
 				await Assert.That(assets.GetFiles("Icons").Select(Path.GetFileName).OrderBy(n => n, StringComparer.Ordinal))
-					.IsEquivalentTo(new[] { "boot.svg", "deferred.svg" });
+					.IsEquivalentTo(new[] { "boot.svg", "deferred.svg" }, CollectionOrdering.Matching);
 
 				var files = assets.GetFiles("Icons").ToList();
-				await Assert.That(files).IsEquivalentTo(files.OrderBy(f => f, StringComparer.Ordinal).ToList());
+				await Assert.That(files).IsEquivalentTo(files.OrderBy(f => f, StringComparer.Ordinal).ToList(), CollectionOrdering.Matching);
 
 				// The root gains the deferred archive's top-level directory, and keeps the boot one's.
 				await Assert.That(assets.GetDirectories(string.Empty).Select(Path.GetFileName).OrderBy(n => n, StringComparer.Ordinal))
-					.IsEquivalentTo(new[] { "Fonts", "Icons", "Text" });
+					.IsEquivalentTo(new[] { "Fonts", "Icons", "Text" }, CollectionOrdering.Matching);
 
 				// Paths out of a merged enumeration still round trip back in, from either archive.
 				foreach (var file in assets.GetFiles("Icons"))

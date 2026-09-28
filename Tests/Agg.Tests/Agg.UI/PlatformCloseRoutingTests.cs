@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Platform;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -117,7 +118,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			await Assert.That(mayClose).IsFalse();
 			await Assert.That(shell.HasBeenClosed).IsFalse();
-			await Assert.That(platformClosing).IsEquivalentTo(new[] { true, false });
+			await Assert.That(platformClosing).IsEquivalentTo(new[] { true, false }, CollectionOrdering.Matching);
 		}
 
 		[Test]

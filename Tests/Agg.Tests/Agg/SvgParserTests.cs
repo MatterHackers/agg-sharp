@@ -36,6 +36,7 @@ using MatterHackers.Agg.SvgTools;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -269,8 +270,8 @@ namespace MatterHackers.Agg.Tests
 		{
 			var storage = new VertexStorage("m10 10 20 0 0 20z");
 
-			await Assert.That(MoveToPoints(storage)).IsEquivalentTo(new[] { new Vector2(10, 10) });
-			await Assert.That(LineToPoints(storage)).IsEquivalentTo(new[] { new Vector2(30, 10), new Vector2(30, 30) });
+			await Assert.That(MoveToPoints(storage)).IsEquivalentTo(new[] { new Vector2(10, 10) }, CollectionOrdering.Matching);
+			await Assert.That(LineToPoints(storage)).IsEquivalentTo(new[] { new Vector2(30, 10), new Vector2(30, 30) }, CollectionOrdering.Matching);
 		}
 
 		/// <summary>
@@ -282,8 +283,8 @@ namespace MatterHackers.Agg.Tests
 		{
 			var storage = new VertexStorage("M10 10 30 10 30 30z");
 
-			await Assert.That(MoveToPoints(storage)).IsEquivalentTo(new[] { new Vector2(10, 10) });
-			await Assert.That(LineToPoints(storage)).IsEquivalentTo(new[] { new Vector2(30, 10), new Vector2(30, 30) });
+			await Assert.That(MoveToPoints(storage)).IsEquivalentTo(new[] { new Vector2(10, 10) }, CollectionOrdering.Matching);
+			await Assert.That(LineToPoints(storage)).IsEquivalentTo(new[] { new Vector2(30, 10), new Vector2(30, 30) }, CollectionOrdering.Matching);
 		}
 
 		/// <summary>

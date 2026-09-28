@@ -37,6 +37,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.LcdCoverage;
 using MatterHackers.Agg.Transform;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -249,7 +250,7 @@ namespace Agg.Tests.Agg
 		{
 			LcdFixtureManifest manifest = LcdFixtureManifest.Load();
 
-			await Assert.That(Sorted(manifest.BufferCaseNames)).IsEquivalentTo(Sorted(BufferCaseNames()));
+			await Assert.That(Sorted(manifest.BufferCaseNames)).IsEquivalentTo(Sorted(BufferCaseNames()), CollectionOrdering.Matching);
 		}
 
 		/// <summary>
@@ -263,7 +264,7 @@ namespace Agg.Tests.Agg
 		{
 			LcdFixtureManifest manifest = LcdFixtureManifest.Load();
 
-			await Assert.That(Sorted(manifest.CaseNames)).IsEquivalentTo(Sorted(AllCaseNames()));
+			await Assert.That(Sorted(manifest.CaseNames)).IsEquivalentTo(Sorted(AllCaseNames()), CollectionOrdering.Matching);
 			await Assert.That(manifest.PrimaryWeight).IsEqualTo(LcdFilter.DefaultPrimaryWeight);
 			await Assert.That(manifest.Gamma).IsEqualTo(LcdFilter.DefaultGamma);
 		}
@@ -280,7 +281,7 @@ namespace Agg.Tests.Agg
 		{
 			LcdFixtureManifest manifest = LcdFixtureManifest.Load();
 
-			await Assert.That(Sorted(manifest.CompositeCaseNames)).IsEquivalentTo(Sorted(CompositeCaseNames()));
+			await Assert.That(Sorted(manifest.CompositeCaseNames)).IsEquivalentTo(Sorted(CompositeCaseNames()), CollectionOrdering.Matching);
 		}
 
 		private static string[] Sorted(IEnumerable<string> names)

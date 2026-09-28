@@ -32,6 +32,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -51,7 +52,7 @@ namespace MatterHackers.Agg.UI.Tests
 		public async Task RemainderColumnsShareWhatFixedColumnsLeave()
 		{
 			double[] widths = TableColumn.DistributeWidths(DemoColumns(), 300, null);
-			await Assert.That(widths).IsEquivalentTo(new double[] { 56, 172, 72 });
+			await Assert.That(widths).IsEquivalentTo(new double[] { 56, 172, 72 }, CollectionOrdering.Matching);
 
 			// Too narrow: the remainder column keeps its at-least and the table scrolls.
 			widths = TableColumn.DistributeWidths(DemoColumns(), 100, null);
@@ -59,7 +60,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// A dragged width is pinned and taken out of the share; nothing goes under the minimum.
 			widths = TableColumn.DistributeWidths(DemoColumns(), 300, new double?[] { 100, null, 2 });
-			await Assert.That(widths).IsEquivalentTo(new double[] { 100, 184, TableColumn.MinimumWidth });
+			await Assert.That(widths).IsEquivalentTo(new double[] { 100, 184, TableColumn.MinimumWidth }, CollectionOrdering.Matching);
 		}
 
 		[Test]
@@ -94,7 +95,7 @@ namespace MatterHackers.Agg.UI.Tests
 			table.CellPainter = (g, cell) => painted.Add(cell.Row);
 
 			table.OnDraw(new ImageBuffer((int)table.Width, (int)table.Height).NewGraphics2D());
-			await Assert.That(painted.OrderBy(r => r)).IsEquivalentTo(Enumerable.Range(0, 10));
+			await Assert.That(painted.OrderBy(r => r)).IsEquivalentTo(Enumerable.Range(0, 10), CollectionOrdering.Matching);
 
 			painted.Clear();
 			table.ScrollToRow(5000);

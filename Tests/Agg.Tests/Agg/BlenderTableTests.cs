@@ -34,6 +34,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.ImageProcessing;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Core;
 
 namespace MatterHackers.Agg.Tests
@@ -230,8 +231,8 @@ namespace MatterHackers.Agg.Tests
 
 			for (int t = 0; t < threadCount; t++)
 			{
-				await Assert.That(rgbaResults[t]).IsEquivalentTo(referenceRgba);
-				await Assert.That(grayResults[t]).IsEquivalentTo(referenceGray);
+				await Assert.That(rgbaResults[t]).IsEquivalentTo(referenceRgba, CollectionOrdering.Matching);
+				await Assert.That(grayResults[t]).IsEquivalentTo(referenceGray, CollectionOrdering.Matching);
 			}
 		}
 

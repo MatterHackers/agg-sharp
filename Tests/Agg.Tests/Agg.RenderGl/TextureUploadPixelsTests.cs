@@ -27,6 +27,7 @@ using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using MatterHackers.RenderGl;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -52,7 +53,7 @@ namespace MatterHackers.Agg.Tests
 
 			await Assert.That(width).IsEqualTo(1);
 			await Assert.That(height).IsEqualTo(1);
-			await Assert.That(level1).IsEquivalentTo(new byte[] { 80, 40, 90, 128 });
+			await Assert.That(level1).IsEquivalentTo(new byte[] { 80, 40, 90, 128 }, CollectionOrdering.Matching);
 		}
 
 		[Test]
@@ -66,7 +67,7 @@ namespace MatterHackers.Agg.Tests
 
 			byte[] level1 = TextureUploadPixels.DownsampleStraightAlpha(level0, 2, 2, out _, out _);
 
-			await Assert.That(level1).IsEquivalentTo(new byte[] { 255, 0, 0, 128 });
+			await Assert.That(level1).IsEquivalentTo(new byte[] { 255, 0, 0, 128 }, CollectionOrdering.Matching);
 		}
 
 		[Test]
@@ -85,7 +86,7 @@ namespace MatterHackers.Agg.Tests
 
 			byte[] rgba = TextureUploadPixels.FromImage(image, 4, 1);
 
-			await Assert.That(rgba).IsEquivalentTo(new byte[] { 10, 20, 30, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+			await Assert.That(rgba).IsEquivalentTo(new byte[] { 10, 20, 30, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, CollectionOrdering.Matching);
 		}
 	}
 }
