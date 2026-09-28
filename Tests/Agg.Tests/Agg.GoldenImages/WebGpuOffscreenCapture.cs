@@ -72,6 +72,7 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		private GlCompatContext context;
 		private WebGpuSceneRenderer sceneRenderer;
 		private IGpuTexture colorTarget;
+		private Graphics2DGpu widgetGraphics;
 		private IGpuTexture depthTarget;
 
 		private WebGpuOffscreenCapture(int width, int height)
@@ -205,6 +206,7 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 
 			graphics.Clear(background);
 			graphics.PushTransform();
+			this.widgetGraphics = graphics;
 
 			return graphics;
 		}
@@ -295,6 +297,8 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		/// </remarks>
 		public async Task<ImageBuffer> CaptureAsync()
 		{
+			// As the window hosts do at frame end: batched draws (Graphics2DSpanImage's runs) are part of the frame.
+			this.widgetGraphics?.FlushDeferredDraws();
 			context.Submit();
 
 			uint rowStride = TextureFormatInfo.AlignedRowStride(TextureFormat.Bgra8Unorm, (uint)Width);

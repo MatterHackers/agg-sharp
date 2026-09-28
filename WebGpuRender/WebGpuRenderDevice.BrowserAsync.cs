@@ -217,7 +217,7 @@ namespace MatterHackers.WebGpuRender
 					throw new InvalidOperationException($"wgpuBufferMapAsync did not succeed (status {map.Status}).");
 				}
 
-				CopyMappedRange(readback, totalBytes, destination.Span);
+				WebGpuCopies.CopyMappedRange(readback, totalBytes, destination.Span);
 			}
 			finally
 			{

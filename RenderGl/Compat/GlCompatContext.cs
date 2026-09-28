@@ -67,6 +67,10 @@ namespace MatterHackers.RenderGl.Compat
 		private readonly GlRenderPassScope passes;
 		private readonly GlDrawSubmitter submitter;
 
+		// Per-context GPU state the effects keep in their own tables (GpuCompOp's layers and the like),
+		// released with this context - see Own.
+		private readonly List<IDisposable> ownedResources = new List<IDisposable>();
+
 		private int coordinateScale = 1;
 
 		/// <summary>Creates a compat context over a retained device.</summary>
@@ -126,8 +130,9 @@ namespace MatterHackers.RenderGl.Compat
 		/// </summary>
 		/// <remarks>
 		/// This is the compat-layer half of the classic path's <c>ActiveCoordinateScale</c>. It is not a
-		/// DPI scale: the widget stack already works in device pixels, and nothing but full-frame capture
-		/// ever moves it off 1.
+		/// DPI scale: the widget stack already works in device pixels, and only the supersampled offscreen
+		/// targets - full-frame capture, <c>SsaaRenderTarget</c> and the retained layers painted inside a
+		/// capture - move it off 1. The scene renderer sizes its own targets from it.
 		/// </remarks>
 		public int CoordinateScale
 		{
@@ -175,8 +180,9 @@ namespace MatterHackers.RenderGl.Compat
 		/// </summary>
 		/// <param name="colorTarget">The texture to draw into.</param>
 		/// <param name="depthTarget">The depth texture, or null for no depth buffer.</param>
-		public void SetRenderTarget(IGpuTexture colorTarget, IGpuTexture depthTarget = null)
-			=> this.passes.SetTargets(colorTarget, depthTarget);
+		/// <param name="linearLight">True when <paramref name="colorTarget"/> holds linear light (<see cref="GlRenderPassScope.LinearLight"/>).</param>
+		public void SetRenderTarget(IGpuTexture colorTarget, IGpuTexture depthTarget = null, bool linearLight = false)
+			=> this.passes.SetTargets(colorTarget, depthTarget, linearLight);
 
 		/// <summary>Ends the open pass, if any, without submitting.</summary>
 		public void FlushPass() => this.passes.FlushPass();
@@ -217,6 +223,9 @@ namespace MatterHackers.RenderGl.Compat
 
 		/// <inheritdoc/>
 		public void Begin(BeginMode mode) => this.immediate.Begin(mode);
+
+		/// <summary>Between Begin and End: appends coloured vertices in one call (see <see cref="GlImmediateModeBuffer.AddVertices"/>).</summary>
+		internal void AddVertices(ReadOnlySpan<PosColorVertex> vertices) => this.immediate.AddVertices(vertices);
 
 		/// <inheritdoc/>
 		public void End()
@@ -650,9 +659,36 @@ namespace MatterHackers.RenderGl.Compat
 		/// <inheritdoc/>
 		public void DownsampleAndBlitFullFrame() => this.SceneRenderer?.DownsampleAndBlitFullFrame();
 
-		/// <summary>Releases the caches, stores and any open pass.</summary>
+		/// <summary>
+		/// Ties <paramref name="resource"/> to this context: it is disposed when the context is. For GPU state
+		/// kept per context outside it, in a ConditionalWeakTable, which would otherwise drop the managed
+		/// object and never release its wgpu textures and buffers - and every unreleased wgpu resource keeps
+		/// its whole device alive after the device is disposed.
+		/// </summary>
+		internal T Own<T>(T resource)
+			where T : IDisposable
+		{
+			this.ownedResources.Add(resource);
+			return resource;
+		}
+
+		/// <summary>Takes back a resource handed to <see cref="Own"/> that its owner released first, so a
+		/// context that outlives many of them (a window's retained layers) does not keep every one.</summary>
+		internal void Disown(IDisposable resource)
+		{
+			this.ownedResources.Remove(resource);
+		}
+
+		/// <summary>Releases the caches, stores, any open pass and everything handed to <see cref="Own"/>.</summary>
 		public void Dispose()
 		{
+			// A snapshot: an owned resource's Dispose may Disown itself.
+			foreach (var resource in this.ownedResources.ToArray())
+			{
+				resource.Dispose();
+			}
+
+			this.ownedResources.Clear();
 			this.passes.Dispose();
 			this.displayLists.Dispose();
 			this.textures.Dispose();
@@ -889,7 +925,7 @@ namespace MatterHackers.RenderGl.Compat
 		/// </para>
 		/// </summary>
 		/// <param name="rect">The rectangle in GL coordinates.</param>
-		private (int X, int Y, int Width, int Height) ToDeviceRect(GlViewportRect rect)
+		internal (int X, int Y, int Width, int Height) ToDeviceRect(GlViewportRect rect)
 		{
 			// Callers speak in logical (backbuffer) pixels. While a full-frame supersample capture is
 			// redirecting drawing at an oversized offscreen target, every rectangle has to be scaled to

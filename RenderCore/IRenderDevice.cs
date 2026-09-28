@@ -206,6 +206,18 @@ namespace MatterHackers.RenderCore
 		ValueTask ReadBufferAsync(IGpuBuffer source, ulong offset, Memory<byte> destination);
 
 		/// <summary>
+		/// Records a copy of the <paramref name="width"/> by <paramref name="height"/> texel rectangle at
+		/// (<paramref name="x"/>, <paramref name="y"/>) (row 0 at the top) from <paramref name="source"/> to the
+		/// same place in <paramref name="destination"/> (<c>wgpuCommandEncoderCopyTextureToTexture</c>), ordered
+		/// with the draws around it. Both textures need the same format; the source must declare
+		/// <see cref="TextureUsage.CopySrc"/> and the destination <see cref="TextureUsage.CopyDst"/>. The default
+		/// throws, for devices (recording fakes) that have no copies.
+		/// </summary>
+		/// <exception cref="InvalidOperationException">A render pass is open - end it first.</exception>
+		void CopyTextureToTexture(IGpuTexture source, IGpuTexture destination, int x, int y, int width, int height)
+			=> throw new NotSupportedException($"{this.GetType().Name} does not copy between textures.");
+
+		/// <summary>
 		/// Submits everything recorded since the last submit to the queue
 		/// (<c>wgpuQueueSubmit</c>).
 		/// </summary>

@@ -318,6 +318,12 @@ namespace MatterHackers.WebGpuRender
 		/// <summary>True once <see cref="Dispose"/> has been called.</summary>
 		public bool IsDisposed { get; private set; }
 
+		/// <summary>The buffers and textures this device made that have not been disposed yet.</summary>
+		public LiveResourceTally LiveResources { get; } = new LiveResourceTally();
+
+		// Bumped by every uncaptured error, so Submit can tell one arrived during its Finish.
+		private int uncapturedErrorCount;
+
 		/// <summary>The pass currently open, or null.</summary>
 		public WebGpuRenderEncoder OpenPass => this.openEncoder;
 
@@ -443,7 +449,7 @@ namespace MatterHackers.WebGpuRender
 				wgpuBufferUnmap(handle);
 			}
 
-			return new WebGpuBuffer(handle, usage, size, "buffer");
+			return new WebGpuBuffer(handle, usage, size, "buffer", this.LiveResources);
 		}
 
 		/// <summary>
@@ -509,7 +515,7 @@ namespace MatterHackers.WebGpuRender
 
 				// A null view descriptor means the whole resource, which is what every use here wants.
 				WGPUTextureView view = wgpuTextureCreateView(handle, null);
-				return new WebGpuTexture(handle, view, descriptor);
+				return new WebGpuTexture(handle, view, descriptor, this.LiveResources);
 			}
 		}
 
@@ -930,9 +936,19 @@ namespace MatterHackers.WebGpuRender
 			}
 
 			var finishDescriptor = new WGPUCommandBufferDescriptor { label = WgpuStrings.Null };
+			int errorsBefore = this.uncapturedErrorCount;
 			WGPUCommandBuffer commands = wgpuCommandEncoderFinish(this.commandEncoder, &finishDescriptor);
 			wgpuCommandEncoderRelease(this.commandEncoder);
 			this.commandEncoder = default;
+
+			// wgpu-native reports a bad recording (an error buffer used, say) at Finish, through the callback,
+			// and then treats submitting the invalid command buffer as fatal: a non-unwinding panic that aborts
+			// the process. Dropping the commands and throwing leaves the caller a stack to read instead.
+			if (this.uncapturedErrorCount != errorsBefore)
+			{
+				wgpuCommandBufferRelease(commands);
+				throw new InvalidOperationException($"The recorded commands are invalid and were not submitted ('{this.label}'): {this.LastUncapturedError}");
+			}
 
 			wgpuQueueSubmit(this.queue, 1, &commands);
 			wgpuCommandBufferRelease(commands);
@@ -1837,34 +1853,15 @@ namespace MatterHackers.WebGpuRender
 				}
 			}
 
-			CopyMappedRange(readback, totalBytes, destination);
+			WebGpuCopies.CopyMappedRange(readback, totalBytes, destination);
 		}
 
-		/// <summary>
-		/// Copies an already-mapped readback buffer out and unmaps it. Shared by both wait strategies: the
-		/// desktop reaches it straight after its spin, the browser from the continuation of its map promise,
-		/// and neither leg gets its own copy of the unmap rule.
-		/// </summary>
-		/// <param name="readback">A buffer that is currently mapped for read.</param>
-		/// <param name="totalBytes">The mapped range, from offset 0.</param>
-		/// <param name="destination">Where the mapped bytes are copied to.</param>
-		private static void CopyMappedRange(WGPUBuffer readback, ulong totalBytes, Span<byte> destination)
+		/// <inheritdoc/>
+		public void CopyTextureToTexture(IGpuTexture source, IGpuTexture destination, int x, int y, int width, int height)
 		{
-			try
-			{
-				var mapped = wgpuBufferGetConstMappedRange(readback, 0, (nuint)totalBytes);
-				if (mapped == null)
-				{
-					throw new InvalidOperationException("wgpuBufferGetConstMappedRange returned null.");
-				}
-
-				new ReadOnlySpan<byte>(mapped, (int)totalBytes).CopyTo(destination);
-			}
-			finally
-			{
-				// Releasing a still-mapped buffer is undefined, so a throw out of the copy must not skip this.
-				wgpuBufferUnmap(readback);
-			}
+			this.ThrowIfDisposed();
+			this.ThrowIfPassOpen("copy between textures");
+			WebGpuCopies.TextureToTexture(this.EnsureCommandEncoder(), Require<WebGpuTexture>(source, nameof(source)), Require<WebGpuTexture>(destination, nameof(destination)), x, y, width, height);
 		}
 
 		/// <summary>
@@ -2003,7 +2000,7 @@ namespace MatterHackers.WebGpuRender
 
 		/// <summary>
 		/// The browser wait strategy for a buffer map. The copy itself is
-		/// <see cref="CopyMappedRange"/>, shared with the desktop.
+		/// <see cref="WebGpuCopies.CopyMappedRange"/>, shared with the desktop.
 		/// </summary>
 		/// <param name="readback">The mappable buffer the texture copy was recorded into.</param>
 		/// <param name="totalBytes">The range to map, which is the whole padded read.</param>
@@ -2367,6 +2364,7 @@ namespace MatterHackers.WebGpuRender
 		private void ReportUncapturedError(string message)
 		{
 			this.LastUncapturedError = message;
+			this.uncapturedErrorCount++;
 			this.UncapturedError?.Invoke(this, message);
 		}
 

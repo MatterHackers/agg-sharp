@@ -57,6 +57,7 @@ namespace MatterHackers.Agg.Tests
 			[nameof(DisposeRenderPipelineWithNoBindings)] = DisposeRenderPipelineWithNoBindings,
 			[nameof(ComputeCallsOnDisposedResourcesThrow)] = ComputeCallsOnDisposedResourcesThrow,
 			[nameof(OversizedStorageBindingIsRefused)] = OversizedStorageBindingIsRefused,
+			[nameof(SubmittingAnInvalidRecordingThrows)] = SubmittingAnInvalidRecordingThrows,
 		};
 
 		/// <summary>
@@ -212,6 +213,31 @@ namespace MatterHackers.Agg.Tests
 				}
 
 				throw new InvalidOperationException("A storage binding over maxStorageBufferBindingSize did not throw ArgumentException.");
+			}
+		}
+
+		private static void SubmittingAnInvalidRecordingThrows()
+		{
+			using (GpuTestGate.Acquire(nameof(SubmittingAnInvalidRecordingThrows)))
+			using (var device = new WebGpuRenderDevice(false, TestRenderBackend.Native, nameof(NativeAbortProbe)))
+			{
+				// 20 mip levels on a 4x4 texture is invalid, so wgpu hands back an error texture - as it hands
+				// back an error buffer when an allocation fails. Copying from it records fine; submitting the
+				// recording is what wgpu-native treats as fatal.
+				using var invalid = device.CreateTexture(new TextureDescriptor(4, 4, TextureFormat.Rgba8Unorm, TextureUsage.CopySrc | TextureUsage.TextureBinding, 20, 1, "invalid"));
+				using var destination = device.CreateTexture(new TextureDescriptor(4, 4, TextureFormat.Rgba8Unorm, TextureUsage.CopyDst | TextureUsage.TextureBinding, 1, 1, "destination"));
+				device.CopyTextureToTexture(invalid, destination, 0, 0, 4, 4);
+
+				try
+				{
+					device.Submit();
+				}
+				catch (InvalidOperationException)
+				{
+					return;
+				}
+
+				throw new InvalidOperationException("Submitting a recording that uses an invalid texture did not throw.");
 			}
 		}
 

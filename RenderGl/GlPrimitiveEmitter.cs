@@ -109,12 +109,19 @@ namespace MatterHackers.RenderGl
 
 			gl.Begin(ToBeginMode(topology));
 
-			for (int i = 0; i < vertices.Length; i++)
+			if (gl.GpuContext is Compat.GlCompatContext context)
 			{
-				var vertex = vertices[i];
-				var color = vertex.Color;
-				gl.Color4(color.Red0To255, color.Green0To255, color.Blue0To255, color.Alpha0To255);
-				gl.Vertex3(vertex.Position.X, vertex.Position.Y, vertex.Position.Z);
+				context.AddVertices(vertices);
+			}
+			else
+			{
+				for (int i = 0; i < vertices.Length; i++)
+				{
+					var vertex = vertices[i];
+					var color = vertex.Color;
+					gl.Color4(color.Red0To255, color.Green0To255, color.Blue0To255, color.Alpha0To255);
+					gl.Vertex3(vertex.Position.X, vertex.Position.Y, vertex.Position.Z);
+				}
 			}
 
 			gl.End();

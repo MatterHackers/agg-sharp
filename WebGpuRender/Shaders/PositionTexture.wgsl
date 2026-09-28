@@ -75,14 +75,19 @@ fn combine(texel : vec4<f32>, vertexColor : vec4<f32>) -> vec4<f32>
 	return texel * vertexColor;
 }
 
+// The colour a fragment entry point returns. WgslShaderSources' linear-light variants of this module (the key with
+// "+LinearStraight" or "+LinearPremultiplied") replace this one line with an sRGB-to-linear conversion, for draws
+// into a linear float target (a GpuRetainedLayer made with linearLight).
+fn outputColor(c : vec4<f32>) -> vec4<f32> { return c; }
+
 @fragment
 fn fragmentMain(input : SmoothFragmentInput) -> @location(0) vec4<f32>
 {
-	return combine(textureSample(diffuseTexture, textureSampler, input.texCoord), input.color);
+	return outputColor(combine(textureSample(diffuseTexture, textureSampler, input.texCoord), input.color));
 }
 
 @fragment
 fn fragmentMainFlat(input : FlatFragmentInput) -> @location(0) vec4<f32>
 {
-	return combine(textureSample(diffuseTexture, textureSampler, input.texCoord), input.flatColor);
+	return outputColor(combine(textureSample(diffuseTexture, textureSampler, input.texCoord), input.flatColor));
 }

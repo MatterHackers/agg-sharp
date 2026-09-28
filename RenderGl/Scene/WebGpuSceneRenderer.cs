@@ -223,19 +223,29 @@ namespace MatterHackers.RenderGl.Scene
 		/// </summary>
 		public int VertexBufferCreateCount { get; private set; }
 
-		/// <summary>Device pixels per logical pixel: 1 normally, the frame's capture scale (at most
-		/// <see cref="MaxSupersampleScale"/>) while a full-frame capture is in progress. Applied to the
-		/// scene's target sizes and to every width the shaders measure in pixels, exactly as the classic path
-		/// applies its supersampleScale.</summary>
-		private int supersampleScale = 1;
+		/// <summary>Device pixels per logical pixel of the target the scene is drawn into: 1 normally, the
+		/// frame's capture scale while a full-frame capture is in progress, and the factor of an
+		/// <see cref="SsaaRenderTarget"/> or supersampled retained layer the scene is drawn inside (the product
+		/// when a capture is opened inside an SSAA draw). Read off the
+		/// compat layer, which is what scales the scene's GL viewport, so the two cannot disagree. Applied to
+		/// the scene's target sizes and to every width the shaders measure in pixels, exactly as the classic
+		/// path applies its supersampleScale.</summary>
+		private int SupersampleScale => this.compat.CoordinateScale;
 
 		/// <summary>
 		/// The scale the capture target that currently exists was built at. Unlike
-		/// <see cref="supersampleScale"/> this survives <see cref="EndFullFrameCapture"/>, because
+		/// <see cref="SupersampleScale"/> this survives <see cref="EndFullFrameCapture"/>, because
 		/// <see cref="DownsampleAndBlitFullFrame"/> runs after it and has to filter over the block size the
 		/// target was actually rendered at.
 		/// </summary>
 		private int captureSupersampleScale = MaxSupersampleScale;
+
+		/// <summary>
+		/// The compat layer's coordinate scale when the open capture began - above 1 when the capture was
+		/// opened inside an <see cref="SsaaRenderTarget"/> draw - which <see cref="EndFullFrameCapture"/>
+		/// hands back.
+		/// </summary>
+		private int coordinateScaleBeforeCapture = 1;
 
 		private IGpuTexture capturedColorTarget;
 		private IGpuTexture capturedDepthTarget;
@@ -574,9 +584,9 @@ namespace MatterHackers.RenderGl.Scene
 		/// pipeline's own intermediate targets, which are sized from the viewport in
 		/// <see cref="EnsureFrameResources"/>.
 		/// </remarks>
-		/// <param name="viewport">The logical viewport, accepted for interface parity; the capture target
-		/// is sized from the current render target, exactly as the classic path sizes it from the
-		/// backbuffer.</param>
+		/// <param name="viewport">The logical viewport, accepted for interface parity; the capture target is sized
+		/// from the current render target, exactly as the classic path sizes it from the backbuffer.</param>
+		/// <exception cref="NotSupportedException">The target is a linear-light layer, which the sRGB 3D frame would be blitted into unconverted.</exception>
 		public void BeginFullFrameCapture(RectangleDouble viewport)
 		{
 			if (this.capturedColorTarget != null)
@@ -596,9 +606,8 @@ namespace MatterHackers.RenderGl.Scene
 				return;
 			}
 
-			// Before anything else, including the checks that return or throw: a pending blit belongs to
-			// the frame that armed it, and every path out of here leaves this frame with nothing to
-			// composite unless it gets all the way through.
+			// Before anything else, including the checks that return or throw: a pending blit belongs to the frame
+			// that armed it, and every path out of here leaves this frame with nothing to composite unless it gets all the way through.
 			this.blitPending = false;
 
 			var destination = this.compat.Passes.ColorTarget;
@@ -616,6 +625,8 @@ namespace MatterHackers.RenderGl.Scene
 					"No render target is set on the compat context, so there is nothing to capture on behalf of.");
 			}
 
+			this.compat.Passes.RejectLinearLight("A 3D scene (full-frame capture)");
+
 			// A clear queued against the caller's target must land on the caller's target. WebGPU clears
 			// through a pass load op, so a clear left pending here would be consumed by the first pass on
 			// the capture target instead - opening and immediately ending a pass spends it now, which is
@@ -628,7 +639,7 @@ namespace MatterHackers.RenderGl.Scene
 			// over-limit texture at the new one. Everything that has to agree on it for this frame - the
 			// capture target here, the scene pipeline's own targets in EnsureFrameResources, the compat
 			// layer's viewport and scissor scaling, and every pixel width the shaders are handed - reads it
-			// back off supersampleScale rather than recomputing it.
+			// back off SupersampleScale rather than recomputing it.
 			int scale = SupersampleScaleFor(
 				(int)destination.Descriptor.Width,
 				(int)destination.Descriptor.Height,
@@ -655,8 +666,11 @@ namespace MatterHackers.RenderGl.Scene
 #endif
 
 				this.compat.SetRenderTarget(this.sampleFrameColor, this.sampleFrameDepth);
-				this.compat.CoordinateScale = scale;
-				this.supersampleScale = scale;
+				// Composed, not replaced: the capture target is scale x the current target, whose own device
+				// pixels may already be several per logical pixel (an SSAA target's), so logical coordinates
+				// land on the capture at the product. The downsample still averages scale x scale blocks.
+				this.coordinateScaleBeforeCapture = previousCoordinateScale;
+				this.compat.CoordinateScale = previousCoordinateScale * scale;
 				this.captureSupersampleScale = scale;
 
 				// Cleared to transparent so only the region the 3D frame actually covers contributes when the
@@ -676,7 +690,6 @@ namespace MatterHackers.RenderGl.Scene
 				this.capturedColorTarget = null;
 				this.capturedDepthTarget = null;
 				this.captureOpenedAt = null;
-				this.supersampleScale = 1;
 				this.captureSupersampleScale = previousCaptureScale;
 				this.compat.CoordinateScale = previousCoordinateScale;
 
@@ -721,8 +734,8 @@ namespace MatterHackers.RenderGl.Scene
 			}
 			finally
 			{
-				this.compat.CoordinateScale = 1;
-				this.supersampleScale = 1;
+				this.compat.CoordinateScale = this.coordinateScaleBeforeCapture;
+				this.coordinateScaleBeforeCapture = 1;
 				this.capturedColorTarget = null;
 				this.capturedDepthTarget = null;
 				this.captureOpenedAt = null;
@@ -932,10 +945,10 @@ namespace MatterHackers.RenderGl.Scene
 			this.compat.Passes.EnsurePassOpen();
 			this.compat.FlushPass();
 
-			// During a full-frame capture the scene pipeline renders at supersampleScale times the logical
+			// During a full-frame capture the scene pipeline renders at SupersampleScale times the logical
 			// viewport, so its output matches the resolution of the target it composites into.
-			int width = Math.Max(1, (int)Math.Ceiling(this.activeSceneRenderContext.Viewport.Width)) * this.supersampleScale;
-			int height = Math.Max(1, (int)Math.Ceiling(this.activeSceneRenderContext.Viewport.Height)) * this.supersampleScale;
+			int width = Math.Max(1, (int)Math.Ceiling(this.activeSceneRenderContext.Viewport.Width)) * this.SupersampleScale;
+			int height = Math.Max(1, (int)Math.Ceiling(this.activeSceneRenderContext.Viewport.Height)) * this.SupersampleScale;
 			this.EnsureFrameResources(width, height);
 
 			// Safe together: the previous frame ended in a submit, which flushed every slot it staged.
@@ -2685,7 +2698,7 @@ namespace MatterHackers.RenderGl.Scene
 				48,
 				this.targetWidth,
 				this.targetHeight,
-				SceneRenderModeUtilities.DefaultWireframeWidth * this.supersampleScale,
+				SceneRenderModeUtilities.DefaultWireframeWidth * this.SupersampleScale,
 				unlit ? 1 : 0);
 
 			GlUniformBlock.WriteVector4(
@@ -2727,8 +2740,8 @@ namespace MatterHackers.RenderGl.Scene
 				span,
 				160,
 				(float)bedGrid.GridSpacing,
-				bedGrid.GridLineWidthPixels * 0.5f * this.supersampleScale,
-				bedGrid.AxisLineWidthPixels * 0.5f * this.supersampleScale,
+				bedGrid.GridLineWidthPixels * 0.5f * this.SupersampleScale,
+				bedGrid.AxisLineWidthPixels * 0.5f * this.SupersampleScale,
 				(float)bedGrid.AxisHeight);
 
 			// The same shadow colour the composite pass tints the fill with, so an analytic line darkens
@@ -2773,7 +2786,7 @@ namespace MatterHackers.RenderGl.Scene
 			GlUniformBlock.WriteVector4(
 				span,
 				0,
-				2.0f * this.supersampleScale,
+				2.0f * this.SupersampleScale,
 				0.35f,
 				this.targetWidth,
 				this.targetHeight);
@@ -3076,7 +3089,7 @@ namespace MatterHackers.RenderGl.Scene
 		private void ApplySceneViewport(IRenderEncoder encoder, IGpuTexture destination)
 		{
 			var viewport = this.activeSceneRenderContext.Viewport;
-			int scale = this.supersampleScale;
+			int scale = this.SupersampleScale;
 			int x = (int)viewport.Left * scale;
 			int y = (int)viewport.Bottom * scale;
 			int width = Math.Max(1, (int)Math.Ceiling(viewport.Width)) * scale;
@@ -3189,77 +3202,6 @@ namespace MatterHackers.RenderGl.Scene
 			public Mesh Mesh;
 
 			public Matrix4X4 Transform;
-		}
-
-		/// <summary>
-		/// The vertex buffers one mesh render-data plugin generation minted, and which generation that
-		/// was. See <see cref="meshBufferSlots"/>.
-		/// </summary>
-		private sealed class MeshBufferSlot
-		{
-			/// <summary>The plugin instance these buffers belong to. Compared by reference only.</summary>
-			public object Owner;
-
-			/// <summary>
-			/// Whether <see cref="retainedMeshBuffers"/> is currently holding this slot. A swept or released
-			/// slot comes off that list but stays reachable from the weak key table, so the next draw through
-			/// it has to put it back before it mints buffers nothing would own.
-			/// </summary>
-			public bool IsRetained;
-
-			/// <param name="mesh">The mesh this slot's buffers were built from.</param>
-			public MeshBufferSlot(Mesh mesh)
-			{
-				this.Mesh = new WeakReference<Mesh>(mesh);
-			}
-
-			/// <summary>
-			/// The mesh the slot is keyed on, weakly - the slot is what keeps the plugin generation (and its
-			/// multi-megabyte interleaved vertex data) alive, so it must never be what keeps the mesh alive.
-			/// A dead target is how the sweep recognises a slot nothing can ever draw through again.
-			/// </summary>
-			public WeakReference<Mesh> Mesh { get; }
-
-			/// <summary>
-			/// The buffers minted for that instance: one per chunk, of every submesh drawn so far.
-			/// </summary>
-			public List<IGpuBuffer> Buffers { get; } = new List<IGpuBuffer>();
-
-			/// <summary>
-			/// Nulls the per-submesh caches that point at <see cref="Buffers"/>. One per submesh rather than
-			/// one per buffer - a submesh caches its whole chunk list on one field - because the two kinds of
-			/// submesh cache it on unrelated fields of unrelated types.
-			/// </summary>
-			private List<Action> CacheClears { get; } = new List<Action>();
-
-			/// <summary>Records the buffers of one submesh this slot owns.</summary>
-			/// <param name="buffers">The chunks just minted for that submesh.</param>
-			/// <param name="clearSubMeshCache">Nulls the submesh field that now caches them.</param>
-			public void Add(IReadOnlyList<IGpuBuffer> buffers, Action clearSubMeshCache)
-			{
-				this.Buffers.AddRange(buffers);
-				this.CacheClears.Add(clearSubMeshCache);
-			}
-
-			/// <summary>Hands the buffers to the caller's retirement list and empties the slot.</summary>
-			/// <remarks>
-			/// The submesh caches are cleared here as well. On the mesh-edit path that is redundant (the
-			/// edit replaced the submeshes wholesale), but on the release path the submeshes outlive their
-			/// buffers, and a cache still pointing at a disposed buffer would be handed to the next draw.
-			/// </remarks>
-			/// <param name="retired">The list that owns them until the next submit has happened.</param>
-			public void RetireInto(List<IGpuBuffer> retired)
-			{
-				retired.AddRange(this.Buffers);
-				this.Buffers.Clear();
-
-				foreach (var clearSubMeshCache in this.CacheClears)
-				{
-					clearSubMeshCache();
-				}
-
-				this.CacheClears.Clear();
-			}
 		}
 
 		private sealed class SceneTarget : IDisposable

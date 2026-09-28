@@ -330,6 +330,19 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		/// <summary>
+		/// A recording that uses an invalid resource (an error texture or buffer, as a failed allocation leaves)
+		/// throws from Submit rather than reaching wgpuQueueSubmit, where wgpu-native aborts the process - as
+		/// Windows CI run 36413681526 did with "Buffer with '' label is invalid".
+		/// </summary>
+		[Test]
+		public async Task SubmittingAnInvalidRecordingThrowsInsteadOfAborting()
+		{
+			var (exitCode, output) = await NativeAbortProbe.RunInChildAsync("SubmittingAnInvalidRecordingThrows");
+
+			await Assert.That(exitCode).IsEqualTo(0).Because(output);
+		}
+
+		/// <summary>
 		/// Three clip-space vertices in the canned colored layout: position (float3) then color (float4),
 		/// 28 bytes apart. Built by hand rather than through the compat layer so a layout mistake shows up
 		/// here and not only in the integration suite.

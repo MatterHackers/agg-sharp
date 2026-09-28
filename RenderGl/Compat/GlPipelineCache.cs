@@ -225,33 +225,54 @@ namespace MatterHackers.RenderGl.Compat
 		/// <param name="topology">The primitive topology of the draw.</param>
 		/// <param name="textured">Whether the draw samples a texture.</param>
 		/// <param name="lit">Whether the draw uses the lit shader variant.</param>
+		/// <param name="linearLight">True when the target holds linear light (<see cref="GlRenderPassScope.LinearLight"/>).</param>
 		public RenderPipelineDescriptor BuildPipelineDescriptor(
 			GlStateShadow state,
 			TextureFormat target,
 			TextureFormat depthFormat,
 			PrimitiveTopology topology,
 			bool textured,
-			bool lit)
+			bool lit,
+			bool linearLight = false)
 		{
 			if (state == null)
 			{
 				throw new ArgumentNullException(nameof(state));
 			}
 
-			var module = this.GetShaderModule(GlShaderKeys.ModuleKey(textured, lit));
 
-			// Both halves of the equation take the same factors and always add, which is exactly what
-			// the classic path's GetOrCreateBlendState builds - GL's fixed function pipeline has no
-			// separate alpha equation to express.
+			// The color half takes GL's factors and always adds. The alpha half takes the same factors except
+			// that a SrcAlpha source factor becomes One: straight-alpha source-over (SrcAlpha /
+			// OneMinusSrcAlpha) must accumulate coverage as a + dstA(1 - a), not a² + dstA(1 - a). Colour is
+			// unaffected, and on the window's opaque frame the alpha stays opaque rather than drifting down, but
+			// the difference is everything inside a premultiplied offscreen target (a GPU widget backbuffer,
+			// GpuRenderTarget): with a² the layer comes out see-through wherever a translucent fill or image
+			// edge landed on opaque content, and the frame behind shows through when it is composited.
 			bool blendEnabled = state.BlendEnabled;
-			var blend = blendEnabled
+			var sourceFactor = GlStateShadow.MapBlendFactor(state.BlendSourceFactor);
+			var destinationFactor = GlStateShadow.MapBlendFactor(state.BlendDestinationFactor);
+			var colorBlend = blendEnabled
+				? new BlendComponent(BlendOperation.Add, sourceFactor, destinationFactor)
+				: default;
+			var alphaBlend = blendEnabled
 				? new BlendComponent(
 					BlendOperation.Add,
-					GlStateShadow.MapBlendFactor(state.BlendSourceFactor),
-					GlStateShadow.MapBlendFactor(state.BlendDestinationFactor))
+					sourceFactor == BlendFactor.SrcAlpha ? BlendFactor.One : sourceFactor,
+					destinationFactor)
 				: default;
 
-			var colorTarget = new ColorTargetState(target, blendEnabled, blend, blend, state.ColorWriteMask);
+			var colorTarget = new ColorTargetState(target, blendEnabled, colorBlend, alphaBlend, state.ColorWriteMask);
+
+			// Into a linear-light target the unlit modules write linear colour; a premultiplied colour (anything but a
+			// SrcAlpha blend - a retained layer being composited, a halo fill, an unblended write) has its alpha
+			// undone around the conversion.
+			string moduleKey = GlShaderKeys.ModuleKey(textured, lit);
+			if (!lit)
+			{
+				moduleKey = GlShaderKeys.ForTarget(moduleKey, linearLight, !GlShaderKeys.IsStraightAlphaDraw(blendEnabled, sourceFactor));
+			}
+
+			var module = this.GetShaderModule(moduleKey);
 
 			// glPolygonOffset(factor, units) maps onto webgpu's depthBiasSlopeScale/depthBias, which is
 			// the same conversion the D3D11 backend does onto RasterizerDescription: the factor is

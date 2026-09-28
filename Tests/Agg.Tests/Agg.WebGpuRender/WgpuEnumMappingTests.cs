@@ -28,6 +28,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.RenderCore;
+using MatterHackers.RenderGl;
 using MatterHackers.RenderGl.Compat;
 using MatterHackers.RenderGl.Scene;
 using MatterHackers.WebGpu;
@@ -188,11 +189,19 @@ namespace MatterHackers.Agg.Tests
 		{
 			// WebGpuRender cannot reference RenderGl (that would point the backend at the layer above it),
 			// so the key strings are duplicated as literals. This is the test that keeps the duplicate
-			// honest, and the one place the lists are ever compared. Two consumers ask for modules: the
-			// compat layer's canned 2D combos and the native scene renderer's 3D pipeline - together they
-			// must account for exactly what the backend serves, no more and no less.
+			// honest, and the one place the lists are ever compared. Four consumers ask for modules: the
+			// compat layer's canned 2D combos, the native scene renderer's 3D pipeline and the SSAA target's
+			// downsample the compositing operators' composite and the blur - together they must account for exactly what the backend serves, no more and no less.
 			var expectedKeys = GlShaderKeys.AllModuleKeys
 				.Concat(SceneShaderKeys.AllModuleKeys)
+				.Append(SsaaRenderTarget.ShaderModuleKey)
+				.Append(GpuCompOp.ShaderModuleKey)
+				.Append(GpuBlur.ShaderModuleKey)
+				.Append(GpuRegionBlur.ShaderModuleKey)
+				.Append(GpuGradientFill.ShaderModuleKey)
+				.Append(GpuColorLut.ShaderModuleKey)
+				.Append(GpuImageFilter.ShaderModuleKey)
+				.Append(GpuGouraudFill.ShaderModuleKey)
 				.OrderBy(key => key, StringComparer.Ordinal)
 				.ToList();
 

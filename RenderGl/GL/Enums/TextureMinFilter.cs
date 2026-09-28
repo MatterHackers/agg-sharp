@@ -31,6 +31,7 @@ namespace MatterHackers.RenderGl.OpenGl
 {
 	public enum TextureMinFilter
 	{
+		Nearest = 9728,
 		Linear = 9729,
 		LinearMipmapLinear = 9987,
 	}

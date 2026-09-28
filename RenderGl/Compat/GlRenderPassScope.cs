@@ -92,6 +92,14 @@ namespace MatterHackers.RenderGl.Compat
 		/// </summary>
 		public int PassOpenCount { get; private set; }
 
+		/// <summary>
+		/// True when the color attachment holds linear premultiplied light (a linear-light retained layer) rather than
+		/// sRGB: draws into it take the modules' linear-light variants (<see cref="GlShaderKeys.ForTarget"/>). Said by
+		/// whoever sets the target, not read off the texture format, so a scratch or nested target of the same format
+		/// is not mistaken for one.
+		/// </summary>
+		public bool LinearLight { get; private set; }
+
 		/// <summary>The color attachment's format, or Undefined when no target is set.</summary>
 		public TextureFormat ColorFormat
 			=> this.ColorTarget?.Descriptor.Format ?? TextureFormat.Undefined;
@@ -109,12 +117,28 @@ namespace MatterHackers.RenderGl.Compat
 		/// <summary>Points subsequent drawing at new attachments, ending any pass in progress.</summary>
 		/// <param name="colorTarget">The texture to draw into.</param>
 		/// <param name="depthTarget">The depth texture, or null.</param>
-		public void SetTargets(IGpuTexture colorTarget, IGpuTexture depthTarget)
+		/// <param name="linearLight">True when <paramref name="colorTarget"/> holds linear light (see <see cref="LinearLight"/>).</param>
+		public void SetTargets(IGpuTexture colorTarget, IGpuTexture depthTarget, bool linearLight = false)
 		{
 			this.FlushPass();
 			this.ColorTarget = colorTarget;
 			this.DepthTarget = depthTarget;
+			this.LinearLight = colorTarget != null && linearLight;
 			this.hasEverHadTarget |= colorTarget != null;
+		}
+
+		/// <summary>
+		/// Throws when the target holds linear light: for the draws that have no linear-light variant, which would
+		/// otherwise write sRGB values into it and come out wrong without a word.
+		/// </summary>
+		/// <param name="operation">What cannot be drawn, for the message.</param>
+		/// <exception cref="NotSupportedException">The target is a linear-light layer.</exception>
+		public void RejectLinearLight(string operation)
+		{
+			if (this.LinearLight)
+			{
+				throw new NotSupportedException($"{operation} cannot draw into a linear-light layer (CreateRetainedLayer(linearLight: true)); draw it in an sRGB layer.");
+			}
 		}
 
 		/// <summary>

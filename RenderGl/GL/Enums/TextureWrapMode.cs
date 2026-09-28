@@ -33,5 +33,6 @@ namespace MatterHackers.RenderGl.OpenGl
 	{
 		ClampToEdge = 33071,
 		Repeat = 0x2901,
+		MirroredRepeat = 0x8370,
 	}
 }

@@ -144,7 +144,8 @@ namespace MatterHackers.RenderGl.Compat
 					this.passes.DepthFormat,
 					GlStateShadow.MapTopology(mode),
 					textured,
-					false);
+					false,
+					this.passes.LinearLight);
 
 				pipeline = this.pipelines.GetPipeline(descriptor);
 			}

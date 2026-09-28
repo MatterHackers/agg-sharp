@@ -43,8 +43,12 @@ namespace MatterHackers.WebGpuRender
 	/// </summary>
 	public sealed class WebGpuBuffer : IGpuBuffer
 	{
-		internal WebGpuBuffer(WGPUBuffer handle, BufferUsage usage, ulong sizeInBytes, string label)
+		private readonly LiveResourceTally tally;
+
+		internal WebGpuBuffer(WGPUBuffer handle, BufferUsage usage, ulong sizeInBytes, string label, LiveResourceTally tally = null)
 		{
+			this.tally = tally;
+			tally?.Created();
 			this.Handle = handle;
 			this.Usage = usage;
 			this.SizeInBytes = sizeInBytes;
@@ -74,6 +78,7 @@ namespace MatterHackers.WebGpuRender
 			}
 
 			this.IsDisposed = true;
+			this.tally?.Released();
 			wgpuBufferRelease(this.Handle);
 			this.Handle = default;
 		}
@@ -86,8 +91,12 @@ namespace MatterHackers.WebGpuRender
 	/// </summary>
 	public sealed class WebGpuTexture : IGpuTexture
 	{
-		internal WebGpuTexture(WGPUTexture handle, WGPUTextureView view, in TextureDescriptor descriptor)
+		private readonly LiveResourceTally tally;
+
+		internal WebGpuTexture(WGPUTexture handle, WGPUTextureView view, in TextureDescriptor descriptor, LiveResourceTally tally = null)
 		{
+			this.tally = tally;
+			tally?.Created();
 			this.Handle = handle;
 			this.View = view;
 			this.Descriptor = descriptor;
@@ -115,6 +124,7 @@ namespace MatterHackers.WebGpuRender
 			}
 
 			this.IsDisposed = true;
+			this.tally?.Released();
 			wgpuTextureViewRelease(this.View);
 			wgpuTextureRelease(this.Handle);
 			this.View = default;
@@ -378,5 +388,24 @@ namespace MatterHackers.WebGpuRender
 			wgpuBindGroupRelease(this.Handle);
 			this.Handle = default;
 		}
+	}
+
+	/// <summary>
+	/// How many of a device's buffers and textures are still unreleased. A wgpu resource holds its device
+	/// alive, so one that is never disposed keeps the whole device - and on d3d12-warp its system-memory
+	/// heaps - alive after the device itself is disposed. Enough of those and a later allocation fails,
+	/// hands back an error buffer, and the submit that uses it aborts the process. Tests assert this is
+	/// back to zero once everything built on a device has been disposed.
+	/// </summary>
+	public sealed class LiveResourceTally
+	{
+		private int count;
+
+		/// <summary>Buffers and textures created and not yet disposed.</summary>
+		public int Count => System.Threading.Volatile.Read(ref this.count);
+
+		internal void Created() => System.Threading.Interlocked.Increment(ref this.count);
+
+		internal void Released() => System.Threading.Interlocked.Decrement(ref this.count);
 	}
 }

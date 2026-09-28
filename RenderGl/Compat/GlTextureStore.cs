@@ -63,9 +63,28 @@ namespace MatterHackers.RenderGl.Compat
 		{
 			if (this.textures.TryGetValue(name, out var entry))
 			{
-				entry.Texture?.Dispose();
+				if (entry.OwnsTexture)
+				{
+					entry.Texture?.Dispose();
+				}
+
 				this.textures.Remove(name);
 			}
+		}
+
+		/// <summary>
+		/// Reserves a texture name for a texture someone else created and keeps alive - a render target's
+		/// color texture - so the ordinary bind-and-draw path can sample it. The store never disposes it;
+		/// point the entry at a replacement texture through <see cref="Find"/> when the owner reallocates.
+		/// </summary>
+		/// <param name="texture">The texture the name refers to.</param>
+		public int GenerateName(IGpuTexture texture)
+		{
+			int name = this.GenerateName();
+			var entry = this.textures[name];
+			entry.Texture = texture;
+			entry.OwnsTexture = false;
+			return name;
 		}
 
 		/// <summary>Looks a texture name up, returning null when it is unknown or empty.</summary>
@@ -112,7 +131,13 @@ namespace MatterHackers.RenderGl.Compat
 					|| entry.Texture.Descriptor.Format != format
 					|| entry.Texture.Descriptor.MipLevelCount != mipLevelCount)
 				{
-					entry.Texture?.Dispose();
+					if (entry.OwnsTexture)
+					{
+						entry.Texture?.Dispose();
+					}
+
+					// Whatever was there before, the replacement is the store's own.
+					entry.OwnsTexture = true;
 					entry.Texture = this.device.CreateTexture(new TextureDescriptor(
 						(uint)width,
 						(uint)height,
@@ -174,11 +199,21 @@ namespace MatterHackers.RenderGl.Compat
 					break;
 
 				case TextureParameterName.TextureWrapS:
+					entry.AddressModeU = ToAddressMode(value);
+					break;
+
 				case TextureParameterName.TextureWrapT:
-					entry.Clamp = value == 33071;
+					entry.AddressModeV = ToAddressMode(value);
 					break;
 			}
 		}
+
+		private static AddressMode ToAddressMode(int glWrapMode) => glWrapMode switch
+		{
+			(int)TextureWrapMode.ClampToEdge => AddressMode.ClampToEdge,
+			(int)TextureWrapMode.MirroredRepeat => AddressMode.MirrorRepeat,
+			_ => AddressMode.Repeat,
+		};
 
 		/// <summary>Returns the sampler matching a texture's filter and wrap state, cached by descriptor.</summary>
 		/// <remarks>
@@ -190,10 +225,9 @@ namespace MatterHackers.RenderGl.Compat
 		/// <param name="entry">The texture whose sampling state is wanted.</param>
 		public ISampler GetSampler(GlTextureEntry entry)
 		{
-			var address = entry.Clamp ? AddressMode.ClampToEdge : AddressMode.Repeat;
 			var descriptor = new SamplerDescriptor(
-				address,
-				address,
+				entry.AddressModeU,
+				entry.AddressModeV,
 				entry.MagFilterLinear ? FilterMode.Linear : FilterMode.Nearest,
 				entry.MinFilterLinear ? FilterMode.Linear : FilterMode.Nearest,
 				entry.MipmapFilterLinear ? FilterMode.Linear : FilterMode.Nearest);
@@ -222,7 +256,10 @@ namespace MatterHackers.RenderGl.Compat
 		{
 			foreach (var entry in this.textures.Values)
 			{
-				entry.Texture?.Dispose();
+				if (entry.OwnsTexture)
+				{
+					entry.Texture?.Dispose();
+				}
 			}
 
 			foreach (var sampler in this.samplers.Values)
@@ -241,8 +278,24 @@ namespace MatterHackers.RenderGl.Compat
 		/// <summary>The retained texture, or null when the name has been generated but never uploaded.</summary>
 		public IGpuTexture Texture { get; set; }
 
-		/// <summary>Whether coordinates clamp rather than wrap.</summary>
-		public bool Clamp { get; set; }
+		/// <summary>
+		/// False for a texture registered through <see cref="GlTextureStore.GenerateName(IGpuTexture)"/>:
+		/// its owner disposes it, so deleting the name or disposing the store must not.
+		/// </summary>
+		public bool OwnsTexture { get; set; } = true;
+
+		/// <summary>Whether coordinates clamp rather than wrap, on both axes. Setting it sets both address modes.</summary>
+		public bool Clamp
+		{
+			get => this.AddressModeU == AddressMode.ClampToEdge && this.AddressModeV == AddressMode.ClampToEdge;
+			set => this.AddressModeU = this.AddressModeV = value ? AddressMode.ClampToEdge : AddressMode.Repeat;
+		}
+
+		/// <summary>How horizontal coordinates outside 0..1 sample (GL_TEXTURE_WRAP_S). GL's default is repeat.</summary>
+		public AddressMode AddressModeU { get; set; } = AddressMode.Repeat;
+
+		/// <summary>How vertical coordinates outside 0..1 sample (GL_TEXTURE_WRAP_T).</summary>
+		public AddressMode AddressModeV { get; set; } = AddressMode.Repeat;
 
 		/// <summary>Whether magnification filters. GL's default is linear, and so is this.</summary>
 		public bool MagFilterLinear { get; set; } = true;

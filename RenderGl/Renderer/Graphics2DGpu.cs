@@ -41,6 +41,7 @@ using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters2D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
+using MatterHackers.RenderGl.Compat;
 using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
 using filling_rule_e = MatterHackers.Agg.Util.filling_rule_e;
@@ -51,7 +52,7 @@ namespace MatterHackers.RenderGl
 	// All drawing goes through the IGpuContext abstraction, which in production is the compat layer over
 	// WebGpuRenderDevice (wgpu-native). The OpenGL-flavored vocabulary in GL/IGpuContext is a historical
 	// API shape kept from the since-removed OpenGL backend, not a live OpenGL dependency.
-	public class Graphics2DGpu : Graphics2D
+	public class Graphics2DGpu : Graphics2D, IChannelMaskGraphics, IPatternFillGraphics, ICompOpGraphics, IBlurGraphics, IGradientFillGraphics, IFillRuleGraphics, IAlphaMaskGraphics, IGammaGraphics, IImageFilterGraphics, IGouraudGraphics
 	{
         public readonly GL gl;
 
@@ -70,8 +71,8 @@ namespace MatterHackers.RenderGl
         /// </summary>
         private class GlContextCaches
         {
-            public readonly Dictionary<ulong, AARenderTesselator> TriangleEdgeInfos = new Dictionary<ulong, AARenderTesselator>();
-            public readonly List<AARenderTesselator> AvailableTriangleEdgeInfos = new List<AARenderTesselator>();
+            public readonly Dictionary<ulong, HaloAaTesselator> TriangleEdgeInfos = new Dictionary<ulong, HaloAaTesselator>();
+            public readonly List<HaloAaTesselator> AvailableTriangleEdgeInfos = new List<HaloAaTesselator>();
             public readonly Dictionary<ulong, int> DisplayListCache = new Dictionary<ulong, int>();
             public RenderTesselator RenderNowTesselator;
 
@@ -200,7 +201,7 @@ namespace MatterHackers.RenderGl
                 {
                     for (int i = 0; i < 1000; i++)
                     {
-                        caches.AvailableTriangleEdgeInfos.Add(new AARenderTesselator(gl));
+                        caches.AvailableTriangleEdgeInfos.Add(new HaloAaTesselator());
                     }
                 }
             }
@@ -222,9 +223,11 @@ namespace MatterHackers.RenderGl
         /// </summary>
         /// <remarks>
         /// <see cref="Graphics2D.DestImage"/> is the agg CPU rasterizer's back buffer, and a GPU surface has
-        /// no such thing - the base class field stays null and every widget that reaches for it (the agg
-        /// demos that rasterize by hand: aa_demo, FontHinting, gouraud, blur, image_resample and friends)
-        /// used to die on an NRE the moment they were hosted on a GPU window.
+        /// no such thing - the base class field stays null and every widget that reaches for it (the old
+        /// stand-alone agg examples that rasterize by hand: aa_demo, FontHinting, gouraud, blur,
+        /// image_resample and friends) used to die on an NRE the moment they were hosted on a GPU window.
+        /// The AggSharpDemo ports avoid it: GouraudDemo, for one, draws per-vertex-coloured primitives on
+        /// the GPU until span generators get GPU support.
         /// <para>
         /// So they get a real one. The buffer is plain system memory that agg rasterizes into exactly as it
         /// would on a bitmap window; the difference is only that it reaches the screen as a texture upload
@@ -278,6 +281,7 @@ namespace MatterHackers.RenderGl
         /// </remarks>
         public void CompositeCpuLayer()
         {
+            this.FlushDeferredDraws();
             var layer = this.caches.CpuLayer;
             if (layer == null || this.gl == null)
             {
@@ -306,10 +310,61 @@ namespace MatterHackers.RenderGl
             Array.Clear(layer.GetBuffer(), 0, layer.GetBuffer().Length);
         }
 
+        /// <summary>The CPU raster layer behind <see cref="DestImage"/>, which a <see cref="GpuRetainedLayer"/>
+        /// swaps for its own while a widget paints into it (see there).</summary>
+        internal ImageBuffer CpuLayer { get => this.caches.CpuLayer; set => this.caches.CpuLayer = value; }
+
+        /// <summary>True on the WebGPU compat context, the only one a <see cref="GpuRenderTarget"/> can
+        /// redirect: double-buffered widgets on this surface keep their pixels in a GPU texture.</summary>
+        public override bool SupportsRetainedLayers => this.gl?.GpuContext is GlCompatContext;
+
+        /// <inheritdoc/>
+        public override IRetainedLayer CreateRetainedLayer() =>
+            this.SupportsRetainedLayers ? new GpuRetainedLayer(this.gl, this.DeviceScale) : null;
+
+        /// <inheritdoc/>
+        public override IRetainedLayer CreateRetainedLayer(bool linearLight) =>
+            this.SupportsRetainedLayers ? new GpuRetainedLayer(this.gl, this.DeviceScale, linearLight) : null;
+
+        /// <inheritdoc/>
+        public override bool RenderRetainedLayer(IRetainedLayer layer, double x, double y, double opacity = 1) { this.FlushDeferredDraws(); return layer is GpuRetainedLayer gpuLayer && gpuLayer.CompositeOnto(this, x, y, opacity); }
+
         public override RectangleDouble GetClippingRect() => cachedClipRect;
+
+        /// <inheritdoc/>
+        public void DrawWithChannelMask(ColorChannels channels, Action draw) { this.FlushDeferredDraws(); GpuChannelMask.Draw(gl, channels, draw); }
+
+        /// <inheritdoc/>
+        public bool SupportsCompOp(CompOp op) => GpuCompOp.Supports(gl, op);
+
+        /// <inheritdoc/>
+        public void DrawWithCompOp(CompOp op, Action draw) { this.FlushDeferredDraws(); GpuCompOp.Draw(this, op, draw); }
+
+        /// <inheritdoc/>
+        public void DrawBlurred(double radius, Action draw, Color[] alphaToColor = null) { this.FlushDeferredDraws(); GpuBlur.Draw(gl, radius * this.GetTransform().GetScale(), draw, alphaToColor); }
+
+        /// <inheritdoc/>
+        public void BlurUnder(IVertexSource region, double radius) { this.FlushDeferredDraws(); GpuBlur.BlurUnder(this, region, radius * this.GetTransform().GetScale()); }
+
+        /// <inheritdoc/>
+        public void BlurBox(IVertexSource region, double radius, BlurKind kind, ColorChannels channels = ColorChannels.All) { this.FlushDeferredDraws(); GpuRegionBlur.Blur(this, region, radius * this.GetTransform().GetScale(), kind, channels); }
+
+        /// <summary>While set, vector and pattern fills draw in opaque white: GpuCompOp's pass that records only coverage.</summary>
+        internal bool CoverageOnly { get; set; }
+
+        /// <inheritdoc/>
+        public void FillPathWithImage(IVertexSource path, IImageByte image, Affine imageToScreen, ImageWrapMode wrapX, ImageWrapMode wrapY) { this.FlushDeferredDraws(); GpuPatternFill.Fill(this, gl, path, image, imageToScreen, wrapX, wrapY); }
+
+        /// <inheritdoc/>
+        public void FillPathWithGradient(IVertexSource path, GradientFill gradient, GradientFill alphaGradient = null) { this.FlushDeferredDraws(); GpuGradientFill.Fill(this, path, gradient, alphaGradient); }
+
+        /// <inheritdoc/>
+        public void FillPathWithFilteredImage(IVertexSource path, IImageByte image, ImageFilterFill fill) { this.FlushDeferredDraws(); GpuImageFilter.Fill(this, path, image, fill); }
+        public void FillPathWithFilteredImage(IVertexSource path, IRetainedLayer layer, ImageFilterFill fill) { this.FlushDeferredDraws(); GpuImageFilter.Fill(this, path, layer, fill); }
 
         public override void SetClippingRect(RectangleDouble clippingRect)
         {
+            this.FlushDeferredDraws();
             cachedClipRect = clippingRect;
             gl.Scissor(
                 (int)Math.Floor(Math.Max(clippingRect.Left, 0)),
@@ -330,6 +385,8 @@ namespace MatterHackers.RenderGl
 
         public override int Height => height;
 
+        public override bool CanDrawColoredPrimitives => true;
+
         /// <summary>
         /// Draws per-vertex-coloured primitives in widget coordinates.
         /// </summary>
@@ -343,6 +400,7 @@ namespace MatterHackers.RenderGl
         /// <param name="vertices">The vertices, in widget coordinates. Z is ignored.</param>
         public override void DrawColoredPrimitives(DrawTopology topology, ReadOnlySpan<PosColorVertex> vertices)
         {
+            this.FlushDeferredDraws();
             if (vertices.Length == 0)
             {
                 return;
@@ -401,7 +459,8 @@ namespace MatterHackers.RenderGl
                 var textureImages = new List<ImageBuffer>();
                 for (int i = 0; i < 256; i++)
                 {
-                    var texture = new ImageBuffer(1024, 4);
+                    // Premultiplied white (PreRender blends One / OneMinusSrcAlpha): the texture holds these bytes as they are.
+                    var texture = new ImageBuffer(1024, 4, 32, new BlenderPreMultBGRA());
                     textureImages.Add(texture);
                     var hardwarePixelBuffer = texture.GetBuffer();
                     for (int y = 0; y < 4; y++)
@@ -410,9 +469,9 @@ namespace MatterHackers.RenderGl
                         for (int x = 0; x < 1024; x++)
                         {
                             var index = (y * 1024 + x) * 4;
-                            hardwarePixelBuffer[index + 0] = 255;
-                            hardwarePixelBuffer[index + 1] = 255;
-                            hardwarePixelBuffer[index + 2] = 255;
+                            hardwarePixelBuffer[index + 0] = alpha;
+                            hardwarePixelBuffer[index + 1] = alpha;
+                            hardwarePixelBuffer[index + 2] = alpha;
                             hardwarePixelBuffer[index + 3] = alpha;
                             alpha = (byte)i;
                         }
@@ -445,8 +504,9 @@ namespace MatterHackers.RenderGl
                 && vertexSource is VertexSourceApplyTransform applyTransform
                 && applyTransform.TransformToApply is Affine affine)
             {
-                if ((affine.sx == 1 && affine.sy == 1)
-                    || (affine.sx == 0 && affine.sy == 0))
+                // Only a pure translation can be split into a cached shape plus an offset; a shear or a
+                // rotation (whose sx and sy can be 1, or both 0) would be dropped.
+                if (IsTransformIdentity(affine))
                 {
                     vertexSource = applyTransform.VertexSource;
                     translation = new Vector2(affine.tx, affine.ty);
@@ -469,8 +529,9 @@ namespace MatterHackers.RenderGl
                 && transform.shx == 0
                 && transform.shy == 0)
             {
-                translation.X = (float)(translation.X / transform.sx + transform.tx);
-                translation.Y = (float)(translation.Y / transform.sy + transform.ty);
+                // The offset is applied on the screen, after the scale, so it is scaled like the shape.
+                translation.X = (float)(translation.X * transform.sx + transform.tx);
+                translation.Y = (float)(translation.Y * transform.sy + transform.ty);
                 transform.tx = 0;
                 transform.ty = 0;
                 vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
@@ -480,11 +541,12 @@ namespace MatterHackers.RenderGl
                 vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
             }
 
-            SetColor(colorIn);
             var colorBytes = colorIn.ToColor();
             var longHash = vertexSource.GetLongHashCode();
             // Include color in cache key so same geometry with different colors gets separate display lists
             longHash = longHash * 31 + (ulong)(colorBytes.red | (colorBytes.green << 8) | (colorBytes.blue << 16) | (colorBytes.Alpha0To255 << 24));
+            // and the rule, which changes the triangles the same geometry tessellates to.
+            longHash = longHash * 31 + (ulong)FillingRule;
 
             if (caches.AvailableTriangleEdgeInfos.Count == 0)
             {
@@ -498,24 +560,21 @@ namespace MatterHackers.RenderGl
                 caches.TriangleEdgeInfos.Add(longHash, triangleEdgeInfo);
 
                 triangleEdgeInfo.Clear();
+                triangleEdgeInfo.WindingRule = TesselatorWindingRule;
                 //using (new RecursiveReportTimer("Graphics2DOpenGl.SendShapeToTesselator"))
                 {
                     VertexSourceToTesselator.SendShapeToTesselator(triangleEdgeInfo, vertexSource);
                 }
+
+                triangleEdgeInfo.BuildHaloMesh();
             }
 
-            RenderTriangleEdgeInfo(triangleEdgeInfo, translation, longHash);
+            RenderHaloMesh(triangleEdgeInfo, colorBytes, translation, longHash);
         }
 
         private static bool IsTransformIdentity(Affine transform)
         {
             return transform.sx == 1 && transform.sy == 1 && transform.shx == 0 && transform.shy == 0;
-        }
-
-        private void SetColor(IColorType colorIn)
-        {
-            var colorBytes = colorIn.ToColor();
-            gl.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, (byte)255);
         }
 
         private void MoveTriangleEdgeInfos()
@@ -527,13 +586,13 @@ namespace MatterHackers.RenderGl
             caches.TriangleEdgeInfos.Clear();
         }
 
-        private AARenderTesselator GetAvailableTriangleEdgeInfo()
+        private HaloAaTesselator GetAvailableTriangleEdgeInfo()
         {
             var available = caches.AvailableTriangleEdgeInfos;
             if (available.Count == 0)
             {
                 // The pool is emptied by a generation reset; refill it bound to this context's gl.
-                return new AARenderTesselator(gl);
+                return new HaloAaTesselator();
             }
 
             var triangleEdgeInfo = available[^1];
@@ -541,14 +600,40 @@ namespace MatterHackers.RenderGl
             return triangleEdgeInfo;
         }
 
-        private void RenderTriangleEdgeInfo(AARenderTesselator triangleEdgeInfo, Vector2 translation)
+        /// <summary>
+        /// Draws a halo mesh at <paramref name="translation"/>, recorded once per
+        /// <paramref name="cacheKey"/> (geometry and color) into a display list.
+        /// </summary>
+        private void RenderHaloMesh(HaloAaTesselator haloMesh, Color color, Vector2 translation, ulong cacheKey)
         {
-            //using (new RecursiveReportTimer("Graphics2DOpenGl.RenderLastToGL"))
+            if (!caches.DisplayListCache.TryGetValue(cacheKey, out int displayListId))
             {
-                gl.Translate(translation.X, translation.Y, 0);
-                triangleEdgeInfo.RenderLastToGL();
-                gl.Translate(-translation.X, -translation.Y, 0);
+                MatterHackers.RenderCore.FrameProfiler.Count("DisplayListMiss");
+                displayListId = gl.GenLists(1);
+                gl.NewList(displayListId, GL.GL_COMPILE);
+                haloMesh.Render(gl, color);
+                gl.EndList();
+                AddToCache(cacheKey, displayListId);
             }
+            else
+            {
+                MatterHackers.RenderCore.FrameProfiler.Count("DisplayListHit");
+            }
+
+            gl.Translate(translation.X, translation.Y, 0);
+            gl.CallList(displayListId);
+            gl.Translate(-translation.X, -translation.Y, 0);
+        }
+
+        /// <summary>
+        /// The state a halo fill draws under: untextured, since coverage rides on the per-vertex color,
+        /// and blended as premultiplied.
+        /// </summary>
+        private void PrepareHaloFill()
+        {
+            gl.Disable(EnableCap.Texture2D);
+            gl.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
+            gl.Enable(EnableCap.Blend);
         }
 
         private const int MaxCacheSize = 1000;
@@ -632,17 +717,23 @@ namespace MatterHackers.RenderGl
         /// <inheritdoc/>
         protected override void RenderVertexSource(IVertexSource vertexSource, IColorType colorIn)
         {
-            PreRender(colorIn);
+            colorIn = CoverageOnly ? Color.White : colorIn;
+            if (DoEdgeAntiAliasing && GpuTextMask.TryDraw(this, vertexSource, GetTransform(), Premultiply(colorIn.ToColor()), cachedClipRect))
+            {
+                return;
+            }
 
             if (DoEdgeAntiAliasing)
             {
-                //using (new RecursiveReportTimer("Graphics2DOpenGl.DrawAAShape"))
-                {
-                    DrawAAShape(vertexSource, colorIn, true);
-                }
+                SyncCacheGeneration();
+                PushOrthoProjection();
+                PrepareHaloFill();
+                DrawAAShape(vertexSource, colorIn, true);
             }
             else
             {
+                PreRender(colorIn);
+
                 vertexSource.Rewind(0);
                 var transform = GetTransform();
                 if (!transform.is_identity())
@@ -650,10 +741,13 @@ namespace MatterHackers.RenderGl
                     vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
                 }
 
-                SetColor(colorIn);
+                // RenderTesselator sends no texture coordinates, so the draw is untextured and the alpha has to ride
+                // on the colour, premultiplied for PreRender's One / OneMinusSrcAlpha.
+                gl.Color4(Premultiply(colorIn.ToColor()));
                 // May have been dropped by a generation reset; it has to be bound to this context's gl.
                 var renderNowTesselator = caches.RenderNowTesselator ??= new RenderTesselator(gl);
                 renderNowTesselator.Clear();
+                renderNowTesselator.WindingRule = TesselatorWindingRule;
                 VertexSourceToTesselator.SendShapeToTesselator(renderNowTesselator, vertexSource);
             }
 
@@ -662,6 +756,7 @@ namespace MatterHackers.RenderGl
 
         public override void Render(IImageByte source, double x, double y, double angleRadians, double scaleX, double scaleY)
         {
+            this.FlushDeferredDraws();
             var transform = GetTransform();
             if (!transform.is_identity())
             {
@@ -694,11 +789,10 @@ namespace MatterHackers.RenderGl
             gl.Disable(EnableCap.DepthTest);
             gl.Enable(EnableCap.Blend);
 
-            // Known asymmetry with the LCD arm, and pre-existing: this is the path a widget's ordinary RGBA
-            // backbuffer blits through, and it uses non-premultiplied source over on a source that is in fact
-            // premultiplied, which double-darkens partially covered pixels. CompositeLcdBuffer uses the
-            // correct One / OneMinusSrcAlpha. Boundary pixels that differ between the two backbuffer modes are
-            // therefore this, not an LCD regression - fixing it means auditing every Render(IImageByte) caller.
+            // The texture holds the image's bytes as they are, read as straight alpha - what software does drawing
+            // onto a straight surface, and what MatterCAD's icons (stamped premultiplied, straight inside) need. A
+            // genuinely premultiplied image (a CPU widget backbuffer) is darkened at partial alpha here, as it is in
+            // software; CompositeLcdBuffer blends One / OneMinusSrcAlpha because its buffer is premultiplied.
             gl.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
 
             gl.Translate(x, y, 0);
@@ -718,6 +812,7 @@ namespace MatterHackers.RenderGl
 
         public override void Rectangle(double left, double bottom, double right, double top, Color color, double strokeWidth)
         {
+            this.FlushDeferredDraws();
             var transform = GetTransform();
             var fastLeft = left;
             var fastBottom = bottom;
@@ -758,6 +853,7 @@ namespace MatterHackers.RenderGl
 
         public override void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor)
         {
+            this.FlushDeferredDraws();
             var transform = GetTransform();
             var fastLeft = left;
             var fastBottom = bottom;
@@ -805,6 +901,7 @@ namespace MatterHackers.RenderGl
 
         public override void Line(double x1, double y1, double x2, double y2, Color color, double strokeWidth = 1)
         {
+            this.FlushDeferredDraws();
             strokeWidth = strokeWidth == -1 ? 1 * DeviceScale : strokeWidth;
 
             var strokeBounds = x1 == x2 // vertical line
@@ -826,15 +923,34 @@ namespace MatterHackers.RenderGl
             return (x1 == x2 || y1 == y2) && IsPixelAligned(strokeBounds.Left, strokeBounds.Right, strokeBounds.Bottom, strokeBounds.Top);
         }
 
+        /// <summary>
+        /// Fills <paramref name="rect"/> intersected with the clip rect, both in destination pixels, whatever the
+        /// transform - as <c>ImageGraphics2D.Clear</c> does.
+        /// </summary>
         public override void Clear(RectangleDouble rect, IColorType color)
         {
-            var transform = GetTransform();
-            var transformedRect = TransformRectangle(rect, transform);
-            var transformedClipRect = TransformRectangle(cachedClipRect, transform);
-            transformedClipRect.IntersectWithRectangle(transformedRect);
+            this.FlushDeferredDraws();
+            var clearBounds = cachedClipRect;
+            if (!clearBounds.IntersectWithRectangle(rect))
+            {
+                return;
+            }
 
-            var clearRect = new RoundedRect(transformedClipRect, 0);
-            Render(clearRect, color.ToColor());
+            // Drawn under the identity rather than by mapping the rect back through the inverse: the old
+            // mapping only undid a translation, so under a scale or AggSharpDemo's y-flip it cleared the wrong
+            // rect (or nothing at all).
+            var savedTransform = this.GetTransform();
+            this.PushTransform();
+            try
+            {
+                this.SetTransform(Affine.NewIdentity());
+                Render(new RoundedRect(clearBounds, 0), color.ToColor());
+            }
+            finally
+            {
+                this.PopTransform();
+                this.SetTransform(savedTransform);
+            }
         }
 
         public override void Clear(IColorType color) => Clear(cachedClipRect, color);
@@ -881,6 +997,7 @@ namespace MatterHackers.RenderGl
 
         public void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, Color color, bool doDepthTest)
         {
+            this.FlushDeferredDraws();
             if (gl?.GpuContext is INativeSceneRenderer nativeSceneRenderer
                 && nativeSceneRenderer.IsSceneRenderingActive)
             {
@@ -909,11 +1026,7 @@ namespace MatterHackers.RenderGl
                 }
             }
 
-            var lineImages = GetLineImageCache();
-            gl.Enable(EnableCap.Texture2D);
-            gl.BindTexture(TextureTarget.Texture2D, RenderGl.ImageTexturePlugin.GetImageTexturePlugin(gl, lineImages[color.Alpha0To255], false).GLTextureHandle);
-            gl.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
-            gl.Enable(EnableCap.Blend);
+            PrepareHaloFill();
             gl.Disable(EnableCap.CullFace);
 
             gl.MatrixMode(MatrixMode.Modelview);
@@ -928,37 +1041,11 @@ namespace MatterHackers.RenderGl
             gl.PopMatrix();
         }
 
-        private static RectangleDouble TransformRectangle(RectangleDouble rect, Affine transform)
-        {
-            return new RectangleDouble(
-                rect.Left - transform.tx,
-                rect.Bottom - transform.ty,
-                rect.Right - transform.tx,
-                rect.Top - transform.ty
-            );
-        }
-
         // ---- The LCD coverage arm of this GL destination ----
-        // Compositing a two plane LcdBuffer onto the framebuffer through three color masked passes, and
-        // the per-channel pass images those passes sample. It lives on this class rather than in a
-        // collaborator because every one of these members is an override that draws through this
-        // instance's own gl, ortho projection and scissor.
-
-        // The three per-channel pass images an LcdBuffer composites through. Like aATextureImages these are
-        // cpu side ImageBuffers with no gl affinity, so one set is shared by every context and the per
-        // context part is left to ImageTexturePlugin, which already keys its textures by (pixel buffer,
-        // context) and re-uploads on InvalidateGlCaches through MarkAllImagesNeedRefresh.
-        // Weak on the buffer so a widget's planes take their pass images with them when the widget goes.
-        private static readonly ConditionalWeakTable<LcdBuffer, LcdBufferChannelImages> lcdChannelImages = new ConditionalWeakTable<LcdBuffer, LcdBufferChannelImages>();
-        private static readonly object lcdChannelImagesLock = new object();
-
-        // The same arrangement for a single mask's three pass images. Weak on the mask because a mask lives in
-        // LcdMaskCache, which is LRU bounded - an evicted mask has to be able to take its textures with it, and
-        // a strong table here would pin every glyph run the process ever drew.
-        // No change stamp, where the buffer table needs one: a mask is finished when it is built and is handed
-        // out read only (see Graphics2D.CompositeLcdMask), so one pack per mask is all there ever is.
-        private static readonly ConditionalWeakTable<LcdMask, ImageBuffer[]> lcdMaskChannelImages = new ConditionalWeakTable<LcdMask, ImageBuffer[]>();
-        private static readonly object lcdMaskChannelImagesLock = new object();
+        // Compositing a two plane LcdBuffer (and an LCD mask) onto the framebuffer through three color masked
+        // passes. The draws live on this class because every one of them is an override that draws through
+        // this instance's own gl, ortho projection and scissor; the per-channel pass images they sample have
+        // no gl affinity and are built and cached by LcdChannelImageCache.
 
         /// <summary>
         /// True: this destination composites a two plane <see cref="LcdBuffer"/> per channel, through three
@@ -998,18 +1085,39 @@ namespace MatterHackers.RenderGl
             && this.Height > 0
             && !this.IsTransparentCompositingLayer;
 
+        /// <inheritdoc/>
+        public void DrawMasked(IImageByte mask, Action draw) { this.FlushDeferredDraws(); GpuAlphaMask.Draw(this, mask, draw); }
+
+        /// <inheritdoc/>
+        public void DrawWithCoverageGamma(IGammaFunction gamma, Color color, Action drawCoverage) { this.FlushDeferredDraws(); GpuColorLut.DrawWithCoverageGamma(this, gamma, color, drawCoverage); }
+
+        /// <inheritdoc/>
+        public void MapChannels(RectangleDouble region, byte[] red, byte[] green, byte[] blue) { this.FlushDeferredDraws(); GpuColorLut.MapChannels(this, region, red, green, blue); }
+
+        /// <inheritdoc/>
+        public void FillGouraud(IReadOnlyList<span_gouraud_rgba> triangles, IGammaFunction coverageGamma = null) { this.FlushDeferredDraws(); GpuGouraudFill.Fill(this, triangles, coverageGamma, false); }
+
+        /// <inheritdoc/>
+        public void FillGouraudCompound(IReadOnlyList<span_gouraud_rgba> triangles) { this.FlushDeferredDraws(); GpuGouraudFill.Fill(this, triangles, null, true); }
+
+        /// <inheritdoc/>
+        public filling_rule_e FillingRule { get; set; } = filling_rule_e.fill_non_zero;
+
+        // Pooled tesselators keep whatever rule they last filled with, so every fill sets this one.
+        private Tesselate.Tesselator.WindingRuleType TesselatorWindingRule => FillingRule == filling_rule_e.fill_even_odd
+            ? Tesselate.Tesselator.WindingRuleType.Odd
+            : Tesselate.Tesselator.WindingRuleType.NonZero;
+
         /// <summary>
-        /// Non-zero, always - the rule this class's own fills use.
+        /// <see cref="FillingRule"/> - the rule this class's own fills use.
         /// </summary>
         /// <remarks>
         /// The base class reads the fill rule off its <see cref="ScanlineRasterizer"/>, and this class has
-        /// none: it fills by tessellation (<c>VertexSourceToTesselator</c>), whose
-        /// <see cref="Tesselate.Tesselator.WindingRule"/> is left at its <c>NonZero</c> default everywhere in
-        /// the render path - nothing in RenderGl ever sets it. So the mask is rasterized under exactly the rule
-        /// the tesselated fill it replaces would have used, which is the property that matters: the LCD path
-        /// must cover the pixels the ordinary path covered, only with per-channel coverage.
+        /// none: it fills by tessellation, under <see cref="FillingRule"/>. So the mask is rasterized under
+        /// exactly the rule the tesselated fill it replaces would have used, which is the property that matters:
+        /// the LCD path must cover the pixels the ordinary path covered, only with per-channel coverage.
         /// </remarks>
-        protected override filling_rule_e? LcdFillingRule => filling_rule_e.fill_non_zero;
+        protected override filling_rule_e? LcdFillingRule => FillingRule;
 
         /// <summary>
         /// Composites a finished LCD coverage backbuffer onto the framebuffer at whole pixel
@@ -1049,6 +1157,7 @@ namespace MatterHackers.RenderGl
         /// </remarks>
         public override void CompositeLcdBuffer(LcdBuffer buffer, int destX, int destY)
         {
+            this.FlushDeferredDraws();
             if (buffer == null)
             {
                 throw new ArgumentNullException(nameof(buffer));
@@ -1067,7 +1176,7 @@ namespace MatterHackers.RenderGl
                 return;
             }
 
-            var channelImages = GetLcdChannelImages(buffer);
+            var channelImages = LcdChannelImageCache.GetBufferChannelImages(buffer);
 
             PushOrthoProjection();
             gl.Disable(EnableCap.Lighting);
@@ -1181,7 +1290,7 @@ namespace MatterHackers.RenderGl
                 return;
             }
 
-            ImageBuffer[] channelImages = GetLcdMaskChannelImages(mask);
+            ImageBuffer[] channelImages = LcdChannelImageCache.GetMaskChannelImages(mask);
 
             PushOrthoProjection();
             gl.Disable(EnableCap.Lighting);
@@ -1216,96 +1325,13 @@ namespace MatterHackers.RenderGl
         }
 
         /// <summary>
-        /// This mask's three per-channel pass images: channel <c>c</c>'s coverage as white premultiplied by
-        /// itself, built once and then shared by every draw of that mask.
-        /// </summary>
-        /// <remarks>
-        /// The pack runs outside the lock, so two threads that both miss can both build - the loser's images
-        /// are simply dropped, and only the published set is ever drawn with. That is the same trade the buffer
-        /// table above makes: holding a process wide lock across an O(width * height) pass would park every
-        /// other context behind a glyph run's repack.
-        /// </remarks>
-        private static ImageBuffer[] GetLcdMaskChannelImages(LcdMask mask)
-        {
-            lock (lcdMaskChannelImagesLock)
-            {
-                if (lcdMaskChannelImages.TryGetValue(mask, out ImageBuffer[] cached))
-                {
-                    return cached;
-                }
-            }
-
-            ImageBuffer[] built = PackLcdMaskChannelImages(mask);
-
-            lock (lcdMaskChannelImagesLock)
-            {
-                if (lcdMaskChannelImages.TryGetValue(mask, out ImageBuffer[] published))
-                {
-                    return published;
-                }
-
-                lcdMaskChannelImages.Add(mask, built);
-                return built;
-            }
-        }
-
-        /// <summary>
-        /// Reduces <paramref name="mask"/> to one ordinary premultiplied BGRA image per pass, each holding
-        /// channel <c>c</c>'s coverage in all four bytes.
-        /// </summary>
-        /// <remarks>
-        /// White premultiplied by the coverage, rather than the coverage in alpha alone: see
-        /// <see cref="CompositeLcdMask"/> for why the image has to be premultiplied to survive the texture
-        /// uploader, and <see cref="LcdBufferChannelImages"/> for why a valid premultiplied image
-        /// (<c>color &lt;= alpha</c>, trivially true here) makes that blit lossless. The two color channels the
-        /// pass's write mask discards are white too, which costs nothing and keeps the image a plain
-        /// interpretation of itself - a coverage image - rather than a channel-selecting one, because unlike
-        /// the buffer form there is no per-channel color to select.
-        /// <para>
-        /// Row <c>y</c> in, row <c>y</c> out. Both the mask and the image are Y-up and agg-sharp's GL texture
-        /// path is Y-up end to end, so there is no flip anywhere in this composite.
-        /// </para>
-        /// </remarks>
-        private static ImageBuffer[] PackLcdMaskChannelImages(LcdMask mask)
-        {
-            var images = new ImageBuffer[LcdBufferChannelImages.ChannelCount];
-
-            for (int channel = 0; channel < images.Length; channel++)
-            {
-                var image = new ImageBuffer(mask.Width, mask.Height, 32, new BlenderPreMultBGRA());
-                byte[] pixels = image.GetBuffer();
-                int bytesPerPixel = image.GetBytesBetweenPixelsInclusive();
-
-                for (int y = 0; y < mask.Height; y++)
-                {
-                    int rowOffset = image.GetBufferOffsetXY(0, y);
-                    int source = mask.PixelOffset(0, y) + channel;
-
-                    for (int x = 0; x < mask.Width; x++, source += 3)
-                    {
-                        byte coverage = mask.Data[source];
-                        int offset = rowOffset + (x * bytesPerPixel);
-                        pixels[offset + ImageBuffer.OrderR] = coverage;
-                        pixels[offset + ImageBuffer.OrderG] = coverage;
-                        pixels[offset + ImageBuffer.OrderB] = coverage;
-                        pixels[offset + ImageBuffer.OrderA] = coverage;
-                    }
-                }
-
-                images[channel] = image;
-            }
-
-            return images;
-        }
-
-        /// <summary>
         /// The draw color with its color channels multiplied by its own alpha, rounding half up.
         /// </summary>
         /// <remarks>
         /// Half up rather than truncating because the whole point is to land the software composite's byte:
         /// truncation would darken every translucent fill by up to a full level instead of half of one.
         /// </remarks>
-        private static Color Premultiply(Color color)
+        internal static Color Premultiply(Color color)
         {
             if (color.alpha == 255)
             {
@@ -1319,33 +1345,5 @@ namespace MatterHackers.RenderGl
                 color.alpha);
         }
 
-        /// <summary>
-        /// This buffer's three per-channel pass images, repacked if the buffer has been painted since they
-        /// were last built.
-        /// </summary>
-        /// <remarks>
-        /// The lock covers only the table, not the repack: the repack writes into images owned by this
-        /// buffer, and a buffer is painted and composited by the one thread that owns it, so two threads
-        /// racing here would already be racing over the planes themselves. Holding a process wide lock across
-        /// an O(width * height) pass over a full window backbuffer, on the other hand, would park every other
-        /// context behind it.
-        /// </remarks>
-        private static LcdBufferChannelImages GetLcdChannelImages(LcdBuffer buffer)
-        {
-            LcdBufferChannelImages images;
-            lock (lcdChannelImagesLock)
-            {
-                if (!lcdChannelImages.TryGetValue(buffer, out images)
-                    || images.Width != buffer.Width
-                    || images.Height != buffer.Height)
-                {
-                    images = new LcdBufferChannelImages(buffer.Width, buffer.Height);
-                    lcdChannelImages.AddOrUpdate(buffer, images);
-                }
-            }
-
-            images.UpdateFrom(buffer);
-            return images;
-        }
     }
 }

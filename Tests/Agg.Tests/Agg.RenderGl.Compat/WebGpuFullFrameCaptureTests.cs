@@ -224,6 +224,28 @@ namespace MatterHackers.Agg.Tests
 			await Assert.That(fixture.Context.Passes.ColorTarget).IsEqualTo(fixture.Target);
 		}
 
+		[Test]
+		public async Task ACaptureInsideALinearLightLayerIsRejectedAndLeavesTheLayerLinear()
+		{
+			using var fixture = CaptureFixture.Create();
+
+			// What a linear-light retained layer's redirect does. The capture's restore used to drop the
+			// flag, so every 2D draw after the 3D scene went into the layer unconverted - and the 3D frame
+			// itself is sRGB, which its downsample would have blitted into the layer as is.
+			fixture.Context.SetRenderTarget(fixture.Target, fixture.Depth, linearLight: true);
+
+			await Assert.That(() => fixture.Renderer.BeginFullFrameCapture(Viewport)).Throws<NotSupportedException>();
+
+			await Assert.That(fixture.Context.Passes.ColorTarget).IsEqualTo(fixture.Target);
+			await Assert.That(fixture.Context.Passes.LinearLight).IsTrue();
+
+			// Nothing was left open: the capture works once the target is sRGB again.
+			fixture.Context.SetRenderTarget(fixture.Target, fixture.Depth);
+			fixture.Renderer.BeginFullFrameCapture(Viewport);
+			fixture.Renderer.EndFullFrameCapture();
+			await Assert.That(fixture.Context.Passes.ColorTarget).IsEqualTo(fixture.Target);
+		}
+
 		/// <summary>A scene renderer over a compat context on a failure-injecting recording device.</summary>
 		private sealed class CaptureFixture : IDisposable
 		{

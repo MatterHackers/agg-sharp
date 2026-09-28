@@ -105,6 +105,7 @@ namespace MatterHackers.RenderGl
 		private int imageUpdateCount;
 		private bool createdWithMipMaps;
 		private bool clamp;
+		private bool magFilterLinear = true;
 
 		private static int currentGlobalRefreshCount = 0;
 
@@ -194,6 +195,7 @@ namespace MatterHackers.RenderGl
 				// use the original settings
 				createAndUseMipMaps = plugin.createdWithMipMaps;
 				clamp = plugin.clamp;
+				textureMagFilterLinear = plugin.magFilterLinear;
 				plugin = null;
 			}
 
@@ -302,85 +304,29 @@ namespace MatterHackers.RenderGl
 			float offsetX = (float)bufferedImage.OriginOffset.X;
 			float offsetY = (float)bufferedImage.OriginOffset.Y;
 
-			bufferedImage = FixImageSizePower2IfRequired(bufferedImage);
-			FixImageColors(bufferedImage);
+			byte[] pixels = TextureUploadPixels.FromImage(bufferedImage, hardwareWidth, hardwareHeight);
 
 			gl.Enable(EnableCap.Texture2D);
 			// Create the texture handle
 			glData.glTextureHandle = gl.GenTexture();
 
-			// Set up some texture parameters for openGL
 			gl.BindTexture(TextureTarget.Texture2D, glData.glTextureHandle);
-			if (textureMagFilterLinear)
-			{
-				gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-			}
-			else
-			{
-				gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
-			}
+			this.magFilterLinear = textureMagFilterLinear;
+			RestoreSampling();
+
+			gl.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, hardwareWidth, hardwareHeight,
+				0, PixelFormat.Rgba, PixelType.UnsignedByte, pixels);
 
 			if (createdWithMipMaps)
 			{
-				gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
-			}
-			else
-			{
-				gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-			}
-
-			if (clamp)
-			{
-				gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
-				gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
-			}
-			else
-			{
-				gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
-				gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
-			}
-
-			// Create the texture
-			switch (bufferedImage.BitDepth)
-			{
-				case 32:
-					gl.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, hardwareWidth, hardwareHeight,
-						0, PixelFormat.Rgba, PixelType.UnsignedByte, bufferedImage.GetBuffer());
-					break;
-
-				default:
-					throw new NotImplementedException();
-			}
-
-			if (createdWithMipMaps)
-			{
-				switch (bufferedImage.BitDepth)
+				int levelWidth = hardwareWidth;
+				int levelHeight = hardwareHeight;
+				int mipLevel = 1;
+				while (levelWidth > 1 || levelHeight > 1)
 				{
-					case 32:
-						{
-							var sourceImage = new ImageBuffer(bufferedImage);
-							var tempImage = new ImageBuffer(sourceImage.Width / 2, sourceImage.Height / 2);
-							tempImage.NewGraphics2D().Render(sourceImage, 0, 0, 0, .5, .5);
-
-							int mipLevel = 1;
-							while (sourceImage.Width > 1 || sourceImage.Height > 1)
-							{
-								gl.TexImage2D(TextureTarget.Texture2D, mipLevel++, PixelInternalFormat.Rgba, tempImage.Width, tempImage.Height,
-									0, PixelFormat.Rgba, PixelType.UnsignedByte, tempImage.GetBuffer());
-
-								sourceImage = new ImageBuffer(tempImage);
-								tempImage = new ImageBuffer(Math.Max(1, sourceImage.Width / 2), Math.Max(1, sourceImage.Height / 2));
-								tempImage.NewGraphics2D().Render(sourceImage, 0, 0,
-									0,
-									(double)tempImage.Width / (double)sourceImage.Width,
-									(double)tempImage.Height / (double)sourceImage.Height);
-							}
-						}
-
-						break;
-
-					default:
-						throw new NotImplementedException();
+					pixels = TextureUploadPixels.DownsampleStraightAlpha(pixels, levelWidth, levelHeight, out levelWidth, out levelHeight);
+					gl.TexImage2D(TextureTarget.Texture2D, mipLevel++, PixelInternalFormat.Rgba, levelWidth, levelHeight,
+						0, PixelFormat.Rgba, PixelType.UnsignedByte, pixels);
 				}
 			}
 
@@ -396,56 +342,23 @@ namespace MatterHackers.RenderGl
 			glData.positions = quadData.Positions;
 		}
 
-		private void FixImageColors(ImageBuffer bufferedImage)
+		/// <summary>The texture's width, which is the image's unless the hardware needed it padded to a power of two.</summary>
+		internal int HardwareWidth => glData.hardwareWidth;
+
+		/// <summary>The texture's height; see <see cref="HardwareWidth"/>.</summary>
+		internal int HardwareHeight => glData.hardwareHeight;
+
+		/// <summary>
+		/// Sets the bound texture's filtering and wrapping to what this plugin was created with - after a caller (the
+		/// GPU pattern fill) has sampled it another way.
+		/// </summary>
+		internal void RestoreSampling()
 		{
-			// Next we expand the image into an openGL texture
-			int imageWidth = bufferedImage.Width;
-			int imageHeight = bufferedImage.Height;
-
-			byte[] imageBuffer = bufferedImage.GetBuffer(out _);
-
-			switch (bufferedImage.BitDepth)
-			{
-				case 32:
-					for (int y = 0; y < imageHeight; y++)
-					{
-						for (int x = 0; x < imageWidth; x++)
-						{
-							int pixelIndex = 4 * (x + y * imageWidth);
-
-							byte r = imageBuffer[pixelIndex + 2];
-							byte g = imageBuffer[pixelIndex + 1];
-							byte b = imageBuffer[pixelIndex + 0];
-							byte a = imageBuffer[pixelIndex + 3];
-
-							imageBuffer[pixelIndex + 0] = r;
-							imageBuffer[pixelIndex + 1] = g;
-							imageBuffer[pixelIndex + 2] = b;
-							imageBuffer[pixelIndex + 3] = a;
-						}
-					}
-
-					break;
-
-				default:
-					throw new NotImplementedException();
-			}
-		}
-
-		private ImageBuffer FixImageSizePower2IfRequired(ImageBuffer bufferedImage)
-		{
-			// Next we expand the image into an openGL texture
-			int imageWidth = bufferedImage.Width;
-			int imageHeight = bufferedImage.Height;
-			byte[] imageBuffer = bufferedImage.GetBuffer(out _);
-			int hardwareWidth = SmallestHardwareCompatibleTextureSize(imageWidth);
-			int hardwareHeight = SmallestHardwareCompatibleTextureSize(imageHeight);
-
-			var pow2BufferedImage = new ImageBuffer(hardwareWidth, hardwareHeight, 32, bufferedImage.GetRecieveBlender());
-			pow2BufferedImage.NewGraphics2D().Render(bufferedImage, 0, 0);
-
-			// always return a new image because we are going to modify its colors and don't want to change the original image
-			return pow2BufferedImage;
+			gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)(magFilterLinear ? TextureMagFilter.Linear : TextureMagFilter.Nearest));
+			gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)(createdWithMipMaps ? TextureMinFilter.LinearMipmapLinear : TextureMinFilter.Linear));
+			var wrap = clamp ? TextureWrapMode.ClampToEdge : TextureWrapMode.Repeat;
+			gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)wrap);
+			gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)wrap);
 		}
 
 		public void DrawToGL()

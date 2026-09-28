@@ -267,7 +267,7 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		/// Builds a human-readable diff: the golden dimmed to a gray wash, with every out-of-tolerance
 		/// pixel painted magenta so a handful of stray pixels are still findable by eye at a glance.
 		/// </summary>
-		private static ImageBuffer BuildDiffImage(ImageBuffer golden, ImageBuffer rendered, int channelTolerance)
+		internal static ImageBuffer BuildDiffImage(ImageBuffer golden, ImageBuffer rendered, int channelTolerance)
 		{
 			var diff = new ImageBuffer(golden.Width, golden.Height, 32, new BlenderBGRA());
 			var goldenBuffer = golden.GetBuffer();

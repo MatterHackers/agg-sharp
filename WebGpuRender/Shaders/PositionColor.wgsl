@@ -72,14 +72,19 @@ fn vertexMain(input : VertexInput) -> VertexOutput
 	return output;
 }
 
+// The colour a fragment entry point returns. WgslShaderSources' linear-light variants of this module (the key with
+// "+LinearStraight" or "+LinearPremultiplied") replace this one line with an sRGB-to-linear conversion, for draws
+// into a linear float target (a GpuRetainedLayer made with linearLight).
+fn outputColor(c : vec4<f32>) -> vec4<f32> { return c; }
+
 @fragment
 fn fragmentMain(@location(0) color : vec4<f32>) -> @location(0) vec4<f32>
 {
-	return color;
+	return outputColor(color);
 }
 
 @fragment
 fn fragmentMainFlat(@location(1) @interpolate(flat) flatColor : vec4<f32>) -> @location(0) vec4<f32>
 {
-	return flatColor;
+	return outputColor(flatColor);
 }

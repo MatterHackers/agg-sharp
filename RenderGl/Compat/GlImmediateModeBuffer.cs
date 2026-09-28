@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using MatterHackers.Agg;
 using MatterHackers.RenderCore;
 using MatterHackers.RenderGl.OpenGl;
 
@@ -90,6 +91,35 @@ namespace MatterHackers.RenderGl.Compat
 			this.Colors.Add(this.CurrentColor[1]);
 			this.Colors.Add(this.CurrentColor[2]);
 			this.Colors.Add(this.CurrentColor[3]);
+		}
+
+		/// <summary>
+		/// Appends each vertex with its own color, as a <c>glColor4</c> then <c>glVertex3</c> per vertex would -
+		/// the color left current is the last one - without two calls per vertex: a span image's frame is
+		/// hundreds of thousands of them.
+		/// </summary>
+		public void AddVertices(ReadOnlySpan<PosColorVertex> vertices)
+		{
+			this.Positions.EnsureCapacity(this.Positions.Count + (vertices.Length * 3));
+			this.Colors.EnsureCapacity(this.Colors.Count + (vertices.Length * 4));
+			foreach (var vertex in vertices)
+			{
+				this.Positions.Add((float)vertex.Position.X);
+				this.Positions.Add((float)vertex.Position.Y);
+				this.Positions.Add((float)vertex.Position.Z);
+
+				Color color = vertex.Color;
+				this.Colors.Add(color.red);
+				this.Colors.Add(color.green);
+				this.Colors.Add(color.blue);
+				this.Colors.Add(color.alpha);
+			}
+
+			if (vertices.Length > 0)
+			{
+				Color last = vertices[vertices.Length - 1].Color;
+				this.SetColor(last.red, last.green, last.blue, last.alpha);
+			}
 		}
 
 		/// <summary>Sets the color subsequent vertices capture.</summary>

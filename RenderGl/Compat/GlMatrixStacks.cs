@@ -131,8 +131,14 @@ namespace MatterHackers.RenderGl.Compat
 		/// <param name="x">Axis X.</param>
 		/// <param name="y">Axis Y.</param>
 		/// <param name="z">Axis Z.</param>
+		/// <remarks>
+		/// glRotate turns counter-clockwise about the axis. <see cref="Matrix4X4.CreateRotation(Vector3, double)"/>
+		/// lays out glRotate's column-vector matrix as is, but these stacks multiply row vectors (translation in
+		/// Row3), so used directly it turns clockwise; its transpose - the same rotation by the negated angle - is
+		/// what glRotate means here. (CreateRotationZ, by contrast, is already row-vector counter-clockwise.)
+		/// </remarks>
 		public void Rotate(double degrees, double x, double y, double z)
-			=> this.Multiply(Matrix4X4.CreateRotation(new Vector3(x, y, z), MathHelper.DegreesToRadians(degrees)));
+			=> this.Multiply(Matrix4X4.CreateRotation(new Vector3(x, y, z), -MathHelper.DegreesToRadians(degrees)));
 
 		/// <summary>Concatenates a scale.</summary>
 		/// <param name="x">X scale.</param>

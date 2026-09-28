@@ -174,6 +174,44 @@ namespace MatterHackers.RenderGl.Compat
 			return lit ? PositionColorLit : PositionColor;
 		}
 
+		/// <summary>
+		/// Appended to a module key for its variant that converts the straight-alpha colour it writes from sRGB to
+		/// linear light - what a linear float target (rgba16float, a linear-light retained layer) is drawn with, so
+		/// its blending mixes light as C++ AGG's float buffers do. The backend's <c>WgslShaderSources</c> spells the
+		/// same suffix.
+		/// </summary>
+		public const string LinearStraightSuffix = "+LinearStraight";
+
+		/// <summary><see cref="LinearStraightSuffix"/> for a module whose output is premultiplied.</summary>
+		public const string LinearPremultipliedSuffix = "+LinearPremultiplied";
+
+		/// <summary>
+		/// <paramref name="moduleKey"/>, or its linear-light variant when the target holds linear light
+		/// (<see cref="GlRenderPassScope.LinearLight"/>): a 2D surface draws sRGB colours, which such a target needs
+		/// converted.
+		/// </summary>
+		/// <param name="linearLight">True when the target holds linear light.</param>
+		/// <param name="premultiplied">True when the module's output is premultiplied (see <see cref="IsStraightAlphaDraw"/>).</param>
+		public static string ForTarget(string moduleKey, bool linearLight, bool premultiplied)
+		{
+			if (!linearLight)
+			{
+				return moduleKey;
+			}
+
+			return moduleKey + (premultiplied ? LinearPremultipliedSuffix : LinearStraightSuffix);
+		}
+
+		/// <summary>
+		/// True when a draw's colour is straight alpha: only a blended draw with a SrcAlpha source factor has its colour
+		/// multiplied by its alpha on the way in. Every other draw lands its colour as it is - blended with One, or not
+		/// blended at all and so written straight into a target that holds premultiplied colour - so that colour has
+		/// to be premultiplied already. (LCD passes are the per-channel case of this: each pass writes one channel
+		/// premultiplied by that channel's own coverage, which is the alpha the pass blends with.)
+		/// </summary>
+		public static bool IsStraightAlphaDraw(bool blendEnabled, BlendFactor sourceFactor)
+			=> blendEnabled && sourceFactor == BlendFactor.SrcAlpha;
+
 		/// <summary>Picks the fragment entry point for a draw.</summary>
 		/// <param name="flatShading">True when <c>glShadeModel(GL_FLAT)</c> is in effect.</param>
 		public static string FragmentEntryPoint(bool flatShading)
