@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- The whole demo site: sidebar, demo registry, AGG demos and the GUI demo. Everything a head does not
+	     have to own lives here, and nothing here may reference a platform project - the mac head and the
+	     browser head both consume this one assembly, and a platform reference would pull a desktop window
+	     host into the wasm publish (or the browser host into the mac build). -->
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>disable</Nullable>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<RootNamespace>MatterHackers.AggSharpDemo</RootNamespace>
+		<Company>MatterHackers Inc.</Company>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\agg\Agg.csproj" />
+		<ProjectReference Include="..\..\..\Gui\Gui.csproj" />
+		<!-- ImageIO: the Screenshot window's PNG encoder. -->
+		<ProjectReference Include="..\..\..\DataConverters2D\DataConverters2D.csproj" />
+		<!-- MarkdownWidget: the GUI demo's About window. -->
+		<ProjectReference Include="..\..\..\MarkdigAgg\MarkdigAgg.csproj" />
+		<ProjectReference Include="..\..\..\RenderGl\RenderGl.csproj" />
+		<ProjectReference Include="..\..\LionShape\LionShape.csproj" />
+		<ProjectReference Include="..\..\..\VectorMath\VectorMath.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- The trans_curve demos' stand-in for C++'s Times New Roman (Liberation Serif is metric-compatible). -->
+		<EmbeddedResource Include="..\..\..\liberation-fonts-ttf-1.07.0\LiberationSerif-Regular.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.LiberationSerif-Regular.ttf" />
+		<EmbeddedResource Include="..\..\..\liberation-fonts-ttf-1.07.0\LiberationSerif-Italic.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.LiberationSerif-Italic.ttf" />
+		<!-- The GUI demo's code font, standing in for agg-gui's Cascadia Code (both monospaced). -->
+		<EmbeddedResource Include="..\..\..\liberation-fonts-ttf-1.07.0\LiberationMono-Regular.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.LiberationMono-Regular.ttf" />
+		<!-- The GUI demo's icon font, agg-gui's Font Awesome 4.7 (SIL OFL 1.1, Fonts/FontAwesome-LICENSE-OFL.txt). -->
+		<EmbeddedResource Include="Fonts\FontAwesome.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.FontAwesome.ttf" />
+		<!-- The GUI demo's emoji fallback font, agg-gui's Noto Emoji (SIL OFL 1.1, Fonts/NotoEmoji-LICENSE-OFL.txt). -->
+		<EmbeddedResource Include="Fonts\NotoEmoji-Regular.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.NotoEmoji-Regular.ttf" />
+		<!-- The image demos' source picture. -->
+		<EmbeddedResource Include="..\..\spheres.bmp" LogicalName="MatterHackers.AggSharpDemo.Images.spheres.bmp" />
+		<!-- The pattern demos' picture, C++ AGG's examples/art/agg.ppm. -->
+		<EmbeddedResource Include="Images\agg.ppm" LogicalName="MatterHackers.AggSharpDemo.Images.agg.ppm" />
+		<!-- compositing's destination picture, C++ AGG's examples/art/compositing.ppm. -->
+		<EmbeddedResource Include="Images\compositing.ppm" LogicalName="MatterHackers.AggSharpDemo.Images.compositing.ppm" />
+		<!-- line_patterns' pictures, C++ AGG's examples 1.ppm to 9.ppm. -->
+		<EmbeddedResource Include="Images\LinePatterns\*.ppm" LogicalName="MatterHackers.AggSharpDemo.Images.LinePatterns.%(Filename)%(Extension)" />
+		<!-- The flash_rasterizer demos' shapes, C++ AGG's examples/art/shapes.txt. -->
+		<EmbeddedResource Include="Art\shapes.txt" LogicalName="MatterHackers.AggSharpDemo.Art.shapes.txt" />
+		<!-- mol_view's molecules, C++ AGG's examples/X11/1.sdf. -->
+		<EmbeddedResource Include="Art\1.sdf" LogicalName="MatterHackers.AggSharpDemo.Art.1.sdf" />
+		<!-- The SVG Test window's samples and their reference renders, from resvg-test-suite (MIT,
+		     Art/SvgTests/LICENSE-resvg-test-suite.txt). Named by their path under Art/SvgTests; resources/ holds the
+		     suite files samples link to. -->
+		<EmbeddedResource Include="Art\SvgTests\**\*.svg;Art\SvgTests\**\*.png" LogicalName="MatterHackers.AggSharpDemo.SvgTests/%(RecursiveDir)%(Filename)%(Extension)" />
+		<!-- Noto Sans, the font resvg-test-suite's references are rendered in, so the SVG Test window's text rows
+		     draw the reference's glyphs (SIL OFL 1.1, Art/Fonts/Noto-LICENSE-OFL.txt). -->
+		<EmbeddedResource Include="Art\Fonts\NotoSans-Regular.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.NotoSans-Regular.ttf" />
+	</ItemGroup>
+
+</Project>

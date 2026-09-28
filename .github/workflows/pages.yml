@@ -1,0 +1,81 @@
+name: Demo site
+
+# Builds the agg-sharp demo site (examples/AggSharpDemo/AggSharpDemo.Browser) and deploys it to GitHub
+# Pages, where it is served from the project path https://<owner>.github.io/agg-sharp/. The build is
+# scripts/publish-demo-site.sh, the same script a local build runs, so what deploys is what was checked.
+# CI has no GPU or browser, so the paint check (scripts/check-demo-site.py) is a local pre-push step and
+# does not gate this deploy.
+#
+# One-time repository setting: Settings > Pages > Build and deployment > Source = "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time; a newer push supersedes a queued one, but a deploy already running finishes
+# rather than leaving Pages half-updated.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # PolygonMesh project-references Submodules/manifold-sharp (see tests.yml).
+          submodules: recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # The emdawnwebgpu link (LinkEmdawnWebGpu=true) is an emcc relink, which only this workload has.
+      - name: Install wasm-tools
+        run: dotnet workload install wasm-tools
+
+      # The workload's Emscripten version decides what the seeded cache holds, so it is part of the key.
+      - name: Emscripten cache key
+        id: emscripten
+        run: echo "workloads=$(dotnet --version)-$(dotnet workload list | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      # WebGpu/build/WebGpuBrowser.targets seeds this ~215 MB writable cache from the workload on the first
+      # link and builds emdawnwebgpu's port library into it; restoring it skips both. Its contents are fixed
+      # by the workload's Emscripten, the vendored emdawnwebgpu package and the targets file that patches it.
+      - name: Cache Emscripten
+        uses: actions/cache@v4
+        with:
+          path: WebGpu/Browser/emscripten-cache
+          key: emscripten-${{ runner.os }}-${{ steps.emscripten.outputs.workloads }}-${{ hashFiles('WebGpu/Browser/emdawnwebgpu_pkg/**', 'WebGpu/build/WebGpuBrowser.targets') }}
+
+      # Two lines on purpose: a failing command substitution inside echo's argument would not fail the
+      # step, but a failing plain assignment does under the runner's `bash -e`.
+      - name: Publish the demo site
+        id: publish
+        run: |
+          site="$(scripts/publish-demo-site.sh)"
+          echo "site=$site" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ steps.publish.outputs.site }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

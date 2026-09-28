@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- The mac head: a window around AggSharpDemoApp, nothing else. The AppKit host is plain net10.0 (raw
+	     objc P/Invoke, no macOS workload), so this builds on any OS but only runs on a Mac. -->
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<OutputType>Exe</OutputType>
+		<Nullable>disable</Nullable>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<RootNamespace>MatterHackers.AggSharpDemo</RootNamespace>
+		<Company>MatterHackers Inc.</Company>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\AggSharpDemo\AggSharpDemo.csproj" />
+		<ProjectReference Include="..\..\..\PlatformMac\PlatformMac.csproj" />
+	</ItemGroup>
+
+</Project>
