@@ -354,24 +354,33 @@ namespace MatterHackers.AggSharpDemo.Demos
 		}
 
 		/// <summary>
-		/// C++'s rgba32 gradient_linear_color, each step shown as the float window shows it (srgba8): the GPU layer
-		/// holds sRGB bytes, so the colours are interpolated in linear light as C++ does and only then encoded.
+		/// C++'s rgba32 gradient_linear_color, interpolated in linear light as C++ does. The GPU reads its float colours
+		/// (<see cref="IColorFunctionFloat"/>); the 8-bit ones - each step as the float window shows it, srgba8 - serve
+		/// a surface that takes bytes only. Bytes are not enough in the linear layer: color-burn divides by the rounded
+		/// rectangle's near-black end (0x05 is 0.0015 in linear light), and a byte's rounding there came out up to 19
+		/// levels off.
 		/// </summary>
-		private sealed class GpuGradientColors : IColorFunction
+		private sealed class GpuGradientColors : IColorFunction, IColorFunctionFloat
 		{
+			private readonly ColorF[] linear;
+
 			private readonly Color[] colors;
 
 			public GpuGradientColors(ColorF c1, ColorF c2)
 			{
-				var linear = new GradientLinearColorFloat(c1, c2);
-				this.colors = new Color[linear.size()];
+				var gradient = new GradientLinearColorFloat(c1, c2);
+				this.linear = new ColorF[gradient.size()];
+				this.colors = new Color[gradient.size()];
 				for (int i = 0; i < this.colors.Length; i++)
 				{
-					this.colors[i] = SrgbLut.Srgba8FromRgba32(linear[i]);
+					this.linear[i] = gradient[i];
+					this.colors[i] = SrgbLut.Srgba8FromRgba32(gradient[i]);
 				}
 			}
 
 			public Color this[int v] => this.colors[v];
+
+			ColorF IColorFunctionFloat.this[int v] => this.linear[v];
 
 			public int size() => this.colors.Length;
 		}

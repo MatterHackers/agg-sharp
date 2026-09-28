@@ -182,6 +182,13 @@ namespace MatterHackers.RenderGl
 			GlUniformBlock.WriteVector4(destination, 64, gradient.Colors.size(), 1, 0, 0);
 		}
 
+		/// <summary>
+		/// Writes <paramref name="colors"/> into a lookup table, one texel an entry, as sRGB colour (what the shader and
+		/// its linear-light output variant take). A colour function that is also an <see cref="IColorFunctionFloat"/>
+		/// is read in float - its colours linear light, as C++'s rgba32 gradients hold them - and encoded to sRGB
+		/// without rounding to bytes, in a half-float table: near black an sRGB byte step is a fifth of the linear
+		/// value, so an operator that divides by the colour (color-burn in a linear layer) magnified the byte rounding.
+		/// </summary>
 		private static IGpuTexture WriteTable(GlCompatContext context, IGpuTexture table, IColorFunction colors, string label)
 		{
 			int size = colors.size();
@@ -190,7 +197,9 @@ namespace MatterHackers.RenderGl
 				throw new ArgumentException("A gradient's colour function needs at least one entry.");
 			}
 
-			if (table == null || table.Descriptor.Width != size)
+			var floatColors = colors as IColorFunctionFloat;
+			var format = floatColors != null ? TextureFormat.Rgba16Float : TextureFormat.Rgba8Unorm;
+			if (table == null || table.Descriptor.Width != size || table.Descriptor.Format != format)
 			{
 				if (table != null)
 				{
@@ -198,7 +207,23 @@ namespace MatterHackers.RenderGl
 					table.Dispose();
 				}
 
-				table = context.Device.CreateTexture(new TextureDescriptor((uint)size, 1, TextureFormat.Rgba8Unorm, TextureUsage.TextureBinding | TextureUsage.CopyDst, 1, 1, label));
+				table = context.Device.CreateTexture(new TextureDescriptor((uint)size, 1, format, TextureUsage.TextureBinding | TextureUsage.CopyDst, 1, 1, label));
+			}
+
+			if (floatColors != null)
+			{
+				var halves = new byte[size * 8];
+				for (int i = 0; i < size; i++)
+				{
+					ColorF color = floatColors[i];
+					WriteHalf(halves, (i * 8) + 0, SrgbFromLinear(color.red));
+					WriteHalf(halves, (i * 8) + 2, SrgbFromLinear(color.green));
+					WriteHalf(halves, (i * 8) + 4, SrgbFromLinear(color.blue));
+					WriteHalf(halves, (i * 8) + 6, Math.Clamp(color.alpha, 0, 1));
+				}
+
+				context.Device.WriteTexture(table, halves, (uint)(size * 8));
+				return table;
 			}
 
 			var bytes = new byte[size * 4];
@@ -213,6 +238,18 @@ namespace MatterHackers.RenderGl
 
 			context.Device.WriteTexture(table, bytes, (uint)(size * 4));
 			return table;
+		}
+
+		/// <summary>sRGB's encoding curve, the inverse of the shaders' srgbToLinear, clamped to 0..1.</summary>
+		private static double SrgbFromLinear(double linear)
+		{
+			linear = Math.Clamp(linear, 0, 1);
+			return linear <= 0.0031308 ? linear * 12.92 : (1.055 * Math.Pow(linear, 1 / 2.4)) - 0.055;
+		}
+
+		private static void WriteHalf(byte[] destination, int offset, double value)
+		{
+			BitConverter.TryWriteBytes(destination.AsSpan(offset, 2), (Half)value);
 		}
 
 		/// <summary>One context's coverage layer, tables and uniform, reused from call to call.</summary>

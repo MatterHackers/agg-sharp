@@ -99,17 +99,15 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		/// </summary>
 		/// <remarks>
 		/// color-burn divides by the source colour, and the rounded rectangle's dark end is nearly black in linear
-		/// light (0x05 is 0.0015), so the gradient colours the GPU reads as sRGB bytes (IColorFunction answers
-		/// <see cref="Color"/>) and the layer's half floats are amplified there: it is held to 5 levels at the
-		/// translucent alphas and 19 at the opaque ones, the most those roundings give.
+		/// light (0x05 is 0.0015), so it holds the gradient to its float colours: read as sRGB bytes it was 19 levels
+		/// off at opaque alphas across the rectangle.
 		/// </remarks>
 		[Test]
 		[NotInParallel]
 		[MethodDataSource(nameof(MixingCases))]
 		public async Task GpuMixedColoursMatchTheFloatWindow(CompOp op, double srcAlpha, double dstAlpha)
 		{
-			int tolerance = op != CompOp.ColorBurn ? 3 : srcAlpha < 1 ? 5 : 19;
-			var (compared, bad, worst) = await CompareGpuWithFloatWindow(NewDemo(op, srcAlpha, dstAlpha), tolerance);
+			var (compared, bad, _) = await CompareGpuWithFloatWindow(NewDemo(op, srcAlpha, dstAlpha), 3);
 
 			await Assert.That(compared).IsGreaterThan(75000);
 			await Assert.That(bad).IsLessThanOrEqualTo(150);
@@ -166,8 +164,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 						int difference = Difference(gpu.GetPixel(x, y), center);
 						worst = Math.Max(worst, difference);
 						if (difference > tolerance)
-						{
-							bad++;
+						{							bad++;
 						}
 					}
 				}

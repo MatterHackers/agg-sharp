@@ -50,14 +50,6 @@ end to end. Two sections, every pixel drawn by agg-sharp (no HTML chrome):
    Scene.GizmoOverlay, Text.Aa.LightOnDark, Text.Aa.SizeLadder, Text.Aa.SubPixel,
    Text.Lcd.ThenOrdinary.
 
-## GPU fill quality
-
-Where the GPU path still falls short of the C++ render:
-
-- compositing's color-burn is up to 19 levels off at opaque alphas (5 translucent): it divides by the
-  near-black end of the rounded rectangle's gradient, whose colours reach the GPU as sRGB bytes
-  (IColorFunction answers Color) and sit in a half-float layer.
-
 ## Phase 2 - GUI demo parity
 
 Steps and parity matrix in `docs/gui-demo-plan.md`.
