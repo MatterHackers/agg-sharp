@@ -34,11 +34,16 @@ jobs:
       # (--logger). Note MTP's --timeout is a whole-session cap, not per-test.
       # --maximum-parallel-tests 1: the UI automation tests share window/input state and
       # fail intermittently when run in parallel; serializing costs no wall-clock time.
-      # Three nested timeouts on purpose, innermost first, each one salvaging less than
+      # Four nested timeouts on purpose, innermost first, each one salvaging less than
       # the one before:
-      #   --timeout 1200s   cancels inside MTP, so the run still writes results.trx and
-      #                     the always() uploads below make a hang diagnosable. A TRX
-      #                     names the test; nothing else here can.
+      #   --hangdump-timeout 5m  fires when no test has started or finished for 5 minutes
+      #                     (the slowest test takes ~30 s on WARP). It prints the tests still
+      #                     running to this log and writes a minidump into TestResults, then
+      #                     kills the host. It is the layer that names a hung test: run
+      #                     36434210638 hung for 18 minutes, --timeout cancelled it, and
+      #                     no results.trx was written, so nothing said which test it was.
+      #   --timeout 1200s   cancels inside MTP; a run that finishes its tests slowly still
+      #                     writes results.trx here.
       #   timeout-minutes:25 (this step) is for a wedge MTP cannot cancel itself out of -
       #                     a UI thread that never returns takes the session with it. A
       #                     STEP timeout FAILS the step, so its log is archived and both
@@ -55,7 +60,7 @@ jobs:
       # ~5 min window, and 25m leaves the job cap a margin of its own.
       - name: Run tests
         timeout-minutes: 25
-        run: dotnet test Tests/Agg.Tests/Agg.Tests.csproj --configuration Release --no-build --report-trx --report-trx-filename results.trx --results-directory TestResults --maximum-parallel-tests 1 --timeout 1200s
+        run: dotnet test Tests/Agg.Tests/Agg.Tests.csproj --configuration Release --no-build --report-trx --report-trx-filename results.trx --results-directory TestResults --maximum-parallel-tests 1 --timeout 1200s --hangdump --hangdump-timeout 5m --hangdump-type Mini
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
