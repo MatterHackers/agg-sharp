@@ -362,6 +362,177 @@ export function attachInput(selector, onInputEvent, onResize) {
 	canvasStates.set(selector, state);
 }
 
+// ---------------------------------------------------------------------------------------------------
+// File drag-and-drop
+// ---------------------------------------------------------------------------------------------------
+
+// How much of a dropped file is read per turn of the event loop. Small enough that no one read stalls the
+// page, large enough that a video of hundreds of megabytes is not thousands of round trips into managed code.
+const DROP_CHUNK_BYTES = 4 * 1024 * 1024;
+
+// Every field BrowserFileDropEvents reads, on every event - the same contract the input events keep.
+function packFileDragEvent(type, fields) {
+	return Object.assign({
+		type: type,
+		offsetX: 0,
+		offsetY: 0,
+		names: '',
+		types: '',
+		name: '',
+		size: 0,
+		bytes: null,
+	}, fields);
+}
+
+// Only a drag that carries files is agg's; a text or link drag from elsewhere on the page is left alone.
+function carriesFiles(e) {
+	return !!(e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files'));
+}
+
+// Newline-joined because a marshalled object has no string-array getter; a newline inside a name becomes a
+// space first so the managed split is exact.
+function joinLines(values) {
+	return values.map((v) => String(v || '').replace(/[\r\n]/g, ' ')).join('\n');
+}
+
+// What a hover can know: per dragged file, its name (hidden by every engine for a real drag - only a
+// synthetic one or a drop reveals it) and its MIME type (usually there). See BrowserFileDrop's remarks.
+function describeDraggedFiles(dataTransfer) {
+	const names = [];
+	const types = [];
+
+	const files = Array.from(dataTransfer.files || []);
+	if (files.length > 0) {
+		for (const file of files) {
+			names.push(file.name);
+			types.push(file.type);
+		}
+	} else {
+		for (const item of Array.from(dataTransfer.items || [])) {
+			if (item.kind === 'file') {
+				names.push('');
+				types.push(item.type);
+			}
+		}
+	}
+
+	return { names: joinLines(names), types: joinLines(types) };
+}
+
+// Reads one dropped file a slice at a time, handing each slice over as it arrives. Each byte is read from
+// the File exactly once and the managed side appends it straight to the staged file, so a large video is
+// never held whole anywhere but the browser's own File.
+async function streamDroppedFile(file, onFileDrag) {
+	onFileDrag(packFileDragEvent('dropfile', { name: file.name, size: file.size }));
+
+	try {
+		for (let start = 0; start < file.size; start += DROP_CHUNK_BYTES) {
+			const slice = await file.slice(start, start + DROP_CHUNK_BYTES).arrayBuffer();
+			onFileDrag(packFileDragEvent('dropchunk', { bytes: new Uint8Array(slice) }));
+		}
+	} catch (error) {
+		onFileDrag(packFileDragEvent('dropfileerror', { name: error && error.message ? error.message : String(error) }));
+	}
+}
+
+/**
+ * Subscribes the canvas's drag-and-drop listeners; call after attachInput, whose state they join so
+ * detachInput removes them. onFileDrag takes packFileDragEvent's object and answers a dragover with true
+ * for "copy".
+ *
+ * Every file drag's dragover and drop are preventDefault'ed, whatever agg answers: a drop the page does not
+ * cancel is a navigation to the file, which throws the whole app away. The same goes for a file dropped
+ * beside the canvas - on the page's margin or a status line - so the window gets a guard that refuses it
+ * (dropEffect none) rather than letting the browser open it.
+ */
+export function attachFileDrop(selector, onFileDrag) {
+	const state = canvasStates.get(selector);
+	if (!state) {
+		throw new Error(`attachFileDrop('${selector}') needs attachInput first.`);
+	}
+
+	// Drops are staged strictly one after another, so a second drop landing while a large first one is still
+	// streaming cannot interleave its slices into the first one's files.
+	state.dropChain = Promise.resolve();
+
+	const on = (type, handler) => {
+		state.canvas.addEventListener(type, handler);
+		state.listeners.push({ target: state.canvas, type, handler, options: undefined });
+	};
+
+	const hover = (e) => {
+		if (!carriesFiles(e)) {
+			return;
+		}
+
+		e.preventDefault();
+
+		const described = describeDraggedFiles(e.dataTransfer);
+		const accepted = onFileDrag(packFileDragEvent('dragover', {
+			offsetX: e.offsetX,
+			offsetY: e.offsetY,
+			names: described.names,
+			types: described.types,
+		}));
+
+		e.dataTransfer.dropEffect = accepted ? 'copy' : 'none';
+	};
+
+	// The window-level guard. Canvas events are the canvas's own listeners' business; everything else that
+	// carries files is refused, not opened.
+	const guard = (e) => {
+		if (e.target === state.canvas || !carriesFiles(e)) {
+			return;
+		}
+
+		e.preventDefault();
+		e.dataTransfer.dropEffect = 'none';
+	};
+
+	for (const type of ['dragover', 'drop']) {
+		window.addEventListener(type, guard);
+		state.listeners.push({ target: window, type, handler: guard, options: undefined });
+	}
+
+	on('dragenter', hover);
+	on('dragover', hover);
+
+	on('dragleave', (e) => {
+		if (carriesFiles(e)) {
+			onFileDrag(packFileDragEvent('dragleave', {}));
+		}
+	});
+
+	on('drop', (e) => {
+		if (!carriesFiles(e)) {
+			return;
+		}
+
+		e.preventDefault();
+
+		// Taken now: the DataTransfer is emptied once this listener returns.
+		const files = Array.from(e.dataTransfer.files || []);
+		const offsetX = e.offsetX;
+		const offsetY = e.offsetY;
+
+		state.dropChain = state.dropChain.then(async () => {
+			onFileDrag(packFileDragEvent('dropstart', { offsetX, offsetY }));
+
+			try {
+				for (const file of files) {
+					await streamDroppedFile(file, onFileDrag);
+				}
+			} finally {
+				onFileDrag(packFileDragEvent('dropend', {}));
+			}
+		}).catch((error) => {
+			// Every link ends here, so one drop that threw cannot leave the chain rejected - which would
+			// silently skip every drop after it for the rest of the session.
+			console.error('agg file drop failed:', error);
+		});
+	});
+}
+
 /** Removes everything attachInput added. A closed window must stop swallowing the page's keystrokes. */
 export function detachInput(selector) {
 	const state = canvasStates.get(selector);

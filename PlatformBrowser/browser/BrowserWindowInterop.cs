@@ -66,11 +66,19 @@ namespace MatterHackers.Agg.Platform.Browser
 		}
 
 		/// <inheritdoc/>
+		/// <remarks>
+		/// File drag-and-drop is attached here too, after the input listeners whose state it joins, so
+		/// <see cref="DetachInput"/> removes both and the window interface needs no drop method of its own.
+		/// </remarks>
 		public void AttachInput(string canvasSelector)
-			=> AttachInputCore(
+		{
+			AttachInputCore(
 				canvasSelector,
 				BrowserInputEvents.DispatchInputEvent,
 				canvasMetrics => BrowserInputEvents.DispatchResize(canvasSelector, canvasMetrics));
+
+			AttachFileDropCore(canvasSelector, BrowserFileDropEvents.DispatchFileDragEvent);
+		}
 
 		/// <inheritdoc/>
 		public void DetachInput(string canvasSelector) => DetachInputCore(canvasSelector);
@@ -128,6 +136,15 @@ namespace MatterHackers.Agg.Platform.Browser
 			string canvasSelector,
 			[JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> onInputEvent,
 			[JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> onResize);
+
+		/// <summary>
+		/// Subscribes the canvas's drag-and-drop listeners. The callback answers each dragover with whether
+		/// to show a copy; see <see cref="BrowserFileDrop"/>.
+		/// </summary>
+		[JSImport("attachFileDrop", ModuleName)]
+		private static partial void AttachFileDropCore(
+			string canvasSelector,
+			[JSMarshalAs<JSType.Function<JSType.Object, JSType.Boolean>>] Func<JSObject, bool> onFileDrag);
 
 		/// <summary>Sets the canvas's <c>width</c>/<c>height</c> attributes - its backing store.</summary>
 		[JSImport("setCanvasBackingSize", ModuleName)]

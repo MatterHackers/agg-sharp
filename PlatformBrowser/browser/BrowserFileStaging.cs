@@ -78,6 +78,48 @@ namespace MatterHackers.Agg.Platform.Browser
 		}
 
 		/// <summary>
+		/// Frees a dropped file once its receiver is done with it, by deleting the <c>drop-*</c> staging
+		/// directory it is in (and so the rest of that drop's files). Anything else - an open dialog's file, a
+		/// path outside the staging root, null - is left alone, so a receiver that handles files from every
+		/// source can call this on all of them.
+		/// </summary>
+		/// <remarks>
+		/// The whole directory rather than the one file, because a drop's files arrive together and are
+		/// normally consumed together; a receiver that wants to keep some of them copies them out first.
+		/// </remarks>
+		public static void Release(string stagedPath)
+		{
+			if (string.IsNullOrEmpty(stagedPath))
+			{
+				return;
+			}
+
+			string directory = Path.GetDirectoryName(Path.GetFullPath(stagedPath));
+			string root = Path.GetFullPath(StagingRoot);
+
+			if (string.IsNullOrEmpty(directory)
+				|| !string.Equals(Path.GetDirectoryName(directory), root, StringComparison.Ordinal)
+				|| !Path.GetFileName(directory).StartsWith("drop-", StringComparison.Ordinal)
+				|| !Directory.Exists(directory))
+			{
+				return;
+			}
+
+			try
+			{
+				Directory.Delete(directory, recursive: true);
+			}
+			catch (IOException releaseException)
+			{
+				Console.Error.WriteLine($"BrowserFileStaging could not release '{directory}': {releaseException.Message}");
+			}
+			catch (UnauthorizedAccessException releaseException)
+			{
+				Console.Error.WriteLine($"BrowserFileStaging could not release '{directory}': {releaseException.Message}");
+			}
+		}
+
+		/// <summary>
 		/// Reduces whatever the browser called a file to something safe to use as one path segment.
 		/// </summary>
 		/// <remarks>
