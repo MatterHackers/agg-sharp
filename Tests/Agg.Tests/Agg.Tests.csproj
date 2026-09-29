@@ -117,6 +117,8 @@
     <!-- Needs an HWND, which it gets by constructing a hidden WinForms Form. The mac equivalent would be
          a CAMetalLayer-backed NSView, which is a different surface path and a different test. -->
     <Compile Remove="Agg.WebGpuRender\WebGpuSurfaceTargetTests.cs" />
+    <!-- Subject is MediaFoundationVideoFrameReader, which decodes through Windows' own codecs. -->
+    <Compile Remove="Agg.UI\MediaFoundationVideoFrameReaderTests.cs" />
   </ItemGroup>
 
   <!-- Tests whose subject is the mac platform layer. Removed wherever PlatformMac is not referenced -
@@ -177,6 +179,14 @@
   <ItemGroup>
     <Content Include="..\..\TestData\AggReference\*.raw">
       <Link>AggReference\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- Video fixtures for MediaFoundationVideoFrameReaderTests, tree-preferred like the data above. -->
+  <ItemGroup>
+    <Content Include="..\..\TestData\Video\*.mp4">
+      <Link>TestData\Video\%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

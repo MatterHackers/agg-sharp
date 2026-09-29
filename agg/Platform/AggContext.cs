@@ -57,6 +57,7 @@ namespace MatterHackers.Agg.Platform
 
 		private static volatile IFileDialogProvider _fileDialogs = null;
 		private static volatile IOsInformationProvider _osInformation = null;
+		private static volatile IVideoFrameReader _videoFrames = null;
 		private static volatile PlatformConfig _config = null;
 
 		/// <summary>
@@ -119,6 +120,37 @@ namespace MatterHackers.Agg.Platform
 			set
 			{
 				_osInformation = value;
+			}
+		}
+
+		/// <summary>
+		/// Reads frames out of video files. Never null: on a platform with no reader (see
+		/// <see cref="ProviderSettings.VideoFrameReaderProvider"/>) it is an <see cref="UnsupportedVideoFrameReader"/>
+		/// whose <see cref="IVideoFrameReader.UnsupportedReason"/> tells the user what to do instead.
+		/// </summary>
+		public static IVideoFrameReader VideoFrames
+		{
+			get
+			{
+				if (_videoFrames == null)
+				{
+					lock (initLock)
+					{
+						if (_videoFrames == null)
+						{
+							var typeName = Config.ProviderTypes.VideoFrameReaderProvider;
+							_videoFrames = (typeName == null ? null : CreateInstanceFrom<IVideoFrameReader>(typeName))
+								?? new UnsupportedVideoFrameReader();
+						}
+					}
+				}
+
+				return _videoFrames;
+			}
+
+			set
+			{
+				_videoFrames = value;
 			}
 		}
 
@@ -254,6 +286,15 @@ namespace MatterHackers.Agg.Platform
 					: IsLinux
 						? "MatterHackers.Agg.Platform.LinuxFileDialogProvider, agg_platform_linux"
 						: "MatterHackers.Agg.Platform.WinformsFileDialogProvider, agg_platform_win32";
+
+			/// <summary>
+			/// The video frame reader, or null where there is none yet - <see cref="VideoFrames"/> then answers
+			/// with <see cref="UnsupportedVideoFrameReader"/>. Only Windows has one (Media Foundation); a mac
+			/// (AVFoundation) or browser (WebCodecs) reader would slot in here the same way.
+			/// </summary>
+			public string VideoFrameReaderProvider { get; set; } = IsBrowser || IsMac || IsLinux
+				? null
+				: "MatterHackers.Agg.Platform.MediaFoundationVideoFrameReader, agg_platform_win32";
 
 			public string SystemWindowProvider { get; set; } = IsBrowser
 				? BrowserSystemWindowProvider

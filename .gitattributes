@@ -14,6 +14,7 @@
 *.stl binary
 *.zip binary
 *.dll binary
+*.mp4 binary
 
 # The LCD byte-exactness fixture is raw coverage/pixel dumps whose whole point is that every byte
 # survives the round trip. Git's automatic binary detection looks for a NUL byte, and some of these
