@@ -150,7 +150,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			this.Add(new GuiWidget { HAnchor = HAnchor.Stretch, Height = 8 * DeviceScale });
 			this.Add(this.Separator());
 			this.ThemeHeader = new CollapsingHeader("Theme", this.theme, expanded: false) { Name = "Code Example Theme" };
-			var themeNote = new WrappedTextWidget("Syntax highlighting is represented by the fixed dark code palette in this agg-gui demo.", pointSize: 12)
+			var themeNote = new WrappedTextWidget("Syntax highlighting is represented by the fixed dark code palette in this agg-gui demo.", pointSize: DemoText.Points(12))
 			{
 				HAnchor = HAnchor.Stretch,
 			};
@@ -189,10 +189,10 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			base.OnClosed(e);
 		}
 
-		/// <summary>One syntax-coloured line of a snippet, in agg-gui's 11.5 point code size.</summary>
+		/// <summary>One syntax-coloured line of a snippet, in agg-gui's 11.5px code size and the demo's monospaced code face.</summary>
 		private static TextWidget CodeLine(string text, Color color)
 		{
-			return new TextWidget(text, pointSize: 11.5, textColor: color)
+			return new TextWidget(text, pointSize: DemoText.Points(11.5), textColor: color, typeFace: CodeFont.TypeFace)
 			{
 				HAnchor = HAnchor.Left,
 				AutoExpandBoundsToText = true,
@@ -271,9 +271,10 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			this.column.AddChild(child);
 		}
 
-		private TextWidget Text(string text, double pointSize)
+		/// <summary>A label at agg-gui's <paramref name="aggGuiPixels"/> em.</summary>
+		private TextWidget Text(string text, double aggGuiPixels)
 		{
-			var widget = new TextWidget(text, pointSize: pointSize, textColor: this.theme.TextColor)
+			var widget = new TextWidget(text, pointSize: DemoText.Points(aggGuiPixels), textColor: this.theme.TextColor)
 			{
 				HAnchor = HAnchor.Left,
 				AutoExpandBoundsToText = true,
@@ -317,10 +318,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 			this.NameField.ActualTextEditWidget.TextColor = palette.TextColor;
 			this.NameField.BackgroundColor = palette.WidgetBackground;
-			this.IncrementButton.BackgroundColor = this.theme.ButtonBackgroundColor;
-			this.IncrementButton.TextColor = palette.TextColor;
-			this.IncrementButton.HoverColor = this.theme.SlightShade;
-			this.IncrementButton.MouseDownColor = this.theme.MinimalShade;
+			this.demoTheme.StyleButton(this.IncrementButton);
 		}
 	}
 }

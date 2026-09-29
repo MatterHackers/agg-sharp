@@ -211,8 +211,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 		/// <summary>
 		/// Puts <paramref name="shell"/>'s windows and theme back as a first run has them, as agg-gui's
-		/// on_reset_all does: the open-by-default windows open and tiled in spec order, every other window
-		/// closed, the System theme with the Blue accent, and snapping on. The backend panel is left alone.
+		/// on_reset_all does: the default windows (<see cref="GuiDemoSpecs.DefaultOpen"/>) open, tiled and stacked
+		/// as a first run has them, every other window closed, the System theme with the Blue accent, and snapping on. The backend panel is left alone.
 		/// </summary>
 		public static void ApplyDefaults(GuiDemoShell shell)
 		{
@@ -220,19 +220,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			shell.DemoTheme.SetAccent(AccentColor.Blue);
 			shell.TopBar.SetSnapEnabled(true);
 
-			DemoWindowHost windows = shell.Windows;
-			foreach (DemoSpec spec in AllSpecs)
-			{
-				windows.SetOpen(spec, spec.OpenByDefault);
-			}
-
-			// The first run's stacking order: spec order, the last on top.
-			foreach (DemoSpec spec in GuiDemoSpecs.All.Where(s => s.OpenByDefault))
-			{
-				windows.Raise(spec);
-			}
-
-			windows.Organize();
+			shell.Windows.ResetToDefaultLayout();
 		}
 
 		/// <summary>"Reset all state": <see cref="ApplyDefaults"/>, then forgets the saved state, so a run started

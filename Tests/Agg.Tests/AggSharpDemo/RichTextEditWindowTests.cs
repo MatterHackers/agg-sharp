@@ -78,18 +78,60 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			editor.Focus();
 			editor.Core.SetSelection(new DocPos(1, 0), new DocPos(1, 6));
 
-			window.Descendants<ThemedTextButton>().Single(b => b.Name == "RichTextEdit Italic").InvokeClick();
+			window.Descendants<ThemedIconButton>().Single(b => b.Name == "RichTextEdit Italic").InvokeClick();
 			await Assert.That(editor.Core.Doc.Blocks[1].Runs[0].Style.Italic).IsTrue();
 			await Assert.That(editor.Core.Doc.Blocks[1].Runs[0].Text).IsEqualTo("Toggle");
 			await Assert.That(editor.ContainsFocus).IsTrue();
 
-			window.Descendants<ThemedTextButton>().Single(b => b.Name == "RichTextEdit Bulleted list").InvokeClick();
+			window.Descendants<ThemedIconButton>().Single(b => b.Name == "RichTextEdit Bulleted list").InvokeClick();
 			await Assert.That(editor.Core.Doc.Blocks[1].List).IsEqualTo(ListKind.Bullet);
 
-			window.Descendants<ThemedTextButton>().Single(b => b.Name == "RichTextEdit Undo (" + (System.OperatingSystem.IsMacOS() ? "Cmd" : "Ctrl") + "+Z)").InvokeClick();
+			window.Descendants<ThemedIconButton>().Single(b => b.Name == "RichTextEdit Undo (" + (System.OperatingSystem.IsMacOS() ? "Cmd" : "Ctrl") + "+Z)").InvokeClick();
 			await Assert.That(editor.Core.Doc.Blocks[1].List).IsEqualTo(ListKind.Ordered);
-			window.Descendants<ThemedTextButton>().Single(b => b.Name.StartsWith("RichTextEdit Undo")).InvokeClick();
+			window.Descendants<ThemedIconButton>().Single(b => b.Name.StartsWith("RichTextEdit Undo")).InvokeClick();
 			await Assert.That(editor.Core.Doc.Blocks[1].Runs[0].Style.Italic).IsFalse();
+		}
+
+		[Test]
+		public async Task FamilyAndSizeCombosFormatTheSelectionAndFollowIt()
+		{
+			var (page, window) = Build();
+			var editor = window.Editor;
+			await Assert.That(window.SizeCombo.SelectedLabel).IsEqualTo("16");
+			await Assert.That(window.FamilyCombo.SelectedLabel).IsEqualTo("Liberation Sans");
+
+			editor.Core.SetSelection(new DocPos(1, 0), new DocPos(1, 6));
+			window.SizeCombo.SelectedIndex = System.Array.IndexOf(RichTextEditWindow.FontSizes, 24.0);
+			await Assert.That(editor.Core.Doc.Blocks[1].Runs[0].Style.FontSize).IsEqualTo(RichTextEditWindow.EditorSize(24));
+			await Assert.That(editor.Core.Doc.Blocks[1].Runs[0].Text).IsEqualTo("Toggle");
+
+			window.FamilyCombo.SelectedIndex = 0;
+			editor.Core.SetSelection(new DocPos(1, 0), new DocPos(1, 6));
+			window.FamilyCombo.SelectedIndex = -1;
+			window.FamilyCombo.SelectedIndex = 0;
+			await Assert.That(editor.Core.Doc.Blocks[1].Runs[0].Style.FontFamily).IsEqualTo("Liberation Sans");
+
+			// The size combo picks in agg-gui's sizes: the heading is its 24, the body its 16.
+			await Assert.That(editor.Core.Doc.Blocks[0].Runs[0].Style.FontSize).IsEqualTo(RichTextEditWindow.EditorSize(24));
+			await Assert.That(RichTextEditWindow.EditorSize(16)).IsEqualTo(editor.DefaultFontSize);
+		}
+
+		[Test]
+		public async Task UndoAndRedoAreGreyedOutWhenThereIsNothingToTakeBack()
+		{
+			var (page, window) = Build();
+			var editor = window.Editor;
+			await Assert.That(window.UndoButton.Enabled).IsFalse();
+			await Assert.That(window.RedoButton.Enabled).IsFalse();
+
+			editor.Core.SetSelection(new DocPos(1, 0), new DocPos(1, 6));
+			window.Descendants<ThemedIconButton>().Single(b => b.Name == "RichTextEdit Italic").InvokeClick();
+			await Assert.That(window.UndoButton.Enabled).IsTrue();
+			await Assert.That(window.RedoButton.Enabled).IsFalse();
+
+			window.UndoButton.InvokeClick();
+			await Assert.That(editor.Core.Doc.Blocks[1].Runs[0].Style.Italic).IsFalse();
+			await Assert.That(window.RedoButton.Enabled).IsTrue();
 		}
 
 		[Test]
@@ -97,10 +139,13 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		{
 			var (page, window) = Build();
 			var editor = window.Editor;
-			var bold = window.Descendants<ThemedTextButton>().Single(b => b.Name == "RichTextEdit Bold");
+			var bold = window.Descendants<ThemedIconButton>().Single(b => b.Name == "RichTextEdit Bold");
 
-			// The heading is bold and left aligned; the list item under it is numbered.
-			editor.Core.SetSelection(new DocPos(0, 0), new DocPos(0, 4));
+			// The heading is regular weight, as agg-gui's; bolded, it is bold and left aligned. The list item
+			// under it is numbered.
+			editor.Core.SetSelection(new DocPos(0, 0), new DocPos(0, 7));
+			await Assert.That(window.IsToolOn("Bold")).IsFalse();
+			bold.InvokeClick();
 			await Assert.That(window.IsToolOn("Bold")).IsTrue();
 			await Assert.That(window.IsToolOn("Align left")).IsTrue();
 			await Assert.That(window.IsToolOn("Numbered list")).IsFalse();
@@ -116,10 +161,10 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(window.IsToolOn("Bold")).IsFalse();
 
 			// Formatting updates the state straight away.
-			window.Descendants<ThemedTextButton>().Single(b => b.Name == "RichTextEdit Align center").InvokeClick();
+			window.Descendants<ThemedIconButton>().Single(b => b.Name == "RichTextEdit Align center").InvokeClick();
 			await Assert.That(window.IsToolOn("Align center")).IsTrue();
 			await Assert.That(window.IsToolOn("Align left")).IsFalse();
-			await Assert.That(window.Descendants<ThemedTextButton>().Single(b => b.Name == "RichTextEdit Align center").BackgroundColor).IsEqualTo(onColor);
+			await Assert.That(window.Descendants<ThemedIconButton>().Single(b => b.Name == "RichTextEdit Align center").BackgroundColor).IsEqualTo(onColor);
 		}
 
 		[Test]
@@ -138,7 +183,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 
 			// The toolbar button opens agg-gui's colour wheel in a modal window; dragging previews on the selection
 			// and Cancel puts the text back.
-			window.Descendants<ThemedTextButton>().Single(b => b.Name == "RichTextEdit Text color").InvokeClick();
+			window.Descendants<ThemedIconButton>().Single(b => b.Name == "RichTextEdit Text color").InvokeClick();
 			var dialog = window.ColorDialog;
 			await Assert.That(dialog).IsNotNull();
 			await Assert.That(dialog.Parent).IsTypeOf<ModalOverlay>();
@@ -193,7 +238,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(HighlightAt()).IsNull();
 			await Assert.That(couldUndo).IsTrue();
 
-			window.Descendants<ThemedTextButton>().Single(b => b.Name == "RichTextEdit Remove highlight").InvokeClick();
+			window.Descendants<ThemedIconButton>().Single(b => b.Name == "RichTextEdit Remove highlight").InvokeClick();
 			await Assert.That(HighlightAt()).IsNull();
 		}
 	}

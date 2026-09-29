@@ -48,6 +48,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			("Liberation Sans Bold", () => LiberationSansBoldFont.Instance),
 			("Font Awesome", () => IconFont.TypeFace),
 			("Noto Emoji", () => EmojiFont.TypeFace),
+			("Nunito", () => DemoText.Nunito),
 		};
 
 		private const double Gap = 8;
@@ -82,11 +83,15 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			this.AddChild(Spaced(note));
 			this.AddChild(this.Separator());
 
+			// agg-gui's font picker is a combo as wide as the window, so it reads as a field with the font's name
+			// (its arrow runs off past the window's edge); ours stretches to the edge and keeps its arrow in view.
 			FlowLayoutWidget fontRow = this.kit.Row(Gap);
+			fontRow.HAnchor = HAnchor.Stretch;
 			fontRow.AddChild(this.kit.Label("Font:", 13));
 			this.FontPicker = new DropDownList("Font", this.kit.Theme.TextColor, pointSize: this.kit.FontSize(13))
 			{
 				Name = "Font Book Font",
+				HAnchor = HAnchor.Stretch,
 				Margin = new BorderDouble(left: Gap),
 			};
 			foreach ((string name, _) in FontOptions)
@@ -194,9 +199,12 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			this.FontPicker.TextColor = palette.TextColor;
 			this.FilterField.ActualTextEditWidget.TextColor = palette.TextColor;
 			this.FilterField.BackgroundColor = palette.WidgetBackground;
-			this.ClearFilterButton.BackgroundColor = this.kit.Theme.ButtonBackgroundColor;
-			this.ClearFilterButton.HoverColor = this.kit.Theme.SlightShade;
-			this.ClearFilterButton.MouseDownColor = this.kit.Theme.MinimalShade;
+			// agg-gui's plain Button: the accent fill with white lettering.
+			Color accent = DemoTheme.ColorOf(this.demoTheme.Accent);
+			this.ClearFilterButton.BackgroundColor = accent;
+			this.ClearFilterButton.TextColor = Color.White;
+			this.ClearFilterButton.HoverColor = new Color(accent, 220);
+			this.ClearFilterButton.MouseDownColor = new Color(accent, 180);
 
 			// The grid reads the theme as it draws.
 			this.Grid.Invalidate();

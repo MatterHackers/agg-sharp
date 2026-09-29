@@ -11,7 +11,7 @@
 # local run and CI build the same thing. Prints the folder to serve as its last line.
 #
 # Needs the wasm-tools workload (`dotnet workload install wasm-tools`): LinkEmdawnWebGpu=true is the
-# emcc relink that makes the page paint. The first link seeds a ~215 MB Emscripten cache under
+# emcc relink that makes the page paint, and AOT compilation needs it too. The first link seeds a ~215 MB Emscripten cache under
 # WebGpu/Browser/emscripten-cache (see WebGpu/build/WebGpuBrowser.targets); later ones reuse it.
 #
 # Serve the output from any static server, at a domain root or under a subpath - index.html uses a
@@ -23,8 +23,9 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 project="$root/examples/AggSharpDemo/AggSharpDemo.Browser/AggSharpDemo.Browser.csproj"
 site="$root/examples/AggSharpDemo/AggSharpDemo.Browser/bin/Release/net10.0/publish/wwwroot"
 
-# Release, because it runs the trimmer: the site is a download, and the providers survive trimming
-# (they are resolved by type name and ILLink keeps them - see examples/BrowserHost/README.md).
+# Release, because publish then trims every assembly and compiles it to wasm ahead of time (the
+# project's TrimMode and RunAOTCompilation). The browser providers are resolved by type name; the
+# DynamicDependency attributes on BrowserHostBootstrap.InitializeAsync are what keep them.
 dotnet publish "$project" -c Release -p:LinkEmdawnWebGpu=true >&2
 
 # Jekyll drops every path that starts with an underscore - Blazor's whole _framework folder. The

@@ -138,7 +138,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 				AnchoredPopup.CloseBehaviors.Select(b => b.Description).ToArray());
 
 			var openRow = this.Row("let popup_open = ");
-			this.OpenCheckBox = new CheckBox("", this.theme.TextColor, this.theme.DefaultFontSize)
+			this.OpenCheckBox = new CheckBox("", this.theme.TextColor, DemoText.Points(DemoText.BodyPixels))
 			{
 				Name = "Popups Open",
 				VAnchor = VAnchor.Center,
@@ -153,7 +153,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			};
 			this.panel.AddChild(this.separator);
 
-			this.menusPointer = new WrappedTextWidget("For nested submenus, checkmarks, radios and shortcuts, see the Menus demo.", this.theme.DefaultFontSize - 2);
+			this.menusPointer = new WrappedTextWidget("For nested submenus, checkmarks, radios and shortcuts, see the Menus demo.", DemoText.Points(12));
 			this.panel.AddChild(this.menusPointer);
 
 			// The band under the configurator: the trigger and what it does. Its deep bottom padding is agg-gui's
@@ -166,28 +166,28 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			};
 			root.AddChild(band);
 
-			this.Trigger = new ThemedTextButton(TriggerText, this.theme)
+			this.Trigger = this.demoTheme.AccentButton(new ThemedTextButton(TriggerText, this.theme)
 			{
 				Name = "Popups Trigger",
 				HAnchor = HAnchor.Center,
 				ToolTipText = TriggerTip,
-			};
+			});
 			this.Trigger.MouseDown += this.Trigger_MouseDown;
 			band.AddChild(this.Trigger);
 
-			this.hintText = this.Text("Left-click: popup (menu)   Right-click: context menu", this.theme.DefaultFontSize - 2);
+			this.hintText = this.Text("Left-click: popup (menu)   Right-click: context menu", DemoText.Points(12));
 			this.hintText.HAnchor = HAnchor.Center;
 			this.hintText.VAnchor = VAnchor.Absolute;
 			this.hintText.Margin = new BorderDouble(0, 0, 0, 6);
 			band.AddChild(this.hintText);
 
-			this.ContextActionText = this.Text("", this.theme.DefaultFontSize - 2);
+			this.ContextActionText = this.Text("", DemoText.Points(12));
 			this.ContextActionText.Name = "Popups Context Action";
 			this.ContextActionText.HAnchor = HAnchor.Center;
 			this.ContextActionText.VAnchor = VAnchor.Absolute;
 			band.AddChild(this.ContextActionText);
 
-			this.PopupPanel = new PopupsPopupPanel(this.theme.DefaultFontSize);
+			this.PopupPanel = new PopupsPopupPanel(DemoText.Points(DemoText.BodyPixels));
 
 			// agg-gui's paint_popup shadow: the panel's rounded rect in 22% black, 4 px right and down, unblurred.
 			// A sibling under the panel rather than part of it, since a widget cannot paint past its own bounds
@@ -514,7 +514,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 		/// <summary>A caption of the code-style configurator.</summary>
 		private TextWidget Code(string text)
 		{
-			TextWidget widget = this.Text(text, this.theme.DefaultFontSize);
+			TextWidget widget = this.Text(text, DemoText.Points(DemoText.BodyPixels));
 			widget.Margin = new BorderDouble(0, 3, 8, 3);
 			return widget;
 		}
@@ -531,7 +531,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 		private DropDownList ComboRow(string caption, string name, IEnumerable<string> options, string[] tips)
 		{
 			FlowLayoutWidget row = this.Row(caption);
-			var combo = new DropDownList("", this.theme.TextColor, pointSize: this.theme.DefaultFontSize)
+			var combo = new DropDownList("", this.theme.TextColor, pointSize: DemoText.Points(DemoText.BodyPixels))
 			{
 				Name = name,
 				VAnchor = VAnchor.Center,

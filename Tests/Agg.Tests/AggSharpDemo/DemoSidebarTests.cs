@@ -23,6 +23,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg.UI;
@@ -124,7 +126,11 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		{
 			GuiDemoShell shell = CreateShell();
 			await Assert.That(shell.Sidebar.AboutRow.Name).IsEqualTo("Sidebar About");
+			// Open on a first run, as agg-gui's is; the row closes and reopens it.
+			await Assert.That(shell.Windows.IsOpen(GuiDemoSpecs.About)).IsTrue();
+			shell.Sidebar.AboutRow.InvokeClick();
 			await Assert.That(shell.Windows.IsOpen(GuiDemoSpecs.About)).IsFalse();
+			await Assert.That(shell.Sidebar.IsRowOn(GuiDemoSpecs.About)).IsFalse();
 
 			shell.Sidebar.AboutRow.InvokeClick();
 
@@ -171,6 +177,66 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(sidebar.HeaderOf("Widgets").Visible).IsTrue();
 			await Assert.That(sidebar.RowOf(Spec("Sliders")).Visible).IsFalse();
 			await Assert.That(sidebar.RowOf(Spec("Lion")).Visible).IsTrue();
+		}
+
+		[Test]
+		public async Task GroupHeaderDrawsAVectorTriangleThatFollowsTheOpenState()
+		{
+			GuiDemoShell shell = CreateShell(new DemoTheme(ThemePreference.Dark));
+			SidebarGroupHeader header = shell.Sidebar.HeaderOf("Widgets");
+
+			// The name alone is lettered; the ▼/► glyphs the default font lacks are gone.
+			TextWidget label = header.Descendants<TextWidget>().Single();
+			await Assert.That(label.Text).IsEqualTo("Widgets");
+			await Assert.That(label.Position.X).IsEqualTo(SidebarGroupHeader.LabelX * GuiWidget.DeviceScale);
+
+			// Open: a flat top edge with the apex below it (y-up), pointing down.
+			await Assert.That(header.IsOpen).IsTrue();
+			var open = Points(header.TrianglePath());
+			await Assert.That(open.Count).IsEqualTo(3);
+			await Assert.That(open[0].Y).IsEqualTo(open[1].Y);
+			await Assert.That(open[2].Y).IsLessThan(open[0].Y);
+			await Assert.That(open[2].X).IsEqualTo((open[0].X + open[1].X) / 2);
+
+			// Collapsed: a vertical left edge with the apex to its right, pointing right.
+			header.InvokeClick();
+			await Assert.That(header.IsOpen).IsFalse();
+			var closed = Points(header.TrianglePath());
+			await Assert.That(closed[0].X).IsEqualTo(closed[1].X);
+			await Assert.That(closed[2].X).IsGreaterThan(closed[0].X);
+			await Assert.That(closed[2].Y).IsEqualTo((closed[0].Y + closed[1].Y) / 2);
+
+			// Drawn: the band tints the whole row, the top line is the separator, and the triangle is text_dim.
+			var image = new Image.ImageBuffer((int)header.Width, (int)header.Height);
+			header.OnDraw(image.NewGraphics2D());
+			DemoPalette palette = new DemoTheme(ThemePreference.Dark).Palette;
+			Color band = image.GetPixel((int)header.Width - 2, (int)header.Height / 2);
+			Color top = image.GetPixel((int)header.Width - 2, (int)header.Height - 1);
+			await Assert.That(band.alpha).IsEqualTo((byte)Math.Round(255 * SidebarGroupHeader.BandAlpha));
+			await Assert.That(top.alpha).IsEqualTo(palette.Separator.alpha);
+			Color triangle = image.GetPixel((int)(closed[0].X + 1), (int)closed[2].Y);
+			await Assert.That(triangle.alpha).IsGreaterThan((byte)100);
+		}
+
+		[Test]
+		public async Task SearchPlaceholderLeadsWithAMagnifierThatHidesOnceTyping()
+		{
+			GuiDemoShell shell = CreateShell();
+			DemoSidebar sidebar = shell.Sidebar;
+
+			await Assert.That(sidebar.SearchIcon.Visible).IsTrue();
+			await Assert.That(sidebar.Search.NoContentFieldDescription.Position.X).IsGreaterThanOrEqualTo(
+				sidebar.SearchIcon.Position.X + sidebar.SearchIcon.Width);
+
+			sidebar.Search.Text = "lion";
+			await Assert.That(sidebar.SearchIcon.Visible).IsFalse();
+			sidebar.Search.Text = "";
+			await Assert.That(sidebar.SearchIcon.Visible).IsTrue();
+		}
+
+		private static List<VectorMath.Vector2> Points(VertexSource.IVertexSource path)
+		{
+			return path.Vertices().Where(v => v.IsMoveTo || v.IsLineTo).Select(v => v.Position).ToList();
 		}
 
 		[Test]

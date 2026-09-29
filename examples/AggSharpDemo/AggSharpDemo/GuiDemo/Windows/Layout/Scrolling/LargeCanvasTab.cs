@@ -113,7 +113,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Layout.Scrolling
 				RectangleDouble clip = ScrollOffsets.LocalClippingRect(graphics2D);
 				this.LastDrawnRows = ScrollOffsets.VisibleRows(bounds.Top, Math.Max(clip.Bottom, bounds.Bottom), Math.Min(clip.Top, bounds.Top), RowHeight * s, RowCount);
 				Color text = this.demoTheme.Palette.TextColor;
-				double pointSize = this.demoTheme.Theme.DefaultFontSize * s;
+				double pointSize = DemoText.Points(12) * s;
 				for (int row = this.LastDrawnRows.First; row < this.LastDrawnRows.End; row++)
 				{
 					double middle = bounds.Top - (row + .5) * RowHeight * s;

@@ -52,7 +52,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Graphics
 			this.VAnchor = VAnchor.Stretch;
 			this.Padding = new BorderDouble(8);
 
-			var label = new TextWidget("Alpha", pointSize: 12, textColor: demoTheme.Palette.TextColor)
+			var label = new TextWidget("Alpha", pointSize: DemoText.Points(12), textColor: demoTheme.Palette.TextColor)
 			{
 				HAnchor = HAnchor.Left,
 				Margin = new BorderDouble(bottom: Gap),
@@ -72,7 +72,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Graphics
 				VAnchor = VAnchor.Center,
 			};
 			sliderRow.AddChild(this.AlphaSlider);
-			this.alphaText = new TextWidget("1.00", pointSize: 12, textColor: demoTheme.Palette.TextColor)
+			this.alphaText = new TextWidget("1.00", pointSize: DemoText.Points(12), textColor: demoTheme.Palette.TextColor)
 			{
 				VAnchor = VAnchor.Center,
 				Margin = new BorderDouble(left: 8),
@@ -80,7 +80,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Graphics
 			sliderRow.AddChild(this.alphaText);
 			this.AddChild(sliderRow);
 
-			var note = new WrappedTextWidget(NoteText, pointSize: 11, textColor: demoTheme.Palette.TextColor)
+			var note = new WrappedTextWidget(NoteText, pointSize: DemoText.Points(11), textColor: demoTheme.Palette.TextColor)
 			{
 				Name = "Lion Note",
 				HAnchor = HAnchor.Stretch,

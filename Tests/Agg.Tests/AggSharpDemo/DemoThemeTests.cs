@@ -97,7 +97,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		}
 
 		[Test]
-		[NotInParallel(new[] { MatterHackers.Agg.UI.Tests.SystemServicesTests.NotInParallelKey, nameof(AutomationRunner.ShowWindowAndExecuteTests), nameof(MatterHackers.Agg.UI.ThemeConfig.Current) })]
+		[NotInParallel(new[] { MatterHackers.Agg.UI.Tests.SystemServicesTests.NotInParallelKey, SharedStateKeys.MarkdownWidget, SharedStateKeys.ThemeConfigCurrent })]
 		public async Task TheShellsDefaultThemeAsksSystemAppearance()
 		{
 			var saved = SystemAppearance.Provider;
@@ -147,6 +147,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		}
 
 		[Test]
+		[NotInParallel(new[] { SharedStateKeys.ThemeConfigCurrent, SharedStateKeys.MarkdownWidget })] // the shell opens About's MarkdownWidget
 		public async Task ShellRecoloursOnThemeChange()
 		{
 			var demoTheme = new DemoTheme(ThemePreference.Dark);

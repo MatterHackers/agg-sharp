@@ -43,11 +43,12 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tools
 	/// </summary>
 	public class SystemFontTab : ScrollableWidget
 	{
-		/// <summary>The faces agg-sharp embeds; agg-gui's catalogue of shipped fonts is not bundled.</summary>
+		/// <summary>The faces agg-sharp embeds and the demo's Nunito; agg-gui's catalogue of shipped fonts is not bundled.</summary>
 		public static readonly IReadOnlyList<(string Name, Func<TypeFace> Face)> FontOptions = new (string, Func<TypeFace>)[]
 		{
 			("Liberation Sans", () => LiberationSansFont.Instance),
 			("Liberation Sans Bold", () => LiberationSansBoldFont.Instance),
+			("Nunito", () => DemoText.Nunito),
 		};
 
 		/// <summary>agg-gui's BASE_POINT_SIZE: the body-text size the point size field shows at a size scale of 1.</summary>
@@ -70,18 +71,20 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tools
 			this.ScrollArea.HAnchor = HAnchor.Stretch;
 
 			FlowLayoutWidget column = kit.Column();
-			column.Margin = new BorderDouble(14);
+			// Padding, not Margin: the scroll area lays a Stretch child over its whole width, margin or not, so
+			// only padding keeps the text off the window's edge.
+			column.Padding = new BorderDouble(12, 12, 20, 12);
 			this.AddChild(column);
 
-			column.AddChild(kit.Wrapped("Process-wide text rendering settings.  Changes apply on the next frame.", 13));
+			column.AddChild(this.Description("Process-wide text rendering settings.  Changes apply on the next frame.", 13));
 			column.AddChild(this.Separator());
 
-			column.AddChild(kit.Label("Font", 16));
-			column.AddChild(kit.Wrapped("Sets the system font for every widget built after the change.", 13));
+			column.AddChild(this.Heading("Font"));
+			column.AddChild(this.Description("Sets the system font for every widget built after the change.", 13));
 			this.Font = new DropDownList("Other", kit.Theme.TextColor, pointSize: kit.FontSize(14))
 			{
 				Name = "System Font",
-				HAnchor = HAnchor.Left | HAnchor.Fit,
+				HAnchor = HAnchor.Stretch,
 				Margin = new BorderDouble(0, 4),
 			};
 			foreach ((string name, _) in FontOptions)
@@ -102,12 +105,12 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tools
 
 			// Displayed as the body-text point size, stored as the size scale every text widget's own size is
 			// multiplied by, as agg-gui does. Applied when the edit completes (Enter or leaving the field).
-			column.AddChild(kit.Label("Point size", 16));
-			column.AddChild(kit.Wrapped("Body-text size in points.  Scales every label proportionally.  Range 7–42 pt.", 13));
+			column.AddChild(this.Heading("Point size"));
+			column.AddChild(this.Description("Body-text size in points.  Scales every label proportionally.  Range 7–42 pt.", 13));
 			this.PointSize = new ThemedNumberEdit(
 				TextStyleSettings.SizeScale * BasePointSize,
 				kit.Theme,
-				pixelWidth: 60 * GuiWidget.DeviceScale,
+				pixelWidth: 80 * GuiWidget.DeviceScale,
 				allowDecimals: true,
 				minValue: 7,
 				maxValue: 42,
@@ -116,20 +119,24 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tools
 				Name = "System Point Size",
 				Margin = new BorderDouble(0, 4),
 			};
+
+			// agg-gui's DragValue shows the size to one decimal: "14.0".
+			this.PointSize.Text = FormatPointSize(this.PointSize.Value);
 			this.PointSize.ActuallNumberEdit.EditComplete += (s, e) =>
 			{
 				this.Apply(() => TextStyleSettings.SizeScale = this.PointSize.Value / BasePointSize);
+				this.PointSize.Text = FormatPointSize(this.PointSize.Value);
 			};
 			column.AddChild(this.PointSize);
 			column.AddChild(this.Separator());
 
-			column.AddChild(kit.Label("LCD subpixel text", 16));
-			column.AddChild(kit.Wrapped("Renders text using per-channel R/G/B coverage for sharper edges on LCD displays.", 13));
+			column.AddChild(this.Heading("LCD subpixel text"));
+			column.AddChild(this.Description("Renders text using per-channel R/G/B coverage for sharper edges on LCD displays.", 13));
 			this.Lcd = this.ToggleRow(column, "System LCD", "Enable LCD subpixel rendering", LcdRenderSettings.Enabled, on => LcdRenderSettings.Enabled = on);
 			column.AddChild(this.Separator());
 
-			column.AddChild(kit.Label("Hinting", 16));
-			column.AddChild(kit.Wrapped(
+			column.AddChild(this.Heading("Hinting"));
+			column.AddChild(this.Description(
 				"Snaps glyph baselines to whole pixels for crisper text at small sizes.  Required if you want LCD and grayscale "
 				+ "renderers to land on the same vertical position.", 13));
 			this.Hinting = this.ToggleRow(
@@ -137,8 +144,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tools
 			column.AddChild(this.Separator());
 
 			// Gamma and Primary Weight shape the LCD filter, so they change nothing while LCD text is off.
-			column.AddChild(kit.Label("Typography style", 16));
-			column.AddChild(kit.Wrapped("Process-wide style overrides applied to every glyph at paint time.  Defaults are pass-through.", 13));
+			column.AddChild(this.Heading("Typography style"));
+			column.AddChild(this.Description("Process-wide style overrides applied to every glyph at paint time.  Defaults are pass-through.", 13));
 			this.Gamma = this.StyleRow(column, "Gamma", "System Gamma", LcdRenderSettings.Gamma, .5, 2.5, .01, v => LcdRenderSettings.Gamma = v);
 			this.GlyphWidth = this.StyleRow(column, "Width", "System Width", TextStyleSettings.Width, .75, 1.25, .01, v => TextStyleSettings.Width = v);
 			this.Interval = this.StyleRow(column, "Interval", "System Interval", TextStyleSettings.Interval, -.2, .2, .001, v => TextStyleSettings.Interval = v);
@@ -286,13 +293,32 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tools
 			return slider;
 		}
 
+		/// <summary>The point size as the field shows it, to one decimal like agg-gui's: "14.0".</summary>
+		public static string FormatPointSize(double points) => points.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+
+		// agg-gui's section heading: a size 16 label with room below it before the description.
+		private TextWidget Heading(string text)
+		{
+			TextWidget heading = this.kit.Label(text, 16);
+			heading.Margin = new BorderDouble(0, 8, 0, 4);
+			return heading;
+		}
+
+		// A section's description, with room below it before the section's control.
+		private WrappedTextWidget Description(string text, double size)
+		{
+			WrappedTextWidget description = this.kit.Wrapped(text, size);
+			description.Margin = new BorderDouble(0, 8, 0, 0);
+			return description;
+		}
+
 		private GuiWidget Separator()
 		{
 			var line = new GuiWidget
 			{
 				HAnchor = HAnchor.Stretch,
 				Height = GuiWidget.DeviceScale,
-				Margin = new BorderDouble(0, 6),
+				Margin = new BorderDouble(0, 12),
 			};
 			this.separators.Add(line);
 			return line;

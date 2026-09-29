@@ -101,17 +101,17 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			var window = shell.ThreeDAnimation;
 			await Assert.That(window).IsNotNull();
 			await Assert.That(window.BarGrid.SsaaFactor).IsEqualTo(3);
-			await Assert.That(window.Ssaa.SelectedIndex).IsEqualTo(2);
+			await Assert.That(window.SsaaFactor).IsEqualTo(3);
 
 			// The panel drives the window's selector and bars...
 			shell.BackendPanel.SetSsaaFactor(4);
 			await Assert.That(window.BarGrid.SsaaFactor).IsEqualTo(4);
-			await Assert.That(window.Ssaa.SelectedIndex).IsEqualTo(3);
+			await Assert.That(window.SsaaButtons[3].BackgroundColor).IsNotEqualTo(window.SsaaButtons[0].BackgroundColor);
 
 			// ...and the window's selector drives the panel, across a close and reopen.
 			shell.Windows.SetOpen(spec, false);
 			shell.Windows.SetOpen(spec, true);
-			window.Ssaa.SelectedIndex = 0;
+			window.SsaaButtons[0].InvokeClick();
 			await Assert.That(shell.BackendPanel.SsaaFactor).IsEqualTo(1);
 			await Assert.That(shell.BackendPanel.SsaaControl.SelectedIndex).IsEqualTo(0);
 		}
@@ -151,7 +151,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		}
 
 		[Test]
-		[NotInParallel(new[] { nameof(AutomationRunner.ShowWindowAndExecuteTests), SharedStateKeys.ThemeConfigCurrent, SharedStateKeys.MarkdownWidget })]
+		[NotInParallel(new[] { SharedStateKeys.ThemeConfigCurrent, SharedStateKeys.MarkdownWidget })]
 		public async Task ClickingTheDrawerButtonOpensTheSidebarOnANarrowWindow()
 		{
 			var shell = new GuiDemoShell(new DemoTheme(ThemePreference.Dark));

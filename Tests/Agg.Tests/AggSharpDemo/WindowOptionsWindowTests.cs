@@ -46,6 +46,14 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		private static (WindowOptionsWindow Content, WindowWidget Window) Open(GuiWidget canvas, DemoTheme demoTheme)
 		{
 			var host = new DemoWindowHost(canvas, demoTheme);
+
+			// Every demo window has a collapse chevron by the same name; closing the first run's windows (About too)
+			// leaves this window's as the only one an automation click can find.
+			foreach (DemoSpec other in GuiDemoSpecs.DefaultOpen)
+			{
+				host.SetOpen(other, false);
+			}
+
 			host.SetOpen(Spec, true);
 			canvas.PerformLayout();
 			WindowWidget window = host.GetWindow(Spec);

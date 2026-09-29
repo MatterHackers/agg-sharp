@@ -57,13 +57,13 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Layout
 			this.HAnchor = HAnchor.Stretch;
 			this.VAnchor = VAnchor.Absolute;
 			ThemeConfig theme = demoTheme.Theme;
-			double buttonSize = theme.DefaultFontSize * 13 / 12;
+			double buttonSize = DemoText.Points(13);
 
 			this.ResetButton = new ThemedTextButton("Reset", theme, buttonSize) { Name = "Interactive Container Reset" };
 			this.ResetButton.Click += (s, e) => this.Count = 0;
 			this.PlusButton = new ThemedTextButton("+ 100", theme, buttonSize) { Name = "Interactive Container Plus 100" };
 			this.PlusButton.Click += (s, e) => this.Count += 100;
-			this.CountText = new TextWidget("0", pointSize: theme.DefaultFontSize * 32 / 12, textColor: theme.TextColor)
+			this.CountText = new TextWidget("0", pointSize: DemoText.Points(32), textColor: theme.TextColor)
 			{
 				Name = "Interactive Container Count",
 				HAnchor = HAnchor.Center,
@@ -181,10 +181,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Layout
 			this.CountText.TextColor = theme.TextColor;
 			foreach (ThemedTextButton button in new[] { this.ResetButton, this.PlusButton })
 			{
-				button.TextColor = theme.TextColor;
-				button.BackgroundColor = theme.ButtonBackgroundColor;
-				button.HoverColor = theme.SlightShade;
-				button.MouseDownColor = theme.MinimalShade;
+				this.demoTheme.StyleButton(button);
 			}
 
 			this.Invalidate();

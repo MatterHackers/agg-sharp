@@ -50,7 +50,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		// pixels); they are multiplied by GuiWidget.DeviceScale where a window is placed, so at 2x the windows
 		// open twice as many device pixels big, the size their doubled text needs.
 
-		/// <summary>app_builder.rs tiles for this canvas height until the canvas has been laid out.</summary>
+		/// <summary>app_builder.rs's default_canvas_h: the canvas height every default rectangle is laid out
+		/// for, whatever the real canvas's height. The layout then hangs from the real canvas's top.</summary>
 		public const double DefaultCanvasHeight = 720;
 
 		/// <summary>The width tiled for until the canvas has been laid out: wide enough for specs.rs's four columns.</summary>
@@ -67,8 +68,12 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// window is inset by this much, so the widget is grown by it to make the visible card the spec's size.</summary>
 		internal const double GrabBorder = 5;
 
-		/// <summary>app_builder.rs's default About rectangle (x, y up from the bottom, width, height).</summary>
-		private static readonly RectangleDouble AboutRect = new RectangleDouble(80, 80, 80 + 360, 80 + 420);
+		/// <summary>The band under a window's top that must not be wholly covered for it to count as showing its
+		/// title bar, in design units (below a 4 unit inset); WindowWidget's bar is taller.</summary>
+		private const double TitleBarBand = 16;
+
+		/// <summary>app_builder.rs's default About rectangle (x, y up from the bottom of the 720 canvas).</summary>
+		private static readonly RectangleDouble AboutRect = new RectangleDouble(80, 80, 80 + 440, 80 + 500);
 
 		/// <summary>app_builder.rs's INSPECTOR_DEFAULT_BOUNDS, kept on a narrower canvas.</summary>
 		private static readonly RectangleDouble InspectorRect = new RectangleDouble(960, 60, 960 + 320, 60 + 520);
@@ -85,6 +90,10 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// <summary>Windows still where the host put them (their tile or restored rectangle); they are placed
 		/// again whenever the canvas changes size. A user's drag takes a window out.</summary>
 		private readonly HashSet<DemoSpec> followsCanvas = new HashSet<DemoSpec>();
+
+		/// <summary>True until anything restacks, opens, closes or moves a window after the default layout was
+		/// made: until then the default windows are restacked for each canvas size (<see cref="ApplyDefaultStacking"/>).</summary>
+		private bool keepDefaultStacking;
 
 		/// <summary>Rectangles restored from a previous run; they replace the tile until Organize.</summary>
 		private readonly Dictionary<DemoSpec, RectangleDouble> restoredRects = new Dictionary<DemoSpec, RectangleDouble>();
@@ -105,10 +114,13 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			// before any window, so its guide overlay is the canvas's first child and the windows keep the rest
 			this.Snap = new SnapCoordinator(canvas);
 
-			foreach (DemoSpec spec in GuiDemoSpecs.All.Where(s => s.OpenByDefault))
+			foreach (DemoSpec spec in GuiDemoSpecs.DefaultOpen)
 			{
 				this.SetOpen(spec, true);
 			}
+
+			this.keepDefaultStacking = true;
+			this.ApplyDefaultStacking();
 
 			this.canvas.BoundsChanged += this.Canvas_BoundsChanged;
 			this.demoTheme.ThemeChanged += this.DemoTheme_ThemeChanged;
@@ -144,6 +156,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 				return;
 			}
 
+			this.keepDefaultStacking = false;
+
 			if (open)
 			{
 				if (!this.windows.TryGetValue(spec, out WindowWidget window))
@@ -176,6 +190,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		{
 			if (this.IsOpen(spec))
 			{
+				this.keepDefaultStacking = false;
 				this.windows[spec].BringToFront();
 				this.LayoutChanged?.Invoke(this, EventArgs.Empty);
 			}
@@ -225,6 +240,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		public void RestoreRect(DemoSpec spec, RectangleDouble visible)
 		{
 			this.restoredRects[spec] = visible;
+			this.keepDefaultStacking = false;
 			if (this.windows.TryGetValue(spec, out WindowWidget window))
 			{
 				this.Place(spec, window);
@@ -272,40 +288,147 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// <summary>
 		/// specs.rs's tile_rect: the visible window's rectangle (y up) for the spec at <paramref name="index"/>
 		/// in a canvas <paramref name="canvasWidth"/> x <paramref name="canvasHeight"/>. Four columns of WIN_W x
-		/// WIN_H cells from the top left; a row that would run off the bottom is re-anchored near the top with a
-		/// small stagger.
+		/// WIN_H cells from the top left of app_builder.rs's 720-tall default canvas; a row that would run off
+		/// its bottom is re-anchored near the top with a small stagger.
 		/// </summary>
 		/// <remarks>
-		/// Unlike specs.rs, the columns wrap to the canvas width (a 1200-wide browser page leaves the canvas about
-		/// 780 wide, room for two), a window wider than its cell is pulled left to fit, and one bigger than the
-		/// canvas (SVG Test is 960 wide) is shrunk to it, as <see cref="ClampToCanvas"/> does: a window that
-		/// opens off-screen looks broken to someone who does not know it is there. On a canvas wide enough for
-		/// four columns this is specs.rs's tiling unchanged.
+		/// The 720-tall layout hangs from the real canvas's top (a window the user has not moved follows the
+		/// canvas), so on a 720 canvas every rectangle is agg-gui's. The rectangle is then moved (and if need be
+		/// shrunk, as <see cref="ClampToCanvas"/> does) onto the canvas, as agg-gui keeps its windows on its
+		/// canvas: a column past the right edge is pulled left, as Code Example is on agg-gui's ~980-wide
+		/// canvas. A window that opens off-screen looks broken to someone who does not know it is there.
 		/// </remarks>
 		public static RectangleDouble TileRect(int index, double canvasWidth, double canvasHeight, double width, double height)
 		{
 			// The arguments are device pixels; specs.rs's cell, gap, origin and stagger are design units.
 			double scale = GuiWidget.DeviceScale;
+			double frameHeight = DefaultCanvasHeight * scale;
 			double gap = TileGap * scale;
 			double origin = TileOrigin * scale;
 			double edge = 4 * scale;
-			width = Math.Min(width, canvasWidth);
-			height = Math.Min(height, canvasHeight);
-			double pitch = GuiDemoSpecs.DefaultWindowWidth * scale + gap;
-			int columns = Math.Clamp((int)((canvasWidth - origin + gap) / pitch), 1, TileColumns);
-			int column = index % columns;
-			int row = index / columns;
-			double x = Math.Max(0, Math.Min(origin + column * pitch, canvasWidth - width));
+			int column = index % TileColumns;
+			int row = index / TileColumns;
+			double x = origin + column * (GuiDemoSpecs.DefaultWindowWidth * scale + gap);
 			double yDown = origin + row * (GuiDemoSpecs.DefaultWindowHeight * scale + gap);
-			double y = canvasHeight - yDown - height;
+			double y = frameHeight - yDown - height;
 			if (y < edge)
 			{
-				double topY = Math.Max(canvasHeight - height - origin, edge);
+				double topY = Math.Max(frameHeight - height - origin, edge);
 				double stagger = index * 24.0 % 200.0 * scale;
 				y = Math.Max(topY - stagger, edge);
 			}
 
-			return new RectangleDouble(x, y, x + width, y + height);
+			return FromDefaultCanvas(new RectangleDouble(x, y, x + width, y + height), canvasWidth, canvasHeight);
+		}
+
+		/// <summary>
+		/// The first run's stacking of the default windows (<see cref="GuiDemoSpecs.DefaultOpen"/>) at their current
+		/// places, from the back to the front: that list's order, About on top, except that a window whose title bar
+		/// the ones above it hide completely is moved up past them one at a time until some of it shows. On a canvas
+		/// narrower than agg-gui's the pulled-in columns can put one window entirely under another (Code Example
+		/// under Lion), open but impossible to find.
+		/// </summary>
+		public IReadOnlyList<DemoSpec> DefaultStacking()
+		{
+			var order = GuiDemoSpecs.DefaultOpen.ToList();
+			if (!order.All(this.windows.ContainsKey))
+			{
+				return order;
+			}
+
+			// Bounded: moving one window up can hide another, and two could keep trading places.
+			for (int step = 0; step < order.Count * order.Count; step++)
+			{
+				int hidden = -1;
+				for (int i = 0; i < order.Count - 1 && hidden < 0; i++)
+				{
+					if (this.TitleBarHidden(order[i], order.Skip(i + 1)))
+					{
+						hidden = i;
+					}
+				}
+
+				if (hidden < 0)
+				{
+					break;
+				}
+
+				(order[hidden], order[hidden + 1]) = (order[hidden + 1], order[hidden]);
+			}
+
+			return order;
+		}
+
+		/// <summary>Stacks the default windows as <see cref="DefaultStacking"/> says. Does nothing once the user has
+		/// restacked, opened, closed or moved anything, or while the canvas has no size yet.</summary>
+		public void ApplyDefaultStacking()
+		{
+			if (!this.keepDefaultStacking
+				|| this.canvas.Height <= 0
+				|| !GuiDemoSpecs.DefaultOpen.All(this.IsOpen))
+			{
+				return;
+			}
+
+			foreach (DemoSpec spec in this.DefaultStacking())
+			{
+				this.windows[spec].BringToFront();
+			}
+		}
+
+		/// <summary>Makes the first run's layout again (app_builder.rs's on_reset_all): only the default windows
+		/// open, in their default places and stacking.</summary>
+		public void ResetToDefaultLayout()
+		{
+			foreach (DemoSpec spec in GuiDemoSpecs.All.Append(GuiDemoSpecs.About).Append(GuiDemoSpecs.Inspector))
+			{
+				this.SetOpen(spec, spec.OpenByDefault);
+			}
+
+			this.Organize();
+			if (this.windows.TryGetValue(GuiDemoSpecs.About, out WindowWidget about))
+			{
+				this.Place(GuiDemoSpecs.About, about);
+			}
+
+			foreach (DemoSpec spec in GuiDemoSpecs.DefaultOpen)
+			{
+				this.windows[spec].BringToFront();
+			}
+
+			this.keepDefaultStacking = true;
+			this.ApplyDefaultStacking();
+			this.LayoutChanged?.Invoke(this, EventArgs.Empty);
+		}
+
+		/// <summary>Whether the windows <paramref name="above"/> cover every point of the band across the top of
+		/// <paramref name="spec"/>'s window, so none of its title bar can be seen or grabbed.</summary>
+		private bool TitleBarHidden(DemoSpec spec, IEnumerable<DemoSpec> above)
+		{
+			var covers = above.Select(s => this.GetVisibleRect(s).Value).ToList();
+			RectangleDouble rect = this.GetVisibleRect(spec).Value;
+			double scale = GuiWidget.DeviceScale;
+			double step = 4 * scale;
+			for (double y = rect.Top - step; y > rect.Top - step - TitleBarBand * scale; y -= step)
+			{
+				for (double x = rect.Left + step; x < rect.Right - step; x += step)
+				{
+					if (!covers.Any(c => c.Contains(x, y)))
+					{
+						return false;
+					}
+				}
+			}
+
+			return true;
+		}
+
+		/// <summary><paramref name="rect"/>, laid out for app_builder.rs's 720-tall default canvas (y up), hung
+		/// from the top of the real canvas and moved onto it. Device pixels.</summary>
+		private static RectangleDouble FromDefaultCanvas(RectangleDouble rect, double canvasWidth, double canvasHeight)
+		{
+			rect.Offset(0, canvasHeight - DefaultCanvasHeight * GuiWidget.DeviceScale);
+			return ClampToCanvas(rect, canvasWidth, canvasHeight);
 		}
 
 		private WindowWidget CreateWindow(DemoSpec spec)
@@ -315,11 +438,14 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 				Name = spec.Title + " Window",
 				CornerRadius = 8,
 
-				// agg-gui's windows maximize from a title bar button or a double-click on the bar.
+				// agg-gui's windows maximize from a title bar button or a double-click on the bar, and fold up
+				// to their title from the chevron at its left.
 				Maximizable = true,
+				Collapsible = true,
 
 				// agg-gui's shadow (blur 14, offset 2, 6) is wider than WindowWidget's grab border, which is all
-				// the room its shadow has; this keeps the same direction within that border.
+				// the room its shadow has; this keeps the same direction within that border, and ApplyTheme
+				// darkens it so it reads as heavy as agg-gui's.
 				ShadowBlur = 3.5,
 				ShadowOffset = new Vector2(0.5, -1.5),
 
@@ -327,7 +453,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 				// blit rather than a repaint while others animate. SetOpen turns it off while the window is closed.
 				DoubleBuffer = true,
 			};
-			window.AddTitleBar(spec.Title, () => this.SetOpen(spec, false));
+			// No close action here: DemoWindowChrome adds agg-gui's bold close X in place of the library's glyph.
+			window.AddTitleBar(spec.Title, null);
+			DemoWindowChrome.Attach(window, this.demoTheme, () => this.SetOpen(spec, false));
 			AddTitleIcon(spec, window);
 			this.AddContent(spec, window);
 			this.ApplyTheme(window);
@@ -369,7 +497,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			else
 			{
 				visible = spec == GuiDemoSpecs.About
-					? Scaled(AboutRect, scale)
+					? FromDefaultCanvas(Scaled(AboutRect, scale), laidOut ? this.canvas.Width : DefaultCanvasWidth * scale, laidOut ? this.canvas.Height : DefaultCanvasHeight * scale)
 					: spec == GuiDemoSpecs.Inspector
 					? (laidOut ? ClampToCanvas(Scaled(InspectorRect, scale), this.canvas.Width, this.canvas.Height) : Scaled(InspectorRect, scale))
 					: TileRect(
@@ -397,6 +525,13 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		private void AddContent(DemoSpec spec, WindowWidget window)
 		{
 			GuiWidget content = GuiDemoSpecs.CreateContent(spec, this.demoTheme);
+
+			// A window that scrolls itself (Widget Gallery, TextEdit, ...) gets the same floating bar and fade
+			// as the scroll area the host adds below.
+			if (content is ScrollableWidget scrollingContent)
+			{
+				this.demoTheme.StyleScroll(scrollingContent);
+			}
 			if (spec.VerticalScroll)
 			{
 				var scroll = new ScrollableWidget(autoScroll: true)
@@ -406,6 +541,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 					VAnchor = VAnchor.Stretch,
 				};
 				scroll.ScrollArea.HAnchor = HAnchor.Stretch;
+				this.demoTheme.StyleScroll(scroll);
 				content.HAnchor = HAnchor.Stretch;
 				content.VAnchor = VAnchor.Fit | VAnchor.Top;
 				scroll.AddChild(content);
@@ -549,8 +685,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			DemoPalette palette = this.demoTheme.Palette;
 			window.BackgroundColor = palette.WindowFill;
 			window.TitleBarColor = palette.WindowTitleFill;
-			window.ShadowColor = palette.WindowShadow;
+			window.ShadowColor = palette.WindowShadow.WithAlpha(Math.Min(255, palette.WindowShadow.alpha * 2));
 			window.WindowBorderColor = palette.WindowStroke;
+			DemoWindowChrome.ColorTitleRule(window, palette.Separator);
 			foreach (TextWidget title in window.TitleBar.Descendants<TextWidget>())
 			{
 				title.TextColor = palette.TextColor;
@@ -612,10 +749,16 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 					this.Place(spec, window);
 				}
 			}
+
+			this.ApplyDefaultStacking();
 		}
 
 		/// <summary>The user dragged <paramref name="spec"/>'s window (moved or resized it): it stays where they
 		/// put it from now on, whatever the canvas does.</summary>
-		private void StopFollowingCanvas(DemoSpec spec) => this.followsCanvas.Remove(spec);
+		private void StopFollowingCanvas(DemoSpec spec)
+		{
+			this.followsCanvas.Remove(spec);
+			this.keepDefaultStacking = false;
+		}
 	}
 }

@@ -131,10 +131,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Interaction
 			this.TextField.BackgroundColor = this.demoTheme.Palette.WidgetBackground;
 			foreach (ThemedTextButton button in new[] { this.IncrementButton, this.ZeroButton })
 			{
-				button.BackgroundColor = this.kit.Theme.ButtonBackgroundColor;
-				button.TextColor = this.kit.Theme.TextColor;
-				button.HoverColor = this.kit.Theme.SlightShade;
-				button.MouseDownColor = this.kit.Theme.MinimalShade;
+				this.kit.DemoTheme.StyleButton(button);
 			}
 
 			this.Invalidate();

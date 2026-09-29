@@ -74,9 +74,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			row.AddChild(this.OpenSaveButton);
 			this.AddChild(row);
 
-			this.AddChild(this.Wrapped("Click one of the buttons to open a modal."));
-			this.AddChild(this.Wrapped("Modals have a backdrop and prevent interaction with the rest of the UI."));
-			this.AddChild(this.Wrapped("You can show modals on top of each other and close the topmost modal with escape or by clicking outside the modal."));
+			this.AddChild(this.Clipped("Click one of the buttons to open a modal."));
+			this.AddChild(this.Clipped("Modals have a backdrop and prevent interaction with the rest of the UI."));
+			this.AddChild(this.Clipped("You can show modals on top of each other and close the topmost modal with escape or by clicking outside the modal."));
 
 			this.AddChild(new Hyperlink("(source code)", this.theme, SourceUrl)
 			{
@@ -132,7 +132,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			nameField.ActualTextEditWidget.TextChanged += (s, e) => this.UserName = nameField.Text;
 			dialog.AddChild(this.FieldRow("Name:", nameField));
 
-			var roleList = new DropDownList("", this.theme.TextColor, pointSize: this.theme.DefaultFontSize)
+			var roleList = new DropDownList("", this.theme.TextColor, pointSize: DemoText.Points(DemoText.BodyPixels))
 			{
 				Name = "Modals Role",
 				VAnchor = VAnchor.Center,
@@ -301,14 +301,14 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 		private ThemedTextButton Button(string text, string name, Action click)
 		{
-			var button = new ThemedTextButton(text, this.theme) { Name = name, VAnchor = VAnchor.Center };
+			var button = this.demoTheme.AccentButton(new ThemedTextButton(text, this.theme) { Name = name, VAnchor = VAnchor.Center });
 			button.Click += (s, e) => click();
 			return button;
 		}
 
 		private TextWidget Label(string text)
 		{
-			var widget = new TextWidget(text, pointSize: this.theme.DefaultFontSize, textColor: this.theme.TextColor)
+			var widget = new TextWidget(text, pointSize: DemoText.Points(12), textColor: this.theme.TextColor)
 			{
 				HAnchor = HAnchor.Left,
 				Margin = new BorderDouble(0, 2),
@@ -318,11 +318,26 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			return widget;
 		}
 
+		// agg-gui's Label: one line as wide as the window, the rest clipped at its edge rather than wrapped.
+		private TextWidget Clipped(string text)
+		{
+			var widget = new TextWidget(text, pointSize: this.theme.DefaultFontSize, textColor: this.theme.TextColor)
+			{
+				AutoExpandBoundsToText = false,
+				EllipsisIfClipped = false,
+				HAnchor = HAnchor.Stretch,
+				Margin = new BorderDouble(0, 2),
+			};
+			this.texts.Add(widget);
+			return widget;
+		}
+
 		private WrappedTextWidget Wrapped(string text)
 		{
-			var widget = new WrappedTextWidget(text, this.theme.DefaultFontSize, textColor: this.theme.TextColor)
+			var widget = new WrappedTextWidget(text, DemoText.Points(11), textColor: this.theme.TextColor)
 			{
 				Margin = new BorderDouble(0, 2),
+				LineSpacing = DemoText.LineHeightFactor,
 			};
 			this.wrappedTexts.Add(widget);
 			return widget;

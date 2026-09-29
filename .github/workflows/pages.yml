@@ -25,7 +25,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # The publish AOT-compiles every assembly to wasm: about 3.5 minutes on a 10-core M-series mac from
+    # clean, so several times that on a 4-core runner, plus the workload install.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,7 +39,8 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # The emdawnwebgpu link (LinkEmdawnWebGpu=true) is an emcc relink, which only this workload has.
+      # The emdawnwebgpu link (LinkEmdawnWebGpu=true) is an emcc relink, and the publish's AOT compilation
+      # runs the same toolchain; only this workload has it.
       - name: Install wasm-tools
         run: dotnet workload install wasm-tools
 

@@ -31,7 +31,7 @@ using MatterHackers.Agg.UI;
 namespace MatterHackers.AggSharpDemo.GuiDemo
 {
 	/// <summary>
-	/// One <see cref="IconFont"/> glyph in a 16px square (the size menu glyph icons get), drawn in <see cref="Color"/>.
+	/// One <see cref="IconFont"/> glyph in a square, 16px by default (the size menu glyph icons get), drawn in <see cref="Color"/>.
 	/// agg-gui prefixes its titles with the codepoint and lets the text run render it; our text runs have no
 	/// Font Awesome fallback, so the glyph sits beside the text as its own widget.
 	/// </summary>
@@ -40,16 +40,21 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// <summary>The design-unit side of the square.</summary>
 		public const double IconSize = 16;
 
+		private readonly double size;
+
 		private Color color;
 
 		private ImageBuffer image;
 
-		public IconGlyphWidget(string glyph, Color color)
+		/// <param name="size">The square's side in design units; smaller than <see cref="IconSize"/> where the glyph
+		/// stands in a smaller run of text (the sidebar's 12px search placeholder).</param>
+		public IconGlyphWidget(string glyph, Color color, double size = IconSize)
 		{
 			this.Glyph = glyph;
 			this.color = color;
-			this.Width = IconSize * DeviceScale;
-			this.Height = IconSize * DeviceScale;
+			this.size = size;
+			this.Width = size * DeviceScale;
+			this.Height = size * DeviceScale;
 			this.Selectable = false;
 		}
 
@@ -73,7 +78,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			// Rendered once and kept until the colour changes, so a redraw is a blit
-			this.image ??= GlyphIcon.Render(this.Glyph, IconFont.TypeFace, this.color, (int)Math.Round(IconSize * DeviceScale));
+			this.image ??= GlyphIcon.Render(this.Glyph, IconFont.TypeFace, this.color, (int)Math.Round(this.size * DeviceScale));
 			if (this.image != null)
 			{
 				graphics2D.Render(this.image, 0, 0);

@@ -99,7 +99,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Layout.Scrolling
 			Color accent = this.demoTheme.Theme.PrimaryAccentColor;
 			Color stripe = palette.TextColor.WithAlpha(13);
 			Color highlightFill = accent.WithAlpha(64);
-			double pointSize = this.demoTheme.Theme.DefaultFontSize * this.PointSize / 12 * s;
+			double pointSize = DemoText.Points(this.PointSize) * s;
 			for (int row = this.LastDrawnRows.First; row < this.LastDrawnRows.End; row++)
 			{
 				double top = bounds.Top - row * rowHeight;

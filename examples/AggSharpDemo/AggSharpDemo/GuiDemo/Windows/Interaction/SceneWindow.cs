@@ -96,10 +96,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Interaction
 				separator.BackgroundColor = palette.Separator;
 				kit.Recolor();
 				this.Canvas.Recolor();
-				this.ResetButton.BackgroundColor = kit.Theme.ButtonBackgroundColor;
-				this.ResetButton.TextColor = kit.Theme.TextColor;
-				this.ResetButton.HoverColor = kit.Theme.SlightShade;
-				this.ResetButton.MouseDownColor = kit.Theme.MinimalShade;
+				kit.DemoTheme.StyleButton(this.ResetButton);
 			}
 
 			Recolor(null, null);

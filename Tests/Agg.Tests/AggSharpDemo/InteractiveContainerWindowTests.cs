@@ -74,7 +74,9 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			demoTheme.SetPreference(ThemePreference.Dark);
 			await Assert.That(window.BackgroundColor).IsEqualTo(demoTheme.Palette.PanelFill);
 			await Assert.That(container.CountText.TextColor).IsEqualTo(demoTheme.Theme.TextColor);
-			await Assert.That(container.PlusButton.TextColor).IsEqualTo(demoTheme.Theme.TextColor);
+			// agg-gui's buttons: white text on the accent, in either palette.
+			await Assert.That(container.PlusButton.TextColor).IsEqualTo(Color.White);
+			await Assert.That(container.PlusButton.BackgroundColor).IsEqualTo(DemoTheme.ColorOf(demoTheme.Accent));
 			window.OnDraw(image.NewGraphics2D());
 		}
 

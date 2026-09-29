@@ -74,6 +74,27 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(next.BackendPanel.InspectorPill.IsOn).IsTrue();
 		}
 
+		// agg-gui's inspector starts at its app's root, not at a window around it: in the AGG Demos runner the
+		// SystemWindow also holds the runner's demo list, several times as many widgets that are not the demo's.
+		[Test]
+		public async Task TheTreeStartsAtTheGuiDemosOwnRoot()
+		{
+			var outer = new SystemWindow(1200, 700) { Name = "Runner Around The Demo" };
+			GuiDemoShell shell = LaidOutShell();
+			outer.AddChild(shell.Parent);
+			shell.Windows.SetOpen(GuiDemoSpecs.Inspector, true);
+			var panel = (InspectorPanel)shell.Windows.GetWindow(GuiDemoSpecs.Inspector).FindDescendant(GuiDemoSpecs.Inspector.ContentName);
+
+			panel.RefreshNow();
+			await Assert.That(panel.Model.Root).IsSameReferenceAs(shell);
+
+			// Closed, it lets go of the tree.
+			shell.Windows.SetOpen(GuiDemoSpecs.Inspector, false);
+			panel.RefreshNow();
+			await Assert.That(panel.Model.Root).IsNull();
+			outer.Close();
+		}
+
 		[Test]
 		public async Task TheTreeSelectionAndSplitAreRememberedAcrossRuns()
 		{
@@ -121,9 +142,9 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 				testRunner.WaitFor(() => shell.Windows.IsOpen(GuiDemoSpecs.Inspector));
 				var panel = (InspectorPanel)shell.Windows.GetWindow(GuiDemoSpecs.Inspector).FindDescendant(GuiDemoSpecs.Inspector.ContentName);
 
-				// The timer's first refresh fills the tree with the page, starting at the SystemWindow.
+				// The timer's first refresh fills the tree with the page, starting at the GUI demo's own root.
 				testRunner.WaitFor(() => panel.Tree.Rows.Count > 1);
-				await Assert.That(panel.Model.Root).IsEqualTo(window);
+				await Assert.That(panel.Model.Root).IsEqualTo(shell);
 
 				RectangleDouble row = panel.Tree.RowBounds(1);
 				var rowCenter = new Point2D((int)row.Center.X, (int)row.Center.Y);

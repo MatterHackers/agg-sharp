@@ -278,8 +278,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Interaction
 			base.OnMouseLeaveBounds(mouseEvent);
 		}
 
-		/// <summary>agg-gui's point size <paramref name="aggGuiSize"/> in the theme's scale, in device pixels.</summary>
-		private double Points(double aggGuiSize) => this.demoTheme.Theme.DefaultFontSize * aggGuiSize / 12 * S;
+		/// <summary>agg-gui's pixel em <paramref name="aggGuiSize"/> as points at the device scale.</summary>
+		private double Points(double aggGuiSize) => DemoText.Points(aggGuiSize) * S;
 
 		/// <summary>The rows a column shows: all but the lifted item while it is being dragged.</summary>
 		private int VisibleCount(int column)

@@ -73,8 +73,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tests
 
 		private DemoPalette Palette => this.demoTheme.Palette;
 
-		// DefaultFontSize is an int, so divide as a double: agg-gui sizes are for its 12 point default.
-		private double FontScale => this.demoTheme.Theme.DefaultFontSize / 12.0;
+		// agg-gui sizes are pixel ems; this turns one into DrawString's points.
+		private double FontScale => DemoText.Points(1);
 
 		/// <summary>Forgets every gesture and the whole history (the window's Clear button).</summary>
 		public void Clear()

@@ -13,6 +13,18 @@
 		<!-- The [JSExport] on PaintState: the interop generator emits unsafe marshalling code, so the switch
 		     is required for a single attribute (SYSLIB1075), as in examples/BrowserHost. -->
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<!-- The site is a download: trim every assembly, not just the framework's (the default, partial,
+		     leaves agg whole). What is reached only by name is kept by annotation where it is reached - the
+		     browser providers in BrowserHostBootstrap - and trim analysis warnings are shown, not hidden,
+		     so a new one in a publish log is a question to answer. -->
+		<TrimMode>full</TrimMode>
+		<SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
+		<!-- Publish compiles the trimmed IL to wasm ahead of time: agg rasterizes on the CPU, and under the
+		     interpreter a lion drag frame is about four times slower. The IL is then stripped from the
+		     assemblies, as the AOT code replaces it. Needs the wasm-tools workload, as LinkEmdawnWebGpu does;
+		     a plain build and `dotnet run` stay interpreted. -->
+		<RunAOTCompilation>true</RunAOTCompilation>
+		<WasmStripILAfterAOT>true</WasmStripILAfterAOT>
 	</PropertyGroup>
 
 	<ItemGroup>

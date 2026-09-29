@@ -59,7 +59,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tests
 
 		private double ContentHeight => Math.Max((Math.Max(1, this.History.Entries.Count) * LineHeight + 12) * DeviceScale, this.viewportHeight);
 
-		private double FontSize => this.demoTheme.Theme.DefaultFontSize * 11 / 12;
+		private double FontSize => DemoText.Points(11);
 
 		/// <summary>Sets the height of the scroll viewport the view must at least fill.</summary>
 		public void SetViewportHeight(double height)

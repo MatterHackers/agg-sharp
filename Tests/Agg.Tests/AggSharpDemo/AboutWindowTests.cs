@@ -39,7 +39,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 {
 	// The GUI demo's About window (agg-gui's about in demo-ui/src/windows.rs). MarkdownWidget.Theme and
 	// LaunchBrowser are process-wide, so these do not run beside other tests that set them.
-	[NotInParallel(new[] { nameof(AutomationRunner.ShowWindowAndExecuteTests), nameof(MatterHackers.Agg.UI.ThemeConfig.Current), nameof(MarkdownWidget) })]
+	[NotInParallel(new[] { SharedStateKeys.MarkdownWidget, SharedStateKeys.ThemeConfigCurrent })]
 	public class AboutWindowTests
 	{
 		[Test]

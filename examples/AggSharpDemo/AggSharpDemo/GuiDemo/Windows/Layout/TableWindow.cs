@@ -117,6 +117,13 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Layout
 			options.AddChild(this.OptionBox("Table Overline", "Overline some rows", true, on => this.Overline = on));
 			options.AddChild(this.OptionBox("Table Resizable", "Resizable columns", true, on => this.Grid.ResizableColumns = on));
 			options.AddChild(this.OptionBox("Table Clickable", "Clickable rows", true, on => this.Grid.ClickableRows = on));
+
+			// table_demo.rs's FlexRow gap of 12 between the check boxes (the kit's Row gap is vertical only)
+			foreach (GuiWidget option in options.Children.Take(options.Children.Count - 1))
+			{
+				option.Margin = new BorderDouble(0, 0, 12, 0);
+			}
+
 			column.AddChild(options);
 
 			column.AddChild(this.kit.Label("Table type:"));

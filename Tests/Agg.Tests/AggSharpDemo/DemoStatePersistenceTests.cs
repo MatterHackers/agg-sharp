@@ -107,7 +107,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 
 			// A shell given garbage starts as if nothing had been saved.
 			GuiDemoShell shell = LaidOutShell(new MemoryStore("{garbage"));
-			await Assert.That(shell.Windows.ZOrder).IsEquivalentTo(GuiDemoSpecs.All.Where(s => s.OpenByDefault).ToList(), CollectionOrdering.Matching);
+			await Assert.That(shell.Windows.ZOrder.Select(s => s.Title).ToList()).IsEquivalentTo(shell.Windows.DefaultStacking().Select(s => s.Title).ToList(), CollectionOrdering.Matching);
 			await Assert.That(shell.DemoTheme.Preference).IsEqualTo(ThemePreference.System);
 		}
 

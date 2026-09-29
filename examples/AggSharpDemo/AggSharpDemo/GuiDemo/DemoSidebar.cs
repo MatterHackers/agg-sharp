@@ -47,6 +47,15 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// <summary>sidebar.rs's TB_HEIGHT: the height of one toggle row, in design units (times DeviceScale).</summary>
 		private const double RowHeight = 22;
 
+		/// <summary>collapsing_header.rs indents a group's content by INDENT / 2.</summary>
+		private const double GroupContentInset = SidebarGroupHeader.TriangleX / 2;
+
+		/// <summary>agg-gui's TextField corner radius.</summary>
+		private const double SearchRadius = 6;
+
+		/// <summary>The search placeholder's font size (12px), which its magnifier glyph matches.</summary>
+		private const double SearchIconSize = 12;
+
 		private readonly DemoTheme demoTheme;
 
 		private readonly DemoWindowHost host;
@@ -57,7 +66,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 		private readonly Dictionary<DemoSpec, ToggleRow> rows = new Dictionary<DemoSpec, ToggleRow>();
 
-		private readonly Dictionary<string, ThemedTextButton> groupHeaders = new Dictionary<string, ThemedTextButton>();
+		private readonly Dictionary<string, SidebarGroupHeader> groupHeaders = new Dictionary<string, SidebarGroupHeader>();
+
+		private readonly IconGlyphWidget searchIcon;
 
 		private readonly ThemedTextButton organizeButton;
 
@@ -83,16 +94,39 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			this.AddChild(this.heading);
 			this.AddChild(this.Separator(6, 4));
 
-			this.AboutRow = this.AddRow(this, GuiDemoSpecs.About, "About");
+			// sidebar.rs labels the About pill with FA info-circle; the About window's own title has no icon.
+			// The About pill lines up with the group rows' (as on agg-gui's site), so it gets their inset too.
+			this.AboutRow = this.AddRow(this, GuiDemoSpecs.About, "About", "\uF05A", GroupContentInset);
 			this.AddChild(this.Separator(0, 6));
 
-			this.Search = new ThemedTextEditWidget("", theme, messageWhenEmptyAndNotSelected: "Search...")
+			// agg-gui's TextField: radius 6 with a 1px outline rather than the square border, and a placeholder of
+			// "\u{F002}  Search…". Our text runs have no Font Awesome fallback, so the magnifier is its own widget,
+			// 12px like the placeholder, and the placeholder text starts after it.
+			this.Search = new ThemedTextEditWidget("", theme, messageWhenEmptyAndNotSelected: "Search…")
 			{
 				Name = "Sidebar Search",
 				HAnchor = HAnchor.Stretch,
 				Margin = new BorderDouble(10, 6, 10, 2),
+				Border = 0,
+				BackgroundRadius = SearchRadius * DeviceScale,
+				BackgroundOutlineWidth = 1 * DeviceScale,
 			};
-			this.Search.TextChanged += (s, e) => this.Filter.SetQuery(this.Search.Text);
+			this.searchIcon = new IconGlyphWidget(IconFont.Search, theme.EditFieldColors.Inactive.LightTextColor, SearchIconSize)
+			{
+				Name = "Sidebar Search Icon",
+				HAnchor = HAnchor.Left,
+				VAnchor = VAnchor.Center,
+				Margin = new BorderDouble(left: 5),
+			};
+			this.Search.AddChild(this.searchIcon);
+			// HAnchor.Left, not the default Absolute, so the margin is honoured
+			this.Search.NoContentFieldDescription.HAnchor = HAnchor.Left;
+			this.Search.NoContentFieldDescription.Margin = new BorderDouble(left: 5 + SearchIconSize + 5);
+			this.Search.TextChanged += (s, e) =>
+			{
+				this.searchIcon.Visible = this.Search.Text.Length == 0;
+				this.Filter.SetQuery(this.Search.Text);
+			};
 			this.AddChild(this.Search);
 
 			var scroll = new ScrollableWidget(autoScroll: true)
@@ -101,6 +135,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 				VAnchor = VAnchor.Stretch,
 			};
 			scroll.ScrollArea.HAnchor = HAnchor.Stretch;
+			demoTheme.StyleScroll(scroll);
 			this.AddChild(scroll);
 
 			var list = new FlowLayoutWidget(FlowDirection.TopToBottom)
@@ -111,14 +146,11 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 			foreach (string group in GuiDemoSpecs.Groups)
 			{
-				var header = new ThemedTextButton("", theme)
+				// sidebar.rs's list has a 2px gap between groups
+				var header = new SidebarGroupHeader(group)
 				{
 					Name = "Sidebar Group " + group,
-					HAnchor = HAnchor.Stretch,
-					TextHAnchor = HAnchor.Left,
-					Height = RowHeight * DeviceScale,
-					Margin = new BorderDouble(4, 1, 5, 1),
-					Padding = new BorderDouble(4, 0),
+					Margin = new BorderDouble(0, 0, 0, this.groupHeaders.Count == 0 ? 0 : 2),
 				};
 				header.Click += (s, e) => this.Filter.SetCollapsed(group, !this.Filter.IsCollapsed(group));
 				this.groupHeaders.Add(group, header);
@@ -126,7 +158,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 				foreach (DemoSpec spec in SidebarFilter.EntriesOf(group))
 				{
-					this.AddRow(list, spec, spec.Title);
+					this.AddRow(list, spec, spec.Title, contentInset: GroupContentInset);
 				}
 			}
 
@@ -162,7 +194,10 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		public GuiWidget RowOf(DemoSpec spec) => spec == GuiDemoSpecs.About ? this.AboutRow : this.rows[spec];
 
 		/// <summary>The collapsible header of <paramref name="group"/>.</summary>
-		public GuiWidget HeaderOf(string group) => this.groupHeaders[group];
+		public SidebarGroupHeader HeaderOf(string group) => this.groupHeaders[group];
+
+		/// <summary>The magnifier drawn in the search box while it is empty.</summary>
+		public GuiWidget SearchIcon => this.searchIcon;
 
 		/// <summary>The icon glyph drawn at the start of <paramref name="spec"/>'s row, or null for none.</summary>
 		public string RowIconOf(DemoSpec spec) => ((IconTextButton)this.RowOf(spec)).IconGlyph;
@@ -180,9 +215,10 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			base.OnClosed(e);
 		}
 
-		private ToggleRow AddRow(GuiWidget parent, DemoSpec spec, string text)
+		/// <param name="contentInset">Added to the row's TB_INDENT; see <see cref="GroupContentInset"/>.</param>
+		private ToggleRow AddRow(GuiWidget parent, DemoSpec spec, string text, string icon = null, double contentInset = 0)
 		{
-			var row = new ToggleRow(text, spec.Icon, this.demoTheme.Theme)
+			var row = new ToggleRow(text, icon ?? spec.Icon, this.demoTheme.Theme, contentInset)
 			{
 				Name = spec == GuiDemoSpecs.About ? "Sidebar About" : "Sidebar " + spec.Title,
 				IsOn = this.host.IsOpen(spec),
@@ -216,10 +252,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 		private void ApplyFilter()
 		{
-			foreach (KeyValuePair<string, ThemedTextButton> pair in this.groupHeaders)
+			foreach (KeyValuePair<string, SidebarGroupHeader> pair in this.groupHeaders)
 			{
-				// agg-gui's CollapsingHeader draws its open triangle before the name.
-				pair.Value.Text = (this.Filter.IsCollapsed(pair.Key) ? "►  " : "▼  ") + pair.Key;
+				pair.Value.IsOpen = !this.Filter.IsCollapsed(pair.Key);
 				pair.Value.Visible = this.Filter.IsGroupVisible(pair.Key);
 			}
 
@@ -246,11 +281,11 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 				line.BackgroundColor = palette.Separator;
 			}
 
-			foreach (ThemedTextButton button in this.groupHeaders.Values)
+			foreach (SidebarGroupHeader header in this.groupHeaders.Values)
 			{
-				button.TextColor = palette.TextColor;
-				button.BackgroundColor = Color.Transparent;
-				button.HoverColor = this.demoTheme.Theme.MinimalShade;
+				header.TextColor = palette.TextColor;
+				header.TriangleColor = palette.TextDim;
+				header.SeparatorColor = palette.Separator;
 			}
 
 			this.organizeButton.TextColor = palette.TextColor;
@@ -264,6 +299,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 				: this.demoTheme.Theme.EditFieldColors.Inactive;
 			this.Search.ActualTextEditWidget.TextColor = fieldColors.TextColor;
 			this.Search.NoContentFieldDescription.TextColor = fieldColors.LightTextColor;
+			this.searchIcon.Color = fieldColors.LightTextColor;
 
 			foreach (ToggleRow row in this.rows.Values)
 			{
@@ -288,16 +324,19 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// the panel edges (TB_BG_INSET_*) so consecutive lit rows do not fuse into one block.</summary>
 		private class ToggleRow : IconTextButton
 		{
-			public ToggleRow(string text, string iconGlyph, ThemeConfig theme)
+			public ToggleRow(string text, string iconGlyph, ThemeConfig theme, double contentInset)
 				: base(text, iconGlyph, theme, 10)
 			{
 				this.HAnchor = HAnchor.Stretch;
 				this.TextHAnchor = HAnchor.Left;
 				this.Height = (RowHeight - 2) * DeviceScale;
 
+				// The ghost button's pill (widgets/button.rs, radius 6)
+				this.BackgroundRadius = 6 * DeviceScale;
+
 				// TB_INDENT (22) less the fill's own left padding (5), so the label nests under the group
 				// triangle; the About row uses the same indent, as agg-gui's does. The icon goes in the padding.
-				this.Margin = new BorderDouble(17, 1, 5, 1);
+				this.Margin = new BorderDouble(contentInset + 17, 1, 5, 1);
 				this.TextPadding = new BorderDouble(5, 0);
 			}
 

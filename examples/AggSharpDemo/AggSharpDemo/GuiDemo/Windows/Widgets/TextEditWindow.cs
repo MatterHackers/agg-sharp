@@ -93,7 +93,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			column.AddChild(usage);
 
 			// The editor is built before the selectors, whose first check sets its alignment.
-			this.Editor = new CodeEditor(DefaultText, pointSize: this.theme.DefaultFontSize * 13 / 12)
+			this.Editor = new CodeEditor(DefaultText, pointSize: DemoText.Points(13))
 			{
 				Name = "TextEdit Editor",
 				HAnchor = HAnchor.Stretch,
@@ -141,7 +141,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 			// Its colour is set by RefreshReadout: dimmed, as egui's add_enabled, until something is selected. It wraps
 			// rather than clipping when the window is narrower than the sentence.
-			this.caseHint = new WrappedTextWidget("Press ctrl+Y to toggle the case of selected text (cmd+Y on Mac)", this.theme.DefaultFontSize)
+			this.caseHint = new WrappedTextWidget("Press ctrl+Y to toggle the case of selected text (cmd+Y on Mac)", DemoText.Points(DemoText.BodyPixels))
 			{
 				Name = "TextEdit Case Hint",
 				Margin = new BorderDouble(0, 2),
@@ -282,7 +282,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 		private AlignedTextEditWidget Field(string text, bool multiLine, string hint)
 		{
-			var field = new AlignedTextEditWidget(text, this.theme.DefaultFontSize, multiLine, hint)
+			var field = new AlignedTextEditWidget(text, DemoText.Points(DemoText.BodyPixels), multiLine, hint)
 			{
 				Border = 1,
 			};
@@ -297,12 +297,12 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 		private ThemedTextButton Button(string text, string name, Action click)
 		{
-			var button = new ThemedTextButton(text, this.theme)
+			var button = this.demoTheme.AccentButton(new ThemedTextButton(text, this.theme)
 			{
 				Name = name,
 				VAnchor = VAnchor.Center,
 				Margin = new BorderDouble(left: 6),
-			};
+			});
 			button.Click += (s, e) => click();
 			return button;
 		}
@@ -343,7 +343,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 		private TextWidget Label(string text, Color? fixedColor = null)
 		{
-			var widget = new TextWidget(text, pointSize: this.theme.DefaultFontSize, textColor: fixedColor ?? this.theme.TextColor)
+			var widget = new TextWidget(text, pointSize: DemoText.Points(DemoText.BodyPixels), textColor: fixedColor ?? this.theme.TextColor)
 			{
 				Margin = new BorderDouble(0, 2),
 				AutoExpandBoundsToText = true,

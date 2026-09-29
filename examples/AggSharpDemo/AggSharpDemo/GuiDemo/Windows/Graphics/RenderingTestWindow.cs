@@ -152,7 +152,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Graphics
 		/// <summary>The fine lines and faded text on black and white.</summary>
 		public RenderingTestBlending Blending { get; }
 
-		/// <summary>agg-gui's point size <paramref name="aggGuiSize"/> as a Graphics2D.DrawString size in this theme and scale.</summary>
-		public static double TextSize(DemoTheme demoTheme, double aggGuiSize) => demoTheme.Theme.DefaultFontSize * aggGuiSize / 12 * DeviceScale;
+		/// <summary>agg-gui's pixel em <paramref name="aggGuiSize"/> as a Graphics2D.DrawString size at this scale.</summary>
+		public static double TextSize(DemoTheme demoTheme, double aggGuiSize) => DemoText.Points(aggGuiSize) * DeviceScale;
 	}
 }

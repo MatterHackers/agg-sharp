@@ -44,14 +44,34 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 
 			await Assert.That(window.Name).IsEqualTo(spec.ContentName);
 			await Assert.That(window.FindDescendant("3D Animation Bar Grid")).IsSameReferenceAs(window.BarGrid);
-			await Assert.That(window.FindDescendant("3D Animation SSAA")).IsSameReferenceAs(window.Ssaa);
+			await Assert.That(window.SsaaButtons.Select(b => b.Text)).IsEquivalentTo(ThreeDAnimationWindow.SsaaLabels, TUnit.Assertions.Enums.CollectionOrdering.Matching);
 
-			// Starts at 4x (linear 2); each segment is its linear factor.
-			await Assert.That(window.Ssaa.SelectedLabel).IsEqualTo("4×");
-			window.Ssaa.SelectedIndex = 3;
+			// Starts at 4x (linear 2); each button is its linear factor.
+			await Assert.That(window.SsaaFactor).IsEqualTo(2);
+			window.SsaaButtons[3].InvokeClick();
 			await Assert.That(window.BarGrid.SsaaFactor).IsEqualTo(4);
-			window.Ssaa.SelectedIndex = 0;
+			window.SsaaButtons[0].InvokeClick();
 			await Assert.That(window.BarGrid.SsaaFactor).IsEqualTo(1);
+		}
+
+		[Test]
+		public async Task TheStatusLineReadsLikeAggGuis()
+		{
+			await Assert.That(ThreeDAnimationWindow.StatusCaption(1, 300, 182)).IsEqualTo("Off  (300 × 182 = 0.4 MB)");
+			await Assert.That(ThreeDAnimationWindow.StatusCaption(2, 300, 182)).IsEqualTo("2× linear · 4× memory  (300 × 182 = 1.7 MB)");
+			await Assert.That(ThreeDAnimationWindow.StatusCaption(3, 0, 0)).IsEqualTo("3× linear · 9× memory");
+
+			var spec = GuiDemoSpecs.All.First(s => s.Title == "3D Animation");
+			var window = (ThreeDAnimationWindow)GuiDemoSpecs.CreateContent(spec, new DemoTheme());
+			var page = new MatterHackers.Agg.UI.GuiWidget(300, 260);
+			page.AddChild(window);
+			page.PerformLayout();
+			window.SsaaFactor = 1;
+
+			// The line follows the bar grid's laid out size.
+			await Assert.That(window.BarGrid.Width).IsGreaterThan(0);
+			await Assert.That(window.Status.Text).IsEqualTo(ThreeDAnimationWindow.StatusCaption(1, (int)System.Math.Round(window.BarGrid.Width), (int)System.Math.Round(window.BarGrid.Height)));
+			await Assert.That(window.Status.Text).StartsWith("Off  (300 × ");
 		}
 	}
 }

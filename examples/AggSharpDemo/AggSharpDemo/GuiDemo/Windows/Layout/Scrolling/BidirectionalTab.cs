@@ -105,7 +105,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Layout.Scrolling
 			}
 
 			/// <summary>The text size in device points, at the theme's font size.</summary>
-			private double PointSize => this.demoTheme.Theme.DefaultFontSize * DeviceScale;
+			private double PointSize => DemoText.Points(12) * DeviceScale;
 
 			public override void OnDraw(Graphics2D graphics2D)
 			{

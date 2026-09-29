@@ -71,7 +71,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 			// Header row: description + source link, on one line as egui has them.
 			var header = new FlowLayoutWidget { HAnchor = HAnchor.Stretch, VAnchor = VAnchor.Fit, Padding = new BorderDouble(8, 4) };
-			this.description = new TextWidget("An example of syntax highlighting in an editable TextEdit.", pointSize: 12)
+			this.description = new TextWidget("An example of syntax highlighting in an editable TextEdit.", pointSize: DemoText.Points(12))
 			{
 				Name = "Code Editor Description",
 				VAnchor = VAnchor.Center,
@@ -92,7 +92,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 			// The editor takes all the height left, growing and shrinking with the window; it scrolls itself. Like
 			// agg-gui's TextArea it wraps to its width and edits with agg-gui's Home, Enter and Tab.
-			this.Editor = new CodeEditor(Sample, CodeFont.TypeFace)
+			// agg-gui's EDITOR_FONT_SIZE: a 13px em of Cascadia Code.
+			this.Editor = new CodeEditor(Sample, CodeFont.TypeFace, DemoText.Points(13))
 			{
 				Name = "Code Editor Editor",
 				HAnchor = HAnchor.Stretch,

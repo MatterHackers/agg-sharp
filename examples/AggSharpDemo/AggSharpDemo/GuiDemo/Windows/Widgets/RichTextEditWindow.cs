@@ -29,9 +29,11 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Font;
+using MatterHackers.Agg.Image;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.UI.RichText;
 
@@ -39,29 +41,60 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 {
 	/// <summary>
 	/// The "RichTextEdit" window, a port of agg-gui's demo-ui/src/windows/rich_text_demo: agg-gui's two-row
-	/// formatting toolbar over a <see cref="RichTextEdit"/> seeded with the same headings and lists.
+	/// Font Awesome formatting toolbar over a <see cref="RichTextEdit"/> seeded with the same headings and lists.
 	/// </summary>
 	/// <remarks>
-	/// Deviation: the font-family picker is left out (agg-sharp bundles one family).
+	/// Deviation: the family combo lists the text families this demo carries (Liberation Sans) rather than the
+	/// system catalog. The size combo shows agg-gui's pixel sizes; <see cref="EditorSize"/> maps them to the
+	/// editor's points, 16 being the body size.
 	/// </remarks>
 	public class RichTextEditWindow : FlowLayoutWidget
 	{
+		/// <summary>agg-gui's size dropdown (toolbar.rs FONT_SIZES), in its pixel sizes; 16 is the body size.</summary>
+		public static readonly double[] FontSizes = { 8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32 };
+
+		/// <summary>The families the family combo offers: the text faces this demo carries.</summary>
+		public static readonly string[] FontFamilies = { "Liberation Sans" };
+
 		private const string SourceUrl = "https://github.com/MatterHackers/agg-sharp/blob/main/examples/AggSharpDemo/AggSharpDemo/GuiDemo/Windows/Widgets/RichTextEditWindow.cs";
 
-		private static readonly double[] FontSizes = { 10, 12, 14, 18, 24, 32 };
+		// The editor's body size in points, standing for agg-gui's 16px default.
+		private const double BodyPointSize = 12;
+		private const double AggGuiBodySize = 16;
 
-		private readonly DemoTheme demoTheme;
-		private readonly List<ThemedTextButton> buttons = new List<ThemedTextButton>();
+		// agg-gui's toolbar glyphs (toolbar.rs ICON_*).
+		private const string IconBold = "";
+		private const string IconItalic = "";
+		private const string IconUnderline = "";
+		private const string IconStrike = "";
+		private const string IconAlignLeft = "";
+		private const string IconAlignCenter = "";
+		private const string IconAlignRight = "";
+		private const string IconListOrdered = "";
+		private const string IconListBullet = "";
+		private const string IconOutdent = "";
+		private const string IconIndent = "";
+		private const string IconTextColor = "";
+		private const string IconHighlight = "";
+		private const string IconEraser = "";
 
-		// agg-gui's with_active_fn: each toggle's on test over the selection's CommonStyle, re-read on every change.
-		private readonly List<(ThemedTextButton Button, Func<CommonStyle, bool> IsOn)> toggles = new List<(ThemedTextButton, Func<CommonStyle, bool>)>();
 		// agg-gui's starting colours when the selection has no colour of its own, or a mixed one.
 		private static readonly Color DefaultTextColor = new Color(51, 115, 224);
 		private static readonly Color DefaultHighlight = new Color(255, 235, 59);
 
-		private int sizeIndex = 1;
-		private ThemedTextButton textColorButton;
-		private ThemedTextButton highlightButton;
+		private readonly DemoTheme demoTheme;
+
+		// Every toolbar button with its glyph, re-rendered in the right colour as the theme and on states change.
+		private readonly List<(ThemedIconButton Button, string Glyph)> buttons = new List<(ThemedIconButton, string)>();
+
+		// agg-gui's with_active_fn: each toggle's on test over the selection's CommonStyle, re-read on every change.
+		private readonly List<(ThemedIconButton Button, Func<CommonStyle, bool> IsOn)> toggles = new List<(ThemedIconButton, Func<CommonStyle, bool>)>();
+
+		private readonly ThemedIconButton textColorButton;
+		private readonly ThemedIconButton highlightButton;
+
+		// Set while the combos are moved to follow the selection, so following it does not format it.
+		private bool reflecting;
 
 		public RichTextEditWindow(DemoTheme demoTheme)
 			: base(FlowDirection.TopToBottom)
@@ -72,51 +105,57 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			this.VAnchor = VAnchor.Stretch;
 			this.Padding = new BorderDouble(8);
 
-			this.AddChild(new Hyperlink("(source code)", theme, SourceUrl)
-			{
-				Name = "RichTextEdit Source Link",
-				HAnchor = HAnchor.Center,
-				Margin = new BorderDouble(0, 5),
-			});
-
-			this.Editor = new RichTextEdit(SeedDoc(), 12)
+			this.Editor = new RichTextEdit(SeedDoc(), BodyPointSize)
 			{
 				Name = "RichTextEdit Editor",
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Stretch,
 				MenuTheme = theme,
+				Margin = new BorderDouble(top: 24),
 			};
 
-			// agg-gui's toolbar row 1: character formatting.
+			// agg-gui's toolbar row 1: character formatting, family and size, colours.
 			var row1 = this.ToolbarRow();
-			this.Toggle(row1, "B", "Bold", RichCommand.ToggleBold, c => c.Bold == true);
-			this.Toggle(row1, "I", "Italic", RichCommand.ToggleItalic, c => c.Italic == true);
-			this.Toggle(row1, "U", "Underline", RichCommand.ToggleUnderline, c => c.Underline == true);
-			this.Toggle(row1, "S", "Strikethrough", RichCommand.ToggleStrikethrough, c => c.Strikethrough == true);
-			this.Tool(row1, "A-", "Smaller", () => this.StepSize(-1));
-			this.Tool(row1, "A+", "Larger", () => this.StepSize(1));
+			this.Toggle(row1, IconBold, "Bold", RichCommand.ToggleBold, c => c.Bold == true);
+			this.Toggle(row1, IconItalic, "Italic", RichCommand.ToggleItalic, c => c.Italic == true);
+			this.Toggle(row1, IconUnderline, "Underline", RichCommand.ToggleUnderline, c => c.Underline == true);
+			this.Toggle(row1, IconStrike, "Strikethrough", RichCommand.ToggleStrikethrough, c => c.Strikethrough == true);
 
-			// agg-gui's colour swatch buttons: each opens a floating colour dialog that previews on the selection.
-			this.textColorButton = this.SwatchTool(row1, "Color", "Text color", highlight: false);
-			this.highlightButton = this.SwatchTool(row1, "Mark", "Highlight color", highlight: true);
-			this.Tool(row1, "Unmark", "Remove highlight", () => this.Editor.Exec(RichCommand.SetHighlight(null)));
+			this.FamilyCombo = this.Combo(row1, "Font family", FontFamilies, 0, 180);
+			this.FamilyCombo.SelectionChanged += (s, e) => this.FromCombo(this.FamilyCombo, () => RichCommand.SetFontFamily(FontFamilies[this.FamilyCombo.SelectedIndex]));
+			this.SizeCombo = this.Combo(row1, "Font size", FontSizes.Select(f => f.ToString(CultureInfo.InvariantCulture)), Array.IndexOf(FontSizes, AggGuiBodySize), 64);
+			this.SizeCombo.SelectionChanged += (s, e) => this.FromCombo(this.SizeCombo, () => RichCommand.SetFontSize(EditorSize(FontSizes[this.SizeCombo.SelectedIndex])));
+
+			// agg-gui's colour buttons: each opens a floating colour dialog that previews on the selection.
+			this.textColorButton = this.Tool(row1, IconTextColor, "Text color", () => this.OpenColorDialog(highlight: false), focusEditor: false);
+			this.highlightButton = this.Tool(row1, IconHighlight, "Highlight color", () => this.OpenColorDialog(highlight: true), focusEditor: false);
+			this.Tool(row1, IconEraser, "Remove highlight", () => this.Editor.Exec(RichCommand.SetHighlight(null)));
 			this.AddChild(row1);
 
 			// Row 2: paragraph formatting and history.
 			var row2 = this.ToolbarRow();
-			this.Toggle(row2, "Left", "Align left", RichCommand.SetAlign(Justification.Left), c => c.Align == Justification.Left);
-			this.Toggle(row2, "Center", "Align center", RichCommand.SetAlign(Justification.Center), c => c.Align == Justification.Center);
-			this.Toggle(row2, "Right", "Align right", RichCommand.SetAlign(Justification.Right), c => c.Align == Justification.Right);
-			this.Toggle(row2, "1.", "Numbered list", RichCommand.SetList(ListKind.Ordered), c => c.List == ListKind.Ordered);
-			this.Toggle(row2, "•", "Bulleted list", RichCommand.SetList(ListKind.Bullet), c => c.List == ListKind.Bullet);
-			this.Tool(row2, "Outdent", "Decrease indent", () => this.Editor.Exec(RichCommand.Outdent));
-			this.Tool(row2, "Indent", "Increase indent", () => this.Editor.Exec(RichCommand.Indent));
+			this.Toggle(row2, IconAlignLeft, "Align left", RichCommand.SetAlign(Justification.Left), c => c.Align == Justification.Left);
+			this.Toggle(row2, IconAlignCenter, "Align center", RichCommand.SetAlign(Justification.Center), c => c.Align == Justification.Center);
+			this.Toggle(row2, IconAlignRight, "Align right", RichCommand.SetAlign(Justification.Right), c => c.Align == Justification.Right);
+			this.Toggle(row2, IconListOrdered, "Numbered list", RichCommand.SetList(ListKind.Ordered), c => c.List == ListKind.Ordered);
+			this.Toggle(row2, IconListBullet, "Bulleted list", RichCommand.SetList(ListKind.Bullet), c => c.List == ListKind.Bullet);
+			this.Tool(row2, IconOutdent, "Decrease indent", () => this.Editor.Exec(RichCommand.Outdent));
+			this.Tool(row2, IconIndent, "Increase indent", () => this.Editor.Exec(RichCommand.Indent));
 			string modifier = OperatingSystem.IsMacOS() ? "Cmd" : "Ctrl";
-			this.Tool(row2, "Undo", $"Undo ({modifier}+Z)", this.Editor.Undo);
-			this.Tool(row2, "Redo", $"Redo ({modifier}+Y)", this.Editor.Redo);
+			this.UndoButton = this.Tool(row2, IconFont.Undo, $"Undo ({modifier}+Z)", this.Editor.Undo);
+			this.RedoButton = this.Tool(row2, IconFont.Redo, $"Redo ({modifier}+Y)", this.Editor.Redo);
 			this.AddChild(row2);
 
 			this.AddChild(this.Editor);
+
+			// agg-gui's source_link sits under the content, at the right.
+			this.AddChild(new Hyperlink("(source code)", theme, SourceUrl)
+			{
+				Name = "RichTextEdit Source Link",
+				HAnchor = HAnchor.Right,
+				Margin = new BorderDouble(top: 5),
+			});
+
 			this.Recolor();
 			this.Editor.Changed += (s, e) => this.RefreshToggles();
 			demoTheme.ThemeChanged += this.OnThemeChanged;
@@ -124,8 +163,23 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 		public RichTextEdit Editor { get; }
 
+		/// <summary>The font family dropdown; picking a family sets it on the selection.</summary>
+		public DropDownList FamilyCombo { get; }
+
+		/// <summary>The font size dropdown, in agg-gui's pixel sizes; picking a size sets it on the selection.</summary>
+		public DropDownList SizeCombo { get; }
+
+		/// <summary>The Undo button, greyed out when there is nothing to undo.</summary>
+		public ThemedIconButton UndoButton { get; }
+
+		/// <summary>The Redo button, greyed out when there is nothing to redo.</summary>
+		public ThemedIconButton RedoButton { get; }
+
 		/// <summary>Gets the open colour dialog, or null when none is open.</summary>
 		public ColorDialog ColorDialog { get; private set; }
+
+		/// <summary>The editor's point size for agg-gui pixel size <paramref name="aggGuiSize"/>, 16 being the body size.</summary>
+		public static double EditorSize(double aggGuiSize) => aggGuiSize * BodyPointSize / AggGuiBodySize;
 
 		/// <summary>
 		/// Opens agg-gui's colour dialog for the text colour or the highlight: a colour wheel in a modal window,
@@ -214,7 +268,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 		/// <summary>agg-gui's seed document: two headings, a numbered list and a bullet.</summary>
 		public static RichDoc SeedDoc()
 		{
-			static Block Heading(string text) => new Block(new TextRun(text, InlineStyle.Default with { Bold = true, FontSize = 24 }));
+			static Block Heading(string text) => new Block(new TextRun(text, InlineStyle.Default with { FontSize = EditorSize(24) }));
 			static Block Item(string text, ListKind list)
 			{
 				var block = Block.Plain(text);
@@ -241,16 +295,20 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			base.OnClosed(e);
 		}
 
-		private FlowLayoutWidget ToolbarRow() => new FlowLayoutWidget() { HAnchor = HAnchor.Stretch, VAnchor = VAnchor.Fit, Margin = new BorderDouble(0, 2) };
+		// agg-gui's FlexRow with_gap(4), rows 6 apart.
+		private FlowLayoutWidget ToolbarRow() => new FlowLayoutWidget() { HAnchor = HAnchor.Stretch, VAnchor = VAnchor.Fit, Margin = new BorderDouble(0, 3) };
 
-		// A toolbar button named after agg-gui's tooltip, so tests and the Inspector find it by what it does.
-		private void Tool(FlowLayoutWidget row, string label, string tooltip, Action action, bool focusEditor = true)
+		// A Font Awesome toolbar button named after agg-gui's tooltip, so tests and the Inspector find it by what it does.
+		private ThemedIconButton Tool(FlowLayoutWidget row, string glyph, string tooltip, Action action, bool focusEditor = true)
 		{
-			var button = new ThemedTextButton(label, this.demoTheme.Theme)
+			var theme = this.demoTheme.Theme;
+			var button = new ThemedIconButton(this.RenderGlyph(glyph, theme.TextColor), theme)
 			{
 				Name = "RichTextEdit " + tooltip,
 				ToolTipText = tooltip,
-				Margin = new BorderDouble(right: 3),
+				Width = 40 * DeviceScale,
+				Height = 22 * DeviceScale,
+				Margin = new BorderDouble(right: 4),
 			};
 			button.Click += (s, e) =>
 			{
@@ -262,8 +320,47 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 					this.Editor.Focus();
 				}
 			};
-			this.buttons.Add(button);
+			this.buttons.Add((button, glyph));
 			row.AddChild(button);
+			return button;
+		}
+
+		// agg-gui's ComboBox: a fixed-width dropdown of the labels, starting at selectedIndex.
+		private DropDownList Combo(FlowLayoutWidget row, string tooltip, IEnumerable<string> labels, int selectedIndex, double designWidth)
+		{
+			var combo = new DropDownList(tooltip, this.demoTheme.Theme.TextColor, pointSize: this.demoTheme.Theme.DefaultFontSize * 10 / 12)
+			{
+				Name = "RichTextEdit " + tooltip,
+				ToolTipText = tooltip,
+				HAnchor = HAnchor.Absolute,
+				VAnchor = VAnchor.Center,
+				Width = designWidth * DeviceScale,
+				Margin = new BorderDouble(right: 4),
+			};
+			foreach (string label in labels)
+			{
+				combo.AddItem(label);
+			}
+
+			combo.SelectedIndex = selectedIndex;
+			row.AddChild(combo);
+			return combo;
+		}
+
+		// A combo pick formats the selection, unless the combo is only following the selection or was cleared.
+		private void FromCombo(DropDownList combo, Func<RichCommand> command)
+		{
+			if (!this.reflecting && combo.SelectedIndex >= 0)
+			{
+				this.Editor.Exec(command());
+				this.Editor.Focus();
+			}
+		}
+
+		private ImageBuffer RenderGlyph(string glyph, Color color)
+		{
+			int pixels = (int)Math.Round(this.demoTheme.Theme.DefaultFontSize * 11 / 12 * 96 / 72 * DeviceScale);
+			return GlyphIcon.Render(glyph, IconFont.TypeFace, color, pixels);
 		}
 
 		/// <summary>
@@ -273,39 +370,42 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 		public bool IsToolOn(string tooltip) => this.toggles.Any(t => t.Button.ToolTipText == tooltip && t.IsOn(this.Editor.Core.CommonStyleOfSelection()));
 
 		// A toolbar button that also shows an on state, like agg-gui's with_active_fn toggles.
-		private void Toggle(FlowLayoutWidget row, string label, string tooltip, RichCommand command, Func<CommonStyle, bool> isOn)
+		private void Toggle(FlowLayoutWidget row, string glyph, string tooltip, RichCommand command, Func<CommonStyle, bool> isOn)
 		{
-			this.Tool(row, label, tooltip, () => this.Editor.Exec(command));
-			this.toggles.Add((this.buttons[^1], isOn));
+			var button = this.Tool(row, glyph, tooltip, () => this.Editor.Exec(command));
+			this.toggles.Add((button, isOn));
 		}
 
 		private void RefreshToggles()
 		{
-			this.textColorButton?.Invalidate();
-			this.highlightButton?.Invalidate();
 			var common = this.Editor.Core.CommonStyleOfSelection();
 			var theme = this.demoTheme.Theme;
 			var accent = DemoTheme.ColorOf(this.demoTheme.Accent);
-			foreach (var (button, isOn) in this.toggles)
+			foreach (var (button, glyph) in this.buttons)
 			{
-				bool on = isOn(common);
+				// The colour buttons wear the accent like agg-gui's; a toggle does while it is on.
+				bool on = button == this.textColorButton || button == this.highlightButton || this.toggles.Any(t => t.Button == button && t.IsOn(common));
 				button.BackgroundColor = on ? accent : theme.ButtonBackgroundColor;
-				button.TextColor = on ? Color.White : theme.TextColor;
+				button.SetIcon(this.RenderGlyph(glyph, on ? Color.White : theme.TextColor));
+			}
+
+			// agg-gui's enabled_fn: undo and redo grey out when there is nothing to take back or bring back.
+			this.UndoButton.Enabled = this.Editor.Core.CanUndo;
+			this.RedoButton.Enabled = this.Editor.Core.CanRedo;
+
+			// agg-gui's family combo follows a selection that agrees on a family (a mixed one leaves it as it is);
+			// its size combo keeps the last size picked.
+			if (common.FontFamilyAgrees)
+			{
+				this.reflecting = true;
+				this.FamilyCombo.SelectedIndex = Math.Max(0, Array.IndexOf(FontFamilies, common.FontFamily ?? FontFamilies[0]));
+				this.reflecting = false;
 			}
 		}
 
-		// A toolbar button with a strip of the selection's colour, opening the colour dialog.
-		private ThemedTextButton SwatchTool(FlowLayoutWidget row, string label, string tooltip, bool highlight)
-		{
-			this.Tool(row, label, tooltip, () => this.OpenColorDialog(highlight), focusEditor: false);
-			var button = this.buttons[^1];
-			button.AfterDraw += (s, e) => e.Graphics2D.FillRectangle(4, 2, button.Width - 4, 5, this.SwatchColor(highlight));
-			return button;
-		}
-
 		/// <summary>
-		/// The colour a swatch strip shows: the selection's text colour (the editor's default when it has none) or
-		/// its highlight; clear when the selection is mixed or has no highlight.
+		/// The selection's text colour (the editor's default when it has none) or its highlight; clear when the
+		/// selection is mixed or has no highlight.
 		/// </summary>
 		public Color SwatchColor(bool highlight)
 		{
@@ -318,12 +418,6 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			return common.TextColorAgrees ? common.TextColor ?? this.Editor.TextColor : Color.Transparent;
 		}
 
-		private void StepSize(int direction)
-		{
-			this.sizeIndex = Math.Clamp(this.sizeIndex + direction, 0, FontSizes.Length - 1);
-			this.Editor.Exec(RichCommand.SetFontSize(FontSizes[this.sizeIndex]));
-		}
-
 		private void OnThemeChanged(object sender, EventArgs e) => this.Recolor();
 
 		private void Recolor()
@@ -334,6 +428,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			this.Editor.CaretColor = palette.TextColor;
 			this.Editor.SelectionColor = new Color(DemoTheme.ColorOf(this.demoTheme.Accent), 90);
 			this.Editor.Invalidate();
+			this.FamilyCombo.TextColor = palette.TextColor;
+			this.SizeCombo.TextColor = palette.TextColor;
 			this.RefreshToggles();
 		}
 	}

@@ -30,12 +30,12 @@ using MatterHackers.Agg.Font;
 namespace MatterHackers.AggSharpDemo.GuiDemo
 {
 	/// <summary>
-	/// The GUI demo's monospaced code font: Liberation Mono, embedded in this assembly, standing in for the
-	/// Cascadia Code agg-gui's Code Editor loads - a code editor wants fixed-width columns.
+	/// The GUI demo's monospaced code font: Cascadia Code, the same CascadiaCode.ttf agg-gui's Code Editor loads
+	/// (SIL OFL 1.1, see Fonts/CascadiaCode-LICENSE-OFL.txt), embedded in this assembly.
 	/// </summary>
 	public static class CodeFont
 	{
-		private const string ResourceName = "MatterHackers.AggSharpDemo.Fonts.LiberationMono-Regular.ttf";
+		private const string ResourceName = "MatterHackers.AggSharpDemo.Fonts.CascadiaCode.ttf";
 
 		private static readonly Lazy<TypeFace> Instance = new Lazy<TypeFace>(Load, LazyThreadSafetyMode.ExecutionAndPublication);
 
@@ -46,7 +46,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		{
 			using var stream = typeof(CodeFont).Assembly.GetManifestResourceStream(ResourceName)
 				?? throw new InvalidOperationException(
-					$"The font resource '{ResourceName}' is missing; AggSharpDemo.csproj embeds it from liberation-fonts-ttf-1.07.0.");
+					$"The font resource '{ResourceName}' is missing; AggSharpDemo.csproj embeds it from Fonts/CascadiaCode.ttf.");
 			var typeFace = new TypeFace();
 			typeFace.LoadTTF(stream);
 			return typeFace;

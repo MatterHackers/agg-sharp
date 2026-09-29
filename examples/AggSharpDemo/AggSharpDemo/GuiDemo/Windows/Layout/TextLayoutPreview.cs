@@ -97,7 +97,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Layout
 			this.demoTheme = demoTheme;
 			this.HAnchor = HAnchor.Stretch;
 			this.VAnchor = VAnchor.Absolute;
-			this.typeFace = new StyledTypeFace(LiberationSansFont.Instance, demoTheme.Theme.DefaultFontSize * FontSizeUnits / 12 * DeviceScale);
+			this.typeFace = new StyledTypeFace(LiberationSansFont.Instance, DemoText.Points(FontSizeUnits) * DeviceScale);
 			this.Relayout();
 		}
 

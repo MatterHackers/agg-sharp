@@ -24,6 +24,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 using System;
+using System.Linq;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 
@@ -51,6 +52,11 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tools
 			this.demoTheme.ThemeChanged -= this.DemoTheme_ThemeChanged;
 			base.OnClosed(e);
 		}
+
+		/// <summary>The GUI demo's own page, as agg-gui's inspector starts at its app root: the SystemWindow would
+		/// add the AGG Demos runner around it, several times as many widgets that are not the demo's. Null while
+		/// the window is closed (off the page), so a closed inspector lets go of the tree.</summary>
+		protected override GuiWidget FindDefaultRoot() => this.Parents<GuiDemoShell>().FirstOrDefault();
 
 		private void DemoTheme_ThemeChanged(object sender, EventArgs e) => this.ApplyTheme();
 

@@ -29,8 +29,11 @@
 		<!-- The trans_curve demos' stand-in for C++'s Times New Roman (Liberation Serif is metric-compatible). -->
 		<EmbeddedResource Include="..\..\..\liberation-fonts-ttf-1.07.0\LiberationSerif-Regular.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.LiberationSerif-Regular.ttf" />
 		<EmbeddedResource Include="..\..\..\liberation-fonts-ttf-1.07.0\LiberationSerif-Italic.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.LiberationSerif-Italic.ttf" />
-		<!-- The GUI demo's code font, standing in for agg-gui's Cascadia Code (both monospaced). -->
-		<EmbeddedResource Include="..\..\..\liberation-fonts-ttf-1.07.0\LiberationMono-Regular.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.LiberationMono-Regular.ttf" />
+		<!-- The GUI demo's default face, agg-gui's Nunito (SIL OFL 1.1, Fonts/Nunito-LICENSE-OFL.txt). -->
+		<EmbeddedResource Include="Fonts\Nunito-Regular.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.Nunito-Regular.ttf" />
+		<EmbeddedResource Include="Fonts\Nunito-Bold.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.Nunito-Bold.ttf" />
+		<!-- The GUI demo's code font, agg-gui's Cascadia Code (SIL OFL 1.1, Fonts/CascadiaCode-LICENSE-OFL.txt). -->
+		<EmbeddedResource Include="Fonts\CascadiaCode.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.CascadiaCode.ttf" />
 		<!-- The GUI demo's icon font, agg-gui's Font Awesome 4.7 (SIL OFL 1.1, Fonts/FontAwesome-LICENSE-OFL.txt). -->
 		<EmbeddedResource Include="Fonts\FontAwesome.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.FontAwesome.ttf" />
 		<!-- The GUI demo's emoji fallback font, agg-gui's Noto Emoji (SIL OFL 1.1, Fonts/NotoEmoji-LICENSE-OFL.txt). -->

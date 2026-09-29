@@ -83,7 +83,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Graphics
 					EmptyText,
 					bounds.Center.X,
 					bounds.Center.Y,
-					this.demoTheme.Theme.DefaultFontSize * 13 / 12,
+					DemoText.Points(13),
 					Justification.Center,
 					Baseline.BoundsCenter,
 					palette.TextDim);

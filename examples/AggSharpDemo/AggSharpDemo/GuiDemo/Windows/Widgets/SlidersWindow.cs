@@ -149,12 +149,12 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			column.AddChild(this.Wrapped("Smart Aim will guide you towards round values when you drag the slider so you you are more likely to hit 250 than 247.23"));
 			column.AddChild(new GuiWidget { Height = 8 * DeviceScale });
 
-			var reset = new ThemedTextButton("Reset", this.theme)
+			var reset = this.demoTheme.AccentButton(new ThemedTextButton("Reset", this.theme)
 			{
 				Name = "Sliders Reset",
 				HAnchor = HAnchor.Left,
 				Margin = 0,
-			};
+			});
 			reset.Click += (s, e) => this.Reset();
 			column.AddChild(reset);
 
@@ -323,12 +323,12 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			if (!this.Integer)
 			{
 				this.demoHost.AddChild(this.Wrapped("Sliders will intelligently pick how many decimals to show."));
-				var assignPi = new ThemedTextButton("Assign PI", this.theme)
+				var assignPi = this.demoTheme.AccentButton(new ThemedTextButton("Assign PI", this.theme)
 				{
 					Name = "Sliders Assign PI",
 					HAnchor = HAnchor.Left,
 					Margin = new BorderDouble(0, 4),
-				};
+				});
 				assignPi.Click += (s, e) => this.AssignPi();
 				this.demoHost.AddChild(assignPi);
 			}
@@ -394,7 +394,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 		private CheckBox Check(string text, string name, GuiWidget parent, Action<bool> set)
 		{
-			var checkBox = new CheckBox(text, this.theme.TextColor, this.theme.DefaultFontSize)
+			var checkBox = new CheckBox(text, this.theme.TextColor, DemoText.Points(DemoText.BodyPixels))
 			{
 				Name = name,
 				HAnchor = HAnchor.Left,
@@ -445,7 +445,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 		private TextWidget Label(string text)
 		{
-			var widget = new TextWidget(text, pointSize: this.theme.DefaultFontSize, textColor: this.theme.TextColor)
+			var widget = new TextWidget(text, pointSize: DemoText.Points(12), textColor: this.theme.TextColor)
 			{
 				HAnchor = HAnchor.Left,
 				Margin = new BorderDouble(0, 2),
@@ -457,9 +457,10 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 		private WrappedTextWidget Wrapped(string text)
 		{
-			var widget = new WrappedTextWidget(text, this.theme.DefaultFontSize, textColor: this.theme.TextColor)
+			var widget = new WrappedTextWidget(text, DemoText.Points(12), textColor: this.theme.TextColor)
 			{
 				Margin = new BorderDouble(0, 2),
+				LineSpacing = DemoText.LineHeightFactor,
 			};
 			this.wrappedTexts.Add(widget);
 			return widget;

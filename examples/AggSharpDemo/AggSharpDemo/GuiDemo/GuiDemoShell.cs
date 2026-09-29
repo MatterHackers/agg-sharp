@@ -187,7 +187,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 			this.ThreeDAnimation = content;
 			content.SsaaFactor = this.BackendPanel.SsaaFactor;
-			content.Ssaa.SelectedIndexChanged += (s, e) => this.BackendPanel.SetSsaaFactor(content.SsaaFactor);
+			content.SsaaFactorChanged += (s, e) => this.BackendPanel.SetSsaaFactor(content.SsaaFactor);
 		}
 
 		/// <summary>Whether a frame just drawn asks for the next one straight away: the backend panel's Continuous

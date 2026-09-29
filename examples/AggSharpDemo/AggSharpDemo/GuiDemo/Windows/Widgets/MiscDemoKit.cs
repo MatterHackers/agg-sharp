@@ -34,8 +34,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 	/// <summary>
 	/// The Misc Demos window's widget factory: builds themed labels, check boxes, radios, buttons and
 	/// sliders and remembers the ones that copy a colour when built, so <see cref="Recolor"/> can push a live
-	/// theme change into them. agg-gui sizes text in points where 12 is its body text; here that maps to the
-	/// theme's DefaultFontSize.
+	/// theme change into them. agg-gui sizes text as an em in pixels; <see cref="FontSize"/>
+	/// turns that into points (<see cref="DemoText.Points"/>).
 	/// </summary>
 	internal sealed class MiscDemoKit
 	{
@@ -55,8 +55,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 		public ThemeConfig Theme { get; }
 
-		/// <summary>agg-gui's point size <paramref name="aggGuiSize"/> in this theme's scale.</summary>
-		public double FontSize(double aggGuiSize) => this.Theme.DefaultFontSize * aggGuiSize / 12;
+		/// <summary>The point size that draws agg-gui's <paramref name="aggGuiSize"/> pixel em.</summary>
+		public double FontSize(double aggGuiSize) => DemoText.Points(aggGuiSize);
 
 		/// <summary>A label in the theme's text colour, or in a fixed <paramref name="color"/> that the theme leaves alone.</summary>
 		public TextWidget Label(string text, double size = 12, Color? color = null)
@@ -74,6 +74,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			var widget = new WrappedTextWidget(text, this.FontSize(size), textColor: this.Theme.TextColor)
 			{
 				Margin = new BorderDouble(0, 2),
+				LineSpacing = DemoText.LineHeightFactor,
 			};
 			this.wrappedTexts.Add(widget);
 			return widget;
@@ -103,11 +104,11 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 		public ThemedTextButton Button(string name, string text)
 		{
-			return new ThemedTextButton(text, this.Theme)
+			return this.DemoTheme.AccentButton(new ThemedTextButton(text, this.Theme)
 			{
 				Name = name,
 				Margin = new BorderDouble(0, 2),
-			};
+			});
 		}
 
 		/// <summary>

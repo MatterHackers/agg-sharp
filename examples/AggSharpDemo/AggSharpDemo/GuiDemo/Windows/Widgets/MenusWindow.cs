@@ -99,7 +99,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			};
 			this.ContextArea.MouseDown += this.ContextArea_MouseDown;
 			// Wrapped: agg-gui's line runs past a narrow window's edge.
-			this.areaText = new WrappedTextWidget(ContextAreaText, this.theme.DefaultFontSize, textColor: this.theme.TextColor)
+			this.areaText = new WrappedTextWidget(ContextAreaText, DemoText.Points(DemoText.BodyPixels), textColor: this.theme.TextColor)
 			{
 				VAnchor = VAnchor.Top | VAnchor.Fit,
 				Selectable = false,
@@ -300,7 +300,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 		private TextWidget Label(string text)
 		{
-			var widget = new TextWidget(text, pointSize: this.theme.DefaultFontSize, textColor: this.theme.TextColor)
+			var widget = new TextWidget(text, pointSize: DemoText.Points(DemoText.BodyPixels), textColor: this.theme.TextColor)
 			{
 				HAnchor = HAnchor.Left,
 				Margin = new BorderDouble(0, 2),
@@ -320,6 +320,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 		/// the menus read the theme each time they open.</summary>
 		private void Recolor()
 		{
+			// agg-gui's menu bar sits on its own band, a shade off the window's fill.
+			this.MenuBar.BackgroundColor = this.demoTheme.Palette.PanelFill;
 			this.ContextArea.BackgroundColor = this.demoTheme.Palette.PanelFill;
 			this.ContextArea.BorderColor = this.demoTheme.Palette.WidgetStroke;
 			this.areaText.TextColor = this.theme.TextColor;

@@ -133,7 +133,13 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			}
 
 			column.AddChild(colors);
-			column.AddChild(this.kit.Wrapped("The default font supports latin, cyrillic (ИÅđ…), math (∫√∞²⅓…), and emojis (💓🌟🖩…)."));
+			// agg-gui keeps this on one line and clips it at the window's edge.
+			TextWidget fonts = this.kit.Label("The default font supports latin, cyrillic (ИÅđ…), math (∫√∞²⅓…), and emojis (💓🌟🖩…).");
+			fonts.AutoExpandBoundsToText = false;
+			fonts.EllipsisIfClipped = false;
+			fonts.HAnchor = HAnchor.Stretch;
+			fonts.Margin = new BorderDouble(0, 2);
+			column.AddChild(fonts);
 			return column;
 		}
 
@@ -189,12 +195,12 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 				cell.AddChild(new WrappedTextWidget($"Column {i + 1} out of {count}", this.kit.FontSize(11.5), textColor: this.kit.Theme.TextColor));
 				if (i == count - 1)
 				{
-					var delete = new ThemedTextButton("Delete this", this.kit.Theme)
+					var delete = this.demoTheme.AccentButton(new ThemedTextButton("Delete this", this.kit.Theme)
 					{
 						Name = "Misc Columns Delete",
 						HAnchor = HAnchor.Left,
 						Margin = new BorderDouble(0, 2),
-					};
+					});
 
 					// The slider's change rebuilds the row, closing this button; let its click finish first.
 					delete.Click += (s, e) => UiThread.RunOnIdle(() => this.ColumnCountSlider.Value = Math.Max(1, this.ColumnCount - 1));

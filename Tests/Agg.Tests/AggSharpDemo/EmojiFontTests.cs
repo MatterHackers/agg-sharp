@@ -51,7 +51,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		}
 
 		[Test]
-		[NotInParallel(nameof(MatterHackers.Agg.UI.ThemeConfig.Current))]
+		[NotInParallel(new[] { SharedStateKeys.ThemeConfigCurrent, SharedStateKeys.MarkdownWidget })] // the app opens About's MarkdownWidget
 		public async Task TheSiteDrawsEmojisInItsDefaultFaces()
 		{
 			_ = new AggSharpDemoApp(AggSharpDemoApp.GuiDemoName);

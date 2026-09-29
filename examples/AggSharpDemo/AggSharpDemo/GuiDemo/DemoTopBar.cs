@@ -68,6 +68,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 				VAnchor = VAnchor.Center,
 			};
 			this.AddChild(this.MenuBar);
+			this.SizeTitles();
 
 			// The narrow page's sidebar drawer toggle (FA bars), at the bar's right end; the shell shows it
 			// below its breakpoint.
@@ -188,6 +189,32 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			this.SidebarDrawerButton.HoverColor = this.demoTheme.Theme.SlightShade;
 
 			this.Invalidate();
+		}
+
+		/// <summary>top_bar.rs's MenuBar is 13px, and each title a fixed slot of max(chars * 8 + 22, 52) scaled by
+		/// 13 / 14 (menu/widget/mod.rs), its text 9px in from the slot's left; the library's titles fit their text
+		/// in the theme's button padding, so they are resized here. agg-gui counts the icon prefix ("\u{F009} ") as
+		/// two characters.</summary>
+		private void SizeTitles()
+		{
+			const double FontPixels = 13;
+			const double TextInset = 9;
+			foreach ((ThemedTextButton title, MenuItemModel menu) in this.MenuBar.Children.OfType<ThemedTextButton>().Zip(this.Menus))
+			{
+				bool hasIcon = !string.IsNullOrEmpty(menu.IconGlyph);
+				int characters = menu.Text.Length + (hasIcon ? 2 : 0);
+				double slot = Math.Max(characters * 8.0 + 22, 52) * FontPixels / 14;
+				title.Children.OfType<TextWidget>().Single().PointSize = DemoText.Points(FontPixels);
+				title.HAnchor = HAnchor.Absolute;
+				title.Width = slot * DeviceScale;
+				title.TextHAnchor = HAnchor.Left;
+
+				// The slots abut; ThemedButton's default 3px side margins would add 6px between titles
+				title.Margin = new BorderDouble(0);
+
+				// MenuBarTitle paints its icon in the left padding, IconSize + IconGap (20) wide
+				title.Padding = new BorderDouble(TextInset + (hasIcon ? 20 : 0), 0, 0, 0);
+			}
 		}
 
 		private IReadOnlyList<MenuItemModel> CreateMenus()

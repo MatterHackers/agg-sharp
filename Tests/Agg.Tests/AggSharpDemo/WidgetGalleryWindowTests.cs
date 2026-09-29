@@ -23,8 +23,11 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+using System;
 using System.Linq;
 using System.Threading.Tasks;
+using MatterHackers.Agg.Image;
+using MatterHackers.Agg.LcdCoverage;
 using MatterHackers.Agg.UI;
 using MatterHackers.AggSharpDemo.GuiDemo;
 using MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets;
@@ -129,6 +132,58 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			gallery.VisibleCheckBox.Checked = false;
 			await Assert.That(gallery.FindDescendant("Gallery Grid").Visible).IsFalse();
 			await Assert.That(gallery.InteractiveCheckBox.Parent.Visible).IsFalse();
+		}
+
+		/// <summary>The empty TextEdit shows its "Write something here" hint in the dimmed text colour, as
+		/// agg-gui's does: the field has to draw pixels well away from its own fill.</summary>
+		[Test]
+		[Arguments(ThemePreference.Light, false)]
+		[Arguments(ThemePreference.Dark, false)]
+		[Arguments(ThemePreference.Light, true)]
+		[Arguments(ThemePreference.Dark, true)]
+		[NotInParallel] // LcdRenderSettings.Enabled is process-wide
+		public async Task EmptyTextEditDrawsItsPlaceholder(ThemePreference preference, bool lcd)
+		{
+			bool wasLcd = LcdRenderSettings.Enabled;
+			LcdRenderSettings.Enabled = lcd;
+			try
+			{
+				await this.AssertPlaceholderDraws(preference);
+			}
+			finally
+			{
+				LcdRenderSettings.Enabled = wasLcd;
+			}
+		}
+
+		private async Task AssertPlaceholderDraws(ThemePreference preference)
+		{
+			WidgetGalleryWindow gallery = Build(new DemoTheme(preference));
+			ThemedTextEditWidget field = gallery.TextField;
+			TextWidget hint = field.NoContentFieldDescription;
+			await Assert.That(hint.Visible).IsTrue();
+
+			var image = new ImageBuffer((int)Math.Ceiling(field.Width), (int)Math.Ceiling(field.Height));
+			Graphics2D graphics = image.NewGraphics2D();
+			graphics.Clear(field.BackgroundColor);
+			field.OnDraw(graphics);
+
+			Color fill = field.BackgroundColor;
+			int inked = 0;
+			RectangleDouble hintBounds = hint.BoundsRelativeToParent;
+			for (int y = (int)hintBounds.Bottom; y < (int)hintBounds.Top; y++)
+			{
+				for (int x = (int)hintBounds.Left; x < (int)hintBounds.Right; x++)
+				{
+					Color pixel = image.GetPixel(x, y);
+					if (Math.Abs(pixel.red - fill.red) + Math.Abs(pixel.green - fill.green) + Math.Abs(pixel.blue - fill.blue) > 90)
+					{
+						inked++;
+					}
+				}
+			}
+
+			await Assert.That(inked).IsGreaterThan(20);
 		}
 
 		[Test]

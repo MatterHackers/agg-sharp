@@ -124,7 +124,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			var row = new FlowLayoutWidget { HAnchor = HAnchor.Left | HAnchor.Fit, VAnchor = VAnchor.Fit, Margin = new BorderDouble(0, 4) };
 			left.AddChild(row);
 
-			this.EnabledCheckBox = new CheckBox("Enabled", this.theme.TextColor, this.theme.DefaultFontSize)
+			this.EnabledCheckBox = new CheckBox("Enabled", this.theme.TextColor, DemoText.Points(DemoText.BodyPixels))
 			{
 				Name = "Tooltips Enabled",
 				Checked = true,
@@ -134,13 +134,13 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			};
 			row.AddChild(this.EnabledCheckBox);
 
-			this.SometimesClickableButton = new ThemedTextButton("Sometimes clickable", this.theme)
+			this.SometimesClickableButton = this.demoTheme.AccentButton(new ThemedTextButton("Sometimes clickable", this.theme)
 			{
 				Name = "Tooltips Sometimes Clickable",
 				VAnchor = VAnchor.Center,
 				Margin = 0,
 				ToolTipText = ButtonTip,
-			};
+			});
 			row.AddChild(this.SometimesClickableButton);
 
 			// egui's on_disabled_hover_ui: the button speaks differently while it is greyed out.
@@ -219,7 +219,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 		/// the tooltip hit walk, so these opt back in.</summary>
 		private TextWidget TipLabel(string text, string tip)
 		{
-			var widget = new TextWidget(text, pointSize: this.theme.DefaultFontSize, textColor: this.theme.TextColor)
+			var widget = new TextWidget(text, pointSize: DemoText.Points(DemoText.BodyPixels), textColor: this.theme.TextColor)
 			{
 				HAnchor = HAnchor.Left,
 				Margin = new BorderDouble(0, 4),
@@ -248,7 +248,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 				BorderColor = palette.WidgetStroke,
 			};
 
-			panel.AddChild(new TextWidget("This tooltip contains a link:", pointSize: this.theme.DefaultFontSize, textColor: this.theme.TextColor)
+			panel.AddChild(new TextWidget("This tooltip contains a link:", pointSize: DemoText.Points(DemoText.BodyPixels), textColor: this.theme.TextColor)
 			{
 				Margin = new BorderDouble(bottom: 4),
 			});
@@ -264,7 +264,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 		private WrappedTextWidget Wrapped(string text, string tip)
 		{
-			var widget = new WrappedTextWidget(text, this.theme.DefaultFontSize, textColor: this.theme.TextColor)
+			var widget = new WrappedTextWidget(text, DemoText.Points(DemoText.BodyPixels), textColor: this.theme.TextColor)
 			{
 				Margin = new BorderDouble(0, 4),
 				ToolTipText = tip,

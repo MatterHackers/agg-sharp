@@ -54,6 +54,8 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			public double WindowHeight;
 			public double LionWindowWidth;
 			public double BackendPanelWidth;
+			public double IconToLabelGap;
+			public double LabelLeft;
 			public List<string> ClippedLabels = new List<string>();
 			public List<string> ClippedIcons = new List<string>();
 		}
@@ -95,6 +97,12 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 					LionWindowWidth = shell.Windows.GetVisibleRect(Spec("Lion")).Value.Width,
 					BackendPanelWidth = shell.BackendPanel.Width,
 				};
+
+				// The icon-to-label gap and the label's inset, in device pixels, of one icon row.
+				var sliders = (IconTextButton)shell.Sidebar.RowOf(Spec("Sliders"));
+				double slidersTextLeft = sliders.Descendants<TextWidget>().Min(t => BoundsIn(t, sliders).Left);
+				measured.IconToLabelGap = slidersTextLeft - sliders.IconBounds.Right;
+				measured.LabelLeft = slidersTextLeft - sliders.LocalBounds.Left;
 
 				// Every label's text must lie inside the button (row) that holds it.
 				foreach (ThemedTextButton row in shell.Sidebar.Descendants<ThemedTextButton>().Where(b => b.Visible))
@@ -147,6 +155,8 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(two.WindowWidth).IsEqualTo(one.WindowWidth * 2);
 			await Assert.That(two.WindowHeight).IsEqualTo(one.WindowHeight * 2);
 			await Assert.That(two.LionWindowWidth).IsEqualTo(one.LionWindowWidth * 2);
+			await Assert.That(two.IconToLabelGap).IsEqualTo(one.IconToLabelGap * 2);
+			await Assert.That(two.LabelLeft).IsEqualTo(one.LabelLeft * 2);
 			await Assert.That(one.ClippedLabels).IsEmpty();
 			await Assert.That(two.ClippedLabels).IsEmpty();
 			await Assert.That(one.ClippedIcons).IsEmpty();

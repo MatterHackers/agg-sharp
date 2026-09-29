@@ -83,7 +83,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Layout
 					Padding = new BorderDouble(6),
 					BackgroundColor = new ColorF(Hues[i].red, Hues[i].green, Hues[i].blue, .22).ToColor(),
 				};
-				this.texts[i] = new WrappedTextWidget(Labels[i], demoTheme.Theme.DefaultFontSize * 11 / 12, textColor: demoTheme.Palette.TextColor)
+				this.texts[i] = new WrappedTextWidget(Labels[i], DemoText.Points(11), textColor: demoTheme.Palette.TextColor)
 				{
 					VAnchor = VAnchor.Top | VAnchor.Fit,
 				};

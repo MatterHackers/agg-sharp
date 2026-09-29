@@ -40,8 +40,20 @@ namespace MatterHackers.AggSharpDemo
 			string statePath = System.Environment.GetEnvironmentVariable("AGG_DEMO_STATE");
 			var store = new FileDemoStateStore(string.IsNullOrEmpty(statePath) ? null : statePath);
 
+			// agg-gui's demo draws LCD subpixel text by default (lcd=1), but this head leaves agg-sharp's default (off)
+			// for now: with LCD on, the GUI demo's first paint in the browser at a device scale of 2 still takes
+			// about 530-580 ms (the sidebar, top bar and double-buffered labels rastered as CPU LCD coverage), over
+			// the 500 ms BrowserFrameTick freeze limit. Turn it on once that paint is under it. A saved System
+			// window setting (System LCD) still turns it on when the state is applied.
+
+			// agg-gui's check boxes and radio circles are 16 across. Set here, not in DemoTheme, as it is
+			// process-wide and the tests build DemoThemes beside other tests drawing check boxes.
+			SelectionControlSize.BoxSize = 16;
+
 			// AGG_DEMO=<name> opens on that demo ("GUI Demo" for the GUI demo page), so a smoke screenshot (AGG_SMOKE_FRAMES/AGG_SMOKE_SCREENSHOT)
 			// can show any of them. Built first: it sets GuiWidget.DeviceScale to the display's scale.
+			// agg-gui's demo draws in Nunito; set before the app chains its emoji fallback onto the default faces.
+			DemoText.UseNunitoAsDefault();
 			var app = new AggSharpDemoApp(System.Environment.GetEnvironmentVariable("AGG_DEMO"), store, followDisplayScale: true);
 
 			// The window opens at the size it had when the demo last closed (agg-gui state.rs window_w / window_h),

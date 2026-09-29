@@ -192,6 +192,70 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			}
 		}
 
+		/// <summary>
+		/// Colours <paramref name="button"/> as agg-gui's Button: an accent fill with white text, a lighter accent
+		/// under the pointer and accent_pressed while held. Windows that recolour their buttons on
+		/// <see cref="ThemeChanged"/> call this there; <see cref="AccentButton"/> keeps a button styled by itself.
+		/// </summary>
+		/// <remarks>
+		/// Only buttons are styled, not ThemeConfig.ButtonBackgroundColor: that colour is also every check box's
+		/// fill (SelectionControlStyle.WidgetBackground) and the menu bar's, which stay widget_bg in agg-gui.
+		/// </remarks>
+		public void StyleButton(ThemedTextButton button)
+		{
+			Color accent = ColorOf(this.Accent);
+			button.BackgroundColor = accent;
+			button.TextColor = Color.White;
+			button.HoverColor = accent.Blend(Color.White, 0.12);
+			button.MouseDownColor = AccentPressed(this.Accent);
+			button.Invalidate();
+		}
+
+		/// <summary>
+		/// Gives <paramref name="scroll"/> agg-gui's default scroll bar: floating over the content, hidden until
+		/// the pointer is over it or the view scrolls, and a fade at each edge with more content past it. The
+		/// values are agg-gui's ScrollBarStyle::floating, as the Scrolling window's Floating preset shows them.
+		/// </summary>
+		public void StyleScroll(ScrollableWidget scroll)
+		{
+			double scale = GuiWidget.DeviceScale;
+			ScrollBar bar = scroll.VerticalScrollBar;
+			bar.Floating = true;
+			bar.Show = ScrollBar.ShowState.WhenRequired;
+			bar.BarWidth = 10 * scale;
+			bar.FloatingWidth = 2 * scale;
+			bar.HandleMinLength = 12 * scale;
+			bar.InnerMargin = 0;
+			this.ColorScroll(scroll);
+
+			ScrollEdgeFade fade = scroll.EdgeFade;
+			fade.Strength = 0.5;
+			fade.Size = 20 * scale;
+
+			EventHandler recolor = (s, e) => this.ColorScroll(scroll);
+			this.ThemeChanged += recolor;
+			scroll.Closed += (s, e) => this.ThemeChanged -= recolor;
+		}
+
+		private void ColorScroll(ScrollableWidget scroll)
+		{
+			ScrollBar bar = scroll.VerticalScrollBar;
+			bar.TrackColor = Color.Transparent;
+			bar.ThumbColor = this.Palette.TextDim.WithAlpha(140);
+			bar.ThumbHoverColor = this.Palette.TextDim;
+		}
+
+		/// <summary>Styles <paramref name="button"/> with <see cref="StyleButton"/> now and on every theme change
+		/// until it is closed, for buttons whose window does not recolour them itself.</summary>
+		public ThemedTextButton AccentButton(ThemedTextButton button)
+		{
+			this.StyleButton(button);
+			EventHandler restyle = (s, e) => this.StyleButton(button);
+			this.ThemeChanged += restyle;
+			button.Closed += (s, e) => this.ThemeChanged -= restyle;
+			return button;
+		}
+
 		/// <summary>agg-gui's AccentColor::key: the lower case id used in menu ids (and later saved state).</summary>
 		public static string KeyOf(AccentColor accent) => accent.ToString().ToLowerInvariant();
 

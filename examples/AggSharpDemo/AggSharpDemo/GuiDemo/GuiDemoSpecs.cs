@@ -25,6 +25,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 
@@ -172,8 +173,13 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		};
 
 		/// <summary>The About window. Not in <see cref="All"/>: app_builder.rs adds it beside the specs.rs list and
-		/// the sidebar gives it its own row above the groups, so it is in no group and no Demos submenu.</summary>
-		public static DemoSpec About { get; } = new DemoSpec("", "About agg-sharp", "Tools", false, 360, 420);
+		/// the sidebar gives it its own row above the groups, so it is in no group and no Demos submenu. Open on a
+		/// first run, 440 x 500, as app_builder.rs's about_open and about_initial are.</summary>
+		public static DemoSpec About { get; } = new DemoSpec("", "About agg-sharp", "Tools", true, 440, 500);
+
+		/// <summary>The windows a first run opens, in their stacking order (the last on top): the open-by-default
+		/// specs in <see cref="All"/> order, then About, which app_builder.rs adds to the canvas last.</summary>
+		public static IReadOnlyList<DemoSpec> DefaultOpen { get; } = All.Where(s => s.OpenByDefault).Append(About).ToList();
 
 		/// <summary>The Inspector window. Not in <see cref="All"/>: app_builder.rs adds it beside the specs.rs list as the
 		/// one tool_entries row, which the sidebar shows in the Tools group; the backend panel's Inspector checkbox

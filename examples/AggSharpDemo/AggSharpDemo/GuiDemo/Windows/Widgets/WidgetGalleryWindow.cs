@@ -134,7 +134,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			this.Link.Activated += (s, e) => this.ToggleBoolean();
 			this.AddRow("Link", "link", this.Link);
 
-			this.CheckBox = new CheckBox("Checkbox", this.theme.TextColor, this.theme.DefaultFontSize)
+			this.CheckBox = new CheckBox("Checkbox", this.theme.TextColor, DemoText.Points(DemoText.BodyPixels))
 			{
 				Name = "Gallery Checkbox",
 			};
@@ -197,7 +197,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 			var comboRow = new FlowLayoutWidget();
 			comboRow.AddChild(this.Text("Take your pick", VAnchor.Center, HAnchor.Absolute));
-			this.ComboBox = new DropDownList("", this.theme.TextColor, pointSize: this.theme.DefaultFontSize)
+			this.ComboBox = new DropDownList("", this.theme.TextColor, pointSize: DemoText.Points(DemoText.BodyPixels))
 			{
 				Name = "Gallery ComboBox",
 				Margin = new BorderDouble(left: 8),
@@ -497,7 +497,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 				Padding = new BorderDouble(16),
 			};
 
-			this.VisibleCheckBox = new CheckBox("Visible", this.theme.TextColor, this.theme.DefaultFontSize)
+			this.VisibleCheckBox = new CheckBox("Visible", this.theme.TextColor, DemoText.Points(DemoText.BodyPixels))
 			{
 				Name = "Gallery Visible",
 				Checked = true,
@@ -509,7 +509,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			var conditional = new FlowLayoutWidget { VAnchor = VAnchor.Center | VAnchor.Fit };
 			bar.AddChild(conditional);
 
-			this.InteractiveCheckBox = new CheckBox("Interactive", this.theme.TextColor, this.theme.DefaultFontSize)
+			this.InteractiveCheckBox = new CheckBox("Interactive", this.theme.TextColor, DemoText.Points(DemoText.BodyPixels))
 			{
 				Name = "Gallery Interactive",
 				Checked = true,
@@ -589,7 +589,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 		private TextWidget Text(string text, VAnchor vAnchor = VAnchor.Absolute, HAnchor hAnchor = HAnchor.Left)
 		{
-			var widget = new TextWidget(text, pointSize: this.theme.DefaultFontSize, textColor: this.theme.TextColor)
+			var widget = new TextWidget(text, pointSize: DemoText.Points(DemoText.BodyPixels), textColor: this.theme.TextColor)
 			{
 				HAnchor = hAnchor,
 				VAnchor = vAnchor,
@@ -675,10 +675,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 
 			foreach (ThemedTextButton button in new[] { this.Button, (ThemedTextButton)this.FindDescendant("Gallery Image Button") })
 			{
-				button.BackgroundColor = this.theme.ButtonBackgroundColor;
-				button.TextColor = this.theme.TextColor;
-				button.HoverColor = this.theme.SlightShade;
-				button.MouseDownColor = this.theme.MinimalShade;
+				this.demoTheme.StyleButton(button);
 			}
 
 			this.ColorSelectableButtons();

@@ -37,8 +37,9 @@ using TUnit.Core;
 namespace MatterHackers.Agg.Tests.AggSharpDemo
 {
 	// agg-gui's backend panel (demo-ui/src/backend_panel.rs) on the GUI demo page.
-	// GuiDemoShell installs its theme as ThemeConfig.Current, which other tests set and read.
-	[NotInParallel(nameof(MatterHackers.Agg.UI.ThemeConfig.Current))]
+	// GuiDemoShell installs its theme as ThemeConfig.Current, which other tests set and read, and opens the
+	// About window's MarkdownWidget.
+	[NotInParallel(new[] { SharedStateKeys.ThemeConfigCurrent, SharedStateKeys.MarkdownWidget })]
 	public class BackendPanelTests
 	{
 		private static DemoSpec Spec(string title) => GuiDemoSpecs.All.First(s => s.Title == title);
@@ -131,7 +132,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 
 			await Assert.That(store.Json).IsNull();
 			await Assert.That(shell.Persistence.SavePending).IsFalse();
-			await Assert.That(shell.Windows.ZOrder).IsEquivalentTo(defaultOrder, CollectionOrdering.Matching);
+			await Assert.That(shell.Windows.ZOrder.Select(s => s.Title).ToList()).IsEquivalentTo(shell.Windows.DefaultStacking().Select(s => s.Title).ToList(), CollectionOrdering.Matching);
 			await Assert.That(shell.Windows.IsOpen(Spec("Sliders"))).IsFalse();
 			await Assert.That(shell.DemoTheme.Preference).IsEqualTo(ThemePreference.System);
 			await Assert.That(shell.DemoTheme.Accent).IsEqualTo(AccentColor.Blue);
@@ -139,7 +140,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(shell.BackendPanel.RunMode).IsEqualTo(DemoRunMode.Reactive);
 			await Assert.That(shell.BackendPanel.SsaaFactor).IsEqualTo(BackendPanel.DefaultSsaaFactor);
 			await Assert.That(shell.BackendPanel.InspectorEnabled).IsFalse();
-			await Assert.That(shell.BackendPanel.OpenWindowTitles).IsEquivalentTo(defaultOrder.AsEnumerable().Reverse().Select(s => s.Title).ToList(), CollectionOrdering.Matching);
+			await Assert.That(shell.BackendPanel.OpenWindowTitles).IsEquivalentTo(shell.Windows.DefaultStacking().Reverse().Select(s => s.Title).ToList(), CollectionOrdering.Matching);
 		}
 
 		[Test]

@@ -94,6 +94,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tools
 				this.paragraphs.AddChild(new WrappedTextWidget(text, this.kit.FontSize(14), textColor: this.kit.Theme.TextColor)
 				{
 					Margin = new BorderDouble(0, 5),
+					LineSpacing = DemoText.LineHeightFactor,
 				});
 			}
 

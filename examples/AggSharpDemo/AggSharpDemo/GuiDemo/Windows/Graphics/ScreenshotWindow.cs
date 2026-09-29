@@ -123,10 +123,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Graphics
 				separator.BackgroundColor = palette.Separator;
 				foreach (ThemedTextButton button in new[] { this.TakeButton, this.SaveButton, this.CopyButton })
 				{
-					button.BackgroundColor = kit.Theme.ButtonBackgroundColor;
-					button.TextColor = kit.Theme.TextColor;
-					button.HoverColor = kit.Theme.SlightShade;
-					button.MouseDownColor = kit.Theme.MinimalShade;
+					demoTheme.StyleButton(button);
 				}
 
 				this.Preview.Invalidate();

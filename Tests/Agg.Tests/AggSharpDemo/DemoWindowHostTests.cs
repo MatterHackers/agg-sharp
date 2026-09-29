@@ -57,7 +57,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		{
 			var (canvas, host) = CreateHost();
 
-			var expected = GuiDemoSpecs.All.Where(s => s.OpenByDefault).ToList();
+			var expected = GuiDemoSpecs.DefaultOpen.ToList();
 			await Assert.That(expected.Count).IsGreaterThan(0);
 			await Assert.That(host.ZOrder).IsEquivalentTo(expected, CollectionOrdering.Matching);
 			await Assert.That(canvas.Children.OfType<WindowWidget>().Count()).IsEqualTo(expected.Count);
@@ -324,6 +324,61 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			{
 				RectangleDouble tile = DemoWindowHost.TileRect(index, 1600, 900, 360, 290);
 				await Assert.That(tile.Left).IsEqualTo(20 + index % 4 * 380.0);
+			}
+		}
+
+		// app_builder.rs's first run on its 720-tall default canvas (x, y up from the canvas bottom): the
+		// default windows at tile_rect's places, Code Example's column pulled onto a ~980-wide canvas, and
+		// About (440 x 500 at 80, 80) on top.
+		[Test]
+		[Arguments(1540.0, 1160.0)]
+		[Arguments(980.0, 620.0)]
+		public async Task DefaultWindowsOpenWhereAggGuisDo(double canvasWidth, double codeExampleLeft)
+		{
+			var canvas = new GuiWidget(canvasWidth, 720);
+			var host = new DemoWindowHost(canvas);
+
+			async Task At(DemoSpec spec, double left, double bottom, double width, double height)
+			{
+				RectangleDouble rect = host.GetVisibleRect(spec).Value;
+				await Assert.That(rect).IsEqualTo(new RectangleDouble(left, bottom, left + width, bottom + height)).Because(spec.Title);
+			}
+
+			await At(Spec("Widget Gallery"), 20, 410, 360, 290);
+			await At(Spec("Code Example"), codeExampleLeft, 346, 360, 290);
+			await At(Spec("Lion"), 400, 80, 520, 620);
+			await At(GuiDemoSpecs.About, 80, 80, 440, 500);
+			await Assert.That(host.ZOrder.Last()).IsSameReferenceAs(GuiDemoSpecs.About);
+		}
+
+		// However narrow or short the canvas, every default window shows some of its title bar above the ones
+		// stacked over it: an open window hidden completely looks like a window that did not open. The
+		// narrowest is the canvas beside the app's demo list and the sidebar in a 1200-wide browser page.
+		[Test]
+		[Arguments(780.0, 780.0)]
+		[Arguments(780.0, 700.0)]
+		[Arguments(600.0, 500.0)]
+		[Arguments(1000.0, 780.0)]
+		public async Task EveryDefaultWindowShowsItsTitleBar(double canvasWidth, double canvasHeight)
+		{
+			var canvas = new GuiWidget(canvasWidth, canvasHeight);
+			var host = new DemoWindowHost(canvas);
+
+			IReadOnlyList<DemoSpec> order = host.ZOrder;
+			await Assert.That(order).IsEquivalentTo(GuiDemoSpecs.DefaultOpen, CollectionOrdering.Any);
+			await Assert.That(order.Last()).IsSameReferenceAs(GuiDemoSpecs.About);
+			for (int i = 0; i < order.Count; i++)
+			{
+				RectangleDouble rect = host.GetVisibleRect(order[i]).Value;
+				var above = order.Skip(i + 1).Select(s => host.GetVisibleRect(s).Value).ToList();
+				bool shows = false;
+				double y = rect.Top - 10;
+				for (double x = rect.Left + 10; x < rect.Right - 10 && !shows; x++)
+				{
+					shows = rect.Top <= canvasHeight && !above.Any(r => r.Contains(x, y));
+				}
+
+				await Assert.That(shows).IsTrue().Because($"'{order[i].Title}' at {rect} is under {string.Join(", ", order.Skip(i + 1).Select(s => s.Title))}");
 			}
 		}
 	}
