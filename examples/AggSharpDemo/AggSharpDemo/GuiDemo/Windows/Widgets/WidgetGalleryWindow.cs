@@ -304,6 +304,32 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			this.CollapsingHeader.Body.AddChild(this.Text("It's a custom toggle switch:"));
 			this.AddRow("CollapsingHeader", "CollapsingHeader", this.CollapsingHeader);
 
+			// The theme's newer building blocks: a Strip segmented control stretched to equal columns, a pair of
+			// single-choice cards, a section header, an info box and a primary button.
+			this.StripSegmentedControl = new SegmentedControl(new[] { "Fast", "Medium", "High", "Best" }, this.theme, 1, SegmentedStyle.Strip)
+			{
+				Name = "Gallery Segmented Strip",
+				HAnchor = HAnchor.Stretch,
+			};
+			this.AddRow("Strip segmented", "SegmentedControl", this.StripSegmentedControl);
+
+			var cardGroup = new SelectableCardGroup();
+			var cardRow = new FlowLayoutWidget { HAnchor = HAnchor.Stretch };
+			cardRow.AddChild(cardGroup.Add(new SelectableCard("One object", "On a plain background.", this.theme) { Selected = true }));
+			cardRow.AddChild(cardGroup.Add(new SelectableCard("A scene", "Everything in view.", this.theme) { Margin = new BorderDouble(left: 10) }));
+			this.Cards = cardGroup;
+			this.AddRow("SelectableCard", "SelectableCard", cardRow);
+
+			this.AddRow("Section header", "CreateSectionHeader", this.theme.CreateSectionHeader("Quality"));
+
+			var infoBox = new InfoBox(this.theme) { Name = "Gallery InfoBox" };
+			infoBox.AddChild(this.Text("Grouped options sit in a tinted box."));
+			this.AddRow("InfoBox", "InfoBox", infoBox);
+
+			var primary = this.theme.CreatePrimaryButton("Build");
+			primary.Name = "Gallery Primary Button";
+			this.AddRow("Primary button", "CreatePrimaryButton", primary);
+
 			this.ToggleSwitch = this.CreateToggleSwitch();
 			this.AddRow(new Hyperlink("Custom widget", this.theme, RepoUrl), this.ToggleSwitch);
 
@@ -340,6 +366,10 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 		public IReadOnlyList<RadioButton> RadioButtons => this.radioButtons;
 
 		public SegmentedControl SegmentedControl { get; }
+
+		public SegmentedControl StripSegmentedControl { get; }
+
+		public SelectableCardGroup Cards { get; }
 
 		public IReadOnlyList<ThemedTextButton> SelectableButtons => this.selectableButtons;
 

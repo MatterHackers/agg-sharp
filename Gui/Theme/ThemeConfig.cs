@@ -75,51 +75,86 @@ namespace MatterHackers.Agg.UI
         public Color BackgroundColor { get; set; } = new Color("#fff");
         public Color PrimaryAccentColor { get; set; } = new Color("#7AD7F0");
         public BorderDouble TextButtonPadding { get; } = new BorderDouble(14, 0);
-        public double ButtonHeight => 32 * GuiWidget.DeviceScale;
+        /// <summary>The height of a themed button, in device pixels: <see cref="ButtonDesignHeight"/> scaled.</summary>
+        public double ButtonHeight => ButtonDesignHeight * GuiWidget.DeviceScale;
 
+        /// <summary>The height of a themed button (and of icon buttons' square), in design units.</summary>
+        public double ButtonDesignHeight { get; set; } = 32;
+
+        /// <summary>
+        /// agg's default look, the one agg apps get unless they build their own theme: a warm off-white window,
+        /// white controls with a 1 px warm grey border rounded at 8, a deep teal accent, and the Strip
+        /// segmented control. The property initializers are deliberately the older look instead, because
+        /// MatterCAD deserializes its themes over a bare <c>new ThemeConfig()</c>; the new look lives here only.
+        /// </summary>
         public static ThemeConfig DefaultTheme()
         {
+            var accent = new Color("#1f5f7a");
+            var border = new Color("#c9c6bd");
+            var text = new Color("#1d2226");
+            var muted = new Color("#5b6166");
+            var white = new Color("#ffffff");
+
             var theme = new ThemeConfig()
             {
                 DefaultFontSize = 11,
+                PrimaryAccentColor = accent,
+                TextColor = text,
+                SecondaryTextColor = new Color("#3c4449"),
+                MutedTextColor = muted,
+                LightTextColor = muted,
+                BackgroundColor = new Color("#fbfaf7"),
+                ButtonBackgroundColor = white,
+                ControlFillColor = white,
+                ControlBorderColor = border,
+
+                ButtonBorderWidth = 1,
+                ButtonBorderColor = border,
+                ButtonHoverShadesFill = true,
+                ButtonDesignHeight = 36,
+
+                ButtonRadius = 8,
+                FieldRadius = 8,
+                DropDownRadius = 8,
+                CardRadius = 10,
+                ContainerRadius = 10,
+
+                AccentTintColor = new Color("#eef4f6"),
+                AccentTintBorderColor = new Color("#c8dbe2"),
+                WarningTextColor = new Color("#8a4a12"),
+
+                OnAccentMinimumContrast = 4.5,
+                FieldDesignHeight = 36,
+                SegmentedHeight = 40,
+                SegmentedStyle = SegmentedStyle.Strip,
+
                 EditFieldColors = new ThreeStateColor()
                 {
-                    Focused = new StateColor()
-                    {
-                        BackgroundColor = new Color("#fff"),
-                        ForegroundColor = new Color("#00000000"),
-                        BorderColor = new Color("#FF7F00"),
-                        TextColor = new Color("#222222"),
-                        LightTextColor = new Color("#6e6e6e")
-                    },
-                    Hovered = new StateColor()
-                    {
-                        BackgroundColor = new Color("#fff"),
-                        ForegroundColor = new Color("#00000000"),
-                        BorderColor = new Color("#FF7F00"),
-                        TextColor = new Color("#00000000")
-                        // LightTextColor = new Color("#")
-                    },
-                    Inactive = new StateColor()
-                    {
-                        BackgroundColor = new Color("#fff"),
-                        ForegroundColor = new Color("#00000000"),
-                        BorderColor = new Color("#ccc"),
-                        TextColor = new Color("#222222"),
-                        LightTextColor = new Color("#6e6e6e")
-                    }
+                    Focused = EditFieldState(white, accent, text, muted),
+                    Hovered = EditFieldState(white, accent, text, muted),
+                    Inactive = EditFieldState(white, border, text, muted),
                 },
             };
 
-            theme.ButtonBackgroundColor = Color.LightGray;
             theme.BorderColor20 = Color.Black.WithAlpha(140);
             theme.AccentMimimalOverlay = theme.PrimaryAccentColor.WithAlpha(128);
             theme.SlightShade = theme.PrimaryAccentColor.WithAlpha(80);
             theme.MinimalShade = theme.PrimaryAccentColor.WithAlpha(60);
             theme.RowBorder = theme.TextColor;
 
-            theme.ButtonBackgroundColor = theme.BackgroundColor.WithLightness(0.9).ToColor();
             return theme;
+        }
+
+        private static StateColor EditFieldState(Color fill, Color border, Color text, Color lightText)
+        {
+            return new StateColor()
+            {
+                BackgroundColor = fill,
+                ForegroundColor = Color.Transparent,
+                BorderColor = border,
+                TextColor = text,
+                LightTextColor = lightText,
+            };
         }
 
         public static ThemeConfig DefaultMenuTheme()
@@ -193,6 +228,141 @@ namespace MatterHackers.Agg.UI
 
 
         public double ButtonRadius { get; set; } = 3;
+
+        // Shape, border and colour tokens. Every initializer is the look the widget had before it read the
+        // token: MatterCAD deserializes its theme into a new ThemeConfig and keeps these for anything its
+        // theme file does not name, so a default that drifted would restyle MatterCAD unasked. Radii,
+        // widths and heights are design units (multiplied by GuiWidget.DeviceScale where drawn). Derived
+        // values are get-only so MatterCAD's ThemeContractResolver, which saves only writable properties,
+        // never bakes today's derivation into a user's saved theme.
+
+        /// <summary>
+        /// The outside height (border included) of themed text and number fields and drop downs, in design
+        /// units, with their text centred. 0, the default, keeps the height their font and padding give them,
+        /// exactly as before this token existed.
+        /// </summary>
+        public double FieldDesignHeight { get; set; } = 0;
+
+        /// <summary>Corner radius of themed text and number fields. 0 draws the square field.</summary>
+        public double FieldRadius { get; set; } = 0;
+
+        /// <summary>Corner radius of a DropDownList's field, measured on the outside of its outline.</summary>
+        public double DropDownRadius { get; set; } = 4;
+
+        /// <summary>Corner radius of a <see cref="SelectableCard"/>.</summary>
+        public double CardRadius { get; set; } = 10;
+
+        /// <summary>Corner radius of a grouping container such as an <see cref="InfoBox"/>.</summary>
+        public double ContainerRadius { get; set; } = 10;
+
+        /// <summary>Outline width of themed buttons. 0 draws no outline.</summary>
+        public double ButtonBorderWidth { get; set; } = 0;
+
+        /// <summary>Outline colour of themed buttons, used when <see cref="ButtonBorderWidth"/> is above 0.</summary>
+        public Color ButtonBorderColor { get; set; } = Color.Transparent;
+
+        /// <summary>
+        /// When true, hovering a button whose fill is opaque shades that fill with its HoverColor rather than
+        /// replacing it. Off by default: MatterCAD's toolbars and dialogs are built around the replace
+        /// behaviour, and a translucent fill always keeps it either way.
+        /// </summary>
+        public bool ButtonHoverShadesFill { get; set; } = false;
+
+        /// <summary>
+        /// The outline of fields, drop downs, segmented strips and cards. Transparent (the default) means unset:
+        /// each widget keeps its own default (a DropDownList's agg-gui widget stroke, a field's EditFieldColors
+        /// border). Widgets read it through <see cref="ControlBorderColorIfSet"/>.
+        /// </summary>
+        /// <remarks>
+        /// Unset is Transparent rather than null because MatterCAD saves themes with a resolver that skips
+        /// Transparent colours, while agg's Color converter reads a saved null back as Transparent - a nullable
+        /// token came back from its first save and reload as a real, invisible border.
+        /// </remarks>
+        public Color ControlBorderColor { get; set; } = Color.Transparent;
+
+        /// <summary><see cref="ControlBorderColor"/>, or null while it is unset (Transparent).</summary>
+        public Color? ControlBorderColorIfSet => ControlBorderColor.Alpha0To255 == 0 ? null : ControlBorderColor;
+
+        /// <summary>
+        /// The fill of drop downs, a Strip segmented control and unselected cards. Transparent (the default)
+        /// means unset, which is <see cref="ButtonBackgroundColor"/>; read it through
+        /// <see cref="ResolvedControlFillColor"/>. Not a getter that falls back: MatterCAD saves every writable
+        /// property, and would save today's ButtonBackgroundColor under this name and pin it.
+        /// </summary>
+        public Color ControlFillColor { get; set; } = Color.Transparent;
+
+        /// <summary><see cref="ControlFillColor"/>, or null while it is unset (Transparent).</summary>
+        public Color? ControlFillColorIfSet => ControlFillColor.Alpha0To255 == 0 ? null : ControlFillColor;
+
+        /// <summary><see cref="ControlFillColor"/>, or <see cref="ButtonBackgroundColor"/> when it is unset.</summary>
+        public Color ResolvedControlFillColor => ControlFillColorIfSet ?? ButtonBackgroundColor;
+
+        /// <summary>Text one step quieter than <see cref="TextColor"/>: an unselected card's title.</summary>
+        public Color SecondaryTextColor { get; set; } = new Color("#3c4449");
+
+        /// <summary>Descriptions, hints and section headers.</summary>
+        public Color MutedTextColor { get; set; } = new Color("#5b6166");
+
+        /// <summary>A light wash of the accent: a selected card's or an info box's fill.</summary>
+        public Color AccentTintColor { get; set; } = new Color("#eef4f6");
+
+        /// <summary>The outline drawn around an <see cref="AccentTintColor"/> fill.</summary>
+        public Color AccentTintBorderColor { get; set; } = new Color("#c8dbe2");
+
+        /// <summary>Text that warns without being an error.</summary>
+        public Color WarningTextColor { get; set; } = new Color("#8a4a12");
+
+        /// <summary>
+        /// Ink that stays readable on <see cref="PrimaryAccentColor"/>: the segmented control's long-standing rule
+        /// (<see cref="TextColor"/> pushed to 3:1 against the accent). A theme that raises
+        /// <see cref="OnAccentMinimumContrast"/> above 3 gets white or black, whichever reads better, wherever
+        /// that rule falls short of it - DefaultTheme's dark teal otherwise gets a hard-to-read grey.
+        /// </summary>
+        public Color OnAccentTextColor
+        {
+            get
+            {
+                var accent = PrimaryAccentColor;
+                var ink = TextColor.WithContrast(accent, 3).ToColor();
+                if (OnAccentMinimumContrast <= 3 || ContrastRatio(ink, accent) >= OnAccentMinimumContrast)
+                {
+                    return ink;
+                }
+
+                return ContrastRatio(Color.White, accent) >= ContrastRatio(Color.Black, accent) ? Color.White : Color.Black;
+            }
+        }
+
+        /// <summary>
+        /// The WCAG contrast <see cref="OnAccentTextColor"/> must reach. 3 (the default) is exactly the old rule,
+        /// which existing themes - AggSharpDemo's agg-gui accents among them - are drawn with; DefaultTheme asks
+        /// for 4.5, the body-text minimum.
+        /// </summary>
+        public double OnAccentMinimumContrast { get; set; } = 3;
+
+        /// <summary>The WCAG 2 contrast ratio of two opaque colours, from 1 (identical) to 21 (black on white).</summary>
+        public static double ContrastRatio(Color a, Color b)
+        {
+            static double Channel(int value)
+            {
+                double c = value / 255.0;
+                return c <= 0.03928 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+            }
+
+            static double Luminance(Color c) => 0.2126 * Channel(c.red) + 0.7152 * Channel(c.green) + 0.0722 * Channel(c.blue);
+
+            double la = Luminance(a), lb = Luminance(b);
+            return (Math.Max(la, lb) + 0.05) / (Math.Min(la, lb) + 0.05);
+        }
+
+        /// <summary>The height of a single-line control, in device pixels. The same as <see cref="ButtonHeight"/>.</summary>
+        public double ControlHeight => ButtonHeight;
+
+        /// <summary>The height of a <see cref="SegmentedControl"/>, in design units.</summary>
+        public double SegmentedHeight { get; set; } = 24;
+
+        /// <summary>How a <see cref="SegmentedControl"/> is drawn.</summary>
+        public SegmentedStyle SegmentedStyle { get; set; } = SegmentedStyle.Pill;
 
         public int FontSize7 { get; } = 7;
 
@@ -361,6 +531,46 @@ namespace MatterHackers.Agg.UI
             {
                 Margin = new BorderDouble(0, 5)
             };
+        }
+
+        /// <summary>
+        /// A small, bold, uppercase label in <see cref="MutedTextColor"/> that opens a group of settings.
+        /// Named "<c>text</c> Header".
+        /// </summary>
+        public TextWidget CreateSectionHeader(string text)
+        {
+            return new TextWidget(text.ToUpperInvariant(), pointSize: DefaultFontSize - 2, textColor: MutedTextColor, bold: true)
+            {
+                Name = text + " Header",
+                Margin = new BorderDouble(0, 2),
+            };
+        }
+
+        /// <summary>
+        /// The one button that carries a view's main action: accent fill, bold <see cref="OnAccentTextColor"/>
+        /// text, a darker accent while hovered and pressed. Disabled, it turns to a pale accent wash with
+        /// <see cref="MutedTextColor"/> text, so it no longer looks clickable.
+        /// </summary>
+        public ThemedTextButton CreatePrimaryButton(string text)
+        {
+            var accent = PrimaryAccentColor;
+            var button = new ThemedTextButton(text, this)
+            {
+                Name = text + " Button",
+                BackgroundColor = accent,
+                HoverColor = accent.Blend(Color.Black, .1),
+                MouseDownColor = accent.Blend(Color.Black, .18),
+                TextColor = OnAccentTextColor,
+                Bold = true,
+                DisabledFillColor = accent.Blend(BackgroundColor, .8),
+            };
+
+            // After TextColor, which resets it.
+            button.DisabledTextColor = MutedTextColor;
+
+            // A primary action has no outline: the fill is the whole look.
+            button.BackgroundOutlineWidth = 0;
+            return button;
         }
 
         public Color SplitterBackground { get; set; } = new Color(0, 0, 0, 60);
@@ -607,6 +817,19 @@ namespace MatterHackers.Agg.UI
             widget.BorderColor = shadedBorder ? MinimalShade : BorderColor20;
             widget.Border = border;
         }
+    }
+
+    /// <summary>The two looks of a <see cref="SegmentedControl"/>.</summary>
+    public enum SegmentedStyle
+    {
+        /// <summary>A shaded rounded track with the selected segment as an inset accent pill (agg-gui, macOS).</summary>
+        Pill,
+
+        /// <summary>
+        /// A <see cref="ThemeConfig.ResolvedControlFillColor"/> strip in a 1 px rounded outline, square full height
+        /// dividers, and the selected segment filled edge to edge with the accent.
+        /// </summary>
+        Strip,
     }
 
     public class GridColors

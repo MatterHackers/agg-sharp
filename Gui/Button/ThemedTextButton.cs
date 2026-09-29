@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2022, John Lewin, Lars Brubaker
+Copyright (c) 2026, John Lewin, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -64,6 +64,20 @@ namespace MatterHackers.Agg.UI
         {
             get => textWidget.TextColor;
             set => textWidget.TextColor = value;
+        }
+
+        /// <summary>The label's colour while disabled. Set it after <see cref="TextColor"/>, which resets it.</summary>
+        public Color DisabledTextColor
+        {
+            get => textWidget.DisabledTextColor;
+            set => textWidget.DisabledTextColor = value;
+        }
+
+        /// <summary>Whether the label is drawn bold. The button refits to the bold text's width.</summary>
+        public bool Bold
+        {
+            get => textWidget.Bold;
+            set => textWidget.Bold = value;
         }
 
         public override string Text

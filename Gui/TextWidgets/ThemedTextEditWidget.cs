@@ -152,6 +152,7 @@ namespace MatterHackers.Agg.UI
 			});
 
 			SyncNoContentFieldDescription();
+			RoundedFieldChrome.ApplyFieldHeight(this, theme, ActualTextEditWidget, NoContentFieldDescription);
 		}
 
         public TextEditWidget ActualTextEditWidget { get; }
@@ -198,10 +199,35 @@ namespace MatterHackers.Agg.UI
 				}
 				else
 				{
-					return theme.EditFieldColors.Inactive.BorderColor;
+					return theme.ControlBorderColorIfSet ?? theme.EditFieldColors.Inactive.BorderColor;
 				}
 			}
 			set => base.BorderColor = value;
+		}
+
+		/// <summary>The field's outer corner radius in device pixels: the theme's FieldRadius, 0 for the square field.</summary>
+		private double FieldRadius => theme.FieldRadius * DeviceScale;
+
+		/// <summary>
+		/// A theme with a FieldRadius gets the rounded field DropDownList draws, in the same bounds; without one
+		/// the square fill is left to GuiWidget as it always was.
+		/// </summary>
+		public override void OnDrawBackground(Graphics2D graphics2D)
+		{
+			if (FieldRadius > 0)
+			{
+				RoundedFieldChrome.DrawFill(graphics2D, LocalBounds, FieldRadius, DeviceBorder.Left, BackgroundColor);
+				return;
+			}
+
+			base.OnDrawBackground(graphics2D);
+		}
+
+		/// <summary>Strokes the rounded outline in the Border band when the theme rounds fields.</summary>
+		protected internal override bool DrawBorderRing(Graphics2D graphics2D, RectangleDouble boundsInParent, BorderDouble deviceBorder, Color borderColor)
+		{
+			return FieldRadius > 0
+				&& RoundedFieldChrome.DrawRing(graphics2D, boundsInParent, deviceBorder.Left, FieldRadius, borderColor);
 		}
 
 		public override void OnMouseEnterBounds(MouseEventArgs mouseEvent)
@@ -265,15 +291,18 @@ namespace MatterHackers.Agg.UI
 		/// changes in place (light to dark, or the system preference arriving after the widget was built) would
 		/// otherwise leave the hint in the old theme's colour - the dark theme's near-white hint on the light
 		/// theme's white field, which reads as no hint at all.
+		/// A theme that never set its edit-field colours (a bare new ThemeConfig()) reads as transparent here;
+		/// the hint then stays black, as TextWidget's constructor makes it, rather than drawing nothing.
 		/// </remarks>
 		private void SyncNoContentFieldDescription()
 		{
 			if (NoContentFieldDescription != null)
 			{
 				NoContentFieldDescription.Visible = Text == "";
-				NoContentFieldDescription.TextColor = ActualTextEditWidget.InternalTextEditWidget.Focused
+				var hintColor = ActualTextEditWidget.InternalTextEditWidget.Focused
 					? theme.EditFieldColors.Focused.LightTextColor
 					: theme.EditFieldColors.Inactive.LightTextColor;
+				NoContentFieldDescription.TextColor = hintColor.Alpha0To255 == 0 ? Color.Black : hintColor;
 			}
 		}
 

@@ -76,6 +76,9 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public async Task DropDownSizeIsWhatItWasBeforeTheRestyle()
 		{
+			// Under a bare ThemeConfig - what MatterCAD's layouts are built on. A drop down reads its height
+			// from ThemeConfig.Current, and DefaultTheme (the fallback Current) now asks for 36 on purpose.
+			ThemeConfig.Current = new ThemeConfig();
 			var dropDown = new DropDownList("none", Color.Black);
 			dropDown.AddItem("A much longer item");
 			dropDown.AddItem("B");
@@ -268,6 +271,11 @@ namespace MatterHackers.Agg.UI.Tests
 				theme.BackgroundColor = new Color(27, 27, 27);
 				theme.TextColor = new Color(230, 230, 235);
 				theme.ButtonBackgroundColor = new Color(56, 56, 66);
+
+				// DefaultTheme's light control fill and border are explicit tokens; a dark theme built on it
+				// has to replace them, or its fields stay white.
+				theme.ControlFillColor = theme.ButtonBackgroundColor;
+				theme.ControlBorderColor = Color.Transparent;
 			}
 
 			theme.SlightShade = theme.PrimaryAccentColor.WithAlpha(80);

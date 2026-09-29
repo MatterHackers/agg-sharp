@@ -67,6 +67,8 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 				"Gallery ComboBox", "Gallery Slider", "Gallery DragValue", "Gallery ProgressBar",
 				"Gallery Spinner Small", "Gallery Spinner", "Gallery ColorPicker", "Gallery Color Wheel", "Gallery Image",
 				"Gallery Image Button", "Gallery CollapsingHeader", "Gallery ToggleSwitch",
+				"Gallery Segmented Strip", "One object Card", "A scene Card", "Quality Header", "Gallery InfoBox",
+				"Gallery Primary Button",
 				"Gallery Visible", "Gallery Interactive", "Gallery Opacity",
 				"Gallery Doc Label", "Gallery Doc Hyperlink", "Gallery Doc CollapsingHeader",
 			};

@@ -391,6 +391,20 @@ namespace MatterHackers.Agg.UI
 			base.OnEnabledChanged(e);
 		}
 
+		/// <summary>
+		/// The colour drawn while disabled. Setting <see cref="TextColor"/> resets it to that colour at a fifth
+		/// opacity, so set this afterwards.
+		/// </summary>
+		public Color DisabledTextColor
+		{
+			get => disabledColor;
+			set
+			{
+				disabledColor = value;
+				this.Invalidate();
+			}
+		}
+
 		public Color TextColor
 		{
 			get => this.Enabled ? textColor : this.disabledColor;

@@ -165,7 +165,13 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		public event EventHandler ThemeChanged;
 
 		/// <summary>The theme config the demo's widgets are built with; updated in place on every change.</summary>
-		public ThemeConfig Theme { get; } = ThemeConfig.DefaultTheme();
+		/// <remarks>
+		/// Built on a bare ThemeConfig, not <see cref="ThemeConfig.DefaultTheme"/>: the demo reproduces agg-gui's
+		/// look, and DefaultTheme carries agg's own look (rounded, outlined, Strip segments, a fixed control
+		/// border) in tokens that <see cref="Apply"/> does not reset. Every colour DefaultTheme used to add
+		/// before that, Apply sets itself, so this is the theme the demo always had.
+		/// </remarks>
+		public ThemeConfig Theme { get; } = new ThemeConfig();
 
 		public ThemePreference Preference { get; private set; }
 

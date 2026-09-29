@@ -109,6 +109,7 @@ namespace MatterHackers.Agg.UI
 
 				this.ActuallNumberEdit.InternalNumberEdit.MaxDecimalsPlaces = 5;
 				this.AddChild(this.ActuallNumberEdit);
+				RoundedFieldChrome.ApplyFieldHeight(this, theme, ActuallNumberEdit);
 			}
 
 			this.PerformLayout();
@@ -156,10 +157,35 @@ namespace MatterHackers.Agg.UI
 				}
 				else
 				{
-					return theme.EditFieldColors.Inactive.BorderColor;
+					return theme.ControlBorderColorIfSet ?? theme.EditFieldColors.Inactive.BorderColor;
 				}
 			}
 			set => base.BorderColor = value;
+		}
+
+		/// <summary>The field's outer corner radius in device pixels: the theme's FieldRadius, 0 for the square field.</summary>
+		private double FieldRadius => theme.FieldRadius * DeviceScale;
+
+		/// <summary>
+		/// A theme with a FieldRadius gets the rounded field DropDownList draws, in the same bounds; without one
+		/// the square fill is left to GuiWidget as it always was.
+		/// </summary>
+		public override void OnDrawBackground(Graphics2D graphics2D)
+		{
+			if (FieldRadius > 0)
+			{
+				RoundedFieldChrome.DrawFill(graphics2D, LocalBounds, FieldRadius, DeviceBorder.Left, BackgroundColor);
+				return;
+			}
+
+			base.OnDrawBackground(graphics2D);
+		}
+
+		/// <summary>Strokes the rounded outline in the Border band when the theme rounds fields.</summary>
+		protected internal override bool DrawBorderRing(Graphics2D graphics2D, RectangleDouble boundsInParent, BorderDouble deviceBorder, Color borderColor)
+		{
+			return FieldRadius > 0
+				&& RoundedFieldChrome.DrawRing(graphics2D, boundsInParent, deviceBorder.Left, FieldRadius, borderColor);
 		}
 
 		private bool mouseInBounds = false;

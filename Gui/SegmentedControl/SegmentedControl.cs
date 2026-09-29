@@ -43,12 +43,15 @@ namespace MatterHackers.Agg.UI
 	/// Each segment is a child widget named "<c>label</c> Segment", so automation can click one by name.
 	/// Two segments with the same label therefore share a name; a caller that needs both reachable by
 	/// name gives them distinct labels (or finds them through <see cref="Segments"/>).
-	/// Every segment is as wide as the widest label, the macOS default.
+	/// Every segment is as wide as the widest label, the macOS default; a control laid out wider than that
+	/// (HAnchor.Stretch, or a Width set outright) shares the width equally, like CSS <c>repeat(n, 1fr)</c>.
+	/// <see cref="ThemeConfig.SegmentedStyle"/> picks the Pill look or the Strip look, read at draw time.
 	/// </remarks>
 	public class SegmentedControl : GuiWidget
 	{
-		private const double DesignHeight = 24;
 		private const double DesignPadding = 12;
+
+		/// <summary>The Pill track's corner radius. The Strip look rounds by ThemeConfig.ButtonRadius instead.</summary>
 		private const double DesignCornerRadius = 6;
 
 		/// <summary>Gap between the track edge and the selected fill, so it reads as a raised pill.</summary>
@@ -60,11 +63,23 @@ namespace MatterHackers.Agg.UI
 		private readonly List<GuiWidget> segments = new List<GuiWidget>();
 		private readonly List<TextWidget> labelWidgets = new List<TextWidget>();
 		private int selectedIndex;
+		private readonly SegmentedStyle? style;
 
-		/// <summary>Creates a control with one segment per label and <paramref name="selectedIndex"/> selected.</summary>
-		public SegmentedControl(IEnumerable<string> labels, ThemeConfig theme, int selectedIndex = 0)
+		/// <summary>Every segment's width at the control's natural size: the widest label plus padding, whole pixels.</summary>
+		private double naturalSegmentWidth;
+
+		/// <summary>
+		/// Creates a control with one segment per label and <paramref name="selectedIndex"/> selected, drawn in
+		/// <paramref name="style"/>, or in the theme's <see cref="ThemeConfig.SegmentedStyle"/> when that is null.
+		/// </summary>
+		/// <remarks>
+		/// The style is fixed here rather than settable later because it decides the segment widths: Strip
+		/// bolds the selected label, so its segments are measured to fit every label bold.
+		/// </remarks>
+		public SegmentedControl(IEnumerable<string> labels, ThemeConfig theme, int selectedIndex = 0, SegmentedStyle? style = null)
 		{
 			this.theme = theme;
+			this.style = style;
 			Labels = labels.ToList();
 			this.selectedIndex = Labels.Count == 0 ? 0 : Math.Clamp(selectedIndex, 0, Labels.Count - 1);
 			HAnchor = HAnchor.Absolute;
@@ -72,8 +87,11 @@ namespace MatterHackers.Agg.UI
 			TabStop = true;
 
 			var scale = DeviceScale;
-			var height = DesignHeight * scale;
+			var height = theme.SegmentedHeight * scale;
 
+			// The widest label decides every segment's width. Strip draws the selected label bold, so its
+			// width is measured bold too - the segments must not change size when the selection moves.
+			double widestLabel = 0;
 			for (int i = 0; i < Labels.Count; i++)
 			{
 				var label = new TextWidget(Labels[i], pointSize: theme.DefaultFontSize, textColor: theme.TextColor)
@@ -82,10 +100,24 @@ namespace MatterHackers.Agg.UI
 					VAnchor = VAnchor.Center,
 					Selectable = false,
 				};
+
+				// Strip bolds the selected label, and bold is wider: without this the label keeps its regular
+				// width and the bold text is cut to an ellipsis. Pill never changes the typeface, and is left
+				// exactly as it was.
+				if (Style == SegmentedStyle.Strip)
+				{
+					label.AutoExpandBoundsToText = true;
+				}
+
 				labelWidgets.Add(label);
+				widestLabel = Math.Max(widestLabel, label.Width);
+				if (Style == SegmentedStyle.Strip)
+				{
+					widestLabel = Math.Max(widestLabel, new TextWidget(Labels[i], pointSize: theme.DefaultFontSize, bold: true).Width);
+				}
 			}
 
-			var segmentWidth = labelWidgets.Count == 0 ? 0 : labelWidgets.Max(l => l.Width) + 2 * DesignPadding * scale;
+			var segmentWidth = labelWidgets.Count == 0 ? 0 : widestLabel + 2 * DesignPadding * scale;
 			segmentWidth = Math.Ceiling(segmentWidth);
 
 			for (int i = 0; i < Labels.Count; i++)
@@ -113,12 +145,42 @@ namespace MatterHackers.Agg.UI
 				AddChild(segment);
 			}
 
+			naturalSegmentWidth = segmentWidth;
 			LocalBounds = new RectangleDouble(0, 0, segmentWidth * Labels.Count, height);
 			UpdateLabelColors();
 		}
 
+		/// <summary>
+		/// Shares the control's width equally among the segments, so a control stretched wider than its labels
+		/// need reads as n equal columns. Boundaries are rounded to whole pixels so every divider and selection
+		/// edge is crisp, the leftover pixel going to whichever segments rounding hands it. Narrower than its
+		/// natural width, the control keeps its natural segments and clips, as it always has - squeezing would
+		/// cut every label instead of hiding the last segment's end. At the natural width this is exactly where
+		/// the constructor put them.
+		/// </summary>
+		public override void OnBoundsChanged(EventArgs e)
+		{
+			if (segments.Count > 0)
+			{
+				var share = Math.Max(naturalSegmentWidth, Width / segments.Count);
+				for (int i = 0; i < segments.Count; i++)
+				{
+					var left = Math.Round(i * share);
+					var right = Math.Round((i + 1) * share);
+					segments[i].Width = right - left;
+					segments[i].Height = Height;
+					segments[i].Position = new VectorMath.Vector2(left, 0);
+				}
+			}
+
+			base.OnBoundsChanged(e);
+		}
+
 		/// <summary>Raised when <see cref="SelectedIndex"/> changes, by click, keyboard or code.</summary>
 		public event EventHandler SelectedIndexChanged;
+
+		/// <summary>The look this control draws in: its own style if it was given one, otherwise the theme's.</summary>
+		public SegmentedStyle Style => style ?? theme.SegmentedStyle;
 
 		/// <summary>The segment labels, in order.</summary>
 		public IReadOnlyList<string> Labels { get; }
@@ -188,6 +250,13 @@ namespace MatterHackers.Agg.UI
 
 			// Colours are read from the theme every frame so a live theme switch reaches this widget.
 			UpdateLabelColors();
+
+			if (Style == SegmentedStyle.Strip)
+			{
+				DrawStrip(graphics2D);
+				base.OnDraw(graphics2D);
+				return;
+			}
 
 			// Track.
 			graphics2D.Render(new RoundedRect(bounds, radius), theme.MinimalShade);
@@ -260,13 +329,90 @@ namespace MatterHackers.Agg.UI
 			return fill;
 		}
 
+		/// <summary>
+		/// The Strip look: a control-fill track in a 1 px rounded outline, square full height dividers, and the
+		/// selected segment filled edge to edge with the accent, rounded only where it meets the outline.
+		/// </summary>
+		private void DrawStrip(Graphics2D graphics2D)
+		{
+			var scale = DeviceScale;
+			var bounds = LocalBounds;
+			var radius = theme.ButtonRadius * scale;
+			// Whole device pixels, so the outline and dividers stay crisp at fractional scales like 1.5.
+			var stroke = Math.Max(1, Math.Round(scale));
+			var border = theme.ControlBorderColorIfSet ?? SelectionControlStyle.WidgetStroke(theme);
+			var accent = theme.PrimaryAccentColor;
+
+			graphics2D.Render(new RoundedRect(bounds, radius), theme.ResolvedControlFillColor);
+
+			for (int i = 0; i < segments.Count; i++)
+			{
+				var segment = segments[i];
+				var underMouse = segment.UnderMouseState != UnderMouseState.NotUnderMouse && Enabled;
+				if (i == selectedIndex)
+				{
+					var fill = underMouse && segment.MouseCaptured
+						? accent.AdjustLightness(.9).ToColor()
+						: (underMouse ? accent.AdjustLightness(1.05).ToColor() : accent);
+					graphics2D.Render(StripSegmentFill(i, radius), fill);
+				}
+				else if (underMouse)
+				{
+					graphics2D.Render(StripSegmentFill(i, radius), theme.MinimalShade);
+				}
+			}
+
+			// Dividers run the full height and stay beside the selection too: the design draws each
+			// segment's right edge (CSS border-right) as a plain 1 px line, so it ends on the boundary,
+			// snapped to a whole pixel to stay crisp.
+			for (int i = 1; i < segments.Count; i++)
+			{
+				var x = Math.Round(segments[i].Position.X);
+				graphics2D.FillRectangle(x - stroke, bounds.Bottom, x, bounds.Top, border);
+			}
+
+			var outline = new RoundedRect(bounds.Left + stroke / 2, bounds.Bottom + stroke / 2, bounds.Right - stroke / 2, bounds.Top - stroke / 2, Math.Max(0, radius - stroke / 2));
+			graphics2D.Render(new Stroke(outline, stroke), border);
+
+			if (Focused)
+			{
+				var inset = .75 * scale;
+				var ring = new RoundedRect(bounds.Left + inset, bounds.Bottom + inset, bounds.Right - inset, bounds.Top - inset, radius);
+				graphics2D.Render(new Stroke(ring, 1.5 * scale), theme.EditFieldColors.Focused.BorderColor);
+			}
+		}
+
+		/// <summary>
+		/// Segment <paramref name="index"/>'s full-bleed fill for the Strip look, rounded by the outline's radius
+		/// on the corners it shares with the control's ends so no square corner pokes past the outline.
+		/// </summary>
+		private IVertexSource StripSegmentFill(int index, double radius)
+		{
+			var segment = segments[index];
+			var leftRadius = index == 0 ? radius : 0;
+			var rightRadius = index == segments.Count - 1 ? radius : 0;
+			var fill = new RoundedRect(segment.Position.X, 0, segment.Position.X + segment.Width, segment.Height, 0);
+
+			// radius order is bottom-left, bottom-right, top-right, top-left.
+			fill.radius(leftRadius, rightRadius, rightRadius, leftRadius);
+			return fill;
+		}
+
 		private void UpdateLabelColors()
 		{
 			// Ink on the accent has to stay readable whatever accent the theme picks.
-			var selectedText = theme.TextColor.WithContrast(theme.PrimaryAccentColor, 3).ToColor();
+			var selectedText = theme.OnAccentTextColor;
+			bool strip = Style == SegmentedStyle.Strip;
 			for (int i = 0; i < labelWidgets.Count; i++)
 			{
-				labelWidgets[i].TextColor = i == selectedIndex ? selectedText : theme.TextColor;
+				bool selected = i == selectedIndex;
+				labelWidgets[i].TextColor = selected ? selectedText : theme.TextColor;
+
+				// Only Strip bolds the selection; the Pill look never touches the typeface.
+				if (strip && labelWidgets[i].Bold != selected)
+				{
+					labelWidgets[i].Bold = selected;
+				}
 			}
 		}
 	}

@@ -139,6 +139,23 @@ namespace MatterHackers.Agg.UI
 			this.Border = 1;
 		}
 
+		/// <summary>
+		/// At least <see cref="ThemeConfig.FieldDesignHeight"/> tall (border included) when the theme sets one,
+		/// whatever minimum a caller gives - callers routinely set a minimum width with a 0 height. The label is
+		/// already centred. At the default of 0 this is exactly the minimum that was set.
+		/// </summary>
+		public override Vector2 MinimumSize
+		{
+			get
+			{
+				var minimum = base.MinimumSize;
+				var fieldHeight = ThemeConfig.Current.FieldDesignHeight * DeviceScale - DeviceBorder.Height;
+				return fieldHeight > minimum.Y ? new Vector2(minimum.X, fieldHeight) : minimum;
+			}
+
+			set => base.MinimumSize = value;
+		}
+
 		public event EventHandler SelectionChanged;
 
 		public bool AutoScaleIcons { get; set; } = true;
@@ -146,14 +163,15 @@ namespace MatterHackers.Agg.UI
 		private bool borderColorSet;
 
 		/// <summary>
-		/// The field's outline. Unless a caller sets it, agg-gui's widget_stroke for
-		/// <see cref="ThemeConfig.Current"/>, read at draw time; faded when disabled.
+		/// The field's outline. Unless a caller sets it, <see cref="ThemeConfig.Current"/>'s
+		/// ControlBorderColor, or agg-gui's widget_stroke when that is unset, read at draw time; faded when disabled.
 		/// </summary>
 		public override Color BorderColor
 		{
 			get
 			{
-				Color color = borderColorSet ? base.BorderColor : SelectionControlStyle.WidgetStroke(ThemeConfig.Current);
+				var theme = ThemeConfig.Current;
+				Color color = borderColorSet ? base.BorderColor : theme.ControlBorderColorIfSet ?? SelectionControlStyle.WidgetStroke(theme);
 				return this.Enabled ? color : new Color(color, 30);
 			}
 			set
@@ -436,18 +454,19 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// The corner radius of agg-gui's combo field, measured on the outside of its outline.
+		/// The corner radius of the combo field, measured on the outside of its outline: the theme's
+		/// DropDownRadius (agg-gui's 4 unless a theme says otherwise), read at draw time.
 		/// </summary>
-		private static double FieldRadius => 4 * DeviceScale;
+		private static double FieldRadius => ThemeConfig.Current.DropDownRadius * DeviceScale;
 
 		/// <summary>
 		/// The fill sits inside the Border band, so its corners are the outline's radius less that band.
 		/// </summary>
-		private double FieldInnerRadius => Math.Max(0, FieldRadius - DeviceBorder.Left);
+		private double FieldInnerRadius => RoundedFieldChrome.InnerRadius(FieldRadius, DeviceBorder.Left);
 
 		/// <summary>
 		/// What the field is filled with: the caller's BackgroundColor when it is visible, otherwise
-		/// <see cref="ThemeConfig.Current"/>'s button fill (shaded while hovered or open), read at draw time
+		/// <see cref="ThemeConfig.Current"/>'s control fill (shaded while hovered or open), read at draw time
 		/// so a theme swap reaches it.
 		/// </summary>
 		private Color FieldColor
@@ -462,12 +481,13 @@ namespace MatterHackers.Agg.UI
 
 				// The same neutrals the check box, radio and switch use, so the widgets agree.
 				var theme = ThemeConfig.Current;
-				if (menuVisible || this.UnderMouseState != UnderMouseState.NotUnderMouse)
+				bool hovered = menuVisible || this.UnderMouseState != UnderMouseState.NotUnderMouse;
+				if (theme.ControlFillColorIfSet is Color fill)
 				{
-					return SelectionControlStyle.WidgetBackgroundHovered(theme);
+					return hovered ? SelectionControlStyle.WithOpaqueAlpha(fill.Blend(theme.TextColor, .08)) : fill;
 				}
 
-				return SelectionControlStyle.WidgetBackground(theme);
+				return hovered ? SelectionControlStyle.WidgetBackgroundHovered(theme) : SelectionControlStyle.WidgetBackground(theme);
 			}
 		}
 
@@ -475,7 +495,7 @@ namespace MatterHackers.Agg.UI
 		{
 			// agg-gui's rounded field. Its outline is drawn in the Border band by DrawBorderRing, so the
 			// field fills the same LocalBounds the square look did and nothing moves.
-			graphics2D.Render(new RoundedRect(LocalBounds, FieldInnerRadius), FieldColor);
+			RoundedFieldChrome.DrawFill(graphics2D, LocalBounds, FieldRadius, DeviceBorder.Left, FieldColor);
 		}
 
 		/// <summary>
@@ -483,19 +503,7 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		protected internal override bool DrawBorderRing(Graphics2D graphics2D, RectangleDouble boundsInParent, BorderDouble deviceBorder, Color borderColor)
 		{
-			double width = deviceBorder.Left;
-			if (width <= 0)
-			{
-				return false;
-			}
-
-			var centerline = new RectangleDouble(
-				boundsInParent.Left - width / 2,
-				boundsInParent.Bottom - width / 2,
-				boundsInParent.Right + width / 2,
-				boundsInParent.Top + width / 2);
-			graphics2D.Render(new Stroke(new RoundedRect(centerline, FieldRadius - width / 2), width), borderColor);
-			return true;
+			return RoundedFieldChrome.DrawRing(graphics2D, boundsInParent, deviceBorder.Left, FieldRadius, borderColor);
 		}
 
 		public override void OnFocusChanged(EventArgs e)

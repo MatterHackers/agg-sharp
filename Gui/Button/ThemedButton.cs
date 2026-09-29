@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2022, John Lewin, Lars Brubaker
+Copyright (c) 2026, John Lewin, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -52,12 +52,48 @@ namespace MatterHackers.Agg.UI
             Cursor = Cursors.Hand;
             BackgroundColor = theme.ButtonBackgroundColor;
 
+            // The theme's optional outline. GuiWidget draws it inside the bounds, so an outlined button is
+            // the same size as a plain one; at the default width of 0 nothing is drawn.
+            if (theme.ButtonBorderWidth > 0)
+            {
+                BackgroundOutlineWidth = theme.ButtonBorderWidth;
+                BorderColor = theme.ButtonBorderColor;
+            }
+
             TabStop = true;
         }
 
         public Color HoverColor { get; set; } = Color.Transparent;
 
         public Color MouseDownColor { get; set; } = Color.Transparent;
+
+        /// <summary>
+        /// The fill while disabled, or null to keep the normal fill. A button whose fill carries its meaning (a
+        /// primary action's accent) sets this so that, disabled, it stops looking clickable.
+        /// </summary>
+        public Color? DisabledFillColor { get; set; }
+
+        /// <summary>
+        /// The outline. Under a theme that outlines its buttons (ButtonBorderWidth above 0) a disabled button's
+        /// outline fades toward the theme background, as its label does; other themes draw it unchanged.
+        /// </summary>
+        public override Color BorderColor
+        {
+            get
+            {
+                var color = base.BorderColor;
+                if (!Enabled
+                    && theme.ButtonBorderWidth > 0
+                    && BackgroundOutlineWidth > 0)
+                {
+                    return color.Blend(theme.BackgroundColor, .6);
+                }
+
+                return color;
+            }
+
+            set => base.BorderColor = value;
+        }
 
         public override void OnMouseDown(MouseEventArgs mouseEvent)
         {
@@ -108,6 +144,11 @@ namespace MatterHackers.Agg.UI
         {
             get
             {
+                if (!Enabled && DisabledFillColor is Color disabledFill)
+                {
+                    return disabledFill;
+                }
+
                 var firstWidgetUnderMouse = ContainsFirstUnderMouseRecursive();
                 if (MouseCaptured
                     && firstWidgetUnderMouse
@@ -118,7 +159,7 @@ namespace MatterHackers.Agg.UI
                 else if (firstWidgetUnderMouse
                     && Enabled)
                 {
-                    return HoverColor;
+                    return HoverFill(base.BackgroundColor);
                 }
                 else
                 {
@@ -126,6 +167,24 @@ namespace MatterHackers.Agg.UI
                 }
             }
             set => base.BackgroundColor = value;
+        }
+
+        /// <summary>
+        /// The hovered fill. Normally <see cref="HoverColor"/> replaces the fill outright - MatterCAD's toolbar
+        /// buttons have a transparent fill and a translucent hover, and depend on that. A theme that sets
+        /// <see cref="ThemeConfig.ButtonHoverShadesFill"/> instead gets an opaque fill shaded by the hover
+        /// colour, so an outlined white button darkens a touch rather than turning see-through.
+        /// </summary>
+        private Color HoverFill(Color fill)
+        {
+            if (theme.ButtonHoverShadesFill
+                && fill.Alpha0To255 == 255
+                && HoverColor.Alpha0To255 < 255)
+            {
+                return ThemeConfig.ResolveColor2(fill, HoverColor);
+            }
+
+            return HoverColor;
         }
 
         public override void OnFocusChanged(EventArgs e)

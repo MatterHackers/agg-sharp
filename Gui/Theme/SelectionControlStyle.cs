@@ -56,10 +56,10 @@ namespace MatterHackers.Agg.UI
 		/// <summary>agg-gui's widget_bg_hovered: widget_bg nudged toward the text colour.</summary>
 		public static Color WidgetBackgroundHovered(ThemeConfig theme) => WithOpaqueAlpha(theme.ButtonBackgroundColor.Blend(theme.TextColor, .08));
 
-		/// <summary>agg-gui's widget_stroke for Visuals::dark() and Visuals::light().</summary>
-		public static Color WidgetStroke(ThemeConfig theme) => theme.IsDarkTheme
+		/// <summary>The theme's ControlBorderColor when set, otherwise agg-gui's widget_stroke for Visuals::dark() and Visuals::light().</summary>
+		public static Color WidgetStroke(ThemeConfig theme) => theme.ControlBorderColorIfSet ?? (theme.IsDarkTheme
 			? new ColorF(.60, .60, .65, .60).ToColor()
-			: new ColorF(.75, .76, .78).ToColor();
+			: new ColorF(.75, .76, .78).ToColor());
 
 		/// <summary>agg-gui's track_bg (a slider's unfilled rail) for Visuals::dark() and Visuals::light().</summary>
 		public static Color TrackBackground(ThemeConfig theme) => theme.IsDarkTheme
@@ -161,6 +161,6 @@ namespace MatterHackers.Agg.UI
 
 		private static Color Dim(Color color, bool enabled) => enabled ? color : color.WithAlpha(color.Alpha0To1 * DisabledOpacity);
 
-		private static Color WithOpaqueAlpha(Color color) => new Color(color, 255);
+		public static Color WithOpaqueAlpha(Color color) => new Color(color, 255);
 	}
 }
