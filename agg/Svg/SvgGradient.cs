@@ -51,7 +51,7 @@ namespace MatterHackers.Agg.Svg
 	}
 
 	/// <summary>
-	/// linearGradient and radialGradient, drawn through agg's span_gradient. Attributes and stops a gradient
+	/// linearGradient and radialGradient, drawn with agg's gradient functions (<see cref="SvgGradientSpans"/>). Attributes and stops a gradient
 	/// leaves out are taken from the gradient its href names (SVG 1.1 section 13.2.2), and the gradient's own
 	/// space - its bounding box or user space, then gradientTransform - is folded into the span interpolator's
 	/// pixel-to-gradient matrix.
@@ -59,13 +59,10 @@ namespace MatterHackers.Agg.Svg
 	public static class SvgGradient
 	{
 		/// <summary>
-		/// The gradient's length in span_gradient units. span_gradient works in 1/16ths of an integer unit, so the
+		/// The gradient's length in gradient-function units. The functions work in 1/16ths of an integer unit, so the
 		/// gradient vector (or radius) is scaled up to this many units to keep its colour steps sub-level.
 		/// </summary>
 		private const double GradientUnits = 1024;
-
-		/// <summary>Colour table entries across the gradient vector; enough that neighbours differ by under a level.</summary>
-		private const int ColorTableSize = 1024;
 
 		private const int MaxHrefDepth = 16;
 
@@ -75,8 +72,8 @@ namespace MatterHackers.Agg.Svg
 		/// <summary>
 		/// Resolves <paramref name="server"/> (a linearGradient or radialGradient) for a shape whose user-space
 		/// bounding box is <paramref name="bounds"/>, drawn with <paramref name="userToPixels"/>, at
-		/// <paramref name="opacity"/>. Returns null when <paramref name="server"/> is not a gradient, so the
-		/// caller uses the paint's fallback.
+		/// <paramref name="opacity"/>. Returns null when <paramref name="server"/> is not a gradient or cannot paint (no stops,
+		/// a bounding box with no area), so the caller uses the paint's fallback.
 		/// </summary>
 		public static SvgServerPaint? Resolve(SvgDocument document, SvgElement server, RectangleDouble bounds, Affine userToPixels, double opacity, double viewportWidth, double viewportHeight)
 		{
@@ -108,9 +105,10 @@ namespace MatterHackers.Agg.Svg
 			}
 
 			List<(double Offset, Color Color)> stops = Stops(chain, opacity);
+			// usvg: a gradient with no stops is no server, so the paint falls back to the colour after its url().
 			if (stops.Count == 0)
 			{
-				return new SvgServerPaint(null, null);
+				return null;
 			}
 
 			if (stops.Count == 1)
@@ -124,10 +122,11 @@ namespace MatterHackers.Agg.Svg
 			double percentDiagonal = Math.Sqrt((viewportWidth * viewportWidth + viewportHeight * viewportHeight) / 2);
 			if (boundingBoxUnits)
 			{
-				// A box with no area has no bounding-box space to paint in (SVG 1.1 section 13.2.2).
+				// A box with no area has no bounding-box space to paint in (SVG 1.1 section 13.2.2): the paint's
+				// fallback colour is used instead.
 				if (bounds.Width <= 0 || bounds.Height <= 0)
 				{
-					return new SvgServerPaint(null, null);
+					return null;
 				}
 
 				units = new Affine(bounds.Width, 0, 0, bounds.Height, bounds.Left, bounds.Bottom);
@@ -205,7 +204,7 @@ namespace MatterHackers.Agg.Svg
 			}
 
 			pixelsToGradient.invert();
-			var spans = new span_gradient(new span_interpolator_linear(pixelsToGradient), function, new StopColors(stops), 0, GradientUnits);
+			var spans = new SvgGradientSpans(new span_interpolator_linear(pixelsToGradient), function, stops, GradientUnits);
 			return new SvgServerPaint(null, cone == null ? spans : new SvgFocalCone.Spans(spans, cone, new span_interpolator_linear(pixelsToGradient)));
 		}
 
@@ -339,50 +338,10 @@ namespace MatterHackers.Agg.Svg
 			return value != null && SvgColor.TryParse(value, out Color parsed) ? parsed : Color.Black;
 		}
 
-		private static Color Premultiply(Color c)
+		internal static Color Premultiply(Color c)
 		{
 			int Scale(int channel) => (channel * c.alpha + 127) / 255;
 			return new Color(Scale(c.red), Scale(c.green), Scale(c.blue), c.alpha);
-		}
-
-		/// <summary>
-		/// The stops as a premultiplied colour table: colours are interpolated straight, as SVG specifies, and
-		/// premultiplied after, since the renderer draws premultiplied.
-		/// </summary>
-		private sealed class StopColors : IColorFunction
-		{
-			private readonly Color[] table = new Color[ColorTableSize];
-
-			public StopColors(List<(double Offset, Color Color)> stops)
-			{
-				for (int i = 0; i < ColorTableSize; i++)
-				{
-					double t = i / (double)(ColorTableSize - 1);
-					int next = stops.FindIndex(s => s.Offset > t);
-					Color color;
-					if (next == -1)
-					{
-						color = stops[stops.Count - 1].Color;
-					}
-					else if (next == 0)
-					{
-						color = stops[0].Color;
-					}
-					else
-					{
-						(double Offset, Color Color) a = stops[next - 1], b = stops[next];
-						double f = (t - a.Offset) / (b.Offset - a.Offset);
-						int Lerp(int from, int to) => (int)Math.Round(from + (to - from) * f);
-						color = new Color(Lerp(a.Color.red, b.Color.red), Lerp(a.Color.green, b.Color.green), Lerp(a.Color.blue, b.Color.blue), Lerp(a.Color.alpha, b.Color.alpha));
-					}
-
-					this.table[i] = Premultiply(color);
-				}
-			}
-
-			public Color this[int v] => this.table[v];
-
-			public int size() => ColorTableSize;
 		}
 	}
 }

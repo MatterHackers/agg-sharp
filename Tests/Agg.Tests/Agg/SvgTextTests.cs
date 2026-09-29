@@ -53,8 +53,9 @@ namespace MatterHackers.Agg.Tests.Agg
 		[Test]
 		public async Task TspansCollapseWhitespaceAcrossTheirBoundaries()
 		{
-			// resvg's text/tspan/sequential: the runs are "Text " and "Text", one space between, none around.
-			var runs = Layout("<text x=\"33\" y=\"100\" font-size=\"32\" fill=\"red\">\n  <tspan fill=\"green\">\n    Text\n  </tspan>\n  <tspan fill=\"blue\">\n    Text\n  </tspan>\n</text>");
+			// resvg's text/tspan/sequential: the tspans draw "Text" and "Text" one space apart, none around; as in usvg
+			// the space is the <text>'s own, so it is a run of its own that draws nothing.
+			var runs = Layout("<text x=\"33\" y=\"100\" font-size=\"32\" fill=\"red\">\n  <tspan fill=\"green\">\n    Text\n  </tspan>\n  <tspan fill=\"blue\">\n    Text\n  </tspan>\n</text>").Where(r => r.Path.Count > 0).ToList();
 			await Assert.That(runs.Count).IsEqualTo(2);
 			await Assert.That(runs[0].Style.Fill.Color).IsEqualTo(new Color(0, 128, 0));
 			await Assert.That(runs[1].Style.Fill.Color).IsEqualTo(Color.Blue);

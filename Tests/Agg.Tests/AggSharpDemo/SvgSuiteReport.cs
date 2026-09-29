@@ -209,6 +209,15 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 				string svgPath = Path.Combine(testsRoot, name);
 				ImageBuffer reference = ImageIO.LoadImage(Path.ChangeExtension(svgPath, ".png"));
 				ImageBuffer render = Render(svgPath, reference.Width, reference.Height);
+				string dump = Environment.GetEnvironmentVariable("AGG_SVG_DUMP");
+				if (!string.IsNullOrEmpty(dump))
+				{
+					Directory.CreateDirectory(dump);
+					string pngPath = Path.Combine(dump, name.Replace('/', '_').Replace(".svg", ".png"));
+					File.Delete(pngPath);
+					ImageIO.SaveImageData(pngPath, render);
+				}
+
 				byte[] rendered = SvgCompare.ToRgba(render);
 				byte[] expected = SvgCompare.ToRgba(reference);
 				SvgCompareResult strict = SvgCompare.Compare(rendered, expected);

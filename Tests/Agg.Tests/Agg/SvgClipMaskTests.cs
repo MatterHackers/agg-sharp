@@ -88,11 +88,10 @@ namespace MatterHackers.Agg.Tests.Agg
 		}
 
 		[Test]
-		public async Task AMissingClipIsIgnoredButOneThatClipsItselfDrawsNothing()
+		public async Task AMissingClipIsIgnored()
 		{
+			// One that clips itself is covered by ARecursiveClipOrMaskLinkIsDropped.
 			await Assert.That(AlphaAt(Render(Filled("clip-path=\"url(#missing)\"")), 50, 50)).IsEqualTo(255);
-			ImageBuffer self = Render("<clipPath id=\"c\" clip-path=\"url(#c)\"><rect width=\"100\" height=\"100\"/></clipPath>" + Filled("clip-path=\"url(#c)\""));
-			await Assert.That(AlphaAt(self, 50, 50)).IsEqualTo(0);
 		}
 
 		[Test]
@@ -135,6 +134,21 @@ namespace MatterHackers.Agg.Tests.Agg
 			await Assert.That(AlphaAt(image, 30, 30)).IsEqualTo(255);
 			await Assert.That(AlphaAt(image, 70, 30)).IsEqualTo(0);
 			await Assert.That(AlphaAt(image, 5, 5)).IsEqualTo(0);
+		}
+
+		[Test]
+		[Arguments("<clipPath id=\"c\" clip-path=\"url(#c)\"><rect x=\"20\" y=\"20\" width=\"60\" height=\"60\"/></clipPath>", "clip-path=\"url(#c)\"")]
+		[Arguments("<clipPath id=\"c\"><rect x=\"20\" y=\"20\" width=\"60\" height=\"60\" clip-path=\"url(#c)\"/></clipPath>", "clip-path=\"url(#c)\"")]
+		[Arguments("<clipPath id=\"c\"><rect x=\"20\" y=\"20\" width=\"60\" height=\"60\" clip-path=\"url(#d)\"/></clipPath>"
+			+ "<clipPath id=\"d\"><rect width=\"100\" height=\"100\" clip-path=\"url(#c)\"/></clipPath>", "clip-path=\"url(#c)\"")]
+		[Arguments("<mask id=\"m\" mask=\"url(#m)\"><rect x=\"20\" y=\"20\" width=\"60\" height=\"60\" fill=\"white\"/></mask>", "mask=\"url(#m)\"")]
+		public async Task ARecursiveClipOrMaskLinkIsDropped(string defs, string reference)
+		{
+			// usvg sets a clip-path (or mask) that leads back to its own clipPath (or mask) to none, so the rest of
+			// the clip still applies.
+			ImageBuffer image = Render(defs + Filled(reference));
+			await Assert.That(AlphaAt(image, 50, 50)).IsEqualTo(255);
+			await Assert.That(AlphaAt(image, 10, 10)).IsEqualTo(0);
 		}
 	}
 }

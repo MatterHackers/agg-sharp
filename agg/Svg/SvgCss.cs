@@ -80,7 +80,7 @@ namespace MatterHackers.Agg.Svg
 		internal static List<Declaration> ParseDeclarations(string text)
 		{
 			var declarations = new List<Declaration>();
-			foreach (string declaration in text.Split(';'))
+			foreach (string declaration in Regex.Replace(text, @"/\*.*?\*/", "", RegexOptions.Singleline).Split(';'))
 			{
 				int colon = declaration.IndexOf(':');
 				if (colon <= 0)
@@ -101,16 +101,38 @@ namespace MatterHackers.Agg.Svg
 			return declarations;
 		}
 
+		/// <summary>
+		/// The properties a style may set (usvg's AId::is_presentation). Anything else - geometry such as width or
+		/// height, which only SVG 2 lets CSS set - stays as the element's attributes say.
+		/// </summary>
+		private static readonly HashSet<string> PresentationAttributes = new HashSet<string>(StringComparer.Ordinal)
+		{
+			"alignment-baseline", "baseline-shift", "background-color", "clip-path", "clip-rule", "color", "color-interpolation",
+			"color-interpolation-filters", "color-rendering", "direction", "display", "dominant-baseline", "fill", "fill-opacity",
+			"fill-rule", "filter", "flood-color", "flood-opacity", "font-family", "font-kerning", "font-size", "font-size-adjust",
+			"font-stretch", "font-style", "font-variant", "font-weight", "glyph-orientation-horizontal", "glyph-orientation-vertical",
+			"image-rendering", "isolation", "letter-spacing", "lighting-color", "marker-end", "marker-mid", "marker-start", "mask",
+			"mask-type", "mix-blend-mode", "opacity", "overflow", "paint-order", "shape-rendering", "stop-color", "stop-opacity",
+			"stroke", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-miterlimit",
+			"stroke-opacity", "stroke-width", "text-anchor", "text-decoration", "text-overflow", "text-rendering", "transform",
+			"transform-origin", "unicode-bidi", "vector-effect", "visibility", "white-space", "word-spacing", "writing-mode",
+		};
+
 		private static void SetAll(SvgElement element, IEnumerable<Declaration> declarations)
 		{
 			foreach (Declaration declaration in declarations)
 			{
-				// "marker" is a CSS-only shorthand (not a presentation attribute) for all three marker properties.
+				// "marker" and "font" are the CSS-only shorthands usvg expands (svgtree/parse.rs); neither is a
+				// presentation attribute, so they are handled before the presentation filter.
 				if (declaration.Name == "marker")
 				{
 					element.Attributes["marker-start"] = element.Attributes["marker-mid"] = element.Attributes["marker-end"] = declaration.Value;
 				}
-				else
+				else if (declaration.Name == "font")
+				{
+					SvgFontShorthand.Apply(element.Attributes, declaration.Value);
+				}
+				else if (PresentationAttributes.Contains(declaration.Name))
 				{
 					element.Attributes[declaration.Name] = declaration.Value;
 				}

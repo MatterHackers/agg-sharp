@@ -93,6 +93,14 @@ namespace MatterHackers.Agg.Svg
 			(double docWidth, double docHeight) = document.Size;
 			SvgElement root = document.Root;
 			RectangleDouble? viewBox = SvgViewport.ParseViewBox(root["viewBox"]);
+
+			// usvg rejects a root whose width or height is zero or negative, so resvg draws nothing. Size falls back
+			// to the viewBox's for such a root, which other callers of it rely on; drawing must not.
+			if (SvgLength.Parse(root["width"], 1, viewBox?.Width ?? 100) <= 0 || SvgLength.Parse(root["height"], 1, viewBox?.Height ?? 100) <= 0)
+			{
+				return;
+			}
+
 			var context = new Context(document, premultipliedTarget)
 			{
 				ViewportWidth = viewBox?.Width ?? docWidth,
@@ -283,9 +291,9 @@ namespace MatterHackers.Agg.Svg
 					// Each run's own visibility decides: a visible tspan shows inside a hidden text.
 					WithOpacity(context, target, opacity, layer =>
 					{
-						foreach ((VertexStorage run, SvgStyle runStyle) in SvgText.Layout(element, style, context.ViewportWidth, context.ViewportHeight, context.Diagonal, context.Document.FontResolver, context.Document.Fonts).Where(r => r.Style.Visible))
+						foreach ((VertexStorage run, SvgStyle runStyle) in SvgText.Layout(element, style, context.ViewportWidth, context.ViewportHeight, context.Diagonal, context.Document.FontResolver, context.Document.Fonts, context.Document).Where(r => r.Style.Visible))
 						{
-							DrawShape(context, run, runStyle, transform, layer);
+							DrawShape(context, run, runStyle, transform, layer, antiAlias: true);
 						}
 					});
 					break;
@@ -403,8 +411,11 @@ namespace MatterHackers.Agg.Svg
 			return false;
 		}
 
-		/// <summary>Fills then strokes <paramref name="path"/> (user space) with <paramref name="transform"/> to pixels.</summary>
-		private static void DrawShape(Context context, VertexStorage path, SvgStyle style, Affine transform, ImageBuffer target)
+		/// <summary>
+		/// Fills then strokes <paramref name="path"/> (user space) with <paramref name="transform"/> to pixels;
+		/// <paramref name="antiAlias"/> overrides the style's shape-rendering, which text does not follow.
+		/// </summary>
+		private static void DrawShape(Context context, VertexStorage path, SvgStyle style, Affine transform, ImageBuffer target, bool? antiAlias = null)
 		{
 			// Curves are flattened in user space, finely enough for the scale they are drawn at, so the stroker
 			// (which needs straight segments) and the fill see the same outline.
@@ -419,7 +430,7 @@ namespace MatterHackers.Agg.Svg
 			SvgServerPaint fill = Paint(context, style.Fill, style.FillOpacity, flattened, transform);
 			if (!fill.IsNone)
 			{
-				Fill(graphics, target, new VertexSourceApplyTransform(flattened, transform), fill, style.FillEvenOdd);
+				Fill(graphics, target, new VertexSourceApplyTransform(flattened, transform), fill, style.FillEvenOdd, antiAlias ?? style.AntiAlias);
 			}
 
 			SvgServerPaint stroke = style.StrokeWidth > 0 ? Paint(context, style.Stroke, style.StrokeOpacity, flattened, transform) : default;
@@ -428,14 +439,15 @@ namespace MatterHackers.Agg.Svg
 				IVertexSource outline = flattened;
 				if (style.DashArray != null)
 				{
-					var dash = new Dash(flattened);
-					for (int i = 0; i + 1 < style.DashArray.Count; i += 2)
+					// Dashed on the curves, measured at tiny-skia's resolution scale (the longer transformed axis).
+					double dashScale = Math.Max(Math.Sqrt(transform.sx * transform.sx + transform.shx * transform.shx), Math.Sqrt(transform.shy * transform.shy + transform.sy * transform.sy));
+					VertexStorage dashes = SvgDash.Dash(path, style.DashArray, style.DashOffset, dashScale);
+					if (dashes == null)
 					{
-						dash.AddDash(style.DashArray[i], style.DashArray[i + 1]);
+						return;
 					}
 
-					dash.DashStart(style.DashOffset);
-					outline = dash;
+					outline = new FlattenCurves(dashes) { ResolutionScale = scale };
 				}
 
 				var strokeOutline = new Stroke(outline, style.StrokeWidth)
@@ -445,7 +457,7 @@ namespace MatterHackers.Agg.Svg
 					MiterLimit = style.MiterLimit,
 					ApproximationScale = scale,
 				};
-				Fill(graphics, target, new VertexSourceApplyTransform(strokeOutline, transform), stroke, false);
+				Fill(graphics, target, new VertexSourceApplyTransform(strokeOutline, transform), stroke, false, antiAlias ?? style.AntiAlias);
 			}
 		}
 
@@ -513,9 +525,14 @@ namespace MatterHackers.Agg.Svg
 			return SvgStyle.Compute(element, element.Parent == null ? null : InheritedStyle(context, element.Parent), context.Diagonal);
 		}
 
-		private static void Fill(Graphics2D graphics, ImageBuffer target, IVertexSource pixels, SvgServerPaint paint, bool evenOdd)
+		/// <summary>
+		/// Fills <paramref name="pixels"/> (already in pixel space) with <paramref name="paint"/>. Without
+		/// <paramref name="antiAlias"/> each pixel is covered or not: a coverage threshold of one half stands in for
+		/// tiny-skia's non-anti-aliased fill, which covers the pixels whose centres are inside.
+		/// </summary>
+		private static void Fill(Graphics2D graphics, ImageBuffer target, IVertexSource pixels, SvgServerPaint paint, bool evenOdd, bool antiAlias = true)
 		{
-			if (paint.Spans == null)
+			if (paint.Spans == null && antiAlias)
 			{
 				graphics.Rasterizer.filling_rule(evenOdd ? Util.filling_rule_e.fill_even_odd : Util.filling_rule_e.fill_non_zero);
 				graphics.Render(pixels, paint.Solid.Value);
@@ -528,8 +545,21 @@ namespace MatterHackers.Agg.Svg
 			var rasterizer = new ScanlineRasterizer();
 			rasterizer.SetVectorClipBox(0, 0, target.Width, target.Height);
 			rasterizer.filling_rule(evenOdd ? Util.filling_rule_e.fill_even_odd : Util.filling_rule_e.fill_non_zero);
+			if (!antiAlias)
+			{
+				rasterizer.gamma(new gamma_threshold(0.5));
+			}
+
 			rasterizer.add_path(pixels);
-			new ScanlineRenderer().GenerateAndRender(rasterizer, new scanline_unpacked_8(), target, new span_allocator(), paint.Spans);
+			if (paint.Spans == null)
+			{
+				new ScanlineRenderer().RenderSolid(target, rasterizer, new scanline_unpacked_8(), paint.Solid.Value);
+			}
+			else
+			{
+				new ScanlineRenderer().GenerateAndRender(rasterizer, new scanline_unpacked_8(), target, new span_allocator(), paint.Spans);
+			}
+
 			target.MarkImageChanged();
 		}
 

@@ -105,6 +105,47 @@ namespace MatterHackers.Agg.Svg
 					this.elementsById[id] = element;
 				}
 			}
+
+			this.DropRecursiveLinks("clipPath", "clip-path");
+			this.DropRecursiveLinks("mask", "mask");
+		}
+
+		/// <summary>
+		/// usvg's fix_recursive_links: while an element inside a <paramref name="name"/> element links (through
+		/// <paramref name="attribute"/>) to that element, or to one whose own subtree links back to it, the link is
+		/// set to none - so the rest of the clip or mask still applies rather than the whole of it failing.
+		/// </summary>
+		private void DropRecursiveLinks(string name, string attribute)
+		{
+			while (this.FindRecursiveLink(name, attribute) is SvgElement offender)
+			{
+				offender.Attributes[attribute] = "none";
+			}
+		}
+
+		private SvgElement FindRecursiveLink(string name, string attribute)
+		{
+			SvgElement Link(SvgElement e) => e[attribute] is string value && value.StartsWith("url(") ? this.GetElementById(value) : null;
+			foreach (SvgElement node in this.Root.DescendantsAndSelf().Where(e => e.Name == name))
+			{
+				foreach (SvgElement child in node.DescendantsAndSelf())
+				{
+					if (Link(child) is SvgElement link)
+					{
+						if (link == node)
+						{
+							return child;
+						}
+
+						if (link.DescendantsAndSelf().FirstOrDefault(e => Link(e) == node) is SvgElement back)
+						{
+							return back;
+						}
+					}
+				}
+			}
+
+			return null;
 		}
 
 		/// <summary>The outermost &lt;svg&gt; element.</summary>
@@ -196,6 +237,8 @@ namespace MatterHackers.Agg.Svg
 			return SvgRenderer.RenderToImage(Parse(svgText), width, height);
 		}
 
+		private const string SvgNamespace = "http://www.w3.org/2000/svg";
+
 		private static SvgElement Convert(XElement xml, SvgElement parent)
 		{
 			var element = new SvgElement(xml.Name.LocalName, parent);
@@ -214,7 +257,9 @@ namespace MatterHackers.Agg.Svg
 				{
 					element.Content.Add(text.Value);
 				}
-				else if (node is XElement child)
+				// usvg skips an element in another namespace, and everything inside it. One with no namespace at all
+				// is kept, so an SVG that never declares xmlns still draws.
+				else if (node is XElement child && (child.Name.NamespaceName.Length == 0 || child.Name.NamespaceName == SvgNamespace))
 				{
 					SvgElement converted = Convert(child, element);
 					element.AddChild(converted);

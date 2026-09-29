@@ -107,14 +107,14 @@ namespace MatterHackers.Agg.Svg
 			return this.focalRadius + t * dr >= 0;
 		}
 
-		/// <summary>span_gradient's colours, with the pixels no circle of the cone reaches left transparent.</summary>
+		/// <summary>The gradient's colours, with the pixels no circle of the cone reaches left transparent.</summary>
 		internal sealed class Spans : ISpanGenerator
 		{
-			private readonly span_gradient colors;
+			private readonly ISpanGenerator colors;
 			private readonly SvgFocalCone cone;
 			private readonly ISpanInterpolator interpolator;
 
-			public Spans(span_gradient colors, SvgFocalCone cone, ISpanInterpolator interpolator)
+			public Spans(ISpanGenerator colors, SvgFocalCone cone, ISpanInterpolator interpolator)
 			{
 				this.colors = colors;
 				this.cone = cone;
@@ -130,7 +130,7 @@ namespace MatterHackers.Agg.Svg
 				for (int i = 0; i < len; i++)
 				{
 					this.interpolator.coordinates(out int ix, out int iy);
-					if (!this.cone.Reaches(ix >> span_gradient.downscale_shift, iy >> span_gradient.downscale_shift))
+					if (!this.cone.Reaches(SvgGradientSpans.ToGradient(ix), SvgGradientSpans.ToGradient(iy)))
 					{
 						span[spanIndex + i] = new Color(0, 0, 0, 0);
 					}

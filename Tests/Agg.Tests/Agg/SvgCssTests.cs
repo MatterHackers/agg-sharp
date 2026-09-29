@@ -92,5 +92,26 @@ namespace MatterHackers.Agg.Tests.Agg
 				10);
 			await Assert.That(image.GetPixel(5, 5)).IsEqualTo(new Color(0, 255, 0, 255));
 		}
+
+		[Test]
+		public async Task OnlyPresentationPropertiesAreTakenFromStyles()
+		{
+			// usvg applies a style's declaration only when it names a presentation attribute (plus the marker
+			// shorthand): geometry such as height can be styled only in SVG 2, which it does not follow.
+			SvgDocument document = Parse("<style>#s { height: 160px; fill: blue }</style>"
+				+ "<rect id=\"r\" style=\"height:160px; fill: green\"/><rect id=\"s\"/>");
+			await Assert.That(document.GetElementById("r")["height"]).IsNull();
+			await Assert.That(document.GetElementById("r")["fill"]).IsEqualTo("green");
+			await Assert.That(document.GetElementById("s")["height"]).IsNull();
+			await Assert.That(document.GetElementById("s")["fill"]).IsEqualTo("blue");
+		}
+
+		[Test]
+		public async Task CommentsInAStyleAttributeAreIgnored()
+		{
+			SvgDocument document = Parse("<rect id=\"r\" style=\"/*text*/fill:green/*text*/;stroke:/*a;b*/red\"/>");
+			await Assert.That(document.GetElementById("r")["fill"]).IsEqualTo("green");
+			await Assert.That(document.GetElementById("r")["stroke"]).IsEqualTo("red");
+		}
 	}
 }

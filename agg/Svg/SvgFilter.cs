@@ -25,6 +25,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
@@ -311,21 +312,97 @@ namespace MatterHackers.Agg.Svg
 		/// <summary>dx, dy (in units of <paramref name="unitX"/>, <paramref name="unitY"/> user units) as a pixel vector.</summary>
 		private static (int X, int Y) DeviceOffset(SvgElement primitive, double fallback, double unitX, double unitY, Affine transform)
 		{
-			double userX = SvgLength.ParseNumber(primitive["dx"], fallback) * unitX;
-			double userY = SvgLength.ParseNumber(primitive["dy"], fallback) * unitY;
+			double userX = PlainNumber(primitive["dx"], fallback) * unitX;
+			double userY = PlainNumber(primitive["dy"], fallback) * unitY;
 			double x = userX * transform.sx + userY * transform.shx;
 			double y = userX * transform.shy + userY * transform.sy;
 			return ((int)Math.Truncate(x + (x > 0 ? 1e-6 : -1e-6)), (int)Math.Truncate(y + (y > 0 ? 1e-6 : -1e-6)));
 		}
 
+		/// <summary>
+		/// A number as usvg reads a number attribute: the whole value must be one number, so "20%" or "1px" is
+		/// <paramref name="fallback"/> (SvgLength.ParseNumber would read "20%" as .2).
+		/// </summary>
+		internal static double PlainNumber(string text, double fallback)
+		{
+			string value = text?.Trim();
+			return !string.IsNullOrEmpty(value) && SvgLength.NumberEnd(value, 0) == value.Length
+				&& double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double number) ? number : fallback;
+		}
+
+		/// <summary>
+		/// A number list as usvg reads one: anything that is not a number makes the whole list empty, where
+		/// SvgLength.ParseList keeps the numbers before it ("1px" would be 1).
+		/// </summary>
+		internal static List<double> NumberList(string text)
+		{
+			var numbers = new List<double>();
+			int index = 0;
+			while (text != null)
+			{
+				while (index < text.Length && (char.IsWhiteSpace(text[index]) || text[index] == ','))
+				{
+					index++;
+				}
+
+				if (index >= text.Length)
+				{
+					break;
+				}
+
+				int end = SvgLength.NumberEnd(text, index);
+				if (end == index || !double.TryParse(text.Substring(index, end - index), NumberStyles.Float, CultureInfo.InvariantCulture, out double number))
+				{
+					return new List<double>();
+				}
+
+				numbers.Add(number);
+				index = end;
+			}
+
+			return numbers;
+		}
+
 		/// <summary>flood-color (black by default) at flood-opacity, premultiplied.</summary>
 		private static Color FloodColor(SvgElement primitive)
 		{
-			Color color = SvgColor.TryParse(primitive["flood-color"], out Color parsed) ? parsed : new Color(0, 0, 0, 255);
+			Color color = PrimitiveColor(primitive, "flood-color", new Color(0, 0, 0, 255));
 			double opacity = Math.Max(0, Math.Min(1, SvgLength.ParseNumber(primitive["flood-opacity"], 1)));
 			int alpha = (int)Math.Round(color.alpha * opacity);
 			int Premultiply(int channel) => (channel * alpha + 127) / 255;
 			return new Color(Premultiply(color.red), Premultiply(color.green), Premultiply(color.blue), alpha);
+		}
+
+		/// <summary>
+		/// A primitive's flood-color or lighting-color as usvg resolves it: neither is inherited, but "inherit" takes
+		/// the parent's value, and "currentColor" is the nearest color property - black when there is none.
+		/// <paramref name="fallback"/> when missing or unreadable.
+		/// </summary>
+		internal static Color PrimitiveColor(SvgElement primitive, string property, Color fallback)
+		{
+			string value = primitive[property];
+			for (SvgElement e = primitive.Parent; value == "inherit"; e = e.Parent)
+			{
+				if (e == null)
+				{
+					return fallback;
+				}
+
+				value = e[property];
+			}
+
+			if (value == "currentColor")
+			{
+				value = null;
+				for (SvgElement e = primitive; e != null && (value == null || value == "inherit" || value == "currentColor"); e = e.Parent)
+				{
+					value = e["color"];
+				}
+
+				return value != null && SvgColor.TryParse(value, out Color current) ? current : new Color(0, 0, 0, 255);
+			}
+
+			return value != null && SvgColor.TryParse(value, out Color parsed) ? parsed : fallback;
 		}
 
 		/// <summary>color-interpolation-filters, inherited: linearRGB unless it says sRGB.</summary>

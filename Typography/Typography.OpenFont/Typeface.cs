@@ -247,6 +247,16 @@ namespace Typography.OpenFont
         public ushort UnitsPerEm => _unitsPerEm;
         public Glyph[] Glyphs => _glyphs;
         public short UnderlinePosition => PostTable.UnderlinePosition;
+        /// <summary>post underlineThickness, in font units; null without a post table.</summary>
+        public short? UnderlineThickness => PostTable?.UnderlineThickness;
+        /// <summary>OS/2 yStrikeoutPosition, in font units up from the baseline; null without an OS/2 table.</summary>
+        public short? StrikeoutPosition => OS2Table?.yStrikeoutPosition;
+        /// <summary>OS/2 ySubscriptYOffset, in font units down from the baseline; null without an OS/2 table.</summary>
+        public short? SubscriptYOffset => OS2Table?.ySubscriptYOffset;
+        /// <summary>OS/2 ySuperscriptYOffset, in font units up from the baseline; null without an OS/2 table.</summary>
+        public short? SuperscriptYOffset => OS2Table?.ySuperscriptYOffset;
+        /// <summary>OS/2 sxHeight (version 2 and up), in font units; null when the table does not carry it.</summary>
+        public short? OS2XHeight => OS2Table != null && OS2Table.version >= 2 ? (short?)OS2Table.sxHeight : null;
 
         //
 

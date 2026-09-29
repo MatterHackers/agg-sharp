@@ -133,6 +133,24 @@ namespace MatterHackers.Agg.Font
 
 		public int Underline_position { get { return underline_position; } }
 
+		// The TrueType tables' own metrics, null where the font has no such table (SVG fonts, a TTF without OS/2).
+		// Kept apart from the fields above, which other callers read as 0 when unset.
+
+		/// <summary>post underlineThickness, in font units.</summary>
+		public int? PostUnderlineThickness => _ofTypeface?.UnderlineThickness;
+
+		/// <summary>OS/2 yStrikeoutPosition: the line-through's centre, in font units up from the baseline.</summary>
+		public int? StrikeoutPosition => _ofTypeface?.StrikeoutPosition;
+
+		/// <summary>OS/2 ySubscriptYOffset: how far a subscript drops, in font units.</summary>
+		public int? SubscriptYOffset => _ofTypeface?.SubscriptYOffset;
+
+		/// <summary>OS/2 ySuperscriptYOffset: how far a superscript rises, in font units.</summary>
+		public int? SuperscriptYOffset => _ofTypeface?.SuperscriptYOffset;
+
+		/// <summary>OS/2 sxHeight (table version 2 and up), in font units.</summary>
+		public int? OS2XHeight => _ofTypeface?.OS2XHeight;
+
 		private string unicode_range;
 
 		private Glyph missingGlyph;

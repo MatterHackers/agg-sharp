@@ -44,9 +44,10 @@ namespace MatterHackers.Agg.Svg
 		/// <summary>
 		/// Draws <paramref name="element"/> with <paramref name="userToPixels"/> onto the premultiplied
 		/// <paramref name="target"/>; an SVG image is drawn by <paramref name="drawDocument"/>. Draws nothing when the
-		/// image cannot be loaded or decoded.
+		/// image cannot be loaded or decoded. A smoothed raster is sampled bilinearly, or with tiny-skia's bicubic
+		/// filter when <paramref name="bicubic"/> - which only feImage asks for, as resvg's filter references show.
 		/// </summary>
-		public static void Draw(SvgDocument document, SvgElement element, Affine userToPixels, ImageBuffer target, double viewportWidth, double viewportHeight, Action<SvgDocument, Affine, ImageBuffer> drawDocument)
+		public static void Draw(SvgDocument document, SvgElement element, Affine userToPixels, ImageBuffer target, double viewportWidth, double viewportHeight, Action<SvgDocument, Affine, ImageBuffer> drawDocument, bool bicubic = false)
 		{
 			// As in usvg, a document drawn as an SVG image draws no images of its own - any, not only ones that
 			// include it again - so a self-including chain shows once.
@@ -126,20 +127,20 @@ namespace MatterHackers.Agg.Svg
 				return;
 			}
 
-			DrawRaster(raster, element, imageToPixels, viewport, userToPixels, target);
+			DrawRaster(raster, element, imageToPixels, viewport, userToPixels, target, bicubic);
 		}
 
 		/// <summary>
 		/// Fills the part of the viewport the image covers (all of it, when "slice" overflows it) with the image,
 		/// read through a clamping accessor so its edges are not blended with the transparency beyond them.
 		/// </summary>
-		private static void DrawRaster(ImageBuffer raster, SvgElement element, Affine imageToPixels, RectangleDouble viewport, Affine userToPixels, ImageBuffer target)
+		private static void DrawRaster(ImageBuffer raster, SvgElement element, Affine imageToPixels, RectangleDouble viewport, Affine userToPixels, ImageBuffer target, bool bicubic)
 		{
 			ImageBuffer premultiplied = Premultiply(raster);
 
 			// Raster rows run bottom-up; the image's own space runs top-down.
 			Affine rasterToPixels = new Affine(1, 0, 0, -1, 0, raster.Height) * imageToPixels;
-			ISpanGenerator spans = SvgPattern.ImageSpans(new ImageBufferAccessorClamp(premultiplied), rasterToPixels, Smooth(element));
+			ISpanGenerator spans = SvgPattern.ImageSpans(new ImageBufferAccessorClamp(premultiplied), rasterToPixels, Smooth(element), bicubic);
 			if (spans == null)
 			{
 				return;

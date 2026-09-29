@@ -262,6 +262,34 @@ namespace MatterHackers.Agg.Tests.Agg
 
 			// A negative amount makes the whole list invalid, which usvg skips: drawn unfiltered.
 			await AssertColor(Red("grayscale(-1) invert(1)"), 50, 50, 255, 0, 0, 255);
+
+			// Only a zero angle may drop its unit (svgtypes); hue-rotate(45) is invalid, so unfiltered too.
+			await AssertColor(Red("hue-rotate(45)"), 50, 50, 255, 0, 0, 255);
+			await AssertColor(Red("hue-rotate(0)"), 50, 50, 255, 0, 0, 255);
+		}
+
+		[Test]
+		public async Task PrimitiveAttributesReadAsUsvgReadsThem()
+		{
+			const string Flat = "<rect width=\"100\" height=\"100\" fill=\"none\" filter=\"url(#f)\"/>";
+			const string Red = "<rect width=\"100\" height=\"100\" fill=\"#ff0000\" filter=\"url(#f)\"/>";
+
+			// flood-color="inherit" takes the filter element's flood-color.
+			await AssertColor(Filtered("<feFlood flood-color=\"inherit\"/>", Red, Whole + " flood-color=\"#00ff00\""), 50, 50, 0, 255, 0, 255);
+
+			// lighting-color="currentColor" is the nearest color property, black when there is none.
+			const string Overhead = "<feDiffuseLighting lighting-color=\"currentColor\"><feDistantLight elevation=\"90\"/></feDiffuseLighting>";
+			await AssertColor(Filtered(Overhead, Flat, Whole + " color=\"#0000ff\""), 50, 50, 0, 0, 255, 255);
+			await AssertColor(Filtered(Overhead, Flat), 50, 50, 0, 0, 0, 255);
+
+			// tableValues is a number list; "1px" does not parse, so the table is empty: the identity.
+			await AssertColor(Filtered("<feComponentTransfer><feFuncR type=\"table\" tableValues=\"1px\"/></feComponentTransfer>",
+				"<rect width=\"100\" height=\"100\" fill=\"#800000\" filter=\"url(#f)\"/>"), 50, 50, 128, 0, 0, 255);
+
+			// dx and dy are numbers; a percentage does not parse, so the offset is 0.
+			ImageBuffer offset = Filtered("<feOffset dx=\"20%\" dy=\"40%\"/>", "<rect x=\"20\" y=\"20\" width=\"60\" height=\"60\" fill=\"#ff0000\" filter=\"url(#f)\"/>");
+			await AssertColor(offset, 20, 20, 255, 0, 0, 255);
+			await Assert.That(Alpha(offset, 80, 80)).IsEqualTo(0);
 		}
 
 		[Test]
@@ -289,9 +317,31 @@ namespace MatterHackers.Agg.Tests.Agg
 				return quad;
 			};
 			ImageBuffer image = SvgRenderer.RenderToImage(document, 100, 100);
-			await AssertColor(image, 20, 20, 255, 0, 0, 255);
-			await AssertColor(image, 80, 20, 0, 0, 255, 255);
-			await AssertColor(image, 80, 80, 255, 255, 255, 255);
+
+			// Bicubic smoothing bleeds a little of the neighbours into each quadrant's middle.
+			await AssertColor(image, 20, 20, 255, 0, 0, 255, 12);
+			await AssertColor(image, 80, 20, 0, 0, 255, 255, 12);
+			await AssertColor(image, 80, 80, 255, 255, 255, 255, 12);
+		}
+
+		[Test]
+		public async Task FeImageSmoothsAnImageBicubically()
+		{
+			// resvg draws feImage's raster through tiny-skia's bicubic (Mitchell, B = C = 1/3) filter, as its
+			// filters/feImage references show. A 3x1 black, white, black stretched over 100: at x = 50 the white
+			// pixel's centre is .015 away, so bicubic keeps .89 of it (226) where bilinear would keep .985 (251).
+			SvgDocument document = SvgDocument.Parse("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\">"
+				+ $"<filter id=\"f\" {Whole}><feImage href=\"data:image/png;base64,AAAA\" preserveAspectRatio=\"none\"/></filter>{LeftHalf}</svg>");
+			document.ImageDecoder = _ =>
+			{
+				var strip = new ImageBuffer(3, 1);
+				strip.SetPixel(0, 0, Color.Black);
+				strip.SetPixel(1, 0, Color.White);
+				strip.SetPixel(2, 0, Color.Black);
+				return strip;
+			};
+			ImageBuffer image = SvgRenderer.RenderToImage(document, 100, 100);
+			await AssertColor(image, 50, 50, 226, 226, 226, 255, 3);
 		}
 
 		[Test]

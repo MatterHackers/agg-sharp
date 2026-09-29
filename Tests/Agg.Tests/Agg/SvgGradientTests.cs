@@ -190,5 +190,39 @@ namespace MatterHackers.Agg.Tests.Agg
 			await Assert.That((int)At(outer, 50, 50).red).IsEqualTo(0);
 			await Assert.That((int)At(outer, 1, 1).red).IsEqualTo(255);
 		}
+
+		[Test]
+		[Arguments("<linearGradient id=\"g\"/><rect width=\"100\" height=\"100\" fill=\"url(#g) green\"/>")]
+		[Arguments("<linearGradient id=\"g\"/><rect width=\"100\" height=\"100\" color=\"green\" fill=\"url(#g) currentColor\"/>")]
+		[Arguments("<linearGradient id=\"g\">" + WhiteToBlack + "</linearGradient><line x1=\"50\" y1=\"0\" x2=\"50\" y2=\"100\" stroke-width=\"20\" stroke=\"url(#g) green\"/>")]
+		[Arguments("<pattern id=\"p\"><rect width=\"50\" height=\"50\" fill=\"red\"/></pattern><line x1=\"50\" y1=\"0\" x2=\"50\" y2=\"100\" stroke-width=\"20\" stroke=\"url(#p) green\"/>")]
+		public async Task AServerThatCannotPaintFallsBackToTheColourAfterIt(string body)
+		{
+			// usvg: a gradient with no stops, or a bounding-box server on a shape with no area, is no server at all,
+			// so the paint's fallback colour is used.
+			await Assert.That(At(Render(body), 50, 50)).IsEqualTo(new Color(0, 128, 0, 255));
+		}
+
+		[Test]
+		public async Task RadialAlphaIsTheExactInterpolationRoundedOnce()
+		{
+			// resvg's lighting cases draw their height map with a radial alpha ramp, and surfaceScale magnifies any
+			// level the ramp is off. Every pixel's alpha is 255 (1 - t), t its centre's distance over r, to within
+			// the half level one rounding allows (a colour table quantising t, or flooring into it, lands a level low).
+			ImageBuffer image = Render("<radialGradient id=\"g\" gradientUnits=\"userSpaceOnUse\" cx=\"50\" cy=\"50\" r=\"50\">"
+				+ "<stop offset=\"0\" stop-color=\"black\"/><stop offset=\"1\" stop-color=\"black\" stop-opacity=\"0\"/></radialGradient>"
+				+ "<rect width=\"100\" height=\"100\" fill=\"url(#g)\"/>");
+			double worst = 0;
+			for (int y = 0; y < 100; y++)
+			{
+				for (int x = 0; x < 100; x++)
+				{
+					double t = Math.Min(1, Math.Sqrt((x + .5 - 50) * (x + .5 - 50) + (y + .5 - 50) * (y + .5 - 50)) / 50);
+					worst = Math.Max(worst, Math.Abs(At(image, x, y).alpha - 255 * (1 - t)));
+				}
+			}
+
+			await Assert.That(worst).IsLessThanOrEqualTo(.51);
+		}
 	}
 }

@@ -177,7 +177,10 @@ namespace MatterHackers.Agg.Svg
 			return percent ? value / 100 : value;
 		}
 
-		/// <summary>An angle in degrees (deg, rad, grad or turn; a bare number is degrees), 0 when missing.</summary>
+		/// <summary>
+		/// An angle in degrees (deg, rad, grad or turn), 0 when missing. As svgtypes reads it, only a zero may drop
+		/// its unit: hue-rotate(45) is invalid, which makes the whole list invalid.
+		/// </summary>
 		private static double? Angle(string text)
 		{
 			if (text.Length == 0)
@@ -195,7 +198,7 @@ namespace MatterHackers.Agg.Svg
 				}
 			}
 
-			return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double plain) ? plain : (double?)null;
+			return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double plain) && plain == 0 ? 0 : (double?)null;
 		}
 
 		/// <summary>grayscale, sepia (amounts capped at 1) and saturate as 4x5 matrices, with usvg's coefficients.</summary>

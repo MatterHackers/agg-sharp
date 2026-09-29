@@ -145,5 +145,62 @@ namespace MatterHackers.Agg.Tests.Agg
 			await Assert.That(At(nested, 70, 20).alpha).IsEqualTo((byte)255);
 			await Assert.That(At(nested, 20, 40).alpha).IsEqualTo((byte)0);
 		}
+
+		[Test]
+		[Arguments("width=\"0\" height=\"0\"")]
+		[Arguments("width=\"-50\" height=\"-100\"")]
+		[Arguments("viewBox=\"0 0 100 100\" width=\"100\" height=\"0\"")]
+		public async Task ARootWithNoSizeDrawsNothing(string rootAttributes)
+		{
+			// usvg rejects a document whose width or height is zero or negative; resvg draws nothing.
+			await Assert.That(At(Render("<rect width=\"100\" height=\"100\" fill=\"green\"/>", rootAttributes), 50, 50).alpha).IsEqualTo((byte)0);
+		}
+
+		[Test]
+		public async Task ElementsOutsideTheSvgNamespaceAreNotDrawn()
+		{
+			// usvg skips an element (and all it holds) whose namespace is not SVG's, whatever its local name.
+			ImageBuffer image = Render("<s:g xmlns=\"http://www.example.org/notsvg\" xmlns:s=\"http://www.w3.org/2000/svg\">"
+				+ "<s:rect width=\"100\" height=\"100\" fill=\"green\"/><rect width=\"100\" height=\"100\" fill=\"red\"/></s:g>");
+			await Assert.That(At(image, 50, 50)).IsEqualTo(new Color(0, 128, 0, 255));
+		}
+
+		[Test]
+		[Arguments("<circle cx=\"50\" cy=\"50\" r=\"40.3\" fill=\"green\" shape-rendering=\"crispEdges\"/>")]
+		[Arguments("<g shape-rendering=\"optimizeSpeed\"><circle cx=\"50\" cy=\"50\" r=\"40.3\" fill=\"none\" stroke=\"green\" stroke-width=\"3.3\"/></g>")]
+		public async Task ShapeRenderingWithoutAntiAliasingDrawsWholePixels(string body)
+		{
+			// resvg draws crispEdges and optimizeSpeed (inherited) with anti-aliasing off: every pixel is covered or not.
+			ImageBuffer image = Render(body);
+			int partial = 0;
+			for (int y = 0; y < 100; y++)
+			{
+				for (int x = 0; x < 100; x++)
+				{
+					byte alpha = At(image, x, y).alpha;
+					partial += alpha != 0 && alpha != 255 ? 1 : 0;
+				}
+			}
+
+			await Assert.That(partial).IsEqualTo(0);
+			await Assert.That(At(image, 50, 10).alpha).IsEqualTo((byte)255);
+		}
+
+		[Test]
+		public async Task ShapeRenderingDoesNotAffectText()
+		{
+			ImageBuffer image = Render("<text x=\"5\" y=\"70\" font-size=\"60\" shape-rendering=\"crispEdges\">Text</text>");
+			bool partial = false;
+			for (int y = 0; y < 100 && !partial; y++)
+			{
+				for (int x = 0; x < 100 && !partial; x++)
+				{
+					byte alpha = At(image, x, y).alpha;
+					partial = alpha != 0 && alpha != 255;
+				}
+			}
+
+			await Assert.That(partial).IsTrue();
+		}
 	}
 }

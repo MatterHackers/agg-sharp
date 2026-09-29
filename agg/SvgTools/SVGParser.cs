@@ -3,7 +3,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007-2011
+// Copyright (C) 2007-2026
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -22,6 +22,7 @@ using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -129,10 +130,10 @@ namespace MatterHackers.Agg.SvgTools
                 var segments = viewBoxAttr.Value.Split(' ');
                 if (segments.Length >= 4)
                 {
-                    double.TryParse(segments[0], out viewBoxMinX);
-                    double.TryParse(segments[1], out viewBoxMinY);
-                    double.TryParse(segments[2], out viewBoxWidth);
-                    double.TryParse(segments[3], out viewBoxHeight);
+                    double.TryParse(segments[0], NumberStyles.Float, CultureInfo.InvariantCulture, out viewBoxMinX);
+                    double.TryParse(segments[1], NumberStyles.Float, CultureInfo.InvariantCulture, out viewBoxMinY);
+                    double.TryParse(segments[2], NumberStyles.Float, CultureInfo.InvariantCulture, out viewBoxWidth);
+                    double.TryParse(segments[3], NumberStyles.Float, CultureInfo.InvariantCulture, out viewBoxHeight);
                 }
             }
 
@@ -252,7 +253,7 @@ namespace MatterHackers.Agg.SvgTools
         private static double ParseAttrDouble(HtmlNode node, string attrName, double defaultValue)
         {
             var attr = node.Attributes[attrName];
-            if (attr != null && double.TryParse(attr.Value, out double result))
+            if (attr != null && double.TryParse(attr.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out double result))
             {
                 return result;
             }
@@ -316,6 +317,16 @@ namespace MatterHackers.Agg.SvgTools
             return Color.Black;
         }
 
+        /// <summary>An SVG coordinate pair at three decimal places, with '.' as the decimal point whatever the culture.</summary>
+        private static string Coordinates(Vector2 position)
+        {
+            return string.Create(CultureInfo.InvariantCulture, $"{position.X:0.###} {position.Y:0.###}");
+        }
+
+        /// <summary>
+        /// Writes <paramref name="vertexSource"/> as SVG path data, at three decimal places and culture-invariant, so
+        /// <see cref="ParseSvgDString"/> reads it back to the same vertices.
+        /// </summary>
         public static string SvgDString(this IVertexSource vertexSource)
         {
             var dstring = new StringBuilder();
@@ -332,13 +343,15 @@ namespace MatterHackers.Agg.SvgTools
                 {
                     case FlagsAndCommand.MoveTo:
                         {
-                            dstring.Append($"M {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                            dstring.Append($"M {Coordinates(vertexData.Position)}");
                             break;
                         }
 
                     case FlagsAndCommand.LineTo:
                         {
-                            dstring.Append($"L {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                            // Path data must open with a moveto; a reader drops everything after an opening L.
+                            dstring.Append(dstring.Length == 0 ? "M " : "L ");
+                            dstring.Append(Coordinates(vertexData.Position));
                             break;
                         }
 
@@ -357,14 +370,14 @@ namespace MatterHackers.Agg.SvgTools
                             {
                                 case 0:
                                     {
-                                        dstring.Append($"Q {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                                        dstring.Append($"Q {Coordinates(vertexData.Position)}");
                                         curveIndex++;
                                     }
                                     break;
 
                                 case 1:
                                     {
-                                        dstring.Append($" {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                                        dstring.Append($" {Coordinates(vertexData.Position)}");
                                         curveIndex = 0;
                                     }
                                     break;
@@ -381,21 +394,21 @@ namespace MatterHackers.Agg.SvgTools
                             {
                                 case 0:
                                     {
-                                        dstring.Append($"C {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                                        dstring.Append($"C {Coordinates(vertexData.Position)}");
                                         curveIndex++;
                                     }
                                     break;
 
                                 case 1:
                                     {
-                                        dstring.Append($" {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                                        dstring.Append($" {Coordinates(vertexData.Position)}");
                                         curveIndex++;
                                     }
                                     break;
 
                                 case 2:
                                     {
-                                        dstring.Append($" {vertexData.Position.X:0.###} {vertexData.Position.Y:0.###}");
+                                        dstring.Append($" {Coordinates(vertexData.Position)}");
                                         curveIndex = 0;
                                     }
                                     break;
@@ -423,275 +436,17 @@ namespace MatterHackers.Agg.SvgTools
             return newString;
         }
 
-        public static void ParseSvgDString(this VertexStorage vertexStorage, string dString)
+        /// <summary>Appends an arc command's curve to <paramref name="path"/>, whose current point is <paramref name="start"/>.</summary>
+        public delegate void ArcToPath(VertexStorage path, Vector2 start, Vector2 radii, double angleDegrees, int size, int sweep, Vector2 end);
+
+        /// <summary>
+        /// Replaces <paramref name="vertexStorage"/> with the path data <paramref name="dString"/>, read as SVG reads it:
+        /// the first invalid segment ends the path and keeps what came before (<see cref="SvgPathData"/>). Arcs are cubics
+        /// (<see cref="AddArcToPath"/>) unless <paramref name="addArc"/> draws them another way.
+        /// </summary>
+        public static void ParseSvgDString(this VertexStorage vertexStorage, string dString, ArcToPath addArc = null)
         {
-            vertexStorage.Clear();
-
-            var fastSimpleNumbers = dString.IndexOf('e') == -1;
-            var parseIndex = 0;
-            var lastXY = new Vector2();
-            var curXY = new Vector2();
-
-            var secondControlPoint = new Vector2();
-            var polygonStart = new Vector2();
-
-            // The previous path command letter, needed by the smooth curve commands. It has to be tracked
-            // here rather than inferred from the last stored vertex: arcs are emitted as Curve4 vertices,
-            // so the storage cannot tell "the author wrote a cubic" from "we approximated an arc".
-            var lastCommand = ' ';
-
-            while (parseIndex < dString.Length)
-            {
-                var command = dString[parseIndex];
-                // SVG 1.1 section 8.3.3: drawing on after a closepath starts a new subpath at the closed one's start.
-                if ((lastCommand == 'z' || lastCommand == 'Z') && "aAcChHlLqQsStTvV".IndexOf(command) >= 0) vertexStorage.MoveTo(polygonStart.X, polygonStart.Y);
-                switch (command)
-                {
-                    case 'a': // relative arc
-                    case 'A': // absolute arc
-                        {
-                            parseIndex++;
-                            do
-                            {
-                                Vector2 radii;
-                                radii.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                radii.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                var angle = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                var largeArcFlag = (int)Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                var sweepFlag = (int)Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-
-                                if (command == 'a')
-                                {
-                                    curXY += lastXY;
-                                }
-
-                                AddArcToPath(vertexStorage,
-                                    lastXY,
-                                    radii,
-                                    angle,
-                                    largeArcFlag,
-                                    sweepFlag,
-                                    curXY);
-
-                                lastXY = curXY;
-
-                                // if the next element is another coordinate than we just continue to add more curves.
-                            } while (NextElementIsANumber(dString, parseIndex));
-                        }
-                        break;
-
-                    case 'c': // curve to relative
-                    case 'C': // curve to absolute
-                        {
-                            parseIndex++;
-
-                            do
-                            {
-                                Vector2 controlPoint1;
-                                controlPoint1.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                controlPoint1.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                secondControlPoint.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                secondControlPoint.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                if (command == 'c')
-                                {
-                                    controlPoint1 += lastXY;
-                                    secondControlPoint += lastXY;
-                                    curXY += lastXY;
-                                }
-
-                                vertexStorage.Curve4(controlPoint1.X, controlPoint1.Y, secondControlPoint.X, secondControlPoint.Y, curXY.X, curXY.Y);
-
-                                lastXY = curXY;
-                            } while (NextElementIsANumber(dString, parseIndex));
-                        }
-                        break;
-
-                    case 's': // shorthand/smooth curveto relative
-                    case 'S': // shorthand/smooth curveto absolute
-                        {
-                            parseIndex++;
-
-                            do
-                            {
-                                // SVG 1.1 section 8.3.6: the first control point is the reflection of the
-                                // previous command's second control point about the current point, but only
-                                // when that previous command was a cubic (C, c, S or s). After anything else
-                                // - an arc, a line, a close - the first control point is the current point.
-                                // Reflecting a control point left over from an earlier cubic throws it wildly
-                                // off the path (a stray spike on the 'e' of the MatterHackers wordmark).
-                                var previousWasCubic = lastCommand == 'c' || lastCommand == 'C'
-                                    || lastCommand == 's' || lastCommand == 'S';
-
-                                var controlPoint = previousWasCubic
-                                    ? Reflect(secondControlPoint, lastXY)
-                                    : lastXY;
-
-                                secondControlPoint.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                secondControlPoint.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                if (command == 's')
-                                {
-                                    secondControlPoint += lastXY;
-                                    curXY += lastXY;
-                                }
-
-                                vertexStorage.Curve4(controlPoint.X, controlPoint.Y, secondControlPoint.X, secondControlPoint.Y, curXY.X, curXY.Y);
-
-                                lastXY = curXY;
-
-                                // repeated coordinate sets are further smooth cubics, so from here on the
-                                // previous command really is a cubic and reflection is correct
-                                lastCommand = command;
-                            } while (NextElementIsANumber(dString, parseIndex));
-                        }
-                        break;
-
-                    case 'h': // horizontal line to relative
-                    case 'H': // horizontal line to absolute
-                    case 'v': // vertical line to relative
-                    case 'V': // vertical line to absolute
-                        parseIndex++;
-                        // Both take a list of numbers, as every command does ("v-.012-4.827" is two lines).
-                        do
-                        {
-                            curXY = lastXY;
-                            var value = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            if (command == 'h' || command == 'H')
-                            {
-                                curXY.X = command == 'h' ? lastXY.X + value : value;
-                                vertexStorage.HorizontalLineTo(curXY.X);
-                            }
-                            else
-                            {
-                                curXY.Y = command == 'v' ? lastXY.Y + value : value;
-                                vertexStorage.VerticalLineTo(curXY.Y);
-                            }
-
-                            lastXY = curXY;
-                        } while (NextElementIsANumber(dString, parseIndex));
-                        break;
-
-                    case 'l': // line to relative
-                    case 'L': // line to absolute
-                        parseIndex++;
-                        do
-                        {
-                            curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            if (command == 'l')
-                            {
-                                curXY += lastXY;
-                            }
-
-                            vertexStorage.LineTo(curXY.X, curXY.Y);
-                            lastXY = curXY;
-                        } while (NextElementIsANumber(dString, parseIndex));
-                        break;
-
-                    case 'm': // move to relative
-                    case 'M': // move to absolute
-                        parseIndex++;
-                        {
-                            // SVG 1.1 section 8.3.2: only the first coordinate pair is a moveto. Every pair
-                            // after it is an implicit lineto, taking its case from the moveto ('m' relative,
-                            // 'M' absolute). Emitting a moveto per pair instead leaves the path with no edges
-                            // at all, so it fills nothing.
-                            var isFirstPair = true;
-                            do
-                            {
-                                curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                                if (command == 'm')
-                                {
-                                    curXY += lastXY;
-                                }
-
-                                if (isFirstPair)
-                                {
-                                    vertexStorage.MoveTo(curXY.X, curXY.Y);
-
-                                    // svg fonts are stored cw and agg expects its shapes to be ccw.  cw shapes are holes.
-                                    // so we store the position of the start of this polygon so we can flip it when we close it.
-                                    polygonStart = curXY;
-                                    isFirstPair = false;
-                                }
-                                else
-                                {
-                                    vertexStorage.LineTo(curXY.X, curXY.Y);
-                                }
-
-                                lastXY = curXY;
-                            } while (NextElementIsANumber(dString, parseIndex));
-                        }
-
-                        break;
-
-                    case 'q': // quadratic B�zier curveto relative
-                    case 'Q': // quadratic B�zier curveto absolute
-                        parseIndex++;
-                        do
-                        {
-                            Vector2 controlPoint;
-                            controlPoint.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            controlPoint.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            if (command == 'q')
-                            {
-                                controlPoint += lastXY;
-                                curXY += lastXY;
-                            }
-
-                            vertexStorage.Curve3(controlPoint.X, controlPoint.Y, curXY.X, curXY.Y);
-                        } while (NextElementIsANumber(dString, parseIndex)) ;
-                        lastXY = curXY;
-                        break;
-
-                    case 't': // Shorthand/smooth quadratic B�zier curveto relative
-                    case 'T': // Shorthand/smooth quadratic B�zier curveto absolute
-                        parseIndex++;
-                        do
-                        {
-                            curXY.X = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            curXY.Y = Util.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-                            if (command == 't')
-                            {
-                                curXY += lastXY;
-                            }
-
-                            vertexStorage.Curve3(curXY.X, curXY.Y);
-                        } while (NextElementIsANumber(dString, parseIndex));
-                        lastXY = curXY;
-                        break;
-
-                    case 'z': // close path
-                    case 'Z': // close path
-                        parseIndex++;
-                        vertexStorage.ClosePolygon();
-                        lastXY = polygonStart;
-                        break;
-
-                    case ' ':
-                    case '\t': // tab character
-                    case '\n': // some white space we need to skip
-                    case '\r':
-                        parseIndex++;
-                        break;
-
-                    default:
-                        throw new NotImplementedException("unrecognized d command '" + command + "'.");
-                }
-
-                if (!validSkipCharacters.Contains(command))
-                {
-                    lastCommand = command;
-                }
-            }
+            SvgPathData.Parse(vertexStorage, dString, addArc ?? AddArcToPath);
         }
 
         private static double CalculateVectorAngle(double ux, double uy, double vx, double vy)
@@ -704,9 +459,16 @@ namespace MatterHackers.Agg.SvgTools
                 return aTanV - aTanU;
             }
 
-            return MathHelper.Tau - (aTanU - aTanV);
+            // Math.PI, not MathHelper.Tau: MathHelper.Pi is a float literal, which put arcs about 1e-7 of a turn off.
+            return 2 * Math.PI - (aTanU - aTanV);
         }
 
+        /// <summary>
+        /// Appends the SVG elliptical arc from <paramref name="start"/> to <paramref name="end"/> as cubics, following the
+        /// SVG spec's arc implementation notes (B.2.5): an arc to its own start draws nothing, a zero radius is a line,
+        /// negative radii are taken as positive, radii too small to reach <paramref name="end"/> are scaled up until they
+        /// just do, and the last cubic lands exactly on <paramref name="end"/>.
+        /// </summary>
         public static void AddArcToPath(VertexStorage vertexStorage, Vector2 start, Vector2 radii, double angleDegrees, int size, int sweep, Vector2 end)
         {
             if (start == end)
@@ -714,7 +476,8 @@ namespace MatterHackers.Agg.SvgTools
                 return;
             }
 
-            if (radii.X == 0 && radii.Y == 0)
+            radii = new Vector2(Math.Abs(radii.X), Math.Abs(radii.Y));
+            if (radii.X == 0 || radii.Y == 0)
             {
                 vertexStorage.LineTo(end);
                 return;
@@ -772,8 +535,11 @@ namespace MatterHackers.Agg.SvgTools
                 var cosTheta2 = Math.Cos(theta2);
                 var sinTheta2 = Math.Sin(theta2);
 
-                var endpoint = new Vector2(cosAngle * radii.X * cosTheta2 - sinAngle * radii.Y * sinTheta2 + cx,
-                                           sinAngle * radii.X * cosTheta2 + cosAngle * radii.Y * sinTheta2 + cy);
+                // The last segment ends on the end point itself; the trigonometry only gets within rounding of it.
+                var endpoint = i == segments - 1
+                    ? end
+                    : new Vector2(cosAngle * radii.X * cosTheta2 - sinAngle * radii.Y * sinTheta2 + cx,
+                                  sinAngle * radii.X * cosTheta2 + cosAngle * radii.Y * sinTheta2 + cy);
 
                 var dx1 = t * (-cosAngle * radii.X * sinTheta1 - sinAngle * radii.Y * cosTheta1);
                 var dy1 = t * (-sinAngle * radii.X * sinTheta1 + cosAngle * radii.Y * cosTheta1);
@@ -860,32 +626,6 @@ namespace MatterHackers.Agg.SvgTools
 
                 lastPosition = vertexData;
             }
-        }
-
-        private static Vector2 Reflect(Vector2 point, Vector2 mirror)
-        {
-            double x, y, dx, dy;
-            dx = Math.Abs(mirror.X - point.X);
-            dy = Math.Abs(mirror.Y - point.Y);
-
-            if (mirror.X >= point.X)
-            {
-                x = mirror.X + dx;
-            }
-            else
-            {
-                x = mirror.X - dx;
-            }
-            if (mirror.Y >= point.Y)
-            {
-                y = mirror.Y + dy;
-            }
-            else
-            {
-                y = mirror.Y - dy;
-            }
-
-            return new Vector2(x, y);
         }
     }
 }

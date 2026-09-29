@@ -69,9 +69,11 @@ namespace MatterHackers.Agg.Svg
 
 			bool boundingBoxUnits = Get("patternUnits") != "userSpaceOnUse";
 			bool hasArea = bounds.Width > 0 && bounds.Height > 0;
+			// As usvg: no content, or bounding-box units on a shape with no area, is no server - the paint's
+			// fallback colour is used.
 			if (contentOwner == null || (boundingBoxUnits && !hasArea))
 			{
-				return none;
+				return null;
 			}
 
 			// The tile's rectangle in user space: fractions of the bounding box, or lengths of the viewport.
@@ -91,7 +93,7 @@ namespace MatterHackers.Agg.Svg
 
 			if (width <= 0 || height <= 0)
 			{
-				return none;
+				return null;
 			}
 
 			// Tile space - (0, 0) at the tile's top-left - to pixels; agg's a * b applies a first.
@@ -140,9 +142,10 @@ namespace MatterHackers.Agg.Svg
 		/// <summary>
 		/// A span generator that draws the premultiplied image behind <paramref name="accessor"/> through
 		/// <paramref name="imageToPixels"/>: pixel for pixel when that is a whole-pixel move, else sampled bilinearly
-		/// (or nearest-neighbour when not <paramref name="smooth"/>). Null when the transform is singular.
+		/// (or nearest-neighbour when not <paramref name="smooth"/>; tiny-skia's bicubic, Mitchell with B = C = 1/3, when
+		/// <paramref name="bicubic"/>). Null when the transform is singular.
 		/// </summary>
-		internal static ISpanGenerator ImageSpans(IImageBufferAccessor accessor, Affine imageToPixels, bool smooth)
+		internal static ISpanGenerator ImageSpans(IImageBufferAccessor accessor, Affine imageToPixels, bool smooth, bool bicubic = false)
 		{
 			if (Math.Abs(imageToPixels.sx * imageToPixels.sy - imageToPixels.shx * imageToPixels.shy) < 1e-12)
 			{
@@ -159,6 +162,11 @@ namespace MatterHackers.Agg.Svg
 			if (wholePixelMove || !smooth)
 			{
 				return new span_image_filter_rgba_nn(accessor, interpolator);
+			}
+
+			if (bicubic)
+			{
+				return new span_image_filter_rgba(accessor, interpolator, new ImageFilterLookUpTable(new image_filter_mitchell(), true));
 			}
 
 			return new span_image_filter_rgba_2x2(accessor, interpolator, new ImageFilterLookUpTable(new image_filter_bilinear()));

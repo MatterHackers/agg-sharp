@@ -128,7 +128,7 @@ namespace MatterHackers.Agg.Svg
 					break;
 				case "text":
 					SvgStyle style = SvgRenderer.InheritedStyle(context, element);
-					foreach ((VertexStorage run, _) in SvgText.Layout(element, style, context.ViewportWidth, context.ViewportHeight, context.Diagonal, context.Document.FontResolver, context.Document.Fonts))
+					foreach ((VertexStorage run, _) in SvgText.Layout(element, style, context.ViewportWidth, context.ViewportHeight, context.Diagonal, context.Document.FontResolver, context.Document.Fonts, context.Document))
 					{
 						Include(run, Affine.NewIdentity());
 					}
@@ -248,7 +248,7 @@ namespace MatterHackers.Agg.Svg
 			var paths = new List<(VertexStorage Path, SvgStyle Style)>();
 			if (child.Name == "text")
 			{
-				paths.AddRange(SvgText.Layout(child, style, context.ViewportWidth, context.ViewportHeight, context.Diagonal, context.Document.FontResolver, context.Document.Fonts));
+				paths.AddRange(SvgText.Layout(child, style, context.ViewportWidth, context.ViewportHeight, context.Diagonal, context.Document.FontResolver, context.Document.Fonts, context.Document));
 			}
 			else if (SvgShapes.ToPath(child, context.ViewportWidth, context.ViewportHeight, style.FontSize) is VertexStorage path)
 			{

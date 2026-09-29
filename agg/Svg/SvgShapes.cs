@@ -33,14 +33,11 @@ namespace MatterHackers.Agg.Svg
 {
 	/// <summary>
 	/// The outline of each basic shape - rect (with rx/ry), circle, ellipse, line, polyline, polygon and path - in
-	/// the element's user space. Curved corners and ellipses are cubic Béziers, which the renderer flattens at
+	/// the element's user space. Curved corners, ellipses and arcs are usvg's cubic Béziers (see <see cref="SvgArc"/>), which the renderer flattens at
 	/// the output resolution.
 	/// </summary>
 	public static class SvgShapes
 	{
-		/// <summary>4/3 (√2 - 1): the cubic control distance that best approximates a quarter circle.</summary>
-		private const double Kappa = 0.5522847498307936;
-
 		/// <summary>
 		/// The outline of <paramref name="element"/>, or null when it is not a shape or is a shape that draws
 		/// nothing (a zero-size rect, a circle without a radius). Percentages are of the viewport,
@@ -109,22 +106,22 @@ namespace MatterHackers.Agg.Svg
 				return path;
 			}
 
-			double kx = rx * Kappa, ky = ry * Kappa;
+			// Each corner a quarter of the ellipse centred rx, ry in from it, as usvg's rect path draws it.
 			double right = x + width, bottom = y + height;
 			path.MoveTo(x + rx, y);
 			path.LineTo(right - rx, y);
-			path.Curve4(right - rx + kx, y, right, y + ry - ky, right, y + ry);
+			SvgArc.AppendCubics(path, right - rx, y + ry, rx, ry, 0, -Math.PI / 2, Math.PI / 2);
 			path.LineTo(right, bottom - ry);
-			path.Curve4(right, bottom - ry + ky, right - rx + kx, bottom, right - rx, bottom);
+			SvgArc.AppendCubics(path, right - rx, bottom - ry, rx, ry, 0, 0, Math.PI / 2);
 			path.LineTo(x + rx, bottom);
-			path.Curve4(x + rx - kx, bottom, x, bottom - ry + ky, x, bottom - ry);
+			SvgArc.AppendCubics(path, x + rx, bottom - ry, rx, ry, 0, Math.PI / 2, Math.PI / 2);
 			path.LineTo(x, y + ry);
-			path.Curve4(x, y + ry - ky, x + rx - kx, y, x + rx, y);
+			SvgArc.AppendCubics(path, x + rx, y + ry, rx, ry, 0, Math.PI, Math.PI / 2);
 			path.ClosePolygon();
 			return path;
 		}
 
-		/// <summary>An ellipse as four cubic quarter arcs, starting at its rightmost point as SVG's does; null without a radius.</summary>
+		/// <summary>An ellipse as four quarter arcs of cubics (see <see cref="SvgArc"/>), starting at its rightmost point as SVG's does; null without a radius.</summary>
 		public static VertexStorage Ellipse(double cx, double cy, double rx, double ry)
 		{
 			if (rx <= 0 || ry <= 0)
@@ -132,13 +129,14 @@ namespace MatterHackers.Agg.Svg
 				return null;
 			}
 
-			double kx = rx * Kappa, ky = ry * Kappa;
+			// Four quarter arcs, each cut as kurbo cuts it (usvg's ellipse_to_path).
 			var path = new VertexStorage();
 			path.MoveTo(cx + rx, cy);
-			path.Curve4(cx + rx, cy + ky, cx + kx, cy + ry, cx, cy + ry);
-			path.Curve4(cx - kx, cy + ry, cx - rx, cy + ky, cx - rx, cy);
-			path.Curve4(cx - rx, cy - ky, cx - kx, cy - ry, cx, cy - ry);
-			path.Curve4(cx + kx, cy - ry, cx + rx, cy - ky, cx + rx, cy);
+			for (int quarter = 0; quarter < 4; quarter++)
+			{
+				SvgArc.AppendCubics(path, cx, cy, rx, ry, 0, quarter * Math.PI / 2, Math.PI / 2);
+			}
+
 			path.ClosePolygon();
 			return path;
 		}
@@ -183,7 +181,7 @@ namespace MatterHackers.Agg.Svg
 			var parsed = new VertexStorage();
 			try
 			{
-				parsed.ParseSvgDString(d);
+				parsed.ParseSvgDString(d, (path, start, radii, angle, size, sweep, end) => SvgArc.AppendSvgArc(path, start, radii, angle, size != 0, sweep != 0, end));
 			}
 			catch (NotImplementedException)
 			{

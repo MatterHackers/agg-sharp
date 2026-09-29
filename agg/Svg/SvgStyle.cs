@@ -147,6 +147,9 @@ namespace MatterHackers.Agg.Svg
 
 		public double MiterLimit { get; private set; } = 4;
 
+		/// <summary>shape-rendering (inherited): resvg draws crispEdges and optimizeSpeed without anti-aliasing.</summary>
+		public bool AntiAlias { get; private set; } = true;
+
 		/// <summary>The dash lengths, always an even count; null for a solid stroke.</summary>
 		public IReadOnlyList<double> DashArray { get; private set; }
 
@@ -185,6 +188,14 @@ namespace MatterHackers.Agg.Svg
 		public double LetterSpacing { get; private set; }
 
 		public double WordSpacing { get; private set; }
+
+		/// <summary>
+		/// False when kerning="0" or font-kerning="none" (both inherited) turns the font's pair kerning off, as usvg reads them.
+		/// </summary>
+		public bool Kerning => !kerningZero && !fontKerningNone;
+
+		private bool kerningZero;
+		private bool fontKerningNone;
 
 		/// <summary>
 		/// marker-start, marker-mid and marker-end: the <c>url(#id)</c> of the marker drawn at a shape's first, middle
@@ -323,8 +334,18 @@ namespace MatterHackers.Agg.Svg
 				style.TextDecoration = decoration == "none" ? null : decoration;
 			}
 
-			style.LetterSpacing = Get("letter-spacing") == "normal" ? 0 : SvgLength.Parse(Get("letter-spacing"), style.LetterSpacing, style.FontSize, style.FontSize);
-			style.WordSpacing = Get("word-spacing") == "normal" ? 0 : SvgLength.Parse(Get("word-spacing"), style.WordSpacing, style.FontSize, style.FontSize);
+			// A percentage is of the viewport's diagonal, as usvg converts any length it has no axis for.
+			style.LetterSpacing = Get("letter-spacing") == "normal" ? 0 : SvgLength.Parse(Get("letter-spacing"), style.LetterSpacing, viewportDiagonal, style.FontSize);
+			style.WordSpacing = Get("word-spacing") == "normal" ? 0 : SvgLength.Parse(Get("word-spacing"), style.WordSpacing, viewportDiagonal, style.FontSize);
+			if (Get("kerning") is string kerning)
+			{
+				style.kerningZero = SvgLength.Parse(kerning, -1, viewportDiagonal, style.FontSize) == 0;
+			}
+
+			if (Get("font-kerning") is string fontKerning)
+			{
+				style.fontKerningNone = fontKerning == "none";
+			}
 
 			switch (Get("fill-rule"))
 			{
@@ -343,6 +364,18 @@ namespace MatterHackers.Agg.Svg
 					break;
 				case "nonzero":
 					style.ClipEvenOdd = false;
+					break;
+			}
+
+			switch (Get("shape-rendering"))
+			{
+				case "optimizeSpeed":
+				case "crispEdges":
+					style.AntiAlias = false;
+					break;
+				case "auto":
+				case "geometricPrecision":
+					style.AntiAlias = true;
 					break;
 			}
 
@@ -422,6 +455,22 @@ namespace MatterHackers.Agg.Svg
 		}
 
 		private static double Clamp01(double value) => Math.Max(0, Math.Min(1, value));
+
+		/// <summary>
+		/// This style as text glyphs fill in: nonzero, whatever fill-rule says - it does not apply to text, and usvg
+		/// ignores it there.
+		/// </summary>
+		internal SvgStyle ForGlyphs()
+		{
+			if (!FillEvenOdd)
+			{
+				return this;
+			}
+
+			var copy = (SvgStyle)this.MemberwiseClone();
+			copy.FillEvenOdd = false;
+			return copy;
+		}
 
 		private SvgStyle InheritedCopy()
 		{

@@ -99,7 +99,7 @@ namespace MatterHackers.Agg.Svg
 						if (index >= 0)
 						{
 							double Number(string name, double fallback) => SvgLength.ParseNumber(child[name], fallback);
-							functions[index] = SvgFilterEffects.TransferFunction(child["type"], SvgLength.ParseList(child["tableValues"]),
+							functions[index] = SvgFilterEffects.TransferFunction(child["type"], SvgFilter.NumberList(child["tableValues"]),
 								Number("slope", 1), Number("intercept", 0), Number("amplitude", 1), Number("exponent", 1), Number("offset", 0));
 						}
 					}
@@ -190,7 +190,7 @@ namespace MatterHackers.Agg.Svg
 					image.Attributes["preserveAspectRatio"] = aspect;
 				}
 
-				SvgImage.Draw(context.Document, image, toPixels, layer, context.ViewportWidth, context.ViewportHeight, SvgRenderer.DrawImageDocument);
+				SvgImage.Draw(context.Document, image, toPixels, layer, context.ViewportWidth, context.ViewportHeight, SvgRenderer.DrawImageDocument, bicubic: true);
 			}
 
 			return SvgFilterPrimitives.Crop(layer.GetBuffer(), run.Width, run.Pixels);
@@ -270,7 +270,7 @@ namespace MatterHackers.Agg.Svg
 			light.LimitingConeAngle = source["limitingConeAngle"] != null ? Number(source, "limitingConeAngle", 0) : (double?)null;
 
 			// lighting-color is sRGB (white by default; its alpha is ignored).
-			Color color = SvgColor.TryParse(primitive["lighting-color"], out Color parsed) ? parsed : new Color(255, 255, 255, 255);
+			Color color = SvgFilter.PrimitiveColor(primitive, "lighting-color", new Color(255, 255, 255, 255));
 			double Channel(int value)
 			{
 				double c = value / 255.0;
