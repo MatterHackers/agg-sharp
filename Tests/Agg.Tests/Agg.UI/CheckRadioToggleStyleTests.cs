@@ -44,7 +44,15 @@ namespace MatterHackers.Agg.UI.Tests
 	/// CheckBox, RadioButton and ToggleSwitchView drawn in agg-gui's look from ThemeConfig.Current,
 	/// without moving any size, hit area or label position MatterCAD's layouts are built around.
 	/// </summary>
-	[NotInParallel(new[] { nameof(GuiWidget.DeviceScale), nameof(ThemeConfig.Current) })]
+	/// <remarks>
+	/// Keyless <c>[NotInParallel]</c>, exclusive of every other test, for two reasons. The tests write the
+	/// process-wide <see cref="GuiWidget.DeviceScale"/>, which every layout reads (see SharedStateKeys). And
+	/// checking a box or hovering it queues <see cref="CheckBoxViewStates.PostUpdateSetCorrectVisibilityStates"/>
+	/// on the process-wide <see cref="UiThread"/> idle queue: a test pumping UiThread on another thread ran
+	/// that queued update while this test drew, so the switch's states were mid-layout and the "on" image came
+	/// out as bare background. Keyed on DeviceScale and Current only, this class ran alongside those pumps.
+	/// </remarks>
+	[NotInParallel]
 	public class CheckRadioToggleStyleTests
 	{
 		private const int HostPad = 4;

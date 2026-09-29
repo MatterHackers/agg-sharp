@@ -70,6 +70,62 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// In full mac suite runs a capture once came back whole but with the capturing thread (and a few
+		/// others) walked to a single frame or spliced with another thread's frames - its register contexts did
+		/// not match its stacks. The capturing thread is the one thread known to be inside ThreadStackDump while
+		/// the dump is written, so a dump that cannot walk it back there is rejected, which makes
+		/// <see cref="ThreadStackDump.Capture"/> take a new one instead of returning a report missing the caller.
+		/// </summary>
+		[Test]
+		public async Task ADumpThatCannotWalkItsCapturingThreadIsRejected()
+		{
+			var blocked = new ManualResetEventSlim(false);
+			var started = new ManualResetEventSlim(false);
+			var bystander = new Thread(() =>
+			{
+				started.Set();
+				blocked.Wait();
+			})
+			{
+				IsBackground = true,
+			};
+
+			bystander.Start();
+			string dumpPath = Path.Combine(Path.GetTempPath(), $"agg-threadstacks-test-{Guid.NewGuid():N}.dmp");
+
+			try
+			{
+				started.Wait();
+				ThreadStackDump.WriteDumpOfThisProcess(dumpPath);
+				int writer = Environment.CurrentManagedThreadId;
+
+				string report = ThreadStackDump.ReportFromDump("the writer is walked", dumpPath, 0, Stopwatch.StartNew(), writer);
+				await Assert.That(report).Contains("END THREAD STACKS");
+
+				// The bystander never entered ThreadStackDump: named as the capturer, it reads as a dump whose
+				// contexts are wrong for the thread that took it.
+				InvalidOperationException rejected = null;
+				try
+				{
+					ThreadStackDump.ReportFromDump("the capturer is not walked", dumpPath, 0, Stopwatch.StartNew(), bystander.ManagedThreadId);
+				}
+				catch (InvalidOperationException ex)
+				{
+					rejected = ex;
+				}
+
+				await Assert.That(rejected).IsNotNull();
+				await Assert.That(rejected.Message).Contains($"managed {bystander.ManagedThreadId}");
+			}
+			finally
+			{
+				blocked.Set();
+				bystander.Join();
+				File.Delete(dumpPath);
+			}
+		}
+
+		/// <summary>
 		/// On macOS the runtime's dump writer, <c>createdump</c>, prints five "[createdump] ..." status lines
 		/// per capture. Launched by the runtime's diagnostic server it inherits the host's stdout, so every
 		/// capture - three from this class and one from the vetoed-close watchdog test - landed in the

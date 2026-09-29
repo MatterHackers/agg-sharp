@@ -190,7 +190,7 @@ namespace MatterHackers.GuiAutomation
 			{
 				WriteDumpOfThisProcess(dumpPath);
 
-				return ReportFromDump(reason, dumpPath, timer.ElapsedMilliseconds, timer);
+				return ReportFromDump(reason, dumpPath, timer.ElapsedMilliseconds, timer, Environment.CurrentManagedThreadId);
 			}
 			finally
 			{
@@ -295,7 +295,16 @@ namespace MatterHackers.GuiAutomation
 		/// <param name="dumpPath">The dump to read; owned by the caller, who deletes it.</param>
 		/// <param name="writeMilliseconds">How long writing the dump took, for the header line.</param>
 		/// <param name="timer">Started when the capture began; its total goes in the footer.</param>
-		internal static string ReportFromDump(string reason, string dumpPath, long writeMilliseconds, Stopwatch timer)
+		/// <param name="capturingThreadId">
+		/// The managed id of the thread that wrote the dump, or null not to check it. That thread was certainly
+		/// inside this class while the dump was written, so a walk of it that never reaches a
+		/// <see cref="ThreadStackDump"/> frame means the file's register contexts do not match its stacks -
+		/// another lost race with the running process (seen in full mac suite runs: the capturing thread and a
+		/// few others came back with one frame or with two threads' frames spliced together). That is a
+		/// property of the file, so it throws and <see cref="CaptureWithRetries"/> takes a new dump.
+		/// </param>
+		/// <exception cref="InvalidOperationException">The capturing thread's own frames were not in the dump.</exception>
+		internal static string ReportFromDump(string reason, string dumpPath, long writeMilliseconds, Stopwatch timer, int? capturingThreadId = null)
 		{
 			int droppedContexts = DropThreadContextsWithRepeatedStackPointers(dumpPath);
 			long dumpBytes = new FileInfo(dumpPath).Length;
@@ -310,6 +319,7 @@ namespace MatterHackers.GuiAutomation
 				report.AppendLine($"({droppedContexts} thread register context(s) repeated an earlier thread's stack pointer and were dropped; the thread that owns that stack pointer keeps the first one, others may show no frames)");
 			}
 
+			bool capturerWalked = false;
 			using (var dataTarget = DataTarget.LoadDump(dumpPath))
 			{
 				int runtimeCount = 0;
@@ -317,13 +327,18 @@ namespace MatterHackers.GuiAutomation
 				foreach (var clrInfo in dataTarget.ClrVersions)
 				{
 					runtimeCount++;
-					AppendRuntimeThreads(report, clrInfo.CreateRuntime());
+					capturerWalked |= AppendRuntimeThreads(report, clrInfo.CreateRuntime(), capturingThreadId);
 				}
 
 				if (runtimeCount == 0)
 				{
 					report.AppendLine("(no CLR found in the dump - nothing to walk)");
 				}
+			}
+
+			if (capturingThreadId != null && !capturerWalked)
+			{
+				throw new InvalidOperationException($"the dump did not walk the capturing thread (managed {capturingThreadId}) back into ThreadStackDump; its register contexts do not match its stacks");
 			}
 
 			report.AppendLine($"===================== END THREAD STACKS ({timer.ElapsedMilliseconds} ms) =====================");
@@ -508,8 +523,12 @@ namespace MatterHackers.GuiAutomation
 			return note.ToString();
 		}
 
-		private static void AppendRuntimeThreads(StringBuilder report, ClrRuntime runtime)
+		/// <summary>Appends every live thread's stack to <paramref name="report"/>.</summary>
+		/// <returns>True when the thread <paramref name="capturingThreadId"/> was walked into a ThreadStackDump frame.</returns>
+		private static bool AppendRuntimeThreads(StringBuilder report, ClrRuntime runtime, int? capturingThreadId)
 		{
+			bool capturerWalked = false;
+
 			foreach (var clrThread in runtime.Threads)
 			{
 				if (!clrThread.IsAlive)
@@ -534,7 +553,13 @@ namespace MatterHackers.GuiAutomation
 						break;
 					}
 
-					report.AppendLine($"    {frame}");
+					string text = frame.ToString();
+					report.AppendLine($"    {text}");
+
+					if (clrThread.ManagedThreadId == capturingThreadId && text.Contains(typeof(ThreadStackDump).FullName + "."))
+					{
+						capturerWalked = true;
+					}
 				}
 
 				if (frameCount == 0)
@@ -542,6 +567,8 @@ namespace MatterHackers.GuiAutomation
 					report.AppendLine("    (no managed frames - thread is in native code with no managed caller)");
 				}
 			}
+
+			return capturerWalked;
 		}
 
 		/// <summary>
