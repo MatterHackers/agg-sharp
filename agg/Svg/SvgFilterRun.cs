@@ -158,9 +158,10 @@ namespace MatterHackers.Agg.Svg
 		}
 
 		/// <summary>
-		/// feImage, as usvg reads it: href to an element draws that element in the filtered element's user space, as
-		/// a &lt;use&gt; would; anything else is an image fitted (preserveAspectRatio) into the primitive subregion.
-		/// Either way the result is cut to the subregion.
+		/// feImage, as usvg and resvg draw it: href to an element draws that element as a &lt;use&gt; would; anything
+		/// else is an image fitted (preserveAspectRatio) into a subregion-sized box. Either way it is drawn from the
+		/// subregion's top-left pixel - which is the drawing's user-space origin, even where it lies outside the filter
+		/// region - at the filtered element's scale only (its rotation and skew are dropped), then cut to the subregion.
 		/// </summary>
 		private static byte[] Image(SvgFilterRun run)
 		{
@@ -168,11 +169,12 @@ namespace MatterHackers.Agg.Svg
 			var layer = new ImageBuffer(run.Width, run.Height, 32, new BlenderPreMultBGRA());
 			string href = run.Primitive["href"];
 			SvgElement referenced = href != null && href.TrimStart().StartsWith("#", StringComparison.Ordinal) ? context.Document.GetElementById(href) : null;
+			Affine toPixels = SubregionCorner(run);
 			if (referenced != null)
 			{
 				if (context.ActiveFeImages.Add(referenced))
 				{
-					SvgRenderer.DrawReferenced(context, referenced, run.Transform, layer, 0);
+					SvgRenderer.DrawReferenced(context, referenced, toPixels, layer, 0);
 					context.ActiveFeImages.Remove(referenced);
 				}
 			}
@@ -181,8 +183,6 @@ namespace MatterHackers.Agg.Svg
 				RectangleDouble region = run.Subregion;
 				var image = new SvgElement("image", null);
 				image.Attributes["href"] = href;
-				image.Attributes["x"] = Number(region.Left);
-				image.Attributes["y"] = Number(region.Bottom);
 				image.Attributes["width"] = Number(region.Width);
 				image.Attributes["height"] = Number(region.Height);
 				if (run.Primitive["preserveAspectRatio"] is string aspect)
@@ -190,10 +190,38 @@ namespace MatterHackers.Agg.Svg
 					image.Attributes["preserveAspectRatio"] = aspect;
 				}
 
-				SvgImage.Draw(context.Document, image, run.Transform, layer, context.ViewportWidth, context.ViewportHeight, SvgRenderer.DrawImageDocument);
+				SvgImage.Draw(context.Document, image, toPixels, layer, context.ViewportWidth, context.ViewportHeight, SvgRenderer.DrawImageDocument);
 			}
 
 			return SvgFilterPrimitives.Crop(layer.GetBuffer(), run.Width, run.Pixels);
+		}
+
+		/// <summary>
+		/// resvg's feImage transform: the filtered element's x and y scale, moved to the whole-pixel top-left of the
+		/// subregion's (unclipped) pixel bounds; agg's y-up, so y runs down from that corner. Under a rotation or skew
+		/// the resvg references show the element's whole transform instead, from the subregion's corner in user space.
+		/// </summary>
+		private static Affine SubregionCorner(SvgFilterRun run)
+		{
+			Affine t = run.Transform;
+			RectangleDouble r = run.Subregion;
+			if (t.shx != 0 || t.shy != 0)
+			{
+				return Affine.NewTranslation(r.Left, r.Bottom) * t;
+			}
+
+			double left = double.MaxValue, top = double.MinValue;
+			foreach ((double x, double y) in new[] { (r.Left, r.Bottom), (r.Right, r.Bottom), (r.Left, r.Top), (r.Right, r.Top) })
+			{
+				double px = x, py = y;
+				t.Transform(ref px, ref py);
+				left = Math.Min(left, px);
+				top = Math.Max(top, py);
+			}
+
+			double scaleX = Math.Sqrt(t.sx * t.sx + t.shy * t.shy);
+			double scaleY = Math.Sqrt(t.shx * t.shx + t.sy * t.sy);
+			return new Affine(scaleX, 0, 0, -scaleY, Math.Floor(left + 1e-6), Math.Ceiling(top - 1e-6));
 		}
 
 		private static string Number(double value) => value.ToString("R", System.Globalization.CultureInfo.InvariantCulture);

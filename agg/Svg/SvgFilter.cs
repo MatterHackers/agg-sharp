@@ -342,9 +342,17 @@ namespace MatterHackers.Agg.Svg
 			return true;
 		}
 
-		/// <summary>A primitive's x, y, width and height (the filter region where not given); null when empty.</summary>
+		/// <summary>
+		/// A primitive's x, y, width and height (the filter region where not given); null when empty. usvg gives
+		/// feImage and feFlood under objectBoundingBox primitiveUnits the element's box instead, as 0 0 1 1.
+		/// </summary>
 		private static RectangleDouble? Subregion(SvgRenderer.Context context, SvgElement primitive, bool boxUnits, RectangleDouble box, RectangleDouble region)
 		{
+			if (boxUnits && primitive.Name is "feImage" or "feFlood")
+			{
+				region = box;
+			}
+
 			double Length(string name, double regionValue, double boxOrigin, double boxSize, double viewport) => primitive[name] == null
 				? regionValue
 				: boxUnits ? boxOrigin + SvgLength.Parse(primitive[name], 0, 1) * boxSize : SvgLength.Parse(primitive[name], regionValue, viewport);

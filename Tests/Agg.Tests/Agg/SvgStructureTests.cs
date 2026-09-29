@@ -114,5 +114,36 @@ namespace MatterHackers.Agg.Tests.Agg
 				+ "<use xlink:href=\"#s\" transform=\"translate(10 10)\" width=\"50\" height=\"50\"/>");
 			await Assert.That(At(visible, 5, 5).alpha).IsEqualTo((byte)255);
 		}
+
+		[Test]
+		public async Task ANestedSvgIsANewViewportClippedToItsRectangle()
+		{
+			// Its x/y/width/height clip what it draws, and percentages inside are of its own width/height.
+			ImageBuffer clipped = Render("<svg x=\"20\" y=\"20\" width=\"40\" height=\"40\"><rect width=\"100\" height=\"100\" fill=\"green\"/></svg>");
+			await Assert.That(At(clipped, 30, 30).alpha).IsEqualTo((byte)255);
+			await Assert.That(At(clipped, 70, 70).alpha).IsEqualTo((byte)0);
+
+			ImageBuffer percent = Render("<svg width=\"50\" height=\"50\" overflow=\"visible\"><rect width=\"100%\" height=\"100%\" fill=\"green\"/></svg>");
+			await Assert.That(At(percent, 40, 40).alpha).IsEqualTo((byte)255);
+			await Assert.That(At(percent, 60, 60).alpha).IsEqualTo((byte)0);
+
+			// Only a viewBox and no rectangle: not clipped.
+			ImageBuffer viewBoxOnly = Render("<svg viewBox=\"0 0 100 100\"><rect x=\"-20\" y=\"-20\" width=\"50\" height=\"50\" fill=\"green\"/></svg>", "viewBox=\"-50 -50 100 100\"");
+			await Assert.That(At(viewBoxOnly, 35, 35).alpha).IsEqualTo((byte)255);
+		}
+
+		[Test]
+		public async Task AUsesWidthAndHeightReplaceTheSvgsItReferences()
+		{
+			// The use's width (30) replaces the svg's 80; its height stays 80. Only the nearest use's size counts.
+			ImageBuffer used = Render("<defs><svg id=\"s\" width=\"80\" height=\"80\"><rect width=\"100\" height=\"100\" fill=\"green\"/></svg></defs><use xlink:href=\"#s\" width=\"30\"/>");
+			await Assert.That(At(used, 20, 70).alpha).IsEqualTo((byte)255);
+			await Assert.That(At(used, 40, 20).alpha).IsEqualTo((byte)0);
+			await Assert.That(At(used, 20, 90).alpha).IsEqualTo((byte)0);
+
+			ImageBuffer nested = Render("<defs><svg id=\"s\" width=\"80\" height=\"80\"><rect width=\"100\" height=\"100\" fill=\"green\"/></svg><use id=\"u\" xlink:href=\"#s\" height=\"30\"/></defs><use xlink:href=\"#u\" width=\"10\"/>");
+			await Assert.That(At(nested, 70, 20).alpha).IsEqualTo((byte)255);
+			await Assert.That(At(nested, 20, 40).alpha).IsEqualTo((byte)0);
+		}
 	}
 }

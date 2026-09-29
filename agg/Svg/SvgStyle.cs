@@ -31,18 +31,25 @@ using MatterHackers.Agg.VertexSource;
 
 namespace MatterHackers.Agg.Svg
 {
-	/// <summary>What a fill or stroke paints with: nothing, a colour, or a paint server (a gradient or pattern) by id.</summary>
+	/// <summary>
+	/// What a fill or stroke paints with: nothing, a colour, a paint server (a gradient or pattern) by id, or
+	/// context-fill / context-stroke - the context element's paint, resolved when drawing.
+	/// </summary>
 	public readonly struct SvgPaint
 	{
-		private SvgPaint(bool isNone, Color color, string serverId, SvgPaint? fallback)
+		private SvgPaint(bool isNone, Color color, string serverId, SvgPaint? fallback, SvgContextPaintKind context = SvgContextPaintKind.None)
 		{
 			this.IsNone = isNone;
 			this.Color = color;
 			this.ServerId = serverId;
 			this.FallbackColor = fallback?.IsNone == false && fallback.Value.ServerId == null ? fallback.Value.Color : (Color?)null;
+			this.Context = context;
 		}
 
 		public static SvgPaint None { get; } = new SvgPaint(true, default, null, null);
+
+		/// <summary>Which of the context element's paints this stands for, when it is context-fill or context-stroke.</summary>
+		public SvgContextPaintKind Context { get; }
 
 		public bool IsNone { get; }
 
@@ -74,6 +81,17 @@ namespace MatterHackers.Agg.Svg
 				return FromColor(currentColor);
 			}
 
+			// Kept as keywords and inherited so: what they name depends on where the shape is drawn from.
+			if (value == "context-fill")
+			{
+				return new SvgPaint(false, default, null, null, SvgContextPaintKind.Fill);
+			}
+
+			if (value == "context-stroke")
+			{
+				return new SvgPaint(false, default, null, null, SvgContextPaintKind.Stroke);
+			}
+
 			if (value.StartsWith("url("))
 			{
 				int close = value.IndexOf(')');
@@ -90,6 +108,14 @@ namespace MatterHackers.Agg.Svg
 
 			return SvgColor.TryParse(value, out Color color) ? FromColor(color) : (SvgPaint?)null;
 		}
+	}
+
+	/// <summary>Whether a paint is context-fill, context-stroke, or neither.</summary>
+	public enum SvgContextPaintKind
+	{
+		None,
+		Fill,
+		Stroke,
 	}
 
 	/// <summary>

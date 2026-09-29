@@ -232,13 +232,14 @@ namespace MatterHackers.Agg.Svg
 
 					break;
 				case "svg":
-					Affine nested = NestedViewport(context, element) * transform;
-					WithOpacity(context, target, opacity, layer => DrawChildren(context, element, style, nested, layer, useDepth));
+					DrawNestedSvg(context, element, style, opacity, transform, target, useDepth);
 					break;
 				case "use":
 					SvgElement referenced = context.Document.GetElementById(element["href"]);
 					if (referenced != null && useDepth < MaxUseDepth && !IsAncestorOrSelf(referenced, element))
 					{
+						SvgContextElement outerContext = context.ContextElement;
+						context.ContextElement = SvgContextElement.Resolve(outerContext, style, SvgClipMask.ObjectBounds(context, element, 0) ?? default, transform);
 						Affine offset = Affine.NewTranslation(
 							SvgLength.Parse(element["x"], 0, context.ViewportWidth),
 							SvgLength.Parse(element["y"], 0, context.ViewportHeight)) * transform;
@@ -246,10 +247,28 @@ namespace MatterHackers.Agg.Svg
 						{
 							WithOpacity(context, target, opacity, layer => DrawSymbol(context, element, referenced, style, transform, layer, useDepth + 1));
 						}
+						else if (referenced.Name == "svg")
+						{
+							// usvg: the use's width/height, each set or not, replace the svg's - and a use nearer the svg
+							// resets both, so an outer use's width does not reach through an inner use's height.
+							(double? useWidth, double? useHeight) = (context.UseWidth, context.UseHeight);
+							context.UseWidth = element["width"] != null ? SvgLength.Parse(element["width"], context.ViewportWidth, context.ViewportWidth) : null;
+							context.UseHeight = element["height"] != null ? SvgLength.Parse(element["height"], context.ViewportHeight, context.ViewportHeight) : null;
+							try
+							{
+								WithOpacity(context, target, opacity, layer => Draw(context, referenced, style, offset, layer, useDepth + 1));
+							}
+							finally
+							{
+								(context.UseWidth, context.UseHeight) = (useWidth, useHeight);
+							}
+						}
 						else
 						{
 							WithOpacity(context, target, opacity, layer => Draw(context, referenced, style, offset, layer, useDepth + 1));
 						}
+
+						context.ContextElement = outerContext;
 					}
 
 					break;
@@ -278,7 +297,10 @@ namespace MatterHackers.Agg.Svg
 						WithOpacity(context, target, opacity, layer =>
 						{
 							DrawShape(context, path, style, transform, layer);
+							SvgContextElement outerContext = context.ContextElement;
+							context.ContextElement = SvgContextElement.Resolve(outerContext, style, new FlattenCurves(path).GetBounds(), transform);
 							SvgMarker.Draw(context, path, style, transform, layer, useDepth);
+							context.ContextElement = outerContext;
 						});
 					}
 
@@ -298,57 +320,74 @@ namespace MatterHackers.Agg.Svg
 			double y = SvgLength.Parse(use["y"], 0, context.ViewportHeight);
 			double width = SvgLength.Parse(use["width"], context.ViewportWidth, context.ViewportWidth);
 			double height = SvgLength.Parse(use["height"], context.ViewportHeight, context.ViewportHeight);
-			Affine contentToPixels = Affine.NewTranslation(x, y) * useTransform;
-			if (SvgViewport.ParseViewBox(symbol["viewBox"]) is RectangleDouble viewBox && width > 0 && height > 0)
+			SvgStyle symbolStyle = SvgStyle.Compute(symbol, useStyle, context.Diagonal);
+			double percentWidth = use["width"] != null && width > 0 ? width : context.ViewportWidth;
+			double percentHeight = use["height"] != null && height > 0 ? height : context.ViewportHeight;
+			DrawViewport(context, symbol, symbolStyle, symbolStyle.Opacity, useTransform, new RectangleDouble(x, y, x + width, y + height), true, percentWidth, percentHeight, target, useDepth);
+		}
+
+		/// <summary>
+		/// A nested &lt;svg&gt;, as usvg's convert_svg: its x/y/width/height (100% by default; a referencing use's
+		/// width/height replace them) are a new viewport its viewBox fits into, and what percentages inside are of
+		/// when it has no viewBox. It is clipped to that rectangle unless its overflow is visible or auto - or unless
+		/// it is sized neither by both its own width and height nor by a use: a viewBox-only svg is not clipped.
+		/// </summary>
+		private static void DrawNestedSvg(Context context, SvgElement svg, SvgStyle style, double opacity, Affine transform, ImageBuffer target, int useDepth)
+		{
+			double x = SvgLength.Parse(svg["x"], 0, context.ViewportWidth);
+			double y = SvgLength.Parse(svg["y"], 0, context.ViewportHeight);
+			double width = context.UseWidth ?? SvgLength.Parse(svg["width"], context.ViewportWidth, context.ViewportWidth);
+			double height = context.UseHeight ?? SvgLength.Parse(svg["height"], context.ViewportHeight, context.ViewportHeight);
+			bool sized = context.UseWidth != null || context.UseHeight != null || (svg["width"] != null && svg["height"] != null);
+			RectangleDouble? viewBox = SvgViewport.ParseViewBox(svg["viewBox"]);
+			bool validSize = width > 0 && height > 0;
+			double percentWidth = viewBox?.Width ?? (validSize ? width : context.ViewportWidth);
+			double percentHeight = viewBox?.Height ?? (validSize ? height : context.ViewportHeight);
+			DrawViewport(context, svg, style, opacity, transform, new RectangleDouble(x, y, x + width, y + height), sized, percentWidth, percentHeight, target, useDepth);
+		}
+
+		/// <summary>
+		/// Draws <paramref name="owner"/>'s children in a new viewport, <paramref name="viewport"/> (x/y/width/height as
+		/// a y-down rectangle, in the space <paramref name="transform"/> takes to pixels): the owner's viewBox fitted
+		/// into it by its preserveAspectRatio, clipped to it when <paramref name="mayClip"/> and the owner's overflow is
+		/// not visible or auto, and percentages inside taken of <paramref name="percentWidth"/> by
+		/// <paramref name="percentHeight"/>. The shared body of &lt;symbol&gt; and nested &lt;svg&gt;.
+		/// </summary>
+		private static void DrawViewport(Context context, SvgElement owner, SvgStyle ownerStyle, double opacity, Affine transform, RectangleDouble viewport, bool mayClip, double percentWidth, double percentHeight, ImageBuffer target, int useDepth)
+		{
+			double width = viewport.Width, height = viewport.Height;
+			Affine contentToPixels = Affine.NewTranslation(viewport.Left, viewport.Bottom) * transform;
+			if (SvgViewport.ParseViewBox(owner["viewBox"]) is RectangleDouble viewBox && width > 0 && height > 0)
 			{
-				contentToPixels = SvgViewport.ViewBoxTransform(viewBox, symbol["preserveAspectRatio"], width, height) * contentToPixels;
+				contentToPixels = SvgViewport.ViewBoxTransform(viewBox, owner["preserveAspectRatio"], width, height) * contentToPixels;
 			}
 
-			SvgStyle symbolStyle = SvgStyle.Compute(symbol, useStyle, context.Diagonal);
 			(double viewportWidth, double viewportHeight) = (context.ViewportWidth, context.ViewportHeight);
-			context.ViewportWidth = use["width"] != null && width > 0 ? width : viewportWidth;
-			context.ViewportHeight = use["height"] != null && height > 0 ? height : viewportHeight;
+			(context.ViewportWidth, context.ViewportHeight) = (percentWidth, percentHeight);
 			try
 			{
-				string overflow = symbol["overflow"];
-				Action<ImageBuffer> drawChildren = layer => DrawChildren(context, symbol, symbolStyle, contentToPixels, layer, useDepth);
+				string overflow = owner["overflow"];
+				Action<ImageBuffer> drawChildren = layer => DrawChildren(context, owner, ownerStyle, contentToPixels, layer, useDepth);
 				Action<ImageBuffer> draw = drawChildren;
-				if (overflow != "visible" && overflow != "auto" && width > 0 && height > 0)
+				if (mayClip && overflow != "visible" && overflow != "auto" && width > 0 && height > 0)
 				{
 					draw = layer =>
 					{
 						ImageBuffer content = SvgClipMask.NewLayer(layer);
 						drawChildren(content);
 						ImageBuffer coverage = SvgClipMask.NewLayer(layer);
-						coverage.NewGraphics2D().Render(new VertexSourceApplyTransform(SvgShapes.Rect(x, y, width, height, 0, 0), useTransform), Color.White);
+						coverage.NewGraphics2D().Render(new VertexSourceApplyTransform(SvgShapes.Rect(viewport.Left, viewport.Bottom, width, height, 0, 0), transform), Color.White);
 						SvgClipMask.Multiply(content, coverage, (pixels, i) => pixels[i + ImageBuffer.OrderA]);
 						CompositeLayer(layer, content, 1);
 					};
 				}
 
-				WithOpacity(context, target, symbolStyle.Opacity, draw);
+				WithOpacity(context, target, opacity, draw);
 			}
 			finally
 			{
 				(context.ViewportWidth, context.ViewportHeight) = (viewportWidth, viewportHeight);
 			}
-		}
-
-		/// <summary>A nested &lt;svg&gt;: moved to its x/y and, with a viewBox, fitted into its width/height.</summary>
-		private static Affine NestedViewport(Context context, SvgElement element)
-		{
-			Affine offset = Affine.NewTranslation(
-				SvgLength.Parse(element["x"], 0, context.ViewportWidth),
-				SvgLength.Parse(element["y"], 0, context.ViewportHeight));
-			RectangleDouble? viewBox = SvgViewport.ParseViewBox(element["viewBox"]);
-			if (viewBox == null)
-			{
-				return offset;
-			}
-
-			double width = SvgLength.Parse(element["width"], context.ViewportWidth, context.ViewportWidth);
-			double height = SvgLength.Parse(element["height"], context.ViewportHeight, context.ViewportHeight);
-			return SvgViewport.ViewBoxTransform(viewBox.Value, element["preserveAspectRatio"], width, height) * offset;
 		}
 
 		private static bool IsAncestorOrSelf(SvgElement candidate, SvgElement element)
@@ -416,17 +455,33 @@ namespace MatterHackers.Agg.Svg
 		/// </summary>
 		private static SvgServerPaint Paint(Context context, SvgPaint paint, double opacity, IVertexSource shape, Affine transform)
 		{
+			RectangleDouble bounds;
+			if (paint.Context != SvgContextPaintKind.None)
+			{
+				// Painted as the context element would be: over its box, in its user space.
+				if (!(context.ContextElement is SvgContextElement contextElement))
+				{
+					return default;
+				}
+
+				(paint, bounds, transform) = (contextElement.Paint(paint.Context), contextElement.Bounds, contextElement.Transform);
+			}
+			else
+			{
+				bounds = shape.GetBounds();
+			}
+
 			if (paint.ServerId != null && !paint.IsNone)
 			{
 				SvgElement server = context.Document.GetElementById(paint.ServerId);
-				if (SvgGradient.Resolve(context.Document, server, shape.GetBounds(), transform, opacity, context.ViewportWidth, context.ViewportHeight) is SvgServerPaint gradient)
+				if (SvgGradient.Resolve(context.Document, server, bounds, transform, opacity, context.ViewportWidth, context.ViewportHeight) is SvgServerPaint gradient)
 				{
 					return gradient;
 				}
 
 				// A pattern used inside its own content would recurse forever: that use gets the fallback colour.
 				if (server != null && !context.ActivePatterns.Contains(server)
-					&& SvgPattern.Resolve(context.Document, server, shape.GetBounds(), transform, opacity, context.ViewportWidth, context.ViewportHeight, (owner, contentToTile, tile) => DrawPatternContent(context, server, owner, contentToTile, tile)) is SvgServerPaint pattern)
+					&& SvgPattern.Resolve(context.Document, server, bounds, transform, opacity, context.ViewportWidth, context.ViewportHeight, (owner, contentToTile, tile) => DrawPatternContent(context, server, owner, contentToTile, tile)) is SvgServerPaint pattern)
 				{
 					return pattern;
 				}
@@ -603,6 +658,17 @@ namespace MatterHackers.Agg.Svg
 			public double ViewportWidth { get; set; }
 
 			public double ViewportHeight { get; set; }
+
+			/// <summary>
+			/// The width and height of the &lt;use&gt; whose &lt;svg&gt; is being drawn, where it gives them: they replace
+			/// that svg's own (usvg's use_size).
+			/// </summary>
+			public double? UseWidth { get; set; }
+
+			public double? UseHeight { get; set; }
+
+			/// <summary>The use or marked path whose fill and stroke context-fill and context-stroke name, or null.</summary>
+			public SvgContextElement ContextElement { get; set; }
 
 			/// <summary>The viewport's normalized diagonal, what a percentage of neither width nor height is of.</summary>
 			public double Diagonal => Math.Sqrt((this.ViewportWidth * this.ViewportWidth + this.ViewportHeight * this.ViewportHeight) / 2);

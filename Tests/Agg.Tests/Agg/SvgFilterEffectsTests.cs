@@ -295,6 +295,32 @@ namespace MatterHackers.Agg.Tests.Agg
 		}
 
 		[Test]
+		public async Task FeImageDrawsItsElementFromTheSubregionsCorner()
+		{
+			// usvg/resvg: the element's user-space origin is the subregion's top-left - here the filter region, 40,40.
+			const string Target = "<defs><rect id=\"r\" x=\"10\" y=\"10\" width=\"20\" height=\"20\" fill=\"#0000ff\"/></defs>"
+				+ "<rect x=\"40\" y=\"40\" width=\"50\" height=\"50\" fill=\"red\" filter=\"url(#f)\"/>";
+			ImageBuffer region = Filtered("<feImage href=\"#r\"/>", Target, "x=\"0\" y=\"0\" width=\"1\" height=\"1\"");
+			await AssertColor(region, 60, 60, 0, 0, 255, 255);
+			await Assert.That(Alpha(region, 45, 45)).IsEqualTo(0);
+
+			// x/y on the primitive move it; the subregion's corner counts even where it sticks out of the filter region.
+			ImageBuffer moved = Filtered("<feImage href=\"#r\" x=\"50\" y=\"30\"/>", Target, "x=\"0\" y=\"0\" width=\"1\" height=\"1\"");
+			await AssertColor(moved, 75, 45, 0, 0, 255, 255);
+			await Assert.That(Alpha(moved, 75, 65)).IsEqualTo(0);
+
+			// objectBoundingBox primitiveUnits: a missing y (and width, height) is of the box, not the filter region.
+			ImageBuffer box = Filtered("<feImage href=\"#r\" x=\"0.5\"/>", Target, "primitiveUnits=\"objectBoundingBox\"");
+			await AssertColor(box, 80, 68, 0, 0, 255, 255);
+
+			// Under a rotation the element's whole transform applies, from the subregion's corner in its user space:
+			// rotate(90 50 50) takes the 40..50 square that corner puts r's 0..10 at to x 50..60, y 40..50.
+			ImageBuffer rotated = Filtered("<feImage href=\"#s\"/>", "<defs><rect id=\"s\" width=\"10\" height=\"10\" fill=\"#0000ff\"/></defs>"
+				+ "<rect x=\"40\" y=\"40\" width=\"20\" height=\"20\" fill=\"red\" filter=\"url(#f)\" transform=\"rotate(90 50 50)\"/>", "x=\"0\" y=\"0\" width=\"1\" height=\"1\"");
+			await AssertColor(rotated, 55, 45, 0, 0, 255, 255);
+		}
+
+		[Test]
 		public async Task DisplacementMapMovesBySelectedChannels()
 		{
 			// R = 1 moves x by +.5 * 20 = 10; B = 0 moves y by -10 (samples above).
