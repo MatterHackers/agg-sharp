@@ -134,6 +134,8 @@
     <Compile Remove="Agg.UI\MacKeyTranslationTests.cs" />
     <Compile Remove="Agg.UI\MacMenuBarTests.cs" />
     <Compile Remove="Agg.UI\MacCursorMapTests.cs" />
+    <!-- Subject is MacVideoFrameReader, which decodes through AVFoundation. -->
+    <Compile Remove="Agg.UI\MacVideoFrameReaderTests.cs" />
   </ItemGroup>
 
   <!-- Tests whose subject is the Linux platform layer. Removed wherever PlatformLinux is not referenced -
@@ -183,7 +185,7 @@
     </Content>
   </ItemGroup>
 
-  <!-- Video fixtures for MediaFoundationVideoFrameReaderTests, tree-preferred like the data above. -->
+  <!-- Video fixtures for MediaFoundationVideoFrameReaderTests and MacVideoFrameReaderTests, tree-preferred like the data above. -->
   <ItemGroup>
     <Content Include="..\..\TestData\Video\*.mp4">
       <Link>TestData\Video\%(Filename)%(Extension)</Link>

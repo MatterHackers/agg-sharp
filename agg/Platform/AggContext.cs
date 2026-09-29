@@ -289,12 +289,14 @@ namespace MatterHackers.Agg.Platform
 
 			/// <summary>
 			/// The video frame reader, or null where there is none yet - <see cref="VideoFrames"/> then answers
-			/// with <see cref="UnsupportedVideoFrameReader"/>. Only Windows has one (Media Foundation); a mac
-			/// (AVFoundation) or browser (WebCodecs) reader would slot in here the same way.
+			/// with <see cref="UnsupportedVideoFrameReader"/>. Windows reads through Media Foundation and the mac
+			/// through AVFoundation; a browser (WebCodecs) or Linux reader would slot in here the same way.
 			/// </summary>
-			public string VideoFrameReaderProvider { get; set; } = IsBrowser || IsMac || IsLinux
+			public string VideoFrameReaderProvider { get; set; } = IsBrowser || IsLinux
 				? null
-				: "MatterHackers.Agg.Platform.MediaFoundationVideoFrameReader, agg_platform_win32";
+				: IsMac
+					? "MatterHackers.Agg.Platform.MacVideoFrameReader, agg_platform_mac"
+					: "MatterHackers.Agg.Platform.MediaFoundationVideoFrameReader, agg_platform_win32";
 
 			public string SystemWindowProvider { get; set; } = IsBrowser
 				? BrowserSystemWindowProvider
