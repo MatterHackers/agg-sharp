@@ -96,10 +96,25 @@ namespace MatterHackers.Agg.UI.Tests
 			try
 			{
 				started.Wait();
-				ThreadStackDump.WriteDumpOfThisProcess(dumpPath);
 				int writer = Environment.CurrentManagedThreadId;
 
-				string report = ThreadStackDump.ReportFromDump("the writer is walked", dumpPath, 0, Stopwatch.StartNew(), writer);
+				// A mac dump is sometimes written with contexts that do not match the stacks - the case this check
+				// exists for - and Capture retakes it; so does this test, until it has a good dump to name the
+				// bystander in. Asserting on the first dump failed the full suite now and then.
+				string report = null;
+				for (int attempt = 0; report == null && attempt < ThreadStackDump.CaptureAttempts; attempt++)
+				{
+					ThreadStackDump.WriteDumpOfThisProcess(dumpPath);
+					try
+					{
+						report = ThreadStackDump.ReportFromDump("the writer is walked", dumpPath, 0, Stopwatch.StartNew(), writer);
+					}
+					catch (InvalidOperationException)
+					{
+						File.Delete(dumpPath);
+					}
+				}
+
 				await Assert.That(report).Contains("END THREAD STACKS");
 
 				// The bystander never entered ThreadStackDump: named as the capturer, it reads as a dump whose
@@ -147,13 +162,93 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				string log = ThreadStackDump.WriteDumpOfThisProcess(dumpPath);
 
-				await Assert.That(log).Contains("[createdump]");
+				// Written through --logtofile, which drops the "[createdump] " prefix the console lines carry.
+				await Assert.That(log).Contains($"Gathering state for process {Environment.ProcessId}");
+				await Assert.That(log).Contains("Dump successfully written");
 				await Assert.That(new FileInfo(dumpPath).Length).IsGreaterThan(0);
 			}
 			finally
 			{
 				File.Delete(dumpPath);
 			}
+		}
+
+		/// <summary>
+		/// createdump suspends every thread of the process it dumps, including the one that would drain a pipe
+		/// of its output, so a writer whose output was piped back here blocked for good once it had written 64 KB
+		/// - a full suite run hung until it was killed at 600 s. A verbose createdump writes megabytes; it has to
+		/// finish, with all of its log handed back.
+		/// </summary>
+		[Test]
+		public async Task ADumpWriterWithMoreOutputThanAPipeHoldsStillFinishes()
+		{
+			if (!OperatingSystem.IsMacOS())
+			{
+				return;
+			}
+
+			string dumpPath = Path.Combine(Path.GetTempPath(), $"agg-threadstacks-test-{Guid.NewGuid():N}.dmp");
+			string logPath = dumpPath + ".log";
+			string createDump = Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "createdump");
+
+			try
+			{
+				string log = ThreadStackDump.RunDumpWriter(
+					createDump,
+					new[] { "--normal", "--verbose", "--logtofile", logPath, "--name", dumpPath, Environment.ProcessId.ToString() },
+					logPath,
+					ThreadStackDump.DumpWriterTimeout);
+
+				await Assert.That(log.Length).IsGreaterThan(64 * 1024);
+				await Assert.That(File.Exists(logPath)).IsFalse();
+			}
+			finally
+			{
+				File.Delete(dumpPath);
+			}
+		}
+
+		/// <summary>
+		/// A dump writer that never exits must not take the watchdog - and the test run - down with it: it is
+		/// killed at the timeout and the capture fails with a reason, which the retry and WriteToConsole handle.
+		/// </summary>
+		[Test]
+		public async Task ADumpWriterThatNeverExitsIsKilledAtTheTimeout()
+		{
+			if (!OperatingSystem.IsMacOS())
+			{
+				return;
+			}
+
+			var timer = Stopwatch.StartNew();
+			TimeoutException thrown = null;
+
+			try
+			{
+				ThreadStackDump.RunDumpWriter("/bin/sleep", new[] { "600" }, Path.Combine(Path.GetTempPath(), $"agg-threadstacks-test-{Guid.NewGuid():N}.log"), TimeSpan.FromMilliseconds(300));
+			}
+			catch (TimeoutException ex)
+			{
+				thrown = ex;
+			}
+
+			await Assert.That(thrown).IsNotNull();
+			await Assert.That(timer.Elapsed).IsLessThan(TimeSpan.FromSeconds(30));
+
+			// The message names the writer's pid; that process must be gone, not left running.
+			string pidText = thrown.Message.Split("(pid ")[1].Split(')')[0];
+			bool stillRunning;
+			try
+			{
+				using var writer = Process.GetProcessById(int.Parse(pidText));
+				stillRunning = !writer.HasExited;
+			}
+			catch (ArgumentException)
+			{
+				stillRunning = false;
+			}
+
+			await Assert.That(stillRunning).IsFalse();
 		}
 
 		[Test]

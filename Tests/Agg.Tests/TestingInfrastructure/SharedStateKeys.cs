@@ -31,9 +31,13 @@ namespace MatterHackers.Agg.Tests
 
 		/// <summary>
 		/// <c>MarkdownWidget.Theme</c> (written by every MarkdownWidget constructor, so by anything that builds
-		/// the demo's About window) and <c>MarkdownWidget.LaunchBrowser</c>.
+		/// the demo's About window - every GuiDemoShell and DemoWindowHost, which open it by default) and
+		/// <c>MarkdownWidget.LaunchBrowser</c>. It is the same key as <see cref="UiThreadAndKeyboard"/>: rendering
+		/// markdown queues a layout fix-up on <c>UiThread</c> (AggRenderer.Render), which a test pumping UiThread
+		/// runs on its own thread while the test that built the widget is still laying it out, so neither test's
+		/// tree survives. Building one must exclude every UiThread pump.
 		/// </summary>
-		public const string MarkdownWidget = "MarkdownWidget";
+		public const string MarkdownWidget = UiThreadAndKeyboard;
 
 		/// <summary><c>Clipboard.Instance</c>, swapped by <c>Clipboard.SetSystemClipboard</c>.</summary>
 		public const string Clipboard = "Clipboard";

@@ -130,7 +130,7 @@ namespace MatterHackers.Agg.UI
 			internalWidget.FocusChanged += (s, e) =>
 			{
 				internalWidget.TextColor = internalWidget.Focused ? theme.EditFieldColors.Focused.TextColor : theme.EditFieldColors.Inactive.TextColor;
-				NoContentFieldDescription.TextColor = internalWidget.Focused ? theme.EditFieldColors.Focused.LightTextColor : theme.EditFieldColors.Inactive.LightTextColor;
+				SyncNoContentFieldDescription();
 				if (trailingLabel != null) trailingLabel.TextColor = internalWidget.Focused
 					? theme.PrimaryAccentColor.WithContrast(theme.EditFieldColors.Focused.BackgroundColor, 3).ToColor()
 					: theme.PrimaryAccentColor;
@@ -151,7 +151,7 @@ namespace MatterHackers.Agg.UI
 				AutoExpandBoundsToText = true
 			});
 
-			SetNoContentFieldDescriptionVisibility();
+			SyncNoContentFieldDescription();
 		}
 
         public TextEditWidget ActualTextEditWidget { get; }
@@ -257,17 +257,29 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void SetNoContentFieldDescriptionVisibility()
+		/// <summary>
+		/// Shows the hint only while the field is empty, in the theme's current dimmed edit-field colour.
+		/// </summary>
+		/// <remarks>
+		/// The colour is re-read from the theme on every paint, as <see cref="BackgroundColor"/> is: a theme that
+		/// changes in place (light to dark, or the system preference arriving after the widget was built) would
+		/// otherwise leave the hint in the old theme's colour - the dark theme's near-white hint on the light
+		/// theme's white field, which reads as no hint at all.
+		/// </remarks>
+		private void SyncNoContentFieldDescription()
 		{
 			if (NoContentFieldDescription != null)
 			{
 				NoContentFieldDescription.Visible = Text == "";
+				NoContentFieldDescription.TextColor = ActualTextEditWidget.InternalTextEditWidget.Focused
+					? theme.EditFieldColors.Focused.LightTextColor
+					: theme.EditFieldColors.Inactive.LightTextColor;
 			}
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			SetNoContentFieldDescriptionVisibility();
+			SyncNoContentFieldDescription();
 			base.OnDraw(graphics2D);
 		}
 

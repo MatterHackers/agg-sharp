@@ -8,9 +8,13 @@ namespace MatterHackers.Agg.UI
 	{
 		private Vector2 center;
 
+		private readonly double radius;
+
 		public RadioCircleWidget()
 		{
-			var boxWidth = RadioImage.BoxWidth;
+			// SelectionControlSize.BoxSize, when an app set one, is the circle's diameter.
+			var boxWidth = SelectionControlSize.BoxSize * DeviceScale ?? RadioImage.BoxWidth;
+			radius = boxWidth / 2;
 
 			this.MinimumSize = new Vector2(boxWidth + 1 * DeviceScale, boxWidth + 1 * DeviceScale);
 
@@ -34,7 +38,7 @@ namespace MatterHackers.Agg.UI
 			SelectionControlStyle.DrawRadio(
 				graphics2D,
 				center,
-				RadioImage.BorderRadius,
+				radius,
 				this.RadioButton.Checked,
 				hovered,
 				pressed: hovered && this.RadioButton.MouseDownOnWidget,

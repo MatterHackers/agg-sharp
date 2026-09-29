@@ -106,7 +106,16 @@ namespace MatterHackers.Agg.UI
 			parentScrollWidget.ScrollArea.BoundsChanged += Bounds_Changed;
 			parentScrollWidget.ScrollPositionChanged += Bounds_Changed;
 			parentScrollWidget.ScrollArea.MarginChanged += Bounds_Changed;
-			parentScrollWidget.ScrollPositionChanged += (s, e) => lastScrollMs = UiThread.CurrentTimerMs;
+			parentScrollWidget.ScrollPositionChanged += (s, e) =>
+			{
+				// Layout putting the offset back as the content or view changes moves ScrollPosition but not what
+				// the user sees; showing an auto-hiding bar for it would flash the bar and ask for frames on every
+				// layout, so only a real scroll brings the bar up.
+				if (!parentScrollWidget.RestoringOffset)
+				{
+					lastScrollMs = UiThread.CurrentTimerMs;
+				}
+			};
 
 			UpdateScrollBar();
 		}

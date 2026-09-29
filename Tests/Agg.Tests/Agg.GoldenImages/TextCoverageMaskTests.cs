@@ -185,7 +185,38 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 			}
 		}
 
-		private static void CoverageMaskOf(TypeFacePrinter printer)
+		/// <summary>
+		/// The mask is coverage for a GPU draw that blends later, never LCD: with LCD text on, the mask's own CPU
+		/// raster took the subpixel path, which leaves alpha alone, so the coverage read from alpha was zero and
+		/// every text run drawn into a GPU retained layer (the demo's windows, in the browser) vanished.
+		/// </summary>
+		[Test]
+		public async Task LcdTextSettingDoesNotEmptyTheMask()
+		{
+			bool wasLcdEnabled = LcdRenderSettings.Enabled;
+			try
+			{
+				var printer = new TypeFacePrinter("Widget Gallery", 14);
+				TextCoverageMaskCache.Clear();
+				LcdRenderSettings.Enabled = false;
+				byte[] gray = CoverageMaskOf(printer).Image.GetBuffer();
+
+				TextCoverageMaskCache.Clear();
+				LcdRenderSettings.Enabled = true;
+				byte[] withLcdOn = CoverageMaskOf(printer).Image.GetBuffer();
+
+				await Assert.That(gray.Any(b => b != 0)).IsTrue();
+				await Assert.That(withLcdOn.SequenceEqual(gray)).IsTrue()
+					.Because("the LCD setting is for the frame the mask is drawn onto, not for the mask itself");
+			}
+			finally
+			{
+				LcdRenderSettings.Enabled = wasLcdEnabled;
+				TextCoverageMaskCache.Clear();
+			}
+		}
+
+		private static TextCoverageMaskCache.CoverageMask CoverageMaskOf(TypeFacePrinter printer)
 			=> TextCoverageMaskCache.GetMask(((VertexSource.IVertexSourceRenderIdentity)printer).RenderIdentity, printer, Transform.Affine.NewIdentity());
 
 		[Test]

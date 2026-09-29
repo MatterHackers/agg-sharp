@@ -160,6 +160,25 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
+		public async Task ContentGrowingUnderAFloatingBarDoesNotBringItUp()
+		{
+			// Layout keeps the view's top-left in place as the content grows (ScrollingArea restores the offset),
+			// which moves ScrollPosition but not what the user sees. Taken for a scroll, it showed the bar and asked
+			// for frames to fade it in and out again, so a reactive app redrew after every layout.
+			ScrollableWidget scroll = Make();
+			ScrollBar bar = scroll.VerticalScrollBar;
+			bar.Floating = true;
+			GuiWidget content = scroll.ScrollArea.Children[0];
+			Vector2 before = scroll.ScrollPosition;
+
+			content.Height = 800;
+
+			await Assert.That(scroll.ScrollPosition).IsNotEqualTo(before);
+			await Assert.That(bar.FadeTarget(UiThread.CurrentTimerMs)).IsEqualTo(0);
+			await Assert.That(bar.StepFade(UiThread.CurrentTimerMs)).IsFalse();
+		}
+
+		[Test]
 		public async Task ColorOverridesPaintTheBar()
 		{
 			ScrollableWidget scroll = Make();

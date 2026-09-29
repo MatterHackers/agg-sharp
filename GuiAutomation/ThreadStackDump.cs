@@ -223,7 +223,7 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		/// <summary>
-		/// Runs the runtime's <c>createdump</c> against this process with its output redirected, which is what
+		/// Runs the runtime's <c>createdump</c> against this process with its log sent to a file, which is what
 		/// <see cref="DiagnosticsClient.WriteDump(DumpType, string, bool)"/> does on this OS minus the noise.
 		/// </summary>
 		/// <remarks>
@@ -240,50 +240,101 @@ namespace MatterHackers.GuiAutomation
 		private static string RunCreateDump(string dumpPath)
 		{
 			string createDump = Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "createdump");
-			var startInfo = new ProcessStartInfo(createDump)
+			string logPath = dumpPath + ".log";
+
+			return RunDumpWriter(createDump, new[] { "--normal", "--logtofile", logPath, "--name", dumpPath, Environment.ProcessId.ToString() }, logPath, DumpWriterTimeout);
+		}
+
+		/// <summary>
+		/// Longest one run of the dump writer may take before it is killed. A capture measured about a second
+		/// on a loaded machine; this only has to be long enough never to kill a writer that was going to finish.
+		/// </summary>
+		internal static readonly TimeSpan DumpWriterTimeout = TimeSpan.FromSeconds(30);
+
+		/// <summary>
+		/// Runs a dump writer to completion and returns the log it wrote to <paramref name="logPath"/> (deleted
+		/// afterwards); kills it and throws <see cref="TimeoutException"/> if it has not exited within
+		/// <paramref name="timeout"/>.
+		/// </summary>
+		/// <remarks>
+		/// The writer's output must never go through a pipe this process reads. createdump suspends every
+		/// thread of the process it dumps - including whichever one would drain that pipe - so once it has
+		/// written a pipe buffer's worth (64 KB on macOS) it blocks on the write while this process stays
+		/// suspended, forever: a full suite run hung until it was killed at 600 s, and a verbose createdump of
+		/// a small process reproduced it with exactly 65522 bytes read. Hence <c>--logtofile</c>, which takes
+		/// all of createdump's output, and a stdout that is inherited rather than piped.
+		/// <para>
+		/// The timeout covers any other way the writer can stall. It cannot fire while the writer holds this
+		/// process suspended - nothing in-process can - but killing the writer does release that suspension
+		/// (measured), so a writer stalled any other time is killed and the capture moves on.
+		/// </para>
+		/// </remarks>
+		[System.Runtime.Versioning.SupportedOSPlatform("macos")]
+		internal static string RunDumpWriter(string executable, IEnumerable<string> arguments, string logPath, TimeSpan timeout)
+		{
+			var startInfo = new ProcessStartInfo(executable)
 			{
-				RedirectStandardOutput = true,
-				RedirectStandardError = true,
 				UseShellExecute = false,
 			};
-			startInfo.ArgumentList.Add("--normal");
-			startInfo.ArgumentList.Add("--name");
-			startInfo.ArgumentList.Add(dumpPath);
-			startInfo.ArgumentList.Add(Environment.ProcessId.ToString());
 
-			using (var process = new Process { StartInfo = startInfo })
+			foreach (string argument in arguments)
 			{
-				// Drain stderr on its own callback while stdout is read here, so neither pipe can fill and
-				// stall the writer. WaitForExit() (no timeout) also waits for the callback's end of stream.
-				var error = new StringBuilder();
-				process.ErrorDataReceived += (s, e) =>
+				startInfo.ArgumentList.Add(argument);
+			}
+
+			try
+			{
+				using (var process = new Process { StartInfo = startInfo })
 				{
-					if (e.Data != null)
+					process.Start();
+
+					if (!process.WaitForExit((int)timeout.TotalMilliseconds))
 					{
-						lock (error)
+						try
 						{
-							error.AppendLine(e.Data);
+							process.Kill(entireProcessTree: true);
+							process.WaitForExit();
 						}
+						catch (InvalidOperationException)
+						{
+							// It exited between the timeout and the kill; gone either way.
+						}
+
+						throw new TimeoutException($"{Path.GetFileName(executable)} (pid {process.Id}) did not exit within {timeout.TotalSeconds:0.#} s and was killed. {ReadLog(logPath)}".Trim());
 					}
-				};
 
-				process.Start();
-				process.BeginErrorReadLine();
-				string output = process.StandardOutput.ReadToEnd();
-				process.WaitForExit();
+					string log = ReadLog(logPath);
 
-				string log;
-				lock (error)
-				{
-					log = output + error;
+					if (process.ExitCode != 0)
+					{
+						throw new InvalidOperationException($"{Path.GetFileName(executable)} exited with {process.ExitCode}: {log.Trim()}");
+					}
+
+					return log;
 				}
-
-				if (process.ExitCode != 0)
+			}
+			finally
+			{
+				try
 				{
-					throw new InvalidOperationException($"createdump exited with {process.ExitCode}: {log.Trim()}");
+					File.Delete(logPath);
 				}
+				catch
+				{
+					// A leaked log file is not worth failing a diagnostic over; the OS will clear it.
+				}
+			}
+		}
 
-				return log;
+		private static string ReadLog(string logPath)
+		{
+			try
+			{
+				return File.Exists(logPath) ? File.ReadAllText(logPath) : string.Empty;
+			}
+			catch (IOException)
+			{
+				return string.Empty;
 			}
 		}
 
@@ -338,7 +389,7 @@ namespace MatterHackers.GuiAutomation
 
 			if (capturingThreadId != null && !capturerWalked)
 			{
-				throw new InvalidOperationException($"the dump did not walk the capturing thread (managed {capturingThreadId}) back into ThreadStackDump; its register contexts do not match its stacks");
+				throw new InvalidOperationException($"the dump did not walk the capturing thread (managed {capturingThreadId}) through ThreadStackDump to a named caller; its register contexts do not match its stacks, or its frames could not be named");
 			}
 
 			report.AppendLine($"===================== END THREAD STACKS ({timer.ElapsedMilliseconds} ms) =====================");
@@ -544,6 +595,9 @@ namespace MatterHackers.GuiAutomation
 				report.AppendLine($"--- thread os={clrThread.OSThreadId} managed={clrThread.ManagedThreadId} {role}");
 
 				int frameCount = 0;
+				bool isCapturer = clrThread.ManagedThreadId == capturingThreadId;
+				bool capturerFrameUnresolved = false;
+				bool passedEntryPoint = false;
 
 				foreach (var frame in clrThread.EnumerateStackTrace())
 				{
@@ -553,12 +607,35 @@ namespace MatterHackers.GuiAutomation
 						break;
 					}
 
-					string text = frame.ToString();
+					// ClrMD names a frame it cannot resolve to a method (a runtime or native frame, or a thread whose
+					// context does not match its stack) as null; that failed the whole report with a
+					// NullReferenceException below instead of letting the capturer check reject the dump.
+					string resolved = frame.ToString();
+					string text = resolved ?? $"[{frame.Kind} frame, ip 0x{frame.InstructionPointer:x}]";
 					report.AppendLine($"    {text}");
 
-					if (clrThread.ManagedThreadId == capturingThreadId && text.Contains(typeof(ThreadStackDump).FullName + "."))
+					// The capturing thread is known to be running its caller -> ThreadStackDump -> the dump writer,
+					// so its walk must name every managed frame from the leaf up to and including that caller.
+					// Reaching a ThreadStackDump frame is not enough: in one loaded full suite run the walk went
+					// through Capture fine, but five frames around it - the caller among them - came back as
+					// unnamed "[ManagedMethod frame, ip ...]" because the dump lacked the runtime data that maps
+					// those jitted methods' code to their methods. A report that cannot name the caller is the
+					// failure this class exists to prevent, so it counts as a lost race and is retaken.
+					if (isCapturer && !capturerWalked && !capturerFrameUnresolved && frame.Kind == ClrStackFrameKind.ManagedMethod)
 					{
-						capturerWalked = true;
+						if (resolved == null)
+						{
+							capturerFrameUnresolved = true;
+						}
+						else if (resolved.StartsWith(typeof(ThreadStackDump).FullName, StringComparison.Ordinal))
+						{
+							passedEntryPoint = true;
+						}
+						else if (passedEntryPoint)
+						{
+							// The first named frame outside this class, below it: the caller.
+							capturerWalked = true;
+						}
 					}
 				}
 

@@ -283,7 +283,12 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		/// <param name="destination">The graphics the backbuffer will be composited onto, with the transform
 		/// the composite will happen under already set.</param>
-		public BackbufferMode ResolveBackbufferMode(Graphics2D destination)
+		/// <remarks>
+		/// Virtual so a widget that knows nothing it paints can be subpixel can turn down
+		/// <see cref="BackbufferMode.LcdCoverage"/>, which rasters on the CPU where a retained layer would not
+		/// (see <c>WindowWidget</c>).
+		/// </remarks>
+		public virtual BackbufferMode ResolveBackbufferMode(Graphics2D destination)
 		{
 			return WidgetBackbuffer.ResolveMode(destination, faded: this.BackbufferOpacity < 1 || WidgetBackbuffer.ClipRadius(this) > 0);
 		}

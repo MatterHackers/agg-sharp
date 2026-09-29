@@ -299,6 +299,12 @@ namespace MatterHackers.RenderGl
 		{
 			var image = new ImageBuffer(region.Width, region.Height, 32, new BlenderPreMultBGRA());
 			var graphics = image.NewGraphics2D();
+
+			// The mask is blended onto its target later, so it is a compositing layer, which keeps the raster below
+			// on the ordinary grayscale path whatever the LCD setting. Without this, LCD text on sent the run
+			// through the subpixel composite, which writes colour and leaves alpha at zero - and alpha is all this
+			// mask reads - so every run drawn through a mask (all text in a GPU retained layer) came out empty.
+			graphics.IsTransparentCompositingLayer = true;
 			graphics.Render(new VertexSourceApplyTransform(placedSource, Affine.NewTranslation(-region.Left, -region.Bottom)), Color.White);
 
 			// Only the alpha channel is trusted as coverage: the blender leaves partially covered pixels'

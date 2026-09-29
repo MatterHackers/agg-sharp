@@ -23,6 +23,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
@@ -66,6 +67,14 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// conditional import would mean a second boot-order contract for a head to get wrong. The mirror
 		/// module does nothing at all until someone calls <c>openStore</c>.
 		/// </remarks>
+		// The three browser providers are created by type name (AggContext.ProviderSettings), which the
+		// trimmer cannot follow, so a full-trim publish would remove them and the page would fail with
+		// "Failed to create ISystemWindowProvider". Every head calls this before it creates a provider,
+		// so hanging them here keeps exactly those types for every browser head, without rooting the
+		// whole assembly.
+		[DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(BrowserInformationProvider))]
+		[DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(BrowserFileDialogProvider))]
+		[DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(MatterHackers.Agg.UI.WebGpuBrowserWindowProvider))]
 		public static Task InitializeAsync()
 		{
 			// No lock: wasm has one thread, so there is no race to protect against here (see

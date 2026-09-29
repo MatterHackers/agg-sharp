@@ -58,6 +58,44 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
+		public async Task AnEditorAwayFromTheOriginDrawsItsFirstLine()
+		{
+			// The padding-box clip was built in the editor's own coordinates but intersected with the screen-space
+			// clip, so an editor 40px up its parent lost its top 40px - the whole first line.
+			var root = new GuiWidget(300, 200);
+			var editor = new RichTextEdit(new RichDoc(new[] { Block.Plain("MMMM first"), Block.Plain("second") }))
+			{
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Stretch,
+				Margin = new BorderDouble(20, 40, 20, 20),
+				BackgroundColor = Color.White,
+				TextColor = Color.Black,
+			};
+			root.AddChild(editor);
+			root.PerformLayout();
+
+			var image = new ImageBuffer(300, 200);
+			image.NewGraphics2D().Clear(Color.White);
+			root.OnDraw(image.NewGraphics2D());
+
+			// The first line's glyphs sit in the editor's top 30px.
+			var bounds = editor.TransformToScreenSpace(editor.LocalBounds);
+			int dark = 0;
+			for (int y = (int)bounds.Top - 30; y < (int)bounds.Top; y++)
+			{
+				for (int x = (int)bounds.Left; x < (int)bounds.Left + 80; x++)
+				{
+					if (image.GetPixel(x, y).Red0To255 < 128)
+					{
+						dark++;
+					}
+				}
+			}
+
+			await Assert.That(dark).IsGreaterThan(20);
+		}
+
+		[Test]
 		public async Task ShortDocumentsDoNotScroll()
 		{
 			var (root, editor) = Build(2);

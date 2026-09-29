@@ -6,6 +6,8 @@ All rights reserved.
 using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.LcdCoverage;
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
 using TUnit.Core;
@@ -100,6 +102,101 @@ namespace MatterHackers.Agg.UI.Tests
 			finally
 			{
 				GuiWidget.DeviceScale = saved;
+			}
+		}
+
+		/// <summary>
+		/// The shadow is drawn in stacked layers the size of the whole window, and the background is one more
+		/// window-sized fill, but under an opaque background only a thin ring around the edge needs a real fill:
+		/// the middle is one flat colour. On an LCD backbuffer every fill costs a 3x raster, a filter and a
+		/// per-pixel composite over its whole area, so filling the middle made a GUI demo window's first paint
+		/// cost about eight window-sized fills, and froze the browser page for two seconds.
+		/// </summary>
+		[Test]
+		public async Task AnOpaqueWindowOnlyFillsTheRingAroundItsFlatMiddle()
+		{
+			var saved = GuiWidget.DeviceScale;
+			try
+			{
+				GuiWidget.DeviceScale = 1;
+				var window = new WindowWidget(new ThemeConfig(), new RectangleDouble(0, 0, 400, 300))
+				{
+					BackgroundColor = Background,
+					CornerRadius = 8,
+					ShadowColor = new Color(Color.Black, 80),
+					ShadowOffset = new Vector2(0.5, -1.5),
+					ShadowBlur = 3.5,
+				};
+				window.PerformLayout();
+
+				var graphics2D = new FillAreaCountingGraphics2D(new LcdBuffer((int)window.Width, (int)window.Height));
+				window.OnDrawBackground(graphics2D);
+
+				// Four shadow layers and the background, each filled only in bands a radius and a little wide around
+				// the edge, come to about half the window's area together; filling each one whole was nearly five.
+				double windowArea = window.Width * window.Height;
+				await Assert.That(graphics2D.FilledArea).IsLessThan(windowArea)
+					.Because($"only the edge of the opaque window should be filled; {graphics2D.FilledArea / windowArea:0.00} window areas were filled");
+			}
+			finally
+			{
+				GuiWidget.DeviceScale = saved;
+			}
+		}
+
+		/// <summary>
+		/// A rounded window clips its panel, and the clip keeps every glyph in it greyscale (see
+		/// <c>WidgetBackbuffer.ClipRadius</c>), so the window's own buffer holds nothing subpixel text could
+		/// use. Painting it as LCD coverage anyway ran the whole window - shadow, background and the panel's
+		/// pixels - through the CPU LCD pipeline instead of a GPU layer, and turning LCD text on by default
+		/// froze the GUI demo's first frame for two seconds. A square window can still hold subpixel text.
+		/// </summary>
+		[Test]
+		public async Task ARoundedWindowIsNotBufferedAsLcdCoverage()
+		{
+			bool wasEnabled = LcdRenderSettings.Enabled;
+			try
+			{
+				LcdRenderSettings.Enabled = true;
+				var window = new WindowWidget(new ThemeConfig(), new RectangleDouble(0, 0, 200, 100))
+				{
+					BackgroundColor = Background,
+					DoubleBuffer = true,
+				};
+				Graphics2D capable = new ImageBuffer(300, 200).NewGraphics2D();
+
+				await Assert.That(window.ResolveBackbufferMode(capable)).IsEqualTo(BackbufferMode.LcdCoverage)
+					.Because("a square window's text can be subpixel, so its buffer keeps the LCD planes");
+
+				window.CornerRadius = 8;
+				await Assert.That(window.ResolveBackbufferMode(capable)).IsEqualTo(BackbufferMode.Rgba)
+					.Because("nothing in a rounded window can be subpixel, so LCD planes are only cost");
+			}
+			finally
+			{
+				LcdRenderSettings.Enabled = wasEnabled;
+			}
+		}
+
+		/// <summary>Sums the pixel area each fill covers (its bounds inside the clip), which is what an LCD fill costs.</summary>
+		private class FillAreaCountingGraphics2D : LcdBufferGraphics2D
+		{
+			public FillAreaCountingGraphics2D(LcdBuffer buffer)
+				: base(buffer)
+			{
+			}
+
+			public double FilledArea { get; private set; }
+
+			protected override void RenderVertexSource(IVertexSource vertexSource, IColorType colorType)
+			{
+				var bounds = new VertexSourceApplyTransform(vertexSource, this.GetTransform()).GetBounds();
+				if (bounds.IntersectWithRectangle(this.GetClippingRect()))
+				{
+					this.FilledArea += bounds.Width * bounds.Height;
+				}
+
+				base.RenderVertexSource(vertexSource, colorType);
 			}
 		}
 

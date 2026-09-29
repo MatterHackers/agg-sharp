@@ -229,7 +229,8 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		/// <param name="destination">The graphics the backbuffer will be composited onto, with the transform
 		/// the composite will happen under already set. Null answers <see cref="BackbufferMode.Rgba"/>.</param>
-		/// <param name="faded">True when the widget's <see cref="GuiWidget.BackbufferOpacity"/> is below 1.</param>
+		/// <param name="faded">True when the widget's pixels cannot go on as LCD planes: its <see cref="GuiWidget.BackbufferOpacity"/>
+		/// is below 1, it is clipped round, or (a rounded <c>WindowWidget</c>) nothing in it can be subpixel.</param>
 		/// <remarks>
 		/// <para>
 		/// A faded widget cannot be <see cref="BackbufferMode.LcdCoverage"/>: that keeps its pixels as three

@@ -41,6 +41,7 @@ using TUnit.Core;
 
 namespace Markdig.Agg.Tests
 {
+	[NotInParallel(MatterHackers.Agg.Tests.SharedStateKeys.MarkdownWidget)] // MarkdownWidget writes its static Theme and queues UiThread work
 	public class MarkdownTableTests
 	{
 		[Test]

@@ -23,6 +23,9 @@ namespace MatterHackers.Agg.UI
 		public static BorderDouble DefaultPadding; //= new BorderDouble(5);
 
 		private double CheckBoxWidth = 10 * GuiWidget.DeviceScale;
+
+		// SelectionControlSize.BoxSize as it was when this was built, in device pixels; null keeps the classic box.
+		private readonly double? boxSize = SelectionControlSize.BoxSize * GuiWidget.DeviceScale;
 		private Color inactiveColor;
 		private Color activeColor;
 
@@ -33,7 +36,10 @@ namespace MatterHackers.Agg.UI
 		public CheckBoxViewText(string label, double textHeight = 12, Color textColor = new Color())
 		{
 			FlowLayoutWidget leftToRight = new FlowLayoutWidget();
-			GuiWidget boxSpace = new GuiWidget(CheckBoxWidth * 2, 1)
+			double slotWidth = boxSize is double size
+				? size + (SelectionControlSize.LeadingPad + SelectionControlSize.LabelGap) * DeviceScale
+				: CheckBoxWidth * 2;
+			GuiWidget boxSpace = new GuiWidget(slotWidth, 1)
 			{ 
 				VAnchor = VAnchor.Center,
 			};
@@ -83,8 +89,8 @@ namespace MatterHackers.Agg.UI
 				// agg-gui's box is 16 with a 2 focus pad in a slot as wide as the label gap; here the slot is
 				// CheckBoxWidth * 2 (the label's position, which layouts depend on), so the box is 12 with the
 				// same 2 pad, leaving a 6 gap before the label.
-				double boxSize = 1.2 * CheckBoxWidth;
-				double left = LocalBounds.Left + 2 * DeviceScale;
+				double boxSize = this.boxSize ?? 1.2 * CheckBoxWidth;
+				double left = LocalBounds.Left + SelectionControlSize.LeadingPad * DeviceScale;
 				double bottom = Math.Round(LocalBounds.Bottom + (Height - boxSize) / 2);
 				var box = new RectangleDouble(left, bottom, left + boxSize, bottom + boxSize);
 

@@ -590,6 +590,17 @@ namespace MatterHackers.Agg.UI
 			titleBarButtons.AddChild(button, insertIndex);
 		}
 
+		/// <summary>
+		/// Never <see cref="BackbufferMode.LcdCoverage"/> for a rounded window: its panel's rounded clip keeps
+		/// every glyph in it greyscale (see <see cref="CornerRadius"/>), so the window's buffer would hold
+		/// nothing subpixel, and the LCD planes are painted on the CPU where a GPU surface would otherwise keep
+		/// a retained layer. With LCD text on, that CPU raster of every window froze the GUI demo's first frame.
+		/// </summary>
+		public override BackbufferMode ResolveBackbufferMode(Graphics2D destination)
+		{
+			return WidgetBackbuffer.ResolveMode(destination, faded: this.BackbufferOpacity < 1 || cornerRadius > 0);
+		}
+
         public override void OnDrawBackground(Graphics2D graphics2D)
 		{
 			if (IsStyled)
@@ -647,6 +658,10 @@ namespace MatterHackers.Agg.UI
 			var panel = windowBackground.BoundsRelativeToParent;
 			var radius = cornerRadius * DeviceScale;
 
+			// Under a translucent background the whole of every shadow layer shows, so only an opaque one may
+			// have the middle it paints over skipped.
+			RectangleDouble? backgroundCovers = BackgroundColor.Alpha0To255 == 255 ? OpaqueRoundedFill.SolidInterior(graphics2D, panel, radius) : null;
+
 			if (ShadowColor.Alpha0To255 > 0)
 			{
 				// A blur is stacked translucent rounded rectangles, widest first: each ring past the window's edge
@@ -664,14 +679,18 @@ namespace MatterHackers.Agg.UI
 					var grow = blur * i / layers;
 					var layer = shadow;
 					layer.Inflate(grow);
-					var rect = new RoundedRect(layer, radius + grow);
-					graphics2D.Render(rect, layerColor);
+					OpaqueRoundedFill.RenderAround(graphics2D, layer, radius + grow, layerColor, backgroundCovers);
 				}
 			}
 
 			if (BackgroundColor.Alpha0To255 > 0)
 			{
-				graphics2D.Render(new RoundedRect(panel, radius), BackgroundColor);
+				if (backgroundCovers is RectangleDouble interior)
+				{
+					graphics2D.Clear(interior, BackgroundColor);
+				}
+
+				OpaqueRoundedFill.RenderAround(graphics2D, panel, radius, BackgroundColor, backgroundCovers);
 			}
 
 			if (TitleBarColor.Alpha0To255 > 0

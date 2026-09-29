@@ -220,7 +220,7 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		public void RefreshNow()
 		{
-			GuiWidget root = this.Visible ? this.InspectedRoot ?? this.Parents<SystemWindow>().FirstOrDefault() : null;
+			GuiWidget root = this.Visible ? this.InspectedRoot ?? this.FindDefaultRoot() : null;
 			this.overlay.Root = root;
 			if (root != this.Model.Root)
 			{
@@ -231,6 +231,11 @@ namespace MatterHackers.Agg.UI
 				this.Model.Refresh();
 			}
 		}
+
+		/// <summary>The tree shown when <see cref="InspectedRoot"/> is null, looked up on every refresh so it follows the
+		/// panel as it is moved or taken out: the SystemWindow the panel is in. An app that hosts its own page inside
+		/// a bigger window can return its page's root instead.</summary>
+		protected virtual GuiWidget FindDefaultRoot() => this.Parents<SystemWindow>().FirstOrDefault();
 
 		/// <summary>The edits waiting for the next idle, oldest first.</summary>
 		public IReadOnlyList<InspectorEdit> PendingEdits => this.pendingEdits;

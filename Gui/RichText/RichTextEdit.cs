@@ -291,8 +291,12 @@ namespace MatterHackers.Agg.UI.RichText
 			var (selectionMin, selectionMax) = (this.Core.Selection.Min, this.Core.Selection.Max);
 
 			// Scrolled text stays inside the padding box rather than drawing over it.
+			// The clipping rect is in the destination's coordinates, not the widget's, so the padding box is
+			// moved there before the two meet; intersected as local coordinates, an editor away from the origin
+			// lost that much of its top.
 			var oldClip = graphics2D.GetClippingRect();
 			var textClip = new RectangleDouble(0, this.Padding.Bottom, this.Width, this.Height - this.Padding.Top);
+			graphics2D.GetTransform().transform(ref textClip);
 			textClip.IntersectWithRectangle(oldClip);
 			graphics2D.SetClippingRect(textClip);
 			double blockTop = this.ContentTop;

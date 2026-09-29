@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -65,6 +65,16 @@ namespace MatterHackers.Agg.UI
 		{
 			get { return TextWidget.TextColor; }
 			set { TextWidget.TextColor = value; }
+		}
+
+		/// <summary>
+		/// The spacing of the wrapped lines as a multiple of the em. 1 (the default) is the historical one-em
+		/// advance; about 1.5 matches the paragraph spacing of most UI toolkits.
+		/// </summary>
+		public double LineSpacing
+		{
+			get => TextWidget.LineSpacing;
+			set => TextWidget.LineSpacing = value;
 		}
 
 		public bool DrawFromHintedCache

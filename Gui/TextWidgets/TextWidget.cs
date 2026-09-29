@@ -72,6 +72,28 @@ namespace MatterHackers.Agg.UI
 
 		public TypeFacePrinter Printer { get; private set; }
 
+		/// <summary>
+		/// The line spacing of multi-line text, as a multiple of the em (see <see cref="TypeFacePrinter.LineSpacing"/>).
+		/// Kept here as well as on the printer because the printer is rebuilt whenever the text or face changes.
+		/// </summary>
+		public double LineSpacing
+		{
+			get => Printer.LineSpacing;
+			set
+			{
+				if (Printer.LineSpacing != value)
+				{
+					Printer.LineSpacing = value;
+					if (AutoExpandBoundsToText)
+					{
+						DoExpandBoundsToText();
+					}
+
+					Invalidate();
+				}
+			}
+		}
+
 		/// <summary>A text widget is UI text, so its face follows the System window's <see cref="TextStyleSettings"/>.</summary>
 		private static StyledTypeFace UiFace(StyledTypeFace face)
 		{
@@ -100,7 +122,7 @@ namespace MatterHackers.Agg.UI
 				if (!value && Printer.TypeFaceStyle.TypeFace == AggContext.DefaultFontBold)
 				{
 					var typeFaceStyle = UiFace(new StyledTypeFace(AggContext.DefaultFont, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline));
-					Printer = new TypeFacePrinter(Text, typeFaceStyle, justification: Printer.Justification);
+					Printer = new TypeFacePrinter(Text, typeFaceStyle, justification: Printer.Justification) { LineSpacing = Printer.LineSpacing };
 					if (AutoExpandBoundsToText)
 					{
 						DoExpandBoundsToText();
@@ -109,7 +131,7 @@ namespace MatterHackers.Agg.UI
 				else if (value && Printer.TypeFaceStyle.TypeFace == AggContext.DefaultFont)
 				{
 					var typeFaceStyle = UiFace(new StyledTypeFace(AggContext.DefaultFontBold, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline));
-					Printer = new TypeFacePrinter(Text, typeFaceStyle, justification: Printer.Justification);
+					Printer = new TypeFacePrinter(Text, typeFaceStyle, justification: Printer.Justification) { LineSpacing = Printer.LineSpacing };
 					if (AutoExpandBoundsToText)
 					{
 						DoExpandBoundsToText();
@@ -255,7 +277,8 @@ namespace MatterHackers.Agg.UI
 					// Text may have been changed by a call back be sure to use what we really have set
 					Printer = new TypeFacePrinter(base.Text, Printer.TypeFaceStyle, justification: Printer.Justification)
 					{
-						DrawFromHintedCache = wasUsingHintedCache
+						DrawFromHintedCache = wasUsingHintedCache,
+						LineSpacing = Printer.LineSpacing,
 					};
 
 					if (AutoExpandBoundsToText)
@@ -292,7 +315,7 @@ namespace MatterHackers.Agg.UI
                 Text = Text.Replace("\n\r", "\n");
             }
 
-			double yOffsetForText = Printer.TypeFaceStyle.EmSizeInPixels * numLines;
+			double yOffsetForText = Printer.LineAdvanceInPixels * numLines;
 			double xOffsetForText = 0;
 			switch (Printer.Justification)
 			{

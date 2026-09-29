@@ -2,6 +2,7 @@
 // See https://github.com/sestoft/C5/blob/master/LICENSE for licensing details.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using SCG = System.Collections.Generic;
@@ -36,6 +37,15 @@ namespace C5
         /// <value>The comparer</value>
         public static SCG.IEqualityComparer<T> Default
         {
+            // Trimming: the two comparers built by MakeGenericType are kept, with the Default property
+            // CreateAndCache reads, by the DynamicDependency below. Their type arguments are T and T's own
+            // ISequenced/ICollection element type, which exist because T does; the trimmer keeps T's
+            // implementation of those interfaces because the typeof(ISequenced<>)/typeof(ICollection<>) here
+            // mark them.
+            [DynamicDependency("Default", typeof(SequencedCollectionEqualityComparer<,>))]
+            [DynamicDependency("Default", typeof(UnsequencedCollectionEqualityComparer<,>))]
+            [UnconditionalSuppressMessage("Trimming", "IL2055", Justification = "See the comment above: both generic definitions are kept, and their arguments come from T.")]
+            [UnconditionalSuppressMessage("Trimming", "IL2090", Justification = "See the comment above: the ISequenced/ICollection interfaces looked for are kept by T's own use as a collection.")]
             get
             {
                 if (_default != null)
@@ -72,6 +82,7 @@ namespace C5
             }
         }
 
+        [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "Only called with the two comparer types whose Default property the getter's DynamicDependency keeps.")]
         private static SCG.IEqualityComparer<T> CreateAndCache(Type equalityComparertype)
         {
             return _default = (SCG.IEqualityComparer<T>)(equalityComparertype.GetTypeInfo().GetProperty("Default", BindingFlags.Static | BindingFlags.Public).GetValue(null, null));

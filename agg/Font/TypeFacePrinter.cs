@@ -89,6 +89,31 @@ namespace MatterHackers.Agg.Font
 		// DrawFromHintedCache picks the render path rather than changing Vertices(), so it does not invalidate.
 		public bool DrawFromHintedCache { get; set; }
 
+		private double lineSpacing = 1;
+
+		/// <summary>
+		/// How far each line after the first sits below the one before it, as a multiple of the em.
+		/// The default of 1 keeps the historical one-em advance; paragraph text reads better at about 1.5.
+		/// The first line's height stays one em, so a single line measures the same at any spacing.
+		/// </summary>
+		public double LineSpacing
+		{
+			get => lineSpacing;
+
+			set
+			{
+				if (value != lineSpacing)
+				{
+					lineSpacing = value;
+					totalSizeCache = default(Vector2);
+					InvalidateVertices();
+				}
+			}
+		}
+
+		/// <summary>The distance from one line's baseline to the next: the em times <see cref="LineSpacing"/>.</summary>
+		public double LineAdvanceInPixels => TypeFaceStyle.EmSizeInPixels * lineSpacing;
+
 		private StyledTypeFace typeFaceStyle;
 
 		public StyledTypeFace TypeFaceStyle
@@ -204,6 +229,7 @@ namespace MatterHackers.Agg.Font
 					Baseline,
 					Origin,
 					SnapBaselinesToWholePixels,
+					lineSpacing,
 					TypeFaceStyle.ApplyTextStyleSettings ? TextStyleSettings.Epoch : 0);
 			}
 		}
@@ -229,6 +255,7 @@ namespace MatterHackers.Agg.Font
 		public TypeFacePrinter(string text, TypeFacePrinter copyPropertiesFrom)
 			: this(text, copyPropertiesFrom.TypeFaceStyle, copyPropertiesFrom.Origin, copyPropertiesFrom.Justification, copyPropertiesFrom.Baseline)
 		{
+			this.lineSpacing = copyPropertiesFrom.LineSpacing;
 		}
 
 		public RectangleDouble LocalBounds
@@ -397,7 +424,7 @@ namespace MatterHackers.Agg.Font
 
 					// before we go onto the next line we need to move down a line
 					currentOffset.X = 0;
-					currentOffset.Y -= TypeFaceStyle.EmSizeInPixels;
+					currentOffset.Y -= LineAdvanceInPixels;
 				}
 			}
 		}
@@ -457,7 +484,7 @@ namespace MatterHackers.Agg.Font
 
 					// before we go onto the next line we need to move down a line
 					currentOffset.X = 0;
-					currentOffset.Y -= TypeFaceStyle.EmSizeInPixels;
+					currentOffset.Y -= LineAdvanceInPixels;
 				}
 			}
 
@@ -558,7 +585,7 @@ namespace MatterHackers.Agg.Font
 					}
 
 					currentLineX = 0;
-					offset.Y += TypeFaceStyle.EmSizeInPixels;
+					offset.Y += LineAdvanceInPixels;
 				}
 				else
 				{
@@ -575,7 +602,7 @@ namespace MatterHackers.Agg.Font
 			{
 				if (text[characterToMeasureEndIndexInclusive] == '\n')
 				{
-					offset.Y += TypeFaceStyle.EmSizeInPixels;
+					offset.Y += LineAdvanceInPixels;
 				}
 				else
 				{
@@ -624,7 +651,7 @@ namespace MatterHackers.Agg.Font
 				if (text[i] == '\n')
 				{
 					startIndex = i + 1;
-					offset.Y -= TypeFaceStyle.EmSizeInPixels;
+					offset.Y -= LineAdvanceInPixels;
 				}
 			}
 			characterToMeasureStartIndexInclusive = startIndex;
@@ -634,7 +661,7 @@ namespace MatterHackers.Agg.Font
 				if (text[index] == '\n')
 				{
 					offset.X = 0;
-					offset.Y -= TypeFaceStyle.EmSizeInPixels;
+					offset.Y -= LineAdvanceInPixels;
 				}
 				else if (char.IsSurrogate(text[index]))
 				{
@@ -684,7 +711,7 @@ namespace MatterHackers.Agg.Font
 			int clostestIndex = -1;
 			double clostestXDistSquared = double.MaxValue;
 			double clostestYDistSquared = double.MaxValue;
-			var offset = new Vector2(0, TypeFaceStyle.EmSizeInPixels * NumLines() - TypeFaceStyle.EmSizeInPixels * .5);
+			var offset = new Vector2(0, LineAdvanceInPixels * (NumLines() - 1) + TypeFaceStyle.EmSizeInPixels * .5);
 			int characterToMeasureStartIndexInclusive = 0;
 			int characterToMeasureEndIndexInclusive = text.Length - 1;
 			if (text.Length > 0)
@@ -703,7 +730,7 @@ namespace MatterHackers.Agg.Font
 					if (text[i] == '\n')
 					{
 						offset.X = 0;
-						offset.Y -= TypeFaceStyle.EmSizeInPixels;
+						offset.Y -= LineAdvanceInPixels;
 					}
 					else
 					{
@@ -770,6 +797,7 @@ namespace MatterHackers.Agg.Font
 			private readonly Baseline baseline;
 			private readonly Vector2 origin;
 			private readonly bool snapBaselines;
+			private readonly double lineSpacing;
 			private readonly long styleEpoch;
 
 			internal TextRunIdentity(
@@ -783,6 +811,7 @@ namespace MatterHackers.Agg.Font
 				Baseline baseline,
 				Vector2 origin,
 				bool snapBaselines,
+				double lineSpacing,
 				long styleEpoch)
 			{
 				this.text = text;
@@ -795,6 +824,7 @@ namespace MatterHackers.Agg.Font
 				this.baseline = baseline;
 				this.origin = origin;
 				this.snapBaselines = snapBaselines;
+				this.lineSpacing = lineSpacing;
 				this.styleEpoch = styleEpoch;
 			}
 
@@ -812,6 +842,7 @@ namespace MatterHackers.Agg.Font
 					&& BitConverter.DoubleToInt64Bits(this.origin.X) == BitConverter.DoubleToInt64Bits(other.origin.X)
 					&& BitConverter.DoubleToInt64Bits(this.origin.Y) == BitConverter.DoubleToInt64Bits(other.origin.Y)
 					&& this.snapBaselines == other.snapBaselines
+					&& BitConverter.DoubleToInt64Bits(this.lineSpacing) == BitConverter.DoubleToInt64Bits(other.lineSpacing)
 					&& this.styleEpoch == other.styleEpoch;
 			}
 
