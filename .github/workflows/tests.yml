@@ -8,6 +8,11 @@ on:
 
 jobs:
   test:
+    # The suite is gated on MatterHackers/agg-sharp, as MatterCAD's workflows are on
+    # MatterHackers/MatterCAD: a push to a fork (larsbrubaker/agg-sharp) is a work-in-progress
+    # backup, and the suite runs when that work reaches the MatterHackers repo. The fork's
+    # run shows as skipped in seconds, which is not a pass.
+    if: github.repository == 'MatterHackers/agg-sharp'
     runs-on: windows-latest
     # The last green run took ~3 minutes. A cap here means a future hang fails in
     # half an hour instead of riding GitHub's 6-hour default to a cancel.
