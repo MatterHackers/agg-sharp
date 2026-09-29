@@ -234,6 +234,9 @@ namespace MatterHackers.GuiAutomation
 		/// dump is identical. macOS only: on Linux, Yama's ptrace scope stops a process we start from
 		/// attaching to us unless the runtime's PR_SET_PTRACER dance is repeated, and Windows is untested.
 		/// </remarks>
+		// Its one caller checks OperatingSystem.IsMacOS(); saying so here is what lets the browser compatibility
+		// gate see that Process is never reached in a page.
+		[System.Runtime.Versioning.SupportedOSPlatform("macos")]
 		private static string RunCreateDump(string dumpPath)
 		{
 			string createDump = Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "createdump");
